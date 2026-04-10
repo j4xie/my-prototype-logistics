@@ -1,9 +1,13 @@
 package com.cretas.aims.service.config.impl;
 
 import com.cretas.aims.dto.config.*;
+import com.cretas.aims.engine.DDLExecutor;
+import com.cretas.aims.engine.DynamicFieldService;
+import com.cretas.aims.entity.auth.UserMenuPermission;
 import com.cretas.aims.entity.config.*;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
+import com.cretas.aims.repository.auth.UserMenuPermissionRepository;
 import com.cretas.aims.repository.config.*;
 import com.cretas.aims.service.config.FactoryConfigService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,6 +43,15 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     @org.springframework.context.annotation.Lazy
     private com.cretas.aims.ai.tool.ToolRegistry toolRegistry;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private DDLExecutor ddlExecutor;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private DynamicFieldService dynamicFieldService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private UserMenuPermissionRepository userMenuPermRepo;
 
     // ========== 合并配置读取 ==========
 
@@ -119,6 +132,70 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
                         .collect(Collectors.toMap(Map.Entry::getKey, e -> String.valueOf(e.getValue()))))
                 .renderingMode(renderingMode)
                 .build();
+    }
+
+    @Override
+    public EffectiveModuleConfig getEffectiveConfig(String factoryId, String moduleCode, String roleCode, String userId) {
+        // Call existing 3-param version
+        EffectiveModuleConfig config = getEffectiveConfig(factoryId, moduleCode, roleCode);
+
+        // Merge dynamic fields
+        List<CanvasDynamicField> dynamicFields = dynamicFieldService.getActiveFields(factoryId, moduleCode);
+        if (!dynamicFields.isEmpty()) {
+            List<EffectiveField> allFields = new ArrayList<>(config.getFields());
+            for (CanvasDynamicField df : dynamicFields) {
+                if ("SUB_TABLE".equals(df.getFieldType())) continue;
+                EffectiveField ef = EffectiveField.builder()
+                    .code(df.getFieldCode())
+                    .label(df.getLabel())
+                    .type(df.getFieldType().toLowerCase())
+                    .required(false)
+                    .visible(true)
+                    .readonly(false)
+                    .defaultValue(null)
+                    .options(df.getConfig().get("options"))
+                    .group("custom")
+                    .order(1000 + df.getSortOrder())
+                    .extra(df.getConfig())
+                    .visibleWhen(df.getVisibleWhen())
+                    .computedWhen(df.getComputedWhen())
+                    .source("dynamic")
+                    .build();
+                allFields.add(ef);
+            }
+            config.setFields(allFields);
+        }
+
+        // Apply user-level permission overrides
+        if (userId != null && userMenuPermRepo != null) {
+            applyUserPermissions(config.getFields(), factoryId, moduleCode, userId);
+        }
+
+        return config;
+    }
+
+    private void applyUserPermissions(List<EffectiveField> fields, String factoryId, String moduleCode, String userId) {
+        List<UserMenuPermission> perms = userMenuPermRepo.findByFactoryIdAndUserId(factoryId, userId);
+        for (UserMenuPermission perm : perms) {
+            String mc = perm.getMenuCode();
+            if (!mc.startsWith(moduleCode + ":")) continue;
+            String[] parts = mc.split(":");
+            if (parts.length < 3) continue;
+            String fieldCode = parts[1];
+            String permission = parts[2];
+
+            for (EffectiveField field : fields) {
+                if (field.getCode().equals(fieldCode)) {
+                    if ("REVOKE".equals(perm.getGrantType().name())) {
+                        if ("hidden".equals(permission)) field.setVisible(false);
+                        if ("readonly".equals(permission)) field.setReadonly(true);
+                    } else {
+                        if ("hidden".equals(permission)) field.setVisible(true);
+                        if ("readonly".equals(permission)) field.setReadonly(false);
+                    }
+                }
+            }
+        }
     }
 
     // ========== 字段级查询 ==========
@@ -286,6 +363,10 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
                     published.setStatus("ARCHIVED");
                     factoryConfigurationRepository.save(published);
                 });
+
+        // Execute pending DDL for dynamic fields and refresh cache
+        ddlExecutor.executePendingDDL(factoryId, draft.getConfigVersion());
+        dynamicFieldService.refreshCache();
 
         draft.setStatus("PUBLISHED");
         draft.setPublishedAt(LocalDateTime.now());
@@ -559,6 +640,7 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
                     .group((String) schemaDef.getOrDefault("group", "basic"))
                     .order(order++)
                     .extra(extra)
+                    .source("jpa")
                     .build());
         }
 
