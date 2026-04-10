@@ -1,10 +1,21 @@
 """大众点评评论分析 — 改进 7+8 (Week 4.5)
 
+⚠️ 定位: **Bonus 功能, 不是核心卖点**
+  - 原始 11 improvements 审查中被砍 (见 2026-04-08_smartbi-restaurant-11-improvements-secondary-review.md):
+    "改进 7+8 (endpoint 不支持)" — 当时没有 review 数据获取通路
+  - Week 4.5 加回来的原因: 技术可行性提升 (加了 upload 通路)
+  - Week 6 升级: DeepSeek LLM 驱动 (精度 90%+)
+  - 核心卖点仍然是 W2 的 cost_rigidity + benchmark alerts, 这个是辅助
+
+依赖: 客户必须主动上传 review 数据 (美团商家端导出 Excel 或 dianping 爬取)
+  - 没上传 → reviewAnalysis section 自动 skip (graceful)
+  - 上传后 → 自动从 DB 加载, 不需要每次 POST 都带 reviews
+
 设计依据:
   - 改进 7: 评分趋势分析 — 识别 Q3→Q4 下滑, 预警失去 TOP N 排名
   - 改进 8: 菜品标签聚合 — 统计客户提及的菜品 + 情感倾向, 发现真实招牌
 
-核心价值:
+核心价值 (如果客户有数据):
   客户真实反馈 vs 老板主观判断:
   - 老板认为"招牌毛肚"是销量冠军 → 评论里只提 5 次, 少
   - 客户实际爱"鲜鸭血" → 评论里提 85 次, 好评 95%

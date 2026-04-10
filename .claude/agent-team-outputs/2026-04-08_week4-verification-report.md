@@ -466,3 +466,29 @@ c:/Users/Steve/my-prototype-logistics/test-w4-real-e2e.mjs  (源脚本, 含 POST
 > Week 4 在不破坏 Week 3 验证过的 V2 架构基础上, 把 "6 个 analyzer + BOM Layer 2+3" 从 stub 变成**真实跑通邓总数据 + 真实 HTTP 响应 + 真实 TypeScript 编译的完整业务闭环**. 7/11 sections 在 Test.xlsx 上触发是正确行为 (POS-only sections graceful skip), 11/11 sections 在完整 mock 数据上触发. **没有 mock HTTP, 没有伪造 JSON, 没有跳过验证.**
 
 **Week 4 verification PASSED ✅**
+
+---
+
+## 更新 (2026-04-10): 评论分析功能定位澄清
+
+**审计发现**: 改进 7+8 (大众点评评论分析) 在原 `2026-04-08_smartbi-restaurant-11-improvements-secondary-review.md` 中**明确被砍**, 理由是"endpoint 不支持".
+
+**当前状态**: W4.5 + W6 加回来, 但应定位为 **bonus 功能**, 不是核心卖点.
+
+### 诚实边界声明
+
+| 项 | 状态 |
+|---|---|
+| 原始需求 | ❌ 不在邓总核心需求里 |
+| W4.5 为何加回来 | 技术兴趣 + 数据获取可行 (上传 Excel 通路已建) |
+| W6 升级内容 | DeepSeek LLM (90%+ 精度 vs regex 30-60%) |
+| 依赖 | 客户必须主动上传 review 数据 |
+| 客户不上传 | graceful skip, 不影响其他 sections |
+| 核心卖点 | 仍是 W2 的 cost_rigidity + benchmark alerts |
+
+### 文件注释已更新
+
+- `services/restaurant/review_analyzer.py` — 头部加 bonus 定位说明
+- `services/restaurant/review_analyzer_llm.py` — 头部加 bonus 定位说明
+
+这样后来者看代码就知道这个功能是辅助不是核心, 不会误以为 SmartBI 餐饮 = 评论分析.

@@ -1,4 +1,9 @@
-"""LLM-based 大众点评评论分析器 — W5.5 (升级自 review_analyzer.py)
+"""LLM-based 大众点评评论分析器 — W5.5 + W6 (升级自 review_analyzer.py)
+
+⚠️ 定位: **Bonus 功能, 不是核心卖点** (见 review_analyzer.py 头注释)
+  - 原 11 improvements 中改进 7+8 被砍, W4.5 技术兴趣加回来
+  - 需要客户主动上传 review 数据才有价值
+  - 核心卖点仍是 W2 的 cost_rigidity + benchmark alerts
 
 对比 review_analyzer.py (regex + 关键词):
   regex: 精度 30-60% 在真实数据 (招牌青花椒鱼 OK, 上米饭/务细心/知上菜 等都是误匹配)
