@@ -2,6 +2,7 @@
 import { ApiClient } from './lib/api-client.mjs';
 import { Report } from './lib/report.mjs';
 import { phase0Prereq } from './phases/phase0-prereq.mjs';
+import { phase1Config } from './phases/phase1-config.mjs';
 
 const REPORT_PATH = './tests/canvas-v3/test-canvas-v3-lifecycle-results.json';
 
@@ -25,7 +26,19 @@ async function main() {
     process.exit(1);
   }
 
-  // Future phases will be added in subsequent tasks
+  // Phase 1
+  let state;
+  try {
+    state = await phase1Config(api, report);
+    console.log(`\nPhase 1 state: factoryId=${state.factoryId}`);
+  } catch (e) {
+    console.error('Phase 1 error:', e.message);
+    report.print();
+    report.save(REPORT_PATH);
+    process.exit(1);
+  }
+
+  // Future phases added here
 
   report.print();
   report.save(REPORT_PATH);

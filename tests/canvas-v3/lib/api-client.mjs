@@ -42,13 +42,13 @@ export class ApiClient {
   }
 
   // POST via SSH to localhost:10020 — avoids nginx POST body issues
+  // Uses base64 encoding to safely pass body through SSH shell (handles Chinese/special chars)
   async authedPost(factoryId, path, body, tokenFactoryId = null) {
     const token = this.tokens.get(tokenFactoryId || factoryId);
     if (!token) throw new Error(`No token for factory ${tokenFactoryId || factoryId}`);
 
-    // Escape JSON for shell
-    const bodyJson = JSON.stringify(body).replace(/'/g, "'\\''");
-    const cmd = `ssh ${SERVER} "curl -s -X POST -H 'Authorization: Bearer ${token}' -H 'Content-Type: application/json' 'http://localhost:10020/api/mobile/${factoryId}${path}' -d '${bodyJson}'"`;
+    const bodyB64 = Buffer.from(JSON.stringify(body)).toString('base64');
+    const cmd = `ssh ${SERVER} "echo ${bodyB64} | base64 -d | curl -s -X POST -H 'Authorization: Bearer ${token}' -H 'Content-Type: application/json' 'http://localhost:10020/api/mobile/${factoryId}${path}' -d @-"`;
     const output = execSync(cmd, { encoding: 'utf8' });
     try {
       return JSON.parse(output);
@@ -58,12 +58,13 @@ export class ApiClient {
   }
 
   // PUT via SSH
+  // Uses base64 encoding to safely pass body through SSH shell (handles Chinese/special chars)
   async authedPut(factoryId, path, body, tokenFactoryId = null) {
     const token = this.tokens.get(tokenFactoryId || factoryId);
     if (!token) throw new Error(`No token for factory ${tokenFactoryId || factoryId}`);
 
-    const bodyJson = JSON.stringify(body).replace(/'/g, "'\\''");
-    const cmd = `ssh ${SERVER} "curl -s -X PUT -H 'Authorization: Bearer ${token}' -H 'Content-Type: application/json' 'http://localhost:10020/api/mobile/${factoryId}${path}' -d '${bodyJson}'"`;
+    const bodyB64 = Buffer.from(JSON.stringify(body)).toString('base64');
+    const cmd = `ssh ${SERVER} "echo ${bodyB64} | base64 -d | curl -s -X PUT -H 'Authorization: Bearer ${token}' -H 'Content-Type: application/json' 'http://localhost:10020/api/mobile/${factoryId}${path}' -d @-"`;
     const output = execSync(cmd, { encoding: 'utf8' });
     try {
       return JSON.parse(output);
@@ -73,17 +74,40 @@ export class ApiClient {
   }
 
   // Create factory via internal API (requires X-Internal-Key, SSH only)
+  // Uses base64 encoding to safely pass body through SSH shell (handles Chinese/special chars)
   async createFactory(factoryName, industryCode = 'FOOD', regionCode = '3101') {
-    const body = JSON.stringify({
+    const bodyB64 = Buffer.from(JSON.stringify({
       factoryName,
       industryCode,
       regionCode,
       contactName: 'Canvas测试管理员',
       contactPhone: '13800000099',
-    }).replace(/'/g, "'\\''");
-    const cmd = `ssh ${SERVER} "curl -s -X POST -H 'X-Internal-Key: ${INTERNAL_KEY}' -H 'Content-Type: application/json' 'http://localhost:10020/api/internal/onboarding/create-factory' -d '${body}'"`;
+    })).toString('base64');
+    const cmd = `ssh ${SERVER} "echo ${bodyB64} | base64 -d | curl -s -X POST -H 'X-Internal-Key: ${INTERNAL_KEY}' -H 'Content-Type: application/json' 'http://localhost:10020/api/internal/onboarding/create-factory' -d @-"`;
     const output = execSync(cmd, { encoding: 'utf8' });
     return JSON.parse(output);
+  }
+
+  // Reset a user's password via the reset-password API endpoint
+  // Uses a known bootstrap admin (factory_admin1/123456) which has factory_super_admin role
+  // Returns the new password that was set
+  resetUserPassword(factoryId, username, newPassword) {
+    // Get a bootstrap admin token (factory_admin1 has factory_super_admin role)
+    // Use base64 encoding to avoid shell escaping issues with JSON
+    const loginBodyB64 = Buffer.from(JSON.stringify({ username: 'factory_admin1', password: '123456' })).toString('base64');
+    const loginOut = execSync(
+      `ssh ${SERVER} "echo ${loginBodyB64} | base64 -d | curl -s -X POST -H 'Content-Type: application/json' 'http://localhost:10020/api/mobile/auth/unified-login' -d @-"`,
+      { encoding: 'utf8' }
+    );
+    const loginData = JSON.parse(loginOut);
+    if (!loginData.success) throw new Error(`Bootstrap admin login failed: ${loginData.message}`);
+    const bootstrapToken = loginData.data.accessToken;
+
+    const cmd = `ssh ${SERVER} "curl -s -X POST -H 'Authorization: Bearer ${bootstrapToken}' 'http://localhost:10020/api/mobile/auth/reset-password?factoryId=${factoryId}&username=${username}&newPassword=${newPassword}'"`;
+    const out = execSync(cmd, { encoding: 'utf8' });
+    const result = JSON.parse(out);
+    if (!result.success) throw new Error(`Password reset failed: ${result.message}`);
+    return newPassword;
   }
 
   // Cross-factory HTTP status check (for isolation tests)
