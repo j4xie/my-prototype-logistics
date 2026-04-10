@@ -62,6 +62,28 @@ public class BomServiceImpl implements BomService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.DefaultValueResolver defaultValueResolver;
 
+    /** Canvas V2: DB-driven validation rules */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+
+    private void runBomValidation(String factoryId, String operation, BomItem bomItem) {
+        if (validationRuleEvaluator == null) return;
+        try {
+            java.util.Map<String, Object> context = new java.util.HashMap<>();
+            context.put("productTypeId", bomItem.getProductTypeId());
+            context.put("materialTypeId", bomItem.getMaterialTypeId());
+            context.put("yieldRate", bomItem.getYieldRate());
+            context.put("taxRate", bomItem.getTaxRate());
+            context.put("standardQuantity", bomItem.getStandardQuantity());
+            context.put("sortOrder", bomItem.getSortOrder());
+            validationRuleEvaluator.validate(factoryId, "bom", operation, context);
+        } catch (com.cretas.aims.exception.BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("BOM canvas validation non-blocking error: {}", e.getMessage());
+        }
+    }
+
     // ============ BOM Items ============
 
     @Override
@@ -84,6 +106,10 @@ public class BomServiceImpl implements BomService {
     public BomItem saveBomItem(BomItem bomItem) {
         log.info("保存BOM项目: factoryId={}, productTypeId={}, materialTypeId={}",
             bomItem.getFactoryId(), bomItem.getProductTypeId(), bomItem.getMaterialTypeId());
+
+        // Canvas V2: DB-driven validation (runs before defaults so rules like "#yieldRate > 0" can catch invalid user input)
+        String operation = (bomItem.getId() == null) ? "CREATE" : "UPDATE";
+        runBomValidation(bomItem.getFactoryId(), operation, bomItem);
 
         // 设置默认值（优先从 Canvas Config 读取，不可用时使用硬编码 fallback）
         if (bomItem.getYieldRate() == null) {

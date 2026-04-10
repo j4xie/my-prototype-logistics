@@ -315,6 +315,30 @@ public class SalesServiceImpl implements SalesService {
             throw new BusinessException("只有草稿状态的订单可以编辑");
         }
 
+        // Canvas V2: DB-driven validation for UPDATE — pre-compute totalAmount if items changed
+        BigDecimal updateTotal = order.getTotalAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO;
+        boolean hasDupOnUpdate = false;
+        if (request.getItems() != null && !request.getItems().isEmpty()) {
+            Set<String> seenIds = new HashSet<>();
+            updateTotal = BigDecimal.ZERO;
+            for (CreateSalesOrderRequest.SalesOrderItemDTO itemDTO : request.getItems()) {
+                if (itemDTO.getProductTypeId() != null && !seenIds.add(itemDTO.getProductTypeId())) {
+                    hasDupOnUpdate = true;
+                }
+                if (itemDTO.getQuantity() != null && itemDTO.getUnitPrice() != null) {
+                    BigDecimal discountRate = itemDTO.getDiscountRate() != null ? itemDTO.getDiscountRate() : BigDecimal.ZERO;
+                    BigDecimal line = itemDTO.getQuantity().multiply(itemDTO.getUnitPrice())
+                            .multiply(BigDecimal.ONE.subtract(discountRate));
+                    updateTotal = updateTotal.add(line);
+                }
+            }
+        }
+        runConfiguredValidation(factoryId, "UPDATE", Map.of(
+                "itemCount", request.getItems() != null ? request.getItems().size() : 0,
+                "totalAmount", updateTotal,
+                "hasDuplicateProduct", hasDupOnUpdate,
+                "currentStatus", order.getStatus().name()));
+
         if (request.getSalesperson() != null) {
             order.setSalesperson(request.getSalesperson());
         }
