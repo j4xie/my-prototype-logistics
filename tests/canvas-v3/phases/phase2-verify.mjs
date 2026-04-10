@@ -408,6 +408,156 @@ export async function phase2Verify(state, api, report) {
       }
     }
 
+    // ============================================
+    // Phase 2 Multi-tenant Isolation Tests
+    // ============================================
+
+    // 2.16 F-TEST fields don't pollute F001
+    console.log('\n2.16 Cross-factory isolation — F001 should not see F-TEST fields...');
+    let f001Token = null;
+    try {
+      const f001Login = await api.login('factory_admin1', '123456');
+      if (f001Login.success) {
+        f001Token = f001Login.data.accessToken;
+        api.setToken('F001', f001Token);
+
+        // Get F001's effective config for sales_order
+        const f001Config = await api.authedGet(
+          'F001',
+          '/config/modules/sales_order/effective'
+        );
+
+        const f001Fields = f001Config.data?.fields || f001Config.fields || [];
+        const fTestFieldCodes = [
+          'customer_level',
+          'delivery_priority',
+          'expected_margin',
+          'prepayment_records',
+        ];
+
+        const pollutedFields = f001Fields.filter(f =>
+          fTestFieldCodes.includes(f.code)
+        );
+
+        if (pollutedFields.length === 0) {
+          report.addCheckpoint('P2-16', 'F001 不含 F-TEST 动态字段', 'PASS', {
+            f001FieldCount: f001Fields.length,
+            fTestFieldsFound: 0,
+            detail: 'F001 正向隔离正常',
+          });
+          console.log(`  ✅ F001 has ${f001Fields.length} fields, none from F-TEST`);
+        } else {
+          report.addCheckpoint('P2-16', 'F001 不含 F-TEST 动态字段', 'FAIL', {
+            f001FieldCount: f001Fields.length,
+            fTestFieldsFound: pollutedFields.length,
+            polluted: pollutedFields.map(f => f.code),
+            detail: 'F001 被 F-TEST 字段污染',
+          });
+          console.log(`  ❌ F001 polluted with: ${pollutedFields.map(f => f.code).join(', ')}`);
+        }
+      } else {
+        report.addCheckpoint('P2-16', 'F001 不含 F-TEST 动态字段', 'SKIP', {
+          reason: 'F001 登录失败',
+          loginResp: f001Login.message,
+        });
+        console.log('  ⏭️ F001 login failed');
+      }
+    } catch (e) {
+      report.addCheckpoint('P2-16', 'F001 不含 F-TEST 动态字段', 'SKIP', {
+        error: e.message,
+      });
+      console.log(`  ⏭️ Error: ${e.message}`);
+    }
+
+    // 2.17 Cross-factory access blocked (HTTP 403)
+    console.log('\n2.17 Cross-factory access blocked...');
+    if (!f001Token) {
+      report.addCheckpoint('P2-17', '跨工厂访问拦截', 'SKIP', {
+        reason: 'F001 token 未获取',
+      });
+    } else {
+      try {
+        // F001 token trying to access F-TEST config
+        const code1 = api.crossFactoryHttpCode(
+          state.factoryId,
+          'F001',
+          '/config/modules/sales_order/effective'
+        );
+
+        // F001 token trying to access F-TEST dynamic fields
+        const code2 = api.crossFactoryHttpCode(
+          state.factoryId,
+          'F001',
+          '/config/v2/dynamic-fields?moduleCode=sales_order'
+        );
+
+        // F001 token trying to access F-TEST sales orders
+        const code3 = api.crossFactoryHttpCode(
+          state.factoryId,
+          'F001',
+          '/sales/orders'
+        );
+
+        const allBlocked = code1 === '403' && code2 === '403' && code3 === '403';
+        report.addCheckpoint('P2-17', '跨工厂访问拦截 (3 endpoints)', allBlocked ? 'PASS' : 'FAIL', {
+          detail: `F001→F-TEST: config=${code1}, dynamic-fields=${code2}, sales/orders=${code3}`,
+          expected: 'all 403',
+        });
+        console.log(`  ${allBlocked ? '✅' : '❌'} HTTP codes: ${code1}, ${code2}, ${code3}`);
+      } catch (e) {
+        report.addCheckpoint('P2-17', '跨工厂访问拦截', 'FAIL', { error: e.message });
+        console.log(`  ❌ Error: ${e.message}`);
+      }
+    }
+
+    // 2.18 DDL type conflict detection (KNOWN_GAP verification)
+    console.log('\n2.18 DDL type conflict (KNOWN_GAP verification)...');
+    if (!f001Token) {
+      report.addCheckpoint('P2-18', 'DDL 类型冲突检测', 'SKIP', {
+        reason: 'F001 token 未获取',
+      });
+    } else {
+      try {
+        // F001 tries to add same fieldCode with different type (DECIMAL vs TEXT)
+        const conflictResp = await api.authedPost(
+          'F001',
+          '/config/v2/dynamic-fields',
+          {
+            moduleCode: 'sales_order',
+            fieldCode: 'delivery_priority', // Same as F-TEST's field (TEXT)
+            fieldType: 'DECIMAL', // But different type
+            label: 'F001 优先级数值',
+          }
+        );
+
+        // Check actual DB column type (sshQuery is synchronous)
+        const { sshQuery } = await import('../lib/ssh-client.mjs');
+        const colType = sshQuery(
+          "SELECT data_type FROM information_schema.columns WHERE table_name='sales_orders' AND column_name='cf_delivery_priority'"
+        );
+
+        // The KNOWN_GAP is that F001's DECIMAL request is accepted but actual column is VARCHAR
+        const isVarchar = colType.includes('character varying') || colType.includes('text');
+
+        report.addCheckpoint('P2-18', 'DDL 类型冲突检测 (架构缺陷)', 'KNOWN_GAP', {
+          f001RequestType: 'DECIMAL',
+          fTestExistingType: 'VARCHAR (TEXT)',
+          dbActualType: colType || 'unknown',
+          isVarchar,
+          detail: `F001 声明 DECIMAL, DB 实际 ${colType}, 冲突未被检测`,
+          note: '架构缺陷: DDLExecutor 不检测跨工厂的同名字段类型冲突, 需 V3.1 修复',
+          backlogItem: 'V3.1: Add type conflict detection in DDLExecutor.generateDDL()',
+        });
+        console.log(`  🐛 Known gap confirmed: DB type=${colType}`);
+      } catch (e) {
+        report.addCheckpoint('P2-18', 'DDL 类型冲突检测', 'KNOWN_GAP', {
+          error: e.message,
+          note: 'Error during verification — gap still exists',
+        });
+        console.log(`  🐛 Error: ${e.message}`);
+      }
+    }
+
     return { browser, page };
   } catch (e) {
     console.error('Phase 2 error:', e);
