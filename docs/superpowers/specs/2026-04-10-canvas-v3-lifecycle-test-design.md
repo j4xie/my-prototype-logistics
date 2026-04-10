@@ -456,6 +456,119 @@ result: ✅/❌
 → 子表 CRUD 仍通过直接访问验证 (2.6 已覆盖)
 ```
 
+### 2.11 验证触发链真实执行
+
+```
+action: 将 Phase 2.2 创建的订单从 DRAFT → CONFIRMED
+  PUT /api/mobile/{FACTORY_ID}/sales/orders/{orderId}/confirm (或对应的状态变更 API)
+
+验证:
+  - 订单状态变为 CONFIRMED ✅
+  - 触发链 so_confirmed_chain 被执行:
+    方式A: 查服务器日志 grep "chain.*so_confirmed" cretas-prod.log
+    方式B: 查是否有新的 production_plan 被自动创建 (如果 tool 做了这个)
+    方式C: GET /config/v2/trigger-chains → 确认链 enabled=true, 状态变更后观察副作用
+  - screenshot: P2-11-trigger-chain.png
+result: ✅/❌/KNOWN_BUG
+
+如果 scheduling_list tool 不产生可观测副作用:
+→ 改用日志验证: ssh grep "Executing chain step.*scheduling_list" 
+→ 或标记 KNOWN_GAP: "触发链执行无可观测 UI 副作用，仅日志可查"
+```
+
+### 2.12 验证默认值自动填充
+
+```
+前置 (API): 配置默认值
+  PUT /config/v2/default-values
+  Body: {moduleCode:"sales_order", fieldCode:"delivery_priority",
+         defaultValue:"标准", condition:"", description:"默认交货优先级"}
+
+action: 新建销售订单 → 检查"交货优先级"字段初始值
+验证:
+  - getEffectiveConfig 返回 delivery_priority.defaultValue = "标准"
+  - 前端 SchemaFormRenderer 初始化 formData 时使用此默认值
+  - screenshot: P2-12-default-value.png
+result: ✅/❌
+
+注意: SalesServiceImpl.createSalesOrder() 未调用 DefaultValueResolver
+→ 默认值仅在前端填充 (SchemaFormRenderer 读 defaultValue)
+→ 如果后端也应生效: 标记 KNOWN_GAP "SalesService 未集成 DefaultValueResolver"
+```
+
+### 2.13 验证模块开关
+
+```
+前置 (API): 确认模板禁用了某模块
+  GET /config/modules/hr_employee/effective
+  → enabled=false (被模板禁用)
+
+action (Playwright): 
+  - 检查侧边栏是否隐藏了对应菜单
+  - 如果侧边栏有: 点击进入 → 页面是否显示"模块未启用"
+  - 直接访问 URL → 是否被阻止
+
+evidence:
+  - 侧边栏: hr_employee 菜单 [存在/不存在]
+  - 页面: [正常显示/显示未启用/空白]
+  - screenshot: P2-13-module-disabled.png
+result: ✅/❌/KNOWN_GAP
+
+注意: 后端无硬拦截, API 仍可直接调用
+→ 如果侧边栏仍显示: KNOWN_GAP "前端未根据 enabled=false 隐藏菜单"
+→ 如果 API 仍响应: KNOWN_GAP "后端无模块级拦截, 仅前端控制"
+```
+
+### 2.14 配置变更传播 (核心对照)
+
+```
+目的: 证明"配置真的改变了业务行为，不是只改了数据库记录"
+
+Step A: 先用旧规则验证
+  POST 创建订单 金额=200 → Phase 2 规则 >=100 → 应该通过 ✅
+  验证: 订单创建成功
+
+Step B: Phase 3 改规则为 >=500 (后续执行)
+
+Step C: 同样提交 200 → 现在被拦截
+  验证: "订单金额不能低于500元" — 不是旧的 100
+
+这个测试横跨 Phase 2 和 Phase 4, 步骤 A 在 Phase 2 执行, 步骤 C 在 Phase 4 执行。
+记录 Phase 2 的 orderId 作为"旧规则下创建的证据"。
+```
+
+### 2.15 动态字段与正常业务流程融合
+
+```
+目的: 验证动态字段不是"独立存储"，而是和业务记录关联
+
+Step A: 通过正常业务 API 创建订单
+  POST /sales/orders → orderId
+
+Step B: 写入动态字段
+  PUT /{factoryId}/sales_order/{orderId}/custom-fields
+  Body: {customer_level: "B", delivery_priority: "普通"}
+
+Step C: 读回验证
+  GET /{factoryId}/sales_order/{orderId}/custom-fields
+  验证: {customer_level: "B", delivery_priority: "普通"}
+
+Step D: 读取正常业务数据
+  GET /sales/orders/{orderId} (正常业务 API)
+  验证: 正常业务字段不受影响 (customerName, totalAmount 等)
+
+Step E: 确认两个 API 操作同一条 DB 记录
+  psql: SELECT id, customer_name, cf_customer_level FROM sales_orders WHERE id='{orderId}'
+  验证: 同一行同时有 JPA 列和动态列
+
+evidence:
+  - JPA fields: customerName=..., totalAmount=...
+  - Dynamic fields: cf_customer_level=B, cf_delivery_priority=普通
+  - DB 验证: 同一行, 同一 id
+  - screenshot: P2-15-dual-track.png
+result: ✅/❌
+```
+
 ---
 
 ## 5. Phase 3: 需求变更 (API 层)
@@ -583,10 +696,12 @@ psql: SELECT COUNT(*) FROM canvas_ddl_log WHERE status='EXECUTED' AND factory_id
 
 ## 7. 判定标准
 
-### 总体通过条件 — V3 七大能力全覆盖
+### 总体通过条件 — V3 七大能力 + 配置→行为对照
 
-| # | V3 能力 | 检查点 | PASS 条件 | 测试步骤 | 权重 |
-|---|---------|--------|----------|---------|------|
+**Part A: 能力验证 (配置层)**
+
+| # | V3 能力 | 检查点 | PASS 条件 | 步骤 | 权重 |
+|---|---------|--------|----------|------|------|
 | 1 | 动态字段 | 工厂创建 | factoryId 返回 + 用户可登录 | 1.1 | P0 |
 | 2 | 动态字段 | 字段创建 | 4+ 条 PENDING_DDL | 1.4 | P0 |
 | 3 | 动态字段 | DDL 执行 | publish 后全部 EXECUTED | 1.8 | P0 |
@@ -603,27 +718,52 @@ psql: SELECT COUNT(*) FROM canvas_ddl_log WHERE status='EXECUTED' AND factory_id
 | 14 | 文件上传 | attachment | type=attachment 渲染 + 上传 | 4.2 | P1 |
 | 15 | Tab 布局 | layoutConfig | tabs 结构化配置生效 | 1.7c + 2.10 | P1 |
 | 16 | AI Tools | AI Chat | canvas_add_field 被调用 | 1.7e | P1 |
-| 17 | 二次发布 | 变更后 DDL | 新增 2 条 + 旧数据不丢 | 3.4 + 4.1 | P0 |
-| 18 | 二次发布 | 新校验生效 | 500 替换 100 | 4.3 | P0 |
-| 19 | 二次发布 | BOM 子表 | 变更记录子表可用 | 4.4 | P1 |
 
-### V3 七大能力覆盖矩阵
+**Part B: 配置→行为对照 (执行层)**
+
+| # | 对照场景 | PASS 条件 | 步骤 | 权重 |
+|---|---------|----------|------|------|
+| 17 | 触发链真实执行 | SO 确认后 tool 被调用 (日志可查) | 2.11 | P0 |
+| 18 | 默认值自动填充 | 新建记录时字段被预填 | 2.12 | P1 |
+| 19 | 模块开关生效 | 禁用模块前端不可访问 | 2.13 | P1 |
+| 20 | 配置变更传播 | 200 旧规则通过 → 改500 → 200 被拦截 | 2.14 | P0 |
+| 21 | 双轨融合 | JPA + 动态字段在同一 DB 行 | 2.15 | P0 |
+
+**Part C: 二次发布验证**
+
+| # | 对照场景 | PASS 条件 | 步骤 | 权重 |
+|---|---------|----------|------|------|
+| 22 | 变更后 DDL | 新增 2 条 EXECUTED + 旧数据不丢 | 3.4 + 4.1 | P0 |
+| 23 | 新校验生效 | 500 替换 100 (与 #20 联动) | 4.3 | P0 |
+| 24 | BOM 子表 | 变更记录子表可用 | 4.4 | P1 |
+
+**合计: 24 个检查点 = 12 P0 + 12 P1**
+
+### V3 七大能力 + 配置→行为对照覆盖矩阵
 
 ```
-能力                  Phase1配置  Phase2验证  Phase3变更  Phase4再验
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1. 动态字段 (DDL)     1.4 创建    2.2 渲染    3.1 追加    4.1 不丢
-                      1.8 DDL     2.3 持久化              4.2 新字段
-2. 子表               1.4 创建    2.6 CRUD    3.3 BOM     4.4 BOM
-3. 用户级权限         -           2.7 角色     -           -
-4. 文件上传           -           -           3.1 追加    4.2 上传
-5. 条件渲染           1.6 配置    2.4 显隐    -           -
+                      配置层                    行为层 (配置→实际对照)
+能力                  Phase1配置  Phase2验证    Phase2行为对照         Phase3  Phase4
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. 动态字段 (DDL)     1.4 创建    2.2 渲染     2.15 双轨融合(DB验证)  3.1追加  4.1不丢
+                      1.8 DDL     2.3 持久化                                   4.2新字段
+2. 子表               1.4 创建    2.6 CRUD     2.10 Tab渲染           3.3 BOM  4.4 BOM
+3. 用户级权限         -           2.7 角色     (写端未拦截=KNOWN_GAP) -        -
+4. 文件上传           -           -            -                      3.1追加  4.2上传
+5. 条件渲染           1.6 显隐    2.4 显隐     -                      -        -
                       1.7d 计算   2.9 计算
-6. 聚合公式           1.7b 创建   2.8 验证    -           -
-7. Tab 布局           1.7c 配置   2.10 渲染   -           -
+6. 聚合公式           1.7b 创建   2.8 验证     -                      -        -
+7. Tab 布局           1.7c 配置   2.10 渲染    -                      -        -
 
-AI Tools              1.7e Chat   -           -           -
-变更集流程            1.8 完整    -           3.4 完整    -
+配置→行为对照 (新增):
+触发链执行            1.7 配置    -            2.11 确认→链执行        -        -
+默认值填充            -           -            2.12 新建→自动填充      -        -
+模块开关              1.3 模板    -            2.13 禁用→不可访问      -        -
+配置变更传播          -           2.14A 200通过 -                      3.2改规则 4.3=2.14C
+双轨融合              -           -            2.15 同行JPA+动态列     -        -
+
+AI Tools              1.7e Chat   -            -                      -        -
+变更集流程            1.8 完整    -            -                      3.4完整  -
 ```
 
 ### PASS 阈值
@@ -632,7 +772,7 @@ AI Tools              1.7e Chat   -           -           -
 - **P1 允许 KNOWN_BUG (10 项)**: 最多 3 个 KNOWN_BUG (UI 集成问题), 不影响 P0 通过
 - **任何 P0 FAIL**: 测试不通过, 需修复后重测
 
-### KNOWN_BUG 预期 (可能出现)
+### KNOWN_BUG 预期 (前端 UI 集成)
 
 Canvas V3 前端组件是新建的, 可能的 UI 集成问题:
 1. DynamicModulePage 未读取 layoutConfig.tabs → 子表 tab 不渲染 (P1-11)
@@ -641,7 +781,18 @@ Canvas V3 前端组件是新建的, 可能的 UI 集成问题:
 4. 新工厂可能没有预置的仓库管理员用户 (P1-13)
 5. sales_order_items 可能无 tax_rate 列, 聚合公式预置数据不足 (P1-12)
 
-这些属于 P1 级别, 不阻塞 V3 后端核心验证。
+### KNOWN_GAP 预期 (配置→行为层未完全接通)
+
+代码审计发现的已知执行缺口 (by design 或待后续迭代):
+1. **SalesServiceImpl 未集成 DefaultValueResolver** — 默认值仅前端填充, 后端 create 不自动赋值 (P1-18)
+2. **BomServiceImpl 无校验规则调用** — BOM 保存时不经过 ValidationRuleEvaluator (P1)
+3. **模块开关无后端硬拦截** — 关了模块 API 仍可直接调用, 仅前端菜单隐藏 (P1-19)
+4. **Tool 开关未被调度器/触发链检查** — disabled 的 Tool 仍会被定时任务和触发链执行 (P1)
+5. **用户权限写端不校验** — 字段 hidden/readonly 仅影响读取, 提交时不校验 (P1-13)
+6. **DynamicFieldAspect 未实现** — 动态字段需要独立 API 读写, 不自动注入业务 CRUD 响应 (by design, 双轨制)
+
+这些是 V3 架构的有意取舍或后续迭代内容, **不阻塞 P0 验证**。
+测试中遇到时标记 KNOWN_GAP 并记录, 作为 V3.1 迭代输入。
 
 ---
 
