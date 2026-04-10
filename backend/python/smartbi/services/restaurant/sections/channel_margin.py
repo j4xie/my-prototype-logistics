@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Optional
+from typing import Any
 
 from smartbi.services.restaurant.sections.base import (
     AbstractSectionHandler,
