@@ -48,8 +48,22 @@ export function useCanvasEditor() {
     if (!factoryId.value) return
     try {
       const res = await getConfigVersion(factoryId.value)
-      if (res.data) configVersion.value = res.data
-    } catch { /* first time, no version yet */ }
+      if (res.data) {
+        configVersion.value = res.data
+        // If the factory has no PUBLISHED config yet, trigger onboarding wizard.
+        // First-time factory admins land on the wizard instead of empty canvas.
+        if (res.data.status !== 'PUBLISHED') {
+          // Check history — if no version was ever published, show wizard
+          isOnboarding.value = !res.data.publishedAt
+        }
+      } else {
+        // No version record at all = fresh factory, definitely onboarding
+        isOnboarding.value = true
+      }
+    } catch {
+      // API error or first time, show onboarding as safe default
+      isOnboarding.value = true
+    }
   }
 
   function markDirty() { dirtyCount.value++ }

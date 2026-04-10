@@ -442,7 +442,7 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
         if (factoryTemplateRepository == null) {
             throw new BusinessException("模板系统未就绪");
         }
-        FactoryTemplate template = factoryTemplateRepository.findByTemplateCode(templateCode)
+        FactoryTemplate template = factoryTemplateRepository.findByTemplateCodeIgnoreCase(templateCode)
                 .orElseThrow(() -> new BusinessException("模板不存在: " + templateCode));
 
         // 1. Create draft
