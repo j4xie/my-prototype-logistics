@@ -109,6 +109,32 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
         List<EffectiveField> fields = buildEffectiveFields(fieldSchemaMap, effectiveFieldConfig, customLabels);
         List<FieldGroup> groups = buildFieldGroups(fieldSchemaMap);
 
+        // Layer 2b: Merge Canvas V3 dynamic fields (ALTER TABLE added columns)
+        // This was previously only in the 4-param overload but frontend calls the 3-param version
+        if (dynamicFieldService != null) {
+            List<CanvasDynamicField> dynamicFields = dynamicFieldService.getActiveFields(factoryId, moduleCode);
+            for (CanvasDynamicField df : dynamicFields) {
+                if ("SUB_TABLE".equals(df.getFieldType())) continue;
+                EffectiveField ef = EffectiveField.builder()
+                    .code(df.getFieldCode())
+                    .label(df.getLabel())
+                    .type(df.getFieldType().toLowerCase())
+                    .required(false)
+                    .visible(true)
+                    .readonly(false)
+                    .defaultValue(null)
+                    .options(df.getConfig().get("options"))
+                    .group("custom")
+                    .order(1000 + (df.getSortOrder() != null ? df.getSortOrder() : 0))
+                    .extra(df.getConfig())
+                    .visibleWhen(df.getVisibleWhen())
+                    .computedWhen(df.getComputedWhen())
+                    .source("dynamic")
+                    .build();
+                fields.add(ef);
+            }
+        }
+
         // Build workflow states and transitions
         List<WorkflowStateDTO> workflowStates = buildWorkflowStates(schema.getWorkflowSchema(), effectiveWorkflowConfig);
         List<WorkflowTransitionDTO> workflowTransitions = buildWorkflowTransitions(schema.getWorkflowSchema(), effectiveWorkflowConfig);
@@ -136,37 +162,10 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
 
     @Override
     public EffectiveModuleConfig getEffectiveConfig(String factoryId, String moduleCode, String roleCode, String userId) {
-        // Call existing 3-param version
+        // 3-param version already merges dynamic fields (Layer 2b)
         EffectiveModuleConfig config = getEffectiveConfig(factoryId, moduleCode, roleCode);
 
-        // Merge dynamic fields
-        List<CanvasDynamicField> dynamicFields = dynamicFieldService.getActiveFields(factoryId, moduleCode);
-        if (!dynamicFields.isEmpty()) {
-            List<EffectiveField> allFields = new ArrayList<>(config.getFields());
-            for (CanvasDynamicField df : dynamicFields) {
-                if ("SUB_TABLE".equals(df.getFieldType())) continue;
-                EffectiveField ef = EffectiveField.builder()
-                    .code(df.getFieldCode())
-                    .label(df.getLabel())
-                    .type(df.getFieldType().toLowerCase())
-                    .required(false)
-                    .visible(true)
-                    .readonly(false)
-                    .defaultValue(null)
-                    .options(df.getConfig().get("options"))
-                    .group("custom")
-                    .order(1000 + df.getSortOrder())
-                    .extra(df.getConfig())
-                    .visibleWhen(df.getVisibleWhen())
-                    .computedWhen(df.getComputedWhen())
-                    .source("dynamic")
-                    .build();
-                allFields.add(ef);
-            }
-            config.setFields(allFields);
-        }
-
-        // Apply user-level permission overrides
+        // Apply user-level permission overrides (4-param exclusive)
         if (userId != null && userMenuPermRepo != null) {
             applyUserPermissions(config.getFields(), factoryId, moduleCode, userId);
         }
