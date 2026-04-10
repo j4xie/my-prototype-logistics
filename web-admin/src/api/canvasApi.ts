@@ -76,6 +76,10 @@ export const aiApplyDiffs = (factoryId: string, diffs: Record<string, unknown>[]
 export const getConfigVersion = (factoryId: string) =>
   request.get<ConfigVersion>(`/${factoryId}/config/current-version`)
 
+// List all config versions (history, newest first, for rollback UI)
+export const getConfigVersions = (factoryId: string) =>
+  request.get<ConfigVersion[]>(`/${factoryId}/config/versions`)
+
 export const submitForReview = (factoryId: string) =>
   request.post(`/${factoryId}/config/submit-review`)
 

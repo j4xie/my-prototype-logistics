@@ -126,7 +126,33 @@ function handleSubmit() {
     }
   }
 
-  emit('submit', { ...formData.value })
+  // Canvas V3: Apply computedWhen values into payload (write-back)
+  // computedValues are calculated by SpEL at render time; persist them on submit.
+  const payload: Record<string, unknown> = { ...formData.value }
+  for (const field of config.value.fields) {
+    if (field.computedWhen && computedValues.value[field.code] != null) {
+      payload[field.code] = computedValues.value[field.code]
+    }
+  }
+
+  // Canvas V3: Split JPA vs dynamic fields so backend can route them
+  // Dynamic fields go into customFields Map (dual-track architecture)
+  const customFields: Record<string, unknown> = {}
+  const jpaPayload: Record<string, unknown> = {}
+  for (const field of config.value.fields) {
+    const val = payload[field.code]
+    if (val === undefined) continue
+    if (field.source === 'dynamic') {
+      customFields[field.code] = val
+    } else {
+      jpaPayload[field.code] = val
+    }
+  }
+  if (Object.keys(customFields).length > 0) {
+    jpaPayload.customFields = customFields
+  }
+
+  emit('submit', jpaPayload)
 }
 
 // 活动的 collapse 面板

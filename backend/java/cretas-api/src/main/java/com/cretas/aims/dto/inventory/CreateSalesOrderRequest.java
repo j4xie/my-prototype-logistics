@@ -12,6 +12,7 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -43,6 +44,13 @@ public class CreateSalesOrderRequest {
     @Valid
     @NotEmpty(message = "订单行项目不能为空")
     private List<SalesOrderItemDTO> items;
+
+    /**
+     * Canvas V3: 动态字段 (dual-track)
+     * 用户在 Canvas 里配的自定义字段, 前端通过这个 Map 传过来, 后端通过 DynamicFieldService
+     * 写入 cf_{fieldCode} 物理列. 不配的字段前端不传, 这个 Map 为 null.
+     */
+    private Map<String, Object> customFields;
 
     @Data
     @NoArgsConstructor

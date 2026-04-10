@@ -40,6 +40,10 @@ public class ArApServiceImpl implements ArApService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
 
+    /** Spring ApplicationEventPublisher for PaymentReceivedEvent */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private org.springframework.context.ApplicationEventPublisher applicationEventPublisher;
+
     public ArApServiceImpl(ArApTransactionRepository transactionRepository,
                            CustomerRepository customerRepository,
                            SupplierRepository supplierRepository) {
@@ -172,7 +176,24 @@ public class ArApServiceImpl implements ArApService {
 
         log.info("应收收款: factoryId={}, customerId={}, amount={}, balance={}",
                 factoryId, customerId, amount, newBalance);
-        return transactionRepository.save(transaction);
+        ArApTransaction saved = transactionRepository.save(transaction);
+
+        // Publish PaymentReceivedEvent so Canvas trigger chains (factory_trigger_chains
+        // with eventType='PaymentReceivedEvent') can react to successful AR payments.
+        // Discovered via audit: event had zero publishers despite TriggerChainExecutor listening.
+        if (applicationEventPublisher != null) {
+            try {
+                applicationEventPublisher.publishEvent(
+                        new com.cretas.aims.event.PaymentReceivedEvent(
+                                this, factoryId, customerId, amount,
+                                method != null ? method.name() : null));
+                log.info("已发布 PaymentReceivedEvent: factoryId={}, customerId={}, amount={}",
+                        factoryId, customerId, amount);
+            } catch (Exception e) {
+                log.error("发布 PaymentReceivedEvent 失败: {}", e.getMessage(), e);
+            }
+        }
+        return saved;
     }
 
     @Override

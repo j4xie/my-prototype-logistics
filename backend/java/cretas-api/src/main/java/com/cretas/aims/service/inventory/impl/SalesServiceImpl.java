@@ -67,6 +67,10 @@ public class SalesServiceImpl implements SalesService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.FormulaEngine formulaEngine;
 
+    /** Canvas V3: Dynamic field persistence (cf_xxx columns) */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
+
     public SalesServiceImpl(SalesOrderRepository salesOrderRepository,
                             SalesOrderItemRepository salesOrderItemRepository,
                             SalesDeliveryRecordRepository deliveryRecordRepository,
@@ -175,6 +179,19 @@ public class SalesServiceImpl implements SalesService {
 
         order.setTotalAmount(totalAmount);
         order = salesOrderRepository.save(order);
+
+        // Canvas V3: Persist dynamic custom fields via DynamicFieldService
+        // (dual-track: JPA columns above + dynamic cf_xxx columns here)
+        if (dynamicFieldService != null && request.getCustomFields() != null && !request.getCustomFields().isEmpty()) {
+            try {
+                dynamicFieldService.setDynamicFields(factoryId, "sales_order", order.getId(), request.getCustomFields());
+                log.info("Persisted {} custom fields for sales order {}",
+                        request.getCustomFields().size(), order.getId());
+            } catch (Exception e) {
+                // Non-blocking: log but don't rollback the order
+                log.warn("Failed to persist custom fields for sales order {}: {}", order.getId(), e.getMessage());
+            }
+        }
 
         log.info("创建销售订单: factoryId={}, orderNumber={}, items={}", factoryId, orderNumber, items.size());
         return order;
@@ -392,6 +409,17 @@ public class SalesServiceImpl implements SalesService {
             }
             salesOrderItemRepository.saveAll(newItems);
             order.setTotalAmount(totalAmount);
+        }
+
+        // Canvas V3: Update dynamic custom fields via DynamicFieldService
+        if (dynamicFieldService != null && request.getCustomFields() != null && !request.getCustomFields().isEmpty()) {
+            try {
+                dynamicFieldService.setDynamicFields(factoryId, "sales_order", order.getId(), request.getCustomFields());
+                log.info("Updated {} custom fields for sales order {}",
+                        request.getCustomFields().size(), order.getId());
+            } catch (Exception e) {
+                log.warn("Failed to update custom fields for sales order {}: {}", order.getId(), e.getMessage());
+            }
         }
 
         log.info("更新销售订单: orderId={}, orderNumber={}", orderId, order.getOrderNumber());

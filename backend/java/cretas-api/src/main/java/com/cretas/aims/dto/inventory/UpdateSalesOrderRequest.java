@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 销售订单更新请求 (仅 DRAFT 状态可编辑)
@@ -36,4 +37,7 @@ public class UpdateSalesOrderRequest {
 
     /** 行项目更新 (为null时不更新行项) */
     private List<CreateSalesOrderRequest.SalesOrderItemDTO> items;
+
+    /** Canvas V3: 动态字段 (dual-track) — 为 null 时不修改 */
+    private Map<String, Object> customFields;
 }

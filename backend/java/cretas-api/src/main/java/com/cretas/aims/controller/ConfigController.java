@@ -2,6 +2,8 @@ package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.config.*;
+import com.cretas.aims.entity.config.FactoryConfiguration;
+import com.cretas.aims.repository.config.FactoryConfigurationRepository;
 import com.cretas.aims.service.config.FactoryConfigService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -10,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @RestController
@@ -19,6 +22,7 @@ import java.util.List;
 public class ConfigController {
 
     private final FactoryConfigService configService;
+    private final FactoryConfigurationRepository factoryConfigurationRepository;
 
     // ========== 配置消费 API (前端渲染器用) ==========
 
@@ -91,5 +95,33 @@ public class ConfigController {
             @PathVariable int version) {
         configService.rollbackConfig(factoryId, version, 1L);
         return ApiResponse.success();
+    }
+
+    // ========== 版本查询 (Canvas Editor 用) ==========
+
+    @GetMapping("/current-version")
+    @Operation(summary = "获取当前最新的配置版本 (DRAFT 或 PUBLISHED)")
+    public ApiResponse<FactoryConfiguration> getCurrentVersion(@PathVariable String factoryId) {
+        // Prefer DRAFT first (in-progress edits), fall back to PUBLISHED, then any latest
+        List<FactoryConfiguration> versions = factoryConfigurationRepository
+                .findByFactoryIdOrderByConfigVersionDesc(factoryId);
+        if (versions == null || versions.isEmpty()) {
+            return ApiResponse.success(null);
+        }
+        Optional<FactoryConfiguration> draft = versions.stream()
+                .filter(v -> "DRAFT".equals(v.getStatus()))
+                .findFirst();
+        if (draft.isPresent()) {
+            return ApiResponse.success(draft.get());
+        }
+        return ApiResponse.success(versions.get(0));
+    }
+
+    @GetMapping("/versions")
+    @Operation(summary = "获取配置版本历史 (倒序)")
+    public ApiResponse<List<FactoryConfiguration>> getVersions(@PathVariable String factoryId) {
+        List<FactoryConfiguration> versions = factoryConfigurationRepository
+                .findByFactoryIdOrderByConfigVersionDesc(factoryId);
+        return ApiResponse.success(versions);
     }
 }
