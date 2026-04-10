@@ -569,6 +569,133 @@ evidence:
 result: ✅/❌
 ```
 
+### 2.16 F-TEST 字段不污染 F001 (正向隔离)
+
+```
+前置: Phase 1 F-TEST 已添加 4 个动态字段
+      F001 是 Canvas V2 之前就存在的工厂 (生产数据)
+
+Step A (API): F001 token 查有效配置
+  GET /api/mobile/F001/config/modules/sales_order/effective
+  Header: Authorization: Bearer {F001_TOKEN}
+
+验证:
+  - fields 列表不含 customer_level 字段
+  - fields 列表不含 delivery_priority 字段
+  - fields 列表不含 expected_margin 字段
+  - fields 列表不含 prepayment_records 子表
+
+Step B (Playwright): F001 管理员登录 web-admin
+  → 进入销售订单新建页面
+  验证:
+    - 页面不显示"客户等级"下拉
+    - 页面不显示"预付款记录" tab
+    - 页面只显示 F001 自己的字段 (或零动态字段)
+    - screenshot: P2-16-f001-clean.png
+
+Step C (DB): 物理列 vs 逻辑隔离
+  psql: SELECT cf_customer_level, cf_delivery_priority
+        FROM sales_orders WHERE factory_id='F001' LIMIT 5
+  结果: 物理列存在, 所有 F001 行此列值为 NULL (从未写入)
+
+evidence:
+  - F-TEST effective config 字段数: [X+4]
+  - F001 effective config 字段数: [X] (不含 F-TEST 的动态字段)
+  - F001 UI 截图: 无动态字段
+  - DB: 列共享, 逻辑隔离 ✅
+result: ✅/❌
+```
+
+### 2.17 跨工厂访问拦截
+
+```
+目的: 验证 JwtAuthInterceptor 真的拦截跨工厂请求
+
+Step A: F001 token 查 F-TEST 配置
+  GET /api/mobile/{F-TEST_ID}/config/modules/sales_order/effective
+  Header: Authorization: Bearer {F001_TOKEN}
+验证:
+  - HTTP 403 Forbidden
+  - message 包含 "无权访问" 或类似
+  - 服务器日志: "跨工厂访问被拒绝"
+
+Step B: F001 token 查 F-TEST 动态字段
+  GET /api/mobile/{F-TEST_ID}/config/v2/dynamic-fields
+  Header: Authorization: Bearer {F001_TOKEN}
+验证: HTTP 403
+
+Step C: F001 token 查 F-TEST 订单列表
+  GET /api/mobile/{F-TEST_ID}/sales/orders
+  Header: Authorization: Bearer {F001_TOKEN}
+验证: HTTP 403
+
+Step D: 反向验证
+  F-TEST token 查 F001 订单
+  验证: HTTP 403
+
+evidence:
+  - 4 个跨工厂请求全部 HTTP 403
+  - screenshot: P2-17-cross-factory-blocked.png (可选)
+result: ✅/❌
+```
+
+### 2.18 DDL 类型冲突检测 (KNOWN_GAP 主动验证)
+
+```
+目的: 主动验证已知的 DDL 类型冲突风险, 记录为 V3.1 改进输入
+
+前置: F-TEST 的 delivery_priority 是 TEXT (VARCHAR(500))
+
+Step A: F001 尝试加同名但不同类型的字段
+  POST /api/mobile/F001/config/v2/dynamic-fields
+  Header: Authorization: Bearer {F001_TOKEN}
+  Body: {moduleCode:"sales_order", fieldCode:"delivery_priority",
+         fieldType:"DECIMAL", label:"F001 优先级数值"}
+  → 创建成功 (PENDING_DDL)
+  → canvas_dynamic_field 表有 2 条记录 (F-TEST + F001, 同 fieldCode)
+  → UNIQUE 约束通过 (factoryId 不同)
+
+Step B: F001 发布配置 (触发 DDL)
+  通过变更集流程 → POST /config/publish
+  
+  DDL 执行:
+  ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS cf_delivery_priority NUMERIC(18,4)
+  → PostgreSQL 静默跳过 (列已存在为 VARCHAR)
+  → DDL Log 标记 EXECUTED
+
+Step C: 验证实际列类型
+  psql: \d sales_orders | grep cf_delivery_priority
+  预期结果: 
+    cf_delivery_priority | character varying(500)  (F-TEST 的类型)
+  
+  F001 期望 NUMERIC, 实际 VARCHAR → 类型不一致
+
+Step D: F001 尝试写入数值
+  PUT /api/mobile/F001/sales_order/{orderId}/custom-fields
+  Body: {delivery_priority: 99.5}
+  → 实际存入 DB: "99.5" (字符串, VARCHAR 接受)
+
+Step E: F001 读回
+  GET /custom-fields
+  → 返回 {"delivery_priority": "99.5"} (字符串, 不是数字)
+
+evidence:
+  - canvas_dynamic_field 记录: 2 条 (F-TEST VARCHAR + F001 DECIMAL, 均 ACTIVE)
+  - DDL Log: F001 这条标记 EXECUTED (但实际无效)
+  - DB 列实际类型: VARCHAR(500) (F-TEST 胜出)
+  - F001 写入数值返回字符串 (类型意外)
+  - 架构缺陷确认: DDL 未检测类型冲突
+  
+改进建议 (记录到 V3.1 backlog):
+  DDLExecutor.generateDDL() 应先查 information_schema.columns
+  验证现有列类型是否匹配 field_type 映射, 不匹配时:
+  - 选项 A: 抛错, 要求用户使用不同 fieldCode
+  - 选项 B: 加 factoryId 前缀到列名 (cf_{factoryId}_{fieldCode})
+  - 选项 C: DDL Log 记为 FAILED, 不标 EXECUTED
+
+result: KNOWN_GAP (主动确认)
+```
+
 ---
 
 ## 5. Phase 3: 需求变更 (API 层)
@@ -729,15 +856,23 @@ psql: SELECT COUNT(*) FROM canvas_ddl_log WHERE status='EXECUTED' AND factory_id
 | 20 | 配置变更传播 | 200 旧规则通过 → 改500 → 200 被拦截 | 2.14 | P0 |
 | 21 | 双轨融合 | JPA + 动态字段在同一 DB 行 | 2.15 | P0 |
 
-**Part C: 二次发布验证**
+**Part C: 多租户隔离验证 (关键)**
 
 | # | 对照场景 | PASS 条件 | 步骤 | 权重 |
 |---|---------|----------|------|------|
-| 22 | 变更后 DDL | 新增 2 条 EXECUTED + 旧数据不丢 | 3.4 + 4.1 | P0 |
-| 23 | 新校验生效 | 500 替换 100 (与 #20 联动) | 4.3 | P0 |
-| 24 | BOM 子表 | 变更记录子表可用 | 4.4 | P1 |
+| 22 | 正向隔离 | F-TEST 字段不出现在 F001 的 effective config 和 UI | 2.16 | P0 |
+| 23 | 访问拦截 | 跨工厂 HTTP 请求返回 403 | 2.17 | P0 |
+| 24 | DDL 类型冲突 | 主动确认 KNOWN_GAP (架构缺陷) | 2.18 | KNOWN_GAP |
 
-**合计: 24 个检查点 = 12 P0 + 12 P1**
+**Part D: 二次发布验证**
+
+| # | 对照场景 | PASS 条件 | 步骤 | 权重 |
+|---|---------|----------|------|------|
+| 25 | 变更后 DDL | 新增 2 条 EXECUTED + 旧数据不丢 | 3.4 + 4.1 | P0 |
+| 26 | 新校验生效 | 500 替换 100 (与 #20 联动) | 4.3 | P0 |
+| 27 | BOM 子表 | 变更记录子表可用 | 4.4 | P1 |
+
+**合计: 27 个检查点 = 14 P0 + 12 P1 + 1 KNOWN_GAP (主动确认)**
 
 ### V3 七大能力 + 配置→行为对照覆盖矩阵
 
