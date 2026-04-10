@@ -31,7 +31,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import request from '@/api/request'
+import { getTemplates, applyTemplate } from '@/api/canvasApi'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const props = defineProps<{ factoryId: string }>()
@@ -41,8 +41,8 @@ const templates = ref<any[]>([])
 const selected = ref('')
 
 async function load() {
-  const res = await request.get(`/${props.factoryId}/config/templates`)
-  templates.value = res.data || []
+  const res = await getTemplates(props.factoryId)
+  templates.value = (res as any)?.data || []
 }
 
 async function apply() {
@@ -50,7 +50,7 @@ async function apply() {
     `确定将模板 "${selected.value}" 应用到当前工厂？这会覆盖现有模块配置。`,
     '应用模板'
   )
-  await request.post(`/${props.factoryId}/config/apply-template/${selected.value}`)
+  await applyTemplate(props.factoryId, selected.value)
   ElMessage.success('模板已应用')
   emit('applied')
 }
