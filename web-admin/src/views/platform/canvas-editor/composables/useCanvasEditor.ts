@@ -50,11 +50,19 @@ export function useCanvasEditor() {
       const res = await getConfigVersion(factoryId.value)
       if (res.data) {
         configVersion.value = res.data
-        // If the factory has no PUBLISHED config yet, trigger onboarding wizard.
-        // First-time factory admins land on the wizard instead of empty canvas.
-        if (res.data.status !== 'PUBLISHED') {
-          // Check history — if no version was ever published, show wizard
-          isOnboarding.value = !res.data.publishedAt
+        // Round 4 Fix: Only show OnboardingWizard if NO version in history has been published.
+        // Previously we showed it whenever current version was DRAFT, but that also triggered
+        // for factories that had published earlier and just created a new draft on top.
+        // Check full version history to determine if factory has ever published.
+        try {
+          const { getConfigVersions } = await import('@/api/canvasApi')
+          const historyRes = await getConfigVersions(factoryId.value)
+          const history = (historyRes.data || []) as ConfigVersion[]
+          const everPublished = history.some(v => v.publishedAt !== null && v.publishedAt !== undefined)
+          isOnboarding.value = !everPublished
+        } catch {
+          // If versions endpoint fails, fall back to current-version check
+          isOnboarding.value = res.data.status !== 'PUBLISHED' && !res.data.publishedAt
         }
       } else {
         // No version record at all = fresh factory, definitely onboarding
