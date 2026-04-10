@@ -3,6 +3,7 @@ import { ApiClient } from './lib/api-client.mjs';
 import { Report } from './lib/report.mjs';
 import { phase0Prereq } from './phases/phase0-prereq.mjs';
 import { phase1Config } from './phases/phase1-config.mjs';
+import { phase2Verify } from './phases/phase2-verify.mjs';
 
 const REPORT_PATH = './tests/canvas-v3/test-canvas-v3-lifecycle-results.json';
 
@@ -38,7 +39,22 @@ async function main() {
     process.exit(1);
   }
 
-  // Future phases added here
+  // Phase 2
+  let browserHandle = null;
+  try {
+    const p2 = await phase2Verify(state, api, report);
+    browserHandle = p2?.browser ?? null;
+  } catch (e) {
+    console.error('Phase 2 error:', e.message);
+    report.addCheckpoint('P2-ERR', 'Phase 2 执行错误', 'FAIL', { error: e.message });
+  }
+
+  // Close browser if still open
+  if (browserHandle) {
+    try {
+      await browserHandle.close();
+    } catch (_) {}
+  }
 
   report.print();
   report.save(REPORT_PATH);
