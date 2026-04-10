@@ -39,7 +39,7 @@ def load_config():
 
 load_config()
 
-BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL", "http://139.196.165.140:10010")
+BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL", "http://localhost:10010")
 FACTORY_ID = os.getenv("DEFAULT_FACTORY_ID", "F001")
 
 
