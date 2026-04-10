@@ -49,6 +49,8 @@ Pods/
 tmp/
 temp/
 temp*
+!backend/python/smartbi/shared/temporal_comparator.py
+!backend/python/smartbi/services/restaurant/sections/temporal_comparison.py
 .tmp/
 *.tmp
 *.temp
