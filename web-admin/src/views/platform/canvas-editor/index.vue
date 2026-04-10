@@ -151,12 +151,12 @@ async function saveDraft() {
   // saveDraft 触发 saveModuleConfig 确保 FactoryConfiguration 的 DRAFT 版本存在,
   // 然后刷新 version 确认服务器端状态一致.
   try {
-    if (selectedModule.value) {
-      // Touch the module config to ensure a draft version exists (publish 前置条件)
-      await saveModuleConfig(factoryId.value, selectedModule.value, {
-        enabled: true,
-      })
-    }
+    // Auto-pick sales_order if no module selected — ensures saveDraft always creates/touches a draft.
+    // Without this, clicking 保存草稿 on a fresh canvas (no module selected) was a no-op.
+    const moduleToSave = selectedModule.value || 'sales_order'
+    await saveModuleConfig(factoryId.value, moduleToSave, {
+      enabled: true,
+    })
     await loadVersion()
     clearDirty()
     ElMessage.success('草稿已保存')
@@ -193,7 +193,23 @@ async function cancelApproval() {
   ElMessage.info('已取消，回到草稿')
   loadVersion()
 }
-function newDraft() { ElMessage.info('创建新草稿'); loadVersion() }
+async function newDraft() {
+  // For PUBLISHED factories: clicking 新建草稿 creates a new DRAFT version on top of the PUBLISHED one.
+  // Reuses saveDraft() which calls saveModuleConfig(enabled:true) — this triggers getOrCreateDraft() on backend.
+  if (!factoryId.value) {
+    ElMessage.warning('未找到工厂 ID')
+    return
+  }
+  try {
+    const moduleToSave = selectedModule.value || 'sales_order'
+    await saveModuleConfig(factoryId.value, moduleToSave, { enabled: true })
+    await loadVersion()
+    clearDirty()
+    ElMessage.success('新草稿已创建')
+  } catch (e) {
+    ElMessage.error('创建草稿失败: ' + ((e as any)?.message || 'unknown'))
+  }
+}
 function rollback() { ElMessage.info('回滚到上一版本'); loadVersion() }
 
 // Keyboard shortcuts

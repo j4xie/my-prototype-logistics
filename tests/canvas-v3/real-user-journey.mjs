@@ -292,8 +292,12 @@ async function main() {
         }
       }
 
-      // Click save draft button using force to avoid visibility issues
-      const saveDraftBtn = await page.$('button:has-text("保存草稿")');
+      // Click save draft OR new draft (depending on config status)
+      // DRAFT state shows "保存草稿", PUBLISHED shows "新建草稿"
+      let saveDraftBtn = await page.$('button:has-text("保存草稿")');
+      if (!saveDraftBtn || !(await saveDraftBtn.isVisible().catch(() => false))) {
+        saveDraftBtn = await page.$('button:has-text("新建草稿")');
+      }
       if (saveDraftBtn && await saveDraftBtn.isVisible().catch(() => false)) {
         await saveDraftBtn.click({ timeout: 3000 }).catch(() => {});
         await page.waitForTimeout(3000);
@@ -301,10 +305,10 @@ async function main() {
 
       record(
         'J8',
-        'saveDraft 触发真实 API 调用',
+        'saveDraft/newDraft 触发真实 API 调用',
         saveDraftApiCalled ? 'PASS' : 'WARN',
         {
-          detail: saveDraftApiCalled ? `PUT ${saveDraftUrl}` : '需要手动选择模块后保存',
+          detail: saveDraftApiCalled ? `PUT ${saveDraftUrl}` : '按钮未找到或不可见',
           buttonFound: !!saveDraftBtn,
         }
       );

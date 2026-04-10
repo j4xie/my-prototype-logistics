@@ -50,8 +50,16 @@ async function search(query: string) {
         label: String(item[props.config.displayField] || ''),
         value: item[props.config.valueField] as string | number,
       }))
-    } catch (e) {
-      console.error('ReferenceSelector search failed:', e)
+    } catch (e: any) {
+      // Permission denied (403) or missing endpoint is expected when user has limited access.
+      // Log as warning, not error — the dropdown just shows no options, which is acceptable UX.
+      const msg = e?.message || String(e)
+      const isPermission = msg.includes('权限') || msg.includes('403') || msg.includes('Forbidden')
+      if (isPermission) {
+        console.warn(`ReferenceSelector: no permission for ${props.config.entity} (user sees empty dropdown)`)
+      } else {
+        console.warn('ReferenceSelector search failed:', msg)
+      }
       options.value = []
     } finally {
       loading.value = false
