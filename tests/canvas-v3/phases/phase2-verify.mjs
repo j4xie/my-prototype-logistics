@@ -361,6 +361,161 @@ export async function phase2Verify(state, api, report) {
       }
     }
 
+    // 2.14B REAL UPDATE validation test — PUT /sales/orders/{id} with bad amount should be blocked
+    // This closes the audit gap where Fix #1 wired UPDATE path but no test actually PUT an order.
+    console.log('\n2.14B UPDATE validation — edit order to amount=50 (rule<100 blocks)...');
+    if (!state.phase2OrderId || !prereqReady) {
+      report.addCheckpoint('P2-14B', 'UPDATE 校验规则拦截', 'SKIP', {
+        reason: 'No order created or prereq missing',
+      });
+    } else {
+      try {
+        const updateResp = await api.authedPut(
+          state.factoryId,
+          `/sales/orders/${state.phase2OrderId}`,
+          {
+            items: [{
+              productTypeId: testProductTypeId,
+              productName: 'Canvas测试产品',
+              quantity: 1,
+              unit: '箱',
+              unitPrice: 50, // below threshold, should trigger UPDATE rule
+            }],
+          }
+        );
+        const blocked = updateResp.success === false
+          && (updateResp.message?.includes('100') || updateResp.message?.includes('订单编辑'));
+        report.addCheckpoint('P2-14B', 'UPDATE 校验规则真实拦截', blocked ? 'PASS' : 'FAIL', {
+          response: updateResp,
+          detail: blocked
+            ? 'PUT 订单 amount=50 被 UPDATE 规则 (<100) 阻止 — Fix #1 真实生效'
+            : 'UPDATE 规则未触发 — Fix #1 代码存在但路径死码',
+        });
+        console.log(`  ${blocked ? '✅' : '❌'} UPDATE validation: ${updateResp.message || JSON.stringify(updateResp).slice(0, 150)}`);
+      } catch (e) {
+        const blocked = e.message?.includes('100') || e.message?.includes('订单编辑');
+        report.addCheckpoint('P2-14B', 'UPDATE 校验规则真实拦截', blocked ? 'PASS' : 'FAIL', {
+          error: e.message,
+        });
+        console.log(`  ${blocked ? '✅' : '❌'} Exception: ${e.message?.slice(0, 150)}`);
+      }
+    }
+
+    // 2.14C customFields roundtrip test — Create order WITH customFields, read cf_xxx columns
+    // This closes the audit gap where Fix #7 wired DynamicFieldService but no test proved roundtrip.
+    console.log('\n2.14C customFields 持久化 roundtrip...');
+    if (!prereqReady) {
+      report.addCheckpoint('P2-14C', 'customFields 持久化 roundtrip', 'SKIP', {
+        reason: 'No test data',
+      });
+    } else {
+      try {
+        // Create order with customFields (customer_level + delivery_priority + expected_margin)
+        const createResp = await api.authedPost(state.factoryId, '/sales/orders', {
+          customerId: testCustomerId,
+          orderDate: '2026-04-10',
+          items: [{
+            productTypeId: testProductTypeId,
+            productName: 'Canvas测试产品',
+            quantity: 1,
+            unit: '箱',
+            unitPrice: 150, // pass CREATE rule >=100
+          }],
+          customFields: {
+            customer_level: 'A',
+            delivery_priority: '加急',
+            expected_margin: 0.35,
+          },
+        });
+        const newOrderId = createResp.data?.id || createResp.id;
+        if (!newOrderId) {
+          report.addCheckpoint('P2-14C', 'customFields 持久化 roundtrip', 'FAIL', {
+            reason: 'Order creation failed',
+            response: createResp,
+          });
+          console.log(`  ❌ Could not create order: ${createResp.message}`);
+        } else {
+          // Read cf_xxx columns directly from DB
+          const { sshQuery } = await import('../lib/ssh-client.mjs');
+          const row = sshQuery(
+            `SELECT cf_customer_level, cf_delivery_priority, cf_expected_margin FROM sales_orders WHERE id='${newOrderId}'`
+          );
+          const hasCustomerLevel = row.includes('A');
+          const hasPriority = row.includes('加急');
+          const hasMargin = row.includes('0.35');
+          const allRoundtripped = hasCustomerLevel && hasPriority && hasMargin;
+          report.addCheckpoint('P2-14C', 'customFields 持久化 roundtrip (Fix #7 真实验证)',
+            allRoundtripped ? 'PASS' : 'FAIL', {
+              orderId: newOrderId,
+              dbRow: row,
+              hasCustomerLevel,
+              hasPriority,
+              hasMargin,
+              detail: allRoundtripped
+                ? 'POST 含 customFields → sales_orders.cf_xxx 列正确持久化'
+                : '动态字段未写入 DB — DynamicFieldService.setDynamicFields 未生效',
+            });
+          console.log(`  ${allRoundtripped ? '✅' : '❌'} DB row: ${row.slice(0, 150)}`);
+        }
+      } catch (e) {
+        report.addCheckpoint('P2-14C', 'customFields 持久化 roundtrip', 'FAIL', {
+          error: e.message?.slice(0, 300),
+        });
+        console.log(`  ❌ Error: ${e.message?.slice(0, 150)}`);
+      }
+    }
+
+    // 2.14D Customer validation rule enforcement — test ValidationRuleEvaluator on non-sales service
+    // This closes the audit gap where Fix #11 added validation to 10 services but 0 tests cover them.
+    console.log('\n2.14D Customer module validation rule enforcement...');
+    try {
+      // Create a CREATE rule for customer module that blocks customers with short names
+      const customerRuleResp = await api.authedPut(
+        state.factoryId,
+        '/config/v2/validation-rules/customer_name_length',
+        {
+          moduleCode: 'customer',
+          operation: 'CREATE',
+          condition: '#customerName != null && #customerName.length() < 3',
+          errorMessage: '客户名称长度不能小于3字符',
+          severity: 'BLOCK',
+          enabled: true,
+          sortOrder: 1,
+        }
+      );
+      const ruleCreated = customerRuleResp.id || customerRuleResp.data?.id;
+
+      if (!ruleCreated) {
+        report.addCheckpoint('P2-14D', '10 Service validation integration', 'FAIL', {
+          detail: 'Could not create customer validation rule',
+          response: customerRuleResp,
+        });
+      } else {
+        // Try to create a customer with short name — should be blocked
+        const customerResp = await api.authedPost(state.factoryId, '/customers', {
+          name: 'AB', // 2 chars, should be blocked by rule
+          contactPerson: 'Canvas E2E Test',
+          phone: '13800000000',
+        });
+        const blocked = customerResp.success === false
+          && (customerResp.message?.includes('3字符') || customerResp.message?.includes('长度'));
+        report.addCheckpoint('P2-14D', '10 Service validation integration (Fix #11 真实验证)',
+          blocked ? 'PASS' : 'FAIL', {
+            ruleCreated: !!ruleCreated,
+            customerResponse: customerResp,
+            detail: blocked
+              ? 'CustomerServiceImpl 真正调用了 ValidationRuleEvaluator'
+              : 'CustomerServiceImpl 注入了 ValidationRuleEvaluator 但未生效',
+          });
+        console.log(`  ${blocked ? '✅' : '❌'} Customer validation: ${customerResp.message || JSON.stringify(customerResp).slice(0, 150)}`);
+      }
+    } catch (e) {
+      report.addCheckpoint('P2-14D', '10 Service validation integration', 'FAIL', {
+        error: e.message?.slice(0, 300),
+      });
+      console.log(`  ❌ Error: ${e.message?.slice(0, 150)}`);
+    }
+
     // 2.11 Trigger chain execution
     console.log('\n2.11 Trigger chain execution (SO confirmed)...');
     if (!state.phase2OrderId) {

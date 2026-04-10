@@ -181,8 +181,14 @@ public class CanvasAIController {
 
         // Parse and execute
         try {
-            // Extract JSON array from response
+            // Extract JSON array from response — if LLM didn't return JSON, surface the raw reply
+            // so user sees what the AI actually said (instead of silently saying "no operations").
             String json = extractJson(llmResponse);
+            if ("[]".equals(json) && llmResponse != null && !llmResponse.trim().isEmpty()
+                    && !llmResponse.contains("[") && !llmResponse.contains("]")) {
+                // LLM returned plain text, not JSON — show it to the user
+                return "AI 回复 (非 JSON): " + llmResponse.trim();
+            }
             List<Map<String, Object>> actions = objectMapper.readValue(json,
                     new TypeReference<List<Map<String, Object>>>() {});
 

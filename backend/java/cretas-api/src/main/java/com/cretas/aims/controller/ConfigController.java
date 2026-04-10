@@ -4,7 +4,9 @@ import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.config.*;
 import com.cretas.aims.entity.config.FactoryConfiguration;
 import com.cretas.aims.repository.config.FactoryConfigurationRepository;
+import com.cretas.aims.service.MobileService;
 import com.cretas.aims.service.config.FactoryConfigService;
+import com.cretas.aims.utils.TokenUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,18 @@ public class ConfigController {
 
     private final FactoryConfigService configService;
     private final FactoryConfigurationRepository factoryConfigurationRepository;
+    private final MobileService mobileService;
+
+    /** Extract userId from Authorization header via JWT. Returns null if missing/invalid. */
+    private Long extractUserId(String authorization) {
+        if (authorization == null) return null;
+        try {
+            String token = TokenUtils.extractToken(authorization);
+            return mobileService.getUserFromToken(token).getId();
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
     // ========== 配置消费 API (前端渲染器用) ==========
 
@@ -51,8 +65,10 @@ public class ConfigController {
     public ApiResponse<Void> saveModuleConfig(
             @PathVariable String factoryId,
             @PathVariable String moduleCode,
+            @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestBody ModuleConfigDTO dto) {
-        configService.saveModuleConfig(factoryId, moduleCode, dto, 1L); // TODO: get from JWT
+        Long operatorId = extractUserId(authorization);
+        configService.saveModuleConfig(factoryId, moduleCode, dto, operatorId != null ? operatorId : 0L);
         return ApiResponse.success();
     }
 
@@ -62,8 +78,10 @@ public class ConfigController {
             @PathVariable String factoryId,
             @PathVariable String moduleCode,
             @PathVariable String fieldCode,
+            @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestBody FieldConfigDTO dto) {
-        configService.updateFieldConfig(factoryId, moduleCode, fieldCode, dto, 1L);
+        Long operatorId = extractUserId(authorization);
+        configService.updateFieldConfig(factoryId, moduleCode, fieldCode, dto, operatorId != null ? operatorId : 0L);
         return ApiResponse.success();
     }
 
@@ -72,8 +90,10 @@ public class ConfigController {
     public ApiResponse<Void> toggleModule(
             @PathVariable String factoryId,
             @PathVariable String moduleCode,
-            @RequestParam boolean enabled) {
-        configService.toggleModule(factoryId, moduleCode, enabled, 1L);
+            @RequestParam boolean enabled,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        Long operatorId = extractUserId(authorization);
+        configService.toggleModule(factoryId, moduleCode, enabled, operatorId != null ? operatorId : 0L);
         return ApiResponse.success();
     }
 
@@ -83,8 +103,10 @@ public class ConfigController {
     @Operation(summary = "发布配置")
     public ApiResponse<Void> publishConfig(
             @PathVariable String factoryId,
-            @RequestParam(required = false) String summary) {
-        configService.publishConfig(factoryId, 1L, summary);
+            @RequestParam(required = false) String summary,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        Long operatorId = extractUserId(authorization);
+        configService.publishConfig(factoryId, operatorId != null ? operatorId : 0L, summary);
         return ApiResponse.success();
     }
 
@@ -92,8 +114,10 @@ public class ConfigController {
     @Operation(summary = "回滚到指定版本")
     public ApiResponse<Void> rollbackConfig(
             @PathVariable String factoryId,
-            @PathVariable int version) {
-        configService.rollbackConfig(factoryId, version, 1L);
+            @PathVariable int version,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        Long operatorId = extractUserId(authorization);
+        configService.rollbackConfig(factoryId, version, operatorId != null ? operatorId : 0L);
         return ApiResponse.success();
     }
 

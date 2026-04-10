@@ -92,7 +92,11 @@ public class CanvasAddFieldTool extends AbstractBusinessTool {
         String label = getString(params, "label");
         Object options = params.get("options");
 
-        log.info("Canvas 添加字段 - 工厂ID: {}, 模块: {}, 字段: {}, 类型: {}", factoryId, moduleCode, fieldCode, fieldType);
+        // Extract userId from context for audit logging (set by CanvasAIController.buildToolContext)
+        Object userIdObj = context != null ? context.get("userId") : null;
+        String userIdStr = userIdObj != null ? String.valueOf(userIdObj) : "system";
+        log.info("Canvas 添加字段 [by user={}] - 工厂ID: {}, 模块: {}, 字段: {}, 类型: {}",
+                userIdStr, factoryId, moduleCode, fieldCode, fieldType);
 
         if (!VALID_FIELD_TYPES.contains(fieldType)) {
             throw new IllegalArgumentException("无效的字段类型: " + fieldType + "。有效值为: TEXT, NUMBER, DECIMAL, SELECT, DATE");

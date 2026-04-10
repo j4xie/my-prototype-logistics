@@ -81,7 +81,7 @@ export class Report {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
     const capabilities = [
-      { name: '1. 动态字段 (DDL)', checks: ['P1-4', 'P1-4b', 'P1-8e', 'P1-8f', 'P2-2'] },
+      { name: '1. 动态字段 (DDL)', checks: ['P1-4', 'P1-4b', 'P1-8e', 'P1-8f', 'P2-2', 'P2-14C'] },
       { name: '2. 子表', checks: ['P1-4', 'P3-3', 'P4-4'] },
       { name: '3. 用户级权限', checks: ['P2-19'] },
       { name: '4. 文件上传', checks: ['P3-1'] },
@@ -90,7 +90,7 @@ export class Report {
       { name: '6. 聚合公式', checks: ['P1-7b'] },
       { name: '7. Tab 布局', checks: [] },
       { name: '验证规则存储', checks: ['P1-5', 'P3-2', 'P4-6'] },
-      { name: '验证规则执行 ⚠️', checks: ['P2-5', 'P4-3'] },
+      { name: '验证规则执行 ⚠️', checks: ['P2-5', 'P4-3', 'P2-14B', 'P2-14D'] },
       { name: '触发链存储', checks: ['P1-7'] },
       { name: '触发链执行 ⚠️', checks: ['P2-11'] },
       { name: '变更集流程', checks: ['P1-8a', 'P1-8b', 'P1-8c', 'P3-4a', 'P3-4b', 'P3-4c'] },
