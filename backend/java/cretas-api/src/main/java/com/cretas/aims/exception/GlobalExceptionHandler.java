@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.persistence.PersistenceException;
 import jakarta.validation.ConstraintViolation;
@@ -433,6 +435,32 @@ public class GlobalExceptionHandler {
     public ApiResponse<?> handleNoHandlerFoundException(NoHandlerFoundException e) {
         log.warn("请求路径不存在: {}", e.getRequestURL());
         return ApiResponse.error(404, "请求的接口不存在");
+    }
+
+    /**
+     * 处理 Spring 6 ResourceHttpRequestHandler 抛出的 NoResourceFoundException
+     *
+     * 该异常发生在 DispatcherServlet 路由时没有匹配任何 controller,
+     * 请求被 fall-through 到静态资源 handler, 然后静态资源也不存在。
+     *
+     * 路径分级日志策略:
+     *   - /api/ 开头    → WARN  (真实的前端 bug, 客户端在调错误的 URL, 需要排查)
+     *   - 其他所有路径  → DEBUG (扫描器噪音: /.git/config / /wp-admin / /favicon.ico / /)
+     *
+     * 不再用 ERROR 级别记录 404, 避免 error.log 被扫描器流量淹没。真实的
+     * 前端 bug 仍然在 WARN 级别可见, 不会被掩盖。
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ApiResponse<?> handleNoResourceFoundException(
+            NoResourceFoundException e, HttpServletRequest request) {
+        String path = request.getRequestURI();
+        if (path != null && path.startsWith("/api/")) {
+            log.warn("API 路径无 handler: method={}, path={}", request.getMethod(), path);
+        } else {
+            log.debug("Non-API 404 (scanner/probe): method={}, path={}", request.getMethod(), path);
+        }
+        return ApiResponse.error(404, "请求的资源不存在");
     }
 
     // ==================== 空指针和运行时异常 - 需严格脱敏 ====================
