@@ -90,7 +90,7 @@ class LlmReviewAnalyzer:
     }
 
     _SYSTEM_PROMPT = """你是一位专业的餐饮评论分析专家。
-你的任务: 从一批大众点评评论中准确抽取顾客提到的菜品名称和情感。
+你的任务: 从一批大众点评评论中准确抽取顾客提到的菜品名称和情感, 按 JSON 格式输出.
 
 规则:
 1. dishes: 只抽取真实的菜品, 不抽取"服务""环境""价格""餐厅"等非菜品词
@@ -98,13 +98,15 @@ class LlmReviewAnalyzer:
 3. sentiment 三种: positive (好吃/推荐/赞) / negative (难吃/失望/不推荐) / neutral (没提观感)
 4. 同一条评论里同一个菜品只算一次
 5. overall_sentiment: 这条评论整体的语气, 基于所有菜品情感和顾客的总结句
-6. aspects: 可选, 提及服务/环境/等位/上菜速度时抽取, 格式 {"service": "positive/negative/neutral", "environment": "...", ...}
+6. aspects: 可选, 提及服务/环境/等位/上菜速度时抽取, 格式 {"service": "positive/negative/neutral", ...}
 
-严格按 JSON 数组格式输出, 不要有 markdown 代码块或额外文本:
-[
-  {"review_id": 1, "dishes": [{"name": "招牌毛肚", "sentiment": "positive"}], "overall_sentiment": "positive", "aspects": {"service": "positive"}},
-  ...
-]
+输出 JSON 对象, 顶层 key 为 "reviews", 值为数组:
+{
+  "reviews": [
+    {"review_id": 1, "dishes": [{"name": "招牌毛肚", "sentiment": "positive"}], "overall_sentiment": "positive", "aspects": {"service": "positive"}},
+    {"review_id": 2, "dishes": [...], "overall_sentiment": "neutral"}
+  ]
+}
 """
 
     def __init__(
@@ -260,7 +262,8 @@ class LlmReviewAnalyzer:
             ],
             "temperature": 0.2,
             "max_tokens": 2500,
-            "enable_thinking": False,  # Fast model, no thinking
+            "response_format": {"type": "json_object"},  # W6: force valid JSON
+            "enable_thinking": False,  # DashScope fast model, no thinking (ignored by DeepSeek)
         }
 
         headers = {
@@ -286,20 +289,36 @@ class LlmReviewAnalyzer:
                     .strip()
                 )
 
-                # 去 markdown code block 包装
+                # 去 markdown code block 包装 (json_object mode shouldn't need this, but keep as safety)
                 if content.startswith("```"):
                     content = re.sub(r"^```(?:json)?\s*", "", content)
                     content = re.sub(r"\s*```$", "", content)
 
-                # 解析 JSON array
+                # 解析 JSON (json_object mode guarantees object format)
                 parsed = json.loads(content)
-                if not isinstance(parsed, list):
-                    logger.warning(f"Batch {batch_idx}: LLM returned non-list: {type(parsed)}")
+                # W6: json_object mode returns {"reviews": [...]} instead of bare array
+                # Support both for backward compat
+                if isinstance(parsed, dict):
+                    items = parsed.get("reviews", [])
+                    if not items:
+                        # Try other common keys
+                        for k in ("data", "items", "results"):
+                            if k in parsed and isinstance(parsed[k], list):
+                                items = parsed[k]
+                                break
+                elif isinstance(parsed, list):
+                    items = parsed  # legacy bare-array format
+                else:
+                    logger.warning(f"Batch {batch_idx}: LLM returned {type(parsed).__name__}, expected dict/list")
+                    return []
+
+                if not items:
+                    logger.warning(f"Batch {batch_idx}: LLM returned empty reviews array")
                     return []
 
                 # 映射回原始 review
                 results: list[LlmExtractResult] = []
-                for item in parsed:
+                for item in items:
                     review_idx = item.get("review_id", 0)
                     if isinstance(review_idx, str):
                         try:
