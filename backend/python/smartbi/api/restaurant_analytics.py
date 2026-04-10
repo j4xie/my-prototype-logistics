@@ -664,8 +664,9 @@ async def compute_restaurant_analytics_v2(
     # W5.4 会员 RFM
     members = body.get("members")  # list[dict] — [{member_id, last_order_days_ago, order_count, total_amount}]
 
-    # W5.5 LLM-based review analysis (default false → keep regex 作为安全默认)
-    use_llm_reviews = bool(body.get("use_llm_reviews", False))
+    # W5.5+: LLM 默认开启 (DeepSeek → DashScope → regex 三级 fallback)
+    # 客户可显式 false 节省成本
+    use_llm_reviews = bool(body.get("use_llm_reviews", True))
 
     try:
         with get_db_context() as db:
@@ -802,24 +803,56 @@ async def compute_restaurant_analytics_v2(
                 period=period,
                 reviews=reviews,
                 members=members,
-                use_llm_reviews=False,  # sync pass always uses regex
+                use_llm_reviews=False,  # sync pass always uses regex (endpoint handles LLM async below)
             )
 
-            # W5.5: async LLM review analysis (must be awaited from async endpoint)
-            if use_llm_reviews and reviews:
+            # W5.5+: async LLM review analysis
+            # Re-fetch reviews actually used by v2.analyze (may have been auto-loaded from DB)
+            effective_reviews = reviews
+            if not effective_reviews and result.get("sections", {}).get("reviewAnalysis"):
+                # v2.analyze auto-loaded from DB — reload same query for LLM async path
+                try:
+                    from smartbi.database.models import RestaurantReview
+                    db_reviews = (
+                        db.query(RestaurantReview)
+                        .filter(RestaurantReview.factory_id == factory_id)
+                        .order_by(RestaurantReview.review_time.desc())
+                        .limit(500)
+                        .all()
+                    )
+                    effective_reviews = [
+                        {
+                            "id": r.review_id or r.id,
+                            "rating": float(r.rating),
+                            "content": r.content,
+                            "created_at": r.review_time.isoformat() if r.review_time else "",
+                            "store_name": r.store_name,
+                            "platform": r.platform,
+                        }
+                        for r in db_reviews
+                    ]
+                except Exception as e:
+                    logger.warning(f"Failed to reload reviews for LLM path: {e}")
+
+            if use_llm_reviews and effective_reviews:
                 try:
                     llm_report = await v2.llm_review_analyzer.analyze_async(
-                        reviews, min_mentions=2, max_reviews=200
+                        effective_reviews, min_mentions=2, max_reviews=200
                     )
                     section = llm_report.to_dict()
                     section["usedLlm"] = True
+                    section["llmProvider"] = v2.llm_review_analyzer.provider
                     result["sections"]["reviewAnalysis"] = section
                     # Update executive summary with LLM-sourced alerts
                     for alert in llm_report.risk_alerts[:2]:
                         if alert not in result.get("executiveSummary", []):
                             result.setdefault("executiveSummary", []).append(alert)
+                    logger.info(
+                        f"W5.5 LLM review analysis OK: provider={v2.llm_review_analyzer.provider}, "
+                        f"reviews={len(effective_reviews)}, dishes={len(llm_report.dish_tags)}"
+                    )
                 except Exception as e:
-                    logger.warning(f"W5.5 LLM review async failed: {e}")
+                    logger.warning(f"W5.5 LLM review async failed: {e}, keeping regex fallback")
                     # Regex fallback already ran in v2.analyze(), keep it
 
             t_compute = time.perf_counter() - t1

@@ -214,7 +214,7 @@ class RestaurantAnalyzerV2:
         quantity_col: str = "数量",
         reviews: Optional[list[dict]] = None,
         members: Optional[list[dict]] = None,  # W5.4 会员 RFM
-        use_llm_reviews: bool = False,         # W5.5: LLM-based review analysis
+        use_llm_reviews: bool = True,          # W5.5+: LLM default (auto-fallback to regex)
     ) -> dict:
         """V2 主分析入口
 

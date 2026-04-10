@@ -61,9 +61,12 @@ class LlmExtractResult:
 
 
 class LlmReviewAnalyzer:
-    """LLM 驱动的评论分析器
+    """LLM 驱动的评论分析器 — 支持 DashScope / DeepSeek 双 provider
 
-    使用 DashScope qwen 批量抽取菜品 + 情感.
+    Provider 选择 (环境变量 LLM_PROVIDER):
+      - auto (默认): DeepSeek 优先, fallback DashScope
+      - deepseek:   仅用 DeepSeek (chat-v3)
+      - dashscope:  仅用 DashScope (qwen3.5-flash)
     """
 
     # 配置
@@ -71,6 +74,20 @@ class LlmReviewAnalyzer:
     _MAX_CONCURRENT = 5           # 最多 5 个并发请求
     _TIMEOUT_SECS = 60.0
     _MAX_RETRIES = 2
+
+    # Provider 配置 (base_url + model + env var for key)
+    _PROVIDERS = {
+        "deepseek": {
+            "base_url": "https://api.deepseek.com/v1",
+            "model": "deepseek-chat",
+            "api_key_env": "DEEPSEEK_API_KEY",
+        },
+        "dashscope": {
+            "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+            "model": "qwen3.5-flash",
+            "api_key_env": "DASHSCOPE_API_KEY",
+        },
+    }
 
     _SYSTEM_PROMPT = """你是一位专业的餐饮评论分析专家。
 你的任务: 从一批大众点评评论中准确抽取顾客提到的菜品名称和情感。
@@ -90,12 +107,47 @@ class LlmReviewAnalyzer:
 ]
 """
 
-    def __init__(self, fallback_analyzer: Optional[ReviewAnalyzer] = None):
+    def __init__(
+        self,
+        fallback_analyzer: Optional[ReviewAnalyzer] = None,
+        provider: Optional[str] = None,  # "deepseek" / "dashscope" / "auto" / None
+    ):
         self.fallback = fallback_analyzer or ReviewAnalyzer()
         cfg = get_settings()
-        self._api_key = os.environ.get("DASHSCOPE_API_KEY") or cfg.llm_api_key
-        self._base_url = cfg.llm_base_url
-        self._model = cfg.llm_fast_model  # Use fast model for cost efficiency
+
+        # Resolve provider
+        provider = provider or os.environ.get("LLM_PROVIDER", "auto")
+        self.provider = self._resolve_provider(provider)
+
+        # Set api_key / base_url / model based on provider
+        if self.provider == "deepseek":
+            p = self._PROVIDERS["deepseek"]
+            self._api_key = os.environ.get(p["api_key_env"]) or ""
+            self._base_url = p["base_url"]
+            self._model = p["model"]
+        else:  # dashscope fallback
+            p = self._PROVIDERS["dashscope"]
+            self._api_key = os.environ.get(p["api_key_env"]) or cfg.llm_api_key
+            self._base_url = cfg.llm_base_url
+            self._model = cfg.llm_fast_model
+
+        logger.info(
+            f"LlmReviewAnalyzer: provider={self.provider}, model={self._model}, "
+            f"api_key={'set' if self._api_key else 'EMPTY'}"
+        )
+
+    @classmethod
+    def _resolve_provider(cls, requested: str) -> str:
+        """Resolve 'auto' → actual provider based on what's available"""
+        if requested == "auto":
+            # Prefer DeepSeek if key available, else DashScope
+            if os.environ.get("DEEPSEEK_API_KEY"):
+                return "deepseek"
+            return "dashscope"
+        if requested in cls._PROVIDERS:
+            return requested
+        logger.warning(f"Unknown provider '{requested}', falling back to dashscope")
+        return "dashscope"
 
     # ── Main entry (async) ──────────────────────────────
 
