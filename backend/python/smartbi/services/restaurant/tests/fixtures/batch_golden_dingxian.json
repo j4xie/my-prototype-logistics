@@ -1,0 +1,176 @@
+{
+  "executiveSummary": [
+    "📋 鼎鲜火锅 义乌分公司 current 营收 ¥731,048",
+    "🟡 警戒 | 鼎鲜火锅 义乌分公司 的人力成本率 32.51% (行业基准 25.00%-35.00%, 中位 30.00%), 高于中位数 2.51%, 估算一年多支出约 ¥220,147"
+  ],
+  "factoryId": "F-DINGXIAN-YIWU",
+  "period": "current",
+  "sections": {
+    "benchmarkAlerts": [
+      {
+        "actionHint": "建议立即重排班, 调整全职兼职比例",
+        "actualValue": 32.5094932206914,
+        "deltaPpFromHigh": -2.4905,
+        "deltaPpFromMedian": 2.5095,
+        "estimatedYearlyImpact": 220147.2,
+        "higherIsWorse": true,
+        "median": 30.0,
+        "messageZh": "🟡 警戒 | 鼎鲜火锅 义乌分公司 的人力成本率 32.51% (行业基准 25.00%-35.00%, 中位 30.00%), 高于中位数 2.51%, 估算一年多支出约 ¥220,147",
+        "metricKey": "labor_cost_ratio",
+        "metricNameZh": "人力成本率",
+        "rangeHigh": 35.0,
+        "rangeLow": 25.0,
+        "severity": "yellow",
+        "source": "海底捞人力成本率约31%（高服务模式）",
+        "storeName": "鼎鲜火锅 义乌分公司"
+      }
+    ],
+    "bomLayerStatus": {
+      "currentAccuracyPp": 15.0,
+      "currentLayer": "Layer 1",
+      "layer2SkuCount": 0,
+      "layer3PeriodCount": 0,
+      "upgradeHint": "上传 TOP 20 SKU 主料清单 → Layer 2 (±8%)"
+    },
+    "diagnostics": [
+      {
+        "actualValue": 0.560961801990723,
+        "benchmarkMedian": null,
+        "benchmarkRange": null,
+        "deltaPct": 0.0,
+        "deltaPp": 0.0,
+        "descriptionZh": "成本随营收变化的弹性系数, 衡量排班/采购是否跟随客流调整",
+        "formulaZh": "labor_cost_change_pct / revenue_change_pct",
+        "higherIsWorse": false,
+        "metricKey": "cost_rigidity",
+        "metricNameZh": "成本弹性指数",
+        "playbookId": "cost_rigidity_high",
+        "playbookUrlZh": "playbooks/cost_rigidity_high.yaml",
+        "severity": "warning",
+        "status": "偏低",
+        "subSectorNotes": [
+          "火锅人工占比行业基准 25-35%, 邓总当前 32.5% 在上限, 应压到 25-28%",
+          "火锅最大的弹性空间是后厨切配人员 (淡季减半很常见)",
+          "海底捞模式 (服务员>厨师) 在淡季弹性很差, 大众火锅模式更灵活",
+          "火锅淡季 (春节后 + 夏季 7-8 月) 是必然的, 应该提前 1 个月就开始减员",
+          {
+            "参考海底捞 2024 年报": "淡季员工总数环比 -8% (有央厨承接部分人力)"
+          }
+        ],
+        "suggestionZh": [
+          "[立即重排班] 按未来 30 天预测客流, 重新排班全部门店",
+          "[立即重排班] {'把全职兼职比例从当前调到 60%': '40% (或更激进)'}",
+          "[立即重排班] 高峰时段保留全职, 低峰时段切换兼职",
+          "[营销诊断 (止血)] 分析营收下滑根因 (新客 vs 老客 / 堂食 vs 外卖 / 平台评分变化)",
+          "[营销诊断 (止血)] 立即启动一次低成本拉新活动 (大众点评/抖音 199-299 套餐)",
+          "[营销诊断 (止血)] 联系流失老客做回访问卷"
+        ],
+        "thresholdSource": "inline"
+      }
+    ],
+    "financialMetrics": {
+      "costRigidity": 0.560961801990723,
+      "foodCost": 307040.0,
+      "foodCostChangePct": -0.44732744732744734,
+      "foodCostRatio": 41.999978113612244,
+      "laborCost": 237660.0,
+      "laborCostChangePct": -0.2660397461435123,
+      "laborCostRatio": 32.5094932206914,
+      "netProfit": null,
+      "otherCost": null,
+      "rent": 85000.0,
+      "rentRatio": 11.627143498101356,
+      "restaurantNetMargin": null,
+      "revenue": 731048.0,
+      "revenueChangePct": -0.47425643813785373
+    },
+    "storePnlOnePager": {
+      "dataSourcesUsed": [
+        "financial",
+        "diagnostics",
+        "benchmark_alerts"
+      ],
+      "generatedAt": "2026-04-10T19:58:07",
+      "headline": "鼎鲜火锅 义乌分公司 current 营收 ¥731,048",
+      "headlineColor": "yellow",
+      "kpiCostRigidity": 0.560961801990723,
+      "kpiFoodCostRatio": 41.999978113612244,
+      "kpiLaborCostRatio": 32.5094932206914,
+      "kpiNetMargin": null,
+      "period": "current",
+      "pnlLines": [
+        {
+          "amount": 731048.0,
+          "changePct": -0.4743,
+          "label": "营业收入",
+          "note": null,
+          "pctOfRevenue": 1.0,
+          "statusEmoji": "🔻"
+        },
+        {
+          "amount": 307040.0,
+          "changePct": -0.4473,
+          "label": "食材成本",
+          "note": null,
+          "pctOfRevenue": 0.42,
+          "statusEmoji": "🟢"
+        },
+        {
+          "amount": 237660.0,
+          "changePct": -0.266,
+          "label": "人力成本",
+          "note": null,
+          "pctOfRevenue": 0.3251,
+          "statusEmoji": "🟡"
+        },
+        {
+          "amount": 85000.0,
+          "changePct": null,
+          "label": "房租",
+          "note": null,
+          "pctOfRevenue": 0.1163,
+          "statusEmoji": "🟢"
+        }
+      ],
+      "recommendations": [
+        "📋 [立即重排班] 按未来 30 天预测客流, 重新排班全部门店",
+        "🎯 建议立即重排班, 调整全职兼职比例"
+      ],
+      "storeName": "鼎鲜火锅 义乌分公司",
+      "subSector": "火锅",
+      "temporalSummary": null,
+      "topChannels": [],
+      "topDiagnostics": [
+        {
+          "actionHint": "[立即重排班] 按未来 30 天预测客流, 重新排班全部门店",
+          "oneLiner": "成本随营收变化的弹性系数, 衡量排班/采购是否跟随客流调整",
+          "severityEmoji": "🟡",
+          "title": "成本弹性指数 0.560961801990723 (偏低)"
+        },
+        {
+          "actionHint": "建议立即重排班, 调整全职兼职比例",
+          "oneLiner": "🟡 警戒 | 鼎鲜火锅 义乌分公司 的人力成本率 32.51% (行业基准 25.00%-35.00%, 中位 30.00%), 高于中位数 2.51%, 估算一年多支出约 ¥220,147",
+          "severityEmoji": "🟡",
+          "title": "人力成本率 32.51 (基准 30.00) 年损 ¥220,147"
+        }
+      ]
+    }
+  },
+  "storeId": null,
+  "storeName": "鼎鲜火锅 义乌分公司",
+  "subSector": "火锅",
+  "summary": {
+    "criticalIssues": 0,
+    "redAlerts": 0,
+    "sectionsGenerated": [
+      "financialMetrics",
+      "diagnostics",
+      "benchmarkAlerts",
+      "storePnlOnePager",
+      "bomLayerStatus"
+    ],
+    "totalAlerts": 1,
+    "totalDiagnoses": 1
+  },
+  "warnings": []
+}
