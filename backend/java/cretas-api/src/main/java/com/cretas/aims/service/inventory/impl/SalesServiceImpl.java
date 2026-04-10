@@ -90,10 +90,27 @@ public class SalesServiceImpl implements SalesService {
     @Override
     @Transactional
     public SalesOrder createSalesOrder(String factoryId, CreateSalesOrderRequest request, Long userId) {
-        // Canvas V2: DB-driven validation
+        // Canvas V2: DB-driven validation — pre-compute totalAmount so rules can reference it
+        BigDecimal preComputedTotal = BigDecimal.ZERO;
+        Set<String> seenProductIdsForCheck = new HashSet<>();
+        boolean hasDuplicate = false;
+        if (request.getItems() != null) {
+            for (CreateSalesOrderRequest.SalesOrderItemDTO itemDTO : request.getItems()) {
+                if (itemDTO.getProductTypeId() != null && !seenProductIdsForCheck.add(itemDTO.getProductTypeId())) {
+                    hasDuplicate = true;
+                }
+                if (itemDTO.getQuantity() != null && itemDTO.getUnitPrice() != null) {
+                    BigDecimal discountRate = itemDTO.getDiscountRate() != null ? itemDTO.getDiscountRate() : BigDecimal.ZERO;
+                    BigDecimal line = itemDTO.getQuantity().multiply(itemDTO.getUnitPrice())
+                            .multiply(BigDecimal.ONE.subtract(discountRate));
+                    preComputedTotal = preComputedTotal.add(line);
+                }
+            }
+        }
         runConfiguredValidation(factoryId, "CREATE", Map.of(
                 "itemCount", request.getItems() != null ? request.getItems().size() : 0,
-                "hasDuplicateProduct", false));
+                "totalAmount", preComputedTotal,
+                "hasDuplicateProduct", hasDuplicate));
 
         // 验证客户
         customerRepository.findByIdAndFactoryId(request.getCustomerId(), factoryId)
