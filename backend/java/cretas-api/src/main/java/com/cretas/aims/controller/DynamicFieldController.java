@@ -8,11 +8,17 @@ import com.cretas.aims.repository.config.CanvasDDLLogRepository;
 import com.cretas.aims.repository.config.CanvasDynamicFieldRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Round 4 Fix P0-6: added @PreAuthorize on mutating endpoints to restrict Canvas V3
+ * dynamic field writes to FACTORY_SUPER_ADMIN / PERMISSION_ADMIN only.
+ * Previously every factory user could add/modify fields.
+ */
 @RestController
 @RequestMapping("/api/mobile/{factoryId}")
 @RequiredArgsConstructor
@@ -37,6 +43,7 @@ public class DynamicFieldController {
 
     @SuppressWarnings("unchecked")
     @PostMapping("/config/v2/dynamic-fields")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'PLATFORM_SUPER_ADMIN')")
     public ResponseEntity<CanvasDynamicField> createDynamicField(
             @PathVariable String factoryId,
             @RequestBody Map<String, Object> body) {
@@ -58,6 +65,7 @@ public class DynamicFieldController {
 
     @SuppressWarnings("unchecked")
     @PutMapping("/config/v2/dynamic-fields/{fieldCode}")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'PLATFORM_SUPER_ADMIN')")
     public ResponseEntity<CanvasDynamicField> updateDynamicField(
             @PathVariable String factoryId,
             @PathVariable String fieldCode,
@@ -74,6 +82,7 @@ public class DynamicFieldController {
     }
 
     @DeleteMapping("/config/v2/dynamic-fields/{fieldCode}")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'PLATFORM_SUPER_ADMIN')")
     public ResponseEntity<Void> disableDynamicField(
             @PathVariable String factoryId,
             @PathVariable String fieldCode,

@@ -51,6 +51,9 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
     private DynamicFieldService dynamicFieldService;
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.repository.config.CanvasDynamicFieldRepository canvasDynamicFieldRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
     private UserMenuPermissionRepository userMenuPermRepo;
 
     // ========== 合并配置读取 ==========
@@ -128,7 +131,10 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
                 }
 
                 for (CanvasDynamicField df : dynamicFields) {
-                    if ("SUB_TABLE".equals(df.getFieldType())) continue;
+                    // P0-3 Fix (Round 4): SUB_TABLE was previously skipped, but SchemaFormRenderer
+                    // has a sub_table rendering branch that was never reachable. Now we build an
+                    // EffectiveField with type="sub_table" and copy columns into extra so the
+                    // frontend SubTableEditor can render dynamic child tables (审溯日志/发酵日志).
                     EffectiveField ef = EffectiveField.builder()
                         .code(df.getFieldCode())
                         .label(df.getLabel())
@@ -429,6 +435,31 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
             factoryModuleConfigRepository.save(copy);
         }
 
+        // Round 4 Fix P0-5: disable dynamic fields added after the rollback target version.
+        // Without this, v3→v2 rollback leaves v3's fields still ACTIVE → ghost fields in UI.
+        // Fields added before version tracking was introduced (activeFromVersion = null) are
+        // preserved as baseline.
+        if (canvasDynamicFieldRepository != null) {
+            List<CanvasDynamicField> allActive = canvasDynamicFieldRepository
+                    .findByFactoryIdAndStatusIn(factoryId, java.util.List.of("ACTIVE"));
+            int disabled = 0;
+            for (CanvasDynamicField df : allActive) {
+                Integer fieldVersion = df.getActiveFromVersion();
+                if (fieldVersion != null && fieldVersion > targetVersion) {
+                    df.setStatus("DISABLED");
+                    canvasDynamicFieldRepository.save(df);
+                    disabled++;
+                }
+            }
+            if (disabled > 0) {
+                log.info("Rollback to v{} disabled {} dynamic fields added in later versions", targetVersion, disabled);
+                // Also refresh DynamicFieldService cache
+                if (dynamicFieldService != null) {
+                    dynamicFieldService.refreshCache();
+                }
+            }
+        }
+
         logChange(factoryId, null, "ROLLBACK", null, null,
                 "回滚到版本 " + targetVersion, operatorId);
     }
@@ -626,6 +657,12 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
             Object defaultValue = override.containsKey("defaultValue")
                     ? override.get("defaultValue")
                     : schemaDef.get("defaultValue");
+            // P0-2 Fix (Round 4): applyTemplate wraps raw values in Map.of("value", x) for JSONB
+            // serialization (see Fix #13). Without unwrapping here, frontend renders [object Object].
+            // Unwrap any Map shaped like {"value": x} back to x before sending to frontend.
+            if (defaultValue instanceof Map<?, ?> m && m.size() == 1 && m.containsKey("value")) {
+                defaultValue = m.get("value");
+            }
 
             Object options = override.containsKey("options")
                     ? override.get("options")

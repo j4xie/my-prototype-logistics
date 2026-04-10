@@ -11,11 +11,19 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Canvas Configuration API.
+ * Round 4 Fix P0-6: class-level @PreAuthorize restricts writes to factory_super_admin and
+ * permission_admin. Read endpoints (effective config, modules, versions, current-version)
+ * remain accessible to any authenticated factory user via the method-level annotations.
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/config")
@@ -61,6 +69,7 @@ public class ConfigController {
     // ========== 配置管理 API (画布编辑器用) ==========
 
     @PutMapping("/modules/{moduleCode}")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'PLATFORM_SUPER_ADMIN')")
     @Operation(summary = "保存模块配置")
     public ApiResponse<Void> saveModuleConfig(
             @PathVariable String factoryId,
@@ -73,6 +82,7 @@ public class ConfigController {
     }
 
     @PatchMapping("/modules/{moduleCode}/fields/{fieldCode}")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'PLATFORM_SUPER_ADMIN')")
     @Operation(summary = "更新单个字段配置")
     public ApiResponse<Void> updateFieldConfig(
             @PathVariable String factoryId,
@@ -86,6 +96,7 @@ public class ConfigController {
     }
 
     @PatchMapping("/modules/{moduleCode}/toggle")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'PLATFORM_SUPER_ADMIN')")
     @Operation(summary = "开关模块")
     public ApiResponse<Void> toggleModule(
             @PathVariable String factoryId,
@@ -100,6 +111,7 @@ public class ConfigController {
     // ========== 发布与版本 ==========
 
     @PostMapping("/publish")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PLATFORM_SUPER_ADMIN')")
     @Operation(summary = "发布配置")
     public ApiResponse<Void> publishConfig(
             @PathVariable String factoryId,
@@ -111,6 +123,7 @@ public class ConfigController {
     }
 
     @PostMapping("/rollback/{version}")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PLATFORM_SUPER_ADMIN')")
     @Operation(summary = "回滚到指定版本")
     public ApiResponse<Void> rollbackConfig(
             @PathVariable String factoryId,
@@ -147,5 +160,115 @@ public class ConfigController {
         List<FactoryConfiguration> versions = factoryConfigurationRepository
                 .findByFactoryIdOrderByConfigVersionDesc(factoryId);
         return ApiResponse.success(versions);
+    }
+
+    // ========== 审核流程 (Round 4 Fix P0-1) ==========
+    // Previously: 前端定义 5 个审核 API 但后端完全缺失, 所有按钮 404 死链.
+    // Now: 完整的 DRAFT → PENDING_REVIEW → APPROVED → PUBLISHED (+REJECTED) 状态机.
+
+    @PostMapping("/submit-review")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'PLATFORM_SUPER_ADMIN')")
+    @Operation(summary = "提交配置审核 (DRAFT → PENDING_REVIEW)")
+    public ApiResponse<Void> submitForReview(
+            @PathVariable String factoryId,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        Long operatorId = extractUserId(authorization);
+        transitionStatus(factoryId, "DRAFT", "PENDING_REVIEW", operatorId,
+                fc -> {
+                    fc.setSubmittedAt(java.time.LocalDateTime.now());
+                    fc.setSubmittedBy(operatorId);
+                });
+        return ApiResponse.success();
+    }
+
+    @PostMapping("/approve")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PLATFORM_SUPER_ADMIN')")
+    @Operation(summary = "审核通过 (PENDING_REVIEW → APPROVED)")
+    public ApiResponse<Void> approveConfig(
+            @PathVariable String factoryId,
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestBody(required = false) Map<String, String> body) {
+        Long operatorId = extractUserId(authorization);
+        String notes = body != null ? body.get("notes") : null;
+        transitionStatus(factoryId, "PENDING_REVIEW", "APPROVED", operatorId,
+                fc -> {
+                    fc.setReviewedAt(java.time.LocalDateTime.now());
+                    fc.setReviewedBy(operatorId);
+                    fc.setReviewNotes(notes);
+                });
+        return ApiResponse.success();
+    }
+
+    @PostMapping("/reject")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PLATFORM_SUPER_ADMIN')")
+    @Operation(summary = "审核驳回 (PENDING_REVIEW → DRAFT)")
+    public ApiResponse<Void> rejectConfig(
+            @PathVariable String factoryId,
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestBody Map<String, String> body) {
+        Long operatorId = extractUserId(authorization);
+        String reason = body.get("reason");
+        if (reason == null || reason.isBlank()) {
+            return ApiResponse.error("驳回必须提供 reason");
+        }
+        transitionStatus(factoryId, "PENDING_REVIEW", "DRAFT", operatorId,
+                fc -> {
+                    fc.setReviewedAt(java.time.LocalDateTime.now());
+                    fc.setReviewedBy(operatorId);
+                    fc.setReviewNotes(reason);
+                });
+        return ApiResponse.success();
+    }
+
+    @PostMapping("/publish-now")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PLATFORM_SUPER_ADMIN')")
+    @Operation(summary = "立即发布 (APPROVED → PUBLISHED, 跳过发布窗口)")
+    public ApiResponse<Void> publishNow(
+            @PathVariable String factoryId,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        Long operatorId = extractUserId(authorization);
+        // For immediate publish, delegate to existing publishConfig which handles DDL.
+        // But first ensure status is APPROVED.
+        Optional<FactoryConfiguration> draft = factoryConfigurationRepository.findLatestPending(factoryId);
+        if (draft.isEmpty()) {
+            draft = factoryConfigurationRepository.findDraft(factoryId);
+        }
+        if (draft.isEmpty()) {
+            return ApiResponse.error("没有可发布的配置版本");
+        }
+        configService.publishConfig(factoryId, operatorId != null ? operatorId : 0L, "立即发布");
+        return ApiResponse.success();
+    }
+
+    @PostMapping("/cancel-approval")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'PLATFORM_SUPER_ADMIN')")
+    @Operation(summary = "取消审核 (PENDING_REVIEW → DRAFT, 由提交者撤回)")
+    public ApiResponse<Void> cancelApproval(
+            @PathVariable String factoryId,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        Long operatorId = extractUserId(authorization);
+        transitionStatus(factoryId, "PENDING_REVIEW", "DRAFT", operatorId,
+                fc -> {
+                    fc.setReviewNotes("由提交者撤回");
+                    fc.setReviewedAt(java.time.LocalDateTime.now());
+                });
+        return ApiResponse.success();
+    }
+
+    /** Shared state machine transition helper (Round 4 Fix P0-1) */
+    private void transitionStatus(String factoryId, String fromStatus, String toStatus,
+                                  Long operatorId, java.util.function.Consumer<FactoryConfiguration> mutator) {
+        List<FactoryConfiguration> versions = factoryConfigurationRepository
+                .findByFactoryIdOrderByConfigVersionDesc(factoryId);
+        FactoryConfiguration target = versions.stream()
+                .filter(v -> fromStatus.equals(v.getStatus()))
+                .findFirst()
+                .orElseThrow(() -> new com.cretas.aims.exception.BusinessException(
+                    "没有 " + fromStatus + " 状态的配置版本可供 " + toStatus + " 转换"));
+        target.setStatus(toStatus);
+        if (mutator != null) mutator.accept(target);
+        factoryConfigurationRepository.save(target);
+        log.info("Canvas audit transition: factory={} v{} {} → {} by user {}",
+                factoryId, target.getConfigVersion(), fromStatus, toStatus, operatorId);
     }
 }

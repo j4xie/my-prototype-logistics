@@ -60,6 +60,12 @@ public class CanvasDynamicField {
     @Column(name = "column_name", length = 100)
     private String columnName;
 
+    /** Round 4 Fix P0-5: Version when this field first became active. Used by rollback
+     *  to disable fields that were added after the rollback target version.
+     *  NULL = field existed before version tracking was introduced (treat as version 0). */
+    @Column(name = "active_from_version")
+    private Integer activeFromVersion;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

@@ -82,11 +82,16 @@ public class DDLExecutor {
             try {
                 jdbcTemplate.execute(ddl);
                 field.setStatus("ACTIVE");
+                // Round 4 Fix P0-5: record the config version at which this field first went active
+                // This enables rollback to disable fields added in later versions.
+                if (field.getActiveFromVersion() == null) {
+                    field.setActiveFromVersion(configVersion);
+                }
                 fieldRepo.save(field);
                 logEntry.setStatus("EXECUTED");
                 logEntry.setExecutedAt(LocalDateTime.now());
                 ddlLogRepo.save(logEntry);
-                log.info("DDL executed: {} -> {}.{}", field.getFieldType(), field.getModuleCode(), field.getColumnName());
+                log.info("DDL executed: {} -> {}.{} (v{})", field.getFieldType(), field.getModuleCode(), field.getColumnName(), configVersion);
             } catch (Exception e) {
                 logEntry.setStatus("FAILED");
                 logEntry.setErrorMessage(e.getMessage());

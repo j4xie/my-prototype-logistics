@@ -44,6 +44,22 @@ public class FactoryConfiguration {
     @Column(name = "rollback_version")
     private Integer rollbackVersion;
 
+    // Round 4 Fix P0-1: audit workflow columns (existing from V20260410_12 migration)
+    @Column(name = "submitted_at")
+    private LocalDateTime submittedAt;
+
+    @Column(name = "submitted_by")
+    private Long submittedBy;
+
+    @Column(name = "reviewed_at")
+    private LocalDateTime reviewedAt;
+
+    @Column(name = "reviewed_by")
+    private Long reviewedBy;
+
+    @Column(name = "review_notes", columnDefinition = "TEXT")
+    private String reviewNotes;
+
     @Column(name = "change_summary", columnDefinition = "TEXT")
     private String changeSummary;
 
