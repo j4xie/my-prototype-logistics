@@ -5,6 +5,7 @@ import { phase0Prereq } from './phases/phase0-prereq.mjs';
 import { phase1Config } from './phases/phase1-config.mjs';
 import { phase2Verify } from './phases/phase2-verify.mjs';
 import { phase3Change } from './phases/phase3-change.mjs';
+import { phase4Reverify } from './phases/phase4-reverify.mjs';
 
 const REPORT_PATH = './tests/canvas-v3/test-canvas-v3-lifecycle-results.json';
 
@@ -62,6 +63,13 @@ async function main() {
     await phase3Change(state, api, report);
   } catch (e) {
     console.error('Phase 3 error:', e.message);
+  }
+
+  // Phase 4
+  try {
+    await phase4Reverify(state, api, report);
+  } catch (e) {
+    console.error('Phase 4 error:', e.message);
   }
 
   report.print();
