@@ -113,25 +113,40 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
         // This was previously only in the 4-param overload but frontend calls the 3-param version
         if (dynamicFieldService != null) {
             List<CanvasDynamicField> dynamicFields = dynamicFieldService.getActiveFields(factoryId, moduleCode);
-            for (CanvasDynamicField df : dynamicFields) {
-                if ("SUB_TABLE".equals(df.getFieldType())) continue;
-                EffectiveField ef = EffectiveField.builder()
-                    .code(df.getFieldCode())
-                    .label(df.getLabel())
-                    .type(df.getFieldType().toLowerCase())
-                    .required(false)
-                    .visible(true)
-                    .readonly(false)
-                    .defaultValue(null)
-                    .options(df.getConfig().get("options"))
-                    .group("custom")
-                    .order(1000 + (df.getSortOrder() != null ? df.getSortOrder() : 0))
-                    .extra(df.getConfig())
-                    .visibleWhen(df.getVisibleWhen())
-                    .computedWhen(df.getComputedWhen())
-                    .source("dynamic")
-                    .build();
-                fields.add(ef);
+            if (!dynamicFields.isEmpty()) {
+                // Add a "custom" group so the frontend groupedFields computed doesn't filter these out.
+                // groupedFields filters by: groups.filter(g => g.visible) then fields.filter(f => f.group === group.code)
+                // So fields in a group not in the groups list are invisible.
+                boolean hasCustomGroup = groups.stream().anyMatch(g -> "custom".equals(g.getCode()));
+                if (!hasCustomGroup) {
+                    groups.add(FieldGroup.builder()
+                        .code("custom")
+                        .label("自定义字段")
+                        .order(1000)
+                        .visible(true)
+                        .build());
+                }
+
+                for (CanvasDynamicField df : dynamicFields) {
+                    if ("SUB_TABLE".equals(df.getFieldType())) continue;
+                    EffectiveField ef = EffectiveField.builder()
+                        .code(df.getFieldCode())
+                        .label(df.getLabel())
+                        .type(df.getFieldType().toLowerCase())
+                        .required(false)
+                        .visible(true)
+                        .readonly(false)
+                        .defaultValue(null)
+                        .options(df.getConfig().get("options"))
+                        .group("custom")
+                        .order(1000 + (df.getSortOrder() != null ? df.getSortOrder() : 0))
+                        .extra(df.getConfig())
+                        .visibleWhen(df.getVisibleWhen())
+                        .computedWhen(df.getComputedWhen())
+                        .source("dynamic")
+                        .build();
+                    fields.add(ef);
+                }
             }
         }
 
