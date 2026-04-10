@@ -498,7 +498,10 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
                     fdv.setFactoryId(factoryId);
                     fdv.setModuleCode(modCode);
                     fdv.setFieldCode(fieldEntry.getKey());
-                    fdv.setDefaultValue(fieldEntry.getValue());
+                    // JSONB column — raw strings like "NORMAL" must be wrapped in a JSON-compatible value.
+                    // Simplest: pass as a Map so Hibernate serializes to proper JSON.
+                    Object rawVal = fieldEntry.getValue();
+                    fdv.setDefaultValue(java.util.Map.of("value", rawVal));
                     fdv.setDescription("模板 " + templateCode);
                     factoryDefaultValueRepository.save(fdv);
                 }
