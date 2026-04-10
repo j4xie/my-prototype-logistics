@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartBI · 诊断对话 · 鼎鲜火锅义乌店</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e1a;
+  --bg-card: #131828;
+  --bg-elevated: #1c2238;
+  --bg-user: #1e3a5f;
+  --line: #2a3048;
+  --ink: #e8ecf8;
+  --ink-dim: #8890ac;
+  --ink-mute: #4a5070;
+  --critical: #ff3b5c;
+  --warn: #ffb84d;
+  --good: #4ade80;
+  --accent: #5eead4;
+  --mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  --serif: 'Noto Serif SC', 'Songti SC', serif;
+  --display: 'Oswald', 'Impact', sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--serif);
+  -webkit-font-smoothing: antialiased;
+}
+body {
+  background-image:
+    radial-gradient(ellipse 1000px 500px at 30% 0%, rgba(255, 59, 92, 0.06), transparent),
+    radial-gradient(ellipse 600px 300px at 100% 100%, rgba(94, 234, 212, 0.04), transparent),
+    linear-gradient(180deg, var(--bg) 0%, #050811 100%);
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 30px 20px 120px;
+  position: relative;
+}
+
+/* ========== HEADER ========== */
+.header {
+  border-top: 4px double var(--critical);
+  border-bottom: 1px solid var(--line);
+  padding: 20px 0 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.brand-dot {
+  width: 10px; height: 10px;
+  background: var(--critical);
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--critical);
+  animation: pulse 1.8s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+.brand-text {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.brand-text em {
+  font-style: normal;
+  color: var(--critical);
+}
+.brand-sub {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-dim);
+  letter-spacing: 1px;
+  margin-top: 2px;
+}
+.meta {
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-dim);
+  letter-spacing: 1px;
+  line-height: 1.6;
+}
+.meta strong { color: var(--accent); }
+
+/* ========== SESSION CAPTION ========== */
+.session-caption {
+  background: var(--bg-card);
+  border-left: 3px solid var(--warn);
+  padding: 14px 20px;
+  margin-bottom: 30px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-dim);
+  line-height: 1.7;
+  letter-spacing: 0.5px;
+}
+.session-caption strong { color: var(--warn); }
+
+/* ========== CHAT ========== */
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.turn {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.turn.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* User bubble */
+.turn.user {
+  display: flex;
+  justify-content: flex-end;
+}
+.bubble-user {
+  max-width: 72%;
+  background: var(--bg-user);
+  border: 1px solid #2d5580;
+  border-radius: 14px 14px 4px 14px;
+  padding: 14px 18px;
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink);
+  position: relative;
+}
+.bubble-user::after {
+  content: "鼎鲜火锅义乌 · 邓总";
+  position: absolute;
+  bottom: -18px;
+  right: 4px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--ink-mute);
+  letter-spacing: 1px;
+}
+
+/* AI bubble */
+.turn.ai {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.ai-avatar {
+  width: 36px; height: 36px;
+  border: 1px solid var(--critical);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--critical);
+  flex-shrink: 0;
+  background: var(--bg-card);
+  letter-spacing: 0.5px;
+}
+.bubble-ai {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--critical);
+  border-radius: 4px 14px 14px 14px;
+  padding: 18px 22px;
+  position: relative;
+}
+.bubble-ai .ai-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--critical);
+  margin-bottom: 10px;
+}
+.bubble-ai .ai-text {
+  font-family: var(--serif);
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--ink);
+}
+.bubble-ai .ai-text p { margin-bottom: 8px; }
+.bubble-ai .ai-text em { color: var(--warn); font-style: normal; font-weight: 700; }
+.bubble-ai .ai-text strong { color: var(--critical); }
+
+/* Typing indicator */
+.typing {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.typing.visible { opacity: 1; }
+.typing-bubble {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px 20px;
+  display: flex;
+  gap: 6px;
+}
+.typing-bubble span {
+  width: 7px; height: 7px;
+  background: var(--critical);
+  border-radius: 50%;
+  animation: typing 1.2s infinite;
+}
+.typing-bubble span:nth-child(2) { animation-delay: 0.2s; }
+.typing-bubble span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-4px); }
+}
+
+/* ========== AI content cards ========== */
+.card-block {
+  margin-top: 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 16px 18px;
+}
+.card-block + .card-block { margin-top: 10px; }
+.card-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 6px;
+}
+.card-value {
+  font-family: var(--display);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 1px;
+}
+.card-value.critical { color: var(--critical); }
+.card-value.warn { color: var(--warn); }
+.card-value.good { color: var(--good); }
+.card-delta {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--critical);
+  margin-top: 6px;
+  letter-spacing: 0.5px;
+}
+.card-delta.warn { color: var(--warn); }
+
+/* Stats grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+.stat-mini {
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  padding: 12px 14px;
+  border-radius: 4px;
+}
+.stat-mini-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--ink-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.stat-mini-val {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.stat-mini-val.critical { color: var(--critical); }
+.stat-mini-val.warn { color: var(--warn); }
+.stat-mini-val.good { color: var(--good); }
+.stat-mini-sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--ink-mute);
+  margin-top: 3px;
+}
+
+/* Formula block */
+.formula {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: #0a0e1a;
+  border: 1px dashed var(--warn);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--warn);
+  line-height: 1.7;
+}
+.formula .arrow { color: var(--ink-dim); margin: 0 8px; }
+.formula strong { color: var(--critical); font-weight: 700; }
+
+/* Rx list */
+.rx {
+  margin-top: 12px;
+  counter-reset: rx;
+}
+.rx-item {
+  counter-increment: rx;
+  padding: 12px 0 12px 42px;
+  border-bottom: 1px dotted var(--line);
+  position: relative;
+}
+.rx-item:last-child { border-bottom: none; }
+.rx-item::before {
+  content: counter(rx, decimal-leading-zero);
+  position: absolute;
+  left: 0; top: 12px;
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.rx-title {
+  font-family: var(--serif);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 3px;
+}
+.rx-title em { color: var(--accent); font-style: normal; }
+.rx-desc {
+  font-family: var(--serif);
+  font-size: 12px;
+  color: var(--ink-dim);
+  line-height: 1.6;
+}
+
+/* Bar */
+.bar-wrap {
+  margin-top: 12px;
+}
+.bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-dim);
+  margin-bottom: 4px;
+  letter-spacing: 0.5px;
+}
+.bar-label .burn { color: var(--critical); font-weight: 700; }
+.bar-track {
+  height: 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--good) 0%, var(--warn) 50%, var(--critical) 100%);
+  width: 0;
+  transition: width 1.2s ease;
+}
+
+/* ========== CONTROLS ========== */
+.controls {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 40px;
+  padding: 10px 18px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+  backdrop-filter: blur(10px);
+}
+.ctrl-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ctrl-btn:hover {
+  border-color: var(--critical);
+  color: var(--critical);
+}
+.ctrl-btn.primary {
+  background: var(--critical);
+  border-color: var(--critical);
+  color: #fff;
+}
+.ctrl-btn.primary:hover {
+  background: #ff5577;
+}
+.progress {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-dim);
+  letter-spacing: 1px;
+  padding: 0 8px;
+}
+.progress strong { color: var(--critical); }
+
+/* End marker */
+.end-marker {
+  text-align: center;
+  padding: 40px 0 20px;
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+.end-marker.visible { opacity: 1; }
+.end-marker-line {
+  display: inline-block;
+  padding: 8px 24px;
+  border-top: 1px solid var(--critical);
+  border-bottom: 1px solid var(--critical);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--critical);
+}
+
+/* ===== New modules ===== */
+.benchmark-row {
+  display: grid;
+  grid-template-columns: 92px 1fr 64px;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.benchmark-label { color: var(--ink-dim); letter-spacing: 0.3px; }
+.benchmark-bar {
+  height: 20px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  position: relative;
+  border-radius: 2px;
+  overflow: visible;
+}
+.benchmark-bar-fill {
+  height: 100%;
+  transition: width 1s ease;
+  border-radius: 1px;
+}
+.benchmark-bar-fill.good { background: linear-gradient(90deg, #22c55e, var(--good)); }
+.benchmark-bar-fill.warn { background: linear-gradient(90deg, #eab308, var(--warn)); }
+.benchmark-bar-fill.critical { background: linear-gradient(90deg, #b91c1c, var(--critical)); }
+.benchmark-marker {
+  position: absolute;
+  top: -3px; bottom: -3px;
+  width: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+.benchmark-marker::after {
+  content: "▼";
+  position: absolute;
+  top: -10px;
+  left: -5px;
+  font-size: 9px;
+  color: var(--accent);
+}
+.benchmark-val {
+  color: var(--ink);
+  font-weight: 700;
+  text-align: right;
+  font-size: 13px;
+}
+.benchmark-val.critical { color: var(--critical); }
+.benchmark-val.warn { color: var(--warn); }
+.benchmark-val.good { color: var(--good); }
+.benchmark-note {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--ink-mute);
+  margin-top: 10px;
+  letter-spacing: 0.3px;
+}
+
+.menu-matrix {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  margin-top: 14px;
+}
+.menu-quad {
+  background: var(--bg-elevated);
+  padding: 14px 16px 16px;
+}
+.menu-quad-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--ink-dim);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+.menu-quad-title {
+  font-family: var(--serif);
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.menu-quad.star .menu-quad-title { color: var(--good); }
+.menu-quad.cow .menu-quad-title { color: var(--accent); }
+.menu-quad.puzzle .menu-quad-title { color: var(--warn); }
+.menu-quad.dog .menu-quad-title { color: var(--critical); }
+.menu-quad-items {
+  font-family: var(--serif);
+  font-size: 12px;
+  color: var(--ink-dim);
+  line-height: 1.6;
+}
+
+.heat-single {
+  margin-top: 14px;
+  padding: 16px 18px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.heat-single-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 10px;
+}
+.heat-single-bar {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 2px;
+  height: 36px;
+  margin-bottom: 4px;
+}
+.heat-single-cell {
+  background: var(--bg);
+  border-radius: 1px;
+}
+.heat-single-hours {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 2px;
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--ink-mute);
+  text-align: center;
+}
+
+.forecast-svg {
+  width: 100%;
+  height: 170px;
+  margin-top: 4px;
+}
+
+.follow-up {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px dotted var(--line);
+}
+.follow-up-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.follow-up-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.follow-up-chip {
+  font-family: var(--serif);
+  font-size: 12px;
+  padding: 7px 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--bg-elevated);
+  color: var(--ink-dim);
+  transition: all 0.2s;
+}
+.follow-up-chip:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--bg);
+}
+
+.back-link {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-dim);
+  text-decoration: none;
+  letter-spacing: 1.5px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(19, 24, 40, 0.8);
+  backdrop-filter: blur(8px);
+  z-index: 20;
+  transition: all 0.2s;
+}
+.back-link:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .app { padding: 20px 12px 120px; }
+  .bubble-user { max-width: 86%; font-size: 14px; }
+  .bubble-ai { padding: 14px 16px; }
+  .header { flex-direction: column; gap: 12px; align-items: flex-start; }
+  .meta { text-align: left; }
+  .stats-grid { grid-template-columns: 1fr; }
+  .controls { padding: 8px 12px; gap: 6px; }
+  .ctrl-btn { padding: 6px 10px; font-size: 10px; }
+}
+</style>
+</head>
+<body>
+<a href="index.html" class="back-link">← 返回 Demo 中心</a>
+<div class="app">
+
+  <header class="header">
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <div>
+        <div class="brand-text">Cretas <em>SmartBI</em> · DIAGNOSTIC CHAT</div>
+        <div class="brand-sub">餐饮经营诊断 · 会话回放</div>
+      </div>
+    </div>
+    <div class="meta">
+      客户 · <strong>鼎鲜火锅 · 义乌分公司</strong><br>
+      周期 · 2026-02 经营数据
+    </div>
+  </header>
+
+  <div class="session-caption">
+    <strong>▸ 会话场景</strong>: 邓总把上个月 POS + 财务数据上传到 SmartBI 后, 直接在聊天框里问诊. 下面是完整回放 &mdash; 共 <strong>9</strong> 轮问答. 点击"自动播放"观看, 或"下一步"手动推进.
+  </div>
+
+  <div class="chat" id="chat"></div>
+
+  <div class="end-marker" id="end-marker">
+    <span class="end-marker-line">─── 会话结束 · END OF SESSION ───</span>
+  </div>
+
+</div>
+
+<div class="controls">
+  <button class="ctrl-btn" id="btn-restart">↻ 重播</button>
+  <button class="ctrl-btn primary" id="btn-toggle">▶ 自动播放</button>
+  <button class="ctrl-btn" id="btn-next">下一步 →</button>
+  <span class="progress"><strong id="prog-cur">0</strong> / <span id="prog-total">0</span></span>
+</div>
+
+<script>
+// ==================== SCRIPT DATA ====================
+const turns = [
+  {
+    role: 'user',
+    text: '帮我看看 2 月份店里经营情况, 数据已经传上去了.'
+  },
+  {
+    role: 'ai',
+    label: 'OVERVIEW · 总览快报',
+    html: `
+      <p>邓总, 2 月数据已完成解析. 先说结论 &mdash; <strong>情况不乐观</strong>. 营业额较上月<em>大幅下滑</em>, 但人工成本几乎没跟着降, 造成明显的成本刚性问题.</p>
+      <div class="card-block">
+        <div class="card-label">2 月营业额</div>
+        <div class="card-value critical">¥731,048</div>
+        <div class="card-delta">环比 <strong>−47.43%</strong> · 从 ¥1,390,503 近乎腰斩</div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-mini">
+          <div class="stat-mini-label">人工成本</div>
+          <div class="stat-mini-val warn">−26.60%</div>
+          <div class="stat-mini-sub">从 ¥323,805 → ¥237,660</div>
+        </div>
+        <div class="stat-mini">
+          <div class="stat-mini-label">当月亏损</div>
+          <div class="stat-mini-val critical">≈ ¥49,724</div>
+          <div class="stat-mini-sub">2 月毛利转负</div>
+        </div>
+      </div>
+    `
+  },
+  {
+    role: 'user',
+    text: '为什么会降这么多? 是不是成本没控制好?'
+  },
+  {
+    role: 'ai',
+    label: 'DIAGNOSIS · 诊断 #1 · 成本刚性',
+    html: `
+      <p>核心问题是<strong>成本刚性</strong>. 简单说: 营收掉了 47%, 人工只掉 27%, 两者比值就是成本刚性.</p>
+      <div class="formula">
+        cost_rigidity = Δ人工 / Δ营收<span class="arrow">=</span>−26.60% / −47.43%<span class="arrow">=</span><strong>0.561</strong>
+      </div>
+      <p style="margin-top: 10px;">行业健康值应该在 <em>0.85 以上</em> &mdash; 意思是营收降 10%, 人工至少得跟着降 8.5%. 邓总这个 <strong>0.561</strong> 说明: <em>排班没有跟着客流及时收缩</em>, 每一块下降的营收, 只有不到一半被人工省回来.</p>
+      <div class="card-block">
+        <div class="card-label">年化冲击</div>
+        <div class="card-value warn">¥470,000</div>
+        <div class="card-delta warn">≈ 正常 EBITDA 的 79% · 若不止血, 一年白干</div>
+      </div>
+    `
+  },
+  {
+    role: 'user',
+    text: '拿火锅行业来比, 我这家店到底比别人差在哪?'
+  },
+  {
+    role: 'ai',
+    label: 'SUB-SECTOR BENCHMARK · 火锅行业对标',
+    html: `
+      <p>调出<em>火锅子行业基准库</em> &mdash; 这是 SmartBI 知识库里 9 个餐饮子行业的真实数据池. 鼎鲜义乌店 vs 火锅连锁中位数(▼ 基准线):</p>
+      <div style="margin-top: 14px;">
+        <div class="benchmark-row">
+          <div class="benchmark-label">食材成本率</div>
+          <div class="benchmark-bar">
+            <div class="benchmark-bar-fill warn" style="width: 52%;"></div>
+            <div class="benchmark-marker" style="left: 42%;"></div>
+          </div>
+          <div class="benchmark-val warn">42%</div>
+        </div>
+        <div class="benchmark-row">
+          <div class="benchmark-label">人工成本率</div>
+          <div class="benchmark-bar">
+            <div class="benchmark-bar-fill critical" style="width: 76%;"></div>
+            <div class="benchmark-marker" style="left: 44%;"></div>
+          </div>
+          <div class="benchmark-val critical">38%</div>
+        </div>
+        <div class="benchmark-row">
+          <div class="benchmark-label">客单价</div>
+          <div class="benchmark-bar">
+            <div class="benchmark-bar-fill good" style="width: 62%;"></div>
+            <div class="benchmark-marker" style="left: 56%;"></div>
+          </div>
+          <div class="benchmark-val good">¥108</div>
+        </div>
+        <div class="benchmark-row">
+          <div class="benchmark-label">翻台率</div>
+          <div class="benchmark-bar">
+            <div class="benchmark-bar-fill critical" style="width: 28%;"></div>
+            <div class="benchmark-marker" style="left: 56%;"></div>
+          </div>
+          <div class="benchmark-val critical">1.4x</div>
+        </div>
+      </div>
+      <p style="margin-top: 16px;">三项警报:</p>
+      <p>· <em>客单价还行</em> &mdash; ¥108 略好于火锅中位数 ¥96, 说明产品定价不是问题</p>
+      <p>· <strong>人工成本率 38%</strong> 比行业中位数 22% 高了 16 个百分点, <em>最重的病根</em></p>
+      <p>· <strong>翻台率 1.4</strong> 只有行业 2.8 的一半, 意味着"桌子空着, 但没人坐"</p>
+      <p class="benchmark-note">▸ 基准数据源: Cretas 餐饮知识库 · 火锅子行业 · N=240 门店 · 本年度滚动数据</p>
+    `
+  },
+  {
+    role: 'user',
+    text: '那店里哪些菜撑得住, 哪些在拖后腿?'
+  },
+  {
+    role: 'ai',
+    label: 'MENU ENGINEERING · 菜品工程矩阵',
+    html: `
+      <p>把 2 月份所有菜品按"<em>销量</em> × <em>毛利率</em>"切成四象限 &mdash; 这是国际通用的 Menu Engineering 模型:</p>
+      <div class="menu-matrix">
+        <div class="menu-quad star">
+          <div class="menu-quad-label">★ STAR · 明星菜</div>
+          <div class="menu-quad-title">高销 × 高利</div>
+          <div class="menu-quad-items">肥牛拼盘 · 毛肚王 · 虾滑 · 鸭肠 · 麻辣锅底</div>
+        </div>
+        <div class="menu-quad cow">
+          <div class="menu-quad-label">● 奶牛 · 走量主力</div>
+          <div class="menu-quad-title">高销 × 中利</div>
+          <div class="menu-quad-items">土豆片 · 宽粉 · 冬瓜 · 金针菇 · 油麦菜</div>
+        </div>
+        <div class="menu-quad puzzle">
+          <div class="menu-quad-label">? PUZZLE · 高利无人点</div>
+          <div class="menu-quad-title">低销 × 高利</div>
+          <div class="menu-quad-items">龙虾刺身 · 澳牛板腱 · 黑松露汤底</div>
+        </div>
+        <div class="menu-quad dog">
+          <div class="menu-quad-label">✗ DOG · 淘汰菜</div>
+          <div class="menu-quad-title">低销 × 低利</div>
+          <div class="menu-quad-items">鸭血 · 水晶粉 · 鹌鹑蛋 · 腐竹 · 共 12 道</div>
+        </div>
+      </div>
+      <p style="margin-top: 14px;">马上能做的决定:</p>
+      <p>· 右下 12 道<strong>淘汰菜</strong>贡献营收 &lt;3%, 但占备料 SKU 18% &mdash; <em>直接砍</em></p>
+      <p>· 左下 3 道 <em>Puzzle 菜</em>: 要么在服务员推荐话术里加权, 要么也砍, 不要留在菜单里"凑数"</p>
+      <p>· ★ Star 菜是店的<strong>品牌资产</strong>, 下一步要做 SOP 固定和摆盘提升</p>
+    `
+  },
+  {
+    role: 'user',
+    text: '再看看店里几点最忙几点最闲, 排班有没有浪费?'
+  },
+  {
+    role: 'ai',
+    label: 'DINING HEATMAP · 时段客流 · 单店 24 小时',
+    html: `
+      <p>基于 2 月份 POS 订单时间戳聚合的时段客流:</p>
+      <div class="heat-single">
+        <div class="heat-single-title">24H TRAFFIC · 鼎鲜火锅义乌店 · 2026-02</div>
+        <div class="heat-single-bar" id="heat-a-bar"></div>
+        <div class="heat-single-hours" id="heat-a-hours"></div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-mini">
+          <div class="stat-mini-label">晚餐峰值</div>
+          <div class="stat-mini-val good">18-20 时</div>
+          <div class="stat-mini-sub">日均订单 61% 集中在这 3 小时</div>
+        </div>
+        <div class="stat-mini">
+          <div class="stat-mini-label">空窗时段</div>
+          <div class="stat-mini-val critical">14-17 时</div>
+          <div class="stat-mini-sub">订单仅占 4%, 但仍排 5 人在岗</div>
+        </div>
+      </div>
+      <p style="margin-top: 12px;"><em>排班错配</em>明确存在: 下午 14-17 点贡献 4% 订单, 但按全班排岗. 这就是为什么 cost_rigidity 卡在 <strong>0.561</strong> &mdash; <em>排班曲线没有贴合客流曲线</em>.</p>
+    `
+  },
+  {
+    role: 'user',
+    text: '储值卡那块呢? 我之前发了一批充值, 账上还有多少要兑付?'
+  },
+  {
+    role: 'ai',
+    label: 'STORED VALUE · 储值负债',
+    html: `
+      <p>已经拉出储值余额曲线. <em>当前余额处于警戒区</em>, 但还没到兑付风险线. 关键是<strong>核销速度</strong>在变慢 &mdash; 上月核销率从 18% 掉到 11%.</p>
+      <div class="bar-wrap">
+        <div class="bar-label"><span>储值余额占比</span><span class="burn">警戒区 ▲</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width: 68%;"></div></div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-mini">
+          <div class="stat-mini-label">待兑付余额</div>
+          <div class="stat-mini-val warn">¥118,430</div>
+          <div class="stat-mini-sub">共 236 张有效卡</div>
+        </div>
+        <div class="stat-mini">
+          <div class="stat-mini-label">月核销率</div>
+          <div class="stat-mini-val critical">11.2%</div>
+          <div class="stat-mini-sub">较上月 <strong>−6.8pp</strong></div>
+        </div>
+      </div>
+      <p style="margin-top: 12px;">翻译一下: 储值卡用户<em>正在减少来店</em>. 这通常是"印象恶化"的前兆 &mdash; 和评分/服务数据交叉看能进一步定位.</p>
+    `
+  },
+  {
+    role: 'user',
+    text: '按现在这个趋势, 如果不做任何调整, 3 月份会怎么样?'
+  },
+  {
+    role: 'ai',
+    label: 'FORECAST · 下月推演 · 不干预基线',
+    html: `
+      <p>按当前 cost_rigidity 0.561 和客流衰减率外推, 系统给出 3-4 月份的<em>不干预基线预测</em>(红色虚线 + 阴影是 80% 置信带):</p>
+      <div class="card-block" style="padding: 18px 22px;">
+        <svg class="forecast-svg" viewBox="0 0 600 170" preserveAspectRatio="none">
+          <line x1="0" y1="30" x2="600" y2="30" stroke="#2a3048" stroke-dasharray="2,4"/>
+          <line x1="0" y1="75" x2="600" y2="75" stroke="#2a3048" stroke-dasharray="2,4"/>
+          <line x1="0" y1="120" x2="600" y2="120" stroke="#2a3048" stroke-dasharray="2,4"/>
+          <line x1="0" y1="150" x2="600" y2="150" stroke="#e8ecf8" stroke-width="0.5"/>
+          <text x="8" y="26" font-family="JetBrains Mono" font-size="9" fill="#8890ac">¥100K</text>
+          <text x="8" y="71" font-family="JetBrains Mono" font-size="9" fill="#8890ac">¥65K</text>
+          <text x="8" y="116" font-family="JetBrains Mono" font-size="9" fill="#8890ac">¥30K</text>
+          <line x1="360" y1="15" x2="360" y2="150" stroke="#5eead4" stroke-dasharray="4,4" opacity="0.5"/>
+          <text x="365" y="24" font-family="JetBrains Mono" font-size="9" fill="#5eead4">今天</text>
+          <path d="M 100 50 L 180 72 L 260 105 L 340 118 L 360 121" fill="none" stroke="#ff3b5c" stroke-width="2.5" stroke-linejoin="round"/>
+          <circle cx="100" cy="50" r="4" fill="#ff3b5c"/>
+          <circle cx="180" cy="72" r="4" fill="#ff3b5c"/>
+          <circle cx="260" cy="105" r="4" fill="#ff3b5c"/>
+          <circle cx="340" cy="118" r="4" fill="#ff3b5c"/>
+          <text x="100" y="42" font-family="Oswald" font-size="11" font-weight="700" fill="#e8ecf8" text-anchor="middle">¥95K</text>
+          <text x="180" y="64" font-family="Oswald" font-size="11" font-weight="700" fill="#e8ecf8" text-anchor="middle">¥78K</text>
+          <text x="260" y="97" font-family="Oswald" font-size="11" font-weight="700" fill="#e8ecf8" text-anchor="middle">¥49K</text>
+          <path d="M 360 121 L 440 138 L 520 148 L 570 152 L 570 168 L 360 148 Z" fill="#ff3b5c" opacity="0.15"/>
+          <path d="M 360 121 L 440 140 L 520 150 L 570 154" fill="none" stroke="#ff3b5c" stroke-width="2" stroke-dasharray="5,4"/>
+          <circle cx="570" cy="154" r="5" fill="#131828" stroke="#ff3b5c" stroke-width="2.5"/>
+          <text x="570" y="145" font-family="Oswald" font-size="11" font-weight="700" fill="#ff3b5c" text-anchor="middle">¥34K</text>
+          <text x="130" y="165" font-family="JetBrains Mono" font-size="9" fill="#8890ac" text-anchor="middle">12月</text>
+          <text x="210" y="165" font-family="JetBrains Mono" font-size="9" fill="#8890ac" text-anchor="middle">1月</text>
+          <text x="290" y="165" font-family="JetBrains Mono" font-size="9" fill="#8890ac" text-anchor="middle">2月</text>
+          <text x="440" y="165" font-family="JetBrains Mono" font-size="9" fill="#ff3b5c" text-anchor="middle">3月预</text>
+          <text x="530" y="165" font-family="JetBrains Mono" font-size="9" fill="#ff3b5c" text-anchor="middle">4月预</text>
+        </svg>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-mini">
+          <div class="stat-mini-label">3 月预测营收</div>
+          <div class="stat-mini-val critical">≈ ¥34K</div>
+          <div class="stat-mini-sub">环比再 −32% · 置信 ±15%</div>
+        </div>
+        <div class="stat-mini">
+          <div class="stat-mini-label">现金流拐点</div>
+          <div class="stat-mini-val warn">4 月中</div>
+          <div class="stat-mini-sub">储值兑付压力叠加毛利亏损</div>
+        </div>
+      </div>
+      <p style="margin-top: 12px;"><strong>不干预的话, 3 月再跌 30% 左右</strong>, 4 月中开始现金流告急. 但这不是"命运" &mdash; 只要动 2-3 个杠杆(排班/菜单/唤醒), 完全可以把拐点在 3 月初拉平.</p>
+    `
+  },
+  {
+    role: 'user',
+    text: '那我到底该怎么办? 给我几条能马上动手的.'
+  },
+  {
+    role: 'ai',
+    label: '℞ Rx · 经营处方 · 按"见效快 × 投入小"排序',
+    html: `
+      <p>五条动作, 第 1 条今天就能做:</p>
+      <div class="rx">
+        <div class="rx-item">
+          <div class="rx-title"><em>砍一个班次</em> · 周二 / 周三晚间</div>
+          <div class="rx-desc">两天晚餐客流最低, 但排班仍按周末标准. 先去掉 1 名帮工, 每月立省 ≈ ¥3,200. cost_rigidity 能从 0.561 拉回 0.68.</div>
+        </div>
+        <div class="rx-item">
+          <div class="rx-title"><em>砍 12 道淘汰菜</em> · 菜单瘦身</div>
+          <div class="rx-desc">Menu Engineering 矩阵里的"DOG"区 12 道菜, 贡献 &lt;3% 营收, 占 18% SKU. 砍掉后后厨动作与损耗都会降.</div>
+        </div>
+        <div class="rx-item">
+          <div class="rx-title"><em>储值核销唤醒</em> · 短信 + 到店礼</div>
+          <div class="rx-desc">对 236 张有效卡发一次唤醒, 凭卡到店送小菜, 目标把月核销率从 11% 拉回 16%+.</div>
+        </div>
+        <div class="rx-item">
+          <div class="rx-title"><em>午市延伸档</em> · 打开 14-17 时空档</div>
+          <div class="rx-desc">午市套餐延伸到下午茶档, 28-48 元定价, 先试 2 周看转化. 目标把翻台率从 1.4 拉到 1.8+.</div>
+        </div>
+        <div class="rx-item">
+          <div class="rx-title"><em>财务三张表补齐</em> · Q1 结束前</div>
+          <div class="rx-desc">目前没有门店级 P&amp;L, 毛利是反推的. 补齐后系统能做更精细的 BOM 达成率分析.</div>
+        </div>
+      </div>
+    `
+  },
+  {
+    role: 'user',
+    text: '最后问一下, 这些数字哪些是你估的, 哪些是我上传的真实数据?'
+  },
+  {
+    role: 'ai',
+    label: 'DATA PROVENANCE · 数据来源声明',
+    html: `
+      <p>透明度很重要, 邓总. 逐项说明:</p>
+      <div class="card-block">
+        <div class="card-label">✓ 来自上传的真实数据</div>
+        <div class="ai-text" style="margin-top: 8px;">
+          <p>· 2 月营业额 <em>¥731,048</em> (环比 −47.43%, 从 ¥1,390,503) · POS 汇总</p>
+          <p>· 2 月人工成本 <em>¥237,660</em> (环比 −26.60%, 从 ¥323,805) · 财务导出</p>
+          <p>· 当月亏损 <em>¥49,724</em> · 财务报表</p>
+          <p>· 储值卡 <em>236 张 / ¥118,430</em> · 会员系统</p>
+          <p>· 时段客流 · POS 时间戳聚合</p>
+        </div>
+      </div>
+      <div class="card-block">
+        <div class="card-label">△ 基于模型 / 知识库的推算</div>
+        <div class="ai-text" style="margin-top: 8px;">
+          <p>· cost_rigidity <em>0.561</em> · 按公式计算</p>
+          <p>· 火锅行业基准 · <em>Cretas 知识库 N=240</em></p>
+          <p>· 菜品 4 象限 · Menu Engineering 模型</p>
+          <p>· 3-4 月预测 · 时序外推 80% 置信带</p>
+          <p>· 年化冲击 <em>¥470K</em> · 按当前刚性外推 12 月</p>
+          <p>· Rx 排序 · "投入 × 影响" 启发式</p>
+        </div>
+      </div>
+      <div class="follow-up">
+        <div class="follow-up-label">▸ 你可能还想问</div>
+        <div class="follow-up-chips">
+          <div class="follow-up-chip">Rx 第 1 条的详细排班表</div>
+          <div class="follow-up-chip">淘汰 12 道菜的具体清单</div>
+          <div class="follow-up-chip">储值唤醒的短信文案</div>
+          <div class="follow-up-chip">怎么补齐 P&amp;L 三张表</div>
+          <div class="follow-up-chip">对比去年同期</div>
+        </div>
+      </div>
+      <p style="margin-top: 12px; font-family: var(--mono); font-size: 10px; color: var(--ink-dim);">所有诊断逻辑都可以追溯. 需要原始 SQL 或计算过程, 随时问我 <em>"给我看原始"</em>.</p>
+    `
+  }
+];
+
+// ==================== RENDERER ====================
+const chat = document.getElementById('chat');
+const progCur = document.getElementById('prog-cur');
+const progTotal = document.getElementById('prog-total');
+const btnNext = document.getElementById('btn-next');
+const btnToggle = document.getElementById('btn-toggle');
+const btnRestart = document.getElementById('btn-restart');
+const endMarker = document.getElementById('end-marker');
+
+let idx = 0;
+let autoplay = false;
+let autoTimer = null;
+progTotal.textContent = turns.length;
+
+function scrollToBottom() {
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+}
+
+function renderUserTurn(turn) {
+  const div = document.createElement('div');
+  div.className = 'turn user';
+  div.innerHTML = `<div class="bubble-user">${turn.text}</div>`;
+  chat.appendChild(div);
+  requestAnimationFrame(() => div.classList.add('visible'));
+  scrollToBottom();
+}
+
+function renderTypingIndicator() {
+  const div = document.createElement('div');
+  div.className = 'turn ai typing-wrap';
+  div.innerHTML = `
+    <div class="ai-avatar">Rx</div>
+    <div class="typing visible">
+      <div class="typing-bubble"><span></span><span></span><span></span></div>
+    </div>
+  `;
+  chat.appendChild(div);
+  requestAnimationFrame(() => div.classList.add('visible'));
+  scrollToBottom();
+  return div;
+}
+
+function renderAiTurn(turn, typingNode) {
+  typingNode.remove();
+  const div = document.createElement('div');
+  div.className = 'turn ai';
+  div.innerHTML = `
+    <div class="ai-avatar">Rx</div>
+    <div class="bubble-ai">
+      <div class="ai-label">▸ ${turn.label}</div>
+      <div class="ai-text">${turn.html}</div>
+    </div>
+  `;
+  chat.appendChild(div);
+  requestAnimationFrame(() => {
+    div.classList.add('visible');
+    // animate bar fills if any
+    div.querySelectorAll('.bar-fill, .benchmark-bar-fill').forEach(bar => {
+      const w = bar.style.width;
+      bar.style.width = '0';
+      setTimeout(() => bar.style.width = w, 100);
+    });
+    renderHeatSingle(div);
+  });
+  scrollToBottom();
+}
+
+function renderHeatSingle(node) {
+  const bar = node.querySelector('#heat-a-bar');
+  const hours = node.querySelector('#heat-a-hours');
+  if (!bar || !hours) return;
+  // dark theme palette: dim → critical red
+  const palette = ['#1c2238', '#2a3048', '#3a3a52', '#5a3848', '#8a3850', '#c0365a', '#ff3b5c', '#ff5577'];
+  function intensity(h) {
+    let v = 0.05;
+    // lunch peak around 12
+    const lunchDist = Math.abs(h - 12);
+    if (lunchDist < 2.5) v += (1 - lunchDist / 2.5) * 0.55;
+    // dinner peak around 19
+    const dinnerDist = Math.abs(h - 19);
+    if (dinnerDist < 3) v += (1 - dinnerDist / 3) * 0.95;
+    // afternoon 14-17 very low (empty window)
+    if (h >= 14 && h < 17) v = Math.max(0.04, v * 0.2);
+    // late tail
+    if (h >= 21 && h < 23) v += 0.06 * (1 - (h - 21) / 2);
+    return Math.max(0, Math.min(1, v));
+  }
+  let barHtml = '', hoursHtml = '';
+  for (let h = 0; h < 24; h++) {
+    const v = intensity(h);
+    const idx = Math.min(palette.length - 1, Math.floor(v * palette.length));
+    barHtml += `<div class="heat-single-cell" style="background:${palette[idx]}"></div>`;
+    hoursHtml += `<div>${h % 4 === 0 ? String(h).padStart(2, '0') : '&nbsp;'}</div>`;
+  }
+  bar.innerHTML = barHtml;
+  hours.innerHTML = hoursHtml;
+}
+
+async function advance() {
+  if (idx >= turns.length) {
+    endMarker.classList.add('visible');
+    stopAuto();
+    btnNext.disabled = true;
+    btnToggle.disabled = true;
+    return;
+  }
+  const turn = turns[idx];
+  idx++;
+  progCur.textContent = idx;
+
+  if (turn.role === 'user') {
+    renderUserTurn(turn);
+  } else {
+    const typing = renderTypingIndicator();
+    await sleep(900);
+    renderAiTurn(turn, typing);
+  }
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function autoStep() {
+  if (!autoplay) return;
+  await advance();
+  if (idx >= turns.length) return;
+  const nextDelay = turns[idx - 1].role === 'user' ? 600 : 2400;
+  autoTimer = setTimeout(autoStep, nextDelay);
+}
+
+function startAuto() {
+  autoplay = true;
+  btnToggle.textContent = '❚❚ 暂停';
+  autoStep();
+}
+
+function stopAuto() {
+  autoplay = false;
+  btnToggle.textContent = '▶ 自动播放';
+  if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
+}
+
+function clearHint() {
+  const hint = chat.querySelector('.start-hint');
+  if (hint) hint.remove();
+}
+function showStartHint() {
+  chat.innerHTML = `
+    <div class="start-hint" style="text-align: center; padding: 70px 20px;">
+      <div style="font-family: var(--display); font-size: 44px; color: var(--critical); margin-bottom: 14px; animation: hint-bob 2s ease-in-out infinite; text-shadow: 0 0 16px var(--critical-glow);">▼</div>
+      <div style="font-family: var(--serif); font-size: 16px; color: var(--ink); margin-bottom: 10px;">点击下方 <strong style="color: var(--critical); font-weight: 700;">▶ 自动播放</strong> 开始会话回放</div>
+      <div style="font-family: var(--mono); font-size: 10px; color: var(--ink-mute); letter-spacing: 2px;">9 ROUNDS · ≈ 40 SECONDS</div>
+    </div>
+    <style>@keyframes hint-bob { 0%, 100% { transform: translateY(0); opacity: 0.65; } 50% { transform: translateY(6px); opacity: 1; } }</style>
+  `;
+}
+
+btnNext.addEventListener('click', () => {
+  clearHint();
+  stopAuto();
+  advance();
+});
+btnToggle.addEventListener('click', () => {
+  clearHint();
+  if (autoplay) stopAuto();
+  else startAuto();
+});
+btnRestart.addEventListener('click', () => {
+  stopAuto();
+  chat.innerHTML = '';
+  endMarker.classList.remove('visible');
+  idx = 0;
+  progCur.textContent = 0;
+  btnNext.disabled = false;
+  btnToggle.disabled = false;
+  showStartHint();
+});
+
+showStartHint();
+</script>
+</body>
+</html>

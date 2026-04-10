@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartBI · 连锁对话 · 青花椒</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Noto+Serif+SC:wght@400;700;900&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream: #faf7f0;
+  --cream-deep: #f2ece0;
+  --paper: #fefcf6;
+  --ink: #1a1a1a;
+  --ink-soft: #3d3d3d;
+  --ink-dim: #6b6b6b;
+  --ink-mute: #a8a29e;
+  --forest: #2d4a3e;
+  --forest-light: #4a6b5c;
+  --burgundy: #8b1a1a;
+  --burgundy-soft: #b23838;
+  --gold: #c9a66b;
+  --gold-deep: #a68449;
+  --rule: #d4cdb8;
+  --rule-soft: #e8e1cc;
+  --bg-user: #2d4a3e;
+  --serif: 'Playfair Display', 'Noto Serif SC', Georgia, serif;
+  --serif-cn: 'Noto Serif SC', 'Songti SC', serif;
+  --sans: 'IBM Plex Sans', 'PingFang SC', -apple-system, sans-serif;
+  --mono: 'Space Mono', 'SF Mono', Consolas, monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+body {
+  background-image:
+    radial-gradient(circle at 10% 10%, rgba(201, 166, 107, 0.05), transparent 40%),
+    radial-gradient(circle at 90% 90%, rgba(45, 74, 62, 0.04), transparent 40%);
+  min-height: 100vh;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65'/%3E%3CfeColorMatrix values='0 0 0 0 0.4 0 0 0 0 0.3 0 0 0 0 0.1 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  z-index: 1;
+  opacity: 0.5;
+}
+
+.app {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 40px 24px 140px;
+  position: relative;
+  z-index: 2;
+}
+
+/* ========== MASTHEAD ========== */
+.masthead {
+  border-top: 5px double var(--ink);
+  border-bottom: 1px solid var(--ink);
+  padding: 22px 0 20px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 24px;
+  align-items: baseline;
+  margin-bottom: 32px;
+}
+.mast-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  line-height: 1.5;
+}
+.mast-title {
+  font-family: var(--serif);
+  font-weight: 900;
+  font-size: 28px;
+  letter-spacing: -0.3px;
+  line-height: 1;
+  text-align: center;
+}
+.mast-title em { font-style: italic; color: var(--forest); font-weight: 700; }
+.mast-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-align: right;
+  color: var(--ink-dim);
+  line-height: 1.6;
+}
+
+/* ========== SESSION INTRO ========== */
+.session-intro {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--gold);
+  padding: 18px 24px;
+  margin-bottom: 36px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--ink-soft);
+}
+.session-intro strong { color: var(--forest); font-style: normal; font-weight: 700; }
+
+/* ========== CHAT ========== */
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.turn {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.65s ease, transform 0.65s ease;
+}
+.turn.visible { opacity: 1; transform: translateY(0); }
+
+/* User bubble */
+.turn.user { display: flex; justify-content: flex-end; }
+.bubble-user {
+  max-width: 74%;
+  background: var(--bg-user);
+  color: var(--cream);
+  border-radius: 14px 14px 4px 14px;
+  padding: 15px 20px;
+  font-family: var(--serif-cn);
+  font-size: 15px;
+  line-height: 1.6;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(45, 74, 62, 0.15);
+}
+.bubble-user::after {
+  content: "总经理 · 青花椒总部";
+  position: absolute;
+  bottom: -18px;
+  right: 4px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--ink-mute);
+  letter-spacing: 0.8px;
+}
+
+/* AI bubble */
+.turn.ai {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.ai-avatar {
+  width: 42px; height: 42px;
+  background: var(--paper);
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--serif);
+  font-size: 18px;
+  font-style: italic;
+  font-weight: 900;
+  color: var(--gold-deep);
+  flex-shrink: 0;
+}
+.bubble-ai {
+  flex: 1;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px 14px 14px 14px;
+  padding: 22px 26px 24px;
+  position: relative;
+}
+.bubble-ai::before {
+  content: "";
+  position: absolute;
+  left: -1px; top: -1px; bottom: -1px;
+  width: 4px;
+  background: var(--gold);
+}
+.ai-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--rule);
+}
+.ai-text {
+  font-family: var(--serif-cn);
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--ink-soft);
+}
+.ai-text p { margin-bottom: 10px; }
+.ai-text p:last-child { margin-bottom: 0; }
+.ai-text strong { color: var(--burgundy); font-weight: 700; }
+.ai-text em {
+  font-style: italic;
+  color: var(--forest);
+  font-weight: 700;
+  font-family: var(--serif);
+}
+
+/* Typing */
+.typing-wrap {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.typing-bubble {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  padding: 16px 22px;
+  display: flex;
+  gap: 6px;
+}
+.typing-bubble span {
+  width: 7px; height: 7px;
+  background: var(--gold);
+  border-radius: 50%;
+  animation: typing 1.2s infinite;
+}
+.typing-bubble span:nth-child(2) { animation-delay: 0.2s; }
+.typing-bubble span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-4px); }
+}
+
+/* ========== AI CONTENT ========== */
+.headline-stat {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 18px;
+  margin-top: 14px;
+  padding: 18px 0;
+  border-top: 1px dotted var(--rule);
+  border-bottom: 1px dotted var(--rule);
+}
+.hs-item { text-align: center; }
+.hs-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 6px;
+}
+.hs-val {
+  font-family: var(--serif);
+  font-size: 32px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--forest);
+}
+.hs-val.burgundy { color: var(--burgundy); }
+.hs-val.gold { color: var(--gold-deep); }
+.hs-sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--ink-mute);
+  margin-top: 4px;
+}
+
+/* Ranking mini table */
+.rank-table {
+  margin-top: 12px;
+  border: 1px solid var(--rule);
+  background: var(--cream);
+}
+.rank-row {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px dotted var(--rule);
+  font-family: var(--serif-cn);
+  font-size: 13px;
+}
+.rank-row:last-child { border-bottom: none; }
+.rank-row .num {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--gold);
+}
+.rank-row .num.burgundy { color: var(--burgundy); }
+.rank-row .num.muted { color: var(--ink-mute); font-size: 16px; }
+.rank-row .store strong { display: block; color: var(--ink); font-weight: 700; }
+.rank-row .store small {
+  font-family: var(--sans);
+  font-size: 11px;
+  color: var(--ink-dim);
+  font-weight: 400;
+}
+.rank-row .val {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--forest);
+  text-align: right;
+}
+.rank-row .val.burgundy { color: var(--burgundy); }
+
+/* Trend spark */
+.spark-block {
+  margin-top: 12px;
+  padding: 16px 20px;
+  background: var(--cream);
+  border: 1px solid var(--rule);
+}
+.spark-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 10px;
+}
+.spark-svg {
+  width: 100%;
+  height: 120px;
+}
+.rating-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dotted var(--rule);
+  text-align: center;
+}
+.rating-pt {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--ink-dim);
+}
+.rating-pt strong {
+  display: block;
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.rating-pt.h strong { color: var(--forest); }
+.rating-pt.m strong { color: var(--gold-deep); }
+.rating-pt.l strong { color: var(--burgundy); }
+
+/* Review cards */
+.review-list {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.review-card {
+  border: 1px solid var(--rule);
+  padding: 12px 16px;
+  background: var(--cream);
+  border-left: 4px solid var(--forest);
+}
+.review-card.warn { border-left-color: var(--gold); }
+.review-card.neg { border-left-color: var(--burgundy); }
+.review-head {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.review-score {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 8px;
+  border: 1px solid currentColor;
+  color: var(--forest);
+  letter-spacing: 0.5px;
+}
+.review-score.warn { color: var(--gold-deep); }
+.review-score.neg { color: var(--burgundy); }
+.review-quote {
+  font-family: var(--serif-cn);
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+/* Rx list */
+.rx {
+  margin-top: 12px;
+  counter-reset: rx;
+}
+.rx-item {
+  counter-increment: rx;
+  padding: 14px 0 14px 46px;
+  border-bottom: 1px dotted var(--rule);
+  position: relative;
+}
+.rx-item:last-child { border-bottom: none; }
+.rx-item::before {
+  content: counter(rx, decimal-leading-zero);
+  position: absolute;
+  left: 0; top: 14px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--gold);
+  line-height: 0.9;
+}
+.rx-title {
+  font-family: var(--serif-cn);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.rx-title em { font-style: italic; color: var(--forest); font-weight: 700; font-family: var(--serif); }
+.rx-desc {
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--ink-dim);
+  line-height: 1.6;
+}
+
+/* Heatmap grid (compact) */
+.heat-compact {
+  margin-top: 12px;
+  padding: 16px 18px;
+  background: var(--cream);
+  border: 1px solid var(--rule);
+}
+.heat-compact-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 10px;
+}
+.heat-bar {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 2px;
+  height: 40px;
+}
+.heat-cell {
+  background: var(--rule-soft);
+  border-radius: 1px;
+}
+.heat-hours {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 2px;
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--ink-mute);
+  text-align: center;
+}
+.heat-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dotted var(--rule);
+  text-align: center;
+}
+.heat-summary div {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--ink-dim);
+}
+.heat-summary div strong {
+  display: block;
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--forest);
+  margin-bottom: 2px;
+}
+
+/* ========== CONTROLS ========== */
+.controls {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  border-radius: 40px;
+  padding: 10px 20px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  box-shadow: 0 8px 24px rgba(45, 74, 62, 0.15);
+  z-index: 10;
+}
+.ctrl-btn {
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ctrl-btn:hover {
+  border-color: var(--forest);
+  color: var(--forest);
+}
+.ctrl-btn.primary {
+  background: var(--forest);
+  border-color: var(--forest);
+  color: var(--cream);
+}
+.ctrl-btn.primary:hover { background: var(--forest-light); }
+.progress {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-dim);
+  letter-spacing: 1px;
+  padding: 0 4px;
+}
+.progress strong { color: var(--forest); }
+
+/* End marker */
+.end-marker {
+  text-align: center;
+  padding: 50px 0 20px;
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+.end-marker.visible { opacity: 1; }
+.end-marker-line {
+  display: inline-block;
+  padding: 10px 28px;
+  border-top: 1px solid var(--gold);
+  border-bottom: 1px solid var(--gold);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+}
+
+/* ===== New modules ===== */
+.calib-stage {
+  padding: 10px 14px;
+  background: var(--cream);
+  margin-bottom: 8px;
+  border-left-width: 3px;
+  border-left-style: solid;
+}
+.calib-stage:last-child { margin-bottom: 0; }
+.calib-stage.good { border-left-color: var(--forest); }
+.calib-stage.warn { border-left-color: var(--gold); }
+.calib-stage.crit { border-left-color: var(--burgundy); }
+.calib-stage-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--ink-dim);
+  letter-spacing: 1px;
+}
+.calib-stage-text {
+  font-family: var(--serif-cn);
+  font-size: 13px;
+  color: var(--ink);
+  margin-top: 3px;
+  line-height: 1.5;
+}
+.calib-stage-text strong { color: var(--burgundy); font-weight: 700; }
+
+.rfm-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 14px;
+}
+.rfm-cell {
+  padding: 14px 10px;
+  text-align: center;
+  border: 1px solid var(--rule);
+}
+.rfm-cell.vip { background: #2d4a3e; color: var(--cream); border-color: #1e3329; }
+.rfm-cell.core { background: #4a6b5c; color: var(--cream); border-color: #2d4a3e; }
+.rfm-cell.potential { background: #c9a66b; color: var(--ink); }
+.rfm-cell.new { background: #e8dfc4; color: var(--ink); }
+.rfm-cell.risk { background: #b23838; color: var(--cream); border-color: #8b1a1a; }
+.rfm-cell.lost { background: #8b1a1a; color: var(--cream); border-color: #5a1010; }
+.rfm-cell-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  opacity: 0.85;
+}
+.rfm-cell-val {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1;
+}
+.rfm-cell-pct {
+  font-family: var(--mono);
+  font-size: 9px;
+  margin-top: 4px;
+  opacity: 0.75;
+}
+
+.prov-block {
+  padding: 14px 18px;
+  background: var(--cream);
+  border: 1px solid var(--rule);
+  margin-top: 8px;
+  border-left-width: 4px;
+  border-left-style: solid;
+}
+.prov-block.good { border-left-color: var(--forest); }
+.prov-block.est { border-left-color: var(--gold); background: var(--cream-deep); border-style: solid dashed dashed dashed; }
+.prov-block.gap { border-left-color: var(--burgundy); background: var(--cream-deep); border-style: solid dashed dashed dashed; }
+.prov-block-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.prov-block.good .prov-block-title { color: var(--forest); }
+.prov-block.est .prov-block-title { color: var(--gold-deep); }
+.prov-block.gap .prov-block-title { color: var(--burgundy); }
+
+.follow-up {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px dotted var(--rule);
+}
+.follow-up-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+  margin-bottom: 12px;
+}
+.follow-up-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.follow-up-chip {
+  font-family: var(--serif-cn);
+  font-size: 12px;
+  padding: 7px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 18px;
+  background: var(--cream);
+  color: var(--ink-soft);
+  transition: all 0.2s;
+}
+.follow-up-chip:hover {
+  color: var(--forest);
+  border-color: var(--forest);
+  background: var(--paper);
+}
+
+.back-link {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-soft);
+  text-decoration: none;
+  letter-spacing: 1.5px;
+  padding: 8px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 20px;
+  background: rgba(254, 252, 246, 0.9);
+  backdrop-filter: blur(8px);
+  z-index: 20;
+  transition: all 0.2s;
+}
+.back-link:hover {
+  color: var(--forest);
+  border-color: var(--forest);
+}
+
+@media (max-width: 640px) {
+  .app { padding: 24px 14px 140px; }
+  .masthead { grid-template-columns: 1fr; text-align: center; gap: 10px; }
+  .mast-meta { text-align: center; }
+  .mast-title { font-size: 22px; }
+  .bubble-user { max-width: 86%; }
+  .bubble-ai { padding: 18px 20px; }
+  .headline-stat { grid-template-columns: 1fr; gap: 12px; }
+  .controls { padding: 8px 12px; gap: 6px; }
+  .ctrl-btn { padding: 6px 10px; font-size: 10px; }
+}
+</style>
+</head>
+<body>
+<a href="index.html" class="back-link">← 返回 Demo 中心</a>
+<div class="app">
+
+  <header class="masthead">
+    <div class="mast-label">Cretas SmartBI<br>Restaurant Chain</div>
+    <div class="mast-title">连锁诊断会话 &middot; <em>青花椒</em></div>
+    <div class="mast-meta">
+      Vol. Ⅱ &middot; Q1 / 2026<br>
+      Session Replay
+    </div>
+  </header>
+
+  <div class="session-intro">
+    <strong>▸ 会话场景</strong> &mdash; 青花椒总部把全连锁 17 家门店的 POS 数据和抓取来的 480 条大众点评评论上传到 SmartBI 后, 总经理开始问诊. 下面是完整对话回放, 共 <strong>11</strong> 轮问答. 点击"自动播放"观看回放, 或"下一步"手动推进.
+  </div>
+
+  <div class="chat" id="chat"></div>
+
+  <div class="end-marker" id="end-marker">
+    <span class="end-marker-line">─── 会话结束 · END OF SESSION ───</span>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="ctrl-btn" id="btn-restart">↻ 重播</button>
+  <button class="ctrl-btn primary" id="btn-toggle">▶ 自动播放</button>
+  <button class="ctrl-btn" id="btn-next">下一步 →</button>
+  <span class="progress"><strong id="prog-cur">0</strong> / <span id="prog-total">0</span></span>
+</div>
+
+<script>
+const turns = [
+  {
+    role: 'user',
+    text: '帮我整体看一下 17 家店的情况, 本季度表现怎么样?'
+  },
+  {
+    role: 'ai',
+    label: 'OVERVIEW · 连锁总览',
+    html: `
+      <p>总经理您好. 17 家门店的数据已完成解析. 先看三个最关键的指标:</p>
+      <div class="headline-stat">
+        <div class="hs-item">
+          <div class="hs-label">门店数</div>
+          <div class="hs-val">17</div>
+          <div class="hs-sub">上海 · 苏州 · 南通</div>
+        </div>
+        <div class="hs-item">
+          <div class="hs-label">POS 样本</div>
+          <div class="hs-val">4,051</div>
+          <div class="hs-sub">本季度订单行</div>
+        </div>
+        <div class="hs-item">
+          <div class="hs-label">SKU 归一</div>
+          <div class="hs-val burgundy">−33.79%</div>
+          <div class="hs-sub">1,018 → 674</div>
+        </div>
+      </div>
+      <p style="margin-top: 14px;">大盘整体<em>稳定</em>, 但有几个值得立刻关注的信号 &mdash; 系统发现 <strong>1 家门店出现重大异常</strong>, 以及一个跨全连锁的<em>客户评分下行趋势</em>. 您想先看哪个?</p>
+    `
+  },
+  {
+    role: 'user',
+    text: '先别急, 拿川菜其他连锁跟我比一下, 青花椒在同量级品牌里排第几?'
+  },
+  {
+    role: 'ai',
+    label: 'CROSS-CHAIN BENCHMARK · 跨连锁对标',
+    html: `
+      <p>调出<em>川菜子行业连锁池</em>, 用 SmartBI 跨连锁对标引擎把青花椒放到同量级品牌(15-30 家门店)里对比:</p>
+      <div class="rank-table">
+        <div class="rank-row" style="border-bottom: 2px solid var(--forest); background: var(--cream-deep);">
+          <div class="num" style="font-size: 13px; color: var(--ink-dim); font-style: normal;">#</div>
+          <div class="store"><strong style="font-size: 11px; color: var(--ink-dim); letter-spacing: 1px; font-family: var(--mono);">连锁品牌</strong></div>
+          <div class="val" style="color: var(--ink-dim); font-size: 11px; font-weight: 400;">评分 / SKU 数</div>
+        </div>
+        <div class="rank-row">
+          <div class="num">1</div>
+          <div class="store"><strong>蜀大侠火锅</strong><small>43 家门店 · 四川成都</small></div>
+          <div class="val">4.71 / 412</div>
+        </div>
+        <div class="rank-row">
+          <div class="num">2</div>
+          <div class="store"><strong>小龙坎</strong><small>28 家门店 · 川菜连锁</small></div>
+          <div class="val">4.58 / 389</div>
+        </div>
+        <div class="rank-row" style="background: rgba(45, 74, 62, 0.1);">
+          <div class="num" style="color: var(--forest);">3</div>
+          <div class="store"><strong style="color: var(--forest);">青花椒 ← 您</strong><small>17 家门店 · 川菜连锁</small></div>
+          <div class="val" style="color: var(--forest);">4.30 / 674</div>
+        </div>
+        <div class="rank-row">
+          <div class="num">4</div>
+          <div class="store"><strong>眷食堂</strong><small>22 家门店 · 川菜轻正餐</small></div>
+          <div class="val">4.25 / 298</div>
+        </div>
+        <div class="rank-row">
+          <div class="num burgundy">5</div>
+          <div class="store"><strong>X 椒麻</strong><small>19 家门店 · 川菜</small></div>
+          <div class="val burgundy">4.18 / 521</div>
+        </div>
+      </div>
+      <p style="margin-top: 16px;">三个有意思的发现:</p>
+      <p>· <strong>SKU 数同量级最重</strong>(674) &mdash; 归一后仍是同量级连锁里菜单最厚的, <em>还有精简空间</em></p>
+      <p>· <em>评分排第 3</em>, 领先眷食堂 / X 椒麻, 但距离 Top 2 差距明显 (0.28-0.41 分)</p>
+      <p>· 爆款集中度低于 Top 2 &mdash; 蜀大侠和小龙坎都有更明确的"记忆点菜品", 青花椒的双花爆款还不够强势</p>
+      <p style="font-family: var(--mono); font-size: 10px; color: var(--ink-mute); margin-top: 8px;">▸ 对标池: Cretas 川菜连锁库 · N=14 品牌 · 本季度公开数据</p>
+    `
+  },
+  {
+    role: 'user',
+    text: '好的, 现在说那家异常的门店 &mdash; 排个名给我看.'
+  },
+  {
+    role: 'ai',
+    label: 'STORE RANKING · 门店排行',
+    html: `
+      <p>按本季度 SKU 活跃度和营业额综合排名. Top 3 是健康门店, 第 14 位的<strong>大丸百货店</strong>被系统识别为<strong>异常偏移</strong>:</p>
+      <div class="rank-table">
+        <div class="rank-row">
+          <div class="num">1</div>
+          <div class="store"><strong>松江地中海店</strong><small>松江 · 地中海购物广场</small></div>
+          <div class="val">332 SKU</div>
+        </div>
+        <div class="rank-row">
+          <div class="num">2</div>
+          <div class="store"><strong>第一百货店</strong><small>黄浦 · 第一百货商业中心</small></div>
+          <div class="val">287 SKU</div>
+        </div>
+        <div class="rank-row">
+          <div class="num">3</div>
+          <div class="store"><strong>陆家嘴店</strong><small>浦东 · 金融区</small></div>
+          <div class="val">261 SKU</div>
+        </div>
+        <div class="rank-row">
+          <div class="num burgundy">14</div>
+          <div class="store"><strong>大丸百货店</strong><small>黄浦 · 大丸百货 · <strong>Q4 异常</strong></small></div>
+          <div class="val burgundy">−37.4%</div>
+        </div>
+        <div class="rank-row">
+          <div class="num muted">···</div>
+          <div class="store" style="color: var(--ink-mute); font-style: italic;">其余 13 家详情可展开</div>
+          <div class="val" style="color: var(--ink-mute);">&nbsp;</div>
+        </div>
+      </div>
+      <p style="margin-top: 12px;">大丸店不是季节波动 &mdash; 同期其它 16 家整体持稳. 建议派督导现场复盘: <em>商圈竞品、物业人流、餐饮楼层调整</em>.</p>
+    `
+  },
+  {
+    role: 'user',
+    text: '大丸店 -37% 具体是怎么跌的? 有没有时间线?'
+  },
+  {
+    role: 'ai',
+    label: 'CALIBRATION DRILL · 大丸店月度校准',
+    html: `
+      <p>月度校准引擎(<em>MonthlyCalibrationReporter</em>)按月份拆解大丸店的偏离度, 12 个月的时间线是这样的:</p>
+      <div class="spark-block">
+        <div class="spark-title">大丸店 · 月度校准因子 · 12 MONTHS</div>
+        <svg class="spark-svg" viewBox="0 0 600 120" preserveAspectRatio="none">
+          <line x1="0" y1="60" x2="600" y2="60" stroke="#c9a66b" stroke-dasharray="4,4"/>
+          <text x="8" y="56" font-family="Space Mono" font-size="9" fill="#a68449">基线 1.0</text>
+          <rect x="40" y="55" width="30" height="10" fill="#2d4a3e"/>
+          <rect x="78" y="52" width="30" height="13" fill="#2d4a3e"/>
+          <rect x="116" y="50" width="30" height="15" fill="#2d4a3e"/>
+          <rect x="154" y="48" width="30" height="17" fill="#2d4a3e"/>
+          <rect x="192" y="50" width="30" height="15" fill="#2d4a3e"/>
+          <rect x="230" y="55" width="30" height="10" fill="#4a6b5c"/>
+          <rect x="268" y="58" width="30" height="8" fill="#4a6b5c"/>
+          <rect x="306" y="60" width="30" height="12" fill="#c9a66b"/>
+          <rect x="344" y="60" width="30" height="18" fill="#c9a66b"/>
+          <rect x="382" y="60" width="30" height="28" fill="#b23838"/>
+          <rect x="420" y="60" width="30" height="38" fill="#8b1a1a"/>
+          <rect x="458" y="60" width="30" height="42" fill="#8b1a1a"/>
+          <text x="55" y="115" font-family="Space Mono" font-size="8" fill="#a8a29e" text-anchor="middle">M-11</text>
+          <text x="207" y="115" font-family="Space Mono" font-size="8" fill="#a8a29e" text-anchor="middle">M-7</text>
+          <text x="321" y="115" font-family="Space Mono" font-size="8" fill="#c9a66b" text-anchor="middle">M-3 预警</text>
+          <text x="473" y="115" font-family="Space Mono" font-size="8" fill="#8b1a1a" text-anchor="middle">本月</text>
+        </svg>
+      </div>
+      <div style="margin-top: 14px;">
+        <div class="calib-stage good">
+          <div class="calib-stage-label">阶段 1 · M-11 → M-6 · 稳定期</div>
+          <div class="calib-stage-text">校准因子 0.95-1.05, 正常范围内. 和全连锁同步.</div>
+        </div>
+        <div class="calib-stage warn">
+          <div class="calib-stage-label">阶段 2 · M-5 → M-3 · 预警期</div>
+          <div class="calib-stage-text">开始下滑 &mdash; 午市订单量率先掉 12%, 晚市仍稳定. 系统在 M-3 发出首次预警.</div>
+        </div>
+        <div class="calib-stage crit">
+          <div class="calib-stage-label">阶段 3 · M-2 → 本月 · 急跌期</div>
+          <div class="calib-stage-text">晚市也开始萎缩 &mdash; <strong>从"局部问题"变成"系统性问题"的拐点</strong>.</div>
+        </div>
+      </div>
+      <p style="margin-top: 14px;">系统的推断: 这不是单一事件(比如一次食品安全), 而是<em>渐进式客流流失</em>. 最可能的三个原因: <strong>(1) 物业楼层调整</strong> / <strong>(2) 周边新开竞品</strong> / <strong>(3) 地铁停车动线变化</strong>. 现场督导建议从这三个方向切入.</p>
+    `
+  },
+  {
+    role: 'user',
+    text: '那客户评分下行是怎么回事? 具体降了多少?'
+  },
+  {
+    role: 'ai',
+    label: 'RATING TREND · 评分趋势',
+    html: `
+      <p>480 条大众点评评论的样本, 过去 5 个月评分曲线是这样的:</p>
+      <div class="spark-block">
+        <div class="spark-title">RATING TREND · 5 MONTHS · N=480</div>
+        <svg class="spark-svg" viewBox="0 0 600 120" preserveAspectRatio="none">
+          <line x1="0" y1="20" x2="600" y2="20" stroke="#e8e1cc" stroke-dasharray="2,4"/>
+          <line x1="0" y1="60" x2="600" y2="60" stroke="#e8e1cc" stroke-dasharray="2,4"/>
+          <line x1="0" y1="100" x2="600" y2="100" stroke="#1a1a1a"/>
+          <path d="M 60 30 L 195 42 L 330 58 L 465 76 L 560 98 L 560 110 L 60 110 Z"
+                fill="url(#grad)" opacity="0.2"/>
+          <defs>
+            <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#2d4a3e"/>
+              <stop offset="100%" stop-color="#8b1a1a"/>
+            </linearGradient>
+          </defs>
+          <path d="M 60 30 L 195 42 L 330 58 L 465 76 L 560 98"
+                fill="none" stroke="#8b1a1a" stroke-width="2.5" stroke-linejoin="round"/>
+          <circle cx="60" cy="30" r="5" fill="#2d4a3e" stroke="#faf7f0" stroke-width="2"/>
+          <circle cx="195" cy="42" r="5" fill="#4a6b5c" stroke="#faf7f0" stroke-width="2"/>
+          <circle cx="330" cy="58" r="5" fill="#c9a66b" stroke="#faf7f0" stroke-width="2"/>
+          <circle cx="465" cy="76" r="5" fill="#b23838" stroke="#faf7f0" stroke-width="2"/>
+          <circle cx="560" cy="98" r="6" fill="#8b1a1a" stroke="#faf7f0" stroke-width="2"/>
+        </svg>
+        <div class="rating-row">
+          <div class="rating-pt h"><strong>4.93</strong>M-5</div>
+          <div class="rating-pt h"><strong>4.82</strong>M-4</div>
+          <div class="rating-pt m"><strong>4.68</strong>M-3</div>
+          <div class="rating-pt m"><strong>4.51</strong>M-2</div>
+          <div class="rating-pt l"><strong>4.30</strong>M-1</div>
+        </div>
+      </div>
+      <p style="margin-top: 12px;">从 <em>4.93</em> 跌到 <strong>4.30</strong>, 累计下滑 <strong>−0.63 分</strong>. 关键问题: <em>这个下滑不是菜品问题</em>, 稍后我会从评论文本里拆给您看.</p>
+    `
+  },
+  {
+    role: 'user',
+    text: '那评论里顾客到底在说什么? 菜好不好?'
+  },
+  {
+    role: 'ai',
+    label: 'REVIEW INTELLIGENCE · DeepSeek 抽取',
+    html: `
+      <p>通过 DeepSeek V3.2 对 480 条评论做结构化抽取, 按"提及 SKU × 情感倾向"聚合, 结论很有意思:</p>
+      <div class="review-list">
+        <div class="review-card">
+          <div class="review-head">
+            <span>青花椒鱼</span>
+            <span class="review-score">100% POS</span>
+          </div>
+          <div class="review-quote">"招牌就是招牌 &mdash; 花椒的麻、青椒的香、鱼肉的嫩, 都做到位了, 值得专程来吃."</div>
+        </div>
+        <div class="review-card">
+          <div class="review-head">
+            <span>花椒鱼</span>
+            <span class="review-score">100% POS</span>
+          </div>
+          <div class="review-quote">"和青花椒鱼是兄弟菜 &mdash; 不同顾客从不同角度都给出一致好评, 标品爆款的典型信号."</div>
+        </div>
+        <div class="review-card warn">
+          <div class="review-head">
+            <span>酸菜鱼</span>
+            <span class="review-score warn">85.7% POS</span>
+          </div>
+          <div class="review-quote">"酸度合适, 但部分门店(3 号 / 11 号)酸菜偏咸 &mdash; 连锁常见的<strong>门店方差</strong>, 需要 SOP 校准."</div>
+        </div>
+        <div class="review-card neg">
+          <div class="review-head">
+            <span>服务 &amp; 环境</span>
+            <span class="review-score neg">↓ 评分主拖累</span>
+          </div>
+          <div class="review-quote">"等位太久、上菜慢、服务员脸色 &mdash; 这才是 4.93 到 4.30 下滑的<strong>真正原因</strong>, 不在菜."</div>
+        </div>
+      </div>
+      <p style="margin-top: 12px;">一句话: <em>菜还是好菜, 服务体验拖了后腿</em>. 爆款菜品的品牌资产还在, 但如果服务再滑下去, 招牌也会被拖累.</p>
+    `
+  },
+  {
+    role: 'user',
+    text: '哪些菜卖得最好? 全连锁 Top 10 给我看看.'
+  },
+  {
+    role: 'ai',
+    label: 'TOP SELLERS · 全连锁菜品销量 Top 10',
+    html: `
+      <p>基于 17 家门店 × 本季度 POS 聚合, 按总销量排序:</p>
+      <div class="rank-table" style="margin-top: 12px;">
+        <div class="rank-row">
+          <div class="num">1</div>
+          <div class="store"><strong>青花椒鱼</strong><small>招牌 · 全店覆盖率 100%</small></div>
+          <div class="val">14,283 份</div>
+        </div>
+        <div class="rank-row">
+          <div class="num">2</div>
+          <div class="store"><strong>花椒鱼</strong><small>兄弟菜 · 全店覆盖率 100%</small></div>
+          <div class="val">9,841 份</div>
+        </div>
+        <div class="rank-row">
+          <div class="num">3</div>
+          <div class="store"><strong>酸菜鱼</strong><small>全店覆盖率 94% · 门店方差高</small></div>
+          <div class="val">7,526 份</div>
+        </div>
+        <div class="rank-row">
+          <div class="num">4</div>
+          <div class="store"><strong>水煮肉片</strong><small>川菜经典 · 走量稳定</small></div>
+          <div class="val">5,912 份</div>
+        </div>
+        <div class="rank-row">
+          <div class="num">5</div>
+          <div class="store"><strong>麻婆豆腐</strong><small>口碑菜 · 毛利中等</small></div>
+          <div class="val">4,733 份</div>
+        </div>
+        <div class="rank-row">
+          <div class="num muted">6-10</div>
+          <div class="store" style="color: var(--ink-mute); font-style: italic;">夫妻肺片 · 口水鸡 · 宫保鸡丁 · 辣子鸡 · 毛血旺</div>
+          <div class="val" style="color: var(--ink-mute);">≈ 3K 份/菜</div>
+        </div>
+      </div>
+      <p style="margin-top: 14px;">关键洞察: Top 2 双花菜合计 <em>24,124 份</em>, 占全品类销量的 <strong>31.8%</strong>. 这是非常健康的"爆款结构" &mdash; 但也意味着如果这两道菜质量波动, 整个品牌都被拖累. <em>BOM 锁定 + SOP 固化是当务之急</em>.</p>
+      <p>另一个值得注意的点: Top 10 里<strong>只有 3 道是鱼类</strong>, 但贡献了 Top 10 总销量的 54% &mdash; 品牌的"鱼心智"非常强, 菜单设计应该进一步围绕这个核心资产建设.</p>
+    `
+  },
+  {
+    role: 'user',
+    text: '会员那边呢? RFM 分层能看吗?'
+  },
+  {
+    role: 'ai',
+    label: 'RFM SEGMENTATION · 会员分层 · 部分可用',
+    html: `
+      <p>这里有一个前提要先说清楚: 上传的 POS 里<em>只有约 43%</em>的订单带会员 ID(7,364 位会员, 64,218 笔订单), 所以下面的 RFM 分层<strong>只覆盖带 ID 的样本</strong>, 不代表全量客流.</p>
+      <div class="rfm-grid">
+        <div class="rfm-cell vip">
+          <div class="rfm-cell-label">VIP · 冠军客</div>
+          <div class="rfm-cell-val">412</div>
+          <div class="rfm-cell-pct">5.6%</div>
+        </div>
+        <div class="rfm-cell core">
+          <div class="rfm-cell-label">核心客群</div>
+          <div class="rfm-cell-val">1,834</div>
+          <div class="rfm-cell-pct">24.9%</div>
+        </div>
+        <div class="rfm-cell potential">
+          <div class="rfm-cell-label">潜力客群</div>
+          <div class="rfm-cell-val">2,107</div>
+          <div class="rfm-cell-pct">28.6%</div>
+        </div>
+        <div class="rfm-cell new">
+          <div class="rfm-cell-label">新客</div>
+          <div class="rfm-cell-val">1,578</div>
+          <div class="rfm-cell-pct">21.4%</div>
+        </div>
+        <div class="rfm-cell risk">
+          <div class="rfm-cell-label">即将流失</div>
+          <div class="rfm-cell-val">938</div>
+          <div class="rfm-cell-pct">12.7%</div>
+        </div>
+        <div class="rfm-cell lost">
+          <div class="rfm-cell-label">已流失</div>
+          <div class="rfm-cell-val">495</div>
+          <div class="rfm-cell-pct">6.8%</div>
+        </div>
+      </div>
+      <p style="margin-top: 16px;">两个关键信号:</p>
+      <p>· <strong>即将流失 12.7%</strong>(938 人) &mdash; 他们 60-90 天没来了, 但曾是核心客群. 这是评分下滑的<em>行为证据</em>, 而不只是评论抱怨</p>
+      <p>· <em>新客 + 潜力客</em> 合计 50%, 转化漏斗其实健康 &mdash; 问题出在"留存", 不是"拉新"</p>
+      <p style="margin-top: 10px;"><strong>优先动作</strong>: 对"即将流失"的 938 人做一次定向召回 &mdash; 优惠券 + 短信触达, 预期 4 周内回收 30-40%, 也就是 280-370 人回流.</p>
+      <p style="font-family: var(--mono); font-size: 10px; color: var(--ink-mute); margin-top: 8px;">▸ 数据范围: 43% POS 含会员 ID · N=7,364 · 全量 RFM 需补齐剩余 57% 订单的会员绑定</p>
+    `
+  },
+  {
+    role: 'user',
+    text: '晚餐时段看起来很旺, 但其它时段呢? 有空档吗?'
+  },
+  {
+    role: 'ai',
+    label: 'DINING HEATMAP · 时段客流',
+    html: `
+      <p>基于 199,054 笔订单聚合的时段分布. 青花椒是典型的<strong>"双峰偏晚"</strong>结构:</p>
+      <div class="heat-compact">
+        <div class="heat-compact-title">24 HOUR TRAFFIC · AVG ALL STORES</div>
+        <div class="heat-bar" id="heat-bar"></div>
+        <div class="heat-hours" id="heat-hours"></div>
+        <div class="heat-summary">
+          <div><strong>47.4%</strong>晚餐 17-21</div>
+          <div><strong>41.9%</strong>午餐 11-14</div>
+          <div><strong>10.7%</strong>其他时段</div>
+        </div>
+      </div>
+      <p style="margin-top: 12px;">最大问题: <em>14-17 点下午档几乎空白</em>, 租金和人力全被压在 4-5 小时的高峰窗口里. 如果把下午档从 5% 拉到 10%, 17 家门店年化就是接近<strong>千万级</strong>的增量 &mdash; 而且不用新开一家店.</p>
+    `
+  },
+  {
+    role: 'user',
+    text: '好, 给我五条能马上推的动作, 按见效快慢排序.'
+  },
+  {
+    role: 'ai',
+    label: '℞ Rx · 处方 · 按"投入少×影响大"排序',
+    html: `
+      <p>五条建议, 第一条本周就能启动:</p>
+      <div class="rx">
+        <div class="rx-item">
+          <div class="rx-title"><em>大丸店现场复盘</em> · Q4 -37.4% 异常</div>
+          <div class="rx-desc">派 1 名区域督导驻店 1 周, 排查商圈 / 物业 / 竞品, 这是<strong>唯一的重大异常点</strong>, 优先级 P0.</div>
+        </div>
+        <div class="rx-item">
+          <div class="rx-title"><em>服务体验培训专项</em> · 止血评分下滑</div>
+          <div class="rx-desc">评分从 4.93→4.30 的主因是服务, 不是菜. 重点攻克"等位通知 / 上菜节奏 / 沟通语气"三个动作, 目标 Q2 回到 4.6+.</div>
+        </div>
+        <div class="rx-item">
+          <div class="rx-title"><em>酸菜鱼 SOP 校准</em> · 门店方差治理</div>
+          <div class="rx-desc">3 号、11 号门店的酸菜偏咸是口碑隐患. 中央厨房统一配方 + 门店检查清单, 4 周内解决.</div>
+        </div>
+        <div class="rx-item">
+          <div class="rx-title"><em>下午档试点</em> · 填 14-17 空档</div>
+          <div class="rx-desc">3 家高人流购物中心店先试点"川味下午茶", 价位 28-48 元, 8 周试点看转化.</div>
+        </div>
+        <div class="rx-item">
+          <div class="rx-title"><em>双花爆款保护</em> · 品牌资产锁定</div>
+          <div class="rx-desc">青花椒鱼和花椒鱼 100% 好评是护城河. 锁定 BOM、固定 SOP、菜单视觉强化, 立即执行.</div>
+        </div>
+      </div>
+      <p style="margin-top: 14px;">需要我针对任何一条展开详细的<em>执行计划</em>或<em>数据监控指标</em>, 随时告诉我.</p>
+    `
+  },
+  {
+    role: 'user',
+    text: '最后问一下, 这些数字哪些是真的, 哪些是推算的?'
+  },
+  {
+    role: 'ai',
+    label: 'DATA PROVENANCE · 数据来源声明',
+    html: `
+      <p>透明度很重要. 逐项说明数据来源:</p>
+      <div class="prov-block good">
+        <div class="prov-block-title">✓ 来自上传的真实数据</div>
+        <p>· <em>17 家门店 / 4,051 POS 行</em> · 您的数据库</p>
+        <p>· <em>1,018 → 674 SKU</em> · 归一后数据</p>
+        <p>· <em>480 条评论</em> · 大众点评公开抓取</p>
+        <p>· <em>199,054 笔订单时段分布</em> · POS 时间戳聚合</p>
+        <p>· <em>评分曲线 4.93 → 4.30</em> · 评论打分聚合</p>
+        <p>· <em>64,218 笔订单含会员 ID</em> · 43% POS 子集</p>
+      </div>
+      <div class="prov-block est">
+        <div class="prov-block-title">△ 基于模型 / 知识库的推算</div>
+        <p>· <em>跨连锁对标</em> · Cretas 川菜连锁库 N=14</p>
+        <p>· <em>门店月度校准</em> · MonthlyCalibrationReporter 引擎</p>
+        <p>· <em>RFM 6 象限分层</em> · 按 R/F/M 三维分位数</p>
+        <p>· <em>评论情感分析</em> · DeepSeek V3.2 JSON Mode 抽取</p>
+        <p>· <em>Rx 排序</em> · "投入 × 影响" 启发式</p>
+      </div>
+      <div class="prov-block gap">
+        <div class="prov-block-title">✗ 尚未覆盖 · 数据缺口</div>
+        <p>· <em>门店级 P&amp;L</em> · 未上传, 无法算毛利 / 人效</p>
+        <p>· <em>原料采购单据</em> · 未上传, 无法做 BOM 达成率</p>
+        <p>· <em>剩余 57% 订单</em> · POS 未绑定会员 ID</p>
+      </div>
+      <div class="follow-up">
+        <div class="follow-up-label">▸ 您可能还想看</div>
+        <div class="follow-up-chips">
+          <div class="follow-up-chip">大丸店单店深度报告</div>
+          <div class="follow-up-chip">Rx 第 4 条的下午档试点方案</div>
+          <div class="follow-up-chip">938 位流失客群的召回话术</div>
+          <div class="follow-up-chip">把 P&amp;L 补齐后还能看到什么</div>
+          <div class="follow-up-chip">蜀大侠的爆款结构对比</div>
+        </div>
+      </div>
+    `
+  }
+];
+
+// ==================== RENDERER ====================
+const chat = document.getElementById('chat');
+const progCur = document.getElementById('prog-cur');
+const progTotal = document.getElementById('prog-total');
+const btnNext = document.getElementById('btn-next');
+const btnToggle = document.getElementById('btn-toggle');
+const btnRestart = document.getElementById('btn-restart');
+const endMarker = document.getElementById('end-marker');
+
+let idx = 0;
+let autoplay = false;
+let autoTimer = null;
+progTotal.textContent = turns.length;
+
+function scrollToBottom() {
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+}
+
+function renderUserTurn(turn) {
+  const div = document.createElement('div');
+  div.className = 'turn user';
+  div.innerHTML = `<div class="bubble-user">${turn.text}</div>`;
+  chat.appendChild(div);
+  requestAnimationFrame(() => div.classList.add('visible'));
+  scrollToBottom();
+}
+
+function renderTypingIndicator() {
+  const div = document.createElement('div');
+  div.className = 'turn ai';
+  div.innerHTML = `
+    <div class="ai-avatar">S</div>
+    <div class="typing-bubble"><span></span><span></span><span></span></div>
+  `;
+  chat.appendChild(div);
+  requestAnimationFrame(() => div.classList.add('visible'));
+  scrollToBottom();
+  return div;
+}
+
+function renderAiTurn(turn, typingNode) {
+  typingNode.remove();
+  const div = document.createElement('div');
+  div.className = 'turn ai';
+  div.innerHTML = `
+    <div class="ai-avatar">S</div>
+    <div class="bubble-ai">
+      <div class="ai-label">▸ ${turn.label}</div>
+      <div class="ai-text">${turn.html}</div>
+    </div>
+  `;
+  chat.appendChild(div);
+  requestAnimationFrame(() => {
+    div.classList.add('visible');
+    renderHeatIfPresent(div);
+  });
+  scrollToBottom();
+}
+
+function renderHeatIfPresent(node) {
+  const bar = node.querySelector('#heat-bar');
+  const hours = node.querySelector('#heat-hours');
+  if (!bar || !hours) return;
+  const palette = ['#f2ece0', '#e8dfc4', '#d4cdb8', '#c9a66b', '#a68449', '#6b5230', '#4a6b5c', '#2d4a3e'];
+  function intensity(h) {
+    let v = 0.05;
+    const lunchDist = Math.abs(h - 12.5);
+    if (lunchDist < 2.5) v += (1 - lunchDist / 2.5) * 0.75;
+    const dinnerDist = Math.abs(h - 19);
+    if (dinnerDist < 2.8) v += (1 - dinnerDist / 2.8) * 0.92;
+    if (h >= 14 && h < 17) v += 0.06;
+    if (h >= 21 && h < 23) v += 0.08 * (1 - (h - 21) / 2);
+    return Math.max(0, Math.min(1, v));
+  }
+  let barHtml = '', hoursHtml = '';
+  for (let h = 0; h < 24; h++) {
+    const v = intensity(h);
+    const idx = Math.min(palette.length - 1, Math.floor(v * palette.length));
+    barHtml += `<div class="heat-cell" style="background:${palette[idx]}"></div>`;
+    hoursHtml += `<div>${h % 4 === 0 ? String(h).padStart(2, '0') : '&nbsp;'}</div>`;
+  }
+  bar.innerHTML = barHtml;
+  hours.innerHTML = hoursHtml;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function advance() {
+  if (idx >= turns.length) {
+    endMarker.classList.add('visible');
+    stopAuto();
+    btnNext.disabled = true;
+    btnToggle.disabled = true;
+    return;
+  }
+  const turn = turns[idx];
+  idx++;
+  progCur.textContent = idx;
+  if (turn.role === 'user') {
+    renderUserTurn(turn);
+  } else {
+    const typing = renderTypingIndicator();
+    await sleep(1000);
+    renderAiTurn(turn, typing);
+  }
+}
+
+async function autoStep() {
+  if (!autoplay) return;
+  await advance();
+  if (idx >= turns.length) return;
+  const nextDelay = turns[idx - 1].role === 'user' ? 700 : 2800;
+  autoTimer = setTimeout(autoStep, nextDelay);
+}
+
+function startAuto() {
+  autoplay = true;
+  btnToggle.textContent = '❚❚ 暂停';
+  autoStep();
+}
+function stopAuto() {
+  autoplay = false;
+  btnToggle.textContent = '▶ 自动播放';
+  if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
+}
+
+function clearHint() {
+  const hint = chat.querySelector('.start-hint');
+  if (hint) hint.remove();
+}
+function showStartHint() {
+  chat.innerHTML = `
+    <div class="start-hint" style="text-align: center; padding: 70px 20px;">
+      <div style="font-family: var(--serif); font-size: 44px; color: var(--gold); margin-bottom: 14px; animation: hint-bob 2s ease-in-out infinite;">▼</div>
+      <div style="font-family: var(--serif-cn); font-size: 17px; font-style: italic; color: var(--ink-soft); margin-bottom: 10px;">点击下方 <strong style="color: var(--forest); font-weight: 700;">▶ 自动播放</strong> 开始会话回放</div>
+      <div style="font-family: var(--mono); font-size: 10px; color: var(--ink-mute); letter-spacing: 2px;">11 ROUNDS · ≈ 50 SECONDS</div>
+    </div>
+    <style>@keyframes hint-bob { 0%, 100% { transform: translateY(0); opacity: 0.6; } 50% { transform: translateY(6px); opacity: 1; } }</style>
+  `;
+}
+
+btnNext.addEventListener('click', () => { clearHint(); stopAuto(); advance(); });
+btnToggle.addEventListener('click', () => {
+  clearHint();
+  if (autoplay) stopAuto();
+  else startAuto();
+});
+btnRestart.addEventListener('click', () => {
+  stopAuto();
+  chat.innerHTML = '';
+  endMarker.classList.remove('visible');
+  idx = 0;
+  progCur.textContent = 0;
+  btnNext.disabled = false;
+  btnToggle.disabled = false;
+  showStartHint();
+});
+
+showStartHint();
+</script>
+</body>
+</html>

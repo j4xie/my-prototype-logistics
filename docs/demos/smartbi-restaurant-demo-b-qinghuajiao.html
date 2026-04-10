@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>青花椒 · 连锁诊断报告 · 2026 Q1</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream: #faf7f0;
+  --cream-deep: #f2ece0;
+  --paper: #fefcf6;
+  --ink: #1a1a1a;
+  --ink-soft: #3d3d3d;
+  --ink-dim: #6b6b6b;
+  --ink-mute: #a8a29e;
+  --forest: #2d4a3e;
+  --forest-light: #4a6b5c;
+  --burgundy: #8b1a1a;
+  --burgundy-soft: #b23838;
+  --gold: #c9a66b;
+  --gold-deep: #a68449;
+  --rule: #d4cdb8;
+  --rule-soft: #e8e1cc;
+  --serif: 'Playfair Display', 'Songti SC', 'Noto Serif SC', Georgia, serif;
+  --sans: 'IBM Plex Sans', 'PingFang SC', -apple-system, sans-serif;
+  --mono: 'Space Mono', 'SF Mono', Consolas, monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { background: var(--cream); color: var(--ink); font-family: var(--sans); font-weight: 400; -webkit-font-smoothing: antialiased; }
+body {
+  background-image:
+    radial-gradient(circle at 10% 10%, rgba(201, 166, 107, 0.04), transparent 40%),
+    radial-gradient(circle at 90% 90%, rgba(45, 74, 62, 0.03), transparent 40%);
+  min-height: 100vh;
+  padding: 0;
+  position: relative;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65'/%3E%3CfeColorMatrix values='0 0 0 0 0.4 0 0 0 0 0.3 0 0 0 0 0.1 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  z-index: 1;
+  opacity: 0.5;
+}
+
+.wrap { max-width: 1280px; margin: 0 auto; padding: 50px 60px 100px; position: relative; z-index: 2; }
+
+/* ============ MASTHEAD ============ */
+.masthead {
+  border-top: 6px double var(--ink);
+  border-bottom: 1px solid var(--ink);
+  padding: 28px 0 22px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 30px;
+  align-items: baseline;
+  margin-bottom: 40px;
+}
+.mast-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.mast-title {
+  font-family: var(--serif);
+  font-weight: 900;
+  font-size: 34px;
+  letter-spacing: -0.5px;
+  line-height: 1;
+  text-align: center;
+}
+.mast-title em { font-style: italic; color: var(--forest); font-weight: 700; }
+.mast-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-align: right;
+  color: var(--ink-dim);
+  line-height: 1.6;
+}
+
+/* ============ HERO HEADLINE ============ */
+.hero {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr;
+  gap: 50px;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 50px;
+  margin-bottom: 50px;
+}
+.kicker {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--burgundy);
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.kicker::after { content: ""; flex: 1; height: 1px; background: var(--burgundy); opacity: 0.3; }
+.headline {
+  font-family: var(--serif);
+  font-size: 72px;
+  line-height: 0.95;
+  font-weight: 900;
+  letter-spacing: -1.5px;
+  margin-bottom: 22px;
+  color: var(--ink);
+}
+.headline em { font-style: italic; color: var(--forest); }
+.headline .num { color: var(--burgundy); font-style: normal; }
+.deck {
+  font-family: var(--serif);
+  font-size: 19px;
+  line-height: 1.55;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--ink-soft);
+  max-width: 640px;
+}
+.byline {
+  border-top: 1px solid var(--rule);
+  padding-top: 14px;
+  margin-top: 22px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.byline strong { color: var(--forest); }
+
+/* Dataline (right column of hero) */
+.dataline {
+  border-left: 1px solid var(--rule);
+  padding-left: 36px;
+}
+.dataline-head {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 18px;
+}
+.stat-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  padding: 12px 0;
+  border-bottom: 1px dotted var(--rule);
+}
+.stat-row:last-child { border-bottom: none; }
+.stat-label {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.stat-val {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--forest);
+}
+.stat-val.burgundy { color: var(--burgundy); }
+.stat-val.gold { color: var(--gold-deep); }
+.stat-sub {
+  grid-column: 1 / -1;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-mute);
+  margin-top: 2px;
+}
+
+/* ============ SECTION ============ */
+.section {
+  margin-bottom: 70px;
+}
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.section-num {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 60px;
+  font-weight: 400;
+  color: var(--gold);
+  line-height: 0.8;
+}
+.section-titles { flex: 1; }
+.section-kicker {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 4px;
+}
+.section-title {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 34px;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+.section-title em { font-style: italic; color: var(--forest); }
+.section-hr {
+  border-top: 3px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  height: 6px;
+  margin-bottom: 28px;
+}
+
+/* ============ 3-COL FEATURE GRID (菜单精简) ============ */
+.feature-3 {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 40px;
+  padding-top: 10px;
+}
+.feat-main {
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--ink-soft);
+}
+.feat-main p { margin-bottom: 14px; }
+.feat-main .dropcap::first-letter {
+  font-family: var(--serif);
+  font-size: 68px;
+  font-weight: 900;
+  float: left;
+  line-height: 0.85;
+  padding-right: 10px;
+  padding-top: 6px;
+  color: var(--forest);
+}
+.feat-stat-card {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  padding: 28px 24px;
+  text-align: center;
+  position: relative;
+}
+.feat-stat-card::before {
+  content: "";
+  position: absolute;
+  top: 10px; left: 10px; right: 10px; bottom: 10px;
+  border: 1px solid var(--rule-soft);
+  pointer-events: none;
+}
+.feat-stat-kicker {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 14px;
+}
+.feat-stat-big {
+  font-family: var(--serif);
+  font-size: 78px;
+  font-weight: 900;
+  line-height: 0.9;
+  color: var(--forest);
+  margin-bottom: 8px;
+  letter-spacing: -2px;
+}
+.feat-stat-big.burgundy { color: var(--burgundy); }
+.feat-stat-unit {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-style: italic;
+  color: var(--ink-soft);
+  margin-bottom: 16px;
+}
+.feat-stat-note {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-dim);
+  letter-spacing: 0.5px;
+  border-top: 1px dotted var(--rule);
+  padding-top: 12px;
+}
+
+/* ============ DINING HEATMAP ============ */
+.heatmap-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1.8fr;
+  gap: 50px;
+  align-items: start;
+}
+.heatmap-text {
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--ink-soft);
+}
+.heatmap-text strong { color: var(--burgundy); font-weight: 700; }
+.heatmap-text em { font-style: italic; color: var(--forest); font-weight: 700; }
+.pullquote {
+  border-left: 4px solid var(--gold);
+  padding: 14px 20px;
+  margin: 24px 0;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--cream-deep);
+}
+.heatmap-chart {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  padding: 30px;
+}
+.heatmap-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 6px;
+}
+.heatmap-subtitle {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 19px;
+  color: var(--ink);
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 12px;
+}
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: 50px repeat(24, 1fr);
+  gap: 2px;
+  font-family: var(--mono);
+  font-size: 8px;
+}
+.hm-day-label {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+  color: var(--ink-dim);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.hm-cell {
+  aspect-ratio: 1;
+  background: var(--rule-soft);
+  border-radius: 1px;
+  position: relative;
+}
+.hm-hour-labels {
+  display: grid;
+  grid-template-columns: 50px repeat(24, 1fr);
+  gap: 2px;
+  margin-top: 6px;
+}
+.hm-hour-labels span {
+  font-family: var(--mono);
+  font-size: 8px;
+  text-align: center;
+  color: var(--ink-mute);
+}
+.hm-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--ink-dim);
+  justify-content: flex-end;
+}
+.hm-legend-bar {
+  display: flex;
+  height: 10px;
+  width: 140px;
+  border: 1px solid var(--rule);
+}
+.hm-legend-bar div { flex: 1; }
+.hm-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--rule);
+}
+.hm-stat-block {
+  text-align: center;
+}
+.hm-stat-block-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 6px;
+}
+.hm-stat-block-val {
+  font-family: var(--serif);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--forest);
+  line-height: 1;
+}
+.hm-stat-block-sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--ink-mute);
+  margin-top: 4px;
+}
+
+/* ============ STORE RANKING TABLE ============ */
+.ranking-wrap {
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  padding: 38px 40px 40px;
+  position: relative;
+}
+.ranking-wrap::before {
+  content: "";
+  position: absolute;
+  top: 8px; left: 8px; right: 8px; bottom: 8px;
+  border: 1px solid var(--rule);
+  pointer-events: none;
+}
+.ranking-head {
+  display: grid;
+  grid-template-columns: 50px 2.2fr 1fr 1fr 1.2fr;
+  gap: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--ink);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.ranking-head .num-col { text-align: right; }
+.ranking-row {
+  display: grid;
+  grid-template-columns: 50px 2.2fr 1fr 1fr 1.2fr;
+  gap: 20px;
+  padding: 16px 0;
+  border-bottom: 1px dotted var(--rule);
+  align-items: center;
+}
+.rank-num {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--gold);
+  line-height: 1;
+}
+.rank-num.burgundy { color: var(--burgundy); }
+.rank-num.muted { color: var(--ink-mute); }
+.rank-name {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.rank-name em {
+  display: block;
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 400;
+  font-style: normal;
+  color: var(--ink-dim);
+  margin-top: 3px;
+  letter-spacing: 0.2px;
+}
+.rank-val {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 700;
+  text-align: right;
+  color: var(--forest);
+}
+.rank-val.burgundy { color: var(--burgundy); }
+.rank-bar {
+  height: 8px;
+  background: var(--rule-soft);
+  position: relative;
+}
+.rank-bar-fill {
+  height: 100%;
+  background: var(--forest);
+}
+.rank-bar-fill.burgundy { background: var(--burgundy); }
+.rank-bar-fill.gold { background: var(--gold); }
+
+/* ============ REVIEW QUOTES ============ */
+.reviews-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+}
+.review-card {
+  border: 1px solid var(--rule);
+  padding: 28px 30px;
+  background: var(--paper);
+  position: relative;
+}
+.review-card.positive { border-left: 6px solid var(--forest); }
+.review-card.negative { border-left: 6px solid var(--burgundy); }
+.review-card.warning { border-left: 6px solid var(--gold); }
+.review-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 16px;
+}
+.review-sku {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.review-score {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 4px 10px;
+  border: 1px solid currentColor;
+  letter-spacing: 1px;
+}
+.review-score.pos { color: var(--forest); }
+.review-score.neg { color: var(--burgundy); }
+.review-score.warn { color: var(--gold-deep); }
+.review-quote {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  padding-left: 20px;
+  border-left: 2px solid var(--rule);
+  margin-bottom: 16px;
+}
+.review-quote::before {
+  content: '"';
+  font-family: var(--serif);
+  font-size: 48px;
+  color: var(--gold);
+  float: left;
+  line-height: 0.6;
+  margin-right: 6px;
+  margin-top: 10px;
+}
+.review-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-dim);
+  display: flex;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px dotted var(--rule);
+}
+
+/* ============ TEMPORAL DECLINE ============ */
+.temporal-wrap {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 50px;
+  align-items: start;
+}
+.temporal-text {
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--ink-soft);
+}
+.temporal-text p { margin-bottom: 14px; }
+.temporal-text strong { color: var(--burgundy); font-weight: 700; }
+
+.sparkline-block {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  padding: 32px 36px;
+}
+.sparkline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 22px;
+}
+.sparkline-title {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--ink);
+}
+.sparkline-title em { font-style: italic; color: var(--forest); }
+.sparkline-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-dim);
+  text-align: right;
+  line-height: 1.6;
+}
+
+.sparkline-svg {
+  width: 100%;
+  height: 180px;
+  margin-bottom: 20px;
+}
+
+.rating-trend {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  margin-top: 12px;
+  padding-top: 16px;
+  border-top: 1px dotted var(--rule);
+}
+.rating-point {
+  text-align: center;
+  padding: 10px 4px;
+}
+.rating-month {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 6px;
+}
+.rating-val {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+}
+.rating-point.high .rating-val { color: var(--forest); }
+.rating-point.mid .rating-val { color: var(--gold-deep); }
+.rating-point.low .rating-val { color: var(--burgundy); }
+.rating-delta {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--ink-mute);
+  margin-top: 3px;
+}
+
+/* ============ PRESCRIPTION ============ */
+.rx-wrap {
+  border: 3px double var(--forest);
+  padding: 40px 50px;
+  background: var(--paper);
+  position: relative;
+}
+.rx-wrap::before {
+  content: "℞";
+  position: absolute;
+  top: 28px;
+  right: 40px;
+  font-family: var(--serif);
+  font-size: 64px;
+  font-weight: 900;
+  color: var(--gold);
+  line-height: 1;
+}
+.rx-header {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 20px;
+}
+.rx-title {
+  font-family: var(--serif);
+  font-weight: 900;
+  font-size: 38px;
+  color: var(--forest);
+  line-height: 1.1;
+  margin-bottom: 10px;
+  letter-spacing: -0.5px;
+}
+.rx-title em { font-style: italic; }
+.rx-deck {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  max-width: 720px;
+  margin-bottom: 32px;
+  padding-bottom: 28px;
+  border-bottom: 1px dotted var(--rule);
+}
+.rx-list {
+  list-style: none;
+  counter-reset: rx;
+}
+.rx-list li {
+  counter-increment: rx;
+  padding: 22px 0 22px 72px;
+  position: relative;
+  border-bottom: 1px dotted var(--rule);
+}
+.rx-list li:last-child { border-bottom: none; }
+.rx-list li::before {
+  content: counter(rx, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 22px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 44px;
+  font-weight: 900;
+  color: var(--gold);
+  line-height: 0.8;
+}
+.rx-li-title {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.rx-li-title em { font-style: italic; color: var(--forest); }
+.rx-li-desc {
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+}
+.rx-li-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-dim);
+  letter-spacing: 0.5px;
+}
+.rx-li-meta strong { color: var(--forest); font-weight: 700; }
+
+/* ============ DATA GAPS ============ */
+.gaps-wrap {
+  background: var(--cream-deep);
+  border: 1px dashed var(--burgundy);
+  padding: 30px 36px;
+  margin-top: 40px;
+}
+.gaps-header {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--burgundy);
+  margin-bottom: 14px;
+}
+.gaps-title {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-style: italic;
+  font-size: 24px;
+  margin-bottom: 18px;
+  color: var(--ink);
+}
+.gaps-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+.gaps-list div strong {
+  display: block;
+  font-family: var(--serif);
+  font-size: 15px;
+  color: var(--burgundy);
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+/* ============ COLOPHON ============ */
+.colophon {
+  margin-top: 80px;
+  padding-top: 32px;
+  border-top: 3px double var(--ink);
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 40px;
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.7;
+  color: var(--ink-dim);
+}
+.colophon-block-title {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.colophon-block-title::after {
+  content: "";
+  display: block;
+  width: 30px;
+  border-bottom: 1px solid var(--gold);
+  margin-top: 4px;
+}
+.colophon strong { color: var(--forest); }
+
+/* ============ MOBILE ============ */
+@media (max-width: 900px) {
+  .wrap { padding: 30px 20px 60px; }
+  .masthead { grid-template-columns: 1fr; text-align: center; gap: 10px; }
+  .mast-meta { text-align: center; }
+  .hero { grid-template-columns: 1fr; gap: 30px; }
+  .headline { font-size: 48px; }
+  .dataline { border-left: none; border-top: 1px solid var(--rule); padding: 30px 0 0; }
+  .feature-3 { grid-template-columns: 1fr; gap: 30px; }
+  .heatmap-wrap, .temporal-wrap, .reviews-grid { grid-template-columns: 1fr; gap: 30px; }
+  .ranking-head, .ranking-row { grid-template-columns: 36px 1.4fr 1fr; gap: 12px; font-size: 11px; }
+  .ranking-head .bar-col, .ranking-row .rank-bar, .ranking-head .change-col, .ranking-row .rank-val:nth-of-type(2) { display: none; }
+  .rx-wrap { padding: 30px 24px; }
+  .rx-wrap::before { font-size: 40px; top: 20px; right: 20px; }
+  .rx-title { font-size: 28px; }
+  .rx-list li { padding-left: 50px; }
+  .rx-list li::before { font-size: 32px; }
+  .gaps-list, .colophon { grid-template-columns: 1fr; }
+  .heatmap-grid { grid-template-columns: 36px repeat(24, 1fr); }
+  .hm-day-label { font-size: 8px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ MASTHEAD ============ -->
+  <header class="masthead">
+    <div class="mast-label">Cretas SmartBI<br>Restaurant Intelligence</div>
+    <div class="mast-title">连锁诊断 &middot; <em>青花椒</em> &middot; 川菜系列</div>
+    <div class="mast-meta">
+      Vol. Ⅱ &middot; No. 04<br>
+      Q1 / 2026 &middot; 内部参阅
+    </div>
+  </header>
+
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div>
+      <div class="kicker">头版故事 · Cover Story</div>
+      <h1 class="headline">
+        <em>17</em> 家门店<br>
+        一个<span class="num">-33.79%</span><br>
+        <em>的故事。</em>
+      </h1>
+      <p class="deck">
+        从 1,018 个菜品缩减到 674 个 SKU &mdash; 一次"隐形"的菜单精简，揭开了青花椒川菜品牌在标品管理、门店差异与客户口碑之间微妙的三角关系。晚餐点单占比 47.4%，日均客流稳定，但
+        <em>评分曲线在过去 5 个月里从 4.93 滑落到 4.30</em>，这是值得 C-suite 正视的信号。
+      </p>
+      <div class="byline">
+        署名 &mdash; <strong>Cretas SmartBI V2 引擎</strong> &nbsp;|&nbsp;
+        数据口径 &mdash; POS 4,051 行 &middot; 评价 480 条 &middot; DeepSeek V3.2 提取
+      </div>
+    </div>
+    <aside class="dataline">
+      <div class="dataline-head">At a Glance</div>
+      <div class="stat-row">
+        <span class="stat-label">门店数量</span>
+        <span class="stat-val">17</span>
+        <div class="stat-sub">覆盖上海、苏州、南通 &middot; 多座购物中心/百货店</div>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">POS 订单样本</span>
+        <span class="stat-val">4,051</span>
+        <div class="stat-sub">含 SKU / 档期 / 门店维度</div>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">SKU 精简率</span>
+        <span class="stat-val burgundy">33.79%</span>
+        <div class="stat-sub">1,018 &rarr; 674，含复名与规格合并</div>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">评分拐点</span>
+        <span class="stat-val burgundy">-0.63</span>
+        <div class="stat-sub">4.93 &rarr; 4.30 &middot; 过去 5 个月</div>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">爆款菜 · 好评率</span>
+        <span class="stat-val gold">100%</span>
+        <div class="stat-sub">青花椒鱼 &middot; 480 条评论中 &middot; DeepSeek 情感抽取</div>
+      </div>
+    </aside>
+  </section>
+
+  <!-- ============ 01 MENU NORMALIZATION ============ -->
+  <section class="section">
+    <div class="section-label">
+      <div class="section-num">Ⅰ</div>
+      <div class="section-titles">
+        <div class="section-kicker">第一章 · MENU NORMALIZATION</div>
+        <h2 class="section-title"><em>标品化</em>的尺度问题</h2>
+      </div>
+    </div>
+    <div class="section-hr"></div>
+    <div class="feature-3">
+      <div class="feat-main">
+        <p class="dropcap">
+          在原始 POS 里，一道"青花椒鱼"可能以 8 种写法存在：加"招牌"、加"特色"、加"老坛"前缀；或者按份量切成小份/中份/大份。系统在标品化后把 1,018 条原始菜名聚合为 <strong>674 个真正的 SKU</strong>。
+        </p>
+        <p>
+          这并非单纯的"数据清理"&mdash;它揭示了运营层的隐痛：<em>重复录入、份量混乱、促销命名不统一</em>，都会直接导致原料汇总失真、爆款定义模糊、BOM 无法追溯。
+        </p>
+        <p>
+          换一个角度看，33.79% 的冗余率意味着：每 3 道菜里就有 1 道是"幽灵 SKU"&mdash;它吃着菜单空间，占着后厨动作，却对消费决策贡献寥寥。
+        </p>
+      </div>
+      <div class="feat-stat-card">
+        <div class="feat-stat-kicker">Before</div>
+        <div class="feat-stat-big">1,018</div>
+        <div class="feat-stat-unit">原始菜名</div>
+        <div class="feat-stat-note">
+          跨 17 店 POS 原始导出<br>含份量 / 促销 / 版本
+        </div>
+      </div>
+      <div class="feat-stat-card">
+        <div class="feat-stat-kicker">After</div>
+        <div class="feat-stat-big burgundy">674</div>
+        <div class="feat-stat-unit">标品 SKU</div>
+        <div class="feat-stat-note">
+          同义词合并 + 规格聚合<br>SmartBI 自动归一
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 DINING HEATMAP ============ -->
+  <section class="section">
+    <div class="section-label">
+      <div class="section-num">Ⅱ</div>
+      <div class="section-titles">
+        <div class="section-kicker">第二章 · DINING TIME HEATMAP</div>
+        <h2 class="section-title">晚餐之后，<em>还有什么？</em></h2>
+      </div>
+    </div>
+    <div class="section-hr"></div>
+
+    <div class="heatmap-wrap">
+      <div class="heatmap-text">
+        <p>
+          基于 199,054 笔订单的时段分布，青花椒品牌的客流呈典型的<strong>"双峰偏晚"</strong>结构&mdash;晚餐 <em>47.4%</em>，午餐 <em>41.9%</em>，下午茶 & 夜宵合计仅 10.7%。
+        </p>
+        <div class="pullquote">
+          "晚餐并不是问题，<strong>问题是午餐以外的时段几乎空白</strong>&mdash;这意味着租金和人力的日均负载被压缩到了 4-5 小时的高峰窗口。"
+        </div>
+        <p>
+          若能把午市延伸到 14:00 前后的 Tea Time、或在 21:00 后开辟"川味夜宵"档期，哪怕只把下午时段从 5% 提升到 10%，在 17 家门店体量下就是一年接近 <strong>千万级</strong>的增量营收空间&mdash;而无需新增任何一家店。
+        </p>
+      </div>
+
+      <div class="heatmap-chart">
+        <div class="heatmap-title">17 STORES &middot; 199,054 ORDERS</div>
+        <div class="heatmap-subtitle">时段客流热力（周一 &ndash; 周日 × 24 小时）</div>
+
+        <div class="heatmap-grid" id="heatmap"></div>
+        <div class="hm-hour-labels" id="hm-labels"></div>
+
+        <div class="hm-legend">
+          <span>LOW</span>
+          <div class="hm-legend-bar">
+            <div style="background:#f2ece0"></div>
+            <div style="background:#d4cdb8"></div>
+            <div style="background:#a68449"></div>
+            <div style="background:#6b5230"></div>
+            <div style="background:#2d4a3e"></div>
+          </div>
+          <span>HIGH</span>
+        </div>
+
+        <div class="hm-stats">
+          <div class="hm-stat-block">
+            <div class="hm-stat-block-label">晚餐</div>
+            <div class="hm-stat-block-val">47.4%</div>
+            <div class="hm-stat-block-sub">17:00 &ndash; 21:00</div>
+          </div>
+          <div class="hm-stat-block">
+            <div class="hm-stat-block-label">午餐</div>
+            <div class="hm-stat-block-val">41.9%</div>
+            <div class="hm-stat-block-sub">11:00 &ndash; 14:00</div>
+          </div>
+          <div class="hm-stat-block">
+            <div class="hm-stat-block-label">其他</div>
+            <div class="hm-stat-block-val">10.7%</div>
+            <div class="hm-stat-block-sub">下午 &amp; 夜宵</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 STORE RANKING ============ -->
+  <section class="section">
+    <div class="section-label">
+      <div class="section-num">Ⅲ</div>
+      <div class="section-titles">
+        <div class="section-kicker">第三章 · STORE-BY-STORE</div>
+        <h2 class="section-title"><em>17 个</em>不同的青花椒</h2>
+      </div>
+    </div>
+    <div class="section-hr"></div>
+
+    <div class="ranking-wrap">
+      <div class="ranking-head">
+        <div>&nbsp;</div>
+        <div>门店</div>
+        <div class="num-col">SKU 数</div>
+        <div class="num-col change-col">Q4 趋势</div>
+        <div class="bar-col">相对规模</div>
+      </div>
+      <div class="ranking-row">
+        <div class="rank-num">1</div>
+        <div class="rank-name">青花椒松江地中海店<em>松江 &middot; 地中海购物广场</em></div>
+        <div class="rank-val">332</div>
+        <div class="rank-val">&nbsp;</div>
+        <div class="rank-bar"><div class="rank-bar-fill" style="width: 100%;"></div></div>
+      </div>
+      <div class="ranking-row">
+        <div class="rank-num">2</div>
+        <div class="rank-name">青花椒第一百货店<em>黄浦 &middot; 第一百货商业中心</em></div>
+        <div class="rank-val">287</div>
+        <div class="rank-val">&nbsp;</div>
+        <div class="rank-bar"><div class="rank-bar-fill" style="width: 86%;"></div></div>
+      </div>
+      <div class="ranking-row">
+        <div class="rank-num">3</div>
+        <div class="rank-name">青花椒陆家嘴店<em>浦东 &middot; 陆家嘴金融区</em></div>
+        <div class="rank-val">261</div>
+        <div class="rank-val">&nbsp;</div>
+        <div class="rank-bar"><div class="rank-bar-fill" style="width: 78%;"></div></div>
+      </div>
+      <div class="ranking-row">
+        <div class="rank-num burgundy">14</div>
+        <div class="rank-name">青花椒大丸百货店<em>黄浦 &middot; 大丸百货 &middot; <strong style="color: var(--burgundy);">Q4 异常</strong></em></div>
+        <div class="rank-val burgundy">152</div>
+        <div class="rank-val burgundy">&minus;37.4%</div>
+        <div class="rank-bar"><div class="rank-bar-fill burgundy" style="width: 45%;"></div></div>
+      </div>
+      <div class="ranking-row">
+        <div class="rank-num muted">...</div>
+        <div class="rank-name" style="color: var(--ink-mute); font-style: italic;">其余 13 家门店 · 参见详细版本</div>
+        <div class="rank-val" style="color: var(--ink-mute);">&nbsp;</div>
+        <div class="rank-val" style="color: var(--ink-mute);">&nbsp;</div>
+        <div class="rank-bar"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 TEMPORAL DECLINE ============ -->
+  <section class="section">
+    <div class="section-label">
+      <div class="section-num">Ⅳ</div>
+      <div class="section-titles">
+        <div class="section-kicker">第四章 · TEMPORAL CALIBRATION</div>
+        <h2 class="section-title">大丸店 &middot; <em>失速的 Q4</em></h2>
+      </div>
+    </div>
+    <div class="section-hr"></div>
+
+    <div class="temporal-wrap">
+      <div class="temporal-text">
+        <p>
+          在 17 家门店整体稳定的大盘下，<strong>青花椒大丸百货店</strong>是唯一一家被时序校准模块识别为"异常偏移"的门店&mdash;Q4 营收环比 <strong>-37.4%</strong>。
+        </p>
+        <p>
+          系统从上传数据中提取的信号包括：SKU 活跃度下降 22%、晚餐时段占比从 48.1% 跌至 39.8%、热销 Top 10 里只剩 6 个维持销量。
+        </p>
+        <p>
+          这不是"季节波动"&mdash;同品牌其它门店同期整体持稳。值得现场团队立即排查：<em>商圈是否有大型竞品进驻、物业人流是否改道、餐饮楼层是否调整</em>。
+        </p>
+      </div>
+
+      <div class="sparkline-block">
+        <div class="sparkline-header">
+          <div>
+            <div class="sparkline-title">青花椒 · <em>评分趋势曲线</em></div>
+            <div style="font-family: var(--mono); font-size: 10px; color: var(--ink-dim); margin-top: 4px;">过去 5 个月 &middot; 480 条评论样本</div>
+          </div>
+          <div class="sparkline-meta">
+            起点 4.93<br>
+            终点 4.30<br>
+            <strong style="color: var(--burgundy);">&Delta; -0.63</strong>
+          </div>
+        </div>
+
+        <svg class="sparkline-svg" viewBox="0 0 600 180" preserveAspectRatio="none">
+          <!-- grid lines -->
+          <line x1="0" y1="30" x2="600" y2="30" stroke="#e8e1cc" stroke-dasharray="2,4"/>
+          <line x1="0" y1="75" x2="600" y2="75" stroke="#e8e1cc" stroke-dasharray="2,4"/>
+          <line x1="0" y1="120" x2="600" y2="120" stroke="#e8e1cc" stroke-dasharray="2,4"/>
+          <line x1="0" y1="165" x2="600" y2="165" stroke="#1a1a1a"/>
+
+          <!-- y-axis labels -->
+          <text x="6" y="34" font-family="Space Mono" font-size="10" fill="#a8a29e">5.0</text>
+          <text x="6" y="79" font-family="Space Mono" font-size="10" fill="#a8a29e">4.75</text>
+          <text x="6" y="124" font-family="Space Mono" font-size="10" fill="#a8a29e">4.5</text>
+          <text x="6" y="162" font-family="Space Mono" font-size="10" fill="#a8a29e">4.25</text>
+
+          <!-- baseline at 5.0 ref line -->
+          <line x1="40" y1="26" x2="590" y2="26" stroke="#c9a66b" stroke-width="1" stroke-dasharray="4,4" opacity="0.6"/>
+          <text x="560" y="20" font-family="Space Mono" font-size="9" fill="#a68449">满分 5.0</text>
+
+          <!-- data path: 4.93 → 4.82 → 4.68 → 4.51 → 4.30 -->
+          <!-- x: 80, 200, 320, 440, 560 -->
+          <!-- y mapping: 4.25=165, 5.0=30; scale: (v-4.25)/0.75*(-135)+165 -->
+          <!-- 4.93: 45.4; 4.82: 65.2; 4.68: 90.4; 4.51: 120.8; 4.30: 156.0 -->
+
+          <!-- area fill -->
+          <path d="M 80 45.4 L 200 65.2 L 320 90.4 L 440 120.8 L 560 156.0 L 560 165 L 80 165 Z"
+                fill="url(#decline-gradient)" opacity="0.25"/>
+
+          <defs>
+            <linearGradient id="decline-gradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#2d4a3e"/>
+              <stop offset="100%" stop-color="#8b1a1a"/>
+            </linearGradient>
+          </defs>
+
+          <!-- line -->
+          <path d="M 80 45.4 L 200 65.2 L 320 90.4 L 440 120.8 L 560 156.0"
+                fill="none" stroke="#8b1a1a" stroke-width="2.5" stroke-linejoin="round"/>
+
+          <!-- points -->
+          <circle cx="80" cy="45.4" r="5" fill="#2d4a3e" stroke="#faf7f0" stroke-width="2"/>
+          <circle cx="200" cy="65.2" r="5" fill="#4a6b5c" stroke="#faf7f0" stroke-width="2"/>
+          <circle cx="320" cy="90.4" r="5" fill="#c9a66b" stroke="#faf7f0" stroke-width="2"/>
+          <circle cx="440" cy="120.8" r="5" fill="#b23838" stroke="#faf7f0" stroke-width="2"/>
+          <circle cx="560" cy="156.0" r="6" fill="#8b1a1a" stroke="#faf7f0" stroke-width="2"/>
+
+          <!-- value labels -->
+          <text x="80" y="38" font-family="Playfair Display" font-size="12" font-weight="700" fill="#2d4a3e" text-anchor="middle">4.93</text>
+          <text x="200" y="58" font-family="Playfair Display" font-size="12" font-weight="700" fill="#4a6b5c" text-anchor="middle">4.82</text>
+          <text x="320" y="83" font-family="Playfair Display" font-size="12" font-weight="700" fill="#a68449" text-anchor="middle">4.68</text>
+          <text x="440" y="113" font-family="Playfair Display" font-size="12" font-weight="700" fill="#b23838" text-anchor="middle">4.51</text>
+          <text x="560" y="149" font-family="Playfair Display" font-size="13" font-weight="900" fill="#8b1a1a" text-anchor="middle">4.30</text>
+        </svg>
+
+        <div class="rating-trend">
+          <div class="rating-point high"><div class="rating-month">M-5</div><div class="rating-val">4.93</div><div class="rating-delta">基准</div></div>
+          <div class="rating-point high"><div class="rating-month">M-4</div><div class="rating-val">4.82</div><div class="rating-delta">&minus;0.11</div></div>
+          <div class="rating-point mid"><div class="rating-month">M-3</div><div class="rating-val">4.68</div><div class="rating-delta">&minus;0.14</div></div>
+          <div class="rating-point mid"><div class="rating-month">M-2</div><div class="rating-val">4.51</div><div class="rating-delta">&minus;0.17</div></div>
+          <div class="rating-point low"><div class="rating-month">M-1</div><div class="rating-val">4.30</div><div class="rating-delta">&minus;0.21</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 05 REVIEW INTELLIGENCE ============ -->
+  <section class="section">
+    <div class="section-label">
+      <div class="section-num">Ⅴ</div>
+      <div class="section-titles">
+        <div class="section-kicker">第五章 · REVIEW INTELLIGENCE · Bonus Feature</div>
+        <h2 class="section-title">消费者<em>在说什么？</em></h2>
+      </div>
+    </div>
+    <div class="section-hr"></div>
+
+    <div class="reviews-grid">
+      <div class="review-card positive">
+        <div class="review-head">
+          <div class="review-sku">青花椒鱼</div>
+          <div class="review-score pos">100% POSITIVE</div>
+        </div>
+        <div class="review-quote">
+          招牌就是招牌，<em>花椒的麻、青椒的香、鱼肉的嫩</em>都做到位了&mdash;这家店值得专程来吃一次这道菜。
+        </div>
+        <div class="review-meta">
+          <span>提及次数 &middot; 高频</span>
+          <span>DeepSeek V3.2 抽取</span>
+        </div>
+      </div>
+
+      <div class="review-card positive">
+        <div class="review-head">
+          <div class="review-sku">花椒鱼</div>
+          <div class="review-score pos">100% POSITIVE</div>
+        </div>
+        <div class="review-quote">
+          和"青花椒鱼"是兄弟菜，<em>整体口碑同样稳定</em>&mdash;这是标品爆款的信号：不同消费者从不同角度都给出了一致好评。
+        </div>
+        <div class="review-meta">
+          <span>标品双花 &middot; 品牌资产</span>
+          <span>已纳入招牌保护清单</span>
+        </div>
+      </div>
+
+      <div class="review-card warning">
+        <div class="review-head">
+          <div class="review-sku">酸菜鱼</div>
+          <div class="review-score warn">85.7% POSITIVE</div>
+        </div>
+        <div class="review-quote">
+          酸度合适，但<em>有顾客反馈部分门店的酸菜偏咸</em>&mdash;这是连锁标品常见的"门店方差"问题，14.3% 的负评集中在门店 3 和门店 11。
+        </div>
+        <div class="review-meta">
+          <span>门店方差高 &middot; 需要 SOP 校准</span>
+          <span>DeepSeek + 门店交叉</span>
+        </div>
+      </div>
+
+      <div class="review-card negative">
+        <div class="review-head">
+          <div class="review-sku">服务 &amp; 环境</div>
+          <div class="review-score neg">↓ 评分拖累</div>
+        </div>
+        <div class="review-quote">
+          "<em>等位太久、上菜慢、服务员脸色</em>"&mdash;评分从 4.93 跌到 4.30 的主要贡献，不在菜，在服务与等待体验。
+        </div>
+        <div class="review-meta">
+          <span>非菜品类主题 &middot; 建议联动培训</span>
+          <span>480 条样本 &middot; 多主题聚合</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 PRESCRIPTION ============ -->
+  <section class="section">
+    <div class="section-label">
+      <div class="section-num">Ⅵ</div>
+      <div class="section-titles">
+        <div class="section-kicker">第六章 · EDITOR'S RECOMMENDATION</div>
+        <h2 class="section-title"><em>给总部的五条</em>处方</h2>
+      </div>
+    </div>
+    <div class="section-hr"></div>
+
+    <div class="rx-wrap">
+      <div class="rx-header">Cretas SmartBI V2 &middot; Prescription for 2026 Q2</div>
+      <h3 class="rx-title">连锁管理的<em>下一个动作</em>。</h3>
+      <p class="rx-deck">
+        基于 4,051 笔 POS、480 条客户评论、17 家门店的横截面数据，系统输出以下五项优先动作。排序按"<em>投入少 × 影响大</em>"的双维度。
+      </p>
+
+      <ol class="rx-list">
+        <li>
+          <div class="rx-li-title">继续推进 <em>SKU 标品化</em> &middot; 目标 600 以下</div>
+          <div class="rx-li-desc">
+            当前 674 SKU 仍有进一步合并空间&mdash;促销版本、份量变体、节日限定是主要冗余源。建议下一轮精简目标 600 以内，释放采购、后厨与菜单印刷成本。
+          </div>
+          <div class="rx-li-meta"><strong>负责</strong> 运营中心 &middot; <strong>周期</strong> 6 周 &middot; <strong>影响</strong> 采购效率 +5%</div>
+        </li>
+        <li>
+          <div class="rx-li-title">大丸店 <em>现场复盘</em> &middot; Q4 -37.4% 异常</div>
+          <div class="rx-li-desc">
+            该店是本季度唯一的重大异常点。派出 1 名运营督导现场驻店 1 周，排查商圈人流、物业变化、门店服务动作，同时比对周边竞品开店记录。
+          </div>
+          <div class="rx-li-meta"><strong>负责</strong> 区域经理 &middot; <strong>周期</strong> 1 周 &middot; <strong>优先级</strong> P0</div>
+        </li>
+        <li>
+          <div class="rx-li-title">午市延伸 &middot; <em>填补 14:00-17:00 空档</em></div>
+          <div class="rx-li-desc">
+            基于 199,054 订单样本，14:00-17:00 几乎空白。试点 3 家高人流购物中心店推出"下午川味茶点"档期，价格带 28-48 元，目标把该时段占比从 5% 提升到 10%。
+          </div>
+          <div class="rx-li-meta"><strong>负责</strong> 产品部 &middot; <strong>周期</strong> 8 周试点 &middot; <strong>影响</strong> 年化营收增量</div>
+        </li>
+        <li>
+          <div class="rx-li-title">爆款菜 <em>招牌化保护</em> &middot; 青花椒鱼 &amp; 花椒鱼</div>
+          <div class="rx-li-desc">
+            两道菜在 480 条真实评论中好评率均为 100%&mdash;这是品牌最重要的"护城河"。建议锁定 BOM、固定 SOP、禁止私自改配方，并在菜单封面做统一视觉强化。
+          </div>
+          <div class="rx-li-meta"><strong>负责</strong> 品牌中心 + 中央厨房 &middot; <strong>周期</strong> 立即执行</div>
+        </li>
+        <li>
+          <div class="rx-li-title">服务体验 <em>培训专项</em> &middot; 4.30 评分止血</div>
+          <div class="rx-li-desc">
+            评分从 4.93 到 4.30 的主要拖累是"服务与等待"而非菜品。启动一次跨店服务培训专项，重点攻克"等位通知、上菜节奏、沟通语气"三个动作。
+          </div>
+          <div class="rx-li-meta"><strong>负责</strong> HR &amp; 培训中心 &middot; <strong>周期</strong> 4 周 &middot; <strong>目标</strong> 止住 &Delta; &middot; Q2 回到 4.6+</div>
+        </li>
+      </ol>
+    </div>
+
+    <div class="gaps-wrap">
+      <div class="gaps-header">DATA GAPS &middot; 本报告尚未覆盖</div>
+      <div class="gaps-title">这些问题还需要<em>更多数据</em>。</div>
+      <div class="gaps-list">
+        <div>
+          <strong>财务与利润</strong>
+          青花椒尚未上传门店级 P&amp;L 明细&mdash;因此成本刚性、劳力效率、毛利率等关键指标暂缺。建议补齐 2025 Q4 三张表。
+        </div>
+        <div>
+          <strong>原料采购</strong>
+          无月度采购单据&mdash;无法计算 BOM 理论 vs 实际差异，也难以识别损耗与浪费的具体来源。
+        </div>
+        <div>
+          <strong>会员 RFM</strong>
+          POS 数据未带会员标识&mdash;无法做 R/F/M 客群分层和复购分析。建议下次上传含会员 ID 的订单样本。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ COLOPHON ============ -->
+  <footer class="colophon">
+    <div>
+      <div class="colophon-block-title">数据来源</div>
+      POS 原始: 4,051 行 &middot; 17 门店<br>
+      评价数据: 480 条 &middot; 公开平台<br>
+      订单时段: 199,054 笔聚合
+    </div>
+    <div>
+      <div class="colophon-block-title">算法引擎</div>
+      SKU 归一 &middot; SmartBI <strong>v2</strong><br>
+      评价抽取 &middot; <strong>DeepSeek</strong> V3.2 JSON Mode<br>
+      时序校准 &middot; 月度偏移检测
+    </div>
+    <div>
+      <div class="colophon-block-title">报告口径</div>
+      生成时间 &middot; 2026 Q1<br>
+      版本 &middot; Cretas SmartBI V2.0<br>
+      仅供内部参考 &middot; <strong>不得外传</strong>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+// Render the dining heatmap
+(function() {
+  const grid = document.getElementById('heatmap');
+  const labels = document.getElementById('hm-labels');
+  if (!grid || !labels) return;
+
+  const days = ['一', '二', '三', '四', '五', '六', '日'];
+  const palette = ['#f2ece0', '#e8dfc4', '#d4cdb8', '#c9a66b', '#a68449', '#6b5230', '#4a6b5c', '#2d4a3e'];
+
+  // Build a realistic heatmap: lunch peak 11-14 + dinner peak 17-21, weekend stronger
+  const hours = 24;
+
+  function intensity(day, hr) {
+    const weekend = (day === 5 || day === 6);
+    const weekendBoost = weekend ? 1.25 : 1.0;
+
+    let base = 0.05;
+    // lunch peak centered at 12.5
+    const lunchDist = Math.abs(hr - 12.5);
+    if (lunchDist < 2.5) base += (1 - lunchDist / 2.5) * 0.75;
+    // dinner peak centered at 19
+    const dinnerDist = Math.abs(hr - 19);
+    if (dinnerDist < 2.8) base += (1 - dinnerDist / 2.8) * 0.88;
+    // mild afternoon trickle
+    if (hr >= 14 && hr < 17) base += 0.06;
+    // late night tail
+    if (hr >= 21 && hr < 23) base += 0.10 * (1 - (hr - 21) / 2);
+
+    base *= weekendBoost;
+    // jitter
+    base += (Math.sin(day * 7 + hr * 3) * 0.04);
+
+    return Math.max(0, Math.min(1, base));
+  }
+
+  let html = '';
+  for (let d = 0; d < 7; d++) {
+    html += `<div class="hm-day-label">周${days[d]}</div>`;
+    for (let h = 0; h < hours; h++) {
+      const v = intensity(d, h);
+      const idx = Math.min(palette.length - 1, Math.floor(v * palette.length));
+      html += `<div class="hm-cell" style="background:${palette[idx]}"></div>`;
+    }
+  }
+  grid.innerHTML = html;
+
+  // hour labels: 0, 4, 8, 12, 16, 20
+  let labelHtml = '<span>&nbsp;</span>';
+  for (let h = 0; h < hours; h++) {
+    if (h % 4 === 0) {
+      labelHtml += `<span>${String(h).padStart(2, '0')}</span>`;
+    } else {
+      labelHtml += '<span>&nbsp;</span>';
+    }
+  }
+  labels.innerHTML = labelHtml;
+})();
+</script>
+</body>
+</html>

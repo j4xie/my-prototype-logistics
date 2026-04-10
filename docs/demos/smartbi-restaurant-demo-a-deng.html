@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>鼎鲜火锅义乌 · 诊断室 · 2026-02</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600;900&family=JetBrains+Mono:wght@300;500;700&family=Oswald:wght@300;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e1a;
+  --bg-card: #131828;
+  --bg-elevated: #1c2238;
+  --line: #2a3048;
+  --ink: #e8ecf8;
+  --ink-dim: #7b84a0;
+  --ink-mute: #4a5070;
+  --critical: #ff3b5c;
+  --critical-glow: rgba(255, 59, 92, 0.25);
+  --warn: #ffb84d;
+  --warn-glow: rgba(255, 184, 77, 0.2);
+  --good: #4ade80;
+  --accent: #5eead4;
+  --mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  --serif: 'Noto Serif JP', 'Songti SC', serif;
+  --display: 'Oswald', 'Impact', sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--ink); font-family: var(--mono); }
+body {
+  background-image:
+    radial-gradient(ellipse 1200px 600px at 20% 0%, rgba(255, 59, 92, 0.08), transparent),
+    radial-gradient(ellipse 800px 400px at 100% 100%, rgba(94, 234, 212, 0.05), transparent),
+    linear-gradient(180deg, var(--bg) 0%, #050811 100%);
+  min-height: 100vh;
+  padding: 40px 20px;
+  position: relative;
+  overflow-x: hidden;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(0deg, transparent 0, transparent 2px, rgba(255,255,255,0.008) 2px, rgba(255,255,255,0.008) 4px);
+  pointer-events: none;
+  z-index: 1;
+}
+.grain {
+  position: fixed; inset: 0; pointer-events: none; opacity: 0.04; z-index: 2;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.container { max-width: 1280px; margin: 0 auto; position: relative; z-index: 10; }
+
+@keyframes pulse-critical {
+  0%, 100% { box-shadow: 0 0 0 0 var(--critical-glow), inset 0 0 30px rgba(255,59,92,0.1); }
+  50%       { box-shadow: 0 0 40px 4px var(--critical-glow), inset 0 0 30px rgba(255,59,92,0.15); }
+}
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes reveal-x {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes blink {
+  0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.3; }
+}
+@keyframes scan {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(100%); }
+}
+.reveal { opacity: 0; animation: reveal 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+/* ── HEADER ────────────────────────────────── */
+.header {
+  border: 1px solid var(--critical);
+  background: linear-gradient(135deg, rgba(255,59,92,0.08), rgba(255,59,92,0.02));
+  padding: 28px 36px;
+  margin-bottom: 28px;
+  position: relative;
+  overflow: hidden;
+  animation-delay: 0s;
+}
+.header::before {
+  content: "DIAGNOSTIC / EMERGENCY";
+  position: absolute;
+  top: 12px; right: 36px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--critical);
+  opacity: 0.7;
+}
+.header::after {
+  content: "●";
+  position: absolute;
+  top: 14px; right: 14px;
+  color: var(--critical);
+  font-size: 14px;
+  animation: blink 1.5s infinite;
+}
+.header h1 {
+  font-family: var(--serif);
+  font-weight: 900;
+  font-size: 44px;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  margin-bottom: 8px;
+}
+.header h1 .suffix {
+  color: var(--critical);
+  font-size: 28px;
+  font-weight: 400;
+  margin-left: 12px;
+}
+.header .subtitle {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: 8px;
+}
+.header .meta {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--line);
+  font-size: 11px;
+  color: var(--ink-dim);
+  letter-spacing: 1.5px;
+}
+.header .meta strong { display: block; color: var(--ink); font-family: var(--mono); font-size: 13px; margin-top: 4px; }
+
+/* ── HEADLINE (大字号死亡播报) ──────────────── */
+.headline-box {
+  margin: 32px 0;
+  padding: 40px;
+  background: linear-gradient(180deg, rgba(255,59,92,0.05), transparent);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--critical);
+  position: relative;
+  animation: pulse-critical 3s ease-in-out infinite;
+  animation-delay: 0.3s;
+}
+.headline-box .tag {
+  display: inline-block;
+  padding: 4px 12px;
+  background: var(--critical);
+  color: var(--bg);
+  font-size: 10px;
+  letter-spacing: 3px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+.headline-box h2 {
+  font-family: var(--serif);
+  font-size: 72px;
+  font-weight: 900;
+  line-height: 0.95;
+  margin-bottom: 16px;
+  letter-spacing: -3px;
+}
+.headline-box h2 .negative {
+  color: var(--critical);
+  font-family: var(--display);
+  font-size: 108px;
+  display: inline-block;
+  vertical-align: baseline;
+}
+.headline-box .sub {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--ink-dim);
+  letter-spacing: 1px;
+}
+
+/* ── VITAL SIGNS GRID ──────────────────────── */
+.section-title {
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: 4px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  margin: 40px 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.section-title::before { content: ""; width: 40px; height: 1px; background: var(--critical); }
+.section-title::after  { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--line), transparent); }
+
+.vitals {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border: 1px solid var(--line);
+  background: var(--bg-card);
+}
+.vital {
+  padding: 28px 24px;
+  border-right: 1px solid var(--line);
+  position: relative;
+}
+.vital:last-child { border-right: none; }
+.vital .label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  margin-bottom: 12px;
+}
+.vital .value {
+  font-family: var(--serif);
+  font-size: 40px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+.vital .value.mono { font-family: var(--mono); font-size: 36px; }
+.vital .unit { font-size: 18px; color: var(--ink-dim); font-weight: 400; margin-left: 4px; }
+.vital .delta {
+  margin-top: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--ink-dim);
+}
+.vital .delta.bad  { color: var(--critical); }
+.vital .delta.warn { color: var(--warn); }
+.vital.critical .value { color: var(--critical); }
+.vital.warn .value     { color: var(--warn); }
+
+/* ── DIAGNOSES (alert cards) ────────────────── */
+.diag {
+  background: var(--bg-card);
+  border-left: 3px solid var(--critical);
+  padding: 24px 28px;
+  margin-bottom: 14px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 24px;
+  align-items: start;
+}
+.diag .icon {
+  font-family: var(--serif);
+  font-size: 56px;
+  color: var(--critical);
+  line-height: 0.9;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  min-width: 80px;
+}
+.diag .body h3 {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.diag .body .detail {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+  line-height: 1.7;
+  margin-top: 8px;
+}
+.diag .body .detail strong { color: var(--ink); }
+.diag .body .formula {
+  display: inline-block;
+  padding: 6px 12px;
+  background: var(--bg-elevated);
+  border-left: 2px solid var(--critical);
+  margin: 10px 0;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: var(--critical);
+}
+.diag .impact {
+  text-align: right;
+  min-width: 160px;
+  font-family: var(--display);
+  padding-left: 24px;
+  border-left: 1px dashed var(--line);
+}
+.diag .impact .label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+}
+.diag .impact .value {
+  font-family: var(--serif);
+  font-size: 32px;
+  color: var(--critical);
+  font-weight: 900;
+  letter-spacing: -1px;
+  margin: 4px 0;
+  line-height: 1;
+}
+.diag .impact .unit {
+  font-size: 10px;
+  color: var(--ink-dim);
+  letter-spacing: 1px;
+}
+.diag.warn { border-left-color: var(--warn); }
+.diag.warn .icon { color: var(--warn); }
+.diag.warn .formula { border-left-color: var(--warn); color: var(--warn); }
+.diag.warn .impact .value { color: var(--warn); }
+
+/* ── IMPACT TOTAL BANNER ─────────────────────── */
+.impact-total {
+  margin: 24px 0;
+  background: linear-gradient(90deg, rgba(255,59,92,0.08), rgba(255,59,92,0.02));
+  border: 1px solid var(--critical);
+  padding: 32px 36px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 40px;
+  align-items: center;
+}
+.impact-total .col h4 {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.impact-total .col .val {
+  font-family: var(--serif);
+  font-size: 56px;
+  font-weight: 900;
+  color: var(--critical);
+  letter-spacing: -2px;
+  line-height: 1;
+}
+.impact-total .col .sub {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-dim);
+  margin-top: 6px;
+}
+.impact-total .divider {
+  font-family: var(--serif);
+  font-size: 48px;
+  color: var(--ink-mute);
+  font-weight: 300;
+}
+.impact-total .col.right { text-align: right; }
+
+/* ── STORED VALUE ───────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  padding: 28px;
+  margin-bottom: 14px;
+}
+.card h3 {
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.card .tag-inline {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  padding: 2px 8px;
+  background: rgba(255, 184, 77, 0.15);
+  color: var(--warn);
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.thresholds {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  margin: 20px 0 16px;
+  border: 1px solid var(--line);
+}
+.thr {
+  padding: 16px 20px;
+  border-right: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 11px;
+  text-align: center;
+}
+.thr:last-child { border-right: none; }
+.thr .range { color: var(--ink-dim); font-size: 10px; letter-spacing: 1px; }
+.thr .label { margin-top: 4px; font-size: 13px; font-weight: 500; }
+.thr.healthy .label { color: var(--good); }
+.thr.warn    { background: rgba(255, 184, 77, 0.08); }
+.thr.warn .label { color: var(--warn); }
+.thr.warn::before { content: "▼ 当前"; display: block; font-size: 9px; color: var(--warn); margin-bottom: 4px; letter-spacing: 2px; }
+.thr.danger .label { color: var(--critical); }
+
+/* ── BOM STATUS ─────────────────────────────── */
+.bom-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.bom-item {
+  padding: 18px 20px;
+  background: var(--bg-elevated);
+  border-top: 2px solid var(--ink-mute);
+}
+.bom-item .label { font-family: var(--mono); font-size: 9px; letter-spacing: 2px; color: var(--ink-dim); text-transform: uppercase; }
+.bom-item .value { font-family: var(--serif); font-size: 28px; font-weight: 700; margin-top: 8px; line-height: 1; }
+.bom-item.current { border-top-color: var(--accent); background: linear-gradient(180deg, rgba(94,234,212,0.06), transparent); }
+.bom-item.current .value { color: var(--accent); }
+
+/* ── SKIPPED ───────────────────────────────── */
+.skipped {
+  background: transparent;
+  border: 1px dashed var(--ink-mute);
+  padding: 24px 28px;
+  color: var(--ink-dim);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.skipped h3 {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.skipped ul { list-style: none; }
+.skipped li {
+  padding: 8px 0;
+  border-bottom: 1px dotted var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.skipped li:last-child { border-bottom: none; }
+.skipped li .name { color: var(--ink); font-weight: 500; }
+.skipped li .why  { font-size: 10px; color: var(--ink-mute); letter-spacing: 1px; }
+
+/* ── RX (prescription / Rx block) ─────────────── */
+.rx {
+  margin-top: 40px;
+  padding: 40px;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  position: relative;
+}
+.rx::before {
+  content: "Rx";
+  position: absolute;
+  top: 20px; right: 32px;
+  font-family: var(--serif);
+  font-size: 80px;
+  font-weight: 900;
+  color: var(--bg-elevated);
+  line-height: 1;
+  letter-spacing: -4px;
+}
+.rx h2 {
+  font-family: var(--serif);
+  font-size: 32px;
+  font-weight: 900;
+  margin-bottom: 4px;
+  letter-spacing: -1px;
+}
+.rx .subtitle {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+.rx-item {
+  display: grid;
+  grid-template-columns: 60px 1fr auto;
+  gap: 24px;
+  padding: 22px 0;
+  border-bottom: 1px dashed var(--line);
+  align-items: start;
+}
+.rx-item:last-child { border-bottom: none; }
+.rx-item .num {
+  font-family: var(--serif);
+  font-size: 52px;
+  font-weight: 900;
+  line-height: 0.85;
+  color: var(--critical);
+  letter-spacing: -2px;
+}
+.rx-item:nth-child(3) .num { color: var(--warn); }
+.rx-item .content h4 {
+  font-family: var(--serif);
+  font-size: 19px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.rx-item .content p {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+  line-height: 1.7;
+}
+.rx-item .saving {
+  text-align: right;
+  padding-left: 20px;
+  border-left: 1px solid var(--line);
+  font-family: var(--display);
+}
+.rx-item .saving .label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--ink-mute);
+}
+.rx-item .saving .val {
+  font-family: var(--serif);
+  font-size: 26px;
+  color: var(--good);
+  font-weight: 900;
+  margin-top: 4px;
+  line-height: 1;
+}
+.rx-item .saving .disclaimer {
+  font-size: 9px;
+  color: var(--ink-mute);
+  margin-top: 6px;
+  font-family: var(--mono);
+  letter-spacing: 0.5px;
+}
+
+/* ── PROVENANCE ─────────────────────────────── */
+.provenance {
+  margin-top: 40px;
+  padding: 24px 32px;
+  border-top: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-mute);
+  letter-spacing: 1px;
+  line-height: 2;
+}
+.provenance h4 {
+  font-family: var(--display);
+  font-size: 11px;
+  color: var(--ink-dim);
+  letter-spacing: 3px;
+  margin-bottom: 10px;
+}
+.provenance .row {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 16px;
+  padding: 4px 0;
+}
+.provenance .row .key { color: var(--good); }
+.provenance .row.example .key { color: var(--warn); }
+.provenance .row.skip    .key { color: var(--ink-mute); }
+
+/* ── Staggered reveal delays ─────────────────── */
+.d1 { animation-delay: 0.1s; }
+.d2 { animation-delay: 0.25s; }
+.d3 { animation-delay: 0.4s; }
+.d4 { animation-delay: 0.55s; }
+.d5 { animation-delay: 0.7s; }
+.d6 { animation-delay: 0.85s; }
+.d7 { animation-delay: 1.0s; }
+.d8 { animation-delay: 1.15s; }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header reveal">
+    <h1>鼎鲜火锅 · 义乌分公司<span class="suffix">/ 诊断报告</span></h1>
+    <div class="subtitle">S M A R T B I   V 2   ·   C R I T I C A L   D I A G N O S I S</div>
+    <div class="meta">
+      <div>PATIENT<strong>鼎鲜火锅·义乌分公司</strong></div>
+      <div>CUISINE<strong>火锅 (HOT POT)</strong></div>
+      <div>PERIOD<strong>2026-02</strong></div>
+      <div>ANALYSIS<strong>0.3s / 3:00 AM</strong></div>
+    </div>
+  </div>
+
+  <!-- HEADLINE -->
+  <div class="headline-box reveal d1">
+    <span class="tag">CRITICAL · HEMORRHAGE DETECTED</span>
+    <h2>净亏 <span class="negative">¥49,724</span></h2>
+    <div class="sub">-6.80% margin · 同比上月 ¥139 万营收 腰斩 47.43%</div>
+  </div>
+
+  <!-- VITAL SIGNS -->
+  <div class="section-title reveal d2">I. 生命体征 · Vital Signs</div>
+  <div class="vitals reveal d2">
+    <div class="vital">
+      <div class="label">营业收入</div>
+      <div class="value">¥731K</div>
+      <div class="delta bad">▼ 47.43%  vs ¥1,390K</div>
+    </div>
+    <div class="vital warn">
+      <div class="label">食材成本率</div>
+      <div class="value">45.85<span class="unit">%</span></div>
+      <div class="delta warn">▲ +2.85pp · 中位 43%</div>
+    </div>
+    <div class="vital warn">
+      <div class="label">人力成本率</div>
+      <div class="value">32.51<span class="unit">%</span></div>
+      <div class="delta warn">▲ +2.51pp · 中位 30%</div>
+    </div>
+    <div class="vital critical">
+      <div class="label">成本刚性指数</div>
+      <div class="value mono">0.561</div>
+      <div class="delta bad">健康 ≥ 0.85</div>
+    </div>
+  </div>
+
+  <!-- DIAGNOSES -->
+  <div class="section-title reveal d3">II. 诊断 · Differential Diagnosis</div>
+
+  <div class="diag reveal d3">
+    <div class="icon">01</div>
+    <div class="body">
+      <h3>成本刚性崩溃 — Cost Rigidity Collapse</h3>
+      <div class="formula">rigidity = Δlabor / Δrevenue = -26.60% / -47.43% = 0.561</div>
+      <div class="detail">
+        营收从 <strong>¥1,390,503 → ¥731,048</strong> (腰斩), 人力仅从 <strong>¥323,805 → ¥237,660</strong> (只跌 27%).
+        <br>健康餐厅的刚性指数应 <strong>≥0.85</strong> — 鼎鲜义乌店是 0.561. 这意味着营收跌了一半, 但老板没及时动排班.
+        <br><strong>这是 2 月亏损的主要单一原因.</strong>
+      </div>
+    </div>
+    <div class="impact">
+      <div class="label">SEVERITY</div>
+      <div class="value">CRIT</div>
+      <div class="unit">root cause</div>
+    </div>
+  </div>
+
+  <div class="diag warn reveal d4">
+    <div class="icon">02</div>
+    <div class="body">
+      <h3>食材成本结构性偏高 — Food Cost Structural Excess</h3>
+      <div class="detail">
+        实测 <strong>45.85%</strong> vs 火锅行业中位 <strong>43%</strong>, 超出 <strong>2.85 个百分点</strong>.
+        <br>playbook: <em>food_cost_high</em> → 主材多供应商比价 + 月度采购校准实际损耗.
+      </div>
+    </div>
+    <div class="impact">
+      <div class="label">年度多支</div>
+      <div class="value">¥250K</div>
+      <div class="unit">annualized</div>
+    </div>
+  </div>
+
+  <div class="diag warn reveal d5">
+    <div class="icon">03</div>
+    <div class="body">
+      <h3>人力成本结构性偏高 — Labor Cost Structural Excess</h3>
+      <div class="detail">
+        实测 <strong>32.51%</strong> vs 行业中位 <strong>30%</strong>, 超出 <strong>2.51 个百分点</strong>.
+        <br>playbook: <em>labor_cost_high</em> → 排班系统化, 按时段需求动态调整, 兼职占比 30-40%.
+      </div>
+    </div>
+    <div class="impact">
+      <div class="label">年度多支</div>
+      <div class="value">¥220K</div>
+      <div class="unit">annualized</div>
+    </div>
+  </div>
+
+  <!-- IMPACT TOTAL -->
+  <div class="impact-total reveal d6">
+    <div class="col">
+      <h4>ANNUAL STRUCTURAL BLEED</h4>
+      <div class="val">¥470K</div>
+      <div class="sub">两项结构性偏高合计年度多支出</div>
+    </div>
+    <div class="divider">/</div>
+    <div class="col right">
+      <h4>2026-02 亏损的</h4>
+      <div class="val">79<span style="font-size: 28px;">%</span></div>
+      <div class="sub">仅两项即能解释近 4/5 的当月亏损 · 拉回中位即可扭亏</div>
+    </div>
+  </div>
+
+  <!-- STORED VALUE -->
+  <div class="section-title reveal d6">III. 隐性折扣 · Hidden Discount</div>
+  <div class="card reveal d6">
+    <h3>充卡赠送依赖度<span class="tag-inline">WARNING</span></h3>
+    <div style="font-family: var(--mono); font-size: 13px; color: var(--ink-dim); margin-top: 4px;">
+      充卡赠送 ¥51,681 占营收 7.07% — 属于隐性折扣, 容易被埋在"营业费用" 忽视
+    </div>
+    <div class="thresholds">
+      <div class="thr healthy"><div class="range">&lt; 5%</div><div class="label">健康</div></div>
+      <div class="thr warn"><div class="range">5% — 10%</div><div class="label">警戒 (7.07%)</div></div>
+      <div class="thr danger"><div class="range">&gt; 10%</div><div class="label">严重</div></div>
+    </div>
+    <div style="font-family: var(--mono); font-size: 11px; color: var(--ink-dim); line-height: 1.8;">
+      → 相当于每 100 元营业额送出 ¥7 的隐性折扣<br>
+      → 建议监控充卡 ROI: 如充卡客户复购率不显著高于普通客户, 考虑停止赠送<br>
+      → 降到 3-5% 约省 ¥14-29K/月 (视执行力度)
+    </div>
+  </div>
+
+  <!-- BOM -->
+  <div class="section-title reveal d7">IV. BOM 精度层级 · Accuracy Tier</div>
+  <div class="bom-grid reveal d7">
+    <div class="bom-item current">
+      <div class="label">CURRENT TIER</div>
+      <div class="value">Layer 1</div>
+    </div>
+    <div class="bom-item">
+      <div class="label">ACCURACY</div>
+      <div class="value">± 15%</div>
+    </div>
+    <div class="bom-item">
+      <div class="label">SKU FORMS</div>
+      <div class="value">0</div>
+    </div>
+    <div class="bom-item">
+      <div class="label">PURCHASE MO.</div>
+      <div class="value">0</div>
+    </div>
+  </div>
+  <div style="margin-top: 8px; padding: 16px 24px; border: 1px dashed var(--line); font-family: var(--mono); font-size: 11px; color: var(--ink-dim);">
+    → 上传 TOP 20 SKU 主料清单 → <strong style="color: var(--accent);">Layer 2 (±8%)</strong><br>
+    → 再传 3 月采购汇总 → <strong style="color: var(--good);">Layer 3 (±5%)</strong>
+  </div>
+
+  <!-- SKIPPED -->
+  <div class="section-title reveal d8">V. 未触发 · Awaiting Data</div>
+  <div class="skipped reveal d8">
+    <h3>以下 sections 需额外数据触发, 当前 graceful skip</h3>
+    <ul>
+      <li><span class="name">渠道毛利率</span><span class="why">need: 订单来源, 实收额</span></li>
+      <li><span class="name">营业时段热力图</span><span class="why">need: 开单时间</span></li>
+      <li><span class="name">长尾 SKU 识别</span><span class="why">need: 商品名称, 数量</span></li>
+      <li><span class="name">命名归一统计</span><span class="why">need: 商品名称</span></li>
+      <li><span class="name">多店对比</span><span class="why">单店场景, 天然不适用</span></li>
+      <li><span class="name">会员 RFM</span><span class="why">need: 会员消费明细</span></li>
+      <li><span class="name">大众点评评论</span><span class="why">need: 美团商家端评价 Excel</span></li>
+    </ul>
+  </div>
+
+  <!-- RX / PRESCRIPTION -->
+  <div class="rx reveal d8">
+    <h2>处方 · Prescription</h2>
+    <div class="subtitle">按 ROI 真实排序 · 以下为示例, 实际取决于执行力度</div>
+
+    <div class="rx-item">
+      <div class="num">01</div>
+      <div class="content">
+        <h4>排班弹性化 — Fix cost_rigidity</h4>
+        <p>午餐全职保留, 下午 14-17 点改兼职. 营收跟着动, 人力才跟着动.<br>这是唯一能解决"人力刚性"根因的方案, 其他都是辅助.</p>
+      </div>
+      <div class="saving">
+        <div class="label">UP TO</div>
+        <div class="val">¥220K</div>
+        <div class="disclaimer">年度上限<br>(回到 30% 中位)</div>
+      </div>
+    </div>
+
+    <div class="rx-item">
+      <div class="num">02</div>
+      <div class="content">
+        <h4>食材供应链多元化 — Diversify Suppliers</h4>
+        <p>主材 (底料 / 肉类) 至少 3 家供应商比价, 月度复盘实际损耗, 锁定有竞争力的长期合约.</p>
+      </div>
+      <div class="saving">
+        <div class="label">UP TO</div>
+        <div class="val">¥250K</div>
+        <div class="disclaimer">年度上限<br>(回到 43% 中位)</div>
+      </div>
+    </div>
+
+    <div class="rx-item">
+      <div class="num">03</div>
+      <div class="content">
+        <h4>充卡赠送降档 — Reduce Hidden Discount</h4>
+        <p>从 7.07% 降到 3-5%, 观察流失率. 如复购率不显著升高, 继续降.</p>
+      </div>
+      <div class="saving">
+        <div class="label">月省</div>
+        <div class="val">¥14-29K</div>
+        <div class="disclaimer">视执行力度</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROVENANCE -->
+  <div class="provenance">
+    <h4>DATA PROVENANCE / 数据来源声明</h4>
+    <div class="row"><span class="key">✓ REAL</span><span>财务数字 (¥731,048 / ¥335,213 / ¥237,660 / -¥49,724) 来自 火锅2月利润表.xls</span></div>
+    <div class="row"><span class="key">✓ REAL</span><span>诊断指数 cost_rigidity=0.561, labor_change=-26.60%, revenue_change=-47.43% — 系统真实计算</span></div>
+    <div class="row"><span class="key">✓ REAL</span><span>年度影响 ¥250,348 / ¥220,149 — benchmark_alert_engine 真实输出</span></div>
+    <div class="row"><span class="key">✓ REAL</span><span>充卡赠送 ¥51,681 (7.07%) — 来自 真实 P&amp;L 的 stored_value_giveaway 字段</span></div>
+    <div class="row example"><span class="key">🔷 EXAMPLE</span><span>"排班省 ¥220K/年" 类数字是"回到行业中位"上限假设, 实际视执行力度 — 以下为示例</span></div>
+    <div class="row skip"><span class="key">⏭ SKIP</span><span>时段/长尾/多店/评论 sections 未触发 — 需上传 POS 明细 + 评论 Excel</span></div>
+  </div>
+
+</div>
+</body>
+</html>
