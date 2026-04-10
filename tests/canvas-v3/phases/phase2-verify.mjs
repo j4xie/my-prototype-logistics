@@ -491,11 +491,13 @@ export async function phase2Verify(state, api, report) {
           response: customerRuleResp,
         });
       } else {
-        // Try to create a customer with short name — should be blocked
+        // Try to create a customer with short name — should be blocked by Canvas rule
+        // Include ALL required fields to pass Bean Validation; only the 'name' should fail the Canvas rule
         const customerResp = await api.authedPost(state.factoryId, '/customers', {
-          name: 'AB', // 2 chars, should be blocked by rule
+          name: 'AB', // 2 chars, should be blocked by Canvas rule (<3)
           contactPerson: 'Canvas E2E Test',
           phone: '13800000000',
+          shippingAddress: '测试地址',
         });
         const blocked = customerResp.success === false
           && (customerResp.message?.includes('3字符') || customerResp.message?.includes('长度'));

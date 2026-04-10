@@ -674,8 +674,17 @@ public class SalesServiceImpl implements SalesService {
 
     private String generateSalesOrderNumber(String factoryId) {
         String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        long count = salesOrderRepository.countByFactoryIdAndDate(factoryId, LocalDate.now());
-        return String.format("SO-%s-%04d", dateStr, count + 1);
+        String prefix = "SO-" + dateStr + "-";
+        // Use MAX(orderNumber) by prefix to avoid duplicate-key collisions when multiple
+        // orders are created in quick succession or when orderDate != today in request.
+        String maxNumber = salesOrderRepository.findMaxOrderNumberByPrefix(factoryId, prefix + "%");
+        int seq = 1;
+        if (maxNumber != null && maxNumber.startsWith(prefix)) {
+            try {
+                seq = Integer.parseInt(maxNumber.substring(prefix.length())) + 1;
+            } catch (NumberFormatException ignored) {}
+        }
+        return String.format("SO-%s-%04d", dateStr, seq);
     }
 
     private String generateDeliveryNumber(String factoryId) {
