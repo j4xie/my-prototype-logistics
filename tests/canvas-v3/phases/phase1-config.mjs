@@ -167,5 +167,229 @@ export async function phase1Config(api, report) {
   );
   console.log(`  Dynamic fields status: ${pendingCount}/${items.length} PENDING_DDL`);
 
+  // 1.5 Create validation rule
+  console.log('1.5 Creating validation rule...');
+  try {
+    const ruleResp = await api.authedPut(
+      state.factoryId,
+      '/config/v2/validation-rules/so_amount_min',
+      {
+        moduleCode: 'sales_order',
+        operation: 'CREATE',
+        condition: 'totalAmount >= 100',
+        errorMessage: '订单金额不能低于100元',
+        severity: 'BLOCK',
+        enabled: true,
+        sortOrder: 1,
+      }
+    );
+    const success = ruleResp.id || ruleResp.data?.id || ruleResp.success;
+    report.addCheckpoint('P1-5', '创建校验规则 totalAmount>=100', success ? 'PASS' : 'FAIL', {
+      response: ruleResp,
+    });
+    console.log(`  ${success ? '✅' : '❌'} Validation rule created`);
+  } catch (e) {
+    report.addCheckpoint('P1-5', '创建校验规则', 'FAIL', { error: e.message });
+    console.log(`  ❌ Error: ${e.message}`);
+  }
+
+  // 1.6 Set visibleWhen on expected_margin
+  console.log('1.6 Setting visibleWhen on expected_margin...');
+  try {
+    const visResp = await api.authedPut(
+      state.factoryId,
+      '/config/v2/dynamic-fields/expected_margin',
+      {
+        moduleCode: 'sales_order',
+        visibleWhen: "customer_level == 'A'",
+      }
+    );
+    const success = visResp.id || visResp.data?.id;
+    report.addCheckpoint('P1-6', '配置 visibleWhen (expected_margin)', success ? 'PASS' : 'FAIL', {
+      response: visResp,
+    });
+    console.log(`  ${success ? '✅' : '❌'} visibleWhen set`);
+  } catch (e) {
+    report.addCheckpoint('P1-6', '配置 visibleWhen', 'FAIL', { error: e.message });
+    console.log(`  ❌ Error: ${e.message}`);
+  }
+
+  // 1.7 Create trigger chain
+  console.log('1.7 Creating trigger chain...');
+  try {
+    const trigResp = await api.authedPut(
+      state.factoryId,
+      '/config/v2/trigger-chains/so_confirmed_chain',
+      {
+        eventType: 'SalesOrderConfirmedEvent',
+        enabled: true,
+        steps: [
+          { order: 1, tool: 'scheduling_list', condition: '', enabled: true, params: {} },
+        ],
+        errorStrategy: 'CONTINUE',
+      }
+    );
+    const success = trigResp.id || trigResp.data?.id || trigResp.success;
+    report.addCheckpoint('P1-7', '创建触发链 so_confirmed_chain', success ? 'PASS' : 'FAIL', {
+      response: trigResp,
+    });
+    console.log(`  ${success ? '✅' : '❌'} Trigger chain created`);
+  } catch (e) {
+    report.addCheckpoint('P1-7', '创建触发链', 'FAIL', { error: e.message });
+    console.log(`  ❌ Error: ${e.message}`);
+  }
+
+  // 1.7b Create aggregate formula
+  console.log('1.7b Creating aggregate formula...');
+  try {
+    const fmlResp = await api.authedPut(
+      state.factoryId,
+      '/config/v2/formulas/tax_group_sum',
+      {
+        moduleCode: 'sales_order',
+        formulaCode: 'tax_group_sum',
+        expression: "GROUP_BY(sales_order_items, 'tax_rate', SUM('amount'))",
+        resultType: 'AGGREGATE',
+        precisionVal: 2,
+      }
+    );
+    const success = fmlResp.id || fmlResp.data?.id || fmlResp.success;
+    report.addCheckpoint('P1-7b', '创建聚合公式 tax_group_sum', success ? 'PASS' : 'FAIL', {
+      response: fmlResp,
+    });
+    console.log(`  ${success ? '✅' : '❌'} Aggregate formula created`);
+  } catch (e) {
+    report.addCheckpoint('P1-7b', '创建聚合公式', 'FAIL', { error: e.message });
+    console.log(`  ❌ Error: ${e.message}`);
+  }
+
+  // 1.7d Set computedWhen on delivery_priority
+  console.log('1.7d Setting computedWhen on delivery_priority...');
+  try {
+    const compResp = await api.authedPut(
+      state.factoryId,
+      '/config/v2/dynamic-fields/delivery_priority',
+      {
+        moduleCode: 'sales_order',
+        computedWhen: "customer_level == 'A' ? '加急' : '普通'",
+      }
+    );
+    const success = compResp.id || compResp.data?.id;
+    report.addCheckpoint('P1-7d', '配置 computedWhen (delivery_priority)', success ? 'PASS' : 'FAIL', {
+      response: compResp,
+    });
+    console.log(`  ${success ? '✅' : '❌'} computedWhen set`);
+  } catch (e) {
+    report.addCheckpoint('P1-7d', '配置 computedWhen', 'FAIL', { error: e.message });
+    console.log(`  ❌ Error: ${e.message}`);
+  }
+
+  // 1.8 Change-set workflow → publish
+  console.log('1.8 Publishing via change-set workflow...');
+  try {
+    // Step A: Create change set (configType must be a valid enum: OTHER, FORM_TEMPLATE, etc.)
+    const csResp = await api.authedPost(state.factoryId, '/config-changes', {
+      configType: 'OTHER',
+      configId: 'canvas-v3-init',
+      configName: 'Canvas V3 初始配置',
+      afterSnapshot: '{"dynamicFields":4,"rules":1,"triggers":1,"formulas":1}',
+    });
+    const changeSetId = csResp.id || csResp.data?.id;
+    report.addCheckpoint('P1-8a', '创建变更集', changeSetId ? 'PASS' : 'FAIL', {
+      changeSetId,
+      response: csResp,
+    });
+    console.log(`  ${changeSetId ? '✅' : '❌'} Change set created: ${changeSetId}`);
+
+    if (changeSetId) {
+      // Step B: Approve
+      const apprResp = await api.authedPost(
+        state.factoryId,
+        `/config-changes/${changeSetId}/approve`,
+        { comment: 'Canvas V3 初始配置审批' }
+      );
+      const apprSuccess = apprResp.success || apprResp.id || apprResp.status === 'APPROVED';
+      report.addCheckpoint('P1-8b', '审批变更集', apprSuccess ? 'PASS' : 'FAIL', {
+        response: apprResp,
+      });
+      console.log(`  ${apprSuccess ? '✅' : '❌'} Change set approved`);
+
+      // Step C: Apply
+      const applyResp = await api.authedPost(
+        state.factoryId,
+        `/config-changes/${changeSetId}/apply`,
+        {}
+      );
+      const applySuccess = applyResp.success || applyResp.id || applyResp.status === 'APPLIED';
+      report.addCheckpoint('P1-8c', '应用变更集', applySuccess ? 'PASS' : 'FAIL', {
+        response: applyResp,
+      });
+      console.log(`  ${applySuccess ? '✅' : '❌'} Change set applied`);
+    }
+
+    // Step D-pre: Ensure a DRAFT FactoryConfiguration exists before publish
+    // publishConfig() requires a draft in factory_configurations table.
+    // Create one by calling saveModuleConfig (PUT /config/modules/sales_order).
+    console.log('  Creating draft config for factory...');
+    try {
+      await api.authedPut(state.factoryId, '/config/modules/sales_order', {
+        enabled: true,
+        renderingMode: 'CANVAS',
+      });
+      console.log('  ✅ Draft config created');
+    } catch (draftErr) {
+      console.log(`  ⚠️ Draft create warning: ${draftErr.message}`);
+    }
+
+    // Step D: Publish config (triggers DDL)
+    console.log('  Publishing config (triggers DDL)...');
+    // publish endpoint uses query param ?summary=...
+    const pubResp = await api.authedPost(
+      state.factoryId,
+      '/config/publish?summary=Canvas+V3+initial+publish',
+      {}
+    );
+    const pubSuccess = pubResp.success !== false;
+    report.addCheckpoint('P1-8d', '发布配置 (触发 DDL)', pubSuccess ? 'PASS' : 'FAIL', {
+      response: pubResp,
+    });
+    console.log(`  ${pubSuccess ? '✅' : '❌'} Config published`);
+
+    // Wait a moment for DDL to complete
+    await new Promise(r => setTimeout(r, 2000));
+
+    // Step E: Verify DDL executed
+    console.log('  Verifying DDL execution...');
+    const ddlLog = await api.authedGet(state.factoryId, '/config/v2/ddl-log');
+    const ddlItems = Array.isArray(ddlLog) ? ddlLog : ddlLog.data || [];
+    const executedCount = ddlItems.filter(d => d.status === 'EXECUTED').length;
+    const failedCount = ddlItems.filter(d => d.status === 'FAILED').length;
+    report.addCheckpoint(
+      'P1-8e',
+      `DDL 执行 (${executedCount} 执行, ${failedCount} 失败)`,
+      executedCount >= 4 ? 'PASS' : 'FAIL',
+      { executedCount, failedCount, total: ddlItems.length }
+    );
+    console.log(`  DDL: ${executedCount} executed, ${failedCount} failed`);
+
+    // Step F: Verify dynamic fields are now ACTIVE
+    const listAfter = await api.authedGet(state.factoryId, '/config/v2/dynamic-fields', {
+      moduleCode: 'sales_order',
+    });
+    const listItems = Array.isArray(listAfter) ? listAfter : listAfter.data || [];
+    const activeCount = listItems.filter(f => f.status === 'ACTIVE').length;
+    const stillPendingCount = listItems.filter(f => f.status === 'PENDING_DDL').length;
+    report.addCheckpoint(
+      'P1-8f',
+      `动态字段变 ACTIVE (${activeCount}/${listItems.length})`,
+      activeCount >= 4 ? 'PASS' : 'FAIL',
+      { activeCount, stillPendingCount, total: listItems.length }
+    );
+    console.log(`  Dynamic fields: ${activeCount} ACTIVE, ${stillPendingCount} still PENDING_DDL`);
+  } catch (e) {
+    console.error('Phase 1.8 error:', e.message);
+    report.addCheckpoint('P1-8', '发布流程', 'FAIL', { error: e.message });
+  }
+
   return state;
 }
