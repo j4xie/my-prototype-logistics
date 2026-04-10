@@ -18,8 +18,10 @@ export function sshExec(command) {
 
 export function sshLogGrep(pattern) {
   try {
+    // Logback rolling files at /www/wwwroot/cretas/logs/cretas-backend.log (business logs)
+    // and cretas-prod*.log (startup only). Search both locations to cover Blue-Green.
     return execSync(
-      `ssh ${SERVER} "grep '${pattern}' /www/wwwroot/cretas/cretas-prod.log 2>/dev/null | tail -20"`,
+      `ssh ${SERVER} "grep -h '${pattern}' /www/wwwroot/cretas/logs/cretas-backend.log /www/wwwroot/cretas/cretas-prod.log /www/wwwroot/cretas/cretas-prod-green.log 2>/dev/null | tail -20"`,
       { encoding: 'utf8' }
     ).trim();
   } catch (e) {

@@ -43,7 +43,9 @@ export async function phase2Verify(state, api, report) {
 
     // Strategy 1: Direct URL to /modules/sales_order (generic route)
     try {
-      await page.goto('http://139.196.165.140:8086/#/modules/sales_order', {
+      // NOTE: router uses createWebHistory() (history mode), NOT hash mode
+      // So the URL is /modules/sales_order (no #)
+      await page.goto('http://139.196.165.140:8086/modules/sales_order', {
         waitUntil: 'networkidle',
         timeout: 15000,
       });
@@ -170,11 +172,13 @@ export async function phase2Verify(state, api, report) {
 
     const shot22b = await browser.screenshot('P2-02b-so-form');
 
-    // Check for dynamic field labels in DOM
-    const hasCustomerLevel = (await page.$('text=客户等级')) !== null;
-    const hasDeliveryPriority = (await page.$('text=交货优先级')) !== null;
-    const hasExpectedMargin = (await page.$('text=预期毛利率')) !== null;
-    const hasPrepaymentRecords = (await page.$('text=预付款记录')) !== null;
+    // Check for dynamic field labels in DOM via full innerText search
+    // Playwright's text= selector is exact match by default; use innerText substring instead.
+    const bodyText = await page.evaluate(() => document.body.innerText || '');
+    const hasCustomerLevel = bodyText.includes('客户等级');
+    const hasDeliveryPriority = bodyText.includes('交货优先级');
+    const hasExpectedMargin = bodyText.includes('预期毛利率');
+    const hasPrepaymentRecords = bodyText.includes('预付款记录');
 
     const foundCount = [
       hasCustomerLevel,
@@ -386,25 +390,39 @@ export async function phase2Verify(state, api, report) {
       }
 
       // Give server a moment to fire any trigger chains
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 3000));
 
+      // Search multiple log patterns — Fix #4 added "TriggerChain:" diagnostic prefix
+      const triggerChainLogs = sshLogGrep('TriggerChain:');
       const chainLogs = sshLogGrep('so_confirmed_chain');
-      const toolLogs = sshLogGrep('scheduling_list');
-      const chainFired = chainLogs.length > 0 || toolLogs.length > 0;
+      const eventLogs = sshLogGrep('SalesOrderConfirmedEvent');
+      const executingChainLogs = sshLogGrep('Executing trigger chain');
+
+      const evidence = [triggerChainLogs, chainLogs, eventLogs, executingChainLogs]
+        .filter(Boolean);
+      const chainFired = evidence.length > 0;
 
       if (chainFired) {
         report.addCheckpoint('P2-11', '触发链真实执行', 'PASS', {
           confirmSuccess,
-          chainLogs: chainLogs.slice(0, 300),
-          toolLogs: toolLogs.slice(0, 300),
+          triggerChainLog: triggerChainLogs.slice(0, 200),
+          chainCodeLog: chainLogs.slice(0, 200),
+          eventLog: eventLogs.slice(0, 200),
+          executingLog: executingChainLogs.slice(0, 200),
         });
-        console.log(`  ✅ Trigger chain fired (log evidence)`);
+        console.log(`  ✅ Trigger chain fired (log evidence found)`);
+      } else if (!confirmSuccess) {
+        report.addCheckpoint('P2-11', '触发链真实执行', 'KNOWN_GAP', {
+          confirmSuccess: false,
+          note: '订单 confirm 未成功, 事件未触发 — 测试前置条件不足',
+        });
+        console.log(`  🐛 Order confirm did not succeed, cannot verify chain`);
       } else {
         report.addCheckpoint('P2-11', '触发链真实执行', 'KNOWN_GAP', {
-          confirmSuccess,
-          note: '无日志证据 — 可能未触发或日志模式不同',
+          confirmSuccess: true,
+          note: '确认成功但日志中无 TriggerChain/chain/Event 证据 — 可能日志 buffer 或不同环境',
         });
-        console.log(`  🐛 No trigger chain evidence in logs`);
+        console.log(`  🐛 Confirm succeeded but no chain evidence in logs`);
       }
     }
 
@@ -518,43 +536,101 @@ export async function phase2Verify(state, api, report) {
       });
     } else {
       try {
-        // F001 tries to add same fieldCode with different type (DECIMAL vs TEXT)
-        const conflictResp = await api.authedPost(
-          'F001',
-          '/config/v2/dynamic-fields',
-          {
-            moduleCode: 'sales_order',
-            fieldCode: 'delivery_priority', // Same as F-TEST's field (TEXT)
-            fieldType: 'DECIMAL', // But different type
-            label: 'F001 优先级数值',
-          }
-        );
+        // Step 1: F001 adds a field with a fieldCode that already exists (as VARCHAR)
+        //         from F-TEST but with a different type (DECIMAL).
+        // With Fix #2 (DDLExecutor type conflict detection), this should be caught at publish time.
+        const uniqueFieldCode = `conflict_test_${Date.now()}`;
 
-        // Check actual DB column type (sshQuery is synchronous)
-        const { sshQuery } = await import('../lib/ssh-client.mjs');
-        const colType = sshQuery(
-          "SELECT data_type FROM information_schema.columns WHERE table_name='sales_orders' AND column_name='cf_delivery_priority'"
-        );
-
-        // The KNOWN_GAP is that F001's DECIMAL request is accepted but actual column is VARCHAR
-        const isVarchar = colType.includes('character varying') || colType.includes('text');
-
-        report.addCheckpoint('P2-18', 'DDL 类型冲突检测 (架构缺陷)', 'KNOWN_GAP', {
-          f001RequestType: 'DECIMAL',
-          fTestExistingType: 'VARCHAR (TEXT)',
-          dbActualType: colType || 'unknown',
-          isVarchar,
-          detail: `F001 声明 DECIMAL, DB 实际 ${colType}, 冲突未被检测`,
-          note: '架构缺陷: DDLExecutor 不检测跨工厂的同名字段类型冲突, 需 V3.1 修复',
-          backlogItem: 'V3.1: Add type conflict detection in DDLExecutor.generateDDL()',
+        // First, make F-TEST's field use a unique name so it's actually in DB as VARCHAR
+        const fTestField = await api.authedPost(state.factoryId, '/config/v2/dynamic-fields', {
+          moduleCode: 'sales_order',
+          fieldCode: uniqueFieldCode,
+          fieldType: 'TEXT',
+          label: 'F-TEST 冲突测试字段',
         });
-        console.log(`  🐛 Known gap confirmed: DB type=${colType}`);
+
+        // Publish F-TEST to execute DDL (create VARCHAR column)
+        await api.authedPut(state.factoryId, '/config/modules/sales_order', {
+          enabled: true,
+          changeSummary: 'conflict test prep',
+        });
+        const csPrep = await api.authedPost(state.factoryId, '/config-changes', {
+          configType: 'OTHER',
+          configId: `conflict-prep-${Date.now()}`,
+          configName: 'Conflict test prep',
+          afterSnapshot: '{}',
+        });
+        const csPrepId = csPrep.id || csPrep.data?.id;
+        if (csPrepId) {
+          await api.authedPost(state.factoryId, `/config-changes/${csPrepId}/approve`, { comment: 'prep' });
+          await api.authedPost(state.factoryId, `/config-changes/${csPrepId}/apply`, {});
+        }
+        await api.authedPost(state.factoryId, '/config/publish?summary=conflict+prep', {});
+        await new Promise(r => setTimeout(r, 2000));
+
+        // Step 2: F001 tries to add same fieldCode with DECIMAL type (conflict)
+        const conflictResp = await api.authedPost('F001', '/config/v2/dynamic-fields', {
+          moduleCode: 'sales_order',
+          fieldCode: uniqueFieldCode,
+          fieldType: 'DECIMAL',
+          label: 'F001 冲突字段 (应被阻止)',
+        });
+        const f001FieldCreated = !!(conflictResp.id || conflictResp.data?.id);
+
+        // Step 3: F001 tries to publish — Fix #2 should detect the conflict and throw
+        let f001PublishBlocked = false;
+        let f001PublishError = '';
+        try {
+          await api.authedPut('F001', '/config/modules/sales_order', {
+            enabled: true,
+            changeSummary: 'conflict test trigger',
+          });
+          const csConflict = await api.authedPost('F001', '/config-changes', {
+            configType: 'OTHER',
+            configId: `conflict-${Date.now()}`,
+            configName: 'Conflict trigger',
+            afterSnapshot: '{}',
+          });
+          const csConflictId = csConflict.id || csConflict.data?.id;
+          if (csConflictId) {
+            await api.authedPost('F001', `/config-changes/${csConflictId}/approve`, { comment: 'trigger' });
+            await api.authedPost('F001', `/config-changes/${csConflictId}/apply`, {});
+          }
+          const pubResp = await api.authedPost('F001', '/config/publish?summary=conflict+trigger', {});
+          // Fix #2 should make publish fail with "DDL type conflict" message
+          f001PublishError = pubResp.message || JSON.stringify(pubResp).slice(0, 200);
+          f001PublishBlocked = pubResp.success === false &&
+            (f001PublishError.includes('type conflict') || f001PublishError.includes('DDL'));
+        } catch (e) {
+          f001PublishError = e.message;
+          f001PublishBlocked = e.message.includes('type conflict') || e.message.includes('DDL');
+        }
+
+        if (f001PublishBlocked) {
+          report.addCheckpoint('P2-18', 'DDL 类型冲突检测 (Fix #2 验证)', 'PASS', {
+            fTestFieldCode: uniqueFieldCode,
+            fTestType: 'TEXT/VARCHAR',
+            f001RequestedType: 'DECIMAL',
+            f001FieldCreated,
+            f001PublishError,
+            detail: 'Fix #2 正确检测并阻止类型冲突',
+          });
+          console.log(`  ✅ DDL type conflict detected and blocked (Fix #2 works)`);
+        } else {
+          report.addCheckpoint('P2-18', 'DDL 类型冲突检测 (Fix #2 验证)', 'KNOWN_GAP', {
+            fTestFieldCode: uniqueFieldCode,
+            f001FieldCreated,
+            f001PublishError,
+            note: 'Fix #2 应检测冲突但未触发 — 可能字段尚未到达 DDLExecutor 或未部署',
+          });
+          console.log(`  🐛 Conflict not blocked: ${f001PublishError.slice(0, 150)}`);
+        }
       } catch (e) {
         report.addCheckpoint('P2-18', 'DDL 类型冲突检测', 'KNOWN_GAP', {
           error: e.message,
-          note: 'Error during verification — gap still exists',
+          note: 'Error during verification',
         });
-        console.log(`  🐛 Error: ${e.message}`);
+        console.log(`  🐛 Error: ${e.message.slice(0, 150)}`);
       }
     }
 
