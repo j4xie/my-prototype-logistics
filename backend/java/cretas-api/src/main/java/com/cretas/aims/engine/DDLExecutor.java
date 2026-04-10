@@ -54,6 +54,21 @@ public class DDLExecutor {
 
         log.info("Executing {} pending DDL statements for factory {}", pending.size(), factoryId);
         for (CanvasDynamicField field : pending) {
+            // Pre-check: detect type conflict for shared columns across factories
+            String conflictError = checkTypeConflict(field);
+            if (conflictError != null) {
+                CanvasDDLLog conflictLog = CanvasDDLLog.builder()
+                    .factoryId(factoryId)
+                    .configVersion(configVersion)
+                    .ddlStatement("-- type conflict detected, not executed")
+                    .targetTable(resolveTableName(field))
+                    .status("FAILED")
+                    .errorMessage(conflictError)
+                    .build();
+                ddlLogRepo.save(conflictLog);
+                throw new BusinessException(conflictError);
+            }
+
             String ddl = generateDDL(field);
             CanvasDDLLog logEntry = CanvasDDLLog.builder()
                 .factoryId(factoryId)
@@ -79,6 +94,69 @@ public class DDLExecutor {
                 throw new BusinessException("DDL execution failed [" + field.getModuleCode() + "." + field.getFieldCode() + "]: " + e.getMessage());
             }
         }
+    }
+
+    /**
+     * Check if target column already exists with an incompatible type.
+     * Returns null if no conflict, or an error message if a conflict is detected.
+     * Sub-tables are skipped — table name uniqueness is enforced by the naming scheme.
+     */
+    private String checkTypeConflict(CanvasDynamicField field) {
+        if ("SUB_TABLE".equals(field.getFieldType())) {
+            return null;
+        }
+        String tableName = resolveTableName(field);
+        String colName = field.getColumnName();
+        if (colName == null) {
+            return null;
+        }
+        try {
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT data_type, character_maximum_length, numeric_precision, numeric_scale " +
+                "FROM information_schema.columns WHERE table_name = ? AND column_name = ?",
+                tableName, colName
+            );
+            if (rows.isEmpty()) {
+                return null; // column does not exist, no conflict
+            }
+            String existingDataType = String.valueOf(rows.get(0).get("data_type"));
+            String expectedSql = mapFieldTypeToSQL(field.getFieldType());
+            if (!isCompatible(existingDataType, expectedSql)) {
+                return "DDL type conflict: column " + tableName + "." + colName +
+                       " already exists as " + existingDataType +
+                       " but factory " + field.getFactoryId() +
+                       " requested " + field.getFieldType() + " (" + expectedSql + "). " +
+                       "Rename the fieldCode to avoid cross-factory collision.";
+            }
+            return null;
+        } catch (Exception e) {
+            log.warn("Type conflict check failed for {}.{}: {}", tableName, colName, e.getMessage());
+            return null; // fail-open: do not block on metadata query errors
+        }
+    }
+
+    /**
+     * Check if an existing PostgreSQL data_type is compatible with the expected SQL type.
+     * Maps our mapFieldTypeToSQL() output family to PG information_schema.data_type values.
+     */
+    private boolean isCompatible(String existingDataType, String expectedSql) {
+        if (existingDataType == null) return true;
+        String existing = existingDataType.toLowerCase();
+        String expected = expectedSql.toLowerCase();
+
+        if (expected.startsWith("varchar")) {
+            return existing.equals("character varying") || existing.equals("text");
+        }
+        if (expected.startsWith("integer")) {
+            return existing.equals("integer") || existing.equals("bigint") || existing.equals("smallint");
+        }
+        if (expected.startsWith("numeric")) {
+            return existing.equals("numeric") || existing.equals("decimal");
+        }
+        if (expected.startsWith("timestamp")) {
+            return existing.contains("timestamp") || existing.equals("date");
+        }
+        return false;
     }
 
     private String generateDDL(CanvasDynamicField field) {
