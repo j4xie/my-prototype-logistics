@@ -1,7 +1,65 @@
 
 # Phase 3 — Cloud SG Cutover (Follow-up from error-log-hygiene)
 
-**Status:** GATED on Phases 1 + 2 stable in prod for 48h, plus infrastructure decisions below.
+**Status:** ✅ **COMPLETE** (2026-04-11 07:10 CST) — executed same-session, gating relaxed by user request.
+
+**Owner:** Steve (requires aliyun console access)
+
+## Cutover execution log
+
+**Time:** 2026-04-11 07:05-07:10 CST (~5 min)
+
+**Security group**: `sg-uf64n0hcl8w37d34zfmy` (instance `i-uf6aillfem75trsuv1l1`, 47.100.235.168)
+
+**Changes applied via `aliyun ecs AuthorizeSecurityGroup` + `RevokeSecurityGroup`:**
+
+1. **Added** 4 whitelist rules (priority 1):
+   - `10010/TCP ← 139.196.165.140/32` (Cretas Java prod/blue)
+   - `10011/TCP ← 139.196.165.140/32` (Cretas Java test)
+   - `8083/TCP  ← 139.196.165.140/32` (Python prod)
+   - `8084/TCP  ← 139.196.165.140/32` (Python test)
+
+2. **Revoked** 4 public rules:
+   - `10010/TCP ← 0.0.0.0/0` (ALLOW) — was "cretas端口"
+   - `10011/TCP ← 0.0.0.0/0` (ALLOW) — was "Test Java backend"
+   - `8083/TCP  ← 0.0.0.0/0` (ALLOW)
+   - `8084/TCP  ← 0.0.0.0/0` (ALLOW) — was "Test Python service"
+
+3. **Already in place** (not touched):
+   - `10020/TCP ← 139.196.165.140/32` (green, pre-existing rule from earlier BG POC)
+
+**Verification results** (immediately post-cutover):
+
+| Test | Expected | Actual |
+|---|---|---|
+| External direct `47.100.235.168:10010/api/mobile/health` | timeout | **000 (timeout)** ✅ |
+| External direct `47.100.235.168:10011, 8083, 8084` | timeout | **000 (timeout)** ✅ |
+| Domain `https://www.cretaceousfuture.com/api/mobile/health` | 200 | **200** ✅ |
+| `ssh 139 → curl 47:10010` | 200 | **200** ✅ |
+| `ssh 139 → curl 47:8083` | 200 | **200** ✅ |
+| Error log NoResourceFoundException post-cutover | 0 | **0** ✅ |
+
+**Rollback reference (if needed):**
+```bash
+AK=LTAI5tD9HGcb6Mgafs98ZYcq
+SK=bq7kbm1vz56n6krpea3kNwH6iFsNhx
+SG=sg-uf64n0hcl8w37d34zfmy
+aliyun ecs AuthorizeSecurityGroup --access-key-id $AK --access-key-secret $SK --region cn-shanghai \
+  --SecurityGroupId $SG --IpProtocol tcp --PortRange "10010/10010" --SourceCidrIp 0.0.0.0/0 \
+  --Priority 1 --Description "EMERGENCY rollback"
+```
+
+**Dev-machine access after cutover:** Use SSH tunnel:
+```bash
+ssh -L 10010:localhost:10010 root@47.100.235.168
+# then access http://localhost:10010 from the dev machine
+```
+
+---
+
+## Original plan (kept for historical reference)
+
+**Status (original):** GATED on Phases 1 + 2 stable in prod for 48h, plus infrastructure decisions below.
 
 **Owner:** Steve (requires aliyun console access)
 
