@@ -10,6 +10,7 @@ public interface FactoryConfigService {
     // ========== 合并配置读取 (前端消费) ==========
     EffectiveModuleConfig getEffectiveConfig(String factoryId, String moduleCode);
     EffectiveModuleConfig getEffectiveConfig(String factoryId, String moduleCode, String roleCode);
+    EffectiveModuleConfig getEffectiveConfig(String factoryId, String moduleCode, String roleCode, String userId);
 
     // ========== 字段级查询 (C 层) ==========
     boolean isFieldVisible(String factoryId, String moduleCode, String fieldCode);

@@ -54,8 +54,9 @@ public class ConfigChangeSetServiceImpl implements ConfigChangeSetService {
             throw new BusinessException("该配置存在待审批的变更，请先处理");
         }
 
-        // 计算版本号
-        Integer currentVersion = changeSetRepository.findLatestAppliedVersion(configId).orElse(0);
+        // 计算版本号 (取最新 APPLIED 版本, 若无则从 0 开始)
+        java.util.List<Integer> appliedVersions = changeSetRepository.findAppliedVersionsDesc(configId);
+        Integer currentVersion = appliedVersions.isEmpty() ? 0 : appliedVersions.get(0);
         Integer newVersion = currentVersion + 1;
 
         // 计算差异
@@ -375,7 +376,8 @@ public class ConfigChangeSetServiceImpl implements ConfigChangeSetService {
 
     @Override
     public Integer getCurrentVersion(String configId) {
-        return changeSetRepository.findLatestAppliedVersion(configId).orElse(0);
+        java.util.List<Integer> versions = changeSetRepository.findAppliedVersionsDesc(configId);
+        return versions.isEmpty() ? 0 : versions.get(0);
     }
 
     @Override

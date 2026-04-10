@@ -17,4 +17,7 @@ public class EffectiveField {
     private String group;
     private int order;
     private Map<String, Object> extra;
+    private String visibleWhen;   // SpEL condition for frontend conditional rendering
+    private String computedWhen;  // SpEL expression for frontend dynamic calculation
+    private String source;        // "jpa" or "dynamic" — tells frontend which CRUD path to use
 }

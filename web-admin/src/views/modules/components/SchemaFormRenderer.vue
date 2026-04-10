@@ -8,14 +8,19 @@ import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/store/modules/auth'
 import { useConfigStore } from '@/store/modules/config'
 import type { EffectiveModuleConfig, EffectiveField, FieldGroup } from '@/types/config'
+import { evaluateSpelBoolean, evaluateSpelValue } from '@/utils/spelEvaluator'
 import ReferenceSelector from './ReferenceSelector.vue'
 import DynamicArrayEditor from './DynamicArrayEditor.vue'
 import LineItemsEditor from './LineItemsEditor.vue'
+import SubTableEditor from './SubTableEditor.vue'
+import AttachmentUploader from './AttachmentUploader.vue'
 
 const props = defineProps<{
   moduleCode: string
   mode: 'create' | 'edit' | 'view'
   initialData?: Record<string, unknown>
+  factoryId?: string
+  recordId?: string
 }>()
 
 const emit = defineEmits<{
@@ -71,17 +76,34 @@ const groupedFields = computed(() => {
   }))
 })
 
-// dependsOn 条件显示
+// dependsOn 条件显示 + visibleWhen SpEL
 function isFieldShown(field: EffectiveField): boolean {
   const dep = field.extra?.dependsOn as { field: string; value: unknown } | undefined
-  if (!dep) return true
-  return formData.value[dep.field] === dep.value
+  if (dep) {
+    if (formData.value[dep.field] !== dep.value) return false
+  }
+  if (field.visibleWhen) {
+    return evaluateSpelBoolean(field.visibleWhen, formData.value)
+  }
+  return true
 }
 
 // 是否只读
 function isReadonly(field: EffectiveField): boolean {
   return props.mode === 'view' || field.readonly || !!field.extra?.computed
 }
+
+// computedWhen 动态计算值
+const computedValues = computed(() => {
+  const result: Record<string, unknown> = {}
+  if (!config.value) return result
+  for (const field of config.value.fields) {
+    if (field.computedWhen) {
+      result[field.code] = evaluateSpelValue(field.computedWhen, formData.value)
+    }
+  }
+  return result
+})
 
 // 自定义标签
 function getLabel(field: EffectiveField): string {
@@ -235,8 +257,39 @@ watch(
                 :disabled="isReadonly(field)"
               />
 
+              <!-- attachment -->
+              <AttachmentUploader
+                v-else-if="field.type === 'attachment'"
+                v-model="formData[field.code]"
+                :factory-id="factoryId || ''"
+                :accept="(field.extra?.accept as string)"
+                :max-size="(field.extra?.maxSize as number)"
+                :max-count="(field.extra?.maxCount as number)"
+                :readonly="isReadonly(field)"
+              />
+
+              <!-- sub_table -->
+              <SubTableEditor
+                v-else-if="field.type === 'sub_table'"
+                :factory-id="factoryId || ''"
+                :module-code="moduleCode"
+                :record-id="recordId || ''"
+                :field-code="field.code"
+                :label="field.label"
+                :columns="(field.extra?.columns as any[]) || []"
+                :readonly="mode === 'view'"
+              />
+
               <!-- fallback -->
               <el-input v-else v-model="formData[field.code]" :disabled="isReadonly(field)" />
+
+              <!-- computedWhen 动态计算显示 -->
+              <span
+                v-if="field.computedWhen && computedValues[field.code] != null"
+                class="computed-display"
+              >
+                {{ computedValues[field.code] }}
+              </span>
             </el-form-item>
           </template>
         </el-collapse-item>
@@ -266,5 +319,10 @@ watch(
   font-size: 15px;
   font-weight: 600;
   color: #303133;
+}
+.computed-display {
+  margin-left: 8px;
+  color: #909399;
+  font-size: 13px;
 }
 </style>

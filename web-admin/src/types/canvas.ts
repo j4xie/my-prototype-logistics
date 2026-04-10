@@ -141,3 +141,45 @@ export interface CompletenessCheck {
     message: string
   }[]
 }
+
+// Canvas V3 Dynamic Fields
+export type DynamicFieldType = 'TEXT' | 'NUMBER' | 'DECIMAL' | 'SELECT' | 'DATE' | 'ATTACHMENT' | 'SUB_TABLE'
+export type DynamicFieldStatus = 'PENDING_DDL' | 'ACTIVE' | 'DISABLED'
+
+export interface DynamicFieldConfig {
+  maxLength?: number
+  min?: number
+  max?: number
+  precision?: number
+  options?: Array<{ value: string; label: string }>
+  accept?: string
+  maxSize?: number
+  maxCount?: number
+  columns?: Array<{ code: string; label: string; type: string; required?: boolean }>
+}
+
+export interface DynamicField {
+  id: string
+  factoryId: string | null
+  moduleCode: string
+  fieldCode: string
+  fieldType: DynamicFieldType
+  label: string
+  config: DynamicFieldConfig
+  visibleWhen?: string
+  computedWhen?: string
+  sortOrder: number
+  status: DynamicFieldStatus
+  columnName?: string
+}
+
+export interface DDLLog {
+  id: string
+  factoryId: string
+  configVersion: number
+  ddlStatement: string
+  targetTable: string
+  status: 'PENDING' | 'EXECUTED' | 'FAILED' | 'ROLLED_BACK'
+  executedAt?: string
+  errorMessage?: string
+}

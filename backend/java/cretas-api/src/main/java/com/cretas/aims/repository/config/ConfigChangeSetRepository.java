@@ -93,11 +93,13 @@ public interface ConfigChangeSetRepository extends JpaRepository<ConfigChangeSet
     boolean existsPendingChangeForConfig(@Param("configId") String configId);
 
     /**
-     * 查询特定配置的最新已应用版本号
+     * 查询特定配置的最新已应用版本号。
+     * 注意: 返回 List 因为 ORDER BY 可能匹配多行, Optional<Integer> 会在多个 APPLIED
+     * 变更集存在时触发 NonUniqueResultException → DATABASE_ERROR.
      */
     @Query("SELECT c.toVersion FROM ConfigChangeSet c WHERE c.configId = :configId " +
            "AND c.status = 'APPLIED' ORDER BY c.toVersion DESC")
-    Optional<Integer> findLatestAppliedVersion(@Param("configId") String configId);
+    List<Integer> findAppliedVersionsDesc(@Param("configId") String configId);
 
     /**
      * 按配置类型统计各状态数量

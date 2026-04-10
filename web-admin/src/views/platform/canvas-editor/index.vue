@@ -41,7 +41,10 @@
           <ValidationRulePanel v-else-if="activeTab === 'validation'" :factory-id="factoryId" :module-code="selectedModule" />
 
           <!-- Detail tabs (Phase B) -->
-          <FieldConfigPanel v-else-if="activeTab === 'fields' && selectedModule" :factory-id="factoryId" :module-code="selectedModule" />
+          <template v-else-if="activeTab === 'fields'">
+            <PageEditor v-if="selectedModule" :module-code="selectedModule" :factory-id="factoryId" />
+            <el-empty v-else description="请先选择模块" />
+          </template>
           <PermissionMatrix v-else-if="activeTab === 'permissions' && selectedModule" :factory-id="factoryId" :module-code="selectedModule" />
           <ToolSkillMatrix v-else-if="activeTab === 'tools'" :factory-id="factoryId" />
 
@@ -100,6 +103,7 @@ import WorkflowDesigner from './components/WorkflowDesigner.vue'
 import TriggerChainDesigner from './components/TriggerChainDesigner.vue'
 import ValidationRulePanel from './components/ValidationRulePanel.vue'
 import FieldConfigPanel from './components/FieldConfigPanel.vue'
+import PageEditor from './PageEditor.vue'
 import PermissionMatrix from './components/PermissionMatrix.vue'
 import ToolSkillMatrix from './components/ToolSkillMatrix.vue'
 import AIChatPanel from './components/AIChatPanel.vue'

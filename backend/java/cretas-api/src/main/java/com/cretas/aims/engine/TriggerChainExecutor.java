@@ -43,7 +43,12 @@ public class TriggerChainExecutor {
         if (!HANDLED_EVENTS.contains(eventType)) return;
 
         String factoryId = extractFactoryId(event);
-        if (factoryId == null) return;
+        if (factoryId == null) {
+            log.warn("TriggerChain: event {} has no factoryId accessor, skipping", eventType);
+            return;
+        }
+
+        log.info("TriggerChain: event {} received for factory {}, looking up chains", eventType, factoryId);
 
         List<FactoryTriggerChain> chains = triggerChainRepository
                 .findByFactoryIdAndEventTypeAndEnabledTrue(factoryId, eventType);
@@ -53,8 +58,13 @@ public class TriggerChainExecutor {
         }
 
         if (chains.isEmpty()) {
+            log.info("TriggerChain: no chain configured for event {} / factory {} (fallthrough to hardcoded handlers)",
+                    eventType, factoryId);
             return;
         }
+
+        log.info("TriggerChain: found {} chain(s) for event {} / factory {}",
+                chains.size(), eventType, factoryId);
 
         for (FactoryTriggerChain chain : chains) {
             try {

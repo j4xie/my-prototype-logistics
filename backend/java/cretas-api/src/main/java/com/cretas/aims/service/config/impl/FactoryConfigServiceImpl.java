@@ -1,9 +1,13 @@
 package com.cretas.aims.service.config.impl;
 
 import com.cretas.aims.dto.config.*;
+import com.cretas.aims.engine.DDLExecutor;
+import com.cretas.aims.engine.DynamicFieldService;
+import com.cretas.aims.entity.auth.UserMenuPermission;
 import com.cretas.aims.entity.config.*;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
+import com.cretas.aims.repository.auth.UserMenuPermissionRepository;
 import com.cretas.aims.repository.config.*;
 import com.cretas.aims.service.config.FactoryConfigService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,6 +43,15 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     @org.springframework.context.annotation.Lazy
     private com.cretas.aims.ai.tool.ToolRegistry toolRegistry;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private DDLExecutor ddlExecutor;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private DynamicFieldService dynamicFieldService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private UserMenuPermissionRepository userMenuPermRepo;
 
     // ========== 合并配置读取 ==========
 
@@ -96,6 +109,47 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
         List<EffectiveField> fields = buildEffectiveFields(fieldSchemaMap, effectiveFieldConfig, customLabels);
         List<FieldGroup> groups = buildFieldGroups(fieldSchemaMap);
 
+        // Layer 2b: Merge Canvas V3 dynamic fields (ALTER TABLE added columns)
+        // This was previously only in the 4-param overload but frontend calls the 3-param version
+        if (dynamicFieldService != null) {
+            List<CanvasDynamicField> dynamicFields = dynamicFieldService.getActiveFields(factoryId, moduleCode);
+            if (!dynamicFields.isEmpty()) {
+                // Add a "custom" group so the frontend groupedFields computed doesn't filter these out.
+                // groupedFields filters by: groups.filter(g => g.visible) then fields.filter(f => f.group === group.code)
+                // So fields in a group not in the groups list are invisible.
+                boolean hasCustomGroup = groups.stream().anyMatch(g -> "custom".equals(g.getCode()));
+                if (!hasCustomGroup) {
+                    groups.add(FieldGroup.builder()
+                        .code("custom")
+                        .label("自定义字段")
+                        .order(1000)
+                        .visible(true)
+                        .build());
+                }
+
+                for (CanvasDynamicField df : dynamicFields) {
+                    if ("SUB_TABLE".equals(df.getFieldType())) continue;
+                    EffectiveField ef = EffectiveField.builder()
+                        .code(df.getFieldCode())
+                        .label(df.getLabel())
+                        .type(df.getFieldType().toLowerCase())
+                        .required(false)
+                        .visible(true)
+                        .readonly(false)
+                        .defaultValue(null)
+                        .options(df.getConfig().get("options"))
+                        .group("custom")
+                        .order(1000 + (df.getSortOrder() != null ? df.getSortOrder() : 0))
+                        .extra(df.getConfig())
+                        .visibleWhen(df.getVisibleWhen())
+                        .computedWhen(df.getComputedWhen())
+                        .source("dynamic")
+                        .build();
+                    fields.add(ef);
+                }
+            }
+        }
+
         // Build workflow states and transitions
         List<WorkflowStateDTO> workflowStates = buildWorkflowStates(schema.getWorkflowSchema(), effectiveWorkflowConfig);
         List<WorkflowTransitionDTO> workflowTransitions = buildWorkflowTransitions(schema.getWorkflowSchema(), effectiveWorkflowConfig);
@@ -119,6 +173,43 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
                         .collect(Collectors.toMap(Map.Entry::getKey, e -> String.valueOf(e.getValue()))))
                 .renderingMode(renderingMode)
                 .build();
+    }
+
+    @Override
+    public EffectiveModuleConfig getEffectiveConfig(String factoryId, String moduleCode, String roleCode, String userId) {
+        // 3-param version already merges dynamic fields (Layer 2b)
+        EffectiveModuleConfig config = getEffectiveConfig(factoryId, moduleCode, roleCode);
+
+        // Apply user-level permission overrides (4-param exclusive)
+        if (userId != null && userMenuPermRepo != null) {
+            applyUserPermissions(config.getFields(), factoryId, moduleCode, userId);
+        }
+
+        return config;
+    }
+
+    private void applyUserPermissions(List<EffectiveField> fields, String factoryId, String moduleCode, String userId) {
+        List<UserMenuPermission> perms = userMenuPermRepo.findByFactoryIdAndUserId(factoryId, userId);
+        for (UserMenuPermission perm : perms) {
+            String mc = perm.getMenuCode();
+            if (!mc.startsWith(moduleCode + ":")) continue;
+            String[] parts = mc.split(":");
+            if (parts.length < 3) continue;
+            String fieldCode = parts[1];
+            String permission = parts[2];
+
+            for (EffectiveField field : fields) {
+                if (field.getCode().equals(fieldCode)) {
+                    if ("REVOKE".equals(perm.getGrantType().name())) {
+                        if ("hidden".equals(permission)) field.setVisible(false);
+                        if ("readonly".equals(permission)) field.setReadonly(true);
+                    } else {
+                        if ("hidden".equals(permission)) field.setVisible(true);
+                        if ("readonly".equals(permission)) field.setReadonly(false);
+                    }
+                }
+            }
+        }
     }
 
     // ========== 字段级查询 ==========
@@ -286,6 +377,10 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
                     published.setStatus("ARCHIVED");
                     factoryConfigurationRepository.save(published);
                 });
+
+        // Execute pending DDL for dynamic fields and refresh cache
+        ddlExecutor.executePendingDDL(factoryId, draft.getConfigVersion());
+        dynamicFieldService.refreshCache();
 
         draft.setStatus("PUBLISHED");
         draft.setPublishedAt(LocalDateTime.now());
@@ -559,6 +654,7 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
                     .group((String) schemaDef.getOrDefault("group", "basic"))
                     .order(order++)
                     .extra(extra)
+                    .source("jpa")
                     .build());
         }
 
