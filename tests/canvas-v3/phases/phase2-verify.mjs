@@ -518,6 +518,65 @@ export async function phase2Verify(state, api, report) {
       console.log(`  ❌ Error: ${e.message?.slice(0, 150)}`);
     }
 
+    // 2.14E PaymentReceivedEvent publisher verification (Fix #6)
+    // This closes the audit gap — code publishes event but no test proves it fires.
+    console.log('\n2.14E PaymentReceivedEvent publisher verification...');
+    if (!testCustomerId) {
+      report.addCheckpoint('P2-14E', 'PaymentReceivedEvent 发布', 'SKIP', {
+        reason: 'No customer ID',
+      });
+    } else {
+      try {
+        // Step 1: Create a receivable (挂账) so there's a balance to pay
+        const receivableResp = await api.authedPost(state.factoryId, '/finance/receivable', {
+          counterpartyId: testCustomerId,
+          amount: 500,
+          remark: 'Canvas E2E test AR',
+        });
+        const receivableCreated = receivableResp.success !== false;
+
+        if (!receivableCreated) {
+          report.addCheckpoint('P2-14E', 'PaymentReceivedEvent 发布', 'FAIL', {
+            reason: '应收挂账创建失败',
+            response: receivableResp,
+          });
+          console.log(`  ❌ Could not create receivable: ${receivableResp.message}`);
+        } else {
+          // Step 2: Record payment (should publish PaymentReceivedEvent)
+          const paymentResp = await api.authedPost(state.factoryId, '/finance/receivable/payment', {
+            counterpartyId: testCustomerId,
+            amount: 500,
+            paymentMethod: 'BANK_TRANSFER',
+            paymentReference: `PAY-E2E-${Date.now()}`,
+            remark: 'Canvas E2E payment test',
+          });
+          const paymentRecorded = paymentResp.success !== false;
+          console.log(`  Payment recorded: ${paymentRecorded}`);
+
+          // Step 3: Wait briefly then grep logs for PaymentReceivedEvent
+          await new Promise(r => setTimeout(r, 2000));
+          const paymentLogs = sshLogGrep(`PaymentReceivedEvent.*${state.factoryId}`);
+          const publishedLog = paymentLogs.includes('已发布 PaymentReceivedEvent');
+
+          report.addCheckpoint('P2-14E', 'PaymentReceivedEvent 真实发布 (Fix #6 验证)',
+            (paymentRecorded && publishedLog) ? 'PASS' : 'FAIL', {
+              paymentRecorded,
+              publishedLog: publishedLog,
+              logEvidence: paymentLogs.slice(0, 300),
+              detail: publishedLog
+                ? 'ArApServiceImpl 真实发布了 PaymentReceivedEvent'
+                : '收款成功但未看到事件发布日志 — Fix #6 未真实生效',
+            });
+          console.log(`  ${publishedLog ? '✅' : '❌'} Event published: ${publishedLog}`);
+        }
+      } catch (e) {
+        report.addCheckpoint('P2-14E', 'PaymentReceivedEvent 发布', 'FAIL', {
+          error: e.message?.slice(0, 300),
+        });
+        console.log(`  ❌ Error: ${e.message?.slice(0, 150)}`);
+      }
+    }
+
     // 2.11 Trigger chain execution
     console.log('\n2.11 Trigger chain execution (SO confirmed)...');
     if (!state.phase2OrderId) {

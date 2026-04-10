@@ -139,15 +139,18 @@ export interface ItemSchemaField {
 
 // ========== 模块 API 路径映射 ==========
 
+// Maps moduleCode (spec convention snake_case) → actual REST endpoint prefix
+// Endpoints match the Controller @RequestMapping values in backend.
+// Fixed (Round 3 audit): was using hyphen-case that didn't match any real controller.
 export const MODULE_API_PATHS: Record<string, string> = {
-  sales_order: 'sales-orders',
-  bom: 'bom-items',
-  inbound: 'material-batches/inbound',
-  outbound: 'material-batches/outbound',
-  production_report: 'work-reports',
-  production_plan: 'production-plans',
-  purchase_order: 'purchase-orders',
-  quality_inspection: 'quality-inspections',
+  sales_order: 'sales/orders',
+  bom: 'bom/items',
+  inbound: 'material-batches',
+  outbound: 'material-batches',
+  production_report: 'production/work-reports',
+  production_plan: 'production/plans',
+  purchase_order: 'purchase/orders',
+  quality_inspection: 'quality/inspections',
   equipment: 'equipment',
   inventory: 'inventory',
   customer: 'customers',

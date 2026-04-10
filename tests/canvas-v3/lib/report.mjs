@@ -92,7 +92,7 @@ export class Report {
       { name: '验证规则存储', checks: ['P1-5', 'P3-2', 'P4-6'] },
       { name: '验证规则执行 ⚠️', checks: ['P2-5', 'P4-3', 'P2-14B', 'P2-14D'] },
       { name: '触发链存储', checks: ['P1-7'] },
-      { name: '触发链执行 ⚠️', checks: ['P2-11'] },
+      { name: '触发链执行 ⚠️', checks: ['P2-11', 'P2-14E'] },
       { name: '变更集流程', checks: ['P1-8a', 'P1-8b', 'P1-8c', 'P3-4a', 'P3-4b', 'P3-4c'] },
       { name: '发布 + DDL 执行', checks: ['P1-8d', 'P1-8e', 'P3-4d', 'P3-4e'] },
       { name: '多租户隔离 (正向)', checks: ['P2-16'] },
