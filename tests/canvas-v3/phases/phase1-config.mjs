@@ -167,7 +167,7 @@ export async function phase1Config(api, report) {
   );
   console.log(`  Dynamic fields status: ${pendingCount}/${items.length} PENDING_DDL`);
 
-  // 1.5 Create validation rule
+  // 1.5 Create validation rule (CREATE operation)
   console.log('1.5 Creating validation rule...');
   try {
     const ruleResp = await api.authedPut(
@@ -187,9 +187,35 @@ export async function phase1Config(api, report) {
     report.addCheckpoint('P1-5', '创建校验规则 totalAmount>=100', success ? 'PASS' : 'FAIL', {
       response: ruleResp,
     });
-    console.log(`  ${success ? '✅' : '❌'} Validation rule created`);
+    console.log(`  ${success ? '✅' : '❌'} Validation rule created (CREATE)`);
   } catch (e) {
     report.addCheckpoint('P1-5', '创建校验规则', 'FAIL', { error: e.message });
+    console.log(`  ❌ Error: ${e.message}`);
+  }
+
+  // 1.5b Create UPDATE validation rule (separate from CREATE — engine queries by operation)
+  console.log('1.5b Creating UPDATE validation rule...');
+  try {
+    const ruleResp = await api.authedPut(
+      state.factoryId,
+      '/config/v2/validation-rules/so_amount_min_update',
+      {
+        moduleCode: 'sales_order',
+        operation: 'UPDATE',
+        condition: '#totalAmount < 100',
+        errorMessage: '订单编辑: 金额不能低于100元',
+        severity: 'BLOCK',
+        enabled: true,
+        sortOrder: 1,
+      }
+    );
+    const success = ruleResp.id || ruleResp.data?.id || ruleResp.success;
+    report.addCheckpoint('P1-5b', '创建 UPDATE 校验规则', success ? 'PASS' : 'FAIL', {
+      response: ruleResp,
+    });
+    console.log(`  ${success ? '✅' : '❌'} UPDATE rule created`);
+  } catch (e) {
+    report.addCheckpoint('P1-5b', '创建 UPDATE 校验规则', 'FAIL', { error: e.message });
     console.log(`  ❌ Error: ${e.message}`);
   }
 

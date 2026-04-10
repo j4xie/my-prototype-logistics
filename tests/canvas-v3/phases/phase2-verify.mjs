@@ -634,14 +634,12 @@ export async function phase2Verify(state, api, report) {
       }
     }
 
-    // 2.19 用户级权限 (P0-6 昆山六扇门)
-    //  - Grant: 用户获得额外权限(如访问某模块)
-    //  - Revoke: 用户被撤销权限
-    //  - Effective menus: 查询用户最终有效菜单集合
-    console.log('\n2.19 User-level permission override (GRANT/REVOKE)...');
+    // 2.19 用户级权限 (P0-6 昆山六扇门) — REAL behavior verification
+    //  Before/after approach: verify that granting a menu permission actually
+    //  changes the user's effective menus list (not just API plumbing).
+    console.log('\n2.19 User-level permission override — BEFORE/AFTER verification...');
     try {
-      // Find the new factory admin user ID — extract from token
-      // Token payload contains userId. Decode JWT and extract.
+      // Extract userId from JWT token
       const tokenParts = state.token.split('.');
       const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
       const adminUserId = String(payload.userId || '');
@@ -651,58 +649,80 @@ export async function phase2Verify(state, api, report) {
           reason: '无法从 JWT 提取 userId',
         });
       } else {
-        // Step 1: GRANT a module permission (sales_order)
-        const grantResp = await api.authedPost(
-          state.factoryId,
-          `/users/${adminUserId}/menu-permissions/grant`,
-          { menuCode: 'sales_order:custom_test_field:hidden', remark: 'E2E test grant' }
-        );
-        const grantId = grantResp.id || grantResp.data?.id;
-        console.log(`  ${grantId ? '✅' : '❌'} GRANT: ${grantId || JSON.stringify(grantResp).slice(0, 150)}`);
+        const testMenuCode = `sales_order:test_field_${Date.now()}:hidden`;
 
-        // Step 2: REVOKE a module permission
-        const revokeResp = await api.authedPost(
-          state.factoryId,
-          `/users/${adminUserId}/menu-permissions/revoke`,
-          { menuCode: 'inventory:sensitive_column:hidden', remark: 'E2E test revoke' }
-        );
-        const revokeId = revokeResp.id || revokeResp.data?.id;
-        console.log(`  ${revokeId ? '✅' : '❌'} REVOKE: ${revokeId || JSON.stringify(revokeResp).slice(0, 150)}`);
-
-        // Step 3: List user overrides (expect 2)
-        const listResp = await api.authedGet(
-          state.factoryId,
-          `/users/${adminUserId}/menu-permissions`
-        );
-        const overrides = Array.isArray(listResp) ? listResp : (listResp.data || []);
-        const hasGrant = overrides.some(o => o.menuCode?.includes('custom_test_field'));
-        const hasRevoke = overrides.some(o => o.menuCode?.includes('sensitive_column'));
-
-        // Step 4: Get effective menus for this user (role enum is lowercase per FactoryUserRole)
-        const effectiveResp = await api.authedGet(
+        // Step 1: BEFORE — get effective menus (baseline)
+        const beforeResp = await api.authedGet(
           state.factoryId,
           `/users/${adminUserId}/menu-permissions/effective`,
           { role: 'factory_super_admin' }
         );
-        const effectiveMenus = Array.isArray(effectiveResp) ? effectiveResp :
-          (effectiveResp.data || effectiveResp);
-        const effectiveCount = Array.isArray(effectiveMenus) ? effectiveMenus.length :
-          (typeof effectiveMenus === 'object' ? Object.keys(effectiveMenus).length : 0);
+        const beforeMenus = Array.isArray(beforeResp) ? beforeResp : (beforeResp.data || beforeResp);
+        const beforeSet = new Set(Array.isArray(beforeMenus) ? beforeMenus : []);
+        const beforeCount = beforeSet.size;
 
-        const allOk = !!grantId && !!revokeId && hasGrant && hasRevoke;
-        report.addCheckpoint('P2-19', '用户级权限 GRANT/REVOKE/有效菜单', allOk ? 'PASS' : 'FAIL', {
-          userId: adminUserId,
-          grantCreated: !!grantId,
-          revokeCreated: !!revokeId,
-          overridesCount: overrides.length,
-          hasGrant,
-          hasRevoke,
-          effectiveMenusCount: effectiveCount,
-        });
-        if (allOk) {
-          console.log(`  ✅ Permission override works: ${overrides.length} overrides, ${effectiveCount} effective menus`);
+        // Step 2: GRANT a new menu permission
+        const grantResp = await api.authedPost(
+          state.factoryId,
+          `/users/${adminUserId}/menu-permissions/grant`,
+          { menuCode: testMenuCode, remark: 'E2E before/after test' }
+        );
+        const grantId = grantResp.id || grantResp.data?.id;
+
+        // Step 3: AFTER GRANT — get effective menus again
+        const afterGrantResp = await api.authedGet(
+          state.factoryId,
+          `/users/${adminUserId}/menu-permissions/effective`,
+          { role: 'factory_super_admin' }
+        );
+        const afterGrantMenus = Array.isArray(afterGrantResp) ? afterGrantResp : (afterGrantResp.data || afterGrantResp);
+        const afterGrantSet = new Set(Array.isArray(afterGrantMenus) ? afterGrantMenus : []);
+        const grantWorked = afterGrantSet.has(testMenuCode) && !beforeSet.has(testMenuCode);
+
+        // Step 4: REVOKE the same permission
+        const revokeResp = await api.authedPost(
+          state.factoryId,
+          `/users/${adminUserId}/menu-permissions/revoke`,
+          { menuCode: testMenuCode, remark: 'E2E before/after test revoke' }
+        );
+        const revokeId = revokeResp.id || revokeResp.data?.id;
+
+        // Step 5: AFTER REVOKE — get effective menus, should NOT contain testMenuCode
+        const afterRevokeResp = await api.authedGet(
+          state.factoryId,
+          `/users/${adminUserId}/menu-permissions/effective`,
+          { role: 'factory_super_admin' }
+        );
+        const afterRevokeMenus = Array.isArray(afterRevokeResp) ? afterRevokeResp : (afterRevokeResp.data || afterRevokeResp);
+        const afterRevokeSet = new Set(Array.isArray(afterRevokeMenus) ? afterRevokeMenus : []);
+        const revokeWorked = !afterRevokeSet.has(testMenuCode);
+
+        // Both behaviors must actually change the effective menus
+        const realBehaviorVerified = !!grantId && !!revokeId && grantWorked && revokeWorked;
+
+        report.addCheckpoint('P2-19', '用户级权限 GRANT/REVOKE 真实 before/after 验证',
+          realBehaviorVerified ? 'PASS' : 'FAIL', {
+            userId: adminUserId,
+            testMenuCode,
+            beforeCount,
+            grantCreated: !!grantId,
+            grantWorked,
+            afterGrantHasMenu: afterGrantSet.has(testMenuCode),
+            revokeCreated: !!revokeId,
+            revokeWorked,
+            afterRevokeHasMenu: afterRevokeSet.has(testMenuCode),
+            detail: realBehaviorVerified
+              ? 'GRANT 后菜单出现 + REVOKE 后菜单消失 — 权限真实生效'
+              : 'GRANT/REVOKE API 调用成功但 effective menus 没有相应变化',
+          });
+
+        if (realBehaviorVerified) {
+          console.log(`  ✅ Permission REALLY works: before=${beforeCount}, after grant contains ${testMenuCode}, after revoke removed`);
         } else {
-          console.log(`  ❌ Permission override incomplete: grant=${!!grantId} revoke=${!!revokeId} hasGrant=${hasGrant} hasRevoke=${hasRevoke}`);
+          console.log(`  ❌ Plumbing worked but behavior didn't change:`);
+          console.log(`     grantWorked=${grantWorked} (should be true)`);
+          console.log(`     revokeWorked=${revokeWorked} (should be true)`);
+          console.log(`     beforeHas=${beforeSet.has(testMenuCode)}, afterGrantHas=${afterGrantSet.has(testMenuCode)}, afterRevokeHas=${afterRevokeSet.has(testMenuCode)}`);
         }
       }
     } catch (e) {

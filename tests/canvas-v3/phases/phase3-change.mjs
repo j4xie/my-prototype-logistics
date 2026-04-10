@@ -27,7 +27,7 @@ export async function phase3Change(state, api, report) {
     console.log(`  ❌ Error: ${e.message}`);
   }
 
-  // 3.2 Modify validation rule threshold 100 → 500
+  // 3.2 Modify validation rule threshold 100 → 500 (both CREATE and UPDATE rules)
   console.log('3.2 Modifying validation rule 100→500...');
   try {
     const updateRuleResp = await api.authedPut(
@@ -44,10 +44,27 @@ export async function phase3Change(state, api, report) {
       }
     );
     const success = updateRuleResp.id || updateRuleResp.data?.id;
-    report.addCheckpoint('P3-2', '修改校验阈值 100→500', success ? 'PASS' : 'FAIL', {
+    report.addCheckpoint('P3-2', '修改校验阈值 100→500 (CREATE)', success ? 'PASS' : 'FAIL', {
       response: updateRuleResp,
     });
-    console.log(`  ${success ? '✅' : '❌'} Validation rule updated`);
+    console.log(`  ${success ? '✅' : '❌'} Validation rule updated (CREATE)`);
+
+    // Also update the UPDATE rule so both operations stay in sync
+    const updateRuleRespU = await api.authedPut(
+      state.factoryId,
+      '/config/v2/validation-rules/so_amount_min_update',
+      {
+        moduleCode: 'sales_order',
+        operation: 'UPDATE',
+        condition: '#totalAmount < 500',
+        errorMessage: '订单编辑: 金额不能低于500元',
+        severity: 'BLOCK',
+        enabled: true,
+        sortOrder: 1,
+      }
+    );
+    const successU = updateRuleRespU.id || updateRuleRespU.data?.id;
+    report.addCheckpoint('P3-2b', '修改 UPDATE 校验阈值 100→500', successU ? 'PASS' : 'FAIL');
   } catch (e) {
     report.addCheckpoint('P3-2', '修改校验阈值', 'FAIL', { error: e.message });
     console.log(`  ❌ Error: ${e.message}`);
