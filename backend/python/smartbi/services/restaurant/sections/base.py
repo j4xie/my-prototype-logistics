@@ -1,6 +1,7 @@
 """Section handler base classes - contract for all restaurant analysis sections."""
 from __future__ import annotations
 
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
@@ -58,3 +59,50 @@ class AbstractSectionHandler(ABC):
 
     def cache_key(self, request: SectionRequest) -> str:
         return f"{self.section_name}:{request.factory_id}:{request.upload_id or 'live'}:{request.period}"
+
+    def ok(
+        self,
+        request: SectionRequest,
+        data: dict[str, Any],
+        started: float,
+        warnings: Optional[list[str]] = None,
+    ) -> SectionResponse:
+        """Helper for building a successful SectionResponse.
+
+        Every handler should set `started = time.time()` at the top of compute()
+        and pass it here to get consistent computed_at_ms calculation.
+        """
+        return SectionResponse(
+            section_name=self.section_name,
+            status=SectionStatus.OK,
+            data=data,
+            warnings=warnings or [],
+            cache_key=self.cache_key(request),
+            computed_at_ms=int((time.time() - started) * 1000),
+        )
+
+    def skipped(
+        self,
+        request: SectionRequest,
+        reason: str,
+        started: float,
+    ) -> SectionResponse:
+        """Helper for building a SKIPPED SectionResponse with a reason."""
+        return SectionResponse(
+            section_name=self.section_name,
+            status=SectionStatus.SKIPPED,
+            data={},
+            warnings=[reason],
+            cache_key=self.cache_key(request),
+            computed_at_ms=int((time.time() - started) * 1000),
+        )
+
+    @staticmethod
+    def _safe_float(v: Any) -> Optional[float]:
+        """Convert a JSON value to float or return None for None/invalid."""
+        if v is None:
+            return None
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return None
