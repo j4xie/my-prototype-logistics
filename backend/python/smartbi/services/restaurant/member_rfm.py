@@ -101,6 +101,7 @@ class RfmReport:
 
     insights: list[str] = field(default_factory=list)
     recommendations: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)  # 分析过程中的警告 (如 quintile fallback)
 
     def to_dict(self) -> dict:
         return {
@@ -116,6 +117,7 @@ class RfmReport:
             "avgMonetary": round(self.avg_monetary, 2),
             "insights": self.insights,
             "recommendations": self.recommendations,
+            "warnings": self.warnings,
             # 注意: 不返回 all members 以控制 payload 大小
         }
 
@@ -241,9 +243,22 @@ class MemberRfmAnalyzer:
         frequencies = sorted(m["order_count"] for m in valid)
         monetaries = sorted(m["total_amount"] for m in valid)
 
-        r_cutoffs = self._compute_quintile_cutoffs(recencies, reverse=True) or self._R_QUINTILES_FALLBACK
-        f_cutoffs = self._compute_quintile_cutoffs(frequencies, reverse=False) or self._F_QUINTILES_FALLBACK
-        m_cutoffs = self._compute_quintile_cutoffs(monetaries, reverse=False) or self._M_QUINTILES_FALLBACK
+        # 跟踪哪些维度用了 fallback cutoffs (数据分布退化时警告)
+        warnings: list[str] = []
+        r_computed = self._compute_quintile_cutoffs(recencies, reverse=True)
+        f_computed = self._compute_quintile_cutoffs(frequencies, reverse=False)
+        m_computed = self._compute_quintile_cutoffs(monetaries, reverse=False)
+
+        r_cutoffs = r_computed or self._R_QUINTILES_FALLBACK
+        f_cutoffs = f_computed or self._F_QUINTILES_FALLBACK
+        m_cutoffs = m_computed or self._M_QUINTILES_FALLBACK
+
+        if r_computed is None:
+            warnings.append("R (recency) 维度使用默认分位数 — 数据分布过于集中, 分段可能不准确")
+        if f_computed is None:
+            warnings.append("F (frequency) 维度使用默认分位数 — 数据分布过于集中, 分段可能不准确")
+        if m_computed is None:
+            warnings.append("M (monetary) 维度使用默认分位数 — 数据分布过于集中, 分段可能不准确")
 
         # 评分 + 分段
         scores: list[MemberScore] = []
@@ -309,6 +324,7 @@ class MemberRfmAnalyzer:
             avg_monetary=avg_monetary,
             insights=insights,
             recommendations=recommendations,
+            warnings=warnings,
         )
 
     # ── Segmentation logic ──────────────────────────────
@@ -371,6 +387,11 @@ class MemberRfmAnalyzer:
         ]
         # Dedupe (防止所有值相同导致切点相同)
         if len(set(cutoffs)) < 4:
+            logger.warning(
+                f"_compute_quintile_cutoffs: all cutoffs identical ({cutoffs[0]}), "
+                f"falling back to hardcoded values. This usually means the data distribution "
+                f"is degenerate (e.g., all members have same order_count). Results may be inaccurate."
+            )
             return None
         return cutoffs
 

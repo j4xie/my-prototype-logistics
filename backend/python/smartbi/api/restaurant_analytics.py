@@ -120,6 +120,7 @@ def _save_cache(db, upload_id: int, factory_id: str, result: Dict[str, Any], *, 
         if existing:
             existing.analysis_result = result
             existing.created_at = datetime.utcnow()
+            db.commit()
             return
     try:
         db.add(SmartBiPgAnalysisResult(
@@ -129,6 +130,7 @@ def _save_cache(db, upload_id: int, factory_id: str, result: Dict[str, Any], *, 
             analysis_result=result,
         ))
         db.flush()
+        db.commit()
     except IntegrityError:
         # Concurrent request inserted first — fall back to UPDATE
         db.rollback()
@@ -143,18 +145,20 @@ def _save_cache(db, upload_id: int, factory_id: str, result: Dict[str, Any], *, 
         if existing:
             existing.analysis_result = result
             existing.created_at = datetime.utcnow()
+            db.commit()
 
 
 def _check_upload_ownership(db, upload_id: int, request: Request) -> Optional[Dict[str, Any]]:
     """Verify the authenticated user's factory owns this upload (IDOR protection).
     Returns error dict if mismatch, None if OK.
-    Platform admins (no factory_id) and internal calls bypass the check.
+    Internal calls bypass the check. Platform admins (no token_factory) also bypass.
+    Unclaimed uploads (factory_id is None) are denied for non-internal callers.
     """
     token_factory = getattr(request.state, "factory_id", None)
     auth_method = getattr(request.state, "auth_method", None)
 
-    # Internal calls (Java→Python) and platform admins bypass
-    if auth_method == "internal" or not token_factory:
+    # Internal calls (Java→Python) bypass all checks
+    if auth_method == "internal":
         return None
 
     upload = db.query(SmartBiPgExcelUpload.factory_id).filter(
@@ -163,7 +167,21 @@ def _check_upload_ownership(db, upload_id: int, request: Request) -> Optional[Di
     if not upload:
         return None  # let the endpoint handle 404
 
-    if upload[0] and upload[0] != token_factory:
+    # Platform admins (no token_factory) still bypass factory check,
+    # but we must not grant access to unclaimed uploads via the "upload[0] is None" short-circuit
+    if not token_factory:
+        return None
+
+    if not upload[0]:
+        # Upload has no factory_id — deny (IDOR protection for unclaimed uploads)
+        logger.warning(f"Access denied: upload {upload_id} has no factory_id")
+        return {
+            "success": False,
+            "message": "Upload 无 factory_id, 访问被拒绝",
+            "code": "UNCLAIMED_UPLOAD",
+        }
+
+    if upload[0] != token_factory:
         logger.warning(f"IDOR blocked: user factory={token_factory}, upload factory={upload[0]}, upload_id={upload_id}")
         return {"success": False, "message": "Access denied", "code": "FACTORY_MISMATCH"}
 
@@ -377,9 +395,18 @@ def compute_restaurant_analytics(upload_id: int, request: Request, force: bool =
             # IDOR check: verify upload belongs to user's factory
             token_factory = getattr(request.state, "factory_id", None)
             auth_method = getattr(request.state, "auth_method", None)
-            if auth_method != "internal" and token_factory and upload[1] and upload[1] != token_factory:
-                logger.warning(f"IDOR blocked: user factory={token_factory}, upload factory={upload[1]}, upload_id={upload_id}")
-                return {"success": False, "message": "Access denied", "code": "FACTORY_MISMATCH"}
+            if auth_method != "internal":
+                if not upload[1]:
+                    # Upload has no factory_id — deny unless internal (IDOR protection for unclaimed uploads)
+                    logger.warning(f"V1 access denied: upload {upload_id} has no factory_id")
+                    return {
+                        "success": False,
+                        "message": "Upload 无 factory_id, 访问被拒绝",
+                        "code": "UNCLAIMED_UPLOAD",
+                    }
+                if token_factory and upload[1] != token_factory:
+                    logger.warning(f"IDOR blocked: user factory={token_factory}, upload factory={upload[1]}, upload_id={upload_id}")
+                    return {"success": False, "message": "Access denied", "code": "FACTORY_MISMATCH"}
 
             # Check cache first (skip if force refresh)
             if not force:
@@ -494,7 +521,20 @@ def _save_v2_cache(
         db.commit()
     except IntegrityError:
         db.rollback()
-        logger.warning(f"V2 cache race condition for upload {upload_id}")
+        logger.warning(f"V2 cache race condition for upload {upload_id}, attempting update")
+        try:
+            existing = db.query(SmartBiPgAnalysisResult).filter(
+                SmartBiPgAnalysisResult.upload_id == upload_id,
+                SmartBiPgAnalysisResult.analysis_type == "restaurant_analytics_v2",
+            ).first()
+            if existing:
+                existing.analysis_result = result
+                existing.created_at = datetime.utcnow()
+                db.commit()
+                logger.info(f"V2 cache updated for upload {upload_id}")
+        except Exception as e:
+            db.rollback()
+            logger.error(f"V2 cache update fallback failed: {e}", exc_info=True)
     except Exception as e:
         db.rollback()
         logger.error(f"Failed to save V2 cache for upload {upload_id}: {e}", exc_info=True)
@@ -643,20 +683,26 @@ async def compute_restaurant_analytics_v2(
 
             token_factory = getattr(request.state, "factory_id", None)
             auth_method = getattr(request.state, "auth_method", None)
-            if (
-                auth_method != "internal"
-                and token_factory
-                and upload[1]
-                and upload[1] != token_factory
-            ):
-                logger.warning(
-                    f"V2 IDOR blocked: user factory={token_factory}, upload factory={upload[1]}"
-                )
-                return {
-                    "success": False,
-                    "message": "Access denied",
-                    "code": "FACTORY_MISMATCH",
-                }
+            if auth_method != "internal":
+                if not upload[1]:
+                    # Upload has no factory_id — deny unless internal (IDOR protection for unclaimed uploads)
+                    logger.warning(
+                        f"V2 access denied: upload {upload_id} has no factory_id"
+                    )
+                    return {
+                        "success": False,
+                        "message": "Upload 无 factory_id, 访问被拒绝",
+                        "code": "UNCLAIMED_UPLOAD",
+                    }
+                if token_factory and upload[1] != token_factory:
+                    logger.warning(
+                        f"V2 IDOR blocked: user factory={token_factory}, upload factory={upload[1]}"
+                    )
+                    return {
+                        "success": False,
+                        "message": "Access denied",
+                        "code": "FACTORY_MISMATCH",
+                    }
 
             # 缓存检查
             if not force:

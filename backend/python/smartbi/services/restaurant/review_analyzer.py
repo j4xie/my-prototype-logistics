@@ -449,13 +449,9 @@ class ReviewAnalyzer:
                     seen_in_clause.add(dish)
                     register(dish, clause, rating)
 
-        # 算平均评分
-        for m in mentions.values():
-            if m.mention_count > 0:
-                m.avg_review_rating /= m.mention_count
-
         # 去重合并: 如果 "毛肚" 和 "招牌毛肚" 都存在, 把 "毛肚" 的计数合并到招牌版
         # 因为同一菜品的完整/缩略名应该统一
+        # 注意: avg_review_rating 在这一步仍是 running sum (累加值), 合并后再统一求平均
         to_merge: list[tuple[str, str]] = []
         for short in list(mentions.keys()):
             for full in list(mentions.keys()):
@@ -474,8 +470,14 @@ class ReviewAnalyzer:
                 full_m.positive_count += short_m.positive_count
                 full_m.negative_count += short_m.negative_count
                 full_m.neutral_count += short_m.neutral_count
+                full_m.avg_review_rating += short_m.avg_review_rating  # still running sum
                 # 保留 full 的示例
                 del mentions[short]
+
+        # 现在才算平均评分 (merge 完成后)
+        for m in mentions.values():
+            if m.mention_count > 0:
+                m.avg_review_rating /= m.mention_count
 
         return mentions
 

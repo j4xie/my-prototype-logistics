@@ -144,7 +144,11 @@ class DataIntegrityValidator:
         file_path = str(file_path)
         warnings: list[IntegrityWarning] = []
 
-        # 1. 读取全部原始行 (流式, 不 load 到内存)
+        # 1. 读取全部原始行到内存
+        # NOTE: 当前实现把整个 CSV load 到 raw_lines list (内存占用 ~= 文件大小 * 2)
+        # header 检测 + 截断扫描需要全部数据才能准确判断, 暂时接受 in-memory 模式.
+        # TODO: 对大文件 (>100MB) 实现真正的流式扫描 — 第一轮扫 header + 截断关键字
+        # (只保留 counts/指标), 第二轮才为下游消费者建 data_lines.
         raw_lines: list[list[str]] = []
         try:
             with open(file_path, encoding=encoding) as f:

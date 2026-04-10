@@ -344,10 +344,14 @@ class BenchmarkAlertEngine:
     ) -> Optional[float]:
         """估算"一年多/少支出"金额
 
+        CONTRACT: actual 和 median 必须是百分比形式 (例 32.51 表示 32.51%),
+        不接受 0-1 比率形式. 调用方 (RestaurantAnalyzerV2._extract_financial_metrics)
+        已统一乘以 100. 旧的 0-1 自动检测已废除, 因为会把 net_margin=0.06 (6%)
+        误判为 6e-4 导致估算错误.
+
         逻辑:
             - 比例类 metric (food_cost_ratio, labor_cost_ratio, rent_ratio, discount_rate):
               年度影响 = (actual - median) / 100 * monthly_revenue * 12
-              (假设 metric 是百分比形式, 例 32.51 表示 32.51%)
             - 翻台率类 metric: 不直接估算金额 (需要更多业务参数)
         """
         # 只对成本/费用类比例 metric 估算
@@ -362,16 +366,19 @@ class BenchmarkAlertEngine:
         if metric_key not in ratio_metrics:
             return None
 
-        # actual 可能是 32.51 (百分比) 或 0.3251 (比率), 自动判断
-        if 0 <= actual <= 1 and 0 <= median <= 1:
-            # 比率形式
-            delta_ratio = actual - median
-        else:
-            # 百分比形式
-            delta_ratio = (actual - median) / 100
-
         if not higher_is_worse:
             return None  # 不估算"少赚"
+
+        # 检测单位错误: 比率类 metric 的百分比值一般在 0.5-80 区间, <1 几乎确定是 0-1 比率形式
+        if 0 <= actual <= 1 and 0 <= median <= 1:
+            logger.warning(
+                f"_estimate_yearly_impact: metric {metric_key} actual={actual}, "
+                f"median={median} look like 0-1 ratio, but contract expects percentage (>1). "
+                f"Caller must multiply by 100. Treating as percentage anyway to avoid silent corruption."
+            )
+
+        # 百分比形式 (合约要求)
+        delta_ratio = (actual - median) / 100
 
         return delta_ratio * monthly_revenue * 12
 
