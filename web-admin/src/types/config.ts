@@ -29,6 +29,9 @@ export interface EffectiveField {
   group: string
   order: number
   extra: Record<string, unknown>
+  visibleWhen?: string
+  computedWhen?: string
+  source?: string
 }
 
 export type FieldType =
@@ -43,6 +46,8 @@ export type FieldType =
   | 'reference'
   | 'json_array'
   | 'line_items'
+  | 'attachment'
+  | 'sub_table'
 
 export interface FieldOption {
   value: string | number
