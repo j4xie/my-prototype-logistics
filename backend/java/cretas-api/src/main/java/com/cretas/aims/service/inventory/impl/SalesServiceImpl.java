@@ -71,6 +71,9 @@ public class SalesServiceImpl implements SalesService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
     public SalesServiceImpl(SalesOrderRepository salesOrderRepository,
                             SalesOrderItemRepository salesOrderItemRepository,
                             SalesDeliveryRecordRepository deliveryRecordRepository,
@@ -675,8 +678,13 @@ public class SalesServiceImpl implements SalesService {
     private String generateSalesOrderNumber(String factoryId) {
         String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String prefix = "SO-" + dateStr + "-";
-        // Use MAX(orderNumber) by prefix to avoid duplicate-key collisions when multiple
-        // orders are created in quick succession or when orderDate != today in request.
+        // Serialize concurrent number generation on (factory, date) via a transaction-scoped
+        // advisory lock. Released automatically at transaction end. Prevents the MAX+1 race
+        // against uk_so_factory_order when two POSTs land in the same millisecond.
+        entityManager.createNativeQuery("SELECT pg_advisory_xact_lock(CAST(:fkey AS int), CAST(:dkey AS int))")
+                .setParameter("fkey", factoryId.hashCode())
+                .setParameter("dkey", dateStr.hashCode())
+                .getSingleResult();
         String maxNumber = salesOrderRepository.findMaxOrderNumberByPrefix(factoryId, prefix + "%");
         int seq = 1;
         if (maxNumber != null && maxNumber.startsWith(prefix)) {
