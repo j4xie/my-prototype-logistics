@@ -13,6 +13,7 @@ import type { EffectiveModuleConfig, WorkflowTransition } from '@/types/config'
 import { MODULE_API_PATHS } from '@/types/config'
 import SchemaFormRenderer from './components/SchemaFormRenderer.vue'
 import SchemaTableRenderer from './components/SchemaTableRenderer.vue'
+import TabLayoutRenderer from './components/TabLayoutRenderer.vue'
 
 const route = useRoute()
 const authStore = useAuthStore()
@@ -29,6 +30,16 @@ const tableData = ref<Record<string, unknown>[]>([])
 const selectedRow = ref<Record<string, unknown> | null>(null)
 const loading = ref(false)
 const pagination = ref({ page: 1, size: 20, total: 0 })
+
+// Tab 布局配置（来自 layoutConfig.tabs）
+const layoutTabs = computed(() => {
+  if (!config.value) return []
+  const layout = (config.value as any).layoutConfig
+  if (layout && typeof layout === 'object' && 'tabs' in layout) {
+    return (layout as { tabs: unknown[] }).tabs as any[]
+  }
+  return []
+})
 
 // 加载配置
 async function loadConfig() {
@@ -173,7 +184,17 @@ onMounted(() => {
 
     <!-- 创建视图 -->
     <template v-if="currentView === 'create' && config">
+      <TabLayoutRenderer
+        v-if="layoutTabs.length > 0"
+        :tabs="layoutTabs"
+        :module-code="moduleCode"
+        mode="create"
+        :factory-id="factoryId"
+        @submit="handleCreate"
+        @cancel="currentView = 'list'"
+      />
       <SchemaFormRenderer
+        v-else
         :module-code="moduleCode"
         mode="create"
         @submit="handleCreate"
@@ -183,7 +204,19 @@ onMounted(() => {
 
     <!-- 编辑视图 -->
     <template v-if="currentView === 'edit' && config && selectedRow">
+      <TabLayoutRenderer
+        v-if="layoutTabs.length > 0"
+        :tabs="layoutTabs"
+        :module-code="moduleCode"
+        mode="edit"
+        :initial-data="selectedRow"
+        :factory-id="factoryId"
+        :record-id="(selectedRow.id as string) || undefined"
+        @submit="handleUpdate"
+        @cancel="currentView = 'list'"
+      />
       <SchemaFormRenderer
+        v-else
         :module-code="moduleCode"
         mode="edit"
         :initial-data="selectedRow"
@@ -194,7 +227,18 @@ onMounted(() => {
 
     <!-- 详情视图 -->
     <template v-if="currentView === 'detail' && config && selectedRow">
+      <TabLayoutRenderer
+        v-if="layoutTabs.length > 0"
+        :tabs="layoutTabs"
+        :module-code="moduleCode"
+        mode="view"
+        :initial-data="selectedRow"
+        :factory-id="factoryId"
+        :record-id="(selectedRow.id as string) || undefined"
+        @cancel="currentView = 'list'"
+      />
       <SchemaFormRenderer
+        v-else
         :module-code="moduleCode"
         mode="view"
         :initial-data="selectedRow"
