@@ -1,9 +1,9 @@
 package com.cretas.aims.entity.config;
 
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import org.hibernate.annotations.Type;
 import java.time.LocalDateTime;
 
 @Entity
@@ -14,7 +14,7 @@ public class FactoryDefaultValue {
     @Column(name = "factory_id", length = 50) private String factoryId;
     @Column(name = "module_code", length = 64, nullable = false) private String moduleCode;
     @Column(name = "field_code", length = 64, nullable = false) private String fieldCode;
-    @JdbcTypeCode(SqlTypes.JSON)
+    @Type(JsonBinaryType.class)
     @Column(name = "default_value", columnDefinition = "jsonb", nullable = false) private Object defaultValue;
     @Column(name = "condition", columnDefinition = "TEXT") private String condition;
     @Column(name = "description", columnDefinition = "TEXT") private String description;
