@@ -35,30 +35,41 @@ public class DynamicFieldController {
         return ResponseEntity.ok(fields);
     }
 
+    @SuppressWarnings("unchecked")
     @PostMapping("/config/v2/dynamic-fields")
     public ResponseEntity<CanvasDynamicField> createDynamicField(
             @PathVariable String factoryId,
-            @RequestBody CanvasDynamicField field) {
-        field.setFactoryId(factoryId);
-        field.setStatus("PENDING_DDL");
-        if (field.getColumnName() == null) {
-            field.setColumnName("cf_" + field.getFieldCode());
-        }
+            @RequestBody Map<String, Object> body) {
+        CanvasDynamicField field = CanvasDynamicField.builder()
+            .factoryId(factoryId)
+            .moduleCode((String) body.get("moduleCode"))
+            .fieldCode((String) body.get("fieldCode"))
+            .fieldType((String) body.get("fieldType"))
+            .label((String) body.get("label"))
+            .config(body.containsKey("config") ? (Map<String, Object>) body.get("config") : Map.of())
+            .visibleWhen((String) body.get("visibleWhen"))
+            .computedWhen((String) body.get("computedWhen"))
+            .sortOrder(body.containsKey("sortOrder") ? ((Number) body.get("sortOrder")).intValue() : 0)
+            .status("PENDING_DDL")
+            .build();
+        field.setColumnName("cf_" + field.getFieldCode());
         return ResponseEntity.ok(fieldRepo.save(field));
     }
 
+    @SuppressWarnings("unchecked")
     @PutMapping("/config/v2/dynamic-fields/{fieldCode}")
     public ResponseEntity<CanvasDynamicField> updateDynamicField(
             @PathVariable String factoryId,
             @PathVariable String fieldCode,
-            @RequestBody CanvasDynamicField update) {
+            @RequestBody Map<String, Object> body) {
+        String moduleCode = (String) body.get("moduleCode");
         CanvasDynamicField existing = fieldRepo.findByFactoryIdAndModuleCodeAndFieldCode(
-            factoryId, update.getModuleCode(), fieldCode).orElseThrow();
-        if (update.getLabel() != null) existing.setLabel(update.getLabel());
-        if (update.getConfig() != null) existing.setConfig(update.getConfig());
-        if (update.getVisibleWhen() != null) existing.setVisibleWhen(update.getVisibleWhen());
-        if (update.getComputedWhen() != null) existing.setComputedWhen(update.getComputedWhen());
-        if (update.getSortOrder() != null) existing.setSortOrder(update.getSortOrder());
+            factoryId, moduleCode, fieldCode).orElseThrow();
+        if (body.containsKey("label")) existing.setLabel((String) body.get("label"));
+        if (body.containsKey("config")) existing.setConfig((Map<String, Object>) body.get("config"));
+        if (body.containsKey("visibleWhen")) existing.setVisibleWhen((String) body.get("visibleWhen"));
+        if (body.containsKey("computedWhen")) existing.setComputedWhen((String) body.get("computedWhen"));
+        if (body.containsKey("sortOrder")) existing.setSortOrder(((Number) body.get("sortOrder")).intValue());
         return ResponseEntity.ok(fieldRepo.save(existing));
     }
 
