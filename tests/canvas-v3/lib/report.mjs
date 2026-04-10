@@ -83,7 +83,7 @@ export class Report {
     const capabilities = [
       { name: '1. 动态字段 (DDL)', checks: ['P1-4', 'P1-4b', 'P1-8e', 'P1-8f', 'P2-2'] },
       { name: '2. 子表', checks: ['P1-4', 'P3-3', 'P4-4'] },
-      { name: '3. 用户级权限', checks: [] },
+      { name: '3. 用户级权限', checks: ['P2-19'] },
       { name: '4. 文件上传', checks: ['P3-1'] },
       { name: '5. 条件渲染 visibleWhen', checks: ['P1-6'] },
       { name: '   条件渲染 computedWhen', checks: ['P1-7d'] },

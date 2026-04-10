@@ -634,6 +634,84 @@ export async function phase2Verify(state, api, report) {
       }
     }
 
+    // 2.19 用户级权限 (P0-6 昆山六扇门)
+    //  - Grant: 用户获得额外权限(如访问某模块)
+    //  - Revoke: 用户被撤销权限
+    //  - Effective menus: 查询用户最终有效菜单集合
+    console.log('\n2.19 User-level permission override (GRANT/REVOKE)...');
+    try {
+      // Find the new factory admin user ID — extract from token
+      // Token payload contains userId. Decode JWT and extract.
+      const tokenParts = state.token.split('.');
+      const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
+      const adminUserId = String(payload.userId || '');
+
+      if (!adminUserId) {
+        report.addCheckpoint('P2-19', '用户级权限 override', 'SKIP', {
+          reason: '无法从 JWT 提取 userId',
+        });
+      } else {
+        // Step 1: GRANT a module permission (sales_order)
+        const grantResp = await api.authedPost(
+          state.factoryId,
+          `/users/${adminUserId}/menu-permissions/grant`,
+          { menuCode: 'sales_order:custom_test_field:hidden', remark: 'E2E test grant' }
+        );
+        const grantId = grantResp.id || grantResp.data?.id;
+        console.log(`  ${grantId ? '✅' : '❌'} GRANT: ${grantId || JSON.stringify(grantResp).slice(0, 150)}`);
+
+        // Step 2: REVOKE a module permission
+        const revokeResp = await api.authedPost(
+          state.factoryId,
+          `/users/${adminUserId}/menu-permissions/revoke`,
+          { menuCode: 'inventory:sensitive_column:hidden', remark: 'E2E test revoke' }
+        );
+        const revokeId = revokeResp.id || revokeResp.data?.id;
+        console.log(`  ${revokeId ? '✅' : '❌'} REVOKE: ${revokeId || JSON.stringify(revokeResp).slice(0, 150)}`);
+
+        // Step 3: List user overrides (expect 2)
+        const listResp = await api.authedGet(
+          state.factoryId,
+          `/users/${adminUserId}/menu-permissions`
+        );
+        const overrides = Array.isArray(listResp) ? listResp : (listResp.data || []);
+        const hasGrant = overrides.some(o => o.menuCode?.includes('custom_test_field'));
+        const hasRevoke = overrides.some(o => o.menuCode?.includes('sensitive_column'));
+
+        // Step 4: Get effective menus for this user (role enum is lowercase per FactoryUserRole)
+        const effectiveResp = await api.authedGet(
+          state.factoryId,
+          `/users/${adminUserId}/menu-permissions/effective`,
+          { role: 'factory_super_admin' }
+        );
+        const effectiveMenus = Array.isArray(effectiveResp) ? effectiveResp :
+          (effectiveResp.data || effectiveResp);
+        const effectiveCount = Array.isArray(effectiveMenus) ? effectiveMenus.length :
+          (typeof effectiveMenus === 'object' ? Object.keys(effectiveMenus).length : 0);
+
+        const allOk = !!grantId && !!revokeId && hasGrant && hasRevoke;
+        report.addCheckpoint('P2-19', '用户级权限 GRANT/REVOKE/有效菜单', allOk ? 'PASS' : 'FAIL', {
+          userId: adminUserId,
+          grantCreated: !!grantId,
+          revokeCreated: !!revokeId,
+          overridesCount: overrides.length,
+          hasGrant,
+          hasRevoke,
+          effectiveMenusCount: effectiveCount,
+        });
+        if (allOk) {
+          console.log(`  ✅ Permission override works: ${overrides.length} overrides, ${effectiveCount} effective menus`);
+        } else {
+          console.log(`  ❌ Permission override incomplete: grant=${!!grantId} revoke=${!!revokeId} hasGrant=${hasGrant} hasRevoke=${hasRevoke}`);
+        }
+      }
+    } catch (e) {
+      report.addCheckpoint('P2-19', '用户级权限 override', 'FAIL', {
+        error: e.message?.slice(0, 300),
+      });
+      console.log(`  ❌ Error: ${e.message?.slice(0, 150)}`);
+    }
+
     return { browser, page };
   } catch (e) {
     console.error('Phase 2 error:', e);
