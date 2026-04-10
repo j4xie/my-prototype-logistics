@@ -101,6 +101,21 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         this.salesOrderItemRepository = salesOrderItemRepository;
     }
 
+    /** Canvas V2: DB-driven validation rules */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+
+    private void runConfiguredValidation(String factoryId, String operation, java.util.Map<String, Object> context) {
+        if (validationRuleEvaluator == null) return;
+        try {
+            validationRuleEvaluator.validate(factoryId, "production_plan", operation, context);
+        } catch (com.cretas.aims.exception.BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Canvas validation non-blocking error: {}", e.getMessage());
+        }
+    }
+
     /**
      * P0-12: 校验销售订单行来源 (字段粒度修正),自动回填订单/客户/产品
      * 客户原话 4216s: "关联销售订单产品 / 客户名称应该自动带出来"
@@ -156,6 +171,10 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
     @Override
     @Transactional
     public ProductionPlanDTO createProductionPlan(String factoryId, CreateProductionPlanRequest request, Long userId) {
+        runConfiguredValidation(factoryId, "CREATE", java.util.Map.of(
+            "plannedQuantity", request.getPlannedQuantity() != null ? request.getPlannedQuantity() : java.math.BigDecimal.ZERO,
+            "productTypeId", request.getProductTypeId() != null ? request.getProductTypeId() : "",
+            "status", "DRAFT"));
         // 验证产品类型是否存在
         if (!productTypeRepository.existsById(request.getProductTypeId())) {
             throw new ResourceNotFoundException("产品类型不存在");
@@ -210,6 +229,10 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
     @Override
     @Transactional
     public ProductionPlanDTO updateProductionPlan(String factoryId, String planId, CreateProductionPlanRequest request) {
+        runConfiguredValidation(factoryId, "UPDATE", java.util.Map.of(
+            "planId", planId,
+            "plannedQuantity", request.getPlannedQuantity() != null ? request.getPlannedQuantity() : java.math.BigDecimal.ZERO,
+            "productTypeId", request.getProductTypeId() != null ? request.getProductTypeId() : ""));
         ProductionPlan plan = productionPlanRepository.findById(planId)
                 .orElseThrow(() -> new ResourceNotFoundException("生产计划", "id", planId));
 

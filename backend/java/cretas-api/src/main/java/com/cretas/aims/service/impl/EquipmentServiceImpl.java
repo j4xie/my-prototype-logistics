@@ -54,9 +54,27 @@ public class EquipmentServiceImpl implements EquipmentService {
     private final BatchEquipmentUsageRepository usageRepository;
     private final UserRepository userRepository;
 
+    /** Canvas V2: DB-driven validation rules */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+
+    private void runConfiguredValidation(String factoryId, String operation, java.util.Map<String, Object> context) {
+        if (validationRuleEvaluator == null) return;
+        try {
+            validationRuleEvaluator.validate(factoryId, "equipment", operation, context);
+        } catch (com.cretas.aims.exception.BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Canvas validation non-blocking error: {}", e.getMessage());
+        }
+    }
+
     @Override
     @Transactional
     public EquipmentDTO createEquipment(String factoryId, CreateEquipmentRequest request, Long userId) {
+        runConfiguredValidation(factoryId, "CREATE", java.util.Map.of(
+            "equipmentName", request.getName() != null ? request.getName() : "",
+            "status", request.getStatus() != null ? request.getStatus() : "active"));
         log.info("创建设备: factoryId={}, name={}", factoryId, request.getName());
 
         FactoryEquipment equipment = new FactoryEquipment();
@@ -114,6 +132,10 @@ public class EquipmentServiceImpl implements EquipmentService {
     @Override
     @Transactional
     public EquipmentDTO updateEquipment(String factoryId, String equipmentId, CreateEquipmentRequest request) {
+        runConfiguredValidation(factoryId, "UPDATE", java.util.Map.of(
+            "equipmentId", equipmentId,
+            "equipmentName", request.getName() != null ? request.getName() : "",
+            "status", request.getStatus() != null ? request.getStatus() : ""));
         log.info("更新设备: factoryId={}, equipmentId={}", factoryId, equipmentId);
 
         Long equipmentIdLong = Long.parseLong(equipmentId);

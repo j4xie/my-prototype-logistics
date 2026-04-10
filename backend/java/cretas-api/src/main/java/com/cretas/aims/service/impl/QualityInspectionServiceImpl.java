@@ -32,6 +32,21 @@ public class QualityInspectionServiceImpl implements QualityInspectionService {
     private final ProductionAlertRepository productionAlertRepository;
     private final ApplicationEventPublisher eventPublisher;
 
+    /** Canvas V2: DB-driven validation rules */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+
+    private void runConfiguredValidation(String factoryId, String operation, java.util.Map<String, Object> context) {
+        if (validationRuleEvaluator == null) return;
+        try {
+            validationRuleEvaluator.validate(factoryId, "quality_inspection", operation, context);
+        } catch (com.cretas.aims.exception.BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Canvas validation non-blocking error: {}", e.getMessage());
+        }
+    }
+
     @Override
     public PageResponse<QualityInspection> getInspections(String factoryId, String productionBatchId, PageRequest pageRequest) {
         log.info("分页查询质量检验记录: factoryId={}, productionBatchId={}, page={}, size={}",
@@ -76,6 +91,8 @@ public class QualityInspectionServiceImpl implements QualityInspectionService {
     @Override
     @Transactional
     public QualityInspection createInspection(String factoryId, QualityInspection inspection) {
+        runConfiguredValidation(factoryId, "CREATE", java.util.Map.of(
+            "result", inspection.getResult() != null ? inspection.getResult() : ""));
         log.info("创建质量检验记录: factoryId={}, productionBatchId={}",
                 factoryId, inspection.getProductionBatchId());
 
@@ -100,6 +117,9 @@ public class QualityInspectionServiceImpl implements QualityInspectionService {
     @Override
     @Transactional
     public QualityInspection updateInspection(String factoryId, String inspectionId, QualityInspection inspection) {
+        runConfiguredValidation(factoryId, "UPDATE", java.util.Map.of(
+            "inspectionId", inspectionId,
+            "result", inspection.getResult() != null ? inspection.getResult() : ""));
         log.info("更新质量检验记录: factoryId={}, inspectionId={}", factoryId, inspectionId);
 
         QualityInspection existing = getInspectionById(factoryId, inspectionId);

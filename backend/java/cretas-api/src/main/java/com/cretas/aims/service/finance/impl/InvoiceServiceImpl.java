@@ -44,10 +44,29 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final OssService ossService;
     private final ApplicationEventPublisher eventPublisher;
 
+    /** Canvas V2: DB-driven validation rules */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+
+    private void runConfiguredValidation(String factoryId, String operation, java.util.Map<String, Object> context) {
+        if (validationRuleEvaluator == null) return;
+        try {
+            validationRuleEvaluator.validate(factoryId, "invoice_record", operation, context);
+        } catch (com.cretas.aims.exception.BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Canvas validation non-blocking error: {}", e.getMessage());
+        }
+    }
+
     @Override
     @Transactional
     public InvoiceRecord requestInvoice(String factoryId, String salesOrderId, BigDecimal amount,
                                          BigDecimal taxAmount, String invoiceType, Long requestedBy, String remark) {
+        runConfiguredValidation(factoryId, "CREATE", java.util.Map.of(
+            "amount", amount != null ? amount : BigDecimal.ZERO,
+            "invoiceType", invoiceType != null ? invoiceType : "",
+            "salesOrderId", salesOrderId != null ? salesOrderId : ""));
         SalesOrder so = salesOrderRepository.findById(salesOrderId)
                 .orElseThrow(() -> new IllegalArgumentException("销售订单不存在: " + salesOrderId));
 
@@ -75,6 +94,9 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Transactional
     public InvoiceRecord requestInvoiceFromOrder(String factoryId, String salesOrderId,
                                                   String invoiceType, Long requestedBy, String remark) {
+        runConfiguredValidation(factoryId, "CREATE", java.util.Map.of(
+            "salesOrderId", salesOrderId != null ? salesOrderId : "",
+            "invoiceType", invoiceType != null ? invoiceType : ""));
         SalesOrder so = salesOrderRepository.findById(salesOrderId)
                 .orElseThrow(() -> new IllegalArgumentException("销售订单不存在: " + salesOrderId));
 

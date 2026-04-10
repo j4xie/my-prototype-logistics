@@ -36,6 +36,10 @@ public class SupplierServiceImpl implements SupplierService {
     private final SupplierMapper supplierMapper;
     private final com.cretas.aims.utils.ExcelUtil excelUtil;
 
+    /** Canvas V2: DB-driven validation rules */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+
     // Manual constructor (Lombok @RequiredArgsConstructor not working)
     public SupplierServiceImpl(SupplierRepository supplierRepository, SupplierMapper supplierMapper,
                               com.cretas.aims.utils.ExcelUtil excelUtil) {
@@ -44,9 +48,23 @@ public class SupplierServiceImpl implements SupplierService {
         this.excelUtil = excelUtil;
     }
 
+    private void runConfiguredValidation(String factoryId, String operation, java.util.Map<String, Object> context) {
+        if (validationRuleEvaluator == null) return;
+        try {
+            validationRuleEvaluator.validate(factoryId, "supplier", operation, context);
+        } catch (com.cretas.aims.exception.BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Canvas validation non-blocking error: {}", e.getMessage());
+        }
+    }
+
     @Override
     @Transactional
     public SupplierDTO createSupplier(String factoryId, CreateSupplierRequest request, Long userId) {
+        runConfiguredValidation(factoryId, "CREATE", java.util.Map.of(
+            "supplierName", request.getName() != null ? request.getName() : "",
+            "phoneNumber", request.getPhone() != null ? request.getPhone() : ""));
         log.info("创建供应商: factoryId={}, name={}", factoryId, request.getName());
         // 检查供应商名称是否重复
         if (supplierRepository.existsByFactoryIdAndName(factoryId, request.getName())) {
@@ -71,6 +89,10 @@ public class SupplierServiceImpl implements SupplierService {
     @Override
     @Transactional
     public SupplierDTO updateSupplier(String factoryId, String supplierId, CreateSupplierRequest request) {
+        runConfiguredValidation(factoryId, "UPDATE", java.util.Map.of(
+            "supplierId", supplierId,
+            "supplierName", request.getName() != null ? request.getName() : "",
+            "phoneNumber", request.getPhone() != null ? request.getPhone() : ""));
         log.info("更新供应商: factoryId={}, supplierId={}", factoryId, supplierId);
         Supplier supplier = supplierRepository.findByIdAndFactoryId(supplierId, factoryId)
                 .orElseThrow(() -> new EntityNotFoundException("Supplier", supplierId));

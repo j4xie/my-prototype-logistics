@@ -39,12 +39,27 @@ public class CustomerServiceImpl implements CustomerService {
     private final CustomerMapper customerMapper;
     private final com.cretas.aims.utils.ExcelUtil excelUtil;
 
+    /** Canvas V2: DB-driven validation rules */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+
     // Manual constructor (Lombok @RequiredArgsConstructor not working)
     public CustomerServiceImpl(CustomerRepository customerRepository, CustomerMapper customerMapper,
                               com.cretas.aims.utils.ExcelUtil excelUtil) {
         this.customerRepository = customerRepository;
         this.customerMapper = customerMapper;
         this.excelUtil = excelUtil;
+    }
+
+    private void runConfiguredValidation(String factoryId, String operation, java.util.Map<String, Object> context) {
+        if (validationRuleEvaluator == null) return;
+        try {
+            validationRuleEvaluator.validate(factoryId, "customer", operation, context);
+        } catch (com.cretas.aims.exception.BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Canvas validation non-blocking error: {}", e.getMessage());
+        }
     }
 
     @Override
@@ -54,6 +69,8 @@ public class CustomerServiceImpl implements CustomerService {
         @CacheEvict(value = "customerStats", key = "#factoryId")
     })
     public CustomerDTO createCustomer(String factoryId, CreateCustomerRequest request, Long userId) {
+        runConfiguredValidation(factoryId, "CREATE", java.util.Map.of(
+            "customerName", request.getName() != null ? request.getName() : ""));
         log.info("创建客户: factoryId={}, name={}", factoryId, request.getName());
         // 检查客户名称是否重复
         if (customerRepository.existsByFactoryIdAndName(factoryId, request.getName())) {
@@ -83,6 +100,9 @@ public class CustomerServiceImpl implements CustomerService {
         @CacheEvict(value = "customerStats", key = "#factoryId")
     })
     public CustomerDTO updateCustomer(String factoryId, String customerId, CreateCustomerRequest request) {
+        runConfiguredValidation(factoryId, "UPDATE", java.util.Map.of(
+            "customerId", customerId,
+            "customerName", request.getName() != null ? request.getName() : ""));
         log.info("更新客户: factoryId={}, customerId={}", factoryId, customerId);
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
                 .orElseThrow(() -> new EntityNotFoundException("Customer", customerId));

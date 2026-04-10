@@ -128,6 +128,9 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
     private PurchaseReceiveRecordRepository purchaseReceiveRecordRepository;
     @Autowired(required = false)
     private FactoryMaterialRequisitionRepository factoryMaterialRequisitionRepository;
+    /** Canvas V2: DB-driven validation rules */
+    @Autowired(required = false)
+    private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
 
     // Manual constructor (Lombok @RequiredArgsConstructor not working)
     public MaterialBatchServiceImpl(
@@ -149,9 +152,24 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         this.futurePlanMatchingService = futurePlanMatchingService;
     }
 
+    private void runConfiguredValidation(String factoryId, String operation, java.util.Map<String, Object> context) {
+        if (validationRuleEvaluator == null) return;
+        try {
+            validationRuleEvaluator.validate(factoryId, "material_batch", operation, context);
+        } catch (com.cretas.aims.exception.BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Canvas validation non-blocking error: {}", e.getMessage());
+        }
+    }
+
     @Override
     @Transactional
     public MaterialBatchDTO createMaterialBatch(String factoryId, CreateMaterialBatchRequest request, Long userId) {
+        runConfiguredValidation(factoryId, "CREATE", java.util.Map.of(
+            "quantity", request.getReceiptQuantity() != null ? request.getReceiptQuantity() : java.math.BigDecimal.ZERO,
+            "materialTypeId", request.getMaterialTypeId() != null ? request.getMaterialTypeId() : "",
+            "productionDate", request.getReceiptDate() != null ? request.getReceiptDate().toString() : ""));
         // P0-17: 入库必须有发起单校验
         validateSourceDoc(request);
         // 验证并获取原材料类型
@@ -263,6 +281,10 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
     @Override
     @Transactional
     public MaterialBatchDTO updateMaterialBatch(String factoryId, String batchId, CreateMaterialBatchRequest request) {
+        runConfiguredValidation(factoryId, "UPDATE", java.util.Map.of(
+            "batchId", batchId,
+            "quantity", request.getReceiptQuantity() != null ? request.getReceiptQuantity() : java.math.BigDecimal.ZERO,
+            "materialTypeId", request.getMaterialTypeId() != null ? request.getMaterialTypeId() : ""));
         MaterialBatch batch = materialBatchRepository.findById(batchId)
                 .orElseThrow(() -> new ResourceNotFoundException("原材料批次", "id", batchId));
 

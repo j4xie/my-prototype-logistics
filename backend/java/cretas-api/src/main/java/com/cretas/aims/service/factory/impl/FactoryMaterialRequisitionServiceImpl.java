@@ -37,11 +37,29 @@ public class FactoryMaterialRequisitionServiceImpl implements FactoryMaterialReq
     private final ProductionPlanRepository productionPlanRepository;
     private final BomItemRepository bomItemRepository;
 
+    /** Canvas V2: DB-driven validation rules */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+
+    private void runConfiguredValidation(String factoryId, String operation, java.util.Map<String, Object> context) {
+        if (validationRuleEvaluator == null) return;
+        try {
+            validationRuleEvaluator.validate(factoryId, "material_requisition", operation, context);
+        } catch (com.cretas.aims.exception.BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Canvas validation non-blocking error: {}", e.getMessage());
+        }
+    }
+
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     @Override
     @Transactional
     public FactoryMaterialRequisition generateFromPlan(String factoryId, String productionPlanId, Long requestedBy) {
+        runConfiguredValidation(factoryId, "CREATE", java.util.Map.of(
+            "status", "PENDING",
+            "planId", productionPlanId != null ? productionPlanId : ""));
         ProductionPlan plan = productionPlanRepository.findByIdAndFactoryId(productionPlanId, factoryId)
                 .orElseThrow(() -> new BusinessException("生产计划不存在: " + productionPlanId));
 
@@ -118,6 +136,9 @@ public class FactoryMaterialRequisitionServiceImpl implements FactoryMaterialReq
     @Override
     @Transactional
     public FactoryMaterialRequisition startPicking(String factoryId, String id, Long operatorId) {
+        runConfiguredValidation(factoryId, "UPDATE", java.util.Map.of(
+            "status", "PICKING",
+            "planId", id != null ? id : ""));
         FactoryMaterialRequisition mr = getById(factoryId, id);
         assertStatus(mr, Status.PENDING);
         mr.setStatus(Status.PICKING);

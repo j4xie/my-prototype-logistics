@@ -32,6 +32,21 @@ public class ProcessWorkReportingServiceImpl implements ProcessWorkReportingServ
     private final ProductionReportRepository reportRepository;
     private final ProcessTaskRepository taskRepository;
 
+    /** Canvas V2: DB-driven validation rules */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+
+    private void runConfiguredValidation(String factoryId, String operation, java.util.Map<String, Object> context) {
+        if (validationRuleEvaluator == null) return;
+        try {
+            validationRuleEvaluator.validate(factoryId, "production_report", operation, context);
+        } catch (com.cretas.aims.exception.BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Canvas validation non-blocking error: {}", e.getMessage());
+        }
+    }
+
     @Override
     @Transactional
     public Map<String, Object> approveReport(String factoryId, Long reportId, Long approvedBy) {
@@ -147,6 +162,10 @@ public class ProcessWorkReportingServiceImpl implements ProcessWorkReportingServ
     public Map<String, Object> submitNormalReport(String factoryId, String processTaskId,
                                                     Long workerId, String reporterName,
                                                     BigDecimal outputQuantity, String notes) {
+        runConfiguredValidation(factoryId, "CREATE", java.util.Map.of(
+            "quantity", outputQuantity != null ? outputQuantity : java.math.BigDecimal.ZERO,
+            "processId", processTaskId != null ? processTaskId : "",
+            "workerId", workerId != null ? workerId : 0L));
         log.info("Submitting normal report for task {} by worker {}", processTaskId, workerId);
 
         // P1-3: 30秒时间窗口去重 — 防止弱网环境重复提交

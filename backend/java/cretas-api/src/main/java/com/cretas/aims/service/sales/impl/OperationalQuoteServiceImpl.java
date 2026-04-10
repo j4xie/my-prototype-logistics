@@ -24,6 +24,21 @@ public class OperationalQuoteServiceImpl implements OperationalQuoteService {
 
     private final OperationalQuoteRepository operationalQuoteRepository;
 
+    /** Canvas V2: DB-driven validation rules */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+
+    private void runConfiguredValidation(String factoryId, String operation, java.util.Map<String, Object> context) {
+        if (validationRuleEvaluator == null) return;
+        try {
+            validationRuleEvaluator.validate(factoryId, "operational_quote", operation, context);
+        } catch (com.cretas.aims.exception.BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Canvas validation non-blocking error: {}", e.getMessage());
+        }
+    }
+
     /**
      * 状态机常量 — DRAFT/PENDING_QUOTE/PENDING_APPROVAL/APPROVED/REJECTED/EXPIRED
      */
@@ -38,6 +53,10 @@ public class OperationalQuoteServiceImpl implements OperationalQuoteService {
                                          String productTypeId, String bomId,
                                          Long submittedByUserId, Long quotedByUserId, String quotedByName,
                                          String remarks) {
+        runConfiguredValidation(factoryId, "CREATE", java.util.Map.of(
+            "customerId", customerId != null ? customerId : "",
+            "amount", java.math.BigDecimal.ZERO,
+            "marginRate", java.math.BigDecimal.ZERO));
         OperationalQuote quote = new OperationalQuote();
         quote.setFactoryId(factoryId);
         quote.setQuoteNo(generateQuoteNo(factoryId));
@@ -66,6 +85,9 @@ public class OperationalQuoteServiceImpl implements OperationalQuoteService {
                                          String quoteType, BigDecimal unitPrice, String unit,
                                          BigDecimal minOrderQty, BigDecimal costPrice,
                                          LocalDate validUntil, String remarks) {
+        runConfiguredValidation(factoryId, "UPDATE", java.util.Map.of(
+            "quoteId", quoteId != null ? quoteId : "",
+            "amount", unitPrice != null ? unitPrice : BigDecimal.ZERO));
         OperationalQuote quote = getQuote(factoryId, quoteId);
         if (!STATUS_PENDING_QUOTE.equals(quote.getStatus())) {
             throw new IllegalStateException("只有 PENDING_QUOTE 状态可以录价, 当前: " + quote.getStatus());
