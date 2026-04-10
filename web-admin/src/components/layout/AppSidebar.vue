@@ -153,6 +153,7 @@ const menuConfig: MenuItem[] = [
       { path: '/system/product-processes', title: '产品-工序配置', icon: '', module: 'system' },
       { path: '/system/workflow-designer', title: '工作流设计器', icon: '', module: 'system' },
       { path: '/system/features', title: '功能模块配置', icon: '', module: 'system' },
+      { path: '/canvas-editor', title: 'Canvas 配置编辑器', icon: '', module: 'system' },
       { path: '/system/pos', title: 'POS集成', icon: '', module: 'system' },
       { path: '/system/smartbi-config', title: 'SmartBI配置', icon: '', module: 'system' },
       { path: '/system/badge-generator', title: '员工工牌生成', icon: '', module: 'system' }

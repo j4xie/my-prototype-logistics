@@ -90,6 +90,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useCanvasEditor } from './composables/useCanvasEditor'
 import { aiApplyDiffs, submitForReview, approveConfig, rejectConfig, publishNow as apiPublishNow, cancelApproval as apiCancelApproval } from '@/api/canvasApi'
+import { saveModuleConfig } from '@/api/configApi'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { ConfigDiff } from '@/types/canvas'
 
@@ -141,7 +142,29 @@ async function applyChanges() {
   } catch { ElMessage.error('应用失败') }
 }
 
-async function saveDraft() { ElMessage.success('草稿已保存'); clearDirty() }
+async function saveDraft() {
+  if (!factoryId.value) {
+    ElMessage.warning('未找到工厂 ID')
+    return
+  }
+  // Canvas V3 uses immediate-save pattern (每个子编辑器独立写 API),
+  // saveDraft 触发 saveModuleConfig 确保 FactoryConfiguration 的 DRAFT 版本存在,
+  // 然后刷新 version 确认服务器端状态一致.
+  try {
+    if (selectedModule.value) {
+      // Touch the module config to ensure a draft version exists (publish 前置条件)
+      await saveModuleConfig(factoryId.value, selectedModule.value, {
+        enabled: true,
+      })
+    }
+    await loadVersion()
+    clearDirty()
+    ElMessage.success('草稿已保存')
+  } catch (e) {
+    console.error('Save draft failed:', e)
+    ElMessage.error('保存失败: ' + ((e as any)?.message || 'unknown'))
+  }
+}
 async function submitReview() {
   await submitForReview(factoryId.value)
   ElMessage.success('已提交审核')

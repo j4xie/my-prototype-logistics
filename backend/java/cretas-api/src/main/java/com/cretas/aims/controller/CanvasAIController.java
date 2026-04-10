@@ -5,6 +5,8 @@ import com.cretas.aims.ai.tool.ToolExecutor;
 import com.cretas.aims.ai.tool.ToolRegistry;
 import com.cretas.aims.ai.dto.ToolCall;
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.service.MobileService;
+import com.cretas.aims.utils.TokenUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,6 +28,29 @@ public class CanvasAIController {
     private final ToolRegistry toolRegistry;
     private final ObjectMapper objectMapper;
     private final DashScopeClient dashScopeClient;
+    private final MobileService mobileService;
+
+    /**
+     * Build tool execution context with factoryId + userId.
+     * Canvas AI tools (e.g. canvas_set_user_permission, canvas_apply_template) require userId.
+     */
+    private Map<String, Object> buildToolContext(String factoryId, String authorization) {
+        Map<String, Object> ctx = new HashMap<>();
+        ctx.put("factoryId", factoryId);
+        try {
+            if (authorization != null) {
+                String token = TokenUtils.extractToken(authorization);
+                Long userId = mobileService.getUserFromToken(token).getId();
+                if (userId != null) {
+                    ctx.put("userId", userId);
+                    ctx.put("operatorId", userId);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to extract userId from token: {}", e.getMessage());
+        }
+        return ctx;
+    }
 
     private static final String CANVAS_SYSTEM_PROMPT = """
             你是工厂配置助手。用户通过 Canvas 配置系统管理工厂的模块、字段、工作流、校验规则、触发链和AI工具。
@@ -61,17 +86,19 @@ public class CanvasAIController {
     @Operation(summary = "Canvas AI 对话 (DashScope Qwen)")
     public ApiResponse<AIResponse> chat(
             @PathVariable String factoryId,
+            @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestBody AIRequest request) {
 
         AIResponse response = new AIResponse();
         String mode = request.getMode() != null ? request.getMode() : "action";
         String message = request.getMessage();
         log.info("Canvas AI [{}] factory={}: {}", mode, factoryId, message);
+        Map<String, Object> toolContext = buildToolContext(factoryId, authorization);
 
         try {
             switch (mode) {
                 case "autopilot" -> {
-                    response.setReply(executeAutopilot(factoryId, message));
+                    response.setReply(executeAutopilot(factoryId, message, toolContext));
                     response.setApplied(true);
                 }
                 case "plan" -> {
@@ -98,8 +125,10 @@ public class CanvasAIController {
     @Operation(summary = "批量应用 Plan Mode 生成的变更")
     public ApiResponse<String> applyDiffs(
             @PathVariable String factoryId,
+            @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestBody List<Map<String, Object>> diffs) {
 
+        Map<String, Object> toolContext = buildToolContext(factoryId, authorization);
         int applied = 0;
         List<String> errors = new ArrayList<>();
         for (Map<String, Object> diff : diffs) {
@@ -117,7 +146,7 @@ public class CanvasAIController {
                 Map<String, Object> params = (Map<String, Object>) diff.getOrDefault("params", Map.of());
                 String argsJson = objectMapper.writeValueAsString(params);
                 ToolCall toolCall = ToolCall.of("ai-apply-" + applied, toolName, argsJson);
-                executor.get().execute(toolCall, Map.of("factoryId", factoryId));
+                executor.get().execute(toolCall, toolContext);
                 applied++;
             } catch (Exception e) {
                 errors.add(toolName + ": " + e.getMessage());
@@ -133,7 +162,7 @@ public class CanvasAIController {
     /**
      * Autopilot: LLM 分析用户意图 → 直接调用 canvas tools 执行
      */
-    private String executeAutopilot(String factoryId, String message) {
+    private String executeAutopilot(String factoryId, String message, Map<String, Object> toolContext) {
         String prompt = CANVAS_SYSTEM_PROMPT + """
 
                 模式: AUTOPILOT (全自动执行)
@@ -175,7 +204,7 @@ public class CanvasAIController {
                 try {
                     String argsJson = objectMapper.writeValueAsString(params);
                     ToolCall toolCall = ToolCall.of("autopilot-" + toolName, toolName, argsJson);
-                    executor.get().execute(toolCall, Map.of("factoryId", factoryId));
+                    executor.get().execute(toolCall, toolContext);
                     result.append("- ✅ ").append(desc).append("\n");
                 } catch (Exception e) {
                     result.append("- ❌ ").append(desc).append(": ").append(e.getMessage()).append("\n");
