@@ -36,7 +36,7 @@ export async function phase3Change(state, api, report) {
       {
         moduleCode: 'sales_order',
         operation: 'CREATE',
-        condition: 'totalAmount >= 500',
+        condition: '#totalAmount < 500',
         errorMessage: '订单金额不能低于500元',
         severity: 'BLOCK',
         enabled: true,

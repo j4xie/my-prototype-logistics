@@ -176,7 +176,7 @@ export async function phase1Config(api, report) {
       {
         moduleCode: 'sales_order',
         operation: 'CREATE',
-        condition: 'totalAmount >= 100',
+        condition: '#totalAmount < 100',
         errorMessage: '订单金额不能低于100元',
         severity: 'BLOCK',
         enabled: true,
