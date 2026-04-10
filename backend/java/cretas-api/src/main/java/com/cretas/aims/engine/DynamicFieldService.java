@@ -37,6 +37,39 @@ public class DynamicFieldService {
         cache.remove(factoryId + ":" + moduleCode);
     }
 
+    /**
+     * Determine whether the id column of a given table is UUID or VARCHAR.
+     * Canvas V3 supports both because different modules use different id types:
+     * - sales_orders.id: VARCHAR (legacy)
+     * - bom_items.id: BIGINT
+     * - canvas_dynamic_field.id: UUID
+     * We query information_schema once per table and cache the result.
+     */
+    private final Map<String, String> idTypeCache = new ConcurrentHashMap<>();
+
+    private String getIdColumnType(String tableName) {
+        return idTypeCache.computeIfAbsent(tableName, t -> {
+            try {
+                String type = jdbcTemplate.queryForObject(
+                    "SELECT data_type FROM information_schema.columns " +
+                    "WHERE table_name = ? AND column_name = 'id'",
+                    String.class, t);
+                return type != null ? type.toLowerCase() : "character varying";
+            } catch (Exception e) {
+                log.warn("Could not determine id type for table {}, defaulting to text", t);
+                return "character varying";
+            }
+        });
+    }
+
+    /** Build the id WHERE clause fragment appropriate for the id column type. */
+    private String idWhereClause(String tableName) {
+        String type = getIdColumnType(tableName);
+        if (type.contains("uuid")) return "WHERE id = ?::uuid";
+        if (type.contains("bigint") || type.contains("integer")) return "WHERE id = ?";
+        return "WHERE id = ?"; // varchar/text — PostgreSQL auto-casts string literal
+    }
+
     public Map<String, Object> getDynamicFields(String factoryId, String moduleCode, String recordId) {
         List<CanvasDynamicField> fields = getActiveFields(factoryId, moduleCode);
         if (fields.isEmpty()) return Map.of();
@@ -49,7 +82,7 @@ public class DynamicFieldService {
 
         if (columns.isEmpty()) return Map.of();
 
-        String sql = "SELECT " + String.join(", ", columns) + " FROM " + tableName + " WHERE id = ?::uuid";
+        String sql = "SELECT " + String.join(", ", columns) + " FROM " + tableName + " " + idWhereClause(tableName);
         try {
             Map<String, Object> row = jdbcTemplate.queryForMap(sql, recordId);
             Map<String, Object> result = new LinkedHashMap<>();
@@ -85,7 +118,7 @@ public class DynamicFieldService {
 
         if (setClauses.isEmpty()) return;
         params.add(recordId);
-        String sql = "UPDATE " + tableName + " SET " + String.join(", ", setClauses) + " WHERE id = ?::uuid";
+        String sql = "UPDATE " + tableName + " SET " + String.join(", ", setClauses) + " " + idWhereClause(tableName);
         jdbcTemplate.update(sql, params.toArray());
     }
 }
