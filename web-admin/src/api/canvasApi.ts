@@ -3,7 +3,8 @@ import request from './request'
 import type {
   ToolConfig, SkillConfig, TriggerChain, ValidationRule,
   DefaultValue, Formula, SchedulerConfig,
-  ConfigVersion, PublishWindow, CompletenessCheck
+  ConfigVersion, PublishWindow, CompletenessCheck,
+  DynamicField, DDLLog
 } from '@/types/canvas'
 
 const v2 = (factoryId: string) => `/${factoryId}/config/v2`
@@ -100,3 +101,31 @@ export const setPublishWindow = (factoryId: string, window: PublishWindow) =>
 // Completeness check
 export const checkCompleteness = (factoryId: string) =>
   request.get<CompletenessCheck>(`/${factoryId}/config/completeness-check`)
+
+// Dynamic Fields
+export const getDynamicFields = (factoryId: string, moduleCode?: string) =>
+  request.get<DynamicField[]>(`${v2(factoryId)}/dynamic-fields`, { params: { moduleCode } })
+export const createDynamicField = (factoryId: string, field: Partial<DynamicField>) =>
+  request.post<DynamicField>(`${v2(factoryId)}/dynamic-fields`, field)
+export const updateDynamicField = (factoryId: string, fieldCode: string, field: Partial<DynamicField>) =>
+  request.put<DynamicField>(`${v2(factoryId)}/dynamic-fields/${fieldCode}`, field)
+export const deleteDynamicField = (factoryId: string, fieldCode: string, moduleCode: string) =>
+  request.delete(`${v2(factoryId)}/dynamic-fields/${fieldCode}`, { params: { moduleCode } })
+export const getDDLLog = (factoryId: string) =>
+  request.get<DDLLog[]>(`${v2(factoryId)}/ddl-log`)
+
+// Sub-table CRUD
+export const getSubTableRows = (factoryId: string, moduleCode: string, recordId: string, fieldCode: string) =>
+  request.get<Record<string, unknown>[]>(`/${factoryId}/${moduleCode}/${recordId}/sub-table/${fieldCode}`)
+export const addSubTableRow = (factoryId: string, moduleCode: string, recordId: string, fieldCode: string, row: Record<string, unknown>) =>
+  request.post(`/${factoryId}/${moduleCode}/${recordId}/sub-table/${fieldCode}`, row)
+export const updateSubTableRow = (factoryId: string, moduleCode: string, recordId: string, fieldCode: string, rowId: string, row: Record<string, unknown>) =>
+  request.put(`/${factoryId}/${moduleCode}/${recordId}/sub-table/${fieldCode}/${rowId}`, row)
+export const deleteSubTableRow = (factoryId: string, moduleCode: string, recordId: string, fieldCode: string, rowId: string) =>
+  request.delete(`/${factoryId}/${moduleCode}/${recordId}/sub-table/${fieldCode}/${rowId}`)
+
+// Custom fields for a record
+export const getCustomFields = (factoryId: string, moduleCode: string, recordId: string) =>
+  request.get<Record<string, unknown>>(`/${factoryId}/${moduleCode}/${recordId}/custom-fields`)
+export const setCustomFields = (factoryId: string, moduleCode: string, recordId: string, fields: Record<string, unknown>) =>
+  request.put(`/${factoryId}/${moduleCode}/${recordId}/custom-fields`, fields)
