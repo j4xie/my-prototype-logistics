@@ -87,7 +87,8 @@ class RestaurantSkillsRegistrationTest {
         assertThat(def.getTools()).containsExactlyInAnyOrder(
                 "restaurant_multi_store_comparison",
                 "restaurant_calibration_history",
-                "restaurant_temporal_comparison"
+                "restaurant_temporal_comparison",
+                "restaurant_cross_chain_benchmark"
         );
         assertThat(def.getContextNeeded()).contains("factoryId");
         assertThat(def.isEnabled()).isTrue();

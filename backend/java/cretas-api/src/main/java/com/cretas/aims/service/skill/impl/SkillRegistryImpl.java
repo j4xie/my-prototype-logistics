@@ -365,7 +365,8 @@ public class SkillRegistryImpl implements SkillRegistry {
                 .tools(Arrays.asList(
                         "restaurant_multi_store_comparison",
                         "restaurant_calibration_history",
-                        "restaurant_temporal_comparison"
+                        "restaurant_temporal_comparison",
+                        "restaurant_cross_chain_benchmark"
                 ))
                 .contextNeeded(Arrays.asList("factoryId"))
                 .promptTemplate("分析${factoryId}的连锁餐饮状况，用户问题：${userQuery}")
