@@ -11,6 +11,7 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -35,6 +36,13 @@ public class CreateReturnOrderRequest {
     @Valid
     @NotEmpty(message = "退货行项目不能为空")
     private List<ReturnOrderItemDTO> items;
+
+    /**
+     * Round 11 T2 — Canvas Integration Template slot for factory-configured
+     * dynamic fields. Fields like 退货照片, 客诉单号, 退货责任方 land here and
+     * are persisted to cf_* columns on return_orders via DynamicFieldService.
+     */
+    private Map<String, Object> customFields;
 
     @Data
     @NoArgsConstructor

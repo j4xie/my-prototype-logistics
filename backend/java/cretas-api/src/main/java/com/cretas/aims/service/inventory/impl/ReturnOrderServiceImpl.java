@@ -14,6 +14,7 @@ import com.cretas.aims.service.finance.ArApService;
 import com.cretas.aims.service.inventory.ReturnOrderService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -34,19 +35,43 @@ public class ReturnOrderServiceImpl implements ReturnOrderService {
     private final ReturnOrderRepository returnOrderRepository;
     private final ReturnOrderItemRepository returnOrderItemRepository;
     private final ArApService arApService;
+    private final ApplicationEventPublisher applicationEventPublisher;
+
+    /** Round 11 T2 — Canvas Integration Template hook 1: DB-driven validation. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+
+    /** Round 11 T2 — Canvas Integration Template hook 2: dynamic field persist. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
 
     public ReturnOrderServiceImpl(ReturnOrderRepository returnOrderRepository,
                                    ReturnOrderItemRepository returnOrderItemRepository,
-                                   ArApService arApService) {
+                                   ArApService arApService,
+                                   ApplicationEventPublisher applicationEventPublisher) {
         this.returnOrderRepository = returnOrderRepository;
         this.returnOrderItemRepository = returnOrderItemRepository;
         this.arApService = arApService;
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 
     @Override
     @Transactional
     public ReturnOrder createReturnOrder(String factoryId, CreateReturnOrderRequest request, Long userId) {
         ReturnType returnType = ReturnType.valueOf(request.getReturnType());
+
+        // Round 11 T2: Canvas Integration Template hook 1 — DB-driven validation
+        if (validationRuleEvaluator != null) {
+            try {
+                validationRuleEvaluator.validate(factoryId, "sales_return", "CREATE",
+                        java.util.Map.of(
+                            "returnType", returnType.name(),
+                            "itemCount", request.getItems() != null ? request.getItems().size() : 0,
+                            "counterpartyId", request.getCounterpartyId() != null ? request.getCounterpartyId() : ""));
+            } catch (com.cretas.aims.exception.BusinessException e) { throw e; }
+            catch (Exception e) { log.warn("Canvas validation non-blocking: {}", e.getMessage()); }
+        }
+
         String returnNumber = generateReturnNumber(factoryId, returnType);
 
         ReturnOrder order = new ReturnOrder();
@@ -90,6 +115,29 @@ public class ReturnOrderServiceImpl implements ReturnOrderService {
         returnOrderItemRepository.saveAll(items);
         order.setTotalAmount(totalAmount);
         order = returnOrderRepository.save(order);
+
+        // Round 11 T2: Canvas Integration Template hook 2 — persist dynamic fields.
+        // Customer-configured fields (退货照片, 客诉单号, 退货责任方) land in cf_*
+        // columns on return_orders. Silent failure must not break the return creation.
+        if (dynamicFieldService != null && request.getCustomFields() != null && !request.getCustomFields().isEmpty()) {
+            try {
+                dynamicFieldService.setDynamicFields(factoryId, "sales_return", order.getId(), request.getCustomFields());
+            } catch (Exception e) {
+                log.warn("Canvas dynamic fields save failed for return order {}: {}", order.getId(), e.getMessage());
+            }
+        }
+
+        // Round 11 T2: Canvas Integration Template hook 3 — publish event for trigger chains.
+        // Fires on DRAFT creation of both SALES_RETURN and PURCHASE_RETURN. Factories
+        // can now react via configured trigger chains (e.g., "大额退货通知财务").
+        try {
+            applicationEventPublisher.publishEvent(new com.cretas.aims.event.ReturnOrderCreatedEvent(
+                    this, factoryId, order.getId(), order.getReturnNumber(),
+                    returnType.name(), order.getCounterpartyId(),
+                    order.getSourceOrderId(), order.getTotalAmount()));
+        } catch (Exception e) {
+            log.warn("Publish ReturnOrderCreatedEvent failed for {}: {}", order.getId(), e.getMessage());
+        }
 
         log.info("创建退货单: factoryId={}, returnNumber={}, type={}, items={}",
                 factoryId, returnNumber, returnType, items.size());

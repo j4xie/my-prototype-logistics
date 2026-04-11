@@ -64,7 +64,12 @@ public class TriggerChainExecutor {
             // Round 11 T1 — purchase_receipt template event. Fires on DRAFT create via
             // PurchaseServiceImpl.createReceiveRecord; MaterialReceivedEvent still fires
             // on CONFIRMED state via confirmReceive. Both hooks are live.
-            "PurchaseReceiveCreatedEvent"
+            "PurchaseReceiveCreatedEvent",
+            // Round 11 T2 — sales_return / purchase_return template event. Fires on DRAFT
+            // create via ReturnOrderServiceImpl.createReturnOrder. Covers both return
+            // types via the shared returnType enum — trigger chains can filter by
+            // the event's returnType field if they want one direction only.
+            "ReturnOrderCreatedEvent"
     );
 
     // Round 6 Fix CHECK-5: rate-limited warn log when a factory configures a trigger chain
