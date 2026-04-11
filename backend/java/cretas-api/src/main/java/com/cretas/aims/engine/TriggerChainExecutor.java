@@ -31,7 +31,12 @@ public class TriggerChainExecutor {
     private final ToolRegistry toolRegistry;
     private final ObjectMapper objectMapper;
 
+    // Round 4 Fix P1-14: added SalesOrderCreatedEvent so trigger chains can react to
+    // order creation (e.g. fetch external market price, create parallel workflows).
+    // Full list should eventually be data-driven from factory_trigger_chains.event_type
+    // but this hardcoded whitelist is the current performance-safe approach.
     private static final Set<String> HANDLED_EVENTS = Set.of(
+            "SalesOrderCreatedEvent",
             "SalesOrderConfirmedEvent", "SalesOrderFinanceApprovedEvent",
             "MaterialReceivedEvent", "BatchCompletedEvent",
             "FinishedGoodsCreatedEvent", "PaymentReceivedEvent"

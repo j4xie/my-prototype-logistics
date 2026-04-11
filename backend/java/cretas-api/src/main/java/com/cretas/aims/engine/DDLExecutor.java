@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -182,18 +183,32 @@ public class DDLExecutor {
         sb.append("id UUID PRIMARY KEY DEFAULT gen_random_uuid(), ");
         sb.append("parent_id UUID NOT NULL, ");
 
+        // Round 4 Fix P2-22: collect unique columns for CREATE UNIQUE INDEX
+        List<String> uniqueColumns = new ArrayList<>();
+
         List<Map<String, Object>> columns = (List<Map<String, Object>>) field.getConfig().get("columns");
         if (columns != null) {
             for (Map<String, Object> col : columns) {
                 String code = (String) col.get("code");
                 String type = (String) col.getOrDefault("type", "TEXT");
                 sb.append("cf_").append(code).append(" ").append(mapFieldTypeToSQL(type)).append(", ");
+                if (Boolean.TRUE.equals(col.get("unique"))) {
+                    uniqueColumns.add("cf_" + code);
+                }
             }
         }
         sb.append("created_at TIMESTAMP DEFAULT NOW(), ");
         sb.append("updated_at TIMESTAMP DEFAULT NOW()");
         sb.append("); ");
         sb.append("CREATE INDEX IF NOT EXISTS idx_").append(subTableName).append("_parent ON ").append(subTableName).append("(parent_id)");
+        // Round 4 Fix P2-22: emit UNIQUE indexes for columns marked unique:true in config.
+        // Scoped to parent_id so same ear-tag can exist across different parent orders but
+        // not twice within the same parent. Adjust to global UNIQUE by removing parent_id.
+        for (String uniqueCol : uniqueColumns) {
+            sb.append("; CREATE UNIQUE INDEX IF NOT EXISTS uq_").append(subTableName).append("_").append(uniqueCol)
+              .append(" ON ").append(subTableName).append(" (parent_id, ").append(uniqueCol).append(") WHERE ")
+              .append(uniqueCol).append(" IS NOT NULL");
+        }
         return sb.toString();
     }
 

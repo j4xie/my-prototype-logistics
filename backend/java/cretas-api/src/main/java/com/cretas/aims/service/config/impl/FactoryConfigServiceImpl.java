@@ -554,14 +554,51 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
             }
         }
 
-        // 7. Log + update usage count
+        // 7. Apply seedDynamicFields (Round 4 Fix P2-29)
+        // Template can declare pre-built dynamic fields that are auto-created on apply.
+        // Each field is created with status=PENDING_DDL, will activate on next publish.
+        int seededFields = 0;
+        List<Map<String, Object>> seedFields = (List<Map<String, Object>>)
+                baseConfig.getOrDefault("seedDynamicFields", List.of());
+        if (canvasDynamicFieldRepository != null && !seedFields.isEmpty()) {
+            for (Map<String, Object> seed : seedFields) {
+                String modCode = (String) seed.get("moduleCode");
+                String fieldCode = (String) seed.get("fieldCode");
+                if (modCode == null || fieldCode == null) continue;
+
+                // Skip if field already exists in this factory (idempotent re-apply)
+                if (canvasDynamicFieldRepository
+                        .findByFactoryIdAndModuleCodeAndFieldCode(factoryId, modCode, fieldCode)
+                        .isPresent()) {
+                    continue;
+                }
+
+                CanvasDynamicField newField = CanvasDynamicField.builder()
+                    .factoryId(factoryId)
+                    .moduleCode(modCode)
+                    .fieldCode(fieldCode)
+                    .fieldType((String) seed.get("fieldType"))
+                    .label((String) seed.get("label"))
+                    .config(seed.get("config") instanceof Map m ? (Map<String, Object>) m : Map.of())
+                    .visibleWhen((String) seed.get("visibleWhen"))
+                    .computedWhen((String) seed.get("computedWhen"))
+                    .sortOrder(seed.get("sortOrder") != null ? ((Number) seed.get("sortOrder")).intValue() : 0)
+                    .status("PENDING_DDL")
+                    .build();
+                newField.setColumnName("cf_" + fieldCode);
+                canvasDynamicFieldRepository.save(newField);
+                seededFields++;
+            }
+        }
+
+        // 8. Log + update usage count
         logChange(factoryId, null, "TEMPLATE_APPLIED", null, null,
-                "应用模板: " + templateCode, operatorId);
+                "应用模板: " + templateCode + " (seed " + seededFields + " fields)", operatorId);
         template.setUsageCount(template.getUsageCount() + 1);
         factoryTemplateRepository.save(template);
 
-        log.info("Template {} applied to factory {} — {} enabled, {} disabled",
-                templateCode, factoryId, enabledModules.size(), disabledModules.size());
+        log.info("Template {} applied to factory {} — {} enabled, {} disabled, {} seedFields",
+                templateCode, factoryId, enabledModules.size(), disabledModules.size(), seededFields);
     }
 
     // ========== Export / Import (Round 4 Fix P1-16) ==========

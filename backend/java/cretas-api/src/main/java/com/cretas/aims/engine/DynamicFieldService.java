@@ -180,6 +180,21 @@ public class DynamicFieldService {
         Map<String, CanvasDynamicField> defMap = activeDefs.stream()
             .collect(Collectors.toMap(CanvasDynamicField::getFieldCode, f -> f));
 
+        // Round 4 Fix P2-31: enforce required=true on the server side.
+        // Previously required was a frontend-only rendering hint — backend accepted NULL
+        // values silently. Now we validate required fields using config.required flag.
+        for (CanvasDynamicField def : activeDefs) {
+            if ("SUB_TABLE".equals(def.getFieldType())) continue;
+            Object reqFlag = def.getConfig() != null ? def.getConfig().get("required") : null;
+            if (Boolean.TRUE.equals(reqFlag)) {
+                Object val = fields.get(def.getFieldCode());
+                if (val == null || (val instanceof CharSequence s && s.toString().trim().isEmpty())) {
+                    throw new com.cretas.aims.exception.BusinessException(
+                        "必填字段不能为空: " + def.getLabel() + " (" + def.getFieldCode() + ")");
+                }
+            }
+        }
+
         String tableName = ddlExecutor.resolveTable(moduleCode);
         List<String> setClauses = new ArrayList<>();
         List<Object> params = new ArrayList<>();

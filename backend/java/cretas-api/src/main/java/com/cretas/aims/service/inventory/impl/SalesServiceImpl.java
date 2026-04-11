@@ -197,6 +197,18 @@ public class SalesServiceImpl implements SalesService {
         }
 
         log.info("创建销售订单: factoryId={}, orderNumber={}, items={}", factoryId, orderNumber, items.size());
+
+        // Round 4 Fix P1-14: publish SalesOrderCreatedEvent so trigger chains can react
+        // (e.g. snapshot market price, auto-schedule production, notify sales manager).
+        try {
+            applicationEventPublisher.publishEvent(new com.cretas.aims.event.SalesOrderCreatedEvent(
+                this, factoryId, order.getId(),
+                order.getCustomerId(), order.getTotalAmount()));
+            log.info("已发布 SalesOrderCreatedEvent: SO={}", order.getId());
+        } catch (Exception e) {
+            log.error("发布 SalesOrderCreatedEvent 失败: {}", e.getMessage(), e);
+        }
+
         return order;
     }
 
