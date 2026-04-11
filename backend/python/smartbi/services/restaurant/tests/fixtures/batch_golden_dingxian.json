@@ -46,6 +46,58 @@
         "metricNameZh": "成本弹性指数",
         "playbookId": "cost_rigidity_high",
         "playbookUrlZh": "playbooks/cost_rigidity_high.yaml",
+        "rxActions": [
+          {
+            "description": "周二周三晚餐客流最低但排班仍按周末标准. 去掉 1 名帮工每月立省 ≈ ¥3,200, 是最快见效的成本刚性改善.",
+            "effort": "low",
+            "expectedImpact": "人工成本 -¥3.2K/月, cost_rigidity 从 0.561 → 0.68",
+            "id": "CR-A01",
+            "owner": "店长",
+            "priority": "P0",
+            "timeframe": "本周内",
+            "title": "砍周二/周三晚班帮工"
+          },
+          {
+            "description": "Menu Engineering Dog 区 12 道菜贡献营收 <3% 但占备料 SKU 18%. 砍掉后, 后厨切配工时 + 损耗同步下降.",
+            "effort": "medium",
+            "expectedImpact": "备料 SKU -18%, 后厨切配工时 -15%, 月度损耗 -¥2.5K",
+            "id": "CR-A02",
+            "owner": "运营经理",
+            "priority": "P0",
+            "timeframe": "2 周",
+            "title": "菜单末位 12 道砍除"
+          },
+          {
+            "description": "上月储值余额 ¥52K 未兑付, 发短信提醒 + 限时使用优惠券, 2 周内拉回 30% 消费.",
+            "effort": "low",
+            "expectedImpact": "额外营收 ≈ ¥15K, 同时释放预收款负债",
+            "id": "CR-A03",
+            "owner": "运营经理",
+            "priority": "P1",
+            "timeframe": "2 周",
+            "title": "启动储值卡唤醒活动"
+          },
+          {
+            "description": "当前美团抽成 23%, 同级品牌平均 18%. 基于月流水重新谈判, 降 2-3 个点即可收回 ¥4K+/月.",
+            "effort": "medium",
+            "expectedImpact": "外卖毛利 +2-3pp, 月度净利润 +¥4K",
+            "id": "CR-A04",
+            "owner": "店长",
+            "priority": "P1",
+            "timeframe": "Q2 月初",
+            "title": "外卖平台佣金谈判"
+          },
+          {
+            "description": "当前只有 12 道菜有成本卡, 其余按 40% 估算导致诊断信号失真. 补全 TOP 20 SKU 的半成品 BOM, 精度从 Layer 1 提升到 Layer 2.",
+            "effort": "high",
+            "expectedImpact": "BOM 精度 ±15% → ±8%, 为后续损溢分析打基础",
+            "id": "CR-A05",
+            "owner": "中央厨房",
+            "priority": "P2",
+            "timeframe": "4 周",
+            "title": "BOM 成本卡标准化"
+          }
+        ],
         "severity": "warning",
         "status": "偏低",
         "subSectorNotes": [
@@ -93,7 +145,7 @@
         "diagnostics",
         "benchmark_alerts"
       ],
-      "generatedAt": "2026-04-11T01:54:17",
+      "generatedAt": "2026-04-11T04:13:50",
       "headline": "鼎鲜火锅 义乌分公司 current 营收 ¥731,048",
       "headlineColor": "yellow",
       "kpiCostRigidity": 0.560961801990723,

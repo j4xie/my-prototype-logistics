@@ -43,6 +43,37 @@ Severity = Literal["info", "warning", "critical"]
 
 
 @dataclass
+class RxAction:
+    """Structured prescription action from a playbook.
+
+    Replaces the pre-3.7 free-form text suggestion lists. Every field
+    is required (validated at YAML load time). Frontend renders these
+    as rich action cards with owner badge, timeframe chip, priority
+    indicator, effort stars.
+    """
+    id: str                         # e.g. "CR-A01" (playbook prefix + sequence)
+    title: str                      # short action name
+    description: str                # detailed rationale
+    owner: str                      # 负责角色: 店长 / 运营经理 / 中央厨房 / 等
+    timeframe: str                  # e.g. "本周内", "2 周", "Q2 结束前"
+    priority: str                   # "P0" | "P1" | "P2"
+    effort: str                     # "low" | "medium" | "high"
+    expected_impact: str            # natural language expected outcome
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "title": self.title,
+            "description": self.description,
+            "owner": self.owner,
+            "timeframe": self.timeframe,
+            "priority": self.priority,
+            "effort": self.effort,
+            "expectedImpact": self.expected_impact,
+        }
+
+
+@dataclass
 class Diagnosis:
     """单个 metric 的诊断结果"""
     metric_key: str                          # 例: 'food_cost_ratio'
@@ -57,11 +88,12 @@ class Diagnosis:
     delta_pp: float                          # 与中位数偏差 (绝对值, 单位: 百分点 if metric is %, else absolute)
     delta_pct: float                         # 与中位数相对偏差 (百分比)
     description_zh: str                      # 给客户看的诊断说明
-    suggestion_zh: list[str]                 # 行动建议 (来自 playbook)
+    suggestion_zh: list[str]                 # 行动建议 (来自 playbook, 向后兼容文本格式)
     playbook_id: Optional[str] = None
     playbook_url_zh: Optional[str] = None
     sub_sector_notes: list[str] = field(default_factory=list)
     formula_zh: Optional[str] = None         # 公式说明 (来自 registry)
+    rx_actions: list[RxAction] = field(default_factory=list)  # P3.7 结构化处方行动
 
     def to_dict(self) -> dict:
         return {
@@ -82,6 +114,7 @@ class Diagnosis:
             "playbookUrlZh": self.playbook_url_zh,
             "subSectorNotes": self.sub_sector_notes,
             "formulaZh": self.formula_zh,
+            "rxActions": [a.to_dict() for a in self.rx_actions],
         }
 
 
@@ -209,6 +242,7 @@ class DiagnosticsEngine:
         suggestion_list: list[str] = []
         sub_sector_notes: list[str] = []
         playbook_url: Optional[str] = None
+        rx_actions: list[RxAction] = []
 
         if playbook_id:
             playbook_data = self._load_playbook(playbook_id)
@@ -216,6 +250,7 @@ class DiagnosticsEngine:
                 suggestion_list = self._extract_suggestions(playbook_data, severity)
                 sub_sector_notes = self._extract_sub_sector_notes(playbook_data)
                 playbook_url = f"playbooks/{playbook_id}.yaml"
+                rx_actions = self._extract_rx_actions(playbook_data)
 
         # 渲染描述文案
         description_zh = self._render_description(
@@ -240,6 +275,7 @@ class DiagnosticsEngine:
             playbook_url_zh=playbook_url,
             sub_sector_notes=sub_sector_notes,
             formula_zh=formula,
+            rx_actions=rx_actions,
         )
 
     def list_registered_metrics(self) -> list[str]:
@@ -502,6 +538,41 @@ class DiagnosticsEngine:
             if len(suggestions) >= 6:
                 break
         return suggestions[:6]
+
+    def _extract_rx_actions(self, playbook: dict) -> list[RxAction]:
+        """从 playbook 提取结构化 RxAction 列表 (P3.7 新增)
+
+        读取 playbook YAML 顶层的 rx_actions 列表. 每个条目必须包含全部 8 个字段.
+        YAML 中缺失必填字段的条目会被跳过并记录 warning.
+        """
+        raw_rx = playbook.get("rx_actions") or []
+        if not raw_rx:
+            return []
+
+        required_fields = ("id", "title", "description", "owner", "timeframe",
+                           "priority", "effort", "expected_impact")
+        actions: list[RxAction] = []
+        for item in raw_rx:
+            if not isinstance(item, dict):
+                logger.warning(f"rx_actions 条目不是 dict, 跳过: {item!r}")
+                continue
+            missing = [f for f in required_fields if not item.get(f)]
+            if missing:
+                logger.warning(
+                    f"rx_actions 条目缺失字段 {missing}, 跳过: {item.get('id', '?')!r}"
+                )
+                continue
+            actions.append(RxAction(
+                id=str(item["id"]),
+                title=str(item["title"]),
+                description=str(item["description"]),
+                owner=str(item["owner"]),
+                timeframe=str(item["timeframe"]),
+                priority=str(item["priority"]),
+                effort=str(item["effort"]),
+                expected_impact=str(item["expected_impact"]),
+            ))
+        return actions
 
     def _extract_sub_sector_notes(self, playbook: dict) -> list[str]:
         """提取当前 sub_sector 的专属提示"""

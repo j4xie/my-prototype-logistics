@@ -43,6 +43,35 @@ action_plans:
       - "平台套餐设计：用高毛利菜品组合，控制套餐成本率"
     expected_impact: "平台折扣占比降低20-30%"
 
+# ── 结构化处方行动 (P3.7) ─────────────────────────
+rx_actions:
+  - id: DR-A01
+    title: 盘点折扣渠道 ROI 并砍低效渠道
+    description: 列出所有折扣来源(团购/会员/满减/员工折扣), 计算每个渠道的让利金额和带来的增量消费. ROI<1.5的渠道本月内停掉.
+    owner: 运营经理
+    timeframe: 2 周
+    priority: P0
+    effort: medium
+    expected_impact: 无效折扣让利减少, 折扣率降低2-3pp
+
+  - id: DR-A02
+    title: 用赠品替代直接折扣
+    description: 将全单9折改为"消费满168赠甜品", 赠品成本约¥8-12, 但让利效果等同¥16-20折扣. 客户感知相同, 实际成本降低40%.
+    owner: 运营经理
+    timeframe: 2 周
+    priority: P0
+    effort: low
+    expected_impact: 同等引流效果, 让利金额降低30-40%
+
+  - id: DR-A03
+    title: 建立私域流量减少平台依赖
+    description: 在结账时引导客户关注公众号/加微信群, 私域用户给予专属权益(不是折扣). 每月积累200+私域用户后, 可减少平台投放.
+    owner: 店长
+    timeframe: Q2
+    priority: P1
+    effort: medium
+    expected_impact: 平台依赖度 -20%, 平台抽佣+折扣总成本 -¥3-5K/月
+
 sub_sector_notes:
   火锅:
     - "火锅团购竞争激烈，但低价团购损害品牌定位"

@@ -52,6 +52,44 @@ action_plans:
       - "引入智能排班软件，基于历史数据自动生成排班表"
     expected_impact: "长期减少1-2名全职员工/门店"
 
+# ── 结构化处方行动 (P3.7) ─────────────────────────
+rx_actions:
+  - id: LC-A01
+    title: 重排低客流时段班次
+    description: 分析14:00-17:00客流数据, 将该时段在岗人数从当前配置削减1-2人, 改为按需呼叫兼职覆盖突发需求.
+    owner: 店长
+    timeframe: 本周内
+    priority: P0
+    effort: low
+    expected_impact: 人力成本 -2pp, 单月节省 ≈ ¥4-6K
+
+  - id: LC-A02
+    title: 引入兼职覆盖周末高峰
+    description: 周末高峰期增加2-3名4小时兼职, 替换现有全职加班安排. 兼职时薪约 ¥25-35/h, 总成本比全职加班低40%.
+    owner: 店长
+    timeframe: 2 周
+    priority: P0
+    effort: medium
+    expected_impact: 周末人力成本 -15%, 全职加班费减少
+
+  - id: LC-A03
+    title: 建立绩效奖金制度
+    description: 将20%奖金与翻台率/好评率/客单价挂钩, 固定薪酬降低对应比例. 员工总收入不变, 但成本与业绩联动.
+    owner: 运营经理
+    timeframe: 4 周
+    priority: P1
+    effort: medium
+    expected_impact: 薪酬弹性提升, 淡季人力成本自动下降1-2pp
+
+  - id: LC-A04
+    title: 引入自助点餐减少服务员需求
+    description: 采用扫码点餐 + 自助呼叫系统, 减少传统点单服务员岗位. 设备采购约¥5-8K/套, 6个月可回本.
+    owner: 运营经理
+    timeframe: Q2
+    priority: P2
+    effort: high
+    expected_impact: 前厅人员减少1名, 年度节省 ≈ ¥4-6万
+
 sub_sector_notes:
   火锅:
     - "海底捞人力成本率约31%，属于高服务溢价模式——如果你不走高服务路线，不应对标海底捞"
