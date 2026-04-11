@@ -749,6 +749,84 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
         return result;
     }
 
+    // ========== Runtime Custom Module Creation (Round 4 Fix P1-12) ==========
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplateForCustomModules;
+
+    @Override
+    @Transactional
+    public Map<String, Object> createCustomModule(String factoryId, String moduleCode, String moduleName,
+                                                    String moduleCategory, String description) {
+        // Reject if moduleCode already exists
+        if (moduleSchemaRepository.findByModuleCode(moduleCode).isPresent()) {
+            throw new BusinessException("模块已存在: " + moduleCode);
+        }
+
+        // Create minimal ModuleSchema
+        ModuleSchema schema = ModuleSchema.builder()
+            .moduleCode(moduleCode)
+            .moduleName(moduleName)
+            .moduleCategory(moduleCategory != null ? moduleCategory : "CUSTOM")
+            .moduleVersion(1)
+            .fieldSchema(Map.of("fields", List.of(), "groups", List.of()))
+            .workflowSchema(Map.of("states", List.of(), "transitions", List.of()))
+            .validationSchema(Map.of())
+            .permissionSchema(Map.of())
+            .defaultConfig(Map.of("fields", Map.of(), "workflow", Map.of()))
+            .description(description)
+            .isActive(true)
+            .build();
+        moduleSchemaRepository.save(schema);
+
+        // Auto-create the underlying table if not exists
+        // Table name = moduleCode (snake_case), with id + factory_id + audit columns
+        String tableName = moduleCode;
+        if (jdbcTemplateForCustomModules != null) {
+            String ddl = String.format(
+                "CREATE TABLE IF NOT EXISTS %s (" +
+                "id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text, " +
+                "factory_id VARCHAR(50) NOT NULL, " +
+                "name VARCHAR(200), " +
+                "status VARCHAR(32) DEFAULT 'ACTIVE', " +
+                "created_at TIMESTAMP DEFAULT NOW(), " +
+                "updated_at TIMESTAMP DEFAULT NOW(), " +
+                "created_by BIGINT, " +
+                "deleted_at TIMESTAMP)", tableName);
+            try {
+                jdbcTemplateForCustomModules.execute(ddl);
+                jdbcTemplateForCustomModules.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_" + tableName + "_factory ON " + tableName + " (factory_id)");
+                log.info("Custom module table created: {}", tableName);
+            } catch (Exception e) {
+                log.error("Failed to create custom module table {}: {}", tableName, e.getMessage());
+                throw new BusinessException("创建模块表失败: " + e.getMessage());
+            }
+        }
+
+        // Enable the module for this factory in its draft config
+        FactoryConfiguration draft = getOrCreateDraft(factoryId, 0L);
+        FactoryModuleConfig moduleConfig = FactoryModuleConfig.builder()
+            .factoryId(factoryId)
+            .moduleCode(moduleCode)
+            .configVersion(draft.getConfigVersion())
+            .enabled(true)
+            .fieldConfig(Map.of("fields", Map.of()))
+            .build();
+        factoryModuleConfigRepository.save(moduleConfig);
+
+        logChange(factoryId, moduleCode, "MODULE_CREATED", null, null,
+                "创建自定义模块: " + moduleName + " (" + moduleCode + ")", 0L);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("moduleCode", moduleCode);
+        result.put("moduleName", moduleName);
+        result.put("tableName", tableName);
+        result.put("schemaId", schema.getId());
+        result.put("enabled", true);
+        return result;
+    }
+
     // ========== Private Helpers ==========
 
     private FactoryConfiguration getOrCreateDraft(String factoryId, Long operatorId) {

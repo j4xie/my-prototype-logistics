@@ -66,6 +66,43 @@ public class ConfigController {
         return ApiResponse.success(configService.getEnabledModules(factoryId));
     }
 
+    /**
+     * Round 4 Fix P1-12: Runtime 创建新模块 (非标业务线, e.g. 水产 pond_management).
+     *
+     * 用户 Use Case:
+     *   - 蓝海水产: 需要"塘管理"模块, 当前只有 17 个硬编码模块
+     *   - 定制肉类: 需要"屠宰记录"模块
+     *
+     * 实现:
+     *   1. 插入 module_schemas 记录 (moduleCode + moduleName + 空 fieldSchema)
+     *   2. 自动 CREATE TABLE IF NOT EXISTS (cf_ columns 通过 dynamic-fields 加)
+     *   3. 返回创建的 module 信息
+     *
+     * 注意: 这是 ADMIN 级操作, 需要谨慎授权.
+     */
+    @PostMapping("/modules")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PLATFORM_SUPER_ADMIN')")
+    @Operation(summary = "Runtime 创建新模块 (非标业务线)")
+    public ApiResponse<Map<String, Object>> createModule(
+            @PathVariable String factoryId,
+            @RequestBody Map<String, Object> body) {
+        String moduleCode = (String) body.get("moduleCode");
+        String moduleName = (String) body.get("moduleName");
+        String moduleCategory = (String) body.getOrDefault("moduleCategory", "CUSTOM");
+        String description = (String) body.get("description");
+
+        if (moduleCode == null || !moduleCode.matches("^[a-z][a-z0-9_]{2,40}$")) {
+            return ApiResponse.error("moduleCode 必须是 3-40 位小写字母/数字/下划线, 以字母开头");
+        }
+        if (moduleName == null || moduleName.isBlank()) {
+            return ApiResponse.error("moduleName 不能为空");
+        }
+
+        Map<String, Object> result = configService.createCustomModule(
+            factoryId, moduleCode, moduleName, moduleCategory, description);
+        return ApiResponse.success("模块已创建: " + moduleCode, result);
+    }
+
     // ========== 配置管理 API (画布编辑器用) ==========
 
     @PutMapping("/modules/{moduleCode}")

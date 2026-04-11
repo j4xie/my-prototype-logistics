@@ -44,4 +44,9 @@ public interface FactoryConfigService {
     Map<String, Object> exportConfig(String factoryId);
     /** Import a config bundle (from another factory) as DRAFT, merging with existing config */
     Map<String, Object> importConfig(String factoryId, Map<String, Object> bundle, Long operatorId);
+
+    // ========== Runtime 创建模块 (Round 4 Fix P1-12) ==========
+    /** Create a new ModuleSchema + auto CREATE TABLE for custom business domains */
+    Map<String, Object> createCustomModule(String factoryId, String moduleCode, String moduleName,
+                                            String moduleCategory, String description);
 }
