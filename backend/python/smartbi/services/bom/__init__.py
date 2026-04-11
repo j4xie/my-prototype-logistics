@@ -7,10 +7,13 @@ Part of P3.5 general capabilities refactor. Modules added incrementally:
 """
 from .raw_material import RawMaterial, UnitConverter
 from .intermediate_product import IntermediateProduct, IngredientLine
+from .dish import Dish, DishIngredientLine
 
 __all__ = [
     "RawMaterial",
     "UnitConverter",
     "IntermediateProduct",
     "IngredientLine",
+    "Dish",
+    "DishIngredientLine",
 ]
