@@ -16,6 +16,10 @@
 --   sales_order_items.id       — BIGINT auto-sequence (no UUID)
 --   created_by                 — BIGINT user.id (not UUID)
 --   No sub_total/subtotal col  — total_amount computed from items at app layer
+--
+-- IMPORTANT: tax_rate is stored as INTEGER PERCENT (9, 13, 0), NOT decimal fraction.
+--   Backend formula: taxAmount = lineAmount × taxRate / 100
+--   So tax_rate=9 means 9%, producing taxAmount = 2500 × 9 / 100 = 225.00
 -- =============================================================================
 
 BEGIN;
@@ -72,7 +76,7 @@ VALUES (
     'e2e-so-001-0000000000000000000001',
     (SELECT id FROM product_types WHERE factory_id = 'F_E2E_TEST' AND code = 'SKU_SCY500'),
     '酸菜鱼 500g',
-    100.0000, '袋', 25.0000, 0.09,
+    100.0000, '袋', 25.0000, 9,
     0.00, 0.0000,
     NOW() - INTERVAL '2 days',
     NOW() - INTERVAL '2 days'
@@ -117,7 +121,7 @@ VALUES (
     'e2e-so-002-0000000000000000000001',
     (SELECT id FROM product_types WHERE factory_id = 'F_E2E_TEST' AND code = 'SKU_NRW1K'),
     '鲜牛肉丸 1kg',
-    50.0000, '袋', 55.0000, 0.13,
+    50.0000, '袋', 55.0000, 13,
     0.00, 0.0000,
     NOW() - INTERVAL '1 day',
     NOW() - INTERVAL '1 day'
@@ -162,7 +166,7 @@ VALUES (
     'e2e-so-003-0000000000000000000001',
     (SELECT id FROM product_types WHERE factory_id = 'F_E2E_TEST' AND code = 'SKU_HJY300'),
     '花椒鱼 300g',
-    10.0000, '袋', 18.0000, 0.00,
+    10.0000, '袋', 18.0000, 0,
     0.00, 0.0000,
     NOW() - INTERVAL '3 hours',
     NOW() - INTERVAL '3 hours'
@@ -170,8 +174,8 @@ VALUES (
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- DEMO_SO_G1: 鼎鲜火锅 — G1杀手锏: 9% + 13% 混合税率 — CONFIRMED
--- 行1: 酸菜鱼 500g × 100 @ 25.00 = 2500, tax_rate=0.09 → taxAmount computed by service
--- 行2: 鲜牛肉丸 1kg × 20 @ 55.00 = 1100, tax_rate=0.13 → taxAmount computed by service
+-- 行1: 酸菜鱼 500g × 100 @ 25.00 = 2500, tax_rate=9 → taxAmount=225 (2500×9/100)
+-- 行2: 鲜牛肉丸 1kg × 20 @ 55.00 = 1100, tax_rate=13 → taxAmount=143 (1100×13/100)
 -- Used by: tests/v1-e2e/web/g1-invoice.spec.ts
 -- ─────────────────────────────────────────────────────────────────────────────
 INSERT INTO sales_orders (
@@ -212,7 +216,7 @@ VALUES
     'e2e-so-g1-00000000000000000000001',
     (SELECT id FROM product_types WHERE factory_id = 'F_E2E_TEST' AND code = 'SKU_SCY500'),
     '酸菜鱼 500g',
-    100.0000, '袋', 25.0000, 0.09,
+    100.0000, '袋', 25.0000, 9,
     0.00, 0.0000,
     NOW() - INTERVAL '1 day',
     NOW() - INTERVAL '1 day'
@@ -221,7 +225,7 @@ VALUES
     'e2e-so-g1-00000000000000000000001',
     (SELECT id FROM product_types WHERE factory_id = 'F_E2E_TEST' AND code = 'SKU_NRW1K'),
     '鲜牛肉丸 1kg',
-    20.0000, '袋', 55.0000, 0.13,
+    20.0000, '袋', 55.0000, 13,
     0.00, 0.0000,
     NOW() - INTERVAL '1 day',
     NOW() - INTERVAL '1 day'

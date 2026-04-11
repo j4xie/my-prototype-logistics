@@ -38,23 +38,22 @@ import { S } from '../helpers/selectors';
 const ORDER_NUMBER = 'DEMO_SO_G1';
 
 // Expected values (from fixture + actual API behavior)
-// NOTE: tax_rate in DB is stored as DECIMAL fraction (0.09, 0.13).
+// NOTE: tax_rate in DB is stored as INTEGER PERCENT (9, 13, 0) per SalesOrderItem Javadoc.
 // The backend formula: taxAmount = lineAmount × taxRate / 100
-// So: 2500 × 0.09 / 100 = 2.25  (not 225 — the /100 is double-applied)
-// This matches what the API returns; the UI renders these values from taxBreakdown.
-// The dialog tags show fmtRate(0.09) = "0.09%" (not "9%").
-// taxableAmount is still correct: 2500.00 and 1100.00.
+// So: 2500 × 9 / 100 = 225.00  and  1100 × 13 / 100 = 143.00
+// The dialog tags show fmtRate(9) = "9.00%" (or "9%").
+// taxableAmount: 2500.00 and 1100.00.
 const EXPECTED = {
   taxRate9: {
-    rawRate: 0.09,
+    rawRate: 9,
     taxableAmount: 2500,
-    taxAmount: 2.25,
+    taxAmount: 225,
     taxableAmountFormatted: '2,500.00',
   },
   taxRate13: {
-    rawRate: 0.13,
+    rawRate: 13,
     taxableAmount: 1100,
-    taxAmount: 1.43,
+    taxAmount: 143,
     taxableAmountFormatted: '1,100.00',
   },
 };
@@ -164,18 +163,18 @@ test.describe('G1 税率分组开票 @pr-gate', () => {
       `期望 2 个税率分组, 实际得到 ${breakdown.length}: ${JSON.stringify(breakdown)}`
     ).toBe(2);
 
-    // Identify 9% group (stored as 0.09 in DB → taxRate = 0.09 in API response)
+    // Identify 9% group (stored as 9 in DB → taxRate = 9 in API response)
     const group9 = breakdown.find(
-      (b) => Math.abs(Number(b.taxRate) - EXPECTED.taxRate9.rawRate) < 0.001
+      (b) => Math.abs(Number(b.taxRate) - EXPECTED.taxRate9.rawRate) < 0.5
     );
-    expect(group9, `缺少 0.09 税率分组. breakdown=${JSON.stringify(breakdown)}`).toBeTruthy();
+    expect(group9, `缺少 9 税率分组. breakdown=${JSON.stringify(breakdown)}`).toBeTruthy();
     expect(Number(group9!.taxableAmount)).toBeCloseTo(EXPECTED.taxRate9.taxableAmount, 0);
 
-    // Identify 13% group (stored as 0.13 in DB → taxRate = 0.13 in API response)
+    // Identify 13% group (stored as 13 in DB → taxRate = 13 in API response)
     const group13 = breakdown.find(
-      (b) => Math.abs(Number(b.taxRate) - EXPECTED.taxRate13.rawRate) < 0.001
+      (b) => Math.abs(Number(b.taxRate) - EXPECTED.taxRate13.rawRate) < 0.5
     );
-    expect(group13, `缺少 0.13 税率分组. breakdown=${JSON.stringify(breakdown)}`).toBeTruthy();
+    expect(group13, `缺少 13 税率分组. breakdown=${JSON.stringify(breakdown)}`).toBeTruthy();
     expect(Number(group13!.taxableAmount)).toBeCloseTo(EXPECTED.taxRate13.taxableAmount, 0);
 
     // ── Step 6: Assert dialog shows 2 tax-group cards ─────────────────────
@@ -185,7 +184,7 @@ test.describe('G1 税率分组开票 @pr-gate', () => {
     await expect(successTitle).toBeVisible({ timeout: 10_000 });
     await expect(successTitle).toContainText('已生成 2 组开票明细');
 
-    // The dialog renders fmtRate(0.09) = "0.09%" per TaxGroupInvoiceDialog.vue
+    // The dialog renders fmtRate(9) = "9.00%" (or "9%") per TaxGroupInvoiceDialog.vue
     // Assert the taxable amounts (2500.00 and 1100.00) are displayed in the dialog
     // Use .group-card elements which are more specific
     const groupCards = dialog.locator('.group-card');
