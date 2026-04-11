@@ -3,6 +3,9 @@ package com.cretas.aims.ai.tool.impl.restaurant.diagnostic;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.Map;
+
 @Slf4j
 @Component
 public class RestaurantCostRigidityAnalysisTool extends AbstractRestaurantDiagnosticTool {
@@ -20,5 +23,23 @@ public class RestaurantCostRigidityAnalysisTool extends AbstractRestaurantDiagno
     @Override
     protected String getSectionName() {
         return "cost_rigidity";
+    }
+
+    @Override
+    protected List<String> buildFollowUps(String sectionName, Map<String, Object> data) {
+        Number rigidity = (Number) data.get("costRigidity");
+        if (rigidity == null) {
+            return List.of("对标火锅行业", "看时段客流分布");
+        }
+        if (rigidity.doubleValue() < 0.7) {
+            // Critical: suggest deeper analysis chain
+            return List.of(
+                "对标火锅行业我差在哪",
+                "给我 5 条处方",
+                "按这个趋势预测下个月",
+                "哪些菜该砍"
+            );
+        }
+        return List.of("对标火锅行业", "看时段客流分布");
     }
 }

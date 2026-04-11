@@ -132,6 +132,23 @@ public abstract class AbstractRestaurantDiagnosticTool extends AbstractBusinessT
         return sectionParams;
     }
 
+    /**
+     * Build contextual follow-up chip suggestions based on section output.
+     *
+     * <p>Default: empty list. Override in specific tools to suggest 3-4
+     * context-aware next queries. Frontend renders as clickable chips below
+     * each AI response bubble; clicking sends the chip text as the next query.
+     *
+     * <p>Part of P5 Task 5.5 chat UI integration.
+     *
+     * @param sectionName the Python section name that was executed
+     * @param data the section's data dict
+     * @return list of Chinese follow-up query strings (empty = no chips)
+     */
+    protected List<String> buildFollowUps(String sectionName, Map<String, Object> data) {
+        return Collections.emptyList();
+    }
+
     /** 默认结果格式. 子类可覆盖生成更友好的自然语言摘要. */
     protected Map<String, Object> formatResult(
             String sectionName,
@@ -144,6 +161,7 @@ public abstract class AbstractRestaurantDiagnosticTool extends AbstractBusinessT
         if (warnings != null && !warnings.isEmpty()) {
             result.put("warnings", warnings);
         }
+        result.put("followUpChips", buildFollowUps(sectionName, data != null ? data : Collections.emptyMap()));
         return result;
     }
 

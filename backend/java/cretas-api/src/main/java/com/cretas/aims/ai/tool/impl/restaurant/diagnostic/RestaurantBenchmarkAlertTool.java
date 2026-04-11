@@ -3,6 +3,9 @@ package com.cretas.aims.ai.tool.impl.restaurant.diagnostic;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.Map;
+
 @Slf4j
 @Component
 public class RestaurantBenchmarkAlertTool extends AbstractRestaurantDiagnosticTool {
@@ -20,5 +23,14 @@ public class RestaurantBenchmarkAlertTool extends AbstractRestaurantDiagnosticTo
     @Override
     protected String getSectionName() {
         return "benchmark_alerts";
+    }
+
+    @Override
+    protected List<String> buildFollowUps(String sectionName, Map<String, Object> data) {
+        return List.of(
+            "给我处方建议",
+            "哪些指标最严重",
+            "对比同城同类品牌"
+        );
     }
 }

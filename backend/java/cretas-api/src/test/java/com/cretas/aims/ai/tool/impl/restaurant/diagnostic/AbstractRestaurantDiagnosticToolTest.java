@@ -48,6 +48,8 @@ class AbstractRestaurantDiagnosticToolTest {
         assertThat(result).containsKey("section");
         assertThat(result).containsKey("data");
         assertThat(((Map<?, ?>) result.get("data")).get("costRigidity")).isEqualTo(0.561);
+        // P5.5: followUpChips added by formatResult (default = empty list from base class)
+        assertThat(result).containsKey("followUpChips");
     }
 
     @Test

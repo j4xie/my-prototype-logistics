@@ -3,6 +3,9 @@ package com.cretas.aims.ai.tool.impl.restaurant.diagnostic;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * Restaurant menu engineering tool — wraps the Python menu_engineering
  * section (P3 Task 3.2). Applies the Kasavana-Smith 4-quadrant model:
@@ -33,5 +36,14 @@ public class RestaurantMenuEngineeringTool extends AbstractRestaurantDiagnosticT
     @Override
     protected String getSectionName() {
         return "menu_engineering";
+    }
+
+    @Override
+    protected List<String> buildFollowUps(String sectionName, Map<String, Object> data) {
+        return List.of(
+            "菜单工程改进建议",
+            "长尾 SKU 识别",
+            "菜名归一统计"
+        );
     }
 }
