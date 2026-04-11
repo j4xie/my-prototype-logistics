@@ -46,6 +46,7 @@ from smartbi.services.restaurant.sections.store_pnl_one_pager import (
     StorePnlOnePagerHandler,
 )
 from smartbi.services.restaurant.sections.department_pnl import DepartmentPnlHandler
+from smartbi.services.restaurant.sections.menu_engineering import MenuEngineeringHandler
 from smartbi.services.restaurant.sections.monthly_ppt_export import MonthlyPptExportHandler
 from smartbi.services.restaurant.sections.shrinkage_analysis import (
     ShrinkageAnalysisHandler,
@@ -86,6 +87,7 @@ HANDLERS = {
     "bom_layer_status": BomLayerStatusHandler(),
     "shrinkage_analysis": ShrinkageAnalysisHandler(),
     "department_pnl": DepartmentPnlHandler(),
+    "menu_engineering": MenuEngineeringHandler(),
     "monthly_ppt_export": MonthlyPptExportHandler(),
 }
 

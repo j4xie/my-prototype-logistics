@@ -343,7 +343,8 @@ public class SkillRegistryImpl implements SkillRegistry {
                         "restaurant_member_rfm",
                         "restaurant_stored_value",
                         "restaurant_store_pnl_one_pager",
-                        "restaurant_bom_layer_status"
+                        "restaurant_bom_layer_status",
+                        "restaurant_menu_engineering"
                 ))
                 .contextNeeded(Arrays.asList("factoryId"))
                 .promptTemplate("对${factoryId}进行餐饮经营深度诊断，用户问题：${userQuery}")
