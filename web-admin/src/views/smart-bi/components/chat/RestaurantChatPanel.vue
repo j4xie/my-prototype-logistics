@@ -3,6 +3,7 @@ import { ref, nextTick } from 'vue';
 import { ElInput, ElButton, ElMessage } from 'element-plus';
 import ChatBubble from './ChatBubble.vue';
 import ChatTypingIndicator from './ChatTypingIndicator.vue';
+import SectionCardRenderer from './SectionCardRenderer.vue';
 import {
   askRestaurantQuestion,
   clearRestaurantConversation,
@@ -129,12 +130,11 @@ defineExpose({
 
       <ChatBubble v-for="turn in turns" :key="turn.id" :turn="turn">
         <template #sections>
-          <div
-            v-if="turn.sections && turn.sections.length"
-            class="sections-placeholder"
-          >
-            [{{ turn.sections.length }} sections — rendered in Task 5.4]
-          </div>
+          <SectionCardRenderer
+            v-for="(section, idx) in turn.sections ?? []"
+            :key="idx"
+            :section="section"
+          />
         </template>
         <template #followups>
           <div

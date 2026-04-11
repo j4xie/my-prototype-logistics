@@ -1,0 +1,88 @@
+<script setup lang="ts">
+import { computed } from 'vue';
+import type { SectionPayload } from '@/types/restaurant-chat';
+import BenchmarkBarsCard from './cards/BenchmarkBarsCard.vue';
+import HeatmapCard from './cards/HeatmapCard.vue';
+import RfmGridCard from './cards/RfmGridCard.vue';
+import RxPrescriptionCard from './cards/RxPrescriptionCard.vue';
+import MenuQuadrantCard from './cards/MenuQuadrantCard.vue';
+import CrossChainCard from './cards/CrossChainCard.vue';
+import ForecastCard from './cards/ForecastCard.vue';
+import RawJsonCard from './cards/RawJsonCard.vue';
+
+const props = defineProps<{
+  section: SectionPayload;
+}>();
+
+// Map from Python sectionName → Vue component
+// Falls back to RawJsonCard for unknown section types.
+const CARD_MAP: Record<string, unknown> = {
+  benchmark_alerts: BenchmarkBarsCard,
+  dining_heatmap: HeatmapCard,
+  member_rfm: RfmGridCard,
+  diagnostics: RxPrescriptionCard,
+  menu_engineering: MenuQuadrantCard,
+  cross_chain_benchmark: CrossChainCard,
+  restaurant_forecast: ForecastCard,
+};
+
+const resolvedCard = computed(() => {
+  return CARD_MAP[props.section.sectionName] ?? RawJsonCard;
+});
+</script>
+
+<template>
+  <div v-if="section.status === 'ok'" class="section-card-wrapper">
+    <component :is="resolvedCard" :section="section" />
+  </div>
+  <div v-else-if="section.status === 'skipped'" class="section-skipped">
+    <span class="skipped-icon">○</span>
+    <span class="skipped-label">{{ section.sectionName }}:</span>
+    <span class="skipped-text">
+      {{ section.warnings[0] ?? '数据不足, 已跳过' }}
+    </span>
+  </div>
+  <div v-else class="section-failed">
+    <span class="failed-icon">✗</span>
+    <span>{{ section.sectionName }} 分析失败</span>
+  </div>
+</template>
+
+<style scoped>
+.section-card-wrapper {
+  margin-top: 12px;
+}
+.section-skipped {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: #f2ece0;
+  border: 1px dashed #a8a29e;
+  border-radius: 4px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 11px;
+  color: #a8a29e;
+}
+.skipped-icon {
+  color: #c9a66b;
+  font-size: 14px;
+}
+.skipped-label {
+  font-family: monospace;
+  color: #6b6b6b;
+}
+.section-failed {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: #fef2f2;
+  border: 1px solid #b91c1c;
+  border-radius: 4px;
+  color: #8b1a1a;
+  font-size: 11px;
+}
+</style>
