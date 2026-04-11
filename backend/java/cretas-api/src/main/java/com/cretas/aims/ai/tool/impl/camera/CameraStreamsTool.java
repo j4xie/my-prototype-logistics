@@ -68,8 +68,8 @@ public class CameraStreamsTool extends AbstractBusinessTool {
 
         String deviceId = getString(params, "deviceId");
 
-        List<IsapiStreamDTO> streams = deviceService.getStreamUrls(deviceId);
-        IsapiDevice device = deviceService.getDevice(deviceId);
+        List<IsapiStreamDTO> streams = deviceService.getStreamUrls(factoryId, deviceId);
+        IsapiDevice device = deviceService.getDevice(factoryId, deviceId);
 
         Map<String, Object> result = new HashMap<>();
         result.put("message", "流地址获取成功: " + device.getDeviceName() + " (" + streams.size() + " 个通道)");

@@ -152,8 +152,22 @@ public class IsapiDeviceService {
     }
 
     /**
-     * 获取设备详情
+     * 获取设备详情 (P0-1: 跨工厂隔离, 不匹配 factoryId 按 "不存在" 报错不泄露).
      */
+    public IsapiDevice getDevice(String factoryId, String deviceId) {
+        IsapiDevice device = deviceRepository.findById(deviceId)
+                .orElseThrow(() -> new IllegalArgumentException("设备不存在: " + deviceId));
+        if (!factoryId.equals(device.getFactoryId())) {
+            throw new IllegalArgumentException("设备不存在或无权访问: " + deviceId);
+        }
+        return device;
+    }
+
+    /**
+     * @deprecated 使用 {@link #getDevice(String, String)}. 老 API 无 factoryId 校验,
+     *             保留仅为兼容 controller 层未迁移的调用.
+     */
+    @Deprecated
     public IsapiDevice getDevice(String deviceId) {
         return deviceRepository.findById(deviceId)
                 .orElseThrow(() -> new IllegalArgumentException("设备不存在: " + deviceId));
@@ -289,10 +303,24 @@ public class IsapiDeviceService {
     // ==================== 流媒体 ====================
 
     /**
-     * 获取设备流地址
+     * 获取设备流地址 (P0-1: 跨工厂隔离).
      */
+    public List<IsapiStreamDTO> getStreamUrls(String factoryId, String deviceId) {
+        IsapiDevice device = getDevice(factoryId, deviceId);
+        return buildStreamUrlsForDevice(device);
+    }
+
+    /**
+     * @deprecated 使用 {@link #getStreamUrls(String, String)}.
+     */
+    @Deprecated
     public List<IsapiStreamDTO> getStreamUrls(String deviceId) {
         IsapiDevice device = getDevice(deviceId);
+        return buildStreamUrlsForDevice(device);
+    }
+
+    private List<IsapiStreamDTO> buildStreamUrlsForDevice(IsapiDevice device) {
+        String deviceId = device.getId();
         List<IsapiDeviceChannel> channels = channelRepository.findByDevice_IdOrderByChannelId(deviceId);
 
         return channels.stream().map(channel -> {

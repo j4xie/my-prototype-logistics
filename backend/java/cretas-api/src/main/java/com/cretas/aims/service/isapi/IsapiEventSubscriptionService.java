@@ -63,18 +63,33 @@ public class IsapiEventSubscriptionService {
     // ==================== 订阅管理 ====================
 
     /**
-     * 订阅设备告警
+     * 订阅设备告警 (P0-1: 带 factoryId 校验).
      */
-    public void subscribeDevice(String deviceId) {
-        // 如果已订阅，先取消
-        if (activeSubscriptions.containsKey(deviceId)) {
-            log.info("设备 {} 已有活动订阅，跳过", deviceId);
-            return;
+    public void subscribeDevice(String factoryId, String deviceId) {
+        IsapiDevice device = deviceRepository.findById(deviceId).orElse(null);
+        if (device == null || !factoryId.equals(device.getFactoryId())) {
+            throw new IllegalArgumentException("设备不存在或无权访问: " + deviceId);
         }
+        subscribeDeviceInternal(device);
+    }
 
+    /**
+     * @deprecated 使用 {@link #subscribeDevice(String, String)} 传入 factoryId.
+     */
+    @Deprecated
+    public void subscribeDevice(String deviceId) {
         IsapiDevice device = deviceRepository.findById(deviceId).orElse(null);
         if (device == null) {
             log.warn("设备不存在: {}", deviceId);
+            return;
+        }
+        subscribeDeviceInternal(device);
+    }
+
+    private void subscribeDeviceInternal(IsapiDevice device) {
+        String deviceId = device.getId();
+        if (activeSubscriptions.containsKey(deviceId)) {
+            log.info("设备 {} 已有活动订阅，跳过", deviceId);
             return;
         }
 
@@ -90,23 +105,36 @@ public class IsapiEventSubscriptionService {
         });
 
         activeSubscriptions.put(deviceId, call);
-
-        // 更新设备订阅状态
         device.setAlertSubscribed(true);
         deviceRepository.save(device);
     }
 
     /**
-     * 取消订阅
+     * 取消订阅 (P0-1: 带 factoryId 校验).
      */
+    public void unsubscribeDevice(String factoryId, String deviceId) {
+        IsapiDevice device = deviceRepository.findById(deviceId).orElse(null);
+        if (device == null || !factoryId.equals(device.getFactoryId())) {
+            throw new IllegalArgumentException("设备不存在或无权访问: " + deviceId);
+        }
+        unsubscribeDeviceInternal(deviceId);
+    }
+
+    /**
+     * @deprecated 使用 {@link #unsubscribeDevice(String, String)} 传入 factoryId.
+     */
+    @Deprecated
     public void unsubscribeDevice(String deviceId) {
+        unsubscribeDeviceInternal(deviceId);
+    }
+
+    private void unsubscribeDeviceInternal(String deviceId) {
         Call call = activeSubscriptions.remove(deviceId);
         if (call != null) {
             call.cancel();
             log.info("已取消设备订阅: {}", deviceId);
         }
 
-        // 更新设备状态
         deviceRepository.findById(deviceId).ifPresent(device -> {
             device.setAlertSubscribed(false);
             deviceRepository.save(device);

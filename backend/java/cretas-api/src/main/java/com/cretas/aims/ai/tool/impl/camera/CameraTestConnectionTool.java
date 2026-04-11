@@ -67,8 +67,10 @@ public class CameraTestConnectionTool extends AbstractBusinessTool {
 
         String deviceId = getString(params, "deviceId");
 
+        // P0-1: authz before connection test — 避免 testConnection 自身无 factoryId 校验导致跨工厂探测
+        deviceService.getDevice(factoryId, deviceId);
         boolean success = deviceService.testConnection(deviceId);
-        IsapiDevice device = deviceService.getDevice(deviceId);
+        IsapiDevice device = deviceService.getDevice(factoryId, deviceId);
 
         Map<String, Object> result = new HashMap<>();
         result.put("deviceId", deviceId);

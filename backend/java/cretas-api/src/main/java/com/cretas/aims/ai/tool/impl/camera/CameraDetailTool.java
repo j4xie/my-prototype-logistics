@@ -68,7 +68,7 @@ public class CameraDetailTool extends AbstractBusinessTool {
 
         String deviceId = getString(params, "deviceId");
 
-        IsapiDevice device = deviceService.getDevice(deviceId);
+        IsapiDevice device = deviceService.getDevice(factoryId, deviceId);
         IsapiDeviceDTO dto = deviceService.toDTO(device);
 
         Map<String, Object> result = new HashMap<>();

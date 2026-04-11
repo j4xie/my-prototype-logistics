@@ -67,8 +67,10 @@ public class CameraSyncTool extends AbstractBusinessTool {
 
         String deviceId = getString(params, "deviceId");
 
+        // P0-1: authz before sync — 避免 syncDeviceInfo 自身无 factoryId 校验导致跨工厂同步
+        deviceService.getDevice(factoryId, deviceId);
         deviceService.syncDeviceInfo(deviceId);
-        IsapiDevice device = deviceService.getDevice(deviceId);
+        IsapiDevice device = deviceService.getDevice(factoryId, deviceId);
 
         Map<String, Object> result = new HashMap<>();
         result.put("message", "同步成功: " + device.getDeviceName());

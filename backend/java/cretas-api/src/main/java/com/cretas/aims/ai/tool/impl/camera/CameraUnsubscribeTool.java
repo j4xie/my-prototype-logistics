@@ -69,8 +69,8 @@ public class CameraUnsubscribeTool extends AbstractBusinessTool {
         Map<String, Object> result = new HashMap<>();
 
         if (deviceId != null && !deviceId.isEmpty()) {
-            // 取消单个设备订阅
-            subscriptionService.unsubscribeDevice(deviceId);
+            // 取消单个设备订阅 (P0-1: 跨工厂隔离校验)
+            subscriptionService.unsubscribeDevice(factoryId, deviceId);
 
             result.put("message", "已取消告警订阅");
             result.put("deviceId", deviceId);
