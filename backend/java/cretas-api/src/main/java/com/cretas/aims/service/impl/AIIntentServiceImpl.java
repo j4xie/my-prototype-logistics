@@ -4,12 +4,15 @@ import com.cretas.aims.dto.intent.IntentFeedbackRequest;
 import com.cretas.aims.dto.intent.IntentMatchResult;
 import com.cretas.aims.dto.intent.MultiIntentResult;
 import com.cretas.aims.entity.config.AIIntentConfig;
+import com.cretas.aims.entity.conversation.ConversationTurn;
 import com.cretas.aims.service.AIIntentService;
+import com.cretas.aims.service.conversation.ConversationStateService;
 import com.cretas.aims.service.intent.IntentConfigManagementService;
 import com.cretas.aims.service.intent.IntentFeedbackLearningService;
 import com.cretas.aims.service.intent.IntentRecognitionPipelineService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -44,7 +47,74 @@ public class AIIntentServiceImpl implements AIIntentService {
     private final IntentConfigManagementService configService;
     private final IntentFeedbackLearningService feedbackService;
 
+    /**
+     * P4 Task 4.3: optional conversation context service.
+     * Non-final so Spring can inject it independently of @RequiredArgsConstructor.
+     * required=false ensures existing tests without a Redis bean still work.
+     */
+    @Autowired(required = false)
+    private ConversationStateService conversationStateService;
+
     // ==================== Intent Recognition ====================
+
+    /**
+     * P4 Task 4.3: recognizeIntent with conversation context support.
+     *
+     * <p>When userId is non-null AND conversationStateService is available:
+     * - Loads recent 3 turns before matching (exposed for future context-aware layers)
+     * - Appends the recognized turn after successful dispatch
+     *
+     * <p>Fail-open: any ConversationStateService exception is swallowed and logged.
+     * Intent recognition is the primary concern — context tracking is best-effort.
+     *
+     * <p>When userId is null or conversationStateService is null, delegates directly
+     * to {@link #recognizeIntent(String, String)} — zero-overhead backward compat.
+     */
+    @Override
+    public Optional<AIIntentConfig> recognizeIntent(
+            String factoryId, String userInput, String userId) {
+        // Fast path: no user ID or no context service → delegate directly
+        if (userId == null || conversationStateService == null) {
+            return recognizeIntent(factoryId, userInput);
+        }
+
+        // Load recent context (best-effort — swallow exceptions)
+        try {
+            java.util.List<ConversationTurn> recent =
+                    conversationStateService.loadRecent(factoryId, userId, 3);
+            if (log.isDebugEnabled()) {
+                log.debug("Loaded {} conversation turns for {}/{}",
+                        recent.size(), factoryId, userId);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to load conversation context for {}/{}, proceeding without: {}",
+                    factoryId, userId, e.getMessage());
+        }
+
+        // Dispatch through normal intent matching
+        Optional<AIIntentConfig> result = recognizeIntent(factoryId, userInput);
+
+        // Append turn on success (best-effort — swallow exceptions)
+        if (result.isPresent()) {
+            try {
+                AIIntentConfig cfg = result.get();
+                ConversationTurn turn = new ConversationTurn(
+                        userInput,
+                        cfg.getIntentCode(),
+                        cfg.getToolName(),
+                        null,   // skillName — populated by executor later
+                        null,   // response  — populated by executor later
+                        System.currentTimeMillis()
+                );
+                conversationStateService.appendTurn(factoryId, userId, turn);
+            } catch (Exception e) {
+                log.warn("Failed to append conversation turn for {}/{}: {}",
+                        factoryId, userId, e.getMessage());
+            }
+        }
+
+        return result;
+    }
 
     @Override
     public Optional<AIIntentConfig> recognizeIntent(String userInput) {
