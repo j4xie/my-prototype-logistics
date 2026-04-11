@@ -404,7 +404,7 @@ const businessRoutes: RouteRecordRaw[] = [
         ]
       },
 
-      // 研发管理
+      // 研发管理 (v1 §2.1 — 2 页结构: 研发样品管理 + 已转样品库)
       {
         path: 'rd',
         name: 'RD',
@@ -416,6 +416,12 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'RdSamples',
             component: () => import('@/views/rd/samples/list.vue'),
             meta: { requiresAuth: true, title: '研发样品管理', module: 'production' }
+          },
+          {
+            path: 'converted',
+            name: 'RdConverted',
+            component: () => import('@/views/rd/converted/list.vue'),
+            meta: { requiresAuth: true, title: '已转样品库', module: 'production' }
           }
         ]
       },
