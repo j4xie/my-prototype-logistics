@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@helpers/*": ["helpers/*"]
+    }
+  },
+  "include": ["web/**/*.ts", "helpers/**/*.ts"]
+}
