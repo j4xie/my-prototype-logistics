@@ -5492,22 +5492,65 @@ If Python and Java deploy separately (e.g. Python first, Java next day), the Jav
 
 ## 14. Implementation Log
 
-(To be populated during execution.)
-
 **Start date:** 2026-04-11
 **Target completion:** 2026-05-09 (4 weeks)
 
-**Phase 3.5A (Quick Wins):** dates TBD — commits QW1-QW5
-**Phase 3.5B (Foundation):** dates TBD — commits F1-F8
-**Phase 3.5C (BOM Depth):** dates TBD — commits B1-B6
-**Phase 3.5D (Presentation):** dates TBD — commits P1-P6
-**Phase 3.5E (Integration):** dates TBD — commits I1-I4
+**Phase 3.5A (Quick Wins):** 2026-04-11 — 4 commits (QW1-QW5, bundled in 4 commits due to parallel dispatch collision)
+  - `657e529ae` QW3 MarginSpec
+  - `c05a01da3` QW1 stored value thresholds
+  - `b6b8bfea4` QW5 DepartmentTree
+  - `9b26805c1` QW2 + QW4 (channel_margin venues + ExpenseAccountTree)
+  - Tests: 104 → 127 (+23)
 
-**Key learnings:** (fill in during execution)
+**Phase 3.5B (Foundation):** 2026-04-11 — 7 commits
+  - `dd7789c52` F1 MarginSpec integration
+  - `858d0f090` F2 dual margin
+  - `1e879c84f` F3 stored value 3-mode
+  - `efb5a8fb5` F4 RawMaterial + UnitConverter
+  - `b632e49e2` F5 expense tree loader
+  - `51fc7d1f5` F6+F7 expense_breakdown section + router registration
+  - `206887fe7` F8 stored value mode propagation
+  - Tests: 127 → 156 (+29)
 
-**Deviations from plan:** (fill in during execution)
+**Phase 3.5C (BOM Depth):** 2026-04-11 — 5 commits
+  - `d6c6973ee` B1 IntermediateProduct
+  - `5f7e9d488` B2 Dish 2-layer BOM
+  - `e61d84e9b` B3 ShrinkageEngine
+  - `9a2589783` B4 shrinkage_analysis section
+  - `67297df34` B5+B6 Java tool + Flyway migration
+  - Tests: 156 → 189 (+33)
 
-**Post-3.5 follow-ups:** (fill in as discovered)
+**Phase 3.5D (Presentation):** 2026-04-11 — 4 commits
+  - `5009c9d6b` P1 department_pnl section
+  - `b83a5ad65` P2 MonthlyPptExporter + 19-slide template
+  - `7b62ef19c` P3 monthly_ppt_export section + download endpoint
+  - `44a488d0f` P4+P5+P6 Java tools + Flyway intents
+  - Tests: 189 → 205 (+16)
+
+**Phase 3.5E (Integration):** 2026-04-11 — 2 commits
+  - I1 verification (no commit): golden regression green, 20 integration tests pass
+  - I2+I3 commit: Java disabled E2E + Python handler count lock
+  - I4 commit: this log + memory entry
+  - Tests: 205 → 206 (+1)
+
+**Total P3.5**: 22 commits, 102 new tests (104 → 206 baseline → final), 4-calendar-week estimate completed in **1 calendar day** via subagent-driven development.
+
+**Key learnings:**
+1. **Parallel dispatches collide on staging area** — QW2+QW4 bundled into one commit. For future parallel work in the same directory, serialize dispatches.
+2. **Spec math errors caught by subagent** — F2 dual margin: I wrote "folded > unfolded" but it's actually unfolded > folded (bigger denominator = bigger margin). Implementer fixed silently.
+3. **Chinese severity text + PREPAID default preservation** — F3 stored value 3-mode treatment could have broken backward compat if PREPAID message changed. Implementer preserved exact pre-F3 PREPAID output.
+4. **`FsPath` alias for FastAPI Path collision** — P3 implementer caught `pathlib.Path` vs FastAPI's `Path` name collision and used `from pathlib import Path as FsPath` to avoid breaking existing router imports.
+5. **Lazy-load python-pptx** — P3's `MonthlyPptExportHandler._get_exporter()` defers the python-pptx import cost until first call, keeping module load fast.
+
+**Deviations from plan:**
+1. QW2+QW4 bundled into one commit instead of two (parallel dispatch collision — documented but not reverted)
+2. QW2 also made `bom_resolver` optional in `ChannelMarginCalculator.__init__` as a bonus (calculator now usable standalone in tests)
+3. Flyway migration numbers: used V20260411_01 → _02 → _03 sequentially (plan reserved specific numbers but actual sequence depends on commit order)
+
+**Post-3.5 follow-ups:**
+- Manual dashboard E2E verification (pending, non-blocking for merge)
+- Hook up `FactoryConfig.marginSpec` UI toggles in web-admin (requires frontend work)
+- Populate real dingxian data via `FactoryConfig` and verify end-to-end via the mobile chat path (requires Java deploy with Flyway migrations applied)
 
 ---
 
