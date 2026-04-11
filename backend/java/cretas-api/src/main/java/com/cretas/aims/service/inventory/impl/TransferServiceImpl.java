@@ -57,6 +57,8 @@ public class TransferServiceImpl implements TransferService {
         transfer.setTransferType(TransferType.valueOf(request.getTransferType()));
         transfer.setSourceFactoryId(factoryId);
         transfer.setTargetFactoryId(request.getTargetFactoryId());
+        transfer.setSourceWarehouseId(request.getSourceWarehouseId());
+        transfer.setTargetWarehouseId(request.getTargetWarehouseId());
         transfer.setTransferDate(request.getTransferDate());
         transfer.setExpectedArrivalDate(request.getExpectedArrivalDate());
         transfer.setStatus(TransferStatus.DRAFT);

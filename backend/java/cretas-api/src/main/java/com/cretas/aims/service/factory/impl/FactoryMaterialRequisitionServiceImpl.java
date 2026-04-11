@@ -1,17 +1,20 @@
 package com.cretas.aims.service.factory.impl;
 
+import com.cretas.aims.dto.inventory.CreateTransferRequest;
 import com.cretas.aims.entity.ProductionPlan;
 import com.cretas.aims.entity.bom.BomItem;
 import com.cretas.aims.entity.factory.FactoryMaterialRequisition;
 import com.cretas.aims.entity.factory.FactoryMaterialRequisition.Status;
 import com.cretas.aims.entity.factory.FactoryMaterialRequisitionItem;
 import com.cretas.aims.entity.factory.FactoryMaterialRequisitionItem.MaterialCategory;
+import com.cretas.aims.entity.inventory.InternalTransfer;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.repository.ProductionPlanRepository;
 import com.cretas.aims.repository.bom.BomItemRepository;
 import com.cretas.aims.repository.factory.FactoryMaterialRequisitionItemRepository;
 import com.cretas.aims.repository.factory.FactoryMaterialRequisitionRepository;
 import com.cretas.aims.service.factory.FactoryMaterialRequisitionService;
+import com.cretas.aims.service.inventory.TransferService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -20,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -36,6 +40,7 @@ public class FactoryMaterialRequisitionServiceImpl implements FactoryMaterialReq
     private final FactoryMaterialRequisitionItemRepository itemRepository;
     private final ProductionPlanRepository productionPlanRepository;
     private final BomItemRepository bomItemRepository;
+    private final TransferService transferService;
 
     /** Canvas V2: DB-driven validation rules */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
@@ -189,7 +194,39 @@ public class FactoryMaterialRequisitionServiceImpl implements FactoryMaterialReq
         mr.setStatus(Status.TRANSFERRED);
         mr.setTransferredBy(operatorId);
         mr.setTransferredAt(LocalDateTime.now());
-        // TODO: 调用 InventoryTransferService 创建真实库存调拨单
+
+        // P0-5: 创建备料调出 InternalTransfer (物流仓 → 工厂鲜棉仓)
+        List<CreateTransferRequest.TransferItemDTO> outboundItems = new ArrayList<>();
+        for (FactoryMaterialRequisitionItem it : mr.getItems()) {
+            BigDecimal issued = it.getIssuedQty();
+            if (issued != null && issued.compareTo(BigDecimal.ZERO) > 0) {
+                outboundItems.add(new CreateTransferRequest.TransferItemDTO(
+                        "RAW_MATERIAL",
+                        it.getMaterialTypeId(),
+                        null,
+                        it.getMaterialName(),
+                        issued,
+                        it.getUnit() != null ? it.getUnit() : "kg",
+                        null,
+                        "备料调出: " + mr.getRequisitionNo()
+                ));
+            }
+        }
+        if (!outboundItems.isEmpty()) {
+            CreateTransferRequest req = new CreateTransferRequest();
+            req.setTransferType("FACTORY_TO_FACTORY");
+            req.setTargetFactoryId(factoryId);
+            req.setSourceWarehouseId(mr.getSourceWarehouseId());
+            req.setTargetWarehouseId(mr.getTargetWarehouseId());
+            req.setTransferDate(LocalDate.now());
+            req.setRemark("物料需求单 " + mr.getRequisitionNo() + " 备料调出");
+            req.setItems(outboundItems);
+            InternalTransfer outbound = transferService.createTransfer(factoryId, req, operatorId);
+            mr.setOutboundTransferId(outbound.getId());
+            log.info("✅ 物料需求单 {} 备料调出 InternalTransfer 已创建: {}",
+                    mr.getRequisitionNo(), outbound.getId());
+        }
+
         return repository.save(mr);
     }
 
@@ -222,7 +259,39 @@ public class FactoryMaterialRequisitionServiceImpl implements FactoryMaterialReq
         mr.setStatus(Status.CLOSED);
         mr.setClosedBy(operatorId);
         mr.setClosedAt(LocalDateTime.now());
-        // TODO: 创建反向 InventoryTransfer (factory → logistics)
+
+        // P0-5: 创建退料调入 InternalTransfer (工厂鲜棉仓 → 物流仓), 仅在有退料时
+        List<CreateTransferRequest.TransferItemDTO> returnItems = new ArrayList<>();
+        for (FactoryMaterialRequisitionItem it : mr.getItems()) {
+            BigDecimal returned = it.getReturnedQty();
+            if (returned != null && returned.compareTo(BigDecimal.ZERO) > 0) {
+                returnItems.add(new CreateTransferRequest.TransferItemDTO(
+                        "RAW_MATERIAL",
+                        it.getMaterialTypeId(),
+                        null,
+                        it.getMaterialName(),
+                        returned,
+                        it.getUnit() != null ? it.getUnit() : "kg",
+                        null,
+                        "退料调入: " + mr.getRequisitionNo()
+                ));
+            }
+        }
+        if (!returnItems.isEmpty()) {
+            CreateTransferRequest req = new CreateTransferRequest();
+            req.setTransferType("FACTORY_TO_FACTORY");
+            req.setTargetFactoryId(factoryId);
+            req.setSourceWarehouseId(mr.getTargetWarehouseId());
+            req.setTargetWarehouseId(mr.getSourceWarehouseId());
+            req.setTransferDate(LocalDate.now());
+            req.setRemark("物料需求单 " + mr.getRequisitionNo() + " 退料调入");
+            req.setItems(returnItems);
+            InternalTransfer returnTransfer = transferService.createTransfer(factoryId, req, operatorId);
+            mr.setReturnTransferId(returnTransfer.getId());
+            log.info("✅ 物料需求单 {} 退料调入 InternalTransfer 已创建: {}",
+                    mr.getRequisitionNo(), returnTransfer.getId());
+        }
+
         return repository.save(mr);
     }
 

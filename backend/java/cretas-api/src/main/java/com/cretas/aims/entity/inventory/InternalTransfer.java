@@ -77,6 +77,14 @@ public class InternalTransfer extends BaseEntity {
     @Column(name = "target_factory_id", nullable = false, length = 191)
     private String targetFactoryId;
 
+    /** 工厂内跨仓调拨: 调出仓库ID (null = 跨工厂调拨). V3 P0-5 */
+    @Column(name = "source_warehouse_id", length = 64)
+    private String sourceWarehouseId;
+
+    /** 工厂内跨仓调拨: 调入仓库ID (null = 跨工厂调拨). V3 P0-5 */
+    @Column(name = "target_warehouse_id", length = 64)
+    private String targetWarehouseId;
+
     @Column(name = "transfer_date", nullable = false)
     private LocalDate transferDate;
 

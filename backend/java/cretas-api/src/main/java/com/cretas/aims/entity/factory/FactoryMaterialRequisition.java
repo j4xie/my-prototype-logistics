@@ -98,6 +98,14 @@ public class FactoryMaterialRequisition extends BaseEntity {
     @Column(name = "remarks", columnDefinition = "TEXT")
     private String remarks;
 
+    /** P0-5: 关联的备料调出 InternalTransfer ID (transferToFactory 时创建). */
+    @Column(name = "outbound_transfer_id", length = 191)
+    private String outboundTransferId;
+
+    /** P0-5: 关联的退料调入 InternalTransfer ID (close 时如果 returned>0 则创建). */
+    @Column(name = "return_transfer_id", length = 191)
+    private String returnTransferId;
+
     @OneToMany(mappedBy = "requisition", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<FactoryMaterialRequisitionItem> items = new ArrayList<>();
 

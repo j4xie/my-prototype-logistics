@@ -23,6 +23,12 @@ public class CreateTransferRequest {
     @NotBlank(message = "调入方ID不能为空")
     private String targetFactoryId;
 
+    /** 工厂内跨仓调拨: 调出仓库ID (nullable). V3 P0-5 */
+    private String sourceWarehouseId;
+
+    /** 工厂内跨仓调拨: 调入仓库ID (nullable). V3 P0-5 */
+    private String targetWarehouseId;
+
     @NotNull(message = "调拨日期不能为空")
     private LocalDate transferDate;
 
