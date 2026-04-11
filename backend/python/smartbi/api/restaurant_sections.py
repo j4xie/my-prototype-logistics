@@ -28,6 +28,7 @@ from smartbi.services.restaurant.sections.calibration_history import (
 from smartbi.services.restaurant.sections.channel_margin import ChannelMarginHandler
 from smartbi.services.restaurant.sections.cost_rigidity import CostRigidityHandler
 from smartbi.services.restaurant.sections.diagnostics import DiagnosticsHandler
+from smartbi.services.restaurant.sections.expense_breakdown import ExpenseBreakdownHandler
 from smartbi.services.restaurant.sections.dining_heatmap import DiningHeatmapHandler
 from smartbi.services.restaurant.sections.long_tail_sku import LongTailSkuHandler
 from smartbi.services.restaurant.sections.member_rfm import MemberRfmHandler
@@ -61,6 +62,7 @@ router = APIRouter(
 HANDLERS = {
     "cost_rigidity": CostRigidityHandler(),
     "diagnostics": DiagnosticsHandler(),
+    "expense_breakdown": ExpenseBreakdownHandler(),
     "benchmark_alerts": BenchmarkAlertsHandler(),
     "channel_margin": ChannelMarginHandler(),
     "dining_heatmap": DiningHeatmapHandler(),
