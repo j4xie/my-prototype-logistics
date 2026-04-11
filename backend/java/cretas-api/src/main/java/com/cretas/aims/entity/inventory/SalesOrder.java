@@ -189,6 +189,14 @@ public class SalesOrder extends BaseEntity {
     @Column(name = "box_quantity", precision = 15, scale = 2)
     private BigDecimal boxQuantity;
 
+    /** P1-7 预订合同附件 URL (OSS path, v1 §2.4.3 客户会议 2257s 提及) */
+    @Column(name = "contract_file_url", length = 500)
+    private String contractFileUrl;
+
+    /** P1-7 预订合同附件原文件名 */
+    @Column(name = "contract_file_name", length = 255)
+    private String contractFileName;
+
     // ==================== 关联 ====================
 
     @JsonIgnore
