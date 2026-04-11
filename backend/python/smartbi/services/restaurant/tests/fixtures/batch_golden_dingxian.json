@@ -73,6 +73,9 @@
       "foodCost": 307040.0,
       "foodCostChangePct": -0.44732744732744734,
       "foodCostRatio": 41.999978113612244,
+      "grossMarginFolded": 58.00002188638776,
+      "grossMarginUnfolded": 58.00002188638776,
+      "grossRevenue": 731048.0,
       "laborCost": 237660.0,
       "laborCostChangePct": -0.2660397461435123,
       "laborCostRatio": 32.5094932206914,
@@ -90,7 +93,7 @@
         "diagnostics",
         "benchmark_alerts"
       ],
-      "generatedAt": "2026-04-10T19:58:07",
+      "generatedAt": "2026-04-11T01:54:17",
       "headline": "鼎鲜火锅 义乌分公司 current 营收 ¥731,048",
       "headlineColor": "yellow",
       "kpiCostRigidity": 0.560961801990723,

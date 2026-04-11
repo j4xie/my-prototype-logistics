@@ -127,6 +127,11 @@ class FinancialMetrics:
     labor_cost_change_pct: Optional[float] = None
     food_cost_change_pct: Optional[float] = None
 
+    # P3.5B F2: dual margin computation (折前 + 折后)
+    gross_revenue: Optional[float] = None
+    gross_margin_folded: Optional[float] = None     # (revenue - food_cost) / revenue * 100
+    gross_margin_unfolded: Optional[float] = None   # (gross_revenue - food_cost) / gross_revenue * 100
+
     def to_dict(self) -> dict:
         return {
             "revenue": self.revenue,
@@ -143,6 +148,9 @@ class FinancialMetrics:
             "revenueChangePct": self.revenue_change_pct,
             "laborCostChangePct": self.labor_cost_change_pct,
             "foodCostChangePct": self.food_cost_change_pct,
+            "grossRevenue": self.gross_revenue,
+            "grossMarginFolded": self.gross_margin_folded,
+            "grossMarginUnfolded": self.gross_margin_unfolded,
         }
 
 
@@ -801,6 +809,18 @@ class RestaurantAnalyzerV2:
             rent_ratio=rent_ratio,
             restaurant_net_margin=net_margin,
         )
+
+        # P3.5B F2: dual margin (折前 + 折后)
+        gross_revenue = self._safe_float(current.get("gross_revenue"))
+        if gross_revenue is None or gross_revenue <= 0:
+            gross_revenue = revenue  # fallback: 折前 == 折后 when no discount data
+        metrics.gross_revenue = gross_revenue
+
+        if food_cost is not None:
+            if revenue > 0:
+                metrics.gross_margin_folded = (revenue - food_cost) / revenue * 100
+            if gross_revenue > 0:
+                metrics.gross_margin_unfolded = (gross_revenue - food_cost) / gross_revenue * 100
 
         # cost_rigidity (需要 previous)
         if previous:

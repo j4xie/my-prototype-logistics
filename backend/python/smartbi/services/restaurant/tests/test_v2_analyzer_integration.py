@@ -333,3 +333,45 @@ def test_f1_no_margin_spec_uses_defaults_preserves_byte_identity():
     assert fm["revenue"] == 731048
     assert fm["foodCost"] == 307040
     assert fm["laborCost"] == 237660
+
+
+# === P3.5B F2 tests: dual margin computation ===
+
+def test_f2_dual_margin_both_computed():
+    """BOTH folded and unfolded margins must appear in financialMetrics output."""
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    analyzer = RestaurantAnalyzerV2(factory_id="F-TEST", sub_sector="火锅")
+    report = analyzer.analyze(financial_data={
+        "current": {
+            "revenue": 731048,           # 折后收入
+            "gross_revenue": 820000,     # 折前收入
+            "food_cost": 307040,
+            "labor_cost": 237660,
+        },
+    })
+    fm = report["sections"]["financialMetrics"]
+    assert "grossMarginFolded" in fm
+    assert "grossMarginUnfolded" in fm
+    # Both margins should be populated (non-None) when both revenues present
+    assert fm["grossMarginFolded"] is not None
+    assert fm["grossMarginUnfolded"] is not None
+    # Unfolded > folded: gross_revenue (820000) > revenue (731048), same food_cost
+    # → (820000-307040)/820000 > (731048-307040)/731048
+    assert fm["grossMarginUnfolded"] > fm["grossMarginFolded"]
+
+
+def test_f2_dual_margin_without_gross_revenue_falls_back():
+    """Missing gross_revenue -> grossMarginUnfolded uses revenue as fallback."""
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    analyzer = RestaurantAnalyzerV2(factory_id="F-TEST", sub_sector="火锅")
+    report = analyzer.analyze(financial_data={
+        "current": {"revenue": 731048, "food_cost": 307040},
+    })
+    fm = report["sections"]["financialMetrics"]
+    # Both keys should be present (may be equal when no gross_revenue)
+    assert "grossMarginFolded" in fm
+    assert "grossMarginUnfolded" in fm
+    # When gross_revenue absent, fallback to revenue -> same as folded
+    assert fm["grossMarginUnfolded"] == fm["grossMarginFolded"]
