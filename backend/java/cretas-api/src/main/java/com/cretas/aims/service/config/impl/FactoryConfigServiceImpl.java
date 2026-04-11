@@ -1309,20 +1309,43 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
                 "fields", k -> new HashMap<String, Object>());
 
         int reorderedCount = 0;
+        int dynamicReorderedCount = 0;
         for (int i = 0; i < fieldOrder.size(); i++) {
             String fieldCode = fieldOrder.get(i);
+            int newSortOrder = (i + 1) * 10;  // 10, 20, 30... leaves gaps for insertions
             Map<String, Object> fieldEntry = (Map<String, Object>) fields.computeIfAbsent(
                     fieldCode, k -> new HashMap<String, Object>());
-            fieldEntry.put("sortOrder", (i + 1) * 10);  // 10, 20, 30... leaves gaps
+            fieldEntry.put("sortOrder", newSortOrder);
             reorderedCount++;
+
+            // Round 10 Fix C3 (R10 Task 1 hotfix — missed in original spec):
+            // Dynamic fields are read directly from canvas_dynamic_field via
+            // ORDER BY sortOrder (CanvasDynamicFieldRepository:20). The JSONB override
+            // in factory_module_configs.field_config is NEVER consulted for dynamic
+            // fields — only for JPA schema fields via getEffectiveConfig's deepMerge.
+            // Without this second update, dynamic field reorder was silently no-op'd
+            // on page refresh — exact same bug class R10 was supposed to fix.
+            if (canvasDynamicFieldRepository != null) {
+                var dfOpt = canvasDynamicFieldRepository
+                        .findByFactoryIdAndModuleCodeAndFieldCode(factoryId, moduleCode, fieldCode);
+                if (dfOpt.isPresent()) {
+                    CanvasDynamicField df = dfOpt.get();
+                    df.setSortOrder(newSortOrder);
+                    canvasDynamicFieldRepository.save(df);
+                    dynamicReorderedCount++;
+                }
+            }
         }
         fmc.setFieldConfig(fieldConfig);
         factoryModuleConfigRepository.save(fmc);
 
         // 5. Audit
         logChange(factoryId, moduleCode, "REORDER_FIELDS", null,
-                Map.of("fieldOrder", fieldOrder, "reorderedCount", reorderedCount),
-                "字段重排: " + reorderedCount + " 个字段", operatorId);
+                Map.of("fieldOrder", fieldOrder,
+                       "reorderedCount", reorderedCount,
+                       "dynamicReorderedCount", dynamicReorderedCount),
+                "字段重排: " + reorderedCount + " 个字段 ("
+                        + dynamicReorderedCount + " dynamic)", operatorId);
 
         Map<String, Object> result = new HashMap<>();
         result.put("newVersion", draft.getRowVersion());
