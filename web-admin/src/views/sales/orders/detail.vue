@@ -43,9 +43,11 @@ const issuePdfFile = ref<File | null>(null);
 
 // 收款登记对话框
 const paymentDialogVisible = ref(false);
-const paymentForm = ref<{ amount: number; paymentMethod: string; paymentDate: string; paymentReference: string; remark: string }>({
-  amount: 0, paymentMethod: 'BANK_TRANSFER', paymentDate: '', paymentReference: '', remark: '',
+const paymentForm = ref<{ amount: number; paymentMethod: string; paymentDate: string; paymentReference: string; remark: string; receiptUrl: string }>({
+  amount: 0, paymentMethod: 'BANK_TRANSFER', paymentDate: '', paymentReference: '', remark: '', receiptUrl: '',
 });
+const receiptFile = ref<File | null>(null);
+const receiptUploading = ref(false);
 
 const statusMap: Record<string, { text: string; type: string }> = {
   DRAFT: { text: '草稿', type: 'info' },
@@ -377,7 +379,9 @@ function openPaymentDialog() {
     paymentDate: new Date().toISOString().slice(0, 10),
     paymentReference: '',
     remark: '',
+    receiptUrl: '',
   };
+  receiptFile.value = null;
   paymentDialogVisible.value = true;
 }
 
@@ -489,6 +493,33 @@ const approvalTimeline = computed<Array<{
   return nodes;
 });
 
+async function handleReceiptChange(file: { raw: File }) {
+  receiptFile.value = file.raw;
+  // 立即上传, 拿到 URL 存入 form
+  receiptUploading.value = true;
+  try {
+    const formData = new FormData();
+    formData.append('file', file.raw);
+    const token = localStorage.getItem('cretas_access_token') || '';
+    const resp = await fetch(`/api/mobile/${factoryId.value}/upload/receipt`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    const json = await resp.json();
+    if (json.success && json.data?.url) {
+      paymentForm.value.receiptUrl = json.data.url;
+      ElMessage.success('凭证已上传');
+    } else {
+      ElMessage.error(json.message || '凭证上传失败');
+    }
+  } catch {
+    ElMessage.error('凭证上传失败');
+  } finally {
+    receiptUploading.value = false;
+  }
+}
+
 async function handleCreatePayment() {
   if (submitting.value) return;
   if (!paymentForm.value.amount || paymentForm.value.amount <= 0) {
@@ -503,6 +534,7 @@ async function handleCreatePayment() {
       paymentDate: paymentForm.value.paymentDate || null,
       paymentReference: paymentForm.value.paymentReference,
       remark: paymentForm.value.remark,
+      receiptUrl: paymentForm.value.receiptUrl || null,
     });
     if (res.success) {
       ElMessage.success('收款记录已创建');
@@ -911,6 +943,21 @@ async function handleCreatePayment() {
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="paymentForm.remark" type="textarea" :rows="2" placeholder="如: 定金 / 尾款" />
+        </el-form-item>
+        <el-form-item label="回款凭证">
+          <el-upload
+            :auto-upload="false"
+            :limit="1"
+            accept=".pdf,image/jpeg,image/png,.jpg,.png"
+            :on-change="handleReceiptChange"
+            :on-remove="() => { receiptFile = null; paymentForm.receiptUrl = ''; }"
+          >
+            <el-button size="small" :loading="receiptUploading">选择凭证</el-button>
+            <template #tip>
+              <div class="el-upload__tip">PDF/JPG/PNG, ≤10MB (可选)</div>
+            </template>
+          </el-upload>
+          <span v-if="paymentForm.receiptUrl" style="font-size:12px;color:#67c23a;margin-left:8px">已上传</span>
         </el-form-item>
       </el-form>
       <template #footer>
