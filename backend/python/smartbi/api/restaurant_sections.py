@@ -13,9 +13,12 @@ calls.
 from __future__ import annotations
 
 import logging
+import tempfile
+from pathlib import Path as FsPath
 from typing import Any, Optional
 
 from fastapi import APIRouter, HTTPException, Path
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from smartbi.services.restaurant.sections.base import SectionRequest, SectionStatus
@@ -43,6 +46,7 @@ from smartbi.services.restaurant.sections.store_pnl_one_pager import (
     StorePnlOnePagerHandler,
 )
 from smartbi.services.restaurant.sections.department_pnl import DepartmentPnlHandler
+from smartbi.services.restaurant.sections.monthly_ppt_export import MonthlyPptExportHandler
 from smartbi.services.restaurant.sections.shrinkage_analysis import (
     ShrinkageAnalysisHandler,
 )
@@ -82,6 +86,7 @@ HANDLERS = {
     "bom_layer_status": BomLayerStatusHandler(),
     "shrinkage_analysis": ShrinkageAnalysisHandler(),
     "department_pnl": DepartmentPnlHandler(),
+    "monthly_ppt_export": MonthlyPptExportHandler(),
 }
 
 
@@ -166,3 +171,33 @@ def compute_section(
 def list_sections() -> dict:
     """Return the list of available section handler names."""
     return {"sections": sorted(HANDLERS.keys())}
+
+
+@router.get("/ppt-export/download/{factory_id}/{period}")
+def download_monthly_ppt(factory_id: str, period: str):
+    """Stream a previously-generated monthly PPT file for download.
+
+    Call POST /sections/monthly_ppt_export first to generate the file,
+    then GET this endpoint to download it. Files are stored in
+    /tmp/smartbi_ppt/ and named monthly_{factory_id}_{period}.pptx.
+    """
+    output_file = (
+        FsPath(tempfile.gettempdir())
+        / "smartbi_ppt"
+        / f"monthly_{factory_id}_{period}.pptx"
+    )
+    if not output_file.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"PPT not found for factory_id={factory_id!r} period={period!r}. "
+                f"Call POST /sections/monthly_ppt_export first."
+            ),
+        )
+    return FileResponse(
+        path=str(output_file),
+        filename=f"月度经营分析_{factory_id}_{period}.pptx",
+        media_type=(
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        ),
+    )
