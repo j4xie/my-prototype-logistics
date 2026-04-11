@@ -23,7 +23,7 @@ const submitting = ref(false);
 const order = ref<Record<string, unknown> | null>(null);
 const receives = ref<Record<string, unknown>[]>([]);
 const receiveDialogVisible = ref(false);
-const receiveForm = ref<{ items: { materialTypeId: string; receivedQuantity: number; unit: string; unitPrice: number }[] }>({ items: [] });
+const receiveForm = ref<{ supplierId: string; receiveDate: string; items: { materialTypeId: string; receivedQuantity: number; unit: string; unitPrice: number }[] }>({ supplierId: '', receiveDate: '', items: [] });
 
 // 三价对比
 interface PriceComparison {
@@ -108,6 +108,9 @@ async function handleAction(action: string) {
 
 function openReceiveDialog() {
   if (!order.value?.items?.length) return;
+  // Auto-populate supplierId from PO and default receiveDate to today
+  receiveForm.value.supplierId = (order.value.supplierId as string) || '';
+  receiveForm.value.receiveDate = new Date().toISOString().slice(0, 10);
   receiveForm.value.items = (order.value.items as Record<string, unknown>[]).map((it) => ({
     materialTypeId: it.materialTypeId,
     materialName: it.materialName,
@@ -124,6 +127,8 @@ async function handleCreateReceive() {
   try {
     const res = await post(`/${factoryId.value}/purchase/receives`, {
       purchaseOrderId: orderId.value,
+      supplierId: receiveForm.value.supplierId,
+      receiveDate: receiveForm.value.receiveDate,
       items: receiveForm.value.items.filter(i => i.receivedQuantity > 0),
     });
     if (res.success) {

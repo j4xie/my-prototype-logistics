@@ -326,8 +326,9 @@ public class PurchaseServiceImpl implements PurchaseService {
         if (request.getPurchaseOrderId() != null && !request.getPurchaseOrderId().isEmpty()) {
             PurchaseOrder order = getPurchaseOrderById(factoryId, request.getPurchaseOrderId());
             if (order.getStatus() != PurchaseOrderStatus.APPROVED &&
+                    order.getStatus() != PurchaseOrderStatus.FINANCE_APPROVED &&
                     order.getStatus() != PurchaseOrderStatus.PARTIAL_RECEIVED) {
-                throw new BusinessException("只有已审批或部分到货状态的订单可以入库");
+                throw new BusinessException("只有已审批、财务已审核或部分到货状态的订单可以入库");
             }
         }
 
