@@ -6,8 +6,11 @@ Part of P3.5 general capabilities refactor. Modules added incrementally:
   - dish (P3.5C B2): 2-layer BOM with dish recipes [pending]
 """
 from .raw_material import RawMaterial, UnitConverter
+from .intermediate_product import IntermediateProduct, IngredientLine
 
 __all__ = [
     "RawMaterial",
     "UnitConverter",
+    "IntermediateProduct",
+    "IngredientLine",
 ]
