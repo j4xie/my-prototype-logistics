@@ -48,7 +48,10 @@
 <script setup lang="ts">
 import draggable from 'vuedraggable'
 import { Rank, Delete } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { usePageEditor } from '../composables/usePageEditor'
+import { useCanvasEditor } from '../composables/useCanvasEditor'
+import { reorderFields } from '@/api/canvasApi'
 
 const props = defineProps<{
   moduleCode?: string
@@ -59,12 +62,74 @@ defineEmits<{ 'remove-field': [index: number] }>()
 const fields = defineModel<any[]>('fields', { required: true })
 
 const { selectedField, selectField, setDirty } = usePageEditor()
+// Round 10 Fix — pull the live config + reload helper from the canvas-editor
+// composable so we can include the optimistic-lock token (rowVersion) in the
+// reorder request and refresh after success.
+const { factoryId, configVersion, loadVersion } = useCanvasEditor()
 
-function onReorder() {
+// Round 10 Fix — debounce timer + single-flight lock so rapid drag-drops
+// collapse into one server call instead of stampeding the optimistic lock.
+let reorderTimer: ReturnType<typeof setTimeout> | null = null
+let reorderInFlight = false
+
+async function onReorder() {
+  // Mark dirty + update local sortOrder so the UI reflects the new order
+  // immediately. We use (i + 1) * 10 spacing so future inserts can land
+  // between two existing fields without renumbering everything.
   setDirty()
   fields.value.forEach((f: any, i: number) => {
-    f.sortOrder = i
+    f.sortOrder = (i + 1) * 10
   })
+
+  // Debounce 500ms — reset on each new drop so a flurry of drags only
+  // triggers one API call after the user pauses.
+  if (reorderTimer) clearTimeout(reorderTimer)
+  reorderTimer = setTimeout(async () => {
+    if (reorderInFlight) return
+    if (!props.moduleCode) {
+      console.warn('[FormCanvas] reorder skipped: moduleCode missing')
+      return
+    }
+    if (!factoryId.value) {
+      console.warn('[FormCanvas] reorder skipped: factoryId missing')
+      return
+    }
+
+    reorderInFlight = true
+    try {
+      const fieldOrder = fields.value.map((f: any) => f.fieldCode || f.code)
+      // rowVersion is the @Version optimistic-lock counter on FactoryConfiguration.
+      // Default to 0 (matches @Builder.Default in the entity) if no version loaded.
+      const expectedVersion = configVersion.value?.rowVersion ?? 0
+      await reorderFields(factoryId.value, props.moduleCode, fieldOrder, expectedVersion)
+      ElMessage.success({ message: '排序已保存', duration: 1500 })
+      // Backend currently saves only FactoryModuleConfig (not FactoryConfiguration),
+      // so rowVersion is NOT incremented server-side. We still call loadVersion()
+      // to pick up any other version drift from concurrent sessions.
+      await loadVersion()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      if (msg.includes('版本冲突')) {
+        try {
+          await ElMessageBox.confirm(
+            '其他会话已修改此配置,需要刷新后重试。点击确定自动刷新。',
+            '版本冲突',
+            { type: 'warning', confirmButtonText: '刷新', cancelButtonText: '取消' },
+          )
+          await loadVersion()
+        } catch {
+          /* user cancelled the refresh dialog */
+        }
+      } else {
+        // The axios interceptor already shows a toast for non-conflict errors,
+        // but we add a context-specific one so the user knows it was the reorder
+        // (rather than some other background request) that failed.
+        ElMessage.error('字段排序保存失败: ' + msg)
+      }
+    } finally {
+      reorderInFlight = false
+    }
+  }, 500)
 }
 </script>
 

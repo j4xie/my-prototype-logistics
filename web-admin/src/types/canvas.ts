@@ -108,6 +108,11 @@ export interface ConfigVersion {
   id: number
   factoryId: string
   configVersion: number
+  // Round 10 Fix: JPA optimistic-lock counter on FactoryConfiguration. Used by
+  // POST /reorder-fields as expectedVersion. The backend exposes this as
+  // `rowVersion` (not `configVersion`) because configVersion is the business
+  // version label, while rowVersion is the @Version row-level lock.
+  rowVersion?: number
   status: ConfigStatus
   publishedAt?: string
   publishedBy?: number
