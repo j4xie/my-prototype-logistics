@@ -69,7 +69,12 @@ public class TriggerChainExecutor {
             // create via ReturnOrderServiceImpl.createReturnOrder. Covers both return
             // types via the shared returnType enum — trigger chains can filter by
             // the event's returnType field if they want one direction only.
-            "ReturnOrderCreatedEvent"
+            "ReturnOrderCreatedEvent",
+            // Round 11 T4 — internal transfer template event. Fires on DRAFT create via
+            // TransferServiceImpl.createTransfer for both factory-to-factory and
+            // warehouse-to-warehouse transfers. Trigger chains can filter by
+            // sourceFactoryId vs targetFactoryId to distinguish directions.
+            "TransferCreatedEvent"
     );
 
     // Round 6 Fix CHECK-5: rate-limited warn log when a factory configures a trigger chain

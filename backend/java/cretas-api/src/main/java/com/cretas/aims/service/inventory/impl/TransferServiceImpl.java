@@ -15,6 +15,7 @@ import com.cretas.aims.repository.inventory.*;
 import com.cretas.aims.service.inventory.TransferService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -36,20 +37,43 @@ public class TransferServiceImpl implements TransferService {
     private final InternalTransferItemRepository transferItemRepository;
     private final MaterialBatchRepository materialBatchRepository;
     private final FinishedGoodsBatchRepository finishedGoodsBatchRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
+
+    /** Round 11 T4 — Canvas Integration Template hook 1: DB-driven validation. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+
+    /** Round 11 T4 — Canvas Integration Template hook 2: dynamic field persist. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
 
     public TransferServiceImpl(InternalTransferRepository transferRepository,
                                InternalTransferItemRepository transferItemRepository,
                                MaterialBatchRepository materialBatchRepository,
-                               FinishedGoodsBatchRepository finishedGoodsBatchRepository) {
+                               FinishedGoodsBatchRepository finishedGoodsBatchRepository,
+                               ApplicationEventPublisher applicationEventPublisher) {
         this.transferRepository = transferRepository;
         this.transferItemRepository = transferItemRepository;
         this.materialBatchRepository = materialBatchRepository;
         this.finishedGoodsBatchRepository = finishedGoodsBatchRepository;
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 
     @Override
     @Transactional
     public InternalTransfer createTransfer(String factoryId, CreateTransferRequest request, Long userId) {
+        // Round 11 T4: Canvas Integration Template hook 1 — DB-driven validation
+        if (validationRuleEvaluator != null) {
+            try {
+                validationRuleEvaluator.validate(factoryId, "transfer", "CREATE",
+                        java.util.Map.of(
+                            "transferType", request.getTransferType() != null ? request.getTransferType() : "",
+                            "targetFactoryId", request.getTargetFactoryId() != null ? request.getTargetFactoryId() : "",
+                            "itemCount", request.getItems() != null ? request.getItems().size() : 0));
+            } catch (com.cretas.aims.exception.BusinessException e) { throw e; }
+            catch (Exception e) { log.warn("Canvas validation non-blocking: {}", e.getMessage()); }
+        }
+
         String transferNumber = generateTransferNumber(factoryId);
 
         InternalTransfer transfer = new InternalTransfer();
@@ -86,6 +110,29 @@ public class TransferServiceImpl implements TransferService {
 
         transfer.setTotalAmount(totalAmount);
         transfer = transferRepository.save(transfer);
+
+        // Round 11 T4: Canvas Integration Template hook 2 — persist dynamic fields.
+        // Customer-configured fields (运输车牌号, 司机联系方式, 预计成本) land in
+        // cf_* columns on internal_transfers. Silent failure must not break creation.
+        if (dynamicFieldService != null && request.getCustomFields() != null && !request.getCustomFields().isEmpty()) {
+            try {
+                dynamicFieldService.setDynamicFields(factoryId, "transfer", transfer.getId(), request.getCustomFields());
+            } catch (Exception e) {
+                log.warn("Canvas dynamic fields save failed for transfer {}: {}", transfer.getId(), e.getMessage());
+            }
+        }
+
+        // Round 11 T4: Canvas Integration Template hook 3 — publish event for trigger chains.
+        try {
+            applicationEventPublisher.publishEvent(new com.cretas.aims.event.TransferCreatedEvent(
+                    this, factoryId, transfer.getTargetFactoryId(),
+                    transfer.getId(), transfer.getTransferNumber(),
+                    transfer.getTransferType() != null ? transfer.getTransferType().name() : null,
+                    transfer.getSourceWarehouseId(), transfer.getTargetWarehouseId(),
+                    transfer.getTotalAmount()));
+        } catch (Exception e) {
+            log.warn("Publish TransferCreatedEvent failed for {}: {}", transfer.getId(), e.getMessage());
+        }
 
         log.info("创建调拨单: sourceFactory={}, targetFactory={}, transferNumber={}", factoryId, request.getTargetFactoryId(), transferNumber);
         return transfer;
