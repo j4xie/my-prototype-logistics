@@ -3,10 +3,14 @@ package com.cretas.aims.scheduler;
 import com.cretas.aims.entity.factory.FactoryMaterialRequisition;
 import com.cretas.aims.entity.factory.FactoryMaterialRequisition.Status;
 import com.cretas.aims.repository.factory.FactoryMaterialRequisitionRepository;
+import com.cretas.aims.service.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -36,6 +40,7 @@ import java.util.List;
 public class FmrExpiryScanner {
 
     private final FactoryMaterialRequisitionRepository repository;
+    private final NotificationService notificationService;
 
     /**
      * 每天 20:00 执行一次扫描.
@@ -56,9 +61,22 @@ public class FmrExpiryScanner {
         }
 
         log.warn("[P1-5 FMR expiry scan] 20:00 daily scan — 发现 {} 条跨天未关单物料需求单:", stuck.size());
+
+        // P1-5: 按 factory 分组, 每个工厂单独发一条通知给车间主管
+        Map<String, Integer> byFactory = new HashMap<>();
         for (FactoryMaterialRequisition mr : stuck) {
             log.warn("[P1-5 FMR expiry scan]   - factoryId={} no={} status={} createdAt={}",
                     mr.getFactoryId(), mr.getRequisitionNo(), mr.getStatus(), mr.getCreatedAt());
+            byFactory.merge(mr.getFactoryId(), 1, Integer::sum);
+        }
+        for (Map.Entry<String, Integer> e : byFactory.entrySet()) {
+            notificationService.notifyRole(
+                    e.getKey(),
+                    "WORKSHOP_SUPERVISOR",
+                    "[鲜棉仓清仓] 跨天未关单物料需求单",
+                    String.format("发现 %d 条跨天未关单物料需求单, 请检查是否需要手动 close 或追加退料流水.",
+                            e.getValue())
+            );
         }
     }
 }
