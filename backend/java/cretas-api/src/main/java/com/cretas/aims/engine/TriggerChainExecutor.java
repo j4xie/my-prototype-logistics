@@ -33,13 +33,18 @@ public class TriggerChainExecutor {
 
     // Round 4 Fix P1-14: added SalesOrderCreatedEvent so trigger chains can react to
     // order creation (e.g. fetch external market price, create parallel workflows).
+    // Round 8-α Fix: added InvoiceIssuedEvent + SalesOrderSettledEvent — both were
+    // being published by InvoiceServiceImpl / PaymentRecordServiceImpl but silently
+    // dropped by this whitelist. Customer-configured "发票开具→同步税务" / "订单结清→自动归档"
+    // trigger chains literally never fired. See round8-findings Gap #2.
     // Full list should eventually be data-driven from factory_trigger_chains.event_type
     // but this hardcoded whitelist is the current performance-safe approach.
     private static final Set<String> HANDLED_EVENTS = Set.of(
             "SalesOrderCreatedEvent",
             "SalesOrderConfirmedEvent", "SalesOrderFinanceApprovedEvent",
             "MaterialReceivedEvent", "BatchCompletedEvent",
-            "FinishedGoodsCreatedEvent", "PaymentReceivedEvent"
+            "FinishedGoodsCreatedEvent", "PaymentReceivedEvent",
+            "InvoiceIssuedEvent", "SalesOrderSettledEvent"
     );
 
     // Round 6 Fix CHECK-5: rate-limited warn log when a factory configures a trigger chain
