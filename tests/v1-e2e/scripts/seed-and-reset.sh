@@ -117,6 +117,13 @@ WHERE purchase_order_id IN (
     SELECT id FROM purchase_orders WHERE factory_id = 'F_E2E_TEST'
 );
 
+-- Purchase receive items (children of purchase_receive_records)
+-- Note: receive_record_id FKs to purchase_receive_records.id
+DELETE FROM purchase_receive_items
+WHERE receive_record_id IN (
+    SELECT id FROM purchase_receive_records WHERE factory_id = 'F_E2E_TEST'
+);
+
 -- Internal transfer items
 -- Note: internal_transfers uses source_factory_id/target_factory_id (no factory_id col)
 --       internal_transfer_items FK column is "transfer_id" (not internal_transfer_id)
@@ -135,6 +142,8 @@ WHERE requisition_id IN (
 -- ── Parent / standalone transactional tables ────────────────────────────────
 
 DELETE FROM sales_orders                   WHERE factory_id = 'F_E2E_TEST';
+-- Purchase receive records must be deleted BEFORE purchase_orders (FK: purchase_order_id).
+DELETE FROM purchase_receive_records       WHERE factory_id = 'F_E2E_TEST';
 DELETE FROM purchase_orders                WHERE factory_id = 'F_E2E_TEST';
 DELETE FROM internal_transfers
     WHERE source_factory_id = 'F_E2E_TEST' OR target_factory_id = 'F_E2E_TEST';
