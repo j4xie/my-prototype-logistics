@@ -722,17 +722,6 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
                 request.setEstimatedWorkers(row.getEstimatedWorkers());
                 request.setSourceType(PlanSourceType.EXCEL_IMPORT);
 
-                // Resolve optional production line
-                if (row.getProductionLineCode() != null && !row.getProductionLineCode().trim().isEmpty()) {
-                    Optional<ProductionLine> line = productionLineRepository
-                            .findByFactoryIdAndLineCodeAndDeletedAtIsNull(factoryId, row.getProductionLineCode().trim());
-                    if (line.isPresent()) {
-                        request.setSuggestedProductionLineId(line.get().getId());
-                    } else {
-                        log.warn("第{}行: 产线编号 \"{}\" 未找到，已忽略", rowNumber, row.getProductionLineCode());
-                    }
-                }
-
                 // Resolve optional supervisor username
                 if (row.getSupervisorUsername() != null && !row.getSupervisorUsername().trim().isEmpty()) {
                     Optional<User> supervisor = userRepository.findByUsername(row.getSupervisorUsername().trim());

@@ -167,7 +167,6 @@ public class ProductionPlanCreateTool extends AbstractBusinessTool {
         request.setPlannedDate(plannedDate);
         request.setExpectedCompletionDate(plannedDate.plusDays(1));
         if (priority != null) request.setPriority(priority);
-        if (productionLineId != null) request.setSuggestedProductionLineId(productionLineId);
         if (estimatedWorkers != null) request.setEstimatedWorkers(estimatedWorkers);
         if (customerName != null) request.setSourceCustomerName(customerName);
         if (processName != null) request.setProcessName(processName);

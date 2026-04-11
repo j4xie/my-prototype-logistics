@@ -82,9 +82,6 @@ public class CreateProductionPlanRequest {
 
     // ======= 工厂管理员扩展字段 =======
 
-    @Schema(description = "建议产线ID")
-    private String suggestedProductionLineId;
-
     @Schema(description = "预计工人数")
     @Min(value = 1, message = "预计工人数最小为1")
     @Max(value = 500, message = "预计工人数最大为500")

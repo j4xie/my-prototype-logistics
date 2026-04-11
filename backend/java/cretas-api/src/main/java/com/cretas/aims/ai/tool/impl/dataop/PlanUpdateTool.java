@@ -242,7 +242,6 @@ public class PlanUpdateTool extends AbstractBusinessTool {
         } else {
             req.setExpectedCompletionDate(existing.getExpectedCompletionDate());
         }
-        if (productionLineId != null) req.setSuggestedProductionLineId(productionLineId);
         if (remark != null) req.setNotes(remark);
         return req;
     }

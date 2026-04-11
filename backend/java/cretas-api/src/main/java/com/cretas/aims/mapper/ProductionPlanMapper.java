@@ -167,7 +167,6 @@ public class ProductionPlanMapper {
         }
 
         // 设置工厂管理员扩展字段
-        plan.setSuggestedProductionLineId(request.getSuggestedProductionLineId());
         plan.setEstimatedWorkers(request.getEstimatedWorkers());
         plan.setAssignedSupervisorId(request.getAssignedSupervisorId());
 
@@ -245,9 +244,6 @@ public class ProductionPlanMapper {
             plan.setExpectedCompletionDate(request.getExpectedCompletionDate());
         }
         // 更新工厂管理员扩展字段
-        if (request.getSuggestedProductionLineId() != null) {
-            plan.setSuggestedProductionLineId(request.getSuggestedProductionLineId());
-        }
         if (request.getEstimatedWorkers() != null) {
             plan.setEstimatedWorkers(request.getEstimatedWorkers());
         }
