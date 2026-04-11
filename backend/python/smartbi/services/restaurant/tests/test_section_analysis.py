@@ -236,3 +236,72 @@ def test_stored_value_triggers_critical_at_7pct():
         f"Expected 'critical' for 7.07% ratio, got {resp.data.get('severity')}. "
         f"Data: {resp.data}"
     )
+
+
+# === P3.5B F3 tests: stored value 3-mode treatment ===
+
+def test_f3_stored_value_mode_prepaid_default_behavior():
+    """PREPAID mode is the default — 充卡 as future liability."""
+    from smartbi.services.finance.margin_spec import StoredValueTreatment
+    from smartbi.services.restaurant.stored_value_analyzer import StoredValueAnalyzer
+
+    analyzer = StoredValueAnalyzer()
+    report = analyzer.analyze(
+        stored_value_giveaway=51680.61,
+        revenue=731048,
+        mode=StoredValueTreatment.PREPAID,
+    )
+    # Severity should be critical (7.07% > 7% threshold from QW1)
+    assert report.severity == "critical"
+    # Mode should be recorded in the report
+    report_dict = report.to_dict() if hasattr(report, "to_dict") else report.__dict__
+    assert str(report_dict.get("mode", "")).upper() == "PREPAID" or report_dict.get("mode") == StoredValueTreatment.PREPAID.value
+
+
+def test_f3_stored_value_mode_revenue_treats_as_expense():
+    """REVENUE mode: 充卡 as revenue, 赠送 as marketing expense."""
+    from smartbi.services.finance.margin_spec import StoredValueTreatment
+    from smartbi.services.restaurant.stored_value_analyzer import StoredValueAnalyzer
+
+    analyzer = StoredValueAnalyzer()
+    report = analyzer.analyze(
+        stored_value_giveaway=51680.61,
+        revenue=731048,
+        mode=StoredValueTreatment.REVENUE,
+    )
+    # Same ratio (7.07%) but different mode
+    report_dict = report.to_dict() if hasattr(report, "to_dict") else report.__dict__
+    assert str(report_dict.get("mode", "")).upper() == "REVENUE" or report_dict.get("mode") == StoredValueTreatment.REVENUE.value
+    # Severity still depends on ratio (7.07% > 7% → critical)
+    assert report.severity == "critical"
+
+
+def test_f3_stored_value_mode_excluded_is_info():
+    """EXCLUDED mode: 充卡 not in revenue → no risk → severity 'info' regardless of amount."""
+    from smartbi.services.finance.margin_spec import StoredValueTreatment
+    from smartbi.services.restaurant.stored_value_analyzer import StoredValueAnalyzer
+
+    analyzer = StoredValueAnalyzer()
+    report = analyzer.analyze(
+        stored_value_giveaway=51680.61,
+        revenue=731048,
+        mode=StoredValueTreatment.EXCLUDED,
+    )
+    # When excluded from revenue, there's no dependency risk
+    assert report.severity == "info"
+    report_dict = report.to_dict() if hasattr(report, "to_dict") else report.__dict__
+    assert str(report_dict.get("mode", "")).upper() == "EXCLUDED" or report_dict.get("mode") == StoredValueTreatment.EXCLUDED.value
+
+
+def test_f3_stored_value_mode_omitted_defaults_to_prepaid():
+    """Backward compat: omitted mode param → PREPAID default."""
+    from smartbi.services.restaurant.stored_value_analyzer import StoredValueAnalyzer
+
+    analyzer = StoredValueAnalyzer()
+    # Call WITHOUT mode param — should not raise
+    report = analyzer.analyze(
+        stored_value_giveaway=51680.61,
+        revenue=731048,
+    )
+    # Default behavior matches pre-F3 (should be critical for 7.07%)
+    assert report.severity == "critical"
