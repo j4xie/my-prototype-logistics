@@ -147,6 +147,16 @@ public class RdController {
         return ResponseEntity.ok(Map.of("success", true, "data", sampleService.getSample(factoryId, sampleId)));
     }
 
+    /**
+     * P1-8: 读取样品追踪记录（新独立表）.
+     * 前端 openTrackingDialog 调此接口取代从 progressNotes JSON 解析.
+     */
+    @GetMapping("/samples/{sampleId}/tracking-records")
+    public ResponseEntity<?> getTrackingRecords(@PathVariable String factoryId, @PathVariable String sampleId) {
+        return ResponseEntity.ok(Map.of("success", true, "data",
+                sampleService.getTrackingRecords(factoryId, sampleId)));
+    }
+
     // ==================== 报价任务 ====================
 
     @PostMapping("/quotations/{taskId}/submit")

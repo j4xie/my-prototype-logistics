@@ -251,6 +251,11 @@ public class ProductSampleServiceImpl implements ProductSampleService {
         return quotationTaskRepository.findByFactoryIdAndDeletedAtIsNull(factoryId, pageable);
     }
 
+    @Override
+    public List<ProductSampleTrackingRecord> getTrackingRecords(String factoryId, String sampleId) {
+        return trackingRecordRepository.findByFactoryIdAndSampleIdAndDeletedAtIsNullOrderByRecordedAtDesc(factoryId, sampleId);
+    }
+
     private String genNumber(String prefix) {
         String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         return String.format("%s-%s-%04d", prefix, dateStr, System.nanoTime() % 10000);
