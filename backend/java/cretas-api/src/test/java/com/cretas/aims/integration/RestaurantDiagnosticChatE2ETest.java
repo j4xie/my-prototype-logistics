@@ -2,8 +2,8 @@ package com.cretas.aims.integration;
 
 import com.cretas.aims.entity.config.AIIntentConfig;
 import com.cretas.aims.service.AIIntentService;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -12,40 +12,40 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * P2 Task 2.10: Full-stack E2E — natural language question → intent
- * recognition → Java tool → Python section → structured response.
+ * P2 Task 2.10: intent routing verification — natural language question →
+ * {@code recognizeIntent()} → correct {@code RESTAURANT_*} intent config.
  *
- * <p>This test is <strong>{@code @Disabled}</strong> by default because it
- * requires:
- * <ul>
- *   <li>Running Python backend on port 8083 with the refactored
- *       {@code /api/smartbi/restaurant/sections/*} router (P1 Task 1.7)</li>
- *   <li>PostgreSQL with the V20260411_01 migration applied (P2 Task 2.8)
- *       so the 14 {@code RESTAURANT_*} intent configs are present</li>
- *   <li>Full Spring Boot context (DashScope LLM keys, Redis, etc.)</li>
- * </ul>
+ * <p>Gated by {@code -DrunIntegration=true} system property. Not run in the
+ * default {@code mvn test} build because it needs a full {@code @SpringBootTest}
+ * context + PostgreSQL with {@code V20260411_01} migration applied (14 restaurant
+ * intent configs). Python backend and DashScope keys are <em>not</em> required —
+ * all assertions operate on layer 1-4 (EXACT/PHRASE/REGEX/KEYWORD) intent
+ * recognition which is DB-local.
  *
- * <p>To run manually (after starting Python + Java locally):
+ * <p>To run manually or in CI integration suite:
  * <pre>
  * cd backend/java/cretas-api
  * ./mvnw.cmd test -Dtest=RestaurantDiagnosticChatE2ETest -DrunIntegration=true
  * </pre>
  *
- * <p>The {@code @Disabled} annotation keeps this out of the fast unit test
- * suite. CI can selectively enable it via an {@code @EnabledIfSystemProperty}
- * annotation when the integration environment is available.
+ * <p>P5.6 audit (2026-04-11) changed this from class-level {@code @Disabled}
+ * (which made it "paper coverage" that never ran) to
+ * {@code @EnabledIfSystemProperty}: still skipped by default, but actively
+ * opt-in-able so we can verify the intent routing contract any time without
+ * commenting out an annotation.
  *
- * <p>The 3 test scenarios lock in the intent-routing contract for the
- * 3 highest-value questions from real customer conversations:
+ * <p>The 5 test scenarios lock in the intent-routing contract for the
+ * highest-value questions from real customer conversations:
  * <ol>
  *   <li>"帮我分析一下成本刚性" → RESTAURANT_COST_RIGIDITY
  *       (emerged from 鼎鲜火锅 2026-02 loss case)</li>
  *   <li>"对标火锅行业我差在哪" → RESTAURANT_BENCHMARK_ALERT</li>
  *   <li>"17 家店哪家最差" → RESTAURANT_MULTI_STORE</li>
+ *   <li>"哪些菜该砍了" → RESTAURANT_LONG_TAIL_SKU</li>
+ *   <li>"差评主要集中在哪" → RESTAURANT_REVIEW_ANALYSIS</li>
  * </ol>
  */
-@Disabled("Requires Python backend on 8083 + V20260411_01 Flyway migration applied + DashScope keys. "
-        + "Run manually: ./mvnw.cmd test -Dtest=RestaurantDiagnosticChatE2ETest")
+@EnabledIfSystemProperty(named = "runIntegration", matches = "true")
 @SpringBootTest
 class RestaurantDiagnosticChatE2ETest {
 
