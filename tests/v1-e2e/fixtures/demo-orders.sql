@@ -168,4 +168,63 @@ VALUES (
     NOW() - INTERVAL '3 hours'
 );
 
+-- ─────────────────────────────────────────────────────────────────────────────
+-- DEMO_SO_G1: 鼎鲜火锅 — G1杀手锏: 9% + 13% 混合税率 — CONFIRMED
+-- 行1: 酸菜鱼 500g × 100 @ 25.00 = 2500, tax_rate=0.09 → taxAmount computed by service
+-- 行2: 鲜牛肉丸 1kg × 20 @ 55.00 = 1100, tax_rate=0.13 → taxAmount computed by service
+-- Used by: tests/v1-e2e/web/g1-invoice.spec.ts
+-- ─────────────────────────────────────────────────────────────────────────────
+INSERT INTO sales_orders (
+    id, factory_id, order_number, customer_id,
+    order_date, total_amount, discount_amount, tax_amount,
+    status, created_by, paid_amount,
+    created_at, updated_at
+)
+VALUES (
+    'e2e-so-g1-00000000000000000000001',
+    'F_E2E_TEST',
+    'DEMO_SO_G1',
+    (SELECT id FROM customers WHERE factory_id = 'F_E2E_TEST' AND code = 'CUS_DINGXIAN'),
+    CURRENT_DATE - INTERVAL '1 day',
+    3600.00,      -- 2500 + 1100 (ex-tax)
+    0.00,
+    0.00,         -- tax_amount stored on items, not order-level here
+    'CONFIRMED',
+    (SELECT id FROM users WHERE username = 'e2e_super_admin' AND factory_id = 'F_E2E_TEST'),
+    0.00,
+    NOW() - INTERVAL '1 day',
+    NOW() - INTERVAL '1 day'
+)
+ON CONFLICT (factory_id, order_number) DO NOTHING;
+
+-- Items for DEMO_SO_G1 — delete-then-insert for idempotency
+DELETE FROM sales_order_items
+WHERE sales_order_id = 'e2e-so-g1-00000000000000000000001';
+
+INSERT INTO sales_order_items (
+    sales_order_id, product_type_id, product_name,
+    quantity, unit, unit_price, tax_rate,
+    discount_rate, delivered_quantity,
+    created_at, updated_at
+)
+VALUES
+(
+    'e2e-so-g1-00000000000000000000001',
+    (SELECT id FROM product_types WHERE factory_id = 'F_E2E_TEST' AND code = 'SKU_SCY500'),
+    '酸菜鱼 500g',
+    100.0000, '袋', 25.0000, 0.09,
+    0.00, 0.0000,
+    NOW() - INTERVAL '1 day',
+    NOW() - INTERVAL '1 day'
+),
+(
+    'e2e-so-g1-00000000000000000000001',
+    (SELECT id FROM product_types WHERE factory_id = 'F_E2E_TEST' AND code = 'SKU_NRW1K'),
+    '鲜牛肉丸 1kg',
+    20.0000, '袋', 55.0000, 0.13,
+    0.00, 0.0000,
+    NOW() - INTERVAL '1 day',
+    NOW() - INTERVAL '1 day'
+);
+
 COMMIT;
