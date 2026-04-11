@@ -11,6 +11,7 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -33,6 +34,13 @@ public class CreateReceiveRecordRequest {
     @Valid
     @NotEmpty(message = "入库行项目不能为空")
     private List<ReceiveItemDTO> items;
+
+    /**
+     * Round 11 — Canvas Integration Template slot for factory-configured dynamic fields.
+     * Fields like 运输温度记录, 质检报告附件, 外包装状态 land here and are persisted
+     * to cf_* columns on purchase_receive_records via DynamicFieldService.
+     */
+    private Map<String, Object> customFields;
 
     @Data
     @NoArgsConstructor
