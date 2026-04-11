@@ -57,8 +57,8 @@ INSERT INTO users (
 VALUES
     ('F_E2E_TEST', 'e2e_super_admin',   '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'E2E 超管',     'factory_super_admin',   true, 'web,mobile', NOW(), NOW()),
     ('F_E2E_TEST', 'e2e_sales_mgr',     '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'E2E 销售经理', 'sales_manager',         true, 'web,mobile', NOW(), NOW()),
-    ('F_E2E_TEST', 'e2e_purchase_mgr',  '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'E2E 采购经理', 'purchase_manager',      true, 'web,mobile', NOW(), NOW()),
-    ('F_E2E_TEST', 'e2e_warehouse_ops', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'E2E 仓管',     'warehouse_operator',    true, 'web,mobile', NOW(), NOW()),
+    ('F_E2E_TEST', 'e2e_purchase_mgr',  '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'E2E 采购经理', 'procurement_manager',   true, 'web,mobile', NOW(), NOW()),
+    ('F_E2E_TEST', 'e2e_warehouse_ops', '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'E2E 仓管',     'warehouse_worker',      true, 'web,mobile', NOW(), NOW()),
     ('F_E2E_TEST', 'e2e_workshop_sup',  '$2b$12$kNRuzD4ZSBttEir6cbwlteBTw7kq2lyz6aQnrwac1sn4i/eTLaRse', 'E2E 车间主管', 'workshop_supervisor',   true, 'web,mobile', NOW(), NOW())
 ON CONFLICT (username) DO NOTHING;
 
