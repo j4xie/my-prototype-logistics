@@ -198,7 +198,7 @@ interface EntitySchema {
 | P0-8 | 销售订单明细字段补全（A3.1）| 🟡 | v1 §2.4.1 | 已部分完成 (specification/box_quantity) |
 | P0-9 | 销售订单 3 个状态字段（A3.4）| 🟡 | v1 §2.4.4 | payment/invoice/delivery status |
 | ~~P0-10~~ | ~~销售订单金额联动 → **已合并到 P0-3b**~~ | — | — | 见 §4.1 P0-3b |
-| P0-11 | 销售订单业务中心 tabs（A3.3）| 🔴 | 金矿截图 49m17s | 开票/出库/收款/采购 4 tab ✅ 已实现 (commit 80afe8bb) |
+| P0-11 | 销售订单业务中心 tabs（A3.3）| 🔴 | 金矿截图 49m17s | 开票/出库/收款/采购 4 tab ✅ 已实现 (commit 80afe8bb). 关联采购 tab = 查询已有 PO (salesOrderId 关联), **不自动生成采购建议**. V1 现状: 采购员手工建 PO, 系统仅做关联展示. (2026-04-11 gap audit: 自动采购建议 feature 不存在, 确认手工流程即 V1 现状) |
 | P0-12 | 生产计划必须关联销售订单（A3）| 🔴 | 会议 4141s | ProductionPlan 加 sales_order_id |
 | P0-13 | PC 批次字段强制（A4）| 🔴 | 会议 5016s | ProductionReport + 出库单 |
 | P0-14 | BOM 原辅料拆 3 块（A2）| 🔴 | 会议 1151s | BomItem.group 字段 + 前端 3 tab |
