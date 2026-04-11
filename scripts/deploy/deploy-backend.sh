@@ -874,7 +874,8 @@ deploy_jar() {
             fi
         else
             echo "   [生产] 检查 10010..."
-            if ! wait_for_health "http://${SERVER_IP}:10010/api/mobile/health" 30 2; then
+            # Round 5 fix: bumped 30→90 same as test path (Spring Boot + BERT startup).
+            if ! wait_for_health "http://${SERVER_IP}:10010/api/mobile/health" 90 2; then
                 echo "   请手动检查: ssh $SERVER 'tail -50 $REMOTE_JAR_DIR/cretas-prod.log'"
             fi
         fi
@@ -882,7 +883,9 @@ deploy_jar() {
 
     if [[ "$DEPLOY_ENV" == "test" || "$DEPLOY_ENV" == "all" ]]; then
         echo "   [测试] 检查 10011..."
-        if ! wait_for_health "http://${SERVER_IP}:10011/api/mobile/health" 30 2; then
+        # Round 5 fix: bumped 30→90 (180s total) — test Spring Boot with BERT intents
+        # loads 45+ models + tools, first start can take 90-150s.
+        if ! wait_for_health "http://${SERVER_IP}:10011/api/mobile/health" 90 2; then
             echo "   请手动检查: ssh $SERVER 'tail -50 $REMOTE_JAR_DIR/cretas-test.log'"
         fi
     fi

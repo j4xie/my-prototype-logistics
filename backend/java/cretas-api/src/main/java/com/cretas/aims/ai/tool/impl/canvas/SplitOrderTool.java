@@ -24,6 +24,12 @@ import java.util.*;
  *   - 蓝海水产: 混合活体+冷冻订单 → 拆分以便不同发货流程
  *   - 大额订单分批发货
  *
+ * factoryId 隔离豁免说明: doExecute() 使用 fetch-then-verify pattern —
+ * salesOrderRepository.findById() 后紧跟 factoryId equals 校验
+ * (如果 source.factoryId != 当前 factoryId 则抛 IllegalArgumentException,
+ * 子订单创建时 child.setFactoryId(factoryId) 确保 sink 正确). Audit 脚本
+ * 的 findById 正则无法识别后续的 guard, 故手动标记豁免.
+ *
  * 参数:
  *   sourceOrderId:  源订单 ID
  *   splitMode:      'items' (按行项) | 'quantity' (按数量均分)
