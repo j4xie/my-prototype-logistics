@@ -279,16 +279,39 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
 
     @Override
     public List<ModuleSummaryDTO> getEnabledModules(String factoryId) {
+        // Round 5 Fix PERF-1: previously this loop called getEffectiveConfig once per module,
+        // which issues ~4 queries per module (schema lookup + publishedConfig + fmc + dynamicFields)
+        // + builds the full field schema. With 68 modules that's 270+ queries per page load.
+        // We only need {moduleCode, moduleName, moduleCategory, enabled, renderingMode} so batch-load
+        // all FactoryModuleConfig for the latest published version in a single query.
         List<ModuleSchema> schemas = moduleSchemaRepository.findByIsActiveTrue();
+
+        Map<String, FactoryModuleConfig> configByModule = Map.of();
+        Optional<FactoryConfiguration> publishedConfig = factoryConfigurationRepository.findLatestPublished(factoryId);
+        if (publishedConfig.isPresent()) {
+            int version = publishedConfig.get().getConfigVersion();
+            configByModule = factoryModuleConfigRepository
+                    .findByFactoryIdAndConfigVersion(factoryId, version)
+                    .stream()
+                    .collect(Collectors.toMap(
+                            FactoryModuleConfig::getModuleCode,
+                            fmc -> fmc,
+                            (a, b) -> a));  // duplicate key safety
+        }
+
+        Map<String, FactoryModuleConfig> finalConfigByModule = configByModule;
         return schemas.stream()
                 .map(s -> {
-                    EffectiveModuleConfig config = getEffectiveConfig(factoryId, s.getModuleCode());
+                    FactoryModuleConfig fmc = finalConfigByModule.get(s.getModuleCode());
+                    boolean enabled = fmc == null || Boolean.TRUE.equals(fmc.getEnabled());
+                    String renderingMode = fmc != null && fmc.getRenderingMode() != null
+                            ? fmc.getRenderingMode() : "LEGACY";
                     return ModuleSummaryDTO.builder()
                             .moduleCode(s.getModuleCode())
                             .moduleName(s.getModuleName())
                             .moduleCategory(s.getModuleCategory())
-                            .enabled(config.isEnabled())
-                            .renderingMode(config.getRenderingMode())
+                            .enabled(enabled)
+                            .renderingMode(renderingMode)
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -757,7 +780,7 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
     @Override
     @Transactional
     public Map<String, Object> createCustomModule(String factoryId, String moduleCode, String moduleName,
-                                                    String moduleCategory, String description) {
+                                                    String moduleCategory, String description, Long operatorId) {
         // Reject if moduleCode already exists
         if (moduleSchemaRepository.findByModuleCode(moduleCode).isPresent()) {
             throw new BusinessException("模块已存在: " + moduleCode);
@@ -805,7 +828,9 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
         }
 
         // Enable the module for this factory in its draft config
-        FactoryConfiguration draft = getOrCreateDraft(factoryId, 0L);
+        // Round 5 Fix OBS-2: pass real operatorId so draft creation and MODULE_CREATED log
+        // are attributable to the actual user rather than a ghost operator=0.
+        FactoryConfiguration draft = getOrCreateDraft(factoryId, operatorId);
         FactoryModuleConfig moduleConfig = FactoryModuleConfig.builder()
             .factoryId(factoryId)
             .moduleCode(moduleCode)
@@ -816,7 +841,7 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
         factoryModuleConfigRepository.save(moduleConfig);
 
         logChange(factoryId, moduleCode, "MODULE_CREATED", null, null,
-                "创建自定义模块: " + moduleName + " (" + moduleCode + ")", 0L);
+                "创建自定义模块: " + moduleName + " (" + moduleCode + ")", operatorId);
 
         Map<String, Object> result = new HashMap<>();
         result.put("moduleCode", moduleCode);
@@ -1080,5 +1105,17 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
                 .operatorType("USER")
                 .build();
         configChangeLogRepository.save(changeLog);
+    }
+
+    @Override
+    @Transactional
+    public void logWorkflowTransition(String factoryId, int configVersion, String fromStatus,
+                                       String toStatus, Long operatorId, String notes) {
+        // Round 5 Fix OBS-1: persist workflow transitions as WORKFLOW_TRANSITION log entries.
+        String summary = "配置版本 " + configVersion + " 状态变更: " + fromStatus + " → " + toStatus
+                + (notes != null && !notes.isBlank() ? " (" + notes + ")" : "");
+        Map<String, Object> before = Map.of("status", fromStatus, "configVersion", configVersion);
+        Map<String, Object> after = Map.of("status", toStatus, "configVersion", configVersion);
+        logChange(factoryId, null, "WORKFLOW_TRANSITION", before, after, summary, operatorId);
     }
 }

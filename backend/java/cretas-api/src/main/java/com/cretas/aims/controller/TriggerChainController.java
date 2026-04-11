@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.config.RequireRole;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.config.*;
 import com.cretas.aims.repository.config.*;
@@ -9,7 +10,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -41,7 +41,7 @@ public class TriggerChainController {
     }
 
     @PutMapping("/tools/{toolName}")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'PLATFORM_SUPER_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     @Operation(summary = "设置 Tool 开关/参数覆盖")
     public ApiResponse<FactoryToolConfig> setToolConfig(
             @PathVariable String factoryId, @PathVariable String toolName,
@@ -71,7 +71,7 @@ public class TriggerChainController {
     }
 
     @PutMapping("/skills/{skillName}")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'PLATFORM_SUPER_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     @Operation(summary = "设置 Skill 开关/自定义 DAG")
     public ApiResponse<FactorySkillConfig> setSkillConfig(
             @PathVariable String factoryId, @PathVariable String skillName,
@@ -110,7 +110,7 @@ public class TriggerChainController {
     }
 
     @PutMapping("/trigger-chains/{chainCode}")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'PLATFORM_SUPER_ADMIN')")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     @Operation(summary = "配置触发链步骤")
     public ApiResponse<FactoryTriggerChain> setTriggerChain(
             @PathVariable String factoryId, @PathVariable String chainCode,
@@ -148,7 +148,7 @@ public class TriggerChainController {
     }
 
     @PostMapping("/apply-template/{templateCode}")
-    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PLATFORM_SUPER_ADMIN')")
+    @RequireRole({"factory_super_admin"})
     @Operation(summary = "应用行业模板到工厂")
     public ApiResponse<String> applyTemplate(
             @PathVariable String factoryId, @PathVariable String templateCode) {

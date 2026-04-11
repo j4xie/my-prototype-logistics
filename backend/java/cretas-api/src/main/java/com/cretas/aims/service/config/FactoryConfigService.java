@@ -46,7 +46,19 @@ public interface FactoryConfigService {
     Map<String, Object> importConfig(String factoryId, Map<String, Object> bundle, Long operatorId);
 
     // ========== Runtime 创建模块 (Round 4 Fix P1-12) ==========
-    /** Create a new ModuleSchema + auto CREATE TABLE for custom business domains */
+    /**
+     * Create a new ModuleSchema + auto CREATE TABLE for custom business domains.
+     * Round 5 Fix OBS-2: accepts operatorId for audit attribution.
+     */
     Map<String, Object> createCustomModule(String factoryId, String moduleCode, String moduleName,
-                                            String moduleCategory, String description);
+                                            String moduleCategory, String description, Long operatorId);
+
+    // ========== Audit (Round 5 Fix OBS-1) ==========
+    /**
+     * Persist an audit entry for a workflow state transition (DRAFT→PENDING_REVIEW etc).
+     * Called from ConfigController.transitionStatus so the transition is visible in the
+     * config_change_log table, not just the application log.
+     */
+    void logWorkflowTransition(String factoryId, int configVersion, String fromStatus,
+                                String toStatus, Long operatorId, String notes);
 }

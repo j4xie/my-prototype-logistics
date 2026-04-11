@@ -1,6 +1,8 @@
 package com.cretas.aims.repository.config;
 
 import com.cretas.aims.entity.config.FactoryConfiguration;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -27,6 +29,9 @@ public interface FactoryConfigurationRepository extends JpaRepository<FactoryCon
     Optional<FactoryConfiguration> findLatestApproved(@Param("factoryId") String factoryId);
 
     List<FactoryConfiguration> findByFactoryIdOrderByConfigVersionDesc(String factoryId);
+
+    /** Round 5 Fix PERF-3: paginated version history to bound memory usage. */
+    Page<FactoryConfiguration> findByFactoryIdOrderByConfigVersionDesc(String factoryId, Pageable pageable);
 
     Optional<FactoryConfiguration> findByFactoryIdAndConfigVersion(String factoryId, Integer configVersion);
 }

@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.config.RequireRole;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.engine.DynamicSchedulerService;
 import com.cretas.aims.entity.config.*;
@@ -12,6 +13,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Round 5 Fix SEC-6: added @RequireRole on mutating endpoints (PUT validation-rules,
+ * default-values, formulas, scheduler). Previously any authenticated factory user could
+ * set validation rules or change scheduler cron — huge production risk (a bad rule can
+ * block all saves across a module, and a bad cron can trigger runaway AI workflows).
+ */
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/config/v2")
 @RequiredArgsConstructor
@@ -36,6 +43,7 @@ public class BusinessRuleController {
 
     @PutMapping("/validation-rules/{ruleCode}")
     @Operation(summary = "配置校验规则")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ApiResponse<FactoryValidationRule> setValidationRule(
             @PathVariable String factoryId, @PathVariable String ruleCode,
             @RequestBody FactoryValidationRule body) {
@@ -67,6 +75,7 @@ public class BusinessRuleController {
 
     @PutMapping("/default-values")
     @Operation(summary = "设置默认值")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ApiResponse<FactoryDefaultValue> setDefaultValue(@PathVariable String factoryId, @RequestBody FactoryDefaultValue body) {
         body.setFactoryId(factoryId);
         return ApiResponse.success(defaultValueRepo.save(body));
@@ -82,6 +91,7 @@ public class BusinessRuleController {
 
     @PutMapping("/formulas/{formulaCode}")
     @Operation(summary = "配置公式")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ApiResponse<FactoryFormula> setFormula(
             @PathVariable String factoryId, @PathVariable String formulaCode, @RequestBody FactoryFormula body) {
         FactoryFormula formula = formulaRepo.findByFactoryIdAndModuleCodeAndFormulaCode(factoryId, body.getModuleCode(), formulaCode)
@@ -101,6 +111,7 @@ public class BusinessRuleController {
 
     @PutMapping("/scheduler/{taskCode}")
     @Operation(summary = "配置定时任务 (热更新)")
+    @RequireRole({"factory_super_admin"})
     public ApiResponse<FactorySchedulerConfig> setSchedulerConfig(
             @PathVariable String factoryId, @PathVariable String taskCode, @RequestBody FactorySchedulerConfig body) {
         FactorySchedulerConfig config = schedulerRepo.findByFactoryIdAndTaskCode(factoryId, taskCode)

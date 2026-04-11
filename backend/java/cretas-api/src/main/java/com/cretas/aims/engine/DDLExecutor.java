@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -45,7 +46,18 @@ public class DDLExecutor {
         Map.entry("hr_employee", "employees")
     );
 
-    @Transactional
+    /**
+     * Round 5 Fix PERF-2: REQUIRES_NEW propagation isolates DDL into its own short-lived
+     * transaction so ALTER TABLE's ACCESS EXCLUSIVE lock is released immediately after each
+     * DDL, not held until the parent publishConfig transaction commits (which includes
+     * saving the FactoryConfiguration row and audit logging).
+     *
+     * Trade-off: if the parent TX rolls back AFTER this method commits, the added columns
+     * will remain orphaned in the database. This is acceptable because: (1) ADD COLUMN IF
+     * NOT EXISTS is idempotent on retry, (2) the dangling column holds no data, (3)
+     * CanvasDynamicField rows are also committed in this TX so the schema stays consistent.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void executePendingDDL(String factoryId, int configVersion) {
         List<CanvasDynamicField> pending = fieldRepo.findByFactoryIdAndStatus(factoryId, "PENDING_DDL");
         if (pending.isEmpty()) {
@@ -190,6 +202,10 @@ public class DDLExecutor {
         if (columns != null) {
             for (Map<String, Object> col : columns) {
                 String code = (String) col.get("code");
+                // Round 5 Fix SEC-3: validate sub-column code before SQL concatenation
+                if (code == null || !code.matches("^[a-zA-Z_][a-zA-Z0-9_]{0,60}$")) {
+                    throw new BusinessException("Invalid sub-table column code: " + code);
+                }
                 String type = (String) col.getOrDefault("type", "TEXT");
                 sb.append("cf_").append(code).append(" ").append(mapFieldTypeToSQL(type)).append(", ");
                 if (Boolean.TRUE.equals(col.get("unique"))) {

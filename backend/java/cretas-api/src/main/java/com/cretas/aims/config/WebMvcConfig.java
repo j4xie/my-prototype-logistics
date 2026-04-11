@@ -17,12 +17,15 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     private final JwtAuthInterceptor jwtAuthInterceptor;
     private final PermissionInterceptor permissionInterceptor;
+    private final RequireRoleInterceptor requireRoleInterceptor;
 
     // 构造器注入 - Spring 确保依赖已就绪
     public WebMvcConfig(JwtAuthInterceptor jwtAuthInterceptor,
-                        PermissionInterceptor permissionInterceptor) {
+                        PermissionInterceptor permissionInterceptor,
+                        RequireRoleInterceptor requireRoleInterceptor) {
         this.jwtAuthInterceptor = jwtAuthInterceptor;
         this.permissionInterceptor = permissionInterceptor;
+        this.requireRoleInterceptor = requireRoleInterceptor;
     }
 
     @Override
@@ -47,6 +50,13 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .addPathPatterns("/api/mobile/**", "/api/platform/**", "/api/admin/**")  // 拦截所有API
                 .excludePathPatterns(swaggerWhitelist)  // 排除Swagger
                 .order(2);  // 在JWT之后执行
+
+        // 3. Round 5 Fix SEC-1: @RequireRole 拦截器 - 检查方法级角色限制
+        // Spring Security 在 application.properties 中被禁用，@PreAuthorize 失效，改用自定义注解。
+        registry.addInterceptor(requireRoleInterceptor)
+                .addPathPatterns("/api/mobile/**", "/api/platform/**", "/api/admin/**")
+                .excludePathPatterns(swaggerWhitelist)
+                .order(3);
 
         WebMvcConfigurer.super.addInterceptors(registry);
     }
