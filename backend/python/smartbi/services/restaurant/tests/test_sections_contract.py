@@ -41,3 +41,33 @@ def test_abstract_handler_enforces_compute_method():
 
     with pytest.raises(TypeError):
         BrokenHandler()
+
+
+def test_all_phase_3_5_sections_registered():
+    """Regression: 4 new sections from P3.5B-D must be in the router.
+
+    Prevents accidental deregistration during future refactors. These
+    4 sections were added in:
+      - expense_breakdown (P3.5B F6)
+      - shrinkage_analysis (P3.5C B4)
+      - department_pnl (P3.5D P1)
+      - monthly_ppt_export (P3.5D P3)
+
+    Total handler count should be >=19 (15 P1 originals + 4 P3.5 new).
+    """
+    from smartbi.api.restaurant_sections import HANDLERS
+
+    required = {
+        "expense_breakdown",
+        "shrinkage_analysis",
+        "department_pnl",
+        "monthly_ppt_export",
+    }
+    missing = required - set(HANDLERS.keys())
+    assert not missing, f"Missing section handlers: {missing}"
+
+    # Total count: P1 had 15, P3.5 adds 4 = at least 19
+    assert len(HANDLERS) >= 19, (
+        f"Expected >=19 handlers after P3.5, got {len(HANDLERS)}: "
+        f"{sorted(HANDLERS.keys())}"
+    )
