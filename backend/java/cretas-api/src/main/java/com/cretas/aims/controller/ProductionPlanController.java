@@ -213,9 +213,14 @@ public class ProductionPlanController {
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "计划ID", required = true, example = "PP-2025-001")
             @PathVariable @NotNull String planId,
-            @Parameter(description = "实际产量", required = true, example = "500")
-            @RequestParam @NotNull BigDecimal actualQuantity) {
+            @Parameter(description = "请求体: {actualQuantity: 500}", required = true)
+            @RequestBody Map<String, Object> body) {
 
+        Object rawQty = body.get("actualQuantity");
+        if (rawQty == null) {
+            return ApiResponse.error("缺少必要参数: actualQuantity");
+        }
+        BigDecimal actualQuantity = new BigDecimal(rawQty.toString());
         log.info("完成生产: factoryId={}, planId={}, actualQuantity={}", factoryId, planId, actualQuantity);
         ProductionPlanDTO plan = productionPlanService.completeProduction(factoryId, planId, actualQuantity);
         return ApiResponse.success("生产已完成", plan);
