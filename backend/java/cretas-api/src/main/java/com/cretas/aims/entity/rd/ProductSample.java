@@ -140,4 +140,32 @@ public class ProductSample extends BaseEntity {
     /** 客户级别: A / B / C */
     @Column(name = "customer_level", length = 10)
     private String customerLevel;
+
+    // ════════════════════════════════════════════════════════════════
+    // Round 3 字段补齐 (Apr 11) — 对照客户截图 14:09 t014m09s_0047_s.jpg
+    // ════════════════════════════════════════════════════════════════
+
+    /** 成品报价 — 给客户的成品单价 */
+    @Column(name = "product_quote_price", precision = 15, scale = 2)
+    private java.math.BigDecimal productQuotePrice;
+
+    /** 原料价格 — 主原料单价 */
+    @Column(name = "material_price", precision = 15, scale = 2)
+    private java.math.BigDecimal materialPrice;
+
+    /** 加工费 — 产品加工费用 */
+    @Column(name = "processing_fee", precision = 15, scale = 2)
+    private java.math.BigDecimal processingFee;
+
+    /** 主原料信息 (长文本, 详细描述; 区别于 mainMaterial 字段的名称) */
+    @Column(name = "main_material_info", columnDefinition = "TEXT")
+    private String mainMaterialInfo;
+
+    /** 主要原料出成率 (百分比, 例如 80.00 表示 80%) */
+    @Column(name = "main_material_yield_rate", precision = 5, scale = 2)
+    private java.math.BigDecimal mainMaterialYieldRate;
+
+    /** 主原料图片 URLs (JSON array, 例如: ["url1", "url2"]) */
+    @Column(name = "main_material_images", columnDefinition = "TEXT")
+    private String mainMaterialImages;
 }
