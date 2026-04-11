@@ -70,6 +70,34 @@ from .multi_store_comparator import MultiStoreComparator
 from .store_pnl_one_pager import StorePnlOnePager
 from .stored_value_analyzer import StoredValueAnalyzer
 
+# ── Section handlers (Task 1.7 orchestrator delegation) ─────
+# Each section's logic now lives in a dedicated handler under
+# smartbi.services.restaurant.sections.*. The orchestrator below
+# delegates to these handlers in the legacy section order while
+# preserving byte-identical output.
+#
+# NOTE: Several handlers (menu_normalization, channel_margin,
+# long_tail_sku, bom_layer_status) lazy-import RestaurantAnalyzerV2
+# inside their methods to bridge back into the legacy helper layer.
+# We import them at module top because their modules don't pull the
+# analyzer at import time — only inside _get_analyzer() — so the
+# circular reference resolves cleanly.
+from .sections.base import SectionRequest, SectionStatus
+from .sections.benchmark_alerts import BenchmarkAlertsHandler
+from .sections.bom_layer_status import BomLayerStatusHandler
+from .sections.calibration_history import CalibrationHistoryHandler
+from .sections.channel_margin import ChannelMarginHandler
+from .sections.diagnostics import DiagnosticsHandler
+from .sections.dining_heatmap import DiningHeatmapHandler
+from .sections.long_tail_sku import LongTailSkuHandler
+from .sections.member_rfm import MemberRfmHandler
+from .sections.menu_normalization import MenuNormalizationHandler
+from .sections.multi_store_comparison import MultiStoreComparisonHandler
+from .sections.review_analysis import ReviewAnalysisHandler
+from .sections.store_pnl_one_pager import StorePnlOnePagerHandler
+from .sections.stored_value import StoredValueHandler
+from .sections.temporal_comparison import TemporalComparisonHandler
+
 logger = logging.getLogger(__name__)
 
 
@@ -197,6 +225,25 @@ class RestaurantAnalyzerV2:
 
         # W5.6 同店同比 (Week 3 写的 module, W5 集成进来)
         self.temporal_comparator = TemporalComparator(group_col="门店名称")
+
+        # ── Section handler instances (Task 1.7) ────────────
+        # Instantiated once per analyzer so each handler's internal cache
+        # (e.g. ChannelMarginHandler caches a per-(factory, sub_sector)
+        # analyzer to avoid rebuilding BomResolver) survives across calls.
+        self._menu_normalization_handler = MenuNormalizationHandler()
+        self._channel_margin_handler = ChannelMarginHandler()
+        self._diagnostics_handler = DiagnosticsHandler()
+        self._benchmark_alerts_handler = BenchmarkAlertsHandler()
+        self._store_pnl_handler = StorePnlOnePagerHandler()
+        self._dining_heatmap_handler = DiningHeatmapHandler()
+        self._stored_value_handler = StoredValueHandler()
+        self._long_tail_handler = LongTailSkuHandler()
+        self._review_analysis_handler = ReviewAnalysisHandler()
+        self._member_rfm_handler = MemberRfmHandler()
+        self._temporal_handler = TemporalComparisonHandler()
+        self._multi_store_handler = MultiStoreComparisonHandler()
+        self._calibration_handler = CalibrationHistoryHandler()
+        self._bom_layer_status_handler = BomLayerStatusHandler()
 
     # ── 主入口 ─────────────────────────────────────────
 
