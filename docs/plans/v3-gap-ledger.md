@@ -29,13 +29,13 @@
 | P0-3a | 税率分组聚合 | ✅ FULL | InvoiceServiceImpl.aggregateByTaxRate + Task 9 E2E febd39adc + 8e0112c17 2/2 pass | — |
 | P0-3b | 金额按出库联动 | ✅ FULL | InvoiceServiceImpl:204-228 computeLineAmountForInvoice 明确用 getDeliveredQuantity() >0 时, 否则 fallback getQuantity(). Javadoc 引用客户原话. 2026-04-07 audit 过期了, 这项已 fix | — |
 | P0-3c | 财务上传 PDF + 销售下载 | ✅ FULL | InvoiceRecord.invoicePdfUrl + invoiceFileName 字段齐全. issueInvoice:260 要求 MultipartFile + ossService.uploadFile. 前端 detail.vue:690 `<el-link :href=... :download>` 下载, 869 拖拽上传 dialog | — |
-| P0-3d | 同订单多次付款 (凭证) | 🟡 PARTIAL | PaymentRecord.receiptUrl 列存在. 但 detail.vue 付款 dialog (889-920) **只有文本输入** (金额/方式/日期/paymentReference/remark), **没有 el-upload**. 凭证文件上传没接 | **S**: 加 el-upload + wire /upload/receipt endpoint |
+| P0-3d | 同订单多次付款 (凭证) | ✅ FULL | `a95895f1a`. POST `/upload/receipt` endpoint 加到 FileUploadController. 付款 dialog 加 el-upload, auto-upload on change, 返回 OSS URL 存 paymentForm.receiptUrl, 随 finance/payments/record 一起提交 → receipt_url 落库. | — |
 | P0-4 | 销售运营报价流程 (L1) | 🟡 PARTIAL | **BE ✅**: OperationalQuote entity + 4 段 state machine (DRAFT→PENDING_QUOTE→PENDING_APPROVAL→APPROVED) + margin_rate. **FE ❌**: web-admin 没有 sales/quotes 下的 OperationalQuote 管理页 | **M**: 写 Vue 管理页 (list/detail/dialog) wire 到 OperationalQuoteController |
 | P0-5 | 物料需求单 (G3) | ✅ FULL | FactoryMaterialRequisition:57,61,102,107 — source/target warehouse + outbound/return transferId. B2 ADR Reject | — |
 | P0-6 | 指定人员授权 (L2) | ✅ FULL | UserMenuPermission entity + UserMenuPermissionService grant/revoke + Controller + V20260408_06 migration — 已在 e2e/v1-framework (forked from main at 63041f7dd 时已包含 06708ebe6). Phase B Step 2 确认. | — |
 | P0-7 | 销售订单 SKU 去重 | ✅ FULL | SalesServiceImpl:146-151 Set<String> seenProductIds → throws BusinessException("同一订单不能添加重复的产品") on createSalesOrder | — |
 | P0-8 | 销售订单明细字段补全 | ✅ FULL | SalesOrderItem: specification:79 + boxQuantity:83 字段存在. 前端 detail.vue:582-588 渲染 "规格" + "箱数" 列 | — |
-| P0-9 | 销售订单 3 状态字段 | 🟡 PARTIAL | invoiceStatus + getPaymentStatus() @Transient + transportPlanStatus 齐全. detail.vue:529-536 渲染 3 el-tag. **3 个子 gap**: (1) ✅ getPaymentStatus() Jackson 序列化: 已加 @JsonProperty("paymentStatus") commit `e86a47d14` (2) **transportPlanStatus 没代码 set**, 永远 "待出厂" (wiring TODO: M) (3) B4 ✅ FIXED (ck_so_status CHECK constraint). | 1/3 sub-gaps resolved. |
+| P0-9 | 销售订单 3 状态字段 | ✅ FULL | (1) paymentStatus @JsonProperty `e86a47d14` (2) transportPlanStatus wiring `7cf290259` — updateOrderDeliveryStatus 现设 IN_TRANSIT (部分) / DELIVERED (全) (3) B4 ck_so_status ✅. 全 3 sub-gaps resolved. | — |
 | P0-11 | 销售订单业务 4 tabs | ✅ FULL | detail.vue:563-806 — 5 el-tab-pane: 订单详情/开票申请/销售出库/收款记录/关联采购. 每 tab 独立 API endpoint | — |
 | P0-12 | 生产计划必须关联 SO | ✅ FULL | ProductionPlanController GET /sales-orders/selectable (d8c8e7ace) + sourceOrderItemId 字段粒度修正 (cdf2d2a2c) + V20260408_08 migration. MANUAL 计划为合理例外 (客户原话 4216s 限"关联 SO 产品"). 已在 e2e/v1-framework. Phase B Step 2 确认. | — |
 | P0-13 | PC 批次字段强制 (A4) | ✅ FULL | SalesDeliveryBatchAllocationController:17 P0-13 标签. SalesServiceImpl:580 出库前强校. V20260408_07 migration | — |
@@ -56,7 +56,7 @@
 | P1-5 | 车间仓当天清仓定时任务 | ✅ FULL | FmrExpiryScanner:49 @Scheduled cron="0 0 20 * * ?". 扫 ISSUED/IN_USE 前日 FMR + notifyRole WORKSHOP_SUPERVISOR | — |
 | P1-6 | 销售订单列表智能筛选 tab | ✅ FULL | list.vue:53-88 定义 6 tabs (all/unshipped/partialShipped/unpaid/partialPaid/completed) 客户端 filter. el-radio-button group 509. client-side 对 demo 规模够用 | — |
 | P1-7 | 预订合同附件上传 | ✅ FULL | SalesOrder.contractFileUrl + contractFileName. FileUploadController:92 @PostMapping("/contract") 20MB + MIME + OSS. list.vue:119-150 + el-upload handleBeforeUpload → /upload/contract | — |
-| P1-8 | 研发样品追踪记录表 | 🟡 PARTIAL | **BE ✅**: product_sample_tracking_records table + ProductSampleServiceImpl 双写. **FE ❌**: rd/samples/list.vue:186 仍读 progressNotes JSON → **新表数据用户看不到** | **S**: 前端切 read path 到新 tracking records endpoint |
+| P1-8 | 研发样品追踪记录表 | ✅ FULL | `1ec2fd661`. 新增 GET `/rd/samples/{id}/tracking-records` 端点. 前端 openTrackingDialog 优先调新端点; 新表 0 行时 fallback legacy progressNotes JSON. | — |
 | P1-9 | BOM 追踪记录 (痕迹追踪) | 🟡 PARTIAL | **BE ✅**: bom_change_logs + BomServiceImpl:152-154 auto-log save/update/delete. **FE ❌**: 没有 audit log viewer UI | **S**: 前端写 BOM 审计日志浏览页 |
 
 ---
@@ -76,13 +76,14 @@
 
 | 状态 | P0 | P1 | 总计 | 百分比 |
 |---|---|---|---|---|
-| ✅ FULL | 16 | 6 | **22** | **79%** |
-| 🟡 PARTIAL | 3 | 3 | **6** | **21%** |
+| ✅ FULL | 18 | 7 | **25** | **89%** |
+| 🟡 PARTIAL | 1 | 2 | **3** | **11%** |
 | ❌ MISSING | 0 | 0 | 0 | 0% |
-| 🔴 BLOCKER | — | — | **4** (B1-B4) | — |
+| 🔴 BLOCKER | — | — | **4** (B1-B4) | — (all closed) |
 
 **审计覆盖率**: 28/28 (100%) ✅ · Phase B Step 2 完成: P0-6 + P0-12 → ✅ FULL (已在 e2e/v1-framework, 无需 cherry-pick)
 **Phase B Step 3 Batch 1 完成 (2026-04-11)**: B1 ✅ (`acb2c150c`) + B3 ✅ (`e08460093`) + P0-9 getPaymentStatus 序列化 ✅ (`e86a47d14`). 现在 4 blocker: B1 ✅ B2 ✅ B3 ✅ B4 ✅ — 全部 closed.
+**Phase B Step 3 Batch 2 完成 (2026-04-11)**: P1-8 ✅ (`1ec2fd661`) + P0-3d ✅ (`a95895f1a`) + P0-9 transport ✅ (`7cf290259`). 3/6 PARTIAL → FULL. 现在 **25/28 FULL (89%)**. 剩余 PARTIAL: P0-4 FE, P1-1 RN (deferred), P1-9 BOM audit viewer.
 
 **核心结论**:
 - 😊 **V1 实际完成度远高于预期**. 20/28 ✅ FULL, 0 item 完全缺失
