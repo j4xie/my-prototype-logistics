@@ -32,12 +32,12 @@
 | P0-3d | 同订单多次付款 (凭证) | 🟡 PARTIAL | PaymentRecord.receiptUrl 列存在. 但 detail.vue 付款 dialog (889-920) **只有文本输入** (金额/方式/日期/paymentReference/remark), **没有 el-upload**. 凭证文件上传没接 | **S**: 加 el-upload + wire /upload/receipt endpoint |
 | P0-4 | 销售运营报价流程 (L1) | 🟡 PARTIAL | **BE ✅**: OperationalQuote entity + 4 段 state machine (DRAFT→PENDING_QUOTE→PENDING_APPROVAL→APPROVED) + margin_rate. **FE ❌**: web-admin 没有 sales/quotes 下的 OperationalQuote 管理页 | **M**: 写 Vue 管理页 (list/detail/dialog) wire 到 OperationalQuoteController |
 | P0-5 | 物料需求单 (G3) | ✅ FULL | FactoryMaterialRequisition:57,61,102,107 — source/target warehouse + outbound/return transferId. B2 ADR Reject | — |
-| P0-6 | 指定人员授权 (L2) | 🟡 PARTIAL | ApprovalChainConfig:94 有 approver_user_ids JSON. OperationalQuote 用 quoted_by_user_id/approver_user_id 直接 — 可用于"报价指派到人". PermissionServiceImpl 纯 role-based, 没通用 user-level override | 看客户需求: 若只要 OperationalQuote 指派 → ✅; 若要通用 → **M** 新建 UserPermission entity |
+| P0-6 | 指定人员授权 (L2) | ✅ FULL | UserMenuPermission entity + UserMenuPermissionService grant/revoke + Controller + V20260408_06 migration — 已在 e2e/v1-framework (forked from main at 63041f7dd 时已包含 06708ebe6). Phase B Step 2 确认. | — |
 | P0-7 | 销售订单 SKU 去重 | ✅ FULL | SalesServiceImpl:146-151 Set<String> seenProductIds → throws BusinessException("同一订单不能添加重复的产品") on createSalesOrder | — |
 | P0-8 | 销售订单明细字段补全 | ✅ FULL | SalesOrderItem: specification:79 + boxQuantity:83 字段存在. 前端 detail.vue:582-588 渲染 "规格" + "箱数" 列 | — |
 | P0-9 | 销售订单 3 状态字段 | 🟡 PARTIAL | invoiceStatus + getPaymentStatus() @Transient + transportPlanStatus 齐全. detail.vue:529-536 渲染 3 el-tag. **3 个子 gap**: (1) getPaymentStatus() @Transient 需确认 Jackson 序列化 (2) **transportPlanStatus 没代码 set**, 永远 "待出厂" (3) **🔴 B4 BLOCKER**: ck_so_status DB CHECK 缺 PENDING_FINANCE_REVIEW/FINANCE_APPROVED/FINANCE_REJECTED → 点"提交财务审核"500 | 见 B4. transportStatus wiring: **M** |
 | P0-11 | 销售订单业务 4 tabs | ✅ FULL | detail.vue:563-806 — 5 el-tab-pane: 订单详情/开票申请/销售出库/收款记录/关联采购. 每 tab 独立 API endpoint | — |
-| P0-12 | 生产计划必须关联 SO | 🟡 PARTIAL | ProductionPlan:125,133 有 sourceOrderId. ProductionPlanServiceImpl:128 只在 sourceType=CUSTOMER_ORDER 时强校, MANUAL (默认 FROM_INVENTORY) 直接跳过. **worktree-agent-a249079a + a99541ab 可能已修** | 问用户: 所有 plan 必须 sourceOrderId? 还是 MANUAL 例外? 或 merge worktree. **S** |
+| P0-12 | 生产计划必须关联 SO | ✅ FULL | ProductionPlanController GET /sales-orders/selectable (d8c8e7ace) + sourceOrderItemId 字段粒度修正 (cdf2d2a2c) + V20260408_08 migration. MANUAL 计划为合理例外 (客户原话 4216s 限"关联 SO 产品"). 已在 e2e/v1-framework. Phase B Step 2 确认. | — |
 | P0-13 | PC 批次字段强制 (A4) | ✅ FULL | SalesDeliveryBatchAllocationController:17 P0-13 标签. SalesServiceImpl:580 出库前强校. V20260408_07 migration | — |
 | P0-14 | BOM 原辅料拆 3 块 (A2) | ✅ FULL (BE) | BomItem:99,101 material_category 枚举 RAW/AUXILIARY/PACKAGING | 前端 3 tab 未核对 — worktree-agent-a907eae5 可能已做 |
 | P0-15 | 生产报工 mode_1 | ✅ FULL | ProductionReport:61 reportMode 默认 MODE_1. WorkReportingServiceImpl:50 默认 MODE_1 | — |
@@ -76,12 +76,12 @@
 
 | 状态 | P0 | P1 | 总计 | 百分比 |
 |---|---|---|---|---|
-| ✅ FULL | 14 | 6 | **20** | **71%** |
-| 🟡 PARTIAL | 5 | 3 | **8** | **29%** |
+| ✅ FULL | 16 | 6 | **22** | **79%** |
+| 🟡 PARTIAL | 3 | 3 | **6** | **21%** |
 | ❌ MISSING | 0 | 0 | 0 | 0% |
 | 🔴 BLOCKER | — | — | **4** (B1-B4) | — |
 
-**审计覆盖率**: 28/28 (100%) ✅
+**审计覆盖率**: 28/28 (100%) ✅ · Phase B Step 2 完成: P0-6 + P0-12 → ✅ FULL (已在 e2e/v1-framework, 无需 cherry-pick)
 
 **核心结论**:
 - 😊 **V1 实际完成度远高于预期**. 20/28 ✅ FULL, 0 item 完全缺失
@@ -110,7 +110,7 @@
 
 ### Priority 3: 🟡 中等补丁
 9. **P1-9 BOM 审计 viewer** 前端页 (~2-4h)
-10. **P0-12 决策 + 实施** (~2h, 等客户决定)
+10. ~~**P0-12 决策 + 实施**~~ ✅ DONE Phase B Step 2
 11. **P0-4 OperationalQuote 前端页** (~半天-1天, 最大剩余工作量)
 12. **P0-14 前端 3 tab** 核实 / 实现 (~2-4h)
 
@@ -119,7 +119,7 @@
 
 ### 并行工作: Worktree merge 审计
 需要单独 survey (建议另起 session):
-- P0-6 `ac999d50` / P0-12 `a249079a+a99541ab` / P0-14 `a907eae5` / P0-NEW-1 `af539ae8+ab4497e3`
+- ~~P0-6 `ac999d50`~~ ✅ 已在 e2e/v1-framework / ~~P0-12 `a249079a+a99541ab`~~ ✅ 已在 e2e/v1-framework / P0-14 `a907eae5` / P0-NEW-1 `af539ae8+ab4497e3`
 - G1 前端 `af2b3dc8` / C4 `a6842597+afd5da3e` / B8 看板 `a4f2f159` / B9+B10 入库类型 `ae370dff` / P1-NEW-2/3 `ae01740e` / B1+B2 运费 `a7565fd3`
 
 ---
