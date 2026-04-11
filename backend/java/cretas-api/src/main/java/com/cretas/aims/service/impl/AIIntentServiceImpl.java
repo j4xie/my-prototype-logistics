@@ -78,21 +78,29 @@ public class AIIntentServiceImpl implements AIIntentService {
             return recognizeIntent(factoryId, userInput);
         }
 
-        // Load recent context (best-effort — swallow exceptions)
+        // Load recent context and feed into LLM prompt via ThreadLocal (best-effort)
+        java.util.List<ConversationTurn> recent = java.util.Collections.emptyList();
         try {
-            java.util.List<ConversationTurn> recent =
-                    conversationStateService.loadRecent(factoryId, userId, 3);
+            recent = conversationStateService.loadRecent(factoryId, userId, 3);
             if (log.isDebugEnabled()) {
                 log.debug("Loaded {} conversation turns for {}/{}",
                         recent.size(), factoryId, userId);
             }
+            // P4 Task 4.4: set ThreadLocal so LLM prompt builder can inject conversation history
+            LlmIntentFallbackClientImpl.conversationTurnsHolder.set(recent);
         } catch (Exception e) {
             log.warn("Failed to load conversation context for {}/{}, proceeding without: {}",
                     factoryId, userId, e.getMessage());
         }
 
         // Dispatch through normal intent matching
-        Optional<AIIntentConfig> result = recognizeIntent(factoryId, userInput);
+        Optional<AIIntentConfig> result;
+        try {
+            result = recognizeIntent(factoryId, userInput);
+        } finally {
+            // Always clean up ThreadLocal to avoid cross-request leaks
+            LlmIntentFallbackClientImpl.conversationTurnsHolder.remove();
+        }
 
         // Append turn on success (best-effort — swallow exceptions)
         if (result.isPresent()) {
