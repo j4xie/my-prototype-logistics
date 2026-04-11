@@ -1,0 +1,168 @@
+<h2>统一配置引擎 — 架构概览</h2>
+<p class="subtitle">Canvas 统一控制 3,050+ 业务决策点的四层架构</p>
+
+<div class="section">
+  <div class="mockup">
+    <div class="mockup-header">四层架构: Canvas UI → 配置引擎 → 执行引擎 → 业务服务</div>
+    <div class="mockup-body" style="font-family: monospace; font-size: 13px; line-height: 1.6; padding: 20px; background: #1a1a2e; color: #e0e0e0;">
+
+<div style="text-align:center; margin-bottom:20px;">
+<span style="color:#ffd700; font-size:16px; font-weight:bold;">🎨 Layer 4: Canvas UI (Web-Admin)</span>
+<div style="border:2px solid #ffd700; border-radius:12px; padding:12px; margin:8px 40px;">
+  <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+    <span style="background:#ffd700; color:#000; padding:4px 12px; border-radius:6px;">模块管理</span>
+    <span style="background:#ffd700; color:#000; padding:4px 12px; border-radius:6px;">流程编排</span>
+    <span style="background:#ffd700; color:#000; padding:4px 12px; border-radius:6px;">规则配置</span>
+    <span style="background:#ffd700; color:#000; padding:4px 12px; border-radius:6px;">默认值/阈值</span>
+    <span style="background:#ffd700; color:#000; padding:4px 12px; border-radius:6px;">定时任务</span>
+    <span style="background:#ffd700; color:#000; padding:4px 12px; border-radius:6px;">AI 助手</span>
+  </div>
+</div>
+</div>
+
+<div style="text-align:center; color:#666;">↕ REST API + WebSocket</div>
+
+<div style="text-align:center; margin:16px 0;">
+<span style="color:#00bcd4; font-size:16px; font-weight:bold;">⚙️ Layer 3: 配置存储 (Unified Config Store)</span>
+<div style="border:2px solid #00bcd4; border-radius:12px; padding:12px; margin:8px 20px;">
+  <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; text-align:center;">
+    <div style="background:#004d5a; padding:8px; border-radius:6px;">
+      <div style="color:#00bcd4; font-weight:bold;">module_schemas</div>
+      <div style="font-size:11px;">字段定义 + 状态机</div>
+    </div>
+    <div style="background:#004d5a; padding:8px; border-radius:6px;">
+      <div style="color:#00bcd4; font-weight:bold;">trigger_chains</div>
+      <div style="font-size:11px;">事件→条件→动作</div>
+    </div>
+    <div style="background:#004d5a; padding:8px; border-radius:6px;">
+      <div style="color:#00bcd4; font-weight:bold;">validation_rules</div>
+      <div style="font-size:11px;">364 条校验规则</div>
+    </div>
+    <div style="background:#004d5a; padding:8px; border-radius:6px;">
+      <div style="color:#00bcd4; font-weight:bold;">default_values</div>
+      <div style="font-size:11px;">1,600+ 默认值</div>
+    </div>
+    <div style="background:#004d5a; padding:8px; border-radius:6px;">
+      <div style="color:#00bcd4; font-weight:bold;">scheduler_configs</div>
+      <div style="font-size:11px;">55 个定时任务</div>
+    </div>
+    <div style="background:#004d5a; padding:8px; border-radius:6px;">
+      <div style="color:#00bcd4; font-weight:bold;">factory_configs</div>
+      <div style="font-size:11px;">工厂级覆盖 (3-layer merge)</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div style="text-align:center; color:#666;">↕ 运行时查询 + 缓存</div>
+
+<div style="text-align:center; margin:16px 0;">
+<span style="color:#ff6b6b; font-size:16px; font-weight:bold;">🔥 Layer 2: 执行引擎 (Runtime Engine)</span>
+<div style="border:2px solid #ff6b6b; border-radius:12px; padding:12px; margin:8px 20px;">
+  <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; text-align:center;">
+    <div style="background:#5a1a1a; padding:8px; border-radius:6px;">
+      <div style="color:#ff6b6b; font-weight:bold;">StateMachine</div>
+      <div style="font-size:11px;">状态转换引擎<br/>替代 68 个硬编码 enum</div>
+    </div>
+    <div style="background:#5a1a1a; padding:8px; border-radius:6px;">
+      <div style="color:#ff6b6b; font-weight:bold;">TriggerChain</div>
+      <div style="font-size:11px;">事件编排引擎<br/>替代 22 个 @EventListener</div>
+    </div>
+    <div style="background:#5a1a1a; padding:8px; border-radius:6px;">
+      <div style="color:#ff6b6b; font-weight:bold;">RuleEvaluator</div>
+      <div style="font-size:11px;">规则求值器<br/>替代 364 条 if-throw</div>
+    </div>
+    <div style="background:#5a1a1a; padding:8px; border-radius:6px;">
+      <div style="color:#ff6b6b; font-weight:bold;">Scheduler</div>
+      <div style="font-size:11px;">动态调度器<br/>替代 55 个 @Scheduled</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div style="text-align:center; color:#666;">↕ 注入到业务服务 (替代硬编码逻辑)</div>
+
+<div style="text-align:center; margin:16px 0;">
+<span style="color:#4caf50; font-size:16px; font-weight:bold;">🏭 Layer 1: 业务服务 (现有 295+ Services)</span>
+<div style="border:2px solid #4caf50; border-radius:12px; padding:12px; margin:8px 20px;">
+  <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+    <span style="background:#1a3a1a; color:#4caf50; padding:4px 10px; border-radius:6px; font-size:12px;">SalesService</span>
+    <span style="background:#1a3a1a; color:#4caf50; padding:4px 10px; border-radius:6px; font-size:12px;">ProcessingService</span>
+    <span style="background:#1a3a1a; color:#4caf50; padding:4px 10px; border-radius:6px; font-size:12px;">MaterialBatch</span>
+    <span style="background:#1a3a1a; color:#4caf50; padding:4px 10px; border-radius:6px; font-size:12px;">QualityInspection</span>
+    <span style="background:#1a3a1a; color:#4caf50; padding:4px 10px; border-radius:6px; font-size:12px;">ProductionPlan</span>
+    <span style="background:#1a3a1a; color:#4caf50; padding:4px 10px; border-radius:6px; font-size:12px;">Shipment</span>
+    <span style="background:#1a3a1a; color:#4caf50; padding:4px 10px; border-radius:6px; font-size:12px;">ToolRegistry(348)</span>
+    <span style="background:#1a3a1a; color:#4caf50; padding:4px 10px; border-radius:6px; font-size:12px;">...295+ more</span>
+  </div>
+</div>
+</div>
+
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px;">
+  <h3>四个执行引擎覆盖的硬编码类别</h3>
+  <table style="width:100%; border-collapse:collapse; font-size:14px;">
+    <tr style="background:#2a2a3e; color:#fff;">
+      <th style="padding:10px; text-align:left;">执行引擎</th>
+      <th style="padding:10px; text-align:right;">覆盖量</th>
+      <th style="padding:10px; text-align:left;">替代什么</th>
+      <th style="padding:10px; text-align:left;">配置方式</th>
+    </tr>
+    <tr style="background:#1e1e2e; color:#ddd; border-bottom:1px solid #333;">
+      <td style="padding:10px; color:#ff6b6b; font-weight:bold;">StateMachine</td>
+      <td style="padding:10px; text-align:right;">68 enums + 15 transition 矩阵</td>
+      <td style="padding:10px;">硬编码 if (status != XXX) throw</td>
+      <td style="padding:10px;">JSON 状态图 + Canvas 拖拽节点</td>
+    </tr>
+    <tr style="background:#252535; color:#ddd; border-bottom:1px solid #333;">
+      <td style="padding:10px; color:#ff6b6b; font-weight:bold;">TriggerChain</td>
+      <td style="padding:10px; text-align:right;">16 events + 22 编排序列</td>
+      <td style="padding:10px;">硬编码 @EventListener + Orchestrator</td>
+      <td style="padding:10px;">Event→Condition→Action 规则链</td>
+    </tr>
+    <tr style="background:#1e1e2e; color:#ddd; border-bottom:1px solid #333;">
+      <td style="padding:10px; color:#ff6b6b; font-weight:bold;">RuleEvaluator</td>
+      <td style="padding:10px; text-align:right;">364 校验 + 524 阈值 + 1,600 默认值</td>
+      <td style="padding:10px;">硬编码 if-throw + BigDecimal + null checks</td>
+      <td style="padding:10px;">条件表达式 + 整合 Drools</td>
+    </tr>
+    <tr style="background:#252535; color:#ddd;">
+      <td style="padding:10px; color:#ff6b6b; font-weight:bold;">Scheduler</td>
+      <td style="padding:10px; text-align:right;">55 定时任务</td>
+      <td style="padding:10px;">硬编码 @Scheduled cron</td>
+      <td style="padding:10px;">DB cron 表达式 + Canvas 时间轴</td>
+    </tr>
+  </table>
+</div>
+
+<div class="section" style="margin-top:24px;">
+  <h3>这个架构方向正确吗？</h3>
+  <p class="subtitle">确认后我展示每个引擎的详细数据模型</p>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="approve" onclick="toggleSelect(this)">
+    <div class="letter">✅</div>
+    <div class="content">
+      <h3>方向正确, 继续详细设计</h3>
+      <p>四层架构 + 四个执行引擎的方向 OK</p>
+    </div>
+  </div>
+  <div class="option" data-choice="adjust" onclick="toggleSelect(this)">
+    <div class="letter">🔧</div>
+    <div class="content">
+      <h3>方向对但需要调整</h3>
+      <p>有些地方需要修改 (请在终端说明)</p>
+    </div>
+  </div>
+  <div class="option" data-choice="rethink" onclick="toggleSelect(this)">
+    <div class="letter">🔄</div>
+    <div class="content">
+      <h3>需要重新思考</h3>
+      <p>这个方向有问题</p>
+    </div>
+  </div>
+</div>

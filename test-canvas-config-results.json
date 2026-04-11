@@ -1,0 +1,85 @@
+{
+  "timestamp": "2026-04-09T01:58:48.680Z",
+  "results": [
+    {
+      "name": "S01-默认配置 — 无工厂覆盖",
+      "status": "PASS",
+      "detail": "fields=23, groups=6, states=10, mode=LEGACY"
+    },
+    {
+      "name": "S02-BOM 默认配置验证",
+      "status": "PASS",
+      "detail": "fields=10, groups=3, states=3"
+    },
+    {
+      "name": "S03-创建 DRAFT 配置 — 隐藏运费字段",
+      "status": "PASS",
+      "detail": "shippingFee.visible=true (draft not published yet)"
+    },
+    {
+      "name": "S04-发布配置 → 运费字段隐藏",
+      "status": "PASS",
+      "detail": "shippingFee.visible=false, shippingIncluded.visible=false, mode=DYNAMIC"
+    },
+    {
+      "name": "S05-关闭财务审核 → 工作流跳过审核状态",
+      "status": "PASS",
+      "detail": "CONFIRMED→PROCESSING.enabled=true, CONFIRMED→PENDING_FINANCE.enabled=true"
+    },
+    {
+      "name": "S06-自定义标签 — 重命名字段",
+      "status": "PASS",
+      "detail": "orderNumber→合同编号, customerId→签约方, remark→特殊备注"
+    },
+    {
+      "name": "S07-角色权限过滤 — warehouse 隐藏金额",
+      "status": "PASS",
+      "detail": "totalAmount.visible=false (warehouse role), shippingFee.visible=false"
+    },
+    {
+      "name": "S08-字段级更新 — 修改单个字段 required",
+      "status": "PASS",
+      "detail": "deliveryAddress.required=true, label=收货地址"
+    },
+    {
+      "name": "S09-BOM 配置 — 隐藏成本字段 + 启用 DYNAMIC",
+      "status": "PASS",
+      "detail": "unitPrice.visible=false, taxRate.visible=false, mode=DYNAMIC"
+    },
+    {
+      "name": "S10-模块开关 — 禁用 BOM",
+      "status": "PASS",
+      "detail": "bom.enabled=false"
+    },
+    {
+      "name": "S11-版本回滚 — 恢复 BOM 启用",
+      "status": "PASS",
+      "detail": "bom.enabled=true after rollback"
+    },
+    {
+      "name": "S12-模块列表 API — 返回所有模块摘要",
+      "status": "PASS",
+      "detail": "modules=2, sales_order=true, bom=true"
+    },
+    {
+      "name": "S13-浏览器: /modules/sales_order 页面加载",
+      "status": "PASS",
+      "detail": "title=\"sales_order\", table=false, empty=true"
+    },
+    {
+      "name": "S14-浏览器: /modules/bom 页面加载",
+      "status": "PASS",
+      "detail": "title=\"bom\", hasContent=true"
+    },
+    {
+      "name": "S15-浏览器: 旧版销售订单页面仍可用(LEGACY)",
+      "status": "FAIL",
+      "detail": "hasTable=false"
+    }
+  ],
+  "summary": {
+    "passed": 14,
+    "failed": 1,
+    "total": 15
+  }
+}

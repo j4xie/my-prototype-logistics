@@ -1,0 +1,261 @@
+<h2>Canvas 完整方案 V3 — 整合已有 spec + Tool-Skill + A/B Layer</h2>
+<p class="subtitle">基于已有 spec (11 组件 + 3 AI 模式 + 6 Tool) + 扩展 Tool-Skill 工厂级 + 业务逻辑外化</p>
+
+<div class="section">
+<h3>之前 spec 已设计的 (不能丢)</h3>
+<table style="width:100%; border-collapse:collapse; font-size:12px;">
+  <tr style="background:#1b5e20; color:#fff;">
+    <th style="padding:8px;">已设计</th>
+    <th style="padding:8px;">内容</th>
+    <th style="padding:8px;">状态</th>
+  </tr>
+  <tr style="background:#1e1e2e; color:#ddd; border-bottom:1px solid #333;">
+    <td style="padding:8px; color:#4caf50;">Canvas 编辑器 UI</td>
+    <td style="padding:8px;">左侧模块树(拖拽) + 中央 3-tab(字段/流程SVG/权限矩阵) + 右侧 AI</td>
+    <td style="padding:8px; color:#ff9800;">Phase 1 ✅ 基础, UI 未实现</td>
+  </tr>
+  <tr style="background:#252535; color:#ddd; border-bottom:1px solid #333;">
+    <td style="padding:8px; color:#4caf50;">3 种 AI Agent</td>
+    <td style="padding:8px;"><b>Autopilot</b>: 全自动建工厂配置<br/><b>Plan Mode</b>: 生成 diff → 用户审核 → 批量应用<br/><b>Action Mode</b>: 手动操作 + AI 实时提示关联影响</td>
+    <td style="padding:8px; color:#f44336;">未实现</td>
+  </tr>
+  <tr style="background:#1e1e2e; color:#ddd; border-bottom:1px solid #333;">
+    <td style="padding:8px; color:#4caf50;">6 个 AI Tool</td>
+    <td style="padding:8px;">ModuleToggle / FieldConfig / WorkflowConfig / ValidationConfig / TemplateClone / ConfigDiff</td>
+    <td style="padding:8px; color:#f44336;">未实现</td>
+  </tr>
+  <tr style="background:#252535; color:#ddd; border-bottom:1px solid #333;">
+    <td style="padding:8px; color:#4caf50;">11 个 Vue 组件</td>
+    <td style="padding:8px;">CanvasEditor / ModuleTree / FieldConfigPanel / FieldPropertyPanel / WorkflowDesigner(SVG) / PermissionMatrix / SchemaPreview / AIChatPanel / ConfigDiffViewer / TemplateSelector / VersionHistory</td>
+    <td style="padding:8px; color:#f44336;">未实现</td>
+  </tr>
+  <tr style="background:#1e1e2e; color:#ddd;">
+    <td style="padding:8px; color:#4caf50;">简化 vs 专家模式</td>
+    <td style="padding:8px;">简化: 模块开关+字段可见性+Autopilot<br/>专家: 完整配置+状态机编辑+3模式AI</td>
+    <td style="padding:8px; color:#f44336;">未实现</td>
+  </tr>
+</table>
+</div>
+
+<div class="section" style="margin-top:20px;">
+<h3>本次新增 (之前 spec 没覆盖的)</h3>
+<table style="width:100%; border-collapse:collapse; font-size:12px;">
+  <tr style="background:#e65100; color:#fff;">
+    <th style="padding:8px;">新增项</th>
+    <th style="padding:8px;">内容</th>
+    <th style="padding:8px;">为什么需要</th>
+  </tr>
+  <tr style="background:#1e1e2e; color:#ddd; border-bottom:1px solid #333;">
+    <td style="padding:8px; color:#ff9800;">Layer A: Tool/Skill 工厂级配置</td>
+    <td style="padding:8px;">factory_tool_configs + factory_skill_configs + factory_trigger_chains</td>
+    <td style="padding:8px;">原 spec 只配字段/流程, 没覆盖 348 个 Tool 和 16 个 Skill 的 per-factory 开关</td>
+  </tr>
+  <tr style="background:#252535; color:#ddd; border-bottom:1px solid #333;">
+    <td style="padding:8px; color:#ff9800;">Layer B: 业务逻辑外化</td>
+    <td style="padding:8px;">factory_validation_rules + factory_default_values + factory_formulas + factory_scheduler_configs</td>
+    <td style="padding:8px;">原 spec 只配 UI 层 (字段显隐/标签), 没覆盖 Service 层 3,050 个硬编码点</td>
+  </tr>
+  <tr style="background:#1e1e2e; color:#ddd; border-bottom:1px solid #333;">
+    <td style="padding:8px; color:#ff9800;">触发链可视化编辑器</td>
+    <td style="padding:8px;">TriggerChainDesigner.vue — Event→Condition→Tool 拖拽编排</td>
+    <td style="padding:8px;">原 spec 的 WorkflowDesigner 只设计状态机, 没覆盖 @EventListener 触发链</td>
+  </tr>
+  <tr style="background:#252535; color:#ddd;">
+    <td style="padding:8px; color:#ff9800;">Canvas 新增 Tab</td>
+    <td style="padding:8px;">中央画布从 3 tab → 6 tab: +触发链 +校验规则 +工具开关</td>
+    <td style="padding:8px;">覆盖 A+B layer 的完整配置面</td>
+  </tr>
+</table>
+</div>
+
+<div class="section" style="margin-top:20px;">
+  <div class="mockup">
+    <div class="mockup-header">Canvas 编辑器 — 完整版 (已有 spec + 新增)</div>
+    <div class="mockup-body" style="padding:0; background:#0d1117; font-family:monospace; font-size:11px; color:#e0e0e0;">
+
+<!-- Top bar -->
+<div style="background:#161b22; padding:8px 16px; display:flex; justify-content:space-between; border-bottom:1px solid #30363d;">
+  <div style="display:flex; gap:10px; align-items:center;">
+    <span style="color:#ffd700; font-weight:bold;">🏭 工厂选择: [六扇门食品 ▼]</span>
+    <span style="color:#666;">|</span>
+    <span style="color:#888;">模式: [<span style="color:#4caf50;">专家</span>/简化]</span>
+    <span style="color:#666;">|</span>
+    <span style="color:#888;">v3 DRAFT</span>
+  </div>
+  <div style="display:flex; gap:6px;">
+    <span style="background:#1f6feb33; color:#58a6ff; padding:3px 10px; border-radius:4px; font-size:11px;">💾 草稿</span>
+    <span style="background:#238636; color:#fff; padding:3px 10px; border-radius:4px; font-size:11px;">🚀 发布</span>
+    <span style="background:#30363d; color:#8b949e; padding:3px 10px; border-radius:4px; font-size:11px;">⏪ 历史</span>
+  </div>
+</div>
+
+<!-- 6 Tabs -->
+<div style="display:flex; background:#161b22; border-bottom:2px solid #30363d; overflow-x:auto;">
+  <div style="padding:8px 14px; color:#ffd700; border-bottom:2px solid #ffd700; font-size:11px; font-weight:bold; white-space:nowrap;">📋 字段配置</div>
+  <div style="padding:8px 14px; color:#888; font-size:11px; white-space:nowrap;">🔄 流程设计</div>
+  <div style="padding:8px 14px; color:#888; font-size:11px; white-space:nowrap;">🛡️ 权限矩阵</div>
+  <div style="padding:8px 14px; color:#ff9800; font-size:11px; white-space:nowrap; border-bottom:1px dashed #ff9800;">🔗 触发链 <sup>NEW</sup></div>
+  <div style="padding:8px 14px; color:#ff9800; font-size:11px; white-space:nowrap; border-bottom:1px dashed #ff9800;">📐 校验规则 <sup>NEW</sup></div>
+  <div style="padding:8px 14px; color:#ff9800; font-size:11px; white-space:nowrap; border-bottom:1px dashed #ff9800;">🔧 工具/技能 <sup>NEW</sup></div>
+</div>
+
+<!-- 3-panel layout -->
+<div style="display:grid; grid-template-columns:180px 1fr 280px; min-height:320px;">
+
+  <!-- Left: Module Tree (拖拽) -->
+  <div style="background:#0d1117; border-right:1px solid #21262d; padding:10px;">
+    <div style="color:#8b949e; font-size:10px; margin-bottom:6px;">🔍 搜索模块...</div>
+    <div style="font-size:11px;">
+      <div style="padding:4px 8px; background:#1a2a1a; border-left:3px solid #4caf50; border-radius:3px; color:#4caf50; margin:2px 0; cursor:grab;">☰ ✅ 销售订单</div>
+      <div style="padding:4px 8px; border-radius:3px; color:#ccc; margin:2px 0; cursor:grab;">☰ ✅ BOM配方</div>
+      <div style="padding:4px 8px; border-radius:3px; color:#ccc; margin:2px 0; cursor:grab;">☰ ✅ 生产计划</div>
+      <div style="padding:4px 8px; border-radius:3px; color:#ccc; margin:2px 0; cursor:grab;">☰ ✅ 采购管理</div>
+      <div style="padding:4px 8px; border-radius:3px; color:#ccc; margin:2px 0; cursor:grab;">☰ ✅ 仓储管理</div>
+      <div style="padding:4px 8px; border-radius:3px; color:#ccc; margin:2px 0; cursor:grab;">☰ ✅ 质量检测</div>
+      <div style="padding:4px 8px; border-radius:3px; color:#666; margin:2px 0; cursor:grab; opacity:0.5;">☰ ❌ 设备管理</div>
+      <div style="padding:4px 8px; border-radius:3px; color:#666; margin:2px 0; cursor:grab; opacity:0.5;">☰ ❌ 餐饮运营</div>
+    </div>
+    <div style="color:#8b949e; font-size:10px; margin-top:8px; border-top:1px solid #21262d; padding-top:6px;">
+      ☰ 拖拽调整模块顺序<br/>
+      点击切换启用/禁用
+    </div>
+  </div>
+
+  <!-- Center: Tab Content -->
+  <div style="padding:12px;">
+    <div style="color:#c9d1d9; font-size:13px; font-weight:bold; margin-bottom:10px;">销售订单 — 字段配置</div>
+
+    <!-- Draggable field list -->
+    <div style="font-size:11px;">
+      <div style="display:grid; grid-template-columns:24px 1fr 60px 50px 50px 80px; gap:2px; color:#8b949e; padding:4px 0; border-bottom:1px solid #21262d;">
+        <div></div><div>字段</div><div>类型</div><div>必填</div><div>可见</div><div>自定义标签</div>
+      </div>
+      <div style="display:grid; grid-template-columns:24px 1fr 60px 50px 50px 80px; gap:2px; color:#e0e0e0; padding:6px 0; border-bottom:1px solid #161b22; cursor:grab;">
+        <div style="color:#666;">☰</div><div>orderNumber</div><div style="color:#888;">string</div><div style="color:#4caf50; text-align:center;">✅</div><div style="color:#4caf50; text-align:center;">✅</div><div style="color:#ff9800;">合同编号</div>
+      </div>
+      <div style="display:grid; grid-template-columns:24px 1fr 60px 50px 50px 80px; gap:2px; color:#e0e0e0; padding:6px 0; border-bottom:1px solid #161b22; cursor:grab;">
+        <div style="color:#666;">☰</div><div>customerId</div><div style="color:#888;">reference</div><div style="color:#4caf50; text-align:center;">✅</div><div style="color:#4caf50; text-align:center;">✅</div><div style="color:#ff9800;">客户/门店</div>
+      </div>
+      <div style="display:grid; grid-template-columns:24px 1fr 60px 50px 50px 80px; gap:2px; color:#e0e0e0; padding:6px 0; border-bottom:1px solid #161b22; cursor:grab; background:#1a1520;">
+        <div style="color:#666;">☰</div><div>salesperson</div><div style="color:#888;">string</div><div style="text-align:center;">—</div><div style="color:#4caf50; text-align:center;">✅</div><div style="color:#ff9800;">跟单员</div>
+      </div>
+      <div style="display:grid; grid-template-columns:24px 1fr 60px 50px 50px 80px; gap:2px; color:#666; padding:6px 0; border-bottom:1px solid #161b22; opacity:0.5;">
+        <div>☰</div><div>boxQuantity</div><div>decimal</div><div style="text-align:center;">—</div><div style="color:#f44336; text-align:center;">❌</div><div>—</div>
+      </div>
+      <div style="color:#8b949e; font-size:10px; margin-top:6px;">☰ 拖拽调整字段顺序 | 点击行→右侧编辑详细属性</div>
+    </div>
+  </div>
+
+  <!-- Right: AI Panel with 3 modes -->
+  <div style="background:#0d1117; border-left:1px solid #21262d; padding:10px;">
+    <!-- Mode selector -->
+    <div style="display:flex; gap:4px; margin-bottom:10px;">
+      <div style="flex:1; text-align:center; padding:4px; background:#1f6feb33; border:1px solid #1f6feb; border-radius:4px; color:#58a6ff; font-size:10px; cursor:pointer;">
+        🤖 Autopilot
+      </div>
+      <div style="flex:1; text-align:center; padding:4px; background:#30363d; border:1px solid #30363d; border-radius:4px; color:#8b949e; font-size:10px; cursor:pointer;">
+        📋 Plan
+      </div>
+      <div style="flex:1; text-align:center; padding:4px; background:#30363d; border:1px solid #30363d; border-radius:4px; color:#8b949e; font-size:10px; cursor:pointer;">
+        ⚡ Action
+      </div>
+    </div>
+
+    <!-- Chat area -->
+    <div style="background:#161b22; border-radius:6px; padding:8px; margin-bottom:6px; font-size:11px;">
+      <div style="color:#58a6ff;">用户:</div>
+      <div style="color:#e0e0e0;">新建一个烘焙工厂的配置</div>
+    </div>
+    <div style="background:#1a2a1a; border-radius:6px; padding:8px; margin-bottom:6px; font-size:11px;">
+      <div style="color:#4caf50;">AI (Autopilot):</div>
+      <div style="color:#ccc; margin-top:2px;">
+        正在执行 5 个步骤...<br/>
+        <span style="color:#4caf50;">✅</span> TemplateClone: bakery 模板<br/>
+        <span style="color:#4caf50;">✅</span> ModuleToggle: 6启用/2关闭<br/>
+        <span style="color:#4caf50;">✅</span> FieldConfig: BOM+面团/馅料<br/>
+        <span style="color:#4caf50;">✅</span> WorkflowConfig: 跳过财务审核<br/>
+        <span style="color:#ffd700;">⏳</span> 发布配置...
+      </div>
+    </div>
+    <div style="background:#161b22; border-radius:6px; padding:8px; font-size:11px;">
+      <div style="color:#ffd700;">执行摘要:</div>
+      <div style="color:#aaa; margin-top:2px;">
+        启用 6 模块 | 关闭 2 模块<br/>
+        自定义 3 字段 | 简化 1 流程
+      </div>
+      <div style="display:flex; gap:4px; margin-top:6px;">
+        <span style="background:#238636; color:#fff; padding:2px 8px; border-radius:3px; font-size:10px; cursor:pointer;">✅ 确认发布</span>
+        <span style="background:#30363d; color:#8b949e; padding:2px 8px; border-radius:3px; font-size:10px; cursor:pointer;">📋 查看 Diff</span>
+      </div>
+    </div>
+
+    <div style="margin-top:8px; display:flex; gap:4px;">
+      <input style="flex:1; background:#161b22; border:1px solid #30363d; border-radius:4px; padding:6px; color:#e0e0e0; font-size:11px;" placeholder="输入配置指令..."/>
+      <span style="background:#238636; color:#fff; padding:6px 10px; border-radius:4px; font-size:11px; cursor:pointer;">发送</span>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom panel -->
+<div style="background:#161b22; border-top:1px solid #30363d; padding:6px 16px; display:flex; gap:16px; font-size:10px; color:#8b949e;">
+  <span style="cursor:pointer;">📊 Diff 预览 (Plan Mode)</span>
+  <span style="cursor:pointer;">📝 变更记录</span>
+  <span style="cursor:pointer;">💡 AI 建议</span>
+  <span style="cursor:pointer;">👁️ 实时预览</span>
+</div>
+
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:20px;">
+<h3>完整方案 = 已有 spec + 新增扩展</h3>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+  <div>
+    <div style="color:#4caf50; font-weight:bold; margin-bottom:8px;">已有 spec 覆盖 (不变)</div>
+    <ul style="color:#ccc; font-size:12px; line-height:1.8;">
+      <li>11 个 Vue 组件 (Canvas Editor + 子组件)</li>
+      <li>3 种 AI Agent (Autopilot/Plan/Action)</li>
+      <li>6 个 AI Tool (Toggle/Field/Workflow/Validation/Template/Diff)</li>
+      <li>简化模式 vs 专家模式</li>
+      <li>字段配置 tab (拖拽排序 + 显隐 + 必填 + 标签)</li>
+      <li>流程设计 tab (SVG 状态机可视化)</li>
+      <li>权限矩阵 tab (角色 × 字段)</li>
+      <li>模板系统 (行业模板选择 + 克隆)</li>
+      <li>版本管理 (发布/回滚/diff)</li>
+    </ul>
+  </div>
+  <div>
+    <div style="color:#ff9800; font-weight:bold; margin-bottom:8px;">新增扩展 (本次设计)</div>
+    <ul style="color:#ccc; font-size:12px; line-height:1.8;">
+      <li><b>触发链 tab</b> — Event→Condition→Tool 拖拽编排</li>
+      <li><b>校验规则 tab</b> — 364 条规则可视化开关+条件编辑</li>
+      <li><b>工具/技能 tab</b> — 348 Tool + 16 Skill per-factory 开关矩阵</li>
+      <li><b>Layer A 表</b> — factory_tool_configs / factory_skill_configs / factory_trigger_chains</li>
+      <li><b>Layer B 表</b> — factory_validation_rules / factory_default_values / factory_formulas / factory_scheduler_configs</li>
+      <li><b>ToolRegistry 扩展</b> — getToolsForFactory() per-factory 过滤</li>
+      <li><b>SkillRegistry 扩展</b> — getSkillsForFactory() + customDAG</li>
+      <li><b>EventListener 门控</b> — 触发链配置驱动 @EventListener</li>
+      <li><b>Service 层注入</b> — 校验规则/默认值/公式 从 config 读取</li>
+    </ul>
+  </div>
+</div>
+</div>
+
+<div class="options" style="margin-top:20px;">
+  <div class="option" data-choice="approve-v3" onclick="toggleSelect(this)">
+    <div class="letter">✅</div>
+    <div class="content">
+      <h3>方案 V3 确认 — 出完整 spec</h3>
+      <p>已有 spec 保留 + 新增 A/B Layer + 3 个新 tab + 7 张新表</p>
+    </div>
+  </div>
+  <div class="option" data-choice="adjust-v3" onclick="toggleSelect(this)">
+    <div class="letter">🔧</div>
+    <div class="content">
+      <h3>需要调整</h3>
+      <p>在终端说明修改意见</p>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,124 @@
+{
+  "timestamp": "2026-04-09T02:13:30.802Z",
+  "summary": {
+    "pass": 10,
+    "fail": 0,
+    "total": 10
+  },
+  "tests": [
+    {
+      "id": "C1",
+      "name": "动态列表列 = schema.listVisible 字段",
+      "evidence": [
+        "table headers (8): # | 订单号 | 客户 | 下单日期 | 要求交货日期 | 订单总金额 | 状态 | 操作",
+        "expected columns present: true",
+        "screenshot: C1-list-columns.png"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "C2",
+      "name": "表单分组 = schema.groups",
+      "evidence": [
+        "groups (6): 基本信息 | 订单明细 | 金额汇总 | 运费与其他费用 | 业务中心 | 财务信息",
+        "labels (17): 订单号, 客户, 下单日期, 要求交货日期, 业务员, 备注, 收货地址, 状态...",
+        "expected groups: true",
+        "screenshot: C2-form-groups.png"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "C3",
+      "name": "隐藏3字段 → 表单+列表都不显示",
+      "evidence": [
+        "API: hide salesperson/requiredDeliveryDate/boxQuantity",
+        "form labels (14): 含业务员=false, 含箱数=false",
+        "list headers: 含交货日期=true",
+        "screenshot: C3-hidden-fields.png"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "C4",
+      "name": "自定义标签 → 列表表头+表单标签",
+      "evidence": [
+        "list headers: 含\"合同\"=true, 含\"签约\"=true",
+        "form labels: 含\"合同编号\"=true, 含\"签约方\"=true, 含\"特殊说明\"=true",
+        "screenshot: C4-custom-labels-form.png"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "C5",
+      "name": "工作流配置 → 状态转换变化",
+      "evidence": [
+        "before (hasFinanceReview=true): CONFIRMED→ PENDING_FINANCE_REVIEW(true), PROCESSING(false), CANCELLED(true)",
+        "after (hasFinanceReview=false): CONFIRMED→ PENDING_FINANCE_REVIEW(true), PROCESSING(true), CANCELLED(true)",
+        "CONFIRMED→PROCESSING enabled: true"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "C6",
+      "name": "6 角色权限对比 — 字段可见性差异",
+      "evidence": [
+        "role: factory_super_admin: 18可见/4只读",
+        "role: sales_manager: 18可见/4只读",
+        "role: sales_staff: 18可见/4只读",
+        "role: finance: 18可见/5只读",
+        "role: warehouse: 16可见/4只读",
+        "role: viewer: 17可见/4只读",
+        "warehouse.totalAmount.hidden: true"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "C7",
+      "name": "字段类型→Element Plus 组件映射",
+      "evidence": [
+        "el-input (string): 10",
+        "el-input-number (decimal/integer): 5",
+        "el-switch (boolean): 1",
+        "el-date-editor (date): 2",
+        "el-select (select/reference): 3",
+        "textarea: 1",
+        "screenshot: C7-field-types.png"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "C8",
+      "name": "BOM 成本字段: 全显→隐藏对比",
+      "evidence": [
+        "全显 labels (9): 含单价=true, 含税率=true",
+        "隐藏后 labels (7): 含单价=false, 含税率=false",
+        "delta: 2 fields hidden",
+        "screenshots: C8a-bom-all.png, C8b-bom-no-cost.png"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "C9",
+      "name": "版本发布+回滚 → 配置恢复",
+      "evidence": [
+        "发布前: fields=23",
+        "发布后: customLabels.orderNumber=\"测试版本标签\"",
+        "回滚后: customLabels.orderNumber=\"undefined\" (expect undefined/null)",
+        "版本恢复: SUCCESS"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "C10",
+      "name": "Draft→Publish→Render 完整链路",
+      "evidence": [
+        "draft阶段: remark.visible=true (draft未发布, 应仍为true)",
+        "publish后 API: remark.visible=false, label=\"最终合同号\"",
+        "browser list: 含\"最终合同\"=true",
+        "browser form: 含\"备注\"=false(隐藏), 含\"地址\"=false(隐藏), 含\"最终合同\"=true",
+        "screenshot: C10-final-chain.png"
+      ],
+      "result": "PASS"
+    }
+  ]
+}

@@ -1,0 +1,202 @@
+<h2>修正架构 — 基于已有 Tool-Skill 体系</h2>
+<p class="subtitle">不建新引擎, Canvas 直接配置 348 Tools + 16 Skills 的 per-factory 启用/编排/条件</p>
+
+<div class="section">
+<h3>核心发现: Tool-Skill 已有能力 vs 缺口</h3>
+<table style="width:100%; border-collapse:collapse; font-size:13px;">
+  <tr style="background:#1a5a2e; color:#fff;">
+    <th style="padding:8px;">能力</th>
+    <th style="padding:8px;">已有 ✅</th>
+    <th style="padding:8px;">缺口 ❌</th>
+  </tr>
+  <tr style="background:#1e1e2e; color:#ddd; border-bottom:1px solid #333;">
+    <td style="padding:8px;">Tool 全局注册</td>
+    <td style="padding:8px; color:#4caf50;">ToolRegistry + 348 tools + governance</td>
+    <td style="padding:8px; color:#ff6b6b;">无 per-factory 开关</td>
+  </tr>
+  <tr style="background:#252535; color:#ddd; border-bottom:1px solid #333;">
+    <td style="padding:8px;">Skill DAG 编排</td>
+    <td style="padding:8px; color:#4caf50;">SkillExecutor + DAG拓扑排序 + 条件分支</td>
+    <td style="padding:8px; color:#ff6b6b;">无 per-factory 步骤自定义</td>
+  </tr>
+  <tr style="background:#1e1e2e; color:#ddd; border-bottom:1px solid #333;">
+    <td style="padding:8px;">Skill DB 存储</td>
+    <td style="padding:8px; color:#4caf50;">SmartBiSkill 表 + YAML SKILL.md</td>
+    <td style="padding:8px; color:#ff6b6b;">无 factoryId 列</td>
+  </tr>
+  <tr style="background:#252535; color:#ddd; border-bottom:1px solid #333;">
+    <td style="padding:8px;">Tool 元数据</td>
+    <td style="padding:8px; color:#4caf50;">tool_metadata 表 + 统计</td>
+    <td style="padding:8px; color:#ff6b6b;">无 factoryId 列, 无 enabled 列</td>
+  </tr>
+  <tr style="background:#1e1e2e; color:#ddd; border-bottom:1px solid #333;">
+    <td style="padding:8px;">Governance</td>
+    <td style="padding:8px; color:#4caf50;">ActionType/RiskLevel/DomainTag 三维索引</td>
+    <td style="padding:8px; color:#ff6b6b;">无 per-factory governance</td>
+  </tr>
+  <tr style="background:#252535; color:#ddd;">
+    <td style="padding:8px;">触发链</td>
+    <td style="padding:8px; color:#4caf50;">14 Event 类 + @EventListener</td>
+    <td style="padding:8px; color:#ff6b6b;">触发链硬编码, 不可配置</td>
+  </tr>
+</table>
+</div>
+
+<div class="section" style="margin-top:24px;">
+  <div class="mockup">
+    <div class="mockup-header">修正后架构: Canvas → Tool/Skill 工厂级配置层</div>
+    <div class="mockup-body" style="font-family:monospace; font-size:12px; line-height:1.5; padding:16px; background:#0d1117; color:#e0e0e0;">
+
+<div style="text-align:center; margin-bottom:16px;">
+<span style="color:#ffd700; font-size:15px; font-weight:bold;">Canvas UI</span>
+<div style="border:2px solid #ffd700; border-radius:10px; padding:10px; margin:4px 60px;">
+  <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; font-size:11px;">
+    <span style="background:#ffd700; color:#000; padding:3px 8px; border-radius:4px;">Tool 开关矩阵</span>
+    <span style="background:#ffd700; color:#000; padding:3px 8px; border-radius:4px;">Skill DAG 编辑器</span>
+    <span style="background:#ffd700; color:#000; padding:3px 8px; border-radius:4px;">触发链编排</span>
+    <span style="background:#ffd700; color:#000; padding:3px 8px; border-radius:4px;">规则条件</span>
+    <span style="background:#ffd700; color:#000; padding:3px 8px; border-radius:4px;">字段/默认值</span>
+    <span style="background:#ffd700; color:#000; padding:3px 8px; border-radius:4px;">定时任务</span>
+  </div>
+</div>
+</div>
+
+<div style="text-align:center; color:#555; font-size:11px;">↕ 只需要加一层: per-factory 配置</div>
+
+<div style="text-align:center; margin:12px 0;">
+<span style="color:#ff9800; font-size:15px; font-weight:bold;">🆕 新增: Factory Config Layer (最小改动)</span>
+<div style="border:2px solid #ff9800; border-radius:10px; padding:10px; margin:4px 20px;">
+  <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; font-size:11px;">
+    <div style="background:#3e2a0a; padding:6px; border-radius:6px; text-align:center;">
+      <div style="color:#ff9800; font-weight:bold;">factory_tool_configs</div>
+      <div>factoryId + toolName + enabled</div>
+      <div style="color:#888;">+ paramOverrides (JSONB)</div>
+    </div>
+    <div style="background:#3e2a0a; padding:6px; border-radius:6px; text-align:center;">
+      <div style="color:#ff9800; font-weight:bold;">factory_skill_configs</div>
+      <div>factoryId + skillName + enabled</div>
+      <div style="color:#888;">+ customDAG (JSONB)</div>
+    </div>
+    <div style="background:#3e2a0a; padding:6px; border-radius:6px; text-align:center;">
+      <div style="color:#ff9800; font-weight:bold;">factory_trigger_chains</div>
+      <div>factoryId + eventType + enabled</div>
+      <div style="color:#888;">+ steps: [{tool, condition}]</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div style="text-align:center; color:#555; font-size:11px;">↕ 查询时 merge: global config < factory override</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:12px 0;">
+  <div style="text-align:center;">
+    <span style="color:#4caf50; font-size:14px; font-weight:bold;">已有: ToolRegistry</span>
+    <div style="border:2px solid #4caf50; border-radius:10px; padding:8px;">
+      <div style="font-size:11px; color:#4caf50;">348 Tools (全局注册)</div>
+      <div style="font-size:10px; color:#888;">+ ActionType/RiskLevel/DomainTag</div>
+      <div style="font-size:10px; color:#888;">+ tool_metadata 统计</div>
+      <div style="font-size:10px; color:#ff9800; margin-top:4px;">🆕 加: getToolsForFactory(fid)</div>
+    </div>
+  </div>
+  <div style="text-align:center;">
+    <span style="color:#4caf50; font-size:14px; font-weight:bold;">已有: SkillRegistry</span>
+    <div style="border:2px solid #4caf50; border-radius:10px; padding:8px;">
+      <div style="font-size:11px; color:#4caf50;">16 Skills (DAG编排)</div>
+      <div style="font-size:10px; color:#888;">+ SmartBiSkill DB 表</div>
+      <div style="font-size:10px; color:#888;">+ SKILL.md YAML 定义</div>
+      <div style="font-size:10px; color:#ff9800; margin-top:4px;">🆕 加: getSkillsForFactory(fid)</div>
+    </div>
+  </div>
+</div>
+
+<div style="text-align:center; color:#555; font-size:11px;">↕ 执行时注入 factory context</div>
+
+<div style="text-align:center;">
+<span style="color:#2196f3; font-size:14px; font-weight:bold;">已有: 业务服务 (295+ Services)</span>
+<div style="border:2px solid #2196f3; border-radius:10px; padding:8px; margin:4px 40px;">
+  <div style="font-size:11px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
+    <span style="color:#2196f3;">Sales</span> · <span style="color:#2196f3;">Processing</span> · <span style="color:#2196f3;">Material</span> · <span style="color:#2196f3;">Quality</span> · <span style="color:#2196f3;">Finance</span> · <span style="color:#2196f3;">Scheduling</span> · <span style="color:#2196f3;">Equipment</span> · <span style="color:#2196f3;">HR</span>
+  </div>
+  <div style="font-size:10px; color:#ff9800; margin-top:4px;">🆕 改: 校验规则/默认值/触发链 → 从 factory config 读取</div>
+</div>
+</div>
+
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:20px;">
+<h3>对比: 之前的方案 vs 修正方案</h3>
+<table style="width:100%; border-collapse:collapse; font-size:13px;">
+  <tr style="background:#2a2a3e; color:#fff;">
+    <th style="padding:8px;">维度</th>
+    <th style="padding:8px;">之前: 建4个新引擎</th>
+    <th style="padding:8px;">修正: 加 factory 配置层</th>
+  </tr>
+  <tr style="background:#1e1e2e; color:#ddd; border-bottom:1px solid #333;">
+    <td style="padding:8px;">新代码量</td>
+    <td style="padding:8px;">~15,000 行 (4 个引擎)</td>
+    <td style="padding:8px; color:#4caf50; font-weight:bold;">~3,000 行 (3 张表 + factory filter)</td>
+  </tr>
+  <tr style="background:#252535; color:#ddd; border-bottom:1px solid #333;">
+    <td style="padding:8px;">利用已有</td>
+    <td style="padding:8px; color:#ff6b6b;">0% — 全部重建</td>
+    <td style="padding:8px; color:#4caf50; font-weight:bold;">95% — Tool/Skill 原样复用</td>
+  </tr>
+  <tr style="background:#1e1e2e; color:#ddd; border-bottom:1px solid #333;">
+    <td style="padding:8px;">迁移风险</td>
+    <td style="padding:8px; color:#ff6b6b;">高 — 替换 @EventListener</td>
+    <td style="padding:8px; color:#4caf50; font-weight:bold;">低 — EventListener 加配置检查</td>
+  </tr>
+  <tr style="background:#252535; color:#ddd;">
+    <td style="padding:8px;">工期</td>
+    <td style="padding:8px;">12-16 周</td>
+    <td style="padding:8px; color:#4caf50; font-weight:bold;">4-6 周</td>
+  </tr>
+</table>
+</div>
+
+<div class="section" style="margin-top:20px;">
+<h3>本质改动只有 3 件事</h3>
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px;">
+  <div style="background:#1e1e2e; border:2px solid #ff9800; border-radius:10px; padding:12px; text-align:center;">
+    <div style="color:#ff9800; font-size:32px;">①</div>
+    <div style="color:#ff9800; font-weight:bold; font-size:14px;">3 张新表</div>
+    <div style="font-size:12px; color:#ccc; margin-top:6px;">factory_tool_configs<br/>factory_skill_configs<br/>factory_trigger_chains</div>
+  </div>
+  <div style="background:#1e1e2e; border:2px solid #ff9800; border-radius:10px; padding:12px; text-align:center;">
+    <div style="color:#ff9800; font-size:32px;">②</div>
+    <div style="color:#ff9800; font-weight:bold; font-size:14px;">2 个方法加 factory 过滤</div>
+    <div style="font-size:12px; color:#ccc; margin-top:6px;">ToolRegistry.getToolsForFactory()<br/>SkillRegistry.getSkillsForFactory()</div>
+  </div>
+  <div style="background:#1e1e2e; border:2px solid #ff9800; border-radius:10px; padding:12px; text-align:center;">
+    <div style="color:#ff9800; font-size:32px;">③</div>
+    <div style="color:#ff9800; font-weight:bold; font-size:14px;">EventListener 加配置门控</div>
+    <div style="font-size:12px; color:#ccc; margin-top:6px;">每个 @EventListener 前查<br/>factory_trigger_chains 决定是否执行</div>
+  </div>
+</div>
+</div>
+
+<div class="options" style="margin-top:24px;">
+  <div class="option" data-choice="approve-v2" onclick="toggleSelect(this)">
+    <div class="letter">✅</div>
+    <div class="content">
+      <h3>这才对 — 基于 Tool-Skill 扩展</h3>
+      <p>3 张表 + factory 过滤 + trigger 门控, 继续详细设计</p>
+    </div>
+  </div>
+  <div class="option" data-choice="more-detail" onclick="toggleSelect(this)">
+    <div class="letter">🔍</div>
+    <div class="content">
+      <h3>方向对, 想看更多细节</h3>
+      <p>展示数据模型 / 触发链配置 / Canvas UI 交互</p>
+    </div>
+  </div>
+  <div class="option" data-choice="concern" onclick="toggleSelect(this)">
+    <div class="letter">⚠️</div>
+    <div class="content">
+      <h3>有顾虑</h3>
+      <p>在终端说明</p>
+    </div>
+  </div>
+</div>

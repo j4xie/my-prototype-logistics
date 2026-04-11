@@ -1,0 +1,443 @@
+<h2>Canvas 统一配置引擎 — A+B 完整方案</h2>
+<p class="subtitle">Layer A: Tool/Skill 工厂级配置 + Layer B: 业务逻辑外化 → Canvas 统一控制</p>
+
+<!-- ===== SECTION 1: 数据模型 ===== -->
+<div class="section">
+<h3>1. 数据模型 — 7 张新表</h3>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+
+<!-- Layer A Tables -->
+<div style="background:#1a1a2e; border:2px solid #ff9800; border-radius:12px; padding:16px;">
+<div style="color:#ff9800; font-weight:bold; font-size:15px; margin-bottom:12px;">Layer A: Tool/Skill 配置 (3 张表)</div>
+
+<div style="background:#0d1117; border-radius:8px; padding:12px; margin-bottom:10px;">
+<div style="color:#4caf50; font-weight:bold;">factory_tool_configs</div>
+<pre style="color:#ccc; font-size:11px; margin:4px 0;">
+factoryId    VARCHAR(50) ──┐
+toolName     VARCHAR(100) ─┤ UNIQUE
+enabled      BOOLEAN       │
+paramOverrides JSONB       │ 默认参数覆盖
+riskOverride   VARCHAR(20) │ 风险级别覆盖
+customDescription TEXT     │ 工厂自定义描述
+</pre>
+</div>
+
+<div style="background:#0d1117; border-radius:8px; padding:12px; margin-bottom:10px;">
+<div style="color:#4caf50; font-weight:bold;">factory_skill_configs</div>
+<pre style="color:#ccc; font-size:11px; margin:4px 0;">
+factoryId    VARCHAR(50) ──┐
+skillName    VARCHAR(100) ─┤ UNIQUE
+enabled      BOOLEAN
+customDAG    JSONB         │ 工厂自定义 DAG 步骤
+customTriggers JSONB       │ 工厂自定义触发词
+priority     INTEGER       │ 工厂内排序
+</pre>
+</div>
+
+<div style="background:#0d1117; border-radius:8px; padding:12px;">
+<div style="color:#4caf50; font-weight:bold;">factory_trigger_chains</div>
+<pre style="color:#ccc; font-size:11px; margin:4px 0;">
+factoryId    VARCHAR(50)
+chainCode    VARCHAR(64)   │ 如 "SO_FINANCE_APPROVED"
+eventType    VARCHAR(100)  │ 事件类型
+enabled      BOOLEAN
+steps        JSONB         │ [{tool, condition, order}]
+errorStrategy VARCHAR(20)  │ STOP/CONTINUE/ROLLBACK
+description  TEXT
+</pre>
+</div>
+</div>
+
+<!-- Layer B Tables -->
+<div style="background:#1a1a2e; border:2px solid #2196f3; border-radius:12px; padding:16px;">
+<div style="color:#2196f3; font-weight:bold; font-size:15px; margin-bottom:12px;">Layer B: 业务逻辑外化 (4 张表)</div>
+
+<div style="background:#0d1117; border-radius:8px; padding:12px; margin-bottom:10px;">
+<div style="color:#4caf50; font-weight:bold;">factory_validation_rules</div>
+<pre style="color:#ccc; font-size:11px; margin:4px 0;">
+factoryId    VARCHAR(50)
+moduleCode   VARCHAR(64)   │ "sales_order"
+ruleCode     VARCHAR(64)   │ "DRAFT_ONLY_EDIT"
+condition    TEXT           │ "status != 'DRAFT'"
+errorMessage TEXT           │ "只有草稿可编辑"
+enabled      BOOLEAN
+severity     VARCHAR(16)   │ BLOCK / WARN / INFO
+sortOrder    INTEGER
+</pre>
+</div>
+
+<div style="background:#0d1117; border-radius:8px; padding:12px; margin-bottom:10px;">
+<div style="color:#4caf50; font-weight:bold;">factory_default_values</div>
+<pre style="color:#ccc; font-size:11px; margin:4px 0;">
+factoryId    VARCHAR(50)
+moduleCode   VARCHAR(64)
+fieldCode    VARCHAR(64)   │ "yieldRate"
+defaultValue JSONB         │ 95
+condition    TEXT           │ 可选: 条件默认值
+description  TEXT
+</pre>
+</div>
+
+<div style="background:#0d1117; border-radius:8px; padding:12px; margin-bottom:10px;">
+<div style="color:#4caf50; font-weight:bold;">factory_formulas</div>
+<pre style="color:#ccc; font-size:11px; margin:4px 0;">
+factoryId    VARCHAR(50)
+moduleCode   VARCHAR(64)
+formulaCode  VARCHAR(64)   │ "ACTUAL_QTY"
+expression   TEXT           │ "stdQty / (yieldRate/100)"
+variables    JSONB          │ 变量定义
+resultType   VARCHAR(20)   │ DECIMAL/INTEGER/BOOLEAN
+precision    INTEGER
+</pre>
+</div>
+
+<div style="background:#0d1117; border-radius:8px; padding:12px;">
+<div style="color:#4caf50; font-weight:bold;">factory_scheduler_configs</div>
+<pre style="color:#ccc; font-size:11px; margin:4px 0;">
+factoryId    VARCHAR(50)
+taskCode     VARCHAR(64)   │ "ACTIVE_LEARNING_DAILY"
+cronExpression VARCHAR(50) │ "0 0 2 * * ?"
+enabled      BOOLEAN
+toolOrMethod VARCHAR(100)  │ 执行的 tool 或 method
+params       JSONB         │ 执行参数
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ===== SECTION 2: 触发链详解 ===== -->
+<div class="section" style="margin-top:24px;">
+<h3>2. 触发链配置 — Event→Condition→Tool 编排</h3>
+<p class="subtitle">替代硬编码的 @EventListener, 每个步骤都可以开关/调序/加条件</p>
+
+<div class="mockup">
+<div class="mockup-header">示例: 销售订单财务审批后的触发链 (SO_FINANCE_APPROVED)</div>
+<div class="mockup-body" style="padding:20px; background:#0d1117; color:#e0e0e0; font-size:13px;">
+
+<div style="text-align:center; margin-bottom:16px;">
+  <span style="background:#ff6b6b; color:#fff; padding:6px 16px; border-radius:20px; font-weight:bold;">🔔 Event: SalesOrderFinanceApprovedEvent</span>
+</div>
+
+<div style="display:flex; flex-direction:column; gap:8px; max-width:600px; margin:0 auto;">
+
+<div style="display:flex; align-items:center; gap:12px;">
+  <span style="background:#4caf50; color:#fff; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; flex-shrink:0;">1</span>
+  <div style="flex:1; background:#1e2d1e; border:1px solid #4caf50; border-radius:8px; padding:10px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <span style="color:#4caf50; font-weight:bold;">inventory_check_stock</span>
+        <span style="color:#888; font-size:11px; margin-left:8px;">检查成品库存</span>
+      </div>
+      <span style="background:#2e7d32; color:#fff; padding:2px 8px; border-radius:4px; font-size:11px;">✅ 启用</span>
+    </div>
+    <div style="color:#aaa; font-size:11px; margin-top:4px;">condition: always</div>
+  </div>
+</div>
+
+<div style="display:flex; align-items:center; gap:12px;">
+  <span style="background:#4caf50; color:#fff; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; flex-shrink:0;">2</span>
+  <div style="flex:1; background:#1e2d1e; border:1px solid #4caf50; border-radius:8px; padding:10px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <span style="color:#4caf50; font-weight:bold;">inventory_reserve_stock</span>
+        <span style="color:#888; font-size:11px; margin-left:8px;">预留库存</span>
+      </div>
+      <span style="background:#2e7d32; color:#fff; padding:2px 8px; border-radius:4px; font-size:11px;">✅ 启用</span>
+    </div>
+    <div style="color:#aaa; font-size:11px; margin-top:4px;">condition: step1.result.hasStock == true</div>
+  </div>
+</div>
+
+<div style="display:flex; align-items:center; gap:12px;">
+  <span style="background:#ff9800; color:#fff; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; flex-shrink:0;">3</span>
+  <div style="flex:1; background:#2d2a1e; border:1px solid #ff9800; border-radius:8px; padding:10px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <span style="color:#ff9800; font-weight:bold;">production_plan_create</span>
+        <span style="color:#888; font-size:11px; margin-left:8px;">自动创建排产计划</span>
+      </div>
+      <span style="background:#e65100; color:#fff; padding:2px 8px; border-radius:4px; font-size:11px;">⚙️ 条件启用</span>
+    </div>
+    <div style="color:#aaa; font-size:11px; margin-top:4px;">condition: step1.result.hasStock == false (库存不足时才排产)</div>
+  </div>
+</div>
+
+<div style="display:flex; align-items:center; gap:12px;">
+  <span style="background:#f44336; color:#fff; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; flex-shrink:0;">4</span>
+  <div style="flex:1; background:#2d1e1e; border:1px solid #f44336; border-radius:8px; padding:10px; opacity:0.5;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <span style="color:#f44336; font-weight:bold;">purchase_suggestion_create</span>
+        <span style="color:#888; font-size:11px; margin-left:8px;">自动采购建议</span>
+      </div>
+      <span style="background:#b71c1c; color:#fff; padding:2px 8px; border-radius:4px; font-size:11px;">❌ 六扇门已禁用</span>
+    </div>
+    <div style="color:#888; font-size:11px; margin-top:4px;">六扇门不需要自动采购建议 — 由采购部手动决定</div>
+  </div>
+</div>
+
+<div style="display:flex; align-items:center; gap:12px;">
+  <span style="background:#9c27b0; color:#fff; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; flex-shrink:0;">5</span>
+  <div style="flex:1; background:#2d1e2d; border:1px solid #9c27b0; border-radius:8px; padding:10px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <span style="color:#9c27b0; font-weight:bold;">notification_send</span>
+        <span style="color:#888; font-size:11px; margin-left:8px;">🆕 六扇门自定义: 通知生产主管</span>
+      </div>
+      <span style="background:#6a1b9a; color:#fff; padding:2px 8px; border-radius:4px; font-size:11px;">🆕 工厂新增</span>
+    </div>
+    <div style="color:#aaa; font-size:11px; margin-top:4px;">condition: always | params: {role: "production_supervisor", template: "new_order_approved"}</div>
+  </div>
+</div>
+
+</div>
+
+<div style="text-align:center; margin-top:16px; padding:12px; background:#1a1a2e; border-radius:8px;">
+  <span style="color:#ffd700;">Canvas 操作: 拖拽调序 · 开关步骤 · 编辑条件 · 新增步骤(从 348 个 Tool 中选择)</span>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ===== SECTION 3: Canvas UI 交互 ===== -->
+<div class="section" style="margin-top:24px;">
+<h3>3. Canvas UI — 6 个配置面板</h3>
+
+<div class="mockup">
+<div class="mockup-header">Canvas 编辑器布局</div>
+<div class="mockup-body" style="padding:0; background:#1a1a2e; min-height:400px;">
+
+<!-- Top bar -->
+<div style="background:#0d1117; padding:10px 16px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333;">
+  <div style="display:flex; gap:12px; align-items:center;">
+    <span style="color:#ffd700; font-weight:bold;">🏭 六扇门食品</span>
+    <span style="color:#666;">|</span>
+    <span style="color:#aaa; font-size:12px;">配置版本 v3 (DRAFT)</span>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <span style="background:#1e3a5f; color:#4fc3f7; padding:4px 12px; border-radius:4px; font-size:12px; cursor:pointer;">💾 保存草稿</span>
+    <span style="background:#1b5e20; color:#81c784; padding:4px 12px; border-radius:4px; font-size:12px; cursor:pointer;">🚀 发布</span>
+    <span style="background:#333; color:#aaa; padding:4px 12px; border-radius:4px; font-size:12px; cursor:pointer;">⏪ 回滚</span>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div style="display:flex; background:#0d1117; border-bottom:2px solid #333;">
+  <div style="padding:10px 20px; color:#ffd700; border-bottom:2px solid #ffd700; font-size:13px; font-weight:bold;">📋 模块&字段</div>
+  <div style="padding:10px 20px; color:#888; font-size:13px;">🔗 触发链</div>
+  <div style="padding:10px 20px; color:#888; font-size:13px;">🛡️ 校验规则</div>
+  <div style="padding:10px 20px; color:#888; font-size:13px;">🔧 工具开关</div>
+  <div style="padding:10px 20px; color:#888; font-size:13px;">⏰ 定时任务</div>
+  <div style="padding:10px 20px; color:#888; font-size:13px;">🤖 AI 助手</div>
+</div>
+
+<!-- Content area -->
+<div style="display:grid; grid-template-columns:220px 1fr 300px; min-height:300px;">
+  <!-- Left sidebar -->
+  <div style="background:#0d1117; border-right:1px solid #333; padding:12px;">
+    <div style="color:#888; font-size:11px; margin-bottom:8px;">模块列表</div>
+    <div style="padding:6px 10px; background:#1a2a1a; border-left:3px solid #4caf50; border-radius:4px; color:#4caf50; font-size:12px; margin-bottom:4px; cursor:pointer;">✅ 销售订单</div>
+    <div style="padding:6px 10px; background:#1a1a2e; border-radius:4px; color:#ccc; font-size:12px; margin-bottom:4px; cursor:pointer;">✅ BOM配方</div>
+    <div style="padding:6px 10px; background:#1a1a2e; border-radius:4px; color:#ccc; font-size:12px; margin-bottom:4px; cursor:pointer;">✅ 生产计划</div>
+    <div style="padding:6px 10px; background:#1a1a2e; border-radius:4px; color:#ccc; font-size:12px; margin-bottom:4px; cursor:pointer;">✅ 采购订单</div>
+    <div style="padding:6px 10px; background:#1a1a2e; border-radius:4px; color:#ccc; font-size:12px; margin-bottom:4px; cursor:pointer;">✅ 仓储管理</div>
+    <div style="padding:6px 10px; background:#1a1a2e; border-radius:4px; color:#ccc; font-size:12px; margin-bottom:4px; cursor:pointer;">✅ 质量检测</div>
+    <div style="padding:6px 10px; background:#2d1e1e; border-radius:4px; color:#666; font-size:12px; margin-bottom:4px; cursor:pointer;">❌ 设备管理</div>
+    <div style="padding:6px 10px; background:#2d1e1e; border-radius:4px; color:#666; font-size:12px; margin-bottom:4px; cursor:pointer;">❌ 餐饮运营</div>
+    <div style="color:#888; font-size:10px; margin-top:8px;">6/15 模块启用</div>
+  </div>
+
+  <!-- Center content -->
+  <div style="padding:16px;">
+    <div style="color:#fff; font-size:15px; font-weight:bold; margin-bottom:12px;">销售订单 — 字段配置</div>
+    <table style="width:100%; font-size:11px; border-collapse:collapse;">
+      <tr style="background:#1e1e2e; color:#888;">
+        <th style="padding:6px; text-align:left;">字段</th>
+        <th style="padding:6px;">类型</th>
+        <th style="padding:6px;">必填</th>
+        <th style="padding:6px;">可见</th>
+        <th style="padding:6px;">默认值</th>
+        <th style="padding:6px;">标签</th>
+      </tr>
+      <tr style="color:#ddd; border-bottom:1px solid #222;">
+        <td style="padding:6px;">orderNumber</td><td style="padding:6px; color:#888;">string</td>
+        <td style="padding:6px; text-align:center;">✅</td><td style="padding:6px; text-align:center;">✅</td>
+        <td style="padding:6px; color:#666;">auto</td><td style="padding:6px; color:#ff9800;">合同编号</td>
+      </tr>
+      <tr style="color:#ddd; border-bottom:1px solid #222;">
+        <td style="padding:6px;">customerId</td><td style="padding:6px; color:#888;">reference</td>
+        <td style="padding:6px; text-align:center;">✅</td><td style="padding:6px; text-align:center;">✅</td>
+        <td style="padding:6px; color:#666;">—</td><td style="padding:6px; color:#ff9800;">客户/门店</td>
+      </tr>
+      <tr style="color:#ddd; border-bottom:1px solid #222;">
+        <td style="padding:6px;">boxQuantity</td><td style="padding:6px; color:#888;">decimal</td>
+        <td style="padding:6px; text-align:center;">—</td><td style="padding:6px; text-align:center; color:#f44336;">❌</td>
+        <td style="padding:6px; color:#666;">—</td><td style="padding:6px;">下单箱数</td>
+      </tr>
+      <tr style="color:#ddd; border-bottom:1px solid #222;">
+        <td style="padding:6px;">estimatedCost</td><td style="padding:6px; color:#888;">decimal</td>
+        <td style="padding:6px; text-align:center;">—</td><td style="padding:6px; text-align:center; color:#f44336;">❌</td>
+        <td style="padding:6px; color:#666;">—</td><td style="padding:6px;">预估成本</td>
+      </tr>
+      <tr style="color:#888; font-size:10px;"><td colspan="6" style="padding:4px;">... 共 23 个字段, 17 可见 / 6 隐藏</td></tr>
+    </table>
+
+    <div style="margin-top:16px; color:#fff; font-size:14px; font-weight:bold;">工作流配置</div>
+    <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+      <span style="background:#1b5e20; color:#81c784; padding:4px 10px; border-radius:12px; font-size:11px;">DRAFT</span>
+      <span style="color:#444;">→</span>
+      <span style="background:#0d47a1; color:#64b5f6; padding:4px 10px; border-radius:12px; font-size:11px;">CONFIRMED</span>
+      <span style="color:#444;">→</span>
+      <span style="background:#4a148c; color:#ce93d8; padding:4px 10px; border-radius:12px; font-size:11px; text-decoration:line-through; opacity:0.5;">FINANCE_REVIEW (已跳过)</span>
+      <span style="color:#444;">→</span>
+      <span style="background:#e65100; color:#ffb74d; padding:4px 10px; border-radius:12px; font-size:11px;">PROCESSING</span>
+      <span style="color:#444;">→</span>
+      <span style="background:#1b5e20; color:#81c784; padding:4px 10px; border-radius:12px; font-size:11px;">SHIPPED → COMPLETED</span>
+    </div>
+    <div style="color:#ff9800; font-size:11px; margin-top:6px;">⚙️ hasFinanceReview = false (跳过财务审核)</div>
+  </div>
+
+  <!-- Right panel -->
+  <div style="background:#0d1117; border-left:1px solid #333; padding:12px;">
+    <div style="color:#888; font-size:11px; margin-bottom:8px;">🤖 AI 配置助手</div>
+    <div style="background:#1a1a2e; border-radius:8px; padding:10px; margin-bottom:8px;">
+      <div style="color:#4fc3f7; font-size:12px;">用户: "六扇门不需要财务审核和设备管理"</div>
+    </div>
+    <div style="background:#1a2a1a; border-radius:8px; padding:10px; margin-bottom:8px;">
+      <div style="color:#81c784; font-size:12px;">AI: 已执行 3 项配置:</div>
+      <div style="color:#aaa; font-size:11px; margin-top:4px;">
+        1. hasFinanceReview → false<br/>
+        2. 设备管理模块 → 禁用<br/>
+        3. 触发链 SO_FINANCE → 跳过审核步骤
+      </div>
+    </div>
+    <div style="background:#1a1a2e; border-radius:8px; padding:10px;">
+      <div style="color:#aaa; font-size:11px;">
+        💡 提示: 禁用财务审核后, 订单确认将直接进入生产流程。如需恢复, 在工作流面板开启 hasFinanceReview。
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</div>
+</div>
+
+<!-- ===== SECTION 4: 完成后能实现的 ===== -->
+<div class="section" style="margin-top:24px;">
+<h3>4. 完成后能实现的 — 10 个真实场景</h3>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+
+<div style="background:#1e1e2e; border-radius:10px; padding:14px; border-left:4px solid #4caf50;">
+  <div style="color:#4caf50; font-weight:bold;">场景 1: 新工厂 5 分钟上线</div>
+  <div style="color:#aaa; font-size:12px; margin-top:4px;">
+    <b>现在:</b> 开发写代码适配 2-4 周<br/>
+    <b>之后:</b> Canvas 选行业模板 → 调整模块 → 发布 → 5 分钟完成
+  </div>
+</div>
+
+<div style="background:#1e1e2e; border-radius:10px; padding:14px; border-left:4px solid #2196f3;">
+  <div style="color:#2196f3; font-weight:bold;">场景 2: 六扇门跳过质检环节</div>
+  <div style="color:#aaa; font-size:12px; margin-top:4px;">
+    <b>现在:</b> 改 Java 代码 → 部署 → 1 天<br/>
+    <b>之后:</b> 触发链面板 → 禁用 "生产完成→自动建质检" → 发布 → 1 分钟
+  </div>
+</div>
+
+<div style="background:#1e1e2e; border-radius:10px; padding:14px; border-left:4px solid #ff9800;">
+  <div style="color:#ff9800; font-weight:bold;">场景 3: 工厂 A 保质期 180 天, 工厂 B 90 天</div>
+  <div style="color:#aaa; font-size:12px; margin-top:4px;">
+    <b>现在:</b> 硬编码 plusDays(180), 所有工厂相同<br/>
+    <b>之后:</b> 默认值面板 → 工厂 A: 180, 工厂 B: 90 → 各自生效
+  </div>
+</div>
+
+<div style="background:#1e1e2e; border-radius:10px; padding:14px; border-left:4px solid #e91e63;">
+  <div style="color:#e91e63; font-weight:bold;">场景 4: 调整订单金额计算公式</div>
+  <div style="color:#aaa; font-size:12px; margin-top:4px;">
+    <b>现在:</b> 硬编码 qty × price × (1-discount)<br/>
+    <b>之后:</b> 公式面板 → 改为 qty × price × (1-discount) + shippingFee → 即时生效
+  </div>
+</div>
+
+<div style="background:#1e1e2e; border-radius:10px; padding:14px; border-left:4px solid #9c27b0;">
+  <div style="color:#9c27b0; font-weight:bold;">场景 5: 工厂 C 财务审批后自动通知钉钉</div>
+  <div style="color:#aaa; font-size:12px; margin-top:4px;">
+    <b>现在:</b> 不可能, 需要写代码<br/>
+    <b>之后:</b> 触发链 → 在 "审批通过" 后加一步 notification_send(dingtalk) → 完成
+  </div>
+</div>
+
+<div style="background:#1e1e2e; border-radius:10px; padding:14px; border-left:4px solid #00bcd4;">
+  <div style="color:#00bcd4; font-weight:bold;">场景 6: 订单 > 5000 元自动触发财务审核</div>
+  <div style="color:#aaa; font-size:12px; margin-top:4px;">
+    <b>现在:</b> 要么全审要么全不审<br/>
+    <b>之后:</b> 校验规则 → 加条件 "totalAmount > 5000 → 必须财务审核" → 小单直接通过
+  </div>
+</div>
+
+<div style="background:#1e1e2e; border-radius:10px; padding:14px; border-left:4px solid #8bc34a;">
+  <div style="color:#8bc34a; font-weight:bold;">场景 7: 禁用工厂 D 的 AI 排程</div>
+  <div style="color:#aaa; font-size:12px; margin-top:4px;">
+    <b>现在:</b> 348 个 Tool 全工厂共享, 无法分工厂<br/>
+    <b>之后:</b> 工具开关面板 → 工厂 D: 禁用 scheduling_* 系列 → 手动排程
+  </div>
+</div>
+
+<div style="background:#1e1e2e; border-radius:10px; padding:14px; border-left:4px solid #ff5722;">
+  <div style="color:#ff5722; font-weight:bold;">场景 8: 工厂 E 生产完成不自动扣料</div>
+  <div style="color:#aaa; font-size:12px; margin-top:4px;">
+    <b>现在:</b> BatchCompleted → 硬编码自动扣料<br/>
+    <b>之后:</b> 触发链 → 禁用 "batch_consumption_auto" 步骤 → 改为手动扣料
+  </div>
+</div>
+
+<div style="background:#1e1e2e; border-radius:10px; padding:14px; border-left:4px solid #607d8b;">
+  <div style="color:#607d8b; font-weight:bold;">场景 9: 修改凌晨定时任务为白天执行</div>
+  <div style="color:#aaa; font-size:12px; margin-top:4px;">
+    <b>现在:</b> cron 硬编码 "0 0 2 * * ?" (凌晨 2 点)<br/>
+    <b>之后:</b> 定时任务面板 → 改为 "0 0 8 * * ?" (早上 8 点) → 不用重启
+  </div>
+</div>
+
+<div style="background:#1e1e2e; border-radius:10px; padding:14px; border-left:4px solid #ffd700;">
+  <div style="color:#ffd700; font-weight:bold;">场景 10: AI 对话配置整个工厂</div>
+  <div style="color:#aaa; font-size:12px; margin-top:4px;">
+    <b>用户:</b> "这个工厂只做熟食, 不需要质检和设备模块, 账期 15 天, 出成率默认 92%"<br/>
+    <b>AI:</b> 自动配置 5 项 → Canvas 预览 → 用户确认 → 一键发布
+  </div>
+</div>
+
+</div>
+</div>
+
+<!-- ===== SECTION 5: 实施时间线 ===== -->
+<div class="section" style="margin-top:24px;">
+<h3>5. 实施时间线</h3>
+
+<div style="display:flex; gap:4px;">
+  <div style="flex:2; background:#1a2a1a; border:2px solid #4caf50; border-radius:10px; padding:12px; text-align:center;">
+    <div style="color:#4caf50; font-weight:bold;">Phase 1 ✅ 已完成</div>
+    <div style="color:#aaa; font-size:11px;">module_schemas + 3-layer merge<br/>SchemaFormRenderer + 动态渲染</div>
+    <div style="color:#666; font-size:10px; margin-top:4px;">Week 1-3 (已交付)</div>
+  </div>
+  <div style="flex:2; background:#1a1a2e; border:2px solid #ff9800; border-radius:10px; padding:12px; text-align:center;">
+    <div style="color:#ff9800; font-weight:bold;">Phase 2: Layer A</div>
+    <div style="color:#aaa; font-size:11px;">factory_tool_configs<br/>factory_skill_configs<br/>factory_trigger_chains</div>
+    <div style="color:#666; font-size:10px; margin-top:4px;">Week 4-7 (~4 周)</div>
+  </div>
+  <div style="flex:3; background:#1a1a2e; border:2px solid #2196f3; border-radius:10px; padding:12px; text-align:center;">
+    <div style="color:#2196f3; font-weight:bold;">Phase 3: Layer B</div>
+    <div style="color:#aaa; font-size:11px;">validation_rules + default_values<br/>formulas + scheduler_configs<br/>迁移 364 条规则 + 1,600 默认值</div>
+    <div style="color:#666; font-size:10px; margin-top:4px;">Week 8-13 (~6 周)</div>
+  </div>
+  <div style="flex:2; background:#1a1a2e; border:2px solid #ffd700; border-radius:10px; padding:12px; text-align:center;">
+    <div style="color:#ffd700; font-weight:bold;">Phase 4: Canvas UI</div>
+    <div style="color:#aaa; font-size:11px;">6 个配置面板<br/>AI 助手 (3 模式)<br/>版本管理 + 回滚</div>
+    <div style="color:#666; font-size:10px; margin-top:4px;">Week 14-17 (~4 周)</div>
+  </div>
+</div>
+</div>

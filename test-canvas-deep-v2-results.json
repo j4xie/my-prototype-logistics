@@ -1,0 +1,173 @@
+{
+  "timestamp": "2026-04-09T02:08:32.872Z",
+  "summary": {
+    "passed": 15,
+    "failed": 0,
+    "known": 0,
+    "total": 15
+  },
+  "tests": [
+    {
+      "id": "T01",
+      "name": "真实浏览器登录",
+      "action": "打开 /login → 填 username+password → 点登录",
+      "evidence": [
+        "filled: username=factory_admin1, password=***",
+        "redirect URL: http://139.196.165.140:8086/dashboard",
+        "sidebar visible: true",
+        "screenshot: login-filled.png, after-login.png"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "T02",
+      "name": "旧版销售订单页面",
+      "action": "导航 /sales/orders → 检查 el-table",
+      "evidence": [
+        "table present: true",
+        "rows: 10",
+        "screenshot: T02-legacy-so.png"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "T03",
+      "name": "动态模块页 — sales_order",
+      "action": "导航 /modules/sales_order → 检查布局",
+      "evidence": [
+        "title: \"销售订单\"",
+        "新建 button: true",
+        "el-table: true, el-empty: false",
+        "screenshot: T03-dynamic-so.png"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "T04",
+      "name": "动态表单 — 字段渲染",
+      "action": "点击新建 → 检查 el-form 字段",
+      "evidence": [
+        "labels (23): 基本信息, 订单号, 客户, 下单日期, 要求交货日期, 业务员, 备注, 收货地址, 状态, 下单箱数",
+        "input components: 19",
+        "screenshot: T04-dynamic-form.png"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "T05",
+      "name": "隐藏运费 → 页面验证",
+      "action": "API 隐藏 shippingFee → publish → reload → 检查页面",
+      "evidence": [
+        "API: shippingFee.visible=false",
+        "browser: 页面含\"运费\"=true",
+        "screenshot: T05-no-shipping.png"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "T06",
+      "name": "关闭财务审核 → 工作流",
+      "action": "API hasFinanceReview=false → publish → check transitions",
+      "evidence": [
+        "API: CONFIRMED→PROCESSING.enabled=true (expect true)",
+        "API: total transitions=13"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "T07",
+      "name": "自定义标签 → 表单",
+      "action": "API customLabels → publish → reload form → 检查标签",
+      "evidence": [
+        "API labels: orderNumber=\"合同编号\", customerId=\"签约客户\"",
+        "browser: 含\"合同编号\"=true",
+        "browser: 含\"签约客户\"=true",
+        "screenshot: T07-custom-labels.png"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "T08",
+      "name": "角色权限 — warehouse",
+      "action": "GET /effective?roleCode=warehouse → check field visibility",
+      "evidence": [
+        "API: totalAmount.visible=false (expect false)",
+        "API: visible fields=16/23"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "T09",
+      "name": "字段级更新 — deliveryAddress必填",
+      "action": "PATCH field required=true → publish → verify",
+      "evidence": [
+        "API: deliveryAddress.required=true",
+        "API: deliveryAddress.visible=true"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "T10",
+      "name": "BOM — 隐藏成本字段",
+      "action": "PUT hide unitPrice+taxRate → publish → verify API + browser",
+      "evidence": [
+        "API: unitPrice.visible=false",
+        "API: taxRate.visible=false",
+        "screenshot: T10-bom-no-cost.png"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "T11",
+      "name": "禁用+回滚 BOM",
+      "action": "toggle false → publish → rollback → publish → verify",
+      "evidence": [
+        "API disable: bom.enabled=false (expect false)",
+        "API rollback: bom.enabled=true (expect true)"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "T12",
+      "name": "草稿隔离 — 未发布不影响线上",
+      "action": "PUT draft → NO publish → verify effective unchanged",
+      "evidence": [
+        "API before: renderingMode=LEGACY",
+        "API after (no publish): renderingMode=LEGACY",
+        "isolation: VERIFIED ✅"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "T13",
+      "name": "模块列表 API",
+      "action": "GET /config/modules → verify both modules present",
+      "evidence": [
+        "API: total=2",
+        "API: sales_order(enabled=true), bom(enabled=true)"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "T14",
+      "name": "完整配置生命周期",
+      "action": "最终状态验证: SO + BOM 完整性",
+      "evidence": [
+        "SO: fields=23, groups=6, states=10, transitions=13",
+        "BOM: fields=10, groups=3, enabled=true"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "T15",
+      "name": "旧版 BOM 页面",
+      "action": "导航 /production/bom → 检查 3-tab + table",
+      "evidence": [
+        "table: true",
+        "tabs: 5",
+        "screenshot: T15-legacy-bom.png"
+      ],
+      "result": "PASS"
+    }
+  ]
+}

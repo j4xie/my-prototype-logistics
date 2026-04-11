@@ -1,0 +1,114 @@
+<h2>Canvas V2 Spec — Review</h2>
+<p class="subtitle">文件: docs/superpowers/specs/2026-04-09-canvas-v2-unified-config-engine.md (已 commit)</p>
+
+<div class="section">
+<h3>Spec 核心内容</h3>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+
+<div style="background:#1a2a1a; border:1px solid #4caf50; border-radius:8px; padding:12px;">
+<div style="color:#4caf50; font-weight:bold; margin-bottom:8px;">📊 7 张新表</div>
+<div style="font-size:12px; color:#ccc; line-height:1.8;">
+<b>Layer A:</b><br/>
+• factory_tool_configs (348 Tool 开关)<br/>
+• factory_skill_configs (16 Skill 开关+自定义DAG)<br/>
+• factory_trigger_chains (Event→Tool 步骤编排)<br/><br/>
+<b>Layer B:</b><br/>
+• factory_validation_rules (364 条校验规则)<br/>
+• factory_default_values (960+ 默认值)<br/>
+• factory_formulas (8 计算公式)<br/>
+• factory_scheduler_configs (55 定时任务)
+</div>
+</div>
+
+<div style="background:#1a1a2e; border:1px solid #2196f3; border-radius:8px; padding:12px;">
+<div style="color:#2196f3; font-weight:bold; margin-bottom:8px;">⚙️ 5 个执行引擎</div>
+<div style="font-size:12px; color:#ccc; line-height:1.8;">
+• TriggerChainExecutor — 替代 @EventListener<br/>
+• ValidationRuleEvaluator — 替代 if-throw<br/>
+• DefaultValueResolver — 替代 null-check<br/>
+• FormulaEngine — 替代硬编码计算<br/>
+• DynamicScheduler — 替代 @Scheduled cron<br/><br/>
+<em>全部有完整 Java 代码示例</em>
+</div>
+</div>
+
+<div style="background:#2d1e2d; border:1px solid #9c27b0; border-radius:8px; padding:12px;">
+<div style="color:#9c27b0; font-weight:bold; margin-bottom:8px;">🎨 Canvas UI (14 组件, 6 Tab)</div>
+<div style="font-size:12px; color:#ccc; line-height:1.8;">
+<b>V1 保留 (11):</b> CanvasEditor / ModuleTree / FieldConfig / FieldProperty / WorkflowDesigner(SVG) / PermissionMatrix / SchemaPreview / AIChatPanel / ConfigDiff / TemplateSelector / VersionHistory<br/><br/>
+<b>V2 新增 (3):</b><br/>
+• TriggerChainDesigner (触发链拖拽)<br/>
+• ValidationRulePanel (规则开关)<br/>
+• ToolSkillMatrix (工具/技能矩阵)
+</div>
+</div>
+
+<div style="background:#1e1e2e; border:1px solid #ffd700; border-radius:8px; padding:12px;">
+<div style="color:#ffd700; font-weight:bold; margin-bottom:8px;">🤖 3 种 AI Agent</div>
+<div style="font-size:12px; color:#ccc; line-height:1.8;">
+<b>Autopilot:</b> "新建烘焙工厂" → 全自动配置模块/字段/流程/工具<br/><br/>
+<b>Plan Mode:</b> "简化六扇门" → 生成 diff → 逐项审核 → 批量应用<br/><br/>
+<b>Action Mode:</b> 手动操作 → AI 实时提示关联影响
+</div>
+</div>
+</div>
+</div>
+
+<div class="section" style="margin-top:16px;">
+<h3>实施计划 (11 周)</h3>
+<div style="display:flex; gap:4px; font-size:11px;">
+  <div style="flex:2; background:#1a2a1a; border:2px solid #4caf50; border-radius:8px; padding:10px; text-align:center;">
+    <div style="color:#4caf50; font-weight:bold;">Phase 1 ✅</div>
+    <div style="color:#888;">已完成</div>
+  </div>
+  <div style="flex:2; background:#1e1e2e; border:2px solid #ff9800; border-radius:8px; padding:10px; text-align:center;">
+    <div style="color:#ff9800; font-weight:bold;">2a: Tool/Skill</div>
+    <div style="color:#888;">2 周</div>
+  </div>
+  <div style="flex:3; background:#1e1e2e; border:2px solid #2196f3; border-radius:8px; padding:10px; text-align:center;">
+    <div style="color:#2196f3; font-weight:bold;">2b: 规则外化</div>
+    <div style="color:#888;">3 周</div>
+  </div>
+  <div style="flex:4; background:#1e1e2e; border:2px solid #9c27b0; border-radius:8px; padding:10px; text-align:center;">
+    <div style="color:#9c27b0; font-weight:bold;">2c: Canvas UI</div>
+    <div style="color:#888;">4 周</div>
+  </div>
+  <div style="flex:2; background:#1e1e2e; border:2px solid #ffd700; border-radius:8px; padding:10px; text-align:center;">
+    <div style="color:#ffd700; font-weight:bold;">2d: 全模块</div>
+    <div style="color:#888;">2 周</div>
+  </div>
+</div>
+</div>
+
+<div class="section" style="margin-top:16px;">
+<h3>10 项验收标准</h3>
+<div style="font-size:12px; color:#ccc; line-height:2; columns:2;">
+  1. ✅ 新工厂 < 30 分钟配置上线<br/>
+  2. ✅ 禁用触发链步骤 → 业务行为变化<br/>
+  3. ✅ 关闭校验规则 → 允许之前禁止的操作<br/>
+  4. ✅ Tool 工厂级开关 → AI 功能差异<br/>
+  5. ✅ 默认值 per-factory → 各自生效<br/>
+  6. ✅ 公式可修改 → 计算结果变化<br/>
+  7. ✅ cron 热更新 → 不重启生效<br/>
+  8. ✅ AI Autopilot 全自动建配置<br/>
+  9. ✅ AI Plan Mode diff 审核<br/>
+  10. ✅ AI Action Mode 实时提示
+</div>
+</div>
+
+<div class="options" style="margin-top:16px;">
+  <div class="option" data-choice="spec-approved" onclick="toggleSelect(this)">
+    <div class="letter">✅</div>
+    <div class="content">
+      <h3>Spec 确认 — 开始写 implementation plan</h3>
+    </div>
+  </div>
+  <div class="option" data-choice="spec-changes" onclick="toggleSelect(this)">
+    <div class="letter">🔧</div>
+    <div class="content">
+      <h3>需要修改</h3>
+      <p>在终端说明</p>
+    </div>
+  </div>
+</div>

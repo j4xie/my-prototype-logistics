@@ -1,0 +1,136 @@
+{
+  "timestamp": "2026-04-09T02:47:11.279Z",
+  "summary": {
+    "pass": 9,
+    "fail": 3,
+    "total": 12
+  },
+  "tests": [
+    {
+      "id": "S1",
+      "name": "配置: 关闭财务审核",
+      "evidence": [
+        "hasFinanceReview: false",
+        "CONFIRMED→PROCESSING.enabled: true",
+        "visible fields: 17/23",
+        "customLabels: {\"orderNumber\":\"合同编号\",\"customerId\":\"客户/门店\"}"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "S2",
+      "name": "创建销售订单",
+      "evidence": [
+        "API POST /sales/orders: success=false",
+        "orderNumber: undefined",
+        "status: undefined",
+        "message: 订单行项目不能为空"
+      ],
+      "result": "FAIL"
+    },
+    {
+      "id": "S3",
+      "name": "确认订单 (DRAFT→CONFIRMED)",
+      "evidence": [
+        "API POST /confirm: success=false",
+        "status: undefined",
+        "canvas 配置允许 CONFIRMED→PROCESSING: true"
+      ],
+      "result": "FAIL"
+    },
+    {
+      "id": "S4",
+      "name": "跳过财务审核 — 配置驱动工作流",
+      "evidence": [
+        "CONFIRMED 可达: PENDING_FINANCE_REVIEW(提交审核), PROCESSING(开始生产), CANCELLED(取消)",
+        "PROCESSING 可直达: true",
+        "财务审核仍可选: true (optional, not required)",
+        "canvas 驱动: hasFinanceReview=false → 解锁 CONFIRMED→PROCESSING"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "S5",
+      "name": "开启财务审核 → PROCESSING 受限",
+      "evidence": [
+        "hasFinanceReview: true",
+        "CONFIRMED→PROCESSING.enabled: false (expect false — 被条件 !hasFinanceReview 阻塞)",
+        "CONFIRMED→PENDING_FINANCE.enabled: true"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "S6",
+      "name": "完整财务审核链路: DRAFT→CONFIRMED→PENDING→APPROVED",
+      "evidence": [
+        "创建: success=false, undefined"
+      ],
+      "result": "FAIL"
+    },
+    {
+      "id": "S7",
+      "name": "BOM 配置默认值",
+      "evidence": [
+        "yieldRate.defaultValue: 92 (expect 92)",
+        "taxRate.defaultValue: 9 (expect 9)",
+        "sortOrder.visible: false (expect false)"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "S8",
+      "name": "动态列表 — 自定义表头",
+      "evidence": [
+        "headers: # | 合同编号 | 客户/门店 | 下单日期 | 要求交货日期 | 订单总金额 | 状态 | 操作",
+        "含\"合同编号\": true",
+        "含\"客户/门店\": true",
+        "screenshot: S8-dynamic-list.png"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "S9",
+      "name": "动态表单 — 配置驱动字段",
+      "evidence": [
+        "labels (16): 合同编号, 客户/门店, 下单日期, 要求交货日期, 业务员, 备注, 收货地址, 状态...",
+        "groups (6): 基本信息 | 订单明细 | 金额汇总 | 运费与其他费用 | 业务中心 | 财务信息",
+        "hidden: 箱数=true, 预估成本=true",
+        "custom: 合同编号=true, 客户/门店=true",
+        "screenshot: S9-dynamic-form.png"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "S10",
+      "name": "旧版页面 — 新创建订单可见",
+      "evidence": [
+        "rows: 10",
+        "contains test order: false",
+        "screenshot: S10-legacy-with-orders.png"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "S11",
+      "name": "BOM 动态表单 — 排序隐藏+3分组",
+      "evidence": [
+        "labels (9): 产品(成品), 原辅料, 物料分类, 备注, 标准用量, 计量单位, 出成率(%), 单价, 税率(%)",
+        "groups (3): 基本信息 | 用量与出成 | 成本",
+        "排序(hidden): true",
+        "screenshot: S11-bom-dynamic-form.png"
+      ],
+      "result": "PASS"
+    },
+    {
+      "id": "S12",
+      "name": "4 角色权限差异",
+      "evidence": [
+        "factory_super_admin: 17可见/6隐藏",
+        "sales_staff: 17可见/6隐藏",
+        "finance: 17可见/6隐藏",
+        "warehouse: 15可见/8隐藏"
+      ],
+      "result": "PASS"
+    }
+  ]
+}
