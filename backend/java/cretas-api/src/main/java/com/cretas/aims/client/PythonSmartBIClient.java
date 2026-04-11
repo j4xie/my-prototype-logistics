@@ -557,6 +557,76 @@ public class PythonSmartBIClient {
         return mapFields(request);
     }
 
+    // ==================== 业务 Section 调用 (Domain-agnostic) ====================
+
+    /**
+     * 调用 Python 业务 section endpoint（domain-agnostic）。
+     *
+     * <p>这是架构原则 #5 的物理验证点 — 新业态接入时应该零改这个
+     * {@code PythonSmartBIClient}，只需要在 {@code ai/tool/impl/{new_domain}/}
+     * 下加新的 Tool 类调用此方法即可。
+     *
+     * <p>完全复用既有的 {@link #executeWithRetry(Request, Class)} +
+     * {@link PythonServiceCircuitBreaker} + 构造函数里的 {@code X-Internal-Secret}
+     * 拦截器基础设施，不单独维护一套 circuit breaker / retry / timeout。
+     *
+     * <p>URL 格式: {@code {baseUrl}/api/smartbi/{domain}/sections/{sectionName}}。
+     * 例如 {@code callSection("restaurant", "cost_rigidity", req)} 会 POST 到
+     * {@code {baseUrl}/api/smartbi/restaurant/sections/cost_rigidity}。
+     *
+     * @param domain      业务域 ({@code "restaurant"}, {@code "retail"},
+     *                    {@code "beauty"}, ...)
+     * @param sectionName section 名 (如 {@code "cost_rigidity"}, {@code "diagnostics"})
+     * @param request     通用 section 请求参数
+     * @return            section 结果; {@link Optional#empty()} 表示 Python
+     *                    服务不可用或熔断中
+     * @since 2026-04-10
+     */
+    public Optional<PythonSectionResponse> callSection(
+            String domain, String sectionName, PythonSectionRequest request) {
+        if (!config.isEnabled()) {
+            log.debug("Python SmartBI 服务未启用，跳过 section 调用 {}/{}", domain, sectionName);
+            return Optional.empty();
+        }
+
+        try {
+            String url = config.getFullUrl("/api/smartbi/" + domain + "/sections/" + sectionName);
+            log.debug("调用 Python section: {} / {}", domain, sectionName);
+
+            Request httpRequest = new Request.Builder()
+                    .url(url)
+                    .post(RequestBody.create(JSON, objectMapper.writeValueAsString(request)))
+                    .build();
+
+            PythonSectionResponse response = executeWithRetry(httpRequest, PythonSectionResponse.class);
+            return Optional.ofNullable(response);
+
+        } catch (IOException | PythonServiceUnavailableException e) {
+            log.error("Section 调用失败 {}/{}: {}", domain, sectionName, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * 便捷方法：调用餐饮域 section endpoint。
+     *
+     * <p>内部 delegate 到
+     * {@link #callSection(String, String, PythonSectionRequest)} with
+     * {@code domain="restaurant"}。保留为独立入口的原因：餐饮域的 Tool
+     * 调用点更清晰，且未来可能针对餐饮 section 加 typed {@code data} 子 DTO。
+     *
+     * @param sectionName section 名 (如 {@code "cost_rigidity"}, {@code "diagnostics"})
+     * @param request     餐饮 section 请求参数
+     * @return            section 结果; {@link Optional#empty()} 表示 Python
+     *                    服务不可用或熔断中
+     * @since 2026-04-10
+     */
+    public Optional<PythonRestaurantSectionResponse> callRestaurantSection(
+            String sectionName, PythonRestaurantSectionRequest request) {
+        return callSection("restaurant", sectionName, request.toGeneric())
+                .map(PythonRestaurantSectionResponse::fromGeneric);
+    }
+
     // ==================== 新增：图表配置推荐 ====================
 
     /**
