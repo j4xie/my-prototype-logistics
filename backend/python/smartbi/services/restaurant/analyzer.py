@@ -371,26 +371,36 @@ class RestaurantAnalyzerV2:
 
         # ── Section 1: 命名归一 (POS only) ──
         # NOTE: explicit `is None` checks — pandas DataFrames raise ValueError on truthiness.
+        # DIRECT CALL: MenuNormalizationHandler.lazy-builds an inner V2 without
+        # forwarding db_session, so its menu_normalizer.apply() can't read the
+        # restaurant_dish_alias table — silently dropping customer-confirmed
+        # alias merges. self.menu_normalizer carries the correct db_session
+        # because __init__ wired it. See TODO(P2): refactor handlers to accept
+        # state via context.
         if pos_df is not None and product_col in pos_df.columns:
-            menu_resp = self._menu_normalization_handler.compute(_make_req(), context)
-            if menu_resp.status == SectionStatus.OK:
-                report["sections"]["menuNormalization"] = menu_resp.data
+            report["sections"]["menuNormalization"] = self._normalize_menu(pos_df, product_col)
 
         # ── Section 2: 渠道毛利率 (POS only) ──
         # Legacy emits a warning if POS is provided but the required columns
         # are missing — preserve that exact warning string for byte identity.
+        # DIRECT CALL: ChannelMarginHandler.lazy-builds an inner V2 without
+        # forwarding sku_form_manager / monthly_calibrator / db_session, so
+        # its bom_resolver runs at Layer 1 — silently downgrading the precision
+        # of channel-level COGS / gross_profit / gross_margin_pct. self.channel_margin_calc
+        # carries the correct bom_resolver with full state. See TODO(P2):
+        # refactor handlers to accept state via context.
         if (
             pos_df is not None
             and order_method_col in pos_df.columns
             and revenue_col in pos_df.columns
         ):
-            channel_resp = self._channel_margin_handler.compute(_make_req(), context)
-            if channel_resp.status == SectionStatus.OK:
-                channel_section = channel_resp.data
-                report["sections"]["channelMargin"] = channel_section
-                # 渠道分析的 advice 进 executive summary
-                for advice in channel_section.get("adviceZh", []):
-                    report["executiveSummary"].append(advice)
+            channel_section = self._compute_channel_margin(
+                pos_df, order_method_col, revenue_col, store_id, period
+            )
+            report["sections"]["channelMargin"] = channel_section
+            # 渠道分析的 advice 进 executive summary
+            for advice in channel_section.get("adviceZh", []):
+                report["executiveSummary"].append(advice)
         else:
             if pos_df is not None:
                 report["warnings"].append(
@@ -657,19 +667,13 @@ class RestaurantAnalyzerV2:
 
         # ── Week 4.4: BOM Layer status (报告当前精度状态) ──
         # Always emitted (legacy line: report["sections"]["bomLayerStatus"] = ...).
-        # The handler caches its own RestaurantAnalyzerV2 keyed by
-        # (factory_id, sub_sector); for factories that DO supply
-        # sku_form_manager / monthly_calibrator the cached handler-V2 won't
-        # see them and will report Layer 1 instead. None of the existing
-        # tests pass these, so byte identity holds for the test suite.
-        bom_resp = self._bom_layer_status_handler.compute(_make_req(), context)
-        if bom_resp.status == SectionStatus.OK:
-            report["sections"]["bomLayerStatus"] = bom_resp.data
-        else:
-            # Should never happen — handler always returns OK with default
-            # Layer 1 dict — but fall back to direct call for safety so the
-            # always-emitted invariant holds.
-            report["sections"]["bomLayerStatus"] = self._build_bom_layer_status()
+        # DIRECT CALL: BomLayerStatusHandler.lazy-builds an inner V2 without
+        # forwarding sku_form_manager / monthly_calibrator, so its
+        # _build_bom_layer_status() always reports Layer 1 — silently masking
+        # any Layer 2/3 precision the outer analyzer was configured for.
+        # self._build_bom_layer_status() inspects the outer analyzer's state
+        # correctly. See TODO(P2): refactor handlers to accept state via context.
+        report["sections"]["bomLayerStatus"] = self._build_bom_layer_status()
 
         # ─── 总结统计 ───
         report["summary"] = {
