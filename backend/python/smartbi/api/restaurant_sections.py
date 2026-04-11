@@ -19,6 +19,7 @@ from fastapi import APIRouter, HTTPException, Path
 from pydantic import BaseModel, Field
 
 from smartbi.services.restaurant.sections.base import SectionRequest, SectionStatus
+from smartbi.services.restaurant.sections.cache import SectionCache
 from smartbi.services.restaurant.sections.benchmark_alerts import BenchmarkAlertsHandler
 from smartbi.services.restaurant.sections.bom_layer_status import BomLayerStatusHandler
 from smartbi.services.restaurant.sections.calibration_history import (
@@ -46,6 +47,8 @@ from smartbi.services.restaurant.sections.temporal_comparison import (
 )
 
 logger = logging.getLogger(__name__)
+_cache = SectionCache(ttl_seconds=300)
+
 router = APIRouter(
     prefix="/api/smartbi/restaurant/sections",
     tags=["Restaurant Sections"],
@@ -119,6 +122,12 @@ def compute_section(
         params=body.params,
     )
 
+    cache_key = handler.cache_key(req)
+    cached = _cache.get(cache_key)
+    if cached is not None:
+        # Return a copy with fromCache=True; do NOT mutate the stored dict.
+        return {**cached, "fromCache": True}
+
     try:
         response = handler.compute(req, context={})
     except Exception as exc:
@@ -128,7 +137,7 @@ def compute_section(
         logger.exception("Section %s crashed during compute", section_name)
         raise HTTPException(status_code=500, detail=f"Section {section_name} crashed: {exc}") from exc
 
-    return {
+    result = {
         "success": response.status == SectionStatus.OK,
         "sectionName": response.section_name,
         "status": response.status.value,
@@ -136,7 +145,13 @@ def compute_section(
         "warnings": response.warnings,
         "cacheKey": response.cache_key,
         "computedAtMs": response.computed_at_ms,
+        "fromCache": False,
     }
+    # Only cache OK responses — SKIPPED/FAILED may resolve on next request
+    # (e.g. after the caller uploads more data).
+    if response.status == SectionStatus.OK:
+        _cache.set(cache_key, result)
+    return result
 
 
 @router.get("/list")
