@@ -12,6 +12,12 @@ import com.cretas.aims.service.MixedTrainingDataService.MixedTrainingDataSet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -161,10 +167,21 @@ public class ModelTrainingScheduler {
             request.put("factory_id", factoryId);
             request.put("model_types", modelTypes);
 
-            String url = aiServiceUrl + "/ml/train";
-            @SuppressWarnings("unchecked")
-            Map<String, Object> response = restTemplate.postForObject(url, request, Map.class);
+            // Java → Python internal calls must include X-Internal-Secret header
+            // (see backend/python/auth_middleware.py:115 — accepts this header and
+            //  bypasses JWT Bearer requirement for internal service-to-service traffic).
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            String internalSecret = System.getenv().getOrDefault("INTERNAL_API_SECRET", "cretas-internal-2026");
+            headers.set("X-Internal-Secret", internalSecret);
 
+            HttpEntity<Map<String, Object>> httpEntity = new HttpEntity<>(request, headers);
+            String url = aiServiceUrl + "/ml/train";
+            ResponseEntity<Map<String, Object>> responseEntity = restTemplate.exchange(
+                    url, HttpMethod.POST, httpEntity,
+                    new ParameterizedTypeReference<Map<String, Object>>() {});
+
+            Map<String, Object> response = responseEntity.getBody();
             if (response != null) {
                 Boolean success = (Boolean) response.get("success");
                 if (Boolean.TRUE.equals(success)) {
@@ -176,6 +193,9 @@ public class ModelTrainingScheduler {
                     log.warn("工厂 {} 模型训练请求失败: {}", factoryId, response.get("error"));
                 }
             }
+        } catch (org.springframework.web.client.HttpClientErrorException.NotFound e) {
+            // Python /ml/train endpoint not deployed yet — log once at WARN, don't pollute error.log
+            log.warn("触发工厂 {} 模型训练: Python /ml/train 端点不存在 (404),跳过", factoryId);
         } catch (Exception e) {
             log.error("触发工厂 {} 模型训练失败: {}", factoryId, e.getMessage(), e);
         }
