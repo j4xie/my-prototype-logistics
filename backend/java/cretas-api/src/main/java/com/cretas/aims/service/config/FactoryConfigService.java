@@ -61,4 +61,12 @@ public interface FactoryConfigService {
      */
     void logWorkflowTransition(String factoryId, int configVersion, String fromStatus,
                                 String toStatus, Long operatorId, String notes);
+
+    /**
+     * Round 10 Fix: reorder fields within a module's DRAFT config.
+     * Returns {newVersion, reorderedCount}. Throws if DRAFT missing or version mismatch.
+     */
+    Map<String, Object> reorderFields(String factoryId, String moduleCode,
+                                       List<String> fieldOrder, Long expectedVersion,
+                                       Long operatorId);
 }

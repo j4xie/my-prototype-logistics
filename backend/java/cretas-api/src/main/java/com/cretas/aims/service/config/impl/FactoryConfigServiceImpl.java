@@ -1270,4 +1270,63 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
         Map<String, Object> after = Map.of("status", toStatus, "configVersion", configVersion);
         logChange(factoryId, null, "WORKFLOW_TRANSITION", before, after, summary, operatorId);
     }
+
+    @Override
+    @Transactional
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> reorderFields(String factoryId, String moduleCode,
+                                              List<String> fieldOrder, Long expectedVersion,
+                                              Long operatorId) {
+        // 1. Find DRAFT
+        FactoryConfiguration draft = factoryConfigurationRepository.findDraft(factoryId)
+                .orElseThrow(() -> new BusinessException("没有 DRAFT 配置可重排字段 — 请先创建草稿"));
+
+        // 2. Optimistic lock check
+        if (draft.getRowVersion() == null || !draft.getRowVersion().equals(expectedVersion)) {
+            throw new BusinessException("版本冲突: 当前版本 " + draft.getRowVersion()
+                    + ", 请求版本 " + expectedVersion + " — 请刷新后重试");
+        }
+
+        int targetVersion = draft.getConfigVersion();
+
+        // 3. Find or create FactoryModuleConfig for this module
+        FactoryModuleConfig fmc = factoryModuleConfigRepository
+                .findByFactoryIdAndModuleCodeAndConfigVersion(factoryId, moduleCode, targetVersion)
+                .orElseGet(() -> {
+                    FactoryModuleConfig c = new FactoryModuleConfig();
+                    c.setFactoryId(factoryId);
+                    c.setModuleCode(moduleCode);
+                    c.setConfigVersion(targetVersion);
+                    c.setEnabled(true);
+                    c.setFieldConfig(new HashMap<>());
+                    return c;
+                });
+
+        // 4. Update sortOrder of each field in fieldConfig.fields by its index in fieldOrder
+        Map<String, Object> fieldConfig = fmc.getFieldConfig() != null
+                ? fmc.getFieldConfig() : new HashMap<>();
+        Map<String, Object> fields = (Map<String, Object>) fieldConfig.computeIfAbsent(
+                "fields", k -> new HashMap<String, Object>());
+
+        int reorderedCount = 0;
+        for (int i = 0; i < fieldOrder.size(); i++) {
+            String fieldCode = fieldOrder.get(i);
+            Map<String, Object> fieldEntry = (Map<String, Object>) fields.computeIfAbsent(
+                    fieldCode, k -> new HashMap<String, Object>());
+            fieldEntry.put("sortOrder", (i + 1) * 10);  // 10, 20, 30... leaves gaps
+            reorderedCount++;
+        }
+        fmc.setFieldConfig(fieldConfig);
+        factoryModuleConfigRepository.save(fmc);
+
+        // 5. Audit
+        logChange(factoryId, moduleCode, "REORDER_FIELDS", null,
+                Map.of("fieldOrder", fieldOrder, "reorderedCount", reorderedCount),
+                "字段重排: " + reorderedCount + " 个字段", operatorId);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("newVersion", draft.getRowVersion());
+        result.put("reorderedCount", reorderedCount);
+        return result;
+    }
 }

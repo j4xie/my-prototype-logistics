@@ -10,6 +10,7 @@ import com.cretas.aims.service.config.FactoryConfigService;
 import com.cretas.aims.utils.TokenUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -331,6 +332,26 @@ public class ConfigController {
         Long operatorId = extractUserId(authorization);
         Map<String, Object> result = configService.importConfig(
             factoryId, bundle, operatorId != null ? operatorId : 0L);
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * Round 10 Fix (R7a drag-reorder silent data loss): immediate field reorder with
+     * optimistic lock. Previously the frontend updated sortOrder locally but saveDraft
+     * payload didn't include it, so customers lost field ordering on page refresh.
+     */
+    @PostMapping("/modules/{moduleCode}/reorder-fields")
+    @RequireRole({"factory_super_admin", "permission_admin"})
+    @Operation(summary = "重排模块字段顺序 (Round 10 Fix)")
+    public ApiResponse<Map<String, Object>> reorderFields(
+            @PathVariable String factoryId,
+            @PathVariable String moduleCode,
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @Valid @RequestBody ReorderFieldsRequest request) {
+        Long operatorId = extractUserId(authorization);
+        Map<String, Object> result = configService.reorderFields(
+                factoryId, moduleCode, request.getFieldOrder(),
+                request.getExpectedVersion(), operatorId != null ? operatorId : 0L);
         return ApiResponse.success(result);
     }
 
