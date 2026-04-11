@@ -162,6 +162,7 @@ class RestaurantAnalyzerV2:
         db_session: Optional[Session] = None,
         sku_form_manager: Optional[SkuFormManager] = None,
         monthly_calibrator: Optional[MonthlyPurchaseCalibrator] = None,
+        margin_spec: Optional["MarginSpec"] = None,
     ):
         if not factory_id:
             raise ValueError("factory_id 不能为空")
@@ -175,6 +176,10 @@ class RestaurantAnalyzerV2:
         # Week 4.4 BOM Layer 2 + 3 (可选)
         self.sku_form_manager = sku_form_manager
         self.monthly_calibrator = monthly_calibrator
+
+        # P3.5B F1: MarginSpec controls boundary decisions for _extract_financial_metrics
+        from smartbi.services.finance.margin_spec import MarginSpec as _MarginSpec
+        self.margin_spec = margin_spec if margin_spec is not None else _MarginSpec()
 
         # 初始化所有底层组件
         self.config_resolver = DynamicConfigResolver(
@@ -766,6 +771,17 @@ class RestaurantAnalyzerV2:
         rent = self._safe_float(current.get("rent"))
         other_cost = self._safe_float(current.get("other_cost"))
         net_profit = self._safe_float(current.get("net_profit"))
+
+        # P3.5B F1: Apply MarginSpec boundary decisions
+        if food_cost is not None:
+            if self.margin_spec.include_staff_meal_in_cogs:
+                staff_meal = self._safe_float(current.get("staff_meal_cost"))
+                if staff_meal is not None:
+                    food_cost = food_cost + staff_meal
+            if self.margin_spec.include_gas_in_cogs:
+                gas_cost = self._safe_float(current.get("gas_cost"))
+                if gas_cost is not None:
+                    food_cost = food_cost + gas_cost
 
         # 比率
         food_cost_ratio = food_cost / revenue * 100 if food_cost and revenue > 0 else None

@@ -269,3 +269,67 @@ class TestRestaurantAnalyzerV2Integration:
         """Empty sub_sector should raise."""
         with pytest.raises(ValueError, match="sub_sector"):
             RestaurantAnalyzerV2(factory_id="F1", sub_sector="")
+
+
+# === P3.5B F1 tests: MarginSpec integration ===
+
+def test_f1_margin_spec_staff_meal_excluded_from_cogs():
+    """When includeStaffMealInCogs=False, staff meal stays separate from food_cost."""
+    from smartbi.services.finance.margin_spec import MarginSpec
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    spec = MarginSpec(include_staff_meal_in_cogs=False)
+    analyzer = RestaurantAnalyzerV2(
+        factory_id="F-TEST",
+        sub_sector="火锅",
+        margin_spec=spec,
+    )
+    report = analyzer.analyze(financial_data={
+        "current": {
+            "revenue": 731048,
+            "food_cost": 307040,
+            "staff_meal_cost": 8000,
+            "labor_cost": 237660,
+            "rent": 85000,
+        },
+    })
+    fm = report["sections"]["financialMetrics"]
+    # When excluded, food_cost stays at 307040 (not +8000)
+    assert fm["foodCost"] == 307040
+
+
+def test_f1_margin_spec_staff_meal_included_by_default():
+    """Default includeStaffMealInCogs=True merges staff meal into food_cost."""
+    from smartbi.services.finance.margin_spec import MarginSpec
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    analyzer = RestaurantAnalyzerV2(
+        factory_id="F-TEST",
+        sub_sector="火锅",
+        margin_spec=MarginSpec(),  # defaults — include_staff_meal=True
+    )
+    report = analyzer.analyze(financial_data={
+        "current": {
+            "revenue": 731048,
+            "food_cost": 307040,
+            "staff_meal_cost": 8000,
+            "labor_cost": 237660,
+        },
+    })
+    fm = report["sections"]["financialMetrics"]
+    # When included, food_cost = 307040 + 8000 = 315040
+    assert fm["foodCost"] == 315040
+
+
+def test_f1_no_margin_spec_uses_defaults_preserves_byte_identity():
+    """Regression: omitted margin_spec must match pre-3.5B behavior."""
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    analyzer = RestaurantAnalyzerV2(factory_id="F-TEST", sub_sector="火锅")
+    report = analyzer.analyze(financial_data={
+        "current": {"revenue": 731048, "food_cost": 307040, "labor_cost": 237660},
+    })
+    fm = report["sections"]["financialMetrics"]
+    assert fm["revenue"] == 731048
+    assert fm["foodCost"] == 307040
+    assert fm["laborCost"] == 237660
