@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -35,9 +36,21 @@ import java.util.stream.Collectors;
  * doesn't share context. Legacy callers (no deviceId) use "default".
  *
  * <p>Part of P4 Task 4.2.
+ *
+ * <p><strong>Conditional registration (Apr 11 2026 hot-fix)</strong>: only
+ * registered when a {@link StringRedisTemplate} bean exists. On profiles
+ * that exclude {@code RedisAutoConfiguration} (e.g. local {@code pg} dev
+ * profile), this bean is silently absent and
+ * {@link com.cretas.aims.service.impl.AIIntentServiceImpl} — which injects
+ * {@link ConversationStateService} with {@code required=false} — falls back
+ * to zero-context intent recognition. Without this guard, Spring's
+ * constructor-resolver tries the no-arg fallback and fails with
+ * {@code NoSuchMethodException: RedisConversationStateService.<init>()},
+ * blocking application startup entirely.
  */
 @Slf4j
 @Service
+@ConditionalOnBean(StringRedisTemplate.class)
 public class RedisConversationStateService implements ConversationStateService {
 
     @Getter
