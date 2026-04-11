@@ -81,6 +81,24 @@ const paymentStatusMap: Record<string, { text: string; type: string }> = {
   REJECTED: { text: '已驳回', type: 'danger' },
 };
 
+// V3 P0-9 / v1 §2.4.4 — 订单级状态 (区别于 record-level paymentStatusMap/invoiceStatusMap)
+const orderPaymentStatusMap: Record<string, { text: string; type: string }> = {
+  UNPAID: { text: '待收款', type: 'info' },
+  PARTIAL: { text: '部分收款', type: 'warning' },
+  PAID: { text: '已收款', type: 'success' },
+};
+const orderInvoiceStatusMap: Record<string, { text: string; type: string }> = {
+  NOT_INVOICED: { text: '待开票', type: 'info' },
+  PARTIAL_INVOICED: { text: '部分开票', type: 'warning' },
+  FULLY_INVOICED: { text: '已开票', type: 'success' },
+};
+const orderTransportStatusMap: Record<string, { text: string; type: string }> = {
+  PLANNING: { text: '待出厂', type: 'info' },
+  IN_PRODUCTION: { text: '生产中', type: 'warning' },
+  IN_TRANSIT: { text: '运输中', type: 'warning' },
+  DELIVERED: { text: '已发货', type: 'success' },
+};
+
 onMounted(() => {
   loadOrder();
   loadDeliveries();
@@ -507,6 +525,15 @@ async function handleCreatePayment() {
             <span class="page-title">{{ label('salesOrder') }}详情</span>
             <el-tag v-if="order" :type="(statusMap[order.status]?.type) || 'info'" size="large">
               {{ statusMap[order.status]?.text || order.status }}
+            </el-tag>
+            <el-tag v-if="order" :type="orderPaymentStatusMap[order.paymentStatus]?.type || 'info'" size="small" style="margin-left: 8px">
+              收款: {{ orderPaymentStatusMap[order.paymentStatus]?.text || '待收款' }}
+            </el-tag>
+            <el-tag v-if="order" :type="orderInvoiceStatusMap[order.invoiceStatus]?.type || 'info'" size="small" style="margin-left: 4px">
+              开票: {{ orderInvoiceStatusMap[order.invoiceStatus]?.text || '待开票' }}
+            </el-tag>
+            <el-tag v-if="order" :type="orderTransportStatusMap[order.transportPlanStatus]?.type || 'info'" size="small" style="margin-left: 4px">
+              运输: {{ orderTransportStatusMap[order.transportPlanStatus]?.text || '待出厂' }}
             </el-tag>
           </div>
           <div class="header-right" v-if="order && canWrite">

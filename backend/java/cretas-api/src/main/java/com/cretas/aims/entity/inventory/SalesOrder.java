@@ -229,4 +229,17 @@ public class SalesOrder extends BaseEntity {
         BigDecimal tax = taxAmount != null ? taxAmount : BigDecimal.ZERO;
         return totalAmount.subtract(discount).add(tax);
     }
+
+    /**
+     * 收款状态 — v1 §2.4.4 "待收款/部分收款/已收款".
+     * 从 paidAmount vs totalAmount 派生, 不存 DB.
+     */
+    @Transient
+    public String getPaymentStatus() {
+        BigDecimal paid = this.paidAmount != null ? this.paidAmount : BigDecimal.ZERO;
+        BigDecimal total = this.totalAmount != null ? this.totalAmount : BigDecimal.ZERO;
+        if (paid.compareTo(BigDecimal.ZERO) <= 0) return "UNPAID";
+        if (paid.compareTo(total) >= 0) return "PAID";
+        return "PARTIAL";
+    }
 }
