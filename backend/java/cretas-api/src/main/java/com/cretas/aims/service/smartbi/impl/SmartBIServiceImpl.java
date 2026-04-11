@@ -1338,7 +1338,35 @@ public class SmartBIServiceImpl implements SmartBIService {
     }
 
     /**
-     * 根据意图执行查询
+     * 根据意图执行查询.
+     *
+     * <p><strong>P6 TECH DEBT — legacy switch-case.</strong> This method hard-codes
+     * the routing for ~15 {@link SmartBIIntent} enum cases (sales / finance /
+     * department / forecast etc). It does <em>not</em> go through
+     * {@link com.cretas.aims.service.IntentExecutorService} and therefore does
+     * not participate in the Tool-Skill pipeline. Adding a new intent here
+     * requires: (a) extending {@link SmartBIIntent} enum, (b) adding a case
+     * branch here, (c) wiring a dedicated analysis Service. The rest of the
+     * system (AI Chat, mobile app, CRM etc.) uses Tool-Skill via
+     * {@code IntentExecutorService.execute()} and can add intents via a Flyway
+     * migration + {@code @Component Tool} class alone.
+     *
+     * <p>Restaurant diagnostic intents ({@code RESTAURANT_*}) are routed
+     * through the Tool-Skill pipeline via
+     * {@link #tryRouteRestaurantDiagnostic} before reaching this method —
+     * that's the P5.6 patch. For a full fix, the right move is:
+     * <ol>
+     *   <li>Convert all 15 legacy handlers (salesService / financeService /
+     *       etc) into {@code AbstractBusinessTool} implementations with
+     *       {@code @Component} registration</li>
+     *   <li>Add Flyway migrations binding each {@link SmartBIIntent} enum code
+     *       to its new tool_name in {@code ai_intent_configs}</li>
+     *   <li>Replace this method with a single
+     *       {@code intentExecutorService.execute()} call + NLQueryResponse
+     *       adapter (same pattern as {@link #mapIntentExecuteResponse})</li>
+     *   <li>Delete the {@link SmartBIIntent} enum and this method</li>
+     * </ol>
+     * Estimated effort: 2-3 weeks, ~2000 LOC touched. Tracked in P6 plan.
      */
     private Object executeIntent(String factoryId, IntentResult intentResult) {
         DateRange range = intentResult.getTimeRange();
