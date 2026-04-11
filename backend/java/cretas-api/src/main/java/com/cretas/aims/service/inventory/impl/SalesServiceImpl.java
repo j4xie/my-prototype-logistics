@@ -700,12 +700,41 @@ public class SalesServiceImpl implements SalesService {
     @Override
     @Transactional
     public FinishedGoodsBatch createFinishedGoodsBatch(String factoryId, FinishedGoodsBatch batch, Long userId) {
+        // Round 11 T3: Canvas Integration Template hook 1 — DB-driven validation
+        if (validationRuleEvaluator != null) {
+            try {
+                validationRuleEvaluator.validate(factoryId, "finished_goods", "CREATE",
+                        java.util.Map.of(
+                            "productTypeId", batch.getProductTypeId() != null ? batch.getProductTypeId() : "",
+                            "producedQuantity", batch.getProducedQuantity() != null ? batch.getProducedQuantity() : java.math.BigDecimal.ZERO));
+            } catch (com.cretas.aims.exception.BusinessException e) { throw e; }
+            catch (Exception e) { log.warn("Canvas validation non-blocking: {}", e.getMessage()); }
+        }
+
         batch.setFactoryId(factoryId);
         batch.setCreatedBy(userId);
         if (batch.getBatchNumber() == null) {
             batch.setBatchNumber(generateFinishedGoodsBatchNumber(factoryId));
         }
         batch = finishedGoodsBatchRepository.save(batch);
+
+        // Round 11 T3 — close the FinishedGoodsCreatedEvent gap. Previously the event only
+        // fired from SupplyChainOrchestrator after production plan completion with a
+        // sourceOrderId. Direct createFinishedGoodsBatch calls (manual entry, re-packaging,
+        // rework) were invisible to trigger chains even though the event is already
+        // whitelisted. This hook makes every finished-goods creation path observable.
+        try {
+            applicationEventPublisher.publishEvent(new com.cretas.aims.event.FinishedGoodsCreatedEvent(
+                    this,
+                    batch.getFactoryId(),
+                    null,  // sourceOrderId: null for direct creation (no production plan link)
+                    batch.getProductTypeId(),
+                    batch.getProducedQuantity(),
+                    batch.getId()));
+        } catch (Exception e) {
+            log.warn("Publish FinishedGoodsCreatedEvent failed for {}: {}", batch.getId(), e.getMessage());
+        }
+
         log.info("创建成品批次: factoryId={}, batchNumber={}, productTypeId={}", factoryId, batch.getBatchNumber(), batch.getProductTypeId());
         return batch;
     }
