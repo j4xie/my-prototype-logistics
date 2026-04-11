@@ -238,9 +238,14 @@ public class DDLExecutor {
 
     private String mapFieldTypeToSQL(String fieldType) {
         // Round 4 Fix P1-11: Added DATETIME and BOOLEAN types.
-        // DATETIME = TIMESTAMP (same as DATE since PostgreSQL TIMESTAMP carries full precision)
-        // BOOLEAN  = BOOLEAN for "是否合格"/"是否含税" type switches
-        // TEXTAREA = TEXT for long-form notes
+        // Round 7a Fix: REFERENCE and LINE_ITEMS had no case and fell through to
+        // default -> VARCHAR(500), silently corrupting intended data types. REFERENCE
+        // should store a FK id (UUID-width VARCHAR is the safe choice since our id
+        // columns mix BIGINT and UUID::text). LINE_ITEMS should store the row collection
+        // as JSONB so downstream callers can round-trip the Vue LineItemsEditor value.
+        //
+        // If the caller really has a custom type not in this list we now throw rather
+        // than silently fall through — better to fail the DDL than corrupt the column.
         return switch (fieldType == null ? "TEXT" : fieldType.toUpperCase()) {
             case "TEXT" -> "VARCHAR(500)";
             case "TEXTAREA", "LONGTEXT" -> "TEXT";
@@ -251,7 +256,13 @@ public class DDLExecutor {
             case "DATETIME", "TIMESTAMP" -> "TIMESTAMP";
             case "BOOLEAN", "BOOL" -> "BOOLEAN";
             case "ATTACHMENT" -> "VARCHAR(2000)";
-            default -> "VARCHAR(500)";
+            case "REFERENCE" -> "VARCHAR(64)";   // FK id — works for both UUID::text and BIGINT
+            case "LINE_ITEMS" -> "JSONB";         // row collection as JSONB, parsed by LineItemsEditor
+            default -> {
+                log.error("Unknown fieldType '{}' — cannot generate DDL. Add a case to mapFieldTypeToSQL or reject at Controller validation.", fieldType);
+                throw new com.cretas.aims.exception.BusinessException(
+                        "不支持的动态字段类型: " + fieldType + " (请联系开发补充 DDL 映射)");
+            }
         };
     }
 }

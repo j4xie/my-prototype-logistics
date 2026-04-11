@@ -13,6 +13,25 @@ const leftCollapsed = ref(false)
 const rightCollapsed = ref(false)
 const isOnboarding = ref(false)
 
+// Round 7a fix: in-flight action lock. Parent view sets to the action code when
+// starting an await call, resets to null in finally. CanvasHeader emitLocked()
+// reads this to drop duplicate clicks and drive :loading/:disabled binding.
+const inFlightAction = ref<string | null>(null)
+
+// Round 7a fix: install beforeunload guard ONCE at module load. When dirtyCount > 0,
+// browser shows "unsaved changes" confirm on tab close / refresh / navigation.
+// Previously there was zero protection → data silently lost on tab close.
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', (e) => {
+    if (dirtyCount.value > 0) {
+      e.preventDefault()
+      // Modern browsers ignore custom text; just setting returnValue is enough to trigger prompt.
+      e.returnValue = ''
+      return ''
+    }
+  })
+}
+
 // Restore collapse state from localStorage
 const savedState = localStorage.getItem('canvas-editor-state')
 if (savedState) {
@@ -125,6 +144,7 @@ export function useCanvasEditor() {
   return {
     factoryId, selectedModule, activeTab, configVersion, dirtyCount,
     leftCollapsed, rightCollapsed, isOnboarding,
+    inFlightAction,  // Round 7a: action-button single-flight lock state
     status, isReadOnly, canSubmitReview, canApprove, canPublishNow, versionLabel,
     loadVersion, markDirty, clearDirty,
     toggleLeft, toggleRight, enterFocusMode, exitFocusMode, applyResponsive,

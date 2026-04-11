@@ -45,34 +45,46 @@ export const DynamicFieldsView: React.FC<Props> = ({
   const [values, setValues] = useState<Record<string, any>>({});
 
   useEffect(() => {
+    // Round 7a P0 fix: previously this useEffect had no cleanup, so when the user
+    // rapidly switched factoryId/moduleCode/recordId, the late-arriving response of
+    // the previous factory could overwrite state for the new factory. For a compliance
+    // angle this was a cross-factory data leak: factory A's user could briefly see
+    // factory B's field values if props changed mid-fetch. We now track an "active
+    // request id" and discard stale responses.
+    let cancelled = false;
+    const activeKey = `${factoryId}|${moduleCode}|${recordId}`;
+
+    async function loadData() {
+      if (!factoryId || !moduleCode || !recordId) {
+        if (!cancelled) setLoading(false);
+        return;
+      }
+      if (!cancelled) setLoading(true);
+      try {
+        const [config, customValues] = await Promise.all([
+          canvasApiClient.getEffectiveConfig(factoryId, moduleCode),
+          canvasApiClient.getCustomFields(factoryId, moduleCode, recordId),
+        ]);
+        if (cancelled) return;  // props changed while we were awaiting — discard
+        const allFields = onlyDynamic
+          ? canvasApiClient.filterDynamicFields(config)
+          : (config?.fields || []).filter(f => f.visible);
+        setFields(allFields);
+        setValues(customValues);
+      } catch (e) {
+        if (cancelled) return;
+        setFields([]);
+        setValues({});
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
     loadData();
-  }, [factoryId, moduleCode, recordId]);
-
-  async function loadData() {
-    if (!factoryId || !moduleCode || !recordId) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    try {
-      const [config, customValues] = await Promise.all([
-        canvasApiClient.getEffectiveConfig(factoryId, moduleCode),
-        canvasApiClient.getCustomFields(factoryId, moduleCode, recordId),
-      ]);
-
-      const allFields = onlyDynamic
-        ? canvasApiClient.filterDynamicFields(config)
-        : (config?.fields || []).filter(f => f.visible);
-
-      setFields(allFields);
-      setValues(customValues);
-    } catch (e) {
-      setFields([]);
-      setValues({});
-    } finally {
-      setLoading(false);
-    }
-  }
+    return () => {
+      cancelled = true;
+    };
+  }, [factoryId, moduleCode, recordId, onlyDynamic]);
 
   function formatValue(field: EffectiveField, value: any): string {
     if (value == null) return '—';

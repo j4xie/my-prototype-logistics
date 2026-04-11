@@ -4,6 +4,7 @@ import com.cretas.aims.ai.client.DashScopeClient;
 import com.cretas.aims.ai.tool.ToolExecutor;
 import com.cretas.aims.ai.tool.ToolRegistry;
 import com.cretas.aims.ai.dto.ToolCall;
+import com.cretas.aims.config.RequireRole;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.utils.TokenUtils;
@@ -84,6 +85,11 @@ public class CanvasAIController {
 
     @PostMapping("/chat")
     @Operation(summary = "Canvas AI 对话 (DashScope Qwen)")
+    // Round 7a P0 fix: AI chat in autopilot mode calls arbitrary canvas_* tools via LLM.
+    // Previously NO auth check — any authenticated user (viewer/operator/etc) could run
+    // "禁用 production / 应用 RESTAURANT 模板" and the LLM would execute DDL-level changes.
+    // Now restricted to canvas config admins only.
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ApiResponse<AIResponse> chat(
             @PathVariable String factoryId,
             @RequestHeader(value = "Authorization", required = false) String authorization,
@@ -123,6 +129,8 @@ public class CanvasAIController {
 
     @PostMapping("/apply-diffs")
     @Operation(summary = "批量应用 Plan Mode 生成的变更")
+    // Round 7a P0 fix: same exposure as /chat — plan-mode diffs execute canvas_* tools.
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ApiResponse<String> applyDiffs(
             @PathVariable String factoryId,
             @RequestHeader(value = "Authorization", required = false) String authorization,

@@ -121,9 +121,24 @@ import OnboardingWizard from './OnboardingWizard.vue'
 const {
   factoryId, selectedModule, activeTab, dirtyCount,
   leftCollapsed, rightCollapsed, isOnboarding,
+  inFlightAction,  // Round 7a: single-flight action lock
   toggleLeft, toggleRight, enterFocusMode, exitFocusMode,
   loadVersion, applyResponsive, clearDirty,
 } = useCanvasEditor()
+
+// Round 7a: wrap every action handler with an in-flight lock. CanvasHeader's
+// emitLocked() already drops duplicate clicks client-side; this ensures that
+// if a handler is somehow invoked twice (e.g. keyboard shortcut bypass),
+// the second invocation is still a no-op.
+async function withLock(code: string, fn: () => Promise<void>) {
+  if (inFlightAction.value !== null) return
+  inFlightAction.value = code
+  try {
+    await fn()
+  } finally {
+    inFlightAction.value = null
+  }
+}
 
 const pendingChanges = ref<ConfigDiff[]>([])
 const showApproveDialog = ref(false)
@@ -145,73 +160,76 @@ async function applyChanges() {
   } catch { ElMessage.error('应用失败') }
 }
 
+// Round 7a: all action functions now run under withLock() to prevent double-submit.
 async function saveDraft() {
-  if (!factoryId.value) {
-    ElMessage.warning('未找到工厂 ID')
-    return
-  }
-  // Canvas V3 uses immediate-save pattern (每个子编辑器独立写 API),
-  // saveDraft 触发 saveModuleConfig 确保 FactoryConfiguration 的 DRAFT 版本存在,
-  // 然后刷新 version 确认服务器端状态一致.
-  try {
-    // Auto-pick sales_order if no module selected — ensures saveDraft always creates/touches a draft.
-    // Without this, clicking 保存草稿 on a fresh canvas (no module selected) was a no-op.
-    const moduleToSave = selectedModule.value || 'sales_order'
-    await saveModuleConfig(factoryId.value, moduleToSave, {
-      enabled: true,
-    })
-    await loadVersion()
-    clearDirty()
-    ElMessage.success('草稿已保存')
-  } catch (e) {
-    console.error('Save draft failed:', e)
-    ElMessage.error('保存失败: ' + ((e as any)?.message || 'unknown'))
-  }
+  await withLock('save', async () => {
+    if (!factoryId.value) { ElMessage.warning('未找到工厂 ID'); return }
+    try {
+      const moduleToSave = selectedModule.value || 'sales_order'
+      await saveModuleConfig(factoryId.value, moduleToSave, { enabled: true })
+      await loadVersion()
+      clearDirty()
+      ElMessage.success('草稿已保存')
+    } catch (e) {
+      console.error('Save draft failed:', e)
+      ElMessage.error('保存失败: ' + ((e as any)?.message || 'unknown'))
+    }
+  })
 }
 async function submitReview() {
-  await submitForReview(factoryId.value)
-  ElMessage.success('已提交审核')
-  loadVersion()
+  await withLock('submit-review', async () => {
+    await submitForReview(factoryId.value)
+    ElMessage.success('已提交审核')
+    await loadVersion()
+  })
 }
 async function doApprove(notes: string) {
-  await approveConfig(factoryId.value, notes)
-  showApproveDialog.value = false
-  ElMessage.success('已审核通过，等待发布窗口')
-  loadVersion()
+  await withLock('approve', async () => {
+    await approveConfig(factoryId.value, notes)
+    showApproveDialog.value = false
+    ElMessage.success('已审核通过，等待发布窗口')
+    await loadVersion()
+  })
 }
 async function doReject(reason: string) {
-  await rejectConfig(factoryId.value, reason)
-  showRejectDialog.value = false
-  ElMessage.warning('已驳回')
-  loadVersion()
+  await withLock('reject', async () => {
+    await rejectConfig(factoryId.value, reason)
+    showRejectDialog.value = false
+    ElMessage.warning('已驳回')
+    await loadVersion()
+  })
 }
 async function publishNow() {
-  await ElMessageBox.confirm('确定立即发布？将跳过发布窗口等待。', '立即发布', { type: 'warning' })
-  await apiPublishNow(factoryId.value)
-  ElMessage.success('已发布')
-  loadVersion()
+  // Confirm dialog outside the lock so user can cancel without holding the lock.
+  try {
+    await ElMessageBox.confirm('确定立即发布？将跳过发布窗口等待。', '立即发布', { type: 'warning' })
+  } catch { return }
+  await withLock('publish-now', async () => {
+    await apiPublishNow(factoryId.value)
+    ElMessage.success('已发布')
+    await loadVersion()
+  })
 }
 async function cancelApproval() {
-  await apiCancelApproval(factoryId.value)
-  ElMessage.info('已取消，回到草稿')
-  loadVersion()
+  await withLock('cancel-approval', async () => {
+    await apiCancelApproval(factoryId.value)
+    ElMessage.info('已取消，回到草稿')
+    await loadVersion()
+  })
 }
 async function newDraft() {
-  // For PUBLISHED factories: clicking 新建草稿 creates a new DRAFT version on top of the PUBLISHED one.
-  // Reuses saveDraft() which calls saveModuleConfig(enabled:true) — this triggers getOrCreateDraft() on backend.
-  if (!factoryId.value) {
-    ElMessage.warning('未找到工厂 ID')
-    return
-  }
-  try {
-    const moduleToSave = selectedModule.value || 'sales_order'
-    await saveModuleConfig(factoryId.value, moduleToSave, { enabled: true })
-    await loadVersion()
-    clearDirty()
-    ElMessage.success('新草稿已创建')
-  } catch (e) {
-    ElMessage.error('创建草稿失败: ' + ((e as any)?.message || 'unknown'))
-  }
+  await withLock('new-draft', async () => {
+    if (!factoryId.value) { ElMessage.warning('未找到工厂 ID'); return }
+    try {
+      const moduleToSave = selectedModule.value || 'sales_order'
+      await saveModuleConfig(factoryId.value, moduleToSave, { enabled: true })
+      await loadVersion()
+      clearDirty()
+      ElMessage.success('新草稿已创建')
+    } catch (e) {
+      ElMessage.error('创建草稿失败: ' + ((e as any)?.message || 'unknown'))
+    }
+  })
 }
 function rollback() { ElMessage.info('回滚到上一版本'); loadVersion() }
 
