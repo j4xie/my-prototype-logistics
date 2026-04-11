@@ -98,6 +98,7 @@ if [[ -z "$PSQL_BIN" ]]; then
     exit 1
 fi
 echo "  psql    : $PSQL_BIN"
+export PSQL_BIN_OVERRIDE="$PSQL_BIN"   # propagate to seed-and-reset.sh so it skips its own loop
 
 # 1b. node >= 18
 if ! command -v node &>/dev/null 2>&1; then
@@ -131,10 +132,17 @@ if ! bash "$SCRIPT_DIR/wait-for-health.sh" "${BACKEND_URL}/api/mobile/health" 10
 fi
 
 # 1e. Web-admin port check (timeout 10s for pre-check)
-WEB_HOST="${WEB_URL#http://}"   # strip scheme
-WEB_HOST="${WEB_HOST%%:*}"      # strip :port and path
-WEB_PORT_RAW="${WEB_URL##*:}"   # everything after last colon
+# Parse WEB_URL into host+port, handling both http:// and https:// schemes.
+WEB_WITHOUT_SCHEME="${WEB_URL#http://}"
+WEB_WITHOUT_SCHEME="${WEB_WITHOUT_SCHEME#https://}"
+WEB_HOST="${WEB_WITHOUT_SCHEME%%:*}"
+WEB_HOST="${WEB_HOST%%/*}"      # handle no-port case (strip path)
+WEB_PORT_RAW="${WEB_WITHOUT_SCHEME##*:}"
 WEB_PORT="${WEB_PORT_RAW%%/*}"  # strip path if any
+# If no explicit port (e.g. "https://admin.example.com"), default by scheme.
+if [[ "$WEB_PORT" == "$WEB_HOST" ]]; then
+    if [[ "$WEB_URL" == https://* ]]; then WEB_PORT=443; else WEB_PORT=80; fi
+fi
 echo "  Checking web-admin at $WEB_HOST:$WEB_PORT..."
 if ! bash "$SCRIPT_DIR/wait-for-port.sh" "$WEB_HOST" "$WEB_PORT" 10 2>/dev/null; then
     echo -e "${RED}ERROR: Web-admin not listening on port $WEB_PORT.${RESET}" >&2
