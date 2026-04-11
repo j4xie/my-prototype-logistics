@@ -42,6 +42,9 @@ from smartbi.services.restaurant.sections.review_analysis import ReviewAnalysisH
 from smartbi.services.restaurant.sections.store_pnl_one_pager import (
     StorePnlOnePagerHandler,
 )
+from smartbi.services.restaurant.sections.shrinkage_analysis import (
+    ShrinkageAnalysisHandler,
+)
 from smartbi.services.restaurant.sections.stored_value import StoredValueHandler
 from smartbi.services.restaurant.sections.temporal_comparison import (
     TemporalComparisonHandler,
@@ -76,6 +79,7 @@ HANDLERS = {
     "calibration_history": CalibrationHistoryHandler(),
     "store_pnl_one_pager": StorePnlOnePagerHandler(),
     "bom_layer_status": BomLayerStatusHandler(),
+    "shrinkage_analysis": ShrinkageAnalysisHandler(),
 }
 
 
