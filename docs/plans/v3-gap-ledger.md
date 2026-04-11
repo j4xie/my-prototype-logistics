@@ -133,3 +133,27 @@
 2. 修 Priority 2 的 5 项小补丁 (~6-8h)
 3. 重跑 Task 10 G2 测试 (现在角色应该能 login 了)
 4. 继续 Task 11+ E2E 框架 (或并行 worktree merge)
+
+---
+
+## Phase B Step 3 Batch 3 — Task 11 G3 UI Bug Fixes (2026-04-11)
+
+Task 11 G3 production chain E2E 发现 2 个 live prod UI bug，全部已修复并 commit。
+
+### Bug 1 — FMR 操作按钮永久隐藏 ✅ FIXED `36bbb4271`
+
+**文件**: `web-admin/src/views/factory/material-requisitions/list.vue` 第 25 行
+**原因**: `canWrite('factory') || canWrite('material')` — 两者均不是 `permission.ts` 中的有效模块名，`hasModulePermission()` 始终返回 false
+**修复**: 改为 `canWrite('production')`（FMR 属生产子系统）
+**影响**: 所有角色（包括 factory_super_admin）在 prod 中均无法看到开始备料/调拨/签收/关单按钮
+
+### Bug 2 — 完成计划端点参数不匹配 ✅ FIXED `760ee228c`
+
+**文件**: `backend/.../controller/ProductionPlanController.java` 第 217 行（原）
+**原因**: controller 使用 `@RequestParam BigDecimal actualQuantity`，但 Vue list.vue 第 322 行用 `post(url, { actualQuantity: ... })` 发 JSON body，`@RequestParam` 读不到 body 字段 → 400 "缺少必要参数"
+**修复**: Option A — 改为 `@RequestBody Map<String, Object> body`，内部 `body.get("actualQuantity")` 并加 null-check
+**影响**: 生产计划"完成"操作从来无法通过 UI 完成
+
+### Bug 3 — 全局验证规则 `tank_id` 阻断 E2E 工厂计划创建 (已知 workaround)
+
+**不是 prod blocker**，是 E2E 测试工厂的配置 artifact。Task 11 通过 DB seed 占位规则绕过。无需代码修复。
