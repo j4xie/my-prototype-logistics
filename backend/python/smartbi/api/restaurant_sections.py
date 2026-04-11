@@ -49,6 +49,7 @@ from smartbi.services.restaurant.sections.department_pnl import DepartmentPnlHan
 from smartbi.services.restaurant.sections.cross_chain_benchmark import (
     CrossChainBenchmarkHandler,
 )
+from smartbi.services.restaurant.sections.forecast import RestaurantForecastHandler
 from smartbi.services.restaurant.sections.menu_engineering import MenuEngineeringHandler
 from smartbi.services.restaurant.sections.monthly_ppt_export import MonthlyPptExportHandler
 from smartbi.services.restaurant.sections.shrinkage_analysis import (
@@ -93,6 +94,7 @@ HANDLERS = {
     "menu_engineering": MenuEngineeringHandler(),
     "monthly_ppt_export": MonthlyPptExportHandler(),
     "cross_chain_benchmark": CrossChainBenchmarkHandler(),
+    "restaurant_forecast": RestaurantForecastHandler(),
 }
 
 

@@ -70,7 +70,8 @@ class RestaurantSkillsRegistrationTest {
                 "restaurant_stored_value",
                 "restaurant_store_pnl_one_pager",
                 "restaurant_bom_layer_status",
-                "restaurant_menu_engineering"
+                "restaurant_menu_engineering",
+                "restaurant_forecast"
         );
         assertThat(def.getContextNeeded()).contains("factoryId");
         assertThat(def.isEnabled()).isTrue();
