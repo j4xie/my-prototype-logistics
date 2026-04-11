@@ -375,3 +375,63 @@ def test_f2_dual_margin_without_gross_revenue_falls_back():
     assert "grossMarginUnfolded" in fm
     # When gross_revenue absent, fallback to revenue -> same as folded
     assert fm["grossMarginUnfolded"] == fm["grossMarginFolded"]
+
+
+# === P3.5B F5 tests: ExpenseAccountTree loader ===
+
+def test_f5_analyzer_loads_hotpot_expense_tree_by_id():
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    analyzer = RestaurantAnalyzerV2(
+        factory_id="F-TEST",
+        sub_sector="火锅",
+        expense_account_tree_id="hotpot_default",
+    )
+    tree = analyzer.get_expense_account_tree()
+    assert tree is not None
+    # Hotpot tree should have the critical leaves
+    assert "工资" in tree.nodes
+    assert "充卡赠送" in tree.nodes
+    assert "房租费" in tree.nodes
+    assert "水费" in tree.nodes
+
+
+def test_f5_analyzer_default_tree_is_5_bucket_fallback():
+    """No tree_id -> load 'default.yaml' (5-bucket legacy schema)."""
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    analyzer = RestaurantAnalyzerV2(factory_id="F-TEST", sub_sector="火锅")
+    tree = analyzer.get_expense_account_tree()
+    codes = set(tree.nodes.keys())
+    # Legacy 5-bucket schema
+    for expected in ["food_cost", "labor_cost", "rent", "other_cost", "net_profit"]:
+        assert expected in codes, f"Missing legacy bucket: {expected}"
+
+
+def test_f5_analyzer_unknown_tree_id_raises_on_access():
+    """Unknown tree id fails loudly on first access, not construction."""
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    # Construction should succeed (lazy load)
+    analyzer = RestaurantAnalyzerV2(
+        factory_id="F-TEST",
+        sub_sector="火锅",
+        expense_account_tree_id="nonexistent_tree_xyz",
+    )
+    # First access should raise
+    with pytest.raises((FileNotFoundError, ValueError), match="nonexistent"):
+        analyzer.get_expense_account_tree()
+
+
+def test_f5_analyzer_tree_loaded_only_once_cached():
+    """Lazy load caches the result -- subsequent calls return same instance."""
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    analyzer = RestaurantAnalyzerV2(
+        factory_id="F-TEST",
+        sub_sector="火锅",
+        expense_account_tree_id="hotpot_default",
+    )
+    tree1 = analyzer.get_expense_account_tree()
+    tree2 = analyzer.get_expense_account_tree()
+    assert tree1 is tree2  # same instance (cached)

@@ -171,6 +171,7 @@ class RestaurantAnalyzerV2:
         sku_form_manager: Optional[SkuFormManager] = None,
         monthly_calibrator: Optional[MonthlyPurchaseCalibrator] = None,
         margin_spec: Optional["MarginSpec"] = None,
+        expense_account_tree_id: Optional[str] = None,  # P3.5B F5
     ):
         if not factory_id:
             raise ValueError("factory_id 不能为空")
@@ -188,6 +189,10 @@ class RestaurantAnalyzerV2:
         # P3.5B F1: MarginSpec controls boundary decisions for _extract_financial_metrics
         from smartbi.services.finance.margin_spec import MarginSpec as _MarginSpec
         self.margin_spec = margin_spec if margin_spec is not None else _MarginSpec()
+
+        # P3.5B F5: expense account tree lazy-loaded on first access
+        self.expense_account_tree_id = expense_account_tree_id or "default"
+        self._expense_tree_cache = None  # Optional[ExpenseAccountTree]
 
         # 初始化所有底层组件
         self.config_resolver = DynamicConfigResolver(
@@ -257,6 +262,36 @@ class RestaurantAnalyzerV2:
         self._multi_store_handler = MultiStoreComparisonHandler()
         self._calibration_handler = CalibrationHistoryHandler()
         self._bom_layer_status_handler = BomLayerStatusHandler()
+
+    # ── P3.5B F5: expense account tree ─────────────────
+
+    def get_expense_account_tree(self):
+        """Lazy-load the expense account tree by id.
+
+        Tree YAML files live in knowledge/restaurant/expense_account_tree/{id}.yaml.
+        Default id is 'default' (5-bucket fallback). Raises FileNotFoundError
+        if the id doesn't match a YAML file.
+
+        Part of P3.5B F5. Consumers: expense_breakdown section handler (F6),
+        future leaf-level diagnostic rules.
+        """
+        if self._expense_tree_cache is None:
+            from pathlib import Path
+            from smartbi.services.finance.expense_account_tree import load_tree_from_yaml
+
+            yaml_path = (
+                Path(__file__).parents[2]
+                / "knowledge"
+                / "restaurant"
+                / "expense_account_tree"
+                / f"{self.expense_account_tree_id}.yaml"
+            )
+            if not yaml_path.exists():
+                raise FileNotFoundError(
+                    f"Expense account tree {self.expense_account_tree_id!r} not found at {yaml_path}"
+                )
+            self._expense_tree_cache = load_tree_from_yaml(yaml_path)
+        return self._expense_tree_cache
 
     # ── 主入口 ─────────────────────────────────────────
 
