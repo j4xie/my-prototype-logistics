@@ -204,3 +204,35 @@ def test_stored_value_skipped_without_financial_data():
     response = handler.compute(req, context={})
     assert response.status == SectionStatus.SKIPPED
     assert any("financial_data" in w for w in response.warnings)
+
+
+def test_stored_value_triggers_critical_at_7pct():
+    """Regression: 鼎鲜 7.07% stored_value_giveaway ratio must be 'critical'.
+
+    Previous thresholds (10% warning, 15% critical) missed this.
+    Real mature hotpot chains have 5-8% dependency — above that is a
+    liquidity risk, not just a KPI concern. P3.5A QW1 lowered thresholds
+    to 5% warning / 7% critical.
+    """
+    from smartbi.services.restaurant.sections.stored_value import StoredValueHandler
+    from smartbi.services.restaurant.sections.base import SectionRequest, SectionStatus
+
+    h = StoredValueHandler()
+    req = SectionRequest(
+        factory_id="F-DINGXIAN-YIWU",
+        upload_id=None,
+        sub_sector="火锅",
+        params={"financial_data": {"current": {
+            "revenue": 731048,
+            "stored_value_giveaway": 51680.61,  # 7.07% of revenue
+        }}},
+    )
+    resp = h.compute(req, context={})
+
+    assert resp.status == SectionStatus.OK, (
+        f"Expected OK, got {resp.status}. Warnings: {resp.warnings}"
+    )
+    assert resp.data.get("severity") == "critical", (
+        f"Expected 'critical' for 7.07% ratio, got {resp.data.get('severity')}. "
+        f"Data: {resp.data}"
+    )

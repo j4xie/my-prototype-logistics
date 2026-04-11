@@ -5,10 +5,10 @@
   - 记账时常被埋在"营业费用" 而非"折扣额" 里, 容易被忽视
   - 充卡赠送越多, 现金流越依赖"先收钱后服务", 风险越高
 
-阈值:
-  - <5%   健康
-  - 5-10% 警戒
-  - >10%  严重依赖 (财务风险)
+阈值 (P3.5A QW1, 2026-04-10 — 匹配真实火锅行业实测):
+  - <5%  健康
+  - 5-7% 警戒
+  - >=7% 严重依赖 (财务风险 / 流动性风险)
 
 使用示例:
     >>> analyzer = StoredValueAnalyzer()
@@ -19,7 +19,7 @@
     ...     previous_stored_value_balance=500000.0,  # 上月末储值余额
     ... )
     >>> print(result.dependency_pct)  # 0.0707
-    >>> print(result.severity)  # 'warning'
+    >>> print(result.severity)  # 'critical' (>=7% threshold, P3.5A QW1)
 """
 from __future__ import annotations
 
@@ -129,10 +129,15 @@ class StoredValueAnalyzer:
         )
 
     def _evaluate_severity(self, dependency_pct: float) -> tuple[Severity, str]:
-        """阈值: <5% info / 5-10% warning / >10% critical"""
-        if dependency_pct >= 0.10:
+        """阈值: <5% info / 5-7% warning / >=7% critical
+
+        P3.5A QW1 (2026-04-10): 真实火锅头部品牌 (鼎鲜 2026-02 实测 7.07%)
+        显示 7%+ 已是流动性风险, 而非仅 KPI 警戒。原阈值 10% 过宽,
+        完全错过鼎鲜场景. 新阈值: 5% warning / 7% critical.
+        """
+        if dependency_pct >= 0.07:  # 原 0.10 → 降低至 0.07 以覆盖实际火锅风险
             return ("critical", "🔴 严重依赖")
-        if dependency_pct >= 0.05:
+        if dependency_pct >= 0.05:  # 警戒区间保持 5% 下限
             return ("warning", "🟡 警戒")
         return ("info", "🟢 健康")
 
@@ -140,7 +145,7 @@ class StoredValueAnalyzer:
         self, dep_pct: float, charge_ratio: Optional[float]
     ) -> list[str]:
         warnings: list[str] = []
-        if dep_pct >= 0.10:
+        if dep_pct >= 0.07:  # 与 _evaluate_severity critical 阈值保持一致 (P3.5A QW1)
             warnings.append(
                 f"充卡赠送占比 {dep_pct * 100:.2f}% 严重过高 (健康 <5%), "
                 f"相当于每 100 元营收送出 ¥{dep_pct * 100:.0f} 的隐性折扣"

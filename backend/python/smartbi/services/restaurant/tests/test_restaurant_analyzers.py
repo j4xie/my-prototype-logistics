@@ -178,21 +178,21 @@ class TestStoredValueAnalyzer:
         assert any("健康" in rec for rec in r.recommendations)
 
     def test_warning_threshold(self) -> None:
-        """5-10% → warning."""
+        """5-7% → warning (P3.5A QW1: thresholds lowered; 6% stays in warning band)."""
         a = StoredValueAnalyzer()
-        r = a.analyze(stored_value_giveaway=7000, revenue=100000)
+        r = a.analyze(stored_value_giveaway=6000, revenue=100000)
         assert r.severity == "warning"
-        assert r.dependency_pct == pytest.approx(0.07)
+        assert r.dependency_pct == pytest.approx(0.06)
         # Warning should have at least one recommendation
         assert len(r.recommendations) >= 1
         assert any("ROI" in rec or "监控" in rec for rec in r.recommendations)
 
     def test_critical_threshold(self) -> None:
-        """>=10% → critical."""
+        """>=7% → critical (P3.5A QW1: lowered from 10% to match 火锅 industry reality)."""
         a = StoredValueAnalyzer()
-        r = a.analyze(stored_value_giveaway=12000, revenue=100000)
+        r = a.analyze(stored_value_giveaway=8000, revenue=100000)
         assert r.severity == "critical"
-        assert r.dependency_pct == pytest.approx(0.12)
+        assert r.dependency_pct == pytest.approx(0.08)
         # Should warn about隐性折扣
         assert any("隐性折扣" in w or "过高" in w for w in r.warnings)
         # Critical should have immediate action recommendations
