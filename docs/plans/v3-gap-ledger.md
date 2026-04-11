@@ -66,9 +66,9 @@
 | ID | 描述 | 根因 | Fix |
 |---|---|---|---|
 | **B1** | Task 2 seed 给用户设了 `warehouse_operator` / `purchase_manager`, 但 permission.ts:11-68 的规范代码是 `warehouse_worker` / `procurement_manager`. 这 2 seed role 不在系统里, 自然 /403 | **是 seed bug 不是后端 bug**. roles/list.vue:180 mock 有 `warehouse_operator` 误导, 实际 auth.ts:37 是 `WAREHOUSE_WORKER` | **XS**: 改 seed-e2e-factory.sql 5 个用户的 role 值. **不碰后端** |
-| **B2** | DB `ck_po_status` CHECK 只允许 `DRAFT/SUBMITTED/APPROVED/PARTIAL_RECEIVED/COMPLETED/CANCELLED/CLOSED`. `PurchaseOrderStatus:17,19` enum 有 `PENDING_FINANCE_REVIEW`/`FINANCE_APPROVED`. `PurchaseServiceImpl:216,228` 转这些状态 → **运行时 DB CHECK violation** | 后端 + DB 不同步, 迁移没跟上 | **S**: 新 Flyway migration DROP + ADD CHECK 加 2 新状态. **⚠️ LIVE prod ticking bomb, 下次走财审就炸** |
+| **B2** | DB `ck_po_status` CHECK 只允许 `DRAFT/SUBMITTED/APPROVED/PARTIAL_RECEIVED/COMPLETED/CANCELLED/CLOSED`. `PurchaseOrderStatus:17,19` enum 有 `PENDING_FINANCE_REVIEW`/`FINANCE_APPROVED`. `PurchaseServiceImpl:216,228` 转这些状态 → **运行时 DB CHECK violation** | 后端 + DB 不同步, 迁移没跟上 | ✅ FIXED in `V20260411_10__fix_po_so_status_check_constraints.sql`. CHECK 现在包含 PENDING_FINANCE_REVIEW/FINANCE_APPROVED/FINANCE_REJECTED 全部 10 个 enum 值. 验证: UPDATE to blocked states succeeded (rollback). |
 | **B3** | `PurchaseSuggestion` / `generateSuggestionFrom` 后端 0 hit. SupplyChainOrchestrator:260 从 SO 自动建 production plan, 但没建 purchase suggestion | "自动采购建议" feature 根本没实现 | **XS (doc)**: 改 v3 spec §4.1 G2 表述 "自动采购建议"→"手工建议" |
-| **B4** | 同 B2 模式, 但在销售订单端: DB `ck_so_status` CHECK (V20260408_11 migration) 只允许 6 个值, 缺 `PENDING_FINANCE_REVIEW`/`FINANCE_APPROVED`/`FINANCE_REJECTED`. `SalesServiceImpl:278,298,332` 设这些状态 → DB check_violation. 点"提交财务审核"直接 500 | 又一次 enum/DB 不同步 | **S**: 同 B2 模式, DROP + ADD CHECK. **⚠️ 同样是 LIVE prod latent bug** |
+| **B4** | 同 B2 模式, 但在销售订单端: DB `ck_so_status` CHECK (V20260408_11 migration) 只允许 6 个值, 缺 `PENDING_FINANCE_REVIEW`/`FINANCE_APPROVED`/`FINANCE_REJECTED`. `SalesServiceImpl:278,298,332` 设这些状态 → DB check_violation. 点"提交财务审核"直接 500 | 又一次 enum/DB 不同步 | ✅ FIXED in `V20260411_10__fix_po_so_status_check_constraints.sql` (同 B2 migration). CHECK 现在包含 9 个值含全部财务状态. 验证: UPDATE to PENDING_FINANCE_REVIEW/FINANCE_APPROVED succeeded (rollback). |
 
 ---
 
@@ -97,8 +97,8 @@
 按 ROI 排序 (大效果 / 小工作量 优先):
 
 ### Priority 1: 🔴 Live bug (必须修)
-1. **B2** `ck_po_status` Flyway migration (~1h)
-2. **B4** `ck_so_status` Flyway migration (~1h)
+1. **B2** `ck_po_status` Flyway migration (~1h) ✅ DONE — `V20260411_10`
+2. **B4** `ck_so_status` Flyway migration (~1h) ✅ DONE — `V20260411_10`
 
 ### Priority 2: 🟢 小补丁 (快速 close gap)
 3. **B1** 改 seed role code (~15min)
