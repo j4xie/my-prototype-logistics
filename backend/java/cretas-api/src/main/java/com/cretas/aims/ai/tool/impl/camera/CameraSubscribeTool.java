@@ -17,6 +17,10 @@ import java.util.*;
  *
  * Intent Code: CAMERA_SUBSCRIBE
  *
+ * factoryId 隔离豁免说明: subscribeDevice/getDevice 已迁移到 factoryId-aware
+ * overload (P0-1 fix commit 79b76adff). 剩余 getActiveSubscriptionCount() 和
+ * getActiveSubscriptionIds() 是进程级 in-memory state, 不跨工厂.
+ *
  * @author Cretas Team
  * @version 1.0.0
  * @since 2026-03-07

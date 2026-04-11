@@ -19,6 +19,11 @@ import java.util.*;
  *
  * 提供 IoT 电子秤设备的详细信息查询，包括设备配置、关联的协议和品牌型号信息。
  *
+ * factoryId 隔离豁免说明: 主查询 equipmentRepository.findByIdAndFactoryId 已带
+ * factoryId 校验 (真正 factory-scoped). 后续 protocolRepository.findById 和
+ * brandModelRepository.findById 查询的是**全局共享主数据** (秤协议配置/品牌型号库,
+ * 不同工厂共用), 不涉及跨工厂业务数据泄露.
+ *
  * @author Cretas Team
  * @version 1.0.0
  * @since 2026-01-07

@@ -19,6 +19,10 @@ import java.util.*;
  *
  * Intent Code: PAGINATION_NEXT / NAVIGATION_NEXT_PAGE
  *
+ * factoryId 隔离豁免说明: conversationMemoryService.getContext(sessionId) 是
+ * 用户会话级 state (sessionId 来自 JWT userId + 会话), 不涉及跨工厂读取.
+ * 翻页的 reused intent params 里已带原始查询的 factoryId.
+ *
  * @author Cretas Team
  * @version 2.0.0
  * @since 2026-03-07

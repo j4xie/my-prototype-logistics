@@ -89,7 +89,7 @@ public class OrderQueryTool extends AbstractBusinessTool {
                 result.put("message", "订单查询成功");
             } else {
                 // Try by order number
-                Optional<WorkOrder> byNumber = workOrderService.getByOrderNumber(orderId);
+                Optional<WorkOrder> byNumber = workOrderService.getByOrderNumber(factoryId, orderId);
                 if (byNumber.isPresent()) {
                     result.put("order", byNumber.get());
                     result.put("message", "订单查询成功");

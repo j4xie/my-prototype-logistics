@@ -18,6 +18,10 @@ import java.util.*;
  *
  * Intent Code: SCALE_ADD_MODEL
  *
+ * factoryId 隔离豁免说明: scale_brand_models 是全局共享主数据 (品牌/型号库,
+ * 不同工厂共用一个品牌), 不按工厂分区. scaleBrandModelRepository.findByBrandCodeAndModelCode
+ * 是全局查重 (避免重复添加), 不涉及跨工厂业务数据读取.
+ *
  * @author Cretas Team
  * @version 1.0.0
  * @since 2026-03-07

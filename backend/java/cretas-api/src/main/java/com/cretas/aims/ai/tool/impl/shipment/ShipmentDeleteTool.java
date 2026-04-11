@@ -65,8 +65,8 @@ public class ShipmentDeleteTool extends AbstractBusinessTool {
 
         String shipmentId = getString(params, "shipmentId");
 
-        // 先按出货单号查找，再按ID+工厂ID查找
-        Optional<ShipmentRecord> recordOpt = shipmentRecordService.getByShipmentNumber(shipmentId);
+        // 先按出货单号+工厂ID查找，再按ID+工厂ID查找 (P0-1 MEDIUM fix)
+        Optional<ShipmentRecord> recordOpt = shipmentRecordService.getByShipmentNumberAndFactoryId(shipmentId, factoryId);
         if (recordOpt.isEmpty()) {
             recordOpt = shipmentRecordService.getByIdAndFactoryId(shipmentId, factoryId);
         }

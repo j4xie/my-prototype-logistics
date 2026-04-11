@@ -67,7 +67,7 @@ public class BatchConsumptionAdjustTool extends AbstractBusinessTool {
         if (batchId == null) {
             String batchNumber = getString(params, "batchNumber");
             if (batchNumber != null) {
-                batchId = productionBatchRepository.findByBatchNumber(batchNumber)
+                batchId = productionBatchRepository.findByFactoryIdAndBatchNumber(factoryId, batchNumber)
                         .map(ProductionBatch::getId)
                         .orElseThrow(() -> new IllegalArgumentException("找不到批次: " + batchNumber));
             } else {

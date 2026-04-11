@@ -113,8 +113,14 @@ public interface BatchWorkSessionRepository extends JpaRepository<BatchWorkSessi
         @Param("endTime") LocalDateTime endTime);
 
     /**
-     * Count check-ins within a time range (for daily summary)
+     * Count check-ins within a time range scoped to a factory (P0-1 MEDIUM fix).
      */
+    long countByFactoryIdAndCheckInTimeBetween(String factoryId, LocalDateTime start, LocalDateTime end);
+
+    /**
+     * @deprecated 全局计数, 跨工厂不准确. 使用 {@link #countByFactoryIdAndCheckInTimeBetween}.
+     */
+    @Deprecated
     long countByCheckInTimeBetween(LocalDateTime start, LocalDateTime end);
 
     /**

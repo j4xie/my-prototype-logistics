@@ -17,6 +17,10 @@ import java.util.*;
  *
  * Intent Code: TRACE_PUBLIC
  *
+ * factoryId 隔离豁免说明: 这是**对外公开**的 C 端溯源工具, 消费者扫码只需
+ * 批次号即可查询 (无账号/无工厂身份), traceabilityService.getPublicTrace 按设计
+ * 跨工厂可查 (脱敏后的公开追溯链). 这是业务需求, 不是漏洞.
+ *
  * @author Cretas Team
  * @version 1.0.0
  * @since 2026-01-07
