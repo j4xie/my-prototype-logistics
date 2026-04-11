@@ -458,6 +458,30 @@ public class SalesServiceImpl implements SalesService {
     @Override
     @Transactional
     public SalesDeliveryRecord createDeliveryRecord(String factoryId, CreateDeliveryRequest request, Long userId) {
+        // Round 9 Fix (R8-α Gap #1 template): Canvas validation rules now fire for
+        // delivery creation. Customer-configured rules like "冷链商品必填运输温度" /
+        // "发货金额 > 5万自动预警" / "物流公司必填" take effect here. Context
+        // exposes {customerId, salesOrderId, itemCount, totalAmount, logisticsCompany,
+        // deliveryAddress} so SpEL expressions can reason about the delivery.
+        java.math.BigDecimal prelimTotal = request.getItems() == null ? java.math.BigDecimal.ZERO :
+                request.getItems().stream()
+                        .filter(i -> i.getUnitPrice() != null && i.getDeliveredQuantity() != null)
+                        .map(i -> i.getDeliveredQuantity().multiply(i.getUnitPrice()))
+                        .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        java.util.Map<String, Object> validationCtx = new java.util.HashMap<>();
+        validationCtx.put("customerId", request.getCustomerId());
+        validationCtx.put("salesOrderId", request.getSalesOrderId());
+        validationCtx.put("itemCount", request.getItems() == null ? 0 : request.getItems().size());
+        validationCtx.put("totalAmount", prelimTotal);
+        validationCtx.put("logisticsCompany", request.getLogisticsCompany());
+        validationCtx.put("deliveryAddress", request.getDeliveryAddress());
+        if (request.getCustomFields() != null) {
+            // Merge customFields into validation context so rules can reference them
+            // via #cf_<fieldCode> (matching the SalesOrder/MaterialBatch pattern).
+            request.getCustomFields().forEach((k, v) -> validationCtx.put("cf_" + k, v));
+        }
+        runConfiguredValidation(factoryId, "delivery", "CREATE", validationCtx);
+
         // 验证客户
         customerRepository.findByIdAndFactoryId(request.getCustomerId(), factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("客户不存在或不属于当前组织"));
@@ -511,7 +535,37 @@ public class SalesServiceImpl implements SalesService {
         record.setTotalAmount(totalAmount);
         record = deliveryRecordRepository.save(record);
 
-        log.info("创建发货单: factoryId={}, deliveryNumber={}, items={}", factoryId, deliveryNumber, request.getItems().size());
+        // Round 9 Fix (R8-α Gap #1 template): persist Canvas V3 dynamic field values
+        // via DynamicFieldService. Customer-configured fields (运输温度, 司机姓名,
+        // 车牌号, 温度监控仪器型号 etc.) now land in the cf_* columns of
+        // sales_delivery_records. Previously the DTO had no customFields slot so
+        // frontend Canvas form submissions silently dropped the values.
+        if (dynamicFieldService != null && request.getCustomFields() != null && !request.getCustomFields().isEmpty()) {
+            try {
+                dynamicFieldService.setDynamicFields(factoryId, "delivery", record.getId(), request.getCustomFields());
+            } catch (Exception e) {
+                log.warn("Canvas dynamic fields save failed for delivery {}: {}", record.getId(), e.getMessage());
+            }
+        }
+
+        // Round 9 Fix (R8-α Gap #1 template): publish event so Canvas-configured
+        // trigger chains on the `delivery` module can fire (e.g. 物流推送 / 冷链启动 /
+        // WMS 同步). TriggerChainExecutor.HANDLED_EVENTS has been extended to recognize
+        // SalesDeliveryCreatedEvent.
+        if (applicationEventPublisher != null) {
+            try {
+                applicationEventPublisher.publishEvent(new com.cretas.aims.event.SalesDeliveryCreatedEvent(
+                        this, factoryId, record.getId(), record.getDeliveryNumber(),
+                        record.getCustomerId(), record.getSalesOrderId(),
+                        record.getDeliveryDate(), record.getTotalAmount()));
+            } catch (Exception e) {
+                log.warn("Publish SalesDeliveryCreatedEvent failed: {}", e.getMessage());
+            }
+        }
+
+        log.info("创建发货单: factoryId={}, deliveryNumber={}, items={}, customFields={}",
+                factoryId, deliveryNumber, request.getItems().size(),
+                request.getCustomFields() == null ? 0 : request.getCustomFields().size());
         return record;
     }
 
@@ -747,13 +801,20 @@ public class SalesServiceImpl implements SalesService {
     }
 
     private void runConfiguredValidation(String factoryId, String operation, Map<String, Object> context) {
+        runConfiguredValidation(factoryId, "sales_order", operation, context);
+    }
+
+    // Round 9 Fix: overload with explicit moduleCode so delivery/shipment paths can
+    // use their own module-scoped validation rules instead of reusing sales_order's.
+    private void runConfiguredValidation(String factoryId, String moduleCode, String operation, Map<String, Object> context) {
         if (validationRuleEvaluator == null) return;
         try {
-            validationRuleEvaluator.validate(factoryId, "sales_order", operation, context);
+            validationRuleEvaluator.validate(factoryId, moduleCode, operation, context);
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            log.warn("Canvas validation non-blocking error: {}", e.getMessage());
+            log.warn("Canvas validation non-blocking error for {}.{}: {}",
+                    moduleCode, operation, e.getMessage());
         }
     }
 

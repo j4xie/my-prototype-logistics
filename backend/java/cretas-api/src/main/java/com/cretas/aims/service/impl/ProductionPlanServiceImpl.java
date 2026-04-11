@@ -105,6 +105,10 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
 
+    /** Round 9 Fix (R8-α Gap #3): Canvas dynamic field persistence for production_plan. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
+
     private void runConfiguredValidation(String factoryId, String operation, java.util.Map<String, Object> context) {
         if (validationRuleEvaluator == null) return;
         try {
@@ -196,6 +200,17 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         // 创建生产计划
         ProductionPlan plan = productionPlanMapper.toEntity(request, factoryId, userId.longValue());
         plan = productionPlanRepository.save(plan);
+
+        // Round 9 Fix (R8-α Gap #3 per-module template): persist Canvas V3 dynamic fields.
+        // Customer-configured fields like 客户订单号, QC 等级, 特殊工艺参数, 成品包装要求
+        // now land in the cf_* columns of production_plans. Previously silently dropped.
+        if (dynamicFieldService != null && request.getCustomFields() != null && !request.getCustomFields().isEmpty()) {
+            try {
+                dynamicFieldService.setDynamicFields(factoryId, "production_plan", plan.getId(), request.getCustomFields());
+            } catch (Exception e) {
+                log.warn("Canvas dynamic fields save failed for production plan {}: {}", plan.getId(), e.getMessage());
+            }
+        }
 
         // 如果指定了原材料批次，创建关联
         if (request.getMaterialBatchIds() != null && request.getMaterialBatchIds().length > 0) {

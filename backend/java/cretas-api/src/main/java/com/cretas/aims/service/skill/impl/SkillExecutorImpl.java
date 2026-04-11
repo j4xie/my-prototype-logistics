@@ -734,6 +734,15 @@ public class SkillExecutorImpl implements SkillExecutor {
             throw new IllegalArgumentException("Tool not found: " + toolName);
         }
 
+        // Round 9 Fix (R8-β tail): respect factory_tool_configs disable flag.
+        // R7b fixed this at ToolDispatchService but Skill orchestration was a 2nd path
+        // that still ran disabled tools. Now skills also honor the Canvas switch.
+        if (!toolRegistry.isToolEnabledForFactory(context.getFactoryId(), toolName)) {
+            log.warn("Tool disabled for factory via Canvas: tool={}, factoryId={}, skill path",
+                    toolName, context.getFactoryId());
+            throw new IllegalStateException("Tool disabled for factory: " + toolName);
+        }
+
         ToolExecutor executor = executorOpt.get();
 
         // Build ToolCall

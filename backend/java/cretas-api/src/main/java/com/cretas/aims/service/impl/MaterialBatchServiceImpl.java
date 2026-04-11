@@ -132,6 +132,10 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
     @Autowired(required = false)
     private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
 
+    /** Round 9 Fix (R8-α Gap #3): Canvas dynamic field persistence. */
+    @Autowired(required = false)
+    private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
+
     // Manual constructor (Lombok @RequiredArgsConstructor not working)
     public MaterialBatchServiceImpl(
             MaterialBatchRepository materialBatchRepository,
@@ -194,6 +198,17 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         batch.setBatchNumber(batchNumber);
         batch = materialBatchRepository.save(batch);
         log.info("创建原材料批次成功: batchNumber={}", batch.getBatchNumber());
+
+        // Round 9 Fix (R8-α Gap #3 per-module template): persist Canvas V3 dynamic fields.
+        // Customer-configured fields like 农残检测结果, 供应商批次证明, 运输温度记录
+        // now land in the cf_* columns of material_batches. Previously silently dropped.
+        if (dynamicFieldService != null && request.getCustomFields() != null && !request.getCustomFields().isEmpty()) {
+            try {
+                dynamicFieldService.setDynamicFields(factoryId, "material_batch", batch.getId(), request.getCustomFields());
+            } catch (Exception e) {
+                log.warn("Canvas dynamic fields save failed for material batch {}: {}", batch.getId(), e.getMessage());
+            }
+        }
 
         // 更新物料类型移动平均价
         updateMovingAvgPrice(materialType, batch.getReceiptQuantity(), batch.getUnitPrice(), batch.getId());

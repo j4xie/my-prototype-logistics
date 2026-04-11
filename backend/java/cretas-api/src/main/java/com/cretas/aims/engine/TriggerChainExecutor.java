@@ -44,7 +44,18 @@ public class TriggerChainExecutor {
             "SalesOrderConfirmedEvent", "SalesOrderFinanceApprovedEvent",
             "MaterialReceivedEvent", "BatchCompletedEvent",
             "FinishedGoodsCreatedEvent", "PaymentReceivedEvent",
-            "InvoiceIssuedEvent", "SalesOrderSettledEvent"
+            "InvoiceIssuedEvent", "SalesOrderSettledEvent",
+            // Round 9 Fix: SalesDelivery Canvas integration template (R8-α Gap #1)
+            "SalesDeliveryCreatedEvent",
+            // Round 9-α Fix: 5 more events discovered by subagent audit — all were being
+            // published but silently dropped, so customer trigger chains on these events
+            // literally could not fire. Most impactful: ProductionAlertEvent ("质检不合格
+            // 自动通知采购" / "异常检测触发维护工单").
+            "ProductionAlertEvent",
+            "SampleApprovedEvent",
+            "SkuComplexityChangedEvent",
+            "SopUploadedEvent",
+            "RescheduleNeededEvent"
     );
 
     // Round 6 Fix CHECK-5: rate-limited warn log when a factory configures a trigger chain
@@ -139,6 +150,14 @@ public class TriggerChainExecutor {
             Optional<ToolExecutor> executor = toolRegistry.getExecutor(toolName);
             if (executor.isEmpty()) {
                 log.warn("Tool not found in chain {}: {}", chain.getChainCode(), toolName);
+                continue;
+            }
+
+            // Round 9 Fix (R8-β tail): respect factory_tool_configs disable flag.
+            // R7b fixed ToolDispatchService; R9 fixes SkillExecutor + this trigger chain path.
+            if (!toolRegistry.isToolEnabledForFactory(factoryId, toolName)) {
+                log.warn("Chain {} step {} skipped — tool disabled for factory {} via Canvas config",
+                        chain.getChainCode(), toolName, factoryId);
                 continue;
             }
 
