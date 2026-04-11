@@ -880,11 +880,20 @@ public class SalesServiceImpl implements SalesService {
 
         boolean allDelivered = orderItems.stream().allMatch(item ->
                 item.getDeliveredQuantity().compareTo(item.getQuantity()) >= 0);
+        boolean anyDelivered = orderItems.stream().anyMatch(item ->
+                item.getDeliveredQuantity().compareTo(BigDecimal.ZERO) > 0);
 
         if (allDelivered) {
             order.setStatus(SalesOrderStatus.COMPLETED);
+            // P0-9: 全部发货完成 → transportPlanStatus = DELIVERED
+            order.setTransportPlanStatus("DELIVERED");
+        } else if (anyDelivered) {
+            order.setStatus(SalesOrderStatus.PARTIAL_DELIVERED);
+            // P0-9: 部分发货 → transportPlanStatus = IN_TRANSIT
+            order.setTransportPlanStatus("IN_TRANSIT");
         } else {
             order.setStatus(SalesOrderStatus.PARTIAL_DELIVERED);
+            order.setTransportPlanStatus("IN_TRANSIT");
         }
         salesOrderRepository.save(order);
     }
