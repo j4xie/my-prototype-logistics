@@ -88,5 +88,11 @@ export default defineConfig({
       name: 'web-admin-workflows',
       testMatch: 'web-admin-workflows-e2e.spec.ts',
     },
+    // Step 13: Restaurant Chat E2E (P5 Task 5.7)
+    // Skipped by default — requires full stack. Enable: RUN_CHAT_E2E=1
+    {
+      name: 'restaurant-chat',
+      testMatch: 'restaurant-chat.spec.ts',
+    },
   ],
 });
