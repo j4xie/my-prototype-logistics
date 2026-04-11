@@ -116,7 +116,39 @@ const form = ref({
   shippingFee: 0,
   extraFees: [] as Array<{ name: string; amount: number; remark: string }>,
   items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
+  contractFileUrl: '' as string | null,
+  contractFileName: '' as string | null,
 });
+
+// P1-7 合同附件上传 (v1 §2.4.3, 2257s)
+async function handleContractUpload(options: { file: File }) {
+  if (!factoryId.value) return;
+  const fd = new FormData();
+  fd.append('file', options.file);
+  try {
+    const token = localStorage.getItem('cretas_access_token') || '';
+    const res = await fetch(`/api/mobile/${factoryId.value}/upload/contract`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: fd,
+    });
+    const json = await res.json();
+    if (json.success && json.data) {
+      form.value.contractFileUrl = json.data.url;
+      form.value.contractFileName = json.data.fileName || options.file.name;
+      ElMessage.success(`合同上传成功: ${options.file.name}`);
+    } else {
+      ElMessage.error(json.message || '合同上传失败');
+    }
+  } catch {
+    ElMessage.error('合同上传失败');
+  }
+}
+
+function clearContract() {
+  form.value.contractFileUrl = '';
+  form.value.contractFileName = '';
+}
 const customers = ref<Record<string, unknown>[]>([]);
 const products = ref<Record<string, unknown>[]>([]);
 const salesEmployees = ref<Record<string, unknown>[]>([]);
@@ -646,6 +678,23 @@ async function submitQuickPayment() {
           </div>
         </el-form-item>
         <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="2" /></el-form-item>
+        <el-form-item label="预订合同">
+          <!-- P1-7 合同附件上传 (v1 §2.4.3, 客户 2257s) -->
+          <div v-if="form.contractFileUrl" style="display:flex;gap:8px;align-items:center">
+            <el-tag type="success" size="small">已上传: {{ form.contractFileName }}</el-tag>
+            <el-button size="small" type="danger" link @click="clearContract">移除</el-button>
+          </div>
+          <el-upload
+            v-else
+            :auto-upload="true"
+            :http-request="handleContractUpload as any"
+            :limit="1"
+            :show-file-list="false"
+            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+          >
+            <el-button size="small">上传合同 (PDF/图片/Word, ≤20MB)</el-button>
+          </el-upload>
+        </el-form-item>
         <el-divider>{{ label('product') }}明细</el-divider>
         <div class="item-row item-header">
           <span style="width: 200px">品名</span>

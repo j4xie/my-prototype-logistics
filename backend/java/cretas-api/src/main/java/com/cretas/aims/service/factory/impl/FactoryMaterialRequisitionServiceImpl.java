@@ -7,12 +7,15 @@ import com.cretas.aims.entity.factory.FactoryMaterialRequisition;
 import com.cretas.aims.entity.factory.FactoryMaterialRequisition.Status;
 import com.cretas.aims.entity.factory.FactoryMaterialRequisitionItem;
 import com.cretas.aims.entity.factory.FactoryMaterialRequisitionItem.MaterialCategory;
+import com.cretas.aims.entity.factory.FactoryWarehouse;
+import com.cretas.aims.entity.factory.FactoryWarehouse.WarehouseType;
 import com.cretas.aims.entity.inventory.InternalTransfer;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.repository.ProductionPlanRepository;
 import com.cretas.aims.repository.bom.BomItemRepository;
 import com.cretas.aims.repository.factory.FactoryMaterialRequisitionItemRepository;
 import com.cretas.aims.repository.factory.FactoryMaterialRequisitionRepository;
+import com.cretas.aims.repository.factory.FactoryWarehouseRepository;
 import com.cretas.aims.service.factory.FactoryMaterialRequisitionService;
 import com.cretas.aims.service.inventory.TransferService;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +44,7 @@ public class FactoryMaterialRequisitionServiceImpl implements FactoryMaterialReq
     private final ProductionPlanRepository productionPlanRepository;
     private final BomItemRepository bomItemRepository;
     private final TransferService transferService;
+    private final FactoryWarehouseRepository warehouseRepository;
 
     /** Canvas V2: DB-driven validation rules */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
@@ -82,6 +86,19 @@ public class FactoryMaterialRequisitionServiceImpl implements FactoryMaterialReq
         mr.setStatus(Status.PENDING);
         mr.setRequiredDate(plan.getExpectedCompletionDate());
         mr.setRequestedBy(requestedBy);
+
+        // P1-4: auto-populate source (物流仓) + target (鲜棉仓) from FactoryWarehouse lookup
+        // 为 B1 InternalTransfer 流水提供 warehouse 上下文 (之前是 null).
+        List<FactoryWarehouse> logisticsList = warehouseRepository
+                .findByFactoryIdAndTypeAndDeletedAtIsNullOrderByCodeAsc(factoryId, WarehouseType.LOGISTICS);
+        List<FactoryWarehouse> workshopList = warehouseRepository
+                .findByFactoryIdAndTypeAndDeletedAtIsNullOrderByCodeAsc(factoryId, WarehouseType.WORKSHOP);
+        if (!logisticsList.isEmpty()) {
+            mr.setSourceWarehouseId(logisticsList.get(0).getId());
+        }
+        if (!workshopList.isEmpty()) {
+            mr.setTargetWarehouseId(workshopList.get(0).getId());
+        }
 
         BigDecimal plannedQty = plan.getPlannedQuantity() != null ? plan.getPlannedQuantity() : BigDecimal.ZERO;
         for (BomItem bom : bomItems) {

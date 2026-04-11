@@ -30,7 +30,14 @@ public class FileUploadController {
     private final OssService ossService;
 
     private static final long MAX_SIGNATURE_PHOTO_SIZE = 5L * 1024 * 1024; // 5MB
+    private static final long MAX_CONTRACT_SIZE = 20L * 1024 * 1024; // 20MB
     private static final Set<String> ALLOWED_PHOTO_TYPES = Set.of("image/jpeg", "image/jpg", "image/png");
+    private static final Set<String> ALLOWED_CONTRACT_TYPES = Set.of(
+            "application/pdf",
+            "image/jpeg", "image/jpg", "image/png",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    );
 
     /**
      * 上传签收照片 (出库签收配套)
@@ -71,6 +78,50 @@ public class FileUploadController {
             return ApiResponse.error(e.getMessage());
         } catch (Exception e) {
             log.error("签收照片上传失败: factoryId={}", factoryId, e);
+            return ApiResponse.error("上传失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 上传销售合同附件 (P1-7, v1 §2.4.3 客户会议 2257s).
+     * 接受 PDF/图片/Word, ≤20MB. 上传成功后返回 URL, 前端绑定到
+     * salesOrderForm.contractFileUrl + contractFileName 后 createOrder.
+     */
+    @PostMapping(value = "/contract", consumes = "multipart/form-data")
+    @Operation(summary = "上传销售合同附件", description = "PDF/图片/Word, ≤20MB (P1-7)")
+    public ApiResponse<Map<String, String>> uploadContract(
+            @Parameter(description = "工厂ID", example = "F001", required = true)
+            @PathVariable @NotBlank String factoryId,
+            @Parameter(description = "合同文件 (PDF/JPG/PNG/DOC/DOCX, ≤20MB)", required = true)
+            @RequestParam("file") MultipartFile file) {
+
+        log.info("上传销售合同: factoryId={}, filename={}, size={}, contentType={}",
+                factoryId, file.getOriginalFilename(), file.getSize(), file.getContentType());
+
+        if (file.isEmpty()) {
+            return ApiResponse.error("文件不能为空");
+        }
+        if (file.getSize() > MAX_CONTRACT_SIZE) {
+            return ApiResponse.error("合同文件不能超过 20MB");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_CONTRACT_TYPES.contains(contentType.toLowerCase())) {
+            return ApiResponse.error("仅支持 PDF/JPG/PNG/DOC/DOCX,当前: " + contentType);
+        }
+
+        try {
+            // category = "contracts" → OSS 路径: {factoryId}/files/contracts/yyyy/MM/dd/{uuid}_{filename}
+            String url = ossService.uploadFile(file, "contracts", factoryId);
+            log.info("销售合同上传成功: factoryId={}, url={}", factoryId, url);
+            return ApiResponse.success("上传成功", Map.of(
+                    "url", url,
+                    "fileName", file.getOriginalFilename() == null ? "" : file.getOriginalFilename()
+            ));
+        } catch (IllegalArgumentException e) {
+            log.warn("销售合同上传失败(参数错误): {}", e.getMessage());
+            return ApiResponse.error(e.getMessage());
+        } catch (Exception e) {
+            log.error("销售合同上传失败: factoryId={}", factoryId, e);
             return ApiResponse.error("上传失败: " + e.getMessage());
         }
     }
