@@ -632,9 +632,11 @@ public class SmartBIServiceImpl implements SmartBIService {
      *
      * <p>此方法对任意异常都 fail-safe: 返回包含 intentCode + error 的最小 response,
      * 避免前端崩溃. 真正的错误细节写入 log.
+     *
+     * <p>Pure function (no instance state access) - static for unit test friendliness.
      */
     @SuppressWarnings("unchecked")
-    private NLQueryResponse mapIntentExecuteResponse(IntentExecuteResponse execResponse) {
+    static NLQueryResponse mapIntentExecuteResponse(IntentExecuteResponse execResponse) {
         NLQueryResponse.NLQueryResponseBuilder builder = NLQueryResponse.builder()
                 .intent("RESTAURANT_DIAGNOSTIC")  // legacy 兼容字段
                 .intentCode(execResponse.getIntentCode())
