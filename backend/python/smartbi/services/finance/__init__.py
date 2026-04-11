@@ -11,6 +11,12 @@ from .expense_account_tree import (
     ExpenseAccountTree,
     load_tree_from_yaml,
 )
+from .shrinkage_engine import (
+    ActionItem,
+    ShrinkageEngine,
+    ShrinkageReport,
+    ShrinkageRow,
+)
 
 __all__ = [
     "MarginSpec",
@@ -19,4 +25,8 @@ __all__ = [
     "ExpenseAccountNode",
     "ExpenseAccountTree",
     "load_tree_from_yaml",
+    "ActionItem",
+    "ShrinkageEngine",
+    "ShrinkageReport",
+    "ShrinkageRow",
 ]
