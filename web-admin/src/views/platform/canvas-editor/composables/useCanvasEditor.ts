@@ -56,8 +56,11 @@ export function useCanvasEditor() {
         // Check full version history to determine if factory has ever published.
         try {
           const { getConfigVersions } = await import('@/api/canvasApi')
+          // Round 5 PERF-3: backend returns Page shape {content, totalElements, ...}.
+          // Round 6 P0 fix: previously `historyRes.data.some()` threw TypeError and crashed
+          // the onboarding check, forcing every user into fallback mode.
           const historyRes = await getConfigVersions(factoryId.value)
-          const history = (historyRes.data || []) as ConfigVersion[]
+          const history = (historyRes.data?.content || []) as ConfigVersion[]
           const everPublished = history.some(v => v.publishedAt !== null && v.publishedAt !== undefined)
           isOnboarding.value = !everPublished
         } catch {

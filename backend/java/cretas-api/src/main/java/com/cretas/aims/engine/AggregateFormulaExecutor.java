@@ -26,6 +26,16 @@ public class AggregateFormulaExecutor {
     private static final Pattern RATIO_PATTERN =
         Pattern.compile("RATIO\\(\\s*(\\w+)\\s*,\\s*'(\\w+)'\\s*,\\s*'(\\w+)'\\s*,\\s*'(\\w+)'\\s*\\)");
 
+    // Round 6 Fix Angle-6: hard-reject tables that don't have factory_id column.
+    // Previously, a factory_super_admin could craft a formula like
+    //   GROUP_BY(users, 'role_code', COUNT('id'))
+    // which would read aggregate stats from a tenant-unscoped table (users, platform_admins,
+    // config_change_log) because the factory_id filter was silently omitted when the target
+    // table lacked the column. This guard now rejects those formulas outright.
+    private boolean isTenantScopedTable(String tableName) {
+        return hasColumn(tableName, "factory_id");
+    }
+
     public List<Map<String, Object>> execute(String expression, Map<String, Object> context) {
         String expr = expression.trim();
 
@@ -54,6 +64,13 @@ public class AggregateFormulaExecutor {
         String tableName = ddlExecutor.resolveTable(sourceTable);
         if (sourceTable.endsWith("_items")) {
             tableName = sourceTable;
+        }
+
+        // Round 6 Fix Angle-6: cross-tenant guard — reject tables without factory_id.
+        if (!isTenantScopedTable(tableName)) {
+            log.warn("Aggregate formula rejected — target table '{}' has no factory_id column: {}",
+                    tableName, expression);
+            return List.of();
         }
 
         String parentId = (String) context.get("parentId");
@@ -98,6 +115,13 @@ public class AggregateFormulaExecutor {
         String tableName = ddlExecutor.resolveTable(sourceTable);
         if (sourceTable.endsWith("_items")) {
             tableName = sourceTable;
+        }
+
+        // Round 6 Fix Angle-6: cross-tenant guard (same as GROUP_BY)
+        if (!isTenantScopedTable(tableName)) {
+            log.warn("Ratio formula rejected — target table '{}' has no factory_id column",
+                    tableName);
+            return List.of();
         }
 
         String parentId = (String) context.get("parentId");

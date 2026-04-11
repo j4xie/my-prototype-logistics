@@ -42,10 +42,37 @@ public class TriggerChainExecutor {
             "FinishedGoodsCreatedEvent", "PaymentReceivedEvent"
     );
 
+    // Round 6 Fix CHECK-5: rate-limited warn log when a factory configures a trigger chain
+    // for an event type not in HANDLED_EVENTS. Previously we silently skipped, leaving
+    // operators unable to diagnose why their chain never fired. One warning per eventType
+    // per JVM run is enough — debouncing prevents log flooding when many events fire.
+    private final java.util.concurrent.ConcurrentHashMap<String, Boolean> unhandledWarnedOnce =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
     @EventListener
     public void onApplicationEvent(ApplicationEvent event) {
         String eventType = event.getClass().getSimpleName();
-        if (!HANDLED_EVENTS.contains(eventType)) return;
+        if (!HANDLED_EVENTS.contains(eventType)) {
+            // Round 6 Fix CHECK-5: warn once if a factory has a chain configured for this
+            // unhandled event (someone bothered to configure it — they deserve a hint).
+            if (unhandledWarnedOnce.putIfAbsent(eventType, Boolean.TRUE) == null) {
+                try {
+                    long configuredCount = triggerChainRepository.findAll().stream()
+                            .filter(c -> eventType.equals(c.getEventType()) && Boolean.TRUE.equals(c.getEnabled()))
+                            .count();
+                    if (configuredCount > 0) {
+                        log.warn("TriggerChain: event '{}' is NOT in HANDLED_EVENTS whitelist but "
+                                + "{} enabled chain(s) are configured in factory_trigger_chains — "
+                                + "those chains will NEVER fire until HANDLED_EVENTS is updated. "
+                                + "(This warning logs once per eventType per JVM run.)",
+                                eventType, configuredCount);
+                    }
+                } catch (Exception ignored) {
+                    // guarded — scheduling too early at boot may fail; don't crash event dispatch
+                }
+            }
+            return;
+        }
 
         String factoryId = extractFactoryId(event);
         if (factoryId == null) {

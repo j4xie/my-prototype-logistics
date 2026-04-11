@@ -53,6 +53,12 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.repository.config.CanvasDynamicFieldRepository canvasDynamicFieldRepository;
 
+    // Round 6 Fix CHECK-1: publishConfig must reload scheduler or new cron won't take effect
+    // until JVM restart. Optional to avoid circular dep during bean init.
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @org.springframework.context.annotation.Lazy
+    private com.cretas.aims.engine.DynamicSchedulerService dynamicSchedulerService;
+
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private UserMenuPermissionRepository userMenuPermRepo;
 
@@ -419,6 +425,18 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
 
         logChange(factoryId, null, "PUBLISH", null, null,
                 "配置版本 " + draft.getConfigVersion() + " 已发布: " + changeSummary, operatorId);
+
+        // Round 6 Fix CHECK-1: reload dynamic scheduler so any new/changed cron schedules
+        // configured in this version take effect immediately. Previously scheduler only loaded
+        // @PostConstruct, so new cron would silently not fire until JVM restart.
+        if (dynamicSchedulerService != null) {
+            try {
+                dynamicSchedulerService.reloadAll();
+                log.info("工厂 {} 配置发布后 scheduler 已 reload", factoryId);
+            } catch (Exception e) {
+                log.warn("工厂 {} scheduler reload 失败 (非阻塞): {}", factoryId, e.getMessage());
+            }
+        }
 
         log.info("工厂 {} 配置版本 {} 已发布", factoryId, draft.getConfigVersion());
     }

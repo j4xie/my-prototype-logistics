@@ -40,16 +40,33 @@ public class ValidationRuleEvaluator {
         // Round 4 Fix P2-24: auto-hydrate context with full record fields for UPDATE.
         // If context contains recordId but is sparse (caller only filled a few fields),
         // fetch the full row from DB and merge so SpEL rules can access any column.
+        //
+        // Round 6 Fix POINT-7: autoHydrate must also filter by factory_id so a rule evaluation
+        // for factory A cannot accidentally load factory B's record into the SpEL context. The
+        // caller is supposed to pre-verify recordId ownership, but this belt-and-braces guard
+        // prevents any accidental cross-tenant read if a caller forgets.
         Map<String, Object> enrichedContext = new HashMap<>(context != null ? context : Map.of());
         Object recordIdObj = enrichedContext.get("recordId");
         if (recordIdObj != null && "UPDATE".equals(operation) && ddlExecutor != null && jdbcTemplate != null) {
             try {
                 String tableName = ddlExecutor.resolveTable(moduleCode);
-                String sql = "SELECT * FROM " + tableName + " WHERE id::text = ? LIMIT 1";
-                Map<String, Object> dbRow = jdbcTemplate.queryForMap(sql, recordIdObj.toString());
-                // Merge DB columns into context, but don't overwrite explicit caller values
-                for (Map.Entry<String, Object> e : dbRow.entrySet()) {
-                    enrichedContext.putIfAbsent(e.getKey(), e.getValue());
+                // Check if the target table has factory_id — if yes, filter by it; if no, skip hydration
+                // entirely (we can't safely read rows without tenant isolation).
+                Integer hasFactoryIdCount = jdbcTemplate.queryForObject(
+                        "SELECT COUNT(*) FROM information_schema.columns " +
+                        "WHERE table_name = ? AND column_name = 'factory_id'",
+                        Integer.class, tableName);
+                if (hasFactoryIdCount == null || hasFactoryIdCount == 0) {
+                    log.debug("Auto-hydration skipped for {}: table has no factory_id column", tableName);
+                } else {
+                    String sql = "SELECT * FROM " + tableName +
+                            " WHERE id::text = ? AND factory_id = ? LIMIT 1";
+                    Map<String, Object> dbRow = jdbcTemplate.queryForMap(sql,
+                            recordIdObj.toString(), factoryId);
+                    // Merge DB columns into context, but don't overwrite explicit caller values
+                    for (Map.Entry<String, Object> e : dbRow.entrySet()) {
+                        enrichedContext.putIfAbsent(e.getKey(), e.getValue());
+                    }
                 }
             } catch (Exception e) {
                 log.debug("Auto-hydration skipped for {}#{}: {}", moduleCode, recordIdObj, e.getMessage());

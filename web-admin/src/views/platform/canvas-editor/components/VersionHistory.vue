@@ -72,8 +72,9 @@ async function loadVersions() {
   if (!props.factoryId) return
   loading.value = true
   try {
+    // Round 5 PERF-3: backend returns Page shape {content, totalElements, ...}
     const res = await getConfigVersions(props.factoryId)
-    versions.value = (res.data || []) as Version[]
+    versions.value = (res.data?.content || []) as Version[]
   } catch (e: any) {
     ElMessage.error('加载版本历史失败: ' + (e?.message || 'unknown'))
     versions.value = []

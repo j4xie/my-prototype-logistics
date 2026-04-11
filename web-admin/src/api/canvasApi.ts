@@ -76,9 +76,19 @@ export const aiApplyDiffs = (factoryId: string, diffs: Record<string, unknown>[]
 export const getConfigVersion = (factoryId: string) =>
   request.get<ConfigVersion>(`/${factoryId}/config/current-version`)
 
-// List all config versions (history, newest first, for rollback UI)
-export const getConfigVersions = (factoryId: string) =>
-  request.get<ConfigVersion[]>(`/${factoryId}/config/versions`)
+// Round 5 PERF-3: backend switched to Page shape {content, totalElements, totalPages, number, size}
+// Round 6 fix: aligning frontend type so consumers destructure .content instead of treating .data as array.
+export interface PaginatedVersions {
+  content: ConfigVersion[]
+  totalElements: number
+  totalPages: number
+  number: number
+  size: number
+}
+
+// List config versions (paginated, newest first). Default backend pageSize=20.
+export const getConfigVersions = (factoryId: string, page = 0, size = 20) =>
+  request.get<PaginatedVersions>(`/${factoryId}/config/versions`, { params: { page, size } })
 
 export const submitForReview = (factoryId: string) =>
   request.post(`/${factoryId}/config/submit-review`)
