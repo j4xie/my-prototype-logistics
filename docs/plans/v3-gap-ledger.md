@@ -35,7 +35,7 @@
 | P0-6 | 指定人员授权 (L2) | ✅ FULL | UserMenuPermission entity + UserMenuPermissionService grant/revoke + Controller + V20260408_06 migration — 已在 e2e/v1-framework (forked from main at 63041f7dd 时已包含 06708ebe6). Phase B Step 2 确认. | — |
 | P0-7 | 销售订单 SKU 去重 | ✅ FULL | SalesServiceImpl:146-151 Set<String> seenProductIds → throws BusinessException("同一订单不能添加重复的产品") on createSalesOrder | — |
 | P0-8 | 销售订单明细字段补全 | ✅ FULL | SalesOrderItem: specification:79 + boxQuantity:83 字段存在. 前端 detail.vue:582-588 渲染 "规格" + "箱数" 列 | — |
-| P0-9 | 销售订单 3 状态字段 | 🟡 PARTIAL | invoiceStatus + getPaymentStatus() @Transient + transportPlanStatus 齐全. detail.vue:529-536 渲染 3 el-tag. **3 个子 gap**: (1) getPaymentStatus() @Transient 需确认 Jackson 序列化 (2) **transportPlanStatus 没代码 set**, 永远 "待出厂" (3) **🔴 B4 BLOCKER**: ck_so_status DB CHECK 缺 PENDING_FINANCE_REVIEW/FINANCE_APPROVED/FINANCE_REJECTED → 点"提交财务审核"500 | 见 B4. transportStatus wiring: **M** |
+| P0-9 | 销售订单 3 状态字段 | 🟡 PARTIAL | invoiceStatus + getPaymentStatus() @Transient + transportPlanStatus 齐全. detail.vue:529-536 渲染 3 el-tag. **3 个子 gap**: (1) ✅ getPaymentStatus() Jackson 序列化: 已加 @JsonProperty("paymentStatus") commit `e86a47d14` (2) **transportPlanStatus 没代码 set**, 永远 "待出厂" (wiring TODO: M) (3) B4 ✅ FIXED (ck_so_status CHECK constraint). | 1/3 sub-gaps resolved. |
 | P0-11 | 销售订单业务 4 tabs | ✅ FULL | detail.vue:563-806 — 5 el-tab-pane: 订单详情/开票申请/销售出库/收款记录/关联采购. 每 tab 独立 API endpoint | — |
 | P0-12 | 生产计划必须关联 SO | ✅ FULL | ProductionPlanController GET /sales-orders/selectable (d8c8e7ace) + sourceOrderItemId 字段粒度修正 (cdf2d2a2c) + V20260408_08 migration. MANUAL 计划为合理例外 (客户原话 4216s 限"关联 SO 产品"). 已在 e2e/v1-framework. Phase B Step 2 确认. | — |
 | P0-13 | PC 批次字段强制 (A4) | ✅ FULL | SalesDeliveryBatchAllocationController:17 P0-13 标签. SalesServiceImpl:580 出库前强校. V20260408_07 migration | — |
@@ -65,9 +65,9 @@
 
 | ID | 描述 | 根因 | Fix |
 |---|---|---|---|
-| **B1** | Task 2 seed 给用户设了 `warehouse_operator` / `purchase_manager`, 但 permission.ts:11-68 的规范代码是 `warehouse_worker` / `procurement_manager`. 这 2 seed role 不在系统里, 自然 /403 | **是 seed bug 不是后端 bug**. roles/list.vue:180 mock 有 `warehouse_operator` 误导, 实际 auth.ts:37 是 `WAREHOUSE_WORKER` | **XS**: 改 seed-e2e-factory.sql 5 个用户的 role 值. **不碰后端** |
+| **B1** | Task 2 seed 给用户设了 `warehouse_operator` / `purchase_manager`, 但 permission.ts:11-68 的规范代码是 `warehouse_worker` / `procurement_manager`. 这 2 seed role 不在系统里, 自然 /403 | **是 seed bug 不是后端 bug**. roles/list.vue:180 mock 有 `warehouse_operator` 误导, 实际 auth.ts:37 是 `WAREHOUSE_WORKER` | ✅ FIXED in commit `acb2c150c`. 改 seed-e2e-factory.sql: `purchase_manager` → `procurement_manager`, `warehouse_operator` → `warehouse_worker`. 本地 DB 同步更新 (UPDATE 2 rows confirmed). 全 5 user role_code 已验证与 FactoryUserRole enum 一致. |
 | **B2** | DB `ck_po_status` CHECK 只允许 `DRAFT/SUBMITTED/APPROVED/PARTIAL_RECEIVED/COMPLETED/CANCELLED/CLOSED`. `PurchaseOrderStatus:17,19` enum 有 `PENDING_FINANCE_REVIEW`/`FINANCE_APPROVED`. `PurchaseServiceImpl:216,228` 转这些状态 → **运行时 DB CHECK violation** | 后端 + DB 不同步, 迁移没跟上 | ✅ FIXED in `V20260411_10__fix_po_so_status_check_constraints.sql`. CHECK 现在包含 PENDING_FINANCE_REVIEW/FINANCE_APPROVED/FINANCE_REJECTED 全部 10 个 enum 值. 验证: UPDATE to blocked states succeeded (rollback). |
-| **B3** | `PurchaseSuggestion` / `generateSuggestionFrom` 后端 0 hit. SupplyChainOrchestrator:260 从 SO 自动建 production plan, 但没建 purchase suggestion | "自动采购建议" feature 根本没实现 | **XS (doc)**: 改 v3 spec §4.1 G2 表述 "自动采购建议"→"手工建议" |
+| **B3** | `PurchaseSuggestion` / `generateSuggestionFrom` 后端 0 hit. SupplyChainOrchestrator:260 从 SO 自动建 production plan, 但没建 purchase suggestion | "自动采购建议" feature 根本没实现 | ✅ FIXED in commit `e08460093`. 改 v3 spec P0-11 说明: 关联采购 tab = 查询已有 PO (salesOrderId 关联), 不自动生成采购建议. V1 现状确认为手工流程. |
 | **B4** | 同 B2 模式, 但在销售订单端: DB `ck_so_status` CHECK (V20260408_11 migration) 只允许 6 个值, 缺 `PENDING_FINANCE_REVIEW`/`FINANCE_APPROVED`/`FINANCE_REJECTED`. `SalesServiceImpl:278,298,332` 设这些状态 → DB check_violation. 点"提交财务审核"直接 500 | 又一次 enum/DB 不同步 | ✅ FIXED in `V20260411_10__fix_po_so_status_check_constraints.sql` (同 B2 migration). CHECK 现在包含 9 个值含全部财务状态. 验证: UPDATE to PENDING_FINANCE_REVIEW/FINANCE_APPROVED succeeded (rollback). |
 
 ---
@@ -82,6 +82,7 @@
 | 🔴 BLOCKER | — | — | **4** (B1-B4) | — |
 
 **审计覆盖率**: 28/28 (100%) ✅ · Phase B Step 2 完成: P0-6 + P0-12 → ✅ FULL (已在 e2e/v1-framework, 无需 cherry-pick)
+**Phase B Step 3 Batch 1 完成 (2026-04-11)**: B1 ✅ (`acb2c150c`) + B3 ✅ (`e08460093`) + P0-9 getPaymentStatus 序列化 ✅ (`e86a47d14`). 现在 4 blocker: B1 ✅ B2 ✅ B3 ✅ B4 ✅ — 全部 closed.
 
 **核心结论**:
 - 😊 **V1 实际完成度远高于预期**. 20/28 ✅ FULL, 0 item 完全缺失
