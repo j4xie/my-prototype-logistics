@@ -136,6 +136,14 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
     @Autowired(required = false)
     private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
 
+    /**
+     * Round 10 Task 3 — 3rd hook of Canvas Integration Template for material_batch.
+     * Publishes MaterialBatchCreatedEvent so factory-configured trigger chains on the
+     * material_batch module can react to all batch sources (not just purchase receive).
+     */
+    @Autowired(required = false)
+    private org.springframework.context.ApplicationEventPublisher applicationEventPublisher;
+
     // Manual constructor (Lombok @RequiredArgsConstructor not working)
     public MaterialBatchServiceImpl(
             MaterialBatchRepository materialBatchRepository,
@@ -207,6 +215,21 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
                 dynamicFieldService.setDynamicFields(factoryId, "material_batch", batch.getId(), request.getCustomFields());
             } catch (Exception e) {
                 log.warn("Canvas dynamic fields save failed for material batch {}: {}", batch.getId(), e.getMessage());
+            }
+        }
+
+        // Round 10 Fix (R8-α Gap #1 template 3rd hook): publish MaterialBatchCreatedEvent so
+        // factory-configured trigger chains on the material_batch module can react to all
+        // batch sources (return/gain/manual), not just the purchase-receive path which
+        // already emits MaterialReceivedEvent. Silent failure here must not break batch creation.
+        if (applicationEventPublisher != null) {
+            try {
+                applicationEventPublisher.publishEvent(new com.cretas.aims.event.MaterialBatchCreatedEvent(
+                        this, factoryId, batch.getId(), batch.getBatchNumber(),
+                        batch.getMaterialTypeId(), batch.getReceiptQuantity(),
+                        request.getSourceDocType(), request.getSourceDocId()));
+            } catch (Exception e) {
+                log.warn("Publish MaterialBatchCreatedEvent failed for batch {}: {}", batch.getId(), e.getMessage());
             }
         }
 

@@ -55,7 +55,12 @@ public class TriggerChainExecutor {
             "SampleApprovedEvent",
             "SkuComplexityChangedEvent",
             "SopUploadedEvent",
-            "RescheduleNeededEvent"
+            "RescheduleNeededEvent",
+            // Round 10 Fix (R8-α Gap #1 template 3rd hook): generic event for ALL material
+            // batch sources. MaterialReceivedEvent only fires on the purchase-receive path;
+            // this new event covers return/gain/manual batches so trigger chains can react
+            // to every material_batch row that lands in the DB.
+            "MaterialBatchCreatedEvent"
     );
 
     // Round 6 Fix CHECK-5: rate-limited warn log when a factory configures a trigger chain
