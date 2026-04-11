@@ -70,12 +70,18 @@ class StoredValueHandler(AbstractSectionHandler):
         charge = self._safe_float(current.get("stored_value_charge"))
         previous_balance = self._safe_float(current.get("previous_stored_value_balance"))
 
+        # P3.5B F8: read mode from context (set by orchestrator from margin_spec)
+        # Falls back to PREPAID (default) if not in context (backward compat)
+        from smartbi.services.finance.margin_spec import StoredValueTreatment
+        mode = context.get("stored_value_mode") or StoredValueTreatment.PREPAID
+
         try:
             report = self._get_analyzer().analyze(
                 stored_value_giveaway=giveaway,
                 revenue=revenue,
                 stored_value_charge=charge,
                 previous_balance=previous_balance,
+                mode=mode,
             )
         except Exception as e:
             return self.skipped(request, f"stored_value_analyzer 运行失败: {e}", started)

@@ -435,3 +435,73 @@ def test_f5_analyzer_tree_loaded_only_once_cached():
     tree1 = analyzer.get_expense_account_tree()
     tree2 = analyzer.get_expense_account_tree()
     assert tree1 is tree2  # same instance (cached)
+
+
+# === P3.5B F8 tests: stored_value mode propagation through analyzer ===
+
+def test_f8_analyzer_propagates_stored_value_mode_revenue():
+    """margin_spec.storedValueTreatment=REVENUE -> section records mode=REVENUE."""
+    from smartbi.services.finance.margin_spec import MarginSpec, StoredValueTreatment
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    spec = MarginSpec(stored_value_treatment=StoredValueTreatment.REVENUE)
+    analyzer = RestaurantAnalyzerV2(
+        factory_id="F-TEST",
+        sub_sector="火锅",
+        margin_spec=spec,
+    )
+    report = analyzer.analyze(financial_data={
+        "current": {
+            "revenue": 731048,
+            "food_cost": 307040,
+            "stored_value_giveaway": 51680.61,
+        },
+    })
+    sv_section = report["sections"].get("storedValueDependency")
+    assert sv_section is not None, f"Missing storedValueDependency section. Got: {list(report['sections'].keys())}"
+    # The mode field should reflect REVENUE
+    assert sv_section.get("mode") == "REVENUE"
+
+
+def test_f8_analyzer_propagates_stored_value_mode_excluded():
+    """margin_spec.storedValueTreatment=EXCLUDED -> severity=info regardless of ratio."""
+    from smartbi.services.finance.margin_spec import MarginSpec, StoredValueTreatment
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    spec = MarginSpec(stored_value_treatment=StoredValueTreatment.EXCLUDED)
+    analyzer = RestaurantAnalyzerV2(
+        factory_id="F-TEST",
+        sub_sector="火锅",
+        margin_spec=spec,
+    )
+    report = analyzer.analyze(financial_data={
+        "current": {
+            "revenue": 731048,
+            "food_cost": 307040,
+            "stored_value_giveaway": 51680.61,  # 7.07% would normally be critical
+        },
+    })
+    sv_section = report["sections"].get("storedValueDependency")
+    assert sv_section is not None
+    assert sv_section.get("mode") == "EXCLUDED"
+    # EXCLUDED means customer already removes from revenue -- no risk
+    assert sv_section.get("severity") == "info"
+
+
+def test_f8_default_margin_spec_uses_prepaid_mode():
+    """No margin_spec -> PREPAID default -> backward-compat severity."""
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    analyzer = RestaurantAnalyzerV2(factory_id="F-TEST", sub_sector="火锅")
+    report = analyzer.analyze(financial_data={
+        "current": {
+            "revenue": 731048,
+            "food_cost": 307040,
+            "stored_value_giveaway": 51680.61,
+        },
+    })
+    sv_section = report["sections"].get("storedValueDependency")
+    assert sv_section is not None
+    # Default mode = PREPAID, 7.07% = critical (after QW1 threshold adjustment)
+    assert sv_section.get("mode") == "PREPAID"
+    assert sv_section.get("severity") == "critical"

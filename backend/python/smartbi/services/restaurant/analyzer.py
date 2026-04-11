@@ -416,6 +416,8 @@ class RestaurantAnalyzerV2:
             context["members"] = members
         if self.db_session is not None:
             context["db_session"] = self.db_session
+        # P3.5B F8: propagate stored_value treatment from margin_spec to stored_value handler
+        context["stored_value_mode"] = self.margin_spec.stored_value_treatment
 
         # ── Section 1: 命名归一 (POS only) ──
         # NOTE: explicit `is None` checks — pandas DataFrames raise ValueError on truthiness.
