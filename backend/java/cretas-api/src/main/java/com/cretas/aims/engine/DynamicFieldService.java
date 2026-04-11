@@ -98,6 +98,82 @@ public class DynamicFieldService {
         }
     }
 
+    /**
+     * Round 4 Fix P1-18: Change field type with ALTER COLUMN TYPE + USING cast.
+     * Updates CanvasDynamicField.fieldType after successful DDL.
+     * Throws IllegalArgumentException for unsafe transitions.
+     */
+    public void changeFieldType(com.cretas.aims.entity.config.CanvasDynamicField field, String newType) {
+        String oldType = field.getFieldType();
+        String newUpper = newType.toUpperCase();
+
+        // Validate transition safety
+        boolean safe = isSafeTypeTransition(oldType, newUpper);
+        if (!safe) {
+            throw new IllegalArgumentException(
+                "Unsafe type transition: " + oldType + " → " + newUpper
+                + ". Create a new field and migrate data manually instead.");
+        }
+
+        String tableName = ddlExecutor.resolveTable(field.getModuleCode());
+        String columnName = field.getColumnName();
+        String newSqlType = mapFieldTypeToSQL(newUpper);
+        String usingClause = buildUsingClause(oldType, newUpper, columnName);
+
+        String ddl = String.format(
+            "ALTER TABLE %s ALTER COLUMN %s TYPE %s USING %s",
+            tableName, columnName, newSqlType, usingClause
+        );
+
+        log.info("Changing field type: {} → {}, DDL: {}", oldType, newUpper, ddl);
+        jdbcTemplate.execute(ddl);
+
+        field.setFieldType(newUpper);
+        fieldRepo.save(field);
+        refreshCache(field.getFactoryId(), field.getModuleCode());
+    }
+
+    private boolean isSafeTypeTransition(String from, String to) {
+        if (from.equals(to)) return true;
+        // Any type → TEXT is safe (castable to text)
+        if ("TEXT".equals(to) || "TEXTAREA".equals(to)) return true;
+        // Number ↔ Decimal
+        if (("NUMBER".equals(from) && "DECIMAL".equals(to))
+            || ("DECIMAL".equals(from) && "NUMBER".equals(to))) return true;
+        // TEXT → NUMBER/DECIMAL (will fail if data not numeric)
+        if ("TEXT".equals(from) && ("NUMBER".equals(to) || "DECIMAL".equals(to))) return true;
+        // TEXT → DATE/DATETIME (will fail if not parseable)
+        if ("TEXT".equals(from) && ("DATE".equals(to) || "DATETIME".equals(to))) return true;
+        // DATE ↔ DATETIME
+        if (("DATE".equals(from) && "DATETIME".equals(to))
+            || ("DATETIME".equals(from) && "DATE".equals(to))) return true;
+        return false;
+    }
+
+    private String buildUsingClause(String from, String to, String col) {
+        if ("TEXT".equals(to) || "TEXTAREA".equals(to)) return col + "::text";
+        if ("NUMBER".equals(to)) return col + "::integer";
+        if ("DECIMAL".equals(to)) return col + "::numeric";
+        if ("DATE".equals(to)) return col + "::date";
+        if ("DATETIME".equals(to)) return col + "::timestamp";
+        return col;
+    }
+
+    private String mapFieldTypeToSQL(String fieldType) {
+        return switch (fieldType) {
+            case "TEXT" -> "VARCHAR(500)";
+            case "TEXTAREA" -> "TEXT";
+            case "NUMBER", "INTEGER" -> "INTEGER";
+            case "DECIMAL" -> "NUMERIC(18,4)";
+            case "SELECT" -> "VARCHAR(100)";
+            case "DATE" -> "DATE";
+            case "DATETIME" -> "TIMESTAMP";
+            case "BOOLEAN" -> "BOOLEAN";
+            case "ATTACHMENT" -> "VARCHAR(2000)";
+            default -> "VARCHAR(500)";
+        };
+    }
+
     public void setDynamicFields(String factoryId, String moduleCode, String recordId, Map<String, Object> fields) {
         if (fields == null || fields.isEmpty()) return;
         List<CanvasDynamicField> activeDefs = getActiveFields(factoryId, moduleCode);

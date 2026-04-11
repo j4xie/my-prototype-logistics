@@ -62,6 +62,62 @@ public class SpelConditionEvaluator {
         if (variables != null) {
             variables.forEach(ctx::setVariable);
         }
+        // Round 4 Fix P1-8: register time/date helper functions so computedWhen can do
+        //   cf_expire_at = #addHours(#cf_start_time, 4)
+        //   valid_for_days = #daysBetween(#start_date, #end_date)
+        try {
+            ctx.registerFunction("now",
+                SpelConditionEvaluator.class.getDeclaredMethod("now"));
+            ctx.registerFunction("addHours",
+                SpelConditionEvaluator.class.getDeclaredMethod("addHours", Object.class, Number.class));
+            ctx.registerFunction("addMinutes",
+                SpelConditionEvaluator.class.getDeclaredMethod("addMinutes", Object.class, Number.class));
+            ctx.registerFunction("addDays",
+                SpelConditionEvaluator.class.getDeclaredMethod("addDays", Object.class, Number.class));
+            ctx.registerFunction("daysBetween",
+                SpelConditionEvaluator.class.getDeclaredMethod("daysBetween", Object.class, Object.class));
+        } catch (NoSuchMethodException e) {
+            log.warn("Failed to register SpEL time helper functions: {}", e.getMessage());
+        }
         return ctx;
+    }
+
+    // --- SpEL helper functions (static so they can be registered via registerFunction) ---
+
+    public static java.time.LocalDateTime now() {
+        return java.time.LocalDateTime.now();
+    }
+
+    public static java.time.LocalDateTime addHours(Object base, Number hours) {
+        java.time.LocalDateTime t = toLocalDateTime(base);
+        return t == null ? null : t.plusHours(hours.longValue());
+    }
+
+    public static java.time.LocalDateTime addMinutes(Object base, Number minutes) {
+        java.time.LocalDateTime t = toLocalDateTime(base);
+        return t == null ? null : t.plusMinutes(minutes.longValue());
+    }
+
+    public static java.time.LocalDateTime addDays(Object base, Number days) {
+        java.time.LocalDateTime t = toLocalDateTime(base);
+        return t == null ? null : t.plusDays(days.longValue());
+    }
+
+    public static Long daysBetween(Object start, Object end) {
+        java.time.LocalDateTime s = toLocalDateTime(start);
+        java.time.LocalDateTime e = toLocalDateTime(end);
+        if (s == null || e == null) return null;
+        return java.time.Duration.between(s, e).toDays();
+    }
+
+    private static java.time.LocalDateTime toLocalDateTime(Object v) {
+        if (v == null) return null;
+        if (v instanceof java.time.LocalDateTime ldt) return ldt;
+        if (v instanceof java.time.LocalDate ld) return ld.atStartOfDay();
+        if (v instanceof CharSequence s) {
+            try { return java.time.LocalDateTime.parse(s); } catch (Exception ignored) {}
+            try { return java.time.LocalDate.parse(s).atStartOfDay(); } catch (Exception ignored) {}
+        }
+        return null;
     }
 }

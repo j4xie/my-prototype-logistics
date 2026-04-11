@@ -60,6 +60,14 @@ public class FactoryConfiguration {
     @Column(name = "review_notes", columnDefinition = "TEXT")
     private String reviewNotes;
 
+    // Round 4 Fix P1-17: Optimistic locking to prevent concurrent-edit conflicts.
+    // Two admins saving simultaneously now get a controlled StaleObjectStateException
+    // instead of a random ConstraintViolationException on the unique factory_id+version index.
+    @jakarta.persistence.Version
+    @Column(name = "row_version")
+    @Builder.Default
+    private Long rowVersion = 0L;
+
     @Column(name = "change_summary", columnDefinition = "TEXT")
     private String changeSummary;
 

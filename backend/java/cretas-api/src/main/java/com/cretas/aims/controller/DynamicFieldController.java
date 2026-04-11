@@ -100,6 +100,49 @@ public class DynamicFieldController {
         return ResponseEntity.ok(ddlLogRepo.findByFactoryIdOrderByCreatedAtDesc(factoryId));
     }
 
+    /**
+     * Round 4 Fix P1-18: Change field type via ALTER COLUMN TYPE with USING cast.
+     *
+     * Supported transitions (with data preservation):
+     *   TEXT → NUMBER / DECIMAL  (USING col::numeric, fails if data not numeric)
+     *   TEXT → DATE / DATETIME   (USING col::timestamp, fails if not parseable)
+     *   NUMBER ↔ DECIMAL         (always safe)
+     *   NUMBER / DECIMAL → TEXT  (always safe, USING col::text)
+     *
+     * Unsafe transitions (e.g. DATE → NUMBER) return 400.
+     */
+    @PostMapping("/config/v2/dynamic-fields/{fieldCode}/change-type")
+    @org.springframework.security.access.prepost.PreAuthorize(
+        "hasAnyRole('FACTORY_SUPER_ADMIN', 'PLATFORM_SUPER_ADMIN')")
+    public ResponseEntity<?> changeFieldType(
+            @PathVariable String factoryId,
+            @PathVariable String fieldCode,
+            @RequestBody Map<String, Object> body) {
+        String moduleCode = (String) body.get("moduleCode");
+        String newType = (String) body.get("newType");
+        if (newType == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "newType is required"));
+        }
+
+        CanvasDynamicField existing = fieldRepo.findByFactoryIdAndModuleCodeAndFieldCode(
+            factoryId, moduleCode, fieldCode).orElse(null);
+        if (existing == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String oldType = existing.getFieldType();
+        if (oldType.equalsIgnoreCase(newType)) {
+            return ResponseEntity.ok(existing);
+        }
+
+        try {
+            dynamicFieldService.changeFieldType(existing, newType);
+            return ResponseEntity.ok(existing);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage(), "oldType", oldType, "newType", newType));
+        }
+    }
+
     // --- Sub-table CRUD ---
 
     @GetMapping("/{moduleCode}/{recordId}/sub-table/{fieldCode}")
@@ -107,9 +150,21 @@ public class DynamicFieldController {
             @PathVariable String factoryId,
             @PathVariable String moduleCode,
             @PathVariable String recordId,
-            @PathVariable String fieldCode) {
+            @PathVariable String fieldCode,
+            @RequestParam(required = false) Map<String, String> filters) {
+        // Round 4 Fix P1-13: filters query params are forwarded to DynamicTableService.
+        // Supported keys: cf_xxx (exact match), dateFrom, dateTo, limit.
         String subTableName = moduleCode + "_" + fieldCode + "_items";
-        return ResponseEntity.ok(dynamicTableService.getRows(subTableName, recordId));
+        Map<String, Object> filterMap = new java.util.HashMap<>();
+        if (filters != null) {
+            for (Map.Entry<String, String> e : filters.entrySet()) {
+                // Spring injects path variables into @RequestParam Map too; filter them out.
+                if ("factoryId".equals(e.getKey()) || "moduleCode".equals(e.getKey())
+                        || "recordId".equals(e.getKey()) || "fieldCode".equals(e.getKey())) continue;
+                filterMap.put(e.getKey(), e.getValue());
+            }
+        }
+        return ResponseEntity.ok(dynamicTableService.getRows(subTableName, recordId, filterMap));
     }
 
     @PostMapping("/{moduleCode}/{recordId}/sub-table/{fieldCode}")

@@ -38,4 +38,10 @@ public interface FactoryConfigService {
 
     // ========== 模板 ==========
     void applyTemplate(String factoryId, String templateCode, Long operatorId);
+
+    // ========== 导出/导入 (Round 4 Fix P1-16) ==========
+    /** Export full Canvas config bundle: modules + dynamic fields + validation rules + trigger chains + formulas */
+    Map<String, Object> exportConfig(String factoryId);
+    /** Import a config bundle (from another factory) as DRAFT, merging with existing config */
+    Map<String, Object> importConfig(String factoryId, Map<String, Object> bundle, Long operatorId);
 }

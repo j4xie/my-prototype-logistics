@@ -142,8 +142,11 @@ export interface CompletenessCheck {
   }[]
 }
 
-// Canvas V3 Dynamic Fields
-export type DynamicFieldType = 'TEXT' | 'NUMBER' | 'DECIMAL' | 'SELECT' | 'DATE' | 'ATTACHMENT' | 'SUB_TABLE'
+// Canvas V3 Dynamic Fields — Round 4 Fix P1-11: added TEXTAREA/DATETIME/BOOLEAN
+export type DynamicFieldType =
+  | 'TEXT' | 'TEXTAREA' | 'NUMBER' | 'DECIMAL' | 'SELECT'
+  | 'DATE' | 'DATETIME' | 'BOOLEAN'
+  | 'ATTACHMENT' | 'SUB_TABLE'
 export type DynamicFieldStatus = 'PENDING_DDL' | 'ACTIVE' | 'DISABLED'
 
 export interface DynamicFieldConfig {

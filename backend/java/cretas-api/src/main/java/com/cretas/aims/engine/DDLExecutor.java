@@ -206,12 +206,19 @@ public class DDLExecutor {
     }
 
     private String mapFieldTypeToSQL(String fieldType) {
-        return switch (fieldType) {
+        // Round 4 Fix P1-11: Added DATETIME and BOOLEAN types.
+        // DATETIME = TIMESTAMP (same as DATE since PostgreSQL TIMESTAMP carries full precision)
+        // BOOLEAN  = BOOLEAN for "是否合格"/"是否含税" type switches
+        // TEXTAREA = TEXT for long-form notes
+        return switch (fieldType == null ? "TEXT" : fieldType.toUpperCase()) {
             case "TEXT" -> "VARCHAR(500)";
-            case "NUMBER" -> "INTEGER";
+            case "TEXTAREA", "LONGTEXT" -> "TEXT";
+            case "NUMBER", "INTEGER" -> "INTEGER";
             case "DECIMAL" -> "NUMERIC(18,4)";
             case "SELECT" -> "VARCHAR(100)";
-            case "DATE" -> "TIMESTAMP";
+            case "DATE" -> "DATE";
+            case "DATETIME", "TIMESTAMP" -> "TIMESTAMP";
+            case "BOOLEAN", "BOOL" -> "BOOLEAN";
             case "ATTACHMENT" -> "VARCHAR(2000)";
             default -> "VARCHAR(500)";
         };

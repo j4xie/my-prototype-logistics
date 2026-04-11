@@ -564,6 +564,154 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
                 templateCode, factoryId, enabledModules.size(), disabledModules.size());
     }
 
+    // ========== Export / Import (Round 4 Fix P1-16) ==========
+
+    @Override
+    public Map<String, Object> exportConfig(String factoryId) {
+        Map<String, Object> bundle = new HashMap<>();
+        bundle.put("factoryId", factoryId);
+        bundle.put("exportedAt", LocalDateTime.now().toString());
+        bundle.put("version", "1.0");
+
+        // Latest published version metadata
+        Optional<FactoryConfiguration> latestPublished =
+            factoryConfigurationRepository.findLatestPublished(factoryId);
+        latestPublished.ifPresent(v -> bundle.put("sourceVersion", v.getConfigVersion()));
+
+        // Export module configs (enabled modules + their field overrides)
+        int exportVersion = latestPublished.map(FactoryConfiguration::getConfigVersion).orElse(1);
+        List<FactoryModuleConfig> modules = factoryModuleConfigRepository
+            .findByFactoryIdAndConfigVersion(factoryId, exportVersion);
+        List<Map<String, Object>> moduleData = new ArrayList<>();
+        for (FactoryModuleConfig m : modules) {
+            Map<String, Object> mm = new HashMap<>();
+            mm.put("moduleCode", m.getModuleCode());
+            mm.put("enabled", m.getEnabled());
+            mm.put("fieldConfig", m.getFieldConfig());
+            mm.put("workflowConfig", m.getWorkflowConfig());
+            mm.put("validationConfig", m.getValidationConfig());
+            mm.put("permissionConfig", m.getPermissionConfig());
+            mm.put("layoutConfig", m.getLayoutConfig());
+            mm.put("customLabels", m.getCustomLabels());
+            mm.put("renderingMode", m.getRenderingMode());
+            moduleData.add(mm);
+        }
+        bundle.put("modules", moduleData);
+
+        // Export dynamic fields
+        if (canvasDynamicFieldRepository != null) {
+            List<CanvasDynamicField> fields = canvasDynamicFieldRepository
+                .findByFactoryIdAndStatusIn(factoryId, List.of("ACTIVE", "PENDING_DDL"));
+            List<Map<String, Object>> fieldData = new ArrayList<>();
+            for (CanvasDynamicField f : fields) {
+                Map<String, Object> ff = new HashMap<>();
+                ff.put("moduleCode", f.getModuleCode());
+                ff.put("fieldCode", f.getFieldCode());
+                ff.put("fieldType", f.getFieldType());
+                ff.put("label", f.getLabel());
+                ff.put("config", f.getConfig());
+                ff.put("visibleWhen", f.getVisibleWhen());
+                ff.put("computedWhen", f.getComputedWhen());
+                ff.put("sortOrder", f.getSortOrder());
+                fieldData.add(ff);
+            }
+            bundle.put("dynamicFields", fieldData);
+        }
+
+        log.info("Exported config for factory {} — {} modules, {} fields",
+            factoryId, moduleData.size(), ((List<?>) bundle.getOrDefault("dynamicFields", List.of())).size());
+        return bundle;
+    }
+
+    @Override
+    @Transactional
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> importConfig(String factoryId, Map<String, Object> bundle, Long operatorId) {
+        if (bundle == null || !bundle.containsKey("modules")) {
+            throw new BusinessException("Invalid config bundle: missing 'modules' key");
+        }
+
+        // Get or create a DRAFT version for this factory
+        FactoryConfiguration draft = getOrCreateDraft(factoryId, operatorId);
+        int targetVersion = draft.getConfigVersion();
+
+        int modulesImported = 0;
+        int fieldsImported = 0;
+        List<String> skipped = new ArrayList<>();
+
+        // Import module configs
+        List<Map<String, Object>> modules = (List<Map<String, Object>>) bundle.getOrDefault("modules", List.of());
+        for (Map<String, Object> mData : modules) {
+            String moduleCode = (String) mData.get("moduleCode");
+            if (moduleSchemaRepository.findByModuleCode(moduleCode).isEmpty()) {
+                skipped.add("module:" + moduleCode + " (schema not found in target)");
+                continue;
+            }
+
+            FactoryModuleConfig existing = factoryModuleConfigRepository
+                .findByFactoryIdAndModuleCodeAndConfigVersion(factoryId, moduleCode, targetVersion)
+                .orElseGet(() -> {
+                    FactoryModuleConfig c = new FactoryModuleConfig();
+                    c.setFactoryId(factoryId);
+                    c.setModuleCode(moduleCode);
+                    c.setConfigVersion(targetVersion);
+                    return c;
+                });
+            if (mData.containsKey("enabled")) existing.setEnabled((Boolean) mData.get("enabled"));
+            if (mData.containsKey("fieldConfig")) existing.setFieldConfig((Map<String, Object>) mData.get("fieldConfig"));
+            if (mData.containsKey("workflowConfig")) existing.setWorkflowConfig((Map<String, Object>) mData.get("workflowConfig"));
+            if (mData.containsKey("validationConfig")) existing.setValidationConfig((Map<String, Object>) mData.get("validationConfig"));
+            if (mData.containsKey("permissionConfig")) existing.setPermissionConfig((Map<String, Object>) mData.get("permissionConfig"));
+            if (mData.containsKey("layoutConfig")) existing.setLayoutConfig((Map<String, Object>) mData.get("layoutConfig"));
+            if (mData.containsKey("customLabels")) existing.setCustomLabels((Map<String, Object>) mData.get("customLabels"));
+            if (mData.containsKey("renderingMode")) existing.setRenderingMode((String) mData.get("renderingMode"));
+            factoryModuleConfigRepository.save(existing);
+            modulesImported++;
+        }
+
+        // Import dynamic fields (as PENDING_DDL for safe re-publish)
+        if (canvasDynamicFieldRepository != null && bundle.containsKey("dynamicFields")) {
+            List<Map<String, Object>> fields = (List<Map<String, Object>>) bundle.get("dynamicFields");
+            for (Map<String, Object> fData : fields) {
+                String moduleCode = (String) fData.get("moduleCode");
+                String fieldCode = (String) fData.get("fieldCode");
+                // Skip if field already exists in target factory
+                if (canvasDynamicFieldRepository.findByFactoryIdAndModuleCodeAndFieldCode(
+                        factoryId, moduleCode, fieldCode).isPresent()) {
+                    skipped.add("field:" + moduleCode + "." + fieldCode + " (already exists)");
+                    continue;
+                }
+                CanvasDynamicField newField = CanvasDynamicField.builder()
+                    .factoryId(factoryId)
+                    .moduleCode(moduleCode)
+                    .fieldCode(fieldCode)
+                    .fieldType((String) fData.get("fieldType"))
+                    .label((String) fData.get("label"))
+                    .config((Map<String, Object>) fData.getOrDefault("config", Map.of()))
+                    .visibleWhen((String) fData.get("visibleWhen"))
+                    .computedWhen((String) fData.get("computedWhen"))
+                    .sortOrder(fData.get("sortOrder") != null ? ((Number) fData.get("sortOrder")).intValue() : 0)
+                    .status("PENDING_DDL")
+                    .build();
+                newField.setColumnName("cf_" + fieldCode);
+                canvasDynamicFieldRepository.save(newField);
+                fieldsImported++;
+            }
+        }
+
+        logChange(factoryId, null, "IMPORT", null, null,
+                "导入配置 — " + modulesImported + " modules, " + fieldsImported + " fields", operatorId);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("modulesImported", modulesImported);
+        result.put("fieldsImported", fieldsImported);
+        result.put("skipped", skipped);
+        result.put("draftVersion", targetVersion);
+        log.info("Imported config to factory {} — {} modules, {} fields, {} skipped",
+            factoryId, modulesImported, fieldsImported, skipped.size());
+        return result;
+    }
+
     // ========== Private Helpers ==========
 
     private FactoryConfiguration getOrCreateDraft(String factoryId, Long operatorId) {

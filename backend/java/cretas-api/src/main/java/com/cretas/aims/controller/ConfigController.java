@@ -255,6 +255,29 @@ public class ConfigController {
         return ApiResponse.success();
     }
 
+    // ========== 配置导出/导入 (Round 4 Fix P1-16) ==========
+
+    @GetMapping("/export")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PLATFORM_SUPER_ADMIN')")
+    @Operation(summary = "导出工厂完整 Canvas 配置 (modules + dynamic fields + rules)")
+    public ApiResponse<Map<String, Object>> exportConfig(@PathVariable String factoryId) {
+        Map<String, Object> bundle = configService.exportConfig(factoryId);
+        return ApiResponse.success(bundle);
+    }
+
+    @PostMapping("/import")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PLATFORM_SUPER_ADMIN')")
+    @Operation(summary = "从另一个工厂导入 Canvas 配置 (merge 到当前工厂的 DRAFT)")
+    public ApiResponse<Map<String, Object>> importConfig(
+            @PathVariable String factoryId,
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestBody Map<String, Object> bundle) {
+        Long operatorId = extractUserId(authorization);
+        Map<String, Object> result = configService.importConfig(
+            factoryId, bundle, operatorId != null ? operatorId : 0L);
+        return ApiResponse.success(result);
+    }
+
     /** Shared state machine transition helper (Round 4 Fix P0-1) */
     private void transitionStatus(String factoryId, String fromStatus, String toStatus,
                                   Long operatorId, java.util.function.Consumer<FactoryConfiguration> mutator) {
