@@ -1,0 +1,60 @@
+# Default department tree for bakery chains
+# Proves universality — different structure from hotpot
+
+nodes:
+  - code: 门店
+    name_zh: 门店总部
+    category: 管理
+
+  # 生产 branch
+  - code: 生产
+    name_zh: 生产
+    parent: 门店
+    category: 后厨
+  - code: 烘焙间
+    name_zh: 烘焙间
+    parent: 生产
+    head_count_target: 4
+    category: 后厨
+  - code: 面包房
+    name_zh: 面包房
+    parent: 生产
+    head_count_target: 3
+    category: 后厨
+  - code: 裱花间
+    name_zh: 裱花间
+    parent: 生产
+    head_count_target: 2
+    category: 后厨
+
+  # 销售 branch
+  - code: 销售
+    name_zh: 销售
+    parent: 门店
+    category: 前厅
+  - code: 门店销售
+    name_zh: 门店销售
+    parent: 销售
+    head_count_target: 6
+    category: 前厅
+  - code: 收银
+    name_zh: 收银
+    parent: 销售
+    head_count_target: 2
+    category: 前厅
+
+  # 管理 branch
+  - code: 管理
+    name_zh: 管理
+    parent: 门店
+    category: 管理
+  - code: 店长
+    name_zh: 店长
+    parent: 管理
+    head_count_target: 1
+    category: 管理
+  - code: 仓储
+    name_zh: 仓储
+    parent: 管理
+    head_count_target: 1
+    category: 管理

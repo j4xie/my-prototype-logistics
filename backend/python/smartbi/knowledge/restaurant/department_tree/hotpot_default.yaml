@@ -1,0 +1,137 @@
+# Default department tree for 火锅 chains
+# Based on 鼎鲜火锅 monthly PPT Slide 14 (30-row per-head productivity table)
+
+nodes:
+  - code: 酒店
+    name_zh: 酒店总部
+    category: 管理
+
+  # 后厨 branch
+  - code: 后厨
+    name_zh: 后厨
+    parent: 酒店
+    category: 后厨
+
+  - code: 热菜
+    name_zh: 热菜档
+    parent: 后厨
+    head_count_target: 8
+    category: 后厨
+  - code: 冷菜
+    name_zh: 凉菜档
+    parent: 后厨
+    head_count_target: 4
+    category: 后厨
+  - code: 明档
+    name_zh: 明档
+    parent: 后厨
+    head_count_target: 4
+    category: 后厨
+  - code: 铁板
+    name_zh: 铁板
+    parent: 后厨
+    head_count_target: 2
+    category: 后厨
+  - code: 点心
+    name_zh: 点心
+    parent: 后厨
+    head_count_target: 3
+    category: 后厨
+  - code: 洗杀
+    name_zh: 洗杀
+    parent: 后厨
+    head_count_target: 4
+    category: 后厨
+  - code: 海鲜养殖员
+    name_zh: 海鲜养殖员
+    parent: 后厨
+    head_count_target: 1
+    category: 后厨
+  - code: 厨部临时工
+    name_zh: 厨部临时工
+    parent: 后厨
+    category: 后厨
+
+  # 前厅 branch
+  - code: 前厅
+    name_zh: 前厅
+    parent: 酒店
+    category: 前厅
+
+  - code: 前厅管理层
+    name_zh: 前厅管理层
+    parent: 前厅
+    head_count_target: 3
+    category: 前厅
+  - code: 前厅服务员
+    name_zh: 前厅服务员
+    parent: 前厅
+    head_count_target: 15
+    category: 前厅
+  - code: 收银酒水
+    name_zh: 收银酒水
+    parent: 前厅
+    head_count_target: 3
+    category: 前厅
+  - code: 传菜部
+    name_zh: 传菜部
+    parent: 前厅
+    head_count_target: 5
+    category: 前厅
+  - code: PA保洁
+    name_zh: PA保洁
+    parent: 前厅
+    head_count_target: 3
+    category: 前厅
+  - code: 前厅临时工
+    name_zh: 前厅临时工
+    parent: 前厅
+    category: 前厅
+
+  # 后勤 branch (management)
+  - code: 后勤
+    name_zh: 后勤
+    parent: 酒店
+    category: 管理
+  - code: 店总
+    name_zh: 店总
+    parent: 后勤
+    head_count_target: 1
+    category: 管理
+  - code: 财务
+    name_zh: 财务
+    parent: 后勤
+    head_count_target: 1
+    category: 管理
+  - code: 行政人事
+    name_zh: 行政人事
+    parent: 后勤
+    head_count_target: 1
+    category: 管理
+  - code: 采购
+    name_zh: 采购
+    parent: 后勤
+    head_count_target: 1
+    category: 管理
+  - code: 维修
+    name_zh: 维修
+    parent: 后勤
+    head_count_target: 1
+    category: 管理
+  - code: 仓管
+    name_zh: 仓管
+    parent: 后勤
+    head_count_target: 1
+    category: 管理
+  - code: 保安
+    name_zh: 保安
+    parent: 后勤
+    head_count_target: 1
+    category: 管理
+
+  # 营销 branch
+  - code: 营销
+    name_zh: 营销部
+    parent: 酒店
+    head_count_target: 2
+    category: 前厅
