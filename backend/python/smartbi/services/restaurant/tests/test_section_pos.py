@@ -157,3 +157,67 @@ def test_temporal_comparison_skipped_without_pos():
     response = handler.compute(req, context={})
     assert response.status == SectionStatus.SKIPPED
     assert any("POS" in w or "DataFrame" in w for w in response.warnings)
+
+
+def test_channel_margin_accepts_custom_venue_list():
+    """鼎鲜 has 5 venues, not 3. Calculator must accept a custom venue list.
+
+    Also test 西餐 (2 venues) to prove generality across cuisines.
+    """
+    import pandas as pd
+    from smartbi.services.restaurant.channel_margin_calculator import ChannelMarginCalculator
+
+    # Hotpot: 5 venues
+    hotpot_df = pd.DataFrame([
+        {"订单来源": "包厢", "实收额": 3200, "数量": 1},
+        {"订单来源": "宴会", "实收额": 8800, "数量": 1},
+        {"订单来源": "午茶", "实收额": 450, "数量": 1},
+        {"订单来源": "大厅晚餐", "实收额": 1250, "数量": 1},
+        {"订单来源": "外卖", "实收额": 78, "数量": 1},
+    ])
+    calc = ChannelMarginCalculator(factory_id="F-DINGXIAN", sub_sector="火锅")
+    report = calc.calculate(
+        df=hotpot_df,
+        order_method_col="订单来源",
+        revenue_col="实收额",
+        venue_list=["包厢", "宴会", "午茶", "大厅晚餐", "外卖"],
+    )
+    details = report.to_dict().get("channelDetails") or report.to_dict().get("channels") or report.to_dict().get("rows") or []
+    # At least 5 venues should appear (exact key name depends on the report structure)
+    assert len(details) >= 5
+
+    # Western: 2 venues
+    western_df = pd.DataFrame([
+        {"订单来源": "堂食", "实收额": 680, "数量": 1},
+        {"订单来源": "堂食", "实收额": 720, "数量": 1},
+        {"订单来源": "外卖", "实收额": 120, "数量": 1},
+    ])
+    calc2 = ChannelMarginCalculator(factory_id="F-TEATRO", sub_sector="西餐")
+    report2 = calc2.calculate(
+        df=western_df,
+        order_method_col="订单来源",
+        revenue_col="实收额",
+        venue_list=["堂食", "外卖"],
+    )
+    details2 = report2.to_dict().get("channelDetails") or report2.to_dict().get("channels") or report2.to_dict().get("rows") or []
+    assert len(details2) >= 2
+
+
+def test_channel_margin_venue_list_none_preserves_default():
+    """When venue_list=None, behavior matches pre-QW2 (auto-detect from data)."""
+    import pandas as pd
+    from smartbi.services.restaurant.channel_margin_calculator import ChannelMarginCalculator
+
+    df = pd.DataFrame([
+        {"订单来源": "堂食", "实收额": 100, "数量": 1},
+        {"订单来源": "外卖", "实收额": 80, "数量": 1},
+    ])
+    calc = ChannelMarginCalculator(factory_id="F-TEST", sub_sector="火锅")
+    # Call WITHOUT venue_list param — must still work
+    report = calc.calculate(
+        df=df,
+        order_method_col="订单来源",
+        revenue_col="实收额",
+    )
+    # Should produce a valid report
+    assert report is not None

@@ -49,6 +49,7 @@ class ChannelMarginHandler(AbstractSectionHandler):
 
         order_method_col = request.params.get("order_method_col", "订单来源")
         revenue_col = request.params.get("revenue_col", "实收额")
+        venue_list = request.params.get("venue_list")  # Optional[list[str]], QW2
 
         if not hasattr(pos_df, "columns"):
             return self.skipped(request, "pos_df 不是 DataFrame (缺 columns 属性)", started)
@@ -83,6 +84,7 @@ class ChannelMarginHandler(AbstractSectionHandler):
                 revenue_col=revenue_col,
                 store_id=request.store_id,
                 period=request.period,
+                venue_list=venue_list,
             )
         except Exception as e:
             return self.skipped(request, f"channel margin 计算失败: {e}", started)

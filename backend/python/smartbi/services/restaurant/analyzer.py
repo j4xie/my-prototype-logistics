@@ -730,6 +730,7 @@ class RestaurantAnalyzerV2:
         revenue_col: str,
         store_id: Optional[str],
         period: str,
+        venue_list: Optional[list[str]] = None,
     ) -> dict:
         """渠道毛利率 (改进 6 真名版)"""
         report = self.channel_margin_calc.calculate(
@@ -738,6 +739,7 @@ class RestaurantAnalyzerV2:
             revenue_col=revenue_col,
             store_id=store_id,
             period=period,
+            venue_list=venue_list,
         )
         return report.to_dict()
 

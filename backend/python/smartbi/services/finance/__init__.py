@@ -6,9 +6,17 @@ Part of P3.5 general capabilities refactor. Modules added incrementally:
   - shrinkage_engine (P3.5C B3): standard vs actual variance
 """
 from .margin_spec import MarginSpec, StoredValueTreatment, MarginCalcMode
+from .expense_account_tree import (
+    ExpenseAccountNode,
+    ExpenseAccountTree,
+    load_tree_from_yaml,
+)
 
 __all__ = [
     "MarginSpec",
     "StoredValueTreatment",
     "MarginCalcMode",
+    "ExpenseAccountNode",
+    "ExpenseAccountTree",
+    "load_tree_from_yaml",
 ]

@@ -1,0 +1,212 @@
+# Default expense account tree for 火锅 (hotpot) chains.
+# Based on 鼎鲜火锅 2026-02 P&L structure (45+ leaf accounts).
+# Override via FactoryConfig.expenseAccountTreeId.
+
+nodes:
+  - code: 总费用
+    name_zh: 总费用
+
+  # 营业成本 (COGS)
+  - code: 营业成本
+    name_zh: 营业成本
+    parent: 总费用
+
+  # 营业费用 (OpEx — 45 subaccounts organized by function)
+  - code: 营业费用
+    name_zh: 营业费用
+    parent: 总费用
+
+  # Labor subaccounts
+  - code: 人力成本
+    name_zh: 人力成本
+    parent: 营业费用
+  - code: 工资
+    name_zh: 工资
+    parent: 人力成本
+  - code: 奖金
+    name_zh: 奖金
+    parent: 人力成本
+  - code: 福利费
+    name_zh: 福利费
+    parent: 人力成本
+  - code: 保险费
+    name_zh: 保险费
+    parent: 人力成本
+  - code: 住房公积金
+    name_zh: 住房公积金
+    parent: 人力成本
+  - code: 服装费
+    name_zh: 服装费
+    parent: 人力成本
+  - code: 宿舍费用
+    name_zh: 宿舍费用
+    parent: 人力成本
+
+  # Utilities
+  - code: 水电费
+    name_zh: 水电费
+    parent: 营业费用
+  - code: 水费
+    name_zh: 水费
+    parent: 水电费
+  - code: 电费
+    name_zh: 电费
+    parent: 水电费
+  - code: 柴油
+    name_zh: 柴油
+    parent: 水电费
+  - code: 燃料费
+    name_zh: 燃料费
+    parent: 水电费
+
+  # Operations
+  - code: 运营费用
+    name_zh: 运营费用
+    parent: 营业费用
+  - code: 通讯费
+    name_zh: 通讯费
+    parent: 运营费用
+  - code: 办公费
+    name_zh: 办公费
+    parent: 运营费用
+  - code: 工伤费
+    name_zh: 工伤费
+    parent: 运营费用
+  - code: 推荐费
+    name_zh: 推荐费
+    parent: 运营费用
+  - code: 交通费
+    name_zh: 交通费
+    parent: 运营费用
+  - code: 维修费
+    name_zh: 维修费
+    parent: 运营费用
+  - code: 差旅费
+    name_zh: 差旅费
+    parent: 运营费用
+  - code: 零钞兑换费
+    name_zh: 零钞兑换费
+    parent: 运营费用
+  - code: 刷卡手续费
+    name_zh: 刷卡手续费
+    parent: 运营费用
+
+  # Venue
+  - code: 场地费用
+    name_zh: 场地费用
+    parent: 营业费用
+  - code: 卫生费
+    name_zh: 卫生费
+    parent: 场地费用
+  - code: 运杂费
+    name_zh: 运杂费
+    parent: 场地费用
+  - code: 房产税
+    name_zh: 房产税
+    parent: 场地费用
+  - code: 房租费
+    name_zh: 房租费
+    parent: 场地费用
+  - code: 物业管理费
+    name_zh: 物业管理费
+    parent: 场地费用
+  - code: 绿化费
+    name_zh: 绿化费
+    parent: 场地费用
+  - code: 消杀费
+    name_zh: 消杀费
+    parent: 场地费用
+  - code: 电梯维护费
+    name_zh: 电梯维护费
+    parent: 场地费用
+  - code: 排污费
+    name_zh: 排污费
+    parent: 场地费用
+
+  # Marketing
+  - code: 营销费用
+    name_zh: 营销费用
+    parent: 营业费用
+  - code: 招待费
+    name_zh: 招待费
+    parent: 营销费用
+  - code: 抵扣券
+    name_zh: 抵扣券
+    parent: 营销费用
+  - code: 广告宣传活动费
+    name_zh: 广告宣传活动费
+    parent: 营销费用
+  - code: 充卡赠送
+    name_zh: 充卡赠送
+    parent: 营销费用
+  - code: 折扣与佣金
+    name_zh: 折扣与佣金
+    parent: 营销费用
+  - code: 演艺费
+    name_zh: 演艺费
+    parent: 营销费用
+
+  # HR
+  - code: 人事费用
+    name_zh: 人事费用
+    parent: 营业费用
+  - code: 招聘费
+    name_zh: 招聘费
+    parent: 人事费用
+  - code: 培训费
+    name_zh: 培训费
+    parent: 人事费用
+  - code: 健康证
+    name_zh: 健康证
+    parent: 人事费用
+
+  # Supplies
+  - code: 物资费用
+    name_zh: 物资费用
+    parent: 营业费用
+  - code: 洗涤费
+    name_zh: 洗涤费
+    parent: 物资费用
+  - code: 低值易耗品
+    name_zh: 低值易耗品
+    parent: 物资费用
+  - code: 物料费
+    name_zh: 物料费
+    parent: 物资费用
+
+  # Financial
+  - code: 财务费用
+    name_zh: 财务费用
+    parent: 总费用
+  - code: 支付宝手续费
+    name_zh: 支付宝手续费
+    parent: 财务费用
+  - code: 微信手续费
+    name_zh: 微信手续费
+    parent: 财务费用
+  - code: 汇兑损益
+    name_zh: 汇兑损益
+    parent: 财务费用
+
+  # Management
+  - code: 管理费用
+    name_zh: 管理费用
+    parent: 总费用
+  - code: 内部管理费
+    name_zh: 内部管理费
+    parent: 管理费用
+  - code: 区部费用
+    name_zh: 区部费用
+    parent: 管理费用
+  - code: 折旧费
+    name_zh: 折旧费
+    parent: 管理费用
+  - code: 长期摊销费用
+    name_zh: 长期摊销费用
+    parent: 管理费用
+  - code: 报刊费
+    name_zh: 报刊费
+    parent: 管理费用
+  - code: 其他费用
+    name_zh: 其他费用
+    parent: 管理费用
