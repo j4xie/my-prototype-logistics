@@ -71,7 +71,7 @@ public class DynamicTableService {
     public Map<String, Object> addRow(String subTableName, String parentId, Map<String, Object> row) {
         List<String> columns = new ArrayList<>(List.of("parent_id"));
         List<Object> values = new ArrayList<>(List.of(parentId));
-        List<String> placeholders = new ArrayList<>(List.of("?::uuid"));
+        List<String> placeholders = new ArrayList<>(List.of("CAST(? AS uuid)"));
 
         for (Map.Entry<String, Object> entry : row.entrySet()) {
             String colName = entry.getKey().startsWith("cf_") ? entry.getKey() : "cf_" + entry.getKey();

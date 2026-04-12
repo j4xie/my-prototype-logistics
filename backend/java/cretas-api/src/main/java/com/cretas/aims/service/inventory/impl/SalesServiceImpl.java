@@ -169,6 +169,7 @@ public class SalesServiceImpl implements SalesService {
             item.setQuantity(itemDTO.getQuantity());
             item.setUnit(itemDTO.getUnit());
             item.setUnitPrice(itemDTO.getUnitPrice());
+            item.setTaxRate(itemDTO.getTaxRate() != null ? itemDTO.getTaxRate() : BigDecimal.ZERO);
             item.setDiscountRate(itemDTO.getDiscountRate() != null ? itemDTO.getDiscountRate() : BigDecimal.ZERO);
             item.setRemark(itemDTO.getRemark());
             item.setSpecification(itemDTO.getSpecification());
