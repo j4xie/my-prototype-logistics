@@ -115,6 +115,7 @@ async function handleCreate() {
   if (submitting.value) return; // P-2: prevent double-submit
   if (!form.value.supplierId) return ElMessage.warning('请选择供应商');
   if (form.value.items.some(i => !i.materialTypeId)) return ElMessage.warning('请选择所有原料');
+  if (form.value.items.some(i => !i.unit)) return ElMessage.warning('请填写所有明细的单位');
   submitting.value = true;
   try {
     // Build remark with sales order reference if selected

@@ -258,6 +258,8 @@ async function handleCreate() {
   if (!form.value.customerId) return ElMessage.warning('请选择客户');
   // 数量校验: 不允许0或负数
   if (form.value.items.some((i: Record<string, unknown>) => !i.quantity || Number(i.quantity) <= 0)) return ElMessage.warning('产品数量必须大于0');
+  // 单位校验
+  if (form.value.items.some((i: Record<string, unknown>) => !i.unit)) return ElMessage.warning('请填写所有明细的单位');
   // SKU 重复校验
   const productIds = form.value.items.map((i: Record<string, unknown>) => i.productTypeId).filter(Boolean);
   if (new Set(productIds).size !== productIds.length) return ElMessage.warning('同一订单不能添加重复的产品');
