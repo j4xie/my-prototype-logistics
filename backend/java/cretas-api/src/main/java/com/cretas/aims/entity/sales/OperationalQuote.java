@@ -44,7 +44,7 @@ import java.util.UUID;
                 @Index(name = "idx_oq_customer", columnList = "customer_id"),
                 @Index(name = "idx_oq_product", columnList = "product_type_id"),
                 @Index(name = "idx_oq_quoted_by", columnList = "quoted_by_user_id"),
-                @Index(name = "idx_oq_quote_no", columnList = "quote_no", unique = true)
+                @Index(name = "idx_oq_factory_quote_no", columnList = "factory_id,quote_no", unique = true)
         })
 public class OperationalQuote extends BaseEntity {
 
