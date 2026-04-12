@@ -6,6 +6,7 @@ import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Edit, Delete, Download, Refresh } from '@element-plus/icons-vue';
 import BomChangeLog from './BomChangeLog.vue'
+import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue'
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -575,6 +576,7 @@ function refreshData() {
 </script>
 
 <template>
+  <CanvasAwareWrapper module-code="bom">
   <div class="bom-page">
     <!-- Header -->
     <el-card class="header-card" shadow="never">
@@ -926,6 +928,7 @@ function refreshData() {
     <!-- BOM Change Log Drawer (P1-9) -->
     <BomChangeLog v-model:visible="changeLogVisible" :factory-id="factoryId" :product-type-id="selectedProductTypeId" />
   </div>
+  </CanvasAwareWrapper>
 </template>
 
 <style lang="scss" scoped>
