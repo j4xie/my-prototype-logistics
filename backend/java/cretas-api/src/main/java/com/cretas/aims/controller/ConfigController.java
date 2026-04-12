@@ -36,6 +36,9 @@ public class ConfigController {
     private final FactoryConfigurationRepository factoryConfigurationRepository;
     private final MobileService mobileService;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.DefaultValueResolver defaultValueResolver;
+
     /** Extract userId from Authorization header via JWT. Returns null if missing/invalid. */
     private Long extractUserId(String authorization) {
         if (authorization == null) return null;
@@ -48,6 +51,15 @@ public class ConfigController {
     }
 
     // ========== 配置消费 API (前端渲染器用) ==========
+
+    @GetMapping("/modules/{moduleCode}/defaults")
+    @Operation(summary = "获取模块默认值 (Canvas V2 DefaultValueResolver)")
+    public ApiResponse<java.util.Map<String, Object>> getModuleDefaults(
+            @PathVariable String factoryId,
+            @PathVariable String moduleCode) {
+        if (defaultValueResolver == null) return ApiResponse.success("defaults", java.util.Map.of());
+        return ApiResponse.success("defaults", defaultValueResolver.resolveAll(factoryId, moduleCode, java.util.Map.of()));
+    }
 
     @GetMapping("/modules/{moduleCode}/effective")
     @Operation(summary = "获取合并后的有效配置")

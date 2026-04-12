@@ -11,6 +11,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/store/modules/auth'
 import { getDynamicFields } from '@/api/canvasApi'
+import { get } from '@/api/request'
 
 interface DynField {
   fieldCode: string
@@ -44,7 +45,19 @@ onMounted(async () => {
         .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
     }
   } catch { /* module may not have dynamic fields configured */ }
-  if (props.modelValue) localValues.value = { ...props.modelValue }
+
+  // Load factory defaults for create mode (pre-populate empty fields)
+  if (!props.modelValue || Object.keys(props.modelValue).length === 0) {
+    try {
+      const defRes = await get(`/${authStore.factoryId}/config/modules/${props.moduleCode}/defaults`)
+      if (defRes.success && defRes.data && typeof defRes.data === 'object') {
+        localValues.value = { ...defRes.data as Record<string, unknown> }
+        emit('update:modelValue', { ...localValues.value })
+      }
+    } catch { /* defaults not configured */ }
+  } else {
+    localValues.value = { ...props.modelValue }
+  }
 })
 
 watch(() => props.modelValue, (nv) => {
