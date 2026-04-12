@@ -32,6 +32,8 @@ import {
   createResultCollector,
   FACTORY_A,
   FACTORY_B,
+  ADMIN_A,
+  ADMIN_B,
 } from './canvas-test-helpers.mjs';
 
 const rc = createResultCollector('j4-cross-tenant');
@@ -42,7 +44,7 @@ const rc = createResultCollector('j4-cross-tenant');
 
 async function loginFactoryA() {
   try {
-    const session = await login('food_3101_038_admin', '123456');
+    const session = await login(ADMIN_A, '123456');
     if (!session.token) {
       rc.log('J4-SETUP-A', 'FAIL', 'Factory A login succeeded but returned no token');
       return null;
@@ -61,7 +63,7 @@ async function loginFactoryA() {
 
 async function loginFactoryB() {
   try {
-    const session = await login('factory_admin2', '123456');
+    const session = await login(ADMIN_B, '123456');
     if (!session.token) {
       rc.log('J4-SETUP-B', 'WARN', 'Factory B login returned no token — cross-tenant tests will be skipped');
       return null;
@@ -88,7 +90,7 @@ async function loginFactoryB() {
  */
 async function getFactoryARecordId(tokenA) {
   try {
-    const result = await apiGet(`${FACTORY_A}/sales_order?page=0&size=1`, tokenA);
+    const result = await apiGet(`${FACTORY_A}/sales/orders?page=1&size=1`, tokenA);
     if (result.status !== 200) {
       rc.log(
         'J4-SETUP-SO',

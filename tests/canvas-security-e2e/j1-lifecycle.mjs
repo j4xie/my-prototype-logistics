@@ -17,6 +17,7 @@ import {
   apiPut,
   createResultCollector,
   FACTORY_A,
+  ADMIN_A,
 } from './canvas-test-helpers.mjs';
 
 // ---------------------------------------------------------------------------
@@ -105,9 +106,9 @@ async function phaseA3_createDynamicFields(token) {
       fieldType: 'SUB_TABLE',
       config: {
         columns: [
-          { name: 'amount', type: 'DECIMAL' },
-          { name: 'date', type: 'DATE' },
-          { name: 'remark', type: 'TEXT' },
+          { code: 'amount', label: '金额', type: 'DECIMAL' },
+          { code: 'pay_date', label: '日期', type: 'DATE' },
+          { code: 'remark', label: '备注', type: 'TEXT' },
         ],
       },
     },
@@ -590,7 +591,7 @@ async function main() {
   // Login
   let token;
   try {
-    const session = await login('food_3101_038_admin', '123456');
+    const session = await login(ADMIN_A, '123456');
     if (!session.token) {
       rc.log('J1-login', 'FAIL', 'Login succeeded but no token returned');
       rc.save();

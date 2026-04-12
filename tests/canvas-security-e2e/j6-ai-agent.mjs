@@ -18,6 +18,7 @@ import {
   apiPost,
   createResultCollector,
   FACTORY_A,
+  ADMIN_A,
 } from './canvas-test-helpers.mjs';
 
 const rc = createResultCollector('j6-ai-agent');
@@ -161,7 +162,7 @@ async function testLegitimateCanvasToolAllowed(adminToken) {
 async function testNonAdminBlocked() {
   // Try primary non-admin account; fall back to alternative if login fails
   let nonAdminToken = null;
-  const candidates = ['food_3101_038_worker1', 'meat_3101_001_worker1'];
+  const candidates = ['operator1', 'f006_worker1'];
 
   for (const username of candidates) {
     try {
@@ -221,7 +222,7 @@ async function main() {
   // Acquire admin token (required for A1-A3)
   let adminToken = null;
   try {
-    const session = await login('food_3101_038_admin');
+    const session = await login(ADMIN_A);
     adminToken = session.token;
     console.log(`Admin login OK — factoryId=${session.factoryId} role=${session.role}\n`);
   } catch (err) {

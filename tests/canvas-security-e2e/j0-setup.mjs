@@ -22,6 +22,8 @@ import {
   API_BASE,
   FACTORY_A,
   FACTORY_B,
+  ADMIN_A,
+  ADMIN_B,
 } from './canvas-test-helpers.mjs';
 
 const rc = createResultCollector('j0-setup');
@@ -49,7 +51,7 @@ async function checkHealth() {
 // ---------------------------------------------------------------------------
 async function loginFactoryA() {
   try {
-    const session = await login('food_3101_038_admin', '123456');
+    const session = await login(ADMIN_A, '123456');
     if (!session.token) {
       rc.log('J0-2', 'FAIL', 'Login succeeded but no token returned');
       return null;
@@ -160,7 +162,7 @@ async function checkModuleSchemas(token) {
 // ---------------------------------------------------------------------------
 async function loginFactoryB() {
   try {
-    const session = await login('factory_admin2', '123456');
+    const session = await login(ADMIN_B, '123456');
     if (!session.token) {
       rc.log('J0-5', 'WARN', 'Factory B login returned no token — cross-factory tests may be limited');
       return null;
