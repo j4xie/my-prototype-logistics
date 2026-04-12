@@ -27,8 +27,9 @@ const DynamicModulePage = defineAsyncComponent(
   () => import('@/views/modules/DynamicModulePage.vue')
 )
 
+// R22 P1-3: include DUAL to match config store's isDynamicRenderingEnabled
 const useCanvas = computed(() =>
-  renderingMode.value === 'CANVAS' || renderingMode.value === 'DYNAMIC'
+  renderingMode.value === 'CANVAS' || renderingMode.value === 'DYNAMIC' || renderingMode.value === 'DUAL'
 )
 
 onMounted(async () => {

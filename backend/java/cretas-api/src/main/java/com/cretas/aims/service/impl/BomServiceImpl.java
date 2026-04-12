@@ -74,6 +74,8 @@ public class BomServiceImpl implements BomService {
     /** Canvas V2: DB-driven validation rules */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
 
     private void runBomValidation(String factoryId, String operation, BomItem bomItem) {
         if (validationRuleEvaluator == null) return;

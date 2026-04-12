@@ -35,6 +35,8 @@ public class ProcessWorkReportingServiceImpl implements ProcessWorkReportingServ
     /** Canvas V2: DB-driven validation rules */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private org.springframework.context.ApplicationEventPublisher applicationEventPublisher;

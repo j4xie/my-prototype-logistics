@@ -313,6 +313,7 @@ function handleEdit(row: Record<string, unknown>) {
           unitPrice: Number(item.unitPrice || 0),
         }))
       : [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
+    customFields: {} as Record<string, unknown>,
   };
   dialogVisible.value = true;
 }
@@ -343,6 +344,7 @@ function openCreateDialog() {
     shippingFee: 0,
     extraFees: [],
     items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
+    customFields: {} as Record<string, unknown>,
   };
   dialogVisible.value = true;
 }

@@ -104,7 +104,7 @@ function handleSizeChange(size: number) {
 }
 
 function handleCreate() {
-  dialogForm.value = { batchId: '', sampleSize: null, passCount: null, failCount: null, result: '', notes: '' };
+  dialogForm.value = { batchId: '', sampleSize: null, passCount: null, failCount: null, result: '', notes: '', customFields: {} as Record<string, unknown> };
   dialogVisible.value = true;
   loadProductionBatches();
 }

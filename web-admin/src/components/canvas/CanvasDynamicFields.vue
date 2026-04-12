@@ -8,7 +8,7 @@
  * Usage:
  *   <CanvasDynamicFields v-model="form.customFields" module-code="sales_order" />
  */
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useAuthStore } from '@/store/modules/auth'
 import { getDynamicFields } from '@/api/canvasApi'
 import { get } from '@/api/request'
@@ -81,21 +81,30 @@ function isFieldVisible(field: DynField): boolean {
 const visibleFields = computed(() => fields.value.filter(isFieldVisible))
 
 // R18: computedWhen — auto-compute field values from SpEL expressions
-// e.g. computedWhen: "#quantity * #unitPrice" auto-fills a total field
+// R22 B1 fix: guard against infinite loop. The deep watcher mutates localValues
+// which re-triggers itself. isComputing prevents re-entry; nextTick releases
+// the guard after Vue's synchronous flush so the next user-initiated change works.
 const computedFields = computed(() => fields.value.filter(f => f.computedWhen))
+let isComputing = false
 watch(localValues, () => {
-  let changed = false
-  for (const field of computedFields.value) {
-    if (!field.computedWhen) continue
-    try {
-      const result = evaluateSpelValue(field.computedWhen, localValues.value)
-      if (result !== undefined && result !== localValues.value[field.fieldCode]) {
-        localValues.value[field.fieldCode] = result
-        changed = true
-      }
-    } catch { /* expression may reference fields not yet filled */ }
+  if (isComputing || computedFields.value.length === 0) return
+  isComputing = true
+  try {
+    let changed = false
+    for (const field of computedFields.value) {
+      if (!field.computedWhen) continue
+      try {
+        const result = evaluateSpelValue(field.computedWhen, localValues.value)
+        if (result !== undefined && result !== localValues.value[field.fieldCode]) {
+          localValues.value[field.fieldCode] = result
+          changed = true
+        }
+      } catch { /* expression may reference fields not yet filled */ }
+    }
+    if (changed) emit('update:modelValue', { ...localValues.value })
+  } finally {
+    nextTick(() => { isComputing = false })
   }
-  if (changed) emit('update:modelValue', { ...localValues.value })
 }, { deep: true })
 </script>
 

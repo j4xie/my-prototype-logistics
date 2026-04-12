@@ -261,6 +261,7 @@ function handleCreate() {
     sourceType: 'MANUAL',
     sourceOrderId: '',
     sourceOrderItemId: '',
+    customFields: {} as Record<string, unknown>,
   };
   dialogVisible.value = true;
 }
@@ -578,6 +579,7 @@ function handleAiFill(params: Record<string, unknown>) {
     sourceType: 'MANUAL',
     sourceOrderId: '',
     sourceOrderItemId: '',
+    customFields: {} as Record<string, unknown>,
   };
   dialogVisible.value = true;
 }

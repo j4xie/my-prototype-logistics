@@ -144,7 +144,7 @@ async function handleCreate() {
 }
 
 function resetForm() {
-  form.value = { supplierId: '', purchaseType: 'DIRECT', expectedDeliveryDate: '', remark: '', relatedSalesOrderId: '', items: [{ materialTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }] };
+  form.value = { supplierId: '', purchaseType: 'DIRECT', expectedDeliveryDate: '', remark: '', relatedSalesOrderId: '', items: [{ materialTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }], customFields: {} as Record<string, unknown> };
 }
 
 async function handleAction(orderId: string, action: string) {

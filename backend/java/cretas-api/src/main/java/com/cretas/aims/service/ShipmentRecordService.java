@@ -33,6 +33,8 @@ public class ShipmentRecordService {
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
 
     @Transactional
     public ShipmentRecord createShipment(ShipmentRecord shipment) {

@@ -36,6 +36,8 @@ public class PaymentRecordServiceImpl implements PaymentRecordService {
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
 
     @Override
     @Transactional
