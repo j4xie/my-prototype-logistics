@@ -16,7 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -110,6 +112,47 @@ public class SalesDeliveryBatchAllocationServiceImpl implements SalesDeliveryBat
     @Transactional
     public void clearAllocations(String factoryId, String deliveryItemId) {
         allocationRepository.deleteByFactoryIdAndDeliveryItemId(factoryId, deliveryItemId);
+    }
+
+    @Override
+    public List<Map<String, Object>> recommendFifo(String factoryId, String productTypeId, BigDecimal requiredQty) {
+        if (factoryId == null || factoryId.isBlank()) {
+            throw new BusinessException("factoryId 不能为空");
+        }
+        if (productTypeId == null || productTypeId.isBlank()) {
+            throw new BusinessException("productTypeId 不能为空");
+        }
+        if (requiredQty == null || requiredQty.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("requiredQty 必须大于 0");
+        }
+
+        var batches = finishedGoodsBatchRepository.findAvailableBatchesFifo(factoryId, productTypeId);
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        BigDecimal remaining = requiredQty;
+
+        for (var batch : batches) {
+            if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
+            BigDecimal available = batch.getAvailableQuantity();
+            if (available.compareTo(BigDecimal.ZERO) <= 0) continue;
+
+            BigDecimal allocate = remaining.min(available);
+            Map<String, Object> rec = new LinkedHashMap<>();
+            rec.put("batchId", batch.getId());
+            rec.put("batchNumber", batch.getBatchNumber());
+            rec.put("productionDate", batch.getProductionDate() != null ? batch.getProductionDate().toString() : null);
+            rec.put("expireDate", batch.getExpireDate() != null ? batch.getExpireDate().toString() : null);
+            rec.put("availableQuantity", available);
+            rec.put("recommendedQuantity", allocate);
+            result.add(rec);
+            remaining = remaining.subtract(allocate);
+        }
+
+        log.info("FIFO 成品推荐: factoryId={}, productTypeId={}, requiredQty={}, batches={}, fulfilled={}",
+                factoryId, productTypeId, requiredQty, result.size(),
+                remaining.compareTo(BigDecimal.ZERO) <= 0);
+
+        return result;
     }
 
     @Override
