@@ -10,6 +10,7 @@ import { Plus, Search, Refresh, ChatDotRound } from '@element-plus/icons-vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { PURCHASE_ORDER_CONFIG } from '@/components/ai-entry/types';
 import { formatAmount } from '@/utils/tableFormatters';
+import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -30,7 +31,8 @@ const form = ref({
   expectedDeliveryDate: '',
   remark: '',
   relatedSalesOrderId: '',
-  items: [{ materialTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }]
+  items: [{ materialTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
+  customFields: {} as Record<string, unknown>,
 });
 const suppliers = ref<Record<string, unknown>[]>([]);
 const materials = ref<Record<string, unknown>[]>([]);
@@ -306,6 +308,7 @@ function handleAiFill(params: Record<string, unknown>) {
         <el-form-item label="备注">
           <el-input v-model="form.remark" type="textarea" :rows="2" />
         </el-form-item>
+        <CanvasDynamicFields v-model="form.customFields" module-code="purchase_order" />
         <el-divider>{{ label('rawMaterial') }}明细</el-divider>
         <div class="item-row item-header">
           <span style="width: 200px">原料名称</span>

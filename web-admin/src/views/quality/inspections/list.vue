@@ -5,6 +5,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, post } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Plus, Search, Refresh } from '@element-plus/icons-vue';
+import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -26,7 +27,8 @@ const dialogForm = ref({
   passCount: null as number | null,
   failCount: null as number | null,
   result: '' as string,
-  notes: ''
+  notes: '',
+  customFields: {} as Record<string, unknown>,
 });
 
 // 生产批次列表（用于下拉选择）
@@ -267,6 +269,7 @@ function showDetail(row: Record<string, unknown>) {
         <el-form-item label="备注">
           <el-input v-model="dialogForm.notes" type="textarea" :rows="2" />
         </el-form-item>
+        <CanvasDynamicFields v-model="dialogForm.customFields" module-code="quality_inspection" />
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
