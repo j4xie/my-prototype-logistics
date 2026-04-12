@@ -34,6 +34,9 @@ public class CreateSalesOrderRequest {
 
     private String salesperson;
 
+    /** 关联报价单 ID (OperationalQuote.id), 实现报价→订单数据联动 */
+    private String quoteId;
+
     private Boolean shippingIncluded;
 
     private BigDecimal shippingFee;
