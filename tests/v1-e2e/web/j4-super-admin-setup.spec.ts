@@ -288,7 +288,7 @@ test.describe('J4 工厂初始化 — super_admin 建基础数据 @post-deploy',
     await dialog.locator(S.form.input('客户名称')).fill(customerName);
     await dialog.locator(S.form.input('联系人')).fill('测试联系人');
     await dialog.locator(S.form.input('联系电话')).fill('13800138000');
-    await dialog.locator(S.form.input('收货地址')).fill('测试收货地址');
+    await dialog.locator(S.form.textarea('收货地址')).fill('测试收货地址');
 
     // Submit via dialog footer primary button
     const submitBtn = dialog.locator('.el-dialog__footer .el-button--primary').first();

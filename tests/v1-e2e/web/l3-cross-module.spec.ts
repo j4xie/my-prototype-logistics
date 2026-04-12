@@ -132,7 +132,7 @@ test.describe('L3 \u8DE8\u6A21\u5757\u6570\u636E\u4E00\u81F4\u6027 @post-deploy'
     await dialog.locator(S.form.input('\u5BA2\u6237\u540D\u79F0')).fill(customerName);
     await dialog.locator(S.form.input('\u8054\u7CFB\u4EBA')).fill('L3\u6D4B\u8BD5\u8054\u7CFB\u4EBA');
     await dialog.locator(S.form.input('\u8054\u7CFB\u7535\u8BDD')).fill('13800000001');
-    await dialog.locator(S.form.input('\u6536\u8D27\u5730\u5740')).fill('L3\u6D4B\u8BD5\u5730\u5740');
+    await dialog.locator(S.form.textarea('\u6536\u8D27\u5730\u5740')).fill('L3\u6D4B\u8BD5\u5730\u5740');
 
     const submitBtn = dialog.locator('.el-dialog__footer .el-button--primary').first();
     const [createResp] = await Promise.all([
