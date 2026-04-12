@@ -144,7 +144,24 @@ except ImportError as e:
 # Configure logging with rotation
 _log_level = logging.DEBUG if get_settings().debug else logging.INFO
 _log_format = "%(asctime)s - %(name)s - %(levelname)s - [%(correlation_id)s] - %(message)s"
-_log_formatter = logging.Formatter(_log_format)
+
+
+class _SafeFormatter(logging.Formatter):
+    """Formatter that injects a default correlation_id when missing from the record.
+
+    During shutdown or in background threads, log records may bypass the
+    CorrelationIdLogFilter on the root logger and arrive at the handler
+    without a correlation_id attribute. Python 3.8's %-style formatting then
+    raises KeyError('correlation_id'). This formatter patches the record with
+    the contextvar default ("-") so the format string never fails."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        if not hasattr(record, 'correlation_id'):
+            record.correlation_id = '-'
+        return super().format(record)
+
+
+_log_formatter = _SafeFormatter(_log_format)
 
 # Correlation ID log filter (injects correlation_id from contextvar into log records)
 _correlation_filter = CorrelationIdLogFilter()
