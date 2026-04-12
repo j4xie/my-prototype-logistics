@@ -52,6 +52,23 @@ public class ConfigController {
 
     // ========== 配置消费 API (前端渲染器用) ==========
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.cretas.aims.repository.config.FactoryModuleConfigRepository factoryModuleConfigRepository;
+
+    @GetMapping("/disabled-modules")
+    @Operation(summary = "获取工厂禁用的模块列表")
+    public ApiResponse<java.util.List<String>> getDisabledModules(@PathVariable String factoryId) {
+        var published = factoryConfigurationRepository.findLatestPublished(factoryId);
+        if (published.isEmpty()) return ApiResponse.success("disabled", java.util.List.of());
+        int version = published.get().getConfigVersion();
+        var fmcs = factoryModuleConfigRepository.findByFactoryIdAndConfigVersion(factoryId, version);
+        var disabled = fmcs.stream()
+                .filter(fmc -> !fmc.getEnabled())
+                .map(fmc -> fmc.getModuleCode())
+                .collect(java.util.stream.Collectors.toList());
+        return ApiResponse.success("disabled", disabled);
+    }
+
     @GetMapping("/modules/{moduleCode}/defaults")
     @Operation(summary = "获取模块默认值 (Canvas V2 DefaultValueResolver)")
     public ApiResponse<java.util.Map<String, Object>> getModuleDefaults(

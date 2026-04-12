@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAppStore } from '@/store/modules/app';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore, ModuleName } from '@/store/modules/permission';
+import { get } from '@/api/request';
 import {
   House, Operation, Box, Checked, ShoppingCart, Goods,
   User, Monitor, Money, Setting, DataAnalysis, Calendar,
@@ -19,6 +20,30 @@ const permissionStore = usePermissionStore();
 
 // 当前用户角色
 const roleCode = computed(() => authStore.currentRole);
+
+// R19: Canvas module enable/disable — hide disabled modules from sidebar
+const disabledModuleCodes = ref<string[]>([]);
+const MODULE_CODE_TO_SIDEBAR: Record<string, string> = {
+  sales_order: 'sales', purchase_order: 'procurement', production_plan: 'production',
+  quality_inspection: 'quality', hr_employee: 'hr', equipment: 'equipment',
+  finance_ar: 'finance', finance_ap: 'finance', warehouse: 'warehouse',
+  scheduling: 'scheduling', restaurant: 'restaurant',
+};
+onMounted(async () => {
+  if (!authStore.factoryId) return;
+  try {
+    const res = await get(`/${authStore.factoryId}/config/disabled-modules`);
+    if (res.success && Array.isArray(res.data)) disabledModuleCodes.value = res.data;
+  } catch { /* config not set up for this factory */ }
+});
+const disabledSidebarModules = computed(() => {
+  const set = new Set<string>();
+  for (const code of disabledModuleCodes.value) {
+    const sidebar = MODULE_CODE_TO_SIDEBAR[code];
+    if (sidebar) set.add(sidebar);
+  }
+  return set;
+});
 
 // 图标映射
 const iconMap: Record<string, any> = {
@@ -233,6 +258,10 @@ const menuConfig: MenuItem[] = [
 // 检查菜单项是否可见（基于角色限制 + 工厂类型限制）
 function canSeeMenuItem(item: MenuItem): boolean {
   if (item.hideForFactoryTypes?.includes(authStore.factoryType)) {
+    return false;
+  }
+  // R19: Canvas module enable/disable — hide disabled modules
+  if (disabledSidebarModules.value.has(item.module)) {
     return false;
   }
   if (!item.roles || item.roles.length === 0) {
