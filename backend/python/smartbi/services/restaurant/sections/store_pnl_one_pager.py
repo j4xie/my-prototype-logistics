@@ -29,6 +29,7 @@ from __future__ import annotations
 import time
 from typing import Any, Optional
 
+from smartbi.services.finance.controllable_profit import ControllableProfitCalculator
 from smartbi.services.restaurant.sections.base import (
     AbstractSectionHandler,
     SectionRequest,
@@ -143,5 +144,48 @@ class StorePnlOnePagerHandler(AbstractSectionHandler):
                 f"store_pnl 返回非 dict 类型: {type(report).__name__}",
                 started,
             )
+
+        # ── Controllable profit overlay ──
+        # Extracted from financial_metrics (camelCase keys) because data at this
+        # point is the composed one-pager dict (pnlLines, topDiagnostics, …)
+        # which no longer has flat numeric cost fields.
+        if financial_metrics:
+            controllable_calc = ControllableProfitCalculator()
+            non_controllable_keys = (request.params or {}).get(
+                "non_controllable_keys",
+                ["rent", "tax", "depreciation", "insurance"],
+            )
+            # Map camelCase financial_metrics keys → snake_case cost_items dict
+            cost_field_map = {
+                "foodCost": "food_cost",
+                "laborCost": "labor_cost",
+                "rent": "rent",
+                "utilities": "utilities",
+                "marketing": "marketing",
+                "tax": "tax",
+                "depreciation": "depreciation",
+                "insurance": "insurance",
+                "repairs": "repairs",
+                "otherCost": "other_cost",
+            }
+            cost_breakdown: dict = {}
+            for fm_key, calc_key in cost_field_map.items():
+                val = financial_metrics.get(fm_key)
+                if val is not None and isinstance(val, (int, float)):
+                    cost_breakdown[calc_key] = float(val)
+
+            if cost_breakdown:
+                revenue_val = (
+                    financial_metrics.get("revenue")
+                    or financial_metrics.get("totalRevenue")
+                    or financial_metrics.get("netRevenue")
+                    or 0
+                )
+                controllable = controllable_calc.compute(
+                    revenue=float(revenue_val),
+                    cost_items=cost_breakdown,
+                    non_controllable_keys=non_controllable_keys,
+                )
+                data["controllable_profit"] = controllable
 
         return self.ok(request, data=data, started=started)
