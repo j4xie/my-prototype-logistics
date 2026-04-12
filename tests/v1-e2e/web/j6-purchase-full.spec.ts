@@ -410,10 +410,11 @@ test.describe('J6 采购全周期 — procurement_manager @post-deploy', () => {
     await expect(dialog).toBeVisible({ timeout: 5_000 });
 
     // Fill supplier — pick the first available option
+    // Use the visible dropdown popup to avoid matching hidden items from other selects
     const supplierSelect = dialog.locator('.el-select').first();
     await supplierSelect.click();
     await page.waitForTimeout(500);
-    const firstSupplierOption = page.locator('.el-select-dropdown__item').first();
+    const firstSupplierOption = page.locator('.el-select-dropdown:visible .el-select-dropdown__item').first();
     await expect(firstSupplierOption).toBeVisible({ timeout: 5_000 });
     await firstSupplierOption.click();
     await page.waitForTimeout(300);
@@ -422,7 +423,7 @@ test.describe('J6 采购全周期 — procurement_manager @post-deploy', () => {
     const materialSelect = dialog.locator('.item-row .el-select').first();
     await materialSelect.click();
     await page.waitForTimeout(500);
-    const firstMaterialOption = page.locator('.el-select-dropdown__item').first();
+    const firstMaterialOption = page.locator('.el-select-dropdown:visible .el-select-dropdown__item').first();
     await expect(firstMaterialOption).toBeVisible({ timeout: 5_000 });
     await firstMaterialOption.click();
     await page.waitForTimeout(300);
