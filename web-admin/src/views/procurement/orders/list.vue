@@ -11,6 +11,7 @@ import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { PURCHASE_ORDER_CONFIG } from '@/components/ai-entry/types';
 import { formatAmount } from '@/utils/tableFormatters';
 import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
+import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -211,6 +212,7 @@ function handleAiFill(params: Record<string, unknown>) {
 </script>
 
 <template>
+  <CanvasAwareWrapper module-code="purchase_order">
   <div class="page-wrapper">
     <el-card class="page-card" shadow="never">
       <template #header>
@@ -345,6 +347,7 @@ function handleAiFill(params: Record<string, unknown>) {
       @fill-form="handleAiFill"
     />
   </div>
+  </CanvasAwareWrapper>
 </template>
 
 <style lang="scss" scoped>

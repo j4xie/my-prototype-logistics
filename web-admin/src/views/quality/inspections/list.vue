@@ -6,6 +6,7 @@ import { get, post } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Plus, Search, Refresh } from '@element-plus/icons-vue';
 import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
+import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -163,6 +164,7 @@ function showDetail(row: Record<string, unknown>) {
 </script>
 
 <template>
+  <CanvasAwareWrapper module-code="quality_inspection">
   <div class="page-wrapper">
     <el-card class="page-card" shadow="never">
       <template #header>
@@ -295,6 +297,7 @@ function showDetail(row: Record<string, unknown>) {
       </el-descriptions>
     </el-drawer>
   </div>
+  </CanvasAwareWrapper>
 </template>
 
 <style lang="scss" scoped>

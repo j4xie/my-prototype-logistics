@@ -14,6 +14,7 @@ import {
   getSupervisors,
 } from '@/api/productionPlan';
 import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
+import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { PRODUCTION_PLAN_CONFIG } from '@/components/ai-entry/types';
 
@@ -583,6 +584,7 @@ function handleAiFill(params: Record<string, unknown>) {
 </script>
 
 <template>
+  <CanvasAwareWrapper module-code="production_plan">
   <div class="page-wrapper">
     <el-card class="page-card" shadow="never">
       <template #header>
@@ -870,6 +872,7 @@ function handleAiFill(params: Record<string, unknown>) {
       @fill-form="handleAiFill"
     />
   </div>
+  </CanvasAwareWrapper>
 </template>
 
 <style lang="scss" scoped>

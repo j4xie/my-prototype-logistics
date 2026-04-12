@@ -12,6 +12,7 @@ import { SALES_ORDER_CONFIG } from '@/components/ai-entry/types';
 import { formatAmount } from '@/utils/tableFormatters';
 import TaxGroupInvoiceDialog from './components/TaxGroupInvoiceDialog.vue';
 import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
+import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 
 // G1: 税率分组开票对话框 (客户原话 2645-2660s)
 const taxGroupInvoiceVisible = ref(false);
@@ -490,6 +491,7 @@ async function submitQuickPayment() {
 </script>
 
 <template>
+  <CanvasAwareWrapper module-code="sales_order">
   <div class="page-wrapper">
     <el-card class="page-card" shadow="never">
       <template #header>
@@ -745,6 +747,7 @@ async function submitQuickPayment() {
       @success="loadData"
     />
   </div>
+  </CanvasAwareWrapper>
 </template>
 
 <style lang="scss" scoped>
