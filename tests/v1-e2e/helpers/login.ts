@@ -16,10 +16,12 @@ export type E2ERole =
   | 'sales_mgr'
   | 'purchase_mgr'
   | 'warehouse_ops'
-  | 'workshop_sup';
+  | 'workshop_sup'
+  | 'chain_admin';  // factory_admin1 / F001 — used by business chain tests
 
 /**
  * Usernames seeded by Task 2 (all have password "123456").
+ * chain_admin = factory_admin1 (F001 factory, same user as test-e2e-business-chain.mjs)
  */
 const USERNAMES: Record<E2ERole, string> = {
   super_admin: 'e2e_super_admin',
@@ -27,6 +29,7 @@ const USERNAMES: Record<E2ERole, string> = {
   purchase_mgr: 'e2e_purchase_mgr',
   warehouse_ops: 'e2e_warehouse_ops',
   workshop_sup: 'e2e_workshop_sup',
+  chain_admin: 'factory_admin1',
 };
 
 const PASSWORD = '123456';
