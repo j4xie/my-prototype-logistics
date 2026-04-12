@@ -88,4 +88,40 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
      * 根据来源ID查询通知
      */
     Optional<Notification> findByFactoryIdAndSourceId(String factoryId, String sourceId);
+
+    /**
+     * 查询指定用户的未读通知 (含广播通知 userId=null)
+     */
+    @Query("SELECT n FROM Notification n WHERE n.factoryId = :factoryId " +
+           "AND (n.userId = :userId OR n.userId IS NULL) AND n.isRead = false " +
+           "ORDER BY n.createdAt DESC")
+    List<Notification> findUnreadForUser(@Param("factoryId") String factoryId, @Param("userId") Long userId);
+
+    /**
+     * 查询指定用户或广播的通知 (分页, 未读优先)
+     */
+    @Query("SELECT n FROM Notification n WHERE n.factoryId = :factoryId " +
+           "AND (n.userId = :userId OR n.userId IS NULL) " +
+           "ORDER BY n.isRead ASC, n.createdAt DESC")
+    Page<Notification> findForUserUnreadFirst(@Param("factoryId") String factoryId,
+                                              @Param("userId") Long userId,
+                                              Pageable pageable);
+
+    /**
+     * 统计指定用户的未读数 (含广播和角色通知)
+     */
+    @Query("SELECT COUNT(n) FROM Notification n WHERE n.factoryId = :factoryId " +
+           "AND (n.userId = :userId OR n.userId IS NULL) AND n.isRead = false")
+    long countUnreadForUser(@Param("factoryId") String factoryId, @Param("userId") Long userId);
+
+    /**
+     * 批量标记指定用户(含广播)的通知为已读
+     */
+    @Modifying
+    @Query("UPDATE Notification n SET n.isRead = true, n.readAt = :readAt " +
+           "WHERE n.factoryId = :factoryId AND (n.userId = :userId OR n.userId IS NULL) " +
+           "AND n.isRead = false")
+    int markAllAsReadForUser(@Param("factoryId") String factoryId,
+                             @Param("userId") Long userId,
+                             @Param("readAt") LocalDateTime readAt);
 }

@@ -28,6 +28,7 @@ import java.time.LocalDateTime;
        indexes = {
            @Index(name = "idx_notification_factory", columnList = "factory_id"),
            @Index(name = "idx_notification_user", columnList = "user_id"),
+           @Index(name = "idx_notification_factory_role", columnList = "factory_id, target_role"),
            @Index(name = "idx_notification_read", columnList = "is_read"),
            @Index(name = "idx_notification_type", columnList = "type")
        }
@@ -62,6 +63,9 @@ public class Notification extends BaseEntity {
 
     @Column(name = "read_at")
     private LocalDateTime readAt;
+
+    @Column(name = "target_role", length = 50)
+    private String targetRole;  // 目标角色代码 (e.g. WORKSHOP_SUPERVISOR), null = specific user or broadcast
 
     @Column(name = "source", length = 50)
     private String source;  // 来源：SYSTEM, ALERT, BATCH, QUALITY, etc.
