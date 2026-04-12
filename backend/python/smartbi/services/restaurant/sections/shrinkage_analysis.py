@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Shrinkage analysis section — wraps ShrinkageEngine (P3.5C B4).
+
 
 Params:
   shrinkage_rows (list[dict]): per-department cost comparison rows.
@@ -11,7 +14,6 @@ Returns:
   totalVarianceRate, topOffenders, actionItems — all from
   ShrinkageReport.to_dict().
 """
-from __future__ import annotations
 
 import time
 from typing import Any

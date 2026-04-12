@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Long tail SKU detection — identifies low-volume dishes as delist candidates.
+
 
 Wraps ``LongTailSkuDetector.detect(menu_items, exclude_seasonal=True)``.
 ``menu_items`` is built from a POS DataFrame using the
@@ -13,7 +16,6 @@ Supported params (all optional, with sensible Chinese-POS defaults):
   - ``revenue_col`` (default "实收额")
   - ``exclude_seasonal`` (bool, default True)
 """
-from __future__ import annotations
 
 import time
 from typing import Any

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Expense breakdown section — aggregates leaf account values by tree.
+
 
 Part of P3.5B F6. Consumer wiring of the ExpenseAccountTree (QW4) so
 mobile can drill down from a high-level alert like "人力成本率高" to
@@ -10,7 +13,6 @@ Params:
   expense_leaf_values (dict[str, float]): per-leaf account values,
     typically from the P&L row parser.
 """
-from __future__ import annotations
 
 import time
 from pathlib import Path

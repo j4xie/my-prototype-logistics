@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Procurement forecast: predict next N days using day-of-week history + holiday multiplier."""
+
 import time
 from typing import Any
 from smartbi.services.restaurant.sections.base import AbstractSectionHandler, SectionRequest, SectionResponse

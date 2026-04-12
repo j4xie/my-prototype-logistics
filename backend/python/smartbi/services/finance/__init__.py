@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Finance module — margin spec, expense account tree, shrinkage engine.
 
 Part of P3.5 general capabilities refactor. Modules added incrementally:

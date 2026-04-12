@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Piecework commission calculator: individual (hostess) and team-based (service/kitchen)."""
+
 import time
 from typing import Any
 from smartbi.services.restaurant.sections.base import AbstractSectionHandler, SectionRequest, SectionResponse

@@ -1,5 +1,6 @@
-"""Channel margin section — computes margin by order channel (堂食/外卖/团购)."""
 from __future__ import annotations
+
+"""Channel margin section — computes margin by order channel (堂食/外卖/团购)."""
 
 import time
 from typing import Any

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Menu name normalization — applies dish alias rules to POS DataFrame.
+
 
 Wraps :class:`RestaurantMenuNormalizer` via the
 ``RestaurantAnalyzerV2._normalize_menu`` helper. The helper queries the
@@ -10,7 +13,6 @@ Supported params:
   - ``pos_df``: pandas DataFrame
   - ``product_col`` (default "商品名称")
 """
-from __future__ import annotations
 
 import time
 from typing import Any

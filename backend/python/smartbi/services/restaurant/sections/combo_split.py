@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Combo split: decompose set menu sales into constituent dish-level statistics."""
+
 import time
 from collections import defaultdict
 from typing import Any

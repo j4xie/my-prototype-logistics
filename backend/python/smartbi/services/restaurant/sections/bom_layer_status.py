@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """BOM layer status section — reports current cost/BOM precision layer.
+
 
 Wraps ``RestaurantAnalyzerV2._build_bom_layer_status`` which inspects
 ``self.sku_form_manager`` and ``self.monthly_calibrator`` to determine
@@ -15,7 +18,6 @@ Supported params (all optional):
     via context["db_session"] in batch mode). Not required for the basic
     Layer 1 report.
 """
-from __future__ import annotations
 
 import time
 from typing import Any

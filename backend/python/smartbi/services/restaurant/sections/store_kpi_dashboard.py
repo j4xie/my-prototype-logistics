@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Store KPI dashboard: 3-dimension health check (financial + operational + external)."""
+
 import time
 from typing import Any
 from smartbi.services.restaurant.sections.base import AbstractSectionHandler, SectionRequest, SectionResponse

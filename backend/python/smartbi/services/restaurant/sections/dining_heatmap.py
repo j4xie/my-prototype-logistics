@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Dining time heatmap section — aggregates POS revenue by day-of-week × hour.
+
 
 Wraps ``DiningPeriodHeatmap.build(df, datetime_col, revenue_col)``. Requires
 a POS DataFrame supplied via ``context["pos_df"]`` (batch mode) or
@@ -9,7 +12,6 @@ Supported params (all optional, with sensible Chinese-POS defaults):
   - ``datetime_col`` (default "开单时间")
   - ``revenue_col`` (default "实收额")
 """
-from __future__ import annotations
 
 import time
 from typing import Any

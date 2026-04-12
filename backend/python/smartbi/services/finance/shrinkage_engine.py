@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # -*- coding: utf-8 -*-
 """Shrinkage (损溢) engine — standard vs actual cost variance analysis.
 
@@ -22,7 +24,6 @@ References:
 
 Part of P3.5C B3. Section handler wrapping comes in B4.
 """
-from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Optional

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Stored value dependency section — analyzes 充卡 (gift card) reliance.
+
 
 Wraps :class:`StoredValueAnalyzer` (see analyzer.py:332-348). Requires
 ``financial_data['current']['stored_value_giveaway'] > 0`` — without a
@@ -8,7 +11,6 @@ Note the engine signature uses ``previous_balance`` (not the longer
 ``previous_stored_value_balance``); the input dict still uses the long form
 to match the upstream Excel/JSON convention.
 """
-from __future__ import annotations
 
 import time
 from typing import Any

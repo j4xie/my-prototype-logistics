@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Performance eval: weighted KPI scoring. Each KPI gets score = min(actual/target, 1.2) × weight."""
+
 import time
 from typing import Any
 from smartbi.services.restaurant.sections.base import AbstractSectionHandler, SectionRequest, SectionResponse

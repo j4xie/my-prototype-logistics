@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Multi-store comparison section — ranks restaurant chain stores + anomalies.
+
 
 Wraps ``MultiStoreComparator.compare()`` for chain-level analysis. Requires
 a POS DataFrame containing a 门店名称 column with ≥2 unique stores. Otherwise
@@ -12,7 +15,6 @@ Supported params (all optional, with sensible Chinese-POS defaults):
   - ``quantity_col`` (default "数量")
   - ``reviews``: optional list[dict] of dianping reviews for rating overlay
 """
-from __future__ import annotations
 
 import time
 from typing import Any

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Expense account tree — hierarchical chart of accounts.
+
 
 Every mature finance team organizes expenses as a tree (1-3 levels):
   总费用
@@ -27,7 +30,6 @@ via `FactoryConfig.expenseAccountTreeId` (loader picks the YAML file).
 Part of P3.5A QW4. Consumer wiring (analyzer.py._extract_financial_metrics)
 comes in Phase 3.5B F5-F6.
 """
-from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path

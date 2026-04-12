@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Member RFM analysis section — wraps MemberRfmAnalyzer.
+
 
 Mirrors analyzer.py:426-442. Requires a list of pre-aggregated member dicts
 with fields ``member_id``, ``last_order_days_ago``, ``order_count``,
@@ -8,7 +11,6 @@ The handler does not parse raw POS orders — for that the caller should call
 ``MemberRfmAnalyzer.analyze_from_orders()`` upstream and pass the resulting
 member list in via ``params['members']``.
 """
-from __future__ import annotations
 
 import time
 from typing import Any

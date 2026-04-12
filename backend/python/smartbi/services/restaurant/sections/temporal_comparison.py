@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Temporal comparison — YoY/QoQ/MoM analysis based on POS time series.
+
 
 Wraps :class:`TemporalComparator` from :mod:`smartbi.shared.temporal_comparator`.
 The comparator auto-degrades the comparison mode based on data availability:
@@ -16,7 +19,6 @@ Supported params:
   - ``revenue_col`` (default "实收额")
   - ``group_col`` (default "门店名称")
 """
-from __future__ import annotations
 
 import time
 from typing import Any

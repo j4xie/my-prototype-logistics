@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Shift analysis: evaluate staffing efficiency and full-time/part-time mix.
+
 Customer [T 29:28-31:00]: '分全职跟兼职, 全职保底160-180工时, 高峰多用兼职'.
 """
 import time

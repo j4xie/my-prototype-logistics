@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Single-store P&L one-pager section — composes prior section outputs into a P&L summary.
+
 
 Wraps ``StorePnlOnePager.build()`` which is purely a composition layer over
 existing data: it does **no new computation**, it just renders prior section
@@ -24,7 +27,6 @@ Optional context keys (for richer output):
 
 Without financial_metrics this section is meaningless and returns SKIPPED.
 """
-from __future__ import annotations
 
 import time
 from typing import Any, Optional

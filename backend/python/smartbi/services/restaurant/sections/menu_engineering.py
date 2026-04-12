@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Menu engineering section — Kasavana-Smith 4-quadrant classification.
+
 
 Part of P3 Task 3.2. Wraps the P3.1 MenuEngineeringAnalyzer as a
 FastAPI section endpoint. Classifies menu items into Star / Cash Cow /
@@ -15,7 +18,6 @@ Inputs (via context):
 Params (optional overrides):
   product_col, quantity_col, revenue_col — column name overrides
 """
-from __future__ import annotations
 
 import time
 from typing import Any

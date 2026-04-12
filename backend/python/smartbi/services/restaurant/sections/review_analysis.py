@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Review analysis section — wraps LlmReviewAnalyzer with regex fallback.
+
 
 Mirrors the behavior of analyzer.py:396-424:
   - If `use_llm` (default True) and LLM is available → try LlmReviewAnalyzer first.
@@ -9,7 +12,6 @@ Both engines expose ``analyze(reviews, min_mentions=...)`` and return a
 ``ReviewAnalysisReport`` with ``.to_dict()``. The LLM variant additionally
 accepts ``max_reviews`` for cost capping.
 """
-from __future__ import annotations
 
 import time
 from typing import Any

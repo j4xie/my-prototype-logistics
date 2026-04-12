@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """BOM monthly calibration history section.
+
 
 Wraps ``MonthlyCalibrationReporter.generate()`` for Layer A self-learning
 reports — analyzes the trend of food-cost-rate over the last N months and
@@ -15,7 +18,6 @@ Supported params (all optional):
   - ``months_back`` (int, default 6)
   - ``sub_sector_base_ratio`` (float, default 0.43)
 """
-from __future__ import annotations
 
 import time
 from typing import Any

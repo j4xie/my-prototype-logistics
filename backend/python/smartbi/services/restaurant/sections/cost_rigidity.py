@@ -1,5 +1,6 @@
-"""Cost rigidity section - computes elasticity of labor cost vs revenue change."""
 from __future__ import annotations
+
+"""Cost rigidity section - computes elasticity of labor cost vs revenue change."""
 
 import time
 from typing import Any

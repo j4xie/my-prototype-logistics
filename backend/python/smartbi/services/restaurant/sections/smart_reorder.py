@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Smart reorder: forecast-driven purchase order generation.
+
 Algorithm: daily_need = daily_sales × qty_per_dish, aggregate by ingredient,
 total_need = daily_need × lead_days × safety_factor, order = max(0, total_need - stock).
 """

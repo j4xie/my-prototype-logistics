@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Review competitive: rank own brand against competitors on review metrics."""
+
 import time
 from typing import Any
 from smartbi.services.restaurant.sections.base import AbstractSectionHandler, SectionRequest, SectionResponse

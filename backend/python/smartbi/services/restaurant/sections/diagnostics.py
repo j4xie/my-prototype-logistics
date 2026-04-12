@@ -1,5 +1,6 @@
-"""Diagnostics section — runs DiagnosticsEngine on financial metrics."""
 from __future__ import annotations
+
+"""Diagnostics section — runs DiagnosticsEngine on financial metrics."""
 
 import time
 from typing import Any

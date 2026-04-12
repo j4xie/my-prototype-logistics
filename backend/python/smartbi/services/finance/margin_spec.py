@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Margin spec contract — configurable boundary decisions for P&L computation.
+
 
 Every mature restaurant finance team has to answer 4 ambiguous binary
 questions before computing "net margin":
@@ -15,7 +18,6 @@ This module makes every option explicit as a config field with a sensible
 default. Customers who disagree can override via `FactoryConfig.marginSpec`.
 No pre-launch questionnaire required — ship with defaults, iterate later.
 """
-from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum

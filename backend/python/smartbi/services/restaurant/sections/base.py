@@ -1,5 +1,6 @@
-"""Section handler base classes - contract for all restaurant analysis sections."""
 from __future__ import annotations
+
+"""Section handler base classes - contract for all restaurant analysis sections."""
 
 import time
 from abc import ABC, abstractmethod

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Sales plan tracking — completion dashboard with daily needed calculation."""
+
 import time
 from typing import Any
 

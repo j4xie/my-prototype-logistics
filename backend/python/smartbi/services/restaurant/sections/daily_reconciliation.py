@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Daily inventory reconciliation: opening + deliveries - BOM usage = expected closing vs actual."""
+
 import time
 from typing import Any
 from smartbi.services.restaurant.sections.base import AbstractSectionHandler, SectionRequest, SectionResponse

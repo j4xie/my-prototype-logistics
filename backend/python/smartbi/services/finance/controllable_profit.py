@@ -1,8 +1,12 @@
+from __future__ import annotations
+
 """Controllable profit calculator for store manager KPIs.
+
 
 Splits P&L into controllable vs non-controllable items.
 Non-controllable defaults: rent, tax, depreciation, insurance, interest, investment.
 """
+
 from dataclasses import dataclass, field
 from typing import Optional
 

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Cross-chain benchmark section — wraps CrossChainBenchmark for section pipeline.
+
 
 Part of P3 Task 3.3-3.4. The underlying CrossChainBenchmark class already
 exists (508 lines with unit tests) but was never wired into the section
@@ -22,7 +25,6 @@ Inputs (via request.params):
 Missing chains → SKIPPED (caller must supply at least 2 brands).
 Single chain → SKIPPED (no peer to compare against).
 """
-from __future__ import annotations
 
 import time
 from typing import Any

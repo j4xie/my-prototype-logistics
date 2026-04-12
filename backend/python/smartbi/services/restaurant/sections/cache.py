@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 """Section result cache. In-memory TTL-based, thread-safe.
+
 
 Future: swap for Redis if multi-worker deployment needs shared cache.
 For now, per-worker memory cache is fine — each section runs in seconds
 and V2 API traffic is low.
 """
-from __future__ import annotations
 
 import threading
 import time

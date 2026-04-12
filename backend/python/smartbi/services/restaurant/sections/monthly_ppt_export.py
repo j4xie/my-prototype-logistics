@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Monthly PPT export section — wraps MonthlyPptExporter.
+
 
 Part of P3.5D P3. Takes analyzer-output params and generates a filled
 19-slide .pptx file in /tmp/smartbi_ppt/, returns path + download URL
@@ -16,7 +19,6 @@ Returns:
   pptSizeBytes (int): file size in bytes
   downloadUrl (str): relative URL to the download endpoint
 """
-from __future__ import annotations
 
 import tempfile
 import time

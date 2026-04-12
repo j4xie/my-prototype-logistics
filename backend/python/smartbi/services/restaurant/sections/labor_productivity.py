@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Labor productivity (人效): revenue per employee with zone alerting.
+
 
 Zones (configurable, defaults from customer call):
   < low_threshold (default 30000)  → OVERSTAFFED  "用人过多或收入太低"

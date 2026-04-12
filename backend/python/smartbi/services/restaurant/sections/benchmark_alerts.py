@@ -1,5 +1,6 @@
-"""Benchmark alerts section — compares restaurant metrics against industry benchmarks."""
 from __future__ import annotations
+
+"""Benchmark alerts section — compares restaurant metrics against industry benchmarks."""
 
 import time
 from typing import Any

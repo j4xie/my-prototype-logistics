@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """BOM cost variance dual attribution: supply chain (price) vs management (usage).
+
 
 Methodology (standard cost accounting):
   price_variance  = (actual_price - std_price) * std_qty

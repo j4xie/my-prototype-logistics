@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Department P&L section — per-department labor + cost breakdown.
+
 
 Part of P3.5D P1. Consumer of DepartmentTree (QW5).
 
@@ -16,7 +19,6 @@ Returns:
   headCount/perHeadCost/laborShare/revenueShare), aggregated (map by tree
   node code), totalLaborCost, laborRevenueRatio.
 """
-from __future__ import annotations
 
 import time
 from pathlib import Path

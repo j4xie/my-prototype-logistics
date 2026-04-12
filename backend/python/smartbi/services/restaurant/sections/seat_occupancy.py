@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Seat occupancy: match party sizes to table layout for optimal seating."""
+
 import time
 from typing import Any
 from smartbi.services.restaurant.sections.base import AbstractSectionHandler, SectionRequest, SectionResponse

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Return anomaly: flag stores with abnormal return rates vs peers on same batch."""
+
 import time
 from collections import defaultdict
 from typing import Any

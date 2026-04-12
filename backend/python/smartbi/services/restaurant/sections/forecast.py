@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 """Restaurant forecast section — wraps ForecastService for revenue prediction.
+
 
 Part of P3 Task 3.5-3.6. The underlying ForecastService already exists
 (supports multi-algorithm time-series forecasting) but was only exposed
@@ -26,7 +29,6 @@ Returns:
   algorithm, history, predictions, lowerBound, upperBound, periods,
   confidenceLevel, interpretationZh (Chinese narrative about the trend)
 """
-from __future__ import annotations
 
 import time
 from typing import Any
