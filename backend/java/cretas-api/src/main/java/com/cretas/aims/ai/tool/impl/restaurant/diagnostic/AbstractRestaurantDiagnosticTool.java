@@ -100,15 +100,24 @@ public abstract class AbstractRestaurantDiagnosticTool extends AbstractBusinessT
             pythonClient.callRestaurantSection(getSectionName(), request);
 
         if (responseOpt.isEmpty()) {
-            return buildError("Python 分析服务暂不可用, 请稍后重试 (section=" + getSectionName() + ")");
+            log.warn("Python section 调用失败: section={}, factory={}", getSectionName(), factoryId);
+            return buildError("无法连接数据分析服务。请确认：\n" +
+                "1. 已上传该门店的经营数据 (Excel/POS)\n" +
+                "2. Python 分析服务正在运行\n" +
+                "如需帮助请联系管理员 (section=" + getSectionName() + ")");
         }
 
         PythonRestaurantSectionResponse response = responseOpt.get();
         if (!response.isSuccess()) {
             String warnings = (response.getWarnings() != null && !response.getWarnings().isEmpty())
                 ? String.join("; ", response.getWarnings())
-                : "未知原因";
-            return buildError("section=" + getSectionName() + " 跳过: " + warnings);
+                : "数据不足";
+            // User-friendly message with actionable guidance
+            String toolLabel = getDescription().contains("—")
+                ? getDescription().split("—")[0].trim()
+                : getSectionName();
+            return buildError("暂无法生成「" + toolLabel + "」分析：" + warnings +
+                "\n\n请先上传相关数据或补充所需参数后重试。");
         }
 
         return formatResult(response.getSectionName(), response.getData(), response.getWarnings());
