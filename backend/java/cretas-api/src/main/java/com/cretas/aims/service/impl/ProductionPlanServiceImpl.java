@@ -178,10 +178,19 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
     @Override
     @Transactional
     public ProductionPlanDTO createProductionPlan(String factoryId, CreateProductionPlanRequest request, Long userId) {
-        runConfiguredValidation(factoryId, "CREATE", java.util.Map.of(
-            "plannedQuantity", request.getPlannedQuantity() != null ? request.getPlannedQuantity() : java.math.BigDecimal.ZERO,
-            "productTypeId", request.getProductTypeId() != null ? request.getProductTypeId() : "",
-            "status", "DRAFT"));
+        // Build validation context including Canvas V3 custom fields (e.g. cf_tank_id)
+        // so SpEL rules like '#cf_tank_id != null' can evaluate correctly.
+        java.util.Map<String, Object> validationCtx = new java.util.HashMap<>();
+        validationCtx.put("plannedQuantity", request.getPlannedQuantity() != null ? request.getPlannedQuantity() : java.math.BigDecimal.ZERO);
+        validationCtx.put("productTypeId", request.getProductTypeId() != null ? request.getProductTypeId() : "");
+        validationCtx.put("status", "DRAFT");
+        // Merge custom fields into context so SpEL rules can reference cf_* variables
+        if (request.getCustomFields() != null) {
+            for (var entry : request.getCustomFields().entrySet()) {
+                validationCtx.put(entry.getKey(), entry.getValue() != null ? entry.getValue() : "");
+            }
+        }
+        runConfiguredValidation(factoryId, "CREATE", validationCtx);
         // 验证产品类型是否存在
         if (!productTypeRepository.existsById(request.getProductTypeId())) {
             throw new ResourceNotFoundException("产品类型不存在");
@@ -247,10 +256,17 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
     @Override
     @Transactional
     public ProductionPlanDTO updateProductionPlan(String factoryId, String planId, CreateProductionPlanRequest request) {
-        runConfiguredValidation(factoryId, "UPDATE", java.util.Map.of(
-            "planId", planId,
-            "plannedQuantity", request.getPlannedQuantity() != null ? request.getPlannedQuantity() : java.math.BigDecimal.ZERO,
-            "productTypeId", request.getProductTypeId() != null ? request.getProductTypeId() : ""));
+        // Build validation context including Canvas V3 custom fields for UPDATE too
+        java.util.Map<String, Object> updateCtx = new java.util.HashMap<>();
+        updateCtx.put("planId", planId);
+        updateCtx.put("plannedQuantity", request.getPlannedQuantity() != null ? request.getPlannedQuantity() : java.math.BigDecimal.ZERO);
+        updateCtx.put("productTypeId", request.getProductTypeId() != null ? request.getProductTypeId() : "");
+        if (request.getCustomFields() != null) {
+            for (var entry : request.getCustomFields().entrySet()) {
+                updateCtx.put(entry.getKey(), entry.getValue() != null ? entry.getValue() : "");
+            }
+        }
+        runConfiguredValidation(factoryId, "UPDATE", updateCtx);
         ProductionPlan plan = productionPlanRepository.findById(planId)
                 .orElseThrow(() -> new ResourceNotFoundException("生产计划", "id", planId));
 
