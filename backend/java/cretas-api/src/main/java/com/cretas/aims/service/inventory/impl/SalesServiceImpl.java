@@ -138,6 +138,7 @@ public class SalesServiceImpl implements SalesService {
         order.setShippingIncluded(request.getShippingIncluded());
         order.setShippingFee(request.getShippingFee());
         order.setExtraFees(request.getExtraFees());
+        order.setQuoteId(request.getQuoteId()); // 报价→订单联动 (5016s 客户流程文档)
         order.setStatus(SalesOrderStatus.DRAFT);
         order.setCreatedBy(userId);
 
