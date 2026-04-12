@@ -7,6 +7,7 @@ import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.enums.SalesOrderStatus;
 import com.cretas.aims.dto.sales.ExtraFeeItem;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import org.hibernate.annotations.Formula;
@@ -241,8 +242,10 @@ public class SalesOrder extends BaseEntity {
     /**
      * 收款状态 — v1 §2.4.4 "待收款/部分收款/已收款".
      * 从 paidAmount vs totalAmount 派生, 不存 DB.
+     * @JsonProperty 确保 Jackson 将此 @Transient getter 序列化到 JSON 响应.
      */
     @Transient
+    @JsonProperty("paymentStatus")
     public String getPaymentStatus() {
         BigDecimal paid = this.paidAmount != null ? this.paidAmount : BigDecimal.ZERO;
         BigDecimal total = this.totalAmount != null ? this.totalAmount : BigDecimal.ZERO;

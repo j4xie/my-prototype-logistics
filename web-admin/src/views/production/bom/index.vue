@@ -5,6 +5,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Edit, Delete, Download, Refresh } from '@element-plus/icons-vue';
+import BomChangeLog from './BomChangeLog.vue'
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -13,6 +14,7 @@ const canWrite = computed(() => permissionStore.canWrite('production'));
 
 // State
 const loading = ref(false);
+const changeLogVisible = ref(false)
 const selectedProductTypeId = ref<string>('');
 const productTypes = ref<Record<string, unknown>[]>([]);
 const costSummary = ref<Record<string, unknown> | null>(null);
@@ -593,6 +595,7 @@ function refreshData() {
             />
           </el-select>
           <el-button :icon="Refresh" style="margin-left: 12px;" @click="refreshData">刷新</el-button>
+          <el-button style="margin-left: 12px;" @click="changeLogVisible = true" :disabled="!selectedProductTypeId">变更记录</el-button>
         </div>
         <div class="header-right">
           <el-card class="cost-summary-card" shadow="never">
@@ -919,6 +922,9 @@ function refreshData() {
         <el-button type="primary" :loading="overheadDialogLoading" @click="submitOverheadForm">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- BOM Change Log Drawer (P1-9) -->
+    <BomChangeLog v-model:visible="changeLogVisible" :factory-id="factoryId" :product-type-id="selectedProductTypeId" />
   </div>
 </template>
 
