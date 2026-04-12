@@ -882,8 +882,15 @@ public class SalesServiceImpl implements SalesService {
 
     private void checkTransitionAllowed(String factoryId, String fromStatus, String toStatus) {
         if (factoryConfigService != null) {
-            if (!factoryConfigService.isTransitionAllowed(factoryId, "sales_order", fromStatus, toStatus)) {
-                throw new BusinessException("当前配置不允许从 " + fromStatus + " 转换到 " + toStatus);
+            try {
+                if (!factoryConfigService.isTransitionAllowed(factoryId, "sales_order", fromStatus, toStatus)) {
+                    throw new BusinessException("当前配置不允许从 " + fromStatus + " 转换到 " + toStatus);
+                }
+            } catch (BusinessException e) {
+                throw e;
+            } catch (Exception e) {
+                // No workflow config or config parse error → default to ALLOW
+                log.warn("Workflow transition check failed (defaulting to ALLOW): {} → {}, error: {}", fromStatus, toStatus, e.getMessage());
             }
         }
     }
