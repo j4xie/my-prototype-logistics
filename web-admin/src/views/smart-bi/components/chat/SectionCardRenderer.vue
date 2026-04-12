@@ -12,6 +12,10 @@ import RawJsonCard from './cards/RawJsonCard.vue';
 import BomVarianceCard from './cards/BomVarianceCard.vue';
 import SalesPlanCard from './cards/SalesPlanCard.vue';
 import LaborProductivityCard from './cards/LaborProductivityCard.vue';
+import SeatOccupancyCard from './cards/SeatOccupancyCard.vue';
+import ComboSplitCard from './cards/ComboSplitCard.vue';
+import ReturnAnomalyCard from './cards/ReturnAnomalyCard.vue';
+import ReviewCompetitiveCard from './cards/ReviewCompetitiveCard.vue';
 
 const props = defineProps<{
   section: SectionPayload;
@@ -30,6 +34,10 @@ const CARD_MAP: Record<string, unknown> = {
   bom_variance: BomVarianceCard,
   sales_plan_tracking: SalesPlanCard,
   labor_productivity: LaborProductivityCard,
+  seat_occupancy: SeatOccupancyCard,
+  combo_split: ComboSplitCard,
+  return_anomaly: ReturnAnomalyCard,
+  review_competitive: ReviewCompetitiveCard,
 };
 
 const resolvedCard = computed(() => {

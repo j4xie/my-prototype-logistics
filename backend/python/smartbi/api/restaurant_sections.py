@@ -62,6 +62,10 @@ from smartbi.services.restaurant.sections.temporal_comparison import (
 from smartbi.services.restaurant.sections.bom_variance import BomVarianceHandler
 from smartbi.services.restaurant.sections.labor_productivity import LaborProductivityHandler
 from smartbi.services.restaurant.sections.sales_plan_tracking import SalesPlanTrackingHandler
+from smartbi.services.restaurant.sections.seat_occupancy import SeatOccupancyHandler
+from smartbi.services.restaurant.sections.combo_split import ComboSplitHandler
+from smartbi.services.restaurant.sections.return_anomaly import ReturnAnomalyHandler
+from smartbi.services.restaurant.sections.review_competitive import ReviewCompetitiveHandler
 
 logger = logging.getLogger(__name__)
 _cache = SectionCache(ttl_seconds=300)
@@ -101,6 +105,10 @@ HANDLERS = {
     "bom_variance": BomVarianceHandler(),
     "labor_productivity": LaborProductivityHandler(),
     "sales_plan_tracking": SalesPlanTrackingHandler(),
+    "seat_occupancy": SeatOccupancyHandler(),
+    "combo_split": ComboSplitHandler(),
+    "return_anomaly": ReturnAnomalyHandler(),
+    "review_competitive": ReviewCompetitiveHandler(),
 }
 
 
