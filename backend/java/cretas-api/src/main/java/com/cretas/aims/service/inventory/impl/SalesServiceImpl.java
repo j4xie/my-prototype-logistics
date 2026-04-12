@@ -453,6 +453,37 @@ public class SalesServiceImpl implements SalesService {
         return salesOrderRepository.save(order);
     }
 
+    /**
+     * Round 14: Compute all aggregate formulas configured for a sales order.
+     * Returns formula results keyed by formula_code (e.g., "tax_group_sum").
+     * The "杀手锏 G1" killer feature — 39 factories have tax_group_sum configured,
+     * but it was never evaluated at runtime until now.
+     */
+    public Map<String, Object> computeOrderFormulas(String factoryId, String orderId) {
+        Map<String, Object> results = new java.util.LinkedHashMap<>();
+        if (formulaEngine == null) return results;
+
+        // Query all factory_formulas for this factory + sales_order module
+        var formulas = formulaEngine.listFormulas(factoryId, "sales_order");
+        if (formulas == null || formulas.isEmpty()) return results;
+
+        Map<String, Object> context = Map.of(
+                "factoryId", factoryId,
+                "parentId", orderId);
+
+        for (var formula : formulas) {
+            try {
+                Object result = formulaEngine.evaluateAny(factoryId, "sales_order", formula.getFormulaCode(), context);
+                if (result != null) {
+                    results.put(formula.getFormulaCode(), result);
+                }
+            } catch (Exception e) {
+                log.warn("Formula {} evaluation failed for order {}: {}", formula.getFormulaCode(), orderId, e.getMessage());
+            }
+        }
+        return results;
+    }
+
     // ==================== 发货/出库 ====================
 
     @Override

@@ -65,6 +65,10 @@ public interface SalesService {
 
     FinishedGoodsBatch createFinishedGoodsBatch(String factoryId, FinishedGoodsBatch batch, Long userId);
 
+    // ==================== 公式计算 ====================
+
+    Map<String, Object> computeOrderFormulas(String factoryId, String orderId);
+
     // ==================== 统计 ====================
 
     Map<String, Object> getSalesStatistics(String factoryId);

@@ -47,6 +47,10 @@ public class TransferServiceImpl implements TransferService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
 
+    /** Round 14: formula engine for LINE_AMOUNT etc. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.FormulaEngine formulaEngine;
+
     public TransferServiceImpl(InternalTransferRepository transferRepository,
                                InternalTransferItemRepository transferItemRepository,
                                MaterialBatchRepository materialBatchRepository,
@@ -105,7 +109,15 @@ public class TransferServiceImpl implements TransferService {
             item.setRemark(itemDTO.getRemark());
             transfer.getItems().add(item);
 
-            totalAmount = totalAmount.add(item.getLineAmount());
+            // R14: try FormulaEngine for LINE_AMOUNT, fall back to entity method
+            java.math.BigDecimal lineAmt = null;
+            if (formulaEngine != null && item.getQuantity() != null && item.getUnitPrice() != null) {
+                try {
+                    lineAmt = formulaEngine.evaluate(factoryId, "transfer", "LINE_AMOUNT",
+                            java.util.Map.of("quantity", item.getQuantity(), "unitPrice", item.getUnitPrice()));
+                } catch (Exception e) { /* fall back */ }
+            }
+            totalAmount = totalAmount.add(lineAmt != null ? lineAmt : item.getLineAmount());
         }
 
         transfer.setTotalAmount(totalAmount);
