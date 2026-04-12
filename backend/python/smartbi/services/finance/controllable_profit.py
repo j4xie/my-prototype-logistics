@@ -8,7 +8,7 @@ Non-controllable defaults: rent, tax, depreciation, insurance, interest, investm
 """
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Dict, List, Optional
 
 
 DEFAULT_NON_CONTROLLABLE = frozenset([
@@ -24,9 +24,9 @@ class ControllableProfitCalculator:
     def compute(
         self,
         revenue: float,
-        cost_items: dict[str, float],
-        non_controllable_keys: Optional[list[str]] = None,
-    ) -> dict:
+        cost_items: Dict[str, float],
+        non_controllable_keys: Optional[List[str]] = None,
+    ) -> Dict:
         nc_keys = set(non_controllable_keys) if non_controllable_keys else self.default_non_controllable
 
         controllable_cost = 0.0
