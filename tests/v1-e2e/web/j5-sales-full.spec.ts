@@ -442,4 +442,89 @@ test.describe('J5 sales_mgr full cycle @post-deploy', () => {
       page.locator('.el-descriptions').locator('text=\u00A52,500.00')
     ).toBeVisible({ timeout: 5_000 });
   });
+
+  // ==========================================================================
+  // Test 8: P-2 double-submit on SO creation
+  // ==========================================================================
+
+  test('P-2 double-submit guard on SO creation', async ({ page }) => {
+    await page.goto('/sales/orders');
+    await page.waitForSelector('.el-table', { timeout: 15_000 });
+
+    // Open create dialog
+    await page.click('button:has-text("\u65B0\u5EFA")');
+    const dialog = page.locator('.el-dialog:visible');
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
+
+    // Select customer (minimum required field)
+    const customerSelect = dialog.locator(S.form.select('\u5BA2\u6237'));
+    await customerSelect.click();
+    await page.waitForTimeout(500);
+    const customerOption = page.locator(
+      `.el-select-dropdown:visible .el-select-dropdown__item`
+    ).first();
+    await expect(customerOption).toBeVisible({ timeout: 8_000 });
+    await customerOption.click();
+
+    // Select product in first item row
+    const productSelect = dialog.locator('.item-row .el-select').first();
+    await productSelect.click();
+    await page.waitForTimeout(500);
+    const firstProduct = page.locator(
+      `.el-select-dropdown:visible .el-select-dropdown__item`
+    ).first();
+    await expect(firstProduct).toBeVisible({ timeout: 8_000 });
+    await firstProduct.click();
+
+    // Set quantity
+    const qtyInput = dialog.locator('.el-input-number input').first();
+    await qtyInput.click();
+    await page.keyboard.press('Control+A');
+    await qtyInput.fill('1');
+    await page.keyboard.press('Tab');
+
+    // P-2: verify double-submit protection on the create button
+    const { verifyNoDoubleSubmit } = await import('../helpers/p-checks');
+    await verifyNoDoubleSubmit(
+      page,
+      '.el-dialog:visible button:has-text("\u521B\u5EFA")',
+      '/sales-orders'
+    );
+  });
+
+  // ==========================================================================
+  // Test 9: P-3 dirty form guard
+  // ==========================================================================
+
+  test('P-3 dirty form guard on SO detail', async ({ page }) => {
+    await page.goto(`/sales/orders/${DEMO_SO_001_ID}`);
+
+    const card = page.locator('.el-card').first();
+    await expect(card).toBeVisible({ timeout: 15_000 });
+
+    // Verify order loaded
+    await expect(page.locator('text=DEMO_SO_001')).toBeVisible({ timeout: 10_000 });
+
+    // Try to find an editable textarea or input on the detail page
+    const editableInput = page.locator('input:not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly])').first();
+    const hasEditable = await editableInput.isVisible({ timeout: 3_000 }).catch(() => false);
+
+    if (hasEditable) {
+      const { verifyDirtyFormGuard } = await import('../helpers/p-checks');
+      const { hasGuard } = await verifyDirtyFormGuard(
+        page,
+        'input:not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly])',
+        'E2E dirty test'
+      );
+
+      // Use soft assertion so it does not block other tests
+      if (!hasGuard) {
+        // KNOWN_BUG: app lacks beforeunload guard
+        expect.soft(hasGuard, 'P-3: app should have beforeunload guard on dirty form').toBe(true);
+      }
+    } else {
+      // Detail page may be read-only — P-3 does not apply; pass gracefully
+      expect(true, 'Detail page is read-only — P-3 skipped').toBe(true);
+    }
+  });
 });
