@@ -12,7 +12,6 @@ section names. The list includes ``cost_rigidity`` (which the batch
 ``diagnostics``); the standalone endpoint is useful for direct UI/AI tool
 calls.
 """
-from __future__ import annotations
 
 import logging
 import tempfile
