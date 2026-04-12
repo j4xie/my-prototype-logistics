@@ -65,7 +65,11 @@ class SmartBIRestaurantRoutingTest {
             // P3.2 / P3.3 / P3.5 added intents
             "帮我做个菜单工程 Kasavana 四象限",                   // RESTAURANT_MENU_ENGINEERING
             "跟同业对比一下 我们家营收排第几",                    // RESTAURANT_CROSS_CHAIN_BENCHMARK
-            "销售预测下月营收会多少"                              // RESTAURANT_SALES_FORECAST
+            "销售预测下月营收会多少",                             // RESTAURANT_SALES_FORECAST
+            // Phase 1 financial analytics intents
+            "这个月BOM差异归因看看是供应链还是管理问题",           // RESTAURANT_BOM_VARIANCE
+            "本月销售计划完成度怎么样",                           // RESTAURANT_SALES_PLAN_TRACK
+            "人效分析一下 各门店人均产出"                          // RESTAURANT_LABOR_PRODUCTIVITY
         );
 
         for (String query : positiveSamples) {

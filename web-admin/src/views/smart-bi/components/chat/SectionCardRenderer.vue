@@ -9,6 +9,9 @@ import MenuQuadrantCard from './cards/MenuQuadrantCard.vue';
 import CrossChainCard from './cards/CrossChainCard.vue';
 import ForecastCard from './cards/ForecastCard.vue';
 import RawJsonCard from './cards/RawJsonCard.vue';
+import BomVarianceCard from './cards/BomVarianceCard.vue';
+import SalesPlanCard from './cards/SalesPlanCard.vue';
+import LaborProductivityCard from './cards/LaborProductivityCard.vue';
 
 const props = defineProps<{
   section: SectionPayload;
@@ -24,6 +27,9 @@ const CARD_MAP: Record<string, unknown> = {
   menu_engineering: MenuQuadrantCard,
   cross_chain_benchmark: CrossChainCard,
   restaurant_forecast: ForecastCard,
+  bom_variance: BomVarianceCard,
+  sales_plan_tracking: SalesPlanCard,
+  labor_productivity: LaborProductivityCard,
 };
 
 const resolvedCard = computed(() => {
@@ -33,7 +39,7 @@ const resolvedCard = computed(() => {
 
 <template>
   <div v-if="section.status === 'ok'" class="section-card-wrapper">
-    <component :is="resolvedCard" :section="section" />
+    <component :is="resolvedCard" :section="section" :data="section.data" />
   </div>
   <div v-else-if="section.status === 'skipped'" class="section-skipped">
     <span class="skipped-icon">○</span>

@@ -59,6 +59,9 @@ from smartbi.services.restaurant.sections.stored_value import StoredValueHandler
 from smartbi.services.restaurant.sections.temporal_comparison import (
     TemporalComparisonHandler,
 )
+from smartbi.services.restaurant.sections.bom_variance import BomVarianceHandler
+from smartbi.services.restaurant.sections.labor_productivity import LaborProductivityHandler
+from smartbi.services.restaurant.sections.sales_plan_tracking import SalesPlanTrackingHandler
 
 logger = logging.getLogger(__name__)
 _cache = SectionCache(ttl_seconds=300)
@@ -95,6 +98,9 @@ HANDLERS = {
     "monthly_ppt_export": MonthlyPptExportHandler(),
     "cross_chain_benchmark": CrossChainBenchmarkHandler(),
     "restaurant_forecast": RestaurantForecastHandler(),
+    "bom_variance": BomVarianceHandler(),
+    "labor_productivity": LaborProductivityHandler(),
+    "sales_plan_tracking": SalesPlanTrackingHandler(),
 }
 
 
