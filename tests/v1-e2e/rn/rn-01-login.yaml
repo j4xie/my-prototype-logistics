@@ -1,0 +1,29 @@
+appId: com.cretas.foodtrace
+---
+# RN-01: Login + Home Dashboard Verification
+# V1 E2E — verifies factory_admin1 can login and see dashboard
+# Tags: @post-deploy @rn
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Verify welcome screen renders
+- assertVisible: "Cretas AI Agent"
+- assertVisible: "Login"
+- assertVisible: "Register"
+- takeScreenshot: rn-01-welcome
+
+# Execute login flow
+- runFlow: flows/login.yaml
+
+# Verify home dashboard loaded with key widgets
+- assertVisible: "Quality Rate"
+- assertVisible: "Materials"
+- takeScreenshot: rn-01-dashboard
+
+# Verify bottom tab navigation exists
+- assertVisible:
+    text: ".*Home.*|.*首页.*"
+    optional: false
+- takeScreenshot: rn-01-tabs
