@@ -17,6 +17,7 @@ public interface CanvasDynamicFieldRepository extends JpaRepository<CanvasDynami
     @Query("SELECT f FROM CanvasDynamicField f " +
            "WHERE (f.factoryId = :factoryId OR f.factoryId IS NULL) " +
            "AND f.moduleCode = :moduleCode " +
+           "AND f.status != 'DISABLED' " +
            "ORDER BY f.sortOrder")
     List<CanvasDynamicField> findByModuleCodeForFactory(
             @Param("factoryId") String factoryId,
