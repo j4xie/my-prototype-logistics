@@ -8,10 +8,11 @@
  * Usage:
  *   <CanvasDynamicFields v-model="form.customFields" module-code="sales_order" />
  */
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/store/modules/auth'
 import { getDynamicFields } from '@/api/canvasApi'
 import { get } from '@/api/request'
+import { evaluateSpelBoolean } from '@/utils/spelEvaluator'
 
 interface DynField {
   fieldCode: string
@@ -19,6 +20,8 @@ interface DynField {
   label: string
   config?: Record<string, unknown>
   sortOrder?: number
+  visibleWhen?: string
+  computedWhen?: string
 }
 
 const props = defineProps<{
@@ -68,12 +71,20 @@ function updateField(fieldCode: string, value: unknown) {
   localValues.value[fieldCode] = value
   emit('update:modelValue', { ...localValues.value })
 }
+
+function isFieldVisible(field: DynField): boolean {
+  if (!field.visibleWhen) return true
+  try { return evaluateSpelBoolean(field.visibleWhen, localValues.value) }
+  catch { return true }
+}
+
+const visibleFields = computed(() => fields.value.filter(isFieldVisible))
 </script>
 
 <template>
   <template v-if="fields.length > 0">
     <el-divider>工厂自定义字段</el-divider>
-    <el-form-item v-for="field in fields" :key="field.fieldCode" :label="field.label">
+    <el-form-item v-for="field in visibleFields" :key="field.fieldCode" :label="field.label">
       <!-- NUMBER -->
       <el-input-number
         v-if="field.fieldType === 'NUMBER' || field.fieldType === 'DECIMAL'"
