@@ -109,9 +109,13 @@ function removeItem(index: number) {
   if (form.value.items.length > 1) form.value.items.splice(index, 1);
 }
 
+const submitting = ref(false);
+
 async function handleCreate() {
+  if (submitting.value) return; // P-2: prevent double-submit
   if (!form.value.supplierId) return ElMessage.warning('请选择供应商');
   if (form.value.items.some(i => !i.materialTypeId)) return ElMessage.warning('请选择所有原料');
+  submitting.value = true;
   try {
     // Build remark with sales order reference if selected
     let remark = form.value.remark || '';
@@ -137,6 +141,8 @@ async function handleCreate() {
     }
   } catch (error) {
     ElMessage.error('创建失败');
+  } finally {
+    submitting.value = false;
   }
 }
 
@@ -331,7 +337,7 @@ function handleAiFill(params: Record<string, unknown>) {
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleCreate">创建</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleCreate">创建</el-button>
       </template>
     </el-dialog>
 
