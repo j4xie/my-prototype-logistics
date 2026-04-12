@@ -1,7 +1,7 @@
 {
   "journey": "j2-editor-tabs",
-  "timestamp": "2026-04-12T21:01:32.537Z",
-  "durationMs": 6099,
+  "timestamp": "2026-04-12T21:26:32.562Z",
+  "durationMs": 47639,
   "pass": 8,
   "fail": 0,
   "warn": 2,
@@ -11,61 +11,61 @@
       "testId": "J2-1",
       "status": "PASS",
       "evidence": "workflowStates array has 10 state(s)",
-      "timestamp": "2026-04-12T21:01:28.064Z"
+      "timestamp": "2026-04-12T21:25:50.128Z"
     },
     {
       "testId": "J2-2",
       "status": "PASS",
       "evidence": "trigger-chains HTTP 200 — array with 5 chain(s)",
-      "timestamp": "2026-04-12T21:01:28.642Z"
+      "timestamp": "2026-04-12T21:25:58.590Z"
     },
     {
       "testId": "J2-3",
       "status": "PASS",
-      "evidence": "validation-rules HTTP 200 — 9 rule(s) for sales_order",
-      "timestamp": "2026-04-12T21:01:29.203Z"
+      "evidence": "validation-rules HTTP 200 — 14 rule(s) for sales_order",
+      "timestamp": "2026-04-12T21:26:04.071Z"
     },
     {
       "testId": "J2-4",
       "status": "PASS",
       "evidence": "field config has 30 field(s)",
-      "timestamp": "2026-04-12T21:01:29.204Z"
+      "timestamp": "2026-04-12T21:26:04.071Z"
     },
     {
       "testId": "J2-5",
       "status": "WARN",
       "evidence": "permissionSchema not found in effective config — top-level keys: [moduleCode, moduleName, enabled, fields, groups, workflowStates, workflowTransitions, workflowOptions, customLabels, renderingMode]",
-      "timestamp": "2026-04-12T21:01:29.204Z"
+      "timestamp": "2026-04-12T21:26:04.071Z"
     },
     {
       "testId": "J2-6",
       "status": "PASS",
       "evidence": "tools endpoint HTTP 200 — 27 tool(s) in response",
-      "timestamp": "2026-04-12T21:01:29.783Z"
+      "timestamp": "2026-04-12T21:26:10.024Z"
     },
     {
       "testId": "J2-7a",
       "status": "PASS",
       "evidence": "scheduler/e2e_daily accepted valid cron \"0 0 2 * * ?\" — HTTP 200",
-      "timestamp": "2026-04-12T21:01:30.411Z"
+      "timestamp": "2026-04-12T21:26:14.598Z"
     },
     {
       "testId": "J2-7b",
       "status": "PASS",
       "evidence": "scheduler rejected too-frequent cron \"* * * * * ?\" with HTTP 400 (Fix 11 enforced)",
-      "timestamp": "2026-04-12T21:01:31.027Z"
+      "timestamp": "2026-04-12T21:26:19.790Z"
     },
     {
       "testId": "J2-7c",
       "status": "PASS",
       "evidence": "scheduler/e2e_daily disabled successfully — HTTP 200",
-      "timestamp": "2026-04-12T21:01:31.649Z"
+      "timestamp": "2026-04-12T21:26:24.481Z"
     },
     {
       "testId": "J2-8",
       "status": "WARN",
       "evidence": "submit-review HTTP 400 — 没有 DRAFT 状态的配置版本可供 PENDING_REVIEW 转换",
-      "timestamp": "2026-04-12T21:01:32.537Z"
+      "timestamp": "2026-04-12T21:26:32.562Z"
     }
   ]
 }

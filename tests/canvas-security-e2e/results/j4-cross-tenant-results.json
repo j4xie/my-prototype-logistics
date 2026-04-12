@@ -1,71 +1,71 @@
 {
   "journey": "j4-cross-tenant",
-  "timestamp": "2026-04-12T21:02:07.925Z",
-  "durationMs": 3533,
-  "pass": 6,
+  "timestamp": "2026-04-12T21:41:49.688Z",
+  "durationMs": 81585,
+  "pass": 9,
   "fail": 0,
-  "warn": 4,
+  "warn": 1,
   "total": 10,
   "tests": [
     {
       "testId": "J4-SETUP-A",
       "status": "PASS",
       "evidence": "Factory A admin logged in — factoryId=F002 role=factory_super_admin",
-      "timestamp": "2026-04-12T21:02:05.336Z"
+      "timestamp": "2026-04-12T21:40:34.969Z"
     },
     {
       "testId": "J4-SETUP-B",
-      "status": "WARN",
-      "evidence": "Factory B unavailable (Login failed for \"f006_admin\": 登录请求过于频繁，请60秒后再试) — cross-tenant isolation tests will be skipped",
-      "timestamp": "2026-04-12T21:02:06.119Z"
+      "status": "PASS",
+      "evidence": "Factory B admin logged in — factoryId=F006 role=factory_super_admin",
+      "timestamp": "2026-04-12T21:40:44.236Z"
     },
     {
       "testId": "J4-SETUP-SO",
       "status": "PASS",
       "evidence": "Got Factory A sales order ID: F002-SO-T10",
-      "timestamp": "2026-04-12T21:02:06.682Z"
+      "timestamp": "2026-04-12T21:40:50.018Z"
     },
     {
       "testId": "J4-1",
       "status": "PASS",
-      "evidence": "SQL injection in fieldCode correctly rejected — HTTP 403 message=\"无权访问该工厂数据\"",
-      "timestamp": "2026-04-12T21:02:06.989Z"
+      "evidence": "SQL injection in fieldCode correctly rejected — HTTP 400 message=\"fieldCode 必须匹配 [a-zA-Z_][a-zA-Z0-9_]{1,60}\"",
+      "timestamp": "2026-04-12T21:40:54.951Z"
     },
     {
       "testId": "J4-2",
       "status": "PASS",
-      "evidence": "SQL injection in sub-table column name rejected — HTTP 403 message=\"无权访问该工厂数据\"",
-      "timestamp": "2026-04-12T21:02:07.307Z"
+      "evidence": "SQL injection in sub-table column name rejected — HTTP 400 message=\"记录不属于当前工厂或不存在: sales_order/F002-SO-T10\"",
+      "timestamp": "2026-04-12T21:40:59.831Z"
     },
     {
       "testId": "J4-3",
-      "status": "WARN",
-      "evidence": "Skipped — Factory B token unavailable",
-      "timestamp": "2026-04-12T21:02:07.307Z"
+      "status": "PASS",
+      "evidence": "Cross-tenant sub-table read correctly rejected — HTTP 400 message=\"记录不属于当前工厂或不存在: sales_order/F002-SO-T10\"",
+      "timestamp": "2026-04-12T21:41:11.239Z"
     },
     {
       "testId": "J4-4",
-      "status": "WARN",
-      "evidence": "Skipped — Factory B token unavailable",
-      "timestamp": "2026-04-12T21:02:07.307Z"
+      "status": "PASS",
+      "evidence": "HTTP 200 but data NOT mutated (no active dynamic fields for attacker factory) — defense in depth OK",
+      "timestamp": "2026-04-12T21:41:28.377Z"
     },
     {
       "testId": "J4-5",
       "status": "WARN",
-      "evidence": "Skipped — Factory B token unavailable",
-      "timestamp": "2026-04-12T21:02:07.307Z"
+      "evidence": "Could not create Factory A changeset (HTTP 400: 变更后配置不能为空, 配置类型不能为空, 配置ID不能为空) — attack step skipped",
+      "timestamp": "2026-04-12T21:41:33.954Z"
     },
     {
       "testId": "J4-6",
       "status": "PASS",
-      "evidence": "Cron DDoS expression \"*/5 * * * * ?\" correctly rejected — HTTP 403 message=\"无权访问该工厂数据\"",
-      "timestamp": "2026-04-12T21:02:07.608Z"
+      "evidence": "Cron DDoS expression \"*/5 * * * * ?\" correctly rejected — HTTP 400 message=\"Cron 秒字段只允许单个数字 (0-59), 当前: '*/5'. 最小间隔: 0 * * * * ? (每分钟). 不支持 */N, 逗号列表, 范围\"",
+      "timestamp": "2026-04-12T21:41:38.691Z"
     },
     {
       "testId": "J4-6b",
       "status": "PASS",
-      "evidence": "Cron comma-bypass expression \"0,30 * * * * ?\" correctly rejected — HTTP 403 message=\"无权访问该工厂数据\"",
-      "timestamp": "2026-04-12T21:02:07.925Z"
+      "evidence": "Cron comma-bypass expression \"0,30 * * * * ?\" correctly rejected — HTTP 400 message=\"Cron 秒字段只允许单个数字 (0-59), 当前: '0,30'. 最小间隔: 0 * * * * ? (每分钟). 不支持 */N, 逗号列表, 范围\"",
+      "timestamp": "2026-04-12T21:41:49.687Z"
     }
   ]
 }

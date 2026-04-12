@@ -38,7 +38,8 @@ async function runL1(page) {
   console.log('\n=== L1: MOBILE_ONLY gate ===');
 
   try {
-    const result = await webLogin(page, 'operator1');
+    // zj_staff1 is F002's operator; operator1 is F001's — both are MOBILE_ONLY
+    const result = await webLogin(page, 'zj_staff1');
     const url = result.url;
 
     const blocked = url.includes('mobile-only') || url.includes('403');
@@ -157,7 +158,8 @@ async function runL3() {
   // Obtain a non-admin token; try factory worker accounts in order.
   let bizToken = null;
 
-  const candidates = ['operator1', 'f006_worker1'];
+  // F002 has zj_staff1 (operator), F006 has f006_worker1, F001 has operator1
+  const candidates = ['zj_staff1', 'f006_worker1', 'operator1'];
   for (const username of candidates) {
     try {
       const session = await login(username);

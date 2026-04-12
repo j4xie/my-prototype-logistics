@@ -309,18 +309,22 @@ async function phaseB1b_ddlLog(token) {
       return;
     }
 
-    // Response shape: { content: [], totalElements, ... }
-    const entries = Array.isArray(res.data)
-      ? res.data
-      : Array.isArray(res.data?.content)
-      ? res.data.content
+    // Response shape varies: raw {content:[...]} or {success, data:{content:[...]}}
+    const raw = res.json || res.data || {};
+    const entries = Array.isArray(raw)
+      ? raw
+      : Array.isArray(raw.content)
+      ? raw.content
+      : Array.isArray(raw.data?.content)
+      ? raw.data.content
+      : Array.isArray(raw.data)
+      ? raw.data
       : [];
 
     const executedWithSuffix = entries.filter(
       e =>
         e.status === 'EXECUTED' &&
-        e.ddlSql &&
-        e.ddlSql.includes(SUFFIX)
+        (e.ddlStatement || e.ddlSql || '') .includes(SUFFIX)
     );
 
     if (executedWithSuffix.length >= 6) {

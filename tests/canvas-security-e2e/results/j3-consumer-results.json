@@ -1,7 +1,7 @@
 {
   "journey": "j3-consumer",
-  "timestamp": "2026-04-12T21:02:03.352Z",
-  "durationMs": 29924,
+  "timestamp": "2026-04-12T21:27:00.610Z",
+  "durationMs": 22136,
   "pass": 2,
   "fail": 2,
   "warn": 1,
@@ -10,32 +10,32 @@
     {
       "testId": "J3-S1",
       "status": "PASS",
-      "evidence": "Logged in successfully — redirected to http://139.196.165.140:8086/dashboard",
-      "timestamp": "2026-04-12T21:01:50.473Z"
+      "evidence": "Logged in successfully — redirected to http://localhost:5173/dashboard",
+      "timestamp": "2026-04-12T21:26:52.151Z"
     },
     {
       "testId": "J3-S2",
       "status": "FAIL",
-      "evidence": "Page content too short (10 chars ≤ 1000) — page may not have rendered",
-      "timestamp": "2026-04-12T21:01:57.615Z"
+      "evidence": "Page content too short (255 chars ≤ 1000) — page may not have rendered",
+      "timestamp": "2026-04-12T21:26:57.295Z"
     },
     {
       "testId": "J3-S3",
       "status": "FAIL",
       "evidence": "Skipped — could not load sales orders list",
-      "timestamp": "2026-04-12T21:01:57.662Z"
+      "timestamp": "2026-04-12T21:26:57.378Z"
     },
     {
       "testId": "J3-S4",
       "status": "WARN",
       "evidence": "Skipped — could not load sales orders list",
-      "timestamp": "2026-04-12T21:01:57.662Z"
+      "timestamp": "2026-04-12T21:26:57.378Z"
     },
     {
       "testId": "J3-S10",
       "status": "PASS",
-      "evidence": "Canvas editor accessible — URL: http://139.196.165.140:8086/canvas-editor",
-      "timestamp": "2026-04-12T21:02:03.237Z"
+      "evidence": "Canvas editor accessible — URL: http://localhost:5173/canvas-editor",
+      "timestamp": "2026-04-12T21:27:00.460Z"
     }
   ]
 }

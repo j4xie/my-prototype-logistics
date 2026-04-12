@@ -97,7 +97,26 @@ export function createResultCollector(journeyName) {
  * @param {string} [password]
  * @returns {Promise<{token: string, factoryId: string, role: string, userId: string|number}>}
  */
+import { readFileSync as _readFileSync } from 'fs';
+
+const _tokenCachePath = join(__dirname, 'results', '.token-cache.json');
+const _tokenCache = new Map();
+
+// Load file-based token cache (persists across Node processes in run-all.sh)
+try {
+  const cached = JSON.parse(_readFileSync(_tokenCachePath, 'utf8'));
+  for (const [k, v] of Object.entries(cached)) _tokenCache.set(k, v);
+} catch { /* no cache yet */ }
+
+function _saveTokenCache() {
+  const obj = Object.fromEntries(_tokenCache);
+  writeFileSync(_tokenCachePath, JSON.stringify(obj), 'utf8');
+}
+
 export async function login(username, password = DEFAULT_PASSWORD) {
+  // Return cached token if available (avoids rate limit across journey scripts)
+  if (_tokenCache.has(username)) return _tokenCache.get(username);
+
   const res = await fetch(`${API_BASE}/auth/unified-login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -113,12 +132,15 @@ export async function login(username, password = DEFAULT_PASSWORD) {
   }
 
   const data = json.data ?? {};
-  return {
+  const session = {
     token: data.accessToken ?? data.token,
     factoryId: data.factoryId,
     role: data.role,
     userId: data.userId,
   };
+  _tokenCache.set(username, session);
+  _saveTokenCache();
+  return session;
 }
 
 /**
@@ -215,8 +237,13 @@ export async function webLogin(page, username, password = DEFAULT_PASSWORD) {
   await inputs.nth(1).fill(password);
   await page.locator('.el-button--primary').first().click();
 
-  // Wait for navigation / token storage
-  await page.waitForTimeout(5_000);
+  // Wait for navigation — either dashboard, mobile-only, 403, or stay at login
+  try {
+    await page.waitForURL(url => !url.toString().includes('/login'), { timeout: 10_000 });
+  } catch {
+    // Still on login page — login failed or slow redirect
+  }
+  await page.waitForTimeout(2_000); // Extra settle time for route guards
 
   const url = page.url();
   const loggedIn = !url.includes('/login');

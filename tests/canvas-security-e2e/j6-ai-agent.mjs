@@ -162,7 +162,7 @@ async function testLegitimateCanvasToolAllowed(adminToken) {
 async function testNonAdminBlocked() {
   // Try primary non-admin account; fall back to alternative if login fails
   let nonAdminToken = null;
-  const candidates = ['operator1', 'f006_worker1'];
+  const candidates = ['zj_staff1', 'f006_worker1', 'operator1'];
 
   for (const username of candidates) {
     try {

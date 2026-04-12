@@ -25,6 +25,9 @@ run_journey() {
   PASS_COUNT=$((PASS_COUNT + 1))
 }
 
+# Clean token cache from previous runs
+rm -f "$DIR/results/.token-cache.json"
+
 echo "Canvas Security E2E Test Suite"
 echo "API: ${E2E_API_BASE:-http://localhost:10011/api/mobile}"
 echo "Web: ${E2E_WEB_URL:-http://139.196.165.140:8086}"
@@ -36,12 +39,17 @@ run_journey "J0: Environment Setup" "j0-setup.mjs"
 
 # Phase 2: Lifecycle (creates test data for J3)
 run_journey "J1: Canvas Lifecycle" "j1-lifecycle.mjs"
+sleep 5  # Rate limit cooldown (test backend enforces 60s per user, 5s between journeys helps)
 
 # Phase 3: Independent journeys
 run_journey "J2: Editor 7 Tabs" "j2-editor-tabs.mjs"
+sleep 5
 run_journey "J3: Consumer Form" "j3-consumer.mjs"
+sleep 5
 run_journey "J4: Cross-Tenant Security" "j4-cross-tenant.mjs"
+sleep 5
 run_journey "J5: Permission Ladder" "j5-permission-ladder.mjs"
+sleep 5
 run_journey "J6: AI Agent" "j6-ai-agent.mjs"
 
 echo ""
@@ -56,7 +64,8 @@ echo ""
 # Aggregate all result JSONs
 node -e "
 const fs = require('fs');
-const dir = '$DIR/results';
+const path = require('path');
+const dir = path.join(path.resolve('$DIR'), 'results');
 let pass=0, fail=0, warn=0, total=0;
 try {
   fs.readdirSync(dir).filter(f=>f.endsWith('.json')).forEach(f => {
