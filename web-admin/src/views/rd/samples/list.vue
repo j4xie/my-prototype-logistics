@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post } from '@/api/request';
@@ -158,7 +158,17 @@ async function loadSalespersons() {
   } catch { /* optional */ }
 }
 
-onMounted(() => { loadData(); loadSalespersons(); });
+// D13: Dirty form guard — warn user before leaving with unsaved changes
+const isDirty = ref(false);
+watch([requestDialogVisible, sampleDialogVisible], ([req, smp]) => { isDirty.value = req || smp; });
+function handleBeforeUnload(e: BeforeUnloadEvent) {
+  if (isDirty.value) { e.preventDefault(); e.returnValue = ''; }
+}
+onMounted(() => {
+  loadData(); loadSalespersons();
+  window.addEventListener('beforeunload', handleBeforeUnload);
+});
+onBeforeUnmount(() => { window.removeEventListener('beforeunload', handleBeforeUnload); });
 
 async function handleCreateSample() {
   if (!sampleForm.value.name) { ElMessage.warning('请填写样品名称'); return; }
