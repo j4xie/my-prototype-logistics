@@ -684,24 +684,43 @@ async function step7_workReport(page) {
     }
   }
 
-  // ── Attempt 5: Try creating a ProcessTask via POST /process-tasks ──
+  // ── Attempt 5: Create WorkProcess (if needed) + ProcessTask ──
   if (!processTaskId) {
-    // First, get a workProcessId for this factory
-    const wpRes = await page.request.get(apiUrl('/work-processes?page=0&size=5'), { headers: authHeaders() }).catch(() => null);
+    // 5a: Get or create a WorkProcess
     let workProcessId = null;
+    const wpRes = await page.request.get(apiUrl('/work-processes?page=0&size=5'), { headers: authHeaders() }).catch(() => null);
     if (wpRes) {
       const wpBody = await wpRes.json();
       const wps = wpBody.data?.content || (Array.isArray(wpBody.data) ? wpBody.data : []);
       workProcessId = wps[0]?.id || null;
     }
 
+    if (!workProcessId) {
+      console.log('    No WorkProcess exists, creating one...');
+      const wpCreateRes = await page.request.post(apiUrl('/work-processes'), {
+        headers: authHeaders(),
+        data: { processName: 'E2E生产加工', processCategory: '通用工序', unit: 'kg', estimatedMinutes: 60, sortOrder: 10 },
+      }).catch(() => null);
+      if (wpCreateRes) {
+        const wpCreateBody = await wpCreateRes.json();
+        workProcessId = wpCreateBody.data?.id || null;
+        console.log(`    WorkProcess created: ${workProcessId}`);
+      }
+    }
+
+    // 5b: Create ProcessTask with correct DTO fields
     if (workProcessId) {
       const createRes = await page.request.post(apiUrl('/process-tasks'), {
         headers: authHeaders(),
         data: {
-          productionPlanId: planId,
+          productTypeId: chain.productTypeId,
           workProcessId,
           plannedQuantity: 100,
+          unit: 'kg',
+          createdBy: 1,
+          plannedDate: new Date().toISOString().slice(0, 10),
+          sourceDocType: 'PRODUCTION_PLAN',
+          sourceDocId: planId,
           notes: `E2E-TASK-${TS}`,
         },
       }).catch(() => null);
@@ -710,13 +729,13 @@ async function step7_workReport(page) {
         const createBody = await createRes.json();
         if (createBody.success && createBody.data?.id) {
           processTaskId = createBody.data.id;
-          console.log(`    processTaskId created via POST /process-tasks: ${processTaskId}`);
+          console.log(`    ProcessTask created: ${processTaskId}`);
         } else {
-          console.log(`    POST /process-tasks failed: ${createBody.message || ''}`);
+          console.log(`    POST /process-tasks failed: ${createBody.message || JSON.stringify(createBody).slice(0,200)}`);
         }
       }
     } else {
-      console.log('    No workProcessId available — cannot create ProcessTask');
+      console.log('    Cannot create WorkProcess — skipping ProcessTask creation');
     }
   }
 
