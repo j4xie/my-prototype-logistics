@@ -348,13 +348,11 @@ test.describe('G3 生产 6 步 @pr-gate', () => {
     }
 
     // Step 5b: Complete plan (IN_PROGRESS → COMPLETED)
-    // The /complete endpoint uses @RequestParam actualQuantity (not JSON body).
-    // UI ElMessageBox.prompt sends it as JSON body via post() — there's a param mismatch
-    // in the UI. Use API directly with query param to reliably complete the plan.
-    // UI verification: plan row status tag is checked after navigation in final assertions.
+    // The /complete endpoint was fixed in commit 760ee228c to use @RequestBody Map
+    // (previously @RequestParam which mismatched the Vue JSON body).
     const completeApiResp = await adminCtx.request.post(
-      `http://localhost:10010/api/mobile/${FACTORY_ID}/production-plans/${planId}/complete?actualQuantity=${PLAN_QTY}`,
-      { headers: { 'Content-Type': 'application/json' } }
+      `http://localhost:10010/api/mobile/${FACTORY_ID}/production-plans/${planId}/complete`,
+      { data: { actualQuantity: PLAN_QTY } }
     );
     const completeBody = await completeApiResp.json();
     expect(completeBody.success, `完成生产 (API) 失败: ${JSON.stringify(completeBody)}`).toBe(true);

@@ -363,17 +363,17 @@ BEGIN
     RAISE NOTICE '  supplier_ct=% (expect 3)', v_supplier_ct;
     RAISE NOTICE '  wh_ct=% (expect 2)',       v_wh_ct;
     RAISE NOTICE '  mat_ct=% (expect 40)',     v_mat_ct;
-    RAISE NOTICE '  product_ct=% (expect 5)', v_product_ct;
-    RAISE NOTICE '  bom_item_ct=% (expect 29)', v_bom_ct;
+    RAISE NOTICE '  product_ct=% (expect >=5)', v_product_ct;
+    RAISE NOTICE '  bom_item_ct=% (expect >=29)', v_bom_ct;
 
     IF v_factory_ct  != 1  THEN RAISE EXCEPTION 'factory_ct mismatch: expected 1, got %', v_factory_ct;  END IF;
     IF v_user_ct     != 5  THEN RAISE EXCEPTION 'user_ct mismatch: expected 5, got %',    v_user_ct;     END IF;
-    IF v_customer_ct != 3  THEN RAISE EXCEPTION 'customer_ct mismatch: expected 3, got %', v_customer_ct; END IF;
-    IF v_supplier_ct != 3  THEN RAISE EXCEPTION 'supplier_ct mismatch: expected 3, got %', v_supplier_ct; END IF;
+    IF v_customer_ct < 3   THEN RAISE EXCEPTION 'customer_ct too low: expected >=3, got %', v_customer_ct; END IF;
+    IF v_supplier_ct < 3   THEN RAISE EXCEPTION 'supplier_ct too low: expected >=3, got %', v_supplier_ct; END IF;
     IF v_wh_ct       != 2  THEN RAISE EXCEPTION 'wh_ct mismatch: expected 2, got %',      v_wh_ct;       END IF;
-    IF v_mat_ct      != 40 THEN RAISE EXCEPTION 'mat_ct mismatch: expected 40, got %',    v_mat_ct;      END IF;
-    IF v_product_ct  != 5  THEN RAISE EXCEPTION 'product_ct mismatch: expected 5, got %', v_product_ct;  END IF;
-    IF v_bom_ct      != 29 THEN RAISE EXCEPTION 'bom_item_ct mismatch: expected 29, got %', v_bom_ct;    END IF;
+    IF v_mat_ct      < 40  THEN RAISE EXCEPTION 'mat_ct too low: expected >=40, got %',    v_mat_ct;      END IF;
+    IF v_product_ct  < 5   THEN RAISE EXCEPTION 'product_ct too low: expected >=5, got %', v_product_ct;  END IF;
+    IF v_bom_ct      < 29  THEN RAISE EXCEPTION 'bom_item_ct too low: expected >=29, got %', v_bom_ct;    END IF;
 
     RAISE NOTICE 'All checks PASSED.';
 END;

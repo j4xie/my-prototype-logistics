@@ -187,4 +187,117 @@ test.describe('J7 仓储全周期 — super_admin @post-deploy', () => {
 
     await expectNoErrors(page);
   });
+
+  // ==========================================================================
+  // Test 6: Batch detail expand — click a row to view batch details
+  // ==========================================================================
+
+  test('L2 \u539F\u6750\u6599\u6279\u6B21\u8BE6\u60C5\u5F39\u7A97', async ({ page, context }) => {
+    await installApiProxy(context);
+
+    await page.goto('/warehouse/materials');
+    await page.waitForLoadState('networkidle');
+
+    const table = page.locator(S.table.root).first();
+    await expect(table).toBeVisible({ timeout: 15_000 });
+
+    const rows = page.locator(S.table.row);
+    const rowCount = await rows.count();
+
+    if (rowCount === 0) {
+      test.skip();
+      return;
+    }
+
+    // Click the "\u67E5\u770B" (view) button on the first row to open detail dialog
+    const viewBtn = rows.first().locator('button:has-text("\u67E5\u770B")');
+    const hasViewBtn = await viewBtn.isVisible({ timeout: 3_000 }).catch(() => false);
+
+    if (hasViewBtn) {
+      await viewBtn.click();
+
+      // Detail dialog should appear with title "\u6279\u6B21\u8BE6\u60C5"
+      const dialog = page.locator('.el-dialog:visible');
+      await expect(dialog).toBeVisible({ timeout: 10_000 });
+
+      // Verify descriptions inside the dialog show batch info fields
+      const descriptions = dialog.locator('.el-descriptions');
+      await expect(descriptions).toBeVisible({ timeout: 5_000 });
+
+      // Verify key fields are present: \u6279\u6B21\u53F7 (batch number), \u539F\u6599\u7C7B\u578B (material type)
+      // El-Plus descriptions renders labels in .el-descriptions__label cells (th elements)
+      const batchLabel = dialog.locator('.el-descriptions__label:has-text("\u6279\u6B21\u53F7")');
+      await expect(batchLabel, '\u6279\u6B21\u8BE6\u60C5\u5E94\u663E\u793A\u6279\u6B21\u53F7').toBeVisible({ timeout: 5_000 });
+
+      const materialLabel = dialog.locator('.el-descriptions__label:has-text("\u539F\u6599\u7C7B\u578B")');
+      await expect(materialLabel, '\u6279\u6B21\u8BE6\u60C5\u5E94\u663E\u793A\u539F\u6599\u7C7B\u578B').toBeVisible({ timeout: 5_000 });
+    } else {
+      // No "查看" button found — the page may use row-click or inline display.
+      // Verify the row data itself is readable (batch number column visible).
+      // KNOWN_BUG: if the page has no view button and no row-click handler,
+      // batch detail may not be accessible from this page.
+      const firstRowText = await rows.first().textContent().catch(() => '');
+      expect.soft(firstRowText?.trim().length, 'KNOWN_BUG: 第一行应有可见数据').toBeGreaterThan(0);
+    }
+
+    await expectNoErrors(page);
+  });
+
+  // ==========================================================================
+  // Test 7: Transfer detail view — click "\u8BE6\u60C5" to see transfer info
+  // ==========================================================================
+
+  test('L2 \u8C03\u62E8\u5355\u8BE6\u60C5\u9875\u5185\u5BB9\u6821\u9A8C', async ({ page, context }) => {
+    await installApiProxy(context);
+
+    await page.goto('/transfer/list');
+    await page.waitForLoadState('networkidle');
+
+    const table = page.locator(S.table.root).first();
+    await expect(table).toBeVisible({ timeout: 15_000 });
+
+    const rows = page.locator(S.table.row);
+    const rowCount = await rows.count();
+
+    if (rowCount === 0) {
+      test.skip();
+      return;
+    }
+
+    // Click "\u8BE6\u60C5" button on first row to navigate to detail page
+    const detailBtn = rows.first().locator('button:has-text("\u8BE6\u60C5")');
+    const hasDetailBtn = await detailBtn.isVisible({ timeout: 3_000 }).catch(() => false);
+
+    if (hasDetailBtn) {
+      await detailBtn.click();
+      await page.waitForLoadState('networkidle');
+
+      // Should navigate to transfer detail page (/transfer/{id})
+      expect(page.url()).toMatch(/\/transfer\/[a-zA-Z0-9-]+/);
+
+      // Verify descriptions section with key fields
+      const descriptions = page.locator('.el-descriptions');
+      await expect(descriptions.first()).toBeVisible({ timeout: 10_000 });
+
+      // Verify \u8C03\u62E8\u7F16\u53F7 (transfer number) is shown
+      const transferNumberLabel = page.locator('.el-descriptions-item:has-text("\u8C03\u62E8\u7F16\u53F7")');
+      await expect(transferNumberLabel, '\u8C03\u62E8\u8BE6\u60C5\u5E94\u663E\u793A\u8C03\u62E8\u7F16\u53F7').toBeVisible({ timeout: 5_000 });
+
+      // Verify \u8C03\u51FA\u65B9 (source) and \u8C03\u5165\u65B9 (target) labels
+      const sourceLabel = page.locator('.el-descriptions-item:has-text("\u8C03\u51FA\u65B9")');
+      await expect(sourceLabel, '\u8C03\u62E8\u8BE6\u60C5\u5E94\u663E\u793A\u8C03\u51FA\u65B9').toBeVisible({ timeout: 5_000 });
+
+      const targetLabel = page.locator('.el-descriptions-item:has-text("\u8C03\u5165\u65B9")');
+      await expect(targetLabel, '\u8C03\u62E8\u8BE6\u60C5\u5E94\u663E\u793A\u8C03\u5165\u65B9').toBeVisible({ timeout: 5_000 });
+
+      // Verify the items table is present
+      const itemsTable = page.locator('.el-table');
+      await expect(itemsTable.first()).toBeVisible({ timeout: 5_000 });
+    } else {
+      // No detail button — skip
+      test.skip();
+    }
+
+    await expectNoErrors(page);
+  });
 });

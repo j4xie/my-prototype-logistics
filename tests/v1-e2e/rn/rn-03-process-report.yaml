@@ -1,11 +1,13 @@
 appId: com.cretas.foodtrace
 ---
 # RN-03: Production Process Report (P0-15 + P1-1)
-# V1 E2E — verifies workshop supervisor can access process reporting
+# V1 E2E — workshop supervisor accesses process reporting
 # Tags: @post-deploy @rn
 #
 # P0-15: 生产报工 mode_1 (默认)
-# P1-1: 工人欠退/换岗扫码 (web deferred, RN path verification here)
+# P1-1: 工人欠退/换岗扫码 (web deferred, RN path verification)
+#
+# UPGRADED from optional navigation to mandatory assertions per E2E skill rules.
 
 - launchApp:
     clearState: true
@@ -14,26 +16,28 @@ appId: com.cretas.foodtrace
 # Login
 - runFlow: flows/login.yaml
 
-# Navigate to production/work report tab
-- tapOn:
-    text: ".*Workshop.*|.*车间.*|.*Production.*|.*生产.*"
-    optional: true
-- waitForAnimationToEnd
-- takeScreenshot: rn-03-workshop-tab
+# Navigate to workshop/production tab — mandatory (no optional:true)
+- extendedWaitUntil:
+    visible: ".*Workshop.*|.*Report.*|.*Production.*"
+    timeout: 10000
 
-# Look for work reporting / process reporting section
+# Tap the workshop/production area
 - tapOn:
-    text: ".*Report.*|.*报工.*|.*Process.*|.*工序.*"
-    optional: true
+    text: ".*Workshop.*|.*Report.*"
 - waitForAnimationToEnd
+- takeScreenshot: rn-03-workshop-entered
+
+# Verify we landed on a production-related screen
+# Must see either batch list, report form, or empty state — NOT the home dashboard
+- assertVisible:
+    text: ".*Report.*|.*batch.*|.*Batch.*|.*report.*|.*Process.*|.*暂无.*|.*No.*data.*"
+    optional: false
 - takeScreenshot: rn-03-report-section
 
-# Look for batch or task list
+# If there's a batch/task list, verify it renders (table or FlatList)
+# If empty, verify the empty state text is shown (not a crash)
 - tapOn:
-    text: ".*Batch.*|.*批次.*|.*Task.*|.*任务.*"
+    text: ".*Batch.*|.*batch.*|.*Task.*|.*task.*"
     optional: true
 - waitForAnimationToEnd
-- takeScreenshot: rn-03-batch-list
-
-# Note: actual process reporting requires active production plan + FMR.
-# This test verifies the RN navigation path exists.
+- takeScreenshot: rn-03-batch-or-empty
