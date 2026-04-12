@@ -247,7 +247,7 @@ public class DDLExecutor {
         // If the caller really has a custom type not in this list we now throw rather
         // than silently fall through — better to fail the DDL than corrupt the column.
         return switch (fieldType == null ? "TEXT" : fieldType.toUpperCase()) {
-            case "TEXT" -> "VARCHAR(500)";
+            case "TEXT", "STRING" -> "VARCHAR(500)";
             case "TEXTAREA", "LONGTEXT" -> "TEXT";
             case "NUMBER", "INTEGER" -> "INTEGER";
             case "DECIMAL" -> "NUMERIC(18,4)";
