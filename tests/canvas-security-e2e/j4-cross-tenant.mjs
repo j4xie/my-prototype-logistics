@@ -20,6 +20,8 @@
  *  - If Factory A has no sales orders → log WARN, skip attacks that need a record ID (J4-2, J4-3, J4-4).
  *
  * Exit code 1 if any step is FAIL.
+ *
+ * Run: node tests/canvas-security-e2e/j4-cross-tenant.mjs
  */
 
 import {

@@ -387,6 +387,7 @@ async function step5_purchaseReceive(page) {
         unitPrice: 25,
       }],
       remark: `E2E-PO-${TS}`,
+      relatedSalesOrderId: chain.salesOrderId || null,
     },
   });
   const poBody = await poRes.json();
@@ -484,7 +485,9 @@ async function step6_productionPlan(page) {
       plannedQuantity: 100,
       plannedDate: today(),
       sourceType: 'MANUAL',
-      notes: `E2E-PLAN-${TS}`,
+      sourceOrderId: chain.salesOrderId || null,
+      processName: '生产加工',
+      notes: `E2E-PLAN-${TS} (关联SO: ${chain.orderNumber || 'N/A'})`,
       customFields: { tank_id: `E2E-T${TS % 100}` },
     },
   });
