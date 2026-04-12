@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
@@ -49,12 +49,20 @@ const statusMap: Record<string, { text: string; type: string }> = {
   CLOSED: { text: '已关闭', type: 'info' },
 };
 
+// D13: Dirty form guard — warn user before leaving with unsaved changes
+const isDirty = ref(false);
+watch(dialogVisible, (val) => { isDirty.value = val; });
+function handleBeforeUnload(e: BeforeUnloadEvent) {
+  if (isDirty.value) { e.preventDefault(); e.returnValue = ''; }
+}
 onMounted(() => {
   loadData();
   loadSuppliers();
   loadMaterials();
   loadSalesOrders();
+  window.addEventListener('beforeunload', handleBeforeUnload);
 });
+onBeforeUnmount(() => { window.removeEventListener('beforeunload', handleBeforeUnload); });
 
 async function loadData() {
   if (!factoryId.value) return;
