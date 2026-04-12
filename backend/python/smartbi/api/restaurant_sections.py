@@ -66,6 +66,9 @@ from smartbi.services.restaurant.sections.seat_occupancy import SeatOccupancyHan
 from smartbi.services.restaurant.sections.combo_split import ComboSplitHandler
 from smartbi.services.restaurant.sections.return_anomaly import ReturnAnomalyHandler
 from smartbi.services.restaurant.sections.review_competitive import ReviewCompetitiveHandler
+from smartbi.services.restaurant.sections.smart_reorder import SmartReorderHandler
+from smartbi.services.restaurant.sections.daily_reconciliation import DailyReconciliationHandler
+from smartbi.services.restaurant.sections.procurement_forecast import ProcurementForecastHandler
 
 logger = logging.getLogger(__name__)
 _cache = SectionCache(ttl_seconds=300)
@@ -109,6 +112,9 @@ HANDLERS = {
     "combo_split": ComboSplitHandler(),
     "return_anomaly": ReturnAnomalyHandler(),
     "review_competitive": ReviewCompetitiveHandler(),
+    "smart_reorder": SmartReorderHandler(),
+    "daily_reconciliation": DailyReconciliationHandler(),
+    "procurement_forecast": ProcurementForecastHandler(),
 }
 
 

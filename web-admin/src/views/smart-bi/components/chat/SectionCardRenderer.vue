@@ -16,6 +16,9 @@ import SeatOccupancyCard from './cards/SeatOccupancyCard.vue';
 import ComboSplitCard from './cards/ComboSplitCard.vue';
 import ReturnAnomalyCard from './cards/ReturnAnomalyCard.vue';
 import ReviewCompetitiveCard from './cards/ReviewCompetitiveCard.vue';
+import SmartReorderCard from './cards/SmartReorderCard.vue';
+import DailyReconciliationCard from './cards/DailyReconciliationCard.vue';
+import ProcurementForecastCard from './cards/ProcurementForecastCard.vue';
 
 const props = defineProps<{
   section: SectionPayload;
@@ -38,6 +41,9 @@ const CARD_MAP: Record<string, unknown> = {
   combo_split: ComboSplitCard,
   return_anomaly: ReturnAnomalyCard,
   review_competitive: ReviewCompetitiveCard,
+  smart_reorder: SmartReorderCard,
+  daily_reconciliation: DailyReconciliationCard,
+  procurement_forecast: ProcurementForecastCard,
 };
 
 const resolvedCard = computed(() => {
