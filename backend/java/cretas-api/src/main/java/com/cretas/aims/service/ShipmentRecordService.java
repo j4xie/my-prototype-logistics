@@ -29,29 +29,40 @@ import java.util.UUID;
 public class ShipmentRecordService {
 
     private final ShipmentRecordRepository shipmentRecordRepository;
+    private final org.springframework.context.ApplicationEventPublisher applicationEventPublisher;
 
-    /**
-     * 创建出货记录
-     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+
     @Transactional
     public ShipmentRecord createShipment(ShipmentRecord shipment) {
-        // 生成ID和出货单号
+        if (validationRuleEvaluator != null && shipment.getFactoryId() != null) {
+            try {
+                validationRuleEvaluator.validate(shipment.getFactoryId(), "shipment", "CREATE",
+                        java.util.Map.of("customerId", shipment.getCustomerId() != null ? shipment.getCustomerId() : ""));
+            } catch (com.cretas.aims.exception.BusinessException e) { throw e; }
+            catch (Exception e) { log.warn("Canvas validation non-blocking: {}", e.getMessage()); }
+        }
         if (shipment.getId() == null) {
             shipment.setId(UUID.randomUUID().toString());
         }
         if (shipment.getShipmentNumber() == null) {
             shipment.setShipmentNumber(generateShipmentNumber(shipment.getFactoryId()));
         }
-        // 计算总金额
         if (shipment.getUnitPrice() != null && shipment.getQuantity() != null) {
             shipment.setTotalAmount(shipment.getUnitPrice().multiply(shipment.getQuantity()));
         }
-        // 默认状态为pending
         if (shipment.getStatus() == null) {
             shipment.setStatus("pending");
         }
-        log.info("创建出货记录: {}", shipment.getShipmentNumber());
-        return shipmentRecordRepository.save(shipment);
+        ShipmentRecord saved = shipmentRecordRepository.save(shipment);
+        try {
+            applicationEventPublisher.publishEvent(new com.cretas.aims.event.ShipmentCreatedEvent(
+                    this, saved.getFactoryId(), saved.getId(), saved.getShipmentNumber(),
+                    saved.getCustomerId(), saved.getOrderNumber(), saved.getQuantity(), saved.getTotalAmount()));
+        } catch (Exception e) { log.warn("Publish ShipmentCreatedEvent failed: {}", e.getMessage()); }
+        log.info("创建出货记录: {}", saved.getShipmentNumber());
+        return saved;
     }
 
     /**

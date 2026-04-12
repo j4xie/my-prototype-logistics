@@ -109,6 +109,9 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private org.springframework.context.ApplicationEventPublisher applicationEventPublisher;
+
     private void runConfiguredValidation(String factoryId, String operation, java.util.Map<String, Object> context) {
         if (validationRuleEvaluator == null) return;
         try {
@@ -397,10 +400,18 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
             throw new BusinessException("只能开始待处理的生产计划");
         }
 
-        // 更新状态和开始时间
+        runConfiguredValidation(factoryId, "START", java.util.Map.of("planId", planId));
+
         plan.setStatus(ProductionPlanStatus.IN_PROGRESS);
         plan.setStartTime(LocalDateTime.now());
         plan = productionPlanRepository.save(plan);
+
+        if (applicationEventPublisher != null) {
+            try {
+                applicationEventPublisher.publishEvent(new com.cretas.aims.event.ProductionStartedEvent(
+                        this, factoryId, plan.getId(), plan.getPlanNumber(), plan.getProductTypeId()));
+            } catch (Exception e) { log.warn("Publish ProductionStartedEvent failed: {}", e.getMessage()); }
+        }
 
         log.info("开始生产: planId={}", planId);
         return toDTOWithConversionInfo(plan);
@@ -412,20 +423,29 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         ProductionPlan plan = productionPlanRepository.findById(planId)
                 .orElseThrow(() -> new ResourceNotFoundException("生产计划", "id", planId));
 
-        // 验证工厂ID
         if (!plan.getFactoryId().equals(factoryId)) {
             throw new BusinessException("无权操作该生产计划");
         }
-
         if (plan.getStatus() != ProductionPlanStatus.IN_PROGRESS) {
             throw new BusinessException("只能完成进行中的生产计划");
         }
 
-        // 更新状态和完成信息
+        runConfiguredValidation(factoryId, "COMPLETE", java.util.Map.of(
+            "planId", planId,
+            "actualQuantity", actualQuantity != null ? actualQuantity : java.math.BigDecimal.ZERO));
+
         plan.setStatus(ProductionPlanStatus.COMPLETED);
         plan.setEndTime(LocalDateTime.now());
         plan.setActualQuantity(actualQuantity);
         plan = productionPlanRepository.save(plan);
+
+        if (applicationEventPublisher != null) {
+            try {
+                applicationEventPublisher.publishEvent(new com.cretas.aims.event.ProductionCompletedEvent(
+                        this, factoryId, plan.getId(), plan.getPlanNumber(),
+                        plan.getProductTypeId(), actualQuantity));
+            } catch (Exception e) { log.warn("Publish ProductionCompletedEvent failed: {}", e.getMessage()); }
+        }
 
         log.info("完成生产: planId={}, actualQuantity={}", planId, actualQuantity);
         return toDTOWithConversionInfo(plan);

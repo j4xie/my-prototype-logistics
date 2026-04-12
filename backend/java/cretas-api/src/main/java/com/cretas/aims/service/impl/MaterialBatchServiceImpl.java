@@ -1063,22 +1063,21 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         MaterialBatch batch = materialBatchRepository.findById(batchId)
                 .orElseThrow(() -> new ResourceNotFoundException("原材料批次", "id", batchId));
 
-        // 验证工厂ID
         if (!batch.getFactoryId().equals(factoryId)) {
             throw new BusinessException("无权操作该批次");
         }
 
-        // 验证预留数量是否充足
+        runConfiguredValidation(factoryId, "CONSUME",
+                java.util.Map.of("batchId", batchId, "quantity", quantity != null ? quantity : BigDecimal.ZERO));
+
         if (batch.getReservedQuantity().compareTo(quantity) < 0) {
             throw new BusinessException("预留数量不足以消耗");
         }
 
-        // 从预留数量中扣减，增加已使用数量
         batch.setReservedQuantity(batch.getReservedQuantity().subtract(quantity));
         batch.setUsedQuantity(batch.getUsedQuantity().add(quantity));
         batch.setLastUsedAt(LocalDateTime.now());
 
-        // 如果预留和剩余都为0，更新状态为DEPLETED
         if (batch.getReservedQuantity().compareTo(BigDecimal.ZERO) == 0 &&
             batch.getRemainingQuantity().compareTo(BigDecimal.ZERO) == 0) {
             batch.setStatus(MaterialBatchStatus.DEPLETED);
@@ -1088,7 +1087,6 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         log.info("消耗批次材料成功: batchId={}, quantity={}, reservedRemaining={}, usedTotal={}",
                 batchId, quantity, batch.getReservedQuantity(), batch.getUsedQuantity());
 
-        // 记录消耗记录
         MaterialConsumption consumption = new MaterialConsumption();
         consumption.setFactoryId(factoryId);
         consumption.setProductionPlanId(productionPlanId);
@@ -1097,15 +1095,20 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         consumption.setConsumptionTime(LocalDateTime.now());
         materialConsumptionRepository.save(consumption);
 
-        // 更新批次使用关联
         ProductionPlanBatchUsage usage = productionPlanBatchUsageRepository
                 .findByProductionPlanIdAndMaterialBatchId(productionPlanId, batchId)
                 .orElse(null);
-
         if (usage != null) {
             usage.setReservedQuantity(usage.getReservedQuantity().subtract(quantity));
             usage.setUsedQuantity(usage.getUsedQuantity().add(quantity));
             productionPlanBatchUsageRepository.save(usage);
+        }
+
+        if (applicationEventPublisher != null) {
+            try {
+                applicationEventPublisher.publishEvent(new com.cretas.aims.event.BatchMaterialConsumedEvent(
+                        this, factoryId, batchId, quantity, productionPlanId));
+            } catch (Exception e) { log.warn("Publish BatchMaterialConsumedEvent failed: {}", e.getMessage()); }
         }
     }
 

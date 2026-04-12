@@ -74,7 +74,12 @@ public class TriggerChainExecutor {
             // TransferServiceImpl.createTransfer for both factory-to-factory and
             // warehouse-to-warehouse transfers. Trigger chains can filter by
             // sourceFactoryId vs targetFactoryId to distinguish directions.
-            "TransferCreatedEvent"
+            "TransferCreatedEvent",
+            // Round 12 — status-change + create events:
+            "ShipmentCreatedEvent",
+            "ProductionStartedEvent",
+            "ProductionCompletedEvent",
+            "BatchMaterialConsumedEvent"
     );
 
     // Round 6 Fix CHECK-5: rate-limited warn log when a factory configures a trigger chain
