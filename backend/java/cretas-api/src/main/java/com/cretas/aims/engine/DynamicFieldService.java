@@ -46,6 +46,23 @@ public class DynamicFieldService {
      * We query information_schema once per table and cache the result.
      */
     private final Map<String, String> idTypeCache = new ConcurrentHashMap<>();
+    /** Cache whether a table has a factory_id column. Checked before adding tenant filter. */
+    private final Map<String, Boolean> factoryIdColumnCache = new ConcurrentHashMap<>();
+
+    private boolean hasFactoryIdColumn(String tableName) {
+        return factoryIdColumnCache.computeIfAbsent(tableName, t -> {
+            try {
+                Integer count = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM information_schema.columns " +
+                    "WHERE table_name = ? AND column_name = 'factory_id'",
+                    Integer.class, t);
+                return count != null && count > 0;
+            } catch (Exception e) {
+                log.warn("Could not check factory_id column for table {}: {}", t, e.getMessage());
+                return false;
+            }
+        });
+    }
 
     private String getIdColumnType(String tableName) {
         return idTypeCache.computeIfAbsent(tableName, t -> {
@@ -82,9 +99,14 @@ public class DynamicFieldService {
 
         if (columns.isEmpty()) return Map.of();
 
-        String sql = "SELECT " + String.join(", ", columns) + " FROM " + tableName + " " + idWhereClause(tableName);
+        // Tenant isolation: filter by factory_id when the table has the column.
+        boolean hasTenantCol = hasFactoryIdColumn(tableName);
+        String sql = "SELECT " + String.join(", ", columns) + " FROM " + tableName
+            + " " + idWhereClause(tableName) + (hasTenantCol ? " AND factory_id = ?" : "");
         try {
-            Map<String, Object> row = jdbcTemplate.queryForMap(sql, recordId);
+            Map<String, Object> row = hasTenantCol
+                ? jdbcTemplate.queryForMap(sql, recordId, factoryId)
+                : jdbcTemplate.queryForMap(sql, recordId);
             Map<String, Object> result = new LinkedHashMap<>();
             for (CanvasDynamicField f : fields) {
                 if (!"SUB_TABLE".equals(f.getFieldType()) && row.containsKey(f.getColumnName())) {
@@ -159,18 +181,23 @@ public class DynamicFieldService {
         return col;
     }
 
+    /** Kept in sync with DDLExecutor.mapFieldTypeToSQL — do not add cases here without
+     *  adding them there too, or ALTER COLUMN TYPE will produce a type mismatch. */
     private String mapFieldTypeToSQL(String fieldType) {
         return switch (fieldType) {
-            case "TEXT" -> "VARCHAR(500)";
-            case "TEXTAREA" -> "TEXT";
+            case "TEXT", "STRING" -> "VARCHAR(500)";
+            case "TEXTAREA", "LONGTEXT" -> "TEXT";
             case "NUMBER", "INTEGER" -> "INTEGER";
             case "DECIMAL" -> "NUMERIC(18,4)";
             case "SELECT" -> "VARCHAR(100)";
             case "DATE" -> "DATE";
-            case "DATETIME" -> "TIMESTAMP";
-            case "BOOLEAN" -> "BOOLEAN";
+            case "DATETIME", "TIMESTAMP" -> "TIMESTAMP";
+            case "BOOLEAN", "BOOL" -> "BOOLEAN";
             case "ATTACHMENT" -> "VARCHAR(2000)";
-            default -> "VARCHAR(500)";
+            case "REFERENCE" -> "VARCHAR(64)";
+            case "LINE_ITEMS" -> "JSONB";
+            default -> throw new IllegalArgumentException(
+                "不支持的字段类型转换: " + fieldType + " (请先在 DDLExecutor 补充映射)");
         };
     }
 
@@ -209,7 +236,15 @@ public class DynamicFieldService {
 
         if (setClauses.isEmpty()) return;
         params.add(recordId);
-        String sql = "UPDATE " + tableName + " SET " + String.join(", ", setClauses) + " " + idWhereClause(tableName);
-        jdbcTemplate.update(sql, params.toArray());
+        // Tenant isolation: filter by factory_id when the table has the column.
+        boolean hasTenantCol = hasFactoryIdColumn(tableName);
+        if (hasTenantCol) params.add(factoryId);
+        String sql = "UPDATE " + tableName + " SET " + String.join(", ", setClauses)
+            + " " + idWhereClause(tableName) + (hasTenantCol ? " AND factory_id = ?" : "");
+        int affected = jdbcTemplate.update(sql, params.toArray());
+        if (affected == 0) {
+            throw new com.cretas.aims.exception.BusinessException(
+                "动态字段保存失败: 记录不存在或不属于当前工厂 (" + moduleCode + "/" + recordId + ")");
+        }
     }
 }

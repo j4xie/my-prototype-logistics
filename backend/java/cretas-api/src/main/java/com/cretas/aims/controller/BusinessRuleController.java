@@ -25,6 +25,27 @@ import java.util.Map;
 @Tag(name = "Canvas V2 Business Rules", description = "校验规则/默认值/公式/定时任务")
 public class BusinessRuleController {
 
+    /** Minimum interval: seconds field must be a single literal number (0-59).
+     *  Blocks *, ranges, commas, and sub-minute steps that cause self-DDoS. */
+    private static void validateCronFrequency(String cron) {
+        if (cron == null) return;
+        String[] parts = cron.trim().split("\\s+");
+        if (parts.length >= 1) {
+            String seconds = parts[0];
+            // Only allow a single literal second value (e.g. "0", "30", "59")
+            if (!seconds.matches("^\\d{1,2}$")) {
+                throw new IllegalArgumentException(
+                    "Cron 秒字段只允许单个数字 (0-59), 当前: '" + seconds
+                    + "'. 最小间隔: 0 * * * * ? (每分钟). 不支持 */N, 逗号列表, 范围");
+            }
+            int sec = Integer.parseInt(seconds);
+            if (sec < 0 || sec > 59) {
+                throw new IllegalArgumentException("Cron 秒字段超出范围 (0-59): " + sec);
+            }
+        }
+    }
+
+
     private final FactoryValidationRuleRepository validationRuleRepo;
     private final FactoryDefaultValueRepository defaultValueRepo;
     private final FactoryFormulaRepository formulaRepo;
@@ -114,6 +135,7 @@ public class BusinessRuleController {
     @RequireRole({"factory_super_admin"})
     public ApiResponse<FactorySchedulerConfig> setSchedulerConfig(
             @PathVariable String factoryId, @PathVariable String taskCode, @RequestBody FactorySchedulerConfig body) {
+        if (body.getCronExpression() != null) validateCronFrequency(body.getCronExpression());
         FactorySchedulerConfig config = schedulerRepo.findByFactoryIdAndTaskCode(factoryId, taskCode)
                 .orElseGet(() -> { FactorySchedulerConfig c = new FactorySchedulerConfig(); c.setFactoryId(factoryId); c.setTaskCode(taskCode); c.setCronExpression("0 0 2 * * ?"); return c; });
         if (body.getCronExpression() != null) config.setCronExpression(body.getCronExpression());

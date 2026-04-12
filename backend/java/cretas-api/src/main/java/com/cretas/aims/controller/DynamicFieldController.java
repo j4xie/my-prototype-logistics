@@ -207,6 +207,7 @@ public class DynamicFieldController {
         // Round 5 Fix SEC-4: validate path variables before building table name (injection guard)
         validateModuleCode(moduleCode);
         validateIdentifier(fieldCode, "fieldCode");
+        dynamicTableService.verifyParentOwnership(moduleCode, recordId, factoryId);
         String subTableName = moduleCode + "_" + fieldCode + "_items";
         Map<String, Object> filterMap = new java.util.HashMap<>();
         if (filters != null) {
@@ -230,6 +231,7 @@ public class DynamicFieldController {
         // Round 5 Fix SEC-4
         validateModuleCode(moduleCode);
         validateIdentifier(fieldCode, "fieldCode");
+        dynamicTableService.verifyParentOwnership(moduleCode, recordId, factoryId);
         String subTableName = moduleCode + "_" + fieldCode + "_items";
         return ResponseEntity.ok(dynamicTableService.addRow(subTableName, recordId, row));
     }
@@ -245,8 +247,9 @@ public class DynamicFieldController {
         // Round 5 Fix SEC-4
         validateModuleCode(moduleCode);
         validateIdentifier(fieldCode, "fieldCode");
+        dynamicTableService.verifyParentOwnership(moduleCode, recordId, factoryId);
         String subTableName = moduleCode + "_" + fieldCode + "_items";
-        dynamicTableService.updateRow(subTableName, rowId, row);
+        dynamicTableService.updateRow(subTableName, recordId, rowId, row);
         return ResponseEntity.ok().build();
     }
 
@@ -260,8 +263,9 @@ public class DynamicFieldController {
         // Round 5 Fix SEC-4
         validateModuleCode(moduleCode);
         validateIdentifier(fieldCode, "fieldCode");
+        dynamicTableService.verifyParentOwnership(moduleCode, recordId, factoryId);
         String subTableName = moduleCode + "_" + fieldCode + "_items";
-        dynamicTableService.deleteRow(subTableName, rowId);
+        dynamicTableService.deleteRow(subTableName, recordId, rowId);
         return ResponseEntity.noContent().build();
     }
 

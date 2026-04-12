@@ -18,14 +18,14 @@ public interface FactoryConfigurationRepository extends JpaRepository<FactoryCon
     @Query("SELECT fc FROM FactoryConfiguration fc WHERE fc.factoryId = :factoryId AND fc.status = 'PUBLISHED' ORDER BY fc.configVersion DESC")
     Optional<FactoryConfiguration> findLatestPublished(@Param("factoryId") String factoryId);
 
-    @Query("SELECT fc FROM FactoryConfiguration fc WHERE fc.factoryId = :factoryId AND fc.status = 'DRAFT'")
+    @Query("SELECT fc FROM FactoryConfiguration fc WHERE fc.factoryId = :factoryId AND fc.status = 'DRAFT' ORDER BY fc.configVersion DESC LIMIT 1")
     Optional<FactoryConfiguration> findDraft(@Param("factoryId") String factoryId);
 
     /** Round 4 Fix P0-1: for audit workflow */
-    @Query("SELECT fc FROM FactoryConfiguration fc WHERE fc.factoryId = :factoryId AND fc.status = 'PENDING_REVIEW'")
+    @Query("SELECT fc FROM FactoryConfiguration fc WHERE fc.factoryId = :factoryId AND fc.status = 'PENDING_REVIEW' ORDER BY fc.configVersion DESC LIMIT 1")
     Optional<FactoryConfiguration> findLatestPending(@Param("factoryId") String factoryId);
 
-    @Query("SELECT fc FROM FactoryConfiguration fc WHERE fc.factoryId = :factoryId AND fc.status = 'APPROVED'")
+    @Query("SELECT fc FROM FactoryConfiguration fc WHERE fc.factoryId = :factoryId AND fc.status = 'APPROVED' ORDER BY fc.configVersion DESC LIMIT 1")
     Optional<FactoryConfiguration> findLatestApproved(@Param("factoryId") String factoryId);
 
     List<FactoryConfiguration> findByFactoryIdOrderByConfigVersionDesc(String factoryId);

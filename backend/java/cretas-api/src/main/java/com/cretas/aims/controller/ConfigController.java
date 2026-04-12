@@ -308,20 +308,12 @@ public class ConfigController {
 
     @PostMapping("/publish-now")
     @RequireRole({"factory_super_admin"})
-    @Operation(summary = "立即发布 (APPROVED → PUBLISHED, 跳过发布窗口)")
+    @Operation(summary = "立即发布 (DRAFT/APPROVED → PUBLISHED, 跳过发布窗口)")
     public ApiResponse<Void> publishNow(
             @PathVariable String factoryId,
             @RequestHeader(value = "Authorization", required = false) String authorization) {
         Long operatorId = extractUserId(authorization);
-        // For immediate publish, delegate to existing publishConfig which handles DDL.
-        // But first ensure status is APPROVED.
-        Optional<FactoryConfiguration> draft = factoryConfigurationRepository.findLatestPending(factoryId);
-        if (draft.isEmpty()) {
-            draft = factoryConfigurationRepository.findDraft(factoryId);
-        }
-        if (draft.isEmpty()) {
-            return ApiResponse.error("没有可发布的配置版本");
-        }
+        // publishConfig now accepts both DRAFT and APPROVED status (see FactoryConfigServiceImpl).
         configService.publishConfig(factoryId, operatorId != null ? operatorId : 0L, "立即发布");
         return ApiResponse.success();
     }

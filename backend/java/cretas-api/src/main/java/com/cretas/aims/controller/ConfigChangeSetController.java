@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.config.RequireRole;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.config.ConfigChangeSet;
 import com.cretas.aims.entity.config.ConfigChangeSet.ChangeStatus;
@@ -43,6 +44,16 @@ import java.util.Map;
 public class ConfigChangeSetController {
 
     private final ConfigChangeSetService changeSetService;
+
+    /** Verify that a change set belongs to the given factory. Prevents cross-tenant access. */
+    private ConfigChangeSet getAndVerifyOwnership(String id, String factoryId) {
+        ConfigChangeSet cs = changeSetService.getChangeSetById(id);
+        if (cs.getFactoryId() == null || !cs.getFactoryId().equals(factoryId)) {
+            throw new com.cretas.aims.exception.BusinessException(
+                "变更集不属于当前工厂或数据异常, ID: " + id);
+        }
+        return cs;
+    }
 
     // ========== 查询端点 ==========
 
@@ -101,7 +112,7 @@ public class ConfigChangeSetController {
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @PathVariable @Parameter(description = "变更集ID", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String id) {
 
-        ConfigChangeSet result = changeSetService.getChangeSetById(id);
+        ConfigChangeSet result = getAndVerifyOwnership(id, factoryId);
         return ApiResponse.success(result);
     }
 
@@ -111,6 +122,7 @@ public class ConfigChangeSetController {
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @PathVariable @Parameter(description = "变更集ID", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String id) {
 
+        getAndVerifyOwnership(id, factoryId);
         Map<String, Object> result = changeSetService.previewDiff(id);
         return ApiResponse.success(result);
     }
@@ -158,6 +170,7 @@ public class ConfigChangeSetController {
     // ========== 创建端点 ==========
 
     @PostMapping
+    @RequireRole({"factory_super_admin", "permission_admin"})
     @Operation(summary = "创建配置变更集", description = "创建一个新的配置变更集，状态初始为PENDING，等待审批")
     public ApiResponse<ConfigChangeSet> createChangeSet(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
@@ -183,6 +196,7 @@ public class ConfigChangeSetController {
     // ========== 审批端点 ==========
 
     @PostMapping("/{id}/approve")
+    @RequireRole({"factory_super_admin"})
     @Operation(summary = "审批通过变更集", description = "审批通过指定的变更集，将状态变更为APPROVED，可选添加审批备注")
     public ApiResponse<ConfigChangeSet> approveChangeSet(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
@@ -193,6 +207,7 @@ public class ConfigChangeSetController {
         Long approverId = getUserId(httpRequest);
         String approverName = getUserName(httpRequest);
 
+        getAndVerifyOwnership(id, factoryId);
         ConfigChangeSet result = changeSetService.approveChangeSet(
                 id, approverId, approverName, request.getComment());
 
@@ -200,6 +215,7 @@ public class ConfigChangeSetController {
     }
 
     @PostMapping("/{id}/reject")
+    @RequireRole({"factory_super_admin"})
     @Operation(summary = "拒绝变更集", description = "拒绝指定的变更集，将状态变更为REJECTED，必须提供拒绝原因")
     public ApiResponse<ConfigChangeSet> rejectChangeSet(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
@@ -210,6 +226,7 @@ public class ConfigChangeSetController {
         Long approverId = getUserId(httpRequest);
         String approverName = getUserName(httpRequest);
 
+        getAndVerifyOwnership(id, factoryId);
         ConfigChangeSet result = changeSetService.rejectChangeSet(
                 id, approverId, approverName, request.getReason());
 
@@ -219,16 +236,19 @@ public class ConfigChangeSetController {
     // ========== 应用与回滚端点 ==========
 
     @PostMapping("/{id}/apply")
+    @RequireRole({"factory_super_admin"})
     @Operation(summary = "应用变更集 (使变更生效)", description = "应用已审批通过的变更集，将配置变更实际生效，状态变更为APPLIED")
     public ApiResponse<ConfigChangeSet> applyChangeSet(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @PathVariable @Parameter(description = "变更集ID", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String id) {
 
+        getAndVerifyOwnership(id, factoryId);
         ConfigChangeSet result = changeSetService.applyChangeSet(id);
         return ApiResponse.success(result);
     }
 
     @PostMapping("/{id}/rollback")
+    @RequireRole({"factory_super_admin"})
     @Operation(summary = "回滚变更集", description = "回滚已应用的变更集，将配置恢复到变更前的状态，状态变更为ROLLED_BACK")
     public ApiResponse<ConfigChangeSet> rollbackChangeSet(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
@@ -238,6 +258,7 @@ public class ConfigChangeSetController {
 
         Long userId = getUserId(httpRequest);
 
+        getAndVerifyOwnership(id, factoryId);
         ConfigChangeSet result = changeSetService.rollbackChangeSet(id, userId, request.getReason());
         return ApiResponse.success(result);
     }
