@@ -39,7 +39,9 @@ onMounted(async () => {
     if (res.success && res.data?.renderingMode) {
       renderingMode.value = res.data.renderingMode
     }
-  } catch { /* fallback to LEGACY */ }
+  } catch (e) {
+    console.warn(`[CanvasAwareWrapper] Failed to load effective config for ${props.moduleCode}, falling back to LEGACY:`, e)
+  }
   loading.value = false
 })
 </script>

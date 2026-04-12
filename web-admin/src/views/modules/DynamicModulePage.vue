@@ -15,11 +15,17 @@ import SchemaFormRenderer from './components/SchemaFormRenderer.vue'
 import SchemaTableRenderer from './components/SchemaTableRenderer.vue'
 import TabLayoutRenderer from './components/TabLayoutRenderer.vue'
 
+// R22 Fix Bug 2: accept moduleCode as prop (from CanvasAwareWrapper)
+// AND from route.params (from /modules/:moduleCode route). Prop takes priority.
+const props = defineProps<{
+  moduleCode?: string
+}>()
+
 const route = useRoute()
 const authStore = useAuthStore()
 const configStore = useConfigStore()
 
-const moduleCode = computed(() => String(route.params.moduleCode || ''))
+const moduleCode = computed(() => props.moduleCode || String(route.params.moduleCode || ''))
 const factoryId = computed(() => authStore.factoryId || '')
 const apiPath = computed(() => MODULE_API_PATHS[moduleCode.value] || moduleCode.value)
 
