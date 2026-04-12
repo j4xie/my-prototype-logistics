@@ -60,7 +60,7 @@ test.describe('Cross-End Phase 3 — Web 验证状态更新 @post-deploy', () =>
     }
 
     const res = await page.request.get(
-      `http://localhost:10010/api/mobile/${factoryId}/sales-orders/list?page=1&size=5`,
+      `http://localhost:10010/api/mobile/${factoryId}/sales/orders?page=1&size=5`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
@@ -90,7 +90,7 @@ test.describe('Cross-End Phase 3 — Web 验证状态更新 @post-deploy', () =>
     }
 
     const res = await page.request.get(
-      `http://localhost:10010/api/mobile/${factoryId}/production/plans?page=1&size=5`,
+      `http://localhost:10010/api/mobile/${factoryId}/production-plans?page=1&size=5`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
