@@ -86,8 +86,13 @@ public class InvoiceServiceImpl implements InvoiceService {
         record.setRequestedAt(LocalDateTime.now());
         record.setRemark(remark);
 
-        log.info("开票申请创建: orderId={}, amount={}", salesOrderId, record.getTotalAmount());
-        return invoiceRecordRepository.save(record);
+        InvoiceRecord saved = invoiceRecordRepository.save(record);
+        try {
+            eventPublisher.publishEvent(new com.cretas.aims.event.InvoiceRequestedEvent(
+                    this, factoryId, saved.getId(), salesOrderId, saved.getTotalAmount()));
+        } catch (Exception e) { log.warn("Publish InvoiceRequestedEvent failed: {}", e.getMessage()); }
+        log.info("开票申请创建: orderId={}, amount={}", salesOrderId, saved.getTotalAmount());
+        return saved;
     }
 
     @Override

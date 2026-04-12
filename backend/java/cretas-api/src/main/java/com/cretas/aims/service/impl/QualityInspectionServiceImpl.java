@@ -170,10 +170,27 @@ public class QualityInspectionServiceImpl implements QualityInspectionService {
             existing.setNotes(inspection.getNotes());
         }
 
+        // R13: merge incoming customFields into existing before save
+        if (inspection.getCustomFields() != null && !inspection.getCustomFields().isEmpty()) {
+            java.util.Map<String, Object> merged = new java.util.HashMap<>(
+                    existing.getCustomFields() != null ? existing.getCustomFields() : java.util.Map.of());
+            merged.putAll(inspection.getCustomFields());
+            existing.setCustomFields(merged);
+        }
+
         QualityInspection updated = qualityInspectionRepository.save(existing);
+
+        // R13: persist dynamic fields on update path (R10 T4 only did create)
+        if (dynamicFieldService != null && updated.getCustomFields() != null && !updated.getCustomFields().isEmpty()) {
+            try {
+                dynamicFieldService.setDynamicFields(factoryId, "quality_inspection", updated.getId(), updated.getCustomFields());
+            } catch (Exception e) {
+                log.warn("Canvas dynamic fields save failed for QI update {}: {}", updated.getId(), e.getMessage());
+            }
+        }
+
         log.info("质量检验记录更新成功: inspectionId={}", updated.getId());
 
-        // 更新为 FAIL 时也触发告警
         if ("FAIL".equalsIgnoreCase(updated.getResult())) {
             createQualityFailAlert(updated);
         }
