@@ -2,6 +2,7 @@ package com.cretas.aims.dto.producttype;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,8 +27,10 @@ public class ProductTypeDTO {
     private String id;
     private String factoryId;
     private String code;
+    @NotBlank(message = "产品名称不能为空")
     private String name;
     private String category;
+    @NotBlank(message = "单位不能为空")
     private String unit;
     private BigDecimal unitPrice;
     private Integer productionTimeMinutes;

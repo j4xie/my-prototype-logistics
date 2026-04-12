@@ -41,6 +41,14 @@ public class OperationalQuoteController {
             @PathVariable String factoryId,
             @RequestBody Map<String, Object> body,
             @RequestAttribute(value = "userId", required = false) Long userId) {
+        String customerId = (String) body.get("customerId");
+        String productTypeId = (String) body.get("productTypeId");
+        if (customerId == null || customerId.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "customerId 不能为空"));
+        }
+        if (productTypeId == null || productTypeId.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "productTypeId 不能为空"));
+        }
         OperationalQuote quote = quoteService.createQuote(
                 factoryId,
                 (String) body.get("sampleId"),

@@ -103,7 +103,10 @@ const formData = reactive({ ...defaultForm });
 const formRules = {
   name: [{ required: true, message: '请输入客户名称', trigger: 'blur' }],
   contactPerson: [{ required: true, message: '请输入联系人', trigger: 'blur' }],
-  phone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }],
+  phone: [
+    { required: true, message: '请输入联系电话', trigger: 'blur' },
+    { pattern: /^1[3-9]\d{9}$|^0\d{2,3}-?\d{7,8}$/, message: '请输入正确的手机号或座机号', trigger: 'blur' },
+  ],
   shippingAddress: [{ required: true, message: '请输入收货地址', trigger: 'blur' }],
 };
 
