@@ -254,4 +254,132 @@ test.describe('J4 工厂初始化 — super_admin 建基础数据 @post-deploy',
 
     await expectNoErrors(page);
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Test 7: CRUD — Customer create via form + reload persistence
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  test('L2 客户创建 via form + 刷新验证持久化', async ({ page }) => {
+    await page.goto('/sales/customers');
+    await page.waitForLoadState('networkidle');
+
+    // Wait for table
+    const table = page.locator(S.table.root).first();
+    await expect(table).toBeVisible({ timeout: 15_000 });
+
+    // Click create button
+    const addButton = page.locator('button:has-text("新增客户")');
+    await expect(addButton).toBeVisible({ timeout: 5_000 });
+    await addButton.click();
+
+    // Wait for dialog
+    const dialog = page.locator('.el-dialog:visible');
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
+
+    // Hard Rule 5: check .is-required labels exist
+    const requiredLabels = await dialog
+      .locator('.el-form-item.is-required .el-form-item__label')
+      .allTextContents();
+    expect(requiredLabels.length, 'Customer form should have required fields').toBeGreaterThan(0);
+
+    // Fill required fields
+    const customerName = `E2E客户-${Date.now()}`;
+
+    await dialog.locator(S.form.input('客户名称')).fill(customerName);
+    await dialog.locator(S.form.input('联系人')).fill('测试联系人');
+    await dialog.locator(S.form.input('联系电话')).fill('13800138000');
+    await dialog.locator(S.form.input('收货地址')).fill('测试收货地址');
+
+    // Submit via dialog footer primary button
+    const submitBtn = dialog.locator('.el-dialog__footer .el-button--primary').first();
+
+    const [createResp] = await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes('/customers') && r.request().method() === 'POST',
+        { timeout: 15_000 }
+      ),
+      submitBtn.click(),
+    ]);
+
+    const body = await createResp.json();
+    expect(body.success, `客户创建失败: ${JSON.stringify(body)}`).toBe(true);
+
+    // Verify success toast
+    await expect(page.locator(S.message.success)).toBeVisible({ timeout: 5_000 });
+
+    // Dialog should close
+    await expect(dialog).toBeHidden({ timeout: 5_000 });
+
+    // Reload and verify persistence
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator(S.table.root).first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator(S.table.rowByText(customerName)).first()).toBeVisible({ timeout: 10_000 });
+
+    await expectNoErrors(page);
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Test 8: CRUD — Supplier create via form + reload persistence
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  test('L2 供应商创建 via form + 刷新验证持久化', async ({ page }) => {
+    await page.goto('/procurement/suppliers');
+    await page.waitForLoadState('networkidle');
+
+    // Wait for table
+    const table = page.locator(S.table.root).first();
+    await expect(table).toBeVisible({ timeout: 15_000 });
+
+    // Click create button
+    const addButton = page.locator('button:has-text("新增供应商")');
+    await expect(addButton).toBeVisible({ timeout: 5_000 });
+    await addButton.click();
+
+    // Wait for dialog
+    const dialog = page.locator('.el-dialog:visible');
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
+
+    // Hard Rule 5: check .is-required labels exist
+    const requiredLabels = await dialog
+      .locator('.el-form-item.is-required .el-form-item__label')
+      .allTextContents();
+    expect(requiredLabels.length, 'Supplier form should have required fields').toBeGreaterThan(0);
+
+    // Fill required fields
+    const supplierName = `E2E供应商-${Date.now()}`;
+
+    await dialog.locator(S.form.input('供应商名称')).fill(supplierName);
+    await dialog.locator(S.form.input('联系人')).fill('测试联系人');
+    await dialog.locator(S.form.input('联系电话')).fill('13900139000');
+    await dialog.locator(S.form.input('地址')).fill('测试供应商地址');
+
+    // Submit via dialog footer primary button
+    const submitBtn = dialog.locator('.el-dialog__footer .el-button--primary').first();
+
+    const [createResp] = await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes('/suppliers') && r.request().method() === 'POST',
+        { timeout: 15_000 }
+      ),
+      submitBtn.click(),
+    ]);
+
+    const body = await createResp.json();
+    expect(body.success, `供应商创建失败: ${JSON.stringify(body)}`).toBe(true);
+
+    // Verify success toast
+    await expect(page.locator(S.message.success)).toBeVisible({ timeout: 5_000 });
+
+    // Dialog should close
+    await expect(dialog).toBeHidden({ timeout: 5_000 });
+
+    // Reload and verify persistence
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator(S.table.root).first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator(S.table.rowByText(supplierName)).first()).toBeVisible({ timeout: 10_000 });
+
+    await expectNoErrors(page);
+  });
 });
