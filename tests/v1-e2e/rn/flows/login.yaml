@@ -1,0 +1,68 @@
+appId: com.cretas.foodtrace
+---
+# Reusable Login Sub-flow (factory_admin1)
+# Adapted from tests/maestro/flows/login.yaml for V1 E2E
+
+# Dismiss system dialogs
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Close app"
+    optional: true
+- tapOn:
+    text: "OK"
+    optional: true
+
+# Wait for welcome screen (app renamed to "Cretas AI Agent")
+- extendedWaitUntil:
+    visible: ".*Login.*|.*Cretas.*"
+    timeout: 20000
+
+- tapOn: "Login"
+- waitForAnimationToEnd
+
+# Enter username
+- tapOn: "Enter username"
+- inputText: "factory_admin1"
+- hideKeyboard
+- waitForAnimationToEnd
+
+# Scroll to ensure password field visible
+- swipe:
+    direction: DOWN
+    duration: 200
+- waitForAnimationToEnd
+
+# Enter password
+- tapOn:
+    text: ".*Enter password.*|.*密码.*|.*Password.*"
+- inputText: "123456"
+- hideKeyboard
+- waitForAnimationToEnd
+
+# Dismiss mid-login system dialogs
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Close app"
+    optional: true
+
+# Tap Login button (index 1 = the button, not the tab text)
+- tapOn:
+    text: "Login"
+    index: 1
+- waitForAnimationToEnd
+
+# Wait for either success dialog OR direct navigation to home
+# (App may show "OK" dialog or navigate directly depending on version)
+- tapOn:
+    text: "OK"
+    optional: true
+- waitForAnimationToEnd
+
+# Wait for home dashboard (either after dialog dismiss or direct nav)
+- extendedWaitUntil:
+    visible: ".*Quality.*|.*Dashboard.*|.*首页.*|.*Home.*"
+    timeout: 60000

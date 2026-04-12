@@ -262,8 +262,9 @@ deploy_jar() {
     if [ "$HAS_GH" = "true" ] && [ "$IS_PRIVATE_REPO" != "true" ]; then
         METHODS+=("GitHub+镜像" "GitHub直连")
     fi
-    [ "$HAS_OSS" = "true" ] && METHODS+=("OSS加速")
-    [ "$HAS_R2" = "true" ] && METHODS+=("R2")
+    # OSS 上传已禁用 (PUT 收费), 但仍显示工具可用状态给诊断用
+    [ "$HAS_R2" = "true" ] && METHODS+=("R2(主)")
+    [ "$HAS_OSS" = "true" ] && METHODS+=("OSS(禁用-PUT收费)")
 
     echo "=========================================="
     echo "  JAR 部署 v5.0 - 版本: $VERSION"
@@ -578,10 +579,13 @@ deploy_jar() {
         ssh -o ConnectTimeout=5 $SERVER "pkill -f 'curl.*$JAR_NAME' 2>/dev/null; true" 2>/dev/null || true
 
         # 启动 Fallback 方式 (按工具可用性决定)
+        # R2 优先 — Cloudflare R2 上传免费 (PUT/GET 均免费 egress)
+        # OSS 上传已禁用 — 阿里云 OSS PUT 收费,部署频繁时累积可观
+        # 如需恢复 OSS: 取消下面注释即可,upload_oss_accelerate 函数仍保留
+        [ "$HAS_R2"    = "true" ] && { upload_r2 & UPLOAD_PIDS+=($!); }
         [ "$HAS_RSYNC" = "true" ] && { upload_rsync & UPLOAD_PIDS+=($!); }
         [ "$HAS_RSYNC" = "true" ] && { upload_rsync_compress & UPLOAD_PIDS+=($!); }
-        [ "$HAS_OSS"   = "true" ] && { upload_oss_accelerate & UPLOAD_PIDS+=($!); }
-        [ "$HAS_R2"    = "true" ] && { upload_r2 & UPLOAD_PIDS+=($!); }
+        # [ "$HAS_OSS" = "true" ] && { upload_oss_accelerate & UPLOAD_PIDS+=($!); }  # 禁用: OSS PUT 收费
 
         if [ "${#UPLOAD_PIDS[@]}" -eq 0 ]; then
             echo "   ❌ 没有可用的 Fallback 方式 (rsync/oss/r2 均不可用)"

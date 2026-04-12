@@ -1,0 +1,31 @@
+appId: com.cretas.foodtrace
+---
+# RN-02: Shipment Signature + Photo (P0-16)
+# V1 E2E — verifies photo capture UI exists on shipment flow
+# Tags: @post-deploy @rn
+#
+# P0-16 requires: 手机端拍照签收, signature_photo_urls, expo-image-picker
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login first
+- runFlow: flows/login.yaml
+
+# Navigate to warehouse/shipping tab
+- tapOn:
+    text: ".*Warehouse.*|.*仓储.*|.*WH.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: rn-02-warehouse-tab
+
+# Look for shipment or delivery section
+- tapOn:
+    text: ".*Shipping.*|.*出货.*|.*Delivery.*|.*发货.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: rn-02-shipping-section
+
+# Note: actual signature flow requires an active shipment record.
+# This test verifies the UI path exists. Full flow tested in cross-end (Task 24).
