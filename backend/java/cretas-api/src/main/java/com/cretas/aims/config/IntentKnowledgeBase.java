@@ -7077,7 +7077,99 @@ public class IntentKnowledgeBase {
         // RESTAURANT_WASTAGE_SUMMARY (1)
         restaurantPhraseMapping.put("浪费了多少食材", "RESTAURANT_WASTAGE_SUMMARY");
 
-        log.debug("v32 餐饮短语映射初始化完成，共 {} 条映射", restaurantPhraseMapping.size());
+        // ===== Phase 1: Financial Analytics (v33 青花椒) =====
+        restaurantPhraseMapping.put("bom差异", "RESTAURANT_BOM_VARIANCE");
+        restaurantPhraseMapping.put("bom差异归因", "RESTAURANT_BOM_VARIANCE");
+        restaurantPhraseMapping.put("bom成本差异", "RESTAURANT_BOM_VARIANCE");
+        restaurantPhraseMapping.put("成本差异归因", "RESTAURANT_BOM_VARIANCE");
+        restaurantPhraseMapping.put("供应链差异", "RESTAURANT_BOM_VARIANCE");
+        restaurantPhraseMapping.put("管理差异", "RESTAURANT_BOM_VARIANCE");
+        restaurantPhraseMapping.put("标准成本差异", "RESTAURANT_BOM_VARIANCE");
+        restaurantPhraseMapping.put("销售计划", "RESTAURANT_SALES_PLAN_TRACK");
+        restaurantPhraseMapping.put("销售计划完成度", "RESTAURANT_SALES_PLAN_TRACK");
+        restaurantPhraseMapping.put("目标达成", "RESTAURANT_SALES_PLAN_TRACK");
+        restaurantPhraseMapping.put("计划完成", "RESTAURANT_SALES_PLAN_TRACK");
+        restaurantPhraseMapping.put("进度追踪", "RESTAURANT_SALES_PLAN_TRACK");
+        restaurantPhraseMapping.put("还差多少", "RESTAURANT_SALES_PLAN_TRACK");
+        restaurantPhraseMapping.put("创建销售计划", "RESTAURANT_SALES_PLAN_CREATE");
+        restaurantPhraseMapping.put("设定目标", "RESTAURANT_SALES_PLAN_CREATE");
+        restaurantPhraseMapping.put("月度目标", "RESTAURANT_SALES_PLAN_CREATE");
+        restaurantPhraseMapping.put("人效", "RESTAURANT_LABOR_PRODUCTIVITY");
+        restaurantPhraseMapping.put("人效分析", "RESTAURANT_LABOR_PRODUCTIVITY");
+        restaurantPhraseMapping.put("人均产出", "RESTAURANT_LABOR_PRODUCTIVITY");
+        restaurantPhraseMapping.put("员工效率", "RESTAURANT_LABOR_PRODUCTIVITY");
+        restaurantPhraseMapping.put("人效比", "RESTAURANT_LABOR_PRODUCTIVITY");
+        restaurantPhraseMapping.put("用人多少", "RESTAURANT_LABOR_PRODUCTIVITY");
+
+        // ===== Phase 2: Operational Intelligence (v33) =====
+        restaurantPhraseMapping.put("桌位", "RESTAURANT_SEAT_OCCUPANCY");
+        restaurantPhraseMapping.put("桌位占有率", "RESTAURANT_SEAT_OCCUPANCY");
+        restaurantPhraseMapping.put("桌位配置分析", "RESTAURANT_SEAT_OCCUPANCY");
+        restaurantPhraseMapping.put("座位配置", "RESTAURANT_SEAT_OCCUPANCY");
+        restaurantPhraseMapping.put("几人位", "RESTAURANT_SEAT_OCCUPANCY");
+        restaurantPhraseMapping.put("两人位", "RESTAURANT_SEAT_OCCUPANCY");
+        restaurantPhraseMapping.put("录入桌位", "RESTAURANT_SEAT_CONFIG_MANAGE");
+        restaurantPhraseMapping.put("配置桌位", "RESTAURANT_SEAT_CONFIG_MANAGE");
+        restaurantPhraseMapping.put("套餐拆单", "RESTAURANT_COMBO_SPLIT");
+        restaurantPhraseMapping.put("套餐拆", "RESTAURANT_COMBO_SPLIT");
+        restaurantPhraseMapping.put("拆单统计", "RESTAURANT_COMBO_SPLIT");
+        restaurantPhraseMapping.put("单点还是套餐", "RESTAURANT_COMBO_SPLIT");
+        restaurantPhraseMapping.put("退货异常", "RESTAURANT_RETURN_ANOMALY");
+        restaurantPhraseMapping.put("反复退货", "RESTAURANT_RETURN_ANOMALY");
+        restaurantPhraseMapping.put("退货归因", "RESTAURANT_RETURN_ANOMALY");
+        restaurantPhraseMapping.put("验收异常", "RESTAURANT_RETURN_ANOMALY");
+        restaurantPhraseMapping.put("竞品分析", "RESTAURANT_REVIEW_COMPETITIVE");
+        restaurantPhraseMapping.put("竞品对比", "RESTAURANT_REVIEW_COMPETITIVE");
+        restaurantPhraseMapping.put("竞争对手", "RESTAURANT_REVIEW_COMPETITIVE");
+        restaurantPhraseMapping.put("同行对比", "RESTAURANT_REVIEW_COMPETITIVE");
+        restaurantPhraseMapping.put("评分对比", "RESTAURANT_REVIEW_COMPETITIVE");
+
+        // ===== Phase 3: Supply Chain Automation (v33) =====
+        restaurantPhraseMapping.put("叫货", "RESTAURANT_SMART_REORDER");
+        restaurantPhraseMapping.put("叫货单", "RESTAURANT_SMART_REORDER");
+        restaurantPhraseMapping.put("智能叫货", "RESTAURANT_SMART_REORDER");
+        restaurantPhraseMapping.put("自动下单", "RESTAURANT_SMART_REORDER");
+        restaurantPhraseMapping.put("补货", "RESTAURANT_SMART_REORDER");
+        restaurantPhraseMapping.put("日清日结", "RESTAURANT_DAILY_RECONCILIATION");
+        restaurantPhraseMapping.put("日盘", "RESTAURANT_DAILY_RECONCILIATION");
+        restaurantPhraseMapping.put("库存对账", "RESTAURANT_DAILY_RECONCILIATION");
+        restaurantPhraseMapping.put("每日对账", "RESTAURANT_DAILY_RECONCILIATION");
+        restaurantPhraseMapping.put("当日损耗", "RESTAURANT_DAILY_RECONCILIATION");
+        restaurantPhraseMapping.put("今日盘点", "RESTAURANT_DAILY_RECONCILIATION");
+        restaurantPhraseMapping.put("采购预测", "RESTAURANT_PROCUREMENT_FORECAST");
+        restaurantPhraseMapping.put("备货", "RESTAURANT_PROCUREMENT_FORECAST");
+        restaurantPhraseMapping.put("节假日备货", "RESTAURANT_PROCUREMENT_FORECAST");
+        restaurantPhraseMapping.put("明天需要多少", "RESTAURANT_PROCUREMENT_FORECAST");
+
+        // ===== Phase 4: Workforce Management (v33) =====
+        restaurantPhraseMapping.put("排班", "RESTAURANT_SHIFT_ANALYSIS");
+        restaurantPhraseMapping.put("排班分析", "RESTAURANT_SHIFT_ANALYSIS");
+        restaurantPhraseMapping.put("全职兼职", "RESTAURANT_SHIFT_ANALYSIS");
+        restaurantPhraseMapping.put("兼职比例", "RESTAURANT_SHIFT_ANALYSIS");
+        restaurantPhraseMapping.put("公式制", "RESTAURANT_SHIFT_ANALYSIS");
+        restaurantPhraseMapping.put("创建排班", "RESTAURANT_SHIFT_CREATE");
+        restaurantPhraseMapping.put("排班模板", "RESTAURANT_SHIFT_CREATE");
+        restaurantPhraseMapping.put("计件", "RESTAURANT_PIECEWORK_CALC");
+        restaurantPhraseMapping.put("计件提成", "RESTAURANT_PIECEWORK_CALC");
+        restaurantPhraseMapping.put("迎宾计件", "RESTAURANT_PIECEWORK_CALC");
+        restaurantPhraseMapping.put("小组计件", "RESTAURANT_PIECEWORK_CALC");
+        restaurantPhraseMapping.put("提成计算", "RESTAURANT_PIECEWORK_CALC");
+        restaurantPhraseMapping.put("计件配置", "RESTAURANT_PIECEWORK_CONFIG");
+        restaurantPhraseMapping.put("计件规则", "RESTAURANT_PIECEWORK_CONFIG");
+        restaurantPhraseMapping.put("绩效评估", "RESTAURANT_PERFORMANCE_EVAL");
+        restaurantPhraseMapping.put("绩效考核", "RESTAURANT_PERFORMANCE_EVAL");
+        restaurantPhraseMapping.put("kpi得分", "RESTAURANT_PERFORMANCE_EVAL");
+        restaurantPhraseMapping.put("考核结果", "RESTAURANT_PERFORMANCE_EVAL");
+        restaurantPhraseMapping.put("绩效规则", "RESTAURANT_PERFORMANCE_RULE");
+        restaurantPhraseMapping.put("kpi权重", "RESTAURANT_PERFORMANCE_RULE");
+        restaurantPhraseMapping.put("考核指标", "RESTAURANT_PERFORMANCE_RULE");
+        restaurantPhraseMapping.put("店长kpi", "RESTAURANT_STORE_KPI_DASHBOARD");
+        restaurantPhraseMapping.put("三维度", "RESTAURANT_STORE_KPI_DASHBOARD");
+        restaurantPhraseMapping.put("健康度", "RESTAURANT_STORE_KPI_DASHBOARD");
+        restaurantPhraseMapping.put("综合评估", "RESTAURANT_STORE_KPI_DASHBOARD");
+        restaurantPhraseMapping.put("门店评估", "RESTAURANT_STORE_KPI_DASHBOARD");
+
+        log.debug("v33 餐饮短语映射初始化完成，共 {} 条映射", restaurantPhraseMapping.size());
 
         // ========== v32: 业态隔离 — 公共短语映射（两种业态共享） ==========
         // OUT_OF_DOMAIN: 噪音/闲聊/非业务
