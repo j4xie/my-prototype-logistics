@@ -13,6 +13,7 @@ import WorkerDetailScreen from "../../screens/workshop-supervisor/workers/Worker
 import WorkerAssignScreen from "../../screens/workshop-supervisor/workers/WorkerAssignScreen";
 import ClockInScreen from "../../screens/workshop-supervisor/workers/ClockInScreen";
 import AttendanceHistoryScreen from "../../screens/workshop-supervisor/workers/AttendanceHistoryScreen";
+import EmployeeProcessSegmentScreen from "../../screens/workshop/EmployeeProcessSegmentScreen";
 
 const Stack = createNativeStackNavigator<WSWorkersStackParamList>();
 
@@ -52,6 +53,13 @@ export function WSWorkersStackNavigator() {
         name="AttendanceHistory"
         component={AttendanceHistoryScreen}
         options={{ title: "考勤历史" }}
+      />
+
+      {/* 工序段管理 (P1-1) */}
+      <Stack.Screen
+        name="EmployeeProcessSegment"
+        component={EmployeeProcessSegmentScreen}
+        options={{ title: "工序段管理" }}
       />
     </Stack.Navigator>
   );
