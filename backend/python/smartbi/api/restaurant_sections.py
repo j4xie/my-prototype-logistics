@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """FastAPI router exposing each restaurant analysis section as an independent endpoint.
 
 Each section handler from ``smartbi.services.restaurant.sections`` is exposed
