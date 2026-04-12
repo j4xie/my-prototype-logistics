@@ -465,6 +465,60 @@ async function step5_purchaseReceive(page) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// Step 5.5: 确保产品有 BOM（FMR 生成的前提）
+// ═══════════════════════════════════════════════════════════════
+
+async function step5_5_ensureBom(page) {
+  if (!chain.productTypeId) {
+    console.log('  [Step 5.5] Skipping BOM check — productTypeId not set');
+    return;
+  }
+
+  console.log('\n[Step 5.5] Verifying/creating BOM for product...');
+  const bomRes = await page.request.get(apiUrl(`/bom/items/${chain.productTypeId}`), { headers: authHeaders() });
+  const bomBody = await bomRes.json();
+  const existingBomItems = bomBody.success ? (Array.isArray(bomBody.data) ? bomBody.data : []) : [];
+
+  if (existingBomItems.length === 0) {
+    console.log('  No BOM items found, creating...');
+
+    // Get available materials (re-use materials fetched during step 5, or fetch fresh)
+    const matRes = await page.request.get(apiUrl('/raw-material-types/active'), { headers: authHeaders() });
+    const matBody = await matRes.json();
+    const materials = Array.isArray(matBody.data) ? matBody.data : matBody.data?.content || [];
+
+    if (materials.length >= 2) {
+      for (let i = 0; i < Math.min(2, materials.length); i++) {
+        const mat = materials[i];
+        const bomItemRes = await page.request.post(apiUrl('/bom/items'), {
+          headers: authHeaders(),
+          data: {
+            productTypeId: chain.productTypeId,
+            materialTypeId: mat.id,
+            materialName: mat.name,
+            standardQuantity: 5 + i * 3,
+            yieldRate: 95,
+            unit: mat.unit || 'kg',
+            unitPrice: 10 + i * 5,
+            taxRate: 9,
+            materialCategory: i === 0 ? 'RAW' : 'AUXILIARY',
+            sortOrder: (i + 1) * 10,
+          },
+        });
+        const itemBody = await bomItemRes.json();
+        console.log(`  BOM item ${i + 1}: ${itemBody.success ? 'created' : `failed — ${itemBody.message || ''}`} — ${mat.name}`);
+      }
+      chain.bomCreated = true;
+    } else {
+      console.log(`  Not enough materials to create BOM (found ${materials.length}, need 2)`);
+    }
+  } else {
+    console.log(`  BOM already has ${existingBomItems.length} items`);
+    chain.bomCreated = true;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Step 6: 生产排产
 // ═══════════════════════════════════════════════════════════════
 
@@ -534,12 +588,23 @@ async function step6_productionPlan(page) {
 
   if (fmrBody.success && fmrBody.data?.id) {
     chain.fmrId = fmrBody.data.id;
+
+    // Warn if FMR has no items (BOM expansion produced nothing)
+    const fmrItems = fmrBody.data?.items || fmrBody.data?.requisitionItems || [];
+    if (fmrItems.length === 0) {
+      console.log(`    WARNING: FMR created (id=${chain.fmrId}) but has 0 items — BOM may not have expanded properly`);
+    } else {
+      console.log(`    FMR has ${fmrItems.length} item(s)`);
+    }
+
     record(6, '生产排产 (plan+start+FMR)', 'PASS', {
       filled: `productTypeId=${chain.productTypeId}, qty=100, date=${today()}`,
       API: `plan=${planBody.success}, planId=${planId}, fmr=${fmrBody.success}, fmrId=${chain.fmrId}`,
+      fmrItemCount: fmrItems.length,
     }, { productionPlanId: planId, fmrId: chain.fmrId });
   } else {
     // FMR may fail if no BOM exists — still record plan success
+    console.log(`    WARNING: FMR generation failed — ${fmrBody.message || 'no BOM configured'}. ProcessTask may not be created.`);
     record(6, '生产排产 (plan OK, FMR failed/no BOM)', 'PASS', {
       filled: `productTypeId=${chain.productTypeId}, qty=100, date=${today()}`,
       API: `plan=${planBody.success}, planId=${planId}, fmr=${fmrBody.success || false} — ${fmrBody.message || 'no BOM configured'}`,
@@ -556,26 +621,53 @@ async function step7_workReport(page) {
   if (shouldSkip(7, 'productionPlanId', 'Step 6 production plan')) return;
 
   const planId = chain.productionPlanId;
-
-  // Try to get plan detail to find process tasks
-  const planRes = await page.request.get(apiUrl(`/production-plans/${planId}`), { headers: authHeaders() });
-  const planBody = await planRes.json();
-
-  // Look for process tasks via dedicated endpoint
-  const taskRes = await page.request.get(
-    apiUrl(`/process-work-reporting/by-task/${planId}/workers`),
-    { headers: authHeaders() }
-  ).catch(() => null);
-
-  // Try to find tasks through the plan's batches
   let processTaskId = null;
 
-  // Check if plan has processTasks or related data
-  if (planBody.data?.processTasks && planBody.data.processTasks.length > 0) {
+  // ── Attempt 1: GET plan detail — check for embedded processTasks ──
+  const planRes = await page.request.get(apiUrl(`/production-plans/${planId}`), { headers: authHeaders() });
+  const planBody = await planRes.json();
+  console.log(`    plan status=${planBody.data?.status || 'unknown'}`);
+
+  if (planBody.data?.processTasks?.length > 0) {
     processTaskId = planBody.data.processTasks[0].id;
+    console.log(`    processTaskId found in plan.processTasks: ${processTaskId}`);
   }
 
-  // If no processTask, try querying process tasks for this factory
+  // ── Attempt 2: GET /process-tasks?productionPlanId={planId} ──
+  if (!processTaskId) {
+    const ptRes = await page.request.get(
+      apiUrl(`/process-tasks?productionPlanId=${planId}&page=0&size=5`),
+      { headers: authHeaders() }
+    ).catch(() => null);
+
+    if (ptRes) {
+      const ptBody = await ptRes.json();
+      const tasks = ptBody.data?.content || (Array.isArray(ptBody.data) ? ptBody.data : []);
+      if (tasks.length > 0) {
+        processTaskId = tasks[0].id;
+        console.log(`    processTaskId found via /process-tasks?productionPlanId: ${processTaskId}`);
+      }
+    }
+  }
+
+  // ── Attempt 3: GET /process-work-reporting/tasks?planId={planId} ──
+  if (!processTaskId) {
+    const ptRes = await page.request.get(
+      apiUrl(`/process-work-reporting/tasks?planId=${planId}&page=0&size=5`),
+      { headers: authHeaders() }
+    ).catch(() => null);
+
+    if (ptRes) {
+      const ptBody = await ptRes.json();
+      const tasks = ptBody.data?.content || (Array.isArray(ptBody.data) ? ptBody.data : []);
+      if (tasks.length > 0) {
+        processTaskId = tasks[0].id || tasks[0].processTaskId;
+        console.log(`    processTaskId found via /process-work-reporting/tasks: ${processTaskId}`);
+      }
+    }
+  }
+
+  // ── Attempt 4: GET /process-work-reporting/pending-approval (factory-wide fallback) ──
   if (!processTaskId) {
     const ptRes = await page.request.get(
       apiUrl('/process-work-reporting/pending-approval?page=0&size=5'),
@@ -584,18 +676,54 @@ async function step7_workReport(page) {
 
     if (ptRes) {
       const ptBody = await ptRes.json();
-      // If there are any pending tasks, use the first one for demo
       const tasks = ptBody.data?.content || [];
       if (tasks.length > 0 && tasks[0].processTaskId) {
         processTaskId = tasks[0].processTaskId;
+        console.log(`    processTaskId found via pending-approval fallback: ${processTaskId}`);
       }
+    }
+  }
+
+  // ── Attempt 5: Try creating a ProcessTask via POST /process-tasks ──
+  if (!processTaskId) {
+    // First, get a workProcessId for this factory
+    const wpRes = await page.request.get(apiUrl('/work-processes?page=0&size=5'), { headers: authHeaders() }).catch(() => null);
+    let workProcessId = null;
+    if (wpRes) {
+      const wpBody = await wpRes.json();
+      const wps = wpBody.data?.content || (Array.isArray(wpBody.data) ? wpBody.data : []);
+      workProcessId = wps[0]?.id || null;
+    }
+
+    if (workProcessId) {
+      const createRes = await page.request.post(apiUrl('/process-tasks'), {
+        headers: authHeaders(),
+        data: {
+          productionPlanId: planId,
+          workProcessId,
+          plannedQuantity: 100,
+          notes: `E2E-TASK-${TS}`,
+        },
+      }).catch(() => null);
+
+      if (createRes) {
+        const createBody = await createRes.json();
+        if (createBody.success && createBody.data?.id) {
+          processTaskId = createBody.data.id;
+          console.log(`    processTaskId created via POST /process-tasks: ${processTaskId}`);
+        } else {
+          console.log(`    POST /process-tasks failed: ${createBody.message || ''}`);
+        }
+      }
+    } else {
+      console.log('    No workProcessId available — cannot create ProcessTask');
     }
   }
 
   if (!processTaskId) {
     record(7, '工序报工', 'SKIP', {
       reason: 'processTask not auto-created from plan, KNOWN_LIMITATION',
-      note: 'Process tasks require WorkProcess + ProcessTask entities to be auto-generated when plan starts. This may not be configured for all products.',
+      note: 'Process tasks require WorkProcess + ProcessTask entities to be auto-generated when plan starts, or BOM→FMR to succeed. Tried 5 discovery paths.',
       API: `GET plan=${planBody.success}, plan.status=${planBody.data?.status || 'unknown'}`,
     });
     return;
@@ -872,25 +1000,35 @@ async function main() {
     }
     console.log(`Logged in as ${USERNAME} (factory: ${factoryId})\n`);
 
-    // Run 9 steps serially
+    // Run steps serially (Step 5.5 is a sub-step, not counted in the 9)
     const steps = [
       () => step1_rdSample(page),
       () => step2_quote(page),
       () => step3_salesOrder(page),
       () => step4_financeApproval(page),
       () => step5_purchaseReceive(page),
+      () => step5_5_ensureBom(page),   // sub-step: BOM before production plan
       () => step6_productionPlan(page),
       () => step7_workReport(page),
       () => step8_delivery(page),
       () => step9_invoicePayment(page),
     ];
 
+    // Steps 1-5 and 6-9 keep their numbered positions; step5_5 is internal only
+    const stepNumbers = [1, 2, 3, 4, 5, null, 6, 7, 8, 9];
+
     for (let i = 0; i < steps.length; i++) {
-      console.log(`\n--- Step ${i + 1}/9 ---`);
+      const displayNum = stepNumbers[i];
+      const header = displayNum !== null ? `\n--- Step ${displayNum}/9 ---` : '\n--- Step 5.5 (BOM setup) ---';
+      console.log(header);
       try {
         await steps[i]();
       } catch (e) {
-        record(i + 1, `Step ${i + 1} (unhandled error)`, 'FAIL', { error: e.message.slice(0, 300) });
+        if (displayNum !== null) {
+          record(displayNum, `Step ${displayNum} (unhandled error)`, 'FAIL', { error: e.message.slice(0, 300) });
+        } else {
+          console.error(`  Step 5.5 error: ${e.message.slice(0, 300)}`);
+        }
       }
     }
   } catch (e) {
