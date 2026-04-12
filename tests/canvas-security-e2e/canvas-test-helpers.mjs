@@ -21,8 +21,12 @@ export const API_BASE =
   process.env.E2E_API_BASE || 'http://localhost:10011/api/mobile';
 export const WEB_URL =
   process.env.E2E_WEB_URL || 'http://139.196.165.140:8086';
-export const FACTORY_A = 'FOOD_3101_038';
-export const FACTORY_B = 'F002';
+// Test DB accounts: F001 has full role matrix (8 roles), F002 is restaurant
+// F002 has 27 sales orders + 4 customers (data-rich). F006 is empty (good attacker).
+export const FACTORY_A = process.env.E2E_FACTORY_A || 'F002';
+export const FACTORY_B = process.env.E2E_FACTORY_B || 'F006';
+export const ADMIN_A = process.env.E2E_ADMIN_A || 'restaurant_admin1';
+export const ADMIN_B = process.env.E2E_ADMIN_B || 'f006_admin';
 export const DEFAULT_PASSWORD = '123456';
 export const RESULTS_DIR = join(__dirname, 'results');
 export const SCREENSHOTS_DIR = join(__dirname, 'screenshots');
@@ -145,11 +149,14 @@ export async function apiCall(method, path, body = null, token = null) {
     // non-JSON response — leave json as empty object
   }
 
+  // Some endpoints return {success, data, message} wrapper; others return raw arrays/objects.
+  // Normalize: if json is an array or has no .data key, treat the whole json as data.
+  const isWrapped = json && typeof json === 'object' && !Array.isArray(json) && 'success' in json;
   return {
     status: res.status,
-    success: json.success ?? (res.status >= 200 && res.status < 300),
-    message: json.message ?? '',
-    data: json.data ?? null,
+    success: isWrapped ? json.success : (res.status >= 200 && res.status < 300),
+    message: isWrapped ? (json.message ?? '') : '',
+    data: isWrapped ? (json.data ?? null) : json,
     json,
   };
 }

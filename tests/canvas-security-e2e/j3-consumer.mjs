@@ -24,6 +24,7 @@ import {
   screenshot,
   createResultCollector,
   WEB_URL,
+  ADMIN_A,
 } from './canvas-test-helpers.mjs';
 
 const rc = createResultCollector('j3-consumer');
@@ -33,7 +34,7 @@ const rc = createResultCollector('j3-consumer');
 // ---------------------------------------------------------------------------
 async function stepS1(page) {
   try {
-    const { loggedIn, url } = await webLogin(page, 'food_3101_038_admin');
+    const { loggedIn, url } = await webLogin(page, ADMIN_A);
     if (loggedIn) {
       rc.log('J3-S1', 'PASS', `Logged in successfully — redirected to ${url}`);
       await screenshot(page, 'j3-S1-login');

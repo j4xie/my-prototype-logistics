@@ -5,7 +5,7 @@
  * reachable and return expected data shapes, and that the scheduler endpoint
  * enforces valid cron expression format.
  *
- * Login: food_3101_038_admin (Factory A super admin)
+ * Login: Factory A super admin
  *
  * Steps:
  *  J2-1  Tab 1 — Workflow: effective config has workflowStates array length > 0
@@ -29,6 +29,7 @@ import {
   apiPut,
   createResultCollector,
   FACTORY_A,
+  ADMIN_A,
 } from './canvas-test-helpers.mjs';
 
 const rc = createResultCollector('j2-editor-tabs');
@@ -539,13 +540,13 @@ async function main() {
   // Login as Factory A admin
   let token = null;
   try {
-    const session = await login('food_3101_038_admin', '123456');
+    const session = await login(ADMIN_A, '123456');
     if (!session.token) {
       console.error('Login succeeded but no token returned — aborting.');
       process.exit(1);
     }
     token = session.token;
-    console.log(`Logged in as food_3101_038_admin — factoryId=${session.factoryId} role=${session.role}\n`);
+    console.log(`Logged in as Factory A admin — factoryId=${session.factoryId} role=${session.role}\n`);
   } catch (err) {
     console.error(`Login failed: ${err.message}`);
     process.exit(1);

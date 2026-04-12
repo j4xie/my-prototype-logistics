@@ -26,6 +26,7 @@ import {
   createResultCollector,
   FACTORY_A,
   WEB_URL,
+  ADMIN_A,
 } from './canvas-test-helpers.mjs';
 
 const R = createResultCollector('j5-permission-ladder');
@@ -156,7 +157,7 @@ async function runL3() {
   // Obtain a non-admin token; try factory worker accounts in order.
   let bizToken = null;
 
-  const candidates = ['food_3101_038_worker1', 'meat_3101_001_worker1'];
+  const candidates = ['operator1', 'f006_worker1'];
   for (const username of candidates) {
     try {
       const session = await login(username);
