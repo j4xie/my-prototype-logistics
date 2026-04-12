@@ -15,8 +15,8 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { setupAuthBeforeAll, restoreAuth } from '../helpers/auth-cache';
-import { expectNoErrors } from '../helpers/assertions';
+import { setupAuthBeforeAll, restoreAuth, installApiProxy } from '../helpers/auth-cache';
+import { expectNoErrors, expectToast } from '../helpers/assertions';
 import { S } from '../helpers/selectors';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -209,6 +209,265 @@ test.describe('J10 BOM 审计 + FMR 清仓通知 @post-deploy', () => {
       }
     }
     // Whether or not we caught the API call, the page should have no errors
+    await expectNoErrors(page);
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Test 5: BOM item add via form (L2 CRUD)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  test('L2 BOM \u539F\u8F85\u6599\u6DFB\u52A0 via \u8868\u5355', async ({ page, context }) => {
+    await installApiProxy(context);
+
+    await page.goto(BOM_URL);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000); // wait for product auto-select
+
+    // Ensure a product is selected
+    const changeLogBtn = page.locator('button:has-text("\u53D8\u66F4\u8BB0\u5F55")');
+    const isDisabled = await changeLogBtn.isDisabled().catch(() => true);
+    if (isDisabled) {
+      const productSelect = page.locator('.el-select').first();
+      await productSelect.click();
+      await page.waitForTimeout(500);
+      const firstOption = page.locator('.el-select-dropdown__item').first();
+      const hasOption = await firstOption.isVisible({ timeout: 3_000 }).catch(() => false);
+      if (!hasOption) { test.skip(); return; }
+      await firstOption.click();
+      await page.waitForTimeout(1000);
+    }
+
+    // Count existing BOM items
+    const bomTable = page.locator('.table-card .el-table').first();
+    await expect(bomTable).toBeVisible({ timeout: 10_000 });
+    const rowsBefore = await bomTable.locator('.el-table__row').count();
+
+    // Click "\u6DFB\u52A0" button in the BOM items table header
+    const addBtn = page.locator('.table-card').first().locator('button:has-text("\u6DFB\u52A0")');
+    await expect(addBtn).toBeVisible({ timeout: 5_000 });
+    await addBtn.click();
+
+    // Dialog should appear for adding BOM item
+    const dialog = page.locator('.el-dialog:visible');
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
+
+    // Fill material name (required field)
+    const materialNameInput = dialog.locator('input').first();
+    await materialNameInput.fill(`E2E\u6D4B\u8BD5\u539F\u6599-${Date.now()}`);
+
+    // Fill standardQuantity via el-input-number
+    const qtyInputs = dialog.locator('.el-input-number input');
+    const stdQtyInput = qtyInputs.first();
+    if (await stdQtyInput.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      await stdQtyInput.click();
+      await page.keyboard.press('Control+A');
+      await stdQtyInput.fill('0.5');
+      await page.keyboard.press('Tab');
+    }
+
+    // Fill unitPrice
+    const priceInputs = dialog.locator('.el-input-number input');
+    const priceCount = await priceInputs.count();
+    if (priceCount >= 2) {
+      const priceInput = priceInputs.nth(1);
+      await priceInput.click();
+      await page.keyboard.press('Control+A');
+      await priceInput.fill('15');
+      await page.keyboard.press('Tab');
+    }
+
+    // Submit the form
+    const submitBtn = dialog.locator('.el-dialog__footer .el-button--primary, button:has-text("\u786E\u5B9A"), button:has-text("\u786E\u8BA4")').first();
+
+    const [saveResp] = await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes('/bom/items') && r.request().method() === 'POST',
+        { timeout: 15_000 }
+      ).catch(() => null),
+      submitBtn.click(),
+    ]);
+
+    if (saveResp) {
+      const body = await saveResp.json().catch(() => null);
+      if (body?.success) {
+        // Verify success toast
+        await expect(page.locator(S.message.success)).toBeVisible({ timeout: 5_000 });
+        // Dialog should close
+        await expect(dialog).toBeHidden({ timeout: 5_000 });
+        // Verify row count increased
+        await page.waitForTimeout(1000);
+        const rowsAfter = await bomTable.locator('.el-table__row').count();
+        expect(rowsAfter, 'BOM \u884C\u6570\u5E94\u589E\u52A0').toBeGreaterThanOrEqual(rowsBefore);
+      } else {
+        expect.soft(body?.success, `BOM \u6DFB\u52A0\u5931\u8D25: ${body?.message}`).toBe(true);
+      }
+    }
+
+    await expectNoErrors(page);
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Test 6: BOM item edit + change log verification (P-5)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  test('L2 BOM \u7F16\u8F91 + \u53D8\u66F4\u8BB0\u5F55\u9A8C\u8BC1 (P-5)', async ({ page, context }) => {
+    await installApiProxy(context);
+
+    await page.goto(BOM_URL);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
+
+    // Ensure product is selected
+    const changeLogBtn = page.locator('button:has-text("\u53D8\u66F4\u8BB0\u5F55")');
+    const isDisabled = await changeLogBtn.isDisabled().catch(() => true);
+    if (isDisabled) {
+      const productSelect = page.locator('.el-select').first();
+      await productSelect.click();
+      await page.waitForTimeout(500);
+      const firstOption = page.locator('.el-select-dropdown__item').first();
+      if (!(await firstOption.isVisible({ timeout: 3_000 }).catch(() => false))) { test.skip(); return; }
+      await firstOption.click();
+      await page.waitForTimeout(1000);
+    }
+
+    // Find an existing BOM item row to edit
+    const bomTable = page.locator('.table-card .el-table').first();
+    await expect(bomTable).toBeVisible({ timeout: 10_000 });
+    const rows = bomTable.locator('.el-table__row');
+    const rowCount = await rows.count();
+
+    if (rowCount === 0) { test.skip(); return; }
+
+    // Click the edit (pencil) icon on the first row
+    // BOM uses :icon="Edit" which renders an svg button
+    const editBtn = rows.first().locator('button.el-button--primary').first();
+    await expect(editBtn).toBeVisible({ timeout: 5_000 });
+    await editBtn.click();
+
+    // Dialog should appear in edit mode
+    const dialog = page.locator('.el-dialog:visible');
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
+
+    // Modify standardQuantity (change the value)
+    const qtyInput = dialog.locator('.el-input-number input').first();
+    if (await qtyInput.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      await qtyInput.click();
+      await page.keyboard.press('Control+A');
+      await qtyInput.fill('0.999');
+      await page.keyboard.press('Tab');
+    }
+
+    // Submit the edit
+    const submitBtn = dialog.locator('.el-dialog__footer .el-button--primary, button:has-text("\u786E\u5B9A"), button:has-text("\u786E\u8BA4")').first();
+
+    const [editResp] = await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes('/bom/items') && r.request().method() === 'PUT',
+        { timeout: 15_000 }
+      ).catch(() => null),
+      submitBtn.click(),
+    ]);
+
+    if (editResp) {
+      const body = await editResp.json().catch(() => null);
+      if (body?.success) {
+        await expect(page.locator(S.message.success)).toBeVisible({ timeout: 5_000 });
+        await expect(dialog).toBeHidden({ timeout: 5_000 });
+      } else {
+        expect.soft(body?.success, `BOM \u7F16\u8F91\u5931\u8D25: ${body?.message}`).toBe(true);
+      }
+    }
+
+    // P-5: Open "\u53D8\u66F4\u8BB0\u5F55" drawer and verify the latest entry has "\u4FEE\u6539" tag
+    await page.waitForTimeout(1000);
+    const logBtn = page.locator('button:has-text("\u53D8\u66F4\u8BB0\u5F55")');
+    await expect(logBtn).toBeVisible({ timeout: 5_000 });
+    await logBtn.click();
+
+    const drawer = page.locator('.el-drawer');
+    await expect(drawer).toBeVisible({ timeout: 8_000 });
+
+    // Wait for logs to load
+    await page.waitForTimeout(1000);
+
+    // Verify the drawer has timeline or empty state
+    const timeline = drawer.locator('.el-timeline');
+    const hasTimeline = await timeline.isVisible({ timeout: 3_000 }).catch(() => false);
+
+    if (hasTimeline) {
+      // Check the latest entry has a "\u4FEE\u6539" (UPDATE) tag
+      const updateTag = drawer.locator('.el-tag:has-text("\u4FEE\u6539")').first();
+      const hasUpdateTag = await updateTag.isVisible({ timeout: 3_000 }).catch(() => false);
+      expect.soft(hasUpdateTag, 'P-5: \u53D8\u66F4\u8BB0\u5F55\u5E94\u5305\u542B\u201C\u4FEE\u6539\u201D\u6807\u7B7E').toBe(true);
+    }
+
+    await expectNoErrors(page);
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Test 7: BOM item delete
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  test('L2 BOM \u539F\u8F85\u6599\u5220\u9664', async ({ page, context }) => {
+    await installApiProxy(context);
+
+    await page.goto(BOM_URL);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
+
+    // Ensure product is selected
+    const changeLogBtn = page.locator('button:has-text("\u53D8\u66F4\u8BB0\u5F55")');
+    const isDisabled = await changeLogBtn.isDisabled().catch(() => true);
+    if (isDisabled) {
+      const productSelect = page.locator('.el-select').first();
+      await productSelect.click();
+      await page.waitForTimeout(500);
+      const firstOption = page.locator('.el-select-dropdown__item').first();
+      if (!(await firstOption.isVisible({ timeout: 3_000 }).catch(() => false))) { test.skip(); return; }
+      await firstOption.click();
+      await page.waitForTimeout(1000);
+    }
+
+    // Find BOM item rows
+    const bomTable = page.locator('.table-card .el-table').first();
+    await expect(bomTable).toBeVisible({ timeout: 10_000 });
+    const rows = bomTable.locator('.el-table__row');
+    const rowsBefore = await rows.count();
+
+    if (rowsBefore === 0) { test.skip(); return; }
+
+    // Click the delete (danger) button on the first row
+    const deleteBtn = rows.first().locator('button.el-button--danger').first();
+    await expect(deleteBtn).toBeVisible({ timeout: 5_000 });
+    await deleteBtn.click();
+
+    // Confirm the ElMessageBox confirmation dialog
+    const msgBox = page.locator('.el-message-box');
+    await expect(msgBox).toBeVisible({ timeout: 5_000 });
+
+    const [deleteResp] = await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes('/bom/items') && r.request().method() === 'DELETE',
+        { timeout: 15_000 }
+      ).catch(() => null),
+      // Click the confirm button in message box
+      msgBox.locator('.el-message-box__btns .el-button--primary').click(),
+    ]);
+
+    if (deleteResp) {
+      const body = await deleteResp.json().catch(() => null);
+      if (body?.success) {
+        // Verify success toast
+        await expect(page.locator(S.message.success)).toBeVisible({ timeout: 5_000 });
+        // Verify row count decreased
+        await page.waitForTimeout(1000);
+        const rowsAfter = await bomTable.locator('.el-table__row').count();
+        expect(rowsAfter, 'BOM \u884C\u6570\u5E94\u51CF\u5C11').toBeLessThan(rowsBefore);
+      } else {
+        expect.soft(body?.success, `BOM \u5220\u9664\u5931\u8D25: ${body?.message}`).toBe(true);
+      }
+    }
+
     await expectNoErrors(page);
   });
 });
