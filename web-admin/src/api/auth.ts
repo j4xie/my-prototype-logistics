@@ -57,7 +57,9 @@ export function changePassword(data: { oldPassword: string; newPassword: string 
 
 /**
  * 检查用户名是否可用
+ * TODO: requires factoryId — not actively imported anywhere; keeping for future use
+ * Backend path: GET /{factoryId}/users/check/username?username=xxx (UserController)
  */
-export function checkUsername(username: string): Promise<ApiResponse<{ available: boolean }>> {
-  return request.get(`/auth/check-username/${username}`);
+export function checkUsername(factoryId: string, username: string): Promise<ApiResponse<{ available: boolean }>> {
+  return request.get(`/${factoryId}/users/check/username`, { params: { username } });
 }
