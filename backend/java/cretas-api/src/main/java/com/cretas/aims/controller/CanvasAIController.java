@@ -35,6 +35,18 @@ public class CanvasAIController {
      * Build tool execution context with factoryId + userId.
      * Canvas AI tools (e.g. canvas_set_user_permission, canvas_apply_template) require userId.
      */
+    /** Only canvas_* tools are allowed via AI chat — prevents prompt injection from
+     *  tricking the LLM into calling data-destructive or system-level tools. */
+    private static final java.util.regex.Pattern CANVAS_TOOL_PATTERN =
+        java.util.regex.Pattern.compile("^canvas_[a-z0-9_]+$");
+
+    private void validateCanvasTool(String toolName) {
+        if (toolName == null || !CANVAS_TOOL_PATTERN.matcher(toolName).matches()) {
+            throw new com.cretas.aims.exception.BusinessException(
+                "Canvas AI only allows canvas_* tools, rejected: " + toolName);
+        }
+    }
+
     private Map<String, Object> buildToolContext(String factoryId, String authorization) {
         Map<String, Object> ctx = new HashMap<>();
         ctx.put("factoryId", factoryId);
@@ -143,6 +155,13 @@ public class CanvasAIController {
             String toolName = (String) diff.get("tool");
             if (toolName == null) continue;
 
+            try {
+                validateCanvasTool(toolName);
+            } catch (Exception e) {
+                errors.add(e.getMessage());
+                continue;
+            }
+
             Optional<ToolExecutor> executor = toolRegistry.getExecutor(toolName);
             if (executor.isEmpty()) {
                 errors.add("工具不存在: " + toolName);
@@ -208,6 +227,13 @@ public class CanvasAIController {
                 String desc = (String) action.getOrDefault("description", toolName);
                 @SuppressWarnings("unchecked")
                 Map<String, Object> params = (Map<String, Object>) action.getOrDefault("params", Map.of());
+
+                try {
+                    validateCanvasTool(toolName);
+                } catch (Exception e) {
+                    result.append("- ❌ ").append(desc).append(" (").append(e.getMessage()).append(")\n");
+                    continue;
+                }
 
                 Optional<ToolExecutor> executor = toolRegistry.getExecutor(toolName);
                 if (executor.isEmpty()) {

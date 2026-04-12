@@ -403,8 +403,11 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
     @Override
     @Transactional
     public void publishConfig(String factoryId, Long operatorId, String changeSummary) {
+        // Canvas audit fix: publishNow needs to publish APPROVED configs too, not only DRAFT.
+        // Try DRAFT first (normal flow), then APPROVED (审核通过→立即发布 flow).
         FactoryConfiguration draft = factoryConfigurationRepository.findDraft(factoryId)
-                .orElseThrow(() -> new BusinessException("没有待发布的草稿配置"));
+                .or(() -> factoryConfigurationRepository.findLatestApproved(factoryId))
+                .orElseThrow(() -> new BusinessException("没有待发布的配置 (需 DRAFT 或 APPROVED 状态)"));
 
         // Archive current published
         factoryConfigurationRepository.findLatestPublished(factoryId)

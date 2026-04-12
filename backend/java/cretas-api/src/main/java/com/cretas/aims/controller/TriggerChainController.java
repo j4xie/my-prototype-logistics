@@ -32,6 +32,17 @@ public class TriggerChainController {
     @Qualifier("canvasFactoryConfigService")
     private FactoryConfigService configService;
 
+    @Autowired(required = false)
+    private com.cretas.aims.service.MobileService mobileService;
+
+    private Long extractUserId(String authorization) {
+        if (authorization == null || mobileService == null) return null;
+        try {
+            String token = com.cretas.aims.utils.TokenUtils.extractToken(authorization);
+            return mobileService.getUserFromToken(token).getId();
+        } catch (Exception e) { return null; }
+    }
+
     // ========== Tool Config ==========
 
     @GetMapping("/tools")
@@ -151,9 +162,11 @@ public class TriggerChainController {
     @RequireRole({"factory_super_admin"})
     @Operation(summary = "应用行业模板到工厂")
     public ApiResponse<String> applyTemplate(
-            @PathVariable String factoryId, @PathVariable String templateCode) {
+            @PathVariable String factoryId, @PathVariable String templateCode,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
         if (configService == null) throw new com.cretas.aims.exception.BusinessException("配置服务未就绪");
-        configService.applyTemplate(factoryId, templateCode, 0L);
+        Long operatorId = extractUserId(authorization);
+        configService.applyTemplate(factoryId, templateCode, operatorId != null ? operatorId : 0L);
         return ApiResponse.success("模板 " + templateCode + " 已应用到工厂 " + factoryId);
     }
 }
