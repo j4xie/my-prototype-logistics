@@ -45,6 +45,9 @@ public class ReturnOrderServiceImpl implements ReturnOrderService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.DefaultValueResolver defaultValueResolver;
+
     public ReturnOrderServiceImpl(ReturnOrderRepository returnOrderRepository,
                                    ReturnOrderItemRepository returnOrderItemRepository,
                                    ArApService arApService,

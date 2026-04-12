@@ -67,6 +67,9 @@ public class PurchaseServiceImpl implements PurchaseService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.DefaultValueResolver defaultValueResolver;
+
     /** 三价对比偏差预警阈值（10%） */
     private static final BigDecimal PRICE_ALERT_THRESHOLD = new BigDecimal("10");
 

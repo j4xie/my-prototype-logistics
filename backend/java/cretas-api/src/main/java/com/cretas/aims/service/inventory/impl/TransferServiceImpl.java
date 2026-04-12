@@ -51,6 +51,9 @@ public class TransferServiceImpl implements TransferService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.FormulaEngine formulaEngine;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.DefaultValueResolver defaultValueResolver;
+
     public TransferServiceImpl(InternalTransferRepository transferRepository,
                                InternalTransferItemRepository transferItemRepository,
                                MaterialBatchRepository materialBatchRepository,
