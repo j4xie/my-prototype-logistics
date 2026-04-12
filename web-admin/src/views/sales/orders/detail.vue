@@ -99,12 +99,15 @@ const orderTransportStatusMap: Record<string, { text: string; type: string }> = 
   DELIVERED: { text: '已发货', type: 'success' },
 };
 
+const orderFormulas = ref<Record<string, unknown>>({});
+
 onMounted(() => {
   loadOrder();
   loadDeliveries();
   loadInvoices();
   loadPayments();
   loadPurchaseOrders();
+  loadFormulas();
 });
 
 async function loadOrder() {
@@ -116,6 +119,23 @@ async function loadOrder() {
   } catch { ElMessage.error('加载失败'); }
   finally { loading.value = false; }
 }
+
+async function loadFormulas() {
+  if (!factoryId.value || !orderId.value) return;
+  try {
+    const res = await get(`/${factoryId.value}/sales/orders/${orderId.value}/formulas`);
+    if (res.success && res.data) orderFormulas.value = res.data;
+  } catch { /* formula module may not be configured for this factory */ }
+}
+
+const taxGroupData = computed(() => {
+  const raw = orderFormulas.value?.tax_group_sum;
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  return raw.map((row: Record<string, unknown>) => ({
+    taxRate: row.tax_rate != null ? Number(row.tax_rate) : 0,
+    amount: row.agg_value != null ? Number(row.agg_value) : 0,
+  })).sort((a: { taxRate: number }, b: { taxRate: number }) => a.taxRate - b.taxRate);
+});
 
 async function loadDeliveries() {
   if (!factoryId.value || !orderId.value) return;
@@ -606,6 +626,23 @@ async function handleCreatePayment() {
                 <template #default="{ row }">{{ formatAmount(row.quantity * row.unitPrice) }}</template>
               </el-table-column>
             </el-table>
+
+            <!-- ─── R14: 税率分组汇总 (Canvas FormulaEngine 驱动) ─── -->
+            <div v-if="taxGroupData" class="tax-group-section">
+              <h3 style="margin: 20px 0 12px">税率分组汇总</h3>
+              <el-table :data="taxGroupData" border stripe size="small" style="max-width: 400px">
+                <el-table-column label="税率" width="120" align="center">
+                  <template #default="{ row }">
+                    <el-tag :type="row.taxRate === 9 ? 'success' : (row.taxRate === 13 ? 'warning' : 'info')" size="small">
+                      {{ row.taxRate }}%
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="金额小计" width="160" align="right">
+                  <template #default="{ row }">{{ formatAmount(row.amount) }}</template>
+                </el-table-column>
+              </el-table>
+            </div>
 
             <!-- ─── 审批进度时间线 (V3 P0-11 补强 — 客户金矿截图 49m17s 底部 timeline) ─── -->
             <div class="approval-timeline-section">
