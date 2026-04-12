@@ -42,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SmartBIRestaurantRoutingTest {
 
     @Test
-    @DisplayName("Keyword regex matches all P3 restaurant diagnostic intent triggers (Phase 1+2+3)")
+    @DisplayName("Keyword regex matches all P4 restaurant intent triggers (Phase 1+2+3+4)")
     void keywordRegexMatchesAllFlywayIntents() throws Exception {
         Pattern pattern = getKeywordPattern();
 
@@ -78,7 +78,12 @@ class SmartBIRestaurantRoutingTest {
             // Phase 3 intents
             "帮我生成叫货单 明天需要采购多少食材",                      // RESTAURANT_SMART_REORDER
             "今天日清日结做一下 实际盘点和BOM差了多少",                  // RESTAURANT_DAILY_RECONCILIATION
-            "采购预测一下 下周需要备货多少"                              // RESTAURANT_PROCUREMENT_FORECAST
+            "采购预测一下 下周需要备货多少",                              // RESTAURANT_PROCUREMENT_FORECAST
+            // Phase 4 workforce intents
+            "排班分析一下 全职兼职比例怎么样",                              // RESTAURANT_SHIFT_ANALYSIS
+            "迎宾计件提成本月计算一下 按客单量",                             // RESTAURANT_PIECEWORK_CALC
+            "绩效考核KPI权重怎么设置",                                      // RESTAURANT_PERFORMANCE_RULE/EVAL
+            "店长KPI三维度健康度评估一下"                                    // RESTAURANT_STORE_KPI_DASHBOARD
         );
 
         for (String query : positiveSamples) {

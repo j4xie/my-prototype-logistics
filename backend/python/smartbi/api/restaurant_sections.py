@@ -69,6 +69,10 @@ from smartbi.services.restaurant.sections.review_competitive import ReviewCompet
 from smartbi.services.restaurant.sections.smart_reorder import SmartReorderHandler
 from smartbi.services.restaurant.sections.daily_reconciliation import DailyReconciliationHandler
 from smartbi.services.restaurant.sections.procurement_forecast import ProcurementForecastHandler
+from smartbi.services.restaurant.sections.shift_analysis import ShiftAnalysisHandler
+from smartbi.services.restaurant.sections.piecework_calc import PieceworkCalcHandler
+from smartbi.services.restaurant.sections.performance_eval import PerformanceEvalHandler
+from smartbi.services.restaurant.sections.store_kpi_dashboard import StoreKpiDashboardHandler
 
 logger = logging.getLogger(__name__)
 _cache = SectionCache(ttl_seconds=300)
@@ -115,6 +119,10 @@ HANDLERS = {
     "smart_reorder": SmartReorderHandler(),
     "daily_reconciliation": DailyReconciliationHandler(),
     "procurement_forecast": ProcurementForecastHandler(),
+    "shift_analysis": ShiftAnalysisHandler(),
+    "piecework_calc": PieceworkCalcHandler(),
+    "performance_eval": PerformanceEvalHandler(),
+    "store_kpi_dashboard": StoreKpiDashboardHandler(),
 }
 
 

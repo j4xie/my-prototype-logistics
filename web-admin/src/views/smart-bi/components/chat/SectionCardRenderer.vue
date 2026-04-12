@@ -19,6 +19,10 @@ import ReviewCompetitiveCard from './cards/ReviewCompetitiveCard.vue';
 import SmartReorderCard from './cards/SmartReorderCard.vue';
 import DailyReconciliationCard from './cards/DailyReconciliationCard.vue';
 import ProcurementForecastCard from './cards/ProcurementForecastCard.vue';
+import ShiftAnalysisCard from './cards/ShiftAnalysisCard.vue';
+import PieceworkCalcCard from './cards/PieceworkCalcCard.vue';
+import PerformanceEvalCard from './cards/PerformanceEvalCard.vue';
+import StoreKpiDashboardCard from './cards/StoreKpiDashboardCard.vue';
 
 const props = defineProps<{
   section: SectionPayload;
@@ -44,6 +48,10 @@ const CARD_MAP: Record<string, unknown> = {
   smart_reorder: SmartReorderCard,
   daily_reconciliation: DailyReconciliationCard,
   procurement_forecast: ProcurementForecastCard,
+  shift_analysis: ShiftAnalysisCard,
+  piecework_calc: PieceworkCalcCard,
+  performance_eval: PerformanceEvalCard,
+  store_kpi_dashboard: StoreKpiDashboardCard,
 };
 
 const resolvedCard = computed(() => {
