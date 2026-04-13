@@ -730,7 +730,7 @@ const businessRoutes: RouteRecordRaw[] = [
           icon: 'Setting',
           requiresAuth: true,
           showInMenu: true,
-          roles: ['factory_super_admin', 'permission_admin'],
+          roles: ['platform_admin', 'permission_admin'],
         },
       },
       // 动态模块页 (Canvas配置系统)
