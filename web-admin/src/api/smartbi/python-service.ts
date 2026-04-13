@@ -229,7 +229,7 @@ export async function quickSummary(data: unknown[], signal?: AbortSignal, upload
       signal
     }) as { success: boolean; rowCount: number; columnCount: number; columns: ColumnSummary[] };
   } catch (error) {
-    console.error('quickSummary 失败:', error);
+    console.warn('quickSummary 失败 (无数据时预期):', error);
     return { success: false, rowCount: 0, columnCount: 0, columns: [] };
   }
 }
@@ -884,7 +884,7 @@ export async function simulateWhatIf(params: {
       }),
     }) as WhatIfResponse;
   } catch (error) {
-    console.error('simulateWhatIf failed:', error);
+    console.warn('simulateWhatIf failed (expected when no upload data):', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'What-If 模拟请求失败',
