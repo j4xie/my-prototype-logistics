@@ -88,10 +88,10 @@ async def _load_data(request: WhatIfRequest) -> pd.DataFrame:
                     if data_list:
                         return pd.DataFrame(data_list)
         except Exception as e:
-            logger.error(f"Failed to load upload {request.uploadId}: {e}")
-            raise HTTPException(status_code=400, detail="数据加载失败，请确认上传ID正确")
+            logger.warning(f"Failed to load upload {request.uploadId}: {e}")
+            return pd.DataFrame()  # Return empty — caller handles gracefully
 
-    raise HTTPException(status_code=400, detail="需要提供 uploadId 或 rawData")
+    return pd.DataFrame()  # No data source provided — caller handles gracefully
 
 
 # ---------------------------------------------------------------------------

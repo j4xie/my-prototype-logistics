@@ -84,10 +84,19 @@ public class ConfigController {
             @PathVariable String factoryId,
             @PathVariable String moduleCode,
             @RequestParam(required = false) String roleCode) {
-        EffectiveModuleConfig config = (roleCode != null)
-                ? configService.getEffectiveConfig(factoryId, moduleCode, roleCode)
-                : configService.getEffectiveConfig(factoryId, moduleCode);
-        return ApiResponse.success(config);
+        try {
+            EffectiveModuleConfig config = (roleCode != null)
+                    ? configService.getEffectiveConfig(factoryId, moduleCode, roleCode)
+                    : configService.getEffectiveConfig(factoryId, moduleCode);
+            return ApiResponse.success(config);
+        } catch (com.cretas.aims.exception.ResourceNotFoundException e) {
+            // Module not canvas-configured yet — return LEGACY default instead of 404
+            EffectiveModuleConfig legacy = new EffectiveModuleConfig();
+            legacy.setModuleCode(moduleCode);
+            legacy.setRenderingMode("LEGACY");
+            legacy.setEnabled(true);
+            return ApiResponse.success(legacy);
+        }
     }
 
     @GetMapping("/modules")

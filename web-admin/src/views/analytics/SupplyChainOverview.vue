@@ -106,7 +106,7 @@ async function loadAllData() {
 
     const [purchaseRes, materialRes, batchRes, salesRes] = await Promise.allSettled([
       get<{ content: PurchaseOrder[]; totalElements: number }>(
-        `/${factoryId.value}/purchase-orders`, silentCfg
+        `/${factoryId.value}/purchase/orders`, silentCfg
       ),
       get<{ content: MaterialBatch[]; totalElements: number }>(
         `/${factoryId.value}/material-batches`, silentCfg

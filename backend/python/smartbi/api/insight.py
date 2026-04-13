@@ -257,7 +257,7 @@ async def quick_summary(request: Request):
             raise ApiException("Expected JSON array or object with upload_id", ErrorCode.VALIDATION_ERROR, 400)
 
         if not data:
-            raise ApiException("Data is required (provide data array or valid upload_id)", ErrorCode.VALIDATION_ERROR, 400)
+            return {"success": False, "rowCount": 0, "columnCount": 0, "columns": [], "message": "暂无数据"}
 
         import pandas as pd
         import numpy as np
