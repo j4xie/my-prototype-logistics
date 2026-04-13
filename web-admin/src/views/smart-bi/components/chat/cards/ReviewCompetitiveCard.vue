@@ -11,7 +11,7 @@
       </el-table-column>
       <el-table-column prop="rating" label="评分" align="right" width="70" />
       <el-table-column prop="review_count" label="评论数" align="right" width="80" />
-      <eltml-table-column prop="avg_spend" label="客单价" align="right" width="90">
+      <el-table-column prop="avg_spend" label="客单价" align="right" width="90">
         <template #default="{ row }">
           {{ row.avg_spend != null ? '¥' + row.avg_spend : '-' }}
         </template>
