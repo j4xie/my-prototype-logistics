@@ -161,3 +161,4 @@ scripts/run_old_server.py
 食品标注/
 frontend/标注食品异物图片/
 .claude/worktrees/
+tests/canvas-security-e2e/results/

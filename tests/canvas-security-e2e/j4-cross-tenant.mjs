@@ -271,7 +271,7 @@ async function attack3CrossTenantSubTableRead(tokenB, recordIdA) {
 // ---------------------------------------------------------------------------
 // Attack 4 — Cross-tenant custom-fields write (Fix 5, 14)
 // ---------------------------------------------------------------------------
-async function attack4CrossTenantCustomFieldsWrite(tokenB, recordIdA) {
+async function attack4CrossTenantCustomFieldsWrite(tokenA, tokenB, recordIdA) {
   const TEST_ID = 'J4-4';
   if (!tokenB) {
     rc.log(TEST_ID, 'WARN', 'Skipped — Factory B token unavailable');
@@ -283,12 +283,12 @@ async function attack4CrossTenantCustomFieldsWrite(tokenB, recordIdA) {
   }
 
   try {
-    // Read current value via Factory A token first
+    // Read current value via Factory A token (legitimate owner)
     const before = await apiGet(
-      `${FACTORY_A}/sales_order/${recordIdA}/custom-fields`, tokenB
+      `${FACTORY_A}/sales_order/${recordIdA}/custom-fields`, tokenA
     );
 
-    // Attempt cross-tenant write
+    // Attempt cross-tenant write using Factory B token (attacker)
     const result = await apiPut(
       `${FACTORY_B}/sales_order/${recordIdA}/custom-fields`,
       { customer_level: 'HACKED' },
@@ -297,7 +297,7 @@ async function attack4CrossTenantCustomFieldsWrite(tokenB, recordIdA) {
 
     // Verify: read back via Factory A token — did the value actually change?
     const after = await apiGet(
-      `${FACTORY_A}/sales_order/${recordIdA}/custom-fields`, tokenB
+      `${FACTORY_A}/sales_order/${recordIdA}/custom-fields`, tokenA
     );
 
     const apiBlocked = result.status >= 400 || !result.success;
@@ -504,7 +504,7 @@ async function main() {
   await attack1SqlInjectionFieldCode(attackToken);
   await attack2SqlInjectionSubTableColumn(attackToken, recordIdA);
   await attack3CrossTenantSubTableRead(tokenB, recordIdA);
-  await attack4CrossTenantCustomFieldsWrite(tokenB, recordIdA);
+  await attack4CrossTenantCustomFieldsWrite(tokenA, tokenB, recordIdA);
   await attack5CrossTenantChangeSetApprove(tokenA, tokenB);
   await attack6CronDdos(attackToken);
   await attack6bCronCommBypass(attackToken);

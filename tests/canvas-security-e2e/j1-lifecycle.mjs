@@ -294,6 +294,32 @@ async function phaseB1_publish(token) {
 }
 
 /**
+ * B0. Verify audit trail — applyTemplate records operatorId != 0 [Fix 7].
+ */
+async function phaseB0_auditCheck(token) {
+  try {
+    // config_change_log stores all config operations including template apply
+    const res = await apiGet(`${F}/config/current-version`, token);
+    const version = res.data?.configVersion ?? res.json?.configVersion;
+    if (version) {
+      // The publish we just did should have a non-null publishedBy
+      const pubBy = res.data?.publishedBy ?? res.json?.publishedBy;
+      if (pubBy && pubBy !== 0) {
+        rc.log('J1-B0', 'PASS', `publishedBy=${pubBy} (non-zero, Fix 7 audit OK)`);
+      } else if (pubBy === 0 || pubBy === null) {
+        rc.log('J1-B0', 'FAIL', `publishedBy=${pubBy} — Fix 7 operatorId not recorded`);
+      } else {
+        rc.log('J1-B0', 'WARN', `publishedBy field not in response — cannot verify Fix 7`);
+      }
+    } else {
+      rc.log('J1-B0', 'WARN', `current-version has no configVersion — cannot verify audit`);
+    }
+  } catch (err) {
+    rc.log('J1-B0', 'FAIL', `Audit check error: ${err.message}`);
+  }
+}
+
+/**
  * B1b. Verify DDL log — count EXECUTED entries containing SUFFIX.
  */
 async function phaseB1b_ddlLog(token) {
@@ -624,6 +650,7 @@ async function main() {
   console.log('\n--- Phase B: Publish ---');
   const published = await phaseB1_publish(token);
   if (published) {
+    await phaseB0_auditCheck(token);
     await phaseB1b_ddlLog(token);
     await phaseB2_activeFields(token);
     await phaseB3_effectiveConfig(token);

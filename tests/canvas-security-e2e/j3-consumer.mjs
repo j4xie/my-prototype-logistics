@@ -150,16 +150,16 @@ async function stepS4(page) {
       rc.log('J3-S4', 'PASS',
         `Dynamic field label "${foundInUI}" found in UI + ${dynCount} dynamic fields in API`);
     } else if (dynCount > 0) {
-      rc.log('J3-S4', 'PASS',
-        `${dynCount} dynamic fields in effective config (UI may render in collapsed "自定义字段" group)`);
+      rc.log('J3-S4', 'WARN',
+        `${dynCount} dynamic fields in API but NOT visible in UI — check rendering mode or collapsed groups`);
     } else {
-      rc.log('J3-S4', 'PASS',
-        'No dynamic fields configured for this factory — expected when J1 runs on a different factory');
+      rc.log('J3-S4', 'FAIL',
+        'No dynamic fields found in UI or API — J1 lifecycle must run first on the same factory');
     }
     return true;
   } catch (err) {
-    rc.log('J3-S4', 'WARN', `Dynamic field check threw (non-blocking): ${err.message}`);
-    return true;
+    rc.log('J3-S4', 'FAIL', `Dynamic field check error: ${err.message}`);
+    return false;
   }
 }
 
