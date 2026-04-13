@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "test": "echo \"No root-level tests\" && exit 0"
+  },
   "dependencies": {
     "ws": "^8.19.0"
   },

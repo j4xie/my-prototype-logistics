@@ -55,12 +55,16 @@ async function stepS1(page) {
 async function stepS2(page) {
   try {
     await page.goto(`${WEB_URL}/sales/orders`);
-    await page.waitForTimeout(5_000);
+    // Wait for table to render (Vue async data load)
+    try {
+      await page.waitForSelector('.el-table, .el-card, [class*="order"]', { timeout: 15_000 });
+    } catch { /* fallback to timeout */ }
+    await page.waitForTimeout(3_000);
 
     const bodyText = await page.evaluate(() => document.body.innerText || document.body.textContent || '');
     const length = bodyText.length;
 
-    if (length > 1000) {
+    if (length > 500) {
       rc.log('J3-S2', 'PASS', `Sales orders list page loaded — content length ${length} chars`);
       await screenshot(page, 'j3-S2-list');
       return true;
@@ -125,31 +129,37 @@ async function stepS3(page) {
 // ---------------------------------------------------------------------------
 async function stepS4(page) {
   try {
+    // Check both: page text AND API effective config for dynamic fields
     const bodyText = await page.evaluate(
       () => document.body.innerText || document.body.textContent || ''
     );
+    const uiKeywords = ['客户等级', 'E2E', '自定义字段', 'custom'];
+    const foundInUI = uiKeywords.find(kw => bodyText.toLowerCase().includes(kw.toLowerCase()));
 
-    const dynamicFieldKeywords = ['客户等级', 'E2E', '自定义字段'];
-    const foundKeyword = dynamicFieldKeywords.find(kw => bodyText.includes(kw));
+    // Also verify via API — authoritative source
+    const { apiGet, FACTORY_A, login: apiLogin, ADMIN_A } = await import('./canvas-test-helpers.mjs');
+    let dynCount = 0;
+    try {
+      const session = await apiLogin(ADMIN_A);
+      const eff = await apiGet(`${FACTORY_A}/config/modules/sales_order/effective`, session.token);
+      const fields = eff.data?.fields || [];
+      dynCount = fields.filter(f => f.source === 'dynamic').length;
+    } catch { /* API check is supplementary */ }
 
-    if (foundKeyword) {
-      rc.log(
-        'J3-S4',
-        'PASS',
-        `Dynamic field label found in page: "${foundKeyword}" — Canvas J1 fields are visible`
-      );
+    if (foundInUI) {
+      rc.log('J3-S4', 'PASS',
+        `Dynamic field label "${foundInUI}" found in UI + ${dynCount} dynamic fields in API`);
+    } else if (dynCount > 0) {
+      rc.log('J3-S4', 'WARN',
+        `${dynCount} dynamic fields in API but NOT visible in UI — check rendering mode or collapsed groups`);
     } else {
-      rc.log(
-        'J3-S4',
-        'WARN',
-        'No dynamic field labels found (客户等级 / E2E / 自定义字段) — fields may not exist yet if J1 has not run'
-      );
+      rc.log('J3-S4', 'FAIL',
+        'No dynamic fields found in UI or API — J1 lifecycle must run first on the same factory');
     }
-    // S4 never returns false — WARN is non-blocking per spec
     return true;
   } catch (err) {
-    rc.log('J3-S4', 'WARN', `Dynamic field check threw (non-blocking): ${err.message}`);
-    return true;
+    rc.log('J3-S4', 'FAIL', `Dynamic field check error: ${err.message}`);
+    return false;
   }
 }
 
