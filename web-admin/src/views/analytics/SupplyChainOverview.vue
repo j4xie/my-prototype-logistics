@@ -99,18 +99,23 @@ async function loadAllData() {
       params.endDate = dateRange.value[1];
     }
 
+    // Suppress global error toast — RESTAURANT factories don't have purchase-orders
+    // or processing/batches, so those endpoints return 500. We handle errors locally
+    // via allSettled + status === 'fulfilled' checks below.
+    const silentCfg = { params: { ...params, size: 10 }, _silent: true };
+
     const [purchaseRes, materialRes, batchRes, salesRes] = await Promise.allSettled([
       get<{ content: PurchaseOrder[]; totalElements: number }>(
-        `/${factoryId.value}/purchase-orders`, { params: { ...params, size: 10 } }
+        `/${factoryId.value}/purchase-orders`, silentCfg
       ),
       get<{ content: MaterialBatch[]; totalElements: number }>(
-        `/${factoryId.value}/material-batches`, { params: { ...params, size: 10 } }
+        `/${factoryId.value}/material-batches`, silentCfg
       ),
       get<{ content: ProductionBatch[]; totalElements: number }>(
-        `/${factoryId.value}/processing/batches`, { params: { ...params, size: 10 } }
+        `/${factoryId.value}/processing/batches`, silentCfg
       ),
       get<{ content: SalesOrder[]; totalElements: number }>(
-        `/${factoryId.value}/sales/orders`, { params: { ...params, size: 10 } }
+        `/${factoryId.value}/sales/orders`, silentCfg
       ),
     ]);
 

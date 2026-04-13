@@ -67,7 +67,7 @@ export interface SMTransition {
 }
 
 export function getPublishedStateMachine(factoryId: string, entityType: string) {
-  return get<StateMachineConfig>(`/api/mobile/${factoryId}/state-machines/${entityType}/published`)
+  return get<StateMachineConfig>(`/api/mobile/${factoryId}/state-machines/${entityType}/published`, { _silent: true } as never)
 }
 
 export function getVersionHistory(factoryId: string, entityType: string) {

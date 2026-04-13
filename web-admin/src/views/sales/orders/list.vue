@@ -211,19 +211,17 @@ function handleTabChange() {
 async function loadCustomers() {
   if (!factoryId.value) return;
   try {
-    const res = await get(`/${factoryId.value}/customers`, { params: { page: 1, size: 100 } });
+    const res = await get(`/${factoryId.value}/customers`, { params: { page: 1, size: 100 }, _silent: true } as never);
     if (res.success && res.data) customers.value = res.data.content || [];
-    else if (res.success === false) ElMessage.error(res.message || '加载客户列表失败');
-  } catch { ElMessage.error('加载客户列表失败'); }
+  } catch { /* dropdown optional — fail silently for roles without customer read permission */ }
 }
 
 async function loadProducts() {
   if (!factoryId.value) return;
   try {
-    const res = await get(`/${factoryId.value}/product-types/active`);
+    const res = await get(`/${factoryId.value}/product-types/active`, { _silent: true } as never);
     if (res.success && res.data) products.value = Array.isArray(res.data) ? res.data : res.data.content || [];
-    else if (res.success === false) ElMessage.error(res.message || '加载产品列表失败');
-  } catch { ElMessage.error('加载产品列表失败'); }
+  } catch { /* dropdown optional — fail silently for roles without product read permission */ }
 }
 
 const salesRoles = ['sales_manager', 'factory_super_admin'];
@@ -231,7 +229,7 @@ const salesRoles = ['sales_manager', 'factory_super_admin'];
 async function loadSalesEmployees() {
   if (!factoryId.value) return;
   try {
-    const res = await get(`/${factoryId.value}/users`, { params: { page: 1, size: 200 } });
+    const res = await get(`/${factoryId.value}/users`, { params: { page: 1, size: 200 }, _silent: true } as never);
     if (res.success && res.data) {
       const allUsers = res.data.content || [];
       salesEmployees.value = allUsers.filter(

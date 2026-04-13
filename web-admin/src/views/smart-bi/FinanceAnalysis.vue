@@ -977,7 +977,8 @@ async function loadFinanceData() {
           analysisType: analysisType.value
         },
         signal,
-      }
+        _silent: true,
+      } as never
     );
 
     if (response.success && response.data) {
