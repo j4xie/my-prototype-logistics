@@ -24,7 +24,7 @@
     ...     bom_resolver=resolver,
     ...     config_resolver=cfg_resolver,
     ... )
-    >>> rows = calc.calculate(df, order_method_col="订单来源", revenue_col="实收额")
+    >>> rows = calc.calculate(df, order_method_col="订单来源", revenue_col="实收")
     >>> for row in rows:
     ...     print(row.channel, row.gross_margin_pct, row.cogs_source)
     堂食 0.5234 category_baseline

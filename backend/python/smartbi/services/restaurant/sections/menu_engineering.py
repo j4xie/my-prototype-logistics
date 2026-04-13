@@ -63,7 +63,7 @@ class MenuEngineeringHandler(AbstractSectionHandler):
 
         name_col = request.params.get("product_col", "商品名称")
         qty_col = request.params.get("quantity_col", "数量")
-        revenue_col = request.params.get("revenue_col", "实收额")
+        revenue_col = request.params.get("revenue_col", "实收")
 
         if not hasattr(pos_df, "columns"):
             return self.skipped(

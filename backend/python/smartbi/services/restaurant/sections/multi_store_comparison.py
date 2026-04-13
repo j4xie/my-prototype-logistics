@@ -10,7 +10,7 @@ returns SKIPPED gracefully (single-store factories don't need this section).
 Supported params (all optional, with sensible Chinese-POS defaults):
   - ``pos_df``: pandas DataFrame
   - ``store_col`` (default "门店名称")
-  - ``revenue_col`` (default "实收额")
+  - ``revenue_col`` (default "实收")
   - ``product_col`` (default "商品名称")
   - ``quantity_col`` (default "数量")
   - ``reviews``: optional list[dict] of dianping reviews for rating overlay
@@ -57,7 +57,7 @@ class MultiStoreComparisonHandler(AbstractSectionHandler):
             return self.skipped(request, "pos_df 不是 DataFrame (缺 columns 属性)", started)
 
         store_col = request.params.get("store_col", "门店名称")
-        revenue_col = request.params.get("revenue_col", "实收额")
+        revenue_col = request.params.get("revenue_col", "实收")
         product_col = request.params.get("product_col", "商品名称")
         quantity_col = request.params.get("quantity_col", "数量")
 

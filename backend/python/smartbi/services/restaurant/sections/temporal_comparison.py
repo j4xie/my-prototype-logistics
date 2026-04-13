@@ -16,7 +16,7 @@ DataFrame.
 Supported params:
   - ``pos_df``: pandas DataFrame
   - ``datetime_col`` (default "开单时间")
-  - ``revenue_col`` (default "实收额")
+  - ``revenue_col`` (default "实收")
   - ``group_col`` (default "门店名称")
 """
 
@@ -53,7 +53,7 @@ class TemporalComparisonHandler(AbstractSectionHandler):
             return self.skipped(request, "未提供 POS DataFrame", started)
 
         datetime_col = request.params.get("datetime_col", "开单时间")
-        revenue_col = request.params.get("revenue_col", "实收额")
+        revenue_col = request.params.get("revenue_col", "实收")
         group_col = request.params.get("group_col", self.DEFAULT_GROUP_COL)
 
         if not hasattr(pos_df, "columns"):

@@ -63,7 +63,7 @@ class RestaurantForecastHandler(AbstractSectionHandler):
             if pos_df is None:
                 pos_df = request.params.get("pos_df")
             datetime_col = request.params.get("datetime_col", "开单时间")
-            revenue_col = request.params.get("revenue_col", "实收额")
+            revenue_col = request.params.get("revenue_col", "实收")
 
             if pos_df is None or not hasattr(pos_df, "columns") or datetime_col not in pos_df.columns:
                 return self.skipped(

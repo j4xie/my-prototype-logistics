@@ -29,7 +29,7 @@ class ChannelMarginHandler(AbstractSectionHandler):
     Supported params (all optional, with sensible Chinese-POS defaults):
       - ``pos_df``: pandas DataFrame
       - ``order_method_col`` (default "订单来源")
-      - ``revenue_col`` (default "实收额")
+      - ``revenue_col`` (default "实收")
     """
     section_name = "channel_margin"
 
@@ -49,7 +49,7 @@ class ChannelMarginHandler(AbstractSectionHandler):
             return self.skipped(request, "未提供 POS DataFrame", started)
 
         order_method_col = request.params.get("order_method_col", "订单来源")
-        revenue_col = request.params.get("revenue_col", "实收额")
+        revenue_col = request.params.get("revenue_col", "实收")
         venue_list = request.params.get("venue_list")  # Optional[list[str]], QW2
 
         if not hasattr(pos_df, "columns"):

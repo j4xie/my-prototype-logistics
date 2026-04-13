@@ -13,7 +13,7 @@ Supported params (all optional, with sensible Chinese-POS defaults):
   - ``pos_df``: pandas DataFrame
   - ``product_col`` (default "商品名称")
   - ``quantity_col`` (default "数量")  - missing column is OK; helper falls back to count
-  - ``revenue_col`` (default "实收额")
+  - ``revenue_col`` (default "实收")
   - ``exclude_seasonal`` (bool, default True)
 """
 
@@ -53,7 +53,7 @@ class LongTailSkuHandler(AbstractSectionHandler):
 
         product_col = request.params.get("product_col", "商品名称")
         quantity_col = request.params.get("quantity_col", "数量")
-        revenue_col = request.params.get("revenue_col", "实收额")
+        revenue_col = request.params.get("revenue_col", "实收")
         exclude_seasonal = bool(request.params.get("exclude_seasonal", True))
 
         if not hasattr(pos_df, "columns"):

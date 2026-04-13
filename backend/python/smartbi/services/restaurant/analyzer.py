@@ -304,7 +304,7 @@ class RestaurantAnalyzerV2:
         period: str = "current",
         product_col: str = "商品名称",
         order_method_col: str = "订单来源",
-        revenue_col: str = "实收额",
+        revenue_col: str = "实收",
         datetime_col: str = "开单时间",
         quantity_col: str = "数量",
         reviews: Optional[list[dict]] = None,
