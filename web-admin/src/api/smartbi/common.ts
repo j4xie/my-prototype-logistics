@@ -115,12 +115,17 @@ export const PYTHON_HEADERS: Record<string, string> = {
 
 /**
  * Get auth headers for Python service calls.
- * JWT tokens are now in HttpOnly cookies (not readable by JS).
- * Python service auth relies on X-Internal-Secret for direct calls.
- * When going through Vite proxy (dev), cookies are forwarded automatically.
+ * JWT tokens are in HttpOnly cookies (auto-forwarded by browser in same-origin).
+ * For cross-origin calls through nginx proxy, also include Bearer token
+ * from localStorage fallback (set by auth store alongside the cookie).
  */
 export function getPythonAuthHeaders(): Record<string, string> {
-  return { ...PYTHON_HEADERS };
+  const headers = { ...PYTHON_HEADERS };
+  const token = localStorage.getItem('cretas_access_token');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
 }
 
 // ==================== snake_case -> camelCase transform (AUDIT-065) ====================
