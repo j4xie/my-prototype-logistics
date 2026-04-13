@@ -35,7 +35,7 @@ const useCanvas = computed(() =>
 onMounted(async () => {
   if (!authStore.factoryId) { loading.value = false; return }
   try {
-    const res = await get(`/${authStore.factoryId}/config/modules/${props.moduleCode}/effective`)
+    const res = await get(`/${authStore.factoryId}/config/modules/${props.moduleCode}/effective`, { _silent: true } as never)
     if (res.success && res.data?.renderingMode) {
       renderingMode.value = res.data.renderingMode
     }
