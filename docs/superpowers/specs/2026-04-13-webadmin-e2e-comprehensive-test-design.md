@@ -195,22 +195,38 @@ done
 
 **本测试方案以 `store/modules/permission.ts` 为唯一权威**。`utils/permission.ts` 应标记为 deprecated 或删除。
 
-### 3.5 finance_manager 路由白名单 (v3 新增 — H-2)
+### 3.5 finance_manager 路由白名单 (v3 新增 — H-2, v3.1 精确化 — B-1)
 
-`guards.ts:22-33` 对 `finance_manager` 有额外的 `ROLE_PATH_WHITELIST` 机制:
+`guards.ts:22-33` 对 `finance_manager` 有 `ROLE_PATH_WHITELIST` 机制，**精确 10 条路径**（非通配符）:
 
 ```
-允许路径: /dashboard, /smart-bi/*, /403, /404
+/dashboard
+/smart-bi/dashboard
+/smart-bi/finance
+/smart-bi/financial-dashboard
+/smart-bi/sales
+/smart-bi/query
+/smart-bi/query-templates
+/smart-bi/analysis
+/403
+/404
 ```
 
-即使 §3.1 矩阵标注 `fin=rw` 和 `sales=r`，finance_manager 访问 `/finance/*` 和 `/sales/*` 路由仍会被白名单拦截到 `/403`。
+**以下路由对 finance_manager 被白名单拦截到 /403**（即使矩阵标注有权限）:
 
-**L1 测试影响**: finance_manager 的以下路由预期结果应为 **403(白名单拦截)**，不是 PASS:
-- `/finance/*` (6 条路由) — 矩阵说 rw，但路由白名单拦截
-- `/sales/*` (6 条路由) — 矩阵说 r，但路由白名单拦截
-- `/analytics/*` (7 条路由) — 矩阵说 r，但路由白名单拦截(非 /smart-bi/*)
+| 模块 | 被拦截路由 | 矩阵权限 | 实际结果 |
+|------|----------|---------|---------|
+| finance | `/finance/costs`, `/finance/reports`, `/finance/ar-ap`, `/finance/sku-margin`, `/finance/invoices`, `/finance/payments` (6条) | rw | **403(白名单)** |
+| sales | `/sales/orders`, `/sales/quotes`, `/sales/finished-goods`, `/sales/customers`, `/sales/shipments` (5条) | r | **403(白名单)** |
+| analytics | `/analytics/overview`, `/analytics/trends`, `/analytics/ai-reports`, `/analytics/kpi`, `/analytics/production-report`, `/analytics/alert-dashboard`, `/analytics/supply-chain` (7条) | r | **403(白名单)** |
+| smart-bi | `/smart-bi/upload`, `/smart-bi/data-completeness`, `/smart-bi/food-kb-feedback`, `/smart-bi/calibration`, `/smart-bi/whatif`, `/smart-bi/restaurant-v2` (6条) | — | **403(白名单)** |
 
-**只有 `/dashboard` 和 `/smart-bi/*` 对 finance_manager 实际可达。**
+**finance_manager 实际只能访问 8 条业务路由** (dashboard + 7 条 smart-bi)。L1 测试时这 24 条被拦截路由的预期结果必须标为 403(白名单)，不是 PASS。
+
+**L4 链路影响 (B-3)**:
+- **L4-15** (出货→开票→收款): finance_manager 无法访问 `/finance/invoices` 和 `/finance/payments`。开票/收款操作改用 **factory_super_admin** 执行。
+- **L4-20b** (财务多节点链路): finance_manager 的 4 个操作节点中，"开票"和"收款"两个节点因白名单拦截改用 super_admin。finance_manager 只在 `/smart-bi/finance`（财务分析看板）节点操作。
+- 这是**已知的设计限制**（finance_manager 的 web 操作被刻意收窄为 SmartBI 只读分析），不是 bug。
 
 ---
 
