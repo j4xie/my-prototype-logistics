@@ -176,6 +176,15 @@ public class DynamicFieldController {
             return ResponseEntity.ok(existing);
         }
 
+        // R26 fix: PENDING_DDL fields have no cf_* column yet — ALTER TABLE would fail.
+        // Only allow type change on ACTIVE fields that have been through DDL.
+        if ("PENDING_DDL".equals(existing.getStatus())) {
+            // Safe path: just update the type in metadata, DDL will use the new type on next publish
+            existing.setFieldType(newType.toUpperCase());
+            fieldRepo.save(existing);
+            return ResponseEntity.ok(existing);
+        }
+
         try {
             dynamicFieldService.changeFieldType(existing, newType);
             return ResponseEntity.ok(existing);

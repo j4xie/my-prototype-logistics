@@ -35,6 +35,11 @@ public class ProcessWorkReportingServiceImpl implements ProcessWorkReportingServ
     /** Canvas V2: DB-driven validation rules */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private org.springframework.context.ApplicationEventPublisher applicationEventPublisher;
 
     private void runConfiguredValidation(String factoryId, String operation, java.util.Map<String, Object> context) {
         if (validationRuleEvaluator == null) return;
@@ -217,6 +222,13 @@ public class ProcessWorkReportingServiceImpl implements ProcessWorkReportingServ
         // Add to pendingQuantity (will move to completedQuantity upon approval)
         task.setPendingQuantity(task.getPendingQuantity().add(outputQuantity));
         taskRepository.save(task);
+
+        if (applicationEventPublisher != null) {
+            try {
+                applicationEventPublisher.publishEvent(new com.cretas.aims.event.WorkReportSubmittedEvent(
+                        this, factoryId, processTaskId, String.valueOf(saved.getId()), workerId));
+            } catch (Exception e) { log.warn("Publish WorkReportSubmittedEvent failed: {}", e.getMessage()); }
+        }
 
         return Map.of(
                 "reportId", saved.getId(),

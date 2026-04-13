@@ -11,6 +11,8 @@ import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { SALES_ORDER_CONFIG } from '@/components/ai-entry/types';
 import { formatAmount } from '@/utils/tableFormatters';
 import TaxGroupInvoiceDialog from './components/TaxGroupInvoiceDialog.vue';
+import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
+import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 
 // G1: 税率分组开票对话框 (客户原话 2645-2660s)
 const taxGroupInvoiceVisible = ref(false);
@@ -118,6 +120,7 @@ const form = ref({
   items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
   contractFileUrl: '' as string | null,
   contractFileName: '' as string | null,
+  customFields: {} as Record<string, unknown>,
 });
 
 // P1-7 合同附件上传 (v1 §2.4.3, 2257s)
@@ -322,6 +325,7 @@ function handleEdit(row: Record<string, unknown>) {
           unitPrice: Number(item.unitPrice || 0),
         }))
       : [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
+    customFields: {} as Record<string, unknown>,
   };
   dialogVisible.value = true;
 }
@@ -352,6 +356,7 @@ function openCreateDialog() {
     shippingFee: 0,
     extraFees: [],
     items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
+    customFields: {} as Record<string, unknown>,
   };
   dialogVisible.value = true;
 }
@@ -500,6 +505,7 @@ async function submitQuickPayment() {
 </script>
 
 <template>
+  <CanvasAwareWrapper module-code="sales_order">
   <div class="page-wrapper">
     <el-card class="page-card" shadow="never">
       <template #header>
@@ -707,6 +713,7 @@ async function submitQuickPayment() {
             <el-button size="small">上传合同 (PDF/图片/Word, ≤20MB)</el-button>
           </el-upload>
         </el-form-item>
+        <CanvasDynamicFields v-model="form.customFields" module-code="sales_order" />
         <el-divider>{{ label('product') }}明细</el-divider>
         <div class="item-row item-header">
           <span style="width: 200px">品名</span>
@@ -754,6 +761,7 @@ async function submitQuickPayment() {
       @success="loadData"
     />
   </div>
+  </CanvasAwareWrapper>
 </template>
 
 <style lang="scss" scoped>

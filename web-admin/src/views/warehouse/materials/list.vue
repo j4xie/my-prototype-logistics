@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put } from '@/api/request';
 import { ElMessage } from 'element-plus';
+import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 import { Plus, Search, Refresh } from '@element-plus/icons-vue';
 import { formatDateTimeCell } from '@/utils/tableFormatters';
 import type { FormInstance } from 'element-plus';
@@ -225,6 +226,7 @@ async function handleFormSubmit() {
 </script>
 
 <template>
+  <CanvasAwareWrapper module-code="material_batch">
   <div class="page-wrapper">
     <el-card class="page-card" shadow="never">
       <template #header>
@@ -358,6 +360,7 @@ async function handleFormSubmit() {
       </template>
     </el-dialog>
   </div>
+  </CanvasAwareWrapper>
 </template>
 
 <style lang="scss" scoped>

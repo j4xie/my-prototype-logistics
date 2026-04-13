@@ -75,6 +75,8 @@ public class CreateSalesOrderRequest {
 
         private BigDecimal discountRate;
 
+        private BigDecimal taxRate;
+
         private String remark;
 
         private String specification;

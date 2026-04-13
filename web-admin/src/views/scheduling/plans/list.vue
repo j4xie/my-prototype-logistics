@@ -6,6 +6,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
+import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 import { usePermissionStore } from '@/store/modules/permission';
 import {
   getSchedulingPlans,
@@ -186,6 +187,7 @@ function getProbabilityClass(prob: number) {
 </script>
 
 <template>
+  <CanvasAwareWrapper module-code="scheduling">
   <div class="page-wrapper">
     <el-card class="page-card" shadow="never">
       <template #header>
@@ -311,6 +313,7 @@ function getProbabilityClass(prob: number) {
       </div>
     </el-card>
   </div>
+  </CanvasAwareWrapper>
 </template>
 
 <style lang="scss" scoped>

@@ -15,11 +15,17 @@ import SchemaFormRenderer from './components/SchemaFormRenderer.vue'
 import SchemaTableRenderer from './components/SchemaTableRenderer.vue'
 import TabLayoutRenderer from './components/TabLayoutRenderer.vue'
 
+// R22 Fix Bug 2: accept moduleCode as prop (from CanvasAwareWrapper)
+// AND from route.params (from /modules/:moduleCode route). Prop takes priority.
+const props = defineProps<{
+  moduleCode?: string
+}>()
+
 const route = useRoute()
 const authStore = useAuthStore()
 const configStore = useConfigStore()
 
-const moduleCode = computed(() => String(route.params.moduleCode || ''))
+const moduleCode = computed(() => props.moduleCode || String(route.params.moduleCode || ''))
 const factoryId = computed(() => authStore.factoryId || '')
 const apiPath = computed(() => MODULE_API_PATHS[moduleCode.value] || moduleCode.value)
 
@@ -28,6 +34,17 @@ const config = ref<EffectiveModuleConfig | null>(null)
 const currentView = ref<'list' | 'create' | 'edit' | 'detail'>('list')
 const tableData = ref<Record<string, unknown>[]>([])
 const selectedRow = ref<Record<string, unknown> | null>(null)
+
+// R28: push browser history on view change so back button works
+import { watch as vueWatch, onMounted as onMountedHook } from 'vue'
+vueWatch(currentView, (newView, oldView) => {
+  if (newView !== oldView && newView !== 'list') {
+    history.pushState({ view: newView }, '', location.href)
+  }
+})
+if (typeof window !== 'undefined') {
+  window.addEventListener('popstate', () => { currentView.value = 'list' })
+}
 const loading = ref(false)
 const pagination = ref({ page: 1, size: 20, total: 0 })
 

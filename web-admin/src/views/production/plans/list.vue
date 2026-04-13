@@ -13,6 +13,8 @@ import {
   exportProductionPlans,
   getSupervisors,
 } from '@/api/productionPlan';
+import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
+import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { PRODUCTION_PLAN_CONFIG } from '@/components/ai-entry/types';
 
@@ -47,6 +49,7 @@ const planForm = ref({
   sourceType: 'MANUAL' as 'MANUAL' | 'CUSTOMER_ORDER' | 'AI_FORECAST',
   sourceOrderId: '' as string | undefined,
   sourceOrderItemId: '' as string | undefined,
+  customFields: {} as Record<string, unknown>,
 });
 const productTypes = ref<Record<string, unknown>[]>([]);
 const bomProcesses = ref<string[]>([]);
@@ -258,6 +261,7 @@ function handleCreate() {
     sourceType: 'MANUAL',
     sourceOrderId: '',
     sourceOrderItemId: '',
+    customFields: {} as Record<string, unknown>,
   };
   dialogVisible.value = true;
 }
@@ -575,12 +579,14 @@ function handleAiFill(params: Record<string, unknown>) {
     sourceType: 'MANUAL',
     sourceOrderId: '',
     sourceOrderItemId: '',
+    customFields: {} as Record<string, unknown>,
   };
   dialogVisible.value = true;
 }
 </script>
 
 <template>
+  <CanvasAwareWrapper module-code="production_plan">
   <div class="page-wrapper">
     <el-card class="page-card" shadow="never">
       <template #header>
@@ -853,6 +859,7 @@ function handleAiFill(params: Record<string, unknown>) {
             <el-option v-for="sup in supervisors" :key="sup.id" :label="sup.fullName || sup.username" :value="sup.id" />
           </el-select>
         </el-form-item>
+        <CanvasDynamicFields v-model="planForm.customFields" module-code="production_plan" />
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -867,6 +874,7 @@ function handleAiFill(params: Record<string, unknown>) {
       @fill-form="handleAiFill"
     />
   </div>
+  </CanvasAwareWrapper>
 </template>
 
 <style lang="scss" scoped>

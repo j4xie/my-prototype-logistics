@@ -27,7 +27,7 @@
     </el-table>
 
     <div class="matrix-actions" v-if="dirty">
-      <el-button type="primary" size="small" @click="save">保存权限</el-button>
+      <el-button type="primary" size="small" :loading="saving" @click="save">保存权限</el-button>
     </div>
   </div>
 </template>
@@ -36,6 +36,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useConfigStore } from '@/store/modules/config'
 import { ElMessage } from 'element-plus'
+import { saveModuleConfig } from '@/api/configApi'
 
 const props = defineProps<{
   factoryId: string
@@ -46,6 +47,7 @@ const configStore = useConfigStore()
 const roles = ref(['factory_admin', 'factory_super_admin', 'worker', 'finance', 'quality'])
 const fields = ref<any[]>([])
 const dirty = ref(false)
+const saving = ref(false)
 
 async function load() {
   if (!props.factoryId || !props.moduleCode) return
@@ -61,9 +63,25 @@ async function load() {
 
 function markDirty(_field: string, _role: string) { dirty.value = true }
 
-function save() {
-  ElMessage.success('权限已保存')
-  dirty.value = false
+// R25 fix: was a stub that never called API. Now serializes the matrix
+// and writes to factory_module_configs.permission_config via saveModuleConfig.
+async function save() {
+  if (!props.factoryId || !props.moduleCode) return
+  saving.value = true
+  try {
+    const permissionConfig: Record<string, Record<string, string>> = {}
+    for (const field of fields.value) {
+      permissionConfig[field.fieldCode] = { ...field.permissions }
+    }
+    await saveModuleConfig(props.factoryId, props.moduleCode, { permissionConfig })
+    configStore.invalidateCache(props.factoryId, props.moduleCode)
+    ElMessage.success('权限已保存')
+    dirty.value = false
+  } catch (e: unknown) {
+    ElMessage.error('保存失败: ' + ((e as Error)?.message || '未知错误'))
+  } finally {
+    saving.value = false
+  }
 }
 
 watch(() => props.moduleCode, load)

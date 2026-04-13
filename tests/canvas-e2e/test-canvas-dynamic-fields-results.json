@@ -1,0 +1,42 @@
+[
+  {
+    "step": "Login",
+    "status": "PASS",
+    "evidence": "user=food_3101_038_admin, factory=FOOD_3101_038, token=288字符"
+  },
+  {
+    "step": "Effective config",
+    "status": "PASS",
+    "evidence": "renderingMode=CANVAS, fields=29"
+  },
+  {
+    "step": "DynamicModulePage",
+    "status": "PASS",
+    "evidence": "标题=\"销售订单CANVAS\", isDynamic=true"
+  },
+  {
+    "step": "列表视图 dynamic fields",
+    "status": "WARN",
+    "evidence": "客户等级=false, 交货优先级=false"
+  },
+  {
+    "step": "创建表单 form items",
+    "status": "PASS",
+    "evidence": "23 个表单项"
+  },
+  {
+    "step": "表单字段标签",
+    "status": "INFO",
+    "evidence": "订单号, 客户, 下单日期, 要求交货日期, 业务员, 备注, 收货地址, 状态, 下单箱数, 订单明细, 订单总金额, 税额, 是否含运费, 其他费用, 开票状态, 已开票金额, 已收款金额, F-TEST 冲突测试字段, 交货优先级, 预付款记录"
+  },
+  {
+    "step": "Canvas dynamic fields 在表单中",
+    "status": "PASS",
+    "evidence": "客户等级=true, 交货优先级=true, 预期毛利率=false, 合同附件=true"
+  },
+  {
+    "step": "Canvas 编辑器加载",
+    "status": "WARN",
+    "evidence": "URL=http://139.196.165.140:8086/404, hasModuleList=false"
+  }
+]

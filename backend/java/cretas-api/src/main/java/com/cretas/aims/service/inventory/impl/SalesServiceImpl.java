@@ -170,6 +170,7 @@ public class SalesServiceImpl implements SalesService {
             item.setQuantity(itemDTO.getQuantity());
             item.setUnit(itemDTO.getUnit());
             item.setUnitPrice(itemDTO.getUnitPrice());
+            item.setTaxRate(itemDTO.getTaxRate() != null ? itemDTO.getTaxRate() : BigDecimal.ZERO);
             item.setDiscountRate(itemDTO.getDiscountRate() != null ? itemDTO.getDiscountRate() : BigDecimal.ZERO);
             item.setRemark(itemDTO.getRemark());
             item.setSpecification(itemDTO.getSpecification());
@@ -454,6 +455,37 @@ public class SalesServiceImpl implements SalesService {
         return salesOrderRepository.save(order);
     }
 
+    /**
+     * Round 14: Compute all aggregate formulas configured for a sales order.
+     * Returns formula results keyed by formula_code (e.g., "tax_group_sum").
+     * The "杀手锏 G1" killer feature — 39 factories have tax_group_sum configured,
+     * but it was never evaluated at runtime until now.
+     */
+    public Map<String, Object> computeOrderFormulas(String factoryId, String orderId) {
+        Map<String, Object> results = new java.util.LinkedHashMap<>();
+        if (formulaEngine == null) return results;
+
+        // Query all factory_formulas for this factory + sales_order module
+        var formulas = formulaEngine.listFormulas(factoryId, "sales_order");
+        if (formulas == null || formulas.isEmpty()) return results;
+
+        Map<String, Object> context = Map.of(
+                "factoryId", factoryId,
+                "parentId", orderId);
+
+        for (var formula : formulas) {
+            try {
+                Object result = formulaEngine.evaluateAny(factoryId, "sales_order", formula.getFormulaCode(), context);
+                if (result != null) {
+                    results.put(formula.getFormulaCode(), result);
+                }
+            } catch (Exception e) {
+                log.warn("Formula {} evaluation failed for order {}: {}", formula.getFormulaCode(), orderId, e.getMessage());
+            }
+        }
+        return results;
+    }
+
     // ==================== 发货/出库 ====================
 
     @Override
@@ -701,12 +733,41 @@ public class SalesServiceImpl implements SalesService {
     @Override
     @Transactional
     public FinishedGoodsBatch createFinishedGoodsBatch(String factoryId, FinishedGoodsBatch batch, Long userId) {
+        // Round 11 T3: Canvas Integration Template hook 1 — DB-driven validation
+        if (validationRuleEvaluator != null) {
+            try {
+                validationRuleEvaluator.validate(factoryId, "finished_goods", "CREATE",
+                        java.util.Map.of(
+                            "productTypeId", batch.getProductTypeId() != null ? batch.getProductTypeId() : "",
+                            "producedQuantity", batch.getProducedQuantity() != null ? batch.getProducedQuantity() : java.math.BigDecimal.ZERO));
+            } catch (com.cretas.aims.exception.BusinessException e) { throw e; }
+            catch (Exception e) { log.warn("Canvas validation non-blocking: {}", e.getMessage()); }
+        }
+
         batch.setFactoryId(factoryId);
         batch.setCreatedBy(userId);
         if (batch.getBatchNumber() == null) {
             batch.setBatchNumber(generateFinishedGoodsBatchNumber(factoryId));
         }
         batch = finishedGoodsBatchRepository.save(batch);
+
+        // Round 11 T3 — close the FinishedGoodsCreatedEvent gap. Previously the event only
+        // fired from SupplyChainOrchestrator after production plan completion with a
+        // sourceOrderId. Direct createFinishedGoodsBatch calls (manual entry, re-packaging,
+        // rework) were invisible to trigger chains even though the event is already
+        // whitelisted. This hook makes every finished-goods creation path observable.
+        try {
+            applicationEventPublisher.publishEvent(new com.cretas.aims.event.FinishedGoodsCreatedEvent(
+                    this,
+                    batch.getFactoryId(),
+                    null,  // sourceOrderId: null for direct creation (no production plan link)
+                    batch.getProductTypeId(),
+                    batch.getProducedQuantity(),
+                    batch.getId()));
+        } catch (Exception e) {
+            log.warn("Publish FinishedGoodsCreatedEvent failed for {}: {}", batch.getId(), e.getMessage());
+        }
+
         log.info("创建成品批次: factoryId={}, batchNumber={}, productTypeId={}", factoryId, batch.getBatchNumber(), batch.getProductTypeId());
         return batch;
     }

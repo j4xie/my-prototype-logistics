@@ -1,0 +1,82 @@
+[
+  {
+    "test": "Login",
+    "status": "PASS",
+    "evidence": "token=259"
+  },
+  {
+    "test": "销售订单 — effective config",
+    "status": "PASS",
+    "evidence": "renderingMode=DYNAMIC"
+  },
+  {
+    "test": "销售订单 — Canvas 切换",
+    "status": "PASS",
+    "evidence": "DynamicModulePage (标题=\"销售订单DYNAMIC\")"
+  },
+  {
+    "test": "采购订单 — effective config",
+    "status": "PASS",
+    "evidence": "renderingMode=LEGACY"
+  },
+  {
+    "test": "采购订单 — LEGACY 模式",
+    "status": "PASS",
+    "evidence": "renderingMode=LEGACY, 硬编码页面 (expected)"
+  },
+  {
+    "test": "生产计划 — effective config",
+    "status": "PASS",
+    "evidence": "renderingMode=LEGACY"
+  },
+  {
+    "test": "生产计划 — LEGACY 模式",
+    "status": "PASS",
+    "evidence": "renderingMode=LEGACY, 硬编码页面 (expected)"
+  },
+  {
+    "test": "仓储原料 — effective config",
+    "status": "FAIL",
+    "evidence": "renderingMode=UNKNOWN"
+  },
+  {
+    "test": "仓储原料 — LEGACY 模式",
+    "status": "PASS",
+    "evidence": "renderingMode=UNKNOWN, 硬编码页面 (expected)"
+  },
+  {
+    "test": "API disabled-modules",
+    "status": "PASS",
+    "evidence": "HTTP 200"
+  },
+  {
+    "test": "API defaults(sales_order)",
+    "status": "PASS",
+    "evidence": "HTTP 200"
+  },
+  {
+    "test": "API defaults(purchase_order)",
+    "status": "PASS",
+    "evidence": "HTTP 200"
+  },
+  {
+    "test": "API defaults(production_plan)",
+    "status": "PASS",
+    "evidence": "HTTP 200"
+  },
+  {
+    "test": "API effective(purchase_order)",
+    "status": "PASS",
+    "evidence": "HTTP 200"
+  },
+  {
+    "test": "API effective(production_plan)",
+    "status": "PASS",
+    "evidence": "HTTP 200"
+  },
+  {
+    "test": "API effective(material_batch)",
+    "status": "FAIL",
+    "evidence": "HTTP 404"
+  }
+]

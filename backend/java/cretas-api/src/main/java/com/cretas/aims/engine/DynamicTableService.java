@@ -134,7 +134,7 @@ public class DynamicTableService {
         validateTableName(subTableName);
         List<String> columns = new ArrayList<>(List.of("parent_id"));
         List<Object> values = new ArrayList<>(List.of(parentId));
-        List<String> placeholders = new ArrayList<>(List.of("?::uuid"));
+        List<String> placeholders = new ArrayList<>(List.of("CAST(? AS uuid)"));
 
         for (Map.Entry<String, Object> entry : row.entrySet()) {
             columns.add(safeColumnName(entry.getKey()));

@@ -11,6 +11,7 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -39,6 +40,13 @@ public class CreateTransferRequest {
     @Valid
     @NotEmpty(message = "调拨行项目不能为空")
     private List<TransferItemDTO> items;
+
+    /**
+     * Round 11 T4 — Canvas Integration Template slot for factory-configured
+     * dynamic fields. Fields like 运输车牌号, 司机联系方式, 预计成本 land here
+     * and are persisted to cf_* columns on internal_transfers via DynamicFieldService.
+     */
+    private Map<String, Object> customFields;
 
     @Data
     @NoArgsConstructor

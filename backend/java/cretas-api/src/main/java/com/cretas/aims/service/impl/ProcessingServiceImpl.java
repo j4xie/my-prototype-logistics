@@ -511,6 +511,17 @@ public class ProcessingServiceImpl implements ProcessingService {
         qualityInspection.setPassRate(passRate);
         qualityInspection.setResult((String) inspection.get("result"));
         qualityInspection.setNotes((String) inspection.get("notes"));
+        // Round 10 Fix Task 4 (R8-α Gap #3 per-module template): forward customFields
+        // from the incoming payload to the entity so QualityInspectionServiceImpl's
+        // dynamicFieldService hook can persist them into the cf_* columns on
+        // quality_inspections. Without this the factory's configured dynamic fields
+        // (农残二次检验结果, 温度偏差记录, etc.) would silently drop at the controller
+        // boundary even though the frontend sent them.
+        @SuppressWarnings("unchecked")
+        Map<String, Object> customFieldsFromPayload = (Map<String, Object>) inspection.get("customFields");
+        if (customFieldsFromPayload != null && !customFieldsFromPayload.isEmpty()) {
+            qualityInspection.setCustomFields(customFieldsFromPayload);
+        }
         // 通过 QualityInspectionService 保存，FAIL 时自动创建告警 + 发布事件
         QualityInspection saved = qualityInspectionService.createInspection(factoryId, qualityInspection);
         Map<String, Object> result = new HashMap<>();

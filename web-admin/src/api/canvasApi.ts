@@ -93,6 +93,18 @@ export const getConfigVersions = (factoryId: string, page = 0, size = 20) =>
 export const submitForReview = (factoryId: string) =>
   request.post(`/${factoryId}/config/submit-review`)
 
+// Round 10 Fix — dedicated reorder endpoint (replaces broken saveDraft-based flow)
+export const reorderFields = (
+  factoryId: string,
+  moduleCode: string,
+  fieldOrder: string[],
+  expectedVersion: number,
+) =>
+  request.post<{ newVersion: number; reorderedCount: number }>(
+    `/${factoryId}/config/modules/${moduleCode}/reorder-fields`,
+    { fieldOrder, expectedVersion },
+  )
+
 export const approveConfig = (factoryId: string, notes?: string) =>
   request.post(`/${factoryId}/config/approve`, { notes })
 

@@ -68,10 +68,12 @@ const stateColors: Record<string, string> = {
 async function loadWorkflow() {
   if (!props.factoryId || !props.moduleCode) return
   const config = await configStore.loadEffectiveConfig(props.factoryId, props.moduleCode)
-  if (!config?.workflow) return
+  // R25 fix: was reading config.workflow (undefined). The EffectiveModuleConfig
+  // DTO exposes workflowStates + workflowTransitions, not a nested workflow object.
+  if (!config?.workflowStates) return
 
-  const states = config.workflow.states || []
-  const transitions = config.workflow.transitions || []
+  const states = config.workflowStates || []
+  const transitions = config.workflowTransitions || []
 
   // Auto-layout: arrange states in a grid
   nodes.value = states.map((s: any, i: number) => ({
