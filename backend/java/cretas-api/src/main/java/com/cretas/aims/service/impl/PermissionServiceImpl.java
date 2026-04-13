@@ -127,6 +127,8 @@ public class PermissionServiceImpl implements PermissionService {
         warehouseManagerPerms.put("scheduling", "read");
         warehouseManagerPerms.put("inventory", "read_write");
         warehouseManagerPerms.put("report", "read");
+        warehouseManagerPerms.put("procurement", "read");
+        warehouseManagerPerms.put("sales", "read");
         PERMISSION_MATRIX.put(FactoryUserRole.warehouse_manager, warehouseManagerPerms);
 
         // warehouse_worker
