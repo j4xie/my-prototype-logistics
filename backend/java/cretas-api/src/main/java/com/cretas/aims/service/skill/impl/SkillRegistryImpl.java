@@ -323,6 +323,59 @@ public class SkillRegistryImpl implements SkillRegistry {
                 .build());
         count++;
 
+        // Restaurant diagnostics skill (Phase 2: 深度诊断 — 11 tool 聚合)
+        registerWithSource(SkillDefinition.builder()
+                .name("restaurant-diagnostics")
+                .displayName("餐饮经营深度诊断")
+                .description("基于财务数据 + POS 销售 + 评论 + 会员, 给出 cost_rigidity / 对标 / " +
+                             "时段分析 / 长尾 SKU / 评论情感 / 储值健康 多维度诊断")
+                .version("1.0.0")
+                .triggers(Arrays.asList("经营诊断", "深度分析", "为什么亏损", "成本结构", "刚性", "毛利",
+                                        "对标", "行业基准", "评分下降", "储值卡", "单店诊断", "P&L"))
+                .tools(Arrays.asList(
+                        "restaurant_cost_rigidity_analysis",
+                        "restaurant_benchmark_alert",
+                        "restaurant_channel_margin",
+                        "restaurant_dining_heatmap",
+                        "restaurant_long_tail_sku",
+                        "restaurant_menu_normalization",
+                        "restaurant_review_analysis",
+                        "restaurant_member_rfm",
+                        "restaurant_stored_value",
+                        "restaurant_store_pnl_one_pager",
+                        "restaurant_bom_layer_status",
+                        "restaurant_menu_engineering",
+                        "restaurant_forecast"
+                ))
+                .contextNeeded(Arrays.asList("factoryId"))
+                .promptTemplate("对${factoryId}进行餐饮经营深度诊断，用户问题：${userQuery}")
+                .source("default")
+                .enabled(true)
+                .build());
+        count++;
+
+        // Restaurant chain analysis skill (Phase 2: 连锁级分析)
+        registerWithSource(SkillDefinition.builder()
+                .name("restaurant-chain-analysis")
+                .displayName("餐饮连锁分析")
+                .description("多店对比 + 门店异常检测 + 月度校准历史 + 同店同比 + 跨连锁对标, " +
+                             "适用于连锁品牌总部")
+                .version("1.0.0")
+                .triggers(Arrays.asList("连锁", "多店对比", "门店排名", "异常店", "同店同比",
+                                        "跨品牌", "集团诊断", "17家店"))
+                .tools(Arrays.asList(
+                        "restaurant_multi_store_comparison",
+                        "restaurant_calibration_history",
+                        "restaurant_temporal_comparison",
+                        "restaurant_cross_chain_benchmark"
+                ))
+                .contextNeeded(Arrays.asList("factoryId"))
+                .promptTemplate("分析${factoryId}的连锁餐饮状况，用户问题：${userQuery}")
+                .source("default")
+                .enabled(true)
+                .build());
+        count++;
+
         // 成本分析Skill — BOM成本 + 成本偏差 + 成本趋势
         registerWithSource(SkillDefinition.builder()
                 .name("cost-analysis")

@@ -70,6 +70,34 @@ from .multi_store_comparator import MultiStoreComparator
 from .store_pnl_one_pager import StorePnlOnePager
 from .stored_value_analyzer import StoredValueAnalyzer
 
+# ── Section handlers (Task 1.7 orchestrator delegation) ─────
+# Each section's logic now lives in a dedicated handler under
+# smartbi.services.restaurant.sections.*. The orchestrator below
+# delegates to these handlers in the legacy section order while
+# preserving byte-identical output.
+#
+# NOTE: Several handlers (menu_normalization, channel_margin,
+# long_tail_sku, bom_layer_status) lazy-import RestaurantAnalyzerV2
+# inside their methods to bridge back into the legacy helper layer.
+# We import them at module top because their modules don't pull the
+# analyzer at import time — only inside _get_analyzer() — so the
+# circular reference resolves cleanly.
+from .sections.base import SectionRequest, SectionStatus
+from .sections.benchmark_alerts import BenchmarkAlertsHandler
+from .sections.bom_layer_status import BomLayerStatusHandler
+from .sections.calibration_history import CalibrationHistoryHandler
+from .sections.channel_margin import ChannelMarginHandler
+from .sections.diagnostics import DiagnosticsHandler
+from .sections.dining_heatmap import DiningHeatmapHandler
+from .sections.long_tail_sku import LongTailSkuHandler
+from .sections.member_rfm import MemberRfmHandler
+from .sections.menu_normalization import MenuNormalizationHandler
+from .sections.multi_store_comparison import MultiStoreComparisonHandler
+from .sections.review_analysis import ReviewAnalysisHandler
+from .sections.store_pnl_one_pager import StorePnlOnePagerHandler
+from .sections.stored_value import StoredValueHandler
+from .sections.temporal_comparison import TemporalComparisonHandler
+
 logger = logging.getLogger(__name__)
 
 
@@ -99,6 +127,11 @@ class FinancialMetrics:
     labor_cost_change_pct: Optional[float] = None
     food_cost_change_pct: Optional[float] = None
 
+    # P3.5B F2: dual margin computation (折前 + 折后)
+    gross_revenue: Optional[float] = None
+    gross_margin_folded: Optional[float] = None     # (revenue - food_cost) / revenue * 100
+    gross_margin_unfolded: Optional[float] = None   # (gross_revenue - food_cost) / gross_revenue * 100
+
     def to_dict(self) -> dict:
         return {
             "revenue": self.revenue,
@@ -115,6 +148,9 @@ class FinancialMetrics:
             "revenueChangePct": self.revenue_change_pct,
             "laborCostChangePct": self.labor_cost_change_pct,
             "foodCostChangePct": self.food_cost_change_pct,
+            "grossRevenue": self.gross_revenue,
+            "grossMarginFolded": self.gross_margin_folded,
+            "grossMarginUnfolded": self.gross_margin_unfolded,
         }
 
 
@@ -134,6 +170,8 @@ class RestaurantAnalyzerV2:
         db_session: Optional[Session] = None,
         sku_form_manager: Optional[SkuFormManager] = None,
         monthly_calibrator: Optional[MonthlyPurchaseCalibrator] = None,
+        margin_spec: Optional["MarginSpec"] = None,
+        expense_account_tree_id: Optional[str] = None,  # P3.5B F5
     ):
         if not factory_id:
             raise ValueError("factory_id 不能为空")
@@ -147,6 +185,14 @@ class RestaurantAnalyzerV2:
         # Week 4.4 BOM Layer 2 + 3 (可选)
         self.sku_form_manager = sku_form_manager
         self.monthly_calibrator = monthly_calibrator
+
+        # P3.5B F1: MarginSpec controls boundary decisions for _extract_financial_metrics
+        from smartbi.services.finance.margin_spec import MarginSpec as _MarginSpec
+        self.margin_spec = margin_spec if margin_spec is not None else _MarginSpec()
+
+        # P3.5B F5: expense account tree lazy-loaded on first access
+        self.expense_account_tree_id = expense_account_tree_id or "default"
+        self._expense_tree_cache = None  # Optional[ExpenseAccountTree]
 
         # 初始化所有底层组件
         self.config_resolver = DynamicConfigResolver(
@@ -198,6 +244,55 @@ class RestaurantAnalyzerV2:
         # W5.6 同店同比 (Week 3 写的 module, W5 集成进来)
         self.temporal_comparator = TemporalComparator(group_col="门店名称")
 
+        # ── Section handler instances (Task 1.7) ────────────
+        # Instantiated once per analyzer so each handler's internal cache
+        # (e.g. ChannelMarginHandler caches a per-(factory, sub_sector)
+        # analyzer to avoid rebuilding BomResolver) survives across calls.
+        self._menu_normalization_handler = MenuNormalizationHandler()
+        self._channel_margin_handler = ChannelMarginHandler()
+        self._diagnostics_handler = DiagnosticsHandler()
+        self._benchmark_alerts_handler = BenchmarkAlertsHandler()
+        self._store_pnl_handler = StorePnlOnePagerHandler()
+        self._dining_heatmap_handler = DiningHeatmapHandler()
+        self._stored_value_handler = StoredValueHandler()
+        self._long_tail_handler = LongTailSkuHandler()
+        self._review_analysis_handler = ReviewAnalysisHandler()
+        self._member_rfm_handler = MemberRfmHandler()
+        self._temporal_handler = TemporalComparisonHandler()
+        self._multi_store_handler = MultiStoreComparisonHandler()
+        self._calibration_handler = CalibrationHistoryHandler()
+        self._bom_layer_status_handler = BomLayerStatusHandler()
+
+    # ── P3.5B F5: expense account tree ─────────────────
+
+    def get_expense_account_tree(self):
+        """Lazy-load the expense account tree by id.
+
+        Tree YAML files live in knowledge/restaurant/expense_account_tree/{id}.yaml.
+        Default id is 'default' (5-bucket fallback). Raises FileNotFoundError
+        if the id doesn't match a YAML file.
+
+        Part of P3.5B F5. Consumers: expense_breakdown section handler (F6),
+        future leaf-level diagnostic rules.
+        """
+        if self._expense_tree_cache is None:
+            from pathlib import Path
+            from smartbi.services.finance.expense_account_tree import load_tree_from_yaml
+
+            yaml_path = (
+                Path(__file__).parents[2]
+                / "knowledge"
+                / "restaurant"
+                / "expense_account_tree"
+                / f"{self.expense_account_tree_id}.yaml"
+            )
+            if not yaml_path.exists():
+                raise FileNotFoundError(
+                    f"Expense account tree {self.expense_account_tree_id!r} not found at {yaml_path}"
+                )
+            self._expense_tree_cache = load_tree_from_yaml(yaml_path)
+        return self._expense_tree_cache
+
     # ── 主入口 ─────────────────────────────────────────
 
     def analyze(
@@ -209,7 +304,7 @@ class RestaurantAnalyzerV2:
         period: str = "current",
         product_col: str = "商品名称",
         order_method_col: str = "订单来源",
-        revenue_col: str = "实收额",
+        revenue_col: str = "实收",
         datetime_col: str = "开单时间",
         quantity_col: str = "数量",
         reviews: Optional[list[dict]] = None,
@@ -244,129 +339,9 @@ class RestaurantAnalyzerV2:
             "executiveSummary": [],
         }
 
-        # ─── Section 1: 命名归一 (POS only) ───
-        if pos_df is not None and product_col in pos_df.columns:
-            menu_section = self._normalize_menu(pos_df, product_col)
-            report["sections"]["menuNormalization"] = menu_section
-
-        # ─── Section 2: 渠道毛利率 (POS only) ───
-        if pos_df is not None and order_method_col in pos_df.columns and revenue_col in pos_df.columns:
-            channel_section = self._compute_channel_margin(
-                pos_df, order_method_col, revenue_col, store_id, period
-            )
-            report["sections"]["channelMargin"] = channel_section
-
-            # 渠道分析的 advice 进 executive summary
-            for advice in channel_section.get("adviceZh", []):
-                report["executiveSummary"].append(advice)
-        else:
-            if pos_df is not None:
-                report["warnings"].append(
-                    f"POS 数据缺少列 {order_method_col!r} 或 {revenue_col!r}, 跳过渠道毛利率分析"
-                )
-
-        # ─── Section 3: 财务诊断 + 对标预警 (financial only) ───
-        if financial_data:
-            metrics = self._extract_financial_metrics(financial_data)
-            report["sections"]["financialMetrics"] = metrics.to_dict()
-
-            # 跑诊断
-            diagnoses = self._run_diagnostics(metrics)
-            report["sections"]["diagnostics"] = [d.to_dict() for d in diagnoses]
-
-            # 跑对标预警
-            monthly_revenue = financial_data.get("monthly_revenue") or metrics.revenue
-            alerts = self._run_benchmark_alerts(
-                metrics, store_name or store_id or "店铺", monthly_revenue
-            )
-            report["sections"]["benchmarkAlerts"] = [a.to_dict() for a in alerts]
-
-            # 把 critical/red 诊断 + 对标进 executive summary
-            for d in diagnoses:
-                if d.severity == "critical":
-                    report["executiveSummary"].insert(
-                        0, f"🔴 [{d.metric_name_zh}] {d.description_zh[:80] if d.description_zh else d.status}"
-                    )
-            for a in alerts[:3]:
-                if a.severity in ("red", "yellow"):
-                    report["executiveSummary"].append(a.message_zh)
-        else:
-            report["warnings"].append(
-                "未提供财务数据 (financial_data), 跳过 cost_rigidity / 食材率 / 人力率 等财务诊断"
-            )
-
-        # ─── Week 4.1: 单店 P&L 一页纸 (需 financial + optional channel/pos) ───
-        if financial_data:
-            try:
-                pnl_report = self.store_pnl_one_pager.build(
-                    financial_metrics=report["sections"].get("financialMetrics", {}),
-                    diagnostics=report["sections"].get("diagnostics", []),
-                    benchmark_alerts=report["sections"].get("benchmarkAlerts", []),
-                    channel_margin=report["sections"].get("channelMargin"),
-                    temporal_comparison=None,
-                    store_name=store_name or "本店",
-                    period=period,
-                    sub_sector=self.sub_sector,
-                )
-                report["sections"]["storePnlOnePager"] = pnl_report.to_dict()
-                # 把 headline 放 executive summary 顶部
-                if pnl_report.headline:
-                    report["executiveSummary"].insert(0, f"📋 {pnl_report.headline}")
-            except Exception as e:
-                logger.warning(f"store_pnl_one_pager 失败: {e}")
-                report["warnings"].append(f"单店 P&L 一页纸生成失败: {e}")
-
-        # ─── Week 4.2: 营业时段热力图 (需 POS 含时间列) ───
-        if pos_df is not None and datetime_col in pos_df.columns and revenue_col in pos_df.columns:
-            try:
-                heatmap_report = self.dining_heatmap.build(
-                    df=pos_df,
-                    datetime_col=datetime_col,
-                    revenue_col=revenue_col,
-                )
-                report["sections"]["diningHeatmap"] = heatmap_report.to_dict()
-            except Exception as e:
-                logger.warning(f"dining_heatmap 失败: {e}")
-                report["warnings"].append(f"营业时段热力图生成失败: {e}")
-
-        # ─── Week 4.3a: 充卡依赖度 (需 financial 含 stored_value) ───
-        if financial_data:
-            current = financial_data.get("current") or financial_data
-            giveaway = self._safe_float(current.get("stored_value_giveaway"))
-            if giveaway is not None and giveaway > 0:
-                try:
-                    sv_report = self.stored_value_analyzer.analyze(
-                        stored_value_giveaway=giveaway,
-                        revenue=float(current.get("revenue", 0)),
-                        stored_value_charge=self._safe_float(current.get("stored_value_charge")),
-                        previous_balance=self._safe_float(current.get("previous_stored_value_balance")),
-                    )
-                    report["sections"]["storedValueDependency"] = sv_report.to_dict()
-                    if sv_report.severity in ("warning", "critical"):
-                        report["executiveSummary"].append(sv_report.message_zh)
-                except Exception as e:
-                    logger.warning(f"stored_value_analyzer 失败: {e}")
-
-        # ─── Week 4.3b: 长尾 SKU 识别 (需 POS 含商品 + quantity + revenue) ───
-        if pos_df is not None and product_col in pos_df.columns and revenue_col in pos_df.columns:
-            try:
-                menu_items = self._build_menu_items_for_long_tail(
-                    pos_df, product_col, quantity_col, revenue_col
-                )
-                if menu_items:
-                    lt_report = self.long_tail_detector.detect(
-                        menu_items=menu_items, exclude_seasonal=True
-                    )
-                    report["sections"]["longTailSku"] = lt_report.to_dict()
-                    if lt_report.recommended_delist_count > 0:
-                        report["executiveSummary"].append(
-                            f"🔻 长尾 SKU: 建议下架 {lt_report.recommended_delist_count} 个, "
-                            f"预计年省 ¥{lt_report.estimated_cost_saving:,.0f}"
-                        )
-            except Exception as e:
-                logger.warning(f"long_tail_detector 失败: {e}")
-
-        # ─── W6: Auto-load reviews from DB if not provided in request ───
+        # ── W6: Auto-load reviews from DB if not provided in request ──
+        # Done up-front so the loaded reviews can flow into both review_analysis
+        # and multi_store_comparison handlers via context.
         if not reviews and self.db_session:
             try:
                 from smartbi.database.models import RestaurantReview
@@ -389,140 +364,365 @@ class RestaurantAnalyzerV2:
                         }
                         for r in db_reviews
                     ]
-                    logger.info(f"Auto-loaded {len(reviews)} reviews from DB for factory {self.factory_id}")
+                    logger.info(
+                        f"Auto-loaded {len(reviews)} reviews from DB for factory {self.factory_id}"
+                    )
             except Exception as e:
                 logger.warning(f"Failed to auto-load reviews from DB: {e}")
 
-        # ─── Week 4.5 / W5.5: 大众点评评论分析 (需 reviews 输入) ───
-        if reviews:
-            review_report = None
-            used_llm = False
-            if use_llm_reviews:
-                try:
-                    review_report = self.llm_review_analyzer.analyze(
-                        reviews, min_mentions=2, max_reviews=200
-                    )
-                    used_llm = True
-                except Exception as e:
-                    logger.warning(f"LLM review_analyzer failed, fallback to regex: {e}")
-                    review_report = None
-                    used_llm = False
-            if review_report is None:
-                try:
-                    review_report = self.review_analyzer.analyze(
-                        reviews=reviews, min_mentions=2
-                    )
-                except Exception as e:
-                    logger.warning(f"review_analyzer failed: {e}")
-                    report["warnings"].append(f"评论分析失败: {e}")
-                    review_report = None
-            if review_report is not None:
-                section = review_report.to_dict()
-                section["usedLlm"] = used_llm
-                report["sections"]["reviewAnalysis"] = section
-                for alert in review_report.risk_alerts[:2]:
-                    report["executiveSummary"].append(alert)
+        # ── Build the per-section request template ──
+        # Each handler gets the same factory/sub_sector/store metadata; the
+        # `params` dict carries section-specific inputs (POS DataFrame,
+        # financial data, column overrides, etc).
+        base_params: dict[str, Any] = {
+            "pos_df": pos_df,
+            "financial_data": financial_data,
+            "product_col": product_col,
+            "order_method_col": order_method_col,
+            "revenue_col": revenue_col,
+            "datetime_col": datetime_col,
+            "quantity_col": quantity_col,
+            "store_col": "门店名称",
+            "reviews": reviews,
+            "members": members,
+            "use_llm": use_llm_reviews,
+        }
 
-        # ─── W5.4: 会员 RFM 分析 (需 members 或 POS 含 member_id) ───
+        def _make_req(extra: Optional[dict[str, Any]] = None) -> SectionRequest:
+            params = dict(base_params)
+            if extra:
+                params.update(extra)
+            return SectionRequest(
+                factory_id=self.factory_id,
+                upload_id=None,
+                sub_sector=self.sub_sector,
+                store_id=store_id,
+                store_name=store_name,
+                period=period,
+                params=params,
+            )
+
+        # ── Shared context for handlers in the batch ──
+        # Some handlers read pre-staged values from context (e.g. financial
+        # metrics) instead of recomputing. We mutate this dict between phases
+        # because diagnostics+benchmark_alerts need a snake_case ratio dict
+        # while store_pnl_one_pager needs the camelCase FinancialMetrics dict.
+        context: dict[str, Any] = {}
+        if pos_df is not None:
+            context["pos_df"] = pos_df
+        if reviews:
+            context["reviews"] = reviews
         if members:
-            try:
-                rfm_report = self.member_rfm_analyzer.analyze(
-                    members=members, as_of_date=period
+            context["members"] = members
+        if self.db_session is not None:
+            context["db_session"] = self.db_session
+        # P3.5B F8: propagate stored_value treatment from margin_spec to stored_value handler
+        context["stored_value_mode"] = self.margin_spec.stored_value_treatment
+
+        # ── Section 1: 命名归一 (POS only) ──
+        # NOTE: explicit `is None` checks — pandas DataFrames raise ValueError on truthiness.
+        # DIRECT CALL: MenuNormalizationHandler.lazy-builds an inner V2 without
+        # forwarding db_session, so its menu_normalizer.apply() can't read the
+        # restaurant_dish_alias table — silently dropping customer-confirmed
+        # alias merges. self.menu_normalizer carries the correct db_session
+        # because __init__ wired it. See TODO(P2): refactor handlers to accept
+        # state via context.
+        if pos_df is not None and product_col in pos_df.columns:
+            report["sections"]["menuNormalization"] = self._normalize_menu(pos_df, product_col)
+
+        # ── Section 2: 渠道毛利率 (POS only) ──
+        # Legacy emits a warning if POS is provided but the required columns
+        # are missing — preserve that exact warning string for byte identity.
+        # DIRECT CALL: ChannelMarginHandler.lazy-builds an inner V2 without
+        # forwarding sku_form_manager / monthly_calibrator / db_session, so
+        # its bom_resolver runs at Layer 1 — silently downgrading the precision
+        # of channel-level COGS / gross_profit / gross_margin_pct. self.channel_margin_calc
+        # carries the correct bom_resolver with full state. See TODO(P2):
+        # refactor handlers to accept state via context.
+        if (
+            pos_df is not None
+            and order_method_col in pos_df.columns
+            and revenue_col in pos_df.columns
+        ):
+            channel_section = self._compute_channel_margin(
+                pos_df, order_method_col, revenue_col, store_id, period
+            )
+            report["sections"]["channelMargin"] = channel_section
+            # 渠道分析的 advice 进 executive summary
+            for advice in channel_section.get("adviceZh", []):
+                report["executiveSummary"].append(advice)
+        else:
+            if pos_df is not None:
+                report["warnings"].append(
+                    f"POS 数据缺少列 {order_method_col!r} 或 {revenue_col!r}, 跳过渠道毛利率分析"
                 )
-                report["sections"]["memberRfm"] = rfm_report.to_dict()
-                champions = rfm_report.segment_counts.get("Champions", 0)
-                if champions > 0 and rfm_report.analyzed_members > 0:
-                    champ_rev = rfm_report.segment_revenue.get("Champions", 0)
-                    total_rev = sum(rfm_report.segment_revenue.values()) or 1
+
+        # ── Section 3: 财务诊断 + 对标预警 (financial only) ──
+        # The DiagnosticsHandler / BenchmarkAlertsHandler both expect a
+        # snake_case ratio dict in context["financial_metrics"]. The legacy
+        # _run_diagnostics() builds exactly that dict from a FinancialMetrics
+        # instance — we reuse it via _diagnostics_metric_dict() so the
+        # engine sees identical keys.
+        if financial_data:
+            metrics = self._extract_financial_metrics(financial_data)
+            report["sections"]["financialMetrics"] = metrics.to_dict()
+
+            ratio_metric_dict = self._diagnostics_metric_dict(metrics)
+
+            # Stage snake_case ratios in context for diagnostics + benchmark_alerts.
+            context["financial_metrics"] = ratio_metric_dict
+            context["financial_data"] = financial_data
+
+            # 跑诊断
+            diagnostics_resp = self._diagnostics_handler.compute(_make_req(), context)
+            if diagnostics_resp.status == SectionStatus.OK:
+                # DiagnosticsHandler.data wraps the list in a dict
+                # ({"diagnoses": [...], "criticalCount": N, "totalCount": N}),
+                # while the legacy report stores the raw list. Unwrap.
+                diagnostics_list = diagnostics_resp.data.get("diagnoses", [])
+            else:
+                diagnostics_list = []
+            report["sections"]["diagnostics"] = diagnostics_list
+
+            # 跑对标预警
+            alerts_resp = self._benchmark_alerts_handler.compute(_make_req(), context)
+            if alerts_resp.status == SectionStatus.OK:
+                # BenchmarkAlertsHandler.data wraps the list in a dict
+                # ({"alerts": [...], "redCount": N, ...}); legacy stores the
+                # raw list. Unwrap.
+                alerts_list = alerts_resp.data.get("alerts", [])
+            else:
+                alerts_list = []
+            report["sections"]["benchmarkAlerts"] = alerts_list
+
+            # 把 critical/red 诊断 + 对标进 executive summary
+            # NOTE: legacy iterates the Diagnosis dataclass list; here we
+            # iterate the unwrapped dict list. Field names are camelCase
+            # because Diagnosis.to_dict() / Alert.to_dict() use camelCase.
+            for d in diagnostics_list:
+                if d.get("severity") == "critical":
+                    metric_name_zh = d.get("metricNameZh", "")
+                    description_zh = d.get("descriptionZh") or d.get("status", "")
+                    truncated = description_zh[:80] if description_zh else d.get("status", "")
+                    report["executiveSummary"].insert(
+                        0, f"🔴 [{metric_name_zh}] {truncated}"
+                    )
+            for a in alerts_list[:3]:
+                if a.get("severity") in ("red", "yellow"):
+                    report["executiveSummary"].append(a.get("messageZh", ""))
+        else:
+            report["warnings"].append(
+                "未提供财务数据 (financial_data), 跳过 cost_rigidity / 食材率 / 人力率 等财务诊断"
+            )
+
+        # ── Week 4.1: 单店 P&L 一页纸 (需 financial + optional channel/pos) ──
+        # The handler reads context["financial_metrics"], so we swap the
+        # snake_case ratio dict (used by diagnostics above) for the
+        # camelCase FinancialMetrics.to_dict() that StorePnlOnePager expects.
+        # Also stage the unwrapped diagnostics + benchmark_alerts lists for
+        # the handler's optional inputs.
+        if financial_data:
+            context["financial_metrics"] = report["sections"]["financialMetrics"]
+            context["diagnostics"] = report["sections"].get("diagnostics", [])
+            context["benchmark_alerts"] = report["sections"].get("benchmarkAlerts", [])
+            context["channel_margin"] = report["sections"].get("channelMargin")
+            # Legacy passes temporal_comparison=None here regardless of whether
+            # the temporal section runs later — preserve that.
+            context["temporal_comparison"] = None
+
+            pnl_resp = self._store_pnl_handler.compute(_make_req(), context)
+            if pnl_resp.status == SectionStatus.OK:
+                pnl_section = pnl_resp.data
+                report["sections"]["storePnlOnePager"] = pnl_section
+                headline = pnl_section.get("headline")
+                if headline:
+                    report["executiveSummary"].insert(0, f"📋 {headline}")
+            else:
+                # Legacy logs a warning + adds to report.warnings on exception.
+                # The handler maps exceptions to SKIPPED, so we synthesize the
+                # warning text here when the skip reason indicates a build error.
+                for w in pnl_resp.warnings:
+                    if "store_pnl 构建失败" in w:
+                        # Strip the handler prefix and reuse the original
+                        # legacy phrasing for byte identity.
+                        err = w.replace("store_pnl 构建失败: ", "")
+                        logger.warning(f"store_pnl_one_pager 失败: {err}")
+                        report["warnings"].append(f"单店 P&L 一页纸生成失败: {err}")
+
+        # ── Week 4.2: 营业时段热力图 (需 POS 含时间列) ──
+        if (
+            pos_df is not None
+            and datetime_col in pos_df.columns
+            and revenue_col in pos_df.columns
+        ):
+            heatmap_resp = self._dining_heatmap_handler.compute(_make_req(), context)
+            if heatmap_resp.status == SectionStatus.OK:
+                report["sections"]["diningHeatmap"] = heatmap_resp.data
+            else:
+                # Legacy: warns + appends to report.warnings on exception only.
+                for w in heatmap_resp.warnings:
+                    if "dining_heatmap 生成失败" in w:
+                        err = w.replace("dining_heatmap 生成失败: ", "")
+                        logger.warning(f"dining_heatmap 失败: {err}")
+                        report["warnings"].append(f"营业时段热力图生成失败: {err}")
+
+        # ── Week 4.3a: 充卡依赖度 (需 financial 含 stored_value) ──
+        # Legacy gates this section on giveaway > 0 BEFORE running. The handler
+        # also gates internally and returns SKIPPED otherwise. To preserve the
+        # legacy "no warnings on missing giveaway" behavior we mirror the
+        # outer guard here so the SKIPPED response never triggers a warning.
+        if financial_data:
+            current = financial_data.get("current") or financial_data
+            giveaway = self._safe_float(current.get("stored_value_giveaway"))
+            if giveaway is not None and giveaway > 0:
+                sv_resp = self._stored_value_handler.compute(_make_req(), context)
+                if sv_resp.status == SectionStatus.OK:
+                    sv_section = sv_resp.data
+                    report["sections"]["storedValueDependency"] = sv_section
+                    severity = sv_section.get("severity")
+                    if severity in ("warning", "critical"):
+                        message_zh = sv_section.get("messageZh") or sv_section.get("message_zh", "")
+                        if message_zh:
+                            report["executiveSummary"].append(message_zh)
+                else:
+                    # Legacy only logs (no warnings.append) on stored_value failure
+                    for w in sv_resp.warnings:
+                        if "stored_value_analyzer" in w:
+                            logger.warning(f"stored_value_analyzer 失败: {w}")
+
+        # ── Week 4.3b: 长尾 SKU 识别 (需 POS 含商品 + quantity + revenue) ──
+        if (
+            pos_df is not None
+            and product_col in pos_df.columns
+            and revenue_col in pos_df.columns
+        ):
+            lt_resp = self._long_tail_handler.compute(_make_req(), context)
+            if lt_resp.status == SectionStatus.OK:
+                lt_section = lt_resp.data
+                report["sections"]["longTailSku"] = lt_section
+                recommended = lt_section.get("recommendedDelistCount", 0)
+                if recommended and recommended > 0:
+                    saving = lt_section.get("estimatedCostSaving", 0)
+                    report["executiveSummary"].append(
+                        f"🔻 长尾 SKU: 建议下架 {recommended} 个, "
+                        f"预计年省 ¥{saving:,.0f}"
+                    )
+            else:
+                # Legacy only logs (no warnings.append) on long_tail failure
+                for w in lt_resp.warnings:
+                    if "long_tail" in w:
+                        logger.warning(f"long_tail_detector 失败: {w}")
+
+        # ── Week 4.5 / W5.5: 大众点评评论分析 (需 reviews 输入) ──
+        if reviews:
+            review_resp = self._review_analysis_handler.compute(_make_req(), context)
+            if review_resp.status == SectionStatus.OK:
+                review_section = review_resp.data
+                report["sections"]["reviewAnalysis"] = review_section
+                # Risk alerts (top 2) into executive summary
+                for alert in review_section.get("riskAlerts", [])[:2]:
+                    report["executiveSummary"].append(alert)
+            else:
+                # Legacy: appends "评论分析失败: ..." to warnings on regex failure
+                for w in review_resp.warnings:
+                    if "review_analyzer" in w:
+                        report["warnings"].append(f"评论分析失败: {w}")
+
+        # ── W5.4: 会员 RFM 分析 (需 members 或 POS 含 member_id) ──
+        if members:
+            rfm_resp = self._member_rfm_handler.compute(_make_req(), context)
+            if rfm_resp.status == SectionStatus.OK:
+                rfm_section = rfm_resp.data
+                report["sections"]["memberRfm"] = rfm_section
+                segment_counts = rfm_section.get("segmentCounts", {}) or {}
+                segment_revenue = rfm_section.get("segmentRevenue", {}) or {}
+                champions = segment_counts.get("Champions", 0)
+                analyzed = rfm_section.get("analyzedMembers", 0)
+                if champions > 0 and analyzed > 0:
+                    champ_rev = segment_revenue.get("Champions", 0)
+                    total_rev = sum(segment_revenue.values()) or 1
                     report["executiveSummary"].append(
                         f"🌟 Champions {champions} 人贡献 {champ_rev / total_rev * 100:.0f}% 营收"
                     )
-            except Exception as e:
-                logger.warning(f"member_rfm 失败: {e}")
-                report["warnings"].append(f"会员 RFM 失败: {e}")
+            else:
+                for w in rfm_resp.warnings:
+                    if "member_rfm" in w:
+                        report["warnings"].append(f"会员 RFM 失败: {w}")
 
-        # ─── W5.6: 同店同比 (需 POS 含时间 + 门店名称 + 实收额) ───
-        if pos_df is not None and datetime_col in pos_df.columns and revenue_col in pos_df.columns:
-            try:
-                # Check if 门店名称 column exists
-                if "门店名称" in pos_df.columns:
-                    temporal_report = self.temporal_comparator.compare(
-                        df=pos_df,
-                        date_col=datetime_col,
-                        metric_cols=[revenue_col],
-                    )
-                    report["sections"]["temporalComparison"] = temporal_report.to_dict()
-                    if temporal_report.mode != "insufficient":
-                        report["executiveSummary"].append(
-                            f"📊 {temporal_report.message_zh}"
-                        )
-            except Exception as e:
-                logger.warning(f"temporal_comparator 失败: {e}")
-                report["warnings"].append(f"同店同比生成失败: {e}")
+        # ── W5.6: 同店同比 (需 POS 含时间 + 门店名称 + 实收额) ──
+        if (
+            pos_df is not None
+            and datetime_col in pos_df.columns
+            and revenue_col in pos_df.columns
+            and "门店名称" in pos_df.columns
+        ):
+            temporal_resp = self._temporal_handler.compute(_make_req(), context)
+            if temporal_resp.status == SectionStatus.OK:
+                temporal_section = temporal_resp.data
+                report["sections"]["temporalComparison"] = temporal_section
+                if temporal_section.get("mode") != "insufficient":
+                    msg = temporal_section.get("messageZh", "")
+                    report["executiveSummary"].append(f"📊 {msg}")
+            else:
+                for w in temporal_resp.warnings:
+                    if "temporal" in w:
+                        report["warnings"].append(f"同店同比生成失败: {w}")
 
-        # ─── W6.4: 多店对比 (需 POS 含 门店名称 且 ≥2 店) ───
+        # ── W6.4: 多店对比 (需 POS 含 门店名称 且 ≥2 店) ──
         store_col = "门店名称"
         if pos_df is not None and store_col in pos_df.columns:
             unique_stores = pos_df[store_col].dropna().nunique()
             if unique_stores >= 2:
-                try:
-                    multi_report = self.multi_store_comparator.compare(
-                        pos_df=pos_df,
-                        revenue_col=revenue_col,
-                        product_col=product_col,
-                        store_col=store_col,
-                        quantity_col=quantity_col,
-                        reviews=reviews,
-                    )
-                    report["sections"]["multiStoreComparison"] = multi_report.to_dict()
-                    # Top insight into executive summary
-                    if multi_report.insights:
-                        report["executiveSummary"].append(
-                            f"🏪 {multi_report.insights[0]}"
-                        )
-                    # Anomalies into executive summary
-                    for anomaly in multi_report.anomalies[:2]:
-                        if anomaly.severity == "critical":
+                multi_resp = self._multi_store_handler.compute(_make_req(), context)
+                if multi_resp.status == SectionStatus.OK:
+                    multi_section = multi_resp.data
+                    report["sections"]["multiStoreComparison"] = multi_section
+                    insights = multi_section.get("insights", [])
+                    if insights:
+                        report["executiveSummary"].append(f"🏪 {insights[0]}")
+                    for anomaly in multi_section.get("anomalies", [])[:2]:
+                        if anomaly.get("severity") == "critical":
                             report["executiveSummary"].append(
-                                f"🔴 {anomaly.message_zh}"
+                                f"🔴 {anomaly.get('messageZh', '')}"
                             )
-                except Exception as e:
-                    logger.warning(f"multi_store_comparator 失败: {e}")
-                    report["warnings"].append(f"多店对比分析失败: {e}")
+                else:
+                    for w in multi_resp.warnings:
+                        if "multi_store" in w:
+                            report["warnings"].append(f"多店对比分析失败: {w}")
 
-        # ─── W5.7: Layer A 月度校准历史 (需 db_session + ≥1 月数据) ───
+        # ── W5.7: Layer A 月度校准历史 (需 db_session + ≥1 月数据) ──
         if self.calibration_reporter is not None:
-            try:
-                history_report = self.calibration_reporter.generate(
-                    factory_id=self.factory_id,
-                    store_id=store_id,
-                    months_back=6,
-                )
-                # 没数据时不添加 section, 用户感受不到 (graceful skip)
-                if history_report.total_periods > 0:
-                    report["sections"]["calibrationHistory"] = (
-                        history_report.to_dict()
+            calibration_resp = self._calibration_handler.compute(_make_req(), context)
+            if calibration_resp.status == SectionStatus.OK:
+                history_section = calibration_resp.data
+                report["sections"]["calibrationHistory"] = history_section
+                anomalies = history_section.get("anomalies", []) or []
+                critical_anomalies = [
+                    a for a in anomalies if a.get("severity") == "critical"
+                ]
+                total_periods = history_section.get("totalPeriods", 0)
+                if critical_anomalies:
+                    report["executiveSummary"].append(
+                        f"📅 BOM 校准历史: {len(critical_anomalies)} 个严重月份异常, "
+                        "建议复盘"
                     )
-                    # 严重异常进 executive summary
-                    critical_anomalies = [
-                        a
-                        for a in history_report.anomalies
-                        if a.severity == "critical"
-                    ]
-                    if critical_anomalies:
-                        report["executiveSummary"].append(
-                            f"📅 BOM 校准历史: {len(critical_anomalies)} 个严重月份异常, "
-                            "建议复盘"
-                        )
-                    elif history_report.total_periods >= 6 and not history_report.anomalies:
-                        report["executiveSummary"].append(
-                            f"✅ BOM 校准历史: {history_report.total_periods} 月走势稳定"
-                        )
-            except Exception as e:
-                logger.warning(f"calibration_reporter 失败: {e}")
-                report["warnings"].append(f"月度校准历史报告失败: {e}")
+                elif total_periods >= 6 and not anomalies:
+                    report["executiveSummary"].append(
+                        f"✅ BOM 校准历史: {total_periods} 月走势稳定"
+                    )
+            else:
+                for w in calibration_resp.warnings:
+                    if "calibration history" in w:
+                        report["warnings"].append(f"月度校准历史报告失败: {w}")
 
-        # ─── Week 4.4: BOM Layer status (报告当前精度状态) ───
+        # ── Week 4.4: BOM Layer status (报告当前精度状态) ──
+        # Always emitted (legacy line: report["sections"]["bomLayerStatus"] = ...).
+        # DIRECT CALL: BomLayerStatusHandler.lazy-builds an inner V2 without
+        # forwarding sku_form_manager / monthly_calibrator, so its
+        # _build_bom_layer_status() always reports Layer 1 — silently masking
+        # any Layer 2/3 precision the outer analyzer was configured for.
+        # self._build_bom_layer_status() inspects the outer analyzer's state
+        # correctly. See TODO(P2): refactor handlers to accept state via context.
         report["sections"]["bomLayerStatus"] = self._build_bom_layer_status()
 
         # ─── 总结统计 ───
@@ -580,6 +780,7 @@ class RestaurantAnalyzerV2:
         revenue_col: str,
         store_id: Optional[str],
         period: str,
+        venue_list: Optional[list[str]] = None,
     ) -> dict:
         """渠道毛利率 (改进 6 真名版)"""
         report = self.channel_margin_calc.calculate(
@@ -588,6 +789,7 @@ class RestaurantAnalyzerV2:
             revenue_col=revenue_col,
             store_id=store_id,
             period=period,
+            venue_list=venue_list,
         )
         return report.to_dict()
 
@@ -615,6 +817,17 @@ class RestaurantAnalyzerV2:
         other_cost = self._safe_float(current.get("other_cost"))
         net_profit = self._safe_float(current.get("net_profit"))
 
+        # P3.5B F1: Apply MarginSpec boundary decisions
+        if food_cost is not None:
+            if self.margin_spec.include_staff_meal_in_cogs:
+                staff_meal = self._safe_float(current.get("staff_meal_cost"))
+                if staff_meal is not None:
+                    food_cost = food_cost + staff_meal
+            if self.margin_spec.include_gas_in_cogs:
+                gas_cost = self._safe_float(current.get("gas_cost"))
+                if gas_cost is not None:
+                    food_cost = food_cost + gas_cost
+
         # 比率
         food_cost_ratio = food_cost / revenue * 100 if food_cost and revenue > 0 else None
         labor_cost_ratio = labor_cost / revenue * 100 if labor_cost and revenue > 0 else None
@@ -633,6 +846,18 @@ class RestaurantAnalyzerV2:
             rent_ratio=rent_ratio,
             restaurant_net_margin=net_margin,
         )
+
+        # P3.5B F2: dual margin (折前 + 折后)
+        gross_revenue = self._safe_float(current.get("gross_revenue"))
+        if gross_revenue is None or gross_revenue <= 0:
+            gross_revenue = revenue  # fallback: 折前 == 折后 when no discount data
+        metrics.gross_revenue = gross_revenue
+
+        if food_cost is not None:
+            if revenue > 0:
+                metrics.gross_margin_folded = (revenue - food_cost) / revenue * 100
+            if gross_revenue > 0:
+                metrics.gross_margin_unfolded = (gross_revenue - food_cost) / gross_revenue * 100
 
         # cost_rigidity (需要 previous)
         if previous:
@@ -662,11 +887,15 @@ class RestaurantAnalyzerV2:
 
         return metrics
 
-    def _run_diagnostics(self, metrics: FinancialMetrics) -> list:
-        """跑 DiagnosticsEngine"""
-        # 转 metrics 为 dict
-        metric_dict: dict[str, float] = {}
+    def _diagnostics_metric_dict(self, metrics: FinancialMetrics) -> dict[str, float]:
+        """Build the snake_case ratio dict that DiagnosticsEngine /
+        BenchmarkAlertEngine consume.
 
+        This is the canonical shape passed via context["financial_metrics"]
+        to the section handlers in the orchestrator. Mirrors the legacy
+        _run_diagnostics() / _run_benchmark_alerts() metric_dict construction.
+        """
+        metric_dict: dict[str, float] = {}
         if metrics.food_cost_ratio is not None:
             metric_dict["food_cost_ratio"] = metrics.food_cost_ratio
         if metrics.labor_cost_ratio is not None:
@@ -677,8 +906,14 @@ class RestaurantAnalyzerV2:
             metric_dict["restaurant_net_margin"] = metrics.restaurant_net_margin
         if metrics.cost_rigidity is not None:
             metric_dict["cost_rigidity"] = metrics.cost_rigidity
+        return metric_dict
 
-        return self.diagnostics_engine.run(metric_dict)
+    def _run_diagnostics(self, metrics: FinancialMetrics) -> list:
+        """跑 DiagnosticsEngine (legacy helper, kept for backwards compat /
+        ad-hoc reuse outside the orchestrator). The orchestrator now invokes
+        DiagnosticsHandler directly.
+        """
+        return self.diagnostics_engine.run(self._diagnostics_metric_dict(metrics))
 
     def _run_benchmark_alerts(
         self,

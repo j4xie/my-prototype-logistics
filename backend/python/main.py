@@ -72,6 +72,7 @@ from smartbi.api import (
     rfm,
     financial_ratios,
 )
+from smartbi.api import restaurant_sections
 
 # Import Efficiency Recognition API routers (optional - requires opencv)
 try:
@@ -375,6 +376,7 @@ app.include_router(analysis_cache.router, prefix="/api/smartbi", tags=["Analysis
 app.include_router(benchmark.router, prefix="/api/smartbi", tags=["Industry Benchmark"])
 app.include_router(finance_extract.router, prefix="/api/finance", tags=["Finance Extract"])
 app.include_router(restaurant_analytics.router, prefix="/api/smartbi", tags=["Restaurant Analytics"])
+app.include_router(restaurant_sections.router, tags=["Restaurant Sections"])
 app.include_router(production_ai.router, prefix="/api/smartbi", tags=["Production AI"])
 app.include_router(financial_dashboard.router, prefix="/api/smartbi/financial-dashboard", tags=["Financial Dashboard"])
 app.include_router(layout.router, prefix="/api/smartbi", tags=["Dashboard Layout"])

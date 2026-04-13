@@ -184,7 +184,7 @@ class MultiStoreComparator:
     def compare(
         self,
         pos_df: pd.DataFrame,
-        revenue_col: str = "实收额",
+        revenue_col: str = "实收",
         product_col: str = "商品名称",
         store_col: str = "门店名称",
         quantity_col: str = "数量",

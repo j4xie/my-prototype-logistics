@@ -50,6 +50,7 @@ PUBLIC_PREFIXES = (
     "/api/excel/",       # Excel parsing — called by Java backend internally (no JWT forwarded)
     "/api/smartbi/excel/",  # SmartBI Excel endpoints — called by Java backend internally
     "/api/smartbi/analysis-cache/",  # SmartBI analysis cache — browser direct calls
+    "/api/smartbi/restaurant/sections/",  # Restaurant section handlers — called by Java backend internally
     "/api/smartbi/cross-sheet",  # Cross-sheet analysis
     "/api/smartbi/yoy-",  # YoY comparison
     "/api/smartbi/benchmark",  # Industry benchmarks

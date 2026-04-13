@@ -26,7 +26,9 @@ import {
   InfoFilled,
   Money,
   DataAnalysis,
+  ChatDotRound,
 } from '@element-plus/icons-vue';
+import RestaurantChatPanel from './components/chat/RestaurantChatPanel.vue';
 import { getUploadHistory, type UploadHistoryItem } from '@/api/smartbi/upload';
 import {
   computeRestaurantAnalyticsV2,
@@ -81,6 +83,9 @@ const financialPrevious = ref({
 const subSector = ref<string>('火锅');
 const storeName = ref<string>('');
 const period = ref<string>('2026-02');
+
+// P5 Task 5.3: chat drawer state
+const chatDrawerVisible = ref(false);
 
 // 邓总 demo 快捷填写
 function fillDengHuoguoDemo() {
@@ -616,6 +621,9 @@ function formatCurrency(v?: number): string {
             </el-button>
             <el-button type="success" :icon="Money" @click="openBomIngest">
               BOM 数据录入
+            </el-button>
+            <el-button type="primary" :icon="ChatDotRound" @click="chatDrawerVisible = true">
+              聊天问答
             </el-button>
           </el-form-item>
         </el-form>
@@ -1678,6 +1686,22 @@ function formatCurrency(v?: number): string {
       :factory-id="factoryId || 'F001'"
       @data-changed="onBomDataChanged"
     />
+
+    <!-- P5 Task 5.3: chat drawer -->
+    <el-drawer
+      v-model="chatDrawerVisible"
+      direction="rtl"
+      size="480px"
+      :with-header="false"
+      :append-to-body="true"
+      :destroy-on-close="false"
+    >
+      <RestaurantChatPanel
+        :factory-id="factoryId || 'F001'"
+        :sub-sector="subSector"
+        :upload-id="selectedUploadId != null ? String(selectedUploadId) : undefined"
+      />
+    </el-drawer>
   </div>
 </template>
 

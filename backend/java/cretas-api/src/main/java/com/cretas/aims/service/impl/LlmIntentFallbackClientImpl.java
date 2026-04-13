@@ -82,6 +82,13 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
     private static final ThreadLocal<String> originalInputHolder = new ThreadLocal<>();
     /** Canvas V2: factoryId for per-factory tool filtering in getFilteredToolsForQuery */
     private static final ThreadLocal<String> factoryIdHolder = new ThreadLocal<>();
+    /**
+     * P4 Task 4.4: recent conversation turns for LLM prompt enrichment.
+     * Set by {@link com.cretas.aims.service.impl.AIIntentServiceImpl} before
+     * delegating to the pipeline so the turns flow down to buildIntentClassifyPrompt.
+     */
+    static final ThreadLocal<java.util.List<com.cretas.aims.entity.conversation.ConversationTurn>>
+            conversationTurnsHolder = new ThreadLocal<>();
 
     @Value("${cretas.ai.service.url:http://localhost:8083}")
     private String aiServiceUrl;
@@ -322,6 +329,62 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
         } else {
             log.info("ArenaRL intent disambiguation DISABLED");
         }
+    }
+
+    // ==================== P4 Task 4.4: Conversation Context Prefix Helper ====================
+
+    /**
+     * Build a Chinese-language prefix summarizing recent conversation turns
+     * for LLM prompt enrichment (P4 Task 4.4).
+     *
+     * <p>Input: list from {@link com.cretas.aims.service.ConversationStateService#loadRecent}
+     * — newest turn at index 0. Output: reversed to chronological order for natural
+     * reading, with each turn showing:
+     * <pre>
+     * [Turn N] 用户问: ...
+     *   调用工具: ...
+     *   返回关键字段: key1=v1, key2=v2, key3=v3
+     * </pre>
+     *
+     * <p>Response dicts are truncated to the first 3 fields to keep the
+     * prompt tight. Empty history → empty string (no section header at all).
+     *
+     * <p>Static for easy unit testing without Spring context.
+     */
+    public static String buildConversationContextPrefix(
+            java.util.List<com.cretas.aims.entity.conversation.ConversationTurn> recent) {
+        if (recent == null || recent.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("## 对话历史 (最近 ").append(recent.size()).append(" 轮)\n\n");
+
+        // recent is newest-first; reverse to oldest-first for natural reading
+        for (int i = recent.size() - 1; i >= 0; i--) {
+            com.cretas.aims.entity.conversation.ConversationTurn t = recent.get(i);
+            int turnNum = recent.size() - i;
+
+            sb.append("[Turn ").append(turnNum).append("] ");
+            sb.append("用户问: ").append(t.userMessage() == null ? "" : t.userMessage()).append("\n");
+
+            if (t.toolName() != null && !t.toolName().isBlank()) {
+                sb.append("  调用工具: ").append(t.toolName()).append("\n");
+            }
+
+            if (t.response() != null && !t.response().isEmpty()) {
+                String summary = t.response().entrySet().stream()
+                        .limit(3)  // keep prompt tight
+                        .map(e -> e.getKey() + "=" + e.getValue())
+                        .collect(java.util.stream.Collectors.joining(", "));
+                sb.append("  返回关键字段: ").append(summary).append("\n");
+            }
+
+            sb.append("\n");
+        }
+
+        sb.append("---\n\n");
+        return sb.toString();
     }
 
     @Override
@@ -576,6 +639,15 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
      */
     private String buildIntentClassifyPrompt(List<AIIntentConfig> availableIntents, String userInput, String factoryId) {
         StringBuilder sb = new StringBuilder();
+
+        // P4 Task 4.4: Prepend conversation history if available via ThreadLocal
+        java.util.List<com.cretas.aims.entity.conversation.ConversationTurn> recentTurns =
+                conversationTurnsHolder.get();
+        String contextPrefix = buildConversationContextPrefix(recentTurns);
+        if (!contextPrefix.isEmpty()) {
+            sb.append(contextPrefix);
+            log.debug("[P4.4] Injected {} conversation turn(s) into LLM prompt", recentTurns.size());
+        }
 
         // ===== Chain-of-Thought 4 步分析框架 =====
         sb.append("你是一个意图识别助手。请按照以下 4 步思考链 (Chain-of-Thought) 分析用户输入，选择最匹配的意图。\n\n");

@@ -24,7 +24,7 @@
     ...     bom_resolver=resolver,
     ...     config_resolver=cfg_resolver,
     ... )
-    >>> rows = calc.calculate(df, order_method_col="订单来源", revenue_col="实收额")
+    >>> rows = calc.calculate(df, order_method_col="订单来源", revenue_col="实收")
     >>> for row in rows:
     ...     print(row.channel, row.gross_margin_pct, row.cogs_source)
     堂食 0.5234 category_baseline
@@ -143,12 +143,20 @@ class ChannelMarginCalculator:
         self,
         factory_id: str,
         sub_sector: str,
-        bom_resolver: RestaurantBomResolver,
+        bom_resolver: Optional[RestaurantBomResolver] = None,
         config_resolver: Optional[DynamicConfigResolver] = None,
         kb_root: Optional[Path] = None,
     ):
         self.factory_id = factory_id
         self.sub_sector = sub_sector
+        # Allow callers to omit bom_resolver; create a default instance so the
+        # calculator can be used standalone (e.g. in tests or lightweight scripts).
+        if bom_resolver is None:
+            bom_resolver = RestaurantBomResolver(
+                factory_id=factory_id,
+                sub_sector=sub_sector,
+                config_resolver=config_resolver,
+            )
         self.bom_resolver = bom_resolver
         self.config_resolver = config_resolver
         self.kb_root = kb_root or (Path(__file__).parent.parent.parent / "knowledge" / "restaurant")
@@ -164,6 +172,7 @@ class ChannelMarginCalculator:
         revenue_col: str,
         store_id: Optional[str] = None,
         period: str = "current",
+        venue_list: Optional[list[str]] = None,
     ) -> ChannelMarginReport:
         """对 DataFrame 按渠道计算毛利率
 
@@ -173,6 +182,9 @@ class ChannelMarginCalculator:
             revenue_col: 营收列名 (例 '实收额')
             store_id: 门店 ID (用于 manual override 查找)
             period: 期间标签 (例 '2026-02')
+            venue_list: 可选渠道白名单 (例 ['包厢', '宴会', '外卖']).
+                当传入时, 不在名单中的订单归入 '其他' 渠道.
+                None = 不过滤, 使用数据中全部渠道 (向后兼容默认行为).
 
         Returns:
             ChannelMarginReport
@@ -189,6 +201,11 @@ class ChannelMarginCalculator:
         df = df.copy()
         df[revenue_col] = pd.to_numeric(df[revenue_col], errors="coerce").fillna(0)
         df = df[df[order_method_col].notna()]
+
+        # QW2: 渠道白名单过滤 — 名单外的渠道归入 '其他'
+        if venue_list is not None:
+            mask = df[order_method_col].isin(venue_list)
+            df.loc[~mask, order_method_col] = "其他"
 
         # group by 渠道
         grouped = df.groupby(order_method_col).agg(

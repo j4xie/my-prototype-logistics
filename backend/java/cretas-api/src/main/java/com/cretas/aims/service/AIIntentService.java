@@ -35,6 +35,27 @@ public interface AIIntentService {
     Optional<AIIntentConfig> recognizeIntent(String factoryId, String userInput);
 
     /**
+     * Recognize intent with conversation context support (P4 Task 4.3).
+     *
+     * <p>Loads recent 3 turns from {@link com.cretas.aims.service.conversation.ConversationStateService}
+     * for the given (factoryId, userId) before matching, and appends the recognized
+     * turn after successful recognition. When userId is null, this behaves
+     * identically to {@link #recognizeIntent(String, String)}.
+     *
+     * <p>Default implementation ignores userId — concrete impl overrides.
+     *
+     * @param factoryId factory identifier
+     * @param userInput user's natural language input
+     * @param userId    user identifier, or null to skip context tracking
+     * @return recognized intent config, empty if no match
+     */
+    default Optional<AIIntentConfig> recognizeIntent(
+            String factoryId, String userInput, String userId) {
+        // Default implementation ignores userId — concrete impl overrides.
+        return recognizeIntent(factoryId, userInput);
+    }
+
+    /**
      * 识别用户输入的意图（无租户隔离，向后兼容）
      * @deprecated 请使用 {@link #recognizeIntent(String, String)} 代替
      * @param userInput 用户输入文本

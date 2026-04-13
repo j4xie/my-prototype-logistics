@@ -103,6 +103,50 @@ public class NLQueryResponse {
      */
     private ForecastResult forecast;
 
+    // ==================== P5.6 Tool-Skill Chat Integration (additive) ====================
+
+    /**
+     * 餐饮诊断意图代码 (P5.6)
+     * 当查询被路由到 Tool-Skill 管线时填充，如 "RESTAURANT_COST_RIGIDITY".
+     * Legacy SmartBI 意图走 intent 字段，两者互斥。
+     */
+    private String intentCode;
+
+    /**
+     * 执行的 Tool 名称 (P5.6)
+     * 如 "restaurant_cost_rigidity_analysis"，用于前端调试和日志。
+     */
+    private String toolName;
+
+    /**
+     * 执行的 Skill 名称 (P5.6)
+     * 当 Tool-Skill 管线使用 Skill 编排时填充，直接调用 Tool 时为 null。
+     */
+    private String skillName;
+
+    /**
+     * 结构化段落输出 (P5.6)
+     * 由餐饮 Tool 调用 Python section endpoint 返回的结构化卡片数据.
+     * 每个元素是一个 SectionPayload map: {sectionName, status, data, warnings, fromCache, computedAtMs}.
+     * Legacy 查询此字段为 null，前端根据存在与否决定是否渲染 section 卡片.
+     */
+    private List<Map<String, Object>> sections;
+
+    /**
+     * 后续引导问题 (P5.6)
+     * Tool 根据分析结果生成的 3-4 个 context-aware 下一步问题，前端渲染为可点击 chips.
+     * 与 suggestions 的区别: chips 是结构化数据驱动的 (例如"看看具体的菜品毛利"), suggestions 是静态模板.
+     */
+    private List<String> followUpChips;
+
+    /**
+     * 简短状态消息 (P5.6)
+     * 补充 responseText, 用于 web-admin chat 渲染单行标题或 toast.
+     */
+    private String message;
+
+    // ==================== Helpers ====================
+
     /**
      * 获取有效的建议列表
      * 优先返回 suggestions，兼容旧版 followUpQuestions

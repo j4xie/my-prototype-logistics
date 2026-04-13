@@ -1,0 +1,20 @@
+# Universal 5-bucket fallback for legacy Excel uploads.
+# Matches the pre-P3.5 flat FinancialMetrics schema.
+nodes:
+  - code: 总费用
+    name_zh: 总费用
+  - code: food_cost
+    name_zh: 食材成本
+    parent: 总费用
+  - code: labor_cost
+    name_zh: 人力成本
+    parent: 总费用
+  - code: rent
+    name_zh: 房租
+    parent: 总费用
+  - code: other_cost
+    name_zh: 其他费用
+    parent: 总费用
+  - code: net_profit
+    name_zh: 净利润
+    parent: 总费用

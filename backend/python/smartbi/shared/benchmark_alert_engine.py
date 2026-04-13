@@ -85,7 +85,7 @@ class BenchmarkAlert:
     source: str = ""
 
     def to_dict(self) -> dict:
-        return {
+        result = {
             "metricKey": self.metric_key,
             "metricNameZh": self.metric_name_zh,
             "storeName": self.store_name,
@@ -101,6 +101,34 @@ class BenchmarkAlert:
             "messageZh": self.message_zh,
             "actionHint": self.action_hint,
             "source": self.source,
+        }
+        result["barShape"] = self._compute_bar_shape()
+        return result
+
+    def _compute_bar_shape(self) -> dict:
+        """Pre-compute scale + fill ratio + marker position for frontend bar rendering.
+
+        Frontend uses this to render a horizontal comparison bar without
+        re-doing the math. Scale starts at 0 and extends to
+        max(actual, range_high or actual) * 1.1 for visual headroom.
+        """
+        range_h = self.range_high if self.range_high is not None else self.actual_value
+        scale_max = max(self.actual_value, range_h) * 1.1
+        scale_min = 0
+        denom = scale_max - scale_min if scale_max > scale_min else 1
+
+        return {
+            "actual": round(self.actual_value, 4),
+            "median": round(self.median, 4) if self.median is not None else None,
+            "rangeLow": round(self.range_low, 4) if self.range_low is not None else None,
+            "rangeHigh": round(self.range_high, 4) if self.range_high is not None else None,
+            "scaleMin": scale_min,
+            "scaleMax": round(scale_max, 4),
+            "fillRatio": round((self.actual_value - scale_min) / denom, 4),
+            "markerPosition": (
+                round((self.median - scale_min) / denom, 4)
+                if self.median is not None else None
+            ),
         }
 
 

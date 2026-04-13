@@ -269,3 +269,239 @@ class TestRestaurantAnalyzerV2Integration:
         """Empty sub_sector should raise."""
         with pytest.raises(ValueError, match="sub_sector"):
             RestaurantAnalyzerV2(factory_id="F1", sub_sector="")
+
+
+# === P3.5B F1 tests: MarginSpec integration ===
+
+def test_f1_margin_spec_staff_meal_excluded_from_cogs():
+    """When includeStaffMealInCogs=False, staff meal stays separate from food_cost."""
+    from smartbi.services.finance.margin_spec import MarginSpec
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    spec = MarginSpec(include_staff_meal_in_cogs=False)
+    analyzer = RestaurantAnalyzerV2(
+        factory_id="F-TEST",
+        sub_sector="火锅",
+        margin_spec=spec,
+    )
+    report = analyzer.analyze(financial_data={
+        "current": {
+            "revenue": 731048,
+            "food_cost": 307040,
+            "staff_meal_cost": 8000,
+            "labor_cost": 237660,
+            "rent": 85000,
+        },
+    })
+    fm = report["sections"]["financialMetrics"]
+    # When excluded, food_cost stays at 307040 (not +8000)
+    assert fm["foodCost"] == 307040
+
+
+def test_f1_margin_spec_staff_meal_included_by_default():
+    """Default includeStaffMealInCogs=True merges staff meal into food_cost."""
+    from smartbi.services.finance.margin_spec import MarginSpec
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    analyzer = RestaurantAnalyzerV2(
+        factory_id="F-TEST",
+        sub_sector="火锅",
+        margin_spec=MarginSpec(),  # defaults — include_staff_meal=True
+    )
+    report = analyzer.analyze(financial_data={
+        "current": {
+            "revenue": 731048,
+            "food_cost": 307040,
+            "staff_meal_cost": 8000,
+            "labor_cost": 237660,
+        },
+    })
+    fm = report["sections"]["financialMetrics"]
+    # When included, food_cost = 307040 + 8000 = 315040
+    assert fm["foodCost"] == 315040
+
+
+def test_f1_no_margin_spec_uses_defaults_preserves_byte_identity():
+    """Regression: omitted margin_spec must match pre-3.5B behavior."""
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    analyzer = RestaurantAnalyzerV2(factory_id="F-TEST", sub_sector="火锅")
+    report = analyzer.analyze(financial_data={
+        "current": {"revenue": 731048, "food_cost": 307040, "labor_cost": 237660},
+    })
+    fm = report["sections"]["financialMetrics"]
+    assert fm["revenue"] == 731048
+    assert fm["foodCost"] == 307040
+    assert fm["laborCost"] == 237660
+
+
+# === P3.5B F2 tests: dual margin computation ===
+
+def test_f2_dual_margin_both_computed():
+    """BOTH folded and unfolded margins must appear in financialMetrics output."""
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    analyzer = RestaurantAnalyzerV2(factory_id="F-TEST", sub_sector="火锅")
+    report = analyzer.analyze(financial_data={
+        "current": {
+            "revenue": 731048,           # 折后收入
+            "gross_revenue": 820000,     # 折前收入
+            "food_cost": 307040,
+            "labor_cost": 237660,
+        },
+    })
+    fm = report["sections"]["financialMetrics"]
+    assert "grossMarginFolded" in fm
+    assert "grossMarginUnfolded" in fm
+    # Both margins should be populated (non-None) when both revenues present
+    assert fm["grossMarginFolded"] is not None
+    assert fm["grossMarginUnfolded"] is not None
+    # Unfolded > folded: gross_revenue (820000) > revenue (731048), same food_cost
+    # → (820000-307040)/820000 > (731048-307040)/731048
+    assert fm["grossMarginUnfolded"] > fm["grossMarginFolded"]
+
+
+def test_f2_dual_margin_without_gross_revenue_falls_back():
+    """Missing gross_revenue -> grossMarginUnfolded uses revenue as fallback."""
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    analyzer = RestaurantAnalyzerV2(factory_id="F-TEST", sub_sector="火锅")
+    report = analyzer.analyze(financial_data={
+        "current": {"revenue": 731048, "food_cost": 307040},
+    })
+    fm = report["sections"]["financialMetrics"]
+    # Both keys should be present (may be equal when no gross_revenue)
+    assert "grossMarginFolded" in fm
+    assert "grossMarginUnfolded" in fm
+    # When gross_revenue absent, fallback to revenue -> same as folded
+    assert fm["grossMarginUnfolded"] == fm["grossMarginFolded"]
+
+
+# === P3.5B F5 tests: ExpenseAccountTree loader ===
+
+def test_f5_analyzer_loads_hotpot_expense_tree_by_id():
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    analyzer = RestaurantAnalyzerV2(
+        factory_id="F-TEST",
+        sub_sector="火锅",
+        expense_account_tree_id="hotpot_default",
+    )
+    tree = analyzer.get_expense_account_tree()
+    assert tree is not None
+    # Hotpot tree should have the critical leaves
+    assert "工资" in tree.nodes
+    assert "充卡赠送" in tree.nodes
+    assert "房租费" in tree.nodes
+    assert "水费" in tree.nodes
+
+
+def test_f5_analyzer_default_tree_is_5_bucket_fallback():
+    """No tree_id -> load 'default.yaml' (5-bucket legacy schema)."""
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    analyzer = RestaurantAnalyzerV2(factory_id="F-TEST", sub_sector="火锅")
+    tree = analyzer.get_expense_account_tree()
+    codes = set(tree.nodes.keys())
+    # Legacy 5-bucket schema
+    for expected in ["food_cost", "labor_cost", "rent", "other_cost", "net_profit"]:
+        assert expected in codes, f"Missing legacy bucket: {expected}"
+
+
+def test_f5_analyzer_unknown_tree_id_raises_on_access():
+    """Unknown tree id fails loudly on first access, not construction."""
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    # Construction should succeed (lazy load)
+    analyzer = RestaurantAnalyzerV2(
+        factory_id="F-TEST",
+        sub_sector="火锅",
+        expense_account_tree_id="nonexistent_tree_xyz",
+    )
+    # First access should raise
+    with pytest.raises((FileNotFoundError, ValueError), match="nonexistent"):
+        analyzer.get_expense_account_tree()
+
+
+def test_f5_analyzer_tree_loaded_only_once_cached():
+    """Lazy load caches the result -- subsequent calls return same instance."""
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    analyzer = RestaurantAnalyzerV2(
+        factory_id="F-TEST",
+        sub_sector="火锅",
+        expense_account_tree_id="hotpot_default",
+    )
+    tree1 = analyzer.get_expense_account_tree()
+    tree2 = analyzer.get_expense_account_tree()
+    assert tree1 is tree2  # same instance (cached)
+
+
+# === P3.5B F8 tests: stored_value mode propagation through analyzer ===
+
+def test_f8_analyzer_propagates_stored_value_mode_revenue():
+    """margin_spec.storedValueTreatment=REVENUE -> section records mode=REVENUE."""
+    from smartbi.services.finance.margin_spec import MarginSpec, StoredValueTreatment
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    spec = MarginSpec(stored_value_treatment=StoredValueTreatment.REVENUE)
+    analyzer = RestaurantAnalyzerV2(
+        factory_id="F-TEST",
+        sub_sector="火锅",
+        margin_spec=spec,
+    )
+    report = analyzer.analyze(financial_data={
+        "current": {
+            "revenue": 731048,
+            "food_cost": 307040,
+            "stored_value_giveaway": 51680.61,
+        },
+    })
+    sv_section = report["sections"].get("storedValueDependency")
+    assert sv_section is not None, f"Missing storedValueDependency section. Got: {list(report['sections'].keys())}"
+    # The mode field should reflect REVENUE
+    assert sv_section.get("mode") == "REVENUE"
+
+
+def test_f8_analyzer_propagates_stored_value_mode_excluded():
+    """margin_spec.storedValueTreatment=EXCLUDED -> severity=info regardless of ratio."""
+    from smartbi.services.finance.margin_spec import MarginSpec, StoredValueTreatment
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    spec = MarginSpec(stored_value_treatment=StoredValueTreatment.EXCLUDED)
+    analyzer = RestaurantAnalyzerV2(
+        factory_id="F-TEST",
+        sub_sector="火锅",
+        margin_spec=spec,
+    )
+    report = analyzer.analyze(financial_data={
+        "current": {
+            "revenue": 731048,
+            "food_cost": 307040,
+            "stored_value_giveaway": 51680.61,  # 7.07% would normally be critical
+        },
+    })
+    sv_section = report["sections"].get("storedValueDependency")
+    assert sv_section is not None
+    assert sv_section.get("mode") == "EXCLUDED"
+    # EXCLUDED means customer already removes from revenue -- no risk
+    assert sv_section.get("severity") == "info"
+
+
+def test_f8_default_margin_spec_uses_prepaid_mode():
+    """No margin_spec -> PREPAID default -> backward-compat severity."""
+    from smartbi.services.restaurant.analyzer import RestaurantAnalyzerV2
+
+    analyzer = RestaurantAnalyzerV2(factory_id="F-TEST", sub_sector="火锅")
+    report = analyzer.analyze(financial_data={
+        "current": {
+            "revenue": 731048,
+            "food_cost": 307040,
+            "stored_value_giveaway": 51680.61,
+        },
+    })
+    sv_section = report["sections"].get("storedValueDependency")
+    assert sv_section is not None
+    # Default mode = PREPAID, 7.07% = critical (after QW1 threshold adjustment)
+    assert sv_section.get("mode") == "PREPAID"
+    assert sv_section.get("severity") == "critical"

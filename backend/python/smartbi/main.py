@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse
 
 from config import get_settings
 from api import excel, field, metrics, forecast, insight, chart, analysis, ml, linucb, chat, db_analysis, classifier
+from smartbi.api import restaurant_sections
 
 # 导入独立的人效识别模块
 import sys
@@ -95,6 +96,11 @@ app.include_router(classifier.router, prefix="/api/classifier", tags=["Intent Cl
 # Database analysis endpoints (PostgreSQL)
 # Note: db_analysis.router already has /api/smartbi/analysis/db prefix
 app.include_router(db_analysis.router, tags=["Database Analysis"])
+
+# Restaurant section handlers — one endpoint per section, plus /list discovery.
+# The router carries its own /api/smartbi/restaurant/sections prefix, so we
+# include it without an additional prefix here.
+app.include_router(restaurant_sections.router)
 
 # Efficiency recognition endpoints (VL-based worker efficiency analysis)
 # 独立模块，从 efficiency_recognition/ 导入

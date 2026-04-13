@@ -53,6 +53,44 @@ action_plans:
       - "高峰期拼桌政策(适用于快餐/小吃)"
     expected_impact: "座位利用率提升15-25%"
 
+# ── 结构化处方行动 (P3.7) ─────────────────────────
+rx_actions:
+  - id: TT-A01
+    title: 设定出餐时间红线并追踪
+    description: 测量从点单到上菜的平均时间, 设定红线(快餐<10分钟, 正餐<20分钟). 每日记录超时次数, 周内完成整改.
+    owner: 店长
+    timeframe: 本周内
+    priority: P0
+    effort: low
+    expected_impact: 出餐时间 -20-30%, 翻台率 +0.5次/天
+
+  - id: TT-A02
+    title: 推行扫码点单 + 自助结账
+    description: 引入扫码点餐系统, 结账改为微信/支付宝扫码, 消除排队等候环节. 系统投入 ≈ ¥3K-5K, 2个月回本.
+    owner: 运营经理
+    timeframe: 2 周
+    priority: P0
+    effort: medium
+    expected_impact: 结账等候时间 -50%, 单桌翻台周期 -10分钟
+
+  - id: TT-A03
+    title: 非高峰时段限时优惠引流
+    description: 14:00-17:00低谷期推出"下午茶"套餐(单品+饮品), 利用大众点评/抖音推送定向优惠给附近2km用户.
+    owner: 运营经理
+    timeframe: 2 周
+    priority: P1
+    effort: medium
+    expected_impact: 低谷时段客流 +20-30%, 全天翻台率 +0.3次
+
+  - id: TT-A04
+    title: 引入预约排号系统削减等待损耗
+    description: 高峰期空桌等位时间平均8分钟, 通过微信预约系统提前锁定座位, 消除无效等待. 接入美团排号免费.
+    owner: 店长
+    timeframe: 4 周
+    priority: P2
+    effort: low
+    expected_impact: 高峰期桌位利用率 +15%, 翻台率 +0.2次/天
+
 sub_sector_notes:
   火锅:
     - "火锅用餐时间天然较长(90-120分钟)，翻台上限约5次"

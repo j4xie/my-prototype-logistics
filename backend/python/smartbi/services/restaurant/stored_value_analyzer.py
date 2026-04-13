@@ -5,10 +5,10 @@
   - 记账时常被埋在"营业费用" 而非"折扣额" 里, 容易被忽视
   - 充卡赠送越多, 现金流越依赖"先收钱后服务", 风险越高
 
-阈值:
-  - <5%   健康
-  - 5-10% 警戒
-  - >10%  严重依赖 (财务风险)
+阈值 (P3.5A QW1, 2026-04-10 — 匹配真实火锅行业实测):
+  - <5%  健康
+  - 5-7% 警戒
+  - >=7% 严重依赖 (财务风险 / 流动性风险)
 
 使用示例:
     >>> analyzer = StoredValueAnalyzer()
@@ -19,13 +19,15 @@
     ...     previous_stored_value_balance=500000.0,  # 上月末储值余额
     ... )
     >>> print(result.dependency_pct)  # 0.0707
-    >>> print(result.severity)  # 'warning'
+    >>> print(result.severity)  # 'critical' (>=7% threshold, P3.5A QW1)
 """
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal, Optional
+
+from smartbi.services.finance.margin_spec import StoredValueTreatment
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +51,7 @@ class StoredValueReport:
     message_zh: str
     warnings: list[str]
     recommendations: list[str]
+    mode: Optional[str] = None  # StoredValueTreatment.value (PREPAID/REVENUE/EXCLUDED)
 
     def to_dict(self) -> dict:
         return {
@@ -63,6 +66,7 @@ class StoredValueReport:
             "messageZh": self.message_zh,
             "warnings": self.warnings,
             "recommendations": self.recommendations,
+            "mode": self.mode,
         }
 
 
@@ -75,6 +79,7 @@ class StoredValueAnalyzer:
         revenue: float,
         stored_value_charge: Optional[float] = None,
         previous_balance: Optional[float] = None,
+        mode: StoredValueTreatment = StoredValueTreatment.PREPAID,
     ) -> StoredValueReport:
         """分析充卡依赖度
 
@@ -83,6 +88,10 @@ class StoredValueAnalyzer:
             revenue: 当期营业收入
             stored_value_charge: 当期充卡新充 (可选)
             previous_balance: 上期末储值余额 (可选)
+            mode: 充卡收入确认方式 (P3.5B F3):
+              - PREPAID (default): 充卡 = 预收款负债, 消费时才确认收入
+              - REVENUE: 充卡直接确认收入, 赠送作为营销费用
+              - EXCLUDED: 充卡不纳入收入, 无依赖风险
         """
         if revenue <= 0:
             return self._empty("营收为 0, 无法计算依赖度")
@@ -99,16 +108,30 @@ class StoredValueAnalyzer:
         if charge_ratio is not None:
             estimated_cashflow = charge_ratio
 
-        # 评估严重度
-        severity, severity_label = self._evaluate_severity(dependency_pct)
+        # 评估严重度 — EXCLUDED mode 无依赖风险, 直接 info
+        if mode == StoredValueTreatment.EXCLUDED:
+            severity: Severity = "info"
+            message_zh = (
+                f"充卡赠送 ¥{stored_value_giveaway:,.0f} 已从收入中排除, 无依赖风险"
+            )
+        else:
+            # PREPAID or REVENUE: compute severity from ratio (existing logic)
+            severity, severity_label = self._evaluate_severity(dependency_pct)
 
-        # 构建消息
-        message_zh = (
-            f"{severity_label} | 充卡赠送 ¥{stored_value_giveaway:,.0f} "
-            f"占营收 {dependency_pct * 100:.2f}%"
-        )
-        if charge_ratio is not None:
-            message_zh += f", 充卡新充占营收 {charge_ratio * 100:.1f}%"
+            if mode == StoredValueTreatment.REVENUE:
+                # REVENUE mode: emphasize marketing expense narrative
+                message_zh = (
+                    f"收入直接确认模式: 充卡赠送 {dependency_pct * 100:.1f}% 作为营销费用, "
+                    f"占比{'过高' if severity != 'info' else '正常'}"
+                )
+            else:
+                # PREPAID (default): liability / cashflow risk narrative
+                message_zh = (
+                    f"{severity_label} | 充卡赠送 ¥{stored_value_giveaway:,.0f} "
+                    f"占营收 {dependency_pct * 100:.2f}%"
+                )
+            if charge_ratio is not None:
+                message_zh += f", 充卡新充占营收 {charge_ratio * 100:.1f}%"
 
         # 警告 + 建议
         warnings = self._build_warnings(dependency_pct, charge_ratio)
@@ -126,13 +149,19 @@ class StoredValueAnalyzer:
             message_zh=message_zh,
             warnings=warnings,
             recommendations=recs,
+            mode=mode.value,
         )
 
     def _evaluate_severity(self, dependency_pct: float) -> tuple[Severity, str]:
-        """阈值: <5% info / 5-10% warning / >10% critical"""
-        if dependency_pct >= 0.10:
+        """阈值: <5% info / 5-7% warning / >=7% critical
+
+        P3.5A QW1 (2026-04-10): 真实火锅头部品牌 (鼎鲜 2026-02 实测 7.07%)
+        显示 7%+ 已是流动性风险, 而非仅 KPI 警戒。原阈值 10% 过宽,
+        完全错过鼎鲜场景. 新阈值: 5% warning / 7% critical.
+        """
+        if dependency_pct >= 0.07:  # 原 0.10 → 降低至 0.07 以覆盖实际火锅风险
             return ("critical", "🔴 严重依赖")
-        if dependency_pct >= 0.05:
+        if dependency_pct >= 0.05:  # 警戒区间保持 5% 下限
             return ("warning", "🟡 警戒")
         return ("info", "🟢 健康")
 
@@ -140,7 +169,7 @@ class StoredValueAnalyzer:
         self, dep_pct: float, charge_ratio: Optional[float]
     ) -> list[str]:
         warnings: list[str] = []
-        if dep_pct >= 0.10:
+        if dep_pct >= 0.07:  # 与 _evaluate_severity critical 阈值保持一致 (P3.5A QW1)
             warnings.append(
                 f"充卡赠送占比 {dep_pct * 100:.2f}% 严重过高 (健康 <5%), "
                 f"相当于每 100 元营收送出 ¥{dep_pct * 100:.0f} 的隐性折扣"
@@ -184,4 +213,5 @@ class StoredValueAnalyzer:
             message_zh=f"无法分析: {reason}",
             warnings=[],
             recommendations=[],
+            mode=None,
         )

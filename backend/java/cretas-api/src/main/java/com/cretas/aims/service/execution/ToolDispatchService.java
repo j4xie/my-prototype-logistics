@@ -480,11 +480,15 @@ public class ToolDispatchService {
             // 6. 解析 Tool 结果
             IntentExecuteResponse response = parseToolResultToResponse(resultJson, intent);
 
-            if (retryCount > 0 && response != null && "SUCCESS".equals(response.getStatus())) {
+            // 统一填充 metadata.toolName (P5.6) - 下游 SmartBI chat 适配器读取此字段
+            if (response != null) {
                 Map<String, Object> metadata = response.getMetadata() != null ?
                         new HashMap<>(response.getMetadata()) : new HashMap<>();
-                metadata.put("recoveredAfterRetries", retryCount);
-                metadata.put("totalExecutionTimeMs", totalExecutionTime);
+                metadata.put("toolName", tool.getToolName());
+                if (retryCount > 0 && "SUCCESS".equals(response.getStatus())) {
+                    metadata.put("recoveredAfterRetries", retryCount);
+                    metadata.put("totalExecutionTimeMs", totalExecutionTime);
+                }
                 response.setMetadata(metadata);
             }
 

@@ -90,6 +90,44 @@ sub_sector_notes:
     - "建立每日采购量与预订量的联动机制"
     - "培训切割技术减少边角料浪费"
 
+# ── 结构化处方行动 (P3.7) ─────────────────────────
+rx_actions:
+  - id: FC-A01
+    title: 引入竞争性供应商打破垄断
+    description: 若前3大供应商占采购额>60%, 立即联系2-3家备选供应商报价, 利用价格竞争将主力供应商谈价降低3-5%.
+    owner: 运营经理
+    timeframe: 2 周
+    priority: P0
+    effort: medium
+    expected_impact: 食材采购成本 -3-5%, 月度节省 ≈ ¥8-15K
+
+  - id: FC-A02
+    title: 菜单四象限瘦身——砍 Dog 留 Star
+    description: 用销量×毛利率做四象限, 识别低销量+低利润(Dog)菜品. 下架末尾15%的SKU, 集中资源推Star菜品.
+    owner: 运营经理
+    timeframe: 2 周
+    priority: P0
+    effort: medium
+    expected_impact: 菜单复杂度 -15%, 备料损耗 -10%, 综合毛利 +1-2pp
+
+  - id: FC-A03
+    title: 建立每日损耗追踪表
+    description: 设立每日食材报废记录, 识别高损耗品类(通常是叶菜/海鲜). 按FIFO严格管理, 每周复盘一次.
+    owner: 店长
+    timeframe: 本周内
+    priority: P1
+    effort: low
+    expected_impact: 损耗率降低2-3pp, 月度减少浪费 ≈ ¥3-5K
+
+  - id: FC-A04
+    title: 高毛利附加品提升客单价
+    description: 在饮品/甜品/小食品类增加1-2个高毛利SKU(毛利率>70%), 推荐给点餐客户. 提升客单价5-10元, 稀释食材成本率.
+    owner: 运营经理
+    timeframe: 4 周
+    priority: P1
+    effort: medium
+    expected_impact: 客单价 +5-10元, 综合食材成本率 -1-2pp
+
 decision_tree:
   root: "食材成本率是否超过子行业上限？"
   yes:
