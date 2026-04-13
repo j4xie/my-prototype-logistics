@@ -158,7 +158,7 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- 生产计划卡片 -->
-    <div class="plans-grid" v-if="data && data.plans.length">
+    <div class="plans-grid" v-if="data?.plans?.length">
       <div v-for="plan in data.plans" :key="plan.planId" class="plan-card">
         <div class="plan-header">
           <div class="plan-product">{{ plan.productName }}</div>
