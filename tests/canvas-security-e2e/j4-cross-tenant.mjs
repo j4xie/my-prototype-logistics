@@ -335,9 +335,10 @@ async function attack5CrossTenantChangeSetApprove(tokenA, tokenB) {
     const createResult = await apiPost(
       `${FACTORY_A}/config-changes`,
       {
-        configType: 'RULE',
+        configType: 'DROOLS_RULE',
         configId: 'e2e-security-test-' + Date.now(),
         configName: 'J4-5 security test changeset',
+        beforeSnapshot: '{}',
         afterSnapshot: JSON.stringify({ test: true, purpose: 'cross-tenant attack vector' }),
       },
       tokenA

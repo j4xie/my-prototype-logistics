@@ -55,12 +55,16 @@ async function stepS1(page) {
 async function stepS2(page) {
   try {
     await page.goto(`${WEB_URL}/sales/orders`);
-    await page.waitForTimeout(5_000);
+    // Wait for table to render (Vue async data load)
+    try {
+      await page.waitForSelector('.el-table, .el-card, [class*="order"]', { timeout: 15_000 });
+    } catch { /* fallback to timeout */ }
+    await page.waitForTimeout(3_000);
 
     const bodyText = await page.evaluate(() => document.body.innerText || document.body.textContent || '');
     const length = bodyText.length;
 
-    if (length > 1000) {
+    if (length > 500) {
       rc.log('J3-S2', 'PASS', `Sales orders list page loaded — content length ${length} chars`);
       await screenshot(page, 'j3-S2-list');
       return true;

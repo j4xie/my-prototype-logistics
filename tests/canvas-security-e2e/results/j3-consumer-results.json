@@ -1,7 +1,7 @@
 {
   "journey": "j3-consumer",
-  "timestamp": "2026-04-13T04:56:38.905Z",
-  "durationMs": 16944,
+  "timestamp": "2026-04-13T05:07:05.482Z",
+  "durationMs": 17445,
   "pass": 5,
   "fail": 0,
   "warn": 0,
@@ -11,31 +11,31 @@
       "testId": "J3-S1",
       "status": "PASS",
       "evidence": "Logged in successfully — redirected to http://localhost:5173/dashboard",
-      "timestamp": "2026-04-13T04:56:26.651Z"
+      "timestamp": "2026-04-13T05:06:53.170Z"
     },
     {
       "testId": "J3-S2",
       "status": "PASS",
-      "evidence": "Sales orders list page loaded — content length 1057 chars",
-      "timestamp": "2026-04-13T04:56:31.833Z"
+      "evidence": "Sales orders list page loaded — content length 1047 chars",
+      "timestamp": "2026-04-13T05:06:57.702Z"
     },
     {
       "testId": "J3-S3",
       "status": "PASS",
-      "evidence": "Create form rendered with 8 .el-form-item elements (> 5 required)",
-      "timestamp": "2026-04-13T04:56:35.063Z"
+      "evidence": "Create form rendered with 26 .el-form-item elements (> 5 required)",
+      "timestamp": "2026-04-13T05:07:00.936Z"
     },
     {
       "testId": "J3-S4",
       "status": "PASS",
-      "evidence": "21 dynamic fields in effective config (UI may render in collapsed \"自定义字段\" group)",
-      "timestamp": "2026-04-13T04:56:35.680Z"
+      "evidence": "Dynamic field label \"E2E\" found in UI + 21 dynamic fields in API",
+      "timestamp": "2026-04-13T05:07:01.920Z"
     },
     {
       "testId": "J3-S10",
       "status": "PASS",
       "evidence": "Canvas editor accessible — URL: http://localhost:5173/canvas-editor",
-      "timestamp": "2026-04-13T04:56:38.766Z"
+      "timestamp": "2026-04-13T05:07:05.324Z"
     }
   ]
 }

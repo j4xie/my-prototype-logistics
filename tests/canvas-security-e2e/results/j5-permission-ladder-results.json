@@ -1,7 +1,7 @@
 {
   "journey": "j5-permission-ladder",
-  "timestamp": "2026-04-13T04:57:20.098Z",
-  "durationMs": 21869,
+  "timestamp": "2026-04-13T05:07:46.879Z",
+  "durationMs": 21102,
   "pass": 8,
   "fail": 0,
   "warn": 0,
@@ -11,49 +11,49 @@
       "testId": "L1-operator-blocked",
       "status": "PASS",
       "evidence": "URL after operator login: http://localhost:5173/mobile-only?role=unactivated — expected to contain \"mobile-only\"",
-      "timestamp": "2026-04-13T04:57:02.847Z"
+      "timestamp": "2026-04-13T05:07:30.479Z"
     },
     {
       "testId": "L2-finance-login",
       "status": "PASS",
       "evidence": "URL after finance_mgr1 login: http://localhost:5173/dashboard",
-      "timestamp": "2026-04-13T04:57:07.799Z"
+      "timestamp": "2026-04-13T05:07:35.086Z"
     },
     {
       "testId": "L2-finance-canvas-blocked",
       "status": "PASS",
       "evidence": "URL after navigating to /canvas-editor: http://localhost:5173/403",
-      "timestamp": "2026-04-13T04:57:10.956Z"
+      "timestamp": "2026-04-13T05:07:38.269Z"
     },
     {
       "testId": "L2-finance-sales-blocked",
       "status": "PASS",
       "evidence": "URL after navigating to /sales/orders: http://localhost:5173/403",
-      "timestamp": "2026-04-13T04:57:14.084Z"
+      "timestamp": "2026-04-13T05:07:41.397Z"
     },
     {
       "testId": "L2-finance-smartbi-allowed",
       "status": "PASS",
       "evidence": "URL after navigating to /smart-bi/dashboard: http://localhost:5173/smart-bi/dashboard",
-      "timestamp": "2026-04-13T04:57:17.215Z"
+      "timestamp": "2026-04-13T05:07:44.523Z"
     },
     {
       "testId": "L3-worker-publish-403",
       "status": "PASS",
       "evidence": "POST config/publish → HTTP 403 (expected 403)",
-      "timestamp": "2026-04-13T04:57:18.897Z"
+      "timestamp": "2026-04-13T05:07:46.044Z"
     },
     {
       "testId": "L3-worker-addfield-403",
       "status": "PASS",
       "evidence": "POST config/v2/dynamic-fields → HTTP 403 (expected 403)",
-      "timestamp": "2026-04-13T04:57:19.532Z"
+      "timestamp": "2026-04-13T05:07:46.307Z"
     },
     {
       "testId": "L3-worker-addrule-403",
       "status": "PASS",
       "evidence": "POST config/v2/validation-rules/hack_rule → HTTP 405 (expected 403 or 405)",
-      "timestamp": "2026-04-13T04:57:20.098Z"
+      "timestamp": "2026-04-13T05:07:46.878Z"
     }
   ]
 }

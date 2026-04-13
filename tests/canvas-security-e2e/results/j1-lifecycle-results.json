@@ -1,7 +1,7 @@
 {
   "journey": "j1-lifecycle",
-  "timestamp": "2026-04-13T04:56:03.318Z",
-  "durationMs": 12698,
+  "timestamp": "2026-04-13T05:06:29.934Z",
+  "durationMs": 11301,
   "pass": 21,
   "fail": 0,
   "warn": 0,
@@ -11,127 +11,127 @@
       "testId": "J1-login",
       "status": "PASS",
       "evidence": "Logged in — factoryId=F002 role=factory_super_admin",
-      "timestamp": "2026-04-13T04:55:50.621Z"
+      "timestamp": "2026-04-13T05:06:18.634Z"
     },
     {
       "testId": "J1-A2",
       "status": "PASS",
       "evidence": "Template FOOD_PROCESSING applied — HTTP 200",
-      "timestamp": "2026-04-13T04:55:51.564Z"
+      "timestamp": "2026-04-13T05:06:19.501Z"
     },
     {
       "testId": "J1-A3",
       "status": "PASS",
-      "evidence": "Created field cust_level_e2e_mnwpz4gs (SELECT) — HTTP 200",
-      "timestamp": "2026-04-13T04:55:53.170Z"
+      "evidence": "Created field cust_level_e2e_mnwqcl1l (SELECT) — HTTP 200",
+      "timestamp": "2026-04-13T05:06:20.339Z"
     },
     {
       "testId": "J1-A3",
       "status": "PASS",
-      "evidence": "Created field dlv_priority_e2e_mnwpz4gs (TEXT) — HTTP 200",
-      "timestamp": "2026-04-13T04:55:53.748Z"
+      "evidence": "Created field dlv_priority_e2e_mnwqcl1l (TEXT) — HTTP 200",
+      "timestamp": "2026-04-13T05:06:20.911Z"
     },
     {
       "testId": "J1-A3",
       "status": "PASS",
-      "evidence": "Created field exp_margin_e2e_mnwpz4gs (DECIMAL) — HTTP 200",
-      "timestamp": "2026-04-13T04:55:54.320Z"
+      "evidence": "Created field exp_margin_e2e_mnwqcl1l (DECIMAL) — HTTP 200",
+      "timestamp": "2026-04-13T05:06:21.483Z"
     },
     {
       "testId": "J1-A3",
       "status": "PASS",
-      "evidence": "Created field is_urgent_e2e_mnwpz4gs (BOOLEAN) — HTTP 200",
-      "timestamp": "2026-04-13T04:55:54.882Z"
+      "evidence": "Created field is_urgent_e2e_mnwqcl1l (BOOLEAN) — HTTP 200",
+      "timestamp": "2026-04-13T05:06:22.061Z"
     },
     {
       "testId": "J1-A3",
       "status": "PASS",
-      "evidence": "Created field deadline_e2e_mnwpz4gs (DATETIME) — HTTP 200",
-      "timestamp": "2026-04-13T04:55:55.454Z"
+      "evidence": "Created field deadline_e2e_mnwqcl1l (DATETIME) — HTTP 200",
+      "timestamp": "2026-04-13T05:06:22.629Z"
     },
     {
       "testId": "J1-A3",
       "status": "PASS",
-      "evidence": "Created field ref_po_e2e_mnwpz4gs (REFERENCE) — HTTP 200",
-      "timestamp": "2026-04-13T04:55:56.044Z"
+      "evidence": "Created field ref_po_e2e_mnwqcl1l (REFERENCE) — HTTP 200",
+      "timestamp": "2026-04-13T05:06:23.201Z"
     },
     {
       "testId": "J1-A3",
       "status": "PASS",
-      "evidence": "Created field prepay_e2e_mnwpz4gs (SUB_TABLE) — HTTP 200",
-      "timestamp": "2026-04-13T04:55:56.623Z"
+      "evidence": "Created field prepay_e2e_mnwqcl1l (SUB_TABLE) — HTTP 200",
+      "timestamp": "2026-04-13T05:06:23.761Z"
     },
     {
       "testId": "J1-A3-verify",
       "status": "PASS",
       "evidence": "PENDING_DDL fields with suffix: 7 (expected ≥7)",
-      "timestamp": "2026-04-13T04:55:57.151Z"
+      "timestamp": "2026-04-13T05:06:24.279Z"
     },
     {
       "testId": "J1-A4",
       "status": "PASS",
-      "evidence": "Validation rule so_amount_min_e2e_mnwpz4gs created — HTTP 200",
-      "timestamp": "2026-04-13T04:55:57.741Z"
+      "evidence": "Validation rule so_amount_min_e2e_mnwqcl1l created — HTTP 200",
+      "timestamp": "2026-04-13T05:06:24.847Z"
     },
     {
       "testId": "J1-A5",
       "status": "PASS",
-      "evidence": "visibleWhen set on exp_margin_e2e_mnwpz4gs — persisted correctly",
-      "timestamp": "2026-04-13T04:55:58.316Z"
+      "evidence": "visibleWhen set on exp_margin_e2e_mnwqcl1l — persisted correctly",
+      "timestamp": "2026-04-13T05:06:25.410Z"
     },
     {
       "testId": "J1-B1",
       "status": "PASS",
       "evidence": "Config published — HTTP 200",
-      "timestamp": "2026-04-13T04:55:58.922Z"
+      "timestamp": "2026-04-13T05:06:26.000Z"
     },
     {
       "testId": "J1-B1b",
       "status": "PASS",
       "evidence": "DDL log contains 7 EXECUTED entries with suffix (expected ≥6)",
-      "timestamp": "2026-04-13T04:55:59.199Z"
+      "timestamp": "2026-04-13T05:06:26.267Z"
     },
     {
       "testId": "J1-B2",
       "status": "PASS",
       "evidence": "ACTIVE fields with suffix after publish: 7 (expected 7)",
-      "timestamp": "2026-04-13T04:55:59.720Z"
+      "timestamp": "2026-04-13T05:06:26.787Z"
     },
     {
       "testId": "J1-B3",
       "status": "PASS",
       "evidence": "Effective config contains ≥7 references to suffix fields (found 15 occurrences)",
-      "timestamp": "2026-04-13T04:56:00.251Z"
+      "timestamp": "2026-04-13T05:06:27.054Z"
     },
     {
       "testId": "J1-D1",
       "status": "PASS",
-      "evidence": "currentVersion = 27",
-      "timestamp": "2026-04-13T04:56:00.820Z"
+      "evidence": "currentVersion = 39",
+      "timestamp": "2026-04-13T05:06:27.632Z"
     },
     {
       "testId": "J1-D2",
       "status": "PASS",
-      "evidence": "Rolled back to version 26 — HTTP 200",
-      "timestamp": "2026-04-13T04:56:01.416Z"
+      "evidence": "Rolled back to version 38 — HTTP 200",
+      "timestamp": "2026-04-13T05:06:28.209Z"
     },
     {
       "testId": "J1-D2-pub",
       "status": "PASS",
-      "evidence": "Published rollback to v26 — HTTP 200",
-      "timestamp": "2026-04-13T04:56:01.988Z"
+      "evidence": "Published rollback to v38 — HTTP 200",
+      "timestamp": "2026-04-13T05:06:28.784Z"
     },
     {
       "testId": "J1-D3",
       "status": "PASS",
-      "evidence": "Restored to version 27 — HTTP 200",
-      "timestamp": "2026-04-13T04:56:02.748Z"
+      "evidence": "Restored to version 39 — HTTP 200",
+      "timestamp": "2026-04-13T05:06:29.362Z"
     },
     {
       "testId": "J1-D3-pub",
       "status": "PASS",
-      "evidence": "Published restore to v27 — HTTP 200",
-      "timestamp": "2026-04-13T04:56:03.318Z"
+      "evidence": "Published restore to v39 — HTTP 200",
+      "timestamp": "2026-04-13T05:06:29.934Z"
     }
   ]
 }
