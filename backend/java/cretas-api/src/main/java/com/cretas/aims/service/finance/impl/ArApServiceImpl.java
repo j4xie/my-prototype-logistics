@@ -141,6 +141,18 @@ public class ArApServiceImpl implements ArApService {
     public ArApTransaction recordArPayment(String factoryId, String customerId,
                                             BigDecimal amount, PaymentMethod method,
                                             String paymentReference, Long operatedBy, String remark) {
+        // Round 8-α Fix: Canvas validation rules were bypassed on recordArPayment (see R8-α Gap #4).
+        // ValidationRuleEvaluator was injected but only used in recordReceivable. Now also fires
+        // on payment with {amount, customerId, method} context so rules like "收款 > 100万 require
+        // approval" can block here as well as on invoice creation.
+        if (validationRuleEvaluator != null) {
+            try {
+                validationRuleEvaluator.validate(factoryId, "finance_ar", "PAYMENT",
+                        Map.of("amount", amount, "customerId", customerId,
+                                "method", method != null ? method.name() : "UNKNOWN"));
+            } catch (BusinessException e) { throw e; }
+            catch (Exception e) { log.warn("Canvas validation non-blocking: {}", e.getMessage()); }
+        }
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessException("收款金额必须大于0");
         }
@@ -201,6 +213,15 @@ public class ArApServiceImpl implements ArApService {
     public ArApTransaction recordApPayment(String factoryId, String supplierId,
                                             BigDecimal amount, PaymentMethod method,
                                             String paymentReference, Long operatedBy, String remark) {
+        // Round 8-α Fix: Canvas validation rules on finance_ap PAYMENT now fire.
+        if (validationRuleEvaluator != null) {
+            try {
+                validationRuleEvaluator.validate(factoryId, "finance_ap", "PAYMENT",
+                        Map.of("amount", amount, "supplierId", supplierId,
+                                "method", method != null ? method.name() : "UNKNOWN"));
+            } catch (BusinessException e) { throw e; }
+            catch (Exception e) { log.warn("Canvas validation non-blocking: {}", e.getMessage()); }
+        }
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessException("付款金额必须大于0");
         }

@@ -80,7 +80,7 @@ public class ColdChainQueryTool extends AbstractBusinessTool {
                 LocalDateTime endTime = LocalDateTime.now();
                 LocalDateTime startTime = resolveStartTime(timeRange, endTime);
 
-                records = iotDeviceDataRepository.findByDeviceIdAndTimeRange(warehouseId, startTime, endTime);
+                records = iotDeviceDataRepository.findByFactoryIdAndDeviceIdAndTimeRange(factoryId, warehouseId, startTime, endTime);
 
                 // Filter to only TEMPERATURE data type
                 records = records.stream()

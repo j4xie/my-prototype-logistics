@@ -45,6 +45,13 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     @Override
+    public Optional<WorkOrder> getByOrderNumber(String factoryId, String orderNumber) {
+        return workOrderRepository.findByOrderNumberAndDeletedAtIsNull(orderNumber)
+                .filter(wo -> factoryId.equals(wo.getFactoryId()));
+    }
+
+    @Override
+    @Deprecated
     public Optional<WorkOrder> getByOrderNumber(String orderNumber) {
         return workOrderRepository.findByOrderNumberAndDeletedAtIsNull(orderNumber);
     }

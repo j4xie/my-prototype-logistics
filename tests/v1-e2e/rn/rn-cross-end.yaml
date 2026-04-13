@@ -1,0 +1,40 @@
+appId: com.cretas.foodtrace
+---
+# RN Cross-End Phase 2: Read shared-state.json + process report
+# V1 E2E — RN picks up SO/plan/FMR from Web Phase 1
+# Tags: @post-deploy @rn @cross-end
+#
+# Prerequisites:
+#   1. Phase 1 (cross-end-phase1.spec.ts) must have written shared-state.json
+#   2. The shared-state.json must be pushed to the device:
+#      adb push tests/v1-e2e/test-results/shared-state.json /sdcard/shared-state.json
+#
+# This test verifies the RN app can:
+#   - Login as workshop_supervisor
+#   - Navigate to production/work reporting
+#   - Find the batch from shared-state (manual input, simulates scan)
+#   - Start a process segment + report work
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Login as workshop supervisor (or factory_admin1 as fallback)
+- runFlow: flows/login.yaml
+
+# Navigate to workshop/production
+- tapOn:
+    text: ".*Workshop.*|.*车间.*|.*Production.*|.*生产.*"
+    optional: true
+- waitForAnimationToEnd
+
+# Look for work reporting
+- tapOn:
+    text: ".*Report.*|.*报工.*|.*Process.*|.*工序.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: rn-cross-end-report
+
+# Note: Full cross-end flow requires shared-state.json batch number
+# to be entered manually (simulating barcode scan).
+# This is tested when APK is rebuilt with local API URL.

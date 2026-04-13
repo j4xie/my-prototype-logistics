@@ -1,8 +1,19 @@
 <!-- AIChatPanel.vue — Right panel: 3 AI agent modes -->
+<!-- Round 4 Fix P1-20: explicit mode buttons with data-mode attrs for UI tests -->
 <template>
-  <div class="ai-chat-panel">
+  <div class="ai-chat-panel" data-component="ai-chat-panel">
     <div class="mode-selector">
-      <el-segmented v-model="mode" :options="modes" />
+      <button
+        v-for="m in modes"
+        :key="m.value"
+        type="button"
+        :data-mode="m.value"
+        class="mode-btn"
+        :class="{ active: mode === m.value }"
+        @click="mode = m.value"
+      >
+        {{ m.label }}
+      </button>
     </div>
 
     <div class="mode-description">
@@ -53,8 +64,10 @@ const emit = defineEmits<{
   applyDiff: [diffs: ConfigDiff[]]
 }>()
 
-const mode = ref<AIAgentMode>('action')
-const modes = [
+// Round 4 Fix P1-20: Default to 'plan' mode — safer for new users (review before apply).
+// Autopilot mode is now explicit via data-mode="autopilot" button.
+const mode = ref<AIAgentMode>('plan')
+const modes: { label: string; value: AIAgentMode }[] = [
   { label: '🤖 Autopilot', value: 'autopilot' },
   { label: '📋 Plan', value: 'plan' },
   { label: '⚡ Action', value: 'action' },
@@ -105,7 +118,16 @@ function applyDiff(diff: ConfigDiff) {
 
 <style scoped>
 .ai-chat-panel { display: flex; flex-direction: column; height: 100%; padding: 12px; }
-.mode-selector { margin-bottom: 8px; }
+.mode-selector { margin-bottom: 8px; display: flex; gap: 4px; }
+.mode-btn {
+  flex: 1; padding: 6px 8px; font-size: 12px; cursor: pointer;
+  border: 1px solid var(--el-border-color); background: var(--el-fill-color-light);
+  border-radius: 4px; color: var(--el-text-color-regular);
+}
+.mode-btn.active {
+  background: var(--el-color-primary); color: #fff; border-color: var(--el-color-primary);
+}
+.mode-btn:hover:not(.active) { background: var(--el-fill-color); }
 .mode-description { font-size: 12px; color: #999; margin-bottom: 12px; }
 .chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
 .message { padding: 8px 12px; border-radius: 8px; font-size: 13px; max-width: 95%; }

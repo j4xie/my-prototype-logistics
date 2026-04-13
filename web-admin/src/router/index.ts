@@ -404,7 +404,7 @@ const businessRoutes: RouteRecordRaw[] = [
         ]
       },
 
-      // 研发管理
+      // 研发管理 (v1 §2.1 — 2 页结构: 研发样品管理 + 已转样品库)
       {
         path: 'rd',
         name: 'RD',
@@ -416,6 +416,12 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'RdSamples',
             component: () => import('@/views/rd/samples/list.vue'),
             meta: { requiresAuth: true, title: '研发样品管理', module: 'production' }
+          },
+          {
+            path: 'converted',
+            name: 'RdConverted',
+            component: () => import('@/views/rd/converted/list.vue'),
+            meta: { requiresAuth: true, title: '已转样品库', module: 'production' }
           }
         ]
       },
@@ -711,6 +717,10 @@ const businessRoutes: RouteRecordRaw[] = [
       },
 
       // Canvas 配置编辑器
+      // Round 7a P0 fix: `roles` meta was missing — any authenticated user could load
+      // the editor regardless of role. Restricted to canvas config admins only.
+      // (Backend @RequireRole already gates the mutation endpoints, but the UI should
+      //  not even render for unprivileged users to avoid "button visible then 403" UX.)
       {
         path: 'canvas-editor',
         name: 'CanvasEditor',
@@ -720,6 +730,7 @@ const businessRoutes: RouteRecordRaw[] = [
           icon: 'Setting',
           requiresAuth: true,
           showInMenu: true,
+          roles: ['factory_super_admin', 'permission_admin'],
         },
       },
       // 动态模块页 (Canvas配置系统)

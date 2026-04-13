@@ -3,15 +3,20 @@ package com.cretas.aims.service.impl;
 import com.cretas.aims.dto.bom.BomCostSummaryDTO;
 import com.cretas.aims.dto.config.EffectiveField;
 import com.cretas.aims.dto.config.EffectiveModuleConfig;
+import com.cretas.aims.entity.bom.BomChangeLog;
 import com.cretas.aims.entity.bom.BomItem;
 import com.cretas.aims.entity.bom.LaborCostConfig;
 import com.cretas.aims.entity.bom.OverheadCostConfig;
 import com.cretas.aims.exception.EntityNotFoundException;
+import com.cretas.aims.repository.bom.BomChangeLogRepository;
 import com.cretas.aims.repository.bom.BomItemRepository;
 import com.cretas.aims.repository.bom.LaborCostConfigRepository;
 import com.cretas.aims.repository.bom.OverheadCostConfigRepository;
 import com.cretas.aims.service.BomService;
 import com.cretas.aims.service.config.FactoryConfigService;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +55,10 @@ public class BomServiceImpl implements BomService {
     private final LaborCostConfigRepository laborCostConfigRepository;
     private final OverheadCostConfigRepository overheadCostConfigRepository;
 
+    /** P1-9 BOM 变更痕迹记录, 可选注入 (老环境未迁移时不阻塞) */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private BomChangeLogRepository bomChangeLogRepository;
+
     /** Canvas Config — 可选注入，模块未部署时不影响现有逻辑 */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private FactoryConfigService factoryConfigService;
@@ -65,6 +74,8 @@ public class BomServiceImpl implements BomService {
     /** Canvas V2: DB-driven validation rules */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
 
     private void runBomValidation(String factoryId, String operation, BomItem bomItem) {
         if (validationRuleEvaluator == null) return;
@@ -111,6 +122,12 @@ public class BomServiceImpl implements BomService {
         String operation = (bomItem.getId() == null) ? "CREATE" : "UPDATE";
         runBomValidation(bomItem.getFactoryId(), operation, bomItem);
 
+        // P1-9 BOM 痕迹追踪: 如果是 UPDATE, 先查老值做 snapshot
+        BomItem oldSnapshot = null;
+        if (bomItem.getId() != null) {
+            oldSnapshot = bomItemRepository.findById(bomItem.getId()).orElse(null);
+        }
+
         // 设置默认值（优先从 Canvas Config 读取，不可用时使用硬编码 fallback）
         if (bomItem.getYieldRate() == null) {
             Object configDefault = getConfigDefault(bomItem.getFactoryId(), "yieldRate", new BigDecimal("100.00"));
@@ -133,7 +150,51 @@ public class BomServiceImpl implements BomService {
 
         BomItem saved = bomItemRepository.save(bomItem);
         log.info("BOM项目保存成功: id={}", saved.getId());
+
+        // P1-9 写 BomChangeLog (best-effort, 失败不影响主业务)
+        recordBomChange(saved, oldSnapshot,
+                oldSnapshot == null ? BomChangeLog.ChangeType.CREATE : BomChangeLog.ChangeType.UPDATE);
+
         return saved;
+    }
+
+    /**
+     * P1-9 写 BomChangeLog (v1 §2.2.6 BOM 变更痕迹追踪).
+     * best-effort — 任何异常不影响主业务.
+     */
+    private void recordBomChange(BomItem newItem, BomItem oldItem, BomChangeLog.ChangeType type) {
+        if (bomChangeLogRepository == null) return;
+        try {
+            BomChangeLog log = new BomChangeLog();
+            log.setFactoryId(newItem != null ? newItem.getFactoryId() : (oldItem != null ? oldItem.getFactoryId() : null));
+            log.setBomId(newItem != null ? newItem.getProductTypeId() : (oldItem != null ? oldItem.getProductTypeId() : null));
+            log.setBomItemId(newItem != null ? newItem.getId() : (oldItem != null ? oldItem.getId() : null));
+            log.setChangeType(type);
+            log.setOldValue(snapshotBomItem(oldItem));
+            log.setNewValue(snapshotBomItem(newItem));
+            bomChangeLogRepository.save(log);
+        } catch (Exception e) {
+            BomServiceImpl.log.warn("[P1-9] BomChangeLog 写入失败 (non-blocking): {}", e.getMessage());
+        }
+    }
+
+    private Map<String, Object> snapshotBomItem(BomItem item) {
+        if (item == null) return null;
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("id", item.getId());
+        snapshot.put("productTypeId", item.getProductTypeId());
+        snapshot.put("productName", item.getProductName());
+        snapshot.put("materialTypeId", item.getMaterialTypeId());
+        snapshot.put("materialName", item.getMaterialName());
+        snapshot.put("materialCategory", item.getMaterialCategory());
+        snapshot.put("standardQuantity", item.getStandardQuantity());
+        snapshot.put("yieldRate", item.getYieldRate());
+        snapshot.put("unit", item.getUnit());
+        snapshot.put("unitPrice", item.getUnitPrice());
+        snapshot.put("taxRate", item.getTaxRate());
+        snapshot.put("sortOrder", item.getSortOrder());
+        snapshot.put("remark", item.getRemark());
+        return snapshot;
     }
 
     @Override
@@ -151,9 +212,13 @@ public class BomServiceImpl implements BomService {
         log.info("删除BOM项目: id={}", id);
         BomItem bomItem = bomItemRepository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("BomItem", id.toString()));
+        // P1-9 snapshot before delete
+        BomItem oldSnapshot = bomItem;
         bomItem.softDelete();
         bomItemRepository.save(bomItem);
         log.info("BOM项目删除成功: id={}", id);
+        // P1-9 写 DELETE log
+        recordBomChange(null, oldSnapshot, BomChangeLog.ChangeType.DELETE);
     }
 
     // ============ Labor Cost ============

@@ -6,6 +6,7 @@ import lombok.Data;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Map;
 
 /**
  * 创建原材料批次请求对象
@@ -86,4 +87,14 @@ public class CreateMaterialBatchRequest {
     @Schema(description = "发起单ID (P0-17): 对应类型的单据主键")
     @Size(max = 64)
     private String sourceDocId;
+
+    /**
+     * Round 9 Fix (R8-α Gap #3 per-module template continuation): Canvas V3 dynamic
+     * field values. Customer-configured fields (如:产地, 批次来源证明, 农残检测报告,
+     * 供应商 QC 等级 etc.) arrive here and get persisted via DynamicFieldService.
+     * Previously MaterialBatch entity had a customFields column but the DTO didn't
+     * accept the values — frontend Canvas form submissions silently dropped them.
+     */
+    @Schema(description = "Canvas 动态字段值 (Round 9 Fix)")
+    private Map<String, Object> customFields;
 }

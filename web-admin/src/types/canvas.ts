@@ -108,6 +108,11 @@ export interface ConfigVersion {
   id: number
   factoryId: string
   configVersion: number
+  // Round 10 Fix: JPA optimistic-lock counter on FactoryConfiguration. Used by
+  // POST /reorder-fields as expectedVersion. The backend exposes this as
+  // `rowVersion` (not `configVersion`) because configVersion is the business
+  // version label, while rowVersion is the @Version row-level lock.
+  rowVersion?: number
   status: ConfigStatus
   publishedAt?: string
   publishedBy?: number
@@ -142,8 +147,11 @@ export interface CompletenessCheck {
   }[]
 }
 
-// Canvas V3 Dynamic Fields
-export type DynamicFieldType = 'TEXT' | 'NUMBER' | 'DECIMAL' | 'SELECT' | 'DATE' | 'ATTACHMENT' | 'SUB_TABLE'
+// Canvas V3 Dynamic Fields — Round 4 Fix P1-11: added TEXTAREA/DATETIME/BOOLEAN
+export type DynamicFieldType =
+  | 'TEXT' | 'TEXTAREA' | 'NUMBER' | 'DECIMAL' | 'SELECT'
+  | 'DATE' | 'DATETIME' | 'BOOLEAN'
+  | 'ATTACHMENT' | 'SUB_TABLE'
 export type DynamicFieldStatus = 'PENDING_DDL' | 'ACTIVE' | 'DISABLED'
 
 export interface DynamicFieldConfig {

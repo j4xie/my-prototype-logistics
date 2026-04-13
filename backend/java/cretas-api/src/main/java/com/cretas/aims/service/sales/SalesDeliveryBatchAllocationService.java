@@ -3,7 +3,9 @@ package com.cretas.aims.service.sales;
 import com.cretas.aims.dto.sales.BatchAllocationDTO;
 import com.cretas.aims.entity.sales.SalesDeliveryItemBatchAllocation;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 /**
  * PC 端销售发货批次分配服务（P0-13 昆山六扇门客户需求）。
@@ -34,4 +36,12 @@ public interface SalesDeliveryBatchAllocationService {
      * @return true 当该发货行的总分配量 == deliveredQuantity。
      */
     boolean isFullyAllocated(String factoryId, String deliveryItemId);
+
+    /**
+     * FIFO 推荐：按生产日期升序返回可用成品批次，附建议分配数量（累计至 requiredQty）。
+     * 镜像原材料 FIFO 模式（MaterialFifoRecommendTool）用于成品出库。
+     *
+     * <p>客户需求 5016s: "客户也要做先进先出，销售出库单要有PC日期"
+     */
+    List<Map<String, Object>> recommendFifo(String factoryId, String productTypeId, BigDecimal requiredQty);
 }

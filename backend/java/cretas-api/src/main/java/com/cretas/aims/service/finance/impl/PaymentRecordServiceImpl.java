@@ -34,6 +34,11 @@ public class PaymentRecordServiceImpl implements PaymentRecordService {
     private final ArApService arApService;
     private final ApplicationEventPublisher eventPublisher;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
+
     @Override
     @Transactional
     public PaymentRecord recordPayment(String factoryId, String salesOrderId, BigDecimal amount,
@@ -69,6 +74,13 @@ public class PaymentRecordServiceImpl implements PaymentRecordService {
         PaymentRecord record = getPayment(paymentId);
         if (record.getStatus() != PaymentRecordStatus.PENDING) {
             throw new IllegalStateException("只能验证PENDING状态的收款记录");
+        }
+        if (validationRuleEvaluator != null && record.getFactoryId() != null) {
+            try {
+                validationRuleEvaluator.validate(record.getFactoryId(), "payment_record", "VERIFY",
+                        java.util.Map.of("amount", record.getAmount() != null ? record.getAmount() : java.math.BigDecimal.ZERO));
+            } catch (com.cretas.aims.exception.BusinessException e) { throw e; }
+            catch (Exception e) { log.warn("Canvas validation non-blocking: {}", e.getMessage()); }
         }
 
         record.setStatus(PaymentRecordStatus.VERIFIED);

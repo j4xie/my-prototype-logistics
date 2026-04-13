@@ -9,9 +9,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -44,7 +46,18 @@ public class DDLExecutor {
         Map.entry("hr_employee", "employees")
     );
 
-    @Transactional
+    /**
+     * Round 5 Fix PERF-2: REQUIRES_NEW propagation isolates DDL into its own short-lived
+     * transaction so ALTER TABLE's ACCESS EXCLUSIVE lock is released immediately after each
+     * DDL, not held until the parent publishConfig transaction commits (which includes
+     * saving the FactoryConfiguration row and audit logging).
+     *
+     * Trade-off: if the parent TX rolls back AFTER this method commits, the added columns
+     * will remain orphaned in the database. This is acceptable because: (1) ADD COLUMN IF
+     * NOT EXISTS is idempotent on retry, (2) the dangling column holds no data, (3)
+     * CanvasDynamicField rows are also committed in this TX so the schema stays consistent.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void executePendingDDL(String factoryId, int configVersion) {
         List<CanvasDynamicField> pending = fieldRepo.findByFactoryIdAndStatus(factoryId, "PENDING_DDL");
         if (pending.isEmpty()) {
@@ -82,11 +95,16 @@ public class DDLExecutor {
             try {
                 jdbcTemplate.execute(ddl);
                 field.setStatus("ACTIVE");
+                // Round 4 Fix P0-5: record the config version at which this field first went active
+                // This enables rollback to disable fields added in later versions.
+                if (field.getActiveFromVersion() == null) {
+                    field.setActiveFromVersion(configVersion);
+                }
                 fieldRepo.save(field);
                 logEntry.setStatus("EXECUTED");
                 logEntry.setExecutedAt(LocalDateTime.now());
                 ddlLogRepo.save(logEntry);
-                log.info("DDL executed: {} -> {}.{}", field.getFieldType(), field.getModuleCode(), field.getColumnName());
+                log.info("DDL executed: {} -> {}.{} (v{})", field.getFieldType(), field.getModuleCode(), field.getColumnName(), configVersion);
             } catch (Exception e) {
                 logEntry.setStatus("FAILED");
                 logEntry.setErrorMessage(e.getMessage());
@@ -177,18 +195,36 @@ public class DDLExecutor {
         sb.append("id UUID PRIMARY KEY DEFAULT gen_random_uuid(), ");
         sb.append("parent_id UUID NOT NULL, ");
 
+        // Round 4 Fix P2-22: collect unique columns for CREATE UNIQUE INDEX
+        List<String> uniqueColumns = new ArrayList<>();
+
         List<Map<String, Object>> columns = (List<Map<String, Object>>) field.getConfig().get("columns");
         if (columns != null) {
             for (Map<String, Object> col : columns) {
                 String code = (String) col.get("code");
+                // Round 5 Fix SEC-3: validate sub-column code before SQL concatenation
+                if (code == null || !code.matches("^[a-zA-Z_][a-zA-Z0-9_]{0,60}$")) {
+                    throw new BusinessException("Invalid sub-table column code: " + code);
+                }
                 String type = (String) col.getOrDefault("type", "TEXT");
                 sb.append("cf_").append(code).append(" ").append(mapFieldTypeToSQL(type)).append(", ");
+                if (Boolean.TRUE.equals(col.get("unique"))) {
+                    uniqueColumns.add("cf_" + code);
+                }
             }
         }
         sb.append("created_at TIMESTAMP DEFAULT NOW(), ");
         sb.append("updated_at TIMESTAMP DEFAULT NOW()");
         sb.append("); ");
         sb.append("CREATE INDEX IF NOT EXISTS idx_").append(subTableName).append("_parent ON ").append(subTableName).append("(parent_id)");
+        // Round 4 Fix P2-22: emit UNIQUE indexes for columns marked unique:true in config.
+        // Scoped to parent_id so same ear-tag can exist across different parent orders but
+        // not twice within the same parent. Adjust to global UNIQUE by removing parent_id.
+        for (String uniqueCol : uniqueColumns) {
+            sb.append("; CREATE UNIQUE INDEX IF NOT EXISTS uq_").append(subTableName).append("_").append(uniqueCol)
+              .append(" ON ").append(subTableName).append(" (parent_id, ").append(uniqueCol).append(") WHERE ")
+              .append(uniqueCol).append(" IS NOT NULL");
+        }
         return sb.toString();
     }
 
@@ -201,14 +237,32 @@ public class DDLExecutor {
     }
 
     private String mapFieldTypeToSQL(String fieldType) {
-        return switch (fieldType) {
-            case "TEXT" -> "VARCHAR(500)";
-            case "NUMBER" -> "INTEGER";
+        // Round 4 Fix P1-11: Added DATETIME and BOOLEAN types.
+        // Round 7a Fix: REFERENCE and LINE_ITEMS had no case and fell through to
+        // default -> VARCHAR(500), silently corrupting intended data types. REFERENCE
+        // should store a FK id (UUID-width VARCHAR is the safe choice since our id
+        // columns mix BIGINT and UUID::text). LINE_ITEMS should store the row collection
+        // as JSONB so downstream callers can round-trip the Vue LineItemsEditor value.
+        //
+        // If the caller really has a custom type not in this list we now throw rather
+        // than silently fall through — better to fail the DDL than corrupt the column.
+        return switch (fieldType == null ? "TEXT" : fieldType.toUpperCase()) {
+            case "TEXT", "STRING" -> "VARCHAR(500)";
+            case "TEXTAREA", "LONGTEXT" -> "TEXT";
+            case "NUMBER", "INTEGER" -> "INTEGER";
             case "DECIMAL" -> "NUMERIC(18,4)";
             case "SELECT" -> "VARCHAR(100)";
-            case "DATE" -> "TIMESTAMP";
+            case "DATE" -> "DATE";
+            case "DATETIME", "TIMESTAMP" -> "TIMESTAMP";
+            case "BOOLEAN", "BOOL" -> "BOOLEAN";
             case "ATTACHMENT" -> "VARCHAR(2000)";
-            default -> "VARCHAR(500)";
+            case "REFERENCE" -> "VARCHAR(64)";   // FK id — works for both UUID::text and BIGINT
+            case "LINE_ITEMS" -> "JSONB";         // row collection as JSONB, parsed by LineItemsEditor
+            default -> {
+                log.error("Unknown fieldType '{}' — cannot generate DDL. Add a case to mapFieldTypeToSQL or reject at Controller validation.", fieldType);
+                throw new com.cretas.aims.exception.BusinessException(
+                        "不支持的动态字段类型: " + fieldType + " (请联系开发补充 DDL 映射)");
+            }
         };
     }
 }

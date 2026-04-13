@@ -32,10 +32,12 @@ const phaseA = [
   { key: 'validation', icon: '📐', label: '校验规则' },
 ]
 
+// Round 4 Fix P1-10: added '定时任务' Tab for SchedulerPanel
 const phaseB = [
   { key: 'fields', icon: '📋', label: '字段配置' },
   { key: 'permissions', icon: '🛡️', label: '权限矩阵' },
   { key: 'tools', icon: '🔧', label: '工具/技能' },
+  { key: 'scheduler', icon: '⏰', label: '定时任务' },
 ]
 </script>
 

@@ -44,23 +44,29 @@ public class NotificationController {
 
     /**
      * 获取通知列表
+     * <p>When userId is supplied, returns notifications targeted at that user
+     * plus broadcast notifications (userId=null), sorted unread-first.
      */
     @GetMapping
-    @Operation(summary = "获取通知列表", description = "分页获取工厂的通知列表，支持按通知类型和已读状态筛选，默认按创建时间倒序排列")
+    @Operation(summary = "获取通知列表", description = "分页获取工厂的通知列表，支持按用户、通知类型和已读状态筛选。提供 userId 时返回该用户的通知+广播通知，未读优先排序")
     public ApiResponse<PageResponse<Notification>> getNotifications(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam(required = false) @Parameter(description = "用户ID，提供时返回该用户+广播通知", example = "22") Long userId,
             @RequestParam(defaultValue = "1") @Parameter(description = "页码（1-based）", example = "1") Integer page,
             @RequestParam(defaultValue = "20") @Parameter(description = "每页大小", example = "20") Integer size,
             @RequestParam(required = false) @Parameter(description = "通知类型: INFO/WARNING/ERROR/SUCCESS", example = "INFO") NotificationType type,
             @RequestParam(required = false) @Parameter(description = "是否已读", example = "false") Boolean isRead) {
 
-        log.debug("获取通知列表: factoryId={}, page={}, size={}, type={}, isRead={}",
-                  factoryId, page, size, type, isRead);
+        log.debug("获取通知列表: factoryId={}, userId={}, page={}, size={}, type={}, isRead={}",
+                  factoryId, userId, page, size, type, isRead);
 
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         Page<Notification> pageResult;
-        if (type != null) {
+        if (userId != null) {
+            // User-scoped: their own notifications + broadcasts, unread first
+            pageResult = notificationRepository.findForUserUnreadFirst(factoryId, userId, pageable);
+        } else if (type != null) {
             pageResult = notificationRepository.findByFactoryIdAndTypeOrderByCreatedAtDesc(factoryId, type, pageable);
         } else if (isRead != null) {
             pageResult = notificationRepository.findByFactoryIdAndIsReadOrderByCreatedAtDesc(factoryId, isRead, pageable);
@@ -82,13 +88,19 @@ public class NotificationController {
      * 获取未读通知数量
      */
     @GetMapping("/unread-count")
-    @Operation(summary = "获取未读通知数量", description = "获取工厂当前未读通知的总数，用于显示通知角标")
+    @Operation(summary = "获取未读通知数量", description = "获取未读通知总数。提供 userId 时返回该用户+广播通知的未读数")
     public ApiResponse<Map<String, Long>> getUnreadCount(
-            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam(required = false) @Parameter(description = "用户ID", example = "22") Long userId) {
 
-        log.debug("获取未读通知数量: factoryId={}", factoryId);
+        log.debug("获取未读通知数量: factoryId={}, userId={}", factoryId, userId);
 
-        long count = notificationRepository.countByFactoryIdAndIsReadFalse(factoryId);
+        long count;
+        if (userId != null) {
+            count = notificationRepository.countUnreadForUser(factoryId, userId);
+        } else {
+            count = notificationRepository.countByFactoryIdAndIsReadFalse(factoryId);
+        }
 
         Map<String, Long> result = new HashMap<>();
         result.put("count", count);
@@ -153,7 +165,7 @@ public class NotificationController {
     }
 
     /**
-     * 标记所有通知为已读
+     * 标记所有通知为已读 (factory-wide)
      */
     @PutMapping("/mark-all-read")
     @Operation(summary = "标记所有通知为已读", description = "一键将工厂所有未读通知标记为已读状态，返回更新的通知数量")
@@ -164,6 +176,26 @@ public class NotificationController {
         log.info("标记所有通知为已读: factoryId={}", factoryId);
 
         int count = notificationRepository.markAllAsRead(factoryId, LocalDateTime.now());
+
+        Map<String, Integer> result = new HashMap<>();
+        result.put("updatedCount", count);
+
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * 标记用户的所有通知为已读 (含广播通知)
+     */
+    @PutMapping("/read-all")
+    @Operation(summary = "标记用户所有通知为已读", description = "将指定用户的所有未读通知(含广播)标记为已读")
+    @Transactional
+    public ApiResponse<Map<String, Integer>> markAllAsReadForUser(
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam @Parameter(description = "用户ID", example = "22") Long userId) {
+
+        log.info("标记用户所有通知为已读: factoryId={}, userId={}", factoryId, userId);
+
+        int count = notificationRepository.markAllAsReadForUser(factoryId, userId, LocalDateTime.now());
 
         Map<String, Integer> result = new HashMap<>();
         result.put("updatedCount", count);

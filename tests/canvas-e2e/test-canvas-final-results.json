@@ -1,0 +1,62 @@
+[
+  {
+    "test": "Login",
+    "status": "PASS",
+    "evidence": "token=259字符, URL=http://139.196.165.140:8086/dashboard"
+  },
+  {
+    "test": "API disabled-modules",
+    "status": "PASS",
+    "evidence": "HTTP 200, success=true"
+  },
+  {
+    "test": "API defaults(sales_order)",
+    "status": "PASS",
+    "evidence": "HTTP 200, success=true"
+  },
+  {
+    "test": "API effective(sales_order)",
+    "status": "PASS",
+    "evidence": "HTTP 200, success=true, renderingMode=DYNAMIC"
+  },
+  {
+    "test": "CanvasAwareWrapper 渲染切换",
+    "status": "PASS",
+    "evidence": "DynamicModulePage 激活 (标题=\"销售订单DYNAMIC\")"
+  },
+  {
+    "test": "创建对话框打开",
+    "status": "PASS",
+    "evidence": "表单项=0"
+  },
+  {
+    "test": "CanvasDynamicFields 显示",
+    "status": "WARN",
+    "evidence": "无自定义字段 (工厂可能未配置 dynamic fields)"
+  },
+  {
+    "test": "税率分组公式 API",
+    "status": "PASS",
+    "evidence": "HTTP 200, formulas=none, data={}"
+  },
+  {
+    "test": "侧边栏 销售",
+    "status": "PASS",
+    "evidence": "可见"
+  },
+  {
+    "test": "侧边栏 采购",
+    "status": "PASS",
+    "evidence": "可见"
+  },
+  {
+    "test": "侧边栏 生产",
+    "status": "PASS",
+    "evidence": "可见"
+  },
+  {
+    "test": "侧边栏 仓储",
+    "status": "PASS",
+    "evidence": "可见"
+  }
+]

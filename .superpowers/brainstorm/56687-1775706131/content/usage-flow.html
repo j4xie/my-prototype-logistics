@@ -1,0 +1,350 @@
+<h2>Canvas 完整使用流程 — 从零配置一个新工厂</h2>
+<p class="subtitle">以"昆山六扇门食品 (熟食加工)" 为例，展示平台管理员的完整操作路径</p>
+
+<!-- ===== FLOW 1: 入口 ===== -->
+<div class="section">
+<h3>Flow 1: 进入 Canvas 编辑器</h3>
+<div class="mockup">
+<div class="mockup-header">平台管理员登录 → 系统管理 → Canvas 配置中心</div>
+<div class="mockup-body" style="background:#0d1117; color:#e0e0e0; padding:16px; font-size:12px;">
+
+<div style="display:flex; gap:12px; margin-bottom:16px;">
+  <div style="background:#238636; color:#fff; padding:8px 20px; border-radius:6px; cursor:pointer; font-weight:bold;">+ 新建工厂配置</div>
+  <div style="background:#30363d; color:#8b949e; padding:8px 16px; border-radius:6px; cursor:pointer;">从模板创建</div>
+</div>
+
+<table style="width:100%; border-collapse:collapse; font-size:12px;">
+  <tr style="background:#161b22; color:#8b949e;">
+    <th style="padding:8px; text-align:left;">工厂</th>
+    <th style="padding:8px;">行业</th>
+    <th style="padding:8px;">模块数</th>
+    <th style="padding:8px;">版本</th>
+    <th style="padding:8px;">状态</th>
+    <th style="padding:8px;">操作</th>
+  </tr>
+  <tr style="color:#e0e0e0; border-bottom:1px solid #21262d;">
+    <td style="padding:8px;">🏭 六扇门食品</td>
+    <td style="padding:8px; text-align:center;">熟食加工</td>
+    <td style="padding:8px; text-align:center;">6/15</td>
+    <td style="padding:8px; text-align:center;">v3</td>
+    <td style="padding:8px; text-align:center;"><span style="background:#238636; color:#fff; padding:2px 8px; border-radius:10px; font-size:11px;">PUBLISHED</span></td>
+    <td style="padding:8px; text-align:center;"><span style="color:#58a6ff; cursor:pointer;">编辑</span></td>
+  </tr>
+  <tr style="color:#8b949e; border-bottom:1px solid #21262d;">
+    <td style="padding:8px;">🏭 瑞丰烘焙</td>
+    <td style="padding:8px; text-align:center;">烘焙</td>
+    <td style="padding:8px; text-align:center;">—</td>
+    <td style="padding:8px; text-align:center;">—</td>
+    <td style="padding:8px; text-align:center;"><span style="background:#30363d; color:#8b949e; padding:2px 8px; border-radius:10px; font-size:11px;">未配置</span></td>
+    <td style="padding:8px; text-align:center;"><span style="color:#58a6ff; cursor:pointer;">配置</span></td>
+  </tr>
+</table>
+
+<div style="margin-top:12px; color:#8b949e; font-size:11px;">
+  → 点击 "配置" 进入 Canvas 编辑器<br/>
+  → 或点击 "+ 新建工厂配置" 从头开始
+</div>
+</div>
+</div>
+</div>
+
+<!-- ===== FLOW 2: AI Autopilot 快速建配置 ===== -->
+<div class="section" style="margin-top:20px;">
+<h3>Flow 2: AI Autopilot 一键建配置 (最快路径)</h3>
+<div class="mockup">
+<div class="mockup-header">选择 Autopilot 模式 → 输入需求 → AI 全自动执行 → 5 分钟完成</div>
+<div class="mockup-body" style="background:#0d1117; color:#e0e0e0; padding:16px; font-size:12px;">
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+
+<!-- Left: Chat -->
+<div>
+<div style="color:#ffd700; font-weight:bold; margin-bottom:8px;">🤖 AI Autopilot</div>
+
+<div style="background:#161b22; border-radius:8px; padding:10px; margin-bottom:6px;">
+  <div style="color:#58a6ff; font-size:11px;">平台管理员:</div>
+  <div style="color:#e0e0e0; margin-top:2px;">"给瑞丰烘焙建一套配置。他们做面包蛋糕，30 个 SKU，有门店直销也有批发，不需要设备管理和餐饮模块"</div>
+</div>
+
+<div style="background:#1a2a1a; border-radius:8px; padding:10px; margin-bottom:6px;">
+  <div style="color:#4caf50; font-size:11px;">AI 正在执行...</div>
+  <div style="color:#ccc; margin-top:4px; line-height:1.8;">
+    <span style="color:#4caf50;">✅</span> Step 1: 匹配行业模板 → <b>bakery_template</b><br/>
+    <span style="color:#4caf50;">✅</span> Step 2: 启用 8 模块: 销售/BOM/入库/出库/生产计划/报工/质检/财务<br/>
+    <span style="color:#4caf50;">✅</span> Step 3: 关闭 7 模块: 设备/餐饮/周转箱/研发/调度/报价/调拨<br/>
+    <span style="color:#4caf50;">✅</span> Step 4: 字段自定义 — BOM 添加 "面团/馅料" 分类; 报工添加 "发酵时间" 字段<br/>
+    <span style="color:#4caf50;">✅</span> Step 5: 流程简化 — 跳过财务审核 (小店); 质检必须 (食品安全)<br/>
+    <span style="color:#4caf50;">✅</span> Step 6: 触发链 — 启用: 审批→自动排产, 生产完成→自动入库; 禁用: 自动采购建议<br/>
+    <span style="color:#4caf50;">✅</span> Step 7: 默认值 — 保质期=3天, 出成率=92%, 税率=13%<br/>
+    <span style="color:#4caf50;">✅</span> Step 8: 工具开关 — 禁用 scheduling_* / equipment_* / restaurant_* 系列<br/>
+    <span style="color:#ffd700;">⏳</span> Step 9: 生成配置草稿...
+  </div>
+</div>
+
+<div style="display:flex; gap:6px;">
+  <span style="background:#238636; color:#fff; padding:6px 16px; border-radius:4px; cursor:pointer; font-weight:bold;">✅ 确认发布</span>
+  <span style="background:#1f6feb33; color:#58a6ff; padding:6px 12px; border-radius:4px; cursor:pointer;">📋 查看 Diff</span>
+  <span style="background:#30363d; color:#8b949e; padding:6px 12px; border-radius:4px; cursor:pointer;">✏️ 手动调整</span>
+</div>
+</div>
+
+<!-- Right: Summary -->
+<div>
+<div style="color:#ffd700; font-weight:bold; margin-bottom:8px;">📊 配置摘要</div>
+<div style="background:#161b22; border-radius:8px; padding:12px; line-height:2;">
+  <div style="color:#4caf50;">✅ 启用 8 个模块</div>
+  <div style="color:#f44336;">❌ 关闭 7 个模块</div>
+  <div style="color:#ff9800;">🔧 自定义 5 个字段</div>
+  <div style="color:#2196f3;">🔄 简化 2 个流程</div>
+  <div style="color:#9c27b0;">🔗 调整 3 条触发链</div>
+  <div style="color:#00bcd4;">📐 设置 3 个默认值</div>
+  <div style="color:#607d8b;">🔧 禁用 45 个 AI 工具</div>
+</div>
+
+<div style="background:#161b22; border-radius:8px; padding:12px; margin-top:8px;">
+  <div style="color:#8b949e; font-size:11px;">⏱️ 耗时: 47 秒</div>
+  <div style="color:#8b949e; font-size:11px;">📦 版本: v1 (DRAFT)</div>
+  <div style="color:#8b949e; font-size:11px;">🏭 工厂: 瑞丰烘焙</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+
+<!-- ===== FLOW 3: 手动微调 ===== -->
+<div class="section" style="margin-top:20px;">
+<h3>Flow 3: 手动微调 (点击"手动调整"后)</h3>
+
+<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+
+<div class="mockup">
+<div class="mockup-header">Tab 1: 字段配置 (拖拽)</div>
+<div class="mockup-body" style="background:#0d1117; color:#ccc; padding:10px; font-size:11px;">
+  <div style="color:#fff; font-weight:bold; margin-bottom:6px;">销售订单 — 字段</div>
+  <div style="padding:4px; border:1px dashed #30363d; border-radius:4px; margin:2px 0; cursor:grab;">☰ 订单号 <span style="float:right;">✅可见 ✅必填</span></div>
+  <div style="padding:4px; border:1px dashed #30363d; border-radius:4px; margin:2px 0; cursor:grab;">☰ 客户 <span style="float:right;">✅可见 ✅必填</span></div>
+  <div style="padding:4px; border:1px dashed #30363d; border-radius:4px; margin:2px 0; cursor:grab; background:#1a1520;">☰ 运费 <span style="float:right; color:#f44336;">❌隐藏</span></div>
+  <div style="padding:4px; border:1px dashed #30363d; border-radius:4px; margin:2px 0; cursor:grab;">☰ 备注 <span style="float:right;">✅可见</span></div>
+  <div style="color:#8b949e; margin-top:6px; font-size:10px;">↕ 拖拽调整显示顺序</div>
+</div>
+</div>
+
+<div class="mockup">
+<div class="mockup-header">Tab 2: 流程设计 (SVG)</div>
+<div class="mockup-body" style="background:#0d1117; color:#ccc; padding:10px; font-size:11px; text-align:center;">
+  <div style="display:flex; align-items:center; justify-content:center; gap:4px; flex-wrap:wrap;">
+    <span style="background:#1b5e20; padding:4px 8px; border-radius:12px; font-size:10px;">草稿</span>
+    <span style="color:#4caf50;">→</span>
+    <span style="background:#0d47a1; padding:4px 8px; border-radius:12px; font-size:10px;">确认</span>
+    <span style="color:#4caf50;">→</span>
+    <span style="background:#4a148c; padding:4px 8px; border-radius:12px; font-size:10px; opacity:0.4; text-decoration:line-through;">审核</span>
+    <span style="color:#666;">→</span>
+    <span style="background:#e65100; padding:4px 8px; border-radius:12px; font-size:10px;">生产</span>
+    <span style="color:#4caf50;">→</span>
+    <span style="background:#1b5e20; padding:4px 8px; border-radius:12px; font-size:10px;">完成</span>
+  </div>
+  <div style="color:#ff9800; font-size:10px; margin-top:8px;">⚙️ 财务审核已跳过</div>
+  <div style="color:#8b949e; margin-top:6px; font-size:10px;">点击节点编辑 · 拖拽添加新状态</div>
+</div>
+</div>
+
+<div class="mockup">
+<div class="mockup-header">Tab 4: 触发链 (编排)</div>
+<div class="mockup-body" style="background:#0d1117; color:#ccc; padding:10px; font-size:11px;">
+  <div style="color:#fff; font-weight:bold; margin-bottom:6px;">订单审批后</div>
+  <div style="padding:4px; background:#1a2a1a; border-left:3px solid #4caf50; border-radius:3px; margin:3px 0;">1. ✅ 检查库存</div>
+  <div style="padding:4px; background:#1a2a1a; border-left:3px solid #4caf50; border-radius:3px; margin:3px 0;">2. ✅ 预留库存</div>
+  <div style="padding:4px; background:#1a2a1a; border-left:3px solid #ff9800; border-radius:3px; margin:3px 0;">3. ⚙️ 自动排产 <span style="color:#888; font-size:10px;">(库存不足时)</span></div>
+  <div style="padding:4px; background:#2d1e1e; border-left:3px solid #f44336; border-radius:3px; margin:3px 0; opacity:0.5;">4. ❌ 采购建议 <span style="color:#888; font-size:10px;">(已禁用)</span></div>
+  <div style="color:#58a6ff; margin-top:6px; font-size:10px; cursor:pointer;">+ 添加步骤 (从 348 个 Tool 中选)</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ===== FLOW 4: Plan Mode Diff ===== -->
+<div class="section" style="margin-top:20px;">
+<h3>Flow 4: Plan Mode — 修改已有配置 (diff 审核)</h3>
+<div class="mockup">
+<div class="mockup-header">管理员: "六扇门要加上财务审核，但只对 5000 元以上的订单"</div>
+<div class="mockup-body" style="background:#0d1117; color:#e0e0e0; padding:16px; font-size:12px;">
+
+<div style="color:#ffd700; font-weight:bold; margin-bottom:8px;">📋 Plan Mode — Diff 预览</div>
+
+<div style="background:#161b22; border-radius:8px; padding:12px; margin-bottom:8px;">
+  <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+    <span style="background:#f85149; color:#fff; padding:2px 8px; border-radius:4px; font-size:11px;">变更</span>
+    <span style="color:#fff;">工作流: hasFinanceReview</span>
+  </div>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+    <div style="background:#2d1e1e; padding:8px; border-radius:4px;">
+      <div style="color:#f85149; font-size:11px;">- 当前</div>
+      <div style="color:#ffa198; font-size:12px;">hasFinanceReview = <b>false</b></div>
+    </div>
+    <div style="background:#1a2d1a; padding:8px; border-radius:4px;">
+      <div style="color:#3fb950; font-size:11px;">+ 变更后</div>
+      <div style="color:#7ee787; font-size:12px;">hasFinanceReview = <b>true</b></div>
+    </div>
+  </div>
+</div>
+
+<div style="background:#161b22; border-radius:8px; padding:12px; margin-bottom:8px;">
+  <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+    <span style="background:#238636; color:#fff; padding:2px 8px; border-radius:4px; font-size:11px;">新增</span>
+    <span style="color:#fff;">校验规则: HIGH_AMOUNT_REQUIRE_FINANCE</span>
+  </div>
+  <div style="background:#1a2d1a; padding:8px; border-radius:4px;">
+    <div style="color:#7ee787; font-size:12px;">
+      + condition: <code>totalAmount > 5000</code><br/>
+      + action: 强制走财务审核<br/>
+      + message: "订单金额超过 5000 元，需要财务审核"
+    </div>
+  </div>
+</div>
+
+<div style="display:flex; gap:8px; margin-top:12px;">
+  <span style="background:#238636; color:#fff; padding:6px 16px; border-radius:4px; cursor:pointer;">✅ 全部接受</span>
+  <span style="background:#da3633; color:#fff; padding:6px 16px; border-radius:4px; cursor:pointer;">❌ 全部拒绝</span>
+  <span style="background:#1f6feb33; color:#58a6ff; padding:6px 16px; border-radius:4px; cursor:pointer;">📋 逐项审核</span>
+</div>
+
+</div>
+</div>
+</div>
+
+<!-- ===== FLOW 5: Action Mode ===== -->
+<div class="section" style="margin-top:20px;">
+<h3>Flow 5: Action Mode — 手动操作 + AI 实时提示</h3>
+<div class="mockup">
+<div class="mockup-header">管理员在字段配置中关闭"运费"字段 → AI 实时检测关联影响</div>
+<div class="mockup-body" style="background:#0d1117; color:#e0e0e0; padding:16px; font-size:12px;">
+
+<div style="display:grid; grid-template-columns:1fr 300px; gap:16px;">
+<div>
+  <div style="color:#fff; font-weight:bold; margin-bottom:8px;">管理员刚关闭了 "运费" 字段 ↓</div>
+  <div style="padding:6px 8px; background:#2d1e1e; border:1px solid #f44336; border-radius:4px;">
+    ☰ 运费 (shippingFee) — <span style="color:#f44336;">刚被关闭 ❌</span>
+  </div>
+</div>
+<div style="background:#1a1a2e; border:1px solid #ff9800; border-radius:8px; padding:10px;">
+  <div style="color:#ff9800; font-weight:bold; font-size:11px;">⚡ AI Action Mode 提示</div>
+  <div style="color:#ccc; font-size:11px; margin-top:6px; line-height:1.6;">
+    ⚠️ 隐藏运费字段会影响:<br/>
+    1. <b>开票模块</b> — freightAmount 参与税额计算<br/>
+    2. <b>财务报表</b> — 运费统计指标将缺失<br/>
+    3. <b>触发链</b> — 发货时自动计算运费的步骤<br/><br/>
+    建议: 同时设置运费默认值=0
+  </div>
+  <div style="display:flex; gap:4px; margin-top:8px;">
+    <span style="background:#238636; color:#fff; padding:3px 10px; border-radius:3px; font-size:10px; cursor:pointer;">应用建议</span>
+    <span style="background:#30363d; color:#8b949e; padding:3px 10px; border-radius:3px; font-size:10px; cursor:pointer;">忽略</span>
+  </div>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+
+<!-- ===== FLOW 6: 发布 + 验证 ===== -->
+<div class="section" style="margin-top:20px;">
+<h3>Flow 6: 发布 → 工厂立即生效</h3>
+
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; font-size:11px;">
+
+<div style="background:#1a2a1a; border:2px solid #4caf50; border-radius:8px; padding:12px; text-align:center;">
+  <div style="font-size:24px;">📝</div>
+  <div style="color:#4caf50; font-weight:bold;">1. 保存草稿</div>
+  <div style="color:#888; margin-top:4px;">所有改动保存为 DRAFT<br/>不影响线上</div>
+</div>
+
+<div style="background:#1e1e2e; border:2px solid #2196f3; border-radius:8px; padding:12px; text-align:center;">
+  <div style="font-size:24px;">👁️</div>
+  <div style="color:#2196f3; font-weight:bold;">2. 预览</div>
+  <div style="color:#888; margin-top:4px;">SchemaPreview 实时渲染<br/>看到配置效果</div>
+</div>
+
+<div style="background:#1e1e2e; border:2px solid #ff9800; border-radius:8px; padding:12px; text-align:center;">
+  <div style="font-size:24px;">🚀</div>
+  <div style="color:#ff9800; font-weight:bold;">3. 发布</div>
+  <div style="color:#888; margin-top:4px;">DRAFT → PUBLISHED<br/>版本号+1</div>
+</div>
+
+<div style="background:#1e1e2e; border:2px solid #9c27b0; border-radius:8px; padding:12px; text-align:center;">
+  <div style="font-size:24px;">✅</div>
+  <div style="color:#9c27b0; font-weight:bold;">4. 生效</div>
+  <div style="color:#888; margin-top:4px;">工厂用户刷新页面<br/>立即看到新配置</div>
+</div>
+</div>
+
+<div style="background:#1a2a1a; border-radius:8px; padding:12px; margin-top:12px; font-size:12px; color:#ccc;">
+  <div style="color:#4caf50; font-weight:bold; margin-bottom:6px;">发布后工厂侧的变化:</div>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+    <div>
+      <b>前端 (动态渲染器):</b><br/>
+      • 表单字段按新配置显隐<br/>
+      • 列表列按新配置排列<br/>
+      • 工作流按钮按新状态机显示<br/>
+      • 自定义标签立即生效
+    </div>
+    <div>
+      <b>后端 (业务逻辑):</b><br/>
+      • 校验规则按新规则执行<br/>
+      • 触发链按新编排走<br/>
+      • 默认值按新配置填充<br/>
+      • AI 工具按新开关过滤<br/>
+      • 定时任务按新 cron 执行
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ===== FLOW 7: 出问题 → 回滚 ===== -->
+<div class="section" style="margin-top:20px;">
+<h3>Flow 7: 出问题 → 一键回滚</h3>
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:12px;">
+
+<div style="background:#2d1e1e; border:1px solid #f44336; border-radius:8px; padding:12px;">
+  <div style="color:#f44336; font-weight:bold;">😰 工厂反馈: 订单创建失败了</div>
+  <div style="color:#ccc; margin-top:6px;">原因: 新校验规则条件写错，阻止了所有订单创建</div>
+</div>
+
+<div style="background:#1a2a1a; border:1px solid #4caf50; border-radius:8px; padding:12px;">
+  <div style="color:#4caf50; font-weight:bold;">✅ 30 秒修复</div>
+  <div style="color:#ccc; margin-top:6px;">
+    Canvas → 版本历史 → 选 v2 (上一版) → 点"回滚" → 立即恢复<br/><br/>
+    或: AI "回滚到昨天的配置" → 自动执行
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ===== Summary ===== -->
+<div class="section" style="margin-top:20px;">
+<h3>完整流程总结</h3>
+<div style="background:#161b22; border-radius:10px; padding:16px; font-size:13px; color:#ccc; line-height:2;">
+  <b>快速路径 (5 分钟):</b> 新工厂 → Autopilot "新建烘焙工厂" → AI 全自动 → 确认发布 → 完成<br/>
+  <b>标准路径 (30 分钟):</b> 新工厂 → 选模板 → 6 个 tab 逐项配置 → 预览 → 发布<br/>
+  <b>变更路径 (2 分钟):</b> Plan Mode "加上大额审核" → 看 diff → 全部接受 → 发布<br/>
+  <b>微调路径 (实时):</b> Action Mode 手动改字段 → AI 提示影响 → 保存 → 发布<br/>
+  <b>应急路径 (30 秒):</b> 版本历史 → 回滚 → 恢复
+</div>
+</div>
+
+<div class="options" style="margin-top:16px;">
+  <div class="option" data-choice="flow-clear" onclick="toggleSelect(this)">
+    <div class="letter">✅</div>
+    <div class="content">
+      <h3>流程清晰，开始写 implementation plan</h3>
+    </div>
+  </div>
+  <div class="option" data-choice="flow-question" onclick="toggleSelect(this)">
+    <div class="letter">❓</div>
+    <div class="content">
+      <h3>有问题</h3>
+      <p>在终端说明</p>
+    </div>
+  </div>
+</div>

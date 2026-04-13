@@ -58,7 +58,11 @@ public class TraceabilityController {
         try {
             log.info("获取溯源记录列表: factoryId={}, page={}, size={}", factoryId, page, size);
 
-            Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+            // Clamp page to 1-based minimum and size to sensible bounds before converting
+            // to Spring Data's 0-based PageRequest. Clients occasionally send page=0.
+            int pageIndex = Math.max(0, page - 1);
+            int pageSize = Math.min(Math.max(1, size), 200);
+            Pageable pageable = PageRequest.of(pageIndex, pageSize, Sort.by(Sort.Direction.DESC, "createdAt"));
             Page<ProductionBatch> batchPage = productionBatchRepository.findByFactoryId(factoryId, pageable);
 
             List<TraceabilityDTO.TraceListItem> items = batchPage.getContent().stream()

@@ -43,9 +43,11 @@ const issuePdfFile = ref<File | null>(null);
 
 // 收款登记对话框
 const paymentDialogVisible = ref(false);
-const paymentForm = ref<{ amount: number; paymentMethod: string; paymentDate: string; paymentReference: string; remark: string }>({
-  amount: 0, paymentMethod: 'BANK_TRANSFER', paymentDate: '', paymentReference: '', remark: '',
+const paymentForm = ref<{ amount: number; paymentMethod: string; paymentDate: string; paymentReference: string; remark: string; receiptUrl: string }>({
+  amount: 0, paymentMethod: 'BANK_TRANSFER', paymentDate: '', paymentReference: '', remark: '', receiptUrl: '',
 });
+const receiptFile = ref<File | null>(null);
+const receiptUploading = ref(false);
 
 const statusMap: Record<string, { text: string; type: string }> = {
   DRAFT: { text: '草稿', type: 'info' },
@@ -81,12 +83,33 @@ const paymentStatusMap: Record<string, { text: string; type: string }> = {
   REJECTED: { text: '已驳回', type: 'danger' },
 };
 
+// V3 P0-9 / v1 §2.4.4 — 订单级状态 (区别于 record-level paymentStatusMap/invoiceStatusMap)
+const orderPaymentStatusMap: Record<string, { text: string; type: string }> = {
+  UNPAID: { text: '待收款', type: 'info' },
+  PARTIAL: { text: '部分收款', type: 'warning' },
+  PAID: { text: '已收款', type: 'success' },
+};
+const orderInvoiceStatusMap: Record<string, { text: string; type: string }> = {
+  NOT_INVOICED: { text: '待开票', type: 'info' },
+  PARTIAL_INVOICED: { text: '部分开票', type: 'warning' },
+  FULLY_INVOICED: { text: '已开票', type: 'success' },
+};
+const orderTransportStatusMap: Record<string, { text: string; type: string }> = {
+  PLANNING: { text: '待出厂', type: 'info' },
+  IN_PRODUCTION: { text: '生产中', type: 'warning' },
+  IN_TRANSIT: { text: '运输中', type: 'warning' },
+  DELIVERED: { text: '已发货', type: 'success' },
+};
+
+const orderFormulas = ref<Record<string, unknown>>({});
+
 onMounted(() => {
   loadOrder();
   loadDeliveries();
   loadInvoices();
   loadPayments();
   loadPurchaseOrders();
+  loadFormulas();
 });
 
 async function loadOrder() {
@@ -98,6 +121,23 @@ async function loadOrder() {
   } catch { ElMessage.error('加载失败'); }
   finally { loading.value = false; }
 }
+
+async function loadFormulas() {
+  if (!factoryId.value || !orderId.value) return;
+  try {
+    const res = await get(`/${factoryId.value}/sales/orders/${orderId.value}/formulas`);
+    if (res.success && res.data) orderFormulas.value = res.data;
+  } catch { /* formula module may not be configured for this factory */ }
+}
+
+const taxGroupData = computed(() => {
+  const raw = orderFormulas.value?.tax_group_sum;
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  return raw.map((row: Record<string, unknown>) => ({
+    taxRate: row.tax_rate != null ? Number(row.tax_rate) : 0,
+    amount: row.agg_value != null ? Number(row.agg_value) : 0,
+  })).sort((a: { taxRate: number }, b: { taxRate: number }) => a.taxRate - b.taxRate);
+});
 
 async function loadDeliveries() {
   if (!factoryId.value || !orderId.value) return;
@@ -359,7 +399,9 @@ function openPaymentDialog() {
     paymentDate: new Date().toISOString().slice(0, 10),
     paymentReference: '',
     remark: '',
+    receiptUrl: '',
   };
+  receiptFile.value = null;
   paymentDialogVisible.value = true;
 }
 
@@ -471,6 +513,33 @@ const approvalTimeline = computed<Array<{
   return nodes;
 });
 
+async function handleReceiptChange(file: { raw: File }) {
+  receiptFile.value = file.raw;
+  // 立即上传, 拿到 URL 存入 form
+  receiptUploading.value = true;
+  try {
+    const formData = new FormData();
+    formData.append('file', file.raw);
+    const token = localStorage.getItem('cretas_access_token') || '';
+    const resp = await fetch(`/api/mobile/${factoryId.value}/upload/receipt`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    const json = await resp.json();
+    if (json.success && json.data?.url) {
+      paymentForm.value.receiptUrl = json.data.url;
+      ElMessage.success('凭证已上传');
+    } else {
+      ElMessage.error(json.message || '凭证上传失败');
+    }
+  } catch {
+    ElMessage.error('凭证上传失败');
+  } finally {
+    receiptUploading.value = false;
+  }
+}
+
 async function handleCreatePayment() {
   if (submitting.value) return;
   if (!paymentForm.value.amount || paymentForm.value.amount <= 0) {
@@ -485,6 +554,7 @@ async function handleCreatePayment() {
       paymentDate: paymentForm.value.paymentDate || null,
       paymentReference: paymentForm.value.paymentReference,
       remark: paymentForm.value.remark,
+      receiptUrl: paymentForm.value.receiptUrl || null,
     });
     if (res.success) {
       ElMessage.success('收款记录已创建');
@@ -507,6 +577,15 @@ async function handleCreatePayment() {
             <span class="page-title">{{ label('salesOrder') }}详情</span>
             <el-tag v-if="order" :type="(statusMap[order.status]?.type) || 'info'" size="large">
               {{ statusMap[order.status]?.text || order.status }}
+            </el-tag>
+            <el-tag v-if="order" :type="orderPaymentStatusMap[order.paymentStatus]?.type || 'info'" size="small" style="margin-left: 8px">
+              收款: {{ orderPaymentStatusMap[order.paymentStatus]?.text || '待收款' }}
+            </el-tag>
+            <el-tag v-if="order" :type="orderInvoiceStatusMap[order.invoiceStatus]?.type || 'info'" size="small" style="margin-left: 4px">
+              开票: {{ orderInvoiceStatusMap[order.invoiceStatus]?.text || '待开票' }}
+            </el-tag>
+            <el-tag v-if="order" :type="orderTransportStatusMap[order.transportPlanStatus]?.type || 'info'" size="small" style="margin-left: 4px">
+              运输: {{ orderTransportStatusMap[order.transportPlanStatus]?.text || '待出厂' }}
             </el-tag>
           </div>
           <div class="header-right" v-if="order && canWrite">
@@ -579,6 +658,23 @@ async function handleCreatePayment() {
                 <template #default="{ row }">{{ formatAmount(row.quantity * row.unitPrice) }}</template>
               </el-table-column>
             </el-table>
+
+            <!-- ─── R14: 税率分组汇总 (Canvas FormulaEngine 驱动) ─── -->
+            <div v-if="taxGroupData" class="tax-group-section">
+              <h3 style="margin: 20px 0 12px">税率分组汇总</h3>
+              <el-table :data="taxGroupData" border stripe size="small" style="max-width: 400px">
+                <el-table-column label="税率" width="120" align="center">
+                  <template #default="{ row }">
+                    <el-tag :type="row.taxRate === 9 ? 'success' : (row.taxRate === 13 ? 'warning' : 'info')" size="small">
+                      {{ row.taxRate }}%
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="金额小计" width="160" align="right">
+                  <template #default="{ row }">{{ formatAmount(row.amount) }}</template>
+                </el-table-column>
+              </el-table>
+            </div>
 
             <!-- ─── 审批进度时间线 (V3 P0-11 补强 — 客户金矿截图 49m17s 底部 timeline) ─── -->
             <div class="approval-timeline-section">
@@ -884,6 +980,21 @@ async function handleCreatePayment() {
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="paymentForm.remark" type="textarea" :rows="2" placeholder="如: 定金 / 尾款" />
+        </el-form-item>
+        <el-form-item label="回款凭证">
+          <el-upload
+            :auto-upload="false"
+            :limit="1"
+            accept=".pdf,image/jpeg,image/png,.jpg,.png"
+            :on-change="handleReceiptChange"
+            :on-remove="() => { receiptFile = null; paymentForm.receiptUrl = ''; }"
+          >
+            <el-button size="small" :loading="receiptUploading">选择凭证</el-button>
+            <template #tip>
+              <div class="el-upload__tip">PDF/JPG/PNG, ≤10MB (可选)</div>
+            </template>
+          </el-upload>
+          <span v-if="paymentForm.receiptUrl" style="font-size:12px;color:#67c23a;margin-left:8px">已上传</span>
         </el-form-item>
       </el-form>
       <template #footer>

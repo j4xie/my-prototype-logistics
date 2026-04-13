@@ -71,6 +71,26 @@ public class ToolDispatchService {
                                                   Long userId, String userRole,
                                                   IntentMatchResult matchResult) {
         try {
+            // Round 8-β Fix: Canvas factory_tool_configs was a "write-only" table.
+            // Factory admins toggled tools on/off in Canvas UI (ToolSkillMatrix.vue) but
+            // ToolRegistry.isToolEnabledForFactory() was never called on the execution
+            // path — the switch was decorative. Now we check it here so a disabled tool
+            // returns a clear error instead of silently running.
+            if (toolRegistry != null && !toolRegistry.isToolEnabledForFactory(factoryId, tool.getToolName())) {
+                log.warn("Tool disabled for factory: tool={}, factoryId={}", tool.getToolName(), factoryId);
+                String disabledMsg = "该功能已被工厂管理员禁用: " + intent.getIntentName();
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intent.getIntentCode())
+                        .intentName(intent.getIntentName())
+                        .intentCategory(intent.getIntentCategory())
+                        .status("TOOL_DISABLED")
+                        .message(disabledMsg)
+                        .formattedText(disabledMsg)
+                        .executedAt(LocalDateTime.now())
+                        .build();
+            }
+
             // 1. 权限检查
             if (tool.requiresPermission() && !tool.hasPermission(userRole)) {
                 log.warn("Tool 权限不足: tool={}, userRole={}", tool.getToolName(), userRole);

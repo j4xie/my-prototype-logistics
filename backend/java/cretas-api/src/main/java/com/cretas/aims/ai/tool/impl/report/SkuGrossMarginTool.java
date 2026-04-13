@@ -57,7 +57,7 @@ public class SkuGrossMarginTool extends AbstractBusinessTool {
         List<ProductionBatch> batches;
 
         if (batchNumber != null) {
-            batches = productionBatchRepository.findByBatchNumber(batchNumber)
+            batches = productionBatchRepository.findByFactoryIdAndBatchNumber(factoryId, batchNumber)
                     .map(List::of)
                     .orElse(List.of());
         } else {

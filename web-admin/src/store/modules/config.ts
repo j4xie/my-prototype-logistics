@@ -74,7 +74,7 @@ export const useConfigStore = defineStore('config', () => {
     const key = `${factoryId}:${moduleCode}`
     const config = cache.value.get(key)
     if (!config) return false
-    return config.renderingMode === 'DYNAMIC' || config.renderingMode === 'DUAL'
+    return config.renderingMode === 'DYNAMIC' || config.renderingMode === 'DUAL' || config.renderingMode === 'CANVAS'
   }
 
   /**

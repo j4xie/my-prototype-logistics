@@ -1,0 +1,52 @@
+[
+  {
+    "test": "SQL injection field code",
+    "status": "PASS",
+    "evidence": "HTTP 400, blocked=true, msg=fieldCode 必须匹配 [a-zA-Z_][a-zA-Z0-9_]{1,60}"
+  },
+  {
+    "test": "XSS in remark",
+    "status": "WARN",
+    "evidence": "Stored as: <script>alert(\"xss\")</script> (raw HTML stored = needs frontend escaping)"
+  },
+  {
+    "test": "XSS in customFields",
+    "status": "PASS",
+    "evidence": "Value:  (backend stores raw, Vue auto-escapes on render)"
+  },
+  {
+    "test": "Worker → publish config",
+    "status": "PASS",
+    "evidence": "HTTP 403 (expect 403)"
+  },
+  {
+    "test": "Worker → add dynamic field",
+    "status": "PASS",
+    "evidence": "HTTP 403 (expect 403)"
+  },
+  {
+    "test": "Worker → delete field",
+    "status": "PASS",
+    "evidence": "HTTP 403 (expect 403)"
+  },
+  {
+    "test": "10KB remark",
+    "status": "PASS",
+    "evidence": "HTTP 200, accepted"
+  },
+  {
+    "test": "Factory B reads A order",
+    "status": "PASS",
+    "evidence": "HTTP 400, success=false, msg=无权访问该销售订单"
+  },
+  {
+    "test": "Factory B updates A order",
+    "status": "PASS",
+    "evidence": "HTTP 400, success=false"
+  },
+  {
+    "test": "Factory B cancels A order",
+    "status": "PASS",
+    "evidence": "HTTP 400, success=false"
+  }
+]

@@ -50,4 +50,8 @@ public class FormulaEngine {
     public BigDecimal evaluateExpression(String expression, Map<String, Object> variables, int precision) {
         return spelEvaluator.evaluateFormula(expression, variables, precision);
     }
+
+    public List<FactoryFormula> listFormulas(String factoryId, String moduleCode) {
+        return formulaRepo.findByFactoryIdAndModuleCode(factoryId, moduleCode);
+    }
 }

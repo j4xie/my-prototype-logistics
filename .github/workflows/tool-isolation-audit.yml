@@ -1,0 +1,65 @@
+name: Tool factoryId Isolation Audit
+
+# P0-1 CI 门禁 — 防止新引入的 AI Tool 漏掉 factoryId 隔离
+# 审计脚本会扫描 backend/java/cretas-api/src/main/java/com/cretas/aims/ai/tool/impl/**/*.java
+# 如果发现 HIGH 级别漏洞 (factoryId 签名收但未用, 或 deviceService/repo 调用缺 factoryId),
+# 脚本 process.exit(1) 阻塞 PR merge.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/java/cretas-api/src/main/java/com/cretas/aims/ai/tool/impl/**'
+      - 'scripts/audit/tool-factory-isolation-audit.mjs'
+      - '.github/workflows/tool-isolation-audit.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/java/cretas-api/src/main/java/com/cretas/aims/ai/tool/impl/**'
+      - 'scripts/audit/tool-factory-isolation-audit.mjs'
+      - '.github/workflows/tool-isolation-audit.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: tool-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    name: factoryId Isolation Audit
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run tool-factory-isolation-audit
+        run: node scripts/audit/tool-factory-isolation-audit.mjs
+
+      - name: Upload audit results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tool-isolation-audit-results
+          path: |
+            scripts/audit/audit-results.csv
+            scripts/audit/audit-results.md
+
+      - name: Post summary on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'scripts/audit/audit-results.md';
+            if (!fs.existsSync(path)) return;
+            const body = fs.readFileSync(path, 'utf8').slice(0, 60000);
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '## 🔍 Tool factoryId Isolation Audit\n\n' + body,
+            });

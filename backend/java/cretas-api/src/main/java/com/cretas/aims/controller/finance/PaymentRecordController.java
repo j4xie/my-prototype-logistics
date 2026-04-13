@@ -25,11 +25,24 @@ public class PaymentRecordController {
             @PathVariable String factoryId,
             @RequestBody Map<String, Object> body,
             @RequestAttribute(value = "userId", required = false) Long userId) {
+        // D2 fix: null-guard on required fields to prevent NPE → 500
+        if (body.get("salesOrderId") == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "缺少必要参数: salesOrderId"));
+        }
+        if (body.get("amount") == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "缺少必要参数: amount"));
+        }
+        PaymentMethod pm;
+        try {
+            pm = body.get("paymentMethod") != null ? PaymentMethod.valueOf(body.get("paymentMethod").toString()) : PaymentMethod.BANK_TRANSFER;
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "无效的支付方式: " + body.get("paymentMethod")));
+        }
         var record = paymentRecordService.recordPayment(
                 factoryId,
                 (String) body.get("salesOrderId"),
                 new BigDecimal(body.get("amount").toString()),
-                body.get("paymentMethod") != null ? PaymentMethod.valueOf(body.get("paymentMethod").toString()) : PaymentMethod.BANK_TRANSFER,
+                pm,
                 body.get("paymentDate") != null && !body.get("paymentDate").toString().isEmpty() ? LocalDate.parse(body.get("paymentDate").toString()) : null,
                 (String) body.get("paymentReference"),
                 (String) body.get("receiptUrl"),

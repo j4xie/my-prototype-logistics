@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
@@ -11,6 +11,8 @@ import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { SALES_ORDER_CONFIG } from '@/components/ai-entry/types';
 import { formatAmount } from '@/utils/tableFormatters';
 import TaxGroupInvoiceDialog from './components/TaxGroupInvoiceDialog.vue';
+import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
+import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 
 // G1: 税率分组开票对话框 (客户原话 2645-2660s)
 const taxGroupInvoiceVisible = ref(false);
@@ -50,6 +52,62 @@ const pagination = ref({ page: 1, size: 10, total: 0 });
 const statusFilter = ref('');
 const dialogVisible = ref(false);
 
+// P1-6 智能筛选 tab (v1 金矿截图 49m38s 6 tab)
+const activeViewTab = ref<'all' | 'unshipped' | 'partialShipped' | 'unpaid' | 'partialPaid' | 'completed'>('all');
+const viewTabs = [
+  { key: 'all', label: '全部订单' },
+  { key: 'unshipped', label: '未出库订单' },
+  { key: 'partialShipped', label: '部分出库订单' },
+  { key: 'unpaid', label: '未收款订单' },
+  { key: 'partialPaid', label: '部分收款订单' },
+  { key: 'completed', label: '已完成订单' },
+] as const;
+
+// Client-side filter based on activeViewTab
+const filteredTableData = computed(() => {
+  const rows = tableData.value;
+  if (activeViewTab.value === 'all') return rows;
+  return rows.filter((row) => {
+    const total = Number(row.totalAmount || 0);
+    const shipped = Number(row.actualShippedAmount || 0);
+    const paid = Number(row.paidAmount || 0);
+    const status = String(row.status || '');
+    switch (activeViewTab.value) {
+      case 'unshipped':
+        return shipped <= 0 && status !== 'CANCELLED' && status !== 'COMPLETED';
+      case 'partialShipped':
+        return shipped > 0 && shipped < total && status !== 'CANCELLED';
+      case 'unpaid':
+        return paid <= 0 && status !== 'CANCELLED';
+      case 'partialPaid':
+        return paid > 0 && paid < total && status !== 'CANCELLED';
+      case 'completed':
+        return status === 'COMPLETED';
+      default:
+        return true;
+    }
+  });
+});
+
+function tabCount(key: string): number {
+  if (key === 'all') return tableData.value.length;
+  const rows = tableData.value;
+  return rows.filter((row) => {
+    const total = Number(row.totalAmount || 0);
+    const shipped = Number(row.actualShippedAmount || 0);
+    const paid = Number(row.paidAmount || 0);
+    const status = String(row.status || '');
+    switch (key) {
+      case 'unshipped': return shipped <= 0 && status !== 'CANCELLED' && status !== 'COMPLETED';
+      case 'partialShipped': return shipped > 0 && shipped < total && status !== 'CANCELLED';
+      case 'unpaid': return paid <= 0 && status !== 'CANCELLED';
+      case 'partialPaid': return paid > 0 && paid < total && status !== 'CANCELLED';
+      case 'completed': return status === 'COMPLETED';
+      default: return false;
+    }
+  }).length;
+}
+
 const form = ref({
   customerId: '',
   requiredDeliveryDate: '',
@@ -60,7 +118,40 @@ const form = ref({
   shippingFee: 0,
   extraFees: [] as Array<{ name: string; amount: number; remark: string }>,
   items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
+  contractFileUrl: '' as string | null,
+  contractFileName: '' as string | null,
+  customFields: {} as Record<string, unknown>,
 });
+
+// P1-7 合同附件上传 (v1 §2.4.3, 2257s)
+async function handleContractUpload(options: { file: File }) {
+  if (!factoryId.value) return;
+  const fd = new FormData();
+  fd.append('file', options.file);
+  try {
+    const token = localStorage.getItem('cretas_access_token') || '';
+    const res = await fetch(`/api/mobile/${factoryId.value}/upload/contract`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: fd,
+    });
+    const json = await res.json();
+    if (json.success && json.data) {
+      form.value.contractFileUrl = json.data.url;
+      form.value.contractFileName = json.data.fileName || options.file.name;
+      ElMessage.success(`合同上传成功: ${options.file.name}`);
+    } else {
+      ElMessage.error(json.message || '合同上传失败');
+    }
+  } catch {
+    ElMessage.error('合同上传失败');
+  }
+}
+
+function clearContract() {
+  form.value.contractFileUrl = '';
+  form.value.contractFileName = '';
+}
 const customers = ref<Record<string, unknown>[]>([]);
 const products = ref<Record<string, unknown>[]>([]);
 const salesEmployees = ref<Record<string, unknown>[]>([]);
@@ -77,7 +168,17 @@ const statusMap: Record<string, { text: string; type: string }> = {
   CANCELLED: { text: '已取消', type: 'danger' },
 };
 
-onMounted(() => { loadData(); loadCustomers(); loadProducts(); loadSalesEmployees(); });
+// D13: Dirty form guard — warn user before leaving with unsaved changes
+const isDirty = ref(false);
+watch(dialogVisible, (val) => { isDirty.value = val; });
+function handleBeforeUnload(e: BeforeUnloadEvent) {
+  if (isDirty.value) { e.preventDefault(); e.returnValue = ''; }
+}
+onMounted(() => {
+  loadData(); loadCustomers(); loadProducts(); loadSalesEmployees();
+  window.addEventListener('beforeunload', handleBeforeUnload);
+});
+onBeforeUnmount(() => { window.removeEventListener('beforeunload', handleBeforeUnload); });
 
 async function loadData() {
   if (!factoryId.value) return;
@@ -86,7 +187,9 @@ async function loadData() {
     const url = statusFilter.value
       ? `/${factoryId.value}/sales/orders/by-status`
       : `/${factoryId.value}/sales/orders`;
-    const params: Record<string, unknown> = { page: pagination.value.page, size: pagination.value.size };
+    // P1-6 smart tabs do client-side filter → load larger batch
+    const effectiveSize = activeViewTab.value === 'all' ? pagination.value.size : 200;
+    const params: Record<string, unknown> = { page: pagination.value.page, size: effectiveSize };
     if (statusFilter.value) params.status = statusFilter.value;
     const res = await get(url, { params });
     if (res.success && res.data) {
@@ -97,6 +200,12 @@ async function loadData() {
     }
   } catch { ElMessage.error('加载失败'); }
   finally { loading.value = false; }
+}
+
+function handleTabChange() {
+  // Tab 切换时 reload (后端返回 top 200 以便 client-side filter)
+  pagination.value.page = 1;
+  loadData();
 }
 
 async function loadCustomers() {
@@ -162,6 +271,8 @@ async function handleCreate() {
   if (!form.value.customerId) return ElMessage.warning('请选择客户');
   // 数量校验: 不允许0或负数
   if (form.value.items.some((i: Record<string, unknown>) => !i.quantity || Number(i.quantity) <= 0)) return ElMessage.warning('产品数量必须大于0');
+  // 单位校验
+  if (form.value.items.some((i: Record<string, unknown>) => !i.unit)) return ElMessage.warning('请填写所有明细的单位');
   // SKU 重复校验
   const productIds = form.value.items.map((i: Record<string, unknown>) => i.productTypeId).filter(Boolean);
   if (new Set(productIds).size !== productIds.length) return ElMessage.warning('同一订单不能添加重复的产品');
@@ -214,6 +325,7 @@ function handleEdit(row: Record<string, unknown>) {
           unitPrice: Number(item.unitPrice || 0),
         }))
       : [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
+    customFields: {} as Record<string, unknown>,
   };
   dialogVisible.value = true;
 }
@@ -244,6 +356,7 @@ function openCreateDialog() {
     shippingFee: 0,
     extraFees: [],
     items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
+    customFields: {} as Record<string, unknown>,
   };
   dialogVisible.value = true;
 }
@@ -392,6 +505,7 @@ async function submitQuickPayment() {
 </script>
 
 <template>
+  <CanvasAwareWrapper module-code="sales_order">
   <div class="page-wrapper">
     <el-card class="page-card" shadow="never">
       <template #header>
@@ -409,6 +523,13 @@ async function submitQuickPayment() {
         </div>
       </template>
 
+      <!-- P1-6 智能筛选 tab (v1 金矿截图 49m38s) -->
+      <el-radio-group v-model="activeViewTab" size="default" @change="handleTabChange" style="margin-bottom: 12px">
+        <el-radio-button v-for="tab in viewTabs" :key="tab.key" :value="tab.key">
+          {{ tab.label }} <span v-if="tabCount(tab.key) > 0" class="tab-count">{{ tabCount(tab.key) }}</span>
+        </el-radio-button>
+      </el-radio-group>
+
       <div class="search-bar">
         <el-select v-model="statusFilter" placeholder="按状态筛选" clearable style="width: 160px" @change="handleStatusChange">
           <el-option v-for="(v, k) in statusMap" :key="k" :label="v.text" :value="k" />
@@ -416,7 +537,7 @@ async function submitQuickPayment() {
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
       </div>
 
-      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
+      <el-table :data="filteredTableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="orderNumber" label="订单编号" width="170" />
         <el-table-column label="客户" min-width="150" show-overflow-tooltip>
           <template #default="{ row }">{{ row.customerName || row.customer?.name || row.customerId || '-' }}</template>
@@ -575,6 +696,24 @@ async function submitQuickPayment() {
           </div>
         </el-form-item>
         <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="2" /></el-form-item>
+        <el-form-item label="预订合同">
+          <!-- P1-7 合同附件上传 (v1 §2.4.3, 客户 2257s) -->
+          <div v-if="form.contractFileUrl" style="display:flex;gap:8px;align-items:center">
+            <el-tag type="success" size="small">已上传: {{ form.contractFileName }}</el-tag>
+            <el-button size="small" type="danger" link @click="clearContract">移除</el-button>
+          </div>
+          <el-upload
+            v-else
+            :auto-upload="true"
+            :http-request="handleContractUpload as any"
+            :limit="1"
+            :show-file-list="false"
+            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+          >
+            <el-button size="small">上传合同 (PDF/图片/Word, ≤20MB)</el-button>
+          </el-upload>
+        </el-form-item>
+        <CanvasDynamicFields v-model="form.customFields" module-code="sales_order" />
         <el-divider>{{ label('product') }}明细</el-divider>
         <div class="item-row item-header">
           <span style="width: 200px">品名</span>
@@ -622,6 +761,7 @@ async function submitQuickPayment() {
       @success="loadData"
     />
   </div>
+  </CanvasAwareWrapper>
 </template>
 
 <style lang="scss" scoped>

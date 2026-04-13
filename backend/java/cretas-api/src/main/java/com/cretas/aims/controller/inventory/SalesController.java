@@ -97,6 +97,17 @@ public class SalesController {
         return ApiResponse.success("查询成功", order);
     }
 
+    @GetMapping("/orders/{orderId}/formulas")
+    @Operation(summary = "计算销售订单公式 (如税率分组求和)")
+    @RequirePermission({"sales:read_write", "sales:read"})
+    public ApiResponse<Map<String, Object>> getOrderFormulas(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotBlank String orderId) {
+        salesService.getSalesOrderById(factoryId, orderId);
+        Map<String, Object> formulas = salesService.computeOrderFormulas(factoryId, orderId);
+        return ApiResponse.success("公式计算完成", formulas);
+    }
+
     @PostMapping("/orders/{orderId}/confirm")
     @Operation(summary = "确认销售订单")
     @RequirePermission("sales:read_write")

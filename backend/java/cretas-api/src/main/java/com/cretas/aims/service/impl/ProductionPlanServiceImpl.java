@@ -105,6 +105,13 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
 
+    /** Round 9 Fix (R8-α Gap #3): Canvas dynamic field persistence for production_plan. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private org.springframework.context.ApplicationEventPublisher applicationEventPublisher;
+
     private void runConfiguredValidation(String factoryId, String operation, java.util.Map<String, Object> context) {
         if (validationRuleEvaluator == null) return;
         try {
@@ -171,10 +178,19 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
     @Override
     @Transactional
     public ProductionPlanDTO createProductionPlan(String factoryId, CreateProductionPlanRequest request, Long userId) {
-        runConfiguredValidation(factoryId, "CREATE", java.util.Map.of(
-            "plannedQuantity", request.getPlannedQuantity() != null ? request.getPlannedQuantity() : java.math.BigDecimal.ZERO,
-            "productTypeId", request.getProductTypeId() != null ? request.getProductTypeId() : "",
-            "status", "DRAFT"));
+        // Build validation context including Canvas V3 custom fields (e.g. cf_tank_id)
+        // so SpEL rules like '#cf_tank_id != null' can evaluate correctly.
+        java.util.Map<String, Object> validationCtx = new java.util.HashMap<>();
+        validationCtx.put("plannedQuantity", request.getPlannedQuantity() != null ? request.getPlannedQuantity() : java.math.BigDecimal.ZERO);
+        validationCtx.put("productTypeId", request.getProductTypeId() != null ? request.getProductTypeId() : "");
+        validationCtx.put("status", "DRAFT");
+        // Merge custom fields into context so SpEL rules can reference cf_* variables
+        if (request.getCustomFields() != null) {
+            for (var entry : request.getCustomFields().entrySet()) {
+                validationCtx.put(entry.getKey(), entry.getValue() != null ? entry.getValue() : "");
+            }
+        }
+        runConfiguredValidation(factoryId, "CREATE", validationCtx);
         // 验证产品类型是否存在
         if (!productTypeRepository.existsById(request.getProductTypeId())) {
             throw new ResourceNotFoundException("产品类型不存在");
@@ -196,6 +212,17 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         // 创建生产计划
         ProductionPlan plan = productionPlanMapper.toEntity(request, factoryId, userId.longValue());
         plan = productionPlanRepository.save(plan);
+
+        // Round 9 Fix (R8-α Gap #3 per-module template): persist Canvas V3 dynamic fields.
+        // Customer-configured fields like 客户订单号, QC 等级, 特殊工艺参数, 成品包装要求
+        // now land in the cf_* columns of production_plans. Previously silently dropped.
+        if (dynamicFieldService != null && request.getCustomFields() != null && !request.getCustomFields().isEmpty()) {
+            try {
+                dynamicFieldService.setDynamicFields(factoryId, "production_plan", plan.getId(), request.getCustomFields());
+            } catch (Exception e) {
+                log.warn("Canvas dynamic fields save failed for production plan {}: {}", plan.getId(), e.getMessage());
+            }
+        }
 
         // 如果指定了原材料批次，创建关联
         if (request.getMaterialBatchIds() != null && request.getMaterialBatchIds().length > 0) {
@@ -229,10 +256,17 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
     @Override
     @Transactional
     public ProductionPlanDTO updateProductionPlan(String factoryId, String planId, CreateProductionPlanRequest request) {
-        runConfiguredValidation(factoryId, "UPDATE", java.util.Map.of(
-            "planId", planId,
-            "plannedQuantity", request.getPlannedQuantity() != null ? request.getPlannedQuantity() : java.math.BigDecimal.ZERO,
-            "productTypeId", request.getProductTypeId() != null ? request.getProductTypeId() : ""));
+        // Build validation context including Canvas V3 custom fields for UPDATE too
+        java.util.Map<String, Object> updateCtx = new java.util.HashMap<>();
+        updateCtx.put("planId", planId);
+        updateCtx.put("plannedQuantity", request.getPlannedQuantity() != null ? request.getPlannedQuantity() : java.math.BigDecimal.ZERO);
+        updateCtx.put("productTypeId", request.getProductTypeId() != null ? request.getProductTypeId() : "");
+        if (request.getCustomFields() != null) {
+            for (var entry : request.getCustomFields().entrySet()) {
+                updateCtx.put(entry.getKey(), entry.getValue() != null ? entry.getValue() : "");
+            }
+        }
+        runConfiguredValidation(factoryId, "UPDATE", updateCtx);
         ProductionPlan plan = productionPlanRepository.findById(planId)
                 .orElseThrow(() -> new ResourceNotFoundException("生产计划", "id", planId));
 
@@ -382,10 +416,18 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
             throw new BusinessException("只能开始待处理的生产计划");
         }
 
-        // 更新状态和开始时间
+        runConfiguredValidation(factoryId, "START", java.util.Map.of("planId", planId));
+
         plan.setStatus(ProductionPlanStatus.IN_PROGRESS);
         plan.setStartTime(LocalDateTime.now());
         plan = productionPlanRepository.save(plan);
+
+        if (applicationEventPublisher != null) {
+            try {
+                applicationEventPublisher.publishEvent(new com.cretas.aims.event.ProductionStartedEvent(
+                        this, factoryId, plan.getId(), plan.getPlanNumber(), plan.getProductTypeId()));
+            } catch (Exception e) { log.warn("Publish ProductionStartedEvent failed: {}", e.getMessage()); }
+        }
 
         log.info("开始生产: planId={}", planId);
         return toDTOWithConversionInfo(plan);
@@ -397,20 +439,29 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         ProductionPlan plan = productionPlanRepository.findById(planId)
                 .orElseThrow(() -> new ResourceNotFoundException("生产计划", "id", planId));
 
-        // 验证工厂ID
         if (!plan.getFactoryId().equals(factoryId)) {
             throw new BusinessException("无权操作该生产计划");
         }
-
         if (plan.getStatus() != ProductionPlanStatus.IN_PROGRESS) {
             throw new BusinessException("只能完成进行中的生产计划");
         }
 
-        // 更新状态和完成信息
+        runConfiguredValidation(factoryId, "COMPLETE", java.util.Map.of(
+            "planId", planId,
+            "actualQuantity", actualQuantity != null ? actualQuantity : java.math.BigDecimal.ZERO));
+
         plan.setStatus(ProductionPlanStatus.COMPLETED);
         plan.setEndTime(LocalDateTime.now());
         plan.setActualQuantity(actualQuantity);
         plan = productionPlanRepository.save(plan);
+
+        if (applicationEventPublisher != null) {
+            try {
+                applicationEventPublisher.publishEvent(new com.cretas.aims.event.ProductionCompletedEvent(
+                        this, factoryId, plan.getId(), plan.getPlanNumber(),
+                        plan.getProductTypeId(), actualQuantity));
+            } catch (Exception e) { log.warn("Publish ProductionCompletedEvent failed: {}", e.getMessage()); }
+        }
 
         log.info("完成生产: planId={}, actualQuantity={}", planId, actualQuantity);
         return toDTOWithConversionInfo(plan);
@@ -721,17 +772,6 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
                 request.setNotes(row.getNotes());
                 request.setEstimatedWorkers(row.getEstimatedWorkers());
                 request.setSourceType(PlanSourceType.EXCEL_IMPORT);
-
-                // Resolve optional production line
-                if (row.getProductionLineCode() != null && !row.getProductionLineCode().trim().isEmpty()) {
-                    Optional<ProductionLine> line = productionLineRepository
-                            .findByFactoryIdAndLineCodeAndDeletedAtIsNull(factoryId, row.getProductionLineCode().trim());
-                    if (line.isPresent()) {
-                        request.setSuggestedProductionLineId(line.get().getId());
-                    } else {
-                        log.warn("第{}行: 产线编号 \"{}\" 未找到，已忽略", rowNumber, row.getProductionLineCode());
-                    }
-                }
 
                 // Resolve optional supervisor username
                 if (row.getSupervisorUsername() != null && !row.getSupervisorUsername().trim().isEmpty()) {

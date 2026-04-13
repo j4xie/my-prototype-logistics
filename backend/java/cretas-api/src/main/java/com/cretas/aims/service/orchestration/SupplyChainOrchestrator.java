@@ -107,8 +107,12 @@ public class SupplyChainOrchestrator {
      * <p>业务规则变更（2026-03-26）：生产计划只有在财务审核通过后才可创建，
      * 确保每笔订单的预估成本和利润已经过财务确认。
      */
+    /**
+     * Use REQUIRES_NEW so that a failure in the supply-chain orchestration
+     * does NOT roll back the caller's finance-approve transaction.
+     */
     @EventListener
-    @Transactional
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void onSalesOrderFinanceApproved(SalesOrderFinanceApprovedEvent event) {
         if (hasConfiguredChain(event.getFactoryId(), "SalesOrderFinanceApprovedEvent")) {
             log.info("Trigger chain configured for SalesOrderFinanceApprovedEvent — skipping hardcoded handler");
@@ -120,6 +124,11 @@ public class SupplyChainOrchestrator {
         try {
             StockCheckResult result = inventoryMatchingService.checkAvailability(
                     event.getFactoryId(), event.getSalesOrderId());
+
+            if (result == null || result.getLineItems() == null) {
+                log.warn("库存检查返回空结果, 跳过联动: SO={}", event.getSalesOrderId());
+                return;
+            }
 
             for (LineItemMatch match : result.getLineItems()) {
                 if (match.isFullySatisfied()) {
@@ -135,6 +144,7 @@ public class SupplyChainOrchestrator {
                 }
             }
         } catch (Exception e) {
+            // Log but never re-throw — approval must succeed even if orchestration fails
             log.error("财务审核通过联动失败(不影响审批状态): SO={}", event.getSalesOrderId(), e);
         }
     }

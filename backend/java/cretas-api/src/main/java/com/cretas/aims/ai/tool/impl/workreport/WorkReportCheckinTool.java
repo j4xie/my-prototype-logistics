@@ -71,7 +71,7 @@ public class WorkReportCheckinTool extends AbstractBusinessTool {
 
         LocalDateTime start = queryDate.atStartOfDay();
         LocalDateTime end = start.plusDays(1);
-        long count = batchWorkSessionRepository.countByCheckInTimeBetween(start, end);
+        long count = batchWorkSessionRepository.countByFactoryIdAndCheckInTimeBetween(factoryId, start, end);
 
         Map<String, Object> resultData = new HashMap<>();
         resultData.put("date", queryDate.format(DateTimeFormatter.ISO_DATE));

@@ -147,11 +147,26 @@ public class RdController {
         return ResponseEntity.ok(Map.of("success", true, "data", sampleService.getSample(factoryId, sampleId)));
     }
 
+    /**
+     * P1-8: 读取样品追踪记录（新独立表）.
+     * 前端 openTrackingDialog 调此接口取代从 progressNotes JSON 解析.
+     */
+    @GetMapping("/samples/{sampleId}/tracking-records")
+    public ResponseEntity<?> getTrackingRecords(@PathVariable String factoryId, @PathVariable String sampleId) {
+        return ResponseEntity.ok(Map.of("success", true, "data",
+                sampleService.getTrackingRecords(factoryId, sampleId)));
+    }
+
     // ==================== 报价任务 ====================
 
     @PostMapping("/quotations/{taskId}/submit")
     public ResponseEntity<?> submitQuotation(@PathVariable String taskId, @RequestBody Map<String, Object> body,
                                               @RequestAttribute(value = "userId", required = false) Long userId) {
+        for (String field : new String[]{"materialCost", "laborCost", "overheadCost", "suggestedPrice"}) {
+            if (body.get(field) == null) {
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "缺少必填字段: " + field));
+            }
+        }
         var task = sampleService.submitQuotation(taskId,
                 new BigDecimal(body.get("materialCost").toString()),
                 new BigDecimal(body.get("laborCost").toString()),
@@ -163,6 +178,9 @@ public class RdController {
     @PostMapping("/quotations/{taskId}/confirm")
     public ResponseEntity<?> confirmQuotation(@PathVariable String taskId, @RequestBody Map<String, Object> body,
                                                @RequestAttribute(value = "userId", required = false) Long userId) {
+        if (body.get("finalPrice") == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "缺少必填字段: finalPrice"));
+        }
         var task = sampleService.confirmQuotation(taskId, new BigDecimal(body.get("finalPrice").toString()), userId);
         return ResponseEntity.ok(Map.of("success", true, "data", task, "message", "报价已确认"));
     }

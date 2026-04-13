@@ -10,6 +10,7 @@ import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 创建生产计划请求对象
@@ -82,9 +83,6 @@ public class CreateProductionPlanRequest {
 
     // ======= 工厂管理员扩展字段 =======
 
-    @Schema(description = "建议产线ID")
-    private String suggestedProductionLineId;
-
     @Schema(description = "预计工人数")
     @Min(value = 1, message = "预计工人数最小为1")
     @Max(value = 500, message = "预计工人数最大为500")
@@ -138,4 +136,13 @@ public class CreateProductionPlanRequest {
 
     @Schema(description = "混批关联订单ID列表")
     private List<String> relatedOrders;
+
+    /**
+     * Round 9 Fix (R8-α Gap #3): Canvas V3 dynamic field values for production_plan.
+     * Customer-configured fields (如: 客户订单号, QC 要求等级, 特殊工艺参数, 成品包装
+     * 要求 etc.) get persisted via DynamicFieldService.setDynamicFields. Previously
+     * dropped silently — the frontend Canvas form submitted them but the DTO had no slot.
+     */
+    @Schema(description = "Canvas 动态字段值 (Round 9 Fix)")
+    private Map<String, Object> customFields;
 }

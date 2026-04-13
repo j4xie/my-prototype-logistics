@@ -1,0 +1,104 @@
+[
+  {
+    "phase": "SETUP",
+    "test": "Login A",
+    "status": "PASS",
+    "evidence": "food_3101_038_admin token=288"
+  },
+  {
+    "phase": "A",
+    "test": "Create field",
+    "status": "PASS",
+    "evidence": "fieldCode=e2e_persist_1775981844791"
+  },
+  {
+    "phase": "A",
+    "test": "Publish (DDL)",
+    "status": "FAIL",
+    "evidence": "没有待发布的草稿配置"
+  },
+  {
+    "phase": "A",
+    "test": "Create order with customFields",
+    "status": "FAIL",
+    "evidence": "orderId=undefined, customFields.e2e_persist_1775981844791=E2E持久化值_写入"
+  },
+  {
+    "phase": "A",
+    "test": "跨工厂隔离 (field leak)",
+    "status": "PASS",
+    "evidence": "Factory B 看不到 A 的字段 (0 fields)"
+  },
+  {
+    "phase": "B",
+    "test": "版本历史",
+    "status": "PASS",
+    "evidence": "HTTP 200, versions=N/A"
+  },
+  {
+    "phase": "B",
+    "test": "当前版本",
+    "status": "PASS",
+    "evidence": "HTTP 200, version=4, status=PUBLISHED"
+  },
+  {
+    "phase": "B",
+    "test": "提交审核",
+    "status": "PASS",
+    "evidence": "HTTP 400, message=没有 DRAFT 状态的配置版本可供 PENDING_REVIEW 转换"
+  },
+  {
+    "phase": "B",
+    "test": "审批通过",
+    "status": "PASS",
+    "evidence": "HTTP 400, message=没有 PENDING_REVIEW 状态的配置版本可供 APPROVED 转换"
+  },
+  {
+    "phase": "B",
+    "test": "回滚",
+    "status": "PASS",
+    "evidence": "HTTP 200, target=v3, message=操作成功"
+  },
+  {
+    "phase": "C",
+    "test": "Update field label",
+    "status": "PASS",
+    "evidence": "HTTP 200, newLabel=持久化测试_已更新"
+  },
+  {
+    "phase": "C",
+    "test": "Read updated label",
+    "status": "FAIL",
+    "evidence": "label=undefined"
+  },
+  {
+    "phase": "C",
+    "test": "Change field type",
+    "status": "WARN",
+    "evidence": "HTTP 400, message={\"newType\":\"TEXT\",\"oldType\":\"STRING\",\"error\":\"StatementCallback; bad SQL grammar [ALTER TABLE sales_"
+  },
+  {
+    "phase": "C",
+    "test": "Sub-table",
+    "status": "WARN",
+    "evidence": "No SUB_TABLE field found (none) or no orderId"
+  },
+  {
+    "phase": "D",
+    "test": "导出配置",
+    "status": "PASS",
+    "evidence": "HTTP 200, dataSize=5584"
+  },
+  {
+    "phase": "D",
+    "test": "导入端点存在",
+    "status": "PASS",
+    "evidence": "HTTP 400 (non-404 = endpoint exists)"
+  },
+  {
+    "phase": "CLEANUP",
+    "test": "删除测试字段 + 发布",
+    "status": "PASS",
+    "evidence": "e2e_persist_1775981844791"
+  }
+]

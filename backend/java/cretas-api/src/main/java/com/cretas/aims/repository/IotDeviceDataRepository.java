@@ -60,8 +60,19 @@ public interface IotDeviceDataRepository extends JpaRepository<IotDeviceData, Lo
                                          @Param("end") LocalDateTime end);
 
     /**
-     * 查询指定时间范围内的数据（按设备）
+     * 查询指定时间范围内的数据 (按工厂+设备, P0-1 MEDIUM fix).
      */
+    @Query("SELECT d FROM IotDeviceData d WHERE d.factoryId = :factoryId AND d.deviceId = :deviceId AND d.collectedAt BETWEEN :startTime AND :endTime ORDER BY d.collectedAt DESC")
+    List<IotDeviceData> findByFactoryIdAndDeviceIdAndTimeRange(
+            @Param("factoryId") String factoryId,
+            @Param("deviceId") String deviceId,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * @deprecated 无 factoryId 过滤, 使用 {@link #findByFactoryIdAndDeviceIdAndTimeRange}.
+     */
+    @Deprecated
     @Query("SELECT d FROM IotDeviceData d WHERE d.deviceId = :deviceId AND d.collectedAt BETWEEN :startTime AND :endTime ORDER BY d.collectedAt DESC")
     List<IotDeviceData> findByDeviceIdAndTimeRange(
             @Param("deviceId") String deviceId,

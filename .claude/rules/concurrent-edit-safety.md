@@ -1,14 +1,16 @@
 # 并发编辑安全规范
 
-**最后更新**: 2026-04-08
+**最后更新**: 2026-04-11
 
 ---
 
 ## 背景
 
-多个 Claude Code session / Cursor / VSCode 同时打开同一文件时, 可能互相覆盖编辑.
+多个 Claude Code session / Cursor / VSCode 同时打开同一文件时, 可能互相覆盖编辑. 更隐蔽的, **commit 阶段也可能被并发 session 的文件串到一起** — husky/lint-staged 会 auto-stage.
 
-**真实事故 (2026-04-08)**: 重做 `scripts/deploy/deploy-backend.sh` v5.0 时, 写了 ~150 行 edits 后, 文件被并发 session 覆盖, 只保留最后的 29 行. Deploy run 一度成功执行 BG 逻辑 (说明文件之前是正确的), 但 git diff 只剩 29 行. 被迫重做所有 edits, 之后 commit `09af47780` 保住工作.
+**事故 1 (2026-04-08)**: 重做 `scripts/deploy/deploy-backend.sh` v5.0 时, 写了 ~150 行 edits 后, 文件被并发 session 覆盖, 只保留最后的 29 行. Deploy run 一度成功执行 BG 逻辑 (说明文件之前是正确的), 但 git diff 只剩 29 行. 被迫重做所有 edits, 之后 commit `09af47780` 保住工作.
+
+**事故 2 (2026-04-11)**: Round 5 follow-up commit `19d8d41ab` 本意只提交 2 个 deploy 脚本改动, 结果 pre-commit hook 带入了另一个并行 session 写的 5 个无关文件 (workflow YAML / Java Tool / 规划 MD / audit CSV/MD). commit message 只描述 deploy 修复, 那 5 个文件成了无描述的 scope creep, 已推送 origin/main. **教训: 并发环境下 `git add <specific>` 不足以锁定 commit 范围, 必须 commit 前再 `git status`.**
 
 ---
 
@@ -59,7 +61,24 @@ git status --short <file>
 
 如显示 unstaged 变化而你不记得是自己做的 → **停手先确认**, 不要直接 edit.
 
-### 5. 避免同时打开同一文件
+### 5. Commit 前也要 `git status` (Apr 11 事故新加)
+
+**即使你只 `git add` 了特定文件, commit 前仍然必须 `git status` 确认 staging 区**:
+
+```bash
+git add scripts/foo.sh scripts/bar.sh
+git status --short                    # ← 这一步不能省
+# 只有你预期的文件在 staged 区, 才 commit
+git commit -m "..."
+```
+
+**Why**: `husky` / `lint-staged` / pre-commit 钩子会在 `git commit` 触发时 auto-stage 新文件或格式化修改. 并发 session 同时写别的文件时, 你的 commit 会意外"顺走"它们. 单纯 `git add <specific>` **不足以**锁定 commit 范围.
+
+**如果 commit 后发现 scope creep**:
+- **已推送** → 无法干净回滚 (不违反 no-destructive-git 规则), 只能写 follow-up commit 补 doc
+- **未推送** → `git reset --soft HEAD~1` 退回 staging, 分两个 commit 重写 (soft reset 不丢工作)
+
+### 6. 避免同时打开同一文件
 
 - **Cursor/VSCode auto-save** 会覆盖外部修改. Claude 正在改的文件不要在 IDE 里打开 (哪怕只是查看).
 - **多个 Claude Code chat** 同时 edit 一个文件会互相覆盖 — 不要并行 edit 同一文件.
@@ -67,13 +86,16 @@ git status --short <file>
 
 ---
 
-## 优先级组合 (Apr 8 事故总结)
+## 优先级组合
 
 | 场景 | 方案 |
 |---|---|
 | 单 session 内改 3+ 文件 | 里程碑 commit (规则 1) |
 | 2+ chat 都要改同一文件 | git worktree 隔离 (规则 2) |
-| 不确定是否并发 | git status 防御 (规则 4) + 关闭其他 editor (规则 5) |
+| 不确定是否并发 | git status 防御 (规则 4) + 关闭其他 editor (规则 6) |
+| **Commit 阶段保护 scope** | **commit 前 git status** (规则 5) — 防 pre-commit hook 串入并发文件 |
 | 长期约束 | 这个 rule 本身 + memory `feedback_concurrent_edit_safety.md` |
 
 **Apr 8 事故正确做法**: Phase C 产品化应该用 **规则 1 + 规则 2** — 开 worktree 跑完整流程, 每个 phase 完成立即 commit.
+
+**Apr 11 事故正确做法**: `git add scripts/deploy/deploy-backend.sh scripts/lib/deploy-common.sh` 之后, 在 `git commit` 前先 `git status --short` 看一眼, 发现有 `.github/workflows/*.yml` / `docs/plans/*.md` 出现在 staged 区就会立刻警觉 — 那些是另一 session 的文件, 应该 `git restore --staged <file>` 把它们从我的 commit 里剔除.

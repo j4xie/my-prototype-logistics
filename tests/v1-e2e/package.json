@@ -1,0 +1,17 @@
+{
+  "name": "cretas-v1-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:pr-gate": "playwright test --grep @pr-gate",
+    "test:post-deploy": "playwright test --grep @post-deploy",
+    "test:headed": "playwright test --headed",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.45.0",
+    "typescript": "^5.4.0",
+    "@types/node": "^20.0.0"
+  }
+}

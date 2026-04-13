@@ -11,6 +11,7 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -23,6 +24,12 @@ public class CreateTransferRequest {
     @NotBlank(message = "调入方ID不能为空")
     private String targetFactoryId;
 
+    /** 工厂内跨仓调拨: 调出仓库ID (nullable). V3 P0-5 */
+    private String sourceWarehouseId;
+
+    /** 工厂内跨仓调拨: 调入仓库ID (nullable). V3 P0-5 */
+    private String targetWarehouseId;
+
     @NotNull(message = "调拨日期不能为空")
     private LocalDate transferDate;
 
@@ -33,6 +40,13 @@ public class CreateTransferRequest {
     @Valid
     @NotEmpty(message = "调拨行项目不能为空")
     private List<TransferItemDTO> items;
+
+    /**
+     * Round 11 T4 — Canvas Integration Template slot for factory-configured
+     * dynamic fields. Fields like 运输车牌号, 司机联系方式, 预计成本 land here
+     * and are persisted to cf_* columns on internal_transfers via DynamicFieldService.
+     */
+    private Map<String, Object> customFields;
 
     @Data
     @NoArgsConstructor

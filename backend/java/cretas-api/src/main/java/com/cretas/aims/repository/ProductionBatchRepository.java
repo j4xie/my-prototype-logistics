@@ -217,9 +217,13 @@ public interface ProductionBatchRepository extends JpaRepository<ProductionBatch
                                                                    @Param("startDate") LocalDateTime startDate);
 
     /**
-     * 根据批次号查找（用于公开溯源查询）
-     * 解决 N+1 问题：替代 findAll().stream().filter()
+     * 根据批次号查找（**仅用于公开溯源查询**, trace_public tool 等）.
+     *
+     * @deprecated 对于内部业务 tool, 请使用 L30 的 {@code findByFactoryIdAndBatchNumber}
+     *             (Spring Data derived method) 避免跨工厂数据泄露. 保留此 method
+     *             仅为兼容 trace_public (消费者扫码 C 端).
      */
+    @Deprecated
     @Query("SELECT b FROM ProductionBatch b WHERE b.batchNumber = :batchNumber")
     Optional<ProductionBatch> findByBatchNumber(@Param("batchNumber") String batchNumber);
 

@@ -73,10 +73,15 @@ public class OperationalQuoteServiceImpl implements OperationalQuoteService {
         quote.setRemarks(remarks);
         quote.setRevisionCount(0);
 
-        OperationalQuote saved = operationalQuoteRepository.save(quote);
-        log.info("报价单创建: quoteNo={}, sampleId={}, assignedTo={}",
-                saved.getQuoteNo(), sampleId, quotedByName);
-        return saved;
+        try {
+            OperationalQuote saved = operationalQuoteRepository.save(quote);
+            log.info("报价单创建: quoteNo={}, sampleId={}, assignedTo={}",
+                    saved.getQuoteNo(), sampleId, quotedByName);
+            return saved;
+        } catch (Exception e) {
+            log.error("报价单创建失败: factoryId={}, quoteNo={}, error={}", factoryId, quote.getQuoteNo(), e.getMessage(), e);
+            throw new RuntimeException("报价单创建失败: " + e.getMessage(), e);
+        }
     }
 
     @Override
@@ -197,10 +202,16 @@ public class OperationalQuoteServiceImpl implements OperationalQuoteService {
         return operationalQuoteRepository.findActiveForOrder(factoryId, customerId, productTypeId, LocalDate.now());
     }
 
-    /** 生成报价单号: QT-YYYYMMDD-NNNN */
+    /** 生成报价单号: QT-YYYYMMDD-NNNN, with UUID fallback if counter query fails */
     private String generateQuoteNo(String factoryId) {
         String datePrefix = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        long count = operationalQuoteRepository.countByFactoryIdAndDatePrefix(factoryId, datePrefix);
-        return String.format("QT-%s-%04d", datePrefix, count + 1);
+        try {
+            long count = operationalQuoteRepository.countByFactoryIdAndDatePrefix(factoryId, datePrefix);
+            return String.format("QT-%s-%04d", datePrefix, count + 1);
+        } catch (Exception e) {
+            log.warn("报价单号计数查询失败, 使用UUID后缀: {}", e.getMessage());
+            String fallback = java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+            return String.format("QT-%s-%s", datePrefix, fallback);
+        }
     }
 }

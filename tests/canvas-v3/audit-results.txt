@@ -1,0 +1,6 @@
+Canvas V3 Real Browser Audit Test
+Scenario 1: Canvas sidebar entry discoverable
+    ✓ Logged in
+SUMMARY
+scenario1: FAIL
+  Issue: Canvas sidebar not found

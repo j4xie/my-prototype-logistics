@@ -31,16 +31,91 @@ public class TriggerChainExecutor {
     private final ToolRegistry toolRegistry;
     private final ObjectMapper objectMapper;
 
+    // Round 4 Fix P1-14: added SalesOrderCreatedEvent so trigger chains can react to
+    // order creation (e.g. fetch external market price, create parallel workflows).
+    // Round 8-α Fix: added InvoiceIssuedEvent + SalesOrderSettledEvent — both were
+    // being published by InvoiceServiceImpl / PaymentRecordServiceImpl but silently
+    // dropped by this whitelist. Customer-configured "发票开具→同步税务" / "订单结清→自动归档"
+    // trigger chains literally never fired. See round8-findings Gap #2.
+    // Full list should eventually be data-driven from factory_trigger_chains.event_type
+    // but this hardcoded whitelist is the current performance-safe approach.
     private static final Set<String> HANDLED_EVENTS = Set.of(
+            "SalesOrderCreatedEvent",
             "SalesOrderConfirmedEvent", "SalesOrderFinanceApprovedEvent",
             "MaterialReceivedEvent", "BatchCompletedEvent",
-            "FinishedGoodsCreatedEvent", "PaymentReceivedEvent"
+            "FinishedGoodsCreatedEvent", "PaymentReceivedEvent",
+            "InvoiceIssuedEvent", "SalesOrderSettledEvent",
+            // Round 9 Fix: SalesDelivery Canvas integration template (R8-α Gap #1)
+            "SalesDeliveryCreatedEvent",
+            // Round 9-α Fix: 5 more events discovered by subagent audit — all were being
+            // published but silently dropped, so customer trigger chains on these events
+            // literally could not fire. Most impactful: ProductionAlertEvent ("质检不合格
+            // 自动通知采购" / "异常检测触发维护工单").
+            "ProductionAlertEvent",
+            "SampleApprovedEvent",
+            "SkuComplexityChangedEvent",
+            "SopUploadedEvent",
+            "RescheduleNeededEvent",
+            // Round 10 Fix (R8-α Gap #1 template 3rd hook): generic event for ALL material
+            // batch sources. MaterialReceivedEvent only fires on the purchase-receive path;
+            // this new event covers return/gain/manual batches so trigger chains can react
+            // to every material_batch row that lands in the DB.
+            "MaterialBatchCreatedEvent",
+            // Round 11 T1 — purchase_receipt template event. Fires on DRAFT create via
+            // PurchaseServiceImpl.createReceiveRecord; MaterialReceivedEvent still fires
+            // on CONFIRMED state via confirmReceive. Both hooks are live.
+            "PurchaseReceiveCreatedEvent",
+            // Round 11 T2 — sales_return / purchase_return template event. Fires on DRAFT
+            // create via ReturnOrderServiceImpl.createReturnOrder. Covers both return
+            // types via the shared returnType enum — trigger chains can filter by
+            // the event's returnType field if they want one direction only.
+            "ReturnOrderCreatedEvent",
+            // Round 11 T4 — internal transfer template event. Fires on DRAFT create via
+            // TransferServiceImpl.createTransfer for both factory-to-factory and
+            // warehouse-to-warehouse transfers. Trigger chains can filter by
+            // sourceFactoryId vs targetFactoryId to distinguish directions.
+            "TransferCreatedEvent",
+            // Round 12 — status-change + create events:
+            "ShipmentCreatedEvent",
+            "ProductionStartedEvent",
+            "ProductionCompletedEvent",
+            "BatchMaterialConsumedEvent",
+            // Round 13
+            "InvoiceRequestedEvent",
+            "WorkReportSubmittedEvent"
     );
+
+    // Round 6 Fix CHECK-5: rate-limited warn log when a factory configures a trigger chain
+    // for an event type not in HANDLED_EVENTS. Previously we silently skipped, leaving
+    // operators unable to diagnose why their chain never fired. One warning per eventType
+    // per JVM run is enough — debouncing prevents log flooding when many events fire.
+    private final java.util.concurrent.ConcurrentHashMap<String, Boolean> unhandledWarnedOnce =
+            new java.util.concurrent.ConcurrentHashMap<>();
 
     @EventListener
     public void onApplicationEvent(ApplicationEvent event) {
         String eventType = event.getClass().getSimpleName();
-        if (!HANDLED_EVENTS.contains(eventType)) return;
+        if (!HANDLED_EVENTS.contains(eventType)) {
+            // Round 6 Fix CHECK-5: warn once if a factory has a chain configured for this
+            // unhandled event (someone bothered to configure it — they deserve a hint).
+            if (unhandledWarnedOnce.putIfAbsent(eventType, Boolean.TRUE) == null) {
+                try {
+                    long configuredCount = triggerChainRepository.findAll().stream()
+                            .filter(c -> eventType.equals(c.getEventType()) && Boolean.TRUE.equals(c.getEnabled()))
+                            .count();
+                    if (configuredCount > 0) {
+                        log.warn("TriggerChain: event '{}' is NOT in HANDLED_EVENTS whitelist but "
+                                + "{} enabled chain(s) are configured in factory_trigger_chains — "
+                                + "those chains will NEVER fire until HANDLED_EVENTS is updated. "
+                                + "(This warning logs once per eventType per JVM run.)",
+                                eventType, configuredCount);
+                    }
+                } catch (Exception ignored) {
+                    // guarded — scheduling too early at boot may fail; don't crash event dispatch
+                }
+            }
+            return;
+        }
 
         String factoryId = extractFactoryId(event);
         if (factoryId == null) {
@@ -102,6 +177,14 @@ public class TriggerChainExecutor {
             Optional<ToolExecutor> executor = toolRegistry.getExecutor(toolName);
             if (executor.isEmpty()) {
                 log.warn("Tool not found in chain {}: {}", chain.getChainCode(), toolName);
+                continue;
+            }
+
+            // Round 9 Fix (R8-β tail): respect factory_tool_configs disable flag.
+            // R7b fixed ToolDispatchService; R9 fixes SkillExecutor + this trigger chain path.
+            if (!toolRegistry.isToolEnabledForFactory(factoryId, toolName)) {
+                log.warn("Chain {} step {} skipped — tool disabled for factory {} via Canvas config",
+                        chain.getChainCode(), toolName, factoryId);
                 continue;
             }
 

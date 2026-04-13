@@ -54,7 +54,8 @@ log() {
 # 返回: 0=成功, 1=超时
 wait_for_health() {
     local url="$1"
-    local retries="${2:-30}"
+    local retries="${2:-60}"      # Round 5 fix: bumped default 30→60 (Spring Boot with
+                                   # BERT intent loading needs >60s on first start)
     local interval="${3:-2}"
     local total_wait=$((retries * interval))
 
@@ -62,7 +63,9 @@ wait_for_health() {
 
     for i in $(seq 1 "$retries"); do
         local status
-        status=$(curl -s -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || echo "000")
+        # Round 5 fix: added --max-time/--connect-timeout so curl can't hang forever
+        # when the TCP connect stalls (previously each failed probe could wait minutes).
+        status=$(curl -s -o /dev/null --connect-timeout 2 --max-time 3 -w "%{http_code}" "$url" 2>/dev/null || echo "000")
 
         if [ "$status" = "200" ]; then
             log "INFO" "服务正常 (HTTP 200, 等待 $((i * interval))s)"

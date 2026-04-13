@@ -93,9 +93,6 @@ public class MobileAuthServiceImpl implements MobileAuthService {
                 .orElseThrow(() -> new BusinessException("用户名或密码错误"));
 
         // 验证密码
-        log.info("密码验证 - 用户: {}, 输入密码: {}, 数据库hash: {}",
-            username, password, user.getPassword() != null ? user.getPassword().substring(0, 30) + "..." : "null");
-
         if (!passwordEncoder.matches(password, user.getPassword())) {
             log.error("密码验证失败 - 用户: {}", username);
             throw new BusinessException("用户名或密码错误");

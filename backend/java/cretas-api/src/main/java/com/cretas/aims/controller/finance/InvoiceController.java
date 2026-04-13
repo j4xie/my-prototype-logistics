@@ -24,6 +24,13 @@ public class InvoiceController {
             @PathVariable String factoryId,
             @RequestBody Map<String, Object> body,
             @RequestAttribute(value = "userId", required = false) Long userId) {
+        // D1 fix: null-guard on amount to prevent NPE → 500 during demo
+        if (body.get("salesOrderId") == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "缺少必要参数: salesOrderId"));
+        }
+        if (body.get("amount") == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "缺少必要参数: amount"));
+        }
         var record = invoiceService.requestInvoice(
                 factoryId,
                 (String) body.get("salesOrderId"),

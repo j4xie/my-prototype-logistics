@@ -1,4 +1,5 @@
 <template>
+  <CanvasAwareWrapper module-code="restaurant">
   <div class="page-wrapper">
     <el-card class="page-card" shadow="never">
       <template #header>
@@ -180,6 +181,7 @@
       </el-descriptions>
     </el-drawer>
   </div>
+  </CanvasAwareWrapper>
 </template>
 
 <script setup lang="ts">
@@ -192,6 +194,7 @@ import { getRequisitions, getRequisition, getRequisitionStatistics, calculateRec
 import { emptyCell, formatDateCell, exportTableToExcel } from '@/utils/tableFormatters';
 import { formatDate } from '@/utils/dateFormat';
 import type { RequisitionItem } from '@/types/restaurant';
+import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 
 const factoryId = useFactoryId();
 const permissionStore = usePermissionStore();

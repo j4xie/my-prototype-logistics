@@ -138,6 +138,7 @@ public class SalesServiceImpl implements SalesService {
         order.setShippingIncluded(request.getShippingIncluded());
         order.setShippingFee(request.getShippingFee());
         order.setExtraFees(request.getExtraFees());
+        order.setQuoteId(request.getQuoteId()); // 报价→订单联动 (5016s 客户流程文档)
         order.setStatus(SalesOrderStatus.DRAFT);
         order.setCreatedBy(userId);
 
@@ -169,6 +170,7 @@ public class SalesServiceImpl implements SalesService {
             item.setQuantity(itemDTO.getQuantity());
             item.setUnit(itemDTO.getUnit());
             item.setUnitPrice(itemDTO.getUnitPrice());
+            item.setTaxRate(itemDTO.getTaxRate() != null ? itemDTO.getTaxRate() : BigDecimal.ZERO);
             item.setDiscountRate(itemDTO.getDiscountRate() != null ? itemDTO.getDiscountRate() : BigDecimal.ZERO);
             item.setRemark(itemDTO.getRemark());
             item.setSpecification(itemDTO.getSpecification());
@@ -197,6 +199,18 @@ public class SalesServiceImpl implements SalesService {
         }
 
         log.info("创建销售订单: factoryId={}, orderNumber={}, items={}", factoryId, orderNumber, items.size());
+
+        // Round 4 Fix P1-14: publish SalesOrderCreatedEvent so trigger chains can react
+        // (e.g. snapshot market price, auto-schedule production, notify sales manager).
+        try {
+            applicationEventPublisher.publishEvent(new com.cretas.aims.event.SalesOrderCreatedEvent(
+                this, factoryId, order.getId(),
+                order.getCustomerId(), order.getTotalAmount()));
+            log.info("已发布 SalesOrderCreatedEvent: SO={}", order.getId());
+        } catch (Exception e) {
+            log.error("发布 SalesOrderCreatedEvent 失败: {}", e.getMessage(), e);
+        }
+
         return order;
     }
 
@@ -441,11 +455,66 @@ public class SalesServiceImpl implements SalesService {
         return salesOrderRepository.save(order);
     }
 
+    /**
+     * Round 14: Compute all aggregate formulas configured for a sales order.
+     * Returns formula results keyed by formula_code (e.g., "tax_group_sum").
+     * The "杀手锏 G1" killer feature — 39 factories have tax_group_sum configured,
+     * but it was never evaluated at runtime until now.
+     */
+    public Map<String, Object> computeOrderFormulas(String factoryId, String orderId) {
+        Map<String, Object> results = new java.util.LinkedHashMap<>();
+        if (formulaEngine == null) return results;
+
+        // Query all factory_formulas for this factory + sales_order module
+        var formulas = formulaEngine.listFormulas(factoryId, "sales_order");
+        if (formulas == null || formulas.isEmpty()) return results;
+
+        Map<String, Object> context = Map.of(
+                "factoryId", factoryId,
+                "parentId", orderId);
+
+        for (var formula : formulas) {
+            try {
+                Object result = formulaEngine.evaluateAny(factoryId, "sales_order", formula.getFormulaCode(), context);
+                if (result != null) {
+                    results.put(formula.getFormulaCode(), result);
+                }
+            } catch (Exception e) {
+                log.warn("Formula {} evaluation failed for order {}: {}", formula.getFormulaCode(), orderId, e.getMessage());
+            }
+        }
+        return results;
+    }
+
     // ==================== 发货/出库 ====================
 
     @Override
     @Transactional
     public SalesDeliveryRecord createDeliveryRecord(String factoryId, CreateDeliveryRequest request, Long userId) {
+        // Round 9 Fix (R8-α Gap #1 template): Canvas validation rules now fire for
+        // delivery creation. Customer-configured rules like "冷链商品必填运输温度" /
+        // "发货金额 > 5万自动预警" / "物流公司必填" take effect here. Context
+        // exposes {customerId, salesOrderId, itemCount, totalAmount, logisticsCompany,
+        // deliveryAddress} so SpEL expressions can reason about the delivery.
+        java.math.BigDecimal prelimTotal = request.getItems() == null ? java.math.BigDecimal.ZERO :
+                request.getItems().stream()
+                        .filter(i -> i.getUnitPrice() != null && i.getDeliveredQuantity() != null)
+                        .map(i -> i.getDeliveredQuantity().multiply(i.getUnitPrice()))
+                        .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        java.util.Map<String, Object> validationCtx = new java.util.HashMap<>();
+        validationCtx.put("customerId", request.getCustomerId());
+        validationCtx.put("salesOrderId", request.getSalesOrderId());
+        validationCtx.put("itemCount", request.getItems() == null ? 0 : request.getItems().size());
+        validationCtx.put("totalAmount", prelimTotal);
+        validationCtx.put("logisticsCompany", request.getLogisticsCompany());
+        validationCtx.put("deliveryAddress", request.getDeliveryAddress());
+        if (request.getCustomFields() != null) {
+            // Merge customFields into validation context so rules can reference them
+            // via #cf_<fieldCode> (matching the SalesOrder/MaterialBatch pattern).
+            request.getCustomFields().forEach((k, v) -> validationCtx.put("cf_" + k, v));
+        }
+        runConfiguredValidation(factoryId, "delivery", "CREATE", validationCtx);
+
         // 验证客户
         customerRepository.findByIdAndFactoryId(request.getCustomerId(), factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("客户不存在或不属于当前组织"));
@@ -499,7 +568,37 @@ public class SalesServiceImpl implements SalesService {
         record.setTotalAmount(totalAmount);
         record = deliveryRecordRepository.save(record);
 
-        log.info("创建发货单: factoryId={}, deliveryNumber={}, items={}", factoryId, deliveryNumber, request.getItems().size());
+        // Round 9 Fix (R8-α Gap #1 template): persist Canvas V3 dynamic field values
+        // via DynamicFieldService. Customer-configured fields (运输温度, 司机姓名,
+        // 车牌号, 温度监控仪器型号 etc.) now land in the cf_* columns of
+        // sales_delivery_records. Previously the DTO had no customFields slot so
+        // frontend Canvas form submissions silently dropped the values.
+        if (dynamicFieldService != null && request.getCustomFields() != null && !request.getCustomFields().isEmpty()) {
+            try {
+                dynamicFieldService.setDynamicFields(factoryId, "delivery", record.getId(), request.getCustomFields());
+            } catch (Exception e) {
+                log.warn("Canvas dynamic fields save failed for delivery {}: {}", record.getId(), e.getMessage());
+            }
+        }
+
+        // Round 9 Fix (R8-α Gap #1 template): publish event so Canvas-configured
+        // trigger chains on the `delivery` module can fire (e.g. 物流推送 / 冷链启动 /
+        // WMS 同步). TriggerChainExecutor.HANDLED_EVENTS has been extended to recognize
+        // SalesDeliveryCreatedEvent.
+        if (applicationEventPublisher != null) {
+            try {
+                applicationEventPublisher.publishEvent(new com.cretas.aims.event.SalesDeliveryCreatedEvent(
+                        this, factoryId, record.getId(), record.getDeliveryNumber(),
+                        record.getCustomerId(), record.getSalesOrderId(),
+                        record.getDeliveryDate(), record.getTotalAmount()));
+            } catch (Exception e) {
+                log.warn("Publish SalesDeliveryCreatedEvent failed: {}", e.getMessage());
+            }
+        }
+
+        log.info("创建发货单: factoryId={}, deliveryNumber={}, items={}, customFields={}",
+                factoryId, deliveryNumber, request.getItems().size(),
+                request.getCustomFields() == null ? 0 : request.getCustomFields().size());
         return record;
     }
 
@@ -634,12 +733,41 @@ public class SalesServiceImpl implements SalesService {
     @Override
     @Transactional
     public FinishedGoodsBatch createFinishedGoodsBatch(String factoryId, FinishedGoodsBatch batch, Long userId) {
+        // Round 11 T3: Canvas Integration Template hook 1 — DB-driven validation
+        if (validationRuleEvaluator != null) {
+            try {
+                validationRuleEvaluator.validate(factoryId, "finished_goods", "CREATE",
+                        java.util.Map.of(
+                            "productTypeId", batch.getProductTypeId() != null ? batch.getProductTypeId() : "",
+                            "producedQuantity", batch.getProducedQuantity() != null ? batch.getProducedQuantity() : java.math.BigDecimal.ZERO));
+            } catch (com.cretas.aims.exception.BusinessException e) { throw e; }
+            catch (Exception e) { log.warn("Canvas validation non-blocking: {}", e.getMessage()); }
+        }
+
         batch.setFactoryId(factoryId);
         batch.setCreatedBy(userId);
         if (batch.getBatchNumber() == null) {
             batch.setBatchNumber(generateFinishedGoodsBatchNumber(factoryId));
         }
         batch = finishedGoodsBatchRepository.save(batch);
+
+        // Round 11 T3 — close the FinishedGoodsCreatedEvent gap. Previously the event only
+        // fired from SupplyChainOrchestrator after production plan completion with a
+        // sourceOrderId. Direct createFinishedGoodsBatch calls (manual entry, re-packaging,
+        // rework) were invisible to trigger chains even though the event is already
+        // whitelisted. This hook makes every finished-goods creation path observable.
+        try {
+            applicationEventPublisher.publishEvent(new com.cretas.aims.event.FinishedGoodsCreatedEvent(
+                    this,
+                    batch.getFactoryId(),
+                    null,  // sourceOrderId: null for direct creation (no production plan link)
+                    batch.getProductTypeId(),
+                    batch.getProducedQuantity(),
+                    batch.getId()));
+        } catch (Exception e) {
+            log.warn("Publish FinishedGoodsCreatedEvent failed for {}: {}", batch.getId(), e.getMessage());
+        }
+
         log.info("创建成品批次: factoryId={}, batchNumber={}, productTypeId={}", factoryId, batch.getBatchNumber(), batch.getProductTypeId());
         return batch;
     }
@@ -735,20 +863,34 @@ public class SalesServiceImpl implements SalesService {
     }
 
     private void runConfiguredValidation(String factoryId, String operation, Map<String, Object> context) {
+        runConfiguredValidation(factoryId, "sales_order", operation, context);
+    }
+
+    // Round 9 Fix: overload with explicit moduleCode so delivery/shipment paths can
+    // use their own module-scoped validation rules instead of reusing sales_order's.
+    private void runConfiguredValidation(String factoryId, String moduleCode, String operation, Map<String, Object> context) {
         if (validationRuleEvaluator == null) return;
         try {
-            validationRuleEvaluator.validate(factoryId, "sales_order", operation, context);
+            validationRuleEvaluator.validate(factoryId, moduleCode, operation, context);
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            log.warn("Canvas validation non-blocking error: {}", e.getMessage());
+            log.warn("Canvas validation non-blocking error for {}.{}: {}",
+                    moduleCode, operation, e.getMessage());
         }
     }
 
     private void checkTransitionAllowed(String factoryId, String fromStatus, String toStatus) {
         if (factoryConfigService != null) {
-            if (!factoryConfigService.isTransitionAllowed(factoryId, "sales_order", fromStatus, toStatus)) {
-                throw new BusinessException("当前配置不允许从 " + fromStatus + " 转换到 " + toStatus);
+            try {
+                if (!factoryConfigService.isTransitionAllowed(factoryId, "sales_order", fromStatus, toStatus)) {
+                    throw new BusinessException("当前配置不允许从 " + fromStatus + " 转换到 " + toStatus);
+                }
+            } catch (BusinessException e) {
+                throw e;
+            } catch (Exception e) {
+                // No workflow config or config parse error → default to ALLOW
+                log.warn("Workflow transition check failed (defaulting to ALLOW): {} → {}, error: {}", fromStatus, toStatus, e.getMessage());
             }
         }
     }
@@ -807,11 +949,20 @@ public class SalesServiceImpl implements SalesService {
 
         boolean allDelivered = orderItems.stream().allMatch(item ->
                 item.getDeliveredQuantity().compareTo(item.getQuantity()) >= 0);
+        boolean anyDelivered = orderItems.stream().anyMatch(item ->
+                item.getDeliveredQuantity().compareTo(BigDecimal.ZERO) > 0);
 
         if (allDelivered) {
             order.setStatus(SalesOrderStatus.COMPLETED);
+            // P0-9: 全部发货完成 → transportPlanStatus = DELIVERED
+            order.setTransportPlanStatus("DELIVERED");
+        } else if (anyDelivered) {
+            order.setStatus(SalesOrderStatus.PARTIAL_DELIVERED);
+            // P0-9: 部分发货 → transportPlanStatus = IN_TRANSIT
+            order.setTransportPlanStatus("IN_TRANSIT");
         } else {
             order.setStatus(SalesOrderStatus.PARTIAL_DELIVERED);
+            order.setTransportPlanStatus("IN_TRANSIT");
         }
         salesOrderRepository.save(order);
     }

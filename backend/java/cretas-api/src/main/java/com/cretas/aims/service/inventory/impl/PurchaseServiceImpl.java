@@ -58,6 +58,18 @@ public class PurchaseServiceImpl implements PurchaseService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
 
+    /**
+     * Round 11 T1 — Canvas Integration Template hook 2.
+     * Writes factory-configured dynamic fields into cf_* columns on
+     * purchase_receive_records so downstream trigger chains, reports, and
+     * exports can read them alongside the standard columns.
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.DefaultValueResolver defaultValueResolver;
+
     /** 三价对比偏差预警阈值（10%） */
     private static final BigDecimal PRICE_ALERT_THRESHOLD = new BigDecimal("10");
 
@@ -318,6 +330,17 @@ public class PurchaseServiceImpl implements PurchaseService {
     @Override
     @Transactional
     public PurchaseReceiveRecord createReceiveRecord(String factoryId, CreateReceiveRecordRequest request, Long userId) {
+        // Round 11 T1: Canvas Integration Template hook 1 — DB-driven validation
+        if (validationRuleEvaluator != null) {
+            try {
+                validationRuleEvaluator.validate(factoryId, "purchase_receipt", "CREATE",
+                        java.util.Map.of(
+                            "itemCount", request.getItems() != null ? request.getItems().size() : 0,
+                            "supplierId", request.getSupplierId() != null ? request.getSupplierId() : ""));
+            } catch (com.cretas.aims.exception.BusinessException e) { throw e; }
+            catch (Exception e) { log.warn("Canvas validation non-blocking: {}", e.getMessage()); }
+        }
+
         // 验证供应商
         supplierRepository.findByIdAndFactoryId(request.getSupplierId(), factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("供应商不存在或不属于当前组织"));
@@ -326,8 +349,9 @@ public class PurchaseServiceImpl implements PurchaseService {
         if (request.getPurchaseOrderId() != null && !request.getPurchaseOrderId().isEmpty()) {
             PurchaseOrder order = getPurchaseOrderById(factoryId, request.getPurchaseOrderId());
             if (order.getStatus() != PurchaseOrderStatus.APPROVED &&
+                    order.getStatus() != PurchaseOrderStatus.FINANCE_APPROVED &&
                     order.getStatus() != PurchaseOrderStatus.PARTIAL_RECEIVED) {
-                throw new BusinessException("只有已审批或部分到货状态的订单可以入库");
+                throw new BusinessException("只有已审批、财务已审核或部分到货状态的订单可以入库");
             }
         }
 
@@ -368,6 +392,30 @@ public class PurchaseServiceImpl implements PurchaseService {
 
         record.setTotalAmount(totalAmount);
         record = receiveRecordRepository.save(record);
+
+        // Round 11 T1: Canvas Integration Template hook 2 — persist dynamic fields.
+        // Customer-configured fields (运输温度记录, 质检报告附件, 外包装状态) land in
+        // cf_* columns on purchase_receive_records. Silent failure must not break
+        // the receive record creation.
+        if (dynamicFieldService != null && request.getCustomFields() != null && !request.getCustomFields().isEmpty()) {
+            try {
+                dynamicFieldService.setDynamicFields(factoryId, "purchase_receipt", record.getId(), request.getCustomFields());
+            } catch (Exception e) {
+                log.warn("Canvas dynamic fields save failed for purchase receive {}: {}", record.getId(), e.getMessage());
+            }
+        }
+
+        // Round 11 T1: Canvas Integration Template hook 3 — publish event for trigger chains.
+        // Fires on DRAFT creation; distinct from MaterialReceivedEvent which fires on
+        // CONFIRMED state via confirmReceive. Factories can now react to receive-draft
+        // creation (e.g., auto-create QC sampling task).
+        try {
+            applicationEventPublisher.publishEvent(new com.cretas.aims.event.PurchaseReceiveCreatedEvent(
+                    this, factoryId, record.getId(), record.getReceiveNumber(),
+                    record.getSupplierId(), record.getPurchaseOrderId(), record.getTotalAmount()));
+        } catch (Exception e) {
+            log.warn("Publish PurchaseReceiveCreatedEvent failed for {}: {}", record.getId(), e.getMessage());
+        }
 
         log.info("创建入库单: factoryId={}, receiveNumber={}, items={}", factoryId, receiveNumber, request.getItems().size());
         return record;

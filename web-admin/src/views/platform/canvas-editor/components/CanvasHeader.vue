@@ -10,29 +10,32 @@
       <span v-if="dirtyCount > 0" class="header-dirty">· {{ dirtyCount }} 项未保存</span>
     </div>
     <div class="header-actions">
+      <!-- Round 7a fix: every action button now has :loading + :disabled in-flight lock
+           to prevent double-submit (Scenario 1/3/9/11 from R7a Subagent E). Parent view
+           toggles `inFlightAction` to the action code while awaiting the API. -->
       <!-- DRAFT actions -->
       <template v-if="status === 'DRAFT'">
-        <el-button size="small" @click="$emit('save')">💾 保存草稿</el-button>
-        <el-button size="small" type="primary" :disabled="dirtyCount > 0" @click="$emit('submit-review')">
+        <el-button size="small" :loading="inFlightAction==='save'" :disabled="inFlightAction!==null && inFlightAction!=='save'" @click="emitLocked('save')">💾 保存草稿</el-button>
+        <el-button size="small" type="primary" :loading="inFlightAction==='submit-review'" :disabled="dirtyCount > 0 || (inFlightAction!==null && inFlightAction!=='submit-review')" @click="emitLocked('submit-review')">
           提交审核 →
         </el-button>
       </template>
       <!-- PENDING_REVIEW actions -->
       <template v-if="status === 'PENDING_REVIEW'">
         <el-tag type="warning">等待审核中</el-tag>
-        <el-button size="small" type="success" @click="$emit('approve')">通过 ✅</el-button>
-        <el-button size="small" type="danger" @click="$emit('reject')">驳回 ❌</el-button>
+        <el-button size="small" type="success" :loading="inFlightAction==='approve'" :disabled="inFlightAction!==null && inFlightAction!=='approve'" @click="emitLocked('approve')">通过 ✅</el-button>
+        <el-button size="small" type="danger" :loading="inFlightAction==='reject'" :disabled="inFlightAction!==null && inFlightAction!=='reject'" @click="emitLocked('reject')">驳回 ❌</el-button>
       </template>
       <!-- APPROVED actions -->
       <template v-if="status === 'APPROVED'">
         <span class="countdown" v-if="countdown">⏰ {{ countdown }}</span>
-        <el-button size="small" type="warning" @click="$emit('publish-now')">⚡ 立即发布</el-button>
-        <el-button size="small" @click="$emit('cancel-approval')">取消发布</el-button>
+        <el-button size="small" type="warning" :loading="inFlightAction==='publish-now'" :disabled="inFlightAction!==null && inFlightAction!=='publish-now'" @click="emitLocked('publish-now')">⚡ 立即发布</el-button>
+        <el-button size="small" :loading="inFlightAction==='cancel-approval'" :disabled="inFlightAction!==null && inFlightAction!=='cancel-approval'" @click="emitLocked('cancel-approval')">取消发布</el-button>
       </template>
       <!-- PUBLISHED actions -->
       <template v-if="status === 'PUBLISHED'">
-        <el-button size="small" type="primary" @click="$emit('new-draft')">新建草稿</el-button>
-        <el-button size="small" @click="$emit('rollback')">回滚</el-button>
+        <el-button size="small" type="primary" :loading="inFlightAction==='new-draft'" :disabled="inFlightAction!==null && inFlightAction!=='new-draft'" @click="emitLocked('new-draft')">新建草稿</el-button>
+        <el-button size="small" :loading="inFlightAction==='rollback'" :disabled="inFlightAction!==null && inFlightAction!=='rollback'" @click="emitLocked('rollback')">回滚</el-button>
       </template>
     </div>
   </div>
@@ -42,9 +45,9 @@
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useCanvasEditor } from '../composables/useCanvasEditor'
 
-const { versionLabel, status, dirtyCount, factoryId } = useCanvasEditor()
+const { versionLabel, status, dirtyCount, factoryId, inFlightAction } = useCanvasEditor()
 
-defineEmits<{
+const emit = defineEmits<{
   save: []
   'submit-review': []
   approve: []
@@ -54,6 +57,15 @@ defineEmits<{
   'new-draft': []
   rollback: []
 }>()
+
+// Round 7a: single-flight emit — blocks double-click by gating on inFlightAction.
+// The parent view must set inFlightAction = '<code>' before its await and reset
+// to null in finally. Double-click within loading window is silently dropped.
+type ActionCode = 'save' | 'submit-review' | 'approve' | 'reject' | 'publish-now' | 'cancel-approval' | 'new-draft' | 'rollback'
+function emitLocked(action: ActionCode) {
+  if (inFlightAction.value !== null) return  // already running, drop duplicate
+  emit(action as any)
+}
 
 const factoryName = computed(() => factoryId.value || '未选择工厂')
 

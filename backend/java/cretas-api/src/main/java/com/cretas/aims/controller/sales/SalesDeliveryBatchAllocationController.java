@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -44,6 +45,15 @@ public class SalesDeliveryBatchAllocationController {
                 "deliveryItemId", deliveryItemId,
                 "fullyAllocated", service.isFullyAllocated(factoryId, deliveryItemId)
         ));
+    }
+
+    @GetMapping("/recommend-fifo")
+    @Operation(summary = "FIFO 成品批次推荐（按生产日期升序）")
+    public ApiResponse<List<Map<String, Object>>> recommendFifo(
+            @PathVariable String factoryId,
+            @RequestParam String productTypeId,
+            @RequestParam BigDecimal requiredQty) {
+        return ApiResponse.success("FIFO 推荐 (按生产日期升序)", service.recommendFifo(factoryId, productTypeId, requiredQty));
     }
 
     @DeleteMapping

@@ -46,6 +46,23 @@ public class DynamicFieldService {
      * We query information_schema once per table and cache the result.
      */
     private final Map<String, String> idTypeCache = new ConcurrentHashMap<>();
+    /** Cache whether a table has a factory_id column. Checked before adding tenant filter. */
+    private final Map<String, Boolean> factoryIdColumnCache = new ConcurrentHashMap<>();
+
+    private boolean hasFactoryIdColumn(String tableName) {
+        return factoryIdColumnCache.computeIfAbsent(tableName, t -> {
+            try {
+                Integer count = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM information_schema.columns " +
+                    "WHERE table_name = ? AND column_name = 'factory_id'",
+                    Integer.class, t);
+                return count != null && count > 0;
+            } catch (Exception e) {
+                log.warn("Could not check factory_id column for table {}: {}", t, e.getMessage());
+                return false;
+            }
+        });
+    }
 
     private String getIdColumnType(String tableName) {
         return idTypeCache.computeIfAbsent(tableName, t -> {
@@ -82,9 +99,14 @@ public class DynamicFieldService {
 
         if (columns.isEmpty()) return Map.of();
 
-        String sql = "SELECT " + String.join(", ", columns) + " FROM " + tableName + " " + idWhereClause(tableName);
+        // Tenant isolation: filter by factory_id when the table has the column.
+        boolean hasTenantCol = hasFactoryIdColumn(tableName);
+        String sql = "SELECT " + String.join(", ", columns) + " FROM " + tableName
+            + " " + idWhereClause(tableName) + (hasTenantCol ? " AND factory_id = ?" : "");
         try {
-            Map<String, Object> row = jdbcTemplate.queryForMap(sql, recordId);
+            Map<String, Object> row = hasTenantCol
+                ? jdbcTemplate.queryForMap(sql, recordId, factoryId)
+                : jdbcTemplate.queryForMap(sql, recordId);
             Map<String, Object> result = new LinkedHashMap<>();
             for (CanvasDynamicField f : fields) {
                 if (!"SUB_TABLE".equals(f.getFieldType()) && row.containsKey(f.getColumnName())) {
@@ -98,11 +120,107 @@ public class DynamicFieldService {
         }
     }
 
+    /**
+     * Round 4 Fix P1-18: Change field type with ALTER COLUMN TYPE + USING cast.
+     * Updates CanvasDynamicField.fieldType after successful DDL.
+     * Throws IllegalArgumentException for unsafe transitions.
+     */
+    public void changeFieldType(com.cretas.aims.entity.config.CanvasDynamicField field, String newType) {
+        String oldType = field.getFieldType();
+        String newUpper = newType.toUpperCase();
+
+        // Validate transition safety
+        boolean safe = isSafeTypeTransition(oldType, newUpper);
+        if (!safe) {
+            throw new IllegalArgumentException(
+                "Unsafe type transition: " + oldType + " → " + newUpper
+                + ". Create a new field and migrate data manually instead.");
+        }
+
+        String tableName = ddlExecutor.resolveTable(field.getModuleCode());
+        String columnName = field.getColumnName();
+        String newSqlType = mapFieldTypeToSQL(newUpper);
+        String usingClause = buildUsingClause(oldType, newUpper, columnName);
+
+        String ddl = String.format(
+            "ALTER TABLE %s ALTER COLUMN %s TYPE %s USING %s",
+            tableName, columnName, newSqlType, usingClause
+        );
+
+        log.info("Changing field type: {} → {}, DDL: {}", oldType, newUpper, ddl);
+        jdbcTemplate.execute(ddl);
+
+        field.setFieldType(newUpper);
+        fieldRepo.save(field);
+        refreshCache(field.getFactoryId(), field.getModuleCode());
+    }
+
+    private boolean isSafeTypeTransition(String from, String to) {
+        if (from.equals(to)) return true;
+        // Any type → TEXT is safe (castable to text)
+        if ("TEXT".equals(to) || "TEXTAREA".equals(to)) return true;
+        // Number ↔ Decimal
+        if (("NUMBER".equals(from) && "DECIMAL".equals(to))
+            || ("DECIMAL".equals(from) && "NUMBER".equals(to))) return true;
+        // TEXT → NUMBER/DECIMAL (will fail if data not numeric)
+        if ("TEXT".equals(from) && ("NUMBER".equals(to) || "DECIMAL".equals(to))) return true;
+        // TEXT → DATE/DATETIME (will fail if not parseable)
+        if ("TEXT".equals(from) && ("DATE".equals(to) || "DATETIME".equals(to))) return true;
+        // DATE ↔ DATETIME
+        if (("DATE".equals(from) && "DATETIME".equals(to))
+            || ("DATETIME".equals(from) && "DATE".equals(to))) return true;
+        return false;
+    }
+
+    private String buildUsingClause(String from, String to, String col) {
+        if ("TEXT".equals(to) || "TEXTAREA".equals(to)) return col + "::text";
+        if ("NUMBER".equals(to)) return col + "::integer";
+        if ("DECIMAL".equals(to)) return col + "::numeric";
+        if ("DATE".equals(to)) return col + "::date";
+        if ("DATETIME".equals(to)) return col + "::timestamp";
+        return col;
+    }
+
+    /** Kept in sync with DDLExecutor.mapFieldTypeToSQL — do not add cases here without
+     *  adding them there too, or ALTER COLUMN TYPE will produce a type mismatch. */
+    private String mapFieldTypeToSQL(String fieldType) {
+        return switch (fieldType) {
+            case "TEXT", "STRING" -> "VARCHAR(500)";
+            case "TEXTAREA", "LONGTEXT" -> "TEXT";
+            case "NUMBER", "INTEGER" -> "INTEGER";
+            case "DECIMAL" -> "NUMERIC(18,4)";
+            case "SELECT" -> "VARCHAR(100)";
+            case "DATE" -> "DATE";
+            case "DATETIME", "TIMESTAMP" -> "TIMESTAMP";
+            case "BOOLEAN", "BOOL" -> "BOOLEAN";
+            case "ATTACHMENT" -> "VARCHAR(2000)";
+            case "REFERENCE" -> "VARCHAR(64)";
+            case "LINE_ITEMS" -> "JSONB";
+            default -> throw new IllegalArgumentException(
+                "不支持的字段类型转换: " + fieldType + " (请先在 DDLExecutor 补充映射)");
+        };
+    }
+
     public void setDynamicFields(String factoryId, String moduleCode, String recordId, Map<String, Object> fields) {
         if (fields == null || fields.isEmpty()) return;
         List<CanvasDynamicField> activeDefs = getActiveFields(factoryId, moduleCode);
         Map<String, CanvasDynamicField> defMap = activeDefs.stream()
             .collect(Collectors.toMap(CanvasDynamicField::getFieldCode, f -> f));
+
+        // Round 4 Fix P2-31: enforce required=true on the server side.
+        // Previously required was a frontend-only rendering hint — backend accepted NULL
+        // values silently. Now we validate required fields using config.required flag.
+        for (CanvasDynamicField def : activeDefs) {
+            if ("SUB_TABLE".equals(def.getFieldType())) continue;
+            Object reqFlag = def.getConfig() != null ? def.getConfig().get("required") : null;
+            if (Boolean.TRUE.equals(reqFlag)) {
+                Object val = fields.get(def.getFieldCode());
+                if (val == null || (val instanceof CharSequence s && s.toString().trim().isEmpty())) {
+                    throw new com.cretas.aims.exception.BusinessException(
+                        "必填字段不能为空: " + def.getLabel() + " (" + def.getFieldCode() + ")");
+                }
+            }
+        }
 
         String tableName = ddlExecutor.resolveTable(moduleCode);
         List<String> setClauses = new ArrayList<>();
@@ -118,7 +236,15 @@ public class DynamicFieldService {
 
         if (setClauses.isEmpty()) return;
         params.add(recordId);
-        String sql = "UPDATE " + tableName + " SET " + String.join(", ", setClauses) + " " + idWhereClause(tableName);
-        jdbcTemplate.update(sql, params.toArray());
+        // Tenant isolation: filter by factory_id when the table has the column.
+        boolean hasTenantCol = hasFactoryIdColumn(tableName);
+        if (hasTenantCol) params.add(factoryId);
+        String sql = "UPDATE " + tableName + " SET " + String.join(", ", setClauses)
+            + " " + idWhereClause(tableName) + (hasTenantCol ? " AND factory_id = ?" : "");
+        int affected = jdbcTemplate.update(sql, params.toArray());
+        if (affected == 0) {
+            throw new com.cretas.aims.exception.BusinessException(
+                "动态字段保存失败: 记录不存在或不属于当前工厂 (" + moduleCode + "/" + recordId + ")");
+        }
     }
 }

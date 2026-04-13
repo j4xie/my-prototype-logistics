@@ -22,7 +22,7 @@ import { Plus, Refresh, View } from '@element-plus/icons-vue';
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
-const canWrite = computed(() => permissionStore.canWrite('factory') || permissionStore.canWrite('material'));
+const canWrite = computed(() => permissionStore.canWrite('production'));
 
 const loading = ref(false);
 const submitting = ref(false);

@@ -25,6 +25,9 @@ public interface ProductSampleService {
     ProductSample getSample(String factoryId, String sampleId);
     ProductSample updateSampleFields(ProductSample sample);
 
+    // ==================== 追踪记录 ====================
+    java.util.List<com.cretas.aims.entity.rd.ProductSampleTrackingRecord> getTrackingRecords(String factoryId, String sampleId);
+
     // ==================== 报价任务 ====================
     QuotationTask getQuotationBySample(String sampleId);
     QuotationTask submitQuotation(String taskId, java.math.BigDecimal materialCost,

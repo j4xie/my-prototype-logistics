@@ -13,6 +13,25 @@ const leftCollapsed = ref(false)
 const rightCollapsed = ref(false)
 const isOnboarding = ref(false)
 
+// Round 7a fix: in-flight action lock. Parent view sets to the action code when
+// starting an await call, resets to null in finally. CanvasHeader emitLocked()
+// reads this to drop duplicate clicks and drive :loading/:disabled binding.
+const inFlightAction = ref<string | null>(null)
+
+// Round 7a fix: install beforeunload guard ONCE at module load. When dirtyCount > 0,
+// browser shows "unsaved changes" confirm on tab close / refresh / navigation.
+// Previously there was zero protection → data silently lost on tab close.
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', (e) => {
+    if (dirtyCount.value > 0) {
+      e.preventDefault()
+      // Modern browsers ignore custom text; just setting returnValue is enough to trigger prompt.
+      e.returnValue = ''
+      return ''
+    }
+  })
+}
+
 // Restore collapse state from localStorage
 const savedState = localStorage.getItem('canvas-editor-state')
 if (savedState) {
@@ -50,11 +69,22 @@ export function useCanvasEditor() {
       const res = await getConfigVersion(factoryId.value)
       if (res.data) {
         configVersion.value = res.data
-        // If the factory has no PUBLISHED config yet, trigger onboarding wizard.
-        // First-time factory admins land on the wizard instead of empty canvas.
-        if (res.data.status !== 'PUBLISHED') {
-          // Check history — if no version was ever published, show wizard
-          isOnboarding.value = !res.data.publishedAt
+        // Round 4 Fix: Only show OnboardingWizard if NO version in history has been published.
+        // Previously we showed it whenever current version was DRAFT, but that also triggered
+        // for factories that had published earlier and just created a new draft on top.
+        // Check full version history to determine if factory has ever published.
+        try {
+          const { getConfigVersions } = await import('@/api/canvasApi')
+          // Round 5 PERF-3: backend returns Page shape {content, totalElements, ...}.
+          // Round 6 P0 fix: previously `historyRes.data.some()` threw TypeError and crashed
+          // the onboarding check, forcing every user into fallback mode.
+          const historyRes = await getConfigVersions(factoryId.value)
+          const history = (historyRes.data?.content || []) as ConfigVersion[]
+          const everPublished = history.some(v => v.publishedAt !== null && v.publishedAt !== undefined)
+          isOnboarding.value = !everPublished
+        } catch {
+          // If versions endpoint fails, fall back to current-version check
+          isOnboarding.value = res.data.status !== 'PUBLISHED' && !res.data.publishedAt
         }
       } else {
         // No version record at all = fresh factory, definitely onboarding
@@ -114,6 +144,7 @@ export function useCanvasEditor() {
   return {
     factoryId, selectedModule, activeTab, configVersion, dirtyCount,
     leftCollapsed, rightCollapsed, isOnboarding,
+    inFlightAction,  // Round 7a: action-button single-flight lock state
     status, isReadOnly, canSubmitReview, canApprove, canPublishNow, versionLabel,
     loadVersion, markDirty, clearDirty,
     toggleLeft, toggleRight, enterFocusMode, exitFocusMode, applyResponsive,

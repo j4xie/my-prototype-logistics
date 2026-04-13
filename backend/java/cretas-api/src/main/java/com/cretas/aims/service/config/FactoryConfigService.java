@@ -38,4 +38,35 @@ public interface FactoryConfigService {
 
     // ========== 模板 ==========
     void applyTemplate(String factoryId, String templateCode, Long operatorId);
+
+    // ========== 导出/导入 (Round 4 Fix P1-16) ==========
+    /** Export full Canvas config bundle: modules + dynamic fields + validation rules + trigger chains + formulas */
+    Map<String, Object> exportConfig(String factoryId);
+    /** Import a config bundle (from another factory) as DRAFT, merging with existing config */
+    Map<String, Object> importConfig(String factoryId, Map<String, Object> bundle, Long operatorId);
+
+    // ========== Runtime 创建模块 (Round 4 Fix P1-12) ==========
+    /**
+     * Create a new ModuleSchema + auto CREATE TABLE for custom business domains.
+     * Round 5 Fix OBS-2: accepts operatorId for audit attribution.
+     */
+    Map<String, Object> createCustomModule(String factoryId, String moduleCode, String moduleName,
+                                            String moduleCategory, String description, Long operatorId);
+
+    // ========== Audit (Round 5 Fix OBS-1) ==========
+    /**
+     * Persist an audit entry for a workflow state transition (DRAFT→PENDING_REVIEW etc).
+     * Called from ConfigController.transitionStatus so the transition is visible in the
+     * config_change_log table, not just the application log.
+     */
+    void logWorkflowTransition(String factoryId, int configVersion, String fromStatus,
+                                String toStatus, Long operatorId, String notes);
+
+    /**
+     * Round 10 Fix: reorder fields within a module's DRAFT config.
+     * Returns {newVersion, reorderedCount}. Throws if DRAFT missing or version mismatch.
+     */
+    Map<String, Object> reorderFields(String factoryId, String moduleCode,
+                                       List<String> fieldOrder, Long expectedVersion,
+                                       Long operatorId);
 }

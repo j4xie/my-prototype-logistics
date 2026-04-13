@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.config.RequireRole;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.config.*;
 import com.cretas.aims.repository.config.*;
@@ -31,6 +32,17 @@ public class TriggerChainController {
     @Qualifier("canvasFactoryConfigService")
     private FactoryConfigService configService;
 
+    @Autowired(required = false)
+    private com.cretas.aims.service.MobileService mobileService;
+
+    private Long extractUserId(String authorization) {
+        if (authorization == null || mobileService == null) return null;
+        try {
+            String token = com.cretas.aims.utils.TokenUtils.extractToken(authorization);
+            return mobileService.getUserFromToken(token).getId();
+        } catch (Exception e) { return null; }
+    }
+
     // ========== Tool Config ==========
 
     @GetMapping("/tools")
@@ -40,6 +52,7 @@ public class TriggerChainController {
     }
 
     @PutMapping("/tools/{toolName}")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     @Operation(summary = "设置 Tool 开关/参数覆盖")
     public ApiResponse<FactoryToolConfig> setToolConfig(
             @PathVariable String factoryId, @PathVariable String toolName,
@@ -69,6 +82,7 @@ public class TriggerChainController {
     }
 
     @PutMapping("/skills/{skillName}")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     @Operation(summary = "设置 Skill 开关/自定义 DAG")
     public ApiResponse<FactorySkillConfig> setSkillConfig(
             @PathVariable String factoryId, @PathVariable String skillName,
@@ -107,6 +121,7 @@ public class TriggerChainController {
     }
 
     @PutMapping("/trigger-chains/{chainCode}")
+    @RequireRole({"factory_super_admin", "permission_admin"})
     @Operation(summary = "配置触发链步骤")
     public ApiResponse<FactoryTriggerChain> setTriggerChain(
             @PathVariable String factoryId, @PathVariable String chainCode,
@@ -144,11 +159,14 @@ public class TriggerChainController {
     }
 
     @PostMapping("/apply-template/{templateCode}")
+    @RequireRole({"factory_super_admin"})
     @Operation(summary = "应用行业模板到工厂")
     public ApiResponse<String> applyTemplate(
-            @PathVariable String factoryId, @PathVariable String templateCode) {
+            @PathVariable String factoryId, @PathVariable String templateCode,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
         if (configService == null) throw new com.cretas.aims.exception.BusinessException("配置服务未就绪");
-        configService.applyTemplate(factoryId, templateCode, 0L);
+        Long operatorId = extractUserId(authorization);
+        configService.applyTemplate(factoryId, templateCode, operatorId != null ? operatorId : 0L);
         return ApiResponse.success("模板 " + templateCode + " 已应用到工厂 " + factoryId);
     }
 }

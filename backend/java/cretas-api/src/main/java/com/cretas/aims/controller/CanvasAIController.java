@@ -4,6 +4,7 @@ import com.cretas.aims.ai.client.DashScopeClient;
 import com.cretas.aims.ai.tool.ToolExecutor;
 import com.cretas.aims.ai.tool.ToolRegistry;
 import com.cretas.aims.ai.dto.ToolCall;
+import com.cretas.aims.config.RequireRole;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.utils.TokenUtils;
@@ -34,6 +35,18 @@ public class CanvasAIController {
      * Build tool execution context with factoryId + userId.
      * Canvas AI tools (e.g. canvas_set_user_permission, canvas_apply_template) require userId.
      */
+    /** Only canvas_* tools are allowed via AI chat — prevents prompt injection from
+     *  tricking the LLM into calling data-destructive or system-level tools. */
+    private static final java.util.regex.Pattern CANVAS_TOOL_PATTERN =
+        java.util.regex.Pattern.compile("^canvas_[a-z0-9_]+$");
+
+    private void validateCanvasTool(String toolName) {
+        if (toolName == null || !CANVAS_TOOL_PATTERN.matcher(toolName).matches()) {
+            throw new com.cretas.aims.exception.BusinessException(
+                "Canvas AI only allows canvas_* tools, rejected: " + toolName);
+        }
+    }
+
     private Map<String, Object> buildToolContext(String factoryId, String authorization) {
         Map<String, Object> ctx = new HashMap<>();
         ctx.put("factoryId", factoryId);
@@ -84,6 +97,11 @@ public class CanvasAIController {
 
     @PostMapping("/chat")
     @Operation(summary = "Canvas AI 对话 (DashScope Qwen)")
+    // Round 7a P0 fix: AI chat in autopilot mode calls arbitrary canvas_* tools via LLM.
+    // Previously NO auth check — any authenticated user (viewer/operator/etc) could run
+    // "禁用 production / 应用 RESTAURANT 模板" and the LLM would execute DDL-level changes.
+    // Now restricted to canvas config admins only.
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ApiResponse<AIResponse> chat(
             @PathVariable String factoryId,
             @RequestHeader(value = "Authorization", required = false) String authorization,
@@ -123,6 +141,8 @@ public class CanvasAIController {
 
     @PostMapping("/apply-diffs")
     @Operation(summary = "批量应用 Plan Mode 生成的变更")
+    // Round 7a P0 fix: same exposure as /chat — plan-mode diffs execute canvas_* tools.
+    @RequireRole({"factory_super_admin", "permission_admin"})
     public ApiResponse<String> applyDiffs(
             @PathVariable String factoryId,
             @RequestHeader(value = "Authorization", required = false) String authorization,
@@ -134,6 +154,13 @@ public class CanvasAIController {
         for (Map<String, Object> diff : diffs) {
             String toolName = (String) diff.get("tool");
             if (toolName == null) continue;
+
+            try {
+                validateCanvasTool(toolName);
+            } catch (Exception e) {
+                errors.add(e.getMessage());
+                continue;
+            }
 
             Optional<ToolExecutor> executor = toolRegistry.getExecutor(toolName);
             if (executor.isEmpty()) {
@@ -200,6 +227,13 @@ public class CanvasAIController {
                 String desc = (String) action.getOrDefault("description", toolName);
                 @SuppressWarnings("unchecked")
                 Map<String, Object> params = (Map<String, Object>) action.getOrDefault("params", Map.of());
+
+                try {
+                    validateCanvasTool(toolName);
+                } catch (Exception e) {
+                    result.append("- ❌ ").append(desc).append(" (").append(e.getMessage()).append(")\n");
+                    continue;
+                }
 
                 Optional<ToolExecutor> executor = toolRegistry.getExecutor(toolName);
                 if (executor.isEmpty()) {

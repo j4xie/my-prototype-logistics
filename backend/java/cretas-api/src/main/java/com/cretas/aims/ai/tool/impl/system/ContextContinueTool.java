@@ -19,6 +19,10 @@ import java.util.*;
  *
  * Intent Code: CONTEXT_CONTINUE / CONTINUE_LAST_OPERATION / SYSTEM_RESUME_LAST_ACTION
  *
+ * factoryId 隔离豁免说明: conversationMemoryService.getContext(sessionId) 是
+ * 用户会话级 state (sessionId 来自当前 JWT userId + 登录会话), 不涉及跨工厂数据读取.
+ * 会话所属工厂由调用方 factoryId 隐式限定.
+ *
  * @author Cretas Team
  * @version 2.0.0
  * @since 2026-03-07

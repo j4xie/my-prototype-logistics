@@ -538,6 +538,7 @@ export type WSWorkersStackParamList = {
   WorkerAssign: { batchId?: string; batchNumber?: string };
   ClockIn: undefined;
   AttendanceHistory: { workerId?: number };
+  EmployeeProcessSegment: undefined;
 };
 
 export type WSEquipmentStackParamList = {

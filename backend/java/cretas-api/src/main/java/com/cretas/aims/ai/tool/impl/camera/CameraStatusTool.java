@@ -19,6 +19,10 @@ import java.util.stream.Collectors;
  *
  * Intent Code: CAMERA_STATUS
  *
+ * factoryId 隔离豁免说明: subscriptionService.getActiveSubscriptionCount() 是
+ * 进程级 in-memory counter (ConcurrentMap), 返回当前 JVM 活跃订阅总数,
+ * 不涉及跨工厂数据读取. 设备查询使用 deviceRepository.findByFactoryId 已带 factoryId 过滤.
+ *
  * @author Cretas Team
  * @version 1.0.0
  * @since 2026-03-07

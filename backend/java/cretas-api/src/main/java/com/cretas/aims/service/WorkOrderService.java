@@ -33,8 +33,14 @@ public interface WorkOrderService {
     Optional<WorkOrder> getWorkOrderById(String factoryId, String id);
 
     /**
-     * 根据工单编号查询
+     * 根据工单编号查询 (内部业务, 带 factoryId 校验, P0-1 MEDIUM fix).
      */
+    Optional<WorkOrder> getByOrderNumber(String factoryId, String orderNumber);
+
+    /**
+     * @deprecated 使用 {@link #getByOrderNumber(String, String)} 传 factoryId.
+     */
+    @Deprecated
     Optional<WorkOrder> getByOrderNumber(String orderNumber);
 
     /**

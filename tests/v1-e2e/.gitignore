@@ -1,0 +1,6 @@
+node_modules/
+test-results/
+playwright-report/
+.shared-state.json
+pg_dump_failure.sql
+*.tsbuildinfo

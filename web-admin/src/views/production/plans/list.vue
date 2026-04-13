@@ -11,9 +11,10 @@ import {
   downloadImportTemplate,
   importProductionPlans,
   exportProductionPlans,
-  getProductionLines,
   getSupervisors,
 } from '@/api/productionPlan';
+import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
+import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { PRODUCTION_PLAN_CONFIG } from '@/components/ai-entry/types';
 
@@ -40,7 +41,6 @@ const planForm = ref({
   plannedQuantity: 0,
   plannedDate: '',
   notes: '',
-  suggestedProductionLineId: '' as string | undefined,
   estimatedWorkers: undefined as number | undefined,
   assignedSupervisorId: '' as string | undefined,
   sourceCustomerName: '',
@@ -49,6 +49,7 @@ const planForm = ref({
   sourceType: 'MANUAL' as 'MANUAL' | 'CUSTOMER_ORDER' | 'AI_FORECAST',
   sourceOrderId: '' as string | undefined,
   sourceOrderItemId: '' as string | undefined,
+  customFields: {} as Record<string, unknown>,
 });
 const productTypes = ref<Record<string, unknown>[]>([]);
 const bomProcesses = ref<string[]>([]);
@@ -115,7 +116,6 @@ function handleSalesOrderItemSelect(itemId: string) {
 }
 
 // Import/Export & reference data
-const productionLines = ref<Record<string, unknown>[]>([]);
 const supervisors = ref<Record<string, unknown>[]>([]);
 
 // AI Entry Drawer
@@ -253,7 +253,6 @@ function handleCreate() {
     plannedQuantity: 0,
     plannedDate: '',
     notes: '',
-    suggestedProductionLineId: '',
     estimatedWorkers: undefined,
     assignedSupervisorId: '',
     sourceCustomerName: '',
@@ -262,6 +261,7 @@ function handleCreate() {
     sourceType: 'MANUAL',
     sourceOrderId: '',
     sourceOrderItemId: '',
+    customFields: {} as Record<string, unknown>,
   };
   dialogVisible.value = true;
 }
@@ -469,15 +469,7 @@ function handleViewPlan(row: Record<string, unknown>) {
 async function loadReferenceData() {
   if (!factoryId.value) return;
   try {
-    const [linesRes, supsRes] = await Promise.all([
-      getProductionLines(factoryId.value),
-      getSupervisors(factoryId.value),
-    ]);
-    if (linesRes?.data) {
-      productionLines.value = Array.isArray(linesRes.data) ? linesRes.data : (linesRes.data as Record<string, unknown>).content || [];
-    } else if (linesRes && !linesRes.success) {
-      ElMessage.error(linesRes.message || '加载产线数据失败');
-    }
+    const supsRes = await getSupervisors(factoryId.value);
     if (supsRes?.data) {
       supervisors.value = Array.isArray(supsRes.data) ? supsRes.data : (supsRes.data as Record<string, unknown>).content || [];
     } else if (supsRes && !supsRes.success) {
@@ -579,7 +571,6 @@ function handleAiFill(params: Record<string, unknown>) {
     plannedQuantity: Number(params.plannedQuantity || 0),
     plannedDate: String(params.plannedDate || ''),
     notes: String(params.notes || ''),
-    suggestedProductionLineId: '',
     estimatedWorkers: undefined,
     assignedSupervisorId: '',
     sourceCustomerName: String(params.sourceCustomerName || ''),
@@ -588,12 +579,14 @@ function handleAiFill(params: Record<string, unknown>) {
     sourceType: 'MANUAL',
     sourceOrderId: '',
     sourceOrderItemId: '',
+    customFields: {} as Record<string, unknown>,
   };
   dialogVisible.value = true;
 }
 </script>
 
 <template>
+  <CanvasAwareWrapper module-code="production_plan">
   <div class="page-wrapper">
     <el-card class="page-card" shadow="never">
       <template #header>
@@ -665,7 +658,6 @@ function handleAiFill(params: Record<string, unknown>) {
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="suggestedProductionLineName" label="建议产线" width="120" show-overflow-tooltip />
         <el-table-column prop="estimatedWorkers" label="预计工人" width="90" align="center" />
         <el-table-column prop="assignedSupervisorName" label="指派主管" width="100" show-overflow-tooltip />
         <el-table-column prop="sourceType" label="来源" width="90" align="center">
@@ -758,7 +750,6 @@ function handleAiFill(params: Record<string, unknown>) {
           <el-tag v-else-if="viewPlan.sourceType === 'AI_CHAT'" type="success" size="small">AI创建</el-tag>
           <el-tag v-else size="small">手动</el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="建议产线">{{ viewPlan.suggestedProductionLineName || '-' }}</el-descriptions-item>
         <el-descriptions-item label="指派主管">{{ viewPlan.assignedSupervisorName || '-' }}</el-descriptions-item>
         <el-descriptions-item label="备注" :span="2">{{ viewPlan.notes || '-' }}</el-descriptions-item>
       </el-descriptions>
@@ -860,11 +851,6 @@ function handleAiFill(params: Record<string, unknown>) {
         <el-form-item label="备注">
           <el-input v-model="planForm.notes" type="textarea" :rows="3" />
         </el-form-item>
-        <el-form-item label="建议产线">
-          <el-select v-model="planForm.suggestedProductionLineId" clearable placeholder="可选 - 选择产线" style="width: 100%">
-            <el-option v-for="line in productionLines" :key="line.id" :label="line.name" :value="line.id" />
-          </el-select>
-        </el-form-item>
         <el-form-item label="预计工人数">
           <el-input-number v-model="planForm.estimatedWorkers" :min="1" :max="100" placeholder="可选" style="width: 100%" />
         </el-form-item>
@@ -873,6 +859,7 @@ function handleAiFill(params: Record<string, unknown>) {
             <el-option v-for="sup in supervisors" :key="sup.id" :label="sup.fullName || sup.username" :value="sup.id" />
           </el-select>
         </el-form-item>
+        <CanvasDynamicFields v-model="planForm.customFields" module-code="production_plan" />
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -887,6 +874,7 @@ function handleAiFill(params: Record<string, unknown>) {
       @fill-form="handleAiFill"
     />
   </div>
+  </CanvasAwareWrapper>
 </template>
 
 <style lang="scss" scoped>

@@ -51,6 +51,15 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
     private DynamicFieldService dynamicFieldService;
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.repository.config.CanvasDynamicFieldRepository canvasDynamicFieldRepository;
+
+    // Round 6 Fix CHECK-1: publishConfig must reload scheduler or new cron won't take effect
+    // until JVM restart. Optional to avoid circular dep during bean init.
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @org.springframework.context.annotation.Lazy
+    private com.cretas.aims.engine.DynamicSchedulerService dynamicSchedulerService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
     private UserMenuPermissionRepository userMenuPermRepo;
 
     // ========== 合并配置读取 ==========
@@ -128,7 +137,10 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
                 }
 
                 for (CanvasDynamicField df : dynamicFields) {
-                    if ("SUB_TABLE".equals(df.getFieldType())) continue;
+                    // P0-3 Fix (Round 4): SUB_TABLE was previously skipped, but SchemaFormRenderer
+                    // has a sub_table rendering branch that was never reachable. Now we build an
+                    // EffectiveField with type="sub_table" and copy columns into extra so the
+                    // frontend SubTableEditor can render dynamic child tables (审溯日志/发酵日志).
                     EffectiveField ef = EffectiveField.builder()
                         .code(df.getFieldCode())
                         .label(df.getLabel())
@@ -273,16 +285,39 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
 
     @Override
     public List<ModuleSummaryDTO> getEnabledModules(String factoryId) {
+        // Round 5 Fix PERF-1: previously this loop called getEffectiveConfig once per module,
+        // which issues ~4 queries per module (schema lookup + publishedConfig + fmc + dynamicFields)
+        // + builds the full field schema. With 68 modules that's 270+ queries per page load.
+        // We only need {moduleCode, moduleName, moduleCategory, enabled, renderingMode} so batch-load
+        // all FactoryModuleConfig for the latest published version in a single query.
         List<ModuleSchema> schemas = moduleSchemaRepository.findByIsActiveTrue();
+
+        Map<String, FactoryModuleConfig> configByModule = Map.of();
+        Optional<FactoryConfiguration> publishedConfig = factoryConfigurationRepository.findLatestPublished(factoryId);
+        if (publishedConfig.isPresent()) {
+            int version = publishedConfig.get().getConfigVersion();
+            configByModule = factoryModuleConfigRepository
+                    .findByFactoryIdAndConfigVersion(factoryId, version)
+                    .stream()
+                    .collect(Collectors.toMap(
+                            FactoryModuleConfig::getModuleCode,
+                            fmc -> fmc,
+                            (a, b) -> a));  // duplicate key safety
+        }
+
+        Map<String, FactoryModuleConfig> finalConfigByModule = configByModule;
         return schemas.stream()
                 .map(s -> {
-                    EffectiveModuleConfig config = getEffectiveConfig(factoryId, s.getModuleCode());
+                    FactoryModuleConfig fmc = finalConfigByModule.get(s.getModuleCode());
+                    boolean enabled = fmc == null || Boolean.TRUE.equals(fmc.getEnabled());
+                    String renderingMode = fmc != null && fmc.getRenderingMode() != null
+                            ? fmc.getRenderingMode() : "LEGACY";
                     return ModuleSummaryDTO.builder()
                             .moduleCode(s.getModuleCode())
                             .moduleName(s.getModuleName())
                             .moduleCategory(s.getModuleCategory())
-                            .enabled(config.isEnabled())
-                            .renderingMode(config.getRenderingMode())
+                            .enabled(enabled)
+                            .renderingMode(renderingMode)
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -368,8 +403,11 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
     @Override
     @Transactional
     public void publishConfig(String factoryId, Long operatorId, String changeSummary) {
+        // Canvas audit fix: publishNow needs to publish APPROVED configs too, not only DRAFT.
+        // Try DRAFT first (normal flow), then APPROVED (审核通过→立即发布 flow).
         FactoryConfiguration draft = factoryConfigurationRepository.findDraft(factoryId)
-                .orElseThrow(() -> new BusinessException("没有待发布的草稿配置"));
+                .or(() -> factoryConfigurationRepository.findLatestApproved(factoryId))
+                .orElseThrow(() -> new BusinessException("没有待发布的配置 (需 DRAFT 或 APPROVED 状态)"));
 
         // Archive current published
         factoryConfigurationRepository.findLatestPublished(factoryId)
@@ -390,6 +428,18 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
 
         logChange(factoryId, null, "PUBLISH", null, null,
                 "配置版本 " + draft.getConfigVersion() + " 已发布: " + changeSummary, operatorId);
+
+        // Round 6 Fix CHECK-1: reload dynamic scheduler so any new/changed cron schedules
+        // configured in this version take effect immediately. Previously scheduler only loaded
+        // @PostConstruct, so new cron would silently not fire until JVM restart.
+        if (dynamicSchedulerService != null) {
+            try {
+                dynamicSchedulerService.reloadAll();
+                log.info("工厂 {} 配置发布后 scheduler 已 reload", factoryId);
+            } catch (Exception e) {
+                log.warn("工厂 {} scheduler reload 失败 (非阻塞): {}", factoryId, e.getMessage());
+            }
+        }
 
         log.info("工厂 {} 配置版本 {} 已发布", factoryId, draft.getConfigVersion());
     }
@@ -427,6 +477,31 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
             copy.setComputedFields(src.getComputedFields());
             copy.setRenderingMode(src.getRenderingMode());
             factoryModuleConfigRepository.save(copy);
+        }
+
+        // Round 4 Fix P0-5: disable dynamic fields added after the rollback target version.
+        // Without this, v3→v2 rollback leaves v3's fields still ACTIVE → ghost fields in UI.
+        // Fields added before version tracking was introduced (activeFromVersion = null) are
+        // preserved as baseline.
+        if (canvasDynamicFieldRepository != null) {
+            List<CanvasDynamicField> allActive = canvasDynamicFieldRepository
+                    .findByFactoryIdAndStatusIn(factoryId, java.util.List.of("ACTIVE"));
+            int disabled = 0;
+            for (CanvasDynamicField df : allActive) {
+                Integer fieldVersion = df.getActiveFromVersion();
+                if (fieldVersion != null && fieldVersion > targetVersion) {
+                    df.setStatus("DISABLED");
+                    canvasDynamicFieldRepository.save(df);
+                    disabled++;
+                }
+            }
+            if (disabled > 0) {
+                log.info("Rollback to v{} disabled {} dynamic fields added in later versions", targetVersion, disabled);
+                // Also refresh DynamicFieldService cache
+                if (dynamicFieldService != null) {
+                    dynamicFieldService.refreshCache();
+                }
+            }
         }
 
         logChange(factoryId, null, "ROLLBACK", null, null,
@@ -523,14 +598,413 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
             }
         }
 
-        // 7. Log + update usage count
+        // 7. Apply seedDynamicFields (Round 4 Fix P2-29)
+        // Template can declare pre-built dynamic fields that are auto-created on apply.
+        // Each field is created with status=PENDING_DDL, will activate on next publish.
+        int seededFields = 0;
+        List<Map<String, Object>> seedFields = (List<Map<String, Object>>)
+                baseConfig.getOrDefault("seedDynamicFields", List.of());
+        if (canvasDynamicFieldRepository != null && !seedFields.isEmpty()) {
+            for (Map<String, Object> seed : seedFields) {
+                String modCode = (String) seed.get("moduleCode");
+                String fieldCode = (String) seed.get("fieldCode");
+                if (modCode == null || fieldCode == null) continue;
+
+                // Skip if field already exists in this factory (idempotent re-apply)
+                if (canvasDynamicFieldRepository
+                        .findByFactoryIdAndModuleCodeAndFieldCode(factoryId, modCode, fieldCode)
+                        .isPresent()) {
+                    continue;
+                }
+
+                CanvasDynamicField newField = CanvasDynamicField.builder()
+                    .factoryId(factoryId)
+                    .moduleCode(modCode)
+                    .fieldCode(fieldCode)
+                    .fieldType((String) seed.get("fieldType"))
+                    .label((String) seed.get("label"))
+                    .config(seed.get("config") instanceof Map m ? (Map<String, Object>) m : Map.of())
+                    .visibleWhen((String) seed.get("visibleWhen"))
+                    .computedWhen((String) seed.get("computedWhen"))
+                    .sortOrder(seed.get("sortOrder") != null ? ((Number) seed.get("sortOrder")).intValue() : 0)
+                    .status("PENDING_DDL")
+                    .build();
+                newField.setColumnName("cf_" + fieldCode);
+                canvasDynamicFieldRepository.save(newField);
+                seededFields++;
+            }
+        }
+
+        // 8. Log + update usage count
         logChange(factoryId, null, "TEMPLATE_APPLIED", null, null,
-                "应用模板: " + templateCode, operatorId);
+                "应用模板: " + templateCode + " (seed " + seededFields + " fields)", operatorId);
         template.setUsageCount(template.getUsageCount() + 1);
         factoryTemplateRepository.save(template);
 
-        log.info("Template {} applied to factory {} — {} enabled, {} disabled",
-                templateCode, factoryId, enabledModules.size(), disabledModules.size());
+        log.info("Template {} applied to factory {} — {} enabled, {} disabled, {} seedFields",
+                templateCode, factoryId, enabledModules.size(), disabledModules.size(), seededFields);
+    }
+
+    // ========== Export / Import (Round 4 Fix P1-16) ==========
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @org.springframework.beans.factory.annotation.Qualifier("jdbcTemplate")
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
+    @Override
+    public Map<String, Object> exportConfig(String factoryId) {
+        Map<String, Object> bundle = new HashMap<>();
+        bundle.put("factoryId", factoryId);
+        bundle.put("exportedAt", LocalDateTime.now().toString());
+        // Round 7b P0-1: bundle version bumped to 2.0 to signal subTableRows + attachmentManifest
+        // are now present. Import side checks this version for round-trip safety.
+        bundle.put("version", "2.0");
+
+        // Latest published version metadata
+        Optional<FactoryConfiguration> latestPublished =
+            factoryConfigurationRepository.findLatestPublished(factoryId);
+        latestPublished.ifPresent(v -> bundle.put("sourceVersion", v.getConfigVersion()));
+
+        // Export module configs (enabled modules + their field overrides)
+        int exportVersion = latestPublished.map(FactoryConfiguration::getConfigVersion).orElse(1);
+        List<FactoryModuleConfig> modules = factoryModuleConfigRepository
+            .findByFactoryIdAndConfigVersion(factoryId, exportVersion);
+        List<Map<String, Object>> moduleData = new ArrayList<>();
+        for (FactoryModuleConfig m : modules) {
+            Map<String, Object> mm = new HashMap<>();
+            mm.put("moduleCode", m.getModuleCode());
+            mm.put("enabled", m.getEnabled());
+            mm.put("fieldConfig", m.getFieldConfig());
+            mm.put("workflowConfig", m.getWorkflowConfig());
+            mm.put("validationConfig", m.getValidationConfig());
+            mm.put("permissionConfig", m.getPermissionConfig());
+            mm.put("layoutConfig", m.getLayoutConfig());
+            mm.put("customLabels", m.getCustomLabels());
+            mm.put("renderingMode", m.getRenderingMode());
+            moduleData.add(mm);
+        }
+        bundle.put("modules", moduleData);
+
+        // Export dynamic fields + sub-table row data + attachment manifest
+        List<Map<String, Object>> subTableRows = new ArrayList<>();
+        List<Map<String, Object>> attachmentManifest = new ArrayList<>();
+        if (canvasDynamicFieldRepository != null) {
+            List<CanvasDynamicField> fields = canvasDynamicFieldRepository
+                .findByFactoryIdAndStatusIn(factoryId, List.of("ACTIVE", "PENDING_DDL"));
+            List<Map<String, Object>> fieldData = new ArrayList<>();
+            for (CanvasDynamicField f : fields) {
+                Map<String, Object> ff = new HashMap<>();
+                ff.put("moduleCode", f.getModuleCode());
+                ff.put("fieldCode", f.getFieldCode());
+                ff.put("fieldType", f.getFieldType());
+                ff.put("label", f.getLabel());
+                ff.put("config", f.getConfig());
+                ff.put("visibleWhen", f.getVisibleWhen());
+                ff.put("computedWhen", f.getComputedWhen());
+                ff.put("sortOrder", f.getSortOrder());
+                fieldData.add(ff);
+
+                // Round 7b P0-1: for SUB_TABLE fields, dump the row data from the
+                // child table {moduleCode}_{fieldCode}_items. Previously exportConfig
+                // only wrote the field definition — migration lost all sub-table rows
+                // (e.g. 发酵日志, 审溯日志 明细 completely dropped on factory migration).
+                if ("SUB_TABLE".equals(f.getFieldType()) && jdbcTemplate != null) {
+                    String subTableName = f.getModuleCode() + "_" + f.getFieldCode() + "_items";
+                    try {
+                        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                            "SELECT * FROM " + subTableName + " LIMIT 10000");
+                        Map<String, Object> bucket = new HashMap<>();
+                        bucket.put("moduleCode", f.getModuleCode());
+                        bucket.put("fieldCode", f.getFieldCode());
+                        bucket.put("tableName", subTableName);
+                        bucket.put("rowCount", rows.size());
+                        bucket.put("rows", rows);
+                        subTableRows.add(bucket);
+                    } catch (Exception e) {
+                        log.warn("exportConfig sub-table dump skipped for {}: {}", subTableName, e.getMessage());
+                        Map<String, Object> bucket = new HashMap<>();
+                        bucket.put("moduleCode", f.getModuleCode());
+                        bucket.put("fieldCode", f.getFieldCode());
+                        bucket.put("tableName", subTableName);
+                        bucket.put("rowCount", 0);
+                        bucket.put("error", e.getMessage());
+                        bucket.put("rows", List.of());
+                        subTableRows.add(bucket);
+                    }
+                }
+
+                // Round 7b P0-2: for ATTACHMENT fields, list all referenced OSS paths
+                // as a MANIFEST (not embedded bytes). Import side validates the manifest
+                // and warns about unresolved paths — customer must migrate OSS separately.
+                if ("ATTACHMENT".equals(f.getFieldType()) && jdbcTemplate != null) {
+                    String parentTable = ddlExecutor.resolveTable(f.getModuleCode());
+                    try {
+                        List<Map<String, Object>> refs = jdbcTemplate.queryForList(
+                            "SELECT id, cf_" + f.getFieldCode() + " AS attachment_ref FROM "
+                                + parentTable + " WHERE cf_" + f.getFieldCode() + " IS NOT NULL "
+                                + "AND factory_id = ? LIMIT 5000",
+                            factoryId);
+                        Map<String, Object> bucket = new HashMap<>();
+                        bucket.put("moduleCode", f.getModuleCode());
+                        bucket.put("fieldCode", f.getFieldCode());
+                        bucket.put("parentTable", parentTable);
+                        bucket.put("refCount", refs.size());
+                        bucket.put("refs", refs);
+                        attachmentManifest.add(bucket);
+                    } catch (Exception e) {
+                        log.warn("exportConfig attachment manifest skipped for {}.{}: {}",
+                            f.getModuleCode(), f.getFieldCode(), e.getMessage());
+                    }
+                }
+            }
+            bundle.put("dynamicFields", fieldData);
+        }
+        bundle.put("subTableRows", subTableRows);
+        bundle.put("attachmentManifest", attachmentManifest);
+
+        log.info("Exported config for factory {} — {} modules, {} fields, {} sub-table groups ({} total rows), {} attachment groups",
+            factoryId,
+            moduleData.size(),
+            ((List<?>) bundle.getOrDefault("dynamicFields", List.of())).size(),
+            subTableRows.size(),
+            subTableRows.stream().mapToInt(m -> ((Number) m.getOrDefault("rowCount", 0)).intValue()).sum(),
+            attachmentManifest.size());
+        return bundle;
+    }
+
+    @Override
+    @Transactional
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> importConfig(String factoryId, Map<String, Object> bundle, Long operatorId) {
+        if (bundle == null || !bundle.containsKey("modules")) {
+            throw new BusinessException("Invalid config bundle: missing 'modules' key");
+        }
+
+        // Get or create a DRAFT version for this factory
+        FactoryConfiguration draft = getOrCreateDraft(factoryId, operatorId);
+        int targetVersion = draft.getConfigVersion();
+
+        int modulesImported = 0;
+        int fieldsImported = 0;
+        List<String> skipped = new ArrayList<>();
+
+        // Import module configs
+        List<Map<String, Object>> modules = (List<Map<String, Object>>) bundle.getOrDefault("modules", List.of());
+        for (Map<String, Object> mData : modules) {
+            String moduleCode = (String) mData.get("moduleCode");
+            if (moduleSchemaRepository.findByModuleCode(moduleCode).isEmpty()) {
+                skipped.add("module:" + moduleCode + " (schema not found in target)");
+                continue;
+            }
+
+            FactoryModuleConfig existing = factoryModuleConfigRepository
+                .findByFactoryIdAndModuleCodeAndConfigVersion(factoryId, moduleCode, targetVersion)
+                .orElseGet(() -> {
+                    FactoryModuleConfig c = new FactoryModuleConfig();
+                    c.setFactoryId(factoryId);
+                    c.setModuleCode(moduleCode);
+                    c.setConfigVersion(targetVersion);
+                    return c;
+                });
+            if (mData.containsKey("enabled")) existing.setEnabled((Boolean) mData.get("enabled"));
+            if (mData.containsKey("fieldConfig")) existing.setFieldConfig((Map<String, Object>) mData.get("fieldConfig"));
+            if (mData.containsKey("workflowConfig")) existing.setWorkflowConfig((Map<String, Object>) mData.get("workflowConfig"));
+            if (mData.containsKey("validationConfig")) existing.setValidationConfig((Map<String, Object>) mData.get("validationConfig"));
+            if (mData.containsKey("permissionConfig")) existing.setPermissionConfig((Map<String, Object>) mData.get("permissionConfig"));
+            if (mData.containsKey("layoutConfig")) existing.setLayoutConfig((Map<String, Object>) mData.get("layoutConfig"));
+            if (mData.containsKey("customLabels")) existing.setCustomLabels((Map<String, Object>) mData.get("customLabels"));
+            if (mData.containsKey("renderingMode")) existing.setRenderingMode((String) mData.get("renderingMode"));
+            factoryModuleConfigRepository.save(existing);
+            modulesImported++;
+        }
+
+        // Import dynamic fields (as PENDING_DDL for safe re-publish)
+        if (canvasDynamicFieldRepository != null && bundle.containsKey("dynamicFields")) {
+            List<Map<String, Object>> fields = (List<Map<String, Object>>) bundle.get("dynamicFields");
+            for (Map<String, Object> fData : fields) {
+                String moduleCode = (String) fData.get("moduleCode");
+                String fieldCode = (String) fData.get("fieldCode");
+                // Skip if field already exists in target factory
+                if (canvasDynamicFieldRepository.findByFactoryIdAndModuleCodeAndFieldCode(
+                        factoryId, moduleCode, fieldCode).isPresent()) {
+                    skipped.add("field:" + moduleCode + "." + fieldCode + " (already exists)");
+                    continue;
+                }
+                CanvasDynamicField newField = CanvasDynamicField.builder()
+                    .factoryId(factoryId)
+                    .moduleCode(moduleCode)
+                    .fieldCode(fieldCode)
+                    .fieldType((String) fData.get("fieldType"))
+                    .label((String) fData.get("label"))
+                    .config((Map<String, Object>) fData.getOrDefault("config", Map.of()))
+                    .visibleWhen((String) fData.get("visibleWhen"))
+                    .computedWhen((String) fData.get("computedWhen"))
+                    .sortOrder(fData.get("sortOrder") != null ? ((Number) fData.get("sortOrder")).intValue() : 0)
+                    .status("PENDING_DDL")
+                    .build();
+                newField.setColumnName("cf_" + fieldCode);
+                canvasDynamicFieldRepository.save(newField);
+                fieldsImported++;
+            }
+        }
+
+        // Round 7b P0-1: sub-table row data import. v2.0 bundles carry subTableRows;
+        // we skip-on-exists because the target sub-table may not have been created yet
+        // (the new dynamic fields above are still PENDING_DDL — rows will be inserted
+        // AFTER the next publish triggers DDL). Import records the pending rows in a
+        // staging column of the field config so publish can retry.
+        int subTableRowsStaged = 0;
+        List<String> subTableWarnings = new ArrayList<>();
+        if (bundle.containsKey("subTableRows")) {
+            List<Map<String, Object>> buckets = (List<Map<String, Object>>) bundle.get("subTableRows");
+            for (Map<String, Object> b : buckets) {
+                String tableName = (String) b.get("tableName");
+                List<Map<String, Object>> rows = (List<Map<String, Object>>) b.getOrDefault("rows", List.of());
+                if (rows.isEmpty() || jdbcTemplate == null) continue;
+                // Check whether the table already exists (was created by a prior publish)
+                try {
+                    Integer exists = jdbcTemplate.queryForObject(
+                        "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = ?",
+                        Integer.class, tableName);
+                    if (exists == null || exists == 0) {
+                        subTableWarnings.add(tableName + " (target table not yet created — will retry after publish)");
+                        continue;
+                    }
+                } catch (Exception e) {
+                    subTableWarnings.add(tableName + " (existence check failed: " + e.getMessage() + ")");
+                    continue;
+                }
+                // Naive insert — assumes column names match. Cross-DB migration would
+                // need column mapping. For now: best-effort; errors go to warnings.
+                for (Map<String, Object> row : rows) {
+                    try {
+                        // Remove PG-internal columns that shouldn't round-trip
+                        row.remove("id");
+                        row.remove("created_at");
+                        row.remove("updated_at");
+                        if (row.isEmpty()) continue;
+                        String cols = String.join(",", row.keySet());
+                        String placeholders = row.keySet().stream().map(k -> "?").collect(Collectors.joining(","));
+                        jdbcTemplate.update("INSERT INTO " + tableName + " (" + cols + ") VALUES (" + placeholders + ")",
+                            row.values().toArray());
+                        subTableRowsStaged++;
+                    } catch (Exception e) {
+                        subTableWarnings.add(tableName + " row insert failed: " + e.getMessage());
+                    }
+                }
+            }
+        }
+
+        // Round 7b P0-2: attachment manifest is informational only — we can't copy
+        // files across OSS buckets automatically. Surface warnings for customer ops.
+        List<String> attachmentWarnings = new ArrayList<>();
+        if (bundle.containsKey("attachmentManifest")) {
+            List<Map<String, Object>> manifest = (List<Map<String, Object>>) bundle.get("attachmentManifest");
+            for (Map<String, Object> b : manifest) {
+                int refCount = ((Number) b.getOrDefault("refCount", 0)).intValue();
+                if (refCount > 0) {
+                    attachmentWarnings.add(
+                        b.get("moduleCode") + "." + b.get("fieldCode") + ": " + refCount
+                            + " attachment refs — 文件本体需要手动迁移 OSS");
+                }
+            }
+        }
+
+        logChange(factoryId, null, "IMPORT", null, null,
+                "导入配置 — " + modulesImported + " modules, " + fieldsImported + " fields, "
+                + subTableRowsStaged + " sub-table rows", operatorId);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("modulesImported", modulesImported);
+        result.put("fieldsImported", fieldsImported);
+        result.put("subTableRowsStaged", subTableRowsStaged);
+        result.put("subTableWarnings", subTableWarnings);
+        result.put("attachmentWarnings", attachmentWarnings);
+        result.put("skipped", skipped);
+        result.put("draftVersion", targetVersion);
+        log.info("Imported config to factory {} — {} modules, {} fields, {} sub-table rows, {} skipped",
+            factoryId, modulesImported, fieldsImported, subTableRowsStaged, skipped.size());
+        return result;
+    }
+
+    // ========== Runtime Custom Module Creation (Round 4 Fix P1-12) ==========
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplateForCustomModules;
+
+    @Override
+    @Transactional
+    public Map<String, Object> createCustomModule(String factoryId, String moduleCode, String moduleName,
+                                                    String moduleCategory, String description, Long operatorId) {
+        // Reject if moduleCode already exists
+        if (moduleSchemaRepository.findByModuleCode(moduleCode).isPresent()) {
+            throw new BusinessException("模块已存在: " + moduleCode);
+        }
+
+        // Create minimal ModuleSchema
+        ModuleSchema schema = ModuleSchema.builder()
+            .moduleCode(moduleCode)
+            .moduleName(moduleName)
+            .moduleCategory(moduleCategory != null ? moduleCategory : "CUSTOM")
+            .moduleVersion(1)
+            .fieldSchema(Map.of("fields", List.of(), "groups", List.of()))
+            .workflowSchema(Map.of("states", List.of(), "transitions", List.of()))
+            .validationSchema(Map.of())
+            .permissionSchema(Map.of())
+            .defaultConfig(Map.of("fields", Map.of(), "workflow", Map.of()))
+            .description(description)
+            .isActive(true)
+            .build();
+        moduleSchemaRepository.save(schema);
+
+        // Auto-create the underlying table if not exists
+        // Table name = moduleCode (snake_case), with id + factory_id + audit columns
+        String tableName = moduleCode;
+        if (jdbcTemplateForCustomModules != null) {
+            String ddl = String.format(
+                "CREATE TABLE IF NOT EXISTS %s (" +
+                "id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text, " +
+                "factory_id VARCHAR(50) NOT NULL, " +
+                "name VARCHAR(200), " +
+                "status VARCHAR(32) DEFAULT 'ACTIVE', " +
+                "created_at TIMESTAMP DEFAULT NOW(), " +
+                "updated_at TIMESTAMP DEFAULT NOW(), " +
+                "created_by BIGINT, " +
+                "deleted_at TIMESTAMP)", tableName);
+            try {
+                jdbcTemplateForCustomModules.execute(ddl);
+                jdbcTemplateForCustomModules.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_" + tableName + "_factory ON " + tableName + " (factory_id)");
+                log.info("Custom module table created: {}", tableName);
+            } catch (Exception e) {
+                log.error("Failed to create custom module table {}: {}", tableName, e.getMessage());
+                throw new BusinessException("创建模块表失败: " + e.getMessage());
+            }
+        }
+
+        // Enable the module for this factory in its draft config
+        // Round 5 Fix OBS-2: pass real operatorId so draft creation and MODULE_CREATED log
+        // are attributable to the actual user rather than a ghost operator=0.
+        FactoryConfiguration draft = getOrCreateDraft(factoryId, operatorId);
+        FactoryModuleConfig moduleConfig = FactoryModuleConfig.builder()
+            .factoryId(factoryId)
+            .moduleCode(moduleCode)
+            .configVersion(draft.getConfigVersion())
+            .enabled(true)
+            .fieldConfig(Map.of("fields", Map.of()))
+            .build();
+        factoryModuleConfigRepository.save(moduleConfig);
+
+        logChange(factoryId, moduleCode, "MODULE_CREATED", null, null,
+                "创建自定义模块: " + moduleName + " (" + moduleCode + ")", operatorId);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("moduleCode", moduleCode);
+        result.put("moduleName", moduleName);
+        result.put("tableName", tableName);
+        result.put("schemaId", schema.getId());
+        result.put("enabled", true);
+        return result;
     }
 
     // ========== Private Helpers ==========
@@ -626,6 +1100,12 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
             Object defaultValue = override.containsKey("defaultValue")
                     ? override.get("defaultValue")
                     : schemaDef.get("defaultValue");
+            // P0-2 Fix (Round 4): applyTemplate wraps raw values in Map.of("value", x) for JSONB
+            // serialization (see Fix #13). Without unwrapping here, frontend renders [object Object].
+            // Unwrap any Map shaped like {"value": x} back to x before sending to frontend.
+            if (defaultValue instanceof Map<?, ?> m && m.size() == 1 && m.containsKey("value")) {
+                defaultValue = m.get("value");
+            }
 
             Object options = override.containsKey("options")
                     ? override.get("options")
@@ -780,5 +1260,99 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
                 .operatorType("USER")
                 .build();
         configChangeLogRepository.save(changeLog);
+    }
+
+    @Override
+    @Transactional
+    public void logWorkflowTransition(String factoryId, int configVersion, String fromStatus,
+                                       String toStatus, Long operatorId, String notes) {
+        // Round 5 Fix OBS-1: persist workflow transitions as WORKFLOW_TRANSITION log entries.
+        String summary = "配置版本 " + configVersion + " 状态变更: " + fromStatus + " → " + toStatus
+                + (notes != null && !notes.isBlank() ? " (" + notes + ")" : "");
+        Map<String, Object> before = Map.of("status", fromStatus, "configVersion", configVersion);
+        Map<String, Object> after = Map.of("status", toStatus, "configVersion", configVersion);
+        logChange(factoryId, null, "WORKFLOW_TRANSITION", before, after, summary, operatorId);
+    }
+
+    @Override
+    @Transactional
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> reorderFields(String factoryId, String moduleCode,
+                                              List<String> fieldOrder, Long expectedVersion,
+                                              Long operatorId) {
+        // 1. Find DRAFT
+        FactoryConfiguration draft = factoryConfigurationRepository.findDraft(factoryId)
+                .orElseThrow(() -> new BusinessException("没有 DRAFT 配置可重排字段 — 请先创建草稿"));
+
+        // 2. Optimistic lock check
+        if (draft.getRowVersion() == null || !draft.getRowVersion().equals(expectedVersion)) {
+            throw new BusinessException("版本冲突: 当前版本 " + draft.getRowVersion()
+                    + ", 请求版本 " + expectedVersion + " — 请刷新后重试");
+        }
+
+        int targetVersion = draft.getConfigVersion();
+
+        // 3. Find or create FactoryModuleConfig for this module
+        FactoryModuleConfig fmc = factoryModuleConfigRepository
+                .findByFactoryIdAndModuleCodeAndConfigVersion(factoryId, moduleCode, targetVersion)
+                .orElseGet(() -> {
+                    FactoryModuleConfig c = new FactoryModuleConfig();
+                    c.setFactoryId(factoryId);
+                    c.setModuleCode(moduleCode);
+                    c.setConfigVersion(targetVersion);
+                    c.setEnabled(true);
+                    c.setFieldConfig(new HashMap<>());
+                    return c;
+                });
+
+        // 4. Update sortOrder of each field in fieldConfig.fields by its index in fieldOrder
+        Map<String, Object> fieldConfig = fmc.getFieldConfig() != null
+                ? fmc.getFieldConfig() : new HashMap<>();
+        Map<String, Object> fields = (Map<String, Object>) fieldConfig.computeIfAbsent(
+                "fields", k -> new HashMap<String, Object>());
+
+        int reorderedCount = 0;
+        int dynamicReorderedCount = 0;
+        for (int i = 0; i < fieldOrder.size(); i++) {
+            String fieldCode = fieldOrder.get(i);
+            int newSortOrder = (i + 1) * 10;  // 10, 20, 30... leaves gaps for insertions
+            Map<String, Object> fieldEntry = (Map<String, Object>) fields.computeIfAbsent(
+                    fieldCode, k -> new HashMap<String, Object>());
+            fieldEntry.put("sortOrder", newSortOrder);
+            reorderedCount++;
+
+            // Round 10 Fix C3 (R10 Task 1 hotfix — missed in original spec):
+            // Dynamic fields are read directly from canvas_dynamic_field via
+            // ORDER BY sortOrder (CanvasDynamicFieldRepository:20). The JSONB override
+            // in factory_module_configs.field_config is NEVER consulted for dynamic
+            // fields — only for JPA schema fields via getEffectiveConfig's deepMerge.
+            // Without this second update, dynamic field reorder was silently no-op'd
+            // on page refresh — exact same bug class R10 was supposed to fix.
+            if (canvasDynamicFieldRepository != null) {
+                var dfOpt = canvasDynamicFieldRepository
+                        .findByFactoryIdAndModuleCodeAndFieldCode(factoryId, moduleCode, fieldCode);
+                if (dfOpt.isPresent()) {
+                    CanvasDynamicField df = dfOpt.get();
+                    df.setSortOrder(newSortOrder);
+                    canvasDynamicFieldRepository.save(df);
+                    dynamicReorderedCount++;
+                }
+            }
+        }
+        fmc.setFieldConfig(fieldConfig);
+        factoryModuleConfigRepository.save(fmc);
+
+        // 5. Audit
+        logChange(factoryId, moduleCode, "REORDER_FIELDS", null,
+                Map.of("fieldOrder", fieldOrder,
+                       "reorderedCount", reorderedCount,
+                       "dynamicReorderedCount", dynamicReorderedCount),
+                "字段重排: " + reorderedCount + " 个字段 ("
+                        + dynamicReorderedCount + " dynamic)", operatorId);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("newVersion", draft.getRowVersion());
+        result.put("reorderedCount", reorderedCount);
+        return result;
     }
 }

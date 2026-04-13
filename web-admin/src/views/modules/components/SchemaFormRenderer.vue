@@ -241,6 +241,28 @@ watch(
                 style="width: 220px"
               />
 
+              <!-- Round 4 Fix P1-11: datetime with minute precision -->
+              <el-date-picker
+                v-else-if="field.type === 'datetime'"
+                v-model="formData[field.code]"
+                type="datetime"
+                value-format="YYYY-MM-DD HH:mm:ss"
+                :disabled="isReadonly(field)"
+                :placeholder="`请选择${getLabel(field)}`"
+                style="width: 240px"
+              />
+
+              <!-- Round 4 Fix P1-11: textarea for long-form notes -->
+              <el-input
+                v-else-if="field.type === 'textarea' || field.type === 'longtext'"
+                v-model="formData[field.code]"
+                type="textarea"
+                :rows="3"
+                :disabled="isReadonly(field)"
+                :placeholder="`请输入${getLabel(field)}`"
+                style="width: 100%"
+              />
+
               <!-- select -->
               <el-select
                 v-else-if="field.type === 'select'"

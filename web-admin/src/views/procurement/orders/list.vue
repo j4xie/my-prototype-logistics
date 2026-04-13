@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
@@ -10,6 +10,8 @@ import { Plus, Search, Refresh, ChatDotRound } from '@element-plus/icons-vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { PURCHASE_ORDER_CONFIG } from '@/components/ai-entry/types';
 import { formatAmount } from '@/utils/tableFormatters';
+import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
+import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -30,7 +32,8 @@ const form = ref({
   expectedDeliveryDate: '',
   remark: '',
   relatedSalesOrderId: '',
-  items: [{ materialTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }]
+  items: [{ materialTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
+  customFields: {} as Record<string, unknown>,
 });
 const suppliers = ref<Record<string, unknown>[]>([]);
 const materials = ref<Record<string, unknown>[]>([]);
@@ -46,12 +49,20 @@ const statusMap: Record<string, { text: string; type: string }> = {
   CLOSED: { text: '已关闭', type: 'info' },
 };
 
+// D13: Dirty form guard — warn user before leaving with unsaved changes
+const isDirty = ref(false);
+watch(dialogVisible, (val) => { isDirty.value = val; });
+function handleBeforeUnload(e: BeforeUnloadEvent) {
+  if (isDirty.value) { e.preventDefault(); e.returnValue = ''; }
+}
 onMounted(() => {
   loadData();
   loadSuppliers();
   loadMaterials();
   loadSalesOrders();
+  window.addEventListener('beforeunload', handleBeforeUnload);
 });
+onBeforeUnmount(() => { window.removeEventListener('beforeunload', handleBeforeUnload); });
 
 async function loadData() {
   if (!factoryId.value) return;
@@ -109,9 +120,14 @@ function removeItem(index: number) {
   if (form.value.items.length > 1) form.value.items.splice(index, 1);
 }
 
+const submitting = ref(false);
+
 async function handleCreate() {
+  if (submitting.value) return; // P-2: prevent double-submit
   if (!form.value.supplierId) return ElMessage.warning('请选择供应商');
   if (form.value.items.some(i => !i.materialTypeId)) return ElMessage.warning('请选择所有原料');
+  if (form.value.items.some(i => !i.unit)) return ElMessage.warning('请填写所有明细的单位');
+  submitting.value = true;
   try {
     // Build remark with sales order reference if selected
     let remark = form.value.remark || '';
@@ -137,11 +153,13 @@ async function handleCreate() {
     }
   } catch (error) {
     ElMessage.error('创建失败');
+  } finally {
+    submitting.value = false;
   }
 }
 
 function resetForm() {
-  form.value = { supplierId: '', purchaseType: 'DIRECT', expectedDeliveryDate: '', remark: '', relatedSalesOrderId: '', items: [{ materialTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }] };
+  form.value = { supplierId: '', purchaseType: 'DIRECT', expectedDeliveryDate: '', remark: '', relatedSalesOrderId: '', items: [{ materialTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }], customFields: {} as Record<string, unknown> };
 }
 
 async function handleAction(orderId: string, action: string) {
@@ -209,6 +227,7 @@ function handleAiFill(params: Record<string, unknown>) {
 </script>
 
 <template>
+  <CanvasAwareWrapper module-code="purchase_order">
   <div class="page-wrapper">
     <el-card class="page-card" shadow="never">
       <template #header>
@@ -306,6 +325,7 @@ function handleAiFill(params: Record<string, unknown>) {
         <el-form-item label="备注">
           <el-input v-model="form.remark" type="textarea" :rows="2" />
         </el-form-item>
+        <CanvasDynamicFields v-model="form.customFields" module-code="purchase_order" />
         <el-divider>{{ label('rawMaterial') }}明细</el-divider>
         <div class="item-row item-header">
           <span style="width: 200px">原料名称</span>
@@ -331,7 +351,7 @@ function handleAiFill(params: Record<string, unknown>) {
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleCreate">创建</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleCreate">创建</el-button>
       </template>
     </el-dialog>
 
@@ -342,6 +362,7 @@ function handleAiFill(params: Record<string, unknown>) {
       @fill-form="handleAiFill"
     />
   </div>
+  </CanvasAwareWrapper>
 </template>
 
 <style lang="scss" scoped>

@@ -36,6 +36,15 @@ public class QualityInspectionServiceImpl implements QualityInspectionService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
 
+    /**
+     * Round 10 Task 4 — Canvas Integration Template 5th service to receive this hook.
+     * Writes factory-configured dynamic fields into the cf_* columns on
+     * quality_inspections so downstream readers (reports, trigger chains, exports)
+     * can read them without cracking open the legacy JSONB custom_fields column.
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
+
     private void runConfiguredValidation(String factoryId, String operation, java.util.Map<String, Object> context) {
         if (validationRuleEvaluator == null) return;
         try {
@@ -106,6 +115,20 @@ public class QualityInspectionServiceImpl implements QualityInspectionService {
 
         log.info("质量检验记录创建成功: inspectionId={}", saved.getId());
 
+        // Round 10 Fix Task 4 (R8-α Gap #3 per-module template): persist Canvas V3
+        // dynamic fields into cf_* columns on quality_inspections. Customer-configured
+        // fields (二次复检结果, 异常照片链接, 设备状态标记, etc.) now land in dedicated
+        // columns — previously they only lived in the legacy JSONB custom_fields column
+        // which downstream readers don't consult. Silent failure here must not break
+        // QI creation or downstream alert publishing.
+        if (dynamicFieldService != null && saved.getCustomFields() != null && !saved.getCustomFields().isEmpty()) {
+            try {
+                dynamicFieldService.setDynamicFields(factoryId, "quality_inspection", saved.getId(), saved.getCustomFields());
+            } catch (Exception e) {
+                log.warn("Canvas dynamic fields save failed for quality inspection {}: {}", saved.getId(), e.getMessage());
+            }
+        }
+
         // QI FAIL → 自动创建告警 + 发送通知
         if ("FAIL".equalsIgnoreCase(saved.getResult())) {
             createQualityFailAlert(saved);
@@ -147,10 +170,27 @@ public class QualityInspectionServiceImpl implements QualityInspectionService {
             existing.setNotes(inspection.getNotes());
         }
 
+        // R13: merge incoming customFields into existing before save
+        if (inspection.getCustomFields() != null && !inspection.getCustomFields().isEmpty()) {
+            java.util.Map<String, Object> merged = new java.util.HashMap<>(
+                    existing.getCustomFields() != null ? existing.getCustomFields() : java.util.Map.of());
+            merged.putAll(inspection.getCustomFields());
+            existing.setCustomFields(merged);
+        }
+
         QualityInspection updated = qualityInspectionRepository.save(existing);
+
+        // R13: persist dynamic fields on update path (R10 T4 only did create)
+        if (dynamicFieldService != null && updated.getCustomFields() != null && !updated.getCustomFields().isEmpty()) {
+            try {
+                dynamicFieldService.setDynamicFields(factoryId, "quality_inspection", updated.getId(), updated.getCustomFields());
+            } catch (Exception e) {
+                log.warn("Canvas dynamic fields save failed for QI update {}: {}", updated.getId(), e.getMessage());
+            }
+        }
+
         log.info("质量检验记录更新成功: inspectionId={}", updated.getId());
 
-        // 更新为 FAIL 时也触发告警
         if ("FAIL".equalsIgnoreCase(updated.getResult())) {
             createQualityFailAlert(updated);
         }

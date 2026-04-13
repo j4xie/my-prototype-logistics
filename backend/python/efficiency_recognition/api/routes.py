@@ -33,7 +33,7 @@ router = APIRouter(tags=["人效识别"])
 # 配置项（从环境变量读取）
 AUTO_SUBMIT_DEFAULT = os.getenv("AUTO_SUBMIT_DEFAULT", "false").lower() == "true"
 DEFAULT_FACTORY_ID = os.getenv("DEFAULT_FACTORY_ID", "F001")
-BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL", "http://139.196.165.140:10010")
+BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL", "http://localhost:10010")
 
 # 全局实例
 _analyzer: Optional[VideoEfficiencyAnalyzer] = None

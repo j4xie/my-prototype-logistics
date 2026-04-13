@@ -36,8 +36,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useCanvasEditor } from './composables/useCanvasEditor'
-import { applyTemplate } from '@/api/canvasApi'
-import { ElMessage } from 'element-plus'
+import { applyTemplate, submitForReview, publishNow } from '@/api/canvasApi'
+import { saveModuleConfig } from '@/api/configApi'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import type { OnboardingState } from '@/types/canvas'
 import AIChatPanel from './components/AIChatPanel.vue'
 import OnboardingStep1Template from './components/OnboardingStep1Template.vue'
@@ -74,10 +75,42 @@ async function nextStep() {
   step.value++
 }
 
-function finish() {
-  isOnboarding.value = false
-  emit('complete')
-  ElMessage.success('配置已创建，进入编辑器')
+async function finish() {
+  // Round 4 Fix P1-19: real API calls instead of just closing wizard.
+  // Flow: for each selected enabled module → saveModuleConfig to persist enabled state →
+  //       (optional) submit for review → immediate publish → mark onboarding complete.
+  try {
+    const confirm = await ElMessageBox.confirm(
+      '完成向导将创建配置草稿并立即发布。是否继续？',
+      '确认发布',
+      { type: 'warning', confirmButtonText: '发布', cancelButtonText: '取消' }
+    ).catch(() => false)
+    if (!confirm) return
+
+    // Persist enabled modules as a draft
+    for (const moduleCode of state.value.enabledModules) {
+      try {
+        await saveModuleConfig(factoryId.value, moduleCode, { enabled: true })
+      } catch (e) {
+        console.warn(`Failed to persist ${moduleCode}:`, e)
+      }
+    }
+
+    // Try to publish — gracefully degrades if user lacks permission
+    try {
+      await publishNow(factoryId.value)
+      ElMessage.success('配置已发布')
+    } catch (e: any) {
+      // Not all roles can publish-now; leave as DRAFT for super_admin to approve later
+      console.warn('Auto-publish failed, leaving as DRAFT:', e?.message)
+      ElMessage.info('配置已保存为草稿，请联系管理员审核发布')
+    }
+
+    isOnboarding.value = false
+    emit('complete')
+  } catch (e: any) {
+    ElMessage.error('完成向导失败: ' + (e?.message || 'unknown'))
+  }
 }
 </script>
 

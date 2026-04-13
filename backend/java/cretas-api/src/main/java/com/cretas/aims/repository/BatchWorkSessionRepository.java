@@ -113,8 +113,25 @@ public interface BatchWorkSessionRepository extends JpaRepository<BatchWorkSessi
         @Param("endTime") LocalDateTime endTime);
 
     /**
-     * Count check-ins within a time range (for daily summary)
+     * Count check-ins within a time range scoped to a factory (P0-1 MEDIUM fix).
+     *
+     * BatchWorkSession itself has no factoryId column — scope is enforced via
+     * its parent ProductionBatch. Spring Data cannot derive this from the
+     * method name, so we use an explicit JPQL join.
      */
+    @Query("SELECT COUNT(bws) FROM BatchWorkSession bws " +
+           "JOIN ProductionBatch pb ON bws.batchId = pb.id " +
+           "WHERE pb.factoryId = :factoryId " +
+           "AND bws.checkInTime BETWEEN :start AND :end")
+    long countByFactoryIdAndCheckInTimeBetween(
+        @Param("factoryId") String factoryId,
+        @Param("start") LocalDateTime start,
+        @Param("end") LocalDateTime end);
+
+    /**
+     * @deprecated 全局计数, 跨工厂不准确. 使用 {@link #countByFactoryIdAndCheckInTimeBetween}.
+     */
+    @Deprecated
     long countByCheckInTimeBetween(LocalDateTime start, LocalDateTime end);
 
     /**

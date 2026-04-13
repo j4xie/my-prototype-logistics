@@ -1,12 +1,14 @@
 package com.cretas.aims.service.rd.impl;
 
-import com.cretas.aims.entity.rd.RdRequest;
 import com.cretas.aims.entity.rd.ProductSample;
+import com.cretas.aims.entity.rd.ProductSampleTrackingRecord;
 import com.cretas.aims.entity.rd.QuotationTask;
+import com.cretas.aims.entity.rd.RdRequest;
 import com.cretas.aims.event.SampleApprovedEvent;
-import com.cretas.aims.repository.rd.RdRequestRepository;
 import com.cretas.aims.repository.rd.ProductSampleRepository;
+import com.cretas.aims.repository.rd.ProductSampleTrackingRecordRepository;
 import com.cretas.aims.repository.rd.QuotationTaskRepository;
+import com.cretas.aims.repository.rd.RdRequestRepository;
 import com.cretas.aims.service.rd.ProductSampleService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ public class ProductSampleServiceImpl implements ProductSampleService {
     private final QuotationTaskRepository quotationTaskRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
+    private final ProductSampleTrackingRecordRepository trackingRecordRepository;
 
     // ==================== 研发需求 ====================
 
@@ -109,6 +112,20 @@ public class ProductSampleServiceImpl implements ProductSampleService {
     @Transactional
     public ProductSample updateProgress(String factoryId, String sampleId, String note, String photoUrl) {
         ProductSample sample = getSample(factoryId, sampleId);
+
+        // P1-8 双写: 优先写新独立 table product_sample_tracking_records (支持审计/导出)
+        try {
+            ProductSampleTrackingRecord record = new ProductSampleTrackingRecord();
+            record.setFactoryId(factoryId);
+            record.setSampleId(sampleId);
+            record.setRecordedAt(LocalDateTime.now());
+            record.setContent(note);
+            record.setAttachmentUrl(photoUrl);
+            trackingRecordRepository.save(record);
+        } catch (Exception e) {
+            log.warn("[P1-8] tracking record 独立 table 写入失败, 继续写老 progressNotes JSON: {}", e.getMessage());
+        }
+
         try {
             List<Map<String, String>> notes = objectMapper.readValue(
                     sample.getProgressNotes() != null ? sample.getProgressNotes() : "[]", List.class);
@@ -232,6 +249,11 @@ public class ProductSampleServiceImpl implements ProductSampleService {
     public Page<QuotationTask> listQuotations(String factoryId, String status, Pageable pageable) {
         if (status != null) return quotationTaskRepository.findByFactoryIdAndStatusAndDeletedAtIsNull(factoryId, status, pageable);
         return quotationTaskRepository.findByFactoryIdAndDeletedAtIsNull(factoryId, pageable);
+    }
+
+    @Override
+    public List<ProductSampleTrackingRecord> getTrackingRecords(String factoryId, String sampleId) {
+        return trackingRecordRepository.findByFactoryIdAndSampleIdAndDeletedAtIsNullOrderByRecordedAtDesc(factoryId, sampleId);
     }
 
     private String genNumber(String prefix) {

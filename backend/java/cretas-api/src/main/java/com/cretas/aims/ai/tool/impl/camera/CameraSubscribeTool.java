@@ -17,6 +17,10 @@ import java.util.*;
  *
  * Intent Code: CAMERA_SUBSCRIBE
  *
+ * factoryId 隔离豁免说明: subscribeDevice/getDevice 已迁移到 factoryId-aware
+ * overload (P0-1 fix commit 79b76adff). 剩余 getActiveSubscriptionCount() 和
+ * getActiveSubscriptionIds() 是进程级 in-memory state, 不跨工厂.
+ *
  * @author Cretas Team
  * @version 1.0.0
  * @since 2026-03-07
@@ -69,19 +73,14 @@ public class CameraSubscribeTool extends AbstractBusinessTool {
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
         log.info("执行摄像头告警订阅 - 工厂ID: {}, 参数: {}", factoryId, params);
 
-        // TODO(W1 D3 — camera module systemic fix): IsapiDeviceService.getDevice() and
-        // subscriptionService.subscribeDevice() both lack factoryId scoping. Tracking
-        // via MEDIUM batch fix together with CameraDetailTool / CameraStatusTool /
-        // CameraStreamsTool / CameraSyncTool / CameraTestConnectionTool (5 MEDIUMs in camera domain).
-        // Safe for now: customer demo path does not use camera subscription tools.
         String deviceId = getString(params, "deviceId");
 
         Map<String, Object> result = new HashMap<>();
 
         if (deviceId != null && !deviceId.isEmpty()) {
-            // 订阅单个设备
-            subscriptionService.subscribeDevice(deviceId);
-            IsapiDevice device = deviceService.getDevice(deviceId);
+            // 订阅单个设备 (P0-1: 跨工厂隔离校验)
+            subscriptionService.subscribeDevice(factoryId, deviceId);
+            IsapiDevice device = deviceService.getDevice(factoryId, deviceId);
 
             result.put("message", "已开启告警订阅: " + device.getDeviceName());
             result.put("deviceId", deviceId);

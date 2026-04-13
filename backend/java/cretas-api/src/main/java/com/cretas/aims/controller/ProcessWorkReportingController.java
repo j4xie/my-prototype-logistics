@@ -77,6 +77,12 @@ public class ProcessWorkReportingController {
             @PathVariable String factoryId,
             @RequestBody Map<String, Object> body,
             @RequestAttribute("userId") Long workerId) {
+        if (body.get("processTaskId") == null) {
+            return ApiResponse.error("缺少必填字段: processTaskId");
+        }
+        if (body.get("outputQuantity") == null) {
+            return ApiResponse.error("缺少必填字段: outputQuantity");
+        }
         String processTaskId = (String) body.get("processTaskId");
         String reporterName = (String) body.getOrDefault("reporterName", "");
         BigDecimal outputQuantity = new BigDecimal(body.get("outputQuantity").toString());
@@ -96,6 +102,12 @@ public class ProcessWorkReportingController {
             @PathVariable String factoryId,
             @RequestBody Map<String, Object> body,
             @RequestAttribute("userId") Long workerId) {
+        if (body.get("processTaskId") == null) {
+            return ApiResponse.error("缺少必填字段: processTaskId");
+        }
+        if (body.get("outputQuantity") == null) {
+            return ApiResponse.error("缺少必填字段: outputQuantity");
+        }
         String processTaskId = (String) body.get("processTaskId");
         String reporterName = (String) body.getOrDefault("reporterName", "");
         BigDecimal outputQuantity = new BigDecimal(body.get("outputQuantity").toString());

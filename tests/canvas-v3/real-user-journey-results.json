@@ -1,0 +1,107 @@
+{
+  "timestamp": "2026-04-11T02:54:47.354Z",
+  "summary": {
+    "total": 10,
+    "pass": 10,
+    "fail": 0,
+    "warn": 0,
+    "skip": 0
+  },
+  "results": [
+    {
+      "id": "J1",
+      "description": "真实用户登录",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/dashboard",
+        "screenshot": "tests/canvas-v3/screenshots/real-journey/j1-login-form.png"
+      }
+    },
+    {
+      "id": "J2",
+      "description": "Canvas 菜单项在 DOM 中存在",
+      "status": "PASS",
+      "evidence": {
+        "detail": "侧边栏可发现 Canvas 入口"
+      }
+    },
+    {
+      "id": "J3",
+      "description": "打开 Canvas 编辑器页面",
+      "status": "PASS",
+      "evidence": {
+        "detail": "Canvas 页面加载成功",
+        "url": "http://139.196.165.140:8086/canvas-editor"
+      }
+    },
+    {
+      "id": "J4",
+      "description": "打开销售订单动态模块页 /modules/sales_order",
+      "status": "PASS",
+      "evidence": {
+        "detail": "title=true newButton=true",
+        "url": "http://139.196.165.140:8086/modules/sales_order"
+      }
+    },
+    {
+      "id": "J5",
+      "description": "动态字段在创建表单中渲染",
+      "status": "PASS",
+      "evidence": {
+        "detail": "找到 4/5 动态字段: {\"客户等级\":true,\"交货优先级\":true,\"预期毛利率\":false,\"合同附件\":true,\"自定义字段\":true}",
+        "foundFields": [
+          "客户等级",
+          "交货优先级",
+          "合同附件",
+          "自定义字段"
+        ]
+      }
+    },
+    {
+      "id": "J6",
+      "description": "动态字段类型正确 (select/input/upload)",
+      "status": "PASS",
+      "evidence": {
+        "customerLevelType": "select",
+        "attachmentType": "upload",
+        "totalFormItems": 22
+      }
+    },
+    {
+      "id": "J7",
+      "description": "Canvas 编辑器显示版本状态",
+      "status": "PASS",
+      "evidence": {
+        "detail": "版本标签可见",
+        "hasVersionText": true
+      }
+    },
+    {
+      "id": "J8",
+      "description": "saveDraft/newDraft 触发真实 API 调用",
+      "status": "PASS",
+      "evidence": {
+        "detail": "PUT http://139.196.165.140:8086/api/mobile/FOOD_3101_038/config/modules/sales_order",
+        "buttonFound": true
+      }
+    },
+    {
+      "id": "J9",
+      "description": "历史 customFields 数据在 DB 中可查询",
+      "status": "PASS",
+      "evidence": {
+        "detail": "8 个订单包含 cf_customer_level 值",
+        "count": 8
+      }
+    },
+    {
+      "id": "J10",
+      "description": "无关键 Console 错误",
+      "status": "PASS",
+      "evidence": {
+        "totalErrors": 1,
+        "criticalCount": 0
+      }
+    }
+  ]
+}

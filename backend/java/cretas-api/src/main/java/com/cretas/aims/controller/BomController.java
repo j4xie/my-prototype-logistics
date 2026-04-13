@@ -2,9 +2,11 @@ package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.bom.BomCostSummaryDTO;
+import com.cretas.aims.entity.bom.BomChangeLog;
 import com.cretas.aims.entity.bom.BomItem;
 import com.cretas.aims.entity.bom.LaborCostConfig;
 import com.cretas.aims.entity.bom.OverheadCostConfig;
+import com.cretas.aims.repository.bom.BomChangeLogRepository;
 import com.cretas.aims.service.BomService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -32,6 +34,10 @@ public class BomController {
 
     private final BomService bomService;
 
+    /** P1-9 BOM 变更痕迹查询 Repository (可选注入, 老环境未部署 migration 时不阻塞) */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private BomChangeLogRepository bomChangeLogRepository;
+
     // ========== BOM Items (原辅料配方) ==========
 
     @GetMapping("/items/{productTypeId}")
@@ -41,6 +47,22 @@ public class BomController {
             @PathVariable @Parameter(description = "产品类型ID") String productTypeId) {
         log.info("Getting BOM items: factoryId={}, productTypeId={}", factoryId, productTypeId);
         return ApiResponse.success(bomService.getBomItemsByProduct(factoryId, productTypeId));
+    }
+
+    /**
+     * P1-9 BOM 变更痕迹查询 (v1 §2.2.6).
+     * 返回指定产品 BOM 的所有变更历史 (CREATE/UPDATE/DELETE), 按时间倒序.
+     */
+    @GetMapping("/items/{productTypeId}/change-logs")
+    @Operation(summary = "获取 BOM 变更痕迹 (P1-9)")
+    public ApiResponse<List<BomChangeLog>> getBomChangeLogs(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "产品类型ID") String productTypeId) {
+        if (bomChangeLogRepository == null) {
+            return ApiResponse.success(java.util.Collections.emptyList());
+        }
+        return ApiResponse.success(bomChangeLogRepository
+                .findByFactoryIdAndBomIdAndDeletedAtIsNullOrderByCreatedAtDesc(factoryId, productTypeId));
     }
 
     @GetMapping("/items")

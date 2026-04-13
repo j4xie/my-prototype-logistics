@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post } from '@/api/request';
@@ -158,7 +158,17 @@ async function loadSalespersons() {
   } catch { /* optional */ }
 }
 
-onMounted(() => { loadData(); loadSalespersons(); });
+// D13: Dirty form guard — warn user before leaving with unsaved changes
+const isDirty = ref(false);
+watch([requestDialogVisible, sampleDialogVisible], ([req, smp]) => { isDirty.value = req || smp; });
+function handleBeforeUnload(e: BeforeUnloadEvent) {
+  if (isDirty.value) { e.preventDefault(); e.returnValue = ''; }
+}
+onMounted(() => {
+  loadData(); loadSalespersons();
+  window.addEventListener('beforeunload', handleBeforeUnload);
+});
+onBeforeUnmount(() => { window.removeEventListener('beforeunload', handleBeforeUnload); });
 
 async function handleCreateSample() {
   if (!sampleForm.value.name) { ElMessage.warning('请填写样品名称'); return; }
@@ -180,19 +190,36 @@ const trackingSampleId = ref('');
 const trackingRecords = ref<{ date: string; content: string; attachment: string; recorder: string }[]>([]);
 const newTracking = ref({ date: new Date().toISOString().slice(0, 10), content: '', attachment: '', recorder: '' });
 
-function openTrackingDialog(row: Record<string, unknown>) {
+async function openTrackingDialog(row: Record<string, unknown>) {
   trackingSampleId.value = String(row.id);
+  trackingRecords.value = [];
+  newTracking.value = { date: new Date().toISOString().slice(0, 10), content: '', attachment: '', recorder: String(currentUser.value) };
+  trackingDialogVisible.value = true;
+
+  // P1-8: 优先从新 tracking_records 表读取
+  try {
+    const res = await get(`/${factoryId.value}/rd/samples/${row.id}/tracking-records`);
+    if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+      trackingRecords.value = (res.data as Record<string, unknown>[]).map((r) => ({
+        date: r.recordedAt ? String(r.recordedAt).slice(0, 10) : '',
+        content: String(r.content || ''),
+        attachment: String(r.attachmentUrl || ''),
+        recorder: String(r.recordedByName || r.recordedBy || ''),
+      }));
+      return;
+    }
+  } catch { /* ignore, fall through to legacy */ }
+
+  // 兜底: legacy progressNotes JSON (向后兼容)
   try {
     const notes = row.progressNotes ? JSON.parse(String(row.progressNotes)) : [];
-    trackingRecords.value = notes.map((n: Record<string, string>) => ({
+    trackingRecords.value = (notes as Record<string, string>[]).map((n) => ({
       date: n.time || n.date || '',
       content: n.note || n.content || '',
       attachment: n.photoUrl || n.attachment || '',
       recorder: n.recorder || '',
     }));
   } catch { trackingRecords.value = []; }
-  newTracking.value = { date: new Date().toISOString().slice(0, 10), content: '', attachment: '', recorder: String(currentUser.value) };
-  trackingDialogVisible.value = true;
 }
 
 async function addTrackingRecord() {
