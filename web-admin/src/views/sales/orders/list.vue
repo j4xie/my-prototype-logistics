@@ -229,7 +229,7 @@ const salesRoles = ['sales_manager', 'factory_super_admin'];
 async function loadSalesEmployees() {
   if (!factoryId.value) return;
   try {
-    const res = await get(`/${factoryId.value}/users`, { params: { page: 1, size: 200 } });
+    const res = await get(`/${factoryId.value}/users`, { params: { page: 1, size: 200 }, _silent: true } as never);
     if (res.success && res.data) {
       const allUsers = res.data.content || [];
       salesEmployees.value = allUsers.filter(
