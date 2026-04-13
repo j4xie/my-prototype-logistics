@@ -1,71 +1,77 @@
 {
   "journey": "j2-editor-tabs",
-  "timestamp": "2026-04-12T21:26:32.562Z",
-  "durationMs": 47639,
-  "pass": 8,
+  "timestamp": "2026-04-13T04:56:16.063Z",
+  "durationMs": 6835,
+  "pass": 11,
   "fail": 0,
-  "warn": 2,
-  "total": 10,
+  "warn": 0,
+  "total": 11,
   "tests": [
     {
       "testId": "J2-1",
       "status": "PASS",
       "evidence": "workflowStates array has 10 state(s)",
-      "timestamp": "2026-04-12T21:25:50.128Z"
+      "timestamp": "2026-04-13T04:56:09.774Z"
     },
     {
       "testId": "J2-2",
       "status": "PASS",
       "evidence": "trigger-chains HTTP 200 — array with 5 chain(s)",
-      "timestamp": "2026-04-12T21:25:58.590Z"
+      "timestamp": "2026-04-13T04:56:10.558Z"
     },
     {
       "testId": "J2-3",
       "status": "PASS",
-      "evidence": "validation-rules HTTP 200 — 14 rule(s) for sales_order",
-      "timestamp": "2026-04-12T21:26:04.071Z"
+      "evidence": "validation-rules HTTP 200 — 18 rule(s) for sales_order",
+      "timestamp": "2026-04-13T04:56:11.449Z"
     },
     {
       "testId": "J2-4",
       "status": "PASS",
-      "evidence": "field config has 30 field(s)",
-      "timestamp": "2026-04-12T21:26:04.071Z"
+      "evidence": "field config has 44 field(s)",
+      "timestamp": "2026-04-13T04:56:11.450Z"
     },
     {
       "testId": "J2-5",
-      "status": "WARN",
-      "evidence": "permissionSchema not found in effective config — top-level keys: [moduleCode, moduleName, enabled, fields, groups, workflowStates, workflowTransitions, workflowOptions, customLabels, renderingMode]",
-      "timestamp": "2026-04-12T21:26:04.071Z"
+      "status": "PASS",
+      "evidence": "permission matrix active — 5 hidden, 4 readonly fields",
+      "timestamp": "2026-04-13T04:56:11.450Z"
     },
     {
       "testId": "J2-6",
       "status": "PASS",
-      "evidence": "tools endpoint HTTP 200 — 27 tool(s) in response",
-      "timestamp": "2026-04-12T21:26:10.024Z"
+      "evidence": "tools endpoint HTTP 200 — 66 tool(s) in response",
+      "timestamp": "2026-04-13T04:56:11.719Z"
     },
     {
       "testId": "J2-7a",
       "status": "PASS",
       "evidence": "scheduler/e2e_daily accepted valid cron \"0 0 2 * * ?\" — HTTP 200",
-      "timestamp": "2026-04-12T21:26:14.598Z"
+      "timestamp": "2026-04-13T04:56:12.288Z"
     },
     {
       "testId": "J2-7b",
       "status": "PASS",
       "evidence": "scheduler rejected too-frequent cron \"* * * * * ?\" with HTTP 400 (Fix 11 enforced)",
-      "timestamp": "2026-04-12T21:26:19.790Z"
+      "timestamp": "2026-04-13T04:56:12.865Z"
     },
     {
       "testId": "J2-7c",
       "status": "PASS",
       "evidence": "scheduler/e2e_daily disabled successfully — HTTP 200",
-      "timestamp": "2026-04-12T21:26:24.481Z"
+      "timestamp": "2026-04-13T04:56:14.067Z"
     },
     {
       "testId": "J2-8",
-      "status": "WARN",
-      "evidence": "submit-review HTTP 400 — 没有 DRAFT 状态的配置版本可供 PENDING_REVIEW 转换",
-      "timestamp": "2026-04-12T21:26:32.562Z"
+      "status": "PASS",
+      "evidence": "submit-review HTTP 200 — draft config submitted for review",
+      "timestamp": "2026-04-13T04:56:15.493Z"
+    },
+    {
+      "testId": "J2-8-approve",
+      "status": "PASS",
+      "evidence": "approve HTTP 200 — super_admin can approve submitted review",
+      "timestamp": "2026-04-13T04:56:16.063Z"
     }
   ]
 }

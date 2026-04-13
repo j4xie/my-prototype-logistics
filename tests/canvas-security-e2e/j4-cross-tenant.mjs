@@ -335,11 +335,10 @@ async function attack5CrossTenantChangeSetApprove(tokenA, tokenB) {
     const createResult = await apiPost(
       `${FACTORY_A}/config-changes`,
       {
-        changeType: 'FIELD_ADD',
-        moduleName: 'sales_order',
-        fieldCode: 'test_security_field',
-        fieldConfig: { fieldType: 'STRING', fieldName: 'Security Test Field' },
-        reason: 'J4-5 cross-tenant approve security test',
+        configType: 'RULE',
+        configId: 'e2e-security-test-' + Date.now(),
+        configName: 'J4-5 security test changeset',
+        afterSnapshot: JSON.stringify({ test: true, purpose: 'cross-tenant attack vector' }),
       },
       tokenA
     );

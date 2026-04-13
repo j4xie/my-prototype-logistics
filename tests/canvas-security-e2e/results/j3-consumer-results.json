@@ -1,41 +1,41 @@
 {
   "journey": "j3-consumer",
-  "timestamp": "2026-04-12T21:27:00.610Z",
-  "durationMs": 22136,
-  "pass": 2,
-  "fail": 2,
-  "warn": 1,
+  "timestamp": "2026-04-13T04:56:38.905Z",
+  "durationMs": 16944,
+  "pass": 5,
+  "fail": 0,
+  "warn": 0,
   "total": 5,
   "tests": [
     {
       "testId": "J3-S1",
       "status": "PASS",
       "evidence": "Logged in successfully — redirected to http://localhost:5173/dashboard",
-      "timestamp": "2026-04-12T21:26:52.151Z"
+      "timestamp": "2026-04-13T04:56:26.651Z"
     },
     {
       "testId": "J3-S2",
-      "status": "FAIL",
-      "evidence": "Page content too short (255 chars ≤ 1000) — page may not have rendered",
-      "timestamp": "2026-04-12T21:26:57.295Z"
+      "status": "PASS",
+      "evidence": "Sales orders list page loaded — content length 1057 chars",
+      "timestamp": "2026-04-13T04:56:31.833Z"
     },
     {
       "testId": "J3-S3",
-      "status": "FAIL",
-      "evidence": "Skipped — could not load sales orders list",
-      "timestamp": "2026-04-12T21:26:57.378Z"
+      "status": "PASS",
+      "evidence": "Create form rendered with 8 .el-form-item elements (> 5 required)",
+      "timestamp": "2026-04-13T04:56:35.063Z"
     },
     {
       "testId": "J3-S4",
-      "status": "WARN",
-      "evidence": "Skipped — could not load sales orders list",
-      "timestamp": "2026-04-12T21:26:57.378Z"
+      "status": "PASS",
+      "evidence": "21 dynamic fields in effective config (UI may render in collapsed \"自定义字段\" group)",
+      "timestamp": "2026-04-13T04:56:35.680Z"
     },
     {
       "testId": "J3-S10",
       "status": "PASS",
       "evidence": "Canvas editor accessible — URL: http://localhost:5173/canvas-editor",
-      "timestamp": "2026-04-12T21:27:00.460Z"
+      "timestamp": "2026-04-13T04:56:38.766Z"
     }
   ]
 }

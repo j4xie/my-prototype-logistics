@@ -1,7 +1,7 @@
 {
   "journey": "j0-setup",
-  "timestamp": "2026-04-12T21:23:59.426Z",
-  "durationMs": 23544,
+  "timestamp": "2026-04-13T04:55:49.763Z",
+  "durationMs": 3521,
   "pass": 5,
   "fail": 0,
   "warn": 0,
@@ -11,31 +11,31 @@
       "testId": "J0-1",
       "status": "PASS",
       "evidence": "API reachable — HTTP 200 from http://localhost:10011/api/mobile/health",
-      "timestamp": "2026-04-12T21:23:41.533Z"
+      "timestamp": "2026-04-13T04:55:46.776Z"
     },
     {
       "testId": "J0-2",
       "status": "PASS",
       "evidence": "Factory A admin logged in — factoryId=F002 role=factory_super_admin userId=1325",
-      "timestamp": "2026-04-12T21:23:47.739Z"
+      "timestamp": "2026-04-13T04:55:48.061Z"
     },
     {
       "testId": "J0-3",
       "status": "PASS",
-      "evidence": "dynamic-fields returned HTTP 200 — 12 field(s) in response",
-      "timestamp": "2026-04-12T21:23:52.035Z"
+      "evidence": "dynamic-fields returned HTTP 200 — 26 field(s) in response",
+      "timestamp": "2026-04-13T04:55:48.618Z"
     },
     {
       "testId": "J0-4",
       "status": "PASS",
       "evidence": "module_schemas has 17 module(s) (≥10 required)",
-      "timestamp": "2026-04-12T21:23:56.170Z"
+      "timestamp": "2026-04-13T04:55:49.172Z"
     },
     {
       "testId": "J0-5",
       "status": "PASS",
       "evidence": "Factory B admin logged in — factoryId=F006 role=factory_super_admin",
-      "timestamp": "2026-04-12T21:23:59.425Z"
+      "timestamp": "2026-04-13T04:55:49.763Z"
     }
   ]
 }
