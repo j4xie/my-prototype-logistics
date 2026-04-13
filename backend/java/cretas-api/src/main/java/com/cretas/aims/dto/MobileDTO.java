@@ -121,6 +121,17 @@ public class MobileDTO {
     }
 
     /**
+     * 刷新令牌请求
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RefreshTokenRequest {
+        private String refreshToken;
+    }
+
+    /**
      * 文件上传请求
      */
     @Data

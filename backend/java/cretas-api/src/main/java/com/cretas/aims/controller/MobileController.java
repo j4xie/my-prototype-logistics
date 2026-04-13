@@ -81,19 +81,24 @@ public class MobileController {
     }
 
     @PostMapping("/auth/refresh")
-    @Operation(summary = "刷新访问令牌", description = "使用刷新令牌获取新的访问令牌")
+    @Operation(summary = "刷新访问令牌", description = "使用刷新令牌获取新的访问令牌。令牌可通过 JSON body {\"refreshToken\":\"...\"} 或 query param ?refreshToken=... 或 cookie 传入。")
     @RateLimit(count = 10, period = 60, limitType = LimitType.USER, message = "令牌刷新过于频繁，请稍后再试")
     public ApiResponse<MobileDTO.LoginResponse> refreshToken(
-            @RequestParam(required = false) @Parameter(description = "刷新令牌", example = "eyJhbGciOiJIUzI1NiJ9...") String refreshToken,
+            @RequestBody(required = false) @Parameter(description = "JSON body 传入刷新令牌") MobileDTO.RefreshTokenRequest body,
+            @RequestParam(required = false) @Parameter(description = "刷新令牌（query param，兼容旧调用方）", example = "eyJhbGciOiJIUzI1NiJ9...") String refreshToken,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
-        // For web clients, try to read refresh token from cookie if not provided as param
-        String tokenToUse = refreshToken;
-        if ((tokenToUse == null || tokenToUse.isEmpty()) && cookieAuthHelper.isWebClient(httpRequest)) {
+        // Priority: JSON body > query param > cookie
+        String tokenToUse = null;
+        if (body != null && body.getRefreshToken() != null && !body.getRefreshToken().isEmpty()) {
+            tokenToUse = body.getRefreshToken();
+        } else if (refreshToken != null && !refreshToken.isEmpty()) {
+            tokenToUse = refreshToken;
+        } else if (cookieAuthHelper.isWebClient(httpRequest)) {
             tokenToUse = CookieAuthHelper.extractCookieValue(httpRequest, CookieAuthHelper.REFRESH_TOKEN_COOKIE);
         }
 
-        log.debug("刷新令牌, source={}", (refreshToken != null && !refreshToken.isEmpty()) ? "param" : "cookie");
+        log.debug("刷新令牌, source={}", (body != null && body.getRefreshToken() != null && !body.getRefreshToken().isEmpty()) ? "body" : (refreshToken != null && !refreshToken.isEmpty()) ? "param" : "cookie");
         MobileDTO.LoginResponse response = mobileService.refreshToken(tokenToUse);
 
         // Update cookies for web clients
