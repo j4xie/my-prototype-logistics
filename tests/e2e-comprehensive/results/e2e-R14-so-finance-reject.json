@@ -1,0 +1,173 @@
+{
+  "round": 14,
+  "timestamp": "2026-04-14T22:11:31.855Z",
+  "factoryId": "FOOD_3101_048",
+  "notes": "R14 SO finance REJECT path — completes R9-deep-8 approve/reject symmetry",
+  "results": [
+    {
+      "layer": "L4",
+      "testId": "deep-15",
+      "step": "prep_customer",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "testName": "E2E_C_R14_deep-15_mnz6d70h"
+      },
+      "ts": "2026-04-14T22:10:33.998Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-15",
+      "step": "prep_so_created",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T22:10:54.954Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-15",
+      "step": "prep_so_confirmed",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "orderNumber": "SO-20260415-0008"
+      },
+      "ts": "2026-04-14T22:11:07.886Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-15",
+      "step": "step1_nav_detail",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/sales/orders/a1704b3d-cd95-4e4e-911a-d9752b533701"
+      },
+      "ts": "2026-04-14T22:11:16.512Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-15",
+      "step": "step2_initial_state",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "statusText": "CONFIRMED",
+        "hasSubmitForReviewBtn": true
+      },
+      "ts": "2026-04-14T22:11:19.519Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-15",
+      "step": "step3_click_submit",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T22:11:19.529Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-15",
+      "step": "step4_submit_review_api",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "status": 200
+      },
+      "ts": "2026-04-14T22:11:20.888Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-15",
+      "step": "step5_pending_state",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "statusText": "PENDING_FINANCE_REVIEW",
+        "hasRejectBtn": true
+      },
+      "ts": "2026-04-14T22:11:26.421Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-15",
+      "step": "step6_click_reject",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T22:11:26.428Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-15",
+      "step": "step7_fill_reason",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "promptTitle": "审核驳回"
+      },
+      "ts": "2026-04-14T22:11:27.959Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-15",
+      "step": "step8_reject_api",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "status": 200,
+        "url": "/api/mobile/FOOD_3101_048/sales/orders/a1704b3d-cd95-4e4e-911a-d9752b533701/finance-reject"
+      },
+      "ts": "2026-04-14T22:11:28.246Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-15",
+      "step": "step9_reject_toast",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "toastText": "审核驳回成功"
+      },
+      "ts": "2026-04-14T22:11:28.753Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-15",
+      "step": "step10_final_state",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "statusText": "FINANCE_REJECTED"
+      },
+      "ts": "2026-04-14T22:11:31.766Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-15",
+      "step": "FULL_FLOW",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "testName": "E2E_C_R14_deep-15_mnz6d70h",
+        "orderNumber": "SO-20260415-0008",
+        "stage1_submitForReview": true,
+        "stage2_clickReject": true,
+        "stage3_fillReason": true,
+        "stage4_apiReject": true,
+        "finalState": "FINANCE_REJECTED",
+        "note": "R9-deep-8 complete loop: approve + reject paths now both verified"
+      },
+      "ts": "2026-04-14T22:11:31.766Z"
+    }
+  ],
+  "summary": {
+    "deepTotal": 14,
+    "deepPass": 14,
+    "deepFail": 0,
+    "deepWarn": 0
+  }
+}
