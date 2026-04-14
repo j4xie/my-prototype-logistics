@@ -15,6 +15,7 @@ import hashlib
 import io
 import json
 import logging
+import zipfile
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -277,6 +278,20 @@ class StructureDetector:
                 raw_rows, merged_cells, sheet_name, total_rows, total_cols
             )
 
+        except zipfile.BadZipFile as e:
+            # xlsx IS a zip container. Not-a-zip means the upload is corrupt,
+            # truncated, or simply not an Excel file (e.g. HTML saved as .xlsx,
+            # old .xls binary format, CSV renamed, or a failed partial upload).
+            # Log at WARN — server is fine, caller just needs a clear message.
+            logger.warning(
+                "Uploaded file is not a valid xlsx (BadZipFile): %s. "
+                "Likely corrupt upload, wrong format, or .xls instead of .xlsx.",
+                e,
+            )
+            return StructureDetectionResult(
+                success=False,
+                error="文件不是有效的 xlsx 格式 (可能损坏/非 Excel/旧 .xls 格式). 请确认文件并重新上传.",
+            )
         except Exception as e:
             logger.error(f"Structure detection failed: {e}", exc_info=True)
             return StructureDetectionResult(
