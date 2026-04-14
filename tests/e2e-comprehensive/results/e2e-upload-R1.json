@@ -1,0 +1,162 @@
+{
+  "round": 1,
+  "testSubject": "upload-500mb",
+  "timestamp": "2026-04-14T20:55:27.764Z",
+  "api_base": "http://139.196.165.140:8086",
+  "tests": [
+    {
+      "id": "R1-L1-1",
+      "layer": "L1",
+      "name": "upload_page_accessible",
+      "status": "PASS",
+      "depth": "smoke",
+      "navResult": "OK",
+      "hasUploadArea": true,
+      "at": "2026-04-14T20:55:41.006Z"
+    },
+    {
+      "id": "R1-L1-2",
+      "layer": "L1",
+      "name": "frontend_bundle_has_500mb",
+      "status": "PASS",
+      "depth": "smoke",
+      "matchingFiles": [
+        "/www/wwwroot/web-admin/assets/ExcelUpload-D0K_Xw1q.js"
+      ],
+      "at": "2026-04-14T20:55:44.158Z"
+    },
+    {
+      "id": "R1-L1-3",
+      "layer": "L1",
+      "name": "nginx_client_max_500m",
+      "status": "PASS",
+      "depth": "smoke",
+      "count": 3,
+      "expected": ">=3",
+      "at": "2026-04-14T20:55:47.197Z"
+    },
+    {
+      "id": "R1-L1-4",
+      "layer": "L1",
+      "name": "java_multipart_env",
+      "status": "PASS",
+      "depth": "smoke",
+      "envLine": "SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE=500MB",
+      "at": "2026-04-14T20:55:52.826Z"
+    },
+    {
+      "id": "R1-L1-5",
+      "layer": "L1",
+      "name": "python_max_file_size_env",
+      "status": "PASS",
+      "depth": "smoke",
+      "envLine": "MAX_FILE_SIZE_MB=500",
+      "at": "2026-04-14T20:55:58.439Z"
+    },
+    {
+      "id": "R1-L2-1",
+      "layer": "L2",
+      "name": "fe_accepts_450mb_xlsx",
+      "status": "PASS",
+      "depth": "medium",
+      "mockSize": 471859200,
+      "result": {
+        "passed": true
+      },
+      "at": "2026-04-14T20:55:58.443Z"
+    },
+    {
+      "id": "R1-L2-2",
+      "layer": "L2",
+      "name": "fe_rejects_501mb",
+      "status": "PASS",
+      "depth": "medium",
+      "mockSize": 525336576,
+      "result": {
+        "passed": false,
+        "reason": "size_over_500mb"
+      },
+      "at": "2026-04-14T20:55:58.445Z"
+    },
+    {
+      "id": "R1-L2-3",
+      "layer": "L2",
+      "name": "fe_accepts_csv",
+      "status": "PASS",
+      "depth": "medium",
+      "result": {
+        "passed": true
+      },
+      "at": "2026-04-14T20:55:58.446Z"
+    },
+    {
+      "id": "R1-L3-1",
+      "layer": "L3",
+      "name": "api_upload_55mb_csv_server_local",
+      "status": "PASS",
+      "depth": "medium",
+      "factoryId": "FOOD_3101_048",
+      "filePath": "pos_55mb.csv",
+      "fileSize": 57794467,
+      "sha256": "0d501ff43a654513",
+      "httpStatus": 200,
+      "elapsedMs": 6047,
+      "transport": "scp+curl localhost:10010 (bypass ISP)",
+      "scpSkipped": true,
+      "apiMessage": "Excel parse failed: null",
+      "uploadId": null,
+      "at": "2026-04-14T20:56:04.619Z"
+    },
+    {
+      "id": "R1-L4-1",
+      "layer": "L4",
+      "name": "full_roundtrip",
+      "status": "PASS",
+      "depth": "deep",
+      "fileSize": 44167134,
+      "sha256": "cb236f004a1bd638fd90f83fac09374c15e44ad606f242eaa5d32814d0cb16a7",
+      "apiStatus": 200,
+      "apiUrl": "http://localhost:10010/api/mobile/FOOD_3101_048/smart-bi/upload-and-analyze",
+      "uploadElapsedMs": 215314,
+      "scpSkipped": true,
+      "transport": "scp+curl (browser-UI upload deferred to R2, see plan §R2)",
+      "toastText": "(N/A — upload via server-local curl, no UI toast)",
+      "uploadId": 4040,
+      "targetBefore": 2,
+      "targetAfter": 3,
+      "targetDelta": 1,
+      "canaryBefore": -1,
+      "canaryAfter": -1,
+      "canaryDelta": 0,
+      "sectionStatus": 200,
+      "sectionName": "diagnostics",
+      "sectionReturnStatus": "skipped",
+      "pipelineRan": true,
+      "at": "2026-04-14T20:59:47.653Z"
+    }
+  ],
+  "loggedInFactoryId": null,
+  "targetFactoryId": "FOOD_3101_048",
+  "schema_v3": {
+    "specTotal": 10,
+    "p2Deferred": [],
+    "expectedFail": [],
+    "effectiveTotal": 10,
+    "actualExecuted": 10,
+    "actualPass": 10,
+    "depthBreakdown": {
+      "smoke": 5,
+      "medium": 4,
+      "deep": 1
+    },
+    "pctOfSpec": 100,
+    "pctDeep": 10
+  },
+  "summary": {
+    "total": 10,
+    "pass": 10,
+    "fail": 0,
+    "warn": 0,
+    "skip": 0
+  }
+}
