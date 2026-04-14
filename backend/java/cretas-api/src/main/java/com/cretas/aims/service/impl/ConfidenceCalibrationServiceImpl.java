@@ -11,6 +11,7 @@ import com.cretas.aims.service.RequestScopedEmbeddingCache;
 import com.cretas.aims.util.VectorUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -379,6 +380,7 @@ public class ConfidenceCalibrationServiceImpl implements ConfidenceCalibrationSe
      * 定时刷新所有工厂的转移矩阵
      */
     @Scheduled(fixedRateString = "${cretas.ai.calibration.transition-refresh-ms:21600000}") // 默认 6 小时
+    @SchedulerLock(name = "ConfidenceCalibrationServiceImpl.scheduledRefresh", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void scheduledRefresh() {
         log.info("Scheduled transition matrix refresh starting...");
 

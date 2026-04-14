@@ -8,6 +8,7 @@ import com.cretas.aims.service.aps.StrategyWeightAdaptationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -48,6 +49,7 @@ public class WeightAdjustmentScheduler {
      * cron: 秒 分 时 日 月 周
      */
     @Scheduled(cron = "${aps.weight-adjustment.schedule:0 0 2 * * ?}")
+    @SchedulerLock(name = "WeightAdjustmentScheduler.dailyWeightAdjustment", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void dailyWeightAdjustment() {
         if (!adjustmentEnabled) {
             log.debug("权重自适应调整已禁用，跳过定时任务");

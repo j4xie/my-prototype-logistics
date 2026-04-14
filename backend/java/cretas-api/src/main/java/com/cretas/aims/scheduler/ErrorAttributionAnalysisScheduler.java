@@ -6,6 +6,7 @@ import com.cretas.aims.repository.FactoryRepository;
 import com.cretas.aims.service.ErrorAttributionAnalysisService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -56,6 +57,7 @@ public class ErrorAttributionAnalysisScheduler {
      * 0 0 1 * * ? = 每天凌晨1:00执行
      */
     @Scheduled(cron = "0 0 1 * * ?")
+    @SchedulerLock(name = "ErrorAttributionAnalysisScheduler.aggregateDailyStatistics", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void aggregateDailyStatistics() {
         if (!schedulerEnabled) {
             log.debug("错误归因分析调度器已禁用");
@@ -85,6 +87,7 @@ public class ErrorAttributionAnalysisScheduler {
      * cron: 0 0 2 ? * MON = 每周一凌晨2:00执行
      */
     @Scheduled(cron = "0 0 2 ? * MON")
+    @SchedulerLock(name = "ErrorAttributionAnalysisScheduler.generateWeeklyReports", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void generateWeeklyReports() {
         if (!schedulerEnabled) {
             log.debug("错误归因分析调度器已禁用");
@@ -138,6 +141,7 @@ public class ErrorAttributionAnalysisScheduler {
      * cron: 0 0 4 * * ? = 每天凌晨4:00执行
      */
     @Scheduled(cron = "0 0 4 * * ?")
+    @SchedulerLock(name = "ErrorAttributionAnalysisScheduler.generateOptimizationSuggestions", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void generateOptimizationSuggestions() {
         if (!schedulerEnabled) {
             log.debug("错误归因分析调度器已禁用");
@@ -197,6 +201,7 @@ public class ErrorAttributionAnalysisScheduler {
      * cron: 0 0 3 * * ? = 每天凌晨3:00执行
      */
     @Scheduled(cron = "0 0 3 * * ?")
+    @SchedulerLock(name = "ErrorAttributionAnalysisScheduler.cleanupExpiredData", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void cleanupExpiredData() {
         if (!schedulerEnabled) {
             log.debug("错误归因分析调度器已禁用");

@@ -6,6 +6,7 @@ import com.cretas.aims.repository.factory.FactoryMaterialRequisitionRepository;
 import com.cretas.aims.service.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -47,6 +48,7 @@ public class FmrExpiryScanner {
      * cron format: 秒 分 时 日 月 周
      */
     @Scheduled(cron = "0 0 20 * * ?")
+    @SchedulerLock(name = "FmrExpiryScanner.scanUnclosedRequisitions", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void scanUnclosedRequisitions() {
         LocalDateTime todayStart = LocalDateTime.of(java.time.LocalDate.now(), LocalTime.MIDNIGHT);
         List<Status> stuckStates = List.of(Status.ISSUED, Status.IN_USE);

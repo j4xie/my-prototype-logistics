@@ -7,6 +7,7 @@ import com.cretas.aims.service.KeywordPromotionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -36,6 +37,7 @@ public class KeywordMaintenanceScheduler {
      * 每日05:00 - 清理低效关键词
      */
     @Scheduled(cron = "0 0 5 * * ?")
+    @SchedulerLock(name = "KeywordMaintenanceScheduler.cleanupLowEffectivenessKeywords", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void cleanupLowEffectivenessKeywords() {
         log.info("========== 开始执行低效关键词清理任务 ==========");
 
@@ -74,6 +76,7 @@ public class KeywordMaintenanceScheduler {
      * 每日05:30 - 重算所有关键词的 Specificity
      */
     @Scheduled(cron = "0 30 5 * * ?")
+    @SchedulerLock(name = "KeywordMaintenanceScheduler.recalculateSpecificity", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void recalculateSpecificity() {
         log.info("========== 开始执行 Specificity 重算任务 ==========");
 
@@ -97,6 +100,7 @@ public class KeywordMaintenanceScheduler {
      * 每日06:00 - 检查关键词晋升
      */
     @Scheduled(cron = "0 0 6 * * ?")
+    @SchedulerLock(name = "KeywordMaintenanceScheduler.runPromotionCheck", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void runPromotionCheck() {
         log.info("========== 开始执行关键词晋升检查任务 ==========");
 
@@ -116,6 +120,7 @@ public class KeywordMaintenanceScheduler {
      * 每日06:30 - 检查工厂阶段转换
      */
     @Scheduled(cron = "0 30 6 * * ?")
+    @SchedulerLock(name = "KeywordMaintenanceScheduler.checkPhaseTransitions", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void checkPhaseTransitions() {
         log.info("========== 开始执行工厂阶段转换检查 ==========");
 
@@ -133,6 +138,7 @@ public class KeywordMaintenanceScheduler {
      * 每周一 03:00 - 同步效果评分到采用记录
      */
     @Scheduled(cron = "0 0 3 ? * MON")
+    @SchedulerLock(name = "KeywordMaintenanceScheduler.syncEffectivenessToAdoption", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void syncEffectivenessToAdoption() {
         log.info("========== 开始执行效果评分同步任务 ==========");
 

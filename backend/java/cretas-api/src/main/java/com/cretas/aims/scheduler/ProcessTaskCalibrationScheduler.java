@@ -9,6 +9,7 @@ import com.cretas.aims.service.ProcessWorkReportingService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -30,6 +31,7 @@ public class ProcessTaskCalibrationScheduler {
      * Dynamically queries all factories with PROCESS mode enabled.
      */
     @Scheduled(cron = "0 0 * * * *")
+    @SchedulerLock(name = "ProcessTaskCalibrationScheduler.calibrateTaskQuantities", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void calibrateTaskQuantities() {
         log.info("Starting hourly process task calibration");
 
