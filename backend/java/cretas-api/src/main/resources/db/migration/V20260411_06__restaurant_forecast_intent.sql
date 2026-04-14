@@ -6,11 +6,11 @@
 -- ForecastService already existed (generic /api/smartbi/forecast endpoint)
 -- but was never called from the restaurant flow until this migration.
 
-INSERT INTO ai_intent_configs (id, intent_code, intent_name, intent_category, tool_name, sensitivity_level, keywords, description, priority, is_active)
+INSERT INTO ai_intent_configs (id, intent_code, intent_name, intent_category, tool_name, sensitivity_level, keywords, description, priority, is_active, created_at, updated_at)
 VALUES (gen_random_uuid(), 'RESTAURANT_FORECAST', '餐饮营收预测', 'SMARTBI', 'restaurant_forecast', 'LOW',
         '["预测","下个月","未来营收","按趋势","扛不住","3月预测","营收预测","时间序列","forecast"]',
         '餐饮营收预测 — 基于历史月度序列做 1-6 个月预测, 含置信区间 + Chinese 趋势解读.',
-        85, true)
+        85, true, NOW(), NOW())
 ON CONFLICT (intent_code) DO UPDATE SET
     tool_name = 'restaurant_forecast',
     is_active = true;

@@ -1439,6 +1439,27 @@ public class SmartBIServiceImpl implements SmartBIService {
                 return handleForecastIntent(factoryId, intentResult, startDate, endDate);
 
             default:
+                // P6: 未知 SmartBIIntent → 尝试 Tool-Skill 管线作为 fallback
+                // 这样新增的 RESTAURANT_* Tool 不需要在 switch-case 添加 case
+                if (intentExecutorService != null) {
+                    log.info("P6 fallback: SmartBIIntent={} 无对应 case, 尝试 Tool-Skill 管线", intent);
+                    try {
+                        IntentExecuteRequest fallbackReq = IntentExecuteRequest.builder()
+                                .userInput(intentResult.getOriginalQuery() != null
+                                        ? intentResult.getOriginalQuery() : intent.getName())
+                                .previewOnly(false).skipSlotFilling(false).build();
+                        IntentExecuteResponse fallbackResp = intentExecutorService.execute(
+                                factoryId, fallbackReq, 0L, "restaurant_manager");
+                        if (fallbackResp != null && Boolean.TRUE.equals(fallbackResp.getIntentRecognized())) {
+                            log.info("P6 fallback 成功: intentCode={}", fallbackResp.getIntentCode());
+                            return fallbackResp.getResultData() != null
+                                    ? fallbackResp.getResultData()
+                                    : Map.of("message", fallbackResp.getMessage());
+                        }
+                    } catch (Exception e) {
+                        log.warn("P6 fallback 失败: {}", e.getMessage());
+                    }
+                }
                 log.warn("未支持的意图类型: {}", intent);
                 throw new BusinessException("暂不支持该查询类型: " + intent.getName());
         }
