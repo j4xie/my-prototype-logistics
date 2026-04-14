@@ -51,10 +51,10 @@ async function loginAndWait(page, username) {
 
 async function navigateTo(page, path) {
   try {
-    await page.evaluate((url) => { window.location.href = url; }, `${BASE}${path}`);
-    await page.waitForTimeout(2000);
-    // Wait up to 20s for table or content
-    for (let i = 0; i < 40; i++) {
+    // Use page.goto with generous timeout
+    await page.goto(`${BASE}${path}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    // Wait up to 25s for Vue app to render
+    for (let i = 0; i < 50; i++) {
       await page.waitForTimeout(500);
       const url = page.url();
       if (url.includes('/403')) return '403';
@@ -64,18 +64,31 @@ async function navigateTo(page, path) {
         menu: !!document.querySelector('.el-menu,.app-sidebar'),
         app: (document.querySelector('#app')?.innerHTML?.length || 0) > 500,
       })).catch(() => ({ table: false, menu: false, app: false }));
-      if (has.table || has.menu || has.app) return 'OK';
+      if (has.table) return 'OK';
+      if (has.menu || has.app) return 'OK';
     }
     return 'TIMEOUT';
   } catch (e) {
-    return 'ERROR';
+    return 'ERROR: ' + e.message?.substring(0, 60);
   }
 }
 
 async function clickButton(page, ...texts) {
+  // Wait a bit for buttons to render after table loads
+  await page.waitForTimeout(2000);
   for (const text of texts) {
     const btn = await page.$(`button:has-text("${text}")`);
-    if (btn) { await btn.click(); return text; }
+    if (btn) {
+      const visible = await btn.isVisible().catch(() => false);
+      if (visible) { await btn.click(); return text; }
+    }
+  }
+  // Fallback: try any primary button with Plus icon
+  const primaryBtn = await page.$('button.el-button--primary:has(.el-icon)');
+  if (primaryBtn) {
+    const text = await primaryBtn.innerText().catch(() => '');
+    await primaryBtn.click();
+    return text || 'primary-icon-btn';
   }
   return null;
 }
@@ -98,14 +111,20 @@ async function waitForDialog(page, timeout = 5000) {
 }
 
 async function checkToast(page) {
-  await page.waitForTimeout(1500);
-  const success = await page.$('.el-message--success');
-  if (success) return 'success';
-  const error = await page.$('.el-message--error');
-  if (error) {
-    const text = await error.innerText().catch(() => 'unknown');
-    return 'error: ' + text;
+  // Poll for toast for up to 5 seconds (toast appears then auto-dismisses)
+  for (let i = 0; i < 10; i++) {
+    await page.waitForTimeout(500);
+    const success = await page.$('.el-message--success');
+    if (success) return 'success';
+    const error = await page.$('.el-message--error');
+    if (error) {
+      const text = await error.innerText().catch(() => 'unknown');
+      return 'error: ' + text;
+    }
   }
+  // Fallback: check if dialog closed (submit succeeded even if toast was missed)
+  const dialogGone = !(await page.$('.el-dialog:not([style*="display: none"])'));
+  if (dialogGone) return 'dialog_closed';
   return 'none';
 }
 

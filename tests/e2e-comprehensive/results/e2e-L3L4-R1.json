@@ -1,6 +1,6 @@
 {
   "round": 1,
-  "timestamp": "2026-04-14T05:27:09.132Z",
+  "timestamp": "2026-04-14T05:32:12.309Z",
   "factoryId": "FOOD_3101_048",
   "results": [
     {
@@ -9,9 +9,9 @@
       "action": "fill_customer",
       "status": "PASS",
       "evidence": {
-        "filled": "E2E客户_L3_mny6h3fp"
+        "filled": "E2E客户_L3_mny6n4df"
       },
-      "ts": "2026-04-14T05:25:53.380Z"
+      "ts": "2026-04-14T05:30:35.043Z"
     },
     {
       "layer": "L3",
@@ -19,21 +19,21 @@
       "action": "create_customer",
       "status": "WARNING",
       "evidence": {
-        "filled": "E2E客户_L3_mny6h3fp",
+        "filled": "E2E客户_L3_mny6n4df",
         "toast": "none",
         "submitButton": "确定"
       },
-      "ts": "2026-04-14T05:25:54.922Z"
+      "ts": "2026-04-14T05:30:42.229Z"
     },
     {
       "layer": "L3",
       "testId": "1",
-      "action": "so_create_button",
-      "status": "SKIP",
+      "action": "so_has_customer_field",
+      "status": "PASS",
       "evidence": {
-        "reason": "No SO create button found"
+        "evidence": "Customer field found in SO form"
       },
-      "ts": "2026-04-14T05:26:04.120Z"
+      "ts": "2026-04-14T05:30:57.564Z"
     },
     {
       "layer": "L3",
@@ -41,9 +41,9 @@
       "action": "fill_supplier",
       "status": "PASS",
       "evidence": {
-        "filled": "E2E供应商_L3_mny6h3fp"
+        "filled": "E2E供应商_L3_mny6n4df"
       },
-      "ts": "2026-04-14T05:26:13.910Z"
+      "ts": "2026-04-14T05:31:07.550Z"
     },
     {
       "layer": "L3",
@@ -51,21 +51,21 @@
       "action": "create_supplier",
       "status": "WARNING",
       "evidence": {
-        "filled": "E2E供应商_L3_mny6h3fp",
+        "filled": "E2E供应商_L3_mny6n4df",
         "toast": "none",
         "submitButton": "确定"
       },
-      "ts": "2026-04-14T05:26:15.455Z"
+      "ts": "2026-04-14T05:31:14.722Z"
     },
     {
       "layer": "L3",
       "testId": "2",
-      "action": "po_create_button",
-      "status": "SKIP",
+      "action": "po_has_supplier_field",
+      "status": "PASS",
       "evidence": {
-        "reason": "No PO create button found"
+        "evidence": "Supplier field found in PO form"
       },
-      "ts": "2026-04-14T05:26:25.151Z"
+      "ts": "2026-04-14T05:31:28.580Z"
     },
     {
       "layer": "L4",
@@ -76,7 +76,7 @@
         "length": 258,
         "hasTable": true
       },
-      "ts": "2026-04-14T05:26:33.299Z"
+      "ts": "2026-04-14T05:31:37.901Z"
     },
     {
       "layer": "L4",
@@ -87,7 +87,7 @@
         "length": 358,
         "hasCharts": false
       },
-      "ts": "2026-04-14T05:26:46.586Z"
+      "ts": "2026-04-14T05:31:47.142Z"
     },
     {
       "layer": "L4",
@@ -98,7 +98,7 @@
         "length": 370,
         "hasKPI": true
       },
-      "ts": "2026-04-14T05:26:54.751Z"
+      "ts": "2026-04-14T05:32:00.905Z"
     },
     {
       "layer": "L4",
@@ -110,13 +110,13 @@
         "firstEntries": [],
         "note": "New factory — users may not appear as employees"
       },
-      "ts": "2026-04-14T05:27:09.060Z"
+      "ts": "2026-04-14T05:32:12.237Z"
     }
   ],
   "summary": {
-    "pass": 5,
+    "pass": 7,
     "fail": 0,
     "warn": 3,
-    "skip": 2
+    "skip": 0
   }
 }
