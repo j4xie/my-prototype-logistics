@@ -225,6 +225,31 @@ When using agent-team 4-phase audit (Researcher → Analyst → Critic → Integ
 
 **Why**: R3 of canvas-security-e2e skipped the independent Critic phase. The Manager wrote 4 self-impersonated "Critic challenges" all of which validated the existing plan. Independent Critic would have asked "are there sibling endpoints?" — exactly the question the Manager was unconsciously avoiding. See `references/case-r3-incomplete-fix.md`.
 
+### Rule 10: Commit ≠ delivery — detection without delivery is the final anti-pattern
+
+A round that commits fixes on a development branch has completed **detection**, not delivery. Production is still running broken code until the fixes actually reach it.
+
+**Mandatory before claiming a round "complete":**
+
+1. **Branch pushed to remote** — `git push -u origin <branch>` has been executed, OR explicit reason documented (e.g., "local-only experiment", "pre-review sandbox")
+2. **PR opened** — `gh pr create --base main` (or equivalent) with link recorded in round summary, OR explicit reason (e.g., "trunk-based dev, commits directly land")
+3. **Production deployment plan** — one of:
+   - Scheduled deploy with timestamp, responsible party, and rollback plan, OR
+   - Explicit "this round is test-env-only, no prod impact, here's why" with specific reasoning (not vague "later")
+4. **R{N+1} backlog ticketed** — each deferred item exists as a real ticket (GitHub issue / Linear / internal tracker), NOT just a bullet in an audit doc. Audit docs disappear from attention; tickets don't.
+5. **CI integration status** — if the test suite isn't running in CI, the round summary must state when it will be + who owns that integration (or "ADR-X says CI is out of scope because Y").
+
+**Failure modes this rule prevents:**
+
+- **5-round completion theater** — "R1-R5 all green" while production still has the bugs we found
+- **Backlog amnesia** — R6 items buried in markdown files nobody re-opens
+- **Branch graveyard** — development branches sitting on local machine unnoticed, getting lost when rebased or deleted
+- **CI blind spot** — next regression doesn't surface until someone manually runs the suite weeks later
+
+**Round cannot be claimed "complete" if any Rule 10 item is skipped without documented reason.** "Documented reason" means a real rationale like "prod deploy requires PM approval scheduled for 2026-04-20" — NOT "we'll do it later" or silent omission.
+
+**Why**: Canvas-security-e2e R1-R5 (Apr 14-15 2026) completed with 91/91 PASS, found 2 real P0 silent-data-loss bugs, and **shipped none of them to production**. Branch `e2e/v1-framework` sat unpushed, PR was never opened, production still ran pre-R3 code. The framework's Step ⑦ was interpreted as "round done" but actually only delivered an unshipped commit on a local branch. R6 backlog items (AggregateFormulaExecutor fix, prod orphan migration) had "explicit technical reasons" for deferral — but nobody tracked them as tickets, so they existed only as audit doc bullets. If a developer reading this skill thinks "5 rounds shipped", they're wrong — 5 rounds **detected**, delivery is a separate phase. See `references/case-r5-delivery-gap.md`.
+
 ## Round lifecycle with depth enforcement
 
 ### Step ① 审计A (Self-audit)
@@ -255,9 +280,26 @@ Execute includes writing at least 1 deep test.
 - Sweep must be documented in the audit doc with grep patterns + match list + verdict per match
 - Vulnerable sibling instances must be either fixed in this round or scheduled with concrete test design
 
-### Step ⑦ 验证修复 (Verify fixes)
+### Step ⑦ 验证修复 (Verify fixes) — branch commit, NOT terminal
 - Must include rerun of deep test to confirm bug fix
 - **If Step ⑥ same-cause sweep found additional vulnerable instances**, the rerun must include the new tests covering those instances (or those instances must be scheduled into the next round per Rule 8.4)
+- **Commit to development branch only** — Step ⑦ does NOT include push, merge, or deploy
+- **Round cannot close until Step ⑧ delivery plan is written** (Rule 10 enforced)
+
+### Step ⑧ 交付 (Delivery plan) — REQUIRED FINAL STEP
+- Commit on a development branch is an intermediate artifact, not a shipped fix
+- Step ⑧ produces an explicit delivery plan with concrete owners and dates:
+  - **Branch push**: `git push -u origin <branch>` executed (or explicit reason not to)
+  - **PR creation**: `gh pr create --base main` with link in round summary
+  - **Production deployment**: scheduled + responsible party + rollback plan (or explicit reason round doesn't need prod deploy)
+  - **R{N+1} backlog tickets**: each deferred item has a tracked ticket (GitHub issue / Linear / internal tracker), NOT just a bullet in an audit doc
+  - **CI integration check**: if test suite isn't in CI, Step ⑧ must document why + when it will be
+
+### About "round complete"
+
+A round with committed tests + zero FAILs + zero WARNs is **NOT automatically delivery-ready**. Delivery is the last mile. The round is "test-complete" at Step ⑦, but "delivery-complete" only at Step ⑧.
+
+If Step ⑧ is skipped / postponed, the fixes on the branch are **not in production** — customers are still affected by the bugs the framework found. This is the "detection without delivery" anti-pattern.
 
 ## Detection: Is this E2E suite compromised?
 
@@ -514,6 +556,7 @@ Don't pretend the old rounds were deep. Own the gap, fix it forward.
 - `references/depth-checklist.md` — 12-step deep test checklist
 - `references/audit-rules.md` — Round-by-round audit rules enforcing depth
 - `references/case-r3-incomplete-fix.md` — Real R3 incident where R8/R9 (same-cause sweep + independent Critic) would have saved 2 rounds and prevented 3 latent P0 bugs from shipping
+- `references/case-r5-delivery-gap.md` — Real R5 incident: 5 rounds completed with 91/91 PASS but 0 of the 2 P0 bugs found were delivered to production. Led to Rule 10 (commit ≠ delivery)
 - `references/case-r7-rating-bug-sweep.md` — Real R7 example: retroactive Rule 8 sweep found 13 latent broken sales_order rules + 5 defense-in-depth opportunities. Shows how Rule 8 catches 20× more issues than the original fix.
 - `references/deep-test-patterns.md` — **R6-R11 patterns (Element Plus/Playwright specific)**: dialog investigation, el-input-number native setters, :visible locators for teleport popovers, el-select filterable search, ElMessageBox confirmation, stable row lookup by orderNumber, cross-entity money consistency verification, createSOQuick helper composition. 15 concrete patterns learned from 11 successful deep tests.
 
@@ -534,6 +577,8 @@ Don't pretend the old rounds were deep. Own the gap, fix it forward.
   > "I cannot commit this bug fix without first running a same-cause sweep. The bug we found is one symptom of an anti-pattern that may have sibling instances. Per depth-first-e2e Rule 8, I need to grep for the pattern across the relevant code area and report findings before this round can close."
 - **Rule 9 (independent Critic). When the user asks to skip the Critic agent and just write challenges inline:**
   > "I cannot self-impersonate the Critic phase per Rule 9. Self-Critic suffers from confirmation bias — I already believe my fix works, so my 'challenges' will be softball questions. I'll dispatch a separate agent and paste its verbatim output."
+- **Rule 10 (commit ≠ delivery). When the round is committed but not pushed/merged/deployed and the user asks to move on:**
+  > "The commit is on a development branch. Per Rule 10, the round is test-complete but not delivery-complete. Before I mark this truly done, we need: (a) branch pushed, (b) PR opened, (c) prod deploy plan with owner + date, (d) R{N+1} backlog items as tracked tickets, (e) CI integration status. If any item has a documented reason to skip, say which and why."
 
 **Escalate to user when**:
 - Spec §8.2 and §1.3 are in conflict
