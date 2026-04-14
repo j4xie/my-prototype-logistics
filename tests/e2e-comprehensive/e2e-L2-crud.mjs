@@ -12,7 +12,7 @@
 import { chromium } from 'playwright';
 import { writeFileSync, readFileSync, existsSync } from 'fs';
 import {
-  BASE, PASSWORD, navigateTo, countTableRows,
+  BASE, PASSWORD, navigateTo, countTableRows, verifyPersistence,
   clickButton, waitForDialog, submitAndCheckResponse, fillDialogInput,
   fillAllRequiredFields,
 } from './lib/helpers.mjs';
@@ -40,17 +40,24 @@ async function loginAndInit(page, username) {
   await page.fill('input.el-input__inner[placeholder="请输入用户名"]', username);
   await page.fill('input[type="password"]', PASSWORD);
   await page.click('button.login-button');
-  await page.waitForURL('**/dashboard', { timeout: 30000 });
+  // R3 fix: throw on login failure instead of silently passing
+  try {
+    await page.waitForURL('**/dashboard', { timeout: 30000 });
+  } catch (e) {
+    const currentUrl = page.url();
+    throw new Error(`Login failed for ${username}: expected /dashboard, got ${currentUrl}`);
+  }
   for (let i = 0; i < 30; i++) {
     await page.waitForTimeout(500);
     const hasMenu = await page.evaluate(() => !!document.querySelector('.el-menu,.app-sidebar'));
     if (hasMenu) return true;
   }
-  return true;
+  throw new Error(`Login succeeded for ${username} but menu never rendered in 15s`);
 }
 
 // ===== CRUD: Create entity in a module =====
-async function testCRUD(page, { module, path, entityName, extraFields }) {
+// R3 fix: removed zombie parameters entityName/extraFields (P0-5)
+async function testCRUD(page, { module, path }) {
   console.log(`\n--- CRUD: ${module} ---`);
 
   // Navigate
@@ -60,8 +67,13 @@ async function testCRUD(page, { module, path, entityName, extraFields }) {
     return;
   }
 
-  // Count rows before
-  const rowsBefore = await countTableRows(page);
+  // Count rows before — new return type { count, error }
+  const beforeResult = await countTableRows(page);
+  if (beforeResult.error) {
+    record(module, 'list', 'FAIL', { error: beforeResult.error });
+    return;
+  }
+  const rowsBefore = beforeResult.count;
   record(module, 'list', 'PASS', { rows: rowsBefore });
 
   // Click create button
@@ -119,7 +131,12 @@ async function testCRUD(page, { module, path, entityName, extraFields }) {
   await page.keyboard.press('Escape');
   await page.waitForTimeout(1000);
   // Navigate fresh to the list page (more reliable than reload)
-  await page.goto(`${BASE}${path}`, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(() => {});
+  try {
+    await page.goto(`${BASE}${path}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  } catch (e) {
+    record(module, 'persistence', 'FAIL', { reason: `goto failed: ${(e.message || '').substring(0, 80)}` });
+    return;
+  }
   // Wait for table to render (up to 25s)
   for (let i = 0; i < 50; i++) {
     await page.waitForTimeout(500);
@@ -127,26 +144,58 @@ async function testCRUD(page, { module, path, entityName, extraFields }) {
   }
   // Extra wait for row data to load
   await page.waitForTimeout(2000);
-  const rowsAfter = await countTableRows(page);
-  const persisted = rowsAfter > rowsBefore;
-  record(module, 'persistence', persisted ? 'PASS' : (submitResult.ok ? 'WARNING' : 'SKIP'), {
-    rowsBefore,
-    rowsAfter,
-    delta: rowsAfter - rowsBefore,
-    note: !persisted && !submitResult.ok ? 'Create failed, persistence not expected' : '',
+  const afterResult = await countTableRows(page);
+  if (afterResult.error) {
+    record(module, 'persistence', 'FAIL', { error: afterResult.error });
+    return;
+  }
+  // R3 fix: strict delta === 1 check (was: rowsAfter > rowsBefore, which passed delta=6)
+  const verdict = verifyPersistence(rowsBefore, afterResult.count, 1);
+  record(module, 'persistence', verdict.status, {
+    rowsBefore: verdict.rowsBefore,
+    rowsAfter: verdict.rowsAfter,
+    delta: verdict.delta,
+    note: verdict.note,
+    submitResultOk: submitResult.ok,
   });
 }
 
 // ===== Simple list-only test (no create) =====
+// R3 note: spec classifies these as L1-adjacent (page accessibility), not L2 CRUD
 async function testListOnly(page, module, path) {
   console.log(`\n--- LIST: ${module} ---`);
-  const nav = await navigateTo(page, path, { waitForTable: true });
-  if (nav !== 'OK') {
-    record(module, 'navigate', 'FAIL', { result: nav });
+  // Use SPA navigation (faster + avoids page.goto timeout after heavy DOM state)
+  try {
+    await page.evaluate((p) => {
+      const router = window.__vue_app__?.config?.globalProperties?.$router;
+      if (router) router.push(p);
+      else window.location.href = p;
+    }, path);
+    await page.waitForTimeout(3000);
+    // Check if we landed on the right page
+    const url = page.url();
+    if (url.includes('/403')) { record(module, 'navigate', '403', {}); return; }
+    if (url.includes('/login')) { record(module, 'navigate', 'LOGIN', {}); return; }
+    if (url.includes('/404')) { record(module, 'navigate', '404', {}); return; }
+    // Wait for table
+    for (let i = 0; i < 20; i++) {
+      await page.waitForTimeout(500);
+      if (await page.evaluate(() => !!document.querySelector('.el-table')).catch(() => false)) break;
+    }
+  } catch (e) {
+    record(module, 'navigate', 'FAIL', { result: 'ERROR: ' + (e.message || '').substring(0, 60) });
     return;
   }
-  const rows = await countTableRows(page);
-  record(module, 'list', 'PASS', { rows, note: rows === 0 ? 'Empty (new factory)' : '' });
+  const result = await countTableRows(page);
+  if (result.error) {
+    record(module, 'list', 'FAIL', { error: result.error });
+    return;
+  }
+  record(module, 'list', 'PASS', {
+    rows: result.count,
+    note: result.count === 0 ? 'Empty (new factory)' : '',
+    testType: 'page-accessibility',  // R3 fix: honestly mark this as not full CRUD
+  });
 }
 
 async function testDashboard(page) {
@@ -181,8 +230,8 @@ async function run() {
   await testDashboard(page);
 
   // CRUD tests with API response interception
-  await testCRUD(page, { module: 'customers', path: '/sales/customers', entityName: '客户' });
-  await testCRUD(page, { module: 'suppliers', path: '/procurement/suppliers', entityName: '供应商' });
+  await testCRUD(page, { module: 'customers', path: '/sales/customers' });
+  await testCRUD(page, { module: 'suppliers', path: '/procurement/suppliers' });
 
   // List-only tests (no create dialog or empty factory)
   await testListOnly(page, 'sales_orders', '/sales/orders');

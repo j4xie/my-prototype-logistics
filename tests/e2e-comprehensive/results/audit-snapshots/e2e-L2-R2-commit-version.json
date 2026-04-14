@@ -1,6 +1,6 @@
 {
   "round": 2,
-  "timestamp": "2026-04-14T15:59:27.729Z",
+  "timestamp": "2026-04-14T14:22:16.369Z",
   "factoryId": "FOOD_3101_048",
   "results": [
     {
@@ -12,16 +12,16 @@
         "hasCards": true,
         "hasMenu": true
       },
-      "timestamp": "2026-04-14T15:56:30.721Z"
+      "timestamp": "2026-04-14T14:16:55.899Z"
     },
     {
       "module": "customers",
       "action": "list",
       "status": "PASS",
       "evidence": {
-        "rows": 7
+        "rows": 3
       },
-      "timestamp": "2026-04-14T15:57:18.151Z"
+      "timestamp": "2026-04-14T14:17:09.104Z"
     },
     {
       "module": "customers",
@@ -30,45 +30,44 @@
       "evidence": {
         "count": 3,
         "fields": [
-          "联系人=E2E_customers_R2_mnyt05g5_1",
+          "联系人=E2E_customers_R2_mnypg76u_1",
           "联系电话=13800138000",
           "收货地址=E2E测试地址_上海市浦东新区"
         ]
       },
-      "timestamp": "2026-04-14T15:57:20.682Z"
+      "timestamp": "2026-04-14T14:17:11.326Z"
     },
     {
       "module": "customers",
       "action": "create",
       "status": "PASS",
       "evidence": {
-        "filled": "E2E_customers_R2_mnyt05g5",
+        "filled": "E2E_customers_R2_mnypg76u",
         "apiStatus": 200,
         "apiUrl": "/api/mobile/FOOD_3101_048/customers"
       },
-      "timestamp": "2026-04-14T15:57:21.963Z"
+      "timestamp": "2026-04-14T14:17:11.905Z"
     },
     {
       "module": "customers",
       "action": "persistence",
-      "status": "PASS",
+      "status": "WARNING",
       "evidence": {
-        "rowsBefore": 7,
-        "rowsAfter": 8,
-        "delta": 1,
-        "note": "expected delta=1",
-        "submitResultOk": true
+        "rowsBefore": 3,
+        "rowsAfter": 0,
+        "delta": -3,
+        "note": ""
       },
-      "timestamp": "2026-04-14T15:57:35.683Z"
+      "timestamp": "2026-04-14T14:18:42.546Z"
     },
     {
       "module": "suppliers",
       "action": "list",
       "status": "PASS",
       "evidence": {
-        "rows": 0
+        "rows": 4
       },
-      "timestamp": "2026-04-14T15:57:43.821Z"
+      "timestamp": "2026-04-14T14:19:14.516Z"
     },
     {
       "module": "suppliers",
@@ -77,47 +76,44 @@
       "evidence": {
         "count": 3,
         "fields": [
-          "联系人=E2E_suppliers_R2_mnyt05g5_1",
+          "联系人=E2E_suppliers_R2_mnypg76u_1",
           "联系电话=13800138000",
           "地址=E2E测试地址_上海市浦东新区"
         ]
       },
-      "timestamp": "2026-04-14T15:57:49.353Z"
+      "timestamp": "2026-04-14T14:19:16.662Z"
     },
     {
       "module": "suppliers",
       "action": "create",
       "status": "PASS",
       "evidence": {
-        "filled": "E2E_suppliers_R2_mnyt05g5",
+        "filled": "E2E_suppliers_R2_mnypg76u",
         "apiStatus": 200,
         "apiUrl": "/api/mobile/FOOD_3101_048/suppliers"
       },
-      "timestamp": "2026-04-14T15:57:50.070Z"
+      "timestamp": "2026-04-14T14:19:16.949Z"
     },
     {
       "module": "suppliers",
       "action": "persistence",
-      "status": "WARNING",
+      "status": "PASS",
       "evidence": {
-        "rowsBefore": 0,
-        "rowsAfter": 9,
-        "delta": 9,
-        "note": "Unexpected delta (expected 1, got 9). Possible duplicate submit / dirty data / pagination issue.",
-        "submitResultOk": true
+        "rowsBefore": 4,
+        "rowsAfter": 5,
+        "delta": 1,
+        "note": ""
       },
-      "timestamp": "2026-04-14T15:58:06.495Z"
+      "timestamp": "2026-04-14T14:19:40.733Z"
     },
     {
       "module": "sales_orders",
-      "action": "list",
-      "status": "PASS",
+      "action": "navigate",
+      "status": "FAIL",
       "evidence": {
-        "rows": 0,
-        "note": "Empty (new factory)",
-        "testType": "page-accessibility"
+        "result": "ERROR: page.goto: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - navig"
       },
-      "timestamp": "2026-04-14T15:58:15.673Z"
+      "timestamp": "2026-04-14T14:20:40.744Z"
     },
     {
       "module": "procurement_orders",
@@ -125,10 +121,9 @@
       "status": "PASS",
       "evidence": {
         "rows": 0,
-        "note": "Empty (new factory)",
-        "testType": "page-accessibility"
+        "note": "Empty (new factory)"
       },
-      "timestamp": "2026-04-14T15:58:29.522Z"
+      "timestamp": "2026-04-14T14:20:52.067Z"
     },
     {
       "module": "production_batches",
@@ -136,10 +131,9 @@
       "status": "PASS",
       "evidence": {
         "rows": 0,
-        "note": "Empty (new factory)",
-        "testType": "page-accessibility"
+        "note": "Empty (new factory)"
       },
-      "timestamp": "2026-04-14T15:58:37.761Z"
+      "timestamp": "2026-04-14T14:21:01.496Z"
     },
     {
       "module": "warehouse_materials",
@@ -147,21 +141,19 @@
       "status": "PASS",
       "evidence": {
         "rows": 0,
-        "note": "Empty (new factory)",
-        "testType": "page-accessibility"
+        "note": "Empty (new factory)"
       },
-      "timestamp": "2026-04-14T15:58:47.440Z"
+      "timestamp": "2026-04-14T14:21:10.727Z"
     },
     {
       "module": "employees",
       "action": "list",
       "status": "PASS",
       "evidence": {
-        "rows": 0,
-        "note": "Empty (new factory)",
-        "testType": "page-accessibility"
+        "rows": 10,
+        "note": ""
       },
-      "timestamp": "2026-04-14T15:58:57.628Z"
+      "timestamp": "2026-04-14T14:21:27.778Z"
     },
     {
       "module": "quality_inspections",
@@ -169,10 +161,9 @@
       "status": "PASS",
       "evidence": {
         "rows": 0,
-        "note": "Empty (new factory)",
-        "testType": "page-accessibility"
+        "note": "Empty (new factory)"
       },
-      "timestamp": "2026-04-14T15:59:07.298Z"
+      "timestamp": "2026-04-14T14:21:38.840Z"
     },
     {
       "module": "equipment",
@@ -180,10 +171,9 @@
       "status": "PASS",
       "evidence": {
         "rows": 0,
-        "note": "Empty (new factory)",
-        "testType": "page-accessibility"
+        "note": "Empty (new factory)"
       },
-      "timestamp": "2026-04-14T15:59:15.938Z"
+      "timestamp": "2026-04-14T14:22:01.804Z"
     },
     {
       "module": "finance_costs",
@@ -191,15 +181,14 @@
       "status": "PASS",
       "evidence": {
         "rows": 0,
-        "note": "Empty (new factory)",
-        "testType": "page-accessibility"
+        "note": "Empty (new factory)"
       },
-      "timestamp": "2026-04-14T15:59:27.647Z"
+      "timestamp": "2026-04-14T14:22:16.295Z"
     }
   ],
   "summary": {
-    "pass": 16,
-    "fail": 0,
+    "pass": 15,
+    "fail": 1,
     "warn": 1,
     "skip": 0
   }

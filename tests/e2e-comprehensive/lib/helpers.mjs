@@ -299,11 +299,37 @@ export async function navigateTo(page, path, { waitForTable = false, timeout = 6
 
 /**
  * Count table rows on current page.
+ * @returns { count: number } on success, or { error: string, count: null } on failure.
+ * R3 fix: Don't silently return 0 on error — violates CLAUDE.md "禁止降级处理".
  */
 export async function countTableRows(page) {
-  return page.evaluate(() =>
-    document.querySelectorAll('.el-table__body-wrapper .el-table__row').length
-  ).catch(() => 0);
+  try {
+    const count = await page.evaluate(() =>
+      document.querySelectorAll('.el-table__body-wrapper .el-table__row').length
+    );
+    return { count, error: null };
+  } catch (e) {
+    return { count: null, error: (e.message || '').substring(0, 100) };
+  }
+}
+
+/**
+ * Verify persistence with strict delta check.
+ * R3 fix: rowsAfter > rowsBefore was too lax (delta=6 passed).
+ * Now requires exactly delta === expectedDelta (default 1 for single create).
+ * @returns { status: 'PASS'|'FAIL'|'WARNING', rowsBefore, rowsAfter, delta, note }
+ */
+export function verifyPersistence(rowsBefore, rowsAfter, expectedDelta = 1) {
+  const delta = rowsAfter - rowsBefore;
+  if (delta === expectedDelta) {
+    return { status: 'PASS', rowsBefore, rowsAfter, delta, note: `expected delta=${expectedDelta}` };
+  }
+  if (delta === 0) {
+    return { status: 'FAIL', rowsBefore, rowsAfter, delta, note: 'No persistence — record not created' };
+  }
+  // delta unexpected (too high / negative) — likely duplicate submit or dirty data
+  return { status: 'WARNING', rowsBefore, rowsAfter, delta,
+    note: `Unexpected delta (expected ${expectedDelta}, got ${delta}). Possible duplicate submit / dirty data / pagination issue.` };
 }
 
 /**

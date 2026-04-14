@@ -38,12 +38,18 @@ async function loginAndWait(page, username) {
   await page.fill('input.el-input__inner[placeholder="请输入用户名"]', username);
   await page.fill('input[type="password"]', PASSWORD);
   await page.click('button.login-button');
-  await page.waitForURL('**/dashboard', { timeout: 30000 });
+  // R3 fix: throw on login failure instead of silently passing
+  try {
+    await page.waitForURL('**/dashboard', { timeout: 30000 });
+  } catch (e) {
+    const currentUrl = page.url();
+    throw new Error(`Login failed for ${username}: expected /dashboard, got ${currentUrl}`);
+  }
   for (let i = 0; i < 30; i++) {
     await page.waitForTimeout(500);
     if (await page.evaluate(() => !!document.querySelector('.el-menu,.app-sidebar'))) return true;
   }
-  return true;
+  throw new Error(`Login succeeded for ${username} but menu never rendered in 15s`);
 }
 
 /**
