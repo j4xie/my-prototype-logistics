@@ -653,16 +653,53 @@ async def auto_parse_excel(
 
         # Step 2: Detect structure if not cached
         if structure_result is None:
-            structure_result = await detector.detect(
-                content,
-                sheet_index=effective_index,
-                max_header_rows=10
-            )
+            if ext == ".csv":
+                # CSV fast-path: StructureDetector uses openpyxl which cannot read CSV.
+                # Build StructureDetectionResult directly from pandas.
+                import io
+                from services.structure_detector import (
+                    StructureDetectionResult, RowInfo, ColumnInfo,
+                )
+                try:
+                    df_csv = pd.read_csv(io.BytesIO(content), nrows=10000)
+                except UnicodeDecodeError:
+                    df_csv = pd.read_csv(io.BytesIO(content), nrows=10000, encoding="gbk")
+                headers_csv = [str(c) for c in df_csv.columns]
+                preview = df_csv.head(20).fillna("").values.tolist()
+                structure_result = StructureDetectionResult(
+                    success=True,
+                    confidence=1.0,
+                    method="csv_passthrough",
+                    sheet_name=filename.rsplit(".", 1)[0],
+                    total_rows=len(df_csv),
+                    total_cols=len(headers_csv),
+                    header_row_count=1,
+                    data_start_row=1,
+                    header_rows=[RowInfo(index=0, type="column_names", content=",".join(headers_csv))],
+                    merged_cells=[],
+                    columns=[
+                        ColumnInfo(index=i, name=h, data_type="text", sample_values=list(df_csv[h].dropna().head(3).astype(str)))
+                        for i, h in enumerate(headers_csv)
+                    ],
+                    preview_rows=preview,
+                )
+                logger.info(f"CSV fast-path: {len(headers_csv)} cols, {len(df_csv)} rows")
+            else:
+                structure_result = await detector.detect(
+                    content,
+                    sheet_index=effective_index,
+                    max_header_rows=10
+                )
             if not structure_result.success:
+                # Field is errorMessage not error — AutoParseResponse uses camelCase
+                # for Java compatibility (Java reads pythonResult.getErrorMessage()).
+                # Historical bug: passing error=... was silently dropped by pydantic
+                # (unknown kwarg), so Java's log showed "解析失败: null" instead of
+                # the actual structure-detection reason (e.g. BadZipFile message).
                 return AutoParseResponse(
                     success=False,
-                    auto_detected=True,
-                    error=structure_result.error or "Structure detection failed"
+                    autoDetected=True,
+                    errorMessage=structure_result.error or "Structure detection failed",
                 )
 
             # Apply header_rows_override if provided (bypass auto-detection)
