@@ -807,10 +807,16 @@ deploy_jar() {
             sleep 5
             ssh $SERVER "systemctl stop $ACTIVE_SERVICE" || true
 
-            # [BG 5/5] Systemd 收尾 (v5.1):
+            # [BG 5/5] Systemd 收尾 (v5.2):
             # - stop 后 SIGTERM 可能把旧 active 标记为 'failed' (status=143), 清理之
             # - 验证新 active service 状态 + 端口监听
             # - 幂等: 如新 active systemd 非 running, 尝试 restart 一次
+            # - 🆕 v5.2: 反僵尸保护 — 如果旧 active 端口仍在 listen, systemd 失联了,
+            #   强制 kill -9 残留进程. 历史事故 (2026-04-15):
+            #   cretas-backend-green.service 超过 StartLimitBurst 后 systemd 放弃管理,
+            #   但最后一次 spawn 的 java 进程继续存活, 两个 JVM 同时跑 @Scheduled →
+            #   BehaviorCalibrationScheduler 撞 uk_factory_tool_date. 这种残留
+            #   必须 kill, 否则 shedlock 之前的部署会复现同样的数据库 PK 冲突.
             echo "   [BG 5/5] Systemd 收尾检查..."
             ssh $SERVER "
                 # 清理旧 active 的 failed 状态 (SIGTERM 导致的 exit 143 会被记为 failed)
@@ -830,8 +836,25 @@ deploy_jar() {
                     echo '   ❌ 新 active 端口 $IDLE_PORT 未监听'
                     exit 1
                 fi
+
+                # v5.2 反僵尸: 确认旧 active 端口已释放
+                sleep 2
+                ORPHAN_PIDS=\$(lsof -ti :$ACTIVE_PORT 2>/dev/null || true)
+                if [ -n \"\$ORPHAN_PIDS\" ]; then
+                    echo '   ⚠️  旧 active 端口 $ACTIVE_PORT 仍被占用 (PIDs:' \$ORPHAN_PIDS '), systemd 失联'
+                    echo '   → 强制 kill -9 残留进程 (反僵尸 v5.2)'
+                    kill -9 \$ORPHAN_PIDS 2>/dev/null || true
+                    sleep 1
+                    if lsof -ti :$ACTIVE_PORT >/dev/null 2>&1; then
+                        echo '   ❌ 端口 $ACTIVE_PORT 仍未释放, 请手动排查'
+                        exit 1
+                    fi
+                    echo '   ✓ 残留进程已清理, 端口 $ACTIVE_PORT 已释放'
+                fi
+
                 echo '   ✓ 新 active ($IDLE_SERVICE) systemd running + 端口 $IDLE_PORT 监听'
                 echo '   ✓ 旧 active ($ACTIVE_SERVICE) failed 状态已清理'
+                echo '   ✓ 端口 $ACTIVE_PORT 无残留 (反僵尸 OK)'
             " || echo "   ⚠️  systemd 收尾检查有警告, 请手动 verify"
 
             echo "   ✅ Blue-Green 切换完成: $ACTIVE_COLOR → $IDLE_COLOR"
