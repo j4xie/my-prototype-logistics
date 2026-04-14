@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,7 +25,9 @@ import jakarta.persistence.OptimisticLockException;
 import jakarta.persistence.PersistenceException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
+import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import java.io.EOFException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import org.slf4j.MDC;
@@ -508,6 +511,64 @@ public class GlobalExceptionHandler {
         return ApiResponse.error(400, "数字格式不正确");
     }
 
+    // ==================== 客户端中断 ====================
+
+    /**
+     * Multipart 上传异常 — 区分客户端中断 vs 真实解析失败.
+     *
+     * <p>Tomcat 在客户端提前断开上传 (用户取消/切后台/网络抖动) 时会抛
+     * {@link ClientAbortException} → {@link EOFException}, Spring 包装为
+     * {@link MultipartException}. 不该按 ERROR 刷警报 (服务器行为正常,
+     * 就是对方没把 request body 发完).
+     *
+     * <p>真实的 multipart 解析失败 (错误边界/格式错乱) 仍按 WARN (客户端 bug,
+     * 但不是我们崩了). ERROR 级别保留给真正的服务端崩溃.
+     *
+     * @since 2026-04-15
+     */
+    @ExceptionHandler(MultipartException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiResponse<?> handleMultipartException(MultipartException e) {
+        if (isClientAbort(e)) {
+            log.warn("客户端中断上传 (EOF/ClientAbort): {}", e.getMessage());
+            return ApiResponse.error(400, "上传被中断");
+        }
+        log.warn("Multipart 请求解析失败: {}", e.getMessage());
+        return ApiResponse.error(400, "上传格式错误");
+    }
+
+    /**
+     * 单独兜底 ClientAbortException (非 multipart 路径, e.g. SSE/长连接断开).
+     */
+    @ExceptionHandler(ClientAbortException.class)
+    @ResponseStatus(HttpStatus.OK)
+    public ApiResponse<?> handleClientAbort(ClientAbortException e) {
+        log.warn("客户端主动断开连接: {}", e.getMessage());
+        // 客户端已断, 返回什么都写不过去, 框架会 silently fail — 给个占位.
+        return ApiResponse.error(499, "client aborted");
+    }
+
+    /**
+     * Unwrap 异常链判断 root cause 是不是 client-abort / EOF.
+     * (Tomcat 版本差异: 可能嵌套 2-3 层, e.g. MultipartException →
+     * IOFileUploadException → ClientAbortException → EOFException)
+     */
+    private boolean isClientAbort(Throwable t) {
+        Throwable cursor = t;
+        int depth = 0;
+        while (cursor != null && depth < 10) {
+            if (cursor instanceof ClientAbortException || cursor instanceof EOFException) {
+                return true;
+            }
+            if (cursor.getCause() == cursor) {
+                break;  // self-cycle 保护
+            }
+            cursor = cursor.getCause();
+            depth++;
+        }
+        return false;
+    }
+
     // ==================== 兜底异常处理 ====================
 
     /**
@@ -516,6 +577,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RuntimeException.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiResponse<?> handleRuntimeException(RuntimeException e) {
+        // 即使在兜底也防护一下 client-abort, 以防 ClientAbortException 被 wrap
+        // 在非 MultipartException 的 RuntimeException 里 (e.g. AsyncListener 回调)
+        if (isClientAbort(e)) {
+            log.warn("客户端中断 (包装于 RuntimeException): {}", e.getMessage());
+            return ApiResponse.error(499, "client aborted");
+        }
         String traceId = generateTraceId();
         log.error("[{}] 运行时异常: {}", traceId, e.getClass().getName(), e);
         return buildSanitizedResponse(ErrorCode.SYSTEM_ERROR, traceId);
