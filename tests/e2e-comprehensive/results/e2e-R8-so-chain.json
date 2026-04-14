@@ -1,0 +1,236 @@
+{
+  "round": 8,
+  "timestamp": "2026-04-14T19:12:08.059Z",
+  "factoryId": "FOOD_3101_048",
+  "notes": "R8 deepest business chain test — full SO creation with items",
+  "results": [
+    {
+      "layer": "L4",
+      "testId": "R8-prep",
+      "step": "create_customer",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "testName": "E2E_C_R8_mnyzz17y",
+        "apiStatus": 200
+      },
+      "ts": "2026-04-14T19:11:38.082Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-6",
+      "step": "step1_baseline",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "rowsBefore": 0
+      },
+      "ts": "2026-04-14T19:11:48.914Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-6",
+      "step": "step2_dialog",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T19:11:53.605Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-6",
+      "step": "step2_investigate_structure",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "tagName": "DIV",
+        "className": "el-dialog",
+        "selectCount": 3,
+        "inputCount": 7,
+        "tableCount": 0,
+        "buttonCount": 7,
+        "buttonTexts": [
+          "+ 添加费用项",
+          "上传合同 (PDF/图片/Word, ≤20MB)",
+          "删除",
+          "+ 添加行",
+          "取消",
+          "创建"
+        ],
+        "formItemLabels": [
+          "客户",
+          "交货日期",
+          "交货地址",
+          "业务员",
+          "含运费",
+          "其他费用",
+          "备注",
+          "预订合同"
+        ],
+        "datePickers": 1,
+        "addButton": true
+      },
+      "ts": "2026-04-14T19:11:53.607Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-6",
+      "step": "step3_customer_selected",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "customerName": "E2E_C_R8_mnyzz17y"
+      },
+      "ts": "2026-04-14T19:11:54.654Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-6",
+      "step": "step4_delivery_date",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "date": "2026-04-21"
+      },
+      "ts": "2026-04-14T19:11:56.221Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-6",
+      "step": "step4b_address",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T19:11:56.224Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-6",
+      "step": "step5_open_product_select",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T19:11:56.266Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-6",
+      "step": "step5_product_selected",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "productText": "E2E测试产品"
+      },
+      "ts": "2026-04-14T19:11:58.307Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-6",
+      "step": "step6_fill_item_numbers",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "filled": [
+          {
+            "index": 0,
+            "value": "100"
+          },
+          {
+            "index": 1,
+            "value": "50"
+          },
+          {
+            "index": 2,
+            "value": "10"
+          }
+        ]
+      },
+      "ts": "2026-04-14T19:11:58.821Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-6",
+      "step": "step7_fill_remaining",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "count": 0
+      },
+      "ts": "2026-04-14T19:11:58.824Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-6",
+      "step": "step8_submit",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "apiStatus": 200,
+        "apiUrl": "/api/mobile/FOOD_3101_048/sales/orders"
+      },
+      "ts": "2026-04-14T19:11:59.129Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-6",
+      "step": "step9_toast",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "toastText": "创建成功"
+      },
+      "ts": "2026-04-14T19:11:59.138Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-6",
+      "step": "step11_delta",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "rowsBefore": 0,
+        "rowsAfter": 1,
+        "delta": 1,
+        "note": "expected delta=1"
+      },
+      "ts": "2026-04-14T19:12:07.959Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-6",
+      "step": "step12_roundtrip",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "customerName": "E2E_C_R8_mnyzz17y",
+        "firstRowPreview": "SO-20260415-0001\n\t\nE2E_C_R8_mnyzz17y\n\t\n\t\n2026-04-15\n\t\n¥5,000.00\n\t\n-\n\t\n-\n\t\n草稿\n\t\n详情\n编辑\n确认\n取消",
+        "customerInRow": true
+      },
+      "ts": "2026-04-14T19:12:07.961Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-6",
+      "step": "FULL_FLOW",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "customerName": "E2E_C_R8_mnyzz17y",
+        "apiStatus": 200,
+        "toastText": "创建成功",
+        "delta": 1,
+        "rowsBefore": 0,
+        "rowsAfter": 1,
+        "roundtripOk": true
+      },
+      "ts": "2026-04-14T19:12:07.961Z"
+    }
+  ],
+  "summary": {
+    "deepTotal": 1,
+    "deepPass": 1,
+    "deepFail": 0,
+    "totalRecords": 16
+  }
+}
