@@ -1249,6 +1249,175 @@ async function phaseH_subTableDeleteRoundtrip(token) {
 }
 
 // ---------------------------------------------------------------------------
+// Phase I — Aggregate formula roundtrip (R6 P0-1 deep test)
+// ---------------------------------------------------------------------------
+//
+// R6 P0-1: fix hardcoded `?::uuid` in AggregateFormulaExecutor.java:87-91,142-146.
+// This is the same bug class as R4 P0-7 (DynamicTableService + DDLExecutor) but
+// in the aggregate formula evaluation path. Without a deep test, R5-② Critic
+// correctly deferred this as "no aggregate formula test harness". R6 builds
+// that harness + verifies the fix.
+//
+// Test flow (Rule 2 deep):
+//   I0: Reuse discoverSubTableContext to get recordId + sub-table fieldCode
+//   I1: Define a GROUP_BY aggregate formula via PUT /config/v2/formulas
+//       Expression: GROUP_BY(<sub-table>, 'cf_pay_date', SUM('cf_amount'))
+//       resultType: AGGREGATE
+//   I2: Populate sub-table with known rows (uses phaseF-style POST)
+//       Rows share cf_pay_date so GROUP_BY produces 1 group with known SUM
+//   I3: Trigger formula evaluation via GET /sales/v2/orders/{recordId}/formulas
+//   I4: Assert response contains our formula code AND the aggregate value
+//       matches the known sum of amounts we wrote
+//
+// depth=deep on I4: if AggregateFormulaExecutor still hardcodes UUID cast,
+// the query throws "invalid input syntax for type uuid" → SalesServiceImpl
+// catches it and logs WARN → response omits our formula key → I4 FAILs.
+// Only a correct type-aware cast produces the expected result.
+async function phaseI_aggregateFormulaRoundtrip(token) {
+  const ctx = await discoverSubTableContext(token);
+  if (ctx.error) {
+    rc.log('J1-I0', 'WARN', `[depth=deep] Skipped — ${ctx.error}`);
+    return;
+  }
+
+  const formulaCode = `r6_agg_sum_${SUFFIX.slice(5)}`; // strip leading "_e2e_", keep short
+  const subTableName = `${ctx.moduleCode}_${ctx.fieldCode}_items`;
+  // GROUP_BY regex expects: GROUP_BY(table, 'group_field', AGG('value_field'))
+  const expression = `GROUP_BY(${subTableName}, 'cf_pay_date', SUM('cf_amount'))`;
+
+  rc.log('J1-I0', 'PASS',
+    `[depth=deep] Setup — recordId=${ctx.recordId}, sub-table=${subTableName}, formulaCode=${formulaCode}`);
+
+  // I1: PUT create aggregate formula
+  let createdFormula = false;
+  try {
+    const put = await apiPut(
+      `${F}/config/v2/formulas/${formulaCode}`,
+      {
+        moduleCode: ctx.moduleCode,
+        formulaCode: formulaCode,
+        expression: expression,
+        resultType: 'AGGREGATE',
+        description: `R6 P0-1 aggregate formula test (SUFFIX ${SUFFIX})`,
+      },
+      token
+    );
+    if (put.status !== 200) {
+      rc.log('J1-I1', 'FAIL',
+        `[depth=medium] PUT /config/v2/formulas/${formulaCode} returned HTTP ${put.status}: ${put.message || '(no msg)'}`);
+      return;
+    }
+    createdFormula = true;
+    rc.log('J1-I1', 'PASS',
+      `[depth=medium] PUT formula → HTTP 200, expression="${expression}"`);
+  } catch (err) {
+    rc.log('J1-I1', 'FAIL', `[depth=medium] PUT formula threw: ${err.message}`);
+    return;
+  }
+
+  try {
+    // I2: Populate sub-table with 3 known rows sharing cf_pay_date
+    const subTablePath = `${F}/${ctx.moduleCode}/${ctx.recordId}/sub-table/${ctx.fieldCode}`;
+    const TEST_DATE = '2026-04-15';
+    const AMOUNTS = [100.50, 200.25, 300.00];
+    const EXPECTED_SUM = AMOUNTS.reduce((a, b) => a + b, 0); // 600.75
+    const createdRowIds = [];
+
+    try {
+      for (let i = 0; i < AMOUNTS.length; i++) {
+        const post = await apiPost(subTablePath, {
+          amount: AMOUNTS[i],
+          pay_date: TEST_DATE,
+          remark: `J1-I-row-${i}-${SUFFIX}`,
+        }, token);
+        if (post.status !== 200 || !post.data?.id) {
+          rc.log('J1-I2', 'FAIL',
+            `[depth=medium] Setup POST row ${i} failed: HTTP ${post.status} ${post.message || ''}`);
+          return;
+        }
+        createdRowIds.push(post.data.id);
+      }
+      rc.log('J1-I2', 'PASS',
+        `[depth=medium] Populated ${createdRowIds.length} rows, cf_pay_date=${TEST_DATE}, total cf_amount=${EXPECTED_SUM}`);
+    } catch (err) {
+      rc.log('J1-I2', 'FAIL', `[depth=medium] Setup rows threw: ${err.message}`);
+      return;
+    }
+
+    // I3: Trigger formula evaluation via sales/v2/orders/{recordId}/formulas
+    try {
+      const res = await apiGet(
+        `${F}/sales/orders/${ctx.recordId}/formulas`,
+        token
+      );
+      if (res.status !== 200) {
+        rc.log('J1-I3', 'FAIL',
+          `[depth=deep] GET /formulas returned HTTP ${res.status}: ${res.message || '(no msg)'} — SalesServiceImpl may have hard-failed`);
+        return;
+      }
+
+      // I4: Assert our formula code is present AND value matches
+      // SalesServiceImpl catches AggregateFormulaExecutor exceptions and logs WARN,
+      // so a broken AggregateFormulaExecutor shows up as "formula code absent" in response.
+      const results = res.data || {};
+      const aggResult = results[formulaCode];
+
+      if (aggResult === undefined || aggResult === null) {
+        rc.log('J1-I4', 'FAIL',
+          `[depth=deep] GET /formulas returned HTTP 200 but formula "${formulaCode}" is ABSENT from response. ` +
+          `Keys: [${Object.keys(results).join(', ')}]. ` +
+          `Likely AggregateFormulaExecutor threw (hardcoded UUID cast on VARCHAR parent_id) and SalesServiceImpl silently swallowed the exception.`);
+        return;
+      }
+
+      // Aggregate result shape: List<Map<String, Object>> like
+      //   [{"cf_pay_date": "2026-04-15", "agg_value": 600.75}]
+      // Find the group with our test date
+      const groups = Array.isArray(aggResult) ? aggResult : [];
+      const ourGroup = groups.find(g => {
+        const d = g?.cf_pay_date;
+        // Postgres may return Date object or ISO string — both OK
+        return String(d).startsWith(TEST_DATE);
+      });
+
+      if (!ourGroup) {
+        rc.log('J1-I4', 'FAIL',
+          `[depth=deep] Formula result present but no group matching cf_pay_date=${TEST_DATE}. ` +
+          `Got ${groups.length} groups: ${JSON.stringify(groups).slice(0, 200)}`);
+        return;
+      }
+
+      const actualSum = Number(ourGroup.agg_value);
+      if (Math.abs(actualSum - EXPECTED_SUM) < 0.01) {
+        rc.log('J1-I4', 'PASS',
+          `[depth=deep] Aggregate formula roundtrip verified — GROUP_BY returned cf_pay_date=${TEST_DATE}, ` +
+          `SUM(cf_amount)=${actualSum} matches expected ${EXPECTED_SUM} (${AMOUNTS.length} rows). ` +
+          `AggregateFormulaExecutor correctly handled VARCHAR parent_id cast.`);
+      } else {
+        rc.log('J1-I4', 'FAIL',
+          `[depth=deep] Aggregate value mismatch: expected SUM(cf_amount)=${EXPECTED_SUM} but got ${actualSum}`);
+      }
+    } catch (err) {
+      rc.log('J1-I3', 'FAIL', `[depth=deep] GET /formulas threw: ${err.message}`);
+    }
+
+    // Cleanup: delete the rows we created (formula itself left for idempotent rerun — unique formulaCode per SUFFIX)
+    for (const rowId of createdRowIds) {
+      try {
+        await apiDelete(`${subTablePath}/${rowId}`, token);
+      } catch { /* best effort */ }
+    }
+  } finally {
+    // Cleanup formula (ignore errors; next run uses fresh formulaCode)
+    if (createdFormula) {
+      try {
+        await apiDelete(`${F}/config/v2/formulas/${formulaCode}`, token);
+      } catch { /* ignore */ }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 async function main() {
@@ -1318,6 +1487,10 @@ async function main() {
   await phaseG_subTableUpdateRoundtrip(token);
   console.log('\n--- Phase H: Sub-Table Delete Roundtrip (deep) ---');
   await phaseH_subTableDeleteRoundtrip(token);
+
+  // Phase I — R6 P0-1: aggregate formula roundtrip (fix AggregateFormulaExecutor UUID cast)
+  console.log('\n--- Phase I: Aggregate Formula Roundtrip (deep) ---');
+  await phaseI_aggregateFormulaRoundtrip(token);
 
   // Phase D
   console.log('\n--- Phase D: Rollback ---');
