@@ -374,16 +374,32 @@ export async function waitForDialog(page, timeout = 8000) {
  * 2. Fallback: check validation errors, dialog closed, toast
  * @returns { ok: boolean, status: number, reason: string }
  */
-export async function submitAndCheckResponse(page, submitTexts = ['确定', '保存', '提交']) {
+export async function submitAndCheckResponse(page, submitTexts = ['确定', '保存', '提交'], options = {}) {
+  const { factoryId = null, module: expectedModule = null } = options;
   const submitBtn = await findButton(page, submitTexts);
   if (!submitBtn) return { ok: false, status: 0, reason: 'no_submit_button' };
+
+  // R3 fix: narrow filter to exact business endpoint if factoryId+module provided
+  // Otherwise fall back to generic /api/ filter (less precise)
+  const urlFilter = (factoryId && expectedModule)
+    ? new RegExp(`/api/mobile/${factoryId}/${expectedModule}(/|\\?|$)`)
+    : null;
 
   // Set up API response listener before clicking
   let apiResponse = null;
   const responsePromise = page.waitForResponse(
-    r => r.url().includes('/api/') &&
-         ['POST', 'PUT', 'PATCH'].includes(r.request().method()) &&
-         !r.url().includes('/auth/'),
+    r => {
+      const url = r.url();
+      const method = r.request().method();
+      if (!['POST', 'PUT', 'PATCH'].includes(method)) return false;
+      if (url.includes('/auth/')) return false;
+      if (url.includes('/refresh')) return false;
+      if (urlFilter) return urlFilter.test(url);
+      // R3 fix: narrower generic filter — exclude common noise endpoints
+      return url.includes('/api/mobile/') &&
+             !url.includes('/search') &&
+             !url.includes('/lookup');
+    },
     { timeout: 10000 }
   ).then(r => { apiResponse = r; }).catch(() => {});
 
@@ -395,15 +411,21 @@ export async function submitAndCheckResponse(page, submitTexts = ['确定', '保
   // Signal 1: API response intercepted
   if (apiResponse) {
     const status = apiResponse.status();
+    // R3 fix: strict body.success !== false (undefined NO LONGER treated as success)
     let bodyOk = true;
+    let bodyReason = '';
     try {
       const body = await apiResponse.json();
-      if (body && body.success === false) bodyOk = false;
+      if (body) {
+        if (body.success === false) { bodyOk = false; bodyReason = body.message || 'success=false'; }
+        // Legacy endpoints without success field: only trust HTTP status
+        // (removed the `undefined === pass` loophole)
+      }
     } catch { /* non-JSON */ }
     return {
       ok: status >= 200 && status < 400 && bodyOk,
       status,
-      reason: 'api_response',
+      reason: bodyOk ? 'api_response' : `api_body_error: ${bodyReason}`,
       url: apiResponse.url().replace(BASE, '').split('?')[0],
     };
   }
@@ -437,25 +459,91 @@ export async function fillAllRequiredFields(page, baseName) {
   const formItems = await page.$$('.el-dialog .el-form-item.is-required, .el-drawer .el-form-item.is-required');
   for (let i = 0; i < formItems.length; i++) {
     const label = await formItems[i].$eval('.el-form-item__label', el => el.textContent?.trim()).catch(() => '');
-    // Try input first, then textarea
-    let input = await formItems[i].$('input.el-input__inner');
+
+    // R3 fix: handle Element Plus compound fields (el-select/date-picker/checkbox/radio)
+    // Priority: text input → textarea → date-picker → select → radio → checkbox
+
+    // Try text input
+    let input = await formItems[i].$('input.el-input__inner:not([readonly])');
     let isTextarea = false;
     if (!input) {
       input = await formItems[i].$('textarea.el-textarea__inner');
       isTextarea = true;
     }
-    if (input) {
-      const current = isTextarea
-        ? await input.evaluate(el => el.value).catch(() => '')
-        : await input.inputValue().catch(() => '');
-      if (!current) {
-        const value = label.includes('电话') || label.includes('手机') ? '13800138000'
-          : label.includes('邮箱') || label.includes('email') ? 'e2e@test.com'
-          : label.includes('地址') || label.includes('收货') ? 'E2E测试地址_上海市浦东新区'
-          : `${baseName}_${i}`;
-        await input.fill(value);
-        filled.push({ label, value });
+
+    // el-select (readonly input + dropdown options)
+    const elSelect = await formItems[i].$('.el-select:not(.is-disabled)');
+    // el-date-picker
+    const dateInput = await formItems[i].$('input[placeholder*="日期"], .el-date-editor input');
+    // el-radio / el-checkbox
+    const firstRadio = await formItems[i].$('.el-radio:not(.is-disabled)');
+    const firstCheckbox = await formItems[i].$('.el-checkbox:not(.is-disabled)');
+
+    try {
+      if (input && !isTextarea && !dateInput) {
+        const current = await input.inputValue().catch(() => '');
+        if (!current) {
+          const value = label.includes('电话') || label.includes('手机') ? `138${Date.now().toString().slice(-8)}`
+            : label.includes('邮箱') || label.includes('email') ? `e2e_${Date.now()}@test.com`
+            : label.includes('地址') || label.includes('收货') ? 'E2E测试地址_上海市浦东新区'
+            : `${baseName}_${i}`;
+          await input.fill(value);
+          // R3 fix: trigger blur to activate Element Plus validation (rules often use trigger: 'blur')
+          await input.evaluate(el => el.blur());
+          filled.push({ label, type: 'input', value });
+        }
+      } else if (isTextarea && input) {
+        const current = await input.evaluate(el => el.value).catch(() => '');
+        if (!current) {
+          const value = label.includes('地址') || label.includes('收货') ? 'E2E测试地址_上海市浦东新区'
+            : label.includes('备注') || label.includes('描述') ? 'E2E 测试数据'
+            : `${baseName}_textarea`;
+          await input.fill(value);
+          await input.evaluate(el => el.blur());
+          filled.push({ label, type: 'textarea', value });
+        }
+      } else if (dateInput) {
+        const current = await dateInput.inputValue().catch(() => '');
+        if (!current) {
+          // R3 fix: fill date picker with today's date in YYYY-MM-DD format
+          const today = new Date().toISOString().split('T')[0];
+          await dateInput.fill(today);
+          await page.keyboard.press('Enter');
+          filled.push({ label, type: 'date', value: today });
+        }
+      } else if (elSelect) {
+        // R3 fix: el-select — click to open dropdown, pick first non-disabled option
+        const currentText = await elSelect.$eval('.el-select__placeholder, input', el => el.textContent || el.value).catch(() => '');
+        if (!currentText || currentText.includes('请选择')) {
+          await elSelect.click();
+          await page.waitForTimeout(500);
+          const firstOption = await page.$('.el-select-dropdown__item:not(.is-disabled)');
+          if (firstOption) {
+            const optText = await firstOption.innerText().catch(() => '');
+            await firstOption.click();
+            await page.waitForTimeout(300);
+            filled.push({ label, type: 'select', value: optText });
+          } else {
+            await page.keyboard.press('Escape'); // close dropdown if no options
+          }
+        }
+      } else if (firstRadio) {
+        // R3 fix: click first radio option
+        const checked = await firstRadio.evaluate(el => el.classList.contains('is-checked')).catch(() => false);
+        if (!checked) {
+          await firstRadio.click();
+          filled.push({ label, type: 'radio', value: 'first option' });
+        }
+      } else if (firstCheckbox) {
+        const checked = await firstCheckbox.evaluate(el => el.classList.contains('is-checked')).catch(() => false);
+        if (!checked) {
+          await firstCheckbox.click();
+          filled.push({ label, type: 'checkbox', value: 'checked' });
+        }
       }
+    } catch (e) {
+      // R3 fix: don't silently swallow — record the failure
+      filled.push({ label, type: 'error', value: `Failed: ${(e.message || '').substring(0, 60)}` });
     }
   }
   return filled;

@@ -1,6 +1,6 @@
 {
   "round": 2,
-  "timestamp": "2026-04-14T15:59:27.729Z",
+  "timestamp": "2026-04-14T16:29:41.434Z",
   "factoryId": "FOOD_3101_048",
   "results": [
     {
@@ -12,16 +12,16 @@
         "hasCards": true,
         "hasMenu": true
       },
-      "timestamp": "2026-04-14T15:56:30.721Z"
+      "timestamp": "2026-04-14T16:27:44.120Z"
     },
     {
       "module": "customers",
       "action": "list",
       "status": "PASS",
       "evidence": {
-        "rows": 7
+        "rows": 8
       },
-      "timestamp": "2026-04-14T15:57:18.151Z"
+      "timestamp": "2026-04-14T16:27:54.194Z"
     },
     {
       "module": "customers",
@@ -30,45 +30,45 @@
       "evidence": {
         "count": 3,
         "fields": [
-          "联系人=E2E_customers_R2_mnyt05g5_1",
-          "联系电话=13800138000",
+          "联系人=E2E_customers_R2_mnyu4gl4_1",
+          "联系电话=13884076400",
           "收货地址=E2E测试地址_上海市浦东新区"
         ]
       },
-      "timestamp": "2026-04-14T15:57:20.682Z"
+      "timestamp": "2026-04-14T16:27:56.438Z"
     },
     {
       "module": "customers",
       "action": "create",
       "status": "PASS",
       "evidence": {
-        "filled": "E2E_customers_R2_mnyt05g5",
+        "filled": "E2E_customers_R2_mnyu4gl4",
         "apiStatus": 200,
         "apiUrl": "/api/mobile/FOOD_3101_048/customers"
       },
-      "timestamp": "2026-04-14T15:57:21.963Z"
+      "timestamp": "2026-04-14T16:27:56.719Z"
     },
     {
       "module": "customers",
       "action": "persistence",
       "status": "PASS",
       "evidence": {
-        "rowsBefore": 7,
-        "rowsAfter": 8,
+        "rowsBefore": 8,
+        "rowsAfter": 9,
         "delta": 1,
         "note": "expected delta=1",
         "submitResultOk": true
       },
-      "timestamp": "2026-04-14T15:57:35.683Z"
+      "timestamp": "2026-04-14T16:28:10.676Z"
     },
     {
       "module": "suppliers",
       "action": "list",
       "status": "PASS",
       "evidence": {
-        "rows": 0
+        "rows": 9
       },
-      "timestamp": "2026-04-14T15:57:43.821Z"
+      "timestamp": "2026-04-14T16:28:19.078Z"
     },
     {
       "module": "suppliers",
@@ -77,36 +77,36 @@
       "evidence": {
         "count": 3,
         "fields": [
-          "联系人=E2E_suppliers_R2_mnyt05g5_1",
-          "联系电话=13800138000",
+          "联系人=E2E_suppliers_R2_mnyu4gl4_1",
+          "联系电话=13884101230",
           "地址=E2E测试地址_上海市浦东新区"
         ]
       },
-      "timestamp": "2026-04-14T15:57:49.353Z"
+      "timestamp": "2026-04-14T16:28:21.263Z"
     },
     {
       "module": "suppliers",
       "action": "create",
       "status": "PASS",
       "evidence": {
-        "filled": "E2E_suppliers_R2_mnyt05g5",
+        "filled": "E2E_suppliers_R2_mnyu4gl4",
         "apiStatus": 200,
         "apiUrl": "/api/mobile/FOOD_3101_048/suppliers"
       },
-      "timestamp": "2026-04-14T15:57:50.070Z"
+      "timestamp": "2026-04-14T16:28:21.543Z"
     },
     {
       "module": "suppliers",
       "action": "persistence",
-      "status": "WARNING",
+      "status": "PASS",
       "evidence": {
-        "rowsBefore": 0,
-        "rowsAfter": 9,
-        "delta": 9,
-        "note": "Unexpected delta (expected 1, got 9). Possible duplicate submit / dirty data / pagination issue.",
+        "rowsBefore": 9,
+        "rowsAfter": 10,
+        "delta": 1,
+        "note": "expected delta=1",
         "submitResultOk": true
       },
-      "timestamp": "2026-04-14T15:58:06.495Z"
+      "timestamp": "2026-04-14T16:28:34.737Z"
     },
     {
       "module": "sales_orders",
@@ -117,7 +117,7 @@
         "note": "Empty (new factory)",
         "testType": "page-accessibility"
       },
-      "timestamp": "2026-04-14T15:58:15.673Z"
+      "timestamp": "2026-04-14T16:28:44.408Z"
     },
     {
       "module": "procurement_orders",
@@ -128,7 +128,7 @@
         "note": "Empty (new factory)",
         "testType": "page-accessibility"
       },
-      "timestamp": "2026-04-14T15:58:29.522Z"
+      "timestamp": "2026-04-14T16:28:52.554Z"
     },
     {
       "module": "production_batches",
@@ -139,7 +139,7 @@
         "note": "Empty (new factory)",
         "testType": "page-accessibility"
       },
-      "timestamp": "2026-04-14T15:58:37.761Z"
+      "timestamp": "2026-04-14T16:28:59.671Z"
     },
     {
       "module": "warehouse_materials",
@@ -150,7 +150,7 @@
         "note": "Empty (new factory)",
         "testType": "page-accessibility"
       },
-      "timestamp": "2026-04-14T15:58:47.440Z"
+      "timestamp": "2026-04-14T16:29:08.827Z"
     },
     {
       "module": "employees",
@@ -161,7 +161,7 @@
         "note": "Empty (new factory)",
         "testType": "page-accessibility"
       },
-      "timestamp": "2026-04-14T15:58:57.628Z"
+      "timestamp": "2026-04-14T16:29:16.965Z"
     },
     {
       "module": "quality_inspections",
@@ -172,7 +172,7 @@
         "note": "Empty (new factory)",
         "testType": "page-accessibility"
       },
-      "timestamp": "2026-04-14T15:59:07.298Z"
+      "timestamp": "2026-04-14T16:29:25.100Z"
     },
     {
       "module": "equipment",
@@ -183,7 +183,7 @@
         "note": "Empty (new factory)",
         "testType": "page-accessibility"
       },
-      "timestamp": "2026-04-14T15:59:15.938Z"
+      "timestamp": "2026-04-14T16:29:32.215Z"
     },
     {
       "module": "finance_costs",
@@ -194,13 +194,13 @@
         "note": "Empty (new factory)",
         "testType": "page-accessibility"
       },
-      "timestamp": "2026-04-14T15:59:27.647Z"
+      "timestamp": "2026-04-14T16:29:41.368Z"
     }
   ],
   "summary": {
-    "pass": 16,
+    "pass": 17,
     "fail": 0,
-    "warn": 1,
+    "warn": 0,
     "skip": 0
   }
 }
