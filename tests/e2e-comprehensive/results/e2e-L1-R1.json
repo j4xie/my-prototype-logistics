@@ -1,0 +1,6433 @@
+{
+  "timestamp": "2026-04-14T01:54:27.219Z",
+  "results": [
+    {
+      "account": {
+        "username": "e2e_quality_insp",
+        "roleCode": "quality_inspector",
+        "fullName": "E2E Quality Insp",
+        "web": false,
+        "created": true,
+        "loginVerified": true,
+        "factoryType": "FACTORY",
+        "userId": 1517
+      },
+      "loginResult": "MOBILE_ONLY",
+      "routes": []
+    },
+    {
+      "account": {
+        "username": "e2e_operator",
+        "roleCode": "operator",
+        "fullName": "E2E Operator",
+        "web": false,
+        "created": true,
+        "loginVerified": true,
+        "factoryType": "FACTORY",
+        "userId": 1521
+      },
+      "loginResult": "MOBILE_ONLY",
+      "routes": []
+    },
+    {
+      "account": {
+        "username": "e2e_warehouse_worker",
+        "roleCode": "warehouse_worker",
+        "fullName": "E2E Warehouse Worker",
+        "web": false,
+        "created": true,
+        "loginVerified": true,
+        "factoryType": "FACTORY",
+        "userId": 1512
+      },
+      "loginResult": "MOBILE_ONLY",
+      "routes": []
+    },
+    {
+      "account": {
+        "username": "e2e_factory_admin",
+        "roleCode": "factory_super_admin",
+        "fullName": "E2E Factory Admin",
+        "web": true,
+        "created": true,
+        "loginVerified": true,
+        "factoryType": "FACTORY",
+        "userId": 1511
+      },
+      "loginResult": "OK",
+      "routes": [
+        {
+          "route": "/dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/dashboard/production-progress",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/batches",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/plans",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/bom",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/approval",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/bom-achievement",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/process-io",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/material-requisitions",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/materials",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/shipments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/inventory",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/reusable-containers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/material-price-trend",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/transfer/list",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/quality/inspections",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/quality/disposals",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/quality/standards",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/procurement/orders",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/procurement/suppliers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/procurement/price-lists",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/orders",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/quotes",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/finished-goods",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/customers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/shipments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/hr/employees",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/hr/attendance",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/hr/whitelist",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/hr/departments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/equipment/list",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/equipment/maintenance",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/equipment/alerts",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/costs",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/reports",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/ar-ap",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/sku-margin",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/invoices",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/payments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/rd/samples",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/rd/converted",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/users",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/roles",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/logs",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/settings",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/ai-intents",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/system/skill-tools",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/products",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/features",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/system/pos",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/work-processes",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/product-processes",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/workflow-designer",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/smartbi-config",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/smartbi-config/data-sources",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/smartbi-config/chart-templates",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/badge-generator",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/analytics/overview",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/trends",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/analytics/ai-reports",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/kpi",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/production-report",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/analytics/alert-dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/supply-chain",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/calibration/list",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/overview",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/plans",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/realtime",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/workers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/alerts",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/restaurant/requisitions",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/wastage",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/recipes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/stocktaking",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/menu",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/stores",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/dianping",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production-analytics/production",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production-analytics/efficiency",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/finance",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/sales",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/query",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/query-templates",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/analysis",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/upload",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/data-completeness",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/food-kb-feedback",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/calibration",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/financial-dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/whatif",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/restaurant-v2",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/canvas-editor",
+          "status": "403",
+          "elapsed": "1.0"
+        }
+      ],
+      "netErrors": [
+        "500 /api/mobile/FOOD_3101_048/rd/samples",
+        "404 /api/mobile/FOOD_3101_048/settings/full",
+        "404 /api/mobile/FOOD_3101_048/settings"
+      ]
+    },
+    {
+      "account": {
+        "username": "e2e_hr_admin",
+        "roleCode": "hr_admin",
+        "fullName": "E2E HR Admin",
+        "web": true,
+        "created": true,
+        "loginVerified": true,
+        "factoryType": "FACTORY",
+        "userId": 1514
+      },
+      "loginResult": "OK",
+      "routes": [
+        {
+          "route": "/dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/dashboard/production-progress",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/batches",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production/plans",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production/bom",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production/approval",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production/bom-achievement",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production/process-io",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production/material-requisitions",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/warehouse/materials",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/warehouse/shipments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/warehouse/inventory",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/warehouse/reusable-containers",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/warehouse/material-price-trend",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/transfer/list",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/quality/inspections",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/quality/disposals",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/quality/standards",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/procurement/orders",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/procurement/suppliers",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/procurement/price-lists",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/orders",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/quotes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/finished-goods",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/customers",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/shipments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/employees",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/hr/attendance",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/hr/whitelist",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/hr/departments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/equipment/list",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/equipment/maintenance",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/equipment/alerts",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/costs",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/reports",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/ar-ap",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/sku-margin",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/invoices",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/payments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/rd/samples",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/rd/converted",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/users",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/roles",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/system/logs",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/settings",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/ai-intents",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/skill-tools",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/products",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/features",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/pos",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/work-processes",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/product-processes",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/workflow-designer",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/smartbi-config",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/smartbi-config/data-sources",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/smartbi-config/chart-templates",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/badge-generator",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/overview",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/trends",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/ai-reports",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/kpi",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/production-report",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/alert-dashboard",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/supply-chain",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/calibration/list",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/overview",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/plans",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/realtime",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/workers",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/alerts",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/requisitions",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/wastage",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/recipes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/stocktaking",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/menu",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/stores",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/dianping",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production-analytics/production",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production-analytics/efficiency",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/dashboard",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/finance",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/sales",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/query",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/query-templates",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/analysis",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/upload",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/data-completeness",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/food-kb-feedback",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/calibration",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/financial-dashboard",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/whatif",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/restaurant-v2",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/canvas-editor",
+          "status": "403",
+          "elapsed": "1.0"
+        }
+      ],
+      "netErrors": [
+        "404 /api/mobile/FOOD_3101_048/settings/full",
+        "404 /api/mobile/FOOD_3101_048/settings"
+      ]
+    },
+    {
+      "account": {
+        "username": "e2e_procurement_mgr",
+        "roleCode": "procurement_manager",
+        "fullName": "E2E Procurement Mgr",
+        "web": true,
+        "created": true,
+        "loginVerified": true,
+        "factoryType": "FACTORY",
+        "userId": 1515
+      },
+      "loginResult": "OK",
+      "routes": [
+        {
+          "route": "/dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/dashboard/production-progress",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/batches",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/plans",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/bom",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/approval",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/bom-achievement",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/production/process-io",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/material-requisitions",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/materials",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/shipments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/inventory",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/reusable-containers",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/warehouse/material-price-trend",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/transfer/list",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/quality/inspections",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/quality/disposals",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/quality/standards",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/procurement/orders",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/procurement/suppliers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/procurement/price-lists",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/orders",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/quotes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/finished-goods",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/customers",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/shipments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/employees",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/attendance",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/whitelist",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/departments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/equipment/list",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/equipment/maintenance",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/equipment/alerts",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/costs",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/reports",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/ar-ap",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/sku-margin",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/invoices",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/payments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/rd/samples",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/rd/converted",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/users",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/roles",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/logs",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/settings",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/ai-intents",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/skill-tools",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/products",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/features",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/pos",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/work-processes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/product-processes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/workflow-designer",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config/data-sources",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config/chart-templates",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/badge-generator",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/overview",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/trends",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/ai-reports",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/kpi",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/production-report",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/alert-dashboard",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/supply-chain",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/calibration/list",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/overview",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/plans",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/realtime",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/workers",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/alerts",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/requisitions",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/wastage",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/recipes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/stocktaking",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/menu",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/stores",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/dianping",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production-analytics/production",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production-analytics/efficiency",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/dashboard",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/finance",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/sales",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/query",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/query-templates",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/analysis",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/upload",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/data-completeness",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/food-kb-feedback",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/calibration",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/financial-dashboard",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/whatif",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/restaurant-v2",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/canvas-editor",
+          "status": "403",
+          "elapsed": "1.0"
+        }
+      ],
+      "netErrors": [
+        "403 /api/mobile/FOOD_3101_048/users",
+        "403 /api/mobile/FOOD_3101_048/sales/orders"
+      ]
+    },
+    {
+      "account": {
+        "username": "e2e_sales_mgr",
+        "roleCode": "sales_manager",
+        "fullName": "E2E Sales Mgr",
+        "web": true,
+        "created": true,
+        "loginVerified": true,
+        "factoryType": "FACTORY",
+        "userId": 1516
+      },
+      "loginResult": "OK",
+      "routes": [
+        {
+          "route": "/dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/dashboard/production-progress",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/batches",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/plans",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/bom",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/approval",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/bom-achievement",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/process-io",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/production/material-requisitions",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/materials",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/shipments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/inventory",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/reusable-containers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/material-price-trend",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/transfer/list",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/quality/inspections",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/quality/disposals",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/quality/standards",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/procurement/orders",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/procurement/suppliers",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/procurement/price-lists",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/orders",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/quotes",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/finished-goods",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/customers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/shipments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/hr/employees",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/attendance",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/whitelist",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/departments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/equipment/list",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/equipment/maintenance",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/equipment/alerts",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/costs",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/reports",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/ar-ap",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/sku-margin",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/invoices",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/payments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/rd/samples",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/rd/converted",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/users",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/roles",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/logs",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/settings",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/ai-intents",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/skill-tools",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/products",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/features",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/pos",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/work-processes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/product-processes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/workflow-designer",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config/data-sources",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config/chart-templates",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/badge-generator",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/overview",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/trends",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/ai-reports",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/kpi",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/production-report",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/alert-dashboard",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/analytics/supply-chain",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/calibration/list",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/overview",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/plans",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/realtime",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/workers",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/alerts",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/requisitions",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/wastage",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/recipes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/stocktaking",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/menu",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/stores",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/dianping",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production-analytics/production",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production-analytics/efficiency",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/smart-bi/dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/finance",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/sales",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/query",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/query-templates",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/analysis",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/upload",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/data-completeness",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/food-kb-feedback",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/calibration",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/financial-dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/whatif",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/restaurant-v2",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/canvas-editor",
+          "status": "403",
+          "elapsed": "1.0"
+        }
+      ],
+      "netErrors": [
+        "403 /api/mobile/FOOD_3101_048/users",
+        "403 /api/mobile/FOOD_3101_048/transfers",
+        "403 /api/mobile/FOOD_3101_048/purchase/orders"
+      ]
+    },
+    {
+      "account": {
+        "username": "e2e_dispatcher",
+        "roleCode": "dispatcher",
+        "fullName": "E2E Dispatcher",
+        "web": true,
+        "created": true,
+        "loginVerified": true,
+        "factoryType": "FACTORY",
+        "userId": 1525
+      },
+      "loginResult": "OK",
+      "routes": [
+        {
+          "route": "/dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/dashboard/production-progress",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/batches",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/plans",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/bom",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/production/approval",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/bom-achievement",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/process-io",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/material-requisitions",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/warehouse/materials",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/warehouse/shipments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/inventory",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/reusable-containers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/material-price-trend",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/transfer/list",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/quality/inspections",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/quality/disposals",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/quality/standards",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/procurement/orders",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/procurement/suppliers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/procurement/price-lists",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/orders",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/quotes",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/finished-goods",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/customers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/shipments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/hr/employees",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/hr/attendance",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/hr/whitelist",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/hr/departments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/equipment/list",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/equipment/maintenance",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/equipment/alerts",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/costs",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/reports",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/ar-ap",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/sku-margin",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/invoices",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/payments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/rd/samples",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/rd/converted",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/system/users",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/system/roles",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/logs",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/settings",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/ai-intents",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/system/skill-tools",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/products",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/features",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/pos",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/work-processes",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/product-processes",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/workflow-designer",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/smartbi-config",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/smartbi-config/data-sources",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/system/smartbi-config/chart-templates",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/system/badge-generator",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/overview",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/analytics/trends",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/ai-reports",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/kpi",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/analytics/production-report",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/analytics/alert-dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/supply-chain",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/calibration/list",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/overview",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/scheduling/plans",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/realtime",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/workers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/alerts",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/restaurant/requisitions",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/wastage",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/recipes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/stocktaking",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/menu",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/stores",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/dianping",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production-analytics/production",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production-analytics/efficiency",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/finance",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/sales",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/query",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/query-templates",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/analysis",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/smart-bi/upload",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/data-completeness",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/food-kb-feedback",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/calibration",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/financial-dashboard",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/smart-bi/whatif",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/restaurant-v2",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/canvas-editor",
+          "status": "403",
+          "elapsed": "1.0"
+        }
+      ],
+      "netErrors": [
+        "404 /api/mobile/FOOD_3101_048/settings/full",
+        "404 /api/mobile/FOOD_3101_048/settings"
+      ]
+    },
+    {
+      "account": {
+        "username": "e2e_warehouse_mgr",
+        "roleCode": "warehouse_manager",
+        "fullName": "E2E Warehouse Mgr",
+        "web": true,
+        "created": true,
+        "loginVerified": true,
+        "factoryType": "FACTORY",
+        "userId": 1523
+      },
+      "loginResult": "OK",
+      "routes": [
+        {
+          "route": "/dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/dashboard/production-progress",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/batches",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/plans",
+          "status": "ERROR_TOAST",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/bom",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/approval",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/bom-achievement",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/process-io",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/material-requisitions",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/materials",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/shipments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/inventory",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/warehouse/reusable-containers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/material-price-trend",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/transfer/list",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/quality/inspections",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/quality/disposals",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/quality/standards",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/procurement/orders",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/procurement/suppliers",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/procurement/price-lists",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/orders",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/quotes",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/finished-goods",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/customers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/shipments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/hr/employees",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/attendance",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/whitelist",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/departments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/equipment/list",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/equipment/maintenance",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/equipment/alerts",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/costs",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/reports",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/ar-ap",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/sku-margin",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/invoices",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/payments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/rd/samples",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/rd/converted",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/users",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/roles",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/logs",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/settings",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/ai-intents",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/skill-tools",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/products",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/features",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/pos",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/work-processes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/product-processes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/workflow-designer",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config/data-sources",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config/chart-templates",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/badge-generator",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/overview",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/trends",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/ai-reports",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/kpi",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/production-report",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/alert-dashboard",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/supply-chain",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/calibration/list",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/overview",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/plans",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/realtime",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/workers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/alerts",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/restaurant/requisitions",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/wastage",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/recipes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/stocktaking",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/menu",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/stores",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/dianping",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production-analytics/production",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production-analytics/efficiency",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/dashboard",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/finance",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/sales",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/query",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/query-templates",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/analysis",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/upload",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/data-completeness",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/food-kb-feedback",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/calibration",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/financial-dashboard",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/whatif",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/restaurant-v2",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/canvas-editor",
+          "status": "403",
+          "elapsed": "1.0"
+        }
+      ],
+      "netErrors": [
+        "403 /api/mobile/FOOD_3101_048/users"
+      ]
+    },
+    {
+      "account": {
+        "username": "e2e_equipment_admin",
+        "roleCode": "equipment_admin",
+        "fullName": "E2E Equipment Admin",
+        "web": true,
+        "created": true,
+        "loginVerified": true,
+        "factoryType": "FACTORY",
+        "userId": 1522
+      },
+      "loginResult": "OK",
+      "routes": [
+        {
+          "route": "/dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/dashboard/production-progress",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/batches",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/plans",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/production/bom",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/approval",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/bom-achievement",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/process-io",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/material-requisitions",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/materials",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/warehouse/shipments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/warehouse/inventory",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/warehouse/reusable-containers",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/warehouse/material-price-trend",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/transfer/list",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/quality/inspections",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/quality/disposals",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/quality/standards",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/procurement/orders",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/procurement/suppliers",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/procurement/price-lists",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/orders",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/quotes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/finished-goods",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/customers",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/shipments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/employees",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/attendance",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/whitelist",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/departments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/equipment/list",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/equipment/maintenance",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/equipment/alerts",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/costs",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/reports",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/ar-ap",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/sku-margin",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/invoices",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/payments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/rd/samples",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/rd/converted",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/users",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/roles",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/logs",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/settings",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/ai-intents",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/skill-tools",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/products",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/features",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/pos",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/work-processes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/product-processes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/workflow-designer",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config/data-sources",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config/chart-templates",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/badge-generator",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/overview",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/trends",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/ai-reports",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/kpi",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/production-report",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/alert-dashboard",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/supply-chain",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/calibration/list",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/overview",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/plans",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/realtime",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/workers",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/alerts",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/requisitions",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/wastage",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/recipes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/stocktaking",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/menu",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/stores",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/dianping",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production-analytics/production",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production-analytics/efficiency",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/dashboard",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/finance",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/sales",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/query",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/query-templates",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/analysis",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/upload",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/data-completeness",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/food-kb-feedback",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/calibration",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/financial-dashboard",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/whatif",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/restaurant-v2",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/canvas-editor",
+          "status": "403",
+          "elapsed": "1.0"
+        }
+      ],
+      "netErrors": [
+        "403 /api/mobile/FOOD_3101_048/users"
+      ]
+    },
+    {
+      "account": {
+        "username": "e2e_quality_mgr",
+        "roleCode": "quality_manager",
+        "fullName": "E2E Quality Mgr",
+        "web": true,
+        "created": true,
+        "loginVerified": true,
+        "factoryType": "FACTORY",
+        "userId": 1513
+      },
+      "loginResult": "OK",
+      "routes": [
+        {
+          "route": "/dashboard",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/dashboard/production-progress",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/production/batches",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/plans",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/production/bom",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/approval",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/bom-achievement",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/process-io",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/material-requisitions",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/materials",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/warehouse/shipments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/warehouse/inventory",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/warehouse/reusable-containers",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/warehouse/material-price-trend",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/transfer/list",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/quality/inspections",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/quality/disposals",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/quality/standards",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/procurement/orders",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/procurement/suppliers",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/procurement/price-lists",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/orders",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/quotes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/finished-goods",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/customers",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/shipments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/employees",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/attendance",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/whitelist",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/departments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/equipment/list",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/equipment/maintenance",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/equipment/alerts",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/costs",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/reports",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/ar-ap",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/sku-margin",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/invoices",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/payments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/rd/samples",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/rd/converted",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/users",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/roles",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/logs",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/settings",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/ai-intents",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/skill-tools",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/products",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/features",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/pos",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/work-processes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/product-processes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/workflow-designer",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config/data-sources",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config/chart-templates",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/badge-generator",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/overview",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/trends",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/ai-reports",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/kpi",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/production-report",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/alert-dashboard",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/supply-chain",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/calibration/list",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/overview",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/plans",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/realtime",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/workers",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/alerts",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/requisitions",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/wastage",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/recipes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/stocktaking",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/menu",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/stores",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/dianping",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production-analytics/production",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production-analytics/efficiency",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/dashboard",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/finance",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/sales",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/query",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/query-templates",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/analysis",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/upload",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/data-completeness",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/food-kb-feedback",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/calibration",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/financial-dashboard",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/whatif",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/restaurant-v2",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/canvas-editor",
+          "status": "403",
+          "elapsed": "1.0"
+        }
+      ],
+      "netErrors": [
+        "403 /api/mobile/FOOD_3101_048/users"
+      ]
+    },
+    {
+      "account": {
+        "username": "e2e_finance_mgr",
+        "roleCode": "finance_manager",
+        "fullName": "E2E Finance Mgr",
+        "web": true,
+        "created": true,
+        "loginVerified": true,
+        "factoryType": "FACTORY",
+        "userId": 1518
+      },
+      "loginResult": "OK",
+      "routes": [
+        {
+          "route": "/dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/dashboard/production-progress",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/production/batches",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production/plans",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production/bom",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production/approval",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production/bom-achievement",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production/process-io",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production/material-requisitions",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/warehouse/materials",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/warehouse/shipments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/warehouse/inventory",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/warehouse/reusable-containers",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/warehouse/material-price-trend",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/transfer/list",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/quality/inspections",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/quality/disposals",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/quality/standards",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/procurement/orders",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/procurement/suppliers",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/procurement/price-lists",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/orders",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/quotes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/finished-goods",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/customers",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/shipments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/employees",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/attendance",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/whitelist",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/departments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/equipment/list",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/equipment/maintenance",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/equipment/alerts",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/costs",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/reports",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/ar-ap",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/sku-margin",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/invoices",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/payments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/rd/samples",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/rd/converted",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/users",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/roles",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/logs",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/settings",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/ai-intents",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/skill-tools",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/products",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/features",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/pos",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/work-processes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/product-processes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/workflow-designer",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config/data-sources",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config/chart-templates",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/badge-generator",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/overview",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/trends",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/ai-reports",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/kpi",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/production-report",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/alert-dashboard",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/supply-chain",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/calibration/list",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/overview",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/plans",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/realtime",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/workers",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/alerts",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/requisitions",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/wastage",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/recipes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/stocktaking",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/menu",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/stores",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/dianping",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production-analytics/production",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production-analytics/efficiency",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/dashboard",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/smart-bi/finance",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/sales",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/query",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/query-templates",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/analysis",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/smart-bi/upload",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/data-completeness",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/food-kb-feedback",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/calibration",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/financial-dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/whatif",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/restaurant-v2",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/canvas-editor",
+          "status": "403",
+          "elapsed": "1.0"
+        }
+      ],
+      "netErrors": []
+    },
+    {
+      "account": {
+        "username": "e2e_workshop_sup",
+        "roleCode": "workshop_supervisor",
+        "fullName": "E2E Workshop Sup",
+        "web": true,
+        "created": true,
+        "loginVerified": true,
+        "factoryType": "FACTORY",
+        "userId": 1519
+      },
+      "loginResult": "OK",
+      "routes": [
+        {
+          "route": "/dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/dashboard/production-progress",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/batches",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/production/plans",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/bom",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/approval",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/bom-achievement",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/process-io",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/material-requisitions",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/materials",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/shipments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/inventory",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/reusable-containers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/material-price-trend",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/transfer/list",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/quality/inspections",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/quality/disposals",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/quality/standards",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/procurement/orders",
+          "status": "403",
+          "elapsed": "1.5"
+        },
+        {
+          "route": "/procurement/suppliers",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/procurement/price-lists",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/orders",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/quotes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/finished-goods",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/customers",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/sales/shipments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/employees",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/hr/attendance",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/hr/whitelist",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/hr/departments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/equipment/list",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/equipment/maintenance",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/equipment/alerts",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/costs",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/reports",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/ar-ap",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/sku-margin",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/invoices",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/payments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/rd/samples",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/rd/converted",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/users",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/roles",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/logs",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/settings",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/ai-intents",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/skill-tools",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/products",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/features",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/pos",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/work-processes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/product-processes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/workflow-designer",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config/data-sources",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config/chart-templates",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/badge-generator",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/overview",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/trends",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/ai-reports",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/kpi",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/production-report",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/alert-dashboard",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/supply-chain",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/calibration/list",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/overview",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/plans",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/realtime",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/workers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/alerts",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/restaurant/requisitions",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/wastage",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/recipes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/stocktaking",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/menu",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/stores",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/dianping",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production-analytics/production",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production-analytics/efficiency",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/dashboard",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/finance",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/sales",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/query",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/query-templates",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/analysis",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/upload",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/data-completeness",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/food-kb-feedback",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/calibration",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/financial-dashboard",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/whatif",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/smart-bi/restaurant-v2",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/canvas-editor",
+          "status": "403",
+          "elapsed": "1.0"
+        }
+      ],
+      "netErrors": [
+        "403 /api/mobile/FOOD_3101_048/transfers"
+      ]
+    },
+    {
+      "account": {
+        "username": "e2e_viewer",
+        "roleCode": "viewer",
+        "fullName": "E2E Viewer",
+        "web": true,
+        "created": true,
+        "loginVerified": true,
+        "factoryType": "FACTORY",
+        "userId": 1520
+      },
+      "loginResult": "OK",
+      "routes": [
+        {
+          "route": "/dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/dashboard/production-progress",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/batches",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/production/plans",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/bom",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/approval",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/bom-achievement",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/process-io",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/production/material-requisitions",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/materials",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/shipments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/inventory",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/reusable-containers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/material-price-trend",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/transfer/list",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/quality/inspections",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/quality/disposals",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/quality/standards",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/procurement/orders",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/procurement/suppliers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/procurement/price-lists",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/orders",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/quotes",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/finished-goods",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/customers",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/sales/shipments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/hr/employees",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/attendance",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/whitelist",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/hr/departments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/equipment/list",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/equipment/maintenance",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/equipment/alerts",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/costs",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/reports",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/ar-ap",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/sku-margin",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/invoices",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/finance/payments",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/rd/samples",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/rd/converted",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/users",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/roles",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/logs",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/settings",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/ai-intents",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/skill-tools",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/products",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/features",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/pos",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/work-processes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/product-processes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/workflow-designer",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config/data-sources",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/smartbi-config/chart-templates",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/system/badge-generator",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/analytics/overview",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/trends",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/ai-reports",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/analytics/kpi",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/production-report",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/analytics/alert-dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/supply-chain",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/calibration/list",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/scheduling/overview",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/plans",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/realtime",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/workers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/alerts",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/restaurant/requisitions",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/wastage",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/recipes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/stocktaking",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/menu",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/stores",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/dianping",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production-analytics/production",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/production-analytics/efficiency",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/finance",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/smart-bi/sales",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/query",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/query-templates",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/analysis",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/smart-bi/upload",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/data-completeness",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/smart-bi/food-kb-feedback",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/smart-bi/calibration",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/financial-dashboard",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/smart-bi/whatif",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/restaurant-v2",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/canvas-editor",
+          "status": "403",
+          "elapsed": "1.0"
+        }
+      ],
+      "netErrors": []
+    },
+    {
+      "account": {
+        "username": "e2e_production_mgr",
+        "roleCode": "production_manager",
+        "fullName": "E2E Production Mgr",
+        "web": true,
+        "created": true,
+        "loginVerified": true,
+        "factoryType": "FACTORY",
+        "userId": 1524
+      },
+      "loginResult": "OK",
+      "routes": [
+        {
+          "route": "/dashboard",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/dashboard/production-progress",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/batches",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/plans",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/bom",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/approval",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/bom-achievement",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/process-io",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production/material-requisitions",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/materials",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/shipments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/inventory",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/warehouse/reusable-containers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/warehouse/material-price-trend",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/transfer/list",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/quality/inspections",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/quality/disposals",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/quality/standards",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/procurement/orders",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/procurement/suppliers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/procurement/price-lists",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/orders",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/sales/quotes",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/finished-goods",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/customers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/sales/shipments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/hr/employees",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/hr/attendance",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/hr/whitelist",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/hr/departments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/equipment/list",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/equipment/maintenance",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/equipment/alerts",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/costs",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/reports",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/ar-ap",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/sku-margin",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/invoices",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/finance/payments",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/rd/samples",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/rd/converted",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/users",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/roles",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/logs",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/settings",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/ai-intents",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/skill-tools",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/products",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/features",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/pos",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/work-processes",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/product-processes",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/workflow-designer",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/smartbi-config",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/smartbi-config/data-sources",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/smartbi-config/chart-templates",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/system/badge-generator",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/overview",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/trends",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/ai-reports",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/kpi",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/production-report",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/alert-dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/analytics/supply-chain",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/calibration/list",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/overview",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/plans",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/realtime",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/workers",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/scheduling/alerts",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/restaurant/requisitions",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/wastage",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/recipes",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/stocktaking",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/menu",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/stores",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/restaurant/analytics/dianping",
+          "status": "403",
+          "elapsed": "1.0"
+        },
+        {
+          "route": "/production-analytics/production",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/production-analytics/efficiency",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/finance",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/sales",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/smart-bi/query",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/query-templates",
+          "status": "OK",
+          "elapsed": "5.7"
+        },
+        {
+          "route": "/smart-bi/analysis",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/upload",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/data-completeness",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/food-kb-feedback",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/calibration",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/financial-dashboard",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/whatif",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/smart-bi/restaurant-v2",
+          "status": "OK",
+          "elapsed": "5.6"
+        },
+        {
+          "route": "/canvas-editor",
+          "status": "403",
+          "elapsed": "1.0"
+        }
+      ],
+      "netErrors": [
+        "404 /api/mobile/FOOD_3101_048/settings/full",
+        "404 /api/mobile/FOOD_3101_048/settings"
+      ]
+    }
+  ],
+  "totalPass": 606,
+  "totalFail": 522,
+  "failures": [
+    "e2e_factory_admin(factory_super_admin) /canvas-editor: 403",
+    "e2e_hr_admin(hr_admin) /production/batches: 403",
+    "e2e_hr_admin(hr_admin) /production/plans: 403",
+    "e2e_hr_admin(hr_admin) /production/bom: 403",
+    "e2e_hr_admin(hr_admin) /production/approval: 403",
+    "e2e_hr_admin(hr_admin) /production/bom-achievement: 403",
+    "e2e_hr_admin(hr_admin) /production/process-io: 403",
+    "e2e_hr_admin(hr_admin) /production/material-requisitions: 403",
+    "e2e_hr_admin(hr_admin) /warehouse/materials: 403",
+    "e2e_hr_admin(hr_admin) /warehouse/shipments: 403",
+    "e2e_hr_admin(hr_admin) /warehouse/inventory: 403",
+    "e2e_hr_admin(hr_admin) /warehouse/reusable-containers: 403",
+    "e2e_hr_admin(hr_admin) /warehouse/material-price-trend: 403",
+    "e2e_hr_admin(hr_admin) /transfer/list: 403",
+    "e2e_hr_admin(hr_admin) /quality/inspections: 403",
+    "e2e_hr_admin(hr_admin) /quality/disposals: 403",
+    "e2e_hr_admin(hr_admin) /quality/standards: 403",
+    "e2e_hr_admin(hr_admin) /procurement/orders: 403",
+    "e2e_hr_admin(hr_admin) /procurement/suppliers: 403",
+    "e2e_hr_admin(hr_admin) /procurement/price-lists: 403",
+    "e2e_hr_admin(hr_admin) /sales/orders: 403",
+    "e2e_hr_admin(hr_admin) /sales/quotes: 403",
+    "e2e_hr_admin(hr_admin) /sales/finished-goods: 403",
+    "e2e_hr_admin(hr_admin) /sales/customers: 403",
+    "e2e_hr_admin(hr_admin) /sales/shipments: 403",
+    "e2e_hr_admin(hr_admin) /equipment/list: 403",
+    "e2e_hr_admin(hr_admin) /equipment/maintenance: 403",
+    "e2e_hr_admin(hr_admin) /equipment/alerts: 403",
+    "e2e_hr_admin(hr_admin) /finance/costs: 403",
+    "e2e_hr_admin(hr_admin) /finance/reports: 403",
+    "e2e_hr_admin(hr_admin) /finance/ar-ap: 403",
+    "e2e_hr_admin(hr_admin) /finance/sku-margin: 403",
+    "e2e_hr_admin(hr_admin) /finance/invoices: 403",
+    "e2e_hr_admin(hr_admin) /finance/payments: 403",
+    "e2e_hr_admin(hr_admin) /rd/samples: 403",
+    "e2e_hr_admin(hr_admin) /rd/converted: 403",
+    "e2e_hr_admin(hr_admin) /analytics/overview: 403",
+    "e2e_hr_admin(hr_admin) /analytics/trends: 403",
+    "e2e_hr_admin(hr_admin) /analytics/ai-reports: 403",
+    "e2e_hr_admin(hr_admin) /analytics/kpi: 403",
+    "e2e_hr_admin(hr_admin) /analytics/production-report: 403",
+    "e2e_hr_admin(hr_admin) /analytics/alert-dashboard: 403",
+    "e2e_hr_admin(hr_admin) /analytics/supply-chain: 403",
+    "e2e_hr_admin(hr_admin) /scheduling/overview: 403",
+    "e2e_hr_admin(hr_admin) /scheduling/plans: 403",
+    "e2e_hr_admin(hr_admin) /scheduling/realtime: 403",
+    "e2e_hr_admin(hr_admin) /scheduling/workers: 403",
+    "e2e_hr_admin(hr_admin) /scheduling/alerts: 403",
+    "e2e_hr_admin(hr_admin) /production-analytics/production: 403",
+    "e2e_hr_admin(hr_admin) /production-analytics/efficiency: 403",
+    "e2e_hr_admin(hr_admin) /smart-bi/dashboard: 403",
+    "e2e_hr_admin(hr_admin) /smart-bi/finance: 403",
+    "e2e_hr_admin(hr_admin) /smart-bi/sales: 403",
+    "e2e_hr_admin(hr_admin) /smart-bi/query: 403",
+    "e2e_hr_admin(hr_admin) /smart-bi/query-templates: 403",
+    "e2e_hr_admin(hr_admin) /smart-bi/analysis: 403",
+    "e2e_hr_admin(hr_admin) /smart-bi/upload: 403",
+    "e2e_hr_admin(hr_admin) /smart-bi/data-completeness: 403",
+    "e2e_hr_admin(hr_admin) /smart-bi/food-kb-feedback: 403",
+    "e2e_hr_admin(hr_admin) /smart-bi/calibration: 403",
+    "e2e_hr_admin(hr_admin) /smart-bi/financial-dashboard: 403",
+    "e2e_hr_admin(hr_admin) /smart-bi/whatif: 403",
+    "e2e_hr_admin(hr_admin) /smart-bi/restaurant-v2: 403",
+    "e2e_hr_admin(hr_admin) /canvas-editor: 403",
+    "e2e_procurement_mgr(procurement_manager) /quality/inspections: 403",
+    "e2e_procurement_mgr(procurement_manager) /quality/disposals: 403",
+    "e2e_procurement_mgr(procurement_manager) /quality/standards: 403",
+    "e2e_procurement_mgr(procurement_manager) /sales/orders: 403",
+    "e2e_procurement_mgr(procurement_manager) /sales/quotes: 403",
+    "e2e_procurement_mgr(procurement_manager) /sales/finished-goods: 403",
+    "e2e_procurement_mgr(procurement_manager) /sales/customers: 403",
+    "e2e_procurement_mgr(procurement_manager) /sales/shipments: 403",
+    "e2e_procurement_mgr(procurement_manager) /hr/employees: 403",
+    "e2e_procurement_mgr(procurement_manager) /hr/attendance: 403",
+    "e2e_procurement_mgr(procurement_manager) /hr/whitelist: 403",
+    "e2e_procurement_mgr(procurement_manager) /hr/departments: 403",
+    "e2e_procurement_mgr(procurement_manager) /equipment/list: 403",
+    "e2e_procurement_mgr(procurement_manager) /equipment/maintenance: 403",
+    "e2e_procurement_mgr(procurement_manager) /equipment/alerts: 403",
+    "e2e_procurement_mgr(procurement_manager) /system/users: 403",
+    "e2e_procurement_mgr(procurement_manager) /system/roles: 403",
+    "e2e_procurement_mgr(procurement_manager) /system/logs: 403",
+    "e2e_procurement_mgr(procurement_manager) /system/settings: 403",
+    "e2e_procurement_mgr(procurement_manager) /system/ai-intents: 403",
+    "e2e_procurement_mgr(procurement_manager) /system/skill-tools: 403",
+    "e2e_procurement_mgr(procurement_manager) /system/products: 403",
+    "e2e_procurement_mgr(procurement_manager) /system/features: 403",
+    "e2e_procurement_mgr(procurement_manager) /system/pos: 403",
+    "e2e_procurement_mgr(procurement_manager) /system/work-processes: 403",
+    "e2e_procurement_mgr(procurement_manager) /system/product-processes: 403",
+    "e2e_procurement_mgr(procurement_manager) /system/workflow-designer: 403",
+    "e2e_procurement_mgr(procurement_manager) /system/smartbi-config: 403",
+    "e2e_procurement_mgr(procurement_manager) /system/smartbi-config/data-sources: 403",
+    "e2e_procurement_mgr(procurement_manager) /system/smartbi-config/chart-templates: 403",
+    "e2e_procurement_mgr(procurement_manager) /system/badge-generator: 403",
+    "e2e_procurement_mgr(procurement_manager) /analytics/overview: 403",
+    "e2e_procurement_mgr(procurement_manager) /analytics/trends: 403",
+    "e2e_procurement_mgr(procurement_manager) /analytics/ai-reports: 403",
+    "e2e_procurement_mgr(procurement_manager) /analytics/kpi: 403",
+    "e2e_procurement_mgr(procurement_manager) /analytics/production-report: 403",
+    "e2e_procurement_mgr(procurement_manager) /analytics/alert-dashboard: 403",
+    "e2e_procurement_mgr(procurement_manager) /analytics/supply-chain: 403",
+    "e2e_procurement_mgr(procurement_manager) /calibration/list: 403",
+    "e2e_procurement_mgr(procurement_manager) /scheduling/overview: 403",
+    "e2e_procurement_mgr(procurement_manager) /scheduling/plans: 403",
+    "e2e_procurement_mgr(procurement_manager) /scheduling/realtime: 403",
+    "e2e_procurement_mgr(procurement_manager) /scheduling/workers: 403",
+    "e2e_procurement_mgr(procurement_manager) /scheduling/alerts: 403",
+    "e2e_procurement_mgr(procurement_manager) /production-analytics/production: 403",
+    "e2e_procurement_mgr(procurement_manager) /production-analytics/efficiency: 403",
+    "e2e_procurement_mgr(procurement_manager) /smart-bi/dashboard: 403",
+    "e2e_procurement_mgr(procurement_manager) /smart-bi/finance: 403",
+    "e2e_procurement_mgr(procurement_manager) /smart-bi/sales: 403",
+    "e2e_procurement_mgr(procurement_manager) /smart-bi/query: 403",
+    "e2e_procurement_mgr(procurement_manager) /smart-bi/query-templates: 403",
+    "e2e_procurement_mgr(procurement_manager) /smart-bi/analysis: 403",
+    "e2e_procurement_mgr(procurement_manager) /smart-bi/upload: 403",
+    "e2e_procurement_mgr(procurement_manager) /smart-bi/data-completeness: 403",
+    "e2e_procurement_mgr(procurement_manager) /smart-bi/food-kb-feedback: 403",
+    "e2e_procurement_mgr(procurement_manager) /smart-bi/calibration: 403",
+    "e2e_procurement_mgr(procurement_manager) /smart-bi/financial-dashboard: 403",
+    "e2e_procurement_mgr(procurement_manager) /smart-bi/whatif: 403",
+    "e2e_procurement_mgr(procurement_manager) /smart-bi/restaurant-v2: 403",
+    "e2e_procurement_mgr(procurement_manager) /canvas-editor: 403",
+    "e2e_sales_mgr(sales_manager) /quality/inspections: 403",
+    "e2e_sales_mgr(sales_manager) /quality/disposals: 403",
+    "e2e_sales_mgr(sales_manager) /quality/standards: 403",
+    "e2e_sales_mgr(sales_manager) /procurement/orders: 403",
+    "e2e_sales_mgr(sales_manager) /procurement/suppliers: 403",
+    "e2e_sales_mgr(sales_manager) /procurement/price-lists: 403",
+    "e2e_sales_mgr(sales_manager) /hr/employees: 403",
+    "e2e_sales_mgr(sales_manager) /hr/attendance: 403",
+    "e2e_sales_mgr(sales_manager) /hr/whitelist: 403",
+    "e2e_sales_mgr(sales_manager) /hr/departments: 403",
+    "e2e_sales_mgr(sales_manager) /equipment/list: 403",
+    "e2e_sales_mgr(sales_manager) /equipment/maintenance: 403",
+    "e2e_sales_mgr(sales_manager) /equipment/alerts: 403",
+    "e2e_sales_mgr(sales_manager) /system/users: 403",
+    "e2e_sales_mgr(sales_manager) /system/roles: 403",
+    "e2e_sales_mgr(sales_manager) /system/logs: 403",
+    "e2e_sales_mgr(sales_manager) /system/settings: 403",
+    "e2e_sales_mgr(sales_manager) /system/ai-intents: 403",
+    "e2e_sales_mgr(sales_manager) /system/skill-tools: 403",
+    "e2e_sales_mgr(sales_manager) /system/products: 403",
+    "e2e_sales_mgr(sales_manager) /system/features: 403",
+    "e2e_sales_mgr(sales_manager) /system/pos: 403",
+    "e2e_sales_mgr(sales_manager) /system/work-processes: 403",
+    "e2e_sales_mgr(sales_manager) /system/product-processes: 403",
+    "e2e_sales_mgr(sales_manager) /system/workflow-designer: 403",
+    "e2e_sales_mgr(sales_manager) /system/smartbi-config: 403",
+    "e2e_sales_mgr(sales_manager) /system/smartbi-config/data-sources: 403",
+    "e2e_sales_mgr(sales_manager) /system/smartbi-config/chart-templates: 403",
+    "e2e_sales_mgr(sales_manager) /system/badge-generator: 403",
+    "e2e_sales_mgr(sales_manager) /calibration/list: 403",
+    "e2e_sales_mgr(sales_manager) /scheduling/overview: 403",
+    "e2e_sales_mgr(sales_manager) /scheduling/plans: 403",
+    "e2e_sales_mgr(sales_manager) /scheduling/realtime: 403",
+    "e2e_sales_mgr(sales_manager) /scheduling/workers: 403",
+    "e2e_sales_mgr(sales_manager) /scheduling/alerts: 403",
+    "e2e_sales_mgr(sales_manager) /canvas-editor: 403",
+    "e2e_dispatcher(dispatcher) /canvas-editor: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /production/plans: ERROR_TOAST",
+    "e2e_warehouse_mgr(warehouse_manager) /quality/inspections: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /quality/disposals: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /quality/standards: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /hr/employees: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /hr/attendance: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /hr/whitelist: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /hr/departments: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /equipment/list: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /equipment/maintenance: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /equipment/alerts: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /finance/costs: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /finance/reports: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /finance/ar-ap: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /finance/sku-margin: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /finance/invoices: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /finance/payments: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /system/users: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /system/roles: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /system/logs: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /system/settings: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /system/ai-intents: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /system/skill-tools: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /system/products: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /system/features: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /system/pos: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /system/work-processes: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /system/product-processes: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /system/workflow-designer: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /system/smartbi-config: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /system/smartbi-config/data-sources: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /system/smartbi-config/chart-templates: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /system/badge-generator: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /analytics/overview: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /analytics/trends: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /analytics/ai-reports: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /analytics/kpi: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /analytics/production-report: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /analytics/alert-dashboard: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /analytics/supply-chain: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /calibration/list: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /production-analytics/production: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /production-analytics/efficiency: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /smart-bi/dashboard: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /smart-bi/finance: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /smart-bi/sales: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /smart-bi/query: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /smart-bi/query-templates: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /smart-bi/analysis: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /smart-bi/upload: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /smart-bi/data-completeness: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /smart-bi/food-kb-feedback: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /smart-bi/calibration: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /smart-bi/financial-dashboard: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /smart-bi/whatif: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /smart-bi/restaurant-v2: 403",
+    "e2e_warehouse_mgr(warehouse_manager) /canvas-editor: 403",
+    "e2e_equipment_admin(equipment_admin) /warehouse/materials: 403",
+    "e2e_equipment_admin(equipment_admin) /warehouse/shipments: 403",
+    "e2e_equipment_admin(equipment_admin) /warehouse/inventory: 403",
+    "e2e_equipment_admin(equipment_admin) /warehouse/reusable-containers: 403",
+    "e2e_equipment_admin(equipment_admin) /warehouse/material-price-trend: 403",
+    "e2e_equipment_admin(equipment_admin) /transfer/list: 403",
+    "e2e_equipment_admin(equipment_admin) /quality/inspections: 403",
+    "e2e_equipment_admin(equipment_admin) /quality/disposals: 403",
+    "e2e_equipment_admin(equipment_admin) /quality/standards: 403",
+    "e2e_equipment_admin(equipment_admin) /procurement/orders: 403",
+    "e2e_equipment_admin(equipment_admin) /procurement/suppliers: 403",
+    "e2e_equipment_admin(equipment_admin) /procurement/price-lists: 403",
+    "e2e_equipment_admin(equipment_admin) /sales/orders: 403",
+    "e2e_equipment_admin(equipment_admin) /sales/quotes: 403",
+    "e2e_equipment_admin(equipment_admin) /sales/finished-goods: 403",
+    "e2e_equipment_admin(equipment_admin) /sales/customers: 403",
+    "e2e_equipment_admin(equipment_admin) /sales/shipments: 403",
+    "e2e_equipment_admin(equipment_admin) /hr/employees: 403",
+    "e2e_equipment_admin(equipment_admin) /hr/attendance: 403",
+    "e2e_equipment_admin(equipment_admin) /hr/whitelist: 403",
+    "e2e_equipment_admin(equipment_admin) /hr/departments: 403",
+    "e2e_equipment_admin(equipment_admin) /finance/costs: 403",
+    "e2e_equipment_admin(equipment_admin) /finance/reports: 403",
+    "e2e_equipment_admin(equipment_admin) /finance/ar-ap: 403",
+    "e2e_equipment_admin(equipment_admin) /finance/sku-margin: 403",
+    "e2e_equipment_admin(equipment_admin) /finance/invoices: 403",
+    "e2e_equipment_admin(equipment_admin) /finance/payments: 403",
+    "e2e_equipment_admin(equipment_admin) /system/users: 403",
+    "e2e_equipment_admin(equipment_admin) /system/roles: 403",
+    "e2e_equipment_admin(equipment_admin) /system/logs: 403",
+    "e2e_equipment_admin(equipment_admin) /system/settings: 403",
+    "e2e_equipment_admin(equipment_admin) /system/ai-intents: 403",
+    "e2e_equipment_admin(equipment_admin) /system/skill-tools: 403",
+    "e2e_equipment_admin(equipment_admin) /system/products: 403",
+    "e2e_equipment_admin(equipment_admin) /system/features: 403",
+    "e2e_equipment_admin(equipment_admin) /system/pos: 403",
+    "e2e_equipment_admin(equipment_admin) /system/work-processes: 403",
+    "e2e_equipment_admin(equipment_admin) /system/product-processes: 403",
+    "e2e_equipment_admin(equipment_admin) /system/workflow-designer: 403",
+    "e2e_equipment_admin(equipment_admin) /system/smartbi-config: 403",
+    "e2e_equipment_admin(equipment_admin) /system/smartbi-config/data-sources: 403",
+    "e2e_equipment_admin(equipment_admin) /system/smartbi-config/chart-templates: 403",
+    "e2e_equipment_admin(equipment_admin) /system/badge-generator: 403",
+    "e2e_equipment_admin(equipment_admin) /analytics/overview: 403",
+    "e2e_equipment_admin(equipment_admin) /analytics/trends: 403",
+    "e2e_equipment_admin(equipment_admin) /analytics/ai-reports: 403",
+    "e2e_equipment_admin(equipment_admin) /analytics/kpi: 403",
+    "e2e_equipment_admin(equipment_admin) /analytics/production-report: 403",
+    "e2e_equipment_admin(equipment_admin) /analytics/alert-dashboard: 403",
+    "e2e_equipment_admin(equipment_admin) /analytics/supply-chain: 403",
+    "e2e_equipment_admin(equipment_admin) /calibration/list: 403",
+    "e2e_equipment_admin(equipment_admin) /scheduling/overview: 403",
+    "e2e_equipment_admin(equipment_admin) /scheduling/plans: 403",
+    "e2e_equipment_admin(equipment_admin) /scheduling/realtime: 403",
+    "e2e_equipment_admin(equipment_admin) /scheduling/workers: 403",
+    "e2e_equipment_admin(equipment_admin) /scheduling/alerts: 403",
+    "e2e_equipment_admin(equipment_admin) /production-analytics/production: 403",
+    "e2e_equipment_admin(equipment_admin) /production-analytics/efficiency: 403",
+    "e2e_equipment_admin(equipment_admin) /smart-bi/dashboard: 403",
+    "e2e_equipment_admin(equipment_admin) /smart-bi/finance: 403",
+    "e2e_equipment_admin(equipment_admin) /smart-bi/sales: 403",
+    "e2e_equipment_admin(equipment_admin) /smart-bi/query: 403",
+    "e2e_equipment_admin(equipment_admin) /smart-bi/query-templates: 403",
+    "e2e_equipment_admin(equipment_admin) /smart-bi/analysis: 403",
+    "e2e_equipment_admin(equipment_admin) /smart-bi/upload: 403",
+    "e2e_equipment_admin(equipment_admin) /smart-bi/data-completeness: 403",
+    "e2e_equipment_admin(equipment_admin) /smart-bi/food-kb-feedback: 403",
+    "e2e_equipment_admin(equipment_admin) /smart-bi/calibration: 403",
+    "e2e_equipment_admin(equipment_admin) /smart-bi/financial-dashboard: 403",
+    "e2e_equipment_admin(equipment_admin) /smart-bi/whatif: 403",
+    "e2e_equipment_admin(equipment_admin) /smart-bi/restaurant-v2: 403",
+    "e2e_equipment_admin(equipment_admin) /canvas-editor: 403",
+    "e2e_quality_mgr(quality_manager) /warehouse/materials: 403",
+    "e2e_quality_mgr(quality_manager) /warehouse/shipments: 403",
+    "e2e_quality_mgr(quality_manager) /warehouse/inventory: 403",
+    "e2e_quality_mgr(quality_manager) /warehouse/reusable-containers: 403",
+    "e2e_quality_mgr(quality_manager) /warehouse/material-price-trend: 403",
+    "e2e_quality_mgr(quality_manager) /transfer/list: 403",
+    "e2e_quality_mgr(quality_manager) /procurement/orders: 403",
+    "e2e_quality_mgr(quality_manager) /procurement/suppliers: 403",
+    "e2e_quality_mgr(quality_manager) /procurement/price-lists: 403",
+    "e2e_quality_mgr(quality_manager) /sales/orders: 403",
+    "e2e_quality_mgr(quality_manager) /sales/quotes: 403",
+    "e2e_quality_mgr(quality_manager) /sales/finished-goods: 403",
+    "e2e_quality_mgr(quality_manager) /sales/customers: 403",
+    "e2e_quality_mgr(quality_manager) /sales/shipments: 403",
+    "e2e_quality_mgr(quality_manager) /hr/employees: 403",
+    "e2e_quality_mgr(quality_manager) /hr/attendance: 403",
+    "e2e_quality_mgr(quality_manager) /hr/whitelist: 403",
+    "e2e_quality_mgr(quality_manager) /hr/departments: 403",
+    "e2e_quality_mgr(quality_manager) /equipment/list: 403",
+    "e2e_quality_mgr(quality_manager) /equipment/maintenance: 403",
+    "e2e_quality_mgr(quality_manager) /equipment/alerts: 403",
+    "e2e_quality_mgr(quality_manager) /finance/costs: 403",
+    "e2e_quality_mgr(quality_manager) /finance/reports: 403",
+    "e2e_quality_mgr(quality_manager) /finance/ar-ap: 403",
+    "e2e_quality_mgr(quality_manager) /finance/sku-margin: 403",
+    "e2e_quality_mgr(quality_manager) /finance/invoices: 403",
+    "e2e_quality_mgr(quality_manager) /finance/payments: 403",
+    "e2e_quality_mgr(quality_manager) /system/users: 403",
+    "e2e_quality_mgr(quality_manager) /system/roles: 403",
+    "e2e_quality_mgr(quality_manager) /system/logs: 403",
+    "e2e_quality_mgr(quality_manager) /system/settings: 403",
+    "e2e_quality_mgr(quality_manager) /system/ai-intents: 403",
+    "e2e_quality_mgr(quality_manager) /system/skill-tools: 403",
+    "e2e_quality_mgr(quality_manager) /system/products: 403",
+    "e2e_quality_mgr(quality_manager) /system/features: 403",
+    "e2e_quality_mgr(quality_manager) /system/pos: 403",
+    "e2e_quality_mgr(quality_manager) /system/work-processes: 403",
+    "e2e_quality_mgr(quality_manager) /system/product-processes: 403",
+    "e2e_quality_mgr(quality_manager) /system/workflow-designer: 403",
+    "e2e_quality_mgr(quality_manager) /system/smartbi-config: 403",
+    "e2e_quality_mgr(quality_manager) /system/smartbi-config/data-sources: 403",
+    "e2e_quality_mgr(quality_manager) /system/smartbi-config/chart-templates: 403",
+    "e2e_quality_mgr(quality_manager) /system/badge-generator: 403",
+    "e2e_quality_mgr(quality_manager) /analytics/overview: 403",
+    "e2e_quality_mgr(quality_manager) /analytics/trends: 403",
+    "e2e_quality_mgr(quality_manager) /analytics/ai-reports: 403",
+    "e2e_quality_mgr(quality_manager) /analytics/kpi: 403",
+    "e2e_quality_mgr(quality_manager) /analytics/production-report: 403",
+    "e2e_quality_mgr(quality_manager) /analytics/alert-dashboard: 403",
+    "e2e_quality_mgr(quality_manager) /analytics/supply-chain: 403",
+    "e2e_quality_mgr(quality_manager) /calibration/list: 403",
+    "e2e_quality_mgr(quality_manager) /scheduling/overview: 403",
+    "e2e_quality_mgr(quality_manager) /scheduling/plans: 403",
+    "e2e_quality_mgr(quality_manager) /scheduling/realtime: 403",
+    "e2e_quality_mgr(quality_manager) /scheduling/workers: 403",
+    "e2e_quality_mgr(quality_manager) /scheduling/alerts: 403",
+    "e2e_quality_mgr(quality_manager) /production-analytics/production: 403",
+    "e2e_quality_mgr(quality_manager) /production-analytics/efficiency: 403",
+    "e2e_quality_mgr(quality_manager) /smart-bi/dashboard: 403",
+    "e2e_quality_mgr(quality_manager) /smart-bi/finance: 403",
+    "e2e_quality_mgr(quality_manager) /smart-bi/sales: 403",
+    "e2e_quality_mgr(quality_manager) /smart-bi/query: 403",
+    "e2e_quality_mgr(quality_manager) /smart-bi/query-templates: 403",
+    "e2e_quality_mgr(quality_manager) /smart-bi/analysis: 403",
+    "e2e_quality_mgr(quality_manager) /smart-bi/upload: 403",
+    "e2e_quality_mgr(quality_manager) /smart-bi/data-completeness: 403",
+    "e2e_quality_mgr(quality_manager) /smart-bi/food-kb-feedback: 403",
+    "e2e_quality_mgr(quality_manager) /smart-bi/calibration: 403",
+    "e2e_quality_mgr(quality_manager) /smart-bi/financial-dashboard: 403",
+    "e2e_quality_mgr(quality_manager) /smart-bi/whatif: 403",
+    "e2e_quality_mgr(quality_manager) /smart-bi/restaurant-v2: 403",
+    "e2e_quality_mgr(quality_manager) /canvas-editor: 403",
+    "e2e_finance_mgr(finance_manager) /production/batches: 403",
+    "e2e_finance_mgr(finance_manager) /production/plans: 403",
+    "e2e_finance_mgr(finance_manager) /production/bom: 403",
+    "e2e_finance_mgr(finance_manager) /production/approval: 403",
+    "e2e_finance_mgr(finance_manager) /production/bom-achievement: 403",
+    "e2e_finance_mgr(finance_manager) /production/process-io: 403",
+    "e2e_finance_mgr(finance_manager) /production/material-requisitions: 403",
+    "e2e_finance_mgr(finance_manager) /warehouse/materials: 403",
+    "e2e_finance_mgr(finance_manager) /warehouse/shipments: 403",
+    "e2e_finance_mgr(finance_manager) /warehouse/inventory: 403",
+    "e2e_finance_mgr(finance_manager) /warehouse/reusable-containers: 403",
+    "e2e_finance_mgr(finance_manager) /warehouse/material-price-trend: 403",
+    "e2e_finance_mgr(finance_manager) /transfer/list: 403",
+    "e2e_finance_mgr(finance_manager) /quality/inspections: 403",
+    "e2e_finance_mgr(finance_manager) /quality/disposals: 403",
+    "e2e_finance_mgr(finance_manager) /quality/standards: 403",
+    "e2e_finance_mgr(finance_manager) /procurement/orders: 403",
+    "e2e_finance_mgr(finance_manager) /procurement/suppliers: 403",
+    "e2e_finance_mgr(finance_manager) /procurement/price-lists: 403",
+    "e2e_finance_mgr(finance_manager) /sales/orders: 403",
+    "e2e_finance_mgr(finance_manager) /sales/quotes: 403",
+    "e2e_finance_mgr(finance_manager) /sales/finished-goods: 403",
+    "e2e_finance_mgr(finance_manager) /sales/customers: 403",
+    "e2e_finance_mgr(finance_manager) /sales/shipments: 403",
+    "e2e_finance_mgr(finance_manager) /hr/employees: 403",
+    "e2e_finance_mgr(finance_manager) /hr/attendance: 403",
+    "e2e_finance_mgr(finance_manager) /hr/whitelist: 403",
+    "e2e_finance_mgr(finance_manager) /hr/departments: 403",
+    "e2e_finance_mgr(finance_manager) /equipment/list: 403",
+    "e2e_finance_mgr(finance_manager) /equipment/maintenance: 403",
+    "e2e_finance_mgr(finance_manager) /equipment/alerts: 403",
+    "e2e_finance_mgr(finance_manager) /finance/costs: 403",
+    "e2e_finance_mgr(finance_manager) /finance/reports: 403",
+    "e2e_finance_mgr(finance_manager) /finance/ar-ap: 403",
+    "e2e_finance_mgr(finance_manager) /finance/sku-margin: 403",
+    "e2e_finance_mgr(finance_manager) /finance/invoices: 403",
+    "e2e_finance_mgr(finance_manager) /finance/payments: 403",
+    "e2e_finance_mgr(finance_manager) /rd/samples: 403",
+    "e2e_finance_mgr(finance_manager) /rd/converted: 403",
+    "e2e_finance_mgr(finance_manager) /system/users: 403",
+    "e2e_finance_mgr(finance_manager) /system/roles: 403",
+    "e2e_finance_mgr(finance_manager) /system/logs: 403",
+    "e2e_finance_mgr(finance_manager) /system/settings: 403",
+    "e2e_finance_mgr(finance_manager) /system/ai-intents: 403",
+    "e2e_finance_mgr(finance_manager) /system/skill-tools: 403",
+    "e2e_finance_mgr(finance_manager) /system/products: 403",
+    "e2e_finance_mgr(finance_manager) /system/features: 403",
+    "e2e_finance_mgr(finance_manager) /system/pos: 403",
+    "e2e_finance_mgr(finance_manager) /system/work-processes: 403",
+    "e2e_finance_mgr(finance_manager) /system/product-processes: 403",
+    "e2e_finance_mgr(finance_manager) /system/workflow-designer: 403",
+    "e2e_finance_mgr(finance_manager) /system/smartbi-config: 403",
+    "e2e_finance_mgr(finance_manager) /system/smartbi-config/data-sources: 403",
+    "e2e_finance_mgr(finance_manager) /system/smartbi-config/chart-templates: 403",
+    "e2e_finance_mgr(finance_manager) /system/badge-generator: 403",
+    "e2e_finance_mgr(finance_manager) /analytics/overview: 403",
+    "e2e_finance_mgr(finance_manager) /analytics/trends: 403",
+    "e2e_finance_mgr(finance_manager) /analytics/ai-reports: 403",
+    "e2e_finance_mgr(finance_manager) /analytics/kpi: 403",
+    "e2e_finance_mgr(finance_manager) /analytics/production-report: 403",
+    "e2e_finance_mgr(finance_manager) /analytics/alert-dashboard: 403",
+    "e2e_finance_mgr(finance_manager) /analytics/supply-chain: 403",
+    "e2e_finance_mgr(finance_manager) /calibration/list: 403",
+    "e2e_finance_mgr(finance_manager) /scheduling/overview: 403",
+    "e2e_finance_mgr(finance_manager) /scheduling/plans: 403",
+    "e2e_finance_mgr(finance_manager) /scheduling/realtime: 403",
+    "e2e_finance_mgr(finance_manager) /scheduling/workers: 403",
+    "e2e_finance_mgr(finance_manager) /scheduling/alerts: 403",
+    "e2e_finance_mgr(finance_manager) /production-analytics/production: 403",
+    "e2e_finance_mgr(finance_manager) /production-analytics/efficiency: 403",
+    "e2e_finance_mgr(finance_manager) /smart-bi/upload: 403",
+    "e2e_finance_mgr(finance_manager) /smart-bi/data-completeness: 403",
+    "e2e_finance_mgr(finance_manager) /smart-bi/food-kb-feedback: 403",
+    "e2e_finance_mgr(finance_manager) /smart-bi/calibration: 403",
+    "e2e_finance_mgr(finance_manager) /smart-bi/whatif: 403",
+    "e2e_finance_mgr(finance_manager) /smart-bi/restaurant-v2: 403",
+    "e2e_finance_mgr(finance_manager) /canvas-editor: 403",
+    "e2e_workshop_sup(workshop_supervisor) /procurement/orders: 403",
+    "e2e_workshop_sup(workshop_supervisor) /procurement/suppliers: 403",
+    "e2e_workshop_sup(workshop_supervisor) /procurement/price-lists: 403",
+    "e2e_workshop_sup(workshop_supervisor) /sales/orders: 403",
+    "e2e_workshop_sup(workshop_supervisor) /sales/quotes: 403",
+    "e2e_workshop_sup(workshop_supervisor) /sales/finished-goods: 403",
+    "e2e_workshop_sup(workshop_supervisor) /sales/customers: 403",
+    "e2e_workshop_sup(workshop_supervisor) /sales/shipments: 403",
+    "e2e_workshop_sup(workshop_supervisor) /finance/costs: 403",
+    "e2e_workshop_sup(workshop_supervisor) /finance/reports: 403",
+    "e2e_workshop_sup(workshop_supervisor) /finance/ar-ap: 403",
+    "e2e_workshop_sup(workshop_supervisor) /finance/sku-margin: 403",
+    "e2e_workshop_sup(workshop_supervisor) /finance/invoices: 403",
+    "e2e_workshop_sup(workshop_supervisor) /finance/payments: 403",
+    "e2e_workshop_sup(workshop_supervisor) /system/users: 403",
+    "e2e_workshop_sup(workshop_supervisor) /system/roles: 403",
+    "e2e_workshop_sup(workshop_supervisor) /system/logs: 403",
+    "e2e_workshop_sup(workshop_supervisor) /system/settings: 403",
+    "e2e_workshop_sup(workshop_supervisor) /system/ai-intents: 403",
+    "e2e_workshop_sup(workshop_supervisor) /system/skill-tools: 403",
+    "e2e_workshop_sup(workshop_supervisor) /system/products: 403",
+    "e2e_workshop_sup(workshop_supervisor) /system/features: 403",
+    "e2e_workshop_sup(workshop_supervisor) /system/pos: 403",
+    "e2e_workshop_sup(workshop_supervisor) /system/work-processes: 403",
+    "e2e_workshop_sup(workshop_supervisor) /system/product-processes: 403",
+    "e2e_workshop_sup(workshop_supervisor) /system/workflow-designer: 403",
+    "e2e_workshop_sup(workshop_supervisor) /system/smartbi-config: 403",
+    "e2e_workshop_sup(workshop_supervisor) /system/smartbi-config/data-sources: 403",
+    "e2e_workshop_sup(workshop_supervisor) /system/smartbi-config/chart-templates: 403",
+    "e2e_workshop_sup(workshop_supervisor) /system/badge-generator: 403",
+    "e2e_workshop_sup(workshop_supervisor) /analytics/overview: 403",
+    "e2e_workshop_sup(workshop_supervisor) /analytics/trends: 403",
+    "e2e_workshop_sup(workshop_supervisor) /analytics/ai-reports: 403",
+    "e2e_workshop_sup(workshop_supervisor) /analytics/kpi: 403",
+    "e2e_workshop_sup(workshop_supervisor) /analytics/production-report: 403",
+    "e2e_workshop_sup(workshop_supervisor) /analytics/alert-dashboard: 403",
+    "e2e_workshop_sup(workshop_supervisor) /analytics/supply-chain: 403",
+    "e2e_workshop_sup(workshop_supervisor) /calibration/list: 403",
+    "e2e_workshop_sup(workshop_supervisor) /production-analytics/production: 403",
+    "e2e_workshop_sup(workshop_supervisor) /production-analytics/efficiency: 403",
+    "e2e_workshop_sup(workshop_supervisor) /smart-bi/dashboard: 403",
+    "e2e_workshop_sup(workshop_supervisor) /smart-bi/finance: 403",
+    "e2e_workshop_sup(workshop_supervisor) /smart-bi/sales: 403",
+    "e2e_workshop_sup(workshop_supervisor) /smart-bi/query: 403",
+    "e2e_workshop_sup(workshop_supervisor) /smart-bi/query-templates: 403",
+    "e2e_workshop_sup(workshop_supervisor) /smart-bi/analysis: 403",
+    "e2e_workshop_sup(workshop_supervisor) /smart-bi/upload: 403",
+    "e2e_workshop_sup(workshop_supervisor) /smart-bi/data-completeness: 403",
+    "e2e_workshop_sup(workshop_supervisor) /smart-bi/food-kb-feedback: 403",
+    "e2e_workshop_sup(workshop_supervisor) /smart-bi/calibration: 403",
+    "e2e_workshop_sup(workshop_supervisor) /smart-bi/financial-dashboard: 403",
+    "e2e_workshop_sup(workshop_supervisor) /smart-bi/whatif: 403",
+    "e2e_workshop_sup(workshop_supervisor) /smart-bi/restaurant-v2: 403",
+    "e2e_workshop_sup(workshop_supervisor) /canvas-editor: 403",
+    "e2e_viewer(viewer) /hr/employees: 403",
+    "e2e_viewer(viewer) /hr/attendance: 403",
+    "e2e_viewer(viewer) /hr/whitelist: 403",
+    "e2e_viewer(viewer) /hr/departments: 403",
+    "e2e_viewer(viewer) /finance/costs: 403",
+    "e2e_viewer(viewer) /finance/reports: 403",
+    "e2e_viewer(viewer) /finance/ar-ap: 403",
+    "e2e_viewer(viewer) /finance/sku-margin: 403",
+    "e2e_viewer(viewer) /finance/invoices: 403",
+    "e2e_viewer(viewer) /finance/payments: 403",
+    "e2e_viewer(viewer) /system/users: 403",
+    "e2e_viewer(viewer) /system/roles: 403",
+    "e2e_viewer(viewer) /system/logs: 403",
+    "e2e_viewer(viewer) /system/settings: 403",
+    "e2e_viewer(viewer) /system/ai-intents: 403",
+    "e2e_viewer(viewer) /system/skill-tools: 403",
+    "e2e_viewer(viewer) /system/products: 403",
+    "e2e_viewer(viewer) /system/features: 403",
+    "e2e_viewer(viewer) /system/pos: 403",
+    "e2e_viewer(viewer) /system/work-processes: 403",
+    "e2e_viewer(viewer) /system/product-processes: 403",
+    "e2e_viewer(viewer) /system/workflow-designer: 403",
+    "e2e_viewer(viewer) /system/smartbi-config: 403",
+    "e2e_viewer(viewer) /system/smartbi-config/data-sources: 403",
+    "e2e_viewer(viewer) /system/smartbi-config/chart-templates: 403",
+    "e2e_viewer(viewer) /system/badge-generator: 403",
+    "e2e_viewer(viewer) /calibration/list: 403",
+    "e2e_viewer(viewer) /canvas-editor: 403",
+    "e2e_production_mgr(production_manager) /canvas-editor: 403"
+  ]
+}

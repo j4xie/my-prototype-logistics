@@ -1,0 +1,22 @@
+{
+  "timestamp": "2026-04-14T07:45:00.000Z",
+  "factoryId": "FOOD_3101_048",
+  "factoryType": "FACTORY",
+  "accounts": [
+    { "username": "e2e_factory_admin", "roleCode": "factory_super_admin", "fullName": "E2E Factory Admin", "web": true, "created": true, "loginVerified": true, "factoryType": "FACTORY", "userId": 1511 },
+    { "username": "e2e_hr_admin", "roleCode": "hr_admin", "fullName": "E2E HR Admin", "web": true, "created": true, "loginVerified": true, "factoryType": "FACTORY", "userId": 1514 },
+    { "username": "e2e_procurement_mgr", "roleCode": "procurement_manager", "fullName": "E2E Procurement Mgr", "web": true, "created": true, "loginVerified": true, "factoryType": "FACTORY", "userId": 1515 },
+    { "username": "e2e_sales_mgr", "roleCode": "sales_manager", "fullName": "E2E Sales Mgr", "web": true, "created": true, "loginVerified": true, "factoryType": "FACTORY", "userId": 1516 },
+    { "username": "e2e_dispatcher", "roleCode": "dispatcher", "fullName": "E2E Dispatcher", "web": true, "created": true, "loginVerified": true, "factoryType": "FACTORY", "userId": 1525 },
+    { "username": "e2e_warehouse_mgr", "roleCode": "warehouse_manager", "fullName": "E2E Warehouse Mgr", "web": true, "created": true, "loginVerified": true, "factoryType": "FACTORY", "userId": 1523 },
+    { "username": "e2e_equipment_admin", "roleCode": "equipment_admin", "fullName": "E2E Equipment Admin", "web": true, "created": true, "loginVerified": true, "factoryType": "FACTORY", "userId": 1522 },
+    { "username": "e2e_quality_mgr", "roleCode": "quality_manager", "fullName": "E2E Quality Mgr", "web": true, "created": true, "loginVerified": true, "factoryType": "FACTORY", "userId": 1513 },
+    { "username": "e2e_finance_mgr", "roleCode": "finance_manager", "fullName": "E2E Finance Mgr", "web": true, "created": true, "loginVerified": true, "factoryType": "FACTORY", "userId": 1518 },
+    { "username": "e2e_workshop_sup", "roleCode": "workshop_supervisor", "fullName": "E2E Workshop Sup", "web": true, "created": true, "loginVerified": true, "factoryType": "FACTORY", "userId": 1519 },
+    { "username": "e2e_viewer", "roleCode": "viewer", "fullName": "E2E Viewer", "web": true, "created": true, "loginVerified": true, "factoryType": "FACTORY", "userId": 1520 },
+    { "username": "e2e_production_mgr", "roleCode": "production_manager", "fullName": "E2E Production Mgr", "web": true, "created": true, "loginVerified": true, "factoryType": "FACTORY", "userId": 1524 },
+    { "username": "e2e_quality_insp", "roleCode": "quality_inspector", "fullName": "E2E Quality Insp", "web": false, "created": true, "loginVerified": true, "factoryType": "FACTORY", "userId": 1517 },
+    { "username": "e2e_operator", "roleCode": "operator", "fullName": "E2E Operator", "web": false, "created": true, "loginVerified": true, "factoryType": "FACTORY", "userId": 1521 },
+    { "username": "e2e_warehouse_worker", "roleCode": "warehouse_worker", "fullName": "E2E Warehouse Worker", "web": false, "created": true, "loginVerified": true, "factoryType": "FACTORY", "userId": 1512 }
+  ]
+}
