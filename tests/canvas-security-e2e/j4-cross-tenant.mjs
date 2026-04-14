@@ -332,6 +332,62 @@ async function attack4CrossTenantCustomFieldsWrite(tokenA, tokenB, recordIdA) {
 }
 
 // ---------------------------------------------------------------------------
+// Attack 4b — Cross-tenant custom-fields READ (R3 P0-5, symmetric to J4-4 write)
+// ---------------------------------------------------------------------------
+// R3 adds verifyParentOwnership to both setCustomFields AND getCustomFields.
+// This test verifies the GET endpoint blocks cross-tenant reads at HTTP 400
+// (BusinessException via verifyParentOwnership). Before R3, getCustomFields
+// had only a service-layer WHERE clause defense and returned empty data (200)
+// on cross-tenant read, which was a different flavor of the same silent-pass
+// class as J4-4 write.
+//
+// depth: medium — real API GET with assertion on status + response message,
+//   no mutation to verify (reads are naturally medium, not deep).
+async function attack4bCrossTenantCustomFieldsRead(tokenB, recordIdA) {
+  const TEST_ID = 'J4-4b';
+  if (!tokenB) {
+    rc.log(TEST_ID, 'WARN', '[depth=medium] Skipped — Factory B token unavailable');
+    return;
+  }
+  if (!recordIdA) {
+    rc.log(TEST_ID, 'WARN', '[depth=medium] Skipped — no Factory A sales order ID available');
+    return;
+  }
+
+  try {
+    // F006 user attempts to read F002 record's custom fields via F006 URL path.
+    // Before R3: service-layer WHERE factory_id=? returned empty data, status 200.
+    // After R3: controller-layer verifyParentOwnership throws BusinessException → 400.
+    const result = await apiGet(
+      `${FACTORY_B}/sales_order/${recordIdA}/custom-fields`,
+      tokenB
+    );
+    const apiBlockedHard = result.status === 403;
+    const apiBlockedSoft = (result.status >= 400 && result.status !== 403) || !result.success;
+
+    if (apiBlockedHard) {
+      rc.log(
+        TEST_ID, 'PASS',
+        `[depth=medium] Cross-tenant read rejected at JwtAuth layer — HTTP 403 message="${result.message}"`
+      );
+    } else if (apiBlockedSoft) {
+      rc.log(
+        TEST_ID, 'PASS',
+        `[depth=medium] Cross-tenant read rejected — HTTP ${result.status} (verifyParentOwnership) message="${result.message}"`
+      );
+    } else {
+      rc.log(
+        TEST_ID, 'FAIL',
+        `[depth=medium] Cross-tenant read was NOT rejected — HTTP ${result.status} success=${result.success} ` +
+        `data=${JSON.stringify(result.data).slice(0, 120)}`
+      );
+    }
+  } catch (err) {
+    rc.log(TEST_ID, 'FAIL', `[depth=medium] Unexpected error: ${err.message}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Attack 5 — Cross-tenant ConfigChangeSet approve (Fix 10, 15c)
 // ---------------------------------------------------------------------------
 async function attack5CrossTenantChangeSetApprove(tokenA, tokenB) {
@@ -562,6 +618,7 @@ async function main() {
     rc.log('J4-2', 'FAIL', 'Skipped — Factory A token unavailable');
     rc.log('J4-3', 'FAIL', 'Skipped — Factory A token unavailable');
     rc.log('J4-4', 'FAIL', 'Skipped — Factory A token unavailable');
+    rc.log('J4-4b', 'FAIL', 'Skipped — Factory A token unavailable');
     rc.log('J4-5', 'FAIL', 'Skipped — Factory A token unavailable');
     rc.log('J4-6', 'FAIL', 'Skipped — Factory A token unavailable');
     rc.log('J4-6b', 'FAIL', 'Skipped — Factory A token unavailable');
@@ -587,6 +644,7 @@ async function main() {
   await attack2SqlInjectionSubTableColumn(attackToken, recordIdA);
   await attack3CrossTenantSubTableRead(tokenB, recordIdA);
   await attack4CrossTenantCustomFieldsWrite(tokenA, tokenB, recordIdA);
+  await attack4bCrossTenantCustomFieldsRead(tokenB, recordIdA); // R3 P0-5
   await attack5CrossTenantChangeSetApprove(tokenA, tokenB);
   await attack6CronDdos(attackToken);
   await attack6bCronCommBypass(attackToken);

@@ -733,6 +733,188 @@ async function phaseD_rollback(token) {
 }
 
 // ---------------------------------------------------------------------------
+// Phase E — Custom field roundtrip (deep positive-path test)
+// ---------------------------------------------------------------------------
+//
+// R3 P0-4 (depth-first-e2e skill Rule 2): this round MUST include at least
+// one `depth: deep` test. Prior rounds only tested the negative path (J4-4
+// cross-tenant rejection), never the positive path (same-factory legit write
+// roundtrip). That gap meant R3's backend fix (verifyParentOwnership on
+// setCustomFields/getCustomFields) could have silently broken legitimate
+// writes and no test would catch it.
+//
+// This phase is a deep positive-path test satisfying all 5 deep criteria:
+//   1. Real API write (PUT) with real field value
+//   2. Real API read (GET) before AND after the write
+//   3. Response status check (not just try/catch)
+//   4. State mutation verification (before != after, new value present)
+//   5. Cleanup (restore original value to avoid polluting subsequent runs)
+//
+// depth: deep — if backend returns 500 or data doesn't mutate, test FAILs.
+async function phaseE_customFieldRoundtrip(token) {
+  // Discover a sales order record in Factory A
+  let recordId = null;
+  try {
+    const listRes = await apiGet(`${F}/sales/orders?page=1&size=1`, token);
+    if (listRes.status !== 200) {
+      rc.log(
+        'J1-E0',
+        'WARN',
+        `[depth=deep] Cannot list Factory A sales orders — HTTP ${listRes.status}. Skipping Phase E.`
+      );
+      return;
+    }
+    const d = listRes.data;
+    const records =
+      (Array.isArray(d) && d) ||
+      (d && Array.isArray(d.content) && d.content) ||
+      (d && Array.isArray(d.records) && d.records) ||
+      (d && Array.isArray(d.list) && d.list) ||
+      [];
+    if (records.length === 0) {
+      rc.log(
+        'J1-E0',
+        'WARN',
+        '[depth=deep] Factory A has no sales orders to test against — skipping Phase E'
+      );
+      return;
+    }
+    recordId = records[0].id ?? records[0].orderId ?? records[0].recordId;
+    if (!recordId) {
+      rc.log(
+        'J1-E0',
+        'WARN',
+        `[depth=deep] Cannot extract record ID (keys: ${Object.keys(records[0]).join(', ')}) — skipping`
+      );
+      return;
+    }
+    rc.log('J1-E0', 'PASS', `[depth=deep] Located Factory A record ${recordId} for roundtrip`);
+  } catch (err) {
+    rc.log('J1-E0', 'FAIL', `[depth=deep] Setup error: ${err.message}`);
+    return;
+  }
+
+  // Pick a unique test value so we can detect mutation unambiguously.
+  // Use the TEXT field that phaseA3_createDynamicFields just created in this run
+  // (same SUFFIX guarantees the field exists + is published in Phase B).
+  // Do NOT use a hardcoded name like 'customer_level' — F002 has no such field,
+  // and setDynamicFields silently drops unmatched fields at L237 (setClauses.isEmpty).
+  const TEST_VALUE = `E2E_ROUNDTRIP_${SUFFIX}`;
+  const FIELD_CODE = `dlv_priority${SUFFIX}`;
+
+  // E1: Read original value (before)
+  let originalValue = null;
+  try {
+    const before = await apiGet(
+      `${F}/sales_order/${recordId}/custom-fields`,
+      token
+    );
+    if (before.status !== 200) {
+      rc.log(
+        'J1-E1',
+        'FAIL',
+        `[depth=deep] GET custom-fields before write returned HTTP ${before.status}: ${before.message || '(no msg)'}`
+      );
+      return;
+    }
+    originalValue = before.data?.[FIELD_CODE] ?? null;
+    rc.log(
+      'J1-E1',
+      'PASS',
+      `[depth=deep] Pre-write GET HTTP 200, ${FIELD_CODE}=${JSON.stringify(originalValue)}`
+    );
+  } catch (err) {
+    rc.log('J1-E1', 'FAIL', `[depth=deep] Pre-write GET error: ${err.message}`);
+    return;
+  }
+
+  // E2+E3 wrapped in try/finally so cleanup is guaranteed to run on any path
+  // that successfully mutated the DB, even if E3 fails or throws.
+  let dbMutated = false;
+  try {
+    // E2: PUT the new value
+    try {
+      const put = await apiPut(
+        `${F}/sales_order/${recordId}/custom-fields`,
+        { [FIELD_CODE]: TEST_VALUE },
+        token
+      );
+      if (put.status !== 200) {
+        rc.log(
+          'J1-E2',
+          'FAIL',
+          `[depth=deep] PUT returned HTTP ${put.status}: ${put.message || '(no msg)'} — ` +
+          `R3 backend fix (verifyParentOwnership) may have incorrectly rejected a legitimate same-factory write`
+        );
+        return;
+      }
+      dbMutated = true; // write succeeded — cleanup is required
+      rc.log(
+        'J1-E2',
+        'PASS',
+        `[depth=deep] PUT custom-fields { ${FIELD_CODE}: ${TEST_VALUE} } → HTTP 200 success=${put.success}`
+      );
+    } catch (err) {
+      rc.log('J1-E2', 'FAIL', `[depth=deep] PUT error: ${err.message}`);
+      return;
+    }
+
+    // E3: Read back after write and verify mutation is visible
+    try {
+      const after = await apiGet(
+        `${F}/sales_order/${recordId}/custom-fields`,
+        token
+      );
+      if (after.status !== 200) {
+        rc.log(
+          'J1-E3',
+          'FAIL',
+          `[depth=deep] Post-write GET returned HTTP ${after.status}: ${after.message || '(no msg)'}`
+        );
+        return;
+      }
+      const actualValue = after.data?.[FIELD_CODE];
+      if (actualValue === TEST_VALUE) {
+        rc.log(
+          'J1-E3',
+          'PASS',
+          `[depth=deep] Roundtrip verified — ${FIELD_CODE}=${actualValue} matches write. ` +
+          `before=${JSON.stringify(originalValue)} after=${JSON.stringify(actualValue)}`
+        );
+      } else {
+        rc.log(
+          'J1-E3',
+          'FAIL',
+          `[depth=deep] Post-write read shows ${FIELD_CODE}=${JSON.stringify(actualValue)} ` +
+          `but expected "${TEST_VALUE}" — write silently dropped or filtered`
+        );
+      }
+    } catch (err) {
+      rc.log('J1-E3', 'FAIL', `[depth=deep] Post-write GET error: ${err.message}`);
+    }
+  } finally {
+    // E4: Cleanup — restore original value, always runs if the write mutated DB.
+    // Best effort: failures are logged to stdout but don't affect test result.
+    if (dbMutated) {
+      try {
+        const cleanup = await apiPut(
+          `${F}/sales_order/${recordId}/custom-fields`,
+          { [FIELD_CODE]: originalValue },
+          token
+        );
+        if (cleanup.status === 200) {
+          console.log(`  [J1-E cleanup] restored ${FIELD_CODE} to original value`);
+        } else {
+          console.log(`  [J1-E cleanup] WARNING: restore returned HTTP ${cleanup.status}, test record may be dirty`);
+        }
+      } catch (err) {
+        console.log(`  [J1-E cleanup] WARNING: restore threw — ${err.message}, test record may be dirty`);
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 async function main() {
@@ -785,6 +967,12 @@ async function main() {
   // Phase C — Module toggle E2E (R1 addition: close Canvas 模块启停 0% gap)
   console.log('\n--- Phase C: Module Toggle ---');
   await phaseC_moduleToggle(token);
+
+  // Phase E — R3 P0-4: deep positive-path custom field roundtrip (depth-first-e2e Rule 2).
+  // Runs BEFORE Phase D so phaseD_rollback's history mutations don't interfere
+  // with the freshly-published dynamic field columns from Phase B.
+  console.log('\n--- Phase E: Custom Field Roundtrip (deep) ---');
+  await phaseE_customFieldRoundtrip(token);
 
   // Phase D
   console.log('\n--- Phase D: Rollback ---');

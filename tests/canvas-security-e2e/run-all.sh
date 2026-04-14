@@ -33,9 +33,20 @@ run_journey() {
 # Clean token cache from previous runs
 rm -f "$DIR/results/.token-cache.json"
 
+# R3 P1a: optional CANVAS_E2E_RUN_ID env var to isolate runs without cp/mv.
+# When set (e.g. "R3-run1"), helpers write *-results-${RUN_ID}.json and this
+# script aggregates only those files. When unset, legacy *-results.json path.
+RUN_ID="${CANVAS_E2E_RUN_ID:-}"
+export CANVAS_E2E_RUN_ID
+if [ -n "$RUN_ID" ]; then
+  # Clean any prior run with the same RUN_ID to avoid stale mix
+  rm -f "$DIR/results/"*"-results-${RUN_ID}.json"
+fi
+
 echo "Canvas Security E2E Test Suite"
 echo "API: ${E2E_API_BASE:-http://localhost:10011/api/mobile}"
-echo "Web: ${E2E_WEB_URL:-http://139.196.165.140:8086}"
+echo "Web: ${E2E_WEB_URL:-http://localhost:5173}"
+echo "Run ID: ${RUN_ID:-<default>}"
 echo "Time: $(date)"
 echo ""
 
@@ -68,6 +79,8 @@ echo ""
 
 # Aggregate all result JSONs (test-level, not journey-level)
 # WARN is treated as failure per E2E skill rules (references/test-rules.md:379)
+# R3 P1a: when CANVAS_E2E_RUN_ID is set, aggregate only -${RUN_ID}.json files;
+# when unset, aggregate legacy *-results.json files.
 node -e "
 const fs = require('fs');
 const path = require('path');
@@ -76,13 +89,18 @@ const path = require('path');
 const dir = '$DIR' + '/results';
 // Normalize Git Bash path for Node.js on Windows
 const normalizedDir = dir.replace(/^\\/([a-z])\\//, '\$1:/');
+const runId = process.env.CANVAS_E2E_RUN_ID || '';
+const suffix = runId ? '-results-' + runId + '.json' : '-results.json';
 let pass=0, fail=0, warn=0, total=0;
 let journeyCount = 0;
 try {
-  // Only read *-results.json files (exclude .token-cache.json and any other metadata)
-  const files = fs.readdirSync(normalizedDir).filter(f=>f.endsWith('-results.json'));
+  // Only read journey result files for the current run (exclude tokens, other runs, metadata)
+  const allFiles = fs.readdirSync(normalizedDir);
+  const files = runId
+    ? allFiles.filter(f => f.endsWith(suffix))
+    : allFiles.filter(f => f.endsWith('-results.json') && !f.match(/-results-[^/]+\\.json\$/));
   if (files.length === 0) {
-    console.error('ERROR: No *-results.json files found in ' + normalizedDir);
+    console.error('ERROR: No ' + suffix + ' files found in ' + normalizedDir);
     console.error('Journeys may have failed before rc.save() was called.');
     process.exit(2);
   }

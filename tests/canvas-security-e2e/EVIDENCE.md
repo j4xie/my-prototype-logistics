@@ -212,4 +212,45 @@ grep -r "@RequireModule" backend/java/cretas-api/src/main/java/com/cretas/aims/c
 
 ---
 
+## 12. R3 发现: `setCustomFields` 缺 `@Transactional` (latent silent data loss)
+
+**来源**: R3 第一次跑 J1-E phaseE 深度 round-trip 测试 (depth-first-e2e Rule 2) → 立即 FAIL → 排查发现 latent bug
+
+**问题**:
+- `DynamicFieldController.setCustomFields()` 之前**没有** `@Transactional` 注解
+- `DynamicFieldService.setDynamicFields()` 用 raw `JdbcTemplate.update("UPDATE ...")` 写动态字段
+- `application-pg-prod.properties:spring.datasource.hikari.auto-commit=false` — HikariCP 配置连接 autoCommit=false
+- 没有 Spring transaction boundary → JdbcTemplate update 跑在 connection 级隐式事务里, **从未 commit**
+- 连接归还连接池, 下次拿到 fresh autoCommit=false 连接, 之前的 update 已经 rollback
+- API PUT 返回 HTTP 200 success (controller 方法正常返回, 没异常)
+- 后续 GET 同一记录字段值仍为 null
+
+**影响**:
+- 所有**直接通过 API PUT** `/api/mobile/{factoryId}/{moduleCode}/{recordId}/custom-fields` 的写入都在静默丢失数据
+- service 层 caller 如 `MaterialBatchServiceImpl.createMaterialBatch` (本身有 outer `@Transactional`) **不受影响**, 因为外层事务边界生效
+- bug 存在数月未被发现, 因为**74 个旧 E2E 测试都没有 PUT 后 GET 校验回读**这个流程
+- J4-4 跨租户 attack 测试一直 PASS 是因为 attacker 那边走的是 `verifyParentOwnership` (R3 加的) → 直接 400 拒绝, **没机会**触发 hikari/事务问题
+
+**修复**:
+- `DynamicFieldController.setCustomFields()` 加 `@Transactional` (controller-level minimal scope)
+- 同 commit 还加了 `verifyParentOwnership` (R3 P0-1, 修 R2 J4-4 WARN) 和 `validateModuleCode` (R3 P0-3, 对齐 sub-table SEC-4 模式)
+
+**验证**:
+1. Manual smoke (R3 deploy 后): PUT `dlv_priority_e2e_*=POSTFIX_VERIFY` → GET 返回 `'POSTFIX_VERIFY'` ✓
+2. R3-run1 J1-E3 PASS evidence: "Roundtrip verified — actualValue matches write"
+3. R3-run2 J1-E3 PASS (independent verification, 2 min 间隔)
+
+**Bug 的元意义**:
+- 这是 depth-first-e2e skill 价值的最强证据
+- "如果这个 bug 真的存在, 我的测试会不会 FAIL?" — 旧 74 个测试答案全是"不会"; J1-E phaseE 的答案是"会"
+- 如果没有警告 + skill 介入, R3 会按 6 项收尾, R4 才会发现 @Transactional bug, R5 才能闭环 — 多浪费 2 个 round
+- **每 round 至少 1 个 deep test 不是仪式, 是 bug 发现的必要条件**
+
+**R4 Carryover (有明确技术原因)**:
+1. `@Transactional` 移到 service 层 (`DynamicFieldService.setDynamicFields`) — 需要 caller audit 防止嵌套事务行为变化
+2. audit 同 controller 其他 `JdbcTemplate.update/execute` callers (`setSubTableRow` / `deleteSubTableRow` / `updateRow`) 是否有同样 latent bug
+3. 决定 `setDynamicFields setClauses.isEmpty() return` 早返回的语义 — throw "field not found" or silent no-op
+
+---
+
 **维护**: 每次 R{N} 循环结束, 更新本文档相关章节, 保持与实际套件行为一致。
