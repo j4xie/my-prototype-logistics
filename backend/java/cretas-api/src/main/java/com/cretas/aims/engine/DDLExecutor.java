@@ -190,10 +190,20 @@ public class DDLExecutor {
     @SuppressWarnings("unchecked")
     private String generateSubTableDDL(CanvasDynamicField field) {
         String subTableName = field.getModuleCode() + "_" + field.getFieldCode() + "_items";
+        // R4 Fix P0-7 (same-cause sweep): parent_id column type MUST match the parent
+        // table's id type. Canvas V3 has mixed id types — sales_orders.id is VARCHAR
+        // while bom_items.id is BIGINT and most others are UUID. Using UUID blindly
+        // broke every sub-table CRUD call for VARCHAR-id parents. Query the parent
+        // table's id type at CREATE TIME so new sub-tables have the correct type.
+        // Existing sub-tables with UUID parent_id are preserved (empty in test env,
+        // 2 orphan rows in prod with no matching parent); R5 ADR will handle
+        // back-migration if needed.
+        String parentTable = resolveTableName(field);
+        String parentIdSqlType = resolveParentIdSqlType(parentTable);
         StringBuilder sb = new StringBuilder();
         sb.append("CREATE TABLE IF NOT EXISTS ").append(subTableName).append(" (");
         sb.append("id UUID PRIMARY KEY DEFAULT gen_random_uuid(), ");
-        sb.append("parent_id UUID NOT NULL, ");
+        sb.append("parent_id ").append(parentIdSqlType).append(" NOT NULL, ");
 
         // Round 4 Fix P2-22: collect unique columns for CREATE UNIQUE INDEX
         List<String> uniqueColumns = new ArrayList<>();
@@ -230,6 +240,36 @@ public class DDLExecutor {
 
     private String resolveTableName(CanvasDynamicField field) {
         return MODULE_TABLE_MAP.getOrDefault(field.getModuleCode(), field.getModuleCode());
+    }
+
+    /**
+     * R4 Fix P0-7: resolve the SQL column type to use for `parent_id` in a new sub-table
+     * by querying the parent table's `id` column type from information_schema.
+     * Canvas V3 has mixed id types across modules (VARCHAR, BIGINT, UUID), and a hardcoded
+     * UUID broke sub-table CRUD for every non-UUID parent (e.g. sales_orders).
+     * Returns a SQL type literal safe to concatenate into a CREATE TABLE statement.
+     */
+    private String resolveParentIdSqlType(String parentTable) {
+        try {
+            String type = jdbcTemplate.queryForObject(
+                "SELECT data_type FROM information_schema.columns " +
+                "WHERE table_name = ? AND column_name = 'id'",
+                String.class, parentTable);
+            if (type == null) {
+                log.warn("Parent table {} has no 'id' column found in information_schema — defaulting sub-table parent_id to UUID", parentTable);
+                return "UUID";
+            }
+            String t = type.toLowerCase();
+            if (t.contains("uuid")) return "UUID";
+            if (t.contains("bigint")) return "BIGINT";
+            if (t.contains("integer")) return "INTEGER";
+            // character varying / text / others → VARCHAR wide enough to hold any expected id
+            return "VARCHAR(100)";
+        } catch (Exception e) {
+            log.warn("Could not determine id type for parent table {}, defaulting to UUID: {}",
+                parentTable, e.getMessage());
+            return "UUID";
+        }
     }
 
     public String resolveTable(String moduleCode) {

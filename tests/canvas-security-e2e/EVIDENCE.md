@@ -253,4 +253,60 @@ grep -r "@RequireModule" backend/java/cretas-api/src/main/java/com/cretas/aims/c
 
 ---
 
+## 13. R4 发现: Sub-table CRUD hardcoded UUID cast 破坏 VARCHAR-id 父表 (P0)
+
+**来源**: R4 第一次跑 phaseF 深度 round-trip 测试 → POST 返回 HTTP 400 → 排查 root cause
+
+**问题**:
+- `DDLExecutor.generateSubTableDDL` (line 196 之前): 硬编码 `parent_id UUID NOT NULL`
+- `DynamicTableService.addRow/updateRow/deleteRow/getRows` (line 97, 148, 175, 182): 硬编码 `?::uuid` / `CAST(? AS uuid)` 对 parent_id
+- 但 Canvas V3 module 对应的主表 id 类型**不统一**:
+  - `sales_orders.id`: VARCHAR (如 `SO-F001-202501-001`, `F002-SO-T10`)
+  - `bom_items.id`: BIGINT
+  - 大多数其他: UUID
+- 对 VARCHAR-id 父表 (sales_orders):
+  - POST 返回 `ERROR: invalid input syntax for type uuid: "F002-SO-T10"` → HTTP 400
+  - 整个 sub-table CRUD 完全不可用
+- 对 UUID-id 父表:
+  - 能工作, 但生产环境有 2 条孤儿行 (parent_id UUID 无匹配任何真 parent, 可能是早期测试数据)
+
+**影响**:
+- 所有依赖 Canvas V3 sub-table 的业务流程对 VARCHAR-id 模块**从未工作过**
+- 销售订单 (sales_order) 的预付款记录、子项目等子表 API 对客户不可用
+- 这个 bug 与 R3 的 @Transactional bug 都属于 "生产代码 + 0% 正向 E2E 覆盖" 的经典组合, 被 depth-first Rule 2 + Rule 8 抓出
+
+**修复**:
+- `DynamicTableService`:
+  - 新增 `parentIdTypeCache` (ConcurrentHashMap) + `getParentIdColumnType(subTableName)` + `parentIdPlaceholder(subTableName, forInsert)`
+  - 应用到 4 个方法 (getRows/addRow/updateRow/deleteRow), hardcoded cast 替换为 `parentIdPlaceholder` 返回值
+- `DDLExecutor`:
+  - 新增 `resolveParentIdSqlType(parentTable)` → 查询 `information_schema.columns WHERE table_name=? AND column_name='id'`, 返回 `UUID` / `BIGINT` / `INTEGER` / `VARCHAR(100)`
+  - `generateSubTableDDL`: 用 `resolveParentIdSqlType(resolveTableName(field))` 代替硬编码 `UUID`
+
+**验证**:
+1. Compile pass (mvn)
+2. Deploy to test 10011 (v20260414_162157)
+3. R4-run3 88/88 PASS + R4-run4 88/88 PASS + R4-final 88/88 PASS
+4. phaseF/G/H 全绿 — 新创建的 sub-tables 有正确的 VARCHAR parent_id, CRUD 全部工作
+
+**存量数据处理**:
+- Test env: 29 个 empty sub-tables 保留 (parent_id UUID), 新 run 用 fresh SUFFIX 创建新 sub-tables 都有正确类型
+- Prod env: 1 个 sub-table `sales_order_prepayment_records_items` 含 2 条孤儿行, **R4 明确不动**
+- R5 ADR: 决定 back-migration 策略 (清理孤儿行? ALTER COLUMN TYPE? DROP + recreate?)
+
+**R5 Carryover (有明确技术原因)**:
+1. `AggregateFormulaExecutor.java:87-91, 142-146` 同模式硬编码 `?::uuid` — R4 明确不在 deep test 范围, R5 补 aggregate deep test 后再修
+2. `DynamicFieldController.setCustomFields` 的 controller-level `@Transactional` 上移到 `DynamicFieldService.setDynamicFields` service layer — 架构统一 (与 R4 service-level 保持一致)
+3. `DynamicFieldService.setDynamicFields setClauses.isEmpty() return` 早返回的语义决策 ADR
+4. 生产 sub-tables back-migration ADR
+
+**Bug 发现的 meta 意义**:
+- depth-first-e2e skill Rule 8 (same-cause sweep) 在 R4 triggered 两次:
+  - 第 1 次: R3 @Transactional fix 后 → 找到 3 个 sibling → R4 P0-1/2/3
+  - 第 2 次: R4-④ phaseF 测试现场发现 UUID cast bug → 找到 9 个 instance → R4 P0-7 + R5 backlog
+- Rule 8 的经典应用: 一次测试发现 + 一次扫描 + 一轮修复. 如果没有 Rule 8, UUID cast bug 可能在 R5 才发现, 或干脆被漏掉.
+- Case study: `.claude/skills/depth-first-e2e/references/case-r3-incomplete-fix.md` 已记录 R3 surgical fix 教训, R4 是这个教训的证实案例.
+
+---
+
 **维护**: 每次 R{N} 循环结束, 更新本文档相关章节, 保持与实际套件行为一致。

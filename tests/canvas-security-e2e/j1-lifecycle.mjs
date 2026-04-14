@@ -15,6 +15,7 @@ import {
   apiGet,
   apiPost,
   apiPut,
+  apiDelete,
   apiCall,
   createResultCollector,
   FACTORY_A,
@@ -915,6 +916,339 @@ async function phaseE_customFieldRoundtrip(token) {
 }
 
 // ---------------------------------------------------------------------------
+// Phase F/G/H — Sub-table CRUD round-trip (deep positive-path tests)
+// ---------------------------------------------------------------------------
+//
+// R4 P0-4/5/6 (depth-first-e2e Rule 8 same-cause sweep + Rule 2 deep test):
+// R3 found `setCustomFields` was missing `@Transactional`. The Rule 8 sweep
+// (R4-① pre-investigation) found 3 sibling endpoints with the same root cause
+// in `DynamicTableService.addRow / updateRow / deleteRow`. R4 fixes the 3
+// service methods AND adds these 3 round-trip tests so future regressions are
+// caught locally instead of by another emergency sweep.
+//
+// Each phase is self-contained (R4-② Critic Q4 fix): own POST + own readback
+// + own cleanup. No phase depends on rows left by another phase, so a failure
+// in Phase F doesn't pollute Phase G or H.
+//
+// Each readback uses 3-value evidence (R4-② Critic Q3 defense-in-depth):
+// log the values seen during setup + after-write to make silent-mutation bugs
+// impossible to mistake for transient flakes.
+
+/**
+ * Discover an F002 sales order recordId and the fieldCode of the SUB_TABLE
+ * field created in phaseA3 + published in phaseB1. Used by phases F/G/H.
+ * Returns null with WARN log if discovery fails.
+ */
+async function discoverSubTableContext(token) {
+  // recordId — reuse phaseE's helper logic
+  const listRes = await apiGet(`${F}/sales/orders?page=1&size=1`, token);
+  if (listRes.status !== 200) {
+    return { error: `Cannot list F002 sales orders — HTTP ${listRes.status}` };
+  }
+  const d = listRes.data;
+  const records =
+    (Array.isArray(d) && d) ||
+    (d && Array.isArray(d.content) && d.content) ||
+    (d && Array.isArray(d.records) && d.records) ||
+    (d && Array.isArray(d.list) && d.list) ||
+    [];
+  if (records.length === 0) {
+    return { error: 'F002 has no sales orders' };
+  }
+  const recordId = records[0].id ?? records[0].orderId ?? records[0].recordId;
+  if (!recordId) {
+    return { error: `Cannot extract recordId (keys: ${Object.keys(records[0]).join(', ')})` };
+  }
+  // fieldCode — phaseA3 created `prepay${SUFFIX}` as a SUB_TABLE field
+  return {
+    recordId,
+    moduleCode: 'sales_order',
+    fieldCode: `prepay${SUFFIX}`,
+  };
+}
+
+/**
+ * Phase F — addRow positive-path round-trip.
+ * Test contract: POST adds a row → GET sub-table → assert new row visible by
+ * matching the unique remark we wrote. If R4 P0-1 (@Transactional on addRow)
+ * is not deployed, the POST returns 200 + row data but the GET shows an empty
+ * list, and J1-F2 FAILs.
+ */
+async function phaseF_subTableAddRoundtrip(token) {
+  const ctx = await discoverSubTableContext(token);
+  if (ctx.error) {
+    rc.log('J1-F0', 'WARN', `[depth=deep] Skipped — ${ctx.error}`);
+    return;
+  }
+  rc.log('J1-F0', 'PASS', `[depth=deep] Setup OK — recordId=${ctx.recordId}, fieldCode=${ctx.fieldCode}`);
+
+  const uniqueRemark = `J1-F-${SUFFIX}`;
+  const subTablePath = `${F}/${ctx.moduleCode}/${ctx.recordId}/sub-table/${ctx.fieldCode}`;
+
+  // F1: POST add row
+  let createdRowId = null;
+  try {
+    const post = await apiPost(subTablePath, { amount: 99.99, pay_date: '2026-04-15', remark: uniqueRemark }, token);
+    if (post.status !== 200) {
+      rc.log(
+        'J1-F1',
+        'FAIL',
+        `[depth=medium] POST sub-table row returned HTTP ${post.status}: ${post.message || '(no msg)'}`
+      );
+      return;
+    }
+    createdRowId = post.data?.id ?? null;
+    rc.log(
+      'J1-F1',
+      'PASS',
+      `[depth=medium] POST sub-table row HTTP 200, returned id=${createdRowId}, remark=${uniqueRemark}`
+    );
+  } catch (err) {
+    rc.log('J1-F1', 'FAIL', `[depth=medium] POST sub-table row threw: ${err.message}`);
+    return;
+  }
+
+  // F2: GET sub-table and assert the new row is visible (by unique remark)
+  // This is the deep assertion: if R4 backend fix is not deployed, POST returned
+  // success + row data, but the GET reads from DB which never saw the commit.
+  try {
+    const get = await apiGet(subTablePath, token);
+    if (get.status !== 200) {
+      rc.log(
+        'J1-F2',
+        'FAIL',
+        `[depth=deep] GET sub-table returned HTTP ${get.status}: ${get.message || '(no msg)'}`
+      );
+      return;
+    }
+    const rows = Array.isArray(get.data) ? get.data : (get.data?.content || get.data?.list || []);
+    const found = rows.find(r => r?.cf_remark === uniqueRemark);
+    if (found) {
+      rc.log(
+        'J1-F2',
+        'PASS',
+        `[depth=deep] Round-trip verified — POST'd remark="${uniqueRemark}" IS in GET response. ` +
+        `${rows.length} total row(s), found row id=${found.id}, cf_amount=${found.cf_amount}`
+      );
+    } else {
+      rc.log(
+        'J1-F2',
+        'FAIL',
+        `[depth=deep] Round-trip BROKEN — POST returned HTTP 200 but GET shows ${rows.length} row(s), ` +
+        `none matching remark="${uniqueRemark}". Likely DynamicTableService.addRow @Transactional missing → silent rollback.`
+      );
+    }
+  } catch (err) {
+    rc.log('J1-F2', 'FAIL', `[depth=deep] GET sub-table threw: ${err.message}`);
+  }
+
+  // F3: Cleanup — DELETE the row we created (best-effort)
+  if (createdRowId) {
+    try {
+      const del = await apiDelete(`${subTablePath}/${createdRowId}`, token);
+      if (del.status === 204 || del.status === 200) {
+        console.log(`  [J1-F cleanup] deleted row ${createdRowId}`);
+      } else {
+        console.log(`  [J1-F cleanup] WARNING: delete returned HTTP ${del.status}, row may persist`);
+      }
+    } catch (err) {
+      console.log(`  [J1-F cleanup] WARNING: delete threw — ${err.message}`);
+    }
+  }
+}
+
+/**
+ * Phase G — updateRow positive-path round-trip.
+ * Test contract: POST setup row → verify exists → PUT update → GET → assert
+ * updated value visible. If R4 P0-2 (@Transactional on updateRow) is not
+ * deployed, the PUT returns 200 but the GET shows the original remark (silent
+ * rollback) and J1-G3 FAILs.
+ */
+async function phaseG_subTableUpdateRoundtrip(token) {
+  const ctx = await discoverSubTableContext(token);
+  if (ctx.error) {
+    rc.log('J1-G0', 'WARN', `[depth=deep] Skipped — ${ctx.error}`);
+    return;
+  }
+
+  const setupRemark = `J1-G-setup-${SUFFIX}`;
+  const updatedRemark = `J1-G-updated-${SUFFIX}`;
+  const subTablePath = `${F}/${ctx.moduleCode}/${ctx.recordId}/sub-table/${ctx.fieldCode}`;
+
+  // G0: setup row + verify exists
+  let rowId = null;
+  try {
+    const post = await apiPost(subTablePath, { amount: 50, pay_date: '2026-04-15', remark: setupRemark }, token);
+    if (post.status !== 200) {
+      rc.log('J1-G0', 'WARN', `[depth=deep] Setup POST failed HTTP ${post.status} — addRow may be broken, skipping G`);
+      return;
+    }
+    rowId = post.data?.id ?? null;
+    if (!rowId) {
+      rc.log('J1-G0', 'WARN', `[depth=deep] Setup POST returned 200 but no row id — skipping G`);
+      return;
+    }
+    // Verify row really exists in GET (rules out silent-rollback masking the test)
+    const verify = await apiGet(subTablePath, token);
+    const verifyRows = Array.isArray(verify.data) ? verify.data : (verify.data?.content || verify.data?.list || []);
+    const exists = verifyRows.some(r => r?.id === rowId || r?.cf_remark === setupRemark);
+    if (!exists) {
+      rc.log(
+        'J1-G0',
+        'WARN',
+        `[depth=deep] Setup POST returned id=${rowId} but row not visible in GET — addRow silent rollback. Skipping G test.`
+      );
+      return;
+    }
+    rc.log('J1-G0', 'PASS', `[depth=deep] Setup row id=${rowId} verified visible, remark="${setupRemark}"`);
+  } catch (err) {
+    rc.log('J1-G0', 'FAIL', `[depth=deep] Setup threw: ${err.message}`);
+    return;
+  }
+
+  // G1: PUT update with new remark
+  try {
+    const put = await apiPut(`${subTablePath}/${rowId}`, { amount: 50, pay_date: '2026-04-15', remark: updatedRemark }, token);
+    if (put.status !== 200) {
+      rc.log('J1-G1', 'FAIL', `[depth=medium] PUT sub-table row HTTP ${put.status}: ${put.message || '(no msg)'}`);
+      return;
+    }
+    rc.log('J1-G1', 'PASS', `[depth=medium] PUT row id=${rowId} → HTTP 200`);
+  } catch (err) {
+    rc.log('J1-G1', 'FAIL', `[depth=medium] PUT threw: ${err.message}`);
+    return;
+  }
+
+  // G2: GET and assert updated value visible (deep assertion)
+  try {
+    const get = await apiGet(subTablePath, token);
+    const rows = Array.isArray(get.data) ? get.data : (get.data?.content || get.data?.list || []);
+    const row = rows.find(r => r?.id === rowId);
+    if (!row) {
+      rc.log(
+        'J1-G2',
+        'FAIL',
+        `[depth=deep] Row id=${rowId} disappeared from GET after PUT — likely backend issue beyond updateRow scope`
+      );
+    } else if (row.cf_remark === updatedRemark) {
+      rc.log(
+        'J1-G2',
+        'PASS',
+        `[depth=deep] Round-trip verified — row id=${rowId} cf_remark changed from "${setupRemark}" to "${row.cf_remark}"`
+      );
+    } else if (row.cf_remark === setupRemark) {
+      rc.log(
+        'J1-G2',
+        'FAIL',
+        `[depth=deep] Round-trip BROKEN — PUT returned HTTP 200 but GET shows row id=${rowId} still has setup cf_remark "${setupRemark}" (expected "${updatedRemark}"). ` +
+        `Likely DynamicTableService.updateRow @Transactional missing → silent rollback.`
+      );
+    } else {
+      rc.log(
+        'J1-G2',
+        'FAIL',
+        `[depth=deep] Round-trip UNEXPECTED — row id=${rowId} cf_remark="${row.cf_remark}", expected "${updatedRemark}" or "${setupRemark}"`
+      );
+    }
+  } catch (err) {
+    rc.log('J1-G2', 'FAIL', `[depth=deep] GET sub-table threw: ${err.message}`);
+  }
+
+  // G3: cleanup
+  try {
+    const del = await apiDelete(`${subTablePath}/${rowId}`, token);
+    if (del.status === 204 || del.status === 200) {
+      console.log(`  [J1-G cleanup] deleted row ${rowId}`);
+    } else {
+      console.log(`  [J1-G cleanup] WARNING: delete returned HTTP ${del.status}`);
+    }
+  } catch (err) {
+    console.log(`  [J1-G cleanup] WARNING: delete threw — ${err.message}`);
+  }
+}
+
+/**
+ * Phase H — deleteRow positive-path round-trip.
+ * Test contract: POST setup row → verify exists → DELETE → GET → assert row
+ * by id is no longer in response. If R4 P0-3 (@Transactional on deleteRow)
+ * is not deployed, the DELETE returns 204 but the GET still shows the row
+ * (silent rollback) and J1-H3 FAILs.
+ */
+async function phaseH_subTableDeleteRoundtrip(token) {
+  const ctx = await discoverSubTableContext(token);
+  if (ctx.error) {
+    rc.log('J1-H0', 'WARN', `[depth=deep] Skipped — ${ctx.error}`);
+    return;
+  }
+
+  const setupRemark = `J1-H-${SUFFIX}`;
+  const subTablePath = `${F}/${ctx.moduleCode}/${ctx.recordId}/sub-table/${ctx.fieldCode}`;
+
+  // H0: setup + verify exists
+  let rowId = null;
+  try {
+    const post = await apiPost(subTablePath, { amount: 25, pay_date: '2026-04-15', remark: setupRemark }, token);
+    if (post.status !== 200) {
+      rc.log('J1-H0', 'WARN', `[depth=deep] Setup POST failed HTTP ${post.status} — addRow may be broken, skipping H`);
+      return;
+    }
+    rowId = post.data?.id ?? null;
+    if (!rowId) {
+      rc.log('J1-H0', 'WARN', `[depth=deep] Setup POST returned 200 but no row id — skipping H`);
+      return;
+    }
+    const verify = await apiGet(subTablePath, token);
+    const verifyRows = Array.isArray(verify.data) ? verify.data : (verify.data?.content || verify.data?.list || []);
+    if (!verifyRows.some(r => r?.id === rowId)) {
+      rc.log('J1-H0', 'WARN', `[depth=deep] Setup row id=${rowId} not visible in GET — addRow silent rollback. Skipping H.`);
+      return;
+    }
+    rc.log('J1-H0', 'PASS', `[depth=deep] Setup row id=${rowId} verified visible`);
+  } catch (err) {
+    rc.log('J1-H0', 'FAIL', `[depth=deep] Setup threw: ${err.message}`);
+    return;
+  }
+
+  // H1: DELETE the row
+  try {
+    const del = await apiDelete(`${subTablePath}/${rowId}`, token);
+    if (del.status !== 200 && del.status !== 204) {
+      rc.log('J1-H1', 'FAIL', `[depth=medium] DELETE sub-table row HTTP ${del.status}: ${del.message || '(no msg)'}`);
+      return;
+    }
+    rc.log('J1-H1', 'PASS', `[depth=medium] DELETE row id=${rowId} → HTTP ${del.status}`);
+  } catch (err) {
+    rc.log('J1-H1', 'FAIL', `[depth=medium] DELETE threw: ${err.message}`);
+    return;
+  }
+
+  // H2: GET and assert row is absent (by id, not by row count)
+  try {
+    const get = await apiGet(subTablePath, token);
+    const rows = Array.isArray(get.data) ? get.data : (get.data?.content || get.data?.list || []);
+    const stillThere = rows.some(r => r?.id === rowId);
+    if (!stillThere) {
+      rc.log(
+        'J1-H2',
+        'PASS',
+        `[depth=deep] Round-trip verified — row id=${rowId} absent from GET response (${rows.length} other rows still present, none with this id)`
+      );
+    } else {
+      rc.log(
+        'J1-H2',
+        'FAIL',
+        `[depth=deep] Round-trip BROKEN — DELETE returned HTTP 200/204 but GET still shows row id=${rowId}. ` +
+        `Likely DynamicTableService.deleteRow @Transactional missing → silent rollback.`
+      );
+    }
+  } catch (err) {
+    rc.log('J1-H2', 'FAIL', `[depth=deep] GET sub-table threw: ${err.message}`);
+  }
+
+  // No cleanup needed — the row is already deleted (or wasn't, in which case the test failed)
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 async function main() {
@@ -973,6 +1307,17 @@ async function main() {
   // with the freshly-published dynamic field columns from Phase B.
   console.log('\n--- Phase E: Custom Field Roundtrip (deep) ---');
   await phaseE_customFieldRoundtrip(token);
+
+  // Phase F/G/H — R4 P0-4/5/6: sub-table CRUD round-trip tests (depth-first-e2e Rule 8 sweep).
+  // Each phase is self-contained — own POST + own readback + own cleanup.
+  // Tests J1-F* / J1-G* / J1-H* will FAIL if R4 backend fix (@Transactional on
+  // DynamicTableService.addRow/updateRow/deleteRow) is not deployed.
+  console.log('\n--- Phase F: Sub-Table Add Roundtrip (deep) ---');
+  await phaseF_subTableAddRoundtrip(token);
+  console.log('\n--- Phase G: Sub-Table Update Roundtrip (deep) ---');
+  await phaseG_subTableUpdateRoundtrip(token);
+  console.log('\n--- Phase H: Sub-Table Delete Roundtrip (deep) ---');
+  await phaseH_subTableDeleteRoundtrip(token);
 
   // Phase D
   console.log('\n--- Phase D: Rollback ---');
