@@ -1173,7 +1173,8 @@ public class SmartBIServiceImpl implements SmartBIService {
                     "4. 提供可操作的行动建议\n" +
                     "5. 返回JSON数组格式：[{\"level\":\"YELLOW\",\"category\":\"销售分析\",\"message\":\"华东区销售增长放缓\",\"relatedEntity\":\"华东区\",\"actionSuggestion\":\"建议加强华东区促销力度\"}]";
 
-            // 调用 LLM
+            // 调用 LLM — enableThinking(false) 避免 qwen3.5-plus 的 reasoning tokens
+            // 撑爆 30s readTimeout (历史事故 2026-04-15: 驾驶舱洞察每次 93s 3x 重试失败)
             ChatCompletionRequest request = ChatCompletionRequest.builder()
                     .messages(List.of(
                             ChatMessage.system(systemPrompt),
@@ -1181,6 +1182,7 @@ public class SmartBIServiceImpl implements SmartBIService {
                     ))
                     .temperature(0.3)
                     .maxTokens(1024)
+                    .enableThinking(false)
                     .build();
 
             ChatCompletionResponse response = dashScopeClient.chatCompletion(request);
