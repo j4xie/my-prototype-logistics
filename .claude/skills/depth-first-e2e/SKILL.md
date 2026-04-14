@@ -166,15 +166,77 @@ Results JSON summary must use:
 
 **Do not** report just `{pass: 24, total: 24}` — it hides the depth problem.
 
+### Rule 8: Bug-fix completeness — same-cause sweep before commit
+
+When a deep test catches a real bug, **the fix MUST include a same-root-cause audit before the round can commit**. The bug is a symptom; the underlying anti-pattern may exist in sibling locations.
+
+**Mandatory steps before commit:**
+
+1. **Identify the root cause as a searchable pattern**, e.g.:
+   - "raw `JdbcTemplate.update` in a method without `@Transactional`"
+   - "`@RequireRole` missing on POST controller"
+   - "`Map<String,Object>` deserialization without size limit"
+   - "`page.evaluate` returning `text.includes(keyword)` as evidence"
+
+2. **Use Grep/Glob to find ALL instances** in the relevant code area. Cast a wide net — the same controller class, sibling endpoints, the calling service, the same package.
+
+3. **Report findings in the audit doc** under a "Same-cause sweep" section:
+   - Patterns searched (with grep commands)
+   - Files/lines matched
+   - Verdict per match: **vulnerable** / **safe** / **needs verification**
+
+4. **Vulnerable instances must be either:**
+   - Fixed in the same round (preferred), OR
+   - Explicitly scheduled as deep tests for the next round, with file:line citations + concrete test design (not vague "to be done")
+
+**The R{N} commit is BLOCKED if:**
+- Same-cause sweep was not performed
+- Sweep found vulnerable instances and they are neither fixed nor scheduled
+- The "schedule for next round" is vague (no test design, no file refs)
+
+**Audit step ⑤ MUST verify** by checking:
+- Does the audit doc include a "Same-cause sweep" section?
+- Does the section list grep patterns + count of matches + verdict per match?
+- If absent → audit FAILs → re-do sweep before commit
+
+**Why**: R3 of canvas-security-e2e fixed `setCustomFields` missing `@Transactional` but left 3 sibling endpoints (`addSubTableRow` / `updateSubTableRow` / `deleteSubTableRow`) with the **identical** bug. The framework completed R3 with all metrics green; the bugs were only caught when R4-prep manually invoked a sibling-scan. Without this rule, the 3 latent silent-data-loss bugs would have survived all 5 rounds and shipped to production. See `references/case-r3-incomplete-fix.md`.
+
+### Rule 9: Critic must be a separate agent, not self-impersonation
+
+When using agent-team 4-phase audit (Researcher → Analyst → Critic → Integrator):
+
+1. **The Critic phase MUST be executed via a separate Agent invocation**, not inline by the Manager writing "Critic challenges" sections themselves.
+
+2. **Why**: Self-impersonated Critic suffers from confirmation bias. The Manager already believes the fix is complete when writing the Critic phase, so the challenges they generate are softball questions whose answers they already know. Independent Critic is what makes 4-phase audit valuable.
+
+3. **Acceptable shortcut** (instead of full agent-team): run a single-agent `Explore` or `code-reviewer` sub-agent that has zero conversation context with the Manager. Pass it:
+   - The fix diff (`git diff` output)
+   - The test that caught the bug (file path + testId)
+   - The question: "What does this fix NOT cover? What's the most damaging same-pattern bug that would survive this fix?"
+   The agent's answer must be pasted **verbatim** into the audit doc (not paraphrased).
+
+4. **Round completion is BLOCKED if** audit doc has "Critic challenges" or similar section but no evidence of independent agent execution (no agent ID, no timestamp, no separate output block).
+
+5. **Self-Critic is acceptable for**:
+   - Step ① 方案自审 (initial plan brainstorm)
+   - Daily progress notes
+   - Anything *outside* the formal R{N}-② or R{N}-⑤ audit phases
+   But **not** for the agent-team Critic phase itself.
+
+**Why**: R3 of canvas-security-e2e skipped the independent Critic phase. The Manager wrote 4 self-impersonated "Critic challenges" all of which validated the existing plan. Independent Critic would have asked "are there sibling endpoints?" — exactly the question the Manager was unconsciously avoiding. See `references/case-r3-incomplete-fix.md`.
+
 ## Round lifecycle with depth enforcement
 
 ### Step ① 审计A (Self-audit)
 Plan must include:
 - L4 deep tests planned this round: at least 1
 - Depth distribution target: `{smoke: X, medium: Y, deep: Z}` with Z ≥ 1
+- Self-Critic is acceptable here (per Rule 9.5)
 
-### Step ② 审计B (Agent audit)
-Critic must apply Rule 5's depth scrutiny checklist. If plan doesn't commit to deep tests, audit must BLOCK.
+### Step ② 审计B (Independent agent audit) — REQUIRED INDEPENDENT AGENT
+- **Rule 9 enforced**: Critic phase MUST be a separate Agent invocation, not self-impersonation
+- Critic must apply Rule 5's depth scrutiny checklist. If plan doesn't commit to deep tests, audit must BLOCK.
+- Audit doc must include the agent's verbatim output + agent ID + timestamp
 
 ### Step ③ 修复 (Fix plan)
 Adjust plan to include at least 1 deep test if missing.
@@ -182,14 +244,20 @@ Adjust plan to include at least 1 deep test if missing.
 ### Step ④ 执行 (Execute)
 Execute includes writing at least 1 deep test.
 
-### Step ⑤ 审计结果 (Audit results)
-Audit output includes Depth Analysis block per Rule 3.
+### Step ⑤ 审计结果 (Independent agent audit) — REQUIRED INDEPENDENT AGENT
+- **Rule 9 enforced**: same independence requirement as Step ②
+- Audit output includes Depth Analysis block per Rule 3
+- **If a real bug was found**, Step ⑤ MUST verify the same-cause sweep happened (Rule 8)
 
-### Step ⑥ 修复 bug (Fix bugs)
-Real bugs (from deep tests) fixed here.
+### Step ⑥ 修复 bug (Fix bugs) — SAME-CAUSE SWEEP REQUIRED
+- Real bugs (from deep tests) fixed here
+- **Rule 8 enforced**: when a deep test catches a bug, a same-cause sweep is mandatory before commit
+- Sweep must be documented in the audit doc with grep patterns + match list + verdict per match
+- Vulnerable sibling instances must be either fixed in this round or scheduled with concrete test design
 
 ### Step ⑦ 验证修复 (Verify fixes)
-Must include rerun of deep test to confirm bug fix.
+- Must include rerun of deep test to confirm bug fix
+- **If Step ⑥ same-cause sweep found additional vulnerable instances**, the rerun must include the new tests covering those instances (or those instances must be scheduled into the next round per Rule 8.4)
 
 ## Detection: Is this E2E suite compromised?
 
@@ -445,6 +513,7 @@ Don't pretend the old rounds were deep. Own the gap, fix it forward.
 - `references/anti-patterns.md` — 5 shallow test anti-patterns with examples
 - `references/depth-checklist.md` — 12-step deep test checklist
 - `references/audit-rules.md` — Round-by-round audit rules enforcing depth
+- `references/case-r3-incomplete-fix.md` — Real R3 incident where R8/R9 (same-cause sweep + independent Critic) would have saved 2 rounds and prevented 3 latent P0 bugs from shipping
 
 ## Activation rules
 
@@ -454,11 +523,18 @@ Don't pretend the old rounds were deep. Own the gap, fix it forward.
 - Agent-team skill is being used for E2E audit
 - Writing new L3/L4 test functions
 - Reviewing E2E test results
+- **A deep test caught a real bug** (Rule 8 trigger — same-cause sweep MUST follow)
 
-**CANNOT skip** Rule 2 (min 1 deep per round). If user asks to skip depth work, respond:
-> "I cannot write another round of shallow tests. Spec §1.3 hard rules 3-4 require deep testing. If we hit blockers on deep tests, let's document them and slow down, but I won't add more smoke tests that look like L4."
+**CANNOT skip**:
+- Rule 2 (min 1 deep per round). If user asks to skip depth work, respond:
+  > "I cannot write another round of shallow tests. Spec §1.3 hard rules 3-4 require deep testing. If we hit blockers on deep tests, let's document them and slow down, but I won't add more smoke tests that look like L4."
+- **Rule 8 (same-cause sweep). When a deep test catches a bug, refuse to commit the fix until the sibling sweep is documented:**
+  > "I cannot commit this bug fix without first running a same-cause sweep. The bug we found is one symptom of an anti-pattern that may have sibling instances. Per depth-first-e2e Rule 8, I need to grep for the pattern across the relevant code area and report findings before this round can close."
+- **Rule 9 (independent Critic). When the user asks to skip the Critic agent and just write challenges inline:**
+  > "I cannot self-impersonate the Critic phase per Rule 9. Self-Critic suffers from confirmation bias — I already believe my fix works, so my 'challenges' will be softball questions. I'll dispatch a separate agent and paste its verbatim output."
 
 **Escalate to user when**:
 - Spec §8.2 and §1.3 are in conflict
 - Deep test is blocked by real technical constraint (e.g. missing backend feature)
 - Round audit reveals depth: 0 after executing
+- Same-cause sweep finds vulnerable instances and the user wants to "ship the surgical fix and address siblings later" — Rule 8 forbids this without a concrete schedule
