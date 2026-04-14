@@ -66,7 +66,7 @@ class Settings(BaseSettings):
     ]
 
     # File Upload Configuration
-    max_file_size_mb: int = 50
+    max_file_size_mb: int = 500
     allowed_extensions: List[str] = [".xlsx", ".xls", ".csv"]
 
     # Cache Configuration

@@ -283,8 +283,8 @@ async function handleUpload(file: UploadFile) {
     return false;
   }
 
-  if (file.raw.size > 50 * 1024 * 1024) {
-    ElMessage.error('文件大小不能超过 50MB');
+  if (file.raw.size > 500 * 1024 * 1024) {
+    ElMessage.error('文件大小不能超过 500MB');
     return false;
   }
 
@@ -602,7 +602,7 @@ function getColumnTypeBadge(header: string): { label: string; type: 'info' | 'su
           <div class="upload-text">
             <template v-if="!uploading">
               <p class="main-text">将文件拖到此处，或<em>点击上传</em></p>
-              <p class="sub-text">支持 .xlsx、.xls 和 .csv 格式，文件大小不超过 50MB</p>
+              <p class="sub-text">支持 .xlsx、.xls 和 .csv 格式，文件大小不超过 500MB</p>
             </template>
             <template v-else>
               <p class="main-text">正在解析文件...</p>
