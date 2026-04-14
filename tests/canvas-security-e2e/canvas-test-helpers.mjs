@@ -19,8 +19,13 @@ const __dirname = dirname(__filename);
 // ---------------------------------------------------------------------------
 export const API_BASE =
   process.env.E2E_API_BASE || 'http://localhost:10011/api/mobile';
+// R2-⑥ fix (2026-04-14): default WEB_URL to local vite dev so tests target a build
+// with the latest commits (e.g. 46d1925a3 canvas-editor meta.roles narrowing).
+// Prod web-admin at 139.196.165.140:8086 lags behind the test backend on 10011
+// and would produce environment-drift FAILs (see canvas-e2e-r2-results-audit.md).
+// Override via E2E_WEB_URL env var when running against a prod/staging build.
 export const WEB_URL =
-  process.env.E2E_WEB_URL || 'http://139.196.165.140:8086';
+  process.env.E2E_WEB_URL || 'http://localhost:5173';
 // Test DB accounts: F001 has full role matrix (8 roles), F002 is restaurant
 // F002 has 27 sales orders + 4 customers (data-rich). F006 is empty (good attacker).
 export const FACTORY_A = process.env.E2E_FACTORY_A || 'F002';

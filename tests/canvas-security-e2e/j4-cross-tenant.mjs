@@ -300,19 +300,31 @@ async function attack4CrossTenantCustomFieldsWrite(tokenA, tokenB, recordIdA) {
       `${FACTORY_A}/sales_order/${recordIdA}/custom-fields`, tokenA
     );
 
-    const apiBlocked = result.status >= 400 || !result.success;
+    // R2-⑥ tightening (2026-04-14): Critic Challenge 5 in
+    // canvas-e2e-r2-results-audit.md flagged the previous "HTTP 200 && !fieldExists"
+    // branch as an environment-coupled PASS — it would erroneously PASS if Factory B
+    // happened to have a `customer_level` dynamic field defined. We now require
+    // HTTP 403 as the PRIMARY success criterion (real cross-tenant rejection at the
+    // JwtAuthInterceptor layer) and only accept "data unchanged" as a defense-in-depth
+    // FALLBACK that is explicitly labeled as WEAK, so R3/R4 can track it.
+    const apiBlockedHard = result.status === 403;
+    const apiBlockedSoft = (result.status >= 400 && result.status !== 403) || !result.success;
     const dataUnchanged = JSON.stringify(before.data) === JSON.stringify(after.data) ||
                           (after.data?.customer_level !== 'HACKED');
 
-    if (apiBlocked) {
+    if (apiBlockedHard) {
       rc.log(TEST_ID, 'PASS',
-        `Cross-tenant custom-fields write rejected — HTTP ${result.status} message="${result.message}"`);
+        `Cross-tenant write rejected at JwtAuth layer — HTTP 403 message="${result.message}"`);
+    } else if (apiBlockedSoft) {
+      rc.log(TEST_ID, 'PASS',
+        `Cross-tenant write rejected — HTTP ${result.status} (non-403, but still blocked) message="${result.message}"`);
     } else if (dataUnchanged) {
-      rc.log(TEST_ID, 'PASS',
-        `HTTP ${result.status} but data NOT mutated (no active dynamic fields for attacker factory) — defense in depth OK`);
+      // Weak fallback: env-dependent; track as WARN instead of PASS so R3+ can tighten
+      rc.log(TEST_ID, 'WARN',
+        `HTTP ${result.status} success=true BUT data NOT mutated — likely because Factory B has no "customer_level" field. Weak guarantee; should be HTTP 403.`);
     } else {
       rc.log(TEST_ID, 'FAIL',
-        `Cross-tenant custom-fields write succeeded AND data changed! HTTP ${result.status} before=${JSON.stringify(before.data)} after=${JSON.stringify(after.data)}`);
+        `Cross-tenant write succeeded AND data changed! HTTP ${result.status} before=${JSON.stringify(before.data)} after=${JSON.stringify(after.data)}`);
     }
   } catch (err) {
     rc.log(TEST_ID, 'FAIL', `Unexpected error: ${err.message}`);
@@ -468,6 +480,76 @@ async function attack6bCronCommBypass(tokenB) {
 }
 
 // ---------------------------------------------------------------------------
+// Attack 7 — Cross-tenant Canvas AI (R2 addition)
+// ---------------------------------------------------------------------------
+// R2 agent-team audit exposed: RequireRoleInterceptor allows factory_super_admin
+// on Canvas AI endpoints, BUT JwtAuthInterceptor.validateFactoryAccess enforces
+// tokenFactoryId == urlFactoryId for non-platform roles.
+//
+// This attack verifies Factory B admin (f006_admin) cannot invoke Canvas AI on
+// Factory A (FOOD_3101_038 / F002)'s endpoint. Expected: 403 from Jwt layer.
+async function attack7CrossTenantCanvasAI(tokenB) {
+  const TEST_ID = 'J4-7';
+  if (!tokenB) {
+    rc.log(TEST_ID, 'WARN', 'Skipped — Factory B token unavailable');
+    return;
+  }
+
+  try {
+    const result = await apiPost(
+      `${FACTORY_A}/config/v2/ai/chat`,
+      { message: 'cross-tenant attack attempt', mode: 'action' },
+      tokenB
+    );
+    // Expected: 403 ("无权访问该工厂数据" from JwtAuthInterceptor)
+    const blocked = result.status === 403 || (result.status >= 400 && !result.success);
+    if (blocked) {
+      rc.log(TEST_ID, 'PASS',
+        `Factory B admin → Factory A canvas/ai/chat correctly rejected — HTTP ${result.status} message="${result.message}"`);
+    } else {
+      rc.log(TEST_ID, 'FAIL',
+        `Factory B admin accessed Factory A canvas/ai/chat! HTTP ${result.status} (tenant isolation bypass)`);
+    }
+  } catch (err) {
+    rc.log(TEST_ID, 'FAIL', `Unexpected error: ${err.message}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Attack 8 — Cross-tenant scheduler write (R2 addition)
+// ---------------------------------------------------------------------------
+async function attack8CrossTenantScheduler(tokenB) {
+  const TEST_ID = 'J4-8';
+  if (!tokenB) {
+    rc.log(TEST_ID, 'WARN', 'Skipped — Factory B token unavailable');
+    return;
+  }
+
+  try {
+    const result = await apiPut(
+      `${FACTORY_A}/config/v2/scheduler/j4_cross_tenant_attack`,
+      {
+        cronExpression: '0 0 3 * * ?',
+        enabled: true,
+        toolOrMethod: 'canvas_toggle_module',
+        params: {},
+      },
+      tokenB
+    );
+    const blocked = result.status === 403 || (result.status >= 400 && !result.success);
+    if (blocked) {
+      rc.log(TEST_ID, 'PASS',
+        `Factory B admin → Factory A scheduler write correctly rejected — HTTP ${result.status} message="${result.message}"`);
+    } else {
+      rc.log(TEST_ID, 'FAIL',
+        `Factory B admin wrote Factory A scheduler! HTTP ${result.status} (tenant isolation bypass)`);
+    }
+  } catch (err) {
+    rc.log(TEST_ID, 'FAIL', `Unexpected error: ${err.message}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 async function main() {
@@ -508,6 +590,9 @@ async function main() {
   await attack5CrossTenantChangeSetApprove(tokenA, tokenB);
   await attack6CronDdos(attackToken);
   await attack6bCronCommBypass(attackToken);
+  // R2 additions — cross-tenant attacks on canvas-specific endpoints
+  await attack7CrossTenantCanvasAI(tokenB);
+  await attack8CrossTenantScheduler(tokenB);
 
   // --- Final summary ---
   const summary = rc.save();

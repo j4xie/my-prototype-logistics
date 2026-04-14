@@ -238,6 +238,91 @@ async function runL3() {
 }
 
 // ---------------------------------------------------------------------------
+// L4: Documented front-end/back-end authorization divergence (R2 addition)
+// ---------------------------------------------------------------------------
+// After commit 46d1925a3 (Apr 13 18:23), web-admin canvas-editor route meta.roles
+// was narrowed from ['factory_super_admin', 'permission_admin'] to
+// ['platform_admin', 'permission_admin']. However, the backend @RequireRole on
+// 33 Canvas endpoints was NOT changed — factory_super_admin still has full access
+// via direct API calls.
+//
+// Agent-team R2-② audit (2026-04-14_canvas-e2e-r2-plan-audit.md) concluded this
+// is a DESIGN INTENT DIVERGENCE, not a security gap:
+//   - RequireRoleInterceptor: factory_super_admin passes via the EXPLICIT @RequireRole
+//     allowed list on /config/v2/ai/chat (not via PLATFORM_ADMIN_ROLES whitelist,
+//     which only contains {super_admin, platform_admin, developer, platform_super_admin})
+//   - JwtAuthInterceptor: tokenFactoryId == urlFactoryId check still enforced
+//   - Canvas V3 supports platform/factory dual mode, shared API via factoryId
+//
+// L4 DOCUMENTS this divergence as test contracts — changes to the contract
+// must update both this test AND the documentation. L4 is NOT fixing it.
+// If product decides to align FE and BE, update this test first, then change
+// the backend @RequireRole accordingly.
+async function runL4_DocumentedDivergence() {
+  console.log('\n=== L4: Documented FE/BE divergence (R2 contract tests) ===');
+
+  // Load admin token (ADMIN_A = factory_super_admin via restaurant_admin1)
+  let adminToken = null;
+  try {
+    const session = await login(ADMIN_A);
+    adminToken = session.token;
+  } catch (err) {
+    R.log('L4-skip', 'WARN', `Admin login failed: ${err.message} — L4 tests skipped`);
+    return;
+  }
+
+  // --- L4-a: factory_super_admin CAN call /config/v2/ai/chat (backend permissive) ---
+  // This contract: backend @RequireRole currently includes factory_super_admin.
+  // FE router blocks at /canvas-editor (403), but API accepts direct call.
+  try {
+    const aiChat = await apiPost(
+      `${FACTORY_A}/config/v2/ai/chat`,
+      { message: 'noop (L4 contract test)', mode: 'action' },
+      adminToken
+    );
+    // HTTP 200 = contract honored (backend allows factory_super_admin)
+    // HTTP 403 = contract CHANGED (backend has been tightened) → update this test + ADR
+    R.log(
+      'L4-a-ai-chat-contract',
+      aiChat.status === 200 ? 'PASS' : 'FAIL',
+      `factory_super_admin → /config/v2/ai/chat HTTP ${aiChat.status} ` +
+      `(contract: 200 per current backend; 403 means backend was tightened — update EVIDENCE.md §9)`
+    );
+  } catch (err) {
+    R.log('L4-a-ai-chat-contract', 'FAIL', `Request error: ${err.message}`);
+  }
+
+  // --- L4-b: factory_super_admin CAN call /config/publish (R1 J1-B1 正向断言依据) ---
+  // This contract: backend @RequireRole on /config/publish includes factory_super_admin.
+  // R1 J1-B1 relies on this returning 200. If this fails, R1 lifecycle breaks.
+  //
+  // R2-⑥ tightening (2026-04-14): previous assertion `status !== 403` was too loose —
+  // it would PASS on 500/502/504 (server crash) which violates the WARN=FAIL principle.
+  // Per Critic Challenge 6 in canvas-e2e-r2-results-audit.md, we now accept ONLY:
+  //   200 — DRAFT exists and role check passed (ideal)
+  //   400 — no DRAFT present but role check still passed (acceptable)
+  //   404 — endpoint signature unchanged, no DRAFT (edge case)
+  // Any 5xx / 403 / other status is a FAIL.
+  try {
+    const publish = await apiPost(
+      `${FACTORY_A}/config/publish?summary=L4+contract+noop`,
+      null,
+      adminToken
+    );
+    const ACCEPTED = [200, 400, 404];
+    const roleCheckPassed = ACCEPTED.includes(publish.status);
+    R.log(
+      'L4-b-publish-contract',
+      roleCheckPassed ? 'PASS' : 'FAIL',
+      `factory_super_admin → /config/publish HTTP ${publish.status} ` +
+      `(contract: accept 200/400/404 as role-check-OK; 403=J1 lifecycle broken, 5xx=server fault)`
+    );
+  } catch (err) {
+    R.log('L4-b-publish-contract', 'FAIL', `Request error: ${err.message}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 async function run() {
@@ -256,6 +341,9 @@ async function run() {
 
   // L3 is API-only — no browser needed
   await runL3();
+
+  // L4 is API-only — documents FE/BE divergence (R2 addition)
+  await runL4_DocumentedDivergence();
 
   const summary = R.save();
   process.exit(summary.fail > 0 ? 1 : 0);

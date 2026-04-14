@@ -148,6 +148,68 @@ grep -r "@RequireModule" backend/java/cretas-api/src/main/java/com/cretas/aims/c
 
 **R2 应**: 1 人天对齐产品语义 — Canvas toggle 的产品意图到底是什么? 历史废弃 (应删 `@RequireModule`) 还是规划中未铺开 (应补 18 模块 Controller 注解 + 4-6 周 epic)?
 
+## 11. R2 ADR: 拒绝"方案 A 机械替换" + 接受前后端分层授权
+
+**来源**: R2-② agent-team 审计 (2026-04-14), Critic 代码验证翻盘
+
+**决策**: **保留当前前后端权限矩阵分歧**, 不执行 34 处 @RequireRole 机械替换
+
+### 3 个代码证据推翻 R1-⑤ 原方案 A
+
+**证据 1** (Blocker): **R1 J1-B1/C/D 必挂**
+- `tests/canvas-security-e2e/j1-lifecycle.mjs:272-281` 用 `restaurant_admin1` (factory_super_admin) 调 `/config/publish` 断言 HTTP 200
+- 方案 A 把 `/config/publish` 的 @RequireRole 改为 `{platform_admin, permission_admin}` → restaurant_admin1 立即 403
+- J1-B1 / J1-C (module toggle + publish) / J1-D (rollback + restore publish) 连锁 4-6 测试全挂
+- **R1 70/70 PASS 会退回 ~64/70, R2 无法起步**
+
+**证据 2** (R-B 证据链坍塌): **aiPrompt 字段是死代码**
+- R1-⑤ Analyst 引用 "30 天 0 ai_prompt 记录" 作为"零业务影响"证据
+- `ConfigChangeLog.aiPrompt` 整个 java 源树零写入路径
+- `FactoryConfigServiceImpl.logChange()` 不 set aiPrompt
+- `CanvasAIController.chat()` 不引用 `ConfigChangeLogRepository`
+- 查询必 0, 不管真实流量多大 = **Absence-of-evidence 谬误**
+
+**证据 3** (Scope 越界): **34 处 @RequireRole 业务语义不同质**
+- CanvasAIController 只有 2 处 (chat/apply-diffs) 是真正 "AI 入口"
+- ConfigController 14 处 + BusinessRule 5 + DynamicField 4 + TriggerChain 4 + ConfigChangeSet 5 = 32 处是**工厂配置工作流** (publish / approve / rollback / submit-review / import / export / toggle module / define field / set rule / trigger chain)
+- 把这 32 处一并改 = 剥夺 factory_super_admin 发布配置的能力 = 产品级角色变更, 超出 "前后端对齐" 的 commit 46d1925a3 意图 (只改了 1 行 router menu visibility)
+
+### 正确的架构理解
+
+| 层 | 角色模型 | 职责 |
+|---|---------|------|
+| **前端 router meta.roles** | `[platform_admin, permission_admin]` | Canvas 编辑器**菜单可见性**控制 (UX 层) |
+| **后端 RequireRoleInterceptor** | `PLATFORM_ADMIN_ROLES` 白名单 + 显式 `@RequireRole` 列表 | API 级契约层, 允许 factory_super_admin 通过 factory 模式 |
+| **JwtAuthInterceptor.validateFactoryAccess** | tokenFactoryId == urlFactoryId | Cross-tenant 隔离 |
+
+**不是 bug, 是双模式设计**:
+- Platform mode: platform_admin 通过 `canvas-editor` 页面编辑所有工厂模板
+- Factory mode: factory_super_admin 通过 **业务页面** (不是 canvas-editor) 发布自己工厂的配置
+- 共用同一套后端 API, 靠 `factoryId` 路径参数区分
+- 46d1925a3 只是隐藏了 factory_super_admin 的 canvas-editor 菜单 (UX 考虑), **没有变更业务契约**
+
+### R2 正确的 P0
+
+不是修复"分裂", 而是**测试文档化**它:
+
+1. **J5-L4 契约测试** (已加) — 明确记录 `factory_super_admin → /config/v2/ai/chat` 应返回 200 (当前契约)
+2. **J5-L4-b 契约测试** (已加) — 明确记录 `factory_super_admin → /config/publish` 角色检查必过 (R1 J1 依赖)
+3. **J4-7 / J4-8 跨租户扩展** (已加) — F006 admin 跨 F002 canvas AI/scheduler 应被 JwtAuth 层拦截
+4. **EVIDENCE.md 本节** — ADR 正式记录, 防止未来审计再次误判
+
+### R2 明确拒绝的事
+
+- ❌ 改 34 处 @RequireRole
+- ❌ 回退 commit 46d1925a3
+- ❌ 引入新注解 `@RequireCanvasScope`
+- ❌ 基于 `aiPrompt` 字段查询做决策
+
+### R3+ 可选后续 (非 R2 scope)
+
+- 等产品真正澄清 "Canvas 配置的授权是 platform 还是 factory 级" 再议 (1 人天 PM 对齐)
+- 若产品决定收紧, 需同步改 E2E 账号矩阵 (platform_admin 取代 restaurant_admin1 做 J1 正向) + 34 处 @RequireRole + 客户通知 — 预计 1-2 周 epic
+- 独立处理 `RequireRoleInterceptor` vs `JwtAuthInterceptor` 的 `PLATFORM_ADMIN_ROLES` drift (3 vs 4 元素)
+
 ---
 
 **维护**: 每次 R{N} 循环结束, 更新本文档相关章节, 保持与实际套件行为一致。
