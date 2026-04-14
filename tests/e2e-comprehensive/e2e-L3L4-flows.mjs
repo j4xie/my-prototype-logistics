@@ -174,18 +174,24 @@ async function L3_2_SupplierToPODropdown(page) {
   });
 }
 
+// R4 fix: countTableRows now returns {count, error} — extract count consistently
+function rowsOf(result) {
+  if (result && typeof result === 'object' && 'count' in result) return result.count ?? 0;
+  return result || 0;
+}
+
 async function L3_3_MaterialInBOM(page) {
   console.log('\n--- L3-3: Material list → BOM material dropdown ---');
   // Check material list has data (or at least renders)
   const nav1 = await navigateTo(page, '/warehouse/materials', { waitForTable: true });
   if (nav1 !== 'OK') { record('L3', '3', 'navigate_materials', 'FAIL', { result: nav1 }); return; }
-  const matRows = await countTableRows(page);
+  const matRows = rowsOf(await countTableRows(page));
   record('L3', '3', 'material_list', 'PASS', { rows: matRows });
 
   // Navigate to BOM
   const nav2 = await navigateTo(page, '/production/bom', { waitForTable: true });
   if (nav2 !== 'OK') { record('L3', '3', 'navigate_bom', 'FAIL', { result: nav2 }); return; }
-  const bomRows = await countTableRows(page);
+  const bomRows = rowsOf(await countTableRows(page));
   record('L3', '3', 'bom_list', 'PASS', { rows: bomRows, note: 'BOM page accessible + renders' });
 }
 
@@ -193,12 +199,12 @@ async function L3_4_SOInShipments(page) {
   console.log('\n--- L3-4: SO → Shipment references ---');
   const nav1 = await navigateTo(page, '/sales/orders', { waitForTable: true });
   if (nav1 !== 'OK') { record('L3', '4', 'navigate_so', 'FAIL', { result: nav1 }); return; }
-  const soRows = await countTableRows(page);
+  const soRows = rowsOf(await countTableRows(page));
   record('L3', '4', 'so_list', 'PASS', { rows: soRows });
 
   const nav2 = await navigateTo(page, '/sales/shipments', { waitForTable: true });
   if (nav2 !== 'OK') { record('L3', '4', 'navigate_shipments', 'FAIL', { result: nav2 }); return; }
-  const shipRows = await countTableRows(page);
+  const shipRows = rowsOf(await countTableRows(page));
   record('L3', '4', 'shipment_list', 'PASS', { rows: shipRows, note: 'Shipment page accessible' });
 }
 
@@ -206,12 +212,12 @@ async function L3_5_POInWarehouse(page) {
   console.log('\n--- L3-5: PO → Warehouse receiving ---');
   const nav1 = await navigateTo(page, '/procurement/orders', { waitForTable: true });
   if (nav1 !== 'OK') { record('L3', '5', 'navigate_po', 'FAIL', { result: nav1 }); return; }
-  const poRows = await countTableRows(page);
+  const poRows = rowsOf(await countTableRows(page));
   record('L3', '5', 'po_list', 'PASS', { rows: poRows });
 
   const nav2 = await navigateTo(page, '/warehouse/shipments', { waitForTable: true });
   if (nav2 !== 'OK') { record('L3', '5', 'navigate_wh_shipments', 'FAIL', { result: nav2 }); return; }
-  const whRows = await countTableRows(page);
+  const whRows = rowsOf(await countTableRows(page));
   record('L3', '5', 'warehouse_shipment_list', 'PASS', { rows: whRows, note: 'Warehouse shipment page accessible' });
 }
 
@@ -219,7 +225,7 @@ async function L3_6_EmployeeInHR(page) {
   console.log('\n--- L3-6: Employee → HR attendance ---');
   const nav1 = await navigateTo(page, '/hr/employees', { waitForTable: true });
   if (nav1 !== 'OK') { record('L3', '6', 'navigate_employees', 'FAIL', { result: nav1 }); return; }
-  const empRows = await countTableRows(page);
+  const empRows = rowsOf(await countTableRows(page));
   record('L3', '6', 'employee_list', empRows >= 0 ? 'PASS' : 'FAIL', {
     rows: empRows,
     note: empRows === 0 ? 'New factory — 0 employees expected' : `${empRows} employees`,
@@ -278,7 +284,7 @@ async function L4_4_SOCreateFlow(page) {
   const nav = await navigateTo(page, '/sales/orders', { waitForTable: true });
   if (nav !== 'OK') { record('L4', '4', 'navigate', 'FAIL', { result: nav }); return; }
 
-  const rowsBefore = await countTableRows(page);
+  const rowsBefore = rowsOf(await countTableRows(page));
   record('L4', '4', 'so_list', 'PASS', { rows: rowsBefore });
 
   // Try to create SO
@@ -306,7 +312,7 @@ async function L4_5_POCreateFlow(page) {
   const nav = await navigateTo(page, '/procurement/orders', { waitForTable: true, timeout: 90000 });
   if (nav !== 'OK') { record('L4', '5', 'navigate', 'FAIL', { result: nav }); return; }
 
-  const rowsBefore = await countTableRows(page);
+  const rowsBefore = rowsOf(await countTableRows(page));
   record('L4', '5', 'po_list', 'PASS', { rows: rowsBefore });
 
   const clicked = await clickButton(page, '新建', '新增', '创建订单', '创建');

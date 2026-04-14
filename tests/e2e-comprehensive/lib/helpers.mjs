@@ -124,6 +124,9 @@ export const PERMISSION_MATRIX = {
   finance_manager:     { dashboard:'r',production:'-',warehouse:'-',quality:'-',procurement:'-',sales:'r',hr:'-',equipment:'-',finance:'rw',system:'-',analytics:'r',scheduling:'-',restaurant:'-' },
   restaurant_manager:  { dashboard:'r',production:'-',warehouse:'-',quality:'-',procurement:'r',sales:'-',hr:'-',equipment:'-',finance:'r',system:'-',analytics:'r',scheduling:'-',restaurant:'rw' },
   workshop_supervisor: { dashboard:'r',production:'r',warehouse:'r',quality:'w',procurement:'-',sales:'-',hr:'r',equipment:'r',finance:'-',system:'-',analytics:'-',scheduling:'r',restaurant:'-' },
+  // R4 fix: added team_leader + group_leader (were missing, caused all routes 403)
+  team_leader:         { dashboard:'r',production:'r',warehouse:'-',quality:'-',procurement:'-',sales:'-',hr:'r',equipment:'r',finance:'-',system:'-',analytics:'-',scheduling:'r',restaurant:'-' },
+  group_leader:        { dashboard:'r',production:'w',warehouse:'-',quality:'-',procurement:'-',sales:'-',hr:'-',equipment:'r',finance:'-',system:'-',analytics:'-',scheduling:'-',restaurant:'-' },
   viewer:              { dashboard:'r',production:'r',warehouse:'r',quality:'r',procurement:'r',sales:'r',hr:'-',equipment:'r',finance:'-',system:'-',analytics:'r',scheduling:'r',restaurant:'r' },
 };
 

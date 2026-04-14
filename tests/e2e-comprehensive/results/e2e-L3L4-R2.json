@@ -1,6 +1,6 @@
 {
   "round": 2,
-  "timestamp": "2026-04-14T14:28:11.276Z",
+  "timestamp": "2026-04-14T17:20:12.807Z",
   "factoryId": "FOOD_3101_048",
   "results": [
     {
@@ -9,11 +9,11 @@
       "action": "create_customer",
       "status": "PASS",
       "evidence": {
-        "filled": "E2E_customer_R2_mnyppc37",
+        "filled": "E2E_customer_R2_mnyvv5xz",
         "apiStatus": 200,
         "apiUrl": "/api/mobile/FOOD_3101_048/customers"
       },
-      "ts": "2026-04-14T14:24:18.650Z"
+      "ts": "2026-04-14T17:16:39.283Z"
     },
     {
       "layer": "L3",
@@ -23,7 +23,7 @@
       "evidence": {
         "evidence": "Customer field found in SO form"
       },
-      "ts": "2026-04-14T14:24:35.256Z"
+      "ts": "2026-04-14T17:17:18.631Z"
     },
     {
       "layer": "L3",
@@ -31,11 +31,11 @@
       "action": "create_supplier",
       "status": "PASS",
       "evidence": {
-        "filled": "E2E_supplier_R2_mnyppc37",
+        "filled": "E2E_supplier_R2_mnyvv5xz",
         "apiStatus": 200,
         "apiUrl": "/api/mobile/FOOD_3101_048/suppliers"
       },
-      "ts": "2026-04-14T14:24:46.741Z"
+      "ts": "2026-04-14T17:17:30.972Z"
     },
     {
       "layer": "L3",
@@ -45,7 +45,7 @@
       "evidence": {
         "evidence": "Supplier field found in PO form"
       },
-      "ts": "2026-04-14T14:25:03.226Z"
+      "ts": "2026-04-14T17:17:43.704Z"
     },
     {
       "layer": "L3",
@@ -55,7 +55,7 @@
       "evidence": {
         "rows": 0
       },
-      "ts": "2026-04-14T14:25:17.431Z"
+      "ts": "2026-04-14T17:17:53.295Z"
     },
     {
       "layer": "L3",
@@ -66,7 +66,7 @@
         "rows": 0,
         "note": "BOM page accessible + renders"
       },
-      "ts": "2026-04-14T14:25:27.969Z"
+      "ts": "2026-04-14T17:18:05.721Z"
     },
     {
       "layer": "L3",
@@ -76,7 +76,7 @@
       "evidence": {
         "rows": 0
       },
-      "ts": "2026-04-14T14:25:37.947Z"
+      "ts": "2026-04-14T17:18:13.897Z"
     },
     {
       "layer": "L3",
@@ -87,7 +87,7 @@
         "rows": 0,
         "note": "Shipment page accessible"
       },
-      "ts": "2026-04-14T14:25:49.598Z"
+      "ts": "2026-04-14T17:18:21.221Z"
     },
     {
       "layer": "L3",
@@ -97,7 +97,7 @@
       "evidence": {
         "rows": 0
       },
-      "ts": "2026-04-14T14:26:00.467Z"
+      "ts": "2026-04-14T17:18:30.338Z"
     },
     {
       "layer": "L3",
@@ -108,7 +108,7 @@
         "rows": 0,
         "note": "Warehouse shipment page accessible"
       },
-      "ts": "2026-04-14T14:26:09.219Z"
+      "ts": "2026-04-14T17:18:38.250Z"
     },
     {
       "layer": "L3",
@@ -116,10 +116,10 @@
       "action": "employee_list",
       "status": "PASS",
       "evidence": {
-        "rows": 10,
-        "note": "10 employees"
+        "rows": 0,
+        "note": "New factory — 0 employees expected"
       },
-      "ts": "2026-04-14T14:26:20.576Z"
+      "ts": "2026-04-14T17:18:48.022Z"
     },
     {
       "layer": "L3",
@@ -129,7 +129,7 @@
       "evidence": {
         "note": "Attendance page renders"
       },
-      "ts": "2026-04-14T14:26:35.704Z"
+      "ts": "2026-04-14T17:18:57.196Z"
     },
     {
       "layer": "L4",
@@ -149,7 +149,7 @@
           "交易日期"
         ]
       },
-      "ts": "2026-04-14T14:26:47.918Z"
+      "ts": "2026-04-14T17:19:06.134Z"
     },
     {
       "layer": "L4",
@@ -161,7 +161,7 @@
         "hasCharts": false,
         "hasCards": true
       },
-      "ts": "2026-04-14T14:27:01.208Z"
+      "ts": "2026-04-14T17:19:13.796Z"
     },
     {
       "layer": "L4",
@@ -173,7 +173,7 @@
         "hasKPI": true,
         "hasCharts": false
       },
-      "ts": "2026-04-14T14:27:18.082Z"
+      "ts": "2026-04-14T17:19:22.624Z"
     },
     {
       "layer": "L4",
@@ -183,7 +183,7 @@
       "evidence": {
         "rows": 0
       },
-      "ts": "2026-04-14T14:27:28.672Z"
+      "ts": "2026-04-14T17:19:32.683Z"
     },
     {
       "layer": "L4",
@@ -203,7 +203,7 @@
           "交货日期"
         ]
       },
-      "ts": "2026-04-14T14:27:33.319Z"
+      "ts": "2026-04-14T17:19:37.314Z"
     },
     {
       "layer": "L4",
@@ -213,7 +213,7 @@
       "evidence": {
         "rows": 0
       },
-      "ts": "2026-04-14T14:27:46.785Z"
+      "ts": "2026-04-14T17:19:47.340Z"
     },
     {
       "layer": "L4",
@@ -233,7 +233,7 @@
           "备注"
         ]
       },
-      "ts": "2026-04-14T14:27:51.398Z"
+      "ts": "2026-04-14T17:19:51.945Z"
     },
     {
       "layer": "L4",
@@ -254,7 +254,7 @@
           "计划日期"
         ]
       },
-      "ts": "2026-04-14T14:28:03.530Z"
+      "ts": "2026-04-14T17:20:00.681Z"
     },
     {
       "layer": "L4",
@@ -265,7 +265,7 @@
         "rows": 0,
         "hasTable": true
       },
-      "ts": "2026-04-14T14:28:11.208Z"
+      "ts": "2026-04-14T17:20:12.714Z"
     }
   ],
   "summary": {
