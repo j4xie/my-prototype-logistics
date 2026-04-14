@@ -1,0 +1,122 @@
+{
+  "round": 1,
+  "timestamp": "2026-04-14T05:27:09.132Z",
+  "factoryId": "FOOD_3101_048",
+  "results": [
+    {
+      "layer": "L3",
+      "testId": "1",
+      "action": "fill_customer",
+      "status": "PASS",
+      "evidence": {
+        "filled": "E2E客户_L3_mny6h3fp"
+      },
+      "ts": "2026-04-14T05:25:53.380Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "1",
+      "action": "create_customer",
+      "status": "WARNING",
+      "evidence": {
+        "filled": "E2E客户_L3_mny6h3fp",
+        "toast": "none",
+        "submitButton": "确定"
+      },
+      "ts": "2026-04-14T05:25:54.922Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "1",
+      "action": "so_create_button",
+      "status": "SKIP",
+      "evidence": {
+        "reason": "No SO create button found"
+      },
+      "ts": "2026-04-14T05:26:04.120Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "2",
+      "action": "fill_supplier",
+      "status": "PASS",
+      "evidence": {
+        "filled": "E2E供应商_L3_mny6h3fp"
+      },
+      "ts": "2026-04-14T05:26:13.910Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "2",
+      "action": "create_supplier",
+      "status": "WARNING",
+      "evidence": {
+        "filled": "E2E供应商_L3_mny6h3fp",
+        "toast": "none",
+        "submitButton": "确定"
+      },
+      "ts": "2026-04-14T05:26:15.455Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "2",
+      "action": "po_create_button",
+      "status": "SKIP",
+      "evidence": {
+        "reason": "No PO create button found"
+      },
+      "ts": "2026-04-14T05:26:25.151Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "1",
+      "action": "finance_costs_render",
+      "status": "PASS",
+      "evidence": {
+        "length": 258,
+        "hasTable": true
+      },
+      "ts": "2026-04-14T05:26:33.299Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "2",
+      "action": "analytics_render",
+      "status": "PASS",
+      "evidence": {
+        "length": 358,
+        "hasCharts": false
+      },
+      "ts": "2026-04-14T05:26:46.586Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "3",
+      "action": "smartbi_render",
+      "status": "PASS",
+      "evidence": {
+        "length": 370,
+        "hasKPI": true
+      },
+      "ts": "2026-04-14T05:26:54.751Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "4",
+      "action": "employee_list",
+      "status": "WARNING",
+      "evidence": {
+        "rows": 0,
+        "firstEntries": [],
+        "note": "New factory — users may not appear as employees"
+      },
+      "ts": "2026-04-14T05:27:09.060Z"
+    }
+  ],
+  "summary": {
+    "pass": 5,
+    "fail": 0,
+    "warn": 3,
+    "skip": 2
+  }
+}
