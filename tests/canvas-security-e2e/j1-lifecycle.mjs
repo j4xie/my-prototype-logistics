@@ -15,6 +15,7 @@ import {
   apiGet,
   apiPost,
   apiPut,
+  apiCall,
   createResultCollector,
   FACTORY_A,
   ADMIN_A,
@@ -462,6 +463,127 @@ async function phaseB3_effectiveConfig(token) {
 /**
  * D1–D3. Get current version, rollback to previous, publish, then restore.
  */
+/**
+ * Phase C — Canvas module toggle E2E (R1 addition from agent-team audit).
+ *
+ * Verifies the PATCH /config/modules/{moduleCode}/toggle endpoint lifecycle.
+ * Actual testIds logged (matching implementation):
+ *   J1-C1-disable         — PATCH toggle enabled=false → HTTP 200
+ *   J1-C2-publish         — Publish the DRAFT that contains the toggle change
+ *   J1-C3-verify-disabled — GET /effective → data.enabled === false
+ *   J1-C4-restore         — PATCH toggle enabled=true (restore original state)
+ *   J1-C5-verify-restored — GET /effective → data.enabled === true
+ *
+ * This closes the "Canvas 模块启停 0% E2E 覆盖" gap identified by
+ * the agent-team audit (2026-04-13_canvas-e2e-r1-audit.md).
+ */
+async function phaseC_moduleToggle(token) {
+  // Must be a module registered in module_schemas table.
+  // Verified seed list (V20260410_08+): sales_order, purchase_order, bom,
+  // production_plan, production_report, quality_inspection, inventory,
+  // equipment, customer, supplier, transfer, invoice_record, material_batch,
+  // hr_employee, product, traceability, finance_ar, finance_ap.
+  // Pick `traceability` — low dependency, unlikely to conflict with J1 Phase A/B test data.
+  const TARGET_MODULE = 'traceability';
+
+  // C1: Get current state so we can restore correctly
+  let originalEnabled = true;
+  try {
+    const res = await apiGet(`${F}/config/modules/${TARGET_MODULE}/effective`, token);
+    if (res.status === 200 && res.data) {
+      originalEnabled = res.data.enabled !== false;
+    }
+  } catch { /* proceed with default */ }
+
+  // C2: Disable module (endpoint is @PatchMapping)
+  try {
+    const disableRes = await apiCall('PATCH',
+      `${F}/config/modules/${TARGET_MODULE}/toggle?enabled=false`, null, token
+    );
+    if (disableRes.status === 200) {
+      rc.log('J1-C1-disable', 'PASS',
+        `PATCH toggle disable ${TARGET_MODULE} — HTTP 200`);
+    } else {
+      rc.log('J1-C1-disable', 'FAIL',
+        `PATCH toggle disable returned HTTP ${disableRes.status}: ${disableRes.message || '(no msg)'}`);
+      return;
+    }
+  } catch (err) {
+    rc.log('J1-C1-disable', 'FAIL', `Disable request error: ${err.message}`);
+    return;
+  }
+
+  // C3: Publish so the toggle takes effect (DRAFT → PUBLISHED)
+  try {
+    const pub = await apiPost(`${F}/config/publish?summary=J1-C+module+toggle+test`, null, token);
+    if (pub.status !== 200) {
+      rc.log('J1-C2-publish', 'WARN',
+        `Publish after disable returned HTTP ${pub.status}: ${pub.message || '(no msg)'} — toggle may not be active yet`);
+    } else {
+      rc.log('J1-C2-publish', 'PASS', `Toggle change published — HTTP 200`);
+    }
+  } catch (err) {
+    rc.log('J1-C2-publish', 'WARN', `Publish error: ${err.message}`);
+  }
+
+  // C4: Verify effective config reflects disabled state
+  try {
+    const verifyRes = await apiGet(`${F}/config/modules/${TARGET_MODULE}/effective`, token);
+    const enabledAfter = verifyRes.data?.enabled;
+    if (verifyRes.status === 200 && enabledAfter === false) {
+      rc.log('J1-C3-verify-disabled', 'PASS',
+        `effective config enabled=false after toggle`);
+    } else {
+      rc.log('J1-C3-verify-disabled', 'FAIL',
+        `Expected enabled=false, got ${enabledAfter} (HTTP ${verifyRes.status})`);
+    }
+  } catch (err) {
+    rc.log('J1-C3-verify-disabled', 'FAIL', `Verify disable error: ${err.message}`);
+  }
+
+  // C4: Re-enable to restore original state (endpoint is @PatchMapping)
+  let restored = false;
+  try {
+    const enableRes = await apiCall('PATCH',
+      `${F}/config/modules/${TARGET_MODULE}/toggle?enabled=${originalEnabled}`, null, token
+    );
+    if (enableRes.status === 200) {
+      rc.log('J1-C4-restore', 'PASS',
+        `PATCH toggle restore ${TARGET_MODULE} to enabled=${originalEnabled} — HTTP 200`);
+      restored = true;
+    } else {
+      rc.log('J1-C4-restore', 'FAIL',
+        `PATCH toggle restore returned HTTP ${enableRes.status}: ${enableRes.message || '(no msg)'}`);
+    }
+    // Publish the restore (check result — leaving module in DRAFT-disabled pollutes later runs)
+    const restorePub = await apiPost(`${F}/config/publish?summary=J1-C+toggle+restore`, null, token);
+    if (restorePub.status !== 200 && restored) {
+      rc.log('J1-C4-restore', 'WARN',
+        `Restore PATCH was 200 but restore publish returned HTTP ${restorePub.status}: ${restorePub.message || '(no msg)'} — module may remain in DRAFT state`);
+    }
+  } catch (err) {
+    rc.log('J1-C4-restore', 'FAIL', `Restore request error: ${err.message}`);
+    restored = false;
+  }
+
+  // C5: Verify effective config reflects restored state
+  if (restored) {
+    try {
+      const verifyRes = await apiGet(`${F}/config/modules/${TARGET_MODULE}/effective`, token);
+      const enabledAfter = verifyRes.data?.enabled;
+      if (verifyRes.status === 200 && enabledAfter === originalEnabled) {
+        rc.log('J1-C5-verify-restored', 'PASS',
+          `effective config enabled=${originalEnabled} confirmed after restore`);
+      } else {
+        rc.log('J1-C5-verify-restored', 'FAIL',
+          `Expected enabled=${originalEnabled}, got ${enabledAfter} (HTTP ${verifyRes.status})`);
+      }
+    } catch (err) {
+      rc.log('J1-C5-verify-restored', 'FAIL', `Verify restore error: ${err.message}`);
+    }
+  }
+}
+
 async function phaseD_rollback(token) {
   // D1: Get current version
   let currentVersion = null;
@@ -659,6 +781,10 @@ async function main() {
     rc.log('J1-B2', 'FAIL', 'Skipped — publish failed');
     rc.log('J1-B3', 'FAIL', 'Skipped — publish failed');
   }
+
+  // Phase C — Module toggle E2E (R1 addition: close Canvas 模块启停 0% gap)
+  console.log('\n--- Phase C: Module Toggle ---');
+  await phaseC_moduleToggle(token);
 
   // Phase D
   console.log('\n--- Phase D: Rollback ---');

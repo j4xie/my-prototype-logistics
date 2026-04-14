@@ -15,6 +15,12 @@
  *  J3-S4   Check dynamic field labels (WARN if absent — J1 may not have run)
  *  J3-S10  Navigate to /canvas-editor — URL contains "canvas-editor"
  *
+ * Note: J3-S5 through J3-S9 are INTENTIONALLY UNUSED numbers reserved for future
+ * Playwright form submission / sub-table / validation interception tests. The
+ * current scope does NOT cover those flows because Fix 14 (setDynamicFields
+ * affected-row check) is primarily verified by J1-B2 (ACTIVE field counting),
+ * not by J3 UI form submission. See tests/canvas-security-e2e/EVIDENCE.md §2.
+ *
  * Exit code 1 if any step is FAIL.
  */
 
@@ -167,29 +173,54 @@ async function stepS4(page) {
 // S10 — Navigate to /canvas-editor
 // ---------------------------------------------------------------------------
 async function stepS10(page) {
+  // R1-⑥ fix after agent-team audit:
+  //   commit 46d1925a3 (Apr 13 18:23) changed canvas-editor meta.roles from
+  //   ['factory_super_admin', 'permission_admin'] to ['platform_admin', 'permission_admin'].
+  //   restaurant_admin1 (factory_super_admin) is intentionally NOT in the new whitelist,
+  //   so we expect /403 redirect. This doubles as a security assertion — verifies the
+  //   router guard does actively enforce the updated role matrix.
+  //
+  //   Expected behavior is parameterized via E2E_CANVAS_EDITOR_EXPECT:
+  //     "blocked" (default, current policy)  — expect redirect to /403
+  //     "allowed"                            — expect URL contains "canvas-editor"
+  //
+  //   Open question (tracked in agent-team audit 2026-04-13): the backend
+  //   CanvasAIController.@RequireRole still contains factory_super_admin (not aligned
+  //   with router). R2 must address this front-end/back-end policy split (P0-b).
+  const expectPolicy = process.env.E2E_CANVAS_EDITOR_EXPECT || 'blocked';
+  if (expectPolicy !== 'blocked' && expectPolicy !== 'allowed') {
+    rc.log('J3-S10', 'FAIL',
+      `Invalid E2E_CANVAS_EDITOR_EXPECT="${expectPolicy}" — must be "blocked" or "allowed"`);
+    return false;
+  }
+
   try {
     await page.goto(`${WEB_URL}/canvas-editor`);
     await page.waitForTimeout(3_000);
 
     const currentUrl = page.url();
+    const isBlocked = currentUrl.includes('/403');
+    const isAccessible = currentUrl.includes('canvas-editor');
 
-    if (currentUrl.includes('canvas-editor')) {
-      rc.log(
-        'J3-S10',
-        'PASS',
-        `Canvas editor accessible — URL: ${currentUrl}`
-      );
-      await screenshot(page, 'j3-S10-canvas');
-      return true;
+    if (expectPolicy === 'blocked') {
+      if (isBlocked) {
+        rc.log('J3-S10', 'PASS',
+          `factory_super_admin correctly blocked from /canvas-editor — URL: ${currentUrl}`);
+      } else {
+        rc.log('J3-S10', 'FAIL',
+          `Expected /403 for factory_super_admin, got URL: ${currentUrl} (router guard may be misconfigured)`);
+      }
+    } else { // expectPolicy === 'allowed'
+      if (isAccessible) {
+        rc.log('J3-S10', 'PASS',
+          `Canvas editor accessible for configured account — URL: ${currentUrl}`);
+      } else {
+        rc.log('J3-S10', 'FAIL',
+          `Expected canvas-editor access, got URL: ${currentUrl}`);
+      }
     }
-
-    rc.log(
-      'J3-S10',
-      'FAIL',
-      `URL does not contain "canvas-editor" after navigation — actual URL: ${currentUrl}`
-    );
     await screenshot(page, 'j3-S10-canvas');
-    return false;
+    return (expectPolicy === 'blocked') ? isBlocked : isAccessible;
   } catch (err) {
     rc.log('J3-S10', 'FAIL', `Canvas editor navigation threw: ${err.message}`);
     return false;

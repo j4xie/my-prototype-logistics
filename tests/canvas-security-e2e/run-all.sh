@@ -2,11 +2,16 @@
 # Canvas Security E2E Test Suite — Run all journeys
 # Usage: bash tests/canvas-security-e2e/run-all.sh
 # Prereq: SSH tunnel must be open: ssh -L 10011:localhost:10011 root@47.100.235.168 -N &
+#
+# Exit codes:
+#   0 — all journeys passed with 0 FAIL and 0 WARN (WARN is treated as failure per E2E skill rules)
+#   1 — any journey had FAIL or WARN in its results JSON
+#   2 — runner infrastructure error (missing results dir, JSON parse fail, etc.)
 set -euo pipefail
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
-PASS_COUNT=0
-FAIL_COUNT=0
+JOURNEY_OK=0
+JOURNEY_FAIL=0
 JOURNEY_RESULTS=()
 
 run_journey() {
@@ -18,11 +23,11 @@ run_journey() {
   echo "=========================================="
   if node "$DIR/$script" 2>&1; then
     JOURNEY_RESULTS+=("$name: OK")
+    JOURNEY_OK=$((JOURNEY_OK + 1))
   else
     JOURNEY_RESULTS+=("$name: FAILURES")
-    FAIL_COUNT=$((FAIL_COUNT + 1))
+    JOURNEY_FAIL=$((JOURNEY_FAIL + 1))
   fi
-  PASS_COUNT=$((PASS_COUNT + 1))
 }
 
 # Clean token cache from previous runs
@@ -54,26 +59,54 @@ run_journey "J6: AI Agent" "j6-ai-agent.mjs"
 
 echo ""
 echo "=========================================="
-echo "  SUMMARY"
+echo "  JOURNEY SUMMARY ($JOURNEY_OK OK / $JOURNEY_FAIL FAIL)"
 echo "=========================================="
 for r in "${JOURNEY_RESULTS[@]}"; do
   echo "  $r"
 done
 echo ""
 
-# Aggregate all result JSONs
+# Aggregate all result JSONs (test-level, not journey-level)
+# WARN is treated as failure per E2E skill rules (references/test-rules.md:379)
 node -e "
 const fs = require('fs');
 const path = require('path');
-const dir = path.join(path.resolve('$DIR'), 'results');
+// \$DIR from bash is Git Bash style (/c/Users/...); pass through Node's fs which accepts both.
+// DO NOT use path.resolve — it would mangle /c/Users/... into C:\c\Users\... on Windows.
+const dir = '$DIR' + '/results';
+// Normalize Git Bash path for Node.js on Windows
+const normalizedDir = dir.replace(/^\\/([a-z])\\//, '\$1:/');
 let pass=0, fail=0, warn=0, total=0;
+let journeyCount = 0;
 try {
-  fs.readdirSync(dir).filter(f=>f.endsWith('.json')).forEach(f => {
-    const d = JSON.parse(fs.readFileSync(dir+'/'+f));
+  // Only read *-results.json files (exclude .token-cache.json and any other metadata)
+  const files = fs.readdirSync(normalizedDir).filter(f=>f.endsWith('-results.json'));
+  if (files.length === 0) {
+    console.error('ERROR: No *-results.json files found in ' + normalizedDir);
+    console.error('Journeys may have failed before rc.save() was called.');
+    process.exit(2);
+  }
+  files.forEach(f => {
+    const d = JSON.parse(fs.readFileSync(normalizedDir+'/'+f));
     pass += d.pass||0; fail += d.fail||0; warn += d.warn||0; total += d.total||0;
+    journeyCount++;
   });
-} catch(e) { console.error('Result aggregation error:', e.message); }
-console.log('TOTAL: ' + pass + '/' + total + ' PASS, ' + fail + ' FAIL, ' + warn + ' WARN');
-if (fail > 0) { console.log('EXIT: 1 (failures detected)'); process.exit(1); }
-else { console.log('EXIT: 0 (all clear)'); }
+} catch(e) {
+  console.error('ERROR: Result aggregation failed:', e.message);
+  process.exit(2);
+}
+console.log('');
+console.log('==========================================');
+console.log('  TEST-LEVEL SUMMARY (' + journeyCount + ' journeys aggregated)');
+console.log('==========================================');
+console.log('  Total assertions : ' + total);
+console.log('  PASS             : ' + pass);
+console.log('  FAIL             : ' + fail);
+console.log('  WARN             : ' + warn);
+console.log('');
+if (fail > 0 || warn > 0) {
+  console.log('EXIT: 1 (FAIL=' + fail + ', WARN=' + warn + ' — WARN treated as failure per E2E skill rules)');
+  process.exit(1);
+}
+console.log('EXIT: 0 (all clear — 0 FAIL, 0 WARN)');
 "
