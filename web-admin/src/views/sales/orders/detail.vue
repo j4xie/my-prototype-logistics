@@ -342,8 +342,13 @@ function sumAllocated(item: AllocItem): number {
 
 async function handleBatchAllocate() {
   if (submitting.value) return;
+  // Zero-quantity items don't need allocation (skip them from validation + submission).
+  const activeItems = batchAllocForm.value.items.filter(it => it.deliveredQuantity > 0);
+  if (activeItems.length === 0) {
+    return ElMessage.warning('无需分配 (所有发货行数量为 0)');
+  }
   // Validation: per-item total must equal deliveredQuantity (backend enforces)
-  for (const item of batchAllocForm.value.items) {
+  for (const item of activeItems) {
     if (item.allocations.length === 0) {
       return ElMessage.warning(`${item.productName}: 没有可用成品批次, 请先生产`);
     }
@@ -351,12 +356,20 @@ async function handleBatchAllocate() {
     if (Math.abs(total - item.deliveredQuantity) > 0.001) {
       return ElMessage.warning(`${item.productName}: 分配合计 ${total} 必须等于发货量 ${item.deliveredQuantity}`);
     }
+    // Duplicate batch guard — backend 先清空再写入 would accept dupes silently.
+    const uniqueIds = new Set(item.allocations.map(a => a.finishedGoodsBatchId));
+    if (uniqueIds.size !== item.allocations.length) {
+      return ElMessage.warning(`${item.productName}: 同一批次不能重复分配`);
+    }
   }
   submitting.value = true;
   let success = 0, failed = 0;
   const errors: string[] = [];
-  try {
-    for (const item of batchAllocForm.value.items) {
+  // Per-item try/catch — the axios interceptor rejects on success:false, so a
+  // single outer try would abort the loop after the first failure and leave the
+  // remaining items un-attempted (bug caught in code review).
+  for (const item of activeItems) {
+    try {
       const allocations = item.allocations
         .filter(a => Number(a.allocatedQty) > 0)
         .map(a => ({ finishedGoodsBatchId: a.finishedGoodsBatchId, allocatedQty: Number(a.allocatedQty) }));
@@ -366,18 +379,24 @@ async function handleBatchAllocate() {
       );
       if (res.success) success++;
       else { failed++; errors.push(`${item.productName}: ${res.message || '失败'}`); }
+    } catch (e: unknown) {
+      failed++;
+      const msg = (e && typeof e === 'object' && 'message' in e)
+        ? String((e as { message: unknown }).message)
+        : '网络错误';
+      errors.push(`${item.productName}: ${msg}`);
     }
-    if (failed === 0) {
-      ElMessage.success(`批次分配成功 (${success} 项)`);
-      batchAllocDialogVisible.value = false;
-      loadDeliveries();
-    } else {
-      ElMessage.error(`${success} 成功 / ${failed} 失败:\n${errors.join('\n')}`);
-    }
-  } catch {
-    ElMessage.error('分配失败，请检查网络');
-  } finally {
-    submitting.value = false;
+  }
+  submitting.value = false;
+  if (failed === 0) {
+    ElMessage.success(`批次分配成功 (${success} 项)`);
+    batchAllocDialogVisible.value = false;
+    loadDeliveries();
+  } else {
+    // Reload regardless — partial successes persisted on the server, user should
+    // see current state before deciding whether to retry failed items.
+    loadDeliveries();
+    ElMessage.error(`${success} 成功 / ${failed} 失败:\n${errors.join('\n')}`);
   }
 }
 
