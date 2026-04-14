@@ -1,0 +1,180 @@
+{
+  "round": 10,
+  "timestamp": "2026-04-14T19:34:19.798Z",
+  "factoryId": "FOOD_3101_048",
+  "notes": "R10 PO create chain — mirror of R8 for purchase side",
+  "results": [
+    {
+      "layer": "L4",
+      "testId": "deep-10",
+      "step": "prep_supplier_created",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "supplierName": "E2E_S_R10_mnz0rkjv",
+        "apiStatus": 200
+      },
+      "ts": "2026-04-14T19:33:49.279Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-10",
+      "step": "step1_baseline",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "rowsBefore": 0
+      },
+      "ts": "2026-04-14T19:33:59.010Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-10",
+      "step": "step2_dialog_open",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T19:34:03.639Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-10",
+      "step": "step3_supplier_selected",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "supplierName": "E2E_S_R10_mnz0rkjv",
+        "method": "evaluate"
+      },
+      "ts": "2026-04-14T19:34:04.681Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-10",
+      "step": "step4_delivery_date",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "date": "2026-04-21"
+      },
+      "ts": "2026-04-14T19:34:05.727Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-10",
+      "step": "step5_open_material_select",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T19:34:05.763Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-10",
+      "step": "step5_material_selected",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "materialText": "E2E测试原料"
+      },
+      "ts": "2026-04-14T19:34:07.795Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-10",
+      "step": "step6_fill_numbers",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "quantity": 200,
+        "unitPrice": 25
+      },
+      "ts": "2026-04-14T19:34:08.313Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-10",
+      "step": "step7_fill_remaining",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "count": 0
+      },
+      "ts": "2026-04-14T19:34:08.315Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-10",
+      "step": "step8_submit",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "apiStatus": 200,
+        "apiUrl": "/api/mobile/FOOD_3101_048/purchase/orders"
+      },
+      "ts": "2026-04-14T19:34:08.599Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-10",
+      "step": "step9_toast",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "toastText": "创建成功"
+      },
+      "ts": "2026-04-14T19:34:08.609Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-10",
+      "step": "step11_delta",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "rowsBefore": 0,
+        "rowsAfter": 1,
+        "delta": 1
+      },
+      "ts": "2026-04-14T19:34:19.728Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-10",
+      "step": "step12_roundtrip",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "supplierName": "E2E_S_R10_mnz0rkjv",
+        "supplierInRow": true,
+        "priceVisible": true,
+        "rowPreview": "PO-20260415-0001\n\t\nE2E_S_R10_mnz0rkjv\n\t\n直接\n\t\n2026-04-14\n\t\n¥5,000.00\n\t\n草稿\n\t\n详情\n提交\n取消"
+      },
+      "ts": "2026-04-14T19:34:19.729Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-10",
+      "step": "FULL_FLOW",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "supplierName": "E2E_S_R10_mnz0rkjv",
+        "apiStatus": 200,
+        "toastText": "创建成功",
+        "delta": 1,
+        "rowsBefore": 0,
+        "rowsAfter": 1,
+        "roundtripOk": true,
+        "priceOk": true
+      },
+      "ts": "2026-04-14T19:34:19.729Z"
+    }
+  ],
+  "summary": {
+    "deepTotal": 1,
+    "deepPass": 1,
+    "deepFail": 0
+  }
+}
