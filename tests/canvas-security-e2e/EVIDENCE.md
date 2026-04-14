@@ -309,4 +309,188 @@ grep -r "@RequireModule" backend/java/cretas-api/src/main/java/com/cretas/aims/c
 
 ---
 
+## 14. R5 ADR-1: `setDynamicFields setClauses.isEmpty()` 早返回语义决策
+
+**来源**: R4-① / R4-② plan-audit docs 里作为 R5 backlog item 明确记录, R5 轮内决策
+
+**背景**:
+当前 `DynamicFieldService.setDynamicFields` 逻辑 (line ~220-240):
+```java
+for (Map.Entry<String, Object> entry : fields.entrySet()) {
+    CanvasDynamicField def = defMap.get(entry.getKey());
+    if (def != null && !"SUB_TABLE".equals(def.getFieldType())) {
+        setClauses.add(def.getColumnName() + " = ?");
+        params.add(entry.getValue());
+    }
+}
+if (setClauses.isEmpty()) return;  // <-- Silent no-op
+```
+
+如果 PUT 请求的 fields 中所有 fieldCode 都不在当前工厂的 active dynamic field 定义里 (defMap), setClauses 空, 方法早返回. Controller 返回 HTTP 200 success, 但实际 0 字段被写入 DB.
+
+**问题场景** (R3 最初发现这个 bug, R4 基本上修好 + 这个 ADR 处理遗留边界):
+1. 用户 typo fieldCode — PUT 200 success 但没写入, 用户以为写入了
+2. 用户用过期 fieldCode (字段已被 soft-delete) — 同上
+3. Cross-tenant attacker 利用: 已被 R4 P0-1/2/3 修掉 (verifyParentOwnership 在 controller 层先 400)
+4. 一个 request 混合匹配和不匹配的 field — 匹配的写入, 不匹配的静默忽略, 用户无法分辨
+
+**3 个候选**:
+
+### Option A: Status quo (silent no-op)
+- **Behavior**: 当前行为, 早返回 HTTP 200 success
+- **Pros**:
+  - 向后兼容, 所有现有 caller (MaterialBatchServiceImpl 等) 无变化
+  - 客户端可以发任意 fields, 后端容错
+- **Cons**:
+  - **违反 fail-loud 原则**
+  - 用户 typo 不被察觉
+  - 混合请求 (some match, some don't) 无法告知客户端哪些被忽略
+- **Risk**: 低, 现状
+
+### Option B: Throw BusinessException ("字段未定义")
+- **Behavior**: 如果 fields 非空但 defMap 全无匹配 → throw `BusinessException("字段 ${x} 未在当前工厂定义")`
+- **Pros**:
+  - Fail-loud, 客户端明确知道请求无效
+  - Defense-in-depth against R3-style silent bugs
+- **Cons**:
+  - **BREAKING CHANGE** — 现有 caller 如果曾经"无害地发送过 unknown fields" 会被拒绝
+  - 需要 caller audit (8 处 callers per R5-② Critic Q1): MaterialBatchServiceImpl, ProductionPlanServiceImpl, SalesServiceImpl, PurchaseServiceImpl, ReturnOrderServiceImpl, TransferServiceImpl, QualityInspectionServiceImpl, DynamicFieldController
+- **Risk**: 中. 不确认 caller 行为前不能上.
+
+### Option C: 返回 response 含 ignored fields
+- **Behavior**: `setDynamicFields` 改签名为 `Map<String, Object>` 返回, 内容 `{ignoredFieldCodes: [...]}`. Controller response 从 `ResponseEntity<Void>` 改为 `ResponseEntity<Map>`.
+- **Pros**:
+  - 非 breaking change (新增字段)
+  - 客户端有诊断信息
+- **Cons**:
+  - 改动 8 处 caller (要么适应新返回, 要么忽略)
+  - Swagger / contract 变更
+  - 客户端 UI 可能需要 "部分成功" 提示 (如果某些字段被忽略)
+- **Risk**: 中. API contract change.
+
+**R5 推荐**: Option B (throw BusinessException), 但**实施延 R6**, 因为:
+1. Caller audit 需要 1 天 (8 处 + 每处的客户端调用者)
+2. 变 breaking change, 需要 feature flag 或 grace period
+3. R5 scope 已紧, 加这个 = scope creep
+
+**R5 实际采取**: 仅记录本 ADR. Option B 作为 R6 工作项, 需要:
+1. Grep 所有 8 处 caller 的 input data flow, 确认是否有"无害地发送 unknown fields"的 case
+2. 如无 → 直接 Option B
+3. 如有 → feature flag `cretas.canvas.strict-field-validation` + grace period
+
+**追踪**: 
+- R6 task: caller audit of setDynamicFields unknown-field behavior  
+- Blocker: 需先有 aggregate formula test harness (见 R5 backlog #1), 一起处理
+
+---
+
+## 15. R5 ADR-2: 生产 sub-table orphan rows back-migration plan
+
+**来源**: R4 发现生产 `sales_order_prepayment_records_items` 含 2 条 orphan UUID `parent_id` 行 (parent_id 无匹配 sales_orders.id)
+
+**现状** (verified 2026-04-15 from prod cretas_prod_db):
+```sql
+SELECT id, parent_id FROM sales_order_prepayment_records_items LIMIT 3
+-- id              | parent_id
+-- afbdafe8-...    | cb4e687d-...  (no matching sales_orders.id)
+-- 789d4985-...    | cb4e687d-...  (same orphan parent)
+-- (2 rows total)
+
+SELECT data_type FROM information_schema.columns 
+WHERE table_name='sales_orders' AND column_name='id'
+-- data_type: character varying
+
+SELECT id FROM sales_orders WHERE id = 'cb4e687d-7497-4993-ab2e-c706721751e1'
+-- (0 rows)
+```
+
+两条 sub-table rows 的 parent_id 是 UUID format, 但 sales_orders.id 是 varchar. 这些 parent_id 不匹配任何真实 sales_order. 可能是早期开发/测试阶段 (sales_orders.id 曾是 UUID?) 留下的数据.
+
+**R4 修复影响**:
+- 新 sub-table (`sales_order_prepay_*_items` created after R4 deploy) parent_id 现在是 VARCHAR
+- 但生产 `sales_order_prepayment_records_items` 已经是 UUID parent_id
+- 新 API 请求 (PUT/POST/DELETE) to `sales_order_prepayment_records_items` 如果使用 R4 的 type-aware cast, 会**正确返回** VARCHAR 匹配, 但 parent_id 列类型是 UUID → 插入/更新会失败
+- 当前状态: 表不可写 (schema 不兼容), 2 条 orphan rows 不可读 (verifyParentOwnership fails — parent_id UUID 无 sales_orders 匹配)
+- **事实上**: 这个生产 sub-table 是**完全不可用**的, 与其说是 bug 不如说是历史残留
+
+**4 个候选**:
+
+### Option A: DROP + recreate
+- **Steps**: `DROP TABLE sales_order_prepayment_records_items` + 重新 publish 让 DDLExecutor 用 VARCHAR parent_id 重建
+- **Pros**: Clean, 新表结构正确
+- **Cons**: Permanent data loss (虽然只有 2 条 orphan). 需要 DBA approval.
+- **Risk**: 低 (orphan 无用)
+
+### Option B: ALTER COLUMN TYPE (保留 rows)
+- **Steps**: `ALTER TABLE sales_order_prepayment_records_items ALTER COLUMN parent_id TYPE varchar(100) USING parent_id::text`
+- **Pros**: 保留 2 条历史 rows (即使 orphan)
+- **Cons**: Orphan rows 仍然不可读 (parent_id 值不匹配 sales_orders.id), 占空间但无用
+- **Risk**: 低
+
+### Option C: 清理 orphan + ALTER COLUMN (推荐 ⭐)
+- **Steps**:
+  1. `DELETE FROM sales_order_prepayment_records_items WHERE parent_id::text NOT IN (SELECT id FROM sales_orders);` (安全清理)
+  2. `ALTER TABLE sales_order_prepayment_records_items ALTER COLUMN parent_id TYPE varchar(100) USING parent_id::text;`
+- **Pros**:
+  - Clean up obvious orphans
+  - 表结构匹配 R4 fix
+  - 明确可追溯的变更
+- **Cons**: 需要 DBA maintenance window
+- **Risk**: 低
+
+### Option D: 保留 + document
+- **Steps**: 不做变更, 文档化孤儿 rows 存在 + sub-table 不可用
+- **Pros**: 零运维工作
+- **Cons**:
+  - 生产数据库里有死表, 长期维护负担
+  - 新 publish 不会覆盖 (DDL 用 IF NOT EXISTS)
+- **Risk**: 低
+
+**R5 推荐**: **Option C (清理 orphan + ALTER COLUMN)**
+
+**执行 Plan** (给 DBA, R5 不在本轮执行):
+```sql
+-- Pre-check (应该返回 2)
+SELECT count(*) AS orphan_count
+FROM sales_order_prepayment_records_items sopri
+WHERE NOT EXISTS (SELECT 1 FROM sales_orders so WHERE so.id = sopri.parent_id::text);
+
+-- Delete orphans (expected: 2 rows deleted)
+BEGIN;
+DELETE FROM sales_order_prepayment_records_items sopri
+WHERE NOT EXISTS (SELECT 1 FROM sales_orders so WHERE so.id = sopri.parent_id::text);
+
+-- Expect: 0 rows remain
+SELECT count(*) FROM sales_order_prepayment_records_items;
+
+-- Now safe to ALTER (table is empty)
+ALTER TABLE sales_order_prepayment_records_items 
+  ALTER COLUMN parent_id TYPE varchar(100) USING parent_id::text;
+
+-- Verify
+\d sales_order_prepayment_records_items
+-- Expected: parent_id | character varying(100) | not null
+
+COMMIT;
+```
+
+**If ALTER fails mid-way** (e.g., column cast rejected by an unexpected value):
+```sql
+-- The DELETE + ALTER are inside BEGIN...COMMIT — if ALTER throws, PostgreSQL
+-- automatically aborts the transaction. Explicitly:
+ROLLBACK;
+-- Table state reverts to pre-check baseline (orphan rows + UUID parent_id still present).
+-- Then investigate the unexpected value BEFORE retrying:
+SELECT parent_id, pg_typeof(parent_id) FROM sales_order_prepayment_records_items 
+WHERE parent_id::text !~ '^[0-9a-f-]{36}$';  -- find non-UUID strings in UUID column (should be 0)
+```
+
+**Execution responsibility**: DBA / DevOps during maintenance window, **NOT Claude automation**. Coordinated via:
+- `docs/plans/canvas-v3-subtable-migration-plan.md` (to be created after R5 commit)
+- Maintenance window notice to customers
+
+**Post-execution verification**: Re-run canvas-security-e2e full suite against prod (with appropriate tunnel), expect 91/91 PASS.
+
+---
+
 **维护**: 每次 R{N} 循环结束, 更新本文档相关章节, 保持与实际套件行为一致。

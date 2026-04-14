@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -201,6 +202,15 @@ public class DynamicFieldService {
         };
     }
 
+    // R5 arch cleanup (R4 backlog #1): @Transactional moved from
+    // DynamicFieldController.setCustomFields (R3 surgical hot-fix) down to this
+    // service method. Reasons:
+    //   1. Matches R4 pattern (DynamicTableService.addRow/updateRow/deleteRow)
+    //   2. Covers ALL callers (not just controller-direct): MaterialBatchServiceImpl,
+    //      ProductionPlanServiceImpl, SalesServiceImpl, etc. all go through here
+    //   3. Spring default propagation = REQUIRED — callers that already have an
+    //      outer @Transactional will join; callers without will get a new tx here
+    @Transactional
     public void setDynamicFields(String factoryId, String moduleCode, String recordId, Map<String, Object> fields) {
         if (fields == null || fields.isEmpty()) return;
         List<CanvasDynamicField> activeDefs = getActiveFields(factoryId, moduleCode);

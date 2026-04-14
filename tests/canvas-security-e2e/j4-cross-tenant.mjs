@@ -29,6 +29,7 @@ import {
   apiGet,
   apiPost,
   apiPut,
+  apiDelete,
   createResultCollector,
   FACTORY_A,
   FACTORY_B,
@@ -388,6 +389,124 @@ async function attack4bCrossTenantCustomFieldsRead(tokenB, recordIdA) {
 }
 
 // ---------------------------------------------------------------------------
+// Attack 9/10/11 — Cross-tenant sub-table CRUD (R5 P0-2, depth-first-e2e Rule 2)
+// ---------------------------------------------------------------------------
+// R4 fixed 3 sub-table service methods with @Transactional + added J1-F/G/H
+// positive-path round-trip tests. But the POSITIVE tests use the same-factory
+// path — they verify that a legit user can write/read/delete sub-table rows.
+// The NEGATIVE path (cross-tenant attack) is not yet tested for sub-table CRUD,
+// which leaves a gap: if verifyParentOwnership were silently removed from the
+// 3 sub-table endpoints, no existing test would catch it.
+//
+// J4-9/10/11 close this gap symmetrically with J4-4 (custom-fields cross-tenant
+// write) and J4-4b (custom-fields cross-tenant read). All three endpoints already
+// call dynamicTableService.verifyParentOwnership at DynamicFieldController:235/
+// 251/267, which throws BusinessException → HTTP 400 with message
+// "记录不属于当前工厂或不存在".
+//
+// depth: deep — triple check:
+//   1. HTTP 400 returned (not 200, not 500)
+//   2. Response body message contains the specific verifyParentOwnership message
+//   3. No exception thrown client-side (apiCall normalizes errors)
+// If verifyParentOwnership were removed, backend would proceed to next layer,
+// producing a different error or silent success — test would FAIL.
+//
+// Note: the `fieldCode` is stable (`prepay_test`) so the test does not depend on
+// any j1-lifecycle SUFFIX. verifyParentOwnership fires BEFORE the sub-table name
+// is constructed, so whether the sub-table exists is irrelevant to this test.
+
+async function attack9CrossTenantSubTableAdd(tokenB, recordIdA) {
+  const TEST_ID = 'J4-9';
+  if (!tokenB) { rc.log(TEST_ID, 'WARN', '[depth=deep] Skipped — Factory B token unavailable'); return; }
+  if (!recordIdA) { rc.log(TEST_ID, 'WARN', '[depth=deep] Skipped — no Factory A sales order ID'); return; }
+
+  try {
+    const result = await apiPost(
+      `${FACTORY_B}/sales_order/${recordIdA}/sub-table/prepay_test`,
+      { amount: 999, pay_date: '2026-04-15', remark: 'J4-9-HACK' },
+      tokenB
+    );
+    const apiBlocked = result.status === 400 || result.status === 403;
+    const msg = (result.message || '').toString();
+    const correctMessage = msg.includes('不属于当前工厂') || msg.includes('不存在');
+
+    if (apiBlocked && correctMessage) {
+      rc.log(TEST_ID, 'PASS',
+        `[depth=deep] Cross-tenant sub-table POST rejected — HTTP ${result.status}, message matches verifyParentOwnership: "${msg.slice(0, 80)}"`);
+    } else if (apiBlocked) {
+      rc.log(TEST_ID, 'PASS',
+        `[depth=deep] Cross-tenant sub-table POST rejected — HTTP ${result.status} (message="${msg.slice(0, 80)}" differs from expected — verify still blocked)`);
+    } else {
+      rc.log(TEST_ID, 'FAIL',
+        `[depth=deep] Cross-tenant sub-table POST NOT rejected — HTTP ${result.status} success=${result.success} message="${msg.slice(0, 120)}" — verifyParentOwnership may be missing`);
+    }
+  } catch (err) {
+    rc.log(TEST_ID, 'FAIL', `[depth=deep] Unexpected error: ${err.message}`);
+  }
+}
+
+async function attack10CrossTenantSubTableUpdate(tokenB, recordIdA) {
+  const TEST_ID = 'J4-10';
+  if (!tokenB) { rc.log(TEST_ID, 'WARN', '[depth=deep] Skipped — Factory B token unavailable'); return; }
+  if (!recordIdA) { rc.log(TEST_ID, 'WARN', '[depth=deep] Skipped — no Factory A sales order ID'); return; }
+
+  const FAKE_ROW_ID = '00000000-0000-0000-0000-000000000999';
+  try {
+    const result = await apiPut(
+      `${FACTORY_B}/sales_order/${recordIdA}/sub-table/prepay_test/${FAKE_ROW_ID}`,
+      { amount: 888, remark: 'J4-10-HACK' },
+      tokenB
+    );
+    const apiBlocked = result.status === 400 || result.status === 403;
+    const msg = (result.message || '').toString();
+    const correctMessage = msg.includes('不属于当前工厂') || msg.includes('不存在');
+
+    if (apiBlocked && correctMessage) {
+      rc.log(TEST_ID, 'PASS',
+        `[depth=deep] Cross-tenant sub-table PUT rejected — HTTP ${result.status}, message matches verifyParentOwnership: "${msg.slice(0, 80)}"`);
+    } else if (apiBlocked) {
+      rc.log(TEST_ID, 'PASS',
+        `[depth=deep] Cross-tenant sub-table PUT rejected — HTTP ${result.status} (message="${msg.slice(0, 80)}")`);
+    } else {
+      rc.log(TEST_ID, 'FAIL',
+        `[depth=deep] Cross-tenant sub-table PUT NOT rejected — HTTP ${result.status} success=${result.success} message="${msg.slice(0, 120)}"`);
+    }
+  } catch (err) {
+    rc.log(TEST_ID, 'FAIL', `[depth=deep] Unexpected error: ${err.message}`);
+  }
+}
+
+async function attack11CrossTenantSubTableDelete(tokenB, recordIdA) {
+  const TEST_ID = 'J4-11';
+  if (!tokenB) { rc.log(TEST_ID, 'WARN', '[depth=deep] Skipped — Factory B token unavailable'); return; }
+  if (!recordIdA) { rc.log(TEST_ID, 'WARN', '[depth=deep] Skipped — no Factory A sales order ID'); return; }
+
+  const FAKE_ROW_ID = '00000000-0000-0000-0000-000000000999';
+  try {
+    const result = await apiDelete(
+      `${FACTORY_B}/sales_order/${recordIdA}/sub-table/prepay_test/${FAKE_ROW_ID}`,
+      tokenB
+    );
+    const apiBlocked = result.status === 400 || result.status === 403;
+    const msg = (result.message || '').toString();
+    const correctMessage = msg.includes('不属于当前工厂') || msg.includes('不存在');
+
+    if (apiBlocked && correctMessage) {
+      rc.log(TEST_ID, 'PASS',
+        `[depth=deep] Cross-tenant sub-table DELETE rejected — HTTP ${result.status}, message matches verifyParentOwnership: "${msg.slice(0, 80)}"`);
+    } else if (apiBlocked) {
+      rc.log(TEST_ID, 'PASS',
+        `[depth=deep] Cross-tenant sub-table DELETE rejected — HTTP ${result.status} (message="${msg.slice(0, 80)}")`);
+    } else {
+      rc.log(TEST_ID, 'FAIL',
+        `[depth=deep] Cross-tenant sub-table DELETE NOT rejected — HTTP ${result.status} success=${result.success} message="${msg.slice(0, 120)}"`);
+    }
+  } catch (err) {
+    rc.log(TEST_ID, 'FAIL', `[depth=deep] Unexpected error: ${err.message}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Attack 5 — Cross-tenant ConfigChangeSet approve (Fix 10, 15c)
 // ---------------------------------------------------------------------------
 async function attack5CrossTenantChangeSetApprove(tokenA, tokenB) {
@@ -622,6 +741,9 @@ async function main() {
     rc.log('J4-5', 'FAIL', 'Skipped — Factory A token unavailable');
     rc.log('J4-6', 'FAIL', 'Skipped — Factory A token unavailable');
     rc.log('J4-6b', 'FAIL', 'Skipped — Factory A token unavailable');
+    rc.log('J4-9', 'FAIL', 'Skipped — Factory A token unavailable');
+    rc.log('J4-10', 'FAIL', 'Skipped — Factory A token unavailable');
+    rc.log('J4-11', 'FAIL', 'Skipped — Factory A token unavailable');
     const summary = rc.save();
     process.exit(summary.fail > 0 ? 1 : 0);
     return;
@@ -645,6 +767,10 @@ async function main() {
   await attack3CrossTenantSubTableRead(tokenB, recordIdA);
   await attack4CrossTenantCustomFieldsWrite(tokenA, tokenB, recordIdA);
   await attack4bCrossTenantCustomFieldsRead(tokenB, recordIdA); // R3 P0-5
+  // R5 P0-2: sub-table cross-tenant CRUD attacks (symmetric with J4-4/4b)
+  await attack9CrossTenantSubTableAdd(tokenB, recordIdA);
+  await attack10CrossTenantSubTableUpdate(tokenB, recordIdA);
+  await attack11CrossTenantSubTableDelete(tokenB, recordIdA);
   await attack5CrossTenantChangeSetApprove(tokenA, tokenB);
   await attack6CronDdos(attackToken);
   await attack6bCronCommBypass(attackToken);

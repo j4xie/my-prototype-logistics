@@ -9,7 +9,6 @@ import com.cretas.aims.repository.config.CanvasDDLLogRepository;
 import com.cretas.aims.repository.config.CanvasDynamicFieldRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -285,26 +284,21 @@ public class DynamicFieldController {
     }
 
     @PutMapping("/{moduleCode}/{recordId}/custom-fields")
-    @Transactional
     public ResponseEntity<Void> setCustomFields(
             @PathVariable String factoryId,
             @PathVariable String moduleCode,
             @PathVariable String recordId,
             @RequestBody Map<String, Object> fields) {
-        // R3 Fix #1: close silent-success path on cross-tenant write — when attacker's
+        // R3 Fix: close silent-success path on cross-tenant write — when attacker's
         // factory has no matching dynamic field, setClauses is empty at
         // DynamicFieldService.java:237 and the service returns OK without touching the
         // DB, bypassing the WHERE factory_id=? tenant filter. Moving the ownership
         // check to the controller fails fast at HTTP 400 before the service is called.
         //
-        // R3 Fix #2 (depth-first-e2e Phase E discovery): @Transactional is REQUIRED.
-        // HikariCP sets `auto-commit=false` (application-pg-prod.properties) so the
-        // raw JdbcTemplate.update() inside DynamicFieldService.setDynamicFields runs
-        // in an uncommitted connection-level transaction. Without an outer Spring tx
-        // boundary, the connection returns to the pool with the change uncommitted
-        // and the next reader sees null. Phase E roundtrip caught this — `apiPut`
-        // returned HTTP 200 success, then `apiGet` showed the field still null even
-        // though manual SQL UPDATE on the same row worked.
+        // R5 arch cleanup: @Transactional now lives on DynamicFieldService.setDynamicFields
+        // (service layer), matching the R4 pattern for sub-table methods. The controller
+        // previously had @Transactional (R3 surgical hot-fix) — moved down so all callers
+        // (controller-direct + service-to-service) share the same tx boundary.
         validateModuleCode(moduleCode);
         dynamicTableService.verifyParentOwnership(moduleCode, recordId, factoryId);
         dynamicFieldService.setDynamicFields(factoryId, moduleCode, recordId, fields);
