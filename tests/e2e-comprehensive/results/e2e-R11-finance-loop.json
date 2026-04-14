@@ -1,0 +1,236 @@
+{
+  "round": 11,
+  "timestamp": "2026-04-14T19:40:08.027Z",
+  "factoryId": "FOOD_3101_048",
+  "notes": "R11 finance closed loop — first true SO→开票→收款 chain",
+  "results": [
+    {
+      "layer": "L4",
+      "testId": "deep-11",
+      "step": "prep_customer",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "testName": "E2E_C_R11_deep-11_mnz0y1en"
+      },
+      "ts": "2026-04-14T19:38:51.364Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-11",
+      "step": "prep_so_created",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "apiStatus": 200
+      },
+      "ts": "2026-04-14T19:39:11.900Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-11",
+      "step": "prep_so_in_list",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "cells": [
+          "SO-20260415-0001",
+          "E2E_C_R11_deep-11_mnz0y1en",
+          "",
+          "2026-04-15",
+          "¥5,000.00",
+          "-",
+          "-",
+          "草稿",
+          "详情\n编辑\n确认\n取消"
+        ]
+      },
+      "ts": "2026-04-14T19:39:23.124Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-11",
+      "step": "prep_so_confirmed",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T19:39:26.422Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-11",
+      "step": "step1_click_invoice",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T19:39:36.382Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-11",
+      "step": "step2_invoice_dialog",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "opened": true,
+        "title": "快速开票",
+        "amount": "5000.00"
+      },
+      "ts": "2026-04-14T19:39:38.398Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-11",
+      "step": "step2b_amount_prefilled",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "expected": 5000,
+        "actual": "5000.00"
+      },
+      "ts": "2026-04-14T19:39:38.398Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-11",
+      "step": "step3_invoice_submit",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "apiStatus": 200,
+        "apiUrl": "/api/mobile/FOOD_3101_048/finance/receivable"
+      },
+      "ts": "2026-04-14T19:39:38.692Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-11",
+      "step": "step4_invoice_toast",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "toastText": "开票成功"
+      },
+      "ts": "2026-04-14T19:39:38.699Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-11",
+      "step": "step5_click_payment",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T19:39:41.721Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-11",
+      "step": "step6_payment_dialog",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "opened": true,
+        "title": "快速开票",
+        "amount": "5000.00"
+      },
+      "ts": "2026-04-14T19:39:43.737Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-11",
+      "step": "step6b_payment_amount",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "expected": 5000,
+        "actual": "5000.00"
+      },
+      "ts": "2026-04-14T19:39:43.737Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-11",
+      "step": "step7_payment_submit",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "apiStatus": 200,
+        "apiUrl": "/api/mobile/FOOD_3101_048/finance/receivable/payment"
+      },
+      "ts": "2026-04-14T19:39:43.991Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-11",
+      "step": "step8_payment_toast",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "toastText": "收款成功"
+      },
+      "ts": "2026-04-14T19:39:43.998Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-11",
+      "step": "step9_paid_visible",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "cells": [
+          "SO-20260415-0001",
+          "E2E_C_R11_deep-11_mnz0y1en",
+          "",
+          "2026-04-15",
+          "¥5,000.00",
+          "-",
+          "-",
+          "已确认",
+          "详情\n取消\n出库\n开票\n税率分组开票\n收款"
+        ],
+        "previewContainsAmount": true
+      },
+      "ts": "2026-04-14T19:39:56.636Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-11",
+      "step": "step10_finance_records",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "totalRows": 2,
+        "matchingRows": 2,
+        "sampleMatchingRow": "AR-20260415-8612\n\t\n应收开票\n\t\nE2E_C_R11_deep-11_mnz0y1en\n\t\n¥5,000.00\n\t\n¥5,000.00\n\t\n2026-04-15\n\t\n-\n\t"
+      },
+      "ts": "2026-04-14T19:40:07.962Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-11",
+      "step": "FULL_FLOW",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "customerName": "E2E_C_R11_deep-11_mnz0y1en",
+        "orderNumber": "SO-20260415-0001",
+        "soAmount": "¥5,000.00",
+        "invoiceApi": 200,
+        "invoiceUrl": "/api/mobile/FOOD_3101_048/finance/receivable",
+        "invoiceToast": "开票成功",
+        "paymentApi": 200,
+        "paymentUrl": "/api/mobile/FOOD_3101_048/finance/receivable/payment",
+        "paymentToast": "收款成功",
+        "amountsMatch": true,
+        "paidInListRow": true
+      },
+      "ts": "2026-04-14T19:40:07.962Z"
+    }
+  ],
+  "summary": {
+    "deepTotal": 1,
+    "deepPass": 1,
+    "deepFail": 0
+  }
+}
