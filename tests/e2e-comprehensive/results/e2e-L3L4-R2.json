@@ -1,0 +1,285 @@
+{
+  "round": 2,
+  "timestamp": "2026-04-14T14:28:11.276Z",
+  "factoryId": "FOOD_3101_048",
+  "results": [
+    {
+      "layer": "L3",
+      "testId": "1",
+      "action": "create_customer",
+      "status": "PASS",
+      "evidence": {
+        "filled": "E2E_customer_R2_mnyppc37",
+        "apiStatus": 200,
+        "apiUrl": "/api/mobile/FOOD_3101_048/customers"
+      },
+      "ts": "2026-04-14T14:24:18.650Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "1",
+      "action": "so_customer_field",
+      "status": "PASS",
+      "evidence": {
+        "evidence": "Customer field found in SO form"
+      },
+      "ts": "2026-04-14T14:24:35.256Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "2",
+      "action": "create_supplier",
+      "status": "PASS",
+      "evidence": {
+        "filled": "E2E_supplier_R2_mnyppc37",
+        "apiStatus": 200,
+        "apiUrl": "/api/mobile/FOOD_3101_048/suppliers"
+      },
+      "ts": "2026-04-14T14:24:46.741Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "2",
+      "action": "po_supplier_field",
+      "status": "PASS",
+      "evidence": {
+        "evidence": "Supplier field found in PO form"
+      },
+      "ts": "2026-04-14T14:25:03.226Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "3",
+      "action": "material_list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0
+      },
+      "ts": "2026-04-14T14:25:17.431Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "3",
+      "action": "bom_list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0,
+        "note": "BOM page accessible + renders"
+      },
+      "ts": "2026-04-14T14:25:27.969Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "4",
+      "action": "so_list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0
+      },
+      "ts": "2026-04-14T14:25:37.947Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "4",
+      "action": "shipment_list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0,
+        "note": "Shipment page accessible"
+      },
+      "ts": "2026-04-14T14:25:49.598Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "5",
+      "action": "po_list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0
+      },
+      "ts": "2026-04-14T14:26:00.467Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "5",
+      "action": "warehouse_shipment_list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0,
+        "note": "Warehouse shipment page accessible"
+      },
+      "ts": "2026-04-14T14:26:09.219Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "6",
+      "action": "employee_list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 10,
+        "note": "10 employees"
+      },
+      "ts": "2026-04-14T14:26:20.576Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "6",
+      "action": "attendance_page",
+      "status": "PASS",
+      "evidence": {
+        "note": "Attendance page renders"
+      },
+      "ts": "2026-04-14T14:26:35.704Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "1",
+      "action": "finance_costs_render",
+      "status": "PASS",
+      "evidence": {
+        "length": 258,
+        "hasTable": true,
+        "hasCards": true,
+        "columnHeaders": [
+          "交易编号",
+          "类型",
+          "客户/供应商",
+          "金额",
+          "余额",
+          "交易日期"
+        ]
+      },
+      "ts": "2026-04-14T14:26:47.918Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "2",
+      "action": "analytics_render",
+      "status": "PASS",
+      "evidence": {
+        "length": 358,
+        "hasCharts": false,
+        "hasCards": true
+      },
+      "ts": "2026-04-14T14:27:01.208Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "3",
+      "action": "smartbi_render",
+      "status": "PASS",
+      "evidence": {
+        "length": 509,
+        "hasKPI": true,
+        "hasCharts": false
+      },
+      "ts": "2026-04-14T14:27:18.082Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "4",
+      "action": "so_list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0
+      },
+      "ts": "2026-04-14T14:27:28.672Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "4",
+      "action": "so_form_fields",
+      "status": "PASS",
+      "evidence": {
+        "fieldCount": 14,
+        "fields": [
+          "全部订单",
+          "未出库订单",
+          "部分出库订单",
+          "未收款订单",
+          "部分收款订单",
+          "已完成订单",
+          "客户",
+          "交货日期"
+        ]
+      },
+      "ts": "2026-04-14T14:27:33.319Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "5",
+      "action": "po_list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0
+      },
+      "ts": "2026-04-14T14:27:46.785Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "5",
+      "action": "po_form_fields",
+      "status": "PASS",
+      "evidence": {
+        "fieldCount": 8,
+        "fields": [
+          "供应商",
+          "采购类型",
+          "直接采购",
+          "总部统采",
+          "紧急采购",
+          "关联销售订单",
+          "期望交货",
+          "备注"
+        ]
+      },
+      "ts": "2026-04-14T14:27:51.398Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "6",
+      "action": "production_plan_render",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0,
+        "hasTable": true,
+        "columns": [
+          "计划编号",
+          "产品类型",
+          "客户",
+          "工序",
+          "批次日期",
+          "计划数量",
+          "实际数量",
+          "计划日期"
+        ]
+      },
+      "ts": "2026-04-14T14:28:03.530Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "7",
+      "action": "quality_render",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0,
+        "hasTable": true
+      },
+      "ts": "2026-04-14T14:28:11.208Z"
+    }
+  ],
+  "summary": {
+    "pass": 21,
+    "fail": 0,
+    "warn": 0,
+    "skip": 0,
+    "l3": {
+      "total": 12,
+      "pass": 12
+    },
+    "l4": {
+      "total": 9,
+      "pass": 9
+    }
+  }
+}

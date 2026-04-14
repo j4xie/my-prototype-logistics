@@ -267,3 +267,190 @@ export function isPass(actual, expected) {
   if (actual === 'OK' && expected === 'OK') return true;
   return false;
 }
+
+// ===== R2 HELPERS =====
+
+/**
+ * Navigate to a path using page.goto with generous timeout.
+ * Waits for Vue SPA to render (table, menu, or #app content).
+ * @returns 'OK' | '403' | 'TIMEOUT' | 'ERROR: ...'
+ */
+export async function navigateTo(page, path, { waitForTable = false, timeout = 60000 } = {}) {
+  try {
+    await page.goto(`${BASE}${path}`, { waitUntil: 'domcontentloaded', timeout });
+    for (let i = 0; i < 50; i++) {
+      await page.waitForTimeout(500);
+      const url = page.url();
+      if (url.includes('/403')) return '403';
+      if (url.includes('/login')) return 'LOGIN';
+      const state = await page.evaluate(() => ({
+        table: !!document.querySelector('.el-table'),
+        menu: !!document.querySelector('.el-menu,.app-sidebar'),
+        app: (document.querySelector('#app')?.innerHTML?.length || 0) > 500,
+      })).catch(() => ({ table: false, menu: false, app: false }));
+      if (waitForTable && state.table) return 'OK';
+      if (!waitForTable && (state.table || state.menu || state.app)) return 'OK';
+    }
+    return 'TIMEOUT';
+  } catch (e) {
+    return 'ERROR: ' + (e.message || '').substring(0, 60);
+  }
+}
+
+/**
+ * Count table rows on current page.
+ */
+export async function countTableRows(page) {
+  return page.evaluate(() =>
+    document.querySelectorAll('.el-table__body-wrapper .el-table__row').length
+  ).catch(() => 0);
+}
+
+/**
+ * Click a button matching one of the given text patterns.
+ * Falls back to primary icon button if no text match.
+ * @returns clicked button text or null
+ */
+export async function clickButton(page, ...texts) {
+  await page.waitForTimeout(1500);
+  for (const text of texts) {
+    const btn = await page.$(`button:has-text("${text}")`);
+    if (btn && await btn.isVisible().catch(() => false)) {
+      await btn.click();
+      return text;
+    }
+  }
+  // Fallback: primary button with icon
+  const primary = await page.$('button.el-button--primary:has(.el-icon)');
+  if (primary && await primary.isVisible().catch(() => false)) {
+    const text = await primary.innerText().catch(() => 'primary-btn');
+    await primary.click();
+    return text;
+  }
+  return null;
+}
+
+/**
+ * Wait for dialog/drawer to open.
+ */
+export async function waitForDialog(page, timeout = 8000) {
+  for (let i = 0; i < timeout / 500; i++) {
+    await page.waitForTimeout(500);
+    const d = await page.$('.el-dialog:not([style*="display: none"]), .el-drawer');
+    if (d) return d;
+  }
+  return null;
+}
+
+/**
+ * Submit form and verify via hybrid approach:
+ * 1. Primary: intercept API POST/PUT response
+ * 2. Fallback: check validation errors, dialog closed, toast
+ * @returns { ok: boolean, status: number, reason: string }
+ */
+export async function submitAndCheckResponse(page, submitTexts = ['确定', '保存', '提交']) {
+  const submitBtn = await findButton(page, submitTexts);
+  if (!submitBtn) return { ok: false, status: 0, reason: 'no_submit_button' };
+
+  // Set up API response listener before clicking
+  let apiResponse = null;
+  const responsePromise = page.waitForResponse(
+    r => r.url().includes('/api/') &&
+         ['POST', 'PUT', 'PATCH'].includes(r.request().method()) &&
+         !r.url().includes('/auth/'),
+    { timeout: 10000 }
+  ).then(r => { apiResponse = r; }).catch(() => {});
+
+  await submitBtn.click();
+
+  // Wait for either API response or 5s fallback window
+  await Promise.race([responsePromise, page.waitForTimeout(5000)]);
+
+  // Signal 1: API response intercepted
+  if (apiResponse) {
+    const status = apiResponse.status();
+    let bodyOk = true;
+    try {
+      const body = await apiResponse.json();
+      if (body && body.success === false) bodyOk = false;
+    } catch { /* non-JSON */ }
+    return {
+      ok: status >= 200 && status < 400 && bodyOk,
+      status,
+      reason: 'api_response',
+      url: apiResponse.url().replace(BASE, '').split('?')[0],
+    };
+  }
+
+  // Signal 2: Check for validation errors (form didn't submit)
+  const validationErrors = await page.$$eval(
+    '.el-form-item__error',
+    els => els.map(e => e.textContent?.trim()).filter(Boolean)
+  ).catch(() => []);
+  if (validationErrors.length > 0) {
+    return { ok: false, status: 0, reason: 'validation_error', errors: validationErrors };
+  }
+
+  // Signal 3: Dialog closed (submit succeeded, API not intercepted)
+  const dialogGone = !(await page.$('.el-dialog:not([style*="display: none"])'));
+  if (dialogGone) return { ok: true, status: 0, reason: 'dialog_closed' };
+
+  // Signal 4: Success toast visible
+  const toast = await page.$('.el-message--success');
+  if (toast) return { ok: true, status: 0, reason: 'toast_success' };
+
+  return { ok: false, status: 0, reason: 'no_signal_after_5s' };
+}
+
+/**
+ * Fill all visible required fields in a dialog with test data.
+ * Detects required fields by `.is-required` class on form items.
+ */
+export async function fillAllRequiredFields(page, baseName) {
+  const filled = [];
+  const formItems = await page.$$('.el-dialog .el-form-item.is-required, .el-drawer .el-form-item.is-required');
+  for (let i = 0; i < formItems.length; i++) {
+    const label = await formItems[i].$eval('.el-form-item__label', el => el.textContent?.trim()).catch(() => '');
+    // Try input first, then textarea
+    let input = await formItems[i].$('input.el-input__inner');
+    let isTextarea = false;
+    if (!input) {
+      input = await formItems[i].$('textarea.el-textarea__inner');
+      isTextarea = true;
+    }
+    if (input) {
+      const current = isTextarea
+        ? await input.evaluate(el => el.value).catch(() => '')
+        : await input.inputValue().catch(() => '');
+      if (!current) {
+        const value = label.includes('电话') || label.includes('手机') ? '13800138000'
+          : label.includes('邮箱') || label.includes('email') ? 'e2e@test.com'
+          : label.includes('地址') || label.includes('收货') ? 'E2E测试地址_上海市浦东新区'
+          : `${baseName}_${i}`;
+        await input.fill(value);
+        filled.push({ label, value });
+      }
+    }
+  }
+  return filled;
+}
+
+async function findButton(page, texts) {
+  for (const text of texts) {
+    const btn = await page.$(`button:has-text("${text}")`);
+    if (btn && await btn.isVisible().catch(() => false)) return btn;
+  }
+  return null;
+}
+
+/**
+ * Fill the first input in a dialog/drawer.
+ */
+export async function fillDialogInput(page, value, nth = 0) {
+  const inputs = await page.$$('.el-dialog input.el-input__inner, .el-drawer input.el-input__inner');
+  if (inputs[nth]) {
+    await inputs[nth].fill(value);
+    return true;
+  }
+  return false;
+}
