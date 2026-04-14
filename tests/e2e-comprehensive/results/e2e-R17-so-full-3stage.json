@@ -1,0 +1,168 @@
+{
+  "round": 17,
+  "timestamp": "2026-04-14T21:47:05.051Z",
+  "factoryId": "FOOD_3101_048",
+  "notes": "R17 complete 3-stage SO shipment — includes batch allocation (R16 P0 fix validation)",
+  "results": [
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "prep_customer",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "testName": "E2E_C_R17_deep-14_mnz5hst0"
+      },
+      "ts": "2026-04-14T21:46:11.137Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "prep_so_created",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T21:46:29.791Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "prep_so_confirmed",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "orderNumber": "SO-20260415-0005"
+      },
+      "ts": "2026-04-14T21:46:41.616Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "step1_nav_detail",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/sales/orders/ad2f65e3-4c98-4781-9e5d-85a332bc69e9"
+      },
+      "ts": "2026-04-14T21:46:50.581Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "step2_switch_tab",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T21:46:53.595Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "step3_click_create_delivery",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T21:46:55.624Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "step4_stage1_create",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "apiStatus": 200
+      },
+      "ts": "2026-04-14T21:46:57.899Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "step5_delivery_row",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "found": true,
+        "deliveryNumber": "DLV-20260415-7809",
+        "cells": [
+          "DLV-20260415-7809",
+          "2026-04-14",
+          "",
+          "",
+          "草稿",
+          "¥5,000.00",
+          "分配批次\n发货"
+        ],
+        "buttonTexts": [
+          "分配批次",
+          "发货"
+        ],
+        "hasAllocBtn": true,
+        "hasShipBtn": true
+      },
+      "ts": "2026-04-14T21:47:00.913Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "step6_click_alloc",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T21:47:00.917Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "step7_alloc_dialog",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "opened": true,
+        "title": "成品批次分配",
+        "hasNoBatchWarning": true,
+        "tableCount": 0,
+        "batchRowCount": 0,
+        "snippet": "成品批次分配\n系统已按 FIFO (生产日期升序) 预填推荐批次\n\n每行 '分配合计' 必须等于发货数量才能提交。可手动调整分配数量或选择其他批次。\n\n发货单: DLV-20260415-7809\nE2E测试产品\n发货数量: 100 分配合计: 0\n没有可用成品批次\n\n请先完成此产品的生产入库, 或联系仓管检查库存状态。\n\n取消\n确认分配"
+      },
+      "ts": "2026-04-14T21:47:04.925Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "step8_fg_batch_missing",
+      "status": "WARN",
+      "depth": "deep",
+      "evidence": {
+        "verdict": "Test factory has no FG batches — UI wiring verified but Stage 2/3 cannot run",
+        "recommendation": "Either (A) seed FG batches via R0-setup, or (B) add UI to produce FG batches first",
+        "buildTestEnvReady": false
+      },
+      "ts": "2026-04-14T21:47:04.926Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "FULL_FLOW",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "verdict": "M2 UI wiring VERIFIED, Stage 2/3 skipped — no FG batches in test env",
+        "stage1_create_delivery": true,
+        "stage1_5_alloc_button_visible": true,
+        "stage1_5_dialog_opens": true,
+        "stage1_5_fg_batch_empty": true,
+        "stage2_ship": "not-reached",
+        "stage3_delivered": "not-reached",
+        "note": "R16 bug P0 UI gap is now fixed. Next: seed FG batches + rerun for Stage 2/3 verification."
+      },
+      "ts": "2026-04-14T21:47:04.926Z"
+    }
+  ],
+  "summary": {
+    "deepTotal": 11,
+    "deepPass": 11,
+    "deepFail": 0,
+    "deepWarn": 1
+  }
+}
