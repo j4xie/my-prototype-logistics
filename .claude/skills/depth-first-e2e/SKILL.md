@@ -514,6 +514,8 @@ Don't pretend the old rounds were deep. Own the gap, fix it forward.
 - `references/depth-checklist.md` — 12-step deep test checklist
 - `references/audit-rules.md` — Round-by-round audit rules enforcing depth
 - `references/case-r3-incomplete-fix.md` — Real R3 incident where R8/R9 (same-cause sweep + independent Critic) would have saved 2 rounds and prevented 3 latent P0 bugs from shipping
+- `references/case-r7-rating-bug-sweep.md` — Real R7 example: retroactive Rule 8 sweep found 13 latent broken sales_order rules + 5 defense-in-depth opportunities. Shows how Rule 8 catches 20× more issues than the original fix.
+- `references/deep-test-patterns.md` — **R6-R11 patterns (Element Plus/Playwright specific)**: dialog investigation, el-input-number native setters, :visible locators for teleport popovers, el-select filterable search, ElMessageBox confirmation, stable row lookup by orderNumber, cross-entity money consistency verification, createSOQuick helper composition. 15 concrete patterns learned from 11 successful deep tests.
 
 ## Activation rules
 
