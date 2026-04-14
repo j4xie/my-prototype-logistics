@@ -1,0 +1,184 @@
+{
+  "round": 15,
+  "timestamp": "2026-04-14T20:32:58.499Z",
+  "factoryId": "FOOD_3101_048",
+  "notes": "R15 SO delivery chain — CONFIRMED → shipment → state change",
+  "results": [
+    {
+      "layer": "L4",
+      "testId": "deep-12",
+      "step": "prep_customer",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "testName": "E2E_C_R15_deep-12_mnz2u4bb"
+      },
+      "ts": "2026-04-14T20:31:46.769Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-12",
+      "step": "prep_so_created",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T20:32:08.032Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-12",
+      "step": "prep_so_confirmed",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "orderNumber": "SO-20260415-0001"
+      },
+      "ts": "2026-04-14T20:32:22.037Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-12",
+      "step": "step1_initial_state",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "hasConfirmed": true,
+        "hasShipBtn": true,
+        "buttonTexts": [
+          "详情",
+          "取消",
+          "出库",
+          "开票",
+          "税率分组开票",
+          "收款"
+        ],
+        "preview": "SO-20260415-0001\n\t\nE2E_C_R15_deep-12_mnz2u4bb\n\t\n\t\n2026-04-15\n\t\n¥5,000.00\n\t\n-\n\t\n-\n\t\n已确认\n\t\n详情\n取消\n出库\n开票\n税率分组开票\n收款"
+      },
+      "ts": "2026-04-14T20:32:33.101Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-12",
+      "step": "step2_click_ship",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T20:32:33.126Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-12",
+      "step": "step3_delivery_dialog",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "opened": true,
+        "title": "快速出库",
+        "preFilledQuantity": "100",
+        "preFilledDate": "2026-04-14",
+        "hasItems": true
+      },
+      "ts": "2026-04-14T20:32:35.136Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-12",
+      "step": "step3b_qty_prefilled",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "expected": 100,
+        "actual": "100"
+      },
+      "ts": "2026-04-14T20:32:35.136Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-12",
+      "step": "step4_submit_delivery",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "apiStatus": 200,
+        "apiUrl": "/api/mobile/FOOD_3101_048/sales/deliveries"
+      },
+      "ts": "2026-04-14T20:32:35.414Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-12",
+      "step": "step5_toast",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "toastText": "出库成功"
+      },
+      "ts": "2026-04-14T20:32:35.426Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-12",
+      "step": "step6_state_changed",
+      "status": "WARN",
+      "depth": "deep",
+      "evidence": {
+        "found": true,
+        "cells": [
+          "SO-20260415-0001",
+          "E2E_C_R15_deep-12_mnz2u4bb",
+          "",
+          "2026-04-15",
+          "¥5,000.00",
+          "-",
+          "-",
+          "已确认",
+          "详情\n取消\n出库\n开票\n税率分组开票\n收款"
+        ],
+        "newStates": {
+          "processing": false,
+          "partialDelivered": false,
+          "completed": false
+        }
+      },
+      "ts": "2026-04-14T20:32:48.100Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-12",
+      "step": "step7_shipment_record",
+      "status": "WARN",
+      "depth": "deep",
+      "evidence": {
+        "totalRows": 0,
+        "matchingRows": 0,
+        "samplePreview": null
+      },
+      "ts": "2026-04-14T20:32:58.421Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-12",
+      "step": "FULL_FLOW",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "customerName": "E2E_C_R15_deep-12_mnz2u4bb",
+        "orderNumber": "SO-20260415-0001",
+        "apiStatus": 200,
+        "apiUrl": "/api/mobile/FOOD_3101_048/sales/deliveries",
+        "toastText": "出库成功",
+        "initialState": "CONFIRMED",
+        "stage1_delivery_created": true,
+        "so_state_unchanged_by_design": true,
+        "note": "Stage 1 of 3 (DRAFT delivery record). Stage 2/3 (ship/delivered) needed for SO state transition — see R16."
+      },
+      "ts": "2026-04-14T20:32:58.421Z"
+    }
+  ],
+  "summary": {
+    "deepTotal": 1,
+    "deepPass": 1,
+    "deepFail": 0
+  }
+}
