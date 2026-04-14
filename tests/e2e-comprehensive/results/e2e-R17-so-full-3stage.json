@@ -1,6 +1,6 @@
 {
   "round": 17,
-  "timestamp": "2026-04-14T21:47:05.051Z",
+  "timestamp": "2026-04-14T22:04:57.138Z",
   "factoryId": "FOOD_3101_048",
   "notes": "R17 complete 3-stage SO shipment — includes batch allocation (R16 P0 fix validation)",
   "results": [
@@ -11,9 +11,9 @@
       "status": "PASS",
       "depth": "deep",
       "evidence": {
-        "testName": "E2E_C_R17_deep-14_mnz5hst0"
+        "testName": "E2E_C_R17_deep-14_mnz64g0k"
       },
-      "ts": "2026-04-14T21:46:11.137Z"
+      "ts": "2026-04-14T22:03:46.478Z"
     },
     {
       "layer": "L4",
@@ -22,7 +22,7 @@
       "status": "PASS",
       "depth": "deep",
       "evidence": {},
-      "ts": "2026-04-14T21:46:29.791Z"
+      "ts": "2026-04-14T22:04:06.861Z"
     },
     {
       "layer": "L4",
@@ -31,9 +31,9 @@
       "status": "PASS",
       "depth": "deep",
       "evidence": {
-        "orderNumber": "SO-20260415-0005"
+        "orderNumber": "SO-20260415-0006"
       },
-      "ts": "2026-04-14T21:46:41.616Z"
+      "ts": "2026-04-14T22:04:20.853Z"
     },
     {
       "layer": "L4",
@@ -42,9 +42,9 @@
       "status": "PASS",
       "depth": "deep",
       "evidence": {
-        "url": "http://139.196.165.140:8086/sales/orders/ad2f65e3-4c98-4781-9e5d-85a332bc69e9"
+        "url": "http://139.196.165.140:8086/sales/orders/07941a58-6fc3-414a-820b-23460b0c405b"
       },
-      "ts": "2026-04-14T21:46:50.581Z"
+      "ts": "2026-04-14T22:04:29.839Z"
     },
     {
       "layer": "L4",
@@ -53,7 +53,7 @@
       "status": "PASS",
       "depth": "deep",
       "evidence": {},
-      "ts": "2026-04-14T21:46:53.595Z"
+      "ts": "2026-04-14T22:04:32.859Z"
     },
     {
       "layer": "L4",
@@ -62,7 +62,7 @@
       "status": "PASS",
       "depth": "deep",
       "evidence": {},
-      "ts": "2026-04-14T21:46:55.624Z"
+      "ts": "2026-04-14T22:04:34.877Z"
     },
     {
       "layer": "L4",
@@ -73,7 +73,7 @@
       "evidence": {
         "apiStatus": 200
       },
-      "ts": "2026-04-14T21:46:57.899Z"
+      "ts": "2026-04-14T22:04:37.179Z"
     },
     {
       "layer": "L4",
@@ -83,9 +83,9 @@
       "depth": "deep",
       "evidence": {
         "found": true,
-        "deliveryNumber": "DLV-20260415-7809",
+        "deliveryNumber": "DLV-20260415-7074",
         "cells": [
-          "DLV-20260415-7809",
+          "DLV-20260415-7074",
           "2026-04-14",
           "",
           "",
@@ -100,7 +100,7 @@
         "hasAllocBtn": true,
         "hasShipBtn": true
       },
-      "ts": "2026-04-14T21:47:00.913Z"
+      "ts": "2026-04-14T22:04:40.195Z"
     },
     {
       "layer": "L4",
@@ -109,7 +109,7 @@
       "status": "PASS",
       "depth": "deep",
       "evidence": {},
-      "ts": "2026-04-14T21:47:00.917Z"
+      "ts": "2026-04-14T22:04:40.199Z"
     },
     {
       "layer": "L4",
@@ -120,25 +120,64 @@
       "evidence": {
         "opened": true,
         "title": "成品批次分配",
-        "hasNoBatchWarning": true,
-        "tableCount": 0,
-        "batchRowCount": 0,
-        "snippet": "成品批次分配\n系统已按 FIFO (生产日期升序) 预填推荐批次\n\n每行 '分配合计' 必须等于发货数量才能提交。可手动调整分配数量或选择其他批次。\n\n发货单: DLV-20260415-7809\nE2E测试产品\n发货数量: 100 分配合计: 0\n没有可用成品批次\n\n请先完成此产品的生产入库, 或联系仓管检查库存状态。\n\n取消\n确认分配"
+        "hasNoBatchWarning": false,
+        "tableCount": 1,
+        "batchRowCount": 1,
+        "snippet": "成品批次分配\n系统已按 FIFO (生产日期升序) 预填推荐批次\n\n每行 '分配合计' 必须等于发货数量才能提交。可手动调整分配数量或选择其他批次。\n\n发货单: DLV-20260415-7074\nE2E测试产品\n发货数量: 100 分配合计: 100\n批次号\n\t\n生产日期\n\t\n可用数量\n\t\n分配数量\nFG-E2E-001\n\t\n2026-04-01\n\t\n500\n\t\n取消\n确认分配"
       },
-      "ts": "2026-04-14T21:47:04.925Z"
+      "ts": "2026-04-14T22:04:44.218Z"
     },
     {
       "layer": "L4",
       "testId": "deep-14",
-      "step": "step8_fg_batch_missing",
-      "status": "WARN",
+      "step": "step9_submit_alloc",
+      "status": "PASS",
       "depth": "deep",
       "evidence": {
-        "verdict": "Test factory has no FG batches — UI wiring verified but Stage 2/3 cannot run",
-        "recommendation": "Either (A) seed FG batches via R0-setup, or (B) add UI to produce FG batches first",
-        "buildTestEnvReady": false
+        "status": 200
       },
-      "ts": "2026-04-14T21:47:04.926Z"
+      "ts": "2026-04-14T22:04:44.461Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "step10_ship_response",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "status": 200
+      },
+      "ts": "2026-04-14T22:04:49.267Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "step11_deliver_response",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "status": 200
+      },
+      "ts": "2026-04-14T22:04:54.054Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "step12_final_state",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "cells": [
+          "DLV-20260415-7074",
+          "2026-04-14",
+          "",
+          "",
+          "已签收",
+          "¥5,000.00",
+          ""
+        ]
+      },
+      "ts": "2026-04-14T22:04:57.066Z"
     },
     {
       "layer": "L4",
@@ -147,22 +186,20 @@
       "status": "PASS",
       "depth": "deep",
       "evidence": {
-        "verdict": "M2 UI wiring VERIFIED, Stage 2/3 skipped — no FG batches in test env",
-        "stage1_create_delivery": true,
-        "stage1_5_alloc_button_visible": true,
-        "stage1_5_dialog_opens": true,
-        "stage1_5_fg_batch_empty": true,
-        "stage2_ship": "not-reached",
-        "stage3_delivered": "not-reached",
-        "note": "R16 bug P0 UI gap is now fixed. Next: seed FG batches + rerun for Stage 2/3 verification."
+        "verdict": "完整 3-stage 出库链路通过 UI 走通",
+        "stage1_create": true,
+        "stage1_5_alloc": true,
+        "stage2_ship": true,
+        "stage3_delivered": true,
+        "note": "P0-13 强制批次追溯 UI 集成已完整. R16 发现的 P0 bug 完全闭环."
       },
-      "ts": "2026-04-14T21:47:04.926Z"
+      "ts": "2026-04-14T22:04:57.066Z"
     }
   ],
   "summary": {
-    "deepTotal": 11,
-    "deepPass": 11,
+    "deepTotal": 15,
+    "deepPass": 15,
     "deepFail": 0,
-    "deepWarn": 1
+    "deepWarn": 0
   }
 }
