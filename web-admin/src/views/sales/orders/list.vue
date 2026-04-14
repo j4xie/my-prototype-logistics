@@ -414,8 +414,10 @@ async function handleQuickDelivery(row: Record<string, unknown>) {
       .filter((item: Record<string, unknown>) => item.productTypeId || item.productType?.id)
       .map((item: Record<string, unknown>) => ({
         productTypeId: item.productTypeId || item.productType?.id,
+        productName: item.productName || item.productType?.name,
         deliveredQuantity: item.quantity || 0,
         unit: item.unit || 'kg',
+        unitPrice: Number(item.unitPrice || 0),
       }));
   }
   if (items.length === 0) {
