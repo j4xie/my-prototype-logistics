@@ -270,16 +270,21 @@ async function handleUpload(file: UploadFile) {
 
   const validTypes = [
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'application/vnd.ms-excel'
+    'application/vnd.ms-excel',
+    'text/csv',
+    'application/csv',
   ];
+  // Also allow by extension (some browsers report different MIME for CSV)
+  const ext = file.name?.toLowerCase().split('.').pop();
+  const validExts = ['xlsx', 'xls', 'csv'];
 
-  if (!validTypes.includes(file.raw.type)) {
-    ElMessage.error('请上传 Excel 文件 (.xlsx 或 .xls)');
+  if (!validTypes.includes(file.raw.type) && !validExts.includes(ext || '')) {
+    ElMessage.error('请上传 Excel 或 CSV 文件 (.xlsx, .xls, .csv)');
     return false;
   }
 
-  if (file.raw.size > 10 * 1024 * 1024) {
-    ElMessage.error('文件大小不能超过 10MB');
+  if (file.raw.size > 50 * 1024 * 1024) {
+    ElMessage.error('文件大小不能超过 50MB');
     return false;
   }
 
@@ -585,7 +590,7 @@ function getColumnTypeBadge(header: string): { label: string; type: 'info' | 'su
           :file-list="fileList"
           :on-change="handleUpload"
           :limit="1"
-          accept=".xlsx,.xls"
+          accept=".xlsx,.xls,.csv"
         >
           <el-icon class="upload-icon" v-if="!uploading"><Upload /></el-icon>
           <el-progress
@@ -597,7 +602,7 @@ function getColumnTypeBadge(header: string): { label: string; type: 'info' | 'su
           <div class="upload-text">
             <template v-if="!uploading">
               <p class="main-text">将文件拖到此处，或<em>点击上传</em></p>
-              <p class="sub-text">支持 .xlsx 和 .xls 格式，文件大小不超过 10MB</p>
+              <p class="sub-text">支持 .xlsx、.xls 和 .csv 格式，文件大小不超过 50MB</p>
             </template>
             <template v-else>
               <p class="main-text">正在解析文件...</p>
