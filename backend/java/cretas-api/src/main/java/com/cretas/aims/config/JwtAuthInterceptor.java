@@ -200,7 +200,8 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
                     && !"health".equals(factoryId) && !"upload".equals(factoryId)
                     && !"voice".equals(factoryId) && !"ai".equals(factoryId)
                     && !"scale-protocols".equals(factoryId) && !"dashboard".equals(factoryId)
-                    && !"workflow".equals(factoryId)) {  // /api/mobile/workflow/* are global endpoints (node-schemas, validate)
+                    && !"workflow".equals(factoryId)   // /api/mobile/workflow/* are global endpoints (node-schemas, validate)
+                    && !"smartbi-config".equals(factoryId)) {  // /api/mobile/smartbi-config/* uses ?factoryId= query param (R21-F4 fix)
                 return factoryId;
             }
         }
