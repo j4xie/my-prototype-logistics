@@ -72,7 +72,7 @@ curl -s http://localhost:10011/api/mobile/health
 CANVAS_E2E_RUN_ID="preview_$(date +%Y%m%d_%H%M%S)" \
   bash tests/canvas-security-e2e/run-all.sh
 
-# Expected: 97/97 PASS / 0 FAIL / 0 WARN / EXIT 0
+# Expected: 99/99 PASS / 0 FAIL / 0 WARN / EXIT 0
 ```
 
 Runtime ≈ 3-5 minutes across 7 journeys (J0-J6). **WARN is treated as failure** per the `depth-first-e2e` skill rules.
@@ -84,7 +84,7 @@ After a clean run, add this line:
 ```markdown
 ## E2E verification
 
-- Canvas-security-e2e: **97/97 PASS** / 0 FAIL / 0 WARN at commit `<short-sha>`
+- Canvas-security-e2e: **99/99 PASS** / 0 FAIL / 0 WARN at commit `<short-sha>`
 - Run ID: `<CANVAS_E2E_RUN_ID used>`
 - Tested via: SSH tunnel to test env 10011 + local Vite dev server 5173
 ```
