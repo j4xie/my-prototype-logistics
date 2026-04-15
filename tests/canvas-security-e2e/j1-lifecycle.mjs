@@ -1408,10 +1408,12 @@ async function phaseI_aggregateFormulaRoundtrip(token) {
       } catch { /* best effort */ }
     }
   } finally {
-    // Cleanup formula (ignore errors; next run uses fresh formulaCode)
+    // Cleanup formula — R7 Issue 2 added DELETE endpoint; moduleCode is now a required
+    // query param (uniqueness is on factory+module+formulaCode, not formulaCode alone).
+    // Idempotent endpoint returns 200 even if already gone.
     if (createdFormula) {
       try {
-        await apiDelete(`${F}/config/v2/formulas/${formulaCode}`, token);
+        await apiDelete(`${F}/config/v2/formulas/${formulaCode}?moduleCode=${ctx.moduleCode}`, token);
       } catch { /* ignore */ }
     }
   }
