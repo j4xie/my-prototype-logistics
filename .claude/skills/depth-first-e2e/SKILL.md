@@ -40,6 +40,8 @@ Every E2E test record MUST include a `depth` field. Valid values:
 | **medium** | Fill + submit + API 200 captured — but no detail page verification |
 | **deep** | Fill + submit + toast captured + list +1 exact + detail page field readback |
 
+**Data-prerequisite clause**: A test that silently skips verification steps because required seed data (FG batches / related entities / feature-flag state) is missing **downgrades to medium** regardless of intent. A "deep" test with `batchRowCount: 0` recorded as PASS+WARN is not deep — it verified UI wiring only. See Rule 2's prerequisite-data checklist item.
+
 Example:
 ```js
 record('L4', '25', 'so_spec_box_fields', 'PASS', {
@@ -55,6 +57,7 @@ Tests without `depth` field are considered INVALID and rejected by the audit.
 Regardless of what the round's main focus is (infrastructure / bug fix / audit), each round MUST write at least 1 new `depth: 'deep'` L4 test.
 
 The deep test MUST pass this checklist:
+- [ ] Prerequisite data (seed SQL / FG batch / related entities) is either created by the test itself or documented as a setup precondition with a fail-fast check at the top of the test (not silently skipped — per Rule 1 data-prerequisite clause)
 - [ ] `navigateTo(createPath)` — real navigation
 - [ ] `await clickButton(page, '新建')` — open create dialog
 - [ ] `await waitForDialog(page)` — wait for dialog
@@ -81,8 +84,10 @@ Each round's audit (step ② Agent independent audit) MUST answer for each L4 te
 2. 如果被测 frontend 组件崩溃不渲染, 这条测试会 FAIL 吗?
 3. 如果该功能真有 bug 但 UI 表面正常, 这条测试会 FAIL 吗?
 4. 这条测试发现过任何真实 bug 吗?
+5. 这条测试的 prereq 数据已 seed 了吗? 如果 prereq 缺失会静默跳过验证步骤 (记 PASS+WARN), 这条测试实际只验证了 UI wiring, 按 Rule 1 data-prerequisite clause 降为 medium, 不是 deep.
 
 如果 4 个问题答案全是"不会/没有", 这条测试是 smoke 不是 L4.
+如果 Q5 答"静默跳过", 这条测试是 medium 不是 deep.
 ```
 
 Audit output must include:
@@ -179,6 +184,7 @@ When a deep test catches a real bug, **the fix MUST include a same-root-cause au
    - "`page.evaluate` returning `text.includes(keyword)` as evidence"
 
 2. **Use Grep/Glob to find ALL instances** in the relevant code area. Cast a wide net — the same controller class, sibling endpoints, the calling service, the same package.
+   - **Subagent caveat**: if delegating the sweep to an Explore/general-purpose subagent, expect 50-80% false-positive rate on cross-file pattern searches. Subagents miss URL-template construction (e.g. `url: \`/\${factoryId}/\${action}\``), dictionary-dispatched action handlers, and reflection/annotation patterns. Hand-verify every "orphan" / "vulnerable" match with a direct Grep before counting it. See auto-memory `feedback_subagent_code_search_unreliable.md`.
 
 3. **Report findings in the audit doc** under a "Same-cause sweep" section:
    - Patterns searched (with grep commands)
@@ -279,6 +285,7 @@ Execute includes writing at least 1 deep test.
 - **Rule 8 enforced**: when a deep test catches a bug, a same-cause sweep is mandatory before commit
 - Sweep must be documented in the audit doc with grep patterns + match list + verdict per match
 - Vulnerable sibling instances must be either fixed in this round or scheduled with concrete test design
+- **Non-trivial fix diffs (>50 LOC, or touching async / interceptor / transaction boundaries, or adding new UI flows) MUST be reviewed by an independent agent (`superpowers:code-reviewer` or a separate Explore agent with zero conversation context) before Step ⑦ commit.** Same anti-confirmation-bias rationale as Rule 9 — self-review of fix code finds < 50% of the bugs a clean reviewer finds (one session: self-review 0/3, reviewer 3/3 caught unreachable-branch + edge-case + missing-guard).
 
 ### Step ⑦ 验证修复 (Verify fixes) — branch commit, NOT terminal
 - Must include rerun of deep test to confirm bug fix
