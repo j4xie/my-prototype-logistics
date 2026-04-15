@@ -495,6 +495,10 @@ function forceRequestAnalysis(chartType: string) {
 }
 
 async function requestAnalysis(chartType: string) {
+  // Guard: skip if component has been unmounted (user navigated away)
+  // Prevents TypeError: Failed to fetch when pending requests are cancelled.
+  if (isComponentUnmounted) return;
+
   const chart = getChart(chartType);
   if (!chart) return;
 
@@ -511,16 +515,28 @@ async function requestAnalysis(chartType: string) {
       chart_type: chartType,
       analysis_context: chart.analysisContext || '',
     });
+    // After await, re-check unmounted — state updates would be wasted + throw
+    if (isComponentUnmounted) return;
     if (resp.success) {
       analysisByType.value[chartType] = resp.analysis || '暂无分析结果';
     } else {
       analysisByType.value[chartType] = resp.error || 'AI分析暂时不可用';
     }
   } catch (err) {
+    // Swallow abort-style errors silently when unmounted (expected on navigation).
+    if (isComponentUnmounted) return;
+    const name = err instanceof Error ? err.name : '';
+    // "Failed to fetch" happens when browser aborts a pending fetch on navigation.
+    if (name === 'AbortError' || (err instanceof TypeError && String(err).includes('fetch'))) {
+      // Silent — expected race on page leave
+      return;
+    }
     console.error('analyzeChart failed:', err);
     analysisByType.value[chartType] = '分析请求失败，请重试';
   } finally {
-    analysisLoadingByType.value[chartType] = false;
+    if (!isComponentUnmounted) {
+      analysisLoadingByType.value[chartType] = false;
+    }
   }
 }
 
@@ -909,6 +925,7 @@ function toggleGroup(groupName: string) {
 }
 
 async function generateConclusions() {
+  if (isComponentUnmounted) return;
   conclusionsLoading.value = true;
   try {
     const allAnalysis = Object.entries(analysisByType.value)
@@ -928,16 +945,20 @@ async function generateConclusions() {
       chart_type: 'overall_summary',
       analysis_context: allAnalysis,
     });
+    if (isComponentUnmounted) return;
     if (resp.success) {
       conclusionsText.value = resp.analysis || '暂无分析结论';
     } else {
       conclusionsText.value = resp.error || '分析暂不可用';
     }
   } catch (err) {
+    if (isComponentUnmounted) return;
+    const name = err instanceof Error ? err.name : '';
+    if (name === 'AbortError' || (err instanceof TypeError && String(err).includes('fetch'))) return;
     console.error('generateConclusions failed:', err);
     conclusionsText.value = '生成结论失败，请重试';
   } finally {
-    conclusionsLoading.value = false;
+    if (!isComponentUnmounted) conclusionsLoading.value = false;
   }
 }
 
@@ -955,6 +976,7 @@ async function submitFollowUp(chartType: string) {
     fullAnalysis += `\n\n用户追问: ${item.question}\n回复: ${item.answer}`;
   }
 
+  if (isComponentUnmounted) return;
   followUpLoading.value = true;
   followUpInput.value = '';
 
@@ -965,6 +987,7 @@ async function submitFollowUp(chartType: string) {
       follow_up_question: question,
       previous_analysis: fullAnalysis,
     });
+    if (isComponentUnmounted) return;
 
     if (!followUpsByType.value[chartType]) followUpsByType.value[chartType] = [];
     followUpsByType.value[chartType].push({
@@ -972,11 +995,14 @@ async function submitFollowUp(chartType: string) {
       answer: resp.success ? (resp.analysis || '暂无回复') : (resp.error || '请求失败'),
     });
   } catch (err) {
+    if (isComponentUnmounted) return;
+    const name = err instanceof Error ? err.name : '';
+    if (name === 'AbortError' || (err instanceof TypeError && String(err).includes('fetch'))) return;
     console.error('followUp failed:', err);
     if (!followUpsByType.value[chartType]) followUpsByType.value[chartType] = [];
     followUpsByType.value[chartType].push({ question, answer: '请求失败，请重试' });
   } finally {
-    followUpLoading.value = false;
+    if (!isComponentUnmounted) followUpLoading.value = false;
   }
 }
 
