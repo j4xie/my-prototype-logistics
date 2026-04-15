@@ -1,0 +1,110 @@
+{
+  "round": 3,
+  "testSubject": "upload-500mb",
+  "timestamp": "2026-04-15T16:14:20.598Z",
+  "api_base": "http://139.196.165.140:8086",
+  "tests": [
+    {
+      "id": "R3-L3-1",
+      "layer": "L3",
+      "name": "reject_oversize_501mb_real",
+      "status": "PASS",
+      "depth": "medium",
+      "fileSize": 525336576,
+      "httpCode": 400,
+      "bodySnippet": "{\"code\":400,\"message\":\"上传格式错误\",\"data\":null,\"timestamp\":\"2026-04-16T00:14:49.417434497\",\"success\":false}",
+      "rejected": true,
+      "notSuccess": true,
+      "note": "server rejected 501MB > 500MB limit (HTTP 400)",
+      "at": "2026-04-15T16:14:55.466Z"
+    },
+    {
+      "id": "R3-L3-2",
+      "layer": "L3",
+      "name": "reject_missing_auth",
+      "status": "PASS",
+      "depth": "medium",
+      "httpCode": 401,
+      "bodySnippet": "{\"code\":401,\"success\":false,\"message\":\"未授权，请先登录\",\"timestamp\":\"2026-04-16T00:15:02.942454309\"}",
+      "note": "missing Authorization header correctly rejected",
+      "at": "2026-04-15T16:15:06.794Z"
+    },
+    {
+      "id": "R3-L3-3",
+      "layer": "L3",
+      "name": "dirty_data_produces_warnings",
+      "status": "PASS",
+      "depth": "medium",
+      "httpCode": 200,
+      "uploadId": 4072,
+      "bodySnippet": "{\"code\":200,\"message\":\"成功上传并处理 2 条未知数据数据\",\"data\":{\"success\":true,\"message\":\"成功上传并处理 2 条未知数据数据\",\"parseResult\":{\"success\":true,\"errorMessage\":null,\"uploadId\":null,\"headers\":[\"random_col_a\",\"random_col_b\"],\"rowCount\":2,\"columnCount\":2,\"fieldMappings\":[],\"dataFeatures\":null,\"previewData\":[{\"random_col_a\":\"x\",\"random_col_b\":\"1\"},{\"random_col_a\":\"y\",\"random_col_b\":\"2\"}],\"tableType\":\"data\",\"missingRequir",
+      "hasWarnings": true,
+      "uploaded": true,
+      "note": "dirty xlsx parsed with warnings (graceful degradation)",
+      "at": "2026-04-15T16:15:38.841Z"
+    },
+    {
+      "id": "R3-L4-1",
+      "layer": "L4",
+      "name": "csv_to_section_full_chain",
+      "status": "PASS",
+      "depth": "deep",
+      "uploadElapsedMs": 18471,
+      "uploadId": 4073,
+      "targetBefore": 34,
+      "targetAfter": 35,
+      "delta": 1,
+      "sectionName": "temporal_comparison",
+      "sectionStatus": 200,
+      "sectionReturnStatus": "skipped",
+      "autoResolve": {
+        "triggered": true,
+        "reason": "loaded",
+        "uploadId": 4073,
+        "fileName": "e2e_pos_55mb.csv",
+        "rows": 10000
+      },
+      "uploadIdMatches": true,
+      "fileNameIsCsv": true,
+      "handlerInvoked": true,
+      "note": "CSV upload fully traversed 5-layer chain + autoResolve loaded CSV, not xlsx",
+      "at": "2026-04-15T16:15:57.789Z"
+    },
+    {
+      "id": "R3-L4-2",
+      "layer": "L4",
+      "name": "dirty_data_not_silent",
+      "status": "PASS",
+      "depth": "deep",
+      "httpCode": 200,
+      "uploadId": 4074,
+      "bodySnippet": "{\"code\":200,\"message\":\"成功上传并处理 2 条销售数据数据\",\"data\":{\"success\":true,\"message\":\"成功上传并处理 2 条销售数据数据\",\"parseResult\":{\"success\":true,\"errorMessage\":null,\"uploadId\":null,\"headers\":[\"order_id\",\"budget_amount\",\"pay_time\"],\"rowCount\":2,\"columnCount\":3,\"fieldMappings\":[{\"originalColumn\":\"amount\",\"columnIndex\":null,\"standardField\":\"budget_amount\",\"standardFieldLabel\":null,\"dataType\":null,\"subType\":null,\"confide",
+      "acceptanceWithWarnings": true,
+      "rejection": false,
+      "silentAccept": false,
+      "note": "dirty data accepted WITH warnings (graceful)",
+      "at": "2026-04-15T16:16:43.079Z"
+    }
+  ],
+  "schema_v3": {
+    "specTotal": 5,
+    "p2Deferred": [],
+    "expectedFail": [],
+    "effectiveTotal": 5,
+    "actualExecuted": 5,
+    "actualPass": 5,
+    "depthBreakdown": {
+      "smoke": 0,
+      "medium": 3,
+      "deep": 2
+    },
+    "pctOfSpec": 100,
+    "pctDeep": 40
+  },
+  "summary": {
+    "total": 5,
+    "pass": 5,
+    "fail": 0,
+    "warn": 0
+  }
+}
