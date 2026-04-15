@@ -520,7 +520,7 @@ function handleAiFill(params: Record<string, unknown>) {
           <div class="header-right">
             <el-button :icon="Download" @click="handleExport">导出</el-button>
             <el-button :icon="Upload" @click="handleImport">导入</el-button>
-            <el-button type="success" :icon="ChatDotRound" @click="aiEntryVisible = true">
+            <el-button v-if="canWrite" type="success" :icon="ChatDotRound" @click="aiEntryVisible = true">
               AI录入
             </el-button>
             <el-tooltip content="选择产品模板+客户+配方组装为定制SKU" placement="bottom">

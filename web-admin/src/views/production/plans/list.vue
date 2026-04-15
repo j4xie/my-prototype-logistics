@@ -613,7 +613,7 @@ function handleAiFill(params: Record<string, unknown>) {
             <el-button type="info" :icon="Download" @click="handleExport" style="margin-left: 8px;">
               导出Excel
             </el-button>
-            <el-button type="success" :icon="ChatDotRound" @click="aiEntryVisible = true" style="margin-left: 8px;">
+            <el-button v-if="canWrite" type="success" :icon="ChatDotRound" @click="aiEntryVisible = true" style="margin-left: 8px;">
               AI对话创建
             </el-button>
             <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleCreate" style="margin-left: 8px;">

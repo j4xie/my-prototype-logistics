@@ -50,6 +50,12 @@ public interface CustomerRepository extends JpaRepository<Customer, String> {
            "AND (c.name LIKE CONCAT('%', :keyword, '%') OR c.customerCode LIKE CONCAT(:keyword, '%'))")
     List<Customer> searchByName(@Param("factoryId") String factoryId, @Param("keyword") String keyword);
 
+    @Query("SELECT c FROM Customer c WHERE c.factoryId = :factoryId " +
+           "AND (c.name LIKE CONCAT('%', :keyword, '%') " +
+           "OR c.customerCode LIKE CONCAT(:keyword, '%') " +
+           "OR c.contactPerson LIKE CONCAT('%', :keyword, '%'))")
+    Page<Customer> searchByNamePaged(@Param("factoryId") String factoryId, @Param("keyword") String keyword, Pageable pageable);
+
     /**
      * 根据客户类型查找客户
      */

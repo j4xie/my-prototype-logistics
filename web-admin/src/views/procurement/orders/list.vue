@@ -237,7 +237,7 @@ function handleAiFill(params: Record<string, unknown>) {
             <span class="data-count">共 {{ pagination.total }} 条记录</span>
           </div>
           <div class="header-right">
-            <el-button type="success" :icon="ChatDotRound" @click="aiEntryVisible = true">
+            <el-button v-if="canWrite" type="success" :icon="ChatDotRound" @click="aiEntryVisible = true">
               AI录入
             </el-button>
             <el-button v-if="canWrite" type="primary" :icon="Plus" @click="dialogVisible = true">

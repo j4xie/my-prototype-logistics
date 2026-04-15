@@ -36,6 +36,10 @@ public interface CustomerService {
       */
     PageResponse<CustomerDTO> getCustomerList(String factoryId, PageRequest pageRequest);
      /**
+     * 获取客户列表（分页, 支持 keyword 过滤）
+      */
+    PageResponse<CustomerDTO> getCustomerList(String factoryId, PageRequest pageRequest, String keyword);
+     /**
      * 获取所有活跃客户
       */
     List<CustomerDTO> getActiveCustomers(String factoryId);

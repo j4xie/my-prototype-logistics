@@ -214,7 +214,7 @@ async function handleCancel(row: Record<string, unknown>) {
       inputErrorMessage: '请输入取消原因'
     });
     const response = await put(`/${factoryId.value}/shipments/${row.id}/status`, {
-      status: 'CANCELLED',
+      status: 'cancelled',
       reason: value
     });
     if (response.success) {
@@ -291,6 +291,7 @@ function getStatusText(status: string) {
           <el-option label="运输中" value="shipped" />
           <el-option label="已送达" value="delivered" />
           <el-option label="已退货" value="returned" />
+          <el-option label="已取消" value="cancelled" />
         </el-select>
         <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>

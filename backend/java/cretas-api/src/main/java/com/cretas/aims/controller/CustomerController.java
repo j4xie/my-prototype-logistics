@@ -125,9 +125,11 @@ public class CustomerController {
             @Parameter(description = "工厂ID", example = "F001", required = true)
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "分页参数")
-            @Valid PageRequest pageRequest) {
+            @Valid PageRequest pageRequest,
+            @Parameter(description = "关键词过滤 (name / customerCode / contactPerson 模糊匹配)")
+            @RequestParam(required = false) String keyword) {
 
-        PageResponse<CustomerDTO> response = customerService.getCustomerList(factoryId, pageRequest);
+        PageResponse<CustomerDTO> response = customerService.getCustomerList(factoryId, pageRequest, keyword);
         return ApiResponse.success(response);
     }
 

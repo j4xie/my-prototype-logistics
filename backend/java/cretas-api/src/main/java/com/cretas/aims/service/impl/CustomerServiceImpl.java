@@ -146,19 +146,22 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public PageResponse<CustomerDTO> getCustomerList(String factoryId, PageRequest pageRequest) {
-        // 创建分页请求
+        return getCustomerList(factoryId, pageRequest, null);
+    }
+
+    @Override
+    public PageResponse<CustomerDTO> getCustomerList(String factoryId, PageRequest pageRequest, String keyword) {
         org.springframework.data.domain.PageRequest pageable = org.springframework.data.domain.PageRequest.of(
                 pageRequest.getPage() - 1,
                 pageRequest.getSize(),
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
-        // 查询客户
-        Page<Customer> customerPage = customerRepository.findByFactoryId(factoryId, pageable);
-        // 转换为DTO
+        Page<Customer> customerPage = (keyword != null && !keyword.trim().isEmpty())
+                ? customerRepository.searchByNamePaged(factoryId, keyword.trim(), pageable)
+                : customerRepository.findByFactoryId(factoryId, pageable);
         List<CustomerDTO> customerDTOs = customerPage.getContent().stream()
                 .map(customerMapper::toDTO)
                 .collect(Collectors.toList());
-        // 构建分页响应
         PageResponse<CustomerDTO> response = new PageResponse<>();
         response.setContent(customerDTOs);
         response.setPage(pageRequest.getPage());
