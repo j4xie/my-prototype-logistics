@@ -147,9 +147,15 @@ export async function listTemplates(): Promise<TemplatesResponse> {
 }
 
 /**
- * Export dashboard as PPT — returns a Blob via raw fetch (binary response)
+ * Export dashboard as PPT — returns a Blob via raw fetch (binary response).
+ * Bug #13: added 3 min timeout via AbortController. Large dashboards with many
+ * chart images can take 30-90s server-side; prior version had no timeout
+ * so a hung server connection locked the loading spinner forever.
  */
 export async function exportPPT(data: PPTExportRequest): Promise<Blob | null> {
+  const EXPORT_TIMEOUT_MS = 180000; // 3 min
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), EXPORT_TIMEOUT_MS);
   try {
     const { PYTHON_SMARTBI_URL, getPythonAuthHeaders } = await import('./common');
     const response = await fetch(`${PYTHON_SMARTBI_URL}/api/smartbi/financial-dashboard/export-ppt`, {
@@ -159,14 +165,21 @@ export async function exportPPT(data: PPTExportRequest): Promise<Blob | null> {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(data),
+      signal: controller.signal,
     });
     if (!response.ok) {
       throw new Error(`PPT导出失败: HTTP ${response.status}`);
     }
     return await response.blob();
   } catch (error) {
-    console.error('exportPPT 失败:', error);
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      console.error('exportPPT 超时 (>3分钟)');
+    } else {
+      console.error('exportPPT 失败:', error);
+    }
     return null;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -192,9 +205,13 @@ export interface PDFExportRequest {
 }
 
 /**
- * Export dashboard as Excel — returns a Blob via raw fetch (binary response)
+ * Export dashboard as Excel — returns a Blob via raw fetch (binary response).
+ * Bug #13: added 3 min timeout via AbortController.
  */
 export async function exportExcel(data: ExcelExportRequest): Promise<Blob | null> {
+  const EXPORT_TIMEOUT_MS = 180000;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), EXPORT_TIMEOUT_MS);
   try {
     const { PYTHON_SMARTBI_URL, getPythonAuthHeaders } = await import('./common');
     const response = await fetch(`${PYTHON_SMARTBI_URL}/api/smartbi/financial-dashboard/export-excel`, {
@@ -204,21 +221,32 @@ export async function exportExcel(data: ExcelExportRequest): Promise<Blob | null
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(data),
+      signal: controller.signal,
     });
     if (!response.ok) {
       throw new Error(`Excel导出失败: HTTP ${response.status}`);
     }
     return await response.blob();
   } catch (error) {
-    console.error('exportExcel 失败:', error);
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      console.error('exportExcel 超时 (>3分钟)');
+    } else {
+      console.error('exportExcel 失败:', error);
+    }
     return null;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
 /**
- * Export dashboard as PDF — returns a Blob via raw fetch (binary response)
+ * Export dashboard as PDF — returns a Blob via raw fetch (binary response).
+ * Bug #13: added 3 min timeout via AbortController.
  */
 export async function exportPDF(data: PDFExportRequest): Promise<Blob | null> {
+  const EXPORT_TIMEOUT_MS = 180000;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), EXPORT_TIMEOUT_MS);
   try {
     const { PYTHON_SMARTBI_URL, getPythonAuthHeaders } = await import('./common');
     const response = await fetch(`${PYTHON_SMARTBI_URL}/api/smartbi/financial-dashboard/export-pdf`, {
@@ -228,13 +256,20 @@ export async function exportPDF(data: PDFExportRequest): Promise<Blob | null> {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(data),
+      signal: controller.signal,
     });
     if (!response.ok) {
       throw new Error(`PDF导出失败: HTTP ${response.status}`);
     }
     return await response.blob();
   } catch (error) {
-    console.error('exportPDF 失败:', error);
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      console.error('exportPDF 超时 (>3分钟)');
+    } else {
+      console.error('exportPDF 失败:', error);
+    }
     return null;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }

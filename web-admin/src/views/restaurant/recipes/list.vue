@@ -342,6 +342,23 @@ async function submitForm() {
   if (formRef.value) {
     try { await formRef.value.validate(); } catch { return; }
   }
+  // 前端防御: 必填字段（后端 @NotBlank / @NotNull）
+  if (!dialogForm.value.productTypeId) {
+    ElMessage.warning('请选择菜品');
+    return;
+  }
+  if (!dialogForm.value.rawMaterialTypeId) {
+    ElMessage.warning('请选择食材');
+    return;
+  }
+  if (dialogForm.value.standardQuantity == null || Number(dialogForm.value.standardQuantity) <= 0) {
+    ElMessage.warning('请输入大于 0 的标准用量');
+    return;
+  }
+  // netYieldRate 后端要求 0.01-1.00,前端 input-number 已限制,额外防 null
+  if (dialogForm.value.netYieldRate == null) {
+    dialogForm.value.netYieldRate = 1.0;
+  }
   submitting.value = true;
   try {
     if (dialogForm.value.id) {
@@ -353,7 +370,10 @@ async function submitForm() {
         return;
       }
     } else {
-      const res = await createRecipe(factoryId.value, dialogForm.value);
+      // 剔除空串 id,避免干扰后端
+      const { id: _discard, ...payload } = dialogForm.value;
+      void _discard;
+      const res = await createRecipe(factoryId.value, payload);
       if (res.success) {
         ElMessage.success('创建成功');
       } else {

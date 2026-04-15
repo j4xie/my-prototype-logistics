@@ -733,7 +733,14 @@ async function loadDynamicDashboardData(uploadId: number) {
   } catch (error) {
     console.error('加载动态驾驶舱数据失败:', error);
     hasError.value = true;
-    errorMessage.value = error instanceof Error ? error.message : '加载数据失败';
+    // Bug #3: upgrade error message — "数据处理失败，请联系管理员" is a generic Java
+    // ErrorSanitizer fallback for any SQL error. Give the user next-step guidance.
+    const rawMsg = error instanceof Error ? error.message : '加载数据失败';
+    if (rawMsg.includes('数据处理失败') || rawMsg.includes('SQL')) {
+      errorMessage.value = '上传的数据暂时无法解析，请在「Excel上传」页重新上传，或选择系统数据。如持续失败请联系管理员。';
+    } else {
+      errorMessage.value = rawMsg;
+    }
     ElMessage.error(errorMessage.value);
     dashboardData.value = null;
   } finally {

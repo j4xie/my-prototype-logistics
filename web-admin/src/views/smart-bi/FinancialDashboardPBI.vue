@@ -379,7 +379,16 @@ const DEMO_RAW_DATA: Record<string, unknown>[] = [
 ];
 
 // ---- Methods ----
+// Bug #2: track in-flight generate so double-clicks and unmount can cancel/dedupe.
+// `isComponentUnmounted` flag prevents state updates after the view is torn down.
+let isComponentUnmounted = false;
+
 async function generate(useDemo?: boolean) {
+  // Bug #2: dedupe — ignore if a generate is already in flight (prevents double-click canceled errors)
+  if (isGenerating.value) {
+    ElMessage.info('正在生成中，请稍候...');
+    return;
+  }
   // If not explicitly passed, use tracked demo mode
   if (useDemo === undefined) useDemo = isInDemoMode.value;
   if (useDemo) isInDemoMode.value = true;
@@ -417,6 +426,8 @@ async function generate(useDemo?: boolean) {
 
   try {
     const resp = await batchGenerate(payload);
+    // Bug #2: bail if the component unmounted while the request was in flight
+    if (isComponentUnmounted) return;
     if (resp.success) {
       dashboardResponse.value = resp;
       // Fix 72: Extract available filter dimensions from response
@@ -456,6 +467,7 @@ async function generate(useDemo?: boolean) {
 /**
  * Auto-analyze all charts after dashboard generation.
  * Requests run with concurrency limit of 3 to avoid API overload.
+ * Bug #2: stop iterating if the component unmounts — prevents request cancel noise.
  */
 async function autoAnalyzeAllCharts() {
   const allChartTypes = charts.value.map(c => c.chartType);
@@ -465,7 +477,7 @@ async function autoAnalyzeAllCharts() {
   let idx = 0;
 
   async function next(): Promise<void> {
-    while (idx < allChartTypes.length) {
+    while (idx < allChartTypes.length && !isComponentUnmounted) {
       const ct = allChartTypes[idx++];
       if (analysisByType.value[ct]) continue; // already loaded
       await requestAnalysis(ct);
@@ -1337,6 +1349,9 @@ watch(() => charts.value.length, () => {
 
 // Cleanup on unmount
 onBeforeUnmount(() => {
+  // Bug #2: mark unmount so in-flight generate() stops touching reactive state,
+  // avoiding "canceled" console noise when the user navigates away mid-request.
+  isComponentUnmounted = true;
   if (autoRefreshTimer) clearInterval(autoRefreshTimer);
   if (resizeRafId) cancelAnimationFrame(resizeRafId);
   kpiRafIds.forEach((id) => cancelAnimationFrame(id));
