@@ -18,6 +18,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 /**
@@ -50,6 +53,48 @@ public class WhitelistController {
         Long userId = mobileService.getUserFromToken(token).getId();
 
         WhitelistDTO.BatchResult result = whitelistService.batchAdd(factoryId, userId, request);
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * 单条添加白名单（前端 web-admin 表单直连）
+     * 内部包装为 batchAdd 的 size=1 请求，复用 BatchResult 逻辑。
+     * 前端 POST /api/mobile/{factoryId}/whitelist 由此方法处理。
+     */
+    @PostMapping
+    @Operation(summary = "添加单条白名单", description = "添加单个手机号到白名单，内部包装为 batch-of-1 调用 batchAdd")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
+    public ApiResponse<WhitelistDTO.BatchResult> addSingle(
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestHeader("Authorization") @Parameter(description = "访问令牌") String authorization,
+            @RequestBody @Valid @Parameter(description = "单条白名单添加请求") WhitelistDTO.SingleAddRequest request) {
+        log.info("添加单条白名单: factoryId={}, phone={}", factoryId, request.getPhoneNumber());
+
+        String token = TokenUtils.extractToken(authorization);
+        Long userId = mobileService.getUserFromToken(token).getId();
+
+        // 将前端 expirationDate (YYYY-MM-DD) 转成后端 BatchAddRequest.expiresAt (LocalDateTime)
+        LocalDateTime expiresAt = null;
+        if (request.getExpirationDate() != null && !request.getExpirationDate().isBlank()) {
+            // 日期当天 23:59:59 作为过期时刻
+            expiresAt = LocalDateTime.of(LocalDate.parse(request.getExpirationDate()), LocalTime.of(23, 59, 59));
+        }
+
+        WhitelistDTO.WhitelistEntry entry = WhitelistDTO.WhitelistEntry.builder()
+                .phoneNumber(request.getPhoneNumber())
+                .name(request.getName())
+                .build();
+
+        WhitelistDTO.BatchAddRequest batchRequest = WhitelistDTO.BatchAddRequest.builder()
+                .entries(List.of(entry))
+                .expiresAt(expiresAt)
+                .maxUsageCount(request.getMaxUsageCount())
+                .department(request.getDepartmentId())
+                .role(request.getRole())
+                .notes(request.getNotes())
+                .build();
+
+        WhitelistDTO.BatchResult result = whitelistService.batchAdd(factoryId, userId, batchRequest);
         return ApiResponse.success(result);
     }
 

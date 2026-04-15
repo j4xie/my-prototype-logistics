@@ -125,6 +125,41 @@ public class WhitelistDTO {
     }
 
     /**
+     * 单个白名单添加请求（前端表单直连用）
+     * 前端 web-admin/src/views/hr/whitelist/index.vue 使用该形状 POST /whitelist
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SingleAddRequest {
+        @NotBlank(message = "手机号不能为空")
+        @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")
+        private String phoneNumber;
+
+        @Size(max = 50, message = "姓名长度不能超过50个字符")
+        private String name;
+
+        private String role;
+
+        /**
+         * 前端使用 departmentId（部门主键），后端 Entity 里是 department 名称字符串，
+         * 此处仅作为 BatchAddRequest.department 透传值。
+         */
+        private String departmentId;
+
+        /**
+         * 前端使用 expirationDate = "YYYY-MM-DD"
+         */
+        private String expirationDate;
+
+        private String notes;
+
+        @Min(value = 1, message = "最大使用次数必须大于0")
+        private Integer maxUsageCount;
+    }
+
+    /**
      * 更新请求
      */
     @Data
