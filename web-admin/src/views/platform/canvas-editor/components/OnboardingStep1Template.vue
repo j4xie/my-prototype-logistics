@@ -28,7 +28,7 @@
 import { ref, onMounted } from 'vue'
 import { getTemplates } from '@/api/canvasApi'
 
-defineProps<{ factoryId: string; selected: string | null }>()
+const props = defineProps<{ factoryId: string; selected: string | null }>()
 defineEmits<{ 'update:selected': [code: string] }>()
 
 const templates = ref<any[]>([])
@@ -36,7 +36,11 @@ const icons: Record<string, string> = { FOOD_PROCESSING: '🏭', BAKERY: '🍞',
 
 onMounted(async () => {
   try {
-    const res = await getTemplates('F001') // factory-agnostic
+    // Prior code hardcoded 'F001' with "factory-agnostic" comment, but backend
+    // RBAC rejects cross-factory reads → 403 for every non-F001 user. Use the
+    // caller's factoryId (which backend *can* authorize). If templates are truly
+    // meant to be global, that's a backend API design change, not a frontend hack.
+    const res = await getTemplates(props.factoryId)
     templates.value = (res.data || []).map((t: any) => ({ ...t, icon: icons[t.templateCode] || '📦' }))
   } catch { /* use empty */ }
 })
