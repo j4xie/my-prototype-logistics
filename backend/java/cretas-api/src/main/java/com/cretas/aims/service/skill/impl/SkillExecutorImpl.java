@@ -517,7 +517,12 @@ public class SkillExecutorImpl implements SkillExecutor {
             }
 
         } catch (JsonProcessingException e) {
-            log.error("Failed to parse LLM response JSON: {}", e.getMessage());
+            // LLM hallucinated broken JSON (unescaped backslash, trailing comma,
+            // stray markdown). Code already returns base params so the skill
+            // can still run with its defaults — just missing the LLM-extracted
+            // extras. WARN is the right level: quality-of-output issue, not
+            // a server bug.
+            log.warn("LLM response JSON 解析失败, 使用基础 context params: {}", e.getMessage());
         }
 
         return params;
