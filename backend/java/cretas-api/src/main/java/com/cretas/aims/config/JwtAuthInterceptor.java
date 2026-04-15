@@ -199,7 +199,8 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
             if (!"auth".equals(factoryId) && !"activation".equals(factoryId)
                     && !"health".equals(factoryId) && !"upload".equals(factoryId)
                     && !"voice".equals(factoryId) && !"ai".equals(factoryId)
-                    && !"scale-protocols".equals(factoryId) && !"dashboard".equals(factoryId)) {
+                    && !"scale-protocols".equals(factoryId) && !"dashboard".equals(factoryId)
+                    && !"workflow".equals(factoryId)) {  // /api/mobile/workflow/* are global endpoints (node-schemas, validate)
                 return factoryId;
             }
         }
