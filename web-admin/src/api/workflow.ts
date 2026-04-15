@@ -1,4 +1,4 @@
-import { adminGet as get, adminPost as post, adminPut as put } from './request'
+import { get, post, put, adminGet, adminPost, adminPut } from './request'
 
 // === Workflow Node Schemas ===
 
@@ -15,12 +15,16 @@ export interface NodeSchema {
   availableGuards: string[]
 }
 
+// URL moved from /api/workflow/node-schemas to /api/mobile/workflow/node-schemas
+// to be proxied by 139 nginx gateway (old URL returned index.html silently,
+// causing R20-F2 "766 empty 📦 tiles" bug). Switched from adminGet (absolute)
+// to get (relative to /api/mobile baseURL).
 export function getNodeSchemas() {
-  return get<NodeSchema[]>('/api/workflow/node-schemas')
+  return get<NodeSchema[]>('/workflow/node-schemas')
 }
 
 export function getNodeSchemasByCategory(category: string) {
-  return get<NodeSchema[]>('/api/workflow/node-schemas/by-category', { params: { category } })
+  return get<NodeSchema[]>('/workflow/node-schemas/by-category', { params: { category } })
 }
 
 // === State Machine ===
