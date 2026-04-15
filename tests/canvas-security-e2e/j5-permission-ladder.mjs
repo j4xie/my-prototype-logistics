@@ -414,13 +414,19 @@ async function run() {
   console.log(`WEB_URL  : ${WEB_URL}`);
   console.log(`FACTORY_A: ${FACTORY_A}\n`);
 
-  const { browser, page } = await createBrowser();
-
-  try {
-    await runL1(page);
-    await runL2(page);
-  } finally {
-    await browser.close();
+  // CANVAS_E2E_SKIP_UI_IN_J5=1 skips L1/L2 (browser-dependent).
+  // Used by nightly cron on servers without Chromium. L3/L4/L5 still run.
+  const SKIP_UI = process.env.CANVAS_E2E_SKIP_UI_IN_J5 === '1';
+  if (!SKIP_UI) {
+    const { browser, page } = await createBrowser();
+    try {
+      await runL1(page);
+      await runL2(page);
+    } finally {
+      await browser.close();
+    }
+  } else {
+    console.log('\n=== L1/L2 skipped (CANVAS_E2E_SKIP_UI_IN_J5=1) ===');
   }
 
   // L3 is API-only — no browser needed
