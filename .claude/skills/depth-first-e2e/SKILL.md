@@ -1,6 +1,6 @@
 ---
 name: depth-first-e2e
-description: Use when designing or executing E2E test rounds with spec §8.2-style numeric thresholds. Prevents "next round syndrome" and shallow test padding by enforcing depth-first test classification. Triggers on "5 轮测试", "E2E 综合测试", "多轮 E2E", "spec §8.2 阈值", "测试覆盖率", "轮次迭代", or any multi-round E2E testing workflow.
+description: Use when designing or executing multi-round E2E test cycles with numeric thresholds (spec §8.2 style), when a deep E2E test catches a real app bug, when auditing E2E test depth or coverage, or when an E2E round is committed but not yet deployed. Triggers on "5 轮测试", "E2E 综合测试", "多轮 E2E", "spec §8.2 阈值", "测试覆盖率", "轮次迭代", "same-cause sweep", "深度测试", "E2E bug found", "depth-first".
 ---
 
 # Depth-First E2E Testing
