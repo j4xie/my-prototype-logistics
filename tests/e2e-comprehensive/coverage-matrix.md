@@ -2,7 +2,7 @@
 
 **Purpose**: Rule 11.1 — inventory of every major user-facing module with current E2E coverage depth.
 
-**Last updated**: 2026-04-15 after R19 breadth round (5 never-touched modules now at smoke).
+**Last updated**: 2026-04-16 after R21 live devtools sweep (60 routes with real browser + network assertions).
 
 ---
 
@@ -121,9 +121,36 @@ R19 cleared 5 module groups (hr, quality, production, warehouse/inventory, equip
 
 ---
 
+## R21 verdict (live devtools sweep, 2026-04-16)
+
+**Full results**: [`results/e2e-R21-devtools-sweep.md`](results/e2e-R21-devtools-sweep.md)
+
+**60 routes visited** via MCP playwright-test real Chromium + console/network monitoring under `e2e_factory_admin`:
+
+- **58 PASS** — 0 console errors, 0 4xx/5xx, page content rendered
+- **2 issue routes** (new R21 findings):
+  - **R21-F3**: `/system/settings` — `GET /api/mobile/FOOD_3101_048/settings` + `/settings/full` both 404. Page renders default values silently (silent degradation). P2.
+  - **R21-F4**: `/system/smartbi-config` — 阈值配置加载失败, `GET /api/admin/smartbi-config/thresholds` returns HTML (Vite SPA fallback). R20-F2 defensive axios correctly rejects. Same root as R20-F2: nginx at 139 only proxies `/api/mobile/*`, not `/api/admin/*`. P2.
+
+**R20 fixes confirmed live in prod**:
+- R20-F1 canvas-editor 4 real templates load (no F001 hardcode) ✅
+- R20-F2 workflow-designer 10 real state-machine nodes render (not 766 empty 📦 tiles) ✅
+- R20-F2 axios HTML guard is actively doing its job — caught R21-F4 at the interceptor layer
+
+**Coverage deltas**:
+- 32 modules still at smoke — but now with devtools-level assertion (not just page-load + title). This is above script-automation smoke.
+- `/system/settings` and `/system/smartbi-config`: moved from `smoke` to `smoke-issue`.
+
 ## Next round recommendations
 
-**R20 options**:
+**R22 candidates**:
+1. Fix R21-F3 (`/system/settings` missing backend controller or 404-mapped URL)
+2. Fix R21-F4 (same fix pattern as R20-F2: backend move OR nginx `/api/admin/*` location)
+3. T3-T5 from R21-PLAN (L2 CRUD smoke / L3 cross-module / L4 SO full 3-stage on real browser)
+4. T4.5 from R21-PLAN (16 customer bug live re-verify with actual action clicks)
+
+**R20 options** (historical):
+
 1. Switch R18's 10 NOT_REPRO bugs and R19's 14 PASS routes to **medium** coverage (click primary action button, capture response). This gets us real form-submit evidence across 24 modules.
 2. Investigate the `/production/batches` timeout (R19 FAIL) + `/smart-bi/analysis` timeout (R18 TIMEOUT) — same symptom class, likely same root cause (backend slow/hung API or long-polling).
 3. Fix the 3 REPROs from R18 (canvas-editor RBAC + restaurant menu UX).
