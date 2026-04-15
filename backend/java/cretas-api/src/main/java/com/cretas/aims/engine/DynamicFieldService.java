@@ -238,10 +238,22 @@ public class DynamicFieldService {
 
         for (Map.Entry<String, Object> entry : fields.entrySet()) {
             CanvasDynamicField def = defMap.get(entry.getKey());
-            if (def != null && !"SUB_TABLE".equals(def.getFieldType())) {
+            if (def == null) {
+                // R7 Issue 1 Path B (observability-first): log unknown fieldCode for
+                // data collection before deciding Path A (throw) vs Path C (DTO validator).
+                // Current silent-skip behavior is PRESERVED — this log is instrumentation only,
+                // zero behavior change. Ambient frequency will reveal whether unknown fieldCodes
+                // are mostly typos (→ Path A / C) or mostly stale-cache (→ keep silent as design).
+                // See .claude/agent-team-outputs/2026-04-15_r7-issue1-setDynamicFields-caller-audit.md
+                log.warn("Canvas dynamic field unknown (silently skipped): factoryId={}, moduleCode={}, fieldCode={}, recordId={}",
+                    factoryId, moduleCode, entry.getKey(), recordId);
+                continue;
+            }
+            if (!"SUB_TABLE".equals(def.getFieldType())) {
                 setClauses.add(def.getColumnName() + " = ?");
                 params.add(entry.getValue());
             }
+            // def != null && SUB_TABLE: intentional silent skip (handled via sub-table endpoints)
         }
 
         if (setClauses.isEmpty()) return;
