@@ -2,7 +2,7 @@
 
 **Purpose**: Rule 11.1 — inventory of every major user-facing module with current E2E coverage depth.
 
-**Last updated**: 2026-04-15 after R18 breadth round.
+**Last updated**: 2026-04-15 after R19 breadth round (5 never-touched modules now at smoke).
 
 ---
 
@@ -40,6 +40,21 @@
 | restaurant/recipes | `/restaurant/recipes` | **REPRO 403** | R18 | Bug #10 CONFIRMED partially: factory_super_admin → /403. Factory is FACTORY type, not RESTAURANT — likely route guard correctly blocks. User's error may indicate UX issue (menu should hide). |
 | restaurant/stocktaking | `/restaurant/stocktaking` | **REPRO 403** | R18 | Same as recipes — factory type mismatch → 403. |
 | sales/orders (role=sales_mgr) | `/sales/orders` | inconclusive | R18 | sales_mgr account loaded page but no 新建 button found. Either role missing write permission OR page failed to fully render. Bug #4 needs deeper investigation. |
+| hr/employees | `/hr/employees` | smoke (R19) | R19 | Page loads, menu+table rendered, 0 network errors, title "员工管理". |
+| hr/departments | `/hr/departments` | smoke (R19) | R19 | Page loads, menu+table rendered, 0 network errors, title "部门管理". |
+| hr/attendance | `/hr/attendance` | smoke (R19) | R19 | Page loads, menu+table rendered, 0 network errors, title "考勤管理". |
+| quality/inspections | `/quality/inspections` | smoke (R19) | R19 | Page loads, menu+table rendered, 0 network errors, title "质检记录". |
+| quality/disposals | `/quality/disposals` | smoke (R19) | R19 | Page loads, menu+table rendered, 0 network errors, title "废弃处理". |
+| quality/standards | `/quality/standards` | smoke (R19) | R19 | Page loads, menu+table rendered, 0 network errors, title "质检标准". |
+| production/batches | `/production/batches` | **TIMEOUT** | R19 | Page didn't reach networkidle in 45s — matches R18 smart-bi/analysis symptom. Possible perf bug (long-polling request or slow API) OR legitimately heavy list. Needs `domcontentloaded` retry or deeper investigation. |
+| production/plans | `/production/plans` | smoke (R19) | R19 | Page loads, menu+table rendered, 0 network errors, title "生产计划". |
+| production/bom | `/production/bom` | smoke (R19) | R19 | Page loads, menu+table rendered, 0 network errors, title "BOM配方管理". |
+| warehouse/materials | `/warehouse/materials` | smoke (R19) | R19 | Page loads, menu+table rendered, 0 network errors, title "原材料批次". (distinct from sales/deliveries which is FG shipment) |
+| warehouse/inventory | `/warehouse/inventory` | smoke (R19) | R19 | Page loads, menu+table rendered, 0 network errors, title "盘点管理" (raw-mat stocktaking). |
+| warehouse/shipments | `/warehouse/shipments` | smoke (R19) | R19 | Page loads, menu+table rendered, 0 network errors, title "出货管理". (NOT the same as sales/shipments — this is warehouse-side outbound record) |
+| equipment/list | `/equipment/list` | smoke (R19) | R19 | Page loads, menu+table rendered, 0 network errors, title "设备列表". |
+| equipment/maintenance | `/equipment/maintenance` | smoke (R19) | R19 | Page loads, menu+table rendered, 0 network errors, title "维护记录". |
+| equipment/alerts | `/equipment/alerts` | smoke (R19) | R19 | Page loads, menu+table rendered, 0 network errors, title "告警管理". |
 
 ---
 
@@ -50,16 +65,20 @@
 
 ---
 
-## Never-touched (still at `none` after R18)
+## Never-touched (still at `none` after R19)
 
-Spot-check inventory — find other app modules not yet listed:
-- `hr/*` (员工/角色/部门 besides /system/roles)
-- `quality/*` (质检/异常)
-- `production/*` (生产计划/工单/报工)
-- `inventory/*` (库存管理/批次)
-- `equipment/*` (设备/维护)
+R19 cleared 5 module groups (hr, quality, production, warehouse/inventory, equipment). Remaining `none` candidates that may deserve an R20+ smoke pass:
+- `procurement/*` subpages not yet on matrix (only /procurement/orders at medium via R10)
+- `analytics/*` beyond alert-dashboard (overview, trends, ai-reports, kpi, production-report, supply-chain)
+- `scheduling/*` (overview, plans, realtime, workers, alerts) — entire module at none
+- `finance/*` beyond invoices/payments (costs, reports, ar-ap, sku-margin)
+- `system/*` beyond R18 trio (users, logs, settings, ai-intents, skill-tools, products, pos, work-processes, product-processes, smartbi-config, badge-generator)
+- `rd/*` (samples, converted)
+- `calibration/*`
+- `transfer/*`
+- `production-analytics/*`
 
-**Rule 11.4 consequence**: these modules at `none` for 12+ rounds. R19 MUST cover them at smoke minimum unless each gets an exemption.
+**Rule 11.4 status**: R19 covered the 5 modules Rule 11.4 explicitly called out (hr/quality/production/inventory/equipment). The above buckets have not yet hit the 3-consecutive-rounds-at-none threshold to force another breadth round, but are candidates for future planning.
 
 ---
 
@@ -78,11 +97,36 @@ Spot-check inventory — find other app modules not yet listed:
 
 ---
 
+## R19 verdict
+
+**Route option chosen**: #3 (cover 5 never-touched modules per Rule 11.4) — completed.
+
+**Script**: `tests/e2e-comprehensive/e2e-R19-breadth-5modules.mjs`
+**Result**: `tests/e2e-comprehensive/results/e2e-R19-breadth-5modules.json`
+
+**15 probes across 5 modules (hr/quality/production/warehouse/equipment)**:
+- **14 PASS** ✓ — pages render cleanly, menu+table present, zero network errors, zero console errors
+- **1 FAIL** ✗ — `/production/batches` timed out on `networkidle` after 45s (same symptom class as R18 smart-bi/analysis; candidate for perf investigation — either slow API, pending request, or long-polling keeps connection open forever)
+- **0 REPRO** 🐛 — no 403/404 redirects and no forbidden banners on any route
+- **0 WARN** ⚠ — no partial renders
+
+**No surprise bugs found at smoke level.** All 14 rendering routes returned 0 HTTP errors and 0 console errors under factory_super_admin, which is consistent with their permission matrix having `rw` across every module for this role.
+
+**Confirmed negative findings (not bugs, but useful)**:
+- `/hr/*` renders without issue for factory_super_admin — no 403 gate surprise, unlike `/canvas-editor` which was platform_admin-only
+- `/warehouse/*` renders for factory_super_admin (warehouse module is `rw` for this role)
+- `/equipment/*` renders for factory_super_admin (equipment module is `rw`)
+
+**Production/batches timeout — action for R20**: retry with `waitUntil: 'domcontentloaded'` + manual poll for menu, OR investigate backend `/api/mobile/FOOD_3101_048/production/batches` API response time. Matches pattern of R18 bug 2/13 (smart-bi perf timeouts).
+
+---
+
 ## Next round recommendations
 
-**R19 options**:
-1. **Action-level repro** for the 10 NOT_REPRO bugs — click each action button, capture result. Convert smoke to medium for each.
-2. **Fix the 3 REPROs** — canvas-editor route guard (real bug), + UX menu hiding for restaurant modules.
-3. **Cover never-touched modules** (hr, quality, production, inventory, equipment) at smoke minimum per Rule 11.4.
+**R20 options**:
+1. Switch R18's 10 NOT_REPRO bugs and R19's 14 PASS routes to **medium** coverage (click primary action button, capture response). This gets us real form-submit evidence across 24 modules.
+2. Investigate the `/production/batches` timeout (R19 FAIL) + `/smart-bi/analysis` timeout (R18 TIMEOUT) — same symptom class, likely same root cause (backend slow/hung API or long-polling).
+3. Fix the 3 REPROs from R18 (canvas-editor RBAC + restaurant menu UX).
+4. Role-coverage sweep: repeat R19's 15 routes with 3-5 other roles (hr_admin, quality_mgr, warehouse_mgr, equipment_admin, viewer) to verify permission matrix rows enforce correctly.
 
-Priority: #2 (real bug fixes) + #3 (breadth completeness) > #1 (deeper investigation can happen after).
+Priority: #3 (fix real bugs) > #2 (diagnose perf timeouts — these may be the same root) > #1 or #4 (coverage deepening).

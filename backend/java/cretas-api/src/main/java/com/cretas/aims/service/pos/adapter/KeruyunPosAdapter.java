@@ -100,6 +100,14 @@ public class KeruyunPosAdapter implements PosAdapter {
     public List<Map<String, Object>> syncOrders(PosConnection connection, LocalDateTime since) {
         log.info("同步客如云订单: posStoreId={}, since={}", connection.getPosStoreId(), since);
 
+        // Demo 凭证检测: 如果连接使用的是演示凭证 (appKey/accessToken 以 demo_ 开头),
+        // 返回模拟订单数据, 不调用真实客如云 API (避免 404).
+        // 真实生产环境替换为真 appKey 后, 自动走下方真实逻辑.
+        if (isDemoCredential(connection)) {
+            log.info("检测到 Demo 凭证, 返回模拟订单数据: posStoreId={}", connection.getPosStoreId());
+            return generateDemoOrders(connection, since);
+        }
+
         ensureValidToken(connection);
 
         List<Map<String, Object>> allOrders = new ArrayList<>();
@@ -322,6 +330,16 @@ public class KeruyunPosAdapter implements PosAdapter {
     public PosConnection refreshToken(PosConnection connection) {
         log.info("刷新客如云Token: posStoreId={}", connection.getPosStoreId());
 
+        // Demo path: skip the real HTTP call entirely for demo/stub credentials.
+        // The real API 路径 is a placeholder (TODO below) so calling it just
+        // returns 404 and floods alerts. Matches the isDemoCredential() +
+        // generateDemoOrders() pattern the rest of this adapter already uses.
+        if (isDemoCredential(connection)) {
+            log.info("客如云 Demo 模式: 跳过 Token 刷新, 沿用现有占位 token");
+            connection.setTokenExpiresAt(LocalDateTime.now().plusSeconds(7200));
+            return connection;
+        }
+
         try {
             // TODO: 替换为客如云实际的Token刷新接口
             String url = config.getApiBaseUrl() + "/open/v1/token/refresh";
@@ -357,7 +375,11 @@ public class KeruyunPosAdapter implements PosAdapter {
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            log.error("客如云Token刷新异常: error={}", e.getMessage());
+            // Skeleton adapter — URL paths and sandbox config are placeholders
+            // until a real Keruyun 开放平台 contract is signed. 4xx from their
+            // endpoints is expected; WARN keeps observability without polluting
+            // ERROR-level alerts for something we know is a stub.
+            log.warn("客如云Token刷新异常 (adapter 骨架代码, URL 占位符): error={}", e.getMessage());
             throw new BusinessException("客如云Token刷新失败: " + e.getMessage());
         }
     }
@@ -506,6 +528,58 @@ public class KeruyunPosAdapter implements PosAdapter {
         normalized.put("source", "KERUYUN_WEBHOOK");
 
         return normalized;
+    }
+
+    // ==================== Demo 模式支持 ====================
+
+    /**
+     * 判断是否使用 demo 凭证 (开发/演示环境).
+     * Demo 凭证不会真连客如云 API, 返回模拟数据让 demo 可跑通.
+     */
+    private boolean isDemoCredential(PosConnection connection) {
+        return (connection.getAppKey() != null
+                    && (connection.getAppKey().startsWith("demo_") || connection.getAppKey().contains("_demo")))
+                || (connection.getAccessToken() != null && connection.getAccessToken().startsWith("demo_"))
+                || (connection.getRefreshToken() != null && connection.getRefreshToken().startsWith("demo_"));
+    }
+
+    /**
+     * 生成演示订单数据.
+     */
+    private List<Map<String, Object>> generateDemoOrders(PosConnection connection, LocalDateTime since) {
+        List<Map<String, Object>> demoOrders = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+        String storeId = connection.getPosStoreId() != null ? connection.getPosStoreId() : "DEMO-STORE";
+
+        for (int i = 1; i <= 3; i++) {
+            Map<String, Object> order = new LinkedHashMap<>();
+            order.put("externalOrderId", "KRY-DEMO-" + now.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + "-" + i);
+            order.put("externalOrderNo", "D" + now.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + String.format("%04d", i));
+            order.put("posStoreId", storeId);
+            order.put("orderTime", now.minusMinutes(i * 10L).toString());
+            order.put("paymentTime", now.minusMinutes(i * 10L).plusMinutes(1).toString());
+            order.put("orderStatus", "COMPLETED");
+            order.put("totalAmount", 188.50 + i * 20);
+            order.put("actualAmount", 188.50 + i * 20);
+            order.put("discountAmount", 0);
+            order.put("tableNo", "T-" + (i + 10));
+            order.put("customerCount", 2 + i);
+            order.put("paymentMethod", i % 2 == 0 ? "WECHAT" : "ALIPAY");
+
+            List<Map<String, Object>> items = new ArrayList<>();
+            Map<String, Object> item1 = new LinkedHashMap<>();
+            item1.put("itemName", "演示菜品-" + i);
+            item1.put("quantity", 1);
+            item1.put("unitPrice", 58.0);
+            item1.put("totalPrice", 58.0);
+            items.add(item1);
+            order.put("items", items);
+
+            demoOrders.add(order);
+        }
+
+        log.info("生成 {} 条演示订单 (客如云 Demo 模式)", demoOrders.size());
+        return demoOrders;
     }
 
     // ==================== Token管理 ====================
