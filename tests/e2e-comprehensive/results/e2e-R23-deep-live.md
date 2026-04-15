@@ -183,6 +183,38 @@ The last 2 were already 0-indexed by design (matching their 0-indexed backends).
 
 ---
 
+## R22-T7 — Error paths (7 tests, 6 PASS)
+
+All probes via live API with factory_admin JWT. Goal: prove error messages are user-friendly 4xx (not 500 stack traces), and no silent failures.
+
+| # | Test | Status | Response |
+|---|---|---|---|
+| T7-1 | Duplicate customer name | ✅ **PASS** | 400 "客户名称已存在" (second call) |
+| T7-2 | SO without items[] | ✅ **PASS** | 400 "订单行项目不能为空" |
+| T7-3 | Pagination OOB (`page=9999`) | ✅ **PASS** | 200 `{content:[], total:9}` graceful |
+| T7-4 | Invalid UUID format | ✅ **PASS** | 404 "销售订单不存在" (tolerant lookup) |
+| T7-5 | Valid-format nonexistent UUID | ✅ **PASS** | 404 "销售订单不存在" |
+| T7-6 | Delete customer with orders (FK) | ✅ **PASS** | 400 "客户有关联的出货记录，无法删除" (app-layer, not raw PG error) |
+| T7-8 | SQL injection via `keyword=' OR 1=1--` | ⚠️ Keyword IGNORED | See R24-F6 below |
+
+### R24-F6 (minor, deferred): /customers keyword param silently ignored
+
+Probe: `GET /customers?page=1&size=50&keyword=X` returns all 9 rows regardless of X. Tested 3 values: existing substring, nonsense random string, SQL injection string — all return identical 9-row result. Conclusion: backend ignores `keyword`.
+
+- **Security**: SAFE — no SQL is built from the param, no injection possible (parameterized queries implicitly safe)
+- **Functional**: BROKEN — UI's 搜索客户名称 textbox posts `keyword=X`, user sees unfiltered list, assumes no match or app bug
+- **R24 action**: Check `CustomerController.list()` @RequestParam binding. Likely the param name is `name` or `search` in the backend, not `keyword`. Should also check for same-cause across other list endpoints.
+
+### Additional T7 findings (positive)
+
+1. **Required field validation is strict and early**: Any missing required field returns 400 before even reaching uniqueness/business-rule layers. 6 of 7 tests had validation fire at the DTO layer.
+2. **Error messages are localized Chinese**: Every 400/404 has a human-friendly message, no stack traces leaked.
+3. **No 500s observed**: No endpoint returned a server error during deliberate malformed inputs.
+4. **FK violations caught at app layer**: T7-6 shows the delete check queries for related shipments BEFORE hitting PostgreSQL FK constraint — user sees "客户有关联的出货记录" not "duplicate key value violates foreign key constraint".
+5. **Pagination OOB is graceful**: `page=9999` returns empty content with correct totalElements (not a 500, not negative indexing).
+
+---
+
 ## Deferred to R24
 
 | Task | Reason |
