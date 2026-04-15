@@ -91,7 +91,11 @@ public interface SmartBiDynamicDataRepository extends JpaRepository<SmartBiDynam
     @Query(value = """
         SELECT
             row_data->>:groupField as group_value,
-            SUM(CAST(NULLIF(row_data->>:measureField, '') AS DECIMAL(18,2))) as total
+            SUM(CASE
+                WHEN row_data->>:measureField ~ '^-?[0-9]+(\\.[0-9]+)?$'
+                    THEN (row_data->>:measureField)::DECIMAL(18,2)
+                ELSE NULL
+            END) as total
         FROM smart_bi_dynamic_data
         WHERE factory_id = :factoryId AND upload_id = :uploadId
           AND row_data->>:groupField IS NOT NULL
@@ -117,8 +121,16 @@ public interface SmartBiDynamicDataRepository extends JpaRepository<SmartBiDynam
     @Query(value = """
         SELECT
             row_data->>:groupField as group_value,
-            SUM(CAST(NULLIF(row_data->>:measureField1, '') AS DECIMAL(18,2))) as total1,
-            SUM(CAST(NULLIF(row_data->>:measureField2, '') AS DECIMAL(18,2))) as total2
+            SUM(CASE
+                WHEN row_data->>:measureField1 ~ '^-?[0-9]+(\\.[0-9]+)?$'
+                    THEN (row_data->>:measureField1)::DECIMAL(18,2)
+                ELSE NULL
+            END) as total1,
+            SUM(CASE
+                WHEN row_data->>:measureField2 ~ '^-?[0-9]+(\\.[0-9]+)?$'
+                    THEN (row_data->>:measureField2)::DECIMAL(18,2)
+                ELSE NULL
+            END) as total2
         FROM smart_bi_dynamic_data
         WHERE factory_id = :factoryId AND upload_id = :uploadId
           AND row_data->>:groupField IS NOT NULL
@@ -181,7 +193,11 @@ public interface SmartBiDynamicDataRepository extends JpaRepository<SmartBiDynam
      * @return Sum value
      */
     @Query(value = """
-        SELECT SUM(CAST(NULLIF(row_data->>:measureField, '') AS DECIMAL(18,2)))
+        SELECT SUM(CASE
+            WHEN row_data->>:measureField ~ '^-?[0-9]+(\\.[0-9]+)?$'
+                THEN (row_data->>:measureField)::DECIMAL(18,2)
+            ELSE NULL
+        END)
         FROM smart_bi_dynamic_data
         WHERE factory_id = :factoryId AND upload_id = :uploadId
         """, nativeQuery = true)
@@ -199,7 +215,11 @@ public interface SmartBiDynamicDataRepository extends JpaRepository<SmartBiDynam
      * @return Average value
      */
     @Query(value = """
-        SELECT AVG(CAST(NULLIF(row_data->>:measureField, '') AS DECIMAL(18,2)))
+        SELECT AVG(CASE
+            WHEN row_data->>:measureField ~ '^-?[0-9]+(\\.[0-9]+)?$'
+                THEN (row_data->>:measureField)::DECIMAL(18,2)
+            ELSE NULL
+        END)
         FROM smart_bi_dynamic_data
         WHERE factory_id = :factoryId AND upload_id = :uploadId
         """, nativeQuery = true)
@@ -218,8 +238,16 @@ public interface SmartBiDynamicDataRepository extends JpaRepository<SmartBiDynam
      */
     @Query(value = """
         SELECT
-            MIN(CAST(NULLIF(row_data->>:measureField, '') AS DECIMAL(18,2))),
-            MAX(CAST(NULLIF(row_data->>:measureField, '') AS DECIMAL(18,2)))
+            MIN(CASE
+                WHEN row_data->>:measureField ~ '^-?[0-9]+(\\.[0-9]+)?$'
+                    THEN (row_data->>:measureField)::DECIMAL(18,2)
+                ELSE NULL
+            END),
+            MAX(CASE
+                WHEN row_data->>:measureField ~ '^-?[0-9]+(\\.[0-9]+)?$'
+                    THEN (row_data->>:measureField)::DECIMAL(18,2)
+                ELSE NULL
+            END)
         FROM smart_bi_dynamic_data
         WHERE factory_id = :factoryId AND upload_id = :uploadId
         """, nativeQuery = true)
@@ -240,7 +268,11 @@ public interface SmartBiDynamicDataRepository extends JpaRepository<SmartBiDynam
     @Query(value = """
         SELECT
             period,
-            SUM(CAST(NULLIF(row_data->>:measureField, '') AS DECIMAL(18,2))) as total
+            SUM(CASE
+                WHEN row_data->>:measureField ~ '^-?[0-9]+(\\.[0-9]+)?$'
+                    THEN (row_data->>:measureField)::DECIMAL(18,2)
+                ELSE NULL
+            END) as total
         FROM smart_bi_dynamic_data
         WHERE factory_id = :factoryId AND upload_id = :uploadId
           AND period IS NOT NULL
