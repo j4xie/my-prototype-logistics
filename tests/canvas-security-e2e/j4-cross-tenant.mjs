@@ -47,17 +47,17 @@ async function loginFactoryA() {
   try {
     const session = await login(ADMIN_A, '123456');
     if (!session.token) {
-      rc.log('J4-SETUP-A', 'FAIL', 'Factory A login succeeded but returned no token');
+      rc.log('J4-SETUP-A', 'FAIL', '[depth=smoke] Factory A login succeeded but returned no token');
       return null;
     }
     rc.log(
       'J4-SETUP-A',
       'PASS',
-      `Factory A admin logged in — factoryId=${session.factoryId} role=${session.role}`
+      `[depth=smoke] Factory A admin logged in — factoryId=${session.factoryId} role=${session.role}`
     );
     return session;
   } catch (err) {
-    rc.log('J4-SETUP-A', 'FAIL', `Factory A admin login error: ${err.message}`);
+    rc.log('J4-SETUP-A', 'FAIL', `[depth=smoke] Factory A admin login error: ${err.message}`);
     return null;
   }
 }
@@ -66,20 +66,20 @@ async function loginFactoryB() {
   try {
     const session = await login(ADMIN_B, '123456');
     if (!session.token) {
-      rc.log('J4-SETUP-B', 'WARN', 'Factory B login returned no token — cross-tenant tests will be skipped');
+      rc.log('J4-SETUP-B', 'WARN', '[depth=smoke] Factory B login returned no token — cross-tenant tests will be skipped');
       return null;
     }
     rc.log(
       'J4-SETUP-B',
       'PASS',
-      `Factory B admin logged in — factoryId=${session.factoryId} role=${session.role}`
+      `[depth=smoke] Factory B admin logged in — factoryId=${session.factoryId} role=${session.role}`
     );
     return session;
   } catch (err) {
     rc.log(
       'J4-SETUP-B',
       'WARN',
-      `Factory B unavailable (${err.message}) — cross-tenant isolation tests will be skipped`
+      `[depth=smoke] Factory B unavailable (${err.message}) — cross-tenant isolation tests will be skipped`
     );
     return null;
   }
@@ -96,7 +96,7 @@ async function getFactoryARecordId(tokenA) {
       rc.log(
         'J4-SETUP-SO',
         'WARN',
-        `Cannot list Factory A sales orders — HTTP ${result.status}: ${result.message || '(no message)'}. Attacks J4-2, J4-3, J4-4 will be skipped.`
+        `[depth=smoke] Cannot list Factory A sales orders — HTTP ${result.status}: ${result.message || '(no message)'}. Attacks J4-2, J4-3, J4-4 will be skipped.`
       );
       return null;
     }
@@ -118,7 +118,7 @@ async function getFactoryARecordId(tokenA) {
       rc.log(
         'J4-SETUP-SO',
         'WARN',
-        'Factory A has no sales orders — attacks J4-2, J4-3, J4-4 will be skipped'
+        '[depth=smoke] Factory A has no sales orders — attacks J4-2, J4-3, J4-4 will be skipped'
       );
       return null;
     }
@@ -128,18 +128,18 @@ async function getFactoryARecordId(tokenA) {
       rc.log(
         'J4-SETUP-SO',
         'WARN',
-        `Cannot extract record ID from Factory A sales order (keys: ${Object.keys(records[0]).join(', ')}) — attacks J4-2, J4-3, J4-4 will be skipped`
+        `[depth=smoke] Cannot extract record ID from Factory A sales order (keys: ${Object.keys(records[0]).join(', ')}) — attacks J4-2, J4-3, J4-4 will be skipped`
       );
       return null;
     }
 
-    rc.log('J4-SETUP-SO', 'PASS', `Got Factory A sales order ID: ${id}`);
+    rc.log('J4-SETUP-SO', 'PASS', `[depth=smoke] Got Factory A sales order ID: ${id}`);
     return String(id);
   } catch (err) {
     rc.log(
       'J4-SETUP-SO',
       'WARN',
-      `Error fetching Factory A sales orders: ${err.message} — attacks J4-2, J4-3, J4-4 will be skipped`
+      `[depth=smoke] Error fetching Factory A sales orders: ${err.message} — attacks J4-2, J4-3, J4-4 will be skipped`
     );
     return null;
   }
@@ -174,17 +174,17 @@ async function attack1SqlInjectionFieldCode(tokenB) {
       rc.log(
         TEST_ID,
         'PASS',
-        `SQL injection in fieldCode correctly rejected — HTTP ${result.status} message="${result.message}"`
+        `[depth=medium] SQL injection in fieldCode correctly rejected — HTTP ${result.status} message="${result.message}"`
       );
     } else {
       rc.log(
         TEST_ID,
         'FAIL',
-        `SQL injection in fieldCode was NOT rejected — HTTP ${result.status} success=${result.success} message="${result.message}"`
+        `[depth=medium] SQL injection in fieldCode was NOT rejected — HTTP ${result.status} success=${result.success} message="${result.message}"`
       );
     }
   } catch (err) {
-    rc.log(TEST_ID, 'FAIL', `Unexpected error during attack: ${err.message}`);
+    rc.log(TEST_ID, 'FAIL', `[depth=medium] Unexpected error during attack: ${err.message}`);
   }
 }
 
@@ -194,7 +194,7 @@ async function attack1SqlInjectionFieldCode(tokenB) {
 async function attack2SqlInjectionSubTableColumn(tokenB, recordIdA) {
   const TEST_ID = 'J4-2';
   if (!recordIdA) {
-    rc.log(TEST_ID, 'WARN', 'Skipped — no Factory A sales order ID available');
+    rc.log(TEST_ID, 'WARN', '[depth=medium] Skipped — no Factory A sales order ID available');
     return;
   }
 
@@ -213,17 +213,17 @@ async function attack2SqlInjectionSubTableColumn(tokenB, recordIdA) {
       rc.log(
         TEST_ID,
         'PASS',
-        `SQL injection in sub-table column name rejected — HTTP ${result.status} message="${result.message}"`
+        `[depth=medium] SQL injection in sub-table column name rejected — HTTP ${result.status} message="${result.message}"`
       );
     } else {
       rc.log(
         TEST_ID,
         'FAIL',
-        `SQL injection in sub-table column name was NOT rejected — HTTP ${result.status} success=${result.success} message="${result.message}"`
+        `[depth=medium] SQL injection in sub-table column name was NOT rejected — HTTP ${result.status} success=${result.success} message="${result.message}"`
       );
     }
   } catch (err) {
-    rc.log(TEST_ID, 'FAIL', `Unexpected error during attack: ${err.message}`);
+    rc.log(TEST_ID, 'FAIL', `[depth=medium] Unexpected error during attack: ${err.message}`);
   }
 }
 
@@ -233,11 +233,11 @@ async function attack2SqlInjectionSubTableColumn(tokenB, recordIdA) {
 async function attack3CrossTenantSubTableRead(tokenB, recordIdA) {
   const TEST_ID = 'J4-3';
   if (!tokenB) {
-    rc.log(TEST_ID, 'WARN', 'Skipped — Factory B token unavailable');
+    rc.log(TEST_ID, 'WARN', '[depth=medium] Skipped — Factory B token unavailable');
     return;
   }
   if (!recordIdA) {
-    rc.log(TEST_ID, 'WARN', 'Skipped — no Factory A sales order ID available');
+    rc.log(TEST_ID, 'WARN', '[depth=medium] Skipped — no Factory A sales order ID available');
     return;
   }
 
@@ -255,17 +255,17 @@ async function attack3CrossTenantSubTableRead(tokenB, recordIdA) {
       rc.log(
         TEST_ID,
         'PASS',
-        `Cross-tenant sub-table read correctly rejected — HTTP ${result.status} message="${result.message}"`
+        `[depth=medium] Cross-tenant sub-table read correctly rejected — HTTP ${result.status} message="${result.message}"`
       );
     } else {
       rc.log(
         TEST_ID,
         'FAIL',
-        `Cross-tenant sub-table read was NOT blocked — HTTP ${result.status} success=${result.success} message="${result.message}" — Factory B could read Factory A data!`
+        `[depth=medium] Cross-tenant sub-table read was NOT blocked — HTTP ${result.status} success=${result.success} message="${result.message}" — Factory B could read Factory A data!`
       );
     }
   } catch (err) {
-    rc.log(TEST_ID, 'FAIL', `Unexpected error during attack: ${err.message}`);
+    rc.log(TEST_ID, 'FAIL', `[depth=medium] Unexpected error during attack: ${err.message}`);
   }
 }
 
@@ -275,11 +275,11 @@ async function attack3CrossTenantSubTableRead(tokenB, recordIdA) {
 async function attack4CrossTenantCustomFieldsWrite(tokenA, tokenB, recordIdA) {
   const TEST_ID = 'J4-4';
   if (!tokenB) {
-    rc.log(TEST_ID, 'WARN', 'Skipped — Factory B token unavailable');
+    rc.log(TEST_ID, 'WARN', '[depth=deep] Skipped — Factory B token unavailable');
     return;
   }
   if (!recordIdA) {
-    rc.log(TEST_ID, 'WARN', 'Skipped — no Factory A sales order ID available');
+    rc.log(TEST_ID, 'WARN', '[depth=deep] Skipped — no Factory A sales order ID available');
     return;
   }
 
@@ -315,20 +315,20 @@ async function attack4CrossTenantCustomFieldsWrite(tokenA, tokenB, recordIdA) {
 
     if (apiBlockedHard) {
       rc.log(TEST_ID, 'PASS',
-        `Cross-tenant write rejected at JwtAuth layer — HTTP 403 message="${result.message}"`);
+        `[depth=deep] Cross-tenant write rejected at JwtAuth layer — HTTP 403 message="${result.message}"`);
     } else if (apiBlockedSoft) {
       rc.log(TEST_ID, 'PASS',
-        `Cross-tenant write rejected — HTTP ${result.status} (non-403, but still blocked) message="${result.message}"`);
+        `[depth=deep] Cross-tenant write rejected — HTTP ${result.status} (non-403, but still blocked) message="${result.message}"`);
     } else if (dataUnchanged) {
       // Weak fallback: env-dependent; track as WARN instead of PASS so R3+ can tighten
       rc.log(TEST_ID, 'WARN',
-        `HTTP ${result.status} success=true BUT data NOT mutated — likely because Factory B has no "customer_level" field. Weak guarantee; should be HTTP 403.`);
+        `[depth=deep] HTTP ${result.status} success=true BUT data NOT mutated — likely because Factory B has no "customer_level" field. Weak guarantee; should be HTTP 403.`);
     } else {
       rc.log(TEST_ID, 'FAIL',
-        `Cross-tenant write succeeded AND data changed! HTTP ${result.status} before=${JSON.stringify(before.data)} after=${JSON.stringify(after.data)}`);
+        `[depth=deep] Cross-tenant write succeeded AND data changed! HTTP ${result.status} before=${JSON.stringify(before.data)} after=${JSON.stringify(after.data)}`);
     }
   } catch (err) {
-    rc.log(TEST_ID, 'FAIL', `Unexpected error: ${err.message}`);
+    rc.log(TEST_ID, 'FAIL', `[depth=deep] Unexpected error: ${err.message}`);
   }
 }
 
@@ -512,7 +512,7 @@ async function attack11CrossTenantSubTableDelete(tokenB, recordIdA) {
 async function attack5CrossTenantChangeSetApprove(tokenA, tokenB) {
   const TEST_ID = 'J4-5';
   if (!tokenB) {
-    rc.log(TEST_ID, 'WARN', 'Skipped — Factory B token unavailable');
+    rc.log(TEST_ID, 'WARN', '[depth=medium] Skipped — Factory B token unavailable');
     return;
   }
 
@@ -535,7 +535,7 @@ async function attack5CrossTenantChangeSetApprove(tokenA, tokenB) {
       rc.log(
         TEST_ID,
         'WARN',
-        `Could not create Factory A changeset (HTTP ${createResult.status}: ${createResult.message}) — attack step skipped`
+        `[depth=medium] Could not create Factory A changeset (HTTP ${createResult.status}: ${createResult.message}) — attack step skipped`
       );
       return;
     }
@@ -547,12 +547,12 @@ async function attack5CrossTenantChangeSetApprove(tokenA, tokenB) {
       rc.log(
         TEST_ID,
         'WARN',
-        `Factory A changeset created but no ID in response (keys: ${d ? Object.keys(d).join(', ') : 'null'}) — attack step skipped`
+        `[depth=medium] Factory A changeset created but no ID in response (keys: ${d ? Object.keys(d).join(', ') : 'null'}) — attack step skipped`
       );
       return;
     }
   } catch (err) {
-    rc.log(TEST_ID, 'WARN', `Error creating Factory A changeset: ${err.message} — attack step skipped`);
+    rc.log(TEST_ID, 'WARN', `[depth=medium] Error creating Factory A changeset: ${err.message} — attack step skipped`);
     return;
   }
 
@@ -572,17 +572,17 @@ async function attack5CrossTenantChangeSetApprove(tokenA, tokenB) {
       rc.log(
         TEST_ID,
         'PASS',
-        `Cross-tenant changeset approve correctly rejected — HTTP ${approveResult.status} message="${approveResult.message}" changeSetId=${changeSetId}`
+        `[depth=medium] Cross-tenant changeset approve correctly rejected — HTTP ${approveResult.status} message="${approveResult.message}" changeSetId=${changeSetId}`
       );
     } else {
       rc.log(
         TEST_ID,
         'FAIL',
-        `Cross-tenant changeset approve was NOT blocked — HTTP ${approveResult.status} success=${approveResult.success} message="${approveResult.message}" — Factory B approved Factory A changeset!`
+        `[depth=medium] Cross-tenant changeset approve was NOT blocked — HTTP ${approveResult.status} success=${approveResult.success} message="${approveResult.message}" — Factory B approved Factory A changeset!`
       );
     }
   } catch (err) {
-    rc.log(TEST_ID, 'FAIL', `Unexpected error during approve attack: ${err.message}`);
+    rc.log(TEST_ID, 'FAIL', `[depth=medium] Unexpected error during approve attack: ${err.message}`);
   }
 }
 
@@ -606,17 +606,17 @@ async function attack6CronDdos(tokenB) {
       rc.log(
         TEST_ID,
         'PASS',
-        `Cron DDoS expression "*/5 * * * * ?" correctly rejected — HTTP ${result.status} message="${result.message}"`
+        `[depth=medium] Cron DDoS expression "*/5 * * * * ?" correctly rejected — HTTP ${result.status} message="${result.message}"`
       );
     } else {
       rc.log(
         TEST_ID,
         'FAIL',
-        `Cron DDoS expression "*/5 * * * * ?" was NOT rejected — HTTP ${result.status} success=${result.success} message="${result.message}"`
+        `[depth=medium] Cron DDoS expression "*/5 * * * * ?" was NOT rejected — HTTP ${result.status} success=${result.success} message="${result.message}"`
       );
     }
   } catch (err) {
-    rc.log(TEST_ID, 'FAIL', `Unexpected error during attack: ${err.message}`);
+    rc.log(TEST_ID, 'FAIL', `[depth=medium] Unexpected error during attack: ${err.message}`);
   }
 }
 
@@ -640,17 +640,17 @@ async function attack6bCronCommBypass(tokenB) {
       rc.log(
         TEST_ID,
         'PASS',
-        `Cron comma-bypass expression "0,30 * * * * ?" correctly rejected — HTTP ${result.status} message="${result.message}"`
+        `[depth=medium] Cron comma-bypass expression "0,30 * * * * ?" correctly rejected — HTTP ${result.status} message="${result.message}"`
       );
     } else {
       rc.log(
         TEST_ID,
         'FAIL',
-        `Cron comma-bypass expression "0,30 * * * * ?" was NOT rejected — HTTP ${result.status} success=${result.success} message="${result.message}"`
+        `[depth=medium] Cron comma-bypass expression "0,30 * * * * ?" was NOT rejected — HTTP ${result.status} success=${result.success} message="${result.message}"`
       );
     }
   } catch (err) {
-    rc.log(TEST_ID, 'FAIL', `Unexpected error during attack: ${err.message}`);
+    rc.log(TEST_ID, 'FAIL', `[depth=medium] Unexpected error during attack: ${err.message}`);
   }
 }
 
@@ -666,7 +666,7 @@ async function attack6bCronCommBypass(tokenB) {
 async function attack7CrossTenantCanvasAI(tokenB) {
   const TEST_ID = 'J4-7';
   if (!tokenB) {
-    rc.log(TEST_ID, 'WARN', 'Skipped — Factory B token unavailable');
+    rc.log(TEST_ID, 'WARN', '[depth=medium] Skipped — Factory B token unavailable');
     return;
   }
 
@@ -680,13 +680,13 @@ async function attack7CrossTenantCanvasAI(tokenB) {
     const blocked = result.status === 403 || (result.status >= 400 && !result.success);
     if (blocked) {
       rc.log(TEST_ID, 'PASS',
-        `Factory B admin → Factory A canvas/ai/chat correctly rejected — HTTP ${result.status} message="${result.message}"`);
+        `[depth=medium] Factory B admin → Factory A canvas/ai/chat correctly rejected — HTTP ${result.status} message="${result.message}"`);
     } else {
       rc.log(TEST_ID, 'FAIL',
-        `Factory B admin accessed Factory A canvas/ai/chat! HTTP ${result.status} (tenant isolation bypass)`);
+        `[depth=medium] Factory B admin accessed Factory A canvas/ai/chat! HTTP ${result.status} (tenant isolation bypass)`);
     }
   } catch (err) {
-    rc.log(TEST_ID, 'FAIL', `Unexpected error: ${err.message}`);
+    rc.log(TEST_ID, 'FAIL', `[depth=medium] Unexpected error: ${err.message}`);
   }
 }
 
@@ -696,7 +696,7 @@ async function attack7CrossTenantCanvasAI(tokenB) {
 async function attack8CrossTenantScheduler(tokenB) {
   const TEST_ID = 'J4-8';
   if (!tokenB) {
-    rc.log(TEST_ID, 'WARN', 'Skipped — Factory B token unavailable');
+    rc.log(TEST_ID, 'WARN', '[depth=medium] Skipped — Factory B token unavailable');
     return;
   }
 
@@ -714,13 +714,13 @@ async function attack8CrossTenantScheduler(tokenB) {
     const blocked = result.status === 403 || (result.status >= 400 && !result.success);
     if (blocked) {
       rc.log(TEST_ID, 'PASS',
-        `Factory B admin → Factory A scheduler write correctly rejected — HTTP ${result.status} message="${result.message}"`);
+        `[depth=medium] Factory B admin → Factory A scheduler write correctly rejected — HTTP ${result.status} message="${result.message}"`);
     } else {
       rc.log(TEST_ID, 'FAIL',
-        `Factory B admin wrote Factory A scheduler! HTTP ${result.status} (tenant isolation bypass)`);
+        `[depth=medium] Factory B admin wrote Factory A scheduler! HTTP ${result.status} (tenant isolation bypass)`);
     }
   } catch (err) {
-    rc.log(TEST_ID, 'FAIL', `Unexpected error: ${err.message}`);
+    rc.log(TEST_ID, 'FAIL', `[depth=medium] Unexpected error: ${err.message}`);
   }
 }
 
@@ -733,17 +733,17 @@ async function main() {
   // --- Setup ---
   const sessionA = await loginFactoryA();
   if (!sessionA) {
-    rc.log('J4-1', 'FAIL', 'Skipped — Factory A token unavailable (required for all tests)');
-    rc.log('J4-2', 'FAIL', 'Skipped — Factory A token unavailable');
-    rc.log('J4-3', 'FAIL', 'Skipped — Factory A token unavailable');
-    rc.log('J4-4', 'FAIL', 'Skipped — Factory A token unavailable');
-    rc.log('J4-4b', 'FAIL', 'Skipped — Factory A token unavailable');
-    rc.log('J4-5', 'FAIL', 'Skipped — Factory A token unavailable');
-    rc.log('J4-6', 'FAIL', 'Skipped — Factory A token unavailable');
-    rc.log('J4-6b', 'FAIL', 'Skipped — Factory A token unavailable');
-    rc.log('J4-9', 'FAIL', 'Skipped — Factory A token unavailable');
-    rc.log('J4-10', 'FAIL', 'Skipped — Factory A token unavailable');
-    rc.log('J4-11', 'FAIL', 'Skipped — Factory A token unavailable');
+    rc.log('J4-1', 'FAIL', '[depth=medium] Skipped — Factory A token unavailable (required for all tests)');
+    rc.log('J4-2', 'FAIL', '[depth=medium] Skipped — Factory A token unavailable');
+    rc.log('J4-3', 'FAIL', '[depth=medium] Skipped — Factory A token unavailable');
+    rc.log('J4-4', 'FAIL', '[depth=deep] Skipped — Factory A token unavailable');
+    rc.log('J4-4b', 'FAIL', '[depth=medium] Skipped — Factory A token unavailable');
+    rc.log('J4-5', 'FAIL', '[depth=medium] Skipped — Factory A token unavailable');
+    rc.log('J4-6', 'FAIL', '[depth=medium] Skipped — Factory A token unavailable');
+    rc.log('J4-6b', 'FAIL', '[depth=medium] Skipped — Factory A token unavailable');
+    rc.log('J4-9', 'FAIL', '[depth=deep] Skipped — Factory A token unavailable');
+    rc.log('J4-10', 'FAIL', '[depth=deep] Skipped — Factory A token unavailable');
+    rc.log('J4-11', 'FAIL', '[depth=deep] Skipped — Factory A token unavailable');
     const summary = rc.save();
     process.exit(summary.fail > 0 ? 1 : 0);
     return;

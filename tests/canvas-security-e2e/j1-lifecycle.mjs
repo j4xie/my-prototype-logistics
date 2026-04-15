@@ -47,16 +47,16 @@ async function phaseA2_applyTemplate(token) {
       token
     );
     if (res.status === 200) {
-      rc.log('J1-A2', 'PASS', `Template FOOD_PROCESSING applied — HTTP ${res.status}`);
+      rc.log('J1-A2', 'PASS', `[depth=medium] Template FOOD_PROCESSING applied — HTTP ${res.status}`);
     } else {
       rc.log(
         'J1-A2',
         'WARN',
-        `apply-template returned HTTP ${res.status}: ${res.message || '(no message)'} — continuing`
+        `[depth=medium] apply-template returned HTTP ${res.status}: ${res.message || '(no message)'} — continuing`
       );
     }
   } catch (err) {
-    rc.log('J1-A2', 'WARN', `apply-template error: ${err.message} — continuing`);
+    rc.log('J1-A2', 'WARN', `[depth=medium] apply-template error: ${err.message} — continuing`);
   }
 }
 
@@ -137,19 +137,19 @@ async function phaseA3_createDynamicFields(token) {
         rc.log(
           'J1-A3',
           'PASS',
-          `Created field ${def.fieldCode} (${def.fieldType}) — HTTP ${res.status}`
+          `[depth=medium] Created field ${def.fieldCode} (${def.fieldType}) — HTTP ${res.status}`
         );
         created.push(def.fieldCode);
       } else {
         rc.log(
           'J1-A3',
           'FAIL',
-          `Failed to create ${def.fieldCode} (${def.fieldType}) — HTTP ${res.status}: ${res.message || '(no message)'}`
+          `[depth=medium] Failed to create ${def.fieldCode} (${def.fieldType}) — HTTP ${res.status}: ${res.message || '(no message)'}`
         );
         failCount++;
       }
     } catch (err) {
-      rc.log('J1-A3', 'FAIL', `Error creating ${def.fieldCode}: ${err.message}`);
+      rc.log('J1-A3', 'FAIL', `[depth=medium] Error creating ${def.fieldCode}: ${err.message}`);
       failCount++;
     }
   }
@@ -170,17 +170,17 @@ async function phaseA3_createDynamicFields(token) {
       rc.log(
         'J1-A3-verify',
         'PASS',
-        `PENDING_DDL fields with suffix: ${pendingWithSuffix.length} (expected ≥${expectedPending})`
+        `[depth=deep] PENDING_DDL fields with suffix: ${pendingWithSuffix.length} (expected ≥${expectedPending})`
       );
     } else {
       rc.log(
         'J1-A3-verify',
         'FAIL',
-        `PENDING_DDL fields with suffix: ${pendingWithSuffix.length} (expected ${expectedPending}) — some creates may have failed`
+        `[depth=deep] PENDING_DDL fields with suffix: ${pendingWithSuffix.length} (expected ${expectedPending}) — some creates may have failed`
       );
     }
   } catch (err) {
-    rc.log('J1-A3-verify', 'FAIL', `GET dynamic-fields verification error: ${err.message}`);
+    rc.log('J1-A3-verify', 'FAIL', `[depth=deep] GET dynamic-fields verification error: ${err.message}`);
   }
 
   return created;
@@ -205,16 +205,16 @@ async function phaseA4_createValidationRule(token) {
     );
 
     if (res.status === 200 || res.status === 201) {
-      rc.log('J1-A4', 'PASS', `Validation rule ${ruleCode} created — HTTP ${res.status}`);
+      rc.log('J1-A4', 'PASS', `[depth=medium] Validation rule ${ruleCode} created — HTTP ${res.status}`);
     } else {
       rc.log(
         'J1-A4',
         'FAIL',
-        `PUT validation-rules/${ruleCode} returned HTTP ${res.status}: ${res.message || '(no message)'}`
+        `[depth=medium] PUT validation-rules/${ruleCode} returned HTTP ${res.status}: ${res.message || '(no message)'}`
       );
     }
   } catch (err) {
-    rc.log('J1-A4', 'FAIL', `Error creating validation rule: ${err.message}`);
+    rc.log('J1-A4', 'FAIL', `[depth=medium] Error creating validation rule: ${err.message}`);
   }
 }
 
@@ -242,24 +242,24 @@ async function phaseA5_setVisibleWhen(token) {
         rc.log(
           'J1-A5',
           'PASS',
-          `visibleWhen set on ${fieldCode} — persisted correctly`
+          `[depth=deep] visibleWhen set on ${fieldCode} — persisted correctly`
         );
       } else {
         rc.log(
           'J1-A5',
           'WARN',
-          `HTTP 200 but visibleWhen not confirmed in response — got: ${JSON.stringify(saved?.visibleWhen)}`
+          `[depth=deep] HTTP 200 but visibleWhen not confirmed in response — got: ${JSON.stringify(saved?.visibleWhen)}`
         );
       }
     } else {
       rc.log(
         'J1-A5',
         'FAIL',
-        `PUT dynamic-fields/${fieldCode} returned HTTP ${res.status}: ${res.message || '(no message)'}`
+        `[depth=deep] PUT dynamic-fields/${fieldCode} returned HTTP ${res.status}: ${res.message || '(no message)'}`
       );
     }
   } catch (err) {
-    rc.log('J1-A5', 'FAIL', `Error setting visibleWhen on ${fieldCode}: ${err.message}`);
+    rc.log('J1-A5', 'FAIL', `[depth=deep] Error setting visibleWhen on ${fieldCode}: ${err.message}`);
   }
 }
 
@@ -279,18 +279,18 @@ async function phaseB1_publish(token) {
     );
 
     if (res.status === 200) {
-      rc.log('J1-B1', 'PASS', `Config published — HTTP ${res.status}`);
+      rc.log('J1-B1', 'PASS', `[depth=medium] Config published — HTTP ${res.status}`);
       return true;
     } else {
       rc.log(
         'J1-B1',
         'FAIL',
-        `config/publish returned HTTP ${res.status}: ${res.message || '(no message)'}`
+        `[depth=medium] config/publish returned HTTP ${res.status}: ${res.message || '(no message)'}`
       );
       return false;
     }
   } catch (err) {
-    rc.log('J1-B1', 'FAIL', `Error publishing config: ${err.message}`);
+    rc.log('J1-B1', 'FAIL', `[depth=medium] Error publishing config: ${err.message}`);
     return false;
   }
 }
@@ -307,17 +307,17 @@ async function phaseB0_auditCheck(token) {
       // The publish we just did should have a non-null publishedBy
       const pubBy = res.data?.publishedBy ?? res.json?.publishedBy;
       if (pubBy && pubBy !== 0) {
-        rc.log('J1-B0', 'PASS', `publishedBy=${pubBy} (non-zero, Fix 7 audit OK)`);
+        rc.log('J1-B0', 'PASS', `[depth=medium] publishedBy=${pubBy} (non-zero, Fix 7 audit OK)`);
       } else if (pubBy === 0 || pubBy === null) {
-        rc.log('J1-B0', 'FAIL', `publishedBy=${pubBy} — Fix 7 operatorId not recorded`);
+        rc.log('J1-B0', 'FAIL', `[depth=medium] publishedBy=${pubBy} — Fix 7 operatorId not recorded`);
       } else {
-        rc.log('J1-B0', 'WARN', `publishedBy field not in response — cannot verify Fix 7`);
+        rc.log('J1-B0', 'WARN', `[depth=medium] publishedBy field not in response — cannot verify Fix 7`);
       }
     } else {
-      rc.log('J1-B0', 'WARN', `current-version has no configVersion — cannot verify audit`);
+      rc.log('J1-B0', 'WARN', `[depth=medium] current-version has no configVersion — cannot verify audit`);
     }
   } catch (err) {
-    rc.log('J1-B0', 'FAIL', `Audit check error: ${err.message}`);
+    rc.log('J1-B0', 'FAIL', `[depth=medium] Audit check error: ${err.message}`);
   }
 }
 
@@ -332,7 +332,7 @@ async function phaseB1b_ddlLog(token) {
       rc.log(
         'J1-B1b',
         'FAIL',
-        `ddl-log returned HTTP ${res.status}: ${res.message || '(no message)'}`
+        `[depth=deep] ddl-log returned HTTP ${res.status}: ${res.message || '(no message)'}`
       );
       return;
     }
@@ -359,17 +359,17 @@ async function phaseB1b_ddlLog(token) {
       rc.log(
         'J1-B1b',
         'PASS',
-        `DDL log contains ${executedWithSuffix.length} EXECUTED entries with suffix (expected ≥6)`
+        `[depth=deep] DDL log contains ${executedWithSuffix.length} EXECUTED entries with suffix (expected ≥6)`
       );
     } else {
       rc.log(
         'J1-B1b',
         'FAIL',
-        `DDL log only has ${executedWithSuffix.length} EXECUTED entries with suffix (expected ≥6) — total entries checked: ${entries.length}`
+        `[depth=deep] DDL log only has ${executedWithSuffix.length} EXECUTED entries with suffix (expected ≥6) — total entries checked: ${entries.length}`
       );
     }
   } catch (err) {
-    rc.log('J1-B1b', 'FAIL', `Error checking DDL log: ${err.message}`);
+    rc.log('J1-B1b', 'FAIL', `[depth=deep] Error checking DDL log: ${err.message}`);
   }
 }
 
@@ -387,7 +387,7 @@ async function phaseB2_activeFields(token) {
       rc.log(
         'J1-B2',
         'FAIL',
-        `dynamic-fields returned HTTP ${res.status}: ${res.message || '(no message)'}`
+        `[depth=deep] dynamic-fields returned HTTP ${res.status}: ${res.message || '(no message)'}`
       );
       return;
     }
@@ -401,17 +401,17 @@ async function phaseB2_activeFields(token) {
       rc.log(
         'J1-B2',
         'PASS',
-        `ACTIVE fields with suffix after publish: ${activeWithSuffix.length} (expected 7)`
+        `[depth=deep] ACTIVE fields with suffix after publish: ${activeWithSuffix.length} (expected 7)`
       );
     } else {
       rc.log(
         'J1-B2',
         'FAIL',
-        `ACTIVE fields with suffix after publish: ${activeWithSuffix.length} (expected 7)`
+        `[depth=deep] ACTIVE fields with suffix after publish: ${activeWithSuffix.length} (expected 7)`
       );
     }
   } catch (err) {
-    rc.log('J1-B2', 'FAIL', `Error checking ACTIVE fields: ${err.message}`);
+    rc.log('J1-B2', 'FAIL', `[depth=deep] Error checking ACTIVE fields: ${err.message}`);
   }
 }
 
@@ -429,7 +429,7 @@ async function phaseB3_effectiveConfig(token) {
       rc.log(
         'J1-B3',
         'FAIL',
-        `effective config returned HTTP ${res.status}: ${res.message || '(no message)'}`
+        `[depth=deep] effective config returned HTTP ${res.status}: ${res.message || '(no message)'}`
       );
       return;
     }
@@ -443,17 +443,17 @@ async function phaseB3_effectiveConfig(token) {
       rc.log(
         'J1-B3',
         'PASS',
-        `Effective config contains ≥7 references to suffix fields (found ${suffixMatches} occurrences)`
+        `[depth=deep] Effective config contains ≥7 references to suffix fields (found ${suffixMatches} occurrences)`
       );
     } else {
       rc.log(
         'J1-B3',
         'FAIL',
-        `Effective config contains only ${suffixMatches} references to suffix fields (expected ≥7)`
+        `[depth=deep] Effective config contains only ${suffixMatches} references to suffix fields (expected ≥7)`
       );
     }
   } catch (err) {
-    rc.log('J1-B3', 'FAIL', `Error checking effective config: ${err.message}`);
+    rc.log('J1-B3', 'FAIL', `[depth=deep] Error checking effective config: ${err.message}`);
   }
 }
 
@@ -503,14 +503,14 @@ async function phaseC_moduleToggle(token) {
     );
     if (disableRes.status === 200) {
       rc.log('J1-C1-disable', 'PASS',
-        `PATCH toggle disable ${TARGET_MODULE} — HTTP 200`);
+        `[depth=medium] PATCH toggle disable ${TARGET_MODULE} — HTTP 200`);
     } else {
       rc.log('J1-C1-disable', 'FAIL',
-        `PATCH toggle disable returned HTTP ${disableRes.status}: ${disableRes.message || '(no msg)'}`);
+        `[depth=medium] PATCH toggle disable returned HTTP ${disableRes.status}: ${disableRes.message || '(no msg)'}`);
       return;
     }
   } catch (err) {
-    rc.log('J1-C1-disable', 'FAIL', `Disable request error: ${err.message}`);
+    rc.log('J1-C1-disable', 'FAIL', `[depth=medium] Disable request error: ${err.message}`);
     return;
   }
 
@@ -519,12 +519,12 @@ async function phaseC_moduleToggle(token) {
     const pub = await apiPost(`${F}/config/publish?summary=J1-C+module+toggle+test`, null, token);
     if (pub.status !== 200) {
       rc.log('J1-C2-publish', 'WARN',
-        `Publish after disable returned HTTP ${pub.status}: ${pub.message || '(no msg)'} — toggle may not be active yet`);
+        `[depth=medium] Publish after disable returned HTTP ${pub.status}: ${pub.message || '(no msg)'} — toggle may not be active yet`);
     } else {
-      rc.log('J1-C2-publish', 'PASS', `Toggle change published — HTTP 200`);
+      rc.log('J1-C2-publish', 'PASS', `[depth=medium] Toggle change published — HTTP 200`);
     }
   } catch (err) {
-    rc.log('J1-C2-publish', 'WARN', `Publish error: ${err.message}`);
+    rc.log('J1-C2-publish', 'WARN', `[depth=medium] Publish error: ${err.message}`);
   }
 
   // C4: Verify effective config reflects disabled state
@@ -533,13 +533,13 @@ async function phaseC_moduleToggle(token) {
     const enabledAfter = verifyRes.data?.enabled;
     if (verifyRes.status === 200 && enabledAfter === false) {
       rc.log('J1-C3-verify-disabled', 'PASS',
-        `effective config enabled=false after toggle`);
+        `[depth=deep] effective config enabled=false after toggle`);
     } else {
       rc.log('J1-C3-verify-disabled', 'FAIL',
-        `Expected enabled=false, got ${enabledAfter} (HTTP ${verifyRes.status})`);
+        `[depth=deep] Expected enabled=false, got ${enabledAfter} (HTTP ${verifyRes.status})`);
     }
   } catch (err) {
-    rc.log('J1-C3-verify-disabled', 'FAIL', `Verify disable error: ${err.message}`);
+    rc.log('J1-C3-verify-disabled', 'FAIL', `[depth=deep] Verify disable error: ${err.message}`);
   }
 
   // C4: Re-enable to restore original state (endpoint is @PatchMapping)
@@ -550,20 +550,20 @@ async function phaseC_moduleToggle(token) {
     );
     if (enableRes.status === 200) {
       rc.log('J1-C4-restore', 'PASS',
-        `PATCH toggle restore ${TARGET_MODULE} to enabled=${originalEnabled} — HTTP 200`);
+        `[depth=medium] PATCH toggle restore ${TARGET_MODULE} to enabled=${originalEnabled} — HTTP 200`);
       restored = true;
     } else {
       rc.log('J1-C4-restore', 'FAIL',
-        `PATCH toggle restore returned HTTP ${enableRes.status}: ${enableRes.message || '(no msg)'}`);
+        `[depth=medium] PATCH toggle restore returned HTTP ${enableRes.status}: ${enableRes.message || '(no msg)'}`);
     }
     // Publish the restore (check result — leaving module in DRAFT-disabled pollutes later runs)
     const restorePub = await apiPost(`${F}/config/publish?summary=J1-C+toggle+restore`, null, token);
     if (restorePub.status !== 200 && restored) {
       rc.log('J1-C4-restore', 'WARN',
-        `Restore PATCH was 200 but restore publish returned HTTP ${restorePub.status}: ${restorePub.message || '(no msg)'} — module may remain in DRAFT state`);
+        `[depth=medium] Restore PATCH was 200 but restore publish returned HTTP ${restorePub.status}: ${restorePub.message || '(no msg)'} — module may remain in DRAFT state`);
     }
   } catch (err) {
-    rc.log('J1-C4-restore', 'FAIL', `Restore request error: ${err.message}`);
+    rc.log('J1-C4-restore', 'FAIL', `[depth=medium] Restore request error: ${err.message}`);
     restored = false;
   }
 
@@ -574,13 +574,13 @@ async function phaseC_moduleToggle(token) {
       const enabledAfter = verifyRes.data?.enabled;
       if (verifyRes.status === 200 && enabledAfter === originalEnabled) {
         rc.log('J1-C5-verify-restored', 'PASS',
-          `effective config enabled=${originalEnabled} confirmed after restore`);
+          `[depth=deep] effective config enabled=${originalEnabled} confirmed after restore`);
       } else {
         rc.log('J1-C5-verify-restored', 'FAIL',
-          `Expected enabled=${originalEnabled}, got ${enabledAfter} (HTTP ${verifyRes.status})`);
+          `[depth=deep] Expected enabled=${originalEnabled}, got ${enabledAfter} (HTTP ${verifyRes.status})`);
       }
     } catch (err) {
-      rc.log('J1-C5-verify-restored', 'FAIL', `Verify restore error: ${err.message}`);
+      rc.log('J1-C5-verify-restored', 'FAIL', `[depth=deep] Verify restore error: ${err.message}`);
     }
   }
 }
@@ -594,7 +594,7 @@ async function phaseD_rollback(token) {
       rc.log(
         'J1-D1',
         'FAIL',
-        `current-version returned HTTP ${res.status}: ${res.message || '(no message)'}`
+        `[depth=medium] current-version returned HTTP ${res.status}: ${res.message || '(no message)'}`
       );
       return;
     }
@@ -622,14 +622,14 @@ async function phaseD_rollback(token) {
       rc.log(
         'J1-D1',
         'WARN',
-        `current-version HTTP 200 but could not parse version from: ${JSON.stringify(d)} — skipping rollback phases`
+        `[depth=medium] current-version HTTP 200 but could not parse version from: ${JSON.stringify(d)} — skipping rollback phases`
       );
       return;
     }
 
-    rc.log('J1-D1', 'PASS', `currentVersion = ${currentVersion}`);
+    rc.log('J1-D1', 'PASS', `[depth=medium] currentVersion = ${currentVersion}`);
   } catch (err) {
-    rc.log('J1-D1', 'FAIL', `Error fetching current-version: ${err.message}`);
+    rc.log('J1-D1', 'FAIL', `[depth=medium] Error fetching current-version: ${err.message}`);
     return;
   }
 
@@ -638,7 +638,7 @@ async function phaseD_rollback(token) {
     rc.log(
       'J1-D2',
       'WARN',
-      `currentVersion=${currentVersion} — no previous version to roll back to, skipping D2/D3`
+      `[depth=medium] currentVersion=${currentVersion} — no previous version to roll back to, skipping D2/D3`
     );
     return;
   }
@@ -651,18 +651,18 @@ async function phaseD_rollback(token) {
       rc.log(
         'J1-D2',
         'PASS',
-        `Rolled back to version ${rollbackTarget} — HTTP ${rbRes.status}`
+        `[depth=medium] Rolled back to version ${rollbackTarget} — HTTP ${rbRes.status}`
       );
     } else {
       rc.log(
         'J1-D2',
         'FAIL',
-        `config/rollback/${rollbackTarget} returned HTTP ${rbRes.status}: ${rbRes.message || '(no message)'}`
+        `[depth=medium] config/rollback/${rollbackTarget} returned HTTP ${rbRes.status}: ${rbRes.message || '(no message)'}`
       );
       return;
     }
   } catch (err) {
-    rc.log('J1-D2', 'FAIL', `Error during rollback to v${rollbackTarget}: ${err.message}`);
+    rc.log('J1-D2', 'FAIL', `[depth=medium] Error during rollback to v${rollbackTarget}: ${err.message}`);
     return;
   }
 
@@ -674,16 +674,16 @@ async function phaseD_rollback(token) {
       token
     );
     if (pubRbRes.status === 200) {
-      rc.log('J1-D2-pub', 'PASS', `Published rollback to v${rollbackTarget} — HTTP ${pubRbRes.status}`);
+      rc.log('J1-D2-pub', 'PASS', `[depth=medium] Published rollback to v${rollbackTarget} — HTTP ${pubRbRes.status}`);
     } else {
       rc.log(
         'J1-D2-pub',
         'FAIL',
-        `Publish after rollback returned HTTP ${pubRbRes.status}: ${pubRbRes.message || '(no message)'}`
+        `[depth=medium] Publish after rollback returned HTTP ${pubRbRes.status}: ${pubRbRes.message || '(no message)'}`
       );
     }
   } catch (err) {
-    rc.log('J1-D2-pub', 'FAIL', `Error publishing rollback: ${err.message}`);
+    rc.log('J1-D2-pub', 'FAIL', `[depth=medium] Error publishing rollback: ${err.message}`);
   }
 
   // D3: Roll back to currentVersion (restore) and publish
@@ -693,18 +693,18 @@ async function phaseD_rollback(token) {
       rc.log(
         'J1-D3',
         'PASS',
-        `Restored to version ${currentVersion} — HTTP ${restoreRes.status}`
+        `[depth=medium] Restored to version ${currentVersion} — HTTP ${restoreRes.status}`
       );
     } else {
       rc.log(
         'J1-D3',
         'FAIL',
-        `config/rollback/${currentVersion} (restore) returned HTTP ${restoreRes.status}: ${restoreRes.message || '(no message)'}`
+        `[depth=medium] config/rollback/${currentVersion} (restore) returned HTTP ${restoreRes.status}: ${restoreRes.message || '(no message)'}`
       );
       return;
     }
   } catch (err) {
-    rc.log('J1-D3', 'FAIL', `Error restoring to v${currentVersion}: ${err.message}`);
+    rc.log('J1-D3', 'FAIL', `[depth=medium] Error restoring to v${currentVersion}: ${err.message}`);
     return;
   }
 
@@ -719,17 +719,17 @@ async function phaseD_rollback(token) {
       rc.log(
         'J1-D3-pub',
         'PASS',
-        `Published restore to v${currentVersion} — HTTP ${pubRestoreRes.status}`
+        `[depth=medium] Published restore to v${currentVersion} — HTTP ${pubRestoreRes.status}`
       );
     } else {
       rc.log(
         'J1-D3-pub',
         'FAIL',
-        `Publish after restore returned HTTP ${pubRestoreRes.status}: ${pubRestoreRes.message || '(no message)'}`
+        `[depth=medium] Publish after restore returned HTTP ${pubRestoreRes.status}: ${pubRestoreRes.message || '(no message)'}`
       );
     }
   } catch (err) {
-    rc.log('J1-D3-pub', 'FAIL', `Error publishing restore: ${err.message}`);
+    rc.log('J1-D3-pub', 'FAIL', `[depth=medium] Error publishing restore: ${err.message}`);
   }
 }
 
@@ -1432,7 +1432,7 @@ async function main() {
   try {
     const session = await login(ADMIN_A, '123456');
     if (!session.token) {
-      rc.log('J1-login', 'FAIL', 'Login succeeded but no token returned');
+      rc.log('J1-login', 'FAIL', '[depth=smoke] Login succeeded but no token returned');
       rc.save();
       process.exit(1);
     }
@@ -1440,10 +1440,10 @@ async function main() {
     rc.log(
       'J1-login',
       'PASS',
-      `Logged in — factoryId=${session.factoryId} role=${session.role}`
+      `[depth=smoke] Logged in — factoryId=${session.factoryId} role=${session.role}`
     );
   } catch (err) {
-    rc.log('J1-login', 'FAIL', `Login error: ${err.message}`);
+    rc.log('J1-login', 'FAIL', `[depth=smoke] Login error: ${err.message}`);
     rc.save();
     process.exit(1);
   }
@@ -1464,9 +1464,9 @@ async function main() {
     await phaseB2_activeFields(token);
     await phaseB3_effectiveConfig(token);
   } else {
-    rc.log('J1-B1b', 'FAIL', 'Skipped — publish failed');
-    rc.log('J1-B2', 'FAIL', 'Skipped — publish failed');
-    rc.log('J1-B3', 'FAIL', 'Skipped — publish failed');
+    rc.log('J1-B1b', 'FAIL', '[depth=deep] Skipped — publish failed');
+    rc.log('J1-B2', 'FAIL', '[depth=deep] Skipped — publish failed');
+    rc.log('J1-B3', 'FAIL', '[depth=deep] Skipped — publish failed');
   }
 
   // Phase C — Module toggle E2E (R1 addition: close Canvas 模块启停 0% gap)

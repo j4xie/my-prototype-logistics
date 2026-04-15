@@ -48,7 +48,7 @@ async function checkWorkflowTab(token) {
       rc.log(
         'J2-1',
         'FAIL',
-        `effective config returned HTTP ${result.status}: ${result.message || '(no message)'}`
+        `[depth=smoke] effective config returned HTTP ${result.status}: ${result.message || '(no message)'}`
       );
       return null;
     }
@@ -72,7 +72,7 @@ async function checkWorkflowTab(token) {
       rc.log(
         'J2-1',
         'WARN',
-        `effective config HTTP 200 but workflowStates not found — top-level keys: [${keys}]`
+        `[depth=smoke] effective config HTTP 200 but workflowStates not found — top-level keys: [${keys}]`
       );
       return config;
     }
@@ -81,19 +81,19 @@ async function checkWorkflowTab(token) {
       rc.log(
         'J2-1',
         'PASS',
-        `workflowStates array has ${workflowStates.length} state(s)`
+        `[depth=smoke] workflowStates array has ${workflowStates.length} state(s)`
       );
     } else {
       rc.log(
         'J2-1',
         'WARN',
-        'workflowStates array is present but empty — module may have no workflow configured'
+        '[depth=smoke] workflowStates array is present but empty — module may have no workflow configured'
       );
     }
 
     return config;
   } catch (err) {
-    rc.log('J2-1', 'FAIL', `effective config request error: ${err.message}`);
+    rc.log('J2-1', 'FAIL', `[depth=smoke] effective config request error: ${err.message}`);
     return null;
   }
 }
@@ -112,7 +112,7 @@ async function checkTriggerChainsTab(token) {
       rc.log(
         'J2-2',
         'FAIL',
-        `trigger-chains returned HTTP ${result.status}: ${result.message || '(no message)'}`
+        `[depth=smoke] trigger-chains returned HTTP ${result.status}: ${result.message || '(no message)'}`
       );
       return false;
     }
@@ -125,14 +125,14 @@ async function checkTriggerChainsTab(token) {
         rc.log(
           'J2-2',
           'PASS',
-          `trigger-chains HTTP 200 — paginated array with ${result.data.content.length} item(s)`
+          `[depth=smoke] trigger-chains HTTP 200 — paginated array with ${result.data.content.length} item(s)`
         );
         return true;
       }
       rc.log(
         'J2-2',
         'WARN',
-        `trigger-chains HTTP 200 but data is not an array — shape: ${result.data ? typeof result.data : 'null'}`
+        `[depth=smoke] trigger-chains HTTP 200 but data is not an array — shape: ${result.data ? typeof result.data : 'null'}`
       );
       return true; // endpoint is live; shape variance is non-critical
     }
@@ -140,11 +140,11 @@ async function checkTriggerChainsTab(token) {
     rc.log(
       'J2-2',
       'PASS',
-      `trigger-chains HTTP 200 — array with ${result.data.length} chain(s)`
+      `[depth=smoke] trigger-chains HTTP 200 — array with ${result.data.length} chain(s)`
     );
     return true;
   } catch (err) {
-    rc.log('J2-2', 'FAIL', `trigger-chains request error: ${err.message}`);
+    rc.log('J2-2', 'FAIL', `[depth=smoke] trigger-chains request error: ${err.message}`);
     return false;
   }
 }
@@ -163,7 +163,7 @@ async function checkValidationRulesTab(token) {
       rc.log(
         'J2-3',
         'FAIL',
-        `validation-rules returned HTTP ${result.status}: ${result.message || '(no message)'}`
+        `[depth=smoke] validation-rules returned HTTP ${result.status}: ${result.message || '(no message)'}`
       );
       return false;
     }
@@ -176,19 +176,19 @@ async function checkValidationRulesTab(token) {
       rc.log(
         'J2-3',
         'PASS',
-        `validation-rules HTTP 200 — ${count} rule(s) for sales_order`
+        `[depth=smoke] validation-rules HTTP 200 — ${count} rule(s) for sales_order`
       );
     } else {
       rc.log(
         'J2-3',
         'WARN',
-        `validation-rules HTTP 200 but data shape unknown — type: ${typeof result.data}`
+        `[depth=smoke] validation-rules HTTP 200 but data shape unknown — type: ${typeof result.data}`
       );
     }
 
     return true;
   } catch (err) {
-    rc.log('J2-3', 'FAIL', `validation-rules request error: ${err.message}`);
+    rc.log('J2-3', 'FAIL', `[depth=smoke] validation-rules request error: ${err.message}`);
     return false;
   }
 }
@@ -198,7 +198,7 @@ async function checkValidationRulesTab(token) {
 // ---------------------------------------------------------------------------
 async function checkFieldConfigTab(effectiveConfig) {
   if (effectiveConfig === null) {
-    rc.log('J2-4', 'FAIL', 'Skipped — effective config unavailable (J2-1 failed)');
+    rc.log('J2-4', 'FAIL', '[depth=smoke] Skipped — effective config unavailable (J2-1 failed)');
     return false;
   }
 
@@ -220,7 +220,7 @@ async function checkFieldConfigTab(effectiveConfig) {
       rc.log(
         'J2-4',
         'WARN',
-        `effective config has no recognisable fields array — top-level keys: [${keys}]`
+        `[depth=smoke] effective config has no recognisable fields array — top-level keys: [${keys}]`
       );
       return true; // non-fatal; endpoint was reachable
     }
@@ -229,7 +229,7 @@ async function checkFieldConfigTab(effectiveConfig) {
       rc.log(
         'J2-4',
         'PASS',
-        `field config has ${fields.length} field(s)`
+        `[depth=smoke] field config has ${fields.length} field(s)`
       );
       return true;
     }
@@ -237,11 +237,11 @@ async function checkFieldConfigTab(effectiveConfig) {
     rc.log(
       'J2-4',
       'WARN',
-      'fields array is present but empty — module may have no dynamic fields'
+      '[depth=smoke] fields array is present but empty — module may have no dynamic fields'
     );
     return true;
   } catch (err) {
-    rc.log('J2-4', 'FAIL', `field config check error: ${err.message}`);
+    rc.log('J2-4', 'FAIL', `[depth=smoke] field config check error: ${err.message}`);
     return false;
   }
 }
@@ -251,7 +251,7 @@ async function checkFieldConfigTab(effectiveConfig) {
 // ---------------------------------------------------------------------------
 async function checkPermissionMatrixTab(effectiveConfig) {
   if (effectiveConfig === null) {
-    rc.log('J2-5', 'FAIL', 'Skipped — effective config unavailable (J2-1 failed)');
+    rc.log('J2-5', 'FAIL', '[depth=smoke] Skipped — effective config unavailable (J2-1 failed)');
     return false;
   }
 
@@ -269,7 +269,7 @@ async function checkPermissionMatrixTab(effectiveConfig) {
       rc.log(
         'J2-5',
         'PASS',
-        `permission matrix active — ${fields.filter(f => f.visible === false).length} hidden, ${fields.filter(f => f.readonly === true).length} readonly fields`
+        `[depth=smoke] permission matrix active — ${fields.filter(f => f.visible === false).length} hidden, ${fields.filter(f => f.readonly === true).length} readonly fields`
       );
       return true;
     }
@@ -278,11 +278,11 @@ async function checkPermissionMatrixTab(effectiveConfig) {
     rc.log(
       'J2-5',
       'PASS',
-      `permission matrix available — all ${fields.length} fields are visible+editable (no overrides configured)`
+      `[depth=smoke] permission matrix available — all ${fields.length} fields are visible+editable (no overrides configured)`
     );
     return true;
   } catch (err) {
-    rc.log('J2-5', 'FAIL', `permission matrix check error: ${err.message}`);
+    rc.log('J2-5', 'FAIL', `[depth=smoke] permission matrix check error: ${err.message}`);
     return false;
   }
 }
@@ -306,7 +306,7 @@ async function checkToolsTab(token) {
       rc.log(
         'J2-6',
         'PASS',
-        `tools endpoint HTTP 200 — ${count} tool(s) in response`
+        `[depth=smoke] tools endpoint HTTP 200 — ${count} tool(s) in response`
       );
       return true;
     }
@@ -314,11 +314,11 @@ async function checkToolsTab(token) {
     rc.log(
       'J2-6',
       'FAIL',
-      `tools endpoint returned HTTP ${result.status}: ${result.message || '(no message)'}`
+      `[depth=smoke] tools endpoint returned HTTP ${result.status}: ${result.message || '(no message)'}`
     );
     return false;
   } catch (err) {
-    rc.log('J2-6', 'FAIL', `tools request error: ${err.message}`);
+    rc.log('J2-6', 'FAIL', `[depth=smoke] tools request error: ${err.message}`);
     return false;
   }
 }
@@ -344,7 +344,7 @@ async function checkSchedulerValidCron(token) {
       rc.log(
         'J2-7a',
         'PASS',
-        `scheduler/${SCHEDULER_ID} accepted valid cron "0 0 2 * * ?" — HTTP 200`
+        `[depth=medium] scheduler/${SCHEDULER_ID} accepted valid cron "0 0 2 * * ?" — HTTP 200`
       );
       return true;
     }
@@ -352,11 +352,11 @@ async function checkSchedulerValidCron(token) {
     rc.log(
       'J2-7a',
       'FAIL',
-      `scheduler/${SCHEDULER_ID} returned HTTP ${result.status} for valid cron: ${result.message || '(no message)'}`
+      `[depth=medium] scheduler/${SCHEDULER_ID} returned HTTP ${result.status} for valid cron: ${result.message || '(no message)'}`
     );
     return false;
   } catch (err) {
-    rc.log('J2-7a', 'FAIL', `scheduler valid cron request error: ${err.message}`);
+    rc.log('J2-7a', 'FAIL', `[depth=medium] scheduler valid cron request error: ${err.message}`);
     return false;
   }
 }
@@ -382,7 +382,7 @@ async function checkSchedulerInvalidCron(token) {
       rc.log(
         'J2-7b',
         'PASS',
-        `scheduler rejected too-frequent cron "* * * * * ?" with HTTP ${result.status} (Fix 11 enforced)`
+        `[depth=medium] scheduler rejected too-frequent cron "* * * * * ?" with HTTP ${result.status} (Fix 11 enforced)`
       );
       return true;
     }
@@ -390,11 +390,11 @@ async function checkSchedulerInvalidCron(token) {
     rc.log(
       'J2-7b',
       'FAIL',
-      `scheduler accepted invalid/too-frequent cron — expected HTTP ≥400, got ${result.status}. Fix 11 may not be deployed.`
+      `[depth=medium] scheduler accepted invalid/too-frequent cron — expected HTTP ≥400, got ${result.status}. Fix 11 may not be deployed.`
     );
     return false;
   } catch (err) {
-    rc.log('J2-7b', 'FAIL', `scheduler invalid cron request error: ${err.message}`);
+    rc.log('J2-7b', 'FAIL', `[depth=medium] scheduler invalid cron request error: ${err.message}`);
     return false;
   }
 }
@@ -420,7 +420,7 @@ async function cleanupScheduler(token) {
       rc.log(
         'J2-7c',
         'PASS',
-        `scheduler/${SCHEDULER_ID} disabled successfully — HTTP 200`
+        `[depth=medium] scheduler/${SCHEDULER_ID} disabled successfully — HTTP 200`
       );
       return true;
     }
@@ -430,7 +430,7 @@ async function cleanupScheduler(token) {
       rc.log(
         'J2-7c',
         'WARN',
-        `scheduler/${SCHEDULER_ID} not found during cleanup (HTTP 404) — may not have been created`
+        `[depth=medium] scheduler/${SCHEDULER_ID} not found during cleanup (HTTP 404) — may not have been created`
       );
       return true;
     }
@@ -438,11 +438,11 @@ async function cleanupScheduler(token) {
     rc.log(
       'J2-7c',
       'FAIL',
-      `scheduler cleanup returned HTTP ${result.status}: ${result.message || '(no message)'}`
+      `[depth=medium] scheduler cleanup returned HTTP ${result.status}: ${result.message || '(no message)'}`
     );
     return false;
   } catch (err) {
-    rc.log('J2-7c', 'FAIL', `scheduler cleanup request error: ${err.message}`);
+    rc.log('J2-7c', 'FAIL', `[depth=medium] scheduler cleanup request error: ${err.message}`);
     return false;
   }
 }
@@ -474,31 +474,31 @@ async function checkPermissionBoundary(token) {
       rc.log(
         'J2-8',
         'PASS',
-        'submit-review HTTP 200 — draft config submitted for review'
+        '[depth=medium] submit-review HTTP 200 — draft config submitted for review'
       );
     } else if (submitResult.status === 400 || submitResult.status === 409) {
       // 400/409 = no draft or already submitted — informative error, not a permission failure
       rc.log(
         'J2-8',
         'WARN',
-        `submit-review HTTP ${submitResult.status} — ${submitResult.message || 'no draft pending (expected in clean environment)'}`
+        `[depth=medium] submit-review HTTP ${submitResult.status} — ${submitResult.message || 'no draft pending (expected in clean environment)'}`
       );
     } else if (submitResult.status === 403) {
       rc.log(
         'J2-8',
         'FAIL',
-        `submit-review HTTP 403 — admin role should be permitted to submit`
+        `[depth=medium] submit-review HTTP 403 — admin role should be permitted to submit`
       );
       return false;
     } else {
       rc.log(
         'J2-8',
         'WARN',
-        `submit-review HTTP ${submitResult.status}: ${submitResult.message || '(no message)'}`
+        `[depth=medium] submit-review HTTP ${submitResult.status}: ${submitResult.message || '(no message)'}`
       );
     }
   } catch (err) {
-    rc.log('J2-8', 'FAIL', `submit-review request error: ${err.message}`);
+    rc.log('J2-8', 'FAIL', `[depth=medium] submit-review request error: ${err.message}`);
     return false;
   }
 
@@ -515,24 +515,24 @@ async function checkPermissionBoundary(token) {
         rc.log(
           'J2-8-approve',
           'PASS',
-          'approve HTTP 200 — super_admin can approve submitted review'
+          '[depth=medium] approve HTTP 200 — super_admin can approve submitted review'
         );
       } else if (approveResult.status === 403) {
         rc.log(
           'J2-8-approve',
           'FAIL',
-          'approve HTTP 403 — super_admin should be allowed to approve'
+          '[depth=medium] approve HTTP 403 — super_admin should be allowed to approve'
         );
         return false;
       } else {
         rc.log(
           'J2-8-approve',
           'WARN',
-          `approve HTTP ${approveResult.status}: ${approveResult.message || '(no message)'}`
+          `[depth=medium] approve HTTP ${approveResult.status}: ${approveResult.message || '(no message)'}`
         );
       }
     } catch (err) {
-      rc.log('J2-8-approve', 'FAIL', `approve request error: ${err.message}`);
+      rc.log('J2-8-approve', 'FAIL', `[depth=medium] approve request error: ${err.message}`);
       return false;
     }
   }

@@ -46,10 +46,10 @@ async function runL1(page) {
     R.log(
       'L1-operator-blocked',
       blocked ? 'PASS' : 'FAIL',
-      `URL after operator login: ${url} — expected to contain "mobile-only"`
+      `[depth=smoke] URL after operator login: ${url} — expected to contain "mobile-only"`
     );
   } catch (err) {
-    R.log('L1-operator-blocked', 'FAIL', `webLogin threw: ${err.message}`);
+    R.log('L1-operator-blocked', 'FAIL', `[depth=smoke] webLogin threw: ${err.message}`);
   }
 
   await screenshot(page, 'j5-L1-operator');
@@ -75,18 +75,18 @@ async function runL2(page) {
     R.log(
       'L2-finance-login',
       loginOk ? 'PASS' : 'FAIL',
-      `URL after finance_mgr1 login: ${fm.url}`
+      `[depth=smoke] URL after finance_mgr1 login: ${fm.url}`
     );
     await screenshot(page, 'j5-L2-finance-login');
   } catch (err) {
-    R.log('L2-finance-login', 'FAIL', `webLogin threw: ${err.message}`);
+    R.log('L2-finance-login', 'FAIL', `[depth=smoke] webLogin threw: ${err.message}`);
     return; // Cannot test routes without a valid session
   }
 
   if (!loginOk) {
-    R.log('L2-finance-canvas-blocked', 'FAIL', 'Skipped — finance_mgr1 login failed');
-    R.log('L2-finance-sales-blocked', 'FAIL', 'Skipped — finance_mgr1 login failed');
-    R.log('L2-finance-smartbi-allowed', 'FAIL', 'Skipped — finance_mgr1 login failed');
+    R.log('L2-finance-canvas-blocked', 'FAIL', '[depth=smoke] Skipped — finance_mgr1 login failed');
+    R.log('L2-finance-sales-blocked', 'FAIL', '[depth=smoke] Skipped — finance_mgr1 login failed');
+    R.log('L2-finance-smartbi-allowed', 'FAIL', '[depth=smoke] Skipped — finance_mgr1 login failed');
     return;
   }
 
@@ -102,11 +102,11 @@ async function runL2(page) {
     R.log(
       'L2-finance-canvas-blocked',
       ceBlocked ? 'PASS' : 'FAIL',
-      `URL after navigating to /canvas-editor: ${ceUrl}`
+      `[depth=smoke] URL after navigating to /canvas-editor: ${ceUrl}`
     );
     await screenshot(page, 'j5-L2-finance-canvas');
   } catch (err) {
-    R.log('L2-finance-canvas-blocked', 'FAIL', `Navigation error: ${err.message}`);
+    R.log('L2-finance-canvas-blocked', 'FAIL', `[depth=smoke] Navigation error: ${err.message}`);
   }
 
   // --- sales/orders must be blocked ---
@@ -122,11 +122,11 @@ async function runL2(page) {
     R.log(
       'L2-finance-sales-blocked',
       soBlocked ? 'PASS' : 'FAIL',
-      `URL after navigating to /sales/orders: ${soUrl}`
+      `[depth=smoke] URL after navigating to /sales/orders: ${soUrl}`
     );
     await screenshot(page, 'j5-L2-finance-sales');
   } catch (err) {
-    R.log('L2-finance-sales-blocked', 'FAIL', `Navigation error: ${err.message}`);
+    R.log('L2-finance-sales-blocked', 'FAIL', `[depth=smoke] Navigation error: ${err.message}`);
   }
 
   // --- smart-bi/dashboard must be allowed ---
@@ -141,11 +141,11 @@ async function runL2(page) {
     R.log(
       'L2-finance-smartbi-allowed',
       sbiAllowed ? 'PASS' : 'FAIL',
-      `URL after navigating to /smart-bi/dashboard: ${sbiUrl}`
+      `[depth=smoke] URL after navigating to /smart-bi/dashboard: ${sbiUrl}`
     );
     await screenshot(page, 'j5-L2-finance-smartbi');
   } catch (err) {
-    R.log('L2-finance-smartbi-allowed', 'FAIL', `Navigation error: ${err.message}`);
+    R.log('L2-finance-smartbi-allowed', 'FAIL', `[depth=smoke] Navigation error: ${err.message}`);
   }
 }
 
@@ -175,7 +175,7 @@ async function runL3() {
     R.log(
       'L3-skip',
       'WARN',
-      'No non-admin worker account available — API @RequireRole tests skipped'
+      '[depth=medium] No non-admin worker account available — API @RequireRole tests skipped'
     );
     return;
   }
@@ -186,10 +186,10 @@ async function runL3() {
     R.log(
       'L3-worker-publish-403',
       pub.status === 403 ? 'PASS' : 'FAIL',
-      `POST config/publish → HTTP ${pub.status} (expected 403)`
+      `[depth=medium] POST config/publish → HTTP ${pub.status} (expected 403)`
     );
   } catch (err) {
-    R.log('L3-worker-publish-403', 'FAIL', `Request threw: ${err.message}`);
+    R.log('L3-worker-publish-403', 'FAIL', `[depth=medium] Request threw: ${err.message}`);
   }
 
   // --- POST config/v2/dynamic-fields — must be 403 ---
@@ -207,10 +207,10 @@ async function runL3() {
     R.log(
       'L3-worker-addfield-403',
       addField.status === 403 ? 'PASS' : 'FAIL',
-      `POST config/v2/dynamic-fields → HTTP ${addField.status} (expected 403)`
+      `[depth=medium] POST config/v2/dynamic-fields → HTTP ${addField.status} (expected 403)`
     );
   } catch (err) {
-    R.log('L3-worker-addfield-403', 'FAIL', `Request threw: ${err.message}`);
+    R.log('L3-worker-addfield-403', 'FAIL', `[depth=medium] Request threw: ${err.message}`);
   }
 
   // --- PUT config/v2/validation-rules/{ruleCode} — must be 403 or 405 ---
@@ -230,10 +230,10 @@ async function runL3() {
     R.log(
       'L3-worker-addrule-403',
       setRule.status === 403 || setRule.status === 405 ? 'PASS' : 'FAIL',
-      `POST config/v2/validation-rules/hack_rule → HTTP ${setRule.status} (expected 403 or 405)`
+      `[depth=medium] POST config/v2/validation-rules/hack_rule → HTTP ${setRule.status} (expected 403 or 405)`
     );
   } catch (err) {
-    R.log('L3-worker-addrule-403', 'FAIL', `Request threw: ${err.message}`);
+    R.log('L3-worker-addrule-403', 'FAIL', `[depth=medium] Request threw: ${err.message}`);
   }
 }
 
@@ -267,7 +267,7 @@ async function runL4_DocumentedDivergence() {
     const session = await login(ADMIN_A);
     adminToken = session.token;
   } catch (err) {
-    R.log('L4-skip', 'WARN', `Admin login failed: ${err.message} — L4 tests skipped`);
+    R.log('L4-skip', 'WARN', `[depth=medium] Admin login failed: ${err.message} — L4 tests skipped`);
     return;
   }
 
@@ -285,11 +285,11 @@ async function runL4_DocumentedDivergence() {
     R.log(
       'L4-a-ai-chat-contract',
       aiChat.status === 200 ? 'PASS' : 'FAIL',
-      `factory_super_admin → /config/v2/ai/chat HTTP ${aiChat.status} ` +
+      `[depth=medium] factory_super_admin → /config/v2/ai/chat HTTP ${aiChat.status} ` +
       `(contract: 200 per current backend; 403 means backend was tightened — update EVIDENCE.md §9)`
     );
   } catch (err) {
-    R.log('L4-a-ai-chat-contract', 'FAIL', `Request error: ${err.message}`);
+    R.log('L4-a-ai-chat-contract', 'FAIL', `[depth=medium] Request error: ${err.message}`);
   }
 
   // --- L4-b: factory_super_admin CAN call /config/publish (R1 J1-B1 正向断言依据) ---
@@ -314,11 +314,11 @@ async function runL4_DocumentedDivergence() {
     R.log(
       'L4-b-publish-contract',
       roleCheckPassed ? 'PASS' : 'FAIL',
-      `factory_super_admin → /config/publish HTTP ${publish.status} ` +
+      `[depth=medium] factory_super_admin → /config/publish HTTP ${publish.status} ` +
       `(contract: accept 200/400/404 as role-check-OK; 403=J1 lifecycle broken, 5xx=server fault)`
     );
   } catch (err) {
-    R.log('L4-b-publish-contract', 'FAIL', `Request error: ${err.message}`);
+    R.log('L4-b-publish-contract', 'FAIL', `[depth=medium] Request error: ${err.message}`);
   }
 }
 

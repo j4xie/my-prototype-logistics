@@ -38,7 +38,7 @@ async function testAiAutopilotBasic(adminToken) {
       rc.log(
         'A1',
         'PASS',
-        `AI autopilot endpoint reachable — HTTP 200, success=${result.success}`
+        `[depth=smoke] AI autopilot endpoint reachable — HTTP 200, success=${result.success}`
       );
       return true;
     }
@@ -47,11 +47,11 @@ async function testAiAutopilotBasic(adminToken) {
     rc.log(
       'A1',
       'WARN',
-      `AI autopilot returned HTTP ${result.status} — AI backend may not be configured: ${result.message || '(no message)'}`
+      `[depth=smoke] AI autopilot returned HTTP ${result.status} — AI backend may not be configured: ${result.message || '(no message)'}`
     );
     return true; // WARN is non-blocking
   } catch (err) {
-    rc.log('A1', 'WARN', `AI autopilot request error (AI may not be configured): ${err.message}`);
+    rc.log('A1', 'WARN', `[depth=smoke] AI autopilot request error (AI may not be configured): ${err.message}`);
     return true; // WARN is non-blocking
   }
 }
@@ -80,7 +80,7 @@ async function testPromptInjectionBlocked(adminToken) {
       rc.log(
         'A2',
         'PASS',
-        `Prompt injection rejected — success=${result.success}, body mentions "canvas_": ${mentionsCanvas}, HTTP ${result.status}`
+        `[depth=medium] Prompt injection rejected — success=${result.success}, body mentions "canvas_": ${mentionsCanvas}, HTTP ${result.status}`
       );
       return true;
     }
@@ -90,7 +90,7 @@ async function testPromptInjectionBlocked(adminToken) {
       rc.log(
         'A2',
         'PASS',
-        `Prompt injection rejected via HTTP ${result.status} — non-canvas tool blocked`
+        `[depth=medium] Prompt injection rejected via HTTP ${result.status} — non-canvas tool blocked`
       );
       return true;
     }
@@ -98,11 +98,11 @@ async function testPromptInjectionBlocked(adminToken) {
     rc.log(
       'A2',
       'FAIL',
-      `Prompt injection NOT blocked — HTTP ${result.status} success=${result.success}, body: ${bodyStr.slice(0, 200)}`
+      `[depth=medium] Prompt injection NOT blocked — HTTP ${result.status} success=${result.success}, body: ${bodyStr.slice(0, 200)}`
     );
     return false;
   } catch (err) {
-    rc.log('A2', 'FAIL', `apply-diffs request error: ${err.message}`);
+    rc.log('A2', 'FAIL', `[depth=medium] apply-diffs request error: ${err.message}`);
     return false;
   }
 }
@@ -127,7 +127,7 @@ async function testLegitimateCanvasToolAllowed(adminToken) {
       rc.log(
         'A3',
         'FAIL',
-        `canvas_toggle_module (disable BOM) returned HTTP ${disableResult.status}: ${disableResult.message || '(no message)'}`
+        `[depth=medium] canvas_toggle_module (disable BOM) returned HTTP ${disableResult.status}: ${disableResult.message || '(no message)'}`
       );
       return false;
     }
@@ -135,10 +135,10 @@ async function testLegitimateCanvasToolAllowed(adminToken) {
     rc.log(
       'A3',
       'PASS',
-      `canvas_toggle_module accepted — HTTP 200, BOM disabled (success=${disableResult.success})`
+      `[depth=medium] canvas_toggle_module accepted — HTTP 200, BOM disabled (success=${disableResult.success})`
     );
   } catch (err) {
-    rc.log('A3', 'FAIL', `canvas_toggle_module (disable) request error: ${err.message}`);
+    rc.log('A3', 'FAIL', `[depth=medium] canvas_toggle_module (disable) request error: ${err.message}`);
     return false;
   }
 
@@ -178,7 +178,7 @@ async function testNonAdminBlocked() {
     rc.log(
       'A4',
       'WARN',
-      `Could not log in as any non-admin candidate (${candidates.join(', ')}) — RBAC check skipped`
+      `[depth=medium] Could not log in as any non-admin candidate (${candidates.join(', ')}) — RBAC check skipped`
     );
     return true; // WARN is non-blocking
   }
@@ -194,7 +194,7 @@ async function testNonAdminBlocked() {
       rc.log(
         'A4',
         'PASS',
-        `Non-admin correctly blocked from AI chat — HTTP 403`
+        `[depth=medium] Non-admin correctly blocked from AI chat — HTTP 403`
       );
       return true;
     }
@@ -202,11 +202,11 @@ async function testNonAdminBlocked() {
     rc.log(
       'A4',
       'FAIL',
-      `Non-admin was NOT blocked — expected HTTP 403, got HTTP ${result.status} success=${result.success}`
+      `[depth=medium] Non-admin was NOT blocked — expected HTTP 403, got HTTP ${result.status} success=${result.success}`
     );
     return false;
   } catch (err) {
-    rc.log('A4', 'FAIL', `Non-admin AI chat request error: ${err.message}`);
+    rc.log('A4', 'FAIL', `[depth=medium] Non-admin AI chat request error: ${err.message}`);
     return false;
   }
 }
@@ -227,9 +227,9 @@ async function main() {
     console.log(`Admin login OK — factoryId=${session.factoryId} role=${session.role}\n`);
   } catch (err) {
     console.error(`Admin login failed: ${err.message}`);
-    rc.log('A1', 'FAIL', `Skipped — admin token unavailable: ${err.message}`);
-    rc.log('A2', 'FAIL', 'Skipped — admin token unavailable');
-    rc.log('A3', 'FAIL', 'Skipped — admin token unavailable');
+    rc.log('A1', 'FAIL', `[depth=smoke] Skipped — admin token unavailable: ${err.message}`);
+    rc.log('A2', 'FAIL', '[depth=medium] Skipped — admin token unavailable');
+    rc.log('A3', 'FAIL', '[depth=medium] Skipped — admin token unavailable');
     fails.push('A1', 'A2', 'A3');
   }
 

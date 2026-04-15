@@ -42,15 +42,15 @@ async function stepS1(page) {
   try {
     const { loggedIn, url } = await webLogin(page, ADMIN_A);
     if (loggedIn) {
-      rc.log('J3-S1', 'PASS', `Logged in successfully — redirected to ${url}`);
+      rc.log('J3-S1', 'PASS', `[depth=smoke] Logged in successfully — redirected to ${url}`);
       await screenshot(page, 'j3-S1-login');
       return true;
     }
-    rc.log('J3-S1', 'FAIL', `Login did not redirect away from /login — current URL: ${url}`);
+    rc.log('J3-S1', 'FAIL', `[depth=smoke] Login did not redirect away from /login — current URL: ${url}`);
     await screenshot(page, 'j3-S1-login');
     return false;
   } catch (err) {
-    rc.log('J3-S1', 'FAIL', `webLogin threw: ${err.message}`);
+    rc.log('J3-S1', 'FAIL', `[depth=smoke] webLogin threw: ${err.message}`);
     return false;
   }
 }
@@ -71,16 +71,16 @@ async function stepS2(page) {
     const length = bodyText.length;
 
     if (length > 500) {
-      rc.log('J3-S2', 'PASS', `Sales orders list page loaded — content length ${length} chars`);
+      rc.log('J3-S2', 'PASS', `[depth=smoke] Sales orders list page loaded — content length ${length} chars`);
       await screenshot(page, 'j3-S2-list');
       return true;
     }
 
-    rc.log('J3-S2', 'FAIL', `Page content too short (${length} chars ≤ 1000) — page may not have rendered`);
+    rc.log('J3-S2', 'FAIL', `[depth=smoke] Page content too short (${length} chars ≤ 1000) — page may not have rendered`);
     await screenshot(page, 'j3-S2-list');
     return false;
   } catch (err) {
-    rc.log('J3-S2', 'FAIL', `Navigation to /sales/orders threw: ${err.message}`);
+    rc.log('J3-S2', 'FAIL', `[depth=smoke] Navigation to /sales/orders threw: ${err.message}`);
     return false;
   }
 }
@@ -96,7 +96,7 @@ async function stepS3(page) {
     );
 
     if (!btn) {
-      rc.log('J3-S3', 'FAIL', 'Could not find create/new button on the sales orders page');
+      rc.log('J3-S3', 'FAIL', '[depth=smoke] Could not find create/new button on the sales orders page');
       await screenshot(page, 'j3-S3-create-form');
       return false;
     }
@@ -110,7 +110,7 @@ async function stepS3(page) {
       rc.log(
         'J3-S3',
         'PASS',
-        `Create form rendered with ${formItemCount} .el-form-item elements (> 5 required)`
+        `[depth=smoke] Create form rendered with ${formItemCount} .el-form-item elements (> 5 required)`
       );
       await screenshot(page, 'j3-S3-create-form');
       return true;
@@ -119,12 +119,12 @@ async function stepS3(page) {
     rc.log(
       'J3-S3',
       'FAIL',
-      `Create form has only ${formItemCount} .el-form-item elements — expected > 5`
+      `[depth=smoke] Create form has only ${formItemCount} .el-form-item elements — expected > 5`
     );
     await screenshot(page, 'j3-S3-create-form');
     return false;
   } catch (err) {
-    rc.log('J3-S3', 'FAIL', `Create form step threw: ${err.message}`);
+    rc.log('J3-S3', 'FAIL', `[depth=smoke] Create form step threw: ${err.message}`);
     await screenshot(page, 'j3-S3-create-form').catch(() => {});
     return false;
   }
@@ -154,17 +154,17 @@ async function stepS4(page) {
 
     if (foundInUI) {
       rc.log('J3-S4', 'PASS',
-        `Dynamic field label "${foundInUI}" found in UI + ${dynCount} dynamic fields in API`);
+        `[depth=smoke] Dynamic field label "${foundInUI}" found in UI + ${dynCount} dynamic fields in API`);
     } else if (dynCount > 0) {
       rc.log('J3-S4', 'WARN',
-        `${dynCount} dynamic fields in API but NOT visible in UI — check rendering mode or collapsed groups`);
+        `[depth=smoke] ${dynCount} dynamic fields in API but NOT visible in UI — check rendering mode or collapsed groups`);
     } else {
       rc.log('J3-S4', 'FAIL',
-        'No dynamic fields found in UI or API — J1 lifecycle must run first on the same factory');
+        '[depth=smoke] No dynamic fields found in UI or API — J1 lifecycle must run first on the same factory');
     }
     return true;
   } catch (err) {
-    rc.log('J3-S4', 'FAIL', `Dynamic field check error: ${err.message}`);
+    rc.log('J3-S4', 'FAIL', `[depth=smoke] Dynamic field check error: ${err.message}`);
     return false;
   }
 }
@@ -190,7 +190,7 @@ async function stepS10(page) {
   const expectPolicy = process.env.E2E_CANVAS_EDITOR_EXPECT || 'blocked';
   if (expectPolicy !== 'blocked' && expectPolicy !== 'allowed') {
     rc.log('J3-S10', 'FAIL',
-      `Invalid E2E_CANVAS_EDITOR_EXPECT="${expectPolicy}" — must be "blocked" or "allowed"`);
+      `[depth=smoke] Invalid E2E_CANVAS_EDITOR_EXPECT="${expectPolicy}" — must be "blocked" or "allowed"`);
     return false;
   }
 
@@ -205,24 +205,24 @@ async function stepS10(page) {
     if (expectPolicy === 'blocked') {
       if (isBlocked) {
         rc.log('J3-S10', 'PASS',
-          `factory_super_admin correctly blocked from /canvas-editor — URL: ${currentUrl}`);
+          `[depth=smoke] factory_super_admin correctly blocked from /canvas-editor — URL: ${currentUrl}`);
       } else {
         rc.log('J3-S10', 'FAIL',
-          `Expected /403 for factory_super_admin, got URL: ${currentUrl} (router guard may be misconfigured)`);
+          `[depth=smoke] Expected /403 for factory_super_admin, got URL: ${currentUrl} (router guard may be misconfigured)`);
       }
     } else { // expectPolicy === 'allowed'
       if (isAccessible) {
         rc.log('J3-S10', 'PASS',
-          `Canvas editor accessible for configured account — URL: ${currentUrl}`);
+          `[depth=smoke] Canvas editor accessible for configured account — URL: ${currentUrl}`);
       } else {
         rc.log('J3-S10', 'FAIL',
-          `Expected canvas-editor access, got URL: ${currentUrl}`);
+          `[depth=smoke] Expected canvas-editor access, got URL: ${currentUrl}`);
       }
     }
     await screenshot(page, 'j3-S10-canvas');
     return (expectPolicy === 'blocked') ? isBlocked : isAccessible;
   } catch (err) {
-    rc.log('J3-S10', 'FAIL', `Canvas editor navigation threw: ${err.message}`);
+    rc.log('J3-S10', 'FAIL', `[depth=smoke] Canvas editor navigation threw: ${err.message}`);
     return false;
   }
 }
@@ -243,10 +243,10 @@ async function main() {
     if (!loggedIn) {
       fails.push('J3-S1');
       // Cannot proceed with remaining UI steps without login
-      rc.log('J3-S2', 'FAIL', 'Skipped — login failed');
-      rc.log('J3-S3', 'FAIL', 'Skipped — login failed');
-      rc.log('J3-S4', 'WARN', 'Skipped — login failed');
-      rc.log('J3-S10', 'FAIL', 'Skipped — login failed');
+      rc.log('J3-S2', 'FAIL', '[depth=smoke] Skipped — login failed');
+      rc.log('J3-S3', 'FAIL', '[depth=smoke] Skipped — login failed');
+      rc.log('J3-S4', 'WARN', '[depth=smoke] Skipped — login failed');
+      rc.log('J3-S10', 'FAIL', '[depth=smoke] Skipped — login failed');
       fails.push('J3-S2', 'J3-S3', 'J3-S10');
     } else {
       // S2 — Sales orders list
@@ -261,8 +261,8 @@ async function main() {
         // S4 — Dynamic fields (runs on same form page, WARN-only)
         await stepS4(page);
       } else {
-        rc.log('J3-S3', 'FAIL', 'Skipped — could not load sales orders list');
-        rc.log('J3-S4', 'WARN', 'Skipped — could not load sales orders list');
+        rc.log('J3-S3', 'FAIL', '[depth=smoke] Skipped — could not load sales orders list');
+        rc.log('J3-S4', 'WARN', '[depth=smoke] Skipped — could not load sales orders list');
         fails.push('J3-S3');
       }
 
