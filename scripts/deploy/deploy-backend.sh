@@ -290,18 +290,26 @@ deploy_jar() {
     fi
 
     # ----- 1. 本地 Maven 打包 -----
+    # R25: 默认 `clean package` 强制全量重编, 防 incremental cache 漏新 Controller/DTO 签名 (R24 事故教训)
+    # 如需保留 incremental build (快, 但不安全), 传 SKIP_CLEAN=1
     echo ""
     if [ -n "$SKIP_BUILD" ] && [ -f "backend/java/cretas-api/target/$JAR_NAME" ]; then
         echo "📦 [1/4] 跳过 Maven 打包 (SKIP_BUILD=1, 使用已有 JAR)"
     else
-        echo "📦 [1/4] 本地 Maven 打包..."
+        MVN_GOALS="clean package"
+        if [ -n "$SKIP_CLEAN" ]; then
+            MVN_GOALS="package"
+            echo "📦 [1/4] 本地 Maven 打包 (SKIP_CLEAN=1, 增量模式 — 如遇奇怪 bug 去掉 SKIP_CLEAN 重试)..."
+        else
+            echo "📦 [1/4] 本地 Maven 打包 (clean + package, ~90s)..."
+        fi
         cd backend/java/cretas-api
         if [[ "$OSTYPE" == "darwin"* ]] || [[ "$OSTYPE" == "linux"* ]]; then
             chmod +x mvnw 2>/dev/null
-            ./mvnw package -Dmaven.test.skip=true -q
+            ./mvnw $MVN_GOALS -Dmaven.test.skip=true -q
         else
             export JAVA_HOME="${JAVA_HOME:-C:/Program Files/Java/jdk-17}"
-            ./mvnw.cmd package -Dmaven.test.skip=true -q
+            ./mvnw.cmd $MVN_GOALS -Dmaven.test.skip=true -q
         fi
         cd ../../..
     fi
