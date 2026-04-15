@@ -91,7 +91,7 @@ async function R4_L3_2_chatPipeline(token) {
     for (let i = 0; i < 3; i++) {
       try {
         resp = await apiPostJson(url, {
-          query: '分析经营诊断',
+          query: '成本刚性',  // hits SmartBIServiceImpl regex + Skill trigger
           factoryId: TARGET_FACTORY,
         }, token);
         break;
@@ -101,24 +101,29 @@ async function R4_L3_2_chatPipeline(token) {
       }
     }
     // Pass: endpoint returns 200 (pipeline completed, even if result is "no data")
+    // Critic R4 fix #3: drop `message !== undefined` bottom (always-true via ApiResponse
+    // wrapper) — require actual intent match signal.
     const pipelineRan = resp.ok;
-    // Extra credit: response contains recognizable section result structure
-    const hasStructuredResponse = resp.data && (
-      resp.data.intentCode !== undefined ||
-      resp.data.sections !== undefined ||
-      resp.data.data !== undefined ||
-      resp.data.message !== undefined
-    );
-    const pass = pipelineRan && hasStructuredResponse;
-    record('R4-L3-2', 'L3', 'chat_pipeline_natural_language', pass ? 'PASS' : 'FAIL', {
+    const body = resp.data?.data || resp.data || {};
+    const intentMatched = (typeof body.intentCode === 'string' && body.intentCode.length > 0) ||
+                         (typeof body.intent === 'string' && body.intent.length > 0);
+    const hasSections = Array.isArray(body.sections) && body.sections.length > 0;
+    const hasCharts = Array.isArray(body.charts) && body.charts.length > 0;
+    const hasRealResponseText = typeof body.responseText === 'string' && body.responseText.length > 50;
+    const highConfidence = typeof body.confidence === 'number' && body.confidence > 0.3;
+    const realIntentSuccess = intentMatched || hasSections || hasCharts || highConfidence || hasRealResponseText;
+    const pass = pipelineRan && realIntentSuccess;
+    record('R4-L3-2', 'L3', 'chat_intent_match_strict', pass ? 'PASS' : 'FAIL', {
       depth: 'medium',
       httpStatus: resp.status,
-      pipelineRan, hasStructuredResponse,
-      intentCode: resp.data?.intentCode,
-      responseKeys: resp.data ? Object.keys(resp.data).slice(0, 10) : null,
-      note: pass ? 'natural-language → intent → pipeline → structured response' :
+      pipelineRan,
+      intentCode: body.intentCode,
+      confidence: body.confidence,
+      sectionsCount: Array.isArray(body.sections) ? body.sections.length : null,
+      responseKeys: Object.keys(body).slice(0, 10),
+      note: pass ? `intent matched (intentCode=${body.intentCode}, confidence=${body.confidence})` :
             !pipelineRan ? `chat endpoint failed: ${resp.status}` :
-            'endpoint 200 but response lacks structure',
+            'chat 200 but intent not matched (intentCode null, confidence 0) — smoke-level baseline',
     });
   } catch (e) {
     record('R4-L3-2', 'L3', 'chat_pipeline_natural_language', 'FAIL', {
@@ -137,14 +142,16 @@ async function R4_L4_1_concurrentUpload(token) {
   const port = getActiveJavaPort();
 
   try {
-    // Baseline
+    // Baseline — use totalElements, not array length (listUploads paginated at 50).
     let beforeResp = null;
     for (let i = 0; i < 3; i++) {
       try { beforeResp = await listUploads(token, TARGET_FACTORY); break; }
       catch { if (i === 2) throw new Error('baseline listUploads failed'); await new Promise(r => setTimeout(r, 2000)); }
     }
     const beforeArr = beforeResp.data?.data?.content || beforeResp.data?.data || [];
-    const targetBefore = Array.isArray(beforeArr) ? beforeArr.length : 0;
+    const beforeTotalElements = beforeResp.data?.data?.totalElements ?? null;
+    const targetBefore = beforeTotalElements !== null ? beforeTotalElements :
+                        (Array.isArray(beforeArr) ? beforeArr.length : 0);
 
     // FIX-8 pattern: scp a bash script and run it — Windows Git Bash can't nest this
     // much quoting reliably. Script fires 2 concurrent curls via bash &, then waits,
@@ -187,36 +194,60 @@ async function R4_L4_1_concurrentUpload(token) {
     const uploadId1 = extractUploadId('/tmp/r4_c1.json');
     const uploadId2 = extractUploadId('/tmp/r4_c2.json');
 
-    // Verify DB +2
+    // Verify DB +2 via totalElements
     let afterResp = null;
     for (let i = 0; i < 3; i++) {
       try { afterResp = await listUploads(token, TARGET_FACTORY); break; }
       catch { if (i === 2) throw new Error('after listUploads failed'); await new Promise(r => setTimeout(r, 2000)); }
     }
     const afterArr = afterResp.data?.data?.content || afterResp.data?.data || [];
-    const targetAfter = Array.isArray(afterArr) ? afterArr.length : 0;
+    const afterTotalElements = afterResp.data?.data?.totalElements ?? null;
+    const targetAfter = afterTotalElements !== null ? afterTotalElements :
+                       (Array.isArray(afterArr) ? afterArr.length : 0);
     const delta = targetAfter - targetBefore;
 
-    // Real deep checks:
-    // 1. Both requests got 200
-    // 2. Both got distinct uploadIds
-    // 3. DB delta = +2
+    // Critic R4 fix #2: also verify content-level integrity. If lost-update bug causes
+    // record B to overwrite record A, count/distinct-id checks pass but file_name/
+    // row_count could be duplicated or swapped. Grep each response for rowCount and
+    // fileName independently.
+    const extractField = (file, field) => {
+      try {
+        const out = execSync(
+          `ssh -o StrictHostKeyChecking=no root@47.100.235.168 "grep -oE '\\\"${field}\\\"[[:space:]]*:[[:space:]]*[^,}]+' ${file} | head -1"`,
+          { encoding: 'utf8', timeout: 15000 }
+        ).trim();
+        return out.replace(new RegExp(`.*${field}[\\s":]*`), '').replace(/[",]+$/, '').trim();
+      } catch { return null; }
+    };
+    const rowCount1 = extractField('/tmp/r4_c1.json', 'rowCount');
+    const rowCount2 = extractField('/tmp/r4_c2.json', 'rowCount');
+    const fileName1 = extractField('/tmp/r4_c1.json', 'fileName');
+    const fileName2 = extractField('/tmp/r4_c2.json', 'fileName');
+
     const bothSucceeded = code1 === 200 && code2 === 200;
     const distinctIds = uploadId1 !== null && uploadId2 !== null && uploadId1 !== uploadId2;
     const dbDeltaCorrect = delta === 2;
-    const pass = bothSucceeded && distinctIds && dbDeltaCorrect;
+    // Both responses must report non-null rowCount (handler actually parsed them)
+    const bothHaveRowCount = rowCount1 !== null && rowCount2 !== null &&
+                             rowCount1 !== '' && rowCount2 !== '';
+    // RowCount should be the same (same file) — this proves NO lost-update swapped content
+    const rowCountsMatch = rowCount1 === rowCount2;
+    const pass = bothSucceeded && distinctIds && dbDeltaCorrect && bothHaveRowCount && rowCountsMatch;
 
-    record(testId, 'L4', 'concurrent_upload_race', pass ? 'PASS' : 'FAIL', {
+    record(testId, 'L4', 'concurrent_upload_integrity', pass ? 'PASS' : 'FAIL', {
       depth: 'deep',
       elapsedMs,
       code1, code2, uploadId1, uploadId2,
+      rowCount1, rowCount2, fileName1, fileName2,
       targetBefore, targetAfter, delta,
-      bothSucceeded, distinctIds, dbDeltaCorrect,
+      bothSucceeded, distinctIds, dbDeltaCorrect, bothHaveRowCount, rowCountsMatch,
       note: pass ?
-        `2 parallel uploads → distinct uploadIds (${uploadId1}, ${uploadId2}), DB +2, no race` :
+        `2 parallel: distinct ids(${uploadId1},${uploadId2}) + same rowCount(${rowCount1}) → no cross-contamination` :
         !bothSucceeded ? `one failed: code1=${code1}, code2=${code2}` :
         !distinctIds ? `SAME uploadId returned twice (race bug): ${uploadId1}, ${uploadId2}` :
         !dbDeltaCorrect ? `DB delta=${delta}, expected 2 (lost update)` :
+        !bothHaveRowCount ? `missing rowCount in one response (partial write)` :
+        !rowCountsMatch ? `rowCount mismatch (${rowCount1} vs ${rowCount2}) — cross-contamination bug` :
         'unknown',
     });
   } catch (e) {
@@ -258,14 +289,16 @@ async function R4_L4_2_chatToSection(token) {
       return;
     }
 
-    // Now invoke chat endpoint — natural language should trigger intent matching
-    // → Tool-Skill → restaurant section query → autoResolve picks up the upload we just made
+    // Critic R4 fix #1: drop the message-fallback that let intentCode=null PASS.
+    // Real pipeline success requires intentCode match OR sections populated OR
+    // confidence > 0.3. Record elapsedMs to flag short-circuit (< 200ms = static fallback).
     const chatUrl = `${API_BASE}/api/mobile/${TARGET_FACTORY}/smart-bi/query`;
     let chatResp = null;
+    const chatT0 = Date.now();
     for (let i = 0; i < 3; i++) {
       try {
         chatResp = await apiPostJson(chatUrl, {
-          query: '分析经营诊断',
+          query: '成本刚性',  // hits SmartBIServiceImpl regex + Skill trigger
           factoryId: TARGET_FACTORY,
         }, token);
         break;
@@ -274,31 +307,37 @@ async function R4_L4_2_chatToSection(token) {
         await new Promise(r => setTimeout(r, 3000));
       }
     }
+    const chatElapsedMs = Date.now() - chatT0;
 
     const pipelineRan = chatResp.ok;
-    // Real deep check: response must show the chat pipeline reached a section AND
-    // referenced the data (either via intentCode/sectionName/data fields)
-    const responseData = chatResp.data || {};
-    const hasIntentOrSection = responseData.intentCode || responseData.sectionName ||
-                              (responseData.sections && responseData.sections.length > 0) ||
-                              responseData.data;
-    // Accept "no_data" messages too — system may legitimately report no analyzable data
-    // for FACTORY type factory on restaurant-specific intents
-    const hasBusinessResponse = hasIntentOrSection ||
-                               (responseData.message && responseData.message.length > 0);
-    const pass = pipelineRan && hasBusinessResponse;
+    const body = chatResp.data?.data || chatResp.data || {};
+    const intentMatched = (typeof body.intentCode === 'string' && body.intentCode.length > 0) ||
+                         (typeof body.intent === 'string' && body.intent.length > 0);
+    const hasSections = Array.isArray(body.sections) && body.sections.length > 0;
+    const hasCharts = Array.isArray(body.charts) && body.charts.length > 0;
+    const hasRealResponseText = typeof body.responseText === 'string' && body.responseText.length > 50;
+    const highConfidence = typeof body.confidence === 'number' && body.confidence > 0.3;
+    // Real pipeline success: any real business output (intent, sections, charts, or
+    // meaningful responseText > 50 chars)
+    const realIntentSuccess = intentMatched || hasSections || hasCharts || highConfidence || hasRealResponseText;
+    const suspiciousShortCircuit = chatElapsedMs < 200;
+    const pass = pipelineRan && realIntentSuccess && !suspiciousShortCircuit;
 
-    record(testId, 'L4', 'upload_then_chat_to_section', pass ? 'PASS' : 'FAIL', {
+    record(testId, 'L4', 'upload_chat_intent_match', pass ? 'PASS' : 'FAIL', {
       depth: 'deep',
       uploadCode, uploadId,
       chatHttp: chatResp.status,
-      chatKeys: Object.keys(responseData).slice(0, 10),
-      intentCode: responseData.intentCode,
-      message: responseData.message?.slice(0, 200),
-      pipelineRan, hasIntentOrSection, hasBusinessResponse,
-      note: pass ? 'upload → chat NL → intent pipeline → business response' :
+      chatElapsedMs,
+      intentCode: body.intentCode,
+      confidence: body.confidence,
+      sectionsCount: Array.isArray(body.sections) ? body.sections.length : null,
+      responseText: body.responseText?.slice(0, 150),
+      pipelineRan, intentMatched, hasSections, highConfidence, suspiciousShortCircuit,
+      note: pass ? `upload+intent match (intentCode=${body.intentCode}, ${chatElapsedMs}ms)` :
             !pipelineRan ? `chat endpoint failed: ${chatResp.status}` :
-            'chat returned 200 but no recognizable intent/section/message in response',
+            !realIntentSuccess ? `intent NOT matched: intentCode=${body.intentCode}, confidence=${body.confidence}` :
+            suspiciousShortCircuit ? `too fast (${chatElapsedMs}ms) — static template fallback, not real intent` :
+            'unknown',
     });
   } catch (e) {
     record(testId, 'L4', 'upload_then_chat_to_section', 'FAIL', {

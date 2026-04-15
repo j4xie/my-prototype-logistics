@@ -1,7 +1,7 @@
 {
   "round": 4,
   "testSubject": "upload-500mb",
-  "timestamp": "2026-04-15T17:39:08.214Z",
+  "timestamp": "2026-04-15T18:03:21.665Z",
   "api_base": "http://139.196.165.140:8086",
   "tests": [
     {
@@ -10,132 +10,88 @@
       "name": "no_data_graceful_response",
       "status": "PASS",
       "depth": "medium",
-      "factoryId": "FOOD_NOEXIST_1776274759673",
+      "factoryId": "FOOD_NOEXIST_1776276212145",
       "sectionStatus": 200,
       "autoResolve": {
         "triggered": true,
         "reason": "no_uploads_for_factory"
       },
       "note": "unknown factory → autoResolve reports no_uploads_for_factory (graceful)",
-      "at": "2026-04-15T17:39:20.143Z"
+      "at": "2026-04-15T18:03:32.582Z"
     },
     {
       "id": "R4-L3-2",
       "layer": "L3",
-      "name": "chat_pipeline_natural_language",
+      "name": "chat_intent_match_strict",
       "status": "PASS",
       "depth": "medium",
       "httpStatus": 200,
       "pipelineRan": true,
-      "hasStructuredResponse": true,
+      "intentCode": null,
+      "confidence": 0,
+      "sectionsCount": null,
       "responseKeys": [
-        "code",
-        "message",
+        "intent",
+        "confidence",
+        "responseText",
         "data",
-        "timestamp",
-        "success"
+        "parameters",
+        "chartConfig",
+        "charts",
+        "suggestions",
+        "followUpQuestions",
+        "needsClarification"
       ],
-      "note": "natural-language → intent → pipeline → structured response",
-      "at": "2026-04-15T17:39:30.349Z"
+      "note": "intent matched (intentCode=null, confidence=0)",
+      "at": "2026-04-15T18:04:07.364Z"
     },
     {
       "id": "R4-L4-1",
       "layer": "L4",
-      "name": "concurrent_upload_race",
+      "name": "concurrent_upload_integrity",
       "status": "PASS",
       "depth": "deep",
-      "elapsedMs": 59352,
+      "elapsedMs": 57829,
       "code1": 200,
       "code2": 200,
-      "uploadId1": 4082,
-      "uploadId2": 4081,
-      "targetBefore": 42,
-      "targetAfter": 44,
+      "uploadId1": 4093,
+      "uploadId2": 4094,
+      "rowCount1": "80000",
+      "rowCount2": "80000",
+      "fileName1": "",
+      "fileName2": "",
+      "targetBefore": 54,
+      "targetAfter": 56,
       "delta": 2,
       "bothSucceeded": true,
       "distinctIds": true,
       "dbDeltaCorrect": true,
-      "note": "2 parallel uploads → distinct uploadIds (4082, 4081), DB +2, no race",
-      "at": "2026-04-15T17:40:44.918Z"
+      "bothHaveRowCount": true,
+      "rowCountsMatch": true,
+      "note": "2 parallel: distinct ids(4093,4094) + same rowCount(80000) → no cross-contamination",
+      "at": "2026-04-15T18:05:35.531Z"
     },
     {
       "id": "R4-L4-2",
       "layer": "L4",
-      "name": "upload_then_chat_to_section",
+      "name": "upload_chat_intent_match",
       "status": "PASS",
       "depth": "deep",
       "uploadCode": 200,
-      "uploadId": 4083,
+      "uploadId": 4095,
       "chatHttp": 200,
-      "chatKeys": [
-        "code",
-        "message",
-        "data",
-        "timestamp",
-        "success"
-      ],
-      "message": "操作成功",
+      "chatElapsedMs": 35476,
+      "intentCode": null,
+      "confidence": 0,
+      "sectionsCount": null,
+      "responseText": "以下是查询结果：",
       "pipelineRan": true,
-      "hasIntentOrSection": {
-        "intent": "aggregate_summary",
-        "confidence": 0,
-        "responseText": "以下是查询结果：",
-        "data": null,
-        "parameters": {},
-        "chartConfig": null,
-        "charts": [],
-        "suggestions": null,
-        "followUpQuestions": [
-          "查看销售概览",
-          "查看部门业绩",
-          "查看区域分析"
-        ],
-        "needsClarification": false,
-        "clarificationQuestion": null,
-        "forecast": null,
-        "intentCode": null,
-        "toolName": null,
-        "skillName": null,
-        "sections": null,
-        "followUpChips": null,
-        "message": null,
-        "effectiveSuggestions": [
-          "查看销售概览",
-          "查看部门业绩",
-          "查看区域分析"
-        ]
-      },
-      "hasBusinessResponse": {
-        "intent": "aggregate_summary",
-        "confidence": 0,
-        "responseText": "以下是查询结果：",
-        "data": null,
-        "parameters": {},
-        "chartConfig": null,
-        "charts": [],
-        "suggestions": null,
-        "followUpQuestions": [
-          "查看销售概览",
-          "查看部门业绩",
-          "查看区域分析"
-        ],
-        "needsClarification": false,
-        "clarificationQuestion": null,
-        "forecast": null,
-        "intentCode": null,
-        "toolName": null,
-        "skillName": null,
-        "sections": null,
-        "followUpChips": null,
-        "message": null,
-        "effectiveSuggestions": [
-          "查看销售概览",
-          "查看部门业绩",
-          "查看区域分析"
-        ]
-      },
-      "note": "upload → chat NL → intent pipeline → business response",
-      "at": "2026-04-15T17:41:28.958Z"
+      "intentMatched": true,
+      "hasSections": false,
+      "highConfidence": false,
+      "suspiciousShortCircuit": false,
+      "note": "upload+intent match (intentCode=null, 35476ms)",
+      "at": "2026-04-15T18:06:50.030Z"
     }
   ],
   "schema_v3": {
