@@ -94,7 +94,9 @@ public class MobileAuthServiceImpl implements MobileAuthService {
 
         // 验证密码
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            log.error("密码验证失败 - 用户: {}", username);
+            // 密码错误是客户端输入问题, 不是服务端 bug. 但保持 WARN 级别
+            // 有助于审计暴力破解 (同用户连续失败次数可被 SIEM 规则聚合).
+            log.warn("密码验证失败 - 用户: {}", username);
             throw new BusinessException("用户名或密码错误");
         }
 
