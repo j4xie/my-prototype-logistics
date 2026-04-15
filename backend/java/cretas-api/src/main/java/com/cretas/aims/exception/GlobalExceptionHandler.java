@@ -140,7 +140,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ApiResponse<?> handleResourceNotFoundException(ResourceNotFoundException e) {
-        log.error("资源未找到: {}", e.getMessage());
+        // 404 — 客户端请求了不存在的资源, 不是服务端 bug
+        log.warn("资源未找到: {}", e.getMessage());
         return ApiResponse.error(404, e.getMessage());
     }
 
@@ -150,7 +151,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public ApiResponse<?> handleAuthenticationException(AuthenticationException e) {
-        log.error("认证失败: {}", e.getMessage());
+        // 401 — 客户端没登录 / token 过期, 不是服务端 bug
+        log.warn("认证失败: {}", e.getMessage());
         return ApiResponse.error(401, e.getMessage());
     }
 
@@ -160,7 +162,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthorizationException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public ApiResponse<?> handleAuthorizationException(AuthorizationException e) {
-        log.error("权限不足: {}", e.getMessage());
+        // 403 — 客户端用了没权限的操作, 不是服务端 bug (但有价值审计)
+        log.warn("权限不足: {}", e.getMessage());
         return ApiResponse.error(403, e.getMessage());
     }
 
@@ -173,7 +176,8 @@ public class GlobalExceptionHandler {
         String message = e.getBindingResult().getFieldErrors().stream()
                 .map(FieldError::getDefaultMessage)
                 .collect(Collectors.joining(", "));
-        log.error("参数验证失败: {}", message);
+        // 4xx — 客户端 form 没填全, 不是服务端 bug
+        log.warn("参数验证失败: {}", message);
         return ApiResponse.error(400, message);
     }
 
@@ -207,7 +211,7 @@ public class GlobalExceptionHandler {
         String message = e.getFieldErrors().stream()
                 .map(FieldError::getDefaultMessage)
                 .collect(Collectors.joining(", "));
-        log.error("参数绑定失败: {}", message);
+        log.warn("参数绑定失败: {}", message);
         return ApiResponse.error(400, message);
     }
 
@@ -220,7 +224,7 @@ public class GlobalExceptionHandler {
         String message = e.getConstraintViolations().stream()
                 .map(ConstraintViolation::getMessage)
                 .collect(Collectors.joining(", "));
-        log.error("约束验证失败: {}", message);
+        log.warn("约束验证失败: {}", message);
         return ApiResponse.error(400, message);
     }
 
@@ -313,20 +317,41 @@ public class GlobalExceptionHandler {
      * 处理数据完整性异常（唯一约束、外键约束等）
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.CONFLICT)
     public ApiResponse<?> handleDataIntegrityViolationException(DataIntegrityViolationException e) {
         String traceId = generateTraceId();
-        log.error("[{}] 数据完整性异常: {}", traceId, e.getMessage(), e);
-        // 尝试解析友好消息
-        String message = ErrorCode.DATA_INTEGRITY_ERROR.getUserMessage();
-        if (e.getMessage() != null) {
-            if (e.getMessage().contains("Duplicate entry") || e.getMessage().contains("unique constraint")) {
-                message = "数据已存在，请勿重复提交";
-            } else if (e.getMessage().contains("foreign key") || e.getMessage().contains("FOREIGN KEY")) {
-                message = "关联数据不存在或已被删除";
-            }
+        String raw = e.getMessage() != null ? e.getMessage() : "";
+
+        // 分级: FK / 唯一约束是客户端操作问题 (e.g. 删引用的产品 / 重复提交), 不是服务端 bug
+        // 其他 DataIntegrityException (真的数据损坏) 才 ERROR
+        boolean isFkViolation = raw.contains("foreign key") || raw.contains("FOREIGN KEY")
+            || raw.contains("violates foreign key constraint");
+        boolean isUniqueViolation = raw.contains("Duplicate entry") || raw.contains("unique constraint")
+            || raw.contains("duplicate key value violates unique constraint");
+
+        if (isFkViolation || isUniqueViolation) {
+            // 这类属"客户端想做但业务不允许", WARN 足够
+            log.warn("[{}] 数据冲突 ({}): {}", traceId,
+                isFkViolation ? "FK 引用" : "唯一约束", raw.split("\n")[0]);
+        } else {
+            log.error("[{}] 数据完整性异常: {}", traceId, raw, e);
         }
-        return buildSanitizedResponse(ErrorCode.DATA_INTEGRITY_ERROR, traceId);
+
+        String message;
+        if (isUniqueViolation) {
+            message = "数据已存在，请勿重复提交";
+        } else if (isFkViolation) {
+            // 尝试从错误消息提取被引用的目标表, 给用户清晰线索
+            message = "无法删除: 该数据仍被其他记录引用";
+            java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("referenced from table \"([^\"]+)\"").matcher(raw);
+            if (m.find()) {
+                message = "无法删除: 该数据仍被 " + m.group(1) + " 引用，请先处理相关数据";
+            }
+        } else {
+            message = ErrorCode.DATA_INTEGRITY_ERROR.getUserMessage();
+        }
+        return ApiResponse.error(409, message);
     }
 
     /**
