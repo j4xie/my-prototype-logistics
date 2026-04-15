@@ -250,11 +250,16 @@ class FixedExecutor:
 
             # CSV fast-path: when auto_parse used csv_passthrough, file is CSV not xlsx.
             # pd.read_excel would fail; dispatch to pd.read_csv.
+            # CRITICAL: pass nrows=max_rows so we don't load a 55MB / 470K-row
+            # CSV fully into memory and then ship it to Java (caused repeated
+            # prod OOM at 2026-04-15 23:36 — -Xmx1280m heap can't hold 470K
+            # Map<String,Object> entries). Default 10000 matches the xlsx path.
+            csv_max_rows = options.get("max_rows", 10000)
             if structure_config.method == "csv_passthrough":
                 try:
-                    df = pd.read_csv(io.BytesIO(file_bytes))
+                    df = pd.read_csv(io.BytesIO(file_bytes), nrows=csv_max_rows)
                 except UnicodeDecodeError:
-                    df = pd.read_csv(io.BytesIO(file_bytes), encoding="gbk")
+                    df = pd.read_csv(io.BytesIO(file_bytes), encoding="gbk", nrows=csv_max_rows)
             else:
                 # 对于复杂多层表头 (>2行)，使用智能合并而不是 pandas 默认拼接
                 if header_rows > 2 or structure_config.merged_cells:
