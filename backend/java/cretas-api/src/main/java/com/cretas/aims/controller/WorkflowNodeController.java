@@ -14,7 +14,12 @@ import java.util.Map;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/workflow")
+// Moved from "/api/workflow" to "/api/mobile/workflow" so 139 nginx gateway
+// proxies it (gateway only forwards /api/mobile/** to backend). Old URL
+// returned index.html (Vite SPA fallback) — caused R20-F2 (workflow designer
+// renders 766 empty 📦 tiles because v-for iterates over HTML string chars).
+// Frontend api/workflow.ts updated in sync.
+@RequestMapping("/api/mobile/workflow")
 @RequiredArgsConstructor
 public class WorkflowNodeController {
 
