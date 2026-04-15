@@ -112,7 +112,41 @@ The 3 fixed files are the only ones with confirmed 0-indexed-backend + raw-page 
 
 ---
 
-### R23-F4 — Shipment status case mismatch (P1, FIXED)
+### R23-F5 — Over-corrected pagination for 0-indexed frontends (P1, FIXED)
+
+**Symptom** (caught during T6 sales_mgr testing): /finance/invoices rendered empty with `GET /finance/invoices?page=-1&size=20 → 400`
+
+**Root cause**: My original F1 fix blindly added `- 1` to all 3 files. But:
+- `/warehouse/shipments/list.vue:23` — `pagination = ref({ page: 1 })` → 1-1=0 ✅ correct
+- `/finance/invoices/list.vue:16` — `pagination = ref({ page: 0 })` → 0-1=**-1** ❌ breaks
+- `/rd/samples/list.vue:20` — `pagination = ref({ page: 0 })` → 0-1=**-1** ❌ breaks
+
+The last 2 were already 0-indexed by design (matching their 0-indexed backends).
+
+**Fix**: reverted both files to raw `pagination.value.page`. Only `/warehouse/shipments` retains the `- 1` adjustment.
+
+**Lesson**: When doing a same-cause sweep, verify the *assumption* underlying the fix applies equally to each instance. I assumed all 3 files defaulted `page:1` (Element Plus convention). 2 of them overrode to `page:0` intentionally. The empirical `page=0 vs page=1` API classification I did earlier only told me which *backend* convention each endpoint uses — not what the *frontend* was already sending. Should have `grep pagination = ref` BEFORE applying the transformation.
+
+---
+
+## R22-T6 — Role permission spot check (4 roles live)
+
+4 non-baseline roles verified via MCP Chromium real login + navigation:
+
+| Role | Dashboard modules | /sales/orders | /warehouse/shipments | /finance/invoices | /system/users |
+|---|---|---|---|---|---|
+| factory_super_admin | all | RW (new + all row actions) | RW + 送达 visible | RW + 审核/开具 | ✅ access |
+| sales_manager | 4 (销售 RW, 生产/仓储/财务 RO) | RW ✅ | N/A in menu | RO ✅ (row renders, no action buttons) | hidden |
+| viewer (Level 50) | 6 all RO (no 财务) | RO ✅ (only 详情 per row, no 新建) | RO | → **/403 ✅** | → **/403 ✅** |
+| warehouse_manager | 仓储 specialized dashboard | N/A in menu | RW ✅ (新建出货, **单价/金额 column hidden** per P1-NEW-3) | N/A in menu | hidden |
+
+**P1-NEW-3 price-hiding verified live** for warehouse_manager — column count dropped from 9 (admin view) to 8 (warehouse view), 单价/金额 header is absent. Matches `isWarehouseOnly` guard in `list.vue:16-19`.
+
+**403 routing verified** — viewer attempting `/finance/invoices` or `/system/users` via direct URL is redirected to `/403` page with "访问被拒绝" message (Vue router guard level enforcement, not just button-hiding).
+
+**Minor finding (R24-F6 candidate)**: viewer sees AI录入 button on /sales/orders despite RO — this is a write button leak. Row-level 新建 button is correctly hidden, but AI录入 sits outside the `canWrite` gate. P3, defer to R24.
+
+---
 
 **Symptom**: Click 送达 → toast "操作失败，请稍后重试", backend 400 "无效的状态值: DELIVERED"
 

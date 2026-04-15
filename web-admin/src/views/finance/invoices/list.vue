@@ -30,7 +30,7 @@ async function loadData() {
   if (!factoryId.value) return;
   loading.value = true;
   try {
-    const params: Record<string, unknown> = { page: pagination.value.page - 1, size: pagination.value.size };
+    const params: Record<string, unknown> = { page: pagination.value.page, size: pagination.value.size };
     if (statusFilter.value) params.status = statusFilter.value;
     const res = await get(`/${factoryId.value}/finance/invoices`, { params });
     if (res.success) {
