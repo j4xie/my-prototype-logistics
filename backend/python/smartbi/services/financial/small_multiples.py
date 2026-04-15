@@ -142,6 +142,15 @@ class SmallMultiplesBuilder(AbstractFinancialChartBuilder):
             for m in range(len(month_range))
         ]
 
+        # Scale detection (global across all categories) — computed BEFORE KPIs
+        # because sparkline expressions reference `divisor` inside a genexpr.
+        # A later assignment below the KPIs block (as the code had) makes
+        # `divisor` a closure free-var that lookups BEFORE assignment, raising
+        # NameError: "free variable 'divisor' referenced before assignment".
+        all_values = [v for c in cat_data for v in c['values']]
+        scale = _detect_value_scale(all_values)
+        divisor = scale['divisor']
+
         # --- KPIs ---
         kpis = [
             {
@@ -186,10 +195,8 @@ class SmallMultiplesBuilder(AbstractFinancialChartBuilder):
         padding_x = 0.04  # horizontal padding between grids
         padding_y = 0.08  # vertical padding (room for sub-title)
 
-        # Scale detection (global across all categories)
-        all_values = [v for c in cat_data for v in c['values']]
-        scale = _detect_value_scale(all_values)
-        divisor = scale['divisor']
+        # (scale + divisor computed earlier — moved up because KPI sparklines
+        # capture `divisor` in genexpr closures)
 
         # --- Build ECharts option with multiple grids ---
         option = {
