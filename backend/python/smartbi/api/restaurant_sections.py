@@ -185,12 +185,12 @@ def compute_section(
     if not body.upload_id and not body.params.get("pos_df"):
         auto_resolve_meta["triggered"] = True
         try:
-            from smartbi.database import get_db_session
-            from smartbi.database.repository import ExcelUploadRepository, DynamicDataRepository
+            from smartbi.database import get_db
+            from smartbi.database.repository import UploadRepository, DynamicDataRepository
 
-            db = next(get_db_session())
+            db = next(get_db())
             try:
-                upload_repo = ExcelUploadRepository(db)
+                upload_repo = UploadRepository(db)
                 uploads = upload_repo.get_by_factory(body.factory_id, limit=1)
                 if uploads:
                     latest = uploads[0]
