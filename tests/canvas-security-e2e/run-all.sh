@@ -58,14 +58,34 @@ run_journey "J1: Canvas Lifecycle" "j1-lifecycle.mjs"
 sleep 5  # Rate limit cooldown (test backend enforces 60s per user, 5s between journeys helps)
 
 # Phase 3: Independent journeys
+# CANVAS_E2E_SKIP_UI=1 skips Playwright-dependent journeys (J3 full, J5 L1/L2).
+# Used by nightly cron on servers without Chromium. Leaves API-only coverage
+# (J0/J1/J2/J4/J5-L3-L5/J6 — ~75 of 97 assertions). Local dev runs without
+# this flag get full coverage.
+SKIP_UI="${CANVAS_E2E_SKIP_UI:-0}"
+
 run_journey "J2: Editor 7 Tabs" "j2-editor-tabs.mjs"
 sleep 5
-run_journey "J3: Consumer Form" "j3-consumer.mjs"
-sleep 5
+if [ "$SKIP_UI" = "1" ]; then
+  echo ""
+  echo "=========================================="
+  echo "  J3: Consumer Form (SKIPPED — CANVAS_E2E_SKIP_UI=1)"
+  echo "=========================================="
+else
+  run_journey "J3: Consumer Form" "j3-consumer.mjs"
+  sleep 5
+fi
 run_journey "J4: Cross-Tenant Security" "j4-cross-tenant.mjs"
 sleep 5
-run_journey "J5: Permission Ladder" "j5-permission-ladder.mjs"
-sleep 5
+if [ "$SKIP_UI" = "1" ]; then
+  # Run J5 API-only subset (L3/L4/L5) by setting an env var the test respects.
+  # L1 (MOBILE_ONLY gate) and L2 (route whitelist) require a browser.
+  CANVAS_E2E_SKIP_UI_IN_J5=1 run_journey "J5: Permission Ladder (API-only: L3/L4/L5)" "j5-permission-ladder.mjs"
+  sleep 5
+else
+  run_journey "J5: Permission Ladder" "j5-permission-ladder.mjs"
+  sleep 5
+fi
 run_journey "J6: AI Agent" "j6-ai-agent.mjs"
 
 echo ""

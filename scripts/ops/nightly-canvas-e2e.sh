@@ -83,6 +83,7 @@ echo "--- Running canvas-security-e2e ---"
 cd tests/canvas-security-e2e
 set +e  # Allow non-zero exit to be captured
 CANVAS_E2E_RUN_ID="nightly_$TIMESTAMP" \
+  CANVAS_E2E_SKIP_UI=1 \
   E2E_API_BASE="http://localhost:10011/api/mobile" \
   E2E_WEB_URL="http://localhost:5173" \
   bash run-all.sh
