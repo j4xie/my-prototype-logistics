@@ -225,10 +225,23 @@ class ContextExtractor:
             data_end_row: Optional data end row (auto-detected if not provided)
 
         Returns:
-            ContextInfo with extracted context
+            ContextInfo with extracted context (empty ContextInfo if file
+            is not a valid xlsx — caller should treat as "no context
+            available" and move on rather than crash).
         """
         import io
-        wb = openpyxl.load_workbook(io.BytesIO(file_bytes), data_only=True)
+        import zipfile
+        try:
+            wb = openpyxl.load_workbook(io.BytesIO(file_bytes), data_only=True)
+        except zipfile.BadZipFile as e:
+            # xlsx IS a zip container. Happens when the caller passes us a
+            # CSV, truncated upload, .xls binary, or corrupt file. Nothing
+            # to extract from — return empty context so the upstream
+            # pipeline can still proceed with pandas-only parsing.
+            logger.warning(
+                "Context extraction skipped: not a valid xlsx (BadZipFile): %s", e,
+            )
+            return ContextInfo()
 
         if sheet_index < len(wb.sheetnames):
             ws = wb[wb.sheetnames[sheet_index]]
