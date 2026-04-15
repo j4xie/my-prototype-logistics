@@ -32,7 +32,11 @@ const loading = ref(false)
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 function resolveEndpoint(): string {
-  return props.config.apiEndpoint.replace('{factoryId}', authStore.factoryId || '')
+  // axios baseURL 已是 /api/mobile, 若 config.apiEndpoint 已带该前缀则 strip 掉,
+  // 避免 /api/mobile/api/mobile/... 双前缀 (老配置可能写了完整路径).
+  return props.config.apiEndpoint
+    .replace('{factoryId}', authStore.factoryId || '')
+    .replace(/^\/api\/mobile(?=\/)/, '')
 }
 
 async function search(query: string) {

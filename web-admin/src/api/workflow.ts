@@ -71,17 +71,17 @@ export function getPublishedStateMachine(factoryId: string, entityType: string) 
 }
 
 export function getVersionHistory(factoryId: string, entityType: string) {
-  return get<StateMachineConfig[]>(`/api/mobile/${factoryId}/state-machines/${entityType}/versions`)
+  return get<StateMachineConfig[]>(`/${factoryId}/state-machines/${entityType}/versions`)
 }
 
 export function publishDraft(factoryId: string, entityType: string, draftId: number) {
-  return post<StateMachineConfig>(`/api/mobile/${factoryId}/state-machines/${entityType}/publish/${draftId}`)
+  return post<StateMachineConfig>(`/${factoryId}/state-machines/${entityType}/publish/${draftId}`)
 }
 
 export function saveStateMachine(factoryId: string, data: Partial<StateMachineConfig>) {
-  return post<StateMachineConfig>(`/api/mobile/${factoryId}/state-machines`, data)
+  return post<StateMachineConfig>(`/${factoryId}/state-machines`, data)
 }
 
 export function updateStateMachine(factoryId: string, id: number, data: Partial<StateMachineConfig>) {
-  return put<StateMachineConfig>(`/api/mobile/${factoryId}/state-machines/${id}`, data)
+  return put<StateMachineConfig>(`/${factoryId}/state-machines/${id}`, data)
 }

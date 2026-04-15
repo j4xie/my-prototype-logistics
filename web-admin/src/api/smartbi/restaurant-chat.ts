@@ -25,7 +25,7 @@ export async function askRestaurantQuestion(
   request: ChatQueryRequest,
 ): Promise<ChatQueryResponse> {
   const response = await post<ChatQueryResponse>(
-    `/api/mobile/${request.factoryId}/smart-bi/query`,
+    `/${request.factoryId}/smart-bi/query`,
     {
       query: request.query,
       userId: request.userId,
@@ -52,7 +52,7 @@ export async function clearRestaurantConversation(
   userId: string,
 ): Promise<void> {
   await post<void>(
-    `/api/mobile/${factoryId}/conversation/clear?userId=${encodeURIComponent(userId)}`,
+    `/${factoryId}/conversation/clear?userId=${encodeURIComponent(userId)}`,
     {},
   );
 }
