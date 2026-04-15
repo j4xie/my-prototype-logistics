@@ -1,0 +1,130 @@
+{
+  "round": 2,
+  "testSubject": "upload-500mb",
+  "timestamp": "2026-04-15T15:47:43.028Z",
+  "api_base": "http://139.196.165.140:8086",
+  "tests": [
+    {
+      "id": "R2-L3-1",
+      "layer": "L3",
+      "name": "java_rejects_wrong_extension",
+      "status": "PASS",
+      "depth": "medium",
+      "httpCode": 200,
+      "body": "{\"code\":400,\"message\":\"仅支持 .xlsx、.xls 或 .csv 格式的文件\",\"data\":null,\"timestamp\":\"2026-04-15T23:48:08.007960667\",\"success\":false}",
+      "hasExtensionReject": true,
+      "hasUpstreamReject": false,
+      "notSuccess": true,
+      "note": "Java correctly rejects .pdf (or upstream down)",
+      "at": "2026-04-15T15:48:11.863Z"
+    },
+    {
+      "id": "R2-L3-2",
+      "layer": "L3",
+      "name": "uppercase_csv_accepted",
+      "status": "PASS",
+      "depth": "medium",
+      "httpCode": 200,
+      "uploadId": 4058,
+      "bodySnippet": "{\"code\":200,\"message\":\"成功上传并处理 10000 条销售数据数据\",\"data\":{\"success\":true,\"message\":\"成功上传并处理 10000 条销售数据数据\",\"parseResult\":{\"success\":true,\"errorMessage\":null,\"uploadId\":null,\"headers\":[\"order_id\",\"store_id",
+      "note": ".CSV (uppercase) → uploadId allocated",
+      "at": "2026-04-15T15:48:31.603Z"
+    },
+    {
+      "id": "R2-L3-3",
+      "layer": "L3",
+      "name": "csv_55mb_repeat_upload",
+      "status": "PASS",
+      "depth": "medium",
+      "httpCode": 200,
+      "uploadId": 4059,
+      "bodySnippet": "{\"code\":200,\"message\":\"成功上传并处理 10000 条销售数据数据\",\"data\":{\"success\":true,\"message\":\"成功上传并处理 10000 条销售数据数据\",\"parseResult\":{\"success\":true,\"errorMessage\":null,\"uploadId\":null,\"headers\":[\"order_id\",\"store_id",
+      "note": "55MB CSV repeated upload — consistent persist",
+      "at": "2026-04-15T15:48:50.730Z"
+    },
+    {
+      "id": "R2-L4-1",
+      "layer": "L4",
+      "name": "multi_section_chain",
+      "status": "PASS",
+      "depth": "deep",
+      "fileSize": 44167134,
+      "scpSkipped": true,
+      "uploadElapsedMs": 47481,
+      "uploadId": 4060,
+      "targetBefore": 21,
+      "targetAfter": 22,
+      "delta": 1,
+      "sectionName": "temporal_comparison",
+      "sectionStatus": 200,
+      "sectionReturnStatus": "skipped",
+      "autoResolve": {
+        "triggered": true,
+        "reason": "loaded",
+        "uploadId": 4060,
+        "fileName": "e2e_pos.xlsx",
+        "rows": 80000
+      },
+      "uploadIdMatches": true,
+      "note": "temporal_comparison section loaded the upload correctly",
+      "at": "2026-04-15T15:49:41.828Z"
+    },
+    {
+      "id": "R2-L4-2",
+      "layer": "L4",
+      "name": "second_section_independent",
+      "status": "PASS",
+      "depth": "deep",
+      "sectionName": "menu_engineering",
+      "sectionStatus": 200,
+      "sectionReturnStatus": "skipped",
+      "autoResolve": {
+        "triggered": true,
+        "reason": "loaded",
+        "uploadId": 4060,
+        "fileName": "e2e_pos.xlsx",
+        "rows": 80000
+      },
+      "note": "menu_engineering autoResolve triggered independently with valid uploadId",
+      "at": "2026-04-15T15:49:47.521Z"
+    },
+    {
+      "id": "R2-REG-1",
+      "layer": "L4",
+      "name": "r1_regression_diagnostics",
+      "status": "PASS",
+      "depth": "deep",
+      "sectionStatus": 200,
+      "autoResolve": {
+        "triggered": true,
+        "reason": "loaded",
+        "uploadId": 4060,
+        "fileName": "e2e_pos.xlsx",
+        "rows": 80000
+      },
+      "note": "R1 L4-1 equivalent still PASSes (no regression)",
+      "at": "2026-04-15T15:49:49.912Z"
+    }
+  ],
+  "schema_v3": {
+    "specTotal": 6,
+    "p2Deferred": [],
+    "expectedFail": [],
+    "effectiveTotal": 6,
+    "actualExecuted": 6,
+    "actualPass": 6,
+    "depthBreakdown": {
+      "smoke": 0,
+      "medium": 3,
+      "deep": 3
+    },
+    "pctOfSpec": 100,
+    "pctDeep": 50
+  },
+  "summary": {
+    "total": 6,
+    "pass": 6,
+    "fail": 0,
+    "warn": 0
+  }
+}
