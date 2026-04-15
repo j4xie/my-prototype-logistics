@@ -1,0 +1,496 @@
+# Canvas Security E2E — Evidence & Design Decisions
+
+这份文档解释 Canvas E2E 套件的关键设计决策, 避免未来审计时基于**错误假设**做过度校正。
+
+## 1. 为什么 `results/` 被 `.gitignore` 排除
+
+**决策**: `.gitignore:164` 明确排除 `tests/canvas-security-e2e/results/`
+
+**原因**:
+- `.token-cache.json` 包含 JWT tokens (含 userId/factoryId/role 的 base64 payload), 虽 24h TTL 但入 Git 不合规 (MUST-FIX from Apr 12 audit)
+- `*-results.json` 逐次运行覆盖, 非版本化制品
+- CI 可通过 artifact 归档机制保留 (不是通过 Git)
+
+**不是**: "结果文件缺失, 65/65 PASS 无证据" — 这是 agent-team Analyst (R-B #3) 的误判, Critic 用 `.gitignore:164` 反驳
+
+## 2. 为什么 J3 只有 S1/S2/S3/S4/S10 (跳过 S5-S9)
+
+**决策**: `j3-consumer.mjs:18-22` 文件头注释块明确声明:
+
+```
+Note: J3-S5 through J3-S9 are INTENTIONALLY UNUSED numbers reserved for future
+Playwright form submission / sub-table / validation interception tests. The
+current scope does NOT cover those flows because Fix 14 (setDynamicFields
+affected-row check) is primarily verified by J1-B2 (ACTIVE field counting),
+not by J3 UI form submission.
+```
+
+**原因**:
+- S5-S9 原设计覆盖"填表单 / 提交 / 子表 / 校验拦截 / 详情页验证", 但 Fix 14 (setDynamicFields affected-row 检查) 的**主验证路径实际在 J1-B2** (ACTIVE field 计数对比)
+- J3 的核心价值是**消费者角度 UI 可见性验证**, 不需要重复 J1 的 DDL/发布流程
+- 编号保留 S5-S9 是为将来扩展预留, 不是"遗漏"
+
+**不是**: "Fix 14 唯一正向路径, 必须补齐" — Analyst 基于编号假设的错判, Critic 反驳 (见 Challenge 2)
+
+## 3. 为什么 `FeatureConfigController.PUT` 无 `@RequireRole` 不在本次 scope
+
+**决策**: 本套件专测 Canvas V3 范围 (commit `8d3755222` 修复的组件)
+
+**scope 包含**:
+- ConfigController (Canvas 配置发布/回滚)
+- DynamicFieldController (动态字段 CRUD + 子表)
+- CanvasAIController (AI 助手)
+- BusinessRuleController (validation/formula/scheduler)
+- ConfigChangeSetController (变更集审批)
+- TriggerChainController (触发链)
+
+**scope 不含**:
+- `FeatureConfigController` — 独立模块, 不属 Canvas V3
+- 跨租户防御由 `JwtAuthInterceptor:178-184` 统一拦截 (`validateFactoryAccess`)
+
+**后续**: FeatureConfig 安全审计应为独立 workstream, 不混入 Canvas scope
+
+## 4. `log(testId, status, evidence: string)` 签名约定
+
+**当前**: `evidence` 参数是 string, 所有 PASS/FAIL 证据以模板字符串记录
+
+**合理性**:
+- E2E 测试业界惯例允许 string evidence + screenshot 路径作为 artifact
+- 关键追溯性由 `{journey}-results.json` (rc.save) + `screenshots/*.png` + console stdout 三重保证
+- **不是**"零证据" — 是"人类可读证据, 非机器可 diff"
+
+**R2+ 计划** (非 R1 硬阻塞):
+- 扩展 log 签名: `log(testId, status, evidence: string | { filled, output, verified_at })`
+- 关键 E2E 断言 (如跨租户攻击 payload) 改用 object 形式便于 regression diff
+
+## 5. "65" 这个数字的含义
+
+**澄清**: `run-all.sh` 之前存在 `PASS_COUNT` bug — 被误理解为"测试总数", 实际是 journey 总数 (7)
+
+**修复后** (`run-all.sh:65-100`):
+- `TEST-LEVEL SUMMARY` 聚合所有 `*-results.json`, 报告真实 assertion 级别的 pass/fail/warn
+- "65" 指 **唯一 testId × record() 调用** 总数 (其中 J1-A3 循环 7 个字段展开为 7 条独立记录)
+- R1 的诚实表述: "65 assertion records, 其中 59 unique testIds, 覆盖 51 个 spec 任务单元"
+
+## 6. WARN 处理策略
+
+**R0 缺陷**: WARN 被 `run-all.sh` 的 journey-level `PASS_COUNT += 1` 当成 OK
+
+**R1 修正** (`run-all.sh:95-100`):
+- `EXIT 1` 触发条件: `fail > 0 || warn > 0`
+- 符合 E2E skill rules (`references/test-rules.md:378`): "WARN = 没通过 = 必须修"
+- 单 journey 内 WARN 不再被聚合脚本静默
+
+## 7. 角色覆盖哲学
+
+**R0**: 测试覆盖 4/20 角色 — factory_super_admin (主演) + permission_admin (隐式, 通过 @Deprecated 注解列入 Canvas 写权限) + operator (MOBILE_ONLY + API 403) + finance_manager (路由白名单)
+
+**Critic 立场** (Hidden Assumption #3): Canvas 威胁模型核心是 **admin vs non-admin + cross-factory**, 不是 20 细分角色。J5 的 4 角色已覆盖核心场景
+
+**R2+ 扩展** (conditional):
+- 如 PM 决定 Canvas scope 纳入 6 Level-10 经理, 则补 J5-L3 扩展
+- 如保持现状, 则记录在本文档 "scope 边界"
+
+## 8. Canvas 安全 scope 正式边界 (ADR)
+
+本套件 **验证 & 不验证**:
+
+| 验证 ✅ | 不验证 ❌ |
+|---------|---------|
+| Canvas V3 动态字段 CRUD | `FeatureConfigController` |
+| 动态字段 DDL 执行 (ALTER TABLE) | 传统模块 hard-coded 字段 |
+| Canvas 发布/回滚流程 | 跨模块业务流程 (订单 → 发货等) |
+| ConfigChangeSet 审批流 | 旧 AI 意图系统 (非 Canvas AI) |
+| TriggerChain 事件订阅 | 审计日志后端存储层 |
+| Cron DDoS 防御 | SmartBI / Python 服务端点 |
+| AI prompt injection 防御 | 所有非 `canvas_*` 工具的 scope |
+| Cross-tenant 攻击向量 (Canvas 端点) | `JwtAuthInterceptor` 通用跨租户拦截 (已独立审) |
+
+**跨项目安全审计不应混入本套件** — 每次加新旅程需在本 ADR 明确"scope-in"
+
+---
+
+## 9. R1 审计发现: 前后端权限矩阵分裂 (R2 P0)
+
+**来源**: R1-⑤ agent-team 4 阶段审计, Critic 代码验证发现
+
+**问题**:
+- **前端 router** (`web-admin/src/router/index.ts:733`): canvas-editor meta.roles = `['platform_admin', 'permission_admin']` (commit `46d1925a3`, Apr 13 18:23 收紧)
+- **后端 @RequireRole** (`backend/.../CanvasAIController.java:104, 145`): 仍是 `{"factory_super_admin", "permission_admin"}` (未同步更新)
+
+**影响**:
+- `factory_super_admin` 账号 (如 F002 restaurant_admin1) 前端访问 `/canvas-editor` 被挡 (/403)
+- 但同一账号可**绕过前端直接调** `POST /api/mobile/{factoryId}/ai/canvas/chat` — **后端仍允许**
+- 这是生产面 security bug, 不是测试问题
+
+**R1 应对**: J3-S10 断言参数化 (`E2E_CANVAS_EDITOR_EXPECT=blocked|allowed`), 默认期望 `/403` (验证 router 生效)
+
+**R2 真 P0 (必修)**:
+1. 决策前后端对齐 — router 回滚 or 后端 @RequireRole 收紧 (需问产品)
+2. 新增 J5-L4 后端 API 直调 `canvas/chat` with factory_super_admin token → 期望 403
+3. CI 门禁: 改 router meta.roles 或 @RequireRole 必须触发 canvas-security-e2e
+
+**Integrator 裁决**: `.claude/agent-team-outputs/2026-04-13_canvas-e2e-r1-results-audit.md`
+
+## 10. 业务模块门禁的产品语义 (R2 P2 调研)
+
+**R1-⑤ agent-team Critic 代码验证**:
+```
+grep -r "@RequireModule" backend/java/cretas-api/src/main/java/com/cretas/aims/controller/
+→ 0 matches
+```
+
+`@RequireModule` 注解 + `isModuleEnabled()` 服务方法均存在, 但**零 controller 使用** (ModuleEnabledAspect 依赖该注解触发, 零注解 = 零触发).
+
+**含义**: Canvas 模块 toggle 目前只是**前端路由/菜单装饰开关**, 不作用于业务 API. toggle `traceability`=false 后直调 `/api/mobile/{factoryId}/traceability` 仍 200.
+
+**R2 不应**: 写"业务门禁 E2E" (永远 PASS, 因为产品无此行为)
+
+**R2 应**: 1 人天对齐产品语义 — Canvas toggle 的产品意图到底是什么? 历史废弃 (应删 `@RequireModule`) 还是规划中未铺开 (应补 18 模块 Controller 注解 + 4-6 周 epic)?
+
+## 11. R2 ADR: 拒绝"方案 A 机械替换" + 接受前后端分层授权
+
+**来源**: R2-② agent-team 审计 (2026-04-14), Critic 代码验证翻盘
+
+**决策**: **保留当前前后端权限矩阵分歧**, 不执行 34 处 @RequireRole 机械替换
+
+### 3 个代码证据推翻 R1-⑤ 原方案 A
+
+**证据 1** (Blocker): **R1 J1-B1/C/D 必挂**
+- `tests/canvas-security-e2e/j1-lifecycle.mjs:272-281` 用 `restaurant_admin1` (factory_super_admin) 调 `/config/publish` 断言 HTTP 200
+- 方案 A 把 `/config/publish` 的 @RequireRole 改为 `{platform_admin, permission_admin}` → restaurant_admin1 立即 403
+- J1-B1 / J1-C (module toggle + publish) / J1-D (rollback + restore publish) 连锁 4-6 测试全挂
+- **R1 70/70 PASS 会退回 ~64/70, R2 无法起步**
+
+**证据 2** (R-B 证据链坍塌): **aiPrompt 字段是死代码**
+- R1-⑤ Analyst 引用 "30 天 0 ai_prompt 记录" 作为"零业务影响"证据
+- `ConfigChangeLog.aiPrompt` 整个 java 源树零写入路径
+- `FactoryConfigServiceImpl.logChange()` 不 set aiPrompt
+- `CanvasAIController.chat()` 不引用 `ConfigChangeLogRepository`
+- 查询必 0, 不管真实流量多大 = **Absence-of-evidence 谬误**
+
+**证据 3** (Scope 越界): **34 处 @RequireRole 业务语义不同质**
+- CanvasAIController 只有 2 处 (chat/apply-diffs) 是真正 "AI 入口"
+- ConfigController 14 处 + BusinessRule 5 + DynamicField 4 + TriggerChain 4 + ConfigChangeSet 5 = 32 处是**工厂配置工作流** (publish / approve / rollback / submit-review / import / export / toggle module / define field / set rule / trigger chain)
+- 把这 32 处一并改 = 剥夺 factory_super_admin 发布配置的能力 = 产品级角色变更, 超出 "前后端对齐" 的 commit 46d1925a3 意图 (只改了 1 行 router menu visibility)
+
+### 正确的架构理解
+
+| 层 | 角色模型 | 职责 |
+|---|---------|------|
+| **前端 router meta.roles** | `[platform_admin, permission_admin]` | Canvas 编辑器**菜单可见性**控制 (UX 层) |
+| **后端 RequireRoleInterceptor** | `PLATFORM_ADMIN_ROLES` 白名单 + 显式 `@RequireRole` 列表 | API 级契约层, 允许 factory_super_admin 通过 factory 模式 |
+| **JwtAuthInterceptor.validateFactoryAccess** | tokenFactoryId == urlFactoryId | Cross-tenant 隔离 |
+
+**不是 bug, 是双模式设计**:
+- Platform mode: platform_admin 通过 `canvas-editor` 页面编辑所有工厂模板
+- Factory mode: factory_super_admin 通过 **业务页面** (不是 canvas-editor) 发布自己工厂的配置
+- 共用同一套后端 API, 靠 `factoryId` 路径参数区分
+- 46d1925a3 只是隐藏了 factory_super_admin 的 canvas-editor 菜单 (UX 考虑), **没有变更业务契约**
+
+### R2 正确的 P0
+
+不是修复"分裂", 而是**测试文档化**它:
+
+1. **J5-L4 契约测试** (已加) — 明确记录 `factory_super_admin → /config/v2/ai/chat` 应返回 200 (当前契约)
+2. **J5-L4-b 契约测试** (已加) — 明确记录 `factory_super_admin → /config/publish` 角色检查必过 (R1 J1 依赖)
+3. **J4-7 / J4-8 跨租户扩展** (已加) — F006 admin 跨 F002 canvas AI/scheduler 应被 JwtAuth 层拦截
+4. **EVIDENCE.md 本节** — ADR 正式记录, 防止未来审计再次误判
+
+### R2 明确拒绝的事
+
+- ❌ 改 34 处 @RequireRole
+- ❌ 回退 commit 46d1925a3
+- ❌ 引入新注解 `@RequireCanvasScope`
+- ❌ 基于 `aiPrompt` 字段查询做决策
+
+### R3+ 可选后续 (非 R2 scope)
+
+- 等产品真正澄清 "Canvas 配置的授权是 platform 还是 factory 级" 再议 (1 人天 PM 对齐)
+- 若产品决定收紧, 需同步改 E2E 账号矩阵 (platform_admin 取代 restaurant_admin1 做 J1 正向) + 34 处 @RequireRole + 客户通知 — 预计 1-2 周 epic
+- 独立处理 `RequireRoleInterceptor` vs `JwtAuthInterceptor` 的 `PLATFORM_ADMIN_ROLES` drift (3 vs 4 元素)
+
+---
+
+## 12. R3 发现: `setCustomFields` 缺 `@Transactional` (latent silent data loss)
+
+**来源**: R3 第一次跑 J1-E phaseE 深度 round-trip 测试 (depth-first-e2e Rule 2) → 立即 FAIL → 排查发现 latent bug
+
+**问题**:
+- `DynamicFieldController.setCustomFields()` 之前**没有** `@Transactional` 注解
+- `DynamicFieldService.setDynamicFields()` 用 raw `JdbcTemplate.update("UPDATE ...")` 写动态字段
+- `application-pg-prod.properties:spring.datasource.hikari.auto-commit=false` — HikariCP 配置连接 autoCommit=false
+- 没有 Spring transaction boundary → JdbcTemplate update 跑在 connection 级隐式事务里, **从未 commit**
+- 连接归还连接池, 下次拿到 fresh autoCommit=false 连接, 之前的 update 已经 rollback
+- API PUT 返回 HTTP 200 success (controller 方法正常返回, 没异常)
+- 后续 GET 同一记录字段值仍为 null
+
+**影响**:
+- 所有**直接通过 API PUT** `/api/mobile/{factoryId}/{moduleCode}/{recordId}/custom-fields` 的写入都在静默丢失数据
+- service 层 caller 如 `MaterialBatchServiceImpl.createMaterialBatch` (本身有 outer `@Transactional`) **不受影响**, 因为外层事务边界生效
+- bug 存在数月未被发现, 因为**74 个旧 E2E 测试都没有 PUT 后 GET 校验回读**这个流程
+- J4-4 跨租户 attack 测试一直 PASS 是因为 attacker 那边走的是 `verifyParentOwnership` (R3 加的) → 直接 400 拒绝, **没机会**触发 hikari/事务问题
+
+**修复**:
+- `DynamicFieldController.setCustomFields()` 加 `@Transactional` (controller-level minimal scope)
+- 同 commit 还加了 `verifyParentOwnership` (R3 P0-1, 修 R2 J4-4 WARN) 和 `validateModuleCode` (R3 P0-3, 对齐 sub-table SEC-4 模式)
+
+**验证**:
+1. Manual smoke (R3 deploy 后): PUT `dlv_priority_e2e_*=POSTFIX_VERIFY` → GET 返回 `'POSTFIX_VERIFY'` ✓
+2. R3-run1 J1-E3 PASS evidence: "Roundtrip verified — actualValue matches write"
+3. R3-run2 J1-E3 PASS (independent verification, 2 min 间隔)
+
+**Bug 的元意义**:
+- 这是 depth-first-e2e skill 价值的最强证据
+- "如果这个 bug 真的存在, 我的测试会不会 FAIL?" — 旧 74 个测试答案全是"不会"; J1-E phaseE 的答案是"会"
+- 如果没有警告 + skill 介入, R3 会按 6 项收尾, R4 才会发现 @Transactional bug, R5 才能闭环 — 多浪费 2 个 round
+- **每 round 至少 1 个 deep test 不是仪式, 是 bug 发现的必要条件**
+
+**R4 Carryover (有明确技术原因)**:
+1. `@Transactional` 移到 service 层 (`DynamicFieldService.setDynamicFields`) — 需要 caller audit 防止嵌套事务行为变化
+2. audit 同 controller 其他 `JdbcTemplate.update/execute` callers (`setSubTableRow` / `deleteSubTableRow` / `updateRow`) 是否有同样 latent bug
+3. 决定 `setDynamicFields setClauses.isEmpty() return` 早返回的语义 — throw "field not found" or silent no-op
+
+---
+
+## 13. R4 发现: Sub-table CRUD hardcoded UUID cast 破坏 VARCHAR-id 父表 (P0)
+
+**来源**: R4 第一次跑 phaseF 深度 round-trip 测试 → POST 返回 HTTP 400 → 排查 root cause
+
+**问题**:
+- `DDLExecutor.generateSubTableDDL` (line 196 之前): 硬编码 `parent_id UUID NOT NULL`
+- `DynamicTableService.addRow/updateRow/deleteRow/getRows` (line 97, 148, 175, 182): 硬编码 `?::uuid` / `CAST(? AS uuid)` 对 parent_id
+- 但 Canvas V3 module 对应的主表 id 类型**不统一**:
+  - `sales_orders.id`: VARCHAR (如 `SO-F001-202501-001`, `F002-SO-T10`)
+  - `bom_items.id`: BIGINT
+  - 大多数其他: UUID
+- 对 VARCHAR-id 父表 (sales_orders):
+  - POST 返回 `ERROR: invalid input syntax for type uuid: "F002-SO-T10"` → HTTP 400
+  - 整个 sub-table CRUD 完全不可用
+- 对 UUID-id 父表:
+  - 能工作, 但生产环境有 2 条孤儿行 (parent_id UUID 无匹配任何真 parent, 可能是早期测试数据)
+
+**影响**:
+- 所有依赖 Canvas V3 sub-table 的业务流程对 VARCHAR-id 模块**从未工作过**
+- 销售订单 (sales_order) 的预付款记录、子项目等子表 API 对客户不可用
+- 这个 bug 与 R3 的 @Transactional bug 都属于 "生产代码 + 0% 正向 E2E 覆盖" 的经典组合, 被 depth-first Rule 2 + Rule 8 抓出
+
+**修复**:
+- `DynamicTableService`:
+  - 新增 `parentIdTypeCache` (ConcurrentHashMap) + `getParentIdColumnType(subTableName)` + `parentIdPlaceholder(subTableName, forInsert)`
+  - 应用到 4 个方法 (getRows/addRow/updateRow/deleteRow), hardcoded cast 替换为 `parentIdPlaceholder` 返回值
+- `DDLExecutor`:
+  - 新增 `resolveParentIdSqlType(parentTable)` → 查询 `information_schema.columns WHERE table_name=? AND column_name='id'`, 返回 `UUID` / `BIGINT` / `INTEGER` / `VARCHAR(100)`
+  - `generateSubTableDDL`: 用 `resolveParentIdSqlType(resolveTableName(field))` 代替硬编码 `UUID`
+
+**验证**:
+1. Compile pass (mvn)
+2. Deploy to test 10011 (v20260414_162157)
+3. R4-run3 88/88 PASS + R4-run4 88/88 PASS + R4-final 88/88 PASS
+4. phaseF/G/H 全绿 — 新创建的 sub-tables 有正确的 VARCHAR parent_id, CRUD 全部工作
+
+**存量数据处理**:
+- Test env: 29 个 empty sub-tables 保留 (parent_id UUID), 新 run 用 fresh SUFFIX 创建新 sub-tables 都有正确类型
+- Prod env: 1 个 sub-table `sales_order_prepayment_records_items` 含 2 条孤儿行, **R4 明确不动**
+- R5 ADR: 决定 back-migration 策略 (清理孤儿行? ALTER COLUMN TYPE? DROP + recreate?)
+
+**R5 Carryover (有明确技术原因)**:
+1. `AggregateFormulaExecutor.java:87-91, 142-146` 同模式硬编码 `?::uuid` — R4 明确不在 deep test 范围, R5 补 aggregate deep test 后再修
+2. `DynamicFieldController.setCustomFields` 的 controller-level `@Transactional` 上移到 `DynamicFieldService.setDynamicFields` service layer — 架构统一 (与 R4 service-level 保持一致)
+3. `DynamicFieldService.setDynamicFields setClauses.isEmpty() return` 早返回的语义决策 ADR
+4. 生产 sub-tables back-migration ADR
+
+**Bug 发现的 meta 意义**:
+- depth-first-e2e skill Rule 8 (same-cause sweep) 在 R4 triggered 两次:
+  - 第 1 次: R3 @Transactional fix 后 → 找到 3 个 sibling → R4 P0-1/2/3
+  - 第 2 次: R4-④ phaseF 测试现场发现 UUID cast bug → 找到 9 个 instance → R4 P0-7 + R5 backlog
+- Rule 8 的经典应用: 一次测试发现 + 一次扫描 + 一轮修复. 如果没有 Rule 8, UUID cast bug 可能在 R5 才发现, 或干脆被漏掉.
+- Case study: `.claude/skills/depth-first-e2e/references/case-r3-incomplete-fix.md` 已记录 R3 surgical fix 教训, R4 是这个教训的证实案例.
+
+---
+
+## 14. R5 ADR-1: `setDynamicFields setClauses.isEmpty()` 早返回语义决策
+
+**来源**: R4-① / R4-② plan-audit docs 里作为 R5 backlog item 明确记录, R5 轮内决策
+
+**背景**:
+当前 `DynamicFieldService.setDynamicFields` 逻辑 (line ~220-240):
+```java
+for (Map.Entry<String, Object> entry : fields.entrySet()) {
+    CanvasDynamicField def = defMap.get(entry.getKey());
+    if (def != null && !"SUB_TABLE".equals(def.getFieldType())) {
+        setClauses.add(def.getColumnName() + " = ?");
+        params.add(entry.getValue());
+    }
+}
+if (setClauses.isEmpty()) return;  // <-- Silent no-op
+```
+
+如果 PUT 请求的 fields 中所有 fieldCode 都不在当前工厂的 active dynamic field 定义里 (defMap), setClauses 空, 方法早返回. Controller 返回 HTTP 200 success, 但实际 0 字段被写入 DB.
+
+**问题场景** (R3 最初发现这个 bug, R4 基本上修好 + 这个 ADR 处理遗留边界):
+1. 用户 typo fieldCode — PUT 200 success 但没写入, 用户以为写入了
+2. 用户用过期 fieldCode (字段已被 soft-delete) — 同上
+3. Cross-tenant attacker 利用: 已被 R4 P0-1/2/3 修掉 (verifyParentOwnership 在 controller 层先 400)
+4. 一个 request 混合匹配和不匹配的 field — 匹配的写入, 不匹配的静默忽略, 用户无法分辨
+
+**3 个候选**:
+
+### Option A: Status quo (silent no-op)
+- **Behavior**: 当前行为, 早返回 HTTP 200 success
+- **Pros**:
+  - 向后兼容, 所有现有 caller (MaterialBatchServiceImpl 等) 无变化
+  - 客户端可以发任意 fields, 后端容错
+- **Cons**:
+  - **违反 fail-loud 原则**
+  - 用户 typo 不被察觉
+  - 混合请求 (some match, some don't) 无法告知客户端哪些被忽略
+- **Risk**: 低, 现状
+
+### Option B: Throw BusinessException ("字段未定义")
+- **Behavior**: 如果 fields 非空但 defMap 全无匹配 → throw `BusinessException("字段 ${x} 未在当前工厂定义")`
+- **Pros**:
+  - Fail-loud, 客户端明确知道请求无效
+  - Defense-in-depth against R3-style silent bugs
+- **Cons**:
+  - **BREAKING CHANGE** — 现有 caller 如果曾经"无害地发送过 unknown fields" 会被拒绝
+  - 需要 caller audit (8 处 callers per R5-② Critic Q1): MaterialBatchServiceImpl, ProductionPlanServiceImpl, SalesServiceImpl, PurchaseServiceImpl, ReturnOrderServiceImpl, TransferServiceImpl, QualityInspectionServiceImpl, DynamicFieldController
+- **Risk**: 中. 不确认 caller 行为前不能上.
+
+### Option C: 返回 response 含 ignored fields
+- **Behavior**: `setDynamicFields` 改签名为 `Map<String, Object>` 返回, 内容 `{ignoredFieldCodes: [...]}`. Controller response 从 `ResponseEntity<Void>` 改为 `ResponseEntity<Map>`.
+- **Pros**:
+  - 非 breaking change (新增字段)
+  - 客户端有诊断信息
+- **Cons**:
+  - 改动 8 处 caller (要么适应新返回, 要么忽略)
+  - Swagger / contract 变更
+  - 客户端 UI 可能需要 "部分成功" 提示 (如果某些字段被忽略)
+- **Risk**: 中. API contract change.
+
+**R5 推荐**: Option B (throw BusinessException), 但**实施延 R6**, 因为:
+1. Caller audit 需要 1 天 (8 处 + 每处的客户端调用者)
+2. 变 breaking change, 需要 feature flag 或 grace period
+3. R5 scope 已紧, 加这个 = scope creep
+
+**R5 实际采取**: 仅记录本 ADR. Option B 作为 R6 工作项, 需要:
+1. Grep 所有 8 处 caller 的 input data flow, 确认是否有"无害地发送 unknown fields"的 case
+2. 如无 → 直接 Option B
+3. 如有 → feature flag `cretas.canvas.strict-field-validation` + grace period
+
+**追踪**: 
+- R6 task: caller audit of setDynamicFields unknown-field behavior  
+- Blocker: 需先有 aggregate formula test harness (见 R5 backlog #1), 一起处理
+
+---
+
+## 15. R5 ADR-2: 生产 sub-table orphan rows back-migration plan
+
+**来源**: R4 发现生产 `sales_order_prepayment_records_items` 含 2 条 orphan UUID `parent_id` 行 (parent_id 无匹配 sales_orders.id)
+
+**现状** (verified 2026-04-15 from prod cretas_prod_db):
+```sql
+SELECT id, parent_id FROM sales_order_prepayment_records_items LIMIT 3
+-- id              | parent_id
+-- afbdafe8-...    | cb4e687d-...  (no matching sales_orders.id)
+-- 789d4985-...    | cb4e687d-...  (same orphan parent)
+-- (2 rows total)
+
+SELECT data_type FROM information_schema.columns 
+WHERE table_name='sales_orders' AND column_name='id'
+-- data_type: character varying
+
+SELECT id FROM sales_orders WHERE id = 'cb4e687d-7497-4993-ab2e-c706721751e1'
+-- (0 rows)
+```
+
+两条 sub-table rows 的 parent_id 是 UUID format, 但 sales_orders.id 是 varchar. 这些 parent_id 不匹配任何真实 sales_order. 可能是早期开发/测试阶段 (sales_orders.id 曾是 UUID?) 留下的数据.
+
+**R4 修复影响**:
+- 新 sub-table (`sales_order_prepay_*_items` created after R4 deploy) parent_id 现在是 VARCHAR
+- 但生产 `sales_order_prepayment_records_items` 已经是 UUID parent_id
+- 新 API 请求 (PUT/POST/DELETE) to `sales_order_prepayment_records_items` 如果使用 R4 的 type-aware cast, 会**正确返回** VARCHAR 匹配, 但 parent_id 列类型是 UUID → 插入/更新会失败
+- 当前状态: 表不可写 (schema 不兼容), 2 条 orphan rows 不可读 (verifyParentOwnership fails — parent_id UUID 无 sales_orders 匹配)
+- **事实上**: 这个生产 sub-table 是**完全不可用**的, 与其说是 bug 不如说是历史残留
+
+**4 个候选**:
+
+### Option A: DROP + recreate
+- **Steps**: `DROP TABLE sales_order_prepayment_records_items` + 重新 publish 让 DDLExecutor 用 VARCHAR parent_id 重建
+- **Pros**: Clean, 新表结构正确
+- **Cons**: Permanent data loss (虽然只有 2 条 orphan). 需要 DBA approval.
+- **Risk**: 低 (orphan 无用)
+
+### Option B: ALTER COLUMN TYPE (保留 rows)
+- **Steps**: `ALTER TABLE sales_order_prepayment_records_items ALTER COLUMN parent_id TYPE varchar(100) USING parent_id::text`
+- **Pros**: 保留 2 条历史 rows (即使 orphan)
+- **Cons**: Orphan rows 仍然不可读 (parent_id 值不匹配 sales_orders.id), 占空间但无用
+- **Risk**: 低
+
+### Option C: 清理 orphan + ALTER COLUMN (推荐 ⭐)
+- **Steps**:
+  1. `DELETE FROM sales_order_prepayment_records_items WHERE parent_id::text NOT IN (SELECT id FROM sales_orders);` (安全清理)
+  2. `ALTER TABLE sales_order_prepayment_records_items ALTER COLUMN parent_id TYPE varchar(100) USING parent_id::text;`
+- **Pros**:
+  - Clean up obvious orphans
+  - 表结构匹配 R4 fix
+  - 明确可追溯的变更
+- **Cons**: 需要 DBA maintenance window
+- **Risk**: 低
+
+### Option D: 保留 + document
+- **Steps**: 不做变更, 文档化孤儿 rows 存在 + sub-table 不可用
+- **Pros**: 零运维工作
+- **Cons**:
+  - 生产数据库里有死表, 长期维护负担
+  - 新 publish 不会覆盖 (DDL 用 IF NOT EXISTS)
+- **Risk**: 低
+
+**R5 推荐**: **Option C (清理 orphan + ALTER COLUMN)**
+
+**执行 Plan** (给 DBA, R5 不在本轮执行):
+```sql
+-- Pre-check (应该返回 2)
+SELECT count(*) AS orphan_count
+FROM sales_order_prepayment_records_items sopri
+WHERE NOT EXISTS (SELECT 1 FROM sales_orders so WHERE so.id = sopri.parent_id::text);
+
+-- Delete orphans (expected: 2 rows deleted)
+BEGIN;
+DELETE FROM sales_order_prepayment_records_items sopri
+WHERE NOT EXISTS (SELECT 1 FROM sales_orders so WHERE so.id = sopri.parent_id::text);
+
+-- Expect: 0 rows remain
+SELECT count(*) FROM sales_order_prepayment_records_items;
+
+-- Now safe to ALTER (table is empty)
+ALTER TABLE sales_order_prepayment_records_items 
+  ALTER COLUMN parent_id TYPE varchar(100) USING parent_id::text;
+
+-- Verify
+\d sales_order_prepayment_records_items
+-- Expected: parent_id | character varying(100) | not null
+
+COMMIT;
+```
+
+**If ALTER fails mid-way** (e.g., column cast rejected by an unexpected value):
+```sql
+-- The DELETE + ALTER are inside BEGIN...COMMIT — if ALTER throws, PostgreSQL
+-- automatically aborts the transaction. Explicitly:
+ROLLBACK;
+-- Table state reverts to pre-check baseline (orphan rows + UUID parent_id still present).
+-- Then investigate the unexpected value BEFORE retrying:
+SELECT parent_id, pg_typeof(parent_id) FROM sales_order_prepayment_records_items 
+WHERE parent_id::text !~ '^[0-9a-f-]{36}$';  -- find non-UUID strings in UUID column (should be 0)
+```
+
+**Execution responsibility**: DBA / DevOps during maintenance window, **NOT Claude automation**. Coordinated via:
+- `docs/plans/canvas-v3-subtable-migration-plan.md` (to be created after R5 commit)
+- Maintenance window notice to customers
+
+**Post-execution verification**: Re-run canvas-security-e2e full suite against prod (with appropriate tunnel), expect 91/91 PASS.
+
+---
+
+**维护**: 每次 R{N} 循环结束, 更新本文档相关章节, 保持与实际套件行为一致。

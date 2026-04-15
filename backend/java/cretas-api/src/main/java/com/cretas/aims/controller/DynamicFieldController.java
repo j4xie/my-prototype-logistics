@@ -276,6 +276,10 @@ public class DynamicFieldController {
             @PathVariable String factoryId,
             @PathVariable String moduleCode,
             @PathVariable String recordId) {
+        // R3 Fix: symmetric SEC-4 moduleCode validation + record ownership check
+        // (matches existing sub-table endpoint pattern at lines 208-210, 232-234, 248-250, 264-266)
+        validateModuleCode(moduleCode);
+        dynamicTableService.verifyParentOwnership(moduleCode, recordId, factoryId);
         return ResponseEntity.ok(dynamicFieldService.getDynamicFields(factoryId, moduleCode, recordId));
     }
 
@@ -285,6 +289,18 @@ public class DynamicFieldController {
             @PathVariable String moduleCode,
             @PathVariable String recordId,
             @RequestBody Map<String, Object> fields) {
+        // R3 Fix: close silent-success path on cross-tenant write — when attacker's
+        // factory has no matching dynamic field, setClauses is empty at
+        // DynamicFieldService.java:237 and the service returns OK without touching the
+        // DB, bypassing the WHERE factory_id=? tenant filter. Moving the ownership
+        // check to the controller fails fast at HTTP 400 before the service is called.
+        //
+        // R5 arch cleanup: @Transactional now lives on DynamicFieldService.setDynamicFields
+        // (service layer), matching the R4 pattern for sub-table methods. The controller
+        // previously had @Transactional (R3 surgical hot-fix) — moved down so all callers
+        // (controller-direct + service-to-service) share the same tx boundary.
+        validateModuleCode(moduleCode);
+        dynamicTableService.verifyParentOwnership(moduleCode, recordId, factoryId);
         dynamicFieldService.setDynamicFields(factoryId, moduleCode, recordId, fields);
         return ResponseEntity.ok().build();
     }

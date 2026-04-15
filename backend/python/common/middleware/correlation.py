@@ -10,6 +10,7 @@ Propagates X-Correlation-ID across Python service boundaries:
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import uuid
 from contextvars import ContextVar
@@ -17,6 +18,8 @@ from contextvars import ContextVar
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
+
+logger = logging.getLogger(__name__)
 
 # Context variable for the current request's correlation ID (async-safe)
 correlation_id_var: ContextVar[str] = ContextVar("correlation_id", default="-")
@@ -46,6 +49,34 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
             response: Response = await call_next(request)
             response.headers[CORRELATION_ID_HEADER] = correlation_id
             return response
+        except asyncio.CancelledError:
+            # Client disconnected mid-request (closed tab, SSE lost, mobile
+            # went to background, upstream proxy timed out). Swallow silently
+            # — not a server bug, and re-raising would just flood ASGI logs
+            # with "Exception in ASGI application" ERROR traces.
+            logger.warning(
+                "Request cancelled by client (correlation_id=%s, path=%s)",
+                correlation_id,
+                request.url.path,
+            )
+            # Return a 499-style response. Client socket is already closed
+            # so this body will never be written — Starlette / uvicorn drops
+            # it cleanly (unlike the RuntimeError('No response returned')
+            # that propagates up when we raise).
+            return Response(status_code=499, content=b"", media_type="text/plain")
+        except RuntimeError as e:
+            # Starlette's BaseHTTPMiddleware re-wraps cancelled downstream
+            # tasks as `RuntimeError("No response returned.")`. Treat the
+            # same as CancelledError above.
+            if "No response returned" in str(e):
+                logger.warning(
+                    "Downstream handler cancelled (likely client disconnect, "
+                    "correlation_id=%s, path=%s)",
+                    correlation_id,
+                    request.url.path,
+                )
+                return Response(status_code=499, content=b"", media_type="text/plain")
+            raise
         finally:
             correlation_id_var.reset(token)
 

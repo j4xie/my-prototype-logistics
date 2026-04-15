@@ -1,0 +1,115 @@
+{
+  "round": 3,
+  "testSubject": "upload-500mb",
+  "timestamp": "2026-04-15T17:25:47.657Z",
+  "api_base": "http://139.196.165.140:8086",
+  "tests": [
+    {
+      "id": "R3-L3-1",
+      "layer": "L3",
+      "name": "reject_oversize_501mb_real",
+      "status": "PASS",
+      "depth": "medium",
+      "fileSize": 525336576,
+      "httpCode": 400,
+      "bodySnippet": "{\"code\":400,\"message\":\"上传格式错误\",\"data\":null,\"timestamp\":\"2026-04-16T01:26:12.160556902\",\"success\":false}",
+      "rejected": true,
+      "notSuccess": true,
+      "note": "server rejected 501MB > 500MB limit (HTTP 400)",
+      "at": "2026-04-15T17:26:18.028Z"
+    },
+    {
+      "id": "R3-L3-2",
+      "layer": "L3",
+      "name": "reject_missing_auth_strict",
+      "status": "PASS",
+      "depth": "medium",
+      "httpCode": 401,
+      "bodySnippet": "{\"code\":401,\"success\":false,\"message\":\"未授权，请先登录\",\"timestamp\":\"2026-04-16T01:26:24.227369247\"}",
+      "statusIsAuthReject": true,
+      "bodyHasAuthKeyword": true,
+      "note": "missing Authorization → 401 + auth-related message",
+      "at": "2026-04-15T17:26:27.807Z"
+    },
+    {
+      "id": "R3-L3-3",
+      "layer": "L3",
+      "name": "dirty_schema_strict_warnings",
+      "status": "PASS",
+      "depth": "medium",
+      "httpCode": 200,
+      "uploadId": 4075,
+      "bodySnippet": "{\"code\":200,\"message\":\"成功上传并处理 2 条未知数据数据\",\"data\":{\"success\":true,\"message\":\"成功上传并处理 2 条未知数据数据\",\"parseResult\":{\"success\":true,\"errorMessage\":null,\"uploadId\":null,\"headers\":[\"random_col_a\",\"random_col_b\"],\"rowCount\":2,\"columnCount\":2,\"fieldMappings\":[],\"dataFeatures\":null,\"previewData\":[{\"random_col_a\":\"x\",\"random_col_b\":\"1\"},{\"random_col_a\":\"y\",\"random_col_b\":\"2\"}],\"tableType\":\"data\",\"missingRequiredFields\":[\"random_col_a\",\"random_col_b\"],\"status\":\"ANALYZED\",\"metadata\":{\"sheetName\":\"Sheet1\",\"orig",
+      "uploaded": true,
+      "hasRealWarnings": true,
+      "note": "dirty xlsx → real warnings/fieldMappings=[]/errorMessage (not just keyword)",
+      "at": "2026-04-15T17:26:53.872Z"
+    },
+    {
+      "id": "R3-L4-1",
+      "layer": "L4",
+      "name": "csv_to_section_full_chain",
+      "status": "PASS",
+      "depth": "deep",
+      "uploadElapsedMs": 92397,
+      "uploadId": 4076,
+      "targetBefore": 37,
+      "targetAfter": 38,
+      "delta": 1,
+      "sectionName": "temporal_comparison",
+      "sectionStatus": 200,
+      "sectionReturnStatus": "skipped",
+      "autoResolve": {
+        "triggered": true,
+        "reason": "loaded",
+        "uploadId": 4076,
+        "fileName": "e2e_pos_55mb.csv",
+        "rows": 10000
+      },
+      "uploadIdMatches": true,
+      "fileNameIsCsv": true,
+      "handlerInvoked": true,
+      "note": "CSV upload fully traversed 5-layer chain + autoResolve loaded CSV, not xlsx",
+      "at": "2026-04-15T17:28:29.746Z"
+    },
+    {
+      "id": "R3-L4-2",
+      "layer": "L4",
+      "name": "dirty_data_handler_signal",
+      "status": "PASS",
+      "depth": "deep",
+      "uploadHttp": 200,
+      "uploadId": 4077,
+      "autoResolveLoaded": true,
+      "sectionStatus": "skipped",
+      "sectionHasWarnings": true,
+      "warningsSample": [
+        "POS 缺列 '开单时间'"
+      ],
+      "silentAcceptBug": false,
+      "note": "handler correctly signaled dirty data (status=skipped, warnings=true)",
+      "at": "2026-04-15T17:28:56.913Z"
+    }
+  ],
+  "schema_v3": {
+    "specTotal": 5,
+    "p2Deferred": [],
+    "expectedFail": [],
+    "effectiveTotal": 5,
+    "actualExecuted": 5,
+    "actualPass": 5,
+    "depthBreakdown": {
+      "smoke": 0,
+      "medium": 3,
+      "deep": 2
+    },
+    "pctOfSpec": 100,
+    "pctDeep": 40
+  },
+  "summary": {
+    "total": 5,
+    "pass": 5,
+    "fail": 0,
+    "warn": 0
+  }
+}

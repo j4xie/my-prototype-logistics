@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -752,6 +753,7 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
     @Override
     @Scheduled(cron = "0 0 2 * * ?") // 每天凌晨2点执行
+    @SchedulerLock(name = "MaterialBatchServiceImpl.autoCheckAndUpdateExpiredBatches", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void autoCheckAndUpdateExpiredBatches() {
         log.info("开始自动检查过期批次");
 

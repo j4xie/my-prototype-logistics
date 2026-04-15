@@ -5,6 +5,7 @@ import com.cretas.aims.repository.FactoryRepository;
 import com.cretas.aims.service.calibration.BehaviorCalibrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -37,6 +38,7 @@ public class BehaviorCalibrationScheduler {
      * Cron: 秒 分 时 日 月 周
      */
     @Scheduled(cron = "0 0 1 * * ?")
+    @SchedulerLock(name = "BehaviorCalibrationScheduler.calculateDailyMetrics", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void calculateDailyMetrics() {
         log.info("开始执行每日校准指标计算...");
 
@@ -74,6 +76,7 @@ public class BehaviorCalibrationScheduler {
      * 每周一凌晨 2:00 计算上周的汇总指标
      */
     @Scheduled(cron = "0 0 2 ? * MON")
+    @SchedulerLock(name = "BehaviorCalibrationScheduler.calculateWeeklyMetrics", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void calculateWeeklyMetrics() {
         log.info("开始执行每周校准指标计算...");
 
@@ -104,6 +107,7 @@ public class BehaviorCalibrationScheduler {
      * 每月1号凌晨 3:00 计算上月的汇总指标
      */
     @Scheduled(cron = "0 0 3 1 * ?")
+    @SchedulerLock(name = "BehaviorCalibrationScheduler.calculateMonthlyMetrics", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void calculateMonthlyMetrics() {
         log.info("开始执行每月校准指标计算...");
 
@@ -134,6 +138,7 @@ public class BehaviorCalibrationScheduler {
      * 每日凌晨 1:30 计算工具可靠性统计
      */
     @Scheduled(cron = "0 30 1 * * ?")
+    @SchedulerLock(name = "BehaviorCalibrationScheduler.calculateToolReliabilityStats", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void calculateToolReliabilityStats() {
         log.info("开始执行工具可靠性统计计算...");
 

@@ -8,6 +8,7 @@ import com.cretas.aims.service.aps.impl.RescheduleTriggerServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -51,6 +52,7 @@ public class RescheduleCheckScheduler {
      * 3. 如果需要重排，发布 RescheduleNeededEvent 事件
      */
     @Scheduled(fixedRate = 15 * 60 * 1000)  // 15分钟
+    @SchedulerLock(name = "RescheduleCheckScheduler.periodicRescheduleCheck", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void periodicRescheduleCheck() {
         LocalDateTime startTime = LocalDateTime.now();
         log.info("开始执行定时重排检查任务... [{}]", startTime.format(TIME_FORMATTER));
@@ -105,6 +107,7 @@ public class RescheduleCheckScheduler {
      * 生成重排趋势报告
      */
     @Scheduled(fixedRate = 60 * 60 * 1000)  // 1小时
+    @SchedulerLock(name = "RescheduleCheckScheduler.hourlyRescheduleAnalysis", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void hourlyRescheduleAnalysis() {
         log.info("开始执行每小时重排分析...");
 

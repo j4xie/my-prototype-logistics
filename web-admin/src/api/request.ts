@@ -74,6 +74,18 @@ request.interceptors.response.use(
   (response: AxiosResponse) => {
     const data = response.data;
 
+    // Defensive: reject HTML responses that leaked through (routing misconfiguration).
+    // When an API URL hits a non-proxied path, Vite SPA fallback returns index.html
+    // with 200 OK. Without this guard, axios returns {success:true, data:"<HTML>"}
+    // and downstream code silently iterates characters of the HTML string.
+    // See R20-F2: workflow-designer rendered 766 empty 📦 tiles for this reason.
+    if (typeof data === 'string' && data.trimStart().startsWith('<')) {
+      const url = response.config?.url || '(unknown)';
+      const msg = `API 路由错误: ${url} 返回了 HTML (期望 JSON). 检查后端 @RequestMapping 或 nginx 代理规则.`;
+      showMessage(msg, 'error');
+      return Promise.reject(new ApiError(msg, 'ROUTING_ERROR'));
+    }
+
     // 如果响应已经是标准格式
     if (data && typeof data.success === 'boolean') {
       if (!data.success) {

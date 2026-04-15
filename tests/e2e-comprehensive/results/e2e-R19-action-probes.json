@@ -1,0 +1,278 @@
+{
+  "round": 19,
+  "timestamp": "2026-04-15T05:10:25.903Z",
+  "factoryId": "FOOD_3101_048",
+  "notes": "R19 action-level probes — driving the specific user action for each of 10 bugs (R18 smoke = page-load only).",
+  "probeType": "action",
+  "bugsCovered": [
+    "bug5",
+    "bug6",
+    "bug7",
+    "bug8",
+    "bug2",
+    "bug3",
+    "bug12",
+    "bug14",
+    "bug15",
+    "bug9"
+  ],
+  "results": [
+    {
+      "layer": "L4",
+      "testId": "bug5",
+      "probe": "click_new_shipment",
+      "module": "sales/shipments",
+      "status": "REPRO",
+      "depth": "action",
+      "evidence": {
+        "btnInfo": {
+          "found": true,
+          "text": "新建出货",
+          "disabled": false
+        },
+        "dialogState": {
+          "dialogAppeared": false
+        },
+        "newRequestsAfterClick": 0,
+        "toastCount": 0,
+        "toastSample": []
+      },
+      "ts": "2026-04-15T05:03:58.183Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "bug6",
+      "probe": "view_permissions",
+      "module": "system/roles",
+      "status": "REPRO",
+      "depth": "action",
+      "evidence": {
+        "clickedRow": "工厂超管factory_super_admin工厂最高权限，管理所有模块超级管理2 人查看权限编辑",
+        "networkErrors": [
+          {
+            "url": "/api/mobile/FOOD_3101_048/roles/factory_super_admin/permissions",
+            "status": 404,
+            "method": "GET"
+          }
+        ],
+        "toasts": [
+          {
+            "type": "error",
+            "text": "请求的资源不存在"
+          }
+        ]
+      },
+      "ts": "2026-04-15T05:04:25.258Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "bug7",
+      "probe": "interact_save",
+      "module": "system/workflow-designer",
+      "status": "REPRO",
+      "depth": "action",
+      "evidence": {
+        "clicked": {
+          "clicked": true,
+          "buttonText": "保存草稿",
+          "keyword": "保存"
+        },
+        "networkErrors": [
+          {
+            "url": "/api/mobile/FOOD_3101_048/state-machines",
+            "status": 404,
+            "method": "POST"
+          }
+        ],
+        "toasts": [
+          {
+            "type": "error",
+            "text": "保存失败"
+          },
+          {
+            "type": "error",
+            "text": "请求的资源不存在"
+          }
+        ]
+      },
+      "ts": "2026-04-15T05:04:48.184Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "bug8",
+      "probe": "manual_sync",
+      "module": "system/features",
+      "status": "REPRO",
+      "depth": "action",
+      "evidence": {
+        "btnInfo": {
+          "clicked": true,
+          "buttonText": "初始化默认配置",
+          "keyword": "初始化默认配置"
+        },
+        "confirmed": {
+          "hadDialog": true,
+          "confirmed": true
+        },
+        "networkErrors": [
+          {
+            "url": "/api/mobile/FOOD_3101_048/feature-config/init-defaults",
+            "status": 405,
+            "method": "POST"
+          }
+        ],
+        "toasts": [
+          {
+            "type": "error",
+            "text": "初始化失败"
+          },
+          {
+            "type": "error",
+            "text": "不支持的请求方法: POST"
+          }
+        ]
+      },
+      "ts": "2026-04-15T05:05:12.696Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "bug2",
+      "probe": "load_financial_dashboard",
+      "module": "smart-bi/financial-dashboard",
+      "status": "REPRO",
+      "depth": "action",
+      "evidence": {
+        "canceledCount": 8,
+        "canceledSample": [
+          {
+            "url": "/assets/dayjs.min-lasCq60O.js",
+            "failure": "net::ERR_ABORTED"
+          },
+          {
+            "url": "/assets/focus-trap-BDDqUMxO.js",
+            "failure": "net::ERR_ABORTED"
+          },
+          {
+            "url": "/assets/_commonjsHelpers-CE1G-McA.js",
+            "failure": "net::ERR_ABORTED"
+          }
+        ],
+        "networkErrors": [],
+        "toasts": [],
+        "dashboardState": {
+          "hasCanceledText": false,
+          "hasErrorCard": false,
+          "bodyPreview": "白垩纪AI Agent\n首页\n生产管理\n仓储管理\n质量管理\n采购管理\n销售管理\n人事管理\n调拨管理\n设备管理\n财务管理\n研发管理\n系统管理\n数据分析\n智能调度\n行为校准\n生产分析\n智能BI\n分析入口\n经营驾驶舱\n财务分析看板\n智能数据分析\nAI问答\n预定义报表\n销售数据分析\n财务数据分析\n数据管理\nExcel上传\n查询模板\n数据完整度\n质量管理\n知识库反馈\n智能BI\n/\n财务分析看板\ne2e_fa"
+        }
+      },
+      "ts": "2026-04-15T05:05:41.361Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "bug3",
+      "probe": "upload_file",
+      "module": "smart-bi/upload",
+      "status": "NOT_REPRO",
+      "depth": "action",
+      "evidence": {
+        "uploadedPath": "C:\\Users\\Steve\\my-prototype-logistics\\tests\\e2e-comprehensive\\results\\r19-probe-bug3.csv",
+        "networkErrors": [],
+        "toasts": [
+          {
+            "type": "success",
+            "text": "文件解析成功"
+          }
+        ]
+      },
+      "ts": "2026-04-15T05:06:33.152Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "bug12",
+      "probe": "demo_data_click",
+      "module": "smart-bi/financial-dashboard",
+      "status": "NOT_REPRO",
+      "depth": "action",
+      "evidence": {
+        "clickResult": {
+          "clicked": true,
+          "via": "financial-dashboard",
+          "buttonText": "演示数据"
+        },
+        "networkErrors": [],
+        "toasts": [
+          {
+            "type": "success",
+            "text": "成功生成 18 个图表"
+          }
+        ]
+      },
+      "ts": "2026-04-15T05:07:22.105Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "bug14",
+      "probe": "ai_query_submit",
+      "module": "smart-bi/query",
+      "status": "TIMEOUT",
+      "depth": "action",
+      "evidence": {
+        "filled": {
+          "filled": true,
+          "value": "最近三个月的销售额总和是多少？"
+        },
+        "clickResult": {
+          "clicked": true,
+          "buttonText": "发送"
+        },
+        "elapsedMs": 35016,
+        "networkErrors": [],
+        "toasts": []
+      },
+      "ts": "2026-04-15T05:08:23.390Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "bug15",
+      "probe": "one_click_execute",
+      "module": "smart-bi/query-templates",
+      "status": "WARN",
+      "depth": "action",
+      "evidence": {
+        "reason": "button not found",
+        "clickResult": {
+          "clicked": false,
+          "buttonsSeen": [
+            "新增模板",
+            "财务分析",
+            "销售分析",
+            "生产分析",
+            "自定义",
+            "创建第一个模板"
+          ]
+        }
+      },
+      "ts": "2026-04-15T05:08:43.617Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "bug9",
+      "probe": "orchestrator",
+      "module": "analytics/alert-dashboard",
+      "status": "FAIL",
+      "depth": "action",
+      "evidence": {
+        "error": "probe-level timeout 90s"
+      },
+      "ts": "2026-04-15T05:10:13.653Z"
+    }
+  ],
+  "summary": {
+    "repro": 5,
+    "notRepro": 2,
+    "warn": 1,
+    "timeout": 1,
+    "fail": 1,
+    "total": 10
+  }
+}

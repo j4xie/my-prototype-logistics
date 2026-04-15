@@ -1,0 +1,4 @@
+*.csv
+*.xlsx
+*.bin
+!README.md

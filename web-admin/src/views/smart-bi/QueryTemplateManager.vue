@@ -84,7 +84,9 @@ const currentTemplate = ref<QueryTemplate>({
 });
 
 // Feature 1B: Execution state
-const executionResults = reactive(new Map<number, ExecutionResult>());
+// 使用 ref + 普通对象 — reactive(new Map()) 在某些场景下 .set() 后 template 中的
+// 函数调用型依赖（getExecutionResult()）不可靠，导致 loading 卡住。
+const executionResults = ref<Record<number, ExecutionResult>>({});
 const expandedTemplateId = ref<number | null>(null);
 
 // Feature 1C: Parameterized Variable Form state
@@ -270,8 +272,8 @@ async function executeTemplateQuery(template: QueryTemplate, resolvedQuery: stri
   const id = template.id;
   if (id == null) return;
 
-  // Set loading state and expand result panel
-  executionResults.set(id, { loading: true });
+  // Set loading state and expand result panel — 用新对象触发 Vue 响应式
+  executionResults.value = { ...executionResults.value, [id]: { loading: true } };
   expandedTemplateId.value = id;
 
   try {
@@ -279,20 +281,26 @@ async function executeTemplateQuery(template: QueryTemplate, resolvedQuery: stri
       query: resolvedQuery,
     });
 
-    executionResults.set(id, {
-      loading: false,
-      result: {
-        success: result.success !== false,
-        answer: result.answer || (result.error ? undefined : '分析完成，暂无文本结果。'),
-        error: result.error
+    executionResults.value = {
+      ...executionResults.value,
+      [id]: {
+        loading: false,
+        result: {
+          success: result.success !== false,
+          answer: result.answer || (result.error ? undefined : '分析完成，暂无文本结果。'),
+          error: result.error
+        }
       }
-    });
+    };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : '执行查询失败';
-    executionResults.set(id, {
-      loading: false,
-      error: errorMsg
-    });
+    executionResults.value = {
+      ...executionResults.value,
+      [id]: {
+        loading: false,
+        error: errorMsg
+      }
+    };
   }
 }
 
@@ -313,7 +321,7 @@ function toggleExpand(id: number) {
 /** Get execution result for a template */
 function getExecutionResult(id: number | undefined): ExecutionResult | undefined {
   if (id == null) return undefined;
-  return executionResults.get(id);
+  return executionResults.value[id];
 }
 
 // ==================== 生命周期 ====================

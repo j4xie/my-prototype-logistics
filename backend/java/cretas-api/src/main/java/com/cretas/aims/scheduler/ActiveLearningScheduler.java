@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -63,6 +64,7 @@ public class ActiveLearningScheduler {
      * 3. Generates learning suggestions
      */
     @Scheduled(cron = "0 0 2 * * ?")
+    @SchedulerLock(name = "ActiveLearningScheduler.analyzeLowConfidenceSamples", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void analyzeLowConfidenceSamples() {
         log.info("========== Starting daily low confidence sample analysis ==========");
 
@@ -103,6 +105,7 @@ public class ActiveLearningScheduler {
      * Every day at 03:00 - Log daily model performance
      */
     @Scheduled(cron = "0 0 3 * * ?")
+    @SchedulerLock(name = "ActiveLearningScheduler.logDailyPerformance", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void logDailyPerformance() {
         log.info("========== Starting daily performance logging ==========");
 
@@ -138,6 +141,7 @@ public class ActiveLearningScheduler {
      * Every day at 04:00 - Expire old suggestions
      */
     @Scheduled(cron = "0 0 4 * * ?")
+    @SchedulerLock(name = "ActiveLearningScheduler.expireOldSuggestions", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void expireOldSuggestions() {
         log.info("========== Starting suggestion expiration task ==========");
 
@@ -159,6 +163,7 @@ public class ActiveLearningScheduler {
      * 2. Updates all factory transition matrices
      */
     @Scheduled(cron = "0 0 1 ? * MON")
+    @SchedulerLock(name = "ActiveLearningScheduler.updateTransitionMatrices", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void updateTransitionMatrices() {
         log.info("========== Starting weekly transition matrix update ==========");
 
@@ -187,6 +192,7 @@ public class ActiveLearningScheduler {
      * Every Sunday at 00:00 - Log weekly model performance
      */
     @Scheduled(cron = "0 0 0 ? * SUN")
+    @SchedulerLock(name = "ActiveLearningScheduler.logWeeklyPerformance", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void logWeeklyPerformance() {
         log.info("========== Starting weekly performance logging ==========");
 
@@ -220,6 +226,7 @@ public class ActiveLearningScheduler {
      * 3. Promotes high-performing cross-factory knowledge
      */
     @Scheduled(cron = "0 0 0 1 * ?")
+    @SchedulerLock(name = "ActiveLearningScheduler.evaluateKeywordEffectiveness", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void evaluateKeywordEffectiveness() {
         log.info("========== Starting monthly keyword effectiveness evaluation ==========");
 
@@ -252,6 +259,7 @@ public class ActiveLearningScheduler {
      * Every 1st of month at 01:00 - Log monthly model performance
      */
     @Scheduled(cron = "0 0 1 1 * ?")
+    @SchedulerLock(name = "ActiveLearningScheduler.logMonthlyPerformance", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void logMonthlyPerformance() {
         log.info("========== Starting monthly performance logging ==========");
 
@@ -283,6 +291,7 @@ public class ActiveLearningScheduler {
      * 3. Removes old completed annotations
      */
     @Scheduled(cron = "0 0 0 15 * ?")
+    @SchedulerLock(name = "ActiveLearningScheduler.cleanupOldData", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void cleanupOldData() {
         log.info("========== Starting bi-monthly data cleanup ==========");
 
@@ -303,6 +312,7 @@ public class ActiveLearningScheduler {
      * Only runs for factories with high traffic
      */
     @Scheduled(cron = "0 0 * * * ?")
+    @SchedulerLock(name = "ActiveLearningScheduler.logHourlyPerformance", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void logHourlyPerformance() {
         // Only log hourly for high-traffic factories to avoid excessive data
         try {
@@ -335,6 +345,7 @@ public class ActiveLearningScheduler {
      * 2. Analyze clusters and generate learning suggestions
      */
     @Scheduled(cron = "0 0 3 * * ?")
+    @SchedulerLock(name = "ActiveLearningScheduler.dailyClusterAndSuggest", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void dailyClusterAndSuggest() {
         log.info("========== Starting daily cluster + suggest task ==========");
 
@@ -377,6 +388,7 @@ public class ActiveLearningScheduler {
      * other types (MERGE_INTENT, NEW_INTENT, etc.) are logged but require manual action.
      */
     @Scheduled(cron = "0 0 4 * * SUN")
+    @SchedulerLock(name = "ActiveLearningScheduler.weeklyApplyApprovedSuggestions", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void weeklyApplyApprovedSuggestions() {
         log.info("========== Starting weekly approved suggestion application ==========");
 

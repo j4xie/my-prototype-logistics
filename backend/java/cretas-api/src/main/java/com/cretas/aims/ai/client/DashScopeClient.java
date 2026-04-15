@@ -158,8 +158,21 @@ public class DashScopeClient {
         return createErrorResponse("重试耗尽");
     }
 
-    private static final ChatCompletionRequest.ExtraBody THINKING_OFF =
-            ChatCompletionRequest.ExtraBody.builder().enableThinking(false).build();
+    /**
+     * 关闭 thinking 模式的辅助方法.
+     *
+     * <p>历史 bug (2026-04-15 修复): 之前的 THINKING_OFF 常量放在 ExtraBody 里发送,
+     * 但 DashScope 的 OpenAI-compatible 模式**忽略** extra_body 内的 enable_thinking,
+     * 只认顶级 enable_thinking 字段 (见 ChatCompletionRequest DTO 注释). 结果是所有
+     * chat() / chatFast() / chatLowTemp() 调用都在默认跑 reasoning, 简单 "pong"
+     * 也会吐 219 个 reasoning tokens → 驾驶舱洞察 prompt 直接撑爆 30s readTimeout
+     * → SmartBIDashboardController.getDashboardLLMInsights 每次 93s 93s 93s 重试失败.
+     *
+     * <p>实测差异: 同一个 "reply pong" 请求, thinking ON 用 4.8s, thinking OFF 用 0.66s.
+     */
+    private static void disableThinking(ChatCompletionRequest request) {
+        request.setEnableThinking(false);
+    }
 
     /**
      * 简单对话调用（默认关闭 thinking 模式）
@@ -176,9 +189,7 @@ public class DashScopeClient {
         );
         request.setMaxTokens(config.getMaxTokens());
         request.setTemperature(config.getTemperature());
-        if (request.getExtraBody() == null) {
-            request.setExtraBody(THINKING_OFF);
-        }
+        disableThinking(request);
 
         ChatCompletionResponse response = chatCompletion(request);
         if (response.hasError()) {
@@ -199,7 +210,7 @@ public class DashScopeClient {
         );
         request.setMaxTokens(500);
         request.setTemperature(config.getTemperature());
-        request.setExtraBody(THINKING_OFF);
+        disableThinking(request);
 
         ChatCompletionResponse response = chatCompletion(request);
         if (response.hasError()) {
@@ -219,9 +230,7 @@ public class DashScopeClient {
         );
         request.setMaxTokens(config.getMaxTokens());
         request.setTemperature(config.getLowTemperature());
-        if (request.getExtraBody() == null) {
-            request.setExtraBody(THINKING_OFF);
-        }
+        disableThinking(request);
 
         ChatCompletionResponse response = chatCompletion(request);
         if (response.hasError()) {
@@ -571,7 +580,7 @@ public class DashScopeClient {
                 .temperature(config.getLowTemperature())
                 .tools(tools)
                 .toolChoice(toolChoice)
-                .extraBody(THINKING_OFF)
+                .enableThinking(false)
                 .build();
 
         return chatCompletion(request);

@@ -2,8 +2,8 @@
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
-import { get } from '@/api/request';
-import { ElMessage } from 'element-plus';
+import { get, post } from '@/api/request';
+import { ElMessage, type FormInstance } from 'element-plus';
 import { Plus } from '@element-plus/icons-vue';
 import { formatDateTimeCell } from '@/utils/tableFormatters';
 
@@ -92,6 +92,76 @@ function getStatusText(status: string) {
   };
   return map[status?.toUpperCase()] || status;
 }
+
+// ==================== Create ====================
+const createDialogVisible = ref(false);
+const submitting = ref(false);
+const formRef = ref<FormInstance>();
+const customerOptions = ref<Array<{ id: string; name: string }>>([]);
+const emptyForm = () => ({
+  customerId: '',
+  productName: '',
+  quantity: 1,
+  unit: 'kg',
+  unitPrice: 0,
+  shipmentDate: new Date().toISOString().slice(0, 10),
+  shippingAddress: '',
+  trackingNumber: '',
+  notes: ''
+});
+const createForm = ref(emptyForm());
+const createFormRules = {
+  customerId: [{ required: true, message: '请选择客户', trigger: 'change' }],
+  productName: [{ required: true, message: '请输入产品名称', trigger: 'blur' }],
+  quantity: [{ required: true, message: '请输入数量', trigger: 'blur' }],
+  unit: [{ required: true, message: '请输入单位', trigger: 'blur' }],
+  shipmentDate: [{ required: true, message: '请选择出货日期', trigger: 'change' }]
+};
+
+async function loadCustomerOptions() {
+  if (!factoryId.value) return;
+  try {
+    const res = await get(`/${factoryId.value}/customers`, { params: { page: 1, size: 200 } });
+    if (res.success && res.data) {
+      const list = (res.data.content || []) as Array<Record<string, unknown>>;
+      customerOptions.value = list
+        .filter(c => c.id && c.name)
+        .map(c => ({ id: String(c.id), name: String(c.name) }));
+    }
+  } catch {
+    // fall back to empty select
+  }
+}
+
+function handleCreate() {
+  createForm.value = emptyForm();
+  createDialogVisible.value = true;
+  if (customerOptions.value.length === 0) loadCustomerOptions();
+}
+
+async function submitCreateForm() {
+  if (formRef.value) {
+    try { await formRef.value.validate(); } catch { return; }
+  }
+  submitting.value = true;
+  try {
+    const payload: Record<string, unknown> = { ...createForm.value };
+    if (!payload.unitPrice) delete payload.unitPrice;
+    const res = await post(`/${factoryId.value}/shipments`, payload);
+    if (res.success) {
+      ElMessage.success('出货记录已创建');
+      createDialogVisible.value = false;
+      loadData();
+    } else {
+      ElMessage.error(res.message || '创建失败');
+    }
+  } catch (e) {
+    console.error('Create shipment failed:', e);
+    ElMessage.error('创建失败');
+  } finally {
+    submitting.value = false;
+  }
+}
 </script>
 
 <template>
@@ -100,7 +170,7 @@ function getStatusText(status: string) {
       <template #header>
         <div class="card-header">
           <span>出货记录管理</span>
-          <el-button v-if="canWrite" type="primary" :icon="Plus">新建出货</el-button>
+          <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleCreate">新建出货</el-button>
         </div>
       </template>
 
@@ -125,6 +195,45 @@ function getStatusText(status: string) {
           </template>
         </el-table-column>
       </el-table>
+
+      <!-- 新建出货 -->
+      <el-dialog v-model="createDialogVisible" title="新建出货" width="560px" :close-on-click-modal="false" destroy-on-close>
+        <el-form ref="formRef" :model="createForm" :rules="createFormRules" label-width="100px">
+          <el-form-item label="客户" prop="customerId">
+            <el-select v-model="createForm.customerId" filterable placeholder="选择客户" style="width: 100%">
+              <el-option v-for="c in customerOptions" :key="c.id" :label="c.name" :value="c.id" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="产品名称" prop="productName">
+            <el-input v-model="createForm.productName" placeholder="请输入产品名称" />
+          </el-form-item>
+          <el-form-item label="数量" prop="quantity">
+            <el-input-number v-model="createForm.quantity" :min="0.01" :precision="2" :step="1" />
+          </el-form-item>
+          <el-form-item label="单位" prop="unit">
+            <el-input v-model="createForm.unit" placeholder="kg / 件 / 箱" style="width: 140px" />
+          </el-form-item>
+          <el-form-item label="单价">
+            <el-input-number v-model="createForm.unitPrice" :min="0" :precision="2" :step="1" />
+          </el-form-item>
+          <el-form-item label="出货日期" prop="shipmentDate">
+            <el-date-picker v-model="createForm.shipmentDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 200px" />
+          </el-form-item>
+          <el-form-item label="发货地址">
+            <el-input v-model="createForm.shippingAddress" placeholder="请输入发货地址" />
+          </el-form-item>
+          <el-form-item label="物流单号">
+            <el-input v-model="createForm.trackingNumber" placeholder="可选" />
+          </el-form-item>
+          <el-form-item label="备注">
+            <el-input v-model="createForm.notes" type="textarea" :rows="2" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button :disabled="submitting" @click="createDialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="submitting" @click="submitCreateForm">确定</el-button>
+        </template>
+      </el-dialog>
 
       <!-- 查看详情 -->
       <el-dialog v-model="viewDialogVisible" title="出货详情" width="500px" destroy-on-close>

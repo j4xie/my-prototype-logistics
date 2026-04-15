@@ -73,6 +73,7 @@ from smartbi.api import (
     financial_ratios,
 )
 from smartbi.api import restaurant_sections
+from smartbi.api import intent_analysis
 
 # Import Efficiency Recognition API routers (optional - requires opencv)
 try:
@@ -366,6 +367,7 @@ app.include_router(forecast.router, prefix="/api/forecast", tags=["Forecast"])
 app.include_router(insight.router, prefix="/api/insight", tags=["Insight"])
 app.include_router(chart.router, prefix="/api/chart", tags=["Chart"])
 app.include_router(analysis.router, prefix="/api/analysis", tags=["Analysis"])
+app.include_router(intent_analysis.router, prefix="/api/analysis", tags=["Intent Analysis"])
 app.include_router(ml.router, prefix="/api/ml", tags=["ML"])
 app.include_router(linucb.router, prefix="/api/linucb", tags=["LinUCB"])
 app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])

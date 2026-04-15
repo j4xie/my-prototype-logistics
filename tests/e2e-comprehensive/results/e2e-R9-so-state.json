@@ -1,0 +1,255 @@
+{
+  "round": 9,
+  "timestamp": "2026-04-14T19:29:41.014Z",
+  "factoryId": "FOOD_3101_048",
+  "notes": "R9 SO state machine — DRAFT → CONFIRMED + DRAFT → CANCELLED",
+  "results": [
+    {
+      "layer": "L4",
+      "testId": "deep-7",
+      "step": "prep_customer_created",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "testName": "E2E_C_R9_deep-7_mnz0k89l",
+        "apiStatus": 200
+      },
+      "ts": "2026-04-14T19:28:05.421Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-7",
+      "step": "prep_so_created",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "testName": "E2E_C_R9_deep-7_mnz0k89l",
+        "apiStatus": 200
+      },
+      "ts": "2026-04-14T19:28:25.922Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-7",
+      "step": "prep_so_in_list",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "customerName": "E2E_C_R9_deep-7_mnz0k89l",
+        "cells": [
+          "SO-20260415-0001",
+          "E2E_C_R9_deep-7_mnz0k89l",
+          "",
+          "2026-04-15",
+          "¥5,000.00",
+          "-",
+          "-",
+          "草稿"
+        ]
+      },
+      "ts": "2026-04-14T19:28:36.073Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-7",
+      "step": "step1_initial_state",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "hasDraft": true,
+        "hasConfirmed": false,
+        "preview": "SO-20260415-0001\n\t\nE2E_C_R9_deep-7_mnz0k89l\n\t\n\t\n2026-04-15\n\t\n¥5,000.00\n\t\n-\n\t\n-\n\t\n草稿\n\t\n详情\n编辑\n确认\n取消"
+      },
+      "ts": "2026-04-14T19:28:36.074Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-7",
+      "step": "step2_click_confirm",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T19:28:36.082Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-7",
+      "step": "step3_confirm_api",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "status": 200,
+        "url": "/api/mobile/FOOD_3101_048/sales/orders/b13e9f4f-56a2-4b0f-b0f0-4e24761ecb25/confirm"
+      },
+      "ts": "2026-04-14T19:28:37.351Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-7",
+      "step": "step4_toast",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "toastText": "确认成功"
+      },
+      "ts": "2026-04-14T19:28:38.375Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-7",
+      "step": "step5_state_changed",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "hasDraft": false,
+        "hasConfirmed": true,
+        "hasPendingReview": false,
+        "hasProcessing": false,
+        "preview": "SO-20260415-0001\n\t\nE2E_C_R9_deep-7_mnz0k89l\n\t\n\t\n2026-04-15\n\t\n¥5,000.00\n\t\n-\n\t\n-\n\t\n已确认\n\t\n详情\n取消\n出库\n开票\n税率分组开票\n收款"
+      },
+      "ts": "2026-04-14T19:28:47.053Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-7",
+      "step": "FULL_FLOW",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "customerName": "E2E_C_R9_deep-7_mnz0k89l",
+        "initialState": "草稿",
+        "finalState": "已确认",
+        "toastText": "确认成功",
+        "stateTransitionOk": true
+      },
+      "ts": "2026-04-14T19:28:47.053Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-9",
+      "step": "prep_customer_created",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "testName": "E2E_C_R9_deep-9_mnz0k89l",
+        "apiStatus": 200
+      },
+      "ts": "2026-04-14T19:28:58.645Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-9",
+      "step": "prep_so_created",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "testName": "E2E_C_R9_deep-9_mnz0k89l",
+        "apiStatus": 200
+      },
+      "ts": "2026-04-14T19:29:18.204Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-9",
+      "step": "prep_so_in_list",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "customerName": "E2E_C_R9_deep-9_mnz0k89l",
+        "cells": [
+          "SO-20260415-0002",
+          "E2E_C_R9_deep-9_mnz0k89l",
+          "",
+          "2026-04-15",
+          "¥5,000.00",
+          "-",
+          "-",
+          "草稿"
+        ]
+      },
+      "ts": "2026-04-14T19:29:28.076Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-9",
+      "step": "click_cancel",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T19:29:28.083Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-9",
+      "step": "cancel_api",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "status": 200,
+        "url": "/api/mobile/FOOD_3101_048/sales/orders/c4e9454d-f4e2-4017-ab27-7ccc9a11594b/cancel"
+      },
+      "ts": "2026-04-14T19:29:29.343Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-9",
+      "step": "cancel_toast",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "toastText": "取消成功"
+      },
+      "ts": "2026-04-14T19:29:29.351Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-9",
+      "step": "debug_all_rows",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "count": 2,
+        "sample": [
+          "SO-20260415-0002\n\t\nE2E_C_R9_deep-9_mnz0k89l\n\t\n\t\n2026-04-15\n\t\n¥5,000.00\n\t\n-\n\t\n-\n\t\n已取消\n\t\n详情",
+          "SO-20260415-0001\n\t\nE2E_C_R9_deep-7_mnz0k89l\n\t\n\t\n2026-04-15\n\t\n¥5,000.00\n\t\n-\n\t\n-\n\t\n已确认\n\t\n详情\n取消\n出库\n开票\n税率分组开票\n收款"
+        ]
+      },
+      "ts": "2026-04-14T19:29:40.928Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-9",
+      "step": "state_cancelled",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "hasCancelled": true,
+        "hasDraft": false,
+        "matchedBy": "orderNumber",
+        "preview": "SO-20260415-0002\n\t\nE2E_C_R9_deep-9_mnz0k89l\n\t\n\t\n2026-04-15\n\t\n¥5,000.00\n\t\n-\n\t\n-\n\t\n已取消\n\t\n详情"
+      },
+      "ts": "2026-04-14T19:29:40.930Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-9",
+      "step": "FULL_FLOW",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "customerName": "E2E_C_R9_deep-9_mnz0k89l",
+        "initialState": "草稿",
+        "finalState": "已取消",
+        "toastText": "取消成功"
+      },
+      "ts": "2026-04-14T19:29:40.930Z"
+    }
+  ],
+  "summary": {
+    "deepTotal": 2,
+    "deepPass": 2,
+    "deepFail": 0
+  }
+}

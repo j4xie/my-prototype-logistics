@@ -6,6 +6,7 @@ import com.cretas.aims.service.PushNotificationService;
 import com.cretas.aims.websocket.EquipmentMonitoringHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -58,6 +59,7 @@ public class EquipmentMonitoringScheduler {
      * 每30秒检测设备异常状态
      */
     @Scheduled(fixedRate = 30000)
+    @SchedulerLock(name = "EquipmentMonitoringScheduler.monitorEquipmentStatus", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void monitorEquipmentStatus() {
         log.debug("开始设备状态监控检查...");
 
@@ -173,6 +175,7 @@ public class EquipmentMonitoringScheduler {
      * 每5分钟检查保修即将到期的设备
      */
     @Scheduled(fixedRate = 300000)
+    @SchedulerLock(name = "EquipmentMonitoringScheduler.checkWarrantyExpiry", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void checkWarrantyExpiry() {
         log.debug("开始检查保修到期设备...");
 

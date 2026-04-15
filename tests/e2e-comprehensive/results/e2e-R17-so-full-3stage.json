@@ -1,0 +1,205 @@
+{
+  "round": 17,
+  "timestamp": "2026-04-14T22:04:57.138Z",
+  "factoryId": "FOOD_3101_048",
+  "notes": "R17 complete 3-stage SO shipment — includes batch allocation (R16 P0 fix validation)",
+  "results": [
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "prep_customer",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "testName": "E2E_C_R17_deep-14_mnz64g0k"
+      },
+      "ts": "2026-04-14T22:03:46.478Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "prep_so_created",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T22:04:06.861Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "prep_so_confirmed",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "orderNumber": "SO-20260415-0006"
+      },
+      "ts": "2026-04-14T22:04:20.853Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "step1_nav_detail",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/sales/orders/07941a58-6fc3-414a-820b-23460b0c405b"
+      },
+      "ts": "2026-04-14T22:04:29.839Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "step2_switch_tab",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T22:04:32.859Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "step3_click_create_delivery",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T22:04:34.877Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "step4_stage1_create",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "apiStatus": 200
+      },
+      "ts": "2026-04-14T22:04:37.179Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "step5_delivery_row",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "found": true,
+        "deliveryNumber": "DLV-20260415-7074",
+        "cells": [
+          "DLV-20260415-7074",
+          "2026-04-14",
+          "",
+          "",
+          "草稿",
+          "¥5,000.00",
+          "分配批次\n发货"
+        ],
+        "buttonTexts": [
+          "分配批次",
+          "发货"
+        ],
+        "hasAllocBtn": true,
+        "hasShipBtn": true
+      },
+      "ts": "2026-04-14T22:04:40.195Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "step6_click_alloc",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T22:04:40.199Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "step7_alloc_dialog",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "opened": true,
+        "title": "成品批次分配",
+        "hasNoBatchWarning": false,
+        "tableCount": 1,
+        "batchRowCount": 1,
+        "snippet": "成品批次分配\n系统已按 FIFO (生产日期升序) 预填推荐批次\n\n每行 '分配合计' 必须等于发货数量才能提交。可手动调整分配数量或选择其他批次。\n\n发货单: DLV-20260415-7074\nE2E测试产品\n发货数量: 100 分配合计: 100\n批次号\n\t\n生产日期\n\t\n可用数量\n\t\n分配数量\nFG-E2E-001\n\t\n2026-04-01\n\t\n500\n\t\n取消\n确认分配"
+      },
+      "ts": "2026-04-14T22:04:44.218Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "step9_submit_alloc",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "status": 200
+      },
+      "ts": "2026-04-14T22:04:44.461Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "step10_ship_response",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "status": 200
+      },
+      "ts": "2026-04-14T22:04:49.267Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "step11_deliver_response",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "status": 200
+      },
+      "ts": "2026-04-14T22:04:54.054Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "step12_final_state",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "cells": [
+          "DLV-20260415-7074",
+          "2026-04-14",
+          "",
+          "",
+          "已签收",
+          "¥5,000.00",
+          ""
+        ]
+      },
+      "ts": "2026-04-14T22:04:57.066Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-14",
+      "step": "FULL_FLOW",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "verdict": "完整 3-stage 出库链路通过 UI 走通",
+        "stage1_create": true,
+        "stage1_5_alloc": true,
+        "stage2_ship": true,
+        "stage3_delivered": true,
+        "note": "P0-13 强制批次追溯 UI 集成已完整. R16 发现的 P0 bug 完全闭环."
+      },
+      "ts": "2026-04-14T22:04:57.066Z"
+    }
+  ],
+  "summary": {
+    "deepTotal": 15,
+    "deepPass": 15,
+    "deepFail": 0,
+    "deepWarn": 0
+  }
+}

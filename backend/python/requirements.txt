@@ -57,3 +57,13 @@ prometheus-fastapi-instrumentator>=5.0.0,<6.0.0  # 6.0+ requires Python 3.9+
 # Foreign Object Detection (YOLO ONNX inference)
 onnxruntime>=1.14.0,<2.0.0
 Pillow>=9.0.0,<11.0.0
+
+# Intent Classifier (BERT chinese-roberta-wwm-ext)
+# CPU-only torch to keep install size reasonable; model path configured in intent_classifier.py
+# NOTE: If venv is rebuilt, these MUST be reinstalled or /api/classifier/health returns 404
+# and Java ClassifierIntentMatcher floods the error log with "BERT分类器服务不可达".
+torch==2.4.1 ; python_version == "3.8"
+transformers>=4.40,<5.0
+tokenizers>=0.20,<1.0
+safetensors>=0.4,<1.0
+huggingface-hub>=0.20,<1.0

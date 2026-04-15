@@ -9,6 +9,7 @@ import com.cretas.aims.repository.FactoryAILearningConfigRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -65,6 +66,7 @@ public class SyntheticDataScheduler {
      * cron: 秒 分 时 日 月 周
      */
     @Scheduled(cron = "0 0 3 * * ?")
+    @SchedulerLock(name = "SyntheticDataScheduler.dailySyntheticGeneration", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void dailySyntheticGeneration() {
         if (!syntheticEnabled) {
             log.debug("合成数据生成已禁用，跳过定时任务");

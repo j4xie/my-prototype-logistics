@@ -94,7 +94,7 @@ public class ConfigController {
             EffectiveModuleConfig legacy = new EffectiveModuleConfig();
             legacy.setModuleCode(moduleCode);
             legacy.setRenderingMode("LEGACY");
-            legacy.setModuleEnabled(true);
+            legacy.setEnabled(true);
             return ApiResponse.success(legacy);
         }
     }

@@ -16,7 +16,10 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import Constants from 'expo-constants';
 import { useLogin } from '../../hooks/useLogin';
+
+const APP_VERSION = Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '1.0.0';
 import { getPostLoginRoute } from '../../utils/navigationHelper';
 import { useAuthStore } from '../../store/authStore';
 import { useLanguageStore, LANGUAGE_NAMES, type SupportedLanguage } from '../../store/languageStore';
@@ -323,7 +326,7 @@ const LoginFormView: React.FC<LoginFormViewProps> = ({
         </View>
 
         {/* 版本号 */}
-        <Text style={styles.versionText}>v1.0.0</Text>
+        <Text style={styles.versionText}>v{APP_VERSION}</Text>
       </ScrollView>
     </View>
   );

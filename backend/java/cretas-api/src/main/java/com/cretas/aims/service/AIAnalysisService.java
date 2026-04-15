@@ -107,7 +107,19 @@ public class AIAnalysisService {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(connectTimeout);
         factory.setReadTimeout(readTimeout);
-        return new RestTemplate(factory);
+        RestTemplate rt = new RestTemplate(factory);
+        // Python 内部 API 自 2026-02 起强制要求 X-Internal-Secret 头.
+        // AIAnalysisService 直接 new HttpHeaders() 每个调用都没加, 导致 401
+        // (见 prod 2026-04-15 20:00:00 日报告定时任务失败).
+        // 用 interceptor 统一注入, 所有 4 处 exchange/getForEntity 都受益.
+        String secret = System.getenv().getOrDefault("INTERNAL_API_SECRET", "cretas-internal-2026");
+        rt.getInterceptors().add((req, body, exec) -> {
+            if (!req.getHeaders().containsKey("X-Internal-Secret")) {
+                req.getHeaders().add("X-Internal-Secret", secret);
+            }
+            return exec.execute(req, body);
+        });
+        return rt;
     }
 
     /**

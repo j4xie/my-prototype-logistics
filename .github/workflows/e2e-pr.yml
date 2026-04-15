@@ -79,11 +79,11 @@ jobs:
       # ── Dependencies (parallel-friendly caching) ─────────────────────────────
       - name: Install web-admin deps
         working-directory: web-admin
-        run: npm ci --no-audit --no-fund
+        run: npm ci --no-audit --no-fund --legacy-peer-deps
 
       - name: Install v1-e2e deps
         working-directory: tests/v1-e2e
-        run: npm ci --no-audit --no-fund
+        run: npm ci --no-audit --no-fund --legacy-peer-deps
 
       - name: Install playwright browsers (chromium only)
         working-directory: tests/v1-e2e

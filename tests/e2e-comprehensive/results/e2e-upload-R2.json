@@ -1,0 +1,141 @@
+{
+  "round": 2,
+  "testSubject": "upload-500mb",
+  "timestamp": "2026-04-15T16:00:04.154Z",
+  "api_base": "http://139.196.165.140:8086",
+  "tests": [
+    {
+      "id": "R2-L3-1",
+      "layer": "L3",
+      "name": "java_rejects_wrong_extension",
+      "status": "PASS",
+      "depth": "medium",
+      "httpCode": 200,
+      "body": "{\"code\":400,\"message\":\"仅支持 .xlsx、.xls 或 .csv 格式的文件\",\"data\":null,\"timestamp\":\"2026-04-16T00:00:40.89953638\",\"success\":false}",
+      "hasExtensionReject": true,
+      "hasUpstreamReject": false,
+      "notSuccess": true,
+      "note": "Java correctly rejects .pdf (or upstream down)",
+      "at": "2026-04-15T16:00:46.199Z"
+    },
+    {
+      "id": "R2-L3-2",
+      "layer": "L3",
+      "name": "uppercase_csv_accepted",
+      "status": "PASS",
+      "depth": "medium",
+      "httpCode": 200,
+      "uploadId": 4065,
+      "bodySnippet": "{\"code\":200,\"message\":\"成功上传并处理 10000 条销售数据数据\",\"data\":{\"success\":true,\"message\":\"成功上传并处理 10000 条销售数据数据\",\"parseResult\":{\"success\":true,\"errorMessage\":null,\"uploadId\":null,\"headers\":[\"order_id\",\"store_id",
+      "note": ".CSV (uppercase) → uploadId allocated",
+      "at": "2026-04-15T16:01:07.808Z"
+    },
+    {
+      "id": "R2-L3-3",
+      "layer": "L3",
+      "name": "csv_idempotent_double_upload",
+      "status": "PASS",
+      "depth": "medium",
+      "run1": {
+        "httpCode": 200,
+        "uploadId": 4066,
+        "rows": 10000
+      },
+      "run2": {
+        "httpCode": 200,
+        "uploadId": 4067,
+        "rows": 10000
+      },
+      "bothOk": true,
+      "distinctIds": true,
+      "sameRows": true,
+      "note": "idempotent: 2 uploads → 2 distinct uploadIds, same rowCount",
+      "at": "2026-04-15T16:01:43.667Z"
+    },
+    {
+      "id": "R2-L4-1",
+      "layer": "L4",
+      "name": "multi_section_chain",
+      "status": "PASS",
+      "depth": "deep",
+      "fileSize": 44167134,
+      "scpSkipped": true,
+      "uploadElapsedMs": 46820,
+      "uploadId": 4068,
+      "targetBefore": 29,
+      "targetAfter": 30,
+      "delta": 1,
+      "sectionName": "temporal_comparison",
+      "sectionStatus": 200,
+      "sectionReturnStatus": "skipped",
+      "autoResolve": {
+        "triggered": true,
+        "reason": "loaded",
+        "uploadId": 4068,
+        "fileName": "e2e_pos.xlsx",
+        "rows": 80000
+      },
+      "uploadIdMatches": true,
+      "note": "temporal_comparison section loaded the upload correctly",
+      "at": "2026-04-15T16:02:35.209Z"
+    },
+    {
+      "id": "R2-L4-2",
+      "layer": "L3",
+      "name": "menu_engineering_handler_invoked",
+      "status": "PASS",
+      "depth": "medium",
+      "sectionName": "menu_engineering",
+      "sectionStatus": 200,
+      "sectionReturnStatus": "skipped",
+      "autoResolve": {
+        "triggered": true,
+        "reason": "loaded",
+        "uploadId": 4068,
+        "fileName": "e2e_pos.xlsx",
+        "rows": 80000
+      },
+      "note": "handler invoked (status=skipped; skipped means business-logic skip, not error)",
+      "at": "2026-04-15T16:02:37.827Z"
+    },
+    {
+      "id": "R2-REG-1",
+      "layer": "L3",
+      "name": "diagnostics_regression",
+      "status": "PASS",
+      "depth": "medium",
+      "sectionStatus": 200,
+      "sectionReturnStatus": "skipped",
+      "autoResolve": {
+        "triggered": true,
+        "reason": "loaded",
+        "uploadId": 4068,
+        "fileName": "e2e_pos.xlsx",
+        "rows": 80000
+      },
+      "note": "autoResolve.loaded still working for diagnostics (no regression)",
+      "at": "2026-04-15T16:02:40.990Z"
+    }
+  ],
+  "schema_v3": {
+    "specTotal": 6,
+    "p2Deferred": [],
+    "expectedFail": [],
+    "effectiveTotal": 6,
+    "actualExecuted": 6,
+    "actualPass": 6,
+    "depthBreakdown": {
+      "smoke": 0,
+      "medium": 5,
+      "deep": 1
+    },
+    "pctOfSpec": 100,
+    "pctDeep": 16.666666666666664
+  },
+  "summary": {
+    "total": 6,
+    "pass": 6,
+    "fail": 0,
+    "warn": 0
+  }
+}
