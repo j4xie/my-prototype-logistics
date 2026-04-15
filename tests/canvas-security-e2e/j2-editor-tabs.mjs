@@ -541,6 +541,109 @@ async function checkPermissionBoundary(token) {
 }
 
 // ---------------------------------------------------------------------------
+// J2-7d — Scheduler actual execution (deep, gray-area G2 closure)
+// ---------------------------------------------------------------------------
+//
+// J2-7a only verifies PUT scheduler returns 200 (config saved). It does NOT
+// verify the configured cron actually fires the tool. R7 G2 added
+// last_executed_at + execution_count columns to factory_scheduler_configs,
+// written by DynamicSchedulerService.executeTask via @Transactional(REQUIRES_NEW).
+//
+// J2-7d sets a scheduler with cron "N * * * * ?" where N is ~5s in the future,
+// waits up to 75s past the fire point, then reads the scheduler config back
+// and asserts:
+//   - execution_count increased by ≥1
+//   - last_executed_at is non-null (within the wait window)
+//
+// If the Quartz cron engine is broken, the thread pool is saturated, or the
+// metadata REQUIRES_NEW write path is broken, J2-7d FAILs.
+//
+// depth: deep — specific state assertion post-fire.
+async function checkSchedulerActualExecution(token) {
+  const SCHEDULER_ID = 'e2e_fire_verify_sched';
+  // Pick target second ~5s in future. cron "N * * * * ?" fires at second N every minute.
+  // If N is past the current second, it fires in < 60s at the next minute boundary.
+  const now = new Date();
+  const currentSec = now.getSeconds();
+  const targetSec = (currentSec + 5) % 60;
+  const cronExpr = `${targetSec} * * * * ?`;
+  // Wait budget: worst case target is 65s away (if target just wrapped past current).
+  // Give ourselves 75s total to include Spring task-scheduler jitter + persist commit.
+  const waitMs = 75_000;
+
+  try {
+    // Step 1: read baseline
+    const beforeList = await apiGet(`${FACTORY_A}/config/v2/scheduler`, token);
+    const beforeItem = (Array.isArray(beforeList.data) ? beforeList.data : [])
+      .find(s => s.taskCode === SCHEDULER_ID);
+    const baselineCount = beforeItem?.executionCount ?? 0;
+
+    // Step 2: configure scheduler with target cron.
+    // canvas_toggle_module fails under scheduler context (no userId) but that's fine —
+    // we record FAILED status and execution_count bumps regardless, which is what we test.
+    const putResult = await apiPut(
+      `${FACTORY_A}/config/v2/scheduler/${SCHEDULER_ID}`,
+      {
+        cronExpression: cronExpr,
+        enabled: true,
+        toolOrMethod: 'canvas_toggle_module',
+        params: { moduleCode: 'bom', enabled: true },
+      },
+      token
+    );
+    if (putResult.status !== 200) {
+      rc.log('J2-7d', 'FAIL',
+        `[depth=deep] Could not configure scheduler — PUT HTTP ${putResult.status}: ${putResult.message}`);
+      return false;
+    }
+
+    // Step 3: wait for cron fire + metadata commit
+    console.log(`  [J2-7d] Waiting ${waitMs/1000}s for cron "${cronExpr}" to fire...`);
+    await new Promise(r => setTimeout(r, waitMs));
+
+    // Step 4: read scheduler back
+    const afterList = await apiGet(`${FACTORY_A}/config/v2/scheduler`, token);
+    const afterItem = (Array.isArray(afterList.data) ? afterList.data : [])
+      .find(s => s.taskCode === SCHEDULER_ID);
+    if (!afterItem) {
+      rc.log('J2-7d', 'FAIL',
+        `[depth=deep] Scheduler ${SCHEDULER_ID} not found in GET list — config not persisted`);
+      return false;
+    }
+    const afterCount = afterItem.executionCount ?? 0;
+    const lastExecuted = afterItem.lastExecutedAt;
+    const lastStatus = afterItem.lastExecutionStatus;
+
+    // Cleanup: disable scheduler (best-effort, before assertion)
+    try {
+      await apiPut(
+        `${FACTORY_A}/config/v2/scheduler/${SCHEDULER_ID}`,
+        { cronExpression: '0 0 2 * * ?', enabled: false, toolOrMethod: 'canvas_toggle_module', params: {} },
+        token
+      );
+    } catch { /* ignore */ }
+
+    const bumped = afterCount > baselineCount;
+    const hasTimestamp = !!lastExecuted;
+    if (bumped && hasTimestamp) {
+      rc.log('J2-7d', 'PASS',
+        `[depth=deep] Scheduler cron fired — executionCount ${baselineCount} → ${afterCount}, ` +
+        `lastExecutedAt=${lastExecuted}, lastExecutionStatus=${lastStatus}. ` +
+        `DynamicSchedulerService.executeTask (Spring TaskScheduler → ToolRegistry → REQUIRES_NEW persist) verified alive.`);
+      return true;
+    }
+    rc.log('J2-7d', 'FAIL',
+      `[depth=deep] Scheduler did NOT fire in ${waitMs/1000}s — executionCount ${baselineCount} → ${afterCount} ` +
+      `(expected bump), lastExecutedAt=${lastExecuted || '(null)'}. Either Spring TaskScheduler broken, ` +
+      `thread pool saturated, or REQUIRES_NEW persist path failed silently.`);
+    return false;
+  } catch (err) {
+    rc.log('J2-7d', 'FAIL', `[depth=deep] Scheduler fire test error: ${err.message}`);
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // J2-9 — Trigger chain actual firing (deep, gray-area G3 closure)
 // ---------------------------------------------------------------------------
 //
@@ -734,6 +837,10 @@ async function main() {
   // J2-7c Tab 7 — Scheduler cleanup
   const cleanupOk = await cleanupScheduler(token);
   if (!cleanupOk) fails.push('J2-7c');
+
+  // J2-7d Scheduler actual execution (deep, gray-area G2 closure, ~75s wait)
+  const schedulerFireOk = await checkSchedulerActualExecution(token);
+  if (!schedulerFireOk) fails.push('J2-7d');
 
   // J2-8 Permission boundary
   const permBoundaryOk = await checkPermissionBoundary(token);

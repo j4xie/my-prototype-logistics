@@ -1,109 +1,109 @@
 # Canvas E2E Test Gaps — Infrastructure-Blocked
 
-**Status**: 99/99 PASS baseline (2026-04-16). Below are the gray areas that
-remain after R7 E/F/G1/G3 closure work. 2 of the original 3 gaps closed;
-scheduler fire observability (G2) remains deferred.
+**Status**: **100/100 PASS** baseline (2026-04-16). **Zero infrastructure-blocked
+gaps remain** as of R7 G2 closure.
 
-Recording what's left here so future devs don't waste time re-discovering
-the blocker and so smoke-padding tests aren't added to fake closure (which
-would violate `depth-first-e2e` skill Rule 1).
-
----
-
-## Closed this session (2026-04-16)
-
-**G1 — per-role matrix differential** — was based on a wrong premise. Probe
-discovered GET /config/modules/{X}/effective returns identical data for
-admin vs production_manager (role-agnostic at read layer). Real role
-differential lives in WRITE operations, now covered by **J5-L6 deep test**
-(admin PUT formula HTTP 200 vs production_manager HTTP 403).
-
-**G3 — trigger chain actual firing** — closed by adding execution
-observability: last_executed_at / last_execution_status / execution_count
-columns on factory_trigger_chains, written by TriggerChainExecutor.executeChain
-via @Transactional(REQUIRES_NEW) for event-dispatch tx isolation. E2E
-**J2-9 deep test** fires SalesOrderCreatedEvent → asserts execution_count
-bumped.
-
-**F — sales_order_prepayment_records_items parent_id UUID→VARCHAR** —
-applied directly to prod (2 rows preserved), idempotent Flyway migration
-V20260416_02 for replay safety.
-
-**E — nightly cron on 47 server** — installed with CANVAS_E2E_SKIP_UI=1
-flag so API-only subset (~87/99 assertions) runs at 02:00 CST daily.
+This doc is kept as a historical record of the gray-area closure work so future
+devs don't rediscover already-closed questions, and as an example of the pattern
+to apply if a new observability gap surfaces.
 
 ---
 
-## Gap — Scheduler actual execution (cron fires → tool runs)
+## Closure summary
 
-**What's untested**: Whether a configured scheduler actually FIRES the tool
-at the cron boundary, not just that the config persists.
+All 3 original gray-area gaps have been closed with deep tests:
 
-**What IS tested**:
-- J2-7a (medium): PUT scheduler with valid cron → HTTP 200 (config saved)
-- J2-7b (medium): PUT scheduler with too-frequent cron → HTTP ≥400 (DDoS guard)
-- J2-7c (medium): PUT to disable scheduler → HTTP 200 (cleanup path)
+### G1 — Permission matrix per-role differential — CLOSED 2026-04-16
 
-**Probe findings (2026-04-15)**:
-- `DynamicSchedulerService.executeTask()` (engine/DynamicSchedulerService.java:107)
-  executes via `toolRegistry.getExecutor().execute()`. **No persistence**: no
-  `lastExecutedAt` field on `FactorySchedulerConfig`, no
-  `scheduler_execution_log` table, no public counter for `activeTasks`.
-- Evidence of execution is ONLY in backend log file:
-  `log.info("Scheduled task: {} [{}] cron={}", key, config.getToolOrMethod(), config.getCronExpression())`
-  Not accessible via API from E2E.
-- Scheduled tools write to DRAFT (via `configService.toggleModule` etc).
-  DRAFT state is **not visible via any GET endpoint** — `/config/modules/bom/draft`
-  returns 404, `/config-changes` only tracks DROOLS_RULE entries (probe
-  confirmed 0 delta after `canvas_toggle_module` call).
+**Original premise**: GET /config/modules/{X}/effective should return DIFFERENT
+data per requesting role.
 
-**Unblock path** (pick one):
-1. **Add scheduler execution log**: persist `lastExecutedAt`, `lastExecutionStatus`,
-   `executionCount` to `factory_scheduler_config` table. Expose via GET.
-   Then a deep test sets cron for 60s from now, waits 65s, reads the config,
-   asserts `executionCount` incremented AND `lastExecutedAt` within window.
-2. **Add a canvas tool with immediate observable side effect** that doesn't
-   require publish: e.g., `canvas_health_ping` that writes to a ping table
-   with timestamp. Schedule it, wait, check ping table.
-3. **Add GET /config-drafts/{moduleCode}**: expose DRAFT state so existing
-   `canvas_toggle_module` can be used as the scheduled tool with observable
-   DRAFT toggle.
+**Probe finding**: premise was wrong — the effective API is role-agnostic at the
+read layer (admin and production_manager get identical data for all 6 probed
+modules). Role enforcement lives on WRITE operations via `@RequireRole` on
+mutating endpoints.
 
-**Estimated cost**: Option 1 is cleanest. All options need backend work.
+**Closure**: **J5-L6 deep** — admin PUT formula HTTP 200 vs production_manager
+PUT HTTP 403. Test data setup: `UPDATE users SET is_active=true WHERE username='production_mgr2' AND factory_id='F002'`.
 
-**Note**: J6-A5 (deep) already proves the `canvas_toggle_module` →
-`configService.toggleModule` → DB path works when invoked via apply-diffs.
-So the ONLY untested piece is Quartz cron trigger → executeTask — a thin,
-well-tested Spring primitive. Coverage here is defense-in-depth, not a
-silent-data-loss class risk.
+### G2 — Scheduler actual execution — CLOSED 2026-04-16
 
-The G3 pattern (entity columns + @Transactional(REQUIRES_NEW) persist + E2E
-deep test that reads back the counter) is symmetric and ready for future
-application to scheduler when prioritized.
+**Original premise**: No way to know if Spring TaskScheduler actually fires the
+configured cron and invokes the tool.
+
+**Closure**: added 4 observability columns to `factory_scheduler_configs` via
+Flyway V20260416_04 (last_executed_at / last_execution_status /
+last_execution_error / execution_count). `DynamicSchedulerService.executeTask`
+writes them via `@Transactional(REQUIRES_NEW)` + `@Lazy` self-reference for
+proxy-aware AOP. **J2-7d deep** verifies the full chain: set cron for ~5s in
+future → wait up to 75s → assert execution_count bumped + lastExecutedAt set.
+Verified on test: executionCount 0→2 in 75s window.
+
+### G3 — Trigger chain actual firing — CLOSED 2026-04-16
+
+**Original premise**: No way to know if TriggerChainExecutor actually fires the
+chain when its event publishes.
+
+**Closure**: same 4-column pattern on `factory_trigger_chains` via Flyway
+V20260416_03. `TriggerChainExecutor.executeChain` writes via
+`@Transactional(REQUIRES_NEW)` + `@Lazy self` (needed because event-dispatch
+runs inside publisher's transaction — without REQUIRES_NEW, persist rolls back
+with the parent). **J2-9 deep** creates an SO → event publishes →
+SalesOrderCreatedEvent chain fires → assert execution_count bumped.
 
 ---
 
-## Why we're NOT adding "fake deep" tests
+## Pattern reference (if a new observability gap surfaces)
 
-Per `depth-first-e2e` skill Rule 1 and Rule 2, deep tests must perform a real
-roundtrip (fill + submit + readback) with a specific observable assertion.
-A "test that sets scheduler cron and verifies PUT returned 200" is exactly
-J2-7a already — labeling it deep would be smoke-padding and violates the skill.
+The G2/G3 pattern is cheap and repeatable for any executor class that invokes
+tools async outside an @Transactional boundary:
 
-The 3 gaps above each require backend/fixture work that is **outside the E2E
-test code's scope**. Documenting them here preserves visibility without
-inflating the depth metrics dishonestly.
+1. **Entity columns** (4 total):
+   ```java
+   @Column(name = "last_executed_at") private LocalDateTime lastExecutedAt;
+   @Column(name = "last_execution_status", length = 20) private String lastExecutionStatus;
+   @Column(name = "last_execution_error", columnDefinition = "TEXT") private String lastExecutionError;
+   @Column(name = "execution_count", nullable = false) @Builder.Default private Long executionCount = 0L;
+   ```
+
+2. **Flyway migration** (idempotent):
+   ```sql
+   ALTER TABLE <executor_table>
+     ADD COLUMN IF NOT EXISTS last_executed_at TIMESTAMP NULL,
+     ADD COLUMN IF NOT EXISTS last_execution_status VARCHAR(20) NULL,
+     ADD COLUMN IF NOT EXISTS last_execution_error TEXT NULL,
+     ADD COLUMN IF NOT EXISTS execution_count BIGINT NOT NULL DEFAULT 0;
+   CREATE INDEX IF NOT EXISTS idx_<table>_last_executed ON <table>(last_executed_at);
+   ```
+
+3. **Self-injection for @Transactional AOP**:
+   ```java
+   @Autowired @Lazy
+   private MyExecutor self;
+   ```
+
+4. **REQUIRES_NEW persist method** (public, called via `self.persistExecutionMetadata(...)`):
+   ```java
+   @Transactional(propagation = Propagation.REQUIRES_NEW)
+   public void persistExecutionMetadata(...) {
+       // refetch entity, set fields, save
+   }
+   ```
+
+5. **E2E deep test**: set config → wait → read back → assert
+   `execution_count > baseline` AND `last_executed_at != null`.
 
 ---
 
-## Related context
+## Current baseline (2026-04-16)
 
-- Current baseline: **99/99 PASS** / 0 FAIL / 0 WARN across 7 journeys
-- Deep coverage additions through R7 E/F/G1/G3:
+- **100/100 PASS** / 0 FAIL / 0 WARN across 7 journeys
+- Deep coverage through R7 G2 closure:
   - R3 P0-4: J1-E (custom field roundtrip)
   - R4 P0-4/5/6: J1-F/G/H (sub-table CRUD roundtrip)
   - R4 P0-5 symmetric: J4-9/10/11 (cross-tenant sub-table CRUD)
   - R6 P0-1: J1-I (aggregate formula roundtrip)
-  - Session wrap J6-A5 (AI tool exec), J5-L5 (matrix overlay materiality)
-  - R7 G1 **J5-L6** (role differential on writes)
-  - R7 G3 **J2-9** (trigger chain actual firing via SalesOrderCreatedEvent)
+  - Session wrap: J6-A5 (AI tool exec), J5-L5 (matrix overlay materiality)
+  - R7 G1: **J5-L6** (role differential on writes)
+  - R7 G2: **J2-7d** (scheduler cron actually fires)
+  - R7 G3: **J2-9** (trigger chain actually fires via SalesOrderCreatedEvent)

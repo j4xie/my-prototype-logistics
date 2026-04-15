@@ -23,6 +23,15 @@ public class FactorySchedulerConfig {
     @Column(name = "description", columnDefinition = "TEXT") private String description;
     @Column(name = "created_at") private LocalDateTime createdAt;
     @Column(name = "updated_at") private LocalDateTime updatedAt;
+
+    // R7 G2: execution observability (mirrors the G3 pattern on factory_trigger_chains).
+    // Written by DynamicSchedulerService.executeTask via @Transactional(REQUIRES_NEW).
+    // NOT set by @PreUpdate — updatedAt tracks config mutations; these track fires.
+    @Column(name = "last_executed_at") private LocalDateTime lastExecutedAt;
+    @Column(name = "last_execution_status", length = 20) private String lastExecutionStatus; // SUCCESS / FAILED / TOOL_NOT_FOUND
+    @Column(name = "last_execution_error", columnDefinition = "TEXT") private String lastExecutionError;
+    @Column(name = "execution_count", nullable = false) @Builder.Default private Long executionCount = 0L;
+
     @PrePersist protected void onCreate() { createdAt = updatedAt = LocalDateTime.now(); }
     @PreUpdate protected void onUpdate() { updatedAt = LocalDateTime.now(); }
 }

@@ -285,6 +285,9 @@ async function handleAction(orderId: string, action: string) {
   const map: Record<string, { label: string; url: string }> = {
     confirm: { label: '确认', url: `/${factoryId.value}/sales/orders/${orderId}/confirm` },
     cancel: { label: '取消', url: `/${factoryId.value}/sales/orders/${orderId}/cancel` },
+    // R23-Pre3: FINANCE_REJECTED → resubmit for finance review (backend already
+    // supports CONFIRMED || FINANCE_REJECTED → PENDING_FINANCE_REVIEW transition).
+    resubmit: { label: '重新提交', url: `/${factoryId.value}/sales/orders/${orderId}/submit-for-finance-review` },
   };
   const a = map[action];
   if (!a) return;
@@ -566,6 +569,7 @@ async function submitQuickPayment() {
             <el-button v-if="row.status === 'DRAFT' && canWrite" type="warning" link size="small" @click="handleEdit(row)">编辑</el-button>
             <el-button v-if="row.status === 'DRAFT' && canWrite" type="success" link size="small" @click="handleAction(row.id, 'confirm')">确认</el-button>
             <el-button v-if="['DRAFT','CONFIRMED'].includes(row.status) && canWrite" type="danger" link size="small" @click="handleAction(row.id, 'cancel')">取消</el-button>
+            <el-button v-if="row.status === 'FINANCE_REJECTED' && canWrite" type="success" link size="small" @click="handleAction(row.id, 'resubmit')">重新提交</el-button>
             <el-button
               v-if="(row.status === 'CONFIRMED' || row.status === 'PROCESSING') && canWrite"
               type="warning"
