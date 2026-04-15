@@ -99,7 +99,7 @@ public interface SmartBiDynamicDataRepository extends JpaRepository<SmartBiDynam
         FROM smart_bi_dynamic_data
         WHERE factory_id = :factoryId AND upload_id = :uploadId
           AND row_data->>:groupField IS NOT NULL
-        GROUP BY row_data->>:groupField
+        GROUP BY 1
         ORDER BY total DESC
         """, nativeQuery = true)
     List<Object[]> aggregateByField(
@@ -134,7 +134,7 @@ public interface SmartBiDynamicDataRepository extends JpaRepository<SmartBiDynam
         FROM smart_bi_dynamic_data
         WHERE factory_id = :factoryId AND upload_id = :uploadId
           AND row_data->>:groupField IS NOT NULL
-        GROUP BY row_data->>:groupField
+        GROUP BY 1
         ORDER BY total1 DESC
         """, nativeQuery = true)
     List<Object[]> aggregateByFieldMultiMeasure(
