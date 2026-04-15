@@ -115,6 +115,19 @@ public class ForecastServiceImpl implements ForecastService {
             log.warn("Python SmartBI 销售预测返回空结果");
             return buildEmptyForecastResult(MetricCalculatorService.SALES_AMOUNT, ForecastAlgorithm.AUTO, startDate, endDate);
         } catch (java.io.IOException e) {
+            // Contract mismatch between Java (sends date-range query) and Python
+            // (/api/forecast/predict expects `data: List[float]` materialized).
+            // Python returns 422 "field required" every time. Known architectural
+            // gap — proper fix requires Java to fetch sales-series from DB first
+            // and include it in the request. Until that refactor, demote the
+            // recurring 422 to WARN + return empty forecast so NL query keeps
+            // responding to the user (just without forecast data).
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+            if (msg.contains("status=422") && msg.contains("field required")) {
+                log.warn("Python SmartBI 销售预测契约不匹配 (Java 未传 data 历史序列, 待架构重构): factoryId={}, msg={}",
+                        factoryId, msg.length() > 200 ? msg.substring(0, 200) : msg);
+                return buildEmptyForecastResult(MetricCalculatorService.SALES_AMOUNT, ForecastAlgorithm.AUTO, startDate, endDate);
+            }
             throw new RuntimeException("Python SmartBI 销售预测失败: " + e.getMessage(), e);
         }
     }
@@ -170,6 +183,18 @@ public class ForecastServiceImpl implements ForecastService {
                 return buildEmptyForecastResult(metricType, ForecastAlgorithm.AUTO, startDate, endDate);
             }
         } catch (java.io.IOException e) {
+            // Same contract gap as forecastSalesWithPython — demote 422 to WARN.
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+            if (msg.contains("status=422") && msg.contains("field required")) {
+                log.warn("Python SmartBI 指标预测契约不匹配 (Java 未传 data 历史序列): factoryId={}, metricType={}",
+                        factoryId, metricType);
+                try {
+                    ForecastAlgorithm alg = ForecastAlgorithm.valueOf(algorithm);
+                    return buildEmptyForecastResult(metricType, alg, startDate, endDate);
+                } catch (IllegalArgumentException ex) {
+                    return buildEmptyForecastResult(metricType, ForecastAlgorithm.AUTO, startDate, endDate);
+                }
+            }
             throw new RuntimeException("Python SmartBI 指标预测失败: " + e.getMessage(), e);
         }
     }
