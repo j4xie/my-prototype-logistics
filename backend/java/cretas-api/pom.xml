@@ -370,6 +370,17 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Flyway: auto-apply db/migration/*.sql at app startup.
+             Kills the "entity field added but DB column missing → Hibernate
+             crash at runtime" cycle we've been fighting. Version managed by
+             spring-boot-starter-parent 3.2.x (ships Flyway 9.22); that older
+             line still has PostgreSQL support baked into flyway-core, so
+             no flyway-database-postgresql split needed. -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+
         <!-- Hypersistence Utils for JSONB support (Hibernate 6 / PostgreSQL) -->
         <dependency>
             <groupId>io.hypersistence</groupId>
