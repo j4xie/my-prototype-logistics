@@ -8,10 +8,14 @@ import com.cretas.aims.repository.config.FactoryTriggerChainRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEvent;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Method;
 import java.util.*;
@@ -30,6 +34,13 @@ public class TriggerChainExecutor {
     private final FactoryTriggerChainRepository triggerChainRepository;
     private final ToolRegistry toolRegistry;
     private final ObjectMapper objectMapper;
+
+    // Self-reference for proxy-aware @Transactional dispatch.
+    // R7 G3: persistExecutionMetadata needs REQUIRES_NEW tx propagation, which
+    // Spring's AOP can only honor through the proxy (not direct this.call).
+    // @Lazy breaks the circular dependency at wire time.
+    @Autowired @Lazy
+    private TriggerChainExecutor self;
 
     // Round 4 Fix P1-14: added SalesOrderCreatedEvent so trigger chains can react to
     // order creation (e.g. fetch external market price, create parallel workflows).
@@ -158,6 +169,13 @@ public class TriggerChainExecutor {
         Map<String, Object> chainContext = new HashMap<>();
         chainContext.put("factoryId", factoryId);
 
+        // R7 G3: execution observability — track per-chain outcomes for E2E J2-9
+        // and operator diagnostics. Tally step outcomes to produce final status.
+        java.time.LocalDateTime startedAt = java.time.LocalDateTime.now();
+        int stepFailures = 0;
+        int stepAttempts = 0;
+        StringBuilder errorSummary = new StringBuilder();
+
         log.info("Executing trigger chain {} ({} steps) for factory {}",
                 chain.getChainCode(), steps.size(), factoryId);
 
@@ -188,6 +206,7 @@ public class TriggerChainExecutor {
                 continue;
             }
 
+            stepAttempts++;
             try {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> params = (Map<String, Object>) step.getOrDefault("params", Map.of());
@@ -204,13 +223,56 @@ public class TriggerChainExecutor {
                 chainContext.put("step" + order, Map.of("result", result, "success", true));
                 log.info("Chain {} step {} executed OK", chain.getChainCode(), toolName);
             } catch (Exception e) {
+                stepFailures++;
+                if (errorSummary.length() > 0) errorSummary.append("; ");
+                errorSummary.append(toolName).append(": ").append(e.getClass().getSimpleName()).append(": ").append(e.getMessage());
                 chainContext.put("step" + order, Map.of("success", false, "error", e.getMessage()));
                 log.error("Chain {} step {} failed: {}", chain.getChainCode(), toolName, e.getMessage());
 
                 if ("STOP".equals(chain.getErrorStrategy())) {
+                    self.persistExecutionMetadata(chain, startedAt, "FAILED", errorSummary.toString());
                     throw new RuntimeException("Trigger chain stopped at step " + toolName, e);
                 }
             }
+        }
+
+        // R7 G3: final status — SUCCESS if no failures, PARTIAL if some, FAILED if all failed.
+        String finalStatus;
+        if (stepFailures == 0) finalStatus = "SUCCESS";
+        else if (stepFailures < stepAttempts) finalStatus = "PARTIAL";
+        else finalStatus = "FAILED";
+        self.persistExecutionMetadata(chain, startedAt,
+                finalStatus, stepFailures > 0 ? errorSummary.toString() : null);
+    }
+
+    /**
+     * R7 G3: best-effort write of execution metadata. Refetch to avoid stale snapshots
+     * (listener may hold a copy from before the execute-chain iteration started).
+     * Failure to persist metadata must not crash event dispatch.
+     *
+     * REQUIRES_NEW: @EventListener fires synchronously inside the event-publisher's
+     * transaction. If the publisher's transaction rolls back (or hasn't committed
+     * when our method is called), our save gets rolled back too — observability
+     * metadata would silently disappear. REQUIRES_NEW forces a fresh transaction
+     * that commits independently so we can track execution even when the upstream
+     * operation fails.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void persistExecutionMetadata(FactoryTriggerChain chain,
+                                         java.time.LocalDateTime startedAt,
+                                         String status,
+                                         String errorSummary) {
+        try {
+            triggerChainRepository.findById(chain.getId()).ifPresent(fresh -> {
+                fresh.setLastExecutedAt(startedAt);
+                fresh.setLastExecutionStatus(status);
+                fresh.setLastExecutionError(errorSummary);
+                fresh.setExecutionCount((fresh.getExecutionCount() == null ? 0L : fresh.getExecutionCount()) + 1);
+                triggerChainRepository.save(fresh);
+            });
+        } catch (Exception persistErr) {
+            log.warn("Failed to persist chain execution metadata for {}: {}",
+                    chain.getChainCode(), persistErr.getMessage());
         }
     }
 
