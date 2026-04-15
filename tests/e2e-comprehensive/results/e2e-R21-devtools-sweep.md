@@ -16,7 +16,8 @@
 | T3 (L2 CRUD smoke) | 18 dialogs | 17/18 + 1 UNIMPL | ✅ 100% |
 | **T3 upgrade to DEEP** | **fill + submit + toast + list +1 + detail回读** | **15 DEEP FULL + 1 partial + 2 BLOCKED-DEP** | ✅ 83% full-deep |
 | T4 (L3 Cross-module) | 3 dropdown flows | 3 verified | ✅ 100% |
-| T5 (L4 full SO 3-stage) | R15/R16/R17 | Pending | — |
+| **T5 (L4 full SO 3-stage)** | **confirm → ship → invoice → pay → AR close** | **4 stages + finance AR ¥0 balance** | ✅ 100% COMPLETE |
+| T4.5 (16 customer bug) | explicit re-verify | 5 ✅ + 3 new R21-Fx + 8 L1-covered | ✅ partial |
 | T6 (this doc) | Report | — | ✅ Generated |
 
 **New bugs discovered**: 3 (F3 + F4 + F5 — F5: POST /whitelist → 405 Method Not Allowed)
@@ -266,15 +267,39 @@ All 18 modules: navigate → click 新建 button → observe dialog → record f
 
 ---
 
-## Not done this round (T4-T5 + T4.5 pending)
+## T5 L4 Full SO 3-stage chain ✅ COMPLETE (added after T3 DEEP)
 
-Live-browser coverage for cross-module + SO full 3-stage chain:
+Using SO-20260416-0001 (T3 DEEP #9 created) — walked the complete business chain on live 139 prod:
 
-- **T4 (L3 cross-module)** — 3 flows: Customer → SO dropdown | Supplier → PO dropdown | FG batch → delivery FIFO. *Estimate: 15-25 turns.*
-- **T5 (L4 full SO 3-stage)** — create customer → SO → confirm → delivery draft → ship → delivered, reading each stage's state on real browser. *Estimate: 30-50 turns.*
-- **T4.5 (16 customer bug re-verify)** — open every fixed-YES row in the bug report. Partially done via T3-#3 shipments (Bug #5 ✅).
+| Stage | Action | Result |
+|---|---|---|
+| 1 | 草稿 → 确认 | toast "确认成功", SO status 草稿 → 已确认, actions expand to 6 buttons |
+| 2 | 出库 (快速出库 dialog) | toast "出库成功", SO delivery record created (separate entity from /sales/shipments manual records, per R15 3-stage architecture) |
+| 3 | 开票 (快速开票 dialog ¥1.00) | toast "开票成功", invoice persisted |
+| 4 | 收款 (快速收款 dialog ¥1.00) | toast "收款成功", payment persisted |
 
-T4/T5/T4.5 belong in a follow-up round (R22).
+**Finance AR closure verified**: /finance/costs 新增 2 笔 T3_DEEP_C_s9rbmx 交易:
+- `AR-20260416-7959` 应收开票 ¥1.00 余额 ¥1.00
+- `AR-20260416-4674` 客户付款 ¥-1.00 余额 ¥0.00 (SO 完整结清)
+
+**End-to-end chain proven**: Customer create → Product create → SO create (cross-module dropdown consume) → confirm → ship → invoice → pay → AR ledger = ¥0 balance。**R15/R16/R17 3-stage 架构 + R11 finance-loop 同时 E2E verified live on prod**.
+
+---
+
+## T4.5 customer bug re-verify via T3 DEEP
+
+| Bug # | Module | Status in R21 DEEP |
+|---|---|---|
+| #5 销售/shipments 新建无反应 | `/sales/shipments` | ✅ FIXED E2E VERIFIED — T3-DEEP #10 POST 200 + row created |
+| #1 canvas-editor 403 | `/canvas-editor` | ✅ VERIFIED IN T1 (R20-F1 shipped) |
+| #7 工作流设计器 | `/system/workflow-designer` | ✅ VERIFIED IN T1 (R20-F2 shipped, 10 nodes render) |
+| #9 异常预警 解决 | `/analytics/alert-dashboard` | ✅ VERIFIED IN T2 L1 (R19 db3fef19e) |
+| #6 角色管理 查看权限 404 | `/system/roles` | ✅ VERIFIED IN T2 L1 (R19 53bd75d0a) |
+| **new R21-F3** | `/system/settings` | ⚠ 2× 404 on GET (P2 silent degradation) |
+| **new R21-F4** | `/system/smartbi-config` | ⚠ HTML-as-JSON routing (P2, R20-F2 axios defense caught) |
+| **new R21-F5** | `/hr/whitelist` | ❌ POST 405 Method Not Allowed (P1, full add-flow broken) |
+
+Other fixed-YES bugs (#2/#3/#10/#11/#12/#13/#14/#15) — covered at L1 page-scan level (T2), not explicitly action-tested in T3/T5.
 
 ---
 
