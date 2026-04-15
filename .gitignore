@@ -65,6 +65,7 @@ temp*
 *.class
 *.jar
 !gradle-wrapper.jar
+!backend/java/cretas-api/lib/MvCameraControlWrapper.jar
 target/
 BOOT-INF/
 

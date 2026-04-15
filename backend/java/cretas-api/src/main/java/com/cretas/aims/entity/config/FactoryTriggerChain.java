@@ -45,6 +45,14 @@ public class FactoryTriggerChain {
     @Column(name = "created_at") private LocalDateTime createdAt;
     @Column(name = "updated_at") private LocalDateTime updatedAt;
 
+    // R7 G3: execution observability for E2E deep tests + operator diagnostics.
+    // Written by TriggerChainExecutor.executeChain. NOT set by @PreUpdate —
+    // updatedAt tracks config changes; these track execution events.
+    @Column(name = "last_executed_at") private LocalDateTime lastExecutedAt;
+    @Column(name = "last_execution_status", length = 20) private String lastExecutionStatus; // SUCCESS / PARTIAL / FAILED
+    @Column(name = "last_execution_error", columnDefinition = "TEXT") private String lastExecutionError;
+    @Column(name = "execution_count", nullable = false) @Builder.Default private Long executionCount = 0L;
+
     @PrePersist protected void onCreate() { createdAt = updatedAt = LocalDateTime.now(); }
     @PreUpdate protected void onUpdate() { updatedAt = LocalDateTime.now(); }
 }

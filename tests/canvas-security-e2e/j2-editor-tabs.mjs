@@ -541,6 +541,140 @@ async function checkPermissionBoundary(token) {
 }
 
 // ---------------------------------------------------------------------------
+// J2-9 — Trigger chain actual firing (deep, gray-area G3 closure)
+// ---------------------------------------------------------------------------
+//
+// J2-2 only verifies GET /trigger-chains returns 200. It does NOT verify that
+// a configured enabled chain actually fires when its event is published. R7 G3
+// added last_executed_at + execution_count to factory_trigger_chains, written
+// by TriggerChainExecutor.executeChain.
+//
+// J2-9 creates/ensures an enabled chain listening to SalesOrderCreatedEvent
+// (one of the whitelisted HANDLED_EVENTS), then creates a sales order via API
+// which publishes that event, then reads the chain config back and asserts:
+//   - execution_count increased by ≥1
+//   - last_executed_at set within the test window
+//
+// The chain is configured with tool "canvas_toggle_module" (no-op: re-enables
+// an already-enabled module) so it's idempotent and safe to fire repeatedly.
+//
+// depth: deep — state assertion post-event-fire.
+async function checkTriggerChainActualFiring(token) {
+  const CHAIN_CODE = 'e2e_fire_verify_chain';
+  const EVENT = 'SalesOrderCreatedEvent';
+
+  try {
+    // Step 1: configure chain
+    const putChain = await apiPut(
+      `${FACTORY_A}/config/v2/trigger-chains/${CHAIN_CODE}`,
+      {
+        chainCode: CHAIN_CODE,
+        eventType: EVENT,
+        enabled: true,
+        errorStrategy: 'CONTINUE',
+        steps: [
+          { tool: 'canvas_toggle_module', params: { moduleCode: 'bom', enabled: true }, order: 0 },
+        ],
+        description: 'J2-9 canvas-e2e fire verification — idempotent no-op',
+      },
+      token
+    );
+    if (putChain.status !== 200) {
+      rc.log('J2-9', 'FAIL',
+        `[depth=deep] Could not configure chain — PUT HTTP ${putChain.status}: ${putChain.message}`);
+      return false;
+    }
+
+    // Step 2: read baseline
+    const beforeList = await apiGet(`${FACTORY_A}/config/v2/trigger-chains`, token);
+    const beforeItem = (Array.isArray(beforeList.data) ? beforeList.data : [])
+      .find(c => c.chainCode === CHAIN_CODE);
+    const baselineCount = beforeItem?.executionCount ?? 0;
+
+    // Step 3: fire the event by creating a sales order.
+    // Payload matches existing F002 SO structure probed from /sales/orders/F002-SO-T10:
+    //   customerId is the F002 customer PK; items[] required for non-empty order.
+    // The event publishes on CREATE regardless of status (DRAFT is fine).
+    const suffix = Date.now().toString(36);
+    const soCode = `E2E_J29_${suffix}`;
+    const createSo = await apiPost(
+      `${FACTORY_A}/sales/orders`,
+      {
+        orderNumber: soCode,
+        customerId: 'F002-CUS-002',
+        customerName: 'J2-9 event fire test',
+        orderDate: new Date().toISOString().slice(0, 10),
+        status: 'DRAFT',
+        items: [
+          {
+            productTypeId: 'F002-PT-001',
+            productName: '宫保鸡丁',
+            quantity: 1,
+            unit: '份',
+            unitPrice: 38,
+            lineAmount: 38,
+          },
+        ],
+        totalAmount: 38,
+        discountAmount: 0,
+      },
+      token
+    );
+    const soCreatedOk = createSo.status === 200 || createSo.status === 201;
+    if (!soCreatedOk) {
+      // Still worth checking — maybe another concurrent test just created a SO
+      // and the event fired. But log this for diagnostics.
+      console.log(`  [J2-9] SO creation HTTP ${createSo.status} (${createSo.message || 'no msg'}) — ` +
+        `proceeding to check chain fire anyway in case another event fired`);
+    }
+
+    // Step 4: wait briefly for async event dispatch + metadata write
+    await new Promise(r => setTimeout(r, 3_000));
+
+    // Step 5: read chain back
+    const afterList = await apiGet(`${FACTORY_A}/config/v2/trigger-chains`, token);
+    const afterItem = (Array.isArray(afterList.data) ? afterList.data : [])
+      .find(c => c.chainCode === CHAIN_CODE);
+    if (!afterItem) {
+      rc.log('J2-9', 'FAIL',
+        `[depth=deep] Chain ${CHAIN_CODE} disappeared between PUT and GET — persistence broken`);
+      return false;
+    }
+    const afterCount = afterItem.executionCount ?? 0;
+    const lastExecuted = afterItem.lastExecutedAt;
+    const lastStatus = afterItem.lastExecutionStatus;
+
+    // Cleanup: disable the chain
+    try {
+      await apiPut(
+        `${FACTORY_A}/config/v2/trigger-chains/${CHAIN_CODE}`,
+        { ...afterItem, enabled: false },
+        token
+      );
+    } catch { /* ignore */ }
+
+    const bumped = afterCount > baselineCount;
+    const hasTimestamp = !!lastExecuted;
+    if (bumped && hasTimestamp) {
+      rc.log('J2-9', 'PASS',
+        `[depth=deep] Trigger chain fired on ${EVENT} — executionCount ${baselineCount} → ${afterCount}, ` +
+        `lastExecutedAt=${lastExecuted}, lastExecutionStatus=${lastStatus}. ` +
+        `TriggerChainExecutor (@EventListener → HANDLED_EVENTS whitelist → executeChain → ToolRegistry) verified alive.`);
+      return true;
+    }
+    rc.log('J2-9', 'FAIL',
+      `[depth=deep] Trigger chain did NOT fire after ${EVENT} — executionCount ${baselineCount} → ${afterCount} ` +
+      `(expected bump), lastExecutedAt=${lastExecuted || '(null)'}. ` +
+      `SO create was HTTP ${createSo.status}. ` +
+      `Either event wasn't published, or TriggerChainExecutor filtered it out, or metadata write path broke.`);
+    return false;
+  } catch (err) {
+    rc.log('J2-9', 'FAIL', `[depth=deep] Trigger chain fire test error: ${err.message}`);
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 async function main() {
@@ -604,6 +738,10 @@ async function main() {
   // J2-8 Permission boundary
   const permBoundaryOk = await checkPermissionBoundary(token);
   if (!permBoundaryOk) fails.push('J2-8');
+
+  // J2-9 Trigger chain actual firing (deep, gray-area G3 closure)
+  const chainFireOk = await checkTriggerChainActualFiring(token);
+  if (!chainFireOk) fails.push('J2-9');
 
   // Save results and exit
   const summary = rc.save();
