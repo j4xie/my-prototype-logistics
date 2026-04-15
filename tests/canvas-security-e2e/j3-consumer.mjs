@@ -173,21 +173,26 @@ async function stepS4(page) {
 // S10 — Navigate to /canvas-editor
 // ---------------------------------------------------------------------------
 async function stepS10(page) {
-  // R1-⑥ fix after agent-team audit:
-  //   commit 46d1925a3 (Apr 13 18:23) changed canvas-editor meta.roles from
-  //   ['factory_super_admin', 'permission_admin'] to ['platform_admin', 'permission_admin'].
-  //   restaurant_admin1 (factory_super_admin) is intentionally NOT in the new whitelist,
-  //   so we expect /403 redirect. This doubles as a security assertion — verifies the
-  //   router guard does actively enforce the updated role matrix.
+  // Policy history for /canvas-editor route guard:
+  //   46d1925a3 (Apr 13 18:23) — narrowed meta.roles from
+  //     ['factory_super_admin', 'permission_admin'] →
+  //     ['platform_admin',      'permission_admin']. R1-⑥ test default was
+  //     set to 'blocked' to assert this stricter contract.
+  //   5df51ffee (Apr 15 00:56) — REVERTED 46d1925a3's narrowing because R18
+  //     repro showed it desynced FE from BE: ConfigController + CanvasAIController
+  //     @RequireRole always allowed factory_super_admin. Final meta.roles =
+  //     ['platform_admin', 'permission_admin', 'factory_super_admin'].
+  //   Current contract (post-5df51ffee): factory_super_admin IS allowed, so the
+  //     test default is 'allowed'. The PASS still has security value — proves
+  //     the router guard executes without throwing AND grants intended access.
+  //     A regression to 'blocked' (or any /403 redirect) means the realignment
+  //     was reverted.
   //
   //   Expected behavior is parameterized via E2E_CANVAS_EDITOR_EXPECT:
-  //     "blocked" (default, current policy)  — expect redirect to /403
-  //     "allowed"                            — expect URL contains "canvas-editor"
-  //
-  //   Open question (tracked in agent-team audit 2026-04-13): the backend
-  //   CanvasAIController.@RequireRole still contains factory_super_admin (not aligned
-  //   with router). R2 must address this front-end/back-end policy split (P0-b).
-  const expectPolicy = process.env.E2E_CANVAS_EDITOR_EXPECT || 'blocked';
+  //     "allowed" (default, current policy)  — expect URL contains "canvas-editor"
+  //     "blocked"                            — expect redirect to /403
+  //                                            (set this if you re-narrow the route)
+  const expectPolicy = process.env.E2E_CANVAS_EDITOR_EXPECT || 'allowed';
   if (expectPolicy !== 'blocked' && expectPolicy !== 'allowed') {
     rc.log('J3-S10', 'FAIL',
       `[depth=smoke] Invalid E2E_CANVAS_EDITOR_EXPECT="${expectPolicy}" — must be "blocked" or "allowed"`);
