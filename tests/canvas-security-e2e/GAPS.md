@@ -1,55 +1,40 @@
 # Canvas E2E Test Gaps — Infrastructure-Blocked
 
-**Status**: 97/97 PASS baseline (2026-04-15). Below are 3 gray areas that are
-**NOT closeable by adding E2E code alone** — each requires new backend API,
-new test data, or new fixture infrastructure.
+**Status**: 99/99 PASS baseline (2026-04-16). Below are the gray areas that
+remain after R7 E/F/G1/G3 closure work. 2 of the original 3 gaps closed;
+scheduler fire observability (G2) remains deferred.
 
-Recording them here so future devs don't waste time re-discovering the blocker
-and so smoke-padding tests aren't added to fake closure (which would violate
-`depth-first-e2e` skill Rule 1).
-
----
-
-## Gap 1 — Permission matrix per-role differential
-
-**What's untested**: Whether the permission matrix produces DIFFERENT effective
-configs for DIFFERENT roles on the same module.
-
-**What IS tested**:
-- J2-5 (smoke): effective config has visible/readonly attributes per field
-- J5-L5 (deep): for admin, ≥3 sales_order fields are constrained — proves the
-  matrix machinery is actively applying overlay, not default-allow
-
-**Probe findings (2026-04-15)**:
-- `/config/modules/{X}/effective` returns **HTTP 403 for finance_mgr1** on all
-  9 probed modules: `sales_order`, `invoice_record`, `finance_ar`, `finance_ap`,
-  `inventory`, `product`, `customer`, `supplier`, `traceability`, `equipment`.
-  The endpoint is admin-class only.
-- F002 test factory has **only 3 user accounts**:
-  - `restaurant_admin1` (factory_super_admin) — full access
-  - `finance_mgr1` (finance_manager) — blocked at `/config/modules/**` entirely
-  - `zj_staff1` (operator) — MOBILE_ONLY, can't web-login
-- No middle-tier role account exists in F002 that could both access the
-  effective endpoint AND have a narrower permission matrix than admin.
-
-**Unblock path** (pick one):
-1. **Add a test account in F002**: e.g., `f002_production_supervisor` with
-   role `production_supervisor`, seeded with a narrower permission matrix
-   on `sales_order`. Then L5 becomes a real differential test.
-2. **Playwright UI test**: login as restaurant_admin1, snapshot which fields
-   render readonly in `/sales/orders` create form. Then login as a different
-   role in a different factory with known-narrower matrix, snapshot same
-   form, diff. Requires identifying/creating such a role+factory pair.
-3. **Add a debug endpoint**: `/config/modules/{X}/effective?asRole=foo` that
-   lets admin query the effective config **as if** they were role `foo`.
-   This is the cleanest API solution but requires backend work.
-
-**Estimated cost**: Option 1 is cheapest (~1h DB script). Option 3 is the
-right long-term design but requires backend change.
+Recording what's left here so future devs don't waste time re-discovering
+the blocker and so smoke-padding tests aren't added to fake closure (which
+would violate `depth-first-e2e` skill Rule 1).
 
 ---
 
-## Gap 2 — Scheduler actual execution (cron fires → tool runs)
+## Closed this session (2026-04-16)
+
+**G1 — per-role matrix differential** — was based on a wrong premise. Probe
+discovered GET /config/modules/{X}/effective returns identical data for
+admin vs production_manager (role-agnostic at read layer). Real role
+differential lives in WRITE operations, now covered by **J5-L6 deep test**
+(admin PUT formula HTTP 200 vs production_manager HTTP 403).
+
+**G3 — trigger chain actual firing** — closed by adding execution
+observability: last_executed_at / last_execution_status / execution_count
+columns on factory_trigger_chains, written by TriggerChainExecutor.executeChain
+via @Transactional(REQUIRES_NEW) for event-dispatch tx isolation. E2E
+**J2-9 deep test** fires SalesOrderCreatedEvent → asserts execution_count
+bumped.
+
+**F — sales_order_prepayment_records_items parent_id UUID→VARCHAR** —
+applied directly to prod (2 rows preserved), idempotent Flyway migration
+V20260416_02 for replay safety.
+
+**E — nightly cron on 47 server** — installed with CANVAS_E2E_SKIP_UI=1
+flag so API-only subset (~87/99 assertions) runs at 02:00 CST daily.
+
+---
+
+## Gap — Scheduler actual execution (cron fires → tool runs)
 
 **What's untested**: Whether a configured scheduler actually FIRES the tool
 at the cron boundary, not just that the config persists.
@@ -86,52 +71,15 @@ at the cron boundary, not just that the config persists.
 
 **Estimated cost**: Option 1 is cleanest. All options need backend work.
 
-**Note**: J6-A5 (deep) already proves the `canvas_toggle_module` → 
+**Note**: J6-A5 (deep) already proves the `canvas_toggle_module` →
 `configService.toggleModule` → DB path works when invoked via apply-diffs.
 So the ONLY untested piece is Quartz cron trigger → executeTask — a thin,
 well-tested Spring primitive. Coverage here is defense-in-depth, not a
 silent-data-loss class risk.
 
----
-
-## Gap 3 — Trigger chain actual firing (event → chain → downstream)
-
-**What's untested**: Whether a configured trigger chain actually EXECUTES its
-steps when its event fires, and whether the downstream tool mutates state.
-
-**What IS tested**:
-- J2-2 (smoke): GET `/config/v2/trigger-chains` returns 200 with chain list
-
-**Probe findings (2026-04-15)**:
-- F002 has 5 configured chains; **only 1 enabled**:
-  `fermentation_complete_quality_check` listens for `BatchCompletedEvent`
-  with `condition: #moduleCode == 'production_plan'`, action:
-  `quality_create_inspection` with `source: fermentation`.
-- Firing this chain requires:
-  1. Creating a `production_plan` record in F002
-  2. Completing a batch of that plan (POST to production module)
-  3. Event bus publishing `BatchCompletedEvent`
-  4. Async handler matching chain condition
-  5. Tool registry invoking `quality_create_inspection`
-  6. New `quality_inspection` row with `source=fermentation` appears
-- No `/events/fire` or similar debug endpoint found for direct event injection.
-- No existing production_plan records in F002 (probe).
-
-**Unblock path** (pick one):
-1. **Create production_plan fixture in F002**: seed a test plan + add a
-   "complete batch" API call. Deep test: record baseline quality_inspection
-   count → complete batch → wait async → count should be +1 with source=fermentation.
-   Requires knowing the production module's API surface.
-2. **Add `/events/fire` debug endpoint**: admin-only POST that publishes an
-   arbitrary event to the bus. Deep test fires `BatchCompletedEvent` directly,
-   then observes downstream quality_inspection creation.
-3. **Enable a simpler chain**: configure a chain whose trigger is a canvas
-   admin action (e.g., `ModulePublishedEvent`) with a simple observable
-   downstream (e.g., writing to a log table). Fire the event by publishing
-   a canvas config. Much less setup than production_plan.
-
-**Estimated cost**: Option 3 is cheapest (~2h: configure chain + add
-observable side effect). Option 1 requires production module coordination.
+The G3 pattern (entity columns + @Transactional(REQUIRES_NEW) persist + E2E
+deep test that reads back the counter) is symmetric and ready for future
+application to scheduler when prioritized.
 
 ---
 
@@ -150,14 +98,12 @@ inflating the depth metrics dishonestly.
 
 ## Related context
 
-- Current baseline: 97/97 PASS / 0 FAIL / 0 WARN across 7 journeys
-- Depth distribution (post J6-A5 + J5-L5):
-  - smoke: ~106
-  - medium: ~184
-  - deep: ~89
-- Previous deep coverage additions:
+- Current baseline: **99/99 PASS** / 0 FAIL / 0 WARN across 7 journeys
+- Deep coverage additions through R7 E/F/G1/G3:
   - R3 P0-4: J1-E (custom field roundtrip)
   - R4 P0-4/5/6: J1-F/G/H (sub-table CRUD roundtrip)
   - R4 P0-5 symmetric: J4-9/10/11 (cross-tenant sub-table CRUD)
   - R6 P0-1: J1-I (aggregate formula roundtrip)
-  - Gray-area closure: J6-A5 (AI tool exec), J5-L5 (matrix overlay materiality)
+  - Session wrap J6-A5 (AI tool exec), J5-L5 (matrix overlay materiality)
+  - R7 G1 **J5-L6** (role differential on writes)
+  - R7 G3 **J2-9** (trigger chain actual firing via SalesOrderCreatedEvent)
