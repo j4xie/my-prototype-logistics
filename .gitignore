@@ -165,3 +165,26 @@ tests/canvas-security-e2e/results/
 
 # E2E auth-cache — stores live JWT refresh tokens, MUST NOT be committed
 tests/e2e-comprehensive/results/auth-cache/
+
+# YOLO / VL training pipeline scratch (算力项目, not Cretas core)
+/.ossutil_checkpoint/
+/r2_presigned_url.txt
+/analyze_quality.py
+/bone_rerun.py
+/check_parse_errors.py
+/final_merge.py
+/final_training_setup.py
+/labeling_pipeline*.py
+/leakage_check.py
+/orchestrator.py
+/post_pipeline.py
+/vl_compare_remote.py
+/vl_test_single.py
+/vl_test_transformers.py
+/dl_models_*.sh
+/upload_datasets_*.sh
+/upload_r2*.sh
+
+# Android build artifacts
+frontend/CretasFoodTrace/android/app/src/main/assets/
+

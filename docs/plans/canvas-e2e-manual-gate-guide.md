@@ -1,16 +1,12 @@
 # Canvas E2E Manual Gate Guide (Pre-Deploy Checklist)
 
-**Status**: Draft (pending ADR approval — see `docs/plans/canvas-e2e-ci-strategy.md`)
+**Status**: **SUPERSEDED by `CONTRIBUTING.md`** (2026-04-15 — ADR Option A chosen)
 **Date**: 2026-04-15
-**Related**: R7 Issue 4 Phase 1 (Option B implementation)
+**Related**: R7 Issue 4 Phase 1
 
-This guide documents when and how to manually run the `canvas-security-e2e` suite before requesting code review or deploying to production. Pairs with the nightly cron (`scripts/ops/nightly-canvas-e2e.sh`) as a defense-in-depth regression gate.
-
-**Team decision needed**: once the ADR is accepted, this guide's content should either:
-- A. Be merged into a top-level `CONTRIBUTING.md`, or
-- B. Stay as a standalone guide under `docs/plans/`
-
-Pick whichever fits current team doc conventions.
+> The authoritative version of this guide lives in the repo root's
+> [`CONTRIBUTING.md`](../../CONTRIBUTING.md) §1-7. Content below is kept for
+> git history only — future edits should go to `CONTRIBUTING.md`.
 
 ---
 
