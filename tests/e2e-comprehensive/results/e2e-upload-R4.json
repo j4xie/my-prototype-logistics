@@ -1,0 +1,162 @@
+{
+  "round": 4,
+  "testSubject": "upload-500mb",
+  "timestamp": "2026-04-15T17:39:08.214Z",
+  "api_base": "http://139.196.165.140:8086",
+  "tests": [
+    {
+      "id": "R4-L3-1",
+      "layer": "L3",
+      "name": "no_data_graceful_response",
+      "status": "PASS",
+      "depth": "medium",
+      "factoryId": "FOOD_NOEXIST_1776274759673",
+      "sectionStatus": 200,
+      "autoResolve": {
+        "triggered": true,
+        "reason": "no_uploads_for_factory"
+      },
+      "note": "unknown factory → autoResolve reports no_uploads_for_factory (graceful)",
+      "at": "2026-04-15T17:39:20.143Z"
+    },
+    {
+      "id": "R4-L3-2",
+      "layer": "L3",
+      "name": "chat_pipeline_natural_language",
+      "status": "PASS",
+      "depth": "medium",
+      "httpStatus": 200,
+      "pipelineRan": true,
+      "hasStructuredResponse": true,
+      "responseKeys": [
+        "code",
+        "message",
+        "data",
+        "timestamp",
+        "success"
+      ],
+      "note": "natural-language → intent → pipeline → structured response",
+      "at": "2026-04-15T17:39:30.349Z"
+    },
+    {
+      "id": "R4-L4-1",
+      "layer": "L4",
+      "name": "concurrent_upload_race",
+      "status": "PASS",
+      "depth": "deep",
+      "elapsedMs": 59352,
+      "code1": 200,
+      "code2": 200,
+      "uploadId1": 4082,
+      "uploadId2": 4081,
+      "targetBefore": 42,
+      "targetAfter": 44,
+      "delta": 2,
+      "bothSucceeded": true,
+      "distinctIds": true,
+      "dbDeltaCorrect": true,
+      "note": "2 parallel uploads → distinct uploadIds (4082, 4081), DB +2, no race",
+      "at": "2026-04-15T17:40:44.918Z"
+    },
+    {
+      "id": "R4-L4-2",
+      "layer": "L4",
+      "name": "upload_then_chat_to_section",
+      "status": "PASS",
+      "depth": "deep",
+      "uploadCode": 200,
+      "uploadId": 4083,
+      "chatHttp": 200,
+      "chatKeys": [
+        "code",
+        "message",
+        "data",
+        "timestamp",
+        "success"
+      ],
+      "message": "操作成功",
+      "pipelineRan": true,
+      "hasIntentOrSection": {
+        "intent": "aggregate_summary",
+        "confidence": 0,
+        "responseText": "以下是查询结果：",
+        "data": null,
+        "parameters": {},
+        "chartConfig": null,
+        "charts": [],
+        "suggestions": null,
+        "followUpQuestions": [
+          "查看销售概览",
+          "查看部门业绩",
+          "查看区域分析"
+        ],
+        "needsClarification": false,
+        "clarificationQuestion": null,
+        "forecast": null,
+        "intentCode": null,
+        "toolName": null,
+        "skillName": null,
+        "sections": null,
+        "followUpChips": null,
+        "message": null,
+        "effectiveSuggestions": [
+          "查看销售概览",
+          "查看部门业绩",
+          "查看区域分析"
+        ]
+      },
+      "hasBusinessResponse": {
+        "intent": "aggregate_summary",
+        "confidence": 0,
+        "responseText": "以下是查询结果：",
+        "data": null,
+        "parameters": {},
+        "chartConfig": null,
+        "charts": [],
+        "suggestions": null,
+        "followUpQuestions": [
+          "查看销售概览",
+          "查看部门业绩",
+          "查看区域分析"
+        ],
+        "needsClarification": false,
+        "clarificationQuestion": null,
+        "forecast": null,
+        "intentCode": null,
+        "toolName": null,
+        "skillName": null,
+        "sections": null,
+        "followUpChips": null,
+        "message": null,
+        "effectiveSuggestions": [
+          "查看销售概览",
+          "查看部门业绩",
+          "查看区域分析"
+        ]
+      },
+      "note": "upload → chat NL → intent pipeline → business response",
+      "at": "2026-04-15T17:41:28.958Z"
+    }
+  ],
+  "schema_v3": {
+    "specTotal": 4,
+    "p2Deferred": [],
+    "expectedFail": [],
+    "effectiveTotal": 4,
+    "actualExecuted": 4,
+    "actualPass": 4,
+    "depthBreakdown": {
+      "smoke": 0,
+      "medium": 2,
+      "deep": 2
+    },
+    "pctOfSpec": 100,
+    "pctDeep": 50
+  },
+  "summary": {
+    "total": 4,
+    "pass": 4,
+    "fail": 0,
+    "warn": 0
+  }
+}
