@@ -222,6 +222,7 @@ public class ProductTypeServiceImpl implements ProductTypeService {
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public PageResponse<ProductTypeDTO> getProductTypes(String factoryId, String productCategory,
                                                          String keyword, PageRequest pageRequest) {
         log.info("获取产品类型列表: factoryId={}, productCategory={}, keyword={}, page={}, size={}",

@@ -5,7 +5,9 @@ import com.cretas.aims.enums.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.dao.QueryTimeoutException;
+import org.hibernate.PropertyValueException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
@@ -352,6 +354,30 @@ public class GlobalExceptionHandler {
             message = ErrorCode.DATA_INTEGRITY_ERROR.getUserMessage();
         }
         return ApiResponse.error(409, message);
+    }
+
+    /**
+     * R27-F2: Hibernate not-null property violations → 400 with field name
+     * (Spring wraps PropertyValueException as InvalidDataAccessApiUsageException,
+     *  which extends DataAccessException but NOT DataIntegrityViolationException,
+     *  so without this specific handler it falls through to generic 500.)
+     */
+    @ExceptionHandler(InvalidDataAccessApiUsageException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiResponse<?> handleInvalidDataAccessApiUsageException(InvalidDataAccessApiUsageException e) {
+        String traceId = generateTraceId();
+        Throwable root = e.getCause();
+        while (root != null && root.getCause() != null && root.getCause() != root) {
+            if (root instanceof PropertyValueException) break;
+            root = root.getCause();
+        }
+        if (root instanceof PropertyValueException pve) {
+            log.warn("[{}] 必填字段缺失: entity={}, property={}", traceId,
+                pve.getEntityName(), pve.getPropertyName());
+            return ApiResponse.error(400, "必填字段缺失: " + pve.getPropertyName());
+        }
+        log.warn("[{}] 数据访问参数非法: {}", traceId, e.getMessage());
+        return ApiResponse.error(400, "请求参数不符合要求");
     }
 
     /**
