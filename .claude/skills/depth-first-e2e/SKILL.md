@@ -256,6 +256,31 @@ A round that commits fixes on a development branch has completed **detection**, 
 
 **Why**: Canvas-security-e2e R1-R5 (Apr 14-15 2026) completed with 91/91 PASS, found 2 real P0 silent-data-loss bugs, and **shipped none of them to production**. Branch `e2e/v1-framework` sat unpushed, PR was never opened, production still ran pre-R3 code. The framework's Step ⑦ was interpreted as "round done" but actually only delivered an unshipped commit on a local branch. R6 backlog items (AggregateFormulaExecutor fix, prod orphan migration) had "explicit technical reasons" for deferral — but nobody tracked them as tickets, so they existed only as audit doc bullets. If a developer reading this skill thinks "5 rounds shipped", they're wrong — 5 rounds **detected**, delivery is a separate phase. See `references/case-r5-delivery-gap.md`.
 
+### Rule 11: Breadth — module coverage matrix (prevents depth tunnel)
+
+Depth without breadth is **depth tunnel**: you go arbitrarily deep in one module while the rest of the app has zero coverage. A framework that runs 12 rounds on sales while SmartBI / system admin / daily management / data analytics sit at zero is not a tested system — it's a well-tested subset of a test-less system.
+
+**Mandatory for any multi-round campaign (3+ rounds):**
+
+1. **Round 0 produces a module inventory** — list every major user-facing module (~8-20 in ERP-style systems). Inventory lives in round-results JSON or a dedicated `coverage-matrix.md`.
+2. **Every round updates the coverage matrix**: each module has depth in `{none, smoke, medium, deep}`. Update before Step ⑦.
+3. **No round may go deep on module X while any other module sits at `none`** unless the `none` module has a documented exemption (e.g., "mobile-only", "not yet released", "intentionally out of scope" — must name module, reason, owner).
+4. **Hard stop**: if 3 consecutive rounds leave any module at `none` without exemption, the next round MUST be a **breadth round** covering every `none` module with at minimum smoke tests (happy-path load + render check).
+5. **"Scheduled in triage doc" does NOT count as coverage**. The bug triage table with 13 rows and owners is scheduling, not coverage. Until a test actually runs against the module, its coverage stays at `none`.
+
+**Rationalizations this rule explicitly blocks** (captured from baseline testing):
+
+| Excuse | Reality |
+|--------|---------|
+| "Focus wins — R18 goes deep on the new bug cluster" | Blocks Rule 11.3. Pick 1 bug in an uncovered module + smoke the rest of `none` modules in same round. |
+| "Breadth-first violates Rule 2 (1 deep L4/round)" | No. Breadth round still has ≥1 new deep L4 — it's just on a previously-uncovered module. |
+| "Rule 8.4 lets us schedule siblings for later" | Rule 8.4 is for *same-cause siblings*, not for unrelated modules. Different skill mechanism. |
+| "We'll cover SmartBI in a later round" | Already Rule 4 territory; Rule 11 extends it to modules. "Later" = never in practice. |
+
+**Why**: Evidence from 2026-04-15 customer bug report — **0 of 16 bugs caught by 12 rounds of depth-first E2E**. 13 of those 16 bugs lived in modules at `none` coverage since Round 0 (SmartBI, 系统管理, 日常管理, 数据分析, 经营驾驶舱). Those bugs were structurally undetectable by our framework no matter how many more depth rounds we ran on sales. This is the cost of a depth-only discipline without a breadth complement.
+
+**Cross-module scope note for Rule 8**: Rule 8's "relevant code area" phrasing is too narrow in practice. When the bug's root cause is a *pattern* (null guard missing / transaction missing / auth check missing), sweep scope is the **pattern**, not the module. R7 swept customer+supplier validation rules but would not have caught 盘点管理 (stock-take) null bug #11 from the same bug report — different module, same pattern. When sweeping, always ask: "could this same idiom exist in a completely unrelated module?"
+
 ## Round lifecycle with depth enforcement
 
 ### Step ① 审计A (Self-audit)
