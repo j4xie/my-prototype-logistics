@@ -15,6 +15,7 @@
 
 import {
   login,
+  apiGet,
   apiPost,
   createResultCollector,
   FACTORY_A,
@@ -157,6 +158,118 @@ async function testLegitimateCanvasToolAllowed(adminToken) {
 }
 
 // ---------------------------------------------------------------------------
+// A5 — Deep autopilot tool execution roundtrip (gray-area coverage upgrade)
+// ---------------------------------------------------------------------------
+//
+// A3 verifies apply-diffs returns HTTP 200, but doesn't assert the tool actually
+// mutated state. If CanvasAIController.applyDiffs swallowed the executor exception
+// (line 178-181 catches and continues), HTTP 200 says nothing about whether
+// canvas_toggle_module reached configService.toggleModule() and persisted to DRAFT.
+//
+// A5 closes the "Tools 真正被 AI 调用执行" gray area with a full roundtrip:
+//   1. Read effective BOM enabled state (baseline)
+//   2. apply-diffs disable BOM via canvas_toggle_module (the AI execution path)
+//   3. Publish (toggle stays in DRAFT until publish per J1-C semantics)
+//   4. Read effective again — assert enabled=false (the deep readback)
+//   5. Cleanup: re-enable + publish + verify restored to baseline
+//
+// depth=deep: if AI tool path is broken (apply-diffs catches & swallows, or
+// configService.toggleModule silently no-ops, or publish doesn't propagate),
+// the readback in step 4 will see enabled !== false and FAIL.
+async function testAutopilotActuallyMutates(adminToken) {
+  const TARGET = 'bom';
+
+  // Step 1: baseline
+  let baseline;
+  try {
+    const eff = await apiGet(`${FACTORY_A}/config/modules/${TARGET}/effective`, adminToken);
+    if (eff.status !== 200) {
+      rc.log('A5', 'WARN', `[depth=deep] Skipped — cannot read baseline effective HTTP ${eff.status}`);
+      return true; // WARN non-blocking
+    }
+    baseline = eff.data?.enabled !== false; // default true if undefined
+  } catch (err) {
+    rc.log('A5', 'WARN', `[depth=deep] Skipped — baseline read error: ${err.message}`);
+    return true;
+  }
+
+  // Step 2: apply-diffs disable via the AI execution path
+  try {
+    const apply = await apiPost(
+      `${FACTORY_A}/config/v2/ai/apply-diffs`,
+      [{ tool: 'canvas_toggle_module', params: { moduleCode: TARGET, enabled: false } }],
+      adminToken
+    );
+    if (apply.status !== 200) {
+      rc.log('A5', 'FAIL', `[depth=deep] apply-diffs disable returned HTTP ${apply.status}: ${apply.message}`);
+      return false;
+    }
+    // applyDiffs returns "已应用 N/M 项变更。失败: ..." — check for failure mention
+    const msg = JSON.stringify(apply.data ?? apply.json ?? apply.message ?? '');
+    if (msg.includes('失败') || msg.includes('已应用 0/')) {
+      rc.log('A5', 'FAIL', `[depth=deep] apply-diffs swallowed an executor exception — response="${msg.slice(0, 150)}"`);
+      return false;
+    }
+  } catch (err) {
+    rc.log('A5', 'FAIL', `[depth=deep] apply-diffs request error: ${err.message}`);
+    return false;
+  }
+
+  // Step 3: publish (toggle requires publish per J1-C contract)
+  try {
+    const pub = await apiPost(`${FACTORY_A}/config/publish?summary=A5+ai+tool+disable`, null, adminToken);
+    if (pub.status !== 200) {
+      rc.log('A5', 'FAIL',
+        `[depth=deep] Publish after disable HTTP ${pub.status}: ${pub.message} — cannot verify mutation reached effective`);
+      return false;
+    }
+  } catch (err) {
+    rc.log('A5', 'FAIL', `[depth=deep] Publish after disable error: ${err.message}`);
+    return false;
+  }
+
+  // Step 4: deep readback assertion
+  let mutationVerified = false;
+  try {
+    const eff = await apiGet(`${FACTORY_A}/config/modules/${TARGET}/effective`, adminToken);
+    const enabledAfter = eff.data?.enabled;
+    if (eff.status === 200 && enabledAfter === false) {
+      rc.log('A5', 'PASS',
+        `[depth=deep] AI tool roundtrip verified — apply-diffs(canvas_toggle_module disable) → publish → ` +
+        `effective.enabled=false (was ${baseline}). Full chain ToolExecutor → FactoryConfigService → DB → effective intact.`);
+      mutationVerified = true;
+    } else {
+      rc.log('A5', 'FAIL',
+        `[depth=deep] AI tool path broken — apply-diffs returned 200, publish returned 200, ` +
+        `but effective.enabled=${enabledAfter} (expected false). Either ToolExecutor swallowed the call ` +
+        `or DRAFT→effective propagation is broken.`);
+    }
+  } catch (err) {
+    rc.log('A5', 'FAIL', `[depth=deep] Readback error: ${err.message}`);
+  }
+
+  // Step 5: cleanup — restore to baseline regardless of step 4 outcome
+  try {
+    await apiPost(
+      `${FACTORY_A}/config/v2/ai/apply-diffs`,
+      [{ tool: 'canvas_toggle_module', params: { moduleCode: TARGET, enabled: baseline } }],
+      adminToken
+    );
+    await apiPost(`${FACTORY_A}/config/publish?summary=A5+restore+to+${baseline}`, null, adminToken);
+    // Best-effort verify restore — log to console only, doesn't affect test result
+    const verify = await apiGet(`${FACTORY_A}/config/modules/${TARGET}/effective`, adminToken);
+    const restored = verify.data?.enabled;
+    if (restored !== baseline) {
+      console.log(`  [A5 cleanup] WARNING: restore left enabled=${restored}, expected ${baseline}`);
+    }
+  } catch (err) {
+    console.log(`  [A5 cleanup] WARNING: restore threw — ${err.message}`);
+  }
+
+  return mutationVerified;
+}
+
+// ---------------------------------------------------------------------------
 // A4 — Non-admin blocked from AI chat (HTTP 403)
 // ---------------------------------------------------------------------------
 async function testNonAdminBlocked() {
@@ -230,7 +343,8 @@ async function main() {
     rc.log('A1', 'FAIL', `[depth=smoke] Skipped — admin token unavailable: ${err.message}`);
     rc.log('A2', 'FAIL', '[depth=medium] Skipped — admin token unavailable');
     rc.log('A3', 'FAIL', '[depth=medium] Skipped — admin token unavailable');
-    fails.push('A1', 'A2', 'A3');
+    rc.log('A5', 'FAIL', '[depth=deep] Skipped — admin token unavailable');
+    fails.push('A1', 'A2', 'A3', 'A5');
   }
 
   if (adminToken) {
@@ -245,6 +359,10 @@ async function main() {
     // A3 — Legitimate canvas tool allowed
     const a3ok = await testLegitimateCanvasToolAllowed(adminToken);
     if (!a3ok) fails.push('A3');
+
+    // A5 — Deep AI tool execution roundtrip (gray-area coverage)
+    const a5ok = await testAutopilotActuallyMutates(adminToken);
+    if (!a5ok) fails.push('A5');
   }
 
   // A4 — Non-admin blocked (independent of admin token)

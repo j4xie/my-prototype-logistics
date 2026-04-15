@@ -18,6 +18,7 @@
 
 import {
   login,
+  apiGet,
   apiPost,
   apiPut,
   createBrowser,
@@ -323,6 +324,89 @@ async function runL4_DocumentedDivergence() {
 }
 
 // ---------------------------------------------------------------------------
+// L5: Permission matrix overlay materiality (deep, gray-area coverage)
+// ---------------------------------------------------------------------------
+//
+// J2-5 only verifies that effective config has fields with visible/readonly
+// attributes (smoke). That passes even if the matrix produces a default-allow
+// output for everyone — the schema field exists but says nothing.
+//
+// Original L5 design (per-role differential — admin vs finance_manager) was
+// not testable: ALL /config/modules/{X}/effective endpoints return 403 for
+// finance_manager regardless of module (probe 2026-04-15: invoice_record /
+// finance_ar / finance_ap / inventory / product / customer / supplier /
+// traceability / equipment all return HTTP 403 for finance_mgr1). The
+// effective endpoint is admin-class only. Per-role differential thus requires
+// either a UI test that switches user-rendering, or a second admin-class
+// account with a different permission profile (neither available in current
+// test data).
+//
+// What L5 testably asserts (single, narrow, honest assertion): the matrix
+// produces a NON-TRIVIAL overlay on at least one actively-configured module.
+//
+// Concretely:
+//   1. Pull effective config for sales_order as admin (this is the module
+//      J1/J2 actively configure in test factory F002 — known to have matrix rules)
+//   2. Assert: ≥3 fields have visible=false OR readonly=true
+//
+// If the overlay machinery breaks (e.g., EffectiveModuleConfigBuilder skips
+// applying overlay, or permission matrix is wiped), constraint count drops
+// to 0 and L5 FAILs.
+//
+// What L5 does NOT test (tracked gaps for future deepening):
+//   - Per-role differential (admin vs lower role on same module). Not API-
+//     testable: ALL effective endpoints return 403 for finance_mgr1, and no
+//     second admin-class test account exists. Would require UI test.
+//   - Other modules' overlay materiality. Probe 2026-04-15 found customer/
+//     inventory have 0 constrained fields in F002 — that's expected (matrix
+//     rules just aren't configured for those modules), not a bug.
+async function runL5_PermissionMatrixOverlayMateriality() {
+  console.log('\n=== L5: Permission Matrix Overlay Materiality ===');
+
+  let tokenAdmin = null;
+  try {
+    const session = await login(ADMIN_A);
+    tokenAdmin = session.token;
+  } catch (err) {
+    R.log('L5-skip', 'WARN', `[depth=deep] Admin login failed: ${err.message} — L5 skipped`);
+    return;
+  }
+
+  const MODULE = 'sales_order'; // actively-configured in F002 by J1/J2
+  let fields;
+  try {
+    const eff = await apiGet(`${FACTORY_A}/config/modules/${MODULE}/effective`, tokenAdmin);
+    if (eff.status !== 200) {
+      R.log('L5-read', 'FAIL',
+        `[depth=deep] GET effective ${MODULE} HTTP ${eff.status}: ${eff.message}`);
+      return;
+    }
+    fields = eff.data?.fields || eff.data?.config?.fields || [];
+  } catch (err) {
+    R.log('L5-read', 'FAIL', `[depth=deep] Effective ${MODULE} read error: ${err.message}`);
+    return;
+  }
+
+  const totalFields = fields.length;
+  const constrained = fields.filter(f => f.visible === false || f.readonly === true);
+  const sample = constrained.slice(0, 3).map(
+    f => `${f.code || f.fieldCode}(visible=${f.visible !== false}/readonly=${f.readonly === true})`
+  );
+
+  if (constrained.length >= 3) {
+    R.log('L5-overlay-materiality', 'PASS',
+      `[depth=deep] Permission matrix overlay materially applied — ${constrained.length}/${totalFields} ` +
+      `${MODULE} fields have visible=false OR readonly=true (≥3 required). ` +
+      `Samples: ${sample.join(', ')}. Confirms EffectiveModuleConfigBuilder applies per-field overlay, not default-allow.`);
+  } else {
+    R.log('L5-overlay-materiality', 'FAIL',
+      `[depth=deep] Permission matrix overlay appears empty for ${MODULE} — only ${constrained.length}/${totalFields} ` +
+      `fields constrained (expected ≥3). Either matrix rules were wiped, or ` +
+      `EffectiveModuleConfigBuilder no longer applies overlay (silent default-allow regression).`);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 async function run() {
@@ -344,6 +428,10 @@ async function run() {
 
   // L4 is API-only — documents FE/BE divergence (R2 addition)
   await runL4_DocumentedDivergence();
+
+  // L5 is API-only — gray-area coverage upgrade (verifies permission matrix
+  // overlay is materially applied per module, not a default-allow no-op).
+  await runL5_PermissionMatrixOverlayMateriality();
 
   const summary = R.save();
   process.exit(summary.fail > 0 ? 1 : 0);
