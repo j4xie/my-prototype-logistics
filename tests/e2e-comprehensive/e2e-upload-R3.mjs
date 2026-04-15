@@ -147,14 +147,19 @@ async function R3_L3_2_rejectUnauthed() {
       `ssh -o StrictHostKeyChecking=no root@47.100.235.168 "head -c 500 /tmp/r3_auth.json"`,
       { encoding: 'utf8', timeout: 10000 }
     ).trim();
-    // Expected: 401/403, or 400 with auth-related message
-    const authRejected = httpCode === 401 || httpCode === 403 ||
-                        /unauthorized|unauthenticated|token|authentic/i.test(body);
-    record('R3-L3-2', 'L3', 'reject_missing_auth', authRejected ? 'PASS' : 'FAIL', {
+    // Critic R3 fix #4: require BOTH httpCode ∈ {401,403} AND auth keyword — AND not OR.
+    // Previous OR logic would false-PASS on 200 + "auth required" body (theoretical bypass).
+    const statusIsAuthReject = httpCode === 401 || httpCode === 403;
+    const bodyHasAuthKeyword = /unauthorized|unauthenticated|token|authentic|未授权|无权限|登录/i.test(body);
+    const pass = statusIsAuthReject && bodyHasAuthKeyword;
+    record('R3-L3-2', 'L3', 'reject_missing_auth_strict', pass ? 'PASS' : 'FAIL', {
       depth: 'medium',
       httpCode,
       bodySnippet: body.slice(0, 300),
-      note: authRejected ? 'missing Authorization header correctly rejected' : `expected 401/403, got ${httpCode}`,
+      statusIsAuthReject, bodyHasAuthKeyword,
+      note: pass ? `missing Authorization → ${httpCode} + auth-related message` :
+            !statusIsAuthReject ? `expected 401/403, got ${httpCode}` :
+            'auth-code returned but body missing explicit auth keyword',
     });
   } catch (e) {
     record('R3-L3-2', 'L3', 'reject_missing_auth', 'FAIL', {
@@ -167,34 +172,35 @@ async function R3_L3_2_rejectUnauthed() {
 // ===== R3-L3-3: dirty xlsx (missing required columns) =====
 
 async function R3_L3_3_dirtyDataWarning(token) {
+  // Critic R3 fix #2: tighten regex — require explicit "warnings" array or errorMessage
+  // field, not just any keyword containing "field" (which appears in ALL normal responses
+  // via fieldMappings/headers).
   const remoteDirty = '/tmp/r3_dirty.xlsx';
   try {
-    // Generate a minimal xlsx with ONLY unrelated columns (no store_id, no pay_time)
-    // Use server-side Python with pandas (available) instead of openpyxl.
     execSync(
       `ssh -o StrictHostKeyChecking=no root@47.100.235.168 "source /www/wwwroot/cretas/code/backend/python/venv38/bin/activate && python3 -c \\"import pandas as pd; pd.DataFrame({'random_col_a': ['x','y'], 'random_col_b': [1,2]}).to_excel('${remoteDirty}', index=False)\\""`,
       { encoding: 'utf8', timeout: 60000 }
     );
     const { httpCode, body, uploadId } = serverLocalUploadAndAnalyze(token, TARGET_FACTORY, remoteDirty);
-    // Expected: either (a) handler returns status=ok with warnings about missing fields,
-    // OR (b) upload succeeds but downstream sections can't analyze. Both are reasonable.
-    // Real PASS: response is NOT a silent 200 success with zero warnings.
-    const hasWarnings = /warning|missing|unmapped|no[-\s]?match|field/i.test(body);
+    // Stricter: require non-empty warnings array OR non-null errorMessage OR fieldMappings=[]
+    // (empty mapping array proves mapping failed; fieldMappings=[{...}] means matched fine).
+    const hasRealWarnings = /"warnings"\s*:\s*\[\s*["{]/i.test(body) ||
+                           /"errorMessage"\s*:\s*"[^"]{5,}/.test(body) ||
+                           /"fieldMappings"\s*:\s*\[\s*\]/i.test(body) ||
+                           /"missingRequiredFields"\s*:\s*\[\s*["{]/.test(body);
     const uploaded = httpCode === 200 && uploadId !== null;
-    // If uploaded, system handled it; check if warnings exist (graceful degradation)
-    const pass = uploaded && hasWarnings;
-    record('R3-L3-3', 'L3', 'dirty_data_produces_warnings', pass ? 'PASS' : 'FAIL', {
+    const pass = uploaded && hasRealWarnings;
+    record('R3-L3-3', 'L3', 'dirty_schema_strict_warnings', pass ? 'PASS' : 'FAIL', {
       depth: 'medium',
       httpCode, uploadId,
-      bodySnippet: body.slice(0, 400),
-      hasWarnings, uploaded,
-      note: pass ? 'dirty xlsx parsed with warnings (graceful degradation)' :
+      bodySnippet: body.slice(0, 500),
+      uploaded, hasRealWarnings,
+      note: pass ? 'dirty xlsx → real warnings/fieldMappings=[]/errorMessage (not just keyword)' :
             !uploaded ? `upload failed: ${httpCode}` :
-            !hasWarnings ? 'uploaded 200 success BUT no warnings — silent acceptance of broken schema' :
-            'unknown',
+            'SILENT ACCEPT: 200 success without any structural warning signals',
     });
   } catch (e) {
-    record('R3-L3-3', 'L3', 'dirty_data_produces_warnings', 'FAIL', {
+    record('R3-L3-3', 'L3', 'dirty_schema_strict_warnings', 'FAIL', {
       depth: 'medium',
       error: e.message?.slice(0, 300),
     });
@@ -271,58 +277,76 @@ async function R3_L4_1_csvToSection(token) {
 // ===== R3-L4-2 DEEP: dirty data → warnings, not silent skip =====
 
 async function R3_L4_2_dirtyDataNotSilentSkip(token) {
-  console.log('\n--- R3-L4-2 DEEP: dirty data → warnings ---');
+  // Critic R3 fix #1: stop self-fulfilling prophecy. Don't check body for keywords
+  // that the dirty test-data itself contains. Instead: upload dirty → query a section
+  // that WOULD aggregate numeric data → assert section returns status≠ok with a real
+  // reason, OR returns warnings/missing-fields array. This tests HANDLER BEHAVIOR,
+  // not test-input echo.
+  console.log('\n--- R3-L4-2 DEEP: dirty data → section handler detects it ---');
   const testId = 'R3-L4-2';
   const remoteDirty = '/tmp/r3_dirty_pos.xlsx';
 
   try {
-    // Create xlsx with POS-like schema but ALL values in wrong columns
-    // e.g. numeric string_id column, date-looking text in quantity column
+    // Use "generic" column names that won't semantically map to any restaurant schema.
+    // No "order_id"/"amount"/"pay_time" (which Python semantic_mapper might fuzzy-match).
+    // Pure nonsense columns with numeric types so "bad" keyword won't echo back.
     execSync(
-      `ssh -o StrictHostKeyChecking=no root@47.100.235.168 "source /www/wwwroot/cretas/code/backend/python/venv38/bin/activate && python3 -c \\"import pandas as pd; pd.DataFrame({'order_id': ['not-a-number','xyz'], 'amount': ['bad','data'], 'pay_time': ['notadate','also-bad']}).to_excel('${remoteDirty}', index=False)\\""`,
+      `ssh -o StrictHostKeyChecking=no root@47.100.235.168 "source /www/wwwroot/cretas/code/backend/python/venv38/bin/activate && python3 -c \\"import pandas as pd; pd.DataFrame({'xzy_a': [1,2,3], 'xyz_b': [4,5,6], 'xyz_c': [7,8,9]}).to_excel('${remoteDirty}', index=False)\\""`,
       { encoding: 'utf8', timeout: 60000 }
     );
 
-    // Baseline
-    let beforeResp = null;
-    for (let i = 0; i < 3; i++) {
-      try { beforeResp = await listUploads(token, TARGET_FACTORY); break; }
-      catch { if (i === 2) throw new Error('listUploads retries exhausted'); await new Promise(r => setTimeout(r, 2000)); }
+    const { httpCode, uploadId } = serverLocalUploadAndAnalyze(token, TARGET_FACTORY, remoteDirty);
+    if (httpCode !== 200 || uploadId === null) {
+      // Outright rejection also counts as not-silent-accept
+      record(testId, 'L4', 'dirty_data_handler_signal', 'PASS', {
+        depth: 'deep',
+        httpCode, uploadId,
+        outcome: 'rejected_at_upload',
+        note: 'dirty schema rejected at upload layer — not silent',
+      });
+      execSync(`ssh -o StrictHostKeyChecking=no root@47.100.235.168 "rm -f ${remoteDirty}"`, { timeout: 10000 });
+      return;
     }
-    const beforeArr = beforeResp.data?.data?.content || beforeResp.data?.data || [];
-    const targetBefore = Array.isArray(beforeArr) ? beforeArr.length : 0;
 
-    const { httpCode, body, uploadId } = serverLocalUploadAndAnalyze(token, TARGET_FACTORY, remoteDirty);
+    // Query section handler — should NOT return status=ok with real data, because:
+    // (a) auto-resolve loads the dirty upload,
+    // (b) handler either skips (no mappable data) OR returns empty/failed.
+    const sectionResp = await queryRestaurantSection(TARGET_FACTORY, 'temporal_comparison', {}, token);
+    const autoResolve = sectionResp.data?.autoResolve;
+    const loadedDirty = autoResolve?.triggered === true &&
+                        autoResolve?.reason === 'loaded' &&
+                        autoResolve?.uploadId === uploadId;
+    const sectionStatus = sectionResp.data?.status;
+    const sectionData = sectionResp.data?.data;
+    const warnings = sectionResp.data?.warnings;
+    const sectionHasWarnings = Array.isArray(warnings) && warnings.length > 0;
+    const sectionSkipped = sectionStatus === 'skipped';
+    const sectionFailed = sectionStatus === 'failed' || sectionStatus === 'error';
 
-    // Critic requirement: system must NOT silently accept broken data.
-    // Acceptable behaviors:
-    //   (a) httpCode != 200 with clear reason
-    //   (b) httpCode 200 with warnings about field mapping / data quality
-    //   (c) uploadId allocated BUT section query returns warnings/errors
-    const acceptanceWithWarnings = httpCode === 200 && uploadId !== null &&
-                                   /warning|unmapped|type.?mismatch|cast|invalid|bad/i.test(body);
-    const rejection = httpCode !== 200 || uploadId === null;
-    const silentAccept = httpCode === 200 && uploadId !== null &&
-                         !/warning|unmapped|type.?mismatch|cast|invalid|bad/i.test(body);
-    const pass = acceptanceWithWarnings || rejection;
+    // Real PASS: autoResolve loaded dirty upload AND handler signaled something non-ok
+    // (skip / failed / warnings). SILENT BUG: status=ok + no warnings + normal data.
+    const handlerSignaledDirty = loadedDirty && (sectionSkipped || sectionFailed || sectionHasWarnings);
+    // Only FAIL if loaded + status=ok + no warnings (true silent accept)
+    const silentAcceptBug = loadedDirty && sectionStatus === 'ok' && !sectionHasWarnings;
+    const pass = handlerSignaledDirty && !silentAcceptBug;
 
-    record(testId, 'L4', 'dirty_data_not_silent', pass ? 'PASS' : 'FAIL', {
+    record(testId, 'L4', 'dirty_data_handler_signal', pass ? 'PASS' : 'FAIL', {
       depth: 'deep',
-      httpCode, uploadId,
-      bodySnippet: body.slice(0, 400),
-      acceptanceWithWarnings, rejection, silentAccept,
+      uploadHttp: httpCode, uploadId,
+      autoResolveLoaded: loadedDirty,
+      sectionStatus, sectionHasWarnings,
+      warningsSample: Array.isArray(warnings) ? warnings.slice(0, 3) : null,
+      silentAcceptBug,
       note: pass ?
-        (rejection ? 'dirty data rejected outright' : 'dirty data accepted WITH warnings (graceful)') :
-        'SILENT ACCEPT BUG: dirty xlsx got 200 + uploadId WITHOUT any warnings',
+        `handler correctly signaled dirty data (status=${sectionStatus}, warnings=${sectionHasWarnings})` :
+        silentAcceptBug ? 'SILENT ACCEPT: handler returned status=ok with no warnings for xlsx with nonsense columns' :
+        !loadedDirty ? `autoResolve didn't load dirty upload (reason=${autoResolve?.reason})` :
+        'handler behavior unexpected',
     });
 
-    // Cleanup
-    execSync(
-      `ssh -o StrictHostKeyChecking=no root@47.100.235.168 "rm -f ${remoteDirty}"`,
-      { encoding: 'utf8', timeout: 10000 }
-    );
+    execSync(`ssh -o StrictHostKeyChecking=no root@47.100.235.168 "rm -f ${remoteDirty}"`, { timeout: 10000 });
   } catch (e) {
-    record(testId, 'L4', 'dirty_data_not_silent', 'FAIL', {
+    record(testId, 'L4', 'dirty_data_handler_signal', 'FAIL', {
       depth: 'deep',
       error: e.message?.slice(0, 300),
     });
