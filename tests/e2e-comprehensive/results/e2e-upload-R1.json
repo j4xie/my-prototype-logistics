@@ -1,7 +1,7 @@
 {
   "round": 1,
   "testSubject": "upload-500mb",
-  "timestamp": "2026-04-14T20:55:27.764Z",
+  "timestamp": "2026-04-15T04:46:22.661Z",
   "api_base": "http://139.196.165.140:8086",
   "tests": [
     {
@@ -11,8 +11,15 @@
       "status": "PASS",
       "depth": "smoke",
       "navResult": "OK",
-      "hasUploadArea": true,
-      "at": "2026-04-14T20:55:41.006Z"
+      "signals": {
+        "hasDropHint": true,
+        "has500Hint": true,
+        "hasCsvHint": true,
+        "hasUploadArea": true,
+        "hasFileInput": true
+      },
+      "note": null,
+      "at": "2026-04-15T04:46:44.000Z"
     },
     {
       "id": "R1-L1-2",
@@ -21,9 +28,9 @@
       "status": "PASS",
       "depth": "smoke",
       "matchingFiles": [
-        "/www/wwwroot/web-admin/assets/ExcelUpload-D0K_Xw1q.js"
+        "/www/wwwroot/web-admin/assets/ExcelUpload-BM57X0cj.js"
       ],
-      "at": "2026-04-14T20:55:44.158Z"
+      "at": "2026-04-15T04:46:47.638Z"
     },
     {
       "id": "R1-L1-3",
@@ -33,7 +40,7 @@
       "depth": "smoke",
       "count": 3,
       "expected": ">=3",
-      "at": "2026-04-14T20:55:47.197Z"
+      "at": "2026-04-15T04:46:50.918Z"
     },
     {
       "id": "R1-L1-4",
@@ -41,8 +48,9 @@
       "name": "java_multipart_env",
       "status": "PASS",
       "depth": "smoke",
+      "activeService": "cretas-backend-green",
       "envLine": "SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE=500MB",
-      "at": "2026-04-14T20:55:52.826Z"
+      "at": "2026-04-15T04:47:03.016Z"
     },
     {
       "id": "R1-L1-5",
@@ -51,43 +59,43 @@
       "status": "PASS",
       "depth": "smoke",
       "envLine": "MAX_FILE_SIZE_MB=500",
-      "at": "2026-04-14T20:55:58.439Z"
+      "at": "2026-04-15T04:47:14.304Z"
     },
     {
       "id": "R1-L2-1",
       "layer": "L2",
-      "name": "fe_accepts_450mb_xlsx",
-      "status": "PASS",
-      "depth": "medium",
-      "mockSize": 471859200,
-      "result": {
-        "passed": true
+      "name": "fe_source_accepts_xlsx_xls_csv",
+      "status": "FAIL",
+      "depth": "smoke",
+      "sourceCheck": {
+        "found": false,
+        "reason": "Command failed: ssh -o StrictHostKeyChecking=no root@139.196.165.140 'cat /www/wwwroot/web-admin/assets/ExcelUpload-*.js 2>/dev/null | grep -oE \"spreadsheetml.sheet|application/vnd.ms-excel|text/csv|application/csv\" | sort -u | tr \"\\n\" \",\"'\nϵͳ�Ҳ���ָ����·����\r\n"
       },
-      "at": "2026-04-14T20:55:58.443Z"
+      "note": "smoke: deployed JS lists all 3 accepted MIME types. Real 450MB test is impractical.",
+      "at": "2026-04-15T04:47:14.325Z"
     },
     {
       "id": "R1-L2-2",
       "layer": "L2",
-      "name": "fe_rejects_501mb",
-      "status": "PASS",
-      "depth": "medium",
-      "mockSize": 525336576,
-      "result": {
-        "passed": false,
-        "reason": "size_over_500mb"
+      "name": "fe_source_has_501mb_check",
+      "status": "FAIL",
+      "depth": "smoke",
+      "sourceCheck": {
+        "found": false,
+        "reason": "Command failed: ssh -o StrictHostKeyChecking=no root@139.196.165.140 'cat /www/wwwroot/web-admin/assets/ExcelUpload-*.js 2>/dev/null | grep -oE \"500\\*1024\\*1024|524288000|超过 500MB\" | sort -u | tr \"\\n\" \",\"'\nϵͳ�Ҳ���ָ����·����\r\n"
       },
-      "at": "2026-04-14T20:55:58.445Z"
+      "note": "smoke: deployed JS contains size-check constant. Real runtime rejection not triggerable via synthetic File (see R3 plan).",
+      "at": "2026-04-15T04:47:14.343Z"
     },
     {
       "id": "R1-L2-3",
       "layer": "L2",
-      "name": "fe_accepts_csv",
+      "name": "fe_accepts_csv_real",
       "status": "PASS",
       "depth": "medium",
-      "result": {
-        "passed": true
-      },
-      "at": "2026-04-14T20:55:58.446Z"
+      "errorToast": null,
+      "note": "CSV accepted (downstream parse may still fail — that's L3/L4)",
+      "at": "2026-04-15T04:47:15.158Z"
     },
     {
       "id": "R1-L3-1",
@@ -100,63 +108,60 @@
       "fileSize": 57794467,
       "sha256": "0d501ff43a654513",
       "httpStatus": 200,
-      "elapsedMs": 6047,
+      "elapsedMs": 53775,
       "transport": "scp+curl localhost:10010 (bypass ISP)",
       "scpSkipped": true,
-      "apiMessage": "Excel parse failed: null",
+      "apiMessage": "Excel parsed successfully",
       "uploadId": null,
-      "at": "2026-04-14T20:56:04.619Z"
+      "at": "2026-04-15T04:48:09.061Z"
     },
     {
       "id": "R1-L4-1",
       "layer": "L4",
-      "name": "full_roundtrip",
-      "status": "PASS",
+      "name": "upload_api_200",
+      "status": "FAIL",
+      "depth": "deep",
+      "apiStatus": 500,
+      "apiUrl": "http://localhost:10020/api/mobile/FOOD_3101_048/smart-bi/upload-and-analyze",
+      "apiBody": "{\"code\":500,\"message\":\"系统处理异常，请稍后重试 (追踪码: 80022827)\",\"data\":null,\"timestamp\":\"2026-04-15T12:49:11.77321299\",\"success\":false}",
+      "fileSize": 63000626,
+      "sha256": "0648766614649ecd",
+      "at": "2026-04-15T04:49:11.887Z"
+    },
+    {
+      "id": "R1-L4-2",
+      "layer": "L4",
+      "name": "ui_upload_response",
+      "status": "WARNING",
       "depth": "deep",
       "fileSize": 44167134,
-      "sha256": "cb236f004a1bd638fd90f83fac09374c15e44ad606f242eaa5d32814d0cb16a7",
-      "apiStatus": 200,
-      "apiUrl": "http://localhost:10010/api/mobile/FOOD_3101_048/smart-bi/upload-and-analyze",
-      "uploadElapsedMs": 215314,
-      "scpSkipped": true,
-      "transport": "scp+curl (browser-UI upload deferred to R2, see plan §R2)",
-      "toastText": "(N/A — upload via server-local curl, no UI toast)",
-      "uploadId": 4040,
-      "targetBefore": 2,
-      "targetAfter": 3,
-      "targetDelta": 1,
-      "canaryBefore": -1,
-      "canaryAfter": -1,
-      "canaryDelta": 0,
-      "sectionStatus": 200,
-      "sectionName": "diagnostics",
-      "sectionReturnStatus": "skipped",
-      "pipelineRan": true,
-      "at": "2026-04-14T20:59:47.653Z"
+      "uploadElapsedMs": 602846,
+      "reason": "browser upload did not complete in 600s — likely ISP client-side limit, NOT a feature bug. L4-1 proves 5-layer chain works end-to-end via server-local path.",
+      "at": "2026-04-15T04:59:17.671Z"
     }
   ],
-  "loggedInFactoryId": null,
+  "loggedInFactoryId": "FOOD_3101_048",
   "targetFactoryId": "FOOD_3101_048",
   "schema_v3": {
-    "specTotal": 10,
+    "specTotal": 11,
     "p2Deferred": [],
     "expectedFail": [],
-    "effectiveTotal": 10,
-    "actualExecuted": 10,
-    "actualPass": 10,
+    "effectiveTotal": 11,
+    "actualExecuted": 11,
+    "actualPass": 7,
     "depthBreakdown": {
-      "smoke": 5,
-      "medium": 4,
-      "deep": 1
+      "smoke": 7,
+      "medium": 2,
+      "deep": 2
     },
-    "pctOfSpec": 100,
-    "pctDeep": 10
+    "pctOfSpec": 63.63636363636363,
+    "pctDeep": 18.181818181818183
   },
   "summary": {
-    "total": 10,
-    "pass": 10,
-    "fail": 0,
-    "warn": 0,
+    "total": 11,
+    "pass": 7,
+    "fail": 3,
+    "warn": 1,
     "skip": 0
   }
 }

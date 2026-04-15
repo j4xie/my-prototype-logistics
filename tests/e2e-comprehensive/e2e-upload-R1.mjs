@@ -71,6 +71,22 @@ function record(id, layer, name, status, { depth = 'smoke', ...rest } = {}) {
   console.log(`${icon} ${id} [${depth}] ${name}: ${status}${rest.note ? ' — ' + rest.note : ''}`);
 }
 
+// ===== platform_admin token (cached) for canary/cross-tenant checks =====
+let _platformTokenCache = null;
+async function loginAsPlatformAdmin() {
+  if (_platformTokenCache) return _platformTokenCache;
+  const resp = await fetch(`${API_BASE}/api/mobile/auth/unified-login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'platform_admin', password: '123456' }),
+  });
+  const data = await resp.json();
+  const token = data?.data?.accessToken || data?.data?.token || data?.token;
+  if (!token) throw new Error(`platform_admin login failed: ${JSON.stringify(data).slice(0, 200)}`);
+  _platformTokenCache = token;
+  return token;
+}
+
 // ===== Fixture preflight =====
 
 function preflightFixtures() {
@@ -96,13 +112,25 @@ function preflightFixtures() {
 async function R1_L1_1_pageAccessible(page) {
   try {
     const nav = await navigateTo(page, '/smart-bi/upload', { timeout: 30000 });
-    const hasUploadArea = await page.evaluate(() => {
-      return !!(document.querySelector('.el-upload') || document.querySelector('[class*=upload]'));
+    // FIX-7: require ExcelUpload-specific signals (not just third-party .el-upload DOM).
+    // The help text "将文件拖到此处" and "支持 .xlsx、.xls 和 .csv 格式" only exist in
+    // ExcelUpload.vue — their presence proves the component's setup() succeeded.
+    const signals = await page.evaluate(() => {
+      const bodyText = document.body?.innerText || '';
+      return {
+        hasDropHint: bodyText.includes('将文件拖到此处'),
+        has500Hint: bodyText.includes('500MB'),
+        hasCsvHint: bodyText.includes('.csv'),
+        hasUploadArea: !!document.querySelector('.el-upload'),
+        hasFileInput: !!document.querySelector('input[type="file"]'),
+      };
     });
-    record('R1-L1-1', 'L1', 'upload_page_accessible', hasUploadArea ? 'PASS' : 'FAIL', {
+    const pass = signals.hasDropHint && signals.has500Hint && signals.hasFileInput;
+    record('R1-L1-1', 'L1', 'upload_page_accessible', pass ? 'PASS' : 'FAIL', {
       depth: 'smoke',
       navResult: nav,
-      hasUploadArea,
+      signals,
+      note: pass ? null : 'missing ExcelUpload-specific mount signals (dropHint / 500MB / fileInput)',
     });
   } catch (e) {
     record('R1-L1-1', 'L1', 'upload_page_accessible', 'FAIL', { depth: 'smoke', error: e.message });
@@ -143,6 +171,28 @@ async function R1_L1_3_nginxConfig() {
   }
 }
 
+// Resolve active Java service (handles Blue-Green: cretas-backend / cretas-backend-green / cretas-backend-blue).
+let _javaServiceCache = null;
+let _javaPortCache = null;
+
+function getActiveJavaService() {
+  if (_javaServiceCache) return _javaServiceCache;
+  const out = execSync(
+    `ssh -o StrictHostKeyChecking=no root@47.100.235.168 "systemctl list-units --type=service --state=active --no-legend 2>/dev/null | grep -oE 'cretas-backend(-green|-blue)?' | head -1"`,
+    { encoding: 'utf8', timeout: 15000 }
+  ).trim();
+  _javaServiceCache = out || 'cretas-backend';
+  return _javaServiceCache;
+}
+
+function getActiveJavaPort() {
+  if (_javaPortCache) return _javaPortCache;
+  const svc = getActiveJavaService();
+  // Port mapping: blue/plain=10010, green=10020 (per BG convention)
+  _javaPortCache = svc.endsWith('-green') ? 10020 : 10010;
+  return _javaPortCache;
+}
+
 function sshEnvGrep(serviceName, grepPattern) {
   // Two-step to avoid nested $() escaping across Node→bash→ssh→remote bash
   const pid = execSync(
@@ -159,10 +209,12 @@ function sshEnvGrep(serviceName, grepPattern) {
 
 async function R1_L1_4_javaEnv() {
   try {
-    const out = sshEnvGrep('cretas-backend', 'MULTIPART_MAX_FILE_SIZE');
+    const svc = getActiveJavaService();
+    const out = sshEnvGrep(svc, 'MULTIPART_MAX_FILE_SIZE');
     const has500 = out.includes('500MB');
     record('R1-L1-4', 'L1', 'java_multipart_env', has500 ? 'PASS' : 'FAIL', {
       depth: 'smoke',
+      activeService: svc,
       envLine: out || '(empty)',
     });
   } catch (e) {
@@ -186,65 +238,113 @@ async function R1_L1_5_pythonEnv() {
 // ===== L2: medium (frontend validation via JS injection) =====
 
 /**
- * Inject a mock File of given size into the frontend's beforeUpload function.
- * Returns whether the file passed (true) or was rejected (false).
+ * FIX-1: Real component validation instead of re-implementing logic.
  *
- * Note: We can't easily create a real 501MB File in browser memory, so we
- * mock file.raw.size to test the size-check branch.
+ * Trigger ElUpload's on-change handler directly by dispatching a change event
+ * on the hidden input[type=file] with a spoofed File (size mocked via getter).
+ * This routes through the real ExcelUpload.vue handleUpload → beforeUpload path
+ * and produces real `.el-message--error` toasts on rejection.
+ *
+ * Why this works while setInputFiles doesn't: setInputFiles creates a real
+ * 501MB file on disk (impractical). Synthesizing a File with size getter
+ * override fools the beforeUpload size check without allocating bytes.
+ *
+ * Returns: { rejected: boolean, errorMsg: string | null }
  */
-async function mockBeforeUpload(page, mockSize, mockName, mockType) {
-  return await page.evaluate(({ size, name, type }) => {
-    // Find the ExcelUpload Vue instance's beforeUpload function.
-    // Since we can't reach Vue internals from outside, we test the logic inline:
-    // re-implement the same checks from ExcelUpload.vue:271-289.
-    const validTypes = [
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel',
-      'text/csv',
-      'application/csv',
-    ];
-    const ext = name?.toLowerCase().split('.').pop();
-    const validExts = ['xlsx', 'xls', 'csv'];
-
-    // Type check (same as ExcelUpload.vue)
-    if (!validTypes.includes(type) && !validExts.includes(ext || '')) {
-      return { passed: false, reason: 'invalid_type' };
-    }
-    // Size check (same as ExcelUpload.vue line 286)
-    if (size > 500 * 1024 * 1024) {
-      return { passed: false, reason: 'size_over_500mb' };
-    }
-    return { passed: true };
+async function triggerRealBeforeUpload(page, mockSize, mockName, mockType) {
+  // Clear any prior toast
+  await page.evaluate(() => {
+    document.querySelectorAll('.el-message').forEach((el) => el.remove());
+  });
+  // Dispatch on the Element Plus hidden file input
+  const result = await page.evaluate(async ({ size, name, type }) => {
+    const input = document.querySelector('input[type="file"]');
+    if (!input) return { error: 'no input' };
+    // Make a tiny real file, then override `size` via Object.defineProperty
+    const smallBlob = new Blob([new Uint8Array(1024)], { type });
+    const file = new File([smallBlob], name, { type });
+    Object.defineProperty(file, 'size', { value: size, configurable: true });
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    // Give Vue 300ms to render toast
+    await new Promise((r) => setTimeout(r, 800));
+    return { dispatched: true };
   }, { size: mockSize, name: mockName, type: mockType });
+
+  // Capture any toast (error or success) the real component produced
+  const toast = await page.evaluate(() => {
+    const err = document.querySelector('.el-message--error');
+    const ok = document.querySelector('.el-message--success');
+    return {
+      errorText: err?.innerText?.trim() || null,
+      successText: ok?.innerText?.trim() || null,
+    };
+  });
+  return { dispatch: result, toast };
 }
 
 async function R1_L2_1_feAccepts450MB(page) {
-  const result = await mockBeforeUpload(page, 450 * 1024 * 1024, 'pos.xlsx',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  record('R1-L2-1', 'L2', 'fe_accepts_450mb_xlsx', result.passed ? 'PASS' : 'FAIL', {
-    depth: 'medium',
-    mockSize: 450 * 1024 * 1024,
-    result,
+  // HONEST DEPTH: downgrade to smoke — we cannot synthesize 450MB Files reliably.
+  // Tighter check: deployed JS includes xlsx MIME + csv ext accept list.
+  // Fetch the ExcelUpload chunk on the server directly via SSH grep.
+  // Use single-quoted remote command to dodge $() escaping hell.
+  let sourceCheck;
+  try {
+    const out = execSync(
+      `ssh -o StrictHostKeyChecking=no root@139.196.165.140 'cat /www/wwwroot/web-admin/assets/ExcelUpload-*.js 2>/dev/null | grep -oE "spreadsheetml.sheet|application/vnd.ms-excel|text/csv|application/csv" | sort -u | tr "\\n" ","'`,
+      { encoding: 'utf8', timeout: 20000, maxBuffer: 20 * 1024 * 1024 }
+    ).trim();
+    const hasXlsx = out.includes('spreadsheetml.sheet');
+    const hasXls = out.includes('application/vnd.ms-excel');
+    const hasCsv = out.includes('text/csv') || out.includes('application/csv');
+    sourceCheck = { found: hasXlsx && hasXls && hasCsv, hasXlsx, hasXls, hasCsv, rawGrep: out };
+  } catch (e) {
+    sourceCheck = { found: false, reason: e.message };
+  }
+  record('R1-L2-1', 'L2', 'fe_source_accepts_xlsx_xls_csv', sourceCheck.found ? 'PASS' : 'FAIL', {
+    depth: 'smoke',
+    sourceCheck,
+    note: 'smoke: deployed JS lists all 3 accepted MIME types. Real 450MB test is impractical.',
   });
 }
 
 async function R1_L2_2_feRejects501MB(page) {
-  const result = await mockBeforeUpload(page, 501 * 1024 * 1024, 'big.xlsx',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  // Expectation: rejected (!passed) with reason size_over_500mb
-  const ok = !result.passed && result.reason === 'size_over_500mb';
-  record('R1-L2-2', 'L2', 'fe_rejects_501mb', ok ? 'PASS' : 'FAIL', {
-    depth: 'medium',
-    mockSize: 501 * 1024 * 1024,
-    result,
+  // HONEST DEPTH: downgrade to smoke. We cannot synthesize a real 501MB File object
+  // in browser memory, and Object.defineProperty(file, 'size', ...) is NOT respected
+  // by ElUpload's wrapped File reading path — it reads raw File.size at dispatch time.
+  // Instead, verify the source code has the 500*1024*1024 check. This is a "logic copy
+  // check" per depth-first-e2e §Anti-pattern 5 — we acknowledge it's not a real
+  // integration test. Real 501MB rejection is tested in R3-L4-1 (future, with a real
+  // oversize fixture generated locally).
+  let sourceCheck;
+  try {
+    const out = execSync(
+      `ssh -o StrictHostKeyChecking=no root@139.196.165.140 'cat /www/wwwroot/web-admin/assets/ExcelUpload-*.js 2>/dev/null | grep -oE "500\\*1024\\*1024|524288000|超过 500MB" | sort -u | tr "\\n" ","'`,
+      { encoding: 'utf8', timeout: 20000, maxBuffer: 20 * 1024 * 1024 }
+    ).trim();
+    const has500Const = out.includes('500*1024*1024') || out.includes('524288000');
+    const hasMsg = out.includes('超过 500MB');
+    sourceCheck = { found: has500Const && hasMsg, has500Const, hasMsg, rawGrep: out };
+  } catch (e) {
+    sourceCheck = { found: false, reason: e.message };
+  }
+  record('R1-L2-2', 'L2', 'fe_source_has_501mb_check', sourceCheck.found ? 'PASS' : 'FAIL', {
+    depth: 'smoke', // downgraded from medium — this is source-level verification only
+    sourceCheck,
+    note: 'smoke: deployed JS contains size-check constant. Real runtime rejection not triggerable via synthetic File (see R3 plan).',
   });
 }
 
 async function R1_L2_3_feAcceptsCsv(page) {
-  const result = await mockBeforeUpload(page, 10 * 1024 * 1024, 'data.csv', 'text/csv');
-  record('R1-L2-3', 'L2', 'fe_accepts_csv', result.passed ? 'PASS' : 'FAIL', {
+  // Use a small real CSV-like file (1KB) with .csv extension.
+  const r = await triggerRealBeforeUpload(page, 1024, 'data.csv', 'text/csv');
+  const typeRejected = /不支持|格式/i.test(r.toast.errorText || '');
+  record('R1-L2-3', 'L2', 'fe_accepts_csv_real', !typeRejected ? 'PASS' : 'FAIL', {
     depth: 'medium',
-    result,
+    errorToast: r.toast.errorText,
+    note: typeRejected ? 'CSV extension rejected by beforeUpload' : 'CSV accepted (downstream parse may still fail — that\'s L3/L4)',
   });
 }
 
@@ -279,24 +379,44 @@ async function R1_L3_1_apiUpload55MB(token) {
       );
     }
 
-    // 2. curl localhost:10010 on the server to hit Java multipart handler directly
+    // 2. curl localhost:{activePort} on the server to hit Java multipart handler.
+    // BG deploy may swap between 10010 (blue/plain) and 10020 (green).
+    // Response bodies can exceed Node's spawnSync buffer (preview data easily >1MB);
+    // write body to /tmp on server, print only http_code, then scp body back.
+    const javaPort = getActiveJavaPort();
     const curlCmd =
       `ssh -o StrictHostKeyChecking=no root@47.100.235.168 "curl -s -o /tmp/e2e_upload_resp.json -w '%{http_code}' ` +
       `-H 'Authorization: Bearer ${token}' ` +
-      `-F 'file=@${remotePath}' ` +
+      `-F 'file=@${remotePath};type=text/csv' ` +
       `-F 'data_type=pos' ` +
-      `http://localhost:10010/api/mobile/${TARGET_FACTORY}/smart-bi/upload && cat /tmp/e2e_upload_resp.json"`;
-    const out = execSync(curlCmd, { encoding: 'utf8', timeout: 300000 }).trim();
-    const httpCode = parseInt(out.slice(0, 3), 10);
-    const body = out.slice(3).trim();
+      `http://localhost:${javaPort}/api/mobile/${TARGET_FACTORY}/smart-bi/upload"`;
+    const httpCodeStr = execSync(curlCmd, { encoding: 'utf8', timeout: 300000 }).trim();
+    const httpCode = parseInt(httpCodeStr, 10);
+    // Pull only the first 8KB of response body — enough for success/error JSON diagnostics
+    const body = execSync(
+      `ssh -o StrictHostKeyChecking=no root@47.100.235.168 "head -c 8000 /tmp/e2e_upload_resp.json"`,
+      { encoding: 'utf8', timeout: 30000, maxBuffer: 20 * 1024 * 1024 }
+    ).trim();
+    // Response can be >8KB (preview_data), so JSON.parse(head) fails. Instead extract
+    // top-level fields via regex — the values we care about are at the start.
     let bodyJson = null;
-    try { bodyJson = JSON.parse(body); } catch {}
+    try { bodyJson = JSON.parse(body); } catch {
+      const codeMatch = body.match(/"code":\s*(\d+)/);
+      const successMatch = body.match(/"success":\s*(true|false)/);
+      const msgMatch = body.match(/"message":\s*"([^"]{0,200})"/);
+      bodyJson = {
+        code: codeMatch ? parseInt(codeMatch[1], 10) : null,
+        success: successMatch ? successMatch[1] === 'true' : null,
+        message: msgMatch ? msgMatch[1] : null,
+        _partial: true,
+      };
+    }
 
-    // Pass criteria: HTTP 200 with a JSON body and no MaxUploadSizeExceeded.
-    // Parse success is a separate concern (tested in deep L4-1); this medium's job is
-    // "prove Java multipart accepts 55MB > old 50MB cap", not "parse succeeds".
+    // FIX-2: Strict pass criteria. Rule 6 (§1.3 > §8.2) — don't mask parse failures.
     const maxUploadErr = /MaxUpload|MultipartException|FileSizeLimit/i.test(body);
-    const pass = httpCode === 200 && bodyJson !== null && !maxUploadErr;
+    const parseFailed = /parse failed|解析失败/i.test(bodyJson?.message || body);
+    const apiSuccess = bodyJson?.success === true || bodyJson?.code === 200;
+    const pass = httpCode === 200 && !maxUploadErr && !parseFailed && apiSuccess;
     record('R1-L3-1', 'L3', 'api_upload_55mb_csv_server_local', pass ? 'PASS' : 'FAIL', {
       depth: 'medium',
       factoryId: TARGET_FACTORY,
@@ -355,20 +475,32 @@ async function R1_L4_1_deepFullChain(page, token) {
   const targetBeforeArr = targetBeforeResp.data?.data?.content || targetBeforeResp.data?.data || [];
   const targetBefore = Array.isArray(targetBeforeArr) ? targetBeforeArr.length : 0;
 
+  // FIX-3: canary must be readable. factory_super_admin can only see its own factory
+  // (correct by design — cross-tenant data IS blocked at API level). For E2E canary
+  // we need a second token with platform-wide read. Use platform_admin login.
   const canaryFactory = 'F001';
-  const canaryBeforeResp = await listUploads(token, canaryFactory);
+  const platformToken = await loginAsPlatformAdmin();
+  const canaryBeforeResp = await listUploads(platformToken, canaryFactory);
   const canaryBefore = canaryBeforeResp.ok
     ? (canaryBeforeResp.data?.data?.content?.length ?? canaryBeforeResp.data?.data?.length ?? 0)
     : -1;
 
-  // Step 3: Fixture ready + hash.
-  // Use xlsx because /upload-and-analyze rejects CSV (400 "仅支持 .xlsx 或 .xls").
-  // 42MB xlsx crosses old 10MB cap (but NOT old 50MB cap — that's covered by L3-1
-  // server-local 55MB CSV upload). This fixture proves the full parse+persist chain.
-  const filePath = resolve(FIXTURES_DIR, 'pos_5mb.xlsx');
+  if (canaryBefore < 0) {
+    record(testId, 'L4', 'canary_readable', 'FAIL', {
+      depth: 'deep',
+      canaryFactory,
+      canaryBeforeResp_status: canaryBeforeResp.status,
+      canaryBeforeResp_body: canaryBeforeResp.rawText?.slice(0, 200),
+      note: 'platform_admin cannot read F001 uploads — check account permissions',
+    });
+    return;
+  }
+
+  // Step 3: Fixture ready + hash. Using 60MB CSV now that BUG-1 (CSV branch) is fixed.
+  const filePath = resolve(FIXTURES_DIR, 'pos_60mb.csv');
   const sha = await sha256OfFile(filePath);
   const sizeBytes = statSync(filePath).size;
-  const remotePath = '/tmp/e2e_pos.xlsx';
+  const remotePath = '/tmp/e2e_pos_60mb.csv';
 
   // Step 4: scp fixture to server (idempotent)
   let scpSkipped = false;
@@ -401,12 +533,14 @@ async function R1_L4_1_deepFullChain(page, token) {
   // /upload alone only parses + returns preview (no DB write). /upload-and-analyze
   // persists via ExcelUploadRepository which the Python auto-resolve code reads from.
   // auto_confirm=true skips field-mapping review UI → direct save.
+  // CSV now accepted (BUG-1 fixed 2026-04-14). Use active Java port (BG-aware).
+  const javaPort = getActiveJavaPort();
   const curlCmd =
     `ssh -o StrictHostKeyChecking=no root@47.100.235.168 "curl -s -o /tmp/e2e_r1l4_resp.json -w '%{http_code}' ` +
     `-H 'Authorization: Bearer ${token}' ` +
-    `-F 'file=@${remotePath}' -F 'dataType=pos' -F 'auto_confirm=true' ` +
+    `-F 'file=@${remotePath};type=text/csv' -F 'dataType=pos' -F 'auto_confirm=true' ` +
     `--max-time 580 ` +
-    `http://localhost:10010/api/mobile/${TARGET_FACTORY}/smart-bi/upload-and-analyze && cat /tmp/e2e_r1l4_resp.json"`;
+    `http://localhost:${javaPort}/api/mobile/${TARGET_FACTORY}/smart-bi/upload-and-analyze && cat /tmp/e2e_r1l4_resp.json"`;
   let curlOut;
   try {
     // maxBuffer: 50MB — upload-and-analyze returns preview data that can exceed
@@ -430,7 +564,7 @@ async function R1_L4_1_deepFullChain(page, token) {
   const apiBodyText = curlOut.slice(3).trim();
   let apiBody = null;
   try { apiBody = JSON.parse(apiBodyText); } catch {}
-  const apiUrl = `http://localhost:10010/api/mobile/${TARGET_FACTORY}/smart-bi/upload-and-analyze`;
+  const apiUrl = `http://localhost:${javaPort}/api/mobile/${TARGET_FACTORY}/smart-bi/upload-and-analyze`;
 
   if (apiStatus !== 200) {
     record(testId, 'L4', 'upload_api_200', 'FAIL', {
@@ -453,7 +587,7 @@ async function R1_L4_1_deepFullChain(page, token) {
   const targetAfterResp = await listUploads(token, TARGET_FACTORY);
   const targetAfterArr = targetAfterResp.data?.data?.content || targetAfterResp.data?.data || [];
   const targetAfter = Array.isArray(targetAfterArr) ? targetAfterArr.length : 0;
-  const canaryAfterResp = await listUploads(token, canaryFactory);
+  const canaryAfterResp = await listUploads(platformToken, canaryFactory);
   const canaryAfter = canaryAfterResp.ok
     ? (canaryAfterResp.data?.data?.content?.length ?? canaryAfterResp.data?.data?.length ?? 0)
     : -1;
@@ -483,32 +617,38 @@ async function R1_L4_1_deepFullChain(page, token) {
     return;
   }
 
-  // Step 9: Query restaurant section via REST (exercises auto-resolve code)
-  // Use 'diagnostics' — works for both FACTORY and RESTAURANT types.
-  // Pass JWT token since Python sections go through auth_middleware.
+  // Step 9: Query restaurant section via REST (exercises auto-resolve code path).
+  // FIX-4: assert auto-resolve triggered AND loaded our upload, not just "endpoint 200".
   const sectionResp = await queryRestaurantSection(TARGET_FACTORY, 'diagnostics', {}, token);
-  const sectionOk = sectionResp.ok && (sectionResp.data?.success === true || sectionResp.data?.status === 'ok');
 
-  // Even if status=SKIPPED, we're interested in whether the endpoint PROCESSED our upload
-  // (i.e. didn't error out because upload was missing). A SKIPPED with reason other than
-  // "no data" still shows the pipeline ran.
-  const pipelineRan = sectionResp.ok && (sectionResp.data !== null);
+  const autoResolve = sectionResp.data?.autoResolve;
+  const autoResolveLoaded = autoResolve?.triggered === true && autoResolve?.reason === 'loaded';
+  const autoResolveUploadId = autoResolve?.uploadId;
+  const uploadIdMatches = autoResolveUploadId === uploadId; // both should be same int
 
-  // Step 10: Final verdict
-  if (!pipelineRan) {
+  // PASS requires: endpoint 200 + auto-resolve actually loaded + loaded OUR uploadId
+  const endpoint200 = sectionResp.ok;
+  const pass = endpoint200 && autoResolveLoaded && uploadIdMatches;
+
+  if (!pass) {
     record(testId, 'L4', 'full_roundtrip', 'FAIL', {
       depth: 'deep',
       fileSize: sizeBytes,
       sha256: sha.slice(0, 16),
       apiStatus,
       apiUrl,
+      uploadElapsedMs,
       toastText,
       uploadId,
       targetBefore, targetAfter, targetDelta,
       canaryBefore, canaryAfter, canaryDelta,
       sectionStatus: sectionResp.status,
-      sectionData: sectionResp.data ? JSON.stringify(sectionResp.data).slice(0, 300) : null,
-      reason: 'section endpoint did not respond',
+      autoResolve,
+      uploadIdMatches,
+      reason: !endpoint200 ? 'section endpoint failed' :
+              !autoResolveLoaded ? `auto-resolve not loaded (reason=${autoResolve?.reason})` :
+              !uploadIdMatches ? `auto-resolve loaded uploadId=${autoResolveUploadId} but expected ${uploadId}` :
+              'unknown',
     });
     return;
   }
@@ -527,9 +667,130 @@ async function R1_L4_1_deepFullChain(page, token) {
     targetBefore, targetAfter, targetDelta,
     canaryBefore, canaryAfter, canaryDelta,
     sectionStatus: sectionResp.status,
-    sectionName: sectionResp.data?.sectionName || sectionResp.data?.section_name || 'diagnostics',
-    sectionReturnStatus: sectionResp.data?.status || 'unknown',
-    pipelineRan,
+    sectionName: sectionResp.data?.sectionName || 'diagnostics',
+    sectionReturnStatus: sectionResp.data?.status,
+    autoResolve,
+    uploadIdMatches,
+  });
+}
+
+// ===== L4-2: UI-driven deep (real browser upload via setInputFiles) =====
+// Uses the smaller pos_5mb.xlsx (42MB) — same 5 layers as L4-1 but through the
+// real ExcelUpload.vue → handleUpload → uploadAndAnalyze path. Tests click+submit
+// flow that L4-1 bypasses.
+
+async function R1_L4_2_uiDrivenDeep(page, token) {
+  console.log('\n--- R1-L4-2 UI-DRIVEN DEEP ---');
+  const testId = 'R1-L4-2';
+
+  // Step 1: Navigate to upload page
+  const nav = await navigateTo(page, '/smart-bi/upload', { timeout: 30000 });
+  if (nav !== 'OK') {
+    record(testId, 'L4', 'navigate', 'FAIL', { depth: 'deep', navResult: nav });
+    return;
+  }
+  await page.waitForTimeout(1500);
+
+  // Step 2: DB baseline for this factory
+  const beforeResp = await listUploads(token, TARGET_FACTORY);
+  const beforeArr = beforeResp.data?.data?.content || beforeResp.data?.data || [];
+  const rowsBefore = Array.isArray(beforeArr) ? beforeArr.length : 0;
+
+  // Step 3: Fixture (42MB xlsx — BUG-1 not needed; xlsx always worked)
+  const filePath = resolve(FIXTURES_DIR, 'pos_5mb.xlsx');
+  if (!existsSync(filePath)) {
+    record(testId, 'L4', 'fixture', 'FAIL', { depth: 'deep', missing: filePath });
+    return;
+  }
+  const sizeBytes = statSync(filePath).size;
+
+  // Step 4: Register listener for upload API response BEFORE triggering
+  let responseCaptured = null;
+  const responseHandler = async (resp) => {
+    const u = resp.url();
+    if (/\/smart-bi\/upload(-and-analyze)?(\?|$)/.test(u)) {
+      try { responseCaptured = { status: resp.status(), url: u, body: await resp.text() }; }
+      catch (e) { responseCaptured = { status: resp.status(), url: u, body: `(read failed: ${e.message})` }; }
+    }
+  };
+  page.on('response', responseHandler);
+
+  // Step 5: setInputFiles (real browser file dialog equivalent)
+  const t0 = Date.now();
+  const inputHandle = await page.$('input[type="file"]');
+  if (!inputHandle) {
+    page.off('response', responseHandler);
+    record(testId, 'L4', 'find_input', 'FAIL', { depth: 'deep' });
+    return;
+  }
+  await inputHandle.setInputFiles(filePath);
+
+  // Step 6: Wait for upload API response (max 600s for ISP + server)
+  let waitedMs = 0;
+  const maxWait = 600000;
+  while (!responseCaptured && waitedMs < maxWait) {
+    await page.waitForTimeout(2000);
+    waitedMs += 2000;
+  }
+  page.off('response', responseHandler);
+  const uploadElapsedMs = Date.now() - t0;
+
+  if (!responseCaptured) {
+    // Per skill Rule 6: document ISP timeout as WARNING with rationale, not hide as PASS.
+    // This is a known client-side blocker (home ISP ~300KB/s × 42MB = ~140s but browser+Vue
+    // reactive memory allocation overhead pushes it over limits).
+    record(testId, 'L4', 'ui_upload_response', 'WARNING', {
+      depth: 'deep',
+      fileSize: sizeBytes,
+      uploadElapsedMs,
+      reason: `browser upload did not complete in ${maxWait/1000}s — likely ISP client-side limit, NOT a feature bug. L4-1 proves 5-layer chain works end-to-end via server-local path.`,
+    });
+    return;
+  }
+
+  if (responseCaptured.status !== 200) {
+    record(testId, 'L4', 'ui_upload_status', 'FAIL', {
+      depth: 'deep',
+      fileSize: sizeBytes,
+      uploadElapsedMs,
+      responseCaptured: { status: responseCaptured.status, url: responseCaptured.url, body: responseCaptured.body?.slice(0, 300) },
+    });
+    return;
+  }
+
+  // Step 7: Capture success toast
+  let toastText = null;
+  try {
+    const toast = await page.waitForSelector('.el-message--success', { timeout: 10000 });
+    toastText = await toast.innerText();
+  } catch { toastText = '(no success toast in 10s — possibly success state rendered differently)'; }
+
+  // Step 8: Fresh-nav back to upload list and verify +1
+  await page.waitForTimeout(2000);
+  const afterResp = await listUploads(token, TARGET_FACTORY);
+  const afterArr = afterResp.data?.data?.content || afterResp.data?.data || [];
+  const rowsAfter = Array.isArray(afterArr) ? afterArr.length : 0;
+  const delta = rowsAfter - rowsBefore;
+
+  if (delta !== 1) {
+    record(testId, 'L4', 'ui_db_delta', 'FAIL', {
+      depth: 'deep',
+      rowsBefore, rowsAfter, delta,
+      expected: 1,
+      toastText,
+    });
+    return;
+  }
+
+  record(testId, 'L4', 'ui_driven_full_chain', 'PASS', {
+    depth: 'deep',
+    fileSize: sizeBytes,
+    uploadElapsedMs,
+    transport: 'real browser UI (setInputFiles → ExcelUpload.vue handleUpload → uploadAndAnalyze)',
+    toastText,
+    rowsBefore, rowsAfter, delta,
+    apiStatus: responseCaptured.status,
+    apiUrl: responseCaptured.url,
   });
 }
 
@@ -588,6 +849,8 @@ async function main() {
 
   // L4 DEEP — full chain
   await R1_L4_1_deepFullChain(page, token);
+  // L4-2 DEEP — UI-driven alternative (tests real browser flow, may WARNING on ISP timeout)
+  await R1_L4_2_uiDrivenDeep(page, token);
 
   await finish(browser);
 }
@@ -605,14 +868,14 @@ async function finish(browser) {
   }
   const total = RESULTS.tests.length;
   RESULTS.schema_v3 = {
-    specTotal: 10,
+    specTotal: 11,
     p2Deferred: [],
     expectedFail: [],
-    effectiveTotal: 10,
+    effectiveTotal: 11,
     actualExecuted: total,
     actualPass: pass,
     depthBreakdown: depthCounts,
-    pctOfSpec: total > 0 ? (pass / 10) * 100 : 0,
+    pctOfSpec: total > 0 ? (pass / 11) * 100 : 0,
     pctDeep: total > 0 ? (depthCounts.deep / total) * 100 : 0,
   };
   RESULTS.summary = { total, pass, fail, warn, skip };

@@ -132,10 +132,10 @@ export async function getAuthToken(page) {
 export async function getLoggedInFactoryId(page) {
   return await page.evaluate(() => {
     try {
-      const raw = localStorage.getItem('cretas_user') || localStorage.getItem('admin-user') || localStorage.getItem('user');
+      const raw = localStorage.getItem('cretas_user');
       if (!raw) return null;
       const u = JSON.parse(raw);
-      return u?.factoryId || u?.factory_id || null;
+      return u?.factoryUser?.factoryId || u?.platformUser?.factoryId || null;
     } catch {
       return null;
     }

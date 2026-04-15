@@ -575,7 +575,6 @@ async def auto_parse_excel(
 
         # If sheet_name is provided, convert to index
         if effective_sheet_name and ext != ".csv":
-            import pandas as pd
             import io
             try:
                 xl = pd.ExcelFile(io.BytesIO(content))
@@ -595,7 +594,6 @@ async def auto_parse_excel(
         if effective_index is None and ext != ".csv":
             # Smart sheet selection: pick the sheet with most data rows
             try:
-                import pandas as pd
                 import io
                 xl = pd.ExcelFile(io.BytesIO(content))
                 if len(xl.sheet_names) > 1:
@@ -739,7 +737,6 @@ async def auto_parse_excel(
         linked_sheets = None  # Will be populated if table is an index
         try:
             classifier = get_table_classifier()
-            import pandas as pd
             import io
 
             # Read DataFrame for classification
@@ -799,7 +796,6 @@ async def auto_parse_excel(
         if transpose and extracted.rows:
             logger.info("Applying transpose to extracted data")
             # Transpose: first column becomes headers, first row values become row identifiers
-            import pandas as pd
             try:
                 df = pd.DataFrame(extracted.rows, columns=extracted.headers)
                 df_transposed = df.T

@@ -248,27 +248,35 @@ class FixedExecutor:
             header_rows = structure_config.header_row_count
             data_start_row = structure_config.data_start_row
 
-            # 对于复杂多层表头 (>2行)，使用智能合并而不是 pandas 默认拼接
-            if header_rows > 2 or structure_config.merged_cells:
-                return self._execute_with_smart_header_merge(
-                    file_bytes, structure_config, mapping_config, options
-                )
-
-            # 简单表头情况，使用 pandas 默认处理
-            if header_rows == 2:
-                header = [0, 1]
-            elif header_rows == 1:
-                header = 0
+            # CSV fast-path: when auto_parse used csv_passthrough, file is CSV not xlsx.
+            # pd.read_excel would fail; dispatch to pd.read_csv.
+            if structure_config.method == "csv_passthrough":
+                try:
+                    df = pd.read_csv(io.BytesIO(file_bytes))
+                except UnicodeDecodeError:
+                    df = pd.read_csv(io.BytesIO(file_bytes), encoding="gbk")
             else:
-                header = data_start_row - 1 if data_start_row > 0 else 0
+                # 对于复杂多层表头 (>2行)，使用智能合并而不是 pandas 默认拼接
+                if header_rows > 2 or structure_config.merged_cells:
+                    return self._execute_with_smart_header_merge(
+                        file_bytes, structure_config, mapping_config, options
+                    )
 
-            # Read with pandas
-            df = pd.read_excel(
-                io.BytesIO(file_bytes),
-                sheet_name=structure_config.sheet_name or 0,
-                header=header,
-                skiprows=options.get("skip_rows", 0)
-            )
+                # 简单表头情况，使用 pandas 默认处理
+                if header_rows == 2:
+                    header = [0, 1]
+                elif header_rows == 1:
+                    header = 0
+                else:
+                    header = data_start_row - 1 if data_start_row > 0 else 0
+
+                # Read with pandas
+                df = pd.read_excel(
+                    io.BytesIO(file_bytes),
+                    sheet_name=structure_config.sheet_name or 0,
+                    header=header,
+                    skiprows=options.get("skip_rows", 0)
+                )
 
             # Flatten multi-level columns if needed
             if isinstance(df.columns, pd.MultiIndex):
@@ -332,7 +340,9 @@ class FixedExecutor:
                 )
 
             # Extract context (Three-Layer Model - Layer 3)
-            if options.get("extract_context", True):
+            # Skip for CSV: context extractor + _get_sheet_index both use openpyxl,
+            # which crashes on CSV bytes with "File is not a zip file".
+            if options.get("extract_context", True) and structure_config.method != "csv_passthrough":
                 result.context = self._context_extractor.extract_from_bytes(
                     file_bytes=file_bytes,
                     sheet_index=0 if not structure_config.sheet_name else
