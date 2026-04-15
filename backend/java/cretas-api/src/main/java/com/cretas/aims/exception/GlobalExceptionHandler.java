@@ -574,6 +574,20 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Spring 6 AsyncRequestNotUsableException — 客户端在 async 完成阶段断开,
+     * ServletOutputStream 写入失败 (ClosedChannelException / Broken pipe).
+     * 这类异常绕过了 @ExceptionHandler(RuntimeException.class) 的兜底 (Spring
+     * async resolver 不走 @ExceptionHandler chain), 需单独 handler 避免刷 ERROR.
+     */
+    @ExceptionHandler(org.springframework.web.context.request.async.AsyncRequestNotUsableException.class)
+    @ResponseStatus(HttpStatus.OK)
+    public ApiResponse<?> handleAsyncRequestNotUsable(
+            org.springframework.web.context.request.async.AsyncRequestNotUsableException e) {
+        log.warn("Async 请求通道已关闭 (客户端断开): {}", e.getMessage());
+        return ApiResponse.error(499, "client aborted async request");
+    }
+
+    /**
      * Unwrap 异常链判断 root cause 是不是 client-abort / EOF.
      * (Tomcat 版本差异: 可能嵌套 2-3 层, e.g. MultipartException →
      * IOFileUploadException → ClientAbortException → EOFException)
@@ -619,6 +633,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiResponse<?> handleException(Exception e) {
+        // 兜底也查一次 client-abort 链, 以防新的 async 包装类绕过上面的
+        // 专用 handler (Spring 6 迭代里这类 wrapper 还会增加).
+        if (isClientAbort(e)) {
+            log.warn("客户端中断 (未预期的包装类): {}", e.getClass().getSimpleName(), e.getMessage());
+            return ApiResponse.error(499, "client aborted");
+        }
         String traceId = generateTraceId();
         log.error("[{}] 未捕获异常: {}", traceId, e.getClass().getName(), e);
         return buildSanitizedResponse(ErrorCode.SYSTEM_ERROR, traceId);
