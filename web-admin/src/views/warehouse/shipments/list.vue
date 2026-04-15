@@ -59,7 +59,7 @@ async function loadData() {
   try {
     const response = await get(`/${factoryId.value}/shipments`, {
       params: {
-        page: pagination.value.page,
+        page: pagination.value.page - 1,
         size: pagination.value.size,
         keyword: searchForm.value.keyword || undefined,
         status: searchForm.value.status || undefined
@@ -173,7 +173,7 @@ async function handleShip(row: Record<string, unknown>) {
   try {
     await ElMessageBox.confirm('确定发货?', '操作确认', { type: 'warning' });
     const response = await put(`/${factoryId.value}/shipments/${row.id}/status`, {
-      status: 'SHIPPED'
+      status: 'shipped'
     });
     if (response.success) {
       ElMessage.success('已发货');
@@ -192,7 +192,7 @@ async function handleDelivered(row: Record<string, unknown>) {
   try {
     await ElMessageBox.confirm('确认已送达?', '操作确认', { type: 'warning' });
     const response = await put(`/${factoryId.value}/shipments/${row.id}/status`, {
-      status: 'DELIVERED'
+      status: 'delivered'
     });
     if (response.success) {
       ElMessage.success('已确认送达');
@@ -287,10 +287,10 @@ function getStatusText(status: string) {
           @keyup.enter="handleSearch"
         />
         <el-select v-model="searchForm.status" placeholder="全部状态" clearable style="width: 150px">
-          <el-option label="待发货" value="PENDING" />
-          <el-option label="运输中" value="SHIPPED" />
-          <el-option label="已送达" value="DELIVERED" />
-          <el-option label="已取消" value="CANCELLED" />
+          <el-option label="待发货" value="pending" />
+          <el-option label="运输中" value="shipped" />
+          <el-option label="已送达" value="delivered" />
+          <el-option label="已退货" value="returned" />
         </el-select>
         <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>

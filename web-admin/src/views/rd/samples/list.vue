@@ -45,7 +45,7 @@ async function loadData() {
   loading.value = true;
   try {
     const endpoint = activeTab.value === 'requests' ? 'requests' : activeTab.value === 'quotations' ? 'quotations' : 'samples';
-    const params: Record<string, unknown> = { page: pagination.value.page, size: pagination.value.size };
+    const params: Record<string, unknown> = { page: pagination.value.page - 1, size: pagination.value.size };
     if (activeTab.value === 'samples') {
       if (searchForm.value.status) params.status = searchForm.value.status;
       if (searchForm.value.customerName) params.customerName = searchForm.value.customerName;

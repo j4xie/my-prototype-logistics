@@ -287,7 +287,7 @@ async function handleAction(orderId: string, action: string) {
     cancel: { label: '取消', url: `/${factoryId.value}/sales/orders/${orderId}/cancel` },
     // R23-Pre3: FINANCE_REJECTED → resubmit for finance review (backend already
     // supports CONFIRMED || FINANCE_REJECTED → PENDING_FINANCE_REVIEW transition).
-    resubmit: { label: '重新提交', url: `/${factoryId.value}/sales/orders/${orderId}/submit-for-finance-review` },
+    resubmit: { label: '重新提交', url: `/${factoryId.value}/sales/orders/${orderId}/submit-for-review` },
   };
   const a = map[action];
   if (!a) return;
