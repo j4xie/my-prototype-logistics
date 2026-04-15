@@ -21,6 +21,7 @@ import {
   apiGet,
   apiPost,
   apiPut,
+  apiDelete,
   createBrowser,
   webLogin,
   screenshot,
@@ -407,6 +408,103 @@ async function runL5_PermissionMatrixOverlayMateriality() {
 }
 
 // ---------------------------------------------------------------------------
+// L6: Role differential on write operations (deep, gray-area closure)
+// ---------------------------------------------------------------------------
+//
+// Probe finding 2026-04-16: GET /config/modules/*/effective returns IDENTICAL
+// response for factory_super_admin (restaurant_admin1) and production_manager
+// (production_mgr2) on all 6 probed modules — the API does NOT filter fields
+// by requesting-user role. Role enforcement happens instead on WRITE operations
+// via @RequireRole on mutating endpoints.
+//
+// So the meaningful per-role differential is on WRITES, not reads. L6 verifies
+// this by attempting the same admin-only write from two different role tokens:
+//   - factory_super_admin → expect HTTP 200 (permitted) + endpoint usable
+//   - production_manager  → expect HTTP 403 (blocked by @RequireRole)
+//
+// Target endpoint: PUT /config/v2/formulas/{formulaCode} (BusinessRuleController
+// @RequireRole({"factory_super_admin", "permission_admin"}) — Round 5 fix SEC-6).
+//
+// If L6 fails (admin gets 403 or production_mgr gets 200), the role-based
+// write authorization layer is misconfigured.
+async function runL6_RoleDifferentialOnWrites() {
+  console.log('\n=== L6: Role Differential on Write Operations ===');
+
+  let tokenAdmin = null, tokenProdMgr = null;
+  try {
+    tokenAdmin = (await login(ADMIN_A)).token;
+  } catch (err) {
+    R.log('L6-skip', 'WARN', `[depth=deep] Admin login failed: ${err.message} — L6 skipped`);
+    return;
+  }
+  try {
+    tokenProdMgr = (await login('production_mgr2')).token;
+  } catch (err) {
+    R.log('L6-skip', 'WARN',
+      `[depth=deep] production_mgr2 login failed: ${err.message} — need active mid-tier role account; L6 skipped`);
+    return;
+  }
+
+  const TEST_CODE = `l6_write_diff_${Date.now().toString(36)}`;
+  const putBody = {
+    moduleCode: 'sales_order',
+    formulaCode: TEST_CODE,
+    expression: 'cf_amount * 1.0',
+    resultType: 'DECIMAL',
+    description: 'L6 role differential test',
+  };
+
+  // Step 1: admin PUT — expect 200
+  let adminPutStatus = null;
+  try {
+    const r = await apiPut(`${FACTORY_A}/config/v2/formulas/${TEST_CODE}`, putBody, tokenAdmin);
+    adminPutStatus = r.status;
+  } catch (err) {
+    R.log('L6-admin-write', 'FAIL', `[depth=deep] Admin PUT threw: ${err.message}`);
+    return;
+  }
+
+  // Step 2: production_mgr2 PUT — expect 403
+  let pmPutStatus = null;
+  try {
+    const r = await apiPut(`${FACTORY_A}/config/v2/formulas/${TEST_CODE}_pm`, {
+      ...putBody, formulaCode: `${TEST_CODE}_pm`
+    }, tokenProdMgr);
+    pmPutStatus = r.status;
+  } catch (err) {
+    R.log('L6-pm-write', 'FAIL', `[depth=deep] production_mgr2 PUT threw: ${err.message}`);
+    return;
+  }
+
+  // Cleanup: DELETE the admin-created formula via R7 Issue 2 endpoint.
+  // Best-effort — cleanup failure does not affect test verdict (idempotent on backend).
+  try {
+    await apiDelete(
+      `${FACTORY_A}/config/v2/formulas/${TEST_CODE}?moduleCode=sales_order`,
+      tokenAdmin
+    );
+  } catch { /* ignore */ }
+
+  // Assertions
+  const adminOK = adminPutStatus === 200 || adminPutStatus === 201;
+  const pmBlocked = pmPutStatus === 403;
+
+  if (adminOK && pmBlocked) {
+    R.log('L6-role-write-differential', 'PASS',
+      `[depth=deep] Role-differential write enforcement active — ` +
+      `factory_super_admin PUT formula HTTP ${adminPutStatus} (allowed), ` +
+      `production_manager PUT formula HTTP ${pmPutStatus} (blocked per @RequireRole). ` +
+      `BusinessRuleController.setFormula correctly enforces role scope.`);
+  } else {
+    R.log('L6-role-write-differential', 'FAIL',
+      `[depth=deep] Role-differential write enforcement broken — ` +
+      `factory_super_admin HTTP ${adminPutStatus} (expected 200), ` +
+      `production_manager HTTP ${pmPutStatus} (expected 403). ` +
+      `If admin is 403 → role registry broken; if pm is 200 → @RequireRole not enforced.`);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 async function run() {
@@ -438,6 +536,10 @@ async function run() {
   // L5 is API-only — gray-area coverage upgrade (verifies permission matrix
   // overlay is materially applied per module, not a default-allow no-op).
   await runL5_PermissionMatrixOverlayMateriality();
+
+  // L6 is API-only — role differential on WRITE operations (reads don't
+  // differentiate per probe 2026-04-16).
+  await runL6_RoleDifferentialOnWrites();
 
   const summary = R.save();
   process.exit(summary.fail > 0 ? 1 : 0);
