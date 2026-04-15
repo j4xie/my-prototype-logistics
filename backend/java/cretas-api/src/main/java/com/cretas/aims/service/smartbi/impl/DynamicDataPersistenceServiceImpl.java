@@ -42,6 +42,69 @@ public class DynamicDataPersistenceServiceImpl implements DynamicDataPersistence
     private final SmartBiDynamicDataRepository dynamicDataRepository;
     private final SmartBiPgFieldDefinitionRepository fieldDefRepository;
 
+    @jakarta.persistence.PersistenceContext(unitName = "smartbiPostgres")
+    private jakarta.persistence.EntityManager smartbiEntityManager;
+
+    /**
+     * Chunk size for batched persistence — 60MB+ uploads with 600K rows used to
+     * accumulate the entire entity list in heap before saveAll, then Hibernate
+     * held all entities in the first-level cache until commit, blowing -Xmx1280m
+     * with OOM. 1000 rows per batch + flush+clear keeps the session small.
+     */
+    private static final int PERSIST_BATCH_SIZE = 1000;
+
+    /**
+     * Build SmartBiDynamicData rows in chunks of {@link #PERSIST_BATCH_SIZE},
+     * save each batch, then flush + clear the JPA session so Hibernate releases
+     * the entities. Returns the total non-empty rows persisted.
+     */
+    private int persistRowsInBatches(
+            String factoryId,
+            Long uploadId,
+            String sheetName,
+            String timeField,
+            String categoryField,
+            java.util.List<java.util.Map<String, Object>> previewData) {
+        int rowIndex = 0;
+        int saved = 0;
+        java.util.List<SmartBiDynamicData> batch = new java.util.ArrayList<>(PERSIST_BATCH_SIZE);
+        for (java.util.Map<String, Object> rowData : previewData) {
+            if (rowData == null || rowData.isEmpty() ||
+                rowData.values().stream().allMatch(java.util.Objects::isNull)) {
+                continue;
+            }
+            String period = extractValue(rowData, timeField);
+            String category = extractValue(rowData, categoryField);
+            batch.add(SmartBiDynamicData.builder()
+                    .factoryId(factoryId)
+                    .uploadId(uploadId)
+                    .sheetName(sheetName)
+                    .rowIndex(rowIndex++)
+                    .rowData(rowData)
+                    .period(period)
+                    .category(category)
+                    .build());
+            if (batch.size() >= PERSIST_BATCH_SIZE) {
+                dynamicDataRepository.saveAll(batch);
+                if (smartbiEntityManager != null) {
+                    smartbiEntityManager.flush();
+                    smartbiEntityManager.clear();
+                }
+                saved += batch.size();
+                batch.clear();
+            }
+        }
+        if (!batch.isEmpty()) {
+            dynamicDataRepository.saveAll(batch);
+            if (smartbiEntityManager != null) {
+                smartbiEntityManager.flush();
+                smartbiEntityManager.clear();
+            }
+            saved += batch.size();
+        }
+        return saved;
+    }
+
     @Override
     @Transactional("smartbiPostgresTransactionManager")
     public DynamicPersistenceResult persistDynamic(String factoryId, ExcelParseResponse parseResponse) {
@@ -90,38 +153,10 @@ public class DynamicDataPersistenceServiceImpl implements DynamicDataPersistence
             String timeField = findTimeField(confirmedMappings);
             String categoryField = findCategoryField(confirmedMappings);
 
-            // 4. Save data rows as JSONB
-            List<SmartBiDynamicData> dynamicDataList = new ArrayList<>();
-            int rowIndex = 0;
-
-            for (Map<String, Object> rowData : previewData) {
-                // Skip empty rows
-                if (rowData == null || rowData.isEmpty() ||
-                    rowData.values().stream().allMatch(Objects::isNull)) {
-                    continue;
-                }
-
-                // Extract period and category for quick filtering
-                String period = extractValue(rowData, timeField);
-                String category = extractValue(rowData, categoryField);
-
-                SmartBiDynamicData dynamicData = SmartBiDynamicData.builder()
-                        .factoryId(factoryId)
-                        .uploadId(uploadId)
-                        .sheetName(sheetName)
-                        .rowIndex(rowIndex++)
-                        .rowData(rowData)
-                        .period(period)
-                        .category(category)
-                        .build();
-
-                dynamicDataList.add(dynamicData);
-            }
-
-            // Batch save
-            dynamicDataRepository.saveAll(dynamicDataList);
-            int savedRows = dynamicDataList.size();
-            log.info("Saved {} data rows", savedRows);
+            // 4. Save data rows as JSONB — chunked to avoid OOM on large uploads
+            int savedRows = persistRowsInBatches(
+                    factoryId, uploadId, sheetName, timeField, categoryField, previewData);
+            log.info("Saved {} data rows (batched)", savedRows);
 
             // 5. Update upload status
             upload.setUploadStatus(UploadStatus.COMPLETED);
@@ -302,35 +337,10 @@ public class DynamicDataPersistenceServiceImpl implements DynamicDataPersistence
             String timeField = findTimeField(fieldMappings);
             String categoryField = findCategoryField(fieldMappings);
 
-            // Re-save data rows
-            List<SmartBiDynamicData> dynamicDataList = new ArrayList<>();
-            int rowIndex = 0;
-
-            for (Map<String, Object> rowData : previewData) {
-                if (rowData == null || rowData.isEmpty() ||
-                    rowData.values().stream().allMatch(Objects::isNull)) {
-                    continue;
-                }
-
-                String period = extractValue(rowData, timeField);
-                String category = extractValue(rowData, categoryField);
-
-                SmartBiDynamicData dynamicData = SmartBiDynamicData.builder()
-                        .factoryId(factoryId)
-                        .uploadId(existingUploadId)
-                        .sheetName(sheetName)
-                        .rowIndex(rowIndex++)
-                        .rowData(rowData)
-                        .period(period)
-                        .category(category)
-                        .build();
-
-                dynamicDataList.add(dynamicData);
-            }
-
-            dynamicDataRepository.saveAll(dynamicDataList);
-            int savedRows = dynamicDataList.size();
-            log.info("Retry saved {} data rows", savedRows);
+            // Re-save data rows — chunked to avoid OOM on large uploads
+            int savedRows = persistRowsInBatches(
+                    factoryId, existingUploadId, sheetName, timeField, categoryField, previewData);
+            log.info("Retry saved {} data rows (batched)", savedRows);
 
             // Update upload status to COMPLETED
             upload.setUploadStatus(UploadStatus.COMPLETED);
