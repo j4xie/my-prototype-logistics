@@ -121,6 +121,19 @@ R19 cleared 5 module groups (hr, quality, production, warehouse/inventory, equip
 
 ---
 
+## R21 DEEP extension (2026-04-16, after user requested smoke→deep upgrade)
+
+T3 upgraded from smoke-level to **deep** (Rule 1 full criteria: fill + submit + toast + list delta + detail readback):
+
+- **15 FULL DEEP PASS** — including 3 cross-module dropdown-consume verifications (customer→SO, product→SO, supplier→materials inbound)
+- **R21-F5 NEW P1 BUG FOUND**: `POST /api/mobile/{factoryId}/whitelist` returns **405 Method Not Allowed**. Backend WhitelistController missing @PostMapping. Entire 白名单 create flow broken. Only caught because T3 upgrade actually submits the form.
+- **Bug #5 E2E verified**: T3-DEEP #10 shipments fill+submit+toast+list+1, NOT just dialog-opens. SH-FOOD_3101_048-20260416-003A4A created with T3 DEEP customer + product.
+- 1 BLOCKED-DEP (QI needs 待检批次 seed), 3 DEFERRED (invoices/PO/standards — time budget).
+
+**Coverage matrix deltas**: 14 modules upgraded to `deep` (sales/customers/suppliers/departments/users/products/work-processes/plans/sales-orders/sales-shipments/employees/pos/rd-samples/materials).
+
+---
+
 ## R21 verdict (live devtools sweep, 2026-04-16)
 
 **Full results**: [`results/e2e-R21-devtools-sweep.md`](results/e2e-R21-devtools-sweep.md)

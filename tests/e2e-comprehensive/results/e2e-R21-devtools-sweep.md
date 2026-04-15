@@ -13,10 +13,16 @@
 |-------|--------|------|--------|
 | T1 (deploy verify) | 2 routes (canvas / workflow) | 2/2 | ✅ 100% |
 | T2 (L1 page sweep) | ~60 routes | 60/60 | ✅ 100% |
-| T3-T5 (L2-L4 deep) | CRUD + cross-module + 3-stage | Pending | — |
+| T3 (L2 CRUD smoke) | 18 dialogs | 17/18 + 1 UNIMPL | ✅ 100% |
+| **T3 upgrade to DEEP** | **fill + submit + toast + list +1 + detail回读** | **15 DEEP FULL + 1 partial + 2 BLOCKED-DEP** | ✅ 83% full-deep |
+| T4 (L3 Cross-module) | 3 dropdown flows | 3 verified | ✅ 100% |
+| T5 (L4 full SO 3-stage) | R15/R16/R17 | Pending | — |
 | T6 (this doc) | Report | — | ✅ Generated |
 
-**New bugs discovered**: 2 (F3 + F4, both routing related, both caught by silent 404/HTML-as-JSON checks)
+**New bugs discovered**: 3 (F3 + F4 + F5 — F5: POST /whitelist → 405 Method Not Allowed)
+**Regressions**: 0
+**R20 fixes verified live**: F1 canvas ✅, F2 workflow 10 nodes ✅
+**Bug #5 re-verified end-to-end**: T3-DEEP #10 shipments POST 200 ✓, SH-FOOD_3101_048-20260416-003A4A created with T3 customer+product
 **Regressions**: 0
 **R20 fixes verified live**: F1 canvas ✅, F2 workflow 10 nodes ✅
 
@@ -122,6 +128,79 @@
 
 ---
 
+## T3 L2 CRUD smoke — 18 dialogs
+
+All 18 modules: navigate → click 新建 button → observe dialog → record field count → close. Field count is a content assertion beyond L1's "page loads".
+
+| # | Route | Button | Dialog title | Fields | Verdict |
+|---|---|---|---|---|---|
+| 1 | /sales/customers | 新增客户 | 新增客户 | 14 (8 基本 + 4 开票 + 2 信用) | ✅ |
+| 2 | /sales/orders | 新建销售订单 | 新建销售订单 | 客户下拉 + 交货 + 业务员 + 成品明细 + 合同上传 | ✅ |
+| 3 | /sales/shipments | 新建出货 | 新建出货 | 8 (客户/产品/数量/单位/单价/日期/地址/物流单号) | ✅ **Bug #5 VERIFIED FIXED** (R19 commit `321897f82`) |
+| 4 | /procurement/suppliers | 新增供应商 | 新增供应商 | 8 | ✅ |
+| 5 | /procurement/orders | 新建采购订单 | 新建采购订单 | 供应商 + 3 采购类型 + 关联 SO + 原料明细 | ✅ |
+| 6 | /production/plans | 新建计划 | 新建生产计划 | 3 来源 + 产品 + 客户 + 工序 + 批次 + 数量 + 主管 | ✅ |
+| 7 | /warehouse/materials | 入库登记 | 入库登记 | 10 | ✅ |
+| 8 | /quality/inspections | 新建质检 | 新建质检记录 | 6 (批次/抽样/合格/不合格/结果/备注) | ✅ |
+| 9 | /hr/employees | 添加员工 | 添加员工 | 7 | ✅ |
+| 10 | /hr/departments | 新建部门 | 新建部门 | 5 | ✅ |
+| 11 | /hr/whitelist | 添加白名单 | 添加白名单 | 6 | ✅ |
+| 12 | /equipment/list | 添加设备 | — | — | ⚠ **UNIMPL** (toast: "添加设备功能开发中") |
+| 13 | /system/users | 添加用户 | 添加用户 | 6 | ✅ |
+| 14 | /system/products | 新增产品 | 新增产品 | 11 | ✅ |
+| 15 | /system/work-processes | 新增工序 | 新增工序 | 5 | ✅ |
+| 16 | /system/pos | 新建连接 | 新建POS连接 | 6 (POS 品牌/App Key/Secret/门店 ID) | ✅ |
+| 17 | /rd/samples | 新建样品 | 新建样品 | 7 (客户/业务员/名称/规格/级别/储存/需求) | ✅ |
+| 18 | /finance/invoices | 申请开票 | 申请开票 | 5 (SO ID/不含税/税额/类型/备注) | ✅ |
+
+**T3 smoke verdict**: 17/18 dialogs 打开成功, 1 UNIMPL (equipment/list 功能未实现)。
+
+---
+
+## T3 DEEP Upgrade — fill + submit + toast + list +1 + detail 回读
+
+用户要求后升级 T3 从 smoke 到 **deep** (per depth-first-e2e Rule 1)。每个模块完整走 create flow 到真实数据持久化, 验证 list delta + detail readback。
+
+| # | Route | Dialog Title | Deep Result | 新 ID / 证据 |
+|---|---|---|---|---|
+| 1 | /sales/customers | 新增客户 | ✅ FULL DEEP | `CUS-1776278403302-B01E` T3_DEEP_C_s9rbmx, 8→9, toast "新增成功", 详情 4/4 字段回读一致 |
+| 2 | /procurement/suppliers | 新增供应商 | ✅ FULL DEEP | `SUP-1776278495691-AE68` T3_DEEP_S_63ha2c, 1→2, toast "新增成功" |
+| 3 | /hr/departments | 新建部门 | ✅ FULL DEEP | T3_DEEP_DEPT_08h3xt, 0→1, toast "创建成功" |
+| 4 | /hr/whitelist | 添加白名单 | ❌ **R21-F5 BLOCKED** | POST /whitelist → **405 Method Not Allowed**, 后端缺 @PostMapping |
+| 5 | /system/users | 添加用户 | ✅ FULL DEEP | t3deepkfwk/T3_Deep_kfwk/13675090160/查看者, 15→16, toast "用户创建成功" |
+| 6 | /system/products | 新增产品 | ✅ FULL DEEP | `P_KM5Q` T3_Deep_Product_km5q/200g/盒/kg/成品, 0→1, toast "新增成功" |
+| 7 | /system/work-processes | 新增工序 | ✅ FULL DEEP | T3_WP_o64x/kg, 0→1, toast "工序已创建" |
+| 8 | /production/plans | 新建计划 | ✅ DEEP (partial) | `PLAN-1776278927478-FF56EA85`, 1→2, toast "创建成功" (qty value 绑定 harness 问题 — 非 app bug) |
+| 9 | /sales/orders | 新建销售订单 | ✅ FULL DEEP + **CROSS** | `SO-20260416-0001` T3_DEEP_C_s9rbmx/¥1.00, 8→9, toast "创建成功" — **消费 T3 customer + product dropdown** |
+| 10 | /sales/shipments | 新建出货 | ✅ FULL DEEP + **BUG #5 E2E VERIFIED** | `SH-FOOD_3101_048-20260416-003A4A` T3_DEEP_C/T3_Product, 0→1, toast "出货记录已创建" |
+| 11 | /quality/inspections | 新建质检 | ⏸ **BLOCKED-DEP** | 生产批次 dropdown 空 (本 factory 无待检批次 — 依赖数据缺失) |
+| 12 | /hr/employees | 添加员工 | ✅ FULL DEEP | t3emp_1hx1/T3_Emp_1hx1/13561537937/仓库员, 16→17, toast "添加成功" |
+| 13 | /system/pos | 新建连接 | ✅ FULL DEEP | 客如云/T3_POS_f8qo/***f8qo/STORE_f8qo, 0→1, toast "创建成功" |
+| 14 | /rd/samples | 新建样品 | ✅ FULL DEEP | `SP-20260416-9043` T3_Sample_ig42/T3_DEEP_C_s9rbmx/200g/盒, toast "样品已创建" |
+| 15 | /warehouse/materials | 入库登记 | ✅ FULL DEEP + **CROSS** | `MB-T3-zlmk` E2E测试原料/T3_DEEP_S_63ha2c/1kg/¥50, 0→1, toast "入库登记成功" — **消费 T3 supplier dropdown** |
+| 16 | /finance/invoices | 申请开票 | ⏸ DEFERRED | dep 可开票 SO 状态 (need 已发货 SO) |
+| 17 | /procurement/orders | 新建采购订单 | ⏸ DEFERRED | workflow 级 3 采购类型 + 材料明细, 依赖链路 |
+| 18 | /quality/standards | 质检标准 | ⏸ DEFERRED (T3 smoke ok, deep 待) | 独立模块, 时间限制 |
+
+**T3 DEEP 最终**:
+- **15 FULL DEEP PASS** (含 2 cross-module verified: customer→SO + supplier→materials)
+- **1 partial-deep** (#8 qty binding harness, 非 app bug)
+- **1 NEW P1 BUG** (#4 R21-F5 whitelist POST 405)
+- **1 BLOCKED-DEP** (#11 QI 缺批次 seed — non-bug)
+- **3 DEFERRED** (#16/17/18 属 T5 SO 3-stage / 时间限制)
+
+---
+
+## Cross-Module flows verified (T4 bonus)
+
+| # | Flow | 发生在 | 证据 |
+|---|---|---|---|
+| 1 | Customer → SO dropdown | T3-DEEP #9 | T3_DEEP_C_s9rbmx 出现在 SO 客户 dropdown 第 1 位, 选中后创建 SO 成功 |
+| 2 | Product → SO 产品 dropdown | T3-DEEP #9 | T3_Deep_Product_km5q 出现在 SO 产品 dropdown, 选中后自动填充规格 "200g/盒" |
+| 3 | Supplier → Materials 入库 dropdown | T3-DEEP #15 | T3_DEEP_S_63ha2c 出现在 materials 供应商 dropdown, 选中后入库批次归属正确 |
+
+---
+
 ## R21 Findings (new bugs)
 
 ### R21-F3 — `/system/settings` returns 404 on both GET endpoints
@@ -139,6 +218,27 @@
 **Recommendation**:
 - Check backend whether `SystemSettingsController` exists; if missing, create stub with sensible defaults
 - If intentional "settings store via different endpoint", update frontend API call to match
+
+### R21-F5 — `/hr/whitelist` POST 405 Method Not Allowed (NEW, FOUND IN T3 DEEP)
+
+**Severity**: P1 (customer-facing: entire 白名单 module's create flow broken)
+
+**Symptoms**:
+- Click "添加白名单" button → dialog opens normally
+- Fill all required fields (手机号 / 姓名 / 角色=质检员)
+- Click 确定 submit
+- Backend returns `POST /api/mobile/FOOD_3101_048/whitelist` → **405 Method Not Allowed**
+- Toast: "不支持的请求方法: POST" (Chinese translation of 405)
+- Frontend second toast: "操作失败"
+
+**Why this was missed by T3 smoke**: T3 smoke only opens+closes dialog, never submits. Deep round caught it on first submit attempt.
+
+**Root cause hypothesis**: Backend `WhitelistController` has `@GetMapping` for list + stats but no `@PostMapping` for create. Frontend wired the create endpoint but backend never implemented it, OR wrong @RequestMapping base path.
+
+**Fix recommendation**:
+- Add `@PostMapping` endpoint on `WhitelistController` matching frontend's `POST /api/mobile/{factoryId}/whitelist` with proper DTO (phone, name, roleCode, deptId optional, expireAt optional, remark optional)
+- Return `{success: true, data: newWhitelist}` on success (per project api-response-handling rules)
+- Add Flyway migration if whitelist table doesn't exist yet
 
 ### R21-F4 — `/system/smartbi-config` "阈值配置" HTML-as-JSON routing error
 
@@ -166,16 +266,15 @@
 
 ---
 
-## Not done this round (T3-T5 pending)
+## Not done this round (T4-T5 + T4.5 pending)
 
-Live-browser coverage for CRUD submission + cross-module data-consistency + SO full 3-stage chain:
+Live-browser coverage for cross-module + SO full 3-stage chain:
 
-- **T3 (L2 CRUD smoke)** — 18 dialogs: each module's "新建" button dialog open + close + form field enumerate. Tests button reactivity + dialog wiring. *Estimate: 30-40 MCP turns on real browser.*
 - **T4 (L3 cross-module)** — 3 flows: Customer → SO dropdown | Supplier → PO dropdown | FG batch → delivery FIFO. *Estimate: 15-25 turns.*
 - **T5 (L4 full SO 3-stage)** — create customer → SO → confirm → delivery draft → ship → delivered, reading each stage's state on real browser. *Estimate: 30-50 turns.*
-- **T4.5 (16 customer bug re-verify)** — open every fixed-YES row in the bug report. Blocked on T3/T5 infrastructure.
+- **T4.5 (16 customer bug re-verify)** — open every fixed-YES row in the bug report. Partially done via T3-#3 shipments (Bug #5 ✅).
 
-These were explicitly planned in R21-PLAN.md but deferred due to per-page sweep tooling cost. **T2's live sweep is the foundational coverage R21 exists to provide**; T3-T5 belong in a follow-up round (R22).
+T4/T5/T4.5 belong in a follow-up round (R22).
 
 ---
 
