@@ -73,6 +73,7 @@ public class UserMapper {
         User user = new User();
         user.setFactoryId(factoryId);
         user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
         user.setFullName(request.getFullName());
         // department现在是String类型，如果request.getDepartment()返回枚举，需要转换
@@ -98,6 +99,9 @@ public class UserMapper {
      * 更新实体
      */
     public void updateEntity(User user, CreateUserRequest request) {
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            user.setEmail(request.getEmail());
+        }
         if (request.getPhone() != null) {
             user.setPhone(request.getPhone());
         }

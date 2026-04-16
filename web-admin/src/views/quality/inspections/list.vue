@@ -49,6 +49,18 @@ async function loadProductionBatches() {
 const detailVisible = ref(false);
 const detailData = ref<Record<string, unknown> | null>(null);
 
+function isPassResult(result: unknown): boolean {
+  return result === 'PASS' || result === 'PASSED';
+}
+
+function getResultLabel(result: unknown): string {
+  if (isPassResult(result)) return '合格';
+  if (result === 'CONDITIONAL') return '有条件放行';
+  if (result === 'PENDING') return '待检';
+  if (result === 'FAIL' || result === 'FAILED') return '不合格';
+  return String(result ?? '-');
+}
+
 onMounted(() => {
   loadData();
 });
@@ -189,8 +201,9 @@ function showDetail(row: Record<string, unknown>) {
           @keyup.enter="handleSearch"
         />
         <el-select v-model="filterResult" placeholder="检测结果" clearable style="width: 150px">
-          <el-option label="合格" value="PASSED" />
-          <el-option label="不合格" value="FAILED" />
+          <el-option label="合格" value="PASS" />
+          <el-option label="不合格" value="FAIL" />
+          <el-option label="有条件放行" value="CONDITIONAL" />
         </el-select>
         <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
@@ -207,8 +220,8 @@ function showDetail(row: Record<string, unknown>) {
         <el-table-column prop="inspectorId" label="质检员ID" width="100" align="center" />
         <el-table-column prop="result" label="检测结果" width="100" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.result === 'PASSED' ? 'success' : 'danger'" size="small">
-              {{ row.result === 'PASSED' ? '合格' : '不合格' }}
+            <el-tag :type="isPassResult(row.result) ? 'success' : (row.result === 'CONDITIONAL' ? 'warning' : 'danger')" size="small">
+              {{ getResultLabel(row.result) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -287,8 +300,8 @@ function showDetail(row: Record<string, unknown>) {
         <el-descriptions-item label="抽样数">{{ detailData.sampleSize ?? '-' }}</el-descriptions-item>
         <el-descriptions-item label="质检员ID">{{ detailData.inspectorId ?? '-' }}</el-descriptions-item>
         <el-descriptions-item label="检测结果">
-          <el-tag :type="detailData.result === 'PASSED' ? 'success' : 'danger'" size="small">
-            {{ detailData.result === 'PASSED' ? '合格' : '不合格' }}
+          <el-tag :type="isPassResult(detailData.result) ? 'success' : (detailData.result === 'CONDITIONAL' ? 'warning' : 'danger')" size="small">
+            {{ getResultLabel(detailData.result) }}
           </el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="等级">{{ detailData.qualityGrade || '-' }}</el-descriptions-item>
