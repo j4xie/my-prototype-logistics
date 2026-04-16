@@ -451,9 +451,55 @@ function scrollToChart(chartIndex: number) {
 
 // ==================== 生命周期 ====================
 
+// FIX-12 (Apr 16 2026) — persist dashboard state across refresh:
+//  C) remember selected uploadId so 刷新后 user doesn't have to re-select
+//  A) cache the loaded KPI/chart payload (TTL 5min) so refresh shows data instantly
+//     while a fresh API call runs silently in the background.
+function cacheKeyFor(factoryId: string, sourceId: string | number) {
+  return `smartbi-dashboard:${factoryId}:${sourceId}`;
+}
+function savedSourceKey(factoryId: string) {
+  return `smartbi-dashboard-src:${factoryId}`;
+}
+function getCached<T>(factoryId: string, sourceId: string | number): T | null {
+  try {
+    const raw = localStorage.getItem(cacheKeyFor(factoryId, sourceId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { ts: number; data: T };
+    if (Date.now() - parsed.ts > 5 * 60 * 1000) return null;  // 5min TTL
+    return parsed.data;
+  } catch { return null; }
+}
+function putCached(factoryId: string, sourceId: string | number, data: unknown) {
+  try {
+    localStorage.setItem(cacheKeyFor(factoryId, sourceId), JSON.stringify({ ts: Date.now(), data }));
+  } catch { /* quota exceeded — ignore */ }
+}
+
 onMounted(async () => {
-  // Load upload list first (needed for auto-switch fallback)
+  // Load upload list first (needed for auto-switch fallback + data source dropdown)
   await loadDataSources();
+
+  // FIX-12: restore last-selected data source from localStorage so 刷新 doesn't reset to 'system'
+  const remembered = factoryId.value ? localStorage.getItem(savedSourceKey(factoryId.value)) : null;
+  if (remembered && (remembered === 'system' || dataSources.value.some(d => String(d.id) === remembered))) {
+    selectedDataSource.value = remembered;
+
+    // Serve cached dashboard data immediately for instant UI, then refresh in background
+    if (factoryId.value) {
+      const cached = getCached<DashboardResponse>(factoryId.value, remembered);
+      if (cached) {
+        dashboardData.value = cached;
+      }
+    }
+
+    if (remembered === 'system') {
+      await loadDashboardData();
+    } else {
+      await loadDynamicDashboardData(Number(remembered));
+    }
+    return;
+  }
 
   // Default to system data, auto-switch to uploads if system is empty
   selectedDataSource.value = 'system';
@@ -494,6 +540,8 @@ async function loadDashboardData() {
         ? raw.data
         : raw;
       dashboardData.value = actualData as DashboardResponse;
+      // FIX-12: cache system-view payload so 刷新 shows instant (5min TTL)
+      if (factoryId.value) putCached(factoryId.value, 'system', actualData);
       // data loaded
 
       // Auto-switch: if system data is effectively empty (no KPIs with real values),
@@ -596,6 +644,18 @@ async function loadDataSources() {
 async function onDataSourceChange(sourceId: string) {
   // Cancel any pending requests from previous data source
   getSignal();
+
+  // FIX-12: remember selection so 刷新后 restore
+  if (factoryId.value && sourceId) {
+    try { localStorage.setItem(savedSourceKey(factoryId.value), sourceId); } catch {}
+  }
+
+  // Serve cached dashboard data immediately if available (instant UI, no white flash)
+  if (factoryId.value) {
+    const cached = getCached<DashboardResponse>(factoryId.value, sourceId);
+    if (cached) dashboardData.value = cached;
+  }
+
   if (sourceId === 'system') {
     dynamicInsights.value = [];
     await loadDashboardData();
@@ -725,6 +785,9 @@ async function loadDynamicDashboardData(uploadId: number) {
         suggestions: [],
         lastUpdated: new Date().toISOString(),
       } as unknown as DashboardResponse;
+
+      // FIX-12: cache per-uploadId dashboard payload (5min TTL) for instant refresh
+      if (factoryId.value) putCached(factoryId.value, uploadId, dashboardData.value);
 
       // dynamic data loaded from upload
     } else {

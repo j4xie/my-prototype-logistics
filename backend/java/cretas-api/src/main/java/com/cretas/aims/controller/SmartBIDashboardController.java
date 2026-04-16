@@ -50,6 +50,11 @@ public class SmartBIDashboardController {
     private final SmartBIService smartBIService;
     private final AdaptiveChartGenerator adaptiveChartGenerator;
     private final DynamicAnalysisService dynamicAnalysisService;
+    // FIX-13 (Apr 16 2026): cache dashboard payload in smart_bi_pg_analysis_results
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.repository.smartbi.postgres.SmartBiPgAnalysisResultRepository analysisResultRepository;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.fasterxml.jackson.databind.ObjectMapper cacheObjectMapper;
 
     @Autowired
     public SmartBIDashboardController(
@@ -370,12 +375,37 @@ public class SmartBIDashboardController {
     public ResponseEntity<ApiResponse<DynamicAnalysisService.DashboardResponse>> analyzeDynamicData(
             @Parameter(description = "Factory ID") @PathVariable String factoryId,
             @Parameter(description = "Upload ID") @RequestParam Long uploadId,
-            @Parameter(description = "Analysis type: auto/finance/sales/inventory") @RequestParam(defaultValue = "auto") String analysisType) {
+            @Parameter(description = "Analysis type: auto/finance/sales/inventory") @RequestParam(defaultValue = "auto") String analysisType,
+            @Parameter(description = "Bypass cache (for refresh button)") @RequestParam(defaultValue = "false") boolean forceRefresh) {
 
-        log.info("Dynamic data analysis: factoryId={}, uploadId={}, type={}", factoryId, uploadId, analysisType);
+        log.info("Dynamic data analysis: factoryId={}, uploadId={}, type={}, forceRefresh={}",
+                factoryId, uploadId, analysisType, forceRefresh);
 
         if (dynamicAnalysisService == null) {
             return ResponseEntity.ok(ApiResponse.error("Dynamic analysis service not enabled, set smartbi.postgres.enabled=true"));
+        }
+
+        String cacheType = "dashboard_" + analysisType;  // 'dashboard_auto'
+
+        // FIX-13 cache lookup — serve from DB cache if fresh (15min TTL), skip on forceRefresh
+        if (!forceRefresh && analysisResultRepository != null) {
+            try {
+                var cached = analysisResultRepository.findByUploadIdAndAnalysisType(uploadId, cacheType);
+                if (cached.isPresent()) {
+                    var row = cached.get();
+                    long ageSec = java.time.Duration.between(row.getCreatedAt(), java.time.LocalDateTime.now()).getSeconds();
+                    if (ageSec < 15 * 60) {
+                        DynamicAnalysisService.DashboardResponse cachedResp = cacheObjectMapper.convertValue(
+                                row.getAnalysisResult(), DynamicAnalysisService.DashboardResponse.class);
+                        log.info("Dashboard cache HIT: uploadId={}, age={}s", uploadId, ageSec);
+                        return ResponseEntity.ok(ApiResponse.success(cachedResp));
+                    } else {
+                        log.info("Dashboard cache EXPIRED: uploadId={}, age={}s (>900)", uploadId, ageSec);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Cache lookup failed, falling back to live compute: {}", e.getMessage());
+            }
         }
 
         try {
@@ -384,6 +414,25 @@ public class SmartBIDashboardController {
             if (result == null) {
                 return ResponseEntity.ok(ApiResponse.error("Analysis result empty, please verify data was uploaded"));
             }
+
+            // FIX-13 cache write — persist for next refresh (upsert)
+            if (analysisResultRepository != null) {
+                try {
+                    @SuppressWarnings("unchecked")
+                    java.util.Map<String, Object> resultMap = cacheObjectMapper.convertValue(result, java.util.Map.class);
+                    var existing = analysisResultRepository.findByUploadIdAndAnalysisType(uploadId, cacheType);
+                    var entity = existing.orElseGet(() ->
+                            com.cretas.aims.entity.smartbi.postgres.SmartBiPgAnalysisResult.builder()
+                                    .uploadId(uploadId).factoryId(factoryId).analysisType(cacheType).build());
+                    entity.setAnalysisResult(resultMap);
+                    entity.setCreatedAt(java.time.LocalDateTime.now());  // reset TTL on refresh
+                    analysisResultRepository.save(entity);
+                    log.info("Dashboard cache WRITE: uploadId={}", uploadId);
+                } catch (Exception e) {
+                    log.warn("Cache write failed (non-blocking): {}", e.getMessage());
+                }
+            }
+
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Dynamic data analysis failed: {}", e.getMessage(), e);
