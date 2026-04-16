@@ -127,9 +127,14 @@ public class CustomerController {
             @Parameter(description = "分页参数")
             @Valid PageRequest pageRequest,
             @Parameter(description = "关键词过滤 (name / customerCode / contactPerson 模糊匹配)")
-            @RequestParam(required = false) String keyword) {
+            @RequestParam(required = false) String keyword,
+            @Parameter(description = "name alias (Bug #6 R10: 兼容前端传 ?name= 而非 ?keyword=, 否则静默忽略)")
+            @RequestParam(required = false) String name) {
 
-        PageResponse<CustomerDTO> response = customerService.getCustomerList(factoryId, pageRequest, keyword);
+        // Bug #6 fix (R10 2026-04-16): 接受 ?name= 作为 ?keyword= 的别名
+        // 防止前端/集成方误传 name 时静默返全表 (假阳性结果)
+        String effectiveKeyword = keyword != null && !keyword.isBlank() ? keyword : name;
+        PageResponse<CustomerDTO> response = customerService.getCustomerList(factoryId, pageRequest, effectiveKeyword);
         return ApiResponse.success(response);
     }
 
