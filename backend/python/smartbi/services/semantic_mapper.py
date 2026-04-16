@@ -495,9 +495,40 @@ class SemanticMapper:
     ) -> List[FieldMapping]:
         """
         LLM-based field mapping (Layer 2).
+
+        Bug #13 (Apr 17 2026): cache by (unmapped + all_columns + table_context)
+        — deterministic identity across files with same headers. Sample_data
+        is in the prompt for LLM context but NOT part of cache key (per-file
+        data rows vary).
         """
         if not unmapped_columns:
             return []
+
+        # Bug #13: structural cache key — same headers → same mapping regardless of data
+        from common.llm_cache import cache_get, cache_put, cache_key
+        mapper_key = cache_key(
+            "|".join(sorted(unmapped_columns)) + "||" +
+            "|".join(sorted(all_columns[:50])) + "||" +
+            (table_context or ""),
+            slot="mapper_structural"
+        )
+        cached_result = cache_get(mapper_key)
+        if cached_result is not None:
+            logger.info(f"[llm_cache] HIT mapper_structural, hash={mapper_key[:8]}, skipping LLM")
+            # Rebuild FieldMapping objects from cached (list of dicts)
+            result = []
+            for m in cached_result:
+                std = m.get("standard")
+                field_info = STANDARD_FIELDS.get(std, {}) if std else {}
+                result.append(FieldMapping(
+                    original=m["original"],
+                    standard=std,
+                    confidence=m.get("confidence", 0.7),
+                    method="llm_cached",
+                    category=field_info.get("category"),
+                    description=m.get("reasoning"),
+                ))
+            return result
 
         try:
             # Prepare context
@@ -558,6 +589,8 @@ Return JSON only:
                                 method="llm",
                                 description="No matching standard field"
                             ))
+                    # Bug #13: cache structural result (columns-only key)
+                    cache_put(mapper_key, parsed["mappings"])
                     return result
 
         except Exception as e:
@@ -788,17 +821,23 @@ Return JSON: {{"mappings": [{{"original": "col", "standard": "field_or_null", "c
     async def _call_llm(self, prompt: str, model: str = "default") -> Optional[str]:
         """
         Call LLM via multi-provider router (D2, Apr 17 2026).
+        Bug #13 (Apr 17 2026): cache identical prompt → response for 24h.
 
         Routes through `call_chain(SLOT.MAPPER)` so mapper shares the
         aliyun_b → aliyun_a → zhipu → deepseek free-first chain and every
         request is captured by smart_bi_llm_usage via the response hook.
-
-        The `model` parameter is kept for signature compatibility but no
-        longer selects a provider-specific name — SLOT_MODELS does that.
         """
         try:
             from common.llm_router import call_chain, SLOT
             from common.llm_metrics import llm_caller_context
+            from common.llm_cache import cache_get, cache_put, cache_key
+
+            # Bug #13: dedup identical prompts within 24h TTL
+            ckey = cache_key(prompt, slot="mapper")
+            cached = cache_get(ckey)
+            if cached is not None:
+                logger.info(f"[llm_cache] HIT mapper, prompt_hash={ckey[:8]}, skipping LLM")
+                return cached
 
             payload = {
                 "messages": [{"role": "user", "content": prompt}],
@@ -813,7 +852,10 @@ Return JSON: {{"mappings": [{{"original": "col", "standard": "field_or_null", "c
             if not choices:
                 logger.warning("LLM response has no choices")
                 return None
-            return choices[0].get("message", {}).get("content")
+            content = choices[0].get("message", {}).get("content")
+            if content:
+                cache_put(ckey, content)
+            return content
 
         except Exception as e:
             logger.error(f"LLM call failed: {e}")

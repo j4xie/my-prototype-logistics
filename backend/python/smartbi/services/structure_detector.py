@@ -1154,29 +1154,44 @@ Return JSON:
         return None
 
     async def _call_llm(self, prompt: str, model: str = "default") -> Optional[str]:
-        """Call LLM API"""
+        """
+        Call LLM via multi-provider router with cache (Bug #13, Apr 17 2026).
+
+        Routes through call_chain(SLOT.INSIGHTS) so structure detection shares
+        the free-first provider chain and is captured by smart_bi_llm_usage.
+        Same header_content → same LLM output → 24h cache skips repeat calls.
+        """
         try:
-            from openai import AsyncOpenAI
+            from common.llm_router import call_chain, SLOT
+            from common.llm_metrics import llm_caller_context
+            from common.llm_cache import cache_get, cache_put, cache_key
 
-            model_name = {
-                "default": self.settings.llm_model,
-                "fast": self.settings.llm_fast_model,
-                "reasoning": self.settings.llm_reasoning_model
-            }.get(model, self.settings.llm_model)
+            # Bug #13: dedup
+            slot_tag = f"structure_{model}"
+            ckey = cache_key(prompt, slot=slot_tag)
+            cached = cache_get(ckey)
+            if cached is not None:
+                logger.info(f"[llm_cache] HIT structure({model}), prompt_hash={ckey[:8]}")
+                return cached
 
-            client = AsyncOpenAI(
-                api_key=self.settings.llm_api_key,
-                base_url=self.settings.llm_base_url
-            )
+            # Use INSIGHTS slot (fast model) for structure detection
+            slot = SLOT.INSIGHTS if model == "fast" else SLOT.CHAT
+            payload = {
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.1,
+                "max_tokens": 1000,
+            }
 
-            response = await client.chat.completions.create(
-                model=model_name,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,
-                max_tokens=1000
-            )
+            with llm_caller_context("structure_detector"):
+                resp_json = await call_chain(slot, payload)
 
-            return response.choices[0].message.content
+            choices = resp_json.get("choices") or []
+            if not choices:
+                return None
+            content = choices[0].get("message", {}).get("content")
+            if content:
+                cache_put(ckey, content)
+            return content
 
         except Exception as e:
             logger.error(f"LLM call failed: {e}")
