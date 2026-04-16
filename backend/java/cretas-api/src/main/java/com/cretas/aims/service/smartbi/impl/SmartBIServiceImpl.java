@@ -185,8 +185,8 @@ public class SmartBIServiceImpl implements SmartBIService {
     /** 缓存类型：全部 */
     private static final String CACHE_TYPE_ALL = "ALL";
 
-    /** 默认每日配额 */
-    private static final int DEFAULT_DAILY_QUOTA = 50;
+    /** 默认每日配额 (Apr 15 2026: 50 → 1000, demo 中老板 30 题就到顶, 远低于 SaaS 业界基线) */
+    private static final int DEFAULT_DAILY_QUOTA = 1000;
 
     /**
      * 餐饮诊断查询关键词 (P5.6).
@@ -499,7 +499,11 @@ public class SmartBIServiceImpl implements SmartBIService {
         Object data = executeIntent(factoryId, intentResult);
 
         // 6. 生成响应文本
-        String responseText = generateResponseText(intentResult, data);
+        // FIX BUG #5 (Apr 15 2026): try LLM-summarized analysis first; fall back to template only if LLM fails
+        String responseText = generateLLMResponseText(factoryId, request.getEffectiveQuery(), intentResult, data);
+        if (responseText == null || responseText.isBlank()) {
+            responseText = generateResponseText(intentResult, data);
+        }
 
         // 7. 生成图表配置
         List<ChartConfig> charts = generateChartConfig(intentResult, data);
@@ -1572,6 +1576,68 @@ public class SmartBIServiceImpl implements SmartBIService {
                 .build();
 
         return processDrillDown(factoryId, request);
+    }
+
+    /**
+     * BUG #5 FIX (Apr 15 2026): generate analytical responseText via LLM instead of static template.
+     * Returns null on any failure so caller falls back to {@link #generateResponseText}.
+     *
+     * Performance: ~3-8s LLM round-trip (qwen3.5-plus). Timeout protection inside DashScopeClient.
+     * Quota guard: shares the same daily quota check as insights pipeline.
+     */
+    private String generateLLMResponseText(String factoryId, String userQuery, IntentResult intentResult, Object data) {
+        if (!llmInsightEnabled || dashScopeClient == null) return null;
+        if (data == null) return null;
+        if (!checkQuota(factoryId)) return null;
+
+        try {
+            String dataJson;
+            try {
+                dataJson = objectMapper.writeValueAsString(data);
+            } catch (Exception e) {
+                return null;
+            }
+            // Avoid huge payloads — truncate if needed
+            if (dataJson.length() > 6000) {
+                dataJson = dataJson.substring(0, 6000) + "...(truncated)";
+            }
+
+            String intentName = intentResult.getIntent() != null ? intentResult.getIntent().name() : "UNKNOWN";
+            String systemPrompt = "你是青花椒餐饮老板的 AI 经营助手, 用 60-200 字直接回答老板的问题。\n" +
+                    "要求:\n" +
+                    "1. 引用具体业务数字 (金额/百分比/门店名/菜品名), 不要泛泛而谈\n" +
+                    "2. 找出 1-2 个关键发现, 给具体可执行建议\n" +
+                    "3. 用口语化中文, 不要 markdown 标题\n" +
+                    "4. 如果数据为空或不足以回答, 直接说\"暂无足够数据回答, 请确认上传了 X 报表\"\n" +
+                    "5. 不要说\"以下是 XX 分析\"这种空话开头";
+            String userPrompt = String.format(
+                    "老板问: %s\n意图: %s\n数据片段(JSON): %s\n请直接回答。",
+                    userQuery, intentName, dataJson
+            );
+
+            ChatCompletionRequest request = ChatCompletionRequest.builder()
+                    .messages(List.of(
+                            ChatMessage.system(systemPrompt),
+                            ChatMessage.user(userPrompt)
+                    ))
+                    .temperature(0.4)
+                    .maxTokens(400)
+                    .enableThinking(false)
+                    .build();
+
+            ChatCompletionResponse response = dashScopeClient.chatCompletion(request);
+            if (response != null && response.getChoices() != null && !response.getChoices().isEmpty()) {
+                String content = response.getChoices().get(0).getMessage().getContent();
+                if (content != null && !content.isBlank() && content.length() > 30) {
+                    log.info("LLM responseText 生成成功: factoryId={}, intent={}, len={}",
+                            factoryId, intentName, content.length());
+                    return content.trim();
+                }
+            }
+        } catch (Exception e) {
+            log.warn("LLM responseText 生成失败, 回退模板: factoryId={}, error={}", factoryId, e.getMessage());
+        }
+        return null;
     }
 
     /**

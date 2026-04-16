@@ -255,11 +255,15 @@ class FixedExecutor:
             # prod OOM at 2026-04-15 23:36 — -Xmx1280m heap can't hold 470K
             # Map<String,Object> entries). Default 10000 matches the xlsx path.
             csv_max_rows = options.get("max_rows", 10000)
+            # FIX (Apr 15 2026, BUG #4): honour csv_skiprows so CSV files with leading
+            # metadata rows (大众点评/美团/客如云 export format) are parsed correctly.
+            # auto_parse passes csv_skiprows = max(0, (effective_header_override or 1) - 1).
+            csv_skiprows = options.get("csv_skiprows", 0)
             if structure_config.method == "csv_passthrough":
                 try:
-                    df = pd.read_csv(io.BytesIO(file_bytes), nrows=csv_max_rows)
+                    df = pd.read_csv(io.BytesIO(file_bytes), nrows=csv_max_rows, skiprows=csv_skiprows)
                 except UnicodeDecodeError:
-                    df = pd.read_csv(io.BytesIO(file_bytes), encoding="gbk", nrows=csv_max_rows)
+                    df = pd.read_csv(io.BytesIO(file_bytes), encoding="gbk", nrows=csv_max_rows, skiprows=csv_skiprows)
             else:
                 # 对于复杂多层表头 (>2行)，使用智能合并而不是 pandas 默认拼接
                 if header_rows > 2 or structure_config.merged_cells:
@@ -295,21 +299,45 @@ class FixedExecutor:
 
             # Build column mapping and rename
             column_map = self._build_column_map(structure_config, mapping_config)
-            renamed_columns = {orig: column_map.get(orig, orig) for orig in df.columns}
-            df = df.rename(columns=renamed_columns)
 
-            # Deduplicate column names to prevent df[col] returning DataFrame
-            # when multiple columns share the same mapped name (e.g. both 日期 and 月份 → period)
-            seen: Dict[str, int] = {}
-            new_cols = []
-            for c in df.columns:
-                if c in seen:
-                    seen[c] += 1
-                    new_cols.append(f"{c}_{seen[c]}")
-                else:
-                    seen[c] = 1
-                    new_cols.append(c)
-            df.columns = new_cols
+            # FIX (Apr 15 2026, BUG #3): if the rename would produce duplicate target names
+            # (e.g. 开单时间/分单时间/结单时间 all → "period") OR if csv_passthrough method,
+            # PRESERVE original Chinese column names. Restaurant section handlers expect literal
+            # business names (开单时间/营业日期/区域 etc), the generic English aliases break them.
+            from collections import Counter
+            target_names = [column_map.get(orig, orig) for orig in df.columns]
+            target_counts = Counter(target_names)
+            has_collision = any(c > 1 for c in target_counts.values())
+            is_csv_passthrough = structure_config.method == "csv_passthrough"
+
+            if has_collision or is_csv_passthrough:
+                logger.info(
+                    f"Column rename SKIPPED — preserving original headers ({'collision' if has_collision else 'csv_passthrough'}): {df.columns.tolist()[:5]}..."
+                )
+                # Don't rename, but still ensure no duplicate original names (rare edge case)
+                seen: Dict[str, int] = {}
+                new_cols = []
+                for c in df.columns:
+                    if c in seen:
+                        seen[c] += 1
+                        new_cols.append(f"{c}_{seen[c]}")
+                    else:
+                        seen[c] = 1
+                        new_cols.append(c)
+                df.columns = new_cols
+            else:
+                renamed_columns = {orig: column_map.get(orig, orig) for orig in df.columns}
+                df = df.rename(columns=renamed_columns)
+                seen: Dict[str, int] = {}
+                new_cols = []
+                for c in df.columns:
+                    if c in seen:
+                        seen[c] += 1
+                        new_cols.append(f"{c}_{seen[c]}")
+                    else:
+                        seen[c] = 1
+                        new_cols.append(c)
+                df.columns = new_cols
 
             result.headers = df.columns.tolist()
 

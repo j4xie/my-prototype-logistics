@@ -102,6 +102,25 @@ public class SmartBiDatasource extends BaseEntity {
     private Boolean isActive = true;
 
     /**
+     * Unique short code within factory (Apr 16 2026 — for client-side config).
+     */
+    @Column(name = "code", length = 100)
+    private String code;
+
+    /**
+     * Refresh interval in minutes (DATABASE/API only; null = manual).
+     */
+    @Column(name = "refresh_interval")
+    private Integer refreshInterval;
+
+    /**
+     * For sourceType=EXCEL, points to smart_bi_pg_excel_uploads.id
+     * so the DataSource row can be looked up by uploadId and vice-versa.
+     */
+    @Column(name = "linked_upload_id")
+    private Long linkedUploadId;
+
+    /**
      * Field definitions for this datasource
      */
     @OneToMany(mappedBy = "datasource", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

@@ -357,3 +357,55 @@ class UploadRepository:
             SmartBiPgExcelUpload.factory_id == factory_id,
             SmartBiPgExcelUpload.detected_table_type == table_type
         ).order_by(SmartBiPgExcelUpload.created_at.desc()).all()
+
+    def get_latest_for_data_kind(
+        self,
+        factory_id: str,
+        data_kind: str
+    ) -> Optional[SmartBiPgExcelUpload]:
+        """
+        Pick the latest upload best suited for a given data_kind
+        ("pos", "finance", "reviews", "sales_summary", or "any").
+
+        Strategy (FIX BUG #1, Apr 15 2026):
+        - First try detected_table_type exact match
+        - Fallback: keyword match on file_name (Chinese filename keywords are reliable
+          since detected_table_type is often 'general' for ad-hoc uploads)
+
+        Returns None when no upload matches (caller decides whether to fall back).
+        """
+        type_aliases = {
+            "pos": {"types": ["pos", "pos_orders", "order_detail"], "keywords": ["订单", "明细"]},
+            "finance": {"types": ["finance_revenue", "finance", "revenue"], "keywords": ["收入", "利润", "财务"]},
+            "reviews": {"types": ["reviews", "review"], "keywords": ["评价", "评论"]},
+            "sales_summary": {"types": ["pos_sales_summary", "sales_summary", "sales"], "keywords": ["销量", "商品销量"]},
+            "any": {"types": [], "keywords": []},
+        }
+        spec = type_aliases.get(data_kind, type_aliases["any"])
+
+        # Try detected_table_type first
+        if spec["types"]:
+            row = self.db.query(SmartBiPgExcelUpload).filter(
+                SmartBiPgExcelUpload.factory_id == factory_id,
+                SmartBiPgExcelUpload.detected_table_type.in_(spec["types"])
+            ).order_by(SmartBiPgExcelUpload.created_at.desc()).first()
+            if row is not None:
+                return row
+
+        # Fallback: file_name keyword
+        if spec["keywords"]:
+            from sqlalchemy import or_
+            keyword_filters = [SmartBiPgExcelUpload.file_name.like(f"%{kw}%") for kw in spec["keywords"]]
+            row = self.db.query(SmartBiPgExcelUpload).filter(
+                SmartBiPgExcelUpload.factory_id == factory_id,
+                or_(*keyword_filters)
+            ).order_by(SmartBiPgExcelUpload.created_at.desc()).first()
+            if row is not None:
+                return row
+
+        # Final fallback: latest of any type (preserves prior behaviour)
+        if data_kind == "any":
+            return self.db.query(SmartBiPgExcelUpload).filter(
+                SmartBiPgExcelUpload.factory_id == factory_id
+            ).order_by(SmartBiPgExcelUpload.created_at.desc()).first()
+        return None

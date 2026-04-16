@@ -73,7 +73,9 @@ export async function uploadAndAnalyze(file: File, options?: {
   try {
     const response = await request.post(`${getSmartBIBasePath()}/upload-and-analyze`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 120000,
+      // BUG #6 fix (Apr 15 2026): 120s → 600s (10min). 后端允许 500MB 文件, 但原 120s axios
+      // 超时在大文件 (19MB POS zip 解压 263MB / 38MB sample) 下必然 timeout. 青花椒演示翻车根因.
+      timeout: 600000,
     });
 
     const result = response.data || response;

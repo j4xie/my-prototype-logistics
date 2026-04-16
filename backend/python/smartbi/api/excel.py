@@ -654,14 +654,21 @@ async def auto_parse_excel(
             if ext == ".csv":
                 # CSV fast-path: StructureDetector uses openpyxl which cannot read CSV.
                 # Build StructureDetectionResult directly from pandas.
+                # FIX (Apr 15 2026, BUG #4): honour effective_header_override so CSVs with
+                # leading metadata rows (大众点评/美团/客如云 export format) get parsed with
+                # the right header row instead of treating row 0 ("订单销售明细表" title) as columns.
                 import io
                 from services.structure_detector import (
                     StructureDetectionResult, RowInfo, ColumnInfo,
                 )
+                # effective_header_override semantics: 1 == row 0 is header (default).
+                # 4 == rows 0-2 are metadata, row 3 is real header.
+                # pandas read_csv(skiprows=N) skips first N rows then treats the next as header.
+                csv_skiprows = max(0, (effective_header_override or 1) - 1)
                 try:
-                    df_csv = pd.read_csv(io.BytesIO(content), nrows=10000)
+                    df_csv = pd.read_csv(io.BytesIO(content), nrows=10000, skiprows=csv_skiprows)
                 except UnicodeDecodeError:
-                    df_csv = pd.read_csv(io.BytesIO(content), nrows=10000, encoding="gbk")
+                    df_csv = pd.read_csv(io.BytesIO(content), nrows=10000, skiprows=csv_skiprows, encoding="gbk")
                 headers_csv = [str(c) for c in df_csv.columns]
                 preview = df_csv.head(20).fillna("").values.tolist()
                 structure_result = StructureDetectionResult(
@@ -681,7 +688,7 @@ async def auto_parse_excel(
                     ],
                     preview_rows=preview,
                 )
-                logger.info(f"CSV fast-path: {len(headers_csv)} cols, {len(df_csv)} rows")
+                logger.info(f"CSV fast-path: {len(headers_csv)} cols, {len(df_csv)} rows, skiprows={csv_skiprows} (header_override={effective_header_override})")
             else:
                 structure_result = await detector.detect(
                     content,
@@ -771,6 +778,9 @@ async def auto_parse_excel(
             )
 
         # Step 5: Extract data
+        # Pass effective_header_override so executor's CSV-passthrough path can skip
+        # leading metadata rows. Without this, the executor reads CSV with default
+        # header=0 and treats title rows as columns (BUG #4 fix, Apr 15 2026).
         extracted = executor.execute_with_pandas(
             content,
             structure_result,
@@ -779,7 +789,8 @@ async def auto_parse_excel(
                 "max_rows": max_rows,
                 "skip_empty_rows": skip_empty_rows,
                 "calculate_stats": calculate_stats,
-                "transpose": transpose
+                "transpose": transpose,
+                "csv_skiprows": max(0, (effective_header_override or 1) - 1),
             }
         )
 

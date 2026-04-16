@@ -100,4 +100,10 @@ public interface SmartBiDatasourceRepository extends JpaRepository<SmartBiDataso
      */
     @Query("SELECT d FROM SmartBiDatasource d WHERE d.factoryId = :factoryId AND d.name LIKE %:namePattern% AND d.isActive = true")
     List<SmartBiDatasource> searchByName(@Param("factoryId") String factoryId, @Param("namePattern") String namePattern);
+
+    /**
+     * Find DataSource row linked to a specific upload (one per uploadId).
+     * Used by SmartBIUploadFlowService to upsert on re-upload of same uploadId.
+     */
+    Optional<SmartBiDatasource> findByFactoryIdAndLinkedUploadId(String factoryId, Long linkedUploadId);
 }

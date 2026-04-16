@@ -34,6 +34,9 @@ export async function askRestaurantQuestion(
         uploadId: request.uploadId,
       },
     },
+    // BUG #7 fix (Apr 15 2026): 全局 axios 30s 超时 < LLM responseText 生成耗时 (5-60s, median 31s).
+    // 覆盖为 90s 保 LLM 慢查询通过 (qwen3.5-plus tail latency).
+    { timeout: 90000 },
   );
   // post<T> returns ApiResponse<T>; data holds the ChatQueryResponse.
   // If backend wraps response in { success, data }, unwrap it here.

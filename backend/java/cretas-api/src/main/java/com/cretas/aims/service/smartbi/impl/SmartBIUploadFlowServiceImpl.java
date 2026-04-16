@@ -102,6 +102,10 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
     @Autowired(required = false)
     private com.cretas.aims.repository.smartbi.SmartBiAnalysisCacheRepository analysisCacheRepository;
 
+    // Unified DataSource registry — sync upload to data-source page (Apr 16 2026)
+    @Autowired(required = false)
+    private com.cretas.aims.service.smartbi.DataSourceRegistryService dataSourceRegistryService;
+
     @org.springframework.beans.factory.annotation.Value("${smartbi.postgres.enabled:false}")
     private boolean postgresEnabled;
 
@@ -241,6 +245,22 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
                 log.warn("清除分析缓存失败: {}", e.getMessage());
             }
 
+            // 5.08 同步到数据源注册表 (Apr 16 2026) — 让 /smartbi-config/data-sources 页能看到上传的 Excel
+            try {
+                if (dataSourceRegistryService != null && persistResult.getUploadId() != null) {
+                    dataSourceRegistryService.upsertFromExcelUpload(
+                        factoryId,
+                        persistResult.getUploadId(),
+                        fileName,
+                        detectedTypeStr,
+                        persistResult.getSavedRows() != null ? Math.toIntExact(persistResult.getSavedRows()) : null
+                    );
+                }
+            } catch (Exception e) {
+                // 非阻塞 — sync 失败不影响上传成功
+                log.warn("DataSource 注册表同步失败 (不影响上传): {}", e.getMessage());
+            }
+
             // 5.1 自动提取财务数据（非阻塞）
             try {
                 tryExtractAndSaveFinanceData(factoryId, persistResult.getUploadId(), parseResult);
@@ -253,30 +273,24 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             List<SmartBiChartTemplate> recommendedTemplates = recommendTemplates(factoryId, parseResult);
 
             // 7. 生成默认图表配置
+            //
+            // FIX (Apr 15 2026): 之前 chartConfig + aiAnalysis 在 executeUploadFlow 内**同步**生成,
+            // 包括 JSONB 聚合 SQL (10-20 条) + 1 次 LLM aiAnalysis 调用, 总耗时 30-60s,
+            // 导致小文件 (667KB) 上传也要 38s, 用户体验差.
+            //
+            // 现策略: 上传只负责 "解析 + 持久化", 图表 + AI 分析**按需生成** (客户在 chart UI /
+            // chat 里触发时, 后端用 smart_bi_dynamic_data 里的数据即时构图 + 调 LLM).
+            // 这样大文件上传从 60s → ~5s (只剩解析 + insert), 用户看到 "上传成功" 更快,
+            // 再点 AI 问答才付 LLM latency 的代价.
             Map<String, Object> chartConfig = null;
             String aiAnalysis = null;
 
-            if (!recommendedTemplates.isEmpty()) {
-                SmartBiChartTemplate primaryTemplate = recommendedTemplates.get(0);
-                Map<String, Object> chartData = buildChartData(
-                        factoryId, persistResult.getUploadId(), detectedType);
-
-                Map<String, Object> chartWithAnalysis = chartTemplateService.buildChartWithAnalysis(
-                        primaryTemplate.getTemplateCode(), chartData, factoryId);
-
-                chartConfig = chartWithAnalysis;
-                aiAnalysis = (String) chartWithAnalysis.get("aiAnalysis");
-            } else {
-                // Fallback: 当没有匹配的模板时，使用 Python 返回的 recommendedCharts 或生成动态图表
-                log.info("没有匹配的图表模板，尝试生成动态图表");
-                List<String> recommendedCharts = parseResult.getRecommendedCharts();
-                String chartType = (recommendedCharts != null && !recommendedCharts.isEmpty())
-                        ? recommendedCharts.get(0).toUpperCase()
-                        : recommendedChartType;
-
-                // 从 parseResult 构建动态图表配置
-                chartConfig = buildFallbackChartConfig(parseResult, chartType, detectedTypeStr);
-            }
+            List<String> recommendedCharts = parseResult.getRecommendedCharts();
+            String chartType = (recommendedCharts != null && !recommendedCharts.isEmpty())
+                    ? recommendedCharts.get(0).toUpperCase()
+                    : recommendedChartType;
+            // 轻量 fallback chart config — 只用 parseResult 里已有的 preview_data, 不跑额外 SQL/LLM
+            chartConfig = buildFallbackChartConfig(parseResult, chartType, detectedTypeStr);
 
             // 8. 构建完整结果
             return UploadFlowResult.builder()
