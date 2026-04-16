@@ -317,7 +317,7 @@ public class DynamicAnalysisServiceImpl implements DynamicAnalysisService {
             return insights;
         }
 
-        // Top performer insight
+        // Top performer insight — skip when top value ≤ 0 (avoids "revenue 最高 Z加点料 (0.00)" noise)
         if (!dimensions.isEmpty()) {
             SmartBiPgFieldDefinition primaryDim = dimensions.get(0);
             SmartBiPgFieldDefinition primaryMeasure = measures.get(0);
@@ -331,17 +331,22 @@ public class DynamicAnalysisServiceImpl implements DynamicAnalysisService {
                 String topName = top[0] != null ? top[0].toString() : "Unknown";
                 Double topValue = top[1] != null ? ((Number) top[1]).doubleValue() : 0;
 
-                String measureName = primaryMeasure.getStandardName() != null ?
-                        primaryMeasure.getStandardName() : primaryMeasure.getOriginalName();
-                String dimName = primaryDim.getStandardName() != null ?
-                        primaryDim.getStandardName() : primaryDim.getOriginalName();
-
-                insights.add(String.format("%s 最高的%s: %s (%.2f)",
-                        measureName, dimName, topName, topValue));
+                // FIX (Apr 16 2026): suppress zero/negligible top-performer insights —
+                // the "revenue 最高 Z加点料 (0.00)" pattern was misleading老板 who saw
+                // "0.00" next to 最高 and lost trust. Hide the whole line instead.
+                if (Math.abs(topValue) >= 0.01) {
+                    String measureName = primaryMeasure.getStandardName() != null ?
+                            primaryMeasure.getStandardName() : primaryMeasure.getOriginalName();
+                    String dimName = primaryDim.getStandardName() != null ?
+                            primaryDim.getStandardName() : primaryDim.getOriginalName();
+                    insights.add(String.format("%s 最高的%s: %s (%.2f)",
+                            measureName, dimName, topName, topValue));
+                }
             }
         }
 
-        // Measure totals
+        // Measure totals — already skips 0 via sum > 0 guard
+        int nonZeroMeasures = 0;
         for (SmartBiPgFieldDefinition measure : measures) {
             Double sum = dynamicDataRepository.sumField(factoryId, uploadId, measure.getOriginalName());
             if (sum != null && sum > 0) {
@@ -349,7 +354,14 @@ public class DynamicAnalysisServiceImpl implements DynamicAnalysisService {
                         measure.getStandardName() : measure.getOriginalName();
                 insights.add(String.format("%s 合计: %s", name,
                         formatNumber(sum, measure.getFormatPattern())));
+                nonZeroMeasures++;
             }
+        }
+
+        // FIX (Apr 16 2026): if only "X 条记录" shows (all measures 0 / no top performer),
+        // append actionable guidance so the老板 knows why the dashboard看起来空
+        if (insights.size() == 1 && nonZeroMeasures == 0) {
+            insights.add("所有数值列合计均为 0, 请确认上传的文件包含有效金额 (如 营业额/实收额/金额)");
         }
 
         return insights;
