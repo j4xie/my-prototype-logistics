@@ -32,4 +32,11 @@ public interface InvoiceRecordRepository extends JpaRepository<InvoiceRecord, St
     BigDecimal sumIssuedAmountBySalesOrderId(String salesOrderId);
 
     long countByFactoryIdAndStatusAndDeletedAtIsNull(String factoryId, InvoiceStatus status);
+
+    /**
+     * Find pending (REQUESTED/APPROVED, not yet ISSUED/REJECTED) invoices for a given sales order.
+     * Used by requestInvoiceFromOrder to prevent duplicate submissions (Bug #2, R2 fix 2026-04-16).
+     */
+    List<InvoiceRecord> findByFactoryIdAndSalesOrderIdAndStatusInAndDeletedAtIsNull(
+            String factoryId, String salesOrderId, List<InvoiceStatus> statuses);
 }

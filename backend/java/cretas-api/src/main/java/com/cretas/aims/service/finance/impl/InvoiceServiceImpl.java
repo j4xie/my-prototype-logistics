@@ -112,6 +112,20 @@ public class InvoiceServiceImpl implements InvoiceService {
             throw new IllegalArgumentException("销售订单不存在或无权访问: " + salesOrderId);
         }
 
+        // Bug #2 fix (R2 2026-04-16): prevent duplicate invoice requests for same SO.
+        // Reject if an active (REQUESTED/APPROVED) invoice exists — caller must wait or cancel it first.
+        List<InvoiceRecord> existing = invoiceRecordRepository
+                .findByFactoryIdAndSalesOrderIdAndStatusInAndDeletedAtIsNull(
+                        factoryId, salesOrderId,
+                        List.of(InvoiceStatus.REQUESTED, InvoiceStatus.APPROVED));
+        if (!existing.isEmpty()) {
+            String existingNumbers = existing.stream()
+                    .map(InvoiceRecord::getInvoiceNumber)
+                    .collect(java.util.stream.Collectors.joining(", "));
+            throw new org.springframework.dao.DuplicateKeyException(
+                    "该销售订单已有待处理开票申请 (" + existing.size() + " 张: " + existingNumbers + "), 请先处理或撤销");
+        }
+
         List<SalesOrderItem> items = salesOrderItemRepository.findBySalesOrderId(salesOrderId);
         if (items.isEmpty()) {
             throw new IllegalArgumentException("销售订单无明细行,无法生成开票申请: " + salesOrderId);
