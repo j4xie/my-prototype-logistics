@@ -195,6 +195,7 @@ import { emptyCell, formatDateCell, exportTableToExcel } from '@/utils/tableForm
 import { formatDate } from '@/utils/dateFormat';
 import type { RequisitionItem } from '@/types/restaurant';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
+import { handleCatchError } from '@/utils/errorToast';
 
 const factoryId = useFactoryId();
 const permissionStore = usePermissionStore();
@@ -401,7 +402,7 @@ async function handleSubmit(row: RequisitionItem) {
     } else {
       ElMessage.error(res.message || '提交失败');
     }
-  } catch { ElMessage.error('提交失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '提交失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 
@@ -429,7 +430,7 @@ async function handleApprove(row: RequisitionItem) {
     } else {
       ElMessage.error(res.message || '审批失败');
     }
-  } catch { ElMessage.error('审批失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '审批失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 
@@ -449,7 +450,7 @@ async function handleReject(row: RequisitionItem) {
     } else {
       ElMessage.error(res.message || '驳回失败');
     }
-  } catch { ElMessage.error('驳回失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '驳回失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 

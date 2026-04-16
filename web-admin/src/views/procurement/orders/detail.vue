@@ -7,6 +7,7 @@ import { useBusinessMode } from '@/composables/useBusinessMode';
 import { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { ArrowLeft } from '@element-plus/icons-vue';
+import { handleCatchError } from '@/utils/errorToast';
 import { formatAmount } from '@/utils/tableFormatters';
 
 const route = useRoute();
@@ -102,7 +103,7 @@ async function handleAction(action: string) {
     const res = await post(a.url);
     if (res.success) { ElMessage.success(`${a.label}成功`); loadOrder(); }
     else { ElMessage.error(res.message || `${a.label}失败，请重试`); }
-  } catch { ElMessage.error(`${a.label}失败，请检查网络`); }
+  } catch (e) { handleCatchError(e, `${a.label}失败，请检查网络`); }
   finally { submitting.value = false; }
 }
 
@@ -136,7 +137,7 @@ async function handleCreateReceive() {
       receiveDialogVisible.value = false;
       loadOrder(); loadReceives();
     } else { ElMessage.error(res.message || '创建失败，请重试'); }
-  } catch { ElMessage.error('创建失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '创建失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 
@@ -178,7 +179,7 @@ async function confirmReceive(receiveId: string) {
     const res = await post(`/${factoryId.value}/purchase/receives/${receiveId}/confirm`);
     if (res.success) { ElMessage.success('入库确认成功'); loadReceives(); loadOrder(); }
     else { ElMessage.error(res.message || '入库确认失败，请重试'); }
-  } catch { ElMessage.error('入库确认失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '入库确认失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 </script>

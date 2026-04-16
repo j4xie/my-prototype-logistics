@@ -8,6 +8,7 @@ import { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { ArrowLeft } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
+import { handleCatchError } from '@/utils/errorToast';
 
 const route = useRoute();
 const router = useRouter();
@@ -203,7 +204,7 @@ async function handleAction(action: string) {
     const res = await post(a.url);
     if (res.success) { ElMessage.success(`${a.label}成功`); loadOrder(); }
     else { ElMessage.error(res.message || `${a.label}失败，请重试`); }
-  } catch { ElMessage.error(`${a.label}失败，请检查网络`); }
+  } catch (e) { handleCatchError(e, `${a.label}失败，请检查网络`); }
   finally { submitting.value = false; }
 }
 
@@ -261,7 +262,7 @@ async function handleCreateDelivery() {
       deliveryDialogVisible.value = false;
       loadOrder(); loadDeliveries();
     } else { ElMessage.error(res.message || '创建失败，请重试'); }
-  } catch { ElMessage.error('创建失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '创建失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 
@@ -275,7 +276,7 @@ async function handleShip(deliveryId: string) {
     const res = await post(`/${factoryId.value}/sales/deliveries/${deliveryId}/ship`);
     if (res.success) { ElMessage.success('发货成功'); loadDeliveries(); loadOrder(); }
     else { ElMessage.error(res.message || '发货失败，请重试'); }
-  } catch { ElMessage.error('发货失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '发货失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 
@@ -289,7 +290,7 @@ async function handleDelivered(deliveryId: string) {
     const res = await post(`/${factoryId.value}/sales/deliveries/${deliveryId}/delivered`);
     if (res.success) { ElMessage.success('签收确认成功'); loadDeliveries(); loadOrder(); }
     else { ElMessage.error(res.message || '签收确认失败，请重试'); }
-  } catch { ElMessage.error('签收确认失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '签收确认失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 
@@ -688,7 +689,7 @@ async function handleCreatePayment() {
       loadPayments();
       loadOrder();
     } else { ElMessage.error(res.message || '创建失败'); }
-  } catch { ElMessage.error('创建失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '创建失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 </script>

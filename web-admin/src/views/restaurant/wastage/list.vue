@@ -173,6 +173,7 @@ import { getWastageRecords, getWastageRecord, getWastageStatistics, createWastag
 import { emptyCell, formatDateCell, formatAmount, exportTableToExcel } from '@/utils/tableFormatters';
 import { formatDate } from '@/utils/dateFormat';
 import type { WastageRecord } from '@/types/restaurant';
+import { handleCatchError } from '@/utils/errorToast';
 
 const factoryId = useFactoryId();
 const permissionStore = usePermissionStore();
@@ -324,7 +325,7 @@ async function handleSubmit(row: WastageRecord) {
     } else {
       ElMessage.error(res.message || '提交失败');
     }
-  } catch { ElMessage.error('提交失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '提交失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 
@@ -342,7 +343,7 @@ async function handleApprove(row: WastageRecord) {
     } else {
       ElMessage.error(res.message || '审批失败');
     }
-  } catch { ElMessage.error('审批失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '审批失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 
@@ -362,7 +363,7 @@ async function handleReject(row: WastageRecord) {
     } else {
       ElMessage.error(res.message || '驳回失败');
     }
-  } catch { ElMessage.error('驳回失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '驳回失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 
