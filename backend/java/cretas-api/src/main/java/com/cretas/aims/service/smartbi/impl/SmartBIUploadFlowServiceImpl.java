@@ -253,7 +253,7 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
                         persistResult.getUploadId(),
                         fileName,
                         detectedTypeStr,
-                        persistResult.getSavedRows() != null ? Math.toIntExact(persistResult.getSavedRows()) : null
+                        (int) persistResult.getSavedRows()
                     );
                 }
             } catch (Exception e) {
