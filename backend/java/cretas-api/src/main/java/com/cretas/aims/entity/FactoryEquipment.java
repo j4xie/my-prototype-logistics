@@ -198,8 +198,16 @@ public class FactoryEquipment extends BaseEntity {
 
     // 乐观锁版本号
     @Version
-    @Column(name = "version")
-    private Integer version;
+    @Column(name = "version", nullable = false)
+    private Integer version = 1;
+
+    // Hibernate's VersionGeneration.generate() NPEs when @Version field is null,
+    // which happens for rows inserted before the column was added (14/22 rows on
+    // 2026-04-17). DB-side default + backfill fixes existing data; this getter
+    // keeps already-loaded-as-null entities safe until the EntityManager reloads.
+    public Integer getVersion() {
+        return version != null ? version : 1;
+    }
 
     // 关联关系 (使用 @JsonIgnore 防止循环引用)
     @JsonIgnore
