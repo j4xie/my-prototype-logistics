@@ -316,6 +316,19 @@ public class GlobalExceptionHandler {
     // ==================== 数据库相关异常 - 需严格脱敏 ====================
 
     /**
+     * 业务层抛 DuplicateKeyException (e.g. invoice request 去重) — 专用 handler 保留具体消息.
+     * 优先匹配, 避免被下方通用 DataIntegrityViolation handler 脱敏.
+     * R4 2026-04-16: 支持 Bug #2 G1 并发去重的友好 409 消息.
+     */
+    @ExceptionHandler(org.springframework.dao.DuplicateKeyException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ApiResponse<?> handleDuplicateKeyException(org.springframework.dao.DuplicateKeyException e) {
+        log.warn("重复提交拒绝: {}", e.getMessage());
+        String msg = isSafeMessage(e.getMessage()) ? e.getMessage() : "数据已存在，请勿重复提交";
+        return ApiResponse.error(409, msg);
+    }
+
+    /**
      * 处理数据完整性异常（唯一约束、外键约束等）
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
