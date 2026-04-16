@@ -669,6 +669,38 @@ async def auto_parse_excel(
                     df_csv = pd.read_csv(io.BytesIO(content), nrows=10000, skiprows=csv_skiprows)
                 except UnicodeDecodeError:
                     df_csv = pd.read_csv(io.BytesIO(content), nrows=10000, skiprows=csv_skiprows, encoding="gbk")
+
+                # D1 Apr 17 2026: Smart title-row skip for CSV
+                # If all columns start with "Unnamed:" (pandas fallback for empty headers)
+                # OR if >=80% of columns look like data values (numeric-looking names),
+                # the first row was a title/subtitle. Try skipping extra rows until headers
+                # look like real column names (Chinese business terms).
+                if effective_header_override is None:  # only auto-detect if user didn't specify
+                    headers_preview = [str(c) for c in df_csv.columns]
+                    import re as _re_hdr
+                    def looks_like_title_row(hdrs):
+                        if not hdrs: return False
+                        unnamed_count = sum(1 for h in hdrs if _re_hdr.match(r'^Unnamed:\s*\d+$', h))
+                        # 80%+ Unnamed → first row was title
+                        if unnamed_count >= 0.8 * len(hdrs):
+                            return True
+                        # Or all headers look like numbers/dates (data row leaked as header)
+                        data_like = sum(1 for h in hdrs if _re_hdr.match(r'^[\d\s\-./年月日:]+$', h))
+                        if data_like >= 0.8 * len(hdrs):
+                            return True
+                        return False
+                    tried_skiprows = csv_skiprows
+                    while looks_like_title_row(headers_preview) and tried_skiprows < 5:
+                        tried_skiprows += 1
+                        try:
+                            df_csv = pd.read_csv(io.BytesIO(content), nrows=10000, skiprows=tried_skiprows)
+                        except UnicodeDecodeError:
+                            df_csv = pd.read_csv(io.BytesIO(content), nrows=10000, skiprows=tried_skiprows, encoding="gbk")
+                        headers_preview = [str(c) for c in df_csv.columns]
+                        logger.info(f"CSV title-row auto-skip: retry with skiprows={tried_skiprows}, headers={headers_preview[:3]}")
+                    if tried_skiprows != csv_skiprows:
+                        csv_skiprows = tried_skiprows
+
                 headers_csv = [str(c) for c in df_csv.columns]
                 preview = df_csv.head(20).fillna("").values.tolist()
                 structure_result = StructureDetectionResult(
