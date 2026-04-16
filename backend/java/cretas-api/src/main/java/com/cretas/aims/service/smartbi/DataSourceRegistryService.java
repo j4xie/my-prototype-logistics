@@ -77,6 +77,14 @@ public class DataSourceRegistryService {
 
     @Transactional
     public DataSourceDTO create(String factoryId, DataSourceDTO dto) {
+        // Pre-check so the UNIQUE (factory_id, name) collision never reaches
+        // Hibernate. Without this, a duplicate save() leaves the session with
+        // a null-id entity; any subsequent flush in the same transaction throws
+        // AssertionFailure "don't flush the Session after an exception occurs",
+        // and the caller sees UnexpectedRollbackException instead of a 400.
+        if (dto.getName() != null && repository.existsByFactoryIdAndName(factoryId, dto.getName())) {
+            throw new IllegalArgumentException("数据源名称已存在: " + dto.getName());
+        }
         SmartBiDatasource entity = SmartBiDatasource.builder()
                 .factoryId(factoryId)
                 .name(dto.getName())
@@ -126,7 +134,17 @@ public class DataSourceRegistryService {
     @Transactional
     public DataSourceDTO upsertFromExcelUpload(String factoryId, Long uploadId, String fileName,
                                                 String detectedDataType, Integer rowCount) {
+        // Primary lookup: same uploadId → existing row for this upload.
         Optional<SmartBiDatasource> existing = repository.findByFactoryIdAndLinkedUploadId(factoryId, uploadId);
+
+        // Fallback lookup: different uploadId but same filename (user re-uploaded
+        // the same file as a new upload record). Collapse into the existing row
+        // instead of letting the UNIQUE (factory_id, name) constraint reject it.
+        String targetName = fileName != null ? fileName : ("Excel #" + uploadId);
+        if (existing.isEmpty()) {
+            existing = repository.findByFactoryIdAndName(factoryId, targetName);
+        }
+
         SmartBiDatasource entity = existing.orElseGet(() -> SmartBiDatasource.builder()
                 .factoryId(factoryId)
                 .sourceType(DatasourceType.EXCEL)
@@ -135,7 +153,10 @@ public class DataSourceRegistryService {
                 .isActive(true)
                 .build());
 
-        entity.setName(fileName != null ? fileName : ("Excel #" + uploadId));
+        // Always advance linkedUploadId to the latest upload so downstream lookups
+        // by uploadId resolve to the current row.
+        entity.setLinkedUploadId(uploadId);
+        entity.setName(targetName);
         entity.setCode("EXCEL_" + uploadId);
         String desc = (detectedDataType != null ? detectedDataType : "EXCEL") +
                 (rowCount != null ? " · " + rowCount + " 行" : "");
