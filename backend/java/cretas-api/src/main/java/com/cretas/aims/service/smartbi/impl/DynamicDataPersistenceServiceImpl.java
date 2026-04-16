@@ -158,6 +158,19 @@ public class DynamicDataPersistenceServiceImpl implements DynamicDataPersistence
                     factoryId, uploadId, sheetName, timeField, categoryField, previewData);
             log.info("Saved {} data rows (batched)", savedRows);
 
+            // 4.5 Backfill field definitions for row_data columns that semantic_mapper missed
+            // (Apr 16 2026, BUG #11 fix): For CSV/Excel with many columns (POS 订单 232 cols),
+            // semantic_mapper LLM only classifies ~13 cols → 营业额/实收额/应收金额 etc get dropped.
+            // Scan actual row_data keys, auto-classify missing cols via Chinese keyword heuristics.
+            try {
+                if (savedRows > 0 && !previewData.isEmpty()) {
+                    fieldDefs = backfillMissingFieldDefs(uploadId, fieldDefs, previewData.get(0));
+                    log.info("After backfill: {} field definitions total", fieldDefs.size());
+                }
+            } catch (Exception e) {
+                log.warn("Field definition backfill failed (non-blocking): {}", e.getMessage());
+            }
+
             // 5. Update upload status
             upload.setUploadStatus(UploadStatus.COMPLETED);
             upload.setRowCount(savedRows);
@@ -517,6 +530,114 @@ public class DynamicDataPersistenceServiceImpl implements DynamicDataPersistence
         }
         Object value = rowData.get(fieldName);
         return value != null ? value.toString() : null;
+    }
+
+    /**
+     * FIX-11 (Apr 16 2026): Backfill field definitions for columns semantic_mapper missed.
+     *
+     * semantic_mapper's LLM-based classification only handles ~10-20 cols reliably before
+     * timing out or hallucinating. 订单明细 CSV has 232 cols (营业额/实收额/客流量/人均消费 etc
+     * all crucial for Dashboard KPIs). After initial saveFieldDefinitions, scan actual row_data
+     * keys and append missing cols with keyword-based isMeasure/isDimension/isTime.
+     *
+     * Safe: only ADDS missing field defs, never modifies existing ones.
+     */
+    private List<SmartBiPgFieldDefinition> backfillMissingFieldDefs(
+            Long uploadId,
+            List<SmartBiPgFieldDefinition> existingDefs,
+            Map<String, Object> sampleRow) {
+        java.util.Set<String> existingNames = existingDefs.stream()
+                .map(SmartBiPgFieldDefinition::getOriginalName)
+                .collect(java.util.stream.Collectors.toSet());
+
+        List<SmartBiPgFieldDefinition> toAdd = new ArrayList<>();
+        int order = existingDefs.size();
+        int skippedEmpty = 0;
+
+        for (String colName : sampleRow.keySet()) {
+            if (colName == null || colName.trim().isEmpty()) { skippedEmpty++; continue; }
+            if (existingNames.contains(colName)) continue;  // skip already-mapped
+
+            Object sampleValue = sampleRow.get(colName);
+            String inferredType = inferTypeFromValue(sampleValue);
+            boolean isTime = isTimeFieldByName(colName);
+            boolean isMeasure = !isTime && isMeasureByName(colName, inferredType);
+            boolean isDimension = !isTime && !isMeasure && isDimensionByName(colName, inferredType);
+
+            SmartBiPgFieldDefinition def = SmartBiPgFieldDefinition.builder()
+                    .uploadId(uploadId)
+                    .originalName(colName)
+                    .standardName(colName)  // preserve Chinese name; no rename
+                    .fieldType(inferredType)
+                    .isDimension(isDimension)
+                    .isMeasure(isMeasure)
+                    .isTime(isTime)
+                    .displayOrder(order++)
+                    .sampleValues(sampleValue != null ? java.util.List.of(sampleValue) : java.util.Collections.emptyList())
+                    .build();
+            toAdd.add(def);
+        }
+
+        if (!toAdd.isEmpty()) {
+            fieldDefRepository.saveAll(toAdd);
+            log.info("Backfilled {} field definitions (measures: {}, dimensions: {}, times: {}); skipped {} empty names",
+                    toAdd.size(),
+                    toAdd.stream().filter(f -> Boolean.TRUE.equals(f.getIsMeasure())).count(),
+                    toAdd.stream().filter(f -> Boolean.TRUE.equals(f.getIsDimension())).count(),
+                    toAdd.stream().filter(f -> Boolean.TRUE.equals(f.getIsTime())).count(),
+                    skippedEmpty);
+            List<SmartBiPgFieldDefinition> combined = new ArrayList<>(existingDefs);
+            combined.addAll(toAdd);
+            return combined;
+        }
+        return existingDefs;
+    }
+
+    private String inferTypeFromValue(Object v) {
+        if (v == null) return "TEXT";
+        if (v instanceof Number) return "NUMERIC";
+        String s = v.toString().trim();
+        if (s.isEmpty()) return "TEXT";
+        // Numeric check
+        if (s.matches("^-?\\d+(\\.\\d+)?$")) return "NUMERIC";
+        // Date check (yyyy-MM-dd or yyyy/MM/dd or contains 年/月/日)
+        if (s.matches("^\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}.*") || s.contains("年") || s.contains("月")) return "DATE";
+        return "TEXT";
+    }
+
+    /** Chinese business keyword → isMeasure */
+    private boolean isMeasureByName(String colName, String inferredType) {
+        if (colName == null) return false;
+        String n = colName.toLowerCase();
+        // Skip payment method lists that mimic money (支付宝/美团/微信) — those are dimension-like
+        // Strong measure keywords: 营业/实收/应收/金额/营收/销售额/利润/成本/客流/人数/数量/份数/单价
+        if (n.matches(".*(营业额|实收额|实收|应收金额|应收|销售额|营业|收款金额|实收金额|营收|利润|" +
+                "毛利|成本|单价|原价|客流量|客流|人数|份数|销量|数量|产量|总额|合计|折扣额|优惠额).*")) {
+            return true;
+        }
+        // Numeric + contains 额/率/金/count/amount — likely measure
+        if ("NUMERIC".equals(inferredType) &&
+            n.matches(".*(额|率|金|rate|amount|count|revenue|profit|sum|total).*")) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isDimensionByName(String colName, String inferredType) {
+        if (colName == null) return false;
+        String n = colName.toLowerCase();
+        if (n.matches(".*(门店|店铺|区域|省份|城市|大区|品牌|类别|分类|状态|类型|" +
+                "服务员|销售员|收银员|班次|桌位|账单号|订单|区域|部门|编号|名称|store|region|category|type|status).*")) {
+            return true;
+        }
+        // Non-numeric + not a time column → likely dimension
+        return !"NUMERIC".equals(inferredType) && !"DATE".equals(inferredType);
+    }
+
+    private boolean isTimeFieldByName(String colName) {
+        if (colName == null) return false;
+        String n = colName.toLowerCase();
+        return n.matches(".*(时间|日期|period|date|time|year|month|年|月|日).*");
     }
 
     private boolean isDimension(FieldMappingResult mapping) {
