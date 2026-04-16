@@ -68,7 +68,7 @@ public class ProductionWorkflowOrchestrator {
                 factoryId, plan.getProductTypeId(), plan.getPlannedQuantity());
 
         if (requirements.isEmpty()) {
-            throw new BusinessException("该产品无 BOM 配置，无法生成调拨单。请先在 Web 端配置产品的原辅料转换关系。");
+            throw new BusinessException("该产品未配置转换率，无法生成调拨单。请在 [生产管理 → BOM 成本管理 → 转换率 tab] 为该产品添加原料 → 产品的转换率配置（conversionRate）。");
         }
 
         // Step 3: 库存校验 (可选，记录日志但不阻断)

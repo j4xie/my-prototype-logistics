@@ -304,12 +304,27 @@ deploy_jar() {
             echo "📦 [1/4] 本地 Maven 打包 (clean + package, ~90s)..."
         fi
         cd backend/java/cretas-api
-        if [[ "$OSTYPE" == "darwin"* ]] || [[ "$OSTYPE" == "linux"* ]]; then
-            chmod +x mvnw 2>/dev/null
-            ./mvnw $MVN_GOALS -Dmaven.test.skip=true -q
-        else
-            export JAVA_HOME="${JAVA_HOME:-C:/Program Files/Java/jdk-17}"
-            ./mvnw.cmd $MVN_GOALS -Dmaven.test.skip=true -q
+        # R29: maven clean 遇 target/ 被锁时 (Windows 并发 build), 自动 rm -rf 后重试 package
+        # 常见原因: 另一 session 刚跑过 mvn, JVM 未退出就锁住 protoc-dependencies
+        run_mvn() {
+            if [[ "$OSTYPE" == "darwin"* ]] || [[ "$OSTYPE" == "linux"* ]]; then
+                chmod +x mvnw 2>/dev/null
+                ./mvnw "$@" -Dmaven.test.skip=true -q
+            else
+                export JAVA_HOME="${JAVA_HOME:-C:/Program Files/Java/jdk-17}"
+                ./mvnw.cmd "$@" -Dmaven.test.skip=true -q
+            fi
+        }
+        if ! run_mvn $MVN_GOALS; then
+            if [ -z "$SKIP_CLEAN" ]; then
+                echo "   ⚠️  Maven clean 失败 (可能 target/ 被其他进程锁定), 强制 rm + retry package..."
+                rm -rf target 2>/dev/null || true
+                # 二次尝试: 直接 package (clean 已无意义因 target 已 rm)
+                run_mvn package || { echo "❌ Maven 打包失败 (已 retry)"; cd ../../..; exit 1; }
+                echo "   ✓ retry 打包成功"
+            else
+                echo "❌ Maven 打包失败"; cd ../../..; exit 1
+            fi
         fi
         cd ../../..
     fi
