@@ -1,0 +1,5126 @@
+[
+  {
+    "file": "s0004_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "香蕉过熟褐斑"
+  },
+  {
+    "file": "s0007_collected_v2_mold_kaggle_mobil_IMG_20240805_174923.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "番茄表面白斑"
+  },
+  {
+    "file": "s0008_collected_v2_mold__rejected_du_食品_发霉_图片_000124.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "南瓜腐烂"
+  },
+  {
+    "file": "s0012_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "瓶内霉斑"
+  },
+  {
+    "file": "s0013_collected_v2_mold__rejected_v2_saltandpepper_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "苹果霉变腐烂"
+  },
+  {
+    "file": "s0015_collected_v2_mold__rejected_v2_rotated_by_30_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "苹果整体腐烂"
+  },
+  {
+    "file": "s0018_collected_v2_mold__rejected_du_rotated_by_75_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "香蕉整体变黑"
+  },
+  {
+    "file": "s0019_collected_v2_mold_kaggle_mobil_L28 - 494.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "食物表面霉丝"
+  },
+  {
+    "file": "s0020_collected_v2_mold__rejected_du_vertical_flip_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "苹果黑斑霉点"
+  },
+  {
+    "file": "s0024_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "彩椒干瘪脱水"
+  },
+  {
+    "file": "s0027_collected_v2_mold__rejected_du_vertical_flip_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "苹果腐烂洞"
+  },
+  {
+    "file": "s0029_collected_v2_mold__rejected_v2_saltandpepper_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "香蕉整体变黑"
+  },
+  {
+    "file": "s0030_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "瓶内白色霉菌"
+  },
+  {
+    "file": "s0031_collected_v2_mold_kaggle_mobil_IMG_20240805_171914.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "瓶内黑色霉斑"
+  },
+  {
+    "file": "s0032_collected_v2_mold__rejected_v2_p_r014.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "发芽腐烂土豆"
+  },
+  {
+    "file": "s0035_labeled_complaints_v2_images_complaint_v2_00668.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "米饭变色块"
+  },
+  {
+    "file": "s0036_labeled_complaints_v2_images_complaint_v2_03717.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "top-right",
+    "note": "面汤内小虫"
+  },
+  {
+    "file": "s0038_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_PX.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "瓶内面包霉变"
+  },
+  {
+    "file": "s0040_labeled_complaints_v2_images_complaint_v2_00670.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "菜汤内蟑螂"
+  },
+  {
+    "file": "s0041_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-right",
+    "note": "番茄顶部黑腐"
+  },
+  {
+    "file": "s0044_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-right",
+    "note": "番茄顶部腐烂"
+  },
+  {
+    "file": "s0046_collected_v2_mold_kaggle_mobil_IMG_20240805_172248.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "瓶内白色霉菌"
+  },
+  {
+    "file": "s0048_collected_v2_mold__rejected_v2_rotated_by_75_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "腐黑芭蕉串"
+  },
+  {
+    "file": "s0049_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_L2.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "橙子皮表霉点"
+  },
+  {
+    "file": "s0051_meat_anomaly_validation_xiaoho_66855d89000000001f0067a7_1.jpg",
+    "usable": true,
+    "class": "bone",
+    "bbox_hint": "center",
+    "note": "排骨串见骨"
+  },
+  {
+    "file": "s0054_collected_v2_mold_kaggle_mobil_IMG_20240805_164735.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "瓶内小黑点霉"
+  },
+  {
+    "file": "s0055_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_20.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "瓶内黄绿霉"
+  },
+  {
+    "file": "s0056_collected_v2_mold__rejected_v2_p_r625.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "土豆发芽"
+  },
+  {
+    "file": "s0058_collected_v2_mold__rejected_v2_L10 - 26.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "水果表绿霉"
+  },
+  {
+    "file": "s0066_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "瓶内霉斑"
+  },
+  {
+    "file": "s0069_labeled_complaints_v2_images_complaint_v2_01263.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "面包黑霉斑"
+  },
+  {
+    "file": "s0071_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "瓶内霉斑"
+  },
+  {
+    "file": "s0073_collected_v2_mold_kaggle_mobil_20240428_234331.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "瓶内黑色霉丝"
+  },
+  {
+    "file": "s0074_collected_v2_mold__rejected_du_saltandpepper_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "香蕉褐斑"
+  },
+  {
+    "file": "s0075_collected_v2_mold__rejected_v2_Screen Shot 2018-06-12 at 8.51.56 PM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "香蕉整体腐黑"
+  },
+  {
+    "file": "s0077_collected_v2_mold__rejected_v2_t_r738.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "番茄顶黑点"
+  },
+  {
+    "file": "s0078_labeled_complaints_v2_images_complaint_v2_02420.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "面包中疑似蛆虫"
+  },
+  {
+    "file": "s0085_collected_v2_mold__rejected_du_Screen Shot 2018-06-12 at 9.12.17 PM.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "香蕉整体变黑"
+  },
+  {
+    "file": "s0087_collected_v2_mold__rejected_du_t_r500.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "番茄顶部绿霉"
+  },
+  {
+    "file": "s0089_collected_v2_mold__rejected_du_37_jpg.rf.1bc1cb875ad6c582a37c6be979adcc.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "bottom-right",
+    "note": "面包蓝黑霉点"
+  },
+  {
+    "file": "s0090_collected_v2_mold_kaggle_mobil_IMG_20240805_143828.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "瓶内白色霉菌"
+  },
+  {
+    "file": "s0092_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "橙子蓝绿霉"
+  },
+  {
+    "file": "s0095_collected_v2_mold__rejected_v2_rotated_by_75_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-right",
+    "note": "腐香蕉霉白斑"
+  },
+  {
+    "file": "s0098_collected_v2_mold__rejected_v2_img5.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "面包蓝霉圆斑"
+  },
+  {
+    "file": "s0103_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_20.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "瓶内橙色霉"
+  },
+  {
+    "file": "s0108_collected_v2_mold__rejected_du_rotated_by_75_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "香蕉褐黑斑"
+  },
+  {
+    "file": "s0109_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "瓶内白色霉丝"
+  },
+  {
+    "file": "s0115_collected_v2_mold_kaggle_mobil_IMG_20240805_143516.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "瓶内面包霉变"
+  },
+  {
+    "file": "s0117_meat_anomaly_validation_xiaoho_64c3e87000000000120196d1_1.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "食物中昆虫"
+  },
+  {
+    "file": "s0119_collected_v2_mold_kaggle_mobil_IMG_20240805_143034.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "瓶内白色霉菌"
+  },
+  {
+    "file": "s0122_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "番茄黑腐洞"
+  },
+  {
+    "file": "s0125_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_20.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "瓶内白色霉菌"
+  },
+  {
+    "file": "s0135_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "番茄干瘪"
+  },
+  {
+    "file": "s0136_collected_v2_mold__rejected_du_translation_Screen Shot 2018-06-07 at 2..jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-right",
+    "note": "苹果右侧腐烂"
+  },
+  {
+    "file": "s0141_collected_v2_mold_kaggle_mobil_IMG_20240805_144025.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "瓶内白色霉菌"
+  },
+  {
+    "file": "s0142_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "瓶内白色霉菌"
+  },
+  {
+    "file": "s0143_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "瓶内灰色霉菌"
+  },
+  {
+    "file": "s0145_collected_v2_mold__rejected_v2_a_r519.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "苹果整体腐烂"
+  },
+  {
+    "file": "s0150_screened_v2_rejected_mold_roboflow_bread-mold-detection-55dam_trai.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "面包蓝绿霉斑"
+  },
+  {
+    "file": "s0154_collected_v2_mold__rejected_v2_rotated_by_75_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-right",
+    "note": "苹果腐烂疤"
+  },
+  {
+    "file": "s0160_collected_v2_mold_kaggle_mobil_L16 - 553.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "柠檬早期霉"
+  },
+  {
+    "file": "s0163_collected_v2_mold__rejected_du_Screen Shot 2018-06-12 at 8.47.28 PM.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "香蕉整体变黑"
+  },
+  {
+    "file": "s0164_collected_v2_mold_kaggle_mobil_L16 - 620.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "霉菌孢子macro"
+  },
+  {
+    "file": "s0167_meat_anomaly_validation_xiaoho_67ff659c00000000070354dc_0.jpg",
+    "usable": true,
+    "class": "hair",
+    "bbox_hint": "center",
+    "note": "包子内毛发"
+  },
+  {
+    "file": "s0170_collected_v2_mold__rejected_v2_saltandpepper_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "香蕉整体变褐"
+  },
+  {
+    "file": "s0171_collected_v2_mold__rejected_du_vertical_flip_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "苹果皱缩脱水"
+  },
+  {
+    "file": "s0172_collected_v2_mold__rejected_v2_b_r321.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "香蕉褐黑斑"
+  },
+  {
+    "file": "s0173_collected_v2_mold__rejected_v2_vertical_flip_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "橙子蓝绿霉菌"
+  },
+  {
+    "file": "s0181_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "香蕉褐黑斑"
+  },
+  {
+    "file": "s0183_collected_v2_mold__rejected_v2_a_r536.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "top-right",
+    "note": "苹果内黄蜂"
+  },
+  {
+    "file": "s0191_collected_v2_mold_kaggle_mobil_L10 - 149.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-right",
+    "note": "番茄裂口霉点"
+  },
+  {
+    "file": "s0193_collected_v2_mold__rejected_du_rotated_by_60_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "橙子白霉扩散"
+  },
+  {
+    "file": "s0196_labeled_complaints_v2_images_complaint_v2_03451.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "死蟑螂"
+  },
+  {
+    "file": "s0208_collected_v2_mold_kaggle_mobil_L16 - 589.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "霉菌孢子macro"
+  },
+  {
+    "file": "s0211_collected_v2_mold__rejected_v2_变质食品_霉点_000080.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "橙堆中一个霉"
+  },
+  {
+    "file": "s0213_collected_v2_mold__rejected_v2_Screen Shot 2018-06-07 at 2.20.46 PM.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "top-right",
+    "note": "苹果损伤斑"
+  },
+  {
+    "file": "s0218_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_20.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "蓝莓黑霉斑"
+  },
+  {
+    "file": "s0219_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_fres.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "苦瓜枯萎斑"
+  },
+  {
+    "file": "s0226_collected_v2_mold__rejected_v2_L28 - 518.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "腐芒果暴纤维"
+  },
+  {
+    "file": "s0231_meat_anomaly_validation_xiaoho_685f0f170000000017030e21_5.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "面条中昆虫"
+  },
+  {
+    "file": "s0234_labeled_complaints_v2_images_complaint_v2_03370.jpg",
+    "usable": true,
+    "class": "hair",
+    "bbox_hint": "center",
+    "note": "食物中毛发团"
+  },
+  {
+    "file": "s0239_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "bottom-left",
+    "note": "番茄蒂黑霉"
+  },
+  {
+    "file": "s0240_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "香蕉褐斑"
+  },
+  {
+    "file": "s0243_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_L2.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "橙皮小霉点"
+  },
+  {
+    "file": "s0245_collected_v2_mold_kaggle_mobil_20240202_205401.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "瓶内霉菌洞穴"
+  },
+  {
+    "file": "s0246_collected_v2_mold_kaggle_mobil_IMG_20240805_143406.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "瓶内灰色霉"
+  },
+  {
+    "file": "s0247_collected_v2_mold__rejected_du_Screen Shot 2018-06-12 at 9.07.39 PM.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "芭蕉整体变黑"
+  },
+  {
+    "file": "s0249_collected_v2_mold__rejected_v2_IMG_20240805_135804.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "瓶内霉变食物"
+  },
+  {
+    "file": "s0258_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "white moldy bread circle"
+  },
+  {
+    "file": "s0259_collected_v2_mold_kaggle_mobil_IMG_20240805_171701.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "orange moldy bread"
+  },
+  {
+    "file": "s0262_collected_v2_mold__rejected_du_b_r276.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "overripe brown bananas"
+  },
+  {
+    "file": "s0265_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_PX.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy black olives beans"
+  },
+  {
+    "file": "s0268_collected_v2_mold__rejected_v2_rotated_by_45_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "moldy orange green fuzz"
+  },
+  {
+    "file": "s0271_meat_anomaly_validation_xiaoho_66a5ed75000000000600f24b_0.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "moldy cheesecake black spots"
+  },
+  {
+    "file": "s0275_collected_v2_mold__rejected_du_vertical_flip_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "shriveled overripe apple"
+  },
+  {
+    "file": "s0276_collected_v2_mold__rejected_du_vertical_flip_Screen Shot 2018-06-08 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "apple gray mold patch"
+  },
+  {
+    "file": "s0284_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "rotten tomato black mold"
+  },
+  {
+    "file": "s0286_meat_anomaly_validation_xiaoho_6829c5e3000000002202f7a0_1.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "black insect in noodles"
+  },
+  {
+    "file": "s0289_meat_anomaly_validation_xiaoho_67b16fa6000000002902849b_1.jpg",
+    "usable": true,
+    "class": "hair",
+    "bbox_hint": "center",
+    "note": "long hair on palm"
+  },
+  {
+    "file": "s0292_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread texture"
+  },
+  {
+    "file": "s0295_collected_v2_mold__rejected_du_Screen Shot 2018-06-07 at 2.52.44 PM.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "wrinkled overripe apple spots"
+  },
+  {
+    "file": "s0296_labeled_complaints_v2_images_complaint_v2_03987.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "dark insect in bread"
+  },
+  {
+    "file": "s0297_collected_v2_mold_kaggle_mobil_PXL_20240421_113737131.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy grapes brown fuzz"
+  },
+  {
+    "file": "s0298_labeled_complaints_v2_images_complaint_v2_03966.jpg",
+    "usable": true,
+    "class": "hair",
+    "bbox_hint": "center",
+    "note": "hair in white bread"
+  },
+  {
+    "file": "s0302_collected_v2_mold__rejected_du_26_jpg.rf.c986f415811d3e1cd9a89ebea76ef0.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy pepperoni green spots"
+  },
+  {
+    "file": "s0310_collected_v2_mold__rejected_v2_rotated_by_60_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "overripe brown banana"
+  },
+  {
+    "file": "s0311_collected_v2_mold__rejected_du_rotated_by_60_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "moldy orange white fuzz"
+  },
+  {
+    "file": "s0314_collected_v2_mold__rejected_v2_Screen Shot 2018-06-12 at 8.48.40 PM.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "overripe brown banana"
+  },
+  {
+    "file": "s0316_collected_v2_mold__rejected_du_rotated_by_60_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "overripe black banana"
+  },
+  {
+    "file": "s0318_labeled_complaints_v2_images_complaint_v2_01235.jpg",
+    "usable": true,
+    "class": "hair",
+    "bbox_hint": "center",
+    "note": "small fiber in dumpling"
+  },
+  {
+    "file": "s0320_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "overripe black bananas"
+  },
+  {
+    "file": "s0321_collected_v2_mold__rejected_v2_rotated_by_15_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "wrinkled overripe apple"
+  },
+  {
+    "file": "s0322_labeled_complaints_v2_images_complaint_v2_01046.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "heavy blue-green mold frozen food"
+  },
+  {
+    "file": "s0323_labeled_complaints_v2_images_complaint_v2_01910.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "green mold fuzzy food pieces"
+  },
+  {
+    "file": "s0325_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy black food surface"
+  },
+  {
+    "file": "s0333_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_L1.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "orange with green mold spot"
+  },
+  {
+    "file": "s0334_collected_v2_mold_kaggle_mobil_20240421_132831.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy dark berries fuzz"
+  },
+  {
+    "file": "s0337_collected_v2_mold_kaggle_mobil_IMG_20240805_164730.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy cheese dark spots"
+  },
+  {
+    "file": "s0338_collected_v2_mold_kaggle_mobil_IMG_20240805_171530.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-right",
+    "note": "moldy orange bread white fuzz"
+  },
+  {
+    "file": "s0341_collected_v2_mold__rejected_v2_a_r568.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "rotten apple brown patches"
+  },
+  {
+    "file": "s0343_collected_v2_mold__rejected_du_vertical_flip_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-right",
+    "note": "moldy orange green white fuzz"
+  },
+  {
+    "file": "s0354_collected_v2_mold__rejected_v2_c_r409.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "spoiled cucumber dark spots"
+  },
+  {
+    "file": "s0356_labeled_complaints_v2_images_complaint_v2_03385.jpg",
+    "usable": true,
+    "class": "hair",
+    "bbox_hint": "center",
+    "note": "hair in noodles dish"
+  },
+  {
+    "file": "s0363_collected_v2_flat_mold_roboflow_mold-bsgon_train_images_1934865.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy jam white fuzz"
+  },
+  {
+    "file": "s0364_collected_v2_mold__rejected_v2_saltandpepper_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "moldy orange gray fuzz"
+  },
+  {
+    "file": "s0368_collected_v2_mold__rejected_du_saltandpepper_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "moldy rotten fruit heavy fuzz"
+  },
+  {
+    "file": "s0370_collected_v2_mold__rejected_v2_saltandpepper_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "rotten orange moldy"
+  },
+  {
+    "file": "s0371_meat_anomaly_validation_xiaoho_660d48e2000000001a017290_0.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread filling green mold"
+  },
+  {
+    "file": "s0374_collected_v2_flat_mold_crawled_bing_moldy bread green mold clos.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread blue-green mold"
+  },
+  {
+    "file": "s0375_collected_v2_mold_kaggle_mobil_PXL_20240429_062933119.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy meat hairy fuzz"
+  },
+  {
+    "file": "s0380_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "bottom-right",
+    "note": "moldy orange white fuzz"
+  },
+  {
+    "file": "s0381_collected_v2_mold_kaggle_mobil_L10 - 514.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "orange with green mold spot"
+  },
+  {
+    "file": "s0382_labeled_complaints_v2_images_complaint_v2_01244.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread filling white fuzz"
+  },
+  {
+    "file": "s0383_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy food dark spots"
+  },
+  {
+    "file": "s0384_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "overripe shiny tomato wrinkle"
+  },
+  {
+    "file": "s0386_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "white moldy bread"
+  },
+  {
+    "file": "s0391_collected_v2_mold__rejected_v2_p_r656.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy potato halves black"
+  },
+  {
+    "file": "s0394_collected_v2_mold__rejected_du_translation_Screen Shot 2018-06-07 at 3..jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "shriveled rotten apple"
+  },
+  {
+    "file": "s0395_collected_v2_mold__rejected_du_rotated_by_30_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "apple rot brown bruise"
+  },
+  {
+    "file": "s0396_meat_anomaly_validation_xiaoho_691311d90000000005039a4e_0.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy tube tip green mold"
+  },
+  {
+    "file": "s0399_collected_v2_flat_mold_roboflow_bread-mold-detection-55dam_trai.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy red food dark spots"
+  },
+  {
+    "file": "s0400_meat_anomaly_validation_xiaoho_67a08e9d0000000029039ba7_1.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "black insects in noodle pack"
+  },
+  {
+    "file": "s0403_collected_v2_mold__rejected_v2_L10 - 106.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy fruit skin dark spots"
+  },
+  {
+    "file": "s0406_collected_v2_mold__rejected_v2_saltandpepper_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "overripe yellow-brown apple"
+  },
+  {
+    "file": "s0410_collected_v2_mold_kaggle_mobil_IMG_20240805_164702.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy cheese black spots"
+  },
+  {
+    "file": "s0415_labeled_complaints_v2_images_complaint_v2_00712.jpg",
+    "usable": true,
+    "class": "hair",
+    "bbox_hint": "center",
+    "note": "hair strand in lunch tray"
+  },
+  {
+    "file": "s0424_collected_v2_mold__rejected_du_rotated_by_15_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top",
+    "note": "moldy orange dark mold spot"
+  },
+  {
+    "file": "s0425_collected_v2_mold_kaggle_mobil_IMG_20240805_165059.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy yellow bread dark spots"
+  },
+  {
+    "file": "s0426_collected_v2_mold_kaggle_mobil_20240421_132259.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "moldy red meat hairy fuzz"
+  },
+  {
+    "file": "s0429_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_20.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy black beans olives"
+  },
+  {
+    "file": "s0431_collected_v2_mold_kaggle_mobil_IMG_20240805_135221.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy white bread fuzz"
+  },
+  {
+    "file": "s0437_collected_v2_mold__rejected_du_vertical_flip_Screen Shot 2018-06-08 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "overripe apple brown patch"
+  },
+  {
+    "file": "s0438_labeled_complaints_v2_images_complaint_v2_01531.jpg",
+    "usable": true,
+    "class": "hair",
+    "bbox_hint": "center",
+    "note": "hair on fried chicken"
+  },
+  {
+    "file": "s0441_collected_v2_mold__rejected_v2_L10 - 464.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "rotted fruit orange-brown spots"
+  },
+  {
+    "file": "s0442_collected_v2_mold__rejected_du_vertical_flip_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "rotten apple brown spots"
+  },
+  {
+    "file": "s0445_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_L1.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center-right",
+    "note": "orange with dark mold spot"
+  },
+  {
+    "file": "s0447_collected_v2_mold__rejected_v2_saltandpepper_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy orange white-gray fuzz"
+  },
+  {
+    "file": "s0449_collected_v2_mold__rejected_v2_Screen Shot 2018-06-12 at 11.36.48 PM.jp.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy orange heavy green fuzz"
+  },
+  {
+    "file": "s0450_collected_v2_mold__rejected_du_p_r041.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "rotten potatoes moldy sprouts"
+  },
+  {
+    "file": "s0451_collected_v2_mold__rejected_v2_translation_Screen Shot 2018-06-12 at 11.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-right",
+    "note": "moldy orange green fuzz"
+  },
+  {
+    "file": "s0452_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy dark food fuzz"
+  },
+  {
+    "file": "s0453_labeled_complaints_v2_images_complaint_v2_00666.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "right",
+    "note": "dark bug in bread filling"
+  },
+  {
+    "file": "s0455_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_PX.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy black beans"
+  },
+  {
+    "file": "s0456_meat_anomaly_validation_xiaoho_66473f04000000000500540f_1.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread white fuzz spot"
+  },
+  {
+    "file": "s0458_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "wrinkled spoiled tomato"
+  },
+  {
+    "file": "s0459_collected_v2_mold__rejected_du_rotated_by_60_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "rotten apple brown bruise"
+  },
+  {
+    "file": "s0462_collected_v2_mold_kaggle_mobil_IMG_20240805_171949.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy fruit white-gray fuzz"
+  },
+  {
+    "file": "s0466_screened_v2_rejected_mold_roboflow_mold-bsgon_train_images_IMG_300.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mold colonies petri dish"
+  },
+  {
+    "file": "s0467_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy white fuzz food"
+  },
+  {
+    "file": "s0475_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_PX.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "heavy dark mold texture"
+  },
+  {
+    "file": "s0476_collected_v2_mold__rejected_v2_a_r360.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "right",
+    "note": "apple with bruise rotting"
+  },
+  {
+    "file": "s0479_labeled_complaints_v2_images_complaint_v2_02518.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "insect egg cluster on fabric"
+  },
+  {
+    "file": "s0480_collected_v2_mold__rejected_du_rotated_by_15_Screen Shot 2018-06-08 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "rotten apple deep brown hole"
+  },
+  {
+    "file": "s0481_collected_v2_mold_kaggle_mobil_IMG_20240805_143953.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy fluffy white fuzz"
+  },
+  {
+    "file": "s0482_meat_anomaly_validation_xiaoho_665850b60000000016012b33_0.jpg",
+    "usable": true,
+    "class": "hair",
+    "bbox_hint": "center",
+    "note": "long hair in instant noodles"
+  },
+  {
+    "file": "s0484_collected_v2_mold__rejected_du_rotated_by_75_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "overripe dark bananas bunch"
+  },
+  {
+    "file": "s0485_collected_v2_mold_kaggle_mobil_20240428_233536.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center-left",
+    "note": "moldy red meat white hairy"
+  },
+  {
+    "file": "s0487_collected_v2_mold_kaggle_mobil_L28 - 93.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "orange with green mold interior"
+  },
+  {
+    "file": "s0488_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "rotten shriveled apple"
+  },
+  {
+    "file": "s0489_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_PX.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "heavy dark mold dense texture"
+  },
+  {
+    "file": "s0492_collected_v2_mold__rejected_v2_saltandpepper_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "overripe black bananas"
+  },
+  {
+    "file": "s0493_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "overripe shiny tomato"
+  },
+  {
+    "file": "s0494_collected_v2_mold__rejected_du_p_r219.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy food green mold ball"
+  },
+  {
+    "file": "s0496_collected_v2_mold_kaggle_mobil_IMG_20240805_171837.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy jelly dark fuzz lines"
+  },
+  {
+    "file": "s0498_meat_anomaly_validation_xiaoho_69a2f6b8000000001a02ff3e_0.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "worm/leech in vegetable soup"
+  },
+  {
+    "file": "s0499_collected_v2_mold__rejected_v2_L10 - 392.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy tomato heavy green mold"
+  },
+  {
+    "file": "s0503_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "黑色霉斑"
+  },
+  {
+    "file": "s0504_collected_v2_mold__rejected_v2_PXL_20240428_223204390.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "白色霉菌丝"
+  },
+  {
+    "file": "s0508_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "白霉菌丝密集"
+  },
+  {
+    "file": "s0509_collected_v2_mold_kaggle_mobil_IMG_20240805_164334.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "面包霉斑"
+  },
+  {
+    "file": "s0512_collected_v2_mold_kaggle_mobil_IMG_20240805_143010.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "白色霉菌丝"
+  },
+  {
+    "file": "s0514_collected_v2_mold__rejected_v2_rotated_by_15_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "橙子绿霉明显"
+  },
+  {
+    "file": "s0515_collected_v2_mold__rejected_v2_L28 - 467.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "南瓜表面绿霉"
+  },
+  {
+    "file": "s0517_collected_v2_mold__rejected_du_rotated_by_75_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "橙子切面绿霉"
+  },
+  {
+    "file": "s0518_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "彩椒红绿变色"
+  },
+  {
+    "file": "s0524_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "白色霉菌表面"
+  },
+  {
+    "file": "s0525_collected_v2_mold__rejected_du_rotated_by_45_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "香蕉过熟黑化"
+  },
+  {
+    "file": "s0529_collected_v2_color_anomaly__re_牛肉_绿色斑点_000021.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "牛肉绿色斑点"
+  },
+  {
+    "file": "s0530_collected_v2_mold_kaggle_mobil_IMG_20240805_143013.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "白色霉菌"
+  },
+  {
+    "file": "s0532_meat_anomaly_validation_xiaoho_677fc6170000000020021366_0.jpg",
+    "usable": true,
+    "class": "hair",
+    "bbox_hint": "center",
+    "note": "饮料杯中疑似毛发"
+  },
+  {
+    "file": "s0537_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "白色霉菌丝密集"
+  },
+  {
+    "file": "s0540_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "白色绒毛状霉菌"
+  },
+  {
+    "file": "s0543_collected_v2_mold__rejected_v2_L10 - 499.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "橙皮黄色霉菌丝"
+  },
+  {
+    "file": "s0546_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "苦瓜黄熟变色"
+  },
+  {
+    "file": "s0548_collected_v2_mold__rejected_du_rotated_by_75_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "香蕉过熟发黑"
+  },
+  {
+    "file": "s0550_collected_v2_mold__rejected_v2_img31.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "bottom-right",
+    "note": "面包绿霉斑块"
+  },
+  {
+    "file": "s0554_collected_v2_mold__rejected_v2_saltandpepper_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "苹果棕色斑点"
+  },
+  {
+    "file": "s0561_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "白色霉菌丝"
+  },
+  {
+    "file": "s0562_collected_v2_mold__rejected_v2_o_r132.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "秋葵表面灰霉"
+  },
+  {
+    "file": "s0564_collected_v2_mold__rejected_du_Screen Shot 2018-06-12 at 11.19.22 PM.jp.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "橙子表面黑绿霉斑"
+  },
+  {
+    "file": "s0570_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Test_rotte.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "香蕉过熟黑斑"
+  },
+  {
+    "file": "s0573_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "番茄萎缩表皮暗红"
+  },
+  {
+    "file": "s0574_labeled_complaints_v2_images_complaint_v2_03219.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "bottom-left",
+    "note": "杯中疑似昆虫"
+  },
+  {
+    "file": "s0575_collected_v2_mold__rejected_v2_translation_Screen Shot 2018-06-12 at 9..jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "香蕉过熟黑化"
+  },
+  {
+    "file": "s0576_collected_v2_mold__rejected_v2_rotated_by_45_Screen Shot 2018-06-08 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "苹果腐烂变色"
+  },
+  {
+    "file": "s0577_collected_v2_mold__rejected_v2_rotated_by_15_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "苹果皱缩黑化"
+  },
+  {
+    "file": "s0583_collected_v2_mold__rejected_v2_b_r420.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "香蕉过熟黑化"
+  },
+  {
+    "file": "s0585_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "面包多色霉菌"
+  },
+  {
+    "file": "s0597_collected_v2_mold__rejected_du_33_jpg.rf.57c51d6046b3eb2bb4d26e9373042d.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "bottom-right",
+    "note": "汉堡面包绿白霉斑"
+  },
+  {
+    "file": "s0598_collected_v2_mold__rejected_du_b_r563.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "香蕉严重黑化"
+  },
+  {
+    "file": "s0605_collected_v2_color_anomaly__re_rainbow_sheen_meat_surface_000029.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "柑橘青绿色霉斑"
+  },
+  {
+    "file": "s0608_collected_v2_mold_kaggle_mobil_IMG_20240805_165033.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "黑色霉菌大块"
+  },
+  {
+    "file": "s0610_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "番茄萎缩褐色"
+  },
+  {
+    "file": "s0614_labeled_complaints_v2_images_complaint_v2_00891.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "蓝莓表面白霉"
+  },
+  {
+    "file": "s0621_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_20.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "蓝莓表面白色霉菌丝"
+  },
+  {
+    "file": "s0622_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "白色霉斑"
+  },
+  {
+    "file": "s0624_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "番茄萎缩变色"
+  },
+  {
+    "file": "s0628_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "白色霉菌丝"
+  },
+  {
+    "file": "s0631_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "面包黑霉点"
+  },
+  {
+    "file": "s0632_labeled_complaints_v2_images_complaint_v2_00034.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "蟹壳饭中疑似异物"
+  },
+  {
+    "file": "s0634_labeled_complaints_v2_images_complaint_v2_03389.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "食物中虫体"
+  },
+  {
+    "file": "s0635_screened_v2_rejected_mold_roboflow_bread-mold-detection-55dam_trai.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "橙色食物绿霉"
+  },
+  {
+    "file": "s0636_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "白色霉丝"
+  },
+  {
+    "file": "s0639_collected_v2_mold__rejected_du_saltandpepper_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "芭蕉过熟黑化"
+  },
+  {
+    "file": "s0640_labeled_complaints_v2_images_complaint_v2_03576.jpg",
+    "usable": true,
+    "class": "hair",
+    "bbox_hint": "center",
+    "note": "油饼中疑似毛发"
+  },
+  {
+    "file": "s0641_labeled_complaints_v2_images_complaint_v2_02472.jpg",
+    "usable": true,
+    "class": "glass",
+    "bbox_hint": "center",
+    "note": "罐头中玻璃碎片"
+  },
+  {
+    "file": "s0642_collected_v2_mold__rejected_v2_rotated_by_60_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "橙子大面积青绿霉"
+  },
+  {
+    "file": "s0647_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "红椒皱缩变色"
+  },
+  {
+    "file": "s0650_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "白色霉菌丝"
+  },
+  {
+    "file": "s0651_collected_v2_mold__rejected_v2_p_r203.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "土豆腐烂变色"
+  },
+  {
+    "file": "s0655_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Test_rotte.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "苹果褐色腐烂斑"
+  },
+  {
+    "file": "s0669_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "柑橘大面积蓝绿霉菌"
+  },
+  {
+    "file": "s0670_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_20.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "红绿霉菌混合"
+  },
+  {
+    "file": "s0672_collected_v2_mold__rejected_du_saltandpepper_Screen Shot 2018-06-08 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "桃子过熟变色"
+  },
+  {
+    "file": "s0682_collected_v2_mold_kaggle_mobil_IMG_20240805_135547.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "白色霉菌丝网状"
+  },
+  {
+    "file": "s0683_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "香蕉过熟黑斑"
+  },
+  {
+    "file": "s0684_collected_v2_mold__rejected_v2_000034.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "培养皿大面积多色霉菌"
+  },
+  {
+    "file": "s0686_collected_v2_mold__rejected_du_rotated_by_75_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "苹果严重黑化腐烂"
+  },
+  {
+    "file": "s0689_collected_v2_mold__rejected_v2_translation_Screen Shot 2018-06-12 at 11.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "橙子青黑霉大面积"
+  },
+  {
+    "file": "s0691_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "黄色白色霉菌"
+  },
+  {
+    "file": "s0692_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "茄子表面白霉严重"
+  },
+  {
+    "file": "s0693_labeled_complaints_v2_images_complaint_v2_00117.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "食物严重霉变绿色"
+  },
+  {
+    "file": "s0694_labeled_complaints_v2_images_complaint_v2_00177.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "米饭中黑色虫子"
+  },
+  {
+    "file": "s0700_collected_v2_mold_kaggle_mobil_IMG_20240805_142318.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "白色霉菌丝密集"
+  },
+  {
+    "file": "s0701_meat_anomaly_validation_xiaoho_692cb172000000000d037918_1.jpg",
+    "usable": true,
+    "class": "bone",
+    "bbox_hint": "center",
+    "note": "餐巾纸上骨头碎片"
+  },
+  {
+    "file": "s0703_collected_v2_mold_kaggle_mobil_IMG_20240109_170528.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "灰白色霉菌"
+  },
+  {
+    "file": "s0707_collected_v2_mold__rejected_v2_L28 - 609.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "橙子白色霉斑"
+  },
+  {
+    "file": "s0711_collected_v2_mold__rejected_v2_translation_Screen Shot 2018-06-12 at 11.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "橙子皱缩褐色"
+  },
+  {
+    "file": "s0713_collected_v2_mold__rejected_du_rotated_by_30_Screen Shot 2018-06-08 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "苹果皱缩褐化"
+  },
+  {
+    "file": "s0719_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "苹果皱缩褐化"
+  },
+  {
+    "file": "s0721_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_L1.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "黑绿霉菌密集"
+  },
+  {
+    "file": "s0726_collected_v2_mold__rejected_du_rotated_by_60_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "橙子大面积绿白霉"
+  },
+  {
+    "file": "s0734_meat_anomaly_validation_xiaoho_697ff297000000000b011aa7_6.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "肉片表面白色菌斑"
+  },
+  {
+    "file": "s0735_collected_v2_mold__rejected_v2_IMG_20240805_135424.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "食物密集白霉菌"
+  },
+  {
+    "file": "s0736_collected_v2_mold__rejected_du_rotated_by_15_Screen Shot 2018-06-08 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "苹果严重腐烂变色"
+  },
+  {
+    "file": "s0739_collected_v2_mold_kaggle_mobil_L10 - 410.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "红色食物灰绿霉斑"
+  },
+  {
+    "file": "s0742_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "白色霉菌丝"
+  },
+  {
+    "file": "s0743_collected_v2_mold__rejected_v2_L28 - 95.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "橙皮表面青绿霉"
+  },
+  {
+    "file": "s0745_collected_v2_mold__rejected_du_rotated_by_15_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "苹果严重皱缩褐化"
+  },
+  {
+    "file": "s0748_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "番茄过熟褐化"
+  },
+  {
+    "file": "s0750_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_L1.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "橘皮黑霉点"
+  },
+  {
+    "file": "s0752_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_20.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "莓果白色霉斑"
+  },
+  {
+    "file": "s0754_collected_v2_mold_kaggle_mobil_IMG_20240805_165652.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "瓶底黑色霉点"
+  },
+  {
+    "file": "s0757_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "绿色霉菌斑块"
+  },
+  {
+    "file": "s0758_collected_v2_mold__rejected_v2_rotated_by_15_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "橘子灰绿色霉"
+  },
+  {
+    "file": "s0760_meat_anomaly_validation_xiaoho_656f238700000000380348da_0.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "面条中黑色虫"
+  },
+  {
+    "file": "s0765_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "香蕉过熟褐斑"
+  },
+  {
+    "file": "s0767_labeled_complaints_v2_images_complaint_v2_00838.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "吸管内疑似虫"
+  },
+  {
+    "file": "s0768_collected_v2_mold_kaggle_mobil_IMG_20240805_135454.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "容器底白色霉"
+  },
+  {
+    "file": "s0774_collected_v2_mold__rejected_du_rotated_by_75_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "香蕉过熟变黑"
+  },
+  {
+    "file": "s0775_collected_v2_mold_kaggle_mobil_IMG_20240805_144153.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "瓶内白色霉斑"
+  },
+  {
+    "file": "s0777_labeled_complaints_v2_images_complaint_v2_03885.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "面包中白色蛆虫"
+  },
+  {
+    "file": "s0778_collected_v2_mold__rejected_du_vertical_flip_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "苹果腐烂变黑"
+  },
+  {
+    "file": "s0779_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Test_rotte.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "香蕉严重褐斑"
+  },
+  {
+    "file": "s0780_labeled_complaints_v2_images_complaint_v2_00222.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "果冻中黑色蚊虫"
+  },
+  {
+    "file": "s0782_collected_v2_mold__rejected_v2_b_r206.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "香蕉严重霉变黑"
+  },
+  {
+    "file": "s0786_collected_v2_mold__rejected_v2_saltandpepper_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "橘子顶部绿霉"
+  },
+  {
+    "file": "s0791_collected_v2_mold__rejected_v2_a_r554.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "苹果表皮褐变"
+  },
+  {
+    "file": "s0794_meat_anomaly_validation_xiaoho_653d11fd000000001d015fae_0.jpg",
+    "usable": true,
+    "class": "bone",
+    "bbox_hint": "center",
+    "note": "手掌棕色小碎骨"
+  },
+  {
+    "file": "s0805_collected_v2_mold_kaggle_mobil_L10 - 392.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "bottom-left",
+    "note": "番茄绿色霉斑"
+  },
+  {
+    "file": "s0806_collected_v2_mold_kaggle_mobil_IMG_20240805_142955.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "瓶内白絮状霉"
+  },
+  {
+    "file": "s0807_collected_v2_mold__rejected_v2_vertical_flip_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "苹果皱缩褐变"
+  },
+  {
+    "file": "s0810_collected_v2_mold_kaggle_mobil_IMG_20240805_164141.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "瓶底黑褐色霉"
+  },
+  {
+    "file": "s0812_collected_v2_mold__rejected_v2_food_mold_contamination_000066.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "面包青绿色霉"
+  },
+  {
+    "file": "s0813_collected_v2_color_anomaly__re_肉表面_黑点_000137.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "水果表皮褐斑"
+  },
+  {
+    "file": "s0814_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "容器底黑绿霉"
+  },
+  {
+    "file": "s0816_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "橘子白色霉斑"
+  },
+  {
+    "file": "s0817_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "bottom-right",
+    "note": "番茄腐烂发霉"
+  },
+  {
+    "file": "s0819_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "瓶底白絮霉菌"
+  },
+  {
+    "file": "s0822_collected_v2_mold__rejected_v2_b_r139.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "香蕉严重黑腐"
+  },
+  {
+    "file": "s0825_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "番茄顶部腐烂霉"
+  },
+  {
+    "file": "s0830_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "橘子大片绿霉"
+  },
+  {
+    "file": "s0831_collected_v2_mold_kaggle_mobil_L10 - 482.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "橘皮绿白色霉"
+  },
+  {
+    "file": "s0833_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_L1.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "真菌菌丝大面积"
+  },
+  {
+    "file": "s0835_collected_v2_mold_kaggle_mobil_PXL_20240203_164141716.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "瓶底褐色霉点"
+  },
+  {
+    "file": "s0840_collected_v2_mold_kaggle_mobil_IMG_20240805_144204.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "容器底白色霉"
+  },
+  {
+    "file": "s0845_collected_v2_mold__rejected_v2_saltandpepper_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "橘子青绿色霉"
+  },
+  {
+    "file": "s0847_collected_v2_mold__rejected_v2_p_r281.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "土豆皱缩变褐"
+  },
+  {
+    "file": "s0848_collected_v2_mold_kaggle_mobil_20240421_133216.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "瓶内深蓝黑霉斑"
+  },
+  {
+    "file": "s0849_collected_v2_mold_kaggle_mobil_IMG_20240109_170452.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "瓶底绿色霉斑"
+  },
+  {
+    "file": "s0853_collected_v2_mold__rejected_v2_PXL_20240202_200909211.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "容器内严重霉变"
+  },
+  {
+    "file": "s0854_collected_v2_mold_kaggle_mobil_L10 - 417.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-right",
+    "note": "番茄白绿霉"
+  },
+  {
+    "file": "s0858_collected_v2_mold__rejected_du_rotated_by_60_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "橘子堆大片绿霉"
+  },
+  {
+    "file": "s0859_screened_v2_rejected_mold_roboflow_mold-bsgon_train_images_4651C89.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "瓶内灰色霉团"
+  },
+  {
+    "file": "s0862_collected_v2_mold_kaggle_mobil_IMG_20240109_170701.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "瓶底灰黑霉菌"
+  },
+  {
+    "file": "s0863_collected_v2_mold__rejected_v2_p_r142.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "土豆严重腐烂"
+  },
+  {
+    "file": "s0865_collected_v2_mold__rejected_v2_rotated_by_60_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "橘子表皮霉斑"
+  },
+  {
+    "file": "s0866_labeled_complaints_v2_images_complaint_v2_01692.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "柿饼表面白色霉"
+  },
+  {
+    "file": "s0867_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "容器底褐色霉迹"
+  },
+  {
+    "file": "s0873_collected_v2_mold__rejected_v2_saltandpepper_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "香蕉全黑腐变"
+  },
+  {
+    "file": "s0874_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "瓶底白色絮状霉"
+  },
+  {
+    "file": "s0876_collected_v2_mold_kaggle_mobil_IMG_20240805_143553.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "容器底白色霉斑"
+  },
+  {
+    "file": "s0877_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "番茄腐烂霉变"
+  },
+  {
+    "file": "s0885_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "瓶内绿色黑线霉"
+  },
+  {
+    "file": "s0890_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_PX.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "瓶底黑绿霉菌"
+  },
+  {
+    "file": "s0897_collected_v2_mold__rejected_du_a_r872.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "苹果大片腐烂"
+  },
+  {
+    "file": "s0898_collected_v2_mold__rejected_v2_L10 - 535.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "橘皮青绿色霉"
+  },
+  {
+    "file": "s1001_collected_v2_mold_kaggle_mobil_L10 - 624.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "green mold dairy closeup"
+  },
+  {
+    "file": "s1004_collected_v2_mold__rejected_du_Screen Shot 2018-06-12 at 11.21.10 PM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "orange green mold"
+  },
+  {
+    "file": "s1005_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_fres.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "tomato dark bruise spot"
+  },
+  {
+    "file": "s1006_labeled_complaints_v2_images_complaint_v2_01516.jpg",
+    "usable": true,
+    "class": "hair",
+    "bbox_hint": "center",
+    "note": "hair on bread"
+  },
+  {
+    "file": "s1009_collected_v2_mold__rejected_v2_L10 - 438.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "apple skin pitting scars"
+  },
+  {
+    "file": "s1011_collected_v2_mold__rejected_du_rotated_by_30_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "orange heavy green mold"
+  },
+  {
+    "file": "s1013_collected_v2_mold__rejected_du_rotated_by_30_Screen Shot 2018-06-08 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "rotten apple brown patches"
+  },
+  {
+    "file": "s1016_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Test_rotte.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "orange large mold patch"
+  },
+  {
+    "file": "s1021_labeled_complaints_v2_images_complaint_v2_01051.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "jam green mold colonies"
+  },
+  {
+    "file": "s1027_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope mold brown"
+  },
+  {
+    "file": "s1030_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Test_rotte.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "orange white mold top"
+  },
+  {
+    "file": "s1031_collected_v2_mold__rejected_v2_Screen Shot 2018-06-07 at 2.45.44 PM.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "rotten shriveled fruit"
+  },
+  {
+    "file": "s1032_collected_v2_mold__rejected_v2_L28 - 119.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "apple skin patterned"
+  },
+  {
+    "file": "s1035_collected_v2_mold_kaggle_mobil_20240203_172202.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope mold sample"
+  },
+  {
+    "file": "s1039_collected_v2_mold_kaggle_mobil_20240202_205516.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope brown mold"
+  },
+  {
+    "file": "s1040_meat_anomaly_validation_xiaoho_6734745400000000190151fd_0.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "beef jerky white mold"
+  },
+  {
+    "file": "s1046_collected_v2_mold__rejected_du_rotated_by_30_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "overripe black bananas"
+  },
+  {
+    "file": "s1050_collected_v2_mold__rejected_v2_IMG_20240805_135354.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope white mold"
+  },
+  {
+    "file": "s1053_collected_v2_mold__rejected_du_Screen Shot 2018-06-12 at 9.16.20 PM.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "overripe black bananas"
+  },
+  {
+    "file": "s1054_collected_v2_mold__rejected_v2_saltandpepper_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "rotting apple brown side"
+  },
+  {
+    "file": "s1061_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope white mold"
+  },
+  {
+    "file": "s1063_collected_v2_mold__rejected_v2_p_r398.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "rotten potato mold sprout"
+  },
+  {
+    "file": "s1067_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope food black mold"
+  },
+  {
+    "file": "s1068_collected_v2_mold__rejected_v2_Screen Shot 2018-06-07 at 2.58.30 PM.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "rotting apple brown half"
+  },
+  {
+    "file": "s1070_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope white mold"
+  },
+  {
+    "file": "s1072_collected_v2_mold__rejected_v2_rotated_by_75_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-right",
+    "note": "orange heavy green white mold"
+  },
+  {
+    "file": "s1073_collected_v2_flat_mold_roboflow_bread-mold-detection-55dam_trai.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "bread black mold spots"
+  },
+  {
+    "file": "s1074_collected_v2_mold_kaggle_mobil_IMG_20240805_143711.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope white mold"
+  },
+  {
+    "file": "s1077_collected_v2_mold_kaggle_mobil_IMG_20240109_170704.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope white mold"
+  },
+  {
+    "file": "s1080_collected_v2_color_anomaly__re_000025.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "meat iridescent rainbow"
+  },
+  {
+    "file": "s1083_collected_v2_mold_kaggle_mobil_IMG_20240805_135615.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope white mold"
+  },
+  {
+    "file": "s1090_collected_v2_mold_kaggle_mobil_IMG_20240109_170604.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope gray mold"
+  },
+  {
+    "file": "s1096_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope white mold"
+  },
+  {
+    "file": "s1097_collected_v2_mold__rejected_du_16_jpg.rf.ea5219f2e4dcbce232efd462d255cb.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "bread green mold spots"
+  },
+  {
+    "file": "s1105_collected_v2_color_anomaly__re_食品变质_颜色异常_000126.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "rice green mold tint"
+  },
+  {
+    "file": "s1107_collected_v2_mold_kaggle_mobil_IMG_20240805_135458.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope white mold"
+  },
+  {
+    "file": "s1108_collected_v2_mold_kaggle_mobil_IMG_20240805_143402.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope white mold"
+  },
+  {
+    "file": "s1110_meat_anomaly_validation_xiaoho_6364e72a000000000901334f_1.jpg",
+    "usable": true,
+    "class": "bone",
+    "bbox_hint": "center",
+    "note": "stewed meat rib bone"
+  },
+  {
+    "file": "s1111_collected_v2_mold__rejected_du_面包_发霉_000012.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "bread pink green mold"
+  },
+  {
+    "file": "s1112_collected_v2_mold__rejected_v2_IMG_20240109_165609.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope dark spots mold"
+  },
+  {
+    "file": "s1116_collected_v2_mold__rejected_du_saltandpepper_Screen Shot 2018-06-08 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "apple brown rot patch"
+  },
+  {
+    "file": "s1120_collected_v2_mold__rejected_v2_L10 - 437.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "red skin white mold patch"
+  },
+  {
+    "file": "s1121_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope dark green mold"
+  },
+  {
+    "file": "s1128_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "bellpepper partial rot"
+  },
+  {
+    "file": "s1133_collected_v2_mold__rejected_v2_saltandpepper_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "banana overripe brown spots"
+  },
+  {
+    "file": "s1134_labeled_complaints_v2_images_complaint_v2_01880.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "bread heavy yellow green mold"
+  },
+  {
+    "file": "s1139_collected_v2_mold__rejected_du_translation_Screen Shot 2018-06-12 at 9.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "banana overripe dark spots"
+  },
+  {
+    "file": "s1140_collected_v2_mold__rejected_du_Screen Shot 2018-06-12 at 8.52.16 PM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "banana black with mold"
+  },
+  {
+    "file": "s1141_meat_anomaly_validation_xiaoho_662faef7000000001e036501_1.jpg",
+    "usable": true,
+    "class": "hair",
+    "bbox_hint": "center",
+    "note": "meatball hair strand"
+  },
+  {
+    "file": "s1142_collected_v2_mold_kaggle_mobil_20240202_205636.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope brown mold"
+  },
+  {
+    "file": "s1144_collected_v2_mold__rejected_du_rotated_by_45_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "orange green white mold"
+  },
+  {
+    "file": "s1147_collected_v2_mold__rejected_v2_L10 - 65.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "rotten fruit mold decay"
+  },
+  {
+    "file": "s1148_collected_v2_mold_kaggle_mobil_IMG_20240805_144115.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope white mold"
+  },
+  {
+    "file": "s1150_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "banana overripe brown"
+  },
+  {
+    "file": "s1152_collected_v2_mold__rejected_v2_a_r012.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "apple rotten cavity"
+  },
+  {
+    "file": "s1156_collected_v2_mold__rejected_du_rotated_by_45_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "orange brown rot patches"
+  },
+  {
+    "file": "s1158_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "bananas blackened overripe"
+  },
+  {
+    "file": "s1161_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope white mold"
+  },
+  {
+    "file": "s1164_labeled_complaints_v2_images_complaint_v2_02537.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "orange snack gray mold"
+  },
+  {
+    "file": "s1165_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "bellpepper wrinkled rotting"
+  },
+  {
+    "file": "s1166_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Test_rotte.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "orange blue green mold"
+  },
+  {
+    "file": "s1167_collected_v2_mold_kaggle_mobil_IMG_20240805_144128_1.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope white mold"
+  },
+  {
+    "file": "s1168_collected_v2_mold_kaggle_mobil_20240421_133050.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope blue gray mold"
+  },
+  {
+    "file": "s1171_meat_anomaly_validation_xiaoho_6723414b000000001a035915_3.jpg",
+    "usable": true,
+    "class": "hair",
+    "bbox_hint": "center",
+    "note": "hair strand on paper"
+  },
+  {
+    "file": "s1172_collected_v2_mold__rejected_du_a_r172.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "apple brown rot spot"
+  },
+  {
+    "file": "s1173_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_L1.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "tomato skin green mold"
+  },
+  {
+    "file": "s1175_collected_v2_mold__rejected_du_18_jpg.rf.509f9327f107a211c3515367d7ecd5.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "red meat black mold patches"
+  },
+  {
+    "file": "s1176_collected_v2_mold__rejected_du_rotated_by_15_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "apple wrinkled dehydrated"
+  },
+  {
+    "file": "s1177_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "bananas brown spots"
+  },
+  {
+    "file": "s1178_collected_v2_mold_kaggle_mobil_IMG_20240805_161924.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope tan mold spots"
+  },
+  {
+    "file": "s1182_collected_v2_mold__rejected_v2_c_r023.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "rotting vegetables row"
+  },
+  {
+    "file": "s1184_collected_v2_mold_kaggle_mobil_IMG_20240805_143004.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope white mold"
+  },
+  {
+    "file": "s1186_labeled_complaints_v2_images_complaint_v2_02597.jpg",
+    "usable": true,
+    "class": "hair",
+    "bbox_hint": "center",
+    "note": "food mass hair strands"
+  },
+  {
+    "file": "s1187_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope white mold"
+  },
+  {
+    "file": "s1189_collected_v2_mold_kaggle_mobil_L10 - 460.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "corn kernels white mold"
+  },
+  {
+    "file": "s1196_collected_v2_mold__rejected_v2_c_r012.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "cucumber rotten brown interior"
+  },
+  {
+    "file": "s1198_labeled_complaints_v2_images_complaint_v2_00009.jpg",
+    "usable": true,
+    "class": "hair",
+    "bbox_hint": "bottom-right",
+    "note": "food with hair fiber"
+  },
+  {
+    "file": "s1200_collected_v2_mold__rejected_v2_rotated_by_30_Screen Shot 2018-06-08 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "top-left",
+    "note": "apple brown rot top"
+  },
+  {
+    "file": "s1201_labeled_complaints_v2_images_complaint_v2_00044.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "sweet potato dark spots"
+  },
+  {
+    "file": "s1202_meat_anomaly_validation_xiaoho_6965cb12000000002200a306_1.jpg",
+    "usable": true,
+    "class": "hair",
+    "bbox_hint": "center",
+    "note": "hair strand food cup"
+  },
+  {
+    "file": "s1204_collected_v2_mold_kaggle_mobil_IMG_20240805_164053.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope black mold yellow"
+  },
+  {
+    "file": "s1210_collected_v2_flat_mold_roboflow_bread-mold-detection-55dam_trai.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "red bread blue green mold"
+  },
+  {
+    "file": "s1213_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "bellpepper red wrinkled"
+  },
+  {
+    "file": "s1215_collected_v2_mold__rejected_v2_vertical_flip_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "orange white mold heavy"
+  },
+  {
+    "file": "s1217_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope white mold"
+  },
+  {
+    "file": "s1222_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope white mold"
+  },
+  {
+    "file": "s1224_collected_v2_color_anomaly__re_食品变质_颜色异常_000123.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "multi color mold colonies"
+  },
+  {
+    "file": "s1228_collected_v2_mold__rejected_du_translation_Screen Shot 2018-06-12 at 11.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "orange heavy white green mold"
+  },
+  {
+    "file": "s1230_collected_v2_mold__rejected_du_rotated_by_75_Screen Shot 2018-06-08 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "apple brown bruise patches"
+  },
+  {
+    "file": "s1232_collected_v2_mold_kaggle_mobil_L10 - 636.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "green mold powder food"
+  },
+  {
+    "file": "s1233_screened_v2_rejected_mold_crawled_bing_moldy bread green mold clos.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "bread green blue mold closeup"
+  },
+  {
+    "file": "s1236_collected_v2_mold_kaggle_mobil_IMG_20240805_172328.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "microscope orange gray mold"
+  },
+  {
+    "file": "s1239_collected_v2_mold__rejected_v2_Screen Shot 2018-06-12 at 11.38.34 PM.jp.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "orange blue white mold patch"
+  },
+  {
+    "file": "s1241_collected_v2_color_anomaly__re_食品变质_颜色异常_000158.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "moldy peanuts left side"
+  },
+  {
+    "file": "s1243_labeled_complaints_v2_images_complaint_v2_02279.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "soup spoon insect circled"
+  },
+  {
+    "file": "s1249_collected_v2_mold__rejected_v2_p_r799.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "sprouted rotten potato"
+  },
+  {
+    "file": "s1252_labeled_complaints_v2_images_complaint_v2_00728.jpg",
+    "usable": true,
+    "class": "hair",
+    "bbox_hint": "center",
+    "note": "食物中一根黑头发"
+  },
+  {
+    "file": "s1255_screened_v2_rejected_mold_roboflow_bread-mold-detection-55dam_trai.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "面包上霉斑2处"
+  },
+  {
+    "file": "s1262_collected_v2_mold_kaggle_mobil_PXL_20240202_200959030.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "容器内霉变"
+  },
+  {
+    "file": "s1263_collected_v2_mold_kaggle_mobil_L10 - 450.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "柑橘皮霉斑"
+  },
+  {
+    "file": "s1266_collected_v2_mold__rejected_v2_t_r708.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "烂番茄霉变"
+  },
+  {
+    "file": "s1268_collected_v2_mold_kaggle_mobil_IMG_20240805_171307.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "bottom-left",
+    "note": "容器内黑霉块"
+  },
+  {
+    "file": "s1270_collected_v2_mold__rejected_v2_L10 - 103.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "橙皮小黑霉斑"
+  },
+  {
+    "file": "s1272_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Test_rotte.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "香蕉全黑霉烂"
+  },
+  {
+    "file": "s1276_collected_v2_mold__rejected_du_t_r507.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "番茄白霉中心"
+  },
+  {
+    "file": "s1277_collected_v2_mold__rejected_v2_translation_Screen Shot 2018-06-08 at 2.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "bottom-left",
+    "note": "苹果腐烂棕斑"
+  },
+  {
+    "file": "s1280_collected_v2_mold__rejected_du_rotated_by_75_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "苹果多黑斑点"
+  },
+  {
+    "file": "s1282_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Test_rotte.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "橙子半边灰霉"
+  },
+  {
+    "file": "s1284_collected_v2_mold__rejected_du_1_jpg.rf.5d95bfa426c2ac62d2767d52268d4e7.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "柠檬顶绿霉噪图"
+  },
+  {
+    "file": "s1287_collected_v2_mold__rejected_v2_a_r486.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "苹果皱老化黄斑"
+  },
+  {
+    "file": "s1288_collected_v2_mold__rejected_du_rotated_by_45_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "橙子白绿霉"
+  },
+  {
+    "file": "s1289_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "橙顶大片绿霉"
+  },
+  {
+    "file": "s1294_meat_anomaly_validation_xiaoho_6829c5e3000000002202f7a0_2.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "木板上黑小虫"
+  },
+  {
+    "file": "s1297_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "番茄干瘪腐烂"
+  },
+  {
+    "file": "s1298_collected_v2_mold_kaggle_mobil_PXL_20240428_222109036.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "容器内灰黑霉绒"
+  },
+  {
+    "file": "s1300_collected_v2_mold__rejected_v2_食物_白色霉斑_000052.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "面包大面积灰蓝霉"
+  },
+  {
+    "file": "s1301_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "容器内白色霉团"
+  },
+  {
+    "file": "s1303_collected_v2_mold__rejected_v2_img36.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "面包绿白霉覆盖"
+  },
+  {
+    "file": "s1305_labeled_complaints_v2_images_complaint_v2_03218.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "食品严重腐黑霉"
+  },
+  {
+    "file": "s1307_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_L1.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "甜椒蒂灰霉"
+  },
+  {
+    "file": "s1309_collected_v2_mold__rejected_v2_L28 - 549.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "橙皮白霉丝"
+  },
+  {
+    "file": "s1310_collected_v2_mold_kaggle_mobil_IMG_20240805_164338.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "容器内干裂霉"
+  },
+  {
+    "file": "s1311_collected_v2_mold_kaggle_mobil_IMG_20240805_171847.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "橙肉黑霉"
+  },
+  {
+    "file": "s1313_collected_v2_mold__rejected_v2_translation_Screen Shot 2018-06-12 at 11.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "bottom-right",
+    "note": "橙子底绿霉"
+  },
+  {
+    "file": "s1314_collected_v2_mold__rejected_v2_L28 - 470.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "橙上稠密霉"
+  },
+  {
+    "file": "s1318_collected_v2_mold__rejected_v2_rotated_by_45_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-left",
+    "note": "黄苹果棕色斑"
+  },
+  {
+    "file": "s1319_collected_v2_mold__rejected_du_translation_Screen Shot 2018-06-12 at 9.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "香蕉过熟发黑"
+  },
+  {
+    "file": "s1320_collected_v2_mold__rejected_v2_L16 - 192.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "bottom-left",
+    "note": "柠檬黑圆霉斑"
+  },
+  {
+    "file": "s1322_labeled_complaints_v2_images_complaint_v2_01168.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "菜里小黑虫"
+  },
+  {
+    "file": "s1323_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_PX.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "容器内密集霉"
+  },
+  {
+    "file": "s1328_meat_anomaly_validation_xiaoho_699fe52d000000001600be87_0.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-right",
+    "note": "饭碗黑色长霉丝"
+  },
+  {
+    "file": "s1330_collected_v2_mold_kaggle_mobil_IMG_20240805_135220.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "容器内白霉团"
+  },
+  {
+    "file": "s1332_collected_v2_mold__rejected_v2_IMG_20240805_135835.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "容器内大白霉"
+  },
+  {
+    "file": "s1334_collected_v2_mold__rejected_du_saltandpepper_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "top-right",
+    "note": "苹果大棕霉块"
+  },
+  {
+    "file": "s1335_collected_v2_mold__rejected_v2_b_r487.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "整串黑变质香蕉"
+  },
+  {
+    "file": "s1339_collected_v2_mold__rejected_v2_L28 - 442.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "果皮白绿霉丝"
+  },
+  {
+    "file": "s1340_collected_v2_mold_kaggle_mobil_20240202_204510.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "容器白色稠霉"
+  },
+  {
+    "file": "s1342_collected_v2_mold__rejected_du_saltandpepper_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "过熟香蕉黑斑"
+  },
+  {
+    "file": "s1343_collected_v2_mold__rejected_v2_p_r719.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "土豆黑霉洞"
+  },
+  {
+    "file": "s1344_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_20.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "容器内棕霉壳"
+  },
+  {
+    "file": "s1346_collected_v2_mold__rejected_v2_mold_on_meat_surface_000039.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "培养皿霉落菌样"
+  },
+  {
+    "file": "s1347_meat_anomaly_validation_xiaoho_682c803f000000002301f543_1.jpg",
+    "usable": true,
+    "class": "hair",
+    "bbox_hint": "center",
+    "note": "米饭中细黑发"
+  },
+  {
+    "file": "s1348_collected_v2_mold__rejected_du_p_r295.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "土豆白霉"
+  },
+  {
+    "file": "s1500_screened_v2_rejected_mold_crawled_bing_fuzzy mold on fruit vegetab.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "bing crawl fuzzy mold"
+  },
+  {
+    "file": "s1501_collected_v2_mold_kaggle_mobil_L28 - 450.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "orange fruit mold"
+  },
+  {
+    "file": "s1503_collected_v2_color_anomaly__re_IMG_20220925_143323_jpg.rf.a3dddf35c2869.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1506_collected_v2_mold__rejected_v2_WIN_20220423_19_17_54_Pro_jpg.rf.f1568a8.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold dataset"
+  },
+  {
+    "file": "s1507_labeled_complaints_v2_images_complaint_v2_03412.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "insect in soup"
+  },
+  {
+    "file": "s1508_collected_v2_color_anomaly__re_IMG_20220924_183642_jpg.rf.3db9bcb8450ed.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1509_collected_v2_color_anomaly__re_IMG_20220925_141553_jpg.rf.3790b3bfb85e6.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1510_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mobile mold dataset"
+  },
+  {
+    "file": "s1512_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "rotten produce mold"
+  },
+  {
+    "file": "s1513_collected_v2_color_anomaly__re_IMG_20220923_202900_jpg.rf.c6edd3fae4795.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1515_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "rotten produce mold"
+  },
+  {
+    "file": "s1516_collected_v2_mold__rejected_du_rotated_by_45_Screen Shot 2018-06-08 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread rotated"
+  },
+  {
+    "file": "s1522_collected_v2_mold__rejected_du_rotated_by_45_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread rotated"
+  },
+  {
+    "file": "s1523_collected_v2_mold__rejected_v2_L16 - 506.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold dataset"
+  },
+  {
+    "file": "s1524_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "rotten produce mold"
+  },
+  {
+    "file": "s1526_collected_v2_mold__rejected_v2_L28 - 81.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1527_collected_v2_color_anomaly__re_IMG_20220929_114153_jpg.rf.c7d4bc3231e1b.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1528_meat_anomaly_validation_xiaoho_6279ec490000000021034fb6_0.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "pork gristle anomaly"
+  },
+  {
+    "file": "s1529_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_PX.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mobile mold dataset"
+  },
+  {
+    "file": "s1531_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_20.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mobile mold"
+  },
+  {
+    "file": "s1533_collected_v2_mold__rejected_du_rotated_by_30_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread rotated"
+  },
+  {
+    "file": "s1534_collected_v2_mold__rejected_v2_c_r016.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold rejected"
+  },
+  {
+    "file": "s1536_collected_v2_mold__rejected_v2_L28 - 128.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1537_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "rotten mold"
+  },
+  {
+    "file": "s1540_collected_v2_mold__rejected_du_冷藏食品_发霉_000034.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "moldy bread in bag"
+  },
+  {
+    "file": "s1542_collected_v2_mold__rejected_du_rotated_by_75_Screen Shot 2018-06-08 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread rotated"
+  },
+  {
+    "file": "s1543_screened_v2_rejected_mold_roboflow_mold-bsgon_train_images_1231365.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "roboflow mold"
+  },
+  {
+    "file": "s1544_collected_v2_color_anomaly__re_IMG_20220929_163853_jpg.rf.9413ac6be17d7.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1545_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_L2.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mobile mold"
+  },
+  {
+    "file": "s1547_collected_v2_mold_kaggle_mobil_20240421_133049.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1548_collected_v2_mold_kaggle_mobil_IMG_20240805_172003.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1549_collected_v2_mold__rejected_v2_rotated_by_30_Screen Shot 2018-06-08 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread rotated"
+  },
+  {
+    "file": "s1550_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "rotten produce mold"
+  },
+  {
+    "file": "s1551_collected_v2_color_anomaly__re_IMG_20220925_142617_jpg.rf.cfaf7d275b534.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1552_labeled_complaints_v2_images_complaint_v2_01268.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "bread mold spots"
+  },
+  {
+    "file": "s1554_collected_v2_mold__rejected_du_saltandpepper_Screen Shot 2018-06-08 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread noise"
+  },
+  {
+    "file": "s1555_collected_v2_mold__rejected_v2_rotated_by_60_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread rotated"
+  },
+  {
+    "file": "s1556_collected_v2_color_anomaly__re_IMG_20220923_224050_jpg.rf.8aed54c13a8bd.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1557_collected_v2_mold__rejected_v2_L30 - 91.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold dataset"
+  },
+  {
+    "file": "s1558_collected_v2_color_anomaly__re_IMG_20220929_172540_jpg.rf.4612fb2554b18.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1559_collected_v2_mold_kaggle_mobil_IMG_20240109_170627.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1560_collected_v2_color_anomaly__re_食品变质_颜色异常_000073.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center-left",
+    "note": "packaging with mold"
+  },
+  {
+    "file": "s1561_collected_v2_color_anomaly__re_IMG_20220929_125457_jpg.rf.d53ced53dcffa.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1564_collected_v2_mold_kaggle_mobil_IMG_20240805_162502.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1565_collected_v2_mold_kaggle_mobil_IMG_20240805_142242.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1566_screened_v2_rejected_mold_roboflow_bread-mold-detection-55dam_trai.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "bread mold roboflow"
+  },
+  {
+    "file": "s1568_collected_v2_mold__rejected_v2_WIN_20220502_19_45_38_Pro_jpg.rf.f09668a.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold dataset"
+  },
+  {
+    "file": "s1569_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mobile mold"
+  },
+  {
+    "file": "s1571_collected_v2_mold__rejected_du_rotated_by_45_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread rotated"
+  },
+  {
+    "file": "s1572_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mobile mold"
+  },
+  {
+    "file": "s1574_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mobile mold"
+  },
+  {
+    "file": "s1575_collected_v2_mold_kaggle_mobil_IMG_20240805_161846.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1577_collected_v2_mold__rejected_v2_c_r348.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold rejected"
+  },
+  {
+    "file": "s1579_collected_v2_mold__rejected_v2_rotated_by_15_Screen Shot 2018-06-13 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread rotated"
+  },
+  {
+    "file": "s1580_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_PX.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mobile mold"
+  },
+  {
+    "file": "s1581_collected_v2_color_anomaly__re_IMG_20220929_172615_jpg.rf.52056cd01ff56.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1582_collected_v2_color_anomaly__re_IMG_20220929_173934_1_jpg.rf.9fcd32a3e84.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1584_collected_v2_color_anomaly__re_IMG_20220924_180205_jpg.rf.99c8ffa98c846.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1585_collected_v2_color_anomaly__re_IMG_20220925_152603_jpg.rf.993d76fab4fbc.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1586_collected_v2_mold__rejected_v2_a_f375.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold rejected"
+  },
+  {
+    "file": "s1587_meat_anomaly_validation_xiaoho_699d1433000000001a022047_5.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "small insect head"
+  },
+  {
+    "file": "s1588_collected_v2_mold_kaggle_mobil_L10 - 61.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1589_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_L1.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mobile mold"
+  },
+  {
+    "file": "s1591_collected_v2_mold__rejected_v2_Screen Shot 2018-06-08 at 5.25.43 PM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread"
+  },
+  {
+    "file": "s1592_collected_v2_mold__rejected_du_rotated_by_45_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread rotated"
+  },
+  {
+    "file": "s1594_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mobile mold"
+  },
+  {
+    "file": "s1596_collected_v2_mold__rejected_v2_b_f321.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold rejected"
+  },
+  {
+    "file": "s1597_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "rotten mold"
+  },
+  {
+    "file": "s1599_collected_v2_color_anomaly__re_IMG_20220709_190304_jpg.rf.c55d7fb8f1049.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1600_collected_v2_mold_kaggle_mobil_L30 - 80.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1601_collected_v2_mold__rejected_v2_L10 - 417.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold dataset"
+  },
+  {
+    "file": "s1603_collected_v2_mold__rejected_v2_p_f454.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold rejected"
+  },
+  {
+    "file": "s1604_collected_v2_mold__rejected_v2_IMG_20240805_174636.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1605_collected_v2_mold__rejected_v2_rotated_by_30_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread rotated"
+  },
+  {
+    "file": "s1607_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_PX.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mobile mold"
+  },
+  {
+    "file": "s1608_collected_v2_mold__rejected_v2_L10 - 542.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold dataset"
+  },
+  {
+    "file": "s1610_collected_v2_color_anomaly__re_IMG_20220709_193300_jpg.rf.deed48f9f34e3.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1611_collected_v2_mold__rejected_v2_rotated_by_75_Screen Shot 2018-06-08 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread rotated"
+  },
+  {
+    "file": "s1612_collected_v2_mold__rejected_v2_rotated_by_60_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread rotated"
+  },
+  {
+    "file": "s1613_collected_v2_mold__rejected_du_rotated_by_60_Screen Shot 2018-06-13 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread rotated"
+  },
+  {
+    "file": "s1614_collected_v2_color_anomaly__re_IMG_20220925_143207_jpg.rf.481e1258c69d0.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1615_collected_v2_mold__rejected_v2_150701428_3852442384812427_7178293472441.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold dataset"
+  },
+  {
+    "file": "s1616_collected_v2_mold__rejected_v2_saltandpepper_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread noise"
+  },
+  {
+    "file": "s1618_collected_v2_mold__rejected_du_rotated_by_45_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread rotated"
+  },
+  {
+    "file": "s1620_screened_v2_rejected_mold_crawled_bing_moldy bread green mold clos.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "green bread mold"
+  },
+  {
+    "file": "s1624_collected_v2_mold__rejected_v2_b_f223.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold rejected"
+  },
+  {
+    "file": "s1629_collected_v2_mold__rejected_v2_saltandpepper_Screen Shot 2018-06-08 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread noise"
+  },
+  {
+    "file": "s1630_collected_v2_mold__rejected_du_rotated_by_75_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread rotated"
+  },
+  {
+    "file": "s1631_collected_v2_mold_kaggle_mobil_L16 - 283.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1632_collected_v2_color_anomaly__re_IMG_20220709_193028_jpg.rf.5af11e771865f.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1635_collected_v2_mold__rejected_v2_IMG_20240805_145233.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1637_collected_v2_color_anomaly__re_IMG_20220923_192213_jpg.rf.e6d8f8b43c7ba.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1639_collected_v2_flat_mold_crawled_bing_moldy canned food expired_0.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "moldy canned food"
+  },
+  {
+    "file": "s1640_collected_v2_mold_kaggle_mobil_L16 - 568.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1641_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Test_rotte.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "rotten mold"
+  },
+  {
+    "file": "s1642_collected_v2_mold__rejected_du_vertical_flip_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread flipped"
+  },
+  {
+    "file": "s1643_collected_v2_mold_kaggle_mobil_IMG_20240805_143514.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1645_collected_v2_mold__rejected_du_rotated_by_75_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread rotated"
+  },
+  {
+    "file": "s1647_collected_v2_color_anomaly__re_IMG_20220925_155439_jpg.rf.f5a5258c58611.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1650_collected_v2_mold_kaggle_mobil_L10 - 442.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1652_collected_v2_color_anomaly__re_IMG_20220925_153643_jpg.rf.0094568e34cce.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1653_collected_v2_mold__rejected_v2_rotated_by_45_Screen Shot 2018-06-13 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread rotated"
+  },
+  {
+    "file": "s1654_collected_v2_mold_kaggle_mobil_IMG_20240805_162346.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1655_collected_v2_mold__rejected_v2_IMG_20240805_145116.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1658_collected_v2_mold__rejected_v2_L10 - 549.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold dataset"
+  },
+  {
+    "file": "s1659_collected_v2_mold__rejected_du_rotated_by_45_Screen Shot 2018-06-08 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread rotated"
+  },
+  {
+    "file": "s1661_meat_anomaly_validation_xiaoho_690ff981000000000703010e_0.jpg",
+    "usable": true,
+    "class": "glass",
+    "bbox_hint": "center",
+    "note": "glass in soup spoon"
+  },
+  {
+    "file": "s1662_collected_v2_color_anomaly__re_IMG_20220925_153845_jpg.rf.5fadaeea47dbb.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1665_collected_v2_mold__rejected_v2_Screen Shot 2018-06-12 at 11.46.26 PM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread"
+  },
+  {
+    "file": "s1666_collected_v2_mold__rejected_v2_a_f240.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold rejected"
+  },
+  {
+    "file": "s1669_collected_v2_mold__rejected_du_b_r342.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold rejected"
+  },
+  {
+    "file": "s1671_collected_v2_mold__rejected_v2_Screen Shot 2018-06-13 at 12.03.17 AM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread"
+  },
+  {
+    "file": "s1672_collected_v2_mold_kaggle_mobil_IMG_20240109_170447.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1675_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "rotten produce mold"
+  },
+  {
+    "file": "s1676_collected_v2_mold_kaggle_mobil_IMG_20240805_162155.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1677_collected_v2_color_anomaly__re_IMG_20220929_113946_jpg.rf.57d1aef1a035c.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1678_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Test_rotte.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "rotten mold"
+  },
+  {
+    "file": "s1679_collected_v2_color_anomaly__re_IMG_20220624_152003_1_jpg.rf.41e97ff44d8.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1680_collected_v2_mold_kaggle_mobil_IMG_20240805_135750.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1681_collected_v2_mold__rejected_v2_vertical_flip_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread flipped"
+  },
+  {
+    "file": "s1686_collected_v2_mold_kaggle_mobil_L16 - 340.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1688_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mobile mold"
+  },
+  {
+    "file": "s1689_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mobile mold"
+  },
+  {
+    "file": "s1690_collected_v2_mold_kaggle_mobil_IMG_20240805_175950.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1692_collected_v2_color_anomaly__re_IMG_20220925_153512_jpg.rf.08a6c9804e69b.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1693_collected_v2_mold__rejected_du_translation_Screen Shot 2018-06-12 at 9..jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread shifted"
+  },
+  {
+    "file": "s1694_collected_v2_color_anomaly__re_bruised_fruit_vegetables_000023.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "bruised peaches"
+  },
+  {
+    "file": "s1696_collected_v2_mold__rejected_v2_L16 - 254.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold dataset"
+  },
+  {
+    "file": "s1697_collected_v2_mold__rejected_v2_translation_Screen Shot 2018-06-12 at 11.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread shifted"
+  },
+  {
+    "file": "s1698_collected_v2_mold__rejected_v2_b_r009.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold rejected"
+  },
+  {
+    "file": "s1699_labeled_complaints_v2_images_complaint_v2_04025.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "small insect on food"
+  },
+  {
+    "file": "s1700_collected_v2_mold__rejected_du_Screen Shot 2018-06-08 at 5.27.27 PM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread"
+  },
+  {
+    "file": "s1701_collected_v2_mold__rejected_v2_c_r131.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold rejected"
+  },
+  {
+    "file": "s1702_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_L1.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mobile mold"
+  },
+  {
+    "file": "s1703_collected_v2_mold__rejected_v2_t_f036.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold rejected"
+  },
+  {
+    "file": "s1704_collected_v2_mold__rejected_v2_Screen Shot 2018-06-08 at 5.02.38 PM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread"
+  },
+  {
+    "file": "s1710_collected_v2_mold__rejected_du_saltandpepper_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread noise"
+  },
+  {
+    "file": "s1711_collected_v2_color_anomaly__re_IMG_20220924_163932_jpg.rf.88d571a1920df.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1712_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "rotten mold"
+  },
+  {
+    "file": "s1714_collected_v2_color_anomaly__re_IMG_20220929_131033_jpg.rf.22d24d5f81fee.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1715_collected_v2_flat_mold_roboflow_bread-mold-detection-zbka6_trai.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "bread mold roboflow"
+  },
+  {
+    "file": "s1716_collected_v2_color_anomaly__re_IMG_20220925_141806_jpg.rf.e9189cea8a390.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1717_screened_v2_rejected_mold_roboflow_bread-mold-detection-zbka6_trai.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "bread mold roboflow"
+  },
+  {
+    "file": "s1719_collected_v2_mold__rejected_du_rotated_by_15_Screen Shot 2018-06-08 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread rotated"
+  },
+  {
+    "file": "s1724_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_20.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mobile mold"
+  },
+  {
+    "file": "s1726_collected_v2_mold__rejected_du_变质食品_霉点_000003.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "bread massive mold"
+  },
+  {
+    "file": "s1728_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mobile mold"
+  },
+  {
+    "file": "s1729_collected_v2_mold__rejected_du_translation_Screen Shot 2018-06-08 at 5..jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread shifted"
+  },
+  {
+    "file": "s1730_collected_v2_color_anomaly__re_IMG_20220709_175659_1_jpg.rf.ba0d28c9afa.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1731_collected_v2_mold__rejected_du_p_r077.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold rejected"
+  },
+  {
+    "file": "s1732_collected_v2_mold_kaggle_mobil_IMG_20240805_180014.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1733_collected_v2_mold_kaggle_mobil_L10 - 543.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1734_collected_v2_mold__rejected_du_rotated_by_30_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread rotated"
+  },
+  {
+    "file": "s1735_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_L2.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mobile mold"
+  },
+  {
+    "file": "s1737_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mobile mold"
+  },
+  {
+    "file": "s1738_collected_v2_mold__rejected_v2_rotated_by_30_Screen Shot 2018-06-13 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread rotated"
+  },
+  {
+    "file": "s1739_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "rotten produce mold"
+  },
+  {
+    "file": "s1741_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "rotten produce mold"
+  },
+  {
+    "file": "s1742_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "rotten produce mold"
+  },
+  {
+    "file": "s1743_labeled_complaints_v2_images_complaint_v2_02870.jpg",
+    "usable": true,
+    "class": "insect",
+    "bbox_hint": "center",
+    "note": "mealworm in flour"
+  },
+  {
+    "file": "s1744_collected_v2_color_anomaly__re_IMG_20220923_225000_jpg.rf.6fbdfe41cf546.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "food color defect"
+  },
+  {
+    "file": "s1745_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mobile mold"
+  },
+  {
+    "file": "s1746_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mobile mold"
+  },
+  {
+    "file": "s1747_collected_v2_mold__rejected_v2_L10 - 551.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold dataset"
+  },
+  {
+    "file": "s1748_collected_v2_mold__rejected_du_rotated_by_15_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread rotated"
+  },
+  {
+    "file": "s1749_collected_v2_mold__rejected_v2_p_r535.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold rejected"
+  },
+  {
+    "file": "s1751_collected_v2_mold__rejected_v2_PXL_20240202_201058543.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mold in can"
+  },
+  {
+    "file": "s1752_labeled_complaints_v2_images_complaint_v2_00447.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "moldy bread loaf"
+  },
+  {
+    "file": "s1755_collected_v2_mold__rejected_v2_L10 - 59.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mold spots on fruit"
+  },
+  {
+    "file": "s1757_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mobile mold petri"
+  },
+  {
+    "file": "s1758_collected_v2_mold__rejected_du_rotated_by_45_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "moldy fruit rotated"
+  },
+  {
+    "file": "s1759_collected_v2_mold__rejected_v2_black_mold_food_000066.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "moldy bread loaf"
+  },
+  {
+    "file": "s1761_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy orange"
+  },
+  {
+    "file": "s1763_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mold in cup"
+  },
+  {
+    "file": "s1764_labeled_complaints_v2_images_complaint_v2_01267.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread plate"
+  },
+  {
+    "file": "s1765_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "rotten fruit mold"
+  },
+  {
+    "file": "s1767_collected_v2_color_anomaly__re_肉类_异常颜色_000101.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "apple browning"
+  },
+  {
+    "file": "s1768_collected_v2_mold__rejected_v2_rotated_by_45_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "rotten apple brown"
+  },
+  {
+    "file": "s1769_collected_v2_mold__rejected_du_Screen Shot 2018-06-07 at 2.31.43 PM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "rotten apple wrinkled"
+  },
+  {
+    "file": "s1770_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mold in cup"
+  },
+  {
+    "file": "s1777_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mold in cup"
+  },
+  {
+    "file": "s1779_collected_v2_mold_kaggle_mobil_IMG_20240805_165450.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mold with spots cup"
+  },
+  {
+    "file": "s1782_collected_v2_mold_kaggle_mobil_L16 - 488.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold close-up"
+  },
+  {
+    "file": "s1785_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "cracked substance cup"
+  },
+  {
+    "file": "s1788_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mold in cup"
+  },
+  {
+    "file": "s1791_collected_v2_mold__rejected_v2_saltandpepper_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "rotten moldy orange"
+  },
+  {
+    "file": "s1794_collected_v2_mold_kaggle_mobil_IMG_20240805_143429.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "white mold cup"
+  },
+  {
+    "file": "s1799_collected_v2_mold__rejected_v2_img47.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy bread loaf"
+  },
+  {
+    "file": "s1806_collected_v2_mold__rejected_v2_mold-e1623940165486_jpg.rf.997e430eb0623.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mold in jar"
+  },
+  {
+    "file": "s1807_collected_v2_mold__rejected_du_rotated_by_60_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "rotten banana brown"
+  },
+  {
+    "file": "s1812_collected_v2_mold_kaggle_mobil_L28 - 485.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold on fruit surface"
+  },
+  {
+    "file": "s1818_meat_anomaly_validation_xiaoho_673ddfb40000000002029a11_0.jpg",
+    "usable": true,
+    "class": "bone",
+    "bbox_hint": "center",
+    "note": "bone pieces in meat"
+  },
+  {
+    "file": "s1819_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mold in cup"
+  },
+  {
+    "file": "s1820_collected_v2_mold_kaggle_mobil_L10 - 479.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold on fruit surface"
+  },
+  {
+    "file": "s1822_collected_v2_mold_kaggle_mobil_IMG_20240805_135926.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mold in cup"
+  },
+  {
+    "file": "s1824_collected_v2_mold_kaggle_mobil_IMG_20240109_165555.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mold cluster cup"
+  },
+  {
+    "file": "s1827_labeled_complaints_v2_images_complaint_v2_02144.jpg",
+    "usable": true,
+    "class": "hair",
+    "bbox_hint": "center",
+    "note": "strand in bottle neck"
+  },
+  {
+    "file": "s1830_collected_v2_mold__rejected_du_rotated_by_60_Screen Shot 2018-06-08 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "yellow apple spots"
+  },
+  {
+    "file": "s1831_collected_v2_mold_kaggle_mobil_IMG_20240805_135435.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "white mold cup"
+  },
+  {
+    "file": "s1832_collected_v2_mold__rejected_v2_vertical_flip_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "overripe bananas brown"
+  },
+  {
+    "file": "s1834_collected_v2_mold__rejected_du_rotated_by_45_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "yellow apple brown spots"
+  },
+  {
+    "file": "s1835_collected_v2_mold_kaggle_mobil_IMG_20240805_135309.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "white mold cup"
+  },
+  {
+    "file": "s1836_collected_v2_mold__rejected_du_Screen Shot 2018-06-12 at 8.57.04 PM.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "rotten bananas brown"
+  },
+  {
+    "file": "s1839_collected_v2_mold_kaggle_mobil_IMG_20240805_135535.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "white mold texture cup"
+  },
+  {
+    "file": "s1841_meat_anomaly_validation_xiaoho_66bd87790000000005039fd9_1.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "moldy instant noodles"
+  },
+  {
+    "file": "s1845_collected_v2_mold__rejected_v2_rotated_by_60_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "rotten banana dark"
+  },
+  {
+    "file": "s1846_collected_v2_mold__rejected_du_c_r153.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mold on green food"
+  },
+  {
+    "file": "s1847_collected_v2_mold__rejected_du_vertical_flip_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "rotten banana brown"
+  },
+  {
+    "file": "s1849_collected_v2_mold_kaggle_mobil_L28 - 438.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "white mold fruit surface"
+  },
+  {
+    "file": "s1855_collected_v2_mold__rejected_v2_p_r795.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy small fruit"
+  },
+  {
+    "file": "s1859_collected_v2_mold__rejected_v2_Screen Shot 2018-06-12 at 8.53.29 PM.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "rotten dark bananas"
+  },
+  {
+    "file": "s1861_labeled_complaints_v2_images_complaint_v2_02337.jpg",
+    "usable": true,
+    "class": "bone",
+    "bbox_hint": "full",
+    "note": "bone pieces pile"
+  },
+  {
+    "file": "s1862_collected_v2_mold_kaggle_mobil_PXL_20240429_063242466.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mold on berries cup"
+  },
+  {
+    "file": "s1864_collected_v2_mold_kaggle_mobil_L16 - 506.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold specks fruit surface"
+  },
+  {
+    "file": "s1865_collected_v2_mold__rejected_v2_L16 - 630.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold specks close-up"
+  },
+  {
+    "file": "s1866_collected_v2_mold__rejected_du_rotated_by_45_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "white mold on orange"
+  },
+  {
+    "file": "s1868_collected_v2_mold_kaggle_mobil_IMG_20240805_143940.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "white mold cup"
+  },
+  {
+    "file": "s1875_collected_v2_mold__rejected_v2_rotated_by_45_Screen Shot 2018-06-08 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy rotten apple"
+  },
+  {
+    "file": "s1876_collected_v2_mold_kaggle_mobil_IMG_20240805_171936.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "fuzzy mold on fruit cup"
+  },
+  {
+    "file": "s1877_collected_v2_mold_kaggle_mobil_L10 - 215.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mold crack on fruit"
+  },
+  {
+    "file": "s1880_collected_v2_mold__rejected_du_Screen Shot 2018-06-07 at 2.59.13 PM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "moldy fuzzy apple"
+  },
+  {
+    "file": "s1885_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_L1.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold specks lemon"
+  },
+  {
+    "file": "s1891_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "blue mold on orange"
+  },
+  {
+    "file": "s1897_collected_v2_mold__rejected_v2_b_r049.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "rotten bananas dark"
+  },
+  {
+    "file": "s1899_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_20.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mold dense cup"
+  },
+  {
+    "file": "s1904_collected_v2_flat_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "rotten bananas dark"
+  },
+  {
+    "file": "s1905_collected_v2_mold_kaggle_mobil_20240428_234504.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "dark moldy sample"
+  },
+  {
+    "file": "s1908_collected_v2_mold_kaggle_mobil_IMG_20240805_164313.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "dark spots cup"
+  },
+  {
+    "file": "s1913_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_L1.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "dense fuzzy mold"
+  },
+  {
+    "file": "s1916_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_20.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mold on red fruit cup"
+  },
+  {
+    "file": "s1917_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "rotten bananas dark"
+  },
+  {
+    "file": "s1920_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "dark mold on fruit"
+  },
+  {
+    "file": "s1921_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "rotten tomato spot"
+  },
+  {
+    "file": "s1925_collected_v2_mold__rejected_v2_p_r006.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "rotten pineapple black"
+  },
+  {
+    "file": "s1927_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "moldy orange green"
+  },
+  {
+    "file": "s1929_collected_v2_mold__rejected_du_rotated_by_30_Screen Shot 2018-06-08 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "rotten brown apple spot"
+  },
+  {
+    "file": "s1931_labeled_complaints_v2_images_complaint_v2_02605.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "burnt blackened food"
+  },
+  {
+    "file": "s1937_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_20.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mold on dark fruit cup"
+  },
+  {
+    "file": "s1941_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "dense white mold cup"
+  },
+  {
+    "file": "s1945_collected_v2_color_anomaly__re_食品变质_颜色异常_000138.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "rotten spoiled meat"
+  },
+  {
+    "file": "s1946_collected_v2_mold__rejected_v2_Screen Shot 2018-06-12 at 9.10.20 PM.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "rotten banana brown dark"
+  },
+  {
+    "file": "s1950_collected_v2_mold__rejected_v2_rotated_by_45_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "overripe bananas spots"
+  },
+  {
+    "file": "s1952_collected_v2_mold__rejected_v2_p_r533.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "sprouted rotten potato"
+  },
+  {
+    "file": "s1953_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_20.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "fuzzy mold cup"
+  },
+  {
+    "file": "s1958_screened_v2_rejected_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "white fuzzy mold cup"
+  },
+  {
+    "file": "s1959_collected_v2_mold_kaggle_mobil_IMG_20240805_135754.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "white mold cup"
+  },
+  {
+    "file": "s1960_collected_v2_mold__rejected_v2_rotated_by_60_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "rotten dark bananas"
+  },
+  {
+    "file": "s1962_collected_v2_mold_kaggle_mobil_IMG_20240805_164431.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mold black spots cup"
+  },
+  {
+    "file": "s1963_labeled_complaints_v2_images_complaint_v2_01383.jpg",
+    "usable": true,
+    "class": "glass",
+    "bbox_hint": "full",
+    "note": "shattered glass shards"
+  },
+  {
+    "file": "s1965_collected_v2_mold__rejected_du_rotated_by_75_Screen Shot 2018-06-12 at.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "large mold spot orange"
+  },
+  {
+    "file": "s1968_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "full",
+    "note": "wrinkled discolored pepper"
+  },
+  {
+    "file": "s1969_collected_v2_mold_kaggle_mobil_IMG_20240805_142434.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "white mold cup"
+  },
+  {
+    "file": "s1970_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "green mold dense cup"
+  },
+  {
+    "file": "s1974_collected_v2_mold_kaggle_mobil_L10 - 391.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "blue mold on tomato"
+  },
+  {
+    "file": "s1975_collected_v2_mold_kaggle_mobil_IMG_20240805_172349_1.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mold discoloration cup"
+  },
+  {
+    "file": "s1977_screened_v2_rejected_mold_kaggle_fresh-stale-v2_dataset_Train_rott.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "heavy white mold orange"
+  },
+  {
+    "file": "s1979_meat_anomaly_validation_xiaoho_65cd97450000000007027e26_0.jpg",
+    "usable": true,
+    "class": "hair",
+    "bbox_hint": "center",
+    "note": "hair in jerky"
+  },
+  {
+    "file": "s1980_labeled_complaints_v2_images_complaint_v2_00102.jpg",
+    "usable": true,
+    "class": "hair",
+    "bbox_hint": "center",
+    "note": "hair bundle mass"
+  },
+  {
+    "file": "s1981_collected_v2_mold__rejected_v2_L16 - 532.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "mold fuzzy lemon surface"
+  },
+  {
+    "file": "s1985_collected_v2_flat_mold_kaggle_mobilemold_MobileMold_original_IM.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "center",
+    "note": "mold on orange fruit cup"
+  },
+  {
+    "file": "s1986_collected_v2_flat_mold_roboflow_mold-bsgon_valid_images_3375334.jpg",
+    "usable": true,
+    "class": "mold",
+    "bbox_hint": "full",
+    "note": "moldy bowl contents"
+  },
+  {
+    "file": "s1992_collected_v2_mold__rejected_du_rotated_by_60_Screen Shot 2018-06-07 at.jpg",
+    "usable": true,
+    "class": "color_anomaly",
+    "bbox_hint": "center",
+    "note": "rotten apple center"
+  }
+]
