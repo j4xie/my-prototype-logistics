@@ -93,13 +93,23 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --git)
             MODE="git"
-            ARG="${2:-steven}"
-            shift 2
+            if [ -n "$2" ] && [[ ! "$2" =~ ^- ]]; then
+                ARG="$2"
+                shift 2
+            else
+                ARG="steven"
+                shift
+            fi
             ;;
         --jar)
             MODE="jar"
-            ARG="$2"
-            shift 2
+            # --jar 可选 version 参数, 若下一个是 flag (-开头) 或无则跳过
+            if [ -n "$2" ] && [[ ! "$2" =~ ^- ]]; then
+                ARG="$2"
+                shift 2
+            else
+                shift
+            fi
             ;;
         --dry-run)
             MODE="dry-run"
@@ -311,7 +321,13 @@ deploy_jar() {
                 chmod +x mvnw 2>/dev/null
                 ./mvnw "$@" -Dmaven.test.skip=true -q
             else
-                export JAVA_HOME="${JAVA_HOME:-C:/Program Files/Java/jdk-17}"
+                # R4 (Apr 16 2026): project requires Java 21 per pom.xml <maven.compiler.release>21</...>
+                # Use existing JAVA_HOME (Zulu 21 typical install) instead of hardcoding jdk-17
+                if [ -z "$JAVA_HOME" ]; then
+                    for J in "C:/Program Files/Zulu/zulu-21" "C:/Program Files/Java/jdk-21" "C:/Program Files/Java/jdk-17"; do
+                        [ -x "$J/bin/java.exe" ] && export JAVA_HOME="$J" && break
+                    done
+                fi
                 ./mvnw.cmd "$@" -Dmaven.test.skip=true -q
             fi
         }
@@ -503,7 +519,12 @@ deploy_jar() {
     # - 所有公共镜像 (ghproxy.cc/ghfast.top/...) 都不持有用户 token
     # - 直连下载 curl 也不带 token，结果一样
     # - 走 fallback (rsync/OSS/R2) 更稳
-    if [ "$HAS_GH" = "true" ] && [ "$IS_PRIVATE_REPO" != "true" ]; then
+    #
+    # 环境变量 SKIP_GITHUB=1 (默认 true, R4 2026-04-16) 直接走 R2 fallback —
+    # GitHub Release 阶段在国内网络极不稳定, 60s 超时浪费时间, R2 更快.
+    # 如需恢复 GitHub: export SKIP_GITHUB=0
+    SKIP_GITHUB="${SKIP_GITHUB:-1}"
+    if [ "$HAS_GH" = "true" ] && [ "$IS_PRIVATE_REPO" != "true" ] && [ "$SKIP_GITHUB" != "1" ]; then
         echo "   [阶段1] GitHub 并行上传 (直连 + ${#GITHUB_MIRRORS[@]}镜像)..."
 
         # 先创建 Release (stderr 写日志，不要吞)
@@ -561,12 +582,14 @@ deploy_jar() {
         fi
     elif [ "$IS_PRIVATE_REPO" = "true" ]; then
         echo "   [阶段1] 跳过 GitHub (private repo — 见预检警告)"
+    elif [ "$SKIP_GITHUB" = "1" ]; then
+        echo "   [阶段1] 跳过 GitHub (SKIP_GITHUB=1, 直接 R2 优先 — R4 2026-04-16 默认)"
     fi
 
     # 等待 GitHub 方式完成 (最多60秒)
-    # private repo / 无 gh 时，GitHub 阶段从没启动过，直接跳到 fallback
+    # private repo / 无 gh / SKIP_GITHUB=1 时，GitHub 阶段从没启动过，直接跳到 fallback
     WINNER=""
-    if [ "$HAS_GH" = "true" ] && [ "$IS_PRIVATE_REPO" != "true" ] && [ "${#UPLOAD_PIDS[@]}" -gt 0 ]; then
+    if [ "$HAS_GH" = "true" ] && [ "$IS_PRIVATE_REPO" != "true" ] && [ "$SKIP_GITHUB" != "1" ] && [ "${#UPLOAD_PIDS[@]}" -gt 0 ]; then
         echo ""
         echo "   等待 GitHub 下载完成 (超时: 60秒)..."
         GITHUB_TIMEOUT=60
