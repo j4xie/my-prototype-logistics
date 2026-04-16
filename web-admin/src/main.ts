@@ -43,7 +43,7 @@ async function bootstrap() {
   setupRouterGuards(router);
   app.use(router);
 
-  // 6. Register ECharts theme (before any chart component mounts)
+  // 6. Register ECharts theme (fire-and-forget, lazy loads echarts off the critical path)
   registerEChartsTheme();
 
   // 7. 挂载应用

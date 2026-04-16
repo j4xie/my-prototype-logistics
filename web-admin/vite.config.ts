@@ -32,9 +32,35 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: 'dist',
       sourcemap: false,
-      // 注意：不要使用 manualChunks 将 element-plus 和 vue 分到不同 chunk
-      // element-plus 深度依赖 Vue 响应式 API，分离会导致 TDZ 错误
-      // 让 Vite 自动处理代码分割
+      chunkSizeWarningLimit: 800,
+      // Only preload chunks that the entry synchronously needs — skip transitive lazy chunks
+      // (otherwise Vite preloads echarts/pdf-lib on every page load even though they're lazy)
+      modulePreload: {
+        resolveDependencies: (_filename, deps) => {
+          return deps.filter(
+            (dep) =>
+              !dep.includes('echarts-') &&
+              !dep.includes('pdf-lib-') &&
+              !dep.includes('xlsx-lib-') &&
+              !dep.includes('vue-flow-'),
+          );
+        },
+      },
+      rollupOptions: {
+        output: {
+          // 注意: 不要拆 element-plus / vue / pinia / vue-router (会 TDZ)
+          // 只拆独立重包: echarts / xlsx / pdf / vue-flow canvas 编辑器
+          manualChunks: {
+            'echarts': ['echarts', 'vue-echarts'],
+            'xlsx-lib': ['xlsx'],
+            'pdf-lib': ['jspdf', 'html2canvas'],
+            'vue-flow': [
+              '@vue-flow/core',
+              '@vue-flow/controls',
+            ],
+          },
+        },
+      },
     },
   };
 });

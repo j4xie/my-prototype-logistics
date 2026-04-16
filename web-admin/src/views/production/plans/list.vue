@@ -644,7 +644,9 @@ function handleAiFill(params: Record<string, unknown>) {
 
       <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="planNumber" label="计划编号" width="160" />
-        <el-table-column prop="productTypeName" label="产品类型" min-width="150" show-overflow-tooltip />
+        <el-table-column label="产品类型" min-width="150" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.productTypeName || row.productName || row.productTypeId || '-' }}</template>
+        </el-table-column>
         <el-table-column prop="sourceCustomerName" label="客户" min-width="120" show-overflow-tooltip />
         <el-table-column prop="processName" label="工序" width="120" show-overflow-tooltip />
         <el-table-column prop="batchDate" label="批次日期" width="120" />
@@ -735,7 +737,7 @@ function handleAiFill(params: Record<string, unknown>) {
     <el-dialog v-model="viewDialogVisible" title="计划详情" width="560px" destroy-on-close>
       <el-descriptions v-if="viewPlan" :column="2" border>
         <el-descriptions-item label="计划编号">{{ viewPlan.planNumber }}</el-descriptions-item>
-        <el-descriptions-item label="产品类型">{{ viewPlan.productTypeName }}</el-descriptions-item>
+        <el-descriptions-item label="产品类型">{{ viewPlan.productTypeName || viewPlan.productName || viewPlan.productTypeId || '-' }}</el-descriptions-item>
         <el-descriptions-item label="客户">{{ viewPlan.sourceCustomerName || '-' }}</el-descriptions-item>
         <el-descriptions-item label="工序">{{ viewPlan.processName || '-' }}</el-descriptions-item>
         <el-descriptions-item label="计划数量">{{ viewPlan.plannedQuantity }}</el-descriptions-item>
