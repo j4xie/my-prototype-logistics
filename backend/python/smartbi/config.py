@@ -43,7 +43,8 @@ class Settings(BaseSettings):
     # Zero-Code Configuration
     structure_detection_confidence_threshold: float = 0.7  # Minimum confidence for structure detection
     semantic_mapping_confidence_threshold: float = 0.8  # Minimum confidence for field mapping
-    enable_multi_model_enhancement: bool = True  # Enable Layer 4 multi-model voting
+    enable_multi_model_enhancement: bool = True  # Enable Layer 4 multi-model voting (structure_detector)
+    enable_mapper_multi_model: bool = False  # D2: semantic_mapper Layer 3 (2x LLM voting) — off by default
     max_self_correction_rounds: int = 3  # Max rounds for self-correction loop
     use_llm_first: bool = True  # Use LLM as default detection method instead of rules
 

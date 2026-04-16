@@ -344,8 +344,12 @@ async function handleUpload(file: UploadFile) {
     currentStep.value = 1;
     ElMessage.success('文件解析成功');
 
-    // 如果有分析结果，直接跳到分析页面
-    if (result.analysis && result.analysis.success) {
+    // A-fix (Apr 17 2026): 后端 requiresConfirmation=true 时保留在步骤 2,
+    // 让用户 review 字段映射后再进分析. 旧代码硬编码 analysis.success=true
+    // 导致 confidence<阈值的文件也跳过确认,在步骤 3 显示"暂无分析结论".
+    if (result.requiresConfirmation) {
+      ElMessage.warning('字段映射信心较低,请在下方确认后再查看分析结果');
+    } else if (result.analysis && result.analysis.success) {
       currentStep.value = 2;
       await nextTick();
       renderCharts();

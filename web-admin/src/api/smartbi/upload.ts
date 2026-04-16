@@ -56,6 +56,7 @@ export async function uploadAndAnalyze(file: File, options?: {
   analysis?: AnalysisResult;
   chartRecommendations?: ChartConfig[];
   uploadId?: number;
+  requiresConfirmation?: boolean;
   error?: string;
 }> {
   const formData = new FormData();
@@ -102,18 +103,19 @@ export async function uploadAndAnalyze(file: File, options?: {
         table_type: result.detectedDataType,
         sheet_name: parseResponse.sheetName
       },
-      analysis: {
+      analysis: result.aiAnalysis ? {
         success: true,
         answer: result.aiAnalysis,
         insights: [],
         charts: result.chartConfig ? [result.chartConfig] : []
-      },
+      } : undefined,
       chartRecommendations: result.recommendedTemplates?.map((t: { chartType: string; templateCode: string; description: string }) => ({
         type: t.chartType?.toLowerCase() || 'bar',
         title: t.description || t.templateCode,
         templateCode: t.templateCode
       })) || [],
-      uploadId: result.uploadId
+      uploadId: result.uploadId,
+      requiresConfirmation: result.requiresConfirmation === true
     };
   } catch (error) {
     console.error('uploadAndAnalyze 失败:', error);

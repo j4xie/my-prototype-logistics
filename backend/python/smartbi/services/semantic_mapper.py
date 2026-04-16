@@ -294,8 +294,13 @@ class SemanticMapper:
         # Check overall confidence
         avg_confidence = sum(m.confidence for m in mappings) / len(mappings) if mappings else 0.0
 
-        if avg_confidence < self.settings.semantic_mapping_confidence_threshold and unmapped:
-            # Layer 3: Multi-model enhancement
+        if (
+            avg_confidence < self.settings.semantic_mapping_confidence_threshold
+            and unmapped
+            and getattr(self.settings, "enable_mapper_multi_model", False)
+        ):
+            # Layer 3: Multi-model enhancement (2 LLM calls — opt-in via
+            # enable_mapper_multi_model, default off since D2 Apr 17 2026)
             enhanced_mappings = await self._map_with_multi_model(
                 unmapped, columns, sample_data, table_context
             )
@@ -778,28 +783,34 @@ Return JSON: {{"mappings": [{{"original": "col", "standard": "field_or_null", "c
 """
 
     async def _call_llm(self, prompt: str, model: str = "default") -> Optional[str]:
-        """Call LLM API"""
+        """
+        Call LLM via multi-provider router (D2, Apr 17 2026).
+
+        Routes through `call_chain(SLOT.MAPPER)` so mapper shares the
+        aliyun_b → aliyun_a → zhipu → deepseek free-first chain and every
+        request is captured by smart_bi_llm_usage via the response hook.
+
+        The `model` parameter is kept for signature compatibility but no
+        longer selects a provider-specific name — SLOT_MODELS does that.
+        """
         try:
-            from openai import AsyncOpenAI
+            from common.llm_router import call_chain, SLOT
+            from common.llm_metrics import llm_caller_context
 
-            model_name = {
-                "default": self.settings.llm_model,
-                "fast": self.settings.llm_fast_model
-            }.get(model, self.settings.llm_model)
+            payload = {
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.1,
+                "max_tokens": 1000,
+            }
 
-            client = AsyncOpenAI(
-                api_key=self.settings.llm_api_key,
-                base_url=self.settings.llm_base_url
-            )
+            with llm_caller_context("semantic_mapper"):
+                resp_json = await call_chain(SLOT.MAPPER, payload)
 
-            response = await client.chat.completions.create(
-                model=model_name,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,
-                max_tokens=1000
-            )
-
-            return response.choices[0].message.content
+            choices = resp_json.get("choices") or []
+            if not choices:
+                logger.warning("LLM response has no choices")
+                return None
+            return choices[0].get("message", {}).get("content")
 
         except Exception as e:
             logger.error(f"LLM call failed: {e}")
