@@ -196,7 +196,7 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
                 return UploadFlowResult.builder()
                         .success(true)
                         .message("字段映射需要用户确认")
-                        .parseResult(parseResult)
+                        .parseResult(trimForResponse(parseResult))
                         .requiresConfirmation(true)
                         .detectedDataType(detectedTypeStr)
                         .recommendedTemplates(getDefaultTemplates(detectedTypeStr, factoryId))
@@ -300,7 +300,7 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
                     .success(true)
                     .message(String.format("成功上传并处理 %d 条%s数据",
                             persistResult.getSavedRows(), detectedType.getDisplayName()))
-                    .parseResult(parseResult)
+                    .parseResult(trimForResponse(parseResult))
                     .persistResult(persistResult)
                     .detectedDataType(detectedTypeStr)
                     .recommendedChartType(recommendedChartType)
@@ -642,6 +642,27 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             log.info("自动学习完成: 已保存 {} 条用户手动确认的字段映射到字典 (factoryId={})",
                     savedCount, factoryId);
         }
+    }
+
+    /**
+     * P4-opt (Apr 17 2026): 给 FE 返回前把 parseResult 瘦身.
+     * 原始 response 带全量 previewData 导致 10K 行文件响应体到 10+MB,
+     * 慢网浏览器上传卡 90% 进度条. FE 预览表只用前 ~20 行,
+     * 诊断字段 (dataFeatures / metadata / structureInfo) 前端完全不用.
+     *
+     * 全量数据已通过 uploadId 持久化到 DB, 不影响后续分析.
+     */
+    private static final int PREVIEW_ROW_LIMIT = 50;
+
+    private ExcelParseResponse trimForResponse(ExcelParseResponse pr) {
+        if (pr == null) return null;
+        if (pr.getPreviewData() != null && pr.getPreviewData().size() > PREVIEW_ROW_LIMIT) {
+            pr.setPreviewData(new ArrayList<>(pr.getPreviewData().subList(0, PREVIEW_ROW_LIMIT)));
+        }
+        pr.setDataFeatures(null);
+        pr.setMetadata(null);
+        pr.setStructureInfo(null);
+        return pr;
     }
 
     /**
@@ -1770,7 +1791,7 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
                 UploadFlowResult flowResult = UploadFlowResult.builder()
                         .success(true)
                         .message("字段映射需要用户确认")
-                        .parseResult(parseResult)
+                        .parseResult(trimForResponse(parseResult))
                         .requiresConfirmation(true)
                         .detectedDataType(detectedTypeStr)
                         .build();
@@ -1875,7 +1896,7 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             UploadFlowResult flowResult = UploadFlowResult.builder()
                     .success(true)
                     .message(String.format("成功处理 %d 条%s数据", persistResult.getSavedRows(), detectedType.getDisplayName()))
-                    .parseResult(parseResult)
+                    .parseResult(trimForResponse(parseResult))
                     .persistResult(persistResult)
                     .detectedDataType(detectedTypeStr)
                     .recommendedChartType(recommendedChartType)
@@ -1992,7 +2013,7 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
         return UploadFlowResult.builder()
                 .success(true)
                 .message(String.format("重试成功，已保存 %d 行数据", retryResult.getSavedRows()))
-                .parseResult(parseResult)
+                .parseResult(trimForResponse(parseResult))
                 .uploadId(uploadId)
                 .build();
     }
@@ -2127,7 +2148,7 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
                 UploadFlowResult flowResult = UploadFlowResult.builder()
                         .success(true)
                         .message("字段映射需要用户确认")
-                        .parseResult(parseResult)
+                        .parseResult(trimForResponse(parseResult))
                         .requiresConfirmation(true)
                         .detectedDataType(detectedTypeStr)
                         .build();
@@ -2200,7 +2221,7 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
                     .success(true)
                     .message(String.format("成功处理 %d 条%s数据",
                             persistResult.getSavedRows(), detectedType.getDisplayName()))
-                    .parseResult(parseResult)
+                    .parseResult(trimForResponse(parseResult))
                     .persistResult(persistResult)
                     .detectedDataType(detectedTypeStr)
                     .recommendedChartType(recommendedChartType)
