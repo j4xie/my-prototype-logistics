@@ -475,6 +475,19 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 处理 multipart 请求缺少 @RequestPart。MissingServletRequestPartException 继承
+     * ServletException 而非 MultipartException, 没有专门 handler 时会落到 generic
+     * RuntimeException 兜底,返回 500。这里映射为 400 并带出 part 名称。
+     */
+    @ExceptionHandler(org.springframework.web.multipart.support.MissingServletRequestPartException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiResponse<?> handleMissingServletRequestPartException(
+            org.springframework.web.multipart.support.MissingServletRequestPartException e) {
+        log.warn("缺少 multipart 请求部分: {}", e.getRequestPartName());
+        return ApiResponse.error(400, "缺少必要文件字段: " + e.getRequestPartName());
+    }
+
+    /**
      * 处理请求体解析失败
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
