@@ -424,7 +424,9 @@ function getStatusText(status: string): string {
               style="width: 100%"
             >
               <el-table-column prop="batchNumber" label="批次号" min-width="150" show-overflow-tooltip />
-              <el-table-column prop="productTypeName" label="产品名称" min-width="150" show-overflow-tooltip />
+              <el-table-column label="产品名称" min-width="150" show-overflow-tooltip>
+                <template #default="{ row }">{{ row.productTypeName || row.productName || row.productTypeId || '-' }}</template>
+              </el-table-column>
               <el-table-column prop="plannedQuantity" label="计划数量" width="110" align="right" />
               <el-table-column prop="actualQuantity" label="实际数量" width="110" align="right">
                 <template #default="{ row }">
