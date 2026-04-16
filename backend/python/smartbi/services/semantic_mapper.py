@@ -274,8 +274,11 @@ class SemanticMapper:
         rule_mappings, rule_unmapped = self._map_with_rules(columns, factory_id)
         mappings.extend(rule_mappings)
 
-        # If all mapped with high confidence, return
-        if not rule_unmapped or all(m.confidence >= self.settings.semantic_mapping_confidence_threshold for m in mappings):
+        # Bug #12 fix (Apr 17 2026): only return early when every field got a
+        # rule mapping. Previously `all(... for m in mappings)` returned True
+        # when mappings=[] (vacuous truth), which short-circuited Layer 2 LLM
+        # fallback on all-unmapped files — the exact scenario LLM is meant for.
+        if not rule_unmapped:
             result.field_mappings = mappings
             result.unmapped_fields = rule_unmapped
             result.confidence = sum(m.confidence for m in mappings) / len(mappings) if mappings else 0.5
