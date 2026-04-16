@@ -2279,6 +2279,20 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             return;
         }
 
+        // Skip when the JSON serialization of (data × columns) would blow the heap.
+        // Apr 17 2026 prod OOM: user uploaded 9976 × 232 CSV, serializing the Map<>
+        // payload to JSON peaked ~230MB (UTF-16 String) and tripped Xmx=768m.
+        // Threshold 500K cells ≈ 25MB JSON — comfortably under any heap config.
+        // Per Javadoc this extractor is best-effort; skipping big files preserves
+        // the upload flow instead of failing the request.
+        long cellCount = (long) data.size() * columns.size();
+        final long EXTRACT_CELL_LIMIT = 500_000L;
+        if (cellCount > EXTRACT_CELL_LIMIT) {
+            log.warn("财务数据提取跳过: uploadId={}, sheetName={}, size={}行×{}列={}cells > {} (heap 保护)",
+                    uploadId, sheetName, data.size(), columns.size(), cellCount, EXTRACT_CELL_LIMIT);
+            return;
+        }
+
         Optional<FinanceExtractResponse> result = pythonClient.extractFinanceData(data, columns, sheetName);
         if (result.isEmpty() || !result.get().isSuccess() || result.get().getRecords() == null) {
             return;

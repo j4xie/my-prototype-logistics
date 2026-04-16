@@ -1588,6 +1588,17 @@ public class PythonSmartBIClient {
             return Optional.empty();
         }
 
+        // Belt-and-suspenders guard. The primary caller (SmartBIUploadFlowServiceImpl)
+        // already checks this, but other callers shouldn't have to learn it the hard
+        // way. objectMapper.writeValueAsString on a Map with 500K+ cells easily
+        // doubles past Xmx=768m due to UTF-16 string materialization.
+        long cellCount = (data != null ? data.size() : 0L) * (columns != null ? columns.size() : 0L);
+        if (cellCount > 500_000L) {
+            log.warn("财务数据提取跳过(client 级): sheetName={}, size={}cells > 500K (heap 保护)",
+                    sheetName, cellCount);
+            return Optional.empty();
+        }
+
         try {
             log.info("调用 Python 财务数据提取: sheetName={}, dataSize={}, columns={}",
                     sheetName,
