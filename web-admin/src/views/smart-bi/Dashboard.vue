@@ -385,6 +385,9 @@ let trendChart: echarts.ECharts | null = null;
 let pieChart: echarts.ECharts | null = null;
 const hasTrendData = ref(false);
 const hasPieData = ref(false);
+// C Apr 17 2026: 当上传的数据无时间列 (如销量汇总报表) 时, "销售趋势" 标题误导.
+// 根据 x-axis 第一个值判断: 像日期 → 趋势; 否则 → 按类别分布/排行
+const trendChartTitle = ref('销售趋势');
 
 // Cross-filter state
 const crossFilterValue = ref<string | null>(null);
@@ -893,6 +896,20 @@ function initTrendChart(chartConfig?: ChartConfig) {
 
   // 如果有后端数据，使用后端数据
   hasTrendData.value = !!(chartConfig && chartConfig.series && chartConfig.series.length > 0);
+
+  // C Apr 17 2026: 根据 x-axis 第一个值判断是"趋势"(时间) 还是"排行"(类别)
+  if (hasTrendData.value) {
+    const xData = (chartConfig?.xAxis as { data?: unknown[] } | undefined)?.data || [];
+    const firstX = xData.length > 0 ? String(xData[0]) : '';
+    const isTime = /^\d{4}[-/]\d{1,2}/.test(firstX) ||
+                   /\d{1,4}[年月日]/.test(firstX) ||
+                   /^Q[1-4]$/i.test(firstX) ||
+                   /^\d{4}$/.test(firstX);
+    trendChartTitle.value = isTime ? '销售趋势' : '按类别排行';
+  } else {
+    trendChartTitle.value = '销售趋势';
+  }
+
   if (hasTrendData.value) {
     const option: echarts.EChartsOption = {
       tooltip: {
@@ -1485,7 +1502,7 @@ onUnmounted(() => {
           <template #header>
             <div class="card-header">
               <el-icon><TrendCharts /></el-icon>
-              <span>销售趋势</span>
+              <span>{{ trendChartTitle }}</span>
             </div>
           </template>
           <ChartSkeleton v-if="loading && !hasTrendData" type="chart" />
