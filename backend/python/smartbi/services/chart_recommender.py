@@ -742,41 +742,32 @@ class ChartRecommender:
         return base_prompt + dashboard_instruction
 
     async def _call_llm(self, prompt: str) -> str:
-        """Call LLM API"""
-        headers = {
-            "Authorization": f"Bearer {self.settings.llm_api_key}",
-            "Content-Type": "application/json"
-        }
+        """Call LLM via multi-provider router (chart slot).
+
+        Chain: aliyun_b (glm-5) → aliyun_a (glm-5) → zhipu (glm-4.5-air) → deepseek.
+        403 FreeTierOnly / 429 triggers automatic fallback to next provider.
+        Caller context ("chart") + factory_id (from JWT middleware) are
+        recorded in smart_bi_llm_usage automatically.
+        """
+        from common.llm_router import call_chain, SLOT
+        from common.llm_metrics import llm_caller_context
 
         payload = {
-            "model": self.settings.llm_chart_model,
             "messages": [
-                {
-                    "role": "system",
-                    "content": (
-                        "你是专业的数据可视化分析师，擅长根据数据特征推荐最佳图表类型。"
-                        "你的推荐应该基于数据的实际特征，而不是固定规则。"
-                        "请用 JSON 格式回复，确保字段名和值都正确。"
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
+                {"role": "system", "content": (
+                    "你是专业的数据可视化分析师，擅长根据数据特征推荐最佳图表类型。"
+                    "你的推荐应该基于数据的实际特征，而不是固定规则。"
+                    "请用 JSON 格式回复，确保字段名和值都正确。"
+                )},
+                {"role": "user", "content": prompt},
             ],
             "temperature": 0.5,
             "max_tokens": 3500,
-            "enable_thinking": False
+            "enable_thinking": False,
         }
 
-        response = await self.client.post(
-            f"{self.settings.llm_base_url}/chat/completions",
-            headers=headers,
-            json=payload
-        )
-        response.raise_for_status()
-
-        result = response.json()
+        with llm_caller_context("chart"):
+            result = await call_chain(SLOT.CHART, payload)
         return result["choices"][0]["message"]["content"]
 
     def _validate_column_name(
@@ -797,6 +788,17 @@ class ChartRecommender:
             Valid column name or None
         """
         if column is None:
+            return fallback_columns[0] if fallback_columns else None
+
+        # LLM occasionally returns x_axis/series as ["商品名称"] instead of "商品名称".
+        # Unwrap singletons; for lists with multiple values keep the first (caller
+        # only handles one column here — multi-column case lives on the y_axis path).
+        if isinstance(column, list):
+            column = column[0] if column else None
+            if column is None:
+                return fallback_columns[0] if fallback_columns else None
+
+        if not isinstance(column, str):
             return fallback_columns[0] if fallback_columns else None
 
         # 1. Exact match

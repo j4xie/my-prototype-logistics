@@ -516,6 +516,14 @@ watch(() => dashboardData.value?.charts, (newCharts) => {
   }
 });
 
+// FIX-12 (Apr 16 2026): persist selectedDataSource to localStorage on every change,
+// including auto-switch from fallback path (not just manual onDataSourceChange).
+watch(selectedDataSource, (newSrc) => {
+  if (newSrc && factoryId.value) {
+    try { localStorage.setItem(savedSourceKey(factoryId.value), newSrc); } catch {}
+  }
+});
+
 // ==================== API 调用 ====================
 
 async function loadDashboardData() {

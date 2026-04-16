@@ -470,6 +470,12 @@ const businessRoutes: RouteRecordRaw[] = [
             meta: { requiresAuth: true, title: 'Skill/Tool 治理', module: 'system' }
           },
           {
+            path: 'llm-usage',
+            name: 'SystemLLMUsage',
+            component: () => import('@/views/system/llm-usage/index.vue'),
+            meta: { requiresAuth: true, title: 'LLM 用量监控', module: 'system' }
+          },
+          {
             path: 'products',
             name: 'ProductManagement',
             component: () => import('@/views/system/products/index.vue'),

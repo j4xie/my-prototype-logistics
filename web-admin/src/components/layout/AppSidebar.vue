@@ -173,6 +173,7 @@ const menuConfig: MenuItem[] = [
       { path: '/system/settings', title: '系统设置', icon: '', module: 'system' },
       { path: '/system/ai-intents', title: 'AI意图配置', icon: '', module: 'system' },
       { path: '/system/skill-tools', title: 'Skill/Tool治理', icon: '', module: 'system' },
+      { path: '/system/llm-usage', title: 'LLM 用量监控', icon: '', module: 'system' },
       { path: '/system/products', title: '产品信息管理', icon: '', module: 'system' },
       { path: '/system/work-processes', title: '工序管理', icon: '', module: 'system' },
       { path: '/system/product-processes', title: '产品-工序配置', icon: '', module: 'system' },

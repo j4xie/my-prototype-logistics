@@ -151,13 +151,26 @@ class JWTAuthMiddleware:
         # Inject claims into scope state for downstream access via request.state
         if "state" not in scope:
             scope["state"] = {}
-        scope["state"]["factory_id"] = claims.get("factoryId")
+        factory_id = claims.get("factoryId")
+        scope["state"]["factory_id"] = factory_id
         scope["state"]["user_id"] = claims.get("userId")
         scope["state"]["username"] = claims.get("sub")
         scope["state"]["role"] = claims.get("role")
         scope["state"]["auth_method"] = "jwt"
 
-        await self.app(scope, receive, send)
+        # Propagate factory_id to llm_metrics contextvar so LLM usage rows
+        # are tagged with the correct factory automatically (no need to
+        # modify each call site).
+        try:
+            from common.llm_metrics import _llm_factory
+            token = _llm_factory.set(factory_id)
+            try:
+                await self.app(scope, receive, send)
+            finally:
+                _llm_factory.reset(token)
+        except Exception:
+            await self.app(scope, receive, send)
+        return
 
     def _verify_token(self, token: str) -> Optional[dict]:
         """Verify JWT token and return claims, or None if invalid."""

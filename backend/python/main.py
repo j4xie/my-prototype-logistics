@@ -275,9 +275,21 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Shared LLM client initialization failed: {e}")
 
+    # Enable LLM usage metrics (writes to smart_bi_llm_usage via pg pool)
+    try:
+        from common.llm_metrics import enable_llm_metrics
+        enable_llm_metrics()
+    except Exception as e:
+        logger.warning(f"LLM metrics enable failed: {e}")
+
     yield
 
     # Shutdown: close shared LLM HTTP client
+    try:
+        from common.llm_metrics import disable_llm_metrics
+        await disable_llm_metrics()
+    except Exception as e:
+        logger.warning(f"LLM metrics disable error: {e}")
     try:
         from common.llm_client import close_llm_client
         await close_llm_client()
@@ -386,6 +398,10 @@ app.include_router(nl_to_sql.router, prefix="/api/smartbi", tags=["NL2SQL"])
 app.include_router(whatif.router, prefix="/api/smartbi/whatif", tags=["WhatIf Simulator"])
 app.include_router(rfm.router, prefix="/api/smartbi", tags=["Customer RFM"])
 app.include_router(financial_ratios.router, prefix="/api/smartbi", tags=["Financial Ratios"])
+
+# LLM usage admin (BUG-9 + 模型切换监控)
+from smartbi.api import llm_usage_admin
+app.include_router(llm_usage_admin.router, prefix="/api/smartbi/admin/llm-usage", tags=["LLM Usage Admin"])
 
 # Optional: Data sync endpoint (auto-adaptation for system tables)
 if hasattr(data_sync, 'router') and data_sync.router is not None:

@@ -262,9 +262,12 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             }
 
             // 5.1 自动提取财务数据（非阻塞）
+            // Apr 17 2026: catch Throwable (not Exception) so OutOfMemoryError on
+            // large-column files (232 cols × 10K rows = 2.3M cells) doesn't fail
+            // the upload response. Upload already persisted by this point.
             try {
                 tryExtractAndSaveFinanceData(factoryId, persistResult.getUploadId(), parseResult);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 log.warn("财务数据自动提取失败(不影响上传): {}", e.getMessage());
             }
 
@@ -2285,11 +2288,17 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
         // Threshold 500K cells ≈ 25MB JSON — comfortably under any heap config.
         // Per Javadoc this extractor is best-effort; skipping big files preserves
         // the upload flow instead of failing the request.
-        long cellCount = (long) data.size() * columns.size();
+        //
+        // FIX (Apr 17 2026): use max(columns.size(), actual row key count) because
+        // Python can under-report columns when CSV title-row misparse. Each row's
+        // actual Map<> can have 232 keys even though columns[] has 1 entry.
+        int actualColsPerRow = data.get(0) != null ? data.get(0).size() : 0;
+        int effectiveCols = Math.max(columns.size(), actualColsPerRow);
+        long cellCount = (long) data.size() * effectiveCols;
         final long EXTRACT_CELL_LIMIT = 500_000L;
         if (cellCount > EXTRACT_CELL_LIMIT) {
-            log.warn("财务数据提取跳过: uploadId={}, sheetName={}, size={}行×{}列={}cells > {} (heap 保护)",
-                    uploadId, sheetName, data.size(), columns.size(), cellCount, EXTRACT_CELL_LIMIT);
+            log.warn("财务数据提取跳过: uploadId={}, sheetName={}, size={}行×{}列(effective)={}cells > {} (heap 保护)",
+                    uploadId, sheetName, data.size(), effectiveCols, cellCount, EXTRACT_CELL_LIMIT);
             return;
         }
 

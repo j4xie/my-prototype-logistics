@@ -314,6 +314,11 @@ class SemanticMapper:
     ) -> Tuple[List[FieldMapping], List[str]]:
         """
         Rule-based field mapping (Layer 1).
+
+        D1 enhancement (Apr 16 2026): Priority regex layer classifies columns
+        by Chinese suffix patterns BEFORE synonym matching. Fixes the bug where
+        "单卖数量(不含套餐子商品)" wrongly matched `product` category because
+        the column text happened to contain "商品".
         """
         mappings = []
         unmapped = []
@@ -322,7 +327,6 @@ class SemanticMapper:
         custom_map = self._custom_mappings.get(factory_id, {}) if factory_id else {}
 
         for col in columns:
-            col_lower = col.lower().strip()
             col_cleaned = self._clean_column_name(col)
 
             # Check custom mapping
@@ -333,6 +337,24 @@ class SemanticMapper:
                     confidence=0.95,
                     method="custom",
                     description="Custom factory mapping"
+                ))
+                continue
+
+            # D1 Layer 0: Priority regex patterns (Chinese semantic suffixes)
+            # High-confidence classification that wins over substring-matching synonyms
+            priority = self._classify_by_priority_regex(col)
+            if priority is not None:
+                category, std_name, confidence = priority
+                if category == 'skip':
+                    # Unnamed: * columns — don't save field_def at all
+                    continue
+                mappings.append(FieldMapping(
+                    original=col,
+                    standard=std_name,
+                    confidence=confidence,
+                    method="regex_priority",
+                    category=category,
+                    description=f"Matched priority pattern → {category}"
                 ))
                 continue
 
@@ -358,6 +380,72 @@ class SemanticMapper:
                 unmapped.append(col)
 
         return mappings, unmapped
+
+    def _classify_by_priority_regex(self, col: str) -> Optional[Tuple[str, str, float]]:
+        """
+        D1 priority classifier based on Chinese semantic suffix patterns.
+
+        Returns (category, standard_name, confidence) if a priority pattern
+        matches; None if caller should fall through to synonym matching.
+
+        Category values mapping to Java is_measure/is_dimension/is_time:
+        - 'amount' / 'rate' → is_measure=true
+        - 'time'            → is_time=true
+        - 'category'        → is_dimension=true
+        - 'skip'            → don't save field_def (for Unnamed: * columns)
+        """
+        # Skip obviously broken columns (Unnamed: 0..N — means header row was wrong)
+        if re.match(r'^Unnamed:\s*\d+$', col, re.IGNORECASE):
+            return ('skip', '_skip_unnamed', 1.0)
+
+        # Measure — amount patterns (金额/数量/总额 等后缀)
+        # Suffix match at end of token or before (
+        if re.search(
+            r'(金额|金额合计|数量|件数|份数|人次|人数|销量|产量|出货量|入库量|'
+            r'成本|利润|毛利|净利|营收|营业额|销售额|收入|支出|费用|税额|'
+            r'单价|均价|总价|总额|总量|合计|总计|小计|'
+            r'实收|实退|实付|应收|应付|分摊|折扣|优惠)(\(|（|\s|$)',
+            col
+        ):
+            # Use Chinese keyword as standard — Java isMeasure's zh regex will catch it
+            return ('amount', '数量金额', 0.92)
+
+        # Measure — rate patterns (率/占比/系数)
+        if re.search(r'(率|比例|占比|系数|百分比|比率)(\(|（|\s|$)', col):
+            # Standard name "rate_percent" matches Java `.*rate.*` → isMeasure=true
+            return ('rate', 'rate_percent', 0.92)
+
+        # Measure — rating patterns (评分相关, sample val 0-5 or 0-100)
+        # Allow optional `分` suffix (e.g. "星级分") and allow any boundary
+        if re.search(r'(星级|口味|环境|服务|评)分?(\(|（|\s|$)', col) or \
+           re.search(r'(评分|分数|打分|评级)(\(|（|\s|$)', col):
+            # Use "amount_score" — Java isMeasure matches `.*amount.*`
+            return ('amount', 'amount_score', 0.88)
+
+        # Time patterns
+        if re.search(
+            r'(时间|日期|月份|年份|季度|周次|开单|下单|业务日|交易时间|'
+            r'创建时间|最新.*时间|投诉时间|更新时间|起始.*时间|结束.*时间)',
+            col
+        ):
+            # Standard name includes "time" → Java isTimeField matches
+            return ('time', 'time_period', 0.92)
+
+        # Category — ID/code patterns (numeric but should be dim)
+        if re.search(r'(编码|编号|代码|ID|id)$', col):
+            # Use "name" in standard to trigger Java isDimension regex `.*name.*`
+            return ('category', 'id_name', 0.9)
+
+        # Category — known dimensional patterns (名称/分类/类型/门店/商品/标签)
+        if re.search(
+            r'(名称|分类|类型|类别|门店|店铺|商品名|产品名|品牌|渠道|'
+            r'平台|来源|分组|组别|等级|城市|省份|区域|地区|标签)(\(|（|\s|$)',
+            col
+        ) and not re.search(r'(金额|数量|率|量|额|分)', col):
+            # Use "category_name" — matches Java `.*(name|category|...).*`
+            return ('category', 'category_name', 0.85)
+
+        return None
 
     def _match_synonym(self, column: str, synonym: str) -> bool:
         """Check if column matches a synonym"""
