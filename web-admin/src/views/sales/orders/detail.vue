@@ -424,7 +424,17 @@ async function handleCreateInvoice() {
       loadInvoices();
       loadOrder();
     } else { ElMessage.error(res.message || '开票申请创建失败'); }
-  } catch { ElMessage.error('开票申请创建失败，请检查网络'); }
+  } catch (e: unknown) {
+    // Bug #8 fix (R21 2026-04-16): axios response interceptor 对所有 4xx/5xx 已显示 toast,
+    // 这里 catch 不再叠加 "请检查网络" (否则用户看到两个 toast: 业务消息 + 误导网络提示)
+    // 仅在 ApiError.status 未设 (纯网络错, 如无响应/CORS) 时才兜底
+    const err = e as { status?: number };
+    if (!err?.status) {
+      // 真网络错误 — interceptor 来不及显示 (e.g. 断网)
+      ElMessage.error('开票申请创建失败，请检查网络');
+    }
+    // 否则 interceptor 已显示后端 message, 此处不再 toast
+  }
   finally { submitting.value = false; }
 }
 
