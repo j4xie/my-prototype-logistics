@@ -66,7 +66,9 @@ public class ProductionPlanMapper {
                 .build();
         // 设置产品信息
         if (plan.getProductType() != null) {
-            dto.setProductName(plan.getProductType().getName());
+            String ptName = plan.getProductType().getName();
+            dto.setProductName(ptName);
+            dto.setProductTypeName(ptName);  // Bug #1b (R2): alias field, previously orphan, frontend may bind to either
             dto.setProductUnit(plan.getProductType().getUnit());
         }
         // 设置创建人姓名
