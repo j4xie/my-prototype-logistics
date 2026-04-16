@@ -48,8 +48,11 @@ async function handleAction(id: string, action: 'approve' | 'reject' | 'issue') 
       const { value: notes } = await ElMessageBox.prompt('请输入驳回原因', '驳回', { confirmButtonText: '确定', cancelButtonText: '取消' });
       await post(`/${factoryId.value}/finance/invoices/${id}/reject`, { notes });
     } else if (action === 'issue') {
-      await ElMessageBox.confirm('确认开具发票？', '确认');
-      await post(`/${factoryId.value}/finance/invoices/${id}/issue`);
+      // Bug #4 (R7 fix 2026-04-16): 后端硬规则要求 PDF 附件, 开对话框让用户选文件
+      issueTargetId.value = id;
+      issuePdfFile.value = null;
+      issueDialogVisible.value = true;
+      return;
     } else {
       await ElMessageBox.confirm(`确认${labels[action]}？`, '确认');
       await post(`/${factoryId.value}/finance/invoices/${id}/${action}`);
@@ -59,6 +62,42 @@ async function handleAction(id: string, action: 'approve' | 'reject' | 'issue') 
   } catch (e) {
     if (e !== 'cancel') ElMessage.error(`操作失败`);
   }
+}
+
+// Bug #4 fix: 开具发票弹窗 + PDF 上传
+const issueDialogVisible = ref(false);
+const issueTargetId = ref('');
+const issuePdfFile = ref<File | null>(null);
+const issuing = ref(false);
+
+async function submitIssue() {
+  if (!issuePdfFile.value) { ElMessage.warning('请选择发票 PDF 文件'); return; }
+  issuing.value = true;
+  try {
+    const formData = new FormData();
+    formData.append('file', issuePdfFile.value);
+    await post(`/${factoryId.value}/finance/invoices/${issueTargetId.value}/issue`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    ElMessage.success('开具发票成功');
+    issueDialogVisible.value = false;
+    loadData();
+  } catch (e) {
+    ElMessage.error('开具失败');
+  } finally {
+    issuing.value = false;
+  }
+}
+
+function handlePdfChange(file: { raw: File } | File) {
+  const raw = (file as { raw: File }).raw || (file as File);
+  if (!raw.name?.toLowerCase().endsWith('.pdf')) {
+    ElMessage.warning('仅支持 PDF 文件');
+    issuePdfFile.value = null;
+    return false;
+  }
+  issuePdfFile.value = raw;
+  return false;
 }
 
 // 开票申请弹窗
@@ -164,6 +203,30 @@ async function handleRequestSubmit() {
       <template #footer>
         <el-button @click="requestDialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="handleRequestSubmit">提交申请</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- Bug #4 R7 fix: 开具发票 + PDF 上传 -->
+    <el-dialog v-model="issueDialogVisible" title="开具发票" width="480px" destroy-on-close>
+      <el-form label-width="90px">
+        <el-form-item label="发票 PDF" required>
+          <el-upload
+            :auto-upload="false"
+            :limit="1"
+            accept="application/pdf,.pdf"
+            :on-change="handlePdfChange"
+            :on-remove="() => (issuePdfFile = null)"
+          >
+            <el-button type="primary">选择 PDF 文件</el-button>
+            <template #tip>
+              <div style="color:#999;font-size:12px">仅 PDF, 上传后销售可从 SO 详情下载</div>
+            </template>
+          </el-upload>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="issueDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="issuing" :disabled="!issuePdfFile" @click="submitIssue">确认开具</el-button>
       </template>
     </el-dialog>
   </div>
