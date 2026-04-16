@@ -1123,8 +1123,13 @@ function handleKeydown(event: KeyboardEvent) {
   align-items: flex-start;
   margin-bottom: 16px;
   flex-shrink: 0;
+  flex-wrap: wrap;  // E1 Apr 17 2026: mobile 窄屏 header-left + header-right 换行, 避免标题被挤竖排
+  gap: 8px;
 
   .header-left {
+    flex-shrink: 0;
+    min-width: 0;  // allow flex child to shrink below content size
+
     h1 {
       display: flex;
       align-items: center;
@@ -1132,6 +1137,7 @@ function handleKeydown(event: KeyboardEvent) {
       margin: 12px 0 0;
       font-size: 20px;
       font-weight: 600;
+      white-space: nowrap;  // 禁止 "AI 智能问答" 4 字竖排换行
 
       .el-icon {
         color: var(--color-primary);
@@ -1504,6 +1510,22 @@ function handleKeydown(event: KeyboardEvent) {
   .ai-query-page {
     padding: 12px;
     height: calc(100vh - var(--header-height, 56px) - 24px);
+  }
+
+  // E1 Apr 17 2026: 窄屏 header 改纵向排 (标题在上, 数据源在下)
+  // 避免 "AI 智能问答" 4 字被容器挤到竖排 (用户截图 bug)
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+
+    .header-left h1 {
+      font-size: 18px;
+      margin: 0;
+    }
+
+    .header-right {
+      width: 100%;
+    }
   }
 
   .chat-message {
