@@ -95,8 +95,7 @@ public class LabelRecognitionRecord extends BaseEntity {
 
     // ==================== 图片数据 ====================
 
-    @Lob
-    @Column(name = "captured_image", columnDefinition = "LONGBLOB")
+    @Column(name = "captured_image", columnDefinition = "bytea")
     private byte[] capturedImage;
 
     @Column(name = "captured_image_url", length = 500)

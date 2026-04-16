@@ -78,8 +78,7 @@ public class IsapiEventLog {
     @Column(name = "picture_url", length = 500)
     private String pictureUrl;
 
-    @Lob
-    @Column(name = "picture_data")
+    @Column(name = "picture_data", columnDefinition = "bytea")
     private byte[] pictureData;
 
     // ==================== 时间戳 ====================

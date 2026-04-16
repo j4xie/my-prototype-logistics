@@ -51,8 +51,7 @@ public class SampleCluster {
     @Column(name = "cluster_label", length = 200)
     private String clusterLabel;
 
-    @Lob
-    @Column(name = "cluster_centroid")
+    @Column(name = "cluster_centroid", columnDefinition = "bytea")
     private byte[] clusterCentroid;
 
     @Column(name = "representative_sample", columnDefinition = "TEXT")

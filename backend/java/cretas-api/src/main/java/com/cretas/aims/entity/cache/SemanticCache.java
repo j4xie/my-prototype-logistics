@@ -74,8 +74,7 @@ public class SemanticCache extends BaseEntity {
      * 768 维 float32 (GTE-base-zh 模型)，约 3KB
      * 存储为二进制 BLOB
      */
-    @Lob
-    @Column(name = "embedding_vector")
+    @Column(name = "embedding_vector", columnDefinition = "bytea")
     private byte[] embeddingVector;
 
     /**

@@ -71,8 +71,12 @@ public class DroolsRule extends BaseEntity {
     /**
      * Excel 决策表内容 (可选)
      */
-    @Lob
-    @Column(name = "decision_table", columnDefinition = "MEDIUMBLOB")
+    // @Lob on byte[] made Hibernate 6 bind the param as OID (large object),
+    // but the PG column is bytea — any UPDATE failed with
+    // "column is of type bytea but expression is of type oid". The DB columnDefinition
+    // was also MySQL-specific (MEDIUMBLOB). Plain byte[] + columnDefinition=bytea
+    // keeps Hibernate on the BYTEA JDBC path. Applies uniformly across 6 entities.
+    @Column(name = "decision_table", columnDefinition = "bytea")
     private byte[] decisionTable;
 
     /**
