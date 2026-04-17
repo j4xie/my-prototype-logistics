@@ -289,10 +289,61 @@ class FixedExecutor:
 
             # Flatten multi-level columns if needed
             if isinstance(df.columns, pd.MultiIndex):
-                df.columns = [
-                    '_'.join(str(c) for c in col if str(c) != 'nan' and str(c) != '')
-                    for col in df.columns.values
-                ]
+                import re as _re_unnamed
+                _unnamed_re = _re_unnamed.compile(r'^Unnamed:?\s*\d+', _re_unnamed.IGNORECASE)
+
+                def _level_is_noise(cell: str) -> bool:
+                    """Pandas injects 'Unnamed: X_level_N' when header row cell is empty
+                    or part of a merged-cell span. Treat as noise."""
+                    s = str(cell).strip()
+                    return (s == 'nan' or s == '' or bool(_unnamed_re.match(s)))
+
+                # Pass 1: flatten keeping only meaningful level parts
+                flat_cols = []
+                for i, col in enumerate(df.columns.values):
+                    parts = [str(c) for c in col if not _level_is_noise(c)]
+                    flat_cols.append('_'.join(parts) if parts else f'Column_{i}')
+
+                # Bug #25 true fix (Apr 17 2026): if header detection picked wrong rows,
+                # most flat columns will be Column_N placeholders. In that case re-scan
+                # the sheet via openpyxl to find the real header row (first row that's
+                # >=50% non-empty AND >=80% text cells), then re-read with that header.
+                placeholder_count = sum(1 for c in flat_cols if str(c).startswith('Column_'))
+                if placeholder_count > len(flat_cols) * 0.5 and structure_config.method != "csv_passthrough":
+                    try:
+                        import openpyxl
+                        wb = openpyxl.load_workbook(io.BytesIO(file_bytes), data_only=True, read_only=True)
+                        sheet = wb[structure_config.sheet_name] if structure_config.sheet_name in wb.sheetnames else wb[wb.sheetnames[0]]
+                        detected_header_row = None
+                        for row_idx, row in enumerate(sheet.iter_rows(values_only=True, max_row=20)):
+                            cells = list(row)
+                            non_empty = [v for v in cells if v is not None and str(v).strip() != '']
+                            if len(non_empty) < max(3, len(cells) * 0.5):
+                                continue
+                            text_vals = [
+                                v for v in non_empty
+                                if isinstance(v, str) and not str(v).replace('.', '').replace('-', '').replace(',', '').strip().isdigit()
+                            ]
+                            if len(text_vals) >= len(non_empty) * 0.8:
+                                detected_header_row = row_idx
+                                logger.info(
+                                    f"Bug #25 auto-header-detect: row_idx={row_idx} headers={[str(v)[:20] for v in non_empty[:5]]}"
+                                )
+                                break
+                        wb.close()
+                        if detected_header_row is not None:
+                            df = pd.read_excel(
+                                io.BytesIO(file_bytes),
+                                sheet_name=structure_config.sheet_name or 0,
+                                header=detected_header_row,
+                                skiprows=None,
+                            )
+                            logger.info(f"Bug #25 re-read success: {len(df.columns)} cols, {len(df)} rows")
+                    except Exception as _e:
+                        logger.warning(f"Bug #25 auto-header-detect failed (keeping placeholders): {_e}")
+                        df.columns = flat_cols
+                else:
+                    df.columns = flat_cols
 
             # Store original headers
             result.original_headers = df.columns.tolist()
