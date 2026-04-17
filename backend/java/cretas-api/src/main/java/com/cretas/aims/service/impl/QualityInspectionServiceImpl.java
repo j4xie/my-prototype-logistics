@@ -146,15 +146,20 @@ public class QualityInspectionServiceImpl implements QualityInspectionService {
     }
 
     private void propagateToProductionBatch(QualityInspection inspection) {
+        // Writes back ONLY qualityStatus (PASS/FAIL/CONDITIONAL) from the latest
+        // inspection. batch.yieldRate has a different meaning — it is the batch's
+        // production yield (goodQuantity / actualQuantity) computed in
+        // ProductionBatch.recalculate() on production events. Inspection.passRate
+        // is an audit sampling ratio (passCount / sampleSize) and must not
+        // overwrite the production yield.
         if (productionBatchRepository == null) return;
         Long batchId = inspection.getProductionBatchId();
         if (batchId == null) return;
         try {
             productionBatchRepository.findById(batchId).ifPresent(batch -> {
-                batch.setQualityStatus(mapInspectionResultToBatchQuality(inspection.getResult()));
-                if (inspection.getPassRate() != null) {
-                    batch.setYieldRate(inspection.getPassRate());
-                }
+                QualityStatus newStatus = mapInspectionResultToBatchQuality(inspection.getResult());
+                if (newStatus == null) return;
+                batch.setQualityStatus(newStatus);
                 productionBatchRepository.save(batch);
             });
         } catch (Exception e) {
