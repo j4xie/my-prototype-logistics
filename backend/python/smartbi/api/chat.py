@@ -1090,6 +1090,41 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                 # producing wrong numbers. Fix: compute authoritative aggregates
                                 # over ALL rows at DB level and inject into LLM prompt.
                                 try:
+                                    # Bug #25 fix (Apr 17 2026): multi-level Excel uploads may
+                                    # produce field_defs with clean names (门店名称, 销售金额)
+                                    # whose original_name does NOT match the row_data JSON keys
+                                    # (which stay as "Unnamed: X_level_0_..."). Detect this by
+                                    # checking if any measure/dimension appears as a row_data
+                                    # key; if most semantic names are absent, fall back to the
+                                    # Unnamed:* field_defs (which do match row_data keys).
+                                    _key_check = await conn.fetchrow(
+                                        """SELECT jsonb_object_keys(row_data) AS k
+                                           FROM smart_bi_dynamic_data WHERE upload_id = $1 LIMIT 1""",
+                                        upload_id
+                                    )
+                                    actual_keys_row = await conn.fetch(
+                                        """SELECT jsonb_object_keys(row_data) AS k
+                                           FROM smart_bi_dynamic_data WHERE upload_id = $1 LIMIT 100""",
+                                        upload_id
+                                    )
+                                    actual_keys = {r['k'] for r in (actual_keys_row or [])}
+                                    total_defs = len(field_meta)
+                                    defs_in_rowdata = sum(1 for f in field_meta if f['original_name'] in actual_keys)
+                                    # Bug #25 (Apr 17 2026): if EVERY field_def with a clean
+                                    # semantic name (non-Unnamed) is missing from row_data,
+                                    # drop those and keep only the Unnamed:* entries that DO
+                                    # have data. Threshold: >80% semantic names broken.
+                                    import re as _re_keys
+                                    _unnamed_pat = _re_keys.compile(r'^(Unnamed:?\s*\d+|Column_?\d+)', _re_keys.IGNORECASE)
+                                    semantic_defs = [f for f in field_meta if not _unnamed_pat.match(str(f['original_name'] or ''))]
+                                    semantic_matched = sum(1 for f in semantic_defs if f['original_name'] in actual_keys)
+                                    if semantic_defs and semantic_matched / max(len(semantic_defs), 1) < 0.2:
+                                        logger.warning(
+                                            f"[stream] Bug #25 fallback: only {semantic_matched}/{len(semantic_defs)} "
+                                            f"semantic names match row_data; upload path produced broken field_defs; "
+                                            f"keeping only row_data-matching entries"
+                                        )
+                                        field_meta = [f for f in field_meta if f['original_name'] in actual_keys]
                                     measures = [f['original_name'] for f in field_meta if f.get('is_measure')]
                                     dims = [f['original_name'] for f in field_meta if f.get('is_dimension')]
                                     agg_row = await conn.fetchrow(
