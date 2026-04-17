@@ -21,6 +21,7 @@ const MOBILE_ONLY_ROLES = [
 const ROLE_PATH_WHITELIST: Record<string, string[]> = {
   finance_manager: [
     '/dashboard',
+    '/finance',
     '/smart-bi/dashboard',
     '/smart-bi/finance',
     '/smart-bi/financial-dashboard',
