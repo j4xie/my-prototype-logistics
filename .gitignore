@@ -189,3 +189,16 @@ tests/e2e-comprehensive/results/auth-cache/
 # Android build artifacts
 frontend/CretasFoodTrace/android/app/src/main/assets/
 
+# Playwright MCP snapshots + network logs (transient test artifacts)
+.playwright-mcp/
+
+# Claude Code runtime locks
+.claude/scheduled_tasks.lock
+
+# Transient debug/batch artifacts (ad-hoc shell output)
+/p1_batch*.txt
+/p1_all.txt
+/prod_batch*.txt
+/NOW()
+/TASK_*_COMPLETE.txt
+
