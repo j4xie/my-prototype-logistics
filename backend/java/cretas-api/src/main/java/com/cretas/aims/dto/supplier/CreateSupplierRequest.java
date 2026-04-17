@@ -3,6 +3,7 @@ package com.cretas.aims.dto.supplier;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -65,6 +66,7 @@ public class CreateSupplierRequest {
 
     @Schema(description = "信用额度")
     @PositiveOrZero(message = "信用额度必须大于等于0")
+    @DecimalMax(value = "9999999999.99", message = "信用额度不能超过 9,999,999,999.99 (DB 精度限制)")
     private BigDecimal creditLimit;
 
     @Schema(description = "供应商评级 (1-5)")
