@@ -1189,6 +1189,59 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                                     for tr in top_rows
                                                 )
                                                 agg_lines.append(f"- Top5 by {dim} (按 {primary_measure}): {top_str}")
+                                    # Bug #23 fix (Apr 17 2026): user may mention specific
+                                    # entities that aren't in Top-5 (e.g., asks about 南方百联店
+                                    # which ranks #12). Scan the query for distinct labels of
+                                    # each dimension and inject targeted per-entity aggregates.
+                                    try:
+                                        user_query = (request.effective_query or "")
+                                        if user_query and primary_measure:
+                                            mentioned = []  # (dim, label) tuples
+                                            for dim in dims[:3]:
+                                                labels_rows = await conn.fetch(
+                                                    """SELECT DISTINCT row_data->>$1 AS label
+                                                       FROM smart_bi_dynamic_data
+                                                       WHERE upload_id = $2
+                                                         AND row_data->>$1 IS NOT NULL
+                                                         AND length(row_data->>$1) >= 3
+                                                       LIMIT 500""",
+                                                    dim, upload_id
+                                                )
+                                                for lr in labels_rows:
+                                                    lab = lr['label']
+                                                    if lab and lab in user_query:
+                                                        mentioned.append((dim, lab))
+                                            # Dedupe + cap at 6 entities to keep prompt short
+                                            seen = set()
+                                            uniq_mentioned = []
+                                            for dim, lab in mentioned:
+                                                key = (dim, lab)
+                                                if key in seen:
+                                                    continue
+                                                seen.add(key)
+                                                uniq_mentioned.append((dim, lab))
+                                                if len(uniq_mentioned) >= 6:
+                                                    break
+                                            if uniq_mentioned:
+                                                agg_lines.append("## 用户提到的具体实体聚合 (权威, 基于 DB 全量)")
+                                                for dim, lab in uniq_mentioned:
+                                                    rr = await conn.fetchrow(
+                                                        f"""SELECT SUM((row_data->>$1)::numeric) AS s,
+                                                                  COUNT((row_data->>$1)::numeric) AS c
+                                                           FROM smart_bi_dynamic_data
+                                                           WHERE upload_id = $2
+                                                             AND row_data->>$1 ~ '^-?[0-9.,]+$'
+                                                             AND row_data->>$3 = $4""",
+                                                        primary_measure, upload_id, dim, lab
+                                                    )
+                                                    if rr and rr['s'] is not None:
+                                                        agg_lines.append(
+                                                            f"- {dim}={lab}: {primary_measure} 总计={rr['s']:,.2f} (行数={rr['c']})"
+                                                        )
+                                                logger.info(f"[stream] Entity aggregates: {len(uniq_mentioned)} entities")
+                                    except Exception as ee:
+                                        logger.warning(f"[stream] entity lookup failed: {ee}")
+
                                     real_aggregates_text = "\n".join(agg_lines)
                                     logger.info(f"[stream] Computed real aggregates: {len(agg_lines)} lines")
                                 except Exception as ae:
