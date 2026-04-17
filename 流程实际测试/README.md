@@ -1,5 +1,30 @@
 # 六扇门 V1 QA 测试手册 — **Web 端**
 
+> **📊 2026-04-17 QA 执行总结** (R18 + R18-ext 完整 Web 覆盖):
+> - ✅ **Deep/真 E2E (15 files)**: §01-§11 核心链 (11) / §12 RBAC / §17 用户 / §20 质检 / §21 BI / §25 下游 / §31 SmartBI / §32 并发
+> - 🟡 **Medium/Medium+ (6 files)**: §18 HR / §19 设备 / §22 财务 / §23 供应商 / §24 边界 / §30 AI 意图
+> - 🟡 **Smoke/Smoke+ (18 files)**: §26-§29 / §33-§42 / §45-§51
+> - 🟡 **Infra/Partial (10 files)**: §16 / §81-§89
+> - 📖 **参考文档 (6 files)**: §13 / §14 / §15 / §79 / §80 / §99
+> - ⬜ **未测 (2 files)**: §43 / §44 RN 移动端 (超 Web QA 范围)
+>
+> **Bugs 发现 + 修 (test 已验证, prod 按规则未动, 8 个):**
+> 1. Recipe.java @NotBlank 移除
+> 2. CacheAdminController + JwtAuthInterceptor admin 白名单
+> 3. **#255** quality list.vue enum PASSED→PASS/PASSED/FAIL/CONDITIONAL 兼容
+> 4. **#256** UserMapper 漏 setEmail → 补 DTO + mapper
+> 5. **#257** Hibernate @Version NULL NPE → SQL backfill + Flyway V20260420_01/02 4 张表
+> 6. **#258** 查询模板 parameters Array→String JSON.stringify 前端修
+> 7. **#254** 质检→批次 writeback 缺失 → propagateToProductionBatch 加 (后 #274 修正)
+> 8. **#264** HR 员工工号 employeeCode 不持久化 → DTO + mapper
+> 9. **#270** QC 允许负数 sampleSize → ProcessingServiceImpl 3 条 BusinessException 断言
+> 10. **#274** propagateToProductionBatch 错误覆盖 batch.yieldRate → 只写 qualityStatus 保留生产良品率
+>
+> **Commits on `e2e/v1-framework`** (pushed):
+> `8ee844942` / `65b560c2d` / `263fa7e7e` / `3496ddad7` / `6a028e7a5` / `2717903f5` / `262c20540` + 并行 session 的 `b1637219e`
+>
+> **详情见各文件顶部 banner** (✅/🟡/📖/⬜).
+
 **⚠️ 本手册仅 Web 端**. RN APK (移动端) 测试在 **`../移动端流程测试/`** 独立文件夹.
 
 | 端 | 文件夹 | 文件数 | 对象 |
