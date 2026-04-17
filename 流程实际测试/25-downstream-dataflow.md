@@ -1,5 +1,17 @@
 # 25. 每个操作的下游立即验证 (跨模块链)
 
+> **✅ R18 QA Deep 5 flows downstream (2026-04-17, test 139:8097)**: R18 跨模块操作产生的下游实时更新证据 (3 min 内 auto-propagate):
+>
+> 1. **QC→Batch** ✅: QC POST → batch 1879 qualityStatus `null→PASSED`, yieldRate `null→97.22`, updatedAt 12:08 (Bug #254 修后)
+> 2. **发货→AR 自动挂账** ✅: DLV-20260417-5802 (§81) → AR-20260417-8964 ¥5,000 "销售发货自动挂账", 备注带源 DLV ID
+> 3. **采购入库→AP 自动挂账** ✅: RCV-20260417-0322 → AP-20260417-9812 ¥38,000 "采购入库自动挂账"
+> 4. **供应商→PO 下拉** ✅: "QA Deep 测试供应商" (§17) 即时出现在 PO 新建下拉
+> 5. **用户→HR 列表** ✅: qa_r18_user_0417 (§17) 即时出现在 /hr/employees (同 /F001/users endpoint)
+>
+> 全部 5 条 downstream sync API 调用里同 transaction 完成的实时更新, **无需人工干预**, 无 3-min 延迟.
+>
+> depth: deep (多模块跨链真 evidence, 非 API probe).
+
 **对比 §10**: §10 是 8 条大链路, 本节要求**每个操作后 3 min 内验证下游**
 **P0**: 核心业务链 / **P1**: 间接影响 / **P2**: 反向追溯
 

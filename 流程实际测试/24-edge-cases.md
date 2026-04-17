@@ -1,5 +1,18 @@
 # 24. 边界场景 + 反复操作 + 非法输入 (通用)
 
+> **🟡 R18 QA Medium 8 cases + 1 bug (2026-04-17, test 139:8097)**: 8 个 API 边界测试:
+>
+> ✅ PASS (7 条):
+> 1. username 50 chars → 400 "长度 3-20" ✅
+> 2. username SQL injection `'; DROP TABLE users;--` → 400 Pattern 屏蔽 ✅
+> 4. supplier creditLimit 14 位数字 → 409 (BigDecimal/DB 超限) ✅
+> 5. empty username → 400 "不能为空 + 长度3-20" 组合提示 ✅
+> 6. phone letters `abcd1234567` → 400 "手机号格式不正确" ✅
+> 7. duplicate username qa_ec_83029 → 400 "用户名已存在" ✅
+> 8. invalid email `not-an-email` → 400 "邮箱格式不正确" ✅
+>
+> ❌ **Bug #270 发现 (P2)**: 质检 POST sampleSize=-50 → **200 "操作成功"** (应 400). QualityInspection.sampleSize 缺 >0 断言. R19 待办.
+
 **这是 QA 最容易漏的一类, 客户 demo 最爱踩**
 **覆盖**: 10 类边界 / 应用到所有 CRUD 操作
 **耗时**: 30 min (随机抽样 10 个模块测)

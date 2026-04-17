@@ -1,5 +1,13 @@
 # 26. UI 通用模式 (分页/排序/多选/导出/对话框/Toast)
 
+> **🟡 R18 QA Smoke+ 一致性抽样 6 模块 (2026-04-17, test 139:8097)**: Element Plus + Vue 3 一致性高. 抽样 §17 用户 (33 条 4 页) / §18 HR (36 条 4 页) / §19 设备 (15 条 2 页) / §20 质检 (91 条 10 页) / §23 供应商 (4 条 1 页) / §4 SO (12 条 2 页).
+>
+> **统一模式 ✅**: 列表统计 (header + pagination); 分页 (total + "10条/页" sizes combobox 10/20/50/100 + 上一页/页码/下一页 + "前往 __ 页" jumper); 表格 stripe+border; 行内 link 操作 (查看/编辑/删除/重置密码); 对话框标题 + X 关闭 + 取消/确定; 必填 "* 字段名" 前缀; 空态 "暂无数据"; 搜索栏 (搜索框 + 搜索/重置).
+>
+> **Minor inconsistency**: "共 X 条记录" (header) vs "共 X 条" (pagination footer) 措辞微差, 非 blocker.
+>
+> depth: smoke+ (跨模块观察, 未做 Esc/click-outside dialog close 逐点验证).
+
 **对象**: 所有列表页 + 对话框 + 表单
 **耗时**: 20 min (抽样 5 模块测)
 
