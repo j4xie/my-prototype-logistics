@@ -11,7 +11,7 @@
 > 7. duplicate username qa_ec_83029 → 400 "用户名已存在" ✅
 > 8. invalid email `not-an-email` → 400 "邮箱格式不正确" ✅
 >
-> ❌ **Bug #270 发现 (P2)**: 质检 POST sampleSize=-50 → **200 "操作成功"** (应 400). QualityInspection.sampleSize 缺 >0 断言. R19 待办.
+> ❌→✅ **Bug #270 发现 + Fixed (2026-04-17 12:22)**: 质检 POST sampleSize=-50 之前 200, **现修**. ProcessingServiceImpl.submitInspection 加 3 条断言: sampleSize>0 / pass,fail≥0 / pass+fail≤sampleSize. 5 cases verify all 400/200 正确.
 
 **这是 QA 最容易漏的一类, 客户 demo 最爱踩**
 **覆盖**: 10 类边界 / 应用到所有 CRUD 操作

@@ -496,15 +496,27 @@ public class ProcessingServiceImpl implements ProcessingService {
     // ========== 质量检验 ==========
     public Map<String, Object> submitInspection(String factoryId, String batchId, Map<String, Object> inspection) {
         log.info("提交质检记录: factoryId={}, batchId={}", factoryId, batchId);
+        BigDecimal sampleSize = new BigDecimal(inspection.get("sampleSize").toString());
+        BigDecimal passCount = new BigDecimal(inspection.get("passCount").toString());
+        BigDecimal failCount = new BigDecimal(inspection.get("failCount").toString());
+        if (sampleSize.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new com.cretas.aims.exception.BusinessException("抽样数量必须大于 0");
+        }
+        if (passCount.compareTo(BigDecimal.ZERO) < 0 || failCount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new com.cretas.aims.exception.BusinessException("合格数/不合格数不能为负");
+        }
+        if (passCount.add(failCount).compareTo(sampleSize) > 0) {
+            throw new com.cretas.aims.exception.BusinessException("合格数+不合格数不能超过抽样数量");
+        }
         QualityInspection qualityInspection = new QualityInspection();
         qualityInspection.setFactoryId(factoryId);
         qualityInspection.setProductionBatchId(parseBatchId(batchId));
         qualityInspection.setInspectorId(inspection.get("inspectorId") != null ?
                 Long.valueOf(inspection.get("inspectorId").toString()) : null);
         qualityInspection.setInspectionDate(LocalDate.now());
-        qualityInspection.setSampleSize(new BigDecimal(inspection.get("sampleSize").toString()));
-        qualityInspection.setPassCount(new BigDecimal(inspection.get("passCount").toString()));
-        qualityInspection.setFailCount(new BigDecimal(inspection.get("failCount").toString()));
+        qualityInspection.setSampleSize(sampleSize);
+        qualityInspection.setPassCount(passCount);
+        qualityInspection.setFailCount(failCount);
         BigDecimal passRate = qualityInspection.getPassCount()
                 .divide(qualityInspection.getSampleSize(), 2, RoundingMode.HALF_UP)
                 .multiply(new BigDecimal(100));

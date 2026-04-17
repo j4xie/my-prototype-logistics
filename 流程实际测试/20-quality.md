@@ -1,5 +1,10 @@
 # 20. 质量管理 (质检单/异常处理/标准)
 
+> **✅ R18-ext QA Real Deep + Bug #270 Fixed (2026-04-17 12:22, test 139:8097)**:
+> - **UI new QC deep**: /quality/inspections 真 browser_click 新建 → fill PB20260212002/80/75/5/合格 → toast "质检记录已创建" + list 93→95 + 顶部 4210B930. Rule 1 所有项完成.
+> - **#270 Fix verified**: UI 试填 sampleSize=-30 (被 UI clip) 但 pass+fail=30>0 触发 400 "合格数+不合格数不能超过抽样数量" + dialog 保持未提交 ✅. API 5 cases 全 pass.
+> - **Minor #274**: batch 1879 yieldRate 仍 97.22 (4210B930 的 93.75% 未覆盖). propagateToProductionBatch 需查.
+>
 > **✅ R18 QA Deep + 2 Bugs Fixed (2026-04-17 11:00, test 139:8097)**:
 > 1. **Bug #255 发现+修 (P1)**: /quality/inspections 列表 E6025FDE (API result=PASS+98%+A grade) UI 显示 "不合格" ❌. 根因: list.vue:211 检查 `row.result === 'PASSED'` 但后端 canonical enum 是 `PASS/FAIL/CONDITIONAL`. 修: `isPassResult()` + `getResultLabel()` helpers 兼容 PASS/PASSED/FAIL/FAILED/CONDITIONAL/PENDING. 验证: E6025FDE 正确显示"合格" + 兼容 legacy PASSED 数据. commit `8ee844942`.
 > 2. **Bug #254 发现+修 (P2)**: 质检创建不回写批次. 真测: POST batchId=1879 result=PASS → batch 1879 `qualityStatus=null`, `yieldRate=null`, `updatedAt=2026-02-13` (未更新). 修: `QualityInspectionServiceImpl.createInspection()` 新加 `propagateToProductionBatch()` — 映射 PASS→PASSED/FAIL→FAILED/CONDITIONAL→PARTIAL_PASS, 写回 yieldRate + updatedAt. 再测: batch 1879 `qualityStatus="PASSED"` + `yieldRate=97.22` + `updatedAt=2026-04-17T11:00:47` ✅. commit `65b560c2d`.
