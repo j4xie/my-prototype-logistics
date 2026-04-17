@@ -6,7 +6,10 @@ import com.cretas.aims.entity.ProductionAlert;
 import com.cretas.aims.entity.QualityInspection;
 import com.cretas.aims.event.ProductionAlertEvent;
 import com.cretas.aims.exception.EntityNotFoundException;
+import com.cretas.aims.entity.ProductionBatch;
+import com.cretas.aims.entity.enums.QualityStatus;
 import com.cretas.aims.repository.ProductionAlertRepository;
+import com.cretas.aims.repository.ProductionBatchRepository;
 import com.cretas.aims.repository.QualityInspectionRepository;
 import com.cretas.aims.service.QualityInspectionService;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +34,9 @@ public class QualityInspectionServiceImpl implements QualityInspectionService {
     private final QualityInspectionRepository qualityInspectionRepository;
     private final ProductionAlertRepository productionAlertRepository;
     private final ApplicationEventPublisher eventPublisher;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private ProductionBatchRepository productionBatchRepository;
 
     /** Canvas V2: DB-driven validation rules */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
@@ -134,7 +140,47 @@ public class QualityInspectionServiceImpl implements QualityInspectionService {
             createQualityFailAlert(saved);
         }
 
+        propagateToProductionBatch(saved);
+
         return saved;
+    }
+
+    private void propagateToProductionBatch(QualityInspection inspection) {
+        if (productionBatchRepository == null) return;
+        Long batchId = inspection.getProductionBatchId();
+        if (batchId == null) return;
+        try {
+            productionBatchRepository.findById(batchId).ifPresent(batch -> {
+                batch.setQualityStatus(mapInspectionResultToBatchQuality(inspection.getResult()));
+                if (inspection.getPassRate() != null) {
+                    batch.setYieldRate(inspection.getPassRate());
+                }
+                productionBatchRepository.save(batch);
+            });
+        } catch (Exception e) {
+            log.warn("Batch writeback failed for inspection {} → batch {}: {}",
+                    inspection.getId(), batchId, e.getMessage());
+        }
+    }
+
+    private QualityStatus mapInspectionResultToBatchQuality(String result) {
+        if (result == null) return null;
+        switch (result.toUpperCase()) {
+            case "PASS":
+            case "PASSED":
+            case "QUALIFIED":
+                return QualityStatus.PASSED;
+            case "FAIL":
+            case "FAILED":
+                return QualityStatus.FAILED;
+            case "CONDITIONAL":
+            case "PARTIAL_PASS":
+                return QualityStatus.PARTIAL_PASS;
+            case "PENDING":
+                return QualityStatus.PENDING_INSPECTION;
+            default:
+                return null;
+        }
     }
 
     @Override
