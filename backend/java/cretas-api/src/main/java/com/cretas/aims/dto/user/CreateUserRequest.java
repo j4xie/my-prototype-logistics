@@ -8,6 +8,7 @@ import lombok.Data;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
 /**
@@ -57,4 +58,8 @@ public class CreateUserRequest {
 
     @Schema(description = "CCR费率")
     private BigDecimal ccrRate;
+
+    @Schema(description = "工号", maxLength = 10)
+    @Size(max = 10, message = "工号长度不能超过 10 个字符")
+    private String employeeCode;
 }
