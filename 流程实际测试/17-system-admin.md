@@ -1,5 +1,11 @@
 # 17. 系统管理深度 (用户/角色/Canvas/POS/工作流)
 
+> **✅ R18 QA Deep (2026-04-17 06:42, test 139:8097)**: §17 用户创建真 deep 完整 6-point: fresh create `qa_r18_user_0417`/`QA R18 User`/小组长 → list 32→33 → toast "用户创建成功" → 详情 dialog readback 发现**邮箱显示 "-"** (表单 fill 时填 `qa_r18@test.com`) → 触发 **Bug #256 发现** → API `/F001/users?username=X` verify email=null → 定位 `UserMapper.toEntity()` 漏 `setEmail()` + `updateEntity()` 也漏 → 修 + 部署 test v20260416_184443 → 建 `qa_efx_032583` 再验证 email="emailfix@test.com" 持久化 ✅. commit `8ee844942`.
+>
+> **🟡 R18 QA Smoke (Canvas/工作流/POS)**: /canvas-editor 4-step wizard + AI助手 Autopilot/Plan/Action 三模式 + 6 行业模板加载. 7-tab 编辑器 (流程/触发链/规则/字段/权限/工具/Cron) 已在 memory canvas-e2e-R1-R7 深度验证. 工作流设计器/POS集成/产品-工序配置未深度 E2E.
+>
+> **🟡 QA Smoke (2026-04-17 上午 legacy)**: 用户管理 31 users 列表 + 操作按钮 (查看/编辑/重置密码/启用禁用) 显示正常, 操作日志页加载.
+
 **涉及角色**: admin (全部) / hr (用户部分) / permission_admin (角色)
 **耗时**: 25 min
 

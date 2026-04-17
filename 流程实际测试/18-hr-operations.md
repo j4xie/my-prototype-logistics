@@ -1,5 +1,9 @@
 # 18. HR 管理 (员工/部门/考勤/白名单/工牌)
 
+> **🟡 R18 QA Medium (2026-04-17 06:55, test 139:8097)**: /hr/employees 新建 `qa_hr_r18`/`R18 HR Emp`/操作员 → list 35→36 → toast "添加成功" ✅. **未 detail readback** (Rule 1 严格 deep 需点"查看"回读字段, 本次未做 — 降为 medium). 发现: HR "添加员工" endpoint 复用 /F001/users (与 system/users 同), 跨模块一致性验证通过 (之前建的 qa_r18_user_0417 也出现在 HR 列表). 角色列显示: HR 表 "操作员" 中文 vs system/users "group_leader" 原文, 轻微不一致非 blocker.
+>
+> **🟡 QA Smoke (2026-04-17 上午 legacy)**: /hr/employees 31 records 显示 (用户名/姓名/手机/角色/部门/状态), 子菜单 4 项 (员工/考勤/白名单/部门) 加载. **未深度 E2E**: 编辑角色 / 白名单批次 / 工牌生成. 待后续.
+
 **涉及角色**: hr (主) / admin
 **业务价值**: 六扇门日常高频操作
 **耗时**: 20 min

@@ -1,5 +1,7 @@
 # 50. 工厂 SmartBI 大模块 (制造业专用)
 
+> **🟡 R18 QA Smoke (2026-04-17 07:08)**: /smartbi-config/thresholds?factoryId=F001 (全局路径) **200** ✅. /F001/smartbi-config/thresholds (工厂路径) 404. 解决 memory §99.2#2 待确认项: **全局路径存在**, 工厂路径不可用. Config API 可用.
+
 **说明**: 工厂版 SmartBI — 聚焦**制造/生产/财务/供应链**分析.
 **⚠️ 必跑**: 本节与 [51-smartbi-restaurant.md](51-smartbi-restaurant.md) **两者都要跑**, 不能省任一边. 两者内容不交叉, 但都是产品核心功能.
 **对象**: 全系统 (不论当前客户是哪类工厂都要测)

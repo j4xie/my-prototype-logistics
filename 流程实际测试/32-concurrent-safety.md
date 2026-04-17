@@ -1,5 +1,7 @@
 # 32. 并发安全 + 数据一致性 (多会话测试)
 
+> **✅ R18 QA Medium Dedup 验证 (2026-04-17 06:35, test 139:8097)**: G1 税率分组开票并发 dedup 验证 (regression Bug #2 P1). 真测: browser_click SO-202502-003 "税率分组开票" → dialog "一键按税率分组开票" 首次 409 "该销售订单已有待处理开票申请 (1 张: INV-20260409-0002)". 然后 `browser_evaluate` **5 个 parallel Promise.all fetch** POST /F001/finance/invoices/request-from-order 同 payload → 全部 409 within 20ms, 无重复 invoice 创建. Server-level dedup 在并发下可靠. depth: **medium** (negative test 验证 guard, 无 positive flow writeback — 诚实标 medium 不是 deep). Bug #2 regression PASS.
+
 **必做工具**: 2+ 浏览器窗口 (或 admin + sales 两账号)
 **耗时**: 20 min
 

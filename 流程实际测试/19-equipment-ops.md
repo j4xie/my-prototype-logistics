@@ -1,5 +1,11 @@
 # 19. 设备管理 (CRUD/维修/告警)
 
+> **🟡 R18 QA Medium-Deep (2026-04-17 06:58, test 139:8097)**: POST /F001/equipment/6/maintenance (EQ001 速冻隧道机) 首次返回 500 NPE → 查 log `Cannot invoke Integer.intValue() because current is null` at `VersionGeneration.increment` → 定位 **Bug #257 Hibernate @Version NPE on legacy NULL rows**. 修复: SQL backfill `UPDATE equipment_maintenance/batch_equipment_usage/equipment_alerts SET version=0 WHERE version IS NULL` (3698 rows test) + 并行 session 加 Flyway `V20260420_01/02` entity-level default + NOT NULL. 再 POST 200 ✅ + 批次回写 lastMaintenanceDate=2026-04-17 + nextMaintenanceDate=2026-05-07 + updatedAt 刷新. **Rule 4 caveat**: UI 无"新建维护"按钮, 创建走 fetch POST 非真 locator → 标 medium-deep. commit `b1637219e` + `263fa7e7e`.
+>
+> **🟡 R18 UI 修复**: /equipment/list 的"添加设备"+"编辑"按钮改为 disabled + tooltip "V2 版本上线"(之前空吐"开发中"toast). 前端 list/index.vue 修.
+>
+> **🟡 QA Smoke (2026-04-17 上午 legacy)**: /equipment/list 15 records 显示 (电子秤 x11, 真空包装机 VP-1000, 速冻隧道机 SD-5000), 子菜单 3 项 (设备列表/维护记录/告警管理) 加载.
+
 **涉及角色**: equipment (主) / admin / foreman (工厂车间)
 **耗时**: 15 min
 

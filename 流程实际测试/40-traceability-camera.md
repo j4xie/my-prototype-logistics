@@ -1,5 +1,7 @@
 # 40. 溯源 + 摄像头 + 视觉识别
 
+> **🟡 R18 QA Smoke API (2026-04-17 07:06)**: GET /F001/traceability/batch/PB20260212002 返回完整 trace data (production/batchNumber/productName 香酥鱼柳). UI 路由 `/trace/query` 404 (可能路径不同). API 可用, UI 路径需查. 摄像头/视觉识别未测 (camera SDK 禁用).
+
 **来源**: R3 Agent 1
 **耗时**: 25 min
 

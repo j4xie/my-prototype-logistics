@@ -1,5 +1,7 @@
 # 37. 国际化 + 兼容性 + 无障碍
 
+> **🟡 R18 QA Smoke (2026-04-17 07:05)**: /system/settings 基础设置 tab browser_click 打开语言 combobox, 显示选项 `简体中文` (selected) / `English`. i18n 结构存在 ✅. 保持 ZH 避免污染后续测试, 未真切 EN. 未做 untranslated key 全量扫描. 未测无障碍 (ARIA/tab-index).
+
 ---
 
 ## 37.1 国际化 i18n

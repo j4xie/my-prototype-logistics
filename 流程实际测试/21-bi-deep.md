@@ -1,5 +1,7 @@
 # 21. BI 深度操作 (Excel/查询模板/AI 问答/导出)
 
+> **✅ R18 QA Deep (2026-04-17 06:58, test 139:8097)**: AI 问答完整 6-point: /smart-bi/query (数据源 seed Excel "评价下载2025.07.01-2025.09.30_1328220.xlsx · 12903行") → browser_click 快捷问题 "本月销售额是多少?" → LLM stream 响应 → 渲染真实数据 **总营业额 7,788,726.40 元 / 日均 38,943.63 / 峰值 86,488.12 / 低值 15,157.15** + 业务洞察 ("客流+3.9% vs 翻台率-36.2% 背离") + 执行建议 (优化动线/动态定价/精准营销). Network: POST `/smartbi-api/api/chat/general-analysis-stream` 200 SSE. Console 清洁. 真跨模块端到端 (frontend → Python SSE → LLM → UI 渲染). depth: deep ✅.
+
 **对比 §02.3 #12-15**: 02 测 "不崩", 这里测**完整操作**
 **耗时**: 20 min
 

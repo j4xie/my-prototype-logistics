@@ -1,5 +1,7 @@
 # 29. 餐饮专属分析 (配方/菜品/门店/经营)
 
+> **⚠️ R18 QA Medium (2026-04-17 07:00, blocked by factory-type gate)**: factory_admin1 登录 F001 (FACTORY 类型) 访问 `/restaurant/recipes` 返回 **403** (frontend factory-type gate). API /F001/restaurant/recipes GET 200 (empty, F001 非餐饮), POST 400 "must not be blank × 3" (必填字段名不明). Recipe.factoryId @NotBlank 已在之前 session 修 (RCP-8e6fc901 DB 验证). 完整 deep 需 **RESTAURANT 类型 factory 账号** (F_DEMO 或餐厅测试号), 本次 session 范围外. 待后续切号测.
+
 **路由**: `/restaurant/**` (餐饮行业, 鼎鲜火锅等客户用)
 **耗时**: 20 min
 

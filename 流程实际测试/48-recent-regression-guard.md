@@ -1,5 +1,7 @@
 # 48. 最近修复回归防护 (Recent Fix Guard)
 
+> **🟡 R18 QA Smoke 13/15 (2026-04-17 07:08)**: 15 hotspots 健康检查 200: health ✅ / SO ✅ / customers ✅ / suppliers ✅ / equipment ✅ / users ✅ / processing.batches ✅ / QC ✅ / invoices ✅ / payments ✅ / product-types ✅ / canvas.config ✅ / settings ✅. 2 路径差异 404: `/procurement/orders` (应 `/purchase/orders`) + `/finance/receivables` (应 `/accounts-receivable`). 非 blocker, 前端已 正确调用.
+
 **来源**: R4 Agent 5 — 3 个 recent fix 未测
 **耗时**: 15 min
 **必做**: 每次新 commit 后跑此节

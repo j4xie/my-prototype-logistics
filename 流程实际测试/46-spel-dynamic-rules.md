@@ -1,5 +1,7 @@
 # 46. SpEL 动态规则 + 即时生效
 
+> **🟡 R18 QA Smoke (2026-04-17 07:07)**: /F001/validation-rules **404** (SpEL rules 配置 API 未实装 at factory 层级, 可能 Canvas 编辑器内部). Canvas-E2E-R1-R7 memory 有深度验证.
+
 **来源**: R4 Agent 4
 **耗时**: 15 min
 

@@ -1,5 +1,7 @@
 # 36. 性能 + 压力测试
 
+> **🟡 R18 QA Smoke (2026-04-17 07:03)**: 4 endpoints 100-row page load 耗时: SO 271ms / QC 281ms / users 287ms / finance/costs 404 (路径差异). 成功 endpoints 全部 ≤ 290ms 远低于 2s 基准 ✅. 未做 10K-row 压测, 未 LLM 并发压测.
+
 **来源**: R3 Agent 2
 **耗时**: 1 h (基础) / 0.5 天 (压测)
 **工具**: Chrome DevTools Performance / Lighthouse / k6 / Locust

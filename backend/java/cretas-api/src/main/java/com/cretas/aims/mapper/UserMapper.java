@@ -91,6 +91,9 @@ public class UserMapper {
         user.setMonthlySalary(request.getMonthlySalary());
         user.setExpectedWorkMinutes(request.getExpectedWorkMinutes());
         user.setCcrRate(request.getCcrRate());
+        if (request.getEmployeeCode() != null && !request.getEmployeeCode().isBlank()) {
+            user.setEmployeeCode(request.getEmployeeCode());
+        }
         user.setIsActive(false); // 默认未激活
         return user;
     }
@@ -107,6 +110,9 @@ public class UserMapper {
         }
         if (request.getFullName() != null) {
             user.setFullName(request.getFullName());
+        }
+        if (request.getEmployeeCode() != null && !request.getEmployeeCode().isBlank()) {
+            user.setEmployeeCode(request.getEmployeeCode());
         }
         // 更新position字段（roleCode已删除）
         // department现在是String类型

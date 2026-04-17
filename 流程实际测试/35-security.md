@@ -1,5 +1,7 @@
 # 35. 安全综合测试 (8 大攻击向量)
 
+> **🟡 R18 QA Smoke (2026-04-17 07:05)**: 跨租户 F002 → **403** "无权访问该工厂数据" ✅. `credentials:omit` 6 endpoints (SO/users/customers/finance/suppliers/SO-detail) 全 **401** "未授权请先登录" ✅. Invalid token → 401. XSS payload `<script>alert(1)</script>` 在 keyword search 未反射 ✅. 认证/授权/XSS 防护 OK.
+
 **来源**: R3 Agent 2 (NFR 安全部分)
 **耗时**: 2-3 h (渗透测试, 专业 QA)
 **工具**: Burp Suite / Postman / F12 DevTools

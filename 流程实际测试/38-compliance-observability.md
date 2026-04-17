@@ -1,5 +1,7 @@
 # 38. 合规 + 可观测性 + 审计日志
 
+> **🟡 R18 QA Smoke (2026-04-17 07:05)**: /system/logs (注意非 /system/audit-logs, 404) 存在. 表头: 操作类型/操作人/描述/时间. 共 3 条记录但表格显示"暂无日志" — **minor rendering inconsistency** (count vs body mismatch). GDPR/合规流程相关页面部分存在. 未测导出日志 / 审计日志完整性.
+
 ---
 
 ## 38.1 数据脱敏

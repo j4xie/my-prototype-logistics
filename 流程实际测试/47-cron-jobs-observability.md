@@ -1,5 +1,7 @@
 # 47. 定时任务 + 可观测
 
+> **🟡 R18 QA Smoke (2026-04-17 07:07)**: /F001/cron-configs + /system/cron-logs 全 **404** (V2 roadmap per memory §99.2). Cron 跑在 backend 但 UI observability 未实装. ShedLock memory `project_shedlock_deploy_safety.md` 证明 47 ECS 的 @Scheduled 已 locked.
+
 **来源**: R4 Agent 4
 **耗时**: 15 min
 

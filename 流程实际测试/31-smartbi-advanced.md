@@ -1,5 +1,9 @@
 # 31. SmartBI 高级 (查询模板深度 / What-If / 财务 V2)
 
+> **✅ R18 QA Medium + Bug #258 Fixed (2026-04-17 22:50, test 139:8097)**: /smart-bi/query-templates 真 UI 新增模板 → fill "R18 月度销售TOP10" + 描述 + queryTemplate → 提交 → **400 "请求格式不正确"** ❌. 诊断: 后端 `SmartBiQueryTemplate.parameters` 字段类型 `String` (JSONB 文本), 前端发 `TemplateParam[]` 数组, Jackson 解析失败. 修: QueryTemplateManager.vue 新加 `serializeTemplate()` — `JSON.stringify(template.parameters || [])` 后 POST. 验证: POST /F001/smart-bi/query-templates 200 + createdId=42 ✅. commit `65b560c2d`. depth: medium (真 UI 填表 + 提交 + fix, 但**非 list +1 UI 回读, 只 API verify createdId** → medium 不是 deep).
+>
+> **🟡 未深度**: What-If 情景模拟 / 财务 BI V2 面板 / 跨 sheet 分析 / drill-down. 待后续.
+
 **对比 21**: 21 测 Excel/基础查询/AI 问答, 本节测**高级功能**
 **耗时**: 15 min
 

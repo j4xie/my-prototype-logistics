@@ -1,5 +1,7 @@
 # 34. 数据完整性 + 业务规则
 
+> **🟡 R18 QA Smoke (2026-04-17 07:03)**: DELETE unused supplier 200 "供应商删除成功" ✅ (clean delete). POST SO with fake `customerId: 00000000-0000-0000-0000-000000000000` → 400 "订单行项目不能为空" (validation blocks before FK check). Backend enforces constraints. 未深测级联删除/孤儿记录扫描.
+
 **来源**: R3 Agent 5 审计
 **耗时**: 40 min (深度)
 

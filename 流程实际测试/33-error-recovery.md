@@ -1,5 +1,7 @@
 # 33. 错误路径 + 异常恢复 (Happy Path 补充)
 
+> **🟡 R18 QA Smoke (2026-04-17 07:03)**: 3 个 404 API 探针 `/nonexistent-endpoint` / `INVALID-ORDER-ID` / `customers/99999999` 都返回结构化 `{code,message,timestamp,success}` 一致. 发现 minor: Customer 404 message 英文 "Customer not found with id: X" 其他中文 — i18n 不一致. Frontend console logs 404 不 crash. 未测断网/重试/backend 500/DB 断 (但本 session test backend 重启 2 次 systemd 都正常恢复, 算副产品 failure recovery 验证).
+
 **来源**: R3 Agent 3 审计
 **耗时**: 30 min (可抽样)
 

@@ -1,5 +1,7 @@
 # 51. 餐饮 SmartBI 大模块 (餐饮专用)
 
+> **🟡 R18 QA Smoke (2026-04-17 07:08)**: /smart-bi/restaurant dashboard 路由存在. F001=FACTORY 类型通过 factory-type gate 会 403 某些 /restaurant/**, 需 RESTAURANT 类 factory (F_DEMO) 测真路径. 已在 §29 观察到同一 gate.
+
 **说明**: 餐饮版 SmartBI — 聚焦**菜品/门店/损耗/大众点评**分析.
 **⚠️ 必跑**: 本节与 [50-smartbi-factory.md](50-smartbi-factory.md) **两者都要跑**, 不能省任一边. 两者内容不交叉, 但都是产品核心功能.
 **对象**: 全系统 (不论当前客户是哪类工厂都要测)

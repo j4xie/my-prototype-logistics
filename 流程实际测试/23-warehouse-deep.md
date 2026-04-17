@@ -1,5 +1,9 @@
 # 23. 仓储深度 (供应商/批次/库存调整/统计仪表板)
 
+> **🟡 R18 QA Medium-Deep 供应商 CRUD (2026-04-17 06:59, test 139:8097)**: /procurement/suppliers 真 UI browser_click 新建 `R18 测试供应商`/`R18 联系人`/13800138023/`测试地址 R18`/邮箱 `r18sup@test.com` → list 4→5 → toast "新增成功" ✅ → API `/F001/suppliers?status=ACTIVE` verify 新供应商在 active 列表 (PO 下拉数据源) + email/phone 持久化正确 ✅. **Rule 3 caveat**: 跨模块验证只通过 API fetch /suppliers, 未真 UI 点进 /procurement 新建 PO 看下拉 → 降为 medium-deep (非完整 cross-module UI 穿越). 后续 R18 Step 3 补做. commit 无需 (无 bug). DELETE test (R18 QA Medium §34): DELETE /suppliers/{newId} 200 "供应商删除成功".
+>
+> **🟡 QA Smoke+ (2026-04-17 上午 legacy)**: /warehouse/materials 10 批次 records (含 §5 新入库的 MT-20260417-9786 带鱼 15000kg + MT-20260417-9794 黄鱼 10000kg 真实关联), 子菜单 4 项. §5 采购链路已深度验证入库回写. **未深度**: 库存调整 / 统计仪表板. 待后续.
+
 **补充 §05**: 05 走采购收货, 这里覆盖**仓储独立 CRUD 和管理功能**
 **涉及角色**: `warehouse` / `purchase` (供应商) / `admin`
 **耗时**: 25 min

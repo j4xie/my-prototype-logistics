@@ -1,5 +1,7 @@
 # 45. 触发链 E2E + 失败恢复
 
+> **🟡 R18 QA Smoke (2026-04-17 07:07)**: /F001/trigger-chains **404** (V2 roadmap per memory §99.2). 配置 UI + 触发日志未实装 at factory 层级. Canvas-E2E-R1-R7 memory 已深度验证过 TriggerChain 执行.
+
 **来源**: R4 Agent 4 — 触发链覆盖仅 20%, 失败恢复 0%
 **耗时**: 30 min
 

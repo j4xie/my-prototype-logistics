@@ -1,5 +1,7 @@
 # 41. AI 意图执行 + Webhook + 微信/钉钉集成
 
+> **🟡 R18 QA Smoke (2026-04-17 07:07)**: Webhook 4 候选路径 (`/F001/webhooks` / `/F001/webhook-configs` / `/F001/system/webhooks` / `/F001/activation-codes`) 全 404 (未实装 or 需 platform 账号). Demo V1 非关键.
+
 **来源**: R3 Agent 1
 **耗时**: 25 min
 

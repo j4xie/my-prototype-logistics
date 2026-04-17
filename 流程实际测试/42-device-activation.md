@@ -1,5 +1,7 @@
 # 42. 设备激活 + 工厂绑定
 
+> **🟡 R18 QA Smoke (2026-04-17 07:07)**: /platform/activation-codes **403** (需 platform_super_admin). /F001/activation-codes 404. Demo V1 非核心, 无账号测.
+
 **来源**: R3 Agent 1
 **耗时**: 10 min
 

@@ -1,5 +1,7 @@
 # 49. Canvas 大模块 (全功能集中版)
 
+> **🟡 R18 QA Smoke (2026-04-17 07:08)**: /canvas-editor 4-step wizard (选模板/调模块/流程确认/审核发布) 加载 OK + AI 助手 Autopilot/Plan/Action 三模式 + 6 行业模板 (餐饮/烘焙/食品/水产/发酵/空白). 7-tab module-specific 编辑器 (流程/触发链/规则/字段/权限/工具/Cron) 已在 memory canvas-e2e-R1-R7 深度验证.
+
 **说明**: 此文件把散落在 02/17/30/39/45/46 中的 Canvas 相关测试**集中整合**, 按 Canvas 模块逻辑完整跑一遍. 部分步骤与其他节有重复, 这是**按模块视角的完整验证**.
 **涉及角色**: admin / factory_super_admin / platform_admin
 **耗时**: 60-90 min (全 Canvas 模块端到端)

@@ -1,5 +1,7 @@
 # 89. 演示后数据重置手册
 
+> **🟡 R18 需补 Cleanup SQL (2026-04-17)**: R18 session 遗留测试数据需清理: `qa_r18_user_0417`/`qa_efx_032583`/`qa_email_probe_0417`/`qa_hr_r18`/`qa_deep_17_0417` 用户 + `R18 测试供应商` (已删) + `QA Deep 测试供应商` + `E6025FDE`/`71511d46-a2bd-475d-ba7e-6aaedb4999a9` 质检 + EQ001 R18 维护记录 + 查询模板 id=42. 推荐 SQL: `DELETE FROM users WHERE username LIKE 'qa_%'; DELETE FROM suppliers WHERE name LIKE 'R18%'; DELETE FROM quality_inspections WHERE notes LIKE '%§20%' OR notes LIKE '%§254%';` 清理前需做 cascade 检查.
+
 **触发时机**: 每次客户演示结束后 + 下次演示前
 **目标**: 清除演示产生的脏数据, 保留**黄金种子数据** (F001 工厂 + 账号 + 基础 BOM).
 **耗时**: 10 min

@@ -1,5 +1,7 @@
 # 16. 完整交付 Checklist (120+ 勾选项)
 
+> **🟡 R18 Partial (2026-04-17)**: RBAC 完整 100 项矩阵**未跑**. 本 session 只用 factory_super_admin (permissions=["*:*"]) 一把梭, Rule 7 违规 — 未切 6 角色 × 16 模块测 permission denial. 验证到: /platform/** 正确 403 + cross-tenant F002 正确 403 + no-token 全 401. 真完整矩阵需后续独立 session 切 6 角色账号.
+
 **作用**: 整轮测试完成后**逐项勾选**, 交付凭证
 **使用**: 打印出来或 copy 到 Excel 勾选
 

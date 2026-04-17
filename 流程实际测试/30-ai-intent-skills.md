@@ -1,5 +1,9 @@
 # 30. AI 意图配置 + Skill/Tool 治理 + 校准中心
 
+> **🟡 R18 QA Medium (2026-04-17 07:01, test 139:8097)**: /system/ai-intents 加载 read-only (UI 无"新建"按钮, 意图通常 DB 配置). GET /F001/ai-intents/test 200 (dispatcher 存在). POST /F001/ai-intents 400 (payload 格式不明). POST /F001/ai-intents/recognize 200 但 `matched=false` (字段应 `text` 非 `query`, 未深试). depth: medium (list 渲染 + API dispatcher 验证, 未真建意图 + 未完整 recognition).
+>
+> **🟡 QA Smoke (2026-04-17 上午 legacy)**: /system/ai-intents 加载, `/ai-intents/categories` 200 + `/ai-intents` 200. 列表有 "意图代码/名称/分类/敏感度/配额/优先级/语义路径/状态" 9 列表头. SmartBI 配置 /system/smartbi-config 加载 `/smartbi-config/thresholds` 200. **未深度**: 创建意图 / Skill 执行流 / 校准提交.
+
 **路由**: `/system/ai-intents` + `/system/skill-tools` + `/calibration`
 **涉及角色**: admin (需平台级权限)
 **耗时**: 20 min

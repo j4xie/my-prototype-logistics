@@ -1,5 +1,7 @@
 # 39. 平台级管理 API (Platform / Blueprint)
 
+> **🟡 R18 QA Smoke (2026-04-17 07:06)**: /platform/tenants + /platform/factories 用 factory_super_admin token 正确 **403** "无权访问该工厂数据" ✅ (权限屏障正确). 需 PLATFORM_SUPER_ADMIN 账号才能 deep, 本 session 范围外.
+
 **来源**: R3 Agent 1 — 1637 端点只测 31 个
 **涉及角色**: platform_admin (最高权限, 跨工厂)
 **耗时**: 30 min
