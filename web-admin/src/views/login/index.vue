@@ -45,12 +45,15 @@ async function handleLogin() {
         // 跳转到原页面或首页
         const redirect = route.query.redirect as string;
         router.push(redirect || '/dashboard');
-      } else {
-        ElMessage.error('用户名或密码错误');
       }
+      // R18-ext fix #280: do not show a hardcoded "用户名或密码错误" on failure.
+      // The response interceptor already surfaces the server's actual message
+      // (e.g. "用户账号已被禁用", "用户名或密码错误") from data.message. A second
+      // toast here just stacked misleading info on the screen.
     } catch (error) {
       console.error('Login error:', error);
-      ElMessage.error('登录失败，请稍后重试');
+      // Interceptor shows server message for API errors; only fallback for
+      // thrown non-ApiError cases (network, unexpected JS).
     } finally {
       loading.value = false;
     }
