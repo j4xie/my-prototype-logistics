@@ -1098,17 +1098,33 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                     )
                                     real_total_rows = agg_row['total'] if agg_row else 0
                                     agg_lines = [f"- 全量数据行数: {real_total_rows} (样本 {len(data)} 行仅用于字段示意)"]
-                                    # Per-measure totals across ALL rows
-                                    for m in measures[:8]:
+                                    # Bug #21 (Apr 17 2026): exclude 合计/小计/Total meta-rows
+                                    # from SUM/MAX/MIN — they contain pre-aggregated values
+                                    # that double-count row-level data. Check first dimension
+                                    # (typically 门店名称 / 产品名 / 项目 etc) for meta labels.
+                                    # Safe: dim name is bound param $3, uses row_data->> which
+                                    # escapes key contents. No SQL injection.
+                                    meta_dim = dims[0] if dims else None
+                                    meta_where = ""
+                                    meta_args_tail = []
+                                    if meta_dim:
+                                        meta_where = " AND (row_data->>$3 IS NULL OR row_data->>$3 NOT IN ('合计','总计','Total','TOTAL','小计','汇总','总额','Sum','sum'))"
+                                        meta_args_tail = [meta_dim]
+                                    # Per-measure totals across ALL NON-META rows
+                                    # Bug #22 (Apr 17 2026): raise cap 8→15 so revenue-related
+                                    # measures like 分摊优惠 (often 8+ deep in measure list due
+                                    # to dim/measure interleaving) reach the prompt.
+                                    for m in measures[:15]:
                                         r = await conn.fetchrow(
-                                            """SELECT SUM((row_data->>$1)::numeric) AS s,
+                                            f"""SELECT SUM((row_data->>$1)::numeric) AS s,
                                                       AVG((row_data->>$1)::numeric) AS a,
                                                       MIN((row_data->>$1)::numeric) AS mn,
                                                       MAX((row_data->>$1)::numeric) AS mx,
                                                       COUNT((row_data->>$1)::numeric) AS c
                                                FROM smart_bi_dynamic_data
-                                               WHERE upload_id = $2 AND row_data->>$1 ~ '^-?[0-9.,]+$'""",
-                                            m, upload_id
+                                               WHERE upload_id = $2 AND row_data->>$1 ~ '^-?[0-9.,]+$'
+                                               {meta_where}""",
+                                            m, upload_id, *meta_args_tail
                                         )
                                         if r and r['c']:
                                             agg_lines.append(
@@ -1117,6 +1133,19 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                                 f"最大={r['mx'] or 0:,.2f}, 最小={r['mn'] or 0:,.2f}, "
                                                 f"有效行数={r['c']}"
                                             )
+                                    # Inject distinct count per dimension so LLM doesn't infer
+                                    # total category/store count from Top-5 list size.
+                                    for dim in dims[:4]:
+                                        dc = await conn.fetchrow(
+                                            """SELECT COUNT(DISTINCT row_data->>$1) AS c
+                                               FROM smart_bi_dynamic_data
+                                               WHERE upload_id = $2
+                                                 AND row_data->>$1 IS NOT NULL
+                                                 AND row_data->>$1 NOT IN ('合计','总计','Total','TOTAL','小计')""",
+                                            dim, upload_id
+                                        )
+                                        if dc and dc['c'] is not None:
+                                            agg_lines.append(f"- {dim} 不同值总数: {dc['c']}")
                                     # Pick revenue-like primary measure (not the literal first
                                     # which may be miscategorized like 收入分组/商品编码).
                                     _priority_kw = ['销售金额', '销售额', '营业额', '营业收入', '实收', '主营业务收入', '金额']
