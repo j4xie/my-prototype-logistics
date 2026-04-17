@@ -35,6 +35,7 @@ import {
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import echarts from '@/utils/echarts';
+import { processEChartsOptions } from '@/utils/echarts-fmt';
 import { AIInsightPanel } from '@/components/smartbi';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
 
@@ -650,9 +651,14 @@ function renderChartFromConfig(messageId: string, chartConfig: ChartConfig) {
     const chart = echarts.init(chartDom, 'cretas');
     chartInstances.set(messageId, chart);
 
-    // Use option directly if available (proper ECharts config from Python)
+    // Use option directly if available (proper ECharts config from Python).
+    // Bug #20 fix (Apr 17 2026): Python emits __FMT__/__ANIM__ sentinel strings
+    // in place of callbacks. Resolve them via processEChartsOptions, otherwise
+    // ECharts throws "TypeError: f is not a function" when trying to call the
+    // sentinel string as a formatter.
     if (chartConfig.option && typeof chartConfig.option === 'object') {
-      chart.setOption(chartConfig.option as echarts.EChartsOption);
+      const resolvedOption = processEChartsOptions(chartConfig.option as Record<string, unknown>);
+      chart.setOption(resolvedOption as echarts.EChartsOption);
       return;
     }
 

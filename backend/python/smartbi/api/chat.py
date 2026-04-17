@@ -1160,6 +1160,10 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                     if not primary_measure and measures:
                                         primary_measure = measures[0]
                                     # Top-5 per (dim × primary measure) across top dims
+                                    # Bug #24 (Apr 17 2026): also keep structured Top-5 so we
+                                    # can render an accurate chart from DB aggregates instead
+                                    # of the 200-row sample which sometimes loses dim columns.
+                                    top5_by_dim = {}
                                     if primary_measure:
                                         for dim in dims[:4]:
                                             top_rows = await conn.fetch(
@@ -1176,6 +1180,10 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                                 dim, primary_measure, upload_id
                                             )
                                             if top_rows:
+                                                top5_by_dim[dim] = [
+                                                    {"label": tr['label'], "total": float(tr['total'] or 0)}
+                                                    for tr in top_rows
+                                                ]
                                                 top_str = ", ".join(
                                                     f"{tr['label']}={tr['total'] or 0:,.2f}"
                                                     for tr in top_rows
@@ -1310,7 +1318,37 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
             # ── Build charts in parallel (non-blocking) ──
             charts = []
             try:
-                charts = _build_charts_for_query(query, df, data)
+                # Bug #24 (Apr 17 2026): prepend DB-aggregated Top-5 chart so user
+                # sees accurate Top-N even if sample-based chart builder misfires
+                # (e.g., label_field picks a column with nulls in first 50 rows).
+                if 'top5_by_dim' in locals() and top5_by_dim and 'primary_measure' in locals() and primary_measure:
+                    primary_dim = next(iter(top5_by_dim.keys()))
+                    top5 = top5_by_dim[primary_dim]
+                    charts.append({
+                        "type": "bar",
+                        "title": f"Top 5 {primary_dim} (按 {primary_measure})",
+                        "option": {
+                            "title": {"text": f"Top 5 {primary_dim}", "left": "center"},
+                            "xAxis": {
+                                "type": "category",
+                                "data": [t["label"] for t in top5],
+                                "axisLabel": {"rotate": 30, "overflow": "truncate", "width": 120},
+                            },
+                            "yAxis": {"type": "value", "name": primary_measure},
+                            "series": [{
+                                "name": primary_measure,
+                                "type": "bar",
+                                "data": [t["total"] for t in top5],
+                                "label": {"show": True, "position": "top"},
+                            }],
+                            "tooltip": {"trigger": "axis"},
+                            "grid": {"left": "3%", "right": "4%", "bottom": "3%", "containLabel": True},
+                        }
+                    })
+                charts_extra = _build_charts_for_query(query, df, data)
+                if charts_extra:
+                    charts.extend(charts_extra)
+                # (debug logging removed after Bug #20/#24 verified)
             except Exception as chart_err:
                 logger.warning(f"[stream] Chart generation failed: {chart_err}")
 
