@@ -86,6 +86,11 @@ class StructureDetectionResult:
     error: Optional[str] = None
     note: Optional[str] = None
 
+    # Bug #16 fix (Apr 17 2026): CSV skiprows persisted for cache roundtrip
+    # so executor can re-read from correct row when structure_result is served
+    # from cache instead of being freshly detected.
+    csv_skiprows: int = 0
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
         result = {
@@ -105,7 +110,8 @@ class StructureDetectionResult:
             },
             "merged_cells": [asdict(m) for m in self.merged_cells],
             "columns": [asdict(c) for c in self.columns],
-            "preview_rows": self.preview_rows
+            "preview_rows": self.preview_rows,
+            "csv_skiprows": self.csv_skiprows,
         }
         if self.error:
             result["error"] = self.error

@@ -719,6 +719,7 @@ async def auto_parse_excel(
                         for i, h in enumerate(headers_csv)
                     ],
                     preview_rows=preview,
+                    csv_skiprows=csv_skiprows,
                 )
                 logger.info(f"CSV fast-path: {len(headers_csv)} cols, {len(df_csv)} rows, skiprows={csv_skiprows} (header_override={effective_header_override})")
             else:
@@ -813,6 +814,20 @@ async def auto_parse_excel(
         # Pass effective_header_override so executor's CSV-passthrough path can skip
         # leading metadata rows. Without this, the executor reads CSV with default
         # header=0 and treats title rows as columns (BUG #4 fix, Apr 15 2026).
+        #
+        # Bug #16 fix (Apr 17 2026): csv_skiprows must survive the cache roundtrip,
+        # otherwise cache-hit path re-reads CSV from row 0 with Unnamed:* headers,
+        # hangs 60+s → Java 10011 timeout → 502. Prefer structure_result.csv_skiprows
+        # (persists through cache), fall back to locals (fresh detection), then to
+        # header_override-derived value.
+        _structure_skiprows = getattr(structure_result, "csv_skiprows", 0) or 0
+        _local_skiprows = locals().get("csv_skiprows")
+        if _structure_skiprows > 0:
+            _executor_skiprows = _structure_skiprows
+        elif _local_skiprows is not None:
+            _executor_skiprows = _local_skiprows
+        else:
+            _executor_skiprows = max(0, (effective_header_override or 1) - 1)
         extracted = executor.execute_with_pandas(
             content,
             structure_result,
@@ -822,7 +837,7 @@ async def auto_parse_excel(
                 "skip_empty_rows": skip_empty_rows,
                 "calculate_stats": calculate_stats,
                 "transpose": transpose,
-                "csv_skiprows": max(0, (effective_header_override or 1) - 1),
+                "csv_skiprows": _executor_skiprows,
             }
         )
 

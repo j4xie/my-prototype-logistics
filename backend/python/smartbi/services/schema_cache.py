@@ -506,6 +506,9 @@ class SchemaCache:
 
         result.preview_rows = data.get("preview_rows", [])
 
+        # Bug #16 fix (Apr 17 2026): restore csv_skiprows for executor.
+        result.csv_skiprows = data.get("csv_skiprows", 0)
+
         return result
 
     def _dict_to_mapping(self, data: Dict[str, Any]) -> SemanticMappingResult:
