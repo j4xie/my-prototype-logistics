@@ -1069,6 +1069,20 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                 if rows:
                                     data = [_json.loads(r['row_data']) if isinstance(r['row_data'], str) else r['row_data'] for r in rows]
                                     logger.info(f"[stream] Loaded {len(data)} rows from upload {upload_id}")
+                                # Bug #17 fix (Apr 17 2026): load field_definitions for prompt
+                                # So LLM knows which columns are measures/dimensions/times
+                                try:
+                                    field_rows = await conn.fetch(
+                                        """SELECT original_name, standard_name, is_measure, is_dimension, is_time
+                                           FROM smart_bi_pg_field_definitions
+                                           WHERE upload_id = $1 ORDER BY display_order""",
+                                        upload_id
+                                    )
+                                    field_meta = [dict(r) for r in field_rows]
+                                    logger.info(f"[stream] Loaded {len(field_meta)} field defs for upload {upload_id}")
+                                except Exception as fe:
+                                    logger.warning(f"[stream] field_defs lookup failed: {fe}")
+                                    field_meta = []
                 except Exception as e:
                     logger.warning(f"[stream] Failed to load upload data: {e}")
 
@@ -1140,14 +1154,35 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
             if request.context:
                 analysis_ctx = f"{query}\n补充信息: {request.context}"
 
+            # Bug #17 fix: include field_definitions in prompt so LLM knows
+            # which columns are measures/dimensions/times for the selected upload
+            field_summary = ""
+            if 'field_meta' in locals() and field_meta:
+                measures = [f['original_name'] for f in field_meta if f.get('is_measure')]
+                dims = [f['original_name'] for f in field_meta if f.get('is_dimension')]
+                times = [f['original_name'] for f in field_meta if f.get('is_time')]
+                lines = ["## 当前数据源字段分类 (权威信息，优先使用)"]
+                if measures:
+                    lines.append(f"可聚合数值字段 (measures, 用于 sum/avg/count): {', '.join(measures)}")
+                if dims:
+                    lines.append(f"分类维度字段 (dimensions, 用于分组): {', '.join(dims)}")
+                if times:
+                    lines.append(f"时间字段: {', '.join(times)}")
+                field_summary = "\n".join(lines) + "\n"
+
             prompt = f"""用户问题：{analysis_ctx}
 
+{field_summary}
 ## 数据概览
 {data_summary}
 
 {financial_metrics}
 
-基于以上数据回答用户问题。引用具体数字，给出业务建议。中文Markdown，300字以内。"""
+基于上述**当前数据源**回答用户问题。严格按字段分类:
+- 用 measures 做统计 (sum/avg/count)
+- 按 dimensions 分组对比
+- 不要引用非当前字段列表中的字段名 (避免幻觉)
+引用具体数字，给出业务建议。中文Markdown，300字以内。"""
 
             system_role = "你是食品企业的数据分析师。精炼回答，引用数字，给可执行建议。Markdown格式。"
 
