@@ -1083,6 +1083,80 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                 except Exception as fe:
                                     logger.warning(f"[stream] field_defs lookup failed: {fe}")
                                     field_meta = []
+
+                                # Bug #19 fix (Apr 17 2026): sample LIMIT 200 is insufficient
+                                # for aggregation queries ("Top N by dim", "总销售额"). LLM
+                                # was echoing partial sums over 200 rows instead of full data,
+                                # producing wrong numbers. Fix: compute authoritative aggregates
+                                # over ALL rows at DB level and inject into LLM prompt.
+                                try:
+                                    measures = [f['original_name'] for f in field_meta if f.get('is_measure')]
+                                    dims = [f['original_name'] for f in field_meta if f.get('is_dimension')]
+                                    agg_row = await conn.fetchrow(
+                                        "SELECT COUNT(*) AS total FROM smart_bi_dynamic_data WHERE upload_id = $1",
+                                        upload_id
+                                    )
+                                    real_total_rows = agg_row['total'] if agg_row else 0
+                                    agg_lines = [f"- 全量数据行数: {real_total_rows} (样本 {len(data)} 行仅用于字段示意)"]
+                                    # Per-measure totals across ALL rows
+                                    for m in measures[:8]:
+                                        r = await conn.fetchrow(
+                                            """SELECT SUM((row_data->>$1)::numeric) AS s,
+                                                      AVG((row_data->>$1)::numeric) AS a,
+                                                      MIN((row_data->>$1)::numeric) AS mn,
+                                                      MAX((row_data->>$1)::numeric) AS mx,
+                                                      COUNT((row_data->>$1)::numeric) AS c
+                                               FROM smart_bi_dynamic_data
+                                               WHERE upload_id = $2 AND row_data->>$1 ~ '^-?[0-9.,]+$'""",
+                                            m, upload_id
+                                        )
+                                        if r and r['c']:
+                                            agg_lines.append(
+                                                f"- {m} (全量): 总计={r['s'] or 0:,.2f}, "
+                                                f"均值={r['a'] or 0:,.2f}, "
+                                                f"最大={r['mx'] or 0:,.2f}, 最小={r['mn'] or 0:,.2f}, "
+                                                f"有效行数={r['c']}"
+                                            )
+                                    # Pick revenue-like primary measure (not the literal first
+                                    # which may be miscategorized like 收入分组/商品编码).
+                                    _priority_kw = ['销售金额', '销售额', '营业额', '营业收入', '实收', '主营业务收入', '金额']
+                                    primary_measure = None
+                                    for kw in _priority_kw:
+                                        for m in measures:
+                                            if kw in m:
+                                                primary_measure = m
+                                                break
+                                        if primary_measure:
+                                            break
+                                    if not primary_measure and measures:
+                                        primary_measure = measures[0]
+                                    # Top-5 per (dim × primary measure) across top dims
+                                    if primary_measure:
+                                        for dim in dims[:4]:
+                                            top_rows = await conn.fetch(
+                                                """SELECT row_data->>$1 AS label,
+                                                          SUM((row_data->>$2)::numeric) AS total
+                                                   FROM smart_bi_dynamic_data
+                                                   WHERE upload_id = $3
+                                                     AND row_data->>$2 ~ '^-?[0-9.,]+$'
+                                                     AND row_data->>$1 IS NOT NULL
+                                                     AND row_data->>$1 NOT IN ('合计', '总计', 'Total', 'TOTAL', '小计')
+                                                   GROUP BY row_data->>$1
+                                                   ORDER BY total DESC NULLS LAST
+                                                   LIMIT 5""",
+                                                dim, primary_measure, upload_id
+                                            )
+                                            if top_rows:
+                                                top_str = ", ".join(
+                                                    f"{tr['label']}={tr['total'] or 0:,.2f}"
+                                                    for tr in top_rows
+                                                )
+                                                agg_lines.append(f"- Top5 by {dim} (按 {primary_measure}): {top_str}")
+                                    real_aggregates_text = "\n".join(agg_lines)
+                                    logger.info(f"[stream] Computed real aggregates: {len(agg_lines)} lines")
+                                except Exception as ae:
+                                    logger.warning(f"[stream] real aggregates failed: {ae}")
+                                    real_aggregates_text = ""
                 except Exception as e:
                     logger.warning(f"[stream] Failed to load upload data: {e}")
 
@@ -1170,17 +1244,24 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                     lines.append(f"时间字段: {', '.join(times)}")
                 field_summary = "\n".join(lines) + "\n"
 
+            # Bug #19 fix (Apr 17 2026): inject authoritative full-data aggregates
+            # so LLM doesn't guess from 200-row sample.
+            real_agg_block = ""
+            if 'real_aggregates_text' in locals() and real_aggregates_text:
+                real_agg_block = f"\n## 全量数据聚合 (权威，基于 DB 全部行计算，优先引用这些数字)\n{real_aggregates_text}\n"
+
             prompt = f"""用户问题：{analysis_ctx}
 
 {field_summary}
-## 数据概览
+## 数据概览 (样本)
 {data_summary}
-
+{real_agg_block}
 {financial_metrics}
 
 基于上述**当前数据源**回答用户问题。严格按字段分类:
 - 用 measures 做统计 (sum/avg/count)
 - 按 dimensions 分组对比
+- **涉及总量/排名/占比时，必须引用"全量数据聚合"段的数字，不要从样本重新计算**
 - 不要引用非当前字段列表中的字段名 (避免幻觉)
 引用具体数字，给出业务建议。中文Markdown，300字以内。"""
 
