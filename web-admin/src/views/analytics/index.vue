@@ -45,28 +45,35 @@ async function loadOverviewData() {
       get(`/${factoryId.value}/reports/dashboard/equipment`)
     ]);
 
+    const failed: string[] = [];
     if (prodRes.status === 'fulfilled' && prodRes.value.success) {
       overviewData.value.production = {
         ...overviewData.value.production,
         ...prodRes.value.data
       };
-    }
+    } else { failed.push('生产'); }
     if (qualRes.status === 'fulfilled' && qualRes.value.success) {
       overviewData.value.quality = {
         ...overviewData.value.quality,
         ...qualRes.value.data
       };
-    }
+    } else { failed.push('质量'); }
     if (warehouseRes.status === 'fulfilled' && warehouseRes.value.success) {
       const data = warehouseRes.value.data || {};
       overviewData.value.warehouse.totalMaterialBatches = data.materialBatches || 0;
       overviewData.value.warehouse.lowStockCount = data.lowStockMaterials || 0;
-    }
+    } else { failed.push('仓储'); }
     if (equipRes.status === 'fulfilled' && equipRes.value.success) {
       overviewData.value.equipment = {
         ...overviewData.value.equipment,
         ...equipRes.value.data
       };
+    } else { failed.push('设备'); }
+    // R18-ext #282 fix: when some/all endpoints fail, surface the failure
+    // instead of silently showing zeros (prev behavior made zeros look like
+    // real data).
+    if (failed.length > 0) {
+      ElMessage.warning(`概览数据部分加载失败: ${failed.join('、')}. 相关指标可能为占位 0, 请刷新重试`);
     }
   } catch (error) {
     console.error('加载概览数据失败:', error);
@@ -95,8 +102,12 @@ async function loadTrendData() {
 
 // formatNumber imported from @/utils/format-number
 
+// R18-ext #284 fix: backend passRate is already a percentage value
+// (e.g. 68.33 for 68.33%), not a decimal (0.6833). Multiplying by 100
+// produced "6833.0%" in the UI.
 function formatPercent(num: number): string {
-  return (num * 100).toFixed(1) + '%';
+  if (num == null || isNaN(num)) return '0.0%';
+  return Number(num).toFixed(1) + '%';
 }
 </script>
 

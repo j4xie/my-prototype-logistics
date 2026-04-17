@@ -21,6 +21,7 @@ const orderId = computed(() => route.params.id as string);
 
 const loading = ref(false);
 const submitting = ref(false);
+const notFound = ref(false);
 const order = ref<Record<string, unknown> | null>(null);
 const deliveries = ref<Record<string, unknown>[]>([]);
 const invoices = ref<Record<string, unknown>[]>([]);
@@ -125,10 +126,23 @@ onMounted(() => {
 async function loadOrder() {
   if (!factoryId.value || !orderId.value) return;
   loading.value = true;
+  notFound.value = false;
   try {
     const res = await get(`/${factoryId.value}/sales/orders/${orderId.value}`);
-    if (res.success) order.value = res.data;
-  } catch { ElMessage.error('加载失败'); }
+    if (res.success && res.data) {
+      order.value = res.data;
+    } else {
+      notFound.value = true;
+      order.value = null;
+    }
+  } catch (e: unknown) {
+    // R18-ext #283 fix: any load failure on SO detail means the order is
+    // unreachable for this user — most likely 404/not-found, possibly 403.
+    // Either way, render empty state rather than a blank page. Interceptor
+    // already showed the server's message; don't stack a duplicate toast.
+    notFound.value = true;
+    order.value = null;
+  }
   finally { loading.value = false; }
 }
 
@@ -726,7 +740,16 @@ async function handleCreatePayment() {
         </div>
       </template>
 
-      <template v-if="order">
+      <!-- R18-ext #283: explicit empty state for 404 / not-found -->
+      <el-empty
+        v-if="notFound"
+        :description="`订单 ${orderId} 不存在或已被删除`"
+      >
+        <el-button type="primary" @click="router.push('/sales/orders')">返回订单列表</el-button>
+        <el-button @click="router.back()">返回上页</el-button>
+      </el-empty>
+
+      <template v-if="order && !notFound">
         <!-- 订单头部摘要 (4 状态联动) -->
         <el-descriptions :column="4" border>
           <el-descriptions-item label="订单编号">{{ order.orderNumber }}</el-descriptions-item>
