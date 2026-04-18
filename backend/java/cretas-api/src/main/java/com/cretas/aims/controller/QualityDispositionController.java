@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.quality.*;
 import com.cretas.aims.entity.QualityInspection;
 import com.cretas.aims.entity.DecisionAuditLog;
@@ -66,6 +67,7 @@ public class QualityDispositionController {
      * 4. 合格率 < 60%: SCRAP (质量主管审批)
      * 5. 存在安全隐患: HOLD (立即暂停，等待高层决定)
      */
+    @RequirePermission({"quality:read_write"})
     @PostMapping("/evaluate")
     @Operation(summary = "评估质检处置", description = "根据质检结果评估推荐的处置动作")
     public ApiResponse<DispositionEvaluationDTO> evaluateDisposition(
@@ -153,6 +155,7 @@ public class QualityDispositionController {
      * 3. 记录审计日志
      * 4. 发送通知
      */
+    @RequirePermission({"quality:read_write"})
     @PostMapping("/execute")
     @Operation(summary = "执行处置动作", description = "执行质检处置动作，集成状态机门禁")
     public ApiResponse<DispositionResultDTO> executeDisposition(
@@ -315,6 +318,7 @@ public class QualityDispositionController {
     /**
      * 配置处置规则
      */
+    @RequirePermission({"quality:read_write"})
     @PostMapping("/rules")
     @Operation(summary = "创建处置规则", description = "创建新的质检处置规则")
     public ApiResponse<DispositionRuleDTO> createRule(
@@ -472,6 +476,7 @@ public class QualityDispositionController {
      * 申请处置
      * 创建一个新的处置申请，需要后续审批
      */
+    @RequirePermission({"quality:read_write"})
     @PostMapping("/apply")
     @Operation(summary = "申请处置", description = "提交质检处置申请")
     public ApiResponse<DispositionApplicationDTO> applyDisposition(
@@ -567,6 +572,7 @@ public class QualityDispositionController {
     /**
      * 审批处置申请
      */
+    @RequirePermission({"quality:read_write"})
     @PostMapping("/{id}/approve")
     @Operation(summary = "审批处置", description = "审批或拒绝质检处置申请")
     public ApiResponse<DispositionApprovalResultDTO> approveDisposition(

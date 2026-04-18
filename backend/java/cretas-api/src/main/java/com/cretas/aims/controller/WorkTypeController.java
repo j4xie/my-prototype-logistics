@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.WorkTypeDTO;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.service.WorkTypeService;
@@ -34,6 +35,7 @@ public class WorkTypeController {
 
     private final WorkTypeService workTypeService;
 
+    @RequirePermission({"hr:read_write"})
     @PostMapping
     @Operation(summary = "创建工作类型", description = "创建新的工作类型，包含名称、编码、颜色、计件规则等配置信息")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -84,6 +86,7 @@ public class WorkTypeController {
         return ApiResponse.success(workType);
     }
 
+    @RequirePermission({"hr:read_write"})
     @PutMapping("/{id}")
     @Operation(summary = "更新工作类型", description = "更新工作类型的配置信息，包括名称、编码、颜色、计件规则等")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -96,6 +99,7 @@ public class WorkTypeController {
         return ApiResponse.success(result);
     }
 
+    @RequirePermission({"hr:read_write"})
     @DeleteMapping("/{id}")
     @Operation(summary = "删除工作类型", description = "删除指定的工作类型，仅管理员可操作")
     @PreAuthorize("hasRole('ADMIN')")
@@ -107,6 +111,7 @@ public class WorkTypeController {
         return ApiResponse.success();
     }
 
+    @RequirePermission({"hr:read_write"})
     @PutMapping("/{id}/toggle-status")
     @Operation(summary = "切换工作类型状态", description = "切换工作类型的启用/禁用状态")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -118,6 +123,7 @@ public class WorkTypeController {
         return ApiResponse.success(result);
     }
 
+    @RequirePermission({"hr:read_write"})
     @PostMapping("/initialize-defaults")
     @Operation(summary = "初始化默认工作类型", description = "为工厂初始化一套默认的工作类型配置，仅管理员可操作")
     @PreAuthorize("hasRole('ADMIN')")
@@ -137,6 +143,7 @@ public class WorkTypeController {
         return ApiResponse.success(stats);
     }
 
+    @RequirePermission({"hr:read_write"})
     @PutMapping("/display-order")
     @Operation(summary = "更新显示顺序", description = "批量更新工作类型的显示顺序")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")

@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.ProcessTaskDTO;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.service.ProcessWorkReportingService;
@@ -39,6 +40,7 @@ public class ProcessWorkReportingController {
         return ApiResponse.success(service.getPendingApprovals(factoryId, pageable));
     }
 
+    @RequirePermission({"production:read_write"})
     @PutMapping("/{id}/approve")
     @Operation(summary = "审批通过(幂等)")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -49,6 +51,7 @@ public class ProcessWorkReportingController {
         return ApiResponse.success(service.approveReport(factoryId, id, approvedBy));
     }
 
+    @RequirePermission({"production:read_write"})
     @PutMapping("/{id}/reject")
     @Operation(summary = "审批拒绝")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -61,6 +64,7 @@ public class ProcessWorkReportingController {
         return ApiResponse.success(service.rejectReport(factoryId, id, reason, rejectedBy));
     }
 
+    @RequirePermission({"production:read_write"})
     @PutMapping("/batch-approve")
     @Operation(summary = "批量审批(全部成功或全部回滚)")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -71,6 +75,7 @@ public class ProcessWorkReportingController {
         return ApiResponse.success(service.batchApprove(factoryId, reportIds, approvedBy));
     }
 
+    @RequirePermission({"production:read_write"})
     @PostMapping("/normal")
     @Operation(summary = "正常报工(IN_PROGRESS任务，需审批)")
     public ApiResponse<Map<String, Object>> submitNormalReport(
@@ -96,6 +101,7 @@ public class ProcessWorkReportingController {
                 factoryId, processTaskId, effectiveWorkerId, reporterName, outputQuantity, notes));
     }
 
+    @RequirePermission({"production:read_write"})
     @PostMapping("/supplement")
     @Operation(summary = "补报(COMPLETED/CLOSED任务，需审批)")
     public ApiResponse<Map<String, Object>> submitSupplement(
@@ -117,6 +123,7 @@ public class ProcessWorkReportingController {
                 factoryId, processTaskId, workerId, reporterName, outputQuantity, processCategory, notes));
     }
 
+    @RequirePermission({"production:read_write"})
     @PostMapping("/{id}/reversal")
     @Operation(summary = "冲销(已审批记录的数量修正)")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")

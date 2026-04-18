@@ -1,6 +1,7 @@
 package com.cretas.aims.controller.pos;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.enums.PosBrand;
 import com.cretas.aims.entity.pos.PosConnection;
 import com.cretas.aims.entity.pos.PosOrderSync;
@@ -32,6 +33,7 @@ public class PosController {
 
     // ==================== 连接管理 ====================
 
+    @RequirePermission({"sales:read_write"})
     @PostMapping("/connections")
     @Operation(summary = "创建POS连接")
     public ApiResponse<PosConnection> createConnection(
@@ -68,6 +70,7 @@ public class PosController {
         return ApiResponse.success("查询成功", connection);
     }
 
+    @RequirePermission({"sales:read_write"})
     @DeleteMapping("/connections/{connectionId}")
     @Operation(summary = "删除POS连接")
     public ApiResponse<Void> deleteConnection(
@@ -77,6 +80,7 @@ public class PosController {
         return ApiResponse.success("POS连接删除成功", null);
     }
 
+    @RequirePermission({"sales:read_write"})
     @PostMapping("/connections/{connectionId}/toggle")
     @Operation(summary = "启用/停用POS连接")
     public ApiResponse<PosConnection> toggleConnection(
@@ -89,6 +93,7 @@ public class PosController {
 
     // ==================== 连接测试 ====================
 
+    @RequirePermission({"sales:read_write"})
     @PostMapping("/connections/{connectionId}/test")
     @Operation(summary = "测试POS连接")
     public ApiResponse<Map<String, Object>> testConnection(
@@ -101,6 +106,7 @@ public class PosController {
 
     // ==================== 手动同步 ====================
 
+    @RequirePermission({"sales:read_write"})
     @PostMapping("/connections/{connectionId}/sync")
     @Operation(summary = "手动触发订单同步")
     public ApiResponse<List<PosOrderSync>> syncOrders(
@@ -112,6 +118,7 @@ public class PosController {
 
     // ==================== Webhook回调 ====================
 
+    @RequirePermission({"sales:read_write"})
     @PostMapping("/webhook/{brand}")
     @Operation(summary = "POS Webhook回调入口")
     public ApiResponse<Void> handleWebhook(

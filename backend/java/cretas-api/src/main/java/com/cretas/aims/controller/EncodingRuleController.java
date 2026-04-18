@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.config.EncodingRule;
 import com.cretas.aims.service.EncodingRuleService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,6 +45,7 @@ public class EncodingRuleController {
     /**
      * 生成编码
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/generate/{entityType}")
     @Operation(summary = "生成编码", description = "根据配置的编码规则生成下一个唯一编码，会自动递增序列号。支持传入上下文参数用于动态占位符替换")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'workshop_supervisor', 'warehouse_keeper')")
@@ -154,6 +156,7 @@ public class EncodingRuleController {
     /**
      * 创建编码规则
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping
     @Operation(summary = "创建编码规则", description = "为工厂创建新的编码规则，配置实体类型、编码模板、前缀、日期格式、序列号长度和重置周期等")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -186,6 +189,7 @@ public class EncodingRuleController {
     /**
      * 更新编码规则
      */
+    @RequirePermission({"system:read_write"})
     @PutMapping("/{ruleId}")
     @Operation(summary = "更新编码规则", description = "更新指定编码规则的配置信息，可修改编码模板、前缀、日期格式、序列号长度等，但不会重置已生成的序列号")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -225,6 +229,7 @@ public class EncodingRuleController {
     /**
      * 启用/禁用编码规则
      */
+    @RequirePermission({"system:read_write"})
     @PutMapping("/{ruleId}/enabled")
     @Operation(summary = "启用/禁用编码规则", description = "切换编码规则的启用状态。禁用后该规则将不再用于编码生成，系统会使用默认规则")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -242,6 +247,7 @@ public class EncodingRuleController {
     /**
      * 删除编码规则
      */
+    @RequirePermission({"system:read_write"})
     @DeleteMapping("/{ruleId}")
     @Operation(summary = "删除编码规则", description = "软删除编码规则，删除后该规则将不再可用，但历史生成的编码不受影响")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -258,6 +264,7 @@ public class EncodingRuleController {
     /**
      * 重置序列号
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/{ruleId}/reset-sequence")
     @Operation(summary = "重置序列号", description = "将编码规则的当前序列号重置为0，下次生成编码时从1开始。通常在更换年度或业务周期时使用")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -276,6 +283,7 @@ public class EncodingRuleController {
     /**
      * 验证编码模板
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/validate-pattern")
     @Operation(summary = "验证编码模板", description = "验证编码模板格式是否正确，检查占位符语法、日期格式等。返回验证结果和模板解析预览")
     @PreAuthorize("hasAuthority('factory_super_admin')")

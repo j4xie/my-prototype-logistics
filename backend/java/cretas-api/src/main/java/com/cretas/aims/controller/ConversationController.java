@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.entity.conversation.ConversationSession;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.service.ConversationService;
 import com.cretas.aims.service.ConversationService.ConversationResponse;
 import com.cretas.aims.service.ConversationService.ConversationStatistics;
@@ -55,6 +56,7 @@ public class ConversationController {
     /**
      * 开始多轮对话
      */
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/start")
     @Operation(summary = "开始多轮对话", description = "当意图识别置信度低于30%时触发多轮对话")
     public ResponseEntity<Map<String, Object>> startConversation(
@@ -84,6 +86,7 @@ public class ConversationController {
     /**
      * 继续多轮对话
      */
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/{sessionId}/reply")
     @Operation(summary = "继续多轮对话", description = "用户回复澄清问题，继续对话")
     public ResponseEntity<Map<String, Object>> continueConversation(
@@ -107,6 +110,7 @@ public class ConversationController {
     /**
      * SSE 流式 — 开始多轮对话
      */
+    @RequirePermission({"analytics:read_write"})
     @PostMapping(value = "/start/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "流式开始多轮对话 (SSE)")
     public SseEmitter startConversationStream(
@@ -156,6 +160,7 @@ public class ConversationController {
     /**
      * SSE 流式 — 继续多轮对话
      */
+    @RequirePermission({"analytics:read_write"})
     @PostMapping(value = "/{sessionId}/reply/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "流式继续多轮对话 (SSE)")
     public SseEmitter continueConversationStream(
@@ -201,6 +206,7 @@ public class ConversationController {
     /**
      * 确认意图
      */
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/{sessionId}/confirm")
     @Operation(summary = "确认意图", description = "用户确认识别的意图，结束对话并触发学习")
     public ResponseEntity<Map<String, Object>> confirmIntent(
@@ -223,6 +229,7 @@ public class ConversationController {
     /**
      * 取消对话
      */
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/{sessionId}/cancel")
     @Operation(summary = "取消对话", description = "用户取消当前对话")
     public ResponseEntity<Map<String, Object>> cancelConversation(
