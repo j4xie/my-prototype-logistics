@@ -576,6 +576,33 @@ async def api_exception_handler(request, exc: ApiException):
     )
 
 
+# Bug #35 fix (Apr 18 2026): FastAPI 默认 HTTPException 响应是 {detail:"..."},
+# 和项目契约 {success:false, message, code} 不一致 → 前端 interceptor 拿不到
+# .message → 用户看 axios 通用 "Request failed with status code 404".
+# 统一转成项目格式.
+from fastapi import HTTPException as FastAPIHTTPException
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+
+@app.exception_handler(FastAPIHTTPException)
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request, exc):
+    """Convert FastAPI/Starlette HTTPException.detail → unified project format."""
+    code_map = {
+        400: ErrorCode.VALIDATION_ERROR,
+        401: ErrorCode.AUTH_ERROR,
+        403: ErrorCode.AUTH_ERROR,
+        404: ErrorCode.NOT_FOUND,
+        422: ErrorCode.VALIDATION_ERROR,
+    }
+    code = code_map.get(exc.status_code, ErrorCode.INTERNAL_ERROR)
+    message = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=error_response(message, code),
+    )
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
     """Global exception handler — unified format for unhandled errors."""

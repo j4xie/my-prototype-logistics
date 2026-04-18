@@ -34,7 +34,7 @@
             <el-table-column prop="name" label="门店" min-width="160" show-overflow-tooltip />
             <el-table-column prop="revenue" label="营收(元)" width="130" align="right" sortable>
               <template #default="{ row }">
-                <span :class="{ 'weak-store': isWeakStore(row.name) }">{{ row.revenue.toLocaleString() }}</span>
+                <span :class="{ 'weak-store': isWeakStore(row.name) }">{{ formatAmount(row.revenue) }}</span>
               </template>
             </el-table-column>
             <el-table-column prop="orderCount" label="品项数" width="100" align="right" sortable />
@@ -80,6 +80,7 @@ import { ArrowLeft } from '@element-plus/icons-vue'
 import echarts from '@/utils/echarts'
 import { useChartResize } from '@/composables/useChartResize'
 import { useRestaurantAnalytics } from '@/composables/useRestaurantAnalytics'
+import { formatAmount } from '@/utils/tableFormatters'
 import type { StoreComparisonData } from '@/types/restaurant-analytics'
 
 const containerRef = ref<HTMLElement>()
@@ -119,7 +120,7 @@ function renderChart() {
         const p = params[0] as Record<string, unknown>
         const store = stores.value.find(s => s.name === p.name)
         if (!store) return p.name
-        return `<b>${store.name}</b><br/>营收: ¥${store.revenue.toLocaleString()}<br/>品均收入: ¥${store.avgTicket.toFixed(0)}<br/>折扣率: ${store.discountPct.toFixed(1)}%`
+        return `<b>${store.name}</b><br/>营收: ${formatAmount(store.revenue)}<br/>品均收入: ¥${store.avgTicket.toFixed(0)}<br/>折扣率: ${store.discountPct.toFixed(1)}%`
       },
     },
     grid: { left: 140, right: 30, top: 10, bottom: 20 },
