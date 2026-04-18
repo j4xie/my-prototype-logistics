@@ -620,6 +620,54 @@ const approvalTimeline = computed<Array<{
     });
   }
 
+  // Bug #29 fix (Apr 18 2026): 补齐开票 3 段事件 — 申请 / 审核 / 开具
+  if (invoices.value.length > 0) {
+    const sortedByRequest = [...invoices.value].sort((a, b) =>
+      String(a.requestedAt || a.createdAt || '').localeCompare(String(b.requestedAt || b.createdAt || ''))
+    );
+    const earliestRequested = sortedByRequest[0].requestedAt || sortedByRequest[0].createdAt;
+    if (earliestRequested) {
+      nodes.push({
+        type: 'primary',
+        title: invoices.value.length === 1 ? '开票申请' : `开票申请 (${invoices.value.length} 条)`,
+        user: '业务员',
+        time: String(earliestRequested),
+      });
+    }
+
+    const reviewed = invoices.value.filter(inv => inv.reviewedAt);
+    if (reviewed.length > 0) {
+      const latestReview = reviewed.sort((a, b) =>
+        String(b.reviewedAt).localeCompare(String(a.reviewedAt))
+      )[0];
+      const isApproved = ['APPROVED', 'ISSUED'].includes(String(latestReview.status));
+      nodes.push({
+        type: isApproved ? 'success' : 'danger',
+        title: reviewed.length === invoices.value.length
+          ? (isApproved ? '发票审核通过' : '发票审核驳回')
+          : `发票审核中 (${reviewed.length}/${invoices.value.length})`,
+        user: String(latestReview.reviewedByName || `财务#${latestReview.reviewedBy || '?'}`),
+        time: String(latestReview.reviewedAt),
+        notes: latestReview.reviewNotes ? String(latestReview.reviewNotes) : undefined,
+      });
+    }
+
+    const issued = invoices.value.filter(inv => inv.issuedAt);
+    if (issued.length > 0) {
+      const latestIssued = issued.sort((a, b) =>
+        String(b.issuedAt).localeCompare(String(a.issuedAt))
+      )[0];
+      nodes.push({
+        type: 'success',
+        title: issued.length === invoices.value.length
+          ? '发票已开具'
+          : `发票开具中 (${issued.length}/${invoices.value.length})`,
+        user: '财务',
+        time: String(latestIssued.issuedAt),
+      });
+    }
+  }
+
   // 节点 6: 收款 (有 payments 记录就显示)
   if (payments.value.length > 0) {
     const latestPayment = payments.value[0];

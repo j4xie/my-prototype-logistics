@@ -1,5 +1,5 @@
 #!/bin/bash
-# web-admin 部署脚本 v1.0 — Vite build + 原子目录交换 + 旧 assets 清理
+# web-admin 部署脚本 v2.0 — Vite build + 原子目录交换 + 旧 assets 清理 + test/prod 分离
 #
 # 为什么要做原子交换:
 #   Vite 用 content-hash 命名 chunk (e.g. DynamicModulePage-DZGo_ThO.js)。每次 deploy
@@ -11,26 +11,87 @@
 #   瞬间完成,old chunks 被一次性清理。代价是: 未刷新的老 tab 在导航时会 chunk load
 #   fail → 用户被迫刷新。这是正确的行为,stale tab 不应该继续运行。
 #
-# 用法:
-#   ./scripts/deploy/deploy-web-admin.sh           # 默认部署到 139 的 web-admin
-#   ./scripts/deploy/deploy-web-admin.sh --dry-run # 构建但不上传
+# v2.0 (Apr 18 2026) — Bug #30 fix:
+#   之前 REMOTE_PATH 硬编码 /www/wwwroot/web-admin (prod), 运行 script 就直接上 prod,
+#   违反 "不动 prod" 硬规则. 现在强制 --env 参数区分:
+#     --env test (DEFAULT)  → /www/wwwroot/web-admin-test  (139:8097 vhost)
+#     --env prod            → /www/wwwroot/web-admin       (139:8086 / admin domain)
+#     --env all             → 先 test, smoke 后 prod (对齐 deploy-backend.sh)
 #
-# 服务器路径: 139.196.165.140:/www/wwwroot/web-admin/
-# Nginx: /www/server/panel/vhost/nginx/web-admin.conf
+# 用法:
+#   ./scripts/deploy/deploy-web-admin.sh              # 默认 test
+#   ./scripts/deploy/deploy-web-admin.sh --env test   # 显式 test
+#   ./scripts/deploy/deploy-web-admin.sh --env prod   # prod (会 confirm 提示)
+#   ./scripts/deploy/deploy-web-admin.sh --dry-run    # 构建但不上传
+#
+# 服务器路径:
+#   test: 139.196.165.140:/www/wwwroot/web-admin-test/  (vhost 8097)
+#   prod: 139.196.165.140:/www/wwwroot/web-admin/       (vhost 8086 + admin.cretaceousfuture.com 443)
 
 set -e
 
+# ==================== 参数解析 ====================
+ENV="test"   # 默认 test (Bug #30 fix, 之前默认 prod 导致误操作)
+DRY_RUN=0
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --env)
+            ENV="$2"
+            shift 2
+            ;;
+        --env=*)
+            ENV="${1#*=}"
+            shift
+            ;;
+        --dry-run)
+            DRY_RUN=1
+            shift
+            ;;
+        *)
+            echo "❌ 未知参数: $1"
+            echo "用法: $0 [--env test|prod|all] [--dry-run]"
+            exit 1
+            ;;
+    esac
+done
+
+case "$ENV" in
+    test|prod|all) ;;
+    *)
+        echo "❌ --env 必须是 test / prod / all (你传了: $ENV)"
+        exit 1
+        ;;
+esac
+
 # ==================== 配置 ====================
 GATEWAY="root@139.196.165.140"
-REMOTE_PATH="/www/wwwroot/web-admin"
 REMOTE_BACKUP_DIR="/www/wwwroot/web-admin-backups"
 LOCAL_BUILD_DIR="web-admin/dist"
 TMP_TAR="/tmp/web-admin-dist.tar.gz"
 BACKUP_KEEP=3
 
-DRY_RUN=0
-if [ "$1" = "--dry-run" ]; then
-    DRY_RUN=1
+# 根据 --env 决定目标路径
+if [ "$ENV" = "prod" ]; then
+    REMOTE_PATH="/www/wwwroot/web-admin"
+    echo "⚠️  ⚠️  ⚠️  PROD 部署  ⚠️  ⚠️  ⚠️"
+    echo "    目标: $REMOTE_PATH (139:8086 / admin.cretaceousfuture.com)"
+    echo "    影响: 所有 prod 用户立刻看到新代码"
+    echo ""
+    read -p "    真的部 prod? 输 'YES-PROD' 继续, 其他退出: " confirm
+    if [ "$confirm" != "YES-PROD" ]; then
+        echo "❌ 已取消 (你输: '$confirm')"
+        exit 1
+    fi
+    echo ""
+elif [ "$ENV" = "all" ]; then
+    # all 模式: test → smoke → prod, 单独循环处理见下
+    echo "🔄 --env all: 先部 test → smoke → prod (需要最后 confirm)"
+    REMOTE_PATH="/www/wwwroot/web-admin-test"  # 先 test
+else
+    # test (default)
+    REMOTE_PATH="/www/wwwroot/web-admin-test"
+    echo "🧪 TEST 部署 (默认): $REMOTE_PATH (139:8097)"
 fi
 
 log() {
