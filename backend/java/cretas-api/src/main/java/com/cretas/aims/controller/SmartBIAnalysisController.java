@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.smartbi.*;
 import com.cretas.aims.entity.smartbi.SmartBiDatasource;
 import com.cretas.aims.entity.smartbi.SmartBiFieldDefinition;
@@ -486,6 +487,7 @@ public class SmartBIAnalysisController {
 
     // ==================== Natural Language Query ====================
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/query")
     @Operation(summary = "Natural language query", description = "Query and analyze data through natural language")
     public ResponseEntity<ApiResponse<NLQueryResponse>> query(
@@ -525,6 +527,7 @@ public class SmartBIAnalysisController {
 
     // ==================== Drill-Down ====================
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/drill-down")
     @Operation(summary = "Data drill-down", description = "Multi-dimensional data drill-down analysis")
     public ResponseEntity<ApiResponse<Map<String, Object>>> drillDown(
@@ -671,6 +674,7 @@ public class SmartBIAnalysisController {
 
     // ==================== Schema Management ====================
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping(value = "/datasource/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Upload and detect schema", description = "Parse Excel structure, compare with existing schema")
     public ResponseEntity<ApiResponse<SchemaChangePreview>> uploadAndDetectSchema(
@@ -706,6 +710,7 @@ public class SmartBIAnalysisController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/datasource/apply")
     @Operation(summary = "Apply schema changes", description = "Validate confirmed mappings, execute DDL, update field definitions")
     public ResponseEntity<ApiResponse<Void>> applySchemaChanges(
@@ -956,6 +961,7 @@ public class SmartBIAnalysisController {
         return ResponseEntity.ok(ApiResponse.success(templates));
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/query-templates")
     @Operation(summary = "Create query template")
     public ResponseEntity<ApiResponse<SmartBiQueryTemplate>> createQueryTemplate(
@@ -966,6 +972,7 @@ public class SmartBIAnalysisController {
         return ResponseEntity.ok(ApiResponse.success(saved));
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PutMapping("/query-templates/{templateId}")
     @Operation(summary = "Update query template")
     public ResponseEntity<ApiResponse<SmartBiQueryTemplate>> updateQueryTemplate(
@@ -986,6 +993,7 @@ public class SmartBIAnalysisController {
                 .orElse(ResponseEntity.ok(ApiResponse.error("Template not found")));
     }
 
+    @RequirePermission({"analytics:read_write"})
     @DeleteMapping("/query-templates/{templateId}")
     @Operation(summary = "Delete query template")
     public ResponseEntity<ApiResponse<Void>> deleteQueryTemplate(

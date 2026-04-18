@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.production.ProductionPlanDTO;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.scheduling.DetectMixedBatchRequest;
 import com.cretas.aims.dto.scheduling.MixedBatchGroupDTO;
 import com.cretas.aims.dto.scheduling.MixedBatchRuleDTO;
@@ -45,6 +46,7 @@ public class MixedBatchController {
     /**
      * AI检测可合批订单
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/detect")
     @Operation(summary = "检测可合批订单", description = "AI分析订单，检测可以合并的订单组")
     public ResponseEntity<Map<String, Object>> detectMixedBatches(
@@ -137,6 +139,7 @@ public class MixedBatchController {
     /**
      * 确认混批
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/groups/{groupId}/confirm")
     @Operation(summary = "确认混批", description = "确认混批组，创建生产计划")
     public ResponseEntity<Map<String, Object>> confirmGroup(
@@ -160,6 +163,7 @@ public class MixedBatchController {
     /**
      * 拒绝混批
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/groups/{groupId}/reject")
     @Operation(summary = "拒绝混批", description = "拒绝混批建议")
     public ResponseEntity<Map<String, Object>> rejectGroup(
@@ -183,6 +187,7 @@ public class MixedBatchController {
     /**
      * 更新混批组订单
      */
+    @RequirePermission({"production:read_write"})
     @PutMapping("/groups/{groupId}/orders")
     @Operation(summary = "更新混批组订单", description = "添加或移除混批组中的订单")
     public ResponseEntity<Map<String, Object>> updateGroupOrders(
@@ -226,6 +231,7 @@ public class MixedBatchController {
     /**
      * 更新混批规则
      */
+    @RequirePermission({"production:read_write"})
     @PutMapping("/rules")
     @Operation(summary = "更新混批规则", description = "创建或更新混批规则配置")
     public ResponseEntity<Map<String, Object>> saveRule(
@@ -247,6 +253,7 @@ public class MixedBatchController {
     /**
      * 启用/禁用规则
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/rules/{ruleType}/toggle")
     @Operation(summary = "启用/禁用规则", description = "切换混批规则的启用状态")
     public ResponseEntity<Map<String, Object>> toggleRule(
@@ -289,6 +296,7 @@ public class MixedBatchController {
     /**
      * 清理过期混批组
      */
+    @RequirePermission({"production:read_write"})
     @DeleteMapping("/groups/expired")
     @Operation(summary = "清理过期混批组", description = "清理已过期的混批组")
     public ResponseEntity<Map<String, Object>> cleanupExpired(

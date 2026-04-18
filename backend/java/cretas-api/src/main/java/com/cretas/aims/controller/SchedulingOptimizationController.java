@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.FactorySchedulingConfig;
 import com.cretas.aims.entity.FactoryTempWorker;
 import com.cretas.aims.service.scheduling.*;
@@ -52,6 +53,7 @@ public class SchedulingOptimizationController {
     /**
      * 更新工厂调度配置
      */
+    @RequirePermission({"scheduling:read_write"})
     @PutMapping("/config")
     public ResponseEntity<ApiResponse<FactorySchedulingConfig>> updateConfig(
             @PathVariable String factoryId,
@@ -84,6 +86,7 @@ public class SchedulingOptimizationController {
     /**
      * 手动触发自适应学习
      */
+    @RequirePermission({"scheduling:read_write"})
     @PostMapping("/config/adapt")
     public ResponseEntity<ApiResponse<String>> triggerAdaptation(
             @PathVariable String factoryId) {
@@ -116,6 +119,7 @@ public class SchedulingOptimizationController {
     /**
      * 注册临时工
      */
+    @RequirePermission({"scheduling:read_write"})
     @PostMapping("/temp-workers/{workerId}")
     public ResponseEntity<ApiResponse<FactoryTempWorker>> registerTempWorker(
             @PathVariable String factoryId,
@@ -134,6 +138,7 @@ public class SchedulingOptimizationController {
     /**
      * 临时工转正
      */
+    @RequirePermission({"scheduling:read_write"})
     @PostMapping("/temp-workers/{workerId}/convert")
     public ResponseEntity<ApiResponse<FactoryTempWorker>> convertToPermanent(
             @PathVariable String factoryId,
@@ -199,6 +204,7 @@ public class SchedulingOptimizationController {
     /**
      * 设置SKU复杂度
      */
+    @RequirePermission({"scheduling:read_write"})
     @PutMapping("/sku/{skuCode}/complexity")
     public ResponseEntity<ApiResponse<String>> setSkuComplexity(
             @PathVariable String factoryId,
@@ -294,6 +300,7 @@ public class SchedulingOptimizationController {
     /**
      * 重置公平性统计周期
      */
+    @RequirePermission({"scheduling:read_write"})
     @PostMapping("/fairness/reset")
     public ResponseEntity<ApiResponse<String>> resetFairnessPeriod(
             @PathVariable String factoryId) {
@@ -311,6 +318,7 @@ public class SchedulingOptimizationController {
     /**
      * 评估调度复杂度
      */
+    @RequirePermission({"scheduling:read_write"})
     @PostMapping("/complexity/evaluate")
     public ResponseEntity<ApiResponse<SchedulingComplexityRouter.SchedulingComplexity>> evaluateComplexity(
             @PathVariable String factoryId,
