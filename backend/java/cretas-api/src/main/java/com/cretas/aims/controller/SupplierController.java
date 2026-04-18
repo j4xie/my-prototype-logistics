@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
@@ -35,6 +36,9 @@ import java.util.Map;
  * @version 1.0.0
  * @since 2025-01-09
  */
+/**
+ * Bug #318 fix: method-level @RequirePermission on write methods only.
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/suppliers")
@@ -48,6 +52,7 @@ public class SupplierController {
     /**
      * 创建供应商
      */
+    @RequirePermission({"procurement:read_write", "finance:read_write"})
     @PostMapping
     @Operation(summary = "创建供应商", description = "创建新的供应商信息，需要提供供应商名称、联系方式等基本信息")
     public ApiResponse<SupplierDTO> createSupplier(
@@ -69,6 +74,7 @@ public class SupplierController {
     /**
      * 更新供应商
      */
+    @RequirePermission({"procurement:read_write", "finance:read_write"})
     @PutMapping("/{supplierId}")
     @Operation(summary = "更新供应商", description = "更新指定供应商的信息")
     public ApiResponse<SupplierDTO> updateSupplier(
@@ -86,6 +92,7 @@ public class SupplierController {
     /**
      * 删除供应商
      */
+    @RequirePermission({"procurement:read_write", "finance:read_write"})
     @DeleteMapping("/{supplierId}")
     @Operation(summary = "删除供应商", description = "删除指定的供应商记录")
     public ApiResponse<Void> deleteSupplier(
@@ -177,6 +184,7 @@ public class SupplierController {
      * 1. URL参数: PUT /{supplierId}/status?isActive=true
      * 2. Request Body: PUT /{supplierId}/status {"isActive": true}
      */
+    @RequirePermission({"procurement:read_write", "finance:read_write"})
     @PutMapping("/{supplierId}/status")
     @Operation(summary = "切换供应商状态", description = "启用或禁用供应商，支持URL参数或请求体两种方式传递状态")
     public ApiResponse<SupplierDTO> toggleSupplierStatus(
@@ -207,6 +215,7 @@ public class SupplierController {
     /**
      * 更新供应商评级
      */
+    @RequirePermission({"procurement:read_write", "finance:read_write"})
     @PutMapping("/{supplierId}/rating")
     @Operation(summary = "更新供应商评级", description = "为供应商设置评级分数，1-5分，可附加评级说明")
     public ApiResponse<SupplierDTO> updateSupplierRating(
@@ -228,6 +237,7 @@ public class SupplierController {
     /**
      * 更新供应商信用额度
      */
+    @RequirePermission({"procurement:read_write", "finance:read_write"})
     @PutMapping("/{supplierId}/credit-limit")
     @Operation(summary = "更新供应商信用额度", description = "设置供应商的最大信用额度，单位为元")
     public ApiResponse<SupplierDTO> updateCreditLimit(
@@ -345,6 +355,7 @@ public class SupplierController {
     /**
      * 从Excel文件批量导入供应商
      */
+    @RequirePermission({"procurement:read_write", "finance:read_write"})
     @PostMapping("/import")
     @Operation(summary = "从Excel文件批量导入供应商", description = "上传Excel文件批量导入供应商信息，仅支持.xlsx格式，文件大小限制10MB")
     public ApiResponse<com.cretas.aims.dto.common.ImportResult<SupplierDTO>> importSuppliersFromExcel(

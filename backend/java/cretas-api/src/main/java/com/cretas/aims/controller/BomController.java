@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.bom.BomCostSummaryDTO;
 import com.cretas.aims.entity.bom.BomChangeLog;
@@ -24,6 +25,9 @@ import java.util.List;
  * @author Cretas Team
  * @version 1.0.0
  * @since 2025-01-13
+ */
+/**
+ * Bug #318 fix: method-level @RequirePermission on write methods only.
  */
 @Slf4j
 @RestController
@@ -73,6 +77,7 @@ public class BomController {
         return ApiResponse.success(bomService.getAllBomItems(factoryId));
     }
 
+    @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
     @PostMapping("/items")
     @Operation(summary = "添加BOM物料")
     public ApiResponse<BomItem> addBomItem(
@@ -83,6 +88,7 @@ public class BomController {
         return ApiResponse.success(bomService.saveBomItem(bomItem));
     }
 
+    @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
     @PutMapping("/items/{id}")
     @Operation(summary = "更新BOM物料")
     public ApiResponse<BomItem> updateBomItem(
@@ -95,6 +101,7 @@ public class BomController {
         return ApiResponse.success(bomService.saveBomItem(bomItem));
     }
 
+    @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
     @DeleteMapping("/items/{id}")
     @Operation(summary = "删除BOM物料")
     public ApiResponse<Void> deleteBomItem(
@@ -127,6 +134,7 @@ public class BomController {
         return ApiResponse.success(bomService.getAllLaborCosts(factoryId));
     }
 
+    @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
     @PostMapping("/labor")
     @Operation(summary = "添加人工费用")
     public ApiResponse<LaborCostConfig> addLaborCost(
@@ -137,6 +145,7 @@ public class BomController {
         return ApiResponse.success(bomService.saveLaborCost(config));
     }
 
+    @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
     @PutMapping("/labor/{id}")
     @Operation(summary = "更新人工费用")
     public ApiResponse<LaborCostConfig> updateLaborCost(
@@ -149,6 +158,7 @@ public class BomController {
         return ApiResponse.success(bomService.saveLaborCost(config));
     }
 
+    @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
     @DeleteMapping("/labor/{id}")
     @Operation(summary = "删除人工费用")
     public ApiResponse<Void> deleteLaborCost(
@@ -169,6 +179,7 @@ public class BomController {
         return ApiResponse.success(bomService.getOverheadCosts(factoryId));
     }
 
+    @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
     @PostMapping("/overhead")
     @Operation(summary = "添加均摊费用")
     public ApiResponse<OverheadCostConfig> addOverheadCost(
@@ -179,6 +190,7 @@ public class BomController {
         return ApiResponse.success(bomService.saveOverheadCost(config));
     }
 
+    @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
     @PutMapping("/overhead/{id}")
     @Operation(summary = "更新均摊费用")
     public ApiResponse<OverheadCostConfig> updateOverheadCost(
@@ -191,6 +203,7 @@ public class BomController {
         return ApiResponse.success(bomService.saveOverheadCost(config));
     }
 
+    @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
     @DeleteMapping("/overhead/{id}")
     @Operation(summary = "删除均摊费用")
     public ApiResponse<Void> deleteOverheadCost(
@@ -212,6 +225,7 @@ public class BomController {
         return ApiResponse.success(bomService.calculateProductCost(factoryId, productTypeId));
     }
 
+    @RequirePermission({"production:read_write", "rd:read_write", "finance:read_write"})
     @PostMapping("/cost-summary/batch")
     @Operation(summary = "批量计算产品成本")
     public ApiResponse<List<BomCostSummaryDTO>> calculateCostsBatch(
