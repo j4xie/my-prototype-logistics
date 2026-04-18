@@ -143,7 +143,10 @@ async function handleSubmit() {
       roleCode: formData.role,
       employeeCode: formData.employeeCode,
       department: formData.department || undefined,
+      // Apr 18 2026 bug #47: 后端字段兼容 — 有的接口读 isActive, 有的读 status
+      // 一起送避免在职/离职 切换后列表显示不一致。
       isActive: formData.isActive,
+      status: formData.isActive ? 'ACTIVE' : 'INACTIVE',
     };
     if (dialogMode.value === 'add') {
       payload.password = '123456';

@@ -4,7 +4,7 @@ import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post } from '@/api/request';
 import { ElMessage, type FormInstance } from 'element-plus';
-import { Plus } from '@element-plus/icons-vue';
+import { Plus, Search } from '@element-plus/icons-vue';
 import { formatDateTimeCell } from '@/utils/tableFormatters';
 
 const authStore = useAuthStore();
@@ -16,6 +16,7 @@ const loading = ref(false);
 const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const customerMap = ref<Record<string, string>>({});
+const searchKeyword = ref('');
 
 onMounted(() => {
   loadData();
@@ -42,9 +43,13 @@ async function loadData() {
 
   loading.value = true;
   try {
-    const response = await get(`/${factoryId.value}/shipments`, {
-      params: { page: pagination.value.page - 1, size: pagination.value.size }
-    });
+    const params: Record<string, unknown> = {
+      page: pagination.value.page - 1,
+      size: pagination.value.size,
+    };
+    const kw = searchKeyword.value.trim();
+    if (kw) params.keyword = kw;
+    const response = await get(`/${factoryId.value}/shipments`, { params });
     if (response.success && response.data) {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
@@ -63,6 +68,9 @@ function handlePageChange(page: number) {
   pagination.value.page = page;
   loadData();
 }
+
+function handleSearch() { pagination.value.page = 1; loadData(); }
+function handleSearchClear() { searchKeyword.value = ''; handleSearch(); }
 
 // ==================== View ====================
 const viewDialogVisible = ref(false);
@@ -170,7 +178,19 @@ async function submitCreateForm() {
       <template #header>
         <div class="card-header">
           <span>出货记录管理</span>
-          <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleCreate">新建出货</el-button>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <el-input
+              v-model="searchKeyword"
+              placeholder="搜索出货单号 / 产品"
+              clearable
+              :prefix-icon="Search"
+              style="width: 240px;"
+              @keyup.enter="handleSearch"
+              @clear="handleSearchClear"
+            />
+            <el-button type="primary" @click="handleSearch">搜索</el-button>
+            <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleCreate">新建出货</el-button>
+          </div>
         </div>
       </template>
 

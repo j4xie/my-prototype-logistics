@@ -199,7 +199,8 @@ async function acknowledgeAlert(alert: AlertRecord) {
     ) as unknown as { success: boolean; message?: string }
     if (res?.success) {
       ElMessage.success('已确认')
-      await loadData()
+      // Apr 18 2026 bug #49: 原来只刷 summary, 告警列表不更新 -> 用户看到行状态未变以为"没同步"。
+      await Promise.all([loadData(), loadAlerts()])
     } else {
       ElMessage.error(res?.message || '操作失败')
     }
@@ -233,7 +234,8 @@ async function resolveAlert() {
     if (res?.success) {
       ElMessage.success('已解决')
       resolveDialogVisible.value = false
-      await loadData()
+      // Apr 18 2026 bug #49: 同 acknowledgeAlert, 解决后也必须同时刷新列表。
+      await Promise.all([loadData(), loadAlerts()])
     } else {
       ElMessage.error(res?.message || '操作失败')
     }

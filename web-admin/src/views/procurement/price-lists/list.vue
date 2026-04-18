@@ -4,7 +4,7 @@ import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Refresh } from '@element-plus/icons-vue';
+import { Plus, Refresh, Search } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
 
 const authStore = useAuthStore();
@@ -16,6 +16,7 @@ const loading = ref(false);
 const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const dialogVisible = ref(false);
+const searchKeyword = ref('');
 
 const priceTypeMap: Record<string, string> = {
   PURCHASE_PRICE: '采购价',
@@ -37,7 +38,10 @@ async function loadData() {
   if (!factoryId.value) return;
   loading.value = true;
   try {
-    const res = await get(`/${factoryId.value}/price-lists`, { params: { page: pagination.value.page, size: pagination.value.size } });
+    const params: Record<string, unknown> = { page: pagination.value.page, size: pagination.value.size };
+    const kw = searchKeyword.value.trim();
+    if (kw) params.keyword = kw;
+    const res = await get(`/${factoryId.value}/price-lists`, { params });
     if (res.success && res.data) {
       tableData.value = res.data.content || [];
       pagination.value.total = res.data.totalElements || 0;
@@ -76,6 +80,8 @@ async function handleDelete(id: string) {
 
 function handlePageChange(page: number) { pagination.value.page = page; loadData(); }
 function handleSizeChange(size: number) { pagination.value.size = size; pagination.value.page = 1; loadData(); }
+function handleSearch() { pagination.value.page = 1; loadData(); }
+function handleSearchClear() { searchKeyword.value = ''; handleSearch(); }
 </script>
 
 <template>
@@ -88,6 +94,16 @@ function handleSizeChange(size: number) { pagination.value.size = size; paginati
             <span class="data-count">共 {{ pagination.total }} 条</span>
           </div>
           <div class="header-right">
+            <el-input
+              v-model="searchKeyword"
+              placeholder="搜索价格表名称"
+              clearable
+              :prefix-icon="Search"
+              style="width: 240px; margin-right: 12px;"
+              @keyup.enter="handleSearch"
+              @clear="handleSearchClear"
+            />
+            <el-button type="primary" @click="handleSearch">搜索</el-button>
             <el-button v-if="canWrite" type="primary" :icon="Plus" @click="dialogVisible = true">新建价格表</el-button>
           </div>
         </div>
