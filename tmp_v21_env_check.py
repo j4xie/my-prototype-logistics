@@ -1,0 +1,26 @@
+# tmp_v21_env_check.py
+import paramiko, sys
+sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh.connect('180.97.68.228', port=46325, username='root', password='Cretas2026!', timeout=15)
+def run(cmd, timeout=30):
+    stdin, stdout, stderr = ssh.exec_command(cmd, timeout=timeout)
+    return stdout.read().decode('utf-8', errors='replace').strip()
+
+print('=== 8 GPU health ===')
+print(run('nvidia-smi --query-gpu=index,utilization.gpu,memory.used,memory.free --format=csv,noheader'))
+print()
+print('=== R2 creds + endpoint ===')
+print(run('cat /root/.aws/credentials 2>/dev/null | head -3'))
+print(run('aws s3 ls --endpoint-url https://b1251333e5f1465deb7cd31296edeaba.r2.cloudflarestorage.com 2>&1 | head -3'))
+print()
+print('=== refine2 best.pt exists ===')
+print(run('ls -la /root/runs/E_V2_v11l_refine2/weights/best.pt /root/runs/E_V2_FINAL_cp/weights/best.pt 2>/dev/null'))
+print()
+print('=== Any stale yolo procs? ===')
+print(run("ps -ef | grep -E 'yolo train|DDP' | grep -v grep | head -3 || echo CLEAN"))
+print()
+print('=== P1 holdout data exists (732 positives in extended) ===')
+print(run('ls /root/data/merged_v5_2_extended/images/train/ | grep "^p1_s" | wc -l'))
+ssh.close()
