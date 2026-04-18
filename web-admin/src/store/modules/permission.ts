@@ -58,17 +58,20 @@ const PERMISSION_MATRIX: Record<string, ModulePermissions> = {
     finance: 'r', system: '-', analytics: 'r', scheduling: '-', restaurant: '-'  // SmartBI 只读访问
   },
   // 调度 (dispatcher) - 生产调度、数据分析、趋势监控
-  // R18-B3 fix: 原配置 finance/hr/system/procurement/sales 都是 'r' → 越权访问财务敏感数据.
-  // 调度角色只应访问: 生产/仓储/质检/设备 (only read), 生产调度+分析 (rw). 严格收紧.
+  // R18-B3: finance/hr/system 继续锁死 (越权敏感).
+  // Apr 18 2026 bug #53 (回调): 原 R18-B3 把 sales 也设 '-', 但调度员业务上需要
+  // 看 SO 并协调"财务审核通过 → 创建生产计划"闭环 (Doc3 用户测试报告 SO 审核
+  // 按钮 404 的真实场景). sales 改 'rw' 与后端 dispatcherPerms 对齐, 确保调度员
+  // 能提交审核/开始生产。procurement 只读: 调度需看上游物料情况。
   dispatcher: {
     dashboard: 'rw', production: 'rw', warehouse: 'r', quality: 'r',
-    procurement: '-', sales: '-', hr: '-', equipment: 'r',
+    procurement: 'r', sales: 'rw', hr: '-', equipment: 'r',
     finance: '-', system: '-', analytics: 'rw', scheduling: 'rw', restaurant: '-'
   },
   // production_manager (已废弃，保留向后兼容，映射到 dispatcher)
   production_manager: {
     dashboard: 'rw', production: 'rw', warehouse: 'r', quality: 'r',
-    procurement: '-', sales: '-', hr: '-', equipment: 'r',
+    procurement: 'r', sales: 'rw', hr: '-', equipment: 'r',
     finance: '-', system: '-', analytics: 'rw', scheduling: 'rw', restaurant: '-'
   },
   warehouse_manager: {
