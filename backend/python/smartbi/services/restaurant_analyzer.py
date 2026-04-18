@@ -46,6 +46,32 @@ _SUMMARY_PATTERN = re.compile(r"^(合\s*计|小\s*计|总\s*计|汇\s*总)$")
 _CJK_RE = re.compile(r"[\u4e00-\u9fff]")
 _PRODUCT_COL_RE = re.compile(r"^product_\d+$", re.IGNORECASE)
 
+# Bug #37: Excel pseudo-row names that must be dropped from storeComparison.
+# Excel 源里常见: 序号列 "1.0/2.0/..." / 复用表头 / 注释行 / 合计行.
+_NUMERIC_NAME_RE = re.compile(r"^\d+(\.\d+)?$")
+_STORE_NAME_BLACKLIST = frozenset({
+    "门店名称", "门店", "店铺", "店名",
+    "堂食外卖占比", "客单人数", "客单价", "环比", "同比",
+    "合计", "汇总", "总计", "小计",
+})
+_STORE_NAME_PREFIX_BLACKLIST = ("注：", "注:", "备注", "说明：", "说明:")
+
+
+def _is_valid_store_name(name: Any) -> bool:
+    """True if ``name`` is a real store name, False for序号/表头/注释/合计行."""
+    if name is None:
+        return False
+    s = str(name).strip()
+    if not s or s.lower() in {"nan", "none"}:
+        return False
+    if _NUMERIC_NAME_RE.match(s):
+        return False
+    if s in _STORE_NAME_BLACKLIST:
+        return False
+    if any(s.startswith(p) for p in _STORE_NAME_PREFIX_BLACKLIST):
+        return False
+    return True
+
 
 # ── Semantic column role definitions ─────────────────────────
 # Each role has multiple keyword variants (Chinese + English + abbreviations).
@@ -590,6 +616,13 @@ class RestaurantAnalyzer:
     ) -> Dict[str, Any]:
         empty = {"stores": [], "weakStores": [], "medianRevenue": 0}
         if not store_col or not actual_col:
+            return empty
+
+        # Bug #37: drop Excel 序号行 / 重复表头 / 注释行 before aggregation,
+        # otherwise pseudo-rows pollute both stores list and median-based
+        # weakStores threshold.
+        df = df[df[store_col].apply(_is_valid_store_name)]
+        if df.empty:
             return empty
 
         store_df = df.groupby(store_col).agg(
