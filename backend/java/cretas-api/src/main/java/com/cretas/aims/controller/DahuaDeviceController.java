@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.client.dahua.DahuaClient;
 import com.cretas.aims.client.dahua.DahuaDiscoveryClient;
 import com.cretas.aims.dto.common.ApiResponse;
@@ -59,6 +60,7 @@ public class DahuaDeviceController {
 
     // ==================== 设备发现 ====================
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/discover")
     @Operation(summary = "发现局域网大华设备", description = "使用 DHDiscover 协议扫描局域网中的大华设备")
     public ApiResponse<List<DiscoveredDahuaDevice>> discoverDevices(
@@ -75,6 +77,7 @@ public class DahuaDeviceController {
         }
     }
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/discover/all-interfaces")
     @Operation(summary = "在所有网络接口发现设备", description = "并行在所有网络接口上发现大华设备")
     public ApiResponse<List<DiscoveredDahuaDevice>> discoverOnAllInterfaces(
@@ -91,6 +94,7 @@ public class DahuaDeviceController {
         }
     }
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/probe")
     @Operation(summary = "探测单个设备", description = "尝试连接指定 IP 地址的大华设备获取信息")
     public ApiResponse<DiscoveredDahuaDevice> probeDevice(
@@ -143,6 +147,7 @@ public class DahuaDeviceController {
 
     // ==================== 设备 CRUD ====================
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping
     @Operation(summary = "添加设备")
     public ApiResponse<DahuaDevice> addDevice(
@@ -196,6 +201,7 @@ public class DahuaDeviceController {
         }
     }
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PutMapping("/{deviceId}")
     @Operation(summary = "更新设备")
     public ApiResponse<DahuaDevice> updateDevice(
@@ -248,6 +254,7 @@ public class DahuaDeviceController {
         }
     }
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @DeleteMapping("/{deviceId}")
     @Operation(summary = "删除设备")
     public ApiResponse<Void> deleteDevice(
@@ -310,6 +317,7 @@ public class DahuaDeviceController {
 
     // ==================== 设备导入 ====================
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/import")
     @Operation(summary = "从发现结果导入设备", description = "将发现的设备导入到系统中")
     public ApiResponse<DahuaDevice> importFromDiscovery(
@@ -382,6 +390,7 @@ public class DahuaDeviceController {
 
     // ==================== 连接与同步 ====================
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/{deviceId}/test-connection")
     @Operation(summary = "测试设备连接")
     public ApiResponse<Boolean> testConnection(
@@ -415,6 +424,7 @@ public class DahuaDeviceController {
         }
     }
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/{deviceId}/sync")
     @Operation(summary = "同步设备信息", description = "从设备获取最新的型号、固件版本等信息")
     public ApiResponse<Void> syncDeviceInfo(
@@ -499,6 +509,7 @@ public class DahuaDeviceController {
         }
     }
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/{deviceId}/capture")
     @Operation(summary = "抓拍图片")
     public ApiResponse<String> capturePicture(
@@ -556,6 +567,7 @@ public class DahuaDeviceController {
 
     // ==================== 设备配网 ====================
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/provision")
     @Operation(summary = "配网设备", description = "初始化未激活的大华设备 (设置网络参数和密码)")
     public ApiResponse<DahuaProvisioningResultDTO> provisionDevice(
@@ -585,6 +597,7 @@ public class DahuaDeviceController {
         }
     }
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/activate")
     @Operation(summary = "激活设备", description = "为未激活的大华设备设置初始密码")
     public ApiResponse<DahuaProvisioningResultDTO> activateDevice(

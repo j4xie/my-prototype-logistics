@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.config.RequireRole;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.config.ConfigChangeSet;
@@ -150,6 +151,7 @@ public class ConfigChangeSetController {
 
     // ========== Dry-Run 预览端点 ==========
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/dry-run")
     @Operation(summary = "Dry-run 预览变更效果",
                description = "在创建 ChangeSet 之前，预览即将产生的差异和潜在问题，不实际创建变更集")
@@ -169,6 +171,7 @@ public class ConfigChangeSetController {
 
     // ========== 创建端点 ==========
 
+    @RequirePermission({"system:read_write"})
     @PostMapping
     @RequireRole({"factory_super_admin", "permission_admin"})
     @Operation(summary = "创建配置变更集", description = "创建一个新的配置变更集，状态初始为PENDING，等待审批")
@@ -195,6 +198,7 @@ public class ConfigChangeSetController {
 
     // ========== 审批端点 ==========
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/{id}/approve")
     @RequireRole({"factory_super_admin"})
     @Operation(summary = "审批通过变更集", description = "审批通过指定的变更集，将状态变更为APPROVED，可选添加审批备注")
@@ -214,6 +218,7 @@ public class ConfigChangeSetController {
         return ApiResponse.success(result);
     }
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/{id}/reject")
     @RequireRole({"factory_super_admin"})
     @Operation(summary = "拒绝变更集", description = "拒绝指定的变更集，将状态变更为REJECTED，必须提供拒绝原因")
@@ -235,6 +240,7 @@ public class ConfigChangeSetController {
 
     // ========== 应用与回滚端点 ==========
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/{id}/apply")
     @RequireRole({"factory_super_admin"})
     @Operation(summary = "应用变更集 (使变更生效)", description = "应用已审批通过的变更集，将配置变更实际生效，状态变更为APPLIED")
@@ -247,6 +253,7 @@ public class ConfigChangeSetController {
         return ApiResponse.success(result);
     }
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/{id}/rollback")
     @RequireRole({"factory_super_admin"})
     @Operation(summary = "回滚变更集", description = "回滚已应用的变更集，将配置恢复到变更前的状态，状态变更为ROLLED_BACK")

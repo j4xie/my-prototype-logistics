@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.config.ApprovalChainConfig;
 import com.cretas.aims.entity.config.ApprovalChainConfig.DecisionType;
 import com.cretas.aims.service.ApprovalChainService;
@@ -122,6 +123,7 @@ public class ApprovalChainController {
     /**
      * 创建审批链配置
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping
     @Operation(summary = "创建审批链配置", description = "创建新的审批链配置，包括设置决策类型、审批级别、审批人、超时时间等")
     public ResponseEntity<Map<String, Object>> createConfig(
@@ -152,6 +154,7 @@ public class ApprovalChainController {
     /**
      * 更新审批链配置
      */
+    @RequirePermission({"system:read_write"})
     @PutMapping("/{configId}")
     @Operation(summary = "更新审批链配置", description = "更新指定的审批链配置，可修改审批人、超时时间、启用状态等属性")
     public ResponseEntity<Map<String, Object>> updateConfig(
@@ -188,6 +191,7 @@ public class ApprovalChainController {
     /**
      * 删除审批链配置 (软删除)
      */
+    @RequirePermission({"system:read_write"})
     @DeleteMapping("/{configId}")
     @Operation(summary = "删除审批链配置", description = "软删除指定的审批链配置，配置数据不会物理删除，可以恢复")
     public ResponseEntity<Map<String, Object>> deleteConfig(
@@ -222,6 +226,7 @@ public class ApprovalChainController {
     /**
      * 启用/禁用配置
      */
+    @RequirePermission({"system:read_write"})
     @PatchMapping("/{configId}/toggle")
     @Operation(summary = "切换审批链配置状态", description = "启用或禁用指定的审批链配置，禁用后该配置不会参与审批流程判断")
     public ResponseEntity<Map<String, Object>> toggleEnabled(
@@ -254,6 +259,7 @@ public class ApprovalChainController {
     /**
      * 检查是否需要审批
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/check-required")
     @Operation(summary = "检查是否需要审批", description = "根据决策类型和上下文信息检查当前操作是否需要走审批流程，如需要则返回第一级审批配置信息")
     public ResponseEntity<Map<String, Object>> checkApprovalRequired(
@@ -340,6 +346,7 @@ public class ApprovalChainController {
     /**
      * 验证配置
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/validate")
     @Operation(summary = "验证审批链配置", description = "验证审批链配置的合法性，检查审批人、超时时间、级别设置等是否符合规范")
     public ResponseEntity<Map<String, Object>> validateConfig(
