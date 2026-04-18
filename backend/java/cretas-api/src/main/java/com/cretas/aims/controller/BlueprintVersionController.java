@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.blueprint.*;
 import com.cretas.aims.service.BlueprintVersionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -123,6 +124,7 @@ public class BlueprintVersionController {
 
     // ==================== 版本发布 ====================
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/{blueprintId}/versions/publish")
     @Operation(summary = "发布新版本", description = "将当前蓝图状态发布为正式版本")
     public ResponseEntity<Map<String, Object>> publishVersion(
@@ -176,6 +178,7 @@ public class BlueprintVersionController {
         return ResponseEntity.ok(response);
     }
 
+    @RequirePermission({"system:read_write"})
     @PutMapping("/factory/{factoryId}/binding/settings")
     @Operation(summary = "更新绑定设置", description = "更新工厂的蓝图绑定设置（自动更新策略等）")
     public ResponseEntity<Map<String, Object>> updateBindingSettings(
@@ -215,6 +218,7 @@ public class BlueprintVersionController {
         return ResponseEntity.ok(response);
     }
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/factory/{factoryId}/upgrade")
     @Operation(summary = "升级工厂版本", description = "将工厂升级到新的蓝图版本")
     public ResponseEntity<Map<String, Object>> upgradeFactory(
@@ -233,6 +237,7 @@ public class BlueprintVersionController {
         return ResponseEntity.ok(response);
     }
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/batch-upgrade")
     @Operation(summary = "批量升级工厂", description = "批量将多个工厂升级到新版本")
     public ResponseEntity<Map<String, Object>> batchUpgradeFactories(
@@ -272,6 +277,7 @@ public class BlueprintVersionController {
         return ResponseEntity.ok(response);
     }
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/factory/{factoryId}/rollback")
     @Operation(summary = "回滚工厂版本", description = "将工厂回滚到指定的旧版本")
     public ResponseEntity<Map<String, Object>> rollbackFactory(
@@ -292,6 +298,7 @@ public class BlueprintVersionController {
         return ResponseEntity.ok(response);
     }
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/{blueprintId}/notify-factories")
     @Operation(summary = "通知工厂新版本", description = "向所有绑定工厂发送新版本通知")
     public ResponseEntity<Map<String, Object>> notifyFactories(
@@ -309,6 +316,7 @@ public class BlueprintVersionController {
         return ResponseEntity.ok(response);
     }
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/{blueprintId}/process-auto-updates")
     @Operation(summary = "执行自动更新", description = "处理配置了自动更新的工厂")
     public ResponseEntity<Map<String, Object>> processAutoUpdates(

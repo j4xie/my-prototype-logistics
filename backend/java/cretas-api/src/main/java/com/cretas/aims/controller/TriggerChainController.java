@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.config.RequireRole;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.config.*;
@@ -51,6 +52,7 @@ public class TriggerChainController {
         return ApiResponse.success(toolConfigRepo.findByFactoryId(factoryId));
     }
 
+    @RequirePermission({"system:read_write"})
     @PutMapping("/tools/{toolName}")
     @RequireRole({"factory_super_admin", "permission_admin"})
     @Operation(summary = "设置 Tool 开关/参数覆盖")
@@ -81,6 +83,7 @@ public class TriggerChainController {
         return ApiResponse.success(skillConfigRepo.findByFactoryId(factoryId));
     }
 
+    @RequirePermission({"system:read_write"})
     @PutMapping("/skills/{skillName}")
     @RequireRole({"factory_super_admin", "permission_admin"})
     @Operation(summary = "设置 Skill 开关/自定义 DAG")
@@ -120,6 +123,7 @@ public class TriggerChainController {
         return ApiResponse.success(merged);
     }
 
+    @RequirePermission({"system:read_write"})
     @PutMapping("/trigger-chains/{chainCode}")
     @RequireRole({"factory_super_admin", "permission_admin"})
     @Operation(summary = "配置触发链步骤")
@@ -158,6 +162,7 @@ public class TriggerChainController {
         return ApiResponse.success(templateRepo.findByIsActiveTrue());
     }
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/apply-template/{templateCode}")
     @RequireRole({"factory_super_admin"})
     @Operation(summary = "应用行业模板到工厂")

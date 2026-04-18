@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.config.FormTemplate;
 import com.cretas.aims.entity.config.FormTemplateVersion;
@@ -146,6 +147,7 @@ public class FormTemplateController {
     /**
      * 创建表单模板
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping
     @Operation(summary = "创建表单模板", description = "为指定实体类型创建新的表单模板，包含Schema JSON定义。同一工厂同一实体类型只能有一个活跃模板")
     public ApiResponse<FormTemplate> createTemplate(
@@ -174,6 +176,7 @@ public class FormTemplateController {
      * 创建或更新表单模板
      * 如果同类型模板已存在则更新，否则创建
      */
+    @RequirePermission({"system:read_write"})
     @PutMapping("/{entityType}")
     @Operation(summary = "创建或更新表单模板", description = "如果该实体类型的模板已存在则更新，否则创建新模板。更新时会自动创建版本记录")
     public ApiResponse<FormTemplate> createOrUpdateTemplate(
@@ -201,6 +204,7 @@ public class FormTemplateController {
     /**
      * 更新模板
      */
+    @RequirePermission({"system:read_write"})
     @PutMapping("/id/{id}")
     @Operation(summary = "更新表单模板", description = "根据模板ID更新表单模板内容，包括名称、Schema JSON和UI Schema JSON")
     public ApiResponse<FormTemplate> updateTemplate(
@@ -223,6 +227,7 @@ public class FormTemplateController {
     /**
      * 启用/禁用模板
      */
+    @RequirePermission({"system:read_write"})
     @PatchMapping("/id/{id}/active")
     @Operation(summary = "启用/禁用模板", description = "切换表单模板的启用状态。禁用后前端将使用内置默认Schema")
     public ApiResponse<FormTemplate> toggleActive(
@@ -243,6 +248,7 @@ public class FormTemplateController {
     /**
      * 删除模板
      */
+    @RequirePermission({"system:read_write"})
     @DeleteMapping("/id/{id}")
     @Operation(summary = "删除表单模板", description = "永久删除指定的表单模板及其所有版本记录，删除后无法恢复")
     public ApiResponse<Void> deleteTemplate(
@@ -353,6 +359,7 @@ public class FormTemplateController {
     /**
      * 回滚到指定版本
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/id/{id}/rollback")
     @Operation(summary = "回滚版本", description = "将模板回滚到指定的历史版本，回滚后会创建新的版本记录，记录回滚原因")
     public ApiResponse<FormTemplate> rollbackToVersion(
