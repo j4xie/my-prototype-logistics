@@ -616,7 +616,9 @@ public class SalesServiceImpl implements SalesService {
                 String itemIdStr = String.valueOf(item.getId());
                 if (!batchAllocationService.isFullyAllocated(factoryId, itemIdStr)) {
                     throw new BusinessException("发货行 " + itemIdStr
-                            + "（产品：" + item.getProductName() + "）未完成批次分配，无法确认发货");
+                            + "（产品：" + item.getProductName() + "）未完成批次分配，无法确认发货")
+                            .withHint("请在「发货记录」Tab 点击「分配批次」按钮,完成所有行的批次分配后再确认发货")
+                            .withHintTarget("发货记录 Tab");
                 }
             }
         }
@@ -926,7 +928,9 @@ public class SalesServiceImpl implements SalesService {
 
         if (remaining.compareTo(BigDecimal.ZERO) > 0) {
             throw new BusinessException(String.format("成品库存不足: 产品=%s, 缺少数量=%s",
-                item.getProductTypeId(), remaining.toPlainString()));
+                item.getProductTypeId(), remaining.toPlainString()))
+                .withHint("请先下达生产计划(/production/plans)完成生产入库, 或减少本次发货数量")
+                .withHintTarget("生产计划");
         }
     }
 
