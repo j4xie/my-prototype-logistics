@@ -403,12 +403,18 @@ async function runUploadAndAnalyze(rawFile: File, region?: TableRegion) {
 }
 
 // Bug #25b: confirm region selection from dialog, then continue uploading.
+// Bug #25b patch: distinguish user-confirm close from user-cancel close.
+// el-dialog @close fires for BOTH paths; without this flag cancel logic would
+// clear fileList after confirm, breaking the downstream save step.
+const regionConfirmed = ref(false);
+
 async function confirmRegionSelection() {
   if (selectedRegionIndex.value === null || !pendingFile.value) {
     ElMessage.warning('请选择一个数据区域');
     return;
   }
   const region = detectedRegions.value[selectedRegionIndex.value];
+  regionConfirmed.value = true;
   regionDialogVisible.value = false;
   const fileToUpload = pendingFile.value;
   pendingFile.value = null;
@@ -417,6 +423,10 @@ async function confirmRegionSelection() {
 
 function cancelRegionSelection() {
   regionDialogVisible.value = false;
+  if (regionConfirmed.value) {
+    regionConfirmed.value = false;
+    return;  // confirm path already consumed state
+  }
   pendingFile.value = null;
   detectedRegions.value = [];
   selectedRegionIndex.value = null;
