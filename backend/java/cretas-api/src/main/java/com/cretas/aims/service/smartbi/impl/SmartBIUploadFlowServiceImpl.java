@@ -144,8 +144,17 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
     @Transactional
     public UploadFlowResult executeUploadFlow(String factoryId, MultipartFile file, String dataType,
                                                Integer sheetIndex, Integer headerRow, boolean autoConfirm) {
-        log.info("开始执行上传流程: factoryId={}, fileName={}, dataType={}, sheetIndex={}, headerRow={}, autoConfirm={}",
-                factoryId, file.getOriginalFilename(), dataType, sheetIndex, headerRow, autoConfirm);
+        return executeUploadFlow(factoryId, file, dataType, sheetIndex, headerRow, autoConfirm, null, null);
+    }
+
+    @Override
+    @Transactional
+    public UploadFlowResult executeUploadFlow(String factoryId, MultipartFile file, String dataType,
+                                               Integer sheetIndex, Integer headerRow, boolean autoConfirm,
+                                               Integer selectedRegionStart, Integer selectedRegionEnd) {
+        log.info("开始执行上传流程: factoryId={}, fileName={}, dataType={}, sheetIndex={}, headerRow={}, autoConfirm={}, region=[{},{}]",
+                factoryId, file.getOriginalFilename(), dataType, sheetIndex, headerRow, autoConfirm,
+                selectedRegionStart, selectedRegionEnd);
 
         // 1. 验证文件
         if (file == null || file.isEmpty()) {
@@ -173,7 +182,8 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
                     .businessScene(dataType)
                     .build();
 
-            ExcelParseResponse parseResult = parseExcelWithFallback(file, factoryId, dataType, parseRequest);
+            ExcelParseResponse parseResult = parseExcelWithFallback(file, factoryId, dataType, parseRequest,
+                    selectedRegionStart, selectedRegionEnd);
 
             if (!parseResult.isSuccess()) {
                 log.warn("Excel 解析失败: {}", parseResult.getErrorMessage());
@@ -569,6 +579,16 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
      */
     private ExcelParseResponse parseExcelWithFallback(MultipartFile file, String factoryId,
                                                        String dataType, ExcelParseRequest parseRequest) throws IOException {
+        return parseExcelWithFallback(file, factoryId, dataType, parseRequest, null, null);
+    }
+
+    /**
+     * Bug #25b (2026-04-18): overload that forwards multi-stacked-table region bounds
+     * to the Python parser.
+     */
+    private ExcelParseResponse parseExcelWithFallback(MultipartFile file, String factoryId,
+                                                       String dataType, ExcelParseRequest parseRequest,
+                                                       Integer selectedRegionStart, Integer selectedRegionEnd) throws IOException {
         // Python SmartBI 服务必须启用
         if (!pythonConfig.isEnabled()) {
             throw new RuntimeException("Python SmartBI 服务未启用。SmartBI 功能完全依赖 Python 服务 (端口 8083)，请确保服务已启动。");
@@ -595,7 +615,9 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
         log.info("使用 Python SmartBI 服务解析 Excel: fileName={}, sheetIndex={}, headerRow={}",
                 file.getOriginalFilename(), sheetIndex, headerRow);
 
-        ExcelParseResponse pythonResult = pythonClient.parseExcel(file, factoryId, dataType, sheetIndex, headerRow);
+        ExcelParseResponse pythonResult = pythonClient.parseExcel(
+                file, factoryId, dataType, sheetIndex, headerRow,
+                selectedRegionStart, selectedRegionEnd);
 
         if (pythonResult != null && pythonResult.isSuccess()) {
             log.info("Python SmartBI 解析成功: headers={}, rows={}",

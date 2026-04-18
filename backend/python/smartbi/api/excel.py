@@ -159,6 +159,26 @@ class MultiHeaderDetectionResponse(BaseModel):
     error: Optional[str] = None
 
 
+class TableRegionDTO(BaseModel):
+    """Bug #25b: Single detected table region within a stacked sheet."""
+    index: int
+    startRow: int
+    endRow: int
+    headerRow: int
+    previewCols: List[str] = []
+    sampleRows: int = 0
+    previewData: List[List[str]] = []
+
+
+class DetectRegionsResponse(BaseModel):
+    """Bug #25b: List of independent table regions detected in a sheet."""
+    success: bool
+    sheetName: Optional[str] = None
+    totalRegions: int = 0
+    regions: List[TableRegionDTO] = []
+    errorMessage: Optional[str] = None
+
+
 def _perform_analysis(
     headers: List[str],
     rows: List[List[Any]],
@@ -319,6 +339,95 @@ async def detect_multi_header(
     except Exception as e:
         logger.error(f"Multi-header detection error: {e}", exc_info=True)
         return MultiHeaderDetectionResponse(success=False, error="Excel处理失败，请检查文件格式后重试")
+
+
+@router.post("/detect-regions", response_model=DetectRegionsResponse)
+async def detect_table_regions(
+    file: UploadFile = File(...),
+    sheet_index: Optional[int] = Form(None),
+    sheetIndex: Optional[int] = Form(None),
+    sheet_name: Optional[str] = Form(None),
+    min_blank_separator: int = Form(2),
+):
+    """
+    Bug #25b (2026-04-18): Detect multiple independent table regions in one sheet.
+
+    Returns preview info for each region so the client can show a
+    "请选择表范围" dialog. Does NOT persist — preview only.
+
+    - **file**: .xlsx, .xls, or .csv
+    - **sheet_index** / **sheetIndex**: 0-based sheet index (default 0)
+    - **sheet_name**: sheet name (takes priority over index)
+    - **min_blank_separator**: min consecutive blank rows between regions (default 2)
+    """
+    try:
+        content = await _validate_upload(file)
+        filename = file.filename or ""
+        ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
+
+        effective_index = sheet_index if sheet_index is not None else sheetIndex
+        if sheet_name and ext != ".csv":
+            import io as _io
+            xl = pd.ExcelFile(_io.BytesIO(content))
+            if sheet_name in xl.sheet_names:
+                effective_index = xl.sheet_names.index(sheet_name)
+        if effective_index is None:
+            effective_index = 0
+
+        detector = get_structure_detector()
+        resolved_sheet_name: Optional[str] = None
+
+        if ext == ".csv":
+            # CSV: single-region heuristic — blank-row-separated CSVs are rare.
+            import io as _io
+            try:
+                df_csv = pd.read_csv(_io.BytesIO(content), header=None, nrows=5000)
+            except UnicodeDecodeError:
+                df_csv = pd.read_csv(_io.BytesIO(content), header=None, nrows=5000, encoding="gbk")
+            rows_list = df_csv.where(df_csv.notna(), None).values.tolist()
+            regions = detector._split_regions_from_rows(
+                rows_list, min_blank_separator=min_blank_separator
+            )
+            resolved_sheet_name = filename.rsplit(".", 1)[0]
+        else:
+            import io as _io
+            xl = pd.ExcelFile(_io.BytesIO(content))
+            if effective_index < len(xl.sheet_names):
+                resolved_sheet_name = xl.sheet_names[effective_index]
+            regions = detector.detect_multiple_table_regions(
+                content,
+                sheet_index=effective_index,
+                min_blank_separator=min_blank_separator,
+            )
+
+        region_dtos = [
+            TableRegionDTO(
+                index=r.index,
+                startRow=r.start_row,
+                endRow=r.end_row,
+                headerRow=r.header_row,
+                previewCols=r.preview_cols,
+                sampleRows=r.sample_rows,
+                previewData=r.preview_data,
+            )
+            for r in regions
+        ]
+
+        return DetectRegionsResponse(
+            success=True,
+            sheetName=resolved_sheet_name,
+            totalRegions=len(region_dtos),
+            regions=region_dtos,
+        )
+
+    except ApiException:
+        raise
+    except Exception as e:
+        logger.error(f"detect_table_regions error: {e}", exc_info=True)
+        return DetectRegionsResponse(
+            success=False,
+            errorMessage="区域检测失败，请检查文件格式后重试",
+        )
 
 
 @router.post("/preview")
@@ -520,7 +629,15 @@ async def auto_parse_excel(
     calculate_stats: bool = Form(True),
     transpose: bool = Form(False),
     header_rows_override: Optional[int] = Form(None),
-    headerRowsOverride: Optional[int] = Form(None)  # Alias for Java client
+    headerRowsOverride: Optional[int] = Form(None),  # Alias for Java client
+    # Bug #25b (2026-04-18): multi-stacked-table region selection. When both are
+    # provided, the pipeline crops to rows [start, end] (0-indexed, inclusive)
+    # and treats start_row as the header. Header auto-detection and LLM structure
+    # detection are bypassed — the user's selection is authoritative.
+    selected_region_start: Optional[int] = Form(None),
+    selected_region_end: Optional[int] = Form(None),
+    selectedRegionStart: Optional[int] = Form(None),  # Java alias
+    selectedRegionEnd: Optional[int] = Form(None),  # Java alias
 ):
     """
     Zero-Code Excel Auto-Parse
@@ -630,7 +747,25 @@ async def auto_parse_excel(
         # Determine header_rows override
         effective_header_override = header_rows_override if header_rows_override is not None else headerRowsOverride
 
-        logger.info(f"Auto-parse starting: file={filename}, sheet={effective_index}, transpose={transpose}, header_override={effective_header_override}")
+        # Bug #25b (2026-04-18): resolve selected region bounds (camelCase + snake_case)
+        effective_region_start = (
+            selected_region_start if selected_region_start is not None else selectedRegionStart
+        )
+        effective_region_end = (
+            selected_region_end if selected_region_end is not None else selectedRegionEnd
+        )
+        if effective_region_start is not None and effective_region_end is not None:
+            if effective_region_end < effective_region_start:
+                raise ApiException(
+                    f"selected_region_end ({effective_region_end}) < start ({effective_region_start})",
+                    ErrorCode.VALIDATION_ERROR, 400,
+                )
+
+        logger.info(
+            f"Auto-parse starting: file={filename}, sheet={effective_index}, "
+            f"transpose={transpose}, header_override={effective_header_override}, "
+            f"region=[{effective_region_start},{effective_region_end}]"
+        )
 
         # Initialize services
         detector = get_structure_detector()
@@ -650,6 +785,80 @@ async def auto_parse_excel(
                 logger.info("Using cached schema")
 
         # Step 2: Detect structure if not cached
+        # Bug #25b (2026-04-18): when the caller picked a region, crop to it and
+        # synthesize a structure_result — bypass LLM detection entirely. This is
+        # mutually exclusive with CSV fast-path below.
+        if (
+            structure_result is None
+            and effective_region_start is not None
+            and effective_region_end is not None
+            and ext != ".csv"
+        ):
+            import io as _io_region
+            from services.structure_detector import (
+                StructureDetectionResult, RowInfo, ColumnInfo,
+            )
+
+            region_nrows = effective_region_end - effective_region_start  # data rows only
+            try:
+                df_region = pd.read_excel(
+                    _io_region.BytesIO(content),
+                    sheet_name=effective_index,
+                    skiprows=effective_region_start,
+                    nrows=max(region_nrows, 0) if region_nrows > 0 else None,
+                    header=0,
+                )
+            except Exception as e:
+                logger.error(f"Failed to crop region [{effective_region_start},{effective_region_end}]: {e}")
+                return AutoParseResponse(
+                    success=False,
+                    autoDetected=True,
+                    errorMessage=f"区域裁剪失败: {e}",
+                )
+
+            region_headers = [str(c) for c in df_region.columns]
+            region_preview = df_region.head(20).fillna("").values.tolist()
+
+            try:
+                import openpyxl as _opxl_region
+                _wb_r = _opxl_region.load_workbook(
+                    _io_region.BytesIO(content), read_only=True, data_only=True
+                )
+                sheet_display_name = _wb_r.sheetnames[effective_index] if effective_index < len(_wb_r.sheetnames) else filename
+                _wb_r.close()
+            except Exception:
+                sheet_display_name = filename.rsplit(".", 1)[0]
+
+            structure_result = StructureDetectionResult(
+                success=True,
+                confidence=1.0,
+                method="region_selected",
+                sheet_name=sheet_display_name,
+                total_rows=len(df_region),
+                total_cols=len(region_headers),
+                header_row_count=1,
+                data_start_row=1,
+                header_rows=[RowInfo(
+                    index=0, type="column_names", content=",".join(region_headers)
+                )],
+                merged_cells=[],
+                columns=[
+                    ColumnInfo(
+                        index=i, name=h, data_type="text",
+                        sample_values=list(df_region[h].dropna().head(3).astype(str))
+                        if h in df_region.columns else []
+                    )
+                    for i, h in enumerate(region_headers)
+                ],
+                preview_rows=region_preview,
+                csv_skiprows=0,  # not a CSV, but keep the field for executor passthrough
+                note=f"Region [{effective_region_start}, {effective_region_end}] selected by user (Bug #25b)",
+            )
+            logger.info(
+                f"Region-selected path: skiprows={effective_region_start}, "
+                f"nrows={region_nrows}, cols={len(region_headers)}"
+            )
+
         if structure_result is None:
             if ext == ".csv":
                 # CSV fast-path: StructureDetector uses openpyxl which cannot read CSV.
@@ -828,6 +1037,18 @@ async def auto_parse_excel(
             _executor_skiprows = _local_skiprows
         else:
             _executor_skiprows = max(0, (effective_header_override or 1) - 1)
+        # Bug #25b (2026-04-18): when a region is selected, tell the executor
+        # to skip to the region's header row and read exactly region_nrows data rows.
+        _region_skip_rows = 0
+        _region_nrows: Optional[int] = None
+        if (
+            effective_region_start is not None
+            and effective_region_end is not None
+            and ext != ".csv"
+        ):
+            _region_skip_rows = effective_region_start
+            _region_nrows = max(0, effective_region_end - effective_region_start)
+
         extracted = executor.execute_with_pandas(
             content,
             structure_result,
@@ -838,6 +1059,8 @@ async def auto_parse_excel(
                 "calculate_stats": calculate_stats,
                 "transpose": transpose,
                 "csv_skiprows": _executor_skiprows,
+                "skip_rows": _region_skip_rows,
+                "nrows": _region_nrows,
             }
         )
 

@@ -132,10 +132,14 @@ public class SmartBIUploadController {
             @Parameter(description = "Auto confirm field mappings") @RequestParam(name = "auto_confirm", required = false, defaultValue = "false") Boolean autoConfirm,
             @Parameter(description = "Transpose data") @RequestParam(required = false, defaultValue = "false") Boolean transpose,
             @Parameter(description = "Row label column index") @RequestParam(required = false, defaultValue = "0") Integer rowLabelColumn,
-            @Parameter(description = "Header row count") @RequestParam(required = false, defaultValue = "1") Integer headerRowCount) {
+            @Parameter(description = "Header row count") @RequestParam(required = false, defaultValue = "1") Integer headerRowCount,
+            // Bug #25b (2026-04-18): multi-stacked-table region bounds (0-indexed, inclusive)
+            @Parameter(description = "Selected region start row (Bug #25b)") @RequestParam(required = false) Integer selectedRegionStart,
+            @Parameter(description = "Selected region end row (Bug #25b)") @RequestParam(required = false) Integer selectedRegionEnd) {
 
-        log.info("Upload and analyze: factoryId={}, fileName={}, dataType={}, autoConfirm={}",
-                factoryId, file.getOriginalFilename(), dataType, autoConfirm);
+        log.info("Upload and analyze: factoryId={}, fileName={}, dataType={}, autoConfirm={}, region=[{},{}]",
+                factoryId, file.getOriginalFilename(), dataType, autoConfirm,
+                selectedRegionStart, selectedRegionEnd);
 
         if (uploadFlowService == null) {
             return ResponseEntity.ok(ApiResponse.error("SmartBI upload flow service not configured"));
@@ -146,7 +150,8 @@ public class SmartBIUploadController {
 
         try {
             SmartBIUploadFlowService.UploadFlowResult result = uploadFlowService.executeUploadFlow(
-                    factoryId, file, dataType, sheetIndex, headerRow, Boolean.TRUE.equals(autoConfirm));
+                    factoryId, file, dataType, sheetIndex, headerRow, Boolean.TRUE.equals(autoConfirm),
+                    selectedRegionStart, selectedRegionEnd);
             if (result.isSuccess()) {
                 return ResponseEntity.ok(ApiResponse.success(result.getMessage(), result));
             } else {

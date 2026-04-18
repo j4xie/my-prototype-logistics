@@ -148,6 +148,16 @@ public interface SmartBIUploadFlowService {
                                         Integer sheetIndex, Integer headerRow, boolean autoConfirm);
 
     /**
+     * Bug #25b (2026-04-18): multi-stacked-table overload.
+     * When selectedRegionStart/End are provided, only rows [start, end] are parsed.
+     */
+    default UploadFlowResult executeUploadFlow(String factoryId, MultipartFile file, String dataType,
+                                                Integer sheetIndex, Integer headerRow, boolean autoConfirm,
+                                                Integer selectedRegionStart, Integer selectedRegionEnd) {
+        return executeUploadFlow(factoryId, file, dataType, sheetIndex, headerRow, autoConfirm);
+    }
+
+    /**
      * 确认字段映射并持久化数据
      *
      * 当 executeUploadFlow 返回 requiresConfirmation=true 时，

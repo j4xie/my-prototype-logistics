@@ -212,9 +212,19 @@ public class PythonSmartBIClient {
      */
     public ExcelParseResponse parseExcel(MultipartFile file, String factoryId, String dataType,
                                           int sheetIndex, int headerRows) throws IOException {
-        log.info("调用 Python SmartBI /auto-parse: fileName={}, factoryId={}, dataType={}, sheetIndex={}, size={}MB (headerRows={} 将被忽略)",
+        return parseExcel(file, factoryId, dataType, sheetIndex, headerRows, null, null);
+    }
+
+    /**
+     * Bug #25b (2026-04-18): overload accepting multi-stacked-table region bounds.
+     * When both start/end are non-null, the Python pipeline crops to that region.
+     */
+    public ExcelParseResponse parseExcel(MultipartFile file, String factoryId, String dataType,
+                                          int sheetIndex, int headerRows,
+                                          Integer selectedRegionStart, Integer selectedRegionEnd) throws IOException {
+        log.info("调用 Python SmartBI /auto-parse: fileName={}, factoryId={}, dataType={}, sheetIndex={}, size={}MB (headerRows={} 将被忽略), region=[{},{}]",
                 file.getOriginalFilename(), factoryId, dataType, sheetIndex,
-                file.getSize() / 1024 / 1024, headerRows);
+                file.getSize() / 1024 / 1024, headerRows, selectedRegionStart, selectedRegionEnd);
 
         // 流式传输 — 避免 file.getBytes() 对 60MB CSV 触发 OOM (BUG-2, 2026-04-15).
         // Copy to a stable temp File so executeWithRetry can re-read on retry
@@ -235,6 +245,12 @@ public class PythonSmartBIClient {
         // 添加可选的 factory_id 用于自定义字段映射
         if (factoryId != null && !factoryId.isEmpty()) {
             bodyBuilder.addFormDataPart("factory_id", factoryId);
+        }
+
+        // Bug #25b: forward region bounds when the user picked a specific stacked table.
+        if (selectedRegionStart != null && selectedRegionEnd != null) {
+            bodyBuilder.addFormDataPart("selectedRegionStart", String.valueOf(selectedRegionStart));
+            bodyBuilder.addFormDataPart("selectedRegionEnd", String.valueOf(selectedRegionEnd));
         }
 
         Request request = new Request.Builder()

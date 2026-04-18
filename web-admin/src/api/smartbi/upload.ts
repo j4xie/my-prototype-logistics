@@ -18,6 +18,61 @@ import {
 // ==================== Upload Functions ====================
 
 /**
+ * Bug #25b (2026-04-18): Detected table region in a stacked sheet.
+ */
+export interface TableRegion {
+  index: number;
+  startRow: number;
+  endRow: number;
+  headerRow: number;
+  previewCols: string[];
+  sampleRows: number;
+  previewData: string[][];
+}
+
+export interface DetectRegionsResponse {
+  success: boolean;
+  sheetName?: string;
+  totalRegions: number;
+  regions: TableRegion[];
+  errorMessage?: string;
+}
+
+/**
+ * Bug #25b: Detect multiple independent table regions in a single sheet.
+ * Calls Python service directly via the smartbi-api proxy — preview only, no persistence.
+ */
+export async function detectTableRegions(
+  file: File,
+  options?: { sheetIndex?: number; minBlankSeparator?: number },
+): Promise<DetectRegionsResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (options?.sheetIndex !== undefined) {
+    formData.append('sheetIndex', String(options.sheetIndex));
+  }
+  if (options?.minBlankSeparator !== undefined) {
+    formData.append('min_blank_separator', String(options.minBlankSeparator));
+  }
+  try {
+    const res = await request.post('/smartbi-api/api/excel/detect-regions', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      baseURL: '',  // absolute path; don't prepend /api/mobile
+      timeout: 120000,
+    });
+    return (res.data || res) as DetectRegionsResponse;
+  } catch (error) {
+    console.error('detectTableRegions failed:', error);
+    return {
+      success: false,
+      totalRegions: 0,
+      regions: [],
+      errorMessage: error instanceof Error ? error.message : '区域检测失败',
+    };
+  }
+}
+
+/**
  * Upload Excel file
  */
 export function uploadExcel(file: File, dataType: string) {
@@ -43,6 +98,10 @@ export async function uploadAndAnalyze(file: File, options?: {
   sheetIndex?: number;
   autoConfirm?: boolean;
   dataType?: string;
+  // Bug #25b (2026-04-18): when the user picked a stacked-table region,
+  // these bounds tell the pipeline which rows to keep (0-indexed, inclusive).
+  selectedRegionStart?: number;
+  selectedRegionEnd?: number;
 }): Promise<{
   success: boolean;
   parseResult: {
@@ -69,6 +128,11 @@ export async function uploadAndAnalyze(file: File, options?: {
   }
   if (options?.dataType) {
     formData.append('dataType', options.dataType);
+  }
+  // Bug #25b: forward multi-stacked-table region bounds when user picked one.
+  if (options?.selectedRegionStart !== undefined && options?.selectedRegionEnd !== undefined) {
+    formData.append('selectedRegionStart', String(options.selectedRegionStart));
+    formData.append('selectedRegionEnd', String(options.selectedRegionEnd));
   }
 
   try {

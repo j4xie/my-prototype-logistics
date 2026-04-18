@@ -280,11 +280,15 @@ class FixedExecutor:
                     header = data_start_row - 1 if data_start_row > 0 else 0
 
                 # Read with pandas
+                # Bug #25b (2026-04-18): honour options["nrows"] to crop to a
+                # user-selected region. Default is read-all (historical behaviour).
+                _nrows_opt = options.get("nrows")
                 df = pd.read_excel(
                     io.BytesIO(file_bytes),
                     sheet_name=structure_config.sheet_name or 0,
                     header=header,
-                    skiprows=options.get("skip_rows", 0)
+                    skiprows=options.get("skip_rows", 0),
+                    nrows=_nrows_opt if _nrows_opt and _nrows_opt > 0 else None,
                 )
 
             # Flatten multi-level columns if needed

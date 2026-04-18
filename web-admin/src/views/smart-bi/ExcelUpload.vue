@@ -10,10 +10,12 @@ import { useAuthStore } from '@/store/modules/auth';
 import {
   uploadAndAnalyze,
   confirmUploadAndPersist,
+  detectTableRegions,
   type AnalysisResult,
   type AIInsightData,
   type KPIData,
-  type ChartConfig
+  type ChartConfig,
+  type TableRegion,
 } from '@/api/smartbi';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import type { UploadFile, UploadUserFile } from 'element-plus';
@@ -64,6 +66,13 @@ const parsedTableType = ref<string>('');
 const uploading = ref(false);
 const uploadProgress = ref(0);
 const fileList = ref<UploadUserFile[]>([]);
+
+// Bug #25b (2026-04-18): 多表堆叠 — 区域选择 dialog
+const regionDialogVisible = ref(false);
+const detectedRegions = ref<TableRegion[]>([]);
+const pendingFile = ref<File | null>(null);
+const selectedRegionIndex = ref<number | null>(null);
+const regionDetecting = ref(false);
 
 // 数据类型
 interface DataType {
@@ -289,6 +298,31 @@ async function handleUpload(file: UploadFile) {
   }
 
   fileList.value = [file];
+
+  // Bug #25b: preview regions first; CSV skips the dialog (rarely stacked).
+  if (ext !== 'csv') {
+    regionDetecting.value = true;
+    try {
+      const regionResp = await detectTableRegions(file.raw);
+      if (regionResp.success && regionResp.totalRegions >= 2) {
+        detectedRegions.value = regionResp.regions;
+        pendingFile.value = file.raw;
+        selectedRegionIndex.value = 0;
+        regionDialogVisible.value = true;
+        return false; // wait for user to confirm region; continueUpload fires next
+      }
+    } catch (error) {
+      console.warn('Region detection failed, falling back to full-file parse:', error);
+    } finally {
+      regionDetecting.value = false;
+    }
+  }
+
+  await runUploadAndAnalyze(file.raw);
+  return false;
+}
+
+async function runUploadAndAnalyze(rawFile: File, region?: TableRegion) {
   uploading.value = true;
   uploadProgress.value = 0;
 
@@ -302,7 +336,10 @@ async function handleUpload(file: UploadFile) {
     }, 100);
 
     // 调用真实 Python SmartBI API
-    const result = await uploadAndAnalyze(file.raw);
+    const uploadOptions = region
+      ? { selectedRegionStart: region.startRow, selectedRegionEnd: region.endRow }
+      : undefined;
+    const result = await uploadAndAnalyze(rawFile, uploadOptions);
 
     clearInterval(progressInterval);
     uploadProgress.value = 100;
@@ -363,6 +400,27 @@ async function handleUpload(file: UploadFile) {
   }
 
   return false;
+}
+
+// Bug #25b: confirm region selection from dialog, then continue uploading.
+async function confirmRegionSelection() {
+  if (selectedRegionIndex.value === null || !pendingFile.value) {
+    ElMessage.warning('请选择一个数据区域');
+    return;
+  }
+  const region = detectedRegions.value[selectedRegionIndex.value];
+  regionDialogVisible.value = false;
+  const fileToUpload = pendingFile.value;
+  pendingFile.value = null;
+  await runUploadAndAnalyze(fileToUpload, region);
+}
+
+function cancelRegionSelection() {
+  regionDialogVisible.value = false;
+  pendingFile.value = null;
+  detectedRegions.value = [];
+  selectedRegionIndex.value = null;
+  fileList.value = [];
 }
 
 // 渲染所有图表
@@ -596,17 +654,21 @@ function getColumnTypeBadge(header: string): { label: string; type: 'info' | 'su
           :limit="1"
           accept=".xlsx,.xls,.csv"
         >
-          <el-icon class="upload-icon" v-if="!uploading"><Upload /></el-icon>
+          <el-icon class="upload-icon" v-if="!uploading && !regionDetecting"><Upload /></el-icon>
           <el-progress
-            v-else
+            v-else-if="uploading"
             type="circle"
             :percentage="uploadProgress"
             :width="80"
           />
+          <el-icon v-else class="upload-icon is-loading"><Refresh /></el-icon>
           <div class="upload-text">
-            <template v-if="!uploading">
+            <template v-if="!uploading && !regionDetecting">
               <p class="main-text">将文件拖到此处，或<em>点击上传</em></p>
               <p class="sub-text">支持 .xlsx、.xls 和 .csv 格式，文件大小不超过 500MB</p>
+            </template>
+            <template v-else-if="regionDetecting">
+              <p class="main-text">正在检测数据区域...</p>
             </template>
             <template v-else>
               <p class="main-text">正在解析文件...</p>
@@ -863,6 +925,66 @@ function getColumnTypeBadge(header: string): { label: string; type: 'info' | 'su
           </el-button>
         </div>
       </div>
+
+      <!-- Bug #25b: 多表堆叠 - 区域选择 dialog -->
+      <el-dialog
+        v-model="regionDialogVisible"
+        title="请选择表范围"
+        width="680px"
+        :close-on-click-modal="false"
+        :close-on-press-escape="false"
+        @close="cancelRegionSelection"
+      >
+        <div class="region-dialog-hint">
+          检测到 <strong>{{ detectedRegions.length }}</strong> 个独立数据区域，请选择要解析的表：
+        </div>
+        <el-radio-group v-model="selectedRegionIndex" style="width: 100%">
+          <div v-for="region in detectedRegions" :key="region.index" class="region-card">
+            <el-radio :value="region.index" :label="region.index" size="large">
+              <strong>区域 {{ region.index + 1 }}</strong>
+              <span class="region-meta">
+                (第 {{ region.startRow + 1 }}–{{ region.endRow + 1 }} 行,
+                {{ region.previewCols.length }} 列, 约 {{ region.sampleRows }} 行数据)
+              </span>
+            </el-radio>
+            <div class="region-preview">
+              <div class="region-cols">
+                <el-tag v-for="col in region.previewCols.slice(0, 8)" :key="col" size="small" type="info">
+                  {{ col }}
+                </el-tag>
+                <span v-if="region.previewCols.length > 8" class="region-cols-more">
+                  … 共 {{ region.previewCols.length }} 列
+                </span>
+              </div>
+              <el-table
+                v-if="region.previewData.length > 0"
+                :data="region.previewData.slice(0, 3).map((row) => Object.fromEntries(row.map((v, i) => [String(i), v])))"
+                size="small"
+                border
+                class="region-preview-table"
+              >
+                <el-table-column
+                  v-for="(col, idx) in region.previewCols.slice(0, 6)"
+                  :key="idx"
+                  :label="col"
+                  :prop="String(idx)"
+                  min-width="90"
+                />
+              </el-table>
+            </div>
+          </div>
+        </el-radio-group>
+        <template #footer>
+          <el-button @click="cancelRegionSelection">取消</el-button>
+          <el-button
+            type="primary"
+            :disabled="selectedRegionIndex === null"
+            @click="confirmRegionSelection"
+          >
+            确定
+          </el-button>
+        </template>
+      </el-dialog>
 
       <!-- 步骤 4: 保存确认 -->
       <div v-show="currentStep === 3" class="step-content">
@@ -1474,6 +1596,56 @@ function getColumnTypeBadge(header: string): { label: string; type: 'info' | 'su
   margin-top: 32px;
   padding-top: 24px;
   border-top: 1px solid var(--el-border-color-light, #ebeef5);
+}
+
+// Bug #25b: region selection dialog
+.region-dialog-hint {
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: var(--el-text-color-regular, #606266);
+}
+
+.region-card {
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid var(--el-border-color-light, #ebeef5);
+  border-radius: 6px;
+
+  .region-meta {
+    margin-left: 8px;
+    font-size: 12px;
+    color: var(--el-text-color-secondary, #909399);
+    font-weight: normal;
+  }
+
+  .region-preview {
+    margin-top: 12px;
+    margin-left: 24px;
+  }
+
+  .region-cols {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .region-cols-more {
+    font-size: 12px;
+    color: var(--el-text-color-secondary, #909399);
+    align-self: center;
+  }
+
+  .region-preview-table {
+    margin-top: 6px;
+  }
+}
+
+@keyframes cretas-rotate-360 {
+  to { transform: rotate(360deg); }
+}
+.upload-icon.is-loading {
+  animation: cretas-rotate-360 1s linear infinite;
 }
 
 // 响应式

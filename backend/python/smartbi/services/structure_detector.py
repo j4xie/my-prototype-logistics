@@ -56,6 +56,35 @@ class MergedCellInfo:
 
 
 @dataclass
+class TableRegion:
+    """
+    Bug #25b (2026-04-18): Independent table region within a single Excel sheet.
+
+    A sheet may stack multiple tables separated by blank rows. Each region is a
+    contiguous block [start_row, end_row] with its own header row and data rows.
+    Single-table sheets yield exactly one region spanning the whole data range.
+    """
+    index: int  # 0-based region ordinal
+    start_row: int  # 0-indexed first non-blank row (usually the header)
+    end_row: int  # 0-indexed last non-blank row of this region (inclusive)
+    header_row: int  # row containing column headers (defaults to start_row)
+    preview_cols: List[str] = field(default_factory=list)
+    sample_rows: int = 0  # data rows excluding the header
+    preview_data: List[List[Any]] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "index": self.index,
+            "start_row": self.start_row,
+            "end_row": self.end_row,
+            "header_row": self.header_row,
+            "preview_cols": self.preview_cols,
+            "sample_rows": self.sample_rows,
+            "preview_data": self.preview_data,
+        }
+
+
+@dataclass
 class StructureDetectionResult:
     """Result of structure detection"""
     version: str = "1.0"
@@ -1247,3 +1276,141 @@ Return JSON:
         except json.JSONDecodeError as e:
             logger.warning(f"Failed to parse LLM response as JSON: {e}")
             return None
+
+    def detect_multiple_table_regions(
+        self,
+        file_bytes: bytes,
+        sheet_index: int = 0,
+        min_blank_separator: int = 2,
+        max_rows_to_scan: int = 5000,
+        preview_row_count: int = 3,
+    ) -> List[TableRegion]:
+        """
+        Bug #25b (2026-04-18): Detect independent table regions stacked in one sheet.
+
+        Algorithm: consecutive non-blank rows separated by >= min_blank_separator
+        blank rows are treated as distinct regions. The first non-blank row of
+        each region is taken as the header. Regions whose header is fully numeric
+        are dropped — those look like continuation data, not a new table.
+
+        Single-table sheets yield exactly one region. Empty sheets yield [].
+        """
+        try:
+            wb = openpyxl.load_workbook(
+                io.BytesIO(file_bytes), data_only=True, read_only=True
+            )
+            if sheet_index >= len(wb.sheetnames):
+                wb.close()
+                return []
+            ws = wb[wb.sheetnames[sheet_index]]
+
+            rows: List[List[Any]] = []
+            for row in ws.iter_rows(max_row=max_rows_to_scan, values_only=True):
+                rows.append(list(row))
+            wb.close()
+        except zipfile.BadZipFile:
+            logger.warning("detect_multiple_table_regions: not a valid xlsx")
+            return []
+        except Exception as e:
+            logger.error(f"detect_multiple_table_regions load failed: {e}", exc_info=True)
+            return []
+
+        return self._split_regions_from_rows(
+            rows, min_blank_separator=min_blank_separator,
+            preview_row_count=preview_row_count,
+        )
+
+    def _split_regions_from_rows(
+        self,
+        rows: List[List[Any]],
+        min_blank_separator: int = 2,
+        preview_row_count: int = 3,
+    ) -> List[TableRegion]:
+        """Pure-python region splitter — shared by xlsx and CSV paths.
+
+        Extracted so tests and the CSV adapter can feed pre-loaded rows without
+        re-implementing the openpyxl load step.
+        """
+        if not rows:
+            return []
+
+        is_blank = [
+            all(v is None or (isinstance(v, str) and v.strip() == "") for v in r)
+            for r in rows
+        ]
+
+        region_bounds: List[Tuple[int, int]] = []
+        current_start: Optional[int] = None
+        blank_run = 0
+        last_non_blank_idx: Optional[int] = None
+
+        for idx, blank in enumerate(is_blank):
+            if not blank:
+                if current_start is None:
+                    current_start = idx
+                last_non_blank_idx = idx
+                blank_run = 0
+            else:
+                blank_run += 1
+                if current_start is not None and blank_run >= min_blank_separator:
+                    region_bounds.append((current_start, last_non_blank_idx))
+                    current_start = None
+                    last_non_blank_idx = None
+                    blank_run = 0
+
+        if current_start is not None and last_non_blank_idx is not None:
+            region_bounds.append((current_start, last_non_blank_idx))
+
+        regions: List[TableRegion] = []
+        for r_idx, (start, end) in enumerate(region_bounds):
+            header_cells = rows[start]
+            preview_cols = [
+                str(c).strip() for c in header_cells
+                if c is not None and str(c).strip() != ""
+            ]
+
+            if self._is_all_numeric(header_cells):
+                logger.debug(
+                    f"region {r_idx} rejected: header row {start} is fully numeric "
+                    f"(continuation data, not a new table)"
+                )
+                continue
+
+            preview_data: List[List[Any]] = []
+            for i in range(start + 1, min(end + 1, start + 1 + preview_row_count)):
+                preview_data.append([
+                    str(v) if v is not None else "" for v in rows[i]
+                ])
+
+            regions.append(TableRegion(
+                index=len(regions),
+                start_row=start,
+                end_row=end,
+                header_row=start,
+                preview_cols=preview_cols,
+                sample_rows=max(0, end - start),
+                preview_data=preview_data,
+            ))
+
+        logger.info(
+            f"detect_multiple_table_regions: scanned {len(rows)} rows, "
+            f"found {len(regions)} regions"
+        )
+        return regions
+
+    @staticmethod
+    def _is_all_numeric(cells: List[Any]) -> bool:
+        """True when every non-empty cell parses as a number."""
+        saw_value = False
+        for v in cells:
+            if v is None:
+                continue
+            s = str(v).strip()
+            if s == "":
+                continue
+            saw_value = True
+            try:
+                float(s.replace(",", "").replace("¥", "").replace("$", "").replace("%", ""))
+            except (ValueError, TypeError):
+                return False
+        return saw_value  # all-empty row is not "all numeric"
