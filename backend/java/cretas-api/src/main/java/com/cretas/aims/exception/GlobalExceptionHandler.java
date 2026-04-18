@@ -524,6 +524,22 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 处理 Content-Type 不匹配. 客户端发错类型(例 text/plain 发给 application/json endpoint)
+     * 时 Spring 抛 HttpMediaTypeNotSupportedException, 无 handler 落到 generic RuntimeException
+     * 兜底返回 500. 这里映射到 415 + 明确提示支持的 Content-Type.
+     */
+    @ExceptionHandler(org.springframework.web.HttpMediaTypeNotSupportedException.class)
+    @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+    public ApiResponse<?> handleHttpMediaTypeNotSupportedException(
+            org.springframework.web.HttpMediaTypeNotSupportedException e) {
+        String supported = e.getSupportedMediaTypes().isEmpty() ? "application/json"
+                : e.getSupportedMediaTypes().toString();
+        String actual = e.getContentType() != null ? e.getContentType().toString() : "(empty)";
+        log.warn("不支持的 Content-Type: 实际={}, 期望={}", actual, supported);
+        return ApiResponse.error(415, "不支持的 Content-Type (" + actual + "), 请改用: " + supported);
+    }
+
+    /**
      * 处理路由未找到
      */
     @ExceptionHandler(NoHandlerFoundException.class)

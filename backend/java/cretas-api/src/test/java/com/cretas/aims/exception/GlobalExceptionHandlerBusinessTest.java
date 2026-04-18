@@ -98,4 +98,20 @@ class GlobalExceptionHandlerBusinessTest {
         assertNull(body.getSeverity());
         assertNull(body.getHintTarget());
     }
+
+    @Test
+    void mediaTypeNotSupported_maps_to_415_with_hint() {
+        org.springframework.http.MediaType actual = org.springframework.http.MediaType.TEXT_PLAIN;
+        java.util.List<org.springframework.http.MediaType> supported =
+                java.util.List.of(org.springframework.http.MediaType.APPLICATION_JSON);
+        org.springframework.web.HttpMediaTypeNotSupportedException ex =
+                new org.springframework.web.HttpMediaTypeNotSupportedException(actual, supported);
+
+        ApiResponse<?> body = handler.handleHttpMediaTypeNotSupportedException(ex);
+
+        assertEquals((Integer) 415, body.getCode());
+        assertEquals(Boolean.FALSE, body.getSuccess());
+        assertTrue(body.getMessage().contains("text/plain"), "应该包含实际 Content-Type");
+        assertTrue(body.getMessage().contains("application/json"), "应该包含期望 Content-Type");
+    }
 }
