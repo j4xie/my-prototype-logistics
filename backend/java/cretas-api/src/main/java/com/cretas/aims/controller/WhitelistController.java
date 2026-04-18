@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.WhitelistDTO;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.service.MobileService;
@@ -40,6 +41,7 @@ public class WhitelistController {
     private final WhitelistService whitelistService;
     private final MobileService mobileService;
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/batch")
     @Operation(summary = "批量添加白名单", description = "批量添加多个手机号到白名单，返回成功和失败的详细结果")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -61,6 +63,7 @@ public class WhitelistController {
      * 内部包装为 batchAdd 的 size=1 请求，复用 BatchResult 逻辑。
      * 前端 POST /api/mobile/{factoryId}/whitelist 由此方法处理。
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping
     @Operation(summary = "添加单条白名单", description = "添加单个手机号到白名单，内部包装为 batch-of-1 调用 batchAdd")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -145,6 +148,7 @@ public class WhitelistController {
         return ApiResponse.success(whitelist);
     }
 
+    @RequirePermission({"system:read_write"})
     @PutMapping("/{id}")
     @Operation(summary = "更新白名单", description = "更新白名单记录信息，包括姓名、部门、角色、有效期等")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -157,6 +161,7 @@ public class WhitelistController {
         return ApiResponse.success(updated);
     }
 
+    @RequirePermission({"system:read_write"})
     @DeleteMapping("/{id}")
     @Operation(summary = "删除白名单", description = "删除指定的白名单记录（软删除）")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -168,6 +173,7 @@ public class WhitelistController {
         return ApiResponse.success();
     }
 
+    @RequirePermission({"system:read_write"})
     @DeleteMapping("/batch")
     @Operation(summary = "批量删除白名单", description = "批量删除多个白名单记录，返回删除的数量")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -189,6 +195,7 @@ public class WhitelistController {
         return ApiResponse.success(stats);
     }
 
+    @RequirePermission({"system:read_write"})
     @PutMapping("/expired")
     @Operation(summary = "更新过期的白名单状态", description = "将已过有效期的白名单状态更新为EXPIRED，返回更新数量")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -199,6 +206,7 @@ public class WhitelistController {
         return ApiResponse.success(count);
     }
 
+    @RequirePermission({"system:read_write"})
     @PutMapping("/limit-reached")
     @Operation(summary = "更新达到使用上限的白名单状态", description = "将使用次数达上限的白名单状态更新为LIMIT_REACHED，返回更新数量")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -219,6 +227,7 @@ public class WhitelistController {
         return ApiResponse.success(response);
     }
 
+    @RequirePermission({"system:read_write"})
     @PutMapping("/usage/{phoneNumber}")
     @Operation(summary = "增加白名单使用次数", description = "用户注册成功后增加对应白名单的使用次数")
     public ApiResponse<Void> incrementUsage(
@@ -288,6 +297,7 @@ public class WhitelistController {
         return ApiResponse.success(csvData);
     }
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/import")
     @Operation(summary = "导入白名单", description = "从CSV格式数据批量导入白名单，返回导入结果")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -299,6 +309,7 @@ public class WhitelistController {
         return ApiResponse.success(result);
     }
 
+    @RequirePermission({"system:read_write"})
     @DeleteMapping("/cleanup")
     @Operation(summary = "清理已删除的记录", description = "物理删除指定天数之前已软删除的记录，释放空间")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -310,6 +321,7 @@ public class WhitelistController {
         return ApiResponse.success(count);
     }
 
+    @RequirePermission({"system:read_write"})
     @PutMapping("/{id}/reset-usage")
     @Operation(summary = "重置使用次数", description = "将指定白名单的使用次数重置为0")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -321,6 +333,7 @@ public class WhitelistController {
         return ApiResponse.success();
     }
 
+    @RequirePermission({"system:read_write"})
     @PutMapping("/{id}/extend")
     @Operation(summary = "延长有效期", description = "延长指定白名单的有效期，在当前过期时间基础上增加天数")
     @PreAuthorize("hasAuthority('factory_super_admin')")

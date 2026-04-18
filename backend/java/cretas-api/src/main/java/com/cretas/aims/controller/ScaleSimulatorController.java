@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.scale.SimulatorStatus;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.scale.VirtualScaleConfig;
 import com.cretas.aims.service.simulator.VirtualScaleSimulator;
 import com.cretas.aims.util.ErrorSanitizer;
@@ -52,6 +53,7 @@ public class ScaleSimulatorController {
     /**
      * 启动虚拟秤模拟器
      */
+    @RequirePermission({"equipment:read_write"})
     @PostMapping("/start")
     @Operation(summary = "启动模拟器", description = "使用自定义配置启动虚拟秤模拟器")
     public ResponseEntity<Map<String, Object>> startSimulator(
@@ -82,6 +84,7 @@ public class ScaleSimulatorController {
     /**
      * 快速启动 - 使用 Keli D2008 协议预设
      */
+    @RequirePermission({"equipment:read_write"})
     @PostMapping("/start/keli-d2008")
     @Operation(summary = "快速启动 Keli D2008", description = "使用预设的 Keli D2008 协议配置快速启动")
     public ResponseEntity<Map<String, Object>> startKeliD2008(
@@ -126,6 +129,7 @@ public class ScaleSimulatorController {
     /**
      * 停止指定模拟器
      */
+    @RequirePermission({"equipment:read_write"})
     @PostMapping("/{simulatorId}/stop")
     @Operation(summary = "停止模拟器", description = "停止指定的虚拟秤模拟器")
     public ResponseEntity<Map<String, Object>> stopSimulator(
@@ -155,6 +159,7 @@ public class ScaleSimulatorController {
     /**
      * 停止所有模拟器
      */
+    @RequirePermission({"equipment:read_write"})
     @PostMapping("/stop-all")
     @Operation(summary = "停止所有模拟器", description = "停止当前所有运行中的虚拟秤模拟器")
     public ResponseEntity<Map<String, Object>> stopAllSimulators(@PathVariable String factoryId) {
@@ -175,6 +180,7 @@ public class ScaleSimulatorController {
     /**
      * 暂停模拟器
      */
+    @RequirePermission({"equipment:read_write"})
     @PostMapping("/{simulatorId}/pause")
     @Operation(summary = "暂停模拟器", description = "暂停指定的模拟器")
     public ResponseEntity<Map<String, Object>> pauseSimulator(
@@ -203,6 +209,7 @@ public class ScaleSimulatorController {
     /**
      * 恢复模拟器
      */
+    @RequirePermission({"equipment:read_write"})
     @PostMapping("/{simulatorId}/resume")
     @Operation(summary = "恢复模拟器", description = "恢复暂停的模拟器")
     public ResponseEntity<Map<String, Object>> resumeSimulator(
@@ -275,6 +282,7 @@ public class ScaleSimulatorController {
     /**
      * 发送模拟称重数据
      */
+    @RequirePermission({"equipment:read_write"})
     @PostMapping("/{simulatorId}/send")
     @Operation(summary = "发送称重数据", description = "通过模拟器发送指定的称重数据")
     public ResponseEntity<Map<String, Object>> sendWeight(
@@ -310,6 +318,7 @@ public class ScaleSimulatorController {
     /**
      * 模拟完整称重过程 (波动 -> 稳定)
      */
+    @RequirePermission({"equipment:read_write"})
     @PostMapping("/{simulatorId}/simulate-weighing")
     @Operation(summary = "模拟完整称重过程", description = "模拟从波动到稳定的完整称重过程")
     public ResponseEntity<Map<String, Object>> simulateWeighingProcess(
@@ -358,6 +367,7 @@ public class ScaleSimulatorController {
     /**
      * 生成测试数据帧 (不需要启动模拟器)
      */
+    @RequirePermission({"equipment:read_write"})
     @PostMapping("/generate-frame")
     @Operation(summary = "生成测试数据帧", description = "根据协议直接生成测试数据帧，无需启动模拟器")
     public ResponseEntity<Map<String, Object>> generateFrame(
@@ -395,6 +405,7 @@ public class ScaleSimulatorController {
     /**
      * 批量生成测试数据集
      */
+    @RequirePermission({"equipment:read_write"})
     @PostMapping("/generate-test-dataset")
     @Operation(summary = "批量生成测试数据", description = "批量生成指定数量的测试数据帧")
     public ResponseEntity<Map<String, Object>> generateTestDataset(

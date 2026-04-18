@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.ai.IntentExecuteRequest;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.ai.IntentExecuteResponse;
 import com.cretas.aims.dto.ai.ParameterConfirmationRequest;
 import com.cretas.aims.dto.common.ApiResponse;
@@ -124,6 +125,7 @@ public class AIIntentConfigController {
         return ResponseEntity.ok(ApiResponse.success(count));
     }
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/keywords/cleanup")
     @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
     @Operation(summary = "清理低效关键词", description = "清理效果评分低于阈值的关键词（仅工厂管理员）")
@@ -150,6 +152,7 @@ public class AIIntentConfigController {
 
     // ==================== 意图识别 ====================
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/recognize")
     @Operation(summary = "测试意图识别", description = "输入文本测试意图识别结果（支持操作类型检测）")
     public ResponseEntity<ApiResponse<IntentRecognitionResult>> recognizeIntent(
@@ -184,6 +187,7 @@ public class AIIntentConfigController {
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/recognize-all")
     @Operation(summary = "识别所有匹配意图", description = "获取所有可能匹配的意图列表")
     public ResponseEntity<ApiResponse<List<AIIntentConfig>>> recognizeAllIntents(
@@ -196,6 +200,7 @@ public class AIIntentConfigController {
 
     // ==================== 意图执行 ====================
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/execute")
     @Operation(summary = "执行AI意图", description = "识别用户输入的意图并执行对应操作")
     @RateLimit(count = 20, period = 60, limitType = LimitType.USER, message = "AI请求过于频繁，请稍后再试")
@@ -219,6 +224,7 @@ public class AIIntentConfigController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/execute/multi")
     @Operation(summary = "执行多意图 (Multi-Label Classification)",
                description = "使用 Sigmoid-based 多标签分类识别并执行多个意图")
@@ -243,6 +249,7 @@ public class AIIntentConfigController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    @RequirePermission({"system:read_write"})
     @PostMapping(value = "/execute/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "流式执行AI意图 (SSE)", description = "通过 Server-Sent Events 实时返回执行进度")
     @RateLimit(count = 20, period = 60, limitType = LimitType.USER, message = "AI请求过于频繁，请稍后再试")
@@ -265,6 +272,7 @@ public class AIIntentConfigController {
         return intentExecutorService.executeStream(factoryId, request, userId, userRole);
     }
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/preview")
     @Operation(summary = "预览AI意图执行结果", description = "识别意图并预览执行结果，不实际执行")
     public ResponseEntity<ApiResponse<IntentExecuteResponse>> previewIntent(
@@ -282,6 +290,7 @@ public class AIIntentConfigController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/confirm/{confirmToken}")
     @Operation(summary = "确认执行预览的意图", description = "确认执行之前预览的意图操作")
     public ResponseEntity<ApiResponse<IntentExecuteResponse>> confirmIntent(
@@ -301,6 +310,7 @@ public class AIIntentConfigController {
 
     // ==================== 参数确认和规则学习 ====================
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/params/confirm")
     @Operation(summary = "确认参数并学习规则",
                description = "用户确认 LLM 提取的参数后，系统学习提取规则，下次可直接使用规则提取（无需调用 LLM）")
@@ -349,6 +359,7 @@ public class AIIntentConfigController {
         return ResponseEntity.ok(ApiResponse.success(rules));
     }
 
+    @RequirePermission({"system:read_write"})
     @DeleteMapping("/params/rules/{ruleId}")
     @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
     @Operation(summary = "删除参数提取规则", description = "删除指定的参数提取规则（仅管理员）")
@@ -361,6 +372,7 @@ public class AIIntentConfigController {
         return ResponseEntity.ok(ApiResponse.success("规则已删除", null));
     }
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/params/rules/cleanup")
     @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
     @Operation(summary = "清理低成功率规则", description = "清理成功率低于阈值的参数提取规则")
@@ -400,6 +412,7 @@ public class AIIntentConfigController {
 
     // ==================== 意图管理 ====================
 
+    @RequirePermission({"system:read_write"})
     @PostMapping
     @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
     @Operation(summary = "创建意图配置", description = "创建新的AI意图配置（仅工厂管理员）")
@@ -412,6 +425,7 @@ public class AIIntentConfigController {
         return ResponseEntity.ok(ApiResponse.success("意图配置创建成功", created));
     }
 
+    @RequirePermission({"system:read_write"})
     @PutMapping("/{intentCode}")
     @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
     @Operation(summary = "更新意图配置", description = "更新现有的AI意图配置（仅工厂管理员）")
@@ -426,6 +440,7 @@ public class AIIntentConfigController {
         return ResponseEntity.ok(ApiResponse.success("意图配置更新成功", updated));
     }
 
+    @RequirePermission({"system:read_write"})
     @PatchMapping("/{intentCode}/active")
     @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
     @Operation(summary = "启用/禁用意图", description = "切换意图的启用状态（仅工厂管理员）")
@@ -440,6 +455,7 @@ public class AIIntentConfigController {
         return ResponseEntity.ok(ApiResponse.successMessage("意图已" + action));
     }
 
+    @RequirePermission({"system:read_write"})
     @DeleteMapping("/{intentCode}")
     @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
     @Operation(summary = "删除意图配置", description = "软删除意图配置（仅工厂管理员）")
@@ -454,6 +470,7 @@ public class AIIntentConfigController {
 
     // ==================== 版本回滚 ====================
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/{intentCode}/rollback")
     @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
     @Operation(summary = "回滚意图配置", description = "回滚单个意图配置到上个版本（仅工厂管理员）")
@@ -491,6 +508,7 @@ public class AIIntentConfigController {
         return ResponseEntity.ok(ApiResponse.success(history));
     }
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/rollback-all")
     @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
     @Operation(summary = "批量回滚工厂意图", description = "回滚工厂的所有意图配置到上个版本（仅工厂管理员）")
@@ -512,6 +530,7 @@ public class AIIntentConfigController {
 
     // ==================== 反馈记录 ====================
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/feedback/positive")
     @Operation(summary = "记录正向反馈", description = "当用户确认意图匹配正确时调用，用于关键词效果追踪")
     public ResponseEntity<ApiResponse<Void>> recordPositiveFeedback(
@@ -529,6 +548,7 @@ public class AIIntentConfigController {
         return ResponseEntity.ok(ApiResponse.successMessage("正向反馈已记录"));
     }
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/feedback/negative")
     @Operation(summary = "记录负向反馈", description = "当用户拒绝匹配结果并选择其他意图时调用")
     public ResponseEntity<ApiResponse<Void>> recordNegativeFeedback(
@@ -552,6 +572,7 @@ public class AIIntentConfigController {
      * 意图识别反馈接口
      * 用户可以纠正错误的意图识别结果，系统自动学习
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/feedback")
     @Operation(summary = "提交意图识别反馈", description = "用户可以纠正错误的意图识别结果，系统自动学习")
     public ResponseEntity<ApiResponse<Void>> submitIntentFeedback(
@@ -573,6 +594,7 @@ public class AIIntentConfigController {
 
     // ==================== 缓存管理 ====================
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/cache/refresh")
     @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
     @Operation(summary = "刷新意图缓存", description = "清除并重新加载意图配置缓存（仅工厂管理员）")
@@ -584,6 +606,7 @@ public class AIIntentConfigController {
         return ResponseEntity.ok(ApiResponse.successMessage("意图缓存已刷新"));
     }
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/cache/clear")
     @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
     @Operation(summary = "清除意图缓存", description = "清除意图配置缓存（仅工厂管理员）")

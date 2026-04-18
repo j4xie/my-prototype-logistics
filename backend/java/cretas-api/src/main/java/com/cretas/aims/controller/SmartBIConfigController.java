@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.smartbi.ConfigOperationResult;
 import com.cretas.aims.dto.smartbi.DataSourceDTO;
 import com.cretas.aims.entity.smartbi.*;
@@ -68,6 +69,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/intents")
     @Operation(summary = "创建意图配置", description = "创建新的意图配置")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> createIntent(
@@ -87,6 +89,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PutMapping("/intents/{id}")
     @Operation(summary = "更新意图配置", description = "更新指定的意图配置")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> updateIntent(
@@ -107,6 +110,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @DeleteMapping("/intents/{id}")
     @Operation(summary = "删除意图配置", description = "删除指定的意图配置（软删除）")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> deleteIntent(
@@ -126,6 +130,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/intents/reload")
     @Operation(summary = "重载意图配置", description = "重新加载意图配置缓存")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> reloadIntents() {
@@ -158,6 +163,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/thresholds")
     @Operation(summary = "创建告警阈值", description = "创建新的告警阈值配置")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> createThreshold(
@@ -178,6 +184,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PutMapping("/thresholds/{id}")
     @Operation(summary = "更新告警阈值", description = "更新指定的告警阈值配置")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> updateThreshold(
@@ -198,6 +205,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @DeleteMapping("/thresholds/{id}")
     @Operation(summary = "删除告警阈值", description = "删除指定的告警阈值配置（软删除）")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> deleteThreshold(
@@ -217,6 +225,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/thresholds/reload")
     @Operation(summary = "重载告警阈值", description = "重新加载告警阈值缓存")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> reloadThresholds() {
@@ -249,6 +258,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/incentive-rules")
     @Operation(summary = "创建激励规则", description = "创建新的激励规则配置")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> createIncentiveRule(
@@ -269,6 +279,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PutMapping("/incentive-rules/{id}")
     @Operation(summary = "更新激励规则", description = "更新指定的激励规则配置")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> updateIncentiveRule(
@@ -289,6 +300,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @DeleteMapping("/incentive-rules/{id}")
     @Operation(summary = "删除激励规则", description = "删除指定的激励规则配置（软删除）")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> deleteIncentiveRule(
@@ -308,6 +320,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/incentive-rules/reload")
     @Operation(summary = "重载激励规则", description = "重新加载激励规则缓存")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> reloadIncentiveRules() {
@@ -340,6 +353,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/field-mappings")
     @Operation(summary = "创建字段映射", description = "创建新的字段映射配置")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> createFieldMapping(
@@ -360,6 +374,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PutMapping("/field-mappings/{id}")
     @Operation(summary = "更新字段映射", description = "更新指定的字段映射配置")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> updateFieldMapping(
@@ -380,6 +395,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @DeleteMapping("/field-mappings/{id}")
     @Operation(summary = "删除字段映射", description = "删除指定的字段映射配置（软删除）")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> deleteFieldMapping(
@@ -399,6 +415,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/field-mappings/reload")
     @Operation(summary = "重载字段映射", description = "重新加载字段映射缓存")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> reloadFieldMappings() {
@@ -431,6 +448,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/metric-formulas")
     @Operation(summary = "创建指标公式", description = "创建新的指标公式配置")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> createMetricFormula(
@@ -450,6 +468,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PutMapping("/metric-formulas/{id}")
     @Operation(summary = "更新指标公式", description = "更新指定的指标公式配置")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> updateMetricFormula(
@@ -470,6 +489,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @DeleteMapping("/metric-formulas/{id}")
     @Operation(summary = "删除指标公式", description = "删除指定的指标公式配置（软删除）")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> deleteMetricFormula(
@@ -489,6 +509,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/metric-formulas/reload")
     @Operation(summary = "重载指标公式", description = "重新加载指标公式缓存")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> reloadMetricFormulas() {
@@ -544,6 +565,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/chart-templates")
     @Operation(summary = "创建图表模板", description = "创建新的图表模板配置")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> createChartTemplate(
@@ -564,6 +586,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PutMapping("/chart-templates/{id}")
     @Operation(summary = "更新图表模板", description = "更新指定的图表模板配置")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> updateChartTemplate(
@@ -584,6 +607,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @DeleteMapping("/chart-templates/{id}")
     @Operation(summary = "删除图表模板", description = "删除指定的图表模板配置（软删除）")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> deleteChartTemplate(
@@ -603,6 +627,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/chart-templates/reload")
     @Operation(summary = "重载图表模板", description = "重新加载图表模板缓存")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> reloadChartTemplates() {
@@ -655,6 +680,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/chart-templates/{code}/build-with-analysis")
     @Operation(summary = "构建带AI分析的图表", description = "根据模板代码和数据构建图表配置，并生成AI分析文本")
     public ResponseEntity<ApiResponse<Map<String, Object>>> buildChartWithAnalysis(
@@ -674,6 +700,7 @@ public class SmartBIConfigController {
 
     // ==================== 全局操作 ====================
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/reload-all")
     @Operation(summary = "重载所有配置", description = "重新加载所有 SmartBI 配置缓存")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> reloadAll() {
@@ -744,6 +771,7 @@ public class SmartBIConfigController {
         return ResponseEntity.ok(dto != null ? ApiResponse.success(dto) : ApiResponse.error("未找到数据源"));
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/data-sources")
     @Operation(summary = "创建数据源")
     public ResponseEntity<ApiResponse<DataSourceDTO>> createDataSource(
@@ -762,6 +790,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PutMapping("/data-sources/{id}")
     @Operation(summary = "更新数据源")
     public ResponseEntity<ApiResponse<DataSourceDTO>> updateDataSource(
@@ -783,6 +812,7 @@ public class SmartBIConfigController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @DeleteMapping("/data-sources/{id}")
     @Operation(summary = "删除数据源")
     public ResponseEntity<ApiResponse<Void>> deleteDataSource(
