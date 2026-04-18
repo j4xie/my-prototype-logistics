@@ -62,4 +62,12 @@ public class CreateUserRequest {
     @Schema(description = "工号", maxLength = 10)
     @Size(max = 10, message = "工号长度不能超过 10 个字符")
     private String employeeCode;
+
+    /**
+     * Apr 18 2026 Bug #57: 员工编辑时切换在职/离职 UI 操作不生效 — 前端已送 isActive,
+     * 但 DTO 之前没这个字段导致 Jackson 直接丢弃。create 场景该字段可选 (默认
+     * entity 用 true), update 场景 service 需按非 null 才更新 (不能 false 覆盖为 null)。
+     */
+    @Schema(description = "是否在职")
+    private Boolean isActive;
 }

@@ -105,6 +105,13 @@ public class UserServiceImpl implements UserService {
             user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         }
 
+        // Apr 18 2026 Bug #57: isActive 在 MapStruct 的 updateEntity 中可能因
+        // @Mapping ignore=true 而不被更新, 显式处理切换在职/离职 UI 路径。
+        // null 表示前端没送 (create 场景),true/false 都要应用。
+        if (request.getIsActive() != null) {
+            user.setIsActive(request.getIsActive());
+        }
+
         user = userRepository.save(user);
 
         log.info("更新用户成功: userId={}", userId);
