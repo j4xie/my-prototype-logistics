@@ -137,6 +137,25 @@ public class DynamicDataPersistenceServiceImpl implements DynamicDataPersistence
             return DynamicPersistenceResult.failure("No data rows to persist", null);
         }
 
+        // Bug #42 fix (2026-04-18): defense-in-depth against upstream leak of
+        // field mappings that aren't actually in the parsed row data. Seen during
+        // Bug #25b multi-stacked-table testing where region 2 upload received
+        // confirmedMappings containing region 1 column names from stale frontend
+        // state. Row data was correct but field_definitions schema showed both
+        // regions, polluting AI schema analysis. Filter any mapping whose
+        // originalColumn is absent from previewData[0].keys().
+        if (confirmedMappings != null && !confirmedMappings.isEmpty()) {
+            java.util.Set<String> realCols = previewData.get(0).keySet();
+            int beforeSize = confirmedMappings.size();
+            confirmedMappings = confirmedMappings.stream()
+                    .filter(m -> m.getOriginalColumn() != null && realCols.contains(m.getOriginalColumn()))
+                    .collect(java.util.stream.Collectors.toList());
+            if (confirmedMappings.size() < beforeSize) {
+                log.warn("Bug #42 filter: dropped {} field mappings not in previewData (schema-leak defense). Kept {}/{}.",
+                        beforeSize - confirmedMappings.size(), confirmedMappings.size(), beforeSize);
+            }
+        }
+
         SmartBiPgExcelUpload upload = null;
         try {
             // 1. Create upload record
