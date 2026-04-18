@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.edge.EdgeUploadRequest;
 import com.cretas.aims.dto.edge.EdgeUploadResponse;
 import com.cretas.aims.service.edge.EdgeGatewayService;
@@ -45,6 +46,7 @@ public class EdgeGatewayController {
      * 边缘数据上传（JSON格式）
      * 支持抓拍图片、告警事件、心跳
      */
+    @RequirePermission({"equipment:read_write"})
     @PostMapping("/upload")
     @Operation(summary = "边缘数据上传", description = "接收边缘网关上传的摄像头数据")
     public ApiResponse<EdgeUploadResponse> upload(@RequestBody EdgeUploadRequest request) {
@@ -65,6 +67,7 @@ public class EdgeGatewayController {
      * 边缘图片上传（Multipart格式）
      * 用于直接上传二进制图片文件
      */
+    @RequirePermission({"equipment:read_write"})
     @PostMapping(value = "/upload/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "边缘图片上传", description = "直接上传图片文件")
     public ApiResponse<EdgeUploadResponse> uploadImage(
@@ -98,6 +101,7 @@ public class EdgeGatewayController {
      * 边缘心跳
      * 简化的心跳接口
      */
+    @RequirePermission({"equipment:read_write"})
     @PostMapping("/heartbeat")
     @Operation(summary = "边缘心跳", description = "边缘网关心跳检测")
     public ApiResponse<EdgeUploadResponse> heartbeat(
@@ -147,6 +151,7 @@ public class EdgeGatewayController {
      * 配置方式：在摄像头 Web 界面配置 HTTP 监听地址为此接口
      * URL: http://服务器IP:10010/api/mobile/edge/events
      */
+    @RequirePermission({"equipment:read_write"})
     @PostMapping(value = "/events", consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.TEXT_XML_VALUE, MediaType.ALL_VALUE})
     @Operation(summary = "海康事件推送", description = "接收海康摄像头直接推送的事件（XML格式）")
     public String receiveHikvisionEvent(

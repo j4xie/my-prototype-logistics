@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.service.OssService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -50,6 +51,7 @@ public class FileUploadController {
      * 上传成功后返回公网 URL,前端拿到 URL 后调用
      * {@code POST /sales/deliveries/{id}/signature} 提交签收。
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping(value = "/signature-photo", consumes = "multipart/form-data")
     @Operation(summary = "上传签收照片", description = "出库签收配套;≤5MB,仅 JPEG/PNG")
     public ApiResponse<Map<String, String>> uploadSignaturePhoto(
@@ -91,6 +93,7 @@ public class FileUploadController {
      * 接受 PDF/图片, ≤10MB. 上传成功后返回 URL, 前端绑定到 paymentForm.receiptUrl 后
      * 调用 finance/payments/record 接口一并提交.
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping(value = "/receipt", consumes = "multipart/form-data")
     @Operation(summary = "上传收款凭证", description = "PDF/JPG/PNG, ≤10MB (P0-3d)")
     public ApiResponse<Map<String, String>> uploadReceipt(
@@ -135,6 +138,7 @@ public class FileUploadController {
      * 接受 PDF/图片/Word, ≤20MB. 上传成功后返回 URL, 前端绑定到
      * salesOrderForm.contractFileUrl + contractFileName 后 createOrder.
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping(value = "/contract", consumes = "multipart/form-data")
     @Operation(summary = "上传销售合同附件", description = "PDF/图片/Word, ≤20MB (P1-7)")
     public ApiResponse<Map<String, String>> uploadContract(

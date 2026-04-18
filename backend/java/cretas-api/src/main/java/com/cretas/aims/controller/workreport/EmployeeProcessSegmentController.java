@@ -1,6 +1,7 @@
 package com.cretas.aims.controller.workreport;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.workreport.EmployeeProcessSegment;
 import com.cretas.aims.entity.workreport.EmployeeProcessSegment.CheckoutReason;
 import com.cretas.aims.service.workreport.EmployeeProcessSegmentService;
@@ -32,6 +33,7 @@ public class EmployeeProcessSegmentController {
 
     private final EmployeeProcessSegmentService service;
 
+    @RequirePermission({"work_report:read_write"})
     @PostMapping("/start")
     public ApiResponse<EmployeeProcessSegment> startSegment(
             @PathVariable @NotBlank String factoryId,
@@ -44,6 +46,7 @@ public class EmployeeProcessSegmentController {
         return ApiResponse.success("开启工序片段成功", seg);
     }
 
+    @RequirePermission({"work_report:read_write"})
     @PostMapping("/checkout")
     public ApiResponse<EmployeeProcessSegment> checkOut(
             @PathVariable @NotBlank String factoryId,
@@ -56,6 +59,7 @@ public class EmployeeProcessSegmentController {
         return ApiResponse.success("结束工序片段成功", seg);
     }
 
+    @RequirePermission({"work_report:read_write"})
     @PostMapping("/switch")
     public ApiResponse<EmployeeProcessSegment> switchWorkType(
             @PathVariable @NotBlank String factoryId,

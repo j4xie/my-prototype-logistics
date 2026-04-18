@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.TimeStatsDTO;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.service.TimeStatsService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -220,6 +221,7 @@ public class TimeStatsController {
         return ApiResponse.success(trend);
     }
 
+    @RequirePermission({"hr:read_write"})
     @PostMapping("/export")
     @Operation(summary = "导出统计报告")
     public ApiResponse<String> exportStatsReport(
@@ -236,6 +238,7 @@ public class TimeStatsController {
         return ApiResponse.success(report);
     }
 
+    @RequirePermission({"hr:read_write"})
     @DeleteMapping("/cleanup")
     @Operation(summary = "清理过期统计数据")
     public ApiResponse<Void> cleanupOldStats(
@@ -247,6 +250,7 @@ public class TimeStatsController {
         return ApiResponse.success();
     }
 
+    @RequirePermission({"hr:read_write"})
     @PostMapping("/recalculate")
     @Operation(summary = "重新计算统计")
     public ApiResponse<Void> recalculateStats(
