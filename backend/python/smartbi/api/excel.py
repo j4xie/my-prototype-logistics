@@ -778,11 +778,22 @@ async def auto_parse_excel(
         structure_result = None
         mapping_result = None
 
-        if use_cache:
+        # Bug #42 fix (2026-04-18): when user picked a specific region, skip cache
+        # because the cache key is (file, sheet_index) and doesn't distinguish
+        # region bounds — hitting region 1's cached schema when user picked region 2
+        # would leak region 1 fields into region 2 persistence.
+        _region_selected = (
+            effective_region_start is not None
+            and effective_region_end is not None
+            and ext != ".csv"
+        )
+        if use_cache and not _region_selected:
             cached = cache.get(content, effective_index)
             if cached:
                 structure_result, mapping_result = cached
                 logger.info("Using cached schema")
+        elif _region_selected:
+            logger.info("Region selected — bypassing schema cache (Bug #42)")
 
         # Step 2: Detect structure if not cached
         # Bug #25b (2026-04-18): when the caller picked a region, crop to it and
@@ -1012,7 +1023,9 @@ async def auto_parse_excel(
             logger.warning(f"TableClassifier failed, using semantic mapper result: {e}")
 
         # Step 4: Cache results
-        if use_cache and structure_result and mapping_result:
+        # Bug #42 fix: do NOT write region-selected results to the shared cache
+        # (same key as non-region) — it would pollute a subsequent non-region upload.
+        if use_cache and structure_result and mapping_result and not _region_selected:
             cache_key = cache.set(
                 content, effective_index,
                 structure_result, mapping_result,
