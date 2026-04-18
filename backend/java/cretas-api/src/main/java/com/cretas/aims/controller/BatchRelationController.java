@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.entity.BatchRelation;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.service.BatchRelationService;
 import com.cretas.aims.util.ErrorSanitizer;
 import io.swagger.v3.oas.annotations.Operation;
@@ -206,6 +207,7 @@ public class BatchRelationController {
     /**
      * 创建批次关联
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping
     @Operation(summary = "创建批次关联", description = "创建生产批次与原材料批次的关联")
     public ResponseEntity<?> createBatchRelation(
@@ -233,6 +235,7 @@ public class BatchRelationController {
     /**
      * 更新批次关联
      */
+    @RequirePermission({"production:read_write"})
     @PutMapping("/{id}")
     @Operation(summary = "更新批次关联", description = "更新批次关联信息")
     public ResponseEntity<?> updateBatchRelation(
@@ -258,6 +261,7 @@ public class BatchRelationController {
     /**
      * 验证批次关联
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/{id}/verify")
     @Operation(summary = "验证批次关联", description = "验证批次关联的准确性")
     public ResponseEntity<?> verifyRelation(
@@ -283,6 +287,7 @@ public class BatchRelationController {
     /**
      * 删除批次关联
      */
+    @RequirePermission({"production:read_write"})
     @DeleteMapping("/{id}")
     @Operation(summary = "删除批次关联", description = "删除指定的批次关联")
     public ResponseEntity<?> deleteBatchRelation(

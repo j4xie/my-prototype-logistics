@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.LowcodeComponentDefinition;
 import com.cretas.aims.entity.LowcodePageConfig;
 import com.cretas.aims.service.LowcodeService;
@@ -70,6 +71,7 @@ public class LowcodeController {
     /**
      * 创建页面
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/pages")
     @Operation(summary = "创建页面", description = "创建新的低代码页面配置")
     public ApiResponse<LowcodePageConfig> createPage(
@@ -83,6 +85,7 @@ public class LowcodeController {
     /**
      * 更新页面
      */
+    @RequirePermission({"system:read_write"})
     @PutMapping("/pages/{pageId}")
     @Operation(summary = "更新页面", description = "更新页面配置信息，自动增加版本号")
     public ApiResponse<LowcodePageConfig> updatePage(
@@ -97,6 +100,7 @@ public class LowcodeController {
     /**
      * 发布页面
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/pages/{pageId}/publish")
     @Operation(summary = "发布页面", description = "将页面从草稿状态发布为正式版本，设置 status=1")
     public ApiResponse<LowcodePageConfig> publishPage(
@@ -110,6 +114,7 @@ public class LowcodeController {
     /**
      * 删除页面
      */
+    @RequirePermission({"system:read_write"})
     @DeleteMapping("/pages/{pageId}")
     @Operation(summary = "删除页面", description = "删除指定的页面配置")
     public ApiResponse<Void> deletePage(

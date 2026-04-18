@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.ai.AIRuleParseRequest;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.ai.AIRuleParseResponse;
 import com.cretas.aims.dto.ai.AIStateMachineParseRequest;
 import com.cretas.aims.dto.ai.AIStateMachineParseResponse;
@@ -62,6 +63,7 @@ public class AIRuleController {
     /**
      * AI 解析自然语言生成 DRL 规则
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/parse-rule")
     @Operation(summary = "AI解析规则", description = "将自然语言描述转换为 Drools DRL 规则")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -125,6 +127,7 @@ public class AIRuleController {
     /**
      * AI 解析自然语言并直接保存规则
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/parse-and-save-rule")
     @Operation(summary = "AI解析并保存规则", description = "将自然语言转换为 DRL 规则并保存到数据库")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -192,6 +195,7 @@ public class AIRuleController {
     /**
      * AI 解析自然语言生成状态机配置
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/parse-state-machine")
     @Operation(summary = "AI解析状态机", description = "将自然语言描述转换为状态机配置")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -285,6 +289,7 @@ public class AIRuleController {
     /**
      * AI 解析自然语言并直接保存状态机配置
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/parse-and-save-state-machine")
     @Operation(summary = "AI解析并保存状态机", description = "将自然语言转换为状态机配置并保存")
     @PreAuthorize("hasAuthority('factory_super_admin')")
