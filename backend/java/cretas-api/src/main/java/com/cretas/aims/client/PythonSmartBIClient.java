@@ -8,7 +8,6 @@ import com.cretas.aims.dto.python.ClassifierBatchResponse;
 import com.cretas.aims.dto.python.PythonAnalysisRequest;
 import com.cretas.aims.dto.python.PythonAnalysisResponse;
 import com.cretas.aims.dto.smartbi.ExcelParseResponse;
-import com.cretas.aims.dto.smartbi.ForecastResult;
 import com.cretas.aims.dto.smartbi.PythonForecastResponse;
 import com.cretas.aims.dto.smartbi.MetricResult;
 import com.cretas.aims.exception.PythonServiceUnavailableException;
@@ -28,7 +27,6 @@ import okio.Source;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -302,72 +300,6 @@ public class PythonSmartBIClient {
     }
 
     // ==================== 预测分析 ====================
-
-    /**
-     * 使用 Python 服务进行销售预测
-     *
-     * @param factoryId    工厂ID
-     * @param startDate    开始日期
-     * @param endDate      结束日期
-     * @param forecastDays 预测天数
-     * @return 预测结果
-     * @throws IOException 如果请求失败
-     */
-    public ForecastResult forecastSales(String factoryId, LocalDate startDate,
-                                         LocalDate endDate, int forecastDays) throws IOException {
-        log.info("调用 Python SmartBI 销售预测: factoryId={}, startDate={}, endDate={}, forecastDays={}",
-                factoryId, startDate, endDate, forecastDays);
-
-        Map<String, Object> requestBody = Map.of(
-                "factoryId", factoryId,
-                "startDate", startDate.toString(),
-                "endDate", endDate.toString(),
-                "forecastDays", forecastDays,
-                "metricType", "sales_amount"
-        );
-
-        Request request = new Request.Builder()
-                .url(config.getForecastUrl())
-                .post(RequestBody.create(JSON, objectMapper.writeValueAsString(requestBody)))
-                .build();
-
-        return executeWithRetry(request, ForecastResult.class);
-    }
-
-    /**
-     * 使用 Python 服务进行通用指标预测
-     *
-     * @param factoryId    工厂ID
-     * @param metricType   指标类型
-     * @param startDate    开始日期
-     * @param endDate      结束日期
-     * @param forecastDays 预测天数
-     * @param algorithm    预测算法（可选）
-     * @return 预测结果
-     * @throws IOException 如果请求失败
-     */
-    public ForecastResult forecastMetric(String factoryId, String metricType,
-                                          LocalDate startDate, LocalDate endDate,
-                                          int forecastDays, String algorithm) throws IOException {
-        log.info("调用 Python SmartBI 指标预测: factoryId={}, metricType={}, algorithm={}",
-                factoryId, metricType, algorithm);
-
-        Map<String, Object> requestBody = Map.of(
-                "factoryId", factoryId,
-                "metricType", metricType,
-                "startDate", startDate.toString(),
-                "endDate", endDate.toString(),
-                "forecastDays", forecastDays,
-                "algorithm", algorithm != null ? algorithm : "AUTO"
-        );
-
-        Request request = new Request.Builder()
-                .url(config.getForecastUrl())
-                .post(RequestBody.create(JSON, objectMapper.writeValueAsString(requestBody)))
-                .build();
-
-        return executeWithRetry(request, ForecastResult.class);
-    }
 
     /**
      * 方案 E (2026-04-17): Java 查历史数据后调用 Python 纯算端点。
