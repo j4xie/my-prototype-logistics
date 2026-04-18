@@ -1,5 +1,6 @@
 package com.cretas.aims.controller.finance;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.enums.InvoiceStatus;
 import com.cretas.aims.service.finance.InvoiceService;
 import lombok.RequiredArgsConstructor;
@@ -12,14 +13,24 @@ import org.springframework.web.multipart.MultipartFile;
 import java.math.BigDecimal;
 import java.util.Map;
 
+/**
+ * Bug #4 (P1 RBAC, 2026-04-18): Added class-level @RequirePermission so finance
+ * endpoints reject dispatcher/operator/quality users who don't have finance:w.
+ * Previously the controller had ZERO permission checks — any authenticated user
+ * could POST /request, /request-from-order, /{id}/approve, etc and bypass UI
+ * menu-hiding. Read-only endpoints (list/detail) accept finance:read fallback.
+ * Matches pattern in ArApController.
+ */
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/finance/invoices")
 @RequiredArgsConstructor
+@RequirePermission("finance:read_write")
 public class InvoiceController {
 
     private final InvoiceService invoiceService;
 
     @PostMapping("/request")
+    @RequirePermission({"finance:read_write", "sales:read_write"})
     public ResponseEntity<?> requestInvoice(
             @PathVariable String factoryId,
             @RequestBody Map<String, Object> body,
@@ -56,6 +67,7 @@ public class InvoiceController {
      * 响应里的 record.taxBreakdown 含分组明细供前端按组渲染。
      */
     @PostMapping("/request-from-order")
+    @RequirePermission({"finance:read_write", "sales:read_write"})
     public ResponseEntity<?> requestInvoiceFromOrder(
             @PathVariable String factoryId,
             @RequestBody Map<String, Object> body,
@@ -71,6 +83,7 @@ public class InvoiceController {
     }
 
     @PostMapping("/{invoiceId}/approve")
+    @RequirePermission("finance:read_write")
     public ResponseEntity<?> approve(
             @PathVariable String factoryId,
             @PathVariable String invoiceId,
@@ -82,6 +95,7 @@ public class InvoiceController {
     }
 
     @PostMapping("/{invoiceId}/reject")
+    @RequirePermission("finance:read_write")
     public ResponseEntity<?> reject(
             @PathVariable String factoryId,
             @PathVariable String invoiceId,
@@ -92,6 +106,7 @@ public class InvoiceController {
     }
 
     @PostMapping("/{invoiceId}/issue")
+    @RequirePermission("finance:read_write")
     public ResponseEntity<?> issue(
             @PathVariable String factoryId,
             @PathVariable String invoiceId,
@@ -102,6 +117,7 @@ public class InvoiceController {
     }
 
     @GetMapping
+    @RequirePermission({"finance:read_write", "finance:read", "sales:read_write", "sales:read"})
     public ResponseEntity<?> list(
             @PathVariable String factoryId,
             @RequestParam(required = false) String status,
@@ -114,12 +130,14 @@ public class InvoiceController {
     }
 
     @GetMapping("/{invoiceId}")
+    @RequirePermission({"finance:read_write", "finance:read", "sales:read_write", "sales:read"})
     public ResponseEntity<?> detail(@PathVariable String factoryId, @PathVariable String invoiceId) {
         return ResponseEntity.ok(Map.of("success", true, "data", invoiceService.getInvoice(factoryId, invoiceId)));
     }
 
     /** List all invoice records for a sales order — used by sales order detail page tab. */
     @GetMapping("/by-sales-order/{salesOrderId}")
+    @RequirePermission({"finance:read_write", "finance:read", "sales:read_write", "sales:read"})
     public ResponseEntity<?> listBySalesOrder(@PathVariable String factoryId, @PathVariable String salesOrderId) {
         return ResponseEntity.ok(Map.of("success", true,
                 "data", invoiceService.listInvoicesBySalesOrder(factoryId, salesOrderId)));
