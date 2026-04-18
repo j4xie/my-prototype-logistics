@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.equipment.CreateEquipmentAlertRequest;
@@ -39,6 +40,7 @@ public class EquipmentAlertsController {
     /**
      * 创建设备告警
      */
+    @RequirePermission({"equipment:read_write"})
     @PostMapping
     @Operation(summary = "创建设备告警", description = "手动创建设备告警记录，用于记录设备异常情况")
     public ApiResponse<EquipmentAlertDTO> createAlert(
@@ -126,6 +128,7 @@ public class EquipmentAlertsController {
     /**
      * 确认告警
      */
+    @RequirePermission({"equipment:read_write"})
     @PutMapping("/{alertId}/acknowledge")
     @Operation(summary = "确认告警", description = "确认已收到告警通知，状态变更为ACKNOWLEDGED")
     public ApiResponse<EquipmentAlertDTO> acknowledgeAlert(
@@ -148,6 +151,7 @@ public class EquipmentAlertsController {
     /**
      * 处理告警
      */
+    @RequirePermission({"equipment:read_write"})
     @PutMapping("/{alertId}/resolve")
     @Operation(summary = "处理告警", description = "标记告警已处理完成，状态变更为RESOLVED")
     public ApiResponse<EquipmentAlertDTO> resolveAlert(

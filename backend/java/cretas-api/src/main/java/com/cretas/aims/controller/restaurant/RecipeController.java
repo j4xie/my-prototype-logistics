@@ -1,6 +1,7 @@
 package com.cretas.aims.controller.restaurant;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.restaurant.Recipe;
 import com.cretas.aims.repository.restaurant.RecipeRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -69,6 +70,7 @@ public class RecipeController {
 
     // ==================== 创建 ====================
 
+    @RequirePermission({"production:read_write", "rd:read_write"})
     @PostMapping
     @Operation(summary = "创建配方")
     public ApiResponse<Recipe> create(
@@ -96,6 +98,7 @@ public class RecipeController {
 
     // ==================== 更新 ====================
 
+    @RequirePermission({"production:read_write", "rd:read_write"})
     @PutMapping("/{recipeId}")
     @Operation(summary = "更新配方")
     public ApiResponse<Recipe> update(
@@ -118,6 +121,7 @@ public class RecipeController {
 
     // ==================== 软删除 ====================
 
+    @RequirePermission({"production:read_write", "rd:read_write"})
     @DeleteMapping("/{recipeId}")
     @Operation(summary = "停用配方（软删除）")
     public ApiResponse<Void> softDelete(

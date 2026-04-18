@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.isapi.SmartAnalysisDTO;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.isapi.SmartAnalysisDTO.SmartCapabilities;
 import com.cretas.aims.service.isapi.IsapiSmartAnalysisService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -96,6 +97,7 @@ public class IsapiSmartAnalysisController {
     /**
      * 保存越界检测配置
      */
+    @RequirePermission({"equipment:read_write"})
     @PutMapping("/channels/{channelId}/line-detection")
     @Operation(summary = "保存越界检测配置", description = "保存指定通道的越界检测规则配置")
     public ResponseEntity<Map<String, Object>> saveLineDetectionConfig(
@@ -152,6 +154,7 @@ public class IsapiSmartAnalysisController {
     /**
      * 保存区域入侵检测配置
      */
+    @RequirePermission({"equipment:read_write"})
     @PutMapping("/channels/{channelId}/field-detection")
     @Operation(summary = "保存区域入侵检测配置", description = "保存指定通道的区域入侵检测规则配置")
     public ResponseEntity<Map<String, Object>> saveFieldDetectionConfig(
@@ -208,6 +211,7 @@ public class IsapiSmartAnalysisController {
     /**
      * 保存人脸检测配置
      */
+    @RequirePermission({"equipment:read_write"})
     @PutMapping("/channels/{channelId}/face-detection")
     @Operation(summary = "保存人脸检测配置", description = "保存指定通道的人脸检测配置")
     public ResponseEntity<Map<String, Object>> saveFaceDetectionConfig(

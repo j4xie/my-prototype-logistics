@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.entity.Supplier;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.repository.SupplierRepository;
 import com.cretas.aims.service.SupplierAdmissionRuleService;
 import com.cretas.aims.util.ErrorSanitizer;
@@ -91,6 +92,7 @@ public class SupplierAdmissionController {
      * @param request 包含供应商ID列表
      * @return 批量评估结果
      */
+    @RequirePermission({"procurement:read_write"})
     @PostMapping("/evaluate/batch")
     @Operation(summary = "批量评估供应商准入资格", description = "对多个供应商进行批量准入资格评估，返回每个供应商的评估结果列表")
     public ResponseEntity<Map<String, Object>> evaluateAdmissionBatch(
@@ -206,6 +208,7 @@ public class SupplierAdmissionController {
      * @param request 包含供应商ID、原料类型ID、数量
      * @return 验收策略
      */
+    @RequirePermission({"procurement:read_write"})
     @PostMapping("/acceptance-strategy")
     @Operation(summary = "生成验收策略", description = "根据供应商信息、原料类型和数量，生成相应的验收策略，包括抽检比例、检测项目等")
     public ResponseEntity<Map<String, Object>> generateAcceptanceStrategy(
@@ -300,6 +303,7 @@ public class SupplierAdmissionController {
      * @param config 新的规则配置
      * @return 更新后的配置
      */
+    @RequirePermission({"procurement:read_write"})
     @PutMapping("/rules")
     @Operation(summary = "更新供应商准入规则配置", description = "更新工厂的供应商准入规则配置，可调整评分阈值、资质要求、信用额度标准等")
     public ResponseEntity<Map<String, Object>> updateRuleConfiguration(

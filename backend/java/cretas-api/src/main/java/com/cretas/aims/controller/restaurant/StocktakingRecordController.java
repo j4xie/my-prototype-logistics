@@ -1,6 +1,7 @@
 package com.cretas.aims.controller.restaurant;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.restaurant.StocktakingRecord;
 import com.cretas.aims.repository.restaurant.StocktakingRecordRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -68,6 +69,7 @@ public class StocktakingRecordController {
 
     // ==================== 创建 ====================
 
+    @RequirePermission({"inventory:read_write"})
     @PostMapping
     @Operation(summary = "创建盘点单", description = "创建食材盘点单，自动读取系统库存")
     public ApiResponse<StocktakingRecord> create(
@@ -101,6 +103,7 @@ public class StocktakingRecordController {
 
     // ==================== 完成盘点 ====================
 
+    @RequirePermission({"inventory:read_write"})
     @PostMapping("/{recordId}/complete")
     @Operation(summary = "完成盘点", description = "录入实盘数量并计算差异")
     public ApiResponse<StocktakingRecord> complete(
@@ -137,6 +140,7 @@ public class StocktakingRecordController {
 
     // ==================== 取消 ====================
 
+    @RequirePermission({"inventory:read_write"})
     @PostMapping("/{recordId}/cancel")
     @Operation(summary = "取消盘点")
     public ApiResponse<StocktakingRecord> cancel(
