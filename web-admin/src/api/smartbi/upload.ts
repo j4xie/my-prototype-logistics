@@ -195,6 +195,10 @@ export async function uploadAndAnalyze(file: File, options?: {
  * Confirm upload and persist (using existing Java endpoint)
  */
 export function confirmUploadAndPersist(data: {
+  // Bug #43 fix (2026-04-18): pass uploadId returned from /upload-and-analyze
+  // so backend skips the 50-row-trim re-persist path and only updates
+  // field_definitions. Rows were pre-persisted during initial upload.
+  uploadId?: number;
   parseResponse: {
     fileName?: string;
     sheetName?: string;

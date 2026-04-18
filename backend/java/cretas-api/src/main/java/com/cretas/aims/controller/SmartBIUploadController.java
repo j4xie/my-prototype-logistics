@@ -190,8 +190,10 @@ public class SmartBIUploadController {
                 });
             }
 
+            // Bug #43 fix: pass uploadId (pre-persisted during /upload-and-analyze)
+            // so confirmAndPersist skips the 50-row-trim re-persist path.
             SmartBIUploadFlowService.UploadFlowResult result = uploadFlowService.confirmAndPersist(
-                    factoryId, request.getParseResponse(), mappings, request.getDataType());
+                    factoryId, request.getUploadId(), request.getParseResponse(), mappings, request.getDataType());
             if (result.isSuccess()) {
                 return ResponseEntity.ok(ApiResponse.success(result.getMessage(), result));
             } else {

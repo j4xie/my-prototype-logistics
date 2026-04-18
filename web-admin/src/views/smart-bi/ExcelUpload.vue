@@ -61,6 +61,10 @@ const chartInstances = new Map<string, echarts.ECharts>();
 const parsedData = ref<unknown[]>([]);
 const parsedFields = ref<Array<{ original: string; standard: string }>>([]);
 const parsedTableType = ref<string>('');
+// Bug #43: uploadId from /upload-and-analyze so /upload/confirm can skip
+// re-persistence and only update field definitions. Without this, the server
+// would re-persist from trimmed 50-row previewData instead of the original file.
+const currentUploadId = ref<number | null>(null);
 
 // 上传状态
 const uploading = ref(false);
@@ -375,6 +379,9 @@ async function runUploadAndAnalyze(rawFile: File, region?: TableRegion) {
     // 保存图表配置
     chartConfigs.value = result.chartRecommendations || [];
 
+    // Bug #43: remember uploadId so save step reuses pre-persisted rows.
+    currentUploadId.value = result.uploadId ?? null;
+
     // Build field type confirmations from parsed data
     buildFieldTypeConfirmations();
 
@@ -471,6 +478,9 @@ async function handleSaveAnalysis() {
   try {
     // 使用现有的 /upload/confirm 端点持久化
     const saveResponse = await confirmUploadAndPersist({
+      // Bug #43: pass uploadId so backend skips 50-row-trim re-persist and only
+      // updates field definitions. Rows were already persisted during upload.
+      uploadId: currentUploadId.value ?? undefined,
       parseResponse: {
         fileName: fileList.value[0].name || 'unknown.xlsx',
         sheetName: 'Sheet1',

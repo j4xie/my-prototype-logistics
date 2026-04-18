@@ -202,12 +202,37 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             boolean needsConfirmation = !autoConfirm && checkNeedsConfirmation(parseResult);
 
             if (needsConfirmation) {
-                log.info("字段映射需要用户确认");
+                log.info("字段映射需要用户确认 — 先 pre-persist 全量行, 防 50 行截断 (Bug #43)");
+                // Bug #43 fix (2026-04-18): persist ALL rows BEFORE trimForResponse
+                // truncates previewData to 50. Otherwise /upload/confirm would
+                // receive the trimmed 50-row preview and only persist 50 rows,
+                // even though Python returned all 4051 rows in parseResult.
+                // After this pre-persist, /upload/confirm uses uploadId to skip
+                // re-persist and only update field_definitions.
+                Long prePersistUploadId = null;
+                try {
+                    if (postgresEnabled && dynamicPersistenceService != null) {
+                        DynamicPersistenceResult prePersist = dynamicPersistenceService.persistDynamic(
+                                factoryId, parseResult, fileName);
+                        if (prePersist.isSuccess()) {
+                            prePersistUploadId = prePersist.getUploadId();
+                            log.info("Pre-persist 完成: uploadId={}, savedRows={} (全量)",
+                                    prePersistUploadId, prePersist.getSavedRows());
+                        } else {
+                            log.warn("Pre-persist 失败, 回退到老流程 (confirm 时再存): {}",
+                                    prePersist.getMessage());
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Pre-persist 异常, 回退到老流程: {}", e.getMessage());
+                }
+
                 return UploadFlowResult.builder()
                         .success(true)
                         .message("字段映射需要用户确认")
                         .parseResult(trimForResponse(parseResult))
                         .requiresConfirmation(true)
+                        .uploadId(prePersistUploadId)  // Bug #43: frontend passes back on confirm
                         .detectedDataType(detectedTypeStr)
                         .recommendedTemplates(getDefaultTemplates(detectedTypeStr, factoryId))
                         .build();
@@ -344,6 +369,62 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             }
             return UploadFlowResult.failure("处理失败: " + msg);
         }
+    }
+
+    @Override
+    @Transactional
+    public UploadFlowResult confirmAndPersist(String factoryId,
+                                               Long uploadId,
+                                               ExcelParseResponse parseResponse,
+                                               List<FieldMappingResult> confirmedMappings,
+                                               String dataType) {
+        // Bug #43 fix (2026-04-18): if uploadId is set, skip re-persist entirely
+        // — rows were pre-persisted during executeUploadFlow. Only update
+        // field_definitions with user-confirmed mappings.
+        if (uploadId != null && postgresEnabled && dynamicPersistenceService != null) {
+            log.info("Bug #43 path: confirm with uploadId={} — skip re-persist, update field_defs only", uploadId);
+            try {
+                if (confirmedMappings != null && !confirmedMappings.isEmpty()) {
+                    dynamicPersistenceService.saveFieldDefinitions(uploadId, confirmedMappings);
+                    log.info("Field definitions updated: uploadId={}, mappings={}",
+                            uploadId, confirmedMappings.size());
+                }
+                // Recommend chart + generate config (same as normal path)
+                DataType detectedType = parseDataType(dataType);
+                if (detectedType == DataType.UNKNOWN) detectedType = DataType.GENERAL;
+                String recommendedChartType = recommendChartType(parseResponse, dataType);
+                List<SmartBiChartTemplate> recommendedTemplates = recommendTemplates(factoryId, parseResponse);
+                Map<String, Object> chartConfig = null;
+                String aiAnalysis = null;
+                if (!recommendedTemplates.isEmpty()) {
+                    try {
+                        SmartBiChartTemplate primaryTemplate = recommendedTemplates.get(0);
+                        Map<String, Object> chartData = buildChartData(factoryId, uploadId, detectedType);
+                        Map<String, Object> chartWithAnalysis = chartTemplateService.buildChartWithAnalysis(
+                                primaryTemplate.getTemplateCode(), chartData, factoryId);
+                        chartConfig = chartWithAnalysis;
+                        aiAnalysis = (String) chartWithAnalysis.get("aiAnalysis");
+                    } catch (Exception e) {
+                        log.warn("Chart generation 失败 (不影响 save): {}", e.getMessage());
+                    }
+                }
+                saveManualMappingsToDatabase(factoryId, confirmedMappings);
+                return UploadFlowResult.builder()
+                        .success(true)
+                        .message("数据已保存")
+                        .uploadId(uploadId)
+                        .detectedDataType(detectedType.name())
+                        .recommendedChartType(recommendedChartType)
+                        .recommendedTemplates(recommendedTemplates)
+                        .chartConfig(chartConfig)
+                        .aiAnalysis(aiAnalysis)
+                        .build();
+            } catch (Exception e) {
+                log.error("Bug #43 path failed, fallback to full confirm: {}", e.getMessage(), e);
+                // fall through to legacy path below
+            }
+        }
+        return confirmAndPersist(factoryId, parseResponse, confirmedMappings, dataType);
     }
 
     @Override

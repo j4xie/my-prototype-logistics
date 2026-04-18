@@ -175,6 +175,21 @@ public interface SmartBIUploadFlowService {
                                         String dataType);
 
     /**
+     * Bug #43 fix (2026-04-18): uploadId-aware confirm.
+     * When uploadId is non-null (pre-persisted during executeUploadFlow), skip
+     * re-persistence and only update smart_bi_pg_field_definitions with the
+     * user's confirmed mappings. Prevents the 50-row trim bug where frontend
+     * sends back truncated previewData.
+     */
+    default UploadFlowResult confirmAndPersist(String factoryId,
+                                                Long uploadId,
+                                                ExcelParseResponse parseResponse,
+                                                List<FieldMappingResult> confirmedMappings,
+                                                String dataType) {
+        return confirmAndPersist(factoryId, parseResponse, confirmedMappings, dataType);
+    }
+
+    /**
      * 为已持久化的数据生成图表
      *
      * @param factoryId    工厂ID
