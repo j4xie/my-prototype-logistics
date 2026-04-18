@@ -7,9 +7,17 @@ import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig, AxiosResp
 import { ApiResponse, ApiError } from '@/types/api';
 
 // 动态导入 ElMessage，避免循环依赖
+// Apr 18 2026 UX 优化: error 类 toast 默认 3s 闪过对业务流程错误 (库存不足/并发冲突/
+// 批次未分配) 太短 — 用户需时间看清具体原因 + 去依赖流程处理. 改成 duration: 0 (sticky,
+// 必须用户手动关) + showClose: true. warning/success/info 保持 3s.
 const showMessage = async (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'error') => {
   const { ElMessage } = await import('element-plus');
-  ElMessage({ message, type });
+  ElMessage({
+    message,
+    type,
+    duration: type === 'error' ? 0 : 3000,
+    showClose: type === 'error',
+  });
 };
 
 // 创建 axios 实例
