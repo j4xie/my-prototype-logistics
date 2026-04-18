@@ -979,10 +979,21 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
         List<AiIntentConfig> allIntents = intentConfigRepository.findByIsActiveTrueOrderByPriorityAsc();
         intentCache.put("all", allIntents);
 
-        // 按分类分组
+        // 按分类分组. intent_category 允许 NULL (DB 无 NOT NULL), 新建配置可能漏填.
+        // ConcurrentHashMap.putAll 不接受 null key → 先按"UNCATEGORIZED" 兜底再 putAll.
         Map<String, List<AiIntentConfig>> byCategory = new HashMap<>();
+        int nullCategoryCount = 0;
         for (AiIntentConfig intent : allIntents) {
-            byCategory.computeIfAbsent(intent.getIntentCategory(), k -> new ArrayList<>()).add(intent);
+            String category = intent.getIntentCategory();
+            if (category == null) {
+                category = "UNCATEGORIZED";
+                nullCategoryCount++;
+            }
+            byCategory.computeIfAbsent(category, k -> new ArrayList<>()).add(intent);
+        }
+        if (nullCategoryCount > 0) {
+            log.warn("refreshIntentCache: {} 个 intent 的 intentCategory 为 null, 已归入 UNCATEGORIZED",
+                    nullCategoryCount);
         }
         intentCache.putAll(byCategory);
 
