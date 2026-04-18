@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post } from '@/api/request';
@@ -8,6 +9,7 @@ import { formatAmount } from '@/utils/tableFormatters';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
+const route = useRoute();
 const factoryId = computed(() => authStore.factoryId);
 const canWrite = computed(() => permissionStore.canWrite('finance'));
 
@@ -24,7 +26,12 @@ const statusMap: Record<string, { text: string; type: string }> = {
   CANCELLED: { text: '已取消', type: 'info' },
 };
 
-onMounted(() => loadData());
+onMounted(() => {
+  // Bug #40: finance 点"开票审核"菜单时 URL 带 ?status=REQUESTED 自动过滤
+  const qs = route.query.status;
+  if (typeof qs === 'string' && statusMap[qs]) statusFilter.value = qs;
+  loadData();
+});
 
 async function loadData() {
   if (!factoryId.value) return;

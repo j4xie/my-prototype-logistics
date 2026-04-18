@@ -73,7 +73,10 @@ const financeManagerMenu: MenuItem[] = [
   { path: '/smart-bi/sales', title: '销售分析', icon: 'TrendCharts', module: 'sales' },
   { path: '/smart-bi/query', title: 'AI问答', icon: 'ChatDotRound', module: 'analytics' },
   { path: '/smart-bi/query-templates', title: '查询模板管理', icon: 'Tickets', module: 'analytics' },
-  { path: '/smart-bi/analysis', title: '智能数据分析', icon: 'DataAnalysis', module: 'analytics' }
+  { path: '/smart-bi/analysis', title: '智能数据分析', icon: 'DataAnalysis', module: 'analytics' },
+  // Bug #40: finance_manager 需审核开票申请, 加 ERP 财务操作入口
+  { path: '/finance/invoices?status=REQUESTED', title: '开票审核', icon: 'Tickets', module: 'finance' },
+  { path: '/finance/payments', title: '收款管理', icon: 'Money', module: 'finance' }
 ];
 
 const menuConfig: MenuItem[] = [
