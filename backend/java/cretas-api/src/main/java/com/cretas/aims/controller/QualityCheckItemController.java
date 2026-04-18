@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.config.*;
 import com.cretas.aims.entity.enums.QualityCheckCategory;
@@ -43,6 +44,7 @@ public class QualityCheckItemController {
     /**
      * 创建质检项
      */
+    @RequirePermission({"quality:read_write"})
     @PostMapping
     @Operation(summary = "创建质检项", description = "创建新的质检检验项目")
     public ResponseEntity<ApiResponse<QualityCheckItemDTO>> create(
@@ -57,6 +59,7 @@ public class QualityCheckItemController {
     /**
      * 更新质检项
      */
+    @RequirePermission({"quality:read_write"})
     @PutMapping("/{itemId}")
     @Operation(summary = "更新质检项", description = "更新质检项的配置信息")
     public ResponseEntity<ApiResponse<QualityCheckItemDTO>> update(
@@ -70,6 +73,7 @@ public class QualityCheckItemController {
     /**
      * 删除质检项
      */
+    @RequirePermission({"quality:read_write"})
     @DeleteMapping("/{itemId}")
     @Operation(summary = "删除质检项", description = "删除指定的质检项")
     public ResponseEntity<ApiResponse<Void>> delete(
@@ -196,6 +200,7 @@ public class QualityCheckItemController {
     /**
      * 批量启用
      */
+    @RequirePermission({"quality:read_write"})
     @PostMapping("/batch/enable")
     @Operation(summary = "批量启用质检项", description = "批量启用指定的质检项")
     public ResponseEntity<ApiResponse<Integer>> batchEnable(
@@ -208,6 +213,7 @@ public class QualityCheckItemController {
     /**
      * 批量禁用
      */
+    @RequirePermission({"quality:read_write"})
     @PostMapping("/batch/disable")
     @Operation(summary = "批量禁用质检项", description = "批量禁用指定的质检项")
     public ResponseEntity<ApiResponse<Integer>> batchDisable(
@@ -220,6 +226,7 @@ public class QualityCheckItemController {
     /**
      * 从系统模板复制
      */
+    @RequirePermission({"quality:read_write"})
     @PostMapping("/copy-from-template")
     @Operation(summary = "从系统模板复制", description = "将系统默认质检项模板复制到当前工厂")
     public ResponseEntity<ApiResponse<List<QualityCheckItemDTO>>> copyFromTemplate(
@@ -235,6 +242,7 @@ public class QualityCheckItemController {
     /**
      * 绑定质检项到产品
      */
+    @RequirePermission({"quality:read_write"})
     @PostMapping("/bindings")
     @Operation(summary = "绑定质检项到产品", description = "将质检项绑定到指定产品类型")
     public ResponseEntity<ApiResponse<QualityCheckItemBindingDTO>> bind(
@@ -247,6 +255,7 @@ public class QualityCheckItemController {
     /**
      * 解除绑定
      */
+    @RequirePermission({"quality:read_write"})
     @DeleteMapping("/bindings/{bindingId}")
     @Operation(summary = "解除绑定", description = "解除质检项与产品的绑定关系")
     public ResponseEntity<ApiResponse<Void>> unbind(
@@ -259,6 +268,7 @@ public class QualityCheckItemController {
     /**
      * 更新绑定配置
      */
+    @RequirePermission({"quality:read_write"})
     @PutMapping("/bindings/{bindingId}")
     @Operation(summary = "更新绑定配置", description = "更新质检项与产品的绑定配置")
     public ResponseEntity<ApiResponse<QualityCheckItemBindingDTO>> updateBinding(
@@ -284,6 +294,7 @@ public class QualityCheckItemController {
     /**
      * 批量绑定质检项到产品
      */
+    @RequirePermission({"quality:read_write"})
     @PostMapping("/bindings/batch")
     @Operation(summary = "批量绑定质检项", description = "批量将多个质检项绑定到指定产品类型")
     public ResponseEntity<ApiResponse<List<QualityCheckItemBindingDTO>>> batchBind(
@@ -310,6 +321,7 @@ public class QualityCheckItemController {
     /**
      * 验证检测值
      */
+    @RequirePermission({"quality:read_write"})
     @PostMapping("/{itemId}/validate")
     @Operation(summary = "验证检测值", description = "验证检测值是否符合质检项的合格标准")
     public ResponseEntity<ApiResponse<Boolean>> validateValue(

@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.ImportResult;
 import com.cretas.aims.dto.common.PageRequest;
@@ -62,6 +63,7 @@ public class ProductionPlanController {
     /**
      * 创建生产计划
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
     @PostMapping
     @Operation(summary = "创建生产计划")
     public ApiResponse<ProductionPlanDTO> createProductionPlan(
@@ -83,6 +85,7 @@ public class ProductionPlanController {
     /**
      * 更新生产计划
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
     @PutMapping("/{planId}")
     @Operation(summary = "更新生产计划")
     public ApiResponse<ProductionPlanDTO> updateProductionPlan(
@@ -100,6 +103,7 @@ public class ProductionPlanController {
     /**
      * 删除生产计划
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
     @DeleteMapping("/{planId}")
     @Operation(summary = "删除生产计划")
     public ApiResponse<Void> deleteProductionPlan(
@@ -190,6 +194,7 @@ public class ProductionPlanController {
     /**
      * 开始生产
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
     @PostMapping("/{planId}/start")
     @Operation(summary = "开始生产")
     public ApiResponse<ProductionPlanDTO> startProduction(
@@ -206,6 +211,7 @@ public class ProductionPlanController {
     /**
      * 完成生产
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
     @PostMapping("/{planId}/complete")
     @Operation(summary = "完成生产")
     public ApiResponse<ProductionPlanDTO> completeProduction(
@@ -229,6 +235,7 @@ public class ProductionPlanController {
     /**
      * 取消生产计划
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
     @PostMapping("/{planId}/cancel")
     @Operation(summary = "取消生产计划")
     public ApiResponse<Void> cancelProductionPlan(
@@ -247,6 +254,7 @@ public class ProductionPlanController {
     /**
      * 暂停生产
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
     @PostMapping("/{planId}/pause")
     @Operation(summary = "暂停生产")
     public ApiResponse<ProductionPlanDTO> pauseProduction(
@@ -263,6 +271,7 @@ public class ProductionPlanController {
     /**
      * 恢复生产
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
     @PostMapping("/{planId}/resume")
     @Operation(summary = "恢复生产")
     public ApiResponse<ProductionPlanDTO> resumeProduction(
@@ -279,6 +288,7 @@ public class ProductionPlanController {
     /**
      * 更新实际成本
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
     @PutMapping("/{planId}/costs")
     @Operation(summary = "更新实际成本")
     public ApiResponse<ProductionPlanDTO> updateActualCosts(
@@ -304,6 +314,7 @@ public class ProductionPlanController {
     /**
      * 排产 → 自动生成调拨单 (BOM展开 → 创建 InternalTransfer → 自动提交)
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
     @PostMapping("/{planId}/generate-transfer")
     @Operation(summary = "根据BOM生成调拨单")
     public ApiResponse<InternalTransfer> generateTransfer(
@@ -323,6 +334,7 @@ public class ProductionPlanController {
     /**
      * 分配原材料批次
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
     @PostMapping("/{planId}/batches")
     @Operation(summary = "分配原材料批次")
     public ApiResponse<Void> assignMaterialBatches(
@@ -341,6 +353,7 @@ public class ProductionPlanController {
     /**
      * 记录材料消耗
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
     @PostMapping("/{planId}/consumption")
     @Operation(summary = "记录材料消耗")
     public ApiResponse<Void> recordMaterialConsumption(
@@ -392,6 +405,7 @@ public class ProductionPlanController {
     /**
      * 批量创建生产计划
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
     @PostMapping("/batch")
     @Operation(summary = "批量创建生产计划")
     public ApiResponse<List<ProductionPlanDTO>> batchCreateProductionPlans(
@@ -413,6 +427,7 @@ public class ProductionPlanController {
     /**
      * 从生产计划创建生产批次（计划→执行转换）
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
     @PostMapping("/{planId}/create-batch")
     @Operation(summary = "从计划创建批次")
     public ApiResponse<ProductionBatch> createBatchFromPlan(
@@ -462,6 +477,7 @@ public class ProductionPlanController {
     /**
      * Excel批量导入生产计划
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
     @PostMapping("/import")
     @Operation(summary = "Excel批量导入生产计划")
     public ApiResponse<ImportResult<ProductionPlanDTO>> importProductionPlans(
