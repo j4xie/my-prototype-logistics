@@ -128,12 +128,8 @@ public class ForecastServiceImpl implements ForecastService {
     /**
      * 使用 Python 服务进行通用指标预测
      *
-     * Python 服务支持高级预测算法，如：
-     * - Prophet: Facebook 时间序列预测
-     * - ARIMA: 自回归积分滑动平均
-     * - LSTM: 长短期记忆网络
-     *
-     * 不再有 Java fallback，Python 服务必须可用。
+     * 方案 E Stage 1: 只有 SALES_AMOUNT 有配套 SQL GROUP BY，直接委托给 forecastSalesWithPython。
+     * 其他 metric 类型返回 empty + WARN，Stage 2 延后处理（需 Repository 层为 finance/cost 等建日聚合）。
      *
      * @param factoryId    工厂ID
      * @param metricType   指标类型
@@ -142,54 +138,24 @@ public class ForecastServiceImpl implements ForecastService {
      * @param forecastDays 预测天数
      * @param algorithm    预测算法
      * @return 预测结果
-     * @throws RuntimeException 如果 Python 服务不可用或失败
      */
     private ForecastResult forecastMetricWithPython(String factoryId, String metricType,
                                                      LocalDate startDate, LocalDate endDate,
                                                      int forecastDays, String algorithm) {
-        if (!pythonConfig.isEnabled()) {
-            throw new RuntimeException("Python SmartBI 服务未启用。预测功能完全依赖 Python 服务 (端口 8083)。");
+        // 方案 E Stage 1:只有 SALES_AMOUNT 有配套 SQL GROUP BY. 其他 metric 返 empty + WARN.
+        // Stage 2 延后 — 需 Repository 层为 finance/cost 等 metric 建日聚合后再开通.
+        if (MetricCalculatorService.SALES_AMOUNT.equals(metricType)) {
+            return forecastSalesWithPython(factoryId, startDate, endDate, forecastDays);
         }
 
-        if (!pythonClient.isAvailable()) {
-            throw new RuntimeException("Python SmartBI 服务不可用。请检查服务是否在 " + pythonConfig.getUrl() + " 运行。");
-        }
-
-        log.info("使用 Python SmartBI 服务进行指标预测: factoryId={}, metricType={}, algorithm={}",
-                factoryId, metricType, algorithm);
+        log.warn("暂不支持该 metric 的预测: metricType={} (Stage 2 需建对应日聚合 query)", metricType);
+        ForecastAlgorithm alg;
         try {
-            ForecastResult result = pythonClient.forecastMetric(factoryId, metricType, startDate, endDate,
-                    forecastDays, algorithm);
-
-            if (result != null && result.getForecastPoints() != null && !result.getForecastPoints().isEmpty()) {
-                log.info("Python SmartBI 指标预测成功: metricType={}, algorithm={}, confidence={}",
-                        metricType, result.getAlgorithm(), result.getConfidence());
-                return result;
-            }
-
-            // Python 返回空结果，返回空预测结果
-            log.warn("Python SmartBI 指标预测返回空结果");
-            try {
-                ForecastAlgorithm alg = ForecastAlgorithm.valueOf(algorithm);
-                return buildEmptyForecastResult(metricType, alg, startDate, endDate);
-            } catch (IllegalArgumentException ex) {
-                return buildEmptyForecastResult(metricType, ForecastAlgorithm.AUTO, startDate, endDate);
-            }
-        } catch (java.io.IOException e) {
-            // Same contract gap as forecastSalesWithPython — demote 422 to WARN.
-            String msg = e.getMessage() != null ? e.getMessage() : "";
-            if (msg.contains("status=422") && msg.contains("field required")) {
-                log.warn("Python SmartBI 指标预测契约不匹配 (Java 未传 data 历史序列): factoryId={}, metricType={}",
-                        factoryId, metricType);
-                try {
-                    ForecastAlgorithm alg = ForecastAlgorithm.valueOf(algorithm);
-                    return buildEmptyForecastResult(metricType, alg, startDate, endDate);
-                } catch (IllegalArgumentException ex) {
-                    return buildEmptyForecastResult(metricType, ForecastAlgorithm.AUTO, startDate, endDate);
-                }
-            }
-            throw new RuntimeException("Python SmartBI 指标预测失败: " + e.getMessage(), e);
+            alg = algorithm != null ? ForecastAlgorithm.valueOf(algorithm) : ForecastAlgorithm.AUTO;
+        } catch (IllegalArgumentException ex) {
+            alg = ForecastAlgorithm.AUTO;
         }
+        return buildEmptyForecastResult(metricType, alg, startDate, endDate);
     }
 
     @Override

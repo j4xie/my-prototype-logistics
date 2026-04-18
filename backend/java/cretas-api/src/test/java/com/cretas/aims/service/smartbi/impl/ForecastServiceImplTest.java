@@ -34,8 +34,8 @@ class ForecastServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        when(pythonConfig.isEnabled()).thenReturn(true);
-        when(pythonClient.isAvailable()).thenReturn(true);
+        lenient().when(pythonConfig.isEnabled()).thenReturn(true);
+        lenient().when(pythonClient.isAvailable()).thenReturn(true);
     }
 
     @Test
@@ -118,5 +118,41 @@ class ForecastServiceImplTest {
                 LocalDate.of(2025, 2, 1), LocalDate.of(2025, 2, 5), 3);
 
         assertTrue(result.getForecastPoints() == null || result.getForecastPoints().isEmpty());
+    }
+
+    @Test
+    void forecastMetric_salesAmountType_delegatesToForecastSales() throws IOException {
+        List<Object[]> trend = java.util.stream.IntStream.range(0, 5)
+                .<Object[]>mapToObj(i -> new Object[]{
+                        LocalDate.of(2025, 2, 1).plusDays(i),
+                        new BigDecimal("100.00"),
+                        new BigDecimal("10")
+                })
+                .toList();
+        when(salesDataRepository.findDailySalesTrend(anyString(), any(), any())).thenReturn(trend);
+
+        PythonForecastResponse mockResp = new PythonForecastResponse();
+        mockResp.setSuccess(true);
+        mockResp.setAlgorithm("auto");
+        mockResp.setPredictions(List.of(110.0, 120.0, 130.0));
+        mockResp.setLowerBound(List.of(100.0, 110.0, 120.0));
+        mockResp.setUpperBound(List.of(120.0, 130.0, 140.0));
+        when(pythonClient.forecastWithData(anyList(), eq(3), anyString())).thenReturn(mockResp);
+
+        ForecastResult r = service.forecastMetric("F001", "SALES_AMOUNT",
+                LocalDate.of(2025, 2, 1), LocalDate.of(2025, 2, 5), 3);
+
+        assertEquals(3, r.getForecastPoints().size());
+    }
+
+    @Test
+    void forecastMetric_unsupportedMetric_returnsEmptyWithoutCallingPython() throws IOException {
+        ForecastResult r = service.forecastMetric("F001", "TOTAL_COST",
+                LocalDate.of(2025, 2, 1), LocalDate.of(2025, 2, 28), 7);
+
+        assertNotNull(r);
+        assertTrue(r.getForecastPoints() == null || r.getForecastPoints().isEmpty());
+        verify(pythonClient, never()).forecastWithData(any(), anyInt(), anyString());
+        verify(salesDataRepository, never()).findDailySalesTrend(anyString(), any(), any());
     }
 }
