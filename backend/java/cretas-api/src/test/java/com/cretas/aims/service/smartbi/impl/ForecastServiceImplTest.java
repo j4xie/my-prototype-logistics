@@ -34,8 +34,8 @@ class ForecastServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        lenient().when(pythonConfig.isEnabled()).thenReturn(true);
-        lenient().when(pythonClient.isAvailable()).thenReturn(true);
+        when(pythonConfig.isEnabled()).thenReturn(true);
+        when(pythonClient.isAvailable()).thenReturn(true);
     }
 
     @Test

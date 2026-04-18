@@ -90,6 +90,13 @@ public class ForecastServiceImpl implements ForecastService {
      */
     private ForecastResult forecastSalesWithPython(String factoryId, LocalDate startDate,
                                                     LocalDate endDate, int forecastDays) {
+        if (!pythonConfig.isEnabled()) {
+            throw new RuntimeException("Python SmartBI 服务未启用。预测功能完全依赖 Python 服务 (端口 8083)。");
+        }
+        if (!pythonClient.isAvailable()) {
+            throw new RuntimeException("Python SmartBI 服务不可用。请检查服务是否在 " + pythonConfig.getUrl() + " 运行。");
+        }
+
         // 方案 E (2026-04-17): Java 查历史 + Python 纯算
         List<Object[]> trend = salesDataRepository.findDailySalesTrend(factoryId, startDate, endDate);
         if (trend.size() < 3) {
