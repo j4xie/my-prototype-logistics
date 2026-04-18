@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.DepartmentDTO;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.service.DepartmentService;
@@ -43,6 +44,7 @@ public class DepartmentController {
     /**
      * 创建部门
      */
+    @RequirePermission({"hr:read_write"})
     @PostMapping
     @Operation(summary = "创建部门", description = "创建新的部门，需要管理员权限。部门编码必须唯一，可设置上级部门形成层级结构")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -115,6 +117,7 @@ public class DepartmentController {
     /**
      * 更新部门
      */
+    @RequirePermission({"hr:read_write"})
     @PutMapping("/{id}")
     @Operation(summary = "更新部门", description = "更新部门信息，需要管理员权限。可修改名称、编码、上级部门、排序等属性")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -133,6 +136,7 @@ public class DepartmentController {
     /**
      * 删除部门
      */
+    @RequirePermission({"hr:read_write"})
     @DeleteMapping("/{id}")
     @Operation(summary = "删除部门", description = "删除指定部门，需要管理员权限。如果部门下有员工或子部门，删除将失败")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -203,6 +207,7 @@ public class DepartmentController {
     /**
      * 初始化默认部门
      */
+    @RequirePermission({"hr:read_write"})
     @PostMapping("/initialize")
     @Operation(summary = "初始化默认部门", description = "为新工厂初始化默认的部门结构，包含生产、质检、仓储等基础部门。需要管理员权限")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -217,6 +222,7 @@ public class DepartmentController {
     /**
      * 批量更新部门状态
      */
+    @RequirePermission({"hr:read_write"})
     @PutMapping("/batch-status")
     @Operation(summary = "批量更新部门状态", description = "批量启用或禁用多个部门，需要管理员权限。请求体需包含 ids (部门ID数组) 和 isActive (目标状态)")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")

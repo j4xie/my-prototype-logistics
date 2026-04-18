@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.DeviceRegistration;
 import com.cretas.aims.repository.DeviceRegistrationRepository;
 import com.cretas.aims.service.PushNotificationService;
@@ -45,6 +46,7 @@ public class DeviceController {
     /**
      * 注册设备
      */
+    @RequirePermission({"equipment:read_write"})
     @PostMapping("/register")
     @Operation(summary = "注册设备", description = "注册设备以接收推送通知")
     public ApiResponse<DeviceRegistrationResponse> registerDevice(
@@ -121,6 +123,7 @@ public class DeviceController {
     /**
      * 注销设备
      */
+    @RequirePermission({"equipment:read_write"})
     @DeleteMapping("/unregister")
     @Transactional
     @Operation(summary = "注销设备", description = "注销设备，停止接收推送通知")
@@ -142,6 +145,7 @@ public class DeviceController {
     /**
      * 更新设备 Token
      */
+    @RequirePermission({"equipment:read_write"})
     @PutMapping("/token")
     @Operation(summary = "更新设备Token", description = "当 Push Token 刷新时更新")
     public ApiResponse<Void> updateDeviceToken(
@@ -197,6 +201,7 @@ public class DeviceController {
     /**
      * 测试推送通知
      */
+    @RequirePermission({"equipment:read_write"})
     @PostMapping("/test-notification")
     @Operation(summary = "测试推送通知", description = "向当前用户发送测试推送")
     public ApiResponse<Void> testNotification(
@@ -230,6 +235,7 @@ public class DeviceController {
     /**
      * 启用/禁用设备推送
      */
+    @RequirePermission({"equipment:read_write"})
     @PutMapping("/{deviceId}/toggle")
     @Operation(summary = "启用/禁用设备", description = "切换设备的推送通知状态")
     public ApiResponse<Void> toggleDevice(
