@@ -428,10 +428,19 @@ public class SupplyChainOrchestrator {
                 return; // 无产出，不需要质检
             }
 
+            // Bug #296 fix: inspector_id=0L violates FK to users.id (0 isn't a valid user),
+            // causing transaction rollback on commit — which also dropped the FG we just created.
+            // Prefer batch supervisor (always a valid user); skip auto-QC creation if no supervisor.
+            Long inspectorId = batch.getSupervisorId() != null ? batch.getSupervisorId().longValue() : null;
+            if (inspectorId == null) {
+                log.info("跳过自动创建质检任务: batchId={} 无 supervisorId (无候选质检员)", batch.getId());
+                return;
+            }
+
             QualityInspection inspection = QualityInspection.builder()
                     .factoryId(batch.getFactoryId())
                     .productionBatchId(batch.getId())
-                    .inspectorId(0L) // 待分配，质检员认领
+                    .inspectorId(inspectorId)
                     .inspectionDate(LocalDate.now())
                     .sampleSize(totalQty)
                     .passCount(BigDecimal.ZERO)
@@ -443,7 +452,7 @@ public class SupplyChainOrchestrator {
                     .build();
 
             qualityInspectionService.createInspection(batch.getFactoryId(), inspection);
-            log.info("自动创建质检任务: batchId={}, qty={}", batch.getId(), totalQty);
+            log.info("自动创建质检任务: batchId={}, qty={}, inspectorId={}", batch.getId(), totalQty, inspectorId);
         } catch (Exception e) {
             log.warn("自动创建质检任务失败(不影响批次完成): batchId={}, error={}", batch.getId(), e.getMessage());
         }

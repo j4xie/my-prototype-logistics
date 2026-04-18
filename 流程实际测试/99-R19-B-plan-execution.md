@@ -3,6 +3,8 @@
 > **日期**: 2026-04-18  
 > **环境**: test (139.196.165.140:8097 → 47:10011)  
 > **结果**: ✅ 10/10 steps done, SO-20260409-0001 状态 COMPLETED  
+> **追加 (2026-04-18 晚)**: Bug #295/#296 修复完成 + Step 1/3/5 深度验证收尾, 参见末尾"追加部分".
+> 
 > **深度**: 6 deep (steps 2, 4, 6, 7, 8, 9) + 3 medium (steps 1, 3, 5) + 1 deep (step 10 verification)  
 > **发现 bugs**: #295 P1, #296 P2
 
@@ -99,3 +101,64 @@
 3. **UI 缺失补齐** (不紧急): 
    - 生产批次详情页 → 开工/报工/完工 按钮 (目前仅移动端)
    - FG 入库真 UI (目前依赖后端 event listener 自动生成, 无人工兜底入口)
+
+---
+
+## 追加: Bug 修复 + Medium→Deep 升级 (2026-04-18 晚)
+
+### Bug #295 FIXED (P1)
+
+**根因**: `V20260410_18__fermentation_template_enhance.sql` line 56 的 SpEL `#cf_tank_id == null || #cf_tank_id.trim() == ""` 缺少 `#cf_fermentation_days != null &&` 前置守卫, 导致对所有 factory 都触发 (包括非发酵工厂 F001).
+
+**修复**: `V20260421_01` + `V20260421_02` (WHERE 匹配修复) → 条件改为 `#cf_fermentation_days != null && (#cf_tank_id == null || #cf_tank_id.trim() == "")`. 和 V20260410_18 同一迁移里的 `fermentation_days_positive` / `fermentation_ph_range` 同一 pattern.
+
+**验证 (Step 1 DEEP 重跑)**: dispatcher1 真 UI 新建计划 → 黄鱼片 40kg → 计划日期 2026-04-22 → 确定. toast "创建成功" ✅ / list 52→53 ✅ / 新记录 **PLAN-1776472269715-510B9793** 40kg 待执行 ✅.
+
+### Bug #296 FIXED (P2)
+
+**根因 Part 1**: `V20260410_18` line 31-39 插入的全局 (factory_id=NULL) trigger chain `fermentation_complete_quality_check` 对所有 factory 匹配 `BatchCompletedEvent`, 导致 `SupplyChainOrchestrator.onBatchCompleted` line 205-208 早退 (`skipping hardcoded handler`) 跳过 auto-FG 创建.
+
+**根因 Part 2**: 修复 Part 1 后 auto-FG 能创建, 但 `SupplyChainOrchestrator.createQualityInspectionFromBatch` line 434 硬写 `inspectorId(0L)`, 0 不是合法 `users.id`, 违反外键约束 `fk789xw5xqd12m5h46y04csyh90`. 触发 `@Transactional` 回滚, FG 创建被一并丢弃.
+
+**修复**:
+- `V20260421_03`: `UPDATE factory_trigger_chains SET enabled=false WHERE factory_id IS NULL AND chain_code='fermentation_complete_quality_check'` → 让 hardcoded handler 重新运行
+- `SupplyChainOrchestrator.java:424-451`: `inspectorId` 改用 `batch.getSupervisorId()`, 无 supervisor 则跳过 auto-QC. 避免 FK 违反 + 不影响 FG 创建.
+
+**验证 (Step 5 DEEP)**: API 新建 batch 1883 黄鱼片 20kg → start + complete 200 → 3s 后查询 FG 可用量: **8 → 26 (delta +18 = goodQty)**. 新 FG 批次 `FG-AUTO-20260418-1883` qty 18 ✅. Log 全链命中:
+```
+═══ 供应链联动: 批次完成 ═══ batchId=1883, goodQty=18 ✅
+自动扣料成功: batchId=1883 ✅
+自动创建成品: batchNumber=FG-AUTO-20260418-1883, qty=18 ✅
+自动创建质检任务: batchId=1883, qty=20, inspectorId=148 ✅
+已发布BatchCompletedEvent: batchId=1883 (无 Error) ✅
+```
+
+### Step 3 诚实标记为 medium (设计级, 非 bug)
+
+Web admin 批次详情/列表 **无 开工/报工/完工 按钮**, workshop_sup1 / factory_admin1 任何角色都看不到. "报工审批" 菜单仅能审批已提交报工记录, 不能创建. 符合 operator/group_leader/quality_inspector 为 `MOBILE_ONLY_ROLES` 的设计决定. Step 3 stays medium (Rule 4 caveat — API 触发验证通过, 但 UI 缺失由设计决定).
+
+**Follow-up**: 如果 Web QA 要 deep coverage 必须走 mobile 端 (React Native app, 超 Web 范围).
+
+### Commits + Delivery
+
+- **修复提交** (2026-04-18 晚): Flyway V20260421_01/02/03 + SupplyChainOrchestrator.java
+- **部署环境**: test (47:10011) only. Prod **未动** per test-first hard rule
+- **V20260421_01 迁移文件迁坑**: 首次放错到 `db/migration` (非 Flyway 扫描目录), 正确位置是 `db/flyway`. 迁移后发现 UPDATE WHERE 匹配的 literal 是 `""""` (4 个 double-quote) 不是 `""`, V20260421_02 修正.
+- **Prod rollout 建议**: 部 prod 前需 user 明确确认. 预期 prod 同样受 #295/#296 影响, 修复按 test→prod 顺序推.
+
+### Depth Breakdown (Rule 3)
+
+| Step | Before | After fix | Notes |
+|------|-------|----------|------|
+| 1 | medium | **deep** ✅ | Real UI + fill_form + toast + list +1 |
+| 2 | **deep** | **deep** ✅ | Already deep |
+| 3 | medium | medium | Design-level mobile-only, stays medium |
+| 4 | **deep** | **deep** ✅ | Already deep |
+| 5 | medium | **deep** ✅ | Auto-FG verified (+18), log chain full |
+| 6 | **deep** | **deep** ✅ | Already deep |
+| 7 | **deep** | **deep** ✅ | Already deep |
+| 8 | **deep** | **deep** ✅ | Already deep |
+| 9 | **deep** | **deep** ✅ | Already deep |
+| 10 | **deep** | **deep** ✅ | Already deep |
+
+**Total: 8 deep + 2 medium (Step 3 mobile-only + Step 1 original fetch workaround since superseded)**
