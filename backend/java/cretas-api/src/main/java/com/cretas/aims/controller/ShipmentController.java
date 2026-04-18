@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.ShipmentRecord;
 import com.cretas.aims.service.ShipmentRecordService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.cretas.aims.util.ErrorSanitizer;
 
+import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +28,11 @@ import java.util.Map;
  * @version 1.0.0
  * @since 2025-01-09
  */
+/**
+ * Bug #318 fix: 出货是财务/库存关键影响点, 仅 sales/warehouse/inventory read_write 可写.
+ */
 @Slf4j
+@RequirePermission({"sales:read_write", "inventory:read_write", "warehouse:read_write"})
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/shipments")
 @RequiredArgsConstructor
@@ -232,7 +238,7 @@ public class ShipmentController {
     public ResponseEntity<?> createShipment(
             @PathVariable @Parameter(description = "工厂ID", example = "F001", required = true) String factoryId,
             @RequestAttribute("userId") @Parameter(hidden = true) Long userId,
-            @RequestBody @Parameter(description = "出货记录信息，包含customerId、productBatchId、quantity、shippingAddress等") ShipmentRecord shipment) {
+            @Valid @RequestBody @Parameter(description = "出货记录信息，包含customerId、productBatchId、quantity、shippingAddress等") ShipmentRecord shipment) {
         try {
             shipment.setFactoryId(factoryId);
             shipment.setRecordedBy(userId);
