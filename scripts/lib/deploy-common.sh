@@ -185,6 +185,53 @@ graceful_kill() {
     log "WARN" "强制终止 ${#pids[@]} 个进程"
 }
 
+# ==================== 并发锁 (防多 chat 同时 deploy 覆盖 jar) ====================
+
+# acquire_deploy_lock <lock_name>
+# 获取 deploy 互斥锁. flock 可用则用 flock, 否则退化到 PID 文件.
+# 在 deploy 脚本开头调用. 锁会在进程退出时自动释放.
+#
+# 示例:
+#   acquire_deploy_lock "cretas-backend" || exit 1
+acquire_deploy_lock() {
+    local lock_name="${1:-cretas-deploy}"
+    local lock_file="/tmp/${lock_name}.lock"
+
+    if command -v flock >/dev/null 2>&1; then
+        # flock 模式 (POSIX advisory lock, Linux/Mac/Git Bash)
+        exec 200>"$lock_file"
+        if ! flock -n 200; then
+            log "ERROR" "另一个 deploy 进程持有锁 ($lock_file). 等它完成后重试."
+            log "ERROR" "  或 rm $lock_file 如果确认无其他进程."
+            # 尝试显示持有者
+            if command -v lsof >/dev/null 2>&1; then
+                lsof "$lock_file" 2>/dev/null | tail -5
+            fi
+            return 1
+        fi
+        # fd 200 保持打开, 进程退出时 flock 自动释放
+        log "DEBUG" "获取 flock: $lock_file"
+    else
+        # PID 文件模式 (fallback)
+        if [ -f "$lock_file" ]; then
+            local old_pid
+            old_pid=$(cat "$lock_file" 2>/dev/null)
+            if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
+                log "ERROR" "另一个 deploy 进程正在跑 (PID $old_pid, $lock_file). 退出."
+                return 1
+            fi
+            log "WARN" "发现残留 lock 文件 (PID $old_pid 不存在), 清理后继续."
+            rm -f "$lock_file"
+        fi
+        echo $$ > "$lock_file"
+        # trap 在 exit 时清理 (调用方 script 的 EXIT trap 会保留我们的)
+        trap 'rm -f "'"$lock_file"'" 2>/dev/null; true' EXIT
+        log "DEBUG" "获取 PID 锁: $lock_file (PID $$)"
+    fi
+
+    return 0
+}
+
 # ==================== 回滚 ====================
 
 # rollback_jar <jar_path>

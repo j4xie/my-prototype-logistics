@@ -41,6 +41,14 @@ else
             echo "${size:-0}B"
         fi
     }
+    # 无 deploy-common.sh 时不加锁
+    acquire_deploy_lock() { return 0; }
+fi
+
+# 防止多个 chat/terminal 同时跑 deploy 覆盖 jar
+# 锁定到进程退出自动释放, 支持 flock (首选) 或 PID 文件 (fallback)
+if command -v acquire_deploy_lock >/dev/null 2>&1 || declare -F acquire_deploy_lock >/dev/null 2>&1; then
+    acquire_deploy_lock "cretas-backend-deploy" || exit 1
 fi
 
 # ==================== 配置 ====================
