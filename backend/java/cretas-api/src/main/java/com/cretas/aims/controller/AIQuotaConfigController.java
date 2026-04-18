@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.entity.config.AIQuotaConfig;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.repository.config.AIQuotaConfigRepository;
 import com.cretas.aims.util.ErrorSanitizer;
 import io.swagger.v3.oas.annotations.Operation;
@@ -70,6 +71,7 @@ public class AIQuotaConfigController {
     /**
      * 创建配额配置
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping
     @Operation(summary = "创建配额配置", description = "为工厂创建新的AI配额配置规则")
     public ResponseEntity<Map<String, Object>> createConfig(
@@ -133,6 +135,7 @@ public class AIQuotaConfigController {
     /**
      * 更新配额配置
      */
+    @RequirePermission({"system:read_write"})
     @PutMapping("/{configId}")
     @Operation(summary = "更新配额配置", description = "更新指定的AI配额配置规则")
     public ResponseEntity<Map<String, Object>> updateConfig(
@@ -192,6 +195,7 @@ public class AIQuotaConfigController {
     /**
      * 删除配额配置
      */
+    @RequirePermission({"system:read_write"})
     @DeleteMapping("/{configId}")
     @Operation(summary = "删除配额配置", description = "删除指定的AI配额配置规则")
     public ResponseEntity<Map<String, Object>> deleteConfig(

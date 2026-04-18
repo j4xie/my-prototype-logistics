@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.entity.ProductionAlert;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.repository.ProductionAlertRepository;
 import com.cretas.aims.service.AnomalyDetectionService;
 import org.slf4j.Logger;
@@ -103,6 +104,7 @@ public class AlertController {
     }
 
     // PUT /alerts/{id}/acknowledge
+    @RequirePermission({"equipment:read_write"})
     @PutMapping("/{alertId}/acknowledge")
     public ResponseEntity<?> acknowledgeAlert(
             @PathVariable String factoryId, @PathVariable Long alertId,
@@ -127,6 +129,7 @@ public class AlertController {
     }
 
     // PUT /alerts/{id}/resolve
+    @RequirePermission({"equipment:read_write"})
     @PutMapping("/{alertId}/resolve")
     public ResponseEntity<?> resolveAlert(
             @PathVariable String factoryId, @PathVariable Long alertId,
@@ -154,6 +157,7 @@ public class AlertController {
     }
 
     // POST /alerts/detect - manually trigger detection
+    @RequirePermission({"equipment:read_write"})
     @PostMapping("/detect")
     public ResponseEntity<?> triggerDetection(@PathVariable String factoryId) {
         try {

@@ -1,6 +1,7 @@
 package com.cretas.aims.controller.sales;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.sales.BatchAllocationDTO;
 import com.cretas.aims.entity.sales.SalesDeliveryItemBatchAllocation;
 import com.cretas.aims.service.sales.SalesDeliveryBatchAllocationService;
@@ -34,6 +35,7 @@ public class SalesDeliveryBatchAllocationController {
         return ApiResponse.success("查询成功", service.listByDeliveryItem(factoryId, deliveryItemId));
     }
 
+    @RequirePermission({"sales:read_write"})
     @PostMapping
     @Operation(summary = "设置发货行的批次分配（先清空再写入）")
     public ApiResponse<Map<String, Object>> allocate(
@@ -56,6 +58,7 @@ public class SalesDeliveryBatchAllocationController {
         return ApiResponse.success("FIFO 推荐 (按生产日期升序)", service.recommendFifo(factoryId, productTypeId, requiredQty));
     }
 
+    @RequirePermission({"sales:read_write"})
     @DeleteMapping
     @Operation(summary = "清空发货行的批次分配")
     public ApiResponse<Void> clear(
