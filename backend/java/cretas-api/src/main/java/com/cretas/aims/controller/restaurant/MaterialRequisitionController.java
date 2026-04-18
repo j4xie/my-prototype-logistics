@@ -1,6 +1,7 @@
 package com.cretas.aims.controller.restaurant;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.restaurant.MaterialRequisition;
 import com.cretas.aims.repository.restaurant.MaterialRequisitionRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -76,6 +77,7 @@ public class MaterialRequisitionController {
 
     // ==================== 创建 ====================
 
+    @RequirePermission({"warehouse:read_write"})
     @PostMapping
     @Operation(summary = "创建领料单")
     public ApiResponse<MaterialRequisition> create(
@@ -103,6 +105,7 @@ public class MaterialRequisitionController {
 
     // ==================== 提交审批 ====================
 
+    @RequirePermission({"warehouse:read_write"})
     @PostMapping("/{requisitionId}/submit")
     @Operation(summary = "提交领料单", description = "将草稿提交审批")
     public ApiResponse<MaterialRequisition> submit(
@@ -122,6 +125,7 @@ public class MaterialRequisitionController {
 
     // ==================== 审批通过 ====================
 
+    @RequirePermission({"warehouse:read_write"})
     @PostMapping("/{requisitionId}/approve")
     @Operation(summary = "审批通过", description = "审批通过并填写实际领用量")
     public ApiResponse<MaterialRequisition> approve(
@@ -154,6 +158,7 @@ public class MaterialRequisitionController {
 
     // ==================== 驳回 ====================
 
+    @RequirePermission({"warehouse:read_write"})
     @PostMapping("/{requisitionId}/reject")
     @Operation(summary = "驳回领料单")
     public ApiResponse<MaterialRequisition> reject(

@@ -1,6 +1,7 @@
 package com.cretas.aims.controller.restaurant;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.restaurant.WastageRecord;
 import com.cretas.aims.repository.restaurant.WastageRecordRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -77,6 +78,7 @@ public class WastageRecordController {
 
     // ==================== 创建 ====================
 
+    @RequirePermission({"inventory:read_write"})
     @PostMapping
     @Operation(summary = "创建损耗记录")
     public ApiResponse<WastageRecord> create(
@@ -105,6 +107,7 @@ public class WastageRecordController {
 
     // ==================== 提交 ====================
 
+    @RequirePermission({"inventory:read_write"})
     @PostMapping("/{wastageId}/submit")
     @Operation(summary = "提交损耗记录", description = "将草稿提交审批")
     public ApiResponse<WastageRecord> submit(
@@ -125,6 +128,7 @@ public class WastageRecordController {
 
     // ==================== 审批 ====================
 
+    @RequirePermission({"inventory:read_write"})
     @PostMapping("/{wastageId}/approve")
     @Operation(summary = "审批损耗记录")
     public ApiResponse<WastageRecord> approve(
@@ -147,6 +151,7 @@ public class WastageRecordController {
 
     // ==================== 驳回 ====================
 
+    @RequirePermission({"inventory:read_write"})
     @PostMapping("/{wastageId}/reject")
     @Operation(summary = "驳回损耗记录")
     public ApiResponse<WastageRecord> reject(

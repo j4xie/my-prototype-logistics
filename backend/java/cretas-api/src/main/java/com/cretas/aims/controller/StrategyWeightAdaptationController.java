@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.aps.WeightAdjustmentResult;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.scheduler.WeightAdjustmentScheduler;
 import com.cretas.aims.service.aps.ApsSchedulingPerformanceMetricsService;
@@ -89,6 +90,7 @@ public class StrategyWeightAdaptationController {
     /**
      * 自动调整策略权重
      */
+    @RequirePermission({"scheduling:read_write"})
     @PostMapping("/adjust")
     @Operation(summary = "自动调整策略权重", description = "根据历史效果数据自动调整各排产策略的权重")
     public ApiResponse<WeightAdjustmentResult> adjustWeights(
@@ -129,6 +131,7 @@ public class StrategyWeightAdaptationController {
     /**
      * 手动设置策略权重
      */
+    @RequirePermission({"scheduling:read_write"})
     @PutMapping("/set")
     @Operation(summary = "手动设置策略权重", description = "手动设置各排产策略的权重，权重会自动归一化")
     public ApiResponse<WeightAdjustmentResult> setWeights(
@@ -146,6 +149,7 @@ public class StrategyWeightAdaptationController {
     /**
      * 重置为默认权重
      */
+    @RequirePermission({"scheduling:read_write"})
     @PostMapping("/reset")
     @Operation(summary = "重置为默认权重", description = "将策略权重重置为系统默认值")
     public ApiResponse<WeightAdjustmentResult> resetWeights(
@@ -222,6 +226,7 @@ public class StrategyWeightAdaptationController {
     /**
      * 手动触发调度任务
      */
+    @RequirePermission({"scheduling:read_write"})
     @PostMapping("/scheduler/trigger")
     @Operation(summary = "手动触发调度任务", description = "手动触发权重自适应调整任务，仅限管理员使用")
     public ApiResponse<Map<String, Object>> triggerScheduler(

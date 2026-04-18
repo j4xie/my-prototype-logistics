@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.material.RawMaterialTypeDTO;
@@ -41,6 +42,7 @@ public class RawMaterialTypeController {
     /**
      * 创建原材料类型
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping
     @Operation(summary = "创建原材料类型", description = "创建新的原材料类型，需指定名称、编码、类别、单位、存储类型等信息")
     public ApiResponse<RawMaterialTypeDTO> createMaterialType(
@@ -74,6 +76,7 @@ public class RawMaterialTypeController {
     /**
      * 更新原材料类型
      */
+    @RequirePermission({"production:read_write"})
     @PutMapping("/{id}")
     @Operation(summary = "更新原材料类型", description = "更新原材料类型信息，可修改名称、类别、单位、存储条件等")
     public ApiResponse<RawMaterialTypeDTO> updateMaterialType(
@@ -88,6 +91,7 @@ public class RawMaterialTypeController {
     /**
      * 删除原材料类型
      */
+    @RequirePermission({"production:read_write"})
     @DeleteMapping("/{id}")
     @Operation(summary = "删除原材料类型", description = "删除指定的原材料类型，已关联的原材料批次不受影响")
     public ApiResponse<Void> deleteMaterialType(
@@ -211,6 +215,7 @@ public class RawMaterialTypeController {
     /**
      * 批量更新状态
      */
+    @RequirePermission({"production:read_write"})
     @PutMapping("/batch/status")
     @Operation(summary = "批量更新状态", description = "批量更新多个原材料类型的激活/停用状态")
     public ApiResponse<Void> updateMaterialTypesStatus(

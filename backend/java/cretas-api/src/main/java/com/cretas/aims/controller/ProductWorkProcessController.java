@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.ProductWorkProcessDTO;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.service.ProductWorkProcessService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,6 +24,7 @@ public class ProductWorkProcessController {
 
     private final ProductWorkProcessService service;
 
+    @RequirePermission({"production:read_write"})
     @PostMapping
     @Operation(summary = "关联产品与工序")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -40,6 +42,7 @@ public class ProductWorkProcessController {
         return ApiResponse.success(service.listByProduct(factoryId, productTypeId));
     }
 
+    @RequirePermission({"production:read_write"})
     @PutMapping("/{id}")
     @Operation(summary = "更新关联(顺序/覆写参数)")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -50,6 +53,7 @@ public class ProductWorkProcessController {
         return ApiResponse.success(service.update(factoryId, id, dto));
     }
 
+    @RequirePermission({"production:read_write"})
     @DeleteMapping("/{id}")
     @Operation(summary = "移除关联")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -60,6 +64,7 @@ public class ProductWorkProcessController {
         return ApiResponse.success();
     }
 
+    @RequirePermission({"production:read_write"})
     @PutMapping("/batch-sort")
     @Operation(summary = "批量调整排序")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
