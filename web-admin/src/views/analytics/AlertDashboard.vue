@@ -376,19 +376,24 @@ onMounted(() => loadData())
     </el-dialog>
 
     <!-- Detail Drawer -->
+    <!-- Apr 18 2026 bug #52 (用户报 "title 与实际数据不符"):
+         表格列用了 levelLabel/alertTypeLabel/metricLabel 本地化文本, 但详情
+         抽屉直接显示原始枚举码 (如 THRESHOLD_EXCEEDED / CRITICAL), 导致
+         用户看表格"严重 · 阈值超标"进详情变"CRITICAL · THRESHOLD_EXCEEDED"
+         误以为 title 绑错。统一用 *Label() 函数。 -->
     <el-drawer v-model="detailDrawerVisible" title="告警详情" size="500px">
       <div v-if="selectedAlert" class="alert-detail">
         <div class="detail-row">
           <span class="detail-label">告警类型:</span>
-          <span>{{ selectedAlert.alertType }}</span>
+          <span>{{ alertTypeLabel(selectedAlert.alertType) }}</span>
         </div>
         <div class="detail-row">
           <span class="detail-label">级别:</span>
-          <el-tag :type="selectedAlert.level === 'CRITICAL' ? 'danger' : 'warning'" size="small">{{ selectedAlert.level }}</el-tag>
+          <el-tag :type="selectedAlert.level === 'CRITICAL' ? 'danger' : 'warning'" size="small">{{ levelLabel(selectedAlert.level) }}</el-tag>
         </div>
         <div class="detail-row">
           <span class="detail-label">指标:</span>
-          <span>{{ selectedAlert.metricName }}</span>
+          <span>{{ metricLabel(selectedAlert.metricName) }}</span>
         </div>
         <div class="detail-row">
           <span class="detail-label">当前值:</span>

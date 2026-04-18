@@ -222,6 +222,19 @@ async function handleAction(action: string) {
   finally { submitting.value = false; }
 }
 
+// Apr 18 2026 bug #51: 用户报告"开始生产"按钮报错"请求资源不存在"其实按钮前端根本没实现。
+// SO 财务审核通过后的下一步是创建生产计划(SO → ProductionPlan 关联), 此按钮
+// 跳到生产计划页并带 salesOrderId 提示, 用户在那边新建 plan。不直接改 SO 状态(那
+// 是 plan 开始生产后的联动), 只承担"导航 + 提示"职责, 避免前端伪装后端未实现的能力。
+async function handleStartProduction() {
+  if (!order.value) return;
+  ElMessage.info(`请为订单 ${order.value.orderNumber || orderId.value} 创建生产计划`);
+  await router.push({
+    path: '/production/plans',
+    query: { salesOrderId: String(orderId.value), action: 'create' },
+  });
+}
+
 async function handleFinanceAction(action: 'approve' | 'reject') {
   if (submitting.value) return;
   const isApprove = action === 'approve';
@@ -782,6 +795,7 @@ async function handleCreatePayment() {
             <el-button v-if="order.status === 'CONFIRMED'" type="warning" :loading="submitting" @click="handleAction('submit-for-review')">提交财务审核</el-button>
             <el-button v-if="order.status === 'PENDING_FINANCE_REVIEW'" type="success" :loading="submitting" @click="handleFinanceAction('approve')">审核通过</el-button>
             <el-button v-if="order.status === 'PENDING_FINANCE_REVIEW'" type="danger" :loading="submitting" @click="handleFinanceAction('reject')">审核驳回</el-button>
+            <el-button v-if="order.status === 'FINANCE_APPROVED'" type="primary" :loading="submitting" @click="handleStartProduction">开始生产</el-button>
             <el-button v-if="['CONFIRMED','FINANCE_APPROVED','PROCESSING','PARTIAL_DELIVERED'].includes(order.status)" type="primary" :loading="submitting" @click="openDeliveryDialog">{{ label('delivery') }}</el-button>
             <el-button v-if="['DRAFT','CONFIRMED'].includes(order.status)" type="danger" :disabled="submitting" @click="handleAction('cancel')">取消</el-button>
           </div>

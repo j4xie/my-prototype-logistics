@@ -249,6 +249,21 @@ request.interceptors.response.use(
       return Promise.reject(new ApiError('权限不足', 'FORBIDDEN', 403));
     }
 
+    // 404 Spring 默认 NoResourceFoundException 的"请求资源不存在"对用户太神秘,
+    // 常见根因其实是: (a) 后端该接口没上线 / (b) URL 前端拼错 / (c) 权限 interceptor 已 reject
+    // 给出明确提示 + 路径,让用户/开发都能立刻定位 (Apr 18 2026 bug #50)。
+    if (status === 404) {
+      const backendMsg = error.response?.data?.message || '';
+      const method = String(originalRequest?.method || '').toUpperCase();
+      const url = originalRequest?.url || '';
+      const isSpringDefault = /资源不存在|no\s*resource|not\s*found/i.test(backendMsg);
+      const friendly = isSpringDefault || !backendMsg
+        ? `请求的接口不存在 (${method} ${url})。可能是后端未上线该功能,或当前账号无权访问。`
+        : backendMsg;
+      if (!originalRequest._silent) showMessage(friendly, 'error');
+      return Promise.reject(new ApiError(friendly, 'NOT_FOUND', 404));
+    }
+
     // 其他错误
     const message = error.response?.data?.message || error.message || '网络请求失败';
     // Allow callers to suppress error toast via _silent config flag
