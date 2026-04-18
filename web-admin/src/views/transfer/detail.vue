@@ -46,7 +46,7 @@ async function loadTransfer() {
   try {
     const res = await get(`/${factoryId.value}/transfers/${transferId.value}`);
     if (res.success) transfer.value = res.data;
-  } catch { ElMessage.error('加载失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { loading.value = false; }
 }
 

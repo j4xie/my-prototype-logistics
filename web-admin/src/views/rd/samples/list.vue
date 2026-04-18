@@ -68,7 +68,7 @@ async function loadData() {
       tableData.value = items;
       pagination.value.total = res.data.totalElements || 0;
     }
-  } catch { ElMessage.error('加载数据失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { loading.value = false; }
 }
 
@@ -109,7 +109,7 @@ async function handleSampleAction(id: string, action: string) {
     }
     ElMessage.success(`${labels[action]}成功`);
     loadData();
-  } catch (e) { if (e !== 'cancel') ElMessage.error('操作失败'); }
+  } catch (e) { /* axios interceptor handles API errors; cancel from MessageBox is silent */ }
 }
 
 // 新建研发需求弹窗
@@ -128,8 +128,8 @@ async function handleCreateRequest() {
       ElMessage.success('研发需求已创建');
       requestDialogVisible.value = false;
       switchTab('requests');
-    } else { ElMessage.error(res.message || '创建失败'); }
-  } catch { ElMessage.error('创建失败'); }
+    }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { submitting.value = false; }
 }
 
@@ -179,8 +179,8 @@ async function handleCreateSample() {
       ElMessage.success('样品已创建');
       sampleDialogVisible.value = false;
       switchTab('samples');
-    } else { ElMessage.error(res.message || '创建失败'); }
-  } catch { ElMessage.error('创建失败'); }
+    }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { submitting.value = false; }
 }
 
@@ -238,7 +238,7 @@ async function addTrackingRecord() {
       newTracking.value = { date: new Date().toISOString().slice(0, 10), content: '', attachment: '', recorder: String(currentUser.value) };
       loadData();
     } else { ElMessage.error(res.message || '添加失败'); }
-  } catch { ElMessage.error('添加失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { submitting.value = false; }
 }
 </script>

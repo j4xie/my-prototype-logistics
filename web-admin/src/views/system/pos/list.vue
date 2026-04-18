@@ -46,7 +46,7 @@ async function loadConnections() {
     } else {
       ElMessage.error(res.message || '加载失败');
     }
-  } catch { ElMessage.error('加载失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { loading.value = false; }
 }
 
@@ -60,7 +60,7 @@ async function handleCreate() {
     const res = await post(`/${factoryId.value}/pos/connections`, form.value);
     if (res.success) { ElMessage.success('创建成功'); resetForm(); dialogVisible.value = false; loadConnections(); }
     else { ElMessage.error(res.message || '创建失败'); }
-  } catch { ElMessage.error('创建失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
 }
 
 async function handleDelete(id: string) {
@@ -79,7 +79,7 @@ async function handleToggle(id: string, active: boolean) {
     const res = await post(`/${factoryId.value}/pos/connections/${id}/toggle`, undefined, { params: { active } } as Record<string, unknown>);
     if (res.success) { ElMessage.success(active ? '已启用' : '已停用'); loadConnections(); }
     else { ElMessage.error(res.message || '操作失败'); }
-  } catch { ElMessage.error('操作失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
 }
 
 async function handleTest(id: string) {
@@ -91,7 +91,7 @@ async function handleTest(id: string) {
     } else {
       ElMessage.error(res.message || '连接测试失败');
     }
-  } catch { ElMessage.error('连接测试失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { testLoading.value[id] = false; }
 }
 
@@ -105,7 +105,7 @@ async function handleSync(id: string) {
     } else {
       ElMessage.error(res.message || '同步失败');
     }
-  } catch { ElMessage.error('同步失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { syncLoading.value[id] = false; }
 }
 </script>

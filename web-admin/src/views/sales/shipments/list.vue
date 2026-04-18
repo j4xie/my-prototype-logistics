@@ -34,7 +34,7 @@ async function loadCustomers() {
     } else if (res.success === false) {
       ElMessage.error(res.message || '加载客户数据失败');
     }
-  } catch { ElMessage.error('加载客户数据失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
 }
 
 async function loadData() {

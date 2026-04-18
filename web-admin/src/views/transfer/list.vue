@@ -52,7 +52,7 @@ async function loadData() {
     } else if (res.success === false) {
       ElMessage.error(res.message || '加载失败');
     }
-  } catch { ElMessage.error('加载失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { loading.value = false; }
 }
 

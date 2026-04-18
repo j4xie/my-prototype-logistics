@@ -44,7 +44,7 @@ async function loadData() {
       tableData.value = res.data.content || [];
       pagination.value.total = res.data.totalElements || 0;
     }
-  } catch { ElMessage.error('加载开票列表失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { loading.value = false; }
 }
 
@@ -124,7 +124,7 @@ async function handleRequestSubmit() {
       requestDialogVisible.value = false;
       loadData();
     } else { ElMessage.error(res.message || '提交失败'); }
-  } catch { ElMessage.error('提交失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { submitting.value = false; }
 }
 </script>

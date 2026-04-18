@@ -157,7 +157,7 @@ async function applyChanges() {
     await aiApplyDiffs(factoryId.value, diffs)
     ElMessage.success('变更已应用')
     pendingChanges.value = []
-  } catch { ElMessage.error('应用失败') }
+  } catch { /* axios interceptor already displayed error toast */ }
 }
 
 // Round 7a: all action functions now run under withLock() to prevent double-submit.

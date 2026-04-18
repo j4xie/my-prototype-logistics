@@ -71,7 +71,7 @@ async function loadOrder() {
   try {
     const res = await get(`/${factoryId.value}/purchase/orders/${orderId.value}`);
     if (res.success) order.value = res.data;
-  } catch { ElMessage.error('加载订单失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { loading.value = false; }
 }
 
@@ -150,7 +150,7 @@ async function loadPriceComparison() {
       priceComparisons.value = Array.isArray(res.data) ? res.data : [];
       priceLoaded.value = true;
     }
-  } catch { ElMessage.error('加载三价对比失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { priceLoading.value = false; }
 }
 

@@ -143,9 +143,7 @@ async function handleContractUpload(options: { file: File }) {
     } else {
       ElMessage.error(json.message || '合同上传失败');
     }
-  } catch {
-    ElMessage.error('合同上传失败');
-  }
+  } catch { /* axios interceptor already displayed error toast */ }
 }
 
 function clearContract() {
@@ -198,7 +196,7 @@ async function loadData() {
     } else if (res.success === false) {
       ElMessage.error(res.message || '加载订单失败');
     }
-  } catch { ElMessage.error('加载失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { loading.value = false; }
 }
 
@@ -278,7 +276,7 @@ async function handleCreate() {
     const res = await post(`/${factoryId.value}/sales/orders`, form.value);
     if (res.success) { ElMessage.success('创建成功'); dialogVisible.value = false; loadData(); }
     else { ElMessage.error(res.message || '创建失败'); }
-  } catch { ElMessage.error('创建失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
 }
 
 async function handleAction(orderId: string, action: string) {
@@ -340,7 +338,7 @@ async function handleSave() {
       const res = await put(`/${factoryId.value}/sales/orders/${editingOrderId.value}`, form.value);
       if (res.success) { ElMessage.success('保存成功'); dialogVisible.value = false; editingOrderId.value = null; loadData(); }
       else { ElMessage.error(res.message || '保存失败'); }
-    } catch { ElMessage.error('保存失败'); }
+    } catch { /* axios interceptor already displayed error toast */ }
   } else {
     await handleCreate();
   }
@@ -451,9 +449,7 @@ async function submitQuickDelivery() {
     } else {
       ElMessage.error(res.message || '出库失败');
     }
-  } catch {
-    ElMessage.error('出库失败');
-  }
+  } catch { /* axios interceptor already displayed error toast */ }
 }
 
 async function handleQuickInvoice(row: Record<string, unknown>) {
@@ -477,9 +473,7 @@ async function submitQuickInvoice() {
     } else {
       ElMessage.error(res.message || '开票失败');
     }
-  } catch {
-    ElMessage.error('开票失败');
-  }
+  } catch { /* axios interceptor already displayed error toast */ }
 }
 
 async function handleQuickPayment(row: Record<string, unknown>) {
@@ -503,9 +497,7 @@ async function submitQuickPayment() {
     } else {
       ElMessage.error(res.message || '收款失败');
     }
-  } catch {
-    ElMessage.error('收款失败');
-  }
+  } catch { /* axios interceptor already displayed error toast */ }
 }
 </script>
 

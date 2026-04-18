@@ -81,7 +81,7 @@ async function loadTransactions() {
     } else if (res.success === false) {
       ElMessage.error(res.message || '加载交易记录失败');
     }
-  } catch { ElMessage.error('加载交易记录失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { loading.value = false; }
 }
 

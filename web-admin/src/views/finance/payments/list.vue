@@ -40,7 +40,7 @@ async function loadData() {
       tableData.value = res.data.content || [];
       pagination.value.total = res.data.totalElements || 0;
     }
-  } catch { ElMessage.error('加载收款列表失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { loading.value = false; }
 }
 
@@ -50,7 +50,7 @@ async function handleVerify(id: string) {
     const res = await post(`/${factoryId.value}/finance/payments/${id}/verify`);
     if (res.success) { ElMessage.success('收款已确认'); loadData(); }
     else { ElMessage.error(res.message || '确认失败'); }
-  } catch (e) { if (e !== 'cancel') ElMessage.error('操作失败'); }
+  } catch (e) { /* axios interceptor handles API errors; cancel from MessageBox is silent */ }
 }
 
 async function handleReject(id: string) {
@@ -59,7 +59,7 @@ async function handleReject(id: string) {
     const res = await post(`/${factoryId.value}/finance/payments/${id}/reject`, { reason });
     if (res.success) { ElMessage.success('已驳回'); loadData(); }
     else { ElMessage.error(res.message || '驳回失败'); }
-  } catch (e) { if (e !== 'cancel') ElMessage.error('操作失败'); }
+  } catch (e) { /* axios interceptor handles API errors; cancel from MessageBox is silent */ }
 }
 
 // 录入收款弹窗
@@ -82,7 +82,7 @@ async function handleRecordSubmit() {
       recordDialogVisible.value = false;
       loadData();
     } else { ElMessage.error(res.message || '创建失败'); }
-  } catch { ElMessage.error('创建失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { submitting.value = false; }
 }
 </script>

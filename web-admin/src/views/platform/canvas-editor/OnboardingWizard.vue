@@ -70,7 +70,7 @@ async function nextStep() {
     try {
       await applyTemplate(factoryId.value, state.value.selectedTemplate)
       ElMessage.success(`模板 ${state.value.selectedTemplate} 已应用`)
-    } catch (e) { ElMessage.error('模板应用失败') }
+    } catch (e) { /* axios interceptor already displayed error toast */ }
   }
   step.value++
 }

@@ -44,7 +44,7 @@ async function loadData() {
     } else if (res.success === false) {
       ElMessage.error(res.message || '加载价格表失败');
     }
-  } catch { ElMessage.error('加载失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { loading.value = false; }
 }
 
@@ -62,7 +62,7 @@ async function handleCreate() {
     const res = await post(`/${factoryId.value}/price-lists`, form.value);
     if (res.success) { ElMessage.success('创建成功'); dialogVisible.value = false; loadData(); }
     else { ElMessage.error(res.message || '创建失败'); }
-  } catch { ElMessage.error('创建失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
 }
 
 async function handleDelete(id: string) {
@@ -71,7 +71,7 @@ async function handleDelete(id: string) {
     const res = await del(`/${factoryId.value}/price-lists/${id}`);
     if (res.success) { ElMessage.success('删除成功'); loadData(); }
     else { ElMessage.error(res.message || '删除失败'); }
-  } catch (error) { if (error !== 'cancel') ElMessage.error('删除失败'); }
+  } catch (error) { /* axios interceptor handles API errors; cancel from MessageBox is silent */ }
 }
 
 function handlePageChange(page: number) { pagination.value.page = page; loadData(); }

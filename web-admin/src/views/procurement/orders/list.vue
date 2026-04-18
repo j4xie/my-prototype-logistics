@@ -92,7 +92,7 @@ async function loadSuppliers() {
   try {
     const res = await get(`/${factoryId.value}/suppliers`, { params: { page: 1, size: 100 } });
     if (res.success && res.data) suppliers.value = res.data.content || [];
-  } catch { ElMessage.error('加载供应商列表失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
 }
 
 async function loadMaterials() {
@@ -101,7 +101,7 @@ async function loadMaterials() {
     // Bug B3 fix: use /active endpoint (unpaginated, same source as BOM and warehouse)
     const res = await get(`/${factoryId.value}/raw-material-types/active`);
     if (res.success && res.data) materials.value = Array.isArray(res.data) ? res.data : res.data.content || [];
-  } catch { ElMessage.error('加载原料列表失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
 }
 
 async function loadSalesOrders() {
