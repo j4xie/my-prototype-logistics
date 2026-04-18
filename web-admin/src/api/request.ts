@@ -20,6 +20,64 @@ const showMessage = async (message: string, type: 'success' | 'error' | 'warning
   });
 };
 
+// Apr 18 2026 UX 进阶: 3 渠道错误呈现
+//   severity=BLOCKING  → ElMessageBox.alert (必须点确定才能继续, 阻塞)
+//   actionHint != null → ElNotification (带 "去处理" 按钮; 点击 pulse hintTarget)
+//   default            → showMessage (方案 A sticky toast)
+const pulseHintTarget = (label: string) => {
+  if (!label) return;
+  // Find buttons whose visible text or aria-label matches the hint target label.
+  const all = Array.from(document.querySelectorAll<HTMLElement>('button, [role="button"], [role="tab"]'));
+  const target = all.find(el => {
+    const txt = (el.innerText || el.textContent || '').trim();
+    return txt === label || txt.startsWith(label) || el.getAttribute('aria-label') === label;
+  });
+  if (!target) return;
+  target.classList.add('cretas-pulse-hint');
+  target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  setTimeout(() => target.classList.remove('cretas-pulse-hint'), 5000);
+};
+
+const showRichError = async (
+  message: string,
+  opts: { actionHint?: string | null; severity?: string | null; hintTarget?: string | null }
+) => {
+  const el = await import('element-plus');
+  const { ElMessageBox, ElNotification } = el;
+  if (opts.severity === 'BLOCKING') {
+    // Modal alert — must click 确定 to dismiss. Used for critical errors
+    // (RBAC denial, destructive-confirm, critical business-rule violation).
+    try {
+      await ElMessageBox.alert(
+        `${message}${opts.actionHint ? '\n\n提示: ' + opts.actionHint : ''}`,
+        '操作被拒绝',
+        { type: 'error', confirmButtonText: '我知道了' }
+      );
+    } catch { /* user closed */ }
+    if (opts.hintTarget) pulseHintTarget(opts.hintTarget);
+    return;
+  }
+  if (opts.actionHint) {
+    // Rich notification with action button.
+    const n = ElNotification({
+      title: '操作无法完成',
+      message: `${message}\n\n${opts.actionHint}`,
+      type: 'error',
+      duration: 0,
+      showClose: true,
+      onClick: () => { if (opts.hintTarget) pulseHintTarget(opts.hintTarget); },
+    });
+    if (opts.hintTarget) {
+      // Also pulse immediately so user sees where to go.
+      setTimeout(() => pulseHintTarget(opts.hintTarget as string), 300);
+    }
+    void n;
+    return;
+  }
+  // Default: sticky toast (方案 A).
+  return showMessage(message, 'error');
+};
+
 // 创建 axios 实例
 const request: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api/mobile',
@@ -97,7 +155,12 @@ request.interceptors.response.use(
     // 如果响应已经是标准格式
     if (data && typeof data.success === 'boolean') {
       if (!data.success) {
-        showMessage(data.message || '操作失败', 'error');
+        const rich = (data as Record<string, string | null>);
+        showRichError(data.message || '操作失败', {
+          actionHint: rich.actionHint,
+          severity: rich.severity,
+          hintTarget: rich.hintTarget,
+        });
         return Promise.reject(new ApiError(data.message, data.code));
       }
       return data;
@@ -174,9 +237,15 @@ request.interceptors.response.use(
       }
     }
 
-    // 403 禁止访问
+    // 403 禁止访问 — always blocking (per user 进阶方向 2)
     if (status === 403) {
-      showMessage('您没有权限执行此操作', 'error');
+      const backendMsg = error.response?.data?.message || '您没有权限执行此操作';
+      const rich = (error.response?.data as unknown as Record<string, string | null>) || {};
+      showRichError(backendMsg, {
+        actionHint: rich.actionHint,
+        severity: rich.severity || 'BLOCKING',
+        hintTarget: rich.hintTarget,
+      });
       return Promise.reject(new ApiError('权限不足', 'FORBIDDEN', 403));
     }
 
@@ -184,7 +253,12 @@ request.interceptors.response.use(
     const message = error.response?.data?.message || error.message || '网络请求失败';
     // Allow callers to suppress error toast via _silent config flag
     if (!originalRequest._silent) {
-      showMessage(message, 'error');
+      const rich = (error.response?.data as unknown as Record<string, string | null>) || {};
+      showRichError(message, {
+        actionHint: rich.actionHint,
+        severity: rich.severity,
+        hintTarget: rich.hintTarget,
+      });
     }
 
     return Promise.reject(new ApiError(message, error.response?.data?.code, status));

@@ -36,6 +36,16 @@ public class ApiResponse<T> implements Serializable {
     @Schema(description = "请求是否成功", example = "true")
     private Boolean success;
 
+    // UX 2026-04-18 进阶: optional fields rendered by frontend interceptor
+    @Schema(description = "行动提示 (用户下一步建议)")
+    private String actionHint;
+
+    @Schema(description = "错误严重度 BLOCKING 用 ElMessageBox 阻塞; 空/NORMAL 用 ElMessage")
+    private String severity;
+
+    @Schema(description = "UI pulse 目标 button label (提示用户点该按钮)")
+    private String hintTarget;
+
     // 成功响应
     public static <T> ApiResponse<T> success() {
         return success(null);
@@ -93,6 +103,34 @@ public class ApiResponse<T> implements Serializable {
         response.setSuccess(code >= 200 && code < 300);
         return response;
     }
+
+    /**
+     * UX: builder for error with actionHint/severity/hintTarget.
+     * Use when you want the frontend to render a notification-with-button
+     * or blocking modal, not just a toast.
+     */
+    public static <T> ApiResponse<T> errorWithHint(Integer code, String message,
+                                                   String actionHint,
+                                                   String severity,
+                                                   String hintTarget) {
+        ApiResponse<T> response = new ApiResponse<>();
+        response.setCode(code);
+        response.setMessage(message);
+        response.setData(null);
+        response.setTimestamp(LocalDateTime.now());
+        response.setSuccess(false);
+        response.setActionHint(actionHint);
+        response.setSeverity(severity);
+        response.setHintTarget(hintTarget);
+        return response;
+    }
+
+    public String getActionHint() { return actionHint; }
+    public void setActionHint(String actionHint) { this.actionHint = actionHint; }
+    public String getSeverity() { return severity; }
+    public void setSeverity(String severity) { this.severity = severity; }
+    public String getHintTarget() { return hintTarget; }
+    public void setHintTarget(String hintTarget) { this.hintTarget = hintTarget; }
 
     // Manual getters and setters (Lombok @Data not working)
     public Integer getCode() {

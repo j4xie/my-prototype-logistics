@@ -128,12 +128,28 @@ public class GlobalExceptionHandler {
      * 处理业务异常 - 业务异常消息通常是安全的
      */
     @ExceptionHandler(BusinessException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiResponse<?> handleBusinessException(BusinessException e) {
+    public org.springframework.http.ResponseEntity<ApiResponse<?>> handleBusinessException(BusinessException e) {
         log.warn("业务异常: code={}, message={}", e.getCode(), e.getMessage());
         // 业务异常的消息通常是开发者定义的，但仍需检查
         String message = isSafeMessage(e.getMessage()) ? e.getMessage() : ErrorCode.BUSINESS_RULE_VIOLATION.getUserMessage();
-        return ApiResponse.error(e.getCode(), message);
+        // UX 2026-04-18 进阶: propagate actionHint/severity/hintTarget so frontend
+        // interceptor can render ElNotification with button, ElMessageBox modal,
+        // or pulse-hint animation instead of plain ElMessage toast.
+        ApiResponse<?> body;
+        if (e.getActionHint() != null || e.getSeverity() != null || e.getHintTarget() != null) {
+            body = ApiResponse.errorWithHint(e.getCode(), message,
+                    e.getActionHint(), e.getSeverity(), e.getHintTarget());
+        } else {
+            body = ApiResponse.error(e.getCode(), message);
+        }
+        // Map business code to HTTP status (409 stays 409, 403 stays 403, else 400).
+        HttpStatus status = switch (e.getCode() != null ? e.getCode() : 400) {
+            case 409 -> HttpStatus.CONFLICT;
+            case 403 -> HttpStatus.FORBIDDEN;
+            case 404 -> HttpStatus.NOT_FOUND;
+            default -> HttpStatus.BAD_REQUEST;
+        };
+        return org.springframework.http.ResponseEntity.status(status).body(body);
     }
 
     /**

@@ -122,8 +122,13 @@ public class InvoiceServiceImpl implements InvoiceService {
             String existingNumbers = existing.stream()
                     .map(InvoiceRecord::getInvoiceNumber)
                     .collect(java.util.stream.Collectors.joining(", "));
-            throw new org.springframework.dao.DuplicateKeyException(
-                    "该销售订单已有待处理开票申请 (" + existing.size() + " 张: " + existingNumbers + "), 请先处理或撤销");
+            // UX 2026-04-18 进阶: use BusinessException with hints so frontend
+            // renders ElNotification with "去查看发票" button instead of plain toast.
+            // Still returns 409 via GlobalExceptionHandler (BusinessException code=409).
+            throw new com.cretas.aims.exception.BusinessException(409,
+                    "该销售订单已有待处理开票申请 (" + existing.size() + " 张: " + existingNumbers + "), 请先处理或撤销")
+                    .withHint("请在 \"开票申请\" Tab 里审核通过或驳回已有的发票, 再提交新的开票申请")
+                    .withHintTarget("开票申请");
         }
 
         List<SalesOrderItem> items = salesOrderItemRepository.findBySalesOrderId(salesOrderId);
