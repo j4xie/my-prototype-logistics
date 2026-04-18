@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.MobileDTO;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.batch.AssignWorkersDTO;
 import com.cretas.aims.dto.batch.TeamBatchReportRequest;
 import com.cretas.aims.dto.batch.WorkerCheckoutDTO;
@@ -64,6 +65,7 @@ public class ProcessingController {
     /**
      * 创建生产批次
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/batches")
     @Operation(summary = "创建生产批次", description = "创建新的生产批次")
     public ApiResponse<ProductionBatch> createBatch(
@@ -77,6 +79,7 @@ public class ProcessingController {
     /**
      * 开始生产
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/batches/{batchId}/start")
     @Operation(summary = "开始生产", description = "开始批次生产")
     public ApiResponse<ProductionBatch> startProduction(
@@ -91,6 +94,7 @@ public class ProcessingController {
     /**
      * 暂停生产
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/batches/{batchId}/pause")
     @Operation(summary = "暂停生产", description = "暂停批次生产")
     public ApiResponse<ProductionBatch> pauseProduction(
@@ -105,6 +109,7 @@ public class ProcessingController {
     /**
      * 恢复生产
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/batches/{batchId}/resume")
     @Operation(summary = "恢复生产", description = "恢复已暂停的批次生产")
     public ApiResponse<ProductionBatch> resumeProduction(
@@ -118,6 +123,7 @@ public class ProcessingController {
     /**
      * 完成生产
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/batches/{batchId}/complete")
     @Operation(summary = "完成生产", description = "完成批次生产")
     public ApiResponse<ProductionBatch> completeProduction(
@@ -135,6 +141,7 @@ public class ProcessingController {
     /**
      * 取消生产
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/batches/{batchId}/cancel")
     @Operation(summary = "取消生产", description = "取消批次生产")
     public ApiResponse<ProductionBatch> cancelProduction(
@@ -196,6 +203,7 @@ public class ProcessingController {
     /**
      * 分配员工到批次
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/batches/{batchId}/assign-workers")
     @Operation(summary = "分配员工到批次", description = "将多个员工分配到生产批次")
     public ApiResponse<List<Map<String, Object>>> assignWorkersToBatch(
@@ -212,6 +220,7 @@ public class ProcessingController {
     /**
      * 员工签出（完成批次工作）
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/batches/{batchId}/workers/{workerId}/checkout")
     @Operation(summary = "员工签出", description = "员工完成批次工作并签出")
     public ApiResponse<Map<String, Object>> workerCheckout(
@@ -243,6 +252,7 @@ public class ProcessingController {
     /**
      * 取消员工批次分配
      */
+    @RequirePermission({"production:read_write"})
     @DeleteMapping("/batches/{batchId}/workers/{workerId}")
     @Operation(summary = "取消员工分配", description = "取消员工在批次的分配")
     public ApiResponse<Map<String, Object>> cancelWorkerAssignment(
@@ -260,6 +270,7 @@ public class ProcessingController {
      * 班组批量报工
      * 车间主管为班组成员批量提交产出报工
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/work-sessions/batch-report")
     @Operation(summary = "班组批量报工", description = "车间主管为班组成员批量提交产出")
     public ApiResponse<Map<String, Object>> submitTeamBatchReport(
@@ -277,6 +288,7 @@ public class ProcessingController {
     /**
      * 创建原材料接收记录
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/material-receipt")
     @Operation(summary = "原材料接收", description = "创建原材料接收记录")
     public ApiResponse<MaterialBatch> createMaterialReceipt(
@@ -326,6 +338,7 @@ public class ProcessingController {
     /**
      * 记录原材料消耗
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/batches/{batchId}/material-consumption")
     @Operation(summary = "记录原材料消耗", description = "记录生产批次的原材料消耗")
     public ApiResponse<Void> recordMaterialConsumption(
@@ -352,6 +365,7 @@ public class ProcessingController {
     /**
      * 提交质检记录
      */
+    @RequirePermission({"quality:read_write"})
     @PostMapping("/quality/inspections")
     @Operation(summary = "提交质检记录", description = "提交产品质量检验记录")
     public ApiResponse<Map<String, Object>> submitInspection(
@@ -437,6 +451,7 @@ public class ProcessingController {
      * 评估处置建议
      * 根据质检结果，通过规则引擎评估推荐的处置动作
      */
+    @RequirePermission({"quality:read_write"})
     @PostMapping("/quality/inspections/{inspectionId}/evaluate-disposition")
     @Operation(summary = "评估处置建议", description = "根据质检结果评估推荐的处置动作")
     public ApiResponse<DispositionEvaluationDTO> evaluateDisposition(
@@ -519,6 +534,7 @@ public class ProcessingController {
      * 执行处置动作
      * 直接执行处置动作（不需要审批的情况）
      */
+    @RequirePermission({"quality:read_write"})
     @PostMapping("/quality/inspections/{inspectionId}/execute-disposition")
     @Operation(summary = "执行处置动作", description = "执行质检结果的处置动作")
     public ApiResponse<Map<String, Object>> executeDisposition(
@@ -575,6 +591,7 @@ public class ProcessingController {
      * 提交特批放行申请
      * 当处置动作需要审批时，提交特批申请
      */
+    @RequirePermission({"quality:read_write"})
     @PostMapping("/quality/inspections/{inspectionId}/request-special-approval")
     @Operation(summary = "提交特批申请", description = "提交质检特批放行申请")
     public ApiResponse<SpecialApprovalDTO> submitSpecialApproval(
@@ -636,6 +653,7 @@ public class ProcessingController {
     /**
      * 处理审批决策
      */
+    @RequirePermission({"quality:read_write"})
     @PostMapping("/quality/approvals/{approvalId}/decision")
     @Operation(summary = "处理审批", description = "审批或拒绝特批申请")
     public ApiResponse<SpecialApprovalDTO> processApprovalDecision(
@@ -766,6 +784,7 @@ public class ProcessingController {
     /**
      * 重新计算批次成本
      */
+    @RequirePermission({"production:read_write", "finance:read_write"})
     @PostMapping("/batches/{batchId}/recalculate-cost")
     @Operation(summary = "重算成本", description = "重新计算批次成本")
     public ApiResponse<ProductionBatch> recalculateBatchCost(
@@ -794,6 +813,7 @@ public class ProcessingController {
     /**
      * 创建加工环节记录
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/batches/{batchId}/stages")
     @Operation(summary = "创建加工环节记录", description = "为生产批次创建加工环节记录")
     public ApiResponse<ProcessingStageRecordDTO> createStageRecord(
@@ -809,6 +829,7 @@ public class ProcessingController {
     /**
      * 批量创建加工环节记录
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/batches/{batchId}/stages/batch")
     @Operation(summary = "批量创建环节记录", description = "为生产批次批量创建加工环节记录")
     public ApiResponse<List<ProcessingStageRecordDTO>> batchCreateStageRecords(
@@ -855,6 +876,7 @@ public class ProcessingController {
     /**
      * 更新环节记录
      */
+    @RequirePermission({"production:read_write"})
     @PutMapping("/stages/{stageId}")
     @Operation(summary = "更新环节记录", description = "更新加工环节记录")
     public ApiResponse<ProcessingStageRecordDTO> updateStageRecord(
@@ -869,6 +891,7 @@ public class ProcessingController {
     /**
      * 删除环节记录
      */
+    @RequirePermission({"production:read_write"})
     @DeleteMapping("/stages/{stageId}")
     @Operation(summary = "删除环节记录", description = "删除加工环节记录")
     public ApiResponse<Void> deleteStageRecord(

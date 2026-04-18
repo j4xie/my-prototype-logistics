@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.producttype.ProductTypeDTO;
@@ -48,6 +49,7 @@ public class ProductTypeController {
     /**
      * SKU组装: 产品模板 + 客户 + 配方 → 独立SKU
      */
+    @RequirePermission({"production:read_write", "rd:read_write"})
     @PostMapping("/assemble-sku")
     @Operation(summary = "组装SKU", description = "从产品模板+客户+配方创建SKU")
     public ApiResponse<ProductType> assembleSku(
@@ -92,6 +94,7 @@ public class ProductTypeController {
     /**
      * 创建产品类型
      */
+    @RequirePermission({"production:read_write", "rd:read_write"})
     @PostMapping
     @Operation(summary = "创建产品类型", description = "创建新的产品类型")
     public ApiResponse<ProductTypeDTO> createProductType(
@@ -110,6 +113,7 @@ public class ProductTypeController {
     /**
      * 更新产品类型
      */
+    @RequirePermission({"production:read_write", "rd:read_write"})
     @PutMapping("/{id}")
     @Operation(summary = "更新产品类型", description = "更新产品类型信息")
     public ApiResponse<ProductTypeDTO> updateProductType(
@@ -124,6 +128,7 @@ public class ProductTypeController {
     /**
      * 删除产品类型
      */
+    @RequirePermission({"production:read_write", "rd:read_write"})
     @DeleteMapping("/{id}")
     @Operation(summary = "删除产品类型", description = "删除指定的产品类型")
     public ApiResponse<Void> deleteProductType(
@@ -230,6 +235,7 @@ public class ProductTypeController {
     /**
      * 批量更新状态
      */
+    @RequirePermission({"production:read_write", "rd:read_write"})
     @PutMapping("/batch/status")
     @Operation(summary = "批量更新状态", description = "批量更新产品类型的激活状态")
     public ApiResponse<Void> updateProductTypesStatus(
@@ -267,6 +273,7 @@ public class ProductTypeController {
     /**
      * 初始化默认产品类型
      */
+    @RequirePermission({"production:read_write", "rd:read_write"})
     @PostMapping("/init-defaults")
     @Operation(summary = "初始化默认产品类型", description = "为工厂初始化默认的产品类型")
     public ApiResponse<Void> initializeDefaultProductTypes(
@@ -305,6 +312,7 @@ public class ProductTypeController {
      * 更新产品类型的 SKU 配置
      * 仅更新调度相关字段：workHours, processingSteps, skillRequirements, equipmentIds, qualityCheckIds, complexityScore
      */
+    @RequirePermission({"production:read_write", "rd:read_write"})
     @PutMapping("/{id}/config")
     @Operation(summary = "更新SKU配置", description = "更新产品类型的调度相关配置（工时、加工步骤、技能要求等）")
     public ApiResponse<ProductTypeDTO> updateProductTypeConfig(
@@ -378,6 +386,7 @@ public class ProductTypeController {
      * 批量获取产品类型的调度信息
      * 用于调度系统一次性加载多个产品类型
      */
+    @RequirePermission({"production:read_write", "rd:read_write"})
     @PostMapping("/scheduling-info/batch")
     @Operation(summary = "批量获取调度信息", description = "批量获取多个产品类型的调度相关信息")
     public ApiResponse<List<Map<String, Object>>> getSchedulingInfoBatch(

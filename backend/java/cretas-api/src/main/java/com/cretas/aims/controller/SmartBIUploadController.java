@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.smartbi.*;
 import com.cretas.aims.entity.smartbi.postgres.SmartBiDynamicData;
 import com.cretas.aims.entity.smartbi.postgres.SmartBiPgExcelUpload;
@@ -71,6 +72,7 @@ public class SmartBIUploadController {
 
     // ==================== Excel Upload ====================
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Upload Excel file", description = "Upload and parse Excel file using Python SmartBI service")
     public ResponseEntity<ApiResponse<ExcelParseResponse>> uploadExcel(
@@ -118,6 +120,7 @@ public class SmartBIUploadController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping(value = "/upload-and-analyze", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Upload and analyze", description = "Upload Excel, auto-parse, save data and generate chart analysis")
     public ResponseEntity<ApiResponse<?>> uploadAndAnalyze(
@@ -155,6 +158,7 @@ public class SmartBIUploadController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/upload/confirm")
     @Operation(summary = "Confirm field mappings", description = "Confirm field mappings, save data and generate chart")
     public ResponseEntity<ApiResponse<?>> confirmMappingsAndSave(
@@ -196,6 +200,7 @@ public class SmartBIUploadController {
 
     // ==================== Batch Sheet Processing ====================
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping(value = "/sheets", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "List sheets", description = "Preview all sheets in the Excel file")
     public ResponseEntity<ApiResponse<List<SheetInfo>>> listSheets(
@@ -216,6 +221,7 @@ public class SmartBIUploadController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping(value = "/upload-batch", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Batch upload sheets", description = "Upload and process multiple sheets from Excel file")
     public ResponseEntity<ApiResponse<BatchUploadResult>> uploadBatch(
@@ -264,6 +270,7 @@ public class SmartBIUploadController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping(value = "/upload-batch-stream", consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
                  produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "Batch upload sheets (streaming)", description = "SSE streaming progress for batch sheet upload")
@@ -320,6 +327,7 @@ public class SmartBIUploadController {
 
     // ==================== Sheet Retry ====================
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/retry-sheet/{uploadId}")
     @Operation(summary = "Retry failed sheet", description = "Re-parse and persist failed or stuck sheet data")
     public ResponseEntity<ApiResponse<Map<String, Object>>> retrySheet(
@@ -486,6 +494,7 @@ public class SmartBIUploadController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/backfill/fields/{uploadId}")
     @Operation(summary = "Backfill field definitions", description = "Rebuild missing field definitions from field_mappings")
     public ResponseEntity<ApiResponse<BackfillResult>> backfillFieldDefinitions(
@@ -507,6 +516,7 @@ public class SmartBIUploadController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/backfill/batch")
     @Operation(summary = "Batch backfill field definitions", description = "Backfill all uploads missing field definitions")
     public ResponseEntity<ApiResponse<BatchBackfillResult>> batchBackfill(
