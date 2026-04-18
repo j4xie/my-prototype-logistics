@@ -340,28 +340,17 @@ public class ProductionDataCollectorService {
     }
 
     /**
-     * 触发模型训练
+     * 触发模型训练 — 2026-04-18 起 no-op.
+     *
+     * 历史:原调用 Python `/ml/train` 触发 LinUCB 在线训练.
+     * 现状:Python 端此 endpoint 已移除(ml 模块只剩 least-squares/validate-matrix/methods/batch);
+     * 模型训练改由 Java 侧 {@code ModelTrainingScheduler} 定时任务 + {@code LinUCBController}
+     * 手动触发接口处理. 本方法保留签名以兼容 @EventListener 调用点, 实际 no-op.
+     *
+     * 每次批次完成都调死端点产生 401 噪音的问题由此消除.
      */
     public void triggerModelTraining(String factoryId) {
-        log.info("触发工厂 {} 的模型训练", factoryId);
-
-        try {
-            Map<String, Object> request = new HashMap<>();
-            request.put("factory_id", factoryId);
-            request.put("model_types", List.of("efficiency", "duration", "quality"));
-
-            String url = aiServiceUrl + "/ml/train";
-            @SuppressWarnings("unchecked")
-            Map<String, Object> response = restTemplate.postForObject(url, request, Map.class);
-
-            if (response != null && Boolean.TRUE.equals(response.get("success"))) {
-                log.info("模型训练请求成功: {}", response);
-            } else {
-                log.warn("模型训练请求失败: {}", response);
-            }
-        } catch (Exception e) {
-            log.error("触发模型训练失败: {}", e.getMessage(), e);
-        }
+        log.debug("模型训练触发请求(已静默 no-op): factoryId={} — 实际训练由 ModelTrainingScheduler 处理", factoryId);
     }
 
     /**
