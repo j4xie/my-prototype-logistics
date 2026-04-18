@@ -117,7 +117,7 @@ const form = ref({
   shippingIncluded: false,
   shippingFee: 0,
   extraFees: [] as Array<{ name: string; amount: number; remark: string }>,
-  items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
+  items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, taxRate: 13 }],
   contractFileUrl: '' as string | null,
   contractFileName: '' as string | null,
   customFields: {} as Record<string, unknown>,
@@ -244,7 +244,7 @@ async function loadSalesEmployees() {
   } catch { /* silently fail — user can still type manually */ }
 }
 
-function addItem() { form.value.items.push({ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, specification: '', boxQuantity: null }); }
+function addItem() { form.value.items.push({ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, specification: '', boxQuantity: null, taxRate: 13 }); }
 function removeItem(idx: number) { if (form.value.items.length > 1) form.value.items.splice(idx, 1); }
 
 function onProductSelect(item: Record<string, unknown>, productId: string) {
@@ -324,8 +324,9 @@ function handleEdit(row: Record<string, unknown>) {
           quantity: Number(item.quantity || 0),
           unit: String(item.unit || 'kg'),
           unitPrice: Number(item.unitPrice || 0),
+          taxRate: item.taxRate != null ? Number(item.taxRate) : 13,
         }))
-      : [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
+      : [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, taxRate: 13 }],
     customFields: {} as Record<string, unknown>,
   };
   dialogVisible.value = true;
@@ -356,7 +357,7 @@ function openCreateDialog() {
     shippingIncluded: false,
     shippingFee: 0,
     extraFees: [],
-    items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
+    items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, taxRate: 13 }],
     customFields: {} as Record<string, unknown>,
   };
   dialogVisible.value = true;
@@ -401,6 +402,7 @@ function handleAiFill(params: Record<string, unknown>) {
         quantity: Number(item.quantity || 0),
         unit: String(item.unit || 'kg'),
         unitPrice: Number(item.unitPrice || 0),
+        taxRate: item.taxRate != null ? Number(item.taxRate) : 13,
       };
     });
   }
@@ -726,6 +728,7 @@ async function submitQuickPayment() {
           <span style="width: 80px">单位</span>
           <span style="width: 100px">单价</span>
           <span style="width: 80px">箱数</span>
+          <span style="width: 90px" title="税率 (开票 G1 按此分组): 9=原料, 13=加工, 6=服务">税率(%)</span>
           <span style="width: 40px">操作</span>
         </div>
         <div v-for="(item, idx) in form.items" :key="idx" class="item-row">
@@ -737,6 +740,13 @@ async function submitQuickPayment() {
           <el-input v-model="item.unit" style="width: 80px" />
           <el-input-number v-model="item.unitPrice" :min="0" :precision="2" style="width: 100px" />
           <el-input-number v-model="item.boxQuantity" :min="0" :precision="2" style="width: 80px" placeholder="箱" />
+          <el-select v-model="item.taxRate" placeholder="税率" style="width: 90px" size="default">
+            <el-option :value="0" label="0% 免税" />
+            <el-option :value="3" label="3% 小规模" />
+            <el-option :value="6" label="6% 服务" />
+            <el-option :value="9" label="9% 原料" />
+            <el-option :value="13" label="13% 加工" />
+          </el-select>
           <el-button type="danger" link @click="removeItem(idx)" :disabled="form.items.length <= 1">删除</el-button>
         </div>
         <el-button style="width: 100%; margin-top: 8px" @click="addItem">+ 添加行</el-button>
