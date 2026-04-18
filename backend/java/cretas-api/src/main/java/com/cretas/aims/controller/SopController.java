@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.config.OssConfig;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.sop.SopAnalysisResult;
 import com.cretas.aims.dto.sop.SopUploadResponse;
@@ -79,6 +80,7 @@ public class SopController {
      * @param request HTTP 请求
      * @return 上传响应
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/upload")
     @Operation(summary = "上传SOP文档", description = "上传SOP文档（支持PDF、Excel、图片），可选择自动触发复杂度分析")
     public ApiResponse<SopUploadResponse> uploadSop(
@@ -190,6 +192,7 @@ public class SopController {
      * @param requestBody 分析请求
      * @return 分析结果
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/analyze")
     @Operation(summary = "手动触发SOP分析", description = "手动触发SOP文档分析，解析内容并更新SKU复杂度")
     public ApiResponse<SopAnalysisResult> analyzeSop(

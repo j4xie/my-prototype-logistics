@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.smartbi.*;
 import com.cretas.aims.dto.smartbi.chart.AdaptiveChartRequest;
 import com.cretas.aims.dto.smartbi.chart.AdaptiveChartResponse;
@@ -86,6 +87,7 @@ public class SmartBIDashboardController {
 
     // ==================== Adaptive Chart Generation ====================
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/generate-adaptive-charts")
     @Operation(summary = "Generate adaptive charts", description = "Auto-evaluate data and generate optimal chart configs")
     public ResponseEntity<ApiResponse<AdaptiveChartResponse>> generateAdaptiveCharts(
@@ -110,6 +112,7 @@ public class SmartBIDashboardController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/generate-chart")
     @Operation(summary = "Quick generate single chart", description = "Generate single chart by specified type")
     public ResponseEntity<ApiResponse<AdaptiveChartResponse.GeneratedChart>> generateSingleChart(

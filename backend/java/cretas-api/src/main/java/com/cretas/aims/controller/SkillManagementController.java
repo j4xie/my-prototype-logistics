@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.entity.smartbi.SmartBiSkill;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.repository.smartbi.SmartBiSkillRepository;
 import com.cretas.aims.service.governance.ToolAutoComposerService;
 import com.cretas.aims.service.governance.ToolAutoComposerService.SkillRecommendation;
@@ -76,6 +77,7 @@ public class SkillManagementController {
     /**
      * 创建新 Skill (仅管理员)
      */
+    @RequirePermission({"hr:read_write"})
     @PostMapping
     @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN', 'PLATFORM_ADMIN')")
     public ResponseEntity<Map<String, Object>> createSkill(@RequestBody Map<String, Object> body) {
@@ -140,6 +142,7 @@ public class SkillManagementController {
     /**
      * 删除 Skill (仅管理员，且仅 DB skill 可删除)
      */
+    @RequirePermission({"hr:read_write"})
     @DeleteMapping("/{skillName}")
     @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN', 'PLATFORM_ADMIN')")
     public ResponseEntity<Map<String, Object>> deleteSkill(@PathVariable String skillName) {

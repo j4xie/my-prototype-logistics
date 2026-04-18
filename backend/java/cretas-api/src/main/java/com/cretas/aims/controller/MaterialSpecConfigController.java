@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.service.MaterialSpecConfigService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -172,6 +173,7 @@ public class MaterialSpecConfigController {
      * @param request 更新请求（包含规格列表）
      * @return 更新后的类别和规格信息
      */
+    @RequirePermission({"production:read_write", "rd:read_write"})
     @PutMapping("/{category}")
     @Operation(summary = "更新类别规格配置", description = "更新指定类别的规格选项列表，创建自定义配置")
     public ApiResponse<Map<String, Object>> updateCategorySpecs(
@@ -228,6 +230,7 @@ public class MaterialSpecConfigController {
      * @param category 类别名称
      * @return 重置后的系统默认配置
      */
+    @RequirePermission({"production:read_write", "rd:read_write"})
     @DeleteMapping("/{category}")
     @Operation(summary = "重置为默认配置", description = "删除自定义配置，恢复系统默认配置")
     public ApiResponse<Map<String, Object>> resetToDefault(
