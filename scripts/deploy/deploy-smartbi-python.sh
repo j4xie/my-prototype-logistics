@@ -148,7 +148,7 @@ restart_test_via_nohup() {
         LLM_API_KEY=sk-da3b827e6a00404a8bc869296f8690bc \
         LLM_MODEL=qwen3-max-2026-01-23 LLM_FAST_MODEL=qwen3.5-flash \
         LLM_REASONING_MODEL=qwen3.5-flash LLM_VL_MODEL=qwen3-vl-plus-2025-12-19 \
-        JWT_SECRET=cretas-jwt-secret-key-2026 \
+        JWT_SECRET=cretas-jwt-secret-key-2026-test \
         nohup $REMOTE_CRETAS_DIR/code/backend/python/venv38/bin/python \
             -m uvicorn main:app --host 0.0.0.0 --port 8084 \
             > $REMOTE_CRETAS_DIR/python-test.log 2>&1 &
