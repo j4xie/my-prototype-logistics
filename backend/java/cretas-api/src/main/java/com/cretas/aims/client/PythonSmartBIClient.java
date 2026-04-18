@@ -9,6 +9,7 @@ import com.cretas.aims.dto.python.PythonAnalysisRequest;
 import com.cretas.aims.dto.python.PythonAnalysisResponse;
 import com.cretas.aims.dto.smartbi.ExcelParseResponse;
 import com.cretas.aims.dto.smartbi.ForecastResult;
+import com.cretas.aims.dto.smartbi.PythonForecastResponse;
 import com.cretas.aims.dto.smartbi.MetricResult;
 import com.cretas.aims.exception.PythonServiceUnavailableException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -366,6 +367,36 @@ public class PythonSmartBIClient {
                 .build();
 
         return executeWithRetry(request, ForecastResult.class);
+    }
+
+    /**
+     * 方案 E (2026-04-17): Java 查历史数据后调用 Python 纯算端点。
+     *
+     * <p>Python /api/forecast/predict 的 pydantic 契约要求 data 字段为 List[float], min_items=3.
+     * 调用方应在 Java 侧通过 Repository SQL GROUP BY 组装 data 后再调。
+     *
+     * @param data      历史数据序列 (至少 3 个点，调用方预检)
+     * @param periods   预测期数
+     * @param algorithm 算法名 (小写，如 "auto"/"moving_average"/"linear_trend"/"exponential_smoothing")
+     * @return Python 原始响应结构
+     * @throws IOException 网络失败或 Python 返回非 2xx
+     */
+    public PythonForecastResponse forecastWithData(List<Double> data, int periods, String algorithm) throws IOException {
+        log.info("调用 Python forecast (方案 E): dataPoints={}, periods={}, algorithm={}",
+                data.size(), periods, algorithm);
+
+        Map<String, Object> requestBody = new java.util.HashMap<>();
+        requestBody.put("data", data);
+        requestBody.put("algorithm", algorithm != null ? algorithm : "auto");
+        requestBody.put("periods", periods);
+        requestBody.put("confidenceLevel", 0.95);
+
+        Request request = new Request.Builder()
+                .url(config.getForecastUrl())
+                .post(RequestBody.create(JSON, objectMapper.writeValueAsString(requestBody)))
+                .build();
+
+        return executeWithRetry(request, PythonForecastResponse.class);
     }
 
     // ==================== 通用请求执行 ====================
