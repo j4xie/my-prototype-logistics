@@ -265,3 +265,66 @@ commit message 描述只提 Bug #295/#296, 但 `git show` 显示 7 files changed
 | **流程事故** | **§r19-INC1 = 1** |
 
 **合规度**: v2.2 8-rule 核对 ≈ 90-95% (补救后), 关键 UX 功能 (方案 A/1/2/3) 100% 落地.
+
+---
+
+## 补救 II: v2.2 Rule 8 完整 5s sticky 严格验证 (2026-04-18 晚-3)
+
+上次补救只等 1s 不足以证明 sticky. 重启 Playwright MCP 后完整重跑, **实测 sticky 存活 17.6 秒** (3.5× v2.2 Rule 8 最低要求).
+
+### 工具方法
+
+真实 Chromium browser (Playwright MCP `playwright-rn`), 完整 7 步:
+1. `browser_navigate` /login → 点 工厂总监 → 登录
+2. `browser_navigate` SO 详情页
+3. `browser_click` 开票申请 Tab
+4. **操作前** `browser_evaluate` 注入 MutationObserver (监听 childList+subtree, 记 added/removed 生命周期)
+5. `browser_click` 一键开票申请
+6. `browser_click` 提交开票申请
+7. `browser_wait_for time:5` (完整 v2.2 Rule 8 sticky 窗口)
+8. `browser_evaluate` 读 `__toastLog` + `__toastLifecycle` + 当前 DOM
+9. `browser_network_requests` + `browser_console_messages level=error`
+
+### 完整 observer 数据
+
+```
+obsStart:      1776482745396 (t=0, observer 安装时刻)
+toast added:   1776482765637 (t=20.2s, click 后渲染)
+read moment:   1776482783239 (t=37.8s)
+toast 存活:    37843 - 20241 = 17602 ms ≈ 17.6 秒 (still in DOM!)
+removed count: 0  ← 未被自动移除
+```
+
+### v2.2 四位一体 (完整)
+
+| 项 | v2.2 要求 | 实测 | 判定 |
+|---|---|---|---|
+| **a) Network** | response.data.message | `[POST] /finance/invoices/request-from-order => [409]`, data.message 从 b 已验证匹配 | ✅ |
+| **b) UI toast 文案** | = 后端 message 精确 | MutationObserver text: 包含 message 全文 + actionHint 追加 | ✅ 100% 匹配 |
+| **c) Sticky lifecycle** | **5s 后 toast 还在**, duration:0 + showClose | **17.6s 后仍在**, 0 removed, `display=flex` `opacity=1` `isClosable=true` | ✅ 3.5× 要求 |
+| **d) Next action 指引** | actionHint 具体 / message 可推断 | `"请在 \"开票申请\" Tab 里审核通过或驳回已有的发票, 再提交新的开票申请"` — 具体 Tab 名 | ✅ |
+| Console | 4xx 有日志 | `[ERROR] status of 409 ... request-from-order:0` | ✅ |
+
+**v2.2 Rule 8 判定矩阵第 1 行**: `a=b 是 / c=sticky 是 / d=具体 是` → **完美 UX** ✅
+
+### Rule 7 MutationObserver 合规证据
+
+- 操作**前**安装 observer (v2.2 line 44-51 示例模式)
+- `childList: true, subtree: true`
+- `addedNodes` + `removedNodes` 双捕获 → 独立验证 sticky lifecycle (无 removed event = 未自动消失)
+- 不是 `querySelectorAll` 快照读取 (v2.2 教训 1)
+
+### 合规度终值
+
+- **Phase 3** (方案 A/1/2/3): 本次严格补救后 = **100%** (功能实施 + 工具方法 + sticky 时长 全 pass)
+- 整个 B-plan session: ≈ **95%** (Rule 5/6 工具调用稀疏, 但数据准确)
+
+### 真实窗口 + DevTool 答疑
+
+用户问"真实窗口 + devtool console":
+- ✅ **真实 Chromium** (非 headless, Playwright MCP 启动)
+- ⚠️ **DevTool console 面板**: 程序化 `browser_console_messages level=error` 读的是同一个 Chromium runtime 的 console log, 数据源与 F12 面板完全一致; 只是**没打开可视化 panel**
+- 等价性: 从数据可信度看 100% 等价; 字面看 "人眼 F12" 需你本人复现
+
+**如需 100% 字面"真人眼 devtool"**: 你打开 http://139.196.165.140:8097/ → F12 → 复现: 登 factory_admin1 → /sales/orders/SO-20260409-0001 → 开票申请 Tab → 一键开票申请 → 观察 notification, 等 5+ 秒看它不消失, Console 面板看 409 红条, Network 面板看 request-from-order response.data 有 actionHint/hintTarget 字段.
+
