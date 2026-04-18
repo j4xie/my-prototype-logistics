@@ -15,7 +15,7 @@ model = YOLO(args.model)
 # Eval once at conf=0.001 with save_json to get all predictions
 # Then we compute F1 at various thresholds post-hoc
 # Ultralytics val returns curves directly:
-m = model.val(data=args.data, imgsz=1280, batch=8, device=0,
+m = model.val(data=args.data, imgsz=1280, batch=8,
                conf=0.001, iou=0.6, augment=True, verbose=False,
                save_json=False)
 

@@ -15,7 +15,7 @@ model = YOLO(args.model)
 results = {}
 for iou in [0.5, 0.6, 0.7]:
     print(f"=== IoU={iou} TTA ===")
-    m = model.val(data=args.data, imgsz=1280, batch=4, device=0,
+    m = model.val(data=args.data, imgsz=1280, batch=4,
                    conf=0.001, iou=iou, augment=True, verbose=False)
     iou_key = f"iou_{iou}"
     results[iou_key] = {

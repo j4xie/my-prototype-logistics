@@ -16,12 +16,12 @@ model = YOLO(args.model)
 
 # Standard eval (reference)
 print(f"=== Standard @ imgsz={args.imgsz} ===")
-metrics_std = model.val(data=args.data, imgsz=args.imgsz, batch=8, device=0,
+metrics_std = model.val(data=args.data, imgsz=args.imgsz, batch=8,
                           conf=0.001, iou=0.6, augment=False, verbose=False)
 
 # TTA eval
 print(f"=== TTA @ imgsz={args.imgsz} ===")
-metrics_tta = model.val(data=args.data, imgsz=args.imgsz, batch=4, device=0,
+metrics_tta = model.val(data=args.data, imgsz=args.imgsz, batch=4,
                           conf=0.001, iou=0.6, augment=True, verbose=False)
 
 result = {

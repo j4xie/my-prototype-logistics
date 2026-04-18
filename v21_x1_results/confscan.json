@@ -1,0 +1,14 @@
+{
+  "overall_mAP50": 0.7080254330399436,
+  "per_class_mAP50": {
+    "insect": 0.8909601452840284,
+    "color_anomaly": 0.6487007232573091,
+    "bone": 0.7052150989373,
+    "glass": 0.7542579839159962,
+    "hair": 0.7823520394517675,
+    "mold": 0.4666666073932599
+  },
+  "per_class_best_conf": {
+    "error": "f1_curve not available, Ultralytics version incompatible"
+  }
+}

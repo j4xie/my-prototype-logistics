@@ -63,7 +63,7 @@ with open(f"{P1_VAL_ROOT}/data.yaml", "w") as f:
 
 # Eval
 model = YOLO(args.model)
-m = model.val(data=f"{P1_VAL_ROOT}/data.yaml", imgsz=1280, batch=8, device=0,
+m = model.val(data=f"{P1_VAL_ROOT}/data.yaml", imgsz=1280, batch=8,
                conf=0.001, iou=0.6, augment=True, verbose=False)
 result = {
     "overall_mAP50": float(m.box.map50),

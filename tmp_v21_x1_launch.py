@@ -2,11 +2,14 @@
 import paramiko, sys, time, os
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
+def _read(p):
+    return open(p, 'r', encoding='utf-8').read() if os.path.exists(p) else None
+
 REMOTE_SCRIPTS = {
-    "v21_eval_multiscale.py": open("v21_eval_multiscale.py").read() if os.path.exists("v21_eval_multiscale.py") else None,
-    "v21_eval_softnms.py": open("v21_eval_softnms.py").read() if os.path.exists("v21_eval_softnms.py") else None,
-    "v21_eval_conf_scan.py": open("v21_eval_conf_scan.py").read() if os.path.exists("v21_eval_conf_scan.py") else None,
-    "v21_eval_p1_holdout.py": open("v21_eval_p1_holdout.py").read() if os.path.exists("v21_eval_p1_holdout.py") else None,
+    "v21_eval_multiscale.py": _read("v21_eval_multiscale.py"),
+    "v21_eval_softnms.py": _read("v21_eval_softnms.py"),
+    "v21_eval_conf_scan.py": _read("v21_eval_conf_scan.py"),
+    "v21_eval_p1_holdout.py": _read("v21_eval_p1_holdout.py"),
 }
 
 REFINE2 = "/root/runs/E_V2_v11l_refine2/weights/best.pt"

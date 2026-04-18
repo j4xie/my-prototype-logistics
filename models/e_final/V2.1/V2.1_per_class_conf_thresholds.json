@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "version": "2.1",
+    "source": "X1 multi-scale TTA + recommended production defaults",
+    "val_dataset": "merged_v5_1_ultra val (3216 imgs)",
+    "base_model": "V2.1_primary (v11l_refine2 from V2.0)",
+    "created": "2026-04-18",
+    "notes": "Per-class conf empirically derived from V2.0 X1 eval. Production should A/B test these on-site with real data and adjust. Glass/mold use LOW conf for safety (miss-is-worse-than-false-alarm scenarios)."
+  },
+  "per_class": {
+    "insect": {
+      "conf": 0.25,
+      "rationale": "Strong signal, balanced F1. ULTRA val mAP50=0.891 TTA.",
+      "val_mAP50_tta": 0.891
+    },
+    "color_anomaly": {
+      "conf": 0.15,
+      "rationale": "Weak, moderate conf. val mAP50=0.649. Tune down if FP rate too high.",
+      "val_mAP50_tta": 0.649
+    },
+    "bone": {
+      "conf": 0.20,
+      "rationale": "Medium signal. val mAP50=0.705. Lower to 0.10 if missing small bones.",
+      "val_mAP50_tta": 0.705
+    },
+    "glass": {
+      "conf": 0.05,
+      "rationale": "SAFETY-CRITICAL: prefer false alarms over missed glass. val mAP50=0.754.",
+      "val_mAP50_tta": 0.754
+    },
+    "hair": {
+      "conf": 0.25,
+      "rationale": "Strong signal with some false positives. val mAP50=0.782.",
+      "val_mAP50_tta": 0.782
+    },
+    "mold": {
+      "conf": 0.03,
+      "rationale": "HARDEST class - low conf to maximize recall. val mAP50=0.467 (only 39 val imgs - high variance). Production should collect more mold data.",
+      "val_mAP50_tta": 0.467
+    }
+  },
+  "iou_threshold": 0.5,
+  "tta_enabled": true
+}
