@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.service.workstation.WorkstationCountingService;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.service.workstation.WorkstationCountingService.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -43,6 +44,7 @@ public class WorkstationCountingController {
     /**
      * 初始化工位计数会话
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/init")
     @Operation(summary = "初始化工位", description = "初始化工位计数会话，绑定摄像头、电子秤、工人和生产批次")
     public ResponseEntity<Map<String, Object>> initWorkstation(
@@ -72,6 +74,7 @@ public class WorkstationCountingController {
     /**
      * 停止工位计数会话
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/{workstationId}/stop")
     @Operation(summary = "停止工位", description = "停止工位计数会话，保存统计数据")
     public ResponseEntity<Map<String, Object>> stopWorkstation(
@@ -100,6 +103,7 @@ public class WorkstationCountingController {
     /**
      * 处理图像帧（AI识别完成手势）
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/{workstationId}/frame")
     @Operation(summary = "处理图像帧", description = "上传图像帧，AI识别完成手势自动计数")
     public ResponseEntity<Map<String, Object>> processFrame(
@@ -132,6 +136,7 @@ public class WorkstationCountingController {
     /**
      * 手动计数
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/{workstationId}/manual-count")
     @Operation(summary = "手动计数", description = "手动增加一个计数（用于补录或手势识别失败时），可传入重量")
     public ResponseEntity<Map<String, Object>> manualCount(
@@ -170,6 +175,7 @@ public class WorkstationCountingController {
     /**
      * 验证标签
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/{workstationId}/verify-label")
     @Operation(summary = "验证标签", description = "OCR识别标签，验证批次号是否匹配，检查打印质量")
     public ResponseEntity<Map<String, Object>> verifyLabel(

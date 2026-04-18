@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.WorkProcessDTO;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.service.WorkProcessService;
@@ -27,6 +28,7 @@ public class WorkProcessController {
 
     private final WorkProcessService workProcessService;
 
+    @RequirePermission({"production:read_write"})
     @PostMapping
     @Operation(summary = "创建工序")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -65,6 +67,7 @@ public class WorkProcessController {
         return ApiResponse.success(workProcessService.getById(factoryId, id));
     }
 
+    @RequirePermission({"production:read_write"})
     @PutMapping("/{id}")
     @Operation(summary = "更新工序")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -76,6 +79,7 @@ public class WorkProcessController {
         return ApiResponse.success(workProcessService.update(factoryId, id, dto));
     }
 
+    @RequirePermission({"production:read_write"})
     @DeleteMapping("/{id}")
     @Operation(summary = "删除工序")
     @PreAuthorize("hasRole('ADMIN')")
@@ -87,6 +91,7 @@ public class WorkProcessController {
         return ApiResponse.success();
     }
 
+    @RequirePermission({"production:read_write"})
     @PutMapping("/{id}/toggle-status")
     @Operation(summary = "切换工序启用/禁用状态")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -96,6 +101,7 @@ public class WorkProcessController {
         return ApiResponse.success(workProcessService.toggleStatus(factoryId, id));
     }
 
+    @RequirePermission({"production:read_write"})
     @PutMapping("/sort-order")
     @Operation(summary = "批量更新排序")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")

@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.entity.TimeClockRecord;
@@ -36,6 +37,7 @@ public class TimeClockController {
     /**
      * 上班打卡
      */
+    @RequirePermission({"hr:read_write"})
     @PostMapping("/clock-in")
     @Operation(summary = "上班打卡", description = "员工上班打卡，记录打卡时间、位置和设备信息。系统会自动判断是否迟到并记录")
     public ApiResponse<TimeClockRecord> clockIn(
@@ -55,6 +57,7 @@ public class TimeClockController {
     /**
      * 下班打卡
      */
+    @RequirePermission({"hr:read_write"})
     @PostMapping("/clock-out")
     @Operation(summary = "下班打卡", description = "员工下班打卡，记录下班时间并自动计算当日工作时长。系统会自动判断是否早退")
     public ApiResponse<TimeClockRecord> clockOut(
@@ -68,6 +71,7 @@ public class TimeClockController {
     /**
      * 开始休息
      */
+    @RequirePermission({"hr:read_write"})
     @PostMapping("/break-start")
     @Operation(summary = "开始休息", description = "记录员工开始休息的时间，用于计算有效工作时长。需要先完成上班打卡")
     public ApiResponse<TimeClockRecord> breakStart(
@@ -81,6 +85,7 @@ public class TimeClockController {
     /**
      * 结束休息
      */
+    @RequirePermission({"hr:read_write"})
     @PostMapping("/break-end")
     @Operation(summary = "结束休息", description = "记录员工结束休息的时间，自动计算休息时长并更新工作记录")
     public ApiResponse<TimeClockRecord> breakEnd(
@@ -144,6 +149,7 @@ public class TimeClockController {
     /**
      * 修改打卡记录
      */
+    @RequirePermission({"hr:read_write"})
     @PutMapping("/records/{recordId}")
     @Operation(summary = "修改打卡记录", description = "管理员手动修改打卡记录，用于处理异常打卡情况。需要记录修改人和修改原因")
     public ApiResponse<TimeClockRecord> editClockRecord(
