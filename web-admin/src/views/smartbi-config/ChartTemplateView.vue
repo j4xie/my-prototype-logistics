@@ -132,11 +132,12 @@ async function loadData() {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
     } else if (response.success === false) {
-      ElMessage.error(response.message || '加载数据失败');
+      ElMessage.error(response.message || '加载图表模板失败');
     }
   } catch (error) {
-    console.error('加载失败:', error);
-    ElMessage.error('加载数据失败');
+    // Apr 18 2026 bug #55: axios interceptor 已吐精确错误, 这里 fallback toast
+    // 会覆盖真实 message (Rule 7 "吞 message")。
+    console.error('加载图表模板失败:', error);
   } finally {
     loading.value = false;
   }
@@ -149,8 +150,8 @@ async function loadDataSources() {
       dataSources.value = response.data.content || [];
     }
   } catch (error) {
+    // 同上 bug #55
     console.error('加载数据源失败:', error);
-    ElMessage.error('加载数据源失败');
   }
 }
 

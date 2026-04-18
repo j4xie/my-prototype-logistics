@@ -107,7 +107,10 @@ export function abortSmartBIRequest(key: string): void {
  */
 export const PYTHON_SMARTBI_URL = import.meta.env.VITE_SMARTBI_URL || '/smartbi-api';
 const PYTHON_TIMEOUT_MS = 30000;
-export const PYTHON_LLM_TIMEOUT_MS = 200000; // LLM-heavy calls — must exceed Python retry chain (max ~139s after reduction)
+// Apr 18 2026 bug #56: 从 200s → 300s. Doc3 #16/#17 用户报告"财务看板/智能数据分析
+// 超时", 大 dashboard + 多图片 LLM 链调用在负载高时会超 200s. 300s 兜底给 Python 侧
+// 完成多轮 LLM + 图表渲染的时间. 若仍超时, 需后端优化 (非客户端单点能解决)。
+export const PYTHON_LLM_TIMEOUT_MS = 300000;
 export const PYTHON_HEADERS: Record<string, string> = {
   'Content-Type': 'application/json',
   'X-Internal-Secret': import.meta.env.VITE_PYTHON_SECRET || '',

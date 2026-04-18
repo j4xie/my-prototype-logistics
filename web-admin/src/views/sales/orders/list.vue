@@ -265,10 +265,16 @@ function calcBox(item: Record<string, unknown>) {
 
 async function handleCreate() {
   if (!form.value.customerId) return ElMessage.warning('请选择客户');
+  if (!form.value.items || form.value.items.length === 0) return ElMessage.warning('请至少添加一个订单明细');
+  // Apr 18 2026 bug #54: 用户报告"信息填写完整 无法提交 显示不为空" — 实际是前端
+  // 缺 productTypeId 空值校验, 漏到后端才 reject, 用户看文案困惑。
+  if (form.value.items.some((i: Record<string, unknown>) => !i.productTypeId)) return ElMessage.warning('请为所有明细选择产品');
   // 数量校验: 不允许0或负数
   if (form.value.items.some((i: Record<string, unknown>) => !i.quantity || Number(i.quantity) <= 0)) return ElMessage.warning('产品数量必须大于0');
   // 单位校验
   if (form.value.items.some((i: Record<string, unknown>) => !i.unit)) return ElMessage.warning('请填写所有明细的单位');
+  // 销售单价校验
+  if (form.value.items.some((i: Record<string, unknown>) => i.unitPrice == null || Number(i.unitPrice) < 0)) return ElMessage.warning('请填写所有明细的销售单价');
   // SKU 重复校验
   const productIds = form.value.items.map((i: Record<string, unknown>) => i.productTypeId).filter(Boolean);
   if (new Set(productIds).size !== productIds.length) return ElMessage.warning('同一订单不能添加重复的产品');
