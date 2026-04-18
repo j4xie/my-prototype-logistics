@@ -62,9 +62,16 @@ public class SupplyChainOrchestrator {
     private FactoryTriggerChainRepository triggerChainRepository;
 
     /**
-     * Canvas V2: Check if a configurable trigger chain exists for this event.
-     * If yes, skip the hardcoded logic (TriggerChainExecutor handles it).
+     * @deprecated Bug #296 design fix (2026-04-18): the "skip hardcoded if chain
+     * exists" semantics was fundamentally wrong — a configured chain adding one
+     * side-effect (e.g. auto-QC task) would silently disable all other core
+     * invariants (auto-FG, auto-BOM 扣料, 库存预留, PP 创建 etc). Chains are now
+     * treated as purely ADDITIVE via {@code TriggerChainExecutor}. Hardcoded
+     * handlers always run. Do NOT re-introduce early-return-on-configured-chain
+     * without a per-handler opt-out flag on the chain itself. See commit log.
      */
+    @Deprecated
+    @SuppressWarnings("unused")
     private boolean hasConfiguredChain(String factoryId, String eventType) {
         if (triggerChainRepository == null) return false;
         List<FactoryTriggerChain> chains = triggerChainRepository
@@ -85,10 +92,11 @@ public class SupplyChainOrchestrator {
     @EventListener
     @Transactional
     public void onSalesOrderConfirmed(SalesOrderConfirmedEvent event) {
-        if (hasConfiguredChain(event.getFactoryId(), "SalesOrderConfirmedEvent")) {
-            log.info("Trigger chain configured for SalesOrderConfirmedEvent — skipping hardcoded handler");
-            return;
-        }
+        // Bug #296 design fix: trigger chains (via TriggerChainExecutor) run additively
+        // alongside hardcoded handlers — not as replacements. Hardcoded logic is the
+        // business baseline (auto-FG, auto-BOM 扣料, auto-QC 任务, 库存预留, PP 创建
+        // 等 core invariants) and must always run. Chains can EXTEND behavior, never
+        // SKIP it. See commit 9259cc5ee root cause analysis.
         log.info("═══ 供应链通知: SO确认(等待财务审核) ═══ factoryId={}, SO={}",
                 event.getFactoryId(), event.getSalesOrderId());
         // 供应链联动已移至 onSalesOrderFinanceApproved，此处仅做记录
@@ -114,10 +122,7 @@ public class SupplyChainOrchestrator {
     @EventListener
     @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void onSalesOrderFinanceApproved(SalesOrderFinanceApprovedEvent event) {
-        if (hasConfiguredChain(event.getFactoryId(), "SalesOrderFinanceApprovedEvent")) {
-            log.info("Trigger chain configured for SalesOrderFinanceApprovedEvent — skipping hardcoded handler");
-            return;
-        }
+        // Bug #296 design fix: chains are additive, not replacements. See onSalesOrderConfirmed.
         log.info("═══ 供应链联动: 财务审核通过 ═══ factoryId={}, SO={}, approvedBy={}",
                 event.getFactoryId(), event.getSalesOrderId(), event.getApprovedBy());
 
@@ -159,10 +164,7 @@ public class SupplyChainOrchestrator {
     @EventListener
     @Transactional
     public void onMaterialReceived(MaterialReceivedEvent event) {
-        if (hasConfiguredChain(event.getFactoryId(), "MaterialReceivedEvent")) {
-            log.info("Trigger chain configured for MaterialReceivedEvent — skipping hardcoded handler");
-            return;
-        }
+        // Bug #296 design fix: chains are additive, not replacements. See onSalesOrderConfirmed.
         log.info("═══ 供应链联动: 物料入库 ═══ factoryId={}, material={}, qty={}",
                 event.getFactoryId(), event.getMaterialTypeId(), event.getReceivedQuantity());
 
@@ -202,10 +204,7 @@ public class SupplyChainOrchestrator {
     @Transactional
     public void onBatchCompleted(BatchCompletedEvent event) {
         ProductionBatch batch = event.getBatch();
-        if (hasConfiguredChain(batch.getFactoryId(), "BatchCompletedEvent")) {
-            log.info("Trigger chain configured for BatchCompletedEvent — skipping hardcoded handler");
-            return;
-        }
+        // Bug #296 design fix: chains are additive, not replacements. See onSalesOrderConfirmed.
         log.info("═══ 供应链联动: 批次完成 ═══ factoryId={}, batchId={}, goodQty={}",
                 batch.getFactoryId(), batch.getId(), batch.getGoodQuantity());
 
@@ -246,10 +245,7 @@ public class SupplyChainOrchestrator {
     @EventListener
     @Transactional
     public void onPaymentReceived(PaymentReceivedEvent event) {
-        if (hasConfiguredChain(event.getFactoryId(), "PaymentReceivedEvent")) {
-            log.info("Trigger chain configured for PaymentReceivedEvent — skipping hardcoded handler");
-            return;
-        }
+        // Bug #296 design fix: chains are additive, not replacements. See onSalesOrderConfirmed.
         log.info("═══ 供应链联动: 回款 ═══ factoryId={}, counterparty={}, amount={}",
                 event.getFactoryId(), event.getCounterpartyId(), event.getAmount());
         // TODO: Phase C — 回款门控出库
