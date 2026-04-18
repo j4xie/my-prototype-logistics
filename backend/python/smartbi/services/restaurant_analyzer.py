@@ -502,12 +502,17 @@ class RestaurantAnalyzer:
             result["timePeriodAnalysis"] = time_period
 
         # Dimension hints — tell frontend which conditional dimensions are available/missing
+        # Bug #38 fix: pass has_product/has_amount + actual menuQuadrant row count so
+        # available reflects both schema + runtime computed data (was hardcoded True).
         result["dimensionHints"] = detect_available_dimensions(
             df.columns.tolist(),
             has_date=date_col is not None,
             has_store=store_col is not None,
             has_category=category_col is not None,
             has_procurement=supplier_col is not None and (inbound_qty_col is not None or inbound_cost_col is not None),
+            has_product=product_col is not None,
+            has_amount=actual_col is not None,
+            menu_quadrant_row_count=len(quadrant.get("items", [])),
         )
 
         # Sanitize NaN/Infinity → None (prevents invalid JSON responses)

@@ -1,4 +1,4 @@
-【QA 测试通用执行准则 — 真端到端 + 核对 + 监控】v2.2 (Apr 18 2026)
+【QA 测试通用执行准则 — 真端到端 + 核对 + 监控】v2.2 (Apr 18 2026, r2 — 加入 Rule 9 数据抽检 + UX-F2 触发点经验)
 
 在开始执行本次任何测试任务之前, 以及执行过程中的每一步, 严格遵守以下通用准则.
 不管用户让我测什么功能/模块/流程, 都按这套标准来.
@@ -78,13 +78,33 @@
      * 文案泛泛 "失败" → Bug UX (用户懵)
      * silent (无 toast) → 严重 Bug
    - 工具: MutationObserver 抓到后, 额外检查:
-     - item.cls.includes('is-closable') → showClose 生效
+     - item.cls.includes('is-closable') → showClose 生效 (ElMessage)
+     - ElNotification 不用 'is-closable' class, 看是否有 '.el-notification__closeBtn' 子节点
      - 操作后等 5s 再读 log, 看 toast 是否还在 → sticky 验证
+
+9. 数据类页面 byte-match 不够 — 必须做业务合理性抽检 (Bug #37 教训)
+   - 定义: 图表 / 表格 / 列表类页面 (不是单一表单/详情), 数据从上传或 seed 来
+   - 陷阱: API 返回 22 行 → UI 显示 22 行 → byte-match 通过, 但前 3 行可能是 Excel
+     序号列 / 表头行 / 注释行被误当数据 (Bug #37 真实发生).
+   - 规则: Top N byte-match 只证明"传输无损", 不证明"数据有意义".
+     必须额外抽样:
+     a) 中段行 (index = len/2) — 避开 Top 和 Bottom 都是特殊值的可能
+     b) 末段 2-3 行 (最后一个数据 + 最后两个) — 特别看是否混入了注释行/合计行
+     c) 业务语义抽检: name 是否看起来像真实业务实体 (门店名/商品名/客户名),
+        而不是 "1.0/2.0/..." 纯数字, 不是 "门店名称" 这种表头字, 不是 "注：..." 开头
+   - 判定:
+     * Top 3 + 中段 + 末段都是合理业务数据 → 可信
+     * Top 3 OK 但末段混入纯数字/表头/注释 → 数据脏 bug (如 Bug #37)
+     * byte-match 过但业务语义异常 → 后端 aggregation 层未过滤 pseudo-rows
+   - 为什么这条重要:
+     "Top 3 revenue 正好是 6 位数带小数所以匹配" 可以是巧合, 不是证明
+     (Bug #34 原报告的陷阱). 至少 3-5 行抽检才能对抗巧合.
 
 诚实输出核对表: 哪些步骤达 deep 标准, 哪些只是 smoke, 哪些是 medium.
 禁止把 smoke 当 deep 报告.
 禁止把"系统层观察到错"等同于"用户体验正常".
 禁止跳过流程依赖错误的 UX 检查.
+禁止仅凭 Top N byte-match 断言"数据正确" — 必须 sample 中末段.
 
 
 专章: 为什么需要强 UI 反馈
@@ -251,3 +271,21 @@ Bug 分类 (5 类, 不要混并):
    修复: 加 Rule 7 + Rule 8 + 专章"为什么需要强 UI 反馈"
 4. error toast 3s 闪过对流程依赖 ERP → 用户错过关键信息
    修复: error sticky + showClose
+5. "Top 3 byte-match OK" 当作"数据正确" → 巧合 (金额恰好 6 位 + 2 位小数)
+   实际末段行是 Excel 序号 "1.0/2.0/..." 或"门店名称"表头或"注：..."注释 (Bug #37)
+   修复: 加 Rule 9 — 数据类页面必须中段 + 末段 3-5 行业务合理性抽检
+6. UX-F2 actionHint 真窗口触发困难 — 没找到 UI-driven 入口就宣告"代码存在不验证"
+   修复: 通过 SO 详情页 /发货记录 tab / 未分配批次的 DLV 点发货, 可靠触发 400 +
+   actionHint. 今后同类 UX-F2 真窗口补验用这条路径 (factory_admin1 / F001 / DLV
+   未分配批次).
+7. Bug #28 平反教训: 前端 toast 无 bug, 是 DOM 抓取时机 race condition 误诊
+   修复: 这条直接催生 Rule 7 MutationObserver. 任何类似 "前端吞错误" 结论必须先
+   用 MutationObserver 复查才能下定论.
+
+触发点 quick reference (真窗口补验用):
+- UX-F2 actionHint (withHint 业务错): SO-20260409-0002 详情 → 发货记录 tab →
+  DLV-20260418-9490 (未分配批次, 草稿态) 点"发货" → 400 + ElNotification
+- UX-F1 sticky toast (非 actionHint 错误): 故意访问 /F001/sales/deliveries?page=0
+  (Spring page 从 1 开始) → 400 → el-message el-message--error is-closable sticky
+- 数据抽检 (Rule 9): F002 门店对比页 upload 3735 (42 行蜀大侠连锁) 是 Bug #37
+  修复验证的标准样本 — 8 家真门店过滤 14 条 pseudo 行

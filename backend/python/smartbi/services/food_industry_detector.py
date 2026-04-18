@@ -314,17 +314,36 @@ def detect_available_dimensions(
     has_store: bool = False,
     has_category: bool = False,
     has_procurement: bool = False,
+    has_product: bool = False,
+    has_amount: bool = False,
+    menu_quadrant_row_count: int = 0,
 ) -> List[Dict[str, Any]]:
     """
     Report which analysis dimensions are available vs missing based on detected columns.
     Returns a list of dimension hints for frontend display.
+
+    Bug #38 fix: menuQuadrant.available was hardcoded True. Now reflects:
+      - column schema (has_product + has_amount) AND
+      - runtime computed row count (menu_quadrant_row_count > 0)
+    Frontend filter `!d.available && d.hint` now correctly surfaces hint when
+    data is too sparse to produce quadrant classification.
     """
+    menu_quadrant_col_ok = has_product and has_amount
+    menu_quadrant_available = menu_quadrant_col_ok and menu_quadrant_row_count > 0
+    if menu_quadrant_col_ok and not menu_quadrant_available:
+        menu_quadrant_hint = "字段齐全但本次数据行数/去重商品数过少,未产出四象限分类 (建议 ≥10 行 + 5+ 种商品)"
+    elif not menu_quadrant_col_ok:
+        menu_quadrant_hint = "上传数据需包含「商品名称」和「实收/销售金额」列"
+    else:
+        menu_quadrant_hint = None
+
     dimensions = [
         {
             "key": "menuQuadrant",
             "label": "菜品四象限",
-            "available": True,  # Always available if product+amount cols exist
+            "available": menu_quadrant_available,
             "requiredCols": "商品名称, 实收/销售金额",
+            "hint": menu_quadrant_hint,
         },
         {
             "key": "storeComparison",
