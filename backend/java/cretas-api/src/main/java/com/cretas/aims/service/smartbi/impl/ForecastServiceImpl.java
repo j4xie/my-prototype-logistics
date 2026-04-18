@@ -4,6 +4,7 @@ import com.cretas.aims.client.PythonSmartBIClient;
 import com.cretas.aims.config.smartbi.PythonSmartBIConfig;
 import com.cretas.aims.dto.smartbi.ForecastPoint;
 import com.cretas.aims.dto.smartbi.ForecastResult;
+import com.cretas.aims.dto.smartbi.PythonForecastResponse;
 import com.cretas.aims.entity.smartbi.SmartBiSalesData;
 import com.cretas.aims.entity.smartbi.enums.ForecastAlgorithm;
 import com.cretas.aims.repository.smartbi.SmartBiSalesDataRepository;
@@ -11,13 +12,13 @@ import com.cretas.aims.service.smartbi.ForecastService;
 import com.cretas.aims.service.smartbi.MetricCalculatorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -42,12 +43,8 @@ import java.util.stream.Collectors;
 public class ForecastServiceImpl implements ForecastService {
 
     private final SmartBiSalesDataRepository salesDataRepository;
-
-    @Autowired
-    private PythonSmartBIClient pythonClient;
-
-    @Autowired
-    private PythonSmartBIConfig pythonConfig;
+    private final PythonSmartBIClient pythonClient;
+    private final PythonSmartBIConfig pythonConfig;
 
     // 计算精度配置
     private static final int SCALE = 6;
@@ -81,54 +78,43 @@ public class ForecastServiceImpl implements ForecastService {
     /**
      * 使用 Python 服务进行销售预测
      *
-     * Python 服务使用先进的机器学习模型（如 Prophet, ARIMA）进行预测。
-     * 不再有 Java fallback，Python 服务必须可用。
+     * 方案 E (2026-04-17): Java 从数据库查历史序列 → Python 纯算预测。
+     * Python 服务 /api/forecast/predict 需要 data: List[float] 参数，
+     * 由 Java 先从 SmartBiSalesDataRepository 拉取历史数据再传入。
      *
      * @param factoryId    工厂ID
      * @param startDate    开始日期
      * @param endDate      结束日期
      * @param forecastDays 预测天数
-     * @return 预测结果
-     * @throws RuntimeException 如果 Python 服务不可用或失败
+     * @return 预测结果；历史数据不足时返回空结果（不抛异常）
      */
     private ForecastResult forecastSalesWithPython(String factoryId, LocalDate startDate,
                                                     LocalDate endDate, int forecastDays) {
-        if (!pythonConfig.isEnabled()) {
-            throw new RuntimeException("Python SmartBI 服务未启用。预测功能完全依赖 Python 服务 (端口 8083)。");
-        }
-
-        if (!pythonClient.isAvailable()) {
-            throw new RuntimeException("Python SmartBI 服务不可用。请检查服务是否在 " + pythonConfig.getUrl() + " 运行。");
-        }
-
-        log.info("使用 Python SmartBI 服务进行销售预测: factoryId={}", factoryId);
-        try {
-            ForecastResult result = pythonClient.forecastSales(factoryId, startDate, endDate, forecastDays);
-
-            if (result != null && result.getForecastPoints() != null && !result.getForecastPoints().isEmpty()) {
-                log.info("Python SmartBI 销售预测成功: algorithm={}, confidence={}",
-                        result.getAlgorithm(), result.getConfidence());
-                return result;
-            }
-
-            // Python 返回空结果，返回空预测结果
-            log.warn("Python SmartBI 销售预测返回空结果");
+        // 方案 E (2026-04-17): Java 查历史 + Python 纯算
+        List<Object[]> trend = salesDataRepository.findDailySalesTrend(factoryId, startDate, endDate);
+        if (trend.size() < 3) {
+            log.warn("销售历史数据不足 3 天, 无法预测: factoryId={}, 数据点={}", factoryId, trend.size());
             return buildEmptyForecastResult(MetricCalculatorService.SALES_AMOUNT, ForecastAlgorithm.AUTO, startDate, endDate);
-        } catch (java.io.IOException e) {
-            // Contract mismatch between Java (sends date-range query) and Python
-            // (/api/forecast/predict expects `data: List[float]` materialized).
-            // Python returns 422 "field required" every time. Known architectural
-            // gap — proper fix requires Java to fetch sales-series from DB first
-            // and include it in the request. Until that refactor, demote the
-            // recurring 422 to WARN + return empty forecast so NL query keeps
-            // responding to the user (just without forecast data).
-            String msg = e.getMessage() != null ? e.getMessage() : "";
-            if (msg.contains("status=422") && msg.contains("field required")) {
-                log.warn("Python SmartBI 销售预测契约不匹配 (Java 未传 data 历史序列, 待架构重构): factoryId={}, msg={}",
-                        factoryId, msg.length() > 200 ? msg.substring(0, 200) : msg);
+        }
+
+        List<Double> data = trend.stream()
+                .map(row -> ((BigDecimal) row[1]).doubleValue())
+                .collect(Collectors.toList());
+
+        log.info("Python forecast 调用: factoryId={}, dataPoints={}, periods={}",
+                factoryId, data.size(), forecastDays);
+        try {
+            PythonForecastResponse resp = pythonClient.forecastWithData(data, forecastDays, "auto");
+            if (resp == null || !resp.isSuccess() || resp.getPredictions() == null || resp.getPredictions().isEmpty()) {
+                log.warn("Python forecast 返回空/失败: success={}, error={}",
+                        resp != null && resp.isSuccess(),
+                        resp != null ? resp.getError() : "null response");
                 return buildEmptyForecastResult(MetricCalculatorService.SALES_AMOUNT, ForecastAlgorithm.AUTO, startDate, endDate);
             }
-            throw new RuntimeException("Python SmartBI 销售预测失败: " + e.getMessage(), e);
+            return buildForecastResultFromPython(resp, MetricCalculatorService.SALES_AMOUNT, startDate, endDate);
+        } catch (java.io.IOException e) {
+            log.warn("Python forecast IO 失败: factoryId={}, msg={}", factoryId, e.getMessage());
+            return buildEmptyForecastResult(MetricCalculatorService.SALES_AMOUNT, ForecastAlgorithm.AUTO, startDate, endDate);
         }
     }
 
@@ -684,6 +670,74 @@ public class ForecastServiceImpl implements ForecastService {
         }
 
         return desc.toString();
+    }
+
+    /**
+     * 把 Python /api/forecast/predict 的响应映射为 Java ForecastResult.
+     * 预测日期起点 = endDate + 1 天, 逐日递增.
+     *
+     * @since 2026-04-17 (方案 E)
+     */
+    private ForecastResult buildForecastResultFromPython(PythonForecastResponse resp,
+                                                          String metricType,
+                                                          LocalDate startDate,
+                                                          LocalDate endDate) {
+        List<Double> preds = resp.getPredictions();
+        List<Double> lower = resp.getLowerBound() != null ? resp.getLowerBound() : preds;
+        List<Double> upper = resp.getUpperBound() != null ? resp.getUpperBound() : preds;
+
+        List<ForecastPoint> points = new ArrayList<>(preds.size());
+        for (int i = 0; i < preds.size(); i++) {
+            LocalDate date = endDate.plusDays((long) i + 1);
+            BigDecimal value = BigDecimal.valueOf(preds.get(i)).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal lo = BigDecimal.valueOf(i < lower.size() ? lower.get(i) : preds.get(i)).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal up = BigDecimal.valueOf(i < upper.size() ? upper.get(i) : preds.get(i)).setScale(2, RoundingMode.HALF_UP);
+            points.add(ForecastPoint.of(date, value, lo, up));
+        }
+
+        ForecastAlgorithm algo = mapPythonAlgorithm(resp.getAlgorithm());
+        String period = String.format("%s 至 %s",
+                startDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
+                endDate.format(DateTimeFormatter.ISO_LOCAL_DATE));
+
+        return ForecastResult.builder()
+                .forecastPoints(points)
+                .algorithm(algo)
+                .confidence(new BigDecimal("95.00"))
+                .metricType(metricType)
+                .periodDescription(period)
+                .historicalPointCount(resp.getInputLength() != null ? resp.getInputLength() : 0)
+                .forecastPointCount(points.size())
+                .generatedAt(LocalDateTime.now())
+                .trend(computeTrend(points))
+                .growthRate(BigDecimal.ZERO)
+                .build();
+    }
+
+    /**
+     * Python 算法名 (小写下划线) → Java enum.
+     */
+    private ForecastAlgorithm mapPythonAlgorithm(String pythonName) {
+        if (pythonName == null) return ForecastAlgorithm.AUTO;
+        switch (pythonName.toLowerCase()) {
+            case "moving_average": return ForecastAlgorithm.MOVING_AVERAGE;
+            case "linear_trend": return ForecastAlgorithm.LINEAR_TREND;
+            case "exponential_smoothing": return ForecastAlgorithm.EXPONENTIAL_SMOOTHING;
+            default: return ForecastAlgorithm.AUTO;
+        }
+    }
+
+    /**
+     * 根据预测首尾点判断趋势.
+     */
+    private String computeTrend(List<ForecastPoint> points) {
+        if (points.size() < 2) return "STABLE";
+        BigDecimal first = points.get(0).getValue();
+        BigDecimal last = points.get(points.size() - 1).getValue();
+        int cmp = last.compareTo(first);
+        if (cmp > 0) return "UP";
+        if (cmp < 0) return "DOWN";
+        return "STABLE";
     }
 
     /**
