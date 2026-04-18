@@ -1,0 +1,32 @@
+=== V2.3 Acid Test Manifest ===
+Purpose: Chain of custody for 3 held-out production images
+These images are NEVER to be used in training (any phase, any dataset).
+Selection: random.sample(sorted(all_imgs), 3), seed=20260418
+Source dir: C:\Users\Steve\my-prototype-logistics\real_production_imgs
+Date: 2026-04-18
+
+SHA256 hashes (source file integrity):
+  7151066a8007b87f4c8ccc4bf177b5c1310c85505de40732306ecfa53d974b7a  d07a8065e458d21039944386171a985d.jpg
+  944d11c18619401844e2b5514c72f6a5f0affcd02b1c844633f8c3de9c09732a  276dd595777e2f845893df9d7234e7d2.png
+  cbfbdf8c9b88d952d58ccdc75b252a194b35b8a124375b43d5195d29da74aa44  8f9d06f3d11a8c355ba755ac3b722d1c.jpg
+
+Training pool (14 imgs, usable for fine-tune/val):
+  030630a8d01f80c5f642d567e58bbfe2.jpg
+  0ca14adbed1f8457cdcf8be31b824cb3.jpg
+  2fe6426462ffacb7e90a1e3b27a76af6.jpg
+  5260c3df82262bc4c1524e31c81e781e.jpg
+  5dc90e58b6fea90af783359464390a71.jpg
+  68c794ecf7893fae08ef67f36054d415.jpg
+  6c307682e93f6d14adad5813ae6c8466.jpg
+  8429b0fc805a760ed4204d900b63535c.jpg
+  be1273628822519c43c40c0fa1487b32.jpg
+  c29ddc34c155d536379ebc8296cf7d5e.jpg
+  c56d3bee8fddecbee45344524bf102c4.jpg
+  e6a9a30e315a13ac3580e2e3f5c95c7a.jpg
+  eab7cee91b243848b6565dad060d5262.jpg
+  ee150634ebe2f1eeeed023a4a26581ec.jpg
+
+VERIFICATION:
+  Deliver time: compare sha256 of acid_test/*.jpg vs manifest lines above.
+  Expected: all 3 hashes match exactly.
+  If mismatch: ACID TEST COMPROMISED — reject V2.3 results.
