@@ -51,7 +51,7 @@ public class PermissionServiceImpl implements PermissionService {
         dispatcherPerms.put("warehouse", "read");
         dispatcherPerms.put("quality", "read");
         dispatcherPerms.put("procurement", "read");
-        dispatcherPerms.put("sales", "read");       // 新增: 可查看销售数据
+        dispatcherPerms.put("sales", "read_write"); // Apr 18 2026 bug #45: 调度员需能提交/审核/驳回 SO (协调生产发货)
         dispatcherPerms.put("hr", "read");
         dispatcherPerms.put("equipment", "read");
         dispatcherPerms.put("finance", "read");     // 新增: 可查看财务分析
