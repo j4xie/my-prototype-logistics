@@ -1,8 +1,22 @@
 /**
  * 权限状态管理
+ *
+ * 4-layer resolution (per design spec 2026-04-18-permission-matrix-ai-driven-design.md):
+ * - L2 (factory override from DB) → L1 (platform default from DB) → hardcoded fallback
+ *
+ * Hardcoded PERMISSION_MATRIX below is kept as FALLBACK for DB-unavailable scenarios
+ * (initial load race, network error, offline). Primary source is API at login:
+ * GET /api/admin/role-permissions + GET /F001/canvas/role-module-override.
  */
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import {
+  getPlatformPermissions,
+  getFactoryOverride,
+  type PlatformPermission,
+  type RoleModuleOverride,
+  type PermissionLevel as ApiPermissionLevel,
+} from '@/api/permissionApi';
 
 // 权限矩阵 - 定义每个角色对每个模块的权限
 type PermissionLevel = 'rw' | 'r' | 'w' | '-';
@@ -204,15 +218,91 @@ export const usePermissionStore = defineStore('permission', () => {
   const currentFactoryId = ref<string>('');
   const currentFactoryType = ref<string>('');
 
+  // DB-driven state (Phase 3 Task 3.2)
+  const dbPermissions = ref<ModulePermissions | null>(null);
+  const isDbLoaded = ref(false);
+  const dbLoadError = ref<string | null>(null);
+  const lastLoadTs = ref<number>(0);
+  const LOAD_DEBOUNCE_MS = 30_000;  // Avoid redundant fetches within 30s
+
   function setRole(role: string, factoryId?: string, factoryType?: string) {
+    const roleChanged = currentRole.value !== (role || 'unactivated')
+      || currentFactoryId.value !== (factoryId || '');
     currentRole.value = role || 'unactivated';
     currentFactoryId.value = factoryId || '';
     currentFactoryType.value = factoryType || '';
+    if (roleChanged) {
+      // Invalidate DB cache when identity changes
+      dbPermissions.value = null;
+      isDbLoaded.value = false;
+      dbLoadError.value = null;
+      lastLoadTs.value = 0;
+    }
+    // Fire-and-forget async load (non-blocking)
+    if (role && role !== 'unactivated' && factoryId) {
+      void loadFromDb();
+    }
+  }
+
+  /**
+   * Load permissions from L1 + L2 API, merge for current role, fill dbPermissions.
+   * Failures set dbLoadError and leave dbPermissions null (canWrite falls back to hardcoded).
+   */
+  async function loadFromDb(): Promise<void> {
+    const now = Date.now();
+    if (now - lastLoadTs.value < LOAD_DEBOUNCE_MS && isDbLoaded.value) return;
+    lastLoadTs.value = now;
+    dbLoadError.value = null;
+    try {
+      const [l1Rows, l2Map] = await Promise.all([
+        getPlatformPermissions(),
+        currentFactoryId.value
+          ? getFactoryOverride(currentFactoryId.value).catch(() => ({} as RoleModuleOverride))
+          : Promise.resolve({} as RoleModuleOverride),
+      ]);
+      dbPermissions.value = mergeLayers(l1Rows, l2Map, currentRole.value);
+      isDbLoaded.value = true;
+    } catch (e) {
+      dbLoadError.value = (e as Error)?.message || 'Failed to load permissions';
+      isDbLoaded.value = false;
+      dbPermissions.value = null;
+    }
+  }
+
+  /**
+   * Merge L1 (platform defaults for this role) + L2 (factory override for this role).
+   * Returns ModulePermissions map for the role (fallback rw/r/w/- strings).
+   */
+  function mergeLayers(
+    l1Rows: PlatformPermission[],
+    l2Map: RoleModuleOverride,
+    role: string,
+  ): ModulePermissions {
+    const result: Partial<ModulePermissions> = {};
+    // L1 — rows for this role only
+    for (const p of l1Rows) {
+      if (p.roleCode === role) {
+        (result as Record<string, PermissionLevel>)[p.moduleCode] = p.permissionLevel;
+      }
+    }
+    // L2 — overlay override for this role
+    const override = l2Map[role];
+    if (override) {
+      for (const [mod, level] of Object.entries(override)) {
+        (result as Record<string, PermissionLevel>)[mod] = level as PermissionLevel;
+      }
+    }
+    return result as ModulePermissions;
   }
 
   // Getters
+  // Phase 3: prefer DB-driven dbPermissions, fallback to hardcoded for race/offline/error.
   const currentPermissions = computed((): ModulePermissions => {
-    const rolePerms = { ...(PERMISSION_MATRIX[currentRole.value] || PERMISSION_MATRIX['unactivated']) };
+    // Source selection: DB (L1+L2 merged) when loaded and for current role, else hardcoded fallback.
+    const source = (isDbLoaded.value && dbPermissions.value)
+      ? dbPermissions.value
+      : (PERMISSION_MATRIX[currentRole.value] || PERMISSION_MATRIX['unactivated']);
+    const rolePerms: ModulePermissions = { ...source };
     const typeFilter = currentFactoryType.value ? FACTORY_TYPE_MODULE_FILTER[currentFactoryType.value] : undefined;
     if (typeFilter) {
       for (const [mod, level] of Object.entries(typeFilter)) {
@@ -281,6 +371,11 @@ export const usePermissionStore = defineStore('permission', () => {
     loadedRoutes,
     currentRole,
     currentPermissions,
+    // DB-driven state (Phase 3)
+    dbPermissions,
+    isDbLoaded,
+    dbLoadError,
+    loadFromDb,
     setRole,
     canAccess,
     canWrite,
