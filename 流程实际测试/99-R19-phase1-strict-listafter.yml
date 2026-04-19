@@ -1,0 +1,287 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - img "Logo" [ref=e6]
+      - generic [ref=e7]: 白垩纪AI Agent
+    - menubar [ref=e11]:
+      - menuitem "首页" [ref=e12] [cursor=pointer]:
+        - img [ref=e14]
+        - text: 首页
+      - menuitem "生产管理" [ref=e16]:
+        - generic [ref=e17] [cursor=pointer]:
+          - img [ref=e19]
+          - generic [ref=e21]: 生产管理
+          - img [ref=e23]
+      - menuitem "仓储管理" [ref=e25]:
+        - generic [ref=e26] [cursor=pointer]:
+          - img [ref=e28]
+          - generic [ref=e32]: 仓储管理
+          - img [ref=e34]
+      - menuitem "质量管理" [ref=e36]:
+        - generic [ref=e37] [cursor=pointer]:
+          - img [ref=e39]
+          - generic [ref=e41]: 质量管理
+          - img [ref=e43]
+      - menuitem "采购管理" [ref=e45]:
+        - generic [ref=e46] [cursor=pointer]:
+          - img [ref=e48]
+          - generic [ref=e50]: 采购管理
+          - img [ref=e52]
+      - menuitem "销售管理" [ref=e54]:
+        - generic [ref=e55] [cursor=pointer]:
+          - img [ref=e57]
+          - generic [ref=e59]: 销售管理
+          - img [ref=e61]
+      - menuitem "调拨管理" [ref=e63]:
+        - generic [ref=e64] [cursor=pointer]:
+          - img [ref=e66]
+          - generic [ref=e68]: 调拨管理
+          - img [ref=e70]
+      - menuitem "设备管理" [ref=e72]:
+        - generic [ref=e73] [cursor=pointer]:
+          - img [ref=e75]
+          - generic [ref=e77]: 设备管理
+          - img [ref=e79]
+      - menuitem "研发管理" [expanded] [ref=e81]:
+        - generic [ref=e82] [cursor=pointer]:
+          - generic [ref=e84]: 研发管理
+          - img [ref=e86]
+        - menu [ref=e88]:
+          - menuitem "研发样品管理" [ref=e89] [cursor=pointer]
+      - menuitem "数据分析" [ref=e90]:
+        - generic [ref=e91] [cursor=pointer]:
+          - img [ref=e93]
+          - generic [ref=e95]: 数据分析
+          - img [ref=e97]
+      - menuitem "智能调度" [ref=e99]:
+        - generic [ref=e100] [cursor=pointer]:
+          - img [ref=e102]
+          - generic [ref=e104]: 智能调度
+          - img [ref=e106]
+      - menuitem "生产分析" [ref=e108]:
+        - generic [ref=e109] [cursor=pointer]:
+          - img [ref=e111]
+          - generic [ref=e113]: 生产分析
+          - img [ref=e115]
+      - menuitem "智能BI" [ref=e117]:
+        - generic [ref=e118] [cursor=pointer]:
+          - img [ref=e120]
+          - generic [ref=e122]: 智能BI
+          - img [ref=e124]
+  - generic [ref=e126]:
+    - banner [ref=e127]:
+      - generic [ref=e128]:
+        - img [ref=e130] [cursor=pointer]
+        - navigation "面包屑" [ref=e132]:
+          - generic [ref=e133]:
+            - link "研发管理" [ref=e134]
+            - text: /
+          - link "研发样品管理" [ref=e136]
+      - generic [ref=e137]:
+        - img [ref=e139] [cursor=pointer]
+        - img [ref=e142] [cursor=pointer]
+        - button "dispatcher1 调度" [ref=e145] [cursor=pointer]:
+          - img [ref=e148]
+          - generic [ref=e150]:
+            - generic [ref=e151]: dispatcher1
+            - generic [ref=e152]: 调度
+    - main [ref=e153]:
+      - generic [ref=e155]:
+        - generic [ref=e157]:
+          - generic [ref=e158]:
+            - generic [ref=e159]: 研发管理
+            - radiogroup "radio-group" [ref=e160]:
+              - generic [ref=e161]:
+                - radio "研发需求" [ref=e162]
+                - generic [ref=e163] [cursor=pointer]: 研发需求
+              - generic [ref=e164]:
+                - radio "样品管理" [checked] [ref=e165]
+                - generic [ref=e166] [cursor=pointer]: 样品管理
+              - generic [ref=e167]:
+                - radio "报价任务" [ref=e168]
+                - generic [ref=e169] [cursor=pointer]: 报价任务
+          - button "新建样品" [ref=e171] [cursor=pointer]:
+            - generic [ref=e172]: 新建样品
+        - generic [ref=e173]:
+          - generic [ref=e174]:
+            - generic [ref=e176]:
+              - img [ref=e179]
+              - textbox "样品名称" [ref=e181]
+            - textbox "客户筛选" [ref=e184]
+            - generic [ref=e186] [cursor=pointer]:
+              - generic:
+                - combobox [ref=e188]
+                - generic [ref=e189]: 产品状态
+              - img [ref=e192]
+            - button "搜索" [ref=e194] [cursor=pointer]:
+              - img [ref=e196]
+              - generic [ref=e198]: 搜索
+            - button "重置" [ref=e199] [cursor=pointer]:
+              - img [ref=e201]
+              - generic [ref=e203]: 重置
+          - generic [ref=e205]:
+            - table [ref=e207]:
+              - rowgroup [ref=e218]:
+                - row "样品编码 样品名称 客户名称 成品规格 产品级别 业务员 储存方式 产品状态 操作" [ref=e219]:
+                  - columnheader "样品编码" [ref=e220]:
+                    - generic [ref=e221]: 样品编码
+                  - columnheader "样品名称" [ref=e222]:
+                    - generic [ref=e223]: 样品名称
+                  - columnheader "客户名称" [ref=e224]:
+                    - generic [ref=e225]: 客户名称
+                  - columnheader "成品规格" [ref=e226]:
+                    - generic [ref=e227]: 成品规格
+                  - columnheader "产品级别" [ref=e228]:
+                    - generic [ref=e229]: 产品级别
+                  - columnheader "业务员" [ref=e230]:
+                    - generic [ref=e231]: 业务员
+                  - columnheader "储存方式" [ref=e232]:
+                    - generic [ref=e233]: 储存方式
+                  - columnheader "产品状态" [ref=e234]:
+                    - generic [ref=e235]: 产品状态
+                  - columnheader "操作" [ref=e236]:
+                    - generic [ref=e237]: 操作
+            - table [ref=e242]:
+              - rowgroup [ref=e253]:
+                - row "SP-20260419-1254 phase1-strict-deep-20260419 - - 待研发 追踪记录 提交审核" [ref=e466]:
+                  - cell "SP-20260419-1254" [ref=e467]:
+                    - generic [ref=e256]: SP-20260419-1254
+                  - cell "phase1-strict-deep-20260419" [ref=e468]:
+                    - generic [ref=e258]: phase1-strict-deep-20260419
+                  - cell [ref=e259]
+                  - cell [ref=e260]
+                  - cell "-" [ref=e261]:
+                    - generic [ref=e262]: "-"
+                  - cell [ref=e263]
+                  - cell "-" [ref=e264]:
+                    - generic [ref=e265]: "-"
+                  - cell "待研发" [ref=e266]:
+                    - generic [ref=e269]: 待研发
+                  - cell "追踪记录 提交审核" [ref=e270]:
+                    - generic [ref=e271]:
+                      - button "追踪记录" [ref=e272] [cursor=pointer]:
+                        - generic [ref=e273]: 追踪记录
+                      - button "提交审核" [ref=e274] [cursor=pointer]:
+                        - generic [ref=e275]: 提交审核
+                - row "SP-20260419-6802 smoke2 - - 待研发 追踪记录 提交审核" [ref=e469]:
+                  - cell "SP-20260419-6802" [ref=e470]:
+                    - generic [ref=e278]: SP-20260419-6802
+                  - cell "smoke2" [ref=e471]:
+                    - generic [ref=e280]: smoke2
+                  - cell [ref=e281]
+                  - cell [ref=e282]
+                  - cell "-" [ref=e283]:
+                    - generic [ref=e284]: "-"
+                  - cell [ref=e285]
+                  - cell "-" [ref=e286]:
+                    - generic [ref=e287]: "-"
+                  - cell "待研发" [ref=e288]:
+                    - generic [ref=e291]: 待研发
+                  - cell "追踪记录 提交审核" [ref=e292]:
+                    - generic [ref=e293]:
+                      - button "追踪记录" [ref=e294] [cursor=pointer]:
+                        - generic [ref=e295]: 追踪记录
+                      - button "提交审核" [ref=e296] [cursor=pointer]:
+                        - generic [ref=e297]: 提交审核
+                - row "SP-20260419-9297 smoke-L1-default - - 待研发 追踪记录 提交审核" [ref=e472]:
+                  - cell "SP-20260419-9297" [ref=e473]:
+                    - generic [ref=e300]: SP-20260419-9297
+                  - cell "smoke-L1-default" [ref=e474]:
+                    - generic [ref=e302]: smoke-L1-default
+                  - cell [ref=e303]
+                  - cell [ref=e304]
+                  - cell "-" [ref=e305]:
+                    - generic [ref=e306]: "-"
+                  - cell [ref=e307]
+                  - cell "-" [ref=e308]:
+                    - generic [ref=e309]: "-"
+                  - cell "待研发" [ref=e310]:
+                    - generic [ref=e313]: 待研发
+                  - cell "追踪记录 提交审核" [ref=e314]:
+                    - generic [ref=e315]:
+                      - button "追踪记录" [ref=e316] [cursor=pointer]:
+                        - generic [ref=e317]: 追踪记录
+                      - button "提交审核" [ref=e318] [cursor=pointer]:
+                        - generic [ref=e319]: 提交审核
+                - row "SP-20260419-1872 smoke-test-3 - - 待研发 追踪记录 提交审核" [ref=e475]:
+                  - cell "SP-20260419-1872" [ref=e476]:
+                    - generic [ref=e322]: SP-20260419-1872
+                  - cell "smoke-test-3" [ref=e477]:
+                    - generic [ref=e324]: smoke-test-3
+                  - cell [ref=e325]
+                  - cell [ref=e326]
+                  - cell "-" [ref=e327]:
+                    - generic [ref=e328]: "-"
+                  - cell [ref=e329]
+                  - cell "-" [ref=e330]:
+                    - generic [ref=e331]: "-"
+                  - cell "待研发" [ref=e332]:
+                    - generic [ref=e335]: 待研发
+                  - cell "追踪记录 提交审核" [ref=e336]:
+                    - generic [ref=e337]:
+                      - button "追踪记录" [ref=e338] [cursor=pointer]:
+                        - generic [ref=e339]: 追踪记录
+                      - button "提交审核" [ref=e340] [cursor=pointer]:
+                        - generic [ref=e341]: 提交审核
+                - row "SP-20260419-9164 smoke-test-2 - - 待研发 追踪记录 提交审核" [ref=e478]:
+                  - cell "SP-20260419-9164" [ref=e479]:
+                    - generic [ref=e344]: SP-20260419-9164
+                  - cell "smoke-test-2" [ref=e480]:
+                    - generic [ref=e346]: smoke-test-2
+                  - cell [ref=e347]
+                  - cell [ref=e348]
+                  - cell "-" [ref=e349]:
+                    - generic [ref=e350]: "-"
+                  - cell [ref=e351]
+                  - cell "-" [ref=e352]:
+                    - generic [ref=e353]: "-"
+                  - cell "待研发" [ref=e354]:
+                    - generic [ref=e357]: 待研发
+                  - cell "追踪记录 提交审核" [ref=e358]:
+                    - generic [ref=e359]:
+                      - button "追踪记录" [ref=e360] [cursor=pointer]:
+                        - generic [ref=e361]: 追踪记录
+                      - button "提交审核" [ref=e362] [cursor=pointer]:
+                        - generic [ref=e363]: 提交审核
+                - row "SP-20260419-2109 phase1-verify-rd - - 待研发 追踪记录 提交审核" [ref=e481]:
+                  - cell "SP-20260419-2109" [ref=e482]:
+                    - generic [ref=e366]: SP-20260419-2109
+                  - cell "phase1-verify-rd" [ref=e483]:
+                    - generic [ref=e368]: phase1-verify-rd
+                  - cell [ref=e484]
+                  - cell [ref=e485]
+                  - cell "-" [ref=e373]:
+                    - generic [ref=e374]: "-"
+                  - cell [ref=e375]
+                  - cell "-" [ref=e376]:
+                    - generic [ref=e377]: "-"
+                  - cell "待研发" [ref=e486]:
+                    - generic [ref=e381]: 待研发
+                  - cell "追踪记录 提交审核" [ref=e487]:
+                    - generic [ref=e383]:
+                      - button "追踪记录" [ref=e384] [cursor=pointer]:
+                        - generic [ref=e385]: 追踪记录
+                      - button "提交审核" [ref=e488] [cursor=pointer]:
+                        - generic [ref=e489]: 提交审核
+                - row "SP-20260417-1182 黑胡椒牛肉酱-V1-QA-0417 永辉超市 200g/盒, 310g×42袋/箱 - - 样品通过 追踪记录 提交报价申请" [ref=e490]:
+                  - cell "SP-20260417-1182" [ref=e491]:
+                    - generic [ref=e492]: SP-20260417-1182
+                  - cell "黑胡椒牛肉酱-V1-QA-0417" [ref=e493]:
+                    - generic [ref=e494]: 黑胡椒牛肉酱-V1-QA-0417
+                  - cell "永辉超市" [ref=e495]:
+                    - generic [ref=e496]: 永辉超市
+                  - cell "200g/盒, 310g×42袋/箱" [ref=e497]:
+                    - generic [ref=e498]: 200g/盒, 310g×42袋/箱
+                  - cell "-" [ref=e499]:
+                    - generic [ref=e500]: "-"
+                  - cell [ref=e501]
+                  - cell "-" [ref=e502]:
+                    - generic [ref=e503]: "-"
+                  - cell "样品通过" [ref=e504]:
+                    - generic [ref=e507]: 样品通过
+                  - cell "追踪记录 提交报价申请" [ref=e508]:
+                    - generic [ref=e509]:
+                      - button "追踪记录" [ref=e510] [cursor=pointer]:
+                        - generic [ref=e511]: 追踪记录
+                      - button "提交报价申请" [ref=e512] [cursor=pointer]:
+                        - generic [ref=e513]: 提交报价申请
