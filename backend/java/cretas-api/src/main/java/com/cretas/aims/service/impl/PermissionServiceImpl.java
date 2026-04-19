@@ -24,7 +24,8 @@ public class PermissionServiceImpl implements PermissionService {
     private static final List<String> ALL_MODULES = Arrays.asList(
             "dashboard", "production", "warehouse", "quality",
             "procurement", "sales", "hr", "equipment", "finance", "system", "analytics",
-            "scheduling", "work_report", "inventory", "report"
+            "scheduling", "work_report", "inventory", "report",
+            "rd", "restaurant"
     );
 
     /**
@@ -44,6 +45,11 @@ public class PermissionServiceImpl implements PermissionService {
         ALL_MODULES.forEach(m -> superAdminPerms.put(m, "read_write"));
         PERMISSION_MATRIX.put(FactoryUserRole.factory_super_admin, superAdminPerms);
 
+        // platform_admin: 平台级, 同 super_admin (所有模块读写)
+        Map<String, String> platformAdminPerms = new HashMap<>();
+        ALL_MODULES.forEach(m -> platformAdminPerms.put(m, "read_write"));
+        PERMISSION_MATRIX.put(FactoryUserRole.platform_admin, platformAdminPerms);
+
         // dispatcher (调度): 生产读写 + 全模块只读 + 数据分析读写
         Map<String, String> dispatcherPerms = new HashMap<>();
         dispatcherPerms.put("dashboard", "read_write");
@@ -61,6 +67,7 @@ public class PermissionServiceImpl implements PermissionService {
         dispatcherPerms.put("work_report", "read_write");
         dispatcherPerms.put("inventory", "read");
         dispatcherPerms.put("report", "read");
+        dispatcherPerms.put("rd", "read_write");  // 调度协调 RD 样品到生产
         PERMISSION_MATRIX.put(FactoryUserRole.dispatcher, dispatcherPerms);
         PERMISSION_MATRIX.put(FactoryUserRole.production_manager, dispatcherPerms); // 向后兼容
 
@@ -69,6 +76,7 @@ public class PermissionServiceImpl implements PermissionService {
         qualityManagerPerms.put("dashboard", "read");
         qualityManagerPerms.put("production", "read");
         qualityManagerPerms.put("quality", "read_write");
+        qualityManagerPerms.put("rd", "read");  // QA 审核样品但不创建
         PERMISSION_MATRIX.put(FactoryUserRole.quality_manager, qualityManagerPerms);
 
         // workshop_supervisor
@@ -82,6 +90,7 @@ public class PermissionServiceImpl implements PermissionService {
         workshopPerms.put("scheduling", "read");
         workshopPerms.put("work_report", "read_write");
         workshopPerms.put("report", "read");
+        workshopPerms.put("rd", "read");
         PERMISSION_MATRIX.put(FactoryUserRole.workshop_supervisor, workshopPerms);
 
         // team_leader (大组长) — 车间主任下一级,去掉 hr/report 审批类
@@ -93,6 +102,7 @@ public class PermissionServiceImpl implements PermissionService {
         teamLeaderPerms.put("equipment", "read");
         teamLeaderPerms.put("scheduling", "read");
         teamLeaderPerms.put("work_report", "read_write");
+        teamLeaderPerms.put("rd", "read");
         PERMISSION_MATRIX.put(FactoryUserRole.team_leader, teamLeaderPerms);
 
         // group_leader (小组长) — 只管本组,去掉 scheduling 全局查看
@@ -170,6 +180,7 @@ public class PermissionServiceImpl implements PermissionService {
         salesPerms.put("finance", "read");
         salesPerms.put("analytics", "read");
         salesPerms.put("report", "read");
+        salesPerms.put("rd", "read_write");  // 销售驱动 RD 需求/样品
         PERMISSION_MATRIX.put(FactoryUserRole.sales_manager, salesPerms);
 
         // finance_manager: 财务主管 - SmartBI完整权限（含上传Excel）
@@ -181,7 +192,17 @@ public class PermissionServiceImpl implements PermissionService {
         financePerms.put("sales", "read");
         financePerms.put("analytics", "read_write");  // SmartBI 完整权限
         financePerms.put("report", "read");
+        financePerms.put("rd", "read");  // 定价参考
         PERMISSION_MATRIX.put(FactoryUserRole.finance_manager, financePerms);
+
+        // restaurant_manager: 餐饮管理 (跨工厂类型餐饮 domain 角色)
+        Map<String, String> restaurantManagerPerms = new HashMap<>();
+        restaurantManagerPerms.put("dashboard", "read");
+        restaurantManagerPerms.put("restaurant", "read_write");
+        restaurantManagerPerms.put("procurement", "read");
+        restaurantManagerPerms.put("finance", "read");
+        restaurantManagerPerms.put("analytics", "read");
+        PERMISSION_MATRIX.put(FactoryUserRole.restaurant_manager, restaurantManagerPerms);
 
         // viewer: 所有模块只读
         Map<String, String> viewerPerms = new HashMap<>();
@@ -210,7 +231,7 @@ public class PermissionServiceImpl implements PermissionService {
         }
 
         // 超级管理员拥有所有权限
-        if (role == FactoryUserRole.factory_super_admin) {
+        if (role == FactoryUserRole.factory_super_admin || role == FactoryUserRole.platform_admin) {
             return true;
         }
 

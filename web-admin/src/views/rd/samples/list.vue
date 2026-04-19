@@ -9,7 +9,7 @@ import { Search, Refresh } from '@element-plus/icons-vue';
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
-const canWrite = computed(() => permissionStore.canWrite('production'));
+const canWrite = computed(() => permissionStore.canWrite('rd'));
 const currentUser = computed(() => {
   const u = authStore.user.value || authStore.user;
   return (u as Record<string, unknown>)?.fullName || (u as Record<string, unknown>)?.username || '';

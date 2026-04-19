@@ -17,6 +17,14 @@ package com.cretas.aims.entity.enums;
  * @since 2025-01-09
  */
 public enum FactoryUserRole {
+    // ===== Level -1: 平台最高管理层 (跨工厂) =====
+    /**
+     * 平台管理员
+     * 跨工厂权限, factoryId 可为 null 或特殊值 "PLATFORM"
+     * 拥有所有工厂所有模块 rw
+     */
+    platform_admin("平台管理员", "跨工厂平台级权限", -1, "platform"),
+
     // ===== Level 0: 工厂最高管理层 =====
     /**
      * 工厂超级管理员/总监
@@ -79,6 +87,12 @@ public enum FactoryUserRole {
      * 成本核算、费用管理、财务报表
      */
     finance_manager("财务主管", "成本核算、费用、报表", 10, "finance"),
+
+    /**
+     * 餐饮管理
+     * 菜单/配方/厨房/餐厅运营
+     */
+    restaurant_manager("餐饮管理", "菜单、配方、餐厅运营", 10, "restaurant"),
 
     // ===== Level 20: 车间管理层 =====
     /**
@@ -222,8 +236,11 @@ public enum FactoryUserRole {
      */
     public String getPermissionPrefix() {
         switch (this) {
+            case platform_admin:
             case factory_super_admin:
                 return "*";
+            case restaurant_manager:
+                return "restaurant";
             case hr_admin:
                 return "hr";
             case procurement_manager:

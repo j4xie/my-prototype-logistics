@@ -21,6 +21,7 @@ interface ModulePermissions {
   analytics: PermissionLevel;
   scheduling: PermissionLevel;
   restaurant: PermissionLevel;
+  rd: PermissionLevel;
 }
 
 const PERMISSION_MATRIX: Record<string, ModulePermissions> = {
@@ -38,24 +39,26 @@ const PERMISSION_MATRIX: Record<string, ModulePermissions> = {
     system: 'rw',
     analytics: 'rw',
     scheduling: 'rw',
-    restaurant: 'rw'
+    restaurant: 'rw',
+    rd: 'rw'
   },
 
   // Level 10 - 职能部门经理
   hr_admin: {
     dashboard: 'r', production: '-', warehouse: '-', quality: '-',
     procurement: '-', sales: '-', hr: 'rw', equipment: '-',
-    finance: '-', system: 'r', analytics: '-', scheduling: '-', restaurant: '-'
+    finance: '-', system: 'r', analytics: '-', scheduling: '-', restaurant: '-', rd: '-'
   },
   procurement_manager: {
     dashboard: 'r', production: 'r', warehouse: 'r', quality: '-',
     procurement: 'rw', sales: '-', hr: '-', equipment: '-',
-    finance: 'r', system: '-', analytics: '-', scheduling: '-', restaurant: '-'
+    finance: 'r', system: '-', analytics: '-', scheduling: '-', restaurant: '-', rd: '-'
   },
   sales_manager: {
     dashboard: 'r', production: 'r', warehouse: 'r', quality: '-',
     procurement: '-', sales: 'rw', hr: '-', equipment: '-',
-    finance: 'r', system: '-', analytics: 'r', scheduling: '-', restaurant: '-'  // SmartBI 只读访问
+    finance: 'r', system: '-', analytics: 'r', scheduling: '-', restaurant: '-',
+    rd: 'rw'  // 销售驱动 RD 需求/样品
   },
   // 调度 (dispatcher) - 生产调度、数据分析、趋势监控
   // R18-B3: finance/hr/system 继续锁死 (越权敏感).
@@ -66,47 +69,52 @@ const PERMISSION_MATRIX: Record<string, ModulePermissions> = {
   dispatcher: {
     dashboard: 'rw', production: 'rw', warehouse: 'r', quality: 'r',
     procurement: 'r', sales: 'rw', hr: '-', equipment: 'r',
-    finance: '-', system: '-', analytics: 'rw', scheduling: 'rw', restaurant: '-'
+    finance: '-', system: '-', analytics: 'rw', scheduling: 'rw', restaurant: '-',
+    rd: 'rw'  // 调度协调 RD 样品到生产
   },
   // production_manager (已废弃，保留向后兼容，映射到 dispatcher)
   production_manager: {
     dashboard: 'rw', production: 'rw', warehouse: 'r', quality: 'r',
     procurement: 'r', sales: 'rw', hr: '-', equipment: 'r',
-    finance: '-', system: '-', analytics: 'rw', scheduling: 'rw', restaurant: '-'
+    finance: '-', system: '-', analytics: 'rw', scheduling: 'rw', restaurant: '-',
+    rd: 'rw'
   },
   warehouse_manager: {
     dashboard: 'r', production: 'r', warehouse: 'rw', quality: '-',
     procurement: 'r', sales: 'r', hr: '-', equipment: '-',
-    finance: '-', system: '-', analytics: '-', scheduling: 'r', restaurant: '-'
+    finance: '-', system: '-', analytics: '-', scheduling: 'r', restaurant: '-', rd: '-'
   },
   equipment_admin: {
     dashboard: 'r', production: 'r', warehouse: '-', quality: '-',
     procurement: '-', sales: '-', hr: '-', equipment: 'rw',
-    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-'
+    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-', rd: '-'
   },
   quality_manager: {
     dashboard: 'r', production: 'r', warehouse: '-', quality: 'rw',
     procurement: '-', sales: '-', hr: '-', equipment: '-',
-    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-'
+    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-',
+    rd: 'r'  // QA 审核样品, 只读
   },
   finance_manager: {
     dashboard: 'r', production: '-', warehouse: '-', quality: '-',
     procurement: '-', sales: 'r', hr: '-', equipment: '-',
-    finance: 'rw', system: '-', analytics: 'r', scheduling: '-', restaurant: '-'
+    finance: 'rw', system: '-', analytics: 'rw', scheduling: '-', restaurant: '-',
+    rd: 'r'  // 定价参考 (analytics rw 对齐后端 SmartBI 完整权限)
   },
 
   // 餐饮管理
   restaurant_manager: {
     dashboard: 'r', production: '-', warehouse: '-', quality: '-',
     procurement: 'r', sales: '-', hr: '-', equipment: '-',
-    finance: 'r', system: '-', analytics: 'r', scheduling: '-', restaurant: 'rw'
+    finance: 'r', system: '-', analytics: 'r', scheduling: '-', restaurant: 'rw', rd: '-'
   },
 
   // Level 20 - 车间管理 (只看计划，执行在批次/报工模块)
   workshop_supervisor: {
     dashboard: 'r', production: 'r', warehouse: 'r', quality: 'w',
     procurement: '-', sales: '-', hr: 'r', equipment: 'r',
-    finance: '-', system: '-', analytics: '-', scheduling: 'r', restaurant: '-'
+    finance: '-', system: '-', analytics: '-', scheduling: 'r', restaurant: '-',
+    rd: 'r'
   },
 
   // Level 25 - 大组长 (管理多个小组, 批次+报工查看)
@@ -114,7 +122,8 @@ const PERMISSION_MATRIX: Record<string, ModulePermissions> = {
   team_leader: {
     dashboard: 'r', production: 'r', warehouse: '-', quality: '-',
     procurement: '-', sales: '-', hr: 'r', equipment: 'r',
-    finance: '-', system: '-', analytics: '-', scheduling: 'r', restaurant: '-'
+    finance: '-', system: '-', analytics: '-', scheduling: 'r', restaurant: '-',
+    rd: 'r'
   },
 
   // Level 28 - 小组长 (单组 + 批次内操作)
@@ -122,45 +131,47 @@ const PERMISSION_MATRIX: Record<string, ModulePermissions> = {
   group_leader: {
     dashboard: 'r', production: 'w', warehouse: '-', quality: '-',
     procurement: '-', sales: '-', hr: '-', equipment: 'r',
-    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-'
+    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-', rd: '-'
   },
 
   // Level 30 - 一线员工
   quality_inspector: {
     dashboard: 'r', production: 'r', warehouse: '-', quality: 'w',
     procurement: '-', sales: '-', hr: '-', equipment: '-',
-    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-'
+    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-', rd: '-'
   },
   operator: {
     dashboard: 'r', production: 'w', warehouse: '-', quality: '-',
     procurement: '-', sales: '-', hr: '-', equipment: '-',
-    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-'
+    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-', rd: '-'
   },
   warehouse_worker: {
     dashboard: 'r', production: '-', warehouse: 'w', quality: '-',
     procurement: '-', sales: '-', hr: '-', equipment: '-',
-    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-'
+    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-', rd: '-'
   },
 
   // Level 50 - 查看者
   viewer: {
     dashboard: 'r', production: 'r', warehouse: 'r', quality: 'r',
     procurement: 'r', sales: 'r', hr: '-', equipment: 'r',
-    finance: '-', system: '-', analytics: 'r', scheduling: 'r', restaurant: 'r'
+    finance: '-', system: '-', analytics: 'r', scheduling: 'r', restaurant: 'r',
+    rd: 'r'
   },
 
   // 平台管理员
   platform_admin: {
     dashboard: 'rw', production: 'rw', warehouse: 'rw', quality: 'rw',
     procurement: 'rw', sales: 'rw', hr: 'rw', equipment: 'rw',
-    finance: 'rw', system: 'rw', analytics: 'rw', scheduling: 'rw', restaurant: 'rw'
+    finance: 'rw', system: 'rw', analytics: 'rw', scheduling: 'rw', restaurant: 'rw',
+    rd: 'rw'
   },
 
   // 默认
   unactivated: {
     dashboard: '-', production: '-', warehouse: '-', quality: '-',
     procurement: '-', sales: '-', hr: '-', equipment: '-',
-    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-'
+    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-', rd: '-'
   }
 };
 
