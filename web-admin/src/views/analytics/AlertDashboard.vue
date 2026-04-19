@@ -94,7 +94,9 @@ function alertTypeLabel(type: string): string {
     YIELD_DROP: '良率下降',
     COST_SPIKE: '成本飙升',
     QUALITY_ISSUE: '质量问题',
+    QUALITY_FAIL: '质检不合格',
     EQUIPMENT_FAILURE: '设备故障',
+    OEE_LOW: 'OEE 偏低',
     MATERIAL_SHORTAGE: '原料短缺',
     DELIVERY_DELAY: '交付延迟',
     THRESHOLD_BREACH: '阈值突破'
@@ -111,7 +113,9 @@ function metricLabel(metric: string): string {
     unit_cost: '单位成本',
     total_cost: '总成本',
     output_quantity: '产出量',
-    equipment_utilization: '设备利用率'
+    equipment_utilization: '设备利用率',
+    oee: 'OEE',
+    quality_pass_rate: '质检合格率'
   }
   return map[metric] || metric
 }

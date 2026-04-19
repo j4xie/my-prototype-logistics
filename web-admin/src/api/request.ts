@@ -264,8 +264,27 @@ request.interceptors.response.use(
       return Promise.reject(new ApiError(friendly, 'NOT_FOUND', 404));
     }
 
-    // 其他错误
-    const message = error.response?.data?.message || error.message || '网络请求失败';
+    // 其他错误 — Apr 19 2026 Bug #58: 5xx/网络断开时 axios 默认 error.message 是英文
+    // "Request failed with status code 502",用户看不懂。映射为中文 friendly 文案,
+    // 特别对 502/503/504 (nginx 网关 / upstream 未就绪 / 超时) 给出具体指引。
+    const rawMessage = error.response?.data?.message as string | undefined;
+    const isAxiosDefault = !!error.message && /^Request failed with status code/i.test(error.message);
+    let message: string;
+    if (rawMessage) {
+      message = rawMessage;
+    } else if (status === 502 || status === 504) {
+      message = `服务暂时不可用,请稍后重试 (${status === 502 ? '后端未就绪' : '网关超时'})`;
+    } else if (status === 503) {
+      message = '服务繁忙,请稍后重试';
+    } else if (status === 500) {
+      message = '服务器内部错误,请联系管理员';
+    } else if (typeof status === 'number' && status >= 500) {
+      message = `服务异常 (${status}),请稍后重试`;
+    } else if (isAxiosDefault || !error.message) {
+      message = '网络请求失败,请检查网络连接';
+    } else {
+      message = error.message;
+    }
     // Allow callers to suppress error toast via _silent config flag
     if (!originalRequest._silent) {
       const rich = (error.response?.data as unknown as Record<string, string | null>) || {};
