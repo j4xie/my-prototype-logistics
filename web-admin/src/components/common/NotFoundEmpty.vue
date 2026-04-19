@@ -1,11 +1,8 @@
 <template>
   <div class="not-found-wrap">
-    <el-empty :image-size="200" :description="description">
-      <template #extra>
-        <el-button type="primary" @click="goBack">
-          {{ returnLabel }}
-        </el-button>
-      </template>
+    <el-empty :image-size="200" :description="description || '记录不存在或已被删除'">
+      <!-- default slot replaces description's bottom area in current Element Plus -->
+      <el-button type="primary" @click="goBack">{{ returnLabel }}</el-button>
     </el-empty>
   </div>
 </template>

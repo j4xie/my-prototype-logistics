@@ -50,9 +50,12 @@ async function loadTransfer() {
     const res = await get(`/${factoryId.value}/transfers/${transferId.value}`);
     if (res.success) transfer.value = res.data;
   } catch (err: any) {
-    if (err?.response?.status === 404 || err?.code === 'NOT_FOUND' || err?.code === 'FORBIDDEN') {
+    // axios interceptor wraps as ApiError(message, code, status)
+    const status = err?.status ?? err?.response?.status;
+    const code = err?.code ?? err?.response?.data?.code;
+    if (status === 404 || status === 403 || code === 'NOT_FOUND' || code === 'FORBIDDEN') {
       notFound.value = true;
-      notFoundMessage.value = err?.response?.data?.message || '记录不存在';
+      notFoundMessage.value = err?.message || err?.response?.data?.message || '记录不存在';
     }
     // axios interceptor shows toast already (Bug #319 fix), component doesn't add fallback
   }
