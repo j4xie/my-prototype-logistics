@@ -68,7 +68,10 @@ export class AuthService {
 
       const rawResponse = await NetworkManager.executeWithRetry(
         () => apiClient.post<UnifiedLoginApiResponse>('/api/mobile/auth/unified-login', loginPayload),
-        { maxRetries: 2, baseDelay: 1000 }
+        // Apr 19 2026 稳定性修: NetworkManager default timeout 30s 不够 cover OkHttp cold-start
+        // (Windows emulator + Play Store 后台下载时常见), 改 90s (与 axios 120s 留 30s 余量).
+        // 真机用户网络正常,不受影响 (retry 很少触发).
+        { maxRetries: 2, baseDelay: 1000, timeout: 90000 }
       );
 
       authLogger.debug('Raw API Response', rawResponse);
