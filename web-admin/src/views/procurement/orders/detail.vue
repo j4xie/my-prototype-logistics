@@ -9,6 +9,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { ArrowLeft } from '@element-plus/icons-vue';
 import { handleCatchError } from '@/utils/errorToast';
 import { formatAmount } from '@/utils/tableFormatters';
+import NotFoundEmpty from '@/components/common/NotFoundEmpty.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -22,6 +23,8 @@ const orderId = computed(() => route.params.id as string);
 const loading = ref(false);
 const submitting = ref(false);
 const order = ref<Record<string, unknown> | null>(null);
+const notFound = ref(false);
+const notFoundMessage = ref('');
 const receives = ref<Record<string, unknown>[]>([]);
 const receiveDialogVisible = ref(false);
 const receiveForm = ref<{ supplierId: string; receiveDate: string; items: { materialTypeId: string; receivedQuantity: number; unit: string; unitPrice: number }[] }>({ supplierId: '', receiveDate: '', items: [] });
@@ -71,7 +74,13 @@ async function loadOrder() {
   try {
     const res = await get(`/${factoryId.value}/purchase/orders/${orderId.value}`);
     if (res.success) order.value = res.data;
-  } catch { /* axios interceptor already displayed error toast */ }
+  } catch (err: any) {
+    if (err?.response?.status === 404 || err?.code === 'NOT_FOUND' || err?.code === 'FORBIDDEN') {
+      notFound.value = true;
+      notFoundMessage.value = err?.response?.data?.message || '记录不存在';
+    }
+    // axios interceptor shows toast already (Bug #319 fix), component doesn't add fallback
+  }
   finally { loading.value = false; }
 }
 
@@ -185,7 +194,10 @@ async function confirmReceive(receiveId: string) {
 </script>
 
 <template>
-  <div class="page-wrapper" v-loading="loading">
+  <NotFoundEmpty v-if="notFound"
+    :description="notFoundMessage"
+    return-path="/procurement/orders" />
+  <div v-else class="page-wrapper" v-loading="loading">
     <el-card class="page-card" shadow="never">
       <template #header>
         <div class="card-header">

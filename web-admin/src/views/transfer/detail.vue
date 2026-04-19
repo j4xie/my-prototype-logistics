@@ -9,6 +9,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { ArrowLeft } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
 import { handleCatchError } from '@/utils/errorToast';
+import NotFoundEmpty from '@/components/common/NotFoundEmpty.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -22,6 +23,8 @@ const transferId = computed(() => route.params.id as string);
 const loading = ref(false);
 const submitting = ref(false);
 const transfer = ref<Record<string, unknown> | null>(null);
+const notFound = ref(false);
+const notFoundMessage = ref('');
 
 const statusMap: Record<string, { text: string; type: string }> = {
   DRAFT: { text: '草稿', type: 'info' },
@@ -46,7 +49,13 @@ async function loadTransfer() {
   try {
     const res = await get(`/${factoryId.value}/transfers/${transferId.value}`);
     if (res.success) transfer.value = res.data;
-  } catch { /* axios interceptor already displayed error toast */ }
+  } catch (err: any) {
+    if (err?.response?.status === 404 || err?.code === 'NOT_FOUND' || err?.code === 'FORBIDDEN') {
+      notFound.value = true;
+      notFoundMessage.value = err?.response?.data?.message || '记录不存在';
+    }
+    // axios interceptor shows toast already (Bug #319 fix), component doesn't add fallback
+  }
   finally { loading.value = false; }
 }
 
@@ -91,7 +100,10 @@ async function handleAction(action: string) {
 </script>
 
 <template>
-  <div class="page-wrapper" v-loading="loading">
+  <NotFoundEmpty v-if="notFound"
+    :description="notFoundMessage"
+    return-path="/transfer/list" />
+  <div v-else class="page-wrapper" v-loading="loading">
     <el-card class="page-card" shadow="never">
       <template #header>
         <div class="card-header">
