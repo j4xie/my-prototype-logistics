@@ -44,6 +44,7 @@ from smartbi.config import get_settings
 # Import SmartBI API routers
 from smartbi.api import (
     excel,
+    excel_async,  # B MVP (Apr 20 2026, task #323): async upload endpoints
     field,
     metrics,
     forecast,
@@ -373,6 +374,9 @@ app.add_middleware(CorrelationIdMiddleware)
 # SmartBI API Routes
 # =====================================================
 app.include_router(excel.router, prefix="/api/excel", tags=["Excel"])
+# B MVP (task #323): excel_async already carries /api/smartbi/excel prefix
+# internally; don't prepend /api/excel here.
+app.include_router(excel_async.router, tags=["Excel Async"])
 app.include_router(field.router, prefix="/api/field", tags=["Field Detection"])
 app.include_router(metrics.router, prefix="/api/metrics", tags=["Metrics"])
 app.include_router(forecast.router, prefix="/api/forecast", tags=["Forecast"])
