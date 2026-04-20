@@ -215,236 +215,54 @@ const showMessage = async (message, type) => {
   → 四位一体通过 (注意 message 隐含 next action: "去分配批次")
 
 
-第四步: 发版前完整性回归 (Apr 20 2026 v2.3 新增, 事故启动)
+第四步: 发版前完整性回归 (v2.3, Apr 20 事故触发)
 
-背景:
-Apr 20 工厂管理员复测 doc 提了 14 个 bug, 全部之前没测到. 原因:
-Rule 1-9 是"单个测试深度"的标准, 没有"发版前哪些 checklist 必须过"
-的标准. 自动化 E2E 擅长"新功能上线前 deep 测", 不擅长"老功能没烂".
+Rule 1-9 管"单个测试深不深", 不管"发版前老功能烂没烂".
+Apr 20 客户复测 30min 提 14 bug, 全在下面 5 条盲区 — 每条都是硬规则.
 
-6 类漏网模式:
-1. 开发者用 "完整 body" 测 API → 前端实际 dialog 发 "最小 body" → 后端
-   @Valid 在 controller auto-fill 前先 reject (BR-02/04/05 领料/损耗/
-   盘点创建都被 @NotBlank factoryId + @NotNull date 误报"不能为空")
-2. 自动化测试只 assert status=200 → 后端 silent swallow 写操作 (BR-13
-   PUT /users/{id} 返 200 "用户更新成功" 但 roleCode 根本没 map 到 DB)
-3. 没人做过"所有 list page 有没有搜索"的审计 (BR-07/10/11/12 4 个列表
-   全部缺搜索或仅单过滤)
-4. 后端加新 enum 值 → 没 grep 前端 Options 硬编码 (BR-14 Phase 1 加
-   platform_admin/restaurant_manager, 用户编辑 dialog 里没这两个选项)
-5. 浏览器边缘行为没测 (BR-01 点回退时 in-flight axios abort → ElMessage
-   弹 "canceled" 用户困惑)
-6. 视觉截断在 a11y tree / DOM snapshot 检不出 (BR-06 PO dialog 720px
-   容 808px 内容, 截断 90px, 自动化测试都绿但用户看不全)
+Rule 10 — 最小 body API 测试
+Spring @Valid 在 controller auto-fill (setFactoryId / setDate) 前跑,
+entity 上的 @NotBlank / @NotNull 会把 null 字段 reject. 开发者用"完整
+body" 测 API 永远碰不到, 但前端 dialog emit 的 body 就是缺字段.
+硬规则: 每个 POST /create 必须按前端 emptyForm() 的字段集跑一次测试.
+如果返 400 "xxx 不能为空" 而 controller 里本来就 auto-fill → 删 entity
+的 @NotBlank/@NotNull (DB NOT NULL 保兜底). 共享 DTO (create+update 同
+一 DTO) 同理 — BR-13 CreateUserRequest 被 PUT 复用, username @NotBlank
+对 update 误报.
 
----
+Rule 11 — Read-after-write 硬校验
+写接口测试必 2 步: ① 发 POST/PUT → 验 2xx + success=true; ② 独立 GET
+被改资源 → 验目标字段真变. 只看 status 会漏 silent write failure (BR-13
+UserMapper.updateEntity 不 map roleCode, PUT 200 但 DB 没变). 适用:
+角色/权限变更, 订单状态 transition, 字段 patch, 批量导入回读.
 
-Rule 10 — 最小 body API 审计 (配合 Spring @Valid 陷阱)
+Rule 12 — 发版前 5 项 checklist (30min 人工 + grep)
+12.1 每个 list.vue 必有 keyword 搜索 + 状态过滤 + 搜索/重置按钮 + 空状态
+     + 分页. grep: find views -name list.vue | xargs grep -l searchKeyword
+12.2 后端 enum 改动同一 PR 必扫前端硬编码:
+     grep -rn "roleOptions\\|const ROLES\\|STATUS_OPTIONS" web-admin/src
+     长期应改为前端动态拉 /enums/{name} API.
+12.3 每个 dashboard 的 statCards.route 必须点一次, 落地页筛选与卡片
+     标题语义一致 (BR-03 "待审批"卡片应带 ?status=SUBMITTED).
+12.4 创建 dialog 宽度核算: N 列宽 + (N-1)×8 gap + 40 padding ≤ dialog
+     width. 1366×768 / 1920×1080 都看一眼.
+12.5 浏览器边缘: 请求中点回退不应弹 "canceled" toast (interceptor 要
+     axios.isCancel / ERR_CANCELED 静默 reject); token 过期自动 refresh;
+     多 tab 状态一致.
 
-背景: Spring @Valid 在 controller 的 set* auto-fill 之前跑. 如果 entity
-上 @NotBlank factoryId / @NotNull date 而 controller 做 `entity.setFactoryId(path)`
-和 `if (entity.getDate()==null) entity.setDate(today())`, @Valid 先跑就
-reject null, auto-fill 永远执行不到.
+Rule 13 — 用户 shadow test (最关键, 性价比最高)
+每个大版本 prod 发版前, 找一个**真实非开发用户** (客户/实施/QA) 自由
+点透 20-30min, 记录所有不顺的地方. 格式就是本项目 Apr 20 doc:
+  路径        报错现象        一行症状
+  首页-经营驾驶舱-回退   报错   canceled
+  首页-今日领料单-新建   报错   创建失败,不能为空
+这比 100 个自动化 E2E 都有效 — Apr 20 14/14 都来自一个人 30min.
 
-硬规则:
-- 每个 POST /create 端点, 测试 body **必须是前端 dialog 实际 emit 的最小集**
-  (grep 前端 emptyForm() / submit() payload, 不要开发者臆想的"完整 body")
-- 专门跑一组"最小 body test" — 只含前端 dialog 表单的字段, 其他全 omit
-- 如果返 400 "xxx 不能为空" 而 entity 已经有 controller auto-fill 的逻辑
-  → Bug. 修复方式 (优先级):
-    (a) 去掉 entity 上的 @NotBlank/@NotNull (DB 列仍 NOT NULL 保证完整性),
-        controller auto-fill 继续负责填
-    (b) 或改用 DTO 单独校验 (不要直接 @Valid entity)
-
-触发点 quick reference (本项目已知):
-- 餐饮 restaurant/requisitions / wastage / stocktaking 都犯过同样错
-- 任何 shared entity (create + update 同一 DTO) 都有 @NotBlank on 可选
-  字段的风险 — 例 CreateUserRequest 被 PUT /users/{id} 复用导致
-  @NotBlank username 对 update 误报 (BR-13)
-
-检查方式:
-  grep -n "@Valid.*entity" backend/.../controller/*.java
-  对每个 @Valid 目标的 entity, 看它的 @NotNull/@NotBlank 字段是否与
-  controller 内部 setXxx(...) 冲突
-
-
-Rule 11 — Read-after-write 硬校验 (发现 silent write failure)
-
-硬规则: **任何 state-changing endpoint 的测试必须 2 步**:
-  1. 发写请求 (POST/PUT/PATCH/DELETE) → 验 status 2xx + success=true
-  2. **独立 GET 回读** 被修改的资源 → 验目标字段真的变了
-
-禁止: 只看 status=200 + 后端返 "xxx 成功" 就宣布通过.
-
-为什么:
-- MapStruct / 自定义 mapper 可能漏 map 某字段 → 写接口 200 但 DB 没变
-  (BR-13: UserMapper.updateEntity 不 map roleCode, PUT 200 但 role 没
-  变. 前端刷新列表看角色没变才察觉)
-- Service 层 if 分支漏加 set → 写接口 200 但部分字段 silent drop
-- 前端 Jackson deserialize 失败默默 null → 传进 service 后 save 了 null
-  (Apr 18 Bug #57 isActive 字段)
-
-模板代码:
-  // 1. 发写
-  const put1 = await fetch(`/users/${id}`, { method: 'PUT', body: ... });
-  expect(put1.status).toBe(200);
-
-  // 2. 独立回读 (不是读写响应, 要重新 GET)
-  const get2 = await fetch(`/users/${id}`);
-  const after = await get2.json();
-  expect(after.data.roleCode).toBe(newRole);  // ← 这条才是真验证
-
-适用范围:
-- 用户 / 角色 / 权限变更
-- 订单状态 transition
-- 字段 patch (例 custom fields / JSONB update)
-- 批量导入 (上传 N 行, 回读 count = N 且前后段业务语义 OK)
-
-
-Rule 12 — 发版前完整性 Checklist (人工 + grep)
-
-目的: 每次给客户发新版本前, 跑下面的审计清单. 每项不是深度测试, 是"有没有
-显然的洞". 30 分钟人工 + grep 能catch 本次 14 个 bug 中至少 10 个.
-
-### 12.1 List page UI 完整性 (grep 对照表)
-
-每个 `views/*/list.vue` 必须有:
-  - [ ] 关键字搜索 input (placeholder 写清楚搜哪些字段)
-  - [ ] 状态/类型 filter select (有业务状态的模块)
-  - [ ] 搜索 + 重置按钮
-  - [ ] 空状态文案 (empty-text)
-  - [ ] 分页 (pagination)
-  - [ ] 导出 (若业务需要)
-
-grep 自检:
-  # 找所有 list.vue
-  find web-admin/src/views -name "list.vue"
-  # 逐个检查是否有 searchKeyword / filterStatus / el-input.*搜索
-  grep -l "searchKeyword\\|filterKeyword\\|keyword" <list.vue>
-
-本次漏 (都是 Apr 20 发现):
-  - views/sales/orders/list.vue → 只有 tabs+status, 无 keyword (BR-07)
-  - views/hr/employees/list.vue → 整个搜索栏都没 (BR-10)
-  - views/finance/invoices/list.vue → 只 status (BR-11)
-  - views/finance/payments/list.vue → 只 status (BR-12)
-
-### 12.2 Enum 一致性 (后端改 → 前端同步)
-
-硬规则: 后端 enum (`FactoryUserRole` / `*Status` / `*Type`) 改动必须
-同一 PR 扫前端硬编码对照:
-
-  # 加新 enum value 时必 grep
-  grep -rn "roleOptions\\s*=\\|const ROLES\\|const STATUS_OPTIONS" web-admin/src
-  grep -rn "<el-option.*value=" web-admin/src | grep -i "role\\|status"
-
-本次漏:
-  Phase 1 加 `platform_admin` + `restaurant_manager` 到 FactoryUserRole
-  enum, 但 views/system/users/list.vue::roleOptions 数组字面量没同步.
-  用户编辑 dialog 下拉选不到这两个角色 (BR-14).
-
-长期方案 (新代码应走):
-  前端 options 从 API 拉, 不硬编码. 后端一个 `/api/admin/enums/FactoryUserRole`
-  返 [{value, label}], 前端 onMounted 加载.
-
-### 12.3 Dashboard widget 点击审计
-
-每个 dashboard 组件 (DashboardHR/Production/Finance/Restaurant/...)
-的 statCards 数组:
-  - [ ] 每个 card.route 都点过一次
-  - [ ] 落地页的数据筛选与 card 标题语义一致
-    (BR-03: "待审批"卡片 route = /restaurant/requisitions 全列表, 应
-     带 ?status=SUBMITTED 才符合语义)
-
-grep:
-  # 找所有 dashboard 组件
-  find web-admin/src/components/dashboard -name "*.vue"
-  # 对每个组件找 statCards 数组 route: '/...'
-  grep -n "route: '/" <DashboardX.vue>
-
-### 12.4 创建 dialog 布局审计 (CSS 截断)
-
-每个 `新建 XXX` dialog 必过:
-  - [ ] width 容得下最宽的 el-form 或 el-table 行
-    (BR-06: PO 原材料明细 7 列 720px, dialog 也 720px, padding 40px
-     后内容截断 ~90px)
-  - [ ] 常见分辨率 1366×768 / 1440×900 / 1920×1080 窗口里看完整
-  - [ ] el-date-picker / el-select 下拉弹层不会被 dialog 截
-
-算宽规则:
-  N 列 × 列宽 + (N-1) × 8px gap + 40px 左右 padding ≤ dialog width
-
-### 12.5 浏览器 UX 边缘场景
-
-至少跑一次:
-  - [ ] 表单提交中点浏览器回退 → 不应弹 "canceled" toast (BR-01)
-  - [ ] Token 快过期时发请求 → 自动 refresh cookie + retry, 不让用户
-    看见 401
-  - [ ] 多 tab 同账号, tab1 切换 factory, tab2 请求不应残留旧 factory
-  - [ ] 离线 → 在线恢复, 网络错误 toast 合理
-
-前端 axios interceptor 必须:
-  if (axios.isCancel(error) || error.code === 'ERR_CANCELED') {
-    return Promise.reject(error);  // 静默, 不 showMessage
-  }
-
-
-Rule 13 — 用户 shadow test (发版前 cheap but 最有效)
-
-每个大版本发 prod 前:
-1. 找一个**真实用户** (非开发) — 客户代表, 实施工程师, QA.
-2. 让 ta 自由点透系统 20-30 分钟, 跟着日常工作流操作.
-3. 要求 ta 记下**所有不顺的地方**, 包括"感觉怪但不一定是 bug"的.
-4. 每条单独列 — 格式: 路径 → 症状 → 一行描述 (就是 Apr 20 doc 格式)
-
-为什么这个胜过 100 个自动化 E2E:
-- 自动化测"设计好的流程"→ 测不到"用户自己的混合路径"
-- 开发测"完整 body 能通过"→ 用户测"只填必填能不能过"
-- 自动化看"API 200"→ 用户看"点了保存, 刷新一下, 角色还是原来的"
-- 14/14 Apr 20 bug 都是一个人 30 分钟点出来的, 比所有自动化都有效
-
-实际触发:
-- 本项目 14-bug doc 路径: `d:\xwechat_files\.../web工厂管理员4-20复测.doc`
-- 可作为模板: 每列一行, "路径 报错现象 症状"
-
-输出标准 doc 格式参考:
-  首页-经营驾驶舱-回退        报错现象    canceled
-  首页-今日领料单-新建领料单   报错现象    创建失败,不能为空,不能为null
-  首页-待审批                 报错现象    跳转至领料单
-  ...
-
-
-Rule 14 — 发版管理 (前端 bundle 版本号)
-
-问题: Apr 18 修过的 bug #51 "开始生产请求接口不存在", Apr 20 用户又报同
-样现象 — 因为用户浏览器还在用 Apr 18 之前的旧 bundle. 老 bundle 还在
-调已经不存在的 endpoint.
-
-解决方案 (有一个就够):
-
-### 14.1 Bundle 版本号 + 前端检测
-
-  # build 时注入版本
-  VITE_BUILD_VERSION = git rev-parse --short HEAD
-
-  # 每次路由切换前, 拉 /version.json 对比
-  if (server.version !== window.__BUILD_VERSION) {
-    ElMessageBox.alert('发现新版本, 点击刷新应用最新功能', '更新提示', {
-      confirmButtonText: '刷新',
-    }).then(() => location.reload(true));
-  }
-
-### 14.2 老 API 兼容期 + telemetry
-
-后端删除旧 endpoint 前先:
-  1. 加 @Deprecated 注解 + 返 header `Warning: 299 - "endpoint removed in vX.Y"`
-  2. telemetry 记录调用源 (user-agent, IP, referer)
-  3. 连续 3 周 0 调用才删
-  4. 真删后, 返 410 Gone (不是 404), 附 `Link: <newUrl>; rel="successor"`
-
-### 14.3 发版后 smoke check by real user
-
-prod 发版后 30min 内, 找 1-2 个真实用户做快速"刚才的 bug 还在吗"复验.
-硬刷 (Ctrl+Shift+R) 或清缓存是前提.
+Rule 14 — 发版管理 (防用户缓存续命)
+用户浏览器缓存老 bundle 会让已修 bug 看似复发 (BR-08/09 Apr 18 已修
+Apr 20 又报). 最小方案: build 时 inject version, 前端定期 fetch
+/version.json, 发现新版本 ElMessageBox 提示刷新. 发版后 30min 内让真
+用户 Ctrl+Shift+R 复验.
 
 
 测试环境硬规则
@@ -521,18 +339,10 @@ Bug 分类 (5 类, 不要混并):
 7. Bug #28 平反教训: 前端 toast 无 bug, 是 DOM 抓取时机 race condition 误诊
    修复: 这条直接催生 Rule 7 MutationObserver. 任何类似 "前端吞错误" 结论必须先
    用 MutationObserver 复查才能下定论.
-8. Apr 20 工厂管理员复测 14 bug 全部漏网事故 (催生 v2.3 Rule 10-14):
-   客户实施工程师手工点透系统 30 分钟, 列出 14 个 bug, 100% 不在任何自动化
-   E2E 覆盖范围. 暴露出 6 类测试盲区:
-   - 完整 body 偏见 → Rule 10 最小 body 审计
-   - 只看 status 200 不 read-after-write → Rule 11 硬校验
-   - 无 list page UI 完整性 checklist → Rule 12.1
-   - 后端 enum 改动未扫前端硬编码 → Rule 12.2
-   - 未测浏览器边缘行为 (回退/abort) → Rule 12.5
-   - 视觉截断自动化检不出 → Rule 12.4
-   修复: Rule 10-14 发版前 checklist + Rule 13 用户 shadow test 最关键.
-   14/14 的数据是信号: 真用户 30min 超过我们 100 个自动化 E2E 的发现率.
-   把这个变成制度 — 每次大版本发 prod 前必须找一个非开发者点透.
+8. Apr 20 客户复测 14 bug 100% 漏网 → 催生 v2.3 Rule 10-14.
+   真用户 30min 手工点出来的 bug 全部不在我们任何自动化 E2E 覆盖.
+   结论: 自动化擅长"新功能工作", 不擅长"老功能没烂". 真用户 shadow
+   test 是性价比最高的 bug 发现手段, 必须制度化 (见 Rule 13).
 
 触发点 quick reference (真窗口补验用):
 - UX-F2 actionHint (withHint 业务错): SO-20260409-0002 详情 → 发货记录 tab →
