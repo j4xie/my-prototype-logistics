@@ -61,6 +61,7 @@ public class DepartmentController {
     /**
      * 分页查询部门列表
      */
+    @RequirePermission({"hr:read"})
     @GetMapping
     @Operation(summary = "获取部门列表", description = "分页查询工厂下的所有部门，支持自定义排序。默认按显示顺序升序排列")
     public ApiResponse<PageResponse<DepartmentDTO>> getDepartments(
@@ -89,6 +90,7 @@ public class DepartmentController {
     /**
      * 获取所有活跃部门
      */
+    @RequirePermission({"hr:read"})
     @GetMapping("/active")
     @Operation(summary = "获取所有活跃部门", description = "获取工厂下所有启用状态的部门列表，常用于下拉选择框数据源")
     public ApiResponse<List<DepartmentDTO>> getAllActiveDepartments(
@@ -102,6 +104,7 @@ public class DepartmentController {
     /**
      * 获取部门详情
      */
+    @RequirePermission({"hr:read"})
     @GetMapping("/{id}")
     @Operation(summary = "获取部门详情", description = "根据部门ID获取部门的详细信息，包含上级部门、员工数量等")
     public ApiResponse<DepartmentDTO> getDepartmentById(
@@ -153,6 +156,7 @@ public class DepartmentController {
     /**
      * 搜索部门
      */
+    @RequirePermission({"hr:read"})
     @GetMapping("/search")
     @Operation(summary = "搜索部门", description = "根据关键词搜索部门，支持按部门名称和编码模糊匹配")
     public ApiResponse<PageResponse<DepartmentDTO>> searchDepartments(
@@ -176,6 +180,7 @@ public class DepartmentController {
     /**
      * 获取部门树形结构
      */
+    @RequirePermission({"hr:read"})
     @GetMapping("/tree")
     @Operation(summary = "获取部门树形结构", description = "获取工厂下所有部门的层级树形结构，包含父子关系")
     public ApiResponse<List<DepartmentDTO>> getDepartmentTree(

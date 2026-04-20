@@ -39,6 +39,7 @@ public class WorkOrderController {
     /**
      * 获取工单列表（分页）
      */
+    @RequirePermission({"production:read"})
     @GetMapping
     @Operation(summary = "获取工单列表", description = "分页查询指定工厂的工单")
     public ResponseEntity<?> getWorkOrders(
@@ -76,6 +77,7 @@ public class WorkOrderController {
     /**
      * 获取工单统计
      */
+    @RequirePermission({"production:read"})
     @GetMapping("/stats")
     @Operation(summary = "获取工单统计", description = "获取工厂工单统计数据")
     public ResponseEntity<?> getStats(
@@ -105,6 +107,7 @@ public class WorkOrderController {
     /**
      * 获取逾期工单
      */
+    @RequirePermission({"production:read"})
     @GetMapping("/overdue")
     @Operation(summary = "获取逾期工单", description = "获取未完成且已逾期的工单")
     public ResponseEntity<?> getOverdueWorkOrders(
@@ -156,6 +159,7 @@ public class WorkOrderController {
     /**
      * 获取单个工单详情
      */
+    @RequirePermission({"production:read"})
     @GetMapping("/{id}")
     @Operation(summary = "获取工单详情", description = "根据ID获取工单详情")
     public ResponseEntity<?> getWorkOrder(
