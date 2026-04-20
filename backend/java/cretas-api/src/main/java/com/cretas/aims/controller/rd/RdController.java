@@ -39,6 +39,7 @@ public class RdController {
         return ResponseEntity.ok(Map.of("success", true, "data", req));
     }
 
+    @RequirePermission({"rd:read"})
     @GetMapping("/requests")
     public ResponseEntity<?> listRequests(@PathVariable String factoryId,
                                            @RequestParam(required = false) String status,
@@ -142,6 +143,7 @@ public class RdController {
                 sampleService.rejectSample(factoryId, sampleId, userId, body.get("notes"))));
     }
 
+    @RequirePermission({"rd:read"})
     @GetMapping("/samples")
     public ResponseEntity<?> listSamples(@PathVariable String factoryId,
                                           @RequestParam(required = false) String status,
@@ -151,6 +153,7 @@ public class RdController {
                 sampleService.listSamples(factoryId, status, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")))));
     }
 
+    @RequirePermission({"rd:read"})
     @GetMapping("/samples/{sampleId}")
     public ResponseEntity<?> getSample(@PathVariable String factoryId, @PathVariable String sampleId) {
         return ResponseEntity.ok(Map.of("success", true, "data", sampleService.getSample(factoryId, sampleId)));
@@ -160,6 +163,7 @@ public class RdController {
      * P1-8: 读取样品追踪记录（新独立表）.
      * 前端 openTrackingDialog 调此接口取代从 progressNotes JSON 解析.
      */
+    @RequirePermission({"rd:read"})
     @GetMapping("/samples/{sampleId}/tracking-records")
     public ResponseEntity<?> getTrackingRecords(@PathVariable String factoryId, @PathVariable String sampleId) {
         return ResponseEntity.ok(Map.of("success", true, "data",
@@ -196,6 +200,7 @@ public class RdController {
         return ResponseEntity.ok(Map.of("success", true, "data", task, "message", "报价已确认"));
     }
 
+    @RequirePermission({"rd:read"})
     @GetMapping("/quotations")
     public ResponseEntity<?> listQuotations(@PathVariable String factoryId,
                                              @RequestParam(required = false) String status,

@@ -2,6 +2,7 @@ package com.cretas.aims.config;
 
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.User;
+import com.cretas.aims.entity.enums.FactoryUserRole;
 import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.service.PermissionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,6 +13,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -81,11 +83,107 @@ public class PermissionInterceptor implements HandlerInterceptor {
         }
 
         if (!hasPermission) {
-            sendError(response, HttpServletResponse.SC_FORBIDDEN, annotation.message());
+            sendPermissionDenied(response, user, requiredPermissions, annotation);
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * 权限不足响应 — 按 qa-prompt v2.2 Rule 8 四位一体要求构造 rich body:
+     *   message:     具体描述哪个角色 + 哪个模块 + 哪个动作 被拒
+     *   actionHint:  明确 next action (联系管理员 / 切号)
+     *   severity:    "error" 触发前端 ElNotification sticky + closeBtn
+     *   hintTarget:  (可选) 前端 pulseHintTarget
+     */
+    private void sendPermissionDenied(HttpServletResponse response, User user,
+                                       String[] requiredPermissions,
+                                       RequirePermission annotation) throws Exception {
+        String roleCode = user.getRoleEnum() == null ? "unknown" : user.getRoleEnum().name();
+        String roleLabel = roleLabel(user.getRoleEnum());
+        String first = requiredPermissions.length > 0 ? requiredPermissions[0] : "";
+        String[] parts = first.split(":", 2);
+        String moduleCode = parts.length > 0 ? parts[0] : "";
+        String action = parts.length > 1 ? parts[1] : "read_write";
+        String moduleLabel = moduleLabel(moduleCode);
+        String actionLabel = actionLabel(action);
+
+        // 如果 annotation.message() 不是默认文案, 尊重自定义
+        String customMsg = annotation.message();
+        boolean isDefault = customMsg == null || customMsg.isEmpty()
+                || "权限不足，无法访问此资源".equals(customMsg);
+        String message;
+        if (isDefault) {
+            message = String.format("您的角色 [%s] 在 [%s] 模块无 [%s] 权限",
+                    roleLabel, moduleLabel, actionLabel);
+        } else {
+            message = customMsg;
+        }
+
+        String actionHint = "请联系工厂管理员在 Canvas → 模块权限 矩阵为角色 [" + roleLabel + "] 开通 ["
+                + moduleLabel + "] 的 [" + actionLabel + "] 权限, 或切换到有权限的账号重试";
+
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setContentType("application/json;charset=UTF-8");
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("success", false);
+        body.put("code", "FORBIDDEN");
+        body.put("message", message);
+        body.put("severity", "error");
+        body.put("actionHint", actionHint);
+        Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put("role", roleCode);
+        meta.put("module", moduleCode);
+        meta.put("action", action);
+        body.put("meta", meta);
+
+        response.getWriter().write(objectMapper.writeValueAsString(body));
+    }
+
+    private String roleLabel(FactoryUserRole role) {
+        if (role == null) return "未知角色";
+        try {
+            // FactoryUserRole 的构造参数第一个就是中文名 (description)
+            return role.getDisplayName();
+        } catch (Throwable t) {
+            return role.name();
+        }
+    }
+
+    private String moduleLabel(String moduleCode) {
+        switch (moduleCode) {
+            case "dashboard": return "首页";
+            case "production": return "生产管理";
+            case "warehouse": return "仓储管理";
+            case "quality": return "质量管理";
+            case "procurement": return "采购管理";
+            case "sales": return "销售管理";
+            case "hr": return "人事管理";
+            case "equipment": return "设备管理";
+            case "finance": return "财务管理";
+            case "system": return "系统管理";
+            case "analytics": return "数据分析";
+            case "scheduling": return "智能调度";
+            case "work_report": return "工作报告";
+            case "inventory": return "库存管理";
+            case "report": return "报表";
+            case "rd": return "研发管理";
+            case "restaurant": return "餐饮管理";
+            default: return moduleCode;
+        }
+    }
+
+    private String actionLabel(String action) {
+        switch (action) {
+            case "read": return "读取";
+            case "write": return "写入";
+            case "read_write": return "读写";
+            case "create": return "创建";
+            case "approve": return "审批";
+            default: return action;
+        }
     }
 
     /**
