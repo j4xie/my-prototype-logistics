@@ -887,56 +887,150 @@ async def auto_parse_excel(
                 csv_skiprows = max(0, (effective_header_override or 1) - 1)
                 # P0-3 (Apr 20): honor form max_rows instead of hardcoded 10000 silent cap
                 csv_nrows = max_rows if max_rows > 0 else None
-                try:
-                    df_csv = pd.read_csv(io.BytesIO(content), nrows=csv_nrows, skiprows=csv_skiprows)
-                except UnicodeDecodeError:
-                    df_csv = pd.read_csv(io.BytesIO(content), nrows=csv_nrows, skiprows=csv_skiprows, encoding="gbk")
 
-                # D1 Apr 17 2026: Smart title-row skip for CSV
-                # If all columns start with "Unnamed:" (pandas fallback for empty headers)
-                # OR if >=80% of columns look like data values (numeric-looking names),
-                # the first row was a title/subtitle. Try skipping extra rows until headers
-                # look like real column names (Chinese business terms).
-                if effective_header_override is None:  # only auto-detect if user didn't specify
-                    headers_preview = [str(c) for c in df_csv.columns]
-                    import re as _re_hdr
+                # P0-9 (Apr 20, Step 1b fix): prevent OOM on 263MB CSV with 232-col
+                # comma-padded headers. Previously the title-row auto-skip loop
+                # re-read the full file (up to 5 times!) with 200K × 232 cols each,
+                # blowing 7GB RSS → OOM. Now we PROBE with nrows=100 to detect
+                # the real skiprows and the real column count, then do ONE final
+                # read with usecols=<real_cols>. This scales memory with real_cols
+                # (typically 60) × rows, not padded_cols (232) × rows × retries.
+                import re as _re_hdr
+                _unnamed_pat = _re_hdr.compile(r'^Unnamed:\s*\d+$')
+
+                def _probe(skip):
+                    try:
+                        return pd.read_csv(io.BytesIO(content), nrows=100, skiprows=skip), None
+                    except UnicodeDecodeError:
+                        return pd.read_csv(io.BytesIO(content), nrows=100, skiprows=skip, encoding="gbk"), "gbk"
+
+                df_probe, detected_encoding = _probe(csv_skiprows)
+
+                # Title-row auto-skip loop — now on probe (nrows=100), not full file
+                if effective_header_override is None:
                     def looks_like_title_row(hdrs):
                         if not hdrs: return False
-                        unnamed_count = sum(1 for h in hdrs if _re_hdr.match(r'^Unnamed:\s*\d+$', h))
-                        # 80%+ Unnamed → first row was title
+                        unnamed_count = sum(1 for h in hdrs if _unnamed_pat.match(h))
                         if unnamed_count >= 0.8 * len(hdrs):
                             return True
-                        # Or all headers look like numbers/dates (data row leaked as header)
                         data_like = sum(1 for h in hdrs if _re_hdr.match(r'^[\d\s\-./年月日:]+$', h))
                         if data_like >= 0.8 * len(hdrs):
                             return True
                         return False
                     tried_skiprows = csv_skiprows
+                    headers_preview = [str(c) for c in df_probe.columns]
                     while looks_like_title_row(headers_preview) and tried_skiprows < 5:
                         tried_skiprows += 1
-                        try:
-                            df_csv = pd.read_csv(io.BytesIO(content), nrows=csv_nrows, skiprows=tried_skiprows)
-                        except UnicodeDecodeError:
-                            df_csv = pd.read_csv(io.BytesIO(content), nrows=csv_nrows, skiprows=tried_skiprows, encoding="gbk")
-                        headers_preview = [str(c) for c in df_csv.columns]
-                        logger.info(f"CSV title-row auto-skip: retry with skiprows={tried_skiprows}, headers={headers_preview[:3]}")
-                    if tried_skiprows != csv_skiprows:
-                        csv_skiprows = tried_skiprows
+                        df_probe, detected_encoding = _probe(tried_skiprows)
+                        headers_preview = [str(c) for c in df_probe.columns]
+                        logger.info(f"CSV title-row auto-skip (probe): skiprows={tried_skiprows}, headers={headers_preview[:3]}")
+                    csv_skiprows = tried_skiprows
 
-                # P0-7 (Apr 20): Drop trailing "Unnamed: N" cols whose entire column
-                # is empty/NaN. 263MB qhj_order_detail.csv bug: title rows padded with
-                # 171 trailing commas → pandas inferred max 232 cols, real header only
-                # has 60. Mapper then sees 172 bogus Unnamed cols and misclassifies.
-                unnamed_pattern = __import__('re').compile(r'^Unnamed:\s*\d+$')
+                # Identify real cols from the probe: drop trailing Unnamed cols
+                # whose entire 100-row probe is NaN. usecols= in the main read
+                # then tells pandas NOT to allocate 172 padding cols × 200K rows.
+                cols_to_keep_idx = [
+                    i for i, c in enumerate(df_probe.columns)
+                    if not (_unnamed_pat.match(str(c)) and df_probe[c].isna().all())
+                ]
+
+                read_kwargs = dict(skiprows=csv_skiprows, nrows=csv_nrows)
+                if len(cols_to_keep_idx) < len(df_probe.columns):
+                    read_kwargs["usecols"] = cols_to_keep_idx
+                    dropped = len(df_probe.columns) - len(cols_to_keep_idx)
+                    logger.info(
+                        f"[csv-trim-preload] dropping {dropped} padding cols BEFORE main read "
+                        f"(real={len(cols_to_keep_idx)}, padded={len(df_probe.columns)}) "
+                        f"→ memory saved ~{dropped / len(df_probe.columns) * 100:.0f}%"
+                    )
+                if detected_encoding:
+                    read_kwargs["encoding"] = detected_encoding
+
+                # P0-10 (Apr 20, Step 1b OOM fix v2): wide-column CSVs (>80 real cols)
+                # with 200K+ rows exhaust 14GB server RAM (each 100K × 200-col object
+                # dtype ≈ 3GB pandas + 1GB overhead). Until chunked persist lands
+                # (see TODO), cap nrows to 100K for such files. Customer gets first
+                # 100K rows which is representative for AI analytics on POS detail.
+                real_cols = len(cols_to_keep_idx) if cols_to_keep_idx else len(df_probe.columns)
+                file_size_mb = len(content) / 1024 / 1024
+                # P0-10 v3: empirical: 100K × 231 cols still OOMs on 14GB server
+                # (7.5GB RSS observed). Scale cap with col width to keep pandas
+                # working-set under ~1.5GB:
+                #   col_cnt ≤  40 → 500K
+                #   col_cnt ≤  80 → 200K
+                #   col_cnt ≤ 150 → 80K
+                #   col_cnt > 150 → 30K  (e.g. 231-col POS detail)
+                # v4 (Apr 20 post-OOM): empirical cell-budget cap. OOM happens
+                # downstream of read_csv (~4 passes convert df → nested list →
+                # dict → sanitized dict), each ~rows×cols×500B ≈ 4× multiplier.
+                # Target peak working set <1.5GB → cell budget = 500K cells.
+                #   40 cols → 12500 rows  |   80 cols → 6250 rows
+                #  150 cols → 3333 rows   |  231 cols → 2164 rows
+                # Customer gets a representative sample; true full-volume
+                # support needs streaming persist (tracked TODO).
+                CELL_BUDGET = 500_000
+                budget_cap = max(1000, CELL_BUDGET // max(1, real_cols))
+                if real_cols <= 40:
+                    safety_cap = min(500_000, max(budget_cap, 100_000))
+                else:
+                    safety_cap = budget_cap
+                if csv_nrows is None or csv_nrows > safety_cap:
+                    logger.warning(
+                        f"[csv-safety-cap] wide CSV: {file_size_mb:.0f}MB × {real_cols} real cols → "
+                        f"nrows {csv_nrows} capped to {safety_cap} to prevent OOM. "
+                        f"TODO: migrate to chunksize-based streaming persist for full coverage."
+                    )
+                    read_kwargs["nrows"] = safety_cap
+                    csv_nrows = safety_cap
+
+                # DIAG: memory checkpoint before main read
+                try:
+                    import resource as _res
+                    import os as _os
+                    _rss_before = _res.getrusage(_res.RUSAGE_SELF).ru_maxrss / 1024
+                    logger.warning(f"[mem-diag] BEFORE main read_csv: peak-RSS={_rss_before:.0f}MB pid={_os.getpid()}")
+                except Exception:
+                    _rss_before = 0
+
+                try:
+                    df_csv = pd.read_csv(io.BytesIO(content), **read_kwargs)
+                except UnicodeDecodeError:
+                    read_kwargs["encoding"] = "gbk"
+                    df_csv = pd.read_csv(io.BytesIO(content), **read_kwargs)
+
+                # DIAG: memory after
+                try:
+                    _rss_after = _res.getrusage(_res.RUSAGE_SELF).ru_maxrss / 1024
+                    _df_mem = df_csv.memory_usage(deep=True).sum() / 1024 / 1024
+                    logger.warning(
+                        f"[mem-diag] AFTER main read_csv: peak-RSS={_rss_after:.0f}MB "
+                        f"(Δ{_rss_after-_rss_before:+.0f}MB), df.memory_usage(deep)={_df_mem:.0f}MB, "
+                        f"df.shape={df_csv.shape}"
+                    )
+                except Exception as _me:
+                    logger.warning(f"[mem-diag] failed: {_me}")
+
+                # P0-7 safety net: re-trim if probe missed some edge-case padding.
+                # Most of the time this is a no-op because usecols already pruned.
+                unnamed_pattern = _unnamed_pat
                 cols_to_drop = [
                     c for c in df_csv.columns
                     if unnamed_pattern.match(str(c))
                     and df_csv[c].isna().all()
                 ]
                 if cols_to_drop:
-                    logger.info(f"[csv-trim] dropping {len(cols_to_drop)} empty Unnamed cols "
-                                f"(padding commas); kept {len(df_csv.columns) - len(cols_to_drop)} cols")
+                    logger.info(f"[csv-trim-fallback] dropping {len(cols_to_drop)} empty Unnamed cols "
+                                f"(probe missed); kept {len(df_csv.columns) - len(cols_to_drop)} cols")
                     df_csv = df_csv.drop(columns=cols_to_drop)
+
+                # P0-11 (Apr 20, retracted): attempted `del content` to free 263MB
+                # buffer before downstream processing. It DID fix OOM (19s parse,
+                # <1GB RSS) but broke extraction because executor.execute_with_pandas
+                # re-reads content at line 1182 — NameError there silently returned
+                # rows=0. True fix needs executor to accept file_path instead of
+                # bytes, plus streaming chunked persist. Deferred to follow-up.
+                # For now the cell-budget cap (line ~990) prevents OOM on most
+                # files; 200MB+ × 200+ col files still fail (need streaming).
 
                 headers_csv = [str(c) for c in df_csv.columns]
                 preview = df_csv.head(20).fillna("").values.tolist()

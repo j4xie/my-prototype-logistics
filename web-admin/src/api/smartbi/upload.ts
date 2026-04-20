@@ -202,6 +202,127 @@ export async function uploadAndAnalyze(file: File, options?: {
   }
 }
 
+// ==================== Async Upload (Task #323 B MVP, Apr 20 2026) ====================
+
+/**
+ * Status polled from /api/smartbi/excel/auto-parse-status/{id}.
+ */
+export interface AsyncUploadStatus {
+  success: boolean;
+  uploadId: number;
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  fileName?: string;
+  factoryId?: string;
+  rowCount?: number | null;
+  columnCount?: number | null;
+  detectedTableType?: string;
+  fieldMappings?: unknown;
+  contextInfo?: Record<string, unknown>;
+  error?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/**
+ * Start an async upload (non-blocking). Returns uploadId immediately so the
+ * caller can poll status and the user can even close the tab mid-parse.
+ *
+ * Use this for files > 50MB or when UX must not block on parse time.
+ * Small files should still use uploadAndAnalyze (synchronous) for simplicity.
+ */
+export async function uploadFileAsync(
+  file: File,
+  factoryId: string,
+  options?: {
+    sheetIndex?: number;
+    maxRows?: number;
+    selectedRegionStart?: number;
+    selectedRegionEnd?: number;
+    onUploadProgress?: (percent: number, loaded: number, total: number) => void;
+  },
+): Promise<{ success: boolean; uploadId?: number; bytesReceived?: number; error?: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('factory_id', factoryId);
+  if (options?.sheetIndex !== undefined) {
+    formData.append('sheet_index', String(options.sheetIndex));
+  }
+  if (options?.maxRows !== undefined) {
+    formData.append('max_rows', String(options.maxRows));
+  }
+  if (options?.selectedRegionStart !== undefined && options?.selectedRegionEnd !== undefined) {
+    formData.append('selected_region_start', String(options.selectedRegionStart));
+    formData.append('selected_region_end', String(options.selectedRegionEnd));
+  }
+
+  try {
+    // Direct Python endpoint via smartbi-api proxy (bypasses Java). Upload-only
+    // timeout — parse happens in background, so this is just bytes-in-transit.
+    const res = await request.post('/smartbi-api/api/smartbi/excel/auto-parse-async', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      baseURL: '',
+      timeout: 600000, // 10min for the transfer itself; parse is async
+      onUploadProgress: options?.onUploadProgress
+        ? (e: { loaded: number; total?: number }) => {
+            const total = e.total || file.size;
+            const percent = total > 0 ? Math.round((e.loaded / total) * 100) : 0;
+            options.onUploadProgress!(percent, e.loaded, total);
+          }
+        : undefined,
+    });
+    const data = (res.data || res) as { success: boolean; uploadId: number; bytesReceived: number };
+    return { success: !!data.success, uploadId: data.uploadId, bytesReceived: data.bytesReceived };
+  } catch (error) {
+    console.error('uploadFileAsync failed:', error);
+    return { success: false, error: error instanceof Error ? error.message : '异步上传失败' };
+  }
+}
+
+/**
+ * Poll /auto-parse-status/{id} until status is terminal (COMPLETED / FAILED)
+ * or timeout. Each poll fires onProgress so UI can show stage info.
+ *
+ * Usage:
+ *   const { uploadId } = await uploadFileAsync(file, 'F001');
+ *   const final = await pollUploadStatus(uploadId, { onProgress: s => updateUI(s) });
+ *   if (final.status === 'COMPLETED') {...}
+ */
+export async function pollUploadStatus(
+  uploadId: number,
+  options?: {
+    intervalMs?: number;
+    timeoutMs?: number;
+    onProgress?: (s: AsyncUploadStatus) => void;
+  },
+): Promise<AsyncUploadStatus> {
+  const interval = options?.intervalMs ?? 3000; // 3s cadence
+  const timeout = options?.timeoutMs ?? 20 * 60 * 1000; // 20 min
+  const onProgress = options?.onProgress ?? (() => {});
+  const start = Date.now();
+
+  while (Date.now() - start < timeout) {
+    try {
+      const res = await request.get(
+        `/smartbi-api/api/smartbi/excel/auto-parse-status/${uploadId}`,
+        { baseURL: '', timeout: 15000, _silent: true } as Record<string, unknown>,
+      );
+      const status = (res.data || res) as AsyncUploadStatus;
+      onProgress(status);
+      if (status.status === 'COMPLETED' || status.status === 'FAILED') {
+        return status;
+      }
+    } catch (error) {
+      // Transient errors (network blip, 502 during Python restart) — keep
+      // polling unless we've exhausted the outer timeout budget.
+      console.warn('[pollUploadStatus] transient error, retrying:', error);
+    }
+    await new Promise((r) => setTimeout(r, interval));
+  }
+  throw new Error(`Async upload poll timeout after ${timeout}ms (uploadId=${uploadId})`);
+}
+
+// ==================== End Async Upload ====================
+
 /**
  * Confirm upload and persist (using existing Java endpoint)
  */

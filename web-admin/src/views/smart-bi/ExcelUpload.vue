@@ -9,6 +9,12 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import {
   uploadAndAnalyze,
+  // uploadFileAsync + pollUploadStatus (Task #323 B MVP, Apr 20): async upload
+  // helpers exist in api/smartbi/upload.ts but NOT wired into this flow yet —
+  // async Python /auto-parse-async only PARSES (no DB persist). Customer needs
+  // data in smart_bi_dynamic_data for AI chat, which goes through Java's
+  // /upload-and-analyze. Wiring async here would give "upload OK" but empty
+  // AI chat. Next iteration should add async variant on Java side.
   confirmUploadAndPersist,
   detectTableRegions,
   type AnalysisResult,
