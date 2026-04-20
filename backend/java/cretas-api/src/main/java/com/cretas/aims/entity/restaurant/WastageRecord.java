@@ -54,7 +54,10 @@ public class WastageRecord extends BaseEntity {
 
     // ========== 归属与单号 ==========
 
-    @NotBlank
+    /**
+     * Apr 20 Bug BR-04 fix: 移除 @NotBlank — controller.create 在 @Valid 之后
+     * setFactoryId(pathFactoryId). DB 列仍 NOT NULL.
+     */
     @Column(name = "factory_id", nullable = false, length = 100)
     private String factoryId;
 
@@ -66,8 +69,9 @@ public class WastageRecord extends BaseEntity {
 
     /**
      * 损耗日期
+     * Apr 20 Bug BR-04 fix: 移除 @NotNull — controller auto-fill LocalDate.now() 如 null.
+     * @Valid 先跑导致"不能为空"误报. DB 列仍 NOT NULL.
      */
-    @NotNull
     @Column(name = "wastage_date", nullable = false)
     private LocalDate wastageDate;
 

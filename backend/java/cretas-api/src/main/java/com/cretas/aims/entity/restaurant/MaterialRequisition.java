@@ -57,7 +57,10 @@ public class MaterialRequisition extends BaseEntity {
 
     // ========== 归属与单号 ==========
 
-    @NotBlank
+    /**
+     * Apr 20 Bug BR-02 fix: 移除 @NotBlank — controller.create 在 @Valid 之后
+     * setFactoryId(pathFactoryId). @Valid 先跑导致"不能为空"误报. DB 列仍 NOT NULL.
+     */
     @Column(name = "factory_id", nullable = false, length = 100)
     private String factoryId;
 
@@ -69,8 +72,9 @@ public class MaterialRequisition extends BaseEntity {
 
     /**
      * 领料日期
+     * Apr 20 Bug BR-02 fix: 移除 @NotNull — controller.createRequisition 在 @Valid 之后会
+     * auto-fill LocalDate.now() 如果 null, 但 @Valid 先跑会误判"不能为空". DB 列仍 NOT NULL.
      */
-    @NotNull
     @Column(name = "requisition_date", nullable = false)
     private LocalDate requisitionDate;
 
