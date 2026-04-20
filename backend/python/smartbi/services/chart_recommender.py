@@ -1160,7 +1160,7 @@ class ChartRecommender:
             ))
 
         # 7. Pareto chart — when categories have skewed distribution
-        if has_categories and has_measures and row_count >= 5:
+        if has_categories and has_measures and row_count >= 5 and cat_has_variety:
             recommendations.append(ChartRecommendation(
                 chart_type="pareto",
                 title="帕累托分析",
@@ -1184,7 +1184,7 @@ class ChartRecommender:
             ))
 
         # 9. Horizontal bar — long category labels
-        if has_categories and has_measures:
+        if has_categories and has_measures and cat_has_variety:
             recommendations.append(ChartRecommendation(
                 chart_type="bar_horizontal",
                 title="横向排行",
@@ -1196,7 +1196,7 @@ class ChartRecommender:
             ))
 
         # 10. Treemap — hierarchical or categorical data with values
-        if has_categories and has_measures and 3 <= row_count <= 50:
+        if has_categories and has_measures and 3 <= row_count <= 50 and cat_has_variety:
             recommendations.append(ChartRecommendation(
                 chart_type="treemap",
                 title="面积占比分析",
@@ -1208,7 +1208,7 @@ class ChartRecommender:
             ))
 
         # 11. Wordcloud — text column with frequency/count data
-        if has_categories and has_measures:
+        if has_categories and has_measures and cat_has_variety:
             # Detect text-heavy columns (many unique values, short text)
             col_names_lower = ' '.join([
                 c.get('columnName', c.get('column_name', ''))
