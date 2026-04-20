@@ -182,8 +182,28 @@ async def auto_parse_status(upload_id: int):
         }
         if upload.upload_status == "COMPLETED":
             result["detectedTableType"] = upload.detected_table_type
-            result["fieldMappings"] = upload.field_mappings
-            result["contextInfo"] = upload.context_info
+            result["fieldMappings"] = upload.field_mappings or []
+            result["contextInfo"] = upload.context_info or {}
+            # FE-compatibility: expose headers + first 20 rows so the
+            # existing ExcelUpload.vue shape (parseResult.preview_data)
+            # can be filled without a second round-trip. headers come
+            # from context_info.headers (stored by stream-worker);
+            # preview is a cheap LIMIT-20 query against dynamic_data.
+            ctx = upload.context_info or {}
+            result["headers"] = ctx.get("headers") or []
+            try:
+                from smartbi.database.models import SmartBiDynamicData
+                preview_rows = (
+                    db.query(SmartBiDynamicData.row_data)
+                    .filter_by(upload_id=upload_id)
+                    .order_by(SmartBiDynamicData.row_index.asc())
+                    .limit(20)
+                    .all()
+                )
+                result["previewData"] = [r[0] for r in preview_rows]
+            except Exception as _pe:
+                logger.warning(f"[status] preview fetch failed upload_id={upload_id}: {_pe}")
+                result["previewData"] = []
         elif upload.upload_status == "FAILED":
             result["error"] = upload.error_message
         return result
@@ -402,14 +422,28 @@ async def _async_worker_impl(
             logger.info(f"[stream-worker] upload {upload_id}: {total_rows} rows persisted")
 
         # --- Step 4: finalize ---
+        # Populate field_mappings JSONB (FE needs this shape for field review
+        # step; mirrors AutoParseResponse.fieldMappings contract).
         upload.upload_status = "COMPLETED"
         upload.row_count = total_rows
         upload.column_count = len(real_headers)
+        upload.field_mappings = [
+            {
+                "originalColumn": m.original,
+                "standardField": m.standard,
+                "dataType": m.data_type,
+                "confidence": m.confidence,
+                "source": m.method,
+            }
+            for m in mapping_result.field_mappings
+        ]
+        upload.detected_table_type = mapping_result.table_type
         upload.context_info = {
             "streamPersist": True,
             "parsedInMs": int((time.time() - start) * 1000),
             "csvSkiprows": csv_skiprows,
             "encoding": encoding or "utf-8",
+            "headers": real_headers,  # so status endpoint can return them
         }
         db.commit()
         logger.info(

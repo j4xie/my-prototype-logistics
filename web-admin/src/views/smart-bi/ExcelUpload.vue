@@ -9,12 +9,12 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import {
   uploadAndAnalyze,
-  // uploadFileAsync + pollUploadStatus (Task #323 B MVP, Apr 20): async upload
-  // helpers exist in api/smartbi/upload.ts but NOT wired into this flow yet —
-  // async Python /auto-parse-async only PARSES (no DB persist). Customer needs
-  // data in smart_bi_dynamic_data for AI chat, which goes through Java's
-  // /upload-and-analyze. Wiring async here would give "upload OK" but empty
-  // AI chat. Next iteration should add async variant on Java side.
+  // Step 2D+2-5 (Apr 20 2026): async path now does full streaming persist
+  // (smart_bi_dynamic_data + field_definitions) — wiring it in for files >50MB
+  // so customers get 200K+ rows without the sync-path 65K cap and without
+  // blocking the browser tab.
+  uploadFileAsync,
+  pollUploadStatus,
   confirmUploadAndPersist,
   detectTableRegions,
   type AnalysisResult,
@@ -335,6 +335,14 @@ async function handleUpload(file: UploadFile) {
 }
 
 async function runUploadAndAnalyze(rawFile: File, region?: TableRegion) {
+  // Step 2-5 (Apr 20 2026): branch >50MB files to async streaming persist
+  // path. Sync path is still capped at ~65K rows due to memory; async does
+  // full 200K+ via chunked read + execute_values bulk insert. UX win: tab
+  // can close mid-parse, polling reconnects.
+  const ASYNC_THRESHOLD_MB = 50;
+  if (rawFile.size > ASYNC_THRESHOLD_MB * 1024 * 1024) {
+    return runUploadAsync(rawFile, region);
+  }
   uploading.value = true;
   uploadProgress.value = 0;
   uploadStage.value = 'uploading';  // P0-6: 'uploading' (0-100 字节进度) → 'parsing' (后端解析, 无百分比)
@@ -411,6 +419,123 @@ async function runUploadAndAnalyze(rawFile: File, region?: TableRegion) {
     ElMessage.error('文件上传失败: ' + (error instanceof Error ? error.message : '未知错误'));
   } finally {
     // P0-6: no more fake progressInterval; axios onUploadProgress drives uploadProgress now.
+    uploading.value = false;
+    uploadStage.value = 'idle';
+  }
+
+  return false;
+}
+
+/**
+ * Step 2-5 (Apr 20 2026): async streaming upload path for files >50MB.
+ *
+ * Calls Python /auto-parse-async directly (bypasses Java sync flow which
+ * is memory-capped at ~65K rows). Returns uploadId immediately, then polls
+ * /auto-parse-status every 3s until COMPLETED/FAILED.
+ *
+ * Memory bounded on server (chunked CSV read + execute_values bulk insert)
+ * so 263MB × 200K × 231 fits. Customer gets full-fidelity analysis on large
+ * POS detail exports.
+ */
+async function runUploadAsync(rawFile: File, region?: TableRegion) {
+  uploading.value = true;
+  uploadProgress.value = 0;
+  uploadStage.value = 'uploading';
+
+  // Try to get factoryId from auth store; fallback to F001 for backward compat.
+  const authStore = useAuthStore();
+  const factoryId =
+    (authStore.user as { factoryId?: string } | null)?.factoryId || 'F001';
+
+  try {
+    // Phase A: transfer bytes to server (progress 0-100%)
+    const uploadResult = await uploadFileAsync(rawFile, factoryId, {
+      maxRows: 500000,
+      ...(region
+        ? {
+            selectedRegionStart: region.startRow,
+            selectedRegionEnd: region.endRow,
+          }
+        : {}),
+      onUploadProgress: (percent: number) => {
+        uploadProgress.value = percent;
+        if (percent >= 100) {
+          uploadStage.value = 'parsing';
+        }
+      },
+    });
+
+    if (!uploadResult.success || !uploadResult.uploadId) {
+      ElMessage.error(uploadResult.error || '异步上传失败');
+      return false;
+    }
+
+    ElMessage.info(
+      `大文件异步上传: ${Math.round(rawFile.size / 1024 / 1024)}MB 已接收, 后台处理中 (可切换页面,稍后回来).`,
+    );
+
+    // Phase B: poll status until terminal state.
+    const final = await pollUploadStatus(uploadResult.uploadId, {
+      intervalMs: 3000,
+      timeoutMs: 20 * 60 * 1000, // 20 min for very large files
+      onProgress: (s) => {
+        // Keep UI in 'parsing' stage; rows count grows as batches commit.
+        uploadStage.value = 'parsing';
+        if (typeof s.rowCount === 'number' && s.rowCount > 0) {
+          // Re-purpose progress bar as a "rows-so-far" indicator.
+          // We don't know totalRows yet, so keep bar at 100% during parsing.
+        }
+      },
+    });
+
+    uploadProgress.value = 100;
+    uploadStage.value = 'done';
+
+    if (final.status !== 'COMPLETED') {
+      ElMessage.error(`解析失败: ${final.error || '未知错误'}`);
+      return false;
+    }
+
+    // Phase C: build parseResult from status response.
+    type AsyncStatusPayload = typeof final & {
+      headers?: string[];
+      previewData?: Record<string, unknown>[];
+    };
+    const payload = final as AsyncStatusPayload;
+    const headers: string[] = payload.headers || [];
+    const previewData: Record<string, unknown>[] = payload.previewData || [];
+    const fmappings = (payload.fieldMappings as Array<{
+      originalColumn: string;
+      standardField: string;
+    }> | null) || [];
+
+    parseResult.value = {
+      totalRows: final.rowCount || 0,
+      validRows: final.rowCount || 0,
+      errorRows: 0,
+      headers,
+      sampleData: previewData as Record<string, string>[],
+      errors: [],
+    };
+    parsedData.value = previewData;
+    parsedFields.value = fmappings.map((m) => ({
+      original: m.originalColumn,
+      standard: m.standardField,
+    }));
+    parsedTableType.value = final.detectedTableType || '';
+    currentUploadId.value = final.uploadId;
+
+    buildFieldTypeConfirmations();
+    currentStep.value = 1;
+    ElMessage.success(
+      `大文件解析完成: ${final.rowCount} 行 × ${final.columnCount} 列 (流式持久化,已入库)`,
+    );
+  } catch (error) {
+    console.error('异步上传失败:', error);
+    ElMessage.error(
+      '异步上传失败: ' + (error instanceof Error ? error.message : '未知错误'),
+    );
+  } finally {
     uploading.value = false;
     uploadStage.value = 'idle';
   }
