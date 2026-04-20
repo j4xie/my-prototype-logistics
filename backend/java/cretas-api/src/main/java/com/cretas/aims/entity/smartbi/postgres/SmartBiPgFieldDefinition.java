@@ -50,16 +50,20 @@ public class SmartBiPgFieldDefinition {
     private Long uploadId;
 
     /**
-     * Original field name from Excel
+     * Original field name from Excel.
+     * Apr 20 2026: 用户上传含长表头 Excel (多行合并 + 单位说明 + 多语言) 超过 255 →
+     * "value too long for type character varying(255)" 批量插入失败,整个 upload FAILED.
+     * 扩到 TEXT (无上限). DB migration V20260425_01 同步 ALTER COLUMN.
      */
-    @Column(name = "original_name", length = 255)
+    @Column(name = "original_name", columnDefinition = "TEXT")
     private String originalName;
 
     /**
      * Standardized semantic field name
-     * Mapped by AI to common business terms
+     * Mapped by AI to common business terms.
+     * 扩到 500 防御 AI 生成的长 standard_name (e.g. 多维度组合字段).
      */
-    @Column(name = "standard_name", length = 100)
+    @Column(name = "standard_name", length = 500)
     private String standardName;
 
     /**
