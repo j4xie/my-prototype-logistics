@@ -295,7 +295,9 @@ function handleAiFill(params: Record<string, unknown>) {
       </div>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="`新建${label('purchaseOrder')}`" width="720px" destroy-on-close>
+    <!-- Apr 20 Bug BR-06 fix: 原材料明细 7 列 (200+120+100+80+100+80+40=720 + 6×8gap=48 + body padding 40 ≈ 808px),
+         在 720px dialog 里被截断. 扩到 880px 留余量 -->
+    <el-dialog v-model="dialogVisible" :title="`新建${label('purchaseOrder')}`" width="880px" destroy-on-close>
       <el-form :model="form" label-width="100px">
         <el-form-item :label="label('supplier')">
           <el-select v-model="form.supplierId" placeholder="请选择" filterable style="width: 100%">

@@ -179,6 +179,14 @@ request.interceptors.response.use(
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean; _silent?: boolean };
     const status = error.response?.status;
 
+    // Apr 20 Bug BR-01 fix: 用户点浏览器回退/路由切换时, 进行中的 axios 请求会被 abort,
+    // 抛 AxiosError code=ERR_CANCELED, message='canceled'. 之前默认路径会走 showMessage
+    // 弹 "canceled" toast, 用户困惑. 正确做法是静默 reject (调用方通常 await with
+    // .catch 或 Promise.allSettled, 不会 surface 给用户).
+    if (axios.isCancel?.(error) || error.code === 'ERR_CANCELED' || error.message === 'canceled') {
+      return Promise.reject(error);
+    }
+
     // 401 未授权 - 尝试刷新 token via cookie
     if (status === 401 && !originalRequest._retry) {
       if (isRefreshing) {

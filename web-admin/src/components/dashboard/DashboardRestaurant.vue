@@ -43,7 +43,8 @@ const statCards = computed(() => [
     unit: '单',
     icon: Warning,
     color: 'var(--el-color-warning)',
-    route: '/restaurant/requisitions'
+    // Apr 20 Bug BR-03 fix: 点击"待审批"应进入 SUBMITTED 过滤列表, 而不是全列表
+    route: '/restaurant/requisitions?status=SUBMITTED'
   },
   {
     title: '本月损耗',

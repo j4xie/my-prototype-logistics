@@ -41,12 +41,28 @@ async function loadData() {
     if (statusFilter.value) params.status = statusFilter.value;
     const res = await get(`/${factoryId.value}/finance/invoices`, { params });
     if (res.success) {
-      tableData.value = res.data.content || [];
+      let rows = res.data.content || [];
+      // Apr 20 Bug BR-11 fix: 前端补 keyword 搜索 (客户 / 发票号), 后端无 keyword 参数
+      const kw = searchKeyword.value.trim();
+      if (kw) {
+        const lower = kw.toLowerCase();
+        rows = rows.filter((r: Record<string, unknown>) =>
+          String(r.customerName || '').toLowerCase().includes(lower) ||
+          String(r.invoiceNumber || '').toLowerCase().includes(lower) ||
+          String(r.orderNumber || '').toLowerCase().includes(lower)
+        );
+      }
+      tableData.value = rows;
       pagination.value.total = res.data.totalElements || 0;
     }
   } catch { /* axios interceptor already displayed error toast */ }
   finally { loading.value = false; }
 }
+
+// Apr 20 Bug BR-11 fix: keyword state
+const searchKeyword = ref('');
+function handleSearch() { pagination.value.page = 1; loadData(); }
+function handleReset() { searchKeyword.value = ''; statusFilter.value = ''; handleSearch(); }
 
 async function handleAction(id: string, action: 'approve' | 'reject' | 'issue') {
   const labels = { approve: '审核通过', reject: '驳回', issue: '开具发票' };
@@ -136,9 +152,13 @@ async function handleRequestSubmit() {
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:16px;font-weight:600">开票管理</span>
           <div style="display:flex;gap:8px">
+            <!-- Apr 20 Bug BR-11 fix: 加 keyword 搜索 (客户 / 发票号 / 订单号) -->
+            <el-input v-model="searchKeyword" placeholder="搜索 客户/发票号/订单号" clearable style="width:220px" @keyup.enter="handleSearch" />
             <el-select v-model="statusFilter" placeholder="全部状态" clearable style="width:140px" @change="loadData">
               <el-option v-for="(v,k) in statusMap" :key="k" :label="v.text" :value="k" />
             </el-select>
+            <el-button type="primary" @click="handleSearch">搜索</el-button>
+            <el-button @click="handleReset">重置</el-button>
             <el-button v-if="canWrite" type="primary" @click="requestDialogVisible = true">申请开票</el-button>
           </div>
         </div>

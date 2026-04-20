@@ -186,6 +186,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue';
+import { useRoute } from 'vue-router';
 import { Plus, Search, Refresh, Download } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus';
 import { useFactoryId } from '@/composables/useFactoryId';
@@ -483,7 +484,18 @@ async function handleExport() {
   ], '领料记录');
 }
 
-onMounted(() => { loadData(); loadSelectOptions(); loadStatistics(); });
+// Apr 20 Bug BR-03 fix: DashboardRestaurant 的"待审批"卡片现传 ?status=SUBMITTED
+// 进来, 这里读 route query 预设 filterStatus, 让用户看到筛选后列表而不是全列表.
+const route = useRoute();
+onMounted(() => {
+  const qs = route.query.status;
+  if (typeof qs === 'string' && ['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED'].includes(qs)) {
+    filterStatus.value = qs;
+  }
+  loadData();
+  loadSelectOptions();
+  loadStatistics();
+});
 
 // Handle full-page reload: factoryId may not be ready at mount time
 watch(factoryId, (val) => { if (val) { loadData(); loadStatistics(); } });

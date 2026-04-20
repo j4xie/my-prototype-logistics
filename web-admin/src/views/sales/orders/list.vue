@@ -6,7 +6,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { useBusinessMode } from '@/composables/useBusinessMode';
 import { get, post, put } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Refresh, ChatDotRound } from '@element-plus/icons-vue';
+import { Plus, Refresh, Search, ChatDotRound } from '@element-plus/icons-vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { SALES_ORDER_CONFIG } from '@/components/ai-entry/types';
 import { formatAmount } from '@/utils/tableFormatters';
@@ -50,6 +50,8 @@ const loading = ref(false);
 const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const statusFilter = ref('');
+// Apr 20 Bug BR-07 fix: 客户报告"未见检索功能", 补 keyword 搜索 (订单号/客户名)
+const searchKeyword = ref('');
 const dialogVisible = ref(false);
 
 // P1-6 智能筛选 tab (v1 金矿截图 49m38s 6 tab)
@@ -191,7 +193,17 @@ async function loadData() {
     if (statusFilter.value) params.status = statusFilter.value;
     const res = await get(url, { params });
     if (res.success && res.data) {
-      tableData.value = res.data.content || [];
+      let rows = res.data.content || [];
+      // Apr 20 Bug BR-07 fix: 补 keyword 搜索 (订单号 / 客户名)
+      const kw = searchKeyword.value.trim();
+      if (kw) {
+        const lower = kw.toLowerCase();
+        rows = rows.filter((r: Record<string, unknown>) =>
+          String(r.orderNumber || '').toLowerCase().includes(lower) ||
+          String(r.customerName || '').toLowerCase().includes(lower)
+        );
+      }
+      tableData.value = rows;
       pagination.value.total = res.data.totalElements || 0;
     } else if (res.success === false) {
       ElMessage.error(res.message || '加载订单失败');
@@ -378,7 +390,7 @@ function goDetail(id: string) { router.push(`/sales/orders/${id}`); }
 function handlePageChange(page: number) { pagination.value.page = page; loadData(); }
 function handleSizeChange(size: number) { pagination.value.size = size; pagination.value.page = 1; loadData(); }
 function handleStatusChange() { pagination.value.page = 1; loadData(); }
-function handleRefresh() { statusFilter.value = ''; pagination.value.page = 1; loadData(); }
+function handleRefresh() { statusFilter.value = ''; searchKeyword.value = ''; pagination.value.page = 1; loadData(); }
 
 // ==================== AI Entry ====================
 const aiEntryVisible = ref(false);
@@ -534,9 +546,12 @@ async function submitQuickPayment() {
       </el-radio-group>
 
       <div class="search-bar">
+        <!-- Apr 20 Bug BR-07 fix: 加 keyword 搜索 (订单号/客户名) -->
+        <el-input v-model="searchKeyword" placeholder="搜索 订单号/客户" clearable style="width: 240px" @keyup.enter="loadData" />
         <el-select v-model="statusFilter" placeholder="按状态筛选" clearable style="width: 160px" @change="handleStatusChange">
           <el-option v-for="(v, k) in statusMap" :key="k" :label="v.text" :value="k" />
         </el-select>
+        <el-button type="primary" :icon="Search" @click="loadData">搜索</el-button>
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
       </div>
 
