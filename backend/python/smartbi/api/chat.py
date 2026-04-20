@@ -1410,8 +1410,29 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 # sees accurate Top-N even if sample-based chart builder misfires
                 # (e.g., label_field picks a column with nulls in first 50 rows).
                 if 'top5_by_dim' in locals() and top5_by_dim and 'primary_measure' in locals() and primary_measure:
-                    primary_dim = next(iter(top5_by_dim.keys()))
-                    top5 = top5_by_dim[primary_dim]
+                    # Bug #346 fix (Apr 20 2026, Layer A4 extension): pick the
+                    # first dim with at least 2 distinct labels. Single-store
+                    # uploads (cardinality=1 on 门店名称) would otherwise render
+                    # a meaningless single-bar "Top 5 门店名称" chart — the exact
+                    # case Layer A4 gate blocks in chart_recommender, now also
+                    # guarded here in the chat streaming path.
+                    primary_dim = None
+                    top5 = None
+                    for _dim, _t5 in top5_by_dim.items():
+                        if len(_t5) >= 2:
+                            primary_dim = _dim
+                            top5 = _t5
+                            break
+                    if primary_dim is None or not top5:
+                        # All dims have ≤1 distinct value — skip the Top-N chart
+                        # entirely. The answer text still carries the analysis;
+                        # caller can rely on `charts_extra` below for alt views.
+                        logger.info(
+                            f"[chart-gate] Skipping Top-5 chart — no dim has "
+                            f">=2 distinct values (dims tried: {list(top5_by_dim.keys())})"
+                        )
+                        primary_dim = None  # skip the append below
+                if 'top5_by_dim' in locals() and top5_by_dim and 'primary_measure' in locals() and primary_measure and primary_dim:
                     charts.append({
                         "type": "bar",
                         "title": f"Top 5 {primary_dim} (按 {primary_measure})",
