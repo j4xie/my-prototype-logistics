@@ -81,7 +81,9 @@ const showRichError = async (
 // 创建 axios 实例
 const request: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api/mobile',
-  timeout: 30000,
+  // P0-8 (Apr 20): 30s→120s default. Big-data analysis (12K+ rows enrich / LLM insights)
+  // exceed 30s, cascading abort. Per-call 600s overrides stay for upload/confirm.
+  timeout: 120000,
   withCredentials: true, // Send HttpOnly cookies with every request
   headers: {
     'Content-Type': 'application/json',
