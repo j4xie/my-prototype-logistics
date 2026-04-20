@@ -415,10 +415,16 @@ class FixedExecutor:
             data_type_map = self._build_data_type_map(structure_config, mapping_config, result.original_headers)
             result.data_types = data_type_map
 
-            for col_idx in range(len(df.columns)):
-                col_name = df.columns[col_idx]
-                data_type = data_type_map.get(col_name, "text")
-                df.iloc[:, col_idx] = df.iloc[:, col_idx].apply(lambda x: self._clean_value(x, data_type))
+            # Step 1e (Apr 20 2026): skip per-cell clean_value loop for
+            # csv_passthrough — pandas CSV values are already JSON-scalar
+            # (str/int/float/nan). The lambda apply was doing N*M function
+            # calls creating N*M new objects, doubling memory churn for wide
+            # CSVs. For xlsx still needed (type coercion, timestamps).
+            if structure_config.method != "csv_passthrough":
+                for col_idx in range(len(df.columns)):
+                    col_name = df.columns[col_idx]
+                    data_type = data_type_map.get(col_name, "text")
+                    df.iloc[:, col_idx] = df.iloc[:, col_idx].apply(lambda x: self._clean_value(x, data_type))
 
             # Remove empty rows if configured
             if options.get("skip_empty_rows", True):
@@ -429,10 +435,15 @@ class FixedExecutor:
             # Convert to records and ensure all values are JSON-safe scalars
             df = df.replace({np.nan: None})
             raw_rows = df.to_dict(orient='records')
-            result.rows = [
-                {k: self._ensure_scalar(v) for k, v in row.items()}
-                for row in raw_rows
-            ]
+            if structure_config.method == "csv_passthrough":
+                # Step 1e: CSV values from pandas are already scalar. Skip the
+                # ensure_scalar dict rebuild (halves peak memory for wide CSVs).
+                result.rows = raw_rows
+            else:
+                result.rows = [
+                    {k: self._ensure_scalar(v) for k, v in row.items()}
+                    for row in raw_rows
+                ]
             result.row_count = len(result.rows)
             result.column_count = len(result.headers)
 
