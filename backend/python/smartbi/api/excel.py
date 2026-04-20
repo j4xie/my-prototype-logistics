@@ -1023,14 +1023,18 @@ async def auto_parse_excel(
                                 f"(probe missed); kept {len(df_csv.columns) - len(cols_to_drop)} cols")
                     df_csv = df_csv.drop(columns=cols_to_drop)
 
-                # P0-11 (Apr 20, retracted): attempted `del content` to free 263MB
-                # buffer before downstream processing. It DID fix OOM (19s parse,
-                # <1GB RSS) but broke extraction because executor.execute_with_pandas
-                # re-reads content at line 1182 — NameError there silently returned
-                # rows=0. True fix needs executor to accept file_path instead of
-                # bytes, plus streaming chunked persist. Deferred to follow-up.
-                # For now the cell-budget cap (line ~990) prevents OOM on most
-                # files; 200MB+ × 200+ col files still fail (need streaming).
+                # Step 1d (Apr 20 2026): stash df_csv for executor reuse and
+                # release the 263MB `content` bytes now. executor accepts
+                # preparsed_df so no re-read is needed — cuts the memory
+                # duplication that was keeping Python at 7GB RSS on wide+large
+                # CSVs. `content` is also referenced in the outer function
+                # scope, so we just rebind to None instead of `del` (avoids
+                # NameError if any late-binding code path touches it).
+                _csv_preparsed_df = df_csv  # keep reference for executor call
+                content = None  # release 263MB bytes buffer
+                import gc as _gc
+                _gc.collect()
+                logger.info(f"[mem-free] released content buffer after CSV parse; df_csv={df_csv.shape}")
 
                 headers_csv = [str(c) for c in df_csv.columns]
                 preview = df_csv.head(20).fillna("").values.tolist()
@@ -1112,7 +1116,15 @@ async def auto_parse_excel(
 
             # Read DataFrame for classification
             if ext == ".csv":
-                df = pd.read_csv(io.BytesIO(content), nrows=50)
+                # Step 1d: reuse preparsed df_csv instead of re-reading content
+                # (which was released to free 263MB buffer).
+                _csv_df_for_classifier = locals().get("_csv_preparsed_df")
+                if _csv_df_for_classifier is not None:
+                    df = _csv_df_for_classifier.head(50)
+                elif content is not None:
+                    df = pd.read_csv(io.BytesIO(content), nrows=50)
+                else:
+                    df = None
             else:
                 df = pd.read_excel(
                     io.BytesIO(content),
@@ -1136,7 +1148,10 @@ async def auto_parse_excel(
         # Step 4: Cache results
         # Bug #42 fix: do NOT write region-selected results to the shared cache
         # (same key as non-region) — it would pollute a subsequent non-region upload.
-        if use_cache and structure_result and mapping_result and not _region_selected:
+        # Step 1d: skip cache write when content buffer has been released
+        # (CSV fast-path does this to avoid holding 263MB). Cache is an
+        # optimization — losing one entry is fine; losing 200MB of RAM isn't.
+        if use_cache and structure_result and mapping_result and not _region_selected and content is not None:
             cache_key = cache.set(
                 content, effective_index,
                 structure_result, mapping_result,
@@ -1173,6 +1188,10 @@ async def auto_parse_excel(
             _region_skip_rows = effective_region_start
             _region_nrows = max(0, effective_region_end - effective_region_start)
 
+        # Step 1d: if CSV fast-path already parsed into df, reuse it so
+        # executor doesn't re-read 263MB content bytes. For non-CSV (Excel),
+        # content is still needed since the executor may call openpyxl.
+        _preparsed_df = locals().get("_csv_preparsed_df")
         extracted = executor.execute_with_pandas(
             content,
             structure_result,
@@ -1185,7 +1204,8 @@ async def auto_parse_excel(
                 "csv_skiprows": _executor_skiprows,
                 "skip_rows": _region_skip_rows,
                 "nrows": _region_nrows,
-            }
+            },
+            preparsed_df=_preparsed_df,
         )
 
         if not extracted.success:

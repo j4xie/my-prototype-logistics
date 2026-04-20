@@ -224,10 +224,11 @@ class FixedExecutor:
 
     def execute_with_pandas(
         self,
-        file_bytes: bytes,
+        file_bytes: Optional[bytes],
         structure_config: StructureDetectionResult,
         mapping_config: SemanticMappingResult,
-        options: Optional[Dict[str, Any]] = None
+        options: Optional[Dict[str, Any]] = None,
+        preparsed_df: Optional["pd.DataFrame"] = None,
     ) -> ExtractedData:
         """
         Execute data extraction using pandas for better performance.
@@ -260,10 +261,24 @@ class FixedExecutor:
             # auto_parse passes csv_skiprows = max(0, (effective_header_override or 1) - 1).
             csv_skiprows = options.get("csv_skiprows", 0)
             if structure_config.method == "csv_passthrough":
-                try:
-                    df = pd.read_csv(io.BytesIO(file_bytes), nrows=csv_max_rows, skiprows=csv_skiprows)
-                except UnicodeDecodeError:
-                    df = pd.read_csv(io.BytesIO(file_bytes), encoding="gbk", nrows=csv_max_rows, skiprows=csv_skiprows)
+                # Step 1d (Apr 20 2026): caller may pass already-parsed DataFrame
+                # so we don't re-parse from 263MB+ content bytes. This is what
+                # lets auto_parse_excel `del content` safely after its own
+                # read_csv — cuts ~3× 263MB memory duplication on the BG
+                # worker self-call path. Validate the df has the expected
+                # columns; otherwise fall back to re-parse.
+                if preparsed_df is not None and not preparsed_df.empty:
+                    df = preparsed_df
+                else:
+                    if file_bytes is None:
+                        return ExtractedData(
+                            success=False,
+                            error="execute_with_pandas: file_bytes is None and no preparsed_df provided",
+                        )
+                    try:
+                        df = pd.read_csv(io.BytesIO(file_bytes), nrows=csv_max_rows, skiprows=csv_skiprows)
+                    except UnicodeDecodeError:
+                        df = pd.read_csv(io.BytesIO(file_bytes), encoding="gbk", nrows=csv_max_rows, skiprows=csv_skiprows)
             else:
                 # 对于复杂多层表头 (>2行)，使用智能合并而不是 pandas 默认拼接
                 if header_rows > 2 or structure_config.merged_cells:
