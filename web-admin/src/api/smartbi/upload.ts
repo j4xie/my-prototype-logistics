@@ -58,7 +58,7 @@ export async function detectTableRegions(
     const res = await request.post('/smartbi-api/api/excel/detect-regions', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
       baseURL: '',  // absolute path; don't prepend /api/mobile
-      timeout: 120000,
+      timeout: 600000,  // P0-1 (Apr 20): Bug #45 fix — match uploadAndAnalyze (10min). Large xlsx detect-regions can take 30-60s.
     });
     return (res.data || res) as DetectRegionsResponse;
   } catch (error) {
@@ -214,7 +214,8 @@ export function confirmUploadAndPersist(data: {
   generateChart?: boolean;
   chartTemplateId?: number;
 }) {
-  return post(`${getSmartBIBasePath()}/upload/confirm`, data);
+  // P0-2 (Apr 20): 200K rows confirmUpload can need minutes for DB persist → 10min timeout
+  return post(`${getSmartBIBasePath()}/upload/confirm`, data, { timeout: 600000 });
 }
 
 /**

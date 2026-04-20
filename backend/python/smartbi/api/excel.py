@@ -624,7 +624,7 @@ async def auto_parse_excel(
     sheetName: Optional[str] = Form(None),  # Alias for Java client compatibility
     factory_id: Optional[str] = Form(None),
     use_cache: bool = Form(True),
-    max_rows: int = Form(10000),
+    max_rows: int = Form(500000),  # P0-3 (Apr 20): was 10000 silent cap, customer lost rows. 500K safe; 0 = unlimited
     skip_empty_rows: bool = Form(True),
     calculate_stats: bool = Form(True),
     transpose: bool = Form(False),
@@ -885,10 +885,12 @@ async def auto_parse_excel(
                 # 4 == rows 0-2 are metadata, row 3 is real header.
                 # pandas read_csv(skiprows=N) skips first N rows then treats the next as header.
                 csv_skiprows = max(0, (effective_header_override or 1) - 1)
+                # P0-3 (Apr 20): honor form max_rows instead of hardcoded 10000 silent cap
+                csv_nrows = max_rows if max_rows > 0 else None
                 try:
-                    df_csv = pd.read_csv(io.BytesIO(content), nrows=10000, skiprows=csv_skiprows)
+                    df_csv = pd.read_csv(io.BytesIO(content), nrows=csv_nrows, skiprows=csv_skiprows)
                 except UnicodeDecodeError:
-                    df_csv = pd.read_csv(io.BytesIO(content), nrows=10000, skiprows=csv_skiprows, encoding="gbk")
+                    df_csv = pd.read_csv(io.BytesIO(content), nrows=csv_nrows, skiprows=csv_skiprows, encoding="gbk")
 
                 # D1 Apr 17 2026: Smart title-row skip for CSV
                 # If all columns start with "Unnamed:" (pandas fallback for empty headers)
@@ -913,9 +915,9 @@ async def auto_parse_excel(
                     while looks_like_title_row(headers_preview) and tried_skiprows < 5:
                         tried_skiprows += 1
                         try:
-                            df_csv = pd.read_csv(io.BytesIO(content), nrows=10000, skiprows=tried_skiprows)
+                            df_csv = pd.read_csv(io.BytesIO(content), nrows=csv_nrows, skiprows=tried_skiprows)
                         except UnicodeDecodeError:
-                            df_csv = pd.read_csv(io.BytesIO(content), nrows=10000, skiprows=tried_skiprows, encoding="gbk")
+                            df_csv = pd.read_csv(io.BytesIO(content), nrows=csv_nrows, skiprows=tried_skiprows, encoding="gbk")
                         headers_preview = [str(c) for c in df_csv.columns]
                         logger.info(f"CSV title-row auto-skip: retry with skiprows={tried_skiprows}, headers={headers_preview[:3]}")
                     if tried_skiprows != csv_skiprows:
