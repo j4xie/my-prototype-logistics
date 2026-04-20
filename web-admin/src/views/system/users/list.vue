@@ -98,7 +98,10 @@ function handlePageChange(page: number) {
 }
 
 // Must match FactoryUserRole enum values exactly
+// Apr 20 Bug BR-14 fix: 补上 Phase 1 新增的 platform_admin + restaurant_manager,
+// 否则用户编辑时 roleOptions 不完整, 无法切到这两个角色.
 const roleOptions = [
+  { value: 'platform_admin', label: '平台管理员' },
   { value: 'factory_super_admin', label: '工厂总监' },
   { value: 'hr_admin', label: 'HR管理员' },
   { value: 'procurement_manager', label: '采购主管' },
@@ -109,6 +112,7 @@ const roleOptions = [
   { value: 'equipment_admin', label: '设备管理员' },
   { value: 'quality_manager', label: '质量经理' },
   { value: 'finance_manager', label: '财务主管' },
+  { value: 'restaurant_manager', label: '餐饮经理' },
   { value: 'workshop_supervisor', label: '车间主任' },
   { value: 'team_leader', label: '大组长' },
   { value: 'group_leader', label: '小组长' },

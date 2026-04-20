@@ -114,8 +114,11 @@ public class UserMapper {
         if (request.getEmployeeCode() != null && !request.getEmployeeCode().isBlank()) {
             user.setEmployeeCode(request.getEmployeeCode());
         }
-        // 更新position字段（roleCode已删除）
-        // department现在是String类型
+        // Apr 20 Bug BR-13 fix: roleCode 之前在此 mapper 被 ignore, 导致 /users/{id} PUT
+        // 送 roleCode 无效 (用户 "角色变更保存, 更新失败"). 现补 update.
+        if (request.getRoleCode() != null) {
+            user.setRoleCode(request.getRoleCode().name());
+        }
         if (request.getMonthlySalary() != null) {
             user.setMonthlySalary(request.getMonthlySalary());
         }

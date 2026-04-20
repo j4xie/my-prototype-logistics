@@ -22,8 +22,15 @@ import java.math.BigDecimal;
 @Schema(description = "创建用户请求")
 public class CreateUserRequest {
 
+    /**
+     * Apr 20 Bug BR-13 fix: 去 @NotBlank. DTO 同时用于 create + update
+     * (UserController.updateUser 第 78 行: @Valid @RequestBody CreateUserRequest).
+     * 更新场景 frontend 只送 email/fullName/phone/roleCode, username=null 导致 @NotBlank
+     * 误报. Create 场景改由 UserServiceImpl.createUser 显式校验 (line 67+ 已有 existsByUsername
+     * 调用, 补 null/empty 判断即可).
+     * Pattern 保留 — 如果 update 场景 frontend 真送了 username, 也该过校验.
+     */
     @Schema(description = "用户名", required = true)
-    @NotBlank(message = "用户名不能为空")
     @Pattern(regexp = "^[a-zA-Z0-9_]{3,20}$", message = "用户名只能包含字母、数字和下划线，长度3-20")
     private String username;
 

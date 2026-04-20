@@ -64,6 +64,10 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserDTO createUser(String factoryId, CreateUserRequest request) {
+        // Apr 20 Bug BR-13 fix: DTO 去 @NotBlank 后, 此处补 create 场景校验
+        if (request.getUsername() == null || request.getUsername().isBlank()) {
+            throw new BusinessException("用户名不能为空");
+        }
         // 检查用户名是否已存在（用户名全局唯一）
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new BusinessException("用户名已存在");
