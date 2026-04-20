@@ -91,6 +91,10 @@ class DataSummary:
     measures: List[str] = field(default_factory=list)
     time_columns: List[str] = field(default_factory=list)
     category_columns: List[str] = field(default_factory=list)
+    # A4 (Apr 20 2026): per-column unique_count — chart recommender uses this
+    # to refuse x-axis with cardinality < 2 (single-store upload like qhj shows
+    # only "表E-份" as x-axis because the only dim column collapsed to 1 value).
+    cardinality: Dict[str, int] = field(default_factory=dict)
 
     @classmethod
     def from_feature_results(cls, features: List[Dict], row_count: int = 0) -> "DataSummary":
@@ -105,6 +109,7 @@ class DataSummary:
         measures = []
         time_columns = []
         category_columns = []
+        cardinality: Dict[str, int] = {}
 
         for f in features:
             col_name = f.get("columnName", f.get("column_name", ""))
@@ -121,13 +126,22 @@ class DataSummary:
             elif data_type == "ID":
                 dimensions.append(col_name)
 
+            # A4: cache unique count (supports camelCase + snake_case + fallback)
+            uc = f.get("uniqueCount", f.get("unique_count", f.get("unique_values")))
+            if uc is not None and col_name:
+                try:
+                    cardinality[col_name] = int(uc)
+                except (TypeError, ValueError):
+                    pass
+
         return cls(
             columns=features,
             row_count=row_count,
             dimensions=dimensions,
             measures=measures,
             time_columns=time_columns,
-            category_columns=category_columns
+            category_columns=category_columns,
+            cardinality=cardinality,
         )
 
 
@@ -643,7 +657,7 @@ class ChartRecommender:
 **数据概览:**
 - 数据行数: {data_summary.row_count} 行
 - 时间维度: {data_summary.time_columns or '无'}
-- 分类维度: {data_summary.category_columns or '无'}
+- 分类维度: {self._format_cat_cols_with_cardinality(data_summary) or '无'}
 - 度量指标: {data_summary.measures or '无'}
 
 **业务场景:** {scenario_desc}
@@ -692,8 +706,20 @@ class ChartRecommender:
 - **多样性要求**: 推荐的图表类型必须尽可能多样化，不允许连续2个相同类型
 - **高级类型**: 如果数据有层级结构推荐 sunburst，如果需要80/20分析推荐 pareto，如果有目标/实际对比推荐 bullet，如果有不同量纲指标推荐 dual_axis
 - **最少4种不同类型**: 你的推荐中至少包含4种不同的图表类型
+- **A4 cardinality 守卫**: 若某分类维度 unique_count<2（即全部行只有1个取值），绝对不要把它作为 x_axis 推荐对比/占比图；这种情况应优先推 kpi/scorecard 单值卡片或依靠时间维度作趋势图。
 """
         return prompt
+
+    @staticmethod
+    def _format_cat_cols_with_cardinality(data_summary: DataSummary) -> str:
+        """Render category_columns with their unique counts for LLM context (A4)."""
+        if not data_summary.category_columns:
+            return ""
+        parts = []
+        for c in data_summary.category_columns:
+            uc = data_summary.cardinality.get(c)
+            parts.append(f"{c}(unique={uc})" if uc is not None else c)
+        return ", ".join(parts)
 
     def _build_dashboard_prompt(
         self,
@@ -1043,6 +1069,20 @@ class ChartRecommender:
         cat_col = data_summary.category_columns[0] if has_categories else None
         time_col = data_summary.time_columns[0] if has_time else None
 
+        # A4 (Apr 20 2026): cardinality gate — a category is only useful as an
+        # x-axis when it has >=2 distinct values. Without this gate, single-store
+        # uploads (or any file where the "店名" column collapses to 1 value)
+        # produce empty/misleading bar/pie charts.
+        def _cat_has_variety(col: Optional[str]) -> bool:
+            if not col:
+                return False
+            # Default to True when unknown (backwards-compat: no cardinality
+            # data → trust existing behavior rather than hide charts)
+            uc = data_summary.cardinality.get(col)
+            return uc is None or uc >= 2
+
+        cat_has_variety = _cat_has_variety(cat_col)
+
         # 1. Time series → line chart
         if has_time and has_measures:
             recommendations.append(ChartRecommendation(
@@ -1056,7 +1096,7 @@ class ChartRecommender:
             ))
 
         # 2. Category comparison → bar chart
-        if has_categories and has_measures:
+        if has_categories and has_measures and cat_has_variety:
             recommendations.append(ChartRecommendation(
                 chart_type="bar",
                 title="分类对比",
@@ -1068,7 +1108,7 @@ class ChartRecommender:
             ))
 
         # 3. Small category count (<=8) → pie chart for composition
-        if has_categories and has_measures and row_count <= 15:
+        if has_categories and has_measures and row_count <= 15 and cat_has_variety:
             recommendations.append(ChartRecommendation(
                 chart_type="pie",
                 title="占比分析",
@@ -1080,7 +1120,7 @@ class ChartRecommender:
             ))
 
         # 4. Financial/hierarchical data → waterfall
-        if has_categories and has_measures and 3 <= row_count <= 30:
+        if has_categories and has_measures and 3 <= row_count <= 30 and cat_has_variety:
             # Detect financial keywords in column names
             financial_keywords = ['收入', '支出', '费用', '利润', '成本', '净利', 'revenue', 'cost', 'profit', 'expense']
             col_names_lower = ' '.join([c.get('columnName', c.get('column_name', '')) for c in data_summary.columns]).lower()
@@ -1096,7 +1136,7 @@ class ChartRecommender:
                 ))
 
         # 5. Multiple measures (>=3) → radar chart
-        if has_categories and num_measures >= 3 and row_count <= 10:
+        if has_categories and num_measures >= 3 and row_count <= 10 and cat_has_variety:
             recommendations.append(ChartRecommendation(
                 chart_type="radar",
                 title="多维对比",

@@ -27,6 +27,7 @@ class FieldMapping:
     method: str  # rule, llm, multi_model
     category: Optional[str] = None  # Field category (amount, rate, category, time, etc.)
     description: Optional[str] = None  # Human-readable description
+    data_type: Optional[str] = None  # A3: NUMERIC/DATE/TEXT (inferred from sample)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -35,7 +36,8 @@ class FieldMapping:
             "confidence": self.confidence,
             "method": self.method,
             "category": self.category,
-            "description": self.description
+            "description": self.description,
+            "data_type": self.data_type,
         }
 
 
@@ -279,6 +281,9 @@ class SemanticMapper:
         # when mappings=[] (vacuous truth), which short-circuited Layer 2 LLM
         # fallback on all-unmapped files — the exact scenario LLM is meant for.
         if not rule_unmapped:
+            # A1+A3: dedupe standard names + infer data_type before returning
+            self._dedupe_standard_names(mappings)
+            self._enrich_data_types(mappings, columns, sample_data)
             result.field_mappings = mappings
             result.unmapped_fields = rule_unmapped
             result.confidence = sum(m.confidence for m in mappings) / len(mappings) if mappings else 0.5
@@ -309,6 +314,10 @@ class SemanticMapper:
             )
             mappings.extend(enhanced_mappings)
             unmapped = [c for c in unmapped if c not in {m.original for m in enhanced_mappings if m.standard}]
+
+        # A1+A3: dedupe standard names + infer data_type before returning
+        self._dedupe_standard_names(mappings)
+        self._enrich_data_types(mappings, columns, sample_data)
 
         result.field_mappings = mappings
         result.unmapped_fields = unmapped
@@ -389,6 +398,94 @@ class SemanticMapper:
 
         return mappings, unmapped
 
+    def _dedupe_standard_names(self, mappings: List[FieldMapping]) -> None:
+        """
+        A1 (Apr 20 2026): Ensure each `standard` name is unique across mappings.
+        N-th occurrence of the same standard gets suffix `_2`, `_3`, ...
+
+        Why: Java saveFieldDefinitions uses (upload_id, field_name=standard) as
+        natural key; collisions silently overwrite earlier mappings, leaving
+        only the last column's data_type/semantic_type in DB. This breaks
+        chart_recommender which reads per-column type to decide x/y axis.
+
+        Mutates mappings in place.
+        """
+        usage: Dict[str, int] = {}
+        for m in mappings:
+            if not m.standard:
+                continue
+            base = m.standard
+            count = usage.get(base, 0)
+            if count > 0:
+                m.standard = f"{base}_{count + 1}"
+            usage[base] = count + 1
+
+    def _enrich_data_types(
+        self,
+        mappings: List[FieldMapping],
+        columns: List[str],
+        sample_data: Optional[List[List[Any]]],
+    ) -> None:
+        """
+        A3 (Apr 20 2026): Infer `data_type` (NUMERIC/DATE/TEXT) from sample
+        values and attach to each FieldMapping.
+
+        Java `saveFieldDefinitions` reads `mapping.getDataType()`; when this is
+        null, downstream cross_sheet_aggregator / chart_recommender get
+        empty `data_type` columns, so measure vs dimension classification
+        collapses to defaults (everything becomes CATEGORICAL).
+
+        Mutates mappings in place.
+        """
+        if not sample_data or not columns:
+            return
+        col_idx = {c: i for i, c in enumerate(columns)}
+        for m in mappings:
+            if m.data_type is not None:
+                continue
+            idx = col_idx.get(m.original)
+            if idx is None:
+                continue
+            values = [row[idx] for row in sample_data if idx < len(row)]
+            m.data_type = self._infer_data_type(values)
+
+    @staticmethod
+    def _infer_data_type(values: List[Any]) -> str:
+        """Infer NUMERIC / DATE / TEXT from a list of raw sample values."""
+        if not values:
+            return "TEXT"
+        non_null = [
+            v for v in values
+            if v is not None and str(v).strip() not in ("", "nan", "NaN", "None", "null")
+        ]
+        if not non_null:
+            return "TEXT"
+
+        # NUMERIC: >=80% of values parse as float after stripping ,/%/¥/空白
+        numeric_count = 0
+        for v in non_null:
+            s = str(v).replace(",", "").replace("%", "").replace("¥", "").strip()
+            try:
+                float(s)
+                numeric_count += 1
+            except (ValueError, TypeError):
+                pass
+        if numeric_count / len(non_null) >= 0.8:
+            return "NUMERIC"
+
+        # DATE: >=60% match common Chinese/ISO date patterns
+        date_pattern = re.compile(
+            r"^\d{4}[-/年]\d{1,2}[-/月]\d{1,2}日?$|"
+            r"^\d{4}[-/]\d{1,2}月?$|"
+            r"^\d{4}年?$|"
+            r"^\d{1,2}[-/]\d{1,2}$"
+        )
+        date_count = sum(1 for v in non_null if date_pattern.match(str(v).strip()))
+        if date_count / len(non_null) >= 0.6:
+            return "DATE"
+
+        return "TEXT"
+
     def _classify_by_priority_regex(self, col: str) -> Optional[Tuple[str, str, float]]:
         """
         D1 priority classifier based on Chinese semantic suffix patterns.
@@ -405,6 +502,11 @@ class SemanticMapper:
         # Skip obviously broken columns (Unnamed: 0..N — means header row was wrong)
         if re.match(r'^Unnamed:\s*\d+$', col, re.IGNORECASE):
             return ('skip', '_skip_unnamed', 1.0)
+
+        # A2 (Apr 20 2026): 收入分组/销售类型 等 "金额/数量 词 + 分组/类型" 组合
+        # 必须优先于 amount regex, 否则 "收入" 先命中 measure 导致分组字段被当度量.
+        if re.search(r'(收入|营业|销售|金额|数量|成本|利润).{0,3}(分组|组别|类型|分类|维度)', col):
+            return ('category', 'revenue_group', 0.9)
 
         # Measure — amount patterns (金额/数量/总额 等后缀)
         # Suffix match at end of token or before (
