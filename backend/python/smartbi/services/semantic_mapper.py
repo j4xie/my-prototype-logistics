@@ -290,6 +290,67 @@ class SemanticMapper:
             result.method = "rule"
             return result
 
+        # Layer 1.5 (C1 MVP, Apr 20 2026): Embedding-first lookup between
+        # rules and LLM. Cheap (~50ms cached + one DashScope batch call for
+        # all unmapped). Accept cos>=0.82; borderline falls through to LLM.
+        if rule_unmapped:
+            try:
+                from smartbi.services.standard_field_embedder import (
+                    find_best_matches_batch,
+                )
+                # Build per-column samples
+                col_idx = {c: i for i, c in enumerate(columns)}
+                samples_per_col: Dict[str, List[object]] = {}
+                if sample_data:
+                    for col in rule_unmapped:
+                        idx = col_idx.get(col)
+                        if idx is None:
+                            continue
+                        samples_per_col[col] = [
+                            row[idx] for row in sample_data[:3] if idx < len(row)
+                        ]
+
+                matches = await find_best_matches_batch(
+                    rule_unmapped, samples_per_col, top_k=2
+                )
+                emb_mapped: Set[str] = set()
+                # DashScope text-embedding-v3 cosine distribution is narrow
+                # on Chinese financial terms: good matches are typically
+                # 0.60-0.75. We accept top >= 0.65 AND margin(top - 2nd) >= 0.03
+                # to reduce false positives. Borderline (0.55-0.65) falls
+                # through to LLM which has broader semantic understanding.
+                EMB_MIN = 0.65
+                EMB_MARGIN = 0.03
+                for col, hits in matches.items():
+                    if not hits:
+                        continue
+                    std, cat, score = hits[0]
+                    margin = (
+                        score - hits[1][2] if len(hits) > 1 else score
+                    )
+                    if score >= EMB_MIN and margin >= EMB_MARGIN:
+                        field_info = STANDARD_FIELDS.get(std, {})
+                        mappings.append(FieldMapping(
+                            original=col,
+                            standard=std,
+                            confidence=min(0.95, score),
+                            method="embedding",
+                            category=cat or field_info.get("category"),
+                            description=f"embedding cos={score:.3f} margin={margin:.3f}",
+                        ))
+                        emb_mapped.add(col)
+                        logger.info(
+                            f"[embedder] {col!r} → {std} cos={score:.3f} margin={margin:.3f}"
+                        )
+                    else:
+                        logger.debug(
+                            f"[embedder] {col!r} too weak: top={std}@{score:.3f} margin={margin:.3f} — fall to LLM"
+                        )
+                rule_unmapped = [c for c in rule_unmapped if c not in emb_mapped]
+            except Exception as e:
+                # Embedding layer is opportunistic — never block LLM fallback
+                logger.warning(f"[embedder] skipped: {e}")
+
         # Layer 2: LLM mapping for unmapped fields
         if rule_unmapped:
             llm_mappings = await self._map_with_llm(rule_unmapped, columns, sample_data, table_context)
