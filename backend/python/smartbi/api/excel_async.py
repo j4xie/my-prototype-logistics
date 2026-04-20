@@ -123,8 +123,12 @@ async def auto_parse_async(
         db.close()
 
     # 3. Schedule the BG task. httpx self-call runs in the worker's event loop.
+    # FastAPI BackgroundTasks awaits async callables on the main event loop.
+    # Registering _async_worker_impl directly (no asyncio.run wrapper) lets
+    # the shared LLM httpx client (initialized at startup on that same loop)
+    # be reused — otherwise we hit "got Future attached to a different loop".
     background_tasks.add_task(
-        _async_worker,
+        _async_worker_impl,
         upload_id=upload_id,
         tmp_path=tmp_path,
         factory_id=factory_id,
@@ -225,85 +229,202 @@ async def _async_worker_impl(
     selected_region_start: Optional[int],
     selected_region_end: Optional[int],
 ):
+    """
+    Step 2D (Apr 20 2026): streaming persist — bypasses Java entirely.
+
+    Pipeline:
+      1. Probe nrows=100 → detect title-row skip + real cols
+      2. Run semantic_mapper on headers, persist field_definitions
+      3. Stream pd.read_csv(chunksize=5000) FROM DISK (not bytes!)
+      4. Each chunk: execute_values bulk insert into smart_bi_dynamic_data
+      5. Update upload row status=COMPLETED
+
+    Memory stays ~500MB regardless of file size because only one chunk lives
+    in memory at a time and psycopg2 execute_values streams to DB.
+    """
     start = time.time()
     db = SessionLocal()
     upload = None
+    total_rows = 0
     try:
         upload = db.query(SmartBiPgExcelUpload).filter_by(id=upload_id).first()
         if not upload:
-            logger.error(f"[async-worker] upload_id={upload_id} not found, bailing")
+            logger.error(f"[stream-worker] upload_id={upload_id} not found, bailing")
             return
         upload.upload_status = "PROCESSING"
         db.commit()
-        logger.info(f"[async-worker] upload_id={upload_id} PROCESSING started")
+        logger.info(f"[stream-worker] upload_id={upload_id} PROCESSING started ({tmp_path})")
 
-        # Self-call the sync parser endpoint. Port 8083 (prod) or 8084 (test)
-        # — read from env so the same code works in both environments.
-        port = int(os.environ.get("SMARTBI_PORT", "8083"))
-        url = _SYNC_PARSE_URL.format(port=port)
+        import pandas as pd
+        import numpy as np
+        import re as _re
+        from psycopg2.extras import execute_values, Json
 
-        form_data = {
-            "factory_id": factory_id,
-            "max_rows": str(max_rows),
-            "use_cache": "true",
+        unnamed_pat = _re.compile(r'^Unnamed:\s*\d+$')
+
+        def _probe(skip):
+            try:
+                return pd.read_csv(tmp_path, nrows=100, skiprows=skip), None
+            except UnicodeDecodeError:
+                return pd.read_csv(tmp_path, nrows=100, skiprows=skip, encoding='gbk'), 'gbk'
+
+        # --- Step 1: probe + title-row skip ---
+        csv_skiprows = 0
+        df_probe, encoding = _probe(csv_skiprows)
+
+        def _looks_title(hdrs):
+            hs = [str(h) for h in hdrs]
+            if not hs:
+                return False
+            unnamed = sum(1 for h in hs if unnamed_pat.match(h))
+            if unnamed >= 0.8 * len(hs):
+                return True
+            data_like = sum(1 for h in hs if _re.match(r'^[\d\s\-./年月日:]+$', h))
+            return data_like >= 0.8 * len(hs)
+
+        while _looks_title(df_probe.columns) and csv_skiprows < 5:
+            csv_skiprows += 1
+            df_probe, encoding = _probe(csv_skiprows)
+
+        # Real cols: drop Unnamed: N cols that are all-NaN in probe
+        real_cols_idx = [
+            i for i, c in enumerate(df_probe.columns)
+            if not (unnamed_pat.match(str(c)) and df_probe[c].isna().all())
+        ]
+        real_headers = [str(df_probe.columns[i]) for i in real_cols_idx]
+        logger.info(
+            f"[stream-worker] upload {upload_id}: probe skiprows={csv_skiprows}, "
+            f"real_cols={len(real_headers)} headers={real_headers[:5]!r}"
+        )
+
+        # --- Step 2: semantic mapping + write field_defs ---
+        from smartbi.services.semantic_mapper import SemanticMapper
+        from smartbi.database.models import SmartBiPgFieldDefinition
+
+        mapper = SemanticMapper()
+        sample_slice = (
+            df_probe.iloc[:3, real_cols_idx].where(df_probe.iloc[:3, real_cols_idx].notna(), None).values.tolist()
+            if real_cols_idx else None
+        )
+        mapping_result = await mapper.map_fields(
+            columns=real_headers, sample_data=sample_slice, factory_id=factory_id
+        )
+
+        # Wipe any stale field_defs for this upload, then bulk-insert new ones.
+        db.query(SmartBiPgFieldDefinition).filter_by(upload_id=upload_id).delete()
+        db.commit()
+
+        def _infer_sem(std: Optional[str], cat: Optional[str]) -> Optional[str]:
+            if not std:
+                return None
+            base = std.lower().rstrip("_0123456789").rstrip("_")
+            if cat == "time":
+                return "date"
+            if "revenue" in base or "amount" in base or "金额" in base:
+                return "amount"
+            if "rate" in base:
+                return "rate"
+            if "store" in base or "门店" in base:
+                return "store"
+            if "product" in base or "商品" in base:
+                return "product"
+            if "category" in base:
+                return "category"
+            return None
+
+        field_def_rows = []
+        for i, m in enumerate(mapping_result.field_mappings):
+            cat = m.category
+            field_def_rows.append(SmartBiPgFieldDefinition(
+                upload_id=upload_id,
+                original_name=m.original,
+                standard_name=m.standard,
+                field_type=m.data_type,
+                semantic_type=_infer_sem(m.standard, cat),
+                is_measure=(cat in ("amount", "rate")),
+                is_dimension=(cat == "category"),
+                is_time=(cat == "time"),
+                display_order=i,
+            ))
+        db.bulk_save_objects(field_def_rows)
+        db.commit()
+        logger.info(f"[stream-worker] upload {upload_id}: wrote {len(field_def_rows)} field_defs")
+
+        # --- Step 3: streaming chunks + bulk insert dynamic_data ---
+        # Wipe any stale dynamic_data rows for this upload (idempotent retries).
+        raw_conn = db.connection().connection
+        with raw_conn.cursor() as cur:
+            cur.execute("DELETE FROM smart_bi_dynamic_data WHERE upload_id = %s", (upload_id,))
+        raw_conn.commit()
+
+        CHUNK_SIZE = 5000
+        INSERT_SQL = (
+            "INSERT INTO smart_bi_dynamic_data "
+            "(factory_id, upload_id, sheet_name, row_index, row_data) "
+            "VALUES %s"
+        )
+        row_index = 0
+
+        read_kwargs = dict(
+            filepath_or_buffer=tmp_path,
+            skiprows=csv_skiprows,
+            usecols=real_cols_idx,
+            chunksize=CHUNK_SIZE,
+        )
+        if encoding:
+            read_kwargs["encoding"] = encoding
+
+        try:
+            chunks_iter = pd.read_csv(**read_kwargs)
+        except UnicodeDecodeError:
+            read_kwargs["encoding"] = "gbk"
+            chunks_iter = pd.read_csv(**read_kwargs)
+
+        for chunk_df in chunks_iter:
+            # NaN → None so JSON serialization writes null not NaN
+            chunk_df = chunk_df.replace({np.nan: None})
+
+            # Build row records. Use itertuples(index=False) for speed —
+            # 3-4× faster than iterrows on wide dfs.
+            chunk_cols = list(chunk_df.columns)
+            records = []
+            for tpl in chunk_df.itertuples(index=False, name=None):
+                row_dict = {chunk_cols[j]: tpl[j] for j in range(len(chunk_cols))}
+                records.append((
+                    factory_id, upload_id, "Sheet1", row_index, Json(row_dict),
+                ))
+                row_index += 1
+
+            with raw_conn.cursor() as cur:
+                execute_values(cur, INSERT_SQL, records, page_size=500)
+            raw_conn.commit()
+            total_rows += len(records)
+            logger.info(f"[stream-worker] upload {upload_id}: {total_rows} rows persisted")
+
+        # --- Step 4: finalize ---
+        upload.upload_status = "COMPLETED"
+        upload.row_count = total_rows
+        upload.column_count = len(real_headers)
+        upload.context_info = {
+            "streamPersist": True,
+            "parsedInMs": int((time.time() - start) * 1000),
+            "csvSkiprows": csv_skiprows,
+            "encoding": encoding or "utf-8",
         }
-        if sheet_index is not None:
-            form_data["sheet_index"] = str(sheet_index)
-        if selected_region_start is not None:
-            form_data["selected_region_start"] = str(selected_region_start)
-        if selected_region_end is not None:
-            form_data["selected_region_end"] = str(selected_region_end)
-
-        with open(tmp_path, "rb") as f:
-            files = {"file": (os.path.basename(tmp_path), f, "application/octet-stream")}
-            async with httpx.AsyncClient(timeout=900.0) as client:
-                resp = await client.post(url, data=form_data, files=files)
-
-        duration_ms = int((time.time() - start) * 1000)
-
-        if resp.status_code == 200:
-            result = resp.json()
-            # Mirror the parsed result into the placeholder row. The sync
-            # endpoint itself does NOT persist to excel_uploads table, so
-            # no dup row — we own the only record.
-            upload.upload_status = "COMPLETED"
-            upload.row_count = result.get("rowCount") or result.get("row_count") or 0
-            upload.column_count = (
-                result.get("columnCount") or result.get("column_count") or 0
-            )
-            upload.detected_table_type = result.get("tableType") or result.get(
-                "detectedTableType"
-            )
-            upload.field_mappings = result.get("fieldMappings") or result.get(
-                "field_mappings"
-            )
-            upload.context_info = {
-                "parsedInMs": duration_ms,
-                "rawKeys": list(result.keys())[:20],
-            }
-            db.commit()
-            logger.info(
-                f"[async-worker] upload_id={upload_id} COMPLETED in {duration_ms}ms, "
-                f"rows={upload.row_count}, cols={upload.column_count}"
-            )
-        else:
-            upload.upload_status = "FAILED"
-            upload.error_message = f"HTTP {resp.status_code}: {resp.text[:500]}"
-            db.commit()
-            logger.error(
-                f"[async-worker] upload_id={upload_id} FAILED: "
-                f"HTTP {resp.status_code} after {duration_ms}ms"
-            )
+        db.commit()
+        logger.info(
+            f"[stream-worker] upload {upload_id} COMPLETED in "
+            f"{int((time.time() - start) * 1000)}ms: {total_rows} rows × {len(real_headers)} cols"
+        )
     except Exception as e:
-        logger.exception(f"[async-worker] upload_id={upload_id} crashed")
+        logger.exception(f"[stream-worker] upload_id={upload_id} crashed after {total_rows} rows")
         try:
             if upload is None:
-                upload = (
-                    db.query(SmartBiPgExcelUpload).filter_by(id=upload_id).first()
-                )
+                upload = db.query(SmartBiPgExcelUpload).filter_by(id=upload_id).first()
             if upload is not None:
                 upload.upload_status = "FAILED"
-                upload.error_message = str(e)[:500]
+                upload.error_message = f"{type(e).__name__}: {str(e)[:400]}"
+                upload.row_count = total_rows  # record partial progress
                 db.commit()
         except Exception:
             db.rollback()
