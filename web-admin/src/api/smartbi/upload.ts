@@ -102,6 +102,9 @@ export async function uploadAndAnalyze(file: File, options?: {
   // these bounds tell the pipeline which rows to keep (0-indexed, inclusive).
   selectedRegionStart?: number;
   selectedRegionEnd?: number;
+  // P0-6 (Apr 20): 真上传进度回调, 取代 ExcelUpload.vue 里假的 90% 静态数字.
+  // percent 0-100 是 loaded/total 比例. 上传完成后仍要等后端解析,不会直接 100 一次。
+  onUploadProgress?: (percent: number, loaded: number, total: number) => void;
 }): Promise<{
   success: boolean;
   parseResult: {
@@ -141,6 +144,14 @@ export async function uploadAndAnalyze(file: File, options?: {
       // BUG #6 fix (Apr 15 2026): 120s → 600s (10min). 后端允许 500MB 文件, 但原 120s axios
       // 超时在大文件 (19MB POS zip 解压 263MB / 38MB sample) 下必然 timeout. 青花椒演示翻车根因.
       timeout: 600000,
+      // P0-6: Axios 真上传进度 — 取代 UI 伪 90%. 只跟踪字节上传(不含后端解析).
+      onUploadProgress: options?.onUploadProgress
+        ? (e: { loaded: number; total?: number }) => {
+            const total = e.total || file.size;
+            const percent = total > 0 ? Math.round((e.loaded / total) * 100) : 0;
+            options.onUploadProgress!(percent, e.loaded, total);
+          }
+        : undefined,
     });
 
     const result = response.data || response;

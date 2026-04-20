@@ -69,6 +69,8 @@ const currentUploadId = ref<number | null>(null);
 // 上传状态
 const uploading = ref(false);
 const uploadProgress = ref(0);
+// P0-6 (Apr 20): 上传阶段显示 — 'idle' | 'uploading' (字节 0-100%) | 'parsing' (后端解析, 无百分比) | 'done'
+const uploadStage = ref<'idle' | 'uploading' | 'parsing' | 'done'>('idle');
 const fileList = ref<UploadUserFile[]>([]);
 
 // Bug #25b (2026-04-18): 多表堆叠 — 区域选择 dialog
@@ -329,24 +331,24 @@ async function handleUpload(file: UploadFile) {
 async function runUploadAndAnalyze(rawFile: File, region?: TableRegion) {
   uploading.value = true;
   uploadProgress.value = 0;
+  uploadStage.value = 'uploading';  // P0-6: 'uploading' (0-100 字节进度) → 'parsing' (后端解析, 无百分比)
 
-  let progressInterval: ReturnType<typeof setInterval> | null = null;
   try {
-    // 模拟上传进度
-    progressInterval = setInterval(() => {
-      if (uploadProgress.value < 90) {
-        uploadProgress.value += 10;
+    // P0-6 (Apr 20): 真上传进度 — axios onUploadProgress 报实际字节, 不再假 90%.
+    // 263MB+ 文件能看到准确 0→100% 上传进度, 传完切换到 'parsing' 阶段.
+    const uploadOptions = {
+      ...(region ? { selectedRegionStart: region.startRow, selectedRegionEnd: region.endRow } : {}),
+      onUploadProgress: (percent: number, _loaded: number, _total: number) => {
+        uploadProgress.value = percent;
+        if (percent >= 100) {
+          uploadStage.value = 'parsing';  // 字节传完, 后端开始解析
+        }
       }
-    }, 100);
-
-    // 调用真实 Python SmartBI API
-    const uploadOptions = region
-      ? { selectedRegionStart: region.startRow, selectedRegionEnd: region.endRow }
-      : undefined;
+    };
     const result = await uploadAndAnalyze(rawFile, uploadOptions);
 
-    clearInterval(progressInterval);
     uploadProgress.value = 100;
+    uploadStage.value = 'done';
 
     if (!result.success) {
       ElMessage.error(result.error || '解析失败');
@@ -402,8 +404,9 @@ async function runUploadAndAnalyze(rawFile: File, region?: TableRegion) {
     console.error('文件上传失败:', error);
     ElMessage.error('文件上传失败: ' + (error instanceof Error ? error.message : '未知错误'));
   } finally {
-    if (progressInterval) clearInterval(progressInterval);
+    // P0-6: no more fake progressInterval; axios onUploadProgress drives uploadProgress now.
     uploading.value = false;
+    uploadStage.value = 'idle';
   }
 
   return false;
@@ -691,7 +694,14 @@ function getColumnTypeBadge(header: string): { label: string; type: 'info' | 'su
               <p class="main-text">正在检测数据区域...</p>
             </template>
             <template v-else>
-              <p class="main-text">正在解析文件...</p>
+              <!-- P0-6 (Apr 20): 真实阶段提示, 不再全程"正在解析" -->
+              <p class="main-text" v-if="uploadStage === 'uploading'">
+                正在上传文件 ({{ uploadProgress }}%)
+              </p>
+              <p class="main-text" v-else>正在解析文件...</p>
+              <p class="sub-text" v-if="uploadStage === 'parsing'">
+                上传完成, 后端正在解析大文件可能需要几分钟
+              </p>
             </template>
           </div>
         </el-upload>

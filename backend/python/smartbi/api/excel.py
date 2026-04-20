@@ -923,6 +923,21 @@ async def auto_parse_excel(
                     if tried_skiprows != csv_skiprows:
                         csv_skiprows = tried_skiprows
 
+                # P0-7 (Apr 20): Drop trailing "Unnamed: N" cols whose entire column
+                # is empty/NaN. 263MB qhj_order_detail.csv bug: title rows padded with
+                # 171 trailing commas → pandas inferred max 232 cols, real header only
+                # has 60. Mapper then sees 172 bogus Unnamed cols and misclassifies.
+                unnamed_pattern = __import__('re').compile(r'^Unnamed:\s*\d+$')
+                cols_to_drop = [
+                    c for c in df_csv.columns
+                    if unnamed_pattern.match(str(c))
+                    and df_csv[c].isna().all()
+                ]
+                if cols_to_drop:
+                    logger.info(f"[csv-trim] dropping {len(cols_to_drop)} empty Unnamed cols "
+                                f"(padding commas); kept {len(df_csv.columns) - len(cols_to_drop)} cols")
+                    df_csv = df_csv.drop(columns=cols_to_drop)
+
                 headers_csv = [str(c) for c in df_csv.columns]
                 preview = df_csv.head(20).fillna("").values.tolist()
                 structure_result = StructureDetectionResult(
