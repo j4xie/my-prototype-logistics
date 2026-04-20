@@ -12,7 +12,6 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -253,16 +252,23 @@ public class PermissionInterceptor implements HandlerInterceptor {
     }
 
     /**
-     * 发送错误响应
+     * 发送错误响应 (401 未登录场景, 格式与 sendPermissionDenied 对齐).
+     * 401 场景用户未登录, actionHint 指向"重新登录" (前端 axios interceptor 看到
+     * 401 会自动尝试 refresh → 失败才跳 /login, 所以 hint 主要给没有 refresh 的
+     * fetch 层代码读).
      */
     private void sendError(HttpServletResponse response, int status, String message) throws Exception {
         response.setStatus(status);
         response.setContentType("application/json;charset=UTF-8");
 
-        Map<String, Object> errorBody = new HashMap<>();
+        Map<String, Object> errorBody = new LinkedHashMap<>();
         errorBody.put("success", false);
-        errorBody.put("message", message);
         errorBody.put("code", status == HttpServletResponse.SC_UNAUTHORIZED ? "UNAUTHORIZED" : "FORBIDDEN");
+        errorBody.put("message", message);
+        errorBody.put("severity", "error");
+        if (status == HttpServletResponse.SC_UNAUTHORIZED) {
+            errorBody.put("actionHint", "会话已过期, 请重新登录");
+        }
 
         response.getWriter().write(objectMapper.writeValueAsString(errorBody));
     }
