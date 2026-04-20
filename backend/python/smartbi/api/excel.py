@@ -969,12 +969,13 @@ async def auto_parse_excel(
                 # Customer gets a representative sample; true full-volume
                 # support needs streaming persist (tracked TODO).
                 # Scaling measured Apr 20 2026 on prod 14GB server:
-                #   1M cells → 884MB RSS · 2M → 1.08GB · 5M → 1.92GB
-                # Linear ~200MB per 1M cells. 10M budget → ~2.9GB peak, leaves
-                # ~3GB headroom on 6GB free (Python baseline ~800MB + budget).
-                # For 231-col file: 10M / 231 ≈ 43K rows (~21% of 200K).
-                # Full 200K support still needs streaming persist (TODO).
-                CELL_BUDGET = 10_000_000
+                #   1M cells → 884MB RSS · 2M → 1.08GB · 5M → 1.92GB ·
+                #  10M → 3.13GB. Linear ~200-250MB per 1M cells.
+                # 15M budget → ~4.0GB peak, leaves ~2GB headroom on 6GB free.
+                # For 231-col file: 15M / 231 ≈ 65K rows (~32% of 200K).
+                # This is the practical ceiling before streaming persist
+                # refactor (which would lift this to full 200K+).
+                CELL_BUDGET = 15_000_000
                 budget_cap = max(1000, CELL_BUDGET // max(1, real_cols))
                 if real_cols <= 40:
                     safety_cap = min(500_000, max(budget_cap, 100_000))
