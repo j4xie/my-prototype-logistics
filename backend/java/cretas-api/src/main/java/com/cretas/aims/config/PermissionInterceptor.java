@@ -102,12 +102,33 @@ public class PermissionInterceptor implements HandlerInterceptor {
                                        RequirePermission annotation) throws Exception {
         String roleCode = user.getRoleEnum() == null ? "unknown" : user.getRoleEnum().name();
         String roleLabel = roleLabel(user.getRoleEnum());
-        String first = requiredPermissions.length > 0 ? requiredPermissions[0] : "";
-        String[] parts = first.split(":", 2);
-        String moduleCode = parts.length > 0 ? parts[0] : "";
-        String action = parts.length > 1 ? parts[1] : "read_write";
-        String moduleLabel = moduleLabel(moduleCode);
-        String actionLabel = actionLabel(action);
+
+        // 解析所有 required perms. requireAll=false → 任一, true → 全部.
+        // 构造人类可读的 moduleLabel list (去重) 供 message/actionHint 使用.
+        java.util.List<String> moduleLabels = new java.util.ArrayList<>();
+        java.util.List<String> actionLabels = new java.util.ArrayList<>();
+        java.util.List<Map<String, String>> permList = new java.util.ArrayList<>();
+        String primaryModule = "";
+        String primaryAction = "read_write";
+        for (int i = 0; i < requiredPermissions.length; i++) {
+            String code = requiredPermissions[i];
+            String[] parts = code.split(":", 2);
+            String m = parts.length > 0 ? parts[0] : "";
+            String a = parts.length > 1 ? parts[1] : "read_write";
+            if (i == 0) { primaryModule = m; primaryAction = a; }
+            Map<String, String> entry = new LinkedHashMap<>();
+            entry.put("module", m);
+            entry.put("action", a);
+            permList.add(entry);
+            String mLabel = moduleLabel(m);
+            String aLabel = actionLabel(a);
+            if (!moduleLabels.contains(mLabel)) moduleLabels.add(mLabel);
+            if (!actionLabels.contains(aLabel)) actionLabels.add(aLabel);
+        }
+
+        String joiner = annotation.requireAll() ? " 和 " : " 或 ";
+        String moduleDesc = String.join(joiner, moduleLabels);
+        String actionDesc = String.join(" / ", actionLabels);
 
         // 如果 annotation.message() 不是默认文案, 尊重自定义
         String customMsg = annotation.message();
@@ -115,14 +136,28 @@ public class PermissionInterceptor implements HandlerInterceptor {
                 || "权限不足，无法访问此资源".equals(customMsg);
         String message;
         if (isDefault) {
-            message = String.format("您的角色 [%s] 在 [%s] 模块无 [%s] 权限",
-                    roleLabel, moduleLabel, actionLabel);
+            if (moduleLabels.size() > 1) {
+                message = String.format("您的角色 [%s] 缺少 %s 模块的 [%s] 权限 (需%s)",
+                        roleLabel, moduleDesc, actionDesc,
+                        annotation.requireAll() ? "全部" : "任一");
+            } else {
+                message = String.format("您的角色 [%s] 在 [%s] 模块无 [%s] 权限",
+                        roleLabel, moduleDesc, actionDesc);
+            }
         } else {
             message = customMsg;
         }
 
-        String actionHint = "请联系工厂管理员在 Canvas → 模块权限 矩阵为角色 [" + roleLabel + "] 开通 ["
-                + moduleLabel + "] 的 [" + actionLabel + "] 权限, 或切换到有权限的账号重试";
+        String actionHint;
+        if (moduleLabels.size() > 1) {
+            actionHint = "请联系工厂管理员在 Canvas → 模块权限 矩阵为角色 [" + roleLabel
+                    + "] 开通 " + moduleDesc + " 的 [" + actionDesc + "] 权限"
+                    + (annotation.requireAll() ? " (全部需要)" : " (任一即可)")
+                    + ", 或切换到有权限的账号重试";
+        } else {
+            actionHint = "请联系工厂管理员在 Canvas → 模块权限 矩阵为角色 [" + roleLabel
+                    + "] 开通 [" + moduleDesc + "] 的 [" + actionDesc + "] 权限, 或切换到有权限的账号重试";
+        }
 
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setContentType("application/json;charset=UTF-8");
@@ -135,8 +170,10 @@ public class PermissionInterceptor implements HandlerInterceptor {
         body.put("actionHint", actionHint);
         Map<String, Object> meta = new LinkedHashMap<>();
         meta.put("role", roleCode);
-        meta.put("module", moduleCode);
-        meta.put("action", action);
+        meta.put("module", primaryModule);
+        meta.put("action", primaryAction);
+        meta.put("requireAll", annotation.requireAll());
+        meta.put("requiredPermissions", permList);
         body.put("meta", meta);
 
         response.getWriter().write(objectMapper.writeValueAsString(body));
