@@ -66,6 +66,21 @@ public class ExcelDataPersistenceServiceImpl implements ExcelDataPersistenceServ
             "department", "employee", "attendance", "salary", "staff", "headcount"
     );
 
+    // 评价数据关键字段 (Apr 20: qhj_reviews 被误分类, 加 REVIEW 识别)
+    // Priority > SALES: 评价数据通常含"评价门店"/"评价时间" 同时触发 SALES 的"门店"关键词 → 先认 REVIEW
+    private static final Set<String> REVIEW_KEYWORDS = Set.of(
+            "评价", "评分", "评论", "星级", "评语", "好评", "差评", "评级",
+            "rating", "review", "comment", "feedback", "star"
+    );
+
+    // 采购数据关键字段 (Apr 20: dongmenkou_purchase 被误分类成 FINANCE, 加 PURCHASE 识别)
+    // Priority > FINANCE: 采购数据通常含"不含税金额"/"税率" 同时触发 FINANCE 的"税" → 先认 PURCHASE
+    private static final Set<String> PURCHASE_KEYWORDS = Set.of(
+            "采购", "入库", "供应商", "原料", "进货", "到货", "订货",
+            "采购单", "采购订单", "入库单", "入库数量", "不含税单价", "不含税金额",
+            "purchase", "supplier", "vendor", "inbound", "inventory in", "stock in"
+    );
+
     // 日期格式
     private static final List<DateTimeFormatter> DATE_FORMATTERS = Arrays.asList(
             DateTimeFormatter.ofPattern("yyyy-MM-dd"),
@@ -86,7 +101,15 @@ public class ExcelDataPersistenceServiceImpl implements ExcelDataPersistenceServ
                 .map(String::toLowerCase)
                 .collect(Collectors.toSet());
 
-        // 计算匹配分数
+        // 计算匹配分数 (Apr 20: 加 REVIEW/PURCHASE, 优先级高于 SALES/FINANCE)
+        long reviewScore = headerLower.stream()
+                .filter(h -> REVIEW_KEYWORDS.stream().anyMatch(k -> h.contains(k.toLowerCase())))
+                .count();
+
+        long purchaseScore = headerLower.stream()
+                .filter(h -> PURCHASE_KEYWORDS.stream().anyMatch(k -> h.contains(k.toLowerCase())))
+                .count();
+
         long salesScore = headerLower.stream()
                 .filter(h -> SALES_KEYWORDS.stream().anyMatch(k -> h.contains(k.toLowerCase())))
                 .count();
@@ -99,8 +122,17 @@ public class ExcelDataPersistenceServiceImpl implements ExcelDataPersistenceServ
                 .filter(h -> DEPARTMENT_KEYWORDS.stream().anyMatch(k -> h.contains(k.toLowerCase())))
                 .count();
 
-        log.debug("数据类型检测 - salesScore: {}, financeScore: {}, deptScore: {}", salesScore, financeScore, deptScore);
+        log.debug("数据类型检测 - reviewScore: {}, purchaseScore: {}, salesScore: {}, financeScore: {}, deptScore: {}",
+                reviewScore, purchaseScore, salesScore, financeScore, deptScore);
 
+        // REVIEW 优先 (≥2 匹配): 评价数据典型有 3+ 评价关键字
+        if (reviewScore >= 2) {
+            return DataType.REVIEW;
+        }
+        // PURCHASE 优先 (≥2 匹配): 采购入库典型有 3+ 采购关键字
+        if (purchaseScore >= 2) {
+            return DataType.PURCHASE;
+        }
         // 取最高分（>=2 匹配）
         if (salesScore >= 2 && salesScore >= financeScore && salesScore >= deptScore) {
             return DataType.SALES;
@@ -109,7 +141,9 @@ public class ExcelDataPersistenceServiceImpl implements ExcelDataPersistenceServ
         } else if (deptScore >= 2 && deptScore >= salesScore && deptScore >= financeScore) {
             return DataType.DEPARTMENT;
         }
-        // 单关键词匹配也可通过（降低阈值从2到1）
+        // 单关键词匹配也可通过（降低阈值从2到1），REVIEW/PURCHASE 仍优先
+        if (reviewScore >= 1) return DataType.REVIEW;
+        if (purchaseScore >= 1) return DataType.PURCHASE;
         long maxScore = Math.max(salesScore, Math.max(financeScore, deptScore));
         if (maxScore >= 1) {
             if (salesScore == maxScore) return DataType.SALES;
