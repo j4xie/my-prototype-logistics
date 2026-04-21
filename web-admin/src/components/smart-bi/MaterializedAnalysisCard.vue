@@ -1,5 +1,5 @@
 <template>
-  <div class="mat-card" :class="{ 'mat-card--no-chart': !result.chart_config }">
+  <div class="mat-card" :class="{ 'mat-card--no-chart': !result.chartConfig }">
     <div class="mat-card__header">
       <span class="mat-card__title">{{ result.title }}</span>
       <span class="mat-card__code">{{ result.code }}</span>
@@ -19,7 +19,7 @@
 
     <!-- Chart -->
     <div
-      v-if="result.chart_config"
+      v-if="result.chartConfig"
       ref="chartRef"
       class="mat-card__chart"
       :style="{ height: chartHeight + 'px' }"
@@ -38,9 +38,9 @@
     </div>
 
     <!-- Insight -->
-    <div v-if="result.insight_text" class="mat-card__insight">
+    <div v-if="result.insightText" class="mat-card__insight">
       <el-icon><InfoFilled /></el-icon>
-      <span>{{ result.insight_text }}</span>
+      <span>{{ result.insightText }}</span>
     </div>
   </div>
 </template>
@@ -114,12 +114,12 @@ function formatKpiValue(value: unknown): string {
 }
 
 function renderChart() {
-  if (!chartRef.value || !props.result.chart_config) return;
+  if (!chartRef.value || !props.result.chartConfig) return;
   if (!chartInstance) {
     chartInstance = echarts.init(chartRef.value, 'cretas');
   }
   try {
-    chartInstance.setOption(props.result.chart_config as Parameters<typeof chartInstance.setOption>[0], true);
+    chartInstance.setOption(props.result.chartConfig as Parameters<typeof chartInstance.setOption>[0], true);
   } catch (err) {
     console.error(`[mat-card ${props.result.code}] chart render failed`, err);
   }

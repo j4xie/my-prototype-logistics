@@ -94,7 +94,7 @@ async function handleTrigger() {
     const r = await triggerMaterialization(props.uploadId);
     if (r.success) {
       ElMessage.success(
-        `预计算完成: 应用 ${r.applied}/${r.total_templates} 模板, 用时 ${(r.wall_ms / 1000).toFixed(1)}s`
+        `预计算完成: 应用 ${r.applied}/${r.totalTemplates} 模板, 用时 ${(r.wallMs / 1000).toFixed(1)}s`
       );
       await load(props.uploadId);
     }
