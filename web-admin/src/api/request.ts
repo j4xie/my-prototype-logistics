@@ -157,12 +157,20 @@ request.interceptors.response.use(
     // 如果响应已经是标准格式
     if (data && typeof data.success === 'boolean') {
       if (!data.success) {
-        const rich = (data as Record<string, string | null>);
-        showRichError(data.message || '操作失败', {
-          actionHint: rich.actionHint,
-          severity: rich.severity,
-          hintTarget: rich.hintTarget,
-        });
+        // Respect _silent on success=false too (Apr 21 2026): previously
+        // this branch unconditionally fired a red toast even when the
+        // caller set _silent=true (e.g. workflow-designer optional
+        // state-machine fetch → new factory with no SM got a toast
+        // "状态机配置不存在" on every page mount).
+        const cfg = response.config as { _silent?: boolean };
+        if (!cfg._silent) {
+          const rich = (data as Record<string, string | null>);
+          showRichError(data.message || '操作失败', {
+            actionHint: rich.actionHint,
+            severity: rich.severity,
+            hintTarget: rich.hintTarget,
+          });
+        }
         return Promise.reject(new ApiError(data.message, data.code));
       }
       return data;

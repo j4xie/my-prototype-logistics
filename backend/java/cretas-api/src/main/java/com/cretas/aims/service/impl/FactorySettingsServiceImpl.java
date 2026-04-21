@@ -47,13 +47,24 @@ public class FactorySettingsServiceImpl implements FactorySettingsService {
         Factory factory = factoryRepository.findById(factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("工厂不存在，ID: " + factoryId));
 
+        // Race-safe lazy-init (Apr 21 2026): FE calls GET /settings + GET
+        // /settings/full in parallel on page mount. Both race to insert the
+        // default row; the loser hits the unique constraint on factory_id
+        // and returns 409 to the user as a red toast. Catch the conflict
+        // and re-read — the winner's row is now visible.
         FactorySettings settings = settingsRepository.findByFactoryId(factoryId)
                 .orElseGet(() -> {
                     log.info("工厂设置不存在，自动创建默认配置: factoryId={}", factoryId);
                     FactorySettings seed = FactorySettings.builder()
                             .factoryId(factoryId)
                             .build();
-                    return settingsRepository.save(seed);
+                    try {
+                        return settingsRepository.saveAndFlush(seed);
+                    } catch (org.springframework.dao.DataIntegrityViolationException dup) {
+                        log.info("并发创建撞 unique, 重读已存在行: factoryId={}", factoryId);
+                        return settingsRepository.findByFactoryId(factoryId)
+                                .orElseThrow(() -> dup);
+                    }
                 });
 
         settings.setFactoryName(factory.getName());
