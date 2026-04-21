@@ -1,0 +1,80 @@
+"""AnalysisTemplate — base class for every pre-computed analysis.
+
+Each concrete template:
+  1. declares applies(schema) to self-filter by domain/field roles
+  2. declares code (stable string ID used in DB + FE)
+  3. compute(backend, schema) returns TemplateResult
+
+Keep templates pure-functional: same input → same output (deterministic,
+testable, cacheable).
+"""
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
+from ..compute.base import ComputeBackend
+from ..schema import DataSchema
+
+
+@dataclass
+class TemplateResult:
+    """Output of a template run.
+
+    Stored in DB as smart_bi_pg_analysis_results row with:
+      - analysis_type = f"materialized:{code}"
+      - template_code = code
+      - domain        = schema.domain.value
+      - analysis_result = data
+      - chart_configs   = [chart_config] (single chart per template in W1)
+      - kpi_values      = kpis
+      - insights        = [insight_text]
+    """
+    code: str
+    title: str
+    data: Dict[str, Any]                              # primary payload (tables/series)
+    chart_config: Optional[Dict[str, Any]] = None     # ECharts option
+    kpis: Dict[str, Any] = field(default_factory=dict)
+    insight_text: Optional[str] = None                # pre-generated summary
+    applies: bool = True                              # False = "skipped, not applicable"
+    skip_reason: Optional[str] = None
+
+
+class AnalysisTemplate(ABC):
+    """Abstract template. Subclasses must define code + applies + compute."""
+
+    @property
+    @abstractmethod
+    def code(self) -> str:
+        """Stable identifier, e.g., 'top_n_by_dim'. Used as template_code column."""
+
+    @property
+    @abstractmethod
+    def title(self) -> str:
+        """Human-readable title shown in UI and insight text."""
+
+    @abstractmethod
+    def applies(self, schema: DataSchema) -> bool:
+        """Return True if this template can run against this schema."""
+
+    @abstractmethod
+    def compute(
+        self, backend: ComputeBackend, schema: DataSchema
+    ) -> TemplateResult:
+        """Run analysis; return TemplateResult."""
+
+    def run(self, backend: ComputeBackend, schema: DataSchema) -> TemplateResult:
+        """Entry point: handles applies() gate + exception wrapping."""
+        if not self.applies(schema):
+            return TemplateResult(
+                code=self.code, title=self.title, data={},
+                applies=False, skip_reason="schema does not match",
+            )
+        try:
+            return self.compute(backend, schema)
+        except Exception as e:
+            return TemplateResult(
+                code=self.code, title=self.title, data={},
+                applies=False, skip_reason=f"compute error: {e}",
+            )
