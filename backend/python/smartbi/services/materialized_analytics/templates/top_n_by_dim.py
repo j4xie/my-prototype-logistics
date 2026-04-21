@@ -66,6 +66,7 @@ class TopNByDim(AnalysisTemplate):
 
         top_label = top_rows[0]["label"]
         top_share_pct = (top_rows[0]["total"] / total_of_top * 100) if total_of_top > 0 else 0
+        dominance = "独占" if top_share_pct >= 30 else "占比"
 
         return TemplateResult(
             code=self.code,
@@ -85,7 +86,7 @@ class TopNByDim(AnalysisTemplate):
                 "dim_count": len(by_dim),
             },
             insight_text=(
-                f"{primary_dim} Top {len(top_rows)}:{top_label} 独占 "
+                f"{primary_dim} Top {len(top_rows)}:{top_label} {dominance} "
                 f"{top_share_pct:.1f}%,余下梯队收敛明显。"
             ),
         )
