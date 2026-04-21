@@ -353,22 +353,40 @@ async def _async_worker_impl(
             return None
 
         field_def_rows = []
+        fallback_count = 0
         for i, m in enumerate(mapping_result.field_mappings):
             cat = m.category
+            dt = (m.data_type or "").upper()
+            is_measure = (cat in ("amount", "rate"))
+            is_dimension = (cat == "category")
+            is_time = (cat == "time")
+            if not (is_measure or is_dimension or is_time):
+                if dt == "NUMERIC":
+                    is_measure = True
+                    fallback_count += 1
+                elif dt == "DATE":
+                    is_time = True
+                    fallback_count += 1
+                elif dt == "TEXT":
+                    is_dimension = True
+                    fallback_count += 1
             field_def_rows.append(SmartBiPgFieldDefinition(
                 upload_id=upload_id,
                 original_name=m.original,
-                standard_name=m.standard,
+                standard_name=m.standard or m.original,
                 field_type=m.data_type,
                 semantic_type=_infer_sem(m.standard, cat),
-                is_measure=(cat in ("amount", "rate")),
-                is_dimension=(cat == "category"),
-                is_time=(cat == "time"),
+                is_measure=is_measure,
+                is_dimension=is_dimension,
+                is_time=is_time,
                 display_order=i,
             ))
         db.bulk_save_objects(field_def_rows)
         db.commit()
-        logger.info(f"[stream-worker] upload {upload_id}: wrote {len(field_def_rows)} field_defs")
+        logger.info(
+            f"[stream-worker] upload {upload_id}: wrote {len(field_def_rows)} field_defs "
+            f"(dtype-fallback for {fallback_count} unmapped fields)"
+        )
 
         # --- Step 3: streaming chunks + bulk insert dynamic_data ---
         # Wipe any stale dynamic_data rows for this upload (idempotent retries).
