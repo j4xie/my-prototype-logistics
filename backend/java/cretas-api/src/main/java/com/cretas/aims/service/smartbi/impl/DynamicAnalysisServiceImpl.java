@@ -20,6 +20,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -42,6 +46,15 @@ public class DynamicAnalysisServiceImpl implements DynamicAnalysisService {
     private final SmartBiPgExcelUploadRepository uploadRepository;
     private final SmartBiPgFieldDefinitionRepository fieldDefRepository;
     private final PythonSmartBIClient pythonClient;
+
+    // Shared pool for parallel aggregate queries; 8 workers match DB connection
+    // pool headroom while keeping N+1 loops fast even at 12-16 measures.
+    private static final ExecutorService AGG_POOL = Executors.newFixedThreadPool(
+            8, r -> {
+                Thread t = new Thread(r, "smartbi-agg-" + System.nanoTime());
+                t.setDaemon(true);
+                return t;
+            });
 
     @Override
     @Transactional(value = "smartbiPostgresTransactionManager", readOnly = true)
@@ -66,11 +79,20 @@ public class DynamicAnalysisServiceImpl implements DynamicAnalysisService {
                 .map(FieldDefinitionDTO::fromEntity)
                 .collect(Collectors.toList()));
 
-        // Get data rows
-        List<SmartBiDynamicData> dataRows = dynamicDataRepository.findByFactoryIdAndUploadId(factoryId, uploadId);
+        // Get data rows — cap at 1K (insight prompt context only; 200K × 231 JSONB
+        // cols would need ~2GB heap). KPI/chart math runs at SQL level. 1K ≈
+        // 30-50MB materialized even for wide POS tables.
+        final int SAMPLE_CAP = 1000;
+        List<SmartBiDynamicData> dataRows = dynamicDataRepository
+                .findByFactoryIdAndUploadIdOrderByRowIndex(factoryId, uploadId,
+                        org.springframework.data.domain.PageRequest.of(0, SAMPLE_CAP))
+                .getContent();
         if (dataRows.isEmpty()) {
             log.warn("No data found for uploadId={}", uploadId);
             return response;
+        }
+        if (dataRows.size() == SAMPLE_CAP) {
+            log.info("Dynamic analysis sampled {} rows (cap) for uploadId={}", SAMPLE_CAP, uploadId);
         }
 
         // Find measure and dimension fields
@@ -82,14 +104,30 @@ public class DynamicAnalysisServiceImpl implements DynamicAnalysisService {
                 .collect(Collectors.toList());
 
         // Generate KPIs
+        long tKpi = System.currentTimeMillis();
         response.setKpiCards(generateKPIs(factoryId, uploadId, measures));
+        log.info("KPI phase done in {}ms", System.currentTimeMillis() - tKpi);
 
         // Generate charts
+        long tChart = System.currentTimeMillis();
         response.setCharts(generateCharts(factoryId, uploadId, measures, dimensions));
+        log.info("Chart phase done in {}ms", System.currentTimeMillis() - tChart);
 
-        // Generate insights from PostgreSQL data
-        response.setInsights(generateInsights(factoryId, uploadId, upload.getDetectedTableType(),
-                dataRows, measures, dimensions));
+        // Skip insights on large datasets (> 30K rows) — generateInsights
+        // makes additional per-dim SQL aggregates + a Python HTTP call that
+        // together triple the response time. On 200K POS data this pushes
+        // total > 3 min. Users can get richer insight via AI 问答 which has
+        // its own parallel LLM pipeline.
+        long realRowCount = upload.getRowCount() != null ? upload.getRowCount() : dataRows.size();
+        if (realRowCount <= 30000) {
+            long tIns = System.currentTimeMillis();
+            response.setInsights(generateInsights(factoryId, uploadId, upload.getDetectedTableType(),
+                    dataRows, measures, dimensions));
+            log.info("Insight phase done in {}ms", System.currentTimeMillis() - tIns);
+        } else {
+            response.setInsights(java.util.Collections.singletonList(
+                    "数据量较大 (" + realRowCount + " 行)，洞察请使用 AI 问答获取详细分析"));
+        }
 
         return response;
     }
@@ -179,41 +217,60 @@ public class DynamicAnalysisServiceImpl implements DynamicAnalysisService {
 
     private List<Map<String, Object>> generateKPIs(String factoryId, Long uploadId,
                                                     List<SmartBiPgFieldDefinition> measures) {
-        List<Map<String, Object>> kpis = new ArrayList<>();
+        // Cap at 12 measures; each triggers 2 full-table JSONB scans so unbounded
+        // loops on wide POS tables (100+ measures) take minutes.
+        List<SmartBiPgFieldDefinition> capped = measures.size() > 12 ? measures.subList(0, 12) : measures;
 
-        for (SmartBiPgFieldDefinition measure : measures) {
-            String fieldName = measure.getOriginalName();
-            String displayName = measure.getStandardName() != null ?
-                    measure.getStandardName() : fieldName;
+        long t0 = System.currentTimeMillis();
+        // Parallel fan-out: each measure's sum + minMax run concurrently. The
+        // query threads share a daemon pool of 8 workers (matches DB connection
+        // pool headroom). Sequential baseline ~4-8s per measure; parallel ~2 waves.
+        List<CompletableFuture<Map<String, Object>>> futures = capped.stream()
+                .map(measure -> CompletableFuture.supplyAsync(() -> {
+                    try {
+                        String fieldName = measure.getOriginalName();
+                        Double sum = dynamicDataRepository.sumField(factoryId, uploadId, fieldName);
+                        if (sum == null) return null;
+                        List<Object[]> minMax = dynamicDataRepository.minMaxField(factoryId, uploadId, fieldName);
+                        Double min = null, max = null;
+                        if (minMax != null && !minMax.isEmpty() && minMax.get(0) != null) {
+                            Object[] mm = minMax.get(0);
+                            min = mm[0] != null ? ((Number) mm[0]).doubleValue() : null;
+                            max = mm[1] != null ? ((Number) mm[1]).doubleValue() : null;
+                        }
+                        String displayName = measure.getStandardName() != null ?
+                                measure.getStandardName() : fieldName;
+                        Map<String, Object> kpi = new LinkedHashMap<>();
+                        kpi.put("title", displayName);
+                        kpi.put("value", formatNumber(sum, measure.getFormatPattern()));
+                        kpi.put("rawValue", sum);
+                        kpi.put("type", measure.getSemanticType());
+                        kpi.put("formatPattern", measure.getFormatPattern());
+                        if (min != null && max != null) {
+                            kpi.put("min", min);
+                            kpi.put("max", max);
+                        }
+                        return kpi;
+                    } catch (Exception e) {
+                        log.warn("KPI compute failed for {}: {}", measure.getOriginalName(), e.getMessage());
+                        return null;
+                    }
+                }, AGG_POOL))
+                .collect(Collectors.toList());
 
-            // Calculate sum
-            Double sum = dynamicDataRepository.sumField(factoryId, uploadId, fieldName);
-            if (sum == null) continue;
+        List<Map<String, Object>> kpis = futures.stream()
+                .map(f -> {
+                    try {
+                        return f.get(90, TimeUnit.SECONDS);
+                    } catch (Exception e) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
 
-            // Get min/max for trend
-            List<Object[]> minMax = dynamicDataRepository.minMaxField(factoryId, uploadId, fieldName);
-            Double min = null, max = null;
-            if (minMax != null && !minMax.isEmpty() && minMax.get(0) != null) {
-                Object[] mm = minMax.get(0);
-                min = mm[0] != null ? ((Number) mm[0]).doubleValue() : null;
-                max = mm[1] != null ? ((Number) mm[1]).doubleValue() : null;
-            }
-
-            Map<String, Object> kpi = new LinkedHashMap<>();
-            kpi.put("title", displayName);
-            kpi.put("value", formatNumber(sum, measure.getFormatPattern()));
-            kpi.put("rawValue", sum);
-            kpi.put("type", measure.getSemanticType());
-            kpi.put("formatPattern", measure.getFormatPattern());
-
-            if (min != null && max != null) {
-                kpi.put("min", min);
-                kpi.put("max", max);
-            }
-
-            kpis.add(kpi);
-        }
-
+        log.info("generateKPIs: {} measures in {}ms (parallel)", capped.size(),
+                System.currentTimeMillis() - t0);
         return kpis;
     }
 
@@ -230,49 +287,62 @@ public class DynamicAnalysisServiceImpl implements DynamicAnalysisService {
         String measureName = primaryMeasure.getStandardName() != null ?
                 primaryMeasure.getStandardName() : measureField;
 
-        // Generate chart for each dimension
-        for (SmartBiPgFieldDefinition dimension : dimensions) {
-            String dimField = dimension.getOriginalName();
-            String dimName = dimension.getStandardName() != null ?
-                    dimension.getStandardName() : dimField;
+        // Cap dimensions to 5 (FE renders 4-5 chart slots). Sequential loop over
+        // dimensions would be N full-table GROUP BY scans; parallelize instead.
+        List<SmartBiPgFieldDefinition> cappedDims = dimensions.size() > 5 ? dimensions.subList(0, 5) : dimensions;
+        final String fMeasureName = measureName;
+        long tChart0 = System.currentTimeMillis();
 
-            // Aggregate by this dimension
-            List<Object[]> aggResults = dynamicDataRepository.aggregateByField(
-                    factoryId, uploadId, dimField, measureField);
+        List<CompletableFuture<Map<String, Object>>> chartFutures = cappedDims.stream()
+                .map(dimension -> CompletableFuture.supplyAsync(() -> {
+                    try {
+                        String dimField = dimension.getOriginalName();
+                        String dimName = dimension.getStandardName() != null ?
+                                dimension.getStandardName() : dimField;
+                        List<Object[]> aggResults = dynamicDataRepository.aggregateByField(
+                                factoryId, uploadId, dimField, measureField);
+                        if (aggResults.isEmpty()) return null;
+                        List<String> labels = new ArrayList<>();
+                        List<Double> values = new ArrayList<>();
+                        for (Object[] row : aggResults) {
+                            labels.add(row[0] != null ? row[0].toString() : "Unknown");
+                            values.add(row[1] != null ? ((Number) row[1]).doubleValue() : 0);
+                        }
+                        String chartType = Boolean.TRUE.equals(dimension.getIsTime()) ? "line" : "bar";
+                        if (labels.size() <= 6 && !Boolean.TRUE.equals(dimension.getIsTime())) {
+                            chartType = "pie";
+                        }
+                        Map<String, Object> chart = new LinkedHashMap<>();
+                        chart.put("type", chartType);
+                        chart.put("title", fMeasureName + " by " + dimName);
+                        chart.put("xAxisLabel", dimName);
+                        chart.put("yAxisLabel", fMeasureName);
+                        chart.put("data", Map.of(
+                                "labels", labels,
+                                "datasets", Collections.singletonList(Map.of(
+                                        "label", fMeasureName,
+                                        "data", values
+                                ))
+                        ));
+                        return chart;
+                    } catch (Exception e) {
+                        log.warn("Chart compute failed for dim {}: {}",
+                                dimension.getOriginalName(), e.getMessage());
+                        return null;
+                    }
+                }, AGG_POOL))
+                .collect(Collectors.toList());
 
-            if (aggResults.isEmpty()) continue;
-
-            List<String> labels = new ArrayList<>();
-            List<Double> values = new ArrayList<>();
-
-            for (Object[] row : aggResults) {
-                String label = row[0] != null ? row[0].toString() : "Unknown";
-                Double value = row[1] != null ? ((Number) row[1]).doubleValue() : 0;
-                labels.add(label);
-                values.add(value);
+        for (CompletableFuture<Map<String, Object>> f : chartFutures) {
+            try {
+                Map<String, Object> chart = f.get(90, TimeUnit.SECONDS);
+                if (chart != null) charts.add(chart);
+            } catch (Exception e) {
+                log.warn("chart future failed: {}", e.getMessage());
             }
-
-            // Determine chart type
-            String chartType = Boolean.TRUE.equals(dimension.getIsTime()) ? "line" : "bar";
-            if (labels.size() <= 6 && !Boolean.TRUE.equals(dimension.getIsTime())) {
-                chartType = "pie";
-            }
-
-            Map<String, Object> chart = new LinkedHashMap<>();
-            chart.put("type", chartType);
-            chart.put("title", measureName + " by " + dimName);
-            chart.put("xAxisLabel", dimName);
-            chart.put("yAxisLabel", measureName);
-            chart.put("data", Map.of(
-                    "labels", labels,
-                    "datasets", Collections.singletonList(Map.of(
-                            "label", measureName,
-                            "data", values
-                    ))
-            ));
-
-            charts.add(chart);
         }
+        log.info("generateCharts: {} dims in {}ms (parallel)", cappedDims.size(),
+                System.currentTimeMillis() - tChart0);
 
         // Time series chart if period data exists
         List<Map<String, Object>> timeSeries = getTimeSeries(factoryId, uploadId, measureField);
@@ -461,8 +531,11 @@ public class DynamicAnalysisServiceImpl implements DynamicAnalysisService {
     }
 
     private BackfillResult backfillFromData(String factoryId, Long uploadId) {
-        // Get sample data to infer field types
-        List<SmartBiDynamicData> sampleData = dynamicDataRepository.findByFactoryIdAndUploadId(factoryId, uploadId);
+        // Get sample data to infer field types — only need first row, use PageRequest cap
+        List<SmartBiDynamicData> sampleData = dynamicDataRepository
+                .findByFactoryIdAndUploadIdOrderByRowIndex(factoryId, uploadId,
+                        org.springframework.data.domain.PageRequest.of(0, 5))
+                .getContent();
         if (sampleData.isEmpty()) {
             return BackfillResult.failed(uploadId, "No data rows found to infer schema");
         }

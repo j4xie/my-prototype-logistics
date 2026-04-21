@@ -445,16 +445,10 @@ async def _async_worker_impl(
         upload.upload_status = "COMPLETED"
         upload.row_count = total_rows
         upload.column_count = len(real_headers)
-        upload.field_mappings = [
-            {
-                "originalColumn": m.original,
-                "standardField": m.standard,
-                "dataType": m.data_type,
-                "confidence": m.confidence,
-                "source": m.method,
-            }
+        upload.field_mappings = {
+            m.original: (m.standard or m.original)
             for m in mapping_result.field_mappings
-        ]
+        }
         upload.detected_table_type = mapping_result.table_type
         upload.context_info = {
             "streamPersist": True,

@@ -1124,6 +1124,208 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                     primary_measure = _bundle['primary_measure']
                                     # Heartbeat after aggregate phase (cache hit OR fresh compute)
                                     yield _sse_event("status", _hb_text)
+
+                                    # ── C1/C2/C3 query-scoped aggregates (Apr 21 2026) ──
+                                    # The cache above is upload-level (global). User queries
+                                    # that mention time windows ("3月"), specific dimensions
+                                    # ("商品信息"), or subcategories ("饮品") need query-specific
+                                    # aggregates because those filters vary per question.
+                                    try:
+                                        from smartbi.services.query_filters import (
+                                            extract_time_filter,
+                                            pick_time_column,
+                                            time_where_clause,
+                                            hoist_mentioned_dims,
+                                            classify_product_info,
+                                            user_wants_subcategory,
+                                        )
+                                        _q = (request.effective_query or "")
+                                        _tf = extract_time_filter(_q)
+                                        _time_col = pick_time_column(field_meta) if _tf else None
+                                        _mentioned_dims = hoist_mentioned_dims(_q, dims)
+                                        # Top 4 dims after hoist — these drive the focused top5
+                                        _dims_focus = _mentioned_dims[:4] if _mentioned_dims else []
+
+                                        # C1: time-filtered totals + top5 per focused dim
+                                        if _tf and _time_col and primary_measure:
+                                            agg_lines.append(
+                                                f"\n## {_tf['label']} 时间段聚合 (权威, 基于全量)"
+                                            )
+                                            # Grand total for the time window
+                                            where_frag, extra = time_where_clause(_tf, "$2", 2)
+                                            q_total = (
+                                                f"SELECT SUM((row_data->>$1)::numeric) AS s, "
+                                                f"COUNT((row_data->>$1)::numeric) AS c "
+                                                f"FROM smart_bi_dynamic_data "
+                                                f"WHERE upload_id = $3 "
+                                                f"AND row_data->>$1 ~ '^-?[0-9.,]+$' "
+                                                f"{where_frag}"
+                                            )
+                                            try:
+                                                tot_row = await conn.fetchrow(
+                                                    q_total, primary_measure, _time_col, upload_id, *extra
+                                                )
+                                                if tot_row and tot_row['s'] is not None:
+                                                    agg_lines.append(
+                                                        f"- {_tf['label']} {primary_measure} 总计: "
+                                                        f"{tot_row['s']:,.2f} (行数={tot_row['c']})"
+                                                    )
+                                            except Exception as e1:
+                                                logger.warning(f"[stream] time-total failed: {e1}")
+                                            # Per-dim top5 under the time filter
+                                            for _dim in _dims_focus:
+                                                try:
+                                                    # ── Build SQL with time filter injected ──
+                                                    # Params: $1=dim, $2=measure, $3=time_col, $4=upload_id
+                                                    where_frag2, extra2 = time_where_clause(_tf, "$3", 4)
+                                                    q_top = (
+                                                        f"SELECT row_data->>$1 AS label, "
+                                                        f"SUM((row_data->>$2)::numeric) AS total "
+                                                        f"FROM smart_bi_dynamic_data "
+                                                        f"WHERE upload_id = $4 "
+                                                        f"AND row_data->>$2 ~ '^-?[0-9.,]+$' "
+                                                        f"AND row_data->>$1 IS NOT NULL "
+                                                        f"AND row_data->>$1 NOT IN ('合计','总计','Total','TOTAL','小计') "
+                                                        f"{where_frag2} "
+                                                        f"GROUP BY row_data->>$1 "
+                                                        f"ORDER BY total DESC NULLS LAST LIMIT 5"
+                                                    )
+                                                    rows = await conn.fetch(
+                                                        q_top, _dim, primary_measure, _time_col, upload_id, *extra2
+                                                    )
+                                                    if rows:
+                                                        top_str = ", ".join(
+                                                            f"{r['label']}={float(r['total'] or 0):,.2f}"
+                                                            for r in rows
+                                                        )
+                                                        agg_lines.append(
+                                                            f"- {_tf['label']} Top5 by {_dim} "
+                                                            f"(按 {primary_measure}): {top_str}"
+                                                        )
+                                                        # Also expose as a chart candidate
+                                                        top5_by_dim.setdefault(f"{_dim} @ {_tf['label']}", [
+                                                            {"label": r['label'],
+                                                             "total": float(r['total'] or 0)}
+                                                            for r in rows
+                                                        ])
+                                                except Exception as e2:
+                                                    logger.warning(f"[stream] time-top5 {_dim} failed: {e2}")
+                                            logger.info(
+                                                f"[stream] time-filtered agg done for {_tf['label']} "
+                                                f"col={_time_col} dims={_dims_focus[:2]}"
+                                            )
+
+                                        # C2: user-mentioned dims that weren't in cached top5
+                                        _mentioned_only = [
+                                            d for d in _dims_focus if d not in top5_by_dim
+                                        ]
+                                        if _mentioned_only and primary_measure and not _tf:
+                                            for _dim in _mentioned_only:
+                                                try:
+                                                    rows = await conn.fetch(
+                                                        """SELECT row_data->>$1 AS label,
+                                                                  SUM((row_data->>$2)::numeric) AS total
+                                                           FROM smart_bi_dynamic_data
+                                                           WHERE upload_id = $3
+                                                             AND row_data->>$2 ~ '^-?[0-9.,]+$'
+                                                             AND row_data->>$1 IS NOT NULL
+                                                             AND row_data->>$1 NOT IN ('合计','总计','Total','TOTAL','小计')
+                                                           GROUP BY row_data->>$1
+                                                           ORDER BY total DESC NULLS LAST LIMIT 10""",
+                                                        _dim, primary_measure, upload_id
+                                                    )
+                                                    if rows:
+                                                        top_str = ", ".join(
+                                                            f"{r['label']}={float(r['total'] or 0):,.2f}"
+                                                            for r in rows[:5]
+                                                        )
+                                                        agg_lines.append(
+                                                            f"- Top by {_dim} (按 {primary_measure}, "
+                                                            f"query-mentioned): {top_str}"
+                                                        )
+                                                        top5_by_dim[_dim] = [
+                                                            {"label": r['label'],
+                                                             "total": float(r['total'] or 0)}
+                                                            for r in rows[:5]
+                                                        ]
+                                                except Exception as e3:
+                                                    logger.warning(f"[stream] mentioned-dim {_dim} failed: {e3}")
+
+                                        # C3: 商品信息 subcategory rollup (qhj POS combos)
+                                        _subcats = user_wants_subcategory(_q)
+                                        _product_col = None
+                                        for f in field_meta:
+                                            nm = str(f.get('original_name') or '')
+                                            if nm in ('商品信息', '商品名称', '菜品名称', '商品名'):
+                                                _product_col = nm
+                                                break
+                                        if _subcats and _product_col and primary_measure:
+                                            try:
+                                                # Fetch top 500 products + their revenue, then
+                                                # classify + rollup by category in Python.
+                                                where_frag3, extra3 = ("", [])
+                                                if _tf and _time_col:
+                                                    where_frag3, extra3 = time_where_clause(_tf, "$3", 3)
+                                                    q_prod = (
+                                                        f"SELECT row_data->>$1 AS label, "
+                                                        f"SUM((row_data->>$2)::numeric) AS total, "
+                                                        f"COUNT(*) AS cnt "
+                                                        f"FROM smart_bi_dynamic_data "
+                                                        f"WHERE upload_id = $4 "
+                                                        f"AND row_data->>$2 ~ '^-?[0-9.,]+$' "
+                                                        f"AND row_data->>$1 IS NOT NULL "
+                                                        f"{where_frag3} "
+                                                        f"GROUP BY row_data->>$1 "
+                                                        f"ORDER BY total DESC NULLS LAST LIMIT 500"
+                                                    )
+                                                    prod_rows = await conn.fetch(
+                                                        q_prod, _product_col, primary_measure, _time_col, upload_id, *extra3
+                                                    )
+                                                else:
+                                                    prod_rows = await conn.fetch(
+                                                        """SELECT row_data->>$1 AS label,
+                                                                  SUM((row_data->>$2)::numeric) AS total,
+                                                                  COUNT(*) AS cnt
+                                                           FROM smart_bi_dynamic_data
+                                                           WHERE upload_id = $3
+                                                             AND row_data->>$2 ~ '^-?[0-9.,]+$'
+                                                             AND row_data->>$1 IS NOT NULL
+                                                           GROUP BY row_data->>$1
+                                                           ORDER BY total DESC NULLS LAST LIMIT 500""",
+                                                        _product_col, primary_measure, upload_id
+                                                    )
+                                                cat_totals: Dict[str, Dict[str, float]] = {}
+                                                for pr in prod_rows:
+                                                    cat = classify_product_info(pr['label'])
+                                                    entry = cat_totals.setdefault(cat, {"total": 0.0, "cnt": 0, "items": 0})
+                                                    entry["total"] += float(pr['total'] or 0)
+                                                    entry["cnt"] += int(pr['cnt'] or 0)
+                                                    entry["items"] += 1
+                                                time_label = _tf['label'] if _tf else '全量'
+                                                focus_label = "/".join(_subcats)
+                                                agg_lines.append(
+                                                    f"\n## 商品子品类聚合 ({time_label}, 用户关注: {focus_label})"
+                                                )
+                                                # Sort by total desc, emit all matched + top 3 others
+                                                sorted_cats = sorted(
+                                                    cat_totals.items(),
+                                                    key=lambda kv: kv[1]["total"],
+                                                    reverse=True,
+                                                )
+                                                for cat, v in sorted_cats:
+                                                    mark = " ★" if cat in _subcats else ""
+                                                    agg_lines.append(
+                                                        f"- {cat}{mark}: 金额={v['total']:,.2f} "
+                                                        f"行次={v['cnt']} 品项数={v['items']}"
+                                                    )
+                                                logger.info(
+                                                    f"[stream] subcategory rollup done: {len(sorted_cats)} cats, "
+                                                    f"focus={_subcats}, time={_tf}"
+                                                )
+                                            except Exception as e4:
+                                                logger.warning(f"[stream] subcategory rollup failed: {e4}")
+                                    except Exception as eouter:
+                                        logger.warning(f"[stream] C1/C2/C3 block failed: {eouter}")
                                     # Bug #23 fix (Apr 17 2026): user may mention specific
                                     # entities that aren't in Top-5 (e.g., asks about 南方百联店
                                     # which ranks #12). Scan the query for distinct labels of

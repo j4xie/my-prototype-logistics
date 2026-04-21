@@ -390,20 +390,25 @@ public class SmartBIDashboardController {
 
         String cacheType = "dashboard_" + analysisType;  // 'dashboard_auto'
 
-        // FIX-13 cache lookup — serve from DB cache if fresh (15min TTL), skip on forceRefresh
+        // Cache lookup — serve from DB cache indefinitely; upload data is
+        // immutable (each upload_id is an append-only snapshot) so the
+        // analysis result for a given (uploadId, analysisType) never goes
+        // stale without a new upload. Force-refresh still triggers recompute.
+        // 7-day guardrail in case schema evolves between server upgrades.
+        final long CACHE_TTL_SECONDS = 7L * 24 * 60 * 60;
         if (!forceRefresh && analysisResultRepository != null) {
             try {
                 var cached = analysisResultRepository.findByUploadIdAndAnalysisType(uploadId, cacheType);
                 if (cached.isPresent()) {
                     var row = cached.get();
                     long ageSec = java.time.Duration.between(row.getCreatedAt(), java.time.LocalDateTime.now()).getSeconds();
-                    if (ageSec < 15 * 60) {
+                    if (ageSec < CACHE_TTL_SECONDS) {
                         DynamicAnalysisService.DashboardResponse cachedResp = cacheObjectMapper.convertValue(
                                 row.getAnalysisResult(), DynamicAnalysisService.DashboardResponse.class);
                         log.info("Dashboard cache HIT: uploadId={}, age={}s", uploadId, ageSec);
                         return ResponseEntity.ok(ApiResponse.success(cachedResp));
                     } else {
-                        log.info("Dashboard cache EXPIRED: uploadId={}, age={}s (>900)", uploadId, ageSec);
+                        log.info("Dashboard cache EXPIRED: uploadId={}, age={}s (>7d)", uploadId, ageSec);
                     }
                 }
             } catch (Exception e) {
