@@ -20,12 +20,20 @@ from smartbi.canonical.field_registry import (
     RegistryEntry,
     RegistryLookupResult,
 )
+from smartbi.canonical.normalizer import (
+    CanonicalRow,
+    NormalizeStats,
+    SilverNormalizer,
+)
 
 __all__ = [
+    "CanonicalRow",
     "ComboItem",
     "DimResolver",
     "FieldRegistry",
+    "NormalizeStats",
     "RegistryEntry",
     "RegistryLookupResult",
+    "SilverNormalizer",
     "parse_combo",
 ]
