@@ -72,11 +72,21 @@ const salesOrderOptions = ref<SalesOrderOption[]>([]);
 async function loadSalesOrderOptions() {
   if (!factoryId.value) return;
   try {
-    const res = await get<{ content: SalesOrderOption[] }>(`/${factoryId.value}/sales-orders`, {
-      params: { page: 1, size: 200, status: 'CONFIRMED' },
-    });
+    // Note: endpoint is /sales/orders (SalesController), not /sales-orders.
+    // List all then filter to invoicable statuses client-side (CONFIRMED
+    // through COMPLETED; exclude DRAFT / CANCELLED).
+    const res = await get<{ content: (SalesOrderOption & { status?: string })[] }>(
+      `/${factoryId.value}/sales/orders`,
+      { params: { page: 1, size: 200 } }
+    );
     if (res.success && res.data) {
-      salesOrderOptions.value = res.data.content || [];
+      const invoicableStatuses = new Set([
+        'CONFIRMED', 'PENDING_FINANCE_REVIEW', 'FINANCE_APPROVED',
+        'PROCESSING', 'PARTIAL_DELIVERED', 'COMPLETED',
+      ]);
+      salesOrderOptions.value = (res.data.content || []).filter(
+        o => !o.status || invoicableStatuses.has(o.status)
+      );
     }
   } catch { /* silent */ }
 }
