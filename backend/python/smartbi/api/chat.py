@@ -1035,6 +1035,61 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
     async def event_stream() -> AsyncGenerator[str, None]:
         start_time = time.time()
         try:
+            # W2.2: Try template router first — if user query matches a known analysis,
+            # stream cached result (fast, deterministic) instead of invoking LLM.
+            try:
+                upload_id = None
+                if request.sheet_id:
+                    try:
+                        upload_id = int(request.sheet_id)
+                    except (ValueError, TypeError):
+                        pass
+                user_q = (request.effective_query or "").strip()
+                if upload_id and user_q:
+                    from smartbi.services.materialized_analytics.query_router import (
+                        match_template, format_cached_as_sse
+                    )
+                    matched_code = match_template(user_q)
+                    if matched_code:
+                        # Factory-scoped load
+                        from smartbi.services.materialized_analytics.persistence import (
+                            load_materialization_results
+                        )
+                        from smartbi.config import get_pg_pool
+                        pool = await get_pg_pool()
+                        if pool is not None:
+                            factory_id = getattr(http_request.state, 'factory_id', None) if hasattr(http_request, 'state') else None
+                            cached_results = await load_materialization_results(
+                                pool, upload_id, factory_id=factory_id
+                            )
+                            cached_by_code = {r["code"]: r for r in cached_results}
+                            if matched_code in cached_by_code:
+                                tpl = cached_by_code[matched_code]
+                                payload = format_cached_as_sse(tpl, user_q)
+                                # Stream as SSE
+                                yield _sse_event("status", f"命中预计算模板:{tpl['title']}")
+                                # Chunk the answer in small pieces for streaming feel
+                                answer_text = payload["answer"]
+                                chunk_size = 40
+                                for i in range(0, len(answer_text), chunk_size):
+                                    yield _sse_event("chunk", answer_text[i:i + chunk_size])
+                                if payload["charts"]:
+                                    yield _sse_event("charts", payload["charts"])
+                                yield _sse_event("done", {
+                                    "success": True,
+                                    "answer": answer_text,
+                                    "charts": payload["charts"],
+                                    "kpis": payload["kpis"],
+                                    "source": "materialized_cache",
+                                    "template_code": matched_code,
+                                    "processingTimeMs": int((time.time() - start_time) * 1000),
+                                })
+                                logger.info(f"[stream] served upload {upload_id} via cache: template={matched_code}, wall={time.time() - start_time:.2f}s")
+                                return  # early exit — don't invoke LLM
+            except Exception as e:
+                # Router is best-effort; fall through to LLM on any error
+                logger.warning(f"[stream] template router failed, falling back to LLM: {e}")
+
             yield _sse_event("status", "正在加载数据...")
 
             # ── Data loading (same as general_analysis) ──
