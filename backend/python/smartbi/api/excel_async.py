@@ -38,6 +38,7 @@ from fastapi.responses import JSONResponse
 
 from smartbi.database.connection import SessionLocal
 from smartbi.database.models import SmartBiPgExcelUpload
+from smartbi.services.materialized_analytics.hooks import schedule_materialization
 
 router = APIRouter(prefix="/api/smartbi/excel", tags=["Excel Async"])
 logger = logging.getLogger(__name__)
@@ -464,6 +465,11 @@ async def _async_worker_impl(
             "headers": real_headers,  # so status endpoint can return them
         }
         db.commit()
+        # Fire-and-forget: pre-warm materialized analytics cache.
+        # field_defs are fully written above (db.commit() at line ~385) before
+        # we reach this point, so the materializer will see all field metadata.
+        # schedule_materialization() is a no-op if no event loop is running.
+        schedule_materialization(upload_id)
         logger.info(
             f"[stream-worker] upload {upload_id} COMPLETED in "
             f"{int((time.time() - start) * 1000)}ms: {total_rows} rows × {len(real_headers)} cols"
