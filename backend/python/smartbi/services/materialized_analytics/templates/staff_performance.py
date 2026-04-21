@@ -47,12 +47,19 @@ class StaffPerformance(AnalysisTemplate):
                 applies=False, skip_reason="no staff role column found",
             )
 
-        # Aggregate: count orders + sum revenue, exclude null/empty staff names
+        # Aggregate: count orders + sum revenue, exclude null/empty staff names + role-label noise.
+        # Data-quality filter: some uploads have cell values like "收银"/"收银员"/"服务员" mixed into
+        # the 服务员 column (data entry error or merged cells). These are role-label contamination,
+        # not real names. Filter at template level since classifier can only fix COLUMN roles, not
+        # cell VALUES. Meta-rows like 合计/总计 already filtered by PolarsBackend._META_LABELS.
+        _ROLE_NAME_NOISE = {"收银", "收银员", "服务员", "销售员", "厨师", "店长", "经理",
+                            "合计", "总计", "小计", "汇总"}
         ranking_df = (
             backend._df
             .filter(
                 pl.col(role_col).is_not_null()
                 & (pl.col(role_col).cast(pl.Utf8) != "")
+                & (~pl.col(role_col).cast(pl.Utf8).is_in(list(_ROLE_NAME_NOISE)))
             )
             .group_by(role_col)
             .agg([
