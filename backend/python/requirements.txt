@@ -69,4 +69,4 @@ safetensors>=0.4,<1.0
 huggingface-hub>=0.20,<1.0
 
 # Materialized analytics compute backend (W1 Task 3)
-polars>=0.20.0
+polars>=1.0.0,<2.0.0

@@ -35,9 +35,9 @@ class PolarsBackend(ComputeBackend):
         return self._df.columns
 
     def dtype(self, column: str) -> str:
-        dt = self._df.schema.get(column)
-        if dt is None:
-            return "unknown"
+        if column not in self._df.schema:
+            raise KeyError(f"column not in DataFrame: {column!r}")
+        dt = self._df.schema[column]
         name = str(dt).lower()
         if "int" in name:
             return "int"
@@ -73,16 +73,19 @@ class PolarsBackend(ComputeBackend):
         if freq not in ("D", "W", "M"):
             raise ValueError(f"unsupported freq: {freq}")
         polars_freq = {"D": "1d", "W": "1w", "M": "1mo"}[freq]
+        # C1: use str.to_datetime for string columns; cast for already-typed Datetime columns
+        dt_col = self._df.schema.get(time_col)
+        if dt_col is not None and "str" in str(dt_col).lower():
+            t_expr = pl.col(time_col).str.to_datetime(strict=False).alias("_t")
+        else:
+            t_expr = pl.col(time_col).cast(pl.Datetime, strict=False).alias("_t")
         return (
             self._df
-            .with_columns([
-                pl.col(time_col).cast(pl.Datetime, strict=False).alias("_t"),
-                self._as_numeric(measure).alias("_m"),
-            ])
+            .with_columns([t_expr, self._as_numeric(measure).alias("_m")])
             .filter(pl.col("_t").is_not_null() & pl.col("_m").is_not_null())
+            .sort("_t")  # C2: group_by_dynamic requires pre-sorted input
             .group_by_dynamic("_t", every=polars_freq)
             .agg(pl.col("_m").sum().alias("total"))
-            .sort("_t")
             .with_columns(pl.col("_t").dt.strftime("%Y-%m-%d").alias("period"))
             .select(["period", "total"])
             .to_dicts()
@@ -123,6 +126,7 @@ class PolarsBackend(ComputeBackend):
             self._df
             .with_columns(self._as_numeric(measure).alias("_m"))
             .filter((pl.col("_m") < lo) | (pl.col("_m") > hi))
+            .drop("_m")  # I1: drop internal column before returning to caller
             .head(50)
             .to_dicts()
         )
