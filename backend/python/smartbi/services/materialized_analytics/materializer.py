@@ -14,6 +14,7 @@ materialize_upload handles the rest.
 """
 from __future__ import annotations
 
+import gc
 import json
 import logging
 import time
@@ -128,6 +129,8 @@ async def materialize_upload(pool, upload_id: int) -> List[TemplateResult]:
         # Already loaded — fine
         logger.debug(f"[materializer] templates already loaded: {e}")
 
+    # Phase 1: lightweight metadata queries (separate conn, short-lived).
+    # Conn closes before we begin streaming, freeing any lingering refs.
     async with pool.acquire() as conn:
         # 1. Upload metadata
         upload_row = await conn.fetchrow(
@@ -153,24 +156,30 @@ async def materialize_upload(pool, upload_id: int) -> List[TemplateResult]:
             logger.warning(f"[materializer] upload {upload_id}: no field_definitions")
             return []
 
-        # 3. Row data (full load for in-memory OLAP — upload is immutable)
-        data_rows = await conn.fetch(
-            """SELECT row_data FROM smart_bi_dynamic_data WHERE upload_id = $1""",
-            upload_id
-        )
-        rows: List[Dict[str, Any]] = []
-        for r in data_rows:
-            rd = r['row_data']
-            if isinstance(rd, str):
-                rd = json.loads(rd)
-            rows.append(rd)
+    # Phase 2: stream row_data via cursor to avoid loading all 200K rows into
+    # asyncpg buffers at once. Cursor releases each batch as we iterate.
+    # asyncpg requires a transaction for server-side cursors.
+    rows: List[Dict[str, Any]] = []
+    CURSOR_PREFETCH = 10_000  # asyncpg default is 50; 10K batches fit comfortably in RAM
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            async for r in conn.cursor(
+                "SELECT row_data FROM smart_bi_dynamic_data WHERE upload_id = $1",
+                upload_id,
+                prefetch=CURSOR_PREFETCH,
+            ):
+                rd = r['row_data']
+                if isinstance(rd, str):
+                    rd = json.loads(rd)
+                rows.append(rd)
 
+    t_load = time.time() - t_start
     logger.info(
-        f"[materializer] upload {upload_id}: loaded {len(rows)} rows, "
-        f"{len(field_meta)} fields in {time.time() - t_start:.1f}s"
+        f"[materializer] upload {upload_id}: streamed {len(rows)} rows, "
+        f"{len(field_meta)} fields in {t_load:.1f}s"
     )
 
-    # 4+5. Build schema (domain detection inside)
+    # Phase 3: Build schema (domain detection inside)
     sample = rows[:5] if rows else []
     schema = build_schema(upload_id, factory_id, field_meta, row_count, sample_rows=sample)
     logger.info(
@@ -178,10 +187,18 @@ async def materialize_upload(pool, upload_id: int) -> List[TemplateResult]:
         f"primary_measure={schema.primary_measure}, time_field={schema.time_field}"
     )
 
-    # 6. Backend
+    # Phase 4: Build Polars backend, then explicitly free the list of dicts.
+    # For 200K rows the list holds ~600MB-1GB; releasing it before templates
+    # run keeps peak RSS well below the OOM threshold.
     backend = PolarsBackend.from_rows(rows)
+    del rows
+    gc.collect()
+    logger.info(
+        f"[materializer] upload {upload_id}: polars DF built, "
+        f"row list released (row_count={backend.row_count()})"
+    )
 
-    # 7. Run all templates
+    # Phase 5: Run all templates sequentially
     registry = get_registry()
     results: List[TemplateResult] = []
     for template in registry.all():
