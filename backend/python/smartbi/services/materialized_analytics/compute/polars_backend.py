@@ -15,6 +15,12 @@ from .base import ComputeBackend
 
 logger = logging.getLogger(__name__)
 
+# Meta-row labels that pollute aggregates (合计/总计/Total etc). Task W2.0.
+_META_LABELS = {
+    '合计', '总计', '小计', '汇总', '总额', '总数',
+    'Total', 'TOTAL', 'total', 'Sum', 'SUM', 'sum',
+}
+
 
 class PolarsBackend(ComputeBackend):
     def __init__(self, df: pl.DataFrame):
@@ -58,6 +64,7 @@ class PolarsBackend(ComputeBackend):
             self._df
             .with_columns(self._as_numeric(measure).alias("_m"))
             .filter(pl.col(group_col).is_not_null() & pl.col("_m").is_not_null())
+            .filter(~pl.col(group_col).cast(pl.Utf8).is_in(list(_META_LABELS)))  # W2.0: exclude meta-rows
             .group_by(group_col)
             .agg(pl.col("_m").sum().alias("total"))
             .sort("total", descending=True)
