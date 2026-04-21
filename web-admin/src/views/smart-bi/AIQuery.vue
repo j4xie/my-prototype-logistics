@@ -38,6 +38,7 @@ import echarts from '@/utils/echarts';
 import { processEChartsOptions } from '@/utils/echarts-fmt';
 import { AIInsightPanel } from '@/components/smartbi';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
+import MaterializedAnalysisPanel from '@/components/smart-bi/MaterializedAnalysisPanel.vue';
 
 // Render markdown content safely
 function renderMarkdown(text: string): string {
@@ -936,6 +937,12 @@ function handleKeydown(event: KeyboardEvent) {
     </div>
 
     <div class="chat-container">
+      <!-- 物化分析面板：仅在选择了数据源时展示，位于对话历史区上方 -->
+      <MaterializedAnalysisPanel
+        v-if="selectedUploadId"
+        :upload-id="selectedUploadId"
+      />
+
       <!-- 对话历史区 -->
       <div class="chat-history" ref="chatContainerRef" @scroll="onChatScroll">
         <div
