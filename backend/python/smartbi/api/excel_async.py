@@ -318,9 +318,13 @@ async def _async_worker_impl(
             f"real_cols={len(real_headers)} headers={real_headers[:5]!r}"
         )
 
-        # --- Step 2: semantic mapping + write field_defs ---
+        # --- Step 2: semantic mapping + unified classifier write field_defs (γ-1b) ---
         from smartbi.services.semantic_mapper import SemanticMapper
         from smartbi.database.models import SmartBiPgFieldDefinition
+        from smartbi.services.field_classifier import (
+            classify_column, dedupe_column_names,
+            find_time_column, find_category_column,
+        )
 
         mapper = SemanticMapper()
         sample_slice = (
@@ -335,58 +339,44 @@ async def _async_worker_impl(
         db.query(SmartBiPgFieldDefinition).filter_by(upload_id=upload_id).delete()
         db.commit()
 
-        def _infer_sem(std: Optional[str], cat: Optional[str]) -> Optional[str]:
-            if not std:
-                return None
-            base = std.lower().rstrip("_0123456789").rstrip("_")
-            if cat == "time":
-                return "date"
-            if "revenue" in base or "amount" in base or "金额" in base:
-                return "amount"
-            if "rate" in base:
-                return "rate"
-            if "store" in base or "门店" in base:
-                return "store"
-            if "product" in base or "商品" in base:
-                return "product"
-            if "category" in base:
-                return "category"
-            return None
+        # Dedup column names (Java parity; prevents UNIQUE (upload_id, original_name) violations
+        # on sheets with repeated headers like "金额"×3)
+        original_names = [m.original for m in mapping_result.field_mappings]
+        deduped_names = dedupe_column_names(original_names)
+
+        # Run unified classifier (single source of truth post-γ)
+        classifications = []
+        for m, deduped_name in zip(mapping_result.field_mappings, deduped_names):
+            cls = classify_column(
+                original_name=deduped_name,
+                inferred_dtype=(m.data_type or "").upper() or None,
+                category_hint=m.category,
+            )
+            classifications.append({**cls, "standard_name": m.standard or deduped_name,
+                                    "field_type": m.data_type})
 
         field_def_rows = []
-        fallback_count = 0
-        for i, m in enumerate(mapping_result.field_mappings):
-            cat = m.category
-            dt = (m.data_type or "").upper()
-            is_measure = (cat in ("amount", "rate"))
-            is_dimension = (cat == "category")
-            is_time = (cat == "time")
-            if not (is_measure or is_dimension or is_time):
-                if dt == "NUMERIC":
-                    is_measure = True
-                    fallback_count += 1
-                elif dt == "DATE":
-                    is_time = True
-                    fallback_count += 1
-                elif dt == "TEXT":
-                    is_dimension = True
-                    fallback_count += 1
+        for i, c in enumerate(classifications):
             field_def_rows.append(SmartBiPgFieldDefinition(
                 upload_id=upload_id,
-                original_name=m.original,
-                standard_name=m.standard or m.original,
-                field_type=m.data_type,
-                semantic_type=_infer_sem(m.standard, cat),
-                is_measure=is_measure,
-                is_dimension=is_dimension,
-                is_time=is_time,
+                original_name=c["original_name"],
+                standard_name=c["standard_name"],
+                field_type=c["field_type"],
+                semantic_type=c["semantic_type"],
+                is_measure=c["is_measure"],
+                is_dimension=c["is_dimension"],
+                is_time=c["is_time"],
                 display_order=i,
             ))
         db.bulk_save_objects(field_def_rows)
         db.commit()
+
+        # Find the canonical time + category columns for denormalized row writes
+        time_col = find_time_column(classifications)
+        category_col = find_category_column(classifications)
         logger.info(
             f"[stream-worker] upload {upload_id}: wrote {len(field_def_rows)} field_defs "
-            f"(dtype-fallback for {fallback_count} unmapped fields)"
+            f"(time_col={time_col}, category_col={category_col})"
         )
 
         # --- Step 3: streaming chunks + bulk insert dynamic_data ---
@@ -397,12 +387,30 @@ async def _async_worker_impl(
         raw_conn.commit()
 
         CHUNK_SIZE = 5000
+        # γ-1b: populate period/category denormalized columns (was NULL pre-γ,
+        # causing WHERE period='...' queries to silently miss all async-path data).
         INSERT_SQL = (
             "INSERT INTO smart_bi_dynamic_data "
-            "(factory_id, upload_id, sheet_name, row_index, row_data) "
+            "(factory_id, upload_id, sheet_name, row_index, row_data, period, category) "
             "VALUES %s"
         )
         row_index = 0
+
+        def _fmt_period(v):
+            """Truncate period values to fit VARCHAR(50); handle datetime/date."""
+            if v is None:
+                return None
+            s = str(v)
+            # Prefer ISO date (YYYY-MM-DD) if string is longer ISO timestamp
+            if len(s) > 10 and s[4] == "-" and s[7] == "-":
+                s = s[:10]
+            return s[:50] if len(s) > 50 else s
+
+        def _fmt_category(v):
+            if v is None:
+                return None
+            s = str(v)
+            return s[:100] if len(s) > 100 else s
 
         read_kwargs = dict(
             filepath_or_buffer=tmp_path,
@@ -426,11 +434,17 @@ async def _async_worker_impl(
             # Build row records. Use itertuples(index=False) for speed —
             # 3-4× faster than iterrows on wide dfs.
             chunk_cols = list(chunk_df.columns)
+            # Pre-compute col→index for period/category extraction (γ-1b)
+            time_idx = chunk_cols.index(time_col) if time_col and time_col in chunk_cols else -1
+            cat_idx = chunk_cols.index(category_col) if category_col and category_col in chunk_cols else -1
             records = []
             for tpl in chunk_df.itertuples(index=False, name=None):
                 row_dict = {chunk_cols[j]: tpl[j] for j in range(len(chunk_cols))}
+                period_val = _fmt_period(tpl[time_idx]) if time_idx >= 0 else None
+                category_val = _fmt_category(tpl[cat_idx]) if cat_idx >= 0 else None
                 records.append((
                     factory_id, upload_id, "Sheet1", row_index, Json(row_dict),
+                    period_val, category_val,
                 ))
                 row_index += 1
 
