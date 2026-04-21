@@ -316,13 +316,14 @@ async function handleSendMessage() {
   // Helper to find the assistant message
   const getMessageIndex = () => chatHistory.value.findIndex(m => m.id === assistantId);
 
-  // SSE degradation watchdog: 15s warning + 30s retry button (backend status 心跳会 reset)
+  // SSE degradation watchdog: 30s warning + 60s retry button (backend status 心跳会 reset)
+  // 200K 行冷缓存聚合实测 35s — 30s 有 brief "网络不稳定" 警告是可接受的,60s 才 retry 兜底
   let firstChunkReceived = false;
   pendingRetryQuery = query;
 
   const startSseWatchdog = () => {
     clearSseDegradationTimers();
-    // 15s: show inline warning (每次 backend status 心跳都会 reset 此 timer)
+    // 30s: 显示 inline 警告 (每次 backend status 心跳都会 reset 此 timer)
     sseWarningTimer = setTimeout(() => {
       if (!firstChunkReceived) {
         sseWarningVisible.value = true;
@@ -334,8 +335,8 @@ async function handleSendMessage() {
         }
         scrollToBottom();
       }
-    }, 15000);
-    // 30s: show retry button (200K 行全量聚合 + LLM TTFT 最坏情况)
+    }, 30000);
+    // 60s: 显示 retry 按钮 (200K 行首次冷缓存 + LLM TTFT 最坏情况;缓存命中只需 12-15s)
     sseRetryTimer = setTimeout(() => {
       if (!firstChunkReceived) {
         sseRetryVisible.value = true;
@@ -347,7 +348,7 @@ async function handleSendMessage() {
         }
         scrollToBottom();
       }
-    }, 30000);
+    }, 60000);
   };
   const clearSseWatchdog = () => {
     clearSseDegradationTimers();
