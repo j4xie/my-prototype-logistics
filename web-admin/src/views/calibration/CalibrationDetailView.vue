@@ -101,17 +101,18 @@ async function loadData(silent = false) {
       getToolReliabilityRanking(authStore.factoryId, 10)
     ]);
 
+    // Apr 21 2026: drop generateMock fallback. Users saw fake calibration
+    // sessions and treated them as real. Prefer empty state.
     if (sessionRes.success && sessionRes.data) {
       session.value = sessionRes.data;
     } else {
-      // 使用示例数据
-      session.value = generateMockSession();
+      session.value = null as never;
     }
 
     if (historyRes.success && historyRes.data) {
       historyItems.value = historyRes.data.content || [];
     } else {
-      historyItems.value = generateMockHistory();
+      historyItems.value = [];
     }
 
     if (reliabilityRes.success && reliabilityRes.data) {
@@ -125,10 +126,9 @@ async function loadData(silent = false) {
     console.error('加载数据失败:', error);
     if (!silent) {
       ElMessage.error('加载数据失败');
-      // 使用示例数据
-      session.value = generateMockSession();
-      historyItems.value = generateMockHistory();
     }
+    session.value = null as never;
+    historyItems.value = [];
   } finally {
     loading.value = false;
   }

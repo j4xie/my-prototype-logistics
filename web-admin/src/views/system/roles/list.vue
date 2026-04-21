@@ -262,9 +262,11 @@ function getLevelTag(level: number) {
 async function loadRoleUserCounts() {
   if (!factoryId.value) return;
   try {
+    // Backend requires page>=1 (1-indexed); using 0 triggers 409 "页码必须大于0"
+    // _silent suppresses red toast when API is unavailable for new factories.
     const resp = await get<{ content: Array<{ roleCode?: string }>; totalElements: number }>(
       `/${factoryId.value}/users`,
-      { params: { page: 0, size: 500 } }
+      { params: { page: 1, size: 500 }, _silent: true } as never
     );
     if (!resp.success || !resp.data) return;
     const list = resp.data.content || [];
