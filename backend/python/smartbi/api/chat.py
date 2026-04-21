@@ -1084,6 +1084,9 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                     logger.warning(f"[stream] field_defs lookup failed: {fe}")
                                     field_meta = []
 
+                                # Heartbeat: resets FE 15s/30s watchdog while全量聚合 is slow
+                                yield _sse_event("status", f"正在汇总全量数据 ({len(data)} 行样本已加载)...")
+
                                 # Bug #19 fix (Apr 17 2026): sample LIMIT 200 is insufficient
                                 # for aggregation queries ("Top N by dim", "总销售额"). LLM
                                 # was echoing partial sums over 200 rows instead of full data,
@@ -1206,6 +1209,8 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                     logger.info(
                                         f"[stream] parallel measure+dim agg: {len(measure_tasks)} measures + {len(dim_tasks)} dims in {_t_agg_measures:.1f}s"
                                     )
+                                    # Heartbeat after heaviest aggregate phase
+                                    yield _sse_event("status", f"聚合完成 ({real_total_rows:,} 行 / {_t_agg_measures:.1f}s)，正在排名...")
                                     # Pick revenue-like primary measure (not the literal first
                                     # which may be miscategorized like 收入分组/商品编码).
                                     _priority_kw = ['销售金额', '销售额', '营业额', '营业收入', '实收', '主营业务收入', '金额']
@@ -1378,7 +1383,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 df = df.drop(columns=cols_to_drop, errors='ignore')
                 data = [{k: v for k, v in row.items() if k not in cols_to_drop} for row in data]
 
-            yield _sse_event("status", "正在分析...")
+            yield _sse_event("status", "正在调用 AI 模型生成分析...")
 
             # ── Use default qwen-plus but with optimized params ──
             insight_gen = InsightGenerator()

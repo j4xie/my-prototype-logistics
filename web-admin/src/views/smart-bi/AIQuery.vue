@@ -316,13 +316,13 @@ async function handleSendMessage() {
   // Helper to find the assistant message
   const getMessageIndex = () => chatHistory.value.findIndex(m => m.id === assistantId);
 
-  // SSE degradation watchdog: 8s warning + 15s retry button
+  // SSE degradation watchdog: 15s warning + 30s retry button (backend status 心跳会 reset)
   let firstChunkReceived = false;
   pendingRetryQuery = query;
 
   const startSseWatchdog = () => {
     clearSseDegradationTimers();
-    // 8s: show inline warning
+    // 15s: show inline warning (每次 backend status 心跳都会 reset 此 timer)
     sseWarningTimer = setTimeout(() => {
       if (!firstChunkReceived) {
         sseWarningVisible.value = true;
@@ -334,8 +334,8 @@ async function handleSendMessage() {
         }
         scrollToBottom();
       }
-    }, 8000);
-    // 15s: show retry button
+    }, 15000);
+    // 30s: show retry button (200K 行全量聚合 + LLM TTFT 最坏情况)
     sseRetryTimer = setTimeout(() => {
       if (!firstChunkReceived) {
         sseRetryVisible.value = true;
@@ -347,7 +347,7 @@ async function handleSendMessage() {
         }
         scrollToBottom();
       }
-    }, 15000);
+    }, 30000);
   };
   const clearSseWatchdog = () => {
     clearSseDegradationTimers();
@@ -364,7 +364,7 @@ async function handleSendMessage() {
         msg.loading = true;
       }
       scrollToBottom();
-      // Start watchdog after first status — expect chunks within 5s
+      // 每次 status 都 reset watchdog — 连续心跳 = 后端还活着,只要 30s 内有新 status 或第一个 chunk 就不超时
       if (!firstChunkReceived) startSseWatchdog();
     },
 
