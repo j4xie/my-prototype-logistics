@@ -101,7 +101,8 @@ async def test_writer_blocked_from_inserting_other_factory_rows(pool, clean_smok
                     "INSERT INTO tenant_rls_smoke (factory_id, label) VALUES ($1, $2)",
                     "TEST_RLS_B", "A-pretending-to-be-B",
                 )
-            assert "row-level security" in str(exc_info.value).lower()
+            # Check SQLSTATE, not message text — PG locale varies by install.
+            assert exc_info.value.sqlstate == "42501"
     finally:
         reset_factory_id(token)
 
