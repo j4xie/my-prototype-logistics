@@ -369,7 +369,7 @@ const businessRoutes: RouteRecordRaw[] = [
             path: 'costs',
             name: 'FinanceCosts',
             component: () => import('@/views/finance/costs/index.vue'),
-            meta: { requiresAuth: true, title: '成本分析', module: 'finance' }
+            meta: { requiresAuth: true, title: '财务概览', module: 'finance' }
           },
           {
             path: 'reports',
@@ -450,6 +450,12 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'SystemLogs',
             component: () => import('@/views/system/logs/index.vue'),
             meta: { requiresAuth: true, title: '操作日志', module: 'system' }
+          },
+          {
+            path: 'role-permissions',
+            name: 'SystemRolePermissions',
+            component: () => import('@/views/system/role-permissions/index.vue'),
+            meta: { requiresAuth: true, title: '全局权限矩阵 (L1)', module: 'system' }
           },
           {
             path: 'settings',

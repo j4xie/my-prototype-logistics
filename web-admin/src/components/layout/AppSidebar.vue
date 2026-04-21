@@ -153,7 +153,7 @@ const menuConfig: MenuItem[] = [
   {
     path: '/finance', title: '财务管理', icon: 'Money', module: 'finance',
     children: [
-      { path: '/finance/costs', title: '成本分析', icon: '', module: 'finance' },
+      { path: '/finance/costs', title: '财务概览', icon: '', module: 'finance' },
       { path: '/finance/reports', title: '财务报表', icon: '', module: 'finance' },
       { path: '/finance/ar-ap', title: '应收应付', icon: '', module: 'finance' },
       { path: '/finance/invoices', title: '开票管理', icon: '', module: 'finance' },

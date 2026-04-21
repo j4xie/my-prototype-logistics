@@ -27,7 +27,25 @@ const methodMap: Record<string, string> = {
   CHECK: '支票', CREDIT: '信用', POS: 'POS', OTHER: '其他',
 };
 
-onMounted(() => loadData());
+onMounted(() => {
+  loadData();
+  loadSalesOrderOptions();
+});
+
+// Apr 21 2026: load confirmed sales orders for dropdown in 录入收款 dialog
+interface SalesOrderOption { id: string; orderNumber: string; customerName: string; totalAmount?: number }
+const salesOrderOptions = ref<SalesOrderOption[]>([]);
+async function loadSalesOrderOptions() {
+  if (!factoryId.value) return;
+  try {
+    const res = await get<{ content: SalesOrderOption[] }>(`/${factoryId.value}/sales-orders`, {
+      params: { page: 1, size: 200, status: 'CONFIRMED' },
+    });
+    if (res.success && res.data) {
+      salesOrderOptions.value = res.data.content || [];
+    }
+  } catch { /* silent */ }
+}
 
 async function loadData() {
   if (!factoryId.value) return;
@@ -166,8 +184,23 @@ async function handleRecordSubmit() {
     <!-- 录入收款弹窗 -->
     <el-dialog v-model="recordDialogVisible" title="录入收款" width="480px" destroy-on-close>
       <el-form label-width="90px">
-        <el-form-item label="销售订单ID" required>
-          <el-input v-model="recordForm.salesOrderId" placeholder="输入销售订单ID" />
+        <el-form-item label="销售订单" required>
+          <el-select
+            v-model="recordForm.salesOrderId"
+            placeholder="选择已确认的销售订单"
+            filterable
+            style="width:100%"
+          >
+            <el-option
+              v-for="o in salesOrderOptions"
+              :key="o.id"
+              :value="o.id"
+              :label="`${o.orderNumber} · ${o.customerName || '-'} · ¥${(o.totalAmount || 0).toLocaleString()}`"
+            />
+            <template #empty>
+              <div style="padding:8px 12px;color:#909399">暂无已确认的销售订单</div>
+            </template>
+          </el-select>
         </el-form-item>
         <el-form-item label="收款金额" required>
           <el-input-number v-model="recordForm.amount" :min="0" :precision="2" style="width:100%" />

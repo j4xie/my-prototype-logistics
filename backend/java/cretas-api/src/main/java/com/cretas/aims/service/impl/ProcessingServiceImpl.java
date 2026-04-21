@@ -1769,37 +1769,52 @@ public class ProcessingServiceImpl implements ProcessingService {
         return result;
     }
     public Map<String, Object> getTrendAnalysis(String factoryId, String metric, Integer days) {
+        // Apr 21 2026: return a MULTI-metric bundle, not a single metric.
+        // FE /analytics/trends destructures
+        // {productionTrend, qualityTrend, costTrend, materialTrend, equipmentTrend}.
+        // Old shape {metric, period, data:[]} left FE with undefined on every
+        // chart (empty skeleton page for 100% of users).
         Map<String, Object> analysis = new HashMap<>();
         LocalDate endDate = LocalDate.now();
         LocalDate startDate = endDate.minusDays(days);
-        List<Map<String, Object>> trendData = new ArrayList<>();
+        List<Map<String, Object>> productionTrend = new ArrayList<>();
+        List<Map<String, Object>> qualityTrend = new ArrayList<>();
+        List<Map<String, Object>> costTrend = new ArrayList<>();
         for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
-            Map<String, Object> dayData = new HashMap<>();
-            dayData.put("date", date);
-            switch (metric.toLowerCase()) {
-                case "production":
-                    BigDecimal dayOutput = productionBatchRepository.calculateDailyOutput(
-                            factoryId, date.atStartOfDay(), date.atTime(23, 59, 59));
-                    dayData.put("value", dayOutput != null ? dayOutput : BigDecimal.ZERO);
-                    break;
-                case "quality":
-                    BigDecimal dayYieldRate = productionBatchRepository.calculateDailyYieldRate(
-                            factoryId, date.atStartOfDay(), date.atTime(23, 59, 59));
-                    dayData.put("value", dayYieldRate != null ? dayYieldRate : BigDecimal.ZERO);
-                    break;
-                case "cost":
-                    BigDecimal dayCost = productionBatchRepository.calculateDailyCost(
-                            factoryId, date.atStartOfDay(), date.atTime(23, 59, 59));
-                    dayData.put("value", dayCost != null ? dayCost : BigDecimal.ZERO);
-                    break;
-                default:
-                    dayData.put("value", BigDecimal.ZERO);
-            }
-            trendData.add(dayData);
+            LocalDateTime dayStart = date.atStartOfDay();
+            LocalDateTime dayEnd = date.atTime(23, 59, 59);
+            BigDecimal dayOutput = productionBatchRepository.calculateDailyOutput(
+                    factoryId, dayStart, dayEnd);
+            BigDecimal dayYieldRate = productionBatchRepository.calculateDailyYieldRate(
+                    factoryId, dayStart, dayEnd);
+            BigDecimal dayCost = productionBatchRepository.calculateDailyCost(
+                    factoryId, dayStart, dayEnd);
+            productionTrend.add(Map.of(
+                    "date", date.toString(),
+                    "value", dayOutput != null ? dayOutput : BigDecimal.ZERO,
+                    "output", dayOutput != null ? dayOutput : BigDecimal.ZERO
+            ));
+            qualityTrend.add(Map.of(
+                    "date", date.toString(),
+                    "value", dayYieldRate != null ? dayYieldRate : BigDecimal.ZERO,
+                    "passRate", dayYieldRate != null ? dayYieldRate : BigDecimal.ZERO
+            ));
+            costTrend.add(Map.of(
+                    "date", date.toString(),
+                    "value", dayCost != null ? dayCost : BigDecimal.ZERO,
+                    "totalCost", dayCost != null ? dayCost : BigDecimal.ZERO
+            ));
         }
+        analysis.put("productionTrend", productionTrend);
+        analysis.put("qualityTrend", qualityTrend);
+        analysis.put("costTrend", costTrend);
+        // Reserved for future material / equipment metrics; empty now so FE
+        // doesn't crash on `.map()` over undefined.
+        analysis.put("materialTrend", new ArrayList<>());
+        analysis.put("equipmentTrend", new ArrayList<>());
+        // Keep legacy keys for any old callers
         analysis.put("metric", metric);
         analysis.put("period", days);
-        analysis.put("data", trendData);
         return analysis;
     }
     // 辅助方法

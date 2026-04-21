@@ -32,6 +32,24 @@ const periodOptions = [
   { label: '近90天', value: 'quarter' }
 ];
 
+// Apr 21 2026: detect empty state to show CTA pointing users to AI 问答
+// for POS/sales data (this page is only for production-batch sourced
+// metrics; empty for factories without 生产批次).
+const isEmptyAll = computed(() => {
+  const arrs = [
+    trendData.value.productionTrend,
+    trendData.value.qualityTrend,
+    trendData.value.costTrend,
+  ];
+  return arrs.every(a => {
+    if (!Array.isArray(a) || a.length === 0) return true;
+    return a.every((d: Record<string, unknown>) => {
+      const v = Number((d as { value?: unknown }).value ?? 0);
+      return !Number.isFinite(v) || v === 0;
+    });
+  });
+});
+
 let resizeObserver: ResizeObserver | null = null;
 
 onMounted(() => {
@@ -195,6 +213,22 @@ onUnmounted(() => {
         <el-button type="primary" @click="handleRefresh">刷新</el-button>
       </div>
     </div>
+
+    <el-alert
+      v-if="isEmptyAll"
+      type="info"
+      :closable="false"
+      show-icon
+      style="margin-bottom: 16px;"
+    >
+      <template #title>
+        暂无生产数据 — 本页展示「生产批次」汇总的产量/良品率/成本趋势。请在
+        <el-link type="primary" href="/production/batches" :underline="false">生产管理 → 批次</el-link>
+        录入批次后自动生成。若需查看「POS/销售数据」趋势（如营业额、订单量），请前往
+        <el-link type="primary" href="/smart-bi/query" :underline="false">智能BI → AI 问答</el-link>
+        询问「近 N 天营业额趋势」。
+      </template>
+    </el-alert>
 
     <div class="charts-container" v-loading="loading">
       <el-row :gutter="16">

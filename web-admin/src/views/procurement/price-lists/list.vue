@@ -159,15 +159,15 @@ function handleSearchClear() { searchKeyword.value = ''; handleSearch(); }
 
     <el-dialog v-model="dialogVisible" title="新建价格表" width="720px" destroy-on-close>
       <el-form :model="form" label-width="100px">
-        <el-form-item label="名称"><el-input v-model="form.name" /></el-form-item>
-        <el-form-item label="类型">
+        <el-form-item label="名称" required><el-input v-model="form.name" placeholder="例如:2025 Q2 采购标准价" /></el-form-item>
+        <el-form-item label="类型" required>
           <el-radio-group v-model="form.priceType">
             <el-radio value="PURCHASE_PRICE">采购价</el-radio>
             <el-radio value="SELLING_PRICE">销售价</el-radio>
             <el-radio value="TRANSFER_PRICE">调拨价</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="生效日期"><el-date-picker v-model="form.effectiveFrom" type="date" value-format="YYYY-MM-DD" /></el-form-item>
+        <el-form-item label="生效日期" required><el-date-picker v-model="form.effectiveFrom" type="date" value-format="YYYY-MM-DD" /></el-form-item>
         <el-form-item label="失效日期"><el-date-picker v-model="form.effectiveTo" type="date" value-format="YYYY-MM-DD" /></el-form-item>
         <el-divider>价格明细</el-divider>
         <div v-for="(item, idx) in form.items" :key="idx" class="item-row">

@@ -24,6 +24,8 @@ const loading = ref(false);
 const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const statusFilter = ref('');
+const searchKeyword = ref('');
+const dateRange = ref<[string, string] | null>(null);
 const dialogVisible = ref(false);
 
 const form = ref({
@@ -75,7 +77,24 @@ async function loadData() {
     if (statusFilter.value) params.status = statusFilter.value;
     const response = await get(url, { params });
     if (response.success && response.data) {
-      tableData.value = response.data.content || [];
+      let rows = response.data.content || [];
+      // Client-side keyword + date filter (Apr 21 2026): backend lacks
+      // keyword param on purchase/orders; filter locally on current page.
+      const kw = searchKeyword.value.trim().toLowerCase();
+      if (kw) {
+        rows = rows.filter((r: Record<string, unknown>) =>
+          String(r.orderNumber || '').toLowerCase().includes(kw) ||
+          String(r.supplierName || (r.supplier as Record<string, unknown>)?.name || '').toLowerCase().includes(kw)
+        );
+      }
+      if (dateRange.value && dateRange.value[0] && dateRange.value[1]) {
+        const [from, to] = dateRange.value;
+        rows = rows.filter((r: Record<string, unknown>) => {
+          const d = String(r.orderDate || '').slice(0, 10);
+          return d && d >= from && d <= to;
+        });
+      }
+      tableData.value = rows;
       pagination.value.total = response.data.totalElements || 0;
     } else if (response.success === false) {
       ElMessage.error(response.message || '加载数据失败');
@@ -189,7 +208,14 @@ function goDetail(id: string) {
 function handlePageChange(page: number) { pagination.value.page = page; loadData(); }
 function handleSizeChange(size: number) { pagination.value.size = size; pagination.value.page = 1; loadData(); }
 function handleStatusChange() { pagination.value.page = 1; loadData(); }
-function handleRefresh() { statusFilter.value = ''; pagination.value.page = 1; loadData(); }
+function handleSearch() { pagination.value.page = 1; loadData(); }
+function handleRefresh() {
+  statusFilter.value = '';
+  searchKeyword.value = '';
+  dateRange.value = null;
+  pagination.value.page = 1;
+  loadData();
+}
 
 // ==================== AI Entry ====================
 const aiEntryVisible = ref(false);
@@ -248,9 +274,28 @@ function handleAiFill(params: Record<string, unknown>) {
       </template>
 
       <div class="search-bar">
+        <el-input
+          v-model="searchKeyword"
+          placeholder="搜索 订单号 / 供应商"
+          clearable
+          style="width: 220px"
+          @keyup.enter="handleSearch"
+          @clear="handleSearch"
+        />
+        <el-date-picker
+          v-model="dateRange"
+          type="daterange"
+          range-separator="至"
+          start-placeholder="下单起始"
+          end-placeholder="下单结束"
+          value-format="YYYY-MM-DD"
+          style="width: 280px"
+          @change="handleSearch"
+        />
         <el-select v-model="statusFilter" placeholder="按状态筛选" clearable style="width: 160px" @change="handleStatusChange">
           <el-option v-for="(v, k) in statusMap" :key="k" :label="v.text" :value="k" />
         </el-select>
+        <el-button type="primary" @click="handleSearch">搜索</el-button>
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
       </div>
 

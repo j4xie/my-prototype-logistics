@@ -31,6 +31,7 @@ onMounted(() => {
   const qs = route.query.status;
   if (typeof qs === 'string' && statusMap[qs]) statusFilter.value = qs;
   loadData();
+  loadSalesOrderOptions();
 });
 
 async function loadData() {
@@ -63,6 +64,22 @@ async function loadData() {
 const searchKeyword = ref('');
 function handleSearch() { pagination.value.page = 1; loadData(); }
 function handleReset() { searchKeyword.value = ''; statusFilter.value = ''; handleSearch(); }
+
+// Apr 21 2026: load invoiceable sales orders so FE can offer a dropdown
+// instead of asking users to hand-copy 订单号 like SO-20260420-0001.
+interface SalesOrderOption { id: string; orderNumber: string; customerName: string; totalAmount?: number }
+const salesOrderOptions = ref<SalesOrderOption[]>([]);
+async function loadSalesOrderOptions() {
+  if (!factoryId.value) return;
+  try {
+    const res = await get<{ content: SalesOrderOption[] }>(`/${factoryId.value}/sales-orders`, {
+      params: { page: 1, size: 200, status: 'CONFIRMED' },
+    });
+    if (res.success && res.data) {
+      salesOrderOptions.value = res.data.content || [];
+    }
+  } catch { /* silent */ }
+}
 
 async function handleAction(id: string, action: 'approve' | 'reject' | 'issue') {
   const labels = { approve: '审核通过', reject: '驳回', issue: '开具发票' };
@@ -208,8 +225,23 @@ async function handleRequestSubmit() {
     <!-- 开票申请弹窗 -->
     <el-dialog v-model="requestDialogVisible" title="申请开票" width="480px" destroy-on-close>
       <el-form label-width="90px">
-        <el-form-item label="销售订单ID" required>
-          <el-input v-model="requestForm.salesOrderId" placeholder="输入销售订单ID" />
+        <el-form-item label="销售订单" required>
+          <el-select
+            v-model="requestForm.salesOrderId"
+            placeholder="选择已确认的销售订单"
+            filterable
+            style="width:100%"
+          >
+            <el-option
+              v-for="o in salesOrderOptions"
+              :key="o.id"
+              :value="o.id"
+              :label="`${o.orderNumber} · ${o.customerName || '-'} · ¥${(o.totalAmount || 0).toLocaleString()}`"
+            />
+            <template #empty>
+              <div style="padding:8px 12px;color:#909399">暂无已确认的销售订单</div>
+            </template>
+          </el-select>
         </el-form-item>
         <el-form-item label="不含税金额" required>
           <el-input-number v-model="requestForm.amount" :min="0" :precision="2" style="width:100%" />
