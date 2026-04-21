@@ -35,3 +35,8 @@ def test_detect_unknown_when_only_dim_hits():
     ]
     # 2 dim hits but 0 measure hits → not confident
     assert detector.detect(fields, []) == Domain.UNKNOWN
+
+
+def test_detect_empty_fields_returns_unknown():
+    detector = RestaurantRuleDetector()
+    assert detector.detect([], []) == Domain.UNKNOWN

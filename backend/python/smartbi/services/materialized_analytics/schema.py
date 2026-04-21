@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 
 class Domain(str, Enum):
@@ -31,7 +31,7 @@ class FieldRole(str, Enum):
 class Field:
     name: str
     role: FieldRole
-    dtype: str  # "int" | "float" | "string" | "datetime" | "bool"
+    dtype: Literal["int", "float", "string", "datetime", "bool"]
 
 
 @dataclass(frozen=True)
@@ -39,11 +39,11 @@ class DataSchema:
     upload_id: int
     factory_id: str
     domain: Domain
-    fields: List[Field]
+    fields: Tuple[Field, ...]
     row_count: int
     primary_measure: Optional[str] = None  # e.g., "销售金额"
     time_field: Optional[str] = None        # e.g., "订单日期"
-    hints: dict = field(default_factory=dict)
+    hints: Dict[str, Any] = field(default_factory=dict)
 
     @property
     def measures(self) -> List[str]:

@@ -7,13 +7,17 @@ touching template code.
 from __future__ import annotations
 
 import logging
-from typing import List, Protocol
+from typing import List, Protocol, runtime_checkable
 
 from .schema import DataSchema, Domain, Field, FieldRole
 
 logger = logging.getLogger(__name__)
 
-# Restaurant domain signals — any 2+ matching dimension names ⇒ RESTAURANT.
+# NOTE: These keywords intentionally err toward breadth for qhj's restaurant
+# domain where menu items are often labeled 产品/商品 and measures include 成本.
+# When W2 adds SALES or PRODUCTION domain detection, these broad terms must
+# be narrowed or supplanted by a multi-domain scorer to prevent false
+# positives (e.g., a manufacturing upload with 产品型号 + 成本 would match).
 _RESTAURANT_DIM_KEYWORDS = {
     "门店", "店铺", "餐厅", "档口", "分店",
     "菜品", "产品", "商品", "SKU", "品类",
@@ -27,6 +31,7 @@ _RESTAURANT_MEASURE_KEYWORDS = {
 }
 
 
+@runtime_checkable
 class DomainDetector(Protocol):
     def detect(self, fields: List[Field], sample_data: List[dict]) -> Domain: ...
 

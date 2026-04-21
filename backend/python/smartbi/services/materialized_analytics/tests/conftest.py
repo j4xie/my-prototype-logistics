@@ -15,14 +15,14 @@ def restaurant_schema() -> DataSchema:
         upload_id=9999,
         factory_id="F001",
         domain=Domain.RESTAURANT,
-        fields=[
+        fields=tuple([
             Field(name="门店名称", role=FieldRole.DIMENSION, dtype="string"),
             Field(name="菜品名称", role=FieldRole.DIMENSION, dtype="string"),
             Field(name="品类", role=FieldRole.DIMENSION, dtype="string"),
             Field(name="订单日期", role=FieldRole.TIME, dtype="datetime"),
             Field(name="销售金额", role=FieldRole.MEASURE, dtype="float"),
             Field(name="数量", role=FieldRole.MEASURE, dtype="int"),
-        ],
+        ]),
         row_count=200003,
         primary_measure="销售金额",
         time_field="订单日期",
