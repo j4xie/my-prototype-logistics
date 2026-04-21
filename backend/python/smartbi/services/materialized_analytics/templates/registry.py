@@ -56,11 +56,24 @@ def load_all_templates():
     this file; importing them at module level would cycle. Function-body
     imports are evaluated lazily when this function is called.
 
-    Note: these imports will fail until Tasks 5-9 create the template modules.
-    Do not call this function until all templates are implemented.
+    W1 generic templates + W2 restaurant-specific templates (12 added).
     """
+    # W1 generic (5)
     from . import top_n_by_dim          # noqa: F401
     from . import monthly_trend         # noqa: F401
     from . import category_distribution # noqa: F401
     from . import anomaly_detection     # noqa: F401
     from . import pareto_analysis       # noqa: F401
+    # W2 restaurant-specific (12)
+    from . import dish_sales_top_n           # noqa: F401
+    from . import dish_slow_movers           # noqa: F401
+    from . import time_slot_revenue          # noqa: F401
+    from . import dish_category_breakdown    # noqa: F401
+    from . import member_consumption         # noqa: F401
+    from . import table_type_comparison      # noqa: F401
+    from . import staff_performance          # noqa: F401
+    from . import channel_analysis           # noqa: F401
+    from . import promotion_impact           # noqa: F401
+    from . import dish_time_slot_matrix      # noqa: F401
+    from . import refund_analysis            # noqa: F401
+    from . import weekday_weekend_pattern    # noqa: F401
