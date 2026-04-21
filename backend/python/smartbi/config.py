@@ -164,10 +164,18 @@ _pg_pool = None
 
 
 async def get_pg_pool():
-    """Get or create shared asyncpg connection pool for SmartBI database."""
+    """Get or create shared asyncpg connection pool for SmartBI database.
+
+    Apr 22 2026 (Week 1 Day 1 of Unified Data Layer v1 spec): every borrowed
+    connection gets `app.factory_id` set from smartbi.tenant_ctx contextvar.
+    Downstream RLS policies on fact/dim tables use
+      USING (factory_id = current_setting('app.factory_id'))
+    so queries without tenant scope return zero rows by default.
+    """
     global _pg_pool
     if _pg_pool is None or _pg_pool._closed:
         import asyncpg
+        from smartbi.tenant_ctx import set_pg_connection_tenant
         settings = get_settings()
         pg_url = settings.postgres_url
         if not pg_url:
@@ -176,5 +184,6 @@ async def get_pg_pool():
             pg_url,
             min_size=2,
             max_size=settings.postgres_pool_size or 5,
+            setup=set_pg_connection_tenant,
         )
     return _pg_pool

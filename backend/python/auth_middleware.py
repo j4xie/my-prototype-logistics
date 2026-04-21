@@ -113,17 +113,34 @@ class JWTAuthMiddleware:
             for k, v in scope.get("headers", [])
         )
 
-        # Allow legacy X-Internal-Secret for Java->Python internal calls
+        # Allow legacy X-Internal-Secret for Java->Python internal calls.
+        # Apr 22 2026: also propagate X-Factory-Id header so RLS still
+        # scopes properly for per-tenant internal jobs. Absent header →
+        # INTERNAL sentinel (RLS will return 0 rows; caller must BYPASSRLS
+        # or pass X-Factory-Id explicitly).
         internal_secret = headers.get("x-internal-secret", "")
         expected_secret = os.environ.get("INTERNAL_API_SECRET", "")
         if expected_secret and internal_secret == expected_secret:
-            # Inject auth info into scope state
             if "state" not in scope:
                 scope["state"] = {}
-            scope["state"]["factory_id"] = None
+            internal_factory = headers.get("x-factory-id") or None
+            scope["state"]["factory_id"] = internal_factory
             scope["state"]["user_id"] = None
             scope["state"]["auth_method"] = "internal"
-            await self.app(scope, receive, send)
+            try:
+                from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+                tenant_token = set_factory_id(internal_factory)
+            except Exception:
+                tenant_token = None
+            try:
+                await self.app(scope, receive, send)
+            finally:
+                if tenant_token is not None:
+                    try:
+                        from smartbi.tenant_ctx import reset_factory_id
+                        reset_factory_id(tenant_token)
+                    except Exception:
+                        pass
             return
 
         # Extract Bearer token
@@ -158,18 +175,36 @@ class JWTAuthMiddleware:
         scope["state"]["role"] = claims.get("role")
         scope["state"]["auth_method"] = "jwt"
 
-        # Propagate factory_id to llm_metrics contextvar so LLM usage rows
-        # are tagged with the correct factory automatically (no need to
-        # modify each call site).
+        # Propagate factory_id to contextvars:
+        #  (1) llm_metrics _llm_factory — LLM usage rows tagged with factory
+        #  (2) tenant_ctx current_factory_id — asyncpg pool setup callback
+        #      reads this to SET app.factory_id on every borrowed connection
+        #      (RLS policies key off this; see smartbi/tenant_ctx.py)
         try:
             from common.llm_metrics import _llm_factory
-            token = _llm_factory.set(factory_id)
-            try:
-                await self.app(scope, receive, send)
-            finally:
-                _llm_factory.reset(token)
+            llm_token = _llm_factory.set(factory_id)
         except Exception:
+            llm_token = None
+        try:
+            from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+            tenant_token = set_factory_id(factory_id)
+        except Exception:
+            tenant_token = None
+        try:
             await self.app(scope, receive, send)
+        finally:
+            if llm_token is not None:
+                try:
+                    from common.llm_metrics import _llm_factory
+                    _llm_factory.reset(llm_token)
+                except Exception:
+                    pass
+            if tenant_token is not None:
+                try:
+                    from smartbi.tenant_ctx import reset_factory_id
+                    reset_factory_id(tenant_token)
+                except Exception:
+                    pass
         return
 
     def _verify_token(self, token: str) -> Optional[dict]:
