@@ -75,6 +75,7 @@ from smartbi.api import (
 )
 from smartbi.api import restaurant_sections
 from smartbi.api import intent_analysis
+from smartbi.api.materialized_analytics import router as materialized_analytics_router
 
 # Import Efficiency Recognition API routers (optional - requires opencv)
 try:
@@ -402,6 +403,7 @@ app.include_router(nl_to_sql.router, prefix="/api/smartbi", tags=["NL2SQL"])
 app.include_router(whatif.router, prefix="/api/smartbi/whatif", tags=["WhatIf Simulator"])
 app.include_router(rfm.router, prefix="/api/smartbi", tags=["Customer RFM"])
 app.include_router(financial_ratios.router, prefix="/api/smartbi", tags=["Financial Ratios"])
+app.include_router(materialized_analytics_router, prefix="/api/smartbi", tags=["MaterializedAnalytics"])
 
 # LLM usage admin (BUG-9 + 模型切换监控)
 from smartbi.api import llm_usage_admin
