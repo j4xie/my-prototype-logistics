@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from ..compute.base import ComputeBackend
 from ..schema import DataSchema
@@ -36,9 +36,13 @@ class TemplateResult:
     data: Dict[str, Any]                              # primary payload (tables/series)
     chart_config: Optional[Dict[str, Any]] = None     # ECharts option
     kpis: Dict[str, Any] = field(default_factory=dict)
-    insight_text: Optional[str] = None                # pre-generated summary
-    applies: bool = True                              # False = "skipped, not applicable"
+    # Keys are template-specific; no shared schema. Task 14 UI renders per-code.
+    insight_text: Optional[str] = None
+    # Single sentence; stored as insights=[insight_text] in DB.
+    # If a template needs multi-line insights, change to List[str] + update persistence.
+    applies: bool = True                              # False = schema doesn't match
     skip_reason: Optional[str] = None
+    error: bool = False                               # True = compute() raised (skip_reason has details)
 
 
 class AnalysisTemplate(ABC):
@@ -77,4 +81,5 @@ class AnalysisTemplate(ABC):
             return TemplateResult(
                 code=self.code, title=self.title, data={},
                 applies=False, skip_reason=f"compute error: {e}",
+                error=True,  # flag for persistence/observability
             )
