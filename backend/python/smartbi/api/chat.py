@@ -1093,181 +1093,37 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                 # producing wrong numbers. Fix: compute authoritative aggregates
                                 # over ALL rows at DB level and inject into LLM prompt.
                                 try:
-                                    # Bug #25 fix (Apr 17 2026): multi-level Excel uploads may
-                                    # produce field_defs with clean names (门店名称, 销售金额)
-                                    # whose original_name does NOT match the row_data JSON keys
-                                    # (which stay as "Unnamed: X_level_0_..."). Detect this by
-                                    # checking if any measure/dimension appears as a row_data
-                                    # key; if most semantic names are absent, fall back to the
-                                    # Unnamed:* field_defs (which do match row_data keys).
-                                    _key_check = await conn.fetchrow(
-                                        """SELECT jsonb_object_keys(row_data) AS k
-                                           FROM smart_bi_dynamic_data WHERE upload_id = $1 LIMIT 1""",
-                                        upload_id
-                                    )
-                                    actual_keys_row = await conn.fetch(
-                                        """SELECT jsonb_object_keys(row_data) AS k
-                                           FROM smart_bi_dynamic_data WHERE upload_id = $1 LIMIT 100""",
-                                        upload_id
-                                    )
-                                    actual_keys = {r['k'] for r in (actual_keys_row or [])}
-                                    total_defs = len(field_meta)
-                                    defs_in_rowdata = sum(1 for f in field_meta if f['original_name'] in actual_keys)
-                                    # Bug #25 (Apr 17 2026): if EVERY field_def with a clean
-                                    # semantic name (non-Unnamed) is missing from row_data,
-                                    # drop those and keep only the Unnamed:* entries that DO
-                                    # have data. Threshold: >80% semantic names broken.
-                                    import re as _re_keys
-                                    _unnamed_pat = _re_keys.compile(r'^(Unnamed:?\s*\d+|Column_?\d+)', _re_keys.IGNORECASE)
-                                    semantic_defs = [f for f in field_meta if not _unnamed_pat.match(str(f['original_name'] or ''))]
-                                    semantic_matched = sum(1 for f in semantic_defs if f['original_name'] in actual_keys)
-                                    if semantic_defs and semantic_matched / max(len(semantic_defs), 1) < 0.2:
-                                        logger.warning(
-                                            f"[stream] Bug #25 fallback: only {semantic_matched}/{len(semantic_defs)} "
-                                            f"semantic names match row_data; upload path produced broken field_defs; "
-                                            f"keeping only row_data-matching entries"
-                                        )
-                                        field_meta = [f for f in field_meta if f['original_name'] in actual_keys]
-                                    measures = [f['original_name'] for f in field_meta if f.get('is_measure')]
-                                    dims = [f['original_name'] for f in field_meta if f.get('is_dimension')]
-                                    agg_row = await conn.fetchrow(
-                                        "SELECT COUNT(*) AS total FROM smart_bi_dynamic_data WHERE upload_id = $1",
-                                        upload_id
-                                    )
-                                    real_total_rows = agg_row['total'] if agg_row else 0
-                                    agg_lines = [f"- 全量数据行数: {real_total_rows} (样本 {len(data)} 行仅用于字段示意)"]
-                                    # Bug #21 (Apr 17 2026): exclude 合计/小计/Total meta-rows
-                                    # from SUM/MAX/MIN — they contain pre-aggregated values
-                                    # that double-count row-level data. Check first dimension
-                                    # (typically 门店名称 / 产品名 / 项目 etc) for meta labels.
-                                    # Safe: dim name is bound param $3, uses row_data->> which
-                                    # escapes key contents. No SQL injection.
-                                    meta_dim = dims[0] if dims else None
-                                    meta_where = ""
-                                    meta_args_tail = []
-                                    if meta_dim:
-                                        meta_where = " AND (row_data->>$3 IS NULL OR row_data->>$3 NOT IN ('合计','总计','Total','TOTAL','小计','汇总','总额','Sum','sum'))"
-                                        meta_args_tail = [meta_dim]
-                                    # Per-measure totals across ALL NON-META rows (parallel)
-                                    # Perf fix Apr 21: 19 full JSONB scans were sequential
-                                    # (~132s on 200K rows). asyncio.gather runs them
-                                    # concurrently; pool has enough connections for 15+4.
-                                    import asyncio as _asyncio
-                                    _t_agg_start = _asyncio.get_event_loop().time()
-                                    measure_sql = (
-                                        f"""SELECT SUM((row_data->>$1)::numeric) AS s,
-                                                  AVG((row_data->>$1)::numeric) AS a,
-                                                  MIN((row_data->>$1)::numeric) AS mn,
-                                                  MAX((row_data->>$1)::numeric) AS mx,
-                                                  COUNT((row_data->>$1)::numeric) AS c
-                                           FROM smart_bi_dynamic_data
-                                           WHERE upload_id = $2 AND row_data->>$1 ~ '^-?[0-9.,]+$'
-                                           {meta_where}"""
-                                    )
-                                    dim_distinct_sql = (
-                                        """SELECT COUNT(DISTINCT row_data->>$1) AS c
-                                           FROM smart_bi_dynamic_data
-                                           WHERE upload_id = $2
-                                             AND row_data->>$1 IS NOT NULL
-                                             AND row_data->>$1 NOT IN ('合计','总计','Total','TOTAL','小计')"""
+                                    # Phase B (Apr 21 2026): cache upload-level aggregates to
+                                    # avoid re-running 15+4+4 full JSONB scans on every AI
+                                    # question against the same upload. Implementation moved
+                                    # to smartbi.services.upload_aggregate_cache for clarity.
+                                    # Entity-specific lookups below are NOT cached (depend on user_query).
+                                    from smartbi.services.upload_aggregate_cache import (
+                                        get_cache as _get_agg_cache,
+                                        compute_upload_aggregates as _compute_aggs,
                                     )
                                     from smartbi.config import get_pg_pool as _get_pg_pool_agg
-                                    pool_ref = await _get_pg_pool_agg()
-
-                                    async def _run_measure(col):
-                                        async with pool_ref.acquire() as c2:
-                                            return col, await c2.fetchrow(measure_sql, col, upload_id, *meta_args_tail)
-
-                                    async def _run_dim_distinct(col):
-                                        async with pool_ref.acquire() as c2:
-                                            return col, await c2.fetchrow(dim_distinct_sql, col, upload_id)
-
-                                    measure_tasks = [_run_measure(m) for m in measures[:15]]
-                                    dim_tasks = [_run_dim_distinct(d) for d in dims[:4]]
-                                    measure_res, dim_res = await _asyncio.gather(
-                                        _asyncio.gather(*measure_tasks, return_exceptions=True) if measure_tasks else _asyncio.sleep(0, result=[]),
-                                        _asyncio.gather(*dim_tasks, return_exceptions=True) if dim_tasks else _asyncio.sleep(0, result=[]),
-                                    )
-                                    for item in measure_res:
-                                        if isinstance(item, Exception) or not item:
-                                            continue
-                                        m_col, r = item
-                                        if r and r['c']:
-                                            agg_lines.append(
-                                                f"- {m_col} (全量): 总计={r['s'] or 0:,.2f}, "
-                                                f"均值={r['a'] or 0:,.2f}, "
-                                                f"最大={r['mx'] or 0:,.2f}, 最小={r['mn'] or 0:,.2f}, "
-                                                f"有效行数={r['c']}"
-                                            )
-                                    for item in dim_res:
-                                        if isinstance(item, Exception) or not item:
-                                            continue
-                                        d_col, dc = item
-                                        if dc and dc['c'] is not None:
-                                            agg_lines.append(f"- {d_col} 不同值总数: {dc['c']}")
-                                    _t_agg_measures = _asyncio.get_event_loop().time() - _t_agg_start
-                                    logger.info(
-                                        f"[stream] parallel measure+dim agg: {len(measure_tasks)} measures + {len(dim_tasks)} dims in {_t_agg_measures:.1f}s"
-                                    )
-                                    # Heartbeat after heaviest aggregate phase
-                                    yield _sse_event("status", f"聚合完成 ({real_total_rows:,} 行 / {_t_agg_measures:.1f}s)，正在排名...")
-                                    # Pick revenue-like primary measure (not the literal first
-                                    # which may be miscategorized like 收入分组/商品编码).
-                                    _priority_kw = ['销售金额', '销售额', '营业额', '营业收入', '实收', '主营业务收入', '金额']
-                                    primary_measure = None
-                                    for kw in _priority_kw:
-                                        for m in measures:
-                                            if kw in m:
-                                                primary_measure = m
-                                                break
-                                        if primary_measure:
-                                            break
-                                    if not primary_measure and measures:
-                                        primary_measure = measures[0]
-                                    # Top-5 per (dim × primary measure) across top dims
-                                    # Bug #24 (Apr 17 2026): also keep structured Top-5 so we
-                                    # can render an accurate chart from DB aggregates instead
-                                    # of the 200-row sample which sometimes loses dim columns.
-                                    top5_by_dim = {}
-                                    if primary_measure:
-                                        top5_sql = (
-                                            """SELECT row_data->>$1 AS label,
-                                                      SUM((row_data->>$2)::numeric) AS total
-                                               FROM smart_bi_dynamic_data
-                                               WHERE upload_id = $3
-                                                 AND row_data->>$2 ~ '^-?[0-9.,]+$'
-                                                 AND row_data->>$1 IS NOT NULL
-                                                 AND row_data->>$1 NOT IN ('合计', '总计', 'Total', 'TOTAL', '小计')
-                                               GROUP BY row_data->>$1
-                                               ORDER BY total DESC NULLS LAST
-                                               LIMIT 5"""
-                                        )
-
-                                        async def _run_top5(dim):
-                                            async with pool_ref.acquire() as c2:
-                                                return dim, await c2.fetch(top5_sql, dim, primary_measure, upload_id)
-
-                                        _t_t5_start = _asyncio.get_event_loop().time()
-                                        top5_res = await _asyncio.gather(
-                                            *[_run_top5(d) for d in dims[:4]], return_exceptions=True
-                                        )
-                                        for item in top5_res:
-                                            if isinstance(item, Exception) or not item:
-                                                continue
-                                            dim, top_rows = item
-                                            if top_rows:
-                                                top5_by_dim[dim] = [
-                                                    {"label": tr['label'], "total": float(tr['total'] or 0)}
-                                                    for tr in top_rows
-                                                ]
-                                                top_str = ", ".join(
-                                                    f"{tr['label']}={tr['total'] or 0:,.2f}"
-                                                    for tr in top_rows
-                                                )
-                                                agg_lines.append(f"- Top5 by {dim} (按 {primary_measure}): {top_str}")
-                                        logger.info(
-                                            f"[stream] parallel top5: {len(dims[:4])} dims in {_asyncio.get_event_loop().time() - _t_t5_start:.1f}s"
-                                        )
+                                    _agg_cache = _get_agg_cache()
+                                    _bundle = _agg_cache.get(upload_id)
+                                    if _bundle is None:
+                                        _pool_ref = await _get_pg_pool_agg()
+                                        _bundle = await _compute_aggs(conn, _pool_ref, upload_id, field_meta, len(data))
+                                        _agg_cache.set(upload_id, _bundle)
+                                        logger.info(f"[stream] agg cache MISS upload={upload_id} computed in {_bundle['compute_time_s']:.1f}s")
+                                        _hb_text = f"聚合完成 ({_bundle['real_total_rows']:,} 行 / {_bundle['compute_time_s']:.1f}s)，正在排名..."
+                                    else:
+                                        logger.info(f"[stream] agg cache HIT upload={upload_id}")
+                                        _hb_text = f"使用缓存聚合 ({_bundle['real_total_rows']:,} 行)，正在排名..."
+                                    # Unpack bundle into locals that the entity block + prompt builder use
+                                    field_meta = _bundle['field_meta']
+                                    measures = _bundle['measures']
+                                    dims = _bundle['dims']
+                                    real_total_rows = _bundle['real_total_rows']
+                                    agg_lines = list(_bundle['agg_lines'])  # mutable copy (entity block appends)
+                                    top5_by_dim = dict(_bundle['top5_by_dim'])
+                                    primary_measure = _bundle['primary_measure']
+                                    # Heartbeat after aggregate phase (cache hit OR fresh compute)
+                                    yield _sse_event("status", _hb_text)
                                     # Bug #23 fix (Apr 17 2026): user may mention specific
                                     # entities that aren't in Top-5 (e.g., asks about 南方百联店
                                     # which ranks #12). Scan the query for distinct labels of
