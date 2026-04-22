@@ -144,6 +144,29 @@ const kpiData = computed(() => {
     (c.title || '').toLowerCase().includes(keyword)
   );
 
+  // Gold-mode mapping (restaurant POS): total_revenue / bill_count / avg_bill_value / store_count.
+  // Restaurants don't track profit or unique customers at this layer, so relabel slots 2-4 accordingly.
+  const goldRev = findCard('total_revenue');
+  const goldBills = findCard('bill_count');
+  const goldAvg = findCard('avg_bill_value');
+  const goldStores = findCard('store_count');
+  if (goldRev && goldBills && goldAvg && goldStores) {
+    return {
+      totalRevenue: goldRev.rawValue ?? null,
+      revenueGrowth: null as number | null,
+      totalProfit: goldAvg.rawValue ?? null,
+      profitGrowth: null as number | null,
+      profitLabel: '客单价',
+      profitUnit: '元',
+      orderCount: goldBills.rawValue ?? null,
+      orderGrowth: null as number | null,
+      customerCount: goldStores.rawValue ?? null,
+      customerGrowth: null as number | null,
+      customerLabel: '门店数',
+      customerUnit: '家',
+    };
+  }
+
   const salesCard = findCard('SALES_AMOUNT') || findCard('REVENUE') || findCard('销售额')
     || findByTitle('销售') || findByTitle('收入') || findByTitle('revenue');
   const profitCard = findCard('PROFIT') || findCard('PROFIT_AMOUNT') || findCard('利润')
@@ -464,6 +487,77 @@ function cacheKeyFor(factoryId: string, sourceId: string | number) {
 function savedSourceKey(factoryId: string) {
   return `smartbi-dashboard-src:${factoryId}`;
 }
+function savedRangeKey(factoryId: string) {
+  return `smartbi-dashboard-range:${factoryId}`;
+}
+
+// Date range override — null means 默认 period=month (server side).
+// Needed because qhj 2025 historical data is invisible under 本月 default.
+// When set, routes through /executive/custom (same Gold-cutover code path).
+const dateRange = ref<[string, string] | null>(null);
+
+const dateRangeShortcuts = [
+  {
+    text: '本月',
+    value: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setDate(1);
+      return [fmtYmd(start), fmtYmd(end)];
+    },
+  },
+  {
+    text: '本年',
+    value: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setMonth(0, 1);
+      return [fmtYmd(start), fmtYmd(end)];
+    },
+  },
+  {
+    text: '近 12 个月',
+    value: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setFullYear(start.getFullYear() - 1);
+      return [fmtYmd(start), fmtYmd(end)];
+    },
+  },
+  {
+    text: '近 24 个月',
+    value: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setFullYear(start.getFullYear() - 2);
+      return [fmtYmd(start), fmtYmd(end)];
+    },
+  },
+  { text: '2025 全年', value: () => ['2025-01-01', '2025-12-31'] },
+  { text: '2024 全年', value: () => ['2024-01-01', '2024-12-31'] },
+];
+
+function fmtYmd(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function onDateRangeChange(range: [string, string] | null) {
+  if (!factoryId.value) return;
+  if (range) {
+    try { localStorage.setItem(savedRangeKey(factoryId.value), JSON.stringify(range)); } catch {}
+  } else {
+    try { localStorage.removeItem(savedRangeKey(factoryId.value)); } catch {}
+  }
+  // Switch back to system view so the new range actually drives the Gold-backed dashboard.
+  // Otherwise we'd stay on the upload fallback and the picker would silently do nothing.
+  if (selectedDataSource.value !== 'system') {
+    selectedDataSource.value = 'system';
+  }
+  loadDashboardData();
+}
 function getCached<T>(factoryId: string, sourceId: string | number): T | null {
   try {
     const raw = localStorage.getItem(cacheKeyFor(factoryId, sourceId));
@@ -482,6 +576,27 @@ function putCached(factoryId: string, sourceId: string | number, data: unknown) 
 onMounted(async () => {
   // Load upload list first (needed for auto-switch fallback + data source dropdown)
   await loadDataSources();
+
+  // Restore date range from localStorage (per factory) — qhj needs wider default to see 2025 data
+  if (factoryId.value) {
+    const rawRange = localStorage.getItem(savedRangeKey(factoryId.value));
+    if (rawRange) {
+      try {
+        const parsed = JSON.parse(rawRange) as [string, string];
+        if (Array.isArray(parsed) && parsed.length === 2 && parsed[0] && parsed[1]) {
+          dateRange.value = parsed;
+        }
+      } catch { /* ignore */ }
+    }
+  }
+
+  // If user had picked an explicit date range, that overrides any persisted upload-source choice
+  // (otherwise FIX-12 restore would pin them to stale upload data even after they opted into 2025 Gold).
+  if (dateRange.value && factoryId.value) {
+    selectedDataSource.value = 'system';
+    await loadDashboardData();
+    return;
+  }
 
   // FIX-12: restore last-selected data source from localStorage so 刷新 doesn't reset to 'system'
   const remembered = factoryId.value ? localStorage.getItem(savedSourceKey(factoryId.value)) : null;
@@ -542,7 +657,13 @@ async function loadDashboardData() {
   errorMessage.value = '';
 
   try {
-    const response = await get(`/${factoryId.value}/smart-bi/dashboard/executive?period=month`);
+    // If user picked a custom date range, route through /executive/custom
+    // (which calls salesAnalysisService.getSalesOverview with the Gold-cutover code path).
+    // Else fall back to the default period=month behavior.
+    const url = dateRange.value
+      ? `/${factoryId.value}/smart-bi/dashboard/executive/custom?startDate=${dateRange.value[0]}&endDate=${dateRange.value[1]}`
+      : `/${factoryId.value}/smart-bi/dashboard/executive?period=month`;
+    const response = await get(url);
 
     if (response.success && response.data) {
       // Handle double-wrapped response: interceptor wraps {code,data:{...}} into {success,data:{code,data:{...}}}
@@ -566,7 +687,10 @@ async function loadDashboardData() {
           (c && 'data' in c && Array.isArray(c.data) && c.data.length > 0)
         );
 
-      if (!hasRealKpi && !hasCharts && dataSources.value.length > 0) {
+      // Auto-switch only when user has NOT picked an explicit date range.
+      // If they asked for "2025 全年" and Gold returns empty, respect that and
+      // show an empty state — don't silently override with smoke upload data.
+      if (!dateRange.value && !hasRealKpi && !hasCharts && dataSources.value.length > 0) {
         // system data empty, auto-switch to uploaded data
         const best = dataSources.value.find(d => d.id != null);
         if (!best) return;
@@ -587,15 +711,17 @@ async function loadDashboardData() {
     ElMessage.error(errorMessage.value);
     dashboardData.value = null;
 
-    // On error, also try uploaded data as fallback
-    const fallback = dataSources.value.find(d => d.id != null);
-    if (fallback) {
-      // system API failed, falling back to uploaded data
-      hasError.value = false;
-      errorMessage.value = '';
-      selectedDataSource.value = String(fallback.id);
-      await loadDynamicDashboardData(fallback.id);
-      return;
+    // On error, also try uploaded data as fallback — but respect user's explicit date range.
+    if (!dateRange.value) {
+      const fallback = dataSources.value.find(d => d.id != null);
+      if (fallback) {
+        // system API failed, falling back to uploaded data
+        hasError.value = false;
+        errorMessage.value = '';
+        selectedDataSource.value = String(fallback.id);
+        await loadDynamicDashboardData(fallback.id);
+        return;
+      }
     }
   } finally {
     loading.value = false;
@@ -1235,7 +1361,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- 数据源选择器 -->
+    <!-- 数据源 + 时间范围 -->
     <el-card class="datasource-card">
       <div class="datasource-bar">
         <div class="datasource-item">
@@ -1262,6 +1388,26 @@ onUnmounted(() => {
               </div>
             </el-option>
           </el-select>
+        </div>
+        <div class="datasource-item">
+          <span class="datasource-label">
+            <el-icon><Clock /></el-icon>
+            时间范围
+          </span>
+          <el-date-picker
+            v-model="dateRange"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始"
+            end-placeholder="结束"
+            :shortcuts="dateRangeShortcuts"
+            value-format="YYYY-MM-DD"
+            style="width: 280px"
+            clearable
+            @change="onDateRangeChange"
+          />
+          <span v-if="!dateRange && selectedDataSource === 'system'" class="datasource-meta" style="margin-left: 8px;">默认: 本月</span>
+          <span v-else-if="selectedDataSource !== 'system'" class="datasource-meta" style="margin-left: 8px;">(选择范围将返回系统视图)</span>
         </div>
         <el-tag v-if="selectedDataSource && selectedDataSource !== 'system'" type="success" size="small">来自上传数据</el-tag>
       </div>
