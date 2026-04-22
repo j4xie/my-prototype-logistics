@@ -207,34 +207,35 @@ async def discount_breakdown(
 ) -> Dict[str, Any]:
     """Discount usage broken down by voucher/coupon type.
 
-    No agg_discount table — we GROUP BY directly over fact_pos_discount
-    joined to fact_pos_transaction for the date filter. This is one
-    ad-hoc aggregate per request (PG handles 140K rows in ~10ms); if it
-    becomes a hot path, a future migration can add agg_discount.
+    Reads agg_discount (monthly grain) for any month that intersects the
+    date range. Rolls up per discount across months. Upgraded from the
+    original ad-hoc JOIN-and-GROUP-BY over fact_pos_discount × fact_pos_
+    transaction (that version still worked correctly but was O(N) per
+    request; this one is O(months × discounts) ≈ a few dozen rows).
 
-    Only counts discounts actually used in the date range's bills.
     (不计)-suffixed columns are already filtered out upstream by the
     backfill heuristic — those never reach fact_pos_discount.
     """
     start, end = date_range
     _validate_range(start, end)
+    start_m = start.replace(day=1)
+    end_m = end.replace(day=1)
     async with pool.acquire() as conn:
         rows = await conn.fetch(
             """
             SELECT d.discount_id,
                    d.name,
-                   SUM(fd.amount)::numeric(18,2) AS amount,
-                   COUNT(DISTINCT fd.transaction_id) AS bill_count
-              FROM fact_pos_discount fd
-              JOIN fact_pos_transaction t ON t.id = fd.transaction_id
-              JOIN dim_discount d ON d.discount_id = fd.discount_id
-             WHERE fd.factory_id = $1
-               AND t.date BETWEEN $2 AND $3
+                   SUM(a.amount)::numeric(18,2) AS amount,
+                   SUM(a.bill_count)            AS bill_count
+              FROM agg_discount a
+              JOIN dim_discount d ON d.discount_id = a.discount_id
+             WHERE a.factory_id = $1
+               AND a.month BETWEEN $2 AND $3
              GROUP BY d.discount_id, d.name
-             ORDER BY SUM(fd.amount) DESC
+             ORDER BY SUM(a.amount) DESC
              LIMIT $4
             """,
-            factory_id, start, end, int(top_n),
+            factory_id, start_m, end_m, int(top_n),
         )
     total = sum(Decimal(r["amount"]) for r in rows)
     items = []

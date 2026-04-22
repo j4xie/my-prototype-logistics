@@ -67,9 +67,10 @@ async def _materialize_all(
     stats.append(await materializer.materialize_daily((date_min, date_max)))
     stats.append(await materializer.materialize_channel((date_min, date_max)))
 
-    # agg_product needs one call per month.
+    # agg_product + agg_discount both need one call per month (monthly grain).
     for month_first in _months_in_range(date_min, date_max):
         stats.append(await materializer.materialize_product(month_first))
+        stats.append(await materializer.materialize_discount(month_first))
 
     result = TriggerResult(reason=reason, results=stats)
     logger.info(

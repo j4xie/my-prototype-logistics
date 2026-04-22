@@ -299,7 +299,8 @@ async def test_discount_breakdown_empty_when_no_discounts_seeded(pool, seeded):
 
 @pytest.mark.asyncio
 async def test_discount_breakdown_aggregates_and_ranks(pool, clean_rows):
-    """Seed 2 bills, each with 2 discounts; verify GROUP BY + ranking."""
+    """Seed 2 bills, each with discounts; materialize agg_discount; verify
+    GROUP BY + ranking from agg_discount."""
     from smartbi.canonical import CanonicalRow, SilverNormalizer
     from smartbi.tenant_ctx import set_factory_id, reset_factory_id
     token = set_factory_id(_TENANT)
@@ -322,6 +323,10 @@ async def test_discount_breakdown_aggregates_and_ranks(pool, clean_rows):
                 ("点评98代100", Decimal("30"), 1),  # same discount, diff bill
             ),
         ))
+        # Materialize agg_discount for April 2026
+        mat = GoldMaterializer(pool, _TENANT)
+        await mat.materialize_discount(date(2026, 4, 1))
+
         out = await discount_breakdown(
             pool, _TENANT, (date(2026, 4, 21), date(2026, 4, 22)),
         )

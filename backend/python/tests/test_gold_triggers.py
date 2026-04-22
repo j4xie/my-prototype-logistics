@@ -71,17 +71,23 @@ async def test_upload_complete_calls_daily_channel_and_each_month():
         return_value=MaterializeStats("agg_channel", 3, "F"))
     mat.materialize_product = AsyncMock(
         return_value=MaterializeStats("agg_product", 2, "F"))
+    mat.materialize_discount = AsyncMock(
+        return_value=MaterializeStats("agg_discount", 1, "F"))
 
     trig = UploadCompleteTrigger(date(2026, 4, 15), date(2026, 5, 10))
     result = await trig.fire(mat)
 
     assert result.reason == "upload_complete"
-    assert len(result.results) == 4  # 1 daily + 1 channel + 2 month-products
+    # daily + channel + 2 × (product + discount) = 6 per-table results
+    assert len(result.results) == 6
     mat.materialize_daily.assert_awaited_once_with((date(2026, 4, 15), date(2026, 5, 10)))
     mat.materialize_channel.assert_awaited_once_with((date(2026, 4, 15), date(2026, 5, 10)))
     assert mat.materialize_product.await_count == 2
+    assert mat.materialize_discount.await_count == 2
     mat.materialize_product.assert_any_await(date(2026, 4, 1))
     mat.materialize_product.assert_any_await(date(2026, 5, 1))
+    mat.materialize_discount.assert_any_await(date(2026, 4, 1))
+    mat.materialize_discount.assert_any_await(date(2026, 5, 1))
 
 
 @pytest.mark.asyncio
@@ -95,6 +101,8 @@ async def test_api_append_incremental_uses_today_minus_days_back():
         return_value=MaterializeStats("agg_channel", 0, "F"))
     mat.materialize_product = AsyncMock(
         return_value=MaterializeStats("agg_product", 0, "F"))
+    mat.materialize_discount = AsyncMock(
+        return_value=MaterializeStats("agg_discount", 0, "F"))
 
     trig = ApiAppendIncrementalTrigger(days_back=3, today=date(2026, 4, 20))
     await trig.fire(mat)
@@ -114,6 +122,8 @@ async def test_field_registry_reviewed_fire():
         return_value=MaterializeStats("agg_channel", 0, "F"))
     mat.materialize_product = AsyncMock(
         return_value=MaterializeStats("agg_product", 0, "F"))
+    mat.materialize_discount = AsyncMock(
+        return_value=MaterializeStats("agg_discount", 0, "F"))
 
     trig = FieldRegistryReviewedTrigger(date(2026, 4, 1), date(2026, 4, 30))
     result = await trig.fire(mat)
@@ -257,8 +267,10 @@ async def test_total_rows_upserted_aggregates_across_all_calls():
         return_value=MaterializeStats("agg_channel", 5, "F"))
     mat.materialize_product = AsyncMock(
         return_value=MaterializeStats("agg_product", 3, "F"))
+    mat.materialize_discount = AsyncMock(
+        return_value=MaterializeStats("agg_discount", 3, "F"))
 
     trig = UploadCompleteTrigger(date(2026, 4, 1), date(2026, 4, 30))
     result = await trig.fire(mat)
-    # 10 + 5 + 3 (one month: April only)
-    assert result.total_rows_upserted == 18
+    # April only: daily=10 + channel=5 + product=3 + discount=3 = 21
+    assert result.total_rows_upserted == 21

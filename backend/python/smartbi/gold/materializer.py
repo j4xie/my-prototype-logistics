@@ -112,6 +112,30 @@ ON CONFLICT (factory_id, product_id, month) DO UPDATE SET
     computed_at = NOW()
 """
 
+_DISCOUNT_UPSERT_SQL = """
+INSERT INTO agg_discount (
+    factory_id, discount_id, month,
+    amount, bill_count,
+    version, computed_at
+)
+SELECT fd.factory_id,
+       fd.discount_id,
+       DATE_TRUNC('month', t.date)::DATE AS month,
+       SUM(fd.amount)                    AS amount,
+       COUNT(DISTINCT t.id)              AS bill_count,
+       1, NOW()
+  FROM fact_pos_discount fd
+  JOIN fact_pos_transaction t ON t.id = fd.transaction_id
+ WHERE fd.factory_id = $1
+   AND DATE_TRUNC('month', t.date)::DATE = $2
+ GROUP BY fd.factory_id, fd.discount_id, DATE_TRUNC('month', t.date)::DATE
+ON CONFLICT (factory_id, discount_id, month) DO UPDATE SET
+    amount      = EXCLUDED.amount,
+    bill_count  = EXCLUDED.bill_count,
+    version     = agg_discount.version + 1,
+    computed_at = NOW()
+"""
+
 _CHANNEL_UPSERT_SQL = """
 INSERT INTO agg_channel (
     factory_id, channel_id, date,
@@ -174,6 +198,18 @@ class GoldMaterializer:
         logger.info("agg_product upserted=%d factory=%s month=%s",
                     n, self.factory_id, month_first)
         return MaterializeStats("agg_product", n, self.factory_id)
+
+    async def materialize_discount(self, month: date) -> MaterializeStats:
+        """Same shape as materialize_product. month normalized to first-of-month."""
+        month_first = month.replace(day=1)
+        async with self.pool.acquire() as conn:
+            result = await conn.execute(
+                _DISCOUNT_UPSERT_SQL, self.factory_id, month_first
+            )
+        n = _parse_affected_rows(result)
+        logger.info("agg_discount upserted=%d factory=%s month=%s",
+                    n, self.factory_id, month_first)
+        return MaterializeStats("agg_discount", n, self.factory_id)
 
     async def materialize_channel(
         self, date_range: Tuple[date, date]
