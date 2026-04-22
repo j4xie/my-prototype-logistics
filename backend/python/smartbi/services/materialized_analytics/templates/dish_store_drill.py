@@ -1,0 +1,180 @@
+"""DishStoreDrill — 菜品 × 门店 Top 5 下钻 (全菜品, 非 query-scoped).
+
+Pre-computes per-(菜品, 门店) 销量+营收, then surfaces Top N dishes by total
+quantity AND for each top dish, which stores sold it most. Answers questions
+like "招牌青花椒鱼哪家店卖得最多?" indirectly — user sees dish-by-store
+matrix and can pick their dish of interest.
+
+Because we can't query-scope (template cache is pre-computed, not per-query),
+we output Top 10 dishes × Top 5 stores each = 50 cell matrix.
+
+Applies when schema has 商品信息 + store_col.
+"""
+from __future__ import annotations
+
+from collections import Counter, defaultdict
+from typing import Any, Dict, List
+
+from ..compute.base import ComputeBackend
+from ..restaurant.item_parser import parse_items
+from ..restaurant.schema_helpers import find_store_col
+from ..schema import DataSchema, Domain
+from .base import AnalysisTemplate, TemplateResult
+from .registry import register
+
+_ITEM_COL = "商品信息"
+_SAMPLE_ROWS = 500_000
+_TOP_DISHES = 10
+_TOP_STORES_PER_DISH = 5
+
+
+@register
+class DishStoreDrill(AnalysisTemplate):
+
+    @property
+    def code(self) -> str:
+        return "dish_store_drill"
+
+    @property
+    def title(self) -> str:
+        return "菜品 × 门店 下钻 (Top 10 菜品 × Top 5 门店)"
+
+    def applies(self, schema: DataSchema) -> bool:
+        if schema.domain not in (Domain.RESTAURANT, Domain.UNKNOWN):
+            return False
+        field_names = {f.name for f in schema.fields}
+        return _ITEM_COL in field_names and find_store_col(field_names) is not None
+
+    def compute(self, backend: ComputeBackend, schema: DataSchema) -> TemplateResult:
+        df = backend._df  # type: ignore[attr-defined]
+        store_col = find_store_col(df.columns)
+        if store_col is None:
+            return TemplateResult(
+                code=self.code, title=self.title, data={},
+                applies=False, skip_reason="no store column",
+            )
+        if df.height > _SAMPLE_ROWS:
+            df = df.head(_SAMPLE_ROWS)
+
+        rows = df.select([_ITEM_COL, store_col]).to_dicts()
+
+        # { dish_name: Counter(store → qty) }
+        dish_store_qty: Dict[str, Counter] = defaultdict(Counter)
+        dish_store_rev: Dict[str, Counter] = defaultdict(Counter)
+        dish_total_qty: Counter = Counter()
+
+        for row in rows:
+            store = str(row.get(store_col) or "")
+            if not store:
+                continue
+            raw = row.get(_ITEM_COL)
+            if not raw:
+                continue
+            for item in parse_items(str(raw)):
+                name = item["name"]
+                qty = item["quantity"]
+                rev = item["total"]
+                dish_store_qty[name][store] += qty
+                dish_store_rev[name][store] += rev
+                dish_total_qty[name] += qty
+
+        if not dish_total_qty:
+            return TemplateResult(
+                code=self.code, title=self.title, data={},
+                applies=False, skip_reason="no parseable dishes",
+            )
+
+        top_dishes = dish_total_qty.most_common(_TOP_DISHES)
+        drill: List[Dict[str, Any]] = []
+        for dish_name, total_qty in top_dishes:
+            store_rank = dish_store_qty[dish_name].most_common(_TOP_STORES_PER_DISH)
+            top_store, top_store_qty = store_rank[0] if store_rank else ("—", 0)
+            concentration = round(top_store_qty / total_qty * 100, 1) if total_qty else 0.0
+            drill.append({
+                "dish": dish_name,
+                "total_quantity": round(total_qty, 2),
+                "top_store": top_store,
+                "top_store_quantity": round(top_store_qty, 2),
+                "top_store_concentration_pct": concentration,
+                "top_5_stores": [
+                    {
+                        "store": s,
+                        "quantity": round(q, 2),
+                        "revenue": round(dish_store_rev[dish_name].get(s, 0.0), 2),
+                        "share_pct": round(q / total_qty * 100, 2) if total_qty else 0.0,
+                    }
+                    for s, q in store_rank
+                ],
+            })
+
+        # Build insight: highlight top-3 dish × top-store
+        parts = [f"分析 Top {len(drill)} 菜品各自的最畅销门店:"]
+        for d in drill[:3]:
+            parts.append(
+                f"「{d['dish']}」头号销售 → {d['top_store']}"
+                f"({d['top_store_quantity']:.0f} 份, "
+                f"占该菜品 {d['top_store_concentration_pct']:.0f}%);"
+            )
+        # Spot store-dominance pattern: if same store tops multiple dishes, flag it
+        top_stores_across_dishes = Counter(d["top_store"] for d in drill)
+        repeater = top_stores_across_dishes.most_common(1)[0] if top_stores_across_dishes else None
+        if repeater and repeater[1] >= 3:
+            parts.append(
+                f"🏆 「{repeater[0]}」拿下 {repeater[1]} 个菜品的头名,综合表现最突出。"
+            )
+        insight_text = " ".join(parts)
+
+        # ECharts: horizontal stacked bar, dishes on Y, stores as series
+        store_universe: List[str] = []
+        for d in drill:
+            for s in d["top_5_stores"]:
+                if s["store"] not in store_universe:
+                    store_universe.append(s["store"])
+                if len(store_universe) >= 8:
+                    break
+
+        chart_config = {
+            "type": "bar",
+            "title": {"text": "Top 菜品 × Top 门店 销量", "left": "center"},
+            "tooltip": {"trigger": "axis", "axisPointer": {"type": "shadow"}},
+            "legend": {"top": 30, "data": store_universe[:8]},
+            "xAxis": {"type": "value", "name": "销量 (份)"},
+            "yAxis": {
+                "type": "category",
+                "data": [d["dish"] for d in drill[::-1]],
+                "axisLabel": {"fontSize": 10},
+            },
+            "series": [
+                {
+                    "name": s,
+                    "type": "bar",
+                    "stack": "total",
+                    "data": [
+                        next(
+                            (st["quantity"] for st in d["top_5_stores"] if st["store"] == s),
+                            0
+                        )
+                        for d in drill[::-1]
+                    ],
+                }
+                for s in store_universe[:8]
+            ],
+            "grid": {"left": "3%", "right": "3%", "bottom": "8%", "containLabel": True},
+        }
+
+        return TemplateResult(
+            code=self.code,
+            title=self.title,
+            data={
+                "drill": drill,
+                "dish_count_tracked": len(dish_total_qty),
+            },
+            chart_config=chart_config,
+            kpis={
+                "top_dish": drill[0]["dish"] if drill else None,
+                "top_dish_top_store": drill[0]["top_store"] if drill else None,
+                "top_dish_top_store_pct": drill[0]["top_store_concentration_pct"] if drill else None,
+                "dominant_store": repeater[0] if repeater and repeater[1] >= 3 else None,
+            },
+            insight_text=insight_text,
+        )

@@ -109,3 +109,41 @@ def find_table_col(cols: Iterable[str]) -> Optional[str]:
     both formats (无桌位(外卖)/纯数字/包厢/VIP), so a single column is fine.
     """
     return _first_present(cols, _TABLE_COL_CANDIDATES)
+
+
+def preferred_revenue_col(cols: Iterable[str], primary_measure: Optional[str] = None) -> Optional[str]:
+    """Return the best revenue column for user-facing questions.
+
+    User asks "营业额"/"销售额"/"业绩" etc. For actionable insights, **actually
+    received** (实收额) is usually more honest than gross (应收金额). qhj data
+    has a ~25-30% gap: 应收 vs 实收 after platform commission + discounts.
+
+    Preference order:
+      1. 实收额 / 实收 / 实收金额 (net — what the restaurant actually received)
+      2. primary_measure from schema (whatever domain_detector picked)
+      3. 应收金额 / 营业额 (gross — listed price before deductions)
+
+    Returns None if none of these exist.
+    """
+    col_set = set(cols)
+    net = _first_present(col_set, _NET_REVENUE_CANDIDATES)
+    if net:
+        return net
+    if primary_measure and primary_measure in col_set:
+        return primary_measure
+    gross = _first_present(col_set, _GROSS_REVENUE_CANDIDATES)
+    if gross:
+        return gross
+    return None
+
+
+def measure_annotation(col: Optional[str]) -> str:
+    """Return a short annotation string for user-facing insights noting which
+    measure was used. Example: '(按实收额统计)' or '(按应收金额统计)'."""
+    if col is None:
+        return ""
+    if col in _NET_REVENUE_CANDIDATES:
+        return f"(按{col}统计)"
+    if col in _GROSS_REVENUE_CANDIDATES:
+        return f"(按{col}统计 - 含扣减前)"
+    return f"(按{col}统计)"

@@ -41,7 +41,7 @@ _OPEN_DATE_CANDIDATES = ("开卡时间", "开卡日期", "入会时间", "等级
 _LAST_CONSUME_DATE_CANDIDATES = ("最近消费时间", "最后消费", "上次消费")
 _GENDER_CANDIDATES = ("性别",)
 
-_SAMPLE_CAP = 200_000
+_SAMPLE_CAP = 500_000
 _TOP_N = 10
 
 # Status labels considered "active" for KPI (rest = inactive/closed)

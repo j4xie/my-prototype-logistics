@@ -169,6 +169,19 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
         [["环比", "同比", "月度", "上个月", "本月", "上月", "近月", "增长", "涨跌", "趋势"],
          ["多少", "分析", "对比", "变化", "涨", "跌", "增长", "营业额"]],
     ),
+    # W4 quality-audit new templates
+    (
+        "monthly_anomaly",
+        # "哪个月营业额掉了/暴跌/异常"
+        [["月", "异常", "暴跌", "暴涨", "突降", "突增", "掉了", "大跌", "大涨"],
+         ["分析", "多少", "检测", "哪个", "哪几个", "波动", "异常"]],
+    ),
+    (
+        "dish_store_drill",
+        # "菜品 × 门店 × 什么菜哪家卖得多"
+        [["菜品", "哪个菜", "什么菜", "菜"],
+         ["门店", "店铺", "哪家店", "哪家分店", "店"]],
+    ),
     # Note: revenue_management_report / stored_value_card_consumption /
     # groupon_channel_breakdown are placed above, ahead of their respective
     # broader siblings (table_type_comparison / member_consumption / channel_analysis).
@@ -196,13 +209,46 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
 ]
 
 
+# W4-Q4: modifier keywords that indicate query has a filter/exclusion/drill-down
+# intent. When present, cached template is wrong — we need LLM to interpret the
+# filter. Return None → query falls through to LLM fallback with cache as context.
+_MODIFIER_KEYWORDS = (
+    # Exclusion / filter
+    "排除", "除了", "不算", "去掉", "过滤", "剔除", "忽略",
+    # Narrowing
+    "只看", "只要", "只统计", "仅", "单独", "特定",
+    # Comparison against something external
+    "对比去年", "vs去年", "同比", "比去年",
+    # Drill-down by extra dim
+    "哪家店", "哪个门店", "哪家分店", "哪家铺子",
+    # Why / cause
+    "为什么", "为啥", "原因", "归因", "解释",
+    # Next / more
+    "第二", "第三", "下一个", "接下来", "还有哪些",
+)
+
+
+def _has_modifier(query: str) -> bool:
+    """True if query contains a filter/exclusion/causal/drill modifier that
+    the keyword-only template router cannot honor."""
+    q = query.lower()
+    return any(kw.lower() in q for kw in _MODIFIER_KEYWORDS)
+
+
 def match_template(query: str) -> Optional[str]:
     """Try to match user query to a template code.
 
     Returns template_code if matched, None otherwise.
     All groups must have ≥1 keyword hit in query.
+
+    W4-Q4: if query has exclusion/drill modifiers (排除/哪家店/为什么/etc.),
+    return None so LLM can handle the nuance. Templates don't know how to
+    re-filter results based on user input.
     """
     if not query or not isinstance(query, str):
+        return None
+    if _has_modifier(query):
+        logger.info(f"[query-router] modifier detected in '{query[:50]}' → LLM fallback")
         return None
     q = query.lower()  # case-insensitive (works for Chinese too — pass-through)
     for code, groups in _PATTERNS:

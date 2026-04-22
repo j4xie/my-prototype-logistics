@@ -17,7 +17,7 @@ from .base import AnalysisTemplate, TemplateResult
 from .registry import register
 
 _ITEM_COL = "商品信息"
-_SAMPLE_CAP = 50_000  # max rows to parse (performance guard)
+_SAMPLE_CAP = 500_000  # max rows to parse (performance guard)
 
 
 @register

@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Tuple
 import polars as pl
 
 from ..compute.base import ComputeBackend
-from ..restaurant.schema_helpers import find_customer_col
+from ..restaurant.schema_helpers import find_customer_col, measure_annotation, preferred_revenue_col
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
@@ -59,7 +59,13 @@ class ChannelAnalysis(AnalysisTemplate):
 
     def compute(self, backend: ComputeBackend, schema: DataSchema) -> TemplateResult:
         df = backend._df
-        measure = schema.primary_measure
+        # W4-Q3: prefer 实收额 (net) for honest channel comparison
+        measure = preferred_revenue_col(df.columns, schema.primary_measure)
+        if measure is None:
+            return TemplateResult(
+                code=self.code, title=self.title, data={},
+                applies=False, skip_reason="no revenue column found",
+            )
         cust_col = find_customer_col(df.columns)
 
         # Cast measure to float; drop rows with null source or measure

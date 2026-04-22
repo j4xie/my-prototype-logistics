@@ -10,13 +10,13 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 from ..compute.base import ComputeBackend
-from ..restaurant.schema_helpers import find_table_col
+from ..restaurant.schema_helpers import find_table_col, measure_annotation, preferred_revenue_col
 from ..restaurant.table_classifier import classify_table
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
 
-_SAMPLE_CAP = 100_000
+_SAMPLE_CAP = 500_000
 
 
 @register
@@ -44,10 +44,8 @@ class TableTypeComparison(AnalysisTemplate):
         if df.height > _SAMPLE_CAP:
             df = df.head(_SAMPLE_CAP)
 
-        # Identify revenue column (primary_measure or first available measure)
-        revenue_col: Optional[str] = schema.primary_measure
-        if revenue_col and revenue_col not in df.columns:
-            revenue_col = None
+        # W4-Q3: prefer 实收额 over 营业额 for honest comparison
+        revenue_col: Optional[str] = preferred_revenue_col(df.columns, schema.primary_measure)
         if revenue_col is None:
             measure_fields = [f.name for f in schema.fields
                               if f.role.value == "measure" and f.name in df.columns]

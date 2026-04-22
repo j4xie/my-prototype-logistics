@@ -18,7 +18,7 @@ from .base import AnalysisTemplate, TemplateResult
 from .registry import register
 
 _TOP_N = 20
-_SAMPLE_ROWS = 50_000
+_SAMPLE_ROWS = 500_000
 
 
 @register

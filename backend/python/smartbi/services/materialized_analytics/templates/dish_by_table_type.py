@@ -24,7 +24,7 @@ from .base import AnalysisTemplate, TemplateResult
 from .registry import register
 
 _TOP_N_PER_TYPE = 10
-_SAMPLE_ROWS = 50_000
+_SAMPLE_ROWS = 500_000
 _ITEM_COL = "商品信息"
 
 

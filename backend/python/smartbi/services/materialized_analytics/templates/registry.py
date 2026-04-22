@@ -98,3 +98,6 @@ def load_all_templates():
     from . import payment_method_mix              # noqa: F401
     from . import kitchen_dispatch_heatmap        # noqa: F401
     from . import period_comparison_trend         # noqa: F401
+    # W4 quality-audit fixes (Apr 22 2026)
+    from . import dish_store_drill                # noqa: F401
+    from . import monthly_anomaly                 # noqa: F401

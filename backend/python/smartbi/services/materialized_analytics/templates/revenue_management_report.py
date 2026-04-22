@@ -29,7 +29,7 @@ from .registry import register
 _SHIFT_COL = "班次"
 _OPEN_TIME_CANDIDATES = ("开单时间", "下单时间", "点单时间", "结单时间")
 _REVENUE_CANDIDATES = ("实收额", "实收", "营业额", "应收金额")
-_SAMPLE_CAP = 200_000
+_SAMPLE_CAP = 500_000
 
 # Expected channel order (for stable display)
 _CHANNEL_ORDER = ["堂食", "外卖", "包厢", "散客"]

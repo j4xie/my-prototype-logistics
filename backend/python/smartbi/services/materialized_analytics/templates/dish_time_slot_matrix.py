@@ -28,7 +28,7 @@ from .registry import register
 
 _SLOTS: List[str] = ["早餐", "午餐", "下午茶", "晚餐", "宵夜"]
 _TOP_DISHES = 15
-_SAMPLE_ROWS = 50_000
+_SAMPLE_ROWS = 500_000
 
 
 def _get_time_slot(hour: int) -> str:

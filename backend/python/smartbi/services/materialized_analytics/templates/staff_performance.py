@@ -11,6 +11,7 @@ from typing import Any, Dict, List
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.schema_helpers import measure_annotation, preferred_revenue_col
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
@@ -36,7 +37,14 @@ class StaffPerformance(AnalysisTemplate):
         return has_role and schema.primary_measure is not None
 
     def compute(self, backend: ComputeBackend, schema: DataSchema) -> TemplateResult:
-        measure = schema.primary_measure
+        # W4-Q3: prefer 实收额 (net) over 应收金额/营业额 (gross). qhj 实收 ≈ 60% of 营业额
+        # because of platform commissions; gross would overstate staff revenue by ~40%.
+        measure = preferred_revenue_col(backend._df.columns, schema.primary_measure)
+        if measure is None:
+            return TemplateResult(
+                code=self.code, title=self.title, data={},
+                applies=False, skip_reason="no revenue column found",
+            )
         field_names = {f.name for f in schema.fields}
 
         # Pick first matching role column in preference order
@@ -131,6 +139,7 @@ class StaffPerformance(AnalysisTemplate):
         insight_text = (
             f"{role_col} Top 1:{top_staff} (销售额 {top_revenue:,.0f},{top_orders} 单);"
             f"共 {total_staff} 位{role_col}参与服务。"
+            f" {measure_annotation(measure)}"
         )
 
         return TemplateResult(

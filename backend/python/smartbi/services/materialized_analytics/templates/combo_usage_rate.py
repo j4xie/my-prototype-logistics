@@ -34,7 +34,7 @@ from .registry import register
 _ITEM_COL = "商品信息"
 _DISH_TYPE_COL = "商品类型"
 _DISH_NAME_COL = "商品名称"
-_SAMPLE_ROWS = 80_000
+_SAMPLE_ROWS = 500_000
 _TOP_N = 10
 _COMBO_KEYWORDS = ("套餐",)
 
