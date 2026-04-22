@@ -1156,16 +1156,36 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                     from smartbi.services.upload_aggregate_cache import (
                                         get_cache as _get_agg_cache,
                                         compute_upload_aggregates as _compute_aggs,
+                                        load_bundle_from_db as _load_bundle_db,
+                                        save_bundle_to_db as _save_bundle_db,
                                     )
                                     from smartbi.config import get_pg_pool as _get_pg_pool_agg
                                     _agg_cache = _get_agg_cache()
                                     _bundle = _agg_cache.get(upload_id)
+                                    _pool_ref = await _get_pg_pool_agg() if _bundle is None else None
+                                    _hb_text = None
+                                    # L2: persistent DB cache (survives Python restarts). Checked
+                                    # only when L1 in-memory is cold.
                                     if _bundle is None:
-                                        _pool_ref = await _get_pg_pool_agg()
-                                        # Cold cache: compute can take 30-70s on a 200K-row upload.
+                                        _bundle = await _load_bundle_db(_pool_ref, upload_id)
+                                        if _bundle is not None:
+                                            _agg_cache.set(upload_id, _bundle)
+                                            logger.info(
+                                                f"[stream] agg L2 hit upload={upload_id} "
+                                                f"(original compute {_bundle.get('compute_time_s', 0):.1f}s)"
+                                            )
+                                            _hb_text = (
+                                                f"使用持久化聚合 ({_bundle['real_total_rows']:,} 行)，"
+                                                "正在排名..."
+                                            )
+                                    if _bundle is None:
+                                        # L1+L2 cold: compute can take 30-70s on a 200K-row upload.
                                         # Stream a status heartbeat every 10s to keep the FE SSE
                                         # watchdog (~30s) alive — otherwise FE shows "网络连接不稳定"
-                                        # and drops the stream before the compute finishes.
+                                        # and drops the stream before the compute finishes. Normally
+                                        # this path is rare because γ-1c / upload-time materialization
+                                        # pre-warms L2 — only first query against a brand-new upload
+                                        # (before materialize completes) will land here.
                                         _compute_task = asyncio.create_task(
                                             _compute_aggs(conn, _pool_ref, upload_id, field_meta, len(data))
                                         )
@@ -1183,11 +1203,28 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                                     f"正在汇总全量数据 ({_elapsed}s，首次查询较慢)..."
                                                 )
                                         _agg_cache.set(upload_id, _bundle)
-                                        logger.info(f"[stream] agg cache MISS upload={upload_id} computed in {_bundle['compute_time_s']:.1f}s")
-                                        _hb_text = f"聚合完成 ({_bundle['real_total_rows']:,} 行 / {_bundle['compute_time_s']:.1f}s)，正在排名..."
-                                    else:
-                                        logger.info(f"[stream] agg cache HIT upload={upload_id}")
-                                        _hb_text = f"使用缓存聚合 ({_bundle['real_total_rows']:,} 行)，正在排名..."
+                                        # Persist to L2 so the NEXT restart finds it pre-computed.
+                                        _factory_id_l2 = (
+                                            getattr(http_request.state, 'factory_id', None)
+                                            if hasattr(http_request, 'state') else None
+                                        )
+                                        await _save_bundle_db(
+                                            _pool_ref, upload_id, _bundle, factory_id=_factory_id_l2
+                                        )
+                                        logger.info(
+                                            f"[stream] agg cold compute upload={upload_id} in "
+                                            f"{_bundle['compute_time_s']:.1f}s (L1+L2 populated)"
+                                        )
+                                        _hb_text = (
+                                            f"聚合完成 ({_bundle['real_total_rows']:,} 行 / "
+                                            f"{_bundle['compute_time_s']:.1f}s)，正在排名..."
+                                        )
+                                    if _hb_text is None:
+                                        logger.info(f"[stream] agg L1 hit upload={upload_id}")
+                                        _hb_text = (
+                                            f"使用缓存聚合 ({_bundle['real_total_rows']:,} 行)，"
+                                            "正在排名..."
+                                        )
                                     # Unpack bundle into locals that the entity block + prompt builder use
                                     field_meta = _bundle['field_meta']
                                     measures = _bundle['measures']

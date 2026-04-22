@@ -286,6 +286,54 @@ async def reclassify_upload(
             "domain": domain_value,
         }
 
+        # Also pre-warm the L2 aggregate cache (LLM fallback path) so the first
+        # user to ask a HARD-modifier / no-template-match question doesn't wait
+        # 30-70s for cold JSONB scans. Fire-and-forget — reclassify's HTTP
+        # response shouldn't wait on this. If the compute fails or times out,
+        # the first user-facing query still has the L1/L2 miss → heartbeat →
+        # compute fallback path in chat.py.
+        import asyncio as _asyncio
+        from smartbi.services.upload_aggregate_cache import (
+            compute_upload_aggregates as _compute_aggs,
+            save_bundle_to_db as _save_bundle_db,
+            get_cache as _get_agg_cache,
+        )
+
+        async def _warm_l2_aggregate_cache() -> None:
+            try:
+                # Load field_meta again inside the task — can't re-use outer
+                # closure's field_rows because it's tied to the /reclassify conn.
+                async with pool.acquire() as warm_conn:
+                    warm_rows = await warm_conn.fetch(
+                        """SELECT original_name, standard_name, is_measure, is_dimension, is_time
+                           FROM smart_bi_pg_field_definitions
+                           WHERE upload_id = $1 ORDER BY display_order""",
+                        upload_id,
+                    )
+                    warm_field_meta = [dict(r) for r in warm_rows]
+                    if not warm_field_meta:
+                        logger.warning(
+                            f"[reclassify→agg-warm] upload={upload_id} has no "
+                            "field_defs, skipping L2 warm"
+                        )
+                        return
+                    bundle = await _compute_aggs(
+                        warm_conn, pool, upload_id, warm_field_meta, sample_size=0
+                    )
+                _get_agg_cache().set(upload_id, bundle)
+                await _save_bundle_db(pool, upload_id, bundle, factory_id=user_factory)
+                logger.info(
+                    f"[reclassify→agg-warm] upload={upload_id} pre-warmed L2 in "
+                    f"{bundle.get('compute_time_s', 0):.1f}s"
+                )
+            except Exception as warm_err:
+                logger.warning(
+                    f"[reclassify→agg-warm] upload={upload_id} failed: {warm_err}"
+                )
+
+        _asyncio.create_task(_warm_l2_aggregate_cache())
+        remat_result["agg_cache_warm_scheduled"] = True
+
     return {
         "success": True,
         "upload_id": upload_id,

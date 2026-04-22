@@ -1,7 +1,12 @@
-"""In-memory TTL cache + compute helper for upload-level aggregates.
+"""Two-tier cache + compute helper for upload-level aggregates.
+
+L1: in-memory TTL dict (fast, per-process).
+L2: smart_bi_pg_upload_aggregate_cache table (survives restarts).
 
 Avoids re-running 15+ JSONB full scans on every AI chat query against the same
-upload. Uploads are immutable after ingest, so a 1-hour TTL is safe.
+upload. Uploads are immutable after ingest, so a 1-hour TTL is safe on L1;
+L2 never expires (explicit invalidate required — currently only if the upload
+itself is reclassified).
 
 Invalidate via `invalidate(upload_id)` when a new upload writes to the same id
 (currently upload_id is auto-incremented so collisions don't happen, but the
@@ -20,6 +25,7 @@ Cache value: dict with keys:
 """
 from __future__ import annotations
 
+import json as _json
 import logging
 import re
 import threading
@@ -269,3 +275,138 @@ async def compute_upload_aggregates(
         "primary_measure": primary_measure,
         "compute_time_s": compute_time_s,
     }
+
+
+# ── L2 persistence (smart_bi_pg_upload_aggregate_cache) ──
+
+_TABLE = "smart_bi_pg_upload_aggregate_cache"
+
+
+async def load_bundle_from_db(pool, upload_id: int) -> Optional[Dict[str, Any]]:
+    """Try to read a cached bundle from the DB table.
+
+    Returns None if the row doesn't exist (first query for this upload after
+    a deploy, or upload hasn't been pre-warmed yet). Returns the bundle dict
+    otherwise — shape matches compute_upload_aggregates() output.
+    """
+    try:
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow(
+                f"SELECT payload, compute_time_s FROM {_TABLE} WHERE upload_id = $1",
+                upload_id,
+            )
+    except Exception as e:
+        # Table missing (migration not run) or DB unreachable — fall back to
+        # compute. Don't crash the chat endpoint on cache infrastructure issues.
+        logger.warning(f"[agg-cache] L2 load failed for upload={upload_id}: {e}")
+        return None
+    if row is None:
+        return None
+    raw = row["payload"]
+    # asyncpg returns JSONB as str on some driver versions; decode if so.
+    payload = _json.loads(raw) if isinstance(raw, str) else raw
+    if not isinstance(payload, dict):
+        return None
+    # Preserve observability field from the column, since payload may pre-date it.
+    if row["compute_time_s"] is not None:
+        payload["compute_time_s"] = float(row["compute_time_s"])
+    return payload
+
+
+async def save_bundle_to_db(
+    pool, upload_id: int, bundle: Dict[str, Any], factory_id: Optional[str] = None,
+) -> bool:
+    """Upsert the bundle into the L2 cache table.
+
+    Returns True on success, False on failure (e.g., migration not yet run).
+    Failure is non-fatal: L1 still serves the caller for this process.
+    """
+    try:
+        payload_json = _json.dumps(bundle, ensure_ascii=False, default=str)
+        compute_time = float(bundle.get("compute_time_s") or 0.0)
+        async with pool.acquire() as conn:
+            await conn.execute(
+                f"""INSERT INTO {_TABLE} (upload_id, factory_id, payload, compute_time_s, updated_at)
+                    VALUES ($1, $2, $3::jsonb, $4, NOW())
+                    ON CONFLICT (upload_id) DO UPDATE
+                       SET factory_id = EXCLUDED.factory_id,
+                           payload = EXCLUDED.payload,
+                           compute_time_s = EXCLUDED.compute_time_s,
+                           updated_at = NOW()""",
+                upload_id, factory_id, payload_json, compute_time,
+            )
+        return True
+    except Exception as e:
+        logger.warning(f"[agg-cache] L2 save failed for upload={upload_id}: {e}")
+        return False
+
+
+async def invalidate_bundle_in_db(pool, upload_id: int) -> bool:
+    """Remove the L2 cache row for an upload. Used when field_defs change
+    (e.g., after reclassify changes measure/dimension roles)."""
+    try:
+        async with pool.acquire() as conn:
+            result = await conn.execute(
+                f"DELETE FROM {_TABLE} WHERE upload_id = $1", upload_id
+            )
+        return result.upper().startswith("DELETE")
+    except Exception as e:
+        logger.warning(f"[agg-cache] L2 invalidate failed for upload={upload_id}: {e}")
+        return False
+
+
+async def get_or_compute(
+    pool,
+    conn,
+    upload_id: int,
+    field_meta: List[Dict[str, Any]],
+    sample_size: int,
+    factory_id: Optional[str] = None,
+    on_heartbeat=None,
+) -> Dict[str, Any]:
+    """Two-tier get-or-compute.
+
+    Order:
+      1. L1 in-memory cache (fast, ~microseconds).
+      2. L2 DB cache (~ms, survives restarts).
+      3. Cold compute (30-70s on 200K-row upload).
+
+    Args:
+      pool: asyncpg pool for L2 operations + compute fan-out.
+      conn: asyncpg connection the caller already holds (reused for the
+        compute's initial key-check queries to avoid double-acquire).
+      upload_id: target upload.
+      field_meta: field definitions — may be mutated by compute (Bug #25 fallback).
+      sample_size: for the "样本 N 行" label only.
+      factory_id: stored in L2 for cross-tenant audit/cleanup.
+      on_heartbeat: optional async callable invoked on the cold-compute path to
+        emit progress. Not invoked on L1/L2 hit. Caller owns the semantics.
+
+    Returns the bundle dict.
+    """
+    cache = get_cache()
+    bundle = cache.get(upload_id)
+    if bundle is not None:
+        logger.info(f"[agg-cache] L1 hit upload={upload_id}")
+        return bundle
+    bundle = await load_bundle_from_db(pool, upload_id)
+    if bundle is not None:
+        logger.info(
+            f"[agg-cache] L2 hit upload={upload_id} "
+            f"(precomputed in {bundle.get('compute_time_s', 0):.1f}s)"
+        )
+        cache.set(upload_id, bundle)
+        return bundle
+    # Cold path — compute + populate both tiers.
+    logger.info(f"[agg-cache] miss upload={upload_id}, cold compute starting")
+    if on_heartbeat is not None:
+        try:
+            await on_heartbeat("cold_start")
+        except Exception:
+            pass  # heartbeat failures shouldn't block compute
+    bundle = await compute_upload_aggregates(
+        conn, pool, upload_id, field_meta, sample_size
+    )
+    cache.set(upload_id, bundle)
+    await save_bundle_to_db(pool, upload_id, bundle, factory_id=factory_id)
+    return bundle

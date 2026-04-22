@@ -67,6 +67,32 @@ async def _trigger_materialization(upload_id: int) -> None:
             f"{applied}/{len(results)} templates, saved {saved}, "
             f"domain={domain_value}, wall={time.time() - t0:.1f}s"
         )
+
+        # Also pre-warm the L2 aggregate cache used by the LLM fallback path
+        # in chat.py. Runs sequentially with template materialization so we
+        # don't compete for the same polars DataFrame build — acceptable since
+        # this whole hook is already off the user request's critical path.
+        try:
+            from smartbi.services.upload_aggregate_cache import (
+                compute_upload_aggregates,
+                save_bundle_to_db,
+                get_cache,
+            )
+            if field_meta:
+                async with pool.acquire() as conn:
+                    bundle = await compute_upload_aggregates(
+                        conn, pool, upload_id, field_meta, sample_size=0
+                    )
+                get_cache().set(upload_id, bundle)
+                await save_bundle_to_db(pool, upload_id, bundle, factory_id=factory_id)
+                logger.info(
+                    f"[hook] upload {upload_id}: L2 aggregate cache warmed in "
+                    f"{bundle.get('compute_time_s', 0):.1f}s"
+                )
+        except Exception as warm_err:
+            logger.warning(
+                f"[hook] upload {upload_id}: L2 aggregate warm failed: {warm_err}"
+            )
     except Exception as e:
         # Fire-and-forget: never re-raise
         logger.error(
