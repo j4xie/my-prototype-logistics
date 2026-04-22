@@ -90,6 +90,12 @@ const smartBIRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/smart-bi/RestaurantV2Dashboard.vue'),
         meta: { requiresAuth: true, title: '餐饮 V2 Dashboard', icon: 'DataAnalysis', module: 'analytics' },
       },
+      {
+        path: 'gold-preview',
+        name: 'SmartBIGoldPreview',
+        component: () => import('@/views/smart-bi/GoldPreview.vue'),
+        meta: { requiresAuth: true, title: 'Gold 预览', icon: 'Cpu', module: 'analytics' },
+      },
     ],
   },
 ];

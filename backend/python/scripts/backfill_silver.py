@@ -134,6 +134,43 @@ _ALIAS_TO_ATTR: Dict[str, str] = {
 _REQUIRED_ATTRS = ("store_name", "source_bill_no", "date")
 
 
+# EAV payment columns — qhj exports one column per payment method. For each
+# row, any of these columns with a non-zero decimal value becomes a
+# fact_pos_payment entry. Everything else we don't know about stays in
+# `unknown_canonical_names` for admin review.
+#
+# Why hardcoded rather than heuristic: "contains no 代/券" is fragile — e.g.
+# "新美大" is a platform name with no marker. A curated set is auditable
+# and covers the qhj schema exactly.
+_PAYMENT_COLUMNS = {
+    "现金",
+    "微信",
+    "[微信]",
+    "美团",
+    "[美团]",
+    "[美团支付]",
+    "新美大",
+    "银行卡",
+    "[支付宝]",
+    "商家支付宝",
+    "[云闪付]",
+    "银联二维码",
+    "饿了么",
+    "[饿了么]",
+    "京东外卖",
+    "[京东]",
+    "交行买单",
+    "招行买单",
+    "点评买单",
+    "网络支付",
+    "储值卡",
+    "会员卡",
+    "商场积分",
+    "商场饭卡",
+    "商场泷珠支付",
+}
+
+
 @dataclass
 class BackfillStats:
     upload_id: int
@@ -240,6 +277,27 @@ def _lookup_attr(original_col: str, canonical_name: Optional[str]) -> Optional[s
     return _ALIAS_TO_ATTR.get(original_col)
 
 
+def _extract_payments(row_data: Dict[str, Any]) -> Tuple[Tuple[str, Decimal], ...]:
+    """Scan row_data for known payment-method columns with non-zero amount.
+
+    Returns a tuple of (channel_name, amount_decimal) entries for
+    SilverNormalizer to write to fact_pos_payment. Empty tuple when no
+    recognized payments found — normalizer handles that as "no children".
+
+    Zero or empty values are skipped: a row where the customer paid 100
+    cash will have 现金=100 and every other payment column empty or "0";
+    we only emit the non-zero entry.
+    """
+    out: List[Tuple[str, Decimal]] = []
+    for col_name in _PAYMENT_COLUMNS:
+        raw = row_data.get(col_name)
+        amount = _parse_decimal(raw)
+        if amount is None or amount == 0:
+            continue
+        out.append((col_name, amount))
+    return tuple(out)
+
+
 def _build_canonical_row(
     row_data: Dict[str, Any],
     field_mappings: Dict[str, str],
@@ -259,6 +317,10 @@ def _build_canonical_row(
         canonical_name = field_mappings.get(original_col)
         attr = _lookup_attr(original_col, canonical_name)
         if attr is None:
+            # Known EAV payment columns are handled separately — don't
+            # flag them as unknown.
+            if original_col in _PAYMENT_COLUMNS:
+                continue
             # Track both paths' failures so admin can see what's dropped.
             unmapped_key = canonical_name or f"<raw>{original_col}"
             if unmapped_key not in unknown_out:
@@ -273,6 +335,10 @@ def _build_canonical_row(
 
     if not store_name or not bill_no or parsed_date is None:
         return None
+
+    # EAV payments extraction (discount EAV deferred — dim_discount needs
+    # richer metadata parsing that's not worth it today).
+    payments = _extract_payments(row_data)
 
     return CanonicalRow(
         factory_id=factory_id,
@@ -291,6 +357,7 @@ def _build_canonical_row(
         net_amount=_parse_decimal(attrs.get("net_amount")),
         actual_receive=_parse_decimal(attrs.get("actual_receive")),
         combo_string=(str(attrs["combo_string"]) if attrs.get("combo_string") else None),
+        payments=payments,
     )
 
 

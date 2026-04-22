@@ -25,7 +25,9 @@ if str(_SCRIPTS) not in sys.path:
 
 from backfill_silver import (  # noqa: E402
     _ALIAS_TO_ATTR,
+    _PAYMENT_COLUMNS,
     _build_canonical_row,
+    _extract_payments,
     _lookup_attr,
     _normalize_field_mappings,
     _parse_date,
@@ -161,6 +163,70 @@ def test_lookup_attr_falls_back_to_original_column():
 
 def test_lookup_attr_returns_none_when_both_fail():
     assert _lookup_attr("totally_unknown_col", "also_unknown") is None
+
+
+# ── EAV payment extraction ───────────────────────────────────
+
+def test_extract_payments_picks_non_zero_amounts():
+    row = {
+        "现金": "100.00",
+        "微信": "",
+        "美团": "0",
+        "[美团支付]": "50.5",
+        "某不相关列": "ignored",
+    }
+    out = _extract_payments(row)
+    # Set comparison because _PAYMENT_COLUMNS iteration order is set-based
+    got = set(out)
+    assert got == {("现金", Decimal("100.00")), ("[美团支付]", Decimal("50.5"))}
+
+
+def test_extract_payments_handles_currency_symbols():
+    """qhj exports sometimes have ¥ or 1,234.56 — _parse_decimal strips."""
+    row = {"现金": "¥1,234.56"}
+    out = _extract_payments(row)
+    assert out == (("现金", Decimal("1234.56")),)
+
+
+def test_extract_payments_empty_when_all_zero_or_missing():
+    row = {"现金": "0", "微信": "0.00", "美团": ""}
+    assert _extract_payments(row) == ()
+
+
+def test_extract_payments_ignores_non_payment_columns():
+    """Columns not in _PAYMENT_COLUMNS are skipped even if numeric."""
+    row = {"折扣额": "50.00", "门店名称": "门店A"}
+    assert _extract_payments(row) == ()
+
+
+def test_payment_columns_known_methods_present():
+    """Regression: core payment methods must be in the curated set."""
+    for method in ("现金", "微信", "美团", "[美团支付]", "银行卡", "饿了么"):
+        assert method in _PAYMENT_COLUMNS, f"{method} missing from _PAYMENT_COLUMNS"
+
+
+def test_build_canonical_row_attaches_payments():
+    row_data = {
+        "门店名称": "S1",
+        "账单号": "B1",
+        "营业日期": "2026-04-21",
+        "现金": "50.00",
+        "微信": "30.00",
+        "美团": "0",
+    }
+    field_mappings = {}
+    unknown: list = []
+    row = _build_canonical_row(
+        row_data, field_mappings, "F001", "excel", 100, unknown,
+    )
+    assert row is not None
+    assert set(row.payments) == {
+        ("现金", Decimal("50.00")),
+        ("微信", Decimal("30.00")),
+    }
+    # Payment columns must NOT end up in unknown
+    for p in ("现金", "微信", "美团"):
+        assert f"<raw>{p}" not in unknown
 
 
 def test_build_canonical_row_tracks_unknown_canonicals():

@@ -333,3 +333,92 @@ async def test_agg_product_rows_reasonable(pool, has_data):
     finally:
         reset_factory_id(token)
     assert n == 2998
+
+
+# ── Channel payments (added after EAV extraction, v2 backfill) ──
+
+@pytest.mark.asyncio
+async def test_payment_channels_seeded(pool, has_data):
+    """After v2 backfill with EAV, 23 distinct payment channels were
+    extracted from qhj's wide-format columns."""
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        async with pool.acquire() as conn:
+            n = await conn.fetchval(
+                "SELECT COUNT(*) FROM dim_payment_channel WHERE factory_id=$1", _TENANT
+            )
+    finally:
+        reset_factory_id(token)
+    assert n == 23
+
+
+@pytest.mark.asyncio
+async def test_fact_payment_total(pool, has_data):
+    """Total attributable to known payment methods.
+    ~¥13.1M out of ¥20.6M total revenue — remainder is unmapped payment
+    methods (vouchers, stored-value balances) not yet in _PAYMENT_COLUMNS."""
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        async with pool.acquire() as conn:
+            total = await conn.fetchval(
+                "SELECT SUM(amount) FROM fact_pos_payment WHERE factory_id=$1", _TENANT
+            )
+            n = await conn.fetchval(
+                "SELECT COUNT(*) FROM fact_pos_payment WHERE factory_id=$1", _TENANT
+            )
+    finally:
+        reset_factory_id(token)
+    assert abs(total - Decimal("13116990.78")) < _EPSILON_AMOUNT
+    assert n == 139906
+
+
+@pytest.mark.asyncio
+async def test_top_5_channels_by_total_amount(pool, has_data):
+    """Known ranking captured 2026-04-21 (v2 backfill with EAV).
+    Dominated by [微信] ¥6.2M; 饿了么/美团/支付宝follow."""
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT ch.name, SUM(a.amount) AS total
+                  FROM agg_channel a
+                  JOIN dim_payment_channel ch ON ch.channel_id = a.channel_id
+                 WHERE a.factory_id=$1
+                 GROUP BY ch.name
+                 ORDER BY SUM(a.amount) DESC
+                 LIMIT 5
+                """,
+                _TENANT,
+            )
+    finally:
+        reset_factory_id(token)
+    expected = [
+        ("[微信]",   Decimal("6226665.69")),
+        ("[饿了么]", Decimal("2856172.09")),
+        ("[美团]",   Decimal("1598630.66")),
+        ("[支付宝]", Decimal("1396864.88")),
+        ("招行买单", Decimal("259647.78")),
+    ]
+    assert len(rows) == 5
+    for i, (name, total) in enumerate(expected):
+        assert rows[i]["name"] == name, f"rank {i+1}: {rows[i]['name']}"
+        assert abs(rows[i]["total"] - total) < _EPSILON_AMOUNT
+
+
+@pytest.mark.asyncio
+async def test_agg_channel_rows_reasonable(pool, has_data):
+    """agg_channel (factory, channel, date) — 3404 rows post v2 backfill."""
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        async with pool.acquire() as conn:
+            n = await conn.fetchval(
+                "SELECT COUNT(*) FROM agg_channel WHERE factory_id=$1", _TENANT
+            )
+    finally:
+        reset_factory_id(token)
+    assert n == 3404
