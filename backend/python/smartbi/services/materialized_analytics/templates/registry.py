@@ -82,3 +82,8 @@ def load_all_templates():
     from . import combo_usage_rate                # noqa: F401
     from . import reverse_checkout_stats          # noqa: F401
     from . import store_customer_stratification   # noqa: F401
+    # W3 财务端补充 (Apr 22 2026, 4 more templates)
+    from . import profit_loss_statement           # noqa: F401
+    from . import revenue_management_report       # noqa: F401
+    from . import stored_value_card_consumption   # noqa: F401
+    from . import groupon_channel_breakdown       # noqa: F401

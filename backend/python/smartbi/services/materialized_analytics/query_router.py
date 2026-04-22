@@ -43,6 +43,16 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
         [["包厢", "大厅", "堂食", "外卖", "桌位", "散客"],
          ["菜品", "商品", "点单", "点菜", "点什么", "偏好", "爱点"]],
     ),
+    # revenue_management_report must precede table_type_comparison — 堂食外卖 +
+    # 午晚市/时段 context means the user wants the composite report, not just
+    # the channel comparison.
+    (
+        "revenue_management_report",
+        # "收入管理报表" / "堂食外卖午晚市" / "渠道时段营收"
+        [["收入管理", "堂食外卖", "堂食午晚", "外卖午晚", "渠道时段", "复合报表",
+          "堂食和外卖", "外卖和堂食"],
+         ["报表", "分析", "占比", "分布", "对比", "午晚市", "午市", "晚市"]],
+    ),
     (
         "table_type_comparison",
         [["包厢", "大厅", "堂食", "外卖", "桌位", "就餐", "散客"], ["对比", "比较", "分析", "销售", "订单", "客单价", "人均", "数量"]],
@@ -55,13 +65,27 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
         "time_slot_revenue",
         [["时段", "早晨", "上午", "下午", "晚上", "早餐", "午餐", "晚餐", "宵夜", "小时"], ["营业额", "营收", "销售额", "收入", "门店", "区域", "地区"]],
     ),
+    # groupon_channel_breakdown must precede channel_analysis — when user mentions
+    # multiple groupon-specific platforms (点评 + 美团 + 抖音) together, they want
+    # groupon breakdown not generic channel analysis.
+    (
+        "groupon_channel_breakdown",
+        [["团购", "团购券", "券使用", "点评", "美团"],
+         ["三端", "点评", "美团", "抖音", "占比", "对比", "分析"]],
+    ),
     (
         "channel_analysis",
         [["外卖", "堂食", "美团", "饿了么", "京东", "抖音", "渠道", "来源"], ["订单", "销售", "营收", "占比", "对比", "分析"]],
     ),
+    # stored_value_card_consumption must precede member_consumption — the latter
+    # lists 储值卡 in its keywords too, so ordering matters.
+    (
+        "stored_value_card_consumption",
+        [["储值卡", "预付卡"], ["消费", "流水", "金额", "使用", "报表", "分析", "多少"]],
+    ),
     (
         "member_consumption",
-        [["会员", "会员卡", "储值卡"], ["消费", "金额", "频次", "次数", "支付"]],
+        [["会员", "会员卡"], ["消费", "金额", "频次", "次数", "支付"]],
     ),
     (
         "refund_analysis",
@@ -92,6 +116,15 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
         # "门店客单人数分层" / "几人桌占比" / "1 人桌多少"
         [["门店", "客单", "几人", "人数"], ["分层", "占比", "分布", "分析", "桌"]],
     ),
+    # W3 财务端补充: profit_loss_statement (not in conflict with earlier patterns)
+    (
+        "profit_loss_statement",
+        # "利润表" / "营收结构" / "毛利" / "损益"
+        [["利润", "营收结构", "毛利", "净利", "损益", "应收", "实收"], ["报表", "结构", "分析", "多少", "合计", "对比"]],
+    ),
+    # Note: revenue_management_report / stored_value_card_consumption /
+    # groupon_channel_breakdown are placed above, ahead of their respective
+    # broader siblings (table_type_comparison / member_consumption / channel_analysis).
     # === Generic W1 templates (lower priority, broader match) ===
     (
         "monthly_trend",

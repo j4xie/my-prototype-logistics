@@ -1,0 +1,241 @@
+"""StoredValueCardConsumption — 储值卡消费流水.
+
+qhj row_data has a 储值卡 column (currency amount paid via stored-value
+card per order). This is DIFFERENT from member_consumption which covers
+会员卡 (loyalty membership card — typically points-based or discount-tier).
+
+Reports:
+  - number of orders where 储值卡 > 0 (usage count)
+  - total spend via storage card + share of total revenue
+  - concentration by 门店 (where storage-card users cluster)
+  - trend over time (if 营业日期 available)
+
+Separately counts 储值卡(不计) / 储值卡赠送金(不计) when present — tag as
+"non-revenue storage-card flow" in data payload (but don't add to revenue
+since "不计" means excluded from normal revenue accounting).
+
+Applies when 储值卡 column exists.
+"""
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional
+
+import polars as pl
+
+from ..compute.base import ComputeBackend
+from ..schema import DataSchema, Domain
+from .base import AnalysisTemplate, TemplateResult
+from .registry import register
+
+_CARD_COL = "储值卡"
+_CARD_NONREV_COLS = ("储值卡(不计)", "储值卡赠送金(不计)")
+_STORE_COL = "门店名称"
+_DATE_COL = "营业日期"
+_GROSS_REVENUE_CANDIDATES = ("实收额", "实收", "营业额")
+_TOP_N_STORES = 10
+
+
+@register
+class StoredValueCardConsumption(AnalysisTemplate):
+
+    @property
+    def code(self) -> str:
+        return "stored_value_card_consumption"
+
+    @property
+    def title(self) -> str:
+        return "储值卡消费流水"
+
+    def applies(self, schema: DataSchema) -> bool:
+        if schema.domain not in (Domain.RESTAURANT, Domain.UNKNOWN):
+            return False
+        return _CARD_COL in {f.name for f in schema.fields}
+
+    def compute(self, backend: ComputeBackend, schema: DataSchema) -> TemplateResult:
+        df = backend._df  # type: ignore[attr-defined]
+        cols = set(df.columns)
+
+        card_expr = pl.col(_CARD_COL).cast(pl.Float64, strict=False).fill_null(0.0)
+
+        total_orders = df.height
+        card_df = df.filter(card_expr > 0)
+        card_orders = card_df.height
+
+        # Total amount paid via storage card
+        card_total = float(
+            df.select(card_expr.sum()).item() or 0.0
+        )
+
+        usage_rate_pct = round(card_orders / total_orders * 100, 2) if total_orders else 0.0
+
+        # Non-revenue storage flows (e.g., 储值卡赠送金(不计))
+        nonrev: List[Dict[str, Any]] = []
+        for col in _CARD_NONREV_COLS:
+            if col in cols:
+                amt = float(
+                    df.select(
+                        pl.col(col).cast(pl.Float64, strict=False).fill_null(0.0).sum()
+                    ).item() or 0.0
+                )
+                if abs(amt) > 0.01:
+                    nonrev.append({"label": col, "amount": round(amt, 2)})
+
+        # Share of gross revenue
+        share_of_revenue_pct: Optional[float] = None
+        gross_col = next((c for c in _GROSS_REVENUE_CANDIDATES if c in cols), None)
+        if gross_col and card_total > 0:
+            gross = float(
+                df.select(
+                    pl.col(gross_col).cast(pl.Float64, strict=False).fill_null(0.0).sum()
+                ).item() or 0.0
+            )
+            if gross > 0:
+                share_of_revenue_pct = round(card_total / gross * 100, 2)
+
+        if card_orders == 0:
+            return TemplateResult(
+                code=self.code,
+                title=self.title,
+                data={
+                    "card_orders": 0,
+                    "card_total": 0.0,
+                    "usage_rate_pct": 0.0,
+                    "share_of_revenue_pct": 0.0,
+                    "nonrev_flows": nonrev,
+                    "by_store": [],
+                    "by_date": [],
+                    "total_orders": total_orders,
+                },
+                kpis={
+                    "card_orders": 0,
+                    "card_total": 0.0,
+                    "usage_rate_pct": 0.0,
+                },
+                insight_text=(
+                    f"全部 {total_orders} 笔订单均未使用储值卡消费。"
+                ),
+            )
+
+        # Per-store breakdown (Top N)
+        by_store: List[Dict[str, Any]] = []
+        if _STORE_COL in cols:
+            rows = (
+                card_df.filter(pl.col(_STORE_COL).is_not_null())
+                .group_by(_STORE_COL)
+                .agg([
+                    pl.len().alias("orders"),
+                    card_expr.sum().alias("total"),
+                ])
+                .sort("total", descending=True)
+                .head(_TOP_N_STORES)
+                .to_dicts()
+            )
+            by_store = [
+                {
+                    "store": str(r.get(_STORE_COL) or "<空>"),
+                    "orders": int(r["orders"]),
+                    "amount": round(float(r["total"] or 0.0), 2),
+                }
+                for r in rows
+            ]
+
+        # Trend over time (if date present)
+        by_date: List[Dict[str, Any]] = []
+        if _DATE_COL in cols:
+            rows = (
+                card_df.filter(pl.col(_DATE_COL).is_not_null())
+                .group_by(_DATE_COL)
+                .agg([
+                    pl.len().alias("orders"),
+                    card_expr.sum().alias("total"),
+                ])
+                .sort(_DATE_COL)
+                .to_dicts()
+            )
+            by_date = [
+                {
+                    "date": str(r.get(_DATE_COL) or ""),
+                    "orders": int(r["orders"]),
+                    "amount": round(float(r["total"] or 0.0), 2),
+                }
+                for r in rows
+            ]
+
+        # Insight
+        parts = [
+            f"共 {card_orders} 笔订单用储值卡结账 (占总订单 {usage_rate_pct:.1f}%)，"
+            f"累计储值卡收款 {card_total:,.0f} 元。"
+        ]
+        if share_of_revenue_pct is not None:
+            parts.append(f"占总营收 {share_of_revenue_pct:.1f}%。")
+        if by_store:
+            top_s = by_store[0]
+            parts.append(
+                f"Top 门店:{top_s['store']} {top_s['orders']} 单、{top_s['amount']:,.0f} 元。"
+            )
+        if nonrev:
+            nonrev_total = sum(n["amount"] for n in nonrev)
+            parts.append(
+                f"另有 {nonrev_total:,.0f} 元储值卡流水记为'不计营收' (赠送金/不计科目)。"
+            )
+        insight_text = " ".join(parts)
+
+        # ECharts bar — top stores by card amount
+        chart_config = None
+        if by_store:
+            chart_config = {
+                "type": "bar",
+                "title": {"text": "储值卡消费 Top 门店", "left": "center"},
+                "tooltip": {"trigger": "axis", "axisPointer": {"type": "shadow"}},
+                "xAxis": {
+                    "type": "category",
+                    "data": [r["store"] for r in by_store],
+                    "axisLabel": {"rotate": 45, "interval": 0, "fontSize": 10},
+                },
+                "yAxis": [
+                    {"type": "value", "name": "储值卡收款 (元)", "position": "left"},
+                    {"type": "value", "name": "订单数", "position": "right"},
+                ],
+                "series": [
+                    {
+                        "name": "储值卡收款",
+                        "type": "bar",
+                        "yAxisIndex": 0,
+                        "data": [r["amount"] for r in by_store],
+                        "itemStyle": {"color": "#ab47bc"},
+                    },
+                    {
+                        "name": "订单数",
+                        "type": "bar",
+                        "yAxisIndex": 1,
+                        "data": [r["orders"] for r in by_store],
+                        "itemStyle": {"color": "#8e24aa"},
+                    },
+                ],
+                "legend": {"top": 30},
+                "grid": {"left": "3%", "right": "8%", "bottom": "25%", "containLabel": True},
+            }
+
+        return TemplateResult(
+            code=self.code,
+            title=self.title,
+            data={
+                "card_orders": card_orders,
+                "card_total": round(card_total, 2),
+                "usage_rate_pct": usage_rate_pct,
+                "share_of_revenue_pct": share_of_revenue_pct,
+                "nonrev_flows": nonrev,
+                "by_store": by_store,
+                "by_date": by_date,
+                "total_orders": total_orders,
+            },
+            chart_config=chart_config,
+            kpis={
+                "card_orders": card_orders,
+                "card_total": round(card_total, 2),
+                "usage_rate_pct": usage_rate_pct,
+                "share_of_revenue_pct": share_of_revenue_pct,
+                "top_store": by_store[0]["store"] if by_store else None,
+            },
+            insight_text=insight_text,
+        )
