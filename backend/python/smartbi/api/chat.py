@@ -1162,7 +1162,26 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                     _bundle = _agg_cache.get(upload_id)
                                     if _bundle is None:
                                         _pool_ref = await _get_pg_pool_agg()
-                                        _bundle = await _compute_aggs(conn, _pool_ref, upload_id, field_meta, len(data))
+                                        # Cold cache: compute can take 30-70s on a 200K-row upload.
+                                        # Stream a status heartbeat every 10s to keep the FE SSE
+                                        # watchdog (~30s) alive — otherwise FE shows "网络连接不稳定"
+                                        # and drops the stream before the compute finishes.
+                                        _compute_task = asyncio.create_task(
+                                            _compute_aggs(conn, _pool_ref, upload_id, field_meta, len(data))
+                                        )
+                                        _compute_start = time.time()
+                                        while True:
+                                            try:
+                                                _bundle = await asyncio.wait_for(
+                                                    asyncio.shield(_compute_task), timeout=10.0
+                                                )
+                                                break
+                                            except asyncio.TimeoutError:
+                                                _elapsed = int(time.time() - _compute_start)
+                                                yield _sse_event(
+                                                    "status",
+                                                    f"正在汇总全量数据 ({_elapsed}s，首次查询较慢)..."
+                                                )
                                         _agg_cache.set(upload_id, _bundle)
                                         logger.info(f"[stream] agg cache MISS upload={upload_id} computed in {_bundle['compute_time_s']:.1f}s")
                                         _hb_text = f"聚合完成 ({_bundle['real_total_rows']:,} 行 / {_bundle['compute_time_s']:.1f}s)，正在排名..."
