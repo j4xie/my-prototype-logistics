@@ -144,6 +144,31 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
         [["会员卡", "会员数据", "会员等级", "卡余额", "储值会员", "会员充值"],
          ["分布", "数据", "等级", "余额", "多少", "统计", "分析"]],
     ),
+    # W4 专项报表 (Apr 22 2026)
+    (
+        "reviews_sentiment_summary",
+        # "评价/星级/投诉" queries
+        [["评价", "大众点评", "美团点评", "口碑", "星级", "评分", "差评", "好评", "投诉"],
+         ["分析", "分布", "多少", "统计", "平均", "率", "比例"]],
+    ),
+    (
+        "payment_method_mix",
+        # "付款方式/支付方式占比"
+        [["付款方式", "支付方式", "付款", "收款", "现金", "移动支付"],
+         ["占比", "分布", "分析", "多少", "对比"]],
+    ),
+    (
+        "kitchen_dispatch_heatmap",
+        # "传菜/档口/厨房"
+        [["传菜", "档口", "厨房", "上什", "后厨"],
+         ["分析", "多少", "分布", "Top", "报表", "份"]],
+    ),
+    (
+        "period_comparison_trend",
+        # "月度对比/环比/同比"
+        [["环比", "同比", "月度对比", "上个月", "本月", "增长", "涨跌", "趋势"],
+         ["多少", "分析", "对比", "变化", "涨", "跌", "增长"]],
+    ),
     # Note: revenue_management_report / stored_value_card_consumption /
     # groupon_channel_breakdown are placed above, ahead of their respective
     # broader siblings (table_type_comparison / member_consumption / channel_analysis).

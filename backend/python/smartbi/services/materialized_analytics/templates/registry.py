@@ -93,3 +93,8 @@ def load_all_templates():
     from . import business_overview_summary       # noqa: F401
     # W3 会员深度 (Apr 22 2026) — 唏嘛香 60K 会员卡级
     from . import member_deep_analytics           # noqa: F401
+    # W4 专项报表覆盖 (Apr 22 2026)
+    from . import reviews_sentiment_summary       # noqa: F401
+    from . import payment_method_mix              # noqa: F401
+    from . import kitchen_dispatch_heatmap        # noqa: F401
+    from . import period_comparison_trend         # noqa: F401
