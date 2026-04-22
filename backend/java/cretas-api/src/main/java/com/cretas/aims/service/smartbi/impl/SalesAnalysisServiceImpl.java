@@ -8,10 +8,12 @@ import com.cretas.aims.dto.smartbi.MetricResult;
 import com.cretas.aims.dto.smartbi.RankingItem;
 import com.cretas.aims.entity.smartbi.SmartBiSalesData;
 import com.cretas.aims.repository.smartbi.SmartBiSalesDataRepository;
+import com.cretas.aims.service.smartbi.GoldDashboardBuilder;
 import com.cretas.aims.service.smartbi.MetricCalculatorService;
 import com.cretas.aims.service.smartbi.SalesAnalysisService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +49,16 @@ public class SalesAnalysisServiceImpl implements SalesAnalysisService {
 
     private final SmartBiSalesDataRepository salesDataRepository;
     private final MetricCalculatorService metricCalculatorService;
+    private final GoldDashboardBuilder goldDashboardBuilder;
+
+    /**
+     * Shared v1 Phase B flag with FinanceAnalysisServiceImpl. When true,
+     * getSalesOverview tries Gold (same finance_summary endpoint) FIRST
+     * and serves a Gold-backed DashboardResponse; on any failure falls
+     * back to the legacy smart_bi_sales_data path transparently.
+     */
+    @Value("${smartbi.gold.read-primary.enabled:false}")
+    private boolean goldReadPrimaryEnabled;
 
     // 计算精度配置
     private static final int SCALE = 4;
@@ -67,6 +79,25 @@ public class SalesAnalysisServiceImpl implements SalesAnalysisService {
     @Transactional(readOnly = true)
     public DashboardResponse getSalesOverview(String factoryId, LocalDate startDate, LocalDate endDate) {
         log.info("获取销售概览(聚合优化): factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
+
+        // v1 Phase B: try Gold first when enabled. 分析概览 (Dashboard.vue) also
+        // hits this method, so flipping SMARTBI_GOLD_READ_PRIMARY_ENABLED=true
+        // makes both pages show Silver+Gold-backed KPIs for tenants with POS
+        // data in Silver. Legacy path still serves when Gold is empty or fails.
+        if (goldReadPrimaryEnabled && goldDashboardBuilder != null) {
+            try {
+                DashboardResponse goldResponse = goldDashboardBuilder
+                        .buildFromFinanceSummary(factoryId, startDate, endDate);
+                if (goldResponse != null) {
+                    log.info("[gold-primary] sales factory={} range={}..{} served from Gold",
+                            factoryId, startDate, endDate);
+                    return goldResponse;
+                }
+            } catch (Exception e) {
+                log.warn("[gold-primary] sales factory={} failed, falling back to legacy: {}",
+                        factoryId, e.getMessage());
+            }
+        }
 
         // Step 1: Use DB aggregation for KPI cards (single query instead of loading all rows)
         Object[] kpiSummary = salesDataRepository.findKpiSummary(factoryId, startDate, endDate);
