@@ -126,6 +126,20 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
                             factoryId, startDate, endDate);
                     return goldResponse;
                 }
+                // Gold returned null = revenue=0 AND bills=0 in Silver. Gold is authoritative
+                // under primary flag, so skip the slow legacy scan (~50s on empty ranges per
+                // Bug #417) and return empty directly. Fallback to legacy only triggers on
+                // actual Gold failures (exception branch below).
+                log.info("[gold-primary] finance factory={} range={}..{} Gold empty — skipping legacy",
+                        factoryId, startDate, endDate);
+                return DashboardResponse.builder()
+                        .kpiCards(java.util.Collections.emptyList())
+                        .charts(new LinkedHashMap<>())
+                        .rankings(new LinkedHashMap<>())
+                        .aiInsights(new ArrayList<>())
+                        .suggestions(new ArrayList<>())
+                        .lastUpdated(java.time.LocalDateTime.now())
+                        .build();
             } catch (Exception e) {
                 log.warn("[gold-primary] finance factory={} failed, falling back to legacy: {}",
                         factoryId, e.getMessage());

@@ -93,6 +93,13 @@ public class SalesAnalysisServiceImpl implements SalesAnalysisService {
                             factoryId, startDate, endDate);
                     return goldResponse;
                 }
+                // Gold returned null = revenue=0 AND bills=0 in Silver. Gold is authoritative
+                // under primary flag, so skip the slow legacy scan (~50s on empty ranges per
+                // Bug #417) and return empty directly. Fallback to legacy only triggers on
+                // actual Gold failures (exception branch below).
+                log.info("[gold-primary] sales factory={} range={}..{} Gold empty — skipping legacy",
+                        factoryId, startDate, endDate);
+                return buildEmptyDashboard();
             } catch (Exception e) {
                 log.warn("[gold-primary] sales factory={} failed, falling back to legacy: {}",
                         factoryId, e.getMessage());
