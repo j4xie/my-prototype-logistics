@@ -25,6 +25,8 @@ from __future__ import annotations
 from smartbi.gold.dual_write import run_silver_dual_write, silver_dual_write_enabled
 from smartbi.gold.materializer import GoldMaterializer, MaterializeStats
 from smartbi.gold.pipeline import PipelineStats, ingest_and_materialize
+from smartbi.gold.queries import finance_summary
+from smartbi.gold.shadow_compare import DiffReport, FieldDiff, diff_results
 from smartbi.gold.triggers import (
     ApiAppendIncrementalTrigger,
     FieldRegistryReviewedTrigger,
@@ -35,6 +37,8 @@ from smartbi.gold.triggers import (
 
 __all__ = [
     "ApiAppendIncrementalTrigger",
+    "DiffReport",
+    "FieldDiff",
     "FieldRegistryReviewedTrigger",
     "GoldMaterializer",
     "MaterializationTrigger",
@@ -42,6 +46,8 @@ __all__ = [
     "PipelineStats",
     "TriggerResult",
     "UploadCompleteTrigger",
+    "diff_results",
+    "finance_summary",
     "ingest_and_materialize",
     "run_silver_dual_write",
     "silver_dual_write_enabled",

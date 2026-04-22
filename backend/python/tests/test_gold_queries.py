@@ -1,0 +1,161 @@
+"""Tests for smartbi.gold.queries — Gold read-path primitives.
+
+Week 4 Phase B v0 of Unified Data Layer v1 spec.
+"""
+from __future__ import annotations
+
+from datetime import date
+from decimal import Decimal
+
+import pytest
+import pytest_asyncio
+
+from smartbi.canonical import CanonicalRow, SilverNormalizer
+from smartbi.gold import GoldMaterializer, finance_summary
+from smartbi.gold.triggers import UploadCompleteTrigger
+
+
+_TENANT = "TEST_GQ_A"
+
+
+@pytest_asyncio.fixture
+async def pool():
+    import asyncpg
+    from smartbi.config import get_settings
+    from smartbi.tenant_ctx import set_pg_connection_tenant
+    settings = get_settings()
+    if not settings.postgres_url:
+        pytest.skip("No Postgres configured")
+    p = await asyncpg.create_pool(
+        settings.postgres_url, min_size=1, max_size=3,
+        setup=set_pg_connection_tenant,
+    )
+    try:
+        yield p
+    finally:
+        await p.close()
+
+
+@pytest_asyncio.fixture
+async def seeded(pool):
+    """3 bills across 2 stores + 2 days + fully materialized Gold."""
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        async with pool.acquire() as conn:
+            for t in ("agg_daily", "agg_product", "agg_channel"):
+                await conn.execute(f"DELETE FROM {t} WHERE factory_id=$1", _TENANT)
+            await conn.execute("DELETE FROM fact_pos_transaction WHERE factory_id=$1", _TENANT)
+            for t in ("dim_staff", "dim_product", "dim_payment_channel",
+                      "dim_discount", "dim_store"):
+                await conn.execute(f"DELETE FROM {t} WHERE factory_id=$1", _TENANT)
+
+        norm = SilverNormalizer(pool, _TENANT)
+        await norm.write_row(CanonicalRow(
+            factory_id=_TENANT, source_type="excel",
+            store_name="S1", source_bill_no="Q1", date=date(2026, 4, 21),
+            net_amount=Decimal("100"), combo_string="#x#_1份*100",
+        ))
+        await norm.write_row(CanonicalRow(
+            factory_id=_TENANT, source_type="excel",
+            store_name="S1", source_bill_no="Q2", date=date(2026, 4, 21),
+            net_amount=Decimal("50"), combo_string="#y#_1份*50",
+        ))
+        await norm.write_row(CanonicalRow(
+            factory_id=_TENANT, source_type="excel",
+            store_name="S2", source_bill_no="Q3", date=date(2026, 4, 22),
+            net_amount=Decimal("30"), combo_string="#x#_1份*30",
+        ))
+        mat = GoldMaterializer(pool, _TENANT)
+        trig = UploadCompleteTrigger(date(2026, 4, 21), date(2026, 4, 22))
+        await trig.fire(mat)
+        yield
+    finally:
+        async with pool.acquire() as conn:
+            for t in ("agg_daily", "agg_product", "agg_channel"):
+                await conn.execute(f"DELETE FROM {t} WHERE factory_id=$1", _TENANT)
+            await conn.execute("DELETE FROM fact_pos_transaction WHERE factory_id=$1", _TENANT)
+            for t in ("dim_staff", "dim_product", "dim_payment_channel",
+                      "dim_discount", "dim_store"):
+                await conn.execute(f"DELETE FROM {t} WHERE factory_id=$1", _TENANT)
+        reset_factory_id(token)
+
+
+@pytest.mark.asyncio
+async def test_finance_summary_rollup(pool, seeded):
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        out = await finance_summary(
+            pool, _TENANT,
+            (date(2026, 4, 21), date(2026, 4, 22)),
+        )
+    finally:
+        reset_factory_id(token)
+    assert out["factory_id"] == _TENANT
+    assert out["start_date"] == "2026-04-21"
+    assert out["end_date"] == "2026-04-22"
+    # 100 + 50 + 30 = 180
+    assert out["total_revenue"] == 180.0
+    assert out["bill_count"] == 3
+    assert out["store_count"] == 2
+    assert out["day_count"] == 2
+    # Avg bill = 180 / 3 = 60
+    assert out["avg_bill_value"] == 60.0
+    # Top stores: S1 has 150, S2 has 30
+    assert len(out["top_stores"]) == 2
+    assert out["top_stores"][0]["store_name"] == "S1"
+    assert out["top_stores"][0]["revenue"] == 150.0
+    assert out["top_stores"][0]["bill_count"] == 2
+    assert out["top_stores"][1]["store_name"] == "S2"
+    assert out["top_stores"][1]["revenue"] == 30.0
+
+
+@pytest.mark.asyncio
+async def test_finance_summary_empty_range_returns_zeros(pool, seeded):
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        out = await finance_summary(
+            pool, _TENANT,
+            (date(1999, 1, 1), date(1999, 12, 31)),
+        )
+    finally:
+        reset_factory_id(token)
+    assert out["total_revenue"] == 0.0
+    assert out["bill_count"] == 0
+    assert out["store_count"] == 0
+    assert out["day_count"] == 0
+    assert out["avg_bill_value"] is None
+    assert out["top_stores"] == []
+
+
+@pytest.mark.asyncio
+async def test_finance_summary_rejects_inverted_range(pool):
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        with pytest.raises(ValueError, match="start .* > end"):
+            await finance_summary(
+                pool, _TENANT,
+                (date(2026, 4, 22), date(2026, 4, 21)),
+            )
+    finally:
+        reset_factory_id(token)
+
+
+@pytest.mark.asyncio
+async def test_finance_summary_top_n_cap(pool, seeded):
+    """top_n_stores=1 returns only the top."""
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        out = await finance_summary(
+            pool, _TENANT,
+            (date(2026, 4, 21), date(2026, 4, 22)),
+            top_n_stores=1,
+        )
+    finally:
+        reset_factory_id(token)
+    assert len(out["top_stores"]) == 1
+    assert out["top_stores"][0]["store_name"] == "S1"

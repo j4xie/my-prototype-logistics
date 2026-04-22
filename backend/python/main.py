@@ -405,6 +405,10 @@ app.include_router(rfm.router, prefix="/api/smartbi", tags=["Customer RFM"])
 app.include_router(financial_ratios.router, prefix="/api/smartbi", tags=["Financial Ratios"])
 app.include_router(materialized_analytics_router, prefix="/api/smartbi", tags=["MaterializedAnalytics"])
 
+# Gold layer reads — v1 Phase B pilot (§5). Finance-summary from agg_daily.
+from smartbi.api import gold_reads
+app.include_router(gold_reads.router, prefix="/api/smartbi", tags=["Gold Reads"])
+
 # LLM usage admin (BUG-9 + 模型切换监控)
 from smartbi.api import llm_usage_admin
 app.include_router(llm_usage_admin.router, prefix="/api/smartbi/admin/llm-usage", tags=["LLM Usage Admin"])
