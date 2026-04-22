@@ -22,6 +22,7 @@ Public surface
 """
 from __future__ import annotations
 
+from smartbi.gold.dual_write import run_silver_dual_write, silver_dual_write_enabled
 from smartbi.gold.materializer import GoldMaterializer, MaterializeStats
 from smartbi.gold.pipeline import PipelineStats, ingest_and_materialize
 from smartbi.gold.triggers import (
@@ -42,4 +43,6 @@ __all__ = [
     "TriggerResult",
     "UploadCompleteTrigger",
     "ingest_and_materialize",
+    "run_silver_dual_write",
+    "silver_dual_write_enabled",
 ]

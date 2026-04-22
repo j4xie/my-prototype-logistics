@@ -38,6 +38,7 @@ from fastapi.responses import JSONResponse
 
 from smartbi.database.connection import SessionLocal
 from smartbi.database.models import SmartBiPgExcelUpload
+from smartbi.gold.dual_write import run_silver_dual_write, silver_dual_write_enabled
 from smartbi.services.materialized_analytics.hooks import schedule_materialization
 
 router = APIRouter(prefix="/api/smartbi/excel", tags=["Excel Async"])
@@ -482,6 +483,14 @@ async def _async_worker_impl(
             f"[stream-worker] upload {upload_id} COMPLETED in "
             f"{int((time.time() - start) * 1000)}ms: {total_rows} rows × {len(real_headers)} cols"
         )
+        # v1 Phase A Silver+Gold dual-write (behind SMARTBI_ENABLE_SILVER_DUAL_WRITE).
+        # Fires AFTER legacy commit so upload=COMPLETED is already visible.
+        # Failures are logged inside run_silver_dual_write and swallowed —
+        # legacy status is never affected.
+        if silver_dual_write_enabled():
+            await run_silver_dual_write(
+                factory_id=factory_id, upload_id=upload_id,
+            )
     except Exception as e:
         logger.exception(f"[stream-worker] upload_id={upload_id} crashed after {total_rows} rows")
         try:
