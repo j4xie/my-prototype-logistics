@@ -23,6 +23,7 @@ Public surface
 from __future__ import annotations
 
 from smartbi.gold.materializer import GoldMaterializer, MaterializeStats
+from smartbi.gold.pipeline import PipelineStats, ingest_and_materialize
 from smartbi.gold.triggers import (
     ApiAppendIncrementalTrigger,
     FieldRegistryReviewedTrigger,
@@ -37,6 +38,8 @@ __all__ = [
     "GoldMaterializer",
     "MaterializationTrigger",
     "MaterializeStats",
+    "PipelineStats",
     "TriggerResult",
     "UploadCompleteTrigger",
+    "ingest_and_materialize",
 ]
