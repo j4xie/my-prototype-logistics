@@ -773,9 +773,7 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
         query = request.effective_query
         insight_gen = InsightGenerator()
         # Build analysis context from query + any extra context
-        analysis_ctx = query
-        if request.context:
-            analysis_ctx = f"{query}\n补充信息: {request.context}"
+        analysis_ctx = _build_analysis_ctx(query, request.context)
         insights_result = await insight_gen.generate_insights(
             data,
             analysis_context=analysis_ctx,
@@ -1570,9 +1568,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
             financial_metrics = insight_gen._compute_financial_context(df)
 
             query = request.effective_query
-            analysis_ctx = query
-            if request.context:
-                analysis_ctx = f"{query}\n补充信息: {request.context}"
+            analysis_ctx = _build_analysis_ctx(query, request.context)
 
             # Bug #17 fix: include field_definitions in prompt so LLM knows
             # which columns are measures/dimensions/times for the selected upload
@@ -1732,6 +1728,49 @@ async def _stream_llm_response(
         user_prompt, system_prompt, max_tokens=max_tokens, temperature=temperature
     ):
         yield chunk
+
+
+def _build_analysis_ctx(query: str, context: Optional[Dict[str, Any]]) -> str:
+    """Build the analysis_ctx string that gets injected into the LLM prompt.
+
+    Handles conversation history in context.history (Fix 2, Apr 23 2026):
+    FE buffers last 3 Q+A and passes them so LLM can resolve pronouns
+    like "这个月" / "它" / "那家" back to specific entities from the
+    previous turn.
+
+    Falls back to the original `{query}\\n补充信息: {context}` stringify
+    when context is not dict-shaped or has no history key.
+    """
+    if not context:
+        return query
+    if isinstance(context, dict):
+        history = context.get("history")
+        if isinstance(history, list) and history:
+            # Keep the last 6 turns (3 Q+A pairs) to balance context vs token cost
+            history_lines: List[str] = []
+            for msg in history[-6:]:
+                if not isinstance(msg, dict):
+                    continue
+                role = msg.get("role") or msg.get("from")
+                content = str(msg.get("content") or msg.get("text") or "").strip()
+                if not content:
+                    continue
+                # Cap each message to 400 chars so a long previous answer
+                # doesn't blow out the prompt.
+                if len(content) > 400:
+                    content = content[:400] + "..."
+                if role in ("user", "human"):
+                    history_lines.append(f"[前一轮用户问]: {content}")
+                elif role in ("assistant", "ai", "bot"):
+                    history_lines.append(f"[前一轮我答]: {content}")
+            if history_lines:
+                return (
+                    "之前对话历史 (供指代消解, 请据此理解 '这个月'/'它'/'那家' 等指代):\n"
+                    + "\n".join(history_lines)
+                    + f"\n\n当前用户问题: {query}"
+                )
+    # Legacy behavior for non-history context
+    return f"{query}\n补充信息: {context}"
 
 
 @router.post("/drill-down-stream")

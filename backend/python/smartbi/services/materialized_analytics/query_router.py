@@ -246,6 +246,8 @@ _HARD_MODIFIERS = (
     "第二", "第三", "下一个", "接下来", "还有哪些",
     # Year-over-year — no template has historical year data
     "对比去年", "vs去年", "比去年",
+    # Pronominal reference — resolved only with conversation history (Fix 2)
+    "这个月", "那个月", "上个月", "这家", "那家", "这个", "那个",
 )
 
 _SOFT_MODIFIERS = (
@@ -254,9 +256,47 @@ _SOFT_MODIFIERS = (
 )
 
 
+# Apr 23 2026: explicit time limiters. When the user mentions a specific
+# time window ("8月", "2025-08", "昨天", "近7天"), pre-computed templates
+# that return upload-total aggregates give the wrong answer — the answer
+# needs to be filtered to that window. Route to LLM fallback so the
+# C1/C2/C3 time-scoped aggregate path in chat.py fires.
+_TIME_LIMITER_KEYWORDS = (
+    # Single-char month form: 1月, 2月 ... 12月 matched via regex below,
+    # not this tuple. Keep explicit phrases here:
+    "本月", "本周", "今日", "今天", "昨天", "前天", "当天",
+    "上月", "上周", "近一周", "近一月", "近30天", "近7天", "近3天",
+    "最近一周", "最近一月", "最近30天", "最近7天", "最近3天",
+    "最后两天", "最后一天", "月末", "月初", "周末",
+)
+
+# Regex: 年份(2024/2025) 或 月份(1月-12月) 或 日期(YYYY-MM-DD)
+import re as _re
+_TIME_LIMITER_RE = _re.compile(
+    r"(?:"
+    r"20\d{2}[-年]\d{1,2}|"          # 2025-08 / 2025年8
+    r"(?:^|\s|、|，|,)"       # boundary
+    r"(?:1[0-2]|[1-9])"               # 1-12
+    r"月"                             # 月字
+    r"|"
+    r"\d{1,2}月\d{1,2}日"             # 8月15日
+    r")"
+)
+
+
+def _has_time_limiter(query: str) -> bool:
+    if any(kw in query for kw in _TIME_LIMITER_KEYWORDS):
+        return True
+    if _TIME_LIMITER_RE.search(query):
+        return True
+    return False
+
+
 def _has_hard_modifier(query: str) -> bool:
     q = query.lower()
-    return any(kw.lower() in q for kw in _HARD_MODIFIERS)
+    if any(kw.lower() in q for kw in _HARD_MODIFIERS):
+        return True
+    return _has_time_limiter(query)
 
 
 def _has_soft_modifier(query: str) -> bool:

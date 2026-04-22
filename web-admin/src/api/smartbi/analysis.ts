@@ -140,6 +140,10 @@ export function chatAnalysisStream(
     fields?: Array<{ original: string; standard: string }>;
     table_type?: string;
     uploadId?: string;
+    // Fix 2 (Apr 23 2026): conversation history for pronominal/temporal
+    // reference resolution. Send last 3 Q+A (6 messages) so backend LLM
+    // can resolve "这个月" / "它" / "那家" from previous turns.
+    history?: Array<{ role: 'user' | 'assistant'; content: string }>;
   },
   callbacks: ChatStreamCallbacks,
 ): AbortController {
@@ -152,6 +156,9 @@ export function chatAnalysisStream(
     fields: params.fields,
     table_type: params.table_type,
     sheet_id: params.uploadId || undefined,
+    context: params.history && params.history.length > 0
+      ? { history: params.history }
+      : undefined,
   });
 
   (async () => {

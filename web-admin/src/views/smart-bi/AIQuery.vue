@@ -77,6 +77,11 @@ interface ChatMessage {
   sqlResult?: NL2SQLResponse;
   loading?: boolean;
   streaming?: boolean;
+  // Fix 3 (Apr 23 2026): source tags so the UI can render a "深入分析"
+  // CTA after pre-computed template answers. LLM fallback answers already
+  // contain analysis, so no CTA for those.
+  source?: string;
+  templateCode?: string;
 }
 
 // 当前分析上下文 (用于连续对话)
@@ -160,6 +165,26 @@ const useTemplate = (tpl: QueryTemplate) => {
   // Auto-send the template query
   handleSendMessage();
 };
+
+// Fix 3 (Apr 23 2026): deep-analysis CTA handlers. Both just feed a
+// follow-up query into the regular chat pipeline; because Fix 2 passes
+// the last 6 turns as context, the LLM understands "that" / "这个" / etc.
+// and gives grounded analysis on top of the template's numbers.
+function triggerDeepAnalysis(templateMsg: ChatMessage) {
+  const tplHint = templateMsg.templateCode
+    ? `（基于刚才的「${templateMsg.templateCode}」结果）`
+    : '';
+  inputQuery.value = `请结合上面这些数字，分析原因和影响${tplHint}，给出可执行的业务判断`;
+  handleSendMessage();
+}
+
+function triggerImprovementSuggestions(templateMsg: ChatMessage) {
+  const tplHint = templateMsg.templateCode
+    ? `针对「${templateMsg.templateCode}」暴露的问题`
+    : '针对上面这些数字';
+  inputQuery.value = `${tplHint}，给我3-5条可落地的改进建议，说明预期效果和优先级`;
+  handleSendMessage();
+}
 
 // NL2SQL 模式
 const nl2sqlMode = ref(false);
@@ -306,12 +331,25 @@ async function handleSendMessage() {
 
   isTyping.value = true;
 
+  // Fix 2 (Apr 23 2026): pass last 3 Q+A pairs as conversation history so
+  // backend LLM can resolve pronominal/temporal references ("这个月"/"它"/
+  // "那家") from previous turns. Exclude the welcome message, loading
+  // placeholder, and the current user message just pushed above.
+  const historyForContext = chatHistory.value
+    .filter((m) => m.id !== 'welcome' && m.id !== assistantId && !m.loading && m.content.trim())
+    .slice(-7, -1) // last 6 before current user msg (the 7th from end)
+    .map((m) => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+    }));
+
   const requestParams = {
     query,
     data: currentData.value.length > 0 ? currentData.value : undefined,
     fields: currentFields.value.length > 0 ? currentFields.value : undefined,
     table_type: currentTableType.value || undefined,
     uploadId: selectedUploadId.value ? String(selectedUploadId.value) : undefined,
+    history: historyForContext.length > 0 ? historyForContext : undefined,
   };
 
   // Helper to find the assistant message
@@ -427,6 +465,8 @@ async function handleSendMessage() {
         msg.chartConfig = msg.chartConfig || result.charts?.[0];
         msg.insights = result.insights;
         msg.table = result.table as ChatMessage['table'];
+        msg.source = result.source;
+        msg.templateCode = result.template_code;
         msg.loading = false;
         msg.streaming = false;
 
@@ -1031,6 +1071,33 @@ function handleKeydown(event: KeyboardEvent) {
                     />
                   </el-table>
                 </div>
+
+                <!-- Fix 3 (Apr 23 2026): deep-analysis CTA after template hits.
+                     Only shown for assistant messages that were served from the
+                     materialized cache — i.e. templated answer with structured
+                     numbers but no LLM reasoning. LLM fallback answers already
+                     contain analysis, so no CTA for those. -->
+                <div
+                  v-if="message.role === 'assistant' && !message.loading && !message.streaming && message.source === 'materialized_cache'"
+                  class="message-deep-analysis"
+                >
+                  <el-button
+                    size="small"
+                    type="primary"
+                    plain
+                    :icon="ChatDotRound"
+                    @click="triggerDeepAnalysis(message)"
+                  >
+                    深入分析 / 为什么这样
+                  </el-button>
+                  <el-button
+                    size="small"
+                    plain
+                    @click="triggerImprovementSuggestions(message)"
+                  >
+                    给出改进建议
+                  </el-button>
+                </div>
               </template>
             </div>
           </div>
@@ -1363,6 +1430,14 @@ function handleKeydown(event: KeyboardEvent) {
   .message-table {
     margin-top: 16px;
     max-width: 500px;
+  }
+
+  // Fix 3 (Apr 23 2026): deep-analysis CTA after template answers
+  .message-deep-analysis {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
   }
 }
 

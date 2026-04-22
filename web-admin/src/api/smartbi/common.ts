@@ -377,6 +377,11 @@ export interface AnalysisResult {
     data: Record<string, unknown>[];
   };
   error?: string;
+  // Apr 23 2026 (Fix 3): whether the answer came from the pre-computed
+  // template cache ('materialized_cache') or LLM fallback (undefined).
+  // Used by the FE to decide whether to show a "深入分析" follow-up CTA.
+  source?: string;
+  template_code?: string;
 }
 
 /**
