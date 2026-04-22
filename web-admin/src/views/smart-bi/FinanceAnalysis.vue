@@ -1769,6 +1769,30 @@ onUnmounted(() => {
       </div>
     </div>
 
+    <!-- Phase B v0 Gold preview CTA — links to /smart-bi/gold-preview which
+         reads agg_* (Silver+Gold) directly. Appears to all users; once the
+         Java READ_FROM=GOLD cutover lands this banner can become a toggle
+         on this same page. For now, it's an exploration entry point. -->
+    <el-alert
+      type="info"
+      :closable="false"
+      show-icon
+      class="gold-cta"
+      title="🆕 Gold 数据层预览"
+    >
+      <template #default>
+        <div class="gold-cta-row">
+          <span>试用基于 Silver+Gold (agg_*) 的新数据路径 — 6 个 KPI 查询并发,直连 Python。</span>
+          <el-button
+            size="small"
+            type="primary"
+            plain
+            @click="$router.push('/smart-bi/gold-preview')"
+          >打开 Gold 预览</el-button>
+        </div>
+      </template>
+    </el-alert>
+
     <!-- 筛选栏 -->
     <el-card class="filter-card">
       <div class="filter-bar">
@@ -2739,5 +2763,16 @@ onUnmounted(() => {
   .exploration-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.gold-cta {
+  margin-bottom: 16px;
+}
+.gold-cta-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: space-between;
+  flex-wrap: wrap;
 }
 </style>

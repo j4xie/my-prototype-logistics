@@ -90,6 +90,30 @@ class CanonicalRow:
     discounts: Tuple[Tuple[str, Decimal, int], ...] = ()
 
 
+@dataclass(frozen=True)
+class CostLine:
+    """One cost entry — period-scoped by default (transaction_id=None).
+
+    cost_type is one of 'material' / 'labor' / 'overhead' / 'other'.
+    category_name is free-form ("食材-主料", "人工-正式员工", "租金"), will
+    be upserted into dim_cost_category.
+
+    Attach transaction_id when the cost is per-bill (rare; e.g. per-order
+    COGS). For monthly rent or payroll, leave it None and set `date` to
+    the period's first-of-month.
+    """
+    factory_id: str
+    source_type: str
+    cost_type: str
+    category_name: str
+    date: date
+    amount: Decimal
+    upload_id: Optional[int] = None
+    transaction_id: Optional[int] = None
+    is_fixed: bool = False
+    note: Optional[str] = None
+
+
 @dataclass
 class NormalizeStats:
     """Running totals produced by `ingest_rows`."""
@@ -99,6 +123,7 @@ class NormalizeStats:
     payments_written: int = 0
     discounts_written: int = 0
     duplicates_skipped: int = 0
+    cost_lines_written: int = 0
 
 
 _TXN_INSERT_SQL = """
@@ -232,6 +257,47 @@ class SilverNormalizer:
                     )
 
         return txn_id
+
+    async def write_cost_line(self, line: CostLine) -> int:
+        """Write one cost entry. Resolves dim_cost_category on-the-fly,
+        inserts fact_cost_line, returns the new id.
+
+        Raises ValueError on factory_id mismatch (like write_row).
+        """
+        if line.factory_id != self.factory_id:
+            raise ValueError(
+                f"CostLine factory_id {line.factory_id!r} doesn't match "
+                f"normalizer's {self.factory_id!r}"
+            )
+        category_id = await self.dim.resolve_cost_category(
+            line.category_name, line.cost_type, is_fixed=line.is_fixed,
+        )
+        async with self.pool.acquire() as conn:
+            fid = await conn.fetchval(
+                """
+                INSERT INTO fact_cost_line (
+                    factory_id, upload_id, source_type,
+                    transaction_id, category_id, date, amount, note
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                RETURNING id
+                """,
+                line.factory_id, line.upload_id, line.source_type,
+                line.transaction_id, category_id, line.date, line.amount, line.note,
+            )
+        return fid
+
+    async def ingest_cost_lines(self, lines: List[CostLine]) -> int:
+        """Batch write. Per-line failures are logged but don't abort the
+        batch. Returns count written."""
+        n = 0
+        for line in lines:
+            try:
+                await self.write_cost_line(line)
+                n += 1
+            except Exception as e:
+                logger.exception("write_cost_line failed: %s", e)
+        return n
 
     async def ingest_rows(self, rows: List[CanonicalRow]) -> NormalizeStats:
         """Write many rows, accumulating stats. Per-row failures are

@@ -22,6 +22,7 @@ from smartbi.canonical.field_registry import (
 )
 from smartbi.canonical.normalizer import (
     CanonicalRow,
+    CostLine,
     NormalizeStats,
     SilverNormalizer,
 )
@@ -29,6 +30,7 @@ from smartbi.canonical.normalizer import (
 __all__ = [
     "CanonicalRow",
     "ComboItem",
+    "CostLine",
     "DimResolver",
     "FieldRegistry",
     "NormalizeStats",

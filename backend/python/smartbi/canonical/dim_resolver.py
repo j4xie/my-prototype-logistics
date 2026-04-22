@@ -88,6 +88,16 @@ ON CONFLICT (factory_id, name)
 RETURNING channel_id
 """
 
+_COST_CATEGORY_UPSERT_SQL = """
+INSERT INTO dim_cost_category (factory_id, name, cost_type, is_fixed)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (factory_id, name)
+  DO UPDATE SET updated_at  = NOW(),
+                cost_type   = EXCLUDED.cost_type,
+                is_fixed    = EXCLUDED.is_fixed
+RETURNING category_id
+"""
+
 _DISCOUNT_UPSERT_SQL = """
 INSERT INTO dim_discount (
     factory_id, name, discount_type, platform,
@@ -121,6 +131,7 @@ class DimResolver:
         self._staff_cache: Dict[Tuple[str, Optional[int]], int] = {}
         self._channel_cache: Dict[str, int] = {}
         self._discount_cache: Dict[str, int] = {}
+        self._cost_category_cache: Dict[str, int] = {}
 
     # ── Store ────────────────────────────────────────────────
 
@@ -243,6 +254,34 @@ class DimResolver:
         self._discount_cache[name] = did
         return did
 
+    # ── Cost category ────────────────────────────────────────
+
+    async def resolve_cost_category(
+        self,
+        name: str,
+        cost_type: str,
+        *,
+        is_fixed: bool = False,
+    ) -> int:
+        """Upsert a cost category. cost_type must be one of
+        material/labor/overhead/other — enforced by DB CHECK."""
+        if not name:
+            raise ValueError("cost category name required")
+        if cost_type not in ("material", "labor", "overhead", "other"):
+            raise ValueError(
+                f"cost_type must be material/labor/overhead/other, got {cost_type!r}"
+            )
+        cached = self._cost_category_cache.get(name)
+        if cached is not None:
+            return cached
+        async with self.pool.acquire() as conn:
+            cid = await conn.fetchval(
+                _COST_CATEGORY_UPSERT_SQL,
+                self.factory_id, name, cost_type, is_fixed,
+            )
+        self._cost_category_cache[name] = cid
+        return cid
+
     # ── Introspection (for tests / logging) ──────────────────
 
     def cache_stats(self) -> Dict[str, int]:
@@ -252,4 +291,5 @@ class DimResolver:
             "staff": len(self._staff_cache),
             "channel": len(self._channel_cache),
             "discount": len(self._discount_cache),
+            "cost_category": len(self._cost_category_cache),
         }
