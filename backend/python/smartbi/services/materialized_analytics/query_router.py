@@ -178,8 +178,12 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
     ),
     (
         "dish_store_drill",
-        # "菜品 × 门店 × 什么菜哪家卖得多"
-        [["菜品", "哪个菜", "什么菜", "菜"],
+        # W4-Q10: match "X哪家店卖得最多" where X is a dish name. Group 1 accepts
+        # either an explicit 菜/菜品 keyword OR a "卖/点得最多" phrase (implies user
+        # named a specific dish). Group 2 requires store reference. Placed before
+        # top_n_by_dim so "米饭哪家门店卖得最多" routes here, not to generic top-N.
+        [["菜品", "哪个菜", "什么菜", "菜",
+          "卖得最多", "卖得最好", "卖最多", "卖最好", "点最多", "点得最多"],
          ["门店", "店铺", "哪家店", "哪家分店", "店"]],
     ),
     # Note: revenue_management_report / stored_value_card_consumption /
@@ -209,48 +213,61 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
 ]
 
 
-# W4-Q4: modifier keywords that indicate query has a filter/exclusion/drill-down
-# intent. When present, cached template is wrong — we need LLM to interpret the
-# filter. Return None → query falls through to LLM fallback with cache as context.
-_MODIFIER_KEYWORDS = (
-    # Exclusion / filter
+# W4-Q4 / W4-Q10: two modifier classes with different severity.
+#
+# HARD modifiers: cached template is guaranteed wrong. Pre-empt the router
+#   → immediately LLM fallback. User said "exclude", "why", "next" — no
+#   cached aggregation can honor that.
+# SOFT modifiers: no template match after all. Log LLM fallback reason.
+#   User said "which store" — if dish_store_drill matched, serve it; else LLM.
+_HARD_MODIFIERS = (
+    # Exclusion / filter — no template can re-filter cache results
     "排除", "除了", "不算", "去掉", "过滤", "剔除", "忽略",
-    # Narrowing
-    "只看", "只要", "只统计", "仅", "单独", "特定",
-    # Comparison against something external
-    "对比去年", "vs去年", "同比", "比去年",
-    # Drill-down by extra dim
-    "哪家店", "哪个门店", "哪家分店", "哪家铺子",
-    # Why / cause
+    # Narrowing — too specific for pre-computed cache
+    "只看", "只要", "只统计", "单独", "特定",
+    # Why / cause — no causal-inference template
     "为什么", "为啥", "原因", "归因", "解释",
-    # Next / more
+    # Pronominal reference / nth — template returns Top N but can't jump
     "第二", "第三", "下一个", "接下来", "还有哪些",
+    # Year-over-year — no template has historical year data
+    "对比去年", "vs去年", "比去年",
+)
+
+_SOFT_MODIFIERS = (
+    # Drill-down by extra dim — dish_store_drill handles some cases
+    "哪家店", "哪个门店", "哪家分店", "哪家铺子",
 )
 
 
-def _has_modifier(query: str) -> bool:
-    """True if query contains a filter/exclusion/causal/drill modifier that
-    the keyword-only template router cannot honor."""
+def _has_hard_modifier(query: str) -> bool:
     q = query.lower()
-    return any(kw.lower() in q for kw in _MODIFIER_KEYWORDS)
+    return any(kw.lower() in q for kw in _HARD_MODIFIERS)
+
+
+def _has_soft_modifier(query: str) -> bool:
+    q = query.lower()
+    return any(kw.lower() in q for kw in _SOFT_MODIFIERS)
 
 
 def match_template(query: str) -> Optional[str]:
     """Try to match user query to a template code.
 
     Returns template_code if matched, None otherwise.
-    All groups must have ≥1 keyword hit in query.
 
-    W4-Q4: if query has exclusion/drill modifiers (排除/哪家店/为什么/etc.),
-    return None so LLM can handle the nuance. Templates don't know how to
-    re-filter results based on user input.
+    Order:
+      1. Check HARD modifiers (排除/为什么/第二) → return None immediately.
+         Even if a template appears to match, the user's modifier guarantees
+         the cached result is wrong.
+      2. Check patterns in priority order. First match wins.
+      3. After loop, if no match AND SOFT modifier present, also return None
+         with explicit log.
     """
     if not query or not isinstance(query, str):
         return None
-    if _has_modifier(query):
-        logger.info(f"[query-router] modifier detected in '{query[:50]}' → LLM fallback")
+    if _has_hard_modifier(query):
+        logger.info(f"[query-router] hard modifier in '{query[:50]}' → LLM fallback")
         return None
-    q = query.lower()  # case-insensitive (works for Chinese too — pass-through)
+    q = query.lower()
     for code, groups in _PATTERNS:
         hit = True
         for group in groups:
@@ -260,6 +277,9 @@ def match_template(query: str) -> Optional[str]:
         if hit:
             logger.info(f"[query-router] matched '{query[:50]}' → {code}")
             return code
+    if _has_soft_modifier(query):
+        logger.info(f"[query-router] no template + soft modifier in '{query[:50]}' → LLM")
+        return None
     logger.debug(f"[query-router] no match for '{query[:50]}'")
     return None
 
