@@ -301,7 +301,7 @@ class ReviewsSentimentSummary(AnalysisTemplate):
             if black_pearl_candidate_count > 0:
                 parts[-1] += f",💎 {black_pearl_candidate_count} 家已达黑珍珠 3-钻初选资格"
             parts[-1] += "。"
-        parts.append(bench.industry_footer_short())
+        parts.append(bench.industry_footer_by_context("review"))
         insight_text = " ".join(parts)
 
         # Chart — star distribution pie

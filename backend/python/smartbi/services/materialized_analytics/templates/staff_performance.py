@@ -60,8 +60,16 @@ class StaffPerformance(AnalysisTemplate):
         # the 服务员 column (data entry error or merged cells). These are role-label contamination,
         # not real names. Filter at template level since classifier can only fix COLUMN roles, not
         # cell VALUES. Meta-rows like 合计/总计 already filtered by PolarsBackend._META_LABELS.
-        _ROLE_NAME_NOISE = {"收银", "收银员", "服务员", "销售员", "厨师", "店长", "经理",
-                            "合计", "总计", "小计", "汇总"}
+        _ROLE_NAME_NOISE = {
+            # Role labels used as cell values (data-entry error / merged cells)
+            "收银", "收银员", "服务员", "销售员", "厨师", "店长", "经理",
+            "店员", "员工", "点菜", "点单员", "后厨", "前厅", "外卖员",
+            "服务生", "主管", "收银台", "大堂", "兼职", "临时工",
+            # Meta-rows
+            "合计", "总计", "小计", "汇总", "总和", "平均",
+            # Common generic placeholders
+            "默认", "系统", "无", "未知", "暂无",
+        }
         ranking_df = (
             backend._df
             .filter(

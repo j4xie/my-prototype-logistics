@@ -182,7 +182,7 @@ class PeriodComparisonTrend(AnalysisTemplate):
                 parts.append(f"🎯 远超行业同期 ({industry:+.1f}%),表现优异。")
             elif local < industry - 5:
                 parts.append(f"⚠ 落后行业同期 ({industry:+.1f}%),需关注。")
-        parts.append(bench.industry_footer_short())
+        parts.append(bench.industry_footer_by_context("revenue"))
         insight_text = " ".join(parts)
 
         # ECharts — month bars with delta labels

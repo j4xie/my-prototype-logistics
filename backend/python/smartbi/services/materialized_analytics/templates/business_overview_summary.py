@@ -231,7 +231,7 @@ class BusinessOverviewSummary(AnalysisTemplate):
         if total_discount > 0 and total_revenue > 0:
             discount_pct = round(total_discount / total_revenue * 100, 2)
             parts.append(f" 折扣/优惠累计 {total_discount:,.0f} 元 (占营业额 {discount_pct:.1f}%)。")
-        parts.append(bench.industry_footer_short())
+        parts.append(bench.industry_footer_by_context("business_overview"))
         insight_text = " ".join(parts)
 
         # ECharts bar — store ranking

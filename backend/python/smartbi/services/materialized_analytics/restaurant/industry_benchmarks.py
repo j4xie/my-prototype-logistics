@@ -197,12 +197,73 @@ BLACK_PEARL_LISTED_DAYS_MIN = 450            # 黑珍珠需开店+收录早于�
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────
 def industry_footer_short() -> str:
-    """Short one-line industry footer to append at end of template insights."""
+    """Generic 1-line industry footer (legacy — prefer industry_footer_by_context)."""
     return (
         f"（参考:2024 行业规模 {MARKET_SIZE_TRILLION_CNY_2024} 万亿元,"
         f"连锁化率 {CHAIN_RATE_PCT_2024:.0f}%,"
         f"堂食客单价 YoY {DINE_IN_AVG_PRICE_YOY_PCT_2024:+.1f}%）"
     )
+
+
+def industry_footer_by_context(template_type: str) -> str:
+    """Return industry benchmark footer tailored to template type.
+
+    Different templates benefit from different benchmarks:
+      dish     — per-category chain rates + fastest-growing categories
+      revenue  — client-price trend + chain-rate
+      finance  — recharge vs card trends
+      member   — TOP100 franchise scale + new-entrant exit
+      channel  — online-vs-offline multiplier + county opportunity
+      default  — generic market summary
+
+    Categories auto-detected from the `template_type` string keyword.
+    """
+    t = (template_type or "").lower()
+
+    if any(k in t for k in ("dish", "菜品", "商品", "slow", "top_n")):
+        return (
+            f"（参考 2024 品类基准:"
+            f"快餐连锁化率 {CATEGORY_CHAIN_RATE_PCT_2024['快餐']:.0f}%,"
+            f"茶饮 {CATEGORY_CHAIN_RATE_PCT_2024['茶饮']:.0f}%,"
+            f"正餐仅 {CATEGORY_CHAIN_RATE_PCT_2024['正餐']:.0f}%;"
+            f"新茶饮 YoY +{CATEGORY_GROWTH_YOY_PCT_2024['新茶饮']:.0f}% 增长最快）"
+        )
+
+    if any(k in t for k in ("revenue", "profit", "business_overview", "营业", "利润")):
+        return (
+            f"（参考 2024 行业:市场规模 {MARKET_SIZE_TRILLION_CNY_2024} 万亿元,"
+            f"堂食客单价 YoY {DINE_IN_AVG_PRICE_YOY_PCT_2024:+.1f}%,"
+            f"人均订单量 YoY +{DINE_IN_ORDER_QTY_YOY_PCT_2024:.1f}%）"
+        )
+
+    if any(k in t for k in ("member", "card", "会员", "储值")):
+        return (
+            f"（参考 2024 行业:TOP100 加盟品牌 {TOP100_FRANCHISE_TOTAL_STORES_2025 // 1000}K 门店,"
+            f"新商户 ≤1年 退出率 {EXIT_RATE_NEW_MERCHANT_PCT_2024:.1f}% — 会员锁客是长期优势）"
+        )
+
+    if any(k in t for k in ("channel", "delivery", "groupon", "外卖", "团购", "渠道")):
+        return (
+            f"（参考 2024 行业:线上增速 {ONLINE_VS_OFFLINE_MULTIPLIER_2024:.1f}× 整体市场,"
+            f"县域餐饮 YoY +{COUNTY_LEVEL_REV_YOY_PCT_2024:.1f}% 最活跃）"
+        )
+
+    if any(k in t for k in ("reverse", "refund", "anomaly", "异常", "退")):
+        return (
+            f"（参考:新商户 ≤1年 退出率 {EXIT_RATE_NEW_MERCHANT_PCT_2024:.1f}%,"
+            f" 5年+ 稳态店仅 {EXIT_RATE_BY_YEARS_OF_OPERATION_PCT_2024['5年+']:.0f}%)"
+        )
+
+    if any(k in t for k in ("review", "评价", "star")):
+        return (
+            f"（参考 2024:好评榜门槛 星级≥{QUALITY_RANKING_MIN_STAR},"
+            f"评价数≥{QUALITY_RANKING_MIN_REVIEWS};"
+            f"必吃榜口味分≥{MUST_EAT_TASTE_THRESHOLD};"
+            f"黑珍珠 3-钻 星级≥{BLACK_PEARL_MIN_STAR}+口味≥{BLACK_PEARL_MIN_TASTE}+评价≥{BLACK_PEARL_MIN_REVIEWS}）"
+        )
+
+    # Default generic footer
+    return industry_footer_short()
 
 
 def category_growth_benchmark(category_hint: str) -> float | None:

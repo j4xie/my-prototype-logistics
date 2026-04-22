@@ -30,6 +30,16 @@ _STATUS_COL = "订单状态"
 _REVERSE_STATUS_VALUES = ("反结账", "已反结", "反结")
 _TOP_N = 10
 
+# Same noise filter as staff_performance — prevents "收银/点菜" generic role labels
+# from dominating the by-staff breakdown when cashier terminal stamped all orders.
+_STAFF_NOISE = {
+    "收银", "收银员", "服务员", "销售员", "厨师", "店长", "经理",
+    "店员", "员工", "点菜", "点单员", "后厨", "前厅", "外卖员",
+    "服务生", "主管", "收银台", "大堂", "兼职", "临时工",
+    "合计", "总计", "小计", "汇总", "总和", "平均",
+    "默认", "系统", "无", "未知", "暂无",
+}
+
 
 @register
 class ReverseCheckoutStats(AnalysisTemplate):
@@ -103,7 +113,9 @@ class ReverseCheckoutStats(AnalysisTemplate):
         staff_col = find_staff_col(cols)
         date_col = find_date_col(cols)
         by_store = self._group_top(reverse_df, store_col) if store_col else []
-        by_staff = self._group_top(reverse_df, staff_col) if staff_col else []
+        # W4-Q9: filter generic role labels (收银/点菜 etc.) from staff stats —
+        # they're cashier-terminal stamps, not actual people responsible.
+        by_staff = self._group_top(reverse_df, staff_col, filter_noise=_STAFF_NOISE) if staff_col else []
         by_date = self._group_top(reverse_df, date_col) if date_col else []
 
         # Build insight — lead with headline, then call out worst dim
@@ -166,12 +178,18 @@ class ReverseCheckoutStats(AnalysisTemplate):
             insight_text="".join(parts),
         )
 
-    def _group_top(self, df: "pl.DataFrame", col: str) -> List[Dict[str, Any]]:
+    def _group_top(
+        self, df: "pl.DataFrame", col: str, filter_noise: Optional[set] = None
+    ) -> List[Dict[str, Any]]:
         if col not in df.columns or df.height == 0:
             return []
+        base = df.filter(pl.col(col).is_not_null())
+        if filter_noise:
+            base = base.filter(
+                ~pl.col(col).cast(pl.Utf8, strict=False).is_in(list(filter_noise))
+            )
         grouped = (
-            df.filter(pl.col(col).is_not_null())
-            .group_by(col)
+            base.group_by(col)
             .agg(pl.len().alias("count"))
             .sort("count", descending=True)
             .head(_TOP_N)

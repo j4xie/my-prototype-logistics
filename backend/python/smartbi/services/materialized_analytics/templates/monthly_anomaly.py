@@ -28,7 +28,9 @@ from .registry import register
 _META_LABELS = ("合计", "总计", "小计", "汇总")
 _MOM_SIGNIFICANT = 20.0     # |Δ%| ≥ 20% = noteworthy
 _MOM_ALERT = 30.0           # |Δ%| ≥ 30% = alert
-_Z_OUTLIER = 1.5            # |z| ≥ 1.5 vs 12-month mean = outlier
+_Z_OUTLIER = 2.0            # |z| ≥ 2.0 vs 12-month mean (standard 95% outlier threshold).
+                            # Previous 1.5 was too loose — qhj 2025-08 +8.3% MoM flagged
+                            # even though MoM was below significant threshold.
 
 
 @register
