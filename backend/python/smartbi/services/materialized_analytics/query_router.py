@@ -292,11 +292,38 @@ def _has_time_limiter(query: str) -> bool:
     return False
 
 
+# Fix 4 (Apr 23 2026): relational drill-down queries. User references a
+# ranked entity from a previous template ("第一名菜品在哪家店卖得最好",
+# "Top 1 服务员主要卖什么菜", "外卖占比最低的门店是哪家") and asks for
+# cross-dimensional analysis. No single template covers this — need LLM
+# with conversation history (Fix 2) to resolve the anaphor and do the
+# drill. Without this routing, template patterns greedily match the dim
+# keyword (菜品/服务员/门店) and return full-upload Top-N, ignoring the
+# "which store/dish/etc." part of the query.
+_RELATIONAL_DRILL_RE = _re.compile(
+    r"(?:"
+    # Anaphoric rank prefix at start of query + cross-dim interrogative
+    r"^(?:第[一二三四五六七八九十]名|Top\s*\d+)"
+    r".*?(?:哪家|哪款|哪种|哪个|什么菜|主要卖|在哪|是哪|卖.*得最)"
+    r"|"
+    # "最X的{dim} 是哪家/在哪家" — per-entity min/max that no template stores
+    r"最(?:高|低|多|少|好|差)的(?:门店|店|员工|服务员|分店|铺子|区域)"
+    r".*?(?:是哪家|在哪家|哪家|是哪个|是哪)"
+    r")"
+)
+
+
+def _has_relational_drill(query: str) -> bool:
+    return bool(_RELATIONAL_DRILL_RE.search(query))
+
+
 def _has_hard_modifier(query: str) -> bool:
     q = query.lower()
     if any(kw.lower() in q for kw in _HARD_MODIFIERS):
         return True
-    return _has_time_limiter(query)
+    if _has_time_limiter(query):
+        return True
+    return _has_relational_drill(query)
 
 
 def _has_soft_modifier(query: str) -> bool:
@@ -339,6 +366,208 @@ def match_template(query: str) -> Optional[str]:
     return None
 
 
+# Apr 23 2026 — KPI key → Chinese label map. Templates emit technical keys
+# (peak_month, worst_mom_delta_pct, combo_orders) that confuse non-technical
+# users. This map translates them to readable labels at display time.
+# Unknown keys fall back to humanized-snake-case. Unit hints are appended
+# when present.
+_KPI_LABEL_MAP: Dict[str, str] = {
+    # Monthly anomaly
+    "peak_month": "峰值月份",
+    "trough_month": "谷值月份",
+    "worst_month": "最差月份",
+    "best_month": "最佳月份",
+    "anomaly_count": "异常月数",
+    "worst_mom_delta_pct": "最大波动率",
+    "best_mom_delta_pct": "最大涨幅",
+    "avg_month_revenue": "月均营业额",
+    "peak_revenue": "峰值营业额",
+    "trough_revenue": "谷值营业额",
+    # Dish sales Top N
+    "top_dish_name": "冠军菜品",
+    "top_dish_qty": "冠军销量",
+    "top_dish_revenue": "冠军营业额",
+    "distinct_dishes": "菜品总数",
+    "second_dish_name": "亚军菜品",
+    "second_dish_qty": "亚军销量",
+    # Staff performance
+    "role_type": "角色类型",
+    "top_staff": "Top1 员工",
+    "top_revenue": "Top1 销售额",
+    "staff_count": "员工人数",
+    "avg_per_staff": "人均销售额",
+    # Combo usage
+    "combo_orders": "含套餐订单",
+    "total_orders": "总订单数",
+    "combo_rate": "套餐使用率",
+    "combo_usage_rate": "套餐使用率",
+    "top_combo_name": "Top1 套餐",
+    "top_combo_qty": "Top1 套餐销量",
+    "top_combo_revenue": "Top1 套餐营收",
+    # Reverse checkout
+    "reverse_count": "反结账数",
+    "reverse_share_pct": "反结账占比",
+    "top_store_reverse": "高发门店",
+    # Channel analysis
+    "top_channel": "主导渠道",
+    "dine_in_share": "堂食占比",
+    "takeaway_share": "外卖占比",
+    "takeaway_total": "外卖订单数",
+    "dine_in_total": "堂食订单数",
+    "channel_count": "渠道数量",
+    "avg_dine_in": "堂食客单价",
+    "avg_takeaway": "外卖客单价",
+    "dine_in_avg_price": "堂食客单价",
+    "takeaway_avg_price": "外卖客单价",
+    # Dish×store drill
+    "top_dish": "头名菜品",
+    "dominant_store": "主导门店",
+    "top_dish_top_store": "冠军菜主销门店",
+    "top_dish_top_store_pct": "主销集中度",
+    # Period comparison
+    "month_count": "覆盖月数",
+    "latest_month": "最新月",
+    "latest_revenue": "最新月营业额",
+    "latest_mom_delta_pct": "最新环比",
+    "dod_delta_pct": "日环比",
+    # Table type comparison
+    "avg_hall_spend": "大厅客单",
+    "avg_vip_spend": "包厢客单",
+    "avg_takeaway_spend": "外卖客单",
+    "dominant_type": "主导类型",
+    # Time slot revenue
+    "peak_slot": "营业高峰时段",
+    "peak_area": "高峰区域",
+    # Weekday/weekend
+    "weekday_avg_order": "工作日客单",
+    "weekend_avg_order": "周末客单",
+    "delta_pct": "差异百分比",
+    "weekend_share_pct": "周末占比",
+    # Payment method
+    "top_payment": "Top1 付款方式",
+    "top_payment_share": "Top1 占比",
+    "total_payment": "付款合计",
+    "payment_method_count": "付款方式数",
+    # Stored value card
+    "card_orders": "储值卡订单",
+    "card_revenue": "储值卡收入",
+    "card_share_pct": "储值卡占比",
+    # Member consumption
+    "member_revenue": "会员营收",
+    "member_orders": "会员订单",
+    "member_share_pct": "会员占比",
+    "avg_spend": "会员人均",
+    # Groupon / promotion
+    "groupon_revenue": "团购营收",
+    "groupon_orders": "团购订单",
+    "promotion_total": "促销总额",
+    "coupon_total": "代金券总额",
+    # Reviews sentiment
+    "avg_rating": "平均评分",
+    "positive_share_pct": "好评率",
+    "negative_share_pct": "差评率",
+    "complaint_count": "投诉数",
+    # Kitchen dispatch
+    "top_kitchen_station": "主档口",
+    # Business overview
+    "total_revenue": "总营业额",
+    "total_orders_all": "总订单量",
+    "avg_daily_revenue": "日均营业额",
+    # Domain-agnostic generic
+    "count": "数量",
+    "sum": "合计",
+    "avg": "均值",
+    "max": "最大",
+    "min": "最小",
+}
+
+# Unit suffix per key. Empty string means no unit. Percentage keys (ending
+# in _pct / _rate / _share) automatically get "%" appended.
+_KPI_UNIT_MAP: Dict[str, str] = {
+    "peak_revenue": " 元",
+    "trough_revenue": " 元",
+    "avg_month_revenue": " 元",
+    "top_dish_qty": " 份",
+    "top_dish_revenue": " 元",
+    "distinct_dishes": " 个",
+    "top_revenue": " 元",
+    "staff_count": " 位",
+    "avg_per_staff": " 元",
+    "combo_orders": " 单",
+    "total_orders": " 单",
+    "top_combo_qty": " 份",
+    "top_combo_revenue": " 元",
+    "reverse_count": " 笔",
+    "avg_dine_in": " 元",
+    "avg_takeaway": " 元",
+    "dine_in_avg_price": " 元",
+    "takeaway_avg_price": " 元",
+    "takeaway_total": " 单",
+    "dine_in_total": " 单",
+    "channel_count": " 个",
+    "latest_revenue": " 元",
+    "avg_hall_spend": " 元",
+    "avg_vip_spend": " 元",
+    "avg_takeaway_spend": " 元",
+    "weekday_avg_order": " 元",
+    "weekend_avg_order": " 元",
+    "total_payment": " 元",
+    "payment_method_count": " 种",
+    "card_orders": " 单",
+    "card_revenue": " 元",
+    "member_revenue": " 元",
+    "member_orders": " 单",
+    "avg_spend": " 元",
+    "groupon_revenue": " 元",
+    "groupon_orders": " 单",
+    "promotion_total": " 元",
+    "coupon_total": " 元",
+    "complaint_count": " 条",
+    "total_revenue": " 元",
+    "total_orders_all": " 单",
+    "avg_daily_revenue": " 元",
+    "anomaly_count": " 个",
+    "month_count": " 个",
+}
+
+
+def _humanize_kpi_key(key: str) -> str:
+    """Fallback humanization when key isn't in _KPI_LABEL_MAP.
+    Snake_case → Space Separated, with a couple common word swaps."""
+    parts = key.replace("_", " ").split()
+    replacements = {
+        "pct": "占比", "rate": "率", "share": "份额", "count": "数",
+        "avg": "均值", "total": "合计", "top": "Top",
+    }
+    return " ".join(replacements.get(p.lower(), p) for p in parts)
+
+
+def _fmt_kpi_value(key: str, value: Any) -> str:
+    """Format a single KPI value with unit + label.
+
+    Rules:
+      - Floats render as comma-separated with 2 decimals. If the key looks
+        like a percentage (_pct / _rate / _share), append '%'.
+      - Integers render as comma-separated.
+      - Strings pass through.
+      - Explicit unit in _KPI_UNIT_MAP wins over auto-percent.
+    """
+    if value is None:
+        return "—"
+    is_pct = key.endswith("_pct") or key.endswith("_rate") or key.endswith("_share_pct")
+    unit = _KPI_UNIT_MAP.get(key, "")
+    if not unit and is_pct:
+        unit = "%"
+    if isinstance(value, bool):
+        return "是" if value else "否"
+    if isinstance(value, float):
+        # Percentages usually come as 0-100 range from templates
+        return f"{value:,.2f}{unit}"
+    if isinstance(value, int):
+        return f"{value:,}{unit}"
+    return f"{value}{unit}" if unit else str(value)
+
+
 def format_cached_as_sse(template_result: Dict, query: str) -> Dict:
     """Format a cached template result as a response dict suitable for SSE streaming.
 
@@ -360,10 +589,8 @@ def format_cached_as_sse(template_result: Dict, query: str) -> Dict:
     if kpis:
         answer += "**关键指标:**\n"
         for k, v in list(kpis.items())[:8]:
-            if isinstance(v, (int, float)):
-                answer += f"- {k}: {v:,.2f}\n" if isinstance(v, float) else f"- {k}: {v:,}\n"
-            else:
-                answer += f"- {k}: {v}\n"
+            label = _KPI_LABEL_MAP.get(k) or _humanize_kpi_key(k)
+            answer += f"- **{label}**: {_fmt_kpi_value(k, v)}\n"
 
     charts = []
     if chart_config and isinstance(chart_config, dict):
