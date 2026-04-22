@@ -20,13 +20,12 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
-from ..restaurant.schema_helpers import find_customer_col
+from ..restaurant.schema_helpers import find_customer_col, find_table_col
 from ..restaurant.table_classifier import classify_table
 from ..schema import DataSchema, Domain
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
 
-_TABLE_COL = "桌位"
 _SHIFT_COL = "班次"
 _OPEN_TIME_CANDIDATES = ("开单时间", "下单时间", "点单时间", "结单时间")
 _REVENUE_CANDIDATES = ("实收额", "实收", "营业额", "应收金额")
@@ -102,7 +101,7 @@ class RevenueManagementReport(AnalysisTemplate):
         if schema.domain not in (Domain.RESTAURANT, Domain.UNKNOWN):
             return False
         names = {f.name for f in schema.fields}
-        if _TABLE_COL not in names:
+        if find_table_col(names) is None:
             return False
         has_time_signal = (_SHIFT_COL in names) or any(c in names for c in _OPEN_TIME_CANDIDATES)
         return has_time_signal
@@ -117,10 +116,16 @@ class RevenueManagementReport(AnalysisTemplate):
                 code=self.code, title=self.title, data={},
                 applies=False, skip_reason="no revenue column found",
             )
+        table_col = find_table_col(cols)
+        if table_col is None:
+            return TemplateResult(
+                code=self.code, title=self.title, data={},
+                applies=False, skip_reason="no table/source column",
+            )
         open_time_col = next((c for c in _OPEN_TIME_CANDIDATES if c in cols), None)
         customer_col = find_customer_col(cols)
 
-        use_cols = [_TABLE_COL, revenue_col]
+        use_cols = [table_col, revenue_col]
         if _SHIFT_COL in cols: use_cols.append(_SHIFT_COL)
         if open_time_col: use_cols.append(open_time_col)
         if customer_col: use_cols.append(customer_col)
@@ -134,7 +139,7 @@ class RevenueManagementReport(AnalysisTemplate):
         customers: Dict[tuple, float] = defaultdict(float)
 
         for row in rows:
-            channel = _derive_channel(classify_table(row.get(_TABLE_COL)))
+            channel = _derive_channel(classify_table(row.get(table_col)))
             slot = _derive_time_slot(
                 row.get(_SHIFT_COL),
                 row.get(open_time_col) if open_time_col else None,

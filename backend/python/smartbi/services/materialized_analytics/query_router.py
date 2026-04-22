@@ -135,6 +135,15 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
         [["营业概况", "营业汇总", "月度", "月报", "汇总", "概况", "日报"],
          ["报表", "分析", "多少", "总", "合计", "峰值", "最高", "最低"]],
     ),
+    # W3 会员深度 — must precede member_consumption / stored_value_card_consumption
+    # which look at order-level 会员卡/储值卡 columns. member_deep is triggered
+    # by member-level exports with 卡号/等级/余额 — more specific intent.
+    (
+        "member_deep_analytics",
+        # "会员卡数据" / "会员等级分布" / "会员余额"
+        [["会员卡", "会员数据", "会员等级", "卡余额", "储值会员", "会员充值"],
+         ["分布", "数据", "等级", "余额", "多少", "统计", "分析"]],
+    ),
     # Note: revenue_management_report / stored_value_card_consumption /
     # groupon_channel_breakdown are placed above, ahead of their respective
     # broader siblings (table_type_comparison / member_consumption / channel_analysis).

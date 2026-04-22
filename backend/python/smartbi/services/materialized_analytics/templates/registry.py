@@ -91,3 +91,5 @@ def load_all_templates():
     from . import purchase_inventory_inflow       # noqa: F401
     # W3 营业概况报表 (Apr 22 2026) — 桂满陇/营业概况类聚合报表
     from . import business_overview_summary       # noqa: F401
+    # W3 会员深度 (Apr 22 2026) — 唏嘛香 60K 会员卡级
+    from . import member_deep_analytics           # noqa: F401

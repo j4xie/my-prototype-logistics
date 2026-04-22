@@ -10,12 +10,12 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 from ..compute.base import ComputeBackend
+from ..restaurant.schema_helpers import find_table_col
 from ..restaurant.table_classifier import classify_table
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
 
-_TABLE_COL = "桌位"
 _SAMPLE_CAP = 100_000
 
 
@@ -31,10 +31,16 @@ class TableTypeComparison(AnalysisTemplate):
         return "堂食/包厢/外卖对比"
 
     def applies(self, schema: DataSchema) -> bool:
-        return _TABLE_COL in {f.name for f in schema.fields}
+        return find_table_col({f.name for f in schema.fields}) is not None
 
     def compute(self, backend: ComputeBackend, schema: DataSchema) -> TemplateResult:
         df = backend._df  # type: ignore[attr-defined]
+        table_col = find_table_col(df.columns)
+        if table_col is None:
+            return TemplateResult(
+                code=self.code, title=self.title, data={},
+                applies=False, skip_reason="no table/source column",
+            )
         if df.height > _SAMPLE_CAP:
             df = df.head(_SAMPLE_CAP)
 
@@ -55,7 +61,7 @@ class TableTypeComparison(AnalysisTemplate):
                 break
 
         # Columns to pull
-        select_cols = [_TABLE_COL]
+        select_cols = [table_col]
         if revenue_col:
             select_cols.append(revenue_col)
         if customer_col:
@@ -69,7 +75,7 @@ class TableTypeComparison(AnalysisTemplate):
         customers: Dict[str, float] = defaultdict(float)
 
         for row in rows_raw:
-            raw_table = row.get(_TABLE_COL)
+            raw_table = row.get(table_col)
             t_type = classify_table(raw_table)
             orders[t_type] += 1
             if revenue_col:

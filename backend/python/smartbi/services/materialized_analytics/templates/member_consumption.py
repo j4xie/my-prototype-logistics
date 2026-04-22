@@ -37,19 +37,35 @@ class MemberConsumption(AnalysisTemplate):
     def title(self) -> str:
         return "会员卡消费分析"
 
+    _MEMBER_COL_CANDIDATES = ("会员卡", "会员卡支付", "会员卡消费", "会员卡金额")
+
+    def _find_member_col(self, cols) -> Optional[str]:
+        col_set = set(cols)
+        for c in self._MEMBER_COL_CANDIDATES:
+            if c in col_set:
+                return c
+        return None
+
     def applies(self, schema: DataSchema) -> bool:
         field_names = {f.name for f in schema.fields}
-        return "会员卡" in field_names
+        return self._find_member_col(field_names) is not None
 
     def compute(self, backend: ComputeBackend, schema: DataSchema) -> TemplateResult:
         df = backend._df
 
+        member_col = self._find_member_col(df.columns)
+        if member_col is None:
+            return TemplateResult(
+                code=self.code, title=self.title, data={},
+                applies=False, skip_reason="no member-card column",
+            )
+
         # Determine primary revenue column (default "营业额" if not set)
         revenue_col = schema.primary_measure or "营业额"
 
-        # Cast 会员卡 and revenue columns to float for safety
+        # Cast member-card and revenue columns to float for safety
         df_work = df.with_columns([
-            pl.col("会员卡").cast(pl.Float64, strict=False).alias("_member_pay"),
+            pl.col(member_col).cast(pl.Float64, strict=False).alias("_member_pay"),
             pl.col(revenue_col).cast(pl.Float64, strict=False).alias("_revenue"),
         ]).filter(pl.col("_revenue").is_not_null())
 

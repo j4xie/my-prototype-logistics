@@ -42,6 +42,12 @@ _STAFF_COL_CANDIDATES: Tuple[str, ...] = (
     "服务员", "销售员", "收银员", "店员", "员工",
 )
 
+# Table/channel column — qhj splits 桌位 and 订单来源; other POS exports
+# (e.g., 大张鸽) combine them into 桌位或订单来源.
+_TABLE_COL_CANDIDATES: Tuple[str, ...] = (
+    "桌位", "桌位或订单来源", "订单来源", "桌号",
+)
+
 
 def _first_present(cols: Iterable[str], candidates: Iterable[str]) -> Optional[str]:
     """Return first candidate that appears in cols, else None."""
@@ -92,3 +98,14 @@ def find_customer_col(cols: Iterable[str]) -> Optional[str]:
 def find_staff_col(cols: Iterable[str]) -> Optional[str]:
     """Return the first staff-role column present (服务员 → 销售员 → ...)."""
     return _first_present(cols, _STAFF_COL_CANDIDATES)
+
+
+def find_table_col(cols: Iterable[str]) -> Optional[str]:
+    """Return the column holding table/channel info.
+
+    qhj splits this into 桌位 (physical table) and 订单来源 (channel). Other
+    POS exports (大张鸽/dzp) combine them into 桌位或订单来源 which carries
+    both semantics in one column. The classify_table() heuristic recognizes
+    both formats (无桌位(外卖)/纯数字/包厢/VIP), so a single column is fine.
+    """
+    return _first_present(cols, _TABLE_COL_CANDIDATES)

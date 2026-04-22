@@ -17,6 +17,7 @@ from typing import Any, Dict, List
 
 from ..compute.base import ComputeBackend
 from ..restaurant.item_parser import parse_items
+from ..restaurant.schema_helpers import find_table_col
 from ..restaurant.table_classifier import classify_table
 from ..schema import DataSchema, Domain
 from .base import AnalysisTemplate, TemplateResult
@@ -25,7 +26,6 @@ from .registry import register
 _TOP_N_PER_TYPE = 10
 _SAMPLE_ROWS = 50_000
 _ITEM_COL = "商品信息"
-_TABLE_COL = "桌位"
 
 
 @register
@@ -41,16 +41,22 @@ class DishByTableType(AnalysisTemplate):
 
     def applies(self, schema: DataSchema) -> bool:
         field_names = {f.name for f in schema.fields}
-        if _ITEM_COL not in field_names or _TABLE_COL not in field_names:
+        if _ITEM_COL not in field_names or find_table_col(field_names) is None:
             return False
         return schema.domain in (Domain.RESTAURANT, Domain.UNKNOWN)
 
     def compute(self, backend: ComputeBackend, schema: DataSchema) -> TemplateResult:
         df = backend._df  # type: ignore[attr-defined]
+        table_col = find_table_col(df.columns)
+        if table_col is None:
+            return TemplateResult(
+                code=self.code, title=self.title, data={},
+                applies=False, skip_reason="no table/source column",
+            )
         if df.height > _SAMPLE_ROWS:
             df = df.head(_SAMPLE_ROWS)
 
-        rows = df.select([_ITEM_COL, _TABLE_COL]).to_dicts()
+        rows = df.select([_ITEM_COL, table_col]).to_dicts()
 
         # { table_type: { dish_name: qty } }, same for revenue
         qty_by_type: Dict[str, Counter] = defaultdict(Counter)
@@ -58,7 +64,7 @@ class DishByTableType(AnalysisTemplate):
         orders_by_type: Dict[str, int] = defaultdict(int)
 
         for row in rows:
-            t_type = classify_table(row.get(_TABLE_COL))
+            t_type = classify_table(row.get(table_col))
             orders_by_type[t_type] += 1
             raw = row.get(_ITEM_COL)
             if not raw:
