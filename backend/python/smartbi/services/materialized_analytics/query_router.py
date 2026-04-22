@@ -122,6 +122,12 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
         # "利润表" / "营收结构" / "毛利" / "损益"
         [["利润", "营收结构", "毛利", "净利", "损益", "应收", "实收"], ["报表", "结构", "分析", "多少", "合计", "对比"]],
     ),
+    # W3 进销存 (采购入库侧)
+    (
+        "purchase_inventory_inflow",
+        # "采购入库" / "进销存" / "供应商分析"
+        [["采购", "进销存", "入库", "供应商", "原料"], ["分析", "多少", "报表", "金额", "Top", "占比"]],
+    ),
     # Note: revenue_management_report / stored_value_card_consumption /
     # groupon_channel_breakdown are placed above, ahead of their respective
     # broader siblings (table_type_comparison / member_consumption / channel_analysis).

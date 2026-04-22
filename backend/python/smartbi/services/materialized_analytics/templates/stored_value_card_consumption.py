@@ -23,14 +23,13 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.schema_helpers import find_date_col, find_store_col
 from ..schema import DataSchema, Domain
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
 
 _CARD_COL = "储值卡"
 _CARD_NONREV_COLS = ("储值卡(不计)", "储值卡赠送金(不计)")
-_STORE_COL = "门店名称"
-_DATE_COL = "营业日期"
 _GROSS_REVENUE_CANDIDATES = ("实收额", "实收", "营业额")
 _TOP_N_STORES = 10
 
@@ -118,10 +117,11 @@ class StoredValueCardConsumption(AnalysisTemplate):
 
         # Per-store breakdown (Top N)
         by_store: List[Dict[str, Any]] = []
-        if _STORE_COL in cols:
+        store_col = find_store_col(cols)
+        if store_col:
             rows = (
-                card_df.filter(pl.col(_STORE_COL).is_not_null())
-                .group_by(_STORE_COL)
+                card_df.filter(pl.col(store_col).is_not_null())
+                .group_by(store_col)
                 .agg([
                     pl.len().alias("orders"),
                     card_expr.sum().alias("total"),
@@ -132,7 +132,7 @@ class StoredValueCardConsumption(AnalysisTemplate):
             )
             by_store = [
                 {
-                    "store": str(r.get(_STORE_COL) or "<空>"),
+                    "store": str(r.get(store_col) or "<空>"),
                     "orders": int(r["orders"]),
                     "amount": round(float(r["total"] or 0.0), 2),
                 }
@@ -141,20 +141,21 @@ class StoredValueCardConsumption(AnalysisTemplate):
 
         # Trend over time (if date present)
         by_date: List[Dict[str, Any]] = []
-        if _DATE_COL in cols:
+        date_col = find_date_col(cols)
+        if date_col:
             rows = (
-                card_df.filter(pl.col(_DATE_COL).is_not_null())
-                .group_by(_DATE_COL)
+                card_df.filter(pl.col(date_col).is_not_null())
+                .group_by(date_col)
                 .agg([
                     pl.len().alias("orders"),
                     card_expr.sum().alias("total"),
                 ])
-                .sort(_DATE_COL)
+                .sort(date_col)
                 .to_dicts()
             )
             by_date = [
                 {
-                    "date": str(r.get(_DATE_COL) or ""),
+                    "date": str(r.get(date_col) or ""),
                     "orders": int(r["orders"]),
                     "amount": round(float(r["total"] or 0.0), 2),
                 }

@@ -20,15 +20,13 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.schema_helpers import find_date_col, find_staff_col, find_store_col
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
 
 _REVERSE_TIME_COL = "反结账时间"
 _STATUS_COL = "订单状态"
-_STORE_COL = "门店名称"
-_STAFF_COL = "服务员"
-_BIZ_DATE_COL = "营业日期"
 _REVERSE_STATUS_VALUES = ("反结账", "已反结", "反结")
 _TOP_N = 10
 
@@ -101,9 +99,12 @@ class ReverseCheckoutStats(AnalysisTemplate):
 
         reverse_share_pct = round(reverse_count / total_rows * 100, 2) if total_rows else 0.0
 
-        by_store = self._group_top(reverse_df, _STORE_COL)
-        by_staff = self._group_top(reverse_df, _STAFF_COL)
-        by_date = self._group_top(reverse_df, _BIZ_DATE_COL)
+        store_col = find_store_col(cols)
+        staff_col = find_staff_col(cols)
+        date_col = find_date_col(cols)
+        by_store = self._group_top(reverse_df, store_col) if store_col else []
+        by_staff = self._group_top(reverse_df, staff_col) if staff_col else []
+        by_date = self._group_top(reverse_df, date_col) if date_col else []
 
         # Build insight — lead with headline, then call out worst dim
         parts = [

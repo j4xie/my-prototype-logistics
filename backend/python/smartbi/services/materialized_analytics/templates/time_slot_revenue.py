@@ -25,8 +25,11 @@ from .registry import register
 # Ordered slot names (also defines chart x-axis order)
 _SLOTS: List[str] = ["早餐", "午餐", "下午茶", "晚餐", "宵夜"]
 
-# Area dimension preference order
-_AREA_CANDIDATES: List[str] = ["区域", "门店名称", "省份", "城市"]
+# Area dimension preference order (added 店铺名称/门店/店铺 variants for
+# brand portability — POS systems use different column names)
+_AREA_CANDIDATES: List[str] = [
+    "区域", "门店名称", "店铺名称", "门店", "店铺", "省份", "城市",
+]
 
 
 def _find_area_dim(schema: DataSchema) -> Optional[str]:

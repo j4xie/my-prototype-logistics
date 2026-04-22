@@ -26,6 +26,7 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.schema_helpers import find_store_col
 from ..schema import DataSchema, Domain
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
@@ -43,7 +44,6 @@ _DEDUCTION_COLS = [
     ("税费", "税费"),
 ]
 _COST_COLS = ("食材成本", "成本", "采购成本", "商品成本")
-_STORE_COL = "门店名称"
 _TOP_STORES = 10
 
 
@@ -120,7 +120,8 @@ class ProfitLossStatement(AnalysisTemplate):
 
         # Per-store top breakdown (optional chart)
         by_store: List[Dict[str, Any]] = []
-        if _STORE_COL in cols:
+        store_col = find_store_col(cols)
+        if store_col:
             agg_exprs = [
                 pl.col(gross_col).cast(pl.Float64, strict=False).fill_null(0.0).sum().alias("gross"),
             ]
@@ -129,8 +130,8 @@ class ProfitLossStatement(AnalysisTemplate):
                     pl.col(net_col).cast(pl.Float64, strict=False).fill_null(0.0).sum().alias("net")
                 )
             store_rows = (
-                df.filter(pl.col(_STORE_COL).is_not_null())
-                .group_by(_STORE_COL)
+                df.filter(pl.col(store_col).is_not_null())
+                .group_by(store_col)
                 .agg(agg_exprs)
                 .sort("gross", descending=True)
                 .head(_TOP_STORES)
@@ -140,7 +141,7 @@ class ProfitLossStatement(AnalysisTemplate):
                 g = float(r.get("gross") or 0.0)
                 n = float(r.get("net") or 0.0) if net_col else None
                 by_store.append({
-                    "store": str(r.get(_STORE_COL) or "<空>"),
+                    "store": str(r.get(store_col) or "<空>"),
                     "gross": round(g, 2),
                     "net": round(n, 2) if n is not None else None,
                     "net_margin_pct": round(n / g * 100, 2) if n and g > 0 else None,

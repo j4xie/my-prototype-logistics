@@ -20,12 +20,11 @@ import polars as pl
 
 from ..compute.base import ComputeBackend
 from ..restaurant.item_parser import parse_items
+from ..restaurant.schema_helpers import find_customer_col, find_store_col
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
 
-_STORE_COL = "门店名称"
-_CUST_COL = "客流量"
 _REVENUE_COL_CANDIDATES = ("实收额", "营业额", "应收金额", "实收金额", "收款金额")
 _DISH_COUNT_COL_CANDIDATES = ("商品结账总数", "数量(含套餐子商品)")
 _ITEM_COL = "商品信息"
@@ -54,11 +53,19 @@ class StoreCustomerStratification(AnalysisTemplate):
 
     def applies(self, schema: DataSchema) -> bool:
         names = {f.name for f in schema.fields}
-        return _STORE_COL in names and _CUST_COL in names
+        return find_store_col(names) is not None and find_customer_col(names) is not None
 
     def compute(self, backend: ComputeBackend, schema: DataSchema) -> TemplateResult:
         df = backend._df  # type: ignore[attr-defined]
         cols = set(df.columns)
+
+        store_col = find_store_col(cols)
+        cust_col = find_customer_col(cols)
+        if store_col is None or cust_col is None:
+            return TemplateResult(
+                code=self.code, title=self.title, data={},
+                applies=False, skip_reason="no store or customer column",
+            )
 
         revenue_col = next(
             (c for c in _REVENUE_COL_CANDIDATES if c in cols), None
@@ -69,9 +76,9 @@ class StoreCustomerStratification(AnalysisTemplate):
 
         # Filter non-null cust + store
         base = df.filter(
-            pl.col(_STORE_COL).is_not_null()
-            & pl.col(_CUST_COL).cast(pl.Float64, strict=False).is_not_null()
-            & (pl.col(_CUST_COL).cast(pl.Float64, strict=False) >= 1.0)
+            pl.col(store_col).is_not_null()
+            & pl.col(cust_col).cast(pl.Float64, strict=False).is_not_null()
+            & (pl.col(cust_col).cast(pl.Float64, strict=False) >= 1.0)
         )
         total_orders = base.height
 
@@ -82,7 +89,7 @@ class StoreCustomerStratification(AnalysisTemplate):
             )
 
         # Assign bin label per row
-        cust_expr = pl.col(_CUST_COL).cast(pl.Float64, strict=False)
+        cust_expr = pl.col(cust_col).cast(pl.Float64, strict=False)
         bin_expr = (
             pl.when((cust_expr >= 1) & (cust_expr <= 1)).then(pl.lit("1 人"))
             .when((cust_expr >= 2) & (cust_expr <= 2)).then(pl.lit("2 人"))
@@ -107,13 +114,13 @@ class StoreCustomerStratification(AnalysisTemplate):
 
         # Aggregate per (store, bin)
         grouped = (
-            base.group_by([_STORE_COL, "_bin"]).agg(agg_exprs).to_dicts()
+            base.group_by([store_col, "_bin"]).agg(agg_exprs).to_dicts()
         )
 
         # Reshape: { store: { bin_label: row } }
         per_store: Dict[str, Dict[str, Dict[str, Any]]] = {}
         for r in grouped:
-            store = str(r.get(_STORE_COL) or "<空>")
+            store = str(r.get(store_col) or "<空>")
             bin_label = str(r.get("_bin") or "其他")
             if bin_label == "其他":
                 continue
@@ -121,7 +128,7 @@ class StoreCustomerStratification(AnalysisTemplate):
 
         # Build per-store breakdown, limited to Top N stores by total orders
         store_totals = (
-            base.group_by(_STORE_COL)
+            base.group_by(store_col)
             .agg(pl.len().alias("orders"),
                  *([pl.col(revenue_col).cast(pl.Float64, strict=False).sum().alias("revenue")]
                    if revenue_col else []))
@@ -132,7 +139,7 @@ class StoreCustomerStratification(AnalysisTemplate):
 
         stores: List[Dict[str, Any]] = []
         for st in store_totals:
-            store_name = str(st.get(_STORE_COL) or "<空>")
+            store_name = str(st.get(store_col) or "<空>")
             store_orders = int(st["orders"])
             store_revenue = float(st.get("revenue") or 0.0) if revenue_col else 0.0
             bins_out: List[Dict[str, Any]] = []

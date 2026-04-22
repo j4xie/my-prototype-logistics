@@ -87,3 +87,5 @@ def load_all_templates():
     from . import revenue_management_report       # noqa: F401
     from . import stored_value_card_consumption   # noqa: F401
     from . import groupon_channel_breakdown       # noqa: F401
+    # W3 进销存 (Apr 22 2026)
+    from . import purchase_inventory_inflow       # noqa: F401
