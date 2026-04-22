@@ -195,21 +195,36 @@ public class DynamicDataPersistenceServiceImpl implements DynamicDataPersistence
             // 4.6 γ-1c (Apr 22 2026): delegate final classification to Python's unified
             // field_classifier so sync path matches async path. Fixes Java rule divergence
             // (bare 年|月|日 time false-positives, missing 账单号/商品结账总数/外部单号 overrides).
-            // Non-blocking: if Python is down, keep Java-classified definitions — user can
-            // manually call POST /api/smartbi/analytics/reclassify/{id} later.
-            try {
-                boolean ok = pythonSmartBIClient.reclassifyUpload(uploadId, factoryId);
-                if (ok) {
-                    fieldDefs = fieldDefRepository.findByUploadIdOrderByDisplayOrder(uploadId);
-                    log.info("γ-1c: Python reclassify applied to upload {} ({} defs)",
-                            uploadId, fieldDefs.size());
-                } else {
-                    log.warn("γ-1c: Python reclassify skipped/failed for upload {}, keeping Java classification",
-                            uploadId);
-                }
-            } catch (Exception e) {
-                log.warn("γ-1c: Python reclassify threw for upload {} (non-blocking): {}",
-                        uploadId, e.getMessage());
+            //
+            // Must fire AFTER the @Transactional commit — Python opens its own DB connection
+            // and returns 404 on uploadId otherwise (uncommitted rows invisible). Use Spring's
+            // TransactionSynchronizationManager to register an afterCommit hook.
+            //
+            // Non-blocking: if Python is down / returns non-2xx, keep Java-classified
+            // definitions — user can manually POST /analytics/reclassify/{id} later.
+            final Long uploadIdForHook = uploadId;
+            final String factoryIdForHook = factoryId;
+            if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+                org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                        new org.springframework.transaction.support.TransactionSynchronization() {
+                            @Override
+                            public void afterCommit() {
+                                try {
+                                    boolean ok = pythonSmartBIClient.reclassifyUpload(uploadIdForHook, factoryIdForHook);
+                                    if (ok) {
+                                        log.info("γ-1c: Python reclassify applied to upload {}", uploadIdForHook);
+                                    } else {
+                                        log.warn("γ-1c: Python reclassify skipped/failed for upload {}, keeping Java classification",
+                                                uploadIdForHook);
+                                    }
+                                } catch (Exception e) {
+                                    log.warn("γ-1c: Python reclassify threw for upload {} (non-blocking): {}",
+                                            uploadIdForHook, e.getMessage());
+                                }
+                            }
+                        });
+            } else {
+                log.warn("γ-1c: no active transaction sync, skipping reclassify for upload {}", uploadId);
             }
 
             // 5. Update upload status
