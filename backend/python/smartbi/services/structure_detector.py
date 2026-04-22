@@ -1392,6 +1392,52 @@ Return JSON:
                 preview_data=preview_data,
             ))
 
+        # Fix A (Apr 22 2026): filter "header-only" regions when the sheet
+        # clearly has at least one real data region. Catches dashboard-template
+        # xlsx like 收入管理报表.xlsx where rows 3-4 / 20-21 / 38-39 hold just a
+        # coarse header + sub-header with no body — they currently pollute the
+        # region-selection dialog alongside the one region with real data.
+        #
+        # Heuristic: a region is "header-only" when
+        #   sample_rows == 0 (just a header row), OR
+        #   sample_rows == 1 AND the one "data row" contains NO numeric cells
+        #   (i.e., both rows look like header labels — two-level header template
+        #    with no body). Regions with sample_rows >= 2 are always kept.
+        # We only apply the filter when the sheet has at least one region with
+        # real data (sample_rows >= 2). This preserves small single-table uploads
+        # `[header, one_data_row]` and stacked small tables where each region
+        # has exactly 1 data row.
+        def _looks_like_header_only(r: TableRegion) -> bool:
+            if r.sample_rows == 0:
+                return True
+            if r.sample_rows == 1:
+                # Inspect the one "data row" — if all cells are non-numeric text,
+                # it is another header row (two-level header template).
+                data_row_idx = r.start_row + 1
+                if 0 <= data_row_idx < len(rows):
+                    row_cells = rows[data_row_idx]
+                    has_number = any(
+                        c is not None and str(c).strip() != ""
+                        and self._looks_numeric(c)
+                        for c in row_cells
+                    )
+                    return not has_number
+            return False
+
+        if len(regions) > 1:
+            has_real_data_region = any(r.sample_rows >= 2 for r in regions)
+            if has_real_data_region:
+                kept = [r for r in regions if not _looks_like_header_only(r)]
+                if kept and len(kept) < len(regions):
+                    dropped = len(regions) - len(kept)
+                    logger.info(
+                        f"_split_regions_from_rows: dropped {dropped} header-only region(s) "
+                        f"alongside {len(kept)} data region(s)"
+                    )
+                    for i, r in enumerate(kept):
+                        r.index = i
+                    regions = kept
+
         logger.info(
             f"detect_multiple_table_regions: scanned {len(rows)} rows, "
             f"found {len(regions)} regions"
@@ -1409,8 +1455,21 @@ Return JSON:
             if s == "":
                 continue
             saw_value = True
-            try:
-                float(s.replace(",", "").replace("¥", "").replace("$", "").replace("%", ""))
-            except (ValueError, TypeError):
+            if not StructureDetector._looks_numeric(v):
                 return False
         return saw_value  # all-empty row is not "all numeric"
+
+    @staticmethod
+    def _looks_numeric(v: Any) -> bool:
+        """True when a single cell value parses as a number (accepts currency /
+        percent / thousands-separator variants)."""
+        if v is None:
+            return False
+        s = str(v).strip()
+        if s == "":
+            return False
+        try:
+            float(s.replace(",", "").replace("¥", "").replace("$", "").replace("%", ""))
+            return True
+        except (ValueError, TypeError):
+            return False

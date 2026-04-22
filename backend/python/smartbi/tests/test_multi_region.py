@@ -206,6 +206,60 @@ def test_region_index_is_monotonic():
     assert [r.index for r in regions] == [0, 1, 2]
 
 
+def test_sparse_header_only_regions_filtered_when_data_region_exists():
+    """Fix A (Apr 22 2026): dashboard-template xlsx (like 收入管理报表.xlsx) has
+    coarse-header + sub-header blocks separated from a real data block by many
+    blank rows. Those 'header-only' blocks used to pollute the region picker.
+    When at least one region has real data (sample_rows>=2), drop the sparse ones.
+    """
+    rows = [
+        [None, None, None],
+        [None, None, None],
+        # Region 1: coarse header + sub-header, no body (mirrors 收入管理报表 rows 3-4)
+        ["可比同比", "时间段", "午晚市"],
+        ["门店名称", "本期", "去年同期"],
+        [None, None, None],
+        [None, None, None],
+        # Region 2: another header-only template block
+        ["环比", "时间段", "午晚市"],
+        ["门店名称", "本期", "上期"],
+        [None, None, None],
+        [None, None, None],
+        # Region 3: a real data region (sample_rows=3)
+        ["门店", "日期", "实收额"],
+        ["颛桥龙湖店", "10.9", 2861],
+        ["颛桥龙湖店", "10.10", 39617],
+        ["颛桥龙湖店", "10.11", 17577],
+    ]
+    detector = StructureDetector()
+    regions = detector.detect_multiple_table_regions(_make_xlsx(rows))
+
+    # Only the data region should survive the sparse-region filter
+    assert len(regions) == 1, f"expected 1 region, got {len(regions)}"
+    assert regions[0].preview_cols == ["门店", "日期", "实收额"]
+    assert regions[0].sample_rows == 3
+    # Index must be reassigned contiguously from 0
+    assert regions[0].index == 0
+
+
+def test_sparse_region_kept_when_all_regions_are_sparse():
+    """Edge: if every region is sparse (sample_rows<2), keep them all — don't
+    strand the user with zero selectable regions."""
+    rows = [
+        ["X", "Y"],
+        [1, 2],          # region 1: sample_rows=1
+        [None, None],
+        [None, None],
+        ["A", "B"],
+        [3, 4],          # region 2: sample_rows=1
+    ]
+    detector = StructureDetector()
+    regions = detector.detect_multiple_table_regions(_make_xlsx(rows))
+
+    assert len(regions) == 2
+    assert [r.sample_rows for r in regions] == [1, 1]
+
+
 if __name__ == "__main__":
     # Allow running as `python test_multi_region.py` outside pytest
     pytest.main([__file__, "-v"])
