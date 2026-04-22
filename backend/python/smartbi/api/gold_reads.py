@@ -169,6 +169,100 @@ async def get_discount_breakdown(
         raise HTTPException(status_code=500, detail=f"Gold query failed: {e}")
 
 
+@router.get("/analysis-results")
+async def get_analysis_results(
+    upload_id: int = Query(..., description="SmartBI upload id whose results we want"),
+    template_code: Optional[str] = Query(None, description="Single template, omit for all"),
+    factory_id: Optional[str] = Query(None, description="belt-and-suspenders; defaults to JWT tenant"),
+):
+    """Read materialized template results from smart_bi_pg_analysis_results.
+
+    Week 6 entry point for Finance/Trend/Inventory/Cost Vue pages to read
+    pre-computed results instead of running live SQL aggregates. Rows
+    populate automatically after excel_async's schedule_materialization()
+    fires per upload.
+
+    Shape when template_code given:
+      {
+        "upload_id", "template_code", "domain", "analysis_type",
+        "analysis_result", "chart_configs", "kpi_values", "insights",
+        "created_at"
+      }
+    Shape when template_code omitted: `{"items": [ {...}, ... ]}`.
+
+    Returns 404 if no matching row — caller should fall back to live
+    query (legacy path) so FE never breaks on pre-materialize uploads.
+    """
+    fid = _resolve_tenant(factory_id)
+    pool = await get_pg_pool()
+    try:
+        async with pool.acquire() as conn:
+            if template_code:
+                row = await conn.fetchrow(
+                    """
+                    SELECT upload_id, template_code, domain, analysis_type,
+                           analysis_result, chart_configs, kpi_values,
+                           insights, created_at
+                      FROM smart_bi_pg_analysis_results
+                     WHERE factory_id   = $1
+                       AND upload_id    = $2
+                       AND template_code = $3
+                    """,
+                    fid, upload_id, template_code,
+                )
+                if row is None:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"No materialized result for upload={upload_id} template={template_code}",
+                    )
+                return _row_to_result(row)
+
+            rows = await conn.fetch(
+                """
+                SELECT upload_id, template_code, domain, analysis_type,
+                       analysis_result, chart_configs, kpi_values,
+                       insights, created_at
+                  FROM smart_bi_pg_analysis_results
+                 WHERE factory_id = $1
+                   AND upload_id  = $2
+                   AND template_code IS NOT NULL
+                 ORDER BY template_code
+                """,
+                fid, upload_id,
+            )
+            return {"items": [_row_to_result(r) for r in rows]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("analysis-results failed: %s", e)
+        raise HTTPException(status_code=500, detail=f"Analysis read failed: {e}")
+
+
+def _row_to_result(row) -> dict:
+    """Parse JSONB fields (asyncpg returns them as strings) + date isoformat."""
+    import json as _json
+    def _j(v):
+        if v is None:
+            return None
+        if isinstance(v, str):
+            try:
+                return _json.loads(v)
+            except ValueError:
+                return v
+        return v
+    return {
+        "upload_id": int(row["upload_id"]),
+        "template_code": row["template_code"],
+        "domain": row["domain"],
+        "analysis_type": row["analysis_type"],
+        "analysis_result": _j(row["analysis_result"]),
+        "chart_configs": _j(row["chart_configs"]),
+        "kpi_values": _j(row["kpi_values"]),
+        "insights": _j(row["insights"]),
+        "created_at": row["created_at"].isoformat() if row["created_at"] else None,
+    }
+
+
 @router.get("/kpi-summary")
 async def get_kpi_summary(
     start_date: str = Query(...),

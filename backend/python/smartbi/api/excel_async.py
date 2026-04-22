@@ -491,6 +491,23 @@ async def _async_worker_impl(
             await run_silver_dual_write(
                 factory_id=factory_id, upload_id=upload_id,
             )
+        # Week 6: Invalidate Agent layer narrative cache so the next AI
+        # insight query rebuilds from fresh data instead of serving
+        # yesterday's answer (24h TTL would otherwise hide new uploads).
+        # Fire-and-forget — failure must not affect upload status.
+        try:
+            from smartbi.agent.narrative_cache import NarrativeCacheService
+            from smartbi.config import get_pg_pool
+            pool = await get_pg_pool()
+            deleted = await NarrativeCacheService(pool).invalidate_on_upload(factory_id)
+            logger.info(
+                f"[stream-worker] upload {upload_id}: invalidated {deleted} narrative_cache rows for factory={factory_id}"
+            )
+        except Exception:
+            logger.exception(
+                f"[stream-worker] narrative_cache invalidate failed for upload={upload_id}; "
+                f"cache will naturally expire via TTL"
+            )
     except Exception as e:
         logger.exception(f"[stream-worker] upload_id={upload_id} crashed after {total_rows} rows")
         try:
