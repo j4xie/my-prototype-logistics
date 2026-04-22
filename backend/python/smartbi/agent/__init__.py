@@ -23,11 +23,23 @@ from smartbi.agent.narrative_cache import (
     NarrativeCacheService,
     compute_question_hash,
 )
+from smartbi.agent.orchestrator import (
+    AgentOrchestrator,
+    InsightResponse,
+    RESULT_SOURCE_CACHE,
+    RESULT_SOURCE_DEGRADED,
+    RESULT_SOURCE_LLM,
+)
 
 __all__ = [
     "AgentBudgetTracker",
+    "AgentOrchestrator",
     "BudgetCheckResult",
     "DEFAULT_TIER_CAPS",
+    "InsightResponse",
     "NarrativeCacheService",
+    "RESULT_SOURCE_CACHE",
+    "RESULT_SOURCE_DEGRADED",
+    "RESULT_SOURCE_LLM",
     "compute_question_hash",
 ]
