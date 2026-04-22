@@ -18,11 +18,31 @@ POST /api/smartbi/analytics/reclassify/{upload_id}  (γ-2)
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set
 
 from fastapi import APIRouter, HTTPException, Query, Request
+
+# Module-level set of pending background tasks. asyncio only keeps weak refs
+# to tasks, so a fire-and-forget task spawned inside an HTTP handler can get
+# GC'd mid-execution when the handler returns. We anchor tasks here and let
+# them self-remove on completion. See CPython issue #88831 / docs note on
+# asyncio.create_task.
+_PENDING_BG_TASKS: Set[asyncio.Task] = set()
+
+
+def _spawn_bg(coro) -> asyncio.Task:
+    """Schedule a detached coroutine that outlives the current request.
+
+    FastAPI/Starlette can cancel the request context, but the task reference
+    lives in _PENDING_BG_TASKS so the event loop keeps it alive.
+    """
+    task = asyncio.create_task(coro)
+    _PENDING_BG_TASKS.add(task)
+    task.add_done_callback(_PENDING_BG_TASKS.discard)
+    return task
 
 from smartbi.config import get_pg_pool
 from smartbi.services.field_classifier import classify_column
@@ -288,11 +308,8 @@ async def reclassify_upload(
 
         # Also pre-warm the L2 aggregate cache (LLM fallback path) so the first
         # user to ask a HARD-modifier / no-template-match question doesn't wait
-        # 30-70s for cold JSONB scans. Fire-and-forget — reclassify's HTTP
-        # response shouldn't wait on this. If the compute fails or times out,
-        # the first user-facing query still has the L1/L2 miss → heartbeat →
-        # compute fallback path in chat.py.
-        import asyncio as _asyncio
+        # 30-70s for cold JSONB scans. Detached via _spawn_bg so the task
+        # survives request lifecycle teardown (client disconnect, etc).
         from smartbi.services.upload_aggregate_cache import (
             compute_upload_aggregates as _compute_aggs,
             save_bundle_to_db as _save_bundle_db,
@@ -331,7 +348,7 @@ async def reclassify_upload(
                     f"[reclassify→agg-warm] upload={upload_id} failed: {warm_err}"
                 )
 
-        _asyncio.create_task(_warm_l2_aggregate_cache())
+        _spawn_bg(_warm_l2_aggregate_cache())
         remat_result["agg_cache_warm_scheduled"] = True
 
     return {
