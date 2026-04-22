@@ -158,11 +158,46 @@ async def materialize_upload(
             logger.warning(f"[materializer] upload {upload_id}: no field_definitions")
             return []
 
-    # Phase 2: stream row_data via cursor to avoid loading all 200K rows into
-    # asyncpg buffers at once. Cursor releases each batch as we iterate.
-    # asyncpg requires a transaction for server-side cursors.
-    rows: List[Dict[str, Any]] = []
-    CURSOR_PREFETCH = 10_000  # asyncpg default is 50; 10K batches fit comfortably in RAM
+    # Phase 2+4 (fused): stream rows in chunks, convert each chunk to polars
+    # immediately, and release the dict batch before accumulating the next.
+    #
+    # The old path held all 200K row_data dicts in a Python list then called
+    # pl.from_dicts on the whole list — during that conversion both the dict
+    # list AND the growing columnar arrays existed, peaking at ~10 GB on a
+    # 200K × 231 field upload and triggering OOM. Apr 23 2026 prod incident.
+    #
+    # Chunked build peaks at ~500-800 MB (one chunk of dicts + accumulated
+    # polars frames which are columnar-compact).
+    import polars as pl
+    CURSOR_PREFETCH = 10_000
+    CHUNK_SIZE = 10_000  # dicts per polars conversion
+    frames: List[Any] = []  # pl.DataFrame instances
+    batch: List[Dict[str, Any]] = []
+    sample: List[Dict[str, Any]] = []  # first 5 rows for build_schema
+    inferred_schema: Optional[Dict[str, Any]] = None
+    total_rows = 0
+
+    def _flush_batch() -> None:
+        nonlocal inferred_schema
+        if not batch:
+            return
+        if inferred_schema is None:
+            # Infer on first chunk so subsequent chunks use a stable schema —
+            # avoids `could not append value ... to builder` mid-stream if a
+            # later chunk has e.g. null-only columns.
+            df = pl.from_dicts(batch, infer_schema_length=min(1000, len(batch)))
+            inferred_schema = dict(df.schema)
+        else:
+            try:
+                df = pl.from_dicts(batch, schema=inferred_schema)
+            except Exception:
+                # Loose fallback: re-infer per chunk and let concat reconcile
+                # via diagonal merge. Only hit if a later chunk has a new
+                # non-null column that didn't appear in the first 10K.
+                df = pl.from_dicts(batch, infer_schema_length=min(1000, len(batch)))
+        frames.append(df)
+        batch.clear()
+
     async with pool.acquire() as conn:
         async with conn.transaction():
             async for r in conn.cursor(
@@ -173,31 +208,48 @@ async def materialize_upload(
                 rd = r['row_data']
                 if isinstance(rd, str):
                     rd = json.loads(rd)
-                rows.append(rd)
+                if len(sample) < 5:
+                    sample.append(rd)
+                batch.append(rd)
+                total_rows += 1
+                if len(batch) >= CHUNK_SIZE:
+                    _flush_batch()
+            _flush_batch()  # trailing remainder
 
     t_load = time.time() - t_start
     logger.info(
-        f"[materializer] upload {upload_id}: streamed {len(rows)} rows, "
-        f"{len(field_meta)} fields in {t_load:.1f}s"
+        f"[materializer] upload {upload_id}: streamed {total_rows} rows, "
+        f"{len(field_meta)} fields in {t_load:.1f}s ({len(frames)} chunks)"
     )
 
-    # Phase 3: Build schema (domain detection inside)
-    sample = rows[:5] if rows else []
+    # Phase 3: Build schema (domain detection inside) — uses the small sample.
     schema = build_schema(upload_id, factory_id, field_meta, row_count, sample_rows=sample)
     logger.info(
         f"[materializer] upload {upload_id}: domain={schema.domain.value}, "
         f"primary_measure={schema.primary_measure}, time_field={schema.time_field}"
     )
 
-    # Phase 4: Build Polars backend, then explicitly free the list of dicts.
-    # For 200K rows the list holds ~600MB-1GB; releasing it before templates
-    # run keeps peak RSS well below the OOM threshold.
-    backend = PolarsBackend.from_rows(rows)
-    del rows
+    # Phase 4 (cont.): concat chunks into one DataFrame + wrap in PolarsBackend.
+    # `diagonal_relaxed` handles the rare case where later chunks surface new
+    # columns or slightly different dtypes vs. the first chunk's inferred schema.
+    if frames:
+        if len(frames) == 1:
+            df_final = frames[0]
+        else:
+            try:
+                df_final = pl.concat(frames, how="diagonal_relaxed")
+            except Exception as e:
+                logger.warning(f"[materializer] diagonal_relaxed concat failed: {e}; trying diagonal")
+                df_final = pl.concat(frames, how="diagonal")
+    else:
+        df_final = pl.DataFrame()
+    backend = PolarsBackend(df_final)
+    frames.clear()
+    del frames, batch, sample
     gc.collect()
     logger.info(
         f"[materializer] upload {upload_id}: polars DF built, "
-        f"row list released (row_count={backend.row_count()})"
+        f"chunks released (row_count={backend.row_count()})"
     )
 
     # Phase 5: Run all templates sequentially
