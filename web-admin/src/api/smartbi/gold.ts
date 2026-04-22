@@ -70,6 +70,20 @@ export interface ChannelBreakdown {
   }>;
 }
 
+export interface DiscountBreakdown {
+  factory_id: string;
+  start_date: string;
+  end_date: string;
+  total_amount: number;
+  discounts: Array<{
+    discount_id: number;
+    discount_name: string;
+    amount: number;
+    bill_count: number;
+    share_pct: number;
+  }>;
+}
+
 export interface KpiSummary {
   factory_id: string;
   start_date: string;
@@ -123,6 +137,12 @@ export async function getChannelBreakdown(args: DateRangeQuery & { topN?: number
   return (await pythonFetch(`/api/smartbi/gold/channel-breakdown?${_q(args)}`, {
     timeoutMs: PYTHON_LLM_TIMEOUT_MS,
   })) as ChannelBreakdown;
+}
+
+export async function getDiscountBreakdown(args: DateRangeQuery & { topN?: number }): Promise<DiscountBreakdown> {
+  return (await pythonFetch(`/api/smartbi/gold/discount-breakdown?${_q(args)}`, {
+    timeoutMs: PYTHON_LLM_TIMEOUT_MS,
+  })) as DiscountBreakdown;
 }
 
 export async function getKpiSummary(args: DateRangeQuery): Promise<KpiSummary> {

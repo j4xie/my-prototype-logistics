@@ -27,7 +27,9 @@ from backfill_silver import (  # noqa: E402
     _ALIAS_TO_ATTR,
     _PAYMENT_COLUMNS,
     _build_canonical_row,
+    _extract_discounts,
     _extract_payments,
+    _is_discount_column,
     _lookup_attr,
     _normalize_field_mappings,
     _parse_date,
@@ -227,6 +229,95 @@ def test_build_canonical_row_attaches_payments():
     # Payment columns must NOT end up in unknown
     for p in ("现金", "微信", "美团"):
         assert f"<raw>{p}" not in unknown
+
+
+# ── EAV discount extraction ─────────────────────────────────
+
+def test_is_discount_column_positive():
+    """Heuristic recognizes 代<digit> / 券 / 优惠 patterns."""
+    assert _is_discount_column("点评98代100") is True
+    assert _is_discount_column("抖音138代201") is True
+    assert _is_discount_column("[美团代金券]") is True
+    assert _is_discount_column("[抖音套餐券]") is True
+    assert _is_discount_column("鱼羊鲜50元优惠券") is True
+    assert _is_discount_column("代金券优惠") is True
+
+
+def test_is_discount_column_excludes_不计_suffix():
+    """(不计) markers are 0-charge records, not real discounts."""
+    assert _is_discount_column("招待(不计)") is False
+    assert _is_discount_column("[美团代金券优惠](不计)") is False
+    assert _is_discount_column("霸王餐(不计)") is False
+    assert _is_discount_column("储值卡(不计)") is False
+
+
+def test_is_discount_column_negative():
+    """Column names without 代N/券/优惠 markers aren't discounts."""
+    assert _is_discount_column("门店名称") is False
+    assert _is_discount_column("现金") is False
+    assert _is_discount_column("微信") is False
+    assert _is_discount_column("营业日期") is False
+
+
+def test_extract_discounts_picks_non_zero():
+    row = {
+        "点评98代100": "98.00",
+        "抖音138代201": "0",
+        "闪购95代100": "",
+        "[美团代金券]": "50.5",
+        "门店名称": "门店A",  # non-discount column ignored
+    }
+    out = _extract_discounts(row)
+    got = {(name, amt) for name, amt, _qty in out}
+    assert got == {
+        ("点评98代100", Decimal("98.00")),
+        ("[美团代金券]", Decimal("50.5")),
+    }
+    # quantity defaults to 1
+    assert all(qty == 1 for _, _, qty in out)
+
+
+def test_extract_discounts_excludes_不计_columns():
+    row = {
+        "招待(不计)": "50.00",
+        "[美团代金券优惠](不计)": "30.00",
+        "点评98代100": "98.00",  # real discount
+    }
+    out = _extract_discounts(row)
+    assert len(out) == 1
+    assert out[0][0] == "点评98代100"
+
+
+def test_extract_discounts_doesnt_double_count_payment_cols():
+    """点评买单 is a payment channel; it shouldn't be classified as discount
+    even though the name doesn't match the pattern. Payments are filtered
+    out before the discount heuristic runs."""
+    row = {
+        "点评买单": "100.00",      # payment, filtered by _PAYMENT_COLUMNS
+        "点评98代100": "98.00",     # actual discount
+    }
+    out = _extract_discounts(row)
+    names = {name for name, _, _ in out}
+    assert names == {"点评98代100"}
+
+
+def test_build_canonical_row_attaches_discounts():
+    row_data = {
+        "门店名称": "S1",
+        "账单号": "B1",
+        "营业日期": "2026-04-21",
+        "点评98代100": "98.00",
+        "鱼羊鲜50元优惠券": "50.00",
+        "招待(不计)": "0",         # excluded even if present
+    }
+    unknown: list = []
+    row = _build_canonical_row(row_data, {}, "F001", "excel", 100, unknown)
+    assert row is not None
+    disc_names = {name for name, _, _ in row.discounts}
+    assert disc_names == {"点评98代100", "鱼羊鲜50元优惠券"}
+    # Discount columns don't pollute unknown list
+    for d in ("点评98代100", "鱼羊鲜50元优惠券"):
+        assert f"<raw>{d}" not in unknown
 
 
 def test_build_canonical_row_tracks_unknown_canonicals():

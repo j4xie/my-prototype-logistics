@@ -134,6 +134,21 @@ _ALIAS_TO_ATTR: Dict[str, str] = {
 _REQUIRED_ATTRS = ("store_name", "source_bill_no", "date")
 
 
+# Discount columns are detected by heuristic because qhj has 50+ voucher
+# types (each 代金券 denomination is one column); a hardcoded list would
+# rot as new vouchers are issued. Pattern: contains 券/优惠 OR 代<digit>
+# (e.g. 点评98代100). Excluded: suffix "(不计)" — those are 0-charge
+# markers (招待/员工餐/霸王餐/客诉免单) that don't contribute to revenue.
+_DISCOUNT_MARKER_RE = re.compile(r'代\d|券|优惠')
+_DISCOUNT_EXCLUDE_SUFFIX = "(不计)"
+
+
+def _is_discount_column(col_name: str) -> bool:
+    if _DISCOUNT_EXCLUDE_SUFFIX in col_name:
+        return False
+    return bool(_DISCOUNT_MARKER_RE.search(col_name))
+
+
 # EAV payment columns — qhj exports one column per payment method. For each
 # row, any of these columns with a non-zero decimal value becomes a
 # fact_pos_payment entry. Everything else we don't know about stays in
@@ -298,6 +313,33 @@ def _extract_payments(row_data: Dict[str, Any]) -> Tuple[Tuple[str, Decimal], ..
     return tuple(out)
 
 
+def _extract_discounts(
+    row_data: Dict[str, Any],
+) -> Tuple[Tuple[str, Decimal, int], ...]:
+    """Scan row_data for discount-like columns with non-zero amount.
+
+    Returns (discount_name, amount_decimal, quantity=1) tuples. quantity
+    defaults to 1 because qhj doesn't track how many of one voucher type
+    were applied; Silver's dim_discount schema allows refining later.
+
+    Heuristic: column matches _is_discount_column (contains 代N / 券 / 优惠,
+    not suffixed with "(不计)"). Payment columns are explicitly excluded
+    so they don't double-count (e.g. 点评买单 pays via 点评 platform —
+    that's a payment channel, not a discount).
+    """
+    out: List[Tuple[str, Decimal, int]] = []
+    for col_name, raw in row_data.items():
+        if col_name in _PAYMENT_COLUMNS:
+            continue
+        if not _is_discount_column(col_name):
+            continue
+        amount = _parse_decimal(raw)
+        if amount is None or amount == 0:
+            continue
+        out.append((col_name, amount, 1))
+    return tuple(out)
+
+
 def _build_canonical_row(
     row_data: Dict[str, Any],
     field_mappings: Dict[str, str],
@@ -317,9 +359,11 @@ def _build_canonical_row(
         canonical_name = field_mappings.get(original_col)
         attr = _lookup_attr(original_col, canonical_name)
         if attr is None:
-            # Known EAV payment columns are handled separately — don't
-            # flag them as unknown.
+            # Known EAV columns (payments + discounts) are handled separately —
+            # don't flag them as unknown so the admin review list stays useful.
             if original_col in _PAYMENT_COLUMNS:
+                continue
+            if _is_discount_column(original_col):
                 continue
             # Track both paths' failures so admin can see what's dropped.
             unmapped_key = canonical_name or f"<raw>{original_col}"
@@ -336,9 +380,9 @@ def _build_canonical_row(
     if not store_name or not bill_no or parsed_date is None:
         return None
 
-    # EAV payments extraction (discount EAV deferred — dim_discount needs
-    # richer metadata parsing that's not worth it today).
+    # EAV extraction for sub-facts.
     payments = _extract_payments(row_data)
+    discounts = _extract_discounts(row_data)
 
     return CanonicalRow(
         factory_id=factory_id,
@@ -358,6 +402,7 @@ def _build_canonical_row(
         actual_receive=_parse_decimal(attrs.get("actual_receive")),
         combo_string=(str(attrs["combo_string"]) if attrs.get("combo_string") else None),
         payments=payments,
+        discounts=discounts,
     )
 
 

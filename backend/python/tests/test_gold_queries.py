@@ -15,6 +15,7 @@ from smartbi.gold import (
     GoldMaterializer,
     channel_breakdown,
     daily_trend,
+    discount_breakdown,
     finance_summary,
     kpi_summary,
     top_products,
@@ -41,6 +42,31 @@ async def pool():
         yield p
     finally:
         await p.close()
+
+
+@pytest_asyncio.fixture
+async def clean_rows(pool):
+    """Wipe tenant rows; no seeding. Caller seeds inside the test."""
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        async with pool.acquire() as conn:
+            for t in ("agg_daily", "agg_product", "agg_channel"):
+                await conn.execute(f"DELETE FROM {t} WHERE factory_id=$1", _TENANT)
+            await conn.execute("DELETE FROM fact_pos_transaction WHERE factory_id=$1", _TENANT)
+            for t in ("dim_staff", "dim_product", "dim_payment_channel",
+                      "dim_discount", "dim_store"):
+                await conn.execute(f"DELETE FROM {t} WHERE factory_id=$1", _TENANT)
+        yield
+    finally:
+        async with pool.acquire() as conn:
+            for t in ("agg_daily", "agg_product", "agg_channel"):
+                await conn.execute(f"DELETE FROM {t} WHERE factory_id=$1", _TENANT)
+            await conn.execute("DELETE FROM fact_pos_transaction WHERE factory_id=$1", _TENANT)
+            for t in ("dim_staff", "dim_product", "dim_payment_channel",
+                      "dim_discount", "dim_store"):
+                await conn.execute(f"DELETE FROM {t} WHERE factory_id=$1", _TENANT)
+        reset_factory_id(token)
 
 
 @pytest_asyncio.fixture
@@ -252,6 +278,76 @@ async def test_channel_breakdown_empty_when_no_payments_seeded(pool, seeded):
         reset_factory_id(token)
     assert out["channels"] == []
     assert out["total_amount"] == 0.0
+
+
+# ── discount_breakdown ──────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_discount_breakdown_empty_when_no_discounts_seeded(pool, seeded):
+    """Base seeded fixture has no discounts → empty list, total=0."""
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        out = await discount_breakdown(
+            pool, _TENANT, (date(2026, 4, 21), date(2026, 4, 22)),
+        )
+    finally:
+        reset_factory_id(token)
+    assert out["discounts"] == []
+    assert out["total_amount"] == 0.0
+
+
+@pytest.mark.asyncio
+async def test_discount_breakdown_aggregates_and_ranks(pool, clean_rows):
+    """Seed 2 bills, each with 2 discounts; verify GROUP BY + ranking."""
+    from smartbi.canonical import CanonicalRow, SilverNormalizer
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        norm = SilverNormalizer(pool, _TENANT)
+        await norm.write_row(CanonicalRow(
+            factory_id=_TENANT, source_type="excel",
+            store_name="S", source_bill_no="D1", date=date(2026, 4, 21),
+            combo_string="#x#_1份*100",
+            discounts=(
+                ("点评98代100", Decimal("50"), 1),
+                ("鱼羊鲜50元", Decimal("20"), 1),
+            ),
+        ))
+        await norm.write_row(CanonicalRow(
+            factory_id=_TENANT, source_type="excel",
+            store_name="S", source_bill_no="D2", date=date(2026, 4, 22),
+            combo_string="#x#_1份*100",
+            discounts=(
+                ("点评98代100", Decimal("30"), 1),  # same discount, diff bill
+            ),
+        ))
+        out = await discount_breakdown(
+            pool, _TENANT, (date(2026, 4, 21), date(2026, 4, 22)),
+        )
+    finally:
+        reset_factory_id(token)
+    # Expect 2 distinct discounts; 点评98代100 sums to 80 (50+30) across 2 bills
+    assert len(out["discounts"]) == 2
+    assert out["discounts"][0]["discount_name"] == "点评98代100"
+    assert out["discounts"][0]["amount"] == 80.0
+    assert out["discounts"][0]["bill_count"] == 2
+    assert out["discounts"][1]["discount_name"] == "鱼羊鲜50元"
+    assert out["discounts"][1]["amount"] == 20.0
+    assert out["total_amount"] == 100.0
+
+
+@pytest.mark.asyncio
+async def test_discount_breakdown_rejects_inverted_range(pool):
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        with pytest.raises(ValueError, match="start .* > end"):
+            await discount_breakdown(
+                pool, _TENANT, (date(2026, 4, 22), date(2026, 4, 21)),
+            )
+    finally:
+        reset_factory_id(token)
 
 
 # ── kpi_summary ─────────────────────────────────────────────

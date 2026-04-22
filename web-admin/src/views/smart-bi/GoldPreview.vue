@@ -15,11 +15,13 @@ import { ElMessage } from 'element-plus';
 import {
   getChannelBreakdown,
   getDailyTrend,
+  getDiscountBreakdown,
   getFinanceSummary,
   getKpiSummary,
   getTopProducts,
   type ChannelBreakdown,
   type DailyTrend,
+  type DiscountBreakdown,
   type FinanceSummary,
   type KpiSummary,
   type TopProducts,
@@ -39,6 +41,7 @@ const finance = ref<FinanceSummary | null>(null);
 const trend = ref<DailyTrend | null>(null);
 const products = ref<TopProducts | null>(null);
 const channels = ref<ChannelBreakdown | null>(null);
+const discounts = ref<DiscountBreakdown | null>(null);
 
 const rmb = (n: number | null | undefined): string => {
   if (n == null) return '—';
@@ -65,19 +68,21 @@ async function loadAll(): Promise<void> {
       startDate: startDate.value,
       endDate: endDate.value,
     };
-    // Fire all 5 in parallel — independent Gold reads.
-    const [kpiR, financeR, trendR, productsR, channelsR] = await Promise.all([
+    // Fire all 6 in parallel — independent Gold reads.
+    const [kpiR, financeR, trendR, productsR, channelsR, discountsR] = await Promise.all([
       getKpiSummary(args),
       getFinanceSummary({ ...args, topNStores: 5 }),
       getDailyTrend(args),
       getTopProducts({ ...args, topN: 10 }),
       getChannelBreakdown({ ...args, topN: 10 }),
+      getDiscountBreakdown({ ...args, topN: 10 }),
     ]);
     kpi.value = kpiR;
     finance.value = financeR;
     trend.value = trendR;
     products.value = productsR;
     channels.value = channelsR;
+    discounts.value = discountsR;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     ElMessage.error(`Gold 查询失败: ${msg}`);
@@ -210,17 +215,40 @@ onMounted(() => {
         <el-card shadow="never" class="panel">
           <template #header>
             <div class="panel-header">
+              <span>折扣/代金券 (discount_breakdown)</span>
+              <span class="meta">{{ discounts?.discounts.length ?? 0 }} rows · total {{ rmb(discounts?.total_amount ?? 0) }}</span>
+            </div>
+          </template>
+          <el-table :data="discounts?.discounts ?? []" size="small" stripe max-height="320">
+            <el-table-column label="折扣类型" prop="discount_name" min-width="200" />
+            <el-table-column label="金额" align="right" width="130">
+              <template #default="{ row }">{{ rmb(row.amount) }}</template>
+            </el-table-column>
+            <el-table-column label="占比" align="right" width="80">
+              <template #default="{ row }">{{ row.share_pct.toFixed(2) }}%</template>
+            </el-table-column>
+            <el-table-column label="账单" prop="bill_count" align="right" width="80" />
+          </el-table>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <el-row :gutter="16">
+      <el-col :span="24">
+        <el-card shadow="never" class="panel">
+          <template #header>
+            <div class="panel-header">
               <span>日趋势 (daily_trend)</span>
               <span class="meta">{{ trendSummary.count }} 天 · 日均 {{ rmb(trendSummary.avg) }}</span>
             </div>
           </template>
           <el-table :data="trend?.points ?? []" size="small" stripe max-height="320">
             <el-table-column label="日期" prop="date" width="110" />
-            <el-table-column label="营收" align="right" width="130">
+            <el-table-column label="营收" align="right" width="140">
               <template #default="{ row }">{{ rmb(row.revenue) }}</template>
             </el-table-column>
-            <el-table-column label="账单" prop="bill_count" align="right" width="80" />
-            <el-table-column label="客单" align="right" width="100">
+            <el-table-column label="账单" prop="bill_count" align="right" width="100" />
+            <el-table-column label="客单" align="right" width="120">
               <template #default="{ row }">{{ rmb(row.avg_bill_value) }}</template>
             </el-table-column>
           </el-table>

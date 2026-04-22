@@ -198,6 +198,65 @@ async def channel_breakdown(
     }
 
 
+async def discount_breakdown(
+    pool: asyncpg.Pool,
+    factory_id: str,
+    date_range: Tuple[date, date],
+    *,
+    top_n: int = 10,
+) -> Dict[str, Any]:
+    """Discount usage broken down by voucher/coupon type.
+
+    No agg_discount table — we GROUP BY directly over fact_pos_discount
+    joined to fact_pos_transaction for the date filter. This is one
+    ad-hoc aggregate per request (PG handles 140K rows in ~10ms); if it
+    becomes a hot path, a future migration can add agg_discount.
+
+    Only counts discounts actually used in the date range's bills.
+    (不计)-suffixed columns are already filtered out upstream by the
+    backfill heuristic — those never reach fact_pos_discount.
+    """
+    start, end = date_range
+    _validate_range(start, end)
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT d.discount_id,
+                   d.name,
+                   SUM(fd.amount)::numeric(18,2) AS amount,
+                   COUNT(DISTINCT fd.transaction_id) AS bill_count
+              FROM fact_pos_discount fd
+              JOIN fact_pos_transaction t ON t.id = fd.transaction_id
+              JOIN dim_discount d ON d.discount_id = fd.discount_id
+             WHERE fd.factory_id = $1
+               AND t.date BETWEEN $2 AND $3
+             GROUP BY d.discount_id, d.name
+             ORDER BY SUM(fd.amount) DESC
+             LIMIT $4
+            """,
+            factory_id, start, end, int(top_n),
+        )
+    total = sum(Decimal(r["amount"]) for r in rows)
+    items = []
+    for r in rows:
+        amt = Decimal(r["amount"])
+        share = float((amt / total * 100).quantize(Decimal("0.01"))) if total > 0 else 0.0
+        items.append({
+            "discount_id": int(r["discount_id"]),
+            "discount_name": r["name"],
+            "amount": float(amt),
+            "bill_count": int(r["bill_count"]),
+            "share_pct": share,
+        })
+    return {
+        "factory_id": factory_id,
+        "start_date": start.isoformat(),
+        "end_date": end.isoformat(),
+        "total_amount": float(total),
+        "discounts": items,
+    }
+
+
 async def kpi_summary(
     pool: asyncpg.Pool,
     factory_id: str,

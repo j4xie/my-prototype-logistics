@@ -422,3 +422,72 @@ async def test_agg_channel_rows_reasonable(pool, has_data):
     finally:
         reset_factory_id(token)
     assert n == 3404
+
+
+# ── Discounts (added post v3 backfill, 2026-04-21) ──────────
+
+@pytest.mark.asyncio
+async def test_discount_types_discovered(pool, has_data):
+    """Heuristic discount extraction found 39 distinct voucher/coupon types."""
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        async with pool.acquire() as conn:
+            n = await conn.fetchval(
+                "SELECT COUNT(*) FROM dim_discount WHERE factory_id=$1", _TENANT
+            )
+    finally:
+        reset_factory_id(token)
+    assert n == 39
+
+
+@pytest.mark.asyncio
+async def test_fact_discount_totals(pool, has_data):
+    """18,936 discount applications across all bills; ¥3.28M total discount
+    amount. Meituan vouchers dominate (81% share)."""
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        async with pool.acquire() as conn:
+            n = await conn.fetchval(
+                "SELECT COUNT(*) FROM fact_pos_discount WHERE factory_id=$1", _TENANT
+            )
+            total = await conn.fetchval(
+                "SELECT SUM(amount) FROM fact_pos_discount WHERE factory_id=$1", _TENANT
+            )
+    finally:
+        reset_factory_id(token)
+    assert n == 18936
+    assert abs(total - Decimal("3283897.92")) < _EPSILON_AMOUNT
+
+
+@pytest.mark.asyncio
+async def test_top_3_discounts(pool, has_data):
+    """Known ranking captured 2026-04-21 (v3 backfill). Meituan voucher
+    dominates by wide margin."""
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT d.name, SUM(fd.amount) AS total
+                  FROM fact_pos_discount fd
+                  JOIN dim_discount d ON d.discount_id = fd.discount_id
+                 WHERE fd.factory_id=$1
+                 GROUP BY d.name
+                 ORDER BY SUM(fd.amount) DESC
+                 LIMIT 3
+                """,
+                _TENANT,
+            )
+    finally:
+        reset_factory_id(token)
+    expected = [
+        ("[美团代金券]", Decimal("2675359.00")),
+        ("[抖音代金券]", Decimal("270192.00")),
+        ("[美团套餐券]", Decimal("223064.30")),
+    ]
+    for i, (name, total) in enumerate(expected):
+        assert rows[i]["name"] == name
+        assert abs(rows[i]["total"] - total) < _EPSILON_AMOUNT

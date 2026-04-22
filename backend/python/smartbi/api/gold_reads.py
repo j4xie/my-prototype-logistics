@@ -25,6 +25,7 @@ from smartbi.config import get_pg_pool
 from smartbi.gold import (
     channel_breakdown,
     daily_trend,
+    discount_breakdown,
     finance_summary,
     kpi_summary,
     top_products,
@@ -146,6 +147,25 @@ async def get_channel_breakdown(
         return await channel_breakdown(pool, fid, (start, end), top_n=top_n)
     except Exception as e:
         logger.exception("channel-breakdown failed: %s", e)
+        raise HTTPException(status_code=500, detail=f"Gold query failed: {e}")
+
+
+@router.get("/discount-breakdown")
+async def get_discount_breakdown(
+    start_date: str = Query(...),
+    end_date: str = Query(...),
+    factory_id: Optional[str] = Query(None),
+    top_n: int = Query(10, ge=1, le=100),
+):
+    """Voucher/coupon usage ranked by amount. Direct aggregate over
+    fact_pos_discount (no materialized agg_discount table yet)."""
+    fid = _resolve_tenant(factory_id)
+    start, end = _parse_range(start_date, end_date)
+    pool = await get_pg_pool()
+    try:
+        return await discount_breakdown(pool, fid, (start, end), top_n=top_n)
+    except Exception as e:
+        logger.exception("discount-breakdown failed: %s", e)
         raise HTTPException(status_code=500, detail=f"Gold query failed: {e}")
 
 
