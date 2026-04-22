@@ -77,3 +77,8 @@ def load_all_templates():
     from . import dish_time_slot_matrix      # noqa: F401
     from . import refund_analysis            # noqa: F401
     from . import weekday_weekend_pattern    # noqa: F401
+    # W3 餐饮常见 Q-A 补充 (Apr 22 2026, 4 templates)
+    from . import dish_by_table_type              # noqa: F401
+    from . import combo_usage_rate                # noqa: F401
+    from . import reverse_checkout_stats          # noqa: F401
+    from . import store_customer_stratification   # noqa: F401

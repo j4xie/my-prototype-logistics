@@ -34,6 +34,15 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
         "dish_category_breakdown",
         [["分类", "品类", "类别", "饮品", "主食", "小吃", "啤酒", "套餐"], ["销量", "销售", "占比", "份额", "结构"]],
     ),
+    # dish_by_table_type must precede table_type_comparison — both match 包厢/大厅/外卖
+    # keywords, but when the user also mentions 菜品/点单/点菜/偏好, dish drill-down is
+    # the right answer. Router takes the first pattern that matches.
+    (
+        "dish_by_table_type",
+        # "包厢客人点什么" / "大厅点单菜品" / "外卖菜品和堂食差什么"
+        [["包厢", "大厅", "堂食", "外卖", "桌位", "散客"],
+         ["菜品", "商品", "点单", "点菜", "点什么", "偏好", "爱点"]],
+    ),
     (
         "table_type_comparison",
         [["包厢", "大厅", "堂食", "外卖", "桌位", "就餐", "散客"], ["对比", "比较", "分析", "销售", "订单", "客单价", "人均", "数量"]],
@@ -65,6 +74,23 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
     (
         "weekday_weekend_pattern",
         [["周末", "工作日", "周一", "周日", "平日"], ["对比", "差异", "差别", "分析", "营业额", "销售"]],
+    ),
+    # === W3 餐饮常见 Q-A 补充 (Apr 22 2026) ===
+    # Note: dish_by_table_type is placed above, ahead of table_type_comparison.
+    (
+        "combo_usage_rate",
+        # "套餐使用率" / "有多少客人点套餐" / "套餐销量"
+        [["套餐"], ["使用率", "占比", "多少", "分析", "销量", "使用", "点"]],
+    ),
+    (
+        "reverse_checkout_stats",
+        # "反结账统计" / "反结账次数" / "哪些单反结了"
+        [["反结账", "反结", "已反结"], ["统计", "次数", "多少", "分析", "门店", "哪些"]],
+    ),
+    (
+        "store_customer_stratification",
+        # "门店客单人数分层" / "几人桌占比" / "1 人桌多少"
+        [["门店", "客单", "几人", "人数"], ["分层", "占比", "分布", "分析", "桌"]],
     ),
     # === Generic W1 templates (lower priority, broader match) ===
     (
