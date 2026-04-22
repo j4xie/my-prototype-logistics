@@ -102,31 +102,31 @@ export async function getFinanceSummary(args: DateRangeQuery & { topNStores?: nu
     end_date: args.endDate,
   });
   if (args.topNStores !== undefined) p.set('top_n_stores', String(args.topNStores));
-  return (await pythonFetch(`/smartbi/gold/finance-summary?${p}`, {
+  return (await pythonFetch(`/api/smartbi/gold/finance-summary?${p}`, {
     timeoutMs: PYTHON_LLM_TIMEOUT_MS,
   })) as FinanceSummary;
 }
 
 export async function getDailyTrend(args: DateRangeQuery): Promise<DailyTrend> {
-  return (await pythonFetch(`/smartbi/gold/daily-trend?${_q(args)}`, {
+  return (await pythonFetch(`/api/smartbi/gold/daily-trend?${_q(args)}`, {
     timeoutMs: PYTHON_LLM_TIMEOUT_MS,
   })) as DailyTrend;
 }
 
 export async function getTopProducts(args: DateRangeQuery & { topN?: number }): Promise<TopProducts> {
-  return (await pythonFetch(`/smartbi/gold/top-products?${_q(args)}`, {
+  return (await pythonFetch(`/api/smartbi/gold/top-products?${_q(args)}`, {
     timeoutMs: PYTHON_LLM_TIMEOUT_MS,
   })) as TopProducts;
 }
 
 export async function getChannelBreakdown(args: DateRangeQuery & { topN?: number }): Promise<ChannelBreakdown> {
-  return (await pythonFetch(`/smartbi/gold/channel-breakdown?${_q(args)}`, {
+  return (await pythonFetch(`/api/smartbi/gold/channel-breakdown?${_q(args)}`, {
     timeoutMs: PYTHON_LLM_TIMEOUT_MS,
   })) as ChannelBreakdown;
 }
 
 export async function getKpiSummary(args: DateRangeQuery): Promise<KpiSummary> {
-  return (await pythonFetch(`/smartbi/gold/kpi-summary?${_q(args)}`, {
+  return (await pythonFetch(`/api/smartbi/gold/kpi-summary?${_q(args)}`, {
     timeoutMs: PYTHON_LLM_TIMEOUT_MS,
   })) as KpiSummary;
 }
