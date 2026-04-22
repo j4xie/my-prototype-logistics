@@ -1,5 +1,6 @@
 package com.cretas.aims.service.smartbi.impl;
 
+import com.cretas.aims.client.GoldFinanceClient;
 import com.cretas.aims.dto.smartbi.AIInsight;
 import com.cretas.aims.dto.smartbi.ChartConfig;
 import com.cretas.aims.dto.smartbi.DashboardResponse;
@@ -15,6 +16,7 @@ import com.cretas.aims.service.smartbi.FinanceAnalysisService;
 import com.cretas.aims.service.smartbi.MetricCalculatorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -25,6 +27,7 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.WeekFields;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -51,6 +54,16 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
     private final SmartBiFinanceDataRepository financeDataRepository;
     private final SmartBiSalesDataRepository salesDataRepository;
     private final MetricCalculatorService metricCalculatorService;
+    private final GoldFinanceClient goldFinanceClient;
+
+    /**
+     * v1 Phase B v0 shadow-read flag. When true, every getFinanceOverview call
+     * also fires a background Gold query and logs the result for offline
+     * comparison with the legacy DashboardResponse. Default false.
+     * Config key: smartbi.gold.shadow-read.enabled
+     */
+    @Value("${smartbi.gold.shadow-read.enabled:false}")
+    private boolean goldShadowReadEnabled;
 
     // 计算精度配置
     private static final int SCALE = 4;
@@ -114,6 +127,12 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
         // 生成建议
         List<String> suggestions = generateFinanceSuggestions(metricResults, overdueRankings);
 
+        // v1 Phase B v0: shadow-read Gold path (fire-and-forget, log only).
+        // When smartbi.gold.shadow-read.enabled=true, every finance overview
+        // request also kicks off a Gold query; the result is logged for
+        // offline divergence review. Never affects the legacy response.
+        fireGoldShadowRead(factoryId, startDate, endDate);
+
         return DashboardResponse.builder()
                 .kpiCards(kpiCards)
                 .charts(charts)
@@ -122,6 +141,31 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
                 .suggestions(suggestions)
                 .lastUpdated(LocalDateTime.now())
                 .build();
+    }
+
+    /**
+     * Asynchronously call the Python Gold finance-summary endpoint and log
+     * the result. Silently skipped when the flag is off. Exceptions are
+     * swallowed + logged — legacy caller never sees Gold failures.
+     *
+     * Kept as a separate method (not inlined) so the hot path reads
+     * cleanly and the shadow-read logic is easy to rip out or extend.
+     */
+    private void fireGoldShadowRead(String factoryId, LocalDate startDate, LocalDate endDate) {
+        if (!goldShadowReadEnabled) return;
+        if (goldFinanceClient == null) return;  // defensive; Spring should always inject
+        CompletableFuture.runAsync(() -> {
+            try {
+                Map<String, Object> gold = goldFinanceClient.fetchFinanceSummary(
+                        factoryId, startDate, endDate, 5);
+                log.info("[gold-shadow] factory={} range={}..{} gold_revenue={} gold_bills={} gold_stores={}",
+                        factoryId, startDate, endDate,
+                        gold.get("total_revenue"), gold.get("bill_count"), gold.get("store_count"));
+            } catch (Exception e) {
+                log.warn("[gold-shadow] factory={} range={}..{} failed: {}",
+                        factoryId, startDate, endDate, e.getMessage());
+            }
+        });
     }
 
     // ==================== 利润分析 ====================
