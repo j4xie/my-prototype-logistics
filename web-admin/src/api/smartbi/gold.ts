@@ -2,9 +2,11 @@
  * SmartBI Gold Reads API client.
  *
  * Wraps the 5 /api/smartbi/gold/* endpoints exposed by the Python backend
- * (week 4 Phase B v0 of Unified Data Layer v1 spec). Each function returns
- * the raw JSON shape the endpoint produces; no camelCase transform applied
- * because the Vue page knows to use snake_case from these routes.
+ * (week 4 Phase B v0 of Unified Data Layer v1 spec).
+ *
+ * NOTE: pythonFetch auto-converts snake_case → camelCase via transformKeys
+ * (see common.ts line ~190). So these interfaces describe the CAMELCASE
+ * shape the caller actually receives, not the raw Python JSON.
  */
 import { pythonFetch, PYTHON_LLM_TIMEOUT_MS } from './common';
 
@@ -15,88 +17,88 @@ export interface DateRangeQuery {
 }
 
 export interface FinanceSummary {
-  factory_id: string;
-  start_date: string;
-  end_date: string;
-  total_revenue: number;
-  bill_count: number;
-  avg_bill_value: number | null;
-  store_count: number;
-  day_count: number;
-  top_stores: Array<{
-    store_id: number;
-    store_name: string;
+  factoryId: string;
+  startDate: string;
+  endDate: string;
+  totalRevenue: number;
+  billCount: number;
+  avgBillValue: number | null;
+  storeCount: number;
+  dayCount: number;
+  topStores: Array<{
+    storeId: number;
+    storeName: string;
     revenue: number;
-    bill_count: number;
+    billCount: number;
   }>;
 }
 
 export interface DailyTrend {
-  factory_id: string;
-  start_date: string;
-  end_date: string;
+  factoryId: string;
+  startDate: string;
+  endDate: string;
   points: Array<{
     date: string;
     revenue: number;
-    bill_count: number;
-    avg_bill_value: number | null;
+    billCount: number;
+    avgBillValue: number | null;
   }>;
 }
 
 export interface TopProducts {
-  factory_id: string;
-  start_month: string;
-  end_month: string;
-  top_products: Array<{
-    product_id: number;
-    product_name: string;
-    qty_sold: number;
+  factoryId: string;
+  startMonth: string;
+  endMonth: string;
+  topProducts: Array<{
+    productId: number;
+    productName: string;
+    qtySold: number;
     revenue: number;
-    bill_count: number;
+    billCount: number;
   }>;
 }
 
 export interface ChannelBreakdown {
-  factory_id: string;
-  start_date: string;
-  end_date: string;
-  total_amount: number;
+  factoryId: string;
+  startDate: string;
+  endDate: string;
+  totalAmount: number;
   channels: Array<{
-    channel_id: number;
-    channel_name: string;
+    channelId: number;
+    channelName: string;
     amount: number;
-    bill_count: number;
-    share_pct: number;
+    billCount: number;
+    sharePct: number;
   }>;
 }
 
 export interface DiscountBreakdown {
-  factory_id: string;
-  start_date: string;
-  end_date: string;
-  total_amount: number;
+  factoryId: string;
+  startDate: string;
+  endDate: string;
+  totalAmount: number;
   discounts: Array<{
-    discount_id: number;
-    discount_name: string;
+    discountId: number;
+    discountName: string;
     amount: number;
-    bill_count: number;
-    share_pct: number;
+    billCount: number;
+    sharePct: number;
   }>;
 }
 
 export interface KpiSummary {
-  factory_id: string;
-  start_date: string;
-  end_date: string;
+  factoryId: string;
+  startDate: string;
+  endDate: string;
   revenue: number;
-  bill_count: number;
-  item_count: number;
-  customer_count: number;
-  store_count: number;
-  day_count: number;
-  avg_bill_value: number | null;
-  items_per_bill: number | null;
-  avg_per_capita: number | null;
+  billCount: number;
+  itemCount: number;
+  customerCount: number;
+  storeCount: number;
+  dayCount: number;
+  avgBillValue: number | null;
+  itemsPerBill: number | null;
+  avgPerCapita: number | null;
 }
 
 const _q = (args: DateRangeQuery & { topN?: number }): string => {

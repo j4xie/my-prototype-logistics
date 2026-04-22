@@ -128,28 +128,28 @@ onMounted(() => {
         <el-statistic title="总营收" :value="kpi?.revenue ?? 0" :precision="2" :formatter="(v: number) => rmb(v)" />
       </el-col>
       <el-col :span="6">
-        <el-statistic title="账单数" :value="kpi?.bill_count ?? 0" />
+        <el-statistic title="账单数" :value="kpi?.billCount ?? 0" />
       </el-col>
       <el-col :span="6">
-        <el-statistic title="客单价" :value="kpi?.avg_bill_value ?? 0" :precision="2" :formatter="(v: number) => rmb(v)" />
+        <el-statistic title="客单价" :value="kpi?.avgBillValue ?? 0" :precision="2" :formatter="(v: number) => rmb(v)" />
       </el-col>
       <el-col :span="6">
-        <el-statistic title="人均消费" :value="kpi?.avg_per_capita ?? 0" :precision="2" :formatter="(v: number) => rmb(v)" />
+        <el-statistic title="人均消费" :value="kpi?.avgPerCapita ?? 0" :precision="2" :formatter="(v: number) => rmb(v)" />
       </el-col>
     </el-row>
 
     <el-row :gutter="16" class="kpi-row">
       <el-col :span="6">
-        <el-statistic title="商品数/单" :value="kpi?.items_per_bill ?? 0" :precision="2" />
+        <el-statistic title="商品数/单" :value="kpi?.itemsPerBill ?? 0" :precision="2" />
       </el-col>
       <el-col :span="6">
-        <el-statistic title="门店数" :value="kpi?.store_count ?? 0" />
+        <el-statistic title="门店数" :value="kpi?.storeCount ?? 0" />
       </el-col>
       <el-col :span="6">
-        <el-statistic title="活跃天数" :value="kpi?.day_count ?? 0" />
+        <el-statistic title="活跃天数" :value="kpi?.dayCount ?? 0" />
       </el-col>
       <el-col :span="6">
-        <el-statistic title="顾客总数" :value="kpi?.customer_count ?? 0" />
+        <el-statistic title="顾客总数" :value="kpi?.customerCount ?? 0" />
       </el-col>
     </el-row>
 
@@ -159,15 +159,15 @@ onMounted(() => {
           <template #header>
             <div class="panel-header">
               <span>门店 Top 5 (finance_summary)</span>
-              <span class="meta">{{ finance?.top_stores.length ?? 0 }} rows</span>
+              <span class="meta">{{ finance?.topStores?.length ?? 0 }} rows</span>
             </div>
           </template>
-          <el-table :data="finance?.top_stores ?? []" size="small" stripe>
-            <el-table-column label="门店" prop="store_name" min-width="200" />
+          <el-table :data="finance?.topStores ?? []" size="small" stripe>
+            <el-table-column label="门店" prop="storeName" min-width="200" />
             <el-table-column label="营收" align="right" width="140">
               <template #default="{ row }">{{ rmb(row.revenue) }}</template>
             </el-table-column>
-            <el-table-column label="账单" prop="bill_count" align="right" width="90" />
+            <el-table-column label="账单" prop="billCount" align="right" width="90" />
           </el-table>
         </el-card>
       </el-col>
@@ -176,12 +176,12 @@ onMounted(() => {
           <template #header>
             <div class="panel-header">
               <span>商品 Top 10 (top_products)</span>
-              <span class="meta">{{ products?.top_products.length ?? 0 }} rows · {{ products?.start_month }} — {{ products?.end_month }}</span>
+              <span class="meta">{{ products?.topProducts?.length ?? 0 }} rows · {{ products?.startMonth }} — {{ products?.endMonth }}</span>
             </div>
           </template>
-          <el-table :data="products?.top_products ?? []" size="small" stripe max-height="320">
-            <el-table-column label="商品" prop="product_name" min-width="200" />
-            <el-table-column label="销量" prop="qty_sold" align="right" width="90" />
+          <el-table :data="products?.topProducts ?? []" size="small" stripe max-height="320">
+            <el-table-column label="商品" prop="productName" min-width="200" />
+            <el-table-column label="销量" prop="qtySold" align="right" width="90" />
             <el-table-column label="营收" align="right" width="120">
               <template #default="{ row }">{{ rmb(row.revenue) }}</template>
             </el-table-column>
@@ -196,18 +196,18 @@ onMounted(() => {
           <template #header>
             <div class="panel-header">
               <span>支付渠道 (channel_breakdown)</span>
-              <span class="meta">{{ channels?.channels.length ?? 0 }} rows · total {{ rmb(channels?.total_amount ?? 0) }}</span>
+              <span class="meta">{{ channels?.channels?.length ?? 0 }} rows · total {{ rmb(channels?.totalAmount ?? 0) }}</span>
             </div>
           </template>
           <el-table :data="channels?.channels ?? []" size="small" stripe max-height="320">
-            <el-table-column label="渠道" prop="channel_name" min-width="150" />
+            <el-table-column label="渠道" prop="channelName" min-width="150" />
             <el-table-column label="金额" align="right" width="130">
               <template #default="{ row }">{{ rmb(row.amount) }}</template>
             </el-table-column>
             <el-table-column label="占比" align="right" width="80">
-              <template #default="{ row }">{{ row.share_pct.toFixed(2) }}%</template>
+              <template #default="{ row }">{{ (row.sharePct ?? 0).toFixed(2) }}%</template>
             </el-table-column>
-            <el-table-column label="账单" prop="bill_count" align="right" width="80" />
+            <el-table-column label="账单" prop="billCount" align="right" width="80" />
           </el-table>
         </el-card>
       </el-col>
@@ -216,18 +216,18 @@ onMounted(() => {
           <template #header>
             <div class="panel-header">
               <span>折扣/代金券 (discount_breakdown)</span>
-              <span class="meta">{{ discounts?.discounts.length ?? 0 }} rows · total {{ rmb(discounts?.total_amount ?? 0) }}</span>
+              <span class="meta">{{ discounts?.discounts?.length ?? 0 }} rows · total {{ rmb(discounts?.totalAmount ?? 0) }}</span>
             </div>
           </template>
           <el-table :data="discounts?.discounts ?? []" size="small" stripe max-height="320">
-            <el-table-column label="折扣类型" prop="discount_name" min-width="200" />
+            <el-table-column label="折扣类型" prop="discountName" min-width="200" />
             <el-table-column label="金额" align="right" width="130">
               <template #default="{ row }">{{ rmb(row.amount) }}</template>
             </el-table-column>
             <el-table-column label="占比" align="right" width="80">
-              <template #default="{ row }">{{ row.share_pct.toFixed(2) }}%</template>
+              <template #default="{ row }">{{ (row.sharePct ?? 0).toFixed(2) }}%</template>
             </el-table-column>
-            <el-table-column label="账单" prop="bill_count" align="right" width="80" />
+            <el-table-column label="账单" prop="billCount" align="right" width="80" />
           </el-table>
         </el-card>
       </el-col>
@@ -247,9 +247,9 @@ onMounted(() => {
             <el-table-column label="营收" align="right" width="140">
               <template #default="{ row }">{{ rmb(row.revenue) }}</template>
             </el-table-column>
-            <el-table-column label="账单" prop="bill_count" align="right" width="100" />
+            <el-table-column label="账单" prop="billCount" align="right" width="100" />
             <el-table-column label="客单" align="right" width="120">
-              <template #default="{ row }">{{ rmb(row.avg_bill_value) }}</template>
+              <template #default="{ row }">{{ rmb(row.avgBillValue) }}</template>
             </el-table-column>
           </el-table>
         </el-card>
