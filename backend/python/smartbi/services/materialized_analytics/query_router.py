@@ -128,6 +128,13 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
         # "采购入库" / "进销存" / "供应商分析"
         [["采购", "进销存", "入库", "供应商", "原料"], ["分析", "多少", "报表", "金额", "Top", "占比"]],
     ),
+    # W3 营业概况报表
+    (
+        "business_overview_summary",
+        # "营业概况" / "月度汇总" / "门店日报"
+        [["营业概况", "营业汇总", "月度", "月报", "汇总", "概况", "日报"],
+         ["报表", "分析", "多少", "总", "合计", "峰值", "最高", "最低"]],
+    ),
     # Note: revenue_management_report / stored_value_card_consumption /
     # groupon_channel_breakdown are placed above, ahead of their respective
     # broader siblings (table_type_comparison / member_consumption / channel_analysis).

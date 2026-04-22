@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.schema_helpers import find_customer_col
 from ..restaurant.table_classifier import classify_table
 from ..schema import DataSchema, Domain
 from .base import AnalysisTemplate, TemplateResult
@@ -27,9 +28,8 @@ from .registry import register
 
 _TABLE_COL = "桌位"
 _SHIFT_COL = "班次"
-_OPEN_TIME_COL = "开单时间"
+_OPEN_TIME_CANDIDATES = ("开单时间", "下单时间", "点单时间", "结单时间")
 _REVENUE_CANDIDATES = ("实收额", "实收", "营业额", "应收金额")
-_CUSTOMER_COL = "客流量"
 _SAMPLE_CAP = 200_000
 
 # Expected channel order (for stable display)
@@ -104,7 +104,8 @@ class RevenueManagementReport(AnalysisTemplate):
         names = {f.name for f in schema.fields}
         if _TABLE_COL not in names:
             return False
-        return (_SHIFT_COL in names) or (_OPEN_TIME_COL in names)
+        has_time_signal = (_SHIFT_COL in names) or any(c in names for c in _OPEN_TIME_CANDIDATES)
+        return has_time_signal
 
     def compute(self, backend: ComputeBackend, schema: DataSchema) -> TemplateResult:
         df = backend._df  # type: ignore[attr-defined]
@@ -116,11 +117,13 @@ class RevenueManagementReport(AnalysisTemplate):
                 code=self.code, title=self.title, data={},
                 applies=False, skip_reason="no revenue column found",
             )
+        open_time_col = next((c for c in _OPEN_TIME_CANDIDATES if c in cols), None)
+        customer_col = find_customer_col(cols)
 
         use_cols = [_TABLE_COL, revenue_col]
         if _SHIFT_COL in cols: use_cols.append(_SHIFT_COL)
-        if _OPEN_TIME_COL in cols: use_cols.append(_OPEN_TIME_COL)
-        if _CUSTOMER_COL in cols: use_cols.append(_CUSTOMER_COL)
+        if open_time_col: use_cols.append(open_time_col)
+        if customer_col: use_cols.append(customer_col)
 
         sample = df.head(_SAMPLE_CAP) if df.height > _SAMPLE_CAP else df
         rows = sample.select(use_cols).to_dicts()
@@ -132,7 +135,10 @@ class RevenueManagementReport(AnalysisTemplate):
 
         for row in rows:
             channel = _derive_channel(classify_table(row.get(_TABLE_COL)))
-            slot = _derive_time_slot(row.get(_SHIFT_COL), row.get(_OPEN_TIME_COL))
+            slot = _derive_time_slot(
+                row.get(_SHIFT_COL),
+                row.get(open_time_col) if open_time_col else None,
+            )
             if slot is None:
                 slot = "未知"
             key = (channel, slot)
@@ -141,9 +147,9 @@ class RevenueManagementReport(AnalysisTemplate):
                 revenue[key] += float(row.get(revenue_col) or 0.0)
             except (TypeError, ValueError):
                 pass
-            if _CUSTOMER_COL in cols:
+            if customer_col:
                 try:
-                    customers[key] += float(row.get(_CUSTOMER_COL) or 0.0)
+                    customers[key] += float(row.get(customer_col) or 0.0)
                 except (TypeError, ValueError):
                     pass
 
@@ -176,7 +182,7 @@ class RevenueManagementReport(AnalysisTemplate):
                 key = (ch, sl)
                 o = orders.get(key, 0)
                 r = revenue.get(key, 0.0)
-                c = customers.get(key, 0.0) if _CUSTOMER_COL in cols else 0.0
+                c = customers.get(key, 0.0) if customer_col else 0.0
                 avg = round(r / o, 2) if o > 0 else 0.0
                 per_customer = round(r / c, 2) if c > 0 else None
                 cells.append({

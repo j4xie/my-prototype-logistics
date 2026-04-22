@@ -89,3 +89,5 @@ def load_all_templates():
     from . import groupon_channel_breakdown       # noqa: F401
     # W3 进销存 (Apr 22 2026)
     from . import purchase_inventory_inflow       # noqa: F401
+    # W3 营业概况报表 (Apr 22 2026) — 桂满陇/营业概况类聚合报表
+    from . import business_overview_summary       # noqa: F401
