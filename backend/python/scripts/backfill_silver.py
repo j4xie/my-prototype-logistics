@@ -55,56 +55,78 @@ _ALIAS_TO_ATTR: Dict[str, str] = {
     "店铺": "store_name",
     "shop_name": "store_name",
 
-    # bill no
+    # bill no — qhj uses 账单号; other customers use 订单号 / 单号
     "source_bill_no": "source_bill_no",
     "bill_no": "source_bill_no",
     "order_no": "source_bill_no",
     "订单号": "source_bill_no",
     "单号": "source_bill_no",
     "账单号": "source_bill_no",
+    "结账号": "source_bill_no",
+    "外部单号": "source_bill_no",
 
-    # date / time
+    # date — 营业日期 is the qhj canonical; 开单时间 is an adjacent datetime
+    # we don't need (date is derivable). Keep 营业日期 as the primary.
     "date": "date",
     "日期": "date",
+    "营业日期": "date",
     "transaction_date": "date",
     "交易日期": "date",
     "order_date": "date",
 
-    # staff
+    # staff — qhj has 3 roles; all map to staff_name with role inferred elsewhere
     "staff_name": "staff_name",
     "收银员": "staff_name",
     "服务员": "staff_name",
+    "销售员": "staff_name",
 
     # bill-level amounts
     "gross_amount": "gross_amount",
     "应收金额": "gross_amount",
+    "营业额": "gross_amount",
     "原价": "gross_amount",
+    "商品折前金额": "gross_amount",
+
     "discount_amount": "discount_amount",
     "优惠金额": "discount_amount",
     "折扣金额": "discount_amount",
+    "折扣额": "discount_amount",
+    "代金券优惠": "discount_amount",
+
     "net_amount": "net_amount",
     "实收金额": "net_amount",
+    "实收额": "net_amount",
+    "商品折后金额": "net_amount",
     "净额": "net_amount",
+
     "actual_receive": "actual_receive",
+    "收款金额": "actual_receive",
     "实收": "actual_receive",
 
-    # counts
+    # counts — qhj uses 客流量 for customer head count
     "customer_count": "customer_count",
     "人数": "customer_count",
     "就餐人数": "customer_count",
+    "客流量": "customer_count",
 
     # metadata
     "table_no": "table_no",
     "桌号": "table_no",
+    "桌位": "table_no",
+
     "order_type": "order_type",
     "订单类型": "order_type",
+
     "channel_origin": "channel_origin",
     "来源": "channel_origin",
+    "订单来源": "channel_origin",
 
-    # combo string
+    # combo string — qhj's 商品信息 is the full product list blob;
+    # combo_parser splits it into fact_pos_item rows.
     "combo_string": "combo_string",
     "菜品明细": "combo_string",
     "商品": "combo_string",
+    "商品信息": "combo_string",
     "订单明细": "combo_string",
 }
 
@@ -167,6 +189,57 @@ def _parse_int(raw: Any) -> Optional[int]:
         return None
 
 
+def _normalize_field_mappings(raw: Any) -> Dict[str, str]:
+    """Normalize field_mappings JSONB into a {original_col: standard_field} dict.
+
+    Legacy storage has two shapes in the wild:
+      1. Dict format: {"门店名称": "store_name", ...}
+      2. Array-of-objects format: [{"originalColumn": "门店名称",
+         "standardField": "category_name", "dataType": "TEXT", ...}]
+
+    Both come back from asyncpg as parsed Python objects (dict / list) when
+    the JSONB codec is active, or as strings when not — handle both.
+    """
+    if raw is None:
+        return {}
+    if isinstance(raw, str):
+        import json
+        raw = json.loads(raw) if raw else None
+        if raw is None:
+            return {}
+    if isinstance(raw, dict):
+        return {str(k): str(v) for k, v in raw.items() if v is not None}
+    if isinstance(raw, list):
+        out: Dict[str, str] = {}
+        for item in raw:
+            if not isinstance(item, dict):
+                continue
+            orig = item.get("originalColumn") or item.get("original")
+            std = item.get("standardField") or item.get("standard")
+            if orig:
+                out[str(orig)] = str(std) if std else ""
+        return out
+    return {}
+
+
+def _lookup_attr(original_col: str, canonical_name: Optional[str]) -> Optional[str]:
+    """Two-path lookup for mapping a column to a CanonicalRow attr:
+
+    1. Preferred: canonical_name (from semantic_mapper's standardField).
+    2. Fallback: original_col (the raw Chinese/English column name).
+
+    The fallback matters because semantic_mapper sometimes emits generic
+    type tags like 'category_name' / 'time_period' instead of specific
+    business fields. In that case the Chinese original column name is the
+    only reliable signal — so we look it up too.
+    """
+    if canonical_name:
+        attr = _ALIAS_TO_ATTR.get(canonical_name)
+        if attr is not None:
+            return attr
+    return _ALIAS_TO_ATTR.get(original_col)
+
+
 def _build_canonical_row(
     row_data: Dict[str, Any],
     field_mappings: Dict[str, str],
@@ -184,13 +257,12 @@ def _build_canonical_row(
 
     for original_col, value in row_data.items():
         canonical_name = field_mappings.get(original_col)
-        if canonical_name is None:
-            continue
-        attr = _ALIAS_TO_ATTR.get(canonical_name)
+        attr = _lookup_attr(original_col, canonical_name)
         if attr is None:
-            # First time we've seen this canonical — record for reporting.
-            if canonical_name not in unknown_out:
-                unknown_out.append(canonical_name)
+            # Track both paths' failures so admin can see what's dropped.
+            unmapped_key = canonical_name or f"<raw>{original_col}"
+            if unmapped_key not in unknown_out:
+                unknown_out.append(unmapped_key)
             continue
         attrs[attr] = value
 
@@ -244,12 +316,7 @@ async def backfill_upload(
         )
         if row is None:
             raise ValueError(f"upload {upload_id} not found in smart_bi_pg_excel_uploads")
-        import json
-        fm_raw = row["field_mappings"]
-        if isinstance(fm_raw, str):
-            field_mappings: Dict[str, str] = json.loads(fm_raw) or {}
-        else:
-            field_mappings = dict(fm_raw or {})
+        field_mappings = _normalize_field_mappings(row["field_mappings"])
 
     # Stream rows — don't pull all ~200K into memory. Use server-side cursor.
     rows_to_send: List[CanonicalRow] = []

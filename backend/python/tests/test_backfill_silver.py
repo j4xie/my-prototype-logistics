@@ -26,6 +26,8 @@ if str(_SCRIPTS) not in sys.path:
 from backfill_silver import (  # noqa: E402
     _ALIAS_TO_ATTR,
     _build_canonical_row,
+    _lookup_attr,
+    _normalize_field_mappings,
     _parse_date,
     _parse_decimal,
     _parse_int,
@@ -94,7 +96,9 @@ def test_build_canonical_row_maps_chinese_aliases():
     assert row.net_amount == Decimal("58.00")
     assert row.customer_count == 2
     assert row.combo_string == "#米饭#_1份*3"
-    assert unknown == []
+    # 非映射字段 has no field_mapping AND isn't in _ALIAS_TO_ATTR → gets tracked
+    # in unknown with a <raw> prefix so admin can see what's being dropped.
+    assert unknown == ["<raw>非映射字段"]
 
 
 def test_build_canonical_row_missing_required_returns_none():
@@ -105,6 +109,58 @@ def test_build_canonical_row_missing_required_returns_none():
     }
     out = _build_canonical_row(row_data, field_mappings, "F", "excel", 100, [])
     assert out is None
+
+
+def test_normalize_field_mappings_dict_form():
+    raw = {"门店名称": "store_name", "订单号": "source_bill_no"}
+    assert _normalize_field_mappings(raw) == {
+        "门店名称": "store_name", "订单号": "source_bill_no",
+    }
+
+
+def test_normalize_field_mappings_array_form():
+    """Real upload 3970 shape: array of {originalColumn, standardField, ...}."""
+    raw = [
+        {"originalColumn": "门店名称", "standardField": "category_name",
+         "dataType": "TEXT", "confidence": 0.85},
+        {"originalColumn": "营业日期", "standardField": "time_period"},
+        {"originalColumn": "broken", "standardField": None},
+    ]
+    assert _normalize_field_mappings(raw) == {
+        "门店名称": "category_name",
+        "营业日期": "time_period",
+        "broken": "",
+    }
+
+
+def test_normalize_field_mappings_handles_json_string():
+    import json
+    raw = json.dumps({"a": "b"})
+    assert _normalize_field_mappings(raw) == {"a": "b"}
+
+
+def test_normalize_field_mappings_handles_none_and_empty():
+    assert _normalize_field_mappings(None) == {}
+    assert _normalize_field_mappings("") == {}
+    assert _normalize_field_mappings([]) == {}
+    assert _normalize_field_mappings({}) == {}
+
+
+def test_lookup_attr_prefers_standard_field():
+    """When standardField is a known alias, use it (Path A)."""
+    # "store_name" is in _ALIAS_TO_ATTR mapping to "store_name"
+    assert _lookup_attr("某中文列", "store_name") == "store_name"
+
+
+def test_lookup_attr_falls_back_to_original_column():
+    """When standardField is generic-type junk, fall through to original_col.
+    This is the real qhj 3970 case: standardField='category_name' but
+    originalColumn='门店名称' which IS in the alias table."""
+    assert _lookup_attr("门店名称", "category_name") == "store_name"
+
+
+def test_lookup_attr_returns_none_when_both_fail():
+    assert _lookup_attr("totally_unknown_col", "also_unknown") is None
 
 
 def test_build_canonical_row_tracks_unknown_canonicals():
