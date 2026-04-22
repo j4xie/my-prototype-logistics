@@ -10,6 +10,7 @@ import com.cretas.aims.entity.smartbi.postgres.SmartBiPgFieldDefinition;
 import com.cretas.aims.repository.smartbi.postgres.SmartBiDynamicDataRepository;
 import com.cretas.aims.repository.smartbi.postgres.SmartBiPgExcelUploadRepository;
 import com.cretas.aims.repository.smartbi.postgres.SmartBiPgFieldDefinitionRepository;
+import com.cretas.aims.client.PythonSmartBIClient;
 import com.cretas.aims.service.smartbi.DynamicDataPersistenceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +42,7 @@ public class DynamicDataPersistenceServiceImpl implements DynamicDataPersistence
     private final SmartBiPgExcelUploadRepository uploadRepository;
     private final SmartBiDynamicDataRepository dynamicDataRepository;
     private final SmartBiPgFieldDefinitionRepository fieldDefRepository;
+    private final PythonSmartBIClient pythonSmartBIClient;
 
     @jakarta.persistence.PersistenceContext(unitName = "smartbiPostgres")
     private jakarta.persistence.EntityManager smartbiEntityManager;
@@ -188,6 +190,26 @@ public class DynamicDataPersistenceServiceImpl implements DynamicDataPersistence
                 }
             } catch (Exception e) {
                 log.warn("Field definition backfill failed (non-blocking): {}", e.getMessage());
+            }
+
+            // 4.6 γ-1c (Apr 22 2026): delegate final classification to Python's unified
+            // field_classifier so sync path matches async path. Fixes Java rule divergence
+            // (bare 年|月|日 time false-positives, missing 账单号/商品结账总数/外部单号 overrides).
+            // Non-blocking: if Python is down, keep Java-classified definitions — user can
+            // manually call POST /api/smartbi/analytics/reclassify/{id} later.
+            try {
+                boolean ok = pythonSmartBIClient.reclassifyUpload(uploadId, factoryId);
+                if (ok) {
+                    fieldDefs = fieldDefRepository.findByUploadIdOrderByDisplayOrder(uploadId);
+                    log.info("γ-1c: Python reclassify applied to upload {} ({} defs)",
+                            uploadId, fieldDefs.size());
+                } else {
+                    log.warn("γ-1c: Python reclassify skipped/failed for upload {}, keeping Java classification",
+                            uploadId);
+                }
+            } catch (Exception e) {
+                log.warn("γ-1c: Python reclassify threw for upload {} (non-blocking): {}",
+                        uploadId, e.getMessage());
             }
 
             // 5. Update upload status

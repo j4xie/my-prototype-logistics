@@ -1659,6 +1659,45 @@ public class PythonSmartBIClient {
     }
 
     /**
+     * γ-1c: 触发 Python 对已持久化 upload 的 field_definitions 重新分类 + re-materialize.
+     * 同步 Java 上传路径在 saveFieldDefinitions+backfill 后调用，让 Python 的统一 classifier
+     * 覆盖 Java 遗留规则（年/月/日 时间误判、账单号 id 缺失等）。
+     *
+     * 非阻塞：Python 不可用时返回 false，upload 仍成功（field_definitions 保留 Java 结果，
+     * 用户可稍后手动调 POST /api/smartbi/analytics/reclassify/{id} 补救）。
+     *
+     * @param uploadId  已 persist 的 upload id
+     * @param factoryId 当前上传归属的 factory（Python 做 cross-tenant 校验用）
+     * @return true=reclassify+rematerialize 均成功；false=任一步失败
+     */
+    public boolean reclassifyUpload(Long uploadId, String factoryId) {
+        if (!config.isEnabled() || uploadId == null || factoryId == null) {
+            return false;
+        }
+        String url = config.getFullUrl("/api/smartbi/analytics/reclassify/" + uploadId);
+        try {
+            Request httpRequest = new Request.Builder()
+                    .url(url)
+                    .post(RequestBody.create(JSON, "{}"))
+                    .header("X-Factory-Id", factoryId)
+                    .build();
+            try (Response response = httpClient.newCall(httpRequest).execute()) {
+                if (!response.isSuccessful()) {
+                    log.warn("γ-1c reclassify HTTP {} for upload {}: {}",
+                            response.code(), uploadId,
+                            response.body() != null ? response.body().string() : "<empty>");
+                    return false;
+                }
+                log.info("γ-1c reclassify OK for upload {} (factory={})", uploadId, factoryId);
+                return true;
+            }
+        } catch (IOException e) {
+            log.warn("γ-1c reclassify IO failure for upload {}: {}", uploadId, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
      * 根据文件名推断 MIME 类型 — 支持 xlsx/xls/csv/pdf，其他默认 octet-stream。
      * 用于 Python 服务调用时正确设置 multipart body 的 Content-Type，避免 Python
      * 侧根据 MIME 而不是扩展名做 xlsx-only 判断。
