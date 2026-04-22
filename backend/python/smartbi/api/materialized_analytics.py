@@ -335,6 +335,17 @@ async def reclassify_upload(
                         f"[reclassify→agg-warm] upload={upload_id} pre-warmed L2 "
                         f"via polars in {bundle.get('compute_time_s', 0):.2f}s"
                     )
+                    # Drop polars DF + trim heap — see hooks.py for rationale.
+                    try:
+                        _polars_backend._df = None  # noqa: SLF001
+                        materialize_ctx.clear()
+                    except Exception:
+                        pass
+                    try:
+                        from smartbi.services.memory_cleanup import release_and_trim
+                        release_and_trim(label=f"reclassify_{upload_id}")
+                    except Exception:
+                        pass
                     return
                 # Fallback: re-load field_meta and run the SQL path.
                 async with pool.acquire() as warm_conn:

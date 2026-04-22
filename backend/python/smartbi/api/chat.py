@@ -1219,6 +1219,14 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                             f"聚合完成 ({_bundle['real_total_rows']:,} 行 / "
                                             f"{_bundle['compute_time_s']:.1f}s)，正在排名..."
                                         )
+                                        # Release transient allocations back to OS — cold-compute
+                                        # path made 15+4+4 full JSONB scans whose result buffers
+                                        # can leave ~1GB in glibc arenas.
+                                        try:
+                                            from smartbi.services.memory_cleanup import release_and_trim
+                                            release_and_trim(label=f"chat_cold_{upload_id}")
+                                        except Exception:
+                                            pass
                                     if _hb_text is None:
                                         logger.info(f"[stream] agg L1 hit upload={upload_id}")
                                         _hb_text = (

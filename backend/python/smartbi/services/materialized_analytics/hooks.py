@@ -96,6 +96,14 @@ async def _trigger_materialization(upload_id: int) -> None:
                     f"[hook] upload {upload_id}: L2 agg cache warmed via polars "
                     f"in {bundle.get('compute_time_s', 0):.2f}s"
                 )
+                # Explicit release: drop polars DataFrame now that we've
+                # harvested the bundle. Without this the backend stays alive
+                # via the materialize_ctx dict reference, and polars' internal
+                # arena (~200-500 MB on 200K rows) stays in RSS even after
+                # this function returns.
+                backend._df = None  # noqa: SLF001 — intentional drop
+                materialize_ctx.clear()
+                backend = None
             elif field_meta:
                 # Fallback: the polars backend wasn't exposed (older build or
                 # materialize skipped). Pay the SQL cost.
@@ -113,6 +121,16 @@ async def _trigger_materialization(upload_id: int) -> None:
             logger.warning(
                 f"[hook] upload {upload_id}: L2 aggregate warm failed: {warm_err}"
             )
+
+        # Final heap release: after templates + warm completed (or failed),
+        # force gc + malloc_trim so the 200K-row polars arena and Python
+        # object freelists return to the OS. Prevents process RSS from
+        # growing unbounded across multiple uploads.
+        try:
+            from smartbi.services.memory_cleanup import release_and_trim
+            release_and_trim(label=f"hook_upload_{upload_id}")
+        except Exception as trim_err:
+            logger.debug(f"[hook] memory trim skipped: {trim_err}")
     except Exception as e:
         # Fire-and-forget: never re-raise
         logger.error(

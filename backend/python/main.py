@@ -413,6 +413,10 @@ app.include_router(gold_reads.router, prefix="/api/smartbi", tags=["Gold Reads"]
 from smartbi.api import llm_usage_admin
 app.include_router(llm_usage_admin.router, prefix="/api/smartbi/admin/llm-usage", tags=["LLM Usage Admin"])
 
+# Memory diagnostic / manual trim (Apr 23 2026, investigating post-materialize RSS retention)
+from smartbi.api import memory_admin
+app.include_router(memory_admin.router, prefix="/api/smartbi/admin/memory", tags=["Memory Admin"])
+
 # Optional: Data sync endpoint (auto-adaptation for system tables)
 if hasattr(data_sync, 'router') and data_sync.router is not None:
     app.include_router(data_sync.router, prefix="/api/smartbi", tags=["Data Sync"])
