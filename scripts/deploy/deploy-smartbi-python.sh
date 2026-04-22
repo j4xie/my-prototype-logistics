@@ -9,13 +9,27 @@
 
 set -e
 
-# 加载共享函数库
+# 加载共享函数库 (Apr 22 2026 fix: was looking for `$SCRIPT_DIR/scripts/lib/...`
+# which gave `scripts/deploy/scripts/lib/...` — doesn't exist. Use PROJECT_ROOT
+# pattern matching deploy-backend.sh so wait_for_health is available in both.)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [ -f "$SCRIPT_DIR/scripts/lib/deploy-common.sh" ]; then
-    source "$SCRIPT_DIR/scripts/lib/deploy-common.sh"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+if [ -f "$PROJECT_ROOT/scripts/lib/deploy-common.sh" ]; then
+    source "$PROJECT_ROOT/scripts/lib/deploy-common.sh"
 else
-    echo "警告: 未找到 scripts/lib/deploy-common.sh，使用内联函数"
+    echo "警告: 未找到 $PROJECT_ROOT/scripts/lib/deploy-common.sh，使用内联函数"
     log() { echo "[$(date '+%Y-%m-%dT%H:%M:%S')] [$1] ${*:2}"; }
+    # Minimal fallback so downstream `wait_for_health` calls don't crash deploy.
+    # Returns 0 iff url responds within retries*interval seconds.
+    wait_for_health() {
+        local url="$1" retries="${2:-15}" interval="${3:-2}"
+        local i
+        for ((i=0; i<retries; i++)); do
+            if curl -fsS -m 3 "$url" >/dev/null 2>&1; then return 0; fi
+            sleep "$interval"
+        done
+        return 1
+    }
 fi
 
 # 配置
@@ -133,6 +147,10 @@ restart_prod_via_systemd() {
 }
 
 restart_test_via_nohup() {
+    # Apr 22 2026 fix: INTERNAL_API_SECRET was missing — Java sync upload path
+    # on 10011 calls Python /analytics/reclassify/{id} and auth_middleware
+    # returns 401 without it. restart-test.sh already sets it; keep this
+    # inline restart consistent.
     ssh $SERVER "
         PID_PY=\$(lsof -ti :8084 2>/dev/null)
         if [ -n \"\$PID_PY\" ]; then kill \$PID_PY 2>/dev/null; sleep 2; fi
@@ -145,6 +163,7 @@ restart_test_via_nohup() {
         FOOD_KB_POSTGRES_PASSWORD=cretas123 \
         FOOD_KB_POSTGRES_USER=cretas_user \
         FOOD_KB_POSTGRES_HOST=localhost FOOD_KB_POSTGRES_PORT=5432 \
+        INTERNAL_API_SECRET=cretas-internal-sec-87a9caca9f57b1f2 \
         LLM_API_KEY=sk-da3b827e6a00404a8bc869296f8690bc \
         LLM_MODEL=qwen3-max-2026-01-23 LLM_FAST_MODEL=qwen3.5-flash \
         LLM_REASONING_MODEL=qwen3.5-flash LLM_VL_MODEL=qwen3-vl-plus-2025-12-19 \
