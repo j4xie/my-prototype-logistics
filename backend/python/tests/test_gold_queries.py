@@ -11,7 +11,14 @@ import pytest
 import pytest_asyncio
 
 from smartbi.canonical import CanonicalRow, SilverNormalizer
-from smartbi.gold import GoldMaterializer, finance_summary
+from smartbi.gold import (
+    GoldMaterializer,
+    channel_breakdown,
+    daily_trend,
+    finance_summary,
+    kpi_summary,
+    top_products,
+)
 from smartbi.gold.triggers import UploadCompleteTrigger
 
 
@@ -159,3 +166,141 @@ async def test_finance_summary_top_n_cap(pool, seeded):
         reset_factory_id(token)
     assert len(out["top_stores"]) == 1
     assert out["top_stores"][0]["store_name"] == "S1"
+
+
+# ── daily_trend ─────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_daily_trend_orders_ascending_by_date(pool, seeded):
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        out = await daily_trend(pool, _TENANT, (date(2026, 4, 21), date(2026, 4, 22)))
+    finally:
+        reset_factory_id(token)
+    pts = out["points"]
+    assert len(pts) == 2
+    assert pts[0]["date"] == "2026-04-21"
+    assert pts[0]["revenue"] == 150.0  # S1: 100 + 50
+    assert pts[0]["bill_count"] == 2
+    assert pts[0]["avg_bill_value"] == 75.0
+    assert pts[1]["date"] == "2026-04-22"
+    assert pts[1]["revenue"] == 30.0
+    assert pts[1]["bill_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_daily_trend_empty_range_returns_empty_points(pool, seeded):
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        out = await daily_trend(pool, _TENANT, (date(1999, 1, 1), date(1999, 12, 31)))
+    finally:
+        reset_factory_id(token)
+    assert out["points"] == []
+
+
+# ── top_products ────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_top_products_ranked_by_revenue(pool, seeded):
+    """Seeded fixture has bills with products x and y. x appears in Q1+Q3
+    (100 + 30 = 130), y appears in Q2 (50). x should rank first."""
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        out = await top_products(
+            pool, _TENANT, (date(2026, 4, 1), date(2026, 4, 30)), top_n=5,
+        )
+    finally:
+        reset_factory_id(token)
+    products = out["top_products"]
+    assert len(products) == 2
+    assert products[0]["product_name"] == "x"
+    assert products[0]["revenue"] == 130.0
+    assert products[0]["qty_sold"] == 2.0
+    assert products[1]["product_name"] == "y"
+    assert products[1]["revenue"] == 50.0
+
+
+@pytest.mark.asyncio
+async def test_top_products_top_n_cap(pool, seeded):
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        out = await top_products(
+            pool, _TENANT, (date(2026, 4, 1), date(2026, 4, 30)), top_n=1,
+        )
+    finally:
+        reset_factory_id(token)
+    assert len(out["top_products"]) == 1
+
+
+# ── channel_breakdown ───────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_channel_breakdown_empty_when_no_payments_seeded(pool, seeded):
+    """Seeded fixture has no payments (EAV not exercised here) → empty
+    channels list, total_amount=0."""
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        out = await channel_breakdown(
+            pool, _TENANT, (date(2026, 4, 21), date(2026, 4, 22)),
+        )
+    finally:
+        reset_factory_id(token)
+    assert out["channels"] == []
+    assert out["total_amount"] == 0.0
+
+
+# ── kpi_summary ─────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_kpi_summary_rollup(pool, seeded):
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        out = await kpi_summary(pool, _TENANT, (date(2026, 4, 21), date(2026, 4, 22)))
+    finally:
+        reset_factory_id(token)
+    assert out["revenue"] == 180.0
+    assert out["bill_count"] == 3
+    assert out["store_count"] == 2
+    assert out["day_count"] == 2
+    assert out["avg_bill_value"] == 60.0
+    # 3 items total (one per bill); items_per_bill = 3/3 = 1.0
+    assert out["item_count"] == 3
+    assert out["items_per_bill"] == 1.0
+
+
+@pytest.mark.asyncio
+async def test_kpi_summary_empty_range_nones(pool, seeded):
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        out = await kpi_summary(pool, _TENANT, (date(1999, 1, 1), date(1999, 12, 31)))
+    finally:
+        reset_factory_id(token)
+    assert out["revenue"] == 0.0
+    assert out["bill_count"] == 0
+    assert out["avg_bill_value"] is None
+    assert out["items_per_bill"] is None
+    assert out["avg_per_capita"] is None
+
+
+@pytest.mark.asyncio
+async def test_inverted_range_raises_for_all_new_queries(pool):
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+    token = set_factory_id(_TENANT)
+    try:
+        with pytest.raises(ValueError, match="start .* > end"):
+            await daily_trend(pool, _TENANT, (date(2026, 4, 22), date(2026, 4, 21)))
+        with pytest.raises(ValueError, match="start .* > end"):
+            await top_products(pool, _TENANT, (date(2026, 4, 22), date(2026, 4, 21)))
+        with pytest.raises(ValueError, match="start .* > end"):
+            await channel_breakdown(pool, _TENANT, (date(2026, 4, 22), date(2026, 4, 21)))
+        with pytest.raises(ValueError, match="start .* > end"):
+            await kpi_summary(pool, _TENANT, (date(2026, 4, 22), date(2026, 4, 21)))
+    finally:
+        reset_factory_id(token)

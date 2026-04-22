@@ -38,6 +38,220 @@ import asyncpg
 logger = logging.getLogger(__name__)
 
 
+def _validate_range(start: date, end: date) -> None:
+    if start > end:
+        raise ValueError(f"start {start} > end {end}")
+
+
+async def daily_trend(
+    pool: asyncpg.Pool,
+    factory_id: str,
+    date_range: Tuple[date, date],
+) -> Dict[str, Any]:
+    """Daily revenue/bill-count trend — feeds 分析概览 trend line chart.
+
+    Returns dict with:
+      - `factory_id`, `start_date`, `end_date` — echoes input
+      - `points` — list of {date, revenue, bill_count, avg_bill_value},
+        one per date that has any activity, ordered ascending. Missing
+        dates are omitted (caller fills with zeros in the FE if needed).
+    """
+    start, end = date_range
+    _validate_range(start, end)
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT date,
+                   SUM(net_amount)::numeric(18,2) AS revenue,
+                   SUM(bill_count)                AS bill_count
+              FROM agg_daily
+             WHERE factory_id = $1
+               AND date BETWEEN $2 AND $3
+             GROUP BY date
+             ORDER BY date
+            """,
+            factory_id, start, end,
+        )
+    points = []
+    for r in rows:
+        rev = Decimal(r["revenue"])
+        bc = int(r["bill_count"])
+        avg = float((rev / bc).quantize(Decimal("0.01"))) if bc > 0 else None
+        points.append({
+            "date": r["date"].isoformat(),
+            "revenue": float(rev),
+            "bill_count": bc,
+            "avg_bill_value": avg,
+        })
+    return {
+        "factory_id": factory_id,
+        "start_date": start.isoformat(),
+        "end_date": end.isoformat(),
+        "points": points,
+    }
+
+
+async def top_products(
+    pool: asyncpg.Pool,
+    factory_id: str,
+    date_range: Tuple[date, date],
+    *,
+    top_n: int = 10,
+) -> Dict[str, Any]:
+    """Top products by revenue over the date range — feeds 分析概览 pie
+    chart + KPI看板 top seller card.
+
+    Note: agg_product is monthly-grained. We roll up month buckets whose
+    FIRST-of-month falls within date_range — so a range '2025-04-15 to
+    2025-05-10' covers April + May fully, not fractional. This matches
+    how the FE uses "period=month" selectors.
+    """
+    start, end = date_range
+    _validate_range(start, end)
+    # agg_product.month is always first-of-month; pick months where
+    # first-of-month ≤ end AND month ≥ first-of-start-month.
+    start_m = start.replace(day=1)
+    end_m = end.replace(day=1)
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT p.product_id,
+                   p.name,
+                   SUM(a.qty_sold)::numeric(18,3) AS qty,
+                   SUM(a.revenue)::numeric(18,2) AS revenue,
+                   SUM(a.bill_count)             AS bill_count
+              FROM agg_product a
+              JOIN dim_product p ON p.product_id = a.product_id
+             WHERE a.factory_id = $1
+               AND a.month BETWEEN $2 AND $3
+             GROUP BY p.product_id, p.name
+             ORDER BY SUM(a.revenue) DESC
+             LIMIT $4
+            """,
+            factory_id, start_m, end_m, int(top_n),
+        )
+    return {
+        "factory_id": factory_id,
+        "start_month": start_m.isoformat(),
+        "end_month": end_m.isoformat(),
+        "top_products": [
+            {
+                "product_id": int(r["product_id"]),
+                "product_name": r["name"],
+                "qty_sold": float(r["qty"]),
+                "revenue": float(r["revenue"]),
+                "bill_count": int(r["bill_count"]),
+            }
+            for r in rows
+        ],
+    }
+
+
+async def channel_breakdown(
+    pool: asyncpg.Pool,
+    factory_id: str,
+    date_range: Tuple[date, date],
+    *,
+    top_n: int = 10,
+) -> Dict[str, Any]:
+    """Revenue by payment channel — feeds 分析概览 channel breakdown.
+    If fact_pos_payment has no rows for the tenant (EAV extraction not
+    yet wired for this source), returns empty channels list.
+    """
+    start, end = date_range
+    _validate_range(start, end)
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT c.channel_id,
+                   c.name,
+                   SUM(a.amount)::numeric(18,2) AS amount,
+                   SUM(a.bill_count)            AS bill_count
+              FROM agg_channel a
+              JOIN dim_payment_channel c ON c.channel_id = a.channel_id
+             WHERE a.factory_id = $1
+               AND a.date BETWEEN $2 AND $3
+             GROUP BY c.channel_id, c.name
+             ORDER BY SUM(a.amount) DESC
+             LIMIT $4
+            """,
+            factory_id, start, end, int(top_n),
+        )
+    total = sum(Decimal(r["amount"]) for r in rows)
+    channels = []
+    for r in rows:
+        amt = Decimal(r["amount"])
+        share = float((amt / total * 100).quantize(Decimal("0.01"))) if total > 0 else 0.0
+        channels.append({
+            "channel_id": int(r["channel_id"]),
+            "channel_name": r["name"],
+            "amount": float(amt),
+            "bill_count": int(r["bill_count"]),
+            "share_pct": share,
+        })
+    return {
+        "factory_id": factory_id,
+        "start_date": start.isoformat(),
+        "end_date": end.isoformat(),
+        "total_amount": float(total),
+        "channels": channels,
+    }
+
+
+async def kpi_summary(
+    pool: asyncpg.Pool,
+    factory_id: str,
+    date_range: Tuple[date, date],
+) -> Dict[str, Any]:
+    """Compact KPI card data for the 分析概览 + KPI看板 headers.
+
+    Combines cheap aggregates from agg_daily (revenue, bills) + one
+    extra stat from Silver (items_total). More expensive ranking queries
+    (top store, top product) are in separate endpoints so callers can
+    pick-and-choose.
+    """
+    start, end = date_range
+    _validate_range(start, end)
+    async with pool.acquire() as conn:
+        daily = await conn.fetchrow(
+            """
+            SELECT
+              COALESCE(SUM(net_amount), 0)::numeric(18,2) AS revenue,
+              COALESCE(SUM(bill_count), 0)               AS bills,
+              COALESCE(SUM(item_count), 0)               AS items,
+              COALESCE(SUM(customer_count), 0)           AS customers,
+              COUNT(DISTINCT store_id)                   AS stores,
+              COUNT(DISTINCT date)                       AS days
+            FROM agg_daily
+            WHERE factory_id = $1
+              AND date BETWEEN $2 AND $3
+            """,
+            factory_id, start, end,
+        )
+    revenue = Decimal(daily["revenue"])
+    bills = int(daily["bills"])
+    items = int(daily["items"])
+    customers = int(daily["customers"])
+    avg_bill = float((revenue / bills).quantize(Decimal("0.01"))) if bills > 0 else None
+    items_per_bill = round(items / bills, 2) if bills > 0 else None
+    avg_per_capita = float((revenue / customers).quantize(Decimal("0.01"))) if customers > 0 else None
+
+    return {
+        "factory_id": factory_id,
+        "start_date": start.isoformat(),
+        "end_date": end.isoformat(),
+        "revenue": float(revenue),
+        "bill_count": bills,
+        "item_count": items,
+        "customer_count": customers,
+        "store_count": int(daily["stores"]),
+        "day_count": int(daily["days"]),
+        "avg_bill_value": avg_bill,
+        "items_per_bill": items_per_bill,
+        "avg_per_capita": avg_per_capita,
+    }
+
+
 async def finance_summary(
     pool: asyncpg.Pool,
     factory_id: str,
@@ -63,8 +277,7 @@ async def finance_summary(
     tables and extend this shape.
     """
     start, end = date_range
-    if start > end:
-        raise ValueError(f"start {start} > end {end}")
+    _validate_range(start, end)
 
     async with pool.acquire() as conn:
         # Grand totals + row counts.
