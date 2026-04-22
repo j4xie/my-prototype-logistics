@@ -204,6 +204,32 @@ public class SmartBIDashboardController {
         }
     }
 
+    @GetMapping("/dashboard/executive/insights/custom")
+    @Operation(summary = "Agent layer LLM insights (custom range)",
+               description = "Week 5: AgentOrchestrator returns Gold-backed insights for an arbitrary date range. Falls back to empty list if Python Agent layer is disabled or unreachable.")
+    public ResponseEntity<ApiResponse<java.util.List<AIInsight>>> getDashboardLLMInsightsCustomRange(
+            @Parameter(description = "Factory ID") @PathVariable String factoryId,
+            @Parameter(description = "Start date (yyyy-MM-dd)")
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "End date (yyyy-MM-dd)")
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        log.info("Get agent insights custom: factoryId={}, startDate={}, endDate={}",
+                factoryId, startDate, endDate);
+
+        try {
+            if (smartBIService != null) {
+                java.util.List<AIInsight> insights =
+                        smartBIService.getDashboardLLMInsightsCustomRange(factoryId, startDate, endDate);
+                return ResponseEntity.ok(ApiResponse.success(insights));
+            }
+            return ResponseEntity.ok(ApiResponse.success(java.util.Collections.emptyList()));
+        } catch (Exception e) {
+            log.error("Agent insights custom failed: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.success(java.util.Collections.emptyList()));
+        }
+    }
+
     @GetMapping("/dashboard/executive/custom")
     @Operation(summary = "Get custom date range dashboard", description = "Executive dashboard with specified date range")
     public ResponseEntity<ApiResponse<DashboardResponse>> getExecutiveDashboardCustomRange(

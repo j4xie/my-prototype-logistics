@@ -409,6 +409,15 @@ app.include_router(materialized_analytics_router, prefix="/api/smartbi", tags=["
 from smartbi.api import gold_reads
 app.include_router(gold_reads.router, prefix="/api/smartbi", tags=["Gold Reads"])
 
+# Week 5 Agent layer — gated by env flag until verified on test.
+# When flag is off, /api/smartbi/insights/custom does not exist.
+if os.getenv("SMARTBI_AGENT_LAYER_ENABLED", "false").lower() == "true":
+    from smartbi.agent.api import router as agent_router
+    app.include_router(agent_router, prefix="/api/smartbi", tags=["Agent Insights"])
+    logger.info("Week 5 Agent layer ENABLED — /api/smartbi/insights/custom registered")
+else:
+    logger.info("Week 5 Agent layer disabled (set SMARTBI_AGENT_LAYER_ENABLED=true to enable)")
+
 # LLM usage admin (BUG-9 + 模型切换监控)
 from smartbi.api import llm_usage_admin
 app.include_router(llm_usage_admin.router, prefix="/api/smartbi/admin/llm-usage", tags=["LLM Usage Admin"])

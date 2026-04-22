@@ -32,6 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.annotation.PreDestroy;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.time.Duration;
@@ -123,6 +124,13 @@ public class SmartBIServiceImpl implements SmartBIService {
     @Autowired(required = false)
     @Lazy
     private IntentExecutorService intentExecutorService;
+
+    /**
+     * Week 5 Agent layer HTTP client — calls Python /api/smartbi/insights/custom.
+     * required=false: works even if Python is down (endpoint returns empty list).
+     */
+    @Autowired(required = false)
+    private com.cretas.aims.client.AgentInsightsClient agentInsightsClient;
 
     // ==================== 配置参数 ====================
 
@@ -403,6 +411,45 @@ public class SmartBIServiceImpl implements SmartBIService {
         long elapsed = System.currentTimeMillis() - startTime;
         log.info("LLM 洞察生成完成: factoryId={}, count={}, elapsed={}ms", factoryId, llmInsights.size(), elapsed);
         return llmInsights;
+    }
+
+    @Override
+    public List<AIInsight> getDashboardLLMInsightsCustomRange(
+            String factoryId, LocalDate startDate, LocalDate endDate) {
+        log.info("Agent insights custom: factoryId={} range={}..{}", factoryId, startDate, endDate);
+
+        if (agentInsightsClient == null) {
+            log.warn("AgentInsightsClient not wired — returning empty");
+            return java.util.Collections.emptyList();
+        }
+
+        try {
+            Map<String, Object> resp = agentInsightsClient.fetchInsightsCustom(
+                    factoryId, startDate, endDate, null);
+            String answer = resp.get("answer") instanceof String ? (String) resp.get("answer") : "";
+            String source = resp.get("source") instanceof String ? (String) resp.get("source") : "llm";
+            if (answer.isBlank()) {
+                return java.util.Collections.emptyList();
+            }
+            // Degraded responses (budget exhausted / LLM down) map to YELLOW so
+            // the UI shows them distinctly from fresh LLM answers.
+            String level = "degraded".equals(source) ? "YELLOW" : "INFO";
+            String category = "cache".equals(source) ? "AI 分析 (缓存)" : "AI 分析";
+            AIInsight insight = AIInsight.builder()
+                    .level(level)
+                    .category(category)
+                    .message(answer)
+                    .relatedEntity("range:" + startDate + "~" + endDate)
+                    .actionSuggestion(null)
+                    .build();
+            return java.util.Collections.singletonList(insight);
+        } catch (IOException e) {
+            log.error("Agent insights failed: {}", e.getMessage());
+            return java.util.Collections.emptyList();
+        } catch (Exception e) {
+            log.error("Agent insights unexpected failure", e);
+            return java.util.Collections.emptyList();
+        }
     }
 
     // ==================== 综合分析 ====================

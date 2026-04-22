@@ -733,7 +733,16 @@ async function loadLLMInsights() {
   const sourceAtStart = selectedDataSource.value;
   const signal = abortController?.signal;
   try {
-    const res = await get(`/${factoryId.value}/smart-bi/dashboard/executive/insights?period=month`, { timeout: 120000, signal });
+    // Week 5 Agent layer: when user picked an explicit date range, call the
+    // Gold-backed /insights/custom endpoint. Otherwise keep the legacy
+    // ?period=month path (which computes fresh AIInsights from the current
+    // month's sales). The custom path requires SMARTBI_AGENT_LAYER_ENABLED=true
+    // on the Python side; if disabled, it returns empty and UI just shows
+    // whatever aiInsights the dashboard payload already carried.
+    const insightsUrl = dateRange.value
+      ? `/${factoryId.value}/smart-bi/dashboard/executive/insights/custom?startDate=${dateRange.value[0]}&endDate=${dateRange.value[1]}`
+      : `/${factoryId.value}/smart-bi/dashboard/executive/insights?period=month`;
+    const res = await get(insightsUrl, { timeout: 120000, signal });
     // Guard: if user switched data source during await, discard stale result
     if (selectedDataSource.value !== sourceAtStart) return;
     if (res.success && res.data) {

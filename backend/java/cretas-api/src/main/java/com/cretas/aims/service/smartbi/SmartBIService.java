@@ -218,6 +218,21 @@ public interface SmartBIService {
      */
     List<AIInsight> getDashboardLLMInsights(String factoryId, String period);
 
+    /**
+     * Week 5 Agent layer — LLM 洞察 (自定义日期范围).
+     *
+     * 调用 Python Agent 层 /api/smartbi/insights/custom, 由 AgentOrchestrator
+     * 拉 Gold 数据 + 预算守门 + 缓存后返回. 自动降级: Agent 不可用时返回空列表,
+     * UI 继续显示其他模块 (不影响 dashboard 主体).
+     *
+     * @param factoryId 工厂ID
+     * @param startDate 起始日期 (inclusive)
+     * @param endDate   结束日期 (inclusive)
+     * @return 合成的 AIInsight 列表 (单条或空)
+     */
+    List<AIInsight> getDashboardLLMInsightsCustomRange(
+            String factoryId, java.time.LocalDate startDate, java.time.LocalDate endDate);
+
     // ==================== 数据日期范围检测 ====================
 
     /**
