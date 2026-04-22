@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant import industry_benchmarks as bench
 from ..restaurant.schema_helpers import (
     find_customer_col, find_date_col, find_store_col,
 )
@@ -230,6 +231,7 @@ class BusinessOverviewSummary(AnalysisTemplate):
         if total_discount > 0 and total_revenue > 0:
             discount_pct = round(total_discount / total_revenue * 100, 2)
             parts.append(f" 折扣/优惠累计 {total_discount:,.0f} 元 (占营业额 {discount_pct:.1f}%)。")
+        parts.append(bench.industry_footer_short())
         insight_text = " ".join(parts)
 
         # ECharts bar — store ranking

@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant import industry_benchmarks as bench
 from ..restaurant.schema_helpers import (
     find_customer_col, find_date_col, find_gross_revenue_col, find_net_revenue_col,
 )
@@ -173,6 +174,15 @@ class PeriodComparisonTrend(AnalysisTemplate):
         if dod_delta_pct is not None:
             sign = "↑" if dod_delta_pct >= 0 else "↓"
             parts.append(f"最后两天 DoD {sign}{abs(dod_delta_pct):.1f}%。")
+        # Compare to industry dine-in avg price trend
+        if latest.get("revenue_delta_pct") is not None:
+            local = latest["revenue_delta_pct"]
+            industry = bench.DINE_IN_AVG_PRICE_YOY_PCT_2024
+            if local > industry + 5:  # outperform industry by >5 points
+                parts.append(f"🎯 远超行业同期 ({industry:+.1f}%),表现优异。")
+            elif local < industry - 5:
+                parts.append(f"⚠ 落后行业同期 ({industry:+.1f}%),需关注。")
+        parts.append(bench.industry_footer_short())
         insight_text = " ".join(parts)
 
         # ECharts — month bars with delta labels

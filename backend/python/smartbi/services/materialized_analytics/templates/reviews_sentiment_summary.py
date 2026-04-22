@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant import industry_benchmarks as bench
 from ..schema import DataSchema, Domain
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
@@ -243,9 +244,24 @@ class ReviewsSentimentSummary(AnalysisTemplate):
                 reviews_n = int(r["reviews"])
                 avg_s = float(r["avg_star"] or 0.0)
                 avg_t = float(r.get("avg_taste") or 0.0) if taste_col else 0.0
-                quality_eligible = avg_s >= 4.0 and reviews_n >= 50
-                popular_eligible = avg_s >= 3.5 and reviews_n >= 50
-                must_eat_candidate = quality_eligible and (avg_t >= 4.5 if taste_col else False)
+                quality_eligible = (
+                    avg_s >= bench.QUALITY_RANKING_MIN_STAR
+                    and reviews_n >= bench.QUALITY_RANKING_MIN_REVIEWS
+                )
+                popular_eligible = (
+                    avg_s >= bench.POPULAR_RANKING_MIN_STAR
+                    and reviews_n >= bench.QUALITY_RANKING_MIN_REVIEWS
+                )
+                must_eat_candidate = (
+                    quality_eligible
+                    and (avg_t >= bench.MUST_EAT_TASTE_THRESHOLD if taste_col else False)
+                )
+                # 黑珍珠 candidate (per 黑珍珠.docx — 3-钻 approximation)
+                black_pearl_candidate = (
+                    avg_s >= bench.BLACK_PEARL_MIN_STAR
+                    and reviews_n >= bench.BLACK_PEARL_MIN_REVIEWS
+                    and (avg_t >= bench.BLACK_PEARL_MIN_TASTE if taste_col else False)
+                )
                 ranking_qualified.append({
                     "store": s_name,
                     "reviews": reviews_n,
@@ -254,11 +270,13 @@ class ReviewsSentimentSummary(AnalysisTemplate):
                     "quality_ranking_eligible": quality_eligible,
                     "popular_ranking_eligible": popular_eligible,
                     "must_eat_candidate": must_eat_candidate,
+                    "black_pearl_candidate": black_pearl_candidate,
                 })
 
         quality_eligible_count = sum(1 for x in ranking_qualified if x["quality_ranking_eligible"])
         popular_eligible_count = sum(1 for x in ranking_qualified if x["popular_ranking_eligible"])
         must_eat_candidate_count = sum(1 for x in ranking_qualified if x["must_eat_candidate"])
+        black_pearl_candidate_count = sum(1 for x in ranking_qualified if x["black_pearl_candidate"])
 
         # Insight
         parts = [f"期内共 {total:,} 条评价，平均星级 {avg_star:.2f}。"]
@@ -280,7 +298,10 @@ class ReviewsSentimentSummary(AnalysisTemplate):
             )
             if must_eat_candidate_count > 0:
                 parts[-1] += f",{must_eat_candidate_count} 家口味出众可冲必吃榜"
+            if black_pearl_candidate_count > 0:
+                parts[-1] += f",💎 {black_pearl_candidate_count} 家已达黑珍珠 3-钻初选资格"
             parts[-1] += "。"
+        parts.append(bench.industry_footer_short())
         insight_text = " ".join(parts)
 
         # Chart — star distribution pie
@@ -315,6 +336,7 @@ class ReviewsSentimentSummary(AnalysisTemplate):
                 "quality_ranking_eligible_count": quality_eligible_count,
                 "popular_ranking_eligible_count": popular_eligible_count,
                 "must_eat_candidate_count": must_eat_candidate_count,
+                "black_pearl_candidate_count": black_pearl_candidate_count,
             },
             chart_config=chart_config,
             kpis={
@@ -324,6 +346,7 @@ class ReviewsSentimentSummary(AnalysisTemplate):
                 "worst_store_avg_star": worst_stores[0]["avg_star"] if worst_stores else None,
                 "quality_ranking_eligible_count": quality_eligible_count,
                 "must_eat_candidate_count": must_eat_candidate_count,
+                "black_pearl_candidate_count": black_pearl_candidate_count,
             },
             insight_text=insight_text,
         )
