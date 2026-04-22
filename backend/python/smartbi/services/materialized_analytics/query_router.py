@@ -53,9 +53,24 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
           "堂食和外卖", "外卖和堂食"],
          ["报表", "分析", "占比", "分布", "对比", "午晚市", "午市", "晚市"]],
     ),
+    # channel_analysis must precede table_type_comparison. Both can match "外卖
+    # + 分析" queries, but when user says 渠道/来源 or a platform name (美团/饿了
+    # 么/京东/抖音) they mean channel breakdown, not dine-in table comparison.
+    (
+        "channel_analysis",
+        # Higher-priority channel match — fires first when user explicitly
+        # mentions 渠道/来源 or a platform name. Prevents table_type_comparison
+        # from stealing the query when user meant channel breakdown.
+        [["渠道", "来源", "美团", "饿了么", "京东", "抖音"],
+         ["分析", "占比", "对比", "销售", "订单", "营收"]],
+    ),
     (
         "table_type_comparison",
-        [["包厢", "大厅", "堂食", "外卖", "桌位", "就餐", "散客"], ["对比", "比较", "分析", "销售", "订单", "客单价", "人均", "数量"]],
+        # Require at least one true dine-in keyword (包厢/大厅/堂食/桌位/就餐/散客).
+        # Removed 外卖 from group 1 — it ambiguously matched channel queries.
+        # Pure 外卖 questions still route via channel_analysis below.
+        [["包厢", "大厅", "堂食", "桌位", "就餐", "散客"],
+         ["对比", "比较", "分析", "销售", "订单", "客单价", "人均", "数量"]],
     ),
     (
         "staff_performance",
