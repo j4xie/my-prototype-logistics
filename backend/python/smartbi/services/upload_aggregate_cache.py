@@ -277,6 +277,146 @@ async def compute_upload_aggregates(
     }
 
 
+def compute_aggregates_from_polars(
+    backend: Any,
+    field_meta: List[Dict[str, Any]],
+    sample_size: int = 0,
+) -> Dict[str, Any]:
+    """Polars-backed fast path: compute the same bundle shape as
+    compute_upload_aggregates() but from an already-built polars DataFrame,
+    not from JSONB scans.
+
+    Reuses the DataFrame that materialize_upload constructs anyway, so this
+    runs in ~0.5-2s instead of the 30-70s the SQL path takes on 200K rows.
+
+    Callers that don't already have a polars DataFrame should stick with
+    compute_upload_aggregates() — importing polars is expensive if the caller
+    doesn't need it.
+    """
+    import polars as pl
+
+    t_start = time.time()
+    df = backend._df  # type: ignore[attr-defined]
+    measures = [f["original_name"] for f in field_meta if f.get("is_measure")]
+    dims = [f["original_name"] for f in field_meta if f.get("is_dimension")]
+
+    real_total_rows = df.height
+    agg_lines: List[str] = [
+        f"- 全量数据行数: {real_total_rows} (样本 {sample_size} 行仅用于字段示意)"
+    ]
+
+    # Meta-row filter (same as SQL path): exclude 合计/总计/小计/汇总 in first dim
+    meta_dim = dims[0] if dims else None
+    meta_values = {"合计", "总计", "Total", "TOTAL", "小计", "汇总", "总额", "Sum", "sum"}
+    filtered_df = df
+    if meta_dim and meta_dim in df.columns:
+        filtered_df = df.filter(
+            pl.col(meta_dim).cast(pl.Utf8, strict=False).fill_null("").is_in(list(meta_values)).not_()
+        )
+
+    # Per-measure totals. Polars cast-with-strict-false treats non-numeric
+    # values as null, matching the SQL regex filter ~ '^-?[0-9.,]+$'.
+    for m in measures[:15]:
+        if m not in filtered_df.columns:
+            continue
+        try:
+            col = filtered_df.select(
+                pl.col(m).cast(pl.Float64, strict=False)
+            ).get_column(m)
+            cnt = col.drop_nulls().len()
+            if cnt == 0:
+                continue
+            s = col.sum()
+            a = col.mean()
+            mn = col.min()
+            mx = col.max()
+            agg_lines.append(
+                f"- {m} (全量): 总计={float(s or 0):,.2f}, "
+                f"均值={float(a or 0):,.2f}, "
+                f"最大={float(mx or 0):,.2f}, 最小={float(mn or 0):,.2f}, "
+                f"有效行数={cnt}"
+            )
+        except Exception as e:
+            logger.debug(f"[agg-polars] measure {m} failed: {e}")
+
+    # Per-dim distinct counts
+    for d in dims[:4]:
+        if d not in filtered_df.columns:
+            continue
+        try:
+            distinct = (
+                filtered_df.select(pl.col(d))
+                .drop_nulls()
+                .filter(pl.col(d).cast(pl.Utf8, strict=False).is_in(list(meta_values)).not_())
+                .unique()
+                .height
+            )
+            agg_lines.append(f"- {d} 不同值总数: {distinct}")
+        except Exception as e:
+            logger.debug(f"[agg-polars] dim distinct {d} failed: {e}")
+
+    # Primary measure pick (same priority keywords as the SQL path)
+    primary_measure: Optional[str] = None
+    for kw in _PRIORITY_MEASURE_KW:
+        for m in measures:
+            if kw in m:
+                primary_measure = m
+                break
+        if primary_measure:
+            break
+    if not primary_measure and measures:
+        primary_measure = measures[0]
+
+    # Top-5 per dim × primary_measure
+    top5_by_dim: Dict[str, List[Dict[str, Any]]] = {}
+    if primary_measure and primary_measure in filtered_df.columns:
+        for d in dims[:4]:
+            if d not in filtered_df.columns:
+                continue
+            try:
+                top = (
+                    filtered_df
+                    .filter(pl.col(d).is_not_null())
+                    .filter(pl.col(d).cast(pl.Utf8, strict=False).is_in(list(meta_values)).not_())
+                    .group_by(d)
+                    .agg(
+                        pl.col(primary_measure).cast(pl.Float64, strict=False).sum().alias("total")
+                    )
+                    .sort("total", descending=True, nulls_last=True)
+                    .head(5)
+                )
+                top_rows = top.to_dicts()
+                if top_rows:
+                    top5_by_dim[d] = [
+                        {"label": str(r[d]) if r[d] is not None else "", "total": float(r["total"] or 0)}
+                        for r in top_rows
+                    ]
+                    top_str = ", ".join(
+                        f"{r['label']}={r['total']:,.2f}" for r in top5_by_dim[d]
+                    )
+                    agg_lines.append(f"- Top5 by {d} (按 {primary_measure}): {top_str}")
+            except Exception as e:
+                logger.debug(f"[agg-polars] top5 {d} failed: {e}")
+
+    compute_time_s = time.time() - t_start
+    logger.info(
+        f"[agg-polars] computed {len(measures[:15])} measures + "
+        f"{len(dims[:4])} dim_distincts + {len(top5_by_dim)} top5 "
+        f"in {compute_time_s:.2f}s (polars in-memory)"
+    )
+
+    return {
+        "field_meta": field_meta,
+        "measures": measures,
+        "dims": dims,
+        "real_total_rows": real_total_rows,
+        "agg_lines": agg_lines,
+        "top5_by_dim": top5_by_dim,
+        "primary_measure": primary_measure,
+        "compute_time_s": compute_time_s,
+    }
+
+
 # ── L2 persistence (smart_bi_pg_upload_aggregate_cache) ──
 
 _TABLE = "smart_bi_pg_upload_aggregate_cache"

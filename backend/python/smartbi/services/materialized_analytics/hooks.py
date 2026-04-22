@@ -30,7 +30,11 @@ async def _trigger_materialization(upload_id: int) -> None:
             return
 
         t0 = time.time()
-        results = await materialize_upload(pool, upload_id)
+        # out_ctx captures the in-memory backend so we can piggyback the
+        # aggregate compute on the same polars DataFrame (avoids a 30-70s
+        # second pass of JSONB scans).
+        materialize_ctx: dict = {}
+        results = await materialize_upload(pool, upload_id, _out_ctx=materialize_ctx)
 
         # Derive domain + factory_id from upload / field_defs
         async with pool.acquire() as conn:
@@ -69,16 +73,32 @@ async def _trigger_materialization(upload_id: int) -> None:
         )
 
         # Also pre-warm the L2 aggregate cache used by the LLM fallback path
-        # in chat.py. Runs sequentially with template materialization so we
-        # don't compete for the same polars DataFrame build — acceptable since
-        # this whole hook is already off the user request's critical path.
+        # in chat.py. We piggyback on the polars DataFrame that materialize
+        # already built — polars in-memory aggregation runs in ~1s vs ~30-70s
+        # for the SQL path. Falls back to the SQL compute if the backend
+        # didn't make it into out_ctx for any reason.
         try:
             from smartbi.services.upload_aggregate_cache import (
+                compute_aggregates_from_polars,
                 compute_upload_aggregates,
                 save_bundle_to_db,
                 get_cache,
             )
-            if field_meta:
+            backend = materialize_ctx.get("backend")
+            mat_field_meta = materialize_ctx.get("field_meta") or field_meta
+            if backend is not None and mat_field_meta:
+                bundle = compute_aggregates_from_polars(
+                    backend, mat_field_meta, sample_size=0
+                )
+                get_cache().set(upload_id, bundle)
+                await save_bundle_to_db(pool, upload_id, bundle, factory_id=factory_id)
+                logger.info(
+                    f"[hook] upload {upload_id}: L2 agg cache warmed via polars "
+                    f"in {bundle.get('compute_time_s', 0):.2f}s"
+                )
+            elif field_meta:
+                # Fallback: the polars backend wasn't exposed (older build or
+                # materialize skipped). Pay the SQL cost.
                 async with pool.acquire() as conn:
                     bundle = await compute_upload_aggregates(
                         conn, pool, upload_id, field_meta, sample_size=0
@@ -86,8 +106,8 @@ async def _trigger_materialization(upload_id: int) -> None:
                 get_cache().set(upload_id, bundle)
                 await save_bundle_to_db(pool, upload_id, bundle, factory_id=factory_id)
                 logger.info(
-                    f"[hook] upload {upload_id}: L2 aggregate cache warmed in "
-                    f"{bundle.get('compute_time_s', 0):.1f}s"
+                    f"[hook] upload {upload_id}: L2 agg cache warmed via SQL "
+                    f"in {bundle.get('compute_time_s', 0):.1f}s (polars fallback)"
                 )
         except Exception as warm_err:
             logger.warning(

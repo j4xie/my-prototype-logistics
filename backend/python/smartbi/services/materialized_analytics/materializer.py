@@ -109,7 +109,9 @@ def build_schema(
     )
 
 
-async def materialize_upload(pool, upload_id: int) -> List[TemplateResult]:
+async def materialize_upload(
+    pool, upload_id: int, _out_ctx: Optional[Dict[str, Any]] = None,
+) -> List[TemplateResult]:
     """Run all registered templates against an upload's data.
 
     Args:
@@ -215,4 +217,12 @@ async def materialize_upload(pool, upload_id: int) -> List[TemplateResult]:
         f"[materializer] upload {upload_id}: {sum(1 for r in results if r.applies)}/"
         f"{len(results)} templates applicable, total wall {time.time() - t_start:.1f}s"
     )
+    # Expose internals for callers that want to piggyback additional in-memory
+    # computation on the same polars DataFrame (e.g. hooks.py computing the
+    # LLM-fallback aggregate bundle). The backend/schema/field_meta dict is
+    # opt-in — callers that don't pass _out_ctx get the old return shape.
+    if _out_ctx is not None:
+        _out_ctx["backend"] = backend
+        _out_ctx["schema"] = schema
+        _out_ctx["field_meta"] = field_meta
     return results

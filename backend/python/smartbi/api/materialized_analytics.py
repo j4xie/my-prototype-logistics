@@ -274,7 +274,8 @@ async def reclassify_upload(
                        WHERE upload_id = $1 AND template_code IS NOT NULL""",
                     upload_id,
                 )
-        results = await materialize_upload(pool, upload_id)
+        materialize_ctx: Dict[str, Any] = {}
+        results = await materialize_upload(pool, upload_id, _out_ctx=materialize_ctx)
 
         # Derive domain (same pattern as /materialize endpoint)
         async with pool.acquire() as conn:
@@ -306,20 +307,36 @@ async def reclassify_upload(
             "domain": domain_value,
         }
 
-        # Also pre-warm the L2 aggregate cache (LLM fallback path) so the first
-        # user to ask a HARD-modifier / no-template-match question doesn't wait
-        # 30-70s for cold JSONB scans. Detached via _spawn_bg so the task
+        # Also pre-warm the L2 aggregate cache (LLM fallback path). If the
+        # materialize call exposed its polars DataFrame via out_ctx we use
+        # that for a ~1s in-memory compute; otherwise we fall back to the SQL
+        # path (~30-70s). Either way detached via _spawn_bg so the task
         # survives request lifecycle teardown (client disconnect, etc).
         from smartbi.services.upload_aggregate_cache import (
+            compute_aggregates_from_polars as _compute_aggs_polars,
             compute_upload_aggregates as _compute_aggs,
             save_bundle_to_db as _save_bundle_db,
             get_cache as _get_agg_cache,
         )
 
+        _polars_backend = materialize_ctx.get("backend")
+        _polars_field_meta = materialize_ctx.get("field_meta")
+
         async def _warm_l2_aggregate_cache() -> None:
             try:
-                # Load field_meta again inside the task — can't re-use outer
-                # closure's field_rows because it's tied to the /reclassify conn.
+                if _polars_backend is not None and _polars_field_meta:
+                    # Fast path: piggyback on materialize's in-memory polars DF.
+                    bundle = _compute_aggs_polars(
+                        _polars_backend, _polars_field_meta, sample_size=0
+                    )
+                    _get_agg_cache().set(upload_id, bundle)
+                    await _save_bundle_db(pool, upload_id, bundle, factory_id=user_factory)
+                    logger.info(
+                        f"[reclassify→agg-warm] upload={upload_id} pre-warmed L2 "
+                        f"via polars in {bundle.get('compute_time_s', 0):.2f}s"
+                    )
+                    return
+                # Fallback: re-load field_meta and run the SQL path.
                 async with pool.acquire() as warm_conn:
                     warm_rows = await warm_conn.fetch(
                         """SELECT original_name, standard_name, is_measure, is_dimension, is_time
@@ -340,8 +357,8 @@ async def reclassify_upload(
                 _get_agg_cache().set(upload_id, bundle)
                 await _save_bundle_db(pool, upload_id, bundle, factory_id=user_factory)
                 logger.info(
-                    f"[reclassify→agg-warm] upload={upload_id} pre-warmed L2 in "
-                    f"{bundle.get('compute_time_s', 0):.1f}s"
+                    f"[reclassify→agg-warm] upload={upload_id} pre-warmed L2 via "
+                    f"SQL in {bundle.get('compute_time_s', 0):.1f}s (polars fallback)"
                 )
             except Exception as warm_err:
                 logger.warning(
