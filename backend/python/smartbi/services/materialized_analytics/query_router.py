@@ -41,7 +41,7 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
         "dish_by_table_type",
         # "包厢客人点什么" / "大厅点单菜品" / "外卖菜品和堂食差什么"
         [["包厢", "大厅", "堂食", "外卖", "桌位", "散客"],
-         ["菜品", "商品", "点单", "点菜", "点什么", "偏好", "爱点"]],
+         ["菜品", "商品", "点单", "点菜", "点什么", "偏好", "爱点", "点的菜", "点什么菜", "吃什么"]],
     ),
     # revenue_management_report must precede table_type_comparison — 堂食外卖 +
     # 午晚市/时段 context means the user wants the composite report, not just
@@ -166,8 +166,8 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
     (
         "period_comparison_trend",
         # "月度对比/环比/同比"
-        [["环比", "同比", "月度对比", "上个月", "本月", "增长", "涨跌", "趋势"],
-         ["多少", "分析", "对比", "变化", "涨", "跌", "增长"]],
+        [["环比", "同比", "月度", "上个月", "本月", "上月", "近月", "增长", "涨跌", "趋势"],
+         ["多少", "分析", "对比", "变化", "涨", "跌", "增长", "营业额"]],
     ),
     # Note: revenue_management_report / stored_value_card_consumption /
     # groupon_channel_breakdown are placed above, ahead of their respective
