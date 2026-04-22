@@ -65,6 +65,16 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
     @Value("${smartbi.gold.shadow-read.enabled:false}")
     private boolean goldShadowReadEnabled;
 
+    /**
+     * v1 Phase B v0 primary-read flag. When true, getFinanceOverview tries the
+     * Gold path FIRST and returns its DashboardResponse; on any failure (Gold
+     * down, parse error, etc.) falls back to the legacy path. Default false
+     * so existing legacy-reading tenants see no change until admin flips.
+     * Config key: smartbi.gold.read-primary.enabled
+     */
+    @Value("${smartbi.gold.read-primary.enabled:false}")
+    private boolean goldReadPrimaryEnabled;
+
     // 计算精度配置
     private static final int SCALE = 4;
     private static final int DISPLAY_SCALE = 2;
@@ -99,6 +109,25 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
     @Override
     public DashboardResponse getFinanceOverview(String factoryId, LocalDate startDate, LocalDate endDate) {
         log.info("获取财务概览: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
+
+        // v1 Phase B v0 primary-read cutover. When enabled, Gold is the source
+        // of truth for KPI cards + top_stores ranking. Charts / AI insights /
+        // suggestions / receivable aging fall out of scope of Gold today so
+        // those fields ship empty — future commits will backfill as cost +
+        // receivable data lands in Silver.
+        if (goldReadPrimaryEnabled && goldFinanceClient != null) {
+            try {
+                DashboardResponse goldResponse = buildDashboardFromGold(factoryId, startDate, endDate);
+                if (goldResponse != null) {
+                    log.info("[gold-primary] factory={} range={}..{} served from Gold",
+                            factoryId, startDate, endDate);
+                    return goldResponse;
+                }
+            } catch (Exception e) {
+                log.warn("[gold-primary] factory={} failed, falling back to legacy: {}",
+                        factoryId, e.getMessage());
+            }
+        }
 
         // 获取核心KPI指标
         List<MetricResult> metricResults = new ArrayList<>();
@@ -141,6 +170,105 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
                 .suggestions(suggestions)
                 .lastUpdated(LocalDateTime.now())
                 .build();
+    }
+
+    /**
+     * Synchronously call Gold and convert the response into DashboardResponse.
+     * Used by the primary-read path; returns null if Gold returns nothing
+     * meaningful (revenue=0, bills=0) so the caller can fall through to
+     * legacy instead of serving a blank dashboard.
+     *
+     * Scope of the Gold → legacy conversion today:
+     * - KPI cards: 总营收 / 账单数 / 客单价 / 门店数 (populated from Gold)
+     * - Rankings: top_stores (populated from Gold's top_stores list)
+     * - Charts: empty (Gold doesn't emit trend/pie shapes yet — legacy path
+     *   still computed profit_trend/cost_structure/receivable_aging; those
+     *   will migrate as Silver captures cost + receivable data).
+     * - AI insights / suggestions: empty (no Gold-level metrics yet).
+     * - Receivables: empty (SmartBiFinanceData-driven; not in Silver yet).
+     */
+    private DashboardResponse buildDashboardFromGold(
+            String factoryId, LocalDate startDate, LocalDate endDate) throws java.io.IOException {
+        Map<String, Object> gold = goldFinanceClient.fetchFinanceSummary(
+                factoryId, startDate, endDate, 10);
+
+        BigDecimal revenue = toBigDecimal(gold.get("total_revenue"));
+        BigDecimal bills = toBigDecimal(gold.get("bill_count"));
+        BigDecimal avgBill = toBigDecimal(gold.get("avg_bill_value"));
+        BigDecimal stores = toBigDecimal(gold.get("store_count"));
+
+        // Serve nothing rather than a fake empty dashboard when Gold has no data
+        // — caller should fall through to legacy.
+        if (revenue.signum() == 0 && bills.signum() == 0) {
+            log.info("[gold-primary] factory={} has zero Gold rows; null to trigger legacy fallback",
+                    factoryId);
+            return null;
+        }
+
+        List<KPICard> kpiCards = new ArrayList<>();
+        kpiCards.add(KPICard.builder()
+                .key("total_revenue").title("总营收")
+                .value(formatKpiValue(revenue, "元")).rawValue(revenue).unit("元")
+                .status("green").build());
+        kpiCards.add(KPICard.builder()
+                .key("bill_count").title("账单数")
+                .value(formatKpiValue(bills, "单")).rawValue(bills).unit("单")
+                .status("green").build());
+        kpiCards.add(KPICard.builder()
+                .key("avg_bill_value").title("客单价")
+                .value(formatKpiValue(avgBill, "元")).rawValue(avgBill).unit("元")
+                .status("green").build());
+        kpiCards.add(KPICard.builder()
+                .key("store_count").title("门店数")
+                .value(formatKpiValue(stores, "家")).rawValue(stores).unit("家")
+                .status("green").build());
+
+        List<RankingItem> topStores = new ArrayList<>();
+        Object topStoresRaw = gold.get("top_stores");
+        if (topStoresRaw instanceof List) {
+            int rank = 1;
+            for (Object item : (List<?>) topStoresRaw) {
+                if (!(item instanceof Map)) continue;
+                Map<?, ?> store = (Map<?, ?>) item;
+                topStores.add(RankingItem.builder()
+                        .rank(rank++)
+                        .name(String.valueOf(store.get("store_name")))
+                        .value(toBigDecimal(store.get("revenue")))
+                        .build());
+            }
+        }
+        Map<String, List<RankingItem>> rankings = new LinkedHashMap<>();
+        rankings.put("top_stores", topStores);
+
+        return DashboardResponse.builder()
+                .kpiCards(kpiCards)
+                .charts(new LinkedHashMap<>())
+                .rankings(rankings)
+                .aiInsights(new ArrayList<>())
+                .suggestions(new ArrayList<>())
+                .lastUpdated(LocalDateTime.now())
+                .build();
+    }
+
+    /** Tolerant Number → BigDecimal for JSON values that arrive as Integer /
+     *  Long / Double / BigDecimal / null. */
+    private static BigDecimal toBigDecimal(Object v) {
+        if (v == null) return BigDecimal.ZERO;
+        if (v instanceof BigDecimal) return (BigDecimal) v;
+        if (v instanceof Number) return new BigDecimal(v.toString());
+        try {
+            return new BigDecimal(String.valueOf(v));
+        } catch (NumberFormatException nfe) {
+            return BigDecimal.ZERO;
+        }
+    }
+
+    /** Format BigDecimal as user-visible string. 总营收/客单价 → 2dp, counts → 0dp. */
+    private static String formatKpiValue(BigDecimal v, String unit) {
+        if ("元".equals(unit)) {
+            return v.setScale(DISPLAY_SCALE, ROUNDING_MODE).toPlainString();
+        }
+        return v.setScale(0, ROUNDING_MODE).toPlainString();
     }
 
     /**
