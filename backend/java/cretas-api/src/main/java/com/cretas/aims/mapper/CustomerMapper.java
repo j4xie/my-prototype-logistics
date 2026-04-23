@@ -86,9 +86,12 @@ public class CustomerMapper {
         customer.setCurrentBalance(BigDecimal.ZERO);
         customer.setRating(request.getRating() != null ? request.getRating() : 3);
         customer.setRatingNotes(request.getRatingNotes());
-        // Bug D fix: honor frontend-supplied status on create (default ACTIVE if absent)
-        customer.setIsActive(request.getStatus() == null
-            || "ACTIVE".equalsIgnoreCase(request.getStatus()));
+        // Bug D fix + audit M3 validation: status must be ACTIVE/INACTIVE if provided
+        String status = request.getStatus();
+        if (status != null && !"ACTIVE".equalsIgnoreCase(status) && !"INACTIVE".equalsIgnoreCase(status)) {
+            throw new IllegalArgumentException("status 必须是 ACTIVE 或 INACTIVE");
+        }
+        customer.setIsActive(status == null || "ACTIVE".equalsIgnoreCase(status));
         customer.setNotes(request.getNotes());
         customer.setCreatedBy(createdBy);
         customer.setCreatedAt(LocalDateTime.now());
@@ -144,10 +147,13 @@ public class CustomerMapper {
         if (request.getRatingNotes() != null) {
             customer.setRatingNotes(request.getRatingNotes());
         }
-        // Bug D fix (qa-prompt Rule 11 read-after-write caught silent failure):
-        // status="ACTIVE"/"INACTIVE" → entity.isActive mapping
+        // Bug D fix (qa-prompt Rule 11) + audit M3 validation: status only ACTIVE/INACTIVE
         if (request.getStatus() != null) {
-            customer.setIsActive("ACTIVE".equalsIgnoreCase(request.getStatus()));
+            String s = request.getStatus();
+            if (!"ACTIVE".equalsIgnoreCase(s) && !"INACTIVE".equalsIgnoreCase(s)) {
+                throw new IllegalArgumentException("status 必须是 ACTIVE 或 INACTIVE");
+            }
+            customer.setIsActive("ACTIVE".equalsIgnoreCase(s));
         }
         if (request.getNotes() != null) {
             customer.setNotes(request.getNotes());

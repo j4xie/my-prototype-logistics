@@ -53,16 +53,20 @@ function resolveDefault(field: EffectiveField): unknown {
   const dv = field.defaultValue
   if (typeof dv !== 'string') return dv ?? null
   const today = new Date()
+  // Build YYYY-MM-DD using LOCAL date (not UTC) — avoids 8h shift bug for CST users
+  // when local is one day ahead/behind UTC midnight.
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const localDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
   switch (dv) {
     case 'TODAY':
-      // YYYY-MM-DD (LocalDate-compatible)
-      return today.toISOString().slice(0, 10)
+      return localDate
     case 'NOW':
-      // ISO datetime (LocalDateTime-compatible). Strip Z for backend tolerance.
-      return today.toISOString().replace('Z', '')
+      // LOCAL ISO datetime — backend LenientLocalDateDeserializer also accepts the literal
+      // "NOW" sentinel as backup, so frontend resolution is "best effort visual" only.
+      return `${localDate}T${pad(today.getHours())}:${pad(today.getMinutes())}:${pad(today.getSeconds())}`
     case 'YESTERDAY': {
       const d = new Date(today.getTime() - 86400000)
-      return d.toISOString().slice(0, 10)
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
     }
     default:
       return dv

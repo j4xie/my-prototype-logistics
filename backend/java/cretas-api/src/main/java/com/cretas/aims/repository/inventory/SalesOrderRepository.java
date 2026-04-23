@@ -48,13 +48,14 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, String> 
      * Bug G fix: keyword search (qa-prompt v2.3 Rule 12.1).
      * Searches orderNumber + salesperson + remark (display fields visible in list).
      * customerName is @Formula and not directly queryable, so we JOIN customer entity.
+     * Audit H1: ESCAPE '\' so user-typed % and _ are literal (service layer pre-escapes).
      */
     @Query("SELECT so FROM SalesOrder so LEFT JOIN Customer c ON c.id = so.customerId " +
             "WHERE so.factoryId = :factoryId AND (" +
-            "LOWER(so.orderNumber) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(COALESCE(so.salesperson, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(COALESCE(c.name, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(COALESCE(so.remark, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))" +
+            "LOWER(so.orderNumber) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+            "LOWER(COALESCE(so.salesperson, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+            "LOWER(COALESCE(c.name, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+            "LOWER(COALESCE(so.remark, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\'" +
             ") ORDER BY so.createdAt DESC")
     Page<SalesOrder> searchByFactoryAndKeyword(@Param("factoryId") String factoryId, @Param("keyword") String keyword, Pageable pageable);
 }

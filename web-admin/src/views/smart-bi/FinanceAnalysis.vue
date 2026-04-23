@@ -23,6 +23,7 @@ import {
   batchBuildCharts,
   buildChart,
 } from '@/api/smartbi/python-service';
+import { getFinanceSummary, type FinanceSummary } from '@/api/smartbi/gold';
 import { ElMessage } from 'element-plus';
 import {
   Refresh,
@@ -51,6 +52,9 @@ import type { ChartConfig } from '@/types/smartbi';
 const route = useRoute();
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
+// Apr 24 2026 UX P0-1: restaurant tenants 没有 cost/profit 数据 (Silver 无),
+// 顶部 KPI 改显 Gold 营收/订单/客单价/门店. Manufacturing tenants 保持原样.
+const isRestaurantTenant = computed(() => authStore.factoryType === 'RESTAURANT');
 
 // 分析类型
 type AnalysisType = 'profit' | 'cost' | 'receivable' | 'payable' | 'budget';
@@ -541,6 +545,56 @@ const analysisTypes = [
   { type: 'budget' as AnalysisType, label: '预算分析', icon: Document }
 ];
 
+// Gold-backed 营收/订单/客单价/门店 KPIs for restaurant tenants.
+// Replaces the 毛利润/净利润 legacy row when Silver has no cost data.
+const goldFinSummary = ref<FinanceSummary | null>(null);
+const goldFinFallbackLabel = ref<string>('');
+async function loadGoldFinSummary() {
+  if (!factoryId.value || !isRestaurantTenant.value) {
+    goldFinSummary.value = null;
+    goldFinFallbackLabel.value = '';
+    return;
+  }
+  const iso = (d: Date): string => d.toISOString().slice(0, 10);
+  const [s, e] = dateRange.value
+    ? [iso(dateRange.value[0]), iso(dateRange.value[1])]
+    : (() => {
+        const now = new Date();
+        const start = new Date(); start.setTime(start.getTime() - 3600 * 1000 * 24 * 365);
+        return [iso(start), iso(now)];
+      })();
+  try {
+    const r = await getFinanceSummary({
+      factoryId: factoryId.value, startDate: s, endDate: e, topNStores: 3,
+    });
+    if (r && r.billCount > 0) {
+      goldFinSummary.value = r;
+      goldFinFallbackLabel.value = '';
+      return;
+    }
+    // Fallback chain — same pattern as RestaurantV2 / Trends
+    const y = new Date().getFullYear();
+    const chain: Array<[string, string, string]> = [
+      [`${y - 1}-01-01`, `${y - 1}-12-31`, `${y - 1}全年`],
+      [`${y - 2}-01-01`, `${y - 2}-12-31`, `${y - 2}全年`],
+    ];
+    for (const [cs, ce, label] of chain) {
+      const fb = await getFinanceSummary({ factoryId: factoryId.value, startDate: cs, endDate: ce, topNStores: 3 });
+      if (fb && fb.billCount > 0) {
+        goldFinSummary.value = fb;
+        goldFinFallbackLabel.value = label;
+        return;
+      }
+    }
+    goldFinSummary.value = r;
+    goldFinFallbackLabel.value = '';
+  } catch {
+    goldFinSummary.value = null;
+    goldFinFallbackLabel.value = '';
+  }
+}
+watch(dateRange, () => { if (isRestaurantTenant.value) loadGoldFinSummary(); });
+
 onMounted(async () => {
   // 默认选择最近365天（覆盖更多财务数据）
   const end = new Date();
@@ -558,6 +612,9 @@ onMounted(async () => {
   // Initialize legacy chart container (only needed for system data fallback)
   await nextTick();
   initChart();
+
+  // Fire Gold fetch for restaurant tenants (parallel, doesn't block init)
+  if (isRestaurantTenant.value) loadGoldFinSummary();
 });
 
 // 加载数据源列表
@@ -1913,8 +1970,49 @@ onUnmounted(() => {
       style="margin-bottom: 16px"
     />
 
-    <!-- 财务 KPI -->
-    <el-row :gutter="16" class="kpi-section" v-loading="loading">
+    <!-- 餐饮租户: Gold-backed 营收/订单/客单价/门店 代替 毛利润/净利润 (P0-1 fix) -->
+    <el-row v-if="isRestaurantTenant && analysisType === 'profit'" :gutter="16" class="kpi-section">
+      <el-col :span="24" style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+        <el-tag size="small" type="success">Gold · finance_summary</el-tag>
+        <el-tag v-if="goldFinFallbackLabel" size="small" type="warning" effect="plain">
+          所选区间无数据,已显示 {{ goldFinFallbackLabel }}
+        </el-tag>
+        <span style="color: #909399; font-size: 12px;">
+          餐饮门店 POS 汇总数据 (Silver 暂未覆盖 cost/profit 字段, 预计 v2 加入)
+        </span>
+      </el-col>
+      <el-col :xs="24" :sm="12" :md="6">
+        <el-card class="kpi-card kpi-accent-0">
+          <div class="kpi-label">总营收</div>
+          <div class="kpi-value">¥{{ goldFinSummary ? goldFinSummary.totalRevenue.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--' }}</div>
+          <div class="kpi-sub">覆盖 {{ goldFinSummary?.dayCount ?? 0 }} 天</div>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="12" :md="6">
+        <el-card class="kpi-card kpi-accent-1">
+          <div class="kpi-label">POS 订单数</div>
+          <div class="kpi-value">{{ goldFinSummary ? goldFinSummary.billCount.toLocaleString('zh-CN') : '--' }}</div>
+          <div class="kpi-sub">{{ goldFinSummary?.storeCount ?? 0 }} 家门店</div>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="12" :md="6">
+        <el-card class="kpi-card kpi-accent-2">
+          <div class="kpi-label">客单价</div>
+          <div class="kpi-value">¥{{ goldFinSummary?.avgBillValue != null ? goldFinSummary.avgBillValue.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--' }}</div>
+          <div class="kpi-sub">营收 / 账单数</div>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="12" :md="6">
+        <el-card class="kpi-card kpi-accent-3">
+          <div class="kpi-label">门店数</div>
+          <div class="kpi-value">{{ goldFinSummary?.storeCount ?? '--' }}</div>
+          <div class="kpi-sub">有营收的门店</div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 财务 KPI (manufacturing tenants 原路径) -->
+    <el-row v-else :gutter="16" class="kpi-section" v-loading="loading">
       <!-- 利润分析 KPI -->
       <template v-if="analysisType === 'profit'">
         <el-col :xs="24" :sm="12" :md="6">

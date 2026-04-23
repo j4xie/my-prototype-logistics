@@ -240,8 +240,13 @@ public class SalesServiceImpl implements SalesService {
         PageRequest pageRequest = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<SalesOrder> result;
         if (keyword != null && !keyword.isBlank()) {
-            // Bug G: keyword search across orderNumber + salesperson + customer.name + remark
-            result = salesOrderRepository.searchByFactoryAndKeyword(factoryId, keyword.trim(), pageRequest);
+            // Bug G + audit H1: escape SQL LIKE wildcards (% _ \) so user-typed wildcards
+            // become literal characters. Repository uses ESCAPE '\' clause.
+            String escaped = keyword.trim()
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
+            result = salesOrderRepository.searchByFactoryAndKeyword(factoryId, escaped, pageRequest);
         } else {
             result = salesOrderRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageRequest);
         }
