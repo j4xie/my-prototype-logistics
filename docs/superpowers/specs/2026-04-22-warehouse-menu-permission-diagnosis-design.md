@@ -187,7 +187,44 @@ canRead('warehouse') → 'r' or 'rw' or 'w' → 菜单可见 / '-' → 隐藏
 
 ---
 
-## 9. References
+## 9. Diagnostic results (2026-04-23 partial)
+
+DB 层 4 + 1 根因查询完成。客户指定测试工厂为 **六膳门 (F006)**。
+
+### 9.1 已排除的根因
+
+| Root cause | 检查方法 | 结果 |
+|---|---|---|
+| **R1** factory_admin 缺 seed | `users` 表查询 | F006 用户：`f006_admin` (factory_super_admin) / `f006_workshop` (workshop_supervisor) / `f006_worker1` (operator)。**`factory_admin` 角色实际不存在于 DB**（hardcoded matrix 里只有 factory_super_admin），客户口语"工厂管理员"对应的是 factory_super_admin。✅ 排除 |
+| **R2** RESTAURANT factoryType 强过滤 | `factories` 表 | F006: `name='六膳门食品科技', type='FACTORY'`。FACTORY 类型 filter 不影响 warehouse。✅ 排除 |
+| **R3** DB L1 platform_role_permissions 缺 row | `SELECT * FROM platform_role_permissions WHERE module_code='warehouse'` | 22 行齐全，含 `factory_super_admin / warehouse / rw` ✓ + `warehouse_manager / warehouse / rw` ✓ + `workshop_supervisor / warehouse / r` ✓。✅ 排除 |
+| **R4** DB L2 factory override | `SELECT * FROM factory_module_configs WHERE factory_id IN ('F001','F006') AND role_module_override <> '{}'` | 0 行。F006 全部 19 个 module config 的 `role_module_override` 字段都是空 JSON。✅ 排除 |
+| **R5（新）** Canvas disabled-modules API 屏蔽 | `AppSidebar.vue:32-46` 调 `GET /{factoryId}/config/disabled-modules`，逻辑见 `ConfigController.java:58-70` | F006 无 PUBLISHED config（只有 v1 APPROVED + v2 DRAFT），API 走 fallback 返空 list。F001 有 v1 PUBLISHED 但其 factory_module_configs 0 行。`module_code='warehouse' AND enabled=false` 全表 0 行。✅ 排除 |
+
+### 9.2 推论
+
+按 §2 "最终权限 = factoryTypeFilter ∩ (DB-L2 ∪ DB-L1 ∪ hardcoded)" 解析模型，**`f006_admin` 登录后应该能看到 仓储管理 一级菜单 + 4 子菜单**（原材料批次/出货管理/盘点管理/物料均价趋势 — 注意 spec §1 写"5 子菜单"含周转耗材, 但 sidebar 实际配置无周转耗材）。
+
+**矛盾点**：客户报告 "仓储管理大模块没了"，但 DB 状态显示应该可见。可能原因：
+- (a) 客户实际用的不是 `f006_admin`，而是另一个我们没看过的账号 / 工厂
+- (b) 测试环境 (10011) 已停 (`SpringApplicationShutdownHook` ~10:19 CST)，客户 22 日测试时连的是某个之前部署的版本，状态可能与现在 DB 不同
+- (c) 客户浏览器 localStorage 里有过期的 permission 缓存
+- (d) Sidebar 渲染逻辑有未识别的第 6 层 gate
+
+### 9.3 需要的下一步
+
+| Step | 谁做 | 期望产出 |
+|---|---|---|
+| **A. 重启 test 10011** | Steve / 我 | systemctl 起 cretas-backend test，10011 监听 |
+| **B. 用 f006_admin 登录 web-admin test env (139:8097)** | 我 | 截图证明菜单可见 / 不可见 |
+| **C. 若 B 显示菜单可见** | Steve | 告知客户用 `f006_admin / <密码>` 复测，可能问题已自愈或客户用了别的账号 |
+| **D. 若 B 显示菜单仍不可见** | 我 | dig 第 6 层 gate (Vue dev tools 看 permissionStore.canAccess('warehouse') 返回值，trace 渲染) |
+
+诊断 blocker 从"无客户账号"变更为"test 环境需重启 + login 验证"。
+
+---
+
+## 10. References
 
 - 客户原始反馈：`系统修改意见.docx`（在用户 Steve 微信留存）
 - Reviewer audit：本会话 superpowers:code-reviewer 输出
