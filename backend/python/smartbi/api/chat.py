@@ -1681,10 +1681,60 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
             if charts:
                 yield _sse_event("charts", charts)
 
+            # Phase 1 (Apr 23 2026): fire-and-forget log of this LLM fallback.
+            # Captured agg_meta mirrors what went into the LLM prompt so Phase 2
+            # clustering can re-run the same slice later. Logging must not block
+            # the user's answer — 2s soft timeout, exception swallowed.
+            _log_id = None
+            try:
+                from smartbi.services.llm_fallback_logger import (
+                    LlmFallbackLogPayload, log_fallback,
+                )
+                from smartbi.config import get_pg_pool as _get_pg_pool_log
+
+                _log_pool = await _get_pg_pool_log()
+                _history = None
+                if request.context and isinstance(request.context, dict):
+                    _h = request.context.get("history")
+                    if isinstance(_h, list):
+                        _history = _h
+                _factory_for_log = (
+                    getattr(http_request.state, "factory_id", None)
+                    if hasattr(http_request, "state") else None
+                )
+                _upload_for_log = None
+                try:
+                    if request.sheet_id:
+                        _upload_for_log = int(request.sheet_id)
+                except (ValueError, TypeError):
+                    pass
+                _log_payload = LlmFallbackLogPayload(
+                    query=request.effective_query,
+                    factory_id=_factory_for_log,
+                    upload_id=_upload_for_log,
+                    answer=full_text,
+                    agg_meta={
+                        "agg_lines_count": len(agg_lines) if "agg_lines" in locals() else 0,
+                        "primary_measure": primary_measure if "primary_measure" in locals() else None,
+                        "has_history": bool(_history),
+                    },
+                    history=_history,
+                    total_wall_ms=int((time.time() - start_time) * 1000),
+                    llm_wall_ms=int((time.time() - start_time) * 1000),
+                )
+                _log_task = asyncio.create_task(log_fallback(_log_pool, _log_payload))
+                try:
+                    _log_id = await asyncio.wait_for(asyncio.shield(_log_task), timeout=2.0)
+                except (asyncio.TimeoutError, Exception):
+                    _log_id = None
+            except Exception as log_err:
+                logger.debug(f"[stream] fallback log skipped: {log_err}")
+
             yield _sse_event("done", {
                 "success": True,
                 "answer": full_text,
                 "charts": charts,
+                "log_id": _log_id,
                 "processingTimeMs": int((time.time() - start_time) * 1000)
             })
 
