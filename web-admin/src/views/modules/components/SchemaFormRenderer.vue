@@ -90,7 +90,11 @@ function isFieldShown(field: EffectiveField): boolean {
 
 // 是否只读
 function isReadonly(field: EffectiveField): boolean {
-  return props.mode === 'view' || field.readonly || !!field.extra?.computed
+  if (props.mode === 'view') return true
+  if (field.readonly || field.extra?.computed) return true
+  // Spec §4.A.2 + M3: autoGenerate fields disabled in both create + edit (snapshot semantics)
+  if (field.extra?.autoGenerate) return true
+  return false
 }
 
 // computedWhen 动态计算值
@@ -186,7 +190,7 @@ watch(
                 v-if="field.type === 'string' || field.type === 'text'"
                 v-model="formData[field.code]"
                 :disabled="isReadonly(field)"
-                :placeholder="`请输入${getLabel(field)}`"
+                :placeholder="field.extra?.autoGenerate && mode === 'create' ? '保存后自动生成' : `请输入${getLabel(field)}`"
               />
 
               <!-- textarea -->
