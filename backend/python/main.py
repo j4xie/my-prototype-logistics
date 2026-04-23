@@ -422,6 +422,14 @@ else:
 from smartbi.api import llm_usage_admin
 app.include_router(llm_usage_admin.router, prefix="/api/smartbi/admin/llm-usage", tags=["LLM Usage Admin"])
 
+# Phase 1 (Apr 23 2026): LLM fallback query log admin + feedback write
+from smartbi.api import llm_fallback_admin
+app.include_router(
+    llm_fallback_admin.router,
+    prefix="/api/smartbi/admin/fallback-log",
+    tags=["LLM Fallback Log"],
+)
+
 # Memory diagnostic / manual trim (Apr 23 2026, investigating post-materialize RSS retention)
 from smartbi.api import memory_admin
 app.include_router(memory_admin.router, prefix="/api/smartbi/admin/memory", tags=["Memory Admin"])
