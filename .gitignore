@@ -156,6 +156,18 @@ frontend/CretasFoodTrace/batch-*.json
 frontend/CretasFoodTrace/hr-i18n-*.json
 frontend/CretasFoodTrace/warehouse-*.json
 frontend/CretasFoodTrace/migrate-*.sh~$*
+
+# 防止凭证在脚本中泄露（SSH、API key 等不应硬编码）
+**/password
+**/passwd
+**/token
+**/api_key
+**/apikey
+**/secret_key
+**/ssh_key
+credentials.txt
+secrets.txt
+
 nul
 scripts/run_new_server.py
 scripts/run_old_server.py
