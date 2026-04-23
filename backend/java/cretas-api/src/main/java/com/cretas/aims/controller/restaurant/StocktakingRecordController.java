@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * 库存盘点管理 Controller
@@ -70,6 +71,7 @@ public class StocktakingRecordController {
     // ==================== 创建 ====================
 
     @RequirePermission({"inventory:read_write"})
+    @RequireModule("restaurant")
     @PostMapping
     @Operation(summary = "创建盘点单", description = "创建食材盘点单，自动读取系统库存")
     public ApiResponse<StocktakingRecord> create(
@@ -104,6 +106,7 @@ public class StocktakingRecordController {
     // ==================== 完成盘点 ====================
 
     @RequirePermission({"inventory:read_write"})
+    @RequireModule("restaurant")
     @PostMapping("/{recordId}/complete")
     @Operation(summary = "完成盘点", description = "录入实盘数量并计算差异")
     public ApiResponse<StocktakingRecord> complete(
@@ -141,6 +144,7 @@ public class StocktakingRecordController {
     // ==================== 取消 ====================
 
     @RequirePermission({"inventory:read_write"})
+    @RequireModule("restaurant")
     @PostMapping("/{recordId}/cancel")
     @Operation(summary = "取消盘点")
     public ApiResponse<StocktakingRecord> cancel(

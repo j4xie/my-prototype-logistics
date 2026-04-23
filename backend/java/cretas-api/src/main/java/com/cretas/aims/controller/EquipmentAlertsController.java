@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.Map;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * 设备告警管理控制器
@@ -41,6 +42,7 @@ public class EquipmentAlertsController {
      * 创建设备告警
      */
     @RequirePermission({"equipment:read_write"})
+    @RequireModule("equipment")
     @PostMapping
     @Operation(summary = "创建设备告警", description = "手动创建设备告警记录，用于记录设备异常情况")
     public ApiResponse<EquipmentAlertDTO> createAlert(
@@ -129,6 +131,7 @@ public class EquipmentAlertsController {
      * 确认告警
      */
     @RequirePermission({"equipment:read_write"})
+    @RequireModule("equipment")
     @PutMapping("/{alertId}/acknowledge")
     @Operation(summary = "确认告警", description = "确认已收到告警通知，状态变更为ACKNOWLEDGED")
     public ApiResponse<EquipmentAlertDTO> acknowledgeAlert(
@@ -152,6 +155,7 @@ public class EquipmentAlertsController {
      * 处理告警
      */
     @RequirePermission({"equipment:read_write"})
+    @RequireModule("equipment")
     @PutMapping("/{alertId}/resolve")
     @Operation(summary = "处理告警", description = "标记告警已处理完成，状态变更为RESOLVED")
     public ApiResponse<EquipmentAlertDTO> resolveAlert(

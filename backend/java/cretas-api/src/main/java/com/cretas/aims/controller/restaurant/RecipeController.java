@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * BOM 配方管理 Controller
@@ -71,6 +72,7 @@ public class RecipeController {
     // ==================== 创建 ====================
 
     @RequirePermission({"production:read_write", "rd:read_write"})
+    @RequireModule("restaurant")
     @PostMapping
     @Operation(summary = "创建配方")
     public ApiResponse<Recipe> create(
@@ -99,6 +101,7 @@ public class RecipeController {
     // ==================== 更新 ====================
 
     @RequirePermission({"production:read_write", "rd:read_write"})
+    @RequireModule("restaurant")
     @PutMapping("/{recipeId}")
     @Operation(summary = "更新配方")
     public ApiResponse<Recipe> update(
@@ -122,6 +125,7 @@ public class RecipeController {
     // ==================== 软删除 ====================
 
     @RequirePermission({"production:read_write", "rd:read_write"})
+    @RequireModule("restaurant")
     @DeleteMapping("/{recipeId}")
     @Operation(summary = "停用配方（软删除）")
     public ApiResponse<Void> softDelete(

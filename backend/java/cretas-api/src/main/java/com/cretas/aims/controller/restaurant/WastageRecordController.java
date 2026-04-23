@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * 损耗记录管理 Controller
@@ -79,6 +80,7 @@ public class WastageRecordController {
     // ==================== 创建 ====================
 
     @RequirePermission({"inventory:read_write"})
+    @RequireModule("restaurant")
     @PostMapping
     @Operation(summary = "创建损耗记录")
     public ApiResponse<WastageRecord> create(
@@ -108,6 +110,7 @@ public class WastageRecordController {
     // ==================== 提交 ====================
 
     @RequirePermission({"inventory:read_write"})
+    @RequireModule("restaurant")
     @PostMapping("/{wastageId}/submit")
     @Operation(summary = "提交损耗记录", description = "将草稿提交审批")
     public ApiResponse<WastageRecord> submit(
@@ -129,6 +132,7 @@ public class WastageRecordController {
     // ==================== 审批 ====================
 
     @RequirePermission({"inventory:read_write"})
+    @RequireModule("restaurant")
     @PostMapping("/{wastageId}/approve")
     @Operation(summary = "审批损耗记录")
     public ApiResponse<WastageRecord> approve(
@@ -152,6 +156,7 @@ public class WastageRecordController {
     // ==================== 驳回 ====================
 
     @RequirePermission({"inventory:read_write"})
+    @RequireModule("restaurant")
     @PostMapping("/{wastageId}/reject")
     @Operation(summary = "驳回损耗记录")
     public ApiResponse<WastageRecord> reject(

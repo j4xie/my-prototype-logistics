@@ -19,6 +19,7 @@ import com.cretas.aims.util.ErrorSanitizer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * 工单控制器
@@ -185,6 +186,7 @@ public class WorkOrderController {
      * 创建工单
      */
     @RequirePermission({"production:read_write"})
+    @RequireModule("production_plan")
     @PostMapping
     @Operation(summary = "创建工单", description = "创建新的工单")
     public ResponseEntity<?> createWorkOrder(
@@ -213,6 +215,7 @@ public class WorkOrderController {
      * 更新工单
      */
     @RequirePermission({"production:read_write"})
+    @RequireModule("production_plan")
     @PutMapping("/{id}")
     @Operation(summary = "更新工单", description = "更新工单信息")
     public ResponseEntity<?> updateWorkOrder(
@@ -241,6 +244,7 @@ public class WorkOrderController {
      * 开始工单
      */
     @RequirePermission({"production:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/{id}/start")
     @Operation(summary = "开始工单", description = "将工单状态改为进行中")
     public ResponseEntity<?> startWorkOrder(
@@ -267,6 +271,7 @@ public class WorkOrderController {
      * 完成工单
      */
     @RequirePermission({"production:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/{id}/complete")
     @Operation(summary = "完成工单", description = "将工单标记为已完成")
     public ResponseEntity<?> completeWorkOrder(
@@ -293,6 +298,7 @@ public class WorkOrderController {
      * 取消工单
      */
     @RequirePermission({"production:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/{id}/cancel")
     @Operation(summary = "取消工单", description = "取消工单")
     public ResponseEntity<?> cancelWorkOrder(
@@ -321,6 +327,7 @@ public class WorkOrderController {
      * 分配工单
      */
     @RequirePermission({"production:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/{id}/assign")
     @Operation(summary = "分配工单", description = "将工单分配给指定用户")
     public ResponseEntity<?> assignWorkOrder(
@@ -349,6 +356,7 @@ public class WorkOrderController {
      * 删除工单
      */
     @RequirePermission({"production:read_write"})
+    @RequireModule("production_plan")
     @DeleteMapping("/{id}")
     @Operation(summary = "删除工单", description = "删除指定的工单")
     public ResponseEntity<?> deleteWorkOrder(

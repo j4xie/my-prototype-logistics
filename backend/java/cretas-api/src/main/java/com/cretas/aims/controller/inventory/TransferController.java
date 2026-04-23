@@ -18,6 +18,7 @@ import com.cretas.aims.annotation.RequirePermission;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.Map;
+import com.cretas.aims.annotation.RequireModule;
 
 @Slf4j
 @RestController
@@ -29,6 +30,7 @@ public class TransferController {
     private final TransferService transferService;
     private final MobileService mobileService;
 
+    @RequireModule("warehouse")
     @PostMapping
     @Operation(summary = "创建调拨单")
     @RequirePermission("inventory:write")
@@ -63,6 +65,7 @@ public class TransferController {
         return ApiResponse.success("查询成功", transfer);
     }
 
+    @RequireModule("warehouse")
     @PostMapping("/{transferId}/request")
     @Operation(summary = "提交调拨申请")
     @RequirePermission("inventory:write")
@@ -75,6 +78,7 @@ public class TransferController {
         return ApiResponse.success("调拨申请已提交", transfer);
     }
 
+    @RequireModule("warehouse")
     @PostMapping("/{transferId}/approve")
     @Operation(summary = "审批通过")
     @RequirePermission("inventory:write")
@@ -87,6 +91,7 @@ public class TransferController {
         return ApiResponse.success("调拨已审批通过", transfer);
     }
 
+    @RequireModule("warehouse")
     @PostMapping("/{transferId}/reject")
     @Operation(summary = "驳回调拨")
     @RequirePermission("inventory:write")
@@ -100,6 +105,7 @@ public class TransferController {
         return ApiResponse.success("调拨已驳回", transfer);
     }
 
+    @RequireModule("warehouse")
     @PostMapping("/{transferId}/ship")
     @Operation(summary = "调拨发货（扣减调出方库存）")
     @RequirePermission("inventory:write")
@@ -112,6 +118,7 @@ public class TransferController {
         return ApiResponse.success("调拨已发货", transfer);
     }
 
+    @RequireModule("warehouse")
     @PostMapping("/{transferId}/receive")
     @Operation(summary = "调拨签收")
     @RequirePermission("inventory:write")
@@ -124,6 +131,7 @@ public class TransferController {
         return ApiResponse.success("调拨已签收", transfer);
     }
 
+    @RequireModule("warehouse")
     @PostMapping("/{transferId}/confirm")
     @Operation(summary = "确认调拨（调入方入库）")
     @RequirePermission("inventory:write")
@@ -136,6 +144,7 @@ public class TransferController {
         return ApiResponse.success("调拨已确认，库存已更新", transfer);
     }
 
+    @RequireModule("warehouse")
     @PostMapping("/{transferId}/cancel")
     @Operation(summary = "取消调拨")
     @RequirePermission("inventory:write")

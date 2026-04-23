@@ -22,6 +22,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * 智能调度控制器
@@ -44,6 +45,7 @@ public class SchedulingController {
      * 创建调度计划
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/plans")
     @Operation(summary = "创建调度计划", description = "创建新的日生产调度计划，包含产线排程和人员分配")
     public ApiResponse<SchedulingPlanDTO> createPlan(
@@ -101,6 +103,7 @@ public class SchedulingController {
      * 更新调度计划
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PutMapping("/plans/{planId}")
     @Operation(summary = "更新调度计划", description = "更新调度计划信息，仅限DRAFT状态的计划")
     public ApiResponse<SchedulingPlanDTO> updatePlan(
@@ -118,6 +121,7 @@ public class SchedulingController {
      * 确认调度计划
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/plans/{planId}/confirm")
     @Operation(summary = "确认调度计划", description = "确认调度计划，状态变更为CONFIRMED，可开始执行")
     public ApiResponse<SchedulingPlanDTO> confirmPlan(
@@ -136,6 +140,7 @@ public class SchedulingController {
      * 取消调度计划
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/plans/{planId}/cancel")
     @Operation(summary = "取消调度计划", description = "取消调度计划，需提供取消原因")
     public ApiResponse<Void> cancelPlan(
@@ -171,6 +176,7 @@ public class SchedulingController {
      * 更新排程
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PutMapping("/schedules/{scheduleId}")
     @Operation(summary = "更新排程", description = "更新产线排程配置，如时间、产量等")
     public ApiResponse<LineScheduleDTO> updateSchedule(
@@ -188,6 +194,7 @@ public class SchedulingController {
      * 开始排程 (启动生产)
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/schedules/{scheduleId}/start")
     @Operation(summary = "开始排程", description = "启动产线生产，状态变更为IN_PROGRESS")
     public ApiResponse<LineScheduleDTO> startSchedule(
@@ -204,6 +211,7 @@ public class SchedulingController {
      * 完成排程
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/schedules/{scheduleId}/complete")
     @Operation(summary = "完成排程", description = "标记排程完成，记录实际完成产量")
     public ApiResponse<LineScheduleDTO> completeSchedule(
@@ -223,6 +231,7 @@ public class SchedulingController {
      * 更新排程进度
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/schedules/{scheduleId}/progress")
     @Operation(summary = "更新排程进度", description = "实时更新生产进度数量")
     public ApiResponse<LineScheduleDTO> updateProgress(
@@ -244,6 +253,7 @@ public class SchedulingController {
      * 分配工人
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/workers/assign")
     @Operation(summary = "分配工人", description = "将工人分配到指定排程任务，支持批量分配")
     public ApiResponse<List<WorkerAssignmentDTO>> assignWorkers(
@@ -260,6 +270,7 @@ public class SchedulingController {
      * 移除工人分配
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @DeleteMapping("/workers/assignments/{assignmentId}")
     @Operation(summary = "移除工人分配", description = "取消工人的排程任务分配")
     public ApiResponse<Void> removeWorkerAssignment(
@@ -276,6 +287,7 @@ public class SchedulingController {
      * 工人签到
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/workers/assignments/{assignmentId}/check-in")
     @Operation(summary = "工人签到", description = "工人到达工位后签到，记录实际开始工作时间")
     public ApiResponse<WorkerAssignmentDTO> workerCheckIn(
@@ -292,6 +304,7 @@ public class SchedulingController {
      * 工人签退
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/workers/assignments/{assignmentId}/check-out")
     @Operation(summary = "工人签退", description = "工人完成工作后签退，可记录绩效评分")
     public ApiResponse<WorkerAssignmentDTO> workerCheckOut(
@@ -346,6 +359,7 @@ public class SchedulingController {
      * 基于 LinUCB 算法推荐最优工人分配
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/workers/recommend")
     @Operation(summary = "AI工人推荐", description = "基于LinUCB算法，根据任务特征推荐最优工人分配方案")
     public ApiResponse<List<LinUCBService.WorkerRecommendation>> recommendWorkers(
@@ -387,6 +401,7 @@ public class SchedulingController {
      * AI 生成调度计划
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/generate")
     @Operation(summary = "AI生成调度计划", description = "使用AI算法自动生成最优调度计划，考虑产能、人员、设备等因素")
     public ApiResponse<SchedulingPlanDTO> generateSchedule(
@@ -404,6 +419,7 @@ public class SchedulingController {
      * AI 优化人员分配
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/optimize-workers")
     @Operation(summary = "AI优化人员分配", description = "基于工人技能、历史绩效等因素，智能优化人员分配方案")
     public ApiResponse<List<WorkerAssignmentDTO>> optimizeWorkers(
@@ -449,6 +465,7 @@ public class SchedulingController {
      * 重新调度 (AI 辅助)
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/reschedule")
     @Operation(summary = "重新调度", description = "AI辅助重新调度，用于应对突发情况如设备故障、人员变动等")
     public ApiResponse<SchedulingPlanDTO> reschedule(
@@ -503,6 +520,7 @@ public class SchedulingController {
      * 确认告警
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/alerts/{alertId}/acknowledge")
     @Operation(summary = "确认告警", description = "确认已收到告警通知，状态变更为ACKNOWLEDGED")
     public ApiResponse<SchedulingAlertDTO> acknowledgeAlert(
@@ -521,6 +539,7 @@ public class SchedulingController {
      * 解决告警
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/alerts/{alertId}/resolve")
     @Operation(summary = "解决告警", description = "标记告警已处理，可附带解决说明")
     public ApiResponse<SchedulingAlertDTO> resolveAlert(
@@ -558,6 +577,7 @@ public class SchedulingController {
      * 创建产线
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/production-lines")
     @Operation(summary = "创建产线", description = "新增生产线配置，包括产能、设备等信息")
     public ApiResponse<ProductionLineDTO> createProductionLine(
@@ -573,6 +593,7 @@ public class SchedulingController {
      * 更新产线
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PutMapping("/production-lines/{lineId}")
     @Operation(summary = "更新产线", description = "更新产线配置信息")
     public ApiResponse<ProductionLineDTO> updateProductionLine(
@@ -590,6 +611,7 @@ public class SchedulingController {
      * 更新产线状态
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PutMapping("/production-lines/{lineId}/status")
     @Operation(summary = "更新产线状态", description = "切换产线运行状态，如启用、维护、停用等")
     public ApiResponse<ProductionLineDTO> updateProductionLineStatus(
@@ -685,6 +707,7 @@ public class SchedulingController {
      * 注：此接口应配合权限控制使用
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PutMapping("/config/urgent-threshold")
     @Operation(summary = "更新紧急阈值", description = "设置紧急状态判定阈值（0-1），需管理员权限")
     public ApiResponse<java.util.Map<String, Object>> updateUrgentThresholdConfig(
@@ -797,6 +820,7 @@ public class SchedulingController {
      * 确认紧急插单（正常流程，创建生产计划）
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/urgent-insert/confirm")
     @Operation(summary = "确认紧急插单", description = "确认插单并创建生产计划，适用于低影响等级场景")
     public ApiResponse<com.cretas.aims.dto.production.ProductionPlanDTO> confirmUrgentInsert(
@@ -816,6 +840,7 @@ public class SchedulingController {
      * 用于高影响等级场景，创建待审批状态的生产计划
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/urgent-insert/force")
     @Operation(summary = "强制插单", description = "强制插单需提交审批，适用于高影响等级场景")
     public ApiResponse<com.cretas.aims.dto.production.ProductionPlanDTO> forceUrgentInsert(
@@ -835,6 +860,7 @@ public class SchedulingController {
      * 根据当前排产情况计算可用时段，使用科学的多维度分析算法
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/urgent-insert/generate-slots")
     @Operation(summary = "生成插单时段", description = "根据当前排产情况生成可用插单时段，使用多维度评分算法")
     public ApiResponse<java.util.Map<String, Object>> generateInsertSlots(
@@ -858,6 +884,7 @@ public class SchedulingController {
      * 锁定时段（防止并发选择）
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/urgent-insert/slots/{slotId}/lock")
     @Operation(summary = "锁定时段", description = "锁定选中的时段，防止其他用户并发选择")
     public ApiResponse<InsertSlotDTO> lockSlot(
@@ -877,6 +904,7 @@ public class SchedulingController {
      * 释放时段锁定
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @DeleteMapping("/urgent-insert/slots/{slotId}/lock")
     @Operation(summary = "释放时段锁定", description = "释放已锁定的时段，使其可被其他用户选择")
     public ApiResponse<Void> unlockSlot(
@@ -908,6 +936,7 @@ public class SchedulingController {
      * 清理过期时段
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/urgent-insert/cleanup")
     @Operation(summary = "清理过期时段", description = "清理已过期的插单时段数据，释放系统资源")
     public ApiResponse<java.util.Map<String, Object>> cleanupExpiredSlots(
@@ -944,6 +973,7 @@ public class SchedulingController {
      * 审批强制插单 - 批准
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/approvals/{planId}/approve")
     @Operation(summary = "批准强制插单", description = "管理员批准强制插单请求，计划将立即进入排程")
     public ApiResponse<com.cretas.aims.dto.production.ProductionPlanDTO> approveForceInsert(
@@ -965,6 +995,7 @@ public class SchedulingController {
      * 审批强制插单 - 拒绝
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/approvals/{planId}/reject")
     @Operation(summary = "拒绝强制插单", description = "管理员拒绝强制插单请求，必须提供拒绝原因")
     public ApiResponse<com.cretas.aims.dto.production.ProductionPlanDTO> rejectForceInsert(
@@ -1002,6 +1033,7 @@ public class SchedulingController {
      * 更新排产自动化设置
      */
     @RequirePermission({"scheduling:read_write", "production:read_write"})
+    @RequireModule("scheduling")
     @PutMapping("/settings")
     @Operation(summary = "更新排产设置", description = "更新排产自动化配置，支持部分更新")
     public ApiResponse<SchedulingSettingsDTO> updateSchedulingSettings(

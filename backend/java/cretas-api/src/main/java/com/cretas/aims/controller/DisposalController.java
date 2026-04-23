@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * 报废记录控制器
@@ -98,6 +99,7 @@ public class DisposalController {
      * 创建报废记录
      */
     @RequirePermission({"warehouse:read_write"})
+    @RequireModule("quality_inspection")
     @PostMapping
     @Operation(summary = "创建报废记录", description = "创建新的报废记录，需要指定报废类型、数量、原因等信息。创建后默认状态为待审批")
     public ResponseEntity<?> createDisposalRecord(
@@ -124,6 +126,7 @@ public class DisposalController {
      * 更新报废记录
      */
     @RequirePermission({"warehouse:read_write"})
+    @RequireModule("quality_inspection")
     @PutMapping("/{id}")
     @Operation(summary = "更新报废记录", description = "更新指定的报废记录信息。注意：已审批通过的记录不可修改")
     public ResponseEntity<?> updateDisposalRecord(
@@ -156,6 +159,7 @@ public class DisposalController {
      * 审批报废记录
      */
     @RequirePermission({"warehouse:read_write"})
+    @RequireModule("quality_inspection")
     @PutMapping("/{id}/approve")
     @Operation(summary = "审批报废记录", description = "审批指定的报废记录，需要提供审批人信息。审批通过后记录状态变更为已审批，库存将相应减少")
     public ResponseEntity<?> approveDisposal(
@@ -185,6 +189,7 @@ public class DisposalController {
      * 删除报废记录
      */
     @RequirePermission({"warehouse:read_write"})
+    @RequireModule("quality_inspection")
     @DeleteMapping("/{id}")
     @Operation(summary = "删除报废记录", description = "删除指定的报废记录。注意：已审批通过的记录不可删除")
     public ResponseEntity<?> deleteDisposalRecord(

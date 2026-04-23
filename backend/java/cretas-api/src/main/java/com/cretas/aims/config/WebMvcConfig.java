@@ -18,14 +18,17 @@ public class WebMvcConfig implements WebMvcConfigurer {
     private final JwtAuthInterceptor jwtAuthInterceptor;
     private final PermissionInterceptor permissionInterceptor;
     private final RequireRoleInterceptor requireRoleInterceptor;
+    private final ModuleEnabledInterceptor moduleEnabledInterceptor;
 
     // 构造器注入 - Spring 确保依赖已就绪
     public WebMvcConfig(JwtAuthInterceptor jwtAuthInterceptor,
                         PermissionInterceptor permissionInterceptor,
-                        RequireRoleInterceptor requireRoleInterceptor) {
+                        RequireRoleInterceptor requireRoleInterceptor,
+                        ModuleEnabledInterceptor moduleEnabledInterceptor) {
         this.jwtAuthInterceptor = jwtAuthInterceptor;
         this.permissionInterceptor = permissionInterceptor;
         this.requireRoleInterceptor = requireRoleInterceptor;
+        this.moduleEnabledInterceptor = moduleEnabledInterceptor;
     }
 
     @Override
@@ -57,6 +60,14 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .addPathPatterns("/api/mobile/**", "/api/platform/**", "/api/admin/**")
                 .excludePathPatterns(swaggerWhitelist)
                 .order(3);
+
+        // 4. Apr 24 Phase 8: @RequireModule 拦截器 - 检查 Canvas 工厂模块是否启用
+        // 必须在 Spring @Valid 验证之前运行 (aspect 顺序太晚),确保餐饮租户等
+        // disable 了某模块后, URL 直访被 400 "模块 xxx 未启用" 而非 "字段不能为空".
+        registry.addInterceptor(moduleEnabledInterceptor)
+                .addPathPatterns("/api/mobile/**")
+                .excludePathPatterns(swaggerWhitelist)
+                .order(4);
 
         WebMvcConfigurer.super.addInterceptors(registry);
     }

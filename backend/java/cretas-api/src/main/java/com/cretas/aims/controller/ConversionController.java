@@ -23,6 +23,7 @@ import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * 转换率管理控制器
@@ -41,6 +42,7 @@ public class ConversionController {
     private final ConversionService conversionService;
 
     @RequirePermission({"production:read_write", "rd:read_write"})
+    @RequireModule("production_plan")
     @PostMapping
     @Operation(summary = "创建转换率配置", description = "创建新的原材料到产品转换率配置，需指定原材料类型、产品类型、转换率和损耗率等信息")
     public ApiResponse<ConversionDTO> createConversion(
@@ -53,6 +55,7 @@ public class ConversionController {
     }
 
     @RequirePermission({"production:read_write", "rd:read_write"})
+    @RequireModule("production_plan")
     @PutMapping("/{id}")
     @Operation(summary = "更新转换率配置", description = "更新已有的转换率配置信息，修改后会自动记录变更历史")
     public ApiResponse<ConversionDTO> updateConversion(
@@ -65,6 +68,7 @@ public class ConversionController {
     }
 
     @RequirePermission({"production:read_write", "rd:read_write"})
+    @RequireModule("production_plan")
     @DeleteMapping("/{id}")
     @Operation(summary = "删除转换率配置", description = "删除指定的转换率配置，删除后相关的生产计划将无法自动计算原材料需求")
     public ApiResponse<Void> deleteConversion(
@@ -138,6 +142,7 @@ public class ConversionController {
     }
 
     @RequirePermission({"production:read_write", "rd:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/calculate/material-requirement")
     @Operation(summary = "计算原材料需求量", description = "根据产品类型和目标产量，自动计算所需各种原材料的数量，考虑转换率和损耗率")
     public ApiResponse<List<ConversionService.MaterialRequirement>> calculateMaterialRequirement(
@@ -152,6 +157,7 @@ public class ConversionController {
     }
 
     @RequirePermission({"production:read_write", "rd:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/calculate/product-output")
     @Operation(summary = "计算产品产出量", description = "根据原材料类型和投入量，计算可生产的各种产品数量，考虑转换率和损耗率")
     public ApiResponse<List<ConversionService.ProductOutput>> calculateProductOutput(
@@ -166,6 +172,7 @@ public class ConversionController {
     }
 
     @RequirePermission({"production:read_write", "rd:read_write"})
+    @RequireModule("production_plan")
     @PutMapping("/batch/activate")
     @Operation(summary = "批量激活/停用转换率配置", description = "批量更新多个转换率配置的激活状态，激活后的配置才能用于生产计算")
     public ApiResponse<Void> updateActiveStatus(
@@ -178,6 +185,7 @@ public class ConversionController {
     }
 
     @RequirePermission({"production:read_write", "rd:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/import")
     @Operation(summary = "批量导入转换率配置", description = "批量导入多个转换率配置，支持从外部系统或Excel导入数据，会自动校验并跳过重复配置")
     public ApiResponse<List<ConversionDTO>> importConversions(
@@ -198,6 +206,7 @@ public class ConversionController {
     }
 
     @RequirePermission({"production:read_write", "rd:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/validate")
     @Operation(summary = "验证转换率配置", description = "验证转换率配置是否有效，检查原材料类型和产品类型是否存在、转换率是否合理、是否与现有配置冲突等")
     public ApiResponse<ConversionService.ValidationResult> validateConversion(

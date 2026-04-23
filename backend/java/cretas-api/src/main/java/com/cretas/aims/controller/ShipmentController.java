@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * 出货记录控制器
@@ -233,6 +234,7 @@ public class ShipmentController {
      * 创建出货记录
      */
     @RequirePermission({"sales:read_write", "inventory:read_write", "warehouse:read_write"})
+    @RequireModule("sales_order")
     @PostMapping
     @Operation(summary = "创建出货记录", description = "创建新的出货记录，需要指定客户信息、发货产品、数量等。系统将自动记录创建人和创建时间")
     public ResponseEntity<?> createShipment(
@@ -261,6 +263,7 @@ public class ShipmentController {
      * 更新出货记录
      */
     @RequirePermission({"sales:read_write", "inventory:read_write", "warehouse:read_write"})
+    @RequireModule("sales_order")
     @PutMapping("/{id}")
     @Operation(summary = "更新出货记录", description = "更新指定的出货记录信息，可修改发货地址、联系方式、备注等字段")
     public ResponseEntity<?> updateShipment(
@@ -287,6 +290,7 @@ public class ShipmentController {
      * 更新出货状态
      */
     @RequirePermission({"sales:read_write", "inventory:read_write", "warehouse:read_write"})
+    @RequireModule("sales_order")
     @PutMapping("/{id}/status")
     @Operation(summary = "更新出货状态", description = "更新出货记录的状态，支持的状态包括：pending（待发货）、shipped（已发货）、delivered（已送达）、returned（已退货）")
     public ResponseEntity<?> updateStatus(
@@ -314,6 +318,7 @@ public class ShipmentController {
      * 删除出货记录
      */
     @RequirePermission({"sales:read_write", "inventory:read_write", "warehouse:read_write"})
+    @RequireModule("sales_order")
     @DeleteMapping("/{id}")
     @Operation(summary = "删除出货记录", description = "删除指定的出货记录，已发货或已送达的记录建议保留以便追溯")
     public ResponseEntity<?> deleteShipment(

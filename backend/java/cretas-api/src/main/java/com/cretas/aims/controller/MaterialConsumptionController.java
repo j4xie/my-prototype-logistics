@@ -28,6 +28,7 @@ import java.time.LocalTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * 原材料消耗记录控制器
@@ -317,6 +318,7 @@ public class MaterialConsumptionController {
     /**
      * 8. 差异调整
      */
+    @RequireModule("production_plan")
     @PostMapping("/batch/{productionBatchId}/adjust")
     @Operation(summary = "调整物料消耗", description = "调整生产批次中某种物料的实际消耗量")
     public ApiResponse<Void> adjustConsumption(

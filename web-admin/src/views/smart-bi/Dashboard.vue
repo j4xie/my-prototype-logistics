@@ -108,6 +108,11 @@ const errorMessage = ref('');
 // async LLM call (Python cold-start on first visit of day is 5-10s).
 const insightsLoading = ref(false);
 const insightsTookLong = ref(false);
+// Phase 9 Apr 24: live-streaming text from SSE endpoint for the
+// custom-range path. While streaming, shows as a "正在生成..." insight
+// that updates character-by-character; finalizes on done event.
+const streamingInsightText = ref('');
+const streamingInsightMeta = ref<{ source?: string; tokens_used_today?: number } | null>(null);
 
 // 数据源选择 — default empty, will be set after loading sources
 const dataSources = ref<UploadHistoryItem[]>([]);
@@ -831,24 +836,26 @@ async function loadLLMInsights() {
   const signal = abortController?.signal;
   insightsLoading.value = true;
   insightsTookLong.value = false;
+  streamingInsightText.value = '';
+  streamingInsightMeta.value = null;
   // Show "冷启中" hint after 5s (typical Python warm ~2s, cold ~8-10s)
   const longRunTimer = setTimeout(() => { insightsTookLong.value = true; }, 5000);
   try {
-    // Week 5 Agent layer: when user picked an explicit date range, call the
-    // Gold-backed /insights/custom endpoint. Otherwise keep the legacy
-    // ?period=month path (which computes fresh AIInsights from the current
-    // month's sales). The custom path requires SMARTBI_AGENT_LAYER_ENABLED=true
-    // on the Python side; if disabled, it returns empty and UI just shows
-    // whatever aiInsights the dashboard payload already carried.
-    // Apr 24 UX: if KPI fallback activated (本月 empty → historical range),
-    // fetch insights for the SAME range. Otherwise insights say "本月无数据"
-    // while KPI strip shows ¥20M — inconsistent.
     const effectiveRange = dateRange.value || fallbackDateRange.value;
+
+    // Phase 9 Apr 24: for custom-range path, prefer SSE streaming so first
+    // token appears ~2-3s instead of user waiting 8-10s for full response.
+    // Fall back to legacy JSON for period=month path (agent not wired there).
+    if (effectiveRange) {
+      const ok = await loadLLMInsightsStream(effectiveRange[0], effectiveRange[1], sourceAtStart, signal);
+      if (ok) return;
+      // SSE failed → fall through to legacy JSON path as backup
+    }
+
     const insightsUrl = effectiveRange
       ? `/${factoryId.value}/smart-bi/dashboard/executive/insights/custom?startDate=${effectiveRange[0]}&endDate=${effectiveRange[1]}`
       : `/${factoryId.value}/smart-bi/dashboard/executive/insights?period=month`;
     const res = await get(insightsUrl, { timeout: 120000, signal });
-    // Guard: if user switched data source during await, discard stale result
     if (selectedDataSource.value !== sourceAtStart) return;
     if (res.success && res.data) {
       const raw = res.data as Record<string, unknown>;
@@ -863,13 +870,98 @@ async function loadLLMInsights() {
       }
     }
   } catch (e) {
-    // Silently ignore aborted requests (user switched data source or navigated away)
     if (e instanceof DOMException && e.name === 'AbortError') return;
     console.warn('LLM insights load failed (non-critical):', e);
   } finally {
     clearTimeout(longRunTimer);
     insightsLoading.value = false;
     insightsTookLong.value = false;
+  }
+}
+
+// Phase 9 Apr 24: SSE streaming for LLM insights. Returns true on success
+// (user sees tokens streaming live), false if the stream fails early so
+// caller can fall back to the legacy JSON endpoint.
+async function loadLLMInsightsStream(
+  startDate: string,
+  endDate: string,
+  sourceAtStart: string,
+  signal: AbortSignal | undefined,
+): Promise<boolean> {
+  if (!factoryId.value) return false;
+  // Use the same key that request.ts interceptor reads
+  const authHeader = localStorage.getItem('cretas_access_token') || '';
+  const url = `/api/mobile/${factoryId.value}/smart-bi/dashboard/executive/insights/custom/stream?startDate=${startDate}&endDate=${endDate}`;
+
+  try {
+    const resp = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': authHeader ? `Bearer ${authHeader}` : '',
+        'Accept': 'text/event-stream',
+      },
+      signal,
+    });
+    if (!resp.ok || !resp.body) return false;
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+    let accumulated = '';
+    let done = false;
+    let gotAnyDelta = false;
+
+    while (!done) {
+      const { value, done: readerDone } = await reader.read();
+      if (readerDone) break;
+      buffer += decoder.decode(value, { stream: true });
+      // Parse SSE events (separated by blank line)
+      let idx;
+      while ((idx = buffer.indexOf('\n\n')) >= 0) {
+        const eventBlock = buffer.slice(0, idx).trim();
+        buffer = buffer.slice(idx + 2);
+        if (!eventBlock.startsWith('data:')) continue;
+        const dataStr = eventBlock.replace(/^data:\s*/, '').trim();
+        if (!dataStr) continue;
+        try {
+          const event = JSON.parse(dataStr);
+          if (selectedDataSource.value !== sourceAtStart) { done = true; break; }
+          if (event.type === 'meta') {
+            streamingInsightMeta.value = {
+              source: event.source,
+              tokens_used_today: event.tokens_used_today,
+            };
+          } else if (event.type === 'delta' && event.text) {
+            accumulated += event.text;
+            streamingInsightText.value = accumulated;
+            gotAnyDelta = true;
+          } else if (event.type === 'done') {
+            // Finalize: append as regular insight
+            if (accumulated && dashboardData.value) {
+              const existing = dashboardData.value.aiInsights || [];
+              dashboardData.value = {
+                ...dashboardData.value,
+                aiInsights: [
+                  ...existing,
+                  { level: 'normal', category: 'AI 洞察', message: accumulated, actionSuggestion: null } as never
+                ],
+              };
+              insightTimestamp.value = new Date();
+            }
+            streamingInsightText.value = '';
+            done = true;
+          } else if (event.type === 'error') {
+            console.warn('SSE error event:', event.message);
+            return gotAnyDelta;  // If we got some text, count as partial success
+          }
+        } catch { /* malformed event, skip */ }
+      }
+    }
+    return gotAnyDelta;
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') return false;
+    console.warn('SSE stream failed (will fallback):', e);
+    return false;
   }
 }
 
@@ -1818,8 +1910,16 @@ onUnmounted(() => {
               </span>
             </div>
           </template>
+          <!-- Phase 9 Apr 24: live streaming insight text (SSE) — shows chars arriving -->
+          <div v-if="streamingInsightText" class="insight-streaming" role="status">
+            <el-tag size="small" type="info">
+              <el-icon class="is-loading"><Loading /></el-icon> 生成中
+            </el-tag>
+            <div class="streaming-text">{{ streamingInsightText }}<span class="cursor">▌</span></div>
+          </div>
+
           <!-- Apr 24 UX: skeleton while LLM insights are being fetched (1-10s async) -->
-          <div v-if="insightsLoading && aiInsights.length === 0" class="insight-loading" role="status">
+          <div v-else-if="insightsLoading && aiInsights.length === 0" class="insight-loading" role="status">
             <el-skeleton :rows="3" animated />
             <p class="insight-loading-hint">
               <el-icon class="is-loading"><Loading /></el-icon>
@@ -2398,6 +2498,33 @@ onUnmounted(() => {
       animation: rotating 2s linear infinite;
     }
   }
+}
+
+.insight-streaming {
+  padding: 12px 4px;
+
+  .is-loading {
+    animation: rotating 2s linear infinite;
+  }
+
+  .streaming-text {
+    margin-top: 10px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #303133;
+    white-space: pre-wrap;
+    word-break: break-word;
+
+    .cursor {
+      color: #409EFF;
+      animation: blink 1s step-end infinite;
+      margin-left: 1px;
+    }
+  }
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
 }
 
 @keyframes rotating {

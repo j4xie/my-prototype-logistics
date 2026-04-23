@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * PC 端销售发货批次分配 REST 接口（P0-13 昆山六扇门）。
@@ -36,6 +37,7 @@ public class SalesDeliveryBatchAllocationController {
     }
 
     @RequirePermission({"sales:read_write"})
+    @RequireModule("sales_order")
     @PostMapping
     @Operation(summary = "设置发货行的批次分配（先清空再写入）")
     public ApiResponse<Map<String, Object>> allocate(
@@ -59,6 +61,7 @@ public class SalesDeliveryBatchAllocationController {
     }
 
     @RequirePermission({"sales:read_write"})
+    @RequireModule("sales_order")
     @DeleteMapping
     @Operation(summary = "清空发货行的批次分配")
     public ApiResponse<Void> clear(

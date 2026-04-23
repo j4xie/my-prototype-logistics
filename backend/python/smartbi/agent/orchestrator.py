@@ -38,7 +38,7 @@ import logging
 import time
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, AsyncIterator, Dict, Optional, Tuple
 
 import asyncpg
 import httpx
@@ -346,6 +346,147 @@ class AgentOrchestrator:
         if not text:
             raise ValueError("LLM returned empty content")
         return text, tokens
+
+    # ---------- Streaming variant (SSE, Phase 9 Apr 24) ----------
+
+    async def stream_insight(
+        self,
+        factory_id: str,
+        question: str,
+        date_range: Tuple[date, date],
+        *,
+        cache_ttl_hours: int = 24,
+    ) -> AsyncIterator[Dict[str, Any]]:
+        """Streaming variant of answer_insight. Yields event dicts:
+          - {"type": "meta", "source": "cache"|"llm"|"degraded", ...}  (first event)
+          - {"type": "delta", "text": "..."}  (many events, LLM tokens)
+          - {"type": "done", "tokens": N, "elapsed_ms": M}  (final event)
+
+        Cache hit + degraded paths emit meta + a single delta with the
+        full text, then done — caller can treat uniformly.
+        """
+        t0 = time.monotonic()
+        start, end = date_range
+        start_iso, end_iso = start.isoformat(), end.isoformat()
+
+        # 1. Cache check
+        q_hash = compute_question_hash(question, start_iso, end_iso, factory_id)
+        hit = await self._cache.get(factory_id, q_hash)
+        if hit is not None:
+            budget = await self._budget.check_budget(factory_id)
+            yield {"type": "meta", "source": RESULT_SOURCE_CACHE,
+                   "tokens_used_today": budget.tokens_used, "tokens_cap": budget.tokens_cap}
+            yield {"type": "delta", "text": hit["answer"]}
+            yield {"type": "done", "tokens": 0,
+                   "elapsed_ms": int((time.monotonic() - t0) * 1000)}
+            return
+
+        # 2. Budget check
+        budget = await self._budget.check_budget(factory_id)
+        if budget.blocked:
+            yield {"type": "meta", "source": RESULT_SOURCE_DEGRADED,
+                   "tokens_used_today": budget.tokens_used, "tokens_cap": budget.tokens_cap}
+            yield {"type": "delta", "text": DEGRADED_MESSAGE_BUDGET_EXHAUSTED}
+            yield {"type": "done", "tokens": 0,
+                   "elapsed_ms": int((time.monotonic() - t0) * 1000)}
+            return
+
+        # 3. Gather data + prompt
+        data = await self._gather_data(factory_id, date_range)
+        user_prompt = self._build_user_prompt(question, start_iso, end_iso, data)
+
+        yield {"type": "meta", "source": RESULT_SOURCE_LLM,
+               "tokens_used_today": budget.tokens_used, "tokens_cap": budget.tokens_cap,
+               "data_summary_compact": {
+                   "finance": {
+                       "revenue": data.get("finance", {}).get("total_revenue"),
+                       "bills": data.get("finance", {}).get("bill_count"),
+                       "stores": data.get("finance", {}).get("store_count"),
+                   }
+               }}
+
+        # 4. Stream LLM
+        full_text_parts = []
+        total_tokens = 0
+        try:
+            async for chunk in self._call_llm_stream(user_prompt):
+                if chunk.get("text"):
+                    full_text_parts.append(chunk["text"])
+                    yield {"type": "delta", "text": chunk["text"]}
+                if chunk.get("tokens"):
+                    total_tokens = chunk["tokens"]
+        except Exception as e:
+            logger.exception("LLM stream failed: %s", e)
+            # Emit degraded tail so client gets a valid terminator
+            yield {"type": "delta", "text": "\n\n" + DEGRADED_MESSAGE_LLM_UNAVAILABLE}
+            yield {"type": "done", "tokens": 0,
+                   "elapsed_ms": int((time.monotonic() - t0) * 1000)}
+            return
+
+        answer = "".join(full_text_parts).strip()
+        if answer:
+            post_budget = await self._budget.consume(factory_id, total_tokens)
+            await self._cache.put(
+                factory_id, q_hash, answer,
+                chart_config=None, tokens=total_tokens, ttl_hours=cache_ttl_hours,
+            )
+        yield {"type": "done", "tokens": total_tokens,
+               "elapsed_ms": int((time.monotonic() - t0) * 1000)}
+
+    async def _call_llm_stream(self, user_prompt: str) -> AsyncIterator[Dict[str, Any]]:
+        """POST to OpenAI-compatible chat/completions with stream=true.
+
+        Yields {"text": "..."} for each delta, and finally {"tokens": N}
+        if the upstream reports usage on the final [DONE] message.
+        """
+        payload = {
+            "model": self._llm_model,
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt},
+            ],
+            "temperature": 0.3,
+            "max_tokens": 600,
+            "stream": True,
+            "stream_options": {"include_usage": True},
+        }
+        headers = {
+            "Authorization": f"Bearer {self._llm_api_key}",
+            "Content-Type": "application/json",
+        }
+        client = self._http or httpx.AsyncClient(timeout=httpx.Timeout(60.0))
+        owns_client = self._http is None
+        try:
+            async with client.stream(
+                "POST",
+                f"{self._llm_base_url}/chat/completions",
+                headers=headers,
+                json=payload,
+            ) as resp:
+                resp.raise_for_status()
+                async for line in resp.aiter_lines():
+                    line = line.strip()
+                    if not line or not line.startswith("data:"):
+                        continue
+                    data_str = line[5:].strip()
+                    if data_str == "[DONE]":
+                        break
+                    try:
+                        obj = json.loads(data_str)
+                    except json.JSONDecodeError:
+                        continue
+                    choices = obj.get("choices") or []
+                    if choices:
+                        delta = choices[0].get("delta") or {}
+                        content = delta.get("content")
+                        if content:
+                            yield {"text": content}
+                    usage = obj.get("usage")
+                    if usage:
+                        yield {"tokens": int(usage.get("total_tokens") or 0)}
+        finally:
+            if owns_client:
+                await client.aclose()
 
 
 def _fmt_money(v: Any) -> str:

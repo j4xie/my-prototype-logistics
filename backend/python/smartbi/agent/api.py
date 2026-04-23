@@ -17,11 +17,13 @@ Response: AgentOrchestrator.InsightResponse as JSON.
 """
 from __future__ import annotations
 
+import json
 import logging
 from datetime import date, datetime
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
 
 from smartbi.agent.orchestrator import AgentOrchestrator
 from smartbi.config import get_pg_pool, get_settings
@@ -76,3 +78,58 @@ async def get_insights_custom(
     )
     result = await orch.answer_insight(factory_id, q, (start, end))
     return result.to_dict()
+
+
+@router.get("/custom/stream")
+async def get_insights_custom_stream(
+    request: Request,
+    start_date: str = Query(..., description="YYYY-MM-DD inclusive"),
+    end_date: str = Query(..., description="YYYY-MM-DD inclusive"),
+    question: Optional[str] = Query(None, description="User question; defaults to general insight prompt"),
+):
+    """SSE streaming variant of /custom. Same tenant/budget/cache rules but
+    yields LLM tokens progressively so the frontend can render insights
+    character-by-character. First byte typically lands in 2-3s (vs 5-10s
+    full-response cold start)."""
+    factory_id = getattr(request.state, "factory_id", None)
+    if not factory_id:
+        raise HTTPException(status_code=401, detail="tenant context not set")
+
+    start = _parse_date(start_date, "start_date")
+    end = _parse_date(end_date, "end_date")
+    if start > end:
+        raise HTTPException(status_code=400, detail="start_date > end_date")
+
+    q = (question or DEFAULT_QUESTION).strip()
+    if len(q) > 500:
+        raise HTTPException(status_code=400, detail="question too long (max 500 chars)")
+
+    settings = get_settings()
+    if not settings.llm_api_key:
+        raise HTTPException(status_code=503, detail="LLM not configured")
+
+    pool = await get_pg_pool()
+    orch = AgentOrchestrator(
+        pool=pool,
+        llm_base_url=settings.llm_base_url,
+        llm_api_key=settings.llm_api_key,
+        llm_model=settings.llm_insight_model,
+    )
+
+    async def event_generator():
+        try:
+            async for event in orch.stream_insight(factory_id, q, (start, end)):
+                yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+        except Exception as e:
+            logger.exception("stream_insight failed: %s", e)
+            err = {"type": "error", "message": str(e)}
+            yield f"data: {json.dumps(err, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering for true streaming
+        },
+    )

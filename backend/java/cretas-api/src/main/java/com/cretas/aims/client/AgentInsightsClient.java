@@ -116,4 +116,52 @@ public class AgentInsightsClient {
             return parsed;
         }
     }
+
+    /**
+     * Streaming variant — calls Python SSE endpoint /insights/custom/stream
+     * and returns a Response whose body is the raw SSE stream. Caller is
+     * responsible for closing the Response and reading line-by-line.
+     *
+     * Returns null if internalSecret missing (caller should fall through).
+     */
+    public Response streamInsightsCustom(
+            String factoryId,
+            LocalDate startDate,
+            LocalDate endDate,
+            String question
+    ) throws IOException {
+        if (factoryId == null || factoryId.isEmpty()) {
+            throw new IllegalArgumentException("factoryId required");
+        }
+        if (startDate == null || endDate == null || startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("invalid date range");
+        }
+        if (internalSecret.isEmpty()) {
+            return null;  // Caller falls through to empty/degraded
+        }
+
+        HttpUrl.Builder urlBuilder = HttpUrl.parse(config.getUrl() + "/api/smartbi/insights/custom/stream")
+                .newBuilder()
+                .addQueryParameter("start_date", startDate.toString())
+                .addQueryParameter("end_date", endDate.toString());
+        if (question != null && !question.isBlank()) {
+            urlBuilder.addQueryParameter("question", question);
+        }
+        Request req = new Request.Builder()
+                .url(urlBuilder.build())
+                .get()
+                .addHeader("X-Internal-Secret", internalSecret)
+                .addHeader("X-Factory-Id", factoryId)
+                .addHeader("Accept", "text/event-stream")
+                .build();
+        // Do NOT use try-with-resources here — caller owns the Response
+        Response resp = http.newCall(req).execute();
+        if (!resp.isSuccessful()) {
+            int code = resp.code();
+            String body = resp.body() != null ? resp.body().string() : "";
+            resp.close();
+            throw new IOException("Agent insights stream HTTP " + code + ": " + body);
+        }
+        return resp;
+    }
 }

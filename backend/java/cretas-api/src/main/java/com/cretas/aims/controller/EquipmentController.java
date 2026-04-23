@@ -30,6 +30,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * 设备管理控制器
@@ -52,6 +53,7 @@ public class EquipmentController {
      * 创建设备
      */
     @RequirePermission({"equipment:read_write"})
+    @RequireModule("equipment")
     @PostMapping
     @Operation(summary = "创建设备", description = "创建新的设备记录")
     public ApiResponse<EquipmentDTO> createEquipment(
@@ -73,6 +75,7 @@ public class EquipmentController {
      * 更新设备
      */
     @RequirePermission({"equipment:read_write"})
+    @RequireModule("equipment")
     @PutMapping("/{equipmentId}")
     @Operation(summary = "更新设备", description = "更新设备信息")
     public ApiResponse<EquipmentDTO> updateEquipment(
@@ -91,6 +94,7 @@ public class EquipmentController {
      * 删除设备
      */
     @RequirePermission({"equipment:read_write"})
+    @RequireModule("equipment")
     @DeleteMapping("/{equipmentId}")
     @Operation(summary = "删除设备", description = "删除指定设备")
     public ApiResponse<Void> deleteEquipment(
@@ -187,6 +191,7 @@ public class EquipmentController {
      * 更新设备状态
      */
     @RequirePermission({"equipment:read_write"})
+    @RequireModule("equipment")
     @PutMapping("/{equipmentId}/status")
     @Operation(summary = "更新设备状态", description = "更新设备的运行状态")
     public ApiResponse<EquipmentDTO> updateEquipmentStatus(
@@ -206,6 +211,7 @@ public class EquipmentController {
      * 启动设备
      */
     @RequirePermission({"equipment:read_write"})
+    @RequireModule("equipment")
     @PostMapping("/{equipmentId}/start")
     @Operation(summary = "启动设备", description = "启动指定设备，状态变为running")
     public ApiResponse<EquipmentDTO> startEquipment(
@@ -223,6 +229,7 @@ public class EquipmentController {
      * 停止设备
      */
     @RequirePermission({"equipment:read_write"})
+    @RequireModule("equipment")
     @PostMapping("/{equipmentId}/stop")
     @Operation(summary = "停止设备", description = "停止指定设备，可记录本次运行时长")
     public ApiResponse<EquipmentDTO> stopEquipment(
@@ -245,6 +252,7 @@ public class EquipmentController {
      * 2. URL Params: ?maintenanceDate=2025-01-01&cost=100&description=...
      */
     @RequirePermission({"equipment:read_write"})
+    @RequireModule("equipment")
     @PostMapping("/{equipmentId}/maintenance")
     @Operation(summary = "记录设备维护", description = "记录设备维护信息，支持URL参数和RequestBody两种格式")
     public ApiResponse<EquipmentDTO> recordMaintenance(
@@ -440,6 +448,7 @@ public class EquipmentController {
      * 从Excel文件批量导入设备
      */
     @RequirePermission({"equipment:read_write"})
+    @RequireModule("equipment")
     @PostMapping("/import")
     @Operation(summary = "从Excel文件批量导入设备", description = "上传Excel文件批量导入设备，仅支持.xlsx格式，最大10MB")
     public ApiResponse<com.cretas.aims.dto.common.ImportResult<EquipmentDTO>> importEquipmentFromExcel(
@@ -540,6 +549,7 @@ public class EquipmentController {
      * 报废设备
      */
     @RequirePermission({"equipment:read_write"})
+    @RequireModule("equipment")
     @PostMapping("/{equipmentId}/scrap")
     @Operation(summary = "报废设备", description = "将设备标记为报废状态")
     public ApiResponse<EquipmentDTO> scrapEquipment(

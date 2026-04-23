@@ -54,6 +54,10 @@ public class SmartBIDashboardController {
     // FIX-13 (Apr 16 2026): cache dashboard payload in smart_bi_pg_analysis_results
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.repository.smartbi.postgres.SmartBiPgAnalysisResultRepository analysisResultRepository;
+
+    // Phase 9 Apr 24: SSE relay to Python /insights/custom/stream
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.client.AgentInsightsClient agentInsightsClient;
     @org.springframework.beans.factory.annotation.Autowired
     private com.fasterxml.jackson.databind.ObjectMapper cacheObjectMapper;
 
@@ -228,6 +232,73 @@ public class SmartBIDashboardController {
             log.error("Agent insights custom failed: {}", e.getMessage(), e);
             return ResponseEntity.ok(ApiResponse.success(java.util.Collections.emptyList()));
         }
+    }
+
+    /**
+     * Phase 9 Apr 24: SSE streaming variant of /insights/custom.
+     * Relays Python SSE stream to client. Client uses EventSource to
+     * consume tokens as they arrive (~2-3s first byte vs 8-10s full).
+     *
+     * Response content-type: text/event-stream. Events are JSON per spec
+     * in AgentOrchestrator.stream_insight (meta / delta / done / error).
+     */
+    @GetMapping(value = "/dashboard/executive/insights/custom/stream",
+                produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "Streaming LLM insights (SSE)",
+               description = "Server-sent-events relay to Python AgentOrchestrator. Each data: line is a JSON event.")
+    public org.springframework.web.servlet.mvc.method.annotation.SseEmitter streamInsightsCustom(
+            @Parameter(description = "Factory ID") @PathVariable String factoryId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        // 120s timeout — longer than Python's 90s read timeout on LLM
+        org.springframework.web.servlet.mvc.method.annotation.SseEmitter emitter =
+                new org.springframework.web.servlet.mvc.method.annotation.SseEmitter(120_000L);
+
+        if (agentInsightsClient == null) {
+            try {
+                emitter.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event()
+                        .data("{\"type\":\"error\",\"message\":\"Agent layer not wired\"}"));
+            } catch (java.io.IOException ignored) {}
+            emitter.complete();
+            return emitter;
+        }
+
+        // Async pump from Python SSE → client SSE
+        new Thread(() -> {
+            okhttp3.Response resp = null;
+            try {
+                resp = agentInsightsClient.streamInsightsCustom(factoryId, startDate, endDate, null);
+                if (resp == null || resp.body() == null) {
+                    emitter.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event()
+                            .data("{\"type\":\"error\",\"message\":\"upstream unreachable\"}"));
+                    emitter.complete();
+                    return;
+                }
+                java.io.BufferedReader reader = new java.io.BufferedReader(
+                        new java.io.InputStreamReader(resp.body().byteStream(), java.nio.charset.StandardCharsets.UTF_8));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    line = line.trim();
+                    if (line.isEmpty()) continue;
+                    if (!line.startsWith("data:")) continue;
+                    String data = line.substring(5).trim();
+                    emitter.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event().data(data));
+                }
+                emitter.complete();
+            } catch (Exception e) {
+                log.warn("SSE relay failed for factory={}: {}", factoryId, e.getMessage());
+                try {
+                    emitter.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event()
+                            .data("{\"type\":\"error\",\"message\":\"" + e.getMessage().replace("\"", "'") + "\"}"));
+                } catch (java.io.IOException ignored) {}
+                emitter.completeWithError(e);
+            } finally {
+                if (resp != null) resp.close();
+            }
+        }, "sse-relay-" + factoryId).start();
+
+        return emitter;
     }
 
     @GetMapping("/dashboard/executive/custom")
