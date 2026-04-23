@@ -30,21 +30,20 @@ public class CreateCustomerRequest {
     @Schema(description = "所属行业")
     private String industry;
 
-    @Schema(description = "联系人", required = true)
-    @NotBlank(message = "联系人不能为空")
+    // T10 / spec P2.1: contact fields are now optional per docx feedback
+    // (some customers don't have a designated contact person). Only client name remains required.
+    @Schema(description = "联系人")
     private String contactPerson;
 
-    @Schema(description = "联系电话", required = true)
-    @NotBlank(message = "联系电话不能为空")
-    @Pattern(regexp = "^1[3-9]\\d{9}$|^0\\d{2,3}-?\\d{7,8}$", message = "电话格式不正确")
+    @Schema(description = "联系电话")
+    @Pattern(regexp = "^$|^1[3-9]\\d{9}$|^0\\d{2,3}-?\\d{7,8}$", message = "电话格式不正确")
     private String phone;
 
     @Schema(description = "邮箱")
     @Email(message = "邮箱格式不正确")
     private String email;
 
-    @Schema(description = "收货地址", required = true)
-    @NotBlank(message = "收货地址不能为空")
+    @Schema(description = "收货地址")
     private String shippingAddress;
 
     @Schema(description = "账单地址")
