@@ -86,7 +86,9 @@ public class CustomerMapper {
         customer.setCurrentBalance(BigDecimal.ZERO);
         customer.setRating(request.getRating() != null ? request.getRating() : 3);
         customer.setRatingNotes(request.getRatingNotes());
-        customer.setIsActive(true);
+        // Bug D fix: honor frontend-supplied status on create (default ACTIVE if absent)
+        customer.setIsActive(request.getStatus() == null
+            || "ACTIVE".equalsIgnoreCase(request.getStatus()));
         customer.setNotes(request.getNotes());
         customer.setCreatedBy(createdBy);
         customer.setCreatedAt(LocalDateTime.now());
@@ -141,6 +143,11 @@ public class CustomerMapper {
         }
         if (request.getRatingNotes() != null) {
             customer.setRatingNotes(request.getRatingNotes());
+        }
+        // Bug D fix (qa-prompt Rule 11 read-after-write caught silent failure):
+        // status="ACTIVE"/"INACTIVE" → entity.isActive mapping
+        if (request.getStatus() != null) {
+            customer.setIsActive("ACTIVE".equalsIgnoreCase(request.getStatus()));
         }
         if (request.getNotes() != null) {
             customer.setNotes(request.getNotes());

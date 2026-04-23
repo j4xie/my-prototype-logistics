@@ -70,4 +70,8 @@ public class CreateCustomerRequest {
 
     @Schema(description = "备注")
     private String notes;
+
+    /** Bug D fix: status 'ACTIVE'/'INACTIVE' from frontend P2.2 status field. Maps to entity.isActive. */
+    @Schema(description = "状态 ACTIVE/INACTIVE", example = "ACTIVE")
+    private String status;
 }
