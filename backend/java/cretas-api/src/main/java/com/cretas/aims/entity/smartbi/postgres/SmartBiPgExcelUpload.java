@@ -71,12 +71,51 @@ public class SmartBiPgExcelUpload {
     private Map<String, Object> detectedStructure;
 
     /**
-     * Field mappings resolved by AI (JSONB)
-     * Maps original column names to semantic field names
+     * Field mappings resolved by AI (JSONB).
+     *
+     * Shape drift: excel_async.py writes a Map<original, standard> dict,
+     * but older excel.py legacy path writes a List<Map<source, dataType,
+     * standardField, originalColumn, confidence>>. Declare as Object and
+     * let callers normalize via {@link #getFieldMappingsAsMap()}.
+     *
+     * Upload 3970 (qhj) and other legacy uploads have the array shape and
+     * were crashing Hibernate when the field was Map-typed.
      */
     @Type(JsonBinaryType.class)
     @Column(name = "field_mappings", columnDefinition = "jsonb")
-    private Map<String, String> fieldMappings;
+    private Object fieldMappings;
+
+    /**
+     * Normalize both JSONB shapes into a Map<original, standard>.
+     * Returns empty map if field is null or in an unrecognized shape.
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, String> getFieldMappingsAsMap() {
+        Object raw = this.fieldMappings;
+        if (raw == null) return java.util.Collections.emptyMap();
+        if (raw instanceof Map) {
+            Map<String, String> out = new java.util.HashMap<>();
+            ((Map<Object, Object>) raw).forEach((k, v) ->
+                out.put(String.valueOf(k), v == null ? null : String.valueOf(v)));
+            return out;
+        }
+        if (raw instanceof List) {
+            Map<String, String> out = new java.util.HashMap<>();
+            for (Object item : (List<Object>) raw) {
+                if (item instanceof Map) {
+                    Map<String, Object> m = (Map<String, Object>) item;
+                    Object orig = m.get("originalColumn");
+                    Object std  = m.get("standardField");
+                    if (orig != null) {
+                        out.put(String.valueOf(orig),
+                                std == null ? String.valueOf(orig) : String.valueOf(std));
+                    }
+                }
+            }
+            return out;
+        }
+        return java.util.Collections.emptyMap();
+    }
 
     /**
      * Additional context info (JSONB)

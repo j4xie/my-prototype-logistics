@@ -499,8 +499,11 @@ public class DynamicAnalysisServiceImpl implements DynamicAnalysisService {
             return BackfillResult.skipped(uploadId, "Already has " + existingCount + " field definitions");
         }
 
-        // 4. Try to rebuild from field_mappings
-        Map<String, String> fieldMappings = upload.getFieldMappings();
+        // 4. Try to rebuild from field_mappings. Use getFieldMappingsAsMap()
+        //    to normalize both dict and array-of-objects JSONB shapes —
+        //    older uploads (e.g. upload 3970/qhj 200k) stored arrays and
+        //    would otherwise crash Hibernate's Map<String,String> hydration.
+        Map<String, String> fieldMappings = upload.getFieldMappingsAsMap();
         if (fieldMappings == null || fieldMappings.isEmpty()) {
             // Try to infer from data if no mappings
             return backfillFromData(factoryId, uploadId);
