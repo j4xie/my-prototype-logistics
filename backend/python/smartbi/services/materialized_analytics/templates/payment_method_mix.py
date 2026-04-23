@@ -127,11 +127,16 @@ class PaymentMethodMix(AnalysisTemplate):
                 applies=False, skip_reason="no recognized payment-method columns",
             )
 
-        # Sum each column globally
+        # Sum each column globally, but drop sentinel rows:
+        # qhj exports embed a row with payment cols aggregated into single
+        # giant value. Any per-row value >10M is definitively a meta-row.
+        _SENTINEL = 10_000_000.0
         col_amounts: Dict[str, float] = {}
         for c in individual_cols:
             try:
-                amt = float(df.select(
+                amt = float(df.filter(
+                    pl.col(c).cast(pl.Float64, strict=False).fill_null(0.0) < _SENTINEL
+                ).select(
                     pl.col(c).cast(pl.Float64, strict=False).fill_null(0.0).sum()
                 ).item() or 0.0)
                 col_amounts[c] = amt
