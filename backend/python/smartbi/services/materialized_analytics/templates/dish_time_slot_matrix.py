@@ -78,6 +78,14 @@ def _parse_hour(value: Any) -> Optional[int]:
 @register
 class DishTimeSlotMatrix(AnalysisTemplate):
 
+    sample_queries = [
+        "各时段菜品分布",
+        "午餐晚餐菜品差异",
+        "不同时段热卖菜",
+        "时段菜品矩阵",
+        "早晚菜品偏好",
+    ]
+
     @property
     def code(self) -> str:
         return "dish_time_slot_matrix"

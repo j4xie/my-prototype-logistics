@@ -64,6 +64,14 @@ def _platform_for(col: str) -> Optional[str]:
 @register
 class GrouponChannelBreakdown(AnalysisTemplate):
 
+    sample_queries = [
+        "团购渠道分析",
+        "点评美团抖音对比",
+        "三端销售占比",
+        "团购券使用情况",
+        "平台券销量",
+    ]
+
     @property
     def code(self) -> str:
         return "groupon_channel_breakdown"

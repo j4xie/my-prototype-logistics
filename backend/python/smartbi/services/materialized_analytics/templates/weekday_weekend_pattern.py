@@ -19,6 +19,14 @@ from .registry import register
 @register
 class WeekdayWeekendPattern(AnalysisTemplate):
 
+    sample_queries = [
+        "周末工作日差异",
+        "周一到周日营收",
+        "平日周末对比",
+        "周末销售情况",
+        "工作日营业额",
+    ]
+
     @property
     def code(self) -> str:
         return "weekday_weekend_pattern"

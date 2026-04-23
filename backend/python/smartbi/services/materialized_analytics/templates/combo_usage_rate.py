@@ -42,6 +42,14 @@ _COMBO_KEYWORDS = ("套餐",)
 @register
 class ComboUsageRate(AnalysisTemplate):
 
+    sample_queries = [
+        "套餐使用率",
+        "套餐销量",
+        "多少客人点套餐",
+        "套餐占比",
+        "套餐数据",
+    ]
+
     @property
     def code(self) -> str:
         return "combo_usage_rate"

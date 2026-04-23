@@ -14,6 +14,14 @@ from .registry import register
 @register
 class CategoryDistribution(AnalysisTemplate):
 
+    sample_queries = [
+        "占比分布",
+        "份额结构",
+        "类别构成",
+        "营收结构",
+        "销售分布",
+    ]
+
     @property
     def code(self) -> str:
         return "category_distribution"

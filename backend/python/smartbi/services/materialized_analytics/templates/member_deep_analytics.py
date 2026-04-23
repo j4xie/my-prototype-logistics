@@ -53,6 +53,14 @@ _META_LABELS = ("合计", "总计", "小计", "汇总")
 @register
 class MemberDeepAnalytics(AnalysisTemplate):
 
+    sample_queries = [
+        "会员卡数据",
+        "会员等级分布",
+        "会员余额统计",
+        "储值会员分析",
+        "会员充值情况",
+    ]
+
     @property
     def code(self) -> str:
         return "member_deep_analytics"

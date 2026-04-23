@@ -43,6 +43,14 @@ def _first(cols, candidates):
 @register
 class KitchenDispatchHeatmap(AnalysisTemplate):
 
+    sample_queries = [
+        "传菜分析",
+        "档口出餐情况",
+        "后厨分布",
+        "厨房业务量",
+        "出菜份数统计",
+    ]
+
     @property
     def code(self) -> str:
         return "kitchen_dispatch_heatmap"

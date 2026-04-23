@@ -48,6 +48,15 @@ _META_LABELS = ("合计", "总计", "小计", "汇总", "平均", "小结", "总
 @register
 class BusinessOverviewSummary(AnalysisTemplate):
 
+    sample_queries = [
+        "营业概况",
+        "月度汇总",
+        "门店日报",
+        "营业汇总报表",
+        "经营概览",
+        "门店业绩汇总",
+    ]
+
     @property
     def code(self) -> str:
         return "business_overview_summary"

@@ -44,6 +44,14 @@ _STAFF_NOISE = {
 @register
 class ReverseCheckoutStats(AnalysisTemplate):
 
+    sample_queries = [
+        "反结账统计",
+        "反结账次数",
+        "撤单反结次数",
+        "反结账门店分布",
+        "哪些订单反结了",
+    ]
+
     @property
     def code(self) -> str:
         return "reverse_checkout_stats"

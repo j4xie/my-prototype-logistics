@@ -15,6 +15,14 @@ from .registry import register
 class TopNByDim(AnalysisTemplate):
     TOP_N = 10
 
+    sample_queries = [
+        "Top 排名",
+        "门店排行",
+        "区域排名",
+        "分类头部",
+        "排名前几",
+    ]
+
     @property
     def code(self) -> str:
         return "top_n_by_dim"

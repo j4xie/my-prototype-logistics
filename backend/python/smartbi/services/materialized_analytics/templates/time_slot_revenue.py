@@ -55,6 +55,14 @@ def _hour_to_slot(hour_expr: pl.Expr) -> pl.Expr:
 @register
 class TimeSlotRevenue(AnalysisTemplate):
 
+    sample_queries = [
+        "营业高峰时段",
+        "各时段营收分布",
+        "什么时候最赚钱",
+        "时段营收排行",
+        "早晚营业额对比",
+    ]
+
     @property
     def code(self) -> str:
         return "time_slot_revenue"

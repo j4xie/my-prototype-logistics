@@ -14,6 +14,14 @@ from .registry import register
 @register
 class ParetoAnalysis(AnalysisTemplate):
 
+    sample_queries = [
+        "80/20 分析",
+        "帕累托贡献",
+        "头部贡献占比",
+        "核心客户 80%",
+        "二八法则",
+    ]
+
     @property
     def code(self) -> str:
         return "pareto_analysis"

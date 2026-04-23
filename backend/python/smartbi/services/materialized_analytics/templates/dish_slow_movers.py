@@ -23,6 +23,15 @@ _SAMPLE_CAP = 500_000  # max rows to parse (performance guard)
 @register
 class DishSlowMovers(AnalysisTemplate):
 
+    sample_queries = [
+        "菜品滞销榜",
+        "哪些菜卖不出去",
+        "末位菜品",
+        "销量最差的菜",
+        "不好卖的菜",
+        "冷门菜品",
+    ]
+
     @property
     def code(self) -> str:
         return "dish_slow_movers"

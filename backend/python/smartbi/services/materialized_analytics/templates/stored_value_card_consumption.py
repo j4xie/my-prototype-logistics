@@ -37,6 +37,14 @@ _TOP_N_STORES = 10
 @register
 class StoredValueCardConsumption(AnalysisTemplate):
 
+    sample_queries = [
+        "储值卡消费情况",
+        "预付卡使用流水",
+        "储值卡金额统计",
+        "会员储值消费",
+        "储值卡核销",
+    ]
+
     @property
     def code(self) -> str:
         return "stored_value_card_consumption"

@@ -31,6 +31,14 @@ _TOP_STORES_PER_DISH = 5
 @register
 class DishStoreDrill(AnalysisTemplate):
 
+    sample_queries = [
+        "菜品在哪家店卖得多",
+        "某道菜主销门店",
+        "[菜名]哪家卖最好",
+        "菜品门店下钻",
+        "菜店交叉分析",
+    ]
+
     @property
     def code(self) -> str:
         return "dish_store_drill"

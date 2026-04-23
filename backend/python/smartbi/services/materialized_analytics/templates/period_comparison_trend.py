@@ -45,6 +45,14 @@ def _pct_delta(prev: float, curr: float) -> Optional[float]:
 @register
 class PeriodComparisonTrend(AnalysisTemplate):
 
+    sample_queries = [
+        "月度营业额对比",
+        "环比分析",
+        "同比涨跌",
+        "近期趋势",
+        "月度对比",
+    ]
+
     @property
     def code(self) -> str:
         return "period_comparison_trend"

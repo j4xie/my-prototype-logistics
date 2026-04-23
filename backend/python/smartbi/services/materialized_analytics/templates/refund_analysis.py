@@ -35,6 +35,14 @@ _REFUND_KEYWORDS = ("退", "退菜", "取消")
 @register
 class RefundAnalysis(AnalysisTemplate):
 
+    sample_queries = [
+        "退菜统计",
+        "退单分析",
+        "撤单原因",
+        "损耗多少",
+        "退菜次数",
+    ]
+
     @property
     def code(self) -> str:
         return "refund_analysis"

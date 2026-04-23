@@ -29,6 +29,14 @@ from .registry import register
 @register
 class MemberConsumption(AnalysisTemplate):
 
+    sample_queries = [
+        "会员消费分析",
+        "会员卡使用情况",
+        "会员订单统计",
+        "会员频次",
+        "会员复购",
+    ]
+
     @property
     def code(self) -> str:
         return "member_consumption"

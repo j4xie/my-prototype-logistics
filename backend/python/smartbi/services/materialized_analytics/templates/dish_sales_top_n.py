@@ -24,6 +24,15 @@ _SAMPLE_ROWS = 500_000
 @register
 class DishSalesTopN(AnalysisTemplate):
 
+    sample_queries = [
+        "菜品销量 Top 10",
+        "最畅销的菜是什么",
+        "卖得最好的菜排行",
+        "哪个菜最火",
+        "爆款菜品有哪些",
+        "热销菜品",
+    ]
+
     @property
     def code(self) -> str:
         return "dish_sales_top_n"

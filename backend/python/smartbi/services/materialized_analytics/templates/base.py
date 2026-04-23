@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 from ..compute.base import ComputeBackend
 from ..schema import DataSchema
@@ -46,7 +46,19 @@ class TemplateResult:
 
 
 class AnalysisTemplate(ABC):
-    """Abstract template. Subclasses must define code + applies + compute."""
+    """Abstract template. Subclasses must define code + applies + compute.
+
+    Subclasses SHOULD also override `sample_queries` — a list of canonical
+    Chinese questions this template can answer. Used at startup to populate
+    `smart_bi_template_embeddings`, which the Phase 3 hybrid RAG router
+    consults when the keyword match misses. More sample_queries per template
+    → better semantic coverage of user wording variations.
+    """
+
+    # Phase 3 (Apr 23 2026): sample queries for RAG layer. Default [] means
+    # the template relies purely on router keywords (Layer 1). Override with
+    # 5-8 realistic user phrasings for best coverage.
+    sample_queries: ClassVar[List[str]] = []
 
     @property
     @abstractmethod

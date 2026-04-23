@@ -31,6 +31,15 @@ _ITEM_COL = "商品信息"
 @register
 class DishByTableType(AnalysisTemplate):
 
+    sample_queries = [
+        "包厢大厅菜品差异",
+        "堂食外卖点单偏好",
+        "不同桌位点什么菜",
+        "散客包房菜品对比",
+        "包厢客人点什么",
+        "大厅客人爱点什么",
+    ]
+
     @property
     def code(self) -> str:
         return "dish_by_table_type"

@@ -22,6 +22,14 @@ _SAMPLE_CAP = 500_000
 @register
 class TableTypeComparison(AnalysisTemplate):
 
+    sample_queries = [
+        "包厢大厅对比",
+        "堂食桌位分析",
+        "散客就餐比较",
+        "桌型客单价",
+        "包房大厅营收",
+    ]
+
     @property
     def code(self) -> str:
         return "table_type_comparison"

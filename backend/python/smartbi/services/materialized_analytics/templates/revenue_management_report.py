@@ -89,6 +89,14 @@ def _derive_time_slot(shift_value: Any, open_time_value: Any) -> Optional[str]:
 @register
 class RevenueManagementReport(AnalysisTemplate):
 
+    sample_queries = [
+        "收入管理报表",
+        "堂食外卖午晚市",
+        "渠道时段营收",
+        "复合报表",
+        "堂食和外卖综合",
+    ]
+
     @property
     def code(self) -> str:
         return "revenue_management_report"

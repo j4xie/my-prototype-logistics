@@ -24,6 +24,14 @@ _SAMPLE_ROWS = 500_000
 @register
 class DishCategoryBreakdown(AnalysisTemplate):
 
+    sample_queries = [
+        "菜品品类分布",
+        "各类别销售占比",
+        "饮品主食比例",
+        "小吃啤酒销量",
+        "菜单品类结构",
+    ]
+
     @property
     def code(self) -> str:
         return "dish_category_breakdown"

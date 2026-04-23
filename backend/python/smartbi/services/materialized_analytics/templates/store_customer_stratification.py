@@ -43,6 +43,14 @@ _TOP_N_STORES = 10
 @register
 class StoreCustomerStratification(AnalysisTemplate):
 
+    sample_queries = [
+        "门店客单分层",
+        "几人桌占比",
+        "1人桌2人桌分布",
+        "门店客流结构",
+        "桌位人数统计",
+    ]
+
     @property
     def code(self) -> str:
         return "store_customer_stratification"

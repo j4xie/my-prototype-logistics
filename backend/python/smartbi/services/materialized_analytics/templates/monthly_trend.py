@@ -13,6 +13,14 @@ from .registry import register
 @register
 class MonthlyTrend(AnalysisTemplate):
 
+    sample_queries = [
+        "月度趋势",
+        "营收走势",
+        "按月增长",
+        "营业额变化",
+        "月份趋势线",
+    ]
+
     @property
     def code(self) -> str:
         return "monthly_trend"

@@ -81,6 +81,14 @@ def _classify(col: str) -> Optional[str]:
 @register
 class PaymentMethodMix(AnalysisTemplate):
 
+    sample_queries = [
+        "付款方式占比",
+        "支付方式分布",
+        "现金移动支付比例",
+        "各付款方式金额",
+        "支付渠道分析",
+    ]
+
     @property
     def code(self) -> str:
         return "payment_method_mix"

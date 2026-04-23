@@ -47,6 +47,14 @@ _TOP_N = 10
 @register
 class PurchaseInventoryInflow(AnalysisTemplate):
 
+    sample_queries = [
+        "采购入库分析",
+        "进销存",
+        "供应商分析",
+        "原料采购金额",
+        "入库汇总",
+    ]
+
     @property
     def code(self) -> str:
         return "purchase_inventory_inflow"

@@ -45,6 +45,14 @@ def _source_to_bucket(source: str) -> str:
 @register
 class ChannelAnalysis(AnalysisTemplate):
 
+    sample_queries = [
+        "渠道分析",
+        "外卖占比多少",
+        "美团饿了么对比",
+        "来源订单分布",
+        "渠道营收结构",
+    ]
+
     @property
     def code(self) -> str:
         return "channel_analysis"

@@ -22,6 +22,14 @@ from .registry import register
 @register
 class PromotionImpact(AnalysisTemplate):
 
+    sample_queries = [
+        "代金券使用分析",
+        "优惠券效果",
+        "折扣占比",
+        "促销影响",
+        "营销活动复盘",
+    ]
+
     @property
     def code(self) -> str:
         return "promotion_impact"

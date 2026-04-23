@@ -49,6 +49,15 @@ def _first(cols, candidates):
 @register
 class ReviewsSentimentSummary(AnalysisTemplate):
 
+    sample_queries = [
+        "评价分析",
+        "大众点评口碑",
+        "星级分布",
+        "好评差评比例",
+        "评分统计",
+        "投诉多不多",
+    ]
+
     @property
     def code(self) -> str:
         return "reviews_sentiment_summary"

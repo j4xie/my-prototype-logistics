@@ -36,6 +36,14 @@ _Z_OUTLIER = 2.0            # |z| ≥ 2.0 vs 12-month mean (standard 95% outlier
 @register
 class MonthlyAnomaly(AnalysisTemplate):
 
+    sample_queries = [
+        "哪个月营业额异常",
+        "营收暴跌月份",
+        "月度波动检测",
+        "异常月识别",
+        "月份突变",
+    ]
+
     @property
     def code(self) -> str:
         return "monthly_anomaly"

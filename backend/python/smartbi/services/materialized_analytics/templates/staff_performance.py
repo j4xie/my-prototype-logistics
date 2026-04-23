@@ -23,6 +23,15 @@ _TOP_N = 10
 @register
 class StaffPerformance(AnalysisTemplate):
 
+    sample_queries = [
+        "服务员业绩排名 Top 10",
+        "销售员排行",
+        "员工绩效排名",
+        "Top 1 服务员是谁",
+        "谁卖得最多",
+        "收银员业绩",
+    ]
+
     @property
     def code(self) -> str:
         return "staff_performance"

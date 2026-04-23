@@ -50,6 +50,15 @@ _TOP_STORES = 10
 @register
 class ProfitLossStatement(AnalysisTemplate):
 
+    sample_queries = [
+        "利润表",
+        "营收结构",
+        "毛利分析",
+        "净利统计",
+        "损益对比",
+        "应收实收",
+    ]
+
     @property
     def code(self) -> str:
         return "profit_loss_statement"

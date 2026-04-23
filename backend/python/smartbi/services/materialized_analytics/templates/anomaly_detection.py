@@ -11,6 +11,14 @@ from .registry import register
 class AnomalyDetection(AnalysisTemplate):
     SIGMA = 2.0
 
+    sample_queries = [
+        "异常检测",
+        "离群值",
+        "突变点",
+        "数据异常",
+        "偏离均值的点",
+    ]
+
     @property
     def code(self) -> str:
         return "anomaly_detection"
