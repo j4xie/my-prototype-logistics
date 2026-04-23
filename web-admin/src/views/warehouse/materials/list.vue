@@ -212,7 +212,10 @@ async function handleFormSubmit() {
 
   formSaving.value = true;
   try {
-    const payload = { ...formData, factoryId: factoryId.value };
+    // W-05 fix (Round 8): factoryId was being spread into the body even though
+    // the URL path already carries it — redundant noise in server logs. Backend
+    // reads the path variable and ignores any body factoryId.
+    const payload = { ...formData };
     let response;
     if (editingId.value) {
       response = await put(`/${factoryId.value}/material-batches/${editingId.value}`, payload);

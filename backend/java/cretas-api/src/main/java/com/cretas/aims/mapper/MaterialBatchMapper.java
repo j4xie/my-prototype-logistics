@@ -179,6 +179,19 @@ public class MaterialBatchMapper {
 
     /**
      * 更新实体
+     *
+     * W-04 fix (Round 8): previous version silently dropped receiptQuantity /
+     * totalWeight / expireDate / quantityUnit on edit — PUT /material-batches/{id}
+     * returned 200 OK while the DB row stayed unchanged for those fields.
+     * Users correcting a batch's quantity, unit, weight or expiry date had no
+     * way to persist the change via UI. Now all form-editable fields are
+     * mapped with null-guards so partial updates still work.
+     *
+     * Intentionally immutable on edit (not mapped even if present in the DTO):
+     *   - batchNumber  (tracking identifier, frontend disables input on edit)
+     *   - factoryId    (owner, controlled by the URL path variable)
+     *   - productionDate / sourceDocType / sourceDocId  (historical/audit)
+     *   - customFields (flows through a separate DynamicFieldService path)
      */
     public void updateEntity(MaterialBatch batch, CreateMaterialBatchRequest request) {
         if (request.getMaterialTypeId() != null) {
@@ -190,9 +203,22 @@ public class MaterialBatchMapper {
         if (request.getReceiptDate() != null) {
             batch.setReceiptDate(request.getReceiptDate());
         }
+        // W-04: previously dropped
+        if (request.getReceiptQuantity() != null) {
+            batch.setReceiptQuantity(request.getReceiptQuantity());
+        }
+        if (request.getQuantityUnit() != null) {
+            batch.setQuantityUnit(request.getQuantityUnit());
+        }
+        if (request.getTotalWeight() != null) {
+            batch.setTotalWeight(request.getTotalWeight());
+        }
+        if (request.getExpireDate() != null) {
+            batch.setExpireDate(request.getExpireDate());
+        }
         if (request.getTotalValue() != null) {
             // 注意: totalValue 现在是计算属性，不再存储
-            // 根据 totalValue 反算 unitPrice
+            // 根据 totalValue 反算 unitPrice (uses UPDATED totalWeight from above)
             if (batch.getTotalWeight() != null && batch.getTotalWeight().compareTo(BigDecimal.ZERO) > 0) {
                 BigDecimal newUnitPrice = request.getTotalValue()
                     .divide(batch.getTotalWeight(), 2, RoundingMode.HALF_UP);
