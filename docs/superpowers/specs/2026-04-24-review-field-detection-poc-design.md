@@ -11,7 +11,7 @@
 
 ### 1.1 The problem
 
-`backend/python/smartbi/services/materialized_analytics/templates/reviews_sentiment_summary.py` hardcodes 11 column-name candidate tuples (lines 30-43):
+`backend/python/smartbi/services/materialized_analytics/templates/reviews_sentiment_summary.py` hardcodes 12 column-name candidate tuples (lines 30-43; 10 actively used in `compute()`/`applies()`, 2 — `_CONTENT_CANDIDATES`/`_COMPLAINT_TITLE_CANDIDATES` — defined but never read):
 
 ```python
 _STAR_CANDIDATES = ("星级分", "评分", "星级")
@@ -207,7 +207,7 @@ def _first(cols, candidates):
 from ..restaurant import schema_helpers
 ```
 
-**Replace 11 call sites** in `applies()` (line 84) and `compute()` (lines 90-98, 234, 268, 287):
+**Replace 11 call sites** in `applies()` (line 84) and `compute()` (lines 90-98, 234) — verified via grep:
 
 | Old | New |
 |---|---|
@@ -218,14 +218,14 @@ from ..restaurant import schema_helpers
 | `_first(cols, _SERVICE_CANDIDATES)` | `schema_helpers.find_service_score_col(cols)` |
 | `_first(cols, _STORE_CANDIDATES)` | `schema_helpers.find_review_store_col(cols)` |
 | `_first(cols, _REVIEW_TIME_CANDIDATES)` | `schema_helpers.find_review_time_col(cols)` |
-| `_first(cols, _CONTENT_CANDIDATES)` | (only used? grep — currently NOT used in compute, but defined; safe to delete + add helper for future) |
 | `_first(cols, _VIP_CANDIDATES)` | `schema_helpers.find_vip_flag_col(cols)` |
 | `_first(cols, _COMPLAINT_CANDIDATES)` | `schema_helpers.find_complaint_status_col(cols)` |
 | `_first(cols, _PLATFORM_CANDIDATES)` | `schema_helpers.find_review_platform_col(cols)` |
 | `_first(cols, _DISH_TAG_CANDIDATES)` | `schema_helpers.find_dish_tag_col(cols)` |
-| `_first(cols, _COMPLAINT_TITLE_CANDIDATES)` | (currently NOT used; same as content) |
 
-Net file diff: ~-30 lines (delete 24 candidate lines + 6 helper lines, add 1 import line, replace 11 calls in place).
+**Unused candidates** (`_CONTENT_CANDIDATES`, `_COMPLAINT_TITLE_CANDIDATES`) — `_first()` never called on these in current template. Delete both from template entirely. **Still add `find_review_content_col` + `find_complaint_title_col` helpers in `schema_helpers.py`** for near-future use (template authors may add review-text rendering / complaint-title KPIs in next iteration; cost is 4 lines per helper).
+
+Net file diff: template ~-32 lines (delete 12 candidate tuples + 6 helper lines + replace 11 calls in place + add 1 import line). schema_helpers.py ~+90 lines (12 tuples + 12 helpers + 1 section header).
 
 ---
 
@@ -237,7 +237,7 @@ Test depth: per qa-prompt v2.4 Rule 1, unit tests are **smoke** depth alone — 
 
 ```python
 import pytest
-from backend.python.smartbi.services.materialized_analytics.restaurant import schema_helpers
+from smartbi.services.materialized_analytics.restaurant import schema_helpers
 
 
 class TestReviewStoreCol:
