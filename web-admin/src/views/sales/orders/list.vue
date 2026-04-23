@@ -13,6 +13,7 @@ import { formatAmount } from '@/utils/tableFormatters';
 import TaxGroupInvoiceDialog from './components/TaxGroupInvoiceDialog.vue';
 import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
+import { getFinanceSummary, type FinanceSummary } from '@/api/smartbi/gold';
 
 // G1: 税率分组开票对话框 (客户原话 2645-2660s)
 const taxGroupInvoiceVisible = ref(false);
@@ -174,8 +175,37 @@ watch(dialogVisible, (val) => { isDirty.value = val; });
 function handleBeforeUnload(e: BeforeUnloadEvent) {
   if (isDirty.value) { e.preventDefault(); e.returnValue = ''; }
 }
+// v1.2 Week 9: POS summary card — hides auto when Silver has no data (manufacturing tenants).
+// Tries YTD first, falls back to last calendar year when YTD is empty so restaurant tenants
+// whose POS feed is seeded with historical data still see a non-empty demo.
+const goldSummary = ref<FinanceSummary | null>(null);
+const goldSummaryRangeLabel = ref<string>('');
+async function loadGoldSummary() {
+  if (!factoryId.value) return;
+  const year = new Date().getFullYear();
+  const today = new Date().toISOString().slice(0, 10);
+  const ranges: Array<{ start: string; end: string; label: string }> = [
+    { start: `${year}-01-01`, end: today, label: `${year} YTD` },
+    { start: `${year - 1}-01-01`, end: `${year - 1}-12-31`, label: `${year - 1} 全年` },
+  ];
+  for (const rng of ranges) {
+    try {
+      const r = await getFinanceSummary({
+        factoryId: factoryId.value, startDate: rng.start, endDate: rng.end, topNStores: 3,
+      });
+      if (r && r.billCount > 0) {
+        goldSummary.value = r;
+        goldSummaryRangeLabel.value = rng.label;
+        return;
+      }
+    } catch { /* try next range */ }
+  }
+  goldSummary.value = null;
+}
+
 onMounted(() => {
   loadData(); loadCustomers(); loadProducts(); loadSalesEmployees();
+  loadGoldSummary();
   window.addEventListener('beforeunload', handleBeforeUnload);
 });
 onBeforeUnmount(() => { window.removeEventListener('beforeunload', handleBeforeUnload); });
@@ -520,6 +550,40 @@ async function submitQuickPayment() {
 </script>
 
 <template>
+  <!-- v1.2 Week 9: POS 交易概览 (restaurant tenants). Placed OUTSIDE CanvasAwareWrapper
+       so it renders in both LEGACY and DYNAMIC/CANVAS rendering modes. Auto-hides
+       when Silver empty (manufacturing tenants). -->
+  <el-card
+    v-show="goldSummary"
+    class="gold-pos-summary"
+    style="margin: 12px; border-top: 3px solid #67C23A;"
+    shadow="never"
+  >
+    <template #header>
+      <div style="display: flex; align-items: center; gap: 8px; font-weight: 600;">
+        <span>🧾 POS 交易概览</span>
+        <el-tag size="small" type="success">Gold · finance_summary</el-tag>
+        <span v-if="goldSummaryRangeLabel" style="color: #909399; font-size: 12px; margin-left: auto;">
+          {{ goldSummaryRangeLabel }}
+        </span>
+      </div>
+    </template>
+    <el-row v-if="goldSummary" :gutter="16">
+      <el-col :span="6">
+        <el-statistic :value="goldSummary.totalRevenue" title="总营收" :precision="2" prefix="¥" />
+      </el-col>
+      <el-col :span="6">
+        <el-statistic :value="goldSummary.billCount" title="POS 账单数" />
+      </el-col>
+      <el-col :span="6">
+        <el-statistic :value="goldSummary.avgBillValue ?? 0" title="客单价" :precision="2" prefix="¥" />
+      </el-col>
+      <el-col :span="6">
+        <el-statistic :value="goldSummary.storeCount" title="门店数" />
+      </el-col>
+    </el-row>
+  </el-card>
+
   <CanvasAwareWrapper module-code="sales_order">
   <div class="page-wrapper">
     <el-card class="page-card" shadow="never">
