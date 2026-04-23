@@ -83,19 +83,48 @@ const goldTrendFallbackLabel = ref<string>('');
 
 async function loadGoldTrend() {
   if (!factoryId.value) return;
-  // Try user-selected period first. If empty, fallback through longer ranges so
-  // restaurant tenants whose data is historical still see a non-empty chart.
+  // P1-14 perf: cache last-found non-empty range per factory in localStorage
+  // so subsequent visits skip the serial empty-range fallback ladder (~700ms).
+  // Primary range is still tried first; cached fallback used only when primary empty.
   const iso = (d: Date): string => d.toISOString().slice(0, 10);
   const y = new Date().getFullYear();
   const primary = _periodToDateRange(selectedPeriod.value);
+  const cacheKey = `goldTrend.lastRange.${factoryId.value}`;
+  const cached = (() => {
+    try { return JSON.parse(localStorage.getItem(cacheKey) || 'null') as { s: string; e: string; label: string } | null; }
+    catch { return null; }
+  })();
+
+  // 1. Always try user's primary selection first
+  try {
+    const resp = await getDailyTrend({ factoryId: factoryId.value, startDate: primary[0], endDate: primary[1] });
+    if (resp && resp.points && resp.points.length > 0) {
+      goldTrend.value = resp;
+      goldTrendFallbackLabel.value = '';
+      updateGoldChart();
+      return;
+    }
+  } catch { /* fall through */ }
+
+  // 2. If cache has a known-good range, try it next (skip empty intermediates)
+  if (cached && (cached.s !== primary[0] || cached.e !== primary[1])) {
+    try {
+      const resp = await getDailyTrend({ factoryId: factoryId.value, startDate: cached.s, endDate: cached.e });
+      if (resp && resp.points && resp.points.length > 0) {
+        goldTrend.value = resp;
+        goldTrendFallbackLabel.value = cached.label;
+        updateGoldChart();
+        return;
+      }
+    } catch { /* fall through */ }
+  }
+
+  // 3. Standard fallback ladder (also populates cache)
   const fallbackChain: Array<[string, string, string]> = [
-    [primary[0], primary[1], ''],
-    // 90-day window ending today
     (() => { const e = new Date(); const s = new Date(); s.setDate(s.getDate() - 89); return [iso(s), iso(e), '近90天'] as [string, string, string]; })(),
     [`${y - 1}-01-01`, `${y - 1}-12-31`, `${y - 1}全年`],
     [`${y - 2}-01-01`, `${y - 2}-12-31`, `${y - 2}全年`],
   ];
-
   for (const [s, e, label] of fallbackChain) {
     try {
       const resp = await getDailyTrend({ factoryId: factoryId.value, startDate: s, endDate: e });
@@ -103,11 +132,10 @@ async function loadGoldTrend() {
         goldTrend.value = resp;
         goldTrendFallbackLabel.value = label;
         updateGoldChart();
+        try { localStorage.setItem(cacheKey, JSON.stringify({ s, e, label })); } catch { /* quota/privacy mode ignore */ }
         return;
       }
-    } catch {
-      // try next range
-    }
+    } catch { /* try next */ }
   }
   goldTrend.value = null;
   goldTrendFallbackLabel.value = '';
