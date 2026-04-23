@@ -67,6 +67,12 @@ const smartBIRoutes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, title: '知识库反馈', icon: 'ChatDotRound', module: 'analytics' },
       },
       {
+        path: 'fallback-log',
+        name: 'SmartBIFallbackLog',
+        component: () => import('@/views/smart-bi/FallbackLogAdmin.vue'),
+        meta: { requiresAuth: true, title: 'AI 追问日志', icon: 'DataLine', module: 'analytics' },
+      },
+      {
         path: 'calibration',
         name: 'SmartBICalibration',
         component: () => import('@/views/calibration/CalibrationListView.vue'),

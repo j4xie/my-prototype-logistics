@@ -256,6 +256,7 @@ const menuConfig: MenuItem[] = [
       { path: '/smart-bi/query-templates', title: '查询模板', icon: 'Tickets', module: 'analytics' },
       { path: '/smart-bi/data-completeness', title: '数据完整度', icon: 'DataAnalysis', module: 'analytics' },
       { path: '/smart-bi/food-kb-feedback', title: '知识库反馈', icon: 'ChatDotRound', module: 'analytics', groupLabel: '质量管理' },
+      { path: '/smart-bi/fallback-log', title: 'AI 追问日志', icon: 'DataLine', module: 'analytics' },
       { path: '/smart-bi/calibration', title: '行为校准监控', icon: 'Aim', module: 'analytics', roles: ['platform_admin'] }
     ]
   }
