@@ -44,15 +44,41 @@ onMounted(async () => {
   }
 })
 
+/**
+ * PR1.5 Bug A: resolve schema sentinel default values to actual runtime values.
+ * Backend stores defaults like "TODAY" / "NOW" as schema sentinels — frontend
+ * must resolve them so submit payload contains parseable date/datetime strings.
+ */
+function resolveDefault(field: EffectiveField): unknown {
+  const dv = field.defaultValue
+  if (typeof dv !== 'string') return dv ?? null
+  const today = new Date()
+  switch (dv) {
+    case 'TODAY':
+      // YYYY-MM-DD (LocalDate-compatible)
+      return today.toISOString().slice(0, 10)
+    case 'NOW':
+      // ISO datetime (LocalDateTime-compatible). Strip Z for backend tolerance.
+      return today.toISOString().replace('Z', '')
+    case 'YESTERDAY': {
+      const d = new Date(today.getTime() - 86400000)
+      return d.toISOString().slice(0, 10)
+    }
+    default:
+      return dv
+  }
+}
+
 function initFormData() {
   if (!config.value) return
   const data: Record<string, unknown> = {}
 
   config.value.fields.forEach((field) => {
+    const resolvedDefault = resolveDefault(field)
     if (props.mode === 'edit' && props.initialData) {
-      data[field.code] = props.initialData[field.code] ?? field.defaultValue ?? null
+      data[field.code] = props.initialData[field.code] ?? resolvedDefault ?? null
     } else if (props.mode === 'create') {
-      data[field.code] = field.defaultValue ?? null
+      data[field.code] = resolvedDefault ?? null
     } else {
       data[field.code] = props.initialData?.[field.code] ?? null
     }
