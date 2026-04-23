@@ -153,6 +153,9 @@ const formRules = {
 };
 
 // Bug C5: auto-calculate totalWeight and totalValue from selected material's base info
+// W-02 fix (Round 7): when material has no unit price, hint the user so they don't
+// stare at an empty required field wondering why auto-calc skipped it.
+let w02HintShown = false;
 function autoCalcWeightAndValue() {
   const qty = formData.receiptQuantity;
   if (!formData.materialTypeId || qty == null || qty <= 0) return;
@@ -164,6 +167,11 @@ function autoCalcWeightAndValue() {
   const unitPrice = Number(mat.unitPrice || mat.movingAvgPrice || 0);
   if (unitPrice > 0) {
     formData.totalValue = Number((qty * unitPrice).toFixed(2));
+    w02HintShown = false;
+  } else if (!w02HintShown) {
+    // Show hint once per dialog session so user knows why totalValue wasn't auto-filled
+    ElMessage.info({ message: `原料「${mat.name || '该原料'}」未配置单价，请手动输入总价值`, duration: 4000 });
+    w02HintShown = true;
   }
 }
 
@@ -173,6 +181,7 @@ watch(() => formData.receiptQuantity, () => { autoCalcWeightAndValue(); });
 function handleCreate() {
   editingId.value = null;
   formDialogTitle.value = '入库登记';
+  w02HintShown = false;
   Object.assign(formData, { batchNumber: '', materialTypeId: '', supplierId: '', receiptDate: new Date().toISOString().slice(0, 10), receiptQuantity: null, quantityUnit: 'kg', totalWeight: null, totalValue: null, expireDate: '', notes: '' });
   formDialogVisible.value = true;
 }

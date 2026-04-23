@@ -71,6 +71,12 @@ public class ShipmentRecord extends BaseEntity {
     private Long recordedBy;
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+    @Column(name = "vehicle_number", length = 50)
+    private String vehicleNumber;
+    @Column(name = "driver_name", length = 50)
+    private String driverName;
+    @Column(name = "driver_phone", length = 30)
+    private String driverPhone;
     // 关联关系 - 使用JsonIgnore避免懒加载序列化问题
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)

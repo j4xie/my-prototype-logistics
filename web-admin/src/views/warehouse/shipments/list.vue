@@ -32,6 +32,7 @@ const dialogLoading = ref(false);
 const shipmentForm = ref({
   customerId: '',
   productBatchId: '',
+  shipmentDate: new Date().toISOString().slice(0, 10),
   quantity: 0,
   vehicleNumber: '',
   driverName: '',
@@ -137,6 +138,7 @@ function handleCreate() {
   shipmentForm.value = {
     customerId: '',
     productBatchId: '',
+    shipmentDate: new Date().toISOString().slice(0, 10),
     quantity: 0,
     vehicleNumber: '',
     driverName: '',
@@ -147,14 +149,30 @@ function handleCreate() {
 }
 
 async function submitShipment() {
-  if (!shipmentForm.value.customerId || !shipmentForm.value.productBatchId || !shipmentForm.value.quantity) {
+  if (!shipmentForm.value.customerId || !shipmentForm.value.productBatchId || !shipmentForm.value.quantity || !shipmentForm.value.shipmentDate) {
     ElMessage.warning('请填写完整信息');
     return;
   }
 
+  // W-01 fix (Round 7): backend ShipmentRecord requires productName / unit / shipmentDate @NotBlank/@NotNull.
+  // Frontend only collected productBatchId before — POST /shipments returned 400. Derive missing fields
+  // from selected productBatch so create succeeds; vehicleNumber/driverName/driverPhone now persist via
+  // migration V20260424_01.
+  const batch = productBatches.value.find((b) => String(b.id) === String(shipmentForm.value.productBatchId)) as Record<string, unknown> | undefined;
+  const productName = String(batch?.productTypeName || batch?.productName || `批次-${batch?.batchNumber || shipmentForm.value.productBatchId}`);
+  const unit = String(batch?.unit || batch?.quantityUnit || 'kg');
+  const batchNumber = batch?.batchNumber ? String(batch.batchNumber) : undefined;
+
+  const payload = {
+    ...shipmentForm.value,
+    productName,
+    unit,
+    ...(batchNumber ? { batchNumber } : {}),
+  };
+
   dialogLoading.value = true;
   try {
-    const response = await post(`/${factoryId.value}/shipments`, shipmentForm.value);
+    const response = await post(`/${factoryId.value}/shipments`, payload);
     if (response.success) {
       ElMessage.success('创建成功');
       dialogVisible.value = false;
@@ -392,7 +410,7 @@ function getStatusText(status: string) {
     <el-dialog v-model="dialogVisible" title="新建出货" width="550px" :close-on-click-modal="false">
       <el-form :model="shipmentForm" label-width="100px">
         <el-form-item label="客户" required>
-          <el-select v-model="shipmentForm.customerId" placeholder="选择客户" style="width: 100%">
+          <el-select v-model="shipmentForm.customerId" placeholder="选择客户" filterable style="width: 100%">
             <el-option
               v-for="item in customers"
               :key="item.id"
@@ -402,14 +420,17 @@ function getStatusText(status: string) {
           </el-select>
         </el-form-item>
         <el-form-item label="产品批次" required>
-          <el-select v-model="shipmentForm.productBatchId" placeholder="选择产品批次" style="width: 100%">
+          <el-select v-model="shipmentForm.productBatchId" placeholder="选择产品批次" filterable style="width: 100%">
             <el-option
               v-for="item in productBatches"
               :key="item.id"
-              :label="`${item.batchNumber} - ${item.productTypeName}`"
+              :label="`${item.batchNumber}${item.productTypeName ? ' - ' + item.productTypeName : ''}`"
               :value="item.id"
             />
           </el-select>
+        </el-form-item>
+        <el-form-item label="发货日期" required>
+          <el-date-picker v-model="shipmentForm.shipmentDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
         </el-form-item>
         <el-form-item label="数量" required>
           <el-input-number v-model="shipmentForm.quantity" :min="1" style="width: 100%" />
