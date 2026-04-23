@@ -511,12 +511,12 @@ watch(
   font-size: 12px;
   color: #909399;
 }
-/* R6-2: use grid so 3-KPI cards don't look sparse next to 4-KPI cards.
- * Columns auto-fit with min 110px — on a typical card width this yields
- * 2-3 columns per row, filling available space evenly regardless of N. */
+/* R6-2 + R9-1: grid auto-fit with wider min so "¥X,XXX.XX万" fits on one
+ * line. 135px min → on typical 400-500px card width → 3-col layout for
+ * 4-KPI cards, 2-col for 3-KPI (fills naturally). */
 .tpl-kpis {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
   gap: 10px;
   margin-bottom: 12px;
 }
@@ -524,8 +524,7 @@ watch(
   padding: 8px 12px;
   background: #f5f7fa;
   border-radius: 4px;
-  min-width: 80px;
-  max-width: 220px;
+  min-width: 0;          /* grid handles sizing — let chip shrink if needed */
   overflow: hidden;
 }
 .tpl-kpi-label {
@@ -534,14 +533,21 @@ watch(
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  margin-bottom: 2px;
 }
+/* R9-1: KPI values must never truncate — critical data. Allow wrap instead
+ * of ellipsis, shrink font if extremely long. 2-line max. */
 .tpl-kpi-value {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 600;
   color: #303133;
-  white-space: nowrap;
+  line-height: 1.25;
+  word-break: break-all;  /* allow break inside long "¥3,617.60万" */
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 /* Long string values (e.g. 菜品名 "招牌青花椒鱼(微麻微辣)(一吃)") —
  * smaller font + 2-line clamp so whole name is readable. */
