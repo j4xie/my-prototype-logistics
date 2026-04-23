@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * SmartBI 餐饮 V2 Dashboard — 邓总救命组合 (Week 3.5)
+ * SmartBI 餐饮 V2 Dashboard — 餐饮综合分析
  *
  * 渲染 RestaurantAnalyzerV2 的 5 sections:
  *   1. Executive Summary (摘要 + 关键建议)
@@ -89,7 +89,7 @@ const period = ref<string>('2026-02');
 // P5 Task 5.3: chat drawer state
 const chatDrawerVisible = ref(false);
 
-// 邓总 demo 快捷填写
+// 演示数据快捷填写 (火锅店样例 P&L)
 function fillDengHuoguoDemo() {
   financialCurrent.value = {
     revenue: 731047.52,
@@ -104,9 +104,9 @@ function fillDengHuoguoDemo() {
     rent: 57324.0,
   };
   subSector.value = '火锅';
-  storeName.value = '鼎鲜火锅·义乌';
+  storeName.value = '示例店·火锅样例';
   period.value = '2026-02';
-  ElMessage.success('已填入邓总火锅 2026-02 真实 P&L 数据');
+  ElMessage.success('已填入火锅样例 P&L 演示数据');
 }
 
 // ── Lifecycle ──────────────────────────────────────
@@ -218,6 +218,7 @@ const goldKpiShortcuts = [
 const goldKpi = ref<FinanceSummary | null>(null);
 const goldKpiLoading = ref(false);
 const goldKpiError = ref<string>('');
+const goldKpiFallbackLabel = ref<string>('');
 
 async function loadGoldKpi() {
   if (!factoryId.value) return;
@@ -226,15 +227,41 @@ async function loadGoldKpi() {
   goldKpiLoading.value = true;
   goldKpiError.value = '';
   try {
-    goldKpi.value = await getFinanceSummary({
+    const primary = await getFinanceSummary({
       factoryId: factoryId.value,
       startDate: s,
       endDate: e,
       topNStores: 5,
     });
+    if (primary && primary.billCount > 0) {
+      goldKpi.value = primary;
+      goldKpiFallbackLabel.value = '';
+    } else {
+      // Fallback chain: 近 90 天 → 上一年全年 → 再前一年, 避免用户看到空 KPI.
+      const y = new Date().getFullYear();
+      const iso = (d: Date): string => d.toISOString().slice(0, 10);
+      const chain: Array<[string, string, string]> = [
+        (() => { const e2 = new Date(); const s2 = new Date(); s2.setDate(s2.getDate() - 89); return [iso(s2), iso(e2), '近90天'] as [string, string, string]; })(),
+        [`${y - 1}-01-01`, `${y - 1}-12-31`, `${y - 1}全年`],
+        [`${y - 2}-01-01`, `${y - 2}-12-31`, `${y - 2}全年`],
+      ];
+      for (const [cs, ce, label] of chain) {
+        const fb = await getFinanceSummary({ factoryId: factoryId.value, startDate: cs, endDate: ce, topNStores: 5 });
+        if (fb && fb.billCount > 0) {
+          goldKpi.value = fb;
+          goldKpiFallbackLabel.value = label;
+          break;
+        }
+      }
+      if (!goldKpi.value || goldKpi.value.billCount === 0) {
+        goldKpi.value = primary;  // keep zero-state for display
+        goldKpiFallbackLabel.value = '';
+      }
+    }
   } catch (err: unknown) {
     goldKpiError.value = err instanceof Error ? err.message : String(err);
     goldKpi.value = null;
+    goldKpiFallbackLabel.value = '';
   } finally {
     goldKpiLoading.value = false;
   }
@@ -605,8 +632,7 @@ function formatCurrency(v?: number): string {
       <template #header>
         <div class="header-title">
           <el-icon><DataAnalysis /></el-icon>
-          <span>餐饮 SmartBI V2 — 邓总救命组合</span>
-          <el-tag type="success" size="small">Week 2+3</el-tag>
+          <span>餐饮综合分析</span>
         </div>
       </template>
 
@@ -646,7 +672,7 @@ function formatCurrency(v?: number): string {
           <el-form-item label="门店">
             <el-input
               v-model="storeName"
-              placeholder="例: 鼎鲜火锅·义乌"
+              placeholder="例: 青花椒大丸百货店"
               style="width: 200px"
             />
           </el-form-item>
@@ -690,7 +716,7 @@ function formatCurrency(v?: number): string {
               <template #default>
                 填财务数据后, 系统能跑成本弹性指数 + 对标预警 + 诊断. 不填则只做渠道毛利率 + 命名归一.
                 <el-button link type="primary" @click="fillDengHuoguoDemo">
-                  一键填入邓总火锅 demo 数据
+                  一键填入火锅样例演示数据
                 </el-button>
               </template>
             </el-alert>
@@ -784,6 +810,9 @@ function formatCurrency(v?: number): string {
             <el-icon color="#67C23A"><TrendCharts /></el-icon>
             <span>实时 KPI 看板</span>
             <el-tag size="small" type="success">Gold · agg_daily</el-tag>
+            <el-tag v-if="goldKpiFallbackLabel" size="small" type="warning" effect="plain">
+              所选区间无数据,已显示 {{ goldKpiFallbackLabel }}
+            </el-tag>
           </div>
           <el-date-picker
             v-model="goldKpiRange"
@@ -1791,7 +1820,7 @@ function formatCurrency(v?: number): string {
     <!-- Empty state -->
     <el-empty
       v-else-if="!loading"
-      description="选择 upload → 点'跑 V2 分析' → 查看邓总救命组合"
+      description="选择上传数据 → 点「跑 V2 分析」 → 查看餐饮综合分析"
       style="margin-top: 40px"
     />
 

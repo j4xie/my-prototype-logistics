@@ -73,21 +73,39 @@ function _periodToDateRange(period: string): [string, string] {
   return [iso(start), iso(end)];
 }
 
+// Auto-fallback label shown when Gold chart falls back to a prior range.
+const goldTrendFallbackLabel = ref<string>('');
+
 async function loadGoldTrend() {
   if (!factoryId.value) return;
-  const [s, e] = _periodToDateRange(selectedPeriod.value);
-  try {
-    const resp = await getDailyTrend({
-      factoryId: factoryId.value,
-      startDate: s,
-      endDate: e,
-    });
-    goldTrend.value = resp && resp.points && resp.points.length > 0 ? resp : null;
-    updateGoldChart();
-  } catch (err) {
-    // Silently hide Gold section on failure; legacy UI still works.
-    goldTrend.value = null;
+  // Try user-selected period first. If empty, fallback through longer ranges so
+  // restaurant tenants whose data is historical still see a non-empty chart.
+  const iso = (d: Date): string => d.toISOString().slice(0, 10);
+  const y = new Date().getFullYear();
+  const primary = _periodToDateRange(selectedPeriod.value);
+  const fallbackChain: Array<[string, string, string]> = [
+    [primary[0], primary[1], ''],
+    // 90-day window ending today
+    (() => { const e = new Date(); const s = new Date(); s.setDate(s.getDate() - 89); return [iso(s), iso(e), '近90天'] as [string, string, string]; })(),
+    [`${y - 1}-01-01`, `${y - 1}-12-31`, `${y - 1}全年`],
+    [`${y - 2}-01-01`, `${y - 2}-12-31`, `${y - 2}全年`],
+  ];
+
+  for (const [s, e, label] of fallbackChain) {
+    try {
+      const resp = await getDailyTrend({ factoryId: factoryId.value, startDate: s, endDate: e });
+      if (resp && resp.points && resp.points.length > 0) {
+        goldTrend.value = resp;
+        goldTrendFallbackLabel.value = label;
+        updateGoldChart();
+        return;
+      }
+    } catch {
+      // try next range
+    }
   }
+  goldTrend.value = null;
+  goldTrendFallbackLabel.value = '';
 }
 
 function updateGoldChart() {
@@ -319,6 +337,9 @@ onUnmounted(() => {
         <div style="display: flex; align-items: center; gap: 8px; font-weight: 600;">
           <span>📈 POS 营收趋势</span>
           <el-tag size="small" type="success">Gold · daily_trend</el-tag>
+          <el-tag v-if="goldTrendFallbackLabel" size="small" type="warning" effect="plain">
+            所选区间无数据,已显示 {{ goldTrendFallbackLabel }}
+          </el-tag>
           <span v-if="goldTrend" style="color: #909399; font-size: 12px; margin-left: auto;">
             {{ goldTrend.points.length }} 天
           </span>
