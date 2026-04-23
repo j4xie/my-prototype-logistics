@@ -158,7 +158,7 @@ class StaffPerformance(AnalysisTemplate):
         }
 
         insight_text = (
-            f"{role_col} Top 1:{top_staff} (销售额 {top_revenue:,.0f},{top_orders} 单);"
+            f"{role_col} Top 1:{top_staff} (销售额 {top_revenue:,.0f} 元,{top_orders:,} 单);"
             f"共 {total_staff} 位{role_col}参与服务。"
             f" {measure_annotation(measure)}"
         )
