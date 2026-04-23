@@ -331,22 +331,17 @@ function enhanceChartOption(option: unknown): unknown {
       if (s.avoidLabelOverlap === undefined) s.avoidLabelOverlap = true;
     } else if (s.type === 'bar' || s.type === 'line' || s.type === 'scatter') {
       s.label = s.label || {};
-      // Force our formatter even if backend set label.formatter = '{c}' —
-      // '{c}' renders the raw number with all float tail bits visible.
-      // Non-destructive for null/undefined formatters by merging our fn.
-      const hasStringTokenFmt = typeof s.label.formatter === 'string' && /\{c\}/.test(s.label.formatter);
-      if (!s.label.formatter || hasStringTokenFmt) {
-        s.label.formatter = (p: any) => fmtNum(p?.value);
-      }
-      // Also patch any data-level label (e.g. series.data[].label) — rare
-      // but possible if backend emits per-point custom labels.
+      // UNCONDITIONAL override — backend often emits label.show=true with
+      // no explicit formatter OR with '{c}' template, both of which render
+      // raw float values. We always want 万/亿-formatted labels, so replace
+      // any existing formatter (functions, strings, undefined) with ours.
+      // Caller templates that genuinely need custom formatting should omit
+      // label.show and use a title/insight instead.
+      s.label.formatter = (p: any) => fmtNum(p?.value);
       if (Array.isArray(s.data)) {
         for (const d of s.data) {
           if (d && typeof d === 'object' && d.label) {
-            const lf = d.label.formatter;
-            if (typeof lf === 'string' && /\{c\}/.test(lf)) {
-              d.label.formatter = (p: any) => fmtNum(p?.value);
-            }
+            d.label.formatter = (p: any) => fmtNum(p?.value);
           }
         }
       }
