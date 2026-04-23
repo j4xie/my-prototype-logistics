@@ -24,6 +24,7 @@ import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import com.cretas.aims.annotation.RequireModule;
 
 @Slf4j
 @RestController
@@ -38,6 +39,7 @@ public class ArApController {
 
     // ==================== 应收（AR） ====================
 
+    @RequireModule("finance_ar")
     @PostMapping("/receivable")
     @Operation(summary = "记录应收挂账（销售出货）")
     public ApiResponse<ArApTransaction> recordReceivable(
@@ -51,6 +53,7 @@ public class ArApController {
         return ApiResponse.success("应收记录创建成功", transaction);
     }
 
+    @RequireModule("finance_ar")
     @PostMapping("/receivable/payment")
     @Operation(summary = "记录客户付款（冲减应收）")
     public ApiResponse<ArApTransaction> recordArPayment(
@@ -68,6 +71,7 @@ public class ArApController {
 
     // ==================== 应付（AP） ====================
 
+    @RequireModule("finance_ar")
     @PostMapping("/payable")
     @Operation(summary = "记录应付挂账（采购入库）")
     public ApiResponse<ArApTransaction> recordPayable(
@@ -81,6 +85,7 @@ public class ArApController {
         return ApiResponse.success("应付记录创建成功", transaction);
     }
 
+    @RequireModule("finance_ar")
     @PostMapping("/payable/payment")
     @Operation(summary = "记录向供应商付款（冲减应付）")
     public ApiResponse<ArApTransaction> recordApPayment(
@@ -98,6 +103,7 @@ public class ArApController {
 
     // ==================== 手工调整 ====================
 
+    @RequireModule("finance_ar")
     @PostMapping("/adjustment")
     @Operation(summary = "手工调整余额")
     public ApiResponse<ArApTransaction> recordAdjustment(

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Map;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * Bug #4 same-cause sweep (P1 RBAC, 2026-04-18): Added class-level
@@ -28,6 +29,7 @@ public class PaymentRecordController {
 
     private final PaymentRecordService paymentRecordService;
 
+    @RequireModule("finance_ap")
     @PostMapping("/record")
     @RequirePermission({"finance:read_write", "sales:read_write"})
     public ResponseEntity<?> recordPayment(
@@ -60,6 +62,7 @@ public class PaymentRecordController {
         return ResponseEntity.ok(Map.of("success", true, "data", record, "message", "收款记录已创建"));
     }
 
+    @RequireModule("finance_ap")
     @PostMapping("/{paymentId}/verify")
     @RequirePermission("finance:read_write")
     public ResponseEntity<?> verify(
@@ -69,6 +72,7 @@ public class PaymentRecordController {
         return ResponseEntity.ok(Map.of("success", true, "data", record, "message", "收款已确认"));
     }
 
+    @RequireModule("finance_ap")
     @PostMapping("/{paymentId}/reject")
     @RequirePermission("finance:read_write")
     public ResponseEntity<?> reject(

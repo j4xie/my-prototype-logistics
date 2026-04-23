@@ -31,7 +31,8 @@ import {
   Document,
   InfoFilled,
   User,
-  Clock
+  Clock,
+  Loading
 } from '@element-plus/icons-vue';
 import echarts from '@/utils/echarts';
 import { formatNumber, formatCount, formatAxisValue } from '@/utils/format-number';
@@ -102,6 +103,11 @@ function toggleDarkMode() {
 const loading = ref(false);
 const hasError = ref(false);
 const errorMessage = ref('');
+// Apr 24 UX: separate LLM insights loading state so insight card shows
+// skeleton/"生成中" instead of the "暂无分析" empty state during the 1-8s
+// async LLM call (Python cold-start on first visit of day is 5-10s).
+const insightsLoading = ref(false);
+const insightsTookLong = ref(false);
 
 // 数据源选择 — default empty, will be set after loading sources
 const dataSources = ref<UploadHistoryItem[]>([]);
@@ -823,6 +829,10 @@ async function loadLLMInsights() {
   if (!factoryId.value || !dashboardData.value) return;
   const sourceAtStart = selectedDataSource.value;
   const signal = abortController?.signal;
+  insightsLoading.value = true;
+  insightsTookLong.value = false;
+  // Show "冷启中" hint after 5s (typical Python warm ~2s, cold ~8-10s)
+  const longRunTimer = setTimeout(() => { insightsTookLong.value = true; }, 5000);
   try {
     // Week 5 Agent layer: when user picked an explicit date range, call the
     // Gold-backed /insights/custom endpoint. Otherwise keep the legacy
@@ -856,6 +866,10 @@ async function loadLLMInsights() {
     // Silently ignore aborted requests (user switched data source or navigated away)
     if (e instanceof DOMException && e.name === 'AbortError') return;
     console.warn('LLM insights load failed (non-critical):', e);
+  } finally {
+    clearTimeout(longRunTimer);
+    insightsLoading.value = false;
+    insightsTookLong.value = false;
   }
 }
 
@@ -1804,7 +1818,16 @@ onUnmounted(() => {
               </span>
             </div>
           </template>
-          <div class="insight-list" role="list" v-if="aiInsights.length > 0">
+          <!-- Apr 24 UX: skeleton while LLM insights are being fetched (1-10s async) -->
+          <div v-if="insightsLoading && aiInsights.length === 0" class="insight-loading" role="status">
+            <el-skeleton :rows="3" animated />
+            <p class="insight-loading-hint">
+              <el-icon class="is-loading"><Loading /></el-icon>
+              {{ insightsTookLong ? 'AI 分析首次运行需 5-10 秒 (大模型冷启动)...' : 'AI 智能洞察生成中...' }}
+            </p>
+          </div>
+
+          <div class="insight-list" role="list" v-else-if="aiInsights.length > 0">
             <div
               v-for="(insight, index) in (insightsExpanded ? aiInsights : aiInsights.slice(0, INSIGHT_COLLAPSE_LIMIT))"
               :key="index"
@@ -2358,6 +2381,28 @@ onUnmounted(() => {
 // AI 洞察区
 .insight-section {
   margin-bottom: 16px;
+}
+
+.insight-loading {
+  padding: 8px 4px;
+
+  .insight-loading-hint {
+    margin-top: 12px;
+    color: #909399;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    .is-loading {
+      animation: rotating 2s linear infinite;
+    }
+  }
+}
+
+@keyframes rotating {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .insight-card {

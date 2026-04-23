@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * Bug #4 (P1 RBAC, 2026-04-18): Added class-level @RequirePermission so finance
@@ -29,6 +30,7 @@ public class InvoiceController {
 
     private final InvoiceService invoiceService;
 
+    @RequireModule("finance_ar")
     @PostMapping("/request")
     @RequirePermission({"finance:read_write", "sales:read_write"})
     public ResponseEntity<?> requestInvoice(
@@ -66,6 +68,7 @@ public class InvoiceController {
      *
      * 响应里的 record.taxBreakdown 含分组明细供前端按组渲染。
      */
+    @RequireModule("finance_ar")
     @PostMapping("/request-from-order")
     @RequirePermission({"finance:read_write", "sales:read_write"})
     public ResponseEntity<?> requestInvoiceFromOrder(
@@ -82,6 +85,7 @@ public class InvoiceController {
                 "message", "开票申请已提交 (按税率分组)"));
     }
 
+    @RequireModule("finance_ar")
     @PostMapping("/{invoiceId}/approve")
     @RequirePermission("finance:read_write")
     public ResponseEntity<?> approve(
@@ -94,6 +98,7 @@ public class InvoiceController {
         return ResponseEntity.ok(Map.of("success", true, "data", record, "message", "开票申请已审核通过"));
     }
 
+    @RequireModule("finance_ar")
     @PostMapping("/{invoiceId}/reject")
     @RequirePermission("finance:read_write")
     public ResponseEntity<?> reject(
@@ -105,6 +110,7 @@ public class InvoiceController {
         return ResponseEntity.ok(Map.of("success", true, "data", record, "message", "开票申请已驳回"));
     }
 
+    @RequireModule("finance_ar")
     @PostMapping("/{invoiceId}/issue")
     @RequirePermission("finance:read_write")
     public ResponseEntity<?> issue(

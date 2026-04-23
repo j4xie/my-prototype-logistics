@@ -66,6 +66,7 @@ const selectedUploadId = ref<number | null>(null);
 const loading = ref(false);
 const report = ref<V2UnifiedReport | null>(null);
 const lastError = ref<string>('');
+const errorActionHint = ref<string>('');
 const performanceInfo = ref<{ totalSeconds: number; posRows: number } | null>(null);
 
 // Financial data (可选, 用户填)
@@ -186,14 +187,40 @@ async function runAnalysis(force: boolean = false) {
       }
     } else {
       lastError.value = response.message || '分析失败';
-      ElMessage.error(lastError.value);
+      showAnalysisError(lastError.value);
     }
-  } catch (e: any) {
-    lastError.value = String(e?.message || e);
-    ElMessage.error(`分析异常: ${lastError.value}`);
+  } catch (e) {
+    // Apr 24 UX Rule 8: extract useful error message without losing info
+    const msg = e instanceof Error ? e.message : String(e);
+    lastError.value = msg;
+    showAnalysisError(msg);
   } finally {
     loading.value = false;
   }
+}
+
+// Apr 24 UX: sticky error toast with specific actionHint by error type
+// (Rule 8 四位一体: message 具体 / sticky / next action hint)
+function showAnalysisError(rawMsg: string) {
+  let actionHint = '';
+  if (rawMsg.includes('timeout') || rawMsg.includes('超时') || rawMsg.includes('Timeout')) {
+    actionHint = 'Python 服务响应超时。数据量大时可能需 30-60s,请稍后重试,或降低分析范围。';
+  } else if (rawMsg.includes('500') || rawMsg.includes('Internal Server')) {
+    actionHint = 'Python 服务内部错误。请联系管理员检查 python-test.log。';
+  } else if (rawMsg.includes('不存在') || rawMsg.includes('404')) {
+    actionHint = '上传数据可能已被删除,请重新选择其他上传。';
+  } else if (rawMsg.includes('未启用') || rawMsg.includes('模块')) {
+    actionHint = '您的工厂未启用餐饮 V2 分析模块,请联系管理员在 Canvas 配置中开启。';
+  }
+  errorActionHint.value = actionHint;
+  ElMessage({
+    message: actionHint ? `${rawMsg}\n${actionHint}` : rawMsg,
+    type: 'error',
+    duration: 0,      // Sticky — user must manually close
+    showClose: true,
+    dangerouslyUseHTMLString: false,
+    customClass: 'rv2-error-toast',
+  });
 }
 
 // ── Gold KPI strip (v1.1 cutover) ──────────────────
@@ -870,14 +897,27 @@ function formatCurrency(v?: number): string {
       </div>
     </el-card>
 
-    <!-- Error -->
+    <!-- Error — Apr 24 UX: adds retry button + specific action hint -->
     <el-alert
       v-if="lastError"
       type="error"
-      :closable="false"
+      :closable="true"
       :title="lastError"
+      show-icon
       style="margin-top: 16px"
-    />
+      @close="lastError = ''"
+    >
+      <template #default>
+        <div style="margin-top: 8px; display: flex; gap: 8px; align-items: center;">
+          <el-button size="small" type="primary" :loading="loading" @click="runAnalysis(true)">
+            重新分析
+          </el-button>
+          <span v-if="errorActionHint" style="color: #909399; font-size: 13px;">
+            💡 {{ errorActionHint }}
+          </span>
+        </div>
+      </template>
+    </el-alert>
 
     <!-- Report sections -->
     <template v-if="report">

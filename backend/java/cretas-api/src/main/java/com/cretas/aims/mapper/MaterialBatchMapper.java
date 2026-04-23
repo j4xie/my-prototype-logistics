@@ -210,8 +210,13 @@ public class MaterialBatchMapper {
         if (request.getQuantityUnit() != null) {
             batch.setQuantityUnit(request.getQuantityUnit());
         }
-        if (request.getTotalWeight() != null) {
-            batch.setTotalWeight(request.getTotalWeight());
+        // totalWeight is a transient computed property (weightPerUnit × receiptQuantity).
+        // If the form sends it, derive weightPerUnit from receiptQuantity to persist.
+        if (request.getTotalWeight() != null && request.getTotalWeight().compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal qty = batch.getReceiptQuantity();
+            if (qty != null && qty.compareTo(BigDecimal.ZERO) > 0) {
+                batch.setWeightPerUnit(request.getTotalWeight().divide(qty, 4, RoundingMode.HALF_UP));
+            }
         }
         if (request.getExpireDate() != null) {
             batch.setExpireDate(request.getExpireDate());
