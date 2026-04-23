@@ -67,6 +67,11 @@ class TimeSlotRevenue(AnalysisTemplate):
         "午餐晚餐哪个好",
         "宵夜销量",
         "早中晚时段对比",
+        "什么时候开单最多",
+        "什么时段客流最多",
+        "高峰时段",
+        "营业最忙时段",
+        "哪个时间段订单多",
     ]
 
     @property
