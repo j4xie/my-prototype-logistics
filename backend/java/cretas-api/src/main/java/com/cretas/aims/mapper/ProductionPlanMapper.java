@@ -227,6 +227,19 @@ public class ProductionPlanMapper {
         if (request.getPriority() != null) {
             plan.setPriority(request.getPriority());
         }
+        // W-06 fix (Round 9, qa-prompt v2.4 Rule 17.2 sweep): planType /
+        // processName / batchDate are @Column fields but were previously
+        // dropped on update. PUT returned 200 "更新成功" but DB row was
+        // untouched for these 3. Null-guard map each like the other fields.
+        if (request.getPlanType() != null) {
+            plan.setPlanType(request.getPlanType());
+        }
+        if (request.getProcessName() != null) {
+            plan.setProcessName(request.getProcessName());
+        }
+        if (request.getBatchDate() != null) {
+            plan.setBatchDate(request.getBatchDate());
+        }
         if (request.getEstimatedMaterialCost() != null) {
             plan.setEstimatedMaterialCost(request.getEstimatedMaterialCost());
         }
