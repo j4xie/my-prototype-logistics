@@ -70,6 +70,13 @@ class GrouponChannelBreakdown(AnalysisTemplate):
         "三端销售占比",
         "团购券使用情况",
         "平台券销量",
+        "哪个平台订单最多",
+        "哪个平台卖得最多",
+        "美团抖音哪个更好",
+        "外卖平台对比",
+        "各平台销售额",
+        "美团订单",
+        "抖音订单",
     ]
 
     @property
