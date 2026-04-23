@@ -119,8 +119,11 @@ const KPI_LABEL_MAP: Record<string, string> = {
   peakArea: '峰值区域',
   peakSlot: '峰值时段',
   peakRevenue: '峰值营业额',
-  worstMonth: '谷底月份',
-  troughMonth: '低谷月份',
+  // R5-9: two "worst/trough" keys used to read identically. Differentiate:
+  // worstMonth = the worst single value; troughMonth = the smoothed trough
+  // point from anomaly detection.
+  worstMonth: '最差月份',
+  troughMonth: '平滑低谷月',
   // stats
   max: '最大值',
   min: '最小值',
@@ -205,16 +208,19 @@ function formatNumberCN(n: number): string {
   });
 }
 
+/** Keys that represent currency amounts — add ¥ prefix even when value
+ * is small enough to stay in 千分位 format. */
+const CURRENCY_KEY_RE = /(?:^|[A-Z_])(?:revenue|amount|cost|price|avgorder|avgbill|peakvalue|topvalue|grandamount|topplatformamount|netrevenue|grossrevenue|carddeposit|cardtotal)(?:$|[A-Z_])/i;
+
 function formatKpiValue(value: unknown, key?: string): { text: string; isLong: boolean } {
   if (value === null || value === undefined) return { text: '—', isLong: false };
   if (typeof value === 'boolean') {
     return { text: value ? '是' : '否', isLong: false };
   }
   if (typeof value === 'number') {
-    // Percentage keys (匹配 Pct/Share/Rate) keep 2-decimal plain format.
     const isPercent = key ? /Pct|Share|Rate|占比/i.test(key) : false;
-    // Count keys (Count/Orders/Bills/Qty integers) don't need 万/亿 simplify.
     const isCount = key ? /Count|Orders|Bills|Qty|Total$/i.test(key) && Number.isInteger(value) && Math.abs(value) < 1e6 : false;
+    const isCurrency = key ? CURRENCY_KEY_RE.test(key) : false;
     let text: string;
     if (isPercent) {
       text = value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -222,6 +228,11 @@ function formatKpiValue(value: unknown, key?: string): { text: string; isLong: b
       text = value.toLocaleString('zh-CN');
     } else {
       text = formatNumberCN(value);
+    }
+    // Prepend ¥ for known currency keys (after 万/亿 unit is already appended
+    // by formatNumberCN). Skip if value already includes a currency-looking prefix.
+    if (isCurrency && !/[¥￥$]/.test(text)) {
+      text = '¥' + text;
     }
     return { text, isLong: false };
   }
@@ -300,11 +311,12 @@ function enhanceChartOption(option: unknown): unknown {
     if (s.type === 'pie') {
       s.label = s.label || {};
       if (!s.label.formatter) {
-        // {b}: name, {d}: percent — always 2 decimals
         s.label.formatter = '{b}: {d}%';
       }
       if (s.label.overflow === undefined) s.label.overflow = 'truncate';
       if (s.label.width === undefined) s.label.width = 100;
+      // R5-4: avoid label overlap on small/adjacent slices.
+      if (s.avoidLabelOverlap === undefined) s.avoidLabelOverlap = true;
     } else if (s.type === 'bar' || s.type === 'line' || s.type === 'scatter') {
       s.label = s.label || {};
       // Force our formatter even if backend set label.formatter = '{c}' —
