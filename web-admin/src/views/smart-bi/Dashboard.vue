@@ -40,6 +40,7 @@ import { sparklinePath } from '@/utils/sparkline';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 import { enhanceChartDefaults } from '@/composables/useChartEnhancer';
+import TemplateGrid from './components/TemplateGrid.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -1765,6 +1766,9 @@ onUnmounted(() => {
         </el-card>
       </el-col>
     </el-row>
+
+    <!-- Week 6 Template Surfacing: show analysis results for this page -->
+    <TemplateGrid page-key="dashboard" :factory-id="factoryId || 'F001'" />
   </div>
 </template>
 

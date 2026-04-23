@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import echarts from '@/utils/echarts';
+import TemplateGrid from '@/views/smart-bi/components/TemplateGrid.vue';
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
@@ -252,6 +253,9 @@ onUnmounted(() => {
         </el-col>
       </el-row>
     </div>
+
+    <!-- Week 6 Template Surfacing: show analysis results for this page -->
+    <TemplateGrid page-key="trend" :factory-id="factoryId || 'F001'" />
   </div>
 </template>
 

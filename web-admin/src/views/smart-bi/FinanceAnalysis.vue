@@ -45,6 +45,7 @@ import { formatNumber, formatAxisValue } from '@/utils/format-number';
 import DynamicChartRenderer from '@/components/smartbi/DynamicChartRenderer.vue';
 import ChartTypeSelector from '@/components/smartbi/ChartTypeSelector.vue';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
+import TemplateGrid from './components/TemplateGrid.vue';
 import type { ChartConfig } from '@/types/smartbi';
 
 const route = useRoute();
@@ -2261,6 +2262,9 @@ onUnmounted(() => {
         <el-button @click="closeDataPreview">关闭</el-button>
       </template>
     </el-dialog>
+
+    <!-- Week 6 Template Surfacing: show analysis results for this page -->
+    <TemplateGrid page-key="finance" :factory-id="factoryId || 'F001'" />
   </div>
 </template>
 

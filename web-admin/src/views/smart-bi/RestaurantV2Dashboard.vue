@@ -54,6 +54,7 @@ import {
   type MultiStoreComparison,
 } from '@/api/smartbi/restaurant-v2';
 import BomIngestDialog from './BomIngestDialog.vue';
+import TemplateGrid from './components/TemplateGrid.vue';
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
@@ -1702,6 +1703,9 @@ function formatCurrency(v?: number): string {
         :upload-id="selectedUploadId != null ? String(selectedUploadId) : undefined"
       />
     </el-drawer>
+
+    <!-- Week 6 Template Surfacing: show analysis results for this page -->
+    <TemplateGrid page-key="restaurantv2" :factory-id="factoryId || 'F001'" />
   </div>
 </template>
 
