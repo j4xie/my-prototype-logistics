@@ -526,6 +526,9 @@ _KPI_LABEL_MAP: Dict[str, str] = {
     "card_total": "储值卡总额",
     "card_orders": "储值卡订单",
     "card_usage_rate_pct": "储值卡使用率",
+    "net_share_pct": "到账率",
+    "total_deductions": "扣减合计",
+    "has_cost_data": "含成本数据",
     # Member consumption
     "member_revenue": "会员营收",
     "member_orders": "会员订单",

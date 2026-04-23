@@ -86,9 +86,21 @@ class ProfitLossStatement(AnalysisTemplate):
                 applies=False, skip_reason="no gross-revenue column present",
             )
 
+        # Filter out grand-total sentinel rows: qhj exports embed a single
+        # row with 桌位=null and revenue=92.8M (integrated sum of all orders).
+        # Any row with gross > 10M is definitely a meta-aggregate, not a
+        # normal single-order row — skip to prevent 3×+ inflation.
+        _SENTINEL_THRESHOLD = 10_000_000.0
+        try:
+            df_clean = df.filter(
+                pl.col(gross_col).cast(pl.Float64, strict=False).fill_null(0.0) < _SENTINEL_THRESHOLD
+            )
+        except Exception:
+            df_clean = df
+
         def _sum(col: str) -> float:
             try:
-                return float(df.select(
+                return float(df_clean.select(
                     pl.col(col).cast(pl.Float64, strict=False).fill_null(0.0).sum()
                 ).item() or 0.0)
             except Exception:
