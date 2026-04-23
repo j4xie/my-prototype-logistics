@@ -221,6 +221,35 @@ function triggerImprovementSuggestions(templateMsg: ChatMessage) {
   handleSendMessage();
 }
 
+// 相关追问 — 每个模板 3 条交叉维度问题,引导用户深入分析
+const RELATED_FOLLOWUPS: Record<string, string[]> = {
+  store_performance: ['哪家店客单价最高', '员工里谁最厉害', '峰值月份'],
+  staff_performance: ['哪家店业绩最好', '畅销品 Top 5', '反结账情况'],
+  dish_sales_top_n: ['慢销菜品', '哪个菜品类别卖得多', '套餐使用率'],
+  dish_slow_movers: ['畅销品 Top 5', '优惠券使用情况', '哪家店业绩最差'],
+  dish_category_breakdown: ['畅销品 Top 5', '套餐使用率', '包厢客人点什么菜'],
+  channel_analysis: ['付款方式占比', '外卖占比多少', '周末周中对比'],
+  monthly_trend: ['峰值月份', '最近销售异常吗', '周末周中对比'],
+  monthly_anomaly: ['月度趋势', '哪家店业绩最差', '慢销菜品'],
+  payment_method_mix: ['优惠券使用情况', '外卖占比多少', '储值卡使用'],
+  promotion_impact: ['付款方式占比', '套餐使用率', '反结账情况'],
+  weekday_weekend_pattern: ['哪家店业绩最好', '时段销售分布', '优惠券使用情况'],
+  combo_usage_rate: ['畅销品 Top 5', '哪个菜品类别卖得多', '哪家店业绩最好'],
+  reverse_checkout_stats: ['哪家店业绩最差', '客户评价怎么样', '员工里谁最厉害'],
+  member_consumption: ['储值卡使用', '付款方式占比', '优惠券使用情况'],
+  dish_by_table_type: ['畅销品 Top 5', '哪家店业绩最好', '套餐使用率'],
+};
+
+function relatedFollowups(templateCode?: string): string[] {
+  if (!templateCode) return [];
+  return RELATED_FOLLOWUPS[templateCode] || [];
+}
+
+function triggerRelatedFollowup(query: string) {
+  inputQuery.value = query;
+  handleSendMessage();
+}
+
 async function sendFeedback(msg: ChatMessage, value: 1 | -1) {
   if (!msg.logId) return;
   if (msg.feedbackPending) return;  // in-flight, ignore rapid double-click
@@ -1185,6 +1214,25 @@ function handleKeydown(event: KeyboardEvent) {
                   </el-button>
                 </div>
 
+                <!-- Related follow-ups: 3 cross-dim template-hit queries per code -->
+                <div
+                  v-if="message.role === 'assistant' && !message.loading && !message.streaming && message.source === 'materialized_cache' && relatedFollowups(message.templateCode).length > 0"
+                  class="message-related-followups"
+                >
+                  <span class="related-label">相关追问:</span>
+                  <el-button
+                    v-for="(q, i) in relatedFollowups(message.templateCode)"
+                    :key="i"
+                    size="small"
+                    type="info"
+                    plain
+                    round
+                    @click="triggerRelatedFollowup(q)"
+                  >
+                    {{ q }}
+                  </el-button>
+                </div>
+
                 <!-- Phase 1 (Apr 23 2026): feedback for LLM answers -->
                 <div
                   v-if="message.role === 'assistant' && !message.loading && !message.streaming && message.source !== 'materialized_cache' && message.logId"
@@ -1556,6 +1604,20 @@ function handleKeydown(event: KeyboardEvent) {
     gap: 8px;
     margin-top: 12px;
     flex-wrap: wrap;
+  }
+
+  .message-related-followups {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+
+    .related-label {
+      font-size: 12px;
+      color: var(--el-text-color-secondary, #909399);
+      margin-right: 4px;
+    }
   }
 
   // Phase 1 (Apr 23 2026): feedback for LLM answers
