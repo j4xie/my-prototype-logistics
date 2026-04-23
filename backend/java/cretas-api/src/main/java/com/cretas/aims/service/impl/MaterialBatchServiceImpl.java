@@ -935,6 +935,14 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
             throw new BusinessException("无权操作该批次");
         }
 
+        // W-03 defense (Round 7): reject negative newQuantity before it reaches the
+        // receipt_quantity arithmetic — otherwise it propagated to a DB constraint
+        // and surfaced as a generic 500. Matches the guard in the older
+        // adjustBatchQuantity(4-arg) overload.
+        if (newQuantity == null || newQuantity.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessException("调整后数量不能为负数");
+        }
+
         BigDecimal oldQuantity = batch.getRemainingQuantity();
         BigDecimal adjustment = newQuantity.subtract(oldQuantity);
 

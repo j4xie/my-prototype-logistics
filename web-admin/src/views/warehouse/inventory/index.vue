@@ -148,10 +148,24 @@ async function submitAdjust() {
     return;
   }
 
+  // W-03 fix (Round 7): UI "调整数量" is a delta (正数增加/负数减少). Backend
+  // /material-batches/{id}/adjust takes newQuantity as the final absolute value,
+  // not a delta. Prior FE submitted delta → negative caused backend 500, positive
+  // silently reset batch quantity. Now compute newQuantity = current + delta
+  // client-side and send the final value. Guard negative result to avoid 500 on
+  // out-of-range adjustments.
+  const delta = Number(adjustForm.value.adjustQuantity) || 0;
+  const current = Number(adjustForm.value.currentQuantity) || 0;
+  const newQuantity = current + delta;
+  if (newQuantity < 0) {
+    ElMessage.warning(`调整后数量不能为负 (当前 ${current}, 调整 ${delta}, 结果 ${newQuantity})`);
+    return;
+  }
+
   adjustLoading.value = true;
   try {
     const response = await post(`/${factoryId.value}/material-batches/${adjustForm.value.batchId}/adjust`, {
-      quantity: adjustForm.value.adjustQuantity,
+      quantity: newQuantity,
       reason: adjustForm.value.reason
     });
     if (response.success) {
@@ -380,7 +394,10 @@ function getStatusText(status: string) {
         </el-form-item>
         <el-form-item label="调整数量" required>
           <el-input-number v-model="adjustForm.adjustQuantity" :step="1" style="width: 100%" />
-          <div class="form-tip">正数增加，负数减少</div>
+          <div class="form-tip">
+            正数增加，负数减少 ·
+            调整后数量: <strong>{{ (Number(adjustForm.currentQuantity) || 0) + (Number(adjustForm.adjustQuantity) || 0) }}</strong>
+          </div>
         </el-form-item>
         <el-form-item label="调整原因" required>
           <el-input v-model="adjustForm.reason" type="textarea" :rows="3" placeholder="请输入调整原因" />
