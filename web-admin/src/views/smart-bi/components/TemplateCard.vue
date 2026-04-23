@@ -374,13 +374,19 @@ function enhanceChartOption(option: unknown): unknown {
     }
   }
 
-  // legend: truncate long entries
+  // legend: truncate long entries + scroll-paginate when too many
   if (opt.legend) {
     const legends = Array.isArray(opt.legend) ? opt.legend : [opt.legend];
     for (const lg of legends) {
       if (lg && typeof lg === 'object') {
         if (!lg.formatter) lg.formatter = (name: string) => truncateLabel(name, 10);
         if (lg.textStyle === undefined) lg.textStyle = { overflow: 'truncate', width: 120 };
+        // R15: if series count is high, paginate legend so it doesn't
+        // overflow into chart area (e.g. 时段营业额 with 14+ store/channel
+        // combinations).
+        if (lg.type === undefined && Array.isArray(opt.series) && opt.series.length > 6) {
+          lg.type = 'scroll';
+        }
       }
     }
   }
