@@ -22,6 +22,17 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
         "dish_slow_movers",
         [["菜品", "商品", "产品"], ["滞销", "慢销", "卖得不好", "不好卖", "卖不出去", "末位", "末尾", "垫底", "倒数", "下架", "最差", "最少", "低销"]],
     ),
+    # dish_category_breakdown must precede dish_sales_top_n — when a query
+    # carries a category keyword (类别/品类/分类) it's asking about composition
+    # across categories, not individual dish ranking. Otherwise dish_sales_top_n
+    # would claim it via the broader "菜品 + 卖" pattern (R13 regression).
+    (
+        "dish_category_breakdown",
+        # Apr 24 2026 R13 fix: widened group-2 with "卖"/"多"/"最多" and moved
+        # this block above dish_sales_top_n so category queries route correctly.
+        [["分类", "品类", "类别", "饮品", "主食", "小吃", "啤酒", "套餐"],
+         ["销量", "销售", "占比", "份额", "结构", "卖", "多", "最多"]],
+    ),
     (
         "dish_sales_top_n",
         [["菜品", "商品", "产品"], ["销量", "销售", "卖", "热销", "畅销", "排名", "Top", "最多", "最高"]],
@@ -29,10 +40,6 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
     (
         "dish_time_slot_matrix",
         [["菜品", "商品"], ["时段", "早餐", "午餐", "晚餐", "宵夜", "时间", "小时", "早晚"]],
-    ),
-    (
-        "dish_category_breakdown",
-        [["分类", "品类", "类别", "饮品", "主食", "小吃", "啤酒", "套餐"], ["销量", "销售", "占比", "份额", "结构"]],
     ),
     # dish_by_table_type must precede table_type_comparison — both match 包厢/大厅/外卖
     # keywords, but when the user also mentions 菜品/点单/点菜/偏好, dish drill-down is
@@ -48,9 +55,13 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
     # the channel comparison.
     (
         "revenue_management_report",
-        # "收入管理报表" / "堂食外卖午晚市" / "渠道时段营收"
+        # "收入管理报表" / "堂食外卖午晚市" / "渠道时段营收" / "营收结构报表"
+        # Apr 24 2026 R17 fix: "营收结构报表" previously routed to profit_loss
+        # because profit_loss had "营收结构" in its group-1. Semantically
+        # "营收结构" = revenue breakdown, which this template owns (channel ×
+        # time decomposition). profit_loss is narrowed to P&L-specific terms.
         [["收入管理", "堂食外卖", "堂食午晚", "外卖午晚", "渠道时段", "复合报表",
-          "堂食和外卖", "外卖和堂食"],
+          "堂食和外卖", "外卖和堂食", "营收结构", "收入结构"],
          ["报表", "分析", "占比", "分布", "对比", "午晚市", "午市", "晚市"]],
     ),
     # channel_analysis must precede table_type_comparison. Both can match "外卖
@@ -134,8 +145,12 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
     # W3 财务端补充: profit_loss_statement (not in conflict with earlier patterns)
     (
         "profit_loss_statement",
-        # "利润表" / "营收结构" / "毛利" / "损益"
-        [["利润", "营收结构", "毛利", "净利", "损益", "应收", "实收"], ["报表", "结构", "分析", "多少", "合计", "对比"]],
+        # "利润表" / "毛利" / "净利" / "损益"
+        # Apr 24 2026 R17 fix: removed "营收结构" from group-1 — that phrase is
+        # semantically broader and is now claimed by revenue_management_report.
+        # profit_loss stays on unambiguous P&L-specific terminology.
+        [["利润", "毛利", "净利", "损益", "应收", "实收"],
+         ["报表", "结构", "分析", "多少", "合计", "对比"]],
     ),
     # W3 进销存 (采购入库侧)
     (

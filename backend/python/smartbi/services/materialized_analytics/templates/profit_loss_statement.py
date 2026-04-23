@@ -52,11 +52,12 @@ class ProfitLossStatement(AnalysisTemplate):
 
     sample_queries = [
         "利润表",
-        "营收结构",
         "毛利分析",
         "净利统计",
         "损益对比",
         "应收实收",
+        "到账率",
+        "毛利率",
     ]
 
     @property

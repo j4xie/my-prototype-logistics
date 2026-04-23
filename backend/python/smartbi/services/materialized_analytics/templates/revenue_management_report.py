@@ -103,6 +103,9 @@ class RevenueManagementReport(AnalysisTemplate):
         "渠道时段营收",
         "复合报表",
         "堂食和外卖综合",
+        "营收结构报表",
+        "营收结构分析",
+        "收入结构报表",
     ]
 
     @property
