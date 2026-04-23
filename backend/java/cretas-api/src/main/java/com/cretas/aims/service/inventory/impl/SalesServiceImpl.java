@@ -232,8 +232,19 @@ public class SalesServiceImpl implements SalesService {
 
     @Override
     public PageResponse<SalesOrder> getSalesOrders(String factoryId, int page, int size) {
+        return getSalesOrders(factoryId, null, page, size);
+    }
+
+    @Override
+    public PageResponse<SalesOrder> getSalesOrders(String factoryId, String keyword, int page, int size) {
         PageRequest pageRequest = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<SalesOrder> result = salesOrderRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageRequest);
+        Page<SalesOrder> result;
+        if (keyword != null && !keyword.isBlank()) {
+            // Bug G: keyword search across orderNumber + salesperson + customer.name + remark
+            result = salesOrderRepository.searchByFactoryAndKeyword(factoryId, keyword.trim(), pageRequest);
+        } else {
+            result = salesOrderRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageRequest);
+        }
         return PageResponse.of(result.getContent(), page, size, result.getTotalElements());
     }
 

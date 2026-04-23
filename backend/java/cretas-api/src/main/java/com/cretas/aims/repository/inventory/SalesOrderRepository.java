@@ -43,4 +43,18 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, String> 
      */
     @Query("SELECT MAX(so.orderNumber) FROM SalesOrder so WHERE so.factoryId = :factoryId AND so.orderNumber LIKE :prefix")
     String findMaxOrderNumberByPrefix(@Param("factoryId") String factoryId, @Param("prefix") String prefix);
+
+    /**
+     * Bug G fix: keyword search (qa-prompt v2.3 Rule 12.1).
+     * Searches orderNumber + salesperson + remark (display fields visible in list).
+     * customerName is @Formula and not directly queryable, so we JOIN customer entity.
+     */
+    @Query("SELECT so FROM SalesOrder so LEFT JOIN Customer c ON c.id = so.customerId " +
+            "WHERE so.factoryId = :factoryId AND (" +
+            "LOWER(so.orderNumber) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(COALESCE(so.salesperson, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(COALESCE(c.name, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(COALESCE(so.remark, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))" +
+            ") ORDER BY so.createdAt DESC")
+    Page<SalesOrder> searchByFactoryAndKeyword(@Param("factoryId") String factoryId, @Param("keyword") String keyword, Pageable pageable);
 }
