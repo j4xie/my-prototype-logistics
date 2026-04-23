@@ -590,8 +590,11 @@ class SemanticMapper:
         # Allow optional `分` suffix (e.g. "星级分") and allow any boundary
         if re.search(r'(星级|口味|环境|服务|评)分?(\(|（|\s|$)', col) or \
            re.search(r'(评分|分数|打分|评级)(\(|（|\s|$)', col):
-            # Use "amount_score" — Java isMeasure matches `.*amount.*`
-            return ('amount', 'amount_score', 0.88)
+            # Apr 24 2026: preserve original Chinese col name so review templates'
+            # applies() can resolve "星级"/"口味分"/etc. Python field_classifier
+            # NUMERIC-dtype fallback + explicit measure keywords classify this as
+            # measure without needing the "amount_score" rename shim for Java.
+            return ('amount', col, 0.88)
 
         # Time patterns
         if re.search(
@@ -604,8 +607,9 @@ class SemanticMapper:
 
         # Category — ID/code patterns (numeric but should be dim)
         if re.search(r'(编码|编号|代码|ID|id)$', col):
-            # Use "name" in standard to trigger Java isDimension regex `.*name.*`
-            return ('category', 'id_name', 0.9)
+            # Apr 24 2026: preserve original. field_classifier._ID_LIKE_KEYWORDS
+            # already catches this class + marks is_dimension=true.
+            return ('category', col, 0.9)
 
         # Category — known dimensional patterns (名称/分类/类型/门店/商品/标签)
         if re.search(
@@ -613,8 +617,9 @@ class SemanticMapper:
             r'平台|来源|分组|组别|等级|城市|省份|区域|地区|标签)(\(|（|\s|$)',
             col
         ) and not re.search(r'(金额|数量|率|量|额|分)', col):
-            # Use "category_name" — matches Java `.*(name|category|...).*`
-            return ('category', 'category_name', 0.85)
+            # Apr 24 2026: preserve original. field_classifier._DIMENSION_KEYWORDS
+            # resolves is_dimension regardless of Chinese vs English name.
+            return ('category', col, 0.85)
 
         return None
 

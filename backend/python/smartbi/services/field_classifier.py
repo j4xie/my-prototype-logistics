@@ -76,6 +76,10 @@ _MEASURE_KEYWORDS: Tuple[str, ...] = (
     "总额", "合计额", "折扣额", "优惠额", "折扣率",
     "外送费", "服务费", "小费", "税费", "开发票额",
     "损益额", "损耗",
+    # Apr 24 2026: review rating fields (大众点评 / 美团 Q3/Q4 exports).
+    # These were previously masked because semantic_mapper renamed them to
+    # "amount_score"; preserving Chinese now requires explicit measure rules.
+    "星级", "口味分", "环境分", "服务分",
     # English suffixes
     "amount", "count", "revenue", "profit", "sum", "total", "rate",
 )
