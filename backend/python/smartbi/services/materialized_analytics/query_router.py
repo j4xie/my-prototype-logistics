@@ -267,7 +267,10 @@ _TIME_LIMITER_KEYWORDS = (
     "本月", "本周", "今日", "今天", "昨天", "前天", "当天",
     "上月", "上周", "近一周", "近一月", "近30天", "近7天", "近3天",
     "最近一周", "最近一月", "最近30天", "最近7天", "最近3天",
-    "最后两天", "最后一天", "月末", "月初", "周末",
+    "最后两天", "最后一天", "月末", "月初",
+    # NOTE: "周末" intentionally excluded — it's a dimension for
+    # weekday_weekend_pattern template, not a time filter. "本周末"
+    # pattern for time-scoped query uses "本周" (already listed).
 )
 
 # Regex: 年份(2024/2025) 或 月份(1月-12月) 或 日期(YYYY-MM-DD)
@@ -438,7 +441,7 @@ _KPI_LABEL_MAP: Dict[str, str] = {
     # Monthly anomaly
     "peak_month": "峰值月份",
     "trough_month": "谷值月份",
-    "worst_month": "最差月份",
+    "worst_month": "最大波动月份",
     "best_month": "最佳月份",
     "anomaly_count": "异常月数",
     "worst_mom_delta_pct": "最大波动率",
@@ -735,6 +738,10 @@ _KPI_UNIT_MAP: Dict[str, str] = {
     "dine_in_avg_per_customer": " 元",
     "takeaway_avg_per_customer": " 元",
     "total_channels": " 个",
+    "top_avg_per_order": " 元",
+    "bottom_avg_per_order": " 元",
+    "weekend_order_share": "%",
+    "weekend_revenue_share": "%",
     "latest_revenue": " 元",
     "avg_hall_spend": " 元",
     "avg_vip_spend": " 元",

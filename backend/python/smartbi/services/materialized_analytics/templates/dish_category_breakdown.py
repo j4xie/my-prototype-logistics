@@ -30,6 +30,11 @@ class DishCategoryBreakdown(AnalysisTemplate):
         "饮品主食比例",
         "小吃啤酒销量",
         "菜单品类结构",
+        "哪个菜品类别卖得多",
+        "哪类菜销量最高",
+        "菜品类型对比",
+        "品类销量排名",
+        "主食饮品哪个更好卖",
     ]
 
     @property

@@ -25,6 +25,11 @@ class WeekdayWeekendPattern(AnalysisTemplate):
         "平日周末对比",
         "周末销售情况",
         "工作日营业额",
+        "周末周中对比",
+        "周末周内哪天营业额最高",
+        "周末生意好还是平日",
+        "周末和平时差异",
+        "礼拜几卖得最好",
     ]
 
     @property
