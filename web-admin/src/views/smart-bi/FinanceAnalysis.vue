@@ -61,6 +61,11 @@ type AnalysisType = 'profit' | 'cost' | 'receivable' | 'payable' | 'budget';
 const validTabs: AnalysisType[] = ['profit', 'cost', 'receivable', 'payable', 'budget'];
 const initTab = validTabs.includes(route.query.tab as AnalysisType) ? (route.query.tab as AnalysisType) : 'profit';
 const analysisType = ref<AnalysisType>(initTab);
+// Apr 24 UX: restaurants only see 利润分析 tab (see analysisTypes computed below).
+// If URL had ?tab=cost/receivable/payable/budget, force back to profit.
+if (isRestaurantTenant.value && analysisType.value !== 'profit') {
+  analysisType.value = 'profit';
+}
 
 // 日期范围
 const dateRange = ref<[Date, Date] | null>(null);
@@ -537,13 +542,23 @@ const financePageRef = ref<HTMLElement>();
 let mainChart: echarts.ECharts | null = null;
 
 // 分析类型配置
-const analysisTypes = [
+// Apr 24 UX: for restaurant tenants, only 利润分析 is shown (Gold-backed POS).
+// 成本/应收/应付/预算 tabs all render 0 across the board because Silver has no
+// fact_cost_line (blocked on v2 accounting_import) and restaurants don't have
+// A/R, A/P, or annual budget data sources. Hide instead of showing misleading
+// zeros. Manufacturing tenants continue to see all 5 tabs.
+const allAnalysisTypes = [
   { type: 'profit' as AnalysisType, label: '利润分析', icon: TrendCharts },
   { type: 'cost' as AnalysisType, label: '成本分析', icon: Wallet },
   { type: 'receivable' as AnalysisType, label: '应收分析', icon: Money },
   { type: 'payable' as AnalysisType, label: '应付分析', icon: CreditCard },
   { type: 'budget' as AnalysisType, label: '预算分析', icon: Document }
 ];
+const analysisTypes = computed(() => {
+  return isRestaurantTenant.value
+    ? allAnalysisTypes.filter(t => t.type === 'profit')
+    : allAnalysisTypes;
+});
 
 // Gold-backed 营收/订单/客单价/门店 KPIs for restaurant tenants.
 // Replaces the 毛利润/净利润 legacy row when Silver has no cost data.
@@ -1914,8 +1929,8 @@ onUnmounted(() => {
       </div>
     </el-card>
 
-    <!-- 分析类型切换 -->
-    <el-card class="type-switch-card">
+    <!-- 分析类型切换 (餐饮租户只有利润1个,直接隐藏切换器) -->
+    <el-card v-if="analysisTypes.length > 1" class="type-switch-card">
       <div class="type-switch">
         <div
           v-for="item in analysisTypes"
@@ -1929,6 +1944,19 @@ onUnmounted(() => {
         </div>
       </div>
     </el-card>
+
+    <!-- Apr 24 UX: 餐饮租户 tabs 隐藏说明 -->
+    <el-alert
+      v-else-if="isRestaurantTenant"
+      type="info"
+      :closable="false"
+      show-icon
+      style="margin-bottom: 16px;"
+    >
+      <template #title>
+        餐饮门店财务分析聚焦 <strong>营收与利润</strong>。成本 / 应收 / 应付 / 预算 分析将在 v2 (accounting_import 功能上线后) 加入。
+      </template>
+    </el-alert>
 
     <!-- 加载错误提示 (友好模式：系统不可用时显示 info；真实错误显示 error) -->
     <el-alert

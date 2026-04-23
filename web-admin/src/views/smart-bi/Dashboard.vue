@@ -497,6 +497,15 @@ function savedRangeKey(factoryId: string) {
 // When set, routes through /executive/custom (same Gold-cutover code path).
 const dateRange = ref<[string, string] | null>(null);
 
+// Apr 24 2026 UX fallback: when 本月 is empty AND user didn't pick a range,
+// auto-probe 近90天 → 上年 → 前年 and silently load the first non-empty range.
+// Tag below the picker explains the switch. Pattern mirrors Trends/RestaurantV2.
+const fallbackRangeLabel = ref<string>('');
+const fallbackDateRange = ref<[string, string] | null>(null);
+function savedFallbackKey(factoryId: string) {
+  return `smartbi-dashboard-fallback:${factoryId}`;
+}
+
 const dateRangeShortcuts = [
   {
     text: '本月',
@@ -645,6 +654,54 @@ watch(selectedDataSource, (newSrc) => {
 
 // ==================== API 调用 ====================
 
+// Apr 24 2026 UX fallback helper: probe historical date ranges when current
+// month is empty. Returns true if a non-empty range was loaded into dashboardData.
+// Populates localStorage cache so subsequent visits skip the serial probe.
+async function tryFallbackRanges(): Promise<boolean> {
+  if (!factoryId.value) return false;
+  const y = new Date().getFullYear();
+  const iso = (d: Date): string => d.toISOString().slice(0, 10);
+  const cacheKey = savedFallbackKey(factoryId.value);
+  const cached = (() => {
+    try { return JSON.parse(localStorage.getItem(cacheKey) || 'null') as { s: string; e: string; label: string } | null; }
+    catch { return null; }
+  })();
+
+  const chain: Array<[string, string, string]> = [];
+  if (cached) chain.push([cached.s, cached.e, cached.label]);
+  chain.push(
+    (() => { const e = new Date(); const s = new Date(); s.setDate(s.getDate() - 89); return [iso(s), iso(e), '近90天'] as [string, string, string]; })(),
+    [`${y - 1}-01-01`, `${y - 1}-12-31`, `${y - 1}全年`],
+    [`${y - 2}-01-01`, `${y - 2}-12-31`, `${y - 2}全年`],
+  );
+
+  const seen = new Set<string>();
+  for (const [s, e, label] of chain) {
+    const key = `${s}|${e}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    try {
+      const resp = await get(`/${factoryId.value}/smart-bi/dashboard/executive/custom?startDate=${s}&endDate=${e}`);
+      if (resp.success && resp.data) {
+        const raw = resp.data as Record<string, unknown>;
+        const actualData = (raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data) && raw.code)
+          ? raw.data : raw;
+        const data = actualData as DashboardResponse;
+        const hasReal = (data.kpiCards || []).some(c => c.rawValue != null && c.rawValue !== 0);
+        if (hasReal) {
+          dashboardData.value = data;
+          fallbackRangeLabel.value = label;
+          fallbackDateRange.value = [s, e];
+          if (factoryId.value) putCached(factoryId.value, 'system', data);
+          try { localStorage.setItem(cacheKey, JSON.stringify({ s, e, label })); } catch {}
+          return true;
+        }
+      }
+    } catch { /* try next */ }
+  }
+  return false;
+}
+
 async function loadDashboardData() {
   if (!factoryId.value) {
     ElMessage.warning('未获取到工厂ID，请重新登录');
@@ -688,16 +745,23 @@ async function loadDashboardData() {
           (c && 'data' in c && Array.isArray(c.data) && c.data.length > 0)
         );
 
-      // Apr 24 2026 UX P0-2/P0-3 fix: disable auto-switch to uploads entirely.
-      // Rationale: Gold-backed 本月 KPI returning empty for restaurant tenants
-      // with 2025-only historical data is the correct empty state. Previous
-      // behavior auto-picked the first upload (often a 3-row smoke Excel like
-      // gamma1c-smoke.xlsx) and rendered its 4,500/1.6万 KPI + raw ID labels
-      // (1001.0/1002.0) + staff names (李四/王五) as "dashboard KPIs" — which
-      // mislead users into thinking those were real business figures.
-      // Empty state + LLM insight "当前时间范围内暂无销售数据,请调整时间范围"
-      // is the honest UX. User can manually pick an upload from the dropdown.
-      void hasRealKpi; void hasCharts;  // (kept signals in case of future re-enable)
+      // Apr 24 2026 UX P0-2/P0-3 fix: never auto-switch to uploads — picking a
+      // random smoke Excel (e.g. gamma1c with 李四/王五/1001.0) as "dashboard
+      // KPIs" is misleading. Apr 24 UX continuation: instead, when 本月 is
+      // empty AND user hasn't picked a range, silently probe 近90天 → 上年 →
+      // 前年 to show genuine historical Gold data (same fallback pattern as
+      // Trends/RestaurantV2 KPI strip). A warning tag explains the switch.
+      void hasCharts;
+      if (!dateRange.value && !hasRealKpi) {
+        const ok = await tryFallbackRanges();
+        if (!ok) {
+          fallbackRangeLabel.value = '';
+          fallbackDateRange.value = null;
+        }
+      } else {
+        fallbackRangeLabel.value = '';
+        fallbackDateRange.value = null;
+      }
 
       // Async load LLM insights (non-blocking, renders after KPIs+charts)
       loadLLMInsights();
@@ -730,8 +794,12 @@ async function loadLLMInsights() {
     // month's sales). The custom path requires SMARTBI_AGENT_LAYER_ENABLED=true
     // on the Python side; if disabled, it returns empty and UI just shows
     // whatever aiInsights the dashboard payload already carried.
-    const insightsUrl = dateRange.value
-      ? `/${factoryId.value}/smart-bi/dashboard/executive/insights/custom?startDate=${dateRange.value[0]}&endDate=${dateRange.value[1]}`
+    // Apr 24 UX: if KPI fallback activated (本月 empty → historical range),
+    // fetch insights for the SAME range. Otherwise insights say "本月无数据"
+    // while KPI strip shows ¥20M — inconsistent.
+    const effectiveRange = dateRange.value || fallbackDateRange.value;
+    const insightsUrl = effectiveRange
+      ? `/${factoryId.value}/smart-bi/dashboard/executive/insights/custom?startDate=${effectiveRange[0]}&endDate=${effectiveRange[1]}`
       : `/${factoryId.value}/smart-bi/dashboard/executive/insights?period=month`;
     const res = await get(insightsUrl, { timeout: 120000, signal });
     // Guard: if user switched data source during await, discard stale result
@@ -1406,7 +1474,8 @@ onUnmounted(() => {
             clearable
             @change="onDateRangeChange"
           />
-          <span v-if="!dateRange && selectedDataSource === 'system'" class="datasource-meta" style="margin-left: 8px;">默认: 本月</span>
+          <span v-if="!dateRange && selectedDataSource === 'system' && !fallbackRangeLabel" class="datasource-meta" style="margin-left: 8px;">默认: 本月</span>
+          <span v-else-if="!dateRange && selectedDataSource === 'system' && fallbackRangeLabel" class="datasource-meta" style="margin-left: 8px; color: #E6A23C;">本月无数据 · 显示 {{ fallbackRangeLabel }}</span>
           <span v-else-if="selectedDataSource !== 'system'" class="datasource-meta" style="margin-left: 8px;">(选择范围将返回系统视图)</span>
         </div>
         <el-tag v-if="selectedDataSource && selectedDataSource !== 'system'" type="success" size="small">来自上传数据</el-tag>
@@ -1456,6 +1525,19 @@ onUnmounted(() => {
       :showAction="canUpload"
       @action="goToUpload"
     />
+
+    <!-- Apr 24 UX: fallback-range notice (本月 empty, auto-switched to historical) -->
+    <el-alert
+      v-if="fallbackRangeLabel && !dateRange && !loading"
+      type="warning"
+      :closable="false"
+      show-icon
+      style="margin-bottom: 12px;"
+    >
+      <template #title>
+        本月暂无销售数据,已自动显示 <strong>{{ fallbackRangeLabel }}</strong> 的历史数据。如需查看其他区间,请使用上方时间范围选择器。
+      </template>
+    </el-alert>
 
     <!-- KPI 卡片区 -->
     <el-row v-if="loading && !kpiData.totalRevenue" :gutter="16" class="kpi-section" aria-label="KPI指标加载中">
