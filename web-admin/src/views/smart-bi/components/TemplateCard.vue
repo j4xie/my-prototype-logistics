@@ -338,6 +338,14 @@ function enhanceChartOption(option: unknown): unknown {
     opt.tooltip.valueFormatter = (v: unknown) => fmtNum(v);
   }
 
+  // R14: auto-hide overlapping bar/line labels (grouped bar charts
+  // emit 2+ labels at nearby positions, they collide). hideOverlap
+  // keeps the higher-z label and drops the others; tooltip still
+  // shows full values on hover.
+  if (!opt.labelLayout) {
+    opt.labelLayout = { hideOverlap: true };
+  }
+
   // Series-level bar/line label + pie label — truncate + format numbers
   const series = Array.isArray(opt.series) ? opt.series : opt.series ? [opt.series] : [];
   for (const s of series) {
