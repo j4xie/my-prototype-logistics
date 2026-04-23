@@ -510,14 +510,26 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponse<?> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
         log.warn("请求体解析失败: {}", e.getMessage());
-        // PR1.5 O4: friendly message for common Jackson date/datetime parse errors
-        // Pattern e.g.: "Cannot deserialize value of type `java.time.LocalDate` from String \"TODAY\""
+        // PR1.5 O4 (revised QA Round 6): broader Jackson date error detection.
+        // Patterns covered:
+        //   - "Cannot deserialize value of type `java.time.LocalDate` from String \"TODAY\""
+        //   - "JSON parse error: Text 'NOT_A_DATE' could not be parsed at index 0"
+        //   - DateTimeParseException class name in stack
         String msg = e.getMessage() == null ? "" : e.getMessage();
-        if (msg.contains("java.time.LocalDate") || msg.contains("java.time.LocalDateTime")) {
-            // extract problematic value if present
-            java.util.regex.Matcher m = java.util.regex.Pattern
+        boolean isDateError = msg.contains("java.time.LocalDate") || msg.contains("java.time.LocalDateTime")
+            || msg.contains("DateTimeParseException") || msg.contains("could not be parsed at index");
+        if (isDateError) {
+            // extract problematic value: try double-quote pattern first, then single-quote
+            String badValue = "";
+            java.util.regex.Matcher dq = java.util.regex.Pattern
                 .compile("from String \"([^\"]+)\"").matcher(msg);
-            String badValue = m.find() ? m.group(1) : "";
+            if (dq.find()) {
+                badValue = dq.group(1);
+            } else {
+                java.util.regex.Matcher sq = java.util.regex.Pattern
+                    .compile("Text '([^']+)' could not be parsed").matcher(msg);
+                if (sq.find()) badValue = sq.group(1);
+            }
             String fieldHint = badValue.isEmpty() ? "" : "（值: \"" + badValue + "\"）";
             return ApiResponse.error(400, "日期格式不正确" + fieldHint + "，请重新选择日期");
         }
