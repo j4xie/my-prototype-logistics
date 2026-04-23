@@ -76,8 +76,12 @@ function handleChange(val: string | number | null) {
 }
 
 onMounted(() => {
-  // 初始加载，显示已有选项
-  search('')
+  // Spec §4.A.8 — Skip empty-keyword initial fetch (some backends reject @NotBlank).
+  // User-typed keyword triggers search via :remote-method on el-select.
+  // If existing value present, fetch by it so display label populates.
+  if (props.modelValue) {
+    search(String(props.modelValue))
+  }
 })
 </script>
 
