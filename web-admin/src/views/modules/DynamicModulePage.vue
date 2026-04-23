@@ -48,6 +48,24 @@ if (typeof window !== 'undefined') {
 const loading = ref(false)
 const pagination = ref({ page: 1, size: 20, total: 0 })
 
+// Bug G fix (qa-prompt v2.3 Rule 12.1): keyword search input
+const searchKeyword = ref('')
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+function onSearchInput(val: string) {
+  searchKeyword.value = val
+  // debounce 300ms
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    pagination.value.page = 1
+    loadTableData()
+  }, 300)
+}
+function resetSearch() {
+  searchKeyword.value = ''
+  pagination.value.page = 1
+  loadTableData()
+}
+
 // Tab 布局配置（来自 layoutConfig.tabs）
 const layoutTabs = computed(() => {
   if (!config.value) return []
@@ -69,9 +87,10 @@ async function loadTableData() {
   if (!factoryId.value || !apiPath.value) return
   loading.value = true
   try {
-    const res = await request.get(`/${factoryId.value}/${apiPath.value}`, {
-      params: { page: pagination.value.page, size: pagination.value.size },
-    })
+    // Bug G: include keyword for search-supporting endpoints
+    const params: Record<string, unknown> = { page: pagination.value.page, size: pagination.value.size }
+    if (searchKeyword.value) params.keyword = searchKeyword.value
+    const res = await request.get(`/${factoryId.value}/${apiPath.value}`, { params })
     const data = res.data
     if (Array.isArray(data)) {
       tableData.value = data
@@ -186,6 +205,22 @@ onMounted(() => {
 
     <!-- 列表视图 -->
     <template v-if="currentView === 'list' && config">
+      <!-- Bug G fix: keyword search bar (qa-prompt v2.3 Rule 12.1) -->
+      <div class="dynamic-search-bar">
+        <el-input
+          :model-value="searchKeyword"
+          placeholder="搜索关键字 (订单号/客户/编号 等)"
+          clearable
+          style="width: 320px"
+          @update:model-value="onSearchInput"
+          @clear="resetSearch"
+        >
+          <template #prefix>
+            <el-icon><svg viewBox="0 0 1024 1024" width="14" height="14"><path fill="currentColor" d="M795.904 750.72l124.992 124.928a32 32 0 01-45.248 45.248L750.656 795.904a416 416 0 1145.248-45.248zM480 832a352 352 0 100-704 352 352 0 000 704z"/></svg></el-icon>
+          </template>
+        </el-input>
+        <el-button v-if="searchKeyword" @click="resetSearch">重置</el-button>
+      </div>
       <SchemaTableRenderer
         :fields="config.fields"
         :workflow-transitions="config.workflowTransitions"
@@ -298,5 +333,11 @@ onMounted(() => {
 }
 .back-btn:hover {
   text-decoration: underline;
+}
+.dynamic-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 </style>
