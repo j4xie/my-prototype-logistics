@@ -169,72 +169,170 @@ async def get_discount_breakdown(
         raise HTTPException(status_code=500, detail=f"Gold query failed: {e}")
 
 
+async def _query_analysis_results_batch(
+    pool,
+    factory_id: str,
+    template_codes: list,
+    upload_id: Optional[int],
+) -> dict:
+    """Core batch resolver used by the /analysis-results endpoint.
+
+    Split out as a module-level helper so unit tests can exercise the
+    query shape directly (FastAPI request/response handling is separate).
+
+    Returns dict with:
+      - items: list of template rows (one per code that resolved)
+      - missing_codes: codes not found in the pinned upload_id (only
+        populated when upload_id is given)
+      - never_materialized_codes: codes with zero rows in the entire
+        smart_bi_pg_analysis_results for this factory
+    """
+    if not template_codes:
+        return {"items": [], "missing_codes": [], "never_materialized_codes": []}
+
+    async with pool.acquire() as conn:
+        if upload_id is not None:
+            # Strict: only this upload. Codes not in upload → missing_codes.
+            rows = await conn.fetch(
+                """
+                SELECT r.upload_id, r.template_code, r.domain, r.analysis_type,
+                       r.analysis_result, r.chart_configs, r.kpi_values,
+                       r.insights, r.created_at,
+                       u.file_name  AS upload_label,
+                       u.created_at AS upload_created_at
+                  FROM smart_bi_pg_analysis_results r
+                  JOIN smart_bi_pg_excel_uploads u ON u.id = r.upload_id
+                 WHERE r.factory_id    = $1
+                   AND r.upload_id     = $2
+                   AND r.template_code = ANY($3)
+                """,
+                factory_id, upload_id, template_codes,
+            )
+            items = [_row_to_result(r) for r in rows]
+            found = {i["template_code"] for i in items}
+            # Among requested codes: found-in-upload vs not-found-in-upload vs never-seen.
+            ever_seen_rows = await conn.fetch(
+                """
+                SELECT DISTINCT template_code
+                  FROM smart_bi_pg_analysis_results
+                 WHERE factory_id    = $1
+                   AND template_code = ANY($2)
+                """,
+                factory_id, template_codes,
+            )
+            ever_seen = {r["template_code"] for r in ever_seen_rows}
+            missing = sorted(ever_seen - found)
+            never = sorted(set(template_codes) - ever_seen)
+            return {
+                "items": items,
+                "missing_codes": missing,
+                "never_materialized_codes": never,
+            }
+
+        # resolve_latest: DISTINCT ON per code, ordered by created_at DESC.
+        rows = await conn.fetch(
+            """
+            SELECT DISTINCT ON (r.template_code)
+                   r.upload_id, r.template_code, r.domain, r.analysis_type,
+                   r.analysis_result, r.chart_configs, r.kpi_values,
+                   r.insights, r.created_at,
+                   u.file_name  AS upload_label,
+                   u.created_at AS upload_created_at
+              FROM smart_bi_pg_analysis_results r
+              JOIN smart_bi_pg_excel_uploads u ON u.id = r.upload_id
+             WHERE r.factory_id    = $1
+               AND r.template_code = ANY($2)
+             ORDER BY r.template_code, r.created_at DESC
+            """,
+            factory_id, template_codes,
+        )
+        items = [_row_to_result(r) for r in rows]
+        found = {i["template_code"] for i in items}
+        never = sorted(set(template_codes) - found)
+        return {
+            "items": items,
+            "missing_codes": [],
+            "never_materialized_codes": never,
+        }
+
+
 @router.get("/analysis-results")
 async def get_analysis_results(
-    upload_id: int = Query(..., description="SmartBI upload id whose results we want"),
-    template_code: Optional[str] = Query(None, description="Single template, omit for all"),
+    upload_id: Optional[int] = Query(None, description="Pin to one upload; omit to resolve latest per code"),
+    template_code: Optional[str] = Query(None, description="Single template; alias for template_codes=<code>"),
+    template_codes: Optional[str] = Query(None, description="CSV of template codes (1..20)"),
     factory_id: Optional[str] = Query(None, description="belt-and-suspenders; defaults to JWT tenant"),
 ):
     """Read materialized template results from smart_bi_pg_analysis_results.
 
-    Week 6 entry point for Finance/Trend/Inventory/Cost Vue pages to read
-    pre-computed results instead of running live SQL aggregates. Rows
-    populate automatically after excel_async's schedule_materialization()
-    fires per upload.
+    Query modes:
+    - template_codes=<csv> : batch. Resolves per-code "latest upload where
+      this code exists" unless upload_id is also given.
+    - template_code=<single> : legacy single-result variant. Alias for
+      template_codes=<single>.
+    - upload_id=<id> without codes : list all templates for that upload
+      (legacy; still supported).
 
-    Shape when template_code given:
-      {
-        "upload_id", "template_code", "domain", "analysis_type",
-        "analysis_result", "chart_configs", "kpi_values", "insights",
-        "created_at"
-      }
-    Shape when template_code omitted: `{"items": [ {...}, ... ]}`.
-
-    Returns 404 if no matching row — caller should fall back to live
-    query (legacy path) so FE never breaks on pre-materialize uploads.
+    Response shape (batch):
+      { items: [...], missing_codes: [...], never_materialized_codes: [...] }
+    Response shape (legacy single-template, found):
+      { upload_id, template_code, domain, ..., upload_label }
+    Response shape (legacy single-template, not found):
+      404
     """
     fid = _resolve_tenant(factory_id)
     pool = await get_pg_pool()
+
+    # Normalize: template_code → template_codes
+    codes_list: list = []
+    if template_codes:
+        codes_list = [c.strip() for c in template_codes.split(",") if c.strip()]
+    elif template_code:
+        codes_list = [template_code.strip()]
+
+    if codes_list:
+        if len(codes_list) > 20:
+            raise HTTPException(
+                status_code=400,
+                detail=f"template_codes max 20 per call, got {len(codes_list)}",
+            )
+        try:
+            return await _query_analysis_results_batch(
+                pool, fid, codes_list, upload_id,
+            )
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.exception("analysis-results batch failed: %s", e)
+            raise HTTPException(status_code=500, detail=f"Analysis read failed: {e}")
+
+    # Legacy: upload_id without codes → list all templates for the upload.
+    if upload_id is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide template_codes= or upload_id=",
+        )
     try:
         async with pool.acquire() as conn:
-            if template_code:
-                row = await conn.fetchrow(
-                    """
-                    SELECT upload_id, template_code, domain, analysis_type,
-                           analysis_result, chart_configs, kpi_values,
-                           insights, created_at
-                      FROM smart_bi_pg_analysis_results
-                     WHERE factory_id   = $1
-                       AND upload_id    = $2
-                       AND template_code = $3
-                    """,
-                    fid, upload_id, template_code,
-                )
-                if row is None:
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"No materialized result for upload={upload_id} template={template_code}",
-                    )
-                return _row_to_result(row)
-
             rows = await conn.fetch(
                 """
-                SELECT upload_id, template_code, domain, analysis_type,
-                       analysis_result, chart_configs, kpi_values,
-                       insights, created_at
-                  FROM smart_bi_pg_analysis_results
-                 WHERE factory_id = $1
-                   AND upload_id  = $2
-                   AND template_code IS NOT NULL
-                 ORDER BY template_code
+                SELECT DISTINCT ON (r.template_code)
+                       r.upload_id, r.template_code, r.domain, r.analysis_type,
+                       r.analysis_result, r.chart_configs, r.kpi_values,
+                       r.insights, r.created_at,
+                       u.file_name AS upload_label, u.created_at AS upload_created_at
+                  FROM smart_bi_pg_analysis_results r
+                  JOIN smart_bi_pg_excel_uploads u ON u.id = r.upload_id
+                 WHERE r.factory_id = $1
+                   AND r.upload_id  = $2
+                   AND r.template_code IS NOT NULL
+                 ORDER BY r.template_code, r.created_at DESC
                 """,
                 fid, upload_id,
             )
             return {"items": [_row_to_result(r) for r in rows]}
-    except HTTPException:
-        raise
     except Exception as e:
-        logger.exception("analysis-results failed: %s", e)
+        logger.exception("analysis-results by-upload failed: %s", e)
         raise HTTPException(status_code=500, detail=f"Analysis read failed: {e}")
 
 
@@ -250,6 +348,10 @@ def _row_to_result(row) -> dict:
             except ValueError:
                 return v
         return v
+
+    def _iso(dt):
+        return dt.isoformat() if dt is not None else None
+
     return {
         "upload_id": int(row["upload_id"]),
         "template_code": row["template_code"],
@@ -259,7 +361,11 @@ def _row_to_result(row) -> dict:
         "chart_configs": _j(row["chart_configs"]),
         "kpi_values": _j(row["kpi_values"]),
         "insights": _j(row["insights"]),
-        "created_at": row["created_at"].isoformat() if row["created_at"] else None,
+        "created_at": _iso(row["created_at"]),
+        # upload_label + upload_created_at may not exist for the old
+        # single-template caller path. Use row.get()-style access via try.
+        "upload_label": row["upload_label"] if "upload_label" in row.keys() else None,
+        "upload_created_at": _iso(row["upload_created_at"]) if "upload_created_at" in row.keys() else None,
     }
 
 
