@@ -304,7 +304,44 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"[startup] template embedding warmer failed: {e}")
 
+    # Agent layer narrative_cache TTL pruner — hourly background task.
+    # Gated on SMARTBI_AGENT_LAYER_ENABLED so disabled tenants don't touch the table.
+    _narrative_pruner_task = None
+    if os.getenv("SMARTBI_AGENT_LAYER_ENABLED", "").lower() in ("1", "true", "yes"):
+        try:
+            import asyncio as _asyncio
+            from smartbi.agent.narrative_cache import NarrativeCacheService
+            from smartbi.config import get_pg_pool as _get_pg_pool
+
+            async def _prune_narrative_cache_forever():
+                # First tick delayed 60s to let pool/warmers settle post-startup.
+                await _asyncio.sleep(60)
+                while True:
+                    try:
+                        pool = await _get_pg_pool()
+                        svc = NarrativeCacheService(pool)
+                        deleted = await svc.prune_expired()
+                        if deleted > 0:
+                            logger.info(f"[narrative-cache] pruned {deleted} expired rows")
+                    except Exception as ex:
+                        logger.warning(f"[narrative-cache] prune failed: {ex}")
+                    # 1 hour between prunes — cache TTL is 24h, so max stale window is ~1h.
+                    await _asyncio.sleep(3600)
+
+            _narrative_pruner_task = _asyncio.create_task(_prune_narrative_cache_forever())
+            logger.info("[startup] narrative_cache hourly pruner armed")
+        except Exception as e:
+            logger.warning(f"[startup] narrative_cache pruner init failed: {e}")
+
     yield
+
+    # Shutdown: cancel narrative_cache pruner task
+    if _narrative_pruner_task is not None:
+        _narrative_pruner_task.cancel()
+        try:
+            await _narrative_pruner_task
+        except Exception:
+            pass
 
     # Shutdown: close shared LLM HTTP client
     try:
