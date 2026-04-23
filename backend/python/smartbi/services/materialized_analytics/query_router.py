@@ -523,6 +523,9 @@ _KPI_LABEL_MAP: Dict[str, str] = {
     "card_orders": "储值卡订单",
     "card_revenue": "储值卡收入",
     "card_share_pct": "储值卡占比",
+    "card_total": "储值卡总额",
+    "card_orders": "储值卡订单",
+    "card_usage_rate_pct": "储值卡使用率",
     # Member consumption
     "member_revenue": "会员营收",
     "member_orders": "会员订单",
@@ -747,6 +750,7 @@ _KPI_UNIT_MAP: Dict[str, str] = {
     "weekend_order_share": "%",
     "weekend_revenue_share": "%",
     "labels_for_80pct_share": "%",
+    "card_total": " 元",
     "latest_revenue": " 元",
     "avg_hall_spend": " 元",
     "avg_vip_spend": " 元",

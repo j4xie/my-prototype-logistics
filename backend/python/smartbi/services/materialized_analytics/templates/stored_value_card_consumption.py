@@ -116,7 +116,7 @@ class StoredValueCardConsumption(AnalysisTemplate):
                 kpis={
                     "card_orders": 0,
                     "card_total": 0.0,
-                    "usage_rate_pct": 0.0,
+                    "card_usage_rate_pct": 0.0,
                 },
                 insight_text=(
                     f"全部 {total_orders} 笔订单均未使用储值卡消费。"
@@ -242,7 +242,7 @@ class StoredValueCardConsumption(AnalysisTemplate):
             kpis={
                 "card_orders": card_orders,
                 "card_total": round(card_total, 2),
-                "usage_rate_pct": usage_rate_pct,
+                "card_usage_rate_pct": usage_rate_pct,
                 "share_of_revenue_pct": share_of_revenue_pct,
                 "top_store": by_store[0]["store"] if by_store else None,
             },
