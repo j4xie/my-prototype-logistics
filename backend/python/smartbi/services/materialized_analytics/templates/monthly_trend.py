@@ -85,7 +85,7 @@ class MonthlyTrend(AnalysisTemplate):
             data={"series": series, "freq": freq_used},
             chart_config=chart_config,
             kpis={
-                "total": total,
+                "total_revenue": total,
                 "peak_period": peak["period"],
                 "peak_value": peak["total"],
                 "trough_period": trough["period"],

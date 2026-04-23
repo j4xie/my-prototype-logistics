@@ -442,6 +442,7 @@ _KPI_LABEL_MAP: Dict[str, str] = {
     "peak_month": "峰值月份",
     "trough_month": "谷值月份",
     "worst_month": "最大波动月份",
+    "strategy": "策略",
     "best_month": "最佳月份",
     "anomaly_count": "异常月数",
     "worst_mom_delta_pct": "最大波动率",
