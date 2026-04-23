@@ -29,6 +29,14 @@ from .registry import register
 _SHIFT_COL = "班次"
 _OPEN_TIME_CANDIDATES = ("开单时间", "下单时间", "点单时间", "结单时间")
 _REVENUE_CANDIDATES = ("实收额", "实收", "营业额", "应收金额")
+
+# Meta-rows to drop before aggregation — otherwise '合计' row's pre-summed
+# revenue gets accumulated into (channel=其他, slot=未知) cell and balloons
+# totals to 2-4× reality. Same labels as PolarsBackend._META_LABELS.
+_META_ROW_LABELS = {
+    '合计', '总计', '小计', '汇总', '总额', '总数',
+    'Total', 'TOTAL', 'total', 'Sum', 'SUM', 'sum',
+}
 _SAMPLE_CAP = 500_000
 
 # Expected channel order (for stable display)
@@ -147,6 +155,11 @@ class RevenueManagementReport(AnalysisTemplate):
         customers: Dict[tuple, float] = defaultdict(float)
 
         for row in rows:
+            # Skip meta-rows (合计/总计/小计) — their pre-summed revenue
+            # would otherwise inflate the cross-tab totals by 2-4×.
+            table_val = row.get(table_col)
+            if table_val is not None and str(table_val).strip() in _META_ROW_LABELS:
+                continue
             channel = _derive_channel(classify_table(row.get(table_col)))
             slot = _derive_time_slot(
                 row.get(_SHIFT_COL),
