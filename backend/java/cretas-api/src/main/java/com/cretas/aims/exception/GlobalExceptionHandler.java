@@ -691,10 +691,11 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(org.springframework.web.context.request.async.AsyncRequestNotUsableException.class)
     @ResponseStatus(HttpStatus.OK)
-    public ApiResponse<?> handleAsyncRequestNotUsable(
+    public void handleAsyncRequestNotUsable(
             org.springframework.web.context.request.async.AsyncRequestNotUsableException e) {
+        // SSE (text/event-stream) 不支持 ApiResponse JSON 序列化, 返 void 不写 body 避免
+        // HttpMessageNotWritableException 二次噪音. 客户端已断连, 写什么也没人读.
         log.warn("Async 请求通道已关闭 (客户端断开): {}", e.getMessage());
-        return ApiResponse.error(499, "client aborted async request");
     }
 
     /**
