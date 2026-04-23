@@ -19,6 +19,11 @@ class MonthlyTrend(AnalysisTemplate):
         "按月增长",
         "营业额变化",
         "月份趋势线",
+        "营收最高的月份",
+        "哪个月营业额最高",
+        "峰值月份",
+        "最旺的月份",
+        "月度销售排名",
     ]
 
     @property
@@ -88,8 +93,8 @@ class MonthlyTrend(AnalysisTemplate):
                 "period_count": len(series),
             },
             insight_text=(
-                f"{measure} 累计 {total:,.0f},峰值 {peak['period']} "
-                f"({peak['total']:,.0f}),谷值 {trough['period']} "
-                f"({trough['total']:,.0f})。"
+                f"{measure} 累计 {total:,.0f} 元,峰值 {peak['period']} "
+                f"({peak['total']:,.0f} 元),谷值 {trough['period']} "
+                f"({trough['total']:,.0f} 元)。按{ {'D':'日','W':'周','M':'月'}.get(freq_used, freq_used) }聚合,共 {len(series)} 个周期。"
             ),
         )
