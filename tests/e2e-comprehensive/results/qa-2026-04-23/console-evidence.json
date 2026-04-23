@@ -1,0 +1,87 @@
+{
+  "meta": {
+    "url": "https://admin.cretaceousfuture.com",
+    "startedAt": "2026-04-23T19:08:22.352Z"
+  },
+  "summary": {
+    "/smart-bi/dashboard": {
+      "errors": 0,
+      "warnings": 0,
+      "pageErrors": 0,
+      "failedNet": 0,
+      "http4xx5xx": 0
+    },
+    "/smart-bi/finance": {
+      "errors": 0,
+      "warnings": 0,
+      "pageErrors": 0,
+      "failedNet": 0,
+      "http4xx5xx": 0
+    },
+    "/smart-bi/restaurant-v2": {
+      "errors": 0,
+      "warnings": 0,
+      "pageErrors": 0,
+      "failedNet": 0,
+      "http4xx5xx": 0
+    },
+    "/analytics/trends": {
+      "errors": 0,
+      "warnings": 0,
+      "pageErrors": 0,
+      "failedNet": 0,
+      "http4xx5xx": 0
+    },
+    "/sales/orders": {
+      "errors": 0,
+      "warnings": 0,
+      "pageErrors": 0,
+      "failedNet": 0,
+      "http4xx5xx": 0
+    }
+  },
+  "detail": {
+    "login": {
+      "errors": [],
+      "warnings": [],
+      "pageErrors": [],
+      "failedNet": [],
+      "all4xx5xx": []
+    },
+    "/smart-bi/dashboard": {
+      "errors": [],
+      "warnings": [],
+      "pageErrors": [],
+      "failedNet": [],
+      "all4xx5xx": []
+    },
+    "/smart-bi/finance": {
+      "errors": [],
+      "warnings": [],
+      "pageErrors": [],
+      "failedNet": [],
+      "all4xx5xx": []
+    },
+    "/smart-bi/restaurant-v2": {
+      "errors": [],
+      "warnings": [],
+      "pageErrors": [],
+      "failedNet": [],
+      "all4xx5xx": []
+    },
+    "/analytics/trends": {
+      "errors": [],
+      "warnings": [],
+      "pageErrors": [],
+      "failedNet": [],
+      "all4xx5xx": []
+    },
+    "/sales/orders": {
+      "errors": [],
+      "warnings": [],
+      "pageErrors": [],
+      "failedNet": [],
+      "all4xx5xx": []
+    }
+  }
+}
