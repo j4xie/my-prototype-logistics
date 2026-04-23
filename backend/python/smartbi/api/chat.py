@@ -1722,13 +1722,21 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                     total_wall_ms=int((time.time() - start_time) * 1000),
                     llm_wall_ms=int((time.time() - start_time) * 1000),
                 )
-                _log_task = asyncio.create_task(log_fallback(_log_pool, _log_payload))
+                # Anchor task in materialized_analytics._PENDING_BG_TASKS to
+                # survive function return. Python's event loop only keeps weak
+                # refs to tasks — without this, the task can be GC'd mid-write
+                # after the 2s wait_for timeout. Same bug class as Apr 23 2026
+                # reclassify warm.
+                from smartbi.api.materialized_analytics import _spawn_bg
+                _log_task = _spawn_bg(log_fallback(_log_pool, _log_payload))
                 try:
                     _log_id = await asyncio.wait_for(asyncio.shield(_log_task), timeout=2.0)
-                except (asyncio.TimeoutError, Exception):
+                except Exception:
                     _log_id = None
             except Exception as log_err:
-                logger.debug(f"[stream] fallback log skipped: {log_err}")
+                # WARNING (not DEBUG) because this fires when DashScope or DB
+                # is down — we want these in monitoring, not silent.
+                logger.warning(f"[stream] fallback log skipped: {log_err}")
 
             yield _sse_event("done", {
                 "success": True,
