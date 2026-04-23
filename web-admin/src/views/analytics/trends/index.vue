@@ -5,6 +5,7 @@ import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import echarts from '@/utils/echarts';
 import TemplateGrid from '@/views/smart-bi/components/TemplateGrid.vue';
+import { getDailyTrend, type DailyTrend } from '@/api/smartbi/gold';
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
@@ -30,7 +31,9 @@ let resizeRaf = 0;
 const periodOptions = [
   { label: '近7天', value: 'week' },
   { label: '近30天', value: 'month' },
-  { label: '近90天', value: 'quarter' }
+  { label: '近90天', value: 'quarter' },
+  { label: '2025全年', value: 'y2025' },
+  { label: '2024全年', value: 'y2024' },
 ];
 
 // Apr 21 2026: detect empty state to show CTA pointing users to AI 问答
@@ -53,9 +56,83 @@ const isEmptyAll = computed(() => {
 
 let resizeObserver: ResizeObserver | null = null;
 
+// v1.2 Week 9 Gold flip (趋势): restaurant tenants see POS-derived
+// revenue+orders trend backed by /gold/daily-trend. Manufacturing tenants
+// get empty points → the section hides and legacy production charts show.
+const goldTrend = ref<DailyTrend | null>(null);
+let goldRevenueChart: echarts.ECharts | null = null;
+
+function _periodToDateRange(period: string): [string, string] {
+  const iso = (d: Date): string => d.toISOString().slice(0, 10);
+  if (period === 'y2025') return ['2025-01-01', '2025-12-31'];
+  if (period === 'y2024') return ['2024-01-01', '2024-12-31'];
+  const end = new Date();
+  const start = new Date();
+  const days = period === 'week' ? 7 : period === 'quarter' ? 90 : 30;
+  start.setDate(start.getDate() - (days - 1));
+  return [iso(start), iso(end)];
+}
+
+async function loadGoldTrend() {
+  if (!factoryId.value) return;
+  const [s, e] = _periodToDateRange(selectedPeriod.value);
+  try {
+    const resp = await getDailyTrend({
+      factoryId: factoryId.value,
+      startDate: s,
+      endDate: e,
+    });
+    goldTrend.value = resp && resp.points && resp.points.length > 0 ? resp : null;
+    updateGoldChart();
+  } catch (err) {
+    // Silently hide Gold section on failure; legacy UI still works.
+    goldTrend.value = null;
+  }
+}
+
+function updateGoldChart() {
+  if (!goldRevenueChart || !goldTrend.value) return;
+  const pts = goldTrend.value.points;
+  goldRevenueChart.setOption({
+    title: { text: 'POS 营收趋势 (Gold)', left: 'center', textStyle: { fontSize: 14 } },
+    tooltip: { trigger: 'axis', confine: true },
+    legend: { data: ['营收', '订单数'], top: 24 },
+    grid: { top: 60, left: 60, right: 60, bottom: 40 },
+    xAxis: { type: 'category', data: pts.map(p => p.date) },
+    yAxis: [
+      { type: 'value', name: '营收', axisLabel: { formatter: (v: number) => v >= 10000 ? `${(v / 10000).toFixed(1)}万` : String(v) } },
+      { type: 'value', name: '订单数' },
+    ],
+    series: [
+      {
+        name: '营收',
+        type: 'line',
+        smooth: true,
+        areaStyle: { opacity: 0.3 },
+        itemStyle: { color: '#67C23A' },
+        data: pts.map(p => Number(p.revenue)),
+      },
+      {
+        name: '订单数',
+        type: 'line',
+        yAxisIndex: 1,
+        smooth: true,
+        itemStyle: { color: '#E6A23C' },
+        data: pts.map(p => p.billCount),
+      },
+    ],
+  });
+}
+
 onMounted(() => {
   loadTrendData();
+  loadGoldTrend();
   initCharts();
+  const goldEl = document.getElementById('gold-revenue-chart');
+  if (goldEl) {
+    goldRevenueChart = echarts.init(goldEl, 'cretas');
+    updateGoldChart();
+  }
   if (typeof ResizeObserver !== 'undefined') {
     resizeObserver = new ResizeObserver(handleResize);
     document.querySelectorAll('.chart').forEach(el => resizeObserver!.observe(el));
@@ -65,6 +142,7 @@ onMounted(() => {
 
 watch(selectedPeriod, () => {
   loadTrendData();
+  loadGoldTrend();
 });
 
 async function loadTrendData() {
@@ -177,11 +255,13 @@ function handleResize() {
     productionChart?.resize();
     qualityChart?.resize();
     costChart?.resize();
+    goldRevenueChart?.resize();
   });
 }
 
 function handleRefresh() {
   loadTrendData();
+  loadGoldTrend();
 }
 
 onUnmounted(() => {
@@ -191,8 +271,10 @@ onUnmounted(() => {
   productionChart?.dispose();
   qualityChart?.dispose();
   costChart?.dispose();
+  goldRevenueChart?.dispose();
   productionChart = null;
   qualityChart = null;
+  goldRevenueChart = null;
   costChart = null;
 });
 </script>
@@ -216,7 +298,7 @@ onUnmounted(() => {
     </div>
 
     <el-alert
-      v-if="isEmptyAll"
+      v-if="isEmptyAll && !goldTrend"
       type="info"
       :closable="false"
       show-icon
@@ -230,6 +312,20 @@ onUnmounted(() => {
         询问「近 N 天营业额趋势」。
       </template>
     </el-alert>
+
+    <!-- v1.2 Week 9 Gold flip: POS revenue+orders trend for restaurant tenants -->
+    <el-card v-show="goldTrend" class="chart-card gold-trend-card" style="margin-bottom: 16px; border-top: 3px solid #67C23A;">
+      <template #header>
+        <div style="display: flex; align-items: center; gap: 8px; font-weight: 600;">
+          <span>📈 POS 营收趋势</span>
+          <el-tag size="small" type="success">Gold · daily_trend</el-tag>
+          <span v-if="goldTrend" style="color: #909399; font-size: 12px; margin-left: auto;">
+            {{ goldTrend.points.length }} 天
+          </span>
+        </div>
+      </template>
+      <div id="gold-revenue-chart" class="chart" style="height: 320px;"></div>
+    </el-card>
 
     <div class="charts-container" v-loading="loading">
       <el-row :gutter="16">
