@@ -102,6 +102,14 @@ export function setupRouterGuards(router: Router) {
       }
     }
 
+    // Apr 24 UX: 工厂类型黑名单 (sidebar hideForFactoryTypes 的 route-level 对应)
+    // 防止餐饮租户手输 URL 绕过侧边栏访问 manufacturing-only 页面
+    const hideForTypes = to.meta.hideForFactoryTypes as string[] | undefined;
+    if (hideForTypes && authStore.factoryType && hideForTypes.includes(authStore.factoryType)) {
+      next('/403');
+      return;
+    }
+
     // 检查角色权限（如果路由指定了 roles）
     const allowedRoles = to.meta.roles as string[] | undefined;
     if (allowedRoles && allowedRoles.length > 0) {

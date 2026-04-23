@@ -63,9 +63,22 @@ const initTab = validTabs.includes(route.query.tab as AnalysisType) ? (route.que
 const analysisType = ref<AnalysisType>(initTab);
 // Apr 24 UX: restaurants only see 利润分析 tab (see analysisTypes computed below).
 // If URL had ?tab=cost/receivable/payable/budget, force back to profit.
+// Also guard against post-mount navigation (browser back/forward, history.push).
 if (isRestaurantTenant.value && analysisType.value !== 'profit') {
   analysisType.value = 'profit';
 }
+watch(() => route.query.tab, (newTab) => {
+  if (isRestaurantTenant.value && newTab && newTab !== 'profit') {
+    analysisType.value = 'profit';
+  }
+});
+// Also guard programmatic type switches (should never happen via UI since
+// switcher is hidden for restaurants, but defensive against any future code path)
+watch(analysisType, (newType) => {
+  if (isRestaurantTenant.value && newType !== 'profit') {
+    analysisType.value = 'profit';
+  }
+});
 
 // 日期范围
 const dateRange = ref<[Date, Date] | null>(null);

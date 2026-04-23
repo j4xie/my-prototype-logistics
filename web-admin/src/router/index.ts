@@ -279,7 +279,7 @@ const businessRoutes: RouteRecordRaw[] = [
             path: 'finished-goods',
             name: 'SalesFinishedGoods',
             component: () => import('@/views/sales/finished-goods/list.vue'),
-            meta: { requiresAuth: true, title: '成品库存', module: 'sales' }
+            meta: { requiresAuth: true, title: '成品库存', module: 'sales', hideForFactoryTypes: ['RESTAURANT'] }
           },
           {
             path: 'customers',
@@ -291,7 +291,7 @@ const businessRoutes: RouteRecordRaw[] = [
             path: 'shipments',
             name: 'SalesShipments',
             component: () => import('@/views/sales/shipments/list.vue'),
-            meta: { requiresAuth: true, title: '出货记录', module: 'sales' }
+            meta: { requiresAuth: true, title: '出货记录', module: 'sales', hideForFactoryTypes: ['RESTAURANT'] }
           }
         ]
       },
