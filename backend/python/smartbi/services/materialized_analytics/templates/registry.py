@@ -72,6 +72,7 @@ def load_all_templates():
     from . import member_consumption         # noqa: F401
     from . import table_type_comparison      # noqa: F401
     from . import staff_performance          # noqa: F401
+    from . import store_performance          # noqa: F401
     from . import channel_analysis           # noqa: F401
     from . import promotion_impact           # noqa: F401
     from . import dish_time_slot_matrix      # noqa: F401

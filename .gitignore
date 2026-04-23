@@ -52,6 +52,8 @@ temp*
 !backend/python/smartbi/shared/temporal_comparator.py
 !backend/python/smartbi/services/restaurant/sections/temporal_comparison.py
 !backend/python/smartbi/services/materialized_analytics/templates/
+!backend/python/smartbi/services/template_rag.py
+!backend/python/smartbi/services/template_embedding_index.py
 !web-admin/src/views/smart-bi/components/Template*.vue
 .tmp/
 *.tmp
