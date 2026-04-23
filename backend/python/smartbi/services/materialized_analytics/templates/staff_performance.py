@@ -30,6 +30,10 @@ class StaffPerformance(AnalysisTemplate):
         "Top 1 服务员是谁",
         "谁卖得最多",
         "收银员业绩",
+        "员工里谁最厉害",
+        "最厉害的员工",
+        "业绩冠军员工",
+        "谁是销售冠军",
     ]
 
     @property

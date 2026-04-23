@@ -31,6 +31,10 @@ class DishSalesTopN(AnalysisTemplate):
         "哪个菜最火",
         "爆款菜品有哪些",
         "热销菜品",
+        "畅销品",
+        "畅销品 Top 5",
+        "畅销品排行",
+        "卖得最好的菜",
     ]
 
     @property
