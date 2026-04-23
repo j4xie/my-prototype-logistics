@@ -66,8 +66,15 @@ public class MaterialBatch extends BaseEntity {
     // 核心字段 - 存储在数据库
     // ===================================================================
 
+    /**
+     * Apr 24 2026: @Positive 改为 @PositiveOrZero — adjustBatchQuantity 消耗完批次
+     * 时 receiptQuantity 会减到 0 (实现把消耗写回 receiptQuantity 而非 usedQuantity,
+     * 见 MaterialBatchServiceImpl.adjustBatchQuantity:515-519), validation 原本严格
+     * >0 导致整事务 rollback. 消耗完批次 receiptQuantity=0 + status=USED_UP 是合法态.
+     * 创建校验走 DTO 层 (CreateMaterialBatchRequest 仍 @Positive), entity 层放宽为 ≥0.
+     */
     @NotNull(message = "入库数量不能为空")
-    @Positive(message = "入库数量必须大于0")
+    @PositiveOrZero(message = "入库数量不能为负数")
     @Column(name = "receipt_quantity", nullable = false, precision = 10, scale = 2)
     private BigDecimal receiptQuantity;
 
