@@ -1,16 +1,23 @@
 <template>
-  <div class="tpl-grid-section">
-    <div class="tpl-grid-header">
-      <h3>📊 模板分析</h3>
+  <section class="tpl-grid-section">
+    <header class="tpl-grid-header">
+      <div class="tpl-grid-title">
+        <span class="tpl-grid-icon">📊</span>
+        <span class="tpl-grid-title-text">模板分析</span>
+        <span class="tpl-grid-subtitle">AI 自动为本次上传生成的 {{ codes.length }} 项分析</span>
+      </div>
       <el-button
-        v-if="!loading && hasAnyData"
+        v-if="!loading"
         size="small"
-        type="text"
+        type="primary"
+        plain
+        :loading="loading"
         @click="refresh"
       >
+        <el-icon style="margin-right: 4px"><Refresh /></el-icon>
         刷新
       </el-button>
-    </div>
+    </header>
     <div v-if="loadError" class="tpl-grid-error">
       加载模板分析失败: {{ loadError }}
     </div>
@@ -23,11 +30,12 @@
         :status="statusFor(code)"
       />
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
+import { Refresh } from '@element-plus/icons-vue';
 import TemplateCard from './TemplateCard.vue';
 import {
   getAnalysisResults,
@@ -99,23 +107,53 @@ watch(() => [props.factoryId, props.pageKey, props.uploadId], load);
 </script>
 
 <style scoped>
+/* Give the template section its own visual container so users recognize
+ * it as a distinct auto-generated analysis block (N3). */
 .tpl-grid-section {
-  margin-top: 24px;
+  margin-top: 32px;
+  padding: 20px;
+  background: linear-gradient(180deg, #f8faff 0%, #ffffff 100%);
+  border-radius: 8px;
+  border: 1px solid #e4e9f2;
 }
 .tpl-grid-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e4e9f2;
 }
-.tpl-grid-header h3 {
-  margin: 0;
-  font-size: 16px;
+.tpl-grid-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
 }
+.tpl-grid-icon {
+  font-size: 20px;
+}
+.tpl-grid-title-text {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1f2937;
+  letter-spacing: 0.5px;
+}
+.tpl-grid-subtitle {
+  font-size: 12px;
+  color: #909399;
+  margin-left: 4px;
+}
+/* N9: align all cards to equal height in the row so empty-chart cards
+ * don't create stair-step gaps. */
 .tpl-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  grid-auto-rows: 1fr;
   gap: 16px;
+  align-items: stretch;
+}
+.tpl-grid > * {
+  height: 100%;
 }
 .tpl-grid-error {
   padding: 16px;

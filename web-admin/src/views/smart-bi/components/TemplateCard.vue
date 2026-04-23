@@ -3,8 +3,12 @@
     <template #header>
       <div class="tpl-header">
         <span class="tpl-title">{{ title }}</span>
-        <span v-if="uploadLabel" class="tpl-badge">
-          数据截至: {{ formattedDate }}
+        <span
+          v-if="uploadLabel"
+          class="tpl-badge"
+          :title="`数据来源文件: ${uploadLabel}\n上传日期: ${formattedDate}`"
+        >
+          来源: {{ formattedDate }}
         </span>
       </div>
     </template>
@@ -175,18 +179,50 @@ function localizeKpiKey(key: string): string {
   return KPI_LABEL_MAP[key] || key;
 }
 
-function formatKpiValue(value: unknown): { text: string; isLong: boolean } {
+/** Format a large number with 中式万/亿 units.
+ * - |n| >= 1e8 → "X.XX亿"
+ * - |n| >= 1e4 → "X.XX万"
+ * - otherwise  → 千分位 + 2 decimals
+ * Integers <10000 stay as integers (no trailing .00).
+ * Percentages (0..100 range-hinted) use plain formatting so "16.79%" stays
+ * readable (caller passes the % sign separately if needed). */
+function formatNumberCN(n: number): string {
+  if (!isFinite(n)) return String(n);
+  const abs = Math.abs(n);
+  if (abs >= 1e8) {
+    return (n / 1e8).toLocaleString('zh-CN', {
+      minimumFractionDigits: 2, maximumFractionDigits: 2,
+    }) + '亿';
+  }
+  if (abs >= 1e4) {
+    return (n / 1e4).toLocaleString('zh-CN', {
+      minimumFractionDigits: 2, maximumFractionDigits: 2,
+    }) + '万';
+  }
+  return n.toLocaleString('zh-CN', {
+    minimumFractionDigits: Number.isInteger(n) ? 0 : 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function formatKpiValue(value: unknown, key?: string): { text: string; isLong: boolean } {
   if (value === null || value === undefined) return { text: '—', isLong: false };
   if (typeof value === 'boolean') {
-    // Localize booleans so "hasCostData = false" renders as 否 not false.
     return { text: value ? '是' : '否', isLong: false };
   }
   if (typeof value === 'number') {
-    // 2-decimal retention to avoid float tails like 10691165.00000037.
-    const text = value.toLocaleString('zh-CN', {
-      minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
-      maximumFractionDigits: 2,
-    });
+    // Percentage keys (匹配 Pct/Share/Rate) keep 2-decimal plain format.
+    const isPercent = key ? /Pct|Share|Rate|占比/i.test(key) : false;
+    // Count keys (Count/Orders/Bills/Qty integers) don't need 万/亿 simplify.
+    const isCount = key ? /Count|Orders|Bills|Qty|Total$/i.test(key) && Number.isInteger(value) && Math.abs(value) < 1e6 : false;
+    let text: string;
+    if (isPercent) {
+      text = value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    } else if (isCount) {
+      text = value.toLocaleString('zh-CN');
+    } else {
+      text = formatNumberCN(value);
+    }
     return { text, isLong: false };
   }
   const text = String(value);
@@ -199,7 +235,7 @@ const kpis = computed(() => {
   return Object.entries(kv)
     .slice(0, 4)
     .map(([key, value]) => {
-      const formatted = formatKpiValue(value);
+      const formatted = formatKpiValue(value, key);
       return {
         label: localizeKpiKey(key),
         value: formatted.text,
@@ -208,14 +244,12 @@ const kpis = computed(() => {
     });
 });
 
-/** Format number with thousands separator + 2-decimal retention.
- * Used by ECharts yAxis.axisLabel + tooltip formatters. */
+/** Format number for chart axis/tooltip/labels with 万/亿 units.
+ * Reuses formatNumberCN so the same value format shows consistently
+ * in KPI chips AND chart axes. */
 function fmtNum(v: unknown): string {
   if (typeof v !== 'number' || !isFinite(v)) return String(v ?? '');
-  return v.toLocaleString('zh-CN', {
-    minimumFractionDigits: Number.isInteger(v) ? 0 : 2,
-    maximumFractionDigits: 2,
-  });
+  return formatNumberCN(v);
 }
 
 /** Truncate long labels for axis / legend / pie slices.
@@ -271,10 +305,26 @@ function enhanceChartOption(option: unknown): unknown {
       }
       if (s.label.overflow === undefined) s.label.overflow = 'truncate';
       if (s.label.width === undefined) s.label.width = 100;
-    } else if (s.type === 'bar' || s.type === 'line') {
+    } else if (s.type === 'bar' || s.type === 'line' || s.type === 'scatter') {
       s.label = s.label || {};
-      if (s.label.show && !s.label.formatter) {
+      // Force our formatter even if backend set label.formatter = '{c}' —
+      // '{c}' renders the raw number with all float tail bits visible.
+      // Non-destructive for null/undefined formatters by merging our fn.
+      const hasStringTokenFmt = typeof s.label.formatter === 'string' && /\{c\}/.test(s.label.formatter);
+      if (!s.label.formatter || hasStringTokenFmt) {
         s.label.formatter = (p: any) => fmtNum(p?.value);
+      }
+      // Also patch any data-level label (e.g. series.data[].label) — rare
+      // but possible if backend emits per-point custom labels.
+      if (Array.isArray(s.data)) {
+        for (const d of s.data) {
+          if (d && typeof d === 'object' && d.label) {
+            const lf = d.label.formatter;
+            if (typeof lf === 'string' && /\{c\}/.test(lf)) {
+              d.label.formatter = (p: any) => fmtNum(p?.value);
+            }
+          }
+        }
       }
     }
   }
@@ -361,8 +411,18 @@ watch(
 </script>
 
 <style scoped>
+/* N9: card fills grid cell height so empty-chart cards don't shrink.
+ * :deep() because el-card wraps the root node. */
 .tpl-card {
-  margin-bottom: 16px;
+  margin-bottom: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.tpl-card :deep(.el-card__body) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 .tpl-header {
   display: flex;
