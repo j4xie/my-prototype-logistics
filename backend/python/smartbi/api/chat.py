@@ -43,6 +43,12 @@ from services.insight_generator import InsightGenerator
 # Cache
 from common.insight_cache import get_insight_cache
 
+# P2 guardrail (Apr 24 2026): numeric hallucination detection
+from smartbi.services.llm_guard import (
+    NUMERIC_GUARD_CLAUSE,
+    detect_numeric_hallucination,
+)
+
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Chat"])
 
@@ -1607,7 +1613,10 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
 - 不要引用非当前字段列表中的字段名 (避免幻觉)
 引用具体数字，给出业务建议。中文Markdown，300字以内。"""
 
-            system_role = "你是食品企业的数据分析师。精炼回答，引用数字，给可执行建议。Markdown格式。"
+            system_role = (
+                "你是食品企业的数据分析师。精炼回答，引用数字，给可执行建议。Markdown格式。"
+                + NUMERIC_GUARD_CLAUSE
+            )
 
             # ── Stream LLM response (lower max_tokens + temperature for speed) ──
             full_text = ""
@@ -1738,11 +1747,26 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 # is down — we want these in monitoring, not silent.
                 logger.warning(f"[stream] fallback log skipped: {log_err}")
 
+            # P2 guardrail: flag numeric hallucinations that slipped past the
+            # prompt constraint. E.g., qhj_prod upload 4169 previously got
+            # "Top 5 合计 3.4 亿元" on a 36M dataset. We can't unspeak the
+            # streamed text, but we can carry a warning in the done payload
+            # so FE can surface it and ops sees it in the log.
+            _guard_warning = None
+            try:
+                _agg_for_guard = agg_lines if "agg_lines" in locals() else None
+                _guard_warning = detect_numeric_hallucination(full_text, _agg_for_guard)
+                if _guard_warning:
+                    logger.warning(f"[stream] {_guard_warning}")
+            except Exception as guard_err:
+                logger.warning(f"[stream] numeric guard check failed: {guard_err}")
+
             yield _sse_event("done", {
                 "success": True,
                 "answer": full_text,
                 "charts": charts,
                 "log_id": _log_id,
+                "warning": _guard_warning,
                 "processingTimeMs": int((time.time() - start_time) * 1000)
             })
 
@@ -1892,7 +1916,10 @@ async def drill_down_stream(request: DrillDownRequest, http_request: Request):
             sample_rows = data[:10]
             data_preview = _json.dumps(sample_rows, ensure_ascii=False, default=str)[:800]
 
-            system_prompt = "你是食品企业的数据分析师。请用中文Markdown回答，300字以内，引用具体数字，给出可执行建议。"
+            system_prompt = (
+                "你是食品企业的数据分析师。请用中文Markdown回答，300字以内，引用具体数字，给出可执行建议。"
+                + NUMERIC_GUARD_CLAUSE
+            )
             user_prompt = f"""请对以下维度拆分数据进行分析：
 {filter_desc}
 指标: {measures_desc}
@@ -2002,7 +2029,10 @@ async def root_cause_stream(request: RootCauseRequest, http_request: Request):
                 f"标准差={kpi_stats.get('std', 0):.2f}"
             )
 
-            system_prompt = "你是食品企业的数据分析师。请用中文Markdown分析KPI变动的根本原因，300字以内，给出可执行建议。"
+            system_prompt = (
+                "你是食品企业的数据分析师。请用中文Markdown分析KPI变动的根本原因，300字以内，给出可执行建议。"
+                + NUMERIC_GUARD_CLAUSE
+            )
             user_prompt = f"""请分析 KPI「{request.kpi}」变动的根本原因：
 
 KPI统计: {stats_text}
@@ -2085,7 +2115,10 @@ async def benchmark_stream(request: BenchmarkRequest, http_request: Request):
 
             metrics_text = "\n".join(f"- {k}: {v}" for k, v in metrics_display.items())
 
-            system_prompt = "你是食品企业的数据分析师。请用中文Markdown对比企业指标与行业基准，300字以内，指出差距并给出改进建议。"
+            system_prompt = (
+                "你是食品企业的数据分析师。请用中文Markdown对比企业指标与行业基准，300字以内，指出差距并给出改进建议。"
+                + NUMERIC_GUARD_CLAUSE
+            )
             user_prompt = f"""请分析企业指标与{industry_label}行业基准的差距：
 
 企业当前指标:
@@ -2183,7 +2216,10 @@ async def multi_dimension_analysis_stream(request: MultiDimensionRequest, http_r
             if request.context:
                 context_hint = f"\n背景信息: {_json.dumps(request.context, ensure_ascii=False, default=str)}"
 
-            system_prompt = "你是食品企业的数据分析师。请用中文Markdown进行多维度分析，400字以内，结构清晰，引用数字，给出可执行建议。"
+            system_prompt = (
+                "你是食品企业的数据分析师。请用中文Markdown进行多维度分析，400字以内，结构清晰，引用数字，给出可执行建议。"
+                + NUMERIC_GUARD_CLAUSE
+            )
             user_prompt = f"""请对以下数据进行多维度分析：{dims_hint}{context_hint}
 
 数值列统计:

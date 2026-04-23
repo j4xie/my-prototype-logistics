@@ -86,6 +86,9 @@ interface ChatMessage {
   logId?: number | null;
   feedbackValue?: 1 | -1 | 0;  // local optimistic state
   feedbackPending?: boolean;  // Phase 1.5 Task 1 nit: prevent double-click POSTs
+  // P2 guardrail (Apr 24 2026): backend flags numeric hallucination in
+  // LLM output (e.g. "合计 3.4 亿" on a 36M dataset).
+  warning?: string | null;
 }
 
 // 当前分析上下文 (用于连续对话)
@@ -563,6 +566,7 @@ async function handleSendMessage() {
         msg.source = result.source;
         msg.templateCode = result.template_code;
         msg.logId = result.log_id ?? null;
+        msg.warning = (result as { warning?: string | null }).warning ?? null;
         msg.loading = false;
         msg.streaming = false;
 
@@ -1133,6 +1137,17 @@ function handleKeydown(event: KeyboardEvent) {
                 <div v-else-if="message.role === 'assistant'" class="message-text markdown-body" v-html="renderMarkdown(message.content)"></div>
                 <div v-else class="message-text">{{ message.content }}</div>
 
+                <!-- P2 guardrail: warn when backend detected numeric hallucination -->
+                <el-alert
+                  v-if="message.role === 'assistant' && !message.streaming && message.warning"
+                  :title="message.warning"
+                  type="warning"
+                  :closable="false"
+                  show-icon
+                  class="message-warning"
+                />
+
+
                 <!-- AI 洞察面板 (only show if insights has actual content) -->
                 <div v-if="message.insights && ((message.insights.positive?.items?.length ?? 0) > 0 || (message.insights.negative?.items?.length ?? 0) > 0 || (message.insights.suggestions?.items?.length ?? 0) > 0)" class="message-insights">
                   <AIInsightPanel
@@ -1581,6 +1596,12 @@ function handleKeydown(event: KeyboardEvent) {
   .message-insights {
     margin-top: 16px;
     max-width: 500px;
+  }
+
+  .message-warning {
+    margin-top: 12px;
+    max-width: 640px;
+    font-size: 13px;
   }
 
   .message-chart {
