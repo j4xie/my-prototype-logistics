@@ -381,11 +381,19 @@ function enhanceChartOption(option: unknown): unknown {
       if (lg && typeof lg === 'object') {
         if (!lg.formatter) lg.formatter = (name: string) => truncateLabel(name, 10);
         if (lg.textStyle === undefined) lg.textStyle = { overflow: 'truncate', width: 120 };
-        // R15: if series count is high, paginate legend so it doesn't
-        // overflow into chart area (e.g. 时段营业额 with 14+ store/channel
-        // combinations).
-        if (lg.type === undefined && Array.isArray(opt.series) && opt.series.length > 6) {
-          lg.type = 'scroll';
+        // R15/R16: paginate legend when many series OR when a single pie
+        // series has many data slices. Using scroll unconditionally is
+        // safe — ECharts auto-falls-back to normal display if entries
+        // fit without pagination.
+        if (lg.type === undefined) {
+          const seriesCount = Array.isArray(opt.series) ? opt.series.length : 0;
+          const firstPieData = Array.isArray(opt.series) && opt.series[0] &&
+            (opt.series[0] as any).type === 'pie' &&
+            Array.isArray((opt.series[0] as any).data)
+              ? (opt.series[0] as any).data.length : 0;
+          if (seriesCount > 6 || firstPieData > 6) {
+            lg.type = 'scroll';
+          }
         }
       }
     }
