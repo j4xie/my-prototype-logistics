@@ -510,6 +510,20 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponse<?> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
         log.warn("请求体解析失败: {}", e.getMessage());
+        // PR1.5 O4: friendly message for common Jackson date/datetime parse errors
+        // Pattern e.g.: "Cannot deserialize value of type `java.time.LocalDate` from String \"TODAY\""
+        String msg = e.getMessage() == null ? "" : e.getMessage();
+        if (msg.contains("java.time.LocalDate") || msg.contains("java.time.LocalDateTime")) {
+            // extract problematic value if present
+            java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("from String \"([^\"]+)\"").matcher(msg);
+            String badValue = m.find() ? m.group(1) : "";
+            String fieldHint = badValue.isEmpty() ? "" : "（值: \"" + badValue + "\"）";
+            return ApiResponse.error(400, "日期格式不正确" + fieldHint + "，请重新选择日期");
+        }
+        if (msg.contains("Cannot deserialize value of type")) {
+            return ApiResponse.error(400, "字段类型不正确，请检查表单后重新提交");
+        }
         return ApiResponse.error(400, "请求格式不正确，请检查JSON格式");
     }
 
