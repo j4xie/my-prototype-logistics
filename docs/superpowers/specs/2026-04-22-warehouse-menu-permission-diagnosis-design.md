@@ -2,7 +2,7 @@
 
 **Date**: 2026-04-22
 **Author**: Steve + Claude (brainstorming)
-**Status**: Ready for plan
+**Status**: ✅ RESOLVED 2026-04-23 (no plan needed — single-row data fix applied)
 **Scope**: P0 (web-admin only — RN App + 合同号 UI 推迟到下一轮)
 **Branch**: `e2e/v1-framework`
 **Deploy gate**: test-first per `.claude/rules/server-operations.md`
@@ -224,7 +224,61 @@ DB 层 4 + 1 根因查询完成。客户指定测试工厂为 **六膳门 (F006)
 
 ---
 
-## 10. References
+## 10. Resolution (2026-04-23 final)
+
+### 10.1 Real root cause
+
+**R2 命中** — 客户使用 `factory_admin1` 测试，但 prod DB 中 **F001 测试工厂 type='RESTAURANT'**（与 test DB 的 'FACTORY' 不一致）。`FACTORY_TYPE_MODULE_FILTER.RESTAURANT.warehouse='-'` 强制屏蔽 → 客户截图缺失的 8 个菜单（仓储/生产/质量/设备/调拨/智能调度/行为校准/生产分析）全部对应 RESTAURANT filter 规则。
+
+数据证据（prod DB）：
+```
+factory_admin1 -> F001 -> type=RESTAURANT  ← 错误！
+F001 真实数据: sales_orders=100, purchase_orders=57, production_plans=73, quality_inspections=99
+            vs recipes=2, material_requisitions=1, wastage_records=1
+→ F001 数据形态明显是工厂，type 应为 FACTORY
+```
+
+### 10.2 Fix applied
+
+**Single-row data correction on prod**:
+```sql
+UPDATE factories SET type='FACTORY', updated_at=NOW() WHERE id='F001';
+-- UPDATE 1
+```
+
+### 10.3 Verification
+
+| 检查项 | Pre-fix | Post-fix |
+|---|---|---|
+| `factory_admin1` 登录 factoryType | RESTAURANT | **FACTORY** ✓ |
+| 应可见菜单 (基于 hardcoded matrix factory_super_admin/warehouse=rw) | warehouse 被强过滤 | warehouse 现在 'rw' 生效 ✓ |
+| L2 override (F001) | 空 ✓ | 空 ✓ |
+| disabled-modules (F001) | `[]` ✓ | `[]` ✓ |
+
+### 10.4 Customer communication
+
+请告知客户：
+1. F001 测试工厂 type 已修正，`factory_admin1` 重新登录可看到完整菜单（含仓储管理）
+2. 或者用 `f006_admin / 123456` (六膳门食品科技, 已是 FACTORY type) 测试，菜单原本就完整
+3. 如需测餐饮场景，可用 `factory_admin2` (F002 张记餐饮) 或 R001 (白垩纪示范餐厅) — 这些工厂仍是 RESTAURANT type，仓储菜单按设计屏蔽
+
+### 10.5 Deferred items (separate tickets)
+
+本次未做（按 §1 Non-goals 推迟）：
+- RN App `FAManagementScreen` 加"仓库管理"section — 客户可能也需要在 RN 端看到入口
+- 合同编号 DYNAMIC 表单 UI 修复（disabled + 占位）— 30 min 任务，独立
+- web-admin 5 个新建 Vue 页（入库/出库/库位/温控/预警）— 现有菜单不含这些，3-5 天工作量
+- docx 中其他客户需求（客户管理三字段必填 / 状态可编辑 / 业务员人事互联 / 产品模糊搜索）— P1/P2 followup
+
+### 10.6 Lessons (for `feedback_*.md` memory)
+
+- **Test DB ≠ Prod DB**：F001 type 在 test 是 FACTORY，prod 是 RESTAURANT。诊断时只查 test DB 会得到错误结论。**任何 prod 客户问题诊断必须查 prod DB，不只是 test DB。**
+- **Sidebar 缺失整片菜单是 factoryType 过滤特征**：`生产/仓储/质量/设备/调拨/智能调度` 一起消失 → RESTAURANT filter；只缺单独某个 → 看 L1/L2/disabled-modules。
+- **审计 → 验证 → 假说迭代** 的价值：原 spec 列了 4 根因，superpowers:code-reviewer 加 R5 (Canvas disabled-modules)，DB 查询 4+1 全排除后，**仔细看缺失菜单的 PATTERN** 才发现 R2 才是真根因（早期被 test DB 错误数据误导排除）。下次类似诊断要先看缺失菜单的"形状"对照 FACTORY_TYPE_MODULE_FILTER。
+
+---
+
+## 11. References
 
 - 客户原始反馈：`系统修改意见.docx`（在用户 Steve 微信留存）
 - Reviewer audit：本会话 superpowers:code-reviewer 输出
