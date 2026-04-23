@@ -84,7 +84,12 @@ const financialPrevious = ref({
 });
 const subSector = ref<string>('火锅');
 const storeName = ref<string>('');
-const period = ref<string>('2026-02');
+// Apr 24 2026 P1-13: period 默认当前月 YYYY-MM, 不硬编码 2026-02 (历史写死值)
+const _thisMonth = (() => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+})();
+const period = ref<string>(_thisMonth);
 
 // P5 Task 5.3: chat drawer state
 const chatDrawerVisible = ref(false);
