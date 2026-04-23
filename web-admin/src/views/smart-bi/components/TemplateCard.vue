@@ -30,8 +30,20 @@
         </div>
       </div>
       <div ref="chartRef" class="tpl-chart" v-if="chartOption"></div>
+      <!-- R6-1: collapsible insight — long text clamps to 3 lines with
+           "more/less" toggle so user sees short at-a-glance, expands when needed. -->
       <div v-if="insightText" class="tpl-insight">
-        {{ insightText }}
+        <div
+          class="tpl-insight-text"
+          :class="{ 'tpl-insight-text--clamped': !insightExpanded && insightIsLong }"
+          :title="insightText"
+        >{{ insightText }}</div>
+        <button
+          v-if="insightIsLong"
+          class="tpl-insight-toggle"
+          type="button"
+          @click="insightExpanded = !insightExpanded"
+        >{{ insightExpanded ? '收起' : '展开' }}</button>
       </div>
     </template>
 
@@ -449,6 +461,11 @@ const insightText = computed(() => {
     .join('\n');
 });
 
+// R6-1: clamp long insights to 3 lines with expand/collapse toggle
+const insightExpanded = ref(false);
+const INSIGHT_CLAMP_THRESHOLD = 90; // chars — beyond this, show toggle
+const insightIsLong = computed(() => insightText.value.length > INSIGHT_CLAMP_THRESHOLD);
+
 function renderChart() {
   if (!chartRef.value || !chartOption.value) {
     chartInstance?.dispose();
@@ -499,10 +516,13 @@ watch(
   font-size: 12px;
   color: #909399;
 }
+/* R6-2: use grid so 3-KPI cards don't look sparse next to 4-KPI cards.
+ * Columns auto-fit with min 110px — on a typical card width this yields
+ * 2-3 columns per row, filling available space evenly regardless of N. */
 .tpl-kpis {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
   margin-bottom: 12px;
 }
 .tpl-kpi {
@@ -549,7 +569,29 @@ watch(
   background: #f0f9ff;
   border-left: 3px solid #409eff;
   font-size: 13px;
+}
+.tpl-insight-text {
   white-space: pre-wrap;
+  line-height: 1.5;
+}
+/* R6-1: 3-line clamp with fade-out for long insights. */
+.tpl-insight-text--clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tpl-insight-toggle {
+  margin-top: 4px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: #409eff;
+  font-size: 12px;
+  cursor: pointer;
+}
+.tpl-insight-toggle:hover {
+  text-decoration: underline;
 }
 .tpl-empty {
   text-align: center;
