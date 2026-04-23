@@ -27,6 +27,7 @@ public class VehicleController {
 
     private final VehicleService vehicleService;
 
+    @RequirePermission({"warehouse:read"})
     @GetMapping
     @Operation(summary = "获取车辆列表", description = "获取工厂所有车辆，支持按状态筛选")
     public ApiResponse<List<VehicleDTO>> getVehicles(
@@ -44,6 +45,7 @@ public class VehicleController {
         return ApiResponse.success("获取成功", vehicles);
     }
 
+    @RequirePermission({"warehouse:read"})
     @GetMapping("/available")
     @Operation(summary = "获取可用车辆", description = "获取当前可用于装载的车辆列表")
     public ApiResponse<List<VehicleDTO>> getAvailableVehicles(
@@ -54,6 +56,7 @@ public class VehicleController {
         return ApiResponse.success("获取成功", vehicles);
     }
 
+    @RequirePermission({"warehouse:read"})
     @GetMapping("/{vehicleId}")
     @Operation(summary = "获取车辆详情", description = "根据ID获取单个车辆的详细信息")
     public ApiResponse<VehicleDTO> getVehicle(

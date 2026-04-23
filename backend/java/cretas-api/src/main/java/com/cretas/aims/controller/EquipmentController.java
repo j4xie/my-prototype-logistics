@@ -107,6 +107,7 @@ public class EquipmentController {
     /**
      * 获取设备详情
      */
+    @RequirePermission({"equipment:read"})
     @GetMapping("/{equipmentId}")
     @Operation(summary = "获取设备详情", description = "获取单个设备的详细信息")
     public ApiResponse<EquipmentDTO> getEquipmentById(
@@ -122,6 +123,7 @@ public class EquipmentController {
     /**
      * 获取设备列表（分页）
      */
+    @RequirePermission({"equipment:read"})
     @GetMapping
     @Operation(summary = "获取设备列表（分页）", description = "分页获取工厂设备列表")
     public ApiResponse<PageResponse<EquipmentDTO>> getEquipmentList(
@@ -136,6 +138,7 @@ public class EquipmentController {
     /**
      * 按状态获取设备
      */
+    @RequirePermission({"equipment:read"})
     @GetMapping("/status/{status}")
     @Operation(summary = "按状态获取设备", description = "获取指定状态的所有设备")
     public ApiResponse<List<EquipmentDTO>> getEquipmentByStatus(
@@ -151,6 +154,7 @@ public class EquipmentController {
     /**
      * 按类型获取设备
      */
+    @RequirePermission({"equipment:read"})
     @GetMapping("/type/{type}")
     @Operation(summary = "按类型获取设备", description = "获取指定类型的所有设备")
     public ApiResponse<List<EquipmentDTO>> getEquipmentByType(
@@ -166,6 +170,7 @@ public class EquipmentController {
     /**
      * 搜索设备
      */
+    @RequirePermission({"equipment:read"})
     @GetMapping("/search")
     @Operation(summary = "搜索设备", description = "根据关键词搜索设备（支持设备名称、型号等）")
     public ApiResponse<List<EquipmentDTO>> searchEquipment(
@@ -291,6 +296,7 @@ public class EquipmentController {
     /**
      * 获取需要维护的设备
      */
+    @RequirePermission({"equipment:read"})
     @GetMapping("/needing-maintenance")
     @Operation(summary = "获取需要维护的设备", description = "获取所有需要维护的设备列表")
     public ApiResponse<List<EquipmentDTO>> getEquipmentNeedingMaintenance(
@@ -304,6 +310,7 @@ public class EquipmentController {
     /**
      * 获取保修即将到期的设备
      */
+    @RequirePermission({"equipment:read"})
     @GetMapping("/expiring-warranty")
     @Operation(summary = "获取保修即将到期的设备", description = "获取保修即将到期的设备列表")
     public ApiResponse<List<EquipmentDTO>> getEquipmentWithExpiringWarranty(
@@ -319,6 +326,7 @@ public class EquipmentController {
     /**
      * 计算设备折旧后价值
      */
+    @RequirePermission({"equipment:read"})
     @GetMapping("/{equipmentId}/depreciated-value")
     @Operation(summary = "计算设备折旧后价值", description = "根据折旧规则计算设备当前价值")
     public ApiResponse<BigDecimal> calculateDepreciatedValue(
@@ -334,6 +342,7 @@ public class EquipmentController {
     /**
      * 获取设备统计信息
      */
+    @RequirePermission({"equipment:read"})
     @GetMapping("/{equipmentId}/statistics")
     @Operation(summary = "获取设备统计信息", description = "获取单个设备的统计信息")
     public ApiResponse<Map<String, Object>> getEquipmentStatistics(
@@ -349,6 +358,7 @@ public class EquipmentController {
     /**
      * 获取设备使用历史
      */
+    @RequirePermission({"equipment:read"})
     @GetMapping("/{equipmentId}/usage-history")
     @Operation(summary = "获取设备使用历史", description = "获取设备的使用记录历史")
     public ApiResponse<List<Map<String, Object>>> getEquipmentUsageHistory(
@@ -364,6 +374,7 @@ public class EquipmentController {
     /**
      * 获取设备维护历史
      */
+    @RequirePermission({"equipment:read"})
     @GetMapping("/{equipmentId}/maintenance-history")
     @Operation(summary = "获取设备维护历史", description = "获取设备的维护记录历史")
     public ApiResponse<List<Map<String, Object>>> getEquipmentMaintenanceHistory(
@@ -379,6 +390,7 @@ public class EquipmentController {
     /**
      * 获取工厂设备总体统计
      */
+    @RequirePermission({"equipment:read"})
     @GetMapping("/overall-statistics")
     @Operation(summary = "获取工厂设备总体统计", description = "获取工厂所有设备的总体统计信息")
     public ApiResponse<Map<String, Object>> getOverallEquipmentStatistics(
@@ -392,6 +404,7 @@ public class EquipmentController {
     /**
      * 获取工厂设备总体统计（别名，兼容前端调用）
      */
+    @RequirePermission({"equipment:read"})
     @GetMapping("/statistics")
     @Operation(summary = "获取工厂设备总体统计（别名）", description = "获取工厂设备总体统计的别名接口，兼容前端调用")
     public ApiResponse<Map<String, Object>> getEquipmentStatisticsAlias(
@@ -406,6 +419,7 @@ public class EquipmentController {
     /**
      * 获取设备效率报告
      */
+    @RequirePermission({"equipment:read"})
     @GetMapping("/{equipmentId}/efficiency-report")
     @Operation(summary = "获取设备效率报告", description = "获取设备在指定时间段内的效率报告")
     public ApiResponse<Map<String, Object>> getEquipmentEfficiencyReport(
@@ -470,6 +484,7 @@ public class EquipmentController {
     /**
      * 导出设备列表
      */
+    @RequirePermission({"equipment:read"})
     @GetMapping("/export")
     @Operation(summary = "导出设备列表", description = "导出工厂所有设备为Excel文件")
     public ResponseEntity<byte[]> exportEquipmentList(
@@ -497,6 +512,7 @@ public class EquipmentController {
     /**
      * 下载设备导入模板
      */
+    @RequirePermission({"equipment:read"})
     @GetMapping("/export/template")
     @Operation(summary = "下载设备导入模板", description = "下载用于批量导入设备的Excel模板文件")
     public ResponseEntity<byte[]> downloadEquipmentTemplate(
@@ -542,6 +558,7 @@ public class EquipmentController {
     /**
      * 计算设备OEE（整体设备效率）
      */
+    @RequirePermission({"equipment:read"})
     @GetMapping("/{equipmentId}/oee")
     @Operation(summary = "计算设备OEE", description = "计算设备整体效率(Overall Equipment Effectiveness)")
     public ApiResponse<Double> calculateOEE(
