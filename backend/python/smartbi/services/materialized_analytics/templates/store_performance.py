@@ -22,6 +22,15 @@ from .registry import register
 
 _TOP_N = 20
 
+# Store-column pollution:
+#   1. Meta rows ("合计"/"总计" leaked past PolarsBackend filter when store col
+#      holds aggregate labels instead of store names)
+#   2. Excel export warnings ("您查询的数据已经超过最大导出量..." etc.) — rows
+#      where the data pipeline wrote a warning sentinel into the store column
+# Filter at template level since classifier only fixes column roles, not cell values.
+_STORE_META_LABELS = {"合计", "总计", "小计", "汇总", "总和", "平均", "—", "-", "无", "未知", "暂无"}
+_STORE_WARNING_SUBSTRINGS = ("超过最大导出量", "请试着缩小查询范围", "导出数据")
+
 
 @register
 class StorePerformance(AnalysisTemplate):
@@ -72,6 +81,8 @@ class StorePerformance(AnalysisTemplate):
             .filter(
                 pl.col(store_col).is_not_null()
                 & (pl.col(store_col).cast(pl.Utf8) != "")
+                & (~pl.col(store_col).cast(pl.Utf8).is_in(list(_STORE_META_LABELS)))
+                & (~pl.col(store_col).cast(pl.Utf8).str.contains("|".join(_STORE_WARNING_SUBSTRINGS)))
             )
             .group_by(store_col)
             .agg([
@@ -93,6 +104,8 @@ class StorePerformance(AnalysisTemplate):
             .filter(
                 pl.col(store_col).is_not_null()
                 & (pl.col(store_col).cast(pl.Utf8) != "")
+                & (~pl.col(store_col).cast(pl.Utf8).is_in(list(_STORE_META_LABELS)))
+                & (~pl.col(store_col).cast(pl.Utf8).str.contains("|".join(_STORE_WARNING_SUBSTRINGS)))
             )
             .select(pl.col(store_col).n_unique())
             .item()
@@ -137,9 +150,9 @@ class StorePerformance(AnalysisTemplate):
         }
 
         insight_text = (
-            f"门店 Top 1:{top['store']} (销售额 {top['revenue']:,.0f},{top['orders']} 单);"
-            f" Top {len(ranking)} 末位:{bottom['store']} (销售额 {bottom['revenue']:,.0f});"
-            f" 客单价最高:{top_avg['store']} ({top_avg['avg_per_order']:,.2f}/单);"
+            f"门店 Top 1:{top['store']} (销售额 {top['revenue']:,.0f} 元,{top['orders']:,} 单);"
+            f" Top {len(ranking)} 末位:{bottom['store']} (销售额 {bottom['revenue']:,.0f} 元);"
+            f" 客单价最高:{top_avg['store']} ({top_avg['avg_per_order']:,.2f} 元/单);"
             f" 共 {total_stores} 家门店。 {measure_annotation(measure)}"
         )
 
