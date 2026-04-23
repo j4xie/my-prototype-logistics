@@ -468,12 +468,22 @@ public class DynamicDataPersistenceServiceImpl implements DynamicDataPersistence
 
         String sheetName = getSheetName(parseResponse);
 
+        // Apr 23 2026: fieldMappings 改为 String 存原始 JSONB (hypersistence-utils
+        // 对 Object 字段在 List-shape 数据上误推类型导致 LinkedHashMap<String,String>
+        // deserialize 崩溃). 这里先序列化为 JSON string 再写入.
+        String fieldMappingsJson;
+        try {
+            fieldMappingsJson = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(mappingsMap);
+        } catch (Exception e) {
+            fieldMappingsJson = "{}";
+        }
+
         return SmartBiPgExcelUpload.builder()
                 .factoryId(factoryId)
                 .fileName(fileName)
                 .sheetName(sheetName)
                 .detectedTableType(tableType)
-                .fieldMappings(mappingsMap)
+                .fieldMappings(fieldMappingsJson)
                 .contextInfo(contextInfo)
                 .rowCount(parseResponse.getRowCount())
                 .columnCount(parseResponse.getHeaders() != null ? parseResponse.getHeaders().size() : 0)
