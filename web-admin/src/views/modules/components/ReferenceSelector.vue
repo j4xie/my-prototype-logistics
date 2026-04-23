@@ -80,7 +80,18 @@ function handleChange(val: string | number | null) {
  * record by ID so its display name populates instead of showing raw ID.
  * Try GET /endpoint/{id} first; fall back to keyword search if 404/no match.
  */
+/** ID-shape: numeric or UUID. Names with Chinese/spaces/parens skip fetchById. */
+function looksLikeId(v: string | number): boolean {
+  const s = String(v)
+  return /^\d+$/.test(s) || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)
+}
+
 async function fetchById(id: string | number) {
+  // Skip lookup for non-ID-shaped values (legacy display-name strings, e.g., "张三")
+  if (!looksLikeId(id)) {
+    options.value = [{ label: String(id), value: id }]
+    return
+  }
   loading.value = true
   try {
     // Strip /search or /active suffix — those are LIST endpoints, not single-item GET.
