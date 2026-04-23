@@ -53,13 +53,14 @@ public class SalesController {
     }
 
     @GetMapping("/orders")
-    @Operation(summary = "销售订单列表")
+    @Operation(summary = "销售订单列表 (Bug G: ?keyword 搜索 — Rule 12.1)")
     @RequirePermission({"sales:read_write", "sales:read"})
     public ApiResponse<PageResponse<SalesOrder>> listOrders(
             @PathVariable @NotBlank String factoryId,
+            @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
-        PageResponse<SalesOrder> result = salesService.getSalesOrders(factoryId, page, size);
+        PageResponse<SalesOrder> result = salesService.getSalesOrders(factoryId, keyword, page, size);
         return ApiResponse.success("查询成功", result);
     }
 

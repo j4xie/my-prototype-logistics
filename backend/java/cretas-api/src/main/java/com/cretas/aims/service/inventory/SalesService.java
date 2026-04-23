@@ -22,6 +22,9 @@ public interface SalesService {
 
     PageResponse<SalesOrder> getSalesOrders(String factoryId, int page, int size);
 
+    /** Bug G fix: keyword search overload (qa-prompt v2.3 Rule 12.1) */
+    PageResponse<SalesOrder> getSalesOrders(String factoryId, String keyword, int page, int size);
+
     PageResponse<SalesOrder> getSalesOrdersByStatus(String factoryId, SalesOrderStatus status, int page, int size);
 
     SalesOrder confirmOrder(String factoryId, String orderId);
