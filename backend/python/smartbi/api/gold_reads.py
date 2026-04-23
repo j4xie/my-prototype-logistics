@@ -268,17 +268,18 @@ async def get_analysis_results(
     Query modes:
     - template_codes=<csv> : batch. Resolves per-code "latest upload where
       this code exists" unless upload_id is also given.
-    - template_code=<single> : legacy single-result variant. Alias for
-      template_codes=<single>.
-    - upload_id=<id> without codes : list all templates for that upload
-      (legacy; still supported).
+    - template_code=<single> : alias for template_codes=<single> — takes
+      the same batch path.
+    - upload_id=<id> without codes : legacy list-by-upload mode; returns
+      all templates materialized for that upload.
 
-    Response shape (batch):
-      { items: [...], missing_codes: [...], never_materialized_codes: [...] }
-    Response shape (legacy single-template, found):
-      { upload_id, template_code, domain, ..., upload_label }
-    Response shape (legacy single-template, not found):
-      404
+    Response shapes:
+    - template_codes or template_code given (batch path):
+        { items: [...], missing_codes: [...], never_materialized_codes: [...] }
+    - upload_id only (legacy by-upload list):
+        { items: [...] }
+    - Neither codes nor upload_id:
+        HTTP 400
     """
     fid = _resolve_tenant(factory_id)
     pool = await get_pg_pool()

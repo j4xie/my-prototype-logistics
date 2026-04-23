@@ -1,6 +1,7 @@
 """Tests for batch /api/smartbi/gold/analysis-results endpoint (Week 6)."""
 from __future__ import annotations
 
+import os
 from datetime import datetime
 
 import pytest
@@ -9,6 +10,9 @@ import pytest_asyncio
 
 _TENANT_A = "TEST_BATCH_A"
 _TENANT_B = "TEST_BATCH_B"
+_INTERNAL_SECRET = os.getenv(
+    "INTERNAL_API_SECRET", "cretas-internal-sec-87a9caca9f57b1f2",
+)
 
 
 @pytest_asyncio.fixture
@@ -146,6 +150,7 @@ async def test_tenant_isolation(pool):
         await _cleanup(pool, [_TENANT_A, _TENANT_B])
 
 
+@pytest.mark.integration
 async def test_route_batch_limit_rejected(pool, httpx_client=None):
     """Route returns 400 when >20 codes requested."""
     import httpx
@@ -157,7 +162,7 @@ async def test_route_batch_limit_rejected(pool, httpx_client=None):
             "/api/smartbi/gold/analysis-results",
             params={"template_codes": codes},
             headers={
-                "X-Internal-Secret": "cretas-internal-sec-87a9caca9f57b1f2",
+                "X-Internal-Secret": _INTERNAL_SECRET,
                 "X-Factory-Id": _TENANT_A,
             },
         )
@@ -165,6 +170,7 @@ async def test_route_batch_limit_rejected(pool, httpx_client=None):
     assert "max 20" in resp.text
 
 
+@pytest.mark.integration
 async def test_route_batch_happy_path_via_http(pool):
     """Seed, call HTTP, expect items shape."""
     try:
@@ -175,7 +181,7 @@ async def test_route_batch_happy_path_via_http(pool):
                 "/api/smartbi/gold/analysis-results",
                 params={"template_codes": "tpl_alpha,tpl_never"},
                 headers={
-                    "X-Internal-Secret": "cretas-internal-sec-87a9caca9f57b1f2",
+                    "X-Internal-Secret": _INTERNAL_SECRET,
                     "X-Factory-Id": _TENANT_A,
                 },
             )
