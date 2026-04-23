@@ -366,6 +366,69 @@ def match_template(query: str) -> Optional[str]:
     return None
 
 
+async def match_template_hybrid(query: str, pool) -> Optional[str]:
+    """Phase 3 (Apr 23 2026): keyword + vector RAG router.
+
+    Runs the existing keyword matcher first (sync, <1ms), then if no
+    keyword match, queries the pgvector template embedding index. Returns
+    template_code if either layer confidently matches, else None → LLM
+    fallback.
+
+    This is a SUPERSET of match_template(): any query that match_template
+    would have matched, this also matches. Plus it catches queries whose
+    wording doesn't fit the keyword patterns but is semantically close to
+    a template's sample_queries.
+
+    pool is optional — passing None falls back to pure-keyword behavior
+    (useful for tests / when DB is down).
+    """
+    # Layer 0: pre-empt checks (hard modifiers, etc.)
+    if not query or not isinstance(query, str):
+        return None
+    if _has_hard_modifier(query):
+        logger.info(f"[query-router] hard modifier in '{query[:50]}' → LLM fallback")
+        return None
+
+    # Layer 1: keyword match (existing logic)
+    keyword_code: Optional[str] = None
+    q_lower = query.lower()
+    for code, groups in _PATTERNS:
+        hit = True
+        for group in groups:
+            if not any(kw.lower() in q_lower for kw in group):
+                hit = False
+                break
+        if hit:
+            keyword_code = code
+            break
+
+    # Layer 2: vector RAG (if pool available). Fails safe to keyword-only.
+    if pool is not None:
+        try:
+            from smartbi.services.template_rag import hybrid_match
+            result = await hybrid_match(pool, query, keyword_code=keyword_code)
+            if result is not None:
+                logger.info(
+                    f"[query-router] hybrid matched '{query[:50]}' → "
+                    f"{result.template_code} (sim={result.similarity:.3f}, via={result.via})"
+                )
+                return result.template_code
+        except Exception as e:
+            logger.warning(f"[query-router] hybrid_match failed, falling to keyword-only: {e}")
+
+    # Fallback: use keyword result if we have one; else None.
+    if keyword_code:
+        logger.info(f"[query-router] matched '{query[:50]}' → {keyword_code} (keyword)")
+        return keyword_code
+
+    # Soft modifiers
+    if _has_soft_modifier(query):
+        logger.info(f"[query-router] no template + soft modifier in '{query[:50]}' → LLM")
+        return None
+    logger.debug(f"[query-router] no match for '{query[:50]}'")
+    return None
+
+
 # Apr 23 2026 — KPI key → Chinese label map. Templates emit technical keys
 # (peak_month, worst_mom_delta_pct, combo_orders) that confuse non-technical
 # users. This map translates them to readable labels at display time.

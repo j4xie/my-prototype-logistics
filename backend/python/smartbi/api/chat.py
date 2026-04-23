@@ -1045,16 +1045,16 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 user_q = (request.effective_query or "").strip()
                 if upload_id and user_q:
                     from smartbi.services.materialized_analytics.query_router import (
-                        match_template, format_cached_as_sse
+                        match_template_hybrid, format_cached_as_sse
                     )
-                    matched_code = match_template(user_q)
+                    from smartbi.config import get_pg_pool
+                    pool = await get_pg_pool()
+                    matched_code = await match_template_hybrid(user_q, pool)
                     if matched_code:
                         # Factory-scoped load
                         from smartbi.services.materialized_analytics.persistence import (
                             load_materialization_results
                         )
-                        from smartbi.config import get_pg_pool
-                        pool = await get_pg_pool()
                         if pool is not None:
                             factory_id = getattr(http_request.state, 'factory_id', None) if hasattr(http_request, 'state') else None
                             cached_results = await load_materialization_results(

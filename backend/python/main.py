@@ -284,6 +284,26 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"LLM metrics enable failed: {e}")
 
+    # Phase 3 (Apr 23 2026): template embedding index population.
+    # Populates smart_bi_template_embeddings on first boot. Re-runs are
+    # idempotent (ON CONFLICT). Fires in background — no blocking.
+    try:
+        from smartbi.services.template_embedding_index import (
+            count_embeddings, populate_all,
+        )
+        from smartbi.config import get_pg_pool as _get_pool_emb
+        _emb_pool = await _get_pool_emb()
+        if _emb_pool is not None:
+            existing = await count_embeddings(_emb_pool)
+            if existing == 0:
+                logger.info("[startup] template embedding index empty, populating in background")
+                import asyncio as _asyncio
+                _asyncio.create_task(populate_all(_emb_pool))
+            else:
+                logger.info(f"[startup] template embedding index has {existing} rows, skipping populate")
+    except Exception as e:
+        logger.warning(f"[startup] template embedding warmer failed: {e}")
+
     yield
 
     # Shutdown: close shared LLM HTTP client
