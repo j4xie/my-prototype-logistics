@@ -7,11 +7,13 @@ import com.cretas.aims.dto.inventory.UpdateSalesOrderRequest;
 import com.cretas.aims.entity.enums.SalesDeliveryStatus;
 import com.cretas.aims.entity.enums.SalesOrderStatus;
 import com.cretas.aims.entity.inventory.*;
+import com.cretas.aims.entity.User;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.entity.ProductType;
 import com.cretas.aims.repository.CustomerRepository;
 import com.cretas.aims.repository.ProductTypeRepository;
+import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.repository.inventory.*;
 import com.cretas.aims.event.SalesOrderConfirmedEvent;
 import com.cretas.aims.event.SalesOrderFinanceApprovedEvent;
@@ -70,6 +72,10 @@ public class SalesServiceImpl implements SalesService {
     /** Canvas V3: Dynamic field persistence (cf_xxx columns) */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
+
+    /** T3: 业务员双字段过渡 — 用于 resolveSalespersonField */
+    @org.springframework.beans.factory.annotation.Autowired
+    private UserRepository userRepository;
 
     @jakarta.persistence.PersistenceContext
     private jakarta.persistence.EntityManager entityManager;
@@ -134,7 +140,7 @@ public class SalesServiceImpl implements SalesService {
         order.setDeliveryAddress(request.getDeliveryAddress());
         order.setDiscountAmount(request.getDiscountAmount() != null ? request.getDiscountAmount() : BigDecimal.ZERO);
         order.setRemark(request.getRemark());
-        order.setSalesperson(request.getSalesperson());
+        resolveSalespersonField(order, request.getSalesperson(), factoryId);
         order.setShippingIncluded(request.getShippingIncluded());
         order.setShippingFee(request.getShippingFee());
         order.setExtraFees(request.getExtraFees());
@@ -374,7 +380,7 @@ public class SalesServiceImpl implements SalesService {
                 "currentStatus", order.getStatus().name()));
 
         if (request.getSalesperson() != null) {
-            order.setSalesperson(request.getSalesperson());
+            resolveSalespersonField(order, request.getSalesperson(), factoryId);
         }
         if (request.getDeliveryAddress() != null) {
             order.setDeliveryAddress(request.getDeliveryAddress());
@@ -969,5 +975,32 @@ public class SalesServiceImpl implements SalesService {
             order.setTransportPlanStatus("IN_TRANSIT");
         }
         salesOrderRepository.save(order);
+    }
+
+    // ==================== T3: 业务员双字段过渡 ====================
+
+    /** Numeric user-id string pattern (User.id is Long, frontend sends as decimal string). */
+    private static final java.util.regex.Pattern USER_ID_PATTERN =
+        java.util.regex.Pattern.compile("^\\d{1,19}$");
+
+    /**
+     * 解析业务员字段 — 双字段过渡 (option 3 per spec §4.A.4).
+     * 数字字符串 (User.id) → lookup user → 写入 salesperson_id + salesperson(name 快照)
+     * 含非数字字符的字符串 → 老路径，只写 salesperson
+     * null/空 → 不动
+     */
+    public void resolveSalespersonField(SalesOrder order, String input, String factoryId) {
+        if (input == null || input.isBlank()) return;
+        if (USER_ID_PATTERN.matcher(input).matches()) {
+            Long userId = Long.parseLong(input);
+            User user = userRepository.findById(userId)
+                .filter(u -> factoryId.equals(u.getFactoryId()))
+                .orElseThrow(() -> new ResourceNotFoundException("业务员不存在或不属于本工厂: " + input));
+            order.setSalespersonId(input);
+            order.setSalesperson(user.getFullName());  // M1: snapshot name at save time
+        } else {
+            order.setSalesperson(input);
+            order.setSalespersonId(null);
+        }
     }
 }
