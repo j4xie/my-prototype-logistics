@@ -45,6 +45,8 @@ const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const { label } = useBusinessMode();
 const factoryId = computed(() => authStore.factoryId);
+// Apr 24 2026 P1-10: restaurant tenants 用 POS 账单, 无传统 B2B SO → 显提示代替空表混乱
+const isRestaurantTenant = computed(() => authStore.factoryType === 'RESTAURANT');
 const canWrite = computed(() => permissionStore.canWrite('sales'));
 
 const loading = ref(false);
@@ -583,6 +585,16 @@ async function submitQuickPayment() {
       </el-col>
     </el-row>
   </el-card>
+
+  <!-- P1-10: restaurant tenants 无 B2B SO,下面空表只是功能残留 -->
+  <el-alert
+    v-if="isRestaurantTenant"
+    type="info"
+    :closable="false"
+    show-icon
+    style="margin: 0 12px 12px 12px;"
+    title="餐饮门店的 POS 账单已在上方「POS 交易概览」汇总。销售订单 (B2B) 本页下方通常为空,如有企业订餐/团购/外送合同才需新建。"
+  />
 
   <CanvasAwareWrapper module-code="sales_order">
   <div class="page-wrapper">

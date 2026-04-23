@@ -1280,7 +1280,14 @@ function generateSmartWarnings() {
   const autoWarnings: WarningItem[] = [];
   const kpi = kpiData.value;
 
-  if (analysisType.value === 'profit') {
+  // Apr 24 2026 UX P0-1 guard: 如果营收为 0, 说明没数据而不是"负利润" — 不发预警.
+  // 以前 profit=0 + revenue=0 会触发 "毛利率 0.0% 低于行业基准 25-35%" 假警报,
+  // 误导用户以为生意糟糕,实际是 Silver 没 cost 数据导致 profit 字段全 0.
+  const hasRevenueForProfit = (kpi.grossProfit != null && kpi.grossProfit !== 0)
+    || (kpi.netProfit != null && kpi.netProfit !== 0)
+    || (kpi.grossProfitMargin != null && kpi.grossProfitMargin !== 0);
+
+  if (analysisType.value === 'profit' && hasRevenueForProfit) {
     if (kpi.grossProfit < 0) {
       autoWarnings.push({
         level: 'danger',
@@ -1295,7 +1302,7 @@ function generateSmartWarnings() {
         description: `净利润 ${formatMoney(kpi.netProfit)}，企业处于亏损状态，需关注费用控制`,
       });
     }
-    if (kpi.grossProfitMargin != null && kpi.grossProfitMargin < 25) {
+    if (kpi.grossProfitMargin != null && kpi.grossProfitMargin < 25 && kpi.grossProfitMargin > 0) {
       autoWarnings.push({
         level: 'warning',
         title: '毛利率低于行业基准',
@@ -1304,7 +1311,7 @@ function generateSmartWarnings() {
     }
   }
 
-  if (analysisType.value === 'receivable' && kpi.receivableAge90Plus > 0) {
+  if (analysisType.value === 'receivable' && kpi.receivableAge90Plus != null && kpi.receivableAge90Plus > 0) {
     autoWarnings.push({
       level: 'danger',
       title: '存在高风险逾期应收',

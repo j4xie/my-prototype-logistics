@@ -9,6 +9,11 @@ import { getDailyTrend, type DailyTrend } from '@/api/smartbi/gold';
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
+// Apr 24 2026 UX P1-11: restaurant tenants have no production/quality/cost
+// tracking — don't show the 3 zero-value charts for them. Gold POS trend
+// card above is the relevant content; legacy charts only matter for
+// manufacturing tenants (type=FACTORY).
+const isRestaurantTenant = computed(() => authStore.factoryType === 'RESTAURANT');
 
 const loading = ref(false);
 const selectedPeriod = ref('week');
@@ -316,7 +321,7 @@ onUnmounted(() => {
     </div>
 
     <el-alert
-      v-if="isEmptyAll && !goldTrend"
+      v-if="isEmptyAll && !goldTrend && !isRestaurantTenant"
       type="info"
       :closable="false"
       show-icon
@@ -348,7 +353,8 @@ onUnmounted(() => {
       <div id="gold-revenue-chart" class="chart" style="height: 320px;"></div>
     </el-card>
 
-    <div class="charts-container" v-loading="loading">
+    <!-- 餐饮租户不需要生产/质量/成本图 (P1-11) — 隐藏占屏的 0 值 chart -->
+    <div v-if="!isRestaurantTenant" class="charts-container" v-loading="loading">
       <el-row :gutter="16">
         <el-col :span="24">
           <el-card class="chart-card">
