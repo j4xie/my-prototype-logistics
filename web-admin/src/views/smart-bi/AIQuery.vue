@@ -8,8 +8,8 @@ import { ref, computed, onMounted, onUnmounted, onBeforeUnmount, nextTick, watch
 import { useChartResize } from '@/composables/useChartResize';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
-import { chatAnalysis, chatAnalysisStream, getUploadHistory, deduplicateUploads, nl2sql, type AnalysisResult, type AIInsightData, type ChartConfig, type UploadHistoryItem, type NL2SQLResponse } from '@/api/smartbi';
-import { ElMessage } from 'element-plus';
+import { chatAnalysis, chatAnalysisStream, getUploadHistory, deduplicateUploads, nl2sql, logFeedback, type AnalysisResult, type AIInsightData, type ChartConfig, type UploadHistoryItem, type NL2SQLResponse } from '@/api/smartbi';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   ChatDotRound,
   Promotion,
@@ -82,6 +82,9 @@ interface ChatMessage {
   // contain analysis, so no CTA for those.
   source?: string;
   templateCode?: string;
+  // Phase 1 (Apr 23 2026): log id of the fallback log row (LLM answers only)
+  logId?: number | null;
+  feedbackValue?: 1 | -1 | 0;  // local optimistic state
 }
 
 // 当前分析上下文 (用于连续对话)
@@ -184,6 +187,32 @@ function triggerImprovementSuggestions(templateMsg: ChatMessage) {
     : '针对上面这些数字';
   inputQuery.value = `${tplHint}，给我3-5条可落地的改进建议，说明预期效果和优先级`;
   handleSendMessage();
+}
+
+async function sendFeedback(msg: ChatMessage, value: 1 | -1) {
+  if (!msg.logId) return;
+  const prevValue = msg.feedbackValue;
+  msg.feedbackValue = value;  // optimistic
+  let comment: string | undefined;
+  if (value === -1) {
+    const result = await ElMessageBox.prompt('说一下哪里不准确? (可选)', '反馈', {
+      confirmButtonText: '提交',
+      cancelButtonText: '取消',
+      inputRequired: false,
+    }).catch(() => null);
+    if (result === null) {
+      msg.feedbackValue = prevValue;
+      return;
+    }
+    comment = result.value || undefined;
+  }
+  const ok = await logFeedback(msg.logId, value, comment);
+  if (!ok) {
+    msg.feedbackValue = prevValue;
+    ElMessage.warning('反馈提交失败, 请稍后重试');
+  } else {
+    ElMessage.success(value === 1 ? '感谢反馈 👍' : '已记录, 我们会改进');
+  }
 }
 
 // NL2SQL 模式
@@ -467,6 +496,7 @@ async function handleSendMessage() {
         msg.table = result.table as ChatMessage['table'];
         msg.source = result.source;
         msg.templateCode = result.template_code;
+        msg.logId = result.log_id ?? null;
         msg.loading = false;
         msg.streaming = false;
 
@@ -1098,6 +1128,26 @@ function handleKeydown(event: KeyboardEvent) {
                     给出改进建议
                   </el-button>
                 </div>
+
+                <!-- Phase 1 (Apr 23 2026): feedback for LLM answers -->
+                <div
+                  v-if="message.role === 'assistant' && !message.loading && !message.streaming && message.source !== 'materialized_cache' && message.logId"
+                  class="message-feedback"
+                >
+                  <span class="feedback-label">这个回答有用吗?</span>
+                  <el-button
+                    size="small"
+                    :type="message.feedbackValue === 1 ? 'success' : 'default'"
+                    plain
+                    @click="sendFeedback(message, 1)"
+                  >👍 有用</el-button>
+                  <el-button
+                    size="small"
+                    :type="message.feedbackValue === -1 ? 'danger' : 'default'"
+                    plain
+                    @click="sendFeedback(message, -1)"
+                  >👎 不准确</el-button>
+                </div>
               </template>
             </div>
           </div>
@@ -1438,6 +1488,19 @@ function handleKeydown(event: KeyboardEvent) {
     gap: 8px;
     margin-top: 12px;
     flex-wrap: wrap;
+  }
+
+  // Phase 1 (Apr 23 2026): feedback for LLM answers
+  .message-feedback {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    align-items: center;
+
+    .feedback-label {
+      font-size: 12px;
+      color: var(--el-text-color-secondary);
+    }
   }
 }
 

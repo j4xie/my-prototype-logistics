@@ -1798,3 +1798,29 @@ async function _doEnrichSheetAnalysis(
     enrichmentLimiter.release();
   }
 }
+
+/**
+ * Phase 1 (Apr 23 2026): send 👍/👎 feedback on an LLM-fallback answer.
+ * Returns true on success. FE button handlers should optimistically
+ * flip their state and not block on the call.
+ */
+export async function logFeedback(
+  logId: number,
+  value: 1 | -1 | 0,
+  comment?: string,
+): Promise<boolean> {
+  const url = `${PYTHON_SMARTBI_URL}/api/smartbi/admin/fallback-log/${logId}/feedback`;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        ...getPythonAuthHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ value, comment: comment ?? null }),
+    });
+    return res.ok;
+  } catch (e) {
+    return false;
+  }
+}

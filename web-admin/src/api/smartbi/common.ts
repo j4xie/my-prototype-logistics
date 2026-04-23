@@ -382,6 +382,10 @@ export interface AnalysisResult {
   // Used by the FE to decide whether to show a "深入分析" follow-up CTA.
   source?: string;
   template_code?: string;
+  // Phase 1 (Apr 23 2026): id of the row written to smart_bi_llm_fallback_log.
+  // Present only when source !== 'materialized_cache' (i.e. LLM fallback
+  // actually ran). FE uses it to POST feedback.
+  log_id?: number | null;
 }
 
 /**
