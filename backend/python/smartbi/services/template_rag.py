@@ -31,7 +31,14 @@ from .template_embedding_index import cosine_topk
 logger = logging.getLogger(__name__)
 
 # Similarity thresholds tuned for DashScope text-embedding-v3.
-HIGH_CONFIDENCE = 0.85   # Vector-only match at/above this → serve template
+# Tuning history:
+#   Apr 23 2026 initial: 0.85 / 0.70 — too strict in practice; prod E2E showed
+#     two correct semantic matches falling to LLM at sim=0.824 / 0.839:
+#       "谁是销售冠军" → staff_performance (sim 0.824)
+#       "我想看付款方式" → payment_method_mix (sim 0.839)
+#     Both are valid intent matches; threshold was just 0.01-0.03 too high.
+#     Lowered HIGH to 0.80. MIN stays 0.70 (ambiguous band untouched).
+HIGH_CONFIDENCE = 0.80   # Vector-only match at/above this → serve template
 MIN_USEFUL = 0.70        # Below this → no hint, pure LLM fallback
 
 
