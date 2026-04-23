@@ -244,10 +244,12 @@ public class UserController {
     public ApiResponse<PageResponse<UserDTO>> searchUsers(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "搜索关键词", required = true, example = "张三")
-            @RequestParam @NotBlank String keyword,
+            @Parameter(description = "搜索关键词，为空时返回所有", required = false, example = "张三")
+            @RequestParam(required = false, defaultValue = "") String keyword,
+            @Parameter(description = "角色筛选，为空时不筛选", required = false, example = "salesperson")
+            @RequestParam(required = false) String role,
             @Valid PageRequest pageRequest) {
-        PageResponse<UserDTO> response = userService.searchUsers(factoryId, keyword, pageRequest);
+        PageResponse<UserDTO> response = userService.searchUsers(factoryId, keyword, role, pageRequest);
         return ApiResponse.success(response);
     }
 

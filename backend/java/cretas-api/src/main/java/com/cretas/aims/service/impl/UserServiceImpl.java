@@ -267,6 +267,11 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public PageResponse<UserDTO> searchUsers(String factoryId, String keyword, PageRequest pageRequest) {
+        return searchUsers(factoryId, keyword, null, pageRequest);
+    }
+
+    @Override
+    public PageResponse<UserDTO> searchUsers(String factoryId, String keyword, String role, PageRequest pageRequest) {
         Sort sort = Sort.by(
                 pageRequest.getSortDirection().equalsIgnoreCase("DESC") ?
                 Sort.Direction.DESC : Sort.Direction.ASC,
@@ -282,14 +287,20 @@ public class UserServiceImpl implements UserService {
         Page<User> userPage = userRepository.searchUsers(factoryId, keyword, pageable);
 
         List<UserDTO> userDTOs = userPage.getContent().stream()
+                .filter(u -> role == null || role.isBlank() || role.equals(u.getRoleCode()))
                 .map(userMapper::toDTO)
                 .collect(Collectors.toList());
+
+        // Recalculate total after role filter (in-memory, factory user lists are typically <50)
+        long total = role == null || role.isBlank()
+                ? userPage.getTotalElements()
+                : userDTOs.size();
 
         return PageResponse.of(
                 userDTOs,
                 pageRequest.getPage(),
                 pageRequest.getSize(),
-                userPage.getTotalElements()
+                total
         );
     }
 
