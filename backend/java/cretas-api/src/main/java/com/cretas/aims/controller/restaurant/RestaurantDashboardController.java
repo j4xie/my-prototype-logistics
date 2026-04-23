@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * 餐饮 Dashboard 聚合 Controller
