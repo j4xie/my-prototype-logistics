@@ -369,11 +369,51 @@ const INSIGHT_REPLACEMENTS: Array<[RegExp, string]> = [
   [/\bσ\b/g, '标准差'],
 ];
 
+/** Normalize big numbers in insight text to 万/亿 to match KPI chip style.
+ *
+ * Matches: optional ¥ or ￥ prefix, then either thousands-separated
+ * "12,345,678" or bare 5+ digit "123456" (treat as currency/count).
+ * Optional trailing " 元" / "元".
+ *
+ * Skips: dates (YYYY-MM-DD / YYYY/MM/DD), percentages (already small),
+ * years (4-digit standalone), time ranges (HH:MM).
+ *
+ * Example: "累计 36,176,041 元" → "累计 3,617.60万 元" (kept 元 for safety)
+ *          "峰值 2025-09-29 (894,825)" → untouched date, "(89.48万)"
+ */
+const BIG_NUMBER_RE = /(¥|￥)?((?:\d{1,3}(?:,\d{3})+(?:\.\d+)?)|(?:\d{5,}(?:\.\d+)?))/g;
+
+function normalizeInsightNumbers(text: string): string {
+  return text.replace(BIG_NUMBER_RE, (match, currency, raw, offset, full) => {
+    // Skip if inside a date-like context: preceded by '-' '/' or immediately
+    // after a year-month-day segment.
+    const preCtx = full.slice(Math.max(0, offset - 5), offset);
+    if (/\d{4}[-/]$/.test(preCtx) || /\d{2}[-/]$/.test(preCtx)) return match;
+    // Skip if year standalone (e.g. "2025" alone in non-currency context)
+    if (raw.length === 4 && !currency && parseInt(raw, 10) >= 1900 && parseInt(raw, 10) <= 2099) return match;
+
+    const n = parseFloat(raw.replace(/,/g, ''));
+    if (!isFinite(n) || n < 10000) return match;
+
+    const abs = Math.abs(n);
+    let out: string;
+    if (abs >= 1e8) {
+      out = (n / 1e8).toFixed(2) + '亿';
+    } else if (abs >= 1e4) {
+      out = (n / 1e4).toFixed(2) + '万';
+    } else {
+      return match;
+    }
+    return (currency || '') + out;
+  });
+}
+
 function humanizeInsight(raw: string): string {
   let out = raw;
   for (const [re, repl] of INSIGHT_REPLACEMENTS) {
     out = out.replace(re, repl);
   }
+  out = normalizeInsightNumbers(out);
   return out;
 }
 
