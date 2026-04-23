@@ -1,0 +1,169 @@
+{
+  "report": {
+    "dashboard": {
+      "path": "/smart-bi/dashboard",
+      "name": "经营驾驶舱",
+      "timings": {
+        "tDom": 251,
+        "tIdle": 2118,
+        "tTotal": 8137
+      },
+      "lingeringSpinners": 0,
+      "emptyStates": 0,
+      "brokenImages": 0,
+      "overflowedNumbers": [],
+      "truncatedTitles": [],
+      "emptyBodyCards": 0,
+      "deadAnchors": 0,
+      "lowContrastSamples": [],
+      "domNodes": 936,
+      "mainSize": {
+        "w": 1380,
+        "h": 2868
+      },
+      "chartCanvases": 5,
+      "zeroLikeStats": 0,
+      "tplCardCount": 4,
+      "tplCardTitles": [
+        "时间趋势",
+        "维度 Top N",
+        "分类分布",
+        "异常检测"
+      ],
+      "noDataTextCount": 2
+    },
+    "finance": {
+      "path": "/smart-bi/finance",
+      "name": "财务分析",
+      "timings": {
+        "tDom": 259,
+        "tIdle": 1777,
+        "tTotal": 7805
+      },
+      "lingeringSpinners": 0,
+      "emptyStates": 0,
+      "brokenImages": 0,
+      "overflowedNumbers": [],
+      "truncatedTitles": [],
+      "emptyBodyCards": 0,
+      "deadAnchors": 0,
+      "lowContrastSamples": [],
+      "domNodes": 851,
+      "mainSize": {
+        "w": 1380,
+        "h": 2497
+      },
+      "chartCanvases": 4,
+      "zeroLikeStats": 0,
+      "tplCardCount": 4,
+      "tplCardTitles": [
+        "利润表",
+        "营收管理报表",
+        "储值卡消费分析",
+        "团购渠道明细"
+      ],
+      "noDataTextCount": 0
+    },
+    "rest_v2": {
+      "path": "/smart-bi/restaurant-v2",
+      "name": "餐饮v2",
+      "timings": {
+        "tDom": 241,
+        "tIdle": 1658,
+        "tTotal": 7685
+      },
+      "lingeringSpinners": 0,
+      "emptyStates": 1,
+      "brokenImages": 0,
+      "overflowedNumbers": [],
+      "truncatedTitles": [],
+      "emptyBodyCards": 0,
+      "deadAnchors": 0,
+      "lowContrastSamples": [],
+      "domNodes": 900,
+      "mainSize": {
+        "w": 1380,
+        "h": 2283
+      },
+      "chartCanvases": 5,
+      "zeroLikeStats": 0,
+      "tplCardCount": 5,
+      "tplCardTitles": [
+        "热销菜品 Top N",
+        "滞销菜品",
+        "菜品分类明细",
+        "套餐使用率",
+        "时段营业额"
+      ],
+      "noDataTextCount": 0
+    },
+    "trends": {
+      "path": "/analytics/trends",
+      "name": "趋势分析",
+      "timings": {
+        "tDom": 248,
+        "tIdle": 7802,
+        "tTotal": 13819
+      },
+      "lingeringSpinners": 0,
+      "emptyStates": 0,
+      "brokenImages": 0,
+      "overflowedNumbers": [],
+      "truncatedTitles": [],
+      "emptyBodyCards": 0,
+      "deadAnchors": 0,
+      "lowContrastSamples": [],
+      "domNodes": 458,
+      "mainSize": {
+        "w": 1380,
+        "h": 2482
+      },
+      "chartCanvases": 7,
+      "zeroLikeStats": 0,
+      "tplCardCount": 4,
+      "tplCardTitles": [
+        "时间趋势",
+        "同比环比趋势",
+        "工作日/周末规律",
+        "月度异常"
+      ],
+      "noDataTextCount": 0
+    },
+    "orders": {
+      "path": "/sales/orders",
+      "name": "销售订单",
+      "timings": {
+        "tDom": 244,
+        "tIdle": 1500,
+        "tTotal": 7524
+      },
+      "lingeringSpinners": 0,
+      "emptyStates": 0,
+      "brokenImages": 0,
+      "overflowedNumbers": [],
+      "truncatedTitles": [],
+      "emptyBodyCards": 0,
+      "deadAnchors": 0,
+      "lowContrastSamples": [],
+      "domNodes": 532,
+      "mainSize": {
+        "w": 1380,
+        "h": 1000
+      },
+      "chartCanvases": 0,
+      "zeroLikeStats": 0,
+      "tplCardCount": 0,
+      "tplCardTitles": [],
+      "noDataTextCount": 1
+    },
+    "tablet": {
+      "bodyScrollable": false,
+      "overflowX": 0,
+      "kpiCardWidths": []
+    }
+  },
+  "findings": [
+    "[趋势分析] 加载慢: tTotal=13819ms (>10s)",
+    "[趋势分析] 网络空闲慢: tIdle=7802ms (>5s, 用户看到骨架屏)"
+  ]
+}
