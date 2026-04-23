@@ -102,3 +102,26 @@ async def test_update_feedback_rejects_bad_values():
 
     with pytest.raises(ValueError):
         await update_feedback(pool, log_id=1, value=5, comment=None)  # out of range
+
+
+@pytest.mark.asyncio
+async def test_update_feedback_scopes_by_factory_when_provided():
+    """When factory_id is passed, SQL must include factory_id filter."""
+    pool, conn = _make_mock_pool()
+    await update_feedback(pool, log_id=42, value=1, comment=None, factory_id="F001")
+    sql = conn.execute.call_args[0][0]
+    assert "factory_id = $4" in sql
+    # positional args: value, comment, log_id, factory_id
+    args = conn.execute.call_args[0]
+    assert args[1] == 1
+    assert args[3] == 42
+    assert args[4] == "F001"
+
+
+@pytest.mark.asyncio
+async def test_update_feedback_returns_false_on_zero_rows():
+    """UPDATE 0 → row didn't match (wrong id or wrong factory) → return False."""
+    pool, conn = _make_mock_pool()
+    conn.execute = AsyncMock(return_value="UPDATE 0")
+    ok = await update_feedback(pool, log_id=42, value=1, comment=None)
+    assert ok is False

@@ -112,12 +112,28 @@ async def by_similarity(
 
 
 @router.post("/{log_id}/feedback")
-async def feedback(log_id: int, req: FeedbackRequest) -> Dict[str, Any]:
-    """FE calls this when user clicks 👍/👎."""
+async def feedback(
+    log_id: int, req: FeedbackRequest, http_request: Request,
+) -> Dict[str, Any]:
+    """FE calls this when user clicks 👍/👎.
+
+    Scopes the update to the caller's factory_id so user A of factory X
+    can't overwrite feedback on logs owned by factory Y. This signal
+    feeds RAG + template promotion in later phases — cross-tenant
+    poisoning is a real concern.
+    """
     pool = await get_pg_pool()
     if pool is None:
         raise HTTPException(500, "PG pool unavailable")
-    ok = await update_feedback(pool, log_id, req.value, req.comment)
+    factory_id = (
+        getattr(http_request.state, "factory_id", None)
+        if hasattr(http_request, "state") else None
+    )
+    ok = await update_feedback(
+        pool, log_id, req.value, req.comment, factory_id=factory_id
+    )
     if not ok:
-        raise HTTPException(404, f"log id {log_id} not found or update failed")
+        raise HTTPException(
+            404, f"log id {log_id} not found, not owned by your factory, or update failed"
+        )
     return {"ok": True, "log_id": log_id, "value": req.value}

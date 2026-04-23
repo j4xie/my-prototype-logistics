@@ -98,23 +98,48 @@ async def log_fallback(pool, payload: LlmFallbackLogPayload) -> Optional[int]:
 
 
 async def update_feedback(
-    pool, log_id: int, value: int, comment: Optional[str]
+    pool, log_id: int, value: int, comment: Optional[str],
+    factory_id: Optional[str] = None,
 ) -> bool:
     """Update user feedback on a logged fallback. value ∈ {-1, 0, 1}.
 
-    Returns True on success.
+    If factory_id is provided, the UPDATE is scoped to rows owned by that
+    factory — prevents cross-tenant writes when the endpoint is called by
+    a non-admin user. Returns True only when exactly one row is affected.
+
+    Returns True on success (exactly one row updated), False otherwise
+    (not found, wrong factory, or DB error).
     """
     if value not in (-1, 0, 1):
         raise ValueError(f"feedback value must be -1/0/1, got {value}")
-    sql = """
-        UPDATE smart_bi_llm_fallback_log
-        SET user_feedback = $1, feedback_comment = $2
-        WHERE id = $3
-    """
+    if factory_id is not None:
+        sql = """
+            UPDATE smart_bi_llm_fallback_log
+            SET user_feedback = $1, feedback_comment = $2
+            WHERE id = $3 AND factory_id = $4
+        """
+        args = (value, comment, log_id, factory_id)
+    else:
+        sql = """
+            UPDATE smart_bi_llm_fallback_log
+            SET user_feedback = $1, feedback_comment = $2
+            WHERE id = $3
+        """
+        args = (value, comment, log_id)
     try:
         async with pool.acquire() as conn:
-            result = await conn.execute(sql, value, comment, log_id)
-        return result.upper().startswith("UPDATE")
+            result = await conn.execute(sql, *args)
+        # asyncpg returns "UPDATE 1" when exactly one row was updated,
+        # "UPDATE 0" when WHERE matched no rows. Only treat "UPDATE 1+" as
+        # success so the caller can distinguish real updates from silent
+        # no-ops caused by cross-tenant id probing.
+        if not result.upper().startswith("UPDATE"):
+            return False
+        try:
+            affected = int(result.split()[-1])
+        except (ValueError, IndexError):
+            affected = 0
+        return affected >= 1
     except Exception as e:
         logger.warning(f"[fallback-log] feedback update failed for id={log_id}: {e}")
         return False
