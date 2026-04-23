@@ -35,6 +35,25 @@ function getAvailableTransitions(row: Record<string, unknown>): WorkflowTransiti
   return props.workflowTransitions.filter((t) => t.from === status && t.enabled)
 }
 
+/**
+ * Bug I (UX): for reference fields (e.g., customerId), prefer the joined display name
+ * (e.g., customerName) from the row if backend provides it via @Formula or DTO mapping.
+ * Convention: <code> ending in "Id" → look for <prefix>Name (drop "Id", append "Name").
+ * Fallback to raw value if no display sibling exists.
+ */
+function resolveDisplayValue(row: Record<string, unknown>, field: EffectiveField): unknown {
+  const rawValue = row[field.code]
+  if (field.type === 'reference' && field.code.endsWith('Id')) {
+    const prefix = field.code.slice(0, -2)  // customerId → customer
+    const nameKey = prefix + 'Name'         // → customerName
+    const displayName = row[nameKey]
+    if (displayName != null && String(displayName).length > 0) {
+      return displayName
+    }
+  }
+  return rawValue
+}
+
 // 格式化
 function formatCell(value: unknown, field: EffectiveField): string {
   if (value === null || value === undefined) return '-'
@@ -108,8 +127,8 @@ function isStatusField(field: EffectiveField): boolean {
           >
             {{ row[field.code] || '-' }}
           </el-tag>
-          <!-- 其他字段用 formatter -->
-          <span v-else>{{ formatCell(row[field.code], field) }}</span>
+          <!-- 其他字段用 formatter; reference 字段优先显示 joined name (Bug I) -->
+          <span v-else>{{ formatCell(resolveDisplayValue(row, field), field) }}</span>
         </template>
       </el-table-column>
 
