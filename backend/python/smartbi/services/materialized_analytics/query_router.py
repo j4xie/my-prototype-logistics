@@ -20,7 +20,7 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
     # === Restaurant-specific (higher priority, more specific) ===
     (
         "dish_slow_movers",
-        [["菜品", "商品", "产品"], ["滞销", "卖得不好", "不好卖", "末位", "末尾", "最差", "最少", "低销"]],
+        [["菜品", "商品", "产品"], ["滞销", "慢销", "卖得不好", "不好卖", "卖不出去", "末位", "末尾", "垫底", "倒数", "下架", "最差", "最少", "低销"]],
     ),
     (
         "dish_sales_top_n",
@@ -729,6 +729,12 @@ _KPI_UNIT_MAP: Dict[str, str] = {
     "takeaway_total": " 单",
     "dine_in_total": " 单",
     "channel_count": " 个",
+    "dine_in_share": "%",
+    "takeaway_share": "%",
+    "top_channel_share": "%",
+    "dine_in_avg_per_customer": " 元",
+    "takeaway_avg_per_customer": " 元",
+    "total_channels": " 个",
     "latest_revenue": " 元",
     "avg_hall_spend": " 元",
     "avg_vip_spend": " 元",

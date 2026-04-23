@@ -30,6 +30,12 @@ class DishSlowMovers(AnalysisTemplate):
         "销量最差的菜",
         "不好卖的菜",
         "冷门菜品",
+        "慢销菜品",
+        "滞销菜品",
+        "销量垫底",
+        "哪些菜要下架",
+        "菜品销量倒数",
+        "底部菜品",
     ]
 
     @property
