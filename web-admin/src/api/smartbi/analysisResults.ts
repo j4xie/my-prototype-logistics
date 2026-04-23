@@ -1,44 +1,51 @@
 /**
  * Week 6 — batch read of materialized template results.
- * Backend: GET /api/mobile/{factoryId}/smart-bi/gold/analysis-results
- *          (Python proxied via Java gateway; auth via JWT)
- * Or direct: GET /api/smartbi/gold/analysis-results (Python direct; needs X-Factory-Id)
+ *
+ * Calls Python /api/smartbi/gold/analysis-results directly via
+ * pythonFetch (matches existing gold.ts pattern — Java gateway does
+ * not proxy /smart-bi/gold/* routes).
+ *
+ * pythonFetch auto-converts snake_case → camelCase via transformKeys
+ * (common.ts:140). Types below describe the CAMELCASE shape the
+ * caller receives, not the raw Python JSON.
  */
-import { get } from './common';
+import { pythonFetch } from './common';
 
 export interface AnalysisResultItem {
-  upload_id: number;
-  template_code: string;
+  uploadId: number;
+  templateCode: string;
   domain: string | null;
-  analysis_type: string;
-  analysis_result: unknown;
-  chart_configs: unknown[] | null;
-  kpi_values: Record<string, unknown> | null;
+  analysisType: string;
+  analysisResult: unknown;
+  chartConfigs: unknown[] | null;
+  kpiValues: Record<string, unknown> | null;
   insights: unknown[] | null;
-  created_at: string | null;
-  upload_label: string | null;
-  upload_created_at: string | null;
+  createdAt: string | null;
+  uploadLabel: string | null;
+  uploadCreatedAt: string | null;
 }
 
 export interface AnalysisResultsResponse {
   items: AnalysisResultItem[];
-  missing_codes: string[];
-  never_materialized_codes: string[];
+  missingCodes: string[];
+  neverMaterializedCodes: string[];
 }
 
-export function getAnalysisResults(
+export async function getAnalysisResults(
   factoryId: string,
   codes: string[],
   opts: { uploadId?: number } = {},
-) {
-  const params: Record<string, string | number> = {
+): Promise<AnalysisResultsResponse> {
+  const params = new URLSearchParams({
     template_codes: codes.join(','),
-  };
+    factory_id: factoryId,
+  });
   if (opts.uploadId !== undefined) {
-    params.upload_id = opts.uploadId;
+    params.set('upload_id', String(opts.uploadId));
   }
-  return get<AnalysisResultsResponse>(
-    `/${factoryId}/smart-bi/gold/analysis-results`,
-    { params },
-  );
+  const result = (await pythonFetch(
+    `/api/smartbi/gold/analysis-results?${params.toString()}`,
+    { method: 'GET' },
+  )) as AnalysisResultsResponse;
+  return result;
 }

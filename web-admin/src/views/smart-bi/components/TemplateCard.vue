@@ -68,9 +68,9 @@ let chartInstance: ECharts | null = null;
 const title = computed(() => getTemplateTitle(props.code));
 const requiredFields = computed(() => getRequiredFields(props.code));
 
-const uploadLabel = computed(() => props.item?.upload_label);
+const uploadLabel = computed(() => props.item?.uploadLabel);
 const formattedDate = computed(() => {
-  const d = props.item?.upload_created_at;
+  const d = props.item?.uploadCreatedAt;
   if (!d) return '';
   try {
     return new Date(d).toLocaleDateString('zh-CN');
@@ -80,7 +80,7 @@ const formattedDate = computed(() => {
 });
 
 const kpis = computed(() => {
-  const kv = props.item?.kpi_values;
+  const kv = props.item?.kpiValues;
   if (!kv || typeof kv !== 'object') return [];
   return Object.entries(kv)
     .slice(0, 4)
@@ -93,7 +93,7 @@ const kpis = computed(() => {
 });
 
 const chartOption = computed(() => {
-  const configs = props.item?.chart_configs;
+  const configs = props.item?.chartConfigs;
   if (!Array.isArray(configs) || configs.length === 0) return null;
   return configs[0]; // render first chart; library view can show others later
 });

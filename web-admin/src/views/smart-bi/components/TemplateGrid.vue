@@ -54,7 +54,7 @@ const codes = computed(() => getPageCodes(props.pageKey));
 
 const itemsMap = computed(() => {
   const m: Record<string, AnalysisResultItem> = {};
-  for (const i of items.value) m[i.template_code] = i;
+  for (const i of items.value) m[i.templateCode] = i;
   return m;
 });
 
@@ -73,18 +73,15 @@ async function load() {
   loading.value = true;
   loadError.value = '';
   try {
-    const resp = await getAnalysisResults(
+    // pythonFetch returns the body directly (no {success, data} wrap).
+    const body = await getAnalysisResults(
       props.factoryId,
       [...codes.value],
       props.uploadId !== undefined ? { uploadId: props.uploadId } : {},
     );
-    if (resp.success && resp.data) {
-      items.value = resp.data.items || [];
-      missingCodes.value = resp.data.missing_codes || [];
-      neverCodes.value = resp.data.never_materialized_codes || [];
-    } else {
-      loadError.value = resp.message || '接口返回空';
-    }
+    items.value = body.items || [];
+    missingCodes.value = body.missingCodes || [];
+    neverCodes.value = body.neverMaterializedCodes || [];
   } catch (e) {
     loadError.value = e instanceof Error ? e.message : String(e);
     console.error('[TemplateGrid] load failed', e);
