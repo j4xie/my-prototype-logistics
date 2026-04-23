@@ -574,6 +574,8 @@ _KPI_LABEL_MAP: Dict[str, str] = {
     "top_supplier": "Top1 供应商",
     "top_suppliers": "Top 供应商",
     "top_table_type": "Top 桌位类型",
+    "table_type_count": "桌位类型数",
+    "top_dish_by_type": "头名类型菜品",
     "top_platform": "Top 平台",
     "top_platform_amount": "Top平台金额",
     "top_platform_share_pct": "Top平台占比",
