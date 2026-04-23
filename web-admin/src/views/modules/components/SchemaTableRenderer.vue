@@ -86,9 +86,40 @@ function getTagType(status: string): string {
     COMPLETED: 'success',
     CANCELLED: 'danger',
     ACTIVE: 'success',
+    INACTIVE: 'info',
     DEPRECATED: 'danger',
   }
   return map[status] || 'info'
+}
+
+/**
+ * Bug J (UX): map ERP status codes to friendly Chinese display.
+ * Falls back to raw code if not mapped (covers schema-defined options + custom enums).
+ */
+function getStatusLabel(status: string): string {
+  const map: Record<string, string> = {
+    DRAFT: '草稿',
+    CONFIRMED: '已确认',
+    PENDING_FINANCE_REVIEW: '待财务审核',
+    FINANCE_APPROVED: '财务通过',
+    FINANCE_REJECTED: '财务驳回',
+    PROCESSING: '处理中',
+    SHIPPED: '已发货',
+    PARTIAL_SHIPPED: '部分发货',
+    DELIVERED: '已送达',
+    COMPLETED: '已完成',
+    CANCELLED: '已取消',
+    ACTIVE: '合作中',
+    INACTIVE: '已停用',
+    DEPRECATED: '已弃用',
+    NOT_INVOICED: '未开票',
+    PARTIAL_INVOICED: '部分开票',
+    FULLY_INVOICED: '已开票',
+    UNPAID: '未收款',
+    PARTIAL: '部分收款',
+    PAID: '已收款',
+  }
+  return map[status] || status || '-'
 }
 
 function isStatusField(field: EffectiveField): boolean {
@@ -119,13 +150,13 @@ function isStatusField(field: EffectiveField): boolean {
         show-overflow-tooltip
       >
         <template #default="{ row }">
-          <!-- 状态字段用 Tag -->
+          <!-- 状态字段用 Tag (Bug J: friendly Chinese label) -->
           <el-tag
             v-if="isStatusField(field)"
             :type="getTagType(String(row[field.code] || ''))"
             size="small"
           >
-            {{ row[field.code] || '-' }}
+            {{ getStatusLabel(String(row[field.code] || '')) }}
           </el-tag>
           <!-- 其他字段用 formatter; reference 字段优先显示 joined name (Bug I) -->
           <span v-else>{{ formatCell(resolveDisplayValue(row, field), field) }}</span>
