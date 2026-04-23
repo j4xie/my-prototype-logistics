@@ -94,3 +94,57 @@ WHERE module_code='sales_order';
 
 - 2026-04-23 12:24 CST: Applied to test DB (cretas_db) — backup at tmp_pr1/schema_pre.json (6080 bytes)
 - TBD: Apply to prod after customer ack
+
+## Additional follow-up data fixes (discovered during E2E)
+
+### A. customer RATING_RANGE validation rule — must allow null rating
+
+**Problem**: `factory_validation_rules` row for customer UPDATE had condition `#rating < 1 OR #rating > 5`. SpEL evaluates null rating as 0 → blocks ALL customer updates that don't include rating field. Found via E2E PUT test.
+
+**Fix applied to test DB** (2026-04-23):
+```sql
+UPDATE factory_validation_rules
+SET condition='#rating != null && (#rating < 1 OR #rating > 5)',
+    updated_at=NOW()
+WHERE module_code='customer' AND rule_code='RATING_RANGE';
+-- UPDATE 1
+```
+
+**Apply to prod**: replace `cretas_db` with `cretas_prod_db`, run same UPDATE.
+
+**Rollback** (if needed): restore old condition:
+```sql
+UPDATE factory_validation_rules
+SET condition='#rating < 1 OR #rating > 5'
+WHERE module_code='customer' AND rule_code='RATING_RANGE';
+```
+
+### B. supplier RATING_RANGE — same rule pattern
+
+Per V20260410_05 seed file, supplier has same RATING_RANGE rule. Same fix applies.
+```sql
+UPDATE factory_validation_rules
+SET condition='#rating != null && (#rating < 1 OR #rating > 5)',
+    updated_at=NOW()
+WHERE module_code='supplier' AND rule_code='RATING_RANGE';
+```
+
+### C. F001 sales_order rendering_mode (TEST DB ONLY)
+
+For E2E DYNAMIC verification, `factory_module_configs.rendering_mode` for F001 sales_order was switched from `LEGACY` → `DYNAMIC`:
+```sql
+UPDATE factory_module_configs SET rendering_mode='DYNAMIC', updated_at=NOW()
+WHERE factory_id='F001' AND module_code='sales_order';
+```
+
+**This change is test-only**. Prod F001 already has DYNAMIC mode (per spec history). No prod action needed.
+
+If you want to revert F001 test back to LEGACY:
+```sql
+UPDATE factory_module_configs SET rendering_mode='LEGACY', updated_at=NOW()
+WHERE factory_id='F001' AND module_code='sales_order';
+```
+
+### D. Backend DTO @NotBlank fix (commit `211eb7a85`)
+
+`CreateCustomerRequest` had `@NotBlank` on contactPerson/phone/shippingAddress that contradicted T10 frontend change. Removed in commit `211eb7a85` (deployed in v20260423_110328 backend JAR). For prod deploy: just normal backend deploy includes this commit.
