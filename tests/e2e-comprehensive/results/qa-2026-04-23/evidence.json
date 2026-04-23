@@ -1,0 +1,113 @@
+{
+  "meta": {
+    "url": "https://admin.cretaceousfuture.com",
+    "startedAt": "2026-04-23T18:48:47.226Z",
+    "endedAt": "2026-04-23T18:50:37.634Z",
+    "consoleErrors": []
+  },
+  "artifacts": {
+    "1_restaurantV2_kpi": {
+      "depth": "deep",
+      "visible": true,
+      "stats": [
+        "20,567,504.21",
+        "140,077",
+        "146.83",
+        "8"
+      ],
+      "topStores": [
+        [
+          "青花椒大丸百货店",
+          "¥7,431,229",
+          "41,131"
+        ],
+        [
+          "青花椒徐汇日月光店",
+          "¥5,106,416",
+          "42,424"
+        ],
+        [
+          "青花椒徐汇光启城店",
+          "¥2,709,421",
+          "15,018"
+        ],
+        [
+          "青花椒南方百联店",
+          "¥2,350,314",
+          "23,969"
+        ],
+        [
+          "青花椒南桥百联店",
+          "¥1,651,961",
+          "12,003"
+        ]
+      ],
+      "networkGold": 2,
+      "consoleErrors": [],
+      "rule9": {
+        "top1_store": "青花椒大丸百货店",
+        "top1_store_is_real": true,
+        "tail_store": "青花椒南桥百联店",
+        "tail_is_real": true,
+        "no_pseudo": true
+      }
+    },
+    "7_template_grid_v2": {
+      "depth": "smoke",
+      "sectionCount": 1,
+      "cardCount": 5,
+      "titleTexts": [
+        "📊模板分析AI 自动为本次上传生成的 5 项分析 刷新 "
+      ],
+      "firstCardTitle": "热销菜品 Top N"
+    },
+    "2_trends_gold": {
+      "depth": "deep",
+      "happyPath": {
+        "visible": true,
+        "days": "365 天",
+        "tag": "Gold · daily_trend",
+        "pointsSampleCount": 0,
+        "pointsSample": [],
+        "rule9_first_nonzero": false,
+        "rule9_mid_nonzero": false,
+        "rule9_last_nonzero": false
+      },
+      "emptyRange": {
+        "visible": false,
+        "semi_error_ok": true
+      },
+      "networkGoldDailyTrend": 3
+    },
+    "7b_template_grid_trends": {
+      "depth": "smoke",
+      "sectionCount": 1,
+      "cardCount": 4
+    },
+    "3a_sales_orders_qhj": {
+      "depth": "deep",
+      "visible": true,
+      "stats": [
+        "20,639,884.52",
+        "140,541",
+        "146.86",
+        "8"
+      ],
+      "rangeLabel": "2025 全年",
+      "networkCallCount": 2,
+      "fallback_triggered": true
+    },
+    "4_insights_custom": {
+      "depth": "smoke",
+      "hit": true,
+      "url": "https://admin.cretaceousfuture.com/api/mobile/RES_3101_009/smart-bi/dashboard/executive/insights/custom?startDate=2025-01-01&endDate=2025-12-31",
+      "status": 200
+    },
+    "3b_sales_orders_f001_negative": {
+      "depth": "deep-negative",
+      "cardVisible": true,
+      "cardCorrectlyHidden": false,
+      "legacyTableRendered": true
+    }
+  }
+}
