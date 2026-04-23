@@ -52,6 +52,7 @@ temp*
 !backend/python/smartbi/shared/temporal_comparator.py
 !backend/python/smartbi/services/restaurant/sections/temporal_comparison.py
 !backend/python/smartbi/services/materialized_analytics/templates/
+!web-admin/src/views/smart-bi/components/Template*.vue
 .tmp/
 *.tmp
 *.temp
@@ -203,3 +204,5 @@ frontend/CretasFoodTrace/android/app/src/main/assets/
 /NOW()
 /TASK_*_COMPLETE.txt
 
+video-training-data/2*/
+video-training-data/*.mp4
