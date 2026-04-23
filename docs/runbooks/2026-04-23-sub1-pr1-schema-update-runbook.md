@@ -148,3 +148,77 @@ WHERE factory_id='F001' AND module_code='sales_order';
 ### D. Backend DTO @NotBlank fix (commit `211eb7a85`)
 
 `CreateCustomerRequest` had `@NotBlank` on contactPerson/phone/shippingAddress that contradicted T10 frontend change. Removed in commit `211eb7a85` (deployed in v20260423_110328 backend JAR). For prod deploy: just normal backend deploy includes this commit.
+
+### E. Bug C: sales_order items.unit options + default (DB UPDATE on test ✅)
+
+`module_schemas.field_schema.items.itemSchema.fields[unit]` had `type:select required:true` but **no options + no defaultValue** → DYNAMIC form unit dropdown empty, blocks all SO submits.
+
+**Fix applied to test DB** (2026-04-23 via Python transform script + scp + pg_read_file UPDATE):
+```python
+# unit field added: options=[kg/克/袋/箱/瓶/件/盒/只/份] + defaultValue='kg'
+```
+
+**Apply to prod**: re-run T7 UPDATE script with cretas_prod_db (the same script in Task 7 produces both schema_new.json with all 4 changes: orderNumber.required false / salesperson reference / productTypeId apiEndpoint / unit options+default).
+
+### F. PR1.5 + PR1.6 fixes deployed via backend JAR (no DB action needed)
+
+Following commits ship via standard `./scripts/deploy/deploy-backend.sh --env prod`:
+
+| Commit | Bug | Effect |
+|---|---|---|
+| `e270ec361` | Bug A v1 | SchemaFormRenderer resolveDefault TODAY/NOW/YESTERDAY |
+| `f4dc3ed7a` + `d5bb099d9` | O4 v1+v2 | GlobalExceptionHandler friendly date error |
+| `819c0cbdc` (in `cf736b926`) | Bug D | CustomerMapper status field mapping |
+| `5e140e481` `9b7d5eced` `61526a6b5` | Bug E v1+v2+v3 | ReferenceSelector smart fetch + name-shape guard |
+| `27827f549` | Bug G FE | DynamicModulePage keyword search input |
+| `7423eef5f` `835b32e86` | Bug G BE | SalesOrderRepository.searchByFactoryAndKeyword |
+| `94f0fa074` | Bug I | SchemaTableRenderer reference cell display name |
+| `a005a8862` | Bug J | SchemaTableRenderer Chinese status labels |
+| (in `cf736b926`) | C1 audit | Frontend NOW UTC bug → local time |
+| (in `cf736b926`) | H1 audit | SQL LIKE escape for keyword search |
+| (in `cf736b926`) | M3 audit | Customer status validation |
+
+⚠️ **Concurrent-edit incident**: C1+H1+M3 audit fixes were committed inside `cf736b926` ("Finance KPI Gold flip") due to a git ref lock conflict during my commit. Code is correct + deployed; git blame for those files will misleadingly point to that SmartBI commit. See `feedback_concurrent_edit_scope_creep_apr24.md` memory for prevention.
+
+### G. supplier RATING_RANGE (per audit M3 — defensive)
+
+Per audit, supplier validation has the same null-rating bug. Apply same fix:
+```sql
+UPDATE factory_validation_rules
+SET condition='#rating != null && (#rating < 1 OR #rating > 5)',
+    updated_at=NOW()
+WHERE module_code='supplier' AND rule_code='RATING_RANGE';
+-- UPDATE 1 (or 0 if not present in this env)
+```
+
+---
+
+## ⛓️ Prod deploy sequence (when user says "部 prod")
+
+1. **Verify customer ack on test** (recorded in PR description)
+2. **Backup prod DBs**:
+   ```bash
+   ssh root@47.100.235.168 "sudo -u postgres pg_dump cretas_prod_db -t module_schemas -t factory_validation_rules > /tmp/prod-runbook-pre-pr1.sql"
+   ```
+3. **Deploy backend prod**: `./scripts/deploy/deploy-backend.sh --env prod`
+4. **Apply data UPDATEs to prod DB** (steps E + A + B + G above with cretas_prod_db)
+5. **Deploy web-admin prod**: `./scripts/deploy/deploy-web-admin.sh --env prod`
+6. **Smoke test prod**: Login as `factory_admin1` on `admin.cretaceousfuture.com`, verify:
+   - 仓储管理 menu visible (already confirmed Apr 22, fix `b4203ba7b` shipped)
+   - SO create form: 合同号 disabled / 业务员 dropdown / 产品 search / 单位 default kg / 下单日期 today
+   - Customer create with empty contacts → success
+   - Customer status edit → save shows isActive=false in next GET
+7. **Customer go-live ack** in writing
+
+## ⏪ Full rollback procedure
+
+```bash
+# 1. Restore backend JAR
+ssh root@47.100.235.168 "cp /www/wwwroot/cretas/aims-0.0.1-SNAPSHOT.jar.bak.YYYYMMDD_HHMMSS /www/wwwroot/cretas/aims-0.0.1-SNAPSHOT.jar && systemctl restart cretas-backend"
+
+# 2. Restore web-admin (atomic backup auto-saved by deploy script)
+ssh root@139.196.165.140 "ls /www/wwwroot/web-admin.bak.* | tail -1 | xargs -I{} mv {} /www/wwwroot/web-admin"
+
+# 3. Restore DB
+ssh root@47.100.235.168 "sudo -u postgres psql -d cretas_prod_db < /tmp/prod-runbook-pre-pr1.sql"
+```
