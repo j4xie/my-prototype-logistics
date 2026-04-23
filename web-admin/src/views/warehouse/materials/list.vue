@@ -189,6 +189,7 @@ function handleCreate() {
 function handleEdit(row: Record<string, unknown>) {
   editingId.value = String(row.id || '');
   formDialogTitle.value = '编辑批次';
+  w02HintShown = false;
   Object.assign(formData, {
     batchNumber: row.batchNumber || '',
     materialTypeId: row.materialTypeId || '',

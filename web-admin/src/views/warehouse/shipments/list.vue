@@ -158,13 +158,19 @@ async function submitShipment() {
   // Frontend only collected productBatchId before — POST /shipments returned 400. Derive missing fields
   // from selected productBatch so create succeeds; vehicleNumber/driverName/driverPhone now persist via
   // migration V20260424_01.
+  // Reviewer I-4: productBatchId has no column on ShipmentRecord entity, Jackson drops it silently —
+  // strip it from the wire payload to reduce log noise and stay compatible if FAIL_ON_UNKNOWN_PROPERTIES
+  // is ever enabled.
   const batch = productBatches.value.find((b) => String(b.id) === String(shipmentForm.value.productBatchId)) as Record<string, unknown> | undefined;
+  // Reviewer S-1: ProductionBatch entity exposes productName + unit (not productTypeName / quantityUnit),
+  // but defensive fallback chain keeps the dropdown label shape compatible with any older batch DTO.
   const productName = String(batch?.productTypeName || batch?.productName || `批次-${batch?.batchNumber || shipmentForm.value.productBatchId}`);
   const unit = String(batch?.unit || batch?.quantityUnit || 'kg');
   const batchNumber = batch?.batchNumber ? String(batch.batchNumber) : undefined;
 
+  const { productBatchId: _productBatchId, ...restForm } = shipmentForm.value;
   const payload = {
-    ...shipmentForm.value,
+    ...restForm,
     productName,
     unit,
     ...(batchNumber ? { batchNumber } : {}),

@@ -396,7 +396,13 @@ function getStatusText(status: string) {
           <el-input-number v-model="adjustForm.adjustQuantity" :step="1" style="width: 100%" />
           <div class="form-tip">
             正数增加，负数减少 ·
-            调整后数量: <strong>{{ (Number(adjustForm.currentQuantity) || 0) + (Number(adjustForm.adjustQuantity) || 0) }}</strong>
+            调整后数量:
+            <strong :style="{ color: ((Number(adjustForm.currentQuantity) || 0) + (Number(adjustForm.adjustQuantity) || 0)) < 0 ? 'var(--el-color-danger)' : 'inherit' }">
+              {{ (Number(adjustForm.currentQuantity) || 0) + (Number(adjustForm.adjustQuantity) || 0) }}
+            </strong>
+          </div>
+          <div class="form-tip" style="color: #909399; font-size: 12px; margin-top: 4px;">
+            ⚠ "当前数量"在对话框打开时读取，若有其他用户同时调整，实际结果可能偏差。如需保证一致性请先刷新列表。
           </div>
         </el-form-item>
         <el-form-item label="调整原因" required>
@@ -405,7 +411,12 @@ function getStatusText(status: string) {
       </el-form>
       <template #footer>
         <el-button @click="adjustDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="adjustLoading" @click="submitAdjust">确定</el-button>
+        <el-button
+          type="primary"
+          :loading="adjustLoading"
+          :disabled="((Number(adjustForm.currentQuantity) || 0) + (Number(adjustForm.adjustQuantity) || 0)) < 0"
+          @click="submitAdjust"
+        >确定</el-button>
       </template>
     </el-dialog>
 
