@@ -30,6 +30,7 @@ import {
 } from '@element-plus/icons-vue';
 import RestaurantChatPanel from './components/chat/RestaurantChatPanel.vue';
 import { getUploadHistory, type UploadHistoryItem } from '@/api/smartbi/upload';
+import { getFinanceSummary, type FinanceSummary } from '@/api/smartbi/gold';
 import {
   computeRestaurantAnalyticsV2,
   getRestaurantAnalyticsV2,
@@ -111,6 +112,7 @@ function fillDengHuoguoDemo() {
 // ── Lifecycle ──────────────────────────────────────
 onMounted(async () => {
   await loadUploads();
+  loadGoldKpi();
 });
 
 async function loadUploads() {
@@ -188,6 +190,58 @@ async function runAnalysis(force: boolean = false) {
     loading.value = false;
   }
 }
+
+// ── Gold KPI strip (v1.1 cutover) ──────────────────
+// 独立于 V2 compute 的实时 KPI, 读 /gold/finance-summary (agg_daily). 页面打开即可见.
+function _todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+function _monthStartIso(offsetMonths = 0): string {
+  const d = new Date();
+  d.setMonth(d.getMonth() + offsetMonths, 1);
+  return d.toISOString().slice(0, 10);
+}
+const goldKpiRange = ref<[string, string]>([_monthStartIso(), _todayIso()]);
+const goldKpiShortcuts = [
+  { text: '本月', value: (): [Date, Date] => [new Date(new Date().setDate(1)), new Date()] },
+  { text: '近30天', value: (): [Date, Date] => {
+    const e = new Date(); const s = new Date(); s.setDate(s.getDate() - 29);
+    return [s, e];
+  }},
+  { text: '近90天', value: (): [Date, Date] => {
+    const e = new Date(); const s = new Date(); s.setDate(s.getDate() - 89);
+    return [s, e];
+  }},
+  { text: '2025全年', value: (): [Date, Date] => [new Date('2025-01-01'), new Date('2025-12-31')] },
+  { text: '2024全年', value: (): [Date, Date] => [new Date('2024-01-01'), new Date('2024-12-31')] },
+];
+const goldKpi = ref<FinanceSummary | null>(null);
+const goldKpiLoading = ref(false);
+const goldKpiError = ref<string>('');
+
+async function loadGoldKpi() {
+  if (!factoryId.value) return;
+  const [s, e] = goldKpiRange.value;
+  if (!s || !e) return;
+  goldKpiLoading.value = true;
+  goldKpiError.value = '';
+  try {
+    goldKpi.value = await getFinanceSummary({
+      factoryId: factoryId.value,
+      startDate: s,
+      endDate: e,
+      topNStores: 5,
+    });
+  } catch (err: unknown) {
+    goldKpiError.value = err instanceof Error ? err.message : String(err);
+    goldKpi.value = null;
+  } finally {
+    goldKpiLoading.value = false;
+  }
+}
+
+watch(goldKpiRange, loadGoldKpi);
+watch(factoryId, (v) => { if (v) loadGoldKpi(); });
 
 // ── Computed helpers ───────────────────────────────
 
@@ -719,6 +773,66 @@ function formatCurrency(v?: number): string {
             </el-row>
           </div>
         </el-collapse-transition>
+      </div>
+    </el-card>
+
+    <!-- Gold KPI Strip (v1.1 cutover, 独立于 V2 compute 的实时数据) -->
+    <el-card class="gold-kpi-card" shadow="hover" v-loading="goldKpiLoading">
+      <template #header>
+        <div class="gold-kpi-header">
+          <div class="gold-kpi-title">
+            <el-icon color="#67C23A"><TrendCharts /></el-icon>
+            <span>实时 KPI 看板</span>
+            <el-tag size="small" type="success">Gold · agg_daily</el-tag>
+          </div>
+          <el-date-picker
+            v-model="goldKpiRange"
+            type="daterange"
+            range-separator="→"
+            start-placeholder="开始"
+            end-placeholder="结束"
+            value-format="YYYY-MM-DD"
+            :shortcuts="goldKpiShortcuts"
+            size="small"
+            style="width: 300px"
+          />
+        </div>
+      </template>
+
+      <div v-if="goldKpiError" class="gold-kpi-error">
+        Gold 查询失败: {{ goldKpiError }}
+      </div>
+      <div v-else-if="goldKpi && goldKpi.billCount === 0" class="gold-kpi-empty">
+        所选区间无 POS 数据 (请上传 Excel 或调整区间)
+      </div>
+      <el-row v-else-if="goldKpi" :gutter="16" class="gold-kpi-metrics">
+        <el-col :span="6">
+          <el-statistic :value="goldKpi.totalRevenue" title="总营收" :precision="2" prefix="¥" />
+          <div class="gold-kpi-sub">{{ goldKpi.dayCount }} 天</div>
+        </el-col>
+        <el-col :span="6">
+          <el-statistic :value="goldKpi.billCount" title="订单数" :precision="0" />
+        </el-col>
+        <el-col :span="6">
+          <el-statistic :value="goldKpi.avgBillValue ?? 0" title="客单价" :precision="2" prefix="¥" />
+        </el-col>
+        <el-col :span="6">
+          <el-statistic :value="goldKpi.storeCount" title="门店数" :precision="0" />
+        </el-col>
+      </el-row>
+      <div v-else class="gold-kpi-empty">正在加载...</div>
+
+      <div v-if="goldKpi && goldKpi.topStores.length > 0" class="gold-kpi-stores">
+        <div class="gold-kpi-stores-title">门店 Top 5 (按营收)</div>
+        <el-table :data="goldKpi.topStores" size="small" stripe>
+          <el-table-column prop="storeName" label="门店" />
+          <el-table-column prop="revenue" label="营收" width="160" align="right">
+            <template #default="{ row }">{{ formatCurrency(row.revenue) }}</template>
+          </el-table-column>
+          <el-table-column prop="billCount" label="订单数" width="120" align="right">
+            <template #default="{ row }">{{ row.billCount.toLocaleString() }}</template>
+          </el-table-column>
+        </el-table>
       </div>
     </el-card>
 
@@ -1716,6 +1830,47 @@ function formatCurrency(v?: number): string {
 
 .header-card {
   margin-bottom: 16px;
+}
+
+.gold-kpi-card {
+  margin-bottom: 16px;
+  border-top: 3px solid #67C23A;
+}
+.gold-kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.gold-kpi-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 15px;
+}
+.gold-kpi-metrics {
+  padding: 4px 0;
+}
+.gold-kpi-sub {
+  color: #909399;
+  font-size: 12px;
+  margin-top: 4px;
+}
+.gold-kpi-empty, .gold-kpi-error {
+  color: #909399;
+  text-align: center;
+  padding: 24px 0;
+}
+.gold-kpi-error { color: #F56C6C; }
+.gold-kpi-stores {
+  margin-top: 16px;
+}
+.gold-kpi-stores-title {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: #606266;
 }
 
 .header-title {
