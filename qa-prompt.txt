@@ -1,4 +1,6 @@
-【QA 测试通用执行准则 — 真端到端 + 核对 + 监控】v2.3 (Apr 20 2026 — 加入 Rule 10-12: 发版前完整性回归 / 用户视角 shadow test / 发版管理; 触发事件: 工厂管理员 4-20 复测 14 bug 全部漏网)
+【QA 测试通用执行准则 — 真端到端 + 核对 + 监控】v2.4
+(Apr 24 2026 — 加入 Rule 15-17: wire payload 审计 / 独立 reviewer 同模式扫荡 / 入口点矩阵
+触发事件: Round 7 27/27 PASS 但 reviewer 秒抓 4 Important, Round 8 按 reviewer 模式扫荡立即抓到 W-04 silent-drop P1 bug)
 
 在开始执行本次任何测试任务之前, 以及执行过程中的每一步, 严格遵守以下通用准则.
 不管用户让我测什么功能/模块/流程, 都按这套标准来.
@@ -166,16 +168,28 @@ const showMessage = async (message, type) => {
 
 第三步: Depth 标签 + 监控证据
 
-每个测试步骤强制打 depth 标签:
+每个测试步骤强制打 depth 标签. 分两个正交维度, 不是单一阶梯:
 
-- smoke: 只打开页面看渲染 / 按钮存在
-- medium: 填表 + submit + API 200
-- deep: 填表 + submit + toast 文案精确捕获 + 列表 +1 精确 + 详情页字段回读
-- error-deep: 触发业务错误 + toast 文案 = 后端 message + console 4xx + network
-  response.data.message 四匹配 + sticky / showClose 校验
+维度 A — 主路径深度 (按测试力度递增, 选 1):
+  - smoke: 只打开页面看渲染 / 按钮存在
+  - medium: 填表 + submit + API 200
+  - deep: 填表 + submit + toast 文案精确捕获 + 列表 +1 精确 + 详情页字段回读
+    · 写操作: deep 必须同时满足 Rule 11 roundtrip 3 步 (抓 body + shape audit + re-GET diff)
+    · 只读操作: observable 级 deep 已足够 (roundtrip 对 GET 无意义)
 
-至少 1 条 deep 测试. 光 smoke 堆数量不算真测试, 是 Rule 1 违规.
-如果任务涉及写操作, 至少 1 条 error-deep.
+维度 B — 错误路径 (正交, 与 A 共存):
+  - error-deep: 触发业务错误 + toast 文案 = 后端 message + console 4xx + network
+    response.data.message 四匹配 + sticky / showClose 校验
+    · 任何写操作必须叠加 1 条 error-deep, 独立于维度 A 的深度选择
+
+至少 1 条 deep (维度 A). 光 smoke 堆数量不算真测试, 是 Rule 1 违规.
+如果任务涉及写操作, deep 必须达 roundtrip 级 + 至少 1 条 error-deep.
+
+反模式: 宽松断言 (v2.4 教训)
+  ❌ if (autoFilled) recordPass('A'); else recordPass('B');  // 两分支都绿
+  ✅ assertThat(precondition).then(specificBranch must fire).otherwise(skip)
+两分支都记 PASS 等于该路径无约束, 未测分支静默通过. 永远用单向强制断言:
+"给定条件 X, 必须触发 Y" — 不是 "if X then A else B 都算赢".
 
 每步必做 (7 项):
 
@@ -230,11 +244,31 @@ body" 测 API 永远碰不到, 但前端 dialog emit 的 body 就是缺字段.
 一 DTO) 同理 — BR-13 CreateUserRequest 被 PUT 复用, username @NotBlank
 对 update 误报.
 
-Rule 11 — Read-after-write 硬校验
-写接口测试必 2 步: ① 发 POST/PUT → 验 2xx + success=true; ② 独立 GET
-被改资源 → 验目标字段真变. 只看 status 会漏 silent write failure (BR-13
-UserMapper.updateEntity 不 map roleCode, PUT 200 但 DB 没变). 适用:
-角色/权限变更, 订单状态 transition, 字段 patch, 批量导入回读.
+Rule 11 — Read-after-write 硬校验 (v2.4 升级为 wire+roundtrip)
+写接口测试必 3 步:
+  ① 操作前 `page.on('request', ...)` 捕 HTTP body, 记 keys 期望集
+  ② 发 POST/PUT → 验 2xx + success=true + **payload shape audit**:
+     - 无 phantom 字段 (URL path 已有的 factoryId / batchId 不应再塞 body)
+     - 无 backend 管的字段 (id/createdAt/updatedAt/*_name derived field)
+     - required 字段全在 (对齐后端 DTO @NotBlank/@NotNull)
+  ③ 独立 GET 被改资源 → 逐字段 diff: 发送值 === 持久化值?
+     任何字段 diff = silent-drop bug (backend mapper 漏 map, 或 @Transient
+     setter 伪更新, 或 @Column(updatable=false)).
+     注意: re-GET 前若端点有读 cache, 先 wait cache TTL 或加
+     `Cache-Control: no-cache` header, 否则 cache 返旧值会误判 silent-drop.
+
+真实事故:
+- BR-13: UserMapper.updateEntity 不 map roleCode → PUT 200 但 DB 没变
+- W-04 (Round 8): MaterialBatchMapper.updateEntity 漏 map 4 字段
+  (receiptQuantity / quantityUnit / totalWeight / expireDate) → PUT 200
+  success=true 但全部原值, 只有 notes 被更新. 观察层 "toast + 列表"
+  测试永远抓不出, 只有 re-GET diff 能抓.
+- W-05 (Round 8): FE `{ ...form, factoryId }` 把 URL path 变量塞 body
+  → Jackson 当前配置静默丢弃, 但若未来开 FAIL_ON_UNKNOWN_PROPERTIES
+  严格模式这类 phantom 字段会 400, 须提前清理
+
+适用: 所有写接口 (POST create / PUT update / PATCH / 批量导入), 角色
+/权限变更, 订单状态 transition, 字段 patch, 库存调整.
 
 Rule 12 — 发版前 5 项 checklist (30min 人工 + grep)
 12.1 每个 list.vue 必有 keyword 搜索 + 状态过滤 + 搜索/重置按钮 + 空状态
@@ -265,6 +299,118 @@ Apr 20 又报). 最小方案: build 时 inject version, 前端定期 fetch
 用户 Ctrl+Shift+R 复验.
 
 
+以下 3 条 (Rule 15-17) 是 v2.4 新增, 对应 confirmation bias 盲区 / 入口点真空 / 静态结构性 bug — 补 Rule 1-14 的 "动态观察" 层面之外的 3 个维度.
+
+
+Rule 15 — 独立 reviewer + 同模式扫荡 (confirmation bias 防护, v2.4)
+自测有 confirmation bias — 我设计的 test 证明我相信的事, 漏测的就是我回避
+的问题. Round 7 session 自测 27/27 绿灯, superpowers:code-reviewer agent
+秒抓 4 Important findings. 独立 agent 是性价比最高的 bug 发现手段.
+
+硬规则:
+  a) 触发条件: 每 3+ 个 logic commits (不含 docs/rename/config-only)
+     或每个 feature/bug batch 完成, 必跑一次 superpowers:code-reviewer
+     (Task tool, zero conversation context).
+  b) Reviewer 发现的每个 pattern 立即去扫 sibling 代码 — 不是记 backlog
+     留到"下轮再做". Pattern = 可 grep/归纳的反模式, 如 "@RequestBody
+     Entity 直绑"、"partial-field mapper 漏 null-guard"、"FE `{...form}`
+     spread 带 phantom 字段".
+  c) 扫荡产出 = pass/fail 列表, 每个 match 标 "vulnerable / safe /
+     needs-verify". vulnerable 要么修, 要么写具体 test 计划进 backlog
+     (具体到 file:line + 测试设计, 不是 vague "以后").
+  d) 自我审查不能取代独立 reviewer — 自我 critic 写的 "challenge" 都是
+     softball question, 答案提前在心里.
+
+真实事故:
+- Round 7 reviewer I-2 ("edit path 没测") + I-4 ("FE payload 带 phantom")
+  → Round 8 把这两个 pattern 去扫 material batch edit + 所有 warehouse
+  POST body → 立即抓到 W-04 P1 silent-drop + W-05 cosmetic. 每个
+  pattern 产出 1-2 个真 bug.
+- 不跑 reviewer 的下场: 27/27 自信发 prod, 客户下个版本必有 complaint.
+
+
+Rule 16 — 入口点独立覆盖矩阵 (coverage vacuum 防护, v2.4)
+同一 Vue 文件 / 同一 form 有多个 entry points (handleCreate / handleEdit /
+handleDelete / handleStatusChange), 每个 entry point 独立代码路径独立 bug.
+"测了 create flow" ≠ "测了该模块".
+
+前置条件: 本规则仅在 form reset 逻辑写在 entry function 内 (handleCreate
+重置 formData + flag) 时适用. 若 dialog 用 `@open="resetAll()"` 或
+`destroy-on-close` 保证每次重建, 状态泄漏不可能发生, 可跳 Rule 16b.
+
+硬规则:
+  a) 任何 CRUD list.vue, 至少覆盖 create + edit + 1 个 status transition.
+     扫描示意: 找 Vue SFC 里的 `function handleX` 或 `const handleX = () => {}`
+     入口函数集合 (用 IDE 的 "find in files" 或在项目根跑
+     `find web-admin/src/views -name "*.vue" | xargs grep -E "(function|const|let) handle\\w+"`
+     — 避免依赖 bash globstar, 参考 Rule 17 WHAT+WHY 的写法)
+  b) 同 form 共用字段但 reset 逻辑独立 → 对每个 entry 独立测 state isolation.
+     e.g. Round 7 I-2: materials/list.vue handleCreate 重置 w02HintShown
+     但 handleEdit 漏. 测试矩阵:
+     |              | 第一次开 | 第二次开 | 第一次开A→关→开B |
+     | handleCreate | ✓       | ✓       | n/a              |
+     | handleEdit   | ✓       | ✓       | n/a              |
+     | A→B 跨 entry | n/a     | n/a     | ✓ (state 不泄漏) |
+     (n/a = 该维度对该 entry 不适用, 不是"可省略")
+  c) 取数/prefill 在每个 entry 独立验证: create 空表单 / edit 预填 /
+     cancel 后 re-open 不留旧值.
+
+真实事故:
+- Round 7 handleEdit 漏 `w02HintShown = false` (I-2) → 编辑未配单价原料
+  hint 不再显示. Round 8 Phase A 直接测 edit 路径即暴露.
+- Round 8 Phase C cross-dialog state test: create cancel + edit open 验证
+  form 不留旧 dirty 值.
+
+
+Rule 17 — 后端反模式 checklist (静态扫补 E2E 盲区, v2.4)
+E2E 跑再多也跑不出"只有读代码才能看出"的结构性 bug. 每发版前 6 条检查, 有
+hit 就深挖. 完整 grep/ripgrep 模式见 `scripts/qa/static-scan.sh` (随 v2.5
+或按需手写), 这里列 WHAT + WHY, 不列 HOW 的 shell 细节 (各平台 glob/转义
+差异大, 命令容易开箱就错).
+
+17.1 @RequestBody 直绑 Entity (W-01 根因, reviewer S-2 还有多处)
+     目标: Controller 方法参数是 entity class (ShipmentRecord,
+     MaterialBatch 等), 不是专用 Request DTO (以 Request/DTO/VO 结尾).
+     风险: entity 的 @NotBlank/@NotNull 在 controller auto-fill
+     (setFactoryId/setDate) 之前跑, FE 缺字段 → 400 100% 失败.
+     修: 改用专用 Request DTO 隔离 wire contract 和 persistence model.
+
+17.2 Mapper partial-field updateEntity (W-04 根因)
+     目标: mapper 类里的 update*(<Entity>, <Request>) 方法, 对比
+     <Request> 可编辑字段集看 update 方法是否 null-guard 映射全部.
+     风险: 漏 map 的字段 = silent-drop bug (PUT 200 但 DB 不变).
+     修: 每个 DTO editable 字段加 `if (req.getX() != null) entity.setX(req.getX());`
+
+17.3 @Transient 字段/getter 上的假 setter 调用 (v2.4 教训)
+     目标: entity 里 @Transient 字段 (或 @Transient 修饰的 getter, 两种写法
+     都表示计算属性无对应 @Column); mapper/service 里有没有调 Lombok
+     @Data 生成的对应 setter.
+     风险: setter 写 field 变量但 Hibernate 不持久化 — 永远 silent-drop.
+     修: 计算属性不能被 set, 要派生存储字段 (见 W-04 totalWeight →
+     weightPerUnit 派生).
+
+17.4 FE form spread 带 phantom 字段 (W-05, I-4)
+     目标: Vue 里 `...form.value` 或 `...formData` 塞 submit payload 时,
+     检查 form ref 的 initial fields 是否都应该上 wire. UI 不显示但保留
+     的字段 = phantom.
+     风险: Jackson 静默丢 (现在) / FAIL_ON_UNKNOWN 开后 400 (未来).
+     修: submit 前 destructure 剔除, 或重构为 computed payload builder.
+
+17.5 Semantic delta vs absolute 混淆 (W-03 根因)
+     目标: /adjust /delta /increment /调整 endpoint 的后端 param 语义
+     (newQuantity / delta / amount) 是否和 UI 输入意图对齐.
+     风险: UI 显示 "调整数量 正=增负=减" 但后端当 newQuantity, 正数变成
+     "重置为该值" — 数据完整性灾难.
+     修: FE `newX = current + delta` client-side 派生, 或后端加 mode
+     param 区分 ABSOLUTE/DELTA.
+
+17.6 共享 DTO 被 create+update 复用 (BR-13 模式, 配合 Rule 10)
+     目标: CreateXRequest 同时被 POST /x 和 PUT /x/{id} 绑定.
+     风险: create 必填的 username @NotBlank 对 update 误报 (update 不需
+     要 username, 只改 roleCode). 见 Rule 10 最小 body 测试.
+     修: 拆 UpdateDTO, 或弱化 Create DTO 的 validator 用 Groups.
+
+
 测试环境硬规则
 
 - 测试环境唯一: 用户指定的 test URL (通常 http://139.196.165.140:8097/),
@@ -285,8 +431,12 @@ Bug 记录标准 (5 类)
 2. 分析疑似根因 (查 service 代码 / Java log / DB constraint / 前端 catch 块)
 3. 不草率关闭, 不假装已修
 
-Bug 分类 (5 类, 不要混并):
+Bug 分类 (6 类, 不要混并):
 - 业务逻辑 bug: 后端 API 返错/返错数据
+- silent-drop bug (v2.4, 独立类): 后端 HTTP 2xx success=true, 但部分字段
+  未持久化 (mapper 漏 map / @Transient 伪 setter / @Column updatable=false).
+  用户无任何错误反馈但下次看数据没变. 只能靠 roundtrip re-GET 抓. 真实
+  事故: BR-13 (roleCode) / W-04 (4 字段)
 - UX bug: 后端 OK 但前端吞错误 / 显示 fallback / silent failure / toast 不准确 /
   toast 非 sticky (用户错过) / 缺 next action 指引
 - RBAC bug: 权限矩阵和 UI 按钮可见性不一致
@@ -309,8 +459,10 @@ Bug 分类 (5 类, 不要混并):
    如果是流程依赖系统 (ERP/审批/订单流), 至少 1 个 error-deep 必须验证
    完整四位一体检查 (network message + toast 文案 + sticky + next action 指引).
 7. 判定任务类型 — **新功能 E2E 测试** 还是 **发版前回归审计**?
-   - 新功能测试: 重点 Rule 1-9 (深度验证)
-   - 发版前回归: 重点 Rule 10-14 (完整性 checklist)
+   - 新功能测试: 重点 Rule 1-9 (深度验证) + Rule 11 roundtrip (v2.4)
+   - 发版前回归: 重点 Rule 10-14 (完整性 checklist) + Rule 17 反模式 checklist (v2.4)
+   - 任何 3+ commits 的工作: 必跑 Rule 15 reviewer (v2.4)
+   - 任何 CRUD 模块: 必走 Rule 16 入口点矩阵 (v2.4)
    - 两者都需要时分两阶段做, 别混淆
    如果用户提供了"客户复测 doc" 或 "14-bug 列表" 这种输入, 优先走
    Rule 13 用户 shadow test 复现路径 (照 doc 一行一行对, 重现 + 修复
@@ -344,6 +496,12 @@ Bug 分类 (5 类, 不要混并):
    结论: 自动化擅长"新功能工作", 不擅长"老功能没烂". 真用户 shadow
    test 是性价比最高的 bug 发现手段, 必须制度化 (见 Rule 13).
 
+9.  Round 7 session 27/27 自测 PASS / reviewer 秒抓 4 Important → Rule 15 (独立 reviewer + 3+ logic commits 必触发)
+10. Round 8 W-04 silent-drop: PUT 200 但 4 字段未持久化, 观察层测试 27/27 全绿 → Rule 11 升级为 wire+roundtrip
+11. Round 8 W-05 phantom factoryId: FE spread 把 URL path 变量塞 body → Rule 11.② payload shape audit 步骤
+12. Round 7 I-1 if/else 两分支都 PASS + 数据污染掩盖 hint 分支未跑 → Depth 章 "反模式: 宽松断言"; probe 写 DB 会污染后续 branch 分布, 用新 seed 或 DB snapshot 隔离
+13. Round 7 I-2 handleCreate 测了 handleEdit 没测 (state 泄漏) → Rule 16 入口点矩阵
+
 触发点 quick reference (真窗口补验用):
 - UX-F2 actionHint (withHint 业务错): SO-20260409-0002 详情 → 发货记录 tab →
   DLV-20260418-9490 (未分配批次, 草稿态) 点"发货" → 400 + ElNotification
@@ -351,3 +509,11 @@ Bug 分类 (5 类, 不要混并):
   (Spring page 从 1 开始) → 400 → el-message el-message--error is-closable sticky
 - 数据抽检 (Rule 9): F002 门店对比页 upload 3735 (42 行蜀大侠连锁) 是 Bug #37
   修复验证的标准样本 — 8 家真门店过滤 14 条 pseudo 行
+- silent-drop 复测模板 (Rule 11, v2.4): F001 /warehouse/materials 任意批次 →
+  编辑 receiptQuantity 为当前值 +10 → 保存 → 立即 GET
+  /api/mobile/F001/material-batches/{id} 验新值持久化. 任何 silent-drop
+  回归按此模板 (也可换为 expireDate / quantityUnit 等 W-04 修复的字段).
+- Reviewer agent 模板 (Rule 15, v2.4):
+  Task + superpowers:code-reviewer + BASE_SHA / HEAD_SHA / 文件列表 +
+  "focus on <pattern-X>, sweep siblings for same-cause bugs". 每次产出 3-5
+  个 Important findings.
