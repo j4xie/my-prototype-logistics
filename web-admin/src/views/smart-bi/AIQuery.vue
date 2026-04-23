@@ -105,16 +105,47 @@ const dataSourceLabel = computed(() => {
 const chatHistory = ref<ChatMessage[]>([]);
 const chatContainerRef = ref<HTMLDivElement | null>(null);
 
-// 快捷问题 (保留作为后备)
+// 快捷问题 — 餐饮场景 + 命中模板秒回
 const quickQuestions = [
-  '本月销售额是多少?',
-  '销售额最高的产品是什么?',
-  '本月利润率如何?',
-  '哪个部门业绩最好?',
-  '库存周转情况怎样?',
-  '应收账款逾期情况?',
-  '与上月相比销售变化如何?',
-  '客户数量增长情况?'
+  '畅销品 Top 5',
+  '哪家店业绩最好',
+  '员工里谁最厉害',
+  '外卖占比多少',
+  '慢销菜品',
+  '周末周中对比',
+  '峰值月份',
+  '优惠券使用情况'
+];
+
+// 自动补全候选 — 覆盖 35 个模板的高频 sample_queries(177 中精选)
+// 命中这里的任何 query → Python RAG 秒回(sim=1.0 via template embedding)
+const autocompleteSuggestions = [
+  // 菜品
+  '畅销品 Top 5', '畅销品排行', '热销菜品', '爆款菜品有哪些',
+  '慢销菜品', '滞销菜品', '哪些菜卖不出去', '销量垫底',
+  '哪个菜品类别卖得多', '品类销量排名',
+  // 门店
+  '哪家店业绩最好', '哪家店业绩最差', '业绩冠军是哪家店',
+  '门店业绩排名', '哪家店客单价最高', '门店营收对比',
+  // 员工
+  '员工里谁最厉害', '最厉害的员工', '谁是销售冠军',
+  '服务员业绩排名', '员工绩效排名',
+  // 时间
+  '峰值月份', '营收最高的月份', '月度趋势', '哪个月营业额最高',
+  '周末周中对比', '周末生意好还是平日', '礼拜几卖得最好',
+  // 异常
+  '最近销售异常吗', '营收暴跌月份', '异常月识别',
+  // 渠道/付款
+  '外卖占比多少', '堂食外卖对比', '付款方式占比',
+  '移动支付占比', '美团订单',
+  // 套餐/优惠
+  '套餐使用率', '优惠券使用情况', '折扣率',
+  // 桌位
+  '包厢客人点什么菜', '桌位类型对比',
+  // 反结账
+  '反结账情况', '反结账多吗',
+  // 会员
+  '会员消费情况', '储值卡使用'
 ];
 
 // 分析模板系统
@@ -942,6 +973,25 @@ function handleQuickQuestion(question: string) {
   handleSendMessage();
 }
 
+// 自动补全 — 从 autocompleteSuggestions 按 substring 过滤
+function fetchAutocomplete(
+  queryString: string,
+  cb: (suggestions: { value: string }[]) => void,
+) {
+  const q = (queryString || '').trim().toLowerCase();
+  const list = autocompleteSuggestions
+    .filter((s) => !q || s.toLowerCase().includes(q))
+    .slice(0, 15)
+    .map((value) => ({ value }));
+  cb(list);
+}
+
+// 选中建议后自动发送
+function handleSuggestionSelect(item: { value: string }) {
+  inputQuery.value = item.value;
+  handleSendMessage();
+}
+
 // 清空对话
 function handleClearHistory() {
   // 销毁所有图表
@@ -1223,15 +1273,27 @@ function handleKeydown(event: KeyboardEvent) {
 
       <!-- 输入区域 -->
       <div class="input-area">
-        <el-input
+        <el-autocomplete
           v-model="inputQuery"
           ref="inputRef"
-          type="textarea"
-          :rows="2"
-          :placeholder="nl2sqlMode ? '输入数据查询，例如：各产品的销售额汇总' : '输入您的问题，例如：本月销售额是多少？'"
+          class="query-autocomplete"
+          :fetch-suggestions="fetchAutocomplete"
+          :placeholder="nl2sqlMode ? '输入数据查询，例如：各产品的销售额汇总' : '输入您的问题（下拉有 40+ 模板秒回问题可选）'"
           :disabled="isTyping"
+          :trigger-on-focus="true"
+          popper-class="query-autocomplete-popper"
+          value-key="value"
+          clearable
           @keydown="handleKeydown"
-        />
+          @select="handleSuggestionSelect"
+        >
+          <template #default="{ item }">
+            <div class="suggestion-item">
+              <span class="suggestion-text">{{ item.value }}</span>
+              <span class="suggestion-tag">⚡ 秒回</span>
+            </div>
+          </template>
+        </el-autocomplete>
         <el-button
           type="primary"
           :icon="Promotion"
@@ -1537,6 +1599,14 @@ function handleKeydown(event: KeyboardEvent) {
   border-top: 1px solid var(--el-border-color-lighter, #ebeef5);
   background: var(--el-bg-color, #fff);
 
+  .query-autocomplete {
+    flex: 1;
+
+    :deep(.el-input__wrapper) {
+      border-radius: 8px;
+    }
+  }
+
   :deep(.el-textarea) {
     flex: 1;
 
@@ -1701,6 +1771,30 @@ function handleKeydown(event: KeyboardEvent) {
 
   .template-grid {
     grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<style lang="scss">
+.query-autocomplete-popper {
+  .suggestion-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    line-height: 1.4;
+    padding: 2px 0;
+  }
+  .suggestion-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .suggestion-tag {
+    font-size: 11px;
+    color: #67c23a;
+    margin-left: 12px;
+    flex-shrink: 0;
   }
 }
 </style>
