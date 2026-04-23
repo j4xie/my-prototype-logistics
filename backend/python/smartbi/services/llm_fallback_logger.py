@@ -107,8 +107,9 @@ async def update_feedback(
     factory — prevents cross-tenant writes when the endpoint is called by
     a non-admin user. Returns True only when exactly one row is affected.
 
-    Returns True on success (exactly one row updated), False otherwise
-    (not found, wrong factory, or DB error).
+    Returns True when exactly one row updated, False when no row matched
+    (wrong id or wrong factory). Raises on DB errors so the caller can
+    return 500 instead of 404 for those cases.
     """
     if value not in (-1, 0, 1):
         raise ValueError(f"feedback value must be -1/0/1, got {value}")
@@ -126,20 +127,14 @@ async def update_feedback(
             WHERE id = $3
         """
         args = (value, comment, log_id)
-    try:
-        async with pool.acquire() as conn:
-            result = await conn.execute(sql, *args)
-        # asyncpg returns "UPDATE 1" when exactly one row was updated,
-        # "UPDATE 0" when WHERE matched no rows. Only treat "UPDATE 1+" as
-        # success so the caller can distinguish real updates from silent
-        # no-ops caused by cross-tenant id probing.
-        if not result.upper().startswith("UPDATE"):
-            return False
-        try:
-            affected = int(result.split()[-1])
-        except (ValueError, IndexError):
-            affected = 0
-        return affected >= 1
-    except Exception as e:
-        logger.warning(f"[fallback-log] feedback update failed for id={log_id}: {e}")
+    async with pool.acquire() as conn:
+        result = await conn.execute(sql, *args)
+    # asyncpg returns "UPDATE 1" when exactly one row was updated,
+    # "UPDATE 0" when WHERE matched no rows.
+    if not result.upper().startswith("UPDATE"):
         return False
+    try:
+        affected = int(result.split()[-1])
+    except (ValueError, IndexError):
+        affected = 0
+    return affected >= 1

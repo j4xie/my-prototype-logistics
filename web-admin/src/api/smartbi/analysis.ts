@@ -1821,6 +1821,7 @@ export async function logFeedback(
     });
     return res.ok;
   } catch (e) {
+    console.warn('[logFeedback] request failed:', e);
     return false;
   }
 }

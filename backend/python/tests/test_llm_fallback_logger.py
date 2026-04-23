@@ -125,3 +125,14 @@ async def test_update_feedback_returns_false_on_zero_rows():
     conn.execute = AsyncMock(return_value="UPDATE 0")
     ok = await update_feedback(pool, log_id=42, value=1, comment=None)
     assert ok is False
+
+
+@pytest.mark.asyncio
+async def test_update_feedback_raises_on_db_error():
+    """DB errors should propagate so the admin endpoint can return 500."""
+    pool, conn = _make_mock_pool()
+    # Simulate asyncpg raising
+    conn.execute = AsyncMock(side_effect=RuntimeError("connection lost"))
+
+    with pytest.raises(RuntimeError, match="connection lost"):
+        await update_feedback(pool, log_id=1, value=1, comment=None)

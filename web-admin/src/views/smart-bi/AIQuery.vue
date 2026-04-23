@@ -85,6 +85,7 @@ interface ChatMessage {
   // Phase 1 (Apr 23 2026): log id of the fallback log row (LLM answers only)
   logId?: number | null;
   feedbackValue?: 1 | -1 | 0;  // local optimistic state
+  feedbackPending?: boolean;  // Phase 1.5 Task 1 nit: prevent double-click POSTs
 }
 
 // 当前分析上下文 (用于连续对话)
@@ -191,7 +192,10 @@ function triggerImprovementSuggestions(templateMsg: ChatMessage) {
 
 async function sendFeedback(msg: ChatMessage, value: 1 | -1) {
   if (!msg.logId) return;
+  if (msg.feedbackPending) return;  // in-flight, ignore rapid double-click
+  if (msg.feedbackValue === value) return;  // already this value, no-op
   const prevValue = msg.feedbackValue;
+  msg.feedbackPending = true;
   msg.feedbackValue = value;  // optimistic
   let comment: string | undefined;
   if (value === -1) {
@@ -202,6 +206,7 @@ async function sendFeedback(msg: ChatMessage, value: 1 | -1) {
     }).catch(() => null);
     if (result === null) {
       msg.feedbackValue = prevValue;
+      msg.feedbackPending = false;
       return;
     }
     comment = result.value || undefined;
@@ -213,6 +218,7 @@ async function sendFeedback(msg: ChatMessage, value: 1 | -1) {
   } else {
     ElMessage.success(value === 1 ? '感谢反馈 👍' : '已记录, 我们会改进');
   }
+  msg.feedbackPending = false;
 }
 
 // NL2SQL 模式

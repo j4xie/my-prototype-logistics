@@ -121,6 +121,9 @@ async def feedback(
     can't overwrite feedback on logs owned by factory Y. This signal
     feeds RAG + template promotion in later phases — cross-tenant
     poisoning is a real concern.
+
+    Returns 404 if no row matches (wrong id or wrong factory).
+    Returns 500 if the DB call itself fails (update_feedback raises).
     """
     pool = await get_pg_pool()
     if pool is None:
@@ -129,11 +132,15 @@ async def feedback(
         getattr(http_request.state, "factory_id", None)
         if hasattr(http_request, "state") else None
     )
-    ok = await update_feedback(
-        pool, log_id, req.value, req.comment, factory_id=factory_id
-    )
+    try:
+        ok = await update_feedback(
+            pool, log_id, req.value, req.comment, factory_id=factory_id
+        )
+    except Exception as e:
+        logger.error(f"[feedback] DB error on id={log_id}: {e}")
+        raise HTTPException(500, "database error")
     if not ok:
         raise HTTPException(
-            404, f"log id {log_id} not found, not owned by your factory, or update failed"
+            404, f"log id {log_id} not found or not owned by your factory"
         )
     return {"ok": True, "log_id": log_id, "value": req.value}
