@@ -383,14 +383,24 @@ const INSIGHT_REPLACEMENTS: Array<[RegExp, string]> = [
  */
 const BIG_NUMBER_RE = /(¥|￥)?((?:\d{1,3}(?:,\d{3})+(?:\.\d+)?)|(?:\d{5,}(?:\.\d+)?))/g;
 
+/** Chinese count suffixes — when a number is followed by one of these,
+ * keep the 千分位 format (count semantics) instead of converting to 万/亿.
+ * 元 / 万元 / 亿元 are currency and SHOULD convert. */
+const COUNT_SUFFIX_RE = /^\s*[单笔份个条项家只次套道件场人张朵颗]/;
+
 function normalizeInsightNumbers(text: string): string {
   return text.replace(BIG_NUMBER_RE, (match, currency, raw, offset, full) => {
-    // Skip if inside a date-like context: preceded by '-' '/' or immediately
-    // after a year-month-day segment.
+    // Skip if inside a date-like context (preceded by '-' '/' year-month-day).
     const preCtx = full.slice(Math.max(0, offset - 5), offset);
     if (/\d{4}[-/]$/.test(preCtx) || /\d{2}[-/]$/.test(preCtx)) return match;
-    // Skip if year standalone (e.g. "2025" alone in non-currency context)
+    // Skip standalone 4-digit year in 1900-2099 (no currency prefix).
     if (raw.length === 4 && !currency && parseInt(raw, 10) >= 1900 && parseInt(raw, 10) <= 2099) return match;
+
+    // R4-3: skip if followed by count suffix (单/笔/份/个 etc).
+    // Keep currency-prefixed numbers (¥123456) as amounts even if followed
+    // by 单 (rare) — currency prefix is the stronger signal.
+    const postCtx = full.slice(offset + match.length);
+    if (!currency && COUNT_SUFFIX_RE.test(postCtx)) return match;
 
     const n = parseFloat(raw.replace(/,/g, ''));
     if (!isFinite(n) || n < 10000) return match;
