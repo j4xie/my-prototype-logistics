@@ -75,12 +75,49 @@ function handleChange(val: string | number | null) {
   emit('update:modelValue', val)
 }
 
+/**
+ * Bug E fix: when modelValue exists (edit/view mode), fetch the SPECIFIC
+ * record by ID so its display name populates instead of showing raw ID.
+ * Try GET /endpoint/{id} first; fall back to keyword search if 404/no match.
+ */
+async function fetchById(id: string | number) {
+  loading.value = true
+  try {
+    const endpoint = resolveEndpoint()
+    const res = await request.get(`${endpoint}/${encodeURIComponent(String(id))}`)
+    const item = res.data?.data || res.data
+    if (item && typeof item === 'object') {
+      options.value = [{
+        label: String(item[props.config.displayField] || id),
+        value: item[props.config.valueField] as string | number,
+      }]
+      return
+    }
+  } catch (e: any) {
+    // 404 or wrong shape — fall back to keyword search (legacy behavior)
+    const msg = e?.message || String(e)
+    if (!msg.includes('404')) {
+      console.warn('ReferenceSelector fetchById failed:', msg)
+    }
+  } finally {
+    loading.value = false
+  }
+  // fallback: search by id as keyword (legacy path)
+  search(String(id))
+}
+
 onMounted(() => {
   // Spec §4.A.8 — Skip empty-keyword initial fetch (some backends reject @NotBlank).
-  // User-typed keyword triggers search via :remote-method on el-select.
-  // If existing value present, fetch by it so display label populates.
+  // Bug E fix: if existing value present, fetch by ID for proper display name lookup.
   if (props.modelValue) {
-    search(String(props.modelValue))
+    fetchById(props.modelValue)
+  }
+})
+
+watch(() => props.modelValue, (val) => {
+  // Bug E: re-fetch display when value changes externally (form re-init etc.)
+  if (val && !options.value.find(o => o.value === val)) {
+    fetchById(val)
   }
 })
 </script>
