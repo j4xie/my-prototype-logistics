@@ -14,9 +14,12 @@ Applies when schema has 评价 OR 星级 column.
 """
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, List, Optional
 
 import polars as pl
+
+logger = logging.getLogger(__name__)
 
 from ..compute.base import ComputeBackend
 from ..restaurant import industry_benchmarks as bench
@@ -28,12 +31,16 @@ _STAR_CANDIDATES = ("星级分", "评分", "星级")
 _TASTE_CANDIDATES = ("口味分", "口味")
 _ENV_CANDIDATES = ("环境分", "环境")
 _SERVICE_CANDIDATES = ("服务分", "服务")
-_STORE_CANDIDATES = ("评价门店", "门店名称", "店铺名称")
+# Apr 24 2026: add 大众点评 standard column "具体门店" (qhj Q3/Q4 exports use this)
+_STORE_CANDIDATES = ("具体门店", "评价门店", "门店名称", "店铺名称")
 _REVIEW_TIME_CANDIDATES = ("评价时间", "评论时间")
 _CONTENT_CANDIDATES = ("评价详情", "评价内容")
 _VIP_CANDIDATES = ("是否vip", "是否VIP", "VIP")
 _COMPLAINT_CANDIDATES = ("投诉状态", "投诉")
 _PLATFORM_CANDIDATES = ("平台", "评价来源")
+# New: 菜品标签 — most mentioned dishes (useful as ranking signal)
+_DISH_TAG_CANDIDATES = ("菜品标签",)
+_COMPLAINT_TITLE_CANDIDATES = ("投诉标题", "投诉")
 
 _TOP_N = 10
 
@@ -51,11 +58,17 @@ class ReviewsSentimentSummary(AnalysisTemplate):
 
     sample_queries = [
         "评价分析",
+        "客户评价怎么样",
+        "用户评价分析",
         "大众点评口碑",
         "星级分布",
         "好评差评比例",
         "评分统计",
         "投诉多不多",
+        "哪些菜评价最多",
+        "差评分析",
+        "门店评分排名",
+        "评分最高的门店",
     ]
 
     @property
@@ -211,6 +224,45 @@ class ReviewsSentimentSummary(AnalysisTemplate):
                 for r in rows
             ]
 
+        # Top mentioned 菜品标签 — 大众点评 exports a 菜品标签 col with
+        # comma-separated dish names the reviewer tagged (e.g.
+        # "羊骨煲,地瓜拼盘"). Explode + count to find the dishes most
+        # celebrated (or most complained-about) in reviews. This is a
+        # key operational signal — it tells ops which dishes drive
+        # word-of-mouth independent of raw POS volume.
+        top_dish_tags: List[Dict[str, Any]] = []
+        dish_tag_col = _first(cols, _DISH_TAG_CANDIDATES)
+        if dish_tag_col:
+            try:
+                rows = (
+                    df.filter(
+                        pl.col(dish_tag_col).is_not_null()
+                        & (pl.col(dish_tag_col).cast(pl.Utf8, strict=False).str.strip_chars() != "")
+                    )
+                    .with_columns(
+                        pl.col(dish_tag_col).cast(pl.Utf8).str.split(",").alias("_tags")
+                    )
+                    .explode("_tags")
+                    .with_columns(pl.col("_tags").str.strip_chars().alias("_tags"))
+                    .filter(
+                        pl.col("_tags").is_not_null()
+                        & (pl.col("_tags") != "")
+                        & (pl.col("_tags") != "无")
+                    )
+                    .group_by("_tags").agg(pl.len().alias("mentions"))
+                    .sort("mentions", descending=True)
+                    .head(15)
+                    .to_dicts()
+                )
+                for r in rows:
+                    top_dish_tags.append({
+                        "dish": str(r["_tags"]),
+                        "mentions": int(r["mentions"]),
+                        "share_pct": round(r["mentions"] / total * 100, 2) if total else 0.0,
+                    })
+            except Exception as e:
+                logger.warning(f"[reviews] dish_tag extraction failed: {e}")
+
         # Platform share
         by_platform: List[Dict[str, Any]] = []
         if platform_col:
@@ -310,6 +362,13 @@ class ReviewsSentimentSummary(AnalysisTemplate):
             if black_pearl_candidate_count > 0:
                 parts[-1] += f",💎 {black_pearl_candidate_count} 家已达黑珍珠 3-钻初选资格"
             parts[-1] += "。"
+        if top_dish_tags:
+            top3 = top_dish_tags[:3]
+            parts.append(
+                "🥘 评价中最常提及的菜品: "
+                + "、".join(f"{t['dish']} ({t['mentions']} 条)" for t in top3)
+                + "。"
+            )
         parts.append(bench.industry_footer_by_context("review"))
         insight_text = " ".join(parts)
 
@@ -341,6 +400,7 @@ class ReviewsSentimentSummary(AnalysisTemplate):
                 "complaint_rate_pct": complaint_rate_pct,
                 "vip_rate_pct": vip_rate_pct,
                 "by_month": by_month, "by_platform": by_platform,
+                "top_dish_tags": top_dish_tags,
                 "ranking_eligibility": ranking_qualified,
                 "quality_ranking_eligible_count": quality_eligible_count,
                 "popular_ranking_eligible_count": popular_eligible_count,
@@ -349,13 +409,16 @@ class ReviewsSentimentSummary(AnalysisTemplate):
             },
             chart_config=chart_config,
             kpis={
-                "total_reviews": total, "avg_star": avg_star,
-                "complaint_rate_pct": complaint_rate_pct,
-                "worst_store": worst_stores[0]["store"] if worst_stores else None,
-                "worst_store_avg_star": worst_stores[0]["avg_star"] if worst_stores else None,
-                "quality_ranking_eligible_count": quality_eligible_count,
-                "must_eat_candidate_count": must_eat_candidate_count,
-                "black_pearl_candidate_count": black_pearl_candidate_count,
+                "评价总数": total,
+                "平均星级": avg_star,
+                "投诉率": complaint_rate_pct,
+                "最低评分门店": worst_stores[0]["store"] if worst_stores else None,
+                "最低评分门店星级": worst_stores[0]["avg_star"] if worst_stores else None,
+                "最常提及菜品": top_dish_tags[0]["dish"] if top_dish_tags else None,
+                "最常提及菜品次数": top_dish_tags[0]["mentions"] if top_dish_tags else None,
+                "好评榜达标门店数": quality_eligible_count,
+                "必吃榜候选门店数": must_eat_candidate_count,
+                "黑珍珠候选门店数": black_pearl_candidate_count,
             },
             insight_text=insight_text,
         )
