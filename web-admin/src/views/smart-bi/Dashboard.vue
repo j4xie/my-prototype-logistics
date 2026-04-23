@@ -584,8 +584,11 @@ function putCached(factoryId: string, sourceId: string | number, data: unknown) 
 }
 
 onMounted(async () => {
-  // Load upload list first (needed for auto-switch fallback + data source dropdown)
-  await loadDataSources();
+  // Apr 24 UX perf: fire /uploads list in background (non-blocking) — most users
+  // stay on 'system' view and never open the dropdown. Old await blocked ~400ms
+  // on network idle for a 200-item upload list. We only need it synchronously
+  // when restoring a specific remembered upload-ID (cold path).
+  const dataSourcesPromise = loadDataSources();
 
   // Restore date range from localStorage (per factory) — qhj needs wider default to see 2025 data
   if (factoryId.value) {
@@ -610,26 +613,31 @@ onMounted(async () => {
 
   // FIX-12: restore last-selected data source from localStorage so 刷新 doesn't reset to 'system'
   const remembered = factoryId.value ? localStorage.getItem(savedSourceKey(factoryId.value)) : null;
-  if (remembered && (remembered === 'system' || dataSources.value.some(d => String(d.id) === remembered))) {
-    selectedDataSource.value = remembered;
-
-    // Serve cached dashboard data immediately for instant UI, then refresh in background
+  if (remembered === 'system') {
+    selectedDataSource.value = 'system';
     if (factoryId.value) {
-      const cached = getCached<DashboardResponse>(factoryId.value, remembered);
-      if (cached) {
-        dashboardData.value = cached;
-      }
+      const cached = getCached<DashboardResponse>(factoryId.value, 'system');
+      if (cached) dashboardData.value = cached;
     }
-
-    if (remembered === 'system') {
-      await loadDashboardData();
-    } else {
-      await loadDynamicDashboardData(Number(remembered));
-    }
+    await loadDashboardData();
     return;
   }
+  if (remembered && remembered !== 'system') {
+    // Cold path: need dataSources loaded to validate remembered upload still exists
+    await dataSourcesPromise;
+    if (dataSources.value.some(d => String(d.id) === remembered)) {
+      selectedDataSource.value = remembered;
+      if (factoryId.value) {
+        const cached = getCached<DashboardResponse>(factoryId.value, remembered);
+        if (cached) dashboardData.value = cached;
+      }
+      await loadDynamicDashboardData(Number(remembered));
+      return;
+    }
+    // Remembered upload no longer exists — fall through to default
+  }
 
-  // Default to system data, auto-switch to uploads if system is empty
+  // Default to system data
   selectedDataSource.value = 'system';
   await loadDashboardData();
 });
@@ -657,6 +665,11 @@ watch(selectedDataSource, (newSrc) => {
 // Apr 24 2026 UX fallback helper: probe historical date ranges when current
 // month is empty. Returns true if a non-empty range was loaded into dashboardData.
 // Populates localStorage cache so subsequent visits skip the serial probe.
+//
+// Perf (Apr 24 late): cache hit still serial (1 req), cache miss parallelizes
+// the 3 ladder probes (近90天 / 上年 / 前年) via Promise.allSettled — prior
+// serial version added ~900ms on cold start. Picks non-empty in priority order
+// (closest range first).
 async function tryFallbackRanges(): Promise<boolean> {
   if (!factoryId.value) return false;
   const y = new Date().getFullYear();
@@ -667,37 +680,60 @@ async function tryFallbackRanges(): Promise<boolean> {
     catch { return null; }
   })();
 
-  const chain: Array<[string, string, string]> = [];
-  if (cached) chain.push([cached.s, cached.e, cached.label]);
-  chain.push(
-    (() => { const e = new Date(); const s = new Date(); s.setDate(s.getDate() - 89); return [iso(s), iso(e), '近90天'] as [string, string, string]; })(),
+  type ProbeRange = [string, string, string];
+  const extractData = (resp: { success?: boolean; data?: unknown }): DashboardResponse | null => {
+    if (!resp.success || !resp.data) return null;
+    const raw = resp.data as Record<string, unknown>;
+    return (raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data) && raw.code)
+      ? (raw.data as DashboardResponse) : (resp.data as DashboardResponse);
+  };
+  const hasRealKpi = (d: DashboardResponse | null): boolean =>
+    !!d && (d.kpiCards || []).some(c => c.rawValue != null && c.rawValue !== 0);
+
+  const applyFound = (data: DashboardResponse, s: string, e: string, label: string) => {
+    dashboardData.value = data;
+    fallbackRangeLabel.value = label;
+    fallbackDateRange.value = [s, e];
+    if (factoryId.value) putCached(factoryId.value, 'system', data);
+    try { localStorage.setItem(cacheKey, JSON.stringify({ s, e, label })); } catch {}
+  };
+
+  // 1. Cache first (synchronously serial — fastest path when known-good range cached)
+  if (cached) {
+    try {
+      const resp = await get(`/${factoryId.value}/smart-bi/dashboard/executive/custom?startDate=${cached.s}&endDate=${cached.e}`);
+      const data = extractData(resp);
+      if (hasRealKpi(data)) {
+        applyFound(data!, cached.s, cached.e, cached.label);
+        return true;
+      }
+    } catch { /* fall through to parallel probe */ }
+  }
+
+  // 2. Ladder probes in parallel (cache missed or empty)
+  const ladder: ProbeRange[] = [
+    (() => { const e = new Date(); const s = new Date(); s.setDate(s.getDate() - 89); return [iso(s), iso(e), '近90天']; })(),
     [`${y - 1}-01-01`, `${y - 1}-12-31`, `${y - 1}全年`],
     [`${y - 2}-01-01`, `${y - 2}-12-31`, `${y - 2}全年`],
+  ];
+  // De-dupe against cache range (avoid re-firing the probe that just failed)
+  const ladderFiltered = cached
+    ? ladder.filter(([s, e]) => !(s === cached.s && e === cached.e))
+    : ladder;
+
+  const results = await Promise.allSettled(
+    ladderFiltered.map(async ([s, e, label]) => {
+      const resp = await get(`/${factoryId.value}/smart-bi/dashboard/executive/custom?startDate=${s}&endDate=${e}`);
+      return { s, e, label, data: extractData(resp) };
+    })
   );
 
-  const seen = new Set<string>();
-  for (const [s, e, label] of chain) {
-    const key = `${s}|${e}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    try {
-      const resp = await get(`/${factoryId.value}/smart-bi/dashboard/executive/custom?startDate=${s}&endDate=${e}`);
-      if (resp.success && resp.data) {
-        const raw = resp.data as Record<string, unknown>;
-        const actualData = (raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data) && raw.code)
-          ? raw.data : raw;
-        const data = actualData as DashboardResponse;
-        const hasReal = (data.kpiCards || []).some(c => c.rawValue != null && c.rawValue !== 0);
-        if (hasReal) {
-          dashboardData.value = data;
-          fallbackRangeLabel.value = label;
-          fallbackDateRange.value = [s, e];
-          if (factoryId.value) putCached(factoryId.value, 'system', data);
-          try { localStorage.setItem(cacheKey, JSON.stringify({ s, e, label })); } catch {}
-          return true;
-        }
-      }
-    } catch { /* try next */ }
+  // Pick non-empty in ladder priority order
+  for (const r of results) {
+    if (r.status === 'fulfilled' && hasRealKpi(r.value.data)) {
+      applyFound(r.value.data!, r.value.s, r.value.e, r.value.label);
+      return true;
+    }
   }
   return false;
 }
