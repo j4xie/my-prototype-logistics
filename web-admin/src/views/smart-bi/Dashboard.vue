@@ -688,17 +688,16 @@ async function loadDashboardData() {
           (c && 'data' in c && Array.isArray(c.data) && c.data.length > 0)
         );
 
-      // Auto-switch only when user has NOT picked an explicit date range.
-      // If they asked for "2025 全年" and Gold returns empty, respect that and
-      // show an empty state — don't silently override with smoke upload data.
-      if (!dateRange.value && !hasRealKpi && !hasCharts && dataSources.value.length > 0) {
-        // system data empty, auto-switch to uploaded data
-        const best = dataSources.value.find(d => d.id != null);
-        if (!best) return;
-        selectedDataSource.value = String(best.id);
-        await loadDynamicDashboardData(best.id);
-        return;
-      }
+      // Apr 24 2026 UX P0-2/P0-3 fix: disable auto-switch to uploads entirely.
+      // Rationale: Gold-backed 本月 KPI returning empty for restaurant tenants
+      // with 2025-only historical data is the correct empty state. Previous
+      // behavior auto-picked the first upload (often a 3-row smoke Excel like
+      // gamma1c-smoke.xlsx) and rendered its 4,500/1.6万 KPI + raw ID labels
+      // (1001.0/1002.0) + staff names (李四/王五) as "dashboard KPIs" — which
+      // mislead users into thinking those were real business figures.
+      // Empty state + LLM insight "当前时间范围内暂无销售数据,请调整时间范围"
+      // is the honest UX. User can manually pick an upload from the dropdown.
+      void hasRealKpi; void hasCharts;  // (kept signals in case of future re-enable)
 
       // Async load LLM insights (non-blocking, renders after KPIs+charts)
       loadLLMInsights();
@@ -712,18 +711,9 @@ async function loadDashboardData() {
     ElMessage.error(errorMessage.value);
     dashboardData.value = null;
 
-    // On error, also try uploaded data as fallback — but respect user's explicit date range.
-    if (!dateRange.value) {
-      const fallback = dataSources.value.find(d => d.id != null);
-      if (fallback) {
-        // system API failed, falling back to uploaded data
-        hasError.value = false;
-        errorMessage.value = '';
-        selectedDataSource.value = String(fallback.id);
-        await loadDynamicDashboardData(fallback.id);
-        return;
-      }
-    }
+    // Apr 24 2026 UX P0-2/P0-3 fix: don't fallback to upload on error either.
+    // Silent override with random upload's dynamic analysis masked the real
+    // failure and showed misleading KPI. Keep the error visible to the user.
   } finally {
     loading.value = false;
   }
