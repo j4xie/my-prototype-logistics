@@ -160,6 +160,16 @@ class RevenueManagementReport(AnalysisTemplate):
             table_val = row.get(table_col)
             if table_val is not None and str(table_val).strip() in _META_ROW_LABELS:
                 continue
+            # Skip grand-total sentinel rows — some qhj exports embed a
+            # summary row with 桌位=null and revenue=sum(all orders).
+            # Normal order revenue <10K; anything >10M is definitively
+            # an aggregate meta-row.
+            try:
+                rev_check = float(row.get(revenue_col) or 0.0)
+            except (TypeError, ValueError):
+                rev_check = 0.0
+            if rev_check > 10_000_000:
+                continue
             channel = _derive_channel(classify_table(row.get(table_col)))
             slot = _derive_time_slot(
                 row.get(_SHIFT_COL),
