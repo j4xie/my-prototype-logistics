@@ -1132,6 +1132,7 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
             if (schemaDef.containsKey("listWidth")) extra.put("listWidth", schemaDef.get("listWidth"));
             if (schemaDef.containsKey("formatter")) extra.put("formatter", schemaDef.get("formatter"));
             if (schemaDef.containsKey("configurable")) extra.put("configurable", schemaDef.get("configurable"));
+            if (schemaDef.containsKey("autoGenerate")) extra.put("autoGenerate", schemaDef.get("autoGenerate"));
 
             result.add(EffectiveField.builder()
                     .code(code)
