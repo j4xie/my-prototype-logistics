@@ -97,17 +97,17 @@ const defaultForm = {
   type: '',
   industry: '',
   notes: '',
+  status: 'ACTIVE',  // T10: status field default
 };
 const formData = reactive({ ...defaultForm });
 
 const formRules = {
+  // T10 / spec P2.1: only customer name remains required; contact info optional per docx feedback
   name: [{ required: true, message: '请输入客户名称', trigger: 'blur' }],
-  contactPerson: [{ required: true, message: '请输入联系人', trigger: 'blur' }],
   phone: [
-    { required: true, message: '请输入联系电话', trigger: 'blur' },
+    // Format check kept; required removed per docx P2.1
     { pattern: /^1[3-9]\d{9}$|^0\d{2,3}-?\d{7,8}$/, message: '请输入正确的手机号或座机号', trigger: 'blur' },
   ],
-  shippingAddress: [{ required: true, message: '请输入收货地址', trigger: 'blur' }],
 };
 
 const dialogTitle = computed(() => {
@@ -136,6 +136,7 @@ function handleView(row: Record<string, unknown>) {
     type: row.type || '',
     industry: row.industry || '',
     notes: row.notes || '',
+    status: (row.status as string) || 'ACTIVE',  // T10
   });
   dialogVisible.value = true;
 }
@@ -152,6 +153,7 @@ function handleEdit(row: Record<string, unknown>) {
     type: row.type || '',
     industry: row.industry || '',
     notes: row.notes || '',
+    status: (row.status as string) || 'ACTIVE',  // T10
   });
   dialogVisible.value = true;
 }
@@ -170,6 +172,7 @@ async function handleSubmit() {
       type: formData.type || undefined,
       industry: formData.industry || undefined,
       notes: formData.notes || undefined,
+      status: formData.status,  // T10: P2.2 状态可编辑
       // 扩展字段自动收集
       ...Object.fromEntries(
         customerExtendedFields.map(f => [f.key, (formData as Record<string, unknown>)[f.key] ?? null])
@@ -300,6 +303,13 @@ async function handleDelete(row: Record<string, unknown>) {
         </el-form-item>
         <el-form-item label="收货地址" prop="shippingAddress">
           <el-input v-model="formData.shippingAddress" placeholder="请输入收货地址" type="textarea" :rows="2" />
+        </el-form-item>
+        <!-- T10 P2.2: status field editable in form (was view-only via list column badge) -->
+        <el-form-item label="状态" prop="status">
+          <el-select v-model="formData.status" :disabled="isViewMode" style="width: 100%">
+            <el-option label="合作中" value="ACTIVE" />
+            <el-option label="已停用" value="INACTIVE" />
+          </el-select>
         </el-form-item>
         <el-form-item label="客户类型" prop="type">
           <el-select v-model="formData.type" placeholder="请选择客户类型" clearable style="width: 100%">
