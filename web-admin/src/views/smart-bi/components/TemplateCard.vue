@@ -86,12 +86,16 @@ const formattedDate = computed(() => {
 // common ones here so users see localized labels. Unknown keys fall
 // through to the raw key (better than blocking render).
 const KPI_LABEL_MAP: Record<string, string> = {
-  // generic
+  // generic totals
   total: '合计',
   totalRevenue: '营业额',
   totalTracked: '统计总数',
   totalOrders: '订单总数',
   totalItemCount: '明细总数',
+  grandTotal: '总计',
+  grandRevenue: '营业额',
+  grandOrders: '订单总数',
+  grandAmount: '合计金额',
   revenue: '营业额',
   orders: '订单数',
   orderCount: '订单数',
@@ -104,6 +108,7 @@ const KPI_LABEL_MAP: Record<string, string> = {
   monthCount: '月份数',
   latestMonth: '最近月份',
   latestRevenue: '最近月营业额',
+  // peaks / extremes
   peakValue: '峰值',
   peakPeriod: '峰值日期',
   peakMonth: '峰值月份',
@@ -112,13 +117,43 @@ const KPI_LABEL_MAP: Record<string, string> = {
   peakRevenue: '峰值营业额',
   worstMonth: '谷底月份',
   troughMonth: '低谷月份',
+  // stats
+  max: '最大值',
+  min: '最小值',
+  mean: '均值',
+  std: '标准差',
+  median: '中位数',
+  avg: '平均值',
+  // deltas / ratios
   deltaPct: '波动率(%)',
   dodDeltaPct: '环比(%)',
   yoyDeltaPct: '同比(%)',
+  sharePct: '占比(%)',
+  netSharePct: '到账率(%)',
   anomalyCount: '异常月数',
   weekdayAvgOrder: '工作日均客单',
   weekendAvgOrder: '周末均客单',
   weekendOrderShare: '周末订单占比(%)',
+  // dimensions (generic top_n / category_distribution / anomaly)
+  dimCount: '维度数',
+  topLabel: 'Top 项',
+  topValue: 'Top 值',
+  topSharePct: 'Top 占比(%)',
+  topCategory: 'Top 分类',
+  categoryCount: '分类数',
+  topCategoryShare: 'Top 分类占比(%)',
+  // finance
+  netRevenue: '实收',
+  grossRevenue: '应收',
+  hasCostData: '是否含成本',
+  topSlot: '主要时段',
+  topChannel: '主要渠道',
+  topPlatform: '最大平台',
+  topPlatformAmount: '最大平台金额',
+  platformCount: '平台数',
+  // stored value card
+  cardTotal: '储值卡消费',
+  cardOrders: '储值卡笔数',
   // dish / product
   topDishName: '热销菜品',
   topDishQty: '热销销量',
@@ -127,9 +162,6 @@ const KPI_LABEL_MAP: Record<string, string> = {
   bottomDish: '最滞销菜品',
   bottomQty: '最滞销销量',
   nearZeroCount: '近零销量数',
-  topCategory: 'Top 分类',
-  categoryCount: '分类数',
-  topCategoryShare: 'Top 分类占比(%)',
   // combo
   comboOrders: '套餐订单数',
   topComboName: '热销套餐',
@@ -145,6 +177,10 @@ function localizeKpiKey(key: string): string {
 
 function formatKpiValue(value: unknown): { text: string; isLong: boolean } {
   if (value === null || value === undefined) return { text: '—', isLong: false };
+  if (typeof value === 'boolean') {
+    // Localize booleans so "hasCostData = false" renders as 否 not false.
+    return { text: value ? '是' : '否', isLong: false };
+  }
   if (typeof value === 'number') {
     // 2-decimal retention to avoid float tails like 10691165.00000037.
     const text = value.toLocaleString('zh-CN', {
@@ -263,12 +299,41 @@ const chartOption = computed(() => {
   return enhanceChartOption(configs[0]);
 });
 
+// Backend insight templates use 书面 phrases that confuse operators.
+// Replace the common ones with 白话 equivalents. Applied last so any
+// future frontend-only rewording doesn't require a backend deploy.
+const INSIGHT_REPLACEMENTS: Array<[RegExp, string]> = [
+  [/余下梯队收敛明显/g, '其余门店之间差距不大'],
+  [/可复盘成功因素用于复制/g, '可以总结做对了什么再用一次'],
+  [/堂食客单价/g, '堂食人均消费'],
+  [/人均订单量/g, '人均下单次数'],
+  [/到账率/g, '实收比例'],
+  [/DoD ↑/g, '日环比 ↑'],
+  [/DoD ↓/g, '日环比 ↓'],
+  [/YoY \+/g, '同比 +'],
+  [/YoY -/g, '同比 -'],
+  [/MoM \+/g, '环比 +'],
+  [/MoM -/g, '环比 -'],
+  [/\bstd\b/g, '标准差'],
+  [/\bmean\b/g, '均值'],
+  [/\bσ\b/g, '标准差'],
+];
+
+function humanizeInsight(raw: string): string {
+  let out = raw;
+  for (const [re, repl] of INSIGHT_REPLACEMENTS) {
+    out = out.replace(re, repl);
+  }
+  return out;
+}
+
 const insightText = computed(() => {
   const insights = props.item?.insights;
   if (!Array.isArray(insights) || insights.length === 0) return '';
   return insights
     .map((i) => (typeof i === 'string' ? i : (i as { text?: string }).text || ''))
     .filter(Boolean)
+    .map(humanizeInsight)
     .join('\n');
 });
 
