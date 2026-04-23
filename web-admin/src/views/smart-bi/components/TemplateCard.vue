@@ -267,11 +267,33 @@ const kpis = computed(() => {
     });
 });
 
-/** Format number for chart axis/tooltip/labels with 万/亿 units.
- * Reuses formatNumberCN so the same value format shows consistently
- * in KPI chips AND chart axes. */
+/** Format number for chart axis with 万/亿 units. */
 function fmtNum(v: unknown): string {
   if (typeof v !== 'number' || !isFinite(v)) return String(v ?? '');
+  return formatNumberCN(v);
+}
+
+/** Chinese count-category hints in axis/series name. When bar/line
+ * series context carries a count semantic (订单/笔/件/人/次/份 etc),
+ * keep 千分位 instead of 万/亿. Applies to: series.name, params.name
+ * (axis category label), params.seriesName. */
+const COUNT_CTX_RE = /(订单|笔数|单数|次数|件数|人次|份数|数量|个数|只数|场次)/;
+const CURRENCY_CTX_RE = /(营业额|金额|营收|收入|支出|销售|消费|扣减|票面)/;
+
+function fmtChartLabel(params: any): string {
+  const v = params?.value;
+  if (typeof v !== 'number' || !isFinite(v)) return String(v ?? '');
+  const ctx = [
+    typeof params?.name === 'string' ? params.name : '',
+    typeof params?.seriesName === 'string' ? params.seriesName : '',
+  ].join(' ');
+  if (COUNT_CTX_RE.test(ctx)) {
+    return v.toLocaleString('zh-CN', {
+      minimumFractionDigits: Number.isInteger(v) ? 0 : 2,
+      maximumFractionDigits: 2,
+    });
+  }
+  // Default (including explicit currency context): 万/亿 format.
   return formatNumberCN(v);
 }
 
@@ -331,17 +353,13 @@ function enhanceChartOption(option: unknown): unknown {
       if (s.avoidLabelOverlap === undefined) s.avoidLabelOverlap = true;
     } else if (s.type === 'bar' || s.type === 'line' || s.type === 'scatter') {
       s.label = s.label || {};
-      // UNCONDITIONAL override — backend often emits label.show=true with
-      // no explicit formatter OR with '{c}' template, both of which render
-      // raw float values. We always want 万/亿-formatted labels, so replace
-      // any existing formatter (functions, strings, undefined) with ours.
-      // Caller templates that genuinely need custom formatting should omit
-      // label.show and use a title/insight instead.
-      s.label.formatter = (p: any) => fmtNum(p?.value);
+      // Context-aware formatter: count-semantic categories keep 千分位,
+      // everything else gets 万/亿. See fmtChartLabel.
+      s.label.formatter = (p: any) => fmtChartLabel(p);
       if (Array.isArray(s.data)) {
         for (const d of s.data) {
           if (d && typeof d === 'object' && d.label) {
-            d.label.formatter = (p: any) => fmtNum(p?.value);
+            d.label.formatter = (p: any) => fmtChartLabel(p);
           }
         }
       }
