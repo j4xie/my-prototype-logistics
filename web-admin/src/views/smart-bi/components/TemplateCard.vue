@@ -2,14 +2,10 @@
   <el-card class="tpl-card" shadow="hover">
     <template #header>
       <div class="tpl-header">
-        <span class="tpl-title">{{ title }}</span>
         <span
-          v-if="uploadLabel"
-          class="tpl-badge"
-          :title="`数据来源文件: ${uploadLabel}\n上传日期: ${formattedDate}`"
-        >
-          来源: {{ formattedDate }}
-        </span>
+          class="tpl-title"
+          :title="uploadLabel ? `数据来源: ${uploadLabel} (${formattedDate})` : undefined"
+        >{{ title }}</span>
       </div>
     </template>
 
@@ -59,6 +55,11 @@
       <div class="tpl-empty-icon">📄</div>
       <div class="tpl-empty-title">尚未为该工厂生成过 [{{ title }}]</div>
       <div class="tpl-empty-hint">上传含 {{ requiredFields }} 的数据文件</div>
+    </div>
+
+    <!-- Footer: 数据来源 + 生成时间 (P2-17: 从标题挪到这里,不挤占卡片标题行) -->
+    <div v-if="uploadLabel && status === 'loaded'" class="tpl-footer">
+      <span :title="`文件: ${uploadLabel}`">📎 {{ formattedDate }}</span>
     </div>
   </el-card>
 </template>
@@ -550,6 +551,15 @@ watch(
 .tpl-badge {
   font-size: 12px;
   color: #909399;
+}
+/* P2-17: card footer 来源日期小字,不挤占标题行 */
+.tpl-footer {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed #ebeef5;
+  font-size: 11px;
+  color: #c0c4cc;
+  text-align: right;
 }
 /* R6-2 + R9-1: grid auto-fit with wider min so "¥X,XXX.XX万" fits on one
  * line. 135px min → on typical 400-500px card width → 3-col layout for

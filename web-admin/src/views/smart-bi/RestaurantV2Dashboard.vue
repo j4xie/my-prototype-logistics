@@ -1822,11 +1822,12 @@ function formatCurrency(v?: number): string {
       </el-card>
     </template>
 
-    <!-- Empty state -->
+    <!-- Empty state (P2-16: shrink 图 from default ~200px to 80px, 压缩占屏) -->
     <el-empty
       v-else-if="!loading"
-      description="选择上传数据 → 点「跑 V2 分析」 → 查看餐饮综合分析"
-      style="margin-top: 40px"
+      :image-size="80"
+      description="选择上传数据 → 点「跑 V2 分析」 → 查看餐饮综合分析 (诊断 / 预警 / 渠道毛利 / 对标 / BOM / 评论等 15+ section)"
+      style="margin-top: 16px; padding: 16px;"
     />
 
     <!-- W5.2 — BOM Ingest Dialog -->

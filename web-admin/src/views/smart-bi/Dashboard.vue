@@ -1357,7 +1357,7 @@ onUnmounted(() => {
         <el-button size="small" @click="toggleDarkMode" :title="isDarkMode ? '切换亮色' : '切换暗色'" :aria-label="isDarkMode ? '切换亮色模式' : '切换暗色模式'">{{ isDarkMode ? '☀️' : '🌙' }}</el-button>
         <el-button type="primary" :icon="Refresh" @click="handleRefresh" :loading="loading">刷新数据</el-button>
         <el-button type="success" :icon="ChatDotRound" @click="goToAIQuery()">AI 问答</el-button>
-        <el-button type="warning" plain @click="$router.push('/smart-bi/gold-preview')">Gold 预览</el-button>
+        <el-button type="info" plain @click="$router.push('/smart-bi/gold-preview')">Gold 预览</el-button>
       </div>
     </div>
 
@@ -1576,7 +1576,7 @@ onUnmounted(() => {
 
     <!-- 排行榜区 -->
     <el-row :gutter="16" class="ranking-section" v-loading="loading" aria-label="排行榜">
-      <el-col v-if="departmentRanking.length > 0" :xs="24" :md="12">
+      <el-col v-if="departmentRanking.length > 0" :xs="24" :md="regionRanking.length > 0 ? 12 : 24">
         <el-card class="ranking-card">
           <template #header>
             <div class="card-header">
@@ -1604,7 +1604,12 @@ onUnmounted(() => {
           </div>
         </el-card>
       </el-col>
-      <el-col :xs="24" :md="departmentRanking.length > 0 ? 12 : 24">
+      <!-- P2-18: 区域销售分布空时整个 col 隐藏, 部门排行 col 自动扩宽到 24. 避免大片"暂无区域销售数据" 占屏 -->
+      <el-col
+        v-if="regionRanking.length > 0"
+        :xs="24"
+        :md="departmentRanking.length > 0 ? 12 : 24"
+      >
         <el-card class="ranking-card">
           <template #header>
             <div class="card-header">
@@ -1612,7 +1617,7 @@ onUnmounted(() => {
               <span>区域销售分布</span>
             </div>
           </template>
-          <div class="ranking-list" v-if="regionRanking.length > 0">
+          <div class="ranking-list">
             <div
               v-for="item in regionRanking"
               :key="item.name"
@@ -1627,10 +1632,6 @@ onUnmounted(() => {
                 <span class="percent">{{ item.percentage }}%</span>
               </div>
             </div>
-          </div>
-          <div v-else class="compact-empty">
-            <el-icon :size="24" color="#c0c4cc"><Location /></el-icon>
-            <span>暂无区域销售数据</span>
           </div>
         </el-card>
       </el-col>
