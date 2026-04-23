@@ -83,10 +83,14 @@ function handleChange(val: string | number | null) {
 async function fetchById(id: string | number) {
   loading.value = true
   try {
-    const endpoint = resolveEndpoint()
-    const res = await request.get(`${endpoint}/${encodeURIComponent(String(id))}`)
+    // Strip /search or /active suffix — those are LIST endpoints, not single-item GET.
+    // Convention: /entities → /entities/{id} for single fetch.
+    const endpoint = resolveEndpoint().replace(/\/(search|active)$/, '')
+    const res = await request.get(`${endpoint}/${encodeURIComponent(String(id))}`, {
+      _silent: true  // suppress global error toast for 404 lookups
+    } as never)
     const item = res.data?.data || res.data
-    if (item && typeof item === 'object') {
+    if (item && typeof item === 'object' && item[props.config.valueField] != null) {
       options.value = [{
         label: String(item[props.config.displayField] || id),
         value: item[props.config.valueField] as string | number,
@@ -94,16 +98,14 @@ async function fetchById(id: string | number) {
       return
     }
   } catch (e: any) {
-    // 404 or wrong shape — fall back to keyword search (legacy behavior)
-    const msg = e?.message || String(e)
-    if (!msg.includes('404')) {
-      console.warn('ReferenceSelector fetchById failed:', msg)
-    }
+    // 404 → endpoint pattern not supported; silently fall back to keyword search
+    // (no console.warn — this is expected for some entities)
   } finally {
     loading.value = false
   }
-  // fallback: search by id as keyword (legacy path)
-  search(String(id))
+  // fallback: render raw id as label (no API call to avoid 404 noise)
+  // user typing keyword still triggers search() via :remote-method
+  options.value = [{ label: String(id), value: id }]
 }
 
 onMounted(() => {
