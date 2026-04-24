@@ -55,6 +55,9 @@ async function syncEtl() {
       ElMessage.success(
         `同步完成: 食材 ${dimIngredientUpserted} / 配方 ${factRecipeUpserted} / 菜品成本 ${aggProductCostUpserted}`
       );
+      // Signal sibling pages (menu-board BCG margin mode, store-comparison 毛利率列)
+      // to invalidate their cached marginMap next time they render.
+      try { sessionStorage.setItem('restaurantOps.marginDirty', String(Date.now())); } catch { /* ignore */ }
       await loadData();
     } else {
       ElMessage.error(res.message || '同步失败 — 请检查 Python 服务日志');

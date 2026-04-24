@@ -154,7 +154,20 @@ async function loadMarginData() {
 }
 
 function onModeChange() {
-  if (mode.value === 'margin' && Object.keys(marginMap.value).length === 0) {
+  // Check if gross-margin page just triggered an ETL sync — if so invalidate cache
+  // so BCG margin mode reflects the fresh data without a full page reload.
+  let dirty = false
+  try {
+    const last = sessionStorage.getItem('restaurantOps.marginDirty')
+    const seen = sessionStorage.getItem('restaurantOps.marginSeenAt')
+    if (last && last !== seen) {
+      dirty = true
+      sessionStorage.setItem('restaurantOps.marginSeenAt', last)
+    }
+  } catch { /* ignore */ }
+  const needsLoad = mode.value === 'margin' && (dirty || Object.keys(marginMap.value).length === 0)
+  if (needsLoad) {
+    if (dirty) marginMap.value = {}
     loadMarginData().then(() => nextTick(() => renderChart()))
   } else {
     nextTick(() => renderChart())

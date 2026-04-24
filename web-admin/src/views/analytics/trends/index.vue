@@ -69,7 +69,16 @@ let goldRevenueChart: echarts.ECharts | null = null;
 // Apr 24 Plan C Phase 8: second-axis metric toggle. Data already in /gold/daily-trend
 // — 3 fields per point: revenue, bill_count, avg_bill_value.
 type TrendMetric = 'bills' | 'avg';
-const trendSecondMetric = ref<TrendMetric>('bills');
+const TREND_METRIC_KEY = 'trends.secondMetric.v1';
+const trendSecondMetric = ref<TrendMetric>(
+  (() => {
+    try { const v = localStorage.getItem(TREND_METRIC_KEY); return (v === 'avg' || v === 'bills') ? v : 'bills'; }
+    catch { return 'bills'; }
+  })()
+);
+watch(trendSecondMetric, (v) => {
+  try { localStorage.setItem(TREND_METRIC_KEY, v); } catch { /* quota/privacy mode */ }
+});
 
 function _periodToDateRange(period: string): [string, string] {
   const iso = (d: Date): string => d.toISOString().slice(0, 10);
@@ -152,11 +161,26 @@ function updateGoldChart() {
   const secondMeta = secondMetric === 'bills'
     ? { name: '订单数', color: '#E6A23C', data: pts.map(p => p.billCount), unit: '' }
     : { name: '客单价', color: '#409EFF', data: pts.map(p => p.avgBillValue ?? 0), unit: '元' };
+  // Series-aware tooltip: 营收 always gets ¥ + thousands + 万; second metric
+  // formats per its nature (整数 for bills, 2-decimal ¥ for avg).
+  const fmtRevenue = (v: number) => v >= 10000 ? `¥${(v / 10000).toFixed(2)}万` : `¥${v.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`;
+  const fmtSecond = secondMetric === 'bills'
+    ? (v: number) => String(Math.round(v))
+    : (v: number) => `¥${v.toFixed(2)}`;
   goldRevenueChart.setOption({
     title: { text: 'POS 营收趋势 (Gold)', left: 'center', textStyle: { fontSize: 14 } },
     tooltip: {
       trigger: 'axis', confine: true,
-      valueFormatter: (v: number) => typeof v === 'number' ? v.toFixed(secondMetric === 'avg' ? 2 : 0) : String(v),
+      formatter: (params: Array<{ seriesName: string; value: number; axisValue: string; marker: string }>) => {
+        if (!Array.isArray(params) || params.length === 0) return '';
+        const lines = [params[0].axisValue];
+        for (const p of params) {
+          const v = typeof p.value === 'number' ? p.value : Number(p.value);
+          const formatted = p.seriesName === '营收' ? fmtRevenue(v) : fmtSecond(v);
+          lines.push(`${p.marker} ${p.seriesName}: ${formatted}`);
+        }
+        return lines.join('<br/>');
+      },
     },
     legend: { data: ['营收', secondMeta.name], top: 24 },
     grid: { top: 60, left: 60, right: 60, bottom: 40 },
