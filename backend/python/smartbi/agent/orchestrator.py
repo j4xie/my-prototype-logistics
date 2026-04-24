@@ -33,6 +33,7 @@ this module is never imported in the hot path.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import time
@@ -226,14 +227,21 @@ class AgentOrchestrator:
     ) -> Dict[str, Any]:
         """Pull compact summaries from Gold for the prompt.
 
+        Apr 25 2026 perf E1a: 3 independent pg queries run via asyncio.gather
+        so total wall ≈ max(query) instead of sum(query). Each query hits a
+        different agg table (agg_store_daily / agg_product_daily / fact_pos_discount)
+        so there's no contention.
+
         Limits top_n to keep prompt size bounded:
         - 3 stores (by revenue)
         - 5 products (by revenue)
         - All discount types (usually <10)
         """
-        fin = await finance_summary(self._pool, factory_id, date_range, top_n_stores=3)
-        prods = await top_products(self._pool, factory_id, date_range, top_n=5)
-        disc = await discount_breakdown(self._pool, factory_id, date_range)
+        fin, prods, disc = await asyncio.gather(
+            finance_summary(self._pool, factory_id, date_range, top_n_stores=3),
+            top_products(self._pool, factory_id, date_range, top_n=5),
+            discount_breakdown(self._pool, factory_id, date_range),
+        )
         return {
             "finance": fin,
             "top_products": prods.get("items") or prods.get("products") or [],

@@ -1538,226 +1538,246 @@ async function _doEnrichSheetAnalysis(
       : undefined;
     onProgress?.({ phase: 'kpi', partial: { kpiSummary: kpiSummaryEarly, chartsTotal: plans.length } });
 
-    // 7. Batch build charts
-    t0 = performance.now();
-    let charts: Array<{ chartType: string; title: string; config: Record<string, unknown>; xField?: string; anomalies?: Record<string, unknown> }> = [];
-    if (plans.length > 0) {
-      const batchRes = await batchBuildCharts(plans, abortController.signal);
-      if (batchRes.success && batchRes.charts?.length) {
-        charts = batchRes.charts
-          .map((c, i) => ({
-            chartType: c.chartType,
-            title: plans[i]?.title || '数据分析',
-            config: c.config,
-            xField: plans[i]?.xField || '',
-            anomalies: c.anomalies
-          }))
-          .filter(c => c.config);
-      }
-
-      if (charts.length === 0) {
-        for (const plan of plans) {
-          const res = await buildChart({
-            chartType: plan.chartType,
-            data: plan.data,
-            xField: plan.xField,
-            yFields: plan.yFields,
-            title: plan.title
-          });
-          if (res.success && res.option) {
-            charts.push({ chartType: plan.chartType, title: plan.title, config: res.option, xField: plan.xField });
-          }
-        }
-      }
-    }
-
-    // 7.1 Auto-retry empty charts with alternative types
-    const isSeriesEmpty = (config: Record<string, unknown>): boolean => {
-      if (!config || Object.keys(config).length === 0) return true;
-      const series = config.series as unknown[] | undefined;
-      if (!series) return true;
-      const arr = Array.isArray(series) ? series : [series];
-      return arr.every((s: Record<string, unknown>) => !s.data || (s.data as unknown[]).length === 0);
-    };
-    const emptyIndices = charts
-      .map((c, i) => isSeriesEmpty(c.config) ? i : -1)
-      .filter(i => i >= 0);
-    if (emptyIndices.length > 0) {
-      const existingTypes = charts.map(c => c.chartType).filter(Boolean) as string[];
-      try {
-        const retryRec = await smartRecommendChart(
-          { data: cleanedData.slice(0, 100), excludeTypes: existingTypes, maxRecommendations: emptyIndices.length },
-          abortController.signal
-        ).catch(() => ({ success: false } as { success: false }));
-        if (retryRec.success && 'recommendations' in retryRec && retryRec.recommendations?.length) {
-          for (let ri = 0; ri < Math.min(emptyIndices.length, retryRec.recommendations.length); ri++) {
-            const rec = retryRec.recommendations[ri];
-            const idx = emptyIndices[ri];
-            const res = await buildChart({
-              chartType: rec.chartType,
-              data: cleanedData.slice(0, 200),
-              xField: rec.xField,
-              yFields: rec.yFields,
-              title: rec.title || charts[idx].title
-            });
-            if (res.success && res.option && !isSeriesEmpty(res.option)) {
-              charts[idx] = {
-                chartType: rec.chartType,
-                title: rec.title || charts[idx].title,
-                config: res.option,
-                xField: rec.xField
-              };
-            }
-          }
-        }
-      } catch { /* non-critical: keep original empty charts */ }
-    }
-    tick('batchBuildCharts', t0);
-
-    // Notify charts ready
-    if (charts.length) {
-      onProgress?.({ phase: 'chart-single', partial: { charts: [...charts] } });
-    }
-
-    // 7.5 Forecast trend lines for line charts
-    t0 = performance.now();
-    for (const chart of charts) {
-      if (chart.chartType !== 'line') continue;
-      const config = chart.config as Record<string, unknown>;
-      const series = config?.series;
-      if (!Array.isArray(series)) continue;
-
-      const firstSeries = series.find((s: Record<string, unknown>) => s.type === 'line' && Array.isArray(s.data));
-      if (!firstSeries) continue;
-      const numericData = firstSeries.data.filter((v: unknown) => typeof v === 'number' && !isNaN(v as number));
-      if (numericData.length < 5) continue;
-
-      try {
-        const forecastRes = await getForecast(numericData, 3);
-        if (forecastRes.success && forecastRes.predictions?.length) {
-          const xData = config.xAxis?.data;
-          if (Array.isArray(xData)) {
-            for (let i = 0; i < forecastRes.predictions.length; i++) {
-              xData.push(`预测${i + 1}`);
-            }
-          }
-
-          const padded = new Array(numericData.length).fill(null);
-          padded[padded.length - 1] = numericData[numericData.length - 1];
-          series.push({
-            name: `${firstSeries.name}(预测)`,
-            type: 'line',
-            data: [...padded, ...forecastRes.predictions.map((v: number) => Math.round(v * 100) / 100)],
-            lineStyle: { type: 'dashed', width: 2 },
-            symbol: 'diamond',
-            symbolSize: 6,
-            itemStyle: { color: '#9ca3af' }
-          });
-
-          if (forecastRes.lowerBound?.length && forecastRes.upperBound?.length) {
-            const basePad = new Array(numericData.length).fill(null);
-            series.push({
-              name: '置信下界',
-              type: 'line',
-              data: [...basePad, ...forecastRes.lowerBound.map((v: number) => Math.round(v * 100) / 100)],
-              lineStyle: { opacity: 0 },
-              symbol: 'none',
-              silent: true,
-              z: -1
-            });
-            series.push({
-              name: '置信区间',
-              type: 'line',
-              data: [...basePad, ...forecastRes.upperBound.map((v: number) => Math.round(v * 100) / 100)],
-              lineStyle: { opacity: 0 },
-              symbol: 'none',
-              areaStyle: { color: 'rgba(156,163,175,0.18)', origin: 'auto' },
-              silent: true,
-              z: -1
-            });
-          }
-        }
-      } catch {
-        // Forecast is optional
-      }
-    }
-    tick('forecast', t0);
-
-    // 7.6 Pre-compute financial metrics
+    // 7.6 Pre-compute financial metrics (sync, no await — needed early for insights)
     t0 = performance.now();
     const financialMetrics = computeFinancialMetrics(cleanedData, monthlyColumns, labelField);
     tick('computeFinancialMetrics', t0);
 
-    // 8. Generate AI insights (SSE streaming — user sees text appear progressively)
+    // 7+8 PARALLEL (Apr 25 2026 perf E1a):
+    //   - Left lane: batchBuildCharts (step 7) → forecast (step 7.5)
+    //   - Right lane: generateInsightsStream (step 8)
+    // Both lanes only depend on cleanedData / plans / financialMetrics — all
+    // computed above. Insights does NOT depend on chart configs. Saves 3-8s
+    // wall (insights LLM ~5-10s overlaps with chart build ~3-5s).
+    // onProgress callbacks fire from both lanes concurrently — that's OK,
+    // each phase ('chart-single' / 'ai-streaming' / 'ai') is independent.
     t0 = performance.now();
-    let aiAnalysis = '';
-    let structuredAI: StructuredAIData | undefined;
-    // Humanize column keys in data sent to LLM so AI text uses display names
-    const keyMap: Record<string, string> = {};
-    for (const k of allKeys) {
-      keyMap[k] = displayNameMap[k] || humanizeColumnName(k);
-    }
-    const insightData = cleanedData.slice(0, 100).map(row => {
-      const mapped: Record<string, unknown> = {};
-      for (const k of allKeys) {
-        mapped[keyMap[k]] = row[k];
-      }
-      return mapped;
-    });
-    const columnNames = Object.values(keyMap).join(', ');
-    const contextParts = [`数据列: ${columnNames}`];
-    if (textContext) {
-      contextParts.push(textContext);
-    }
-    if (financialMetrics) {
-      contextParts.push(formatFinancialContext(financialMetrics));
-    }
-    const insightRes = await generateInsightsStream({
-      data: insightData,
-      analysisContext: contextParts.join('\n'),
-      maxInsights: 5,
-      signal: abortController.signal,
-      onChunk: (chunk: string) => {
-        // Emit each SSE text chunk so the UI can render progressively (typewriter effect)
-        onProgress?.({ phase: 'ai-streaming', partial: { aiStreamChunk: chunk } });
-      }
-    });
-    if (insightRes.success && insightRes.insights?.length) {
-      const metaInsight = insightRes.insights.find(i => i.type === '_meta');
-      const normalInsights = insightRes.insights.filter(i => i.type !== '_meta');
 
-      if (metaInsight) {
-        const meta = metaInsight as Record<string, unknown>;
-        structuredAI = {
-          executiveSummary: (meta.executive_summary as string) || (meta.text as string) || '',
-          riskAlerts: (meta.risk_alerts as StructuredAIData['riskAlerts']) || [],
-          opportunities: (meta.opportunities as StructuredAIData['opportunities']) || [],
-          sensitivityAnalysis: (meta.sensitivity_analysis as StructuredAIData['sensitivityAnalysis']) || []
-        };
+    // ---------- Left lane: charts + forecast ----------
+    const chartsLane = (async (): Promise<Array<{ chartType: string; title: string; config: Record<string, unknown>; xField?: string; anomalies?: Record<string, unknown> }>> => {
+      let charts: Array<{ chartType: string; title: string; config: Record<string, unknown>; xField?: string; anomalies?: Record<string, unknown> }> = [];
+      if (plans.length > 0) {
+        const batchRes = await batchBuildCharts(plans, abortController.signal);
+        if (batchRes.success && batchRes.charts?.length) {
+          charts = batchRes.charts
+            .map((c, i) => ({
+              chartType: c.chartType,
+              title: plans[i]?.title || '数据分析',
+              config: c.config,
+              xField: plans[i]?.xField || '',
+              anomalies: c.anomalies
+            }))
+            .filter(c => c.config);
+        }
+
+        if (charts.length === 0) {
+          for (const plan of plans) {
+            const res = await buildChart({
+              chartType: plan.chartType,
+              data: plan.data,
+              xField: plan.xField,
+              yFields: plan.yFields,
+              title: plan.title
+            });
+            if (res.success && res.option) {
+              charts.push({ chartType: plan.chartType, title: plan.title, config: res.option, xField: plan.xField });
+            }
+          }
+        }
       }
 
-      // Fallback: compute sensitivity analysis from financial metrics if LLM didn't return it
-      if (structuredAI && (!structuredAI.sensitivityAnalysis || structuredAI.sensitivityAnalysis.length === 0) && financialMetrics) {
-        structuredAI.sensitivityAnalysis = computeSensitivityFallback(financialMetrics);
-      }
-
-      const typeLabels: Record<string, string> = {
-        trend: '趋势分析', anomaly: '异常检测', comparison: '对比分析',
-        kpi: '关键指标', recommendation: '改进建议', forecast: '预测',
+      // 7.1 Auto-retry empty charts with alternative types
+      const isSeriesEmpty = (config: Record<string, unknown>): boolean => {
+        if (!config || Object.keys(config).length === 0) return true;
+        const series = config.series as unknown[] | undefined;
+        if (!series) return true;
+        const arr = Array.isArray(series) ? series : [series];
+        return arr.every((s: Record<string, unknown>) => !s.data || (s.data as unknown[]).length === 0);
       };
-      aiAnalysis = normalInsights
-        .map(i => {
-          const label = typeLabels[i.type] || i.type;
-          let line = `${label}: ${i.text}`;
-          if (i.recommendation) line += ` 建议: ${i.recommendation}`;
-          return line;
-        })
-        .join('\n\n');
-    }
-    tick('generateInsights(stream)', t0);
+      const emptyIndices = charts
+        .map((c, i) => isSeriesEmpty(c.config) ? i : -1)
+        .filter(i => i >= 0);
+      if (emptyIndices.length > 0) {
+        const existingTypes = charts.map(c => c.chartType).filter(Boolean) as string[];
+        try {
+          const retryRec = await smartRecommendChart(
+            { data: cleanedData.slice(0, 100), excludeTypes: existingTypes, maxRecommendations: emptyIndices.length },
+            abortController.signal
+          ).catch(() => ({ success: false } as { success: false }));
+          if (retryRec.success && 'recommendations' in retryRec && retryRec.recommendations?.length) {
+            for (let ri = 0; ri < Math.min(emptyIndices.length, retryRec.recommendations.length); ri++) {
+              const rec = retryRec.recommendations[ri];
+              const idx = emptyIndices[ri];
+              const res = await buildChart({
+                chartType: rec.chartType,
+                data: cleanedData.slice(0, 200),
+                xField: rec.xField,
+                yFields: rec.yFields,
+                title: rec.title || charts[idx].title
+              });
+              if (res.success && res.option && !isSeriesEmpty(res.option)) {
+                charts[idx] = {
+                  chartType: rec.chartType,
+                  title: rec.title || charts[idx].title,
+                  config: res.option,
+                  xField: rec.xField
+                };
+              }
+            }
+          }
+        } catch { /* non-critical: keep original empty charts */ }
+      }
 
-    // Notify AI analysis ready
-    onProgress?.({ phase: 'ai', partial: { aiAnalysis: aiAnalysis || undefined, structuredAI } });
+      // Notify charts ready (before forecast — forecast mutates in-place but
+      // user sees the base chart as soon as batch build completes)
+      if (charts.length) {
+        onProgress?.({ phase: 'chart-single', partial: { charts: [...charts] } });
+      }
+
+      // 7.5 Forecast trend lines for line charts (mutates chart.config in-place)
+      for (const chart of charts) {
+        if (chart.chartType !== 'line') continue;
+        const config = chart.config as Record<string, unknown>;
+        const series = config?.series;
+        if (!Array.isArray(series)) continue;
+
+        const firstSeries = series.find((s: Record<string, unknown>) => s.type === 'line' && Array.isArray(s.data));
+        if (!firstSeries) continue;
+        const numericData = firstSeries.data.filter((v: unknown) => typeof v === 'number' && !isNaN(v as number));
+        if (numericData.length < 5) continue;
+
+        try {
+          const forecastRes = await getForecast(numericData, 3);
+          if (forecastRes.success && forecastRes.predictions?.length) {
+            const xData = config.xAxis?.data;
+            if (Array.isArray(xData)) {
+              for (let i = 0; i < forecastRes.predictions.length; i++) {
+                xData.push(`预测${i + 1}`);
+              }
+            }
+
+            const padded = new Array(numericData.length).fill(null);
+            padded[padded.length - 1] = numericData[numericData.length - 1];
+            series.push({
+              name: `${firstSeries.name}(预测)`,
+              type: 'line',
+              data: [...padded, ...forecastRes.predictions.map((v: number) => Math.round(v * 100) / 100)],
+              lineStyle: { type: 'dashed', width: 2 },
+              symbol: 'diamond',
+              symbolSize: 6,
+              itemStyle: { color: '#9ca3af' }
+            });
+
+            if (forecastRes.lowerBound?.length && forecastRes.upperBound?.length) {
+              const basePad = new Array(numericData.length).fill(null);
+              series.push({
+                name: '置信下界',
+                type: 'line',
+                data: [...basePad, ...forecastRes.lowerBound.map((v: number) => Math.round(v * 100) / 100)],
+                lineStyle: { opacity: 0 },
+                symbol: 'none',
+                silent: true,
+                z: -1
+              });
+              series.push({
+                name: '置信区间',
+                type: 'line',
+                data: [...basePad, ...forecastRes.upperBound.map((v: number) => Math.round(v * 100) / 100)],
+                lineStyle: { opacity: 0 },
+                symbol: 'none',
+                areaStyle: { color: 'rgba(156,163,175,0.18)', origin: 'auto' },
+                silent: true,
+                z: -1
+              });
+            }
+          }
+        } catch {
+          // Forecast is optional
+        }
+      }
+
+      return charts;
+    })();
+
+    // ---------- Right lane: AI insights (SSE streaming) ----------
+    const insightsLane = (async (): Promise<{ aiAnalysis: string; structuredAI: StructuredAIData | undefined }> => {
+      let aiAnalysis = '';
+      let structuredAI: StructuredAIData | undefined;
+      // Humanize column keys in data sent to LLM so AI text uses display names
+      const keyMap: Record<string, string> = {};
+      for (const k of allKeys) {
+        keyMap[k] = displayNameMap[k] || humanizeColumnName(k);
+      }
+      const insightData = cleanedData.slice(0, 100).map(row => {
+        const mapped: Record<string, unknown> = {};
+        for (const k of allKeys) {
+          mapped[keyMap[k]] = row[k];
+        }
+        return mapped;
+      });
+      const columnNames = Object.values(keyMap).join(', ');
+      const contextParts = [`数据列: ${columnNames}`];
+      if (textContext) {
+        contextParts.push(textContext);
+      }
+      if (financialMetrics) {
+        contextParts.push(formatFinancialContext(financialMetrics));
+      }
+      const insightRes = await generateInsightsStream({
+        data: insightData,
+        analysisContext: contextParts.join('\n'),
+        maxInsights: 5,
+        signal: abortController.signal,
+        onChunk: (chunk: string) => {
+          // Emit each SSE text chunk so the UI can render progressively (typewriter effect)
+          onProgress?.({ phase: 'ai-streaming', partial: { aiStreamChunk: chunk } });
+        }
+      });
+      if (insightRes.success && insightRes.insights?.length) {
+        const metaInsight = insightRes.insights.find(i => i.type === '_meta');
+        const normalInsights = insightRes.insights.filter(i => i.type !== '_meta');
+
+        if (metaInsight) {
+          const meta = metaInsight as Record<string, unknown>;
+          structuredAI = {
+            executiveSummary: (meta.executive_summary as string) || (meta.text as string) || '',
+            riskAlerts: (meta.risk_alerts as StructuredAIData['riskAlerts']) || [],
+            opportunities: (meta.opportunities as StructuredAIData['opportunities']) || [],
+            sensitivityAnalysis: (meta.sensitivity_analysis as StructuredAIData['sensitivityAnalysis']) || []
+          };
+        }
+
+        // Fallback: compute sensitivity analysis from financial metrics if LLM didn't return it
+        if (structuredAI && (!structuredAI.sensitivityAnalysis || structuredAI.sensitivityAnalysis.length === 0) && financialMetrics) {
+          structuredAI.sensitivityAnalysis = computeSensitivityFallback(financialMetrics);
+        }
+
+        const typeLabels: Record<string, string> = {
+          trend: '趋势分析', anomaly: '异常检测', comparison: '对比分析',
+          kpi: '关键指标', recommendation: '改进建议', forecast: '预测',
+        };
+        aiAnalysis = normalInsights
+          .map(i => {
+            const label = typeLabels[i.type] || i.type;
+            let line = `${label}: ${i.text}`;
+            if (i.recommendation) line += ` 建议: ${i.recommendation}`;
+            return line;
+          })
+          .join('\n\n');
+      }
+
+      // Notify AI analysis ready (fires as soon as insights lane completes,
+      // independent of chart lane)
+      onProgress?.({ phase: 'ai', partial: { aiAnalysis: aiAnalysis || undefined, structuredAI } });
+
+      return { aiAnalysis, structuredAI };
+    })();
+
+    // Await both lanes — Promise.all blocks until both done (each lane already
+    // fires its own onProgress for streaming UI updates).
+    const [charts, insightsResult] = await Promise.all([chartsLane, insightsLane]);
+    const { aiAnalysis, structuredAI } = insightsResult;
+    tick('charts+insights(parallel)', t0);
 
     // 9. Assemble KPI summary
     // Trust Python /api/insight/quick-summary response shape — it already returns
