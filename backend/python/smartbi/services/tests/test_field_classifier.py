@@ -229,9 +229,10 @@ def test_infer_agg_strategy_rating_in_range_returns_mean():
                               statistics={"mean": 3.5}) == "mean"
 
 
-def test_infer_agg_strategy_rating_name_but_stats_out_of_range_returns_none():
-    """Name suggests rating but mean > 5 → likely loyalty points / score / 积分.
-    Better to skip than to mis-display."""
+def test_infer_agg_strategy_rating_name_but_stats_out_of_range_returns_sum():
+    """Name suggests rating but mean ∉ [1, 5] → likely loyalty points (积分)
+    or unrelated metric. Fall through to sum default — NOT 'none', because
+    the column may still be a meaningful sum-able measure."""
     assert infer_agg_strategy("服务积分", semantic_type=None, is_measure=True,
                               statistics={"mean": 2300.0}) == "sum"
     # mean = 0 (no data) — still fall back to sum default
