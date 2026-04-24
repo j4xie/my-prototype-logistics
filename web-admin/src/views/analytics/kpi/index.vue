@@ -1,14 +1,62 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
-import { Refresh, TrendCharts, Histogram, Timer, Check } from '@element-plus/icons-vue';
+import { Refresh, TrendCharts, Histogram, Timer, Check, KnifeFork, DataAnalysis } from '@element-plus/icons-vue';
+import { pythonFetch } from '@/api/smartbi/common';
 
 const authStore = useAuthStore();
+const router = useRouter();
 const factoryId = computed(() => authStore.factoryId);
+// Apr 24 P1.6: restaurant tenants see ops-specific KPIs, not manufacturing ones
+const isRestaurant = computed(() => authStore.factoryType === 'RESTAURANT');
 
 const loading = ref(false);
+
+// Restaurant KPI set (domain-appropriate)
+const restaurantKpi = ref({
+  wastageRate: 0,        // wastage_cost / requisition_cost — 损耗率
+  shortageRate: 0,       // |shortage_qty| / requisition_qty — 盘亏率
+  activeDays: 0,         // req + wastage + stock active days in window
+  totalCost: 0,          // sum req cost
+  wastageCost: 0,
+  shortageQty: 0,
+  topIngredient: '',
+});
+
+async function loadRestaurantKpi() {
+  if (!factoryId.value) return;
+  loading.value = true;
+  try {
+    const res = await pythonFetch('/api/smartbi/restaurant-ops/summary?days=30') as {
+      success: boolean;
+      data?: {
+        totals?: Record<string, number>;
+        top5_ingredients?: { name: string }[];
+      };
+    };
+    if (res.success && res.data) {
+      // pythonFetch auto-transforms snake_case → camelCase
+      const t = (res.data.totals || {}) as Record<string, number>;
+      const top5 = ((res.data as Record<string, unknown>).top5Ingredients || []) as { name: string }[];
+      restaurantKpi.value.totalCost = t.totalReqCost || 0;
+      restaurantKpi.value.wastageCost = t.totalWastageCost || 0;
+      restaurantKpi.value.shortageQty = t.totalShortage || 0;
+      restaurantKpi.value.activeDays = t.activeDays || 0;
+      restaurantKpi.value.topIngredient = top5[0]?.name || '—';
+      const reqCost = t.totalReqCost || 0;
+      const reqQty = t.totalReqQty || 0;
+      restaurantKpi.value.wastageRate = reqCost > 0 ? (t.totalWastageCost || 0) / reqCost : 0;
+      restaurantKpi.value.shortageRate = reqQty > 0 ? (t.totalShortage || 0) / reqQty : 0;
+    }
+  } catch (e) {
+    console.error('[kpi-dashboard] restaurant kpi load failed:', e);
+  } finally {
+    loading.value = false;
+  }
+}
 
 // KPI 数据
 const kpiData = ref({
@@ -47,6 +95,10 @@ const targets = {
 };
 
 onMounted(() => {
+  if (isRestaurant.value) {
+    loadRestaurantKpi();
+    return;
+  }
   loadKPIData();
 });
 
@@ -92,11 +144,77 @@ function formatPercent(value: number) {
         <h1>KPI看板</h1>
       </div>
       <div class="header-right">
-        <el-button type="primary" :icon="Refresh" @click="loadKPIData">刷新数据</el-button>
+        <el-button type="primary" :icon="Refresh" @click="isRestaurant ? loadRestaurantKpi() : loadKPIData()">刷新数据</el-button>
       </div>
     </div>
 
-    <div class="kpi-grid" v-loading="loading">
+    <!-- Apr 24 P1.6: restaurant-specific KPI view (Plan C Gold) -->
+    <div v-if="isRestaurant" class="kpi-grid" v-loading="loading">
+      <el-card class="kpi-card">
+        <template #header>
+          <div class="card-header"><el-icon><KnifeFork /></el-icon><span>运营指标 (近30天)</span></div>
+        </template>
+        <div class="kpi-item">
+          <div class="kpi-label">损耗率 (金额占领料比)</div>
+          <el-progress
+            :percentage="Math.min(100, Math.round(restaurantKpi.wastageRate * 100))"
+            :color="restaurantKpi.wastageRate > 0.05 ? '#f56c6c' : restaurantKpi.wastageRate > 0.02 ? '#e6a23c' : '#67c23a'"
+          />
+          <div class="kpi-footer">
+            <span>当前: {{ (restaurantKpi.wastageRate * 100).toFixed(2) }}%</span>
+            <span class="target">目标: &lt; 2%</span>
+          </div>
+        </div>
+        <div class="kpi-item">
+          <div class="kpi-label">盘亏率 (数量占领料比)</div>
+          <el-progress
+            :percentage="Math.min(100, Math.round(restaurantKpi.shortageRate * 100))"
+            :color="restaurantKpi.shortageRate > 0.03 ? '#f56c6c' : '#67c23a'"
+          />
+          <div class="kpi-footer">
+            <span>当前: {{ (restaurantKpi.shortageRate * 100).toFixed(2) }}%</span>
+            <span class="target">目标: &lt; 1%</span>
+          </div>
+        </div>
+        <div class="kpi-stats">
+          <div class="stat"><div class="stat-value">{{ restaurantKpi.activeDays }}</div><div class="stat-label">活动天数</div></div>
+          <div class="stat"><div class="stat-value">¥{{ Math.round(restaurantKpi.totalCost).toLocaleString() }}</div><div class="stat-label">领料总成本</div></div>
+        </div>
+      </el-card>
+
+      <el-card class="kpi-card">
+        <template #header>
+          <div class="card-header"><el-icon><DataAnalysis /></el-icon><span>AI 深度分析</span></div>
+        </template>
+        <div style="padding:12px 0">
+          <p style="color:#606266;line-height:1.8">
+            本 KPI 看板基于 <b>Gold 运营层聚合</b>. 数据来自领料/损耗/盘点 3 个 Silver 事实表
+            的当日汇总 (近 30 天).
+          </p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+            <el-button size="small" @click="router.push('/smart-bi/query?q=最近30天损耗最多的食材和类型占比')">🤖 损耗分析</el-button>
+            <el-button size="small" @click="router.push('/smart-bi/query?q=哪个食材盘亏最严重')">🤖 盘亏分析</el-button>
+            <el-button size="small" @click="router.push('/smart-bi/query?q=最近30天领料趋势 top 10 食材')">🤖 领料趋势</el-button>
+            <el-button size="small" @click="router.push('/smart-bi/restaurant-v2')">餐饮综合分析 V2 →</el-button>
+          </div>
+        </div>
+      </el-card>
+
+      <el-card class="kpi-card">
+        <template #header>
+          <div class="card-header"><el-icon><Histogram /></el-icon><span>消耗最多食材</span></div>
+        </template>
+        <div style="text-align:center;padding:20px 0">
+          <div style="font-size:24px;font-weight:600;color:#303133">{{ restaurantKpi.topIngredient }}</div>
+          <div style="color:#909399;margin-top:8px;font-size:13px">近30天消耗最多 (按金额)</div>
+          <el-button type="text" size="small" style="margin-top:12px"
+            @click="router.push('/restaurant/requisitions')">查看领料明细 →</el-button>
+        </div>
+      </el-card>
+    </div>
+
+    <!-- Factory tenant: manufacturing KPI (original) -->
+    <div v-else class="kpi-grid" v-loading="loading">
       <!-- 生产效率KPI -->
       <el-card class="kpi-card">
         <template #header>

@@ -200,10 +200,16 @@ async def summary(request: Request, days: int = Query(30, ge=1, le=365)) -> Dict
         totals = await conn.fetchrow(
             """
             SELECT
-                COALESCE(SUM(requisition_count), 0)::int        AS total_requisitions,
-                COALESCE(SUM(requisition_qty_total), 0)::float  AS total_req_qty,
-                COALESCE(SUM(requisition_cost_total), 0)::float AS total_req_cost,
-                COUNT(DISTINCT date)                            AS active_days
+                COALESCE(SUM(requisition_count), 0)::int             AS total_requisitions,
+                COALESCE(SUM(requisition_qty_total), 0)::float       AS total_req_qty,
+                COALESCE(SUM(requisition_cost_total), 0)::float      AS total_req_cost,
+                COALESCE(SUM(wastage_count), 0)::int                 AS total_wastage,
+                COALESCE(SUM(wastage_qty_total), 0)::float           AS total_wastage_qty,
+                COALESCE(SUM(wastage_cost_total), 0)::float          AS total_wastage_cost,
+                COALESCE(SUM(stocktaking_count), 0)::int             AS total_stocktaking,
+                COALESCE(SUM(stocktaking_shortage_total), 0)::float  AS total_shortage,
+                COALESCE(SUM(stocktaking_surplus_total), 0)::float   AS total_surplus,
+                COUNT(DISTINCT date)                                 AS active_days
               FROM agg_restaurant_daily_totals
              WHERE factory_id = $1
                AND date >= CURRENT_DATE - ($2::int)

@@ -3,13 +3,71 @@ import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
-import { TrendCharts, DataAnalysis, Histogram, PieChart, Timer, Sunny } from '@element-plus/icons-vue';
+import { TrendCharts, DataAnalysis, Histogram, PieChart, Timer, Sunny, KnifeFork, Money, Goods, User, Box } from '@element-plus/icons-vue';
 import { formatNumber } from '@/utils/format-number';
+import { pythonFetch } from '@/api/smartbi/common';
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
+// Apr 24 Plan C+: restaurant tenants get Gold ops dashboard instead of manufacturing cards
+const isRestaurant = computed(() => authStore.factoryType === 'RESTAURANT');
 
 const loading = ref(false);
+
+// Restaurant-specific Gold ops summary data
+const restaurantOps = ref({
+  loading: false,
+  requisitionCount: 0,
+  requisitionQty: 0,
+  requisitionCost: 0,
+  wastageCount: 0,
+  wastageCost: 0,
+  stocktakingCount: 0,
+  shortage: 0,
+  activeDays: 0,
+  top5Ingredients: [] as { name: string; category: string; cost: number }[],
+});
+
+async function loadRestaurantOps() {
+  if (!factoryId.value) return;
+  restaurantOps.value.loading = true;
+  try {
+    const res = await pythonFetch('/api/smartbi/restaurant-ops/summary?days=30') as {
+      success: boolean;
+      data?: {
+        totals?: {
+          total_requisitions?: number;
+          total_req_qty?: number;
+          total_req_cost?: number;
+          total_wastage?: number;
+          total_wastage_cost?: number;
+          total_stocktaking?: number;
+          total_shortage?: number;
+          active_days?: number;
+        };
+        top5_ingredients?: { name: string; category: string; cost: number }[];
+      };
+    };
+    if (res.success && res.data) {
+      // pythonFetch auto-transforms snake_case → camelCase, so read camelCase keys here
+      const t = (res.data.totals || {}) as Record<string, number>;
+      restaurantOps.value.requisitionCount = t.totalRequisitions || 0;
+      restaurantOps.value.requisitionQty = t.totalReqQty || 0;
+      restaurantOps.value.requisitionCost = t.totalReqCost || 0;
+      restaurantOps.value.wastageCount = t.totalWastage || 0;
+      restaurantOps.value.wastageCost = t.totalWastageCost || 0;
+      restaurantOps.value.stocktakingCount = t.totalStocktaking || 0;
+      restaurantOps.value.shortage = t.totalShortage || 0;
+      restaurantOps.value.activeDays = t.activeDays || 0;
+      // top5_ingredients → top5Ingredients by transformKeys
+      restaurantOps.value.top5Ingredients = (res.data as Record<string, unknown>).top5Ingredients as { name: string; category: string; cost: number }[] || [];
+    }
+  } catch (e) {
+    console.error('[analytics/overview] restaurant ops load failed:', e);
+  } finally {
+    restaurantOps.value.loading = false;
+  }
+}
 
 // 概览数据
 const overviewData = ref({
@@ -29,8 +87,14 @@ const trendData = ref({
 });
 
 onMounted(() => {
-  loadOverviewData();
-  loadTrendData();
+  if (isRestaurant.value) {
+    // Skip the manufacturing dashboards entirely — they'd all return zeros
+    // for a restaurant tenant and surface useless warnings. Load Gold ops.
+    loadRestaurantOps();
+  } else {
+    loadOverviewData();
+    loadTrendData();
+  }
 });
 
 async function loadOverviewData() {
@@ -118,11 +182,89 @@ function formatPercent(num: number): string {
         <el-icon><DataAnalysis /></el-icon>
         数据分析中心
       </h1>
-      <p class="subtitle">全局数据概览与趋势分析</p>
+      <p class="subtitle">{{ isRestaurant ? '餐饮日常运营数据概览 (Gold)' : '全局数据概览与趋势分析' }}</p>
     </div>
 
-    <!-- 模块概览卡片 -->
-    <el-row :gutter="16" class="overview-cards" v-loading="loading">
+    <!-- Restaurant tenant: Gold ops dashboard (Plan C Phase 1-5) -->
+    <template v-if="isRestaurant">
+      <el-row :gutter="16" class="overview-cards" v-loading="restaurantOps.loading">
+        <el-col :xs="24" :sm="12" :md="8" :lg="4">
+          <el-card class="stat-card production" shadow="hover">
+            <div class="card-header"><el-icon class="module-icon"><KnifeFork /></el-icon><span>领料</span></div>
+            <div class="stat-value">{{ formatNumber(restaurantOps.requisitionCount) }}</div>
+            <div class="stat-label">近30天领料单</div>
+            <div class="stat-footer"><span>{{ formatNumber(restaurantOps.requisitionQty, 1) }} 单位</span></div>
+          </el-card>
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="8" :lg="4">
+          <el-card class="stat-card quality" shadow="hover">
+            <div class="card-header"><el-icon class="module-icon"><Sunny /></el-icon><span>损耗</span></div>
+            <div class="stat-value">¥{{ formatNumber(restaurantOps.wastageCost, 0) }}</div>
+            <div class="stat-label">近30天损耗金额</div>
+            <div class="stat-footer"><span>{{ restaurantOps.wastageCount }} 次记录</span></div>
+          </el-card>
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="8" :lg="4">
+          <el-card class="stat-card warehouse" shadow="hover">
+            <div class="card-header"><el-icon class="module-icon"><Box /></el-icon><span>盘点</span></div>
+            <div class="stat-value">{{ formatNumber(restaurantOps.shortage, 1) }}</div>
+            <div class="stat-label">近30天盘亏量</div>
+            <div class="stat-footer"><span>{{ restaurantOps.stocktakingCount }} 次盘点</span></div>
+          </el-card>
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="8" :lg="4">
+          <el-card class="stat-card sales" shadow="hover">
+            <div class="card-header"><el-icon class="module-icon"><Money /></el-icon><span>食材成本</span></div>
+            <div class="stat-value">¥{{ formatNumber(restaurantOps.requisitionCost, 0) }}</div>
+            <div class="stat-label">近30天估算</div>
+            <div class="stat-footer"><span>{{ restaurantOps.activeDays }} 天有活动</span></div>
+          </el-card>
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="8" :lg="4">
+          <el-card class="stat-card finance" shadow="hover">
+            <div class="card-header"><el-icon class="module-icon"><Histogram /></el-icon><span>Top 食材</span></div>
+            <div class="stat-value" style="font-size:18px">{{ restaurantOps.top5Ingredients[0]?.name || '—' }}</div>
+            <div class="stat-label">消耗最多</div>
+            <div class="stat-footer"><span>¥{{ formatNumber(restaurantOps.top5Ingredients[0]?.cost || 0, 0) }}</span></div>
+          </el-card>
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="8" :lg="4">
+          <el-card class="stat-card equipment" shadow="hover" @click="$router.push('/smart-bi/query?q=最近30天领料最多的食材和损耗情况')">
+            <div class="card-header"><el-icon class="module-icon"><DataAnalysis /></el-icon><span>AI 深度分析</span></div>
+            <div class="stat-value" style="font-size:18px;cursor:pointer">🤖 点击</div>
+            <div class="stat-label">问 AI 领料/损耗/盘点</div>
+            <div class="stat-footer"><span style="color:#409eff">基于 Gold 数据秒回</span></div>
+          </el-card>
+        </el-col>
+      </el-row>
+
+      <!-- Top 5 ingredients list -->
+      <el-card class="top5-card" shadow="never" v-if="restaurantOps.top5Ingredients.length > 0" style="margin-top:16px">
+        <template #header>
+          <span style="font-size:14px;font-weight:600">食材消耗 Top 5 (近30天)</span>
+        </template>
+        <el-table :data="restaurantOps.top5Ingredients" size="small" :show-header="true">
+          <el-table-column type="index" width="60" label="排名" />
+          <el-table-column prop="name" label="食材" />
+          <el-table-column prop="category" label="类别" />
+          <el-table-column label="估算成本">
+            <template #default="{ row }">¥{{ formatNumber(row.cost, 2) }}</template>
+          </el-table-column>
+        </el-table>
+      </el-card>
+
+      <el-alert type="info" :closable="false" style="margin-top:20px" show-icon>
+        <template #title>关于本页面</template>
+        <div style="font-size:13px">
+          数据来自 <b>Gold 运营层聚合</b> (agg_restaurant_daily_*). 每次打开自动加载近 30 天.
+          如需自定义问答, 点顶部 "🤖 AI 深度分析" 卡片或侧边栏 "AI 问答".
+          生产/质量/仓储等制造业模块对餐饮租户已隐藏 — 本页只显示餐饮日常指标.
+        </div>
+      </el-alert>
+    </template>
+
+    <!-- Factory tenant: manufacturing overview (original flow) -->
+    <el-row v-else :gutter="16" class="overview-cards" v-loading="loading">
       <!-- 生产模块 -->
       <el-col :xs="24" :sm="12" :md="8" :lg="4">
         <el-card class="stat-card production" shadow="hover">
