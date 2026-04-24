@@ -94,6 +94,50 @@ function _periodToDateRange(period: string): [string, string] {
 // Auto-fallback label shown when Gold chart falls back to a prior range.
 const goldTrendFallbackLabel = ref<string>('');
 
+// Apr 25 2026 UX P3 (C-3): 365-day daily granularity creates "noise wall".
+// Auto-aggregate to weekly (90-365 days) or monthly (>365 days). Granularity
+// tag in card header tells user data is summarized, not raw daily.
+type TrendGranularity = 'daily' | 'weekly' | 'monthly';
+type TrendPoint = DailyTrend['points'][number];
+const trendGranularity = ref<TrendGranularity>('daily');
+
+function aggregatePoints(points: TrendPoint[]): { points: TrendPoint[]; granularity: TrendGranularity } {
+  if (!points || points.length === 0) return { points, granularity: 'daily' };
+  if (points.length <= 90) return { points, granularity: 'daily' };
+
+  const granularity: TrendGranularity = points.length <= 365 ? 'weekly' : 'monthly';
+  const buckets = new Map<string, TrendPoint[]>();
+
+  for (const p of points) {
+    const d = new Date(p.date);
+    if (isNaN(d.getTime())) continue;
+    let key: string;
+    if (granularity === 'weekly') {
+      // ISO week bucket: Monday-aligned, label = Monday's YYYY-MM-DD
+      const day = d.getDay() || 7; // Sunday = 7
+      const monday = new Date(d);
+      monday.setDate(d.getDate() - day + 1);
+      key = monday.toISOString().slice(0, 10);
+    } else {
+      key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    }
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key)!.push(p);
+  }
+
+  const aggregated: TrendPoint[] = Array.from(buckets.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, pts]) => {
+      const revenueSum = pts.reduce((s, p) => s + (Number(p.revenue) || 0), 0);
+      const billCountSum = pts.reduce((s, p) => s + (Number(p.billCount) || 0), 0);
+      // avg bill value = sum revenue / sum bills (correct weighted avg, not mean of means)
+      const avgBillValue = billCountSum > 0 ? revenueSum / billCountSum : null;
+      return { date, revenue: revenueSum, billCount: billCountSum, avgBillValue };
+    });
+
+  return { points: aggregated, granularity };
+}
+
 // Apr 25 2026 UX P2 (C-3): banner must explicitly name BOTH the originally
 // requested range and the actual range being shown, otherwise user thinks
 // they are seeing data for the period the dropdown says (e.g. picks 2024全年
@@ -165,7 +209,10 @@ async function loadGoldTrend() {
 
 function updateGoldChart() {
   if (!goldRevenueChart || !goldTrend.value) return;
-  const pts = goldTrend.value.points;
+  // Apr 25 UX P3: aggregate weekly/monthly when range too dense for daily display
+  const agg = aggregatePoints(goldTrend.value.points);
+  trendGranularity.value = agg.granularity;
+  const pts = agg.points;
   const secondMetric = trendSecondMetric.value;
   const secondMeta = secondMetric === 'bills'
     ? { name: '订单数', color: '#E6A23C', data: pts.map(p => p.billCount), unit: '' }
@@ -176,8 +223,9 @@ function updateGoldChart() {
   const fmtSecond = secondMetric === 'bills'
     ? (v: number) => String(Math.round(v))
     : (v: number) => `¥${v.toFixed(2)}`;
+  const granularitySuffix = agg.granularity === 'weekly' ? ' · 按周' : agg.granularity === 'monthly' ? ' · 按月' : '';
   goldRevenueChart.setOption({
-    title: { text: 'POS 营收趋势 (Gold)', left: 'center', textStyle: { fontSize: 14 } },
+    title: { text: `POS 营收趋势 (Gold)${granularitySuffix}`, left: 'center', textStyle: { fontSize: 14 } },
     tooltip: {
       trigger: 'axis', confine: true,
       formatter: (params: Array<{ seriesName: string; value: number; axisValue: string; marker: string }>) => {
@@ -418,6 +466,10 @@ onUnmounted(() => {
         <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; flex-wrap: wrap;">
           <span>📈 POS 营收趋势</span>
           <el-tag size="small" type="success">Gold · daily_trend</el-tag>
+          <el-tag v-if="trendGranularity === 'weekly'" size="small" type="info" effect="plain"
+                  title="范围 90-365 天时,自动按周聚合以减少视觉噪音">按周聚合</el-tag>
+          <el-tag v-else-if="trendGranularity === 'monthly'" size="small" type="info" effect="plain"
+                  title="范围超过 365 天时,自动按月聚合以减少视觉噪音">按月聚合</el-tag>
           <el-tag v-if="goldTrendFallbackLabel" size="small" type="warning" effect="plain">
             {{ selectedPeriodLabel }}无数据,已自动展示 {{ goldTrendFallbackLabel }}
           </el-tag>
