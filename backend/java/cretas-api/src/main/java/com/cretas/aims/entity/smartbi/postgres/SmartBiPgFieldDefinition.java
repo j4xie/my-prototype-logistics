@@ -136,4 +136,25 @@ public class SmartBiPgFieldDefinition {
      */
     @Column(name = "format_pattern", length = 50)
     private String formatPattern;
+
+    /**
+     * KPI aggregation strategy.
+     * Values: "sum" (default for measures), "mean" (1-5 ratings),
+     *         "none" (IDs and non-measures excluded from KPI cards).
+     *
+     * Populated initially by Java with default "sum"; corrected by the Python
+     * /reclassify endpoint (γ-1c afterCommit hook in DynamicDataPersistence).
+     *
+     * Read by both backend (insight.py quick_summary) and frontend
+     * (web-admin getSmartKPIs) — single source of truth, no client-side
+     * heuristic.
+     *
+     * See: backend/python/smartbi/services/field_classifier.py
+     *      infer_agg_strategy()
+     *
+     * Migration: V20260425_02__add_field_def_agg_strategy.sql
+     */
+    @Builder.Default
+    @Column(name = "agg_strategy", length = 20, nullable = false)
+    private String aggStrategy = "sum";
 }
