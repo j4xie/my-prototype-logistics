@@ -42,10 +42,17 @@ _OPS_PATTERNS: List[Tuple[str, List[List[str]]]] = [
         [["盘点", "盘亏", "盘损", "库存差异", "账实差"],
          ["哪个", "哪些", "最多", "top", "TOP", "排名", "频率", "经常"]],
     ),
-    # Recipe cost: "配方/成本/毛利" + "菜/哪/高/低"
+    # Cross-module gross margin (MUST come BEFORE recipe_cost since "毛利"
+    # on its own = margin not cost). Plan C's signature feature.
+    (
+        "RESTAURANT_OPS_GROSS_MARGIN",
+        [["毛利", "毛利率", "净赚", "赚钱", "挣钱", "利润"],
+         ["菜品", "菜", "哪道", "哪个", "排行", "排名", "top", "TOP", "最高", "最赚"]],
+    ),
+    # Recipe cost (食材成本 only — 毛利 moved to gross_margin)
     (
         "RESTAURANT_OPS_RECIPE_COST",
-        [["食材成本", "配方成本", "菜品成本", "食材费用", "毛利"],
+        [["食材成本", "配方成本", "菜品成本", "食材费用"],
          ["最高", "最低", "哪道", "哪个", "top", "TOP", "排名", "多少"]],
     ),
     # Requisition trend: "领料/领/领用" + "趋势/最多/食材"
@@ -92,6 +99,15 @@ SAMPLE_QUERIES: Dict[str, List[str]] = {
         "哪些食材领料频率最高",
         "领料数量趋势",
         "食材消耗排名",
+    ],
+    "RESTAURANT_OPS_GROSS_MARGIN": [
+        "哪道菜毛利最高",
+        "菜品毛利率排行",
+        "最赚钱的菜 top 10",
+        "哪些菜净赚最多",
+        "菜品毛利对比",
+        "利润最高的菜品",
+        "售价减去食材成本最多的菜",
     ],
 }
 
@@ -429,11 +445,173 @@ async def resolve_requisition_trend(
     )
 
 
+async def resolve_gross_margin(
+    smartbi_pool, factory_id: str, days: int = 30, top_n: int = 10,
+) -> OpsAnswer:
+    """Cross-module gross margin analysis: POS sold_price × recipe food_cost.
+
+    Join logic:
+      fact_pos_item (POS 卖价 + qty) →
+      JOIN dim_product (POS side, name) →
+      JOIN product_types (cretas side, name = dim_product.name via normalized name match) →
+      JOIN agg_restaurant_product_cost (food cost per dish, keyed by product_source_pk=product_types.id) →
+      compute gross_profit = sum(amount) - sum(qty × food_cost) per dish
+
+    Plan C's signature feature — unlocks real gross margin analysis that
+    was impossible before Silver/Gold restaurant ops layer.
+    """
+    # Need cretas connection for product_types name↔id lookup
+    async with smartbi_pool.acquire() as conn:
+        await conn.execute("SELECT set_config('app.factory_id', $1, true)", factory_id)
+
+        # Step 1: POS sales aggregated per dish (past N days)
+        # Use fact_pos_transaction.date to filter time window.
+        pos_rows = await conn.fetch(
+            """
+            SELECT p.product_id, p.name AS dish_name, p.normalized_name,
+                   SUM(i.qty)::float AS total_qty,
+                   SUM(i.amount)::float AS total_revenue,
+                   COUNT(DISTINCT i.transaction_id)::int AS bills
+              FROM fact_pos_item i
+              JOIN fact_pos_transaction t ON t.id = i.transaction_id
+              JOIN dim_product p ON p.product_id = i.product_id
+             WHERE i.factory_id = $1
+               AND t.factory_id = $1
+               AND t.date >= CURRENT_DATE - ($2::int)
+               AND p.factory_id = $1
+             GROUP BY p.product_id, p.name, p.normalized_name
+             ORDER BY total_revenue DESC NULLS LAST
+            """,
+            factory_id, days,
+        )
+
+    if not pos_rows:
+        return OpsAnswer(
+            code="RESTAURANT_OPS_GROSS_MARGIN",
+            title=f"菜品毛利分析 (近{days}天)",
+            answer_text=(
+                f"近 {days} 天无 POS 销售数据.\n"
+                f"提示: 上传 POS 账单 Excel 到 SmartBI, materialize 后会写入 fact_pos_item, "
+                f"本分析即可运行. 需要同时有配方+食材单价才能计算毛利."
+            ),
+            charts=[], kpis=[],
+            meta={"window_days": days, "no_pos_data": True},
+        )
+
+    # Step 2: look up cretas product_types to get source_pks by name match
+    normalized_names = list({r["normalized_name"] for r in pos_rows})
+    cretas_map: Dict[str, str] = {}  # name → source_pk (product_type_id)
+    try:
+        import asyncpg as _asyncpg
+        from config import get_settings as _get_settings
+        cretas_url = _get_settings().food_kb_db_url
+        cretas = await _asyncpg.connect(cretas_url)
+        try:
+            name_rows = await cretas.fetch(
+                "SELECT id, name FROM product_types WHERE factory_id = $1 AND name = ANY($2::text[])",
+                factory_id, normalized_names,
+            )
+            cretas_map = {r["name"]: r["id"] for r in name_rows}
+        finally:
+            await cretas.close()
+    except Exception as e:
+        logger.warning(f"[gross_margin] cretas name lookup failed: {e}")
+
+    # Step 3: load food cost per source_pk
+    cost_map: Dict[str, float] = {}
+    if cretas_map:
+        async with smartbi_pool.acquire() as conn:
+            await conn.execute("SELECT set_config('app.factory_id', $1, true)", factory_id)
+            cost_rows = await conn.fetch(
+                """
+                SELECT product_source_pk, food_cost::float AS food_cost
+                  FROM agg_restaurant_product_cost
+                 WHERE factory_id = $1 AND product_source_pk = ANY($2::text[])
+                """,
+                factory_id, list(cretas_map.values()),
+            )
+            cost_map = {r["product_source_pk"]: r["food_cost"] for r in cost_rows}
+
+    # Step 4: compute margin per dish
+    enriched = []
+    for r in pos_rows:
+        source_pk = cretas_map.get(r["normalized_name"])
+        food_cost = cost_map.get(source_pk, 0) if source_pk else 0
+        total_cost = food_cost * r["total_qty"]
+        gross_profit = r["total_revenue"] - total_cost
+        margin_rate = gross_profit / r["total_revenue"] if r["total_revenue"] > 0 else 0
+        enriched.append({
+            "name": r["dish_name"],
+            "qty": r["total_qty"],
+            "revenue": r["total_revenue"],
+            "bills": r["bills"],
+            "food_cost_unit": food_cost,
+            "gross_profit": gross_profit,
+            "margin_rate": margin_rate,
+            "has_cost": food_cost > 0,
+        })
+    enriched.sort(key=lambda x: x["gross_profit"], reverse=True)
+    top_slice = enriched[:top_n]
+    total_rev = sum(e["revenue"] for e in enriched)
+    total_profit = sum(e["gross_profit"] for e in enriched)
+    avg_margin = total_profit / total_rev if total_rev > 0 else 0
+
+    with_cost = [e for e in enriched if e["has_cost"]]
+
+    top_text = "\n".join([
+        f"  {i+1}. {e['name']}: 营收 ¥{e['revenue']:.2f} / 成本 ¥{e['food_cost_unit'] * e['qty']:.2f} / "
+        f"毛利 ¥{e['gross_profit']:.2f} ({e['margin_rate'] * 100:.1f}%)"
+        + ("" if e["has_cost"] else " [无配方数据, 成本按0估]")
+        for i, e in enumerate(top_slice)
+    ])
+    missing_cost_count = len([e for e in enriched if not e["has_cost"]])
+    missing_note = (
+        f"\n\n注: {missing_cost_count} 个菜品缺配方/食材单价, 毛利按无成本估算. "
+        f"录入配方后 ETL 自动重算."
+        if missing_cost_count > 0 else ""
+    )
+    answer = (
+        f"近 {days} 天菜品毛利分析:\n"
+        f"- 总营收 ¥{total_rev:,.2f}, 总毛利 ¥{total_profit:,.2f}, 平均毛利率 {avg_margin * 100:.1f}%\n"
+        f"- {len(with_cost)}/{len(enriched)} 菜品有完整成本数据\n\n"
+        f"Top {len(top_slice)} 毛利菜品 (按绝对毛利):\n{top_text}{missing_note}"
+    )
+
+    charts = [{
+        "chartType": "bar",
+        "title": f"Top {len(top_slice)} 毛利菜品 (近{days}天)",
+        "xAxis": {"data": [e["name"] for e in top_slice]},
+        "series": [
+            {"name": "营收", "type": "bar", "data": [e["revenue"] for e in top_slice]},
+            {"name": "毛利", "type": "bar", "data": [e["gross_profit"] for e in top_slice]},
+        ],
+    }]
+
+    return OpsAnswer(
+        code="RESTAURANT_OPS_GROSS_MARGIN",
+        title=f"菜品毛利分析 (近{days}天)",
+        answer_text=answer,
+        charts=charts,
+        kpis=[
+            {"title": "总营收", "value": f"¥{total_rev:,.0f}", "rawValue": total_rev},
+            {"title": "总毛利", "value": f"¥{total_profit:,.0f}", "rawValue": total_profit},
+            {"title": "平均毛利率", "value": f"{avg_margin * 100:.1f}%", "rawValue": avg_margin},
+            {"title": "最赚菜品", "value": top_slice[0]["name"] if top_slice else "—", "rawValue": 0},
+        ],
+        meta={
+            "window_days": days, "top_n": top_n,
+            "missing_cost_count": missing_cost_count,
+            "total_dishes": len(enriched),
+        },
+    )
+
+
 _RESOLVERS = {
     "RESTAURANT_OPS_WASTAGE_TOP": resolve_wastage_top,
     "RESTAURANT_OPS_STOCK_SHORTAGE": resolve_stock_shortage,
     "RESTAURANT_OPS_RECIPE_COST": resolve_recipe_cost,
     "RESTAURANT_OPS_REQUISITION_TREND": resolve_requisition_trend,
+    "RESTAURANT_OPS_GROSS_MARGIN": resolve_gross_margin,
 }
 
 

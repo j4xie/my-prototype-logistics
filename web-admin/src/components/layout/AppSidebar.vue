@@ -314,6 +314,21 @@ const filteredMenu = computed(() => {
     .filter(item => !item.children || item.children.length > 0);  // 移除没有可见子菜单的父菜单
 });
 
+// Apr 24 2026 Plan C: restaurant-specific sidebar title overrides for
+// manufacturing-origin pages that stay shared. "产品" makes no sense in
+// restaurant context — dishes are the product. One-line map kept close to
+// filteredMenu so it's obvious how to add more overrides.
+const RESTAURANT_TITLE_OVERRIDES: Record<string, string> = {
+  '/system/products': '菜品信息管理',
+};
+
+function titleForItem(item: MenuItem): string {
+  if (authStore.factoryType === 'RESTAURANT' && RESTAURANT_TITLE_OVERRIDES[item.path]) {
+    return RESTAURANT_TITLE_OVERRIDES[item.path];
+  }
+  return item.title;
+}
+
 // 当前激活的菜单
 const activeMenu = computed(() => route.path);
 
@@ -373,14 +388,14 @@ function handleSelect(path: string) {
           <el-sub-menu v-if="item.children?.length" :index="item.path">
             <template #title>
               <el-icon><component :is="iconMap[item.icon]" /></el-icon>
-              <span>{{ item.title }}</span>
+              <span>{{ titleForItem(item) }}</span>
             </template>
             <template v-for="child in item.children" :key="child.path">
               <div v-if="child.groupLabel && !appStore.sidebarCollapsed" class="menu-group-label">
                 {{ child.groupLabel }}
               </div>
               <el-menu-item :index="child.path">
-                {{ child.title }}
+                {{ titleForItem(child) }}
               </el-menu-item>
             </template>
           </el-sub-menu>
@@ -388,7 +403,7 @@ function handleSelect(path: string) {
           <!-- 无子菜单 -->
           <el-menu-item v-else :index="item.path">
             <el-icon><component :is="iconMap[item.icon]" /></el-icon>
-            <template #title>{{ item.title }}</template>
+            <template #title>{{ titleForItem(item) }}</template>
           </el-menu-item>
         </template>
       </el-menu>

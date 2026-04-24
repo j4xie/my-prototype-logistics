@@ -11,9 +11,104 @@ import { useAuthStore } from '@/store/modules/auth'
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
+import { pythonFetch } from '@/api/smartbi/common'
+import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
+const router = useRouter()
 const factoryId = computed(() => authStore.factoryId)
+// Apr 24 Plan C Phase 7: restaurant tenants get Gold-derived alerts
+const isRestaurant = computed(() => authStore.factoryType === 'RESTAURANT')
+
+interface RestaurantAlert {
+  level: 'CRITICAL' | 'WARNING' | 'INFO'
+  kind: string
+  title: string
+  value: string
+  threshold: string
+  action: string
+  link: string
+  icon: string
+}
+const restaurantAlerts = ref<RestaurantAlert[]>([])
+
+async function loadRestaurantAlerts() {
+  if (!factoryId.value) return
+  try {
+    const res = await pythonFetch('/api/smartbi/restaurant-ops/summary?days=30') as {
+      success: boolean
+      data?: { totals?: Record<string, number> }
+    }
+    if (!res.success || !res.data?.totals) return
+    const t = res.data.totals
+    const reqCost = t.totalReqCost || 0
+    const reqQty = t.totalReqQty || 0
+    const wastageCost = t.totalWastageCost || 0
+    const shortage = t.totalShortage || 0
+    const alerts: RestaurantAlert[] = []
+    // Rule 1: 损耗率 > 5% — CRITICAL; > 2% — WARNING
+    if (reqCost > 0) {
+      const rate = wastageCost / reqCost
+      if (rate > 0.05) {
+        alerts.push({
+          level: 'CRITICAL', kind: 'wastage_rate',
+          title: '损耗率过高',
+          value: `${(rate * 100).toFixed(2)}%`,
+          threshold: '> 5%',
+          action: '检查过期/变质食材管理',
+          link: '/restaurant/wastage', icon: '🔴',
+        })
+      } else if (rate > 0.02) {
+        alerts.push({
+          level: 'WARNING', kind: 'wastage_rate',
+          title: '损耗率偏高',
+          value: `${(rate * 100).toFixed(2)}%`,
+          threshold: '> 2%',
+          action: '关注损耗趋势',
+          link: '/restaurant/wastage', icon: '🟠',
+        })
+      }
+    }
+    // Rule 2: 盘亏率 > 3% — WARNING; > 5% — CRITICAL
+    if (reqQty > 0) {
+      const rate = shortage / reqQty
+      if (rate > 0.05) {
+        alerts.push({
+          level: 'CRITICAL', kind: 'shortage_rate',
+          title: '盘亏率严重',
+          value: `${(rate * 100).toFixed(2)}%`,
+          threshold: '> 5%',
+          action: '立即核查库存管理流程',
+          link: '/restaurant/stocktaking', icon: '🔴',
+        })
+      } else if (rate > 0.03) {
+        alerts.push({
+          level: 'WARNING', kind: 'shortage_rate',
+          title: '盘亏率偏高',
+          value: `${(rate * 100).toFixed(2)}%`,
+          threshold: '> 3%',
+          action: '加强盘点频率',
+          link: '/restaurant/stocktaking', icon: '🟠',
+        })
+      }
+    }
+    // Rule 3: 活动天数 < 5 / 30 — INFO (低频使用)
+    const activeDays = t.activeDays || 0
+    if (activeDays > 0 && activeDays < 5) {
+      alerts.push({
+        level: 'INFO', kind: 'low_activity',
+        title: '运营记录频次低',
+        value: `${activeDays} 天`,
+        threshold: '近30天',
+        action: '建议日常录入领料/损耗',
+        link: '/restaurant/requisitions', icon: '🔵',
+      })
+    }
+    restaurantAlerts.value = alerts
+  } catch (e) {
+    console.error('[alerts] restaurant load failed:', e)
+  }
+}
 
 // --- State ---
 const loading = ref(false)
@@ -262,20 +357,51 @@ function handlePageChange(page: number) {
   loadAlerts()
 }
 
-onMounted(() => loadData())
+onMounted(() => {
+  if (isRestaurant.value) loadRestaurantAlerts()
+  loadData()
+})
 </script>
 
 <template>
   <div class="alert-dashboard">
     <div class="page-header">
-      <h2>生产异常预警</h2>
+      <h2>{{ isRestaurant ? '餐饮运营异常预警' : '生产异常预警' }}</h2>
       <div class="controls">
-        <el-button type="primary" @click="triggerDetection" :loading="detecting">
+        <el-button v-if="!isRestaurant" type="primary" @click="triggerDetection" :loading="detecting">
           手动检测
         </el-button>
-        <el-button @click="loadData" :icon="Refresh">刷新</el-button>
+        <el-button @click="isRestaurant ? loadRestaurantAlerts() : loadData()" :icon="Refresh">刷新</el-button>
       </div>
     </div>
+
+    <!-- Apr 24 P1+ Plan C: restaurant Gold-derived alerts -->
+    <div v-if="isRestaurant" class="restaurant-alerts" style="margin-bottom:20px">
+      <el-empty v-if="restaurantAlerts.length === 0" description="近 30 天无运营异常,经营状况良好" style="padding:30px 0" />
+      <template v-else>
+        <div v-for="(a, idx) in restaurantAlerts" :key="idx" :class="['r-alert', `r-alert--${a.level.toLowerCase()}`]">
+          <div class="r-alert-icon">{{ a.icon }}</div>
+          <div class="r-alert-body">
+            <div class="r-alert-title">{{ a.title }} <span class="r-alert-badge">{{ a.level }}</span></div>
+            <div class="r-alert-meta">
+              当前值 <b>{{ a.value }}</b>, 阈值 {{ a.threshold }}. 建议: {{ a.action }}
+            </div>
+          </div>
+          <el-button size="small" @click="router.push(a.link)">查看</el-button>
+        </div>
+      </template>
+      <el-alert type="info" :closable="false" style="margin-top:16px" show-icon>
+        <template #title>关于规则</template>
+        <div style="font-size:12px;line-height:1.7">
+          损耗率 = 损耗金额 / 领料金额 — 行业良好水平 &lt;2%, 超 5% 需立即排查.
+          盘亏率 = 盘亏数量 / 领料数量 — 良好水平 &lt;1%, 超 3% 提示流程漏洞.
+          数据来自 <b>Gold 聚合层</b> (近 30 天滚动窗口), 每小时自动刷新.
+        </div>
+      </el-alert>
+    </div>
+
+    <!-- Factory tenant: manufacturing alerts only (original flow) -->
+    <template v-if="!isRestaurant">
 
     <!-- Summary Cards -->
     <div class="summary-row" v-loading="loading" empty-text="暂无数据">
@@ -440,10 +566,36 @@ onMounted(() => loadData())
         </div>
       </div>
     </el-drawer>
+    </template><!-- /!isRestaurant -->
   </div>
 </template>
 
 <style lang="scss" scoped>
+.restaurant-alerts {
+  .r-alert {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border-left: 4px solid;
+    background: #fafafa;
+    &--critical { border-left-color: #f56c6c; background: #fef0f0; }
+    &--warning  { border-left-color: #e6a23c; background: #fdf6ec; }
+    &--info     { border-left-color: #409eff; background: #ecf5ff; }
+    .r-alert-icon { font-size: 24px; }
+    .r-alert-body { flex: 1; }
+    .r-alert-title {
+      font-weight: 600; font-size: 15px; color: #303133;
+      .r-alert-badge {
+        margin-left: 8px; font-size: 11px; font-weight: normal;
+        padding: 2px 8px; border-radius: 3px; background: rgba(0,0,0,0.08);
+      }
+    }
+    .r-alert-meta { font-size: 13px; color: #606266; margin-top: 4px; }
+  }
+}
 .alert-dashboard {
   padding: 20px;
 }
