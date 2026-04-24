@@ -47,9 +47,9 @@ public interface RawMaterialTypeRepository extends JpaRepository<RawMaterialType
      * 注意：code使用右模糊（可使用索引），name/category使用双向模糊（无法使用索引）
       */
     @Query("SELECT r FROM RawMaterialType r WHERE r.factoryId = :factoryId AND " +
-           "(LOWER(r.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(r.code) LIKE LOWER(CONCAT(:keyword, '%')) OR " +
-           "LOWER(r.category) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+           "(LOWER(r.name) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+           "LOWER(r.code) LIKE LOWER(CONCAT(:keyword, '%')) ESCAPE '\\' OR " +
+           "LOWER(r.category) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\')")
     Page<RawMaterialType> searchMaterialTypes(@Param("factoryId") String factoryId,
                                               @Param("keyword") String keyword,
                                               Pageable pageable);

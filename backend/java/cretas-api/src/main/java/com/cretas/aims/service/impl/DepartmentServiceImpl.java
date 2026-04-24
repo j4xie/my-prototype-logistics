@@ -185,7 +185,8 @@ public class DepartmentServiceImpl implements DepartmentService {
     public PageResponse<DepartmentDTO> searchDepartments(String factoryId, String keyword, Pageable pageable) {
         log.debug("搜索部门: factoryId={}, keyword={}", factoryId, keyword);
 
-        Page<Department> page = departmentRepository.searchDepartments(factoryId, keyword, pageable);
+        Page<Department> page = departmentRepository.searchDepartments(factoryId,
+            com.cretas.aims.util.SqlLikeEscaper.escape(keyword), pageable);
         List<DepartmentDTO> dtos = page.getContent().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());

@@ -308,7 +308,8 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
 
-        Page<RawMaterialType> page = materialTypeRepository.searchMaterialTypes(factoryId, keyword, pageable);
+        Page<RawMaterialType> page = materialTypeRepository.searchMaterialTypes(factoryId,
+            com.cretas.aims.util.SqlLikeEscaper.escape(keyword), pageable);
 
         List<RawMaterialTypeDTO> dtos = page.getContent().stream()
                 .map(this::convertToDTO)

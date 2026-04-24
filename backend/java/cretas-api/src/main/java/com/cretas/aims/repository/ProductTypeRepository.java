@@ -48,9 +48,9 @@ public interface ProductTypeRepository extends JpaRepository<ProductType, String
      * 注意：code使用右模糊（可使用索引），name/category使用双向模糊（无法使用索引）
       */
     @Query("SELECT p FROM ProductType p WHERE p.factoryId = :factoryId AND " +
-           "(LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(p.code) LIKE LOWER(CONCAT(:keyword, '%')) OR " +
-           "LOWER(p.category) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+           "(LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+           "LOWER(p.code) LIKE LOWER(CONCAT(:keyword, '%')) ESCAPE '\\' OR " +
+           "LOWER(p.category) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\')")
     Page<ProductType> searchProductTypes(@Param("factoryId") String factoryId,
                                          @Param("keyword") String keyword,
                                          Pageable pageable);
@@ -65,8 +65,8 @@ public interface ProductTypeRepository extends JpaRepository<ProductType, String
     /** 按工厂 + 大类 + 关键词搜索 (兼顾过滤 + 搜索两种场景) */
     @Query("SELECT p FROM ProductType p WHERE p.factoryId = :factoryId " +
            "AND p.productCategory = :productCategory AND " +
-           "(LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           " LOWER(p.code) LIKE LOWER(CONCAT(:keyword, '%')))")
+           "(LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+           " LOWER(p.code) LIKE LOWER(CONCAT(:keyword, '%')) ESCAPE '\\')")
     Page<ProductType> searchByFactoryIdAndProductCategory(@Param("factoryId") String factoryId,
                                                           @Param("productCategory") String productCategory,
                                                           @Param("keyword") String keyword,

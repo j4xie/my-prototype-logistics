@@ -134,7 +134,8 @@ public interface MaterialBatchRepository extends JpaRepository<MaterialBatch, St
     @Query("SELECT m FROM MaterialBatch m " +
            "LEFT JOIN m.materialType mt " +
            "WHERE m.factoryId = :factoryId " +
-           "AND (m.batchNumber LIKE CONCAT(:keyword, '%') OR mt.name LIKE CONCAT('%', :keyword, '%'))")
+           "AND (m.batchNumber LIKE CONCAT(:keyword, '%') ESCAPE '\\' " +
+           "OR mt.name LIKE CONCAT('%', :keyword, '%') ESCAPE '\\')")
     Page<MaterialBatch> searchByKeyword(@Param("factoryId") String factoryId,
                                         @Param("keyword") String keyword,
                                         Pageable pageable);

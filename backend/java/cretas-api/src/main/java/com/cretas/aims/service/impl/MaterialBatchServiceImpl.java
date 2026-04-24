@@ -422,7 +422,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         // 如果提供了关键词，使用搜索方法；否则使用普通查询
         if (pageRequest.getKeyword() != null && !pageRequest.getKeyword().trim().isEmpty()) {
             log.debug("搜索原材料批次: factoryId={}, keyword={}", factoryId, pageRequest.getKeyword());
-            batchPage = materialBatchRepository.searchByKeyword(factoryId, pageRequest.getKeyword().trim(), pageable);
+            batchPage = materialBatchRepository.searchByKeyword(factoryId,
+                com.cretas.aims.util.SqlLikeEscaper.escape(pageRequest.getKeyword().trim()), pageable);
         } else {
             batchPage = materialBatchRepository.findByFactoryId(factoryId, pageable);
         }

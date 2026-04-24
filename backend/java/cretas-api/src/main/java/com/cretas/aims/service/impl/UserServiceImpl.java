@@ -284,7 +284,8 @@ public class UserServiceImpl implements UserService {
                 sort
         );
 
-        Page<User> userPage = userRepository.searchUsers(factoryId, keyword, pageable);
+        Page<User> userPage = userRepository.searchUsers(factoryId,
+            com.cretas.aims.util.SqlLikeEscaper.escape(keyword), pageable);
 
         List<UserDTO> userDTOs = userPage.getContent().stream()
                 .filter(u -> role == null || role.isBlank() || role.equals(u.getRoleCode()))

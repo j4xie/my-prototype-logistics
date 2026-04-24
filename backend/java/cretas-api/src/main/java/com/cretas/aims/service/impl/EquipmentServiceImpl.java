@@ -207,7 +207,8 @@ public class EquipmentServiceImpl implements EquipmentService {
         String keyword = pageRequest.getKeyword();
         Page<FactoryEquipment> equipmentPage;
         if (keyword != null && !keyword.trim().isEmpty()) {
-            equipmentPage = equipmentRepository.searchByKeyword(factoryId, keyword.trim(), pageable);
+            equipmentPage = equipmentRepository.searchByKeyword(factoryId,
+                com.cretas.aims.util.SqlLikeEscaper.escape(keyword.trim()), pageable);
         } else {
             equipmentPage = equipmentRepository.findByFactoryId(factoryId, pageable);
         }
@@ -245,7 +246,8 @@ public class EquipmentServiceImpl implements EquipmentService {
 
     @Override
     public List<EquipmentDTO> searchEquipment(String factoryId, String keyword) {
-        List<FactoryEquipment> equipment = equipmentRepository.searchByKeyword(factoryId, keyword);
+        String safeKeyword = com.cretas.aims.util.SqlLikeEscaper.escape(keyword);
+        List<FactoryEquipment> equipment = equipmentRepository.searchByKeyword(factoryId, safeKeyword);
         return equipment.stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());

@@ -79,9 +79,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * 注意：username/phone使用右模糊（可使用索引），fullName使用双向模糊（无法使用索引）
      */
     @Query("SELECT u FROM User u WHERE u.factoryId = :factoryId AND " +
-           "(LOWER(u.username) LIKE LOWER(CONCAT(:keyword, '%')) OR " +
-           "LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "u.phone LIKE CONCAT(:keyword, '%'))")
+           "(LOWER(u.username) LIKE LOWER(CONCAT(:keyword, '%')) ESCAPE '\\' OR " +
+           "LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+           "u.phone LIKE CONCAT(:keyword, '%') ESCAPE '\\')")
     Page<User> searchUsers(@Param("factoryId") String factoryId,
                           @Param("keyword") String keyword,
                           Pageable pageable);
@@ -279,10 +279,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @since 2025-12-28
      */
     @Query("SELECT u FROM User u WHERE u.factoryId = :factoryId AND " +
-           "(LOWER(u.username) LIKE LOWER(CONCAT(:keyword, '%')) OR " +
-           "LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "u.phone LIKE CONCAT(:keyword, '%') OR " +
-           "u.employeeCode LIKE CONCAT(:keyword, '%'))")
+           "(LOWER(u.username) LIKE LOWER(CONCAT(:keyword, '%')) ESCAPE '\\' OR " +
+           "LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+           "u.phone LIKE CONCAT(:keyword, '%') ESCAPE '\\' OR " +
+           "u.employeeCode LIKE CONCAT(:keyword, '%') ESCAPE '\\')")
     Page<User> searchUsersWithEmployeeCode(@Param("factoryId") String factoryId,
                                            @Param("keyword") String keyword,
                                            Pageable pageable);

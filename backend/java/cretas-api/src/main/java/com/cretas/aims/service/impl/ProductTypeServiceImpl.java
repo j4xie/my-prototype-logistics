@@ -238,14 +238,15 @@ public class ProductTypeServiceImpl implements ProductTypeService {
         boolean hasCategory = productCategory != null && !productCategory.trim().isEmpty();
         boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
 
+        String safeKeyword = hasKeyword ? com.cretas.aims.util.SqlLikeEscaper.escape(keyword) : keyword;
         Page<ProductType> page;
         if (hasCategory && hasKeyword) {
             page = productTypeRepository.searchByFactoryIdAndProductCategory(
-                    factoryId, productCategory, keyword, pageable);
+                    factoryId, productCategory, safeKeyword, pageable);
         } else if (hasCategory) {
             page = productTypeRepository.findByFactoryIdAndProductCategory(factoryId, productCategory, pageable);
         } else if (hasKeyword) {
-            page = productTypeRepository.searchProductTypes(factoryId, keyword, pageable);
+            page = productTypeRepository.searchProductTypes(factoryId, safeKeyword, pageable);
         } else {
             page = productTypeRepository.findByFactoryId(factoryId, pageable);
         }
@@ -293,7 +294,8 @@ public class ProductTypeServiceImpl implements ProductTypeService {
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
 
-        Page<ProductType> page = productTypeRepository.searchProductTypes(factoryId, keyword, pageable);
+        Page<ProductType> page = productTypeRepository.searchProductTypes(factoryId,
+            com.cretas.aims.util.SqlLikeEscaper.escape(keyword), pageable);
         List<ProductTypeDTO> dtos = page.getContent().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
