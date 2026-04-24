@@ -422,13 +422,28 @@ function goToUpload() {
   router.push({ name: 'SmartBIAnalysis' });
 }
 
-// 快捷问答
-const quickQuestions = [
+// 快捷问答 — 按 factoryType 切换 (餐饮 vs 制造业)
+// 餐饮 8 问 keep in sync with web-admin/src/views/smart-bi/AIQuery.vue quickQuestions (Apr 24 RAG polish)
+const isRestaurantTenant = computed(() => authStore.factoryType === 'RESTAURANT');
+const restaurantQuickQuestions = [
+  { text: '畅销品 Top 5', icon: Goods },
+  { text: '哪家店业绩最好', icon: Location },
+  { text: '员工里谁最厉害', icon: Medal },
+  { text: '外卖占比多少', icon: TrendCharts },
+  { text: '慢销菜品', icon: ArrowDown },
+  { text: '周末周中对比', icon: Clock },
+  { text: '峰值月份', icon: DataLine },
+  { text: '优惠券使用情况', icon: Histogram }
+];
+const manufacturingQuickQuestions = [
   { text: '本月销售额如何?', icon: TrendCharts },
   { text: '哪个部门业绩最好?', icon: Histogram },
   { text: '利润率变化趋势如何?', icon: DataLine },
   { text: '客户增长情况怎样?', icon: User }
 ];
+const quickQuestions = computed(() =>
+  isRestaurantTenant.value ? restaurantQuickQuestions : manufacturingQuickQuestions
+);
 
 // 图表 DOM refs
 const dashboardRef = ref<HTMLElement>();
