@@ -18,12 +18,13 @@ Design decisions
 - Prompt data is always CONCRETE: KPIs, Top 3 stores by revenue, top
   5 products, discount breakdown. LLM cannot hallucinate since it
   sees the real numbers.
-- Model routing is deferred to the configured upstream (settings
-  .llm_base_url + llm_api_key). If the upstream is Aliyun free and
-  rate-limits, the caller will see a degraded response — we don't
-  try to re-route providers here (that's a platform-level concern
-  and the retry logic in services.insights.llm_client already handles
-  per-provider transients).
+- Apr 25 2026 (E2a): LLM calls now route through common.llm_router
+  (SLOT.INSIGHTS) which provides aliyun_b → aliyun_a → zhipu →
+  deepseek fallback on 403/429. Previously raw httpx → DashScope
+  meant a DashScope outage broke the agent layer entirely.
+  llm_model param is now informational (per-provider model is chosen
+  by SLOT mapping); kept in __init__ for backward compatibility with
+  api.py construction.
 
 Feature flag
 ------------
@@ -34,7 +35,6 @@ this module is never imported in the hot path.
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import time
 from dataclasses import dataclass
@@ -44,6 +44,8 @@ from typing import Any, AsyncIterator, Dict, Optional, Tuple
 import asyncpg
 import httpx
 
+from common.llm_router import call_chain, call_chain_stream, SLOT
+from common.llm_metrics import llm_caller_context
 from smartbi.agent.budget_tracker import AgentBudgetTracker
 from smartbi.agent.narrative_cache import (
     NarrativeCacheService,
@@ -131,6 +133,11 @@ class AgentOrchestrator:
         http_client: Optional[httpx.AsyncClient] = None,
     ):
         self._pool = pool
+        # NOTE (Apr 25 2026, E2a): _llm_base_url / _llm_api_key / _llm_model /
+        # _http are retained for backward-compat with constructor callers but
+        # no longer used at runtime — LLM routing now flows through
+        # common.llm_router (SLOT.INSIGHTS chain). The provider/model is
+        # selected per-call by the chain, not by these fields.
         self._llm_base_url = llm_base_url.rstrip("/")
         self._llm_api_key = llm_api_key
         self._llm_model = llm_model
@@ -312,12 +319,14 @@ class AgentOrchestrator:
     # ---------- LLM ----------
 
     async def _call_llm(self, user_prompt: str) -> Tuple[str, int]:
-        """POST to OpenAI-compatible chat/completions. Returns (text, total_tokens).
+        """Call LLM via multi-provider router (INSIGHTS slot). Returns (text, total_tokens).
 
-        Raises on upstream error. Caller handles degraded fallback.
+        Chain: aliyun_b → aliyun_a → zhipu → deepseek with 403/429 fallback.
+        Raises on upstream error (including all-providers exhausted).
+        Caller handles degraded fallback.
         """
         payload = {
-            "model": self._llm_model,
+            # `model` is overwritten per-provider by call_chain
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_prompt},
@@ -325,23 +334,8 @@ class AgentOrchestrator:
             "temperature": 0.3,
             "max_tokens": 600,
         }
-        headers = {
-            "Authorization": f"Bearer {self._llm_api_key}",
-            "Content-Type": "application/json",
-        }
-        client = self._http or httpx.AsyncClient(timeout=httpx.Timeout(60.0))
-        owns_client = self._http is None
-        try:
-            resp = await client.post(
-                f"{self._llm_base_url}/chat/completions",
-                headers=headers,
-                json=payload,
-            )
-            resp.raise_for_status()
-            body = resp.json()
-        finally:
-            if owns_client:
-                await client.aclose()
+        with llm_caller_context("agent_orchestrator"):
+            body = await call_chain(SLOT.INSIGHTS, payload, timeout=60.0)
 
         text = (
             body.get("choices", [{}])[0]
@@ -442,59 +436,40 @@ class AgentOrchestrator:
                "elapsed_ms": int((time.monotonic() - t0) * 1000)}
 
     async def _call_llm_stream(self, user_prompt: str) -> AsyncIterator[Dict[str, Any]]:
-        """POST to OpenAI-compatible chat/completions with stream=true.
+        """Call LLM via multi-provider router (INSIGHTS slot) with SSE streaming.
+
+        Chain: aliyun_b → aliyun_a → zhipu → deepseek (provider fallback before
+        first delta; mid-stream errors propagate without fallback).
 
         Yields {"text": "..."} for each delta, and finally {"tokens": N}
         if the upstream reports usage on the final [DONE] message.
         """
         payload = {
-            "model": self._llm_model,
+            # `model` is overwritten per-provider by call_chain_stream
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_prompt},
             ],
             "temperature": 0.3,
             "max_tokens": 600,
-            "stream": True,
             "stream_options": {"include_usage": True},
         }
-        headers = {
-            "Authorization": f"Bearer {self._llm_api_key}",
-            "Content-Type": "application/json",
-        }
-        client = self._http or httpx.AsyncClient(timeout=httpx.Timeout(60.0))
-        owns_client = self._http is None
-        try:
-            async with client.stream(
-                "POST",
-                f"{self._llm_base_url}/chat/completions",
-                headers=headers,
-                json=payload,
-            ) as resp:
-                resp.raise_for_status()
-                async for line in resp.aiter_lines():
-                    line = line.strip()
-                    if not line or not line.startswith("data:"):
-                        continue
-                    data_str = line[5:].strip()
-                    if data_str == "[DONE]":
-                        break
-                    try:
-                        obj = json.loads(data_str)
-                    except json.JSONDecodeError:
-                        continue
-                    choices = obj.get("choices") or []
-                    if choices:
-                        delta = choices[0].get("delta") or {}
-                        content = delta.get("content")
-                        if content:
-                            yield {"text": content}
-                    usage = obj.get("usage")
-                    if usage:
-                        yield {"tokens": int(usage.get("total_tokens") or 0)}
-        finally:
-            if owns_client:
-                await client.aclose()
+        # Set caller via direct set() instead of `with llm_caller_context()` —
+        # the latter errors on __exit__ ("Token created in different Context")
+        # when an async generator crosses task boundaries (e.g. inside httpx
+        # aiter_lines). Contextvar is request-scoped via FastAPI task isolation.
+        from common.llm_metrics import _llm_caller as _llm_caller_var
+        _llm_caller_var.set("agent_orchestrator_stream")
+        async for event in call_chain_stream(SLOT.INSIGHTS, payload, timeout=60.0):
+            etype = event.get("type")
+            if etype == "delta":
+                text = event.get("text")
+                if text:
+                    yield {"text": text}
+            elif etype == "usage":
+                tokens = event.get("tokens") or 0
+                if tokens:
+                    yield {"tokens": int(tokens)}
 
 
 def _fmt_money(v: Any) -> str:

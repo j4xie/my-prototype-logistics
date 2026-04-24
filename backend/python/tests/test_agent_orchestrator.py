@@ -64,7 +64,13 @@ async def _reset_tenant(pool, tenant):
 
 
 def _make_mock_llm_client(fake_answer: str, total_tokens: int = 450):
-    """httpx.AsyncClient with MockTransport returning a canned chat completion."""
+    """httpx.AsyncClient with MockTransport returning a canned chat completion.
+
+    Apr 25 2026 (E2a): Orchestrator now calls through common.llm_router which
+    uses the shared common.llm_client singleton — not the http_client passed
+    to the constructor. Tests that need to mock LLM responses must patch
+    common.llm_client._client (see _patch_llm_client_singleton helper).
+    """
     def handler(request: httpx.Request) -> httpx.Response:
         # Sanity: ensure our payload is well-formed
         body = json.loads(request.content)
@@ -79,6 +85,47 @@ def _make_mock_llm_client(fake_answer: str, total_tokens: int = 450):
             },
         )
     return httpx.AsyncClient(transport=httpx.MockTransport(handler), timeout=10.0)
+
+
+_LLM_KEY_VARS = (
+    "LLM_ALIYUN_B_API_KEY",
+    "LLM_ALIYUN_A_API_KEY",
+    "LLM_API_KEY",
+    "LLM_ZHIPU_API_KEY",
+    "LLM_DEEPSEEK_API_KEY",
+    "DEEPSEEK_API_KEY",
+)
+
+
+def _patch_llm_client_singleton(mock_client):
+    """Swap the module-level llm_client singleton with our mock. Returns
+    a tuple (original_client, original_env) so tests can restore.
+
+    Sets LLM_ALIYUN_B_API_KEY=test-mock-key (so call_chain tries aliyun_b
+    first via the mocked transport) and clears all other provider keys
+    (so the chain stops cleanly after aliyun_b's response).
+    """
+    import os
+    from common import llm_client as _lc
+    original_env = {k: os.environ.get(k) for k in _LLM_KEY_VARS}
+    for k in _LLM_KEY_VARS:
+        os.environ.pop(k, None)
+    os.environ["LLM_ALIYUN_B_API_KEY"] = "test-mock-key"
+    original_client = _lc._client
+    _lc._client = mock_client
+    return (original_client, original_env)
+
+
+def _restore_llm_client_singleton(state):
+    import os
+    from common import llm_client as _lc
+    original_client, original_env = state
+    _lc._client = original_client
+    for k, v in original_env.items():
+        if v is None:
+            os.environ.pop(k, None)
+        else:
+            os.environ[k] = v
 
 
 def _orchestrator(pool, http_client):
@@ -107,11 +154,13 @@ async def test_cache_hit_short_circuits_without_llm_call(pool):
         called["n"] += 1
         return httpx.Response(500, json={})
     http = httpx.AsyncClient(transport=httpx.MockTransport(fail_on_call))
+    original = _patch_llm_client_singleton(http)
 
     try:
         orch = _orchestrator(pool, http)
         result = await orch.answer_insight(_TENANT, q, _RANGE)
     finally:
+        _restore_llm_client_singleton(original)
         await http.aclose()
 
     assert result.source == RESULT_SOURCE_CACHE
@@ -143,11 +192,13 @@ async def test_budget_exhausted_returns_degraded_without_llm_call(pool):
         called["n"] += 1
         return httpx.Response(500, json={})
     http = httpx.AsyncClient(transport=httpx.MockTransport(fail_on_call))
+    original = _patch_llm_client_singleton(http)
 
     try:
         orch = _orchestrator(pool, http)
         result = await orch.answer_insight(_TENANT, "哪家店最差", _RANGE)
     finally:
+        _restore_llm_client_singleton(original)
         await http.aclose()
 
     assert result.source == RESULT_SOURCE_DEGRADED
@@ -163,6 +214,7 @@ async def test_llm_success_path_consumes_tokens_and_caches(pool):
         fake_answer="青花椒大丸百货店营收 ¥7.43M 占比最高。建议：...",
         total_tokens=512,
     )
+    original = _patch_llm_client_singleton(http)
     try:
         orch = _orchestrator(pool, http)
         q = "给我本年 Top 门店分析"
@@ -179,21 +231,31 @@ async def test_llm_success_path_consumes_tokens_and_caches(pool):
         # Cached answer must match what we returned
         assert r2.answer == r1.answer
     finally:
+        _restore_llm_client_singleton(original)
         await http.aclose()
 
 
 async def test_llm_failure_returns_degraded(pool):
-    """Upstream HTTP 500 → degraded response, no token consumption."""
+    """Upstream HTTP 500 → degraded response, no token consumption.
+
+    Note (Apr 25 E2a): call_chain treats non-200 / non-403/429 as falling
+    through to next provider, then RuntimeError if all exhaust. With only
+    aliyun_b mock-keyed, the chain runs aliyun_b once → falls to aliyun_a
+    (no key, skip) → zhipu (no key, skip) → deepseek (no key, skip) →
+    RuntimeError. Orchestrator catches and returns degraded.
+    """
     await _reset_tenant(pool, _TENANT)
 
     def always_500(req):
         return httpx.Response(500, json={"error": "upstream down"})
     http = httpx.AsyncClient(transport=httpx.MockTransport(always_500))
+    original = _patch_llm_client_singleton(http)
 
     try:
         orch = _orchestrator(pool, http)
         result = await orch.answer_insight(_TENANT, "some question", _RANGE)
     finally:
+        _restore_llm_client_singleton(original)
         await http.aclose()
 
     assert result.source == RESULT_SOURCE_DEGRADED
