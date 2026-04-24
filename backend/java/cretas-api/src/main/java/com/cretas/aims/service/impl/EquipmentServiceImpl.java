@@ -843,6 +843,7 @@ public class EquipmentServiceImpl implements EquipmentService {
                 .updatedAt(equipment.getUpdatedAt())
                 .createdBy(equipment.getCreatedBy())
                 .operatorId(equipment.getOperatorId())
+                .version(equipment.getVersion())
                 .build();
 
         // 填充操作员姓名
