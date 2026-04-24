@@ -276,9 +276,9 @@ async function handleToggleActive(row: Record<string, unknown>) {
       ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('操作失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError (request.ts).
+    // Retained catch to prevent uncaught; log for debug.
+    if (error !== 'cancel') console.error('[提交失败]', error);
   }
 }
 </script>

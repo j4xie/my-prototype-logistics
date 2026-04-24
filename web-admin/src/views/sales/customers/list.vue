@@ -192,8 +192,9 @@ async function handleSubmit() {
       ElMessage.error(res.message || '操作失败');
     }
   } catch (error) {
+    // Interceptor (request.ts) already shows specific sticky toast for ApiError.
+    // Firing a fallback here creates double-toast ("操作失败" BEFORE "客户名称已存在").
     console.error('提交失败:', error);
-    ElMessage.error('操作失败');
   } finally {
     submitting.value = false;
   }

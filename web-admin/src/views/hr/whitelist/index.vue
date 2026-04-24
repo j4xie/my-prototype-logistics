@@ -180,7 +180,8 @@ async function submitForm() {
       ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
-    ElMessage.error('操作失败');
+    // Interceptor already shows specific sticky toast; debug-only log.
+    console.error('[提交失败]', error);
   } finally {
     dialogLoading.value = false;
   }

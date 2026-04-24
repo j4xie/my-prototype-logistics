@@ -307,9 +307,9 @@ async function handleStart(row: Record<string, unknown>) {
       ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('操作失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError (request.ts).
+    // Retained catch to prevent uncaught; log for debug.
+    if (error !== 'cancel') console.error('[提交失败]', error);
   } finally {
     actionLoading.value = false;
   }
@@ -333,9 +333,9 @@ async function handleComplete(row: Record<string, unknown>) {
       ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('操作失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError (request.ts).
+    // Retained catch to prevent uncaught; log for debug.
+    if (error !== 'cancel') console.error('[提交失败]', error);
   } finally {
     actionLoading.value = false;
   }
@@ -357,9 +357,9 @@ async function handleCancel(row: Record<string, unknown>) {
       ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('操作失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError (request.ts).
+    // Retained catch to prevent uncaught; log for debug.
+    if (error !== 'cancel') console.error('[提交失败]', error);
   } finally {
     actionLoading.value = false;
   }
@@ -383,9 +383,9 @@ async function handleCreateBatch(row: Record<string, unknown>) {
       ElMessage.error(response.message || '转换失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('操作失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError (request.ts).
+    // Retained catch to prevent uncaught; log for debug.
+    if (error !== 'cancel') console.error('[提交失败]', error);
   } finally {
     actionLoading.value = false;
   }
@@ -421,9 +421,9 @@ async function handleGenerateTransfer(row: Record<string, unknown>) {
       }
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('操作失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError (request.ts).
+    // Retained catch to prevent uncaught; log for debug.
+    if (error !== 'cancel') console.error('[提交失败]', error);
   } finally {
     actionLoading.value = false;
   }

@@ -188,8 +188,8 @@ async function handleSubmit() {
     dialogVisible.value = false;
     loadData();
   } catch (error) {
+    // Interceptor already shows specific sticky toast; this is debug-only log.
     console.error('Submit failed:', error);
-    ElMessage.error('操作失败');
   } finally {
     submitting.value = false;
   }

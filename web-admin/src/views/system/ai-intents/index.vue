@@ -97,8 +97,8 @@ async function handleToggleActive(row: AIIntentConfig) {
       ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast; this is debug-only log.
     console.error('切换状态失败:', error);
-    ElMessage.error('操作失败');
   }
 }
 

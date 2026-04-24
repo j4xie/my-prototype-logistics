@@ -197,8 +197,8 @@ async function handleSubmit() {
       ElMessage.error(res.message || '操作失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast; this is debug-only log.
     console.error('提交失败:', error);
-    ElMessage.error('操作失败');
   } finally {
     submitting.value = false;
   }
