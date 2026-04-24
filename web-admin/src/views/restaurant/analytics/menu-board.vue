@@ -9,7 +9,11 @@
             <el-tag v-if="data" size="small">{{ data.items.length }} 个菜品</el-tag>
           </div>
           <div class="header-right">
-            <el-select v-model="selectedUploadId" placeholder="选择数据源" filterable style="width: 280px" @change="handleSelectUpload">
+            <el-radio-group v-model="mode" size="small" @change="onModeChange">
+              <el-radio-button value="revenue">按品均收入</el-radio-button>
+              <el-radio-button value="margin">按毛利率 (BCG 真实版)</el-radio-button>
+            </el-radio-group>
+            <el-select v-model="selectedUploadId" placeholder="选择数据源" filterable style="width: 280px; margin-left: 8px" @change="handleSelectUpload">
               <el-option v-for="u in uploads" :key="u.id" :label="`${u.fileName} (${u.rowCount}行)`" :value="u.id" />
             </el-select>
           </div>
@@ -105,6 +109,41 @@ import echarts from '@/utils/echarts'
 import { useChartResize } from '@/composables/useChartResize'
 import { useRestaurantAnalytics } from '@/composables/useRestaurantAnalytics'
 import type { MenuQuadrantData, MenuQuadrantItem } from '@/types/restaurant-analytics'
+import { pythonFetch } from '@/api/smartbi/common'
+
+// Apr 24 Plan C Phase 7+: mode toggle between legacy (品均收入) vs BCG-proper (毛利率)
+const mode = ref<'revenue' | 'margin'>('revenue')
+// Map: dish name → marginRate (0-1), qty, grossProfit. Filled when mode=margin.
+const marginMap = ref<Record<string, { rate: number; qty: number; grossProfit: number; revenue: number }>>({})
+const marginLoading = ref(false)
+
+async function loadMarginData() {
+  marginLoading.value = true
+  try {
+    const res = await pythonFetch('/api/smartbi/restaurant-ops/gross-margin?days=90') as {
+      success: boolean
+      data?: { dishes: Array<{ name: string; qty: number; revenue: number; marginRate: number; grossProfit: number; hasCost: boolean }> }
+    }
+    if (res.success && res.data) {
+      marginMap.value = {}
+      for (const d of res.data.dishes || []) {
+        if (d.hasCost) marginMap.value[d.name] = { rate: d.marginRate, qty: d.qty, grossProfit: d.grossProfit, revenue: d.revenue }
+      }
+    }
+  } catch (e) {
+    console.warn('[menu-board] margin load failed:', e)
+  } finally {
+    marginLoading.value = false
+  }
+}
+
+function onModeChange() {
+  if (mode.value === 'margin' && Object.keys(marginMap.value).length === 0) {
+    loadMarginData().then(() => nextTick(() => renderChart()))
+  } else {
+    nextTick(() => renderChart())
+  }
+}
 
 const containerRef = ref<HTMLElement>()
 useChartResize(containerRef)
@@ -130,12 +169,34 @@ function handleSelectUpload(id: number) {
 
 const quadrants = computed(() => {
   if (!data.value) return []
-  const s = data.value.summary
+  const isM = mode.value === 'margin'
+  if (!isM) {
+    const s = data.value.summary
+    return [
+      { key: 'Star', label: '明星菜', count: s.starCount, color: '#67C23A', desc: '高销量 + 高收入' },
+      { key: 'Plow', label: '金牛菜', count: s.plowCount, color: '#E6A23C', desc: '高销量 + 低收入' },
+      { key: 'Puzzle', label: '问题菜', count: s.puzzleCount, color: '#409EFF', desc: '低销量 + 高收入' },
+      { key: 'Dog', label: '瘦狗菜', count: s.dogCount, color: '#F56C6C', desc: '低销量 + 低收入' },
+    ]
+  }
+  // Margin mode: re-count via marginMap
+  const qm = data.value.qtyMedian
+  const counts = { Star: 0, Plow: 0, Puzzle: 0, Dog: 0 }
+  for (const i of data.value.items) {
+    const m = marginMap.value[i.name]
+    const rate = m?.rate || 0
+    const highQty = i.quantity >= qm
+    const highMargin = rate >= 0.5
+    const k = highQty && highMargin ? 'Star'
+            : highQty && !highMargin ? 'Plow'
+            : !highQty && highMargin ? 'Puzzle' : 'Dog'
+    counts[k as 'Star'|'Plow'|'Puzzle'|'Dog']++
+  }
   return [
-    { key: 'Star', label: '明星菜', count: s.starCount, color: '#67C23A', desc: '高销量 + 高收入' },
-    { key: 'Plow', label: '金牛菜', count: s.plowCount, color: '#E6A23C', desc: '高销量 + 低收入' },
-    { key: 'Puzzle', label: '问题菜', count: s.puzzleCount, color: '#409EFF', desc: '低销量 + 高收入' },
-    { key: 'Dog', label: '瘦狗菜', count: s.dogCount, color: '#F56C6C', desc: '低销量 + 低收入' },
+    { key: 'Star',   label: '明星菜', count: counts.Star,   color: '#67C23A', desc: '高销量 + 高毛利 (核心赚钱菜)' },
+    { key: 'Plow',   label: '金牛菜', count: counts.Plow,   color: '#E6A23C', desc: '高销量 + 低毛利 (引流菜,可优化成本)' },
+    { key: 'Puzzle', label: '问题菜', count: counts.Puzzle, color: '#409EFF', desc: '低销量 + 高毛利 (待推广的赚钱菜)' },
+    { key: 'Dog',   label: '瘦狗菜', count: counts.Dog,   color: '#F56C6C', desc: '低销量 + 低毛利 (考虑下架)' },
   ]
 })
 
@@ -189,6 +250,7 @@ function renderChart() {
   }
   const qm = data.value.qtyMedian
   const pm = data.value.profitMedian
+  const isMarginMode = mode.value === 'margin'
 
   // Clip axes to P95 to prevent outlier compression.
   // min=0 on both axes — sales count can't be negative; unitProfit is a revenue
@@ -198,18 +260,53 @@ function renderChart() {
   const allQtys = data.value.items.map(i => Math.max(0, i.quantity)).sort((a, b) => a - b)
   const p95Profit = allProfits[Math.floor(allProfits.length * 0.95)] || 100
   const p95Qty = allQtys[Math.floor(allQtys.length * 0.95)] || 100
-  const yMax = Math.ceil(Math.max(p95Profit * 1.3, pm * 3))
+  const yMaxLegacy = Math.ceil(Math.max(p95Profit * 1.3, pm * 3))
   const xMax = Math.ceil(Math.max(p95Qty * 1.3, qm * 3))
-  const outlierCount = data.value.items.filter(i => i.unitProfit > yMax || i.quantity > xMax).length
+  // Margin mode: Y axis = rate 0-100%, median threshold at 50% for quadrant
+  const yMax = isMarginMode ? 100 : yMaxLegacy
+  const yMedian = isMarginMode ? 50 : pm
+
+  // Re-classify quadrant for margin mode based on (quantity vs qm, margin% vs 50)
+  const pointsByQuadrant: Record<string, Array<{ value: number[]; name: string; _raw: number[]; _hasMargin?: boolean }>> = {
+    Star: [], Plow: [], Puzzle: [], Dog: [],
+  }
+  const outliersList: string[] = []
+
+  for (const i of data.value.items) {
+    let yVal: number
+    let quadrant: string
+    let hasMargin = true
+    if (isMarginMode) {
+      const m = marginMap.value[i.name]
+      if (m) {
+        yVal = m.rate * 100
+      } else {
+        hasMargin = false
+        yVal = 0  // place at bottom so user sees "no data" cluster
+      }
+      const highQty = i.quantity >= qm
+      const highMargin = yVal >= 50
+      quadrant = highQty && highMargin ? 'Star'
+               : highQty && !highMargin ? 'Plow'
+               : !highQty && highMargin ? 'Puzzle' : 'Dog'
+    } else {
+      yVal = i.unitProfit
+      quadrant = i.quadrant
+    }
+    if (i.quantity > xMax || yVal > yMax) outliersList.push(i.name)
+    pointsByQuadrant[quadrant].push({
+      value: [Math.min(i.quantity, xMax), Math.min(yVal, yMax)],
+      name: i.name,
+      _raw: [i.quantity, yVal],
+      _hasMargin: hasMargin,
+    })
+  }
+  const outlierCount = outliersList.length
 
   const series = Object.entries(colorMap).map(([q, color]) => ({
     name: quadrantLabel(q),
     type: 'scatter' as const,
-    data: data.value!.items.filter(i => i.quadrant === q).map(i => ({
-      value: [Math.min(i.quantity, xMax), Math.min(i.unitProfit, yMax)],
-      name: i.name,
-      _raw: [i.quantity, i.unitProfit],
-    })),
+    data: pointsByQuadrant[q],
     itemStyle: { color },
     symbolSize: 10,
   }))
@@ -221,6 +318,11 @@ function renderChart() {
       formatter: (p: Record<string, unknown>) => {
         const d = p.data as Record<string, unknown>
         const raw = (d._raw || p.value) as number[]
+        const hasMargin = d._hasMargin !== false
+        if (isMarginMode) {
+          if (!hasMargin) return `<b>${p.name}</b><br/>销量: ${raw[0]}<br/>毛利率: 无配方数据`
+          return `<b>${p.name}</b><br/>销量: ${raw[0]}<br/>毛利率: ${raw[1].toFixed(1)}%`
+        }
         return `<b>${p.name}</b><br/>销量: ${raw[0]}<br/>品均收入: ¥${raw[1].toFixed(1)}`
       },
     },
@@ -241,16 +343,17 @@ function renderChart() {
       axisLabel: { formatter: (v: number) => String(Math.round(v)) },
     },
     yAxis: {
-      name: '品均收入 (元)',
+      name: isMarginMode ? '毛利率 (%)' : '品均收入 (元)',
       type: 'value',
       min: 0,
       max: yMax,
       splitLine: { lineStyle: { type: 'dashed' } },
-      axisLabel: { formatter: (v: number) => v >= 1e4 ? (v / 1e4).toFixed(1) + '万' : String(Math.round(v)) },
+      axisLabel: { formatter: (v: number) =>
+        isMarginMode ? v + '%' : (v >= 1e4 ? (v / 1e4).toFixed(1) + '万' : String(Math.round(v))) },
     },
     series: [
       ...series,
-      // Median lines
+      // Median lines — margin mode uses 50% threshold
       {
         type: 'line',
         markLine: {
@@ -258,7 +361,9 @@ function renderChart() {
           lineStyle: { type: 'dashed', color: '#999' },
           data: [
             { xAxis: qm, label: { formatter: `销量中位数: ${qm.toFixed(0)}` } },
-            { yAxis: pm, label: { formatter: `品均收入中位数: ¥${pm.toFixed(1)}` } },
+            { yAxis: yMedian, label: { formatter: isMarginMode
+                ? `毛利率分界: 50%`
+                : `品均收入中位数: ¥${pm.toFixed(1)}` } },
           ],
         },
         data: [],

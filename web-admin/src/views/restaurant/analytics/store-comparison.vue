@@ -9,7 +9,8 @@
             <el-tag v-if="stores.length" size="small">{{ stores.length }} 家门店</el-tag>
           </div>
           <div class="header-right">
-            <el-select v-model="selectedUploadId" placeholder="选择数据源" filterable style="width: 280px" @change="handleSelectUpload">
+            <el-button type="info" plain @click="$router.push('/restaurant/analytics/gross-margin')">📊 菜品毛利分析 →</el-button>
+            <el-select v-model="selectedUploadId" placeholder="选择数据源" filterable style="width: 280px; margin-left: 8px" @change="handleSelectUpload">
               <el-option v-for="u in uploads" :key="u.id" :label="`${u.fileName} (${u.rowCount}行)`" :value="u.id" />
             </el-select>
           </div>
