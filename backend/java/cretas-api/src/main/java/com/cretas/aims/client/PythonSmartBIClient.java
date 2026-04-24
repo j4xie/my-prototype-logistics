@@ -1716,8 +1716,11 @@ public class PythonSmartBIClient {
         if (!config.isEnabled() || uploadId == null || factoryId == null) {
             return false;
         }
+        // Endpoint lives on the materialized_analytics router (JWT-protected)
+        // because /api/smartbi/analysis-cache/ is in PUBLIC_PREFIXES and can't
+        // see request.state.factory_id from the auth_middleware.
         String url = config.getFullUrl(
-                "/api/smartbi/analysis-cache/" + uploadId + "/precompute");
+                "/api/smartbi/analytics/precompute-cache/" + uploadId);
         try {
             Request httpRequest = new Request.Builder()
                     .url(url)

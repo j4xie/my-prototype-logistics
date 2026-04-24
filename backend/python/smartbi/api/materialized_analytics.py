@@ -109,6 +109,46 @@ async def get_cached_analytics(upload_id: int, request: Request) -> Dict[str, An
     }
 
 
+@router.post("/precompute-cache/{upload_id}")
+async def precompute_cache_endpoint(upload_id: int, request: Request) -> Dict[str, Any]:
+    """γ-2c (Apr 25 2026 / Task C / PROD-1 fix): pre-materialize KPI-only
+    enrichment_cache for a given upload.
+
+    Lives on the materialized_analytics router (JWT / X-Internal-Secret +
+    X-Factory-Id protected) instead of analysis_cache.router because the
+    latter is in PUBLIC_PREFIXES and can't see request.state.factory_id.
+
+    Called by Java γ-2c afterCommit hook on every successful upload, so the
+    FE cache-first branch (analysis.ts cache-first, ~line 1400) hits an
+    instant cache on first visit and renders KPI cards in <1s instead of
+    running the full 30-60s LLM pipeline (which times out on 200K-row POS
+    uploads).
+
+    Idempotent. Pure compute (no LLM). Won't clobber a full LLM cache —
+    only refreshes kpiSummary in-place when richer cache exists.
+    """
+    from smartbi.api.analysis_cache import precompute_enrichment_cache_for_upload
+
+    pool = await get_pg_pool()
+    if pool is None:
+        raise HTTPException(status_code=503, detail="postgres pool not available")
+
+    user_factory = _extract_factory_id(request)
+    upload_factory = await _get_upload_factory(pool, upload_id)
+    if upload_factory != user_factory:
+        logger.warning(
+            f"[precompute-cache] factory mismatch: user={user_factory}, "
+            f"upload={upload_factory}"
+        )
+        raise HTTPException(status_code=403, detail="cross-tenant access denied")
+
+    try:
+        return await precompute_enrichment_cache_for_upload(upload_id, user_factory)
+    except Exception as e:
+        logger.error(f"[precompute-cache] upload {upload_id} failed: {e}", exc_info=True)
+        return {"success": False, "message": "处理失败，请稍后重试"}
+
+
 @router.post("/materialize/{upload_id}")
 async def trigger_materialization(upload_id: int, request: Request) -> Dict[str, Any]:
     """Trigger fresh materialization + persist. Idempotent (ON CONFLICT updates)."""
