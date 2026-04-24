@@ -45,10 +45,17 @@ _OPS_PATTERNS: List[Tuple[str, List[List[str]]]] = [
     # Per-store margin (MUST come BEFORE dish-level gross_margin):
     # "哪家店赚钱" = store scope, not dish scope. Group-1 = store scope,
     # Group-2 = margin vocabulary.
+    # Apr 25 2026 routing fix: removed "最好" from group-2 — it was over-broadly
+    # matching unrelated queries like "哪个店服务最好" / "哪家店环境最好" /
+    # "哪家店评价最好", which then routed to STORE_MARGIN (30-day POS window) and
+    # returned the misleading "近 30 天无 POS 销售数据" message even when full
+    # POS data was present. All legitimate margin triggers ("哪家店最赚钱",
+    # "门店毛利排行", "分店利润对比", etc.) still match via the remaining
+    # margin-specific vocabulary. See aiquery-OBSERVATIONS.md (Apr 24 audit C-4).
     (
         "RESTAURANT_OPS_STORE_MARGIN",
         [["门店", "店", "分店", "店铺", "哪家"],
-         ["毛利", "毛利率", "赚钱", "净赚", "利润", "最好"]],
+         ["毛利", "毛利率", "赚钱", "净赚", "利润"]],
     ),
     # Cross-module gross margin — dish-level (MUST come BEFORE recipe_cost since
     # "毛利" on its own = margin not cost). Plan C's signature feature.
@@ -568,11 +575,13 @@ async def resolve_gross_margin(
         })
     enriched.sort(key=lambda x: x["gross_profit"], reverse=True)
     top_slice = enriched[:top_n]
+    # "总营收" 用全菜营收 (users want total). "平均毛利率"/"总毛利" 用仅有
+    # cost 菜, 避免无配方菜 (gross_profit=revenue) 污染真实毛利率.
     total_rev = sum(e["revenue"] for e in enriched)
-    total_profit = sum(e["gross_profit"] for e in enriched)
-    avg_margin = total_profit / total_rev if total_rev > 0 else 0
-
     with_cost = [e for e in enriched if e["has_cost"]]
+    total_rev_with_cost = sum(e["revenue"] for e in with_cost)
+    total_profit = sum(e["gross_profit"] for e in with_cost)
+    avg_margin = total_profit / total_rev_with_cost if total_rev_with_cost > 0 else 0
 
     top_text = "\n".join([
         f"  {i+1}. {e['name']}: 营收 ¥{e['revenue']:.2f} / 成本 ¥{e['food_cost_unit'] * e['qty']:.2f} / "
@@ -692,7 +701,8 @@ async def resolve_store_margin(
             )
             cost_by_pk = {r["product_source_pk"]: r["c"] for r in cr}
 
-    # Aggregate per store
+    # Aggregate per store. Track revenue twice: all-dish (for display) and
+    # with-cost-only (for margin rate denominator — same fix as gross-margin).
     per_store: Dict[int, Dict[str, Any]] = {}
     for r in store_dish_rows:
         pk = name_to_pk.get(r["normalized_name"])
@@ -700,26 +710,33 @@ async def resolve_store_margin(
         line_cost = dish_cost * r["qty"]
         s = per_store.setdefault(r["store_id"], {
             "store_id": r["store_id"], "name": r["store_name"],
-            "revenue": 0.0, "cost": 0.0, "bills": 0, "dishes": 0, "dishes_with_cost": 0,
+            "revenue": 0.0, "revenue_with_cost": 0.0, "cost": 0.0,
+            "bills": 0, "dishes": 0, "dishes_with_cost": 0,
         })
         s["revenue"] += r["revenue"]
-        s["cost"] += line_cost
         s["bills"] += r["bills"]
         s["dishes"] += 1
         if dish_cost > 0:
+            s["revenue_with_cost"] += r["revenue"]
+            s["cost"] += line_cost
             s["dishes_with_cost"] += 1
 
     store_list = []
     for s in per_store.values():
-        s["gross_profit"] = s["revenue"] - s["cost"]
-        s["margin_rate"] = s["gross_profit"] / s["revenue"] if s["revenue"] > 0 else 0
+        s["gross_profit"] = s["revenue_with_cost"] - s["cost"]
+        # marginRate only from with-cost dishes — avoid 89-97% inflation.
+        s["margin_rate"] = (
+            s["gross_profit"] / s["revenue_with_cost"]
+            if s["revenue_with_cost"] > 0 else 0
+        )
         store_list.append(s)
     store_list.sort(key=lambda x: x["gross_profit"], reverse=True)
     top_slice = store_list[:top_n]
 
     total_rev = sum(s["revenue"] for s in store_list)
+    total_rev_with_cost = sum(s["revenue_with_cost"] for s in store_list)
     total_profit = sum(s["gross_profit"] for s in store_list)
-    avg_rate = total_profit / total_rev if total_rev > 0 else 0
+    avg_rate = total_profit / total_rev_with_cost if total_rev_with_cost > 0 else 0
 
     top_text = "\n".join([
         f"  {i+1}. {s['name']}: 营收 ¥{s['revenue']:,.2f} / 毛利 ¥{s['gross_profit']:,.2f} ({s['margin_rate'] * 100:.1f}%), {s['bills']} 单"
@@ -754,9 +771,13 @@ async def resolve_store_margin(
         ],
         meta={
             "window_days": days, "store_count": len(store_list),
+            "totalRevenue": total_rev, "totalRevenueWithCost": total_rev_with_cost,
+            "totalProfit": total_profit, "avgRate": avg_rate,
             "stores": [
                 {"storeId": s["store_id"], "name": s["name"],
-                 "revenue": s["revenue"], "grossProfit": s["gross_profit"],
+                 "revenue": s["revenue"],
+                 "revenueWithCost": s["revenue_with_cost"],
+                 "grossProfit": s["gross_profit"],
                  "marginRate": s["margin_rate"], "bills": s["bills"],
                  "dishesWithCost": s["dishes_with_cost"], "totalDishes": s["dishes"]}
                 for s in store_list
