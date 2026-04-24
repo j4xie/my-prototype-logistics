@@ -1138,14 +1138,21 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                     yield _sse_event("charts", payload["charts"])
                                 wall_ms = int((time.time() - start_time) * 1000)
                                 # Fire-and-forget template hit log so the user can 👍/👎.
-                                # Shielded so caller abort doesn't cancel the insert.
-                                _tpl_log_task = asyncio.create_task(
-                                    asyncio.shield(_log_template_hit_safe(
-                                        pool, user_q,
-                                        getattr(http_request.state, 'factory_id', None) if hasattr(http_request, 'state') else None,
-                                        upload_id, matched_code, answer_text, wall_ms,
-                                    ))
-                                )
+                                # Apr 25 2026 D1.C1 fix: previous code wrapped the coroutine
+                                # in asyncio.shield(<coro>) BEFORE asyncio.create_task, but
+                                # shield() requires a Future/Task not a coroutine — that
+                                # raised TypeError every call, the outer except logged
+                                # 'template router failed' as WARNING and silently fell
+                                # through to the 60s LLM path. Result: cached templates
+                                # were NEVER served via AIQuery despite being materialized.
+                                # Use _spawn_bg (the proven detach-and-anchor helper) and
+                                # shield only the wait_for, mirroring line 1814 idiom.
+                                from smartbi.api.materialized_analytics import _spawn_bg
+                                _tpl_log_task = _spawn_bg(_log_template_hit_safe(
+                                    pool, user_q,
+                                    getattr(http_request.state, 'factory_id', None) if hasattr(http_request, 'state') else None,
+                                    upload_id, matched_code, answer_text, wall_ms,
+                                ))
                                 try:
                                     tpl_log_id = await asyncio.wait_for(
                                         asyncio.shield(_tpl_log_task), timeout=1.5
