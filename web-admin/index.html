@@ -6,11 +6,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Google Fonts removed: blocked in China, causes page render delay -->
     <!-- Fallback: system Chinese fonts (PingFang SC, Microsoft YaHei, Noto Sans SC if installed locally) -->
-    <style>body { font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", -apple-system, sans-serif; }</style>
+    <style>
+      /* UX P1 Round 3: inline loading skeleton so user sees "正在加载"
+         instead of blank white page for 2-3s before Vue+EP bundle parses. */
+      body {
+        font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", -apple-system, sans-serif;
+        margin: 0;
+        background: #f5f7fa;
+      }
+      #app-loader {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        background: linear-gradient(135deg, #f5f7fa 0%, #e8edf3 100%);
+        z-index: 9999;
+      }
+      #app-loader .logo {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1B65A8;
+        letter-spacing: 2px;
+      }
+      #app-loader .sub {
+        color: #909399;
+        font-size: 13px;
+      }
+      #app-loader .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid #e8edf3;
+        border-top-color: #1B65A8;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      /* 当 Vue 挂载后 #app 被填充, 通过 #app:not(:empty) 兄弟选择器隐藏 loader */
+      #app:not(:empty) + #app-loader { display: none; }
+    </style>
     <title>白垩纪AI Agent</title>
   </head>
   <body>
     <div id="app"></div>
+    <div id="app-loader">
+      <div class="logo">白垩纪 AI Agent</div>
+      <div class="spinner"></div>
+      <div class="sub">正在加载应用…</div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
