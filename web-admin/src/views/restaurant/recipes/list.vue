@@ -9,7 +9,8 @@
           </div>
           <div class="header-right">
             <el-button type="info" plain @click="handleAiAnalyze">🤖 AI 分析</el-button>
-            <el-button v-if="canWrite" type="primary" plain @click="aiDraftDialog = true">🧠 AI 智能录配方</el-button>
+            <el-button v-if="canWrite" type="primary" plain @click="aiDraftDialog = true">🧠 AI 录配方</el-button>
+            <el-button v-if="canWrite" type="primary" @click="openAiBatchDraftDialog">🚀 AI 批量录配方 <el-badge v-if="unmatchedCount > 0" :value="unmatchedCount" type="warning" /></el-button>
             <el-button v-if="canWrite" type="warning" plain @click="batchImportDialog = true">📥 批量导入</el-button>
             <el-button v-if="canWrite" type="success" plain @click="openAliasPanel">🔗 菜名对齐 <el-badge v-if="unmatchedCount > 0" :value="unmatchedCount" type="warning" /></el-button>
             <el-button :icon="Download" @click="handleExport">导出</el-button>
@@ -260,6 +261,83 @@
           💡 绑定完成后点 <el-link type="primary" href="/restaurant/analytics/gross-margin" :underline="false">毛利分析页 ⚡立即同步</el-link> 刷新覆盖率.
           "非菜品"的条目 (如 打包盒/餐具/广告词) 会从覆盖率分母中剔除.
         </span>
+      </div>
+    </el-dialog>
+
+    <!-- P2-7 批量版: AI 批量录配方 (覆盖 top N 未录菜品) -->
+    <el-dialog v-model="aiBatchDraftDialog" title="🚀 AI 批量录配方 — 按营收从高到低录 Top N" width="1100px" top="5vh">
+      <div v-if="!batchDraftResults">
+        <el-alert type="info" :closable="false" style="margin-bottom: 12px">
+          <template #title>
+            智能批量配方生成: AI 按营收排序读取未录配方菜品, 并发调用 LLM (10 并发), 约 1 分钟生成 top 100 配方草稿. 客户再逐个或一键采纳.
+          </template>
+        </el-alert>
+        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 14px">
+          <span>目标营收覆盖:</span>
+          <el-radio-group v-model="batchDraftTopN">
+            <el-radio-button :value="30">Top 30 (约 60% 营收)</el-radio-button>
+            <el-radio-button :value="60">Top 60 (约 75% 营收)</el-radio-button>
+            <el-radio-button :value="100">Top 100 (约 85% 营收)</el-radio-button>
+            <el-radio-button :value="130">Top 130 (约 90% 营收)</el-radio-button>
+          </el-radio-group>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 14px">
+          <span>菜系提示 (可选):</span>
+          <el-input v-model="batchDraftHint" placeholder="如 川菜 / 粤菜 / 日料 / 面食" size="small" style="width: 240px" />
+        </div>
+        <el-button type="primary" size="large" :loading="batchDraftLoading" @click="runBatchDraft" style="margin-top: 12px">
+          <span v-if="!batchDraftLoading">🚀 开始 AI 批量生成</span>
+          <span v-else>AI 并发生成中 ({{ batchDraftStatus }}) ...</span>
+        </el-button>
+      </div>
+
+      <div v-if="batchDraftResults" style="max-height: 65vh; overflow-y: auto">
+        <el-alert :type="batchDraftResults.data.failed === 0 ? 'success' : 'warning'" :closable="false" style="margin-bottom: 14px">
+          <template #title>
+            AI 生成完成 · {{ batchDraftResults.data.succeeded }}/{{ batchDraftResults.data.requested }} 成功 ·
+            用时 {{ batchDraftResults.data.elapsedSec }} 秒 ·
+            <span v-if="batchDraftResults.data.failed > 0">{{ batchDraftResults.data.failed }} 失败</span>
+          </template>
+        </el-alert>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px">
+          <el-button type="success" size="large" :loading="batchSaving" @click="batchSaveAll">
+            ✅ 一键采纳全部 {{ selectedDraftCount }} 道菜 (生成 {{ selectedRecipeLineCount }} 条配方行)
+          </el-button>
+          <el-button plain size="large" @click="batchDraftResults = null; batchDraftLoading = false">清空重来</el-button>
+        </div>
+        <el-table
+          :data="batchDraftResults.data.drafts.filter(d => d.success)"
+          :default-sort="{ prop: 'dishName', order: 'ascending' }"
+          border
+          size="small"
+          @selection-change="onBatchDraftSelection"
+          ref="batchDraftTableRef"
+        >
+          <el-table-column type="selection" width="45" />
+          <el-table-column label="菜品" prop="dishName" min-width="160" show-overflow-tooltip />
+          <el-table-column label="食材+用量+主料+建议单价" min-width="500">
+            <template #default="{ row }">
+              <div v-for="(ing, i) in row.ingredients" :key="i" style="display: flex; gap: 6px; align-items: center; font-size: 12px; margin-bottom: 4px">
+                <el-tag size="small" :type="ing.is_main ? 'success' : ''">{{ ing.is_main ? '主' : '辅' }}</el-tag>
+                <el-input v-model="ing.name" size="small" style="width: 110px" />
+                <el-input-number v-model="ing.qty" :precision="4" :step="0.01" :min="0" size="small" :controls="false" style="width: 80px" />
+                <el-input v-model="ing.unit" size="small" style="width: 50px" />
+                <el-input-number v-model="ing.suggested_unit_price" :precision="2" :step="1" :min="0" size="small" :controls="false" placeholder="单价" style="width: 80px" />
+                <el-button type="danger" link size="small" @click="row.ingredients.splice(i, 1)">✖</el-button>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="成本率" width="90" align="center">
+            <template #default="{ row }">
+              <el-tag size="small">{{ row.estimatedCostRatio ? (row.estimatedCostRatio * 100).toFixed(0) + '%' : '—' }}</el-tag>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <div v-if="batchDraftResults.data.failed > 0" style="margin-top: 14px">
+          <div style="font-size: 12px; color: var(--el-color-warning)">以下菜品 AI 生成失败, 可手动录入:</div>
+          <div v-for="(d, i) in batchDraftResults.data.drafts.filter(d => !d.success)" :key="i" style="font-size: 12px; color: #909399">• {{ d.dishName }}: {{ d.message }}</div>
+        </div>
       </div>
     </el-dialog>
 
@@ -746,6 +824,148 @@ async function markAsNoise() {
       ElMessage.error(res.message || '标记失败');
     }
   } catch (e) { ElMessage.error('标记异常'); }
+}
+
+// ====================================================================
+// P2-7 Batch: AI 批量录配方 dialog
+// ====================================================================
+interface BatchDraftResult {
+  success: boolean;
+  data: {
+    requested: number;
+    succeeded: number;
+    failed: number;
+    elapsedSec: number;
+    concurrency: number;
+    drafts: Array<{
+      success: boolean;
+      dishName: string;
+      ingredients?: DraftIngredient[];
+      estimatedCostRatio?: number | null;
+      notes?: string;
+      message?: string;
+    }>;
+  };
+}
+
+const aiBatchDraftDialog = ref(false);
+const batchDraftTopN = ref<number>(30);
+const batchDraftHint = ref('');
+const batchDraftLoading = ref(false);
+const batchDraftStatus = ref('');
+const batchDraftResults = ref<BatchDraftResult | null>(null);
+const batchSaving = ref(false);
+const selectedBatchDrafts = ref<BatchDraftResult['data']['drafts']>([]);
+
+function onBatchDraftSelection(rows: BatchDraftResult['data']['drafts']) {
+  selectedBatchDrafts.value = rows;
+}
+
+const selectedDraftCount = computed(() => selectedBatchDrafts.value.length || (batchDraftResults.value?.data.drafts.filter(d => d.success).length ?? 0));
+const selectedRecipeLineCount = computed(() => {
+  const src = selectedBatchDrafts.value.length ? selectedBatchDrafts.value : (batchDraftResults.value?.data.drafts.filter(d => d.success) ?? []);
+  return src.reduce((sum, d) => sum + (d.ingredients?.length || 0), 0);
+});
+
+async function openAiBatchDraftDialog() {
+  aiBatchDraftDialog.value = true;
+  batchDraftResults.value = null;
+}
+
+async function runBatchDraft() {
+  batchDraftLoading.value = true;
+  batchDraftStatus.value = '读取 top 未录菜品';
+  batchDraftResults.value = null;
+  try {
+    const { pythonFetch } = await import('@/api/smartbi/common');
+    // Step 1: get top N unmatched dishes by revenue
+    const unmatched = await pythonFetch('/api/smartbi/restaurant-ops/unmatched-dishes') as {
+      success: boolean;
+      data?: { dishes: Array<{ name: string; revenue: number }> };
+    };
+    if (!unmatched.success || !unmatched.data?.dishes?.length) {
+      ElMessage.warning('未发现未录配方的菜品');
+      return;
+    }
+    const dishNames = unmatched.data.dishes.slice(0, batchDraftTopN.value).map(d => d.name);
+    batchDraftStatus.value = `调 AI 并发生成 ${dishNames.length} 道`;
+    // Step 2: batch AI
+    const res = await pythonFetch('/api/smartbi/restaurant-ops/recipes/ai-draft-batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dish_names: dishNames, hint: batchDraftHint.value.trim() || undefined, concurrency: 10 }),
+      timeoutMs: 300000,
+    }) as BatchDraftResult;
+    batchDraftResults.value = res;
+    if (res.success) {
+      ElMessage.success(`AI 生成完成: ${res.data.succeeded}/${res.data.requested} 成功, 用时 ${res.data.elapsedSec} 秒`);
+    } else {
+      ElMessage.error('批量生成失败');
+    }
+  } catch (e) {
+    ElMessage.error('批量生成异常: ' + (e instanceof Error ? e.message : String(e)));
+  } finally {
+    batchDraftLoading.value = false;
+  }
+}
+
+async function batchSaveAll() {
+  const toSave = selectedBatchDrafts.value.length > 0
+    ? selectedBatchDrafts.value
+    : batchDraftResults.value!.data.drafts.filter(d => d.success);
+  if (!toSave.length) {
+    ElMessage.warning('没有可保存的草稿');
+    return;
+  }
+  batchSaving.value = true;
+  try {
+    // Build CSV from all selected drafts
+    const cols = ['菜品名称', '食材名称', '用量', '单位', '食材单价', '是否主料'];
+    let csv = '﻿' + cols.join(',') + '\n';
+    for (const d of toSave) {
+      for (const ing of d.ingredients || []) {
+        const row = {
+          菜品名称: d.dishName,
+          食材名称: ing.name,
+          用量: ing.qty,
+          单位: ing.unit || 'kg',
+          食材单价: (ing as DraftIngredient & { suggested_unit_price?: number }).suggested_unit_price ?? ing.price ?? 0,
+          是否主料: ing.is_main ? '是' : '否',
+        };
+        csv += cols.map(c => String(row[c as keyof typeof row] ?? '')).join(',') + '\n';
+      }
+    }
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const file = new File([blob], 'ai_batch_draft.csv', { type: 'text/csv' });
+    const { pythonFetch } = await import('@/api/smartbi/common');
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await pythonFetch('/api/smartbi/restaurant-ops/recipes/batch-import', {
+      method: 'POST',
+      body: formData,
+      headers: {},
+      timeoutMs: 300000,
+    }) as { success: boolean; data?: { dishesCreated: number; ingredientsCreated: number; recipesCreated: number }; message?: string };
+    if (res.success) {
+      ElMessage.success(`批量保存成功: 菜品 +${res.data?.dishesCreated} / 食材 +${res.data?.ingredientsCreated} / 配方行 +${res.data?.recipesCreated}`);
+      aiBatchDraftDialog.value = false;
+      batchDraftResults.value = null;
+      loadData();
+      loadStatistics();
+      loadUnmatchedCount();
+      // Also trigger ETL so gross-margin page updates
+      try {
+        pythonFetch('/api/smartbi/restaurant-ops/etl', { method: 'POST' });
+        ElMessage.info('后台自动重新计算毛利中...');
+      } catch { /* ignore */ }
+    } else {
+      ElMessage.error(res.message || '批量保存失败');
+    }
+  } catch (e) {
+    ElMessage.error('批量保存异常: ' + (e instanceof Error ? e.message : String(e)));
+  } finally {
+    batchSaving.value = false;
+  }
 }
 
 // ====================================================================
