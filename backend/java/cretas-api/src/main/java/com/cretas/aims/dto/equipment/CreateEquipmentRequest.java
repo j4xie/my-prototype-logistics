@@ -91,4 +91,8 @@ public class CreateEquipmentRequest {
     @Schema(description = "备注")
     @Size(max = 5000, message = "备注长度不能超过5000个字符")
     private String notes;
+
+    /** 乐观锁版本号 (编辑时必传, 来自 GET 响应); mismatch → 409 Conflict */
+    @Schema(description = "乐观锁版本号")
+    private Long version;
 }

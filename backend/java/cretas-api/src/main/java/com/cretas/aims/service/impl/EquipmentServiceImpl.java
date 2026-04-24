@@ -141,6 +141,13 @@ public class EquipmentServiceImpl implements EquipmentService {
         Long equipmentIdLong = Long.parseLong(equipmentId);
         FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentIdLong, factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
+        // Optimistic lock: explicit compare. NOTE: entity.version is Integer but DTO is Long —
+        // compare via primitive longValue() so Long.equals(Integer) doesn't always return false.
+        if (request.getVersion() != null
+                && equipment.getVersion().longValue() != request.getVersion().longValue()) {
+            throw new org.springframework.orm.ObjectOptimisticLockingFailureException(
+                FactoryEquipment.class, equipmentId);
+        }
 
         if (request.getName() != null) equipment.setEquipmentName(request.getName());
         if (request.getType() != null) equipment.setType(request.getType());

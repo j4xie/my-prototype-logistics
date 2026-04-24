@@ -370,6 +370,11 @@ public class SalesServiceImpl implements SalesService {
         if (order.getStatus() != SalesOrderStatus.DRAFT) {
             throw new BusinessException("只有草稿状态的订单可以编辑");
         }
+        // Optimistic lock: explicit compare (see CustomerServiceImpl for rationale)
+        if (request.getVersion() != null && !request.getVersion().equals(order.getVersion())) {
+            throw new org.springframework.orm.ObjectOptimisticLockingFailureException(
+                SalesOrder.class, orderId);
+        }
 
         // Canvas V2: DB-driven validation for UPDATE — pre-compute totalAmount if items changed
         BigDecimal updateTotal = order.getTotalAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO;

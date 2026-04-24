@@ -105,6 +105,11 @@ public class SalesOrder extends BaseEntity {
     @Column(name = "created_by", nullable = false)
     private Long createdBy;
 
+    /** Optimistic lock version — prevents silent last-write-wins on concurrent edits */
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
+
     @Column(name = "confirmed_at")
     private LocalDateTime confirmedAt;
 

@@ -98,6 +98,11 @@ public class PurchaseOrder extends BaseEntity {
     @Column(name = "created_by", nullable = false)
     private Long createdBy;
 
+    /** Optimistic lock version — prevents silent last-write-wins on concurrent edits */
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
+
     @Column(name = "approved_by")
     private Long approvedBy;
 

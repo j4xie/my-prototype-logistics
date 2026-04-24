@@ -47,6 +47,9 @@ public class CreatePurchaseOrderRequest {
     @NotEmpty(message = "采购行项目不能为空")
     private List<PurchaseOrderItemDTO> items;
 
+    /** 乐观锁版本号 (编辑时必传, 来自 GET 响应); mismatch → 409 Conflict */
+    private Long version;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

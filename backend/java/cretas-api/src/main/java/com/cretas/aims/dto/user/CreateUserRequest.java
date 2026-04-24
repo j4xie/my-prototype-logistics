@@ -35,10 +35,12 @@ public class CreateUserRequest {
     private String username;
 
     @Schema(description = "密码（创建时必填，更新时可选）")
+    @Size(max = 128, message = "密码长度不能超过128个字符")
     private String password;
 
     @Schema(description = "邮箱（创建时必填，更新时可选）")
     @Email(message = "邮箱格式不正确")
+    @Size(max = 100, message = "邮箱长度不能超过100个字符")
     private String email;
 
     @Schema(description = "手机号")
@@ -46,6 +48,7 @@ public class CreateUserRequest {
     private String phone;
 
     @Schema(description = "全名")
+    @Size(max = 100, message = "全名长度不能超过100个字符")
     private String fullName;
 
     @Schema(description = "角色代码", required = true)
@@ -55,6 +58,7 @@ public class CreateUserRequest {
     private Department department;
 
     @Schema(description = "职位")
+    @Size(max = 100, message = "职位长度不能超过100个字符")
     private String position;
 
     @Schema(description = "月薪")

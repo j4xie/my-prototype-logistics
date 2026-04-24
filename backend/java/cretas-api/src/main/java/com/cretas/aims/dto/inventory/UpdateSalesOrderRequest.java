@@ -40,4 +40,7 @@ public class UpdateSalesOrderRequest {
 
     /** Canvas V3: 动态字段 (dual-track) — 为 null 时不修改 */
     private Map<String, Object> customFields;
+
+    /** 乐观锁版本号 (编辑时必传, 来自 GET 响应); mismatch → 409 Conflict */
+    private Long version;
 }

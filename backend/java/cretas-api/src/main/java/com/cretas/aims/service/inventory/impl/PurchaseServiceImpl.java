@@ -337,6 +337,11 @@ public class PurchaseServiceImpl implements PurchaseService {
         if (order.getStatus() != PurchaseOrderStatus.DRAFT) {
             throw new BusinessException("只有草稿状态的订单可以编辑");
         }
+        // Optimistic lock: explicit compare (see CustomerServiceImpl for rationale)
+        if (request.getVersion() != null && !request.getVersion().equals(order.getVersion())) {
+            throw new org.springframework.orm.ObjectOptimisticLockingFailureException(
+                PurchaseOrder.class, orderId);
+        }
 
         // Validate supplier
         supplierRepository.findByIdAndFactoryId(request.getSupplierId(), factoryId)
