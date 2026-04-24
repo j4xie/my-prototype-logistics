@@ -84,6 +84,7 @@ const menuConfig: MenuItem[] = [
   {
     // P1-5: restaurants 默认不见 "生产管理" (BOM/批次是 manufacturing 语言,
     // 餐饮用配方/备餐在 /restaurant/recipes)
+    // UX P2-5: 合并"研发管理" 1-item 组, 减少顶级菜单
     path: '/production', title: '生产管理', icon: 'Operation', module: 'production',
     hideForFactoryTypes: ['RESTAURANT'],
     children: [
@@ -93,18 +94,21 @@ const menuConfig: MenuItem[] = [
       { path: '/production/bom', title: 'BOM成本管理', icon: '', module: 'production' },
       { path: '/production/approval', title: '报工审批', icon: '', module: 'production' },
       { path: '/production/bom-achievement', title: 'BOM达成率分析', icon: '', module: 'production' },
-      { path: '/production/process-io', title: '工序投入产出对比', icon: '', module: 'production' }
+      { path: '/production/process-io', title: '工序投入产出对比', icon: '', module: 'production' },
+      { path: '/rd/samples', title: '研发样品', icon: '', module: 'production' }
     ]
   },
   {
     // P1-5: restaurants 默认不见 "仓储管理" (食材库存在 /restaurant/stocktaking)
+    // UX P2-5: 合并"调拨管理" 1-item 组到这里,减少顶级菜单数
     path: '/warehouse', title: '仓储管理', icon: 'Box', module: 'warehouse',
     hideForFactoryTypes: ['RESTAURANT'],
     children: [
       { path: '/warehouse/materials', title: '原材料批次', icon: '', module: 'warehouse' },
       { path: '/warehouse/shipments', title: '出货管理', icon: '', module: 'warehouse' },
       { path: '/warehouse/inventory', title: '盘点管理', icon: '', module: 'warehouse' },
-      { path: '/warehouse/material-price-trend', title: '物料均价趋势', icon: '', module: 'warehouse' }
+      { path: '/warehouse/material-price-trend', title: '物料均价趋势', icon: '', module: 'warehouse' },
+      { path: '/transfer/list', title: '调拨单', icon: '', module: 'warehouse' }
     ]
   },
   {
@@ -154,14 +158,7 @@ const menuConfig: MenuItem[] = [
       { path: '/hr/departments', title: '部门管理', icon: '', module: 'hr' }
     ]
   },
-  {
-    // P1-5: restaurants 默认不见 "调拨管理" (门店间调货走 /restaurant/requisitions)
-    path: '/transfer', title: '调拨管理', icon: 'Sell', module: 'warehouse',
-    hideForFactoryTypes: ['RESTAURANT'],
-    children: [
-      { path: '/transfer/list', title: '调拨单列表', icon: '', module: 'warehouse' }
-    ]
-  },
+  // UX P2-5 merged into 仓储管理: /transfer 原独立顶级组 (1 项), 合并节省 1 顶级项
   {
     // P1-5: restaurants 默认不见 "设备管理" (manufacturing 专属)
     path: '/equipment', title: '设备管理', icon: 'Monitor', module: 'equipment',
@@ -186,15 +183,7 @@ const menuConfig: MenuItem[] = [
       { path: '/finance/sku-margin', title: 'SKU毛利率分析', icon: '', module: 'finance' }
     ]
   },
-  {
-    // P1-5: restaurants 默认不见 "研发管理" (产品 R&D 是 manufacturing,
-    // 菜品开发在 /restaurant/recipes)
-    path: '/rd', title: '研发管理', icon: 'Opportunity', module: 'production',
-    hideForFactoryTypes: ['RESTAURANT'],
-    children: [
-      { path: '/rd/samples', title: '研发样品管理', icon: '', module: 'production' }
-    ]
-  },
+  // UX P2-5 merged into 生产管理: /rd 原独立顶级组 (1 项), 研发样品并入生产
   {
     path: '/system', title: '系统管理', icon: 'Setting', module: 'system',
     children: [
@@ -218,6 +207,9 @@ const menuConfig: MenuItem[] = [
       { path: '/system/pos', title: 'POS集成', icon: '', module: 'system' },
       { path: '/system/smartbi-config', title: 'SmartBI配置', icon: '', module: 'system' },
       { path: '/system/badge-generator', title: '员工工牌生成', icon: '', module: 'system',
+        hideForFactoryTypes: ['RESTAURANT'] },
+      // UX P2-5: 行为校准 (1 项) 合并入系统管理下, 不单做顶级组
+      { path: '/calibration/list', title: '行为校准', icon: '', module: 'system',
         hideForFactoryTypes: ['RESTAURANT'] }
     ]
   },
@@ -259,21 +251,7 @@ const menuConfig: MenuItem[] = [
       { path: '/restaurant/stocktaking', title: '盘点管理', icon: '', module: 'restaurant' }
     ]
   },
-  {
-    path: '/calibration', title: '行为校准', icon: 'Aim', module: 'system',
-    hideForFactoryTypes: ['RESTAURANT'],
-    children: [
-      { path: '/calibration/list', title: '校准管理', icon: '', module: 'system' }
-    ]
-  },
-  {
-    path: '/production-analytics', title: '生产分析', icon: 'Histogram', module: 'analytics',
-    hideForFactoryTypes: ['RESTAURANT'],
-    children: [
-      { path: '/production-analytics/production', title: '生产数据分析', icon: 'Histogram', module: 'analytics' },
-      { path: '/production-analytics/efficiency', title: '人效分析', icon: 'User', module: 'analytics' }
-    ]
-  },
+  // UX P2-5 merged: /calibration 并入 系统管理, /production-analytics 并入 智能BI
   {
     path: '/smart-bi', title: '智能BI', icon: 'TrendCharts', module: 'analytics',
     children: [
@@ -291,7 +269,12 @@ const menuConfig: MenuItem[] = [
       { path: '/smart-bi/data-completeness', title: '数据完整度', icon: 'DataAnalysis', module: 'analytics' },
       { path: '/smart-bi/food-kb-feedback', title: '知识库反馈', icon: 'ChatDotRound', module: 'analytics', groupLabel: '质量管理' },
       { path: '/smart-bi/fallback-log', title: 'AI 追问日志', icon: 'DataLine', module: 'analytics' },
-      { path: '/smart-bi/calibration', title: '行为校准监控', icon: 'Aim', module: 'analytics', roles: ['platform_admin'] }
+      { path: '/smart-bi/calibration', title: '行为校准监控', icon: 'Aim', module: 'analytics', roles: ['platform_admin'] },
+      // UX P2-5: 生产分析 (2 项) 合并入智能BI, 不单做顶级组
+      { path: '/production-analytics/production', title: '生产数据分析', icon: 'Histogram', module: 'analytics', groupLabel: '生产分析',
+        hideForFactoryTypes: ['RESTAURANT'] },
+      { path: '/production-analytics/efficiency', title: '人效分析', icon: 'User', module: 'analytics',
+        hideForFactoryTypes: ['RESTAURANT'] }
     ]
   }
 ];

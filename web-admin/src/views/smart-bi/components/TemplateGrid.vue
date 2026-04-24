@@ -28,6 +28,7 @@
         :code="code"
         :item="itemsMap[code]"
         :status="statusFor(code)"
+        @go-upload="onGoUpload"
       />
     </div>
   </section>
@@ -35,6 +36,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { Refresh } from '@element-plus/icons-vue';
 import TemplateCard from './TemplateCard.vue';
 import {
@@ -42,6 +44,13 @@ import {
   type AnalysisResultItem,
 } from '@/api/smartbi/analysisResults';
 import { getPageCodes } from '../composables/useTemplateMap';
+
+const router = useRouter();
+
+// UX P2-10: 空 state CTA — 跳 SmartBI 主页 (含上传入口)
+function onGoUpload(_code: string) {
+  router.push('/smart-bi/analysis');
+}
 
 const props = defineProps<{
   /** Page key (dashboard|finance|trend|restaurantv2) */

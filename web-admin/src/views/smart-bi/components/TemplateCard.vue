@@ -55,6 +55,14 @@
       <div class="tpl-empty-icon">📄</div>
       <div class="tpl-empty-title">尚未为该工厂生成过 [{{ title }}]</div>
       <div class="tpl-empty-hint">上传含 {{ requiredFields }} 的数据文件</div>
+      <!-- UX P2-10: 空工厂 onboarding — CTA 直接跳上传 -->
+      <el-button
+        class="tpl-empty-cta"
+        type="primary"
+        size="small"
+        plain
+        @click="$emit('go-upload', code)"
+      >去上传数据</el-button>
     </div>
 
     <!-- Footer: 数据来源 + 生成时间 (P2-17: 从标题挪到这里,不挤占卡片标题行) -->
@@ -80,6 +88,11 @@ const props = defineProps<{
   code: string;
   item?: AnalysisResultItem;
   status: CardStatus;
+}>();
+
+// UX P2-10: 空状态 CTA 引导
+defineEmits<{
+  (e: 'go-upload', code: string): void;
 }>();
 
 const chartRef = ref<HTMLElement>();
@@ -660,6 +673,9 @@ watch(
 }
 .tpl-empty-hint {
   font-size: 12px;
+}
+.tpl-empty-cta {
+  margin-top: 12px;
 }
 .tpl-loading {
   padding: 16px;

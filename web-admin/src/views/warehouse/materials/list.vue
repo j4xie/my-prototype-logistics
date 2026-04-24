@@ -327,7 +327,10 @@ async function handleFormSubmit() {
     <el-dialog v-model="formDialogVisible" :title="formDialogTitle" width="500px" destroy-on-close>
       <el-form ref="formRef" :model="formData" :rules="formRules" label-width="80px">
         <el-form-item label="批次号" prop="batchNumber">
-          <el-input v-model="formData.batchNumber" placeholder="如 MB-2026-001" :disabled="!!editingId" />
+          <el-tooltip v-if="!!editingId" content="批次号作为追溯标识, 创建后不可修改" placement="top-start">
+            <el-input v-model="formData.batchNumber" placeholder="如 MB-2026-001" :disabled="true" />
+          </el-tooltip>
+          <el-input v-else v-model="formData.batchNumber" placeholder="如 MB-2026-001" />
         </el-form-item>
         <el-form-item label="原料类型" prop="materialTypeId">
           <el-select v-model="formData.materialTypeId" placeholder="选择原料类型" filterable style="width: 100%">

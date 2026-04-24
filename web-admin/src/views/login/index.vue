@@ -122,6 +122,22 @@ function quickLogin(username: string) {
         >
           {{ loading ? '登录中...' : '登 录' }}
         </el-button>
+
+        <!-- UX P2-4: 忘记密码提示 — prod 无自助 reset, 引导联系管理员 -->
+        <div class="forgot-tip">
+          <el-popover placement="top" trigger="click" width="280">
+            <template #reference>
+              <a class="forgot-link">忘记密码?</a>
+            </template>
+            <div style="padding: 4px 0">
+              <p style="margin: 0 0 8px; font-weight: 500">请联系您的工厂管理员</p>
+              <p style="margin: 0; color: #909399; font-size: 12px; line-height: 1.6">
+                由于账号权限与工厂绑定, 密码重置需通过管理员在"系统管理 → 用户管理"中操作.
+                如您就是管理员, 请联系平台 superadmin.
+              </p>
+            </div>
+          </el-popover>
+        </div>
       </el-form>
 
       <!-- 快捷登录 (开发环境) -->
@@ -273,6 +289,23 @@ function quickLogin(username: string) {
     &:active {
       transform: translateY(0);
     }
+  }
+}
+
+.forgot-tip {
+  margin-top: 12px;
+  text-align: right;
+}
+
+.forgot-link {
+  color: #909399;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: none;
+
+  &:hover {
+    color: #1B65A8;
+    text-decoration: underline;
   }
 }
 
