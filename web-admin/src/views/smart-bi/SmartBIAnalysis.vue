@@ -3567,10 +3567,13 @@ const idleEnrichNext = (currentSheetIndex: number) => {
 
     if (nextSheet?.uploadId) {
       // 静默预加载（无加载 UI）
-      enrichSheetAnalysis(nextSheet.uploadId).then(result => {
+      const preCacheUploadId = nextSheet.uploadId;
+      enrichSheetAnalysis(preCacheUploadId).then(result => {
         if (result && result.success) {
+          // STALENESS GUARD: pre-cache fires async; user may have switched
+          // uploads in the meantime. Verify uploadId still matches.
           const sheet = uploadedSheets.value.find(s => s.sheetIndex === nextSheet.sheetIndex);
-          if (sheet) {
+          if (sheet && sheet.uploadId === preCacheUploadId) {
             if (!sheet.flowResult) {
               sheet.flowResult = {};
             }
@@ -3624,8 +3627,12 @@ const enrichSheet = async (sheet: SheetResult, forceRefresh = false) => {
 
   try {
     const result: EnrichResult = await enrichSheetAnalysis(uploadId, forceRefresh, (progress: EnrichProgress) => {
+      // STALENESS GUARD: After upload-dropdown switch, the sheet at this
+      // sheetIndex may belong to a NEW upload. Verify uploadId still matches
+      // before writing — otherwise old upload's data bleeds into new upload's
+      // KPI cards (the "review-carryover" false positive caught Apr 24 2026).
       const currentSheet = uploadedSheets.value.find(s => s.sheetIndex === sheetIndex);
-      if (!currentSheet) return;
+      if (!currentSheet || currentSheet.uploadId !== uploadId) return;
       if (!currentSheet.flowResult) currentSheet.flowResult = {};
 
       const phase = enrichPhases.value.get(sheetIndex);
@@ -3675,8 +3682,10 @@ const enrichSheet = async (sheet: SheetResult, forceRefresh = false) => {
     });
 
     if (result.success) {
+      // STALENESS GUARD (final sync): Same risk as the progress callback above —
+      // user may have switched uploads while the request was in flight.
       const currentSheet = uploadedSheets.value.find(s => s.sheetIndex === sheetIndex);
-      if (currentSheet) {
+      if (currentSheet && currentSheet.uploadId === uploadId) {
         if (!currentSheet.flowResult) currentSheet.flowResult = {};
         // Final sync — ensure all data is set (handles cache-hit path where onProgress fires 'complete' only)
         if (result.charts?.length) {
@@ -4934,6 +4943,13 @@ const selectBatch = (index: number) => {
   enrichingSheets.value = new Set();
   enrichPhases.value = new Map();
   kpiCache.clear();
+  // Staleness fix (Apr 24 2026): clear cross-upload UI/detection state too,
+  // otherwise prior upload's filter chips and food-industry templates leak
+  // into the new upload's render.
+  globalFilterDimension.value = '';
+  globalFilterValues.value = [];
+  foodIndustryDetection.value = null;
+  activeTemplate.value = '';
   activeTab.value = '0';
   nextTick(() => {
     // U6: Clear loading after DOM updates with new batch data
