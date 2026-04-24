@@ -82,7 +82,7 @@ const smartBIRoutes: RouteRecordRaw[] = [
         path: 'financial-dashboard',
         name: 'FinancialDashboardPBI',
         component: () => import('@/views/smart-bi/FinancialDashboardPBI.vue'),
-        meta: { requiresAuth: true, title: '财务分析看板', icon: 'TrendCharts', module: 'analytics' },
+        meta: { requiresAuth: true, title: '财务 PBI 看板', icon: 'TrendCharts', module: 'analytics' },
       },
       {
         path: 'whatif',
