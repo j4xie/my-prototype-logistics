@@ -720,6 +720,26 @@ async function tryFallbackRanges(): Promise<boolean> {
   };
   const hasRealKpi = (d: DashboardResponse | null): boolean =>
     !!d && (d.kpiCards || []).some(c => c.rawValue != null && c.rawValue !== 0);
+  // Apr 25 2026 P1 fix: chart-aware predicate. The Apr 23 Gold KPI flip
+  // started returning non-empty kpiCards from the year fallback, but the
+  // executive endpoint's `charts` payload (sales_trend / category_distribution)
+  // can still be empty for the same range. When that happens, the user sees
+  // "本月销售额 2064万" above + "暂无图表 — 数据正在分析中" below — visual
+  // contradiction. Now the fallback chain prefers a range with BOTH non-empty
+  // KPI AND non-empty charts (two-pass: first chart-and-kpi, then kpi-only).
+  const hasNonEmptyCharts = (d: DashboardResponse | null): boolean => {
+    if (!d) return false;
+    const charts = d.charts || {};
+    return Object.keys(charts).length > 0 && Object.values(charts).some(c => {
+      const cfg = c as Record<string, unknown>;
+      const series = cfg.series;
+      if (Array.isArray(series) && series.length > 0) {
+        return series.some(s => Array.isArray((s as Record<string, unknown>).data) && ((s as Record<string, unknown>).data as unknown[]).length > 0);
+      }
+      const data = cfg.data;
+      return Array.isArray(data) && data.length > 0;
+    });
+  };
 
   const applyFound = (data: DashboardResponse, s: string, e: string, label: string) => {
     dashboardData.value = data;
@@ -730,11 +750,14 @@ async function tryFallbackRanges(): Promise<boolean> {
   };
 
   // 1. Cache first (synchronously serial — fastest path when known-good range cached)
+  // Apr 25 2026: cache hit must satisfy BOTH KPI and charts — otherwise we'd
+  // pin the user on a chart-empty range forever. If cached range fails the
+  // chart check, fall through to ladder probe (a different range may have charts).
   if (cached) {
     try {
       const resp = await get(`/${factoryId.value}/smart-bi/dashboard/executive/custom?startDate=${cached.s}&endDate=${cached.e}`);
       const data = extractData(resp);
-      if (hasRealKpi(data)) {
+      if (hasRealKpi(data) && hasNonEmptyCharts(data)) {
         applyFound(data!, cached.s, cached.e, cached.label);
         return true;
       }
@@ -759,7 +782,17 @@ async function tryFallbackRanges(): Promise<boolean> {
     })
   );
 
-  // Pick non-empty in ladder priority order
+  // Apr 25 2026 P1 fix: two-pass selection in ladder priority order.
+  // Pass 1: prefer a range where BOTH KPI and charts are non-empty (no visual
+  // contradiction). Pass 2: fall back to any range with non-empty KPI (legacy
+  // behaviour — at least the KPI strip shows real numbers, charts may render
+  // "暂无图表" if the server has no chart data for any range).
+  for (const r of results) {
+    if (r.status === 'fulfilled' && hasRealKpi(r.value.data) && hasNonEmptyCharts(r.value.data)) {
+      applyFound(r.value.data!, r.value.s, r.value.e, r.value.label);
+      return true;
+    }
+  }
   for (const r of results) {
     if (r.status === 'fulfilled' && hasRealKpi(r.value.data)) {
       applyFound(r.value.data!, r.value.s, r.value.e, r.value.label);
@@ -818,8 +851,10 @@ async function loadDashboardData() {
       // empty AND user hasn't picked a range, silently probe 近90天 → 上年 →
       // 前年 to show genuine historical Gold data (same fallback pattern as
       // Trends/RestaurantV2 KPI strip). A warning tag explains the switch.
-      void hasCharts;
-      if (!dateRange.value && !hasRealKpi) {
+      // Apr 25 2026 P1 fix: also trigger fallback when KPI is non-empty but
+      // charts are empty — prior logic pinned the user on an all-chart-empty
+      // range, creating a "本月销售额 2064万 + 暂无图表" contradiction.
+      if (!dateRange.value && (!hasRealKpi || !hasCharts)) {
         const ok = await tryFallbackRanges();
         if (!ok) {
           fallbackRangeLabel.value = '';
@@ -1959,8 +1994,25 @@ onUnmounted(() => {
     </div>
 
     <!-- 图表区 -->
-    <el-row :gutter="16" class="chart-section" aria-label="图表区域">
-      <el-col :xs="24" :lg="14">
+    <!-- Apr 25 2026 P1 fix: hide chart cards visually (v-show) when no chart
+         data comes back from the executive endpoint. Showing "暂无图表 - 数据
+         正在分析中,图表即将生成..." right under "本月销售额 2064万" was a
+         visual contradiction (Apr 24 audit finding). Gold-backed KPI cutover
+         added kpiCards but did not include sales_trend / category_distribution
+         payloads — the Week 6 TemplateGrid below already provides chart
+         analytics from the materialised templates, so the empty placeholder
+         here is dead space and confuses the customer. Use v-show (not v-if)
+         so the chart-container ref stays in the DOM, allowing initCharts to
+         find the ref when data does arrive (e.g. user picks a different
+         range or upload). Skeletons during loading still render so the
+         layout doesn't pop on first paint. -->
+    <el-row
+      v-show="loading || hasTrendData || hasPieData"
+      :gutter="16"
+      class="chart-section"
+      aria-label="图表区域"
+    >
+      <el-col :xs="24" :lg="14" v-show="loading || hasTrendData">
         <el-card class="chart-card">
           <template #header>
             <div class="card-header">
@@ -1970,10 +2022,9 @@ onUnmounted(() => {
           </template>
           <ChartSkeleton v-if="loading && !hasTrendData" type="chart" />
           <div ref="trendChartRef" class="chart-container" v-show="hasTrendData"></div>
-          <SmartBIEmptyState v-if="!loading && !hasTrendData" type="no-charts" :show-action="false" />
         </el-card>
       </el-col>
-      <el-col :xs="24" :lg="10">
+      <el-col :xs="24" :lg="10" v-show="loading || hasPieData">
         <el-card class="chart-card">
           <template #header>
             <div class="card-header">
@@ -1983,7 +2034,6 @@ onUnmounted(() => {
           </template>
           <ChartSkeleton v-if="loading && !hasPieData" type="chart" />
           <div ref="pieChartRef" class="chart-container" v-show="hasPieData"></div>
-          <SmartBIEmptyState v-if="!loading && !hasPieData" type="no-charts" :show-action="false" />
         </el-card>
       </el-col>
     </el-row>
