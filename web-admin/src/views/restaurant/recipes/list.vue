@@ -42,6 +42,19 @@
         </el-col>
       </el-row>
 
+      <!-- Apr 24 P1 analytics strip: ranking by dish (food count + standard qty sum) -->
+      <AnalyticsStrip
+        :rows="tableData"
+        date-field="createdAt"
+        value-field="standardQuantity"
+        category-field="productTypeId"
+        :category-name-map="productNameMap"
+        trend-title="配方录入趋势"
+        ranking-title="菜品食材用量 Top 10"
+        value-unit="kg"
+        :top-n="10"
+      />
+
       <div class="search-bar" role="search" aria-label="配方筛选">
         <el-input v-model="filterKeyword" placeholder="搜索食材名称" clearable style="width: 180px" :prefix-icon="Search" @keyup.enter="handleSearch" />
         <el-select v-model="filterDish" placeholder="按菜品筛选" filterable clearable style="width: 180px" @change="handleSearch">
@@ -168,6 +181,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { getRecipes, getRecipe, getRecipeSummary, createRecipe, updateRecipe, deleteRecipe, getProductTypesActive, getRawMaterialTypes } from '@/api/restaurant';
 import { emptyCell, exportTableToExcel } from '@/utils/tableFormatters';
 import type { RecipeItem } from '@/types/restaurant';
+import AnalyticsStrip from '../components/AnalyticsStrip.vue';
 
 const factoryId = useFactoryId();
 const permissionStore = usePermissionStore();

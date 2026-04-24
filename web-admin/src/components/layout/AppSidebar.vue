@@ -246,6 +246,8 @@ const menuConfig: MenuItem[] = [
   },
   {
     path: '/restaurant', title: '餐饮运营', icon: 'KnifeFork', module: 'restaurant',
+    // Restaurant-only group: hide for pure FACTORY tenants (manufacturing)
+    hideForFactoryTypes: ['FACTORY'],
     children: [
       { path: '/restaurant/analytics', title: '运营总览', icon: '', module: 'restaurant', groupLabel: '运营分析' },
       { path: '/restaurant/analytics/menu', title: '菜品四象限', icon: '', module: 'restaurant' },

@@ -42,6 +42,19 @@
         </el-col>
       </el-row>
 
+      <!-- Apr 24 P1 analytics strip: trend of差异 + ranking by food -->
+      <AnalyticsStrip
+        :rows="tableData"
+        date-field="stocktakingDate"
+        value-field="differenceQuantity"
+        category-field="rawMaterialTypeId"
+        :category-name-map="materialNameMap"
+        trend-title="盘点差异趋势"
+        ranking-title="食材盘亏/盈 Top 10"
+        value-unit="kg"
+        :top-n="10"
+      />
+
       <div class="search-bar" role="search" aria-label="盘点记录筛选">
         <el-date-picker v-model="filterDateRange" type="daterange" range-separator="至" start-placeholder="开始日期"
           end-placeholder="结束日期" value-format="YYYY-MM-DD" clearable style="width: 240px" @change="handleSearch" />
@@ -184,6 +197,7 @@ import { getStocktakingRecords, getStocktakingRecord, getStocktakingSummary, cre
 import { emptyCell, formatDateCell, exportTableToExcel } from '@/utils/tableFormatters';
 import { formatDate } from '@/utils/dateFormat';
 import type { StocktakingRecord } from '@/types/restaurant';
+import AnalyticsStrip from '../components/AnalyticsStrip.vue';
 
 const factoryId = useFactoryId();
 const permissionStore = usePermissionStore();

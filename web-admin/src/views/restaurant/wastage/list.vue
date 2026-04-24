@@ -42,6 +42,20 @@
         </el-col>
       </el-row>
 
+      <!-- Apr 24 P1 analytics strip: trend + ranking from current table rows -->
+      <AnalyticsStrip
+        :rows="tableData"
+        date-field="wastageDate"
+        value-field="estimatedCost"
+        category-field="type"
+        :category-name-map="wastageTypeMap"
+        trend-title="损耗金额趋势"
+        ranking-title="按损耗类型排行"
+        value-unit="元"
+        :is-currency="true"
+        :top-n="5"
+      />
+
       <div class="search-bar" role="search" aria-label="损耗记录筛选">
         <el-date-picker v-model="filterDateRange" type="daterange" range-separator="至" start-placeholder="开始日期"
           end-placeholder="结束日期" value-format="YYYY-MM-DD" clearable style="width: 240px" @change="handleSearch" />
@@ -174,6 +188,11 @@ import { emptyCell, formatDateCell, formatAmount, exportTableToExcel } from '@/u
 import { formatDate } from '@/utils/dateFormat';
 import type { WastageRecord } from '@/types/restaurant';
 import { handleCatchError } from '@/utils/errorToast';
+import AnalyticsStrip from '../components/AnalyticsStrip.vue';
+
+const wastageTypeMap: Record<string, string> = {
+  EXPIRED: '过期', DAMAGED: '破损', SPOILED: '变质', PROCESSING: '加工损耗', OTHER: '其他',
+};
 
 const factoryId = useFactoryId();
 const permissionStore = usePermissionStore();
