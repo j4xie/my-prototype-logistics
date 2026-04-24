@@ -35,6 +35,37 @@ interface DishMargin {
 
 const totals = ref({ revenue: 0, profit: 0, rate: 0, dishCount: 0, withCost: 0 });
 const dishes = ref<DishMargin[]>([]);
+const syncing = ref(false);
+
+async function syncEtl() {
+  syncing.value = true;
+  try {
+    const res = await pythonFetch('/api/smartbi/restaurant-ops/etl', { method: 'POST' }) as {
+      success: boolean;
+      data?: {
+        dimIngredientUpserted: number;
+        factRecipeUpserted: number;
+        aggProductCostUpserted: number;
+        errors: string[];
+      };
+      message?: string;
+    };
+    if (res.success && res.data) {
+      const { dimIngredientUpserted = 0, factRecipeUpserted = 0, aggProductCostUpserted = 0 } = res.data;
+      ElMessage.success(
+        `同步完成: 食材 ${dimIngredientUpserted} / 配方 ${factRecipeUpserted} / 菜品成本 ${aggProductCostUpserted}`
+      );
+      await loadData();
+    } else {
+      ElMessage.error(res.message || '同步失败 — 请检查 Python 服务日志');
+    }
+  } catch (e) {
+    console.error('[etl-sync] failed:', e);
+    ElMessage.error('同步失败,请稍后重试');
+  } finally {
+    syncing.value = false;
+  }
+}
 
 async function loadData() {
   if (!factoryId.value) return;
@@ -146,6 +177,9 @@ function marginRateTag(rate: number) {
               <el-option label="近 30 天" :value="30" />
               <el-option label="近 90 天" :value="90" />
             </el-select>
+            <el-tooltip content="刚录完配方? 点此立即同步 Gold 毛利表 (无需等 1 小时 cron)" placement="top">
+              <el-button type="success" plain :loading="syncing" @click="syncEtl">⚡ 立即同步</el-button>
+            </el-tooltip>
             <el-button type="info" plain @click="handleAiAnalyze">🤖 AI 分析</el-button>
             <el-button :icon="Download" @click="exportCsv">导出 CSV</el-button>
             <el-button :icon="Refresh" @click="loadData">刷新</el-button>

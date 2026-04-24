@@ -13,6 +13,18 @@
               <el-radio-button value="revenue">按品均收入</el-radio-button>
               <el-radio-button value="margin">按毛利率 (BCG 真实版)</el-radio-button>
             </el-radio-group>
+            <!-- Margin threshold: classic BCG 50%, thinner restaurants 30-40%, premium 60%+ -->
+            <div v-if="mode === 'margin'" class="margin-threshold-box">
+              <span class="threshold-label">毛利分界:</span>
+              <el-slider
+                v-model="marginThreshold"
+                :min="0.2" :max="0.8" :step="0.05"
+                :format-tooltip="(v: number) => (v * 100).toFixed(0) + '%'"
+                style="width: 120px"
+                @change="onModeChange"
+              />
+              <span class="threshold-value">{{ (marginThreshold * 100).toFixed(0) }}%</span>
+            </div>
             <el-select v-model="selectedUploadId" placeholder="选择数据源" filterable style="width: 280px; margin-left: 8px" @change="handleSelectUpload">
               <el-option v-for="u in uploads" :key="u.id" :label="`${u.fileName} (${u.rowCount}行)`" :value="u.id" />
             </el-select>
@@ -116,6 +128,10 @@ const mode = ref<'revenue' | 'margin'>('revenue')
 // Map: dish name → marginRate (0-1), qty, grossProfit. Filled when mode=margin.
 const marginMap = ref<Record<string, { rate: number; qty: number; grossProfit: number; revenue: number }>>({})
 const marginLoading = ref(false)
+// Adjustable threshold: the cutoff between "high margin" and "low margin"
+// for BCG quadrant classification. Default 50% is classic BCG; restaurants
+// with thinner margins may want 30-40%; premium venues 60%+.
+const marginThreshold = ref(0.5)
 
 async function loadMarginData() {
   marginLoading.value = true
@@ -179,14 +195,15 @@ const quadrants = computed(() => {
       { key: 'Dog', label: '瘦狗菜', count: s.dogCount, color: '#F56C6C', desc: '低销量 + 低收入' },
     ]
   }
-  // Margin mode: re-count via marginMap
+  // Margin mode: re-count via marginMap using adjustable threshold
   const qm = data.value.qtyMedian
+  const mt = marginThreshold.value
   const counts = { Star: 0, Plow: 0, Puzzle: 0, Dog: 0 }
   for (const i of data.value.items) {
     const m = marginMap.value[i.name]
     const rate = m?.rate || 0
     const highQty = i.quantity >= qm
-    const highMargin = rate >= 0.5
+    const highMargin = rate >= mt
     const k = highQty && highMargin ? 'Star'
             : highQty && !highMargin ? 'Plow'
             : !highQty && highMargin ? 'Puzzle' : 'Dog'
@@ -262,9 +279,9 @@ function renderChart() {
   const p95Qty = allQtys[Math.floor(allQtys.length * 0.95)] || 100
   const yMaxLegacy = Math.ceil(Math.max(p95Profit * 1.3, pm * 3))
   const xMax = Math.ceil(Math.max(p95Qty * 1.3, qm * 3))
-  // Margin mode: Y axis = rate 0-100%, median threshold at 50% for quadrant
+  // Margin mode: Y axis = rate 0-100%, threshold from adjustable marginThreshold
   const yMax = isMarginMode ? 100 : yMaxLegacy
-  const yMedian = isMarginMode ? 50 : pm
+  const yMedian = isMarginMode ? marginThreshold.value * 100 : pm
 
   // Re-classify quadrant for margin mode based on (quantity vs qm, margin% vs 50)
   const pointsByQuadrant: Record<string, Array<{ value: number[]; name: string; _raw: number[]; _hasMargin?: boolean }>> = {
@@ -285,7 +302,7 @@ function renderChart() {
         yVal = 0  // place at bottom so user sees "no data" cluster
       }
       const highQty = i.quantity >= qm
-      const highMargin = yVal >= 50
+      const highMargin = yVal >= marginThreshold.value * 100
       quadrant = highQty && highMargin ? 'Star'
                : highQty && !highMargin ? 'Plow'
                : !highQty && highMargin ? 'Puzzle' : 'Dog'
@@ -362,7 +379,7 @@ function renderChart() {
           data: [
             { xAxis: qm, label: { formatter: `销量中位数: ${qm.toFixed(0)}` } },
             { yAxis: yMedian, label: { formatter: isMarginMode
-                ? `毛利率分界: 50%`
+                ? `毛利率分界: ${(marginThreshold.value * 100).toFixed(0)}%`
                 : `品均收入中位数: ¥${pm.toFixed(1)}` } },
           ],
         },
@@ -394,7 +411,10 @@ onUnmounted(() => {
 .page-card { border-radius: 8px; }
 .card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
 .header-left { display: flex; align-items: center; gap: 8px; }
-.header-right { display: flex; gap: 8px; }
+.header-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.margin-threshold-box { display: flex; align-items: center; gap: 8px; padding: 0 10px; border-left: 1px solid #e4e7ed; }
+.threshold-label { font-size: 12px; color: #606266; white-space: nowrap; }
+.threshold-value { font-size: 12px; font-weight: 600; color: #409eff; min-width: 32px; }
 .page-title { font-size: 16px; font-weight: 600; }
 
 .summary-row { margin-top: 8px; }
