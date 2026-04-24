@@ -4774,7 +4774,8 @@ const loadPreviewData = async () => {
       ElMessage.error(res.message || '获取数据失败');
     }
   } catch (error) {
-    ElMessage.error('加载数据失败');
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', error);
   } finally {
     previewLoading.value = false;
   }

@@ -148,8 +148,8 @@ async function loadData() {
       ElMessage.error(response.message || '加载生产计划失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载失败:', error);
-    ElMessage.error('加载数据失败');
   } finally {
     loading.value = false;
   }
@@ -498,8 +498,9 @@ async function handleDownloadTemplate() {
     a.click();
     URL.revokeObjectURL(url);
     ElMessage.success('模板下载成功');
-  } catch {
-    ElMessage.error('模板下载失败');
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', e);
   }
 }
 
@@ -553,8 +554,9 @@ async function handleExport() {
     a.click();
     URL.revokeObjectURL(url);
     ElMessage.success('导出成功');
-  } catch {
-    ElMessage.error('导出失败');
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', e);
   }
 }
 

@@ -85,8 +85,8 @@ async function loadData() {
       ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载失败:', error);
-    ElMessage.error('加载数据失败');
   } finally {
     loading.value = false;
   }
@@ -102,8 +102,8 @@ async function loadStatistics() {
       ElMessage.error(response.message || '加载统计数据失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载统计失败:', error);
-    ElMessage.error('加载统计数据失败');
   }
 }
 
@@ -222,8 +222,9 @@ async function handleExport() {
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
     ElMessage.success('导出成功');
-  } catch {
-    ElMessage.error('导出失败');
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', e);
   }
 }
 

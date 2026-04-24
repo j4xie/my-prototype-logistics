@@ -85,8 +85,8 @@ async function loadData() {
       ElMessage.error(response.message || '加载质检记录失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载失败:', error);
-    ElMessage.error('加载数据失败');
   } finally {
     loading.value = false;
   }

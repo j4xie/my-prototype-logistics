@@ -50,8 +50,9 @@ async function loadData() {
       tableData.value = items;
       pagination.value.total = items.length;
     }
-  } catch {
-    ElMessage.error('加载数据失败');
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', e);
   } finally {
     loading.value = false;
   }

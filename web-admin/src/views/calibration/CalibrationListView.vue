@@ -121,8 +121,9 @@ async function loadStatistics() {
     if (response.success && response.data) {
       statistics.value = response.data;
     }
-  } catch {
-    ElMessage.error('加载统计数据失败');
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', e);
   }
 }
 

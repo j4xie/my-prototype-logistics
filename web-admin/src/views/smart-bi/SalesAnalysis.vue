@@ -575,8 +575,8 @@ async function loadPreviewData() {
       ElMessage.error(res.message || '获取数据失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载预览数据失败:', error);
-    ElMessage.error('加载数据失败');
   } finally {
     previewLoading.value = false;
   }
