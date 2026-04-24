@@ -226,6 +226,125 @@ async def _load_upload_data(upload_id: int, limit: int = 50000) -> List[Dict[str
     return []
 
 
+async def _load_agg_strategy_map(upload_id: int) -> Dict[str, str]:
+    """Load persisted agg_strategy map for an upload's columns.
+
+    Apr 25 2026 — replaces inline regex+stats heuristic. Falls back to {} on
+    any error (caller defaults each numeric col to 'sum').
+    """
+    out: Dict[str, str] = {}
+    try:
+        from smartbi.config import get_pg_pool
+        pool = await get_pg_pool()
+        if not pool:
+            return out
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                """SELECT original_name, agg_strategy
+                   FROM smart_bi_pg_field_definitions
+                   WHERE upload_id = $1""",
+                int(upload_id),
+            )
+            for r in rows:
+                out[r["original_name"]] = (r["agg_strategy"] or "sum")
+    except Exception as _e:
+        logger.warning(f"[_load_agg_strategy_map({upload_id})] failed: {_e}")
+    return out
+
+
+def compute_quick_summary(
+    data: List[Dict[str, Any]],
+    agg_by_name: Optional[Dict[str, str]] = None,
+) -> Dict[str, Any]:
+    """Pure-compute quick summary (no LLM, no DB I/O).
+
+    Extracted Apr 25 2026 (Task C / PROD-1 fix) so the same logic can drive
+    both the HTTP /quick-summary endpoint AND the Python ingest-time
+    precompute-cache hook (which pre-warms enrichment_cache so 200K-row
+    uploads avoid the 120s axios timeout on first visit).
+
+    Returns the same shape as the legacy /quick-summary endpoint:
+      {success, rowCount, columnCount, columns: [{name, type, min, max,
+       mean, sum, semanticType, aggStrategy, sparkline, trend, trendPercent,
+       nullCount, uniqueCount}, ...]}
+    """
+    if not data:
+        return {"success": False, "rowCount": 0, "columnCount": 0, "columns": [], "message": "暂无数据"}
+
+    import pandas as pd
+    from smartbi.config import coerce_numeric_columns
+
+    df = coerce_numeric_columns(pd.DataFrame(data))
+    agg_by_name = agg_by_name or {}
+
+    summary: Dict[str, Any] = {
+        "success": True,
+        "rowCount": len(df),
+        "columnCount": len(df.columns),
+        "columns": [],
+    }
+
+    for col in df.columns:
+        col_info: Dict[str, Any] = {
+            "name": col,
+            "type": str(df[col].dtype),
+            "nullCount": int(df[col].isna().sum()),
+            "uniqueCount": int(df[col].nunique()),
+        }
+
+        if pd.api.types.is_numeric_dtype(df[col]):
+            col_min = df[col].min()
+            col_max = df[col].max()
+            col_mean = df[col].mean()
+            col_sum = df[col].sum()
+            agg_strategy = agg_by_name.get(col, "sum")
+            if agg_strategy == "sum" and pd.notna(col_mean):
+                name_suggests_rating = any(
+                    col.endswith(s) for s in RATING_NAME_SUFFIXES
+                )
+                if name_suggests_rating and 1.0 <= float(col_mean) <= 5.0:
+                    agg_strategy = "mean"
+            emit_sum = agg_strategy == "sum"
+            semantic_type_hint = "rating" if agg_strategy == "mean" else None
+            col_info.update({
+                "min": float(col_min) if pd.notna(col_min) else None,
+                "max": float(col_max) if pd.notna(col_max) else None,
+                "mean": float(col_mean) if pd.notna(col_mean) else None,
+                "sum": float(col_sum) if (emit_sum and pd.notna(col_sum)) else None,
+                "semanticType": semantic_type_hint,
+                "aggStrategy": agg_strategy,
+            })
+
+            values = df[col].dropna().tolist()
+            if len(values) >= 3:
+                step = max(1, len(values) // 12)
+                sparkline = [round(float(v), 2) for v in values[::step]][:12]
+                col_info["sparkline"] = sparkline
+
+                if len(sparkline) >= 2:
+                    meaningful = [v for v in sparkline if v != 0]
+                    if len(meaningful) >= 2:
+                        prev_val = meaningful[-2]
+                        last_val = meaningful[-1]
+                        pct = ((last_val - prev_val) / abs(prev_val)) * 100
+                        if abs(pct) >= 95:
+                            col_info["trend"] = "flat"
+                            col_info["trendPercent"] = None
+                        else:
+                            col_info["trend"] = "up" if pct > 5 else ("down" if pct < -5 else "flat")
+                            col_info["trendPercent"] = round(pct, 1)
+                    else:
+                        col_info["trend"] = "flat"
+                        col_info["trendPercent"] = None
+                else:
+                    col_info["trend"] = "flat"
+                    col_info["trendPercent"] = None
+
+        summary["columns"].append(col_info)
+
+    return summary
+
+
 @router.post("/quick-summary")
 async def quick_summary(request: Request):
     """
@@ -243,139 +362,30 @@ async def quick_summary(request: Request):
 
         # Determine data source
         data: List[Dict[str, Any]] = []
+        upload_id_for_agg: Optional[int] = None
         if isinstance(body, list):
             data = body
         elif isinstance(body, dict):
             data = body.get("data", [])
             upload_id = body.get("upload_id")
-            if not data and upload_id:
+            if upload_id is not None:
                 try:
-                    upload_id = int(upload_id)
+                    upload_id_for_agg = int(upload_id)
                 except (TypeError, ValueError):
                     raise ApiException(f"Invalid upload_id: {upload_id}", ErrorCode.VALIDATION_ERROR, 400)
-                data = await _load_upload_data(upload_id)
+            if not data and upload_id_for_agg is not None:
+                data = await _load_upload_data(upload_id_for_agg)
         else:
             raise ApiException("Expected JSON array or object with upload_id", ErrorCode.VALIDATION_ERROR, 400)
 
         if not data:
             return {"success": False, "rowCount": 0, "columnCount": 0, "columns": [], "message": "暂无数据"}
 
-        import pandas as pd
-        import numpy as np
-        from smartbi.config import coerce_numeric_columns
+        agg_by_name: Dict[str, str] = {}
+        if upload_id_for_agg is not None:
+            agg_by_name = await _load_agg_strategy_map(upload_id_for_agg)
 
-        df = coerce_numeric_columns(pd.DataFrame(data))
-
-        # Apr 25 2026 — read persisted agg_strategy from smart_bi_pg_field_definitions.
-        # Replaces the prior inline regex+stats heuristic (now centralized in
-        # field_classifier.infer_agg_strategy() and persisted by /reclassify).
-        # Falls back to {} if no upload_id or DB lookup fails — every numeric
-        # col then defaults to agg_strategy='sum' below (legacy behaviour).
-        agg_by_name: dict = {}
-        if isinstance(body, dict) and body.get("upload_id"):
-            try:
-                from smartbi.config import get_pg_pool
-                pool = await get_pg_pool()
-                if pool:
-                    async with pool.acquire() as conn:
-                        rows = await conn.fetch(
-                            """SELECT original_name, agg_strategy
-                               FROM smart_bi_pg_field_definitions
-                               WHERE upload_id = $1""",
-                            int(body["upload_id"]),
-                        )
-                        for r in rows:
-                            agg_by_name[r["original_name"]] = (
-                                r["agg_strategy"] or "sum"
-                            )
-            except Exception as _e:
-                logger.warning(f"[quick_summary] field_defs lookup failed: {_e}")
-
-        summary = {
-            "success": True,
-            "rowCount": len(df),
-            "columnCount": len(df.columns),
-            "columns": []
-        }
-
-        for col in df.columns:
-            col_info = {
-                "name": col,
-                "type": str(df[col].dtype),
-                "nullCount": int(df[col].isna().sum()),
-                "uniqueCount": int(df[col].nunique())
-            }
-
-            if pd.api.types.is_numeric_dtype(df[col]):
-                col_min = df[col].min()
-                col_max = df[col].max()
-                col_mean = df[col].mean()
-                col_sum = df[col].sum()
-                # Apr 25 2026 — agg_strategy from DB is authoritative for IDs
-                # ('none') and confirmed ratings ('mean'). The 'sum' default,
-                # however, can be refined by live polars stats: when the
-                # statistics JSONB was empty at /reclassify time (true for
-                # most historical uploads), infer_agg_strategy falls back to
-                # 'sum' even for rating columns. Re-check rating criteria
-                # here against live mean to restore Apr 24 stop-gap behaviour
-                # (matches qhj 4172 / 3975 test fixtures).
-                agg_strategy = agg_by_name.get(col, "sum")
-                if agg_strategy == "sum" and pd.notna(col_mean):
-                    name_suggests_rating = any(
-                        col.endswith(s) for s in RATING_NAME_SUFFIXES
-                    )
-                    if name_suggests_rating and 1.0 <= float(col_mean) <= 5.0:
-                        agg_strategy = "mean"
-                # Suppress sum on the wire when the FE won't use it, so KPI
-                # filters that key on `sum != null` stay correct.
-                emit_sum = agg_strategy == "sum"
-                # semanticType="rating" is a hint for FE label formatting
-                # ("平均X = 4.83 分"). Derived from agg_strategy='mean'.
-                semantic_type_hint = "rating" if agg_strategy == "mean" else None
-                col_info.update({
-                    "min": float(col_min) if pd.notna(col_min) else None,
-                    "max": float(col_max) if pd.notna(col_max) else None,
-                    "mean": float(col_mean) if pd.notna(col_mean) else None,
-                    "sum": float(col_sum) if (emit_sum and pd.notna(col_sum)) else None,
-                    "semanticType": semantic_type_hint,
-                    "aggStrategy": agg_strategy,
-                })
-
-                # Trend & sparkline for numeric columns
-                values = df[col].dropna().tolist()
-                if len(values) >= 3:
-                    # Sparkline: sample up to 12 points
-                    step = max(1, len(values) // 12)
-                    sparkline = [round(float(v), 2) for v in values[::step]][:12]
-                    col_info["sparkline"] = sparkline
-
-                    # Trend detection (MoM from last two non-zero sparkline points)
-                    # Use sparkline-based MoM instead of first-vs-last, which is
-                    # unreliable for row-based financial data (revenue row vs profit row)
-                    if len(sparkline) >= 2:
-                        # Find last two meaningful (non-zero) sparkline values
-                        meaningful = [v for v in sparkline if v != 0]
-                        if len(meaningful) >= 2:
-                            prev_val = meaningful[-2]
-                            last_val = meaningful[-1]
-                            pct = ((last_val - prev_val) / abs(prev_val)) * 100
-                            # Guard: extreme values (abs >= 95%) are likely data artifacts
-                            if abs(pct) >= 95:
-                                col_info["trend"] = "flat"
-                                col_info["trendPercent"] = None
-                            else:
-                                col_info["trend"] = "up" if pct > 5 else ("down" if pct < -5 else "flat")
-                                col_info["trendPercent"] = round(pct, 1)
-                        else:
-                            col_info["trend"] = "flat"
-                            col_info["trendPercent"] = None
-                    else:
-                        col_info["trend"] = "flat"
-                        col_info["trendPercent"] = None
-
-            summary["columns"].append(col_info)
-
-        return summary
+        return compute_quick_summary(data, agg_by_name)
 
     except (HTTPException, ApiException):
         raise
