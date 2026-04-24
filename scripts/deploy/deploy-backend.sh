@@ -307,6 +307,20 @@ deploy_jar() {
         exit 1
     fi
 
+    # ----- 0. Windows-only: clean up stale Java zombies before mvn -----
+    # R32 (Apr 24 2026): Windows git-bash + cygwin accumulates orphan java.exe
+    # processes from old IDE/test runs. Once 10+ stale JVMs pile up, cygheap
+    # memory exhausts and mvnw.cmd hits `cygheap read copy failed` → Maven fork
+    # fails and script crashes with "❌ Maven 打包失败". Session of Round 9 W-07
+    # wasted ~15 min debugging this. Kill stale (>1 day old) java.exe first.
+    if [[ "$OSTYPE" != "darwin"* ]] && [[ "$OSTYPE" != "linux"* ]] && command -v powershell >/dev/null 2>&1; then
+        STALE_COUNT=$(powershell -NoProfile -Command "(Get-Process -Name java -ErrorAction SilentlyContinue | Where-Object { \$_.StartTime -lt (Get-Date).AddDays(-1) } | Measure-Object).Count" 2>/dev/null | tr -d '[:space:]')
+        if [ -n "$STALE_COUNT" ] && [ "$STALE_COUNT" -gt 0 ]; then
+            echo "🧹 清理 $STALE_COUNT 个 >1 天老 java.exe zombie (Windows cygwin 资源防护)..."
+            powershell -NoProfile -Command "Get-Process -Name java -ErrorAction SilentlyContinue | Where-Object { \$_.StartTime -lt (Get-Date).AddDays(-1) } | ForEach-Object { try { Stop-Process -Id \$_.Id -Force -ErrorAction SilentlyContinue } catch {} }" 2>/dev/null || true
+        fi
+    fi
+
     # ----- 1. 本地 Maven 打包 -----
     # R25: 默认 `clean package` 强制全量重编, 防 incremental cache 漏新 Controller/DTO 签名 (R24 事故教训)
     # 如需保留 incremental build (快, 但不安全), 传 SKIP_CLEAN=1
