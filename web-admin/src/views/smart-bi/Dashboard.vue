@@ -134,15 +134,23 @@ function getSignal(): AbortSignal {
 
 // KPI 数据 (从 kpiCards 提取)
 const kpiData = computed(() => {
+  // Always-populated default so the template's `kpiData.revenueLabel || ...`
+  // chain has a real string to hit instead of `undefined` → Chinese fallback
+  // which masked xlsx column titles. If data hasn't loaded yet, labels stay
+  // as the generic Chinese strings; once data loads they get overwritten.
   const defaultKpi = {
     totalRevenue: null as number | null,
     revenueGrowth: null as number | null,
+    revenueLabel: '本月销售额',
     totalProfit: null as number | null,
     profitGrowth: null as number | null,
+    profitLabel: '本月利润',
     orderCount: null as number | null,
     orderGrowth: null as number | null,
+    orderLabel: '订单数量',
     customerCount: null as number | null,
     customerGrowth: null as number | null,
+    customerLabel: '活跃客户',
   };
 
   if (!dashboardData.value?.kpiCards || dashboardData.value.kpiCards.length === 0) {
@@ -188,19 +196,26 @@ const kpiData = computed(() => {
   const customerCard = findCard('CUSTOMER_COUNT') || findCard('ACTIVE_CUSTOMERS') || findCard('客户数')
     || findByTitle('客户') || findByTitle('customer');
 
-  // If no recognized KPI cards matched but we have kpiCards, use them in order as fallback
+  // If no recognized KPI cards matched but we have kpiCards, use them in order as fallback.
+  // Keep the original (humanized) titles instead of relabeling to 销售/利润/订单/客户 —
+  // the positional fallback fires for xlsx uploads where cards[0..3] are typically 4
+  // different "数量金额" columns (not revenue/profit/orders/customers), so relabeling
+  // misleads users.
   const hasMatch = salesCard || profitCard || orderCard || customerCard;
   if (!hasMatch && cards.length > 0) {
-    // Map first N cards to KPI slots by position
     return {
       totalRevenue: cards[0]?.rawValue ?? null,
       revenueGrowth: cards[0]?.changeRate ?? null,
+      revenueLabel: cards[0]?.title || '指标 1',
       totalProfit: cards[1]?.rawValue ?? null,
       profitGrowth: cards[1]?.changeRate ?? null,
+      profitLabel: cards[1]?.title || '指标 2',
       orderCount: cards[2]?.rawValue ?? null,
       orderGrowth: cards[2]?.changeRate ?? null,
+      orderLabel: cards[2]?.title || '指标 3',
       customerCount: cards[3]?.rawValue ?? null,
       customerGrowth: cards[3]?.changeRate ?? null,
+      customerLabel: cards[3]?.title || '指标 4',
     };
   }
 
@@ -208,18 +223,23 @@ const kpiData = computed(() => {
   const targetCard = findCard('TARGET_COMPLETION') || findByTitle('目标') || findByTitle('完成率');
   const growthCard = findCard('MOM_GROWTH') || findByTitle('环比') || findByTitle('增长');
 
+  // If a card matched but its title is more specific than the fixed Chinese label
+  // (e.g. "数量金额 (指标 4)"), prefer the actual card title so users see what the
+  // column really represents. Chinese fallback kicks in only when no card matched.
   return {
     totalRevenue: salesCard?.rawValue ?? null,
     revenueGrowth: salesCard?.changeRate ?? null,
+    revenueLabel: salesCard?.title || '本月销售额',
     totalProfit: profitCard?.rawValue ?? (targetCard?.rawValue ?? null),
     profitGrowth: profitCard?.changeRate ?? null,
-    profitLabel: profitCard ? '本月利润' : (targetCard ? '目标完成率' : '本月利润'),
+    profitLabel: profitCard?.title || (targetCard ? '目标完成率' : '本月利润'),
     profitUnit: profitCard ? '' : (targetCard ? '%' : ''),
     orderCount: orderCard?.rawValue ?? null,
     orderGrowth: orderCard?.changeRate ?? null,
+    orderLabel: orderCard?.title || '订单数量',
     customerCount: customerCard?.rawValue ?? (growthCard?.rawValue ?? null),
     customerGrowth: customerCard?.changeRate ?? null,
-    customerLabel: customerCard ? '活跃客户' : (growthCard ? '环比增长' : '活跃客户'),
+    customerLabel: customerCard?.title || (growthCard ? '环比增长' : '活跃客户'),
     customerUnit: customerCard ? '' : (growthCard ? '%' : ''),
   };
 });
@@ -1273,6 +1293,29 @@ function initTrendChart(chartConfig?: ChartConfig) {
   hasTrendData.value = !!(chartConfig && chartConfig.series && chartConfig.series.length > 0);
 
   // C Apr 17 2026: 根据 x-axis 第一个值判断是"趋势"(时间) 还是"排行"(类别)
+  // Apr 24 2026: drop zero/null datapoints so "all values = 0" doesn't produce a flat
+  // line-at-zero chart that looks broken. Re-evaluate hasTrendData after filtering.
+  if (hasTrendData.value && chartConfig) {
+    const xData = (chartConfig.xAxis as { data?: unknown[] } | undefined)?.data || [];
+    for (const s of chartConfig.series) {
+      if (Array.isArray(s.data)) {
+        const zipped = (s.data as (number | null | undefined)[]).map((v, i) => ({
+          x: xData[i], v: (typeof v === 'number' && isFinite(v) && v !== 0) ? v : null
+        }));
+        const kept = zipped.filter(z => z.v !== null);
+        if (kept.length > 0 && kept.length !== zipped.length) {
+          s.data = kept.map(z => z.v as number);
+          // Keep xAxis alignment — need to rebuild it too
+          (chartConfig.xAxis as { data?: unknown[] }).data = kept.map(z => z.x);
+        }
+      }
+    }
+    const seriesHasData = chartConfig.series.some(s =>
+      Array.isArray(s.data) && (s.data as unknown[]).length > 0
+    );
+    hasTrendData.value = seriesHasData;
+  }
+
   if (hasTrendData.value) {
     const xData = (chartConfig?.xAxis as { data?: unknown[] } | undefined)?.data || [];
     const firstX = xData.length > 0 ? String(xData[0]) : '';
@@ -1363,7 +1406,7 @@ function initPieChart(chartConfig?: ChartConfig) {
   if (hasPieData.value) {
     const seriesData = chartConfig!.series[0];
     // 假设后端返回的数据格式是 { name, data } 或 { data: [{name, value}] }
-    const pieData = Array.isArray(seriesData.data)
+    const pieDataRaw = Array.isArray(seriesData.data)
       ? seriesData.data.map((value, index) => {
           // Support multiple data formats: number, {value}, {name, value}
           const isObj = typeof value === 'object' && value !== null;
@@ -1376,6 +1419,15 @@ function initPieChart(chartConfig?: ChartConfig) {
           };
         })
       : [];
+    // Drop zero-value and sentinel "合计/total" slices that pollute the donut with "0%" labels.
+    const pieData = pieDataRaw.filter(p =>
+      p.value > 0 && !/^(合计|总计|total|grand[_ ]?total)$/i.test(p.name || '')
+    );
+    // All-zero or only-sentinels => fall back to empty state instead of rendering a useless donut.
+    if (pieData.length === 0) {
+      hasPieData.value = false;
+      return;
+    }
 
     const option: echarts.EChartsOption = {
       tooltip: {
@@ -1733,7 +1785,7 @@ onUnmounted(() => {
             <el-icon><DataLine /></el-icon>
           </div>
           <div class="kpi-content">
-            <div class="kpi-label">本月销售额</div>
+            <div class="kpi-label">{{ kpiData.revenueLabel || '本月销售额' }}</div>
             <div class="kpi-value-row">
               <div class="kpi-value">{{ formatKpiValue(kpiData.totalRevenue) }}</div>
               <el-tooltip v-if="kpiSparklines.revenue.length >= 2" :content="sparklineTooltip(kpiSparklines.revenue, kpiSparklines.labels)" placement="top" :show-after="300" raw-content>
@@ -1787,7 +1839,7 @@ onUnmounted(() => {
             <el-icon><Goods /></el-icon>
           </div>
           <div class="kpi-content">
-            <div class="kpi-label">订单数量</div>
+            <div class="kpi-label">{{ kpiData.orderLabel || '订单数量' }}</div>
             <div class="kpi-value-row">
               <div class="kpi-value">{{ kpiData.orderCount != null ? formatCount(kpiData.orderCount) : '--' }}</div>
               <el-tooltip v-if="kpiSparklines.orders.length >= 2" :content="sparklineTooltip(kpiSparklines.orders, kpiSparklines.labels)" placement="top" :show-after="300" raw-content>

@@ -190,13 +190,16 @@ function renderChart() {
   const qm = data.value.qtyMedian
   const pm = data.value.profitMedian
 
-  // Clip axes to P95 to prevent outlier compression
-  const allProfits = data.value.items.map(i => i.unitProfit).sort((a, b) => a - b)
-  const allQtys = data.value.items.map(i => i.quantity).sort((a, b) => a - b)
+  // Clip axes to P95 to prevent outlier compression.
+  // min=0 on both axes — sales count can't be negative; unitProfit is a revenue
+  // proxy that also shouldn't go below zero in a BCG quadrant.
+  // Ceil maxes so labels don't show JS float trails like "478.4000000000003".
+  const allProfits = data.value.items.map(i => Math.max(0, i.unitProfit)).sort((a, b) => a - b)
+  const allQtys = data.value.items.map(i => Math.max(0, i.quantity)).sort((a, b) => a - b)
   const p95Profit = allProfits[Math.floor(allProfits.length * 0.95)] || 100
   const p95Qty = allQtys[Math.floor(allQtys.length * 0.95)] || 100
-  const yMax = Math.max(p95Profit * 1.3, pm * 3)
-  const xMax = Math.max(p95Qty * 1.3, qm * 3)
+  const yMax = Math.ceil(Math.max(p95Profit * 1.3, pm * 3))
+  const xMax = Math.ceil(Math.max(p95Qty * 1.3, qm * 3))
   const outlierCount = data.value.items.filter(i => i.unitProfit > yMax || i.quantity > xMax).length
 
   const series = Object.entries(colorMap).map(([q, color]) => ({
@@ -232,14 +235,18 @@ function renderChart() {
     xAxis: {
       name: '销量',
       type: 'value',
+      min: 0,
       max: xMax,
       splitLine: { show: false },
+      axisLabel: { formatter: (v: number) => String(Math.round(v)) },
     },
     yAxis: {
       name: '品均收入 (元)',
       type: 'value',
+      min: 0,
       max: yMax,
       splitLine: { lineStyle: { type: 'dashed' } },
+      axisLabel: { formatter: (v: number) => v >= 1e4 ? (v / 1e4).toFixed(1) + '万' : String(Math.round(v)) },
     },
     series: [
       ...series,

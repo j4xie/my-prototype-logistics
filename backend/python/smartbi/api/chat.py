@@ -53,6 +53,19 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Chat"])
 
 
+async def _log_template_hit_safe(pool, query, factory_id, upload_id, template_code, answer, wall_ms):
+    """Safe wrapper around log_template_hit — swallows exceptions so a DB
+    hiccup never breaks the SSE stream."""
+    try:
+        from smartbi.services.llm_fallback_logger import log_template_hit
+        return await log_template_hit(
+            pool, query, factory_id, upload_id, template_code, answer, wall_ms,
+        )
+    except Exception as e:
+        logger.warning(f"[template-log] wrapper failed: {e}")
+        return None
+
+
 # ============================================================================
 # Chat Cache Helpers
 # ============================================================================
@@ -1079,6 +1092,22 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                     yield _sse_event("chunk", answer_text[i:i + chunk_size])
                                 if payload["charts"]:
                                     yield _sse_event("charts", payload["charts"])
+                                wall_ms = int((time.time() - start_time) * 1000)
+                                # Fire-and-forget template hit log so the user can 👍/👎.
+                                # Shielded so caller abort doesn't cancel the insert.
+                                _tpl_log_task = asyncio.create_task(
+                                    asyncio.shield(_log_template_hit_safe(
+                                        pool, user_q,
+                                        getattr(http_request.state, 'factory_id', None) if hasattr(http_request, 'state') else None,
+                                        upload_id, matched_code, answer_text, wall_ms,
+                                    ))
+                                )
+                                try:
+                                    tpl_log_id = await asyncio.wait_for(
+                                        asyncio.shield(_tpl_log_task), timeout=1.5
+                                    )
+                                except (asyncio.TimeoutError, Exception):
+                                    tpl_log_id = None
                                 yield _sse_event("done", {
                                     "success": True,
                                     "answer": answer_text,
@@ -1086,9 +1115,10 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                     "kpis": payload["kpis"],
                                     "source": "materialized_cache",
                                     "template_code": matched_code,
-                                    "processingTimeMs": int((time.time() - start_time) * 1000),
+                                    "processingTimeMs": wall_ms,
+                                    "log_id": tpl_log_id,
                                 })
-                                logger.info(f"[stream] served upload {upload_id} via cache: template={matched_code}, wall={time.time() - start_time:.2f}s")
+                                logger.info(f"[stream] served upload {upload_id} via cache: template={matched_code}, wall={time.time() - start_time:.2f}s, log_id={tpl_log_id}")
                                 return  # early exit — don't invoke LLM
             except Exception as e:
                 # Router is best-effort; fall through to LLM on any error

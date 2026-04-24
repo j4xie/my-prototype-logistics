@@ -381,6 +381,38 @@ def list_restaurant_uploads(request: Request):
                             "hasCachedAnalytics": False,
                         })
 
+            # Pass 3 (Apr 24 2026): if restaurant detection yielded zero but the tenant
+            # still has uploads, widen net using filename hints. Many merchant xlsx
+            # exports don't carry the strict POS columns (点单方式/套餐内销量) that
+            # detect_restaurant_chain looks for — but their filename says "销量报表"
+            # or "营业数据". Restaurant tenants would otherwise see a blank dropdown
+            # and the "前往上传" dead-end even though they just uploaded. Trust the
+            # filename signal for restaurant contexts.
+            if len(restaurant_uploads) == 0 and len(uploads) > 0:
+                _RESTAURANT_FILENAME_HINTS = (
+                    "销量", "销售", "营业", "营收", "门店", "餐饮", "POS", "pos",
+                    "订单", "点餐", "菜品", "堂食", "外卖", "小票",
+                )
+                included_ids = set()
+                for uid, file_name, sheet_name, row_count, created_at, _fid, _ctx, _ttype, _fm in uploads:
+                    fname = file_name or ""
+                    if any(hint in fname for hint in _RESTAURANT_FILENAME_HINTS):
+                        if uid in included_ids:
+                            continue
+                        included_ids.add(uid)
+                        restaurant_uploads.append({
+                            "id": uid, "fileName": file_name, "sheetName": sheet_name,
+                            "rowCount": row_count,
+                            "createdAt": created_at.isoformat() if created_at else None,
+                            "hasCachedAnalytics": False,
+                            "softInferred": True,
+                        })
+                if restaurant_uploads:
+                    logger.info(
+                        f"list_restaurant_uploads: pass-3 filename hint matched "
+                        f"{len(restaurant_uploads)} uploads as soft-restaurant"
+                    )
+
             # Sort: cached first, then by row_count descending (in-place, stable)
             restaurant_uploads.sort(
                 key=lambda x: (not x["hasCachedAnalytics"], -(x["rowCount"] or 0))

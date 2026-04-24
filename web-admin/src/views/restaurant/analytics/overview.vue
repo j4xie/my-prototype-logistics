@@ -396,11 +396,13 @@ function renderQuadrantMini() {
   }
   const items = data.value.menuQuadrant.items
 
-  // Clip axes to P95 to prevent outlier compression
-  const profits = items.map(i => i.unitProfit).sort((a, b) => a - b)
-  const qtys = items.map(i => i.quantity).sort((a, b) => a - b)
-  const yMax = (profits[Math.floor(profits.length * 0.95)] || 100) * 1.3
-  const xMax = (qtys[Math.floor(qtys.length * 0.95)] || 100) * 1.3
+  // Clip axes to P95 to prevent outlier compression.
+  // Revenue can't be negative — floor to 0 so BCG scatter doesn't show a -100 gridline.
+  // Round yMax/xMax to avoid floating-point trails like "478.4000000000003".
+  const profits = items.map(i => Math.max(0, i.unitProfit)).sort((a, b) => a - b)
+  const qtys = items.map(i => Math.max(0, i.quantity)).sort((a, b) => a - b)
+  const yMax = Math.ceil((profits[Math.floor(profits.length * 0.95)] || 100) * 1.3)
+  const xMax = Math.ceil((qtys[Math.floor(qtys.length * 0.95)] || 100) * 1.3)
 
   const series = Object.keys(colorMap).map(q => ({
     name: q === 'Star' ? '明星' : q === 'Plow' ? '金牛' : q === 'Puzzle' ? '问题' : '瘦狗',
@@ -414,8 +416,8 @@ function renderQuadrantMini() {
     tooltip: { trigger: 'item', confine: true, formatter: (p: Record<string, unknown>) => { const d = p.data as Record<string, unknown>; const raw = (d._raw || p.value) as number[]; return `销量: ${raw[0]}, 品均收入: ¥${raw[1].toFixed(1)}` } },
     legend: { bottom: 0, textStyle: { fontSize: 11 } },
     grid: { left: 50, right: 20, top: 20, bottom: 40 },
-    xAxis: { name: '销量', type: 'value', max: xMax, splitLine: { show: false } },
-    yAxis: { name: '品均收入', type: 'value', max: yMax, splitLine: { lineStyle: { type: 'dashed' } } },
+    xAxis: { name: '销量', type: 'value', min: 0, max: xMax, splitLine: { show: false }, axisLabel: { formatter: (v: number) => String(Math.round(v)) } },
+    yAxis: { name: '品均收入 (元)', type: 'value', min: 0, max: yMax, splitLine: { lineStyle: { type: 'dashed' } }, axisLabel: { formatter: (v: number) => v >= 1e4 ? (v / 1e4).toFixed(1) + '万' : String(Math.round(v)) } },
     series,
   })
 }
@@ -477,11 +479,15 @@ function renderOpsRadarMini() {
   chart.setOption({
     tooltip: { confine: true },
     radar: {
+      // Expanded to 6 dimensions (from 4) so the radar forms a hexagon rather than
+      // a triangle/quad — much easier to read at small size.
       indicator: [
         { name: '招牌集中度', max: 100 },
         { name: '退货率(反)', max: 10 },
         { name: '价格定位', max: Math.max(ops.priceVsBenchmark.actual * 1.5, ops.priceVsBenchmark.benchmarkMedian * 2, 200) },
         { name: '稳定性', max: 100 },
+        { name: '菜品丰富度', max: 100 },
+        { name: '客单价水平', max: 300 },
       ],
       radius: '60%',
     },
@@ -493,6 +499,10 @@ function renderOpsRadarMini() {
           Math.max(0, 10 - ops.returnRate),
           ops.priceVsBenchmark.actual,
           ops.consistencyScore,
+          // Menu diversity = min(dishCount / 200, 1) * 100. 200+ items caps at 100.
+          Math.min(100, (data.value.menuQuadrant.items.length / 200) * 100),
+          // Average ticket = clamp(avg_bill, 0, 300)
+          Math.max(0, Math.min(300, ops.priceVsBenchmark.actual || 0)),
         ],
         name: '当前水平',
         areaStyle: { opacity: 0.2 },
