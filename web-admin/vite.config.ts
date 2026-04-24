@@ -42,14 +42,16 @@ export default defineConfig(({ mode }) => {
               !dep.includes('echarts-') &&
               !dep.includes('pdf-lib-') &&
               !dep.includes('xlsx-lib-') &&
-              !dep.includes('vue-flow-'),
+              !dep.includes('vue-flow-') &&
+              // Round 6: el-icons 也 skip preload — 登录页仅需极少 icon, runtime lazy
+              !dep.includes('el-icons-'),
           );
         },
       },
       rollupOptions: {
         output: {
           // 注意: 不要拆 element-plus / vue / pinia / vue-router (会 TDZ)
-          // 只拆独立重包: echarts / xlsx / pdf / vue-flow canvas 编辑器
+          // UX Round 6: 只拆独立重包 + icons (纯 SVG, 无循环依赖)
           manualChunks: {
             'echarts': ['echarts', 'vue-echarts'],
             'xlsx-lib': ['xlsx'],
@@ -58,6 +60,8 @@ export default defineConfig(({ mode }) => {
               '@vue-flow/core',
               '@vue-flow/controls',
             ],
+            // Round 6: icons 独立 chunk (~50KB, 纯数据, 登录页仅用少数可 tree-shake)
+            'el-icons': ['@element-plus/icons-vue'],
           },
         },
       },

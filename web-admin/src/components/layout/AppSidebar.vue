@@ -214,7 +214,8 @@ const menuConfig: MenuItem[] = [
     ]
   },
   {
-    path: '/analytics', title: '数据分析', icon: 'DataAnalysis', module: 'analytics',
+    // UX Round 4 改名: "数据分析" → "经营报表" 与 "智能分析" 消歧 (固定报表 vs AI 探索)
+    path: '/analytics', title: '经营报表', icon: 'Histogram', module: 'analytics',
     children: [
       { path: '/analytics/overview', title: '分析概览', icon: '', module: 'analytics' },
       { path: '/analytics/trends', title: '趋势分析', icon: '', module: 'analytics' },
@@ -253,7 +254,8 @@ const menuConfig: MenuItem[] = [
   },
   // UX P2-5 merged: /calibration 并入 系统管理, /production-analytics 并入 智能BI
   {
-    path: '/smart-bi', title: '智能BI', icon: 'TrendCharts', module: 'analytics',
+    // UX Round 4 改名: "智能BI" → "智能分析" (AI 问答 / Excel 探索 / 追问)
+    path: '/smart-bi', title: '智能分析', icon: 'TrendCharts', module: 'analytics',
     children: [
       // -- 分析入口 --
       { path: '/smart-bi/dashboard', title: '经营驾驶舱', icon: 'Monitor', module: 'analytics', groupLabel: '分析入口' },
