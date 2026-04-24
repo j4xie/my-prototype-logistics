@@ -60,6 +60,11 @@ _REVIEW_STORE_CANDIDATES: Tuple[str, ...] = (
     "评价门店",            # 大众点评 alternate
     "门店名称", "店铺名称",  # POS-style names some merchants reuse
     "分店", "门市",          # 美团 / regional variants
+    # Post-mapper internal standard — Java/Python excel parser renames
+    # several store-like vendor names (e.g. 分店) to "region" before
+    # persistence. T6 multi-merchant test (Apr 24 2026) revealed this:
+    # row_data keys are "region", not the original 分店. Fallback last.
+    "region",
 )
 
 _STAR_CANDIDATES: Tuple[str, ...] = ("星级分", "评分", "星级")
@@ -69,6 +74,11 @@ _SERVICE_SCORE_CANDIDATES: Tuple[str, ...] = ("服务分",)
 
 _REVIEW_TIME_CANDIDATES: Tuple[str, ...] = (
     "评价时间", "评论时间", "发表时间", "创建时间",
+    # Post-mapper internal standard — Java/Python excel parser renames
+    # the primary review-time vendor variant to "time_period". Other
+    # time-like cols (投诉时间, 最新回复时间) become time_period_2/_3 but
+    # are NOT review timestamps so deliberately excluded.
+    "time_period",
 )
 _REVIEW_CONTENT_CANDIDATES: Tuple[str, ...] = (
     "评价详情", "评价内容", "评论详情", "评论内容",

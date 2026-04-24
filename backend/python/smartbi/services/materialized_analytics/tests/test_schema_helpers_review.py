@@ -38,6 +38,17 @@ class TestReviewStoreCol:
     def test_empty_cols(self):
         assert schema_helpers.find_review_store_col([]) is None
 
+    def test_post_mapper_region_fallback(self):
+        # Java/Python excel parser renames 分店 → "region" before persist.
+        # T6 (Apr 24 2026) revealed this path. Helper must detect "region"
+        # when no Chinese variant present.
+        assert schema_helpers.find_review_store_col(["region", "评价ID"]) == "region"
+
+    def test_chinese_wins_over_region(self):
+        # If both Chinese variant AND mapper-renamed "region" present, Chinese wins
+        # (priority order: Chinese variants > "region" fallback).
+        assert schema_helpers.find_review_store_col(["region", "具体门店"]) == "具体门店"
+
 
 # ─── STAR / RATING ───
 class TestStarCol:
@@ -97,9 +108,18 @@ class TestReviewTimeCol:
         assert schema_helpers.find_review_time_col(["评论时间", "用户昵称"]) == "评论时间"
 
     def test_priority_evaluation_over_creation(self):
-        # _REVIEW_TIME_CANDIDATES = ("评价时间", "评论时间", "发表时间", "创建时间")
+        # _REVIEW_TIME_CANDIDATES = ("评价时间", "评论时间", "发表时间", "创建时间", "time_period")
         # Evaluation timestamp wins over generic creation timestamp
         assert schema_helpers.find_review_time_col(["创建时间", "评价时间"]) == "评价时间"
+
+    def test_post_mapper_time_period_fallback(self):
+        # Java/Python excel parser renames 评价时间 → "time_period" before persist.
+        # T6 revealed this — helper must detect the post-mapper standard name.
+        assert schema_helpers.find_review_time_col(["time_period", "评价ID"]) == "time_period"
+
+    def test_chinese_wins_over_time_period(self):
+        # Chinese variants take priority over post-mapper "time_period"
+        assert schema_helpers.find_review_time_col(["time_period", "评价时间"]) == "评价时间"
 
 
 # ─── REVIEW CONTENT ───
