@@ -100,10 +100,40 @@ class StoredValueCardConsumption(AnalysisTemplate):
                 share_of_revenue_pct = round(card_total / gross * 100, 2)
 
         if card_orders == 0:
+            # Apr 25 2026 C-2 audit: tenants with no card data previously saw raw
+            # ¥0/0 KPI tiles (misleading — looked like a metric reading zero).
+            # When BOTH usage and non-revenue flows are absent, suppress KPIs +
+            # chart entirely (TemplateCard hides KPI grid when kpiValues={} and
+            # chart when chart_config=None) and surface an actionable subtitle
+            # via insight_text. is_empty flag in data allows future FE-side
+            # special rendering if needed.
+            has_nonrev = bool(nonrev)
+            if not has_nonrev:
+                return TemplateResult(
+                    code=self.code,
+                    title=self.title,
+                    data={
+                        "is_empty": True,
+                        "empty_reason": "no_card_data",
+                        "card_orders": 0,
+                        "card_total": 0.0,
+                        "usage_rate_pct": 0.0,
+                        "share_of_revenue_pct": 0.0,
+                        "nonrev_flows": [],
+                        "by_store": [],
+                        "by_date": [],
+                        "total_orders": total_orders,
+                    },
+                    kpis={},
+                    insight_text="暂无储值卡数据，请在设置中开启储值卡功能。",
+                )
+            # Has 不计 storage flows (gift money etc.) — show those even
+            # when usage_count == 0, since data exists.
             return TemplateResult(
                 code=self.code,
                 title=self.title,
                 data={
+                    "is_empty": False,
                     "card_orders": 0,
                     "card_total": 0.0,
                     "usage_rate_pct": 0.0,
@@ -119,7 +149,9 @@ class StoredValueCardConsumption(AnalysisTemplate):
                     "card_usage_rate_pct": 0.0,
                 },
                 insight_text=(
-                    f"全部 {total_orders} 笔订单均未使用储值卡消费。"
+                    f"全部 {total_orders} 笔订单均未使用储值卡正常消费，"
+                    f"另有 {sum(n['amount'] for n in nonrev):,.0f} 元'不计营收'流水"
+                    f"（赠送金/不计科目）。"
                 ),
             )
 

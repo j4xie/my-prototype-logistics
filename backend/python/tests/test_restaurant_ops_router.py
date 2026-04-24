@@ -37,6 +37,9 @@ LEGITIMATE_TRIGGERS = [
     # GROSS_MARGIN (dish-level)
     ("哪道菜毛利最高", "RESTAURANT_OPS_GROSS_MARGIN"),
     ("菜品毛利率排行", "RESTAURANT_OPS_GROSS_MARGIN"),
+    # Apr 25 2026: 菜系 should still trigger margin analysis when paired with
+    # an explicit margin keyword (legitimate "菜系" = dish-category scope).
+    ("菜系毛利率", "RESTAURANT_OPS_GROSS_MARGIN"),
     # WASTAGE_TOP
     ("损耗最多的食材", "RESTAURANT_OPS_WASTAGE_TOP"),
     ("浪费最多的菜是哪些", "RESTAURANT_OPS_WASTAGE_TOP"),
@@ -52,6 +55,14 @@ NO_MATCH_QUERIES = [
     "哪家店评价最好",
     # Pure ambiguity — no margin keyword present
     "哪家店最好",
+    # Apr 25 2026 follow-up — bare "菜" was removed from GROSS_MARGIN group-2,
+    # so menu/recipe/price queries no longer false-trigger margin analysis.
+    # These all lack a group-1 margin keyword (毛利/利润/etc.) so they pass
+    # without depending on the group-2 tightening, but locking them in keeps
+    # the contract enforced if someone re-broadens group-1 later.
+    "菜单怎么改",
+    "菜价怎么样",
+    "菜谱推荐",
     # Pure POS / time-window queries
     "本月营业额",
     "畅销品 Top 5",

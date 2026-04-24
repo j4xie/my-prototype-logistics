@@ -59,10 +59,17 @@ _OPS_PATTERNS: List[Tuple[str, List[List[str]]]] = [
     ),
     # Cross-module gross margin — dish-level (MUST come BEFORE recipe_cost since
     # "毛利" on its own = margin not cost). Plan C's signature feature.
+    # Apr 25 2026 routing fix (C-2 audit follow-up): removed bare "菜" from
+    # group-2 — it created over-broad matches against 菜单/菜谱 type queries
+    # (e.g. "菜单利润分析" wrongly routed dish-level margin instead of
+    # menu-level). Replaced with the explicit dish-scope tokens 菜品 / 菜系 /
+    # 菜价 plus existing dish-scoped pronouns. "菜单怎么改" / "菜价怎么样"
+    # still fall through cleanly because they lack a group-1 margin keyword;
+    # "菜系毛利率" / "菜品毛利率排行" continue to match (legitimate).
     (
         "RESTAURANT_OPS_GROSS_MARGIN",
         [["毛利", "毛利率", "净赚", "赚钱", "挣钱", "利润"],
-         ["菜品", "菜", "哪道", "哪个", "排行", "排名", "top", "TOP", "最高", "最赚"]],
+         ["菜品", "菜系", "菜价", "哪道", "哪个", "排行", "排名", "top", "TOP", "最高", "最赚"]],
     ),
     # Recipe cost (食材成本 only — 毛利 moved to gross_margin)
     (
@@ -119,7 +126,10 @@ SAMPLE_QUERIES: Dict[str, List[str]] = {
         "哪道菜毛利最高",
         "菜品毛利率排行",
         "最赚钱的菜 top 10",
-        "哪些菜净赚最多",
+        # Apr 25 2026: tightened from "哪些菜净赚最多" (bare 菜 was removed
+        # from group-2 to stop 菜单/菜谱 false-positives) — explicit dish
+        # marker now required.
+        "哪些菜品净赚最多",
         "菜品毛利对比",
         "利润最高的菜品",
         "售价减去食材成本最多的菜",
