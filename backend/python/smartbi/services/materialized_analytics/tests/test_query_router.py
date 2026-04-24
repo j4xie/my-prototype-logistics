@@ -33,7 +33,11 @@ def test_category_query():
 
 
 def test_table_type_query():
-    assert match_template("包厢跟大厅客人的点单数量") == "table_type_comparison"
+    # Pure table-type comparison (no dish/点单 keyword) routes to table_type_comparison.
+    # When the query ALSO mentions 菜品/点单/点菜/偏好 the more specific
+    # dish_by_table_type wins (Apr 24 2026 W4 routing per query_router.py:44 comment).
+    assert match_template("包厢和大厅客单价对比") == "table_type_comparison"
+    assert match_template("包厢跟大厅客人的点单数量") == "dish_by_table_type"
 
 
 def test_weekday_weekend_query():
@@ -41,7 +45,12 @@ def test_weekday_weekend_query():
 
 
 def test_generic_trend_query():
-    assert match_template("营业额的月度走势如何") == "monthly_trend"
+    # period_comparison_trend was added in W4 (Apr 22 2026) and is intentionally
+    # more specific — it claims any query carrying 月度/同比/环比 OR 趋势 keyword.
+    # monthly_trend is the broader fallback for 走势/变化 phrasing combined with a
+    # period dim (日/周/时间) but without 趋势/月度 — those are now period_comparison_trend.
+    assert match_template("营业额的月度走势如何") == "period_comparison_trend"
+    assert match_template("每日销售走势") == "monthly_trend"
 
 
 def test_no_match_returns_none():
