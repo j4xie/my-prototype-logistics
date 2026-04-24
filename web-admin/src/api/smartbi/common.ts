@@ -433,6 +433,15 @@ export interface ColumnSummary {
   sparkline?: number[];
   trend?: string;
   trendPercent?: number | null;
+  // Apr 25 2026 — KPI aggregation strategy persisted on
+  // smart_bi_pg_field_definitions.agg_strategy. Backed by
+  // field_classifier.infer_agg_strategy() (Python). Read by getSmartKPIs.
+  //   "sum"  → display SUM(col) as KPI (default for measures)
+  //   "mean" → display AVG(col) as KPI (e.g. 平均星级 = 4.83 分)
+  //   "none" → exclude this col from KPI cards (IDs, dimensions)
+  aggStrategy?: 'sum' | 'mean' | 'none';
+  // Hint for label prefix; FE displays "平均X" when this is "rating".
+  semanticType?: 'rating' | 'id' | string | null;
 }
 
 /**
