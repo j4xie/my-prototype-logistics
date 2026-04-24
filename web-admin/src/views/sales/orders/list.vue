@@ -126,6 +126,7 @@ const form = ref({
   contractFileUrl: '' as string | null,
   contractFileName: '' as string | null,
   customFields: {} as Record<string, unknown>,
+  version: null as number | null,  // optimistic lock — server returns 409 on stale
 });
 
 // P1-7 合同附件上传 (v1 §2.4.3, 2257s)
@@ -380,6 +381,7 @@ function handleEdit(row: Record<string, unknown>) {
         }))
       : [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, taxRate: 13 }],
     customFields: {} as Record<string, unknown>,
+    version: typeof row.version === 'number' ? row.version : null,
   };
   dialogVisible.value = true;
 }
@@ -392,7 +394,20 @@ async function handleSave() {
       const res = await put(`/${factoryId.value}/sales/orders/${editingOrderId.value}`, form.value);
       if (res.success) { ElMessage.success('保存成功'); dialogVisible.value = false; editingOrderId.value = null; loadData(); }
       else { ElMessage.error(res.message || '保存失败'); }
-    } catch { /* axios interceptor already displayed error toast */ }
+    } catch (err) {
+      // 409 = optimistic lock conflict — offer refresh
+      if ((err as { status?: number })?.status === 409) {
+        try {
+          await ElMessageBox.confirm(
+            '此订单已被其他用户修改。点击"确定"将刷新列表并放弃当前编辑。',
+            '并发编辑冲突',
+            { type: 'warning', confirmButtonText: '刷新列表', cancelButtonText: '取消' }
+          );
+          dialogVisible.value = false; editingOrderId.value = null; loadData();
+        } catch { /* user cancelled */ }
+      }
+      /* axios interceptor already displayed error toast */
+    }
   } else {
     await handleCreate();
   }

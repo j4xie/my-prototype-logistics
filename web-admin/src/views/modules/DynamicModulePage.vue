@@ -142,12 +142,31 @@ async function handleCreate(formData: Record<string, unknown>) {
 async function handleUpdate(formData: Record<string, unknown>) {
   if (!selectedRow.value) return
   const id = selectedRow.value.id
+  // Optimistic lock: forward the version snapshot from the row FE loaded.
+  // Backend compares req.version vs db.version → 409 if stale (Customer/Supplier/SO/PO/Equipment).
+  const version = (selectedRow.value as Record<string, unknown>).version
+  if (version !== undefined && version !== null && (formData as Record<string, unknown>).version === undefined) {
+    (formData as Record<string, unknown>).version = version
+  }
   try {
     await request.put(`/${factoryId.value}/${apiPath.value}/${id}`, formData)
     ElMessage.success('保存成功')
     currentView.value = 'list'
     loadTableData()
   } catch (e: any) {
+    // 409 optimistic lock — interceptor already showed sticky toast; offer refresh flow.
+    if (e?.status === 409) {
+      try {
+        await ElMessageBox.confirm(
+          '此记录已被其他用户修改。点击"确定"将刷新列表并放弃当前编辑。',
+          '并发编辑冲突',
+          { type: 'warning', confirmButtonText: '刷新列表', cancelButtonText: '取消' }
+        )
+        currentView.value = 'list'
+        loadTableData()
+      } catch { /* user cancelled */ }
+      return
+    }
     ElMessage.error(e?.message || '保存失败')
   }
 }
