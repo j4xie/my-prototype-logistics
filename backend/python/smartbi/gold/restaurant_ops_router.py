@@ -287,12 +287,16 @@ async def resolve_stock_shortage(
 async def resolve_recipe_cost(
     smartbi_pool, factory_id: str, top_n: int = 10,
 ) -> OpsAnswer:
-    """Top N dishes by food cost (standard_qty × unit_price rollup)."""
+    """Top N dishes by food cost (standard_qty × unit_price rollup).
+
+    Joins cretas_db.product_types for dish names at query time (no dim_product
+    ETL needed yet — see 2026_04_24_recipe_product_source_pk.sql rationale).
+    """
     async with smartbi_pool.acquire() as conn:
         await conn.execute("SELECT set_config('app.factory_id', $1, true)", factory_id)
         rows = await conn.fetch(
             """
-            SELECT c.product_id, c.food_cost, c.ingredient_count, c.has_price_data
+            SELECT c.product_source_pk, c.food_cost, c.ingredient_count, c.has_price_data
               FROM agg_restaurant_product_cost c
              WHERE c.factory_id = $1 AND c.food_cost > 0
              ORDER BY c.food_cost DESC NULLS LAST
@@ -300,22 +304,42 @@ async def resolve_recipe_cost(
             """,
             factory_id, top_n,
         )
+    source_pks = [r["product_source_pk"] for r in rows]
+
+    # Look up dish names from cretas_db.product_types (separate pool).
+    name_map: Dict[str, str] = {}
+    if source_pks:
+        try:
+            import asyncpg as _asyncpg
+            from config import get_settings as _get_settings
+            cretas_url = _get_settings().food_kb_db_url
+            cretas = await _asyncpg.connect(cretas_url)
+            try:
+                name_rows = await cretas.fetch(
+                    "SELECT id, name FROM product_types WHERE factory_id = $1 AND id = ANY($2::text[])",
+                    factory_id, source_pks,
+                )
+                name_map = {r["id"]: r["name"] for r in name_rows}
+            finally:
+                await cretas.close()
+        except Exception as e:
+            logger.warning(f"[recipe_cost] dish name lookup failed: {e}")
 
     top_text = "\n".join([
-        f"  {i+1}. 菜品 #{r['product_id']}: ¥{r['food_cost']:.2f} ({r['ingredient_count']} 种食材)"
+        f"  {i+1}. {name_map.get(r['product_source_pk'], '#' + r['product_source_pk'])}: ¥{r['food_cost']:.2f} ({r['ingredient_count']} 种食材)"
         for i, r in enumerate(rows)
     ]) or "  (尚未录入配方数据或食材单价为空)"
 
     answer = (
         f"菜品食材成本 Top {len(rows)}:\n{top_text}\n\n"
-        f"注: 成本 = 标准用量 × 食材单价. 需 dim_product → product_type_id 映射落地后显示菜名."
+        f"注: 成本 = 标准用量 × 食材单价. 售价数据可从 POS Gold (fact_pos_item) 获取后计算毛利."
     )
     charts = []
     if rows:
         charts.append({
             "chartType": "bar",
             "title": f"Top {len(rows)} 高成本菜品",
-            "xAxis": {"data": [f"#{r['product_id']}" for r in rows]},
+            "xAxis": {"data": [name_map.get(r["product_source_pk"], r["product_source_pk"]) for r in rows]},
             "series": [{"name": "食材成本", "type": "bar", "data": [r["food_cost"] for r in rows]}],
         })
 
@@ -327,8 +351,9 @@ async def resolve_recipe_cost(
         kpis=[
             {"title": "菜品数", "value": len(rows), "rawValue": len(rows)},
             {"title": "最高成本", "value": f"¥{rows[0]['food_cost']:.2f}" if rows else "—", "rawValue": rows[0]["food_cost"] if rows else 0},
+            {"title": "Top 菜品", "value": name_map.get(rows[0]["product_source_pk"], "—") if rows else "—", "rawValue": 0},
         ],
-        meta={"top_n": top_n, "pending_dim_product": True},
+        meta={"top_n": top_n},
     )
 
 

@@ -366,11 +366,13 @@ async def sync_fact_recipe(
         return 0
 
     ing_map = await _get_ingredient_pk_map(smartbi_pool, factory_id)
-    # product_id is nullable in fact_restaurant_recipe_line schema? No — it's
-    # NOT NULL. Use 0 as sentinel when no dim_product resolution yet.
-    # TODO Phase 2.5: build dim_product_from_product_type sync.
+    # Phase 2.5: store cretas_db product_type_id directly as product_source_pk;
+    # avoids needing full dim_product ETL from cretas_db (which would conflict
+    # with POS-derived dim_product from bill parser). Resolver joins
+    # product_types.name back at query time via source_pk.
     source_pks = [r["id"] for r in rows]
-    product_ids = [0 for _ in rows]  # sentinel; real resolution deferred
+    product_ids = [0 for _ in rows]  # legacy column, kept for FK; real grain is product_source_pk
+    product_source_pks = [r["product_type_id"] for r in rows]
     ingredient_ids = [ing_map.get(r["raw_material_type_id"]) for r in rows]
     std_qtys = [float(r["standard_quantity"]) if r["standard_quantity"] is not None else None for r in rows]
     units = [r["unit"] for r in rows]
@@ -384,15 +386,16 @@ async def sync_fact_recipe(
             result = await dst.fetch(
                 """
                 INSERT INTO fact_restaurant_recipe_line (
-                    factory_id, source_pk, product_id, ingredient_id,
+                    factory_id, source_pk, product_id, product_source_pk, ingredient_id,
                     standard_qty, unit, yield_rate, is_main_ingredient, is_active
                 )
-                SELECT $1, pk, prod, ing, sq, u, yr, m, act
+                SELECT $1::varchar, pk, prod, psp, ing, sq, u, yr, m, act
                   FROM UNNEST(
-                    $2::text[], $3::bigint[], $4::bigint[], $5::numeric[],
-                    $6::text[], $7::numeric[], $8::boolean[], $9::boolean[]
-                  ) AS t(pk, prod, ing, sq, u, yr, m, act)
+                    $2::text[], $3::bigint[], $4::text[], $5::bigint[], $6::numeric[],
+                    $7::text[], $8::numeric[], $9::boolean[], $10::boolean[]
+                  ) AS t(pk, prod, psp, ing, sq, u, yr, m, act)
                 ON CONFLICT (factory_id, source_pk) DO UPDATE SET
+                    product_source_pk = EXCLUDED.product_source_pk,
                     ingredient_id = EXCLUDED.ingredient_id,
                     standard_qty = EXCLUDED.standard_qty,
                     unit = EXCLUDED.unit,
@@ -402,7 +405,7 @@ async def sync_fact_recipe(
                     updated_at = NOW()
                 RETURNING id
                 """,
-                factory_id, source_pks, product_ids, ingredient_ids,
+                factory_id, source_pks, product_ids, product_source_pks, ingredient_ids,
                 std_qtys, units, yield_rates, is_mains, is_actives,
             )
     # Compute line_cost = standard_qty × ingredient.unit_price
@@ -512,10 +515,11 @@ async def sync_fact_stocktaking(
 
 _AGG_PRODUCT_COST_SQL = """
 INSERT INTO agg_restaurant_product_cost (
-    factory_id, product_id, food_cost, main_ingredient_id, ingredient_count,
-    has_price_data, version, computed_at
+    factory_id, product_id, product_source_pk, food_cost, main_ingredient_id,
+    ingredient_count, has_price_data, version, computed_at
 )
-SELECT $1::varchar, r.product_id,
+SELECT $1::varchar, 0 AS product_id,
+       COALESCE(r.product_source_pk, '') AS product_source_pk,
        COALESCE(SUM(r.line_cost), 0)::NUMERIC(14,4) AS food_cost,
        (ARRAY_AGG(r.ingredient_id ORDER BY r.is_main_ingredient DESC, r.line_cost DESC NULLS LAST))[1] AS main_ingredient_id,
        COUNT(*)::int AS ingredient_count,
@@ -523,8 +527,8 @@ SELECT $1::varchar, r.product_id,
        1, NOW()
   FROM fact_restaurant_recipe_line r
  WHERE r.factory_id = $1::varchar AND r.is_active = TRUE
- GROUP BY r.product_id
-ON CONFLICT (factory_id, product_id) DO UPDATE SET
+ GROUP BY r.product_source_pk
+ON CONFLICT (factory_id, product_source_pk) DO UPDATE SET
     food_cost = EXCLUDED.food_cost,
     main_ingredient_id = EXCLUDED.main_ingredient_id,
     ingredient_count = EXCLUDED.ingredient_count,

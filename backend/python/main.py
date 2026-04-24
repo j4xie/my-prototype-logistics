@@ -334,6 +334,73 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.warning(f"[startup] narrative_cache pruner init failed: {e}")
 
+    # Apr 24 2026 Plan C Phase 6: hourly restaurant ops ETL for all RESTAURANT
+    # factories. Keeps Gold fresh without user intervention. First run 120s
+    # after startup so pools/warmers settle; subsequent runs every hour.
+    _restaurant_etl_task = None
+    if os.getenv("RESTAURANT_OPS_ETL_ENABLED", "true").lower() in ("1", "true", "yes"):
+        try:
+            import asyncio as _asyncio
+            import asyncpg as _asyncpg
+            from config import get_settings as _get_settings
+            from smartbi.config import get_pg_pool as _get_pg_pool_etl
+            from smartbi.gold.restaurant_ops_etl import run_full_etl
+
+            async def _run_restaurant_ops_etl_forever():
+                await _asyncio.sleep(120)
+                while True:
+                    try:
+                        smartbi_pool = await _get_pg_pool_etl()
+                        if smartbi_pool is None:
+                            logger.warning("[restaurant-etl] smartbi pool unavailable, skipping tick")
+                        else:
+                            # Discover RESTAURANT factories from cretas_db.factories.type.
+                            cretas_url = _get_settings().food_kb_db_url
+                            cretas_conn = await _asyncpg.connect(cretas_url)
+                            try:
+                                f_rows = await cretas_conn.fetch(
+                                    "SELECT id FROM factories WHERE type = 'RESTAURANT'"
+                                )
+                                factory_ids = [r["id"] for r in f_rows]
+                            finally:
+                                await cretas_conn.close()
+
+                            if not factory_ids:
+                                logger.info("[restaurant-etl] no RESTAURANT factories to sync")
+                            else:
+                                cretas_pool = await _asyncpg.create_pool(
+                                    cretas_url, min_size=1, max_size=3, command_timeout=60,
+                                )
+                                try:
+                                    summary_counts = {"total": 0, "errors": 0}
+                                    for fid in factory_ids:
+                                        try:
+                                            stats = await run_full_etl(cretas_pool, smartbi_pool, fid)
+                                            summary_counts["total"] += 1
+                                            if stats.errors:
+                                                summary_counts["errors"] += 1
+                                                logger.warning(
+                                                    f"[restaurant-etl] {fid} errors={stats.errors}"
+                                                )
+                                        except Exception as fe:
+                                            summary_counts["errors"] += 1
+                                            logger.warning(f"[restaurant-etl] {fid} failed: {fe}")
+                                    logger.info(
+                                        f"[restaurant-etl] tick done: {summary_counts['total']} factories, "
+                                        f"{summary_counts['errors']} errors"
+                                    )
+                                finally:
+                                    await cretas_pool.close()
+                    except Exception as ex:
+                        logger.warning(f"[restaurant-etl] tick failed: {ex}")
+                    # 1 hour between runs — ETL is idempotent so overlap risk is low.
+                    await _asyncio.sleep(3600)
+
+            _restaurant_etl_task = _asyncio.create_task(_run_restaurant_ops_etl_forever())
+            logger.info("[startup] restaurant-ops hourly ETL armed")
+        except Exception as e:
+            logger.warning(f"[startup] restaurant-ops ETL init failed: {e}")
+
     yield
 
     # Shutdown: cancel narrative_cache pruner task
@@ -341,6 +408,14 @@ async def lifespan(app: FastAPI):
         _narrative_pruner_task.cancel()
         try:
             await _narrative_pruner_task
+        except Exception:
+            pass
+
+    # Shutdown: cancel restaurant-ops ETL task
+    if _restaurant_etl_task is not None:
+        _restaurant_etl_task.cancel()
+        try:
+            await _restaurant_etl_task
         except Exception:
             pass
 
