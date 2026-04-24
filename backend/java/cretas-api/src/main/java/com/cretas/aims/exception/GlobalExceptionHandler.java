@@ -187,16 +187,46 @@ public class GlobalExceptionHandler {
 
     /**
      * 处理参数验证异常
+     *
+     * W-08 fix (Round 12, qa-prompt v2.4 Rule 8): previous version joined only
+     * FieldError::getDefaultMessage, so entity annotations written as bare
+     * `@NotNull` / `@NotBlank` (without custom message) produced useless
+     * "must not be null" response with no field name. Now include the field
+     * name + Chinese phrasing for the common default messages.
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponse<?> handleValidationException(MethodArgumentNotValidException e) {
         String message = e.getBindingResult().getFieldErrors().stream()
-                .map(FieldError::getDefaultMessage)
+                .map(GlobalExceptionHandler::formatFieldError)
                 .collect(Collectors.joining(", "));
         // 4xx — 客户端 form 没填全, 不是服务端 bug
         log.warn("参数验证失败: {}", message);
+        // actionHint: first field with violation
+        String firstField = e.getBindingResult().getFieldErrors().stream()
+                .map(FieldError::getField).findFirst().orElse(null);
+        if (firstField != null) {
+            return ApiResponse.errorWithHint(400, message,
+                    "请检查「" + firstField + "」字段", "error", firstField);
+        }
         return ApiResponse.error(400, message);
+    }
+
+    /**
+     * Format a single field validation error into a user-readable Chinese string.
+     * Intercepts Bean Validation's default English messages for common constraints.
+     */
+    private static String formatFieldError(FieldError err) {
+        String msg = err.getDefaultMessage();
+        String field = err.getField();
+        if (msg == null) return "字段 '" + field + "' 校验失败";
+        // Common Bean Validation defaults — translate to Chinese + include field
+        if ("must not be null".equals(msg) || "must not be blank".equals(msg) || "must not be empty".equals(msg)) {
+            return "字段 '" + field + "' 不能为空";
+        }
+        // Custom messages (entity/DTO provided @NotNull(message = "xxx不能为空")) — keep as-is
+        // since they already read naturally in Chinese.
+        return msg.contains(field) ? msg : field + ": " + msg;
     }
 
     /**
@@ -534,7 +564,39 @@ public class GlobalExceptionHandler {
             return ApiResponse.error(400, "日期格式不正确" + fieldHint + "，请重新选择日期");
         }
         if (msg.contains("Cannot deserialize value of type")) {
-            return ApiResponse.error(400, "字段类型不正确，请检查表单后重新提交");
+            // W-10 fix (Round 12, qa-prompt v2.4 Rule 8): previous message was
+            // "字段类型不正确，请检查表单后重新提交" — no field name, no type hint,
+            // no actionHint. Users got "请检查表单" with no clue which field is wrong.
+            // Mirror the O4 date-error pattern: extract field + expected type from
+            // Jackson's message, build a specific Chinese message, populate actionHint.
+            // Jackson message shape:
+            //   "Cannot deserialize value of type `com.cretas.aims.entity.Department`
+            //    from String \"FINANCE\": ... (through reference chain: ...["department"])"
+            String expectedType = "";
+            String badValue = "";
+            String fieldName = "";
+            java.util.regex.Matcher typeM = java.util.regex.Pattern
+                .compile("type `([^`]+)`").matcher(msg);
+            if (typeM.find()) {
+                String fq = typeM.group(1);
+                expectedType = fq.substring(fq.lastIndexOf('.') + 1); // simple class name
+            }
+            java.util.regex.Matcher valM = java.util.regex.Pattern
+                .compile("from String \"([^\"]+)\"").matcher(msg);
+            if (valM.find()) badValue = valM.group(1);
+            java.util.regex.Matcher fieldM = java.util.regex.Pattern
+                .compile("\\[\"([^\"]+)\"\\](?!.*\\[\")").matcher(msg); // last [""] in chain
+            if (fieldM.find()) fieldName = fieldM.group(1);
+            StringBuilder userMsg = new StringBuilder("字段");
+            if (!fieldName.isEmpty()) userMsg.append(" '").append(fieldName).append("' ");
+            userMsg.append("类型不正确");
+            if (!expectedType.isEmpty()) userMsg.append("，期望 ").append(expectedType);
+            if (!badValue.isEmpty()) userMsg.append("，收到 \"").append(badValue).append("\"");
+            String hint = fieldName.isEmpty()
+                    ? "请检查表单字段类型后重新提交"
+                    : "请检查「" + fieldName + "」字段的值";
+            return ApiResponse.errorWithHint(400, userMsg.toString(), hint, "error",
+                    fieldName.isEmpty() ? null : fieldName);
         }
         return ApiResponse.error(400, "请求格式不正确，请检查JSON格式");
     }
