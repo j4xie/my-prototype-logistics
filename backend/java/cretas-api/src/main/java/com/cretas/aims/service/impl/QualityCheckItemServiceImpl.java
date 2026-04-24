@@ -45,15 +45,22 @@ public class QualityCheckItemServiceImpl implements QualityCheckItemService {
     @Override
     @Transactional
     public QualityCheckItemDTO createQualityCheckItem(String factoryId, CreateQualityCheckItemRequest request, Long userId) {
-        // 检查编号是否重复
-        if (qualityCheckItemRepository.existsByFactoryIdAndItemCodeAndDeletedAtIsNull(factoryId, request.getItemCode())) {
-            throw new IllegalArgumentException("项目编号已存在: " + request.getItemCode());
+        // Apr 24 2026 Rule 10 fix: FE 创建 dialog 不暴露 itemCode 字段但 DTO 之前 @NotBlank,
+        // 导致用户新建 100% 400. 现若 itemCode 为空则自动生成: QCI-<category>-<yyyyMMddHHmmss>-<rand>
+        String itemCode = request.getItemCode();
+        if (itemCode == null || itemCode.isBlank()) {
+            String prefix = request.getCategory() != null ? request.getCategory().name().substring(0, 3) : "QCI";
+            String ts = new java.text.SimpleDateFormat("yyyyMMddHHmmss").format(new java.util.Date());
+            String rand = UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+            itemCode = String.format("QCI-%s-%s-%s", prefix, ts, rand);
+        } else if (qualityCheckItemRepository.existsByFactoryIdAndItemCodeAndDeletedAtIsNull(factoryId, itemCode)) {
+            throw new IllegalArgumentException("项目编号已存在: " + itemCode);
         }
 
         QualityCheckItem item = QualityCheckItem.builder()
                 .id(UUID.randomUUID().toString())
                 .factoryId(factoryId)
-                .itemCode(request.getItemCode())
+                .itemCode(itemCode)
                 .itemName(request.getItemName())
                 .category(request.getCategory())
                 .description(request.getDescription())
