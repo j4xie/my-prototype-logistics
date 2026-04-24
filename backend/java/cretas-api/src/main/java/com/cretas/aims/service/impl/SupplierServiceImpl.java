@@ -96,6 +96,12 @@ public class SupplierServiceImpl implements SupplierService {
         log.info("更新供应商: factoryId={}, supplierId={}", factoryId, supplierId);
         Supplier supplier = supplierRepository.findByIdAndFactoryId(supplierId, factoryId)
                 .orElseThrow(() -> new EntityNotFoundException("Supplier", supplierId));
+        // Optimistic lock: explicit version compare (see CustomerServiceImpl — setVersion()
+        // on managed entity is silently ignored by Hibernate, must compare manually).
+        if (request.getVersion() != null && !request.getVersion().equals(supplier.getVersion())) {
+            throw new org.springframework.orm.ObjectOptimisticLockingFailureException(
+                Supplier.class, supplierId);
+        }
         // 检查名称是否与其他供应商重复
         if (request.getName() != null && !request.getName().equals(supplier.getName())) {
             if (supplierRepository.existsByFactoryIdAndNameAndIdNot(factoryId, request.getName(), supplierId)) {

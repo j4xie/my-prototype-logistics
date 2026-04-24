@@ -103,6 +103,11 @@ public class Supplier extends BaseEntity {
     private String notes;
     @Column(name = "created_by", nullable = false)
     private Long createdBy;
+
+    /** Optimistic lock version — prevents silent last-write-wins on concurrent edits */
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
     // 关联关系
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "factory_id", referencedColumnName = "id", insertable = false, updatable = false)

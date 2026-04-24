@@ -37,6 +37,7 @@ const defaultForm = {
   bankAccount: '',
   taxId: '',
   notes: '',
+  version: null as number | null,  // optimistic lock — server returns 409 on stale
 };
 const form = reactive({ ...defaultForm });
 
@@ -151,6 +152,7 @@ function handleEdit(row: Record<string, unknown>) {
     bankAccount: row.bankAccount || '',
     taxId: row.taxId || '',
     notes: row.notes || '',
+    version: typeof row.version === 'number' ? row.version : null,
   });
   dialogMode.value = 'edit';
   dialogVisible.value = true;
@@ -162,7 +164,7 @@ async function handleSubmit() {
 
   submitting.value = true;
   try {
-    const payload = {
+    const payload: Record<string, unknown> = {
       name: form.name,
       contactPerson: form.contactPerson,
       phone: form.phone,
@@ -177,6 +179,9 @@ async function handleSubmit() {
     if (dialogMode.value === 'create') {
       res = await post(`/${factoryId.value}/suppliers`, payload);
     } else {
+      if (form.version !== null && form.version !== undefined) {
+        payload.version = form.version;
+      }
       res = await put(`/${factoryId.value}/suppliers/${form.id}`, payload);
     }
 
@@ -188,6 +193,20 @@ async function handleSubmit() {
     dialogVisible.value = false;
     loadData();
   } catch (error) {
+    const status = (error as { status?: number })?.status;
+    if (status === 409) {
+      try {
+        await ElMessageBox.confirm(
+          '此供应商数据已被其他用户修改。点击"确定"将刷新列表并放弃当前编辑。',
+          '并发编辑冲突',
+          { type: 'warning', confirmButtonText: '刷新列表', cancelButtonText: '取消' }
+        );
+        dialogVisible.value = false;
+        loadData();
+      } catch {
+        // user cancelled — keep dialog open
+      }
+    }
     // Interceptor already shows specific sticky toast; this is debug-only log.
     console.error('Submit failed:', error);
   } finally {

@@ -94,4 +94,12 @@ public class CreateSupplierRequest {
     @Schema(description = "备注")
     @Size(max = 5000, message = "备注长度不能超过5000个字符")
     private String notes;
+
+    /**
+     * Optimistic lock version — echoed from GET response.
+     * On UPDATE: if server detects version mismatch → 409 Conflict.
+     * On CREATE: ignored (entity starts at 0).
+     */
+    @Schema(description = "乐观锁版本号 (编辑时必传, 来自 GET 响应)")
+    private Long version;
 }

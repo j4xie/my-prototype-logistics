@@ -49,6 +49,7 @@ public class SupplierMapper {
                 .createdAt(supplier.getCreatedAt())
                 .updatedAt(supplier.getUpdatedAt())
                 .createdBy(supplier.getCreatedBy())
+                .version(supplier.getVersion())
                 .build();
         // 设置创建人姓名
         if (supplier.getCreatedByUser() != null) {
