@@ -1398,12 +1398,32 @@ async function _doEnrichSheetAnalysis(
   onProgress?: (progress: EnrichProgress) => void
 ): Promise<EnrichResult> {
   // Cache-first
+  // Apr 25 2026 (Task C / PROD-1 fix): cache may be PARTIAL — when populated
+  // by the Java γ-2c afterCommit hook, only kpiSummary is filled (cheap polars
+  // compute, no LLM). In that case render KPIs immediately so the user sees
+  // them in <1s, then continue running the full enrichment pipeline below to
+  // fill charts/aiAnalysis/structuredAI in the background. A FULL cache
+  // (created by saveAnalysisToCache after the LLM pipeline finishes) returns
+  // _partial=false and we short-circuit as before.
   if (!forceRefresh) {
     try {
       const cached = await getCachedAnalysis(uploadId);
       if (cached && cached.success) {
-        onProgress?.({ phase: 'complete', partial: cached });
-        return cached as EnrichResult;
+        if (cached._partial) {
+          // Render KPIs early so the user sees something in <1s, then fall
+          // through to the full pipeline so charts + AI insights still arrive.
+          if (cached.kpiSummary) {
+            onProgress?.({
+              phase: 'kpi',
+              partial: {
+                kpiSummary: cached.kpiSummary as EnrichResult['kpiSummary'],
+              },
+            });
+          }
+        } else {
+          onProgress?.({ phase: 'complete', partial: cached });
+          return cached as EnrichResult;
+        }
       }
     } catch (e) {
       // console.warn('[Cache] Error checking cache, proceeding with enrichment:', e);

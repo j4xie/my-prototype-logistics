@@ -1698,6 +1698,51 @@ public class PythonSmartBIClient {
     }
 
     /**
+     * γ-2c (Apr 25 2026 / Task C / PROD-1 fix): pre-materialize the cheap part
+     * of enrichment (KPI summary via /quick-summary, no LLM) and persist as a
+     * partial enrichment_cache row, so the FE cache-first branch hits an
+     * instant cache on first visit and renders KPI cards in <1s instead of
+     * timing out at 120s on 200K-row POS uploads.
+     *
+     * Non-blocking: any HTTP/IO failure is logged but does not affect upload
+     * status (FE will fall back to running the full enrichment pipeline on
+     * first visit, same as before this hook existed).
+     *
+     * @param uploadId  ID of the upload that just committed
+     * @param factoryId factory the upload belongs to (for cross-tenant check)
+     * @return true on 2xx + success=true; false on any failure
+     */
+    public boolean precomputeEnrichmentCache(Long uploadId, String factoryId) {
+        if (!config.isEnabled() || uploadId == null || factoryId == null) {
+            return false;
+        }
+        String url = config.getFullUrl(
+                "/api/smartbi/analysis-cache/" + uploadId + "/precompute");
+        try {
+            Request httpRequest = new Request.Builder()
+                    .url(url)
+                    .post(RequestBody.create(JSON, "{}"))
+                    .header("X-Factory-Id", factoryId)
+                    .build();
+            try (Response response = httpClient.newCall(httpRequest).execute()) {
+                if (!response.isSuccessful()) {
+                    log.warn("γ-2c precompute-cache HTTP {} for upload {}: {}",
+                            response.code(), uploadId,
+                            response.body() != null ? response.body().string() : "<empty>");
+                    return false;
+                }
+                log.info("γ-2c precompute-cache OK for upload {} (factory={})",
+                        uploadId, factoryId);
+                return true;
+            }
+        } catch (IOException e) {
+            log.warn("γ-2c precompute-cache IO failure for upload {}: {}",
+                    uploadId, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
      * 根据文件名推断 MIME 类型 — 支持 xlsx/xls/csv/pdf，其他默认 octet-stream。
      * 用于 Python 服务调用时正确设置 multipart body 的 Content-Type，避免 Python
      * 侧根据 MIME 而不是扩展名做 xlsx-only 判断。

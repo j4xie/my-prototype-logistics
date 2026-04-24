@@ -221,10 +221,34 @@ public class DynamicDataPersistenceServiceImpl implements DynamicDataPersistence
                                     log.warn("γ-1c: Python reclassify threw for upload {} (non-blocking): {}",
                                             uploadIdForHook, e.getMessage());
                                 }
+
+                                // γ-2c (Apr 25 2026 / Task C / PROD-1 fix):
+                                // pre-materialize enrichment_cache (KPI-only, no LLM) so
+                                // the FE renders KPI cards in <1s on first visit instead
+                                // of timing out at 120s on 200K-row POS uploads.
+                                //
+                                // Runs AFTER γ-1c so it sees the latest agg_strategy.
+                                // Fully non-blocking: failures are logged, FE will fall
+                                // back to running the full enrichment pipeline on first
+                                // visit (same as pre-Task-C behaviour).
+                                try {
+                                    boolean precOk = pythonSmartBIClient.precomputeEnrichmentCache(
+                                            uploadIdForHook, factoryIdForHook);
+                                    if (precOk) {
+                                        log.info("γ-2c: precompute-cache applied to upload {}",
+                                                uploadIdForHook);
+                                    } else {
+                                        log.warn("γ-2c: precompute-cache skipped/failed for upload {} (non-blocking)",
+                                                uploadIdForHook);
+                                    }
+                                } catch (Exception e) {
+                                    log.warn("γ-2c: precompute-cache threw for upload {} (non-blocking): {}",
+                                            uploadIdForHook, e.getMessage());
+                                }
                             }
                         });
             } else {
-                log.warn("γ-1c: no active transaction sync, skipping reclassify for upload {}", uploadId);
+                log.warn("γ-1c: no active transaction sync, skipping reclassify+precompute for upload {}", uploadId);
             }
 
             // 5. Update upload status
