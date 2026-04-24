@@ -1,8 +1,15 @@
 """DishCategoryBreakdown — 菜品分类销售占比 (饮品/主菜/配菜/小吃/啤酒/...).
 
 Parses 商品信息 text column row-by-row using item_parser, classifies each
-dish into a category via classify_dish, then aggregates revenue and quantity
-per category. Returns a pie chart showing revenue share by category.
+dish into a category via classify_dish (KEYWORD/NAME-PREFIX inference, NOT
+authoritative POS category data). Aggregates revenue and quantity per
+inferred category and returns a pie chart.
+
+⚠ Apr 25 2026 D1.C5: insight_text + KPIs explicitly label the breakdown
+as 推断 (inferred). Original implementation presented "招牌菜贡献 34.9%" as
+authoritative — but the upload had no real category dimension. Customer
+deserves to know this is a heuristic so they can ask for a proper category
+mapping if they need authoritative numbers.
 
 Applies only when schema contains a 商品信息 field (restaurant-style data).
 """
@@ -43,7 +50,9 @@ class DishCategoryBreakdown(AnalysisTemplate):
 
     @property
     def title(self) -> str:
-        return "菜品分类销售占比"
+        # Apr 25 2026 D1.C5: surface "推断分类" so user/AI know this is
+        # name-prefix inference, not POS-supplied authoritative categories.
+        return "菜品分类销售占比 (推断)"
 
     def applies(self, schema: DataSchema) -> bool:
         field_names = {f.name for f in schema.fields}
@@ -100,10 +109,14 @@ class DishCategoryBreakdown(AnalysisTemplate):
         top3_pct = sum(row["share_pct"] for row in breakdown[:3])
         total_item_count = sum(row["item_count"] for row in breakdown)
 
-        # ECharts pie chart — category revenue share
+        # ECharts pie chart — category revenue share (inferred)
         chart_config = {
             "type": "pie",
-            "title": {"text": "菜品分类收入占比", "left": "center"},
+            "title": {
+                "text": "菜品分类收入占比 (推断分类)",
+                "subtext": "基于菜品名前缀关键词,无原始类别字段",
+                "left": "center",
+            },
             "tooltip": {"trigger": "item", "formatter": "{b}: {c} 元 ({d}%)"},
             "legend": {"orient": "vertical", "left": "left"},
             "series": [
@@ -120,10 +133,15 @@ class DishCategoryBreakdown(AnalysisTemplate):
             ],
         }
 
+        # Apr 25 2026 D1.C5: clearly label as inferred so the AI / FE can't
+        # present this as authoritative. Real categories require a proper
+        # POS export with a category column or a customer-supplied mapping.
         insight_text = (
-            f"{top_category}贡献 {top_share:.1f}% 营收 (最大品类);"
+            f"⚠ 推断分类 (基于菜品名前缀,无原始类别字段)。"
+            f"{top_category} 贡献 {top_share:.1f}% 营收 (最大推断类目);"
             f"前 3 类合计 {top3_pct:.1f}%,"
             f"覆盖 {total_item_count} 个菜品。"
+            f"如需精确分类,请上传含「商品类别」字段的明细表。"
         )
 
         return TemplateResult(
@@ -132,6 +150,11 @@ class DishCategoryBreakdown(AnalysisTemplate):
             data={
                 "breakdown": breakdown,
                 "total_revenue": round(total_revenue, 2),
+                # Apr 25 2026 D1.C5: explicit flag for downstream (AI prompt /
+                # FE label) to know these categories are inferred.
+                "inferred": True,
+                "inference_method": "name_prefix_keyword_match",
+                "category_source": "推断 (菜品名前缀)",
             },
             chart_config=chart_config,
             kpis={
@@ -139,6 +162,7 @@ class DishCategoryBreakdown(AnalysisTemplate):
                 "top_category_share": top_share,
                 "category_count": len(breakdown),
                 "total_item_count": total_item_count,
+                "inferred": True,
             },
             insight_text=insight_text,
         )
