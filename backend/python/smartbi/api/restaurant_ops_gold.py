@@ -260,7 +260,8 @@ async def gross_margin(request: Request, days: int = Query(30, ge=1, le=365)) ->
             cost_map = {r["product_source_pk"]: r["food_cost"] for r in cost_rows}
 
     dishes = []
-    total_rev = 0.0
+    total_rev_all = 0.0         # all dishes (for display "总营收")
+    total_rev_with_cost = 0.0   # dishes with recipes (for avgRate denominator)
     total_profit = 0.0
     for r in pos_rows:
         source_pk = cretas_map.get(r["normalized_name"])
@@ -268,30 +269,41 @@ async def gross_margin(request: Request, days: int = Query(30, ge=1, le=365)) ->
         total_cost = food_cost * r["qty"]
         gp = r["revenue"] - total_cost
         rate = gp / r["revenue"] if r["revenue"] > 0 else 0
+        has_cost = food_cost > 0
         dishes.append({
             "name": r["dish_name"],
             "qty": r["qty"],
             "revenue": r["revenue"],
             "foodCostUnit": food_cost,
             "totalCost": total_cost,
-            "grossProfit": gp,
-            "marginRate": rate,
+            "grossProfit": gp if has_cost else 0,  # don't treat "no recipe" as pure profit
+            "marginRate": rate if has_cost else 0,
             "bills": r["bills"],
-            "hasCost": food_cost > 0,
+            "hasCost": has_cost,
         })
-        total_rev += r["revenue"]
-        if food_cost > 0:
+        total_rev_all += r["revenue"]
+        if has_cost:
+            total_rev_with_cost += r["revenue"]
             total_profit += gp
 
-    avg_rate = total_profit / total_rev if total_rev > 0 else 0
+    # avgRate 用 "只算有配方菜" 分母, 避免 403 无配方菜稀释真实毛利率.
+    avg_rate = total_profit / total_rev_with_cost if total_rev_with_cost > 0 else 0
+    dishes_with_cost = sum(1 for d in dishes if d["hasCost"])
+    coverage_revenue = total_rev_with_cost / total_rev_all if total_rev_all > 0 else 0
 
     return {
         "success": True,
         "data": {
             "windowDays": days,
-            "totalRevenue": total_rev,
+            "totalRevenue": total_rev_all,
+            "totalRevenueWithCost": total_rev_with_cost,
             "totalProfit": total_profit,
             "avgRate": avg_rate,
+            "coverage": {
+                "dishCount": dishes_with_cost,
+                "totalDishCount": len(dishes),
+                "revenueRatio": coverage_revenue,
+            },
             "dishes": dishes,
         },
     }

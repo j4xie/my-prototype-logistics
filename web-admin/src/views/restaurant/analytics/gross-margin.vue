@@ -33,7 +33,7 @@ interface DishMargin {
   hasCost: boolean;
 }
 
-const totals = ref({ revenue: 0, profit: 0, rate: 0, dishCount: 0, withCost: 0 });
+const totals = ref({ revenue: 0, profit: 0, rate: 0, dishCount: 0, withCost: 0, coverageRev: 0 });
 const dishes = ref<DishMargin[]>([]);
 const syncing = ref(false);
 
@@ -83,8 +83,10 @@ async function loadData() {
       success: boolean;
       data?: {
         totalRevenue: number;
+        totalRevenueWithCost?: number;
         totalProfit: number;
         avgRate: number;
+        coverage?: { dishCount: number; totalDishCount: number; revenueRatio: number };
         dishes: Array<{
           name: string; qty: number; revenue: number; foodCostUnit: number;
           totalCost: number; grossProfit: number; marginRate: number; bills: number; hasCost: boolean;
@@ -96,8 +98,9 @@ async function loadData() {
       totals.value.profit = res.data.totalProfit || 0;
       totals.value.rate = res.data.avgRate || 0;
       dishes.value = res.data.dishes || [];
-      totals.value.dishCount = dishes.value.length;
-      totals.value.withCost = dishes.value.filter(d => d.hasCost).length;
+      totals.value.dishCount = res.data.coverage?.totalDishCount ?? dishes.value.length;
+      totals.value.withCost = res.data.coverage?.dishCount ?? dishes.value.filter(d => d.hasCost).length;
+      totals.value.coverageRev = res.data.coverage?.revenueRatio ?? 0;
     } else {
       ElMessage.warning('毛利数据加载为空 — 请检查是否已有 POS 销售 + 配方数据');
     }
@@ -202,15 +205,18 @@ function marginRateTag(rate: number) {
         </el-col>
         <el-col :xs="12" :sm="6">
           <div class="stat-item">
-            <span class="stat-label">总毛利</span>
+            <span class="stat-label">总毛利 <span class="stat-sub">(仅含配方菜)</span></span>
             <span class="stat-value success">¥{{ totals.profit.toLocaleString('zh-CN', { maximumFractionDigits: 0 }) }}</span>
           </div>
         </el-col>
         <el-col :xs="12" :sm="6">
           <div class="stat-item">
-            <span class="stat-label">平均毛利率</span>
-            <span class="stat-value" :class="{ success: totals.rate >= 0.5, warning: totals.rate < 0.3 }">
+            <span class="stat-label">平均毛利率 <span class="stat-sub">(仅含配方菜)</span></span>
+            <span class="stat-value" :class="{ success: totals.rate >= 0.5, warning: totals.rate < 0.3 && totals.rate > 0 }">
               {{ (totals.rate * 100).toFixed(1) }}%
+            </span>
+            <span v-if="totals.dishCount > 0" class="stat-footnote">
+              覆盖 {{ totals.withCost }}/{{ totals.dishCount }} 菜品 · {{ (totals.coverageRev * 100).toFixed(1) }}% 营收
             </span>
           </div>
         </el-col>
@@ -296,11 +302,14 @@ function marginRateTag(rate: number) {
   .stat-item {
     background: #fafafa; padding: 14px 16px; border-radius: 6px;
     display: flex; flex-direction: column; gap: 6px;
-    .stat-label { font-size: 13px; color: #909399; }
+    .stat-label { font-size: 13px; color: #909399;
+      .stat-sub { font-size: 11px; color: #c0c4cc; margin-left: 3px; }
+    }
     .stat-value { font-size: 22px; font-weight: 600; color: #303133;
       &.success { color: #67c23a; }
       &.warning { color: #e6a23c; }
     }
+    .stat-footnote { font-size: 11px; color: #909399; margin-top: 2px; }
   }
   .chart-section {
     padding: 12px 0 18px;
