@@ -178,29 +178,46 @@ class ChartRecommendationCache:
         """
         Generate cache key from data structure and scenario.
 
-        Key is based on:
-        - Column names and types
-        - Time/category/measure dimensions
+        Apr 25 (D2.B1): Cache key dropped column NAMES — keeps column COUNT
+        + sorted dtype signature only. The previous key included sorted
+        column names, so two customers' POS exports that both have 232
+        columns but use slightly different headers (e.g. 「门店」 vs
+        「门店名称」) would never share a cache entry. Production stats
+        showed only 1 entry / 1 hit total. Dropping names lets similar-
+        shape Excels hit cache regardless of header naming.
+
+        Key is now based on:
+        - Column count (cardinality) + sorted dtype histogram
+        - Row-count bucket (so tiny vs large files don't share charts)
+        - Counts of time/category/measure dimensions
         - Business scenario
         - User intent (if provided)
         """
-        # Build signature from data structure
-        col_names = sorted([
-            c.get("columnName", c.get("column_name", ""))
-            for c in data_summary.columns
-        ])
+        # Apr 25 (D2.B1): drop names, keep dtype histogram + counts.
         col_types = sorted([
             c.get("dataType", c.get("data_type", ""))
             for c in data_summary.columns
         ])
 
+        # Bucket row_count so small variations don't bust cache. Buckets
+        # mirror the LLM-skip threshold (50) and common dataset sizes.
+        rc = int(getattr(data_summary, 'row_count', 0))
+        if rc < 50:
+            rc_bucket = "tiny"
+        elif rc < 1000:
+            rc_bucket = "small"
+        elif rc < 50_000:
+            rc_bucket = "med"
+        else:
+            rc_bucket = "large"
+
         signature_parts = [
-            "|".join(col_names),
-            "|".join(col_types),
-            str(getattr(data_summary, 'row_count', 0)),
-            "|".join(sorted(data_summary.time_columns[:5])),
-            "|".join(sorted(data_summary.category_columns[:5])),
-            "|".join(sorted(data_summary.measures[:5])),
+            f"cols={len(col_types)}",
+            "types=" + "|".join(col_types),
+            f"rc={rc_bucket}",
+            f"time={len(data_summary.time_columns)}",
+            f"cat={len(data_summary.category_columns)}",
+            f"meas={len(data_summary.measures)}",
             scenario,
             user_intent or ""
         ]
@@ -507,8 +524,30 @@ class ChartRecommender:
         if use_cache:
             cached = self._cache.get(data_summary, scenario, user_intent)
             if cached:
-                logger.info(f"Using cached chart recommendations")
-                return cached[:max_recommendations]
+                # Apr 25 (D2.B1): cache key now drops column names. The cached
+                # recommendation may carry x_axis/y_axis values that don't exist
+                # in the current data_summary's columns — remap them to the
+                # actual columns using dtype/role before returning, so the
+                # frontend chart builder doesn't render an empty chart.
+                remapped = self._remap_cached_recommendations(cached, data_summary)
+                logger.info(f"Using cached chart recommendations (remapped to current columns)")
+                return remapped[:max_recommendations]
+
+        # 1b. Apr 25 (D2.B1): skip LLM entirely for tiny uploads. The 24s
+        # qwen-plus round-trip is wasted on 5–50 row test/synthetic data —
+        # the rule-based fallback produces a perfectly fine default chart
+        # (column 1 = x-axis, first numeric = y-axis). Saves ~24s per
+        # tiny-upload sheet analysis.
+        TINY_ROW_THRESHOLD = 50
+        if data_summary.row_count > 0 and data_summary.row_count < TINY_ROW_THRESHOLD:
+            logger.info(
+                f"Tiny upload ({data_summary.row_count} rows < {TINY_ROW_THRESHOLD}) — "
+                f"using rule-based fallback, skipping LLM"
+            )
+            recommendations = self._minimal_fallback(data_summary, scenario)
+            if use_cache and recommendations:
+                self._cache.set(data_summary, scenario, recommendations, user_intent)
+            return recommendations[:max_recommendations]
 
         # 2. Fallback if no LLM configured
         if not self.settings.llm_api_key:
@@ -795,6 +834,71 @@ class ChartRecommender:
         with llm_caller_context("chart"):
             result = await call_chain(SLOT.CHART, payload)
         return result["choices"][0]["message"]["content"]
+
+    def _remap_cached_recommendations(
+        self,
+        cached: List[ChartRecommendation],
+        data_summary: DataSummary,
+    ) -> List[ChartRecommendation]:
+        """
+        Remap cached recommendation x/y/series fields to current data columns.
+
+        Apr 25 (D2.B1): cache key drops column NAMES so similar-shape data
+        hits cache. But the cached ChartRecommendation still carries the
+        original x_axis/y_axis names — which may not exist in the new data.
+        Map them by role/dtype:
+          - x_axis: prefer time_columns[0], else category_columns[0], else dimensions[0]
+          - y_axis: prefer first N measures matching original count
+          - series: prefer second category_column if any
+        Returns a fresh list of ChartRecommendation (does not mutate cache).
+        """
+        actual_columns = [
+            c.get("columnName", c.get("column_name", ""))
+            for c in data_summary.columns
+        ]
+        remapped: List[ChartRecommendation] = []
+        for rec in cached:
+            # If x_axis still exists, keep it (rare — but common when same
+            # tenant re-uploads identical-schema file).
+            new_x = rec.x_axis if rec.x_axis in actual_columns else None
+            if new_x is None:
+                if data_summary.time_columns:
+                    new_x = data_summary.time_columns[0]
+                elif data_summary.category_columns:
+                    new_x = data_summary.category_columns[0]
+                elif data_summary.dimensions:
+                    new_x = data_summary.dimensions[0]
+
+            # Y-axis: keep ones that still exist, fill from measures
+            new_y: List[str] = []
+            if rec.y_axis:
+                for y in rec.y_axis:
+                    if y in actual_columns:
+                        new_y.append(y)
+            if not new_y and data_summary.measures:
+                # Cached y count → take same many from measures (capped at 3)
+                want = max(1, min(len(rec.y_axis or []) or 1, 3))
+                new_y = data_summary.measures[:want]
+
+            # Series: try to keep, else use 2nd category column if cached one was set
+            new_series = rec.series if rec.series in actual_columns else None
+            if rec.series is not None and new_series is None:
+                if len(data_summary.category_columns) >= 2:
+                    new_series = data_summary.category_columns[1]
+
+            remapped.append(ChartRecommendation(
+                chart_type=rec.chart_type,
+                title=rec.title,
+                reason=rec.reason,
+                x_axis=new_x,
+                y_axis=new_y if new_y else None,
+                series=new_series,
+                priority=rec.priority,
+                category=rec.category,
+                confidence=rec.confidence,
+                config_hints=dict(rec.config_hints) if rec.config_hints else {},
+            ))
+        return remapped
 
     def _validate_column_name(
         self,
