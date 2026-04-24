@@ -310,16 +310,23 @@ async def quick_summary(request: Request):
                 col_max = df[col].max()
                 col_mean = df[col].mean()
                 col_sum = df[col].sum()
-                # Apr 25 2026 — agg_strategy is the single source of truth for
-                # how this col appears as a KPI card. Persisted in
-                # smart_bi_pg_field_definitions.agg_strategy by /reclassify
-                # (which calls field_classifier.infer_agg_strategy).
-                #   "mean" → FE displays col.mean (e.g. 平均星级 = 4.83 分)
-                #   "sum"  → FE displays col.sum (default for amounts)
-                #   "none" → FE skips this col entirely (IDs, dimensions)
-                # No upload_id or DB lookup failed → falls back to "sum"
-                # (matches legacy pre-Apr 24 behaviour).
+                # Apr 25 2026 — agg_strategy from DB is authoritative for IDs
+                # ('none') and confirmed ratings ('mean'). The 'sum' default,
+                # however, can be refined by live polars stats: when the
+                # statistics JSONB was empty at /reclassify time (true for
+                # most historical uploads), infer_agg_strategy falls back to
+                # 'sum' even for rating columns. Re-check rating criteria
+                # here against live mean to restore Apr 24 stop-gap behaviour
+                # (matches qhj 4172 / 3975 test fixtures).
                 agg_strategy = agg_by_name.get(col, "sum")
+                if agg_strategy == "sum" and pd.notna(col_mean):
+                    name_suggests_rating = (
+                        col.endswith("分")
+                        or col.endswith("评分")
+                        or col.endswith("星级")
+                    )
+                    if name_suggests_rating and 1.0 <= float(col_mean) <= 5.0:
+                        agg_strategy = "mean"
                 # Suppress sum on the wire when the FE won't use it, so KPI
                 # filters that key on `sum != null` stay correct.
                 emit_sum = agg_strategy == "sum"
