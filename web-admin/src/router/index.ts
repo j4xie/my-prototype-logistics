@@ -724,6 +724,13 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'RestaurantDianpingGap',
             component: () => import('@/views/restaurant/analytics/dianping-gap.vue'),
             meta: { requiresAuth: true, title: '经营与平台分析', module: 'restaurant' }
+          },
+          {
+            // Apr 24 2026 Plan C Phase 7+: cross-module POS × food cost gross margin
+            path: 'analytics/gross-margin',
+            name: 'RestaurantGrossMargin',
+            component: () => import('@/views/restaurant/analytics/gross-margin.vue'),
+            meta: { requiresAuth: true, title: '菜品毛利分析', module: 'restaurant' }
           }
         ]
       },

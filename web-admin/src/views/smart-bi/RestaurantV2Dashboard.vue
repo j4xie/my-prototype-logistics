@@ -134,6 +134,7 @@ function fillDengHuoguoDemo() {
 onMounted(async () => {
   await loadUploads();
   loadGoldKpi();
+  loadMarginKpi();
 });
 
 async function loadUploads() {
@@ -266,6 +267,31 @@ const goldKpi = ref<FinanceSummary | null>(null);
 const goldKpiLoading = ref(false);
 const goldKpiError = ref<string>('');
 const goldKpiFallbackLabel = ref<string>('');
+
+// Apr 24 Plan C Phase 7+: margin KPI (restaurant ops gold)
+const marginKpi = ref<{ rate: number; profit: number; dishes: Array<{name: string, grossProfit: number, marginRate: number}> }>({
+  rate: 0, profit: 0, dishes: [],
+});
+async function loadMarginKpi() {
+  if (!factoryId.value) return;
+  try {
+    const { pythonFetch } = await import('@/api/smartbi/common');
+    const res = await pythonFetch('/api/smartbi/restaurant-ops/gross-margin?days=30') as {
+      success: boolean;
+      data?: { avgRate: number; totalProfit: number; dishes: Array<{name: string; grossProfit: number; marginRate: number; hasCost: boolean}> };
+    };
+    if (res.success && res.data) {
+      marginKpi.value.rate = res.data.avgRate || 0;
+      marginKpi.value.profit = res.data.totalProfit || 0;
+      marginKpi.value.dishes = (res.data.dishes || [])
+        .filter(d => d.hasCost)
+        .sort((a, b) => b.grossProfit - a.grossProfit)
+        .slice(0, 3);
+    }
+  } catch (e) {
+    console.warn('[margin-kpi] load failed:', e);
+  }
+}
 
 async function loadGoldKpi() {
   if (!factoryId.value) return;
@@ -882,18 +908,31 @@ function formatCurrency(v?: number): string {
         所选区间无 POS 数据 (请上传 Excel 或调整区间)
       </div>
       <el-row v-else-if="goldKpi" :gutter="16" class="gold-kpi-metrics">
-        <el-col :span="6">
+        <el-col :span="marginKpi.rate > 0 ? 4 : 6">
           <el-statistic :value="goldKpi.totalRevenue" title="总营收" :precision="2" prefix="¥" />
           <div class="gold-kpi-sub">{{ goldKpi.dayCount }} 天</div>
         </el-col>
-        <el-col :span="6">
+        <el-col :span="marginKpi.rate > 0 ? 4 : 6">
           <el-statistic :value="goldKpi.billCount" title="订单数" :precision="0" />
         </el-col>
-        <el-col :span="6">
+        <el-col :span="marginKpi.rate > 0 ? 4 : 6">
           <el-statistic :value="goldKpi.avgBillValue ?? 0" title="客单价" :precision="2" prefix="¥" />
         </el-col>
-        <el-col :span="6">
+        <el-col :span="marginKpi.rate > 0 ? 4 : 6">
           <el-statistic :value="goldKpi.storeCount" title="门店数" :precision="0" />
+        </el-col>
+        <!-- Phase 7+: margin KPIs if POS × recipe data exists -->
+        <el-col v-if="marginKpi.rate > 0" :span="4">
+          <el-statistic :value="marginKpi.rate * 100" title="平均毛利率" :precision="1" suffix="%" />
+          <div class="gold-kpi-sub" style="color: #67c23a">基于 Gold</div>
+        </el-col>
+        <el-col v-if="marginKpi.rate > 0" :span="4">
+          <el-statistic :value="marginKpi.profit" title="总毛利" :precision="2" prefix="¥" />
+          <div class="gold-kpi-sub">
+            <el-button size="small" type="text" @click="$router.push('/restaurant/analytics/gross-margin')">
+              详细 →
+            </el-button>
+          </div>
         </el-col>
       </el-row>
       <div v-else class="gold-kpi-empty">正在加载...</div>
@@ -907,6 +946,27 @@ function formatCurrency(v?: number): string {
           </el-table-column>
           <el-table-column prop="billCount" label="订单数" width="120" align="right">
             <template #default="{ row }">{{ row.billCount.toLocaleString() }}</template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <!-- Phase 7+: Top 3 毛利菜品 — encouraging "promote these" insight -->
+      <div v-if="marginKpi.dishes.length > 0" class="gold-kpi-stores" style="margin-top: 14px">
+        <div class="gold-kpi-stores-title" style="display:flex;align-items:center;gap:8px">
+          <span>菜品 Top 3 (按毛利)</span>
+          <el-tag size="small" type="success">跨模块: POS × 配方</el-tag>
+        </div>
+        <el-table :data="marginKpi.dishes" size="small" stripe>
+          <el-table-column prop="name" label="菜品" />
+          <el-table-column prop="grossProfit" label="毛利" width="140" align="right">
+            <template #default="{ row }">¥{{ row.grossProfit.toFixed(2) }}</template>
+          </el-table-column>
+          <el-table-column prop="marginRate" label="毛利率" width="120" align="center">
+            <template #default="{ row }">
+              <el-tag :type="row.marginRate >= 0.6 ? 'success' : row.marginRate >= 0.4 ? '' : 'warning'" size="small">
+                {{ (row.marginRate * 100).toFixed(1) }}%
+              </el-tag>
+            </template>
           </el-table-column>
         </el-table>
       </div>

@@ -26,6 +26,12 @@ const restaurantOps = ref({
   shortage: 0,
   activeDays: 0,
   top5Ingredients: [] as { name: string; category: string; cost: number }[],
+  // Apr 24 Phase 7+: gross margin totals (POS × food_cost cross-module)
+  marginRevenue: 0,
+  marginProfit: 0,
+  marginRate: 0,
+  dishesWithCost: 0,
+  totalDishes: 0,
 });
 
 async function loadRestaurantOps() {
@@ -61,6 +67,13 @@ async function loadRestaurantOps() {
       restaurantOps.value.activeDays = t.activeDays || 0;
       // top5_ingredients → top5Ingredients by transformKeys
       restaurantOps.value.top5Ingredients = (res.data as Record<string, unknown>).top5Ingredients as { name: string; category: string; cost: number }[] || [];
+      // margin totals (Phase 7+)
+      const margin = ((res.data as Record<string, unknown>).margin || {}) as Record<string, number>;
+      restaurantOps.value.marginRevenue = margin.totalPosRevenue || 0;
+      restaurantOps.value.marginProfit = margin.totalGrossProfit || 0;
+      restaurantOps.value.marginRate = margin.avgMarginRate || 0;
+      restaurantOps.value.dishesWithCost = margin.dishCountWithCost || 0;
+      restaurantOps.value.totalDishes = margin.totalDishCount || 0;
     }
   } catch (e) {
     console.error('[analytics/overview] restaurant ops load failed:', e);
@@ -234,6 +247,51 @@ function formatPercent(num: number): string {
             <div class="stat-value" style="font-size:18px;cursor:pointer">🤖 点击</div>
             <div class="stat-label">问 AI 领料/损耗/盘点</div>
             <div class="stat-footer"><span style="color:#409eff">基于 Gold 数据秒回</span></div>
+          </el-card>
+        </el-col>
+      </el-row>
+
+      <!-- Gross margin row (Phase 7+: POS × food_cost) -->
+      <el-row v-if="restaurantOps.marginRevenue > 0" :gutter="16" class="overview-cards" style="margin-top:12px">
+        <el-col :xs="24" :sm="12" :md="8" :lg="4">
+          <el-card class="stat-card sales" shadow="hover">
+            <div class="card-header"><el-icon class="module-icon"><Money /></el-icon><span>POS 营收</span></div>
+            <div class="stat-value">¥{{ formatNumber(restaurantOps.marginRevenue, 0) }}</div>
+            <div class="stat-label">近30天</div>
+            <div class="stat-footer"><span>{{ restaurantOps.totalDishes }} 种菜品</span></div>
+          </el-card>
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="8" :lg="4">
+          <el-card class="stat-card production" shadow="hover">
+            <div class="card-header"><el-icon class="module-icon"><TrendCharts /></el-icon><span>毛利</span></div>
+            <div class="stat-value success">¥{{ formatNumber(restaurantOps.marginProfit, 0) }}</div>
+            <div class="stat-label">近30天</div>
+            <div class="stat-footer"><span>毛利率 {{ (restaurantOps.marginRate * 100).toFixed(1) }}%</span></div>
+          </el-card>
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="8" :lg="4">
+          <el-card class="stat-card warehouse" shadow="hover">
+            <div class="card-header"><el-icon class="module-icon"><PieChart /></el-icon><span>毛利率</span></div>
+            <div class="stat-value" :class="{ 'success': restaurantOps.marginRate >= 0.5, 'warning': restaurantOps.marginRate < 0.3 }">
+              {{ (restaurantOps.marginRate * 100).toFixed(1) }}%
+            </div>
+            <div class="stat-label">平均</div>
+            <div class="stat-footer"><span>{{ restaurantOps.dishesWithCost }}/{{ restaurantOps.totalDishes }} 菜有配方</span></div>
+          </el-card>
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="16" :lg="12">
+          <el-card class="stat-card finance" shadow="hover" @click="$router.push('/restaurant/analytics/gross-margin')">
+            <div class="card-header" style="display:flex;align-items:center;gap:8px">
+              <el-icon><DataAnalysis /></el-icon><span>毛利深度分析</span>
+              <span style="margin-left:auto;font-size:12px;color:#409eff;cursor:pointer">查看专属页面 →</span>
+            </div>
+            <div style="font-size:13px;color:#606266;line-height:1.8;padding:6px 0">
+              跨模块分析: POS 销售 × 配方成本 = 每道菜毛利. 可按时段筛选, 按毛利率排序识别"赚钱菜" vs"负担菜".
+            </div>
+            <div style="display:flex;gap:8px">
+              <el-button size="small" type="primary" @click.stop="$router.push('/restaurant/analytics/gross-margin')">查看毛利排行</el-button>
+              <el-button size="small" @click.stop="$router.push('/smart-bi/query?q=哪道菜毛利最高 top 10')">🤖 AI 分析</el-button>
+            </div>
           </el-card>
         </el-col>
       </el-row>

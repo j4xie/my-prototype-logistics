@@ -8,6 +8,7 @@ import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/store/modules/auth'
 import { useConfigStore } from '@/store/modules/config'
+import { usePermissionStore, ModuleName } from '@/store/modules/permission'
 import request from '@/api/request'
 import type { EffectiveModuleConfig, WorkflowTransition } from '@/types/config'
 import { MODULE_API_PATHS } from '@/types/config'
@@ -24,10 +25,26 @@ const props = defineProps<{
 const route = useRoute()
 const authStore = useAuthStore()
 const configStore = useConfigStore()
+const permissionStore = usePermissionStore()
 
 const moduleCode = computed(() => props.moduleCode || String(route.params.moduleCode || ''))
 const factoryId = computed(() => authStore.factoryId || '')
 const apiPath = computed(() => MODULE_API_PATHS[moduleCode.value] || moduleCode.value)
+
+// RBAC UI: 映射 moduleCode (e.g., sales_order) → sidebar permission module (e.g., sales)
+// 使 viewer / read-only 角色不看到启用的 "新建" 按钮 (之前只后端 403, FE 让用户填完才发现)
+const MODULE_CODE_TO_PERMISSION: Record<string, ModuleName> = {
+  sales_order: 'sales', purchase_order: 'procurement', production_plan: 'production',
+  production_batch: 'production', bom_item: 'production',
+  quality_inspection: 'quality', hr_employee: 'hr', equipment: 'equipment',
+  finance_ar: 'finance', finance_ap: 'finance', material_batch: 'warehouse',
+  scheduling: 'scheduling', restaurant: 'restaurant',
+}
+const canWrite = computed(() => {
+  const mod = MODULE_CODE_TO_PERMISSION[moduleCode.value]
+  if (!mod) return true  // 无映射的保守允许, 后端仍 403 兜底
+  return permissionStore.canWrite(mod)
+})
 
 // 状态
 const config = ref<EffectiveModuleConfig | null>(null)
@@ -198,7 +215,8 @@ onMounted(() => {
         </el-tag>
       </div>
       <div class="page-actions" v-if="currentView === 'list'">
-        <el-button type="primary" @click="currentView = 'create'">新建</el-button>
+        <!-- RBAC UI fix: canWrite=false 时隐藏 "新建" (viewer 不再误看到) -->
+        <el-button v-if="canWrite" type="primary" @click="currentView = 'create'">新建</el-button>
         <el-button @click="loadTableData">刷新</el-button>
       </div>
     </div>

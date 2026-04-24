@@ -24,6 +24,10 @@ const restaurantKpi = ref({
   wastageCost: 0,
   shortageQty: 0,
   topIngredient: '',
+  // Phase 7+: gross margin (POS × food cost)
+  marginRate: 0,         // POS revenue - food_cost / POS revenue
+  marginRevenue: 0,
+  marginProfit: 0,
 });
 
 async function loadRestaurantKpi() {
@@ -50,6 +54,11 @@ async function loadRestaurantKpi() {
       const reqQty = t.totalReqQty || 0;
       restaurantKpi.value.wastageRate = reqCost > 0 ? (t.totalWastageCost || 0) / reqCost : 0;
       restaurantKpi.value.shortageRate = reqQty > 0 ? (t.totalShortage || 0) / reqQty : 0;
+      // Phase 7+ gross margin
+      const margin = ((res.data as Record<string, unknown>).margin || {}) as Record<string, number>;
+      restaurantKpi.value.marginRate = margin.avgMarginRate || 0;
+      restaurantKpi.value.marginRevenue = margin.totalPosRevenue || 0;
+      restaurantKpi.value.marginProfit = margin.totalGrossProfit || 0;
     }
   } catch (e) {
     console.error('[kpi-dashboard] restaurant kpi load failed:', e);
@@ -174,6 +183,17 @@ function formatPercent(value: number) {
           <div class="kpi-footer">
             <span>当前: {{ (restaurantKpi.shortageRate * 100).toFixed(2) }}%</span>
             <span class="target">目标: &lt; 1%</span>
+          </div>
+        </div>
+        <div v-if="restaurantKpi.marginRevenue > 0" class="kpi-item">
+          <div class="kpi-label">菜品毛利率 (POS 销售 × 配方成本)</div>
+          <el-progress
+            :percentage="Math.round(restaurantKpi.marginRate * 100)"
+            :color="restaurantKpi.marginRate >= 0.5 ? '#67c23a' : restaurantKpi.marginRate >= 0.3 ? '#e6a23c' : '#f56c6c'"
+          />
+          <div class="kpi-footer">
+            <span>当前: {{ (restaurantKpi.marginRate * 100).toFixed(1) }}%</span>
+            <span class="target">目标: ≥ 60%</span>
           </div>
         </div>
         <div class="kpi-stats">

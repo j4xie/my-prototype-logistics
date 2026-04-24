@@ -246,6 +246,7 @@ const menuConfig: MenuItem[] = [
       { path: '/restaurant/analytics/menu', title: '菜品四象限', icon: '', module: 'restaurant' },
       { path: '/restaurant/analytics/stores', title: '门店对比', icon: '', module: 'restaurant' },
       { path: '/restaurant/analytics/dianping', title: '经营与平台分析', icon: '', module: 'restaurant' },
+      { path: '/restaurant/analytics/gross-margin', title: '菜品毛利分析', icon: '', module: 'restaurant' },
       { path: '/restaurant/requisitions', title: '领料管理', icon: '', module: 'restaurant', groupLabel: '日常管理' },
       { path: '/restaurant/wastage', title: '损耗管理', icon: '', module: 'restaurant' },
       { path: '/restaurant/recipes', title: '配方管理', icon: '', module: 'restaurant' },
