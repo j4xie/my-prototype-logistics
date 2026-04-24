@@ -49,6 +49,40 @@ _TABLE_COL_CANDIDATES: Tuple[str, ...] = (
 )
 
 
+# ─── Review-domain candidates (大众点评 / 美团 / 抖音 / 小红书 export naming) ───
+# Ordered by specificity; first match wins via _first_present.
+# Excludes deliberately:
+#   _TASTE_SCORE_CANDIDATES does NOT contain bare "口味" (overlaps 口味标签 csv list)
+#   _VIP_FLAG_CANDIDATES does NOT contain "会员" (matches 会员卡 measure col on POS)
+
+_REVIEW_STORE_CANDIDATES: Tuple[str, ...] = (
+    "具体门店",            # 大众点评 standard (qhj Q3/Q4 exports)
+    "评价门店",            # 大众点评 alternate
+    "门店名称", "店铺名称",  # POS-style names some merchants reuse
+    "分店", "门市",          # 美团 / regional variants
+)
+
+_STAR_CANDIDATES: Tuple[str, ...] = ("星级分", "评分", "星级")
+_TASTE_SCORE_CANDIDATES: Tuple[str, ...] = ("口味分",)
+_ENV_SCORE_CANDIDATES: Tuple[str, ...] = ("环境分",)
+_SERVICE_SCORE_CANDIDATES: Tuple[str, ...] = ("服务分",)
+
+_REVIEW_TIME_CANDIDATES: Tuple[str, ...] = (
+    "评价时间", "评论时间", "发表时间", "创建时间",
+)
+_REVIEW_CONTENT_CANDIDATES: Tuple[str, ...] = (
+    "评价详情", "评价内容", "评论详情", "评论内容",
+)
+
+_VIP_FLAG_CANDIDATES: Tuple[str, ...] = ("是否vip", "是否VIP", "VIP")
+_COMPLAINT_STATUS_CANDIDATES: Tuple[str, ...] = ("投诉状态",)
+_REVIEW_PLATFORM_CANDIDATES: Tuple[str, ...] = (
+    "平台", "评价来源", "渠道", "来源",
+)
+_DISH_TAG_CANDIDATES: Tuple[str, ...] = ("菜品标签",)
+_COMPLAINT_TITLE_CANDIDATES: Tuple[str, ...] = ("投诉标题",)
+
+
 def _first_present(cols: Iterable[str], candidates: Iterable[str]) -> Optional[str]:
     """Return first candidate that appears in cols, else None."""
     col_set = set(cols)
@@ -109,6 +143,95 @@ def find_table_col(cols: Iterable[str]) -> Optional[str]:
     both formats (无桌位(外卖)/纯数字/包厢/VIP), so a single column is fine.
     """
     return _first_present(cols, _TABLE_COL_CANDIDATES)
+
+
+# ─── Review-domain helpers (added 2026-04-24, Slice 4 D-1 POC) ───
+
+def find_review_store_col(cols: Iterable[str]) -> Optional[str]:
+    """Return the column holding the reviewed store identity, or None.
+
+    Searches 具体门店 → 评价门店 → 门店名称 → 店铺名称 → 分店 → 门市.
+    Distinct from find_store_col() which is POS-domain (transaction store).
+    """
+    return _first_present(cols, _REVIEW_STORE_CANDIDATES)
+
+
+def find_star_col(cols: Iterable[str]) -> Optional[str]:
+    """Return the column holding overall star rating (1-5 scale), or None.
+
+    Priority: 星级分 (qualified) → 评分 (synonym) → 星级 (bare).
+    """
+    return _first_present(cols, _STAR_CANDIDATES)
+
+
+def find_taste_score_col(cols: Iterable[str]) -> Optional[str]:
+    """Return the column holding 口味 rating score, or None.
+
+    Deliberately does NOT match bare 口味 — that overlaps with 口味标签
+    (csv tag list); we want the rating score column only.
+    """
+    return _first_present(cols, _TASTE_SCORE_CANDIDATES)
+
+
+def find_env_score_col(cols: Iterable[str]) -> Optional[str]:
+    """Return the column holding 环境 rating score, or None."""
+    return _first_present(cols, _ENV_SCORE_CANDIDATES)
+
+
+def find_service_score_col(cols: Iterable[str]) -> Optional[str]:
+    """Return the column holding 服务 rating score, or None.
+
+    `_score` suffix disambiguates from POS 服务费 (service charge measure).
+    """
+    return _first_present(cols, _SERVICE_SCORE_CANDIDATES)
+
+
+def find_review_time_col(cols: Iterable[str]) -> Optional[str]:
+    """Return the column holding review/comment timestamp, or None.
+
+    Distinct from find_date_col() which is POS business-date semantics.
+    """
+    return _first_present(cols, _REVIEW_TIME_CANDIDATES)
+
+
+def find_review_content_col(cols: Iterable[str]) -> Optional[str]:
+    """Return the column holding review free-text content, or None."""
+    return _first_present(cols, _REVIEW_CONTENT_CANDIDATES)
+
+
+def find_vip_flag_col(cols: Iterable[str]) -> Optional[str]:
+    """Return the column holding VIP boolean flag, or None.
+
+    Boolean-flag column only — does NOT match 会员卡 (measure col on POS).
+    """
+    return _first_present(cols, _VIP_FLAG_CANDIDATES)
+
+
+def find_complaint_status_col(cols: Iterable[str]) -> Optional[str]:
+    """Return the column holding complaint status, or None.
+
+    Strict literal — only 投诉状态. Does NOT match 投诉时间 / 投诉内容 /
+    投诉标题 which are different complaint columns.
+    """
+    return _first_present(cols, _COMPLAINT_STATUS_CANDIDATES)
+
+
+def find_review_platform_col(cols: Iterable[str]) -> Optional[str]:
+    """Return the column holding review platform/source, or None."""
+    return _first_present(cols, _REVIEW_PLATFORM_CANDIDATES)
+
+
+def find_dish_tag_col(cols: Iterable[str]) -> Optional[str]:
+    """Return the column holding csv-comma-separated dish tags, or None.
+
+    Strict literal — only 菜品标签. Does NOT match 口味标签 / 服务标签.
+    """
+    return _first_present(cols, _DISH_TAG_CANDIDATES)
+
+
+def find_complaint_title_col(cols: Iterable[str]) -> Optional[str]:
+    """Return the column holding complaint title text, or None."""
+    return _first_present(cols, _COMPLAINT_TITLE_CANDIDATES)
 
 
 def preferred_revenue_col(cols: Iterable[str], primary_measure: Optional[str] = None) -> Optional[str]:
