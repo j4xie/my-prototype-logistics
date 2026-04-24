@@ -21,6 +21,7 @@ import com.cretas.aims.repository.bom.BomItemRepository;
 import com.cretas.aims.repository.inventory.PurchaseOrderItemRepository;
 import com.cretas.aims.repository.inventory.PurchaseOrderRepository;
 import com.cretas.aims.repository.inventory.PurchaseReceiveRecordRepository;
+import com.cretas.aims.repository.inventory.SalesOrderRepository;
 import com.cretas.aims.event.MaterialReceivedEvent;
 import com.cretas.aims.service.inventory.PurchaseService;
 import org.slf4j.Logger;
@@ -53,6 +54,10 @@ public class PurchaseServiceImpl implements PurchaseService {
     private final BomItemRepository bomItemRepository;
     private final com.cretas.aims.service.finance.ArApService arApService;
     private final ApplicationEventPublisher applicationEventPublisher;
+
+    /** Rule 2 hydration: lookup SO orderNumber for PO.salesOrderNumber @Transient. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private SalesOrderRepository salesOrderRepository;
 
     /** Canvas V2: DB-driven validation rules */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
@@ -177,13 +182,54 @@ public class PurchaseServiceImpl implements PurchaseService {
         if (!order.getFactoryId().equals(factoryId)) {
             throw new BusinessException("无权访问该采购订单");
         }
+        hydrateSalesOrderNumber(order);
         return order;
+    }
+
+    /**
+     * Rule 2 hydration: 给 PO 填 salesOrderNumber (@Transient). 前端"关联销售订单"
+     * 展示直接用, 免去 1+N 查询 SO. Null-safe — 无 salesOrderId 时不查.
+     */
+    private void hydrateSalesOrderNumber(PurchaseOrder order) {
+        if (order == null || order.getSalesOrderId() == null || salesOrderRepository == null) return;
+        try {
+            salesOrderRepository.findById(order.getSalesOrderId())
+                    .ifPresent(so -> order.setSalesOrderNumber(so.getOrderNumber()));
+        } catch (Exception e) {
+            log.debug("hydrate salesOrderNumber failed for PO {}: {}", order.getId(), e.getMessage());
+        }
+    }
+
+    /**
+     * Rule 2 hydration (batch): 给 list 结果一次性填 salesOrderNumber, 避免 1+N.
+     * 收集唯一 salesOrderIds → findAllById → map → set 回每个 PO.
+     */
+    private void hydrateSalesOrderNumbers(List<PurchaseOrder> orders) {
+        if (orders == null || orders.isEmpty() || salesOrderRepository == null) return;
+        Set<String> ids = orders.stream()
+                .map(PurchaseOrder::getSalesOrderId)
+                .filter(id -> id != null && !id.isEmpty())
+                .collect(Collectors.toSet());
+        if (ids.isEmpty()) return;
+        try {
+            Map<String, String> idToNumber = new HashMap<>();
+            salesOrderRepository.findAllById(ids).forEach(so -> idToNumber.put(so.getId(), so.getOrderNumber()));
+            for (PurchaseOrder po : orders) {
+                if (po.getSalesOrderId() != null) {
+                    String num = idToNumber.get(po.getSalesOrderId());
+                    if (num != null) po.setSalesOrderNumber(num);
+                }
+            }
+        } catch (Exception e) {
+            log.debug("batch hydrate salesOrderNumber failed: {}", e.getMessage());
+        }
     }
 
     @Override
     public PageResponse<PurchaseOrder> getPurchaseOrders(String factoryId, int page, int size) {
         PageRequest pageRequest = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<PurchaseOrder> result = purchaseOrderRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageRequest);
+        hydrateSalesOrderNumbers(result.getContent());
         return PageResponse.of(result.getContent(), page, size, result.getTotalElements());
     }
 
@@ -191,6 +237,7 @@ public class PurchaseServiceImpl implements PurchaseService {
     public PageResponse<PurchaseOrder> getPurchaseOrdersByStatus(String factoryId, PurchaseOrderStatus status, int page, int size) {
         PageRequest pageRequest = PageRequest.of(page - 1, size);
         Page<PurchaseOrder> result = purchaseOrderRepository.findByFactoryIdAndStatusOrderByCreatedAtDesc(factoryId, status, pageRequest);
+        hydrateSalesOrderNumbers(result.getContent());
         return PageResponse.of(result.getContent(), page, size, result.getTotalElements());
     }
 
@@ -199,6 +246,7 @@ public class PurchaseServiceImpl implements PurchaseService {
         // W-12 fix: SO detail page's "关联采购" tab needs this filter
         PageRequest pageRequest = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<PurchaseOrder> result = purchaseOrderRepository.findByFactoryIdAndSalesOrderId(factoryId, salesOrderId, pageRequest);
+        hydrateSalesOrderNumbers(result.getContent());
         return PageResponse.of(result.getContent(), page, size, result.getTotalElements());
     }
 

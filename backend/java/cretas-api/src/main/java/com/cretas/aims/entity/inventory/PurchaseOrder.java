@@ -115,6 +115,15 @@ public class PurchaseOrder extends BaseEntity {
     @Column(name = "sales_order_id", length = 191)
     private String salesOrderId;
 
+    /**
+     * Rule 2 hydration (2026-04-24): 前端"关联销售订单"展示需 orderNumber,
+     * 但 entity 只存 salesOrderId. 以前 UI 要为每行 PO 再 fetch SO detail —
+     * 1+N 查询. 这里用 @Transient 字段让 service 层 hydrate 一次, 前端直接读.
+     * 不持久化, 不走 @Column.
+     */
+    @Transient
+    private String salesOrderNumber;
+
     // ==================== 财务审核 ====================
 
     /** 财务审核人ID */
