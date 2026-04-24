@@ -42,8 +42,16 @@ _OPS_PATTERNS: List[Tuple[str, List[List[str]]]] = [
         [["盘点", "盘亏", "盘损", "库存差异", "账实差"],
          ["哪个", "哪些", "最多", "top", "TOP", "排名", "频率", "经常"]],
     ),
-    # Cross-module gross margin (MUST come BEFORE recipe_cost since "毛利"
-    # on its own = margin not cost). Plan C's signature feature.
+    # Per-store margin (MUST come BEFORE dish-level gross_margin):
+    # "哪家店赚钱" = store scope, not dish scope. Group-1 = store scope,
+    # Group-2 = margin vocabulary.
+    (
+        "RESTAURANT_OPS_STORE_MARGIN",
+        [["门店", "店", "分店", "店铺", "哪家"],
+         ["毛利", "毛利率", "赚钱", "净赚", "利润", "最好"]],
+    ),
+    # Cross-module gross margin — dish-level (MUST come BEFORE recipe_cost since
+    # "毛利" on its own = margin not cost). Plan C's signature feature.
     (
         "RESTAURANT_OPS_GROSS_MARGIN",
         [["毛利", "毛利率", "净赚", "赚钱", "挣钱", "利润"],
@@ -108,6 +116,14 @@ SAMPLE_QUERIES: Dict[str, List[str]] = {
         "菜品毛利对比",
         "利润最高的菜品",
         "售价减去食材成本最多的菜",
+    ],
+    "RESTAURANT_OPS_STORE_MARGIN": [
+        "哪家店最赚钱",
+        "门店毛利排行",
+        "哪家门店毛利率最高",
+        "分店利润对比",
+        "店铺毛利分析",
+        "哪家店净赚最多",
     ],
 }
 
@@ -606,12 +622,156 @@ async def resolve_gross_margin(
     )
 
 
+async def resolve_store_margin(
+    smartbi_pool, factory_id: str, days: int = 30, top_n: int = 10,
+) -> OpsAnswer:
+    """Per-store gross margin: fact_pos_item × fact_pos_transaction.store_id
+    × dim_store.name × recipe food_cost. Connects POS bill → store → dish → cost
+    for the chain-owner's core question "which store is most profitable".
+    """
+    async with smartbi_pool.acquire() as conn:
+        await conn.execute("SELECT set_config('app.factory_id', $1, true)", factory_id)
+        # Per-store per-dish aggregation — need this granularity to compute
+        # cost correctly (dish-level food_cost × qty sold at each store).
+        store_dish_rows = await conn.fetch(
+            """
+            SELECT s.store_id, s.name AS store_name,
+                   p.name AS dish_name, p.normalized_name,
+                   SUM(i.qty)::float AS qty,
+                   SUM(i.amount)::float AS revenue,
+                   COUNT(DISTINCT i.transaction_id)::int AS bills
+              FROM fact_pos_item i
+              JOIN fact_pos_transaction t ON t.id = i.transaction_id
+              JOIN dim_product p ON p.product_id = i.product_id
+              JOIN dim_store s ON s.store_id = t.store_id
+             WHERE i.factory_id = $1 AND t.factory_id = $1
+               AND t.date >= CURRENT_DATE - ($2::int)
+             GROUP BY s.store_id, s.name, p.name, p.normalized_name
+            """,
+            factory_id, days,
+        )
+
+    if not store_dish_rows:
+        return OpsAnswer(
+            code="RESTAURANT_OPS_STORE_MARGIN",
+            title=f"门店毛利分析 (近{days}天)",
+            answer_text=f"近 {days} 天无 POS 销售数据, 需先上传 POS 账单.",
+            charts=[], kpis=[],
+            meta={"window_days": days, "no_pos_data": True},
+        )
+
+    # Lookup cretas product_types + agg_product_cost for food cost per dish
+    dish_names = list({r["normalized_name"] for r in store_dish_rows})
+    name_to_pk: Dict[str, str] = {}
+    try:
+        import asyncpg as _asyncpg
+        from config import get_settings as _get_settings
+        cretas = await _asyncpg.connect(_get_settings().food_kb_db_url)
+        try:
+            rows = await cretas.fetch(
+                "SELECT id, name FROM product_types WHERE factory_id = $1 AND name = ANY($2::text[])",
+                factory_id, dish_names,
+            )
+            name_to_pk = {r["name"]: r["id"] for r in rows}
+        finally:
+            await cretas.close()
+    except Exception as e:
+        logger.warning(f"[store_margin] cretas lookup failed: {e}")
+
+    cost_by_pk: Dict[str, float] = {}
+    if name_to_pk:
+        async with smartbi_pool.acquire() as conn:
+            await conn.execute("SELECT set_config('app.factory_id', $1, true)", factory_id)
+            cr = await conn.fetch(
+                """
+                SELECT product_source_pk, food_cost::float AS c
+                  FROM agg_restaurant_product_cost
+                 WHERE factory_id = $1 AND product_source_pk = ANY($2::text[])
+                """,
+                factory_id, list(name_to_pk.values()),
+            )
+            cost_by_pk = {r["product_source_pk"]: r["c"] for r in cr}
+
+    # Aggregate per store
+    per_store: Dict[int, Dict[str, Any]] = {}
+    for r in store_dish_rows:
+        pk = name_to_pk.get(r["normalized_name"])
+        dish_cost = cost_by_pk.get(pk, 0) if pk else 0
+        line_cost = dish_cost * r["qty"]
+        s = per_store.setdefault(r["store_id"], {
+            "store_id": r["store_id"], "name": r["store_name"],
+            "revenue": 0.0, "cost": 0.0, "bills": 0, "dishes": 0, "dishes_with_cost": 0,
+        })
+        s["revenue"] += r["revenue"]
+        s["cost"] += line_cost
+        s["bills"] += r["bills"]
+        s["dishes"] += 1
+        if dish_cost > 0:
+            s["dishes_with_cost"] += 1
+
+    store_list = []
+    for s in per_store.values():
+        s["gross_profit"] = s["revenue"] - s["cost"]
+        s["margin_rate"] = s["gross_profit"] / s["revenue"] if s["revenue"] > 0 else 0
+        store_list.append(s)
+    store_list.sort(key=lambda x: x["gross_profit"], reverse=True)
+    top_slice = store_list[:top_n]
+
+    total_rev = sum(s["revenue"] for s in store_list)
+    total_profit = sum(s["gross_profit"] for s in store_list)
+    avg_rate = total_profit / total_rev if total_rev > 0 else 0
+
+    top_text = "\n".join([
+        f"  {i+1}. {s['name']}: 营收 ¥{s['revenue']:,.2f} / 毛利 ¥{s['gross_profit']:,.2f} ({s['margin_rate'] * 100:.1f}%), {s['bills']} 单"
+        for i, s in enumerate(top_slice)
+    ])
+    answer = (
+        f"近 {days} 天门店毛利对比 ({len(store_list)} 家店):\n"
+        f"- 总营收 ¥{total_rev:,.2f}, 总毛利 ¥{total_profit:,.2f}, 平均毛利率 {avg_rate * 100:.1f}%\n\n"
+        f"Top {len(top_slice)} 毛利门店:\n{top_text}"
+    )
+
+    charts = [{
+        "chartType": "bar",
+        "title": f"Top {len(top_slice)} 毛利门店",
+        "xAxis": {"data": [s["name"] for s in top_slice]},
+        "series": [
+            {"name": "营收", "type": "bar", "data": [s["revenue"] for s in top_slice]},
+            {"name": "毛利", "type": "bar", "data": [s["gross_profit"] for s in top_slice]},
+        ],
+    }]
+
+    return OpsAnswer(
+        code="RESTAURANT_OPS_STORE_MARGIN",
+        title=f"门店毛利对比 (近{days}天)",
+        answer_text=answer,
+        charts=charts,
+        kpis=[
+            {"title": "门店数", "value": len(store_list), "rawValue": len(store_list)},
+            {"title": "总营收", "value": f"¥{total_rev:,.0f}", "rawValue": total_rev},
+            {"title": "总毛利", "value": f"¥{total_profit:,.0f}", "rawValue": total_profit},
+            {"title": "最赚门店", "value": top_slice[0]["name"] if top_slice else "—", "rawValue": 0},
+        ],
+        meta={
+            "window_days": days, "store_count": len(store_list),
+            "stores": [
+                {"storeId": s["store_id"], "name": s["name"],
+                 "revenue": s["revenue"], "grossProfit": s["gross_profit"],
+                 "marginRate": s["margin_rate"], "bills": s["bills"],
+                 "dishesWithCost": s["dishes_with_cost"], "totalDishes": s["dishes"]}
+                for s in store_list
+            ],
+        },
+    )
+
+
 _RESOLVERS = {
     "RESTAURANT_OPS_WASTAGE_TOP": resolve_wastage_top,
     "RESTAURANT_OPS_STOCK_SHORTAGE": resolve_stock_shortage,
     "RESTAURANT_OPS_RECIPE_COST": resolve_recipe_cost,
     "RESTAURANT_OPS_REQUISITION_TREND": resolve_requisition_trend,
     "RESTAURANT_OPS_GROSS_MARGIN": resolve_gross_margin,
+    "RESTAURANT_OPS_STORE_MARGIN": resolve_store_margin,
 }
 
 

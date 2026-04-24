@@ -8,6 +8,8 @@ import DOMPurify from 'dompurify';
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
+// Apr 24 Plan C Phase 8: restaurant tenants see restaurant ops AI shortcuts
+const isRestaurant = computed(() => authStore.factoryType === 'RESTAURANT');
 
 const loading = ref(false);
 const reports = ref<Record<string, unknown>[]>([]);
@@ -137,6 +139,58 @@ function getSeverityType(severity: string) {
         <el-button type="primary" :icon="Refresh" @click="generateNewReport">生成新报告</el-button>
       </div>
     </div>
+
+    <!-- Apr 24 Plan C Phase 8: restaurant AI shortcuts -->
+    <el-card v-if="isRestaurant" class="restaurant-ai-shortcuts" shadow="never" style="margin-bottom:16px">
+      <template #header>
+        <span style="font-weight:600">🤖 餐饮运营 AI 快捷分析</span>
+        <span style="font-size:12px;color:#909399;margin-left:12px">点击直接进入 AI 问答,基于 Gold 数据秒回</span>
+      </template>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">
+        <div class="ai-shortcut" @click="$router.push('/smart-bi/query?q=哪道菜毛利最高 top 10')">
+          <div class="ai-shortcut-icon">💰</div>
+          <div>
+            <div class="ai-shortcut-title">菜品毛利分析</div>
+            <div class="ai-shortcut-desc">POS × 配方 找出最赚钱的菜</div>
+          </div>
+        </div>
+        <div class="ai-shortcut" @click="$router.push('/smart-bi/query?q=哪家店最赚钱 门店毛利排行')">
+          <div class="ai-shortcut-icon">🏪</div>
+          <div>
+            <div class="ai-shortcut-title">门店毛利对比</div>
+            <div class="ai-shortcut-desc">连锁店毛利率排名 + 找低效店</div>
+          </div>
+        </div>
+        <div class="ai-shortcut" @click="$router.push('/smart-bi/query?q=最近30天损耗最多的食材和类型占比')">
+          <div class="ai-shortcut-icon">🔥</div>
+          <div>
+            <div class="ai-shortcut-title">损耗深度分析</div>
+            <div class="ai-shortcut-desc">过期/变质/破损 类型拆解</div>
+          </div>
+        </div>
+        <div class="ai-shortcut" @click="$router.push('/smart-bi/query?q=哪个食材盘亏最严重')">
+          <div class="ai-shortcut-icon">📉</div>
+          <div>
+            <div class="ai-shortcut-title">盘亏 Top 分析</div>
+            <div class="ai-shortcut-desc">找出库存流失重点食材</div>
+          </div>
+        </div>
+        <div class="ai-shortcut" @click="$router.push('/smart-bi/query?q=最近30天领料趋势 top 10 食材')">
+          <div class="ai-shortcut-icon">📊</div>
+          <div>
+            <div class="ai-shortcut-title">领料趋势+Top</div>
+            <div class="ai-shortcut-desc">食材用量排名 + 30天趋势</div>
+          </div>
+        </div>
+        <div class="ai-shortcut" @click="$router.push('/restaurant/analytics/gross-margin')">
+          <div class="ai-shortcut-icon">📈</div>
+          <div>
+            <div class="ai-shortcut-title">专属毛利 Dashboard</div>
+            <div class="ai-shortcut-desc">每道菜 revenue/cost/profit 详表</div>
+          </div>
+        </div>
+      </div>
+    </el-card>
 
     <el-row :gutter="16">
       <!-- 报告列表 -->
@@ -269,6 +323,48 @@ function getSeverityType(severity: string) {
 
 .reports-card, .anomalies-card {
   border-radius: 8px;
+}
+
+.restaurant-ai-shortcuts {
+  border-radius: 8px;
+  border: 1px solid #e0e7ff;
+  background: linear-gradient(135deg, #f8faff 0%, #fdfcff 100%);
+
+  .ai-shortcut {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 14px;
+    border: 1px solid #ebeef5;
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      border-color: #409eff;
+      background: #f5f9ff;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(64, 158, 255, 0.15);
+    }
+
+    .ai-shortcut-icon {
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+
+    .ai-shortcut-title {
+      font-weight: 600;
+      color: #303133;
+      font-size: 14px;
+    }
+
+    .ai-shortcut-desc {
+      font-size: 12px;
+      color: #909399;
+      margin-top: 2px;
+    }
+  }
 }
 
 .anomaly-list {
