@@ -127,8 +127,42 @@ async function handleSync(id: string) {
         </div>
       </template>
 
-      <div v-if="connections.length === 0 && !loading" style="padding: 40px 0">
-        <el-empty description="暂无POS连接，点击上方按钮创建" />
+      <div v-if="connections.length === 0 && !loading" class="pos-onboarding">
+        <div class="onboarding-hero">
+          <div class="hero-title">接入你的 POS 系统</div>
+          <div class="hero-desc">
+            配置完成后, 系统会自动同步 POS 订单、菜品、门店数据到 SmartBI,
+            你就可以在 <b>经营驾驶舱</b>、<b>菜品四象限</b>、<b>门店对比</b> 等看板中看到实时分析。
+          </div>
+          <el-button v-if="canWrite" type="primary" size="large" :icon="Plus"
+            @click="dialogVisible = true" style="margin-top: 16px">
+            立即接入 POS
+          </el-button>
+          <el-alert v-if="!canWrite" type="info" :closable="false" style="margin-top: 16px; max-width: 500px">
+            当前账号无 POS 集成权限, 请联系工厂管理员
+          </el-alert>
+        </div>
+
+        <div class="brand-list">
+          <div class="brand-list-title">支持接入以下 POS 品牌:</div>
+          <div class="brand-grid">
+            <div v-for="(v, k) in brandMap" :key="k" class="brand-card">
+              <div class="brand-tag" :style="{ backgroundColor: v.color }">{{ v.name }}</div>
+              <div class="brand-hint">{{
+                k === 'KERUYUN' ? '适合中大型连锁' :
+                k === 'ERWEIHUO' ? '适合快餐/茶饮' :
+                k === 'YINBAO' ? '适合小型餐厅' :
+                k === 'MEITUAN' ? '美团外卖/点评订单' :
+                '大型连锁定制'
+              }}</div>
+            </div>
+          </div>
+          <div class="brand-faq">
+            <div>📌 需要在 POS 厂商后台申请 App Key / App Secret 凭证</div>
+            <div>📌 集成后每 15 分钟自动同步, 也可手动触发"同步"按钮</div>
+            <div>📌 如未看到你用的 POS 品牌, 请提工单支持对接</div>
+          </div>
+        </div>
       </div>
 
       <div v-else class="connection-grid">
@@ -212,5 +246,27 @@ async function handleSync(id: string) {
   }
   .conn-error { margin-top: 12px; }
   .conn-actions { display: flex; gap: 8px; margin-top: 16px; padding-top: 12px; border-top: 1px solid #ebeef5; }
+}
+
+// Empty-state onboarding (Apr 24 2026 — P0-C: rich entry replaces el-empty)
+.pos-onboarding {
+  padding: 32px 20px 40px;
+  .onboarding-hero {
+    text-align: center;
+    padding-bottom: 28px;
+    border-bottom: 1px dashed #ebeef5;
+    .hero-title { font-size: 20px; font-weight: 600; color: #303133; margin-bottom: 12px; }
+    .hero-desc { font-size: 14px; color: #606266; line-height: 1.8; max-width: 680px; margin: 0 auto; b { color: #409eff; } }
+  }
+  .brand-list {
+    margin-top: 24px;
+    .brand-list-title { font-size: 14px; font-weight: 600; color: #303133; margin-bottom: 14px; }
+    .brand-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .brand-card { border: 1px solid #ebeef5; border-radius: 6px; padding: 14px; background: #fafafa;
+      .brand-tag { display: inline-block; color: white; padding: 3px 10px; border-radius: 4px; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+      .brand-hint { font-size: 12px; color: #909399; line-height: 1.5; }
+    }
+    .brand-faq { font-size: 12px; color: #909399; line-height: 1.9; padding-top: 12px; border-top: 1px solid #f5f5f5; }
+  }
 }
 </style>

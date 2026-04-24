@@ -206,8 +206,10 @@ const menuConfig: MenuItem[] = [
       { path: '/system/skill-tools', title: 'Skill/Tool治理', icon: '', module: 'system' },
       { path: '/system/llm-usage', title: 'LLM 用量监控', icon: '', module: 'system' },
       { path: '/system/products', title: '产品信息管理', icon: '', module: 'system' },
-      { path: '/system/work-processes', title: '工序管理', icon: '', module: 'system' },
-      { path: '/system/product-processes', title: '产品-工序配置', icon: '', module: 'system' },
+      { path: '/system/work-processes', title: '工序管理', icon: '', module: 'system',
+        hideForFactoryTypes: ['RESTAURANT'] },
+      { path: '/system/product-processes', title: '产品-工序配置', icon: '', module: 'system',
+        hideForFactoryTypes: ['RESTAURANT'] },
       { path: '/system/workflow-designer', title: '工作流设计器', icon: '', module: 'system' },
       { path: '/system/features', title: '功能模块配置', icon: '', module: 'system' },
       // Apr 18 2026 bug #48: Canvas 编辑器 router 限制 roles, sidebar 跟上不让 dispatcher/
@@ -215,7 +217,8 @@ const menuConfig: MenuItem[] = [
       { path: '/canvas-editor', title: 'Canvas 配置编辑器', icon: '', module: 'system', roles: ['factory_super_admin', 'platform_admin', 'permission_admin'] },
       { path: '/system/pos', title: 'POS集成', icon: '', module: 'system' },
       { path: '/system/smartbi-config', title: 'SmartBI配置', icon: '', module: 'system' },
-      { path: '/system/badge-generator', title: '员工工牌生成', icon: '', module: 'system' }
+      { path: '/system/badge-generator', title: '员工工牌生成', icon: '', module: 'system',
+        hideForFactoryTypes: ['RESTAURANT'] }
     ]
   },
   {
@@ -225,7 +228,8 @@ const menuConfig: MenuItem[] = [
       { path: '/analytics/trends', title: '趋势分析', icon: '', module: 'analytics' },
       { path: '/analytics/ai-reports', title: 'AI分析报告', icon: '', module: 'analytics' },
       { path: '/analytics/kpi', title: 'KPI看板', icon: '', module: 'analytics' },
-      { path: '/analytics/production-report', title: '车间实时生产报表', icon: '', module: 'analytics' },
+      { path: '/analytics/production-report', title: '车间实时生产报表', icon: '', module: 'analytics',
+        hideForFactoryTypes: ['RESTAURANT'] },
       { path: '/analytics/alert-dashboard', title: '异常预警', icon: '', module: 'analytics' },
       { path: '/analytics/supply-chain', title: '进销存闭环总览', icon: '', module: 'analytics' }
     ]

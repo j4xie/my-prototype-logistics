@@ -129,6 +129,7 @@ async function handleDelete(row: WorkProcessItem) {
     // Interceptor shows specific toast; dedupe fallback
     if (e !== 'cancel') console.error('[失败]', e);
   }
+}
 
 async function handleToggle(row: WorkProcessItem) {
   if (!factoryId.value) return;
