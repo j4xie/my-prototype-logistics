@@ -251,11 +251,17 @@ async def recommend_chart(data: List[Dict[str, Any]], fields: Optional[List[dict
         date_cols = []
 
         # Try to detect date columns
+        # Guard: skip numeric columns — pd.to_datetime parses raw numbers as Unix
+        # nanoseconds, which would falsely classify measure columns (营业额/销售额 etc.)
+        # as time columns and cause xField=measure on line charts.
+        import pandas.api.types as ptypes
         for col in df.columns:
+            if ptypes.is_numeric_dtype(df[col]):
+                continue
             try:
-                pd.to_datetime(df[col])
+                pd.to_datetime(df[col], errors='raise')
                 date_cols.append(col)
-            except Exception:
+            except (ValueError, TypeError, OverflowError):
                 pass
 
         # Recommend based on data structure
@@ -417,11 +423,17 @@ async def smart_recommend_chart(request: SmartRecommendRequest):
         numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
         categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
         date_cols = []
+        # Guard: skip numeric columns — pd.to_datetime parses raw numbers as Unix
+        # nanoseconds, which would falsely classify measure columns (营业额/销售额 etc.)
+        # as time columns and cause xField=measure on line charts.
+        import pandas.api.types as ptypes
         for col in df.columns:
+            if ptypes.is_numeric_dtype(df[col]):
+                continue
             try:
-                pd.to_datetime(df[col])
+                pd.to_datetime(df[col], errors='raise')
                 date_cols.append(col)
-            except Exception:
+            except (ValueError, TypeError, OverflowError):
                 pass
 
         # Build column feature list
