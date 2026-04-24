@@ -40,8 +40,11 @@ public class ProductionPlanMapper {
                 .productTypeId(plan.getProductTypeId())
                 .plannedQuantity(plan.getPlannedQuantity())
                 .actualQuantity(plan.getActualQuantity())
-                // plannedDate 从 startTime 推导，保持API兼容性
-                .plannedDate(plan.getStartTime() != null ? plan.getStartTime().toLocalDate() : null)
+                // W-07 fix (Round 9): prefer the real plannedDate column; fall back to
+                // startTime-derived date for legacy rows created before the column was restored.
+                .plannedDate(plan.getPlannedDate() != null
+                        ? plan.getPlannedDate()
+                        : (plan.getStartTime() != null ? plan.getStartTime().toLocalDate() : null))
                 .startTime(plan.getStartTime())
                 .endTime(plan.getEndTime())
                 .expectedCompletionDate(plan.getExpectedCompletionDate())
@@ -150,7 +153,8 @@ public class ProductionPlanMapper {
         plan.setPlanNumber(generatePlanNumber());
         plan.setProductTypeId(request.getProductTypeId());
         plan.setPlannedQuantity(request.getPlannedQuantity());
-        // plan.setPlannedDate(request.getPlannedDate());  // 暂时注释 - 数据库表中没有此字段
+        // W-07 fix (Round 9): plannedDate column restored; map it on create
+        plan.setPlannedDate(request.getPlannedDate());
         plan.setStatus(ProductionPlanStatus.PENDING);
         plan.setPlanType(request.getPlanType() != null ? request.getPlanType() : ProductionPlanType.FROM_INVENTORY);
         plan.setCustomerOrderNumber(request.getCustomerOrderNumber());
@@ -218,9 +222,10 @@ public class ProductionPlanMapper {
         if (request.getPlannedQuantity() != null) {
             plan.setPlannedQuantity(request.getPlannedQuantity());
         }
-        // if (request.getPlannedDate() != null) {  // 暂时注释 - 数据库表中没有此字段
-        //     plan.setPlannedDate(request.getPlannedDate());
-        // }
+        // W-07 fix (Round 9): plannedDate column restored; map on update too
+        if (request.getPlannedDate() != null) {
+            plan.setPlannedDate(request.getPlannedDate());
+        }
         if (request.getCustomerOrderNumber() != null) {
             plan.setCustomerOrderNumber(request.getCustomerOrderNumber());
         }

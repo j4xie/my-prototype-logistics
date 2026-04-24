@@ -30,8 +30,8 @@ import java.util.List;
 @Table(name = "production_plans",
        indexes = {
            @Index(name = "idx_plan_factory", columnList = "factory_id"),
-           @Index(name = "idx_plan_status", columnList = "status")
-           // @Index(name = "idx_plan_date", columnList = "planned_date")  // 暂时注释 - 数据库表中没有此字段
+           @Index(name = "idx_plan_status", columnList = "status"),
+           @Index(name = "idx_plan_date", columnList = "planned_date")
        }
 )
 public class ProductionPlan extends BaseEntity {
@@ -48,8 +48,11 @@ public class ProductionPlan extends BaseEntity {
     private BigDecimal plannedQuantity;
     @Column(name = "actual_quantity", precision = 10, scale = 2)
     private BigDecimal actualQuantity;
-    // @Column(name = "planned_date", nullable = false)
-    // private LocalDate plannedDate;  // 暂时注释 - 数据库表中没有此字段
+    // W-07 fix (Round 9): restored as nullable column (was commented out - DB didn't have it,
+    // but DTO still @NotNull on create path + FE required field → silent-drop + user-facing phantom).
+    // Nullable to keep legacy rows (which populated startTime only) valid.
+    @Column(name = "planned_date")
+    private LocalDate plannedDate;
     @Column(name = "start_time")
     private LocalDateTime startTime;
     @Column(name = "end_time")
