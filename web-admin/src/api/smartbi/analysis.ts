@@ -554,9 +554,15 @@ export function getSmartKPIs(
   displayNameMap?: Record<string, string>
 ): SmartKPI[] {
   const numericTypes = ['int64', 'float64', 'numeric', 'number', 'int32', 'float32'];
-  const numericCols = (kpiSummary.columns || []).filter(
-    c => numericTypes.includes(c.type) && c.sum != null
-  );
+  // Apr 24 2026 — include rating cols (aggStrategy='mean') even though their
+  // sum is null. They display as 平均星级=4.83 etc. ID cols (aggStrategy='none')
+  // explicitly excluded.
+  const numericCols = (kpiSummary.columns || []).filter(c => {
+    if (!numericTypes.includes(c.type)) return false;
+    if (c.aggStrategy === 'none') return false;
+    if (c.aggStrategy === 'mean' && c.mean != null) return true;
+    return c.sum != null;
+  });
 
   if (numericCols.length === 0) {
     return [{
@@ -674,9 +680,14 @@ export function getSmartKPIs(
       }
     }
 
-    const absSum = Math.abs(col.sum || 0);
-    if (absSum > 0) score += Math.min(Math.log10(absSum + 1) * 5, 30);
+    // Score basis: sum for amount-style measures, mean for ratings (smaller scale).
+    const isRating = col.aggStrategy === 'mean';
+    const scoreBasis = isRating ? Math.abs(col.mean || 0) : Math.abs(col.sum || 0);
+    if (scoreBasis > 0) score += Math.min(Math.log10(scoreBasis + 1) * 5, 30);
     if (extCol.trend) score += 10;
+    // Bias rating cols up so they show prominently for review xlsx (where
+    // they're often the only meaningful KPI candidate).
+    if (isRating) score += 15;
 
     return { col: extCol, score, matchedKeyword, status };
   });
@@ -717,10 +728,20 @@ export function getSmartKPIs(
   }
 
   const columnKPIs: SmartKPI[] = topN.map(({ col, status }) => {
-    const val = col.sum || 0;
+    // Rating cols (aggStrategy='mean') display the mean, not sum.
+    const isRating = col.aggStrategy === 'mean';
+    const val = isRating ? (col.mean || 0) : (col.sum || 0);
     const extCol = col;
 
-    const { displayValue, unit } = formatLargeNumber(val);
+    let displayValue: string | number;
+    let unit: string;
+    if (isRating) {
+      // Ratings are 1-5 scale — show 2 decimals, no 万/亿 unit
+      displayValue = val.toFixed(2);
+      unit = '分';
+    } else {
+      ({ displayValue, unit } = formatLargeNumber(val));
+    }
 
     let trendPct = extCol.trendPercent;
 
@@ -748,8 +769,12 @@ export function getSmartKPIs(
       finalStatus = trend === 'up' ? 'success' : trend === 'down' ? 'danger' : 'info';
     }
 
+    const baseTitle = displayNameMap?.[col.name] || humanizeColumnName(col.name);
+    // Rating cols get "平均" prefix to make it clear we're showing mean (not sum).
+    const finalTitle = isRating ? `平均${baseTitle}` : baseTitle;
+
     return {
-      title: displayNameMap?.[col.name] || humanizeColumnName(col.name),
+      title: finalTitle,
       value: displayValue,
       unit,
       trend,
@@ -757,7 +782,9 @@ export function getSmartKPIs(
       changeRate: trendPct != null ? trendPct : undefined,
       status: finalStatus,
       displayMode: (extCol.sparkline && extCol.sparkline.length >= 2 ? 'sparkline' : 'default') as 'sparkline' | 'default',
-      sparklineData: extCol.sparkline || []
+      sparklineData: extCol.sparkline || [],
+      // Ratings need 2 decimals (4.83 vs 5 — huge semantic diff). Others default 0.
+      precision: isRating ? 2 : 0,
     };
   });
 

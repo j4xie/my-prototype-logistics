@@ -326,14 +326,26 @@ onMounted(async () => {
       const deduped = deduplicateUploads(res.data);
       dataSources.value = deduped;
 
-      // Prefer non-auto-sync uploads with the most rows (richer data = better analysis)
+      // Prefer non-auto-sync uploads
       const nonAutoSync = deduped.filter(d => {
         const name = d.fileName || d.originalFileName || '';
         return !name.startsWith('[自动同步]');
       });
       const candidates = nonAutoSync.length > 0 ? nonAutoSync : deduped;
-      // Sort by rowCount descending — larger sheets produce better charts
-      const sorted = [...candidates].sort((a, b) => (b.rowCount || 0) - (a.rowCount || 0));
+      // Apr 24 2026 — review xlsx detection: file name contains review/comment
+      // keywords (评价/评论/大众点评/美团评价/评分). When user uploads review
+      // data they want review analysis as default, NOT the biggest POS table.
+      const REVIEW_KEYWORDS = ['评价', '评论', '大众点评', '美团评价', '评分', 'review', 'comment'];
+      const isReviewFile = (d: any) => {
+        const name = (d.fileName || d.originalFileName || '').toLowerCase();
+        return REVIEW_KEYWORDS.some(kw => name.includes(kw.toLowerCase()));
+      };
+      const reviewCands = candidates.filter(isReviewFile);
+      // Sort each group by rowCount desc (richer = better within group)
+      const sortByRows = (a: any, b: any) => (b.rowCount || 0) - (a.rowCount || 0);
+      const sorted = reviewCands.length > 0
+        ? [...reviewCands].sort(sortByRows)            // review-aware: review xlsx wins
+        : [...candidates].sort(sortByRows);            // legacy: biggest rowCount
       selectedUploadId.value = sorted[0].id;
     }
   } catch (e) {
@@ -1248,9 +1260,10 @@ function handleKeydown(event: KeyboardEvent) {
                   </el-button>
                 </div>
 
-                <!-- Phase 1 (Apr 23 2026): feedback for LLM answers -->
+                <!-- Feedback for both LLM and template answers (Apr 24 2026 extended).
+                     Template hits get a logId via _log_template_hit_safe in chat.py. -->
                 <div
-                  v-if="message.role === 'assistant' && !message.loading && !message.streaming && message.source !== 'materialized_cache' && message.logId"
+                  v-if="message.role === 'assistant' && !message.loading && !message.streaming && message.logId"
                   class="message-feedback"
                 >
                   <span class="feedback-label">这个回答有用吗?</span>

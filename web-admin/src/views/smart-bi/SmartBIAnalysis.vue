@@ -312,6 +312,7 @@
                     :sparklineData="kpi.sparklineData"
                     :benchmarkLabel="kpi.benchmarkLabel"
                     :benchmarkGap="kpi.benchmarkGap"
+                    :precision="kpi.precision"
                     format="custom"
                   />
                 </div>

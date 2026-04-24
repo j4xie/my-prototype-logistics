@@ -327,12 +327,23 @@ async def quick_summary(request: Request):
                 # KPI card never fires (12,903 × 4.83 ≈ "6 万" bug).
                 is_id = col in id_cols
                 is_rating = col in rating_cols
+                # aggStrategy tells FE how to display this col as KPI:
+                #   "mean" → use c.mean (4.83 平均星级)
+                #   "sum"  → use c.sum (current default for amounts)
+                #   "none" → skip (don't make KPI card; e.g. ID columns)
+                if is_id:
+                    agg_strategy = "none"
+                elif is_rating:
+                    agg_strategy = "mean"
+                else:
+                    agg_strategy = "sum"
                 col_info.update({
                     "min": float(col_min) if pd.notna(col_min) else None,
                     "max": float(col_max) if pd.notna(col_max) else None,
                     "mean": float(col_mean) if pd.notna(col_mean) else None,
                     "sum": None if (is_id or is_rating) else (float(col_sum) if pd.notna(col_sum) else None),
                     "semanticType": "id" if is_id else ("rating" if is_rating else None),
+                    "aggStrategy": agg_strategy,
                 })
 
                 # Trend & sparkline for numeric columns

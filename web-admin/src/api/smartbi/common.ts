@@ -587,6 +587,9 @@ export interface SmartKPI {
   sparklineData: number[];
   benchmarkLabel?: string;
   benchmarkGap?: number;
+  // Apr 24 2026 — explicit precision for KPICard (defaults to 0). Ratings
+  // need precision=2 (4.83 not 5 — huge semantic diff for 1-5 scale).
+  precision?: number;
 }
 
 /**
