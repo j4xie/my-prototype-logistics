@@ -9,6 +9,8 @@
           </div>
           <div class="header-right">
             <el-button type="info" plain @click="handleAiAnalyze">🤖 AI 分析</el-button>
+            <el-button v-if="canWrite" type="warning" plain @click="batchImportDialog = true">📥 批量导入</el-button>
+            <el-button v-if="canWrite" type="success" plain @click="openAliasPanel">🔗 菜名对齐 <el-badge v-if="unmatchedCount > 0" :value="unmatchedCount" type="warning" /></el-button>
             <el-button :icon="Download" @click="handleExport">导出</el-button>
             <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleCreate">新增配方</el-button>
           </div>
@@ -170,6 +172,84 @@
         <el-descriptions-item label="备注">{{ detailData.notes || '-' }}</el-descriptions-item>
       </el-descriptions>
     </el-drawer>
+
+    <!-- P0-1: 批量导入配方 Dialog -->
+    <el-dialog v-model="batchImportDialog" title="📥 批量导入配方" width="640px">
+      <div style="line-height: 1.8">
+        <p><b>1. 下载模板</b> — Excel/CSV 格式, 6 列: 菜品名称 / 食材名称 / 用量 / 单位 / 食材单价 / 是否主料</p>
+        <el-button type="primary" plain size="small" @click="downloadTemplate">下载 CSV 模板</el-button>
+        <el-divider />
+        <p><b>2. 填写数据</b> — 一行 = 一个菜品的一种食材. 同一菜多食材填多行. 新菜品/食材自动创建.</p>
+        <p><b>3. 上传</b></p>
+        <el-upload
+          action=""
+          :auto-upload="false"
+          :limit="1"
+          :on-change="onFileSelect"
+          accept=".xlsx,.xls,.csv"
+          drag
+        >
+          <div class="el-upload__text">拖拽文件到此处, 或<em>点击选择</em></div>
+          <template #tip>
+            <div class="el-upload__tip">仅支持 .xlsx / .xls / .csv 格式</div>
+          </template>
+        </el-upload>
+        <el-button v-if="selectedFile" type="primary" :loading="importing" @click="submitImport" style="margin-top: 12px">
+          确认导入 {{ selectedFile.name }}
+        </el-button>
+        <el-alert v-if="importResult" :type="importResult.success ? 'success' : 'error'" :closable="false" style="margin-top: 12px">
+          <template #title>
+            <div v-if="importResult.success">
+              ✓ 导入完成: 新增菜品 {{ importResult.data.dishesCreated }} / 新增食材 {{ importResult.data.ingredientsCreated }} / 新增配方 {{ importResult.data.recipesCreated }}
+              <span v-if="importResult.data.errorCount > 0" style="color: var(--el-color-warning)"> · {{ importResult.data.errorCount }} 条行错误 (见下方)</span>
+            </div>
+            <div v-else>导入失败: {{ importResult.message }}</div>
+          </template>
+          <div v-if="importResult.data?.errors?.length" style="font-size: 12px; max-height: 120px; overflow-y: auto">
+            <div v-for="(err, i) in importResult.data.errors" :key="i">• {{ err }}</div>
+          </div>
+        </el-alert>
+      </div>
+    </el-dialog>
+
+    <!-- P0-2: 菜名对齐 (未匹配菜品面板) -->
+    <el-dialog v-model="aliasDialog" title="🔗 菜名对齐 — POS 菜名 → 配方菜品" width="900px">
+      <div v-if="unmatchedData" style="margin-bottom: 12px">
+        <el-alert type="info" :closable="false">
+          <template #title>
+            POS 上传中共 {{ unmatchedData.totalPosDishes }} 个菜名, 其中 <b>{{ unmatchedData.unmatchedCount }}</b> 个未绑定配方菜品 (占 {{ (unmatchedData.unmatchedRevenueRatio * 100).toFixed(1) }}% 营收).
+            按下方营收排序, 优先绑定高营收菜品.
+          </template>
+        </el-alert>
+      </div>
+      <el-table v-if="unmatchedData" :data="unmatchedData.dishes" max-height="400" border>
+        <el-table-column prop="name" label="POS 菜名" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="revenue" label="营收" width="120" align="right">
+          <template #default="{ row }">¥{{ row.revenue.toLocaleString('zh-CN', { maximumFractionDigits: 0 }) }}</template>
+        </el-table-column>
+        <el-table-column prop="qty" label="销量" width="90" align="right" />
+        <el-table-column prop="bills" label="账单数" width="90" align="right" />
+        <el-table-column label="绑定到现有菜品" width="260">
+          <template #default="{ row }">
+            <el-select
+              v-model="row._bindTo"
+              placeholder="搜索已录配方的菜品"
+              filterable
+              size="small"
+              style="width: 220px"
+              clearable
+              @change="(val: string) => val && bindAlias(row.name, val)"
+            >
+              <el-option v-for="p in availableProducts" :key="p.id" :label="p.name" :value="p.id" />
+            </el-select>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div style="margin-top: 12px; font-size: 12px; color: #909399">
+        💡 绑定完成后点 <el-link type="primary" href="/restaurant/analytics/gross-margin" :underline="false">毛利分析页 ⚡立即同步</el-link> 刷新覆盖率.
+        这些 POS 菜名会走 alias → 你选中的配方, 毛利计算自动生效.
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -438,7 +518,138 @@ async function handleExport() {
   ], '配方管理');
 }
 
-onMounted(() => { loadData(); loadSelectOptions(); loadStatistics(); });
+onMounted(() => { loadData(); loadSelectOptions(); loadStatistics(); loadUnmatchedCount(); });
+
+// ====================================================================
+// P0-1: Batch import dialog
+// ====================================================================
+const batchImportDialog = ref(false);
+const selectedFile = ref<File | null>(null);
+const importing = ref(false);
+const importResult = ref<{ success: boolean; message?: string; data?: { dishesCreated: number; ingredientsCreated: number; recipesCreated: number; errors: string[]; errorCount: number } } | null>(null);
+
+function onFileSelect(file: { raw: File }) {
+  selectedFile.value = file.raw;
+  importResult.value = null;
+}
+
+async function downloadTemplate() {
+  try {
+    const { pythonFetch } = await import('@/api/smartbi/common');
+    const res = await pythonFetch('/api/smartbi/restaurant-ops/recipes/import-template') as {
+      success: boolean;
+      data?: { columns: string[]; sample: Record<string, unknown>[] };
+    };
+    if (!res.success || !res.data) {
+      ElMessage.error('模板获取失败');
+      return;
+    }
+    // Build CSV with BOM for Excel Chinese compatibility
+    const cols = res.data.columns;
+    const sample = res.data.sample;
+    let csv = '﻿' + cols.join(',') + '\n';
+    for (const row of sample) {
+      csv += cols.map(c => String(row[c] ?? '')).join(',') + '\n';
+    }
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '配方批量导入模板.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    ElMessage.success('模板已下载');
+  } catch (e) {
+    ElMessage.error('模板下载失败');
+  }
+}
+
+async function submitImport() {
+  if (!selectedFile.value) return;
+  importing.value = true;
+  importResult.value = null;
+  try {
+    const { pythonFetch } = await import('@/api/smartbi/common');
+    const formData = new FormData();
+    formData.append('file', selectedFile.value);
+    const res = await pythonFetch('/api/smartbi/restaurant-ops/recipes/batch-import', {
+      method: 'POST',
+      body: formData,
+      // Force headers: {} to let browser set multipart/form-data boundary
+      headers: {},
+      timeoutMs: 120000,
+    }) as typeof importResult.value;
+    importResult.value = res;
+    if (res?.success) {
+      ElMessage.success(`导入成功: 菜品 +${res.data?.dishesCreated} / 食材 +${res.data?.ingredientsCreated} / 配方 +${res.data?.recipesCreated}`);
+      loadData();
+      loadStatistics();
+    } else {
+      ElMessage.error(res?.message || '导入失败');
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    importResult.value = { success: false, message: msg };
+    ElMessage.error('导入异常: ' + msg);
+  } finally {
+    importing.value = false;
+  }
+}
+
+// ====================================================================
+// P0-2: Alias panel (unmatched dishes)
+// ====================================================================
+const aliasDialog = ref(false);
+const unmatchedCount = ref(0);
+const unmatchedData = ref<{ totalPosDishes: number; unmatchedCount: number; unmatchedRevenueRatio: number; dishes: Array<{ name: string; revenue: number; qty: number; bills: number; _bindTo?: string }> } | null>(null);
+const availableProducts = ref<Array<{ id: string; name: string }>>([]);
+
+async function loadUnmatchedCount() {
+  try {
+    const { pythonFetch } = await import('@/api/smartbi/common');
+    const res = await pythonFetch('/api/smartbi/restaurant-ops/unmatched-dishes') as { success: boolean; data?: { unmatchedCount: number } };
+    if (res.success && res.data) unmatchedCount.value = res.data.unmatchedCount;
+  } catch { /* silent */ }
+}
+
+async function openAliasPanel() {
+  aliasDialog.value = true;
+  try {
+    const { pythonFetch } = await import('@/api/smartbi/common');
+    const [unmatched, products] = await Promise.all([
+      pythonFetch('/api/smartbi/restaurant-ops/unmatched-dishes') as Promise<{ success: boolean; data?: Record<string, unknown> }>,
+      pythonFetch('/api/smartbi/restaurant-ops/product-types') as Promise<{ success: boolean; data?: { products: Array<{ id: string; name: string }> } }>,
+    ]);
+    if (unmatched.success && unmatched.data) unmatchedData.value = unmatched.data as typeof unmatchedData.value;
+    if (products.success && products.data) availableProducts.value = products.data.products;
+  } catch (e) {
+    ElMessage.error('加载未匹配菜品失败');
+  }
+}
+
+async function bindAlias(posName: string, productTypeId: string) {
+  try {
+    const { pythonFetch } = await import('@/api/smartbi/common');
+    const res = await pythonFetch('/api/smartbi/restaurant-ops/aliases', {
+      method: 'POST',
+      body: JSON.stringify({ pos_name: posName, product_type_id: productTypeId }),
+      headers: { 'Content-Type': 'application/json' },
+    }) as { success: boolean; message?: string };
+    if (res.success) {
+      ElMessage.success(`已绑定: ${posName} → 配方菜品`);
+      // Remove from list
+      if (unmatchedData.value) {
+        unmatchedData.value.dishes = unmatchedData.value.dishes.filter(d => d.name !== posName);
+        unmatchedData.value.unmatchedCount -= 1;
+        unmatchedCount.value = Math.max(0, unmatchedCount.value - 1);
+      }
+    } else {
+      ElMessage.error(res.message || '绑定失败');
+    }
+  } catch (e) {
+    ElMessage.error('绑定异常');
+  }
+}
 
 // Handle full-page reload: factoryId may not be ready at mount time
 watch(factoryId, (val) => { if (val) { loadData(); loadStatistics(); } });

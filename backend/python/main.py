@@ -66,6 +66,7 @@ from smartbi.api import (
     data_sync,
     restaurant_analytics,
     restaurant_ops_gold,
+    restaurant_ops_recipes,
     production_ai,
     financial_dashboard,
     layout,
@@ -529,6 +530,7 @@ app.include_router(benchmark.router, prefix="/api/smartbi", tags=["Industry Benc
 app.include_router(finance_extract.router, prefix="/api/finance", tags=["Finance Extract"])
 app.include_router(restaurant_analytics.router, prefix="/api/smartbi", tags=["Restaurant Analytics"])
 app.include_router(restaurant_ops_gold.router, prefix="/api/smartbi", tags=["Restaurant Ops Gold"])
+app.include_router(restaurant_ops_recipes.router, prefix="/api/smartbi", tags=["Restaurant Ops Recipes"])
 app.include_router(restaurant_sections.router, tags=["Restaurant Sections"])
 app.include_router(production_ai.router, prefix="/api/smartbi", tags=["Production AI"])
 app.include_router(financial_dashboard.router, prefix="/api/smartbi/financial-dashboard", tags=["Financial Dashboard"])

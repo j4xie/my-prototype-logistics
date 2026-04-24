@@ -521,20 +521,39 @@ async def resolve_gross_margin(
             meta={"window_days": days, "no_pos_data": True},
         )
 
-    # Step 2: look up cretas product_types to get source_pks by name match
+    # Step 2: look up cretas product_types by name (primary) + dim_product_alias (fallback).
+    # P0-2: alias lets merchants bind POS name → any product_type, handles the
+    # "POS xlsx name vs recipe name" drift problem (括号/空格/[] differences).
     normalized_names = list({r["normalized_name"] for r in pos_rows})
-    cretas_map: Dict[str, str] = {}  # name → source_pk (product_type_id)
+    cretas_map: Dict[str, str] = {}  # pos_name → source_pk (product_type_id)
     try:
         import asyncpg as _asyncpg
         from config import get_settings as _get_settings
         cretas_url = _get_settings().food_kb_db_url
         cretas = await _asyncpg.connect(cretas_url)
         try:
+            # Primary: exact name match
             name_rows = await cretas.fetch(
                 "SELECT id, name FROM product_types WHERE factory_id = $1 AND name = ANY($2::text[])",
                 factory_id, normalized_names,
             )
-            cretas_map = {r["name"]: r["id"] for r in name_rows}
+            for r in name_rows:
+                cretas_map[r["name"]] = r["id"]
+            # Fallback: alias table (table may not exist on older schemas → catch)
+            unmapped = [n for n in normalized_names if n not in cretas_map]
+            if unmapped:
+                try:
+                    alias_rows = await cretas.fetch(
+                        """SELECT pos_name, product_type_id FROM dim_product_alias
+                            WHERE factory_id = $1 AND pos_name = ANY($2::text[])""",
+                        factory_id, unmapped,
+                    )
+                    for r in alias_rows:
+                        cretas_map[r["pos_name"]] = r["product_type_id"]
+                except Exception as e:
+                    # Table doesn't exist yet — ignore, name match still works
+                    if "does not exist" not in str(e):
+                        logger.warning(f"[gross_margin] alias lookup failed: {e}")
         finally:
             await cretas.close()
     except Exception as e:
@@ -669,7 +688,7 @@ async def resolve_store_margin(
             meta={"window_days": days, "no_pos_data": True},
         )
 
-    # Lookup cretas product_types + agg_product_cost for food cost per dish
+    # Lookup cretas product_types + dim_product_alias (P0-2) + agg_product_cost for food cost.
     dish_names = list({r["normalized_name"] for r in store_dish_rows})
     name_to_pk: Dict[str, str] = {}
     try:
@@ -681,7 +700,21 @@ async def resolve_store_margin(
                 "SELECT id, name FROM product_types WHERE factory_id = $1 AND name = ANY($2::text[])",
                 factory_id, dish_names,
             )
-            name_to_pk = {r["name"]: r["id"] for r in rows}
+            for r in rows:
+                name_to_pk[r["name"]] = r["id"]
+            unmapped = [n for n in dish_names if n not in name_to_pk]
+            if unmapped:
+                try:
+                    alias_rows = await cretas.fetch(
+                        """SELECT pos_name, product_type_id FROM dim_product_alias
+                            WHERE factory_id = $1 AND pos_name = ANY($2::text[])""",
+                        factory_id, unmapped,
+                    )
+                    for r in alias_rows:
+                        name_to_pk[r["pos_name"]] = r["product_type_id"]
+                except Exception as e:
+                    if "does not exist" not in str(e):
+                        logger.warning(f"[store_margin] alias lookup failed: {e}")
         finally:
             await cretas.close()
     except Exception as e:

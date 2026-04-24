@@ -1,0 +1,513 @@
+"""Plan C P0 — Batch recipe import + dish alias management.
+
+P0-1: POST /api/smartbi/restaurant-ops/recipes/batch-import — upload xlsx to seed
+      product_types + raw_material_types + recipes in one shot.
+      Expected columns: dish_name, ingredient_name, quantity, unit, ingredient_price, is_main
+
+P0-2: CRUD for dim_product_alias (POS xlsx dish_name → cretas product_type_id mapping).
+      GET  /api/smartbi/restaurant-ops/unmatched-dishes — list POS dishes without a linked product_type
+      POST /api/smartbi/restaurant-ops/aliases — bind a POS name to an existing product_type
+"""
+from __future__ import annotations
+
+import io
+import logging
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, File, Request, UploadFile
+from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
+router = APIRouter(tags=["RestaurantOpsRecipes"])
+
+
+def _get_factory_id(request: Request) -> Optional[str]:
+    return getattr(request.state, "factory_id", None)
+
+
+# ==========================================================================
+# P0-1: Batch recipe import via Excel/CSV
+# ==========================================================================
+
+EXPECTED_COLS = ["菜品名称", "食材名称", "用量", "单位", "食材单价", "是否主料"]
+ENGLISH_COLS = ["dish_name", "ingredient_name", "quantity", "unit", "ingredient_price", "is_main"]
+
+
+@router.post("/restaurant-ops/recipes/batch-import")
+async def batch_import_recipes(
+    request: Request,
+    file: UploadFile = File(...),
+) -> Dict[str, Any]:
+    """Parse uploaded xlsx/csv and insert product_types + raw_material_types + recipes.
+
+    Returns counts per entity type + any row-level validation errors.
+    Idempotent: ON CONFLICT DO NOTHING on natural keys (factory_id+code / factory_id+name).
+    """
+    factory_id = _get_factory_id(request)
+    if not factory_id:
+        return {"success": False, "message": "missing factory context"}
+
+    try:
+        import pandas as pd
+    except ImportError:
+        return {"success": False, "message": "pandas not installed on server"}
+
+    content = await file.read()
+    try:
+        if file.filename and file.filename.lower().endswith(".csv"):
+            df = pd.read_csv(io.BytesIO(content))
+        else:
+            df = pd.read_excel(io.BytesIO(content))
+    except Exception as e:
+        return {"success": False, "message": f"无法解析文件: {e}"}
+
+    # Column normalization — support both Chinese and English headers
+    col_map = {}
+    for cn, en in zip(EXPECTED_COLS, ENGLISH_COLS):
+        if cn in df.columns:
+            col_map[cn] = en
+        elif en in df.columns:
+            col_map[en] = en
+    df = df.rename(columns=col_map)
+    missing = [en for en in ["dish_name", "ingredient_name", "quantity"] if en not in df.columns]
+    if missing:
+        return {"success": False, "message": f"缺少必需列: {', '.join(missing)}. 请用模板下载的格式"}
+
+    # Connect to cretas_prod_db (where product_types/raw_material_types/recipes live)
+    try:
+        import asyncpg
+        from config import get_settings
+    except Exception as e:
+        return {"success": False, "message": f"config/asyncpg error: {e}"}
+
+    settings = get_settings()
+    conn = await asyncpg.connect(settings.food_kb_db_url)
+    try:
+        user_id = 1550  # default factory_super_admin, TODO: extract from JWT
+        dish_created = 0
+        ingredient_created = 0
+        recipe_created = 0
+        errors: List[str] = []
+
+        # Pass 1: upsert raw_material_types (dedupe by name)
+        ingredient_price_map: Dict[str, float] = {}
+        ingredient_id_map: Dict[str, str] = {}
+        for _, row in df.iterrows():
+            iname = str(row.get("ingredient_name", "")).strip()
+            if not iname or iname == "nan":
+                continue
+            unit = str(row.get("unit", "kg")).strip() or "kg"
+            price = row.get("ingredient_price")
+            try:
+                price = float(price) if price is not None and str(price) != "nan" else None
+            except Exception:
+                price = None
+            if price is not None:
+                ingredient_price_map[iname] = price
+
+            # Look up existing or create
+            existing = await conn.fetchrow(
+                "SELECT id, unit_price FROM raw_material_types WHERE factory_id = $1 AND name = $2 AND deleted_at IS NULL",
+                factory_id, iname,
+            )
+            if existing:
+                ingredient_id_map[iname] = existing["id"]
+                if price is not None and (existing["unit_price"] is None or float(existing["unit_price"]) != price):
+                    await conn.execute(
+                        "UPDATE raw_material_types SET unit_price = $1, updated_at = NOW() WHERE id = $2",
+                        price, existing["id"],
+                    )
+            else:
+                # Generate id + code
+                import hashlib
+                code = f"IMP_{hashlib.md5((factory_id + iname).encode()).hexdigest()[:10].upper()}"
+                new_id = f"rm_imp_{hashlib.md5((factory_id + iname).encode()).hexdigest()[:16]}"
+                try:
+                    await conn.execute(
+                        """INSERT INTO raw_material_types (id, factory_id, code, name, unit, unit_price,
+                             is_active, created_by, created_at, updated_at, notes)
+                           VALUES ($1, $2, $3, $4, $5, $6, true, $7, NOW(), NOW(), 'BATCH_IMPORT')""",
+                        new_id, factory_id, code, iname, unit, price, user_id,
+                    )
+                    ingredient_id_map[iname] = new_id
+                    ingredient_created += 1
+                except Exception as e:
+                    errors.append(f"食材 '{iname}' 插入失败: {e}")
+
+        # Pass 2: upsert product_types (dedupe by name)
+        dish_id_map: Dict[str, str] = {}
+        for _, row in df.iterrows():
+            dname = str(row.get("dish_name", "")).strip()
+            if not dname or dname == "nan":
+                continue
+            if dname in dish_id_map:
+                continue
+            existing = await conn.fetchrow(
+                "SELECT id FROM product_types WHERE factory_id = $1 AND name = $2 AND deleted_at IS NULL",
+                factory_id, dname,
+            )
+            if existing:
+                dish_id_map[dname] = existing["id"]
+            else:
+                import hashlib
+                code = f"IMP_{hashlib.md5((factory_id + dname).encode()).hexdigest()[:10].upper()}"
+                new_id = f"pt_imp_{hashlib.md5((factory_id + dname).encode()).hexdigest()[:16]}"
+                try:
+                    await conn.execute(
+                        """INSERT INTO product_types (id, factory_id, code, name, unit, category,
+                             is_active, created_by, created_at, updated_at, notes)
+                           VALUES ($1, $2, $3, $4, '份', '主菜', true, $5, NOW(), NOW(), 'BATCH_IMPORT')""",
+                        new_id, factory_id, code, dname, user_id,
+                    )
+                    dish_id_map[dname] = new_id
+                    dish_created += 1
+                except Exception as e:
+                    errors.append(f"菜品 '{dname}' 插入失败: {e}")
+
+        # Pass 3: insert recipes (each row = one recipe line)
+        for idx, row in df.iterrows():
+            dname = str(row.get("dish_name", "")).strip()
+            iname = str(row.get("ingredient_name", "")).strip()
+            qty_val = row.get("quantity")
+            if not dname or not iname or dname == "nan" or iname == "nan":
+                continue
+            try:
+                qty = float(qty_val)
+                if qty <= 0:
+                    errors.append(f"第 {idx+2} 行: 用量必须 > 0")
+                    continue
+            except Exception:
+                errors.append(f"第 {idx+2} 行: 用量 '{qty_val}' 无法转为数字")
+                continue
+            pid = dish_id_map.get(dname)
+            rid = ingredient_id_map.get(iname)
+            if not pid or not rid:
+                continue
+            unit = str(row.get("unit", "kg")).strip() or "kg"
+            is_main_raw = str(row.get("is_main", "否")).strip()
+            is_main = is_main_raw in ("是", "true", "True", "1", "yes", "Y")
+
+            # Check if this (product_type, raw_material) pair exists
+            existing = await conn.fetchrow(
+                """SELECT id FROM recipes
+                    WHERE factory_id = $1 AND product_type_id = $2 AND raw_material_type_id = $3
+                    AND deleted_at IS NULL""",
+                factory_id, pid, rid,
+            )
+            if existing:
+                # Update quantity
+                await conn.execute(
+                    "UPDATE recipes SET standard_quantity = $1, unit = $2, is_main_ingredient = $3, updated_at = NOW() WHERE id = $4",
+                    qty, unit, is_main, existing["id"],
+                )
+            else:
+                import hashlib
+                new_id = f"rec_imp_{hashlib.md5((factory_id + pid + rid).encode()).hexdigest()[:16]}"
+                try:
+                    await conn.execute(
+                        """INSERT INTO recipes (id, factory_id, product_type_id, raw_material_type_id,
+                             standard_quantity, unit, is_main_ingredient, is_active, created_by,
+                             created_at, updated_at, notes)
+                           VALUES ($1, $2, $3, $4, $5, $6, $7, true, $8, NOW(), NOW(), 'BATCH_IMPORT')""",
+                        new_id, factory_id, pid, rid, qty, unit, is_main, user_id,
+                    )
+                    recipe_created += 1
+                except Exception as e:
+                    errors.append(f"第 {idx+2} 行配方插入失败: {e}")
+
+        return {
+            "success": True,
+            "data": {
+                "dishesCreated": dish_created,
+                "ingredientsCreated": ingredient_created,
+                "recipesCreated": recipe_created,
+                "errors": errors[:20],  # cap error list
+                "errorCount": len(errors),
+            },
+        }
+    finally:
+        await conn.close()
+
+
+@router.get("/restaurant-ops/recipes/import-template")
+async def download_import_template() -> Dict[str, Any]:
+    """Return a CSV template + instructions. Client downloads this for reference."""
+    sample = [
+        {
+            "菜品名称": "招牌青花椒味(单人份)",
+            "食材名称": "鲈鱼",
+            "用量": 0.25,
+            "单位": "kg",
+            "食材单价": 45.00,
+            "是否主料": "是",
+        },
+        {
+            "菜品名称": "招牌青花椒味(单人份)",
+            "食材名称": "青花椒",
+            "用量": 0.03,
+            "单位": "kg",
+            "食材单价": 80.00,
+            "是否主料": "否",
+        },
+        {
+            "菜品名称": "米饭",
+            "食材名称": "大米",
+            "用量": 0.2,
+            "单位": "kg",
+            "食材单价": 6.00,
+            "是否主料": "是",
+        },
+    ]
+    return {
+        "success": True,
+        "data": {
+            "columns": EXPECTED_COLS,
+            "sample": sample,
+            "instructions": [
+                "每行 = 一个菜品的一种食材. 同一菜品多种食材请填多行.",
+                "单位支持: kg / g / L / mL / 个 / 份",
+                "食材单价 = 采购价 (元/单位), 同一食材多次出现以最后一行为准",
+                "是否主料填 '是' 或 '否' (一菜品多主料也允许)",
+                "新菜品/新食材自动创建, 已存在的按菜名/食材名匹配 (需字节完全一致)",
+            ],
+        },
+    }
+
+
+# ==========================================================================
+# P0-2: Dish name alias + unmatched dishes panel
+# ==========================================================================
+
+class AliasBindRequest(BaseModel):
+    pos_name: str       # POS xlsx 里的菜名 (dim_product.name)
+    product_type_id: str  # cretas.product_types.id 要绑定的菜品
+
+
+@router.get("/restaurant-ops/unmatched-dishes")
+async def list_unmatched_dishes(
+    request: Request,
+) -> Dict[str, Any]:
+    """List POS dishes that don't have a matched product_type (by name or alias).
+
+    These are the dishes that show 'hasCost=false' in gross-margin because recipe lookup fails.
+    Returns: [{name, revenue, qty, bills}, ...] sorted by revenue DESC.
+    """
+    factory_id = _get_factory_id(request)
+    if not factory_id:
+        return {"success": False, "message": "missing factory context"}
+
+    from smartbi.config import get_pg_pool
+    pool = await get_pg_pool()
+    if pool is None:
+        return {"success": False, "message": "smartbi_db pool unavailable"}
+
+    async with pool.acquire() as conn:
+        await conn.execute("SELECT set_config('app.factory_id', $1, true)", factory_id)
+        pos_rows = await conn.fetch(
+            """
+            SELECT p.name AS dish_name, p.normalized_name,
+                   SUM(i.qty)::float AS qty,
+                   SUM(i.amount)::float AS revenue,
+                   COUNT(DISTINCT i.transaction_id)::int AS bills
+              FROM fact_pos_item i
+              JOIN dim_product p ON p.product_id = i.product_id
+             WHERE i.factory_id = $1
+             GROUP BY p.name, p.normalized_name
+             ORDER BY revenue DESC
+            """,
+            factory_id,
+        )
+
+    # Fetch existing product_types + aliases from cretas_db
+    try:
+        import asyncpg
+        from config import get_settings
+    except Exception as e:
+        return {"success": False, "message": f"config error: {e}"}
+
+    settings = get_settings()
+    cretas = await asyncpg.connect(settings.food_kb_db_url)
+    try:
+        # Existing product_type names (primary match)
+        rows = await cretas.fetch(
+            "SELECT name FROM product_types WHERE factory_id = $1 AND deleted_at IS NULL",
+            factory_id,
+        )
+        known_names = {r["name"] for r in rows}
+
+        # Aliases (fuzzy match — pos_name → product_type_id)
+        # Create table if not exists
+        await cretas.execute("""
+            CREATE TABLE IF NOT EXISTS dim_product_alias (
+                id BIGSERIAL PRIMARY KEY,
+                factory_id VARCHAR(100) NOT NULL,
+                pos_name VARCHAR(500) NOT NULL,
+                product_type_id VARCHAR(100) NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW(),
+                UNIQUE(factory_id, pos_name)
+            )
+        """)
+        alias_rows = await cretas.fetch(
+            "SELECT pos_name FROM dim_product_alias WHERE factory_id = $1",
+            factory_id,
+        )
+        aliased_names = {r["pos_name"] for r in alias_rows}
+    finally:
+        await cretas.close()
+
+    unmatched = []
+    for r in pos_rows:
+        if r["dish_name"] in known_names:
+            continue
+        if r["dish_name"] in aliased_names:
+            continue
+        unmatched.append({
+            "name": r["dish_name"],
+            "qty": r["qty"],
+            "revenue": r["revenue"],
+            "bills": r["bills"],
+        })
+
+    total_rev = sum(r["revenue"] for r in pos_rows)
+    unmatched_rev = sum(u["revenue"] for u in unmatched)
+
+    return {
+        "success": True,
+        "data": {
+            "unmatchedCount": len(unmatched),
+            "totalPosDishes": len(pos_rows),
+            "unmatchedRevenue": unmatched_rev,
+            "totalRevenue": total_rev,
+            "unmatchedRevenueRatio": unmatched_rev / total_rev if total_rev > 0 else 0,
+            "dishes": unmatched[:100],  # cap to first 100
+        },
+    }
+
+
+@router.get("/restaurant-ops/product-types")
+async def list_product_types(request: Request) -> Dict[str, Any]:
+    """List all product_types for the current factory (for alias binding dropdown)."""
+    factory_id = _get_factory_id(request)
+    if not factory_id:
+        return {"success": False, "message": "missing factory context"}
+    try:
+        import asyncpg
+        from config import get_settings
+    except Exception as e:
+        return {"success": False, "message": f"config error: {e}"}
+    settings = get_settings()
+    conn = await asyncpg.connect(settings.food_kb_db_url)
+    try:
+        rows = await conn.fetch(
+            """SELECT id, name FROM product_types
+                WHERE factory_id = $1 AND is_active = true AND deleted_at IS NULL
+                ORDER BY name""",
+            factory_id,
+        )
+        return {"success": True, "data": {"products": [{"id": r["id"], "name": r["name"]} for r in rows]}}
+    finally:
+        await conn.close()
+
+
+@router.post("/restaurant-ops/aliases")
+async def bind_alias(request: Request, body: AliasBindRequest) -> Dict[str, Any]:
+    """Bind a POS dish name to an existing product_type.
+
+    After binding, ETL will pick up the POS dish's recipe via alias → product_type.
+    User must then call ⚡立即同步 to see the effect on margin analysis.
+    """
+    factory_id = _get_factory_id(request)
+    if not factory_id:
+        return {"success": False, "message": "missing factory context"}
+
+    try:
+        import asyncpg
+        from config import get_settings
+    except Exception as e:
+        return {"success": False, "message": f"config error: {e}"}
+
+    settings = get_settings()
+    conn = await asyncpg.connect(settings.food_kb_db_url)
+    try:
+        # Ensure product_type exists in this factory
+        exists = await conn.fetchval(
+            "SELECT 1 FROM product_types WHERE id = $1 AND factory_id = $2 AND deleted_at IS NULL",
+            body.product_type_id, factory_id,
+        )
+        if not exists:
+            return {"success": False, "message": "product_type_id 不存在或不属于当前租户"}
+
+        await conn.execute("""
+            INSERT INTO dim_product_alias (factory_id, pos_name, product_type_id)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (factory_id, pos_name) DO UPDATE SET product_type_id = $3
+        """, factory_id, body.pos_name, body.product_type_id)
+
+        return {"success": True, "data": {"posName": body.pos_name, "productTypeId": body.product_type_id}}
+    finally:
+        await conn.close()
+
+
+@router.get("/restaurant-ops/aliases")
+async def list_aliases(request: Request) -> Dict[str, Any]:
+    """List all POS→product_type aliases for current factory."""
+    factory_id = _get_factory_id(request)
+    if not factory_id:
+        return {"success": False, "message": "missing factory context"}
+
+    try:
+        import asyncpg
+        from config import get_settings
+    except Exception as e:
+        return {"success": False, "message": f"config error: {e}"}
+
+    settings = get_settings()
+    conn = await asyncpg.connect(settings.food_kb_db_url)
+    try:
+        rows = await conn.fetch("""
+            SELECT a.pos_name, a.product_type_id, p.name AS product_name, a.created_at
+              FROM dim_product_alias a
+              LEFT JOIN product_types p ON p.id = a.product_type_id
+             WHERE a.factory_id = $1
+             ORDER BY a.created_at DESC
+        """, factory_id)
+        return {
+            "success": True,
+            "data": {
+                "aliases": [
+                    {
+                        "posName": r["pos_name"],
+                        "productTypeId": r["product_type_id"],
+                        "productName": r["product_name"],
+                        "createdAt": r["created_at"].isoformat() if r["created_at"] else None,
+                    }
+                    for r in rows
+                ],
+            },
+        }
+    finally:
+        await conn.close()
+
+
+@router.delete("/restaurant-ops/aliases/{pos_name}")
+async def delete_alias(request: Request, pos_name: str) -> Dict[str, Any]:
+    factory_id = _get_factory_id(request)
+    if not factory_id:
+        return {"success": False, "message": "missing factory context"}
+
+    try:
+        import asyncpg
+        from config import get_settings
+    except Exception as e:
+        return {"success": False, "message": f"config error: {e}"}
+
+    settings = get_settings()
+    conn = await asyncpg.connect(settings.food_kb_db_url)
+    try:
+        result = await conn.execute(
+            "DELETE FROM dim_product_alias WHERE factory_id = $1 AND pos_name = $2",
+            factory_id, pos_name,
+        )
+        return {"success": True, "data": {"deleted": result.endswith("1")}}
+    finally:
+        await conn.close()

@@ -226,6 +226,7 @@ async def gross_margin(request: Request, days: int = Query(30, ge=1, le=365)) ->
             factory_id, days,
         )
 
+    # Name match + alias fallback — see restaurant_ops_router.resolve_gross_margin for details.
     normalized_names = list({r["normalized_name"] for r in pos_rows})
     cretas_map: Dict[str, str] = {}
     if normalized_names:
@@ -239,7 +240,22 @@ async def gross_margin(request: Request, days: int = Query(30, ge=1, le=365)) ->
                     "SELECT id, name FROM product_types WHERE factory_id = $1 AND name = ANY($2::text[])",
                     factory_id, normalized_names,
                 )
-                cretas_map = {r["name"]: r["id"] for r in name_rows}
+                for r in name_rows:
+                    cretas_map[r["name"]] = r["id"]
+                # P0-2 alias fallback
+                unmapped = [n for n in normalized_names if n not in cretas_map]
+                if unmapped:
+                    try:
+                        alias_rows = await cretas.fetch(
+                            """SELECT pos_name, product_type_id FROM dim_product_alias
+                                WHERE factory_id = $1 AND pos_name = ANY($2::text[])""",
+                            factory_id, unmapped,
+                        )
+                        for r in alias_rows:
+                            cretas_map[r["pos_name"]] = r["product_type_id"]
+                    except Exception as e:
+                        if "does not exist" not in str(e):
+                            logger.warning(f"[gross-margin] alias lookup failed: {e}")
             finally:
                 await cretas.close()
         except Exception as e:
