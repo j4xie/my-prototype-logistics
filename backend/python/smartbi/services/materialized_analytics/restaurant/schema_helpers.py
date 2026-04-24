@@ -10,8 +10,15 @@ from typing import Iterable, Optional, Tuple
 
 
 # Ordered by specificity — first match wins.
+# Apr 24 P0-3 fix: expand aliases — 不二君 CSV used column name 分店 which
+# the narrower list missed, returning 0 stores despite having 营收 5024.5万.
+# Add common variants from real 大众点评 merchant exports (桂满陇/唏嘛香/
+# IL TEATRO/上马火锅/御九井/不二君 all tested).
 _STORE_COL_CANDIDATES: Tuple[str, ...] = (
-    "门店名称", "店铺名称", "门店", "店铺", "店名",
+    "门店名称", "店铺名称", "分店名称", "店名称",
+    "门店", "店铺", "分店", "店名",
+    "门市", "branch_name", "store_name", "shop_name",
+    "Store", "Branch", "Outlet", "Shop",
 )
 
 _DATE_COL_CANDIDATES: Tuple[str, ...] = (

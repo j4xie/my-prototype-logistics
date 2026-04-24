@@ -804,6 +804,22 @@ async function loadDashboardData() {
         if (!ok) {
           fallbackRangeLabel.value = '';
           fallbackDateRange.value = null;
+
+          // Apr 24 P0-2 fix: Gold fallback chain all empty AND user has upload(s) →
+          // auto-switch to latest upload's dynamic analysis (previously disabled
+          // because test env had smoke Excel files like gamma1c polluting. For new
+          // merchants with real upload, this IS the right data). Show alert
+          // "已切换到您上传的数据" so user understands the source swap.
+          // Only triggers when Gold chain fails AND uploads exist — not for seed-
+          // data factories (F001 test) that already had Gold.
+          const uploads = dataSources.value.filter(d => d.id != null);
+          if (uploads.length > 0) {
+            const latest = uploads[0];  // already sorted newest-first from API
+            const shortName = (latest.fileName || '未命名').slice(0, 30);
+            fallbackRangeLabel.value = `Gold 层暂无数据,已切换到您上传的 ${shortName}`;
+            selectedDataSource.value = String(latest.id);
+            await loadDynamicDashboardData(Number(latest.id));
+          }
         }
       } else {
         fallbackRangeLabel.value = '';
@@ -1038,9 +1054,10 @@ async function loadDynamicDashboardData(uploadId: number) {
       const data = res.data as DynamicAnalysisResponse;
 
       // Map dynamic kpiCards → DashboardResponse.kpiCards format
-      const kpiCards: KPICard[] = (data.kpiCards || []).map(kpi => ({
+      // Apr 24 P0-1: humanize "_N" dedupe suffix from column name leakage
+      const kpiCards: KPICard[] = (data.kpiCards || []).map((kpi, idx) => ({
         key: detectKpiKey(kpi.title || ''),
-        title: kpi.title || '',
+        title: humanizeKpiLabel(kpi.title || '', idx),
         displayValue: kpi.value != null ? String(kpi.value) : String(kpi.rawValue ?? 0),
         rawValue: kpi.rawValue ?? 0,
         changeRate: kpi.changeRate ?? null,
@@ -1165,6 +1182,19 @@ async function loadDynamicDashboardData(uploadId: number) {
   } finally {
     loading.value = false;
   }
+}
+
+/**
+ * Apr 24 P0-1 fix: humanize dedupe "_N" suffix. Backend dedupe_column_names
+ * adds _2/_3 to duplicate columns ("数量金额_3") — render as "数量金额 (指标 3)"
+ * so users don't see DB column names directly.
+ */
+function humanizeKpiLabel(rawTitle: string, idx: number): string {
+  if (!rawTitle) return `指标 ${idx + 1}`;
+  const t = rawTitle.trim();
+  const m = t.match(/^(.+?)_(\d+)$/);
+  if (m) return `${m[1]} (指标 ${m[2]})`;
+  return t;
 }
 
 /**
