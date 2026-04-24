@@ -311,10 +311,8 @@ async function handleDelete(row: ProductType) {
       ElMessage.error(response.message || '删除失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('删除失败:', error);
-      ElMessage.error('删除失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError.
+    if (error !== 'cancel') console.error('删除失败:', error);
   }
 }
 
@@ -359,8 +357,8 @@ async function handleSubmit() {
       ElMessage.error(response.message || '提交失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('提交失败:', error);
-    ElMessage.error('提交失败');
   } finally {
     submitting.value = false;
   }

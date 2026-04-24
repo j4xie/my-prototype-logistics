@@ -364,8 +364,8 @@ async function submitProgress() {
       loadData();
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('更新失败:', error);
-    ElMessage.error('更新失败');
   } finally {
     loading.value = false;
   }

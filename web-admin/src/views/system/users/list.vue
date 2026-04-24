@@ -221,7 +221,8 @@ async function handleSaveEdit() {
       ElMessage.error(response.message || '更新失败');
     }
   } catch (error) {
-    ElMessage.error('更新失败');
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', error);
   } finally {
     editLoading.value = false;
   }

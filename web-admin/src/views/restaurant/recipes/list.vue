@@ -331,10 +331,8 @@ async function handleDelete(row: RecipeItem) {
       ElMessage.error(res.message || '删除失败');
     }
   } catch (e) {
-    if (e !== 'cancel') {
-      console.error('Delete recipe failed:', e);
-      ElMessage.error('删除失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError.
+    if (e !== 'cancel') console.error('Delete recipe failed:', e);
   }
 }
 
@@ -384,8 +382,8 @@ async function submitForm() {
     dialogVisible.value = false;
     loadData();
   } catch (e) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('Save recipe failed:', e);
-    ElMessage.error('保存失败');
   } finally {
     submitting.value = false;
   }

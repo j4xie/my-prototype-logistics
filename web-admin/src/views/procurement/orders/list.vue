@@ -177,7 +177,8 @@ async function handleCreate() {
       ElMessage.error(res.message || '创建失败');
     }
   } catch (error) {
-    ElMessage.error('创建失败');
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', error);
   } finally {
     submitting.value = false;
   }

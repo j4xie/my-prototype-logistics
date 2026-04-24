@@ -55,8 +55,9 @@ async function saveRule(rule: ValidationRule) {
   try {
     await setValidationRule(props.factoryId, rule.ruleCode, rule)
     ElMessage.success(`规则 ${rule.ruleCode} 已保存`)
-  } catch {
-    ElMessage.error('保存失败')
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', e);
   }
 }
 

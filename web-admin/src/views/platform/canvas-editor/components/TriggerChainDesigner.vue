@@ -78,8 +78,9 @@ async function saveChain(chain: TriggerChain) {
   try {
     await setTriggerChain(props.factoryId, chain.chainCode, chain)
     ElMessage.success(`触发链 ${chain.chainCode} 已保存`)
-  } catch {
-    ElMessage.error('保存失败')
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', e);
   }
 }
 

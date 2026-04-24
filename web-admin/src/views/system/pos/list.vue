@@ -70,7 +70,8 @@ async function handleDelete(id: string) {
     if (res.success) { ElMessage.success('删除成功'); loadConnections(); }
     else { ElMessage.error(res.message || '删除失败'); }
   } catch (e) {
-    if (e !== 'cancel') { ElMessage.error('删除失败'); }
+    // Interceptor shows specific toast; dedupe fallback
+    if (e !== 'cancel') console.error('[失败]', e);
   }
 }
 

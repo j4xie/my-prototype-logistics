@@ -142,8 +142,8 @@ async function handleSubmit() {
       router.push(`/scheduling/plans/${response.data.id}`);
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('创建失败:', error);
-    ElMessage.error('创建失败');
   } finally {
     loading.value = false;
   }

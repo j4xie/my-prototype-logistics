@@ -160,7 +160,8 @@ async function submitMaintenance() {
       ElMessage.error(response.message || '提交失败');
     }
   } catch (error) {
-    ElMessage.error('提交失败');
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', error);
   } finally {
     dialogLoading.value = false;
   }

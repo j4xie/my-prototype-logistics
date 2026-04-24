@@ -210,10 +210,8 @@ async function handleDelete(row: Record<string, unknown>) {
     ElMessage.success('删除成功');
     loadData();
   } catch (e) {
-    if (e !== 'cancel') {
-      console.error('Delete supplier failed:', e);
-      ElMessage.error('删除失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError.
+    if (e !== 'cancel') console.error('Delete supplier failed:', e);
   }
 }
 </script>

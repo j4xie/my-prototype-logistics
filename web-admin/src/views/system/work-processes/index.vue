@@ -126,9 +126,9 @@ async function handleDelete(row: WorkProcessItem) {
     ElMessage.success('已删除');
     loadData();
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error('删除失败');
+    // Interceptor shows specific toast; dedupe fallback
+    if (e !== 'cancel') console.error('[失败]', e);
   }
-}
 
 async function handleToggle(row: WorkProcessItem) {
   if (!factoryId.value) return;

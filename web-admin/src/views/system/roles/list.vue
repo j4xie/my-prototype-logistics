@@ -118,8 +118,8 @@ async function handleEditSubmit() {
     }
     editDialogVisible.value = false;
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('Edit role failed:', error);
-    ElMessage.error('保存失败');
   } finally {
     editSubmitting.value = false;
   }

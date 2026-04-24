@@ -110,8 +110,9 @@ async function handleAdd(wp: WorkProcessItem) {
     });
     ElMessage.success(`已添加工序「${wp.processName}」`);
     loadLinkedProcesses();
-  } catch {
-    ElMessage.error('添加失败');
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', e);
   }
 }
 

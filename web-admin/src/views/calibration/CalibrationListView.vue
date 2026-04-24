@@ -219,10 +219,8 @@ async function submitCreate() {
       ElMessage.error(response.message || '创建失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('创建失败:', error);
-      ElMessage.error('创建失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError.
+    if (error !== 'cancel') console.error('创建失败:', error);
   } finally {
     createLoading.value = false;
   }
@@ -319,10 +317,8 @@ async function handleDelete(row: CalibrationSession) {
       ElMessage.error(response.message || '删除失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('删除失败:', error);
-      ElMessage.error('删除失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError.
+    if (error !== 'cancel') console.error('删除失败:', error);
   } finally {
     loading.value = false;
   }

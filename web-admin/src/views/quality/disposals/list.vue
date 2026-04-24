@@ -130,7 +130,8 @@ async function submitDisposal() {
       ElMessage.error(response.message || '创建失败');
     }
   } catch (error) {
-    ElMessage.error('创建失败');
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', error);
   } finally {
     dialogLoading.value = false;
   }

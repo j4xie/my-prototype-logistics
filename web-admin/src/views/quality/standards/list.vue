@@ -223,8 +223,9 @@ async function handleDelete(row: Record<string, unknown>) {
     } else {
       ElMessage.error(response.message || '删除失败');
     }
-  } catch {
-    ElMessage.error('删除失败');
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', e);
   }
 }
 
@@ -240,8 +241,9 @@ async function handleToggleEnabled(row: Record<string, unknown>) {
     } else {
       ElMessage.error(response.message || '操作失败');
     }
-  } catch {
-    ElMessage.error('操作失败');
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', e);
   }
 }
 

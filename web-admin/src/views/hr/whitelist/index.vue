@@ -199,9 +199,8 @@ async function handleDelete(row: Record<string, unknown>) {
       ElMessage.error(response.message || '删除失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败');
-    }
+    // Interceptor shows specific toast; dedupe fallback
+    if (error !== 'cancel') console.error('[失败]', error);
   }
 }
 

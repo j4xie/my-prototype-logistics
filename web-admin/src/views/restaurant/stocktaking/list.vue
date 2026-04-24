@@ -315,8 +315,8 @@ async function submitCreateForm() {
       ElMessage.error(res.message || '创建失败');
     }
   } catch (e) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('Create stocktaking failed:', e);
-    ElMessage.error('创建失败');
   } finally { submitting.value = false; }
 }
 

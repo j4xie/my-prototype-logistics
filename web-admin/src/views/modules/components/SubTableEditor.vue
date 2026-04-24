@@ -67,7 +67,8 @@ async function deleteRow(rowIndex: number) {
     try {
       await deleteSubTableRow(props.factoryId, props.moduleCode, props.recordId, props.fieldCode, row.id as string)
     } catch (e) {
-      ElMessage.error('删除失败')
+      // Interceptor shows specific toast; dedupe fallback
+      console.error('[删除失败]', e)
       return
     }
   }
@@ -107,7 +108,8 @@ async function saveAll() {
         }
       }
     } catch (e) {
-      ElMessage.error('保存失败')
+      // Interceptor shows specific toast; dedupe fallback — rethrow so caller knows
+      console.error('[保存失败]', e)
       throw e
     }
   }

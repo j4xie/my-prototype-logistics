@@ -116,9 +116,8 @@ async function handleResolve(row: Record<string, unknown>) {
       ElMessage.error(response.message || '处理失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('处理失败');
-    }
+    // Interceptor shows specific toast; dedupe fallback
+    if (error !== 'cancel') console.error('[失败]', error);
   }
 }
 

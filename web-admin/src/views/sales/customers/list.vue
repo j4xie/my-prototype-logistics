@@ -215,10 +215,8 @@ async function handleDelete(row: Record<string, unknown>) {
       ElMessage.error(res.message || '删除失败');
     }
   } catch (e) {
-    if (e !== 'cancel') {
-      console.error('Delete customer failed:', e);
-      ElMessage.error('删除失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError.
+    if (e !== 'cancel') console.error('Delete customer failed:', e);
   }
 }
 </script>

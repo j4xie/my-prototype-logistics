@@ -145,8 +145,9 @@ async function handleCreate() {
     } else {
       ElMessage.error(res.message || '创建失败');
     }
-  } catch {
-    ElMessage.error('创建失败');
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', e);
   }
 }
 
@@ -188,8 +189,9 @@ async function adoptRecommendation(rec: SkillRecommendation) {
     } else {
       ElMessage.error(res.message || '创建失败');
     }
-  } catch {
-    ElMessage.error('创建失败');
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', e);
   }
 }
 

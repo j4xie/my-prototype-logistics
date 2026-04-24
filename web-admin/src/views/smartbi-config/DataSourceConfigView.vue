@@ -172,8 +172,8 @@ async function handleSubmit() {
       ElMessage.error(response.message || '保存失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('保存失败:', error);
-    ElMessage.error('保存失败');
   } finally {
     dialogLoading.value = false;
   }
@@ -200,10 +200,8 @@ async function handleDelete(row: DataSource) {
       ElMessage.error(response.message || '删除失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('删除失败:', error);
-      ElMessage.error('删除失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError.
+    if (error !== 'cancel') console.error('删除失败:', error);
   }
 }
 
