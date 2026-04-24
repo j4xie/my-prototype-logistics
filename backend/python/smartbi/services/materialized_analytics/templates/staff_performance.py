@@ -11,6 +11,7 @@ from typing import Any, Dict, List
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.pos_placeholders import POS_STAFF_PLACEHOLDERS
 from ..restaurant.schema_helpers import measure_annotation, preferred_revenue_col
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
@@ -73,22 +74,15 @@ class StaffPerformance(AnalysisTemplate):
         # the 服务员 column (data entry error or merged cells). These are role-label contamination,
         # not real names. Filter at template level since classifier can only fix COLUMN roles, not
         # cell VALUES. Meta-rows like 合计/总计 already filtered by PolarsBackend._META_LABELS.
-        _ROLE_NAME_NOISE = {
-            # Role labels used as cell values (data-entry error / merged cells)
-            "收银", "收银员", "服务员", "销售员", "厨师", "店长", "经理",
-            "店员", "员工", "点菜", "点单员", "后厨", "前厅", "外卖员",
-            "服务生", "主管", "收银台", "大堂", "兼职", "临时工",
-            # Meta-rows
-            "合计", "总计", "小计", "汇总", "总和", "平均",
-            # Common generic placeholders
-            "默认", "系统", "无", "未知", "暂无",
-        }
+        # Apr 25 2026 D1.C4: Denylist moved to shared restaurant.pos_placeholders module
+        # so other templates (kitchen_dispatch / monthly_anomaly with staff dim) reuse it.
+        _staff_noise = list(POS_STAFF_PLACEHOLDERS)
         ranking_df = (
             backend._df
             .filter(
                 pl.col(role_col).is_not_null()
                 & (pl.col(role_col).cast(pl.Utf8) != "")
-                & (~pl.col(role_col).cast(pl.Utf8).is_in(list(_ROLE_NAME_NOISE)))
+                & (~pl.col(role_col).cast(pl.Utf8).is_in(_staff_noise))
             )
             .group_by(role_col)
             .agg([
@@ -105,12 +99,16 @@ class StaffPerformance(AnalysisTemplate):
                 applies=False, skip_reason=f"no non-null rows in {role_col}",
             )
 
-        # Total distinct staff (before Top N cap) for KPI
+        # Total distinct staff (before Top N cap) for KPI.
+        # Apr 25 2026 D1.C4 fix: previously this counted ALL non-null distinct
+        # values including 收银/点菜 placeholders, leading to "共 3 位服务员"
+        # when only 1 was a real human. Apply the same denylist as ranking.
         total_staff = (
             backend._df
             .filter(
                 pl.col(role_col).is_not_null()
                 & (pl.col(role_col).cast(pl.Utf8) != "")
+                & (~pl.col(role_col).cast(pl.Utf8).is_in(_staff_noise))
             )
             .select(pl.col(role_col).n_unique())
             .item()

@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.pos_placeholders import POS_PRODUCT_PLACEHOLDERS, filter_placeholder_rows
 from ..restaurant.schema_helpers import find_store_col
 from ..schema import DataSchema, Domain
 from .base import AnalysisTemplate, TemplateResult
@@ -124,6 +125,11 @@ class KitchenDispatchHeatmap(AnalysisTemplate):
             }
             for r in rows
         ]
+        # Apr 25 2026 D1.C4: drop POS-placeholder rows (打包盒/餐位费/外卖费 etc.)
+        # which are system fee items, not real dishes. Without this filter the
+        # "Top 1 菜品" KPI sometimes surfaces 打包盒 on takeout-heavy uploads.
+        top_dishes = filter_placeholder_rows(top_dishes, name_key="dish",
+                                              placeholders=POS_PRODUCT_PLACEHOLDERS)
 
         # By dispatch plan (档口)
         by_plan: List[Dict[str, Any]] = []

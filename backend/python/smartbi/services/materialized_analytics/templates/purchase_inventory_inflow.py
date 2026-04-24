@@ -28,6 +28,7 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.pos_placeholders import POS_PRODUCT_PLACEHOLDERS, filter_placeholder_rows
 from ..restaurant.schema_helpers import find_date_col, find_store_col
 from ..schema import DataSchema, Domain
 from .base import AnalysisTemplate, TemplateResult
@@ -156,6 +157,11 @@ class PurchaseInventoryInflow(AnalysisTemplate):
             }
             for r in rows
         ]
+        # Apr 25 2026 D1.C4: drop POS-placeholder material names (打包盒/餐位费 etc.)
+        top_materials_by_amount = filter_placeholder_rows(
+            top_materials_by_amount, name_key="material",
+            placeholders=POS_PRODUCT_PLACEHOLDERS,
+        )
 
         # Top categories if present
         top_categories: List[Dict[str, Any]] = []

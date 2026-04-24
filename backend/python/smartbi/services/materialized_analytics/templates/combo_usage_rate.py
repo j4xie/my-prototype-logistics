@@ -27,6 +27,7 @@ import polars as pl
 
 from ..compute.base import ComputeBackend
 from ..restaurant.item_parser import parse_items
+from ..restaurant.pos_placeholders import POS_PRODUCT_PLACEHOLDERS, filter_placeholder_rows
 from ..schema import DataSchema, Domain
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
@@ -247,6 +248,12 @@ class ComboUsageRate(AnalysisTemplate):
                 }
                 for r in grouped
             ]
+            # Apr 25 2026 D1.C4: filter POS-placeholder dish names that
+            # sometimes appear in the 套餐 type column (defensive).
+            top_combos = filter_placeholder_rows(
+                top_combos, name_key="name",
+                placeholders=POS_PRODUCT_PLACEHOLDERS,
+            )
 
         insight_text = (
             f"共 {total_rows} 条商品销售记录，其中 {combo_count} 条为套餐（占 {usage_rate_pct:.1f}%）。"
