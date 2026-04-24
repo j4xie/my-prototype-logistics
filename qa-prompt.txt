@@ -501,6 +501,8 @@ Bug 分类 (6 类, 不要混并):
 11. Round 8 W-05 phantom factoryId: FE spread 把 URL path 变量塞 body → Rule 11.② payload shape audit 步骤
 12. Round 7 I-1 if/else 两分支都 PASS + 数据污染掩盖 hint 分支未跑 → Depth 章 "反模式: 宽松断言"; probe 写 DB 会污染后续 branch 分布, 用新 seed 或 DB snapshot 隔离
 13. Round 7 I-2 handleCreate 测了 handleEdit 没测 (state 泄漏) → Rule 16 入口点矩阵
+14. Round 12 跳过 Rule 8 × 3 (W-08 probe 忽略 UI UX, W-09 probe 忽略, R11 COMPLETE 标 test 问题就 move on) → retroactive audit 抓到 W-10 generic "字段类型不正确" / W-08 "must not be null" 无 field name. 修: GlobalExceptionHandler 加 field-name 解析 + actionHint. 教训: **error path 也要跑 Rule 8 四位一体, 不能用 "非 UI 路径" 当跳过借口**
+15. Round 9 W-07 本地 deploy "拖鞋" 15 min — Windows cygwin 累积 java.exe zombie → mvnw fork 爆. 修: deploy-backend.sh R32 加预清理 stale (&gt;1d) java.exe. 教训: **environment 问题也算问题, 不能 "我已手动搞定" 了事, 要 script 化防重演**
 
 触发点 quick reference (真窗口补验用):
 - UX-F2 actionHint (withHint 业务错): SO-20260409-0002 详情 → 发货记录 tab →
