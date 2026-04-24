@@ -26,31 +26,9 @@ from ..restaurant import industry_benchmarks as bench
 from ..schema import DataSchema, Domain
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
-
-_STAR_CANDIDATES = ("星级分", "评分", "星级")
-_TASTE_CANDIDATES = ("口味分", "口味")
-_ENV_CANDIDATES = ("环境分", "环境")
-_SERVICE_CANDIDATES = ("服务分", "服务")
-# Apr 24 2026: add 大众点评 standard column "具体门店" (qhj Q3/Q4 exports use this)
-_STORE_CANDIDATES = ("具体门店", "评价门店", "门店名称", "店铺名称")
-_REVIEW_TIME_CANDIDATES = ("评价时间", "评论时间")
-_CONTENT_CANDIDATES = ("评价详情", "评价内容")
-_VIP_CANDIDATES = ("是否vip", "是否VIP", "VIP")
-_COMPLAINT_CANDIDATES = ("投诉状态", "投诉")
-_PLATFORM_CANDIDATES = ("平台", "评价来源")
-# New: 菜品标签 — most mentioned dishes (useful as ranking signal)
-_DISH_TAG_CANDIDATES = ("菜品标签",)
-_COMPLAINT_TITLE_CANDIDATES = ("投诉标题", "投诉")
+from ..restaurant import schema_helpers
 
 _TOP_N = 10
-
-
-def _first(cols, candidates):
-    col_set = set(cols)
-    for c in candidates:
-        if c in col_set:
-            return c
-    return None
 
 
 @register
@@ -81,21 +59,21 @@ class ReviewsSentimentSummary(AnalysisTemplate):
 
     def applies(self, schema: DataSchema) -> bool:
         names = {f.name for f in schema.fields}
-        return _first(names, _STAR_CANDIDATES) is not None
+        return schema_helpers.find_star_col(names) is not None
 
     def compute(self, backend: ComputeBackend, schema: DataSchema) -> TemplateResult:
         df = backend._df  # type: ignore[attr-defined]
         cols = set(df.columns)
 
-        star_col = _first(cols, _STAR_CANDIDATES)
-        taste_col = _first(cols, _TASTE_CANDIDATES)
-        env_col = _first(cols, _ENV_CANDIDATES)
-        svc_col = _first(cols, _SERVICE_CANDIDATES)
-        store_col = _first(cols, _STORE_CANDIDATES)
-        time_col = _first(cols, _REVIEW_TIME_CANDIDATES)
-        vip_col = _first(cols, _VIP_CANDIDATES)
-        complaint_col = _first(cols, _COMPLAINT_CANDIDATES)
-        platform_col = _first(cols, _PLATFORM_CANDIDATES)
+        star_col = schema_helpers.find_star_col(cols)
+        taste_col = schema_helpers.find_taste_score_col(cols)
+        env_col = schema_helpers.find_env_score_col(cols)
+        svc_col = schema_helpers.find_service_score_col(cols)
+        store_col = schema_helpers.find_review_store_col(cols)
+        time_col = schema_helpers.find_review_time_col(cols)
+        vip_col = schema_helpers.find_vip_flag_col(cols)
+        complaint_col = schema_helpers.find_complaint_status_col(cols)
+        platform_col = schema_helpers.find_review_platform_col(cols)
 
         if star_col is None:
             return TemplateResult(code=self.code, title=self.title, data={},
@@ -231,7 +209,7 @@ class ReviewsSentimentSummary(AnalysisTemplate):
         # key operational signal — it tells ops which dishes drive
         # word-of-mouth independent of raw POS volume.
         top_dish_tags: List[Dict[str, Any]] = []
-        dish_tag_col = _first(cols, _DISH_TAG_CANDIDATES)
+        dish_tag_col = schema_helpers.find_dish_tag_col(cols)
         if dish_tag_col:
             try:
                 rows = (
