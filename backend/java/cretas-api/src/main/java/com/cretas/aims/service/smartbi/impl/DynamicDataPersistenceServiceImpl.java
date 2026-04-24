@@ -558,7 +558,16 @@ public class DynamicDataPersistenceServiceImpl implements DynamicDataPersistence
 
     private String inferChartRole(FieldMappingResult mapping) {
         String dataType = mapping.getDataType();
+        String semanticType = inferSemanticType(mapping);
 
+        // Apr 24 2026 — semantic-type takes priority over raw dataType.
+        // ID fields are NUMERIC (e.g. 评价ID = 9144294805) but should NOT be
+        // y_axis measures — auto-aggregating them gives "评价ID = 383,816 亿"
+        // KPI cards (user screenshot bug). Mark them as series/grouping role.
+        // Rating fields detected by Python heuristic; here we just guard IDs.
+        if ("id".equalsIgnoreCase(semanticType)) {
+            return "series";
+        }
         if ("DATE".equalsIgnoreCase(dataType)) {
             return "x_axis";
         }

@@ -265,6 +265,42 @@ async def quick_summary(request: Request):
 
         df = coerce_numeric_columns(pd.DataFrame(data))
 
+        # Apr 24 2026 — load semantic_type / chart_role from field_definitions
+        # so we can skip sum for ID + rating cols (prevents 评价ID = 383,816 亿
+        # and 服务分 = 6 万 KPI-card pollution per user screenshot bug).
+        # Falls back to col-name heuristic if no upload_id provided.
+        id_cols: set = set()
+        rating_cols: set = set()
+        if isinstance(body, dict) and body.get("upload_id"):
+            try:
+                from smartbi.config import get_pg_pool
+                pool = await get_pg_pool()
+                if pool:
+                    async with pool.acquire() as conn:
+                        rows = await conn.fetch(
+                            """SELECT original_name, semantic_type
+                               FROM smart_bi_pg_field_definitions
+                               WHERE upload_id = $1""",
+                            int(body["upload_id"]),
+                        )
+                        for r in rows:
+                            sem = (r["semantic_type"] or "").lower()
+                            name = r["original_name"]
+                            if sem == "id" or name.lower().endswith("id"):
+                                id_cols.add(name)
+            except Exception as _e:
+                logger.warning(f"[quick_summary] field_defs lookup failed: {_e}")
+
+        # Heuristic for rating cols (works without field_defs):
+        # col name ends with "分" / "评分" AND mean within [1, 5] inclusive
+        # (matches 星级分/口味分/环境分/服务分 + their merchant variants)
+        for col in df.columns:
+            if pd.api.types.is_numeric_dtype(df[col]):
+                cmean = df[col].mean()
+                if (col.endswith("分") or col.endswith("评分") or col.endswith("星级")) \
+                        and pd.notna(cmean) and 1.0 <= float(cmean) <= 5.0:
+                    rating_cols.add(col)
+
         summary = {
             "success": True,
             "rowCount": len(df),
@@ -285,11 +321,18 @@ async def quick_summary(request: Request):
                 col_max = df[col].max()
                 col_mean = df[col].mean()
                 col_sum = df[col].sum()
+                # Apr 24 2026 — IDs: never aggregate as sum (KPI card filter
+                # uses sum != null to pick measures; setting sum=null filters
+                # IDs out cleanly). Ratings: keep mean but null sum so SUM-based
+                # KPI card never fires (12,903 × 4.83 ≈ "6 万" bug).
+                is_id = col in id_cols
+                is_rating = col in rating_cols
                 col_info.update({
                     "min": float(col_min) if pd.notna(col_min) else None,
                     "max": float(col_max) if pd.notna(col_max) else None,
                     "mean": float(col_mean) if pd.notna(col_mean) else None,
-                    "sum": float(col_sum) if pd.notna(col_sum) else None
+                    "sum": None if (is_id or is_rating) else (float(col_sum) if pd.notna(col_sum) else None),
+                    "semanticType": "id" if is_id else ("rating" if is_rating else None),
                 })
 
                 # Trend & sparkline for numeric columns
