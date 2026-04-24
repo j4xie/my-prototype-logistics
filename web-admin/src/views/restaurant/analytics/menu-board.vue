@@ -136,7 +136,9 @@ const marginThreshold = ref(0.5)
 async function loadMarginData() {
   marginLoading.value = true
   try {
-    const res = await pythonFetch('/api/smartbi/restaurant-ops/gross-margin?days=90') as {
+    // days=365 covers legacy POS uploads (e.g. qhj 2025 full year).
+    // When data becomes more recent, FE can expose this as a user-selectable range.
+    const res = await pythonFetch('/api/smartbi/restaurant-ops/gross-margin?days=365') as {
       success: boolean
       data?: { dishes: Array<{ name: string; qty: number; revenue: number; marginRate: number; grossProfit: number; hasCost: boolean }> }
     }
@@ -208,13 +210,25 @@ const quadrants = computed(() => {
       { key: 'Dog', label: '瘦狗菜', count: s.dogCount, color: '#F56C6C', desc: '低销量 + 低收入' },
     ]
   }
-  // Margin mode: re-count via marginMap using adjustable threshold
+  // Margin mode: re-count via marginMap using adjustable threshold.
+  // Note: xlsx-parsed item.name is often an order-combo string containing
+  // multiple dish names joined with '+'. We match by substring against the
+  // seeded dish names (longest-first so "招牌青花椒味(2-3人份)" wins over
+  // "招牌青花椒味" prefix).
   const qm = data.value.qtyMedian
   const mt = marginThreshold.value
   const counts = { Star: 0, Plow: 0, Puzzle: 0, Dog: 0 }
+  const dishRates = Object.entries(marginMap.value)
+    .map(([name, info]) => ({ name, rate: info.rate }))
+    .sort((a, b) => b.name.length - a.name.length)
+  const rateOf = (itemName: string): number => {
+    const direct = marginMap.value[itemName]
+    if (direct) return direct.rate
+    for (const { name, rate } of dishRates) if (itemName.includes(name)) return rate
+    return 0
+  }
   for (const i of data.value.items) {
-    const m = marginMap.value[i.name]
-    const rate = m?.rate || 0
+    const rate = rateOf(i.name)
     const highQty = i.quantity >= qm
     const highMargin = rate >= mt
     const k = highQty && highMargin ? 'Star'
@@ -296,20 +310,33 @@ function renderChart() {
   const yMax = isMarginMode ? 100 : yMaxLegacy
   const yMedian = isMarginMode ? marginThreshold.value * 100 : pm
 
-  // Re-classify quadrant for margin mode based on (quantity vs qm, margin% vs 50)
+  // Re-classify quadrant for margin mode based on (quantity vs qm, margin% vs threshold)
   const pointsByQuadrant: Record<string, Array<{ value: number[]; name: string; _raw: number[]; _hasMargin?: boolean }>> = {
     Star: [], Plow: [], Puzzle: [], Dog: [],
   }
   const outliersList: string[] = []
+  // Longest-first list of seeded dish names with margin rate — for substring
+  // match against xlsx order-combo item names (e.g. '招牌青花椒味(单人份)+米饭+打包盒').
+  const dishRatesForChart = Object.entries(marginMap.value)
+    .map(([name, info]) => ({ name, rate: info.rate }))
+    .sort((a, b) => b.name.length - a.name.length)
 
   for (const i of data.value.items) {
     let yVal: number
     let quadrant: string
     let hasMargin = true
     if (isMarginMode) {
-      const m = marginMap.value[i.name]
-      if (m) {
-        yVal = m.rate * 100
+      // Same longest-first substring matcher as quadrants computed above —
+      // supports order-combo item names from xlsx containing multiple dishes.
+      const direct = marginMap.value[i.name]
+      let matchedRate = 0
+      if (direct) {
+        matchedRate = direct.rate
+      } else {
+        for (const { name, rate } of dishRatesForChart) if (i.name.includes(name)) { matchedRate = rate; break }
+      }
+      if (matchedRate > 0) {
+        yVal = matchedRate * 100
       } else {
         hasMargin = false
         yVal = 0  // place at bottom so user sees "no data" cluster

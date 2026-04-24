@@ -1,0 +1,24 @@
+import { chromium } from '@playwright/test';
+import path from 'path';
+const BASE = 'https://admin.cretaceousfuture.com';
+const OUT = path.resolve('tests/e2e-comprehensive/results/plan-c-with-seed');
+(async () => {
+  const browser = await chromium.launch({ headless: true });
+  const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
+  await page.goto(BASE);
+  await page.locator('input[placeholder="请输入用户名"]').fill('qhj_prod');
+  await page.locator('input[placeholder="请输入密码"]').fill('123456');
+  await page.locator('button.login-button').click();
+  await page.waitForURL((u) => !new URL(String(u)).pathname.startsWith('/login'), { timeout: 30000 });
+  await page.goto(`${BASE}/restaurant/analytics/menu`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(3500);
+  await page.locator('.el-select').first().click();
+  await page.waitForTimeout(1200);
+  await page.locator('.el-select-dropdown__item').first().click();
+  await page.waitForTimeout(4500);
+  await page.locator('label:has-text("按毛利率")').first().click();
+  await page.waitForTimeout(4500);
+  await page.screenshot({ path: path.join(OUT, 'bcg-margin-substring.png'), fullPage: false });
+  console.log('bcg captured');
+  await browser.close();
+})();

@@ -175,10 +175,12 @@ function marginRateTag(rate: number) {
             <span class="data-count">{{ totals.dishCount }} 种菜品 ({{ totals.withCost }} 有配方)</span>
           </div>
           <div class="header-right">
-            <el-select v-model="daysWindow" style="width:110px" @change="loadData">
+            <el-select v-model="daysWindow" style="width:120px" @change="loadData">
               <el-option label="近 7 天" :value="7" />
               <el-option label="近 30 天" :value="30" />
               <el-option label="近 90 天" :value="90" />
+              <el-option label="近 180 天" :value="180" />
+              <el-option label="近 365 天" :value="365" />
             </el-select>
             <el-tooltip content="刚录完配方? 点此立即同步 Gold 毛利表 (无需等 1 小时 cron)" placement="top">
               <el-button type="success" plain :loading="syncing" @click="syncEtl">⚡ 立即同步</el-button>
