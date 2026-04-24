@@ -2,6 +2,7 @@ package com.cretas.aims.mapper;
 
 import com.cretas.aims.dto.material.CreateMaterialBatchRequest;
 import com.cretas.aims.dto.material.MaterialBatchDTO;
+import com.cretas.aims.dto.material.UpdateMaterialBatchRequest;
 import com.cretas.aims.entity.MaterialBatch;
 import com.cretas.aims.entity.enums.MaterialBatchStatus;
 import lombok.extern.slf4j.Slf4j;
@@ -193,7 +194,7 @@ public class MaterialBatchMapper {
      *   - productionDate / sourceDocType / sourceDocId  (historical/audit)
      *   - customFields (flows through a separate DynamicFieldService path)
      */
-    public void updateEntity(MaterialBatch batch, CreateMaterialBatchRequest request) {
+    public void updateEntity(MaterialBatch batch, UpdateMaterialBatchRequest request) {
         if (request.getMaterialTypeId() != null) {
             batch.setMaterialTypeId(request.getMaterialTypeId());
         }

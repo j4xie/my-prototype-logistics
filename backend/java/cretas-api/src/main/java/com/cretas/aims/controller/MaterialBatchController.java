@@ -190,13 +190,13 @@ public class MaterialBatchController {
     @RequirePermission({"warehouse:read_write", "inventory:read_write"})
     @RequireModule("warehouse")
     @PutMapping("/{batchId}")
-    @Operation(summary = "更新原材料批次", description = "更新指定批次的信息")
+    @Operation(summary = "更新原材料批次", description = "更新指定批次的信息 — 允许 partial body (qa-prompt Rule 17.6)")
     public ApiResponse<MaterialBatchDTO> updateMaterialBatch(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "批次ID", required = true, example = "MB-2025-001")
             @PathVariable @NotBlank String batchId,
-            @Valid @RequestBody CreateMaterialBatchRequest request) {
+            @Valid @RequestBody UpdateMaterialBatchRequest request) {
 
         log.info("更新原材料批次: factoryId={}, batchId={}", factoryId, batchId);
         MaterialBatchDTO batch = materialBatchService.updateMaterialBatch(factoryId, batchId, request);

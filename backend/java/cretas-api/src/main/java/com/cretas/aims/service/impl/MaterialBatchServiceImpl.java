@@ -5,6 +5,7 @@ import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.material.ConvertToFrozenRequest;
 import com.cretas.aims.dto.material.UndoFrozenRequest;
 import com.cretas.aims.dto.material.CreateMaterialBatchRequest;
+import com.cretas.aims.dto.material.UpdateMaterialBatchRequest;
 import com.cretas.aims.dto.material.MaterialBatchDTO;
 import com.cretas.aims.dto.material.MaterialBatchExportDTO;
 import com.cretas.aims.utils.ExcelUtil;
@@ -319,7 +320,7 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
     @Override
     @Transactional
-    public MaterialBatchDTO updateMaterialBatch(String factoryId, String batchId, CreateMaterialBatchRequest request) {
+    public MaterialBatchDTO updateMaterialBatch(String factoryId, String batchId, UpdateMaterialBatchRequest request) {
         runConfiguredValidation(factoryId, "UPDATE", java.util.Map.of(
             "batchId", batchId,
             "quantity", request.getReceiptQuantity() != null ? request.getReceiptQuantity() : java.math.BigDecimal.ZERO,

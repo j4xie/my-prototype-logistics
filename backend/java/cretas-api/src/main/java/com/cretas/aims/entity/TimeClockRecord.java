@@ -140,20 +140,22 @@ public class TimeClockRecord extends BaseEntity {
     @Column(name = "remarks", length = 500)
     private String notes;
      /**
-      * 是否为手动修改（扩展字段，表中暂无）
+      * 是否为 HR 手动编辑 (qa-prompt v2.4 Rule 17.3 fix + V20260424_04 migration).
+      * Prior: @Transient with "表中暂无" 注释 → TimeClockServiceImpl:450 的 setIsManualEdit(true)
+      * 被 Hibernate 忽略, HR 改打卡审计线索丢失. 现 @Column 持久化.
       */
-    @Transient
+    @Column(name = "is_manual_edit")
     @Builder.Default
     private Boolean isManualEdit = false;
      /**
-      * 修改人ID（扩展字段，表中暂无）
+      * 手动编辑操作人 user_id (qa-prompt v2.4 Rule 17.3 fix).
       */
-    @Transient
+    @Column(name = "edited_by")
     private Integer editedBy;
      /**
-      * 修改原因（扩展字段，表中暂无）
+      * 手动编辑原因 — HR 填写, 审计用 (qa-prompt v2.4 Rule 17.3 fix).
       */
-    @Transient
+    @Column(name = "edit_reason", length = 500)
     private String editReason;
     // createdAt, updatedAt, deletedAt 继承自 BaseEntity
 
