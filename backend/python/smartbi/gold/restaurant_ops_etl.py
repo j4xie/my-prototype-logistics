@@ -352,16 +352,31 @@ async def sync_fact_recipe(
     is deferred — dim_product lookup needs a dish dim; for now leave as 0.
     """
     async with cretas_pool.acquire() as src:
-        rows = await src.fetch(
-            """
-            SELECT id, product_type_id, raw_material_type_id,
-                   standard_quantity, unit, net_yield_rate,
-                   is_main_ingredient, is_active
-              FROM recipes
-             WHERE factory_id = $1::varchar AND deleted_at IS NULL
-            """,
-            factory_id,
-        )
+        # P2-8: use v_recipes_effective view if available (picks highest-priority
+        # variant whose effective_from/to covers NOW). Falls back to legacy recipes
+        # table if view doesn't exist yet.
+        try:
+            rows = await src.fetch(
+                """
+                SELECT id, product_type_id, raw_material_type_id,
+                       standard_quantity, unit, net_yield_rate,
+                       is_main_ingredient, is_active
+                  FROM v_recipes_effective
+                 WHERE factory_id = $1::varchar
+                """,
+                factory_id,
+            )
+        except Exception:
+            rows = await src.fetch(
+                """
+                SELECT id, product_type_id, raw_material_type_id,
+                       standard_quantity, unit, net_yield_rate,
+                       is_main_ingredient, is_active
+                  FROM recipes
+                 WHERE factory_id = $1::varchar AND deleted_at IS NULL
+                """,
+                factory_id,
+            )
     if not rows:
         return 0
 
