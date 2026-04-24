@@ -122,6 +122,8 @@ public class PurchaseServiceImpl implements PurchaseService {
         order.setOrderDate(request.getOrderDate());
         order.setExpectedDeliveryDate(request.getExpectedDeliveryDate());
         order.setRemark(request.getRemark());
+        // W-12 fix: persist salesOrderId for cross-module tracking (SO detail "关联采购" tab)
+        order.setSalesOrderId(request.getSalesOrderId());
         order.setStatus(PurchaseOrderStatus.DRAFT);
         order.setCreatedBy(userId);
 
@@ -189,6 +191,14 @@ public class PurchaseServiceImpl implements PurchaseService {
     public PageResponse<PurchaseOrder> getPurchaseOrdersByStatus(String factoryId, PurchaseOrderStatus status, int page, int size) {
         PageRequest pageRequest = PageRequest.of(page - 1, size);
         Page<PurchaseOrder> result = purchaseOrderRepository.findByFactoryIdAndStatusOrderByCreatedAtDesc(factoryId, status, pageRequest);
+        return PageResponse.of(result.getContent(), page, size, result.getTotalElements());
+    }
+
+    @Override
+    public PageResponse<PurchaseOrder> getPurchaseOrdersBySalesOrder(String factoryId, String salesOrderId, int page, int size) {
+        // W-12 fix: SO detail page's "关联采购" tab needs this filter
+        PageRequest pageRequest = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<PurchaseOrder> result = purchaseOrderRepository.findByFactoryIdAndSalesOrderId(factoryId, salesOrderId, pageRequest);
         return PageResponse.of(result.getContent(), page, size, result.getTotalElements());
     }
 
@@ -290,6 +300,10 @@ public class PurchaseServiceImpl implements PurchaseService {
         order.setOrderDate(request.getOrderDate());
         order.setExpectedDeliveryDate(request.getExpectedDeliveryDate());
         order.setRemark(request.getRemark());
+        // W-12 fix: also update salesOrderId (null-safe — null means unlink from SO)
+        if (request.getSalesOrderId() != null) {
+            order.setSalesOrderId(request.getSalesOrderId());
+        }
 
         // Replace items: delete old, create new
         purchaseOrderItemRepository.deleteAll(

@@ -107,6 +107,14 @@ public class PurchaseOrder extends BaseEntity {
     @Column(name = "remark", columnDefinition = "TEXT")
     private String remark;
 
+    /**
+     * W-12 fix (Round 15): optional FK to sales_orders.id — when PO is created
+     * to fulfill a specific SO ("定点追踪主原料防止多采"). Nullable for 无单采购.
+     * SO detail page's "关联采购" tab depends on this column.
+     */
+    @Column(name = "sales_order_id", length = 191)
+    private String salesOrderId;
+
     // ==================== 财务审核 ====================
 
     /** 财务审核人ID */

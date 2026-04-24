@@ -53,13 +53,16 @@ public class PurchaseController {
     }
 
     @GetMapping("/orders")
-    @Operation(summary = "采购订单列表")
+    @Operation(summary = "采购订单列表", description = "支持可选 salesOrderId 过滤 (W-12 fix: SO 详情页'关联采购' tab 依赖)")
     @RequirePermission({"procurement:read_write", "procurement:read"})
     public ApiResponse<PageResponse<PurchaseOrder>> listOrders(
             @PathVariable @NotBlank String factoryId,
+            @RequestParam(required = false) String salesOrderId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
-        PageResponse<PurchaseOrder> result = purchaseService.getPurchaseOrders(factoryId, page, size);
+        PageResponse<PurchaseOrder> result = (salesOrderId != null && !salesOrderId.isBlank())
+                ? purchaseService.getPurchaseOrdersBySalesOrder(factoryId, salesOrderId, page, size)
+                : purchaseService.getPurchaseOrders(factoryId, page, size);
         return ApiResponse.success("查询成功", result);
     }
 

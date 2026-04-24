@@ -148,8 +148,13 @@ async function handleCreate() {
   if (form.value.items.some(i => !i.unit)) return ElMessage.warning('请填写所有明细的单位');
   submitting.value = true;
   try {
-    // Build remark with sales order reference if selected
+    // W-12 fix (Round 15): previously relatedSalesOrderId was stripped from payload
+    // and only embedded as "[关联销售订单: SO-XXX]" in remark. Now that the backend has
+    // a proper sales_order_id column + filter (V20260424_03 + PurchaseService fix),
+    // pass it through as salesOrderId. Keep the remark text for backward-compat
+    // readability — users who view old POs will still see the ref.
     let remark = form.value.remark || '';
+    const salesOrderId = form.value.relatedSalesOrderId || null;
     if (form.value.relatedSalesOrderId) {
       const so = salesOrders.value.find((o: Record<string, unknown>) => o.id === form.value.relatedSalesOrderId);
       const soRef = so ? `[关联销售订单: ${so.orderNumber}]` : '';
@@ -159,6 +164,7 @@ async function handleCreate() {
     const payload = {
       ...formData,
       remark,
+      salesOrderId,
       orderDate: new Date().toISOString().slice(0, 10), // backend requires @NotNull orderDate
     };
     const res = await post(`/${factoryId.value}/purchase/orders`, payload);

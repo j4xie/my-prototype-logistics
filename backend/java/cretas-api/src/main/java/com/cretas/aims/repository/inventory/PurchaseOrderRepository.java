@@ -20,6 +20,9 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, St
 
     Page<PurchaseOrder> findByFactoryIdAndStatusOrderByCreatedAtDesc(String factoryId, PurchaseOrderStatus status, Pageable pageable);
 
+    /** W-12 fix: SO detail "关联采购" tab filter. */
+    Page<PurchaseOrder> findByFactoryIdAndSalesOrderId(String factoryId, String salesOrderId, Pageable pageable);
+
     Optional<PurchaseOrder> findByFactoryIdAndOrderNumber(String factoryId, String orderNumber);
 
     List<PurchaseOrder> findByFactoryIdAndSupplierId(String factoryId, String supplierId);

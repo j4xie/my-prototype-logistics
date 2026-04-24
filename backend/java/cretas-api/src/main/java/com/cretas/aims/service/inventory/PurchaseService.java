@@ -24,6 +24,9 @@ public interface PurchaseService {
 
     PageResponse<PurchaseOrder> getPurchaseOrdersByStatus(String factoryId, PurchaseOrderStatus status, int page, int size);
 
+    /** W-12 fix: filter by linked sales order id (for SO detail "关联采购" tab). */
+    PageResponse<PurchaseOrder> getPurchaseOrdersBySalesOrder(String factoryId, String salesOrderId, int page, int size);
+
     PurchaseOrder submitOrder(String factoryId, String orderId);
 
     PurchaseOrder approveOrder(String factoryId, String orderId, Long approvedBy);

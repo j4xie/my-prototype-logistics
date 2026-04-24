@@ -30,6 +30,14 @@ public class CreatePurchaseOrderRequest {
 
     private String remark;
 
+    /**
+     * W-12 fix (Round 15): optional SO id for cross-module tracking
+     * ("按销售订单做定点追踪"). When set, SO detail page's "关联采购" tab shows this PO.
+     * FE list.vue previously had a `relatedSalesOrderId` field that got stripped from
+     * payload — now renamed + passed through to this field.
+     */
+    private String salesOrderId;
+
     @Valid
     @NotEmpty(message = "采购行项目不能为空")
     private List<PurchaseOrderItemDTO> items;
