@@ -11,6 +11,7 @@ from collections import Counter
 from typing import Any, Dict, List
 
 from ..compute.base import ComputeBackend
+from ..restaurant.dish_name_normalizer import normalize_dish_name
 from ..restaurant.item_parser import parse_items
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
@@ -69,7 +70,10 @@ class DishSlowMovers(AnalysisTemplate):
             items = parse_items(str(cell), include_system=False)
             seen_in_order: set = set()
             for item in items:
-                name = item["name"]
+                # Apr 24 2026: collapse variant suffixes so 招牌青花椒鱼(一吃)
+                # and 招牌青花椒鱼(二吃) are treated as one dish before
+                # ranking the bottom-15 slow movers.
+                name = normalize_dish_name(item["name"])
                 qty_counter[name] += item["quantity"]
                 seen_in_order.add(name)
             for name in seen_in_order:

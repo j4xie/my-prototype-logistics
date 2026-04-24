@@ -16,6 +16,7 @@ from collections import Counter, defaultdict
 from typing import Any, Dict, List
 
 from ..compute.base import ComputeBackend
+from ..restaurant.dish_name_normalizer import normalize_dish_name
 from ..restaurant.item_parser import parse_items
 from ..restaurant.schema_helpers import find_table_col
 from ..restaurant.table_classifier import classify_table
@@ -80,7 +81,9 @@ class DishByTableType(AnalysisTemplate):
                 continue
             items = parse_items(str(raw))
             for item in items:
-                name = item["name"]
+                # Apr 24 2026: collapse variant suffixes so the per-table-type
+                # Top-N treats 招牌青花椒鱼(一吃)/(二吃) as one dish.
+                name = normalize_dish_name(item["name"])
                 qty_by_type[t_type][name] += item["quantity"]
                 rev_by_type[t_type][name] += item["total"]
 

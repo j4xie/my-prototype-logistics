@@ -12,6 +12,7 @@ from collections import Counter
 from typing import Any, Dict, List
 
 from ..compute.base import ComputeBackend
+from ..restaurant.dish_name_normalizer import normalize_dish_name
 from ..restaurant.item_parser import parse_items
 from ..schema import DataSchema, Domain
 from .base import AnalysisTemplate, TemplateResult
@@ -64,7 +65,10 @@ class DishSalesTopN(AnalysisTemplate):
                 continue
             items = parse_items(str(raw_value))
             for item in items:
-                name = item["name"]
+                # Apr 24 2026: collapse SKU variants (一吃/二吃/大份/小份/单人份)
+                # into the parent dish name so the Top-N ranking treats
+                # 招牌青花椒鱼(一吃) and 招牌青花椒鱼(二吃) as one dish.
+                name = normalize_dish_name(item["name"])
                 qty_counter[name] += item["quantity"]
                 rev_counter[name] += item["total"]
 

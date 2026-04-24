@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.dish_name_normalizer import normalize_dish_name
 from ..restaurant.pos_placeholders import POS_PRODUCT_PLACEHOLDERS, filter_placeholder_rows
 from ..restaurant.schema_helpers import find_store_col
 from ..schema import DataSchema, Domain
@@ -111,14 +112,23 @@ class KitchenDispatchHeatmap(AnalysisTemplate):
             agg_exprs.append(
                 pl.col(amount_col).cast(pl.Float64, strict=False).fill_null(0.0).sum().alias("amount")
             )
+        # Apr 24 2026: collapse SKU variants on a normalized dish name so
+        # the Top-N treats 招牌青花椒鱼(一吃)/(二吃) as one dish.
+        _norm_col = "__dish_norm"
+        df_with_norm = df.filter(pl.col(dish_col).is_not_null()).with_columns(
+            pl.col(dish_col)
+            .cast(pl.Utf8, strict=False)
+            .map_elements(normalize_dish_name, return_dtype=pl.Utf8)
+            .alias(_norm_col)
+        )
         rows = (
-            df.filter(pl.col(dish_col).is_not_null())
-            .group_by(dish_col).agg(agg_exprs)
+            df_with_norm
+            .group_by(_norm_col).agg(agg_exprs)
             .sort("ordered", descending=True).head(_TOP_N).to_dicts()
         )
         top_dishes = [
             {
-                "dish": str(r.get(dish_col) or "<空>"),
+                "dish": str(r.get(_norm_col) or "<空>"),
                 "ordered": round(float(r.get("ordered") or 0.0), 2),
                 "checked": round(float(r.get("checked") or 0.0), 2) if checked_qty_col else None,
                 "amount": round(float(r.get("amount") or 0.0), 2) if amount_col else None,

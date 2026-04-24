@@ -26,6 +26,7 @@ from typing import Any, Dict, List
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.dish_name_normalizer import normalize_dish_name
 from ..restaurant.item_parser import parse_items
 from ..restaurant.pos_placeholders import POS_PRODUCT_PLACEHOLDERS, filter_placeholder_rows
 from ..schema import DataSchema, Domain
@@ -101,8 +102,13 @@ class ComboUsageRate(AnalysisTemplate):
             items = parse_items(text)
             order_has_combo = False
             for item in items:
-                name = item["name"]
-                if any(kw in name for kw in _COMBO_KEYWORDS):
+                # Apr 24 2026: collapse SKU variants so combos differing
+                # only by (大份)/(小份)/(单人份) merge in the Top-N combo
+                # ranking. Keyword check uses raw name so we still detect
+                # 套餐 inside the suffix should it ever appear there.
+                raw_name = item["name"]
+                if any(kw in raw_name for kw in _COMBO_KEYWORDS):
+                    name = normalize_dish_name(raw_name)
                     combo_name_counter[name] += item["quantity"]
                     combo_revenue[name] += item["total"]
                     order_has_combo = True
@@ -229,9 +235,19 @@ class ComboUsageRate(AnalysisTemplate):
                     pl.col(rev_col).cast(pl.Float64, strict=False).sum().alias("revenue")
                 )
 
+            # Apr 24 2026: collapse SKU variants (大份/小份/单人份) onto
+            # a normalized name before group-by so the Top-N combo
+            # ranking treats 招牌套餐(大份)/(小份) as one combo.
+            _norm_col = "__dish_name_norm"
+            combo_rows_norm = combo_rows.with_columns(
+                pl.col(_DISH_NAME_COL)
+                .cast(pl.Utf8, strict=False)
+                .map_elements(normalize_dish_name, return_dtype=pl.Utf8)
+                .alias(_norm_col)
+            )
             grouped = (
-                combo_rows
-                .group_by(_DISH_NAME_COL)
+                combo_rows_norm
+                .group_by(_norm_col)
                 .agg(agg_exprs)
                 .sort(
                     "quantity" if qty_col else "row_count",
@@ -242,7 +258,7 @@ class ComboUsageRate(AnalysisTemplate):
             )
             top_combos = [
                 {
-                    "name": str(r.get(_DISH_NAME_COL) or "<空>"),
+                    "name": str(r.get(_norm_col) or "<空>"),
                     "quantity": round(float(r.get("quantity") or 0.0), 2),
                     "revenue": round(float(r.get("revenue") or 0.0), 2),
                 }

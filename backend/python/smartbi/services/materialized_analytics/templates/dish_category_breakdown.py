@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Set
 
 from ..compute.base import ComputeBackend
 from ..restaurant.dish_classifier import classify_dish
+from ..restaurant.dish_name_normalizer import normalize_dish_name
 from ..restaurant.item_parser import parse_items
 from ..schema import DataSchema, Domain
 from .base import AnalysisTemplate, TemplateResult
@@ -71,7 +72,12 @@ class DishCategoryBreakdown(AnalysisTemplate):
                 continue
             items = parse_items(str(raw_value))
             for item in items:
-                name = item["name"]
+                # Apr 24 2026: normalize variant suffixes so the
+                # per-category 'items' set counts (一吃)/(二吃)/(大份)
+                # variants as one distinct dish. Classification is run
+                # against the normalized name (which still keeps the
+                # discriminating prefix that classify_dish uses).
+                name = normalize_dish_name(item["name"])
                 category = classify_dish(name, item.get("is_signature", False))
                 agg[category]["quantity"] += item["quantity"]
                 agg[category]["revenue"] += item["total"]
