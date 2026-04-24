@@ -130,4 +130,134 @@ public class GoldFinanceClient {
             return parsed;
         }
     }
+
+    /**
+     * Fetch daily revenue/bill-count trend from Python Gold layer.
+     *
+     * Used to populate the 销售趋势 line chart on Dashboard 经营驾驶舱 + 分析概览.
+     * Apr 22 Gold cutover only included KPI cards; charts stayed empty until
+     * this method (Apr 25 Phase B4) wired the trend through.
+     *
+     * @return parsed JSON; key fields:
+     *         - factory_id, start_date, end_date (echoes input)
+     *         - points: List of {date, revenue, bill_count, avg_bill_value}
+     *           one per date with activity, ordered ascending
+     * @throws IOException on transport / non-2xx / parse failure
+     */
+    public Map<String, Object> fetchDailyTrend(
+            String factoryId,
+            LocalDate startDate,
+            LocalDate endDate
+    ) throws IOException {
+        if (factoryId == null || factoryId.isEmpty()) {
+            throw new IllegalArgumentException("factoryId required");
+        }
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("startDate and endDate required");
+        }
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("startDate > endDate");
+        }
+
+        HttpUrl url = HttpUrl.parse(config.getUrl() + "/api/smartbi/gold/daily-trend")
+                .newBuilder()
+                .addQueryParameter("factory_id", factoryId)
+                .addQueryParameter("start_date", startDate.toString())
+                .addQueryParameter("end_date", endDate.toString())
+                .build();
+
+        Request.Builder reqBuilder = new Request.Builder().url(url).get();
+        if (!internalSecret.isEmpty()) {
+            reqBuilder.addHeader("X-Internal-Secret", internalSecret);
+            reqBuilder.addHeader("X-Factory-Id", factoryId);
+        }
+        Request req = reqBuilder.build();
+
+        long t0 = System.currentTimeMillis();
+        try (Response resp = http.newCall(req).execute()) {
+            long elapsed = System.currentTimeMillis() - t0;
+            if (!resp.isSuccessful()) {
+                String body = resp.body() != null ? resp.body().string() : "";
+                throw new IOException(
+                        "Gold daily-trend HTTP " + resp.code() + " in " + elapsed
+                                + "ms: " + body);
+            }
+            String body = resp.body() != null ? resp.body().string() : "{}";
+            @SuppressWarnings("unchecked")
+            Map<String, Object> parsed = objectMapper.readValue(body, Map.class);
+            Object pts = parsed.get("points");
+            int count = (pts instanceof java.util.List) ? ((java.util.List<?>) pts).size() : 0;
+            log.debug("Gold daily-trend factory={} range={}..{} points={} in {}ms",
+                    factoryId, startDate, endDate, count, elapsed);
+            return parsed;
+        }
+    }
+
+    /**
+     * Fetch top products by revenue from Python Gold layer.
+     *
+     * Used to populate the 产品类别占比 pie chart on Dashboard. Note that
+     * dim_product.category is NULL for restaurant tenants ingested before
+     * v1.3, so we fall back to top product names as the breakdown — still
+     * useful as a "热销产品 Top N" donut.
+     *
+     * @return parsed JSON; key fields:
+     *         - factory_id, start_month, end_month (rolled up to month grain)
+     *         - top_products: List of {product_id, product_name, qty_sold,
+     *           revenue, bill_count}, ordered by revenue DESC, max top_n
+     * @throws IOException on transport / non-2xx / parse failure
+     */
+    public Map<String, Object> fetchTopProducts(
+            String factoryId,
+            LocalDate startDate,
+            LocalDate endDate,
+            int topN
+    ) throws IOException {
+        if (factoryId == null || factoryId.isEmpty()) {
+            throw new IllegalArgumentException("factoryId required");
+        }
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("startDate and endDate required");
+        }
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("startDate > endDate");
+        }
+        if (topN < 1 || topN > 100) {
+            throw new IllegalArgumentException("topN must be 1..100");
+        }
+
+        HttpUrl url = HttpUrl.parse(config.getUrl() + "/api/smartbi/gold/top-products")
+                .newBuilder()
+                .addQueryParameter("factory_id", factoryId)
+                .addQueryParameter("start_date", startDate.toString())
+                .addQueryParameter("end_date", endDate.toString())
+                .addQueryParameter("top_n", String.valueOf(topN))
+                .build();
+
+        Request.Builder reqBuilder = new Request.Builder().url(url).get();
+        if (!internalSecret.isEmpty()) {
+            reqBuilder.addHeader("X-Internal-Secret", internalSecret);
+            reqBuilder.addHeader("X-Factory-Id", factoryId);
+        }
+        Request req = reqBuilder.build();
+
+        long t0 = System.currentTimeMillis();
+        try (Response resp = http.newCall(req).execute()) {
+            long elapsed = System.currentTimeMillis() - t0;
+            if (!resp.isSuccessful()) {
+                String body = resp.body() != null ? resp.body().string() : "";
+                throw new IOException(
+                        "Gold top-products HTTP " + resp.code() + " in " + elapsed
+                                + "ms: " + body);
+            }
+            String body = resp.body() != null ? resp.body().string() : "{}";
+            @SuppressWarnings("unchecked")
+            Map<String, Object> parsed = objectMapper.readValue(body, Map.class);
+            Object items = parsed.get("top_products");
+            int count = (items instanceof java.util.List) ? ((java.util.List<?>) items).size() : 0;
+            log.debug("Gold top-products factory={} range={}..{} count={} in {}ms",
+                    factoryId, startDate, endDate, count, elapsed);
+            return parsed;
+        }
+    }
 }

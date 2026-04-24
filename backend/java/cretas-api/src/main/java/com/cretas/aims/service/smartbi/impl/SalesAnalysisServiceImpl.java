@@ -86,8 +86,13 @@ public class SalesAnalysisServiceImpl implements SalesAnalysisService {
         // data in Silver. Legacy path still serves when Gold is empty or fails.
         if (goldReadPrimaryEnabled && goldDashboardBuilder != null) {
             try {
+                // Apr 25 Phase B4: Dashboard 经营驾驶舱 charts (sales_trend +
+                // category_distribution) were empty for restaurant tenants
+                // because the original cutover only included KPIs.
+                // buildFromGoldWithCharts adds the chart fetches; KPI null-
+                // contract is preserved (returns null when Gold is empty).
                 DashboardResponse goldResponse = goldDashboardBuilder
-                        .buildFromFinanceSummary(factoryId, startDate, endDate);
+                        .buildFromGoldWithCharts(factoryId, startDate, endDate);
                 if (goldResponse != null) {
                     log.info("[gold-primary] sales factory={} range={}..{} served from Gold",
                             factoryId, startDate, endDate);

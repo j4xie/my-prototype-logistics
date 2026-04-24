@@ -1,6 +1,7 @@
 package com.cretas.aims.service.smartbi;
 
 import com.cretas.aims.client.GoldFinanceClient;
+import com.cretas.aims.dto.smartbi.ChartConfig;
 import com.cretas.aims.dto.smartbi.DashboardResponse;
 import com.cretas.aims.dto.smartbi.KPICard;
 import com.cretas.aims.dto.smartbi.RankingItem;
@@ -113,6 +114,116 @@ public class GoldDashboardBuilder {
                 .suggestions(new ArrayList<>())
                 .lastUpdated(LocalDateTime.now())
                 .build();
+    }
+
+    /**
+     * Same as {@link #buildFromFinanceSummary} but also populates the
+     * `charts` map with sales_trend (daily revenue line) and
+     * category_distribution (top products pie) — both pulled from Python
+     * Gold endpoints.
+     *
+     * Apr 25 2026 (Phase B4): Apr 22 Gold cutover only included KPI
+     * cards; Dashboard 经营驾驶舱 has been rendering empty chart cards
+     * for restaurant tenants ever since. Phase 8 hid those cards
+     * visually; this method makes them show real data.
+     *
+     * Chart fetch failures are logged and tolerated — the response still
+     * has populated KPI cards + top stores even if both chart fetches
+     * fail. Returns null only on the underlying finance_summary failure
+     * (same null-contract as buildFromFinanceSummary).
+     */
+    public DashboardResponse buildFromGoldWithCharts(
+            String factoryId, LocalDate startDate, LocalDate endDate) throws IOException {
+        DashboardResponse base = buildFromFinanceSummary(factoryId, startDate, endDate);
+        if (base == null) {
+            return null;
+        }
+
+        Map<String, ChartConfig> charts = new LinkedHashMap<>();
+
+        ChartConfig trend = fetchTrendChart(factoryId, startDate, endDate);
+        if (trend != null) {
+            charts.put("sales_trend", trend);
+        }
+
+        ChartConfig pie = fetchCategoryChart(factoryId, startDate, endDate);
+        if (pie != null) {
+            charts.put("category_distribution", pie);
+        }
+
+        if (!charts.isEmpty()) {
+            base.setCharts(charts);
+        }
+        return base;
+    }
+
+    private ChartConfig fetchTrendChart(String factoryId, LocalDate startDate, LocalDate endDate) {
+        try {
+            Map<String, Object> trendResp = goldFinanceClient.fetchDailyTrend(
+                    factoryId, startDate, endDate);
+            Object pointsRaw = trendResp.get("points");
+            if (!(pointsRaw instanceof List)) return null;
+            List<?> points = (List<?>) pointsRaw;
+            if (points.isEmpty()) return null;
+
+            List<Map<String, Object>> data = new ArrayList<>();
+            for (Object p : points) {
+                if (!(p instanceof Map)) continue;
+                Map<?, ?> point = (Map<?, ?>) p;
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("date", String.valueOf(point.get("date")));
+                row.put("amount", toBigDecimal(point.get("revenue"))
+                        .setScale(DISPLAY_SCALE, ROUNDING_MODE));
+                data.add(row);
+            }
+            return ChartConfig.builder()
+                    .chartType("LINE")
+                    .title("销售趋势")
+                    .xAxisField("date")
+                    .yAxisField("amount")
+                    .data(data)
+                    .build();
+        } catch (Exception e) {
+            log.warn("[gold-builder] trend fetch failed factory={} range={}..{}: {}",
+                    factoryId, startDate, endDate, e.getMessage());
+            return null;
+        }
+    }
+
+    private ChartConfig fetchCategoryChart(String factoryId, LocalDate startDate, LocalDate endDate) {
+        try {
+            Map<String, Object> productsResp = goldFinanceClient.fetchTopProducts(
+                    factoryId, startDate, endDate, 8);
+            Object itemsRaw = productsResp.get("top_products");
+            if (!(itemsRaw instanceof List)) return null;
+            List<?> items = (List<?>) itemsRaw;
+            if (items.isEmpty()) return null;
+
+            List<Map<String, Object>> data = new ArrayList<>();
+            for (Object it : items) {
+                if (!(it instanceof Map)) continue;
+                Map<?, ?> product = (Map<?, ?>) it;
+                Object name = product.get("product_name");
+                if (name == null) continue;
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("category", String.valueOf(name));
+                row.put("amount", toBigDecimal(product.get("revenue"))
+                        .setScale(DISPLAY_SCALE, ROUNDING_MODE));
+                data.add(row);
+            }
+            if (data.isEmpty()) return null;
+            return ChartConfig.builder()
+                    .chartType("PIE")
+                    .title("产品类别占比")
+                    .xAxisField("category")
+                    .yAxisField("amount")
+                    .data(data)
+                    .build();
+        } catch (Exception e) {
+            log.warn("[gold-builder] category fetch failed factory={} range={}..{}: {}",
+                    factoryId, startDate, endDate, e.getMessage());
+            return null;
+        }
     }
 
     /** Tolerant Number → BigDecimal. */
