@@ -66,6 +66,10 @@ let resizeObserver: ResizeObserver | null = null;
 // get empty points → the section hides and legacy production charts show.
 const goldTrend = ref<DailyTrend | null>(null);
 let goldRevenueChart: echarts.ECharts | null = null;
+// Apr 24 Plan C Phase 8: second-axis metric toggle. Data already in /gold/daily-trend
+// — 3 fields per point: revenue, bill_count, avg_bill_value.
+type TrendMetric = 'bills' | 'avg';
+const trendSecondMetric = ref<TrendMetric>('bills');
 
 function _periodToDateRange(period: string): [string, string] {
   const iso = (d: Date): string => d.toISOString().slice(0, 10);
@@ -144,15 +148,22 @@ async function loadGoldTrend() {
 function updateGoldChart() {
   if (!goldRevenueChart || !goldTrend.value) return;
   const pts = goldTrend.value.points;
+  const secondMetric = trendSecondMetric.value;
+  const secondMeta = secondMetric === 'bills'
+    ? { name: '订单数', color: '#E6A23C', data: pts.map(p => p.billCount), unit: '' }
+    : { name: '客单价', color: '#409EFF', data: pts.map(p => p.avgBillValue ?? 0), unit: '元' };
   goldRevenueChart.setOption({
     title: { text: 'POS 营收趋势 (Gold)', left: 'center', textStyle: { fontSize: 14 } },
-    tooltip: { trigger: 'axis', confine: true },
-    legend: { data: ['营收', '订单数'], top: 24 },
+    tooltip: {
+      trigger: 'axis', confine: true,
+      valueFormatter: (v: number) => typeof v === 'number' ? v.toFixed(secondMetric === 'avg' ? 2 : 0) : String(v),
+    },
+    legend: { data: ['营收', secondMeta.name], top: 24 },
     grid: { top: 60, left: 60, right: 60, bottom: 40 },
     xAxis: { type: 'category', data: pts.map(p => p.date) },
     yAxis: [
       { type: 'value', name: '营收', axisLabel: { formatter: (v: number) => v >= 10000 ? `${(v / 10000).toFixed(1)}万` : String(v) } },
-      { type: 'value', name: '订单数' },
+      { type: 'value', name: secondMeta.name + (secondMeta.unit ? `(${secondMeta.unit})` : '') },
     ],
     series: [
       {
@@ -164,15 +175,19 @@ function updateGoldChart() {
         data: pts.map(p => Number(p.revenue)),
       },
       {
-        name: '订单数',
+        name: secondMeta.name,
         type: 'line',
         yAxisIndex: 1,
         smooth: true,
-        itemStyle: { color: '#E6A23C' },
-        data: pts.map(p => p.billCount),
+        itemStyle: { color: secondMeta.color },
+        data: secondMeta.data,
       },
     ],
-  });
+  }, true);
+}
+
+function onTrendMetricChange() {
+  updateGoldChart();
 }
 
 onMounted(() => {
@@ -367,13 +382,17 @@ onUnmounted(() => {
     <!-- v1.2 Week 9 Gold flip: POS revenue+orders trend for restaurant tenants -->
     <el-card v-show="goldTrend" class="chart-card gold-trend-card" style="margin-bottom: 16px; border-top: 3px solid #67C23A;">
       <template #header>
-        <div style="display: flex; align-items: center; gap: 8px; font-weight: 600;">
+        <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; flex-wrap: wrap;">
           <span>📈 POS 营收趋势</span>
           <el-tag size="small" type="success">Gold · daily_trend</el-tag>
           <el-tag v-if="goldTrendFallbackLabel" size="small" type="warning" effect="plain">
             所选区间无数据,已显示 {{ goldTrendFallbackLabel }}
           </el-tag>
-          <span v-if="goldTrend" style="color: #909399; font-size: 12px; margin-left: auto;">
+          <el-radio-group v-model="trendSecondMetric" size="small" @change="onTrendMetricChange" style="margin-left: auto;">
+            <el-radio-button value="bills">订单数</el-radio-button>
+            <el-radio-button value="avg">客单价</el-radio-button>
+          </el-radio-group>
+          <span v-if="goldTrend" style="color: #909399; font-size: 12px;">
             {{ goldTrend.points.length }} 天
           </span>
         </div>
