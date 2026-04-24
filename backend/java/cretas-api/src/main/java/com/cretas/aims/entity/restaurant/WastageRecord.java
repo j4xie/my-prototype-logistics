@@ -80,7 +80,7 @@ public class WastageRecord extends BaseEntity {
     /**
      * 损耗类型
      */
-    @NotNull
+    @NotNull(message = "损耗类型不能为空")
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false, length = 32)
     private WastageType type;
@@ -88,7 +88,7 @@ public class WastageRecord extends BaseEntity {
     /**
      * 审批状态
      */
-    @NotNull
+    @NotNull(message = "审批状态不能为空")
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 32)
     private Status status = Status.DRAFT;
@@ -98,7 +98,7 @@ public class WastageRecord extends BaseEntity {
     /**
      * 食材类型 ID (raw_material_types.id)
      */
-    @NotBlank
+    @NotBlank(message = "食材类型不能为空")
     @Column(name = "raw_material_type_id", nullable = false, length = 191)
     private String rawMaterialTypeId;
 
@@ -111,7 +111,7 @@ public class WastageRecord extends BaseEntity {
     /**
      * 损耗数量
      */
-    @NotNull
+    @NotNull(message = "损耗数量不能为空")
     @Column(name = "quantity", nullable = false, precision = 10, scale = 4)
     private BigDecimal quantity;
 

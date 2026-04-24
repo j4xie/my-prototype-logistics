@@ -57,27 +57,27 @@ public class PurchaseOrder extends BaseEntity {
         }
     }
 
-    @NotBlank
+    @NotBlank(message = "工厂不能为空")
     @Column(name = "factory_id", nullable = false)
     private String factoryId;
 
-    @NotBlank
+    @NotBlank(message = "订单号不能为空")
     @Column(name = "order_number", nullable = false, length = 50)
     private String orderNumber;
 
-    @NotBlank
+    @NotBlank(message = "供应商不能为空")
     @Column(name = "supplier_id", nullable = false, length = 191)
     private String supplierId;
 
     @Formula("(SELECT s.name FROM suppliers s WHERE s.id = supplier_id)")
     private String supplierName;
 
-    @NotNull
+    @NotNull(message = "采购类型不能为空")
     @Enumerated(EnumType.STRING)
     @Column(name = "purchase_type", nullable = false, length = 32)
     private PurchaseType purchaseType = PurchaseType.DIRECT;
 
-    @NotNull
+    @NotNull(message = "下单日期不能为空")
     @Column(name = "order_date", nullable = false)
     private LocalDate orderDate;
 
@@ -90,7 +90,7 @@ public class PurchaseOrder extends BaseEntity {
     @Column(name = "tax_amount", precision = 15, scale = 2)
     private BigDecimal taxAmount = BigDecimal.ZERO;
 
-    @NotNull
+    @NotNull(message = "订单状态不能为空")
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 32)
     private PurchaseOrderStatus status = PurchaseOrderStatus.DRAFT;
