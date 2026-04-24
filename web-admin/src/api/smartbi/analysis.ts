@@ -1460,33 +1460,6 @@ async function _doEnrichSheetAnalysis(
 
     onProgress?.({ phase: 'data', partial: { rawData: cleanedData } });
 
-    // 4.5. Rename data columns to human-readable names using POSITIONAL mapping
-    // Data keys (e.g. "2025年各部门预算完成情况_2") correspond by POSITION to fieldDefs,
-    // NOT by key name. So we build a positional keyRenameMap: dataKey → humanLabel.
-    if (fieldDefs.length > 0 && cleanedData.length > 0) {
-      const dataKeys = Object.keys(cleanedData[0]);
-      const keyRenameMap: Record<string, string> = {};
-      for (let i = 0; i < Math.min(dataKeys.length, fieldDefs.length); i++) {
-        const fd = fieldDefs[i];
-        const dataKey = dataKeys[i];
-        if (!fd || !dataKey) continue;
-        // Use displayNameMap (originalName → label) to get the label, or humanize originalName
-        const label = displayNameMap[fd.originalName] || humanizeColumnName(fd.originalName);
-        if (label && label !== dataKey) {
-          keyRenameMap[dataKey] = label;
-        }
-      }
-      if (Object.keys(keyRenameMap).length > 0) {
-        cleanedData = cleanedData.map(row => {
-          const mapped: Record<string, unknown> = {};
-          for (const [key, val] of Object.entries(row)) {
-            mapped[keyRenameMap[key] || key] = val;
-          }
-          return mapped;
-        });
-      }
-    }
-
     // 5. Parallel: smart-recommend (LLM) + summary; use allSettled to prevent cascade failure
     t0 = performance.now();
     const [smartRecSettled, summarySettled] = await Promise.allSettled([
@@ -1767,24 +1740,13 @@ async function _doEnrichSheetAnalysis(
     onProgress?.({ phase: 'ai', partial: { aiAnalysis: aiAnalysis || undefined, structuredAI } });
 
     // 9. Assemble KPI summary
+    // Trust Python /api/insight/quick-summary response shape — it already returns
+    // correct names + types + aggStrategy (after Apr 25 agg_strategy persistence work).
+    // Previous positional rename + force-numeric coercion were band-aids that caused
+    // PROD-2 (评价门店 = 4955 亿) and PROD-3 (missing 平均口味分 card).
     const kpiSummary = summaryRes.success
       ? { rowCount: summaryRes.rowCount, columnCount: summaryRes.columnCount, columns: summaryRes.columns }
       : undefined;
-    if (kpiSummary && enhancedNumericCols.length > 0) {
-      const numericSet = new Set(enhancedNumericCols);
-      kpiSummary.columns = kpiSummary.columns.map(col => {
-        if (!numericSet.has(col.name) || ['int64', 'float64', 'number', 'int32', 'float32'].includes(col.type)) {
-          return col;
-        }
-        let sum = 0;
-        for (const row of cleanedData) {
-          const v = row[col.name];
-          const n = typeof v === 'number' ? v : parseFloat(String(v));
-          if (!isNaN(n)) sum += n;
-        }
-        return { ...col, type: 'float64', sum };
-      });
-    }
 
     if (import.meta.env.DEV) console.table(timings);
 
