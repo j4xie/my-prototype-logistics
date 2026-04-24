@@ -247,7 +247,9 @@ export function exportCalibrationReport(params: {
  * @param params 查询参数
  */
 export function getCalibrationSessions(params: CalibrationSessionQueryParams) {
-  return get<CalibrationSessionPageResponse>(`${API_PREFIX}/sessions`, { params });
+  // Apr 24 2026: 后端 /sessions 端点尚未实现 (404). _silent:true 抑制 interceptor
+  // "请求的资源不存在" toast, 调用方负责 catch 显示友好 empty state.
+  return get<CalibrationSessionPageResponse>(`${API_PREFIX}/sessions`, { params, _silent: true } as never);
 }
 
 /**
@@ -297,8 +299,9 @@ export function getCalibrationMetrics(factoryId?: string) {
  * @param factoryId 工厂ID
  */
 export function getCalibrationStatistics(factoryId?: string) {
+  // Apr 24 2026: 后端 /statistics 端点尚未实现. _silent 抑制 toast.
   const params = factoryId ? { factoryId } : undefined;
-  return get<CalibrationStatistics>(`${API_PREFIX}/statistics`, { params });
+  return get<CalibrationStatistics>(`${API_PREFIX}/statistics`, { params, _silent: true } as never);
 }
 
 /**

@@ -270,6 +270,10 @@ const salesRoles = ['sales_manager', 'factory_super_admin'];
 
 async function loadSalesEmployees() {
   if (!factoryId.value) return;
+  // Apr 24 2026: 无 hr 读权限的角色 (如 warehouse_manager) 不必调 /users 下拉.
+  // 之前 _silent:true + try/catch 已经吞错了, 但 console 仍有 403 log 噪音.
+  // 前置 canAccess 检查减少无效请求.
+  if (!permissionStore.canAccess('hr')) return;
   try {
     const res = await get(`/${factoryId.value}/users`, { params: { page: 1, size: 200 }, _silent: true } as never);
     if (res.success && res.data) {

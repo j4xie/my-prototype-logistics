@@ -80,17 +80,19 @@ const PERMISSION_MATRIX: Record<string, ModulePermissions> = {
   // 看 SO 并协调"财务审核通过 → 创建生产计划"闭环 (Doc3 用户测试报告 SO 审核
   // 按钮 404 的真实场景). sales 改 'rw' 与后端 dispatcherPerms 对齐, 确保调度员
   // 能提交审核/开始生产。procurement 只读: 调度需看上游物料情况。
+  // Apr 24 2026: hr/finance/system 硬编码 '-' 与 DB ('r') 不一致导致 router guard 首屏错拒. 对齐 DB.
   dispatcher: {
     dashboard: 'rw', production: 'rw', warehouse: 'r', quality: 'r',
-    procurement: 'r', sales: 'rw', hr: '-', equipment: 'r',
-    finance: '-', system: '-', analytics: 'rw', scheduling: 'rw', restaurant: '-',
+    procurement: 'r', sales: 'rw', hr: 'r', equipment: 'r',
+    finance: 'r', system: 'r', analytics: 'rw', scheduling: 'rw', restaurant: '-',
     rd: 'rw'  // 调度协调 RD 样品到生产
   },
   // production_manager (已废弃，保留向后兼容，映射到 dispatcher)
+  // Apr 24: 同步 dispatcher 的 DB 对齐
   production_manager: {
     dashboard: 'rw', production: 'rw', warehouse: 'r', quality: 'r',
-    procurement: 'r', sales: 'rw', hr: '-', equipment: 'r',
-    finance: '-', system: '-', analytics: 'rw', scheduling: 'rw', restaurant: '-',
+    procurement: 'r', sales: 'rw', hr: 'r', equipment: 'r',
+    finance: 'r', system: 'r', analytics: 'rw', scheduling: 'rw', restaurant: '-',
     rd: 'rw'
   },
   warehouse_manager: {
@@ -109,9 +111,10 @@ const PERMISSION_MATRIX: Record<string, ModulePermissions> = {
     finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-',
     rd: 'r'  // QA 审核样品, 只读
   },
+  // Apr 24: procurement 硬编码 '-' 与 DB 'r' 不一致 (finance 经理需 read 采购数据做成本分析). 对齐 DB.
   finance_manager: {
-    dashboard: 'r', production: '-', warehouse: '-', quality: '-',
-    procurement: '-', sales: 'r', hr: '-', equipment: '-',
+    dashboard: 'r', production: 'r', warehouse: '-', quality: '-',
+    procurement: 'r', sales: 'r', hr: '-', equipment: '-',
     finance: 'rw', system: '-', analytics: 'rw', scheduling: '-', restaurant: '-',
     rd: 'r'  // 定价参考 (analytics rw 对齐后端 SmartBI 完整权限)
   },
@@ -165,11 +168,15 @@ const PERMISSION_MATRIX: Record<string, ModulePermissions> = {
     finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-', rd: '-'
   },
 
-  // Level 50 - 查看者
+  // Level 50 - 查看者 (Apr 24 2026: 对齐 DB L1 platform permissions — 之前 hr/finance 硬编码 '-',
+  // DB 里是 'r'. permissionStore.loadFromDb 是 async, 首屏 router guard 用 hardcoded 快路径判断时
+  // 会错拒 viewer 访问 /hr/*、/finance/* 直接 redirect /403.
+  // 结果 sidebar (等 DB 加载完) 显示人事/财务管理, 但点进去 /403 — 矛盾体验.
+  // 对齐后: hardcoded 与 DB 一致, 初次路由正确放行, UX 一致.)
   viewer: {
     dashboard: 'r', production: 'r', warehouse: 'r', quality: 'r',
-    procurement: 'r', sales: 'r', hr: '-', equipment: 'r',
-    finance: '-', system: '-', analytics: 'r', scheduling: 'r', restaurant: 'r',
+    procurement: 'r', sales: 'r', hr: 'r', equipment: 'r',
+    finance: 'r', system: '-', analytics: 'r', scheduling: 'r', restaurant: 'r',
     rd: 'r'
   },
 
