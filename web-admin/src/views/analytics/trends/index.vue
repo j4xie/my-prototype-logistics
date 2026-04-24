@@ -94,6 +94,15 @@ function _periodToDateRange(period: string): [string, string] {
 // Auto-fallback label shown when Gold chart falls back to a prior range.
 const goldTrendFallbackLabel = ref<string>('');
 
+// Apr 25 2026 UX P2 (C-3): banner must explicitly name BOTH the originally
+// requested range and the actual range being shown, otherwise user thinks
+// they are seeing data for the period the dropdown says (e.g. picks 2024全年
+// but chart shows 2025 data with only "已显示 2025全年" hint).
+const selectedPeriodLabel = computed(() => {
+  const opt = periodOptions.find(o => o.value === selectedPeriod.value);
+  return opt ? opt.label : selectedPeriod.value;
+});
+
 async function loadGoldTrend() {
   if (!factoryId.value) return;
   // P1-14 perf: cache last-found non-empty range per factory in localStorage
@@ -410,7 +419,7 @@ onUnmounted(() => {
           <span>📈 POS 营收趋势</span>
           <el-tag size="small" type="success">Gold · daily_trend</el-tag>
           <el-tag v-if="goldTrendFallbackLabel" size="small" type="warning" effect="plain">
-            所选区间无数据,已显示 {{ goldTrendFallbackLabel }}
+            {{ selectedPeriodLabel }}无数据,已自动展示 {{ goldTrendFallbackLabel }}
           </el-tag>
           <el-radio-group v-model="trendSecondMetric" size="small" @change="onTrendMetricChange" style="margin-left: auto;">
             <el-radio-button value="bills">订单数</el-radio-button>
