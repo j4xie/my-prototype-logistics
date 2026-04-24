@@ -251,6 +251,18 @@ async function checkUpload(page, label, uploadName, expected) {
     }
   }
 
+  // Positive "any of" assertion: require at least one title to match any of
+  // the listed indicators. Catches review-carryover masquerading as POS render
+  // (forbidden-only assertions trivially pass when wrong-domain titles render).
+  if (expected.mustHaveAny && expected.mustHaveAny.length > 0) {
+    const matched = (titles || []).filter((t) => expected.mustHaveAny.some((p) => t.includes(p)));
+    if (matched.length >= 1) {
+      OK(`${label}-must-have-any`, `≥1 title matches any of [${expected.mustHaveAny.join('|')}] (matched: ${matched.slice(0, 6).join(', ')})`);
+    } else {
+      FAIL(`${label}-must-have-any`, `NO title matches any of [${expected.mustHaveAny.join('|')}]. Got: ${(titles || []).join(', ') || '(none)'}. May indicate wrong-domain carryover (e.g. review titles bleeding into POS render) or upstream timeout.`);
+    }
+  }
+
   // Value range check — paired by index with title/unit so we only count
   // values from cards matching the title-pattern AND with the expected unit.
   // (Otherwise unrelated counts like "4955 亿" would falsely match a [4.5, 5] band.)
@@ -317,6 +329,10 @@ async function checkUpload(page, label, uploadName, expected) {
     posSnapshot = await checkUpload(page, 'pos-4169', POS_UPLOAD_NAME, {
       minTotalCards: 1,
       mustNotHave: ['账单号', '外部单号'],
+      // Require at least 1 POS-typical title. Without this, the test trivially
+      // passed when review-carryover (titles like "平均星级") bled into the POS
+      // render — those titles trivially exclude "账单号/外部单号" too.
+      mustHaveAny: ['营业', '实收', '客流', '客单', '订单', '应收', '收款', '消费', '人均', '账单', '商品'],
       expectedRows: '200K',
     });
 
