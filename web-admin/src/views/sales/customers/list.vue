@@ -98,6 +98,7 @@ const defaultForm = {
   industry: '',
   notes: '',
   status: 'ACTIVE',  // T10: status field default
+  version: null as number | null,  // optimistic lock — echoed on PUT, server returns 409 on mismatch
 };
 const formData = reactive({ ...defaultForm });
 
@@ -148,6 +149,7 @@ function handleEdit(row: Record<string, unknown>) {
     name: row.name || '',
     contactPerson: row.contactPerson || '',
     phone: row.phone || '',
+    version: typeof row.version === 'number' ? row.version : null,
     shippingAddress: row.shippingAddress || row.address || '',
     email: row.email || '',
     type: row.type || '',
@@ -182,6 +184,10 @@ async function handleSubmit() {
     if (dialogMode.value === 'add') {
       res = await post(`/${factoryId.value}/customers`, payload);
     } else {
+      // Optimistic lock: include version snapshot so BE can detect concurrent edit.
+      if (formData.version !== null && formData.version !== undefined) {
+        payload.version = formData.version;
+      }
       res = await put(`/${factoryId.value}/customers/${formData.id}`, payload);
     }
     if (res.success) {
@@ -192,6 +198,21 @@ async function handleSubmit() {
       ElMessage.error(res.message || '操作失败');
     }
   } catch (error) {
+    // 409 = optimistic lock conflict; interceptor already toasts. Offer explicit refresh flow.
+    const status = (error as { status?: number })?.status;
+    if (status === 409) {
+      try {
+        await ElMessageBox.confirm(
+          '此客户数据已被其他用户修改。点击"确定"将刷新列表并放弃当前编辑。',
+          '并发编辑冲突',
+          { type: 'warning', confirmButtonText: '刷新列表', cancelButtonText: '取消' }
+        );
+        dialogVisible.value = false;
+        loadData();
+      } catch {
+        // user cancelled — keep dialog open so they can copy their changes elsewhere
+      }
+    }
     // Interceptor (request.ts) already shows specific sticky toast for ApiError.
     // Firing a fallback here creates double-toast ("操作失败" BEFORE "客户名称已存在").
     console.error('提交失败:', error);

@@ -88,4 +88,12 @@ public class CreateCustomerRequest {
     @Schema(description = "状态 ACTIVE/INACTIVE", example = "ACTIVE")
     @Size(max = 20, message = "状态长度不能超过20个字符")
     private String status;
+
+    /**
+     * Optimistic lock version — echoed from GET response.
+     * On UPDATE: if server detects version mismatch → 409 Conflict.
+     * On CREATE: ignored (entity starts at 0).
+     */
+    @Schema(description = "乐观锁版本号 (编辑时必传, 来自 GET 响应)")
+    private Long version;
 }

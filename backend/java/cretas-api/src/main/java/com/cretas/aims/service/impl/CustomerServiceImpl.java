@@ -106,6 +106,12 @@ public class CustomerServiceImpl implements CustomerService {
         log.info("更新客户: factoryId={}, customerId={}", factoryId, customerId);
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
                 .orElseThrow(() -> new EntityNotFoundException("Customer", customerId));
+        // Optimistic lock: force entity.version to the value FE snapshotted when it fetched.
+        // If another writer already bumped it in DB, Hibernate's UPDATE ... WHERE version=?
+        // will match 0 rows → StaleObjectStateException → 409 via GlobalExceptionHandler.
+        if (request.getVersion() != null) {
+            customer.setVersion(request.getVersion());
+        }
         // 检查名称是否与其他客户重复
         if (request.getName() != null && !request.getName().equals(customer.getName())) {
             if (customerRepository.existsByFactoryIdAndNameAndIdNot(factoryId, request.getName(), customerId)) {
