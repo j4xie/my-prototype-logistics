@@ -128,5 +128,16 @@ public class UserMapper {
         if (request.getCcrRate() != null) {
             user.setCcrRate(request.getCcrRate());
         }
+        // W-09 fix (Round 12, qa-prompt v2.4 Rule 17.2 sweep): `position` was
+        // silently dropped on PUT /users/{id}. UI edit dialog doesn't expose
+        // position today, so user-facing impact is low — but API consumers,
+        // AI tools, and other code paths (e.g. UserServiceImpl.updateUserRole
+        // line 250 uses setPosition) make this a real silent-drop gap.
+        // isActive is intentionally handled in UserServiceImpl.updateUser
+        // (Apr 18 Bug #57) and stays there; department is Entity-relation and
+        // needs separate update path (not a simple string set).
+        if (request.getPosition() != null) {
+            user.setPosition(request.getPosition());
+        }
     }
 }
