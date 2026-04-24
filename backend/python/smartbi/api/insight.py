@@ -298,6 +298,14 @@ def compute_quick_summary(
             col_mean = df[col].mean()
             col_sum = df[col].sum()
             agg_strategy = agg_by_name.get(col, "sum")
+            # Apr 25 2026 — defense-in-depth: this live rating detection is
+            # now redundant for new uploads (the γ-2c precompute hook in
+            # analysis_cache.py populates statistics + re-runs
+            # infer_agg_strategy so 'mean' lands in DB before this code
+            # ever sees the column). Kept for: (a) historical uploads that
+            # haven't been backfilled yet, (b) safety net if the precompute
+            # hook fails / hasn't fired yet (large uploads, network blip).
+            # Plan: remove after 2 weeks of confirming backfill coverage.
             if agg_strategy == "sum" and pd.notna(col_mean):
                 name_suggests_rating = any(
                     col.endswith(s) for s in RATING_NAME_SUFFIXES
