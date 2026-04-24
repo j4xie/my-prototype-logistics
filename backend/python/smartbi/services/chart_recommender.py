@@ -866,7 +866,10 @@ class ChartRecommender:
                 for c in data_summary.columns
             ]
 
-            for rec in result.get("recommendations", []):
+            raw_recs = result.get("recommendations") or []
+            for rec in raw_recs:
+                if not isinstance(rec, dict):
+                    continue
                 # Validate chart type
                 chart_type = rec.get("chart_type", "bar")
                 if chart_type not in self.CHART_TYPES:
@@ -881,8 +884,10 @@ class ChartRecommender:
                     data_summary.dimensions or data_summary.category_columns
                 )
 
-                # Validate and resolve y_axis
-                y_axis_raw = rec.get("y_axis", rec.get("yAxis", []))
+                # Validate and resolve y_axis (LLM 返 null 时 rec.get 返 None, 非 [])
+                y_axis_raw = rec.get("y_axis", rec.get("yAxis"))
+                if y_axis_raw is None:
+                    y_axis_raw = []
                 if isinstance(y_axis_raw, str):
                     y_axis_raw = [y_axis_raw]
 
