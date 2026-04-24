@@ -267,6 +267,85 @@ def _infer_semantic_type(name: str, role: str) -> Optional[str]:
     return None
 
 
+# ─── Aggregation-strategy decision ────────────────────────────────────────────
+# Used by /reclassify endpoint to populate smart_bi_pg_field_definitions.agg_strategy.
+# Centralized here so FE getSmartKPIs and Python quick_summary can both read the
+# same persisted value rather than re-deriving via heuristics.
+
+# Suffixes that indicate a 1-5 rating column (大众点评 / 美团 评价 exports).
+_RATING_NAME_SUFFIXES: Tuple[str, ...] = ("分", "评分", "星级")
+
+# Valid bounds for a "rating" mean. Outside [1, 5] strongly suggests the column
+# is a loyalty score (积分) or unrelated metric — fall back to sum default.
+_RATING_MEAN_MIN: float = 1.0
+_RATING_MEAN_MAX: float = 5.0
+
+
+def infer_agg_strategy(
+    name: str,
+    semantic_type: Optional[str],
+    is_measure: bool,
+    statistics: Optional[Dict[str, object]] = None,
+) -> str:
+    """Decide how a column should be aggregated for KPI cards.
+
+    Returns one of:
+      "sum"  — display SUM(col) (default for measures: amounts, counts, etc.)
+      "mean" — display AVG(col) (1-5 ratings: 平均星级 = 4.83)
+      "none" — exclude from KPI cards entirely (IDs, dimensions, time fields)
+
+    Decision order (first match wins):
+      1. semantic_type == 'id' → 'none' (NUMERIC IDs would otherwise sum to 亿)
+      2. is_measure == False   → 'none' (only measures can be KPI cards)
+      3. Name endswith 分/评分/星级 AND statistics.mean ∈ [1, 5] → 'mean'
+      4. Else                   → 'sum'
+
+    The [1, 5] guard prevents columns like "服务积分" (loyalty points,
+    mean ~2300) from being mis-rendered as a 4.83 rating, while still
+    catching legitimate 大众点评 ratings whose names match the suffix list.
+
+    Args:
+      name: column header text (e.g. "星级分", "营业额")
+      semantic_type: from classify_column(...)["semantic_type"] (id/revenue/...)
+      is_measure: from classify_column(...)["is_measure"]
+      statistics: optional {"mean": float, "min": float, "max": float, ...}
+                  from smart_bi_pg_field_definitions.statistics JSONB column.
+                  When None (no stats yet), the rating guard is skipped and
+                  the function falls back to the conservative 'sum' default.
+
+    Returns:
+      String ∈ {"sum", "mean", "none"}.
+    """
+    # Rule 1: IDs never aggregate
+    if (semantic_type or "").lower() == "id":
+        return "none"
+
+    # Rule 2: only measures can be KPI cards
+    if not is_measure:
+        return "none"
+
+    # Rule 3: rating detection (name + stats both required)
+    if statistics:
+        mean = statistics.get("mean")
+        if mean is not None and name:
+            for suffix in _RATING_NAME_SUFFIXES:
+                if name.endswith(suffix):
+                    try:
+                        m = float(mean)
+                    except (TypeError, ValueError):
+                        break
+                    if _RATING_MEAN_MIN <= m <= _RATING_MEAN_MAX:
+                        return "mean"
+                    # Name suggests rating but mean out of [1, 5] →
+                    # likely loyalty points / 积分 / unrelated. Fall through
+                    # to default 'sum'. NOT 'none' because the column may
+                    # still be a meaningful sum-able measure.
+                    break
+
+    # Rule 4: default
+    return "sum"
+
+
 # ─── Duplicate-header dedup ──────────────────────────────────────────────────
 
 
