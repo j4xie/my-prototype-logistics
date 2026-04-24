@@ -224,9 +224,10 @@ async def reclassify_upload(
         new = classify_column(original_name=name, inferred_dtype=field_type)
 
         # Compute agg_strategy from new classification + persisted statistics.
-        # row["statistics"] is JSONB → asyncpg returns it as a dict already; if
-        # the upload predates statistics population (rare), pass None and the
-        # helper falls back to the conservative 'sum' default.
+        # asyncpg's default JSONB codec returns a dict (or None) — but if a
+        # legacy row stored a list/scalar JSONB shape (uncommon, possible from
+        # older codepaths), the isinstance(dict) check normalises to None and
+        # the helper falls back to the conservative 'sum' default.
         stats = row["statistics"] if isinstance(row["statistics"], dict) else None
         new_agg = infer_agg_strategy(
             name=name,
