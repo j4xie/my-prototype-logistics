@@ -220,3 +220,6 @@ frontend/CretasFoodTrace/android/app/src/main/assets/
 
 video-training-data/2*/
 video-training-data/*.mp4
+
+# Worktrees for subagent-driven development
+.worktrees/
