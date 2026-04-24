@@ -85,7 +85,7 @@ async def sync_dim_ingredient(
             SELECT id, name, category, code, unit, unit_price, moving_avg_price,
                    shelf_life_days, storage_type, is_active
               FROM raw_material_types
-             WHERE factory_id = $1 AND COALESCE(deleted_at, '1900-01-01') = '1900-01-01'
+             WHERE factory_id = $1::varchar AND COALESCE(deleted_at, '1900-01-01') = '1900-01-01'
             """,
             factory_id,
         )
@@ -151,7 +151,7 @@ async def _get_ingredient_pk_map(
     async with smartbi_pool.acquire() as conn:
         await _set_tenant(conn, factory_id)
         rows = await conn.fetch(
-            "SELECT source_pk, ingredient_id FROM dim_ingredient WHERE factory_id = $1",
+            "SELECT source_pk, ingredient_id FROM dim_ingredient WHERE factory_id = $1::varchar",
             factory_id,
         )
     return {r["source_pk"]: r["ingredient_id"] for r in rows}
@@ -175,7 +175,7 @@ async def sync_fact_requisition(
                    requested_quantity, actual_quantity, unit,
                    requested_by, approved_by, approved_at, notes
               FROM material_requisitions
-             WHERE factory_id = $1 AND deleted_at IS NULL
+             WHERE factory_id = $1::varchar AND deleted_at IS NULL
             """,
             factory_id,
         )
@@ -269,10 +269,269 @@ async def sync_fact_requisition(
 
 
 # ─────────────────────────────────────────────────────────────────────
-# Stage 3 (placeholder): wastage/recipe/stocktaking facts
+# Stage 3: fact_restaurant_wastage
 # ─────────────────────────────────────────────────────────────────────
-# Will be implemented in Phase 2. For now Phase 1 MVP validates
-# the dim_ingredient + fact_restaurant_requisition path end to end.
+
+async def sync_fact_wastage(
+    cretas_pool: asyncpg.Pool,
+    smartbi_pool: asyncpg.Pool,
+    factory_id: str,
+) -> int:
+    """Upsert wastage_records (1 row per wastage event)."""
+    async with cretas_pool.acquire() as src:
+        rows = await src.fetch(
+            """
+            SELECT id, wastage_number, wastage_date, type, status,
+                   raw_material_type_id, quantity, unit, estimated_cost, reason
+              FROM wastage_records
+             WHERE factory_id = $1::varchar AND deleted_at IS NULL
+            """,
+            factory_id,
+        )
+    if not rows:
+        return 0
+
+    ing_map = await _get_ingredient_pk_map(smartbi_pool, factory_id)
+
+    source_pks = [r["id"] for r in rows]
+    numbers = [r["wastage_number"] for r in rows]
+    dates = [r["wastage_date"] for r in rows]
+    wastage_types = [r["type"] for r in rows]
+    statuses = [r["status"] for r in rows]
+    ingredient_ids = [ing_map.get(r["raw_material_type_id"]) for r in rows]
+    quantities = [float(r["quantity"]) if r["quantity"] is not None else None for r in rows]
+    units = [r["unit"] for r in rows]
+    est_costs = [float(r["estimated_cost"]) if r["estimated_cost"] is not None else None for r in rows]
+    reasons = [r["reason"] for r in rows]
+
+    async with smartbi_pool.acquire() as dst:
+        async with dst.transaction():
+            await _set_tenant(dst, factory_id)
+            result = await dst.fetch(
+                """
+                INSERT INTO fact_restaurant_wastage (
+                    factory_id, source_pk, wastage_number, date, wastage_type,
+                    status, ingredient_id, quantity, unit, estimated_cost, reason
+                )
+                SELECT $1, pk, n, d, wt, s, ing, q, u, ec, r
+                  FROM UNNEST(
+                    $2::text[], $3::text[], $4::date[], $5::text[], $6::text[],
+                    $7::bigint[], $8::numeric[], $9::text[], $10::numeric[], $11::text[]
+                  ) AS t(pk, n, d, wt, s, ing, q, u, ec, r)
+                ON CONFLICT (factory_id, source_pk) DO UPDATE SET
+                    wastage_number = EXCLUDED.wastage_number,
+                    date = EXCLUDED.date,
+                    wastage_type = EXCLUDED.wastage_type,
+                    status = EXCLUDED.status,
+                    ingredient_id = EXCLUDED.ingredient_id,
+                    quantity = EXCLUDED.quantity,
+                    unit = EXCLUDED.unit,
+                    estimated_cost = EXCLUDED.estimated_cost,
+                    reason = EXCLUDED.reason,
+                    updated_at = NOW()
+                RETURNING id
+                """,
+                factory_id, source_pks, numbers, dates, wastage_types, statuses,
+                ingredient_ids, quantities, units, est_costs, reasons,
+            )
+    count = len(result)
+    logger.info("[etl] fact_wastage: upserted %d rows for factory=%s", count, factory_id)
+    return count
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Stage 3b: fact_restaurant_recipe_line
+# ─────────────────────────────────────────────────────────────────────
+
+async def sync_fact_recipe(
+    cretas_pool: asyncpg.Pool,
+    smartbi_pool: asyncpg.Pool,
+    factory_id: str,
+) -> int:
+    """Upsert recipes (BOM line per dish+ingredient). product_id resolution
+    is deferred — dim_product lookup needs a dish dim; for now leave as 0.
+    """
+    async with cretas_pool.acquire() as src:
+        rows = await src.fetch(
+            """
+            SELECT id, product_type_id, raw_material_type_id,
+                   standard_quantity, unit, net_yield_rate,
+                   is_main_ingredient, is_active
+              FROM recipes
+             WHERE factory_id = $1::varchar AND deleted_at IS NULL
+            """,
+            factory_id,
+        )
+    if not rows:
+        return 0
+
+    ing_map = await _get_ingredient_pk_map(smartbi_pool, factory_id)
+    # product_id is nullable in fact_restaurant_recipe_line schema? No — it's
+    # NOT NULL. Use 0 as sentinel when no dim_product resolution yet.
+    # TODO Phase 2.5: build dim_product_from_product_type sync.
+    source_pks = [r["id"] for r in rows]
+    product_ids = [0 for _ in rows]  # sentinel; real resolution deferred
+    ingredient_ids = [ing_map.get(r["raw_material_type_id"]) for r in rows]
+    std_qtys = [float(r["standard_quantity"]) if r["standard_quantity"] is not None else None for r in rows]
+    units = [r["unit"] for r in rows]
+    yield_rates = [float(r["net_yield_rate"]) if r["net_yield_rate"] is not None else None for r in rows]
+    is_mains = [bool(r["is_main_ingredient"]) for r in rows]
+    is_actives = [bool(r["is_active"]) for r in rows]
+
+    async with smartbi_pool.acquire() as dst:
+        async with dst.transaction():
+            await _set_tenant(dst, factory_id)
+            result = await dst.fetch(
+                """
+                INSERT INTO fact_restaurant_recipe_line (
+                    factory_id, source_pk, product_id, ingredient_id,
+                    standard_qty, unit, yield_rate, is_main_ingredient, is_active
+                )
+                SELECT $1, pk, prod, ing, sq, u, yr, m, act
+                  FROM UNNEST(
+                    $2::text[], $3::bigint[], $4::bigint[], $5::numeric[],
+                    $6::text[], $7::numeric[], $8::boolean[], $9::boolean[]
+                  ) AS t(pk, prod, ing, sq, u, yr, m, act)
+                ON CONFLICT (factory_id, source_pk) DO UPDATE SET
+                    ingredient_id = EXCLUDED.ingredient_id,
+                    standard_qty = EXCLUDED.standard_qty,
+                    unit = EXCLUDED.unit,
+                    yield_rate = EXCLUDED.yield_rate,
+                    is_main_ingredient = EXCLUDED.is_main_ingredient,
+                    is_active = EXCLUDED.is_active,
+                    updated_at = NOW()
+                RETURNING id
+                """,
+                factory_id, source_pks, product_ids, ingredient_ids,
+                std_qtys, units, yield_rates, is_mains, is_actives,
+            )
+    # Compute line_cost = standard_qty × ingredient.unit_price
+    async with smartbi_pool.acquire() as dst:
+        async with dst.transaction():
+            await _set_tenant(dst, factory_id)
+            await dst.execute(
+                """
+                UPDATE fact_restaurant_recipe_line r
+                   SET line_cost = ROUND(r.standard_qty * i.unit_price, 4)
+                  FROM dim_ingredient i
+                 WHERE r.factory_id = $1
+                   AND r.ingredient_id = i.ingredient_id
+                   AND r.standard_qty IS NOT NULL
+                   AND i.unit_price IS NOT NULL
+                """,
+                factory_id,
+            )
+    count = len(result)
+    logger.info("[etl] fact_recipe: upserted %d rows for factory=%s", count, factory_id)
+    return count
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Stage 3c: fact_restaurant_stocktaking
+# ─────────────────────────────────────────────────────────────────────
+
+async def sync_fact_stocktaking(
+    cretas_pool: asyncpg.Pool,
+    smartbi_pool: asyncpg.Pool,
+    factory_id: str,
+) -> int:
+    """Upsert stocktaking_records (1 row per stocktaking line)."""
+    async with cretas_pool.acquire() as src:
+        rows = await src.fetch(
+            """
+            SELECT id, stocktaking_number, stocktaking_date, status,
+                   raw_material_type_id, unit,
+                   system_quantity, actual_quantity, difference_quantity,
+                   difference_amount, adjustment_reason
+              FROM stocktaking_records
+             WHERE factory_id = $1::varchar AND deleted_at IS NULL
+            """,
+            factory_id,
+        )
+    if not rows:
+        return 0
+
+    ing_map = await _get_ingredient_pk_map(smartbi_pool, factory_id)
+
+    source_pks = [r["id"] for r in rows]
+    numbers = [r["stocktaking_number"] for r in rows]
+    dates = [r["stocktaking_date"] for r in rows]
+    statuses = [r["status"] for r in rows]
+    ingredient_ids = [ing_map.get(r["raw_material_type_id"]) for r in rows]
+    system_qtys = [float(r["system_quantity"]) if r["system_quantity"] is not None else None for r in rows]
+    actual_qtys = [float(r["actual_quantity"]) if r["actual_quantity"] is not None else None for r in rows]
+    diff_qtys = [float(r["difference_quantity"]) if r["difference_quantity"] is not None else None for r in rows]
+    diff_costs = [float(r["difference_amount"]) if r["difference_amount"] is not None else None for r in rows]
+    units = [r["unit"] for r in rows]
+    reasons = [r["adjustment_reason"] for r in rows]
+
+    async with smartbi_pool.acquire() as dst:
+        async with dst.transaction():
+            await _set_tenant(dst, factory_id)
+            result = await dst.fetch(
+                """
+                INSERT INTO fact_restaurant_stocktaking (
+                    factory_id, source_pk, stocktaking_number, date, status,
+                    ingredient_id, system_qty, actual_qty, difference_qty,
+                    difference_cost, unit, reason
+                )
+                SELECT $1, pk, n, d, s, ing, sq, aq, dq, dc, u, r
+                  FROM UNNEST(
+                    $2::text[], $3::text[], $4::date[], $5::text[],
+                    $6::bigint[], $7::numeric[], $8::numeric[], $9::numeric[],
+                    $10::numeric[], $11::text[], $12::text[]
+                  ) AS t(pk, n, d, s, ing, sq, aq, dq, dc, u, r)
+                ON CONFLICT (factory_id, source_pk) DO UPDATE SET
+                    stocktaking_number = EXCLUDED.stocktaking_number,
+                    date = EXCLUDED.date,
+                    status = EXCLUDED.status,
+                    ingredient_id = EXCLUDED.ingredient_id,
+                    system_qty = EXCLUDED.system_qty,
+                    actual_qty = EXCLUDED.actual_qty,
+                    difference_qty = EXCLUDED.difference_qty,
+                    difference_cost = EXCLUDED.difference_cost,
+                    unit = EXCLUDED.unit,
+                    reason = EXCLUDED.reason,
+                    updated_at = NOW()
+                RETURNING id
+                """,
+                factory_id, source_pks, numbers, dates, statuses,
+                ingredient_ids, system_qtys, actual_qtys, diff_qtys,
+                diff_costs, units, reasons,
+            )
+    count = len(result)
+    logger.info("[etl] fact_stocktaking: upserted %d rows for factory=%s", count, factory_id)
+    return count
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Stage 3d: agg_restaurant_product_cost — dish food-cost rollup
+# ─────────────────────────────────────────────────────────────────────
+# For each product_id, SUM(standard_qty × ingredient.unit_price) gives the
+# per-dish food cost. Recomputed on every ETL run since unit prices drift.
+
+_AGG_PRODUCT_COST_SQL = """
+INSERT INTO agg_restaurant_product_cost (
+    factory_id, product_id, food_cost, main_ingredient_id, ingredient_count,
+    has_price_data, version, computed_at
+)
+SELECT $1::varchar, r.product_id,
+       COALESCE(SUM(r.line_cost), 0)::NUMERIC(14,4) AS food_cost,
+       (ARRAY_AGG(r.ingredient_id ORDER BY r.is_main_ingredient DESC, r.line_cost DESC NULLS LAST))[1] AS main_ingredient_id,
+       COUNT(*)::int AS ingredient_count,
+       bool_and(r.line_cost IS NOT NULL) AS has_price_data,
+       1, NOW()
+  FROM fact_restaurant_recipe_line r
+ WHERE r.factory_id = $1::varchar AND r.is_active = TRUE
+ GROUP BY r.product_id
+ON CONFLICT (factory_id, product_id) DO UPDATE SET
+    food_cost = EXCLUDED.food_cost,
+    main_ingredient_id = EXCLUDED.main_ingredient_id,
+    ingredient_count = EXCLUDED.ingredient_count,
+    has_price_data = EXCLUDED.has_price_data,
+    version = agg_restaurant_product_cost.version + 1,
+    computed_at = NOW()
+"""
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -291,7 +550,7 @@ SELECT factory_id, date, 'requisition_qty',
        SUM(COALESCE(requested_qty, 0))::NUMERIC(18,4) AS value_num,
        1, NOW()
   FROM fact_restaurant_requisition
- WHERE factory_id = $1
+ WHERE factory_id = $1::varchar
    AND status IN ('APPROVED', 'SUBMITTED')
  GROUP BY factory_id, date, ingredient_id
 ON CONFLICT (factory_id, date, kpi_kind, dim_value_id, dim_value_str) DO UPDATE SET
@@ -312,13 +571,64 @@ SELECT factory_id, date, 'requisition_cost',
        SUM(COALESCE(est_cost, 0))::NUMERIC(18,4) AS value_num,
        1, NOW()
   FROM fact_restaurant_requisition
- WHERE factory_id = $1
+ WHERE factory_id = $1::varchar
    AND status IN ('APPROVED', 'SUBMITTED')
  GROUP BY factory_id, date, ingredient_id
 ON CONFLICT (factory_id, date, kpi_kind, dim_value_id, dim_value_str) DO UPDATE SET
     value_num = EXCLUDED.value_num,
     version = agg_restaurant_daily_ops.version + 1,
     computed_at = NOW()
+"""
+
+# Wastage qty per ingredient per day.
+_AGG_WASTAGE_QTY_SQL = """
+INSERT INTO agg_restaurant_daily_ops (
+    factory_id, date, kpi_kind, dim_value_id, dim_value_str, value_num,
+    version, computed_at
+)
+SELECT factory_id, date, 'wastage_qty',
+       COALESCE(ingredient_id, 0), '', SUM(COALESCE(quantity, 0))::NUMERIC(18,4),
+       1, NOW()
+  FROM fact_restaurant_wastage WHERE factory_id = $1::varchar AND status = 'APPROVED'
+ GROUP BY factory_id, date, ingredient_id
+ON CONFLICT (factory_id, date, kpi_kind, dim_value_id, dim_value_str) DO UPDATE SET
+    value_num = EXCLUDED.value_num,
+    version = agg_restaurant_daily_ops.version + 1, computed_at = NOW()
+"""
+
+# Wastage cost by type (string dim, not ingredient). Use dim_value_str.
+_AGG_WASTAGE_COST_BY_TYPE_SQL = """
+INSERT INTO agg_restaurant_daily_ops (
+    factory_id, date, kpi_kind, dim_value_id, dim_value_str, value_num,
+    version, computed_at
+)
+SELECT factory_id, date, 'wastage_cost_by_type',
+       0, COALESCE(wastage_type, 'OTHER'),
+       SUM(COALESCE(estimated_cost, 0))::NUMERIC(18,4),
+       1, NOW()
+  FROM fact_restaurant_wastage WHERE factory_id = $1::varchar AND status = 'APPROVED'
+ GROUP BY factory_id, date, wastage_type
+ON CONFLICT (factory_id, date, kpi_kind, dim_value_id, dim_value_str) DO UPDATE SET
+    value_num = EXCLUDED.value_num,
+    version = agg_restaurant_daily_ops.version + 1, computed_at = NOW()
+"""
+
+# Stocktaking shortage per ingredient (absolute of negative difference).
+_AGG_STOCK_SHORTAGE_SQL = """
+INSERT INTO agg_restaurant_daily_ops (
+    factory_id, date, kpi_kind, dim_value_id, dim_value_str, value_num,
+    version, computed_at
+)
+SELECT factory_id, date, 'stocktaking_shortage_qty',
+       COALESCE(ingredient_id, 0), '',
+       SUM(CASE WHEN difference_qty < 0 THEN -difference_qty ELSE 0 END)::NUMERIC(18,4),
+       1, NOW()
+  FROM fact_restaurant_stocktaking
+ WHERE factory_id = $1::varchar AND status = 'COMPLETED'
+ GROUP BY factory_id, date, ingredient_id
+ON CONFLICT (factory_id, date, kpi_kind, dim_value_id, dim_value_str) DO UPDATE SET
+    value_num = EXCLUDED.value_num,
+    version = agg_restaurant_daily_ops.version + 1, computed_at = NOW()
 """
 
 # Daily totals scalar table — single row per (factory, date).
@@ -332,25 +642,47 @@ INSERT INTO agg_restaurant_daily_totals (
 )
 SELECT $1::varchar AS factory_id, d.date,
        COALESCE(req.cnt, 0), COALESCE(req.qty, 0), COALESCE(req.cost, 0),
-       0, 0, 0,   -- Phase 2 fills these
-       0, 0, 0,   -- Phase 2 fills these
+       COALESCE(w.cnt, 0), COALESCE(w.qty, 0), COALESCE(w.cost, 0),
+       COALESCE(s.cnt, 0), COALESCE(s.shortage, 0), COALESCE(s.surplus, 0),
        1, NOW()
   FROM (
-    SELECT DISTINCT date FROM fact_restaurant_requisition WHERE factory_id = $1
+    SELECT DISTINCT date FROM fact_restaurant_requisition WHERE factory_id = $1::varchar
+    UNION
+    SELECT DISTINCT date FROM fact_restaurant_wastage WHERE factory_id = $1::varchar
+    UNION
+    SELECT DISTINCT date FROM fact_restaurant_stocktaking WHERE factory_id = $1::varchar
   ) d
   LEFT JOIN (
-    SELECT date,
-           COUNT(*)       AS cnt,
+    SELECT date, COUNT(*) AS cnt,
            SUM(COALESCE(requested_qty, 0)) AS qty,
            SUM(COALESCE(est_cost, 0))      AS cost
-      FROM fact_restaurant_requisition
-     WHERE factory_id = $1
+      FROM fact_restaurant_requisition WHERE factory_id = $1::varchar
      GROUP BY date
   ) req ON req.date = d.date
+  LEFT JOIN (
+    SELECT date, COUNT(*) AS cnt,
+           SUM(COALESCE(quantity, 0))       AS qty,
+           SUM(COALESCE(estimated_cost, 0)) AS cost
+      FROM fact_restaurant_wastage WHERE factory_id = $1::varchar
+     GROUP BY date
+  ) w ON w.date = d.date
+  LEFT JOIN (
+    SELECT date, COUNT(*) AS cnt,
+           SUM(CASE WHEN difference_qty < 0 THEN -difference_qty ELSE 0 END) AS shortage,
+           SUM(CASE WHEN difference_qty > 0 THEN difference_qty ELSE 0 END)  AS surplus
+      FROM fact_restaurant_stocktaking WHERE factory_id = $1::varchar
+     GROUP BY date
+  ) s ON s.date = d.date
 ON CONFLICT (factory_id, date) DO UPDATE SET
     requisition_count = EXCLUDED.requisition_count,
     requisition_qty_total = EXCLUDED.requisition_qty_total,
     requisition_cost_total = EXCLUDED.requisition_cost_total,
+    wastage_count = EXCLUDED.wastage_count,
+    wastage_qty_total = EXCLUDED.wastage_qty_total,
+    wastage_cost_total = EXCLUDED.wastage_cost_total,
+    stocktaking_count = EXCLUDED.stocktaking_count,
+    stocktaking_shortage_total = EXCLUDED.stocktaking_shortage_total,
+    stocktaking_surplus_total = EXCLUDED.stocktaking_surplus_total,
     version = agg_restaurant_daily_totals.version + 1,
     computed_at = NOW()
 """
@@ -360,17 +692,24 @@ async def materialize_gold_daily_ops(
     smartbi_pool: asyncpg.Pool, factory_id: str,
 ) -> Dict[str, int]:
     """Re-compute all Gold agg tables from current Silver state."""
-    stats = {"requisition_qty": 0, "requisition_cost": 0, "daily_totals": 0}
+    stats = {}
     async with smartbi_pool.acquire() as conn:
         async with conn.transaction():
             await _set_tenant(conn, factory_id)
             r1 = await conn.execute(_AGG_REQUISITION_QTY_SQL, factory_id)
             r2 = await conn.execute(_AGG_REQUISITION_COST_SQL, factory_id)
-            r3 = await conn.execute(_AGG_DAILY_TOTALS_SQL, factory_id)
-            # asyncpg returns "INSERT 0 N" — parse last int
+            r3 = await conn.execute(_AGG_WASTAGE_QTY_SQL, factory_id)
+            r4 = await conn.execute(_AGG_WASTAGE_COST_BY_TYPE_SQL, factory_id)
+            r5 = await conn.execute(_AGG_STOCK_SHORTAGE_SQL, factory_id)
+            r6 = await conn.execute(_AGG_DAILY_TOTALS_SQL, factory_id)
+            r7 = await conn.execute(_AGG_PRODUCT_COST_SQL, factory_id)
             stats["requisition_qty"] = int(r1.split()[-1]) if r1 else 0
             stats["requisition_cost"] = int(r2.split()[-1]) if r2 else 0
-            stats["daily_totals"] = int(r3.split()[-1]) if r3 else 0
+            stats["wastage_qty"] = int(r3.split()[-1]) if r3 else 0
+            stats["wastage_cost_by_type"] = int(r4.split()[-1]) if r4 else 0
+            stats["stock_shortage"] = int(r5.split()[-1]) if r5 else 0
+            stats["daily_totals"] = int(r6.split()[-1]) if r6 else 0
+            stats["product_cost"] = int(r7.split()[-1]) if r7 else 0
     logger.info("[etl] materialized gold for %s: %s", factory_id, stats)
     return stats
 
@@ -403,11 +742,38 @@ async def run_full_etl(
         logger.exception("[etl] fact_requisition failed for %s", factory_id)
 
     try:
+        stats.fact_wastage_upserted = await sync_fact_wastage(
+            cretas_pool, smartbi_pool, factory_id
+        )
+    except Exception as e:
+        stats.errors.append(f"fact_wastage: {e}")
+        logger.exception("[etl] fact_wastage failed for %s", factory_id)
+
+    try:
+        stats.fact_recipe_upserted = await sync_fact_recipe(
+            cretas_pool, smartbi_pool, factory_id
+        )
+    except Exception as e:
+        stats.errors.append(f"fact_recipe: {e}")
+        logger.exception("[etl] fact_recipe failed for %s", factory_id)
+
+    try:
+        stats.fact_stocktaking_upserted = await sync_fact_stocktaking(
+            cretas_pool, smartbi_pool, factory_id
+        )
+    except Exception as e:
+        stats.errors.append(f"fact_stocktaking: {e}")
+        logger.exception("[etl] fact_stocktaking failed for %s", factory_id)
+
+    try:
         gold = await materialize_gold_daily_ops(smartbi_pool, factory_id)
-        stats.agg_daily_ops_upserted = (
-            gold.get("requisition_qty", 0) + gold.get("requisition_cost", 0)
+        stats.agg_daily_ops_upserted = sum(
+            gold.get(k, 0) for k in
+            ("requisition_qty", "requisition_cost", "wastage_qty",
+             "wastage_cost_by_type", "stock_shortage")
         )
         stats.agg_daily_totals_upserted = gold.get("daily_totals", 0)
+        stats.agg_product_cost_upserted = gold.get("product_cost", 0)
     except Exception as e:
         stats.errors.append(f"gold: {e}")
         logger.exception("[etl] gold materialize failed for %s", factory_id)

@@ -369,6 +369,18 @@ onMounted(async () => {
       timestamp: new Date()
     });
   }
+
+  // Apr 24 2026 Plan C Phase 5: accept `?q=` query param from "AI 分析" buttons
+  // on restaurant daily pages (requisitions/wastage/recipes/stocktaking).
+  // Pre-fill input + auto-send so users land directly on the answer.
+  const qFromRoute = typeof route.query.q === 'string' ? route.query.q : null;
+  if (qFromRoute) {
+    inputQuery.value = qFromRoute;
+    // Wait one tick so the data-source auto-select above finishes, then send.
+    nextTick(() => {
+      setTimeout(() => handleSendMessage(), 300);
+    });
+  }
 });
 
 // Cleanup on unmount

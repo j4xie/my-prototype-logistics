@@ -8,6 +8,7 @@
             <span class="data-count">共 {{ pagination.total }} 条</span>
           </div>
           <div class="header-right">
+            <el-button type="info" plain @click="handleAiAnalyze">🤖 AI 分析</el-button>
             <el-button :icon="Download" @click="handleExport">导出</el-button>
             <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleCreate">新增配方</el-button>
           </div>
@@ -174,6 +175,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { Plus, Search, Refresh, Download } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus';
 import { useFactoryId } from '@/composables/useFactoryId';
@@ -300,6 +302,11 @@ async function loadData() {
   } finally {
     loading.value = false;
   }
+}
+
+const router = useRouter();
+function handleAiAnalyze() {
+  router.push({ path: '/smart-bi/query', query: { q: '食材成本最高的菜品 top 10, 以及配方平均食材数' } });
 }
 
 function handleSearch() {

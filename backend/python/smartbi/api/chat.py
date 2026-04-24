@@ -1052,6 +1052,50 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
     async def event_stream() -> AsyncGenerator[str, None]:
         start_time = time.time()
         try:
+            # Apr 24 2026 Plan C Phase 4: Restaurant daily-ops Gold router (runs
+            # BEFORE xlsx template router). Routes queries about 损耗/盘点/领料/
+            # 配方成本 to pre-aggregated Gold tables. No upload_id needed.
+            try:
+                user_q = (request.effective_query or "").strip()
+                factory_id_hdr = (
+                    getattr(http_request.state, 'factory_id', None)
+                    if hasattr(http_request, 'state') else None
+                )
+                if user_q and factory_id_hdr:
+                    from smartbi.gold.restaurant_ops_router import (
+                        match_restaurant_ops, resolve_by_code
+                    )
+                    from smartbi.config import get_pg_pool as _get_pool
+                    ops_code = match_restaurant_ops(user_q)
+                    if ops_code:
+                        pool = await _get_pool()
+                        if pool:
+                            ops_answer = await resolve_by_code(ops_code, pool, factory_id_hdr)
+                            if ops_answer:
+                                yield _sse_event("status", f"命中餐饮运营模板:{ops_answer.title}")
+                                chunk_size = 40
+                                for i in range(0, len(ops_answer.answer_text), chunk_size):
+                                    yield _sse_event("chunk", ops_answer.answer_text[i:i + chunk_size])
+                                if ops_answer.charts:
+                                    yield _sse_event("charts", ops_answer.charts)
+                                wall_ms = int((time.time() - start_time) * 1000)
+                                yield _sse_event("done", {
+                                    "success": True,
+                                    "answer": ops_answer.answer_text,
+                                    "charts": ops_answer.charts,
+                                    "kpis": ops_answer.kpis,
+                                    "source": "restaurant_ops_gold",
+                                    "template_code": ops_code,
+                                    "processingTimeMs": wall_ms,
+                                    "log_id": None,
+                                })
+                                logger.info(
+                                    f"[stream] served via gold ops: template={ops_code}, wall={wall_ms}ms"
+                                )
+                                return  # early exit — Gold served the answer
+            except Exception as e:
+                logger.warning(f"[stream] gold ops router failed, falling through: {e}")
+
             # W2.2: Try template router first — if user query matches a known analysis,
             # stream cached result (fast, deterministic) instead of invoking LLM.
             try:

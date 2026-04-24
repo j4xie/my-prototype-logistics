@@ -8,6 +8,7 @@
             <span class="data-count">共 {{ pagination.total }} 条</span>
           </div>
           <div class="header-right">
+            <el-button type="info" plain @click="handleAiAnalyze">🤖 AI 分析</el-button>
             <el-button :icon="Download" @click="handleExport">导出</el-button>
             <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleCreate">新建盘点</el-button>
           </div>
@@ -189,6 +190,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { Plus, Search, Refresh, Download } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus';
 import { useFactoryId } from '@/composables/useFactoryId';
@@ -297,6 +299,11 @@ async function loadData() {
     tableData.value = [];
     pagination.value.total = 0;
   } finally { loading.value = false; }
+}
+
+const router = useRouter();
+function handleAiAnalyze() {
+  router.push({ path: '/smart-bi/query', query: { q: '最近30天盘亏最严重的食材 top 10' } });
 }
 
 function handleSearch() { pagination.value.page = 1; loadData(); }
