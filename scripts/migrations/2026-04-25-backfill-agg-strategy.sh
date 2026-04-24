@@ -48,12 +48,10 @@ ssh "$SERVER" bash <<EOF
 set -euo pipefail
 export PGPASSWORD='$SMARTBI_PG_PASSWORD'
 
-# Discover the internal secret from the live process env
-if [ "$ENV" = "prod" ]; then
-  PY_PID=\$(pgrep -f "uvicorn main:app --host 0.0.0.0 --port $PY_PORT" | head -1)
-else
-  PY_PID=\$(pgrep -f "uvicorn main:app --host 0.0.0.0 --port $PY_PORT" | head -1)
-fi
+# Discover the internal secret from the live process env.
+# PY_PORT already encodes the env (8083 prod / 8084 test), so the same
+# pgrep works for both — earlier code had a redundant if/else fork.
+PY_PID=\$(pgrep -f "uvicorn main:app --host 0.0.0.0 --port $PY_PORT" | head -1)
 if [ -z "\$PY_PID" ]; then
   echo "ERROR: Python ($PY_PORT) process not found" >&2
   exit 1
