@@ -18,8 +18,11 @@
 import { execSync } from 'child_process';
 
 const ENV = process.env.ENV || 'test';
+// Prod Java may be on 10010 (blue) or 10020 (green) depending on BG state.
+// Probe before use so the smoke works either way.
+const PROD_JAVA_PORT = process.env.PROD_JAVA_PORT || '10010';
 const CONFIG = ENV === 'prod' ? {
-  jwt_url: 'http://localhost:10010/api/mobile/auth/unified-login',
+  jwt_url: `http://localhost:${PROD_JAVA_PORT}/api/mobile/auth/unified-login`,
   py_url: 'http://localhost:8083/api/insight/quick-summary',
   factory: 'RES_3101_009',
   reviewUploadId: 4172,
