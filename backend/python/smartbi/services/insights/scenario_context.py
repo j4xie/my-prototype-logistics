@@ -458,8 +458,8 @@ def compute_restaurant_context(df: pd.DataFrame) -> str:
             )
             for q_name, q_label in [
                 ('Star', '明星菜(高销量+高利润)'),
-                ('Plow', '耕牛菜(高销量+低利润)'),
-                ('Puzzle', '谜题菜(低销量+高利润)'),
+                ('Plow', '金牛菜(高销量+低利润)'),
+                ('Puzzle', '问题菜(低销量+高利润)'),
                 ('Dog', '瘦狗菜(低销量+低利润)'),
             ]:
                 q_items = item_df[item_df['quadrant'] == q_name].nlargest(

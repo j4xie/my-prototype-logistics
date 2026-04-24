@@ -403,7 +403,7 @@ function renderQuadrantMini() {
   const xMax = (qtys[Math.floor(qtys.length * 0.95)] || 100) * 1.3
 
   const series = Object.keys(colorMap).map(q => ({
-    name: q === 'Star' ? '明星' : q === 'Plow' ? '耕牛' : q === 'Puzzle' ? '谜题' : '瘦狗',
+    name: q === 'Star' ? '明星' : q === 'Plow' ? '金牛' : q === 'Puzzle' ? '问题' : '瘦狗',
     type: 'scatter' as const,
     data: items.filter(i => i.quadrant === q).map(i => ({ value: [Math.min(i.quantity, xMax), Math.min(i.unitProfit, yMax)], _raw: [i.quantity, i.unitProfit] })),
     itemStyle: { color: colorMap[q] },

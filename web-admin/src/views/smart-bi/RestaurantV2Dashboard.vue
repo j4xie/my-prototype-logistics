@@ -83,8 +83,23 @@ const financialPrevious = ref({
   labor_cost: 0,
   rent: 0,
 });
-const subSector = ref<string>('火锅');
+// P1-4 fix: subSector default was hardcoded '火锅', placeholder "青花椒大丸百货店" —
+// both assumed 青花椒 火锅店. Make default generic '中餐' so 西餐/日料/快餐 etc.
+// don't see wrong industry. Placeholder now computed from factoryName (if present).
+const subSector = ref<string>('中餐');
 const storeName = ref<string>('');
+// Computed dynamic placeholder based on merchant identity
+const storePlaceholder = computed(() => {
+  // Try window auth payload (set via login)
+  const factoryName = (authStore as unknown as { factoryName?: string }).factoryName
+    || (window as unknown as { __factoryName?: string }).__factoryName
+    || '';
+  if (factoryName) {
+    const clean = factoryName.replace(/(有限公司|股份|集团|连锁|餐饮|管理)/g, '').trim();
+    return clean ? `例: ${clean}总店` : '例: 总店';
+  }
+  return '例: 总店';
+});
 // Apr 24 2026 P1-13: period 默认当前月 YYYY-MM, 不硬编码 2026-02 (历史写死值)
 const _thisMonth = (() => {
   const d = new Date();
@@ -704,7 +719,7 @@ function formatCurrency(v?: number): string {
           <el-form-item label="门店">
             <el-input
               v-model="storeName"
-              placeholder="例: 青花椒大丸百货店"
+              :placeholder="storePlaceholder"
               style="width: 200px"
             />
           </el-form-item>

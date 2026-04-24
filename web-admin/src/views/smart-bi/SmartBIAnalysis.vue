@@ -69,10 +69,14 @@
 
       <!-- 上传/空数据区域 -->
       <div v-if="uploadedSheets.length === 0 && !uploading" class="upload-section">
-        <!-- 加载中 -->
+        <!-- P2-6 fix: 加载历史数据 + 延迟提示 (Python 冷启时 history 调用可能 >10s) -->
         <div v-if="historyLoading" style="text-align: center; padding: 60px 0;">
           <el-icon class="is-loading" :size="32"><Loading /></el-icon>
           <p style="color: var(--color-text-secondary, #909399); margin-top: 12px;">正在加载历史数据...</p>
+          <p v-if="historyLoadingLong" style="color: #E6A23C; margin-top: 8px; font-size: 13px;">
+            首次访问 Python 需要 5-15 秒冷启动,请稍候...
+          </p>
+          <el-skeleton :rows="4" animated style="margin-top: 24px; max-width: 600px; margin-left: auto; margin-right: auto;" />
         </div>
         <!-- 管理员：显示上传区域 -->
         <template v-else-if="canUpload">
@@ -4941,9 +4945,16 @@ const selectBatch = (index: number) => {
   });
 };
 
+// P2-6 fix: show "冷启动" hint if history load takes >5s
+const historyLoadingLong = ref(false);
+let _historyLongTimer: ReturnType<typeof setTimeout> | null = null;
+
 // 加载历史上传记录（按文件名 + 时间窗口分组为批次）
 const loadHistory = async () => {
   historyLoading.value = true;
+  historyLoadingLong.value = false;
+  if (_historyLongTimer) clearTimeout(_historyLongTimer);
+  _historyLongTimer = setTimeout(() => { historyLoadingLong.value = true; }, 5000);
   try {
     const response = await getUploadHistory();
     if (!response.success || !response.data?.length) return;
@@ -4992,6 +5003,8 @@ const loadHistory = async () => {
     ElMessage.error('加载历史记录失败');
   } finally {
     historyLoading.value = false;
+    historyLoadingLong.value = false;
+    if (_historyLongTimer) { clearTimeout(_historyLongTimer); _historyLongTimer = null; }
   }
 };
 

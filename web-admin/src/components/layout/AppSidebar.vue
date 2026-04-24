@@ -82,7 +82,10 @@ const financeManagerMenu: MenuItem[] = [
 const menuConfig: MenuItem[] = [
   { path: '/dashboard', title: '首页', icon: 'House', module: 'dashboard' },
   {
+    // P1-5: restaurants 默认不见 "生产管理" (BOM/批次是 manufacturing 语言,
+    // 餐饮用配方/备餐在 /restaurant/recipes)
     path: '/production', title: '生产管理', icon: 'Operation', module: 'production',
+    hideForFactoryTypes: ['RESTAURANT'],
     children: [
       { path: '/production/batches', title: '生产批次', icon: '', module: 'production' },
       { path: '/production/plans', title: '生产计划', icon: '', module: 'production' },
@@ -94,7 +97,9 @@ const menuConfig: MenuItem[] = [
     ]
   },
   {
+    // P1-5: restaurants 默认不见 "仓储管理" (食材库存在 /restaurant/stocktaking)
     path: '/warehouse', title: '仓储管理', icon: 'Box', module: 'warehouse',
+    hideForFactoryTypes: ['RESTAURANT'],
     children: [
       { path: '/warehouse/materials', title: '原材料批次', icon: '', module: 'warehouse' },
       { path: '/warehouse/shipments', title: '出货管理', icon: '', module: 'warehouse' },
@@ -103,7 +108,9 @@ const menuConfig: MenuItem[] = [
     ]
   },
   {
+    // P1-5: restaurants 默认不见 "质量管理" (食品安全走 食检,不是 ISO 质检)
     path: '/quality', title: '质量管理', icon: 'Checked', module: 'quality',
+    hideForFactoryTypes: ['RESTAURANT'],
     children: [
       { path: '/quality/inspections', title: '质检记录', icon: '', module: 'quality' },
       { path: '/quality/disposals', title: '废弃处理', icon: '', module: 'quality' },
@@ -111,7 +118,10 @@ const menuConfig: MenuItem[] = [
     ]
   },
   {
+    // P1-5 fix: restaurants 默认不见 "采购管理" (进货走 /restaurant/requisitions)
+    // Canvas 管理员可细粒度开启 purchase_order 码解锁.
     path: '/procurement', title: '采购管理', icon: 'ShoppingCart', module: 'procurement',
+    hideForFactoryTypes: ['RESTAURANT'],
     children: [
       { path: '/procurement/orders', title: '采购订单', icon: '', module: 'procurement' },
       { path: '/procurement/suppliers', title: '供应商管理', icon: '', module: 'procurement' },
@@ -134,7 +144,9 @@ const menuConfig: MenuItem[] = [
     ]
   },
   {
+    // P1-5: restaurants 默认不见 "人事管理" (小连锁常无 HR 系统,Canvas 可开启 hr_employee)
     path: '/hr', title: '人事管理', icon: 'User', module: 'hr',
+    hideForFactoryTypes: ['RESTAURANT'],
     children: [
       { path: '/hr/employees', title: '员工管理', icon: '', module: 'hr' },
       { path: '/hr/attendance', title: '考勤管理', icon: '', module: 'hr' },
@@ -143,13 +155,17 @@ const menuConfig: MenuItem[] = [
     ]
   },
   {
+    // P1-5: restaurants 默认不见 "调拨管理" (门店间调货走 /restaurant/requisitions)
     path: '/transfer', title: '调拨管理', icon: 'Sell', module: 'warehouse',
+    hideForFactoryTypes: ['RESTAURANT'],
     children: [
       { path: '/transfer/list', title: '调拨单列表', icon: '', module: 'warehouse' }
     ]
   },
   {
+    // P1-5: restaurants 默认不见 "设备管理" (manufacturing 专属)
     path: '/equipment', title: '设备管理', icon: 'Monitor', module: 'equipment',
+    hideForFactoryTypes: ['RESTAURANT'],
     children: [
       { path: '/equipment/list', title: '设备列表', icon: '', module: 'equipment' },
       { path: '/equipment/maintenance', title: '维护记录', icon: '', module: 'equipment' },
@@ -157,7 +173,10 @@ const menuConfig: MenuItem[] = [
     ]
   },
   {
+    // P1-5: restaurants 默认不见 "财务管理" (SmartBI 有 /smart-bi/finance 简化版,
+    // manufacturing 的 ar-ap/invoices/sku-margin 对餐饮无意义)
     path: '/finance', title: '财务管理', icon: 'Money', module: 'finance',
+    hideForFactoryTypes: ['RESTAURANT'],
     children: [
       { path: '/finance/costs', title: '财务概览', icon: '', module: 'finance' },
       { path: '/finance/reports', title: '财务报表', icon: '', module: 'finance' },
@@ -168,7 +187,10 @@ const menuConfig: MenuItem[] = [
     ]
   },
   {
+    // P1-5: restaurants 默认不见 "研发管理" (产品 R&D 是 manufacturing,
+    // 菜品开发在 /restaurant/recipes)
     path: '/rd', title: '研发管理', icon: 'Opportunity', module: 'production',
+    hideForFactoryTypes: ['RESTAURANT'],
     children: [
       { path: '/rd/samples', title: '研发样品管理', icon: '', module: 'production' }
     ]

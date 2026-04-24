@@ -43,8 +43,8 @@
             <el-radio-group v-model="filterQuadrant">
               <el-radio-button value="">全部</el-radio-button>
               <el-radio-button value="Star">明星</el-radio-button>
-              <el-radio-button value="Plow">耕牛</el-radio-button>
-              <el-radio-button value="Puzzle">谜题</el-radio-button>
+              <el-radio-button value="Plow">金牛</el-radio-button>
+              <el-radio-button value="Puzzle">问题</el-radio-button>
               <el-radio-button value="Dog">瘦狗</el-radio-button>
             </el-radio-group>
             <el-input v-model="searchKeyword" placeholder="搜索菜品名" clearable style="width: 200px" />
@@ -133,8 +133,8 @@ const quadrants = computed(() => {
   const s = data.value.summary
   return [
     { key: 'Star', label: '明星菜', count: s.starCount, color: '#67C23A', desc: '高销量 + 高收入' },
-    { key: 'Plow', label: '耕牛菜', count: s.plowCount, color: '#E6A23C', desc: '高销量 + 低收入' },
-    { key: 'Puzzle', label: '谜题菜', count: s.puzzleCount, color: '#409EFF', desc: '低销量 + 高收入' },
+    { key: 'Plow', label: '金牛菜', count: s.plowCount, color: '#E6A23C', desc: '高销量 + 低收入' },
+    { key: 'Puzzle', label: '问题菜', count: s.puzzleCount, color: '#409EFF', desc: '低销量 + 高收入' },
     { key: 'Dog', label: '瘦狗菜', count: s.dogCount, color: '#F56C6C', desc: '低销量 + 低收入' },
   ]
 })
@@ -156,15 +156,15 @@ function tagType(q: string): '' | 'success' | 'warning' | 'info' | 'danger' {
 }
 
 function quadrantLabel(q: string): string {
-  const map: Record<string, string> = { Star: '明星', Plow: '耕牛', Puzzle: '谜题', Dog: '瘦狗' }
+  const map: Record<string, string> = { Star: '明星', Plow: '金牛', Puzzle: '问题', Dog: '瘦狗' }
   return map[q] || q
 }
 
 function getSuggestion(q: string): string {
   const map: Record<string, string> = {
     Star: '明星菜品是核心收入来源，保持品质稳定，适当提价测试弹性，作为招牌菜重点推广。',
-    Plow: '耕牛菜品销量高但品均收入低，考虑优化食材成本、调整份量或组合套餐提升单品收入。',
-    Puzzle: '谜题菜品品均收入高但销量低，加大推广力度（推荐位/服务员推荐），或调整价格刺激需求。',
+    Plow: '金牛菜品销量高但品均收入低，考虑优化食材成本、调整份量或组合套餐提升单品收入。',
+    Puzzle: '问题菜品品均收入高但销量低，加大推广力度（推荐位/服务员推荐），或调整价格刺激需求。',
     Dog: '瘦狗菜品销量和品均收入均低，考虑优化口味/呈现，或逐步淘汰替换为新品。',
   }
   return map[q] || ''
