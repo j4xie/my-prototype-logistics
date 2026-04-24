@@ -227,8 +227,10 @@ async def gross_margin(request: Request, days: int = Query(30, ge=1, le=365)) ->
         )
 
     # Name match + alias fallback — see restaurant_ops_router.resolve_gross_margin for details.
+    # P1-5 also loads excluded dish list to drop noise from analysis.
     normalized_names = list({r["normalized_name"] for r in pos_rows})
     cretas_map: Dict[str, str] = {}
+    excluded_set: set = set()
     if normalized_names:
         try:
             import asyncpg as _asyncpg
@@ -256,10 +258,24 @@ async def gross_margin(request: Request, days: int = Query(30, ge=1, le=365)) ->
                     except Exception as e:
                         if "does not exist" not in str(e):
                             logger.warning(f"[gross-margin] alias lookup failed: {e}")
+                # P1-5 excluded dishes (noise — packaging / utensil / ads)
+                try:
+                    ex_rows = await cretas.fetch(
+                        "SELECT pos_name FROM dim_product_excluded WHERE factory_id = $1",
+                        factory_id,
+                    )
+                    excluded_set = {r["pos_name"] for r in ex_rows}
+                except Exception as e:
+                    if "does not exist" not in str(e):
+                        logger.warning(f"[gross-margin] excluded lookup failed: {e}")
             finally:
                 await cretas.close()
         except Exception as e:
             logger.warning(f"[gross-margin] cretas lookup failed: {e}")
+
+    # Filter out excluded dishes from pos_rows before margin calc
+    if excluded_set:
+        pos_rows = [r for r in pos_rows if r["dish_name"] not in excluded_set]
 
     cost_map: Dict[str, float] = {}
     if cretas_map:

@@ -489,6 +489,245 @@ async def list_aliases(request: Request) -> Dict[str, Any]:
         await conn.close()
 
 
+# ==========================================================================
+# P1-5: Noise dish exclusion
+# ==========================================================================
+class ExcludeBody(BaseModel):
+    pos_names: List[str]
+
+
+async def _ensure_excluded_dishes_table(conn) -> None:
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS dim_product_excluded (
+            id BIGSERIAL PRIMARY KEY,
+            factory_id VARCHAR(100) NOT NULL,
+            pos_name VARCHAR(500) NOT NULL,
+            reason VARCHAR(200),
+            created_at TIMESTAMP DEFAULT NOW(),
+            UNIQUE(factory_id, pos_name)
+        )
+    """)
+
+
+@router.post("/restaurant-ops/excluded-dishes")
+async def mark_excluded(request: Request, body: ExcludeBody) -> Dict[str, Any]:
+    """Mark POS dish names as 'noise' (打包盒 / 需要餐具 / 广告文字 etc.).
+    Excluded names stop counting toward coverage denominator + margin analysis.
+    """
+    factory_id = _get_factory_id(request)
+    if not factory_id:
+        return {"success": False, "message": "missing factory context"}
+
+    try:
+        import asyncpg
+        from config import get_settings
+    except Exception as e:
+        return {"success": False, "message": f"config error: {e}"}
+
+    settings = get_settings()
+    conn = await asyncpg.connect(settings.food_kb_db_url)
+    try:
+        await _ensure_excluded_dishes_table(conn)
+        count = 0
+        for name in body.pos_names:
+            try:
+                await conn.execute("""
+                    INSERT INTO dim_product_excluded (factory_id, pos_name, reason)
+                    VALUES ($1, $2, 'user_marked')
+                    ON CONFLICT (factory_id, pos_name) DO NOTHING
+                """, factory_id, name)
+                count += 1
+            except Exception as e:
+                logger.warning(f"[excluded] insert {name} failed: {e}")
+        return {"success": True, "data": {"markedCount": count}}
+    finally:
+        await conn.close()
+
+
+@router.get("/restaurant-ops/excluded-dishes")
+async def list_excluded(request: Request) -> Dict[str, Any]:
+    factory_id = _get_factory_id(request)
+    if not factory_id:
+        return {"success": False, "message": "missing factory context"}
+    try:
+        import asyncpg
+        from config import get_settings
+    except Exception as e:
+        return {"success": False, "message": f"config error: {e}"}
+    settings = get_settings()
+    conn = await asyncpg.connect(settings.food_kb_db_url)
+    try:
+        await _ensure_excluded_dishes_table(conn)
+        rows = await conn.fetch(
+            "SELECT pos_name, reason, created_at FROM dim_product_excluded WHERE factory_id = $1 ORDER BY created_at DESC",
+            factory_id,
+        )
+        return {
+            "success": True,
+            "data": {
+                "excluded": [
+                    {"posName": r["pos_name"], "reason": r["reason"], "createdAt": r["created_at"].isoformat() if r["created_at"] else None}
+                    for r in rows
+                ],
+            },
+        }
+    finally:
+        await conn.close()
+
+
+@router.delete("/restaurant-ops/excluded-dishes/{pos_name}")
+async def unexclude_dish(request: Request, pos_name: str) -> Dict[str, Any]:
+    factory_id = _get_factory_id(request)
+    if not factory_id:
+        return {"success": False, "message": "missing factory context"}
+    try:
+        import asyncpg
+        from config import get_settings
+    except Exception as e:
+        return {"success": False, "message": f"config error: {e}"}
+    settings = get_settings()
+    conn = await asyncpg.connect(settings.food_kb_db_url)
+    try:
+        result = await conn.execute(
+            "DELETE FROM dim_product_excluded WHERE factory_id = $1 AND pos_name = $2",
+            factory_id, pos_name,
+        )
+        return {"success": True, "data": {"deleted": result.endswith("1")}}
+    finally:
+        await conn.close()
+
+
+# ==========================================================================
+# P1-3: Raw material price history (read-only for now — trigger auto-snapshots)
+# ==========================================================================
+@router.get("/restaurant-ops/materials/{material_id}/price-history")
+async def price_history(request: Request, material_id: str) -> Dict[str, Any]:
+    """Return price changes over time for one raw material."""
+    factory_id = _get_factory_id(request)
+    if not factory_id:
+        return {"success": False, "message": "missing factory context"}
+    try:
+        import asyncpg
+        from config import get_settings
+    except Exception as e:
+        return {"success": False, "message": f"config error: {e}"}
+    settings = get_settings()
+    conn = await asyncpg.connect(settings.food_kb_db_url)
+    try:
+        rows = await conn.fetch("""
+            SELECT unit_price, effective_from, effective_to, change_reason, changed_by, created_at
+              FROM raw_material_price_history
+             WHERE factory_id = $1 AND raw_material_type_id = $2
+             ORDER BY effective_from DESC
+        """, factory_id, material_id)
+        return {
+            "success": True,
+            "data": {
+                "history": [
+                    {
+                        "unitPrice": float(r["unit_price"]),
+                        "effectiveFrom": r["effective_from"].isoformat() if r["effective_from"] else None,
+                        "effectiveTo": r["effective_to"].isoformat() if r["effective_to"] else None,
+                        "changeReason": r["change_reason"],
+                    }
+                    for r in rows
+                ],
+            },
+        }
+    finally:
+        await conn.close()
+
+
+# ==========================================================================
+# P2-7: LLM recipe draft suggestion (qwen3-max generate JSON recipe)
+# ==========================================================================
+class RecipeDraftRequest(BaseModel):
+    dish_name: str
+    hint: Optional[str] = None  # 如 "川菜 / 粤菜 / 素菜" / "用量参考人均"
+
+
+@router.post("/restaurant-ops/recipes/ai-draft")
+async def ai_recipe_draft(request: Request, body: RecipeDraftRequest) -> Dict[str, Any]:
+    """LLM (qwen3-max) generates a draft recipe. User reviews + edits + saves.
+
+    Returns: { ingredients: [{name, qty, unit, is_main}], estimated_cost_ratio: 0.30, notes: '...' }
+    """
+    factory_id = _get_factory_id(request)
+    if not factory_id:
+        return {"success": False, "message": "missing factory context"}
+    if not body.dish_name or len(body.dish_name) < 2:
+        return {"success": False, "message": "菜品名称至少 2 个字"}
+
+    # Build prompt — structured JSON output, 3-5 ingredients, 成本率 25-40%
+    prompt = f"""你是资深中餐厨师兼成本核算师. 给定菜品名称, 输出一份配方草稿 JSON.
+
+菜品: {body.dish_name}
+{f'提示: {body.hint}' if body.hint else ''}
+
+要求:
+- 3-5 种主要食材 (主料 1-2 个, 辅料 + 调味料 2-3 个)
+- 每种食材给出: name (中文), qty (数字), unit (kg/L/个/份), is_main (true/false)
+- 数量按单份/单人份计算
+- 食材成本率目标 25-40%
+- 输出**纯 JSON** 不要任何 markdown 或注释
+
+JSON schema:
+{{
+  "ingredients": [
+    {{"name": "鲈鱼", "qty": 0.25, "unit": "kg", "is_main": true}}
+  ],
+  "estimated_cost_ratio": 0.32,
+  "notes": "川菜经典做法..."
+}}"""
+
+    try:
+        import httpx
+        from common.llm_client import get_llm_http_client
+        from config import get_settings as _get_settings
+        settings = _get_settings()
+        client = get_llm_http_client()
+        headers = {
+            "Authorization": f"Bearer {settings.llm_api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": settings.llm_model or "qwen3-max-2026-01-23",
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 800,
+            "temperature": 0.3,
+            "enable_thinking": False,
+        }
+        resp = await client.post(
+            f"{settings.llm_base_url}/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=httpx.Timeout(45.0),
+        )
+        resp.raise_for_status()
+        content = resp.json()["choices"][0]["message"]["content"].strip()
+        # Strip markdown fences if LLM ignored instructions
+        if content.startswith("```"):
+            content = content.strip("`").lstrip("json").strip()
+        import json as _json
+        try:
+            parsed = _json.loads(content)
+        except _json.JSONDecodeError as e:
+            return {"success": False, "message": f"LLM 返回 JSON 解析失败: {e}", "rawOutput": content[:500]}
+
+        return {
+            "success": True,
+            "data": {
+                "dishName": body.dish_name,
+                "ingredients": parsed.get("ingredients", []),
+                "estimatedCostRatio": parsed.get("estimated_cost_ratio"),
+                "notes": parsed.get("notes", ""),
+            },
+        }
+    except Exception as e:
+        logger.exception(f"[ai-recipe-draft] failed for {body.dish_name}")
+        return {"success": False, "message": f"LLM 调用失败: {e}"}
+
+
 @router.delete("/restaurant-ops/aliases/{pos_name}")
 async def delete_alias(request: Request, pos_name: str) -> Dict[str, Any]:
     factory_id = _get_factory_id(request)

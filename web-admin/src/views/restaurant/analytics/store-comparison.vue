@@ -118,9 +118,13 @@ interface StoreMarginRow { storeId: number; name: string; revenue: number; gross
 const storeMarginMap = ref<Record<string, StoreMarginRow>>({})
 
 async function loadStoreMargin() {
+  // P1-6: days=365 to align with other Gold pages (gross-margin.vue, menu-board.vue)
+  // so historic POS data (e.g. qhj 2025) matches on first load. Using 30 days would
+  // return empty for any merchant whose POS is not recent, causing the 毛利率 column
+  // to silently show "—" for all rows.
   try {
     const { pythonFetch } = await import('@/api/smartbi/common')
-    const res = await pythonFetch('/api/smartbi/restaurant-ops/store-margin?days=30') as {
+    const res = await pythonFetch('/api/smartbi/restaurant-ops/store-margin?days=365') as {
       success: boolean
       data?: { stores: StoreMarginRow[] }
     }

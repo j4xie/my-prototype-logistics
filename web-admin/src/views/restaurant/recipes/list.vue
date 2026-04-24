@@ -222,7 +222,8 @@
           </template>
         </el-alert>
       </div>
-      <el-table v-if="unmatchedData" :data="unmatchedData.dishes" max-height="400" border>
+      <el-table v-if="unmatchedData" :data="unmatchedData.dishes" max-height="400" border @selection-change="onSelectionChange">
+        <el-table-column type="selection" width="45" />
         <el-table-column prop="name" label="POS 菜名" min-width="200" show-overflow-tooltip />
         <el-table-column prop="revenue" label="营收" width="120" align="right">
           <template #default="{ row }">¥{{ row.revenue.toLocaleString('zh-CN', { maximumFractionDigits: 0 }) }}</template>
@@ -245,9 +246,19 @@
           </template>
         </el-table-column>
       </el-table>
-      <div style="margin-top: 12px; font-size: 12px; color: #909399">
-        💡 绑定完成后点 <el-link type="primary" href="/restaurant/analytics/gross-margin" :underline="false">毛利分析页 ⚡立即同步</el-link> 刷新覆盖率.
-        这些 POS 菜名会走 alias → 你选中的配方, 毛利计算自动生效.
+      <div style="margin-top: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap">
+        <el-button
+          v-if="selectedUnmatched.length > 0"
+          type="warning"
+          size="small"
+          @click="markAsNoise"
+        >
+          标记为"非菜品"(噪音) ({{ selectedUnmatched.length }})
+        </el-button>
+        <span style="font-size: 12px; color: #909399; flex: 1">
+          💡 绑定完成后点 <el-link type="primary" href="/restaurant/analytics/gross-margin" :underline="false">毛利分析页 ⚡立即同步</el-link> 刷新覆盖率.
+          "非菜品"的条目 (如 打包盒/餐具/广告词) 会从覆盖率分母中剔除.
+        </span>
       </div>
     </el-dialog>
   </div>
@@ -625,6 +636,34 @@ async function openAliasPanel() {
   } catch (e) {
     ElMessage.error('加载未匹配菜品失败');
   }
+}
+
+const selectedUnmatched = ref<Array<{ name: string }>>([]);
+function onSelectionChange(rows: Array<{ name: string }>) { selectedUnmatched.value = rows; }
+
+async function markAsNoise() {
+  if (selectedUnmatched.value.length === 0) return;
+  try {
+    const { pythonFetch } = await import('@/api/smartbi/common');
+    const names = selectedUnmatched.value.map(r => r.name);
+    const res = await pythonFetch('/api/smartbi/restaurant-ops/excluded-dishes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pos_names: names }),
+    }) as { success: boolean; data?: { markedCount: number }; message?: string };
+    if (res.success) {
+      ElMessage.success(`已标记 ${res.data?.markedCount ?? 0} 个为非菜品, 覆盖率分母自动重算`);
+      // Remove from list
+      if (unmatchedData.value) {
+        unmatchedData.value.dishes = unmatchedData.value.dishes.filter(d => !names.includes(d.name));
+        unmatchedData.value.unmatchedCount -= names.length;
+        unmatchedCount.value = Math.max(0, unmatchedCount.value - names.length);
+      }
+      selectedUnmatched.value = [];
+    } else {
+      ElMessage.error(res.message || '标记失败');
+    }
+  } catch (e) { ElMessage.error('标记异常'); }
 }
 
 async function bindAlias(posName: string, productTypeId: string) {
