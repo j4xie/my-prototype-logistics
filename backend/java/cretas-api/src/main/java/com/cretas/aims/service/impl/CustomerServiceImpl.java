@@ -106,11 +106,13 @@ public class CustomerServiceImpl implements CustomerService {
         log.info("更新客户: factoryId={}, customerId={}", factoryId, customerId);
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
                 .orElseThrow(() -> new EntityNotFoundException("Customer", customerId));
-        // Optimistic lock: force entity.version to the value FE snapshotted when it fetched.
-        // If another writer already bumped it in DB, Hibernate's UPDATE ... WHERE version=?
-        // will match 0 rows → StaleObjectStateException → 409 via GlobalExceptionHandler.
-        if (request.getVersion() != null) {
-            customer.setVersion(request.getVersion());
+        // Optimistic lock: compare client-supplied version against DB version.
+        // Note: we can't just setVersion() on the managed entity — Hibernate locks its
+        // dirty-check against the version observed at findById time, so setVersion()
+        // is silently ignored for UPDATE conflict detection. Manual compare instead.
+        if (request.getVersion() != null && !request.getVersion().equals(customer.getVersion())) {
+            throw new org.springframework.orm.ObjectOptimisticLockingFailureException(
+                Customer.class, customerId);
         }
         // 检查名称是否与其他客户重复
         if (request.getName() != null && !request.getName().equals(customer.getName())) {
