@@ -45,15 +45,17 @@ public interface CustomerRepository extends JpaRepository<Customer, String> {
     /**
      * 根据名称搜索客户
      * 注意：name使用双向模糊匹配（无法使用索引），customerCode使用右模糊（可使用索引）
+     * keyword 必须先经 SqlLikeEscaper.escape() 处理 _ % \, 再传入. ESCAPE '\\' 子句生效.
      */
     @Query("SELECT c FROM Customer c WHERE c.factoryId = :factoryId " +
-           "AND (c.name LIKE CONCAT('%', :keyword, '%') OR c.customerCode LIKE CONCAT(:keyword, '%'))")
+           "AND (c.name LIKE CONCAT('%', :keyword, '%') ESCAPE '\\' " +
+           "OR c.customerCode LIKE CONCAT(:keyword, '%') ESCAPE '\\')")
     List<Customer> searchByName(@Param("factoryId") String factoryId, @Param("keyword") String keyword);
 
     @Query("SELECT c FROM Customer c WHERE c.factoryId = :factoryId " +
-           "AND (c.name LIKE CONCAT('%', :keyword, '%') " +
-           "OR c.customerCode LIKE CONCAT(:keyword, '%') " +
-           "OR c.contactPerson LIKE CONCAT('%', :keyword, '%'))")
+           "AND (c.name LIKE CONCAT('%', :keyword, '%') ESCAPE '\\' " +
+           "OR c.customerCode LIKE CONCAT(:keyword, '%') ESCAPE '\\' " +
+           "OR c.contactPerson LIKE CONCAT('%', :keyword, '%') ESCAPE '\\')")
     Page<Customer> searchByNamePaged(@Param("factoryId") String factoryId, @Param("keyword") String keyword, Pageable pageable);
 
     /**

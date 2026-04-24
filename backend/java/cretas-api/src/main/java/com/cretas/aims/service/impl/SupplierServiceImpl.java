@@ -172,7 +172,8 @@ public class SupplierServiceImpl implements SupplierService {
     @Override
     @Transactional(readOnly = true)
     public List<SupplierDTO> searchSuppliersByName(String factoryId, String keyword) {
-        List<Supplier> suppliers = supplierRepository.searchByName(factoryId, keyword);
+        String safeKeyword = com.cretas.aims.util.SqlLikeEscaper.escape(keyword);
+        List<Supplier> suppliers = supplierRepository.searchByName(factoryId, safeKeyword);
         return suppliers.stream()
                 .map(supplierMapper::toDTO)
                 .collect(Collectors.toList());

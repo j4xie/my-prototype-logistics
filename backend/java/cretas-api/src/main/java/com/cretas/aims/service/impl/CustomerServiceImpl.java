@@ -166,7 +166,8 @@ public class CustomerServiceImpl implements CustomerService {
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
         Page<Customer> customerPage = (keyword != null && !keyword.trim().isEmpty())
-                ? customerRepository.searchByNamePaged(factoryId, keyword.trim(), pageable)
+                ? customerRepository.searchByNamePaged(factoryId,
+                    com.cretas.aims.util.SqlLikeEscaper.escape(keyword.trim()), pageable)
                 : customerRepository.findByFactoryId(factoryId, pageable);
         List<CustomerDTO> customerDTOs = customerPage.getContent().stream()
                 .map(customerMapper::toDTO)
@@ -193,7 +194,8 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public List<CustomerDTO> searchCustomersByName(String factoryId, String keyword) {
-        List<Customer> customers = customerRepository.searchByName(factoryId, keyword);
+        String safeKeyword = com.cretas.aims.util.SqlLikeEscaper.escape(keyword);
+        List<Customer> customers = customerRepository.searchByName(factoryId, safeKeyword);
         return customers.stream()
                 .map(customerMapper::toDTO)
                 .collect(Collectors.toList());

@@ -45,9 +45,11 @@ public interface SupplierRepository extends JpaRepository<Supplier, String> {
     /**
      * 根据名称搜索供应商
      * 注意：name使用双向模糊匹配（无法使用索引），supplierCode使用右模糊（可使用索引）
+     * keyword 必须先经 SqlLikeEscaper.escape() 处理 _ % \, ESCAPE '\\' 子句生效.
      */
     @Query("SELECT s FROM Supplier s WHERE s.factoryId = :factoryId " +
-           "AND (s.name LIKE CONCAT('%', :keyword, '%') OR s.supplierCode LIKE CONCAT(:keyword, '%'))")
+           "AND (s.name LIKE CONCAT('%', :keyword, '%') ESCAPE '\\' " +
+           "OR s.supplierCode LIKE CONCAT(:keyword, '%') ESCAPE '\\')")
     List<Supplier> searchByName(@Param("factoryId") String factoryId, @Param("keyword") String keyword);
 
     /**
