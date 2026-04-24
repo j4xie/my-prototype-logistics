@@ -101,11 +101,35 @@ _COMPLAINT_TITLE_CANDIDATES: Tuple[str, ...] = ("投诉标题",)
 
 
 def _first_present(cols: Iterable[str], candidates: Iterable[str]) -> Optional[str]:
-    """Return first candidate that appears in cols, else None."""
-    col_set = set(cols)
+    """Return first candidate that appears in cols, else None.
+
+    Match tiers (Apr 24 P0-3 v2, 不二君 case — POS exports multi-line report
+    metadata got concatenated into header cells, so real column "门店名称"
+    lives at the suffix of a 500-char string):
+      1. Exact equality  (fast path for well-formed exports)
+      2. Suffix match "_<candidate>"  (embedded metadata prefix case)
+      3. Substring presence  (last resort; may over-match)
+
+    Returns the actual column name found in cols (not the candidate), so the
+    caller can use it for DataFrame slicing directly.
+    """
+    cols_list = list(cols)
+    col_set = set(cols_list)
+    # Tier 1: exact match
     for c in candidates:
         if c in col_set:
             return c
+    # Tier 2: suffix match on "_<candidate>" — P0-3 v2 (不二君 POS header quirk)
+    for c in candidates:
+        suffix = f"_{c}"
+        for col in cols_list:
+            if col and col.endswith(suffix):
+                return col
+    # Tier 3: substring (last resort)
+    for c in candidates:
+        for col in cols_list:
+            if col and c in col:
+                return col
     return None
 
 
