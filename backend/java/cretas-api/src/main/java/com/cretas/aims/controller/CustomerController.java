@@ -5,6 +5,7 @@ import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.customer.CreateCustomerRequest;
+import com.cretas.aims.dto.customer.UpdateCustomerRequest;
 import com.cretas.aims.dto.customer.CustomerDTO;
 import com.cretas.aims.service.CustomerService;
 import com.cretas.aims.service.MobileService;
@@ -79,14 +80,14 @@ public class CustomerController {
      */
     @RequirePermission({"sales:read_write", "finance:read_write"})
     @PutMapping("/{customerId}")
-    @Operation(summary = "更新客户", description = "更新指定客户的信息，包括名称、联系方式、地址等")
+    @Operation(summary = "更新客户", description = "更新指定客户的信息 (partial update: 所有字段可选)")
     public ApiResponse<CustomerDTO> updateCustomer(
             @Parameter(description = "工厂ID", example = "F001", required = true)
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "客户ID", example = "CUST-001", required = true)
             @PathVariable @NotBlank String customerId,
             @Parameter(description = "客户更新请求体")
-            @Valid @RequestBody CreateCustomerRequest request) {
+            @Valid @RequestBody UpdateCustomerRequest request) {
 
         log.info("更新客户: factoryId={}, customerId={}", factoryId, customerId);
         CustomerDTO customer = customerService.updateCustomer(factoryId, customerId, request);

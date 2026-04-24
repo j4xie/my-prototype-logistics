@@ -5,6 +5,7 @@ import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.supplier.CreateSupplierRequest;
+import com.cretas.aims.dto.supplier.UpdateSupplierRequest;
 import com.cretas.aims.dto.supplier.SupplierDTO;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.service.SupplierService;
@@ -76,13 +77,13 @@ public class SupplierController {
      */
     @RequirePermission({"procurement:read_write", "finance:read_write"})
     @PutMapping("/{supplierId}")
-    @Operation(summary = "更新供应商", description = "更新指定供应商的信息")
+    @Operation(summary = "更新供应商", description = "更新指定供应商的信息 (partial update: 所有字段可选)")
     public ApiResponse<SupplierDTO> updateSupplier(
             @Parameter(description = "工厂ID", example = "F001", required = true)
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "供应商ID", example = "SUP-001", required = true)
             @PathVariable @NotBlank String supplierId,
-            @Valid @RequestBody CreateSupplierRequest request) {
+            @Valid @RequestBody UpdateSupplierRequest request) {
 
         log.info("更新供应商: factoryId={}, supplierId={}", factoryId, supplierId);
         SupplierDTO supplier = supplierService.updateSupplier(factoryId, supplierId, request);

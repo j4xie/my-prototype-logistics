@@ -2,6 +2,7 @@ package com.cretas.aims.mapper;
 
 import com.cretas.aims.dto.customer.CreateCustomerRequest;
 import com.cretas.aims.dto.customer.CustomerDTO;
+import com.cretas.aims.dto.customer.UpdateCustomerRequest;
 import com.cretas.aims.entity.Customer;
 import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
@@ -102,7 +103,7 @@ public class CustomerMapper {
     /**
      * 更新实体
      */
-    public void updateEntity(Customer customer, CreateCustomerRequest request) {
+    public void updateEntity(Customer customer, UpdateCustomerRequest request) {
         if (request.getName() != null) {
             customer.setName(request.getName());
         }

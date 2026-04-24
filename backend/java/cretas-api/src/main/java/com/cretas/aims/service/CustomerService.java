@@ -4,6 +4,7 @@ import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.customer.CreateCustomerRequest;
 import com.cretas.aims.dto.customer.CustomerDTO;
+import com.cretas.aims.dto.customer.UpdateCustomerRequest;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +23,7 @@ public interface CustomerService {
      /**
      * 更新客户
       */
-    CustomerDTO updateCustomer(String factoryId, String customerId, CreateCustomerRequest request);
+    CustomerDTO updateCustomer(String factoryId, String customerId, UpdateCustomerRequest request);
      /**
      * 删除客户
       */

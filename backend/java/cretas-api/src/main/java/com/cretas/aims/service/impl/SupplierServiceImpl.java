@@ -4,6 +4,7 @@ import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.supplier.CreateSupplierRequest;
 import com.cretas.aims.dto.supplier.SupplierDTO;
+import com.cretas.aims.dto.supplier.UpdateSupplierRequest;
 import com.cretas.aims.entity.Supplier;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.EntityNotFoundException;
@@ -88,7 +89,7 @@ public class SupplierServiceImpl implements SupplierService {
     }
     @Override
     @Transactional
-    public SupplierDTO updateSupplier(String factoryId, String supplierId, CreateSupplierRequest request) {
+    public SupplierDTO updateSupplier(String factoryId, String supplierId, UpdateSupplierRequest request) {
         runConfiguredValidation(factoryId, "UPDATE", java.util.Map.of(
             "supplierId", supplierId,
             "supplierName", request.getName() != null ? request.getName() : "",

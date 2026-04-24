@@ -1,8 +1,8 @@
 package com.cretas.aims.ai.tool.impl.crm;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
-import com.cretas.aims.dto.customer.CreateCustomerRequest;
 import com.cretas.aims.dto.customer.CustomerDTO;
+import com.cretas.aims.dto.customer.UpdateCustomerRequest;
 import com.cretas.aims.service.CustomerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,7 +79,7 @@ public class CustomerUpdateTool extends AbstractBusinessTool {
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
         String customerId = getString(params, "customerId");
 
-        CreateCustomerRequest request = new CreateCustomerRequest();
+        UpdateCustomerRequest request = new UpdateCustomerRequest();
         String name = getString(params, "name");
         if (name != null) request.setName(name);
         String contactPerson = getString(params, "contactPerson");

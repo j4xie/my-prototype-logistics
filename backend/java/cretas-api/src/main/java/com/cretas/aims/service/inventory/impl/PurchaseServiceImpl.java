@@ -3,6 +3,7 @@ package com.cretas.aims.service.inventory.impl;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.inventory.CreatePurchaseOrderRequest;
 import com.cretas.aims.dto.inventory.CreateReceiveRecordRequest;
+import com.cretas.aims.dto.inventory.UpdatePurchaseOrderRequest;
 import com.cretas.aims.dto.inventory.MaterialPriceComparisonDTO;
 import com.cretas.aims.entity.MaterialBatch;
 import com.cretas.aims.entity.RawMaterialType;
@@ -332,7 +333,7 @@ public class PurchaseServiceImpl implements PurchaseService {
 
     @Override
     @Transactional
-    public PurchaseOrder updateDraftOrder(String factoryId, String orderId, CreatePurchaseOrderRequest request) {
+    public PurchaseOrder updateDraftOrder(String factoryId, String orderId, UpdatePurchaseOrderRequest request) {
         PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
         if (order.getStatus() != PurchaseOrderStatus.DRAFT) {
             throw new BusinessException("只有草稿状态的订单可以编辑");
@@ -343,29 +344,41 @@ public class PurchaseServiceImpl implements PurchaseService {
                 PurchaseOrder.class, orderId);
         }
 
-        // Validate supplier
-        supplierRepository.findByIdAndFactoryId(request.getSupplierId(), factoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("供应商不存在或不属于当前组织"));
-
-        // Update mutable fields
-        order.setSupplierId(request.getSupplierId());
-        order.setPurchaseType(PurchaseType.valueOf(request.getPurchaseType()));
-        order.setOrderDate(request.getOrderDate());
-        order.setExpectedDeliveryDate(request.getExpectedDeliveryDate());
-        order.setRemark(request.getRemark());
-        // W-12 fix: also update salesOrderId (null-safe — null means unlink from SO)
+        // Partial update — only touch fields the caller sent
+        if (request.getSupplierId() != null) {
+            // Validate supplier only when changed
+            supplierRepository.findByIdAndFactoryId(request.getSupplierId(), factoryId)
+                    .orElseThrow(() -> new ResourceNotFoundException("供应商不存在或不属于当前组织"));
+            order.setSupplierId(request.getSupplierId());
+        }
+        if (request.getPurchaseType() != null) {
+            order.setPurchaseType(PurchaseType.valueOf(request.getPurchaseType()));
+        }
+        if (request.getOrderDate() != null) {
+            order.setOrderDate(request.getOrderDate());
+        }
+        if (request.getExpectedDeliveryDate() != null) {
+            order.setExpectedDeliveryDate(request.getExpectedDeliveryDate());
+        }
+        if (request.getRemark() != null) {
+            order.setRemark(request.getRemark());
+        }
+        // W-12 fix: also update salesOrderId (null-safe — null means caller didn't send, not unlink)
         if (request.getSalesOrderId() != null) {
             order.setSalesOrderId(request.getSalesOrderId());
         }
 
-        // Replace items: delete old, create new
+        // Replace items only when request.items is provided (null = keep existing)
+        BigDecimal totalAmount = order.getTotalAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO;
+        BigDecimal taxAmount = order.getTaxAmount() != null ? order.getTaxAmount() : BigDecimal.ZERO;
+        List<PurchaseOrderItem> items = new ArrayList<>();
+
+        if (request.getItems() != null) {
         purchaseOrderItemRepository.deleteAll(
                 purchaseOrderItemRepository.findByPurchaseOrderId(orderId));
 
-        BigDecimal totalAmount = BigDecimal.ZERO;
-        BigDecimal taxAmount = BigDecimal.ZERO;
-        List<PurchaseOrderItem> items = new ArrayList<>();
-
+        totalAmount = BigDecimal.ZERO;
+        taxAmount = BigDecimal.ZERO;
         for (CreatePurchaseOrderRequest.PurchaseOrderItemDTO itemDTO : request.getItems()) {
             PurchaseOrderItem item = new PurchaseOrderItem();
             item.setPurchaseOrderId(orderId);
@@ -386,6 +399,7 @@ public class PurchaseServiceImpl implements PurchaseService {
         purchaseOrderItemRepository.saveAll(items);
         order.setTotalAmount(totalAmount);
         order.setTaxAmount(taxAmount);
+        } // end if (request.getItems() != null)
         order = purchaseOrderRepository.save(order);
 
         log.info("编辑草稿采购订单: orderId={}, orderNumber={}", orderId, order.getOrderNumber());

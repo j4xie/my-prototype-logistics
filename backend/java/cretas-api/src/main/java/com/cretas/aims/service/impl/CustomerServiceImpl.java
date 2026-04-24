@@ -3,6 +3,7 @@ package com.cretas.aims.service.impl;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.customer.CreateCustomerRequest;
+import com.cretas.aims.dto.customer.UpdateCustomerRequest;
 import com.cretas.aims.dto.customer.CustomerDTO;
 import com.cretas.aims.entity.Customer;
 import com.cretas.aims.exception.BusinessException;
@@ -99,7 +100,7 @@ public class CustomerServiceImpl implements CustomerService {
         @CacheEvict(value = "customerList", key = "#factoryId"),
         @CacheEvict(value = "customerStats", key = "#factoryId")
     })
-    public CustomerDTO updateCustomer(String factoryId, String customerId, CreateCustomerRequest request) {
+    public CustomerDTO updateCustomer(String factoryId, String customerId, UpdateCustomerRequest request) {
         runConfiguredValidation(factoryId, "UPDATE", java.util.Map.of(
             "customerId", customerId,
             "customerName", request.getName() != null ? request.getName() : ""));

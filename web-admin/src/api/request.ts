@@ -303,8 +303,11 @@ request.interceptors.response.use(
     } else {
       message = error.message;
     }
+    // 409 乐观锁冲突 — caller 弹 ElMessageBox 提供"刷新列表"选项, interceptor 不再追加 sticky toast
+    // (否则同一冲突出两次提示, UX 噪声). 2026-04-24 code-review LOW-1.
+    const isOptimisticLockConflict = status === 409;
     // Allow callers to suppress error toast via _silent config flag
-    if (!originalRequest._silent) {
+    if (!originalRequest._silent && !isOptimisticLockConflict) {
       const rich = (error.response?.data as unknown as Record<string, string | null>) || {};
       showRichError(message, {
         actionHint: rich.actionHint,

@@ -4,6 +4,7 @@ import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.inventory.CreatePurchaseOrderRequest;
 import com.cretas.aims.dto.inventory.CreateReceiveRecordRequest;
+import com.cretas.aims.dto.inventory.UpdatePurchaseOrderRequest;
 import com.cretas.aims.dto.inventory.MaterialPriceComparisonDTO;
 import com.cretas.aims.entity.enums.PurchaseOrderStatus;
 import com.cretas.aims.entity.inventory.PurchaseOrder;
@@ -90,12 +91,12 @@ public class PurchaseController {
 
     @RequireModule("purchase_order")
     @PutMapping("/orders/{orderId}")
-    @Operation(summary = "编辑草稿采购订单")
+    @Operation(summary = "编辑草稿采购订单 (partial update: 所有字段可选)")
     @RequirePermission("procurement:read_write")
     public ApiResponse<PurchaseOrder> updateDraftOrder(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String orderId,
-            @Valid @RequestBody CreatePurchaseOrderRequest request) {
+            @Valid @RequestBody UpdatePurchaseOrderRequest request) {
         log.info("编辑草稿采购订单: factoryId={}, orderId={}", factoryId, orderId);
         PurchaseOrder order = purchaseService.updateDraftOrder(factoryId, orderId, request);
         return ApiResponse.success("采购订单更新成功", order);
