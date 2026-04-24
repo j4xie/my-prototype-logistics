@@ -9,6 +9,7 @@
           </div>
           <div class="header-right">
             <el-button type="info" plain @click="handleAiAnalyze">🤖 AI 分析</el-button>
+            <el-button v-if="canWrite" type="primary" plain @click="aiDraftDialog = true">🧠 AI 智能录配方</el-button>
             <el-button v-if="canWrite" type="warning" plain @click="batchImportDialog = true">📥 批量导入</el-button>
             <el-button v-if="canWrite" type="success" plain @click="openAliasPanel">🔗 菜名对齐 <el-badge v-if="unmatchedCount > 0" :value="unmatchedCount" type="warning" /></el-button>
             <el-button :icon="Download" @click="handleExport">导出</el-button>
@@ -261,6 +262,87 @@
         </span>
       </div>
     </el-dialog>
+
+    <!-- P2-7: AI 智能录配方 dialog -->
+    <el-dialog v-model="aiDraftDialog" title="🧠 AI 智能录配方" width="720px">
+      <div style="line-height: 1.8">
+        <p><b>1. 输入菜品名</b> — AI 会根据菜名生成 3-5 食材的配方草稿 (川菜成本率 25-40%)</p>
+        <el-input v-model="draftDishName" placeholder="如: 宫保鸡丁 / 麻婆豆腐 / 青椒肉丝" size="large" style="margin-bottom: 8px">
+          <template #append>
+            <el-button type="primary" :loading="draftLoading" @click="generateDraft">AI 生成草稿</el-button>
+          </template>
+        </el-input>
+        <el-input v-model="draftHint" placeholder="可选提示: 如 '川菜经典' / '素菜' / '粤式做法'" size="small" style="margin-bottom: 12px" />
+
+        <div v-if="draftResult && draftResult.success" style="border: 1px solid #e4e7ed; border-radius: 6px; padding: 14px; background: #fafbfc">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px">
+            <b>AI 草稿: {{ draftResult.data.dishName }}</b>
+            <el-tag v-if="draftResult.data.estimatedCostRatio" type="success">预估成本率 {{ (draftResult.data.estimatedCostRatio * 100).toFixed(0) }}%</el-tag>
+          </div>
+          <el-table :data="draftResult.data.ingredients" size="small" border style="margin-bottom: 10px">
+            <el-table-column label="食材" prop="name" min-width="140">
+              <template #default="{ row }">
+                <el-input v-model="row.name" size="small" />
+              </template>
+            </el-table-column>
+            <el-table-column label="用量" prop="qty" width="120">
+              <template #default="{ row }">
+                <el-input-number v-model="row.qty" :precision="4" :step="0.01" :min="0" size="small" :controls="false" style="width: 100px" />
+              </template>
+            </el-table-column>
+            <el-table-column label="单位" prop="unit" width="90">
+              <template #default="{ row }">
+                <el-input v-model="row.unit" size="small" />
+              </template>
+            </el-table-column>
+            <el-table-column label="主料" width="70">
+              <template #default="{ row }">
+                <el-switch v-model="row.is_main" size="small" />
+              </template>
+            </el-table-column>
+            <el-table-column label="单价(元/单位)" width="130">
+              <template #default="{ row }">
+                <el-input-number v-model="row.price" :precision="2" :step="1" :min="0" size="small" :controls="false" placeholder="采购价" style="width: 110px" />
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="60">
+              <template #default="{ $index }">
+                <el-button type="danger" link size="small" @click="draftResult!.data.ingredients.splice($index, 1)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+          <el-button size="small" plain @click="draftResult!.data.ingredients.push({ name: '', qty: 0.1, unit: 'kg', is_main: false, price: 0 })">+ 添加食材</el-button>
+          <div v-if="draftResult.data.notes" style="font-size: 12px; color: #909399; margin-top: 10px">💬 AI 备注: {{ draftResult.data.notes }}</div>
+          <div style="margin-top: 16px">
+            <el-button type="success" :loading="savingDraft" @click="saveDraftRecipe">✓ 保存为配方 (一键创建菜品 + 食材 + 配方行)</el-button>
+            <el-button plain @click="draftResult = null">清空重来</el-button>
+          </div>
+        </div>
+        <el-alert v-else-if="draftResult && !draftResult.success" type="error" :closable="false" :title="draftResult.message || 'AI 生成失败'" />
+        <div v-else style="color: #909399; font-size: 13px; padding: 20px 0; text-align: center">
+          💡 输入菜名 + 点 "AI 生成草稿". 草稿只是建议, 保存前可自由修改食材 / 用量 / 单价.
+        </div>
+      </div>
+    </el-dialog>
+
+    <!-- P1-3: 价格历史 drawer -->
+    <el-drawer v-model="priceHistoryDrawer" title="食材价格历史" size="540px" direction="rtl">
+      <div v-if="priceHistoryData">
+        <div style="margin-bottom: 12px"><b>{{ priceHistoryData.materialName }}</b> <span style="color: #909399; font-size: 12px">{{ priceHistoryData.history.length }} 条变更记录</span></div>
+        <div id="price-history-chart" style="height: 260px; margin-bottom: 14px" v-if="priceHistoryData.history.length > 1"></div>
+        <el-empty v-else description="暂无历史变更 (食材价格首次录入后才会 snapshot)" :image-size="80" />
+        <el-table :data="priceHistoryData.history" size="small" border v-if="priceHistoryData.history.length">
+          <el-table-column label="单价(元)" prop="unitPrice" width="90" align="right" />
+          <el-table-column label="生效起" width="160">
+            <template #default="{ row }">{{ row.effectiveFrom ? new Date(row.effectiveFrom).toLocaleDateString('zh-CN') : '-' }}</template>
+          </el-table-column>
+          <el-table-column label="生效止" width="160">
+            <template #default="{ row }">{{ row.effectiveTo ? new Date(row.effectiveTo).toLocaleDateString('zh-CN') : '当前' }}</template>
+          </el-table-column>
+          <el-table-column label="原因" prop="changeReason" show-overflow-tooltip />
+        </el-table>
+      </div>
+    </el-drawer>
   </div>
 </template>
 
@@ -664,6 +746,158 @@ async function markAsNoise() {
       ElMessage.error(res.message || '标记失败');
     }
   } catch (e) { ElMessage.error('标记异常'); }
+}
+
+// ====================================================================
+// P2-7: AI recipe draft dialog
+// ====================================================================
+interface DraftIngredient { name: string; qty: number; unit: string; is_main: boolean; price?: number }
+interface DraftResult {
+  success: boolean;
+  message?: string;
+  data?: {
+    dishName: string;
+    ingredients: DraftIngredient[];
+    estimatedCostRatio: number | null;
+    notes: string;
+  };
+}
+
+const aiDraftDialog = ref(false);
+const draftDishName = ref('');
+const draftHint = ref('');
+const draftLoading = ref(false);
+const savingDraft = ref(false);
+const draftResult = ref<DraftResult | null>(null);
+
+async function generateDraft() {
+  if (!draftDishName.value || draftDishName.value.trim().length < 2) {
+    ElMessage.warning('请输入菜品名称 (至少 2 个字)');
+    return;
+  }
+  draftLoading.value = true;
+  draftResult.value = null;
+  try {
+    const { pythonFetch } = await import('@/api/smartbi/common');
+    const res = await pythonFetch('/api/smartbi/restaurant-ops/recipes/ai-draft', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dish_name: draftDishName.value.trim(), hint: draftHint.value.trim() || undefined }),
+      timeoutMs: 60000,
+    }) as DraftResult;
+    // Init price field for UI
+    if (res.success && res.data) {
+      res.data.ingredients = res.data.ingredients.map(i => ({ ...i, price: 0 }));
+    }
+    draftResult.value = res;
+    if (!res.success) ElMessage.error(res.message || 'AI 生成失败');
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    draftResult.value = { success: false, message: msg };
+    ElMessage.error('AI 调用异常: ' + msg);
+  } finally {
+    draftLoading.value = false;
+  }
+}
+
+async function saveDraftRecipe() {
+  if (!draftResult.value?.data) return;
+  const d = draftResult.value.data;
+  if (!d.ingredients.length) {
+    ElMessage.warning('至少保留 1 个食材');
+    return;
+  }
+  savingDraft.value = true;
+  try {
+    // Build CSV-like payload matching batch-import parser
+    const rows: Record<string, unknown>[] = d.ingredients.map(i => ({
+      菜品名称: d.dishName,
+      食材名称: i.name,
+      用量: i.qty,
+      单位: i.unit || 'kg',
+      食材单价: i.price || 0,
+      是否主料: i.is_main ? '是' : '否',
+    }));
+    // Convert to CSV blob
+    const cols = ['菜品名称', '食材名称', '用量', '单位', '食材单价', '是否主料'];
+    let csv = '﻿' + cols.join(',') + '\n';
+    for (const r of rows) csv += cols.map(c => String(r[c] ?? '')).join(',') + '\n';
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const file = new File([blob], 'ai_draft.csv', { type: 'text/csv' });
+
+    const { pythonFetch } = await import('@/api/smartbi/common');
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await pythonFetch('/api/smartbi/restaurant-ops/recipes/batch-import', {
+      method: 'POST',
+      body: formData,
+      headers: {},
+      timeoutMs: 60000,
+    }) as { success: boolean; data?: { dishesCreated: number; ingredientsCreated: number; recipesCreated: number }; message?: string };
+    if (res.success) {
+      ElMessage.success(`已保存: 菜品 +${res.data?.dishesCreated} / 食材 +${res.data?.ingredientsCreated} / 配方 +${res.data?.recipesCreated}`);
+      aiDraftDialog.value = false;
+      draftResult.value = null;
+      draftDishName.value = '';
+      draftHint.value = '';
+      loadData();
+      loadStatistics();
+    } else {
+      ElMessage.error(res.message || '保存失败');
+    }
+  } catch (e) {
+    ElMessage.error('保存异常: ' + (e instanceof Error ? e.message : String(e)));
+  } finally {
+    savingDraft.value = false;
+  }
+}
+
+// ====================================================================
+// P1-3: Price history drawer (triggered from table row)
+// ====================================================================
+const priceHistoryDrawer = ref(false);
+const priceHistoryData = ref<{ materialName: string; history: Array<{ unitPrice: number; effectiveFrom: string; effectiveTo: string | null; changeReason: string }> } | null>(null);
+
+async function showPriceHistory(materialId: string, materialName: string) {
+  priceHistoryDrawer.value = true;
+  priceHistoryData.value = null;
+  try {
+    const { pythonFetch } = await import('@/api/smartbi/common');
+    const res = await pythonFetch(`/api/smartbi/restaurant-ops/materials/${materialId}/price-history`) as {
+      success: boolean;
+      data?: { history: Array<{ unitPrice: number; effectiveFrom: string; effectiveTo: string | null; changeReason: string }> };
+      message?: string;
+    };
+    if (res.success && res.data) {
+      priceHistoryData.value = { materialName, history: res.data.history };
+      // Render chart if more than 1 entry
+      if (res.data.history.length > 1) {
+        import('echarts').then((echartsMod) => {
+          const echarts = (echartsMod.default ?? echartsMod) as typeof import('echarts');
+          setTimeout(() => {
+            const el = document.getElementById('price-history-chart');
+            if (!el) return;
+            const chart = echarts.init(el);
+            const sorted = [...res.data!.history].reverse();  // oldest first for x axis
+            chart.setOption({
+              title: { text: '价格变化', left: 'center', textStyle: { fontSize: 12 } },
+              tooltip: { trigger: 'axis' },
+              xAxis: {
+                type: 'category',
+                data: sorted.map(h => h.effectiveFrom ? new Date(h.effectiveFrom).toLocaleDateString('zh-CN') : '-'),
+              },
+              yAxis: { type: 'value', name: '单价(元)' },
+              series: [{ type: 'line', step: 'end', data: sorted.map(h => h.unitPrice), itemStyle: { color: '#409eff' } }],
+            });
+          }, 100);
+        });
+      }
+    } else {
+      ElMessage.error(res.message || '价格历史加载失败');
+    }
+  } catch (e) {
+    ElMessage.error('价格历史加载异常');
+  }
 }
 
 async function bindAlias(posName: string, productTypeId: string) {
