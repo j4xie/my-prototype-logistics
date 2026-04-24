@@ -17,7 +17,7 @@ const currentUser = computed(() => {
 
 const loading = ref(false);
 const tableData = ref<Record<string, unknown>[]>([]);
-const pagination = ref({ page: 0, size: 20, total: 0 });
+const pagination = ref({ page: 1, size: 20, total: 0 });
 const activeTab = ref('samples');
 
 // 搜索筛选

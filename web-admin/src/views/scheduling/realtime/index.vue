@@ -72,7 +72,7 @@ async function loadPlans() {
     const response = await getSchedulingPlans(factoryId.value, {
       startDate: today,
       endDate: today,
-      page: 0,
+      page: 1,
       size: 10
     });
 

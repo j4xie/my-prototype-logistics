@@ -55,10 +55,11 @@ async function loadBatches() {
 
   try {
     // 加载待调度的生产批次
+    // Bug fix (sidebar audit): 后端 @Min(1) 要求 page>=1, 之前 page:0 触发 400 "Page index must not be less than zero"
     const response = await get(`/${factoryId.value}/processing/batches`, {
       params: {
         status: 'PENDING',
-        page: 0,
+        page: 1,
         size: 100
       }
     });

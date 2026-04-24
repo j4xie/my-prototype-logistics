@@ -13,7 +13,7 @@ const canWrite = computed(() => permissionStore.canWrite('finance'));
 
 const loading = ref(false);
 const tableData = ref<Record<string, unknown>[]>([]);
-const pagination = ref({ page: 0, size: 20, total: 0 });
+const pagination = ref({ page: 1, size: 20, total: 0 });
 const statusFilter = ref('');
 
 const statusMap: Record<string, { text: string; type: string }> = {

@@ -28,7 +28,7 @@ async function loadReports() {
   loading.value = true;
   try {
     const response = await get(`/${factoryId.value}/ai/reports`, {
-      params: { page: 0, size: 20 }
+      params: { page: 1, size: 20 }
     });
     if (response.success && response.data) {
       const data = response.data;

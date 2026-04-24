@@ -62,7 +62,7 @@ async function loadPlans() {
   try {
     const response = await getSchedulingPlans(factoryId.value, {
       status: 'confirmed',
-      page: 0,
+      page: 1,
       size: 50
     });
     if (response.success && response.data) {

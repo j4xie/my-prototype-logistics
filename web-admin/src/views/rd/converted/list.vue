@@ -14,7 +14,7 @@ const factoryId = computed(() => authStore.factoryId);
 
 const loading = ref(false);
 const tableData = ref<Record<string, unknown>[]>([]);
-const pagination = ref({ page: 0, size: 20, total: 0 });
+const pagination = ref({ page: 1, size: 20, total: 0 });
 const searchForm = ref({ customerName: '', name: '' });
 
 async function loadData() {
