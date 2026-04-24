@@ -34,6 +34,22 @@ interface DishMargin {
 }
 
 const totals = ref({ revenue: 0, profit: 0, rate: 0, dishCount: 0, withCost: 0, coverageRev: 0 });
+
+// 默认营收覆盖目标 90% — 大多数商家录 top N 高营收菜品即可达成
+// 未来可做成系统设置让客户按行业调整 (快餐 95%, 精品餐厅 85%)
+const coverageTarget = 0.90;
+const coverageColor = computed(() => {
+  if (totals.value.coverageRev >= coverageTarget) return '#67c23a';  // 绿
+  if (totals.value.coverageRev >= coverageTarget * 0.8) return '#e6a23c';  // 橙 (近目标)
+  return '#909399';  // 灰 (起步阶段)
+});
+// 粗略估算还需录多少道菜 — 按已录菜覆盖的营收比例外推
+const suggestedTopN = computed(() => {
+  if (totals.value.withCost === 0 || totals.value.coverageRev === 0) return 30;
+  const currentRate = totals.value.coverageRev / totals.value.withCost;  // 每道菜平均贡献营收比
+  const need = Math.ceil((coverageTarget - totals.value.coverageRev) / currentRate);
+  return Math.max(5, need);
+});
 const dishes = ref<DishMargin[]>([]);
 const syncing = ref(false);
 
@@ -195,6 +211,32 @@ function marginRateTag(rate: number) {
         </div>
       </template>
 
+      <!-- 营收覆盖进度条 — 默认目标 90%, 引导用户意识到这是可操作的 KPI -->
+      <el-card v-if="totals.dishCount > 0" class="coverage-card" shadow="never" style="margin-bottom: 12px">
+        <div class="coverage-row">
+          <div class="coverage-label">
+            <span class="cov-title">营收覆盖率</span>
+            <span class="cov-help">有配方菜 × POS 营收 ÷ 总营收</span>
+          </div>
+          <div class="coverage-progress">
+            <el-progress
+              :percentage="Math.min(100, Math.round(totals.coverageRev * 1000) / 10)"
+              :stroke-width="14"
+              :color="coverageColor"
+              :format="() => `${(totals.coverageRev * 100).toFixed(1)}%`"
+            />
+          </div>
+          <div class="coverage-target">
+            <span>目标 {{ (coverageTarget * 100).toFixed(0) }}%</span>
+            <span v-if="totals.coverageRev >= coverageTarget" class="cov-ok">✓ 已达标</span>
+            <span v-else class="cov-gap">还差 {{ ((coverageTarget - totals.coverageRev) * 100).toFixed(1) }}%</span>
+          </div>
+        </div>
+        <div v-if="totals.coverageRev < coverageTarget" class="coverage-hint">
+          💡 按 POS 营收从高到低录配方, 建议优先录营收 top {{ suggestedTopN }} 的未录菜品, 即可达 {{ (coverageTarget * 100).toFixed(0) }}% 目标. <el-link type="primary" :underline="false" href="/restaurant/recipes">去配方管理</el-link>
+        </div>
+      </el-card>
+
       <!-- KPI 4 cards -->
       <el-row :gutter="16" class="stat-row" v-loading="loading">
         <el-col :xs="12" :sm="6">
@@ -311,11 +353,37 @@ function marginRateTag(rate: number) {
     }
     .stat-footnote { font-size: 11px; color: #909399; margin-top: 2px; }
   }
-  .chart-section {
-    padding: 12px 0 18px;
-    .section-title { font-size: 14px; font-weight: 600; color: #303133; margin-bottom: 10px; }
-    .chart-hint { font-size: 12px; color: #909399; margin-top: 8px; padding: 0 8px; }
+}
+.coverage-card {
+  border-radius: 6px;
+  border: 1px solid #ebeef5;
+  background: #fafbfc;
+  :deep(.el-card__body) { padding: 14px 18px; }
+  .coverage-row {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
   }
+  .coverage-label {
+    min-width: 140px;
+    .cov-title { font-weight: 600; color: #303133; font-size: 14px; display: block; }
+    .cov-help { font-size: 11px; color: #909399; }
+  }
+  .coverage-progress {
+    flex: 1; min-width: 240px;
+  }
+  .coverage-target {
+    font-size: 13px; color: #606266; display: flex; gap: 10px; align-items: center;
+    .cov-ok { color: #67c23a; font-weight: 600; }
+    .cov-gap { color: #e6a23c; font-weight: 600; }
+  }
+  .coverage-hint {
+    margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e4e7ed;
+    font-size: 12px; color: #606266;
+  }
+}
+.chart-section {
+  padding: 12px 0 18px;
+  .section-title { font-size: 14px; font-weight: 600; color: #303133; margin-bottom: 10px; }
+  .chart-hint { font-size: 12px; color: #909399; margin-top: 8px; padding: 0 8px; }
 }
 .success { color: #67c23a; }
 </style>
