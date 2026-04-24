@@ -273,7 +273,8 @@ def _infer_semantic_type(name: str, role: str) -> Optional[str]:
 # same persisted value rather than re-deriving via heuristics.
 
 # Suffixes that indicate a 1-5 rating column (大众点评 / 美团 评价 exports).
-_RATING_NAME_SUFFIXES: Tuple[str, ...] = ("分", "评分", "星级")
+# Public — also consumed by insight.py quick_summary live fallback.
+RATING_NAME_SUFFIXES: Tuple[str, ...] = ("分", "评分", "星级")
 
 # Valid bounds for a "rating" mean. Outside [1, 5] strongly suggests the column
 # is a loyalty score (积分) or unrelated metric — fall back to sum default.
@@ -328,7 +329,7 @@ def infer_agg_strategy(
     if statistics:
         mean = statistics.get("mean")
         if mean is not None and name:
-            for suffix in _RATING_NAME_SUFFIXES:
+            for suffix in RATING_NAME_SUFFIXES:
                 if name.endswith(suffix):
                     try:
                         m = float(mean)

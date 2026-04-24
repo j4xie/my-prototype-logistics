@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from common.responses import ApiException, ErrorCode
 
 from services.insight_generator import InsightGenerator
+from smartbi.services.field_classifier import RATING_NAME_SUFFIXES
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -320,10 +321,8 @@ async def quick_summary(request: Request):
                 # (matches qhj 4172 / 3975 test fixtures).
                 agg_strategy = agg_by_name.get(col, "sum")
                 if agg_strategy == "sum" and pd.notna(col_mean):
-                    name_suggests_rating = (
-                        col.endswith("分")
-                        or col.endswith("评分")
-                        or col.endswith("星级")
+                    name_suggests_rating = any(
+                        col.endswith(s) for s in RATING_NAME_SUFFIXES
                     )
                     if name_suggests_rating and 1.0 <= float(col_mean) <= 5.0:
                         agg_strategy = "mean"
