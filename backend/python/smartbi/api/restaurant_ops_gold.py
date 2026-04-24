@@ -297,6 +297,25 @@ async def gross_margin(request: Request, days: int = Query(30, ge=1, le=365)) ->
     }
 
 
+@router.get("/restaurant-ops/store-margin")
+async def store_margin(request: Request, days: int = Query(30, ge=1, le=365)) -> Dict[str, Any]:
+    """Per-store margin breakdown for store-comparison page."""
+    factory_id = _get_factory_id(request)
+    if not factory_id:
+        return {"success": False, "message": "missing factory context"}
+    from smartbi.config import get_pg_pool
+    from smartbi.gold.restaurant_ops_router import resolve_store_margin
+    pool = await get_pg_pool()
+    if pool is None:
+        return {"success": False, "message": "db pool unavailable"}
+    try:
+        ans = await resolve_store_margin(pool, factory_id, days=days, top_n=100)
+    except Exception as e:
+        logger.exception("[store-margin] failed")
+        return {"success": False, "message": str(e)}
+    return {"success": True, "data": ans.meta}
+
+
 @router.get("/restaurant-ops/summary")
 async def summary(request: Request, days: int = Query(30, ge=1, le=365)) -> Dict[str, Any]:
     """Combined summary for a factory — total requisition cost, top 5 ingredients, etc.
@@ -312,41 +331,62 @@ async def summary(request: Request, days: int = Query(30, ge=1, le=365)) -> Dict
     if pool is None:
         return {"success": False, "message": "db pool unavailable"}
 
+    # Apr 24 2026: graceful fallback if aggregation tables not yet provisioned
+    # for this factory (Plan C Silver 层 migration pending). Return empty totals
+    # so FE sees 0 KPI instead of 500 error.
+    import asyncpg as _asyncpg
     async with pool.acquire() as conn:
         await conn.execute("SELECT set_config('app.factory_id', $1, true)", factory_id)
-        totals = await conn.fetchrow(
-            """
-            SELECT
-                COALESCE(SUM(requisition_count), 0)::int             AS total_requisitions,
-                COALESCE(SUM(requisition_qty_total), 0)::float       AS total_req_qty,
-                COALESCE(SUM(requisition_cost_total), 0)::float      AS total_req_cost,
-                COALESCE(SUM(wastage_count), 0)::int                 AS total_wastage,
-                COALESCE(SUM(wastage_qty_total), 0)::float           AS total_wastage_qty,
-                COALESCE(SUM(wastage_cost_total), 0)::float          AS total_wastage_cost,
-                COALESCE(SUM(stocktaking_count), 0)::int             AS total_stocktaking,
-                COALESCE(SUM(stocktaking_shortage_total), 0)::float  AS total_shortage,
-                COALESCE(SUM(stocktaking_surplus_total), 0)::float   AS total_surplus,
-                COUNT(DISTINCT date)                                 AS active_days
-              FROM agg_restaurant_daily_totals
-             WHERE factory_id = $1
-               AND date >= CURRENT_DATE - ($2::int)
-            """,
-            factory_id, days,
-        )
-        top5 = await conn.fetch(
-            """
-            SELECT i.name, i.category,
-                   SUM(a.value_num)::float AS cost
-              FROM agg_restaurant_daily_ops a
-              JOIN dim_ingredient i ON a.dim_value_id = i.ingredient_id
-             WHERE a.factory_id = $1 AND a.kpi_kind = 'requisition_cost'
-               AND a.date >= CURRENT_DATE - ($2::int)
-             GROUP BY i.name, i.category
-             ORDER BY cost DESC NULLS LAST
-             LIMIT 5
-            """,
-            factory_id, days,
-        )
+        try:
+            totals = await conn.fetchrow(
+                """
+                SELECT
+                    COALESCE(SUM(requisition_count), 0)::int             AS total_requisitions,
+                    COALESCE(SUM(requisition_qty_total), 0)::float       AS total_req_qty,
+                    COALESCE(SUM(requisition_cost_total), 0)::float      AS total_req_cost,
+                    COALESCE(SUM(wastage_count), 0)::int                 AS total_wastage,
+                    COALESCE(SUM(wastage_qty_total), 0)::float           AS total_wastage_qty,
+                    COALESCE(SUM(wastage_cost_total), 0)::float          AS total_wastage_cost,
+                    COALESCE(SUM(stocktaking_count), 0)::int             AS total_stocktaking,
+                    COALESCE(SUM(stocktaking_shortage_total), 0)::float  AS total_shortage,
+                    COALESCE(SUM(stocktaking_surplus_total), 0)::float   AS total_surplus,
+                    COUNT(DISTINCT date)                                 AS active_days
+                  FROM agg_restaurant_daily_totals
+                 WHERE factory_id = $1
+                   AND date >= CURRENT_DATE - ($2::int)
+                """,
+                factory_id, days,
+            )
+            top5 = await conn.fetch(
+                """
+                SELECT i.name, i.category,
+                       SUM(a.value_num)::float AS cost
+                  FROM agg_restaurant_daily_ops a
+                  JOIN dim_ingredient i ON a.dim_value_id = i.ingredient_id
+                 WHERE a.factory_id = $1 AND a.kpi_kind = 'requisition_cost'
+                   AND a.date >= CURRENT_DATE - ($2::int)
+                 GROUP BY i.name, i.category
+                 ORDER BY cost DESC NULLS LAST
+                 LIMIT 5
+                """,
+                factory_id, days,
+            )
+        except _asyncpg.exceptions.UndefinedTableError as e:
+            logger.warning(f"[summary] agg table not yet provisioned for {factory_id}: {e}")
+            return {
+                "success": True,
+                "data": {
+                    "window_days": days,
+                    "totals": {},
+                    "top5_ingredients": [],
+                    "margin": {
+                        "total_pos_revenue": 0.0, "total_gross_profit": 0.0,
+                        "avg_margin_rate": 0.0,
+                        "dish_count_with_cost": 0, "total_dish_count": 0,
+                    },
+                    "etl_pending": True,
+                }
+            }
 
     # Apr 24 Plan C Phase 7+: compute gross margin totals by reusing the
     # resolver. Wraps the same POS × food_cost join already used by AI query.

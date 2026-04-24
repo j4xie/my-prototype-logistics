@@ -36,6 +36,11 @@ const restaurantOps = ref({
 
 async function loadRestaurantOps() {
   if (!factoryId.value) return;
+  // 餐饮运营统计仅 RESTAURANT/CENTRAL_KITCHEN 租户有. 其他租户 agg 表空/不存在 → 500/404.
+  // (authStore 已在 outer scope 定义, 复用)
+  if (authStore.factoryType !== 'RESTAURANT' && authStore.factoryType !== 'CENTRAL_KITCHEN') {
+    return;
+  }
   restaurantOps.value.loading = true;
   try {
     const res = await pythonFetch('/api/smartbi/restaurant-ops/summary?days=30') as {
