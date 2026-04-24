@@ -193,3 +193,73 @@ def test_find_category_column_skips_time():
 def test_find_time_column_none_when_no_time():
     cls = [classify_column("门店", "TEXT"), classify_column("额", "NUMERIC")]
     assert find_time_column(cls) is None
+
+
+# ─── infer_agg_strategy ──────────────────────────────────────────────────────
+
+
+from smartbi.services.field_classifier import infer_agg_strategy
+
+
+def test_infer_agg_strategy_id_returns_none():
+    """semantic_type='id' always returns 'none' regardless of stats."""
+    assert infer_agg_strategy("评价ID", semantic_type="id", is_measure=False,
+                              statistics=None) == "none"
+
+
+def test_infer_agg_strategy_non_measure_returns_none():
+    """Non-measure columns (dimensions/time) never aggregate."""
+    assert infer_agg_strategy("门店名称", semantic_type=None, is_measure=False,
+                              statistics={"mean": 100}) == "none"
+
+
+def test_infer_agg_strategy_rating_in_range_returns_mean():
+    """Name endswith '分' AND mean ∈ [1,5] → 'mean'."""
+    assert infer_agg_strategy("星级分", semantic_type=None, is_measure=True,
+                              statistics={"mean": 4.83}) == "mean"
+    assert infer_agg_strategy("口味分", semantic_type=None, is_measure=True,
+                              statistics={"mean": 4.82}) == "mean"
+    assert infer_agg_strategy("环境分", semantic_type=None, is_measure=True,
+                              statistics={"mean": 4.5}) == "mean"
+    assert infer_agg_strategy("服务分", semantic_type=None, is_measure=True,
+                              statistics={"mean": 1.0}) == "mean"
+    assert infer_agg_strategy("综合评分", semantic_type=None, is_measure=True,
+                              statistics={"mean": 5.0}) == "mean"
+    assert infer_agg_strategy("店铺星级", semantic_type=None, is_measure=True,
+                              statistics={"mean": 3.5}) == "mean"
+
+
+def test_infer_agg_strategy_rating_name_but_stats_out_of_range_returns_none():
+    """Name suggests rating but mean > 5 → likely loyalty points / score / 积分.
+    Better to skip than to mis-display."""
+    assert infer_agg_strategy("服务积分", semantic_type=None, is_measure=True,
+                              statistics={"mean": 2300.0}) == "sum"
+    # mean = 0 (no data) — still fall back to sum default
+    assert infer_agg_strategy("星级分", semantic_type=None, is_measure=True,
+                              statistics={"mean": 0.0}) == "sum"
+    # mean = 6.5 (out of range) — fall back
+    assert infer_agg_strategy("星级分", semantic_type=None, is_measure=True,
+                              statistics={"mean": 6.5}) == "sum"
+
+
+def test_infer_agg_strategy_no_stats_falls_back_to_sum():
+    """No statistics available → can't apply rating guard, default to sum."""
+    assert infer_agg_strategy("营业额", semantic_type="revenue", is_measure=True,
+                              statistics=None) == "sum"
+    assert infer_agg_strategy("星级分", semantic_type=None, is_measure=True,
+                              statistics=None) == "sum"
+
+
+def test_infer_agg_strategy_normal_measure_returns_sum():
+    """Standard measures → sum."""
+    assert infer_agg_strategy("营业额", semantic_type="revenue", is_measure=True,
+                              statistics={"mean": 12000.0}) == "sum"
+    assert infer_agg_strategy("实收金额", semantic_type="payment", is_measure=True,
+                              statistics={"mean": 250.0}) == "sum"
+
+
+def test_infer_agg_strategy_id_takes_priority_over_measure_flag():
+    """If is_measure=True but semantic_type='id' (e.g. wrongly classified
+    numeric ID), id wins → 'none'."""
+    assert infer_agg_strategy("订单ID", semantic_type="id", is_measure=True,
+                              statistics={"mean": 9144294805.0}) == "none"

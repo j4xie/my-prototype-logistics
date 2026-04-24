@@ -45,7 +45,7 @@ def _spawn_bg(coro) -> asyncio.Task:
     return task
 
 from smartbi.config import get_pg_pool
-from smartbi.services.field_classifier import classify_column
+from smartbi.services.field_classifier import classify_column, infer_agg_strategy
 from smartbi.services.materialized_analytics.materializer import build_schema, materialize_upload
 from smartbi.services.materialized_analytics.persistence import (
     load_materialization_results,
@@ -205,7 +205,8 @@ async def reclassify_upload(
     async with pool.acquire() as conn:
         rows = await conn.fetch(
             """SELECT original_name, standard_name, field_type, semantic_type,
-                      is_measure, is_dimension, is_time, display_order
+                      is_measure, is_dimension, is_time, display_order,
+                      statistics, agg_strategy
                FROM smart_bi_pg_field_definitions
                WHERE upload_id = $1
                ORDER BY display_order""",
@@ -221,6 +222,19 @@ async def reclassify_upload(
         name = row["original_name"]
         field_type = (row["field_type"] or "").upper() or None
         new = classify_column(original_name=name, inferred_dtype=field_type)
+
+        # Compute agg_strategy from new classification + persisted statistics.
+        # row["statistics"] is JSONB → asyncpg returns it as a dict already; if
+        # the upload predates statistics population (rare), pass None and the
+        # helper falls back to the conservative 'sum' default.
+        stats = row["statistics"] if isinstance(row["statistics"], dict) else None
+        new_agg = infer_agg_strategy(
+            name=name,
+            semantic_type=new["semantic_type"],  # type: ignore[arg-type]
+            is_measure=bool(new["is_measure"]),
+            statistics=stats,
+        )
+
         old_roles = {
             "is_measure": row["is_measure"],
             "is_dimension": row["is_dimension"],
@@ -231,12 +245,18 @@ async def reclassify_upload(
             "is_dimension": new["is_dimension"],
             "is_time": new["is_time"],
         }
-        if old_roles != new_roles or row["semantic_type"] != new["semantic_type"]:
+        old_agg = row["agg_strategy"]
+
+        if (old_roles != new_roles
+                or row["semantic_type"] != new["semantic_type"]
+                or old_agg != new_agg):
             changes.append({
                 "original_name": name,
                 "field_type": row["field_type"],
-                "old": {**old_roles, "semantic_type": row["semantic_type"]},
-                "new": {**new_roles, "semantic_type": new["semantic_type"]},
+                "old": {**old_roles, "semantic_type": row["semantic_type"],
+                        "agg_strategy": old_agg},
+                "new": {**new_roles, "semantic_type": new["semantic_type"],
+                        "agg_strategy": new_agg},
                 "reason": new["reason"],
             })
             updates.append({
@@ -245,6 +265,7 @@ async def reclassify_upload(
                 "is_dimension": new["is_dimension"],
                 "is_time": new["is_time"],
                 "semantic_type": new["semantic_type"],
+                "agg_strategy": new_agg,
             })
 
     # Apply updates in a transaction
@@ -255,10 +276,11 @@ async def reclassify_upload(
                     await conn.execute(
                         """UPDATE smart_bi_pg_field_definitions
                            SET is_measure = $1, is_dimension = $2, is_time = $3,
-                               semantic_type = $4
-                           WHERE upload_id = $5 AND original_name = $6""",
+                               semantic_type = $4, agg_strategy = $5
+                           WHERE upload_id = $6 AND original_name = $7""",
                         u["is_measure"], u["is_dimension"], u["is_time"],
-                        u["semantic_type"], upload_id, u["name"],
+                        u["semantic_type"], u["agg_strategy"],
+                        upload_id, u["name"],
                     )
         logger.info(
             f"[reclassify] upload {upload_id}: updated {len(updates)}/{len(rows)} field_defs"
