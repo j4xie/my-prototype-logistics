@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
 /**
@@ -25,9 +26,11 @@ import java.math.BigDecimal;
 public class CreateDispositionRuleRequest {
 
     @NotBlank(message = "规则名称不能为空")
+    @Size(max = 200, message = "规则名称长度不能超过200个字符")
     @Schema(description = "规则名称", example = "高合格率自动放行", required = true)
     private String ruleName;
 
+    @Size(max = 2000, message = "规则描述长度不能超过2000个字符")
     @Schema(description = "规则描述", example = "当合格率 >= 95% 时自动放行")
     private String description;
 
@@ -39,6 +42,7 @@ public class CreateDispositionRuleRequest {
     private BigDecimal maxDefectRate;
 
     @NotBlank(message = "处置动作不能为空")
+    @Size(max = 50, message = "处置动作长度不能超过50个字符")
     @Schema(description = "触发的处置动作",
             example = "RELEASE",
             required = true,
@@ -49,6 +53,7 @@ public class CreateDispositionRuleRequest {
     @Schema(description = "是否需要审批", example = "false", required = true)
     private Boolean requiresApproval;
 
+    @Size(max = 50, message = "审批级别长度不能超过50个字符")
     @Schema(description = "审批级别",
             example = "SUPERVISOR",
             allowableValues = {"SUPERVISOR", "MANAGER", "QUALITY_HEAD", "FACTORY_MANAGER"})

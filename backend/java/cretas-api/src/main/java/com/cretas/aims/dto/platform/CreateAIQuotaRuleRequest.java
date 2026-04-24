@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.util.Map;
 
 /**
@@ -26,6 +27,7 @@ import java.util.Map;
 public class CreateAIQuotaRuleRequest {
 
     @Schema(description = "工厂ID（null表示创建全局默认规则）")
+    @Size(max = 191, message = "工厂ID长度不能超过191个字符")
     private String factoryId;
 
     @Schema(description = "周配额（次/周）", example = "20", required = true)
@@ -49,5 +51,6 @@ public class CreateAIQuotaRuleRequest {
     private Integer priority;
 
     @Schema(description = "规则描述")
+    @Size(max = 2000, message = "规则描述长度不能超过2000个字符")
     private String description;
 }
