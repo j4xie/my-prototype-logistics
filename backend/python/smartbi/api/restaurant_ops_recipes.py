@@ -646,27 +646,28 @@ class RecipeDraftRequest(BaseModel):
     hint: Optional[str] = None  # 如 "川菜 / 粤菜 / 素菜" / "用量参考人均"
 
 
-@router.post("/restaurant-ops/recipes/ai-draft")
-async def ai_recipe_draft(request: Request, body: RecipeDraftRequest) -> Dict[str, Any]:
-    """LLM (qwen3-max) generates a draft recipe. User reviews + edits + saves.
-
-    Returns: { ingredients: [{name, qty, unit, is_main}], estimated_cost_ratio: 0.30, notes: '...' }
+class RecipeDraftBatchRequest(BaseModel):
+    """P2-7 加速版: 一次性提交多个菜名, 后端并发调 LLM, 全部完成后返回.
+    客户侧体验: 点一下按钮, 1-2 分钟看到所有草稿, 而不是等 10 分钟串行.
     """
-    factory_id = _get_factory_id(request)
-    if not factory_id:
-        return {"success": False, "message": "missing factory context"}
-    if not body.dish_name or len(body.dish_name) < 2:
-        return {"success": False, "message": "菜品名称至少 2 个字"}
+    dish_names: List[str]
+    hint: Optional[str] = None
+    concurrency: int = 10  # 并发 LLM 调用数 (DashScope 限流不超过 60/min 即可)
 
-    # Build prompt — structured JSON output, 3-5 ingredients, 成本率 25-40%
-    prompt = f"""你是资深中餐厨师兼成本核算师. 给定菜品名称, 输出一份配方草稿 JSON.
 
-菜品: {body.dish_name}
-{f'提示: {body.hint}' if body.hint else ''}
+def _build_recipe_prompt(dish_name: str, hint: Optional[str] = None) -> str:
+    """Accelerated prompt: ask LLM for ingredients AND price suggestion in one call.
+    Saves the user from manually filling unit_price per ingredient."""
+    return f"""你是资深中餐厨师兼成本核算师. 给定菜品名称, 输出一份配方草稿 JSON.
+
+菜品: {dish_name}
+{f'提示: {hint}' if hint else ''}
 
 要求:
 - 3-5 种主要食材 (主料 1-2 个, 辅料 + 调味料 2-3 个)
-- 每种食材给出: name (中文), qty (数字), unit (kg/L/个/份), is_main (true/false)
+- 每种食材给出:
+  name (中文), qty (数字), unit (kg/L/个/份), is_main (true/false),
+  suggested_unit_price (元/单位, 参考当前市场采购价, 例: 牛肉 100, 鸡腿 22, 食用油 12, 盐 3, 花椒 80)
 - 数量按单份/单人份计算
 - 食材成本率目标 25-40%
 - 输出**纯 JSON** 不要任何 markdown 或注释
@@ -674,58 +675,124 @@ async def ai_recipe_draft(request: Request, body: RecipeDraftRequest) -> Dict[st
 JSON schema:
 {{
   "ingredients": [
-    {{"name": "鲈鱼", "qty": 0.25, "unit": "kg", "is_main": true}}
+    {{"name": "鲈鱼", "qty": 0.25, "unit": "kg", "is_main": true, "suggested_unit_price": 45}}
   ],
   "estimated_cost_ratio": 0.32,
   "notes": "川菜经典做法..."
 }}"""
 
+
+async def _call_llm_for_recipe(dish_name: str, hint: Optional[str], client, settings) -> Dict[str, Any]:
+    """Single LLM call for one dish. Returns parsed dict or {success:false}."""
+    import httpx
+    if not dish_name or len(dish_name) < 2:
+        return {"success": False, "dishName": dish_name, "message": "菜名过短"}
+    prompt = _build_recipe_prompt(dish_name, hint)
+    headers = {
+        "Authorization": f"Bearer {settings.llm_api_key}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": settings.llm_model or "qwen3-max-2026-01-23",
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 800,
+        "temperature": 0.3,
+        "enable_thinking": False,
+    }
     try:
-        import httpx
+        resp = await client.post(
+            f"{settings.llm_base_url}/chat/completions",
+            headers=headers, json=payload, timeout=httpx.Timeout(45.0),
+        )
+        resp.raise_for_status()
+        content = resp.json()["choices"][0]["message"]["content"].strip()
+        if content.startswith("```"):
+            content = content.strip("`").lstrip("json").strip()
+        import json as _json
+        parsed = _json.loads(content)
+        return {
+            "success": True,
+            "dishName": dish_name,
+            "ingredients": parsed.get("ingredients", []),
+            "estimatedCostRatio": parsed.get("estimated_cost_ratio"),
+            "notes": parsed.get("notes", ""),
+        }
+    except Exception as e:
+        logger.warning(f"[ai-recipe-draft] {dish_name} failed: {e}")
+        return {"success": False, "dishName": dish_name, "message": str(e)}
+
+
+@router.post("/restaurant-ops/recipes/ai-draft")
+async def ai_recipe_draft(request: Request, body: RecipeDraftRequest) -> Dict[str, Any]:
+    """LLM (qwen3-max) generates a draft recipe for ONE dish, including
+    suggested unit prices so user doesn't need to fill price manually.
+    """
+    factory_id = _get_factory_id(request)
+    if not factory_id:
+        return {"success": False, "message": "missing factory context"}
+    try:
         from common.llm_client import get_llm_http_client
         from config import get_settings as _get_settings
         settings = _get_settings()
         client = get_llm_http_client()
-        headers = {
-            "Authorization": f"Bearer {settings.llm_api_key}",
-            "Content-Type": "application/json",
-        }
-        payload = {
-            "model": settings.llm_model or "qwen3-max-2026-01-23",
-            "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 800,
-            "temperature": 0.3,
-            "enable_thinking": False,
-        }
-        resp = await client.post(
-            f"{settings.llm_base_url}/chat/completions",
-            headers=headers,
-            json=payload,
-            timeout=httpx.Timeout(45.0),
-        )
-        resp.raise_for_status()
-        content = resp.json()["choices"][0]["message"]["content"].strip()
-        # Strip markdown fences if LLM ignored instructions
-        if content.startswith("```"):
-            content = content.strip("`").lstrip("json").strip()
-        import json as _json
-        try:
-            parsed = _json.loads(content)
-        except _json.JSONDecodeError as e:
-            return {"success": False, "message": f"LLM 返回 JSON 解析失败: {e}", "rawOutput": content[:500]}
-
-        return {
-            "success": True,
-            "data": {
-                "dishName": body.dish_name,
-                "ingredients": parsed.get("ingredients", []),
-                "estimatedCostRatio": parsed.get("estimated_cost_ratio"),
-                "notes": parsed.get("notes", ""),
-            },
-        }
+        result = await _call_llm_for_recipe(body.dish_name, body.hint, client, settings)
+        if result.get("success"):
+            return {"success": True, "data": {
+                "dishName": result["dishName"],
+                "ingredients": result["ingredients"],
+                "estimatedCostRatio": result.get("estimatedCostRatio"),
+                "notes": result.get("notes", ""),
+            }}
+        return {"success": False, "message": result.get("message", "LLM 调用失败")}
     except Exception as e:
-        logger.exception(f"[ai-recipe-draft] failed for {body.dish_name}")
+        logger.exception(f"[ai-recipe-draft] outer failed for {body.dish_name}")
         return {"success": False, "message": f"LLM 调用失败: {e}"}
+
+
+@router.post("/restaurant-ops/recipes/ai-draft-batch")
+async def ai_recipe_draft_batch(request: Request, body: RecipeDraftBatchRequest) -> Dict[str, Any]:
+    """Batch AI draft: N dishes concurrent (default 10 parallel).
+    Top 130 dishes go from ~10 min (serial) to ~1-2 min (10x concurrent).
+
+    Returns per-dish result; partial success tolerated.
+    """
+    factory_id = _get_factory_id(request)
+    if not factory_id:
+        return {"success": False, "message": "missing factory context"}
+    if not body.dish_names:
+        return {"success": False, "message": "dish_names 不能为空"}
+    if len(body.dish_names) > 200:
+        return {"success": False, "message": "单次最多 200 道菜"}
+
+    import asyncio
+    from common.llm_client import get_llm_http_client
+    from config import get_settings as _get_settings
+    settings = _get_settings()
+    client = get_llm_http_client()
+    concurrency = max(1, min(body.concurrency or 10, 20))
+    semaphore = asyncio.Semaphore(concurrency)
+
+    async def _guarded_call(name: str) -> Dict[str, Any]:
+        async with semaphore:
+            return await _call_llm_for_recipe(name, body.hint, client, settings)
+
+    import time
+    t0 = time.time()
+    results = await asyncio.gather(*[_guarded_call(n) for n in body.dish_names], return_exceptions=False)
+    elapsed = time.time() - t0
+
+    ok_count = sum(1 for r in results if r.get("success"))
+    return {
+        "success": True,
+        "data": {
+            "requested": len(body.dish_names),
+            "succeeded": ok_count,
+            "failed": len(results) - ok_count,
+            "elapsedSec": round(elapsed, 2),
+            "concurrency": concurrency,
+            "drafts": results,
+        },
+    }
 
 
 @router.delete("/restaurant-ops/aliases/{pos_name}")
