@@ -264,11 +264,18 @@ public class SmartBIDashboardController {
             return emitter;
         }
 
+        // I1 fix (reviewer Apr 24): shared ref to Response + callbacks so
+        // timeout/client-disconnect closes OkHttp resource (was leaking).
+        final okhttp3.Response[] respRef = new okhttp3.Response[1];
+        emitter.onTimeout(() -> { if (respRef[0] != null) respRef[0].close(); emitter.complete(); });
+        emitter.onError((t) -> { if (respRef[0] != null) respRef[0].close(); });
+        emitter.onCompletion(() -> { if (respRef[0] != null) respRef[0].close(); });
+
         // Async pump from Python SSE → client SSE
         new Thread(() -> {
-            okhttp3.Response resp = null;
             try {
-                resp = agentInsightsClient.streamInsightsCustom(factoryId, startDate, endDate, null);
+                respRef[0] = agentInsightsClient.streamInsightsCustom(factoryId, startDate, endDate, null);
+                okhttp3.Response resp = respRef[0];
                 if (resp == null || resp.body() == null) {
                     emitter.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event()
                             .data("{\"type\":\"error\",\"message\":\"upstream unreachable\"}"));
@@ -283,7 +290,13 @@ public class SmartBIDashboardController {
                     if (line.isEmpty()) continue;
                     if (!line.startsWith("data:")) continue;
                     String data = line.substring(5).trim();
-                    emitter.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event().data(data));
+                    try {
+                        emitter.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event().data(data));
+                    } catch (java.io.IOException ioe) {
+                        // Client disconnected — break loop so OkHttp Response gets closed in finally
+                        log.debug("SSE client disconnected for factory={}: {}", factoryId, ioe.getMessage());
+                        break;
+                    }
                 }
                 emitter.complete();
             } catch (Exception e) {
@@ -294,7 +307,7 @@ public class SmartBIDashboardController {
                 } catch (java.io.IOException ignored) {}
                 emitter.completeWithError(e);
             } finally {
-                if (resp != null) resp.close();
+                if (respRef[0] != null) respRef[0].close();
             }
         }, "sse-relay-" + factoryId).start();
 

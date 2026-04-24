@@ -915,6 +915,12 @@ async function loadLLMInsightsStream(
       const { value, done: readerDone } = await reader.read();
       if (readerDone) break;
       buffer += decoder.decode(value, { stream: true });
+      // I3 fix (reviewer Apr 24): cancel reader on source switch mid-stream,
+      // not just break — otherwise fetch connection keeps consuming bytes.
+      if (selectedDataSource.value !== sourceAtStart) {
+        try { await reader.cancel(); } catch { /* ignore */ }
+        return gotAnyDelta;
+      }
       // Parse SSE events (separated by blank line)
       let idx;
       while ((idx = buffer.indexOf('\n\n')) >= 0) {
@@ -925,7 +931,10 @@ async function loadLLMInsightsStream(
         if (!dataStr) continue;
         try {
           const event = JSON.parse(dataStr);
-          if (selectedDataSource.value !== sourceAtStart) { done = true; break; }
+          if (selectedDataSource.value !== sourceAtStart) {
+            try { await reader.cancel(); } catch { /* ignore */ }
+            return gotAnyDelta;
+          }
           if (event.type === 'meta') {
             streamingInsightMeta.value = {
               source: event.source,

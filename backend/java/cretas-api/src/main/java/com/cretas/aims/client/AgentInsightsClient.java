@@ -158,7 +158,10 @@ public class AgentInsightsClient {
         Response resp = http.newCall(req).execute();
         if (!resp.isSuccessful()) {
             int code = resp.code();
+            // I5 fix (reviewer Apr 24): cap body at 512 chars — nginx 502 HTML
+            // error pages can be multi-MB and explode log lines.
             String body = resp.body() != null ? resp.body().string() : "";
+            if (body.length() > 512) body = body.substring(0, 512) + "...[truncated]";
             resp.close();
             throw new IOException("Agent insights stream HTTP " + code + ": " + body);
         }

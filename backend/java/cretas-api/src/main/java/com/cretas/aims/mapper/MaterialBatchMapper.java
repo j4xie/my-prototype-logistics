@@ -223,10 +223,15 @@ public class MaterialBatchMapper {
         }
         if (request.getTotalValue() != null) {
             // 注意: totalValue 现在是计算属性，不再存储
-            // 根据 totalValue 反算 unitPrice (uses UPDATED totalWeight from above)
-            if (batch.getTotalWeight() != null && batch.getTotalWeight().compareTo(BigDecimal.ZERO) > 0) {
+            // C1 fix (reviewer Apr 24): 如 form 同时发了 totalWeight 用 request 值,
+            // 否则回退到 batch.getTotalWeight() (weightPerUnit × receiptQuantity, 用
+            // 刚更新的 qty). 避免 request 只发 {qty,totalValue} 时 unitPrice 算错.
+            BigDecimal effectiveTotalWeight = request.getTotalWeight() != null
+                ? request.getTotalWeight()
+                : batch.getTotalWeight();
+            if (effectiveTotalWeight != null && effectiveTotalWeight.compareTo(BigDecimal.ZERO) > 0) {
                 BigDecimal newUnitPrice = request.getTotalValue()
-                    .divide(batch.getTotalWeight(), 2, RoundingMode.HALF_UP);
+                    .divide(effectiveTotalWeight, 2, RoundingMode.HALF_UP);
                 batch.setUnitPrice(newUnitPrice);
             }
         }

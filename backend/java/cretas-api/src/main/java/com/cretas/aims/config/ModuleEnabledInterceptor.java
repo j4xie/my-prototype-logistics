@@ -54,9 +54,11 @@ public class ModuleEnabledInterceptor implements HandlerInterceptor {
         String path = request.getRequestURI();
         String factoryId = extractFactoryId(path);
         if (factoryId == null) {
-            // Can't enforce without factoryId; log and pass through
-            log.debug("@RequireModule({}) on {} but no factoryId in path — skipping check", moduleCode, path);
-            return true;
+            // C2 fix (reviewer Apr 24): false-accept is silent security gap.
+            // Log at WARN so ops notices + return 400 with explicit reason.
+            log.warn("@RequireModule({}) on {} but no factoryId extractable — blocking", moduleCode, path);
+            sendCanvasError(response, "请求路径缺少 factoryId, 无法校验模块状态");
+            return false;
         }
 
         if (!configService.isModuleEnabled(factoryId, moduleCode)) {
@@ -91,6 +93,20 @@ public class ModuleEnabledInterceptor implements HandlerInterceptor {
         body.put("timestamp", java.time.LocalDateTime.now().toString());
         body.put("actionHint", "该功能需要在 Canvas 配置中启用 " + moduleCode + " 模块后才能使用");
         body.put("severity", "warning");
+        response.getWriter().write(objectMapper.writeValueAsString(body));
+        response.getWriter().flush();
+    }
+
+    private void sendCanvasError(HttpServletResponse response, String message) throws Exception {
+        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        response.setContentType("application/json;charset=UTF-8");
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("code", 400);
+        body.put("success", false);
+        body.put("message", message);
+        body.put("data", null);
+        body.put("timestamp", java.time.LocalDateTime.now().toString());
+        body.put("severity", "error");
         response.getWriter().write(objectMapper.writeValueAsString(body));
         response.getWriter().flush();
     }
