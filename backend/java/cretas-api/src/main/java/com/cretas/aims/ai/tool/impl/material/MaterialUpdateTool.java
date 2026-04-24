@@ -1,8 +1,8 @@
 package com.cretas.aims.ai.tool.impl.material;
 
 import com.cretas.aims.ai.tool.AbstractBusinessTool;
-import com.cretas.aims.dto.material.CreateMaterialBatchRequest;
 import com.cretas.aims.dto.material.MaterialBatchDTO;
+import com.cretas.aims.dto.material.UpdateMaterialBatchRequest;
 import com.cretas.aims.service.MaterialBatchService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,7 +80,7 @@ public class MaterialUpdateTool extends AbstractBusinessTool {
         log.info("更新原材料批次信息: factoryId={}, batchId={}, storageLocation={}, notes={}",
                 factoryId, batchId, storageLocation, notes);
 
-        CreateMaterialBatchRequest updateReq = new CreateMaterialBatchRequest();
+        UpdateMaterialBatchRequest updateReq = new UpdateMaterialBatchRequest();
         if (storageLocation != null) {
             updateReq.setStorageLocation(storageLocation);
         }
