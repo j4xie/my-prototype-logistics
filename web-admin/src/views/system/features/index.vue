@@ -184,7 +184,7 @@ async function handleToggle(config: FeatureConfig) {
   } catch (error) {
     // Revert on failure
     config.enabled = !config.enabled;
-    ElMessage.error('操作失败');
+    // Interceptor already shows specific toast for ApiError
   }
 }
 

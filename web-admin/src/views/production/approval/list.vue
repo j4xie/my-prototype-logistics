@@ -72,7 +72,8 @@ async function handleReject(row: ApprovalItem) {
     ElMessage.success('已驳回');
     loadData();
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error('操作失败');
+    // Interceptor shows specific toast; dedupe fallback
+    if (e !== 'cancel') console.error('[操作失败]', e);
   }
 }
 

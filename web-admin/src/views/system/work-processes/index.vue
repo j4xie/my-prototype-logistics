@@ -108,8 +108,9 @@ async function handleSubmit() {
     }
     dialogVisible.value = false;
     loadData();
-  } catch {
-    ElMessage.error('操作失败');
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[操作失败]', e);
   } finally {
     submitting.value = false;
   }
@@ -135,8 +136,9 @@ async function handleToggle(row: WorkProcessItem) {
     await toggleWorkProcessStatus(factoryId.value, row.id);
     ElMessage.success(row.isActive ? '已禁用' : '已启用');
     loadData();
-  } catch {
-    ElMessage.error('操作失败');
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[操作失败]', e);
   }
 }
 

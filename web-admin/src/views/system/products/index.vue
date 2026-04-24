@@ -464,7 +464,8 @@ async function handleRemoveProcess(item: ProductWorkProcessItem) {
       ElMessage.success('已取消关联');
     }
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error('操作失败');
+    // Interceptor shows specific toast; dedupe fallback
+    if (e !== 'cancel') console.error('[操作失败]', e);
   }
 }
 

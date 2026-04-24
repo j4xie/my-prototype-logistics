@@ -94,8 +94,9 @@ async function handleToggle(skill: SkillInfo, enabled: boolean) {
     } else {
       ElMessage.error(res.message || '操作失败');
     }
-  } catch {
-    ElMessage.error('操作失败');
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[操作失败]', e);
   }
 }
 

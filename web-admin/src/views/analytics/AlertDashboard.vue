@@ -209,7 +209,8 @@ async function acknowledgeAlert(alert: AlertRecord) {
       ElMessage.error(res?.message || '操作失败')
     }
   } catch (e) {
-    ElMessage.error('操作失败')
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[操作失败]', e);
   }
 }
 
@@ -244,7 +245,8 @@ async function resolveAlert() {
       ElMessage.error(res?.message || '操作失败')
     }
   } catch (e) {
-    ElMessage.error('操作失败')
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[操作失败]', e);
   } finally {
     resolving.value = false
   }

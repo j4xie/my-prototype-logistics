@@ -335,10 +335,8 @@ async function handleStartSchedule(schedule: LineSchedule) {
       loadData();
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('操作失败:', error);
-      ElMessage.error('操作失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError.
+    if (error !== 'cancel') console.error('操作失败:', error);
   } finally {
     loading.value = false;
   }
@@ -394,10 +392,8 @@ async function handleCompleteSchedule(schedule: LineSchedule) {
       loadData();
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('操作失败:', error);
-      ElMessage.error('操作失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError.
+    if (error !== 'cancel') console.error('操作失败:', error);
   } finally {
     loading.value = false;
   }

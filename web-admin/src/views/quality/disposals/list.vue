@@ -152,8 +152,9 @@ async function handleApprove(row: Record<string, unknown>) {
     } else {
       ElMessage.error(response.message || '操作失败');
     }
-  } catch {
-    ElMessage.error('操作失败');
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[操作失败]', e);
   } finally {
     actionLoading.value = false;
   }
@@ -181,8 +182,9 @@ async function handleReject(row: Record<string, unknown>) {
     } else {
       ElMessage.error(response.message || '操作失败');
     }
-  } catch {
-    ElMessage.error('操作失败');
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[操作失败]', e);
   } finally {
     actionLoading.value = false;
   }

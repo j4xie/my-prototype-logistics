@@ -245,10 +245,8 @@ async function handleStart(row: CalibrationSession) {
       ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('操作失败:', error);
-      ElMessage.error('操作失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError.
+    if (error !== 'cancel') console.error('操作失败:', error);
   } finally {
     loading.value = false;
   }
@@ -272,10 +270,8 @@ async function handleComplete(row: CalibrationSession) {
       ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('操作失败:', error);
-      ElMessage.error('操作失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError.
+    if (error !== 'cancel') console.error('操作失败:', error);
   } finally {
     loading.value = false;
   }
@@ -298,10 +294,8 @@ async function handleCancel(row: CalibrationSession) {
       ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('操作失败:', error);
-      ElMessage.error('操作失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError.
+    if (error !== 'cancel') console.error('操作失败:', error);
   } finally {
     loading.value = false;
   }
