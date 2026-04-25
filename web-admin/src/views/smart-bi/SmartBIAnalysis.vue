@@ -966,52 +966,8 @@
     <el-empty v-else description="暂无综合分析数据" />
   </el-dialog>
 
-  <!-- 同比分析对话框 -->
-  <el-dialog v-model="yoyVisible" title="年度同比分析" width="90%" top="3vh">
-    <!-- Sheet 选择器 -->
-    <div v-if="!yoyLoading && !yoyResult" class="yoy-sheet-selector">
-      <p style="margin-bottom: 12px; color: var(--color-text-regular, #606266);">选择要进行同比分析的报表：</p>
-      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-        <el-button
-          v-for="sheet in dataSheets"
-          :key="sheet.uploadId"
-          @click="runYoYForSheet(sheet)"
-          size="default"
-        >
-          {{ getSheetDisplayName(sheet) }}
-        </el-button>
-      </div>
-    </div>
-
-    <div v-if="yoyLoading" class="cross-sheet-loading">
-      <el-icon class="is-loading" :size="48"><Loading /></el-icon>
-      <p>正在查询历史数据并生成同比分析...</p>
-    </div>
-
-    <div v-else-if="yoyResult && yoyResult.success && yoyResult.comparison.length > 0">
-      <div style="margin-bottom: 16px; color: var(--color-text-secondary, #909399); font-size: 13px;">
-        <span v-if="yoyResult.currentPeriod">当期: {{ yoyResult.currentPeriod }}</span>
-        <span v-if="yoyResult.comparePeriod"> vs 对比期: {{ yoyResult.comparePeriod }}</span>
-      </div>
-      <YoYMoMComparisonChart
-        :title="yoySheetName"
-        :data="transformYoYData(yoyResult.comparison)"
-        metric="金额"
-        unit="元"
-        :showViewToggle="true"
-        defaultViewMode="yoy"
-        :height="450"
-      />
-    </div>
-
-    <div v-else-if="yoyResult && !yoyResult.success">
-      <el-empty :description="yoyResult.error || '同比分析失败'" />
-    </div>
-
-    <div v-else-if="yoyResult && yoyResult.comparison.length === 0">
-      <el-empty description="未找到可对比的历史数据。请确保已上传不同期间的同类报表。" />
-    </div>
-  </el-dialog>
+  <!-- 同比分析对话框 — extracted to analysis/YoYDialog.vue (Item 1 phase 2) -->
+  <YoYDialog ref="yoyDialogRef" :available-sheets="dataSheets" :get-sheet-display-name="getSheetDisplayName" />
 
   <!-- P5: 因果分析对话框 -->
   <el-dialog v-model="statisticalVisible" title="因果分析" width="90%" top="3vh" destroy-on-close @close="disposeStatHeatmap">
@@ -1165,6 +1121,7 @@ import { defineAsyncComponent } from 'vue';
 import KPICard from '@/components/smartbi/KPICard.vue';
 import ShareDialog from './analysis/ShareDialog.vue';
 import DataPreviewDialog from './analysis/DataPreviewDialog.vue';
+import YoYDialog from './analysis/YoYDialog.vue';
 import AIInsightPanel from '@/components/smartbi/AIInsightPanel.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 // T3.1: Lazy-load rarely-used components — only loaded when user triggers them
@@ -1412,10 +1369,8 @@ const {
 const openCrossSheetAnalysis = () => _openCrossSheet(uploadedSheets.value);
 
 // 同比分析状态
-const yoyVisible = ref(false);
-const yoyLoading = ref(false);
-const yoyResult = ref<YoYResult | null>(null);
-const yoySheetName = ref('');
+// Item 1 phase 2: yoy state moved to analysis/YoYDialog.vue
+const yoyDialogRef = ref<InstanceType<typeof YoYDialog> | null>(null);
 const dataSheets = computed(() => uploadedSheets.value.filter(s => !isIndexSheet(s) && s.uploadId && s.success));
 
 // 因果分析 (composable)
@@ -4606,49 +4561,9 @@ onBeforeUnmount(() => {
 
 // Cross-sheet analysis — provided by useSmartBICrossSheet composable
 
-// 打开同比分析对话框
+// 打开同比分析对话框 — delegates to extracted YoYDialog component
 const openYoYComparison = () => {
-  yoyResult.value = null;
-  yoyLoading.value = false;
-  yoySheetName.value = '';
-  yoyVisible.value = true;
-};
-
-// 为指定 Sheet 运行同比分析
-const runYoYForSheet = async (sheet: SheetResult) => {
-  if (!sheet.uploadId) {
-    ElMessage.warning('该 Sheet 没有持久化数据');
-    return;
-  }
-
-  yoySheetName.value = getSheetDisplayName(sheet);
-  yoyLoading.value = true;
-  yoyResult.value = null;
-
-  try {
-    const result = await yoyComparison({ uploadId: sheet.uploadId });
-    yoyResult.value = result;
-  } catch (error) {
-    console.error('YoY comparison failed:', error);
-    yoyResult.value = {
-      success: false,
-      currentUploadId: sheet.uploadId,
-      comparison: [],
-      error: '同比分析失败'
-    };
-  } finally {
-    yoyLoading.value = false;
-  }
-};
-
-// 转换 YoY API 数据为组件格式
-const transformYoYData = (comparison: YoYComparisonItem[]): ComparisonData[] => {
-  return comparison.map(item => ({
-    period: item.label,
-    current: item.currentValue,
-    lastYearSame: item.previousValue,
-    yoyGrowth: item.yoyGrowth ?? 0
-  }));
+  yoyDialogRef.value?.open();
 };
 
 // P5: Statistical analysis — provided by useSmartBIStatistical composable
