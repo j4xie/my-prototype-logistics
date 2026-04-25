@@ -8,8 +8,10 @@
  *   node qa-runner.mjs [tenant=qhj|gml|xmx|all] [phase=main|followup|all]
  */
 
-import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
+import { writeFileSync, readFileSync, existsSync, mkdirSync, unlinkSync } from 'fs';
 import { spawnSync } from 'child_process';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
 const ROOT = 'tests/e2e-comprehensive/results/depth-aiq-2026-04-26';
 const QUESTIONS_FILE = `${ROOT}/scripts/questions.json`;
@@ -36,10 +38,15 @@ function login(tenant) {
   ], { encoding: 'utf8' });
   try {
     const data = JSON.parse(resp.stdout);
+    // nginx 8086 returns `token`, localhost direct returns `accessToken`
     return data?.data?.token || data?.data?.accessToken || null;
   } catch {
     return null;
   }
+}
+
+function shellEscape(s) {
+  return String(s).replace(/'/g, "'\\''");
 }
 
 function askQuestion(token, question) {
@@ -48,37 +55,58 @@ function askQuestion(token, question) {
   let totalChars = 0;
   const chunks = [];
 
-  // curl -sN streams; we read line-by-line to find first event
+  // Write request body to temp file — Windows shell mangles Chinese in inline -d arg
+  // (validates verified: spawnSync with inline JSON.stringify Chinese → 400 VALIDATION_ERROR;
+  // file-based --data-binary works correctly)
+  const bodyFile = join(tmpdir(), `qa-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.json`);
+  writeFileSync(bodyFile, JSON.stringify({ query: question }), 'utf8');
+
   const resp = spawnSync('curl', [
     '-sN', '-X', 'POST',
-    `${API_BASE}/api/chat/general-analysis-stream`,
+    // /smartbi-api/ prefix routes to Python 8083 directly (where /api/chat/* lives)
+    `${API_BASE}/smartbi-api/api/chat/general-analysis-stream`,
     '-H', `Authorization: Bearer ${token}`,
     '-H', 'Content-Type: application/json',
-    '-d', JSON.stringify({ question }),
+    '--data-binary', `@${bodyFile}`,
     '--max-time', '60',
     '--no-buffer',
   ], { encoding: 'utf8', maxBuffer: 1024 * 1024 * 50 });
 
+  try { unlinkSync(bodyFile); } catch {}
+
   const totalMs = Date.now() - t0;
   const out = resp.stdout || '';
 
-  // Parse SSE events
+  // Parse SSE events. Server sends:
+  //   event: status   data: "正在加载数据..."   (skip — progress noise)
+  //   event: chunk    data: "按"               (LLM text fragment, JSON-encoded string)
+  //   event: done     data: {"answer":..., "source":...}  (final summary; some surfaces send this)
+  //   event: error    data: "..."              (capture as warning)
+  // Each "data:" payload is JSON. JSON.parse('"按"') returns string "按"; on objects it returns dict.
   const lines = out.split('\n');
   let answer = '';
   let source = null;
   let warning = null;
+  let currentEvent = null;
   for (const line of lines) {
+    if (line.startsWith('event: ')) {
+      currentEvent = line.slice(7).trim();
+      continue;
+    }
     if (line.startsWith('data: ')) {
       const payload = line.slice(6).trim();
-      try {
-        const obj = JSON.parse(payload);
-        if (obj.source) source = obj.source;
-        if (obj.warning) warning = obj.warning;
-        if (obj.text) answer += obj.text;
-      } catch {
-        // plain string chunk
-        const stripped = payload.replace(/^"|"$/g, '');
-        answer += stripped;
+      let parsed;
+      try { parsed = JSON.parse(payload); } catch { parsed = payload; }
+
+      if (typeof parsed === 'string') {
+        if (currentEvent === 'chunk') answer += parsed;
+        else if (currentEvent === 'error') warning = (warning || '') + parsed;
+        // status messages ignored
+      } else if (parsed && typeof parsed === 'object') {
+        if (parsed.source) source = parsed.source;
+        if (parsed.warning) warning = parsed.warning;
+        if (parsed.answer) answer = parsed.answer;          // 'done' final
+        if (parsed.text) answer += parsed.text;
       }
     }
   }
