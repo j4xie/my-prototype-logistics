@@ -257,50 +257,18 @@
 
                 <!-- 标准模式 (v-show preserves ECharts DOM) -->
                 <div v-show="!layoutEditMode || !hasChartData(sheet)" class="chart-dashboard" :class="`layout-${chartLayoutMode}`">
-                  <!-- Chart action bar -->
-                  <div class="chart-action-bar">
-                    <el-button
-                      size="small"
-                      type="primary"
-                      plain
-                      :loading="refreshAllChartsLoading"
-                      @click="handleRefreshAllCharts(sheet)"
-                    >
-                      <el-icon><Refresh /></el-icon>
-                      换一批图表
-                    </el-button>
-                    <el-button
-                      size="small"
-                      type="success"
-                      plain
-                      @click="handleExportExcel(sheet)"
-                    >
-                      <el-icon><Download /></el-icon>
-                      导出 Excel
-                    </el-button>
-                    <el-button
-                      size="small"
-                      type="warning"
-                      plain
-                      @click="handleExportPDF(sheet)"
-                    >
-                      <el-icon><Document /></el-icon>
-                      导出 PDF
-                    </el-button>
-                    <span class="chart-count-hint">{{ getSheetCharts(sheet).filter(c => !isChartDataEmpty(c.config)).length }} 个图表</span>
-                    <!-- P2: Layout mode toggle -->
-                    <el-radio-group v-model="chartLayoutMode" size="small" style="margin-left: auto;">
-                      <el-radio-button value="compact">紧凑</el-radio-button>
-                      <el-radio-button value="comfortable">舒适</el-radio-button>
-                      <el-radio-button value="presentation">演示</el-radio-button>
-                    </el-radio-group>
-                  </div>
-                  <!-- Cross-chart filter bar -->
-                  <div v-if="activeFilter" class="chart-filter-bar">
-                    <el-icon><Filter /></el-icon>
-                    <span>过滤: {{ activeFilter.dimension }} = <strong>{{ activeFilter.value }}</strong></span>
-                    <el-button type="primary" link size="small" @click="clearChartFilter">清除过滤</el-button>
-                  </div>
+                  <!-- Chart action bar — extracted to analysis/ChartActionBar.vue (Item 1 phase 8) -->
+                  <ChartActionBar
+                    :refresh-all-loading="refreshAllChartsLoading"
+                    :chart-count="getSheetCharts(sheet).filter(c => !isChartDataEmpty(c.config)).length"
+                    v-model:layout-mode="chartLayoutMode"
+                    @refresh-all="handleRefreshAllCharts(sheet)"
+                    @export-excel="handleExportExcel(sheet)"
+                    @export-pdf="handleExportPDF(sheet)"
+                  />
+
+                  <!-- Cross-chart filter bar — extracted to analysis/ChartFilterBar.vue -->
+                  <ChartFilterBar :filter="activeFilter" @clear="clearChartFilter" />
                   <!-- P2: Grouped charts with section headers (when enough charts to group) -->
                   <template v-if="getGroupedCharts(sheet).length > 1">
                     <template v-for="(group, gIdx) in getGroupedCharts(sheet)" :key="`group-${gIdx}`">
@@ -582,6 +550,8 @@ import IndexPageView from './analysis/IndexPageView.vue';
 import UploadArea from './analysis/UploadArea.vue';
 import ChartSkeletonWrapper from './analysis/ChartSkeletonWrapper.vue';
 import ExplorePanel from './analysis/ExplorePanel.vue';
+import ChartActionBar from './analysis/ChartActionBar.vue';
+import ChartFilterBar from './analysis/ChartFilterBar.vue';
 import AIInsightPanel from '@/components/smartbi/AIInsightPanel.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 // T3.1: Lazy-load rarely-used components — only loaded when user triggers them
