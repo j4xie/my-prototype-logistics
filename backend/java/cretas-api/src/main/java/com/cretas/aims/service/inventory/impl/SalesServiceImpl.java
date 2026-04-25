@@ -367,14 +367,6 @@ public class SalesServiceImpl implements SalesService {
     @Transactional
     public SalesOrder updateSalesOrder(String factoryId, String orderId, UpdateSalesOrderRequest request) {
         SalesOrder order = getSalesOrderById(factoryId, orderId);
-        // DEBUG 2026-04-24: 调查 PUT 总返"只有草稿状态" 的真因 (DB+GET 都 DRAFT)
-        log.warn("[SO-UPDATE-DEBUG] orderId={} status={} statusClass={} == DRAFT? {} equals DRAFT? {} version={}",
-                orderId,
-                order.getStatus(),
-                order.getStatus() != null ? order.getStatus().getClass().getName() : "null",
-                order.getStatus() == SalesOrderStatus.DRAFT,
-                order.getStatus() != null && order.getStatus().equals(SalesOrderStatus.DRAFT),
-                order.getVersion());
         if (order.getStatus() != SalesOrderStatus.DRAFT) {
             throw new BusinessException("只有草稿状态的订单可以编辑");
         }
@@ -406,7 +398,11 @@ public class SalesServiceImpl implements SalesService {
                 "itemCount", request.getItems() != null ? request.getItems().size() : 0,
                 "totalAmount", updateTotal,
                 "hasDuplicateProduct", hasDupOnUpdate,
-                "currentStatus", order.getStatus().name()));
+                "currentStatus", order.getStatus().name(),
+                // Bug fix 2026-04-24: 全局规则 ID=1 (factory_validation_rules) 用 #status,
+                // 历史代码只传 currentStatus → #status null → null!='DRAFT' = true →
+                // 任何 SO PUT 即使 status=DRAFT 也错误抛 "只有草稿状态". 双键兼容.
+                "status", order.getStatus().name()));
 
         if (request.getSalesperson() != null) {
             resolveSalespersonField(order, request.getSalesperson(), factoryId);
