@@ -45,16 +45,8 @@
         </div>
       </template>
 
-      <!-- Python 服务降级警告 -->
-      <el-alert
-        v-if="pythonUnavailable"
-        title="AI 分析服务暂时不可用"
-        description="Python SmartBI 服务无法连接，智能图表推荐和 AI 洞察功能暂时禁用。已上传的数据仍可正常查看。"
-        type="warning"
-        :closable="true"
-        show-icon
-        style="margin-bottom: 12px;"
-      />
+      <!-- Python 服务降级警告 — extracted to analysis/PythonUnavailableAlert.vue (Item 1 phase 5) -->
+      <PythonUnavailableAlert :visible="pythonUnavailable" />
 
       <!-- 上传/空数据区域 -->
       <div v-if="uploadedSheets.length === 0 && !uploading" class="upload-section">
@@ -106,54 +98,25 @@
         <SmartBIEmptyState v-else type="read-only" :showAction="false" />
       </div>
 
-      <!-- 上传进度 (SSE 流式) -->
-      <div v-if="uploading" class="progress-section">
-        <el-progress :percentage="uploadProgress" :status="uploadStatus" :stroke-width="20" striped striped-flow></el-progress>
-        <p class="progress-text">{{ progressText }}</p>
+      <!-- 上传进度 (SSE 流式) — extracted to analysis/UploadProgressPanel.vue (Item 1 phase 5) -->
+      <UploadProgressPanel
+        :uploading="uploading"
+        :progress="uploadProgress"
+        :status="uploadStatus"
+        :progress-text="progressText"
+        :sheets="sheetProgressList"
+        :completed-count="completedSheetCount"
+        :total-count="totalSheetCount"
+        :dictionary-hits="dictionaryHits"
+        :llm-analyzed-fields="llmAnalyzedFields"
+      />
 
-        <!-- 详细进度面板 -->
-        <div v-if="sheetProgressList.length > 0" class="sheet-progress-panel">
-          <div class="progress-header">
-            <span><span class="section-badge section-badge--chart" aria-hidden="true"></span> Sheet 处理进度 ({{ completedSheetCount }}/{{ totalSheetCount }})</span>
-            <el-tag v-if="dictionaryHits > 0" type="success" size="small">
-              字典命中: {{ dictionaryHits }}
-            </el-tag>
-            <el-tag v-if="llmAnalyzedFields > 0" type="warning" size="small">
-              LLM分析: {{ llmAnalyzedFields }}
-            </el-tag>
-          </div>
-
-          <div class="sheet-progress-list">
-            <div
-              v-for="sheet in sheetProgressList"
-              :key="sheet.sheetIndex"
-              class="sheet-progress-item"
-              :class="{ 'is-complete': sheet.status === 'complete', 'is-failed': sheet.status === 'failed' }"
-            >
-              <div class="sheet-name">
-                <el-icon v-if="sheet.status === 'complete'" class="status-icon success"><CircleCheckFilled /></el-icon>
-                <el-icon v-else-if="sheet.status === 'failed'" class="status-icon error"><CircleCloseFilled /></el-icon>
-                <el-icon v-else class="status-icon loading"><Loading /></el-icon>
-                {{ sheet.sheetName }}
-              </div>
-              <div class="sheet-stage">{{ sheet.stage }}</div>
-              <div class="sheet-message">{{ sheet.message }}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Demo 缓存提示条 -->
-      <div v-if="usingDemoCache && uploadedSheets.length > 0 && !uploading" class="demo-cache-banner">
-        <div class="cache-banner-left">
-          <el-icon><CircleCheckFilled /></el-icon>
-          <span>已从缓存加载「{{ demoCacheFileName }}」的分析结果，无需等待</span>
-        </div>
-        <el-button type="primary" link size="small" @click="refreshFromServer">
-          <el-icon><Refresh /></el-icon>
-          从服务器刷新
-        </el-button>
-      </div>
+      <!-- Demo 缓存提示条 — extracted to analysis/DemoCacheBanner.vue (Item 1 phase 5) -->
+      <DemoCacheBanner
+        :visible="usingDemoCache && uploadedSheets.length > 0 && !uploading"
+        :file-name="demoCacheFileName"
+        @refresh="refreshFromServer"
+      />
 
       <!-- 结果展示 -->
       <div v-if="uploadedSheets.length > 0 && !uploading" v-loading="batchSwitching" element-loading-text="正在切换数据源..." class="result-section">
@@ -227,52 +190,24 @@
               </div>
             </div>
 
-            <!-- 失败的 Sheet - 显示重试按钮 -->
-            <div v-else-if="!sheet.success" class="failed-sheet-view">
-              <el-result icon="error" :title="'Sheet 处理失败'" :sub-title="sheet.message">
-                <template #extra>
-                  <el-button
-                    v-if="sheet.uploadId"
-                    type="primary"
-                    :loading="retryingSheets[sheet.sheetIndex]"
-                    @click="handleRetrySheet(sheet)"
-                  >
-                    {{ retryingSheets[sheet.sheetIndex] ? '重试中...' : '重新处理' }}
-                  </el-button>
-                  <el-text v-else type="info" style="margin-top: 8px">
-                    该 Sheet 未生成上传记录，请重新上传整个文件
-                  </el-text>
-                </template>
-              </el-result>
-            </div>
+            <!-- 失败的 Sheet — extracted to analysis/FailedSheetView.vue (Item 1 phase 5) -->
+            <FailedSheetView
+              v-else-if="!sheet.success"
+              :message="sheet.message"
+              :can-retry="!!sheet.uploadId"
+              :retrying="!!retryingSheets[sheet.sheetIndex]"
+              @retry="handleRetrySheet(sheet)"
+            />
 
             <!-- 普通 Sheet 展示 -->
             <template v-else>
-              <!-- Sheet 信息 -->
-              <div class="sheet-info">
-                <el-descriptions :column="3" border>
-                  <el-descriptions-item label="数据类型">
-                    <el-tag>{{ sheet.detectedDataType && sheet.detectedDataType !== 'UNKNOWN' ? sheet.detectedDataType : '通用数据' }}</el-tag>
-                  </el-descriptions-item>
-                  <el-descriptions-item label="推荐图表">
-                    <el-tag type="success">{{ sheet.flowResult?.recommendedChartType && sheet.flowResult.recommendedChartType !== 'N/A' ? sheet.flowResult.recommendedChartType : '自动推荐' }}</el-tag>
-                  </el-descriptions-item>
-                  <el-descriptions-item label="保存行数">
-                    {{ sheet.savedRows }}
-                  </el-descriptions-item>
-                </el-descriptions>
-
-                <!-- 显示编制说明（如有） -->
-                <el-alert
-                  v-if="getSheetDescription(sheet)"
-                  :title="'编制说明'"
-                  type="info"
-                  :description="getSheetDescription(sheet)"
-                  show-icon
-                  :closable="false"
-                  style="margin-top: 16px"
-                />
-              </div>
+              <!-- Sheet 信息 — extracted to analysis/SheetInfoStrip.vue (Item 1 phase 5) -->
+              <SheetInfoStrip
+                :detected-data-type="sheet.detectedDataType"
+                :recommended-chart-type="sheet.flowResult?.recommendedChartType"
+                :saved-rows="sheet.savedRows"
+                :description="getSheetDescription(sheet)"
+              />
 
               <!-- KPI 统计卡片 — extracted to analysis/KPIStripPanel.vue (Item 1 phase 3c) -->
               <KPIStripPanel
@@ -738,6 +673,11 @@ import UploadSwitcher from './analysis/UploadSwitcher.vue';
 import FoodIndustryPanel from './analysis/FoodIndustryPanel.vue';
 import SensitivityAnalysisTable from './analysis/SensitivityAnalysisTable.vue';
 import EmptySheetPlaceholder from './analysis/EmptySheetPlaceholder.vue';
+import PythonUnavailableAlert from './analysis/PythonUnavailableAlert.vue';
+import UploadProgressPanel from './analysis/UploadProgressPanel.vue';
+import DemoCacheBanner from './analysis/DemoCacheBanner.vue';
+import FailedSheetView from './analysis/FailedSheetView.vue';
+import SheetInfoStrip from './analysis/SheetInfoStrip.vue';
 import AIInsightPanel from '@/components/smartbi/AIInsightPanel.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 // T3.1: Lazy-load rarely-used components — only loaded when user triggers them
