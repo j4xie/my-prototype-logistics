@@ -13,15 +13,19 @@
 --
 -- Fix: re-point to /reference-data/{materials,products} (consistent with sales_order fix).
 -- materials endpoint added in same commit as this migration.
+--
+-- Schema shape: bom uses wrapper shape {fields: [...]} (verified test+prod), NOT top-level
+-- array as initially assumed. Same shape as sales_order. Reuse the same UPDATE pattern.
 
 UPDATE module_schemas
-SET field_schema = (
-    SELECT CASE
-        WHEN jsonb_typeof(field_schema) = 'array' THEN
-            -- bom uses top-level array shape
-            (SELECT jsonb_agg(
+SET field_schema = jsonb_set(
+    field_schema,
+    '{fields}',
+    COALESCE(
+        (
+            SELECT jsonb_agg(
                 CASE
-                    WHEN f->>'fieldCode' = 'materialTypeId' OR f->>'code' = 'materialTypeId' THEN
+                    WHEN f->>'code' = 'materialTypeId' OR f->>'fieldCode' = 'materialTypeId' THEN
                         jsonb_set(
                             f,
                             '{referenceConfig}',
@@ -32,7 +36,7 @@ SET field_schema = (
                                 'apiEndpoint', '/api/mobile/{factoryId}/reference-data/materials'
                             )
                         )
-                    WHEN f->>'fieldCode' = 'productTypeId' OR f->>'code' = 'productTypeId' THEN
+                    WHEN f->>'code' = 'productTypeId' OR f->>'fieldCode' = 'productTypeId' THEN
                         jsonb_set(
                             f,
                             '{referenceConfig}',
@@ -45,13 +49,15 @@ SET field_schema = (
                         )
                     ELSE f
                 END
-             )
-             FROM jsonb_array_elements(field_schema) f)
-        ELSE field_schema
-    END
+            )
+            FROM jsonb_array_elements(field_schema->'fields') f
+        ),
+        field_schema->'fields'
+    )
 )
 WHERE module_code = 'bom'
-  AND field_schema IS NOT NULL;
+  AND field_schema IS NOT NULL
+  AND jsonb_typeof(field_schema->'fields') = 'array';
 
 DO $$
 DECLARE
@@ -59,12 +65,12 @@ DECLARE
   v_prod_endpoint TEXT;
 BEGIN
   SELECT f->'referenceConfig'->>'apiEndpoint' INTO v_mat_endpoint
-  FROM module_schemas, jsonb_array_elements(field_schema) f
-  WHERE module_code='bom' AND (f->>'fieldCode'='materialTypeId' OR f->>'code'='materialTypeId');
+  FROM module_schemas, jsonb_array_elements(field_schema->'fields') f
+  WHERE module_code='bom' AND (f->>'code'='materialTypeId' OR f->>'fieldCode'='materialTypeId');
 
   SELECT f->'referenceConfig'->>'apiEndpoint' INTO v_prod_endpoint
-  FROM module_schemas, jsonb_array_elements(field_schema) f
-  WHERE module_code='bom' AND (f->>'fieldCode'='productTypeId' OR f->>'code'='productTypeId');
+  FROM module_schemas, jsonb_array_elements(field_schema->'fields') f
+  WHERE module_code='bom' AND (f->>'code'='productTypeId' OR f->>'fieldCode'='productTypeId');
 
   RAISE NOTICE 'V20260425_03: bom materialTypeId endpoint=%, productTypeId endpoint=%',
     v_mat_endpoint, v_prod_endpoint;
