@@ -244,126 +244,50 @@
                         <span class="section-label">{{ group.label }}</span>
                         <span class="section-count">{{ group.charts.length }}</span>
                       </div>
-                      <div v-for="{ chart, originalIndex } in group.charts" :key="`chart-${sheet.sheetIndex}-${chart.title || originalIndex}`" class="chart-grid-item"
-                           :class="[getChartSizeClass(chart), { 'chart-empty': isChartDataEmpty(chart.config) }]">
-                        <template v-if="isChartDataEmpty(chart.config)">
-                          <div class="chart-title-row">
-                            <div class="chart-title" style="margin-bottom:0">{{ cleanDisplayLabel(chart.title || '数据分析') }}</div>
-                            <div class="chart-controls">
-                              <el-button size="small" @click="handleRefreshChart(sheet, originalIndex)">
-                                <el-icon><Refresh /></el-icon> 重新生成
-                              </el-button>
-                            </div>
-                          </div>
-                          <div class="chart-no-data">
-                            <el-empty description="暂无数据" :image-size="60" />
-                          </div>
-                        </template>
-                        <template v-else>
-                        <div class="chart-title-row">
-                          <div class="chart-title" style="margin-bottom:0">{{ cleanDisplayLabel(chart.title || '数据分析') }}</div>
-                          <div class="chart-controls">
-                            <ChartTypeSelector
-                              :current-type="chart.chartType || 'bar'"
-                              :numeric-columns="getSheetColumns(sheet).filter(c => c.type === 'numeric').map(c => c.name)"
-                              :categorical-columns="getSheetColumns(sheet).filter(c => c.type === 'categorical').map(c => c.name)"
-                              :date-columns="getSheetColumns(sheet).filter(c => c.type === 'date').map(c => c.name)"
-                              :row-count="sheet.flowResult?.kpiSummary?.rowCount || 0"
-                              :loading="switchingChart?.sheetIndex === sheet.sheetIndex && switchingChart?.chartIndex === originalIndex"
-                              @switch-type="(type: string) => handleSwitchChartType(sheet, originalIndex, type)"
-                              @refresh="handleRefreshChart(sheet, originalIndex)"
-                            />
-                            <ChartConfigPanel
-                              :columns="getSheetColumns(sheet)"
-                              :current-config="{ chartType: chart.chartType || 'bar', xField: chart.xField, yFields: extractYFieldsFromConfig(chart.config) }"
-                              :loading="switchingChart?.sheetIndex === sheet.sheetIndex && switchingChart?.chartIndex === originalIndex"
-                              @apply="(config: { xField: string; yFields: string[]; seriesField?: string; aggregation?: string }) => handleApplyChartConfig(sheet, originalIndex, config)"
-                            />
-                            <el-dropdown class="chart-export-btn" trigger="click" @command="(cmd: string) => handleChartExport(cmd, sheet.sheetIndex, originalIndex, chart.title)">
-                              <el-button :icon="Download" circle size="small" />
-                              <template #dropdown>
-                                <el-dropdown-menu>
-                                  <el-dropdown-item command="png">导出 PNG</el-dropdown-item>
-                                  <el-dropdown-item command="svg">导出 SVG</el-dropdown-item>
-                                </el-dropdown-menu>
-                              </template>
-                            </el-dropdown>
-                          </div>
-                        </div>
-                        <div :id="`chart-${sheet.sheetIndex}-${originalIndex}`" class="chart-container"></div>
-                        <div v-if="getChartMiniInsight(chart)" class="chart-mini-insight">
-                          <span class="mini-insight-icon">📊</span>
-                          <span class="mini-insight-text">{{ getChartMiniInsight(chart) }}</span>
-                        </div>
-                        <div v-if="chart.totalItems" class="chart-view-more">
-                          <el-button type="primary" link size="small" @click="handleViewMoreData(sheet, originalIndex, chart)">
-                            查看更多 (共 {{ chart.totalItems }} 项，当前显示 {{ getDisplayedCount(chart) }} 项)
-                          </el-button>
-                        </div>
-                        </template>
-                      </div>
+                      <ChartGridItem
+                        v-for="{ chart, originalIndex } in group.charts"
+                        :key="`chart-${sheet.sheetIndex}-${chart.title || originalIndex}`"
+                        :chart="chart"
+                        :container-id="`chart-${sheet.sheetIndex}-${originalIndex}`"
+                        :is-empty="isChartDataEmpty(chart.config)"
+                        :size-class="getChartSizeClass(chart)"
+                        :title-label="cleanDisplayLabel(chart.title || '数据分析')"
+                        :columns="getSheetColumns(sheet)"
+                        :y-fields="extractYFieldsFromConfig(chart.config)"
+                        :row-count="sheet.flowResult?.kpiSummary?.rowCount || 0"
+                        :switching="switchingChart?.sheetIndex === sheet.sheetIndex && switchingChart?.chartIndex === originalIndex"
+                        :mini-insight="getChartMiniInsight(chart)"
+                        :displayed-count="getDisplayedCount(chart)"
+                        @switch-type="(type) => handleSwitchChartType(sheet, originalIndex, type)"
+                        @apply-config="(config) => handleApplyChartConfig(sheet, originalIndex, config)"
+                        @refresh="handleRefreshChart(sheet, originalIndex)"
+                        @export="(cmd) => handleChartExport(cmd, sheet.sheetIndex, originalIndex, chart.title)"
+                        @view-more="handleViewMoreData(sheet, originalIndex, chart)"
+                      />
                     </template>
                   </template>
                   <!-- Flat layout (few charts or no grouping match) -->
                   <template v-else>
-                  <div v-for="(chart, idx) in getSheetCharts(sheet)" :key="`chart-${sheet.sheetIndex}-${chart.title || idx}`" class="chart-grid-item"
-                       :class="[getChartSizeClass(chart), { 'chart-empty': isChartDataEmpty(chart.config) }]">
-                    <template v-if="isChartDataEmpty(chart.config)">
-                      <div class="chart-title-row">
-                        <div class="chart-title" style="margin-bottom:0">{{ cleanDisplayLabel(chart.title || '数据分析') }}</div>
-                        <div class="chart-controls">
-                          <el-button size="small" @click="handleRefreshChart(sheet, idx)">
-                            <el-icon><Refresh /></el-icon> 重新生成
-                          </el-button>
-                        </div>
-                      </div>
-                      <div class="chart-no-data">
-                        <el-empty description="暂无数据" :image-size="60" />
-                      </div>
-                    </template>
-                    <template v-else>
-                    <div class="chart-title-row">
-                      <div class="chart-title" style="margin-bottom:0">{{ cleanDisplayLabel(chart.title || '数据分析') }}</div>
-                      <div class="chart-controls">
-                        <ChartTypeSelector
-                          :current-type="chart.chartType || 'bar'"
-                          :numeric-columns="getSheetColumns(sheet).filter(c => c.type === 'numeric').map(c => c.name)"
-                          :categorical-columns="getSheetColumns(sheet).filter(c => c.type === 'categorical').map(c => c.name)"
-                          :date-columns="getSheetColumns(sheet).filter(c => c.type === 'date').map(c => c.name)"
-                          :row-count="sheet.flowResult?.kpiSummary?.rowCount || 0"
-                          :loading="switchingChart?.sheetIndex === sheet.sheetIndex && switchingChart?.chartIndex === idx"
-                          @switch-type="(type: string) => handleSwitchChartType(sheet, idx, type)"
-                          @refresh="handleRefreshChart(sheet, idx)"
-                        />
-                        <ChartConfigPanel
-                          :columns="getSheetColumns(sheet)"
-                          :current-config="{ chartType: chart.chartType || 'bar', xField: chart.xField, yFields: extractYFieldsFromConfig(chart.config) }"
-                          :loading="switchingChart?.sheetIndex === sheet.sheetIndex && switchingChart?.chartIndex === idx"
-                          @apply="(config: { xField: string; yFields: string[]; seriesField?: string; aggregation?: string }) => handleApplyChartConfig(sheet, idx, config)"
-                        />
-                        <el-dropdown class="chart-export-btn" trigger="click" @command="(cmd: string) => handleChartExport(cmd, sheet.sheetIndex, idx, chart.title)">
-                          <el-button :icon="Download" circle size="small" />
-                          <template #dropdown>
-                            <el-dropdown-menu>
-                              <el-dropdown-item command="png">导出 PNG</el-dropdown-item>
-                              <el-dropdown-item command="svg">导出 SVG</el-dropdown-item>
-                            </el-dropdown-menu>
-                          </template>
-                        </el-dropdown>
-                      </div>
-                    </div>
-                    <div :id="`chart-${sheet.sheetIndex}-${idx}`" class="chart-container"></div>
-                    <div v-if="getChartMiniInsight(chart)" class="chart-mini-insight">
-                      <span class="mini-insight-icon">📊</span>
-                      <span class="mini-insight-text">{{ getChartMiniInsight(chart) }}</span>
-                    </div>
-                    <div v-if="chart.totalItems" class="chart-view-more">
-                      <el-button type="primary" link size="small" @click="handleViewMoreData(sheet, idx, chart)">
-                        查看更多 (共 {{ chart.totalItems }} 项，当前显示 {{ getDisplayedCount(chart) }} 项)
-                      </el-button>
-                    </div>
-                    </template>
-                  </div>
+                  <ChartGridItem
+                    v-for="(chart, idx) in getSheetCharts(sheet)"
+                    :key="`chart-${sheet.sheetIndex}-${chart.title || idx}`"
+                    :chart="chart"
+                    :container-id="`chart-${sheet.sheetIndex}-${idx}`"
+                    :is-empty="isChartDataEmpty(chart.config)"
+                    :size-class="getChartSizeClass(chart)"
+                    :title-label="cleanDisplayLabel(chart.title || '数据分析')"
+                    :columns="getSheetColumns(sheet)"
+                    :y-fields="extractYFieldsFromConfig(chart.config)"
+                    :row-count="sheet.flowResult?.kpiSummary?.rowCount || 0"
+                    :switching="switchingChart?.sheetIndex === sheet.sheetIndex && switchingChart?.chartIndex === idx"
+                    :mini-insight="getChartMiniInsight(chart)"
+                    :displayed-count="getDisplayedCount(chart)"
+                    @switch-type="(type) => handleSwitchChartType(sheet, idx, type)"
+                    @apply-config="(config) => handleApplyChartConfig(sheet, idx, config)"
+                    @refresh="handleRefreshChart(sheet, idx)"
+                    @export="(cmd) => handleChartExport(cmd, sheet.sheetIndex, idx, chart.title)"
+                    @view-more="handleViewMoreData(sheet, idx, chart)"
+                  />
                   </template>
                 </div>
               </div>
@@ -522,12 +446,12 @@ import ChartFilterBar from './analysis/ChartFilterBar.vue';
 import SheetTabLabel from './analysis/SheetTabLabel.vue';
 import ChartSectionHeader from './analysis/ChartSectionHeader.vue';
 import ExplorePanelToggle from './analysis/ExplorePanelToggle.vue';
+import ChartGridItem from './analysis/ChartGridItem.vue';
 import AIInsightPanel from '@/components/smartbi/AIInsightPanel.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 // T3.1: Lazy-load rarely-used components — only loaded when user triggers them
 const YoYMoMComparisonChart = defineAsyncComponent(() => import('@/components/smartbi/YoYMoMComparisonChart.vue'));
-const ChartTypeSelector = defineAsyncComponent(() => import('@/components/smartbi/ChartTypeSelector.vue'));
-const ChartConfigPanel = defineAsyncComponent(() => import('@/components/smartbi/ChartConfigPanel.vue'));
+// ChartTypeSelector + ChartConfigPanel moved into analysis/ChartGridItem.vue (Item 1 phase 10)
 const DashboardBuilder = defineAsyncComponent(() => import('@/components/smartbi/DashboardBuilder.vue'));
 const DemoTour = defineAsyncComponent(() => import('@/components/smartbi/DemoTour.vue'));
 // SmartBIEmptyState moved to analysis/UploadArea.vue (Item 1 phase 6)
