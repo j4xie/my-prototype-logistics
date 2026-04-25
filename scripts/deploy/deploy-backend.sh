@@ -381,6 +381,40 @@ deploy_jar() {
     LOCAL_MD5=$(md5sum "$JAR_PATH" | cut -d' ' -f1)
     echo "   ✓ MD5: $LOCAL_MD5"
 
+    # ----- 1b. Jar 完整性预检 (防 corrupt jar 上线) -----
+    # 历史事故 2026-04-24: maven 增量编译偶发产生 corrupt fat jar — 缺
+    # ch.qos.logback.classic.spi.ThrowableProxy class. Spring Boot 启动后
+    # 任何 exception 触发 logback rendering 都 cascade ClassNotFound, 服务
+    # crashloop 但 nginx 健康检查可能仍 200 (短暂窗口). 本地预检挡在最早,
+    # 早于上传 152M jar 到 R2 + 服务器部署.
+    INTEGRITY_OK=true
+    LOGBACK_NESTED=$(unzip -l "$JAR_PATH" 2>/dev/null | grep -oE 'BOOT-INF/lib/logback-classic-[0-9.]+\.jar' | head -1)
+    if [ -z "$LOGBACK_NESTED" ]; then
+        echo "❌ Jar 完整性预检失败: 缺 logback-classic-*.jar"
+        INTEGRITY_OK=false
+    else
+        # 解 nested jar 验证 ThrowableProxy.class 存在
+        TMPDIR_INT=$(mktemp -d)
+        if unzip -j -q -o "$JAR_PATH" "$LOGBACK_NESTED" -d "$TMPDIR_INT" 2>/dev/null; then
+            NESTED_BASENAME=$(basename "$LOGBACK_NESTED")
+            if ! unzip -l "$TMPDIR_INT/$NESTED_BASENAME" 2>/dev/null | grep -q 'ch/qos/logback/classic/spi/ThrowableProxy.class'; then
+                echo "❌ Jar 完整性预检失败: logback nested jar 缺 ThrowableProxy.class"
+                INTEGRITY_OK=false
+            fi
+        else
+            echo "❌ Jar 完整性预检失败: 无法解 logback nested jar"
+            INTEGRITY_OK=false
+        fi
+        rm -rf "$TMPDIR_INT"
+    fi
+    if [ "$INTEGRITY_OK" = "true" ]; then
+        echo "   ✓ Jar 完整性预检通过 ($LOGBACK_NESTED 含 ThrowableProxy)"
+    else
+        echo "   建议: cd backend/java/cretas-api && mvn clean package, 或 mvn dependency:purge-local-repository -DreResolve=false"
+        cd ../../..
+        exit 1
+    fi
+
     # ----- 2. 并行上传 -----
     echo ""
     echo "📤 [2/4] 启动并行上传..."
