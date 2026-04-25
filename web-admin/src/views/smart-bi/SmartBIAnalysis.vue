@@ -360,59 +360,21 @@
                   </div>
                 </div>
 
-                <!-- Global Filter Bar (Power BI / Tableau style) -->
-                <div v-if="hasChartData(sheet)" class="global-filter-bar">
-                  <el-icon class="filter-bar-icon"><Filter /></el-icon>
-                  <el-select
-                    v-model="globalFilterDimension"
-                    placeholder="维度筛选"
-                    size="small"
-                    clearable
-                    filterable
-                    style="width: 140px"
-                    @change="handleGlobalFilterChange(sheet)"
-                  >
-                    <el-option
-                      v-for="col in getFilterableDimensions(sheet)"
-                      :key="col"
-                      :label="col"
-                      :value="col"
-                    />
-                  </el-select>
-                  <el-select
-                    v-if="globalFilterDimension"
-                    v-model="globalFilterValues"
-                    placeholder="选择值"
-                    size="small"
-                    multiple
-                    filterable
-                    collapse-tags
-                    collapse-tags-tooltip
-                    :max-collapse-tags="2"
-                    style="width: 240px"
-                    @change="handleGlobalFilterApply(sheet)"
-                  >
-                    <el-option
-                      v-for="val in getDimensionValues(sheet, globalFilterDimension)"
-                      :key="val"
-                      :label="val"
-                      :value="val"
-                    />
-                  </el-select>
-                  <el-button
-                    v-if="globalFilterDimension || globalFilterValues.length"
-                    size="small"
-                    type="info"
-                    link
-                    @click="clearGlobalFilter(sheet)"
-                  >清除筛选</el-button>
-                  <span v-if="globalFilterValues.length" class="filter-count-badge">
-                    已筛选 {{ globalFilterValues.length }} 项
-                  </span>
-                  <span v-if="filteredRawData" class="filter-count-badge filter-data-badge">
-                    数据过滤: {{ filteredRowCount }}/{{ totalRowCount }} 行
-                  </span>
-                </div>
+                <!-- Global Filter Bar (Power BI / Tableau style) — extracted to analysis/FilterChipsBar.vue (Item 1 phase 3a) -->
+                <FilterChipsBar
+                  v-if="hasChartData(sheet)"
+                  :dimension="globalFilterDimension"
+                  :values="globalFilterValues"
+                  :available-dimensions="getFilterableDimensions(sheet)"
+                  :dimension-values="getDimensionValues(sheet, globalFilterDimension)"
+                  :filtered-row-count="filteredRawData ? filteredRowCount : 0"
+                  :total-row-count="totalRowCount"
+                  @update:dimension="globalFilterDimension = $event"
+                  @update:values="globalFilterValues = $event"
+                  @dimension-change="handleGlobalFilterChange(sheet)"
+                  @apply="handleGlobalFilterApply(sheet)"
+                  @clear="clearGlobalFilter(sheet)"
+                />
 
                 <!-- Explore Panel Toggle (Superset-style multi-dimension) -->
                 <div v-if="hasChartData(sheet)" class="explore-panel-toggle">
@@ -916,6 +878,7 @@ import YoYDialog from './analysis/YoYDialog.vue';
 import CrossSheetDialog from './analysis/CrossSheetDialog.vue';
 import DrillDownDrawer from './analysis/DrillDownDrawer.vue';
 import StatisticalDialog from './analysis/StatisticalDialog.vue';
+import FilterChipsBar from './analysis/FilterChipsBar.vue';
 import AIInsightPanel from '@/components/smartbi/AIInsightPanel.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 // T3.1: Lazy-load rarely-used components — only loaded when user triggers them
