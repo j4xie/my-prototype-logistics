@@ -12,7 +12,11 @@ from pathlib import Path
 
 import pytest
 import httpx
-import pandas as pd
+
+# pandas is imported lazily inside excel_ground_truth fixture below.
+# Reason: some local dev envs (anaconda) have broken numpy installs that
+# crash on `import pandas`; making it lazy lets unit tests that don't need
+# Excel parsing run without triggering the dependency chain.
 
 # ── Paths ──────────────────────────────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent  # my-prototype-logistics/
@@ -81,6 +85,8 @@ def excel_ground_truth():
     """
     if not EXCEL_PATH.exists():
         pytest.skip(f"Test.xlsx not found at {EXCEL_PATH}")
+
+    import pandas as pd  # lazy: only needed when this fixture runs
 
     xls = pd.ExcelFile(EXCEL_PATH)
     ground_truth = {}
