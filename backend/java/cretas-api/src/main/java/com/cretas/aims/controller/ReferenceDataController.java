@@ -3,10 +3,12 @@ package com.cretas.aims.controller;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.Customer;
 import com.cretas.aims.entity.ProductType;
+import com.cretas.aims.entity.RawMaterialType;
 import com.cretas.aims.entity.Supplier;
 import com.cretas.aims.entity.User;
 import com.cretas.aims.repository.CustomerRepository;
 import com.cretas.aims.repository.ProductTypeRepository;
+import com.cretas.aims.repository.RawMaterialTypeRepository;
 import com.cretas.aims.repository.SupplierRepository;
 import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.util.SqlLikeEscaper;
@@ -57,6 +59,7 @@ public class ReferenceDataController {
     private final CustomerRepository customerRepository;
     private final SupplierRepository supplierRepository;
     private final ProductTypeRepository productTypeRepository;
+    private final RawMaterialTypeRepository materialTypeRepository;
 
     /** Salesperson-eligible roles (department name fallback also applied). */
     private static final Set<String> SALES_ROLES = Set.of(
@@ -312,6 +315,61 @@ public class ReferenceDataController {
                 })
                 .collect(Collectors.toList());
         return wrap(content, result.getTotalElements());
+    }
+
+    /** 原材料查找 (bom.materialTypeId 等). Apr 25 2026 audit: bom DYNAMIC mode active vulnerable
+     *  — old schema pointed at /material-types (404, real path is /raw-material-types). */
+    @GetMapping("/materials")
+    @Operation(summary = "原材料查找")
+    public ApiResponse<Map<String, Object>> findMaterials(
+            @PathVariable String factoryId,
+            @RequestParam(required = false, defaultValue = "") String keyword,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        org.springframework.data.domain.PageRequest pageable = PageRequest.of(
+                Math.max(page - 1, 0), clampSize(size),
+                Sort.by(Sort.Direction.ASC, "name"));
+        String esc = SqlLikeEscaper.escape(keyword);
+        Page<RawMaterialType> result = (esc == null || esc.isBlank())
+                ? materialTypeRepository.findByFactoryId(factoryId, pageable)
+                : materialTypeRepository.searchMaterialTypes(factoryId, esc, pageable);
+        List<Map<String, Object>> content = result.getContent().stream()
+                .map(m -> {
+                    Map<String, Object> mp = new LinkedHashMap<>();
+                    mp.put("id", m.getId());
+                    mp.put("name", m.getName());
+                    mp.put("code", m.getCode());
+                    mp.put("unit", m.getUnit());
+                    mp.put("category", m.getCategory());
+                    return mp;
+                })
+                .collect(Collectors.toList());
+        return wrap(content, result.getTotalElements());
+    }
+
+    /** GET-by-id for material. Reviewer Issue #1 same pattern. */
+    @GetMapping("/materials/{id}")
+    @Operation(summary = "按 ID 查单个原材料")
+    public ApiResponse<Map<String, Object>> getMaterial(@PathVariable String factoryId,
+                                                        @PathVariable String id) {
+        return materialTypeRepository.findById(id)
+                .filter(m -> factoryId.equals(m.getFactoryId()))
+                .map(m -> {
+                    Map<String, Object> mp = new LinkedHashMap<>();
+                    mp.put("id", m.getId());
+                    mp.put("name", m.getName());
+                    mp.put("code", m.getCode());
+                    mp.put("unit", m.getUnit());
+                    mp.put("category", m.getCategory());
+                    return mp;
+                })
+                .map(ApiResponse::success)
+                .orElseGet(() -> {
+                    Map<String, Object> echo = new LinkedHashMap<>();
+                    echo.put("id", id);
+                    echo.put("name", id);
+                    return ApiResponse.success(echo);
+                });
     }
 
     private int clampSize(int requested) {
