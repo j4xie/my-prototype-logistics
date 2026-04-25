@@ -80,15 +80,37 @@ function initFormData() {
   config.value.fields.forEach((field) => {
     const resolvedDefault = resolveDefault(field)
     if (props.mode === 'edit' && props.initialData) {
-      data[field.code] = props.initialData[field.code] ?? resolvedDefault ?? null
+      data[field.code] = readInitialForField(field, props.initialData) ?? resolvedDefault ?? null
     } else if (props.mode === 'create') {
       data[field.code] = resolvedDefault ?? null
     } else {
-      data[field.code] = props.initialData?.[field.code] ?? null
+      data[field.code] = props.initialData ? readInitialForField(field, props.initialData) : null
     }
   })
 
   formData.value = data
+}
+
+/**
+ * Apr 25 2026 (Round 4 Critical #4): for reference fields with valueField='id',
+ * prefer initialData[`${code}Id`] when present (backend dual-field convention:
+ * the snapshot string lives in `salesperson` and the FK Long lives in `salespersonId`).
+ * Falls back to initialData[code] for legacy/non-reference cases.
+ *
+ * Why: SO entity returns both `salesperson` (snapshot fullName) and `salespersonId` (FK).
+ * Without this lookup, edit-mode form gets the snapshot string, which (a) doesn't survive
+ * fetchById (looksLikeId rejects non-ASCII names), (b) saves back as legacy path on submit,
+ * dropping the FK link and re-introducing the collision the dual-field migration was meant
+ * to solve.
+ */
+function readInitialForField(field: { code: string; type?: string; extra?: { referenceConfig?: { valueField?: string } } }, initial: Record<string, unknown>): unknown {
+  if (field.type === 'reference' && field.extra?.referenceConfig?.valueField === 'id') {
+    const idKey = `${field.code}Id`
+    if (initial[idKey] !== undefined && initial[idKey] !== null) {
+      return initial[idKey]
+    }
+  }
+  return initial[field.code]
 }
 
 // 按 group 分组的可见字段
