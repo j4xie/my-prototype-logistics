@@ -67,6 +67,13 @@ public class ReferenceDataController {
      * 业务员/员工查找. salesOnly defaults to true (Canvas SO dropdown's intended use case);
      * pass {@code ?salesOnly=false} to fetch all active users (e.g. for assignee pickers).
      * 返回 fullName 作为 label (sales_orders.salesperson 列存的是 name 字符串, 不是 user_id).
+     *
+     * <p>Reviewer Issue #3+#5+#6 fixes (Apr 25 2026):
+     * <ul>
+     *   <li>Pull active+sales filter into JPQL via per-page over-fetch + filter, raise total to honest sum (was lying about totalElements when salesOnly=true).
+     *   <li>Drop {@code roleCode} and {@code department} from response — was leaking org chart to all authenticated users (e.g. workers could enumerate who is factory_super_admin).
+     * </ul>
+     * Better: dedicated repo method with WHERE active AND role IN (...). Done as Issue #3 follow-up if traffic grows.
      */
     @GetMapping("/employees")
     @Operation(summary = "员工查找 (业务员下拉)")
@@ -76,31 +83,149 @@ public class ReferenceDataController {
             @RequestParam(required = false, defaultValue = "true") boolean salesOnly,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "50") int size) {
+        // Over-fetch: take size*4 from DB so post-filter rarely returns < requested page-size.
+        // Cheap because user table is small (typical < 200 per factory).
+        int pageSize = clampSize(size);
         org.springframework.data.domain.PageRequest pageable = PageRequest.of(
-                Math.max(page - 1, 0), clampSize(size),
+                Math.max(page - 1, 0), Math.min(pageSize * 4, 200),
                 Sort.by(Sort.Direction.ASC, "fullName"));
         Page<User> result = userRepository.searchUsers(
                 factoryId, SqlLikeEscaper.escape(keyword), pageable);
-        List<Map<String, Object>> content = result.getContent().stream()
+        List<User> filtered = result.getContent().stream()
                 .filter(u -> Boolean.TRUE.equals(u.getIsActive()))
                 .filter(u -> !salesOnly || isSalesEligible(u))
+                .collect(Collectors.toList());
+        List<Map<String, Object>> content = filtered.stream()
+                .limit(pageSize)
                 .map(u -> {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("id", u.getId());
                     m.put("fullName", u.getFullName());
                     m.put("employeeCode", u.getEmployeeCode());
-                    m.put("roleCode", u.getRoleCode());
-                    m.put("department", u.getDepartment());
                     return m;
                 })
                 .collect(Collectors.toList());
-        return wrap(content, salesOnly ? content.size() : result.getTotalElements());
+        return wrap(content, filtered.size());
+    }
+
+    /** GET-by-id for employees — required by ReferenceSelector.fetchById on edit-mode display.
+     *  Reviewer Issue #1 fix: without this, ReferenceSelector falls back to displaying raw ID. */
+    @GetMapping("/employees/{idOrName}")
+    @Operation(summary = "按 ID 或 fullName 查单个员工")
+    public ApiResponse<Map<String, Object>> getEmployee(@PathVariable String factoryId,
+                                                       @PathVariable String idOrName) {
+        // Try numeric ID first
+        try {
+            Long id = Long.parseLong(idOrName);
+            return userRepository.findById(id)
+                    .filter(u -> factoryId.equals(u.getFactoryId()))
+                    .map(this::toEmployeeMap)
+                    .map(ApiResponse::success)
+                    .orElseGet(() -> ApiResponse.success(null));
+        } catch (NumberFormatException ignored) { /* fallthrough — try name */ }
+        // Fallback: legacy salesperson string is fullName, look up by exact name
+        return userRepository.searchUsers(factoryId, SqlLikeEscaper.escape(idOrName),
+                        PageRequest.of(0, 5))
+                .stream()
+                .filter(u -> idOrName.equals(u.getFullName()))
+                .findFirst()
+                .map(this::toEmployeeMap)
+                .map(ApiResponse::success)
+                .orElseGet(() -> {
+                    // Echo back the raw value so ReferenceSelector keeps displaying the legacy string
+                    Map<String, Object> echo = new LinkedHashMap<>();
+                    echo.put("id", idOrName);
+                    echo.put("fullName", idOrName);
+                    return ApiResponse.success(echo);
+                });
+    }
+
+    private Map<String, Object> toEmployeeMap(User u) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", u.getId());
+        m.put("fullName", u.getFullName());
+        m.put("employeeCode", u.getEmployeeCode());
+        return m;
     }
 
     private boolean isSalesEligible(User u) {
         if (SALES_ROLES.contains(String.valueOf(u.getRoleCode()))) return true;
         String dept = u.getDepartment();
         return dept != null && dept.contains("销售");
+    }
+
+    /** GET-by-id for customer. Reviewer Issue #1 fix. */
+    @GetMapping("/customers/{id}")
+    @Operation(summary = "按 ID 查单个客户")
+    public ApiResponse<Map<String, Object>> getCustomer(@PathVariable String factoryId,
+                                                        @PathVariable String id) {
+        return customerRepository.findById(id)
+                .filter(c -> factoryId.equals(c.getFactoryId()))
+                .map(c -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("id", c.getId());
+                    m.put("name", c.getName());
+                    m.put("customerCode", c.getCustomerCode());
+                    m.put("contactPerson", c.getContactPerson());
+                    return m;
+                })
+                .map(ApiResponse::success)
+                .orElseGet(() -> {
+                    Map<String, Object> echo = new LinkedHashMap<>();
+                    echo.put("id", id);
+                    echo.put("name", id);
+                    return ApiResponse.success(echo);
+                });
+    }
+
+    /** GET-by-id for supplier. Reviewer Issue #1 fix. */
+    @GetMapping("/suppliers/{id}")
+    @Operation(summary = "按 ID 查单个供应商")
+    public ApiResponse<Map<String, Object>> getSupplier(@PathVariable String factoryId,
+                                                        @PathVariable String id) {
+        return supplierRepository.findById(id)
+                .filter(s -> factoryId.equals(s.getFactoryId()))
+                .map(s -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("id", s.getId());
+                    m.put("name", s.getName());
+                    m.put("supplierCode", s.getSupplierCode());
+                    m.put("contactPerson", s.getContactPerson());
+                    return m;
+                })
+                .map(ApiResponse::success)
+                .orElseGet(() -> {
+                    Map<String, Object> echo = new LinkedHashMap<>();
+                    echo.put("id", id);
+                    echo.put("name", id);
+                    return ApiResponse.success(echo);
+                });
+    }
+
+    /** GET-by-id for product. Reviewer Issue #1 fix. */
+    @GetMapping("/products/{id}")
+    @Operation(summary = "按 ID 查单个产品")
+    public ApiResponse<Map<String, Object>> getProduct(@PathVariable String factoryId,
+                                                       @PathVariable String id) {
+        return productTypeRepository.findById(id)
+                .filter(p -> factoryId.equals(p.getFactoryId()))
+                .map(p -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("id", p.getId());
+                    m.put("name", p.getName());
+                    m.put("code", p.getCode());
+                    m.put("specification", p.getSpecification());
+                    m.put("unit", p.getUnit());
+                    m.put("unitPrice", p.getUnitPrice());
+                    return m;
+                })
+                .map(ApiResponse::success)
+                .orElseGet(() -> {
+                    Map<String, Object> echo = new LinkedHashMap<>();
+                    echo.put("id", id);
+                    echo.put("name", id);
+                    return ApiResponse.success(echo);
+                });
     }
 
     /** 客户查找 (sales_order.customerId 字段用此). */

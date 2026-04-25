@@ -125,11 +125,13 @@ BEGIN
   RAISE NOTICE 'V20260425_01: salesperson type=% endpoint=%, customerId endpoint=%, productTypeId endpoint=%',
     v_salesperson_type, v_salesperson_endpoint, v_customer_endpoint, v_product_endpoint;
 
-  IF v_salesperson_type IS DISTINCT FROM 'reference' THEN
+  -- Reviewer Issue #2 fix: skip asserts on environments lacking sales_order row
+  -- (fresh dev DB / unprovisioned factory). NULL means "no row" — not a failure.
+  IF v_salesperson_type IS NOT NULL AND v_salesperson_type IS DISTINCT FROM 'reference' THEN
     RAISE EXCEPTION 'V20260425_01 sanity failure: SO salesperson type should be "reference", got %',
       v_salesperson_type;
   END IF;
-  IF v_salesperson_endpoint NOT LIKE '%/reference-data/employees%' THEN
+  IF v_salesperson_endpoint IS NOT NULL AND v_salesperson_endpoint NOT LIKE '%/reference-data/employees%' THEN
     RAISE EXCEPTION 'V20260425_01 sanity failure: SO salesperson endpoint should target /reference-data/employees, got %',
       v_salesperson_endpoint;
   END IF;
