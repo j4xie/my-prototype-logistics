@@ -206,21 +206,14 @@
                   :charts-total="enrichPhases.get(sheet.sheetIndex)?.chartsTotal || 0"
                 />
 
-                <!-- P6: 编排模式 — DashboardBuilder (v-show preserves ECharts DOM) -->
-                <div v-show="layoutEditMode && hasChartData(sheet)" class="builder-wrapper">
-                  <DashboardBuilder
-                    :layout="getCachedLayout(sheet)"
-                    :available-charts="availableChartDefinitions"
-                    :editable="true"
-                    @layout-change="handleLayoutChange"
-                    @save="(layout: DashboardLayout) => handleLayoutSave(layout, sheet.uploadId, sheet.sheetIndex)"
-                    @card-configure="(card: DashboardCard) => {}"
-                  >
-                    <template #card-content="{ card }">
-                      <div :id="`builder-chart-${card.id}`" class="builder-chart-el" style="width:100%;height:100%;"></div>
-                    </template>
-                  </DashboardBuilder>
-                </div>
+                <!-- P6: 编排模式 — extracted to analysis/DashboardBuilderWrapper.vue (Item 1 phase 11) -->
+                <DashboardBuilderWrapper
+                  :visible="layoutEditMode && hasChartData(sheet)"
+                  :layout="getCachedLayout(sheet)"
+                  :available-charts="availableChartDefinitions"
+                  @layout-change="handleLayoutChange"
+                  @save="(layout) => handleLayoutSave(layout, sheet.uploadId, sheet.sheetIndex)"
+                />
 
                 <!-- 标准模式 (v-show preserves ECharts DOM) -->
                 <div v-show="!layoutEditMode || !hasChartData(sheet)" class="chart-dashboard" :class="`layout-${chartLayoutMode}`">
@@ -239,11 +232,7 @@
                   <!-- P2: Grouped charts with section headers (when enough charts to group) -->
                   <template v-if="getGroupedCharts(sheet).length > 1">
                     <template v-for="(group, gIdx) in getGroupedCharts(sheet)" :key="`group-${gIdx}`">
-                      <div class="chart-section-header">
-                        <span class="section-icon">{{ group.icon }}</span>
-                        <span class="section-label">{{ group.label }}</span>
-                        <span class="section-count">{{ group.charts.length }}</span>
-                      </div>
+                      <ChartGroupHeader :icon="group.icon" :label="group.label" :count="group.charts.length" />
                       <ChartGridItem
                         v-for="{ chart, originalIndex } in group.charts"
                         :key="`chart-${sheet.sheetIndex}-${chart.title || originalIndex}`"
@@ -447,16 +436,18 @@ import SheetTabLabel from './analysis/SheetTabLabel.vue';
 import ChartSectionHeader from './analysis/ChartSectionHeader.vue';
 import ExplorePanelToggle from './analysis/ExplorePanelToggle.vue';
 import ChartGridItem from './analysis/ChartGridItem.vue';
+import ChartGroupHeader from './analysis/ChartGroupHeader.vue';
+import DashboardBuilderWrapper from './analysis/DashboardBuilderWrapper.vue';
 import AIInsightPanel from '@/components/smartbi/AIInsightPanel.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 // T3.1: Lazy-load rarely-used components — only loaded when user triggers them
 const YoYMoMComparisonChart = defineAsyncComponent(() => import('@/components/smartbi/YoYMoMComparisonChart.vue'));
 // ChartTypeSelector + ChartConfigPanel moved into analysis/ChartGridItem.vue (Item 1 phase 10)
-const DashboardBuilder = defineAsyncComponent(() => import('@/components/smartbi/DashboardBuilder.vue'));
+// DashboardBuilder moved into analysis/DashboardBuilderWrapper.vue (Item 1 phase 11)
 const DemoTour = defineAsyncComponent(() => import('@/components/smartbi/DemoTour.vue'));
 // SmartBIEmptyState moved to analysis/UploadArea.vue (Item 1 phase 6)
 const ShortcutsHelpOverlay = defineAsyncComponent(() => import('@/components/smartbi/ShortcutsHelpOverlay.vue'));
-import type { DashboardLayout, DashboardCard, ChartDefinition } from '@/components/smartbi/DashboardBuilder.vue';
+// DashboardLayout/DashboardCard/ChartDefinition types moved into analysis/DashboardBuilderWrapper.vue
 import type { ComparisonData } from '@/components/smartbi/YoYMoMComparisonChart.vue';
 import type { AIInsight } from '@/components/smartbi/AIInsightPanel.vue';
 import { saveDemoCache, loadDemoCache } from '@/utils/demo-cache';
