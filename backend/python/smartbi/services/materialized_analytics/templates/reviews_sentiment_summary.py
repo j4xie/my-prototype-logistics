@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 from ..compute.base import ComputeBackend
 from ..restaurant import industry_benchmarks as bench
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..schema import DataSchema, Domain
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
@@ -348,7 +349,38 @@ class ReviewsSentimentSummary(AnalysisTemplate):
                 + "。"
             )
         parts.append(bench.industry_footer_by_context("review"))
-        insight_text = " ".join(parts)
+        # Spec §4.3: drive worst store / complaint / dish into specific service action
+        if worst_stores and worst_stores[0]["avg_star"] < 4.0:
+            w = worst_stores[0]
+            action_rec = format_action_rec(
+                object_target=f"低评分门店「{w['store']}」 (仅 {w['avg_star']:.2f} 星 / {w['reviews']} 条)",
+                benefit_range="客诉清单 + 服务 SOP 培训后,评分提升 0.2-0.5 分,影响外卖排名 / 必吃榜资格",
+                prerequisite="抽样 10 条差评分析根因 + 店长 / 服务员培训 + 30 天内回访低分顾客",
+                timeline="本月内",
+            )
+        elif complaint_rate_pct is not None and complaint_rate_pct >= 3:
+            action_rec = format_action_rec(
+                object_target=f"投诉率 {complaint_rate_pct:.1f}% ({complaint_count} 条)",
+                benefit_range="投诉根因复盘 + SOP 修订可降投诉率 0.5-1.5 个百分点",
+                prerequisite="投诉清单分类 (菜品 / 服务 / 环境) + 周例会复盘 + SOP 修订",
+                timeline="本月内",
+            )
+        elif top_dish_tags and top_dish_tags[0]["mentions"] >= 50:
+            top_d = top_dish_tags[0]
+            action_rec = format_action_rec(
+                object_target=f"口碑菜品「{top_d['dish']}」 ({top_d['mentions']} 条提及)",
+                benefit_range="主推位 + 招牌菜营销可放大口碑效应,带动客流 5-10%",
+                prerequisite="POS 推荐位置顶 + 包装升级 + 大众点评 / 美团置顶推广",
+                timeline="本月内",
+            )
+        else:
+            action_rec = format_action_rec(
+                object_target=f"评价整体 (平均 {avg_star:.2f} 星 / {total} 条)",
+                benefit_range="持续监控差评 + 30 天内回访可稳定评分 + 外卖排名",
+                prerequisite="周期性差评跟踪 + 客户回访 + 必吃榜 / 黑珍珠资格申报",
+                timeline="本月内",
+            )
+        insight_text = " ".join(parts) + " " + action_rec
 
         # Chart — star distribution pie
         chart_config = None

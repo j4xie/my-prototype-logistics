@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.schema_helpers import find_date_col, find_store_col
 from ..schema import DataSchema, Domain
 from .base import AnalysisTemplate, TemplateResult
@@ -219,7 +220,29 @@ class StoredValueCardConsumption(AnalysisTemplate):
             parts.append(
                 f"另有 {nonrev_total:,.0f} 元储值卡流水记为'不计营收' (赠送金/不计科目)。"
             )
-        insight_text = " ".join(parts)
+        # Spec §4.3: drive low usage rate or top-store concentration into action
+        if usage_rate_pct < 5:
+            action_rec = format_action_rec(
+                object_target=f"储值卡使用率仅 {usage_rate_pct:.1f}%",
+                benefit_range="储值卡充值返券 + 会员等级激励可拉高储值锁客率 5-15%",
+                prerequisite="储值返券方案设计 + 收银员推荐话术 + 会员体系打通",
+                timeline="本月内",
+            )
+        elif by_store and len(by_store) >= 2 and by_store[0]["amount"] > sum(s["amount"] for s in by_store[1:]) * 2:
+            action_rec = format_action_rec(
+                object_target=f"储值卡集中在「{by_store[0]['store']}」 ({by_store[0]['amount']:,.0f} 元)",
+                benefit_range=f"复制 Top 门店储值推广 SOP 到其他门店,跨店储值率提升 8-15%",
+                prerequisite=f"对标走访{by_store[0]['store']} + 全店储值推广培训",
+                timeline="本月内",
+            )
+        else:
+            action_rec = format_action_rec(
+                object_target=f"储值卡 {card_orders} 笔 / {card_total:,.0f} 元",
+                benefit_range="储值卡老客户复购率高 (锁定流量),持续推广可拉营收 3-7%",
+                prerequisite="储值卡到期提醒 + 新档活动套餐 + 余额唤回 SMS",
+                timeline="本月内",
+            )
+        insight_text = " ".join(parts) + " " + action_rec
 
         # ECharts bar — top stores by card amount
         chart_config = None

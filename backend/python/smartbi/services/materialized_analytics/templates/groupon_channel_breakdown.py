@@ -25,6 +25,7 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..schema import DataSchema, Domain
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
@@ -214,7 +215,31 @@ class GrouponChannelBreakdown(AnalysisTemplate):
             f"最大渠道:{top['platform']} {top['amount']:,.0f} 元 / {top['orders']} 单"
             f"（按金额 {top['share_amount_pct']:.1f}% / 按笔数 {top['share_bills_pct']:.1f}%）。"
         )
-        insight_text = " ".join(insight_parts)
+        # Spec §4.3: drive top-platform concentration / dependency into action
+        if top["share_amount_pct"] >= 60:
+            action_rec = format_action_rec(
+                object_target=f"过度依赖「{top['platform']}」 ({top['share_amount_pct']:.1f}% 团购扣减)",
+                benefit_range="拓展 2 端 + 自营券 + 直营会员体系,降单平台依赖,毛利提升 1-3 个百分点",
+                prerequisite="多端 BD 谈判 + 自有小程序团购上线 + 会员体系打通",
+                timeline="本季度内",
+            )
+        elif len(platforms_active) >= 3:
+            # Identify weakest active platform for activation lever
+            weakest = platforms_active[-1]
+            action_rec = format_action_rec(
+                object_target=f"最弱团购端「{weakest['platform']}」 (仅 {weakest['share_amount_pct']:.1f}%)",
+                benefit_range=f"活动套餐重点投放 + 平台联运可拉高{weakest['platform']}订单 15-30%",
+                prerequisite=f"与{weakest['platform']}BD 谈判 + 设计平台专属套餐 + 推广预算倾斜",
+                timeline="本月内",
+            )
+        else:
+            action_rec = format_action_rec(
+                object_target=f"团购整体 ({grand_orders} 单 / {grand_amount:,.0f} 元扣减)",
+                benefit_range="平台间 ROI 横评后,把预算调到边际效益最高 1-2 端可提扣减率回报 10-20%",
+                prerequisite="按平台拉新成本 + 客单价 + 复购率分层评估 + 调整预算",
+                timeline="本月内",
+            )
+        insight_text = " ".join(insight_parts) + " " + action_rec
 
         chart_config = {
             "type": "pie",

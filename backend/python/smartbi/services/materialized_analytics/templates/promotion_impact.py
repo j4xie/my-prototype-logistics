@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
@@ -161,10 +162,32 @@ class PromotionImpact(AnalysisTemplate):
         total_coupon = total_coupon_amount
         avg_coupon = avg_coupon_per_order
         heavy = heavy_discount_pct
+        # Spec §4.3: drive heavy discount or low coupon usage into action
+        if heavy >= 20:
+            action_rec = format_action_rec(
+                object_target=f"重度折扣 (>20%) 订单占 {heavy:.1f}%",
+                benefit_range="收紧深度折扣阈值 + 改成赠菜 / 储值返券形式可降毛利损失 1-2 个百分点",
+                prerequisite="按门店 / 班次 / 服务员分析重度折扣触发场景 + 修订折扣权限",
+                timeline="本月内",
+            )
+        elif coupon_share < 5 and total_orders > 100:
+            action_rec = format_action_rec(
+                object_target=f"代金券使用率仅 {coupon_share:.1f}%",
+                benefit_range="主动推送代金券 + 加入会员体系拉新回头率,客单提升 5-10%",
+                prerequisite="代金券与会员积分挂钩 + 收银员推荐话术 + 公众号推送",
+                timeline="本月内",
+            )
+        else:
+            action_rec = format_action_rec(
+                object_target=f"代金券使用 {coupon_share:.1f}% (累计 {total_coupon:,.0f} 元)",
+                benefit_range="按券价值 / 客群分层后,投放 ROI 可提升 10-20%",
+                prerequisite="按券类型 / 触发场景 / 客单价分层复盘 + A/B 测试",
+                timeline="本月内",
+            )
         insight_text = (
             f"{coupon_share:.1f}% 订单使用代金券，"
             f"累计优惠 {total_coupon:,.0f} 元 (人均 {avg_coupon:.0f})；"
-            f"重度折扣 (>20%) 订单占 {heavy:.1f}%。"
+            f"重度折扣 (>20%) 订单占 {heavy:.1f}%。 {action_rec}"
         )
 
         data: Dict[str, Any] = {

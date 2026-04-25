@@ -25,6 +25,7 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..schema import DataSchema, Domain
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
@@ -281,7 +282,38 @@ class MemberDeepAnalytics(AnalysisTemplate):
                     f"⚠ {zero_bin['members']:,} 位会员余额已清零"
                     f"（占 {zero_bin['members_share_pct']:.1f}%），需激活唤回。"
                 )
-        insight_text = " ".join(parts)
+        # Spec §4.3: drive sleeping members or low recharge utilization into recall
+        zero_bin_obj = next((b for b in balance_bins if b["bin"].startswith("0 元")), None) if balance_bins else None
+        if zero_bin_obj and zero_bin_obj["members_share_pct"] > 20:
+            action_rec = format_action_rec(
+                object_target=f"余额清零会员 {zero_bin_obj['members']:,} 人 (占 {zero_bin_obj['members_share_pct']:.1f}%)",
+                benefit_range="SMS / 公众号 + 储值返券唤回,召回率 8-15%,带回客单 5-10 倍 SMS 成本",
+                prerequisite="会员手机号清洗 + 储值返券方案 + 节假日时点触达",
+                timeline="本周内",
+            )
+        elif consumed_rate_pct is not None and consumed_rate_pct < 30 and total_recharge > 100000:
+            action_rec = format_action_rec(
+                object_target=f"会员储值消化率仅 {consumed_rate_pct:.1f}% (累计 {total_recharge:,.0f} 元)",
+                benefit_range="储值卡到期前 30 天提醒 + 节假日活动可拉高消化率 8-15%,加速现金流回流",
+                prerequisite="储值卡到期日清洗 + 自动 SMS 推送 + 限时活动套餐",
+                timeline="本月内",
+            )
+        elif by_level:
+            top_level = by_level[0]
+            action_rec = format_action_rec(
+                object_target=f"主力等级「{top_level['level']}」 ({top_level['members']:,} 人)",
+                benefit_range="对该等级设计专属权益 / 升级激励,可拉升等级转化 5-10%",
+                prerequisite="该等级权益设计 + 升级路径设计 + 收银员推荐话术",
+                timeline="本月内",
+            )
+        else:
+            action_rec = format_action_rec(
+                object_target=f"会员体系 ({total_members:,} 人)",
+                benefit_range="补完会员等级 + 激活流程后,LTV 提升 10-20%",
+                prerequisite="设置会员等级 + 储值激励 + 收银员录入培训",
+                timeline="本月内",
+            )
+        insight_text = " ".join(parts) + " " + action_rec
 
         # ── ECharts — pie of level distribution, fallback to status ──
         chart_config = None

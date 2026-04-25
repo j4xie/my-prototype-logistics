@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
@@ -142,15 +143,23 @@ class RefundAnalysis(AnalysisTemplate):
 
         top_status = by_status[0]["status"] if by_status else ""
         top_count = by_status[0]["count"] if by_status else 0
+        # Spec §4.3: drive refund cluster into root-cause action
+        action_rec = format_action_rec(
+            object_target=f"主要异常状态「{top_status}」 ({top_count} 笔)" if by_status
+                else f"退单 / 撤单 {refund_count} 笔",
+            benefit_range="复盘高频退单原因 + SOP 修订可降退单率 0.5-1.5 个百分点",
+            prerequisite="按状态调取退单详情 + 客诉清单 + 服务员复述确认改单",
+            timeline="本周内",
+        )
         if by_status:
             insight_text = (
                 f"共检出 {refund_count} 笔非已结账订单"
                 f"（占总单数 {refund_share_pct:.1f}%）。"
-                f"主要状态：{top_status} {top_count} 笔。"
+                f"主要状态：{top_status} {top_count} 笔。 {action_rec}"
             )
         else:
             insight_text = (
-                f"共检出 {refund_count} 笔退单/撤单（占 {refund_share_pct:.1f}%）。"
+                f"共检出 {refund_count} 笔退单/撤单（占 {refund_share_pct:.1f}%）。 {action_rec}"
             )
 
         return TemplateResult(
@@ -226,10 +235,17 @@ class RefundAnalysis(AnalysisTemplate):
             ],
         }
 
+        # Spec §4.3: drive loss amount into cost-control action
+        action_rec = format_action_rec(
+            object_target=f"损耗 {refund_count} 笔 / 累计 {total_loss_amount:,.0f} 元",
+            benefit_range="复盘高频损耗原因 + 流程改善可降损耗 20-40%",
+            prerequisite="按门店 / 班次 / 菜品分组分析损耗 + 厨师长例会复盘",
+            timeline="本月内",
+        )
         insight_text = (
             f"发现 {refund_count} 笔损耗记录（占 {refund_share_pct:.1f}%），"
             f"合计损益额 {total_loss_amount:,.2f} 元。"
-            f"数据来源：{'、'.join(loss_cols)}。"
+            f"数据来源：{'、'.join(loss_cols)}。 {action_rec}"
         )
 
         return TemplateResult(
@@ -299,10 +315,17 @@ class RefundAnalysis(AnalysisTemplate):
             ],
         }
 
+        # Spec §4.3: drive remark-keyword finding into manual verify + root cause
+        action_rec = format_action_rec(
+            object_target=f"备注疑似退菜 {refund_count} 条 (占 {refund_share_pct:.1f}%)",
+            benefit_range="人工核实 + 客诉对账后定位高频退菜菜品 / 服务员,定向培训降发生率 30-50%",
+            prerequisite="抽样 50 条备注复核 + 服务员 / 厨师长走访 + SOP 修订",
+            timeline="本周内",
+        )
         insight_text = (
             f"在 {_REMARK_COL} 中发现 {refund_count} 条含退菜关键字的记录"
             f"（占 {refund_share_pct:.1f}%）。"
-            f"注意：此为模糊文本匹配，实际退菜数量需人工核实。"
+            f"注意：此为模糊文本匹配，实际退菜数量需人工核实。 {action_rec}"
         )
 
         return TemplateResult(
