@@ -30,23 +30,11 @@ SELECT * FROM all_refs WHERE endpoint IS NULL OR endpoint = '';
 
 ### Tier 2 — Time-bomb: hidden field in DYNAMIC, ships when admin configures visible
 
-| module | field | endpoint | failure mode |
-|--------|-------|----------|--------------|
-| sales_order | quoteId | `/api/mobile/{factoryId}/operational-quotes` (HTTP 404, no controller) | `defaultVisible=false`, but if admin enables it via Canvas editor, dropdown silently shows 0 options (ReferenceSelector swallows 404) |
+| module | field | endpoint | failure mode | status |
+|--------|-------|----------|--------------|--------|
+| sales_order | quoteId | ~~`/operational-quotes` (claimed "404 no controller")~~ → **FIXED V20260425_04**: re-pointed to `/quotes` (`OperationalQuoteController` exists, verified HTTP 200 + GET-by-id). Server-side keyword search not yet implemented (next round). | RESOLVED Apr 25 R3 |
 
-**Action**: schedule R{N+1} — either build `OperationalQuoteController` OR remove `quoteId` from schema. Test design:
-```js
-// L4 deep — quoteId visibility regression
-async function L4_deep_quoteId(page) {
-  // Step 1: Toggle quoteId visible via Canvas editor API
-  await page.evaluate(() => fetch('/api/mobile/F001/config/modules/sales_order/fields/quoteId',
-    {method:'PATCH',body:JSON.stringify({visible:true})}));
-  // Step 2: Navigate to SO new form
-  // Step 3: Click 关联报价 dropdown
-  // Step 4: Assert dropdown has options OR field is removed
-  // FAIL if options=[] AND no error toast (silent fail)
-}
-```
+**R3 audit correction (Apr 25)**: original Tier 2 entry mis-classified this as "no controller, requires 3-day build". Reality: controller exists at `/api/mobile/{factoryId}/quotes` since `OperationalQuoteController.java`. Fix was a 5-min schema-path UPDATE migration (V20260425_04).
 
 ### Tier 3 — Time-bomb: top-level-array shape, all LEGACY mode
 
@@ -78,14 +66,16 @@ traceability.productBatchId
 
 **Hard rule**: 任何 PR 把模块 flip 到 DYNAMIC 之前, 必须先跑 sweep 确认该模块所有 reference 字段都有有效 apiEndpoint.
 
-### Tier 4 — Time-bomb: top-level wrapper but legacy endpoint paths
+### Tier 4 — bom schema fix (forward-compat only — current UI bypasses canvas)
 
-| module | field | endpoint | reason |
+| module | field | endpoint | status |
 |--------|-------|----------|--------|
-| bom | materialTypeId | `/api/mobile/{factoryId}/material-types` | grep 找不到匹配 controller. 实际 controller 在 `/raw-material-types`. bom 当前 LEGACY mode, 不渲染. |
-| bom | productTypeId | `/api/mobile/{factoryId}/finished-goods/product-types` | 同上, controller 路径未确认 |
+| bom | materialTypeId | ~~`/material-types` (404)~~ → `/reference-data/materials` | FIXED V20260425_03 |
+| bom | productTypeId | ~~`/finished-goods/product-types` (404)~~ → `/reference-data/products` | FIXED V20260425_03 |
 
-**Action**: 当 bom 模块 flip DYNAMIC 时, 改 schema 指向真实 controller 路径或 `/reference-data`.
+**R3 audit (Apr 25 2026) clarification**: `factory_module_configs` shows F001/bom is DYNAMIC mode, but the actual UI route (`/production/bom`) loads `views/production/bom-unified/index.vue` which **does NOT use `CanvasAwareWrapper`** and never reads the schema-driven `referenceConfig`. So V20260425_03 is **forward-compatible only** — it makes bom correct IF the page is later migrated to use `CanvasAwareWrapper`/`SchemaFormRenderer`, but does not affect any current user-facing screen.
+
+The new `/reference-data/materials` endpoint + GET-by-id IS however available for any other caller (e.g., AI tools, future Canvas pages). Not wasted code — just narrower live impact than originally framed.
 
 ## Rule 8 verdict summary
 

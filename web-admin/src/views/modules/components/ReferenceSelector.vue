@@ -88,15 +88,17 @@ function handleChange(val: string | number | null) {
  * line items displayed raw "PT-F001-003" as the option label instead of looking up the
  * product name.
  *
- * Allowed: numeric, UUID, alnum+hyphens (covers PT-F001-003, R001-PT-001, CUS-1767..., etc).
- * Rejected: anything containing Chinese/spaces/parens (legacy display-name strings like "张三").
+ * Accepted: alnum + underscore/hyphen/dot (covers numeric IDs, UUIDs, PT-F001-003,
+ *   R001-PT-001, CUS-1767..., RMT_1774414299841, etc).
+ * Rejected (treated as legacy display-name string, ReferenceSelector falls back to
+ *   render-as-label): anything containing Chinese / spaces / parens / slashes /
+ *   apostrophes / & / non-ASCII letters (Müller, O'Brien, "Apple M2 Pro", "B-2/3", etc).
+ *   For these the raw value IS already the human-readable name, so the fallback display
+ *   is correct UX even though we skipped the fetchById lookup.
  */
 function looksLikeId(v: string | number): boolean {
   const s = String(v)
   if (s.length === 0) return false
-  // Reject if contains Chinese, spaces, parens — these are legacy display-name strings
-  if (/[一-鿿\s()（）]/.test(s)) return false
-  // Accept: numeric, UUID, alnum+hyphens (covers prefix-style IDs)
   return /^[A-Za-z0-9_\-.]+$/.test(s)
 }
 
