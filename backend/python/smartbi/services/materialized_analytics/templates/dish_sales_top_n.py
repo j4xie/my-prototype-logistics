@@ -9,7 +9,9 @@ Applies only when schema contains a 商品信息 field (restaurant-style data).
 from __future__ import annotations
 
 from collections import Counter
-from typing import Any, Dict, List
+from typing import Any, ClassVar, Dict, List
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
@@ -38,6 +40,11 @@ class DishSalesTopN(AnalysisTemplate):
         "畅销品排行",
         "卖得最好的菜",
     ]
+
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        all=["store_name", "combo_string"],
+        description="按菜品销量 / 销售额排行 (Top 20)",
+    )
 
     @property
     def code(self) -> str:

@@ -6,9 +6,11 @@ on store column (find_store_col) instead of staff role column.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, ClassVar, Dict, List
 
 import polars as pl
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
@@ -46,6 +48,12 @@ class StorePerformance(AnalysisTemplate):
         "哪家店客单价最高",
         "门店营收对比",
     ]
+
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        all=["store_name"],
+        any=["net_amount", "gross_amount", "revenue"],
+        description="门店业绩对比",
+    )
 
     @property
     def code(self) -> str:

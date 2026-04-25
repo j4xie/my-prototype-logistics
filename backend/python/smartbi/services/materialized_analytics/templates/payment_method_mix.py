@@ -16,9 +16,11 @@ Complements groupon_channel_breakdown which only looks at voucher platforms.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import polars as pl
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
@@ -89,6 +91,9 @@ class PaymentMethodMix(AnalysisTemplate):
         "各付款方式金额",
         "支付渠道分析",
     ]
+
+    # spec §6.1: B 阶段引入 payment_channel 字段后再填
+    requires: ClassVar[RequiresSpec | None] = None
 
     @property
     def code(self) -> str:

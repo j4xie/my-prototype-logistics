@@ -78,6 +78,7 @@ from smartbi.api import (
 from smartbi.api import restaurant_sections
 from smartbi.api import intent_analysis
 from smartbi.api.materialized_analytics import router as materialized_analytics_router
+from smartbi.capability.api import router as capability_router
 
 # Import Efficiency Recognition API routers (optional - requires opencv)
 try:
@@ -540,6 +541,7 @@ app.include_router(whatif.router, prefix="/api/smartbi/whatif", tags=["WhatIf Si
 app.include_router(rfm.router, prefix="/api/smartbi", tags=["Customer RFM"])
 app.include_router(financial_ratios.router, prefix="/api/smartbi", tags=["Financial Ratios"])
 app.include_router(materialized_analytics_router, prefix="/api/smartbi", tags=["MaterializedAnalytics"])
+app.include_router(capability_router)
 
 # Gold layer reads — v1 Phase B pilot (§5). Finance-summary from agg_daily.
 from smartbi.api import gold_reads

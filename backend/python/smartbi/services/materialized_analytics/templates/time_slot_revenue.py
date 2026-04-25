@@ -12,9 +12,11 @@ Slot definitions (Chinese restaurant standard):
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import polars as pl
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..compute.polars_backend import PolarsBackend
@@ -74,6 +76,12 @@ class TimeSlotRevenue(AnalysisTemplate):
         "营业最忙时段",
         "哪个时间段订单多",
     ]
+
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        all=["date"],
+        any=["net_amount", "gross_amount"],
+        description="时段营收分布",
+    )
 
     @property
     def code(self) -> str:

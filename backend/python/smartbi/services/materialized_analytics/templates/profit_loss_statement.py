@@ -21,9 +21,11 @@ Applies when either 应收金额 OR 营业额 is in schema (has a gross-revenue 
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import polars as pl
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec, format_data_insufficient
@@ -60,6 +62,11 @@ class ProfitLossStatement(AnalysisTemplate):
         "到账率",
         "毛利率",
     ]
+
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        all=["date", "gross_amount", "discount_amount", "net_amount"],
+        description="利润损益表",
+    )
 
     @property
     def code(self) -> str:

@@ -15,9 +15,11 @@ Applies when 桌位 exists (for channel) AND (班次 OR 开单时间 — for tim
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import polars as pl
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
@@ -108,6 +110,12 @@ class RevenueManagementReport(AnalysisTemplate):
         "营收结构分析",
         "收入结构报表",
     ]
+
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        all=["date"],
+        any=["gross_amount", "net_amount", "revenue"],
+        description="营收管理报表",
+    )
 
     @property
     def code(self) -> str:

@@ -18,9 +18,11 @@ Applies when 储值卡 column exists.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import polars as pl
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
@@ -45,6 +47,9 @@ class StoredValueCardConsumption(AnalysisTemplate):
         "会员储值消费",
         "储值卡核销",
     ]
+
+    # spec §6.1: B 阶段引入 SVC fields 字段后再填
+    requires: ClassVar[RequiresSpec | None] = None
 
     @property
     def code(self) -> str:

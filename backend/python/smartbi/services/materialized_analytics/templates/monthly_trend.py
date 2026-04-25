@@ -4,6 +4,10 @@ Auto-picks frequency: <= 62 days → daily, <= 400 days → weekly, else monthly
 """
 from __future__ import annotations
 
+from typing import ClassVar
+
+from smartbi.capability.contract import RequiresSpec
+
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
 from ..schema import DataSchema
@@ -26,6 +30,12 @@ class MonthlyTrend(AnalysisTemplate):
         "最旺的月份",
         "月度销售排名",
     ]
+
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        all=["date"],
+        any=["gross_amount", "net_amount", "revenue"],
+        description="月度营收趋势",
+    )
 
     @property
     def code(self) -> str:

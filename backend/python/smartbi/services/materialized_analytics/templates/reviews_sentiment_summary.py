@@ -15,11 +15,13 @@ Applies when schema has 评价 OR 星级 column.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import polars as pl
 
 logger = logging.getLogger(__name__)
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant import industry_benchmarks as bench
@@ -49,6 +51,9 @@ class ReviewsSentimentSummary(AnalysisTemplate):
         "门店评分排名",
         "评分最高的门店",
     ]
+
+    # spec §6.1: B 阶段引入 review_text/rating 字段后再填
+    requires: ClassVar[RequiresSpec | None] = None
 
     @property
     def code(self) -> str:

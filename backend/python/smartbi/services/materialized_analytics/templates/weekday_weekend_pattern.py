@@ -6,9 +6,11 @@ Requires >= 14 rows to span a meaningful sample of both types.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar, Dict, Optional
 
 import polars as pl
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
@@ -32,6 +34,12 @@ class WeekdayWeekendPattern(AnalysisTemplate):
         "周末和平时差异",
         "礼拜几卖得最好",
     ]
+
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        all=["date"],
+        any=["net_amount", "gross_amount"],
+        description="工作日 vs 周末模式",
+    )
 
     @property
     def code(self) -> str:

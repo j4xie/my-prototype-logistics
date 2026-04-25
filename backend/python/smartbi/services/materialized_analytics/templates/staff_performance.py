@@ -6,9 +6,11 @@ per staff and avg-per-order.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, ClassVar, Dict, List
 
 import polars as pl
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
@@ -37,6 +39,12 @@ class StaffPerformance(AnalysisTemplate):
         "业绩冠军员工",
         "谁是销售冠军",
     ]
+
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        all=["staff_name"],
+        any=["net_amount", "gross_amount"],
+        description="员工业绩排行",
+    )
 
     @property
     def code(self) -> str:

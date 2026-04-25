@@ -11,9 +11,11 @@ Chart: ECharts pie by bucket revenue share.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, ClassVar, Dict, List, Tuple
 
 import polars as pl
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
@@ -53,6 +55,12 @@ class ChannelAnalysis(AnalysisTemplate):
         "来源订单分布",
         "渠道营收结构",
     ]
+
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        all=["channel_origin"],
+        any=["net_amount", "gross_amount"],
+        description="渠道销售分析",
+    )
 
     @property
     def code(self) -> str:
