@@ -167,10 +167,18 @@ class GrouponChannelBreakdown(AnalysisTemplate):
             grand_amount += amount
             grand_orders += order_count
 
-        # Compute shares (of total voucher amount)
+        # C-rec 7 (Apr 25 2026): expose BOTH amount-share and bills-share so
+        # AI doesn't conflate them. Q12 bug: AI said "65.0%" was bills-basis,
+        # actual was amount-basis (real bills basis was 55.8%). Now every
+        # platform carries share_amount_pct + share_bills_pct + legacy share_pct
+        # (= share_amount_pct, kept for FE backward compatibility).
         for p in platforms:
-            p["share_pct"] = round(p["amount"] / grand_amount * 100, 2) \
-                if grand_amount > 0 else 0.0
+            share_amount = (p["amount"] / grand_amount * 100) if grand_amount > 0 else 0.0
+            share_bills = (p["orders"] / grand_orders * 100) if grand_orders > 0 else 0.0
+            p["share_amount_pct"] = round(share_amount, 2)  # 按金额(扣减额)
+            p["share_bills_pct"] = round(share_bills, 2)    # 按笔数(订单数)
+            p["share_pct"] = p["share_amount_pct"]  # legacy alias = amount-basis
+            p["share_basis"] = "amount"  # explicit basis marker for legacy field
 
         # Sort by amount desc for display
         platforms_active = sorted(
@@ -189,16 +197,22 @@ class GrouponChannelBreakdown(AnalysisTemplate):
 
         top = platforms_active[0]
         insight_parts = [
-            f"团购券合计扣减 {grand_amount:,.0f} 元，覆盖 {grand_orders} 笔订单使用。"
+            f"团购券合计扣减 {grand_amount:,.0f} 元[毛扣减额]，覆盖 {grand_orders} 笔订单使用。"
         ]
         top3 = platforms_active[:3]
         insight_parts.append(
-            "三端占比: " + "、".join(
-                f"{p['platform']} {p['share_pct']:.1f}%" for p in top3
+            "三端占比[按金额]: " + "、".join(
+                f"{p['platform']} {p['share_amount_pct']:.1f}%" for p in top3
             ) + "。"
         )
         insight_parts.append(
-            f"最大渠道:{top['platform']} {top['amount']:,.0f} 元 / {top['orders']} 单。"
+            "三端占比[按笔数]: " + "、".join(
+                f"{p['platform']} {p['share_bills_pct']:.1f}%" for p in top3
+            ) + "。"
+        )
+        insight_parts.append(
+            f"最大渠道:{top['platform']} {top['amount']:,.0f} 元 / {top['orders']} 单"
+            f"（按金额 {top['share_amount_pct']:.1f}% / 按笔数 {top['share_bills_pct']:.1f}%）。"
         )
         insight_text = " ".join(insight_parts)
 
@@ -226,14 +240,21 @@ class GrouponChannelBreakdown(AnalysisTemplate):
                 "platforms": platforms,
                 "grand_amount": round(grand_amount, 2),
                 "grand_orders": grand_orders,
+                # C-rec 7: explicit basis labels so AI/FE never conflate
+                # amount-share and bills-share.
+                "share_basis_note": "share_amount_pct=按金额(扣减额)占比，share_bills_pct=按笔数(订单数)占比",
+                "amount_basis": "毛/扣减额",  # voucher 扣减 is gross-side
             },
             chart_config=chart_config,
             kpis={
                 "top_platform": top["platform"],
                 "top_platform_amount": top["amount"],
-                "top_platform_share_pct": top["share_pct"],
+                "top_platform_share_pct": top["share_pct"],            # legacy = amount
+                "top_platform_share_amount_pct": top["share_amount_pct"],
+                "top_platform_share_bills_pct": top["share_bills_pct"],
                 "grand_amount": round(grand_amount, 2),
                 "platform_count": len(platforms_active),
+                "share_basis_default": "amount",
             },
             insight_text=insight_text,
         )

@@ -155,7 +155,11 @@ class PaymentMethodMix(AnalysisTemplate):
             grand_total += amt
 
         for b in buckets:
+            # C-rec 7 (Apr 25 2026): explicit amount basis (no per-method bills count
+            # in this template — payment method mix is amount-only by design).
             b["share_pct"] = round(b["amount"] / grand_total * 100, 2) if grand_total > 0 else 0.0
+            b["share_amount_pct"] = b["share_pct"]
+            b["share_basis"] = "amount"
         buckets.sort(key=lambda x: x["amount"], reverse=True)
 
         # Top individual methods
@@ -185,12 +189,16 @@ class PaymentMethodMix(AnalysisTemplate):
                 for r in rows
             ]
 
+        # C-rec 7: explicit amount basis on every percentage
         top_bucket = buckets[0] if buckets else None
-        parts = [f"付款方式合计 {grand_total:,.0f} 元 (覆盖 {len(individual_cols)} 个方式)。"]
+        parts = [f"付款方式合计 {grand_total:,.0f} 元[毛/收款金额] (覆盖 {len(individual_cols)} 个方式)。"]
         if top_bucket:
-            parts.append(f"最大类别:{top_bucket['bucket']} {top_bucket['amount']:,.0f} 元 ({top_bucket['share_pct']:.1f}%)。")
+            parts.append(
+                f"最大类别:{top_bucket['bucket']} {top_bucket['amount']:,.0f} 元 "
+                f"({top_bucket['share_pct']:.1f}%[按金额])。"
+            )
         if len(buckets) >= 3:
-            mix_str = "、".join(f"{b['bucket']} {b['share_pct']:.1f}%" for b in buckets[:4])
+            mix_str = "、".join(f"{b['bucket']} {b['share_pct']:.1f}%[按金额]" for b in buckets[:4])
             parts.append(f"结构:{mix_str}。")
         insight_text = " ".join(parts)
 
@@ -217,13 +225,18 @@ class PaymentMethodMix(AnalysisTemplate):
                 "buckets": buckets,
                 "top_methods": top_methods,
                 "by_store": by_store,
+                # C-rec 7: explicit basis info
+                "share_basis_note": "share_pct=按金额(收款金额)占比；本模板无每方式bills计数，bills占比不可用",
+                "amount_basis": "毛/收款金额",
             },
             chart_config=chart_config,
             kpis={
                 "grand_total": round(grand_total, 2),
                 "top_bucket": top_bucket["bucket"] if top_bucket else None,
                 "top_bucket_share_pct": top_bucket["share_pct"] if top_bucket else None,
+                "top_bucket_share_amount_pct": top_bucket["share_pct"] if top_bucket else None,
                 "method_count": len(individual_cols),
+                "share_basis_default": "amount",
             },
             insight_text=insight_text,
         )

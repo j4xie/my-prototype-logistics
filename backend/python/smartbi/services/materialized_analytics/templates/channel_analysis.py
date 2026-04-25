@@ -124,6 +124,9 @@ class ChannelAnalysis(AnalysisTemplate):
             cnt = int(row["orders"])
             cust = float(row.get("customers") or 0.0) if cust_col else 0.0
             share = round(rev / total_revenue * 100, 2) if total_revenue > 0 else 0.0
+            # C-rec 7 (Apr 25 2026): also expose bills-basis share so AI/FE
+            # never conflate revenue% with bills%.
+            share_bills = round(cnt / total_orders * 100, 2) if total_orders > 0 else 0.0
             # 客单价 (Q-A #15) — per-customer and per-order variants
             avg_per_order = round(rev / cnt, 2) if cnt > 0 else 0.0
             avg_per_customer = round(rev / cust, 2) if cust > 0 else None
@@ -131,7 +134,9 @@ class ChannelAnalysis(AnalysisTemplate):
                 "source": src,
                 "orders": cnt,
                 "revenue": round(rev, 2),
-                "share_pct": share,
+                "share_pct": share,                  # legacy = amount-basis
+                "share_amount_pct": share,           # explicit amount basis
+                "share_bills_pct": share_bills,      # explicit bills basis
                 "customers": int(cust) if cust_col else None,
                 "avg_per_order": avg_per_order,
                 "avg_per_customer": avg_per_customer,
@@ -156,13 +161,17 @@ class ChannelAnalysis(AnalysisTemplate):
         for bucket, (cnt, rev, cust) in bucket_totals.items():
             cnt = int(cnt)
             share = round(rev / total_revenue * 100, 2) if total_revenue > 0 else 0.0
+            # C-rec 7: explicit bills-basis share alongside amount-basis
+            share_bills = round(cnt / total_orders * 100, 2) if total_orders > 0 else 0.0
             avg_per_order = round(rev / cnt, 2) if cnt > 0 else 0.0
             avg_per_customer = round(rev / cust, 2) if cust_col and cust > 0 else None
             by_bucket.append({
                 "bucket": bucket,
                 "orders": cnt,
                 "revenue": round(rev, 2),
-                "share_pct": share,
+                "share_pct": share,                # legacy = amount-basis
+                "share_amount_pct": share,         # explicit amount basis
+                "share_bills_pct": share_bills,    # explicit bills basis
                 "customers": int(cust) if cust_col else None,
                 "avg_per_order": avg_per_order,
                 "avg_per_customer": avg_per_customer,
@@ -171,12 +180,18 @@ class ChannelAnalysis(AnalysisTemplate):
         # --- KPIs ---
         top_source = by_source[0] if by_source else None
         top_channel = top_source["source"] if top_source else ""
-        top_channel_share = top_source["share_pct"] if top_source else 0.0
+        top_channel_share = top_source["share_pct"] if top_source else 0.0  # legacy = amount-basis
+        top_channel_share_bills = top_source["share_bills_pct"] if top_source else 0.0
 
         dine_in_rev = bucket_totals[_BUCKET_LABEL][1]
         takeaway_rev = bucket_totals[_TAKEAWAY_LABEL][1]
+        dine_in_orders = int(bucket_totals[_BUCKET_LABEL][0])
+        takeaway_orders = int(bucket_totals[_TAKEAWAY_LABEL][0])
         dine_in_share = round(dine_in_rev / total_revenue * 100, 2) if total_revenue > 0 else 0.0
         takeaway_share = round(takeaway_rev / total_revenue * 100, 2) if total_revenue > 0 else 0.0
+        # C-rec 7: bills-basis shares for the two main buckets
+        dine_in_share_bills = round(dine_in_orders / total_orders * 100, 2) if total_orders > 0 else 0.0
+        takeaway_share_bills = round(takeaway_orders / total_orders * 100, 2) if total_orders > 0 else 0.0
         total_channels = len(by_source)
 
         # --- ECharts pie (by bucket revenue share) ---
@@ -217,18 +232,21 @@ class ChannelAnalysis(AnalysisTemplate):
             (b["avg_per_customer"] for b in by_bucket if b["bucket"] == _TAKEAWAY_LABEL),
             None,
         )
+        # C-rec 7 (Apr 25 2026): both bases stated explicitly so customer
+        # never confuses "amount share" with "bills share".
         parts = [
-            f"堂食占 {dine_in_share:.1f}%,外卖平台占 {takeaway_share:.1f}%;"
-            f"最大单一来源 {top_channel} ({top_channel_share:.1f}%)。"
+            f"堂食占 {dine_in_share:.1f}%[按营业额] / {dine_in_share_bills:.1f}%[按笔数],"
+            f"外卖平台占 {takeaway_share:.1f}%[按营业额] / {takeaway_share_bills:.1f}%[按笔数];"
+            f"最大单一来源 {top_channel} ({top_channel_share:.1f}%[按营业额] / {top_channel_share_bills:.1f}%[按笔数])。"
         ]
         if dine_in_avg is not None and takeaway_avg is not None:
             parts.append(
-                f" 客单价:堂食 {dine_in_avg:.0f} 元 vs 外卖 {takeaway_avg:.0f} 元。"
+                f" 客单价:堂食 {dine_in_avg:.0f} 元/人 vs 外卖 {takeaway_avg:.0f} 元/人。"
             )
         elif dine_in_avg is not None:
-            parts.append(f" 堂食客单价 {dine_in_avg:.0f} 元。")
+            parts.append(f" 堂食客单价 {dine_in_avg:.0f} 元/人。")
         elif takeaway_avg is not None:
-            parts.append(f" 外卖客单价 {takeaway_avg:.0f} 元。")
+            parts.append(f" 外卖客单价 {takeaway_avg:.0f} 元/人。")
         insight_text = "".join(parts)
 
         return TemplateResult(
@@ -238,16 +256,26 @@ class ChannelAnalysis(AnalysisTemplate):
                 "by_source": by_source,
                 "by_bucket": by_bucket,
                 "has_customer_data": cust_col is not None,
+                # C-rec 7: explicit basis info for AI prompt + FE label
+                "share_basis_note": "share_amount_pct=按营业额占比，share_bills_pct=按笔数(订单数)占比",
+                "revenue_basis_label": measure_annotation(measure),
             },
             chart_config=chart_config,
             kpis={
                 "top_channel": top_channel,
-                "top_channel_share": top_channel_share,
-                "takeaway_share": takeaway_share,
-                "dine_in_share": dine_in_share,
+                "top_channel_share": top_channel_share,             # legacy = amount
+                "top_channel_share_amount_pct": top_channel_share,
+                "top_channel_share_bills_pct": top_channel_share_bills,
+                "takeaway_share": takeaway_share,                   # legacy = amount
+                "takeaway_share_amount_pct": takeaway_share,
+                "takeaway_share_bills_pct": takeaway_share_bills,
+                "dine_in_share": dine_in_share,                     # legacy = amount
+                "dine_in_share_amount_pct": dine_in_share,
+                "dine_in_share_bills_pct": dine_in_share_bills,
                 "total_channels": total_channels,
                 "dine_in_avg_per_customer": dine_in_avg,
                 "takeaway_avg_per_customer": takeaway_avg,
+                "share_basis_default": "amount",
             },
             insight_text=insight_text,
         )

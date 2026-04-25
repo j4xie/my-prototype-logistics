@@ -19,7 +19,7 @@ import polars as pl
 from ..compute.base import ComputeBackend
 from ..restaurant.schema_helpers import (
     find_date_col, find_gross_revenue_col, find_net_revenue_col,
-    preferred_revenue_col,
+    measure_annotation, preferred_revenue_col,
 )
 from ..schema import DataSchema, Domain
 from .base import AnalysisTemplate, TemplateResult
@@ -75,6 +75,21 @@ class MonthlyAnomaly(AnalysisTemplate):
                 code=self.code, title=self.title, data={},
                 applies=False, skip_reason="missing date or revenue col",
             )
+
+        # C-rec 7 (Apr 25 2026): label revenue basis so AI / FE can't pass
+        # off gross-side numbers as net (Q14 bug: "monthly peak ¥3.19M" was
+        # gross 应收, real net 实收 was ¥2.29M, customer made wrong decisions).
+        net_candidate = find_net_revenue_col(cols)
+        gross_candidate = find_gross_revenue_col(cols)
+        if rev_col == net_candidate:
+            revenue_basis = "净"  # 实收 / 折后 / 到账
+            revenue_basis_label = "[净/实收口径]"
+        elif rev_col == gross_candidate:
+            revenue_basis = "毛"  # 应收 / 折前 / 含税
+            revenue_basis_label = "[毛/应收口径]"
+        else:
+            revenue_basis = "未知"
+            revenue_basis_label = f"[按{rev_col}统计]"
 
         # Drop meta rows
         df = df.filter(
@@ -147,11 +162,15 @@ class MonthlyAnomaly(AnalysisTemplate):
 
         # Insight
         parts: List[str] = []
-        parts.append(f"期内 {len(months)} 个月,月均 ¥{mean:,.0f}。")
-        parts.append(f"峰值 {peak['month']} ¥{peak['revenue']:,.0f},谷值 {trough['month']} ¥{trough['revenue']:,.0f}。")
+        parts.append(f"营收口径：{revenue_basis_label}（{rev_col}）。")
+        parts.append(f"期内 {len(months)} 个月,月均 ¥{mean:,.0f}{revenue_basis_label}。")
+        parts.append(
+            f"峰值 {peak['month']} ¥{peak['revenue']:,.0f}{revenue_basis_label},"
+            f"谷值 {trough['month']} ¥{trough['revenue']:,.0f}{revenue_basis_label}。"
+        )
         if anomalies:
             anomaly_months = ", ".join(f"{m['month']}({m['mom_delta_pct']:+.1f}%)" for m in anomalies)
-            parts.append(f"🚨 发现 {len(anomalies)} 个异常月:{anomaly_months}。")
+            parts.append(f"🚨 发现 {len(anomalies)} 个异常月:{anomaly_months}（按月度营收MoM[{revenue_basis}]统计）。")
             if worst and worst.get("mom_delta_pct"):
                 delta = worst["mom_delta_pct"]
                 if delta < 0:
@@ -203,6 +222,10 @@ class MonthlyAnomaly(AnalysisTemplate):
                 "trough": trough,
                 "mean_revenue": round(mean, 2),
                 "stdev_revenue": round(stdev, 2),
+                # C-rec 7: explicit basis labels for downstream LLM/FE
+                "revenue_basis": revenue_basis,           # "毛" / "净" / "未知"
+                "revenue_column": rev_col,
+                "revenue_basis_label": revenue_basis_label,  # "[毛/应收口径]" 等
             },
             chart_config=chart_config,
             kpis={
@@ -211,6 +234,9 @@ class MonthlyAnomaly(AnalysisTemplate):
                 "worst_mom_delta_pct": worst.get("mom_delta_pct") if worst else None,
                 "peak_month": peak["month"],
                 "trough_month": trough["month"],
+                # C-rec 7: surface basis label so AI prompt + cards inherit it
+                "revenue_basis": revenue_basis,
+                "revenue_basis_label": revenue_basis_label,
             },
             insight_text=insight_text,
         )

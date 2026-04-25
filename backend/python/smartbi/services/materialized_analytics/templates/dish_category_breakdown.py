@@ -91,6 +91,9 @@ class DishCategoryBreakdown(AnalysisTemplate):
             )
 
         total_revenue = sum(v["revenue"] for v in agg.values())
+        # C-rec 7 (Apr 25 2026): also expose bills/quantity-basis share so
+        # customer can compare "卖得多" (qty) vs "赚得多" (revenue).
+        total_quantity = sum(v["quantity"] for v in agg.values())
 
         # Build breakdown list, sorted by revenue descending
         breakdown: List[Dict[str, Any]] = sorted(
@@ -101,6 +104,10 @@ class DishCategoryBreakdown(AnalysisTemplate):
                     "revenue": round(vals["revenue"], 2),
                     "share_pct": round(vals["revenue"] / total_revenue * 100, 2)
                     if total_revenue > 0 else 0.0,
+                    "share_amount_pct": round(vals["revenue"] / total_revenue * 100, 2)
+                    if total_revenue > 0 else 0.0,
+                    "share_quantity_pct": round(vals["quantity"] / total_quantity * 100, 2)
+                    if total_quantity > 0 else 0.0,
                     "item_count": len(vals["items"]),
                 }
                 for cat, vals in agg.items()
@@ -142,10 +149,13 @@ class DishCategoryBreakdown(AnalysisTemplate):
         # Apr 25 2026 D1.C5: clearly label as inferred so the AI / FE can't
         # present this as authoritative. Real categories require a proper
         # POS export with a category column or a customer-supplied mapping.
+        # C-rec 7: explicit basis "[按营业额]" on every percentage so customer
+        # never confuses revenue% with quantity-sold%.
+        top_qty_share = breakdown[0]["share_quantity_pct"] if breakdown else 0.0
         insight_text = (
-            f"⚠ 推断分类 (基于菜品名前缀,无原始类别字段)。"
-            f"{top_category} 贡献 {top_share:.1f}% 营收 (最大推断类目);"
-            f"前 3 类合计 {top3_pct:.1f}%,"
+            f"⚠ 推断分类 (基于菜品名前缀,无原始类别字段, inferred=true)。"
+            f"{top_category} 贡献 {top_share:.1f}%[按营业额] / {top_qty_share:.1f}%[按销量] (最大推断类目);"
+            f"前 3 类合计 {top3_pct:.1f}%[按营业额],"
             f"覆盖 {total_item_count} 个菜品。"
             f"如需精确分类,请上传含「商品类别」字段的明细表。"
         )
@@ -156,19 +166,25 @@ class DishCategoryBreakdown(AnalysisTemplate):
             data={
                 "breakdown": breakdown,
                 "total_revenue": round(total_revenue, 2),
+                "total_quantity": round(total_quantity, 2),
                 # Apr 25 2026 D1.C5: explicit flag for downstream (AI prompt /
                 # FE label) to know these categories are inferred.
                 "inferred": True,
                 "inference_method": "name_prefix_keyword_match",
                 "category_source": "推断 (菜品名前缀)",
+                # C-rec 7: explicit basis info
+                "share_basis_note": "share_amount_pct=按营业额(收入)占比，share_quantity_pct=按销量(份数)占比",
             },
             chart_config=chart_config,
             kpis={
                 "top_category": top_category,
-                "top_category_share": top_share,
+                "top_category_share": top_share,                          # legacy = amount
+                "top_category_share_amount_pct": top_share,
+                "top_category_share_quantity_pct": top_qty_share,
                 "category_count": len(breakdown),
                 "total_item_count": total_item_count,
                 "inferred": True,
+                "share_basis_default": "amount",
             },
             insight_text=insight_text,
         )

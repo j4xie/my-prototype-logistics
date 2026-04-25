@@ -190,23 +190,24 @@ class ProfitLossStatement(AnalysisTemplate):
                 "name": "毛利(估算)", "value": round(gross_profit, 2), "type": "total",
             })
 
-        # Build insight
+        # Build insight — C-rec 7 (Apr 25 2026): explicit [毛]/[净] tags so AI
+        # never blurs gross-side and net-side amounts in the same answer.
         parts: List[str] = []
-        parts.append(f"应收合计 {gross:,.0f} 元。")
+        parts.append(f"应收合计 {gross:,.0f} 元[毛/应收口径]。")
         if net_col:
-            parts.append(f"实收 {net:,.0f} 元 (到账率 {net_share:.1f}%)。")
+            parts.append(f"实收 {net:,.0f} 元[净/到账口径] (到账率 {net_share:.1f}%[按营业额])。")
         if deductions:
             top_ded = max(deductions, key=lambda d: d["amount"])
             parts.append(
-                f"最大扣减项:{top_ded['label']} {top_ded['amount']:,.0f} 元。"
+                f"最大扣减项:{top_ded['label']} {top_ded['amount']:,.0f} 元[毛-净 差额口径]。"
             )
         if has_cost:
             parts.append(
-                f"毛利估算 {gross_profit:,.0f} 元 (已扣成本 {total_cost:,.0f} 元)。"
+                f"毛利估算 {gross_profit:,.0f} 元[毛利口径] (已扣成本 {total_cost:,.0f} 元)。"
             )
         else:
             parts.append(
-                "⚠ 成本/人工/房租等数据未在上传中，无法计算真毛利/净利 — 仅展示营收结构。"
+                "⚠ 成本/人工/房租等数据未在上传中，无法计算真毛利/净利 — 仅展示营收结构（has_cost_data=false）。"
             )
         insight_text = " ".join(parts)
 
@@ -255,6 +256,10 @@ class ProfitLossStatement(AnalysisTemplate):
                 "has_cost_data": has_cost,
                 "by_store_top": by_store,
                 "waterfall": waterfall_nodes,
+                # C-rec 7: explicit basis labels so AI knows gross vs net
+                "gross_basis_label": "[毛/应收口径]",
+                "net_basis_label": "[净/到账口径]",
+                "net_share_basis": "按营业额(应收→实收)",
             },
             chart_config=chart_config,
             kpis={
@@ -263,6 +268,9 @@ class ProfitLossStatement(AnalysisTemplate):
                 "net_share_pct": net_share,
                 "total_deductions": round(sum(d["amount"] for d in deductions), 2),
                 "has_cost_data": has_cost,
+                # C-rec 7
+                "gross_basis_label": "[毛/应收口径]",
+                "net_basis_label": "[净/到账口径]",
             },
             insight_text=insight_text,
         )

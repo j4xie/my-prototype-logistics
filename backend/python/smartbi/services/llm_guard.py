@@ -38,6 +38,30 @@ NUMERIC_GUARD_CLAUSE = (
 )
 
 
+# Apr 25 2026 quality audit C-rec 7: Customers misinterpret numbers because the
+# AI doesn't label them. Two specific bugs caught:
+#   Q14: AI said "monthly anomaly peak ¥3.19M" but DB net was ¥2.29M (gross
+#        vs net = 39% off). Customer made wrong cost decisions.
+#   Q12: AI said "65.0%" but the basis was amount; bills% was 55.8%. Customer
+#        thought it was bill share and miscalibrated channel investment.
+# Fix: force every numeric mention to carry a basis label.
+LABELING_GUARD_CLAUSE = (
+    "\n\n数字标注强制规则（违反将被视为错误答案）：\n"
+    "1. **金额数字必须标注口径**：写到 ¥/元 时必须紧跟 [毛] 或 [净]（毛=折扣前/含税"
+    "/应收，净=折后/到账/实收），除非数据上下文已注明该数字是'营业额'/'应收'/'实收'/"
+    "'到账'等明确口径词。\n"
+    "   反面：'营业额 3,190,000 元'  正面：'营业额 3,190,000 元（毛/应收口径）'\n"
+    "2. **百分比必须标注分母基准**：写到 % 时必须紧跟 [按营业额]/[按订单数]/[按笔数]/"
+    "[按客流] 等基准说明，除非上下文已经显式说明该比例的分母。\n"
+    "   反面：'堂食占 65.0%'  正面：'堂食占 65.0%（按营业额）'\n"
+    "3. 当数据 dict 中有 _label / _basis / share_amount_pct / share_bills_pct 等字段时，"
+    "必须采用其中文标注，不要省略；当 has_cost_data=false 或 inferred=true 时，必须在"
+    "答案中明确说明'未含成本'或'推断分类'。\n"
+    "4. 同一个比例如果同时有按金额和按笔数两种基准（例如 channel_analysis.share_pct 是按营业额，"
+    "share_bills_pct 是按笔数），请同时陈述两个数字并标注，避免读者误读。"
+)
+
+
 _HALLUC_PATTERN = re.compile(r"([-+]?\d+(?:\.\d+)?)\s*(亿|千万)")
 _NUMBER_PATTERN = re.compile(r"([-+]?\d+(?:,\d{3})*(?:\.\d+)?)")
 

@@ -266,10 +266,23 @@ class RevenueManagementReport(AnalysisTemplate):
         top_cell = max(all_cells, key=lambda c: c[3])  # by revenue
         top_ch, top_sl, top_orders, top_rev = top_cell
         top_share = round(top_rev / grand_revenue * 100, 1) if grand_revenue > 0 else 0.0
+        # C-rec 7 (Apr 25 2026): bills-basis share for the same dominant cell
+        top_share_bills = round(top_orders / grand_orders * 100, 1) if grand_orders > 0 else 0.0
+
+        # C-rec 7: revenue basis depends on which column was chosen from
+        # _REVENUE_CANDIDATES = ("实收额", "实收", "营业额", "应收金额").
+        if revenue_col in ("实收额", "实收"):
+            revenue_basis_label = "[净/实收]"
+        elif revenue_col in ("营业额", "应收金额"):
+            revenue_basis_label = "[毛/应收]"
+        else:
+            revenue_basis_label = f"[按{revenue_col}]"
 
         insight_text = (
-            f"营收高峰：{top_ch}×{top_sl} 贡献 {top_rev:,.0f} 元（占 {top_share:.1f}%）, {top_orders} 单。"
-            f" 全渠道全时段 {grand_orders} 单、{grand_revenue:,.0f} 元。"
+            f"营收口径：{revenue_basis_label}（{revenue_col}）。"
+            f" 营收高峰：{top_ch}×{top_sl} 贡献 {top_rev:,.0f} 元{revenue_basis_label}"
+            f"（占 {top_share:.1f}%[按营业额] / {top_share_bills:.1f}%[按笔数]）, {top_orders} 单。"
+            f" 全渠道全时段 {grand_orders} 单、{grand_revenue:,.0f} 元{revenue_basis_label}。"
         )
 
         # ECharts — stacked bar: x=time_slot, each channel is a series
@@ -306,6 +319,10 @@ class RevenueManagementReport(AnalysisTemplate):
                 "col_totals": col_totals,
                 "grand_orders": grand_orders,
                 "grand_revenue": round(grand_revenue, 2),
+                # C-rec 7: explicit basis info
+                "revenue_column": revenue_col,
+                "revenue_basis_label": revenue_basis_label,
+                "share_basis_note": "top_cell_share_pct=按营业额(收入)占比，top_cell_share_bills_pct=按笔数(订单数)占比",
             },
             chart_config=chart_config,
             kpis={
@@ -313,7 +330,11 @@ class RevenueManagementReport(AnalysisTemplate):
                 "grand_revenue": round(grand_revenue, 2),
                 "top_channel": top_ch,
                 "top_slot": top_sl,
-                "top_cell_share_pct": top_share,
+                "top_cell_share_pct": top_share,                  # legacy = amount
+                "top_cell_share_amount_pct": top_share,
+                "top_cell_share_bills_pct": top_share_bills,
+                "revenue_basis_label": revenue_basis_label,
+                "share_basis_default": "amount",
             },
             insight_text=insight_text,
         )
