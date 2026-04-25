@@ -38,97 +38,16 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 import asyncpg
 
 from smartbi.canonical import CanonicalRow
+from smartbi.canonical.aliases import ALIAS_TO_ATTR  # 数据织网 A v1.4 §3.0: 搬到 canonical/aliases.py
 from smartbi.gold import PipelineStats, ingest_and_materialize
 
 logger = logging.getLogger(__name__)
 
 
-# Canonical field aliases → CanonicalRow attribute. Covers both English
-# canonical names (from semantic_mapper standard output) and common
-# Chinese column names from qhj-style exports. Unknown aliases are
-# silently ignored — rows missing required fields are reported in stats.
-_ALIAS_TO_ATTR: Dict[str, str] = {
-    # store
-    "store_name": "store_name",
-    "门店": "store_name",
-    "门店名称": "store_name",
-    "店铺": "store_name",
-    "shop_name": "store_name",
-
-    # bill no — qhj uses 账单号; other customers use 订单号 / 单号
-    "source_bill_no": "source_bill_no",
-    "bill_no": "source_bill_no",
-    "order_no": "source_bill_no",
-    "订单号": "source_bill_no",
-    "单号": "source_bill_no",
-    "账单号": "source_bill_no",
-    "结账号": "source_bill_no",
-    "外部单号": "source_bill_no",
-
-    # date — 营业日期 is the qhj canonical; 开单时间 is an adjacent datetime
-    # we don't need (date is derivable). Keep 营业日期 as the primary.
-    "date": "date",
-    "日期": "date",
-    "营业日期": "date",
-    "transaction_date": "date",
-    "交易日期": "date",
-    "order_date": "date",
-
-    # staff — qhj has 3 roles; all map to staff_name with role inferred elsewhere
-    "staff_name": "staff_name",
-    "收银员": "staff_name",
-    "服务员": "staff_name",
-    "销售员": "staff_name",
-
-    # bill-level amounts
-    "gross_amount": "gross_amount",
-    "应收金额": "gross_amount",
-    "营业额": "gross_amount",
-    "原价": "gross_amount",
-    "商品折前金额": "gross_amount",
-
-    "discount_amount": "discount_amount",
-    "优惠金额": "discount_amount",
-    "折扣金额": "discount_amount",
-    "折扣额": "discount_amount",
-    "代金券优惠": "discount_amount",
-
-    "net_amount": "net_amount",
-    "实收金额": "net_amount",
-    "实收额": "net_amount",
-    "商品折后金额": "net_amount",
-    "净额": "net_amount",
-
-    "actual_receive": "actual_receive",
-    "收款金额": "actual_receive",
-    "实收": "actual_receive",
-
-    # counts — qhj uses 客流量 for customer head count
-    "customer_count": "customer_count",
-    "人数": "customer_count",
-    "就餐人数": "customer_count",
-    "客流量": "customer_count",
-
-    # metadata
-    "table_no": "table_no",
-    "桌号": "table_no",
-    "桌位": "table_no",
-
-    "order_type": "order_type",
-    "订单类型": "order_type",
-
-    "channel_origin": "channel_origin",
-    "来源": "channel_origin",
-    "订单来源": "channel_origin",
-
-    # combo string — qhj's 商品信息 is the full product list blob;
-    # combo_parser splits it into fact_pos_item rows.
-    "combo_string": "combo_string",
-    "菜品明细": "combo_string",
-    "商品": "combo_string",
-    "商品信息": "combo_string",
-    "订单明细": "combo_string",
-}
+# 数据织网 A v1.4 §3.0 + Day 0 audit option 2: ALIAS dict 已搬到 smartbi/canonical/aliases.py
+# 含 v1.0 新增 product_summary 维度字段 (商品名/编码/分类/销量/单价/退货等)
+# 此处保留旧 _ALIAS_TO_ATTR 别名为向后兼容 (内部其它代码可能 import)
+_ALIAS_TO_ATTR: Dict[str, str] = ALIAS_TO_ATTR
 
 
 _REQUIRED_ATTRS = ("store_name", "source_bill_no", "date")
