@@ -11,6 +11,8 @@ interface ItemField {
   label: string
   required: boolean
   min?: number
+  /** Apr 25 2026 audit: schema-driven default for new array entries. */
+  defaultValue?: unknown
 }
 
 const props = defineProps<{
@@ -31,7 +33,15 @@ const rows = computed({
 function addRow() {
   const newRow: Record<string, unknown> = {}
   props.itemSchema.fields.forEach((f) => {
-    newRow[f.code] = f.type === 'decimal' || f.type === 'integer' ? 0 : ''
+    // Apr 25 2026 audit (Rule 8 same-cause sweep): respect schema defaultValue
+    // — same fix as LineItemsEditor.addRow (b13edd00b).
+    if (f.defaultValue !== undefined && f.defaultValue !== null) {
+      newRow[f.code] = f.defaultValue
+    } else if (f.type === 'decimal' || f.type === 'integer') {
+      newRow[f.code] = 0
+    } else {
+      newRow[f.code] = ''
+    }
   })
   emit('update:modelValue', [...rows.value, newRow])
 }

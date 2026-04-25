@@ -80,10 +80,24 @@ function handleChange(val: string | number | null) {
  * record by ID so its display name populates instead of showing raw ID.
  * Try GET /endpoint/{id} first; fall back to keyword search if 404/no match.
  */
-/** ID-shape: numeric or UUID. Names with Chinese/spaces/parens skip fetchById. */
+/**
+ * ID-shape detection — broad allow-list to support legacy prefix-style IDs.
+ *
+ * Apr 25 2026 audit caught: prod has 177 product_type IDs like "PT-F001-003" that the
+ * original UUID/numeric-only regex rejected. fetchById was being skipped, so edit-mode
+ * line items displayed raw "PT-F001-003" as the option label instead of looking up the
+ * product name.
+ *
+ * Allowed: numeric, UUID, alnum+hyphens (covers PT-F001-003, R001-PT-001, CUS-1767..., etc).
+ * Rejected: anything containing Chinese/spaces/parens (legacy display-name strings like "张三").
+ */
 function looksLikeId(v: string | number): boolean {
   const s = String(v)
-  return /^\d+$/.test(s) || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)
+  if (s.length === 0) return false
+  // Reject if contains Chinese, spaces, parens — these are legacy display-name strings
+  if (/[一-鿿\s()（）]/.test(s)) return false
+  // Accept: numeric, UUID, alnum+hyphens (covers prefix-style IDs)
+  return /^[A-Za-z0-9_\-.]+$/.test(s)
 }
 
 async function fetchById(id: string | number) {

@@ -112,7 +112,9 @@ public class ReferenceDataController {
     }
 
     /** GET-by-id for employees — required by ReferenceSelector.fetchById on edit-mode display.
-     *  Reviewer Issue #1 fix: without this, ReferenceSelector falls back to displaying raw ID. */
+     *  Reviewer Issue #1 fix: without this, ReferenceSelector falls back to displaying raw ID.
+     *  Audit Apr 25 2026: removed input-echo on miss — was hiding stale/deleted user references.
+     *  ReferenceSelector itself handles the "render raw value" fallback for true legacy strings. */
     @GetMapping("/employees/{idOrName}")
     @Operation(summary = "按 ID 或 fullName 查单个员工")
     public ApiResponse<Map<String, Object>> getEmployee(@PathVariable String factoryId,
@@ -134,13 +136,7 @@ public class ReferenceDataController {
                 .findFirst()
                 .map(this::toEmployeeMap)
                 .map(ApiResponse::success)
-                .orElseGet(() -> {
-                    // Echo back the raw value so ReferenceSelector keeps displaying the legacy string
-                    Map<String, Object> echo = new LinkedHashMap<>();
-                    echo.put("id", idOrName);
-                    echo.put("fullName", idOrName);
-                    return ApiResponse.success(echo);
-                });
+                .orElseGet(() -> ApiResponse.success(null));
     }
 
     private Map<String, Object> toEmployeeMap(User u) {
@@ -173,12 +169,7 @@ public class ReferenceDataController {
                     return m;
                 })
                 .map(ApiResponse::success)
-                .orElseGet(() -> {
-                    Map<String, Object> echo = new LinkedHashMap<>();
-                    echo.put("id", id);
-                    echo.put("name", id);
-                    return ApiResponse.success(echo);
-                });
+                .orElseGet(() -> ApiResponse.success(null));
     }
 
     /** GET-by-id for supplier. Reviewer Issue #1 fix. */
@@ -197,12 +188,7 @@ public class ReferenceDataController {
                     return m;
                 })
                 .map(ApiResponse::success)
-                .orElseGet(() -> {
-                    Map<String, Object> echo = new LinkedHashMap<>();
-                    echo.put("id", id);
-                    echo.put("name", id);
-                    return ApiResponse.success(echo);
-                });
+                .orElseGet(() -> ApiResponse.success(null));
     }
 
     /** GET-by-id for product. Reviewer Issue #1 fix. */
@@ -223,12 +209,7 @@ public class ReferenceDataController {
                     return m;
                 })
                 .map(ApiResponse::success)
-                .orElseGet(() -> {
-                    Map<String, Object> echo = new LinkedHashMap<>();
-                    echo.put("id", id);
-                    echo.put("name", id);
-                    return ApiResponse.success(echo);
-                });
+                .orElseGet(() -> ApiResponse.success(null));
     }
 
     /** 客户查找 (sales_order.customerId 字段用此). */
@@ -364,12 +345,7 @@ public class ReferenceDataController {
                     return mp;
                 })
                 .map(ApiResponse::success)
-                .orElseGet(() -> {
-                    Map<String, Object> echo = new LinkedHashMap<>();
-                    echo.put("id", id);
-                    echo.put("name", id);
-                    return ApiResponse.success(echo);
-                });
+                .orElseGet(() -> ApiResponse.success(null));
     }
 
     private int clampSize(int requested) {
