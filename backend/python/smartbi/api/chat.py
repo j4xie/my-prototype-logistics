@@ -666,7 +666,7 @@ async def root_cause(request: RootCauseRequest) -> RootCauseResponse:
 
 
 @router.post("/general-analysis", response_model=GeneralAnalysisResponse)
-async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisResponse:
+async def general_analysis(request: GeneralAnalysisRequest, http_request: Request) -> GeneralAnalysisResponse:
     """
     Perform general analysis based on query.
 
@@ -700,7 +700,10 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
             data = get_sheet_data(request.sheet_id)
 
         if not data:
-            # Try to load data from database — prefer specific sheet_id, fallback to latest upload
+            # Bug G fix (Apr 26 2026): fallback factory-scoped + largest non-empty upload.
+            # Old: ORDER BY created_at DESC globally → cross-tenant leak risk + 16-row file
+            # beats 32K-row file. New: filter by factory_id from JWT, prefer largest upload
+            # (most informative for general queries) and skip failed/empty uploads.
             try:
                 from smartbi.config import get_pg_pool
 
@@ -714,9 +717,32 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
                             except (ValueError, TypeError):
                                 pass
                         if not upload_id:
-                            row = await conn.fetchrow(
-                                "SELECT id FROM smart_bi_pg_excel_uploads ORDER BY created_at DESC LIMIT 1"
+                            factory_id_for_select = (
+                                getattr(http_request.state, 'factory_id', None)
+                                if hasattr(http_request, 'state') else None
                             )
+                            if factory_id_for_select:
+                                row = await conn.fetchrow(
+                                    """
+                                    SELECT id FROM smart_bi_pg_excel_uploads
+                                    WHERE factory_id = $1
+                                      AND upload_status = 'COMPLETED'
+                                      AND row_count > 0
+                                    ORDER BY row_count DESC, created_at DESC
+                                    LIMIT 1
+                                    """,
+                                    factory_id_for_select,
+                                )
+                            else:
+                                row = await conn.fetchrow(
+                                    """
+                                    SELECT id FROM smart_bi_pg_excel_uploads
+                                    WHERE upload_status = 'COMPLETED'
+                                      AND row_count > 0
+                                    ORDER BY created_at DESC
+                                    LIMIT 1
+                                    """
+                                )
                             if row:
                                 upload_id = row['id']
                         if upload_id:
@@ -1131,6 +1157,40 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                     except (ValueError, TypeError):
                         pass
                 user_q = (request.effective_query or "").strip()
+                # Bug G fix (Apr 26 2026): when no sheet_id, auto-select largest upload
+                # for this factory so template cache fast-path can still fire. Without
+                # this, qa-runner / Java callers without sheet_id always missed cache and
+                # fell through to 60s LLM path on potentially-wrong upload.
+                if not upload_id and user_q:
+                    factory_id_for_select = (
+                        getattr(http_request.state, 'factory_id', None)
+                        if hasattr(http_request, 'state') else None
+                    )
+                    if factory_id_for_select:
+                        try:
+                            from smartbi.config import get_pg_pool as _g_pool
+                            _pool = await _g_pool()
+                            if _pool:
+                                async with _pool.acquire() as _conn:
+                                    _row = await _conn.fetchrow(
+                                        """
+                                        SELECT id FROM smart_bi_pg_excel_uploads
+                                        WHERE factory_id = $1
+                                          AND upload_status = 'COMPLETED'
+                                          AND row_count > 0
+                                        ORDER BY row_count DESC, created_at DESC
+                                        LIMIT 1
+                                        """,
+                                        factory_id_for_select,
+                                    )
+                                    if _row:
+                                        upload_id = _row['id']
+                                        logger.info(
+                                            f"[stream] auto-selected upload {upload_id} "
+                                            f"(factory={factory_id_for_select}, no sheet_id)"
+                                        )
+                        except Exception as _e:
+                            logger.warning(f"[stream] auto-select upload failed: {_e}")
                 if upload_id and user_q:
                     from smartbi.services.materialized_analytics.query_router import (
                         match_template_hybrid, format_cached_as_sse
@@ -1223,9 +1283,33 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                 except (ValueError, TypeError):
                                     pass
                             if not upload_id:
-                                row = await conn.fetchrow(
-                                    "SELECT id FROM smart_bi_pg_excel_uploads ORDER BY created_at DESC LIMIT 1"
+                                # Bug G fix (Apr 26 2026): factory-scoped + largest non-empty upload.
+                                factory_id_for_select = (
+                                    getattr(http_request.state, 'factory_id', None)
+                                    if hasattr(http_request, 'state') else None
                                 )
+                                if factory_id_for_select:
+                                    row = await conn.fetchrow(
+                                        """
+                                        SELECT id FROM smart_bi_pg_excel_uploads
+                                        WHERE factory_id = $1
+                                          AND upload_status = 'COMPLETED'
+                                          AND row_count > 0
+                                        ORDER BY row_count DESC, created_at DESC
+                                        LIMIT 1
+                                        """,
+                                        factory_id_for_select,
+                                    )
+                                else:
+                                    row = await conn.fetchrow(
+                                        """
+                                        SELECT id FROM smart_bi_pg_excel_uploads
+                                        WHERE upload_status = 'COMPLETED'
+                                          AND row_count > 0
+                                        ORDER BY created_at DESC
+                                        LIMIT 1
+                                        """
+                                    )
                                 if row:
                                     upload_id = row['id']
                             if upload_id:
