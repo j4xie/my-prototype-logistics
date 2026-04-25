@@ -105,16 +105,14 @@
             :key="sheet.sheetIndex"
             :name="String(sheet.sheetIndex)"
           >
-            <!-- 自定义 Tab 标签 -->
+            <!-- 自定义 Tab 标签 — extracted to analysis/SheetTabLabel.vue (Item 1 phase 9) -->
             <template #label>
-              <span class="custom-tab-label" :class="{ 'is-index': isIndexSheet(sheet), 'is-failed': !sheet.success }">
-                <el-icon v-if="!sheet.success" color="#F56C6C"><WarningFilled /></el-icon>
-                <el-icon v-else-if="isIndexSheet(sheet)"><List /></el-icon>
-                <el-icon v-else><Document /></el-icon>
-                <span>{{ getSheetDisplayName(sheet) }}</span>
-                <el-tag v-if="!sheet.success" size="small" type="danger">失败</el-tag>
-                <el-tag v-else-if="!isIndexSheet(sheet)" size="small" type="info">{{ sheet.savedRows }}行</el-tag>
-              </span>
+              <SheetTabLabel
+                :is-index="isIndexSheet(sheet)"
+                :success="sheet.success"
+                :display-name="getSheetDisplayName(sheet)"
+                :saved-rows="sheet.savedRows"
+              />
             </template>
 
             <!-- 索引页特殊展示 — extracted to analysis/IndexPageView.vue (Item 1 phase 6) -->
@@ -152,45 +150,15 @@
 
               <!-- 图表展示（多图表仪表板） -->
               <div v-if="hasChartData(sheet) || enrichingSheets.has(sheet.sheetIndex)" class="chart-section">
-                <div class="chart-section-header">
-                  <h3>数据可视化</h3>
-                  <div class="chart-section-actions">
-                    <span v-if="hasChartData(sheet) && !layoutEditMode" class="drill-hint">点击图表数据点可下钻分析</span>
-                    <!-- 刷新分析按钮 -->
-                    <el-button
-                      v-if="hasChartData(sheet)"
-                      :icon="Refresh"
-                      size="small"
-                      :loading="enrichingSheets.has(sheet.sheetIndex)"
-                      @click="handleRefreshAnalysis(sheet)"
-                      style="margin-left: 8px;"
-                    >刷新分析</el-button>
-                    <!-- Q2: Auto-refresh dropdown -->
-                    <el-dropdown v-if="hasChartData(sheet)" @command="setAutoRefresh" trigger="click" style="margin-left: 4px;">
-                      <el-button size="small" :type="autoRefreshInterval > 0 ? 'success' : 'default'">
-                        <el-icon><Timer /></el-icon>
-                        {{ autoRefreshInterval > 0 ? `${autoRefreshInterval/1000}s` : '自动' }}
-                      </el-button>
-                      <template #dropdown>
-                        <el-dropdown-menu>
-                          <el-dropdown-item :command="0">关闭自动刷新</el-dropdown-item>
-                          <el-dropdown-item :command="30000">每 30 秒</el-dropdown-item>
-                          <el-dropdown-item :command="60000">每 1 分钟</el-dropdown-item>
-                          <el-dropdown-item :command="300000">每 5 分钟</el-dropdown-item>
-                        </el-dropdown-menu>
-                      </template>
-                    </el-dropdown>
-                    <!-- P6: 编排模式切换 -->
-                    <el-switch
-                      v-if="hasChartData(sheet)"
-                      v-model="layoutEditMode"
-                      active-text="编排"
-                      inactive-text="标准"
-                      size="small"
-                      style="margin-left: 12px;"
-                    />
-                  </div>
-                </div>
+                <!-- Chart section header — extracted to analysis/ChartSectionHeader.vue (Item 1 phase 9) -->
+                <ChartSectionHeader
+                  :has-data="hasChartData(sheet)"
+                  :refreshing="enrichingSheets.has(sheet.sheetIndex)"
+                  v-model:layout-edit-mode="layoutEditMode"
+                  :auto-refresh-interval="autoRefreshInterval"
+                  @refresh="handleRefreshAnalysis(sheet)"
+                  @set-auto-refresh="setAutoRefresh"
+                />
 
                 <!-- Global Filter Bar (Power BI / Tableau style) — extracted to analysis/FilterChipsBar.vue (Item 1 phase 3a) -->
                 <FilterChipsBar
@@ -208,14 +176,13 @@
                   @clear="clearGlobalFilter(sheet)"
                 />
 
-                <!-- Explore Panel Toggle (Superset-style multi-dimension) -->
-                <div v-if="hasChartData(sheet)" class="explore-panel-toggle">
-                  <el-button size="small" text @click="explorePanelVisible = !explorePanelVisible">
-                    <el-icon><Operation /></el-icon>
-                    {{ explorePanelVisible ? '收起探索面板' : '展开探索面板' }}
-                    <el-badge v-if="exploreDimensions.length" :value="exploreDimensions.length" type="primary" />
-                  </el-button>
-                </div>
+                <!-- Explore Panel Toggle — extracted to analysis/ExplorePanelToggle.vue (Item 1 phase 9) -->
+                <ExplorePanelToggle
+                  :visible="hasChartData(sheet)"
+                  :expanded="explorePanelVisible"
+                  :selected-count="exploreDimensions.length"
+                  @toggle="explorePanelVisible = !explorePanelVisible"
+                />
                 <!-- Explore panel — extracted to analysis/ExplorePanel.vue (Item 1 phase 7) -->
                 <ExplorePanel
                   :visible="explorePanelVisible && hasChartData(sheet)"
@@ -552,6 +519,9 @@ import ChartSkeletonWrapper from './analysis/ChartSkeletonWrapper.vue';
 import ExplorePanel from './analysis/ExplorePanel.vue';
 import ChartActionBar from './analysis/ChartActionBar.vue';
 import ChartFilterBar from './analysis/ChartFilterBar.vue';
+import SheetTabLabel from './analysis/SheetTabLabel.vue';
+import ChartSectionHeader from './analysis/ChartSectionHeader.vue';
+import ExplorePanelToggle from './analysis/ExplorePanelToggle.vue';
 import AIInsightPanel from '@/components/smartbi/AIInsightPanel.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 // T3.1: Lazy-load rarely-used components — only loaded when user triggers them
