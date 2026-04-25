@@ -687,30 +687,15 @@
                 </el-collapse-item>
               </el-collapse>
 
-              <!-- AI 分析 -->
-              <div v-if="sheet.flowResult?.aiAnalysis || sheet.flowResult?.chartConfig?.aiAnalysis || enrichingSheets.has(sheet.sheetIndex)" class="ai-analysis-section">
-                <!-- 结构化 AI 面板 -->
-                <AIInsightPanel
-                  v-if="getStructuredInsight(sheet)"
-                  :insight="getStructuredInsight(sheet)"
-                  :loading="enrichingSheets.has(sheet.sheetIndex) && !sheet.flowResult?.aiAnalysis"
-                />
-
-                <!-- 回退：纯文本展示 -->
-                <template v-else>
-                  <h3><span class="section-badge section-badge--ai" aria-hidden="true"></span> AI 智能分析</h3>
-                  <div v-if="enrichingSheets.has(sheet.sheetIndex) && !sheet.flowResult?.aiAnalysis">
-                    <ChartSkeleton type="ai" />
-                  </div>
-                  <el-card v-else shadow="never" class="analysis-card">
-                    <div class="analysis-content" v-html="formatAnalysis(getAIAnalysis(sheet))"></div>
-                  </el-card>
-                </template>
-                <!-- 缓存状态提示 -->
-                <div v-if="getCacheHint(sheet)" class="cache-hint">
-                  {{ getCacheHint(sheet) }}
-                </div>
-              </div>
+              <!-- AI 分析 — extracted to analysis/AIInsightsStream.vue (Item 1 phase 3d) -->
+              <AIInsightsStream
+                :visible="!!(sheet.flowResult?.aiAnalysis || sheet.flowResult?.chartConfig?.aiAnalysis || enrichingSheets.has(sheet.sheetIndex))"
+                :enriching="enrichingSheets.has(sheet.sheetIndex)"
+                :structured-insight="getStructuredInsight(sheet)"
+                :raw-analysis="getAIAnalysis(sheet)"
+                :cache-hint="getCacheHint(sheet)"
+                :format-analysis="formatAnalysis"
+              />
 
               <!-- 敏感性分析 -->
               <div v-if="getSensitivityAnalysis(sheet)?.length" class="sensitivity-analysis-section">
@@ -854,6 +839,7 @@ import StatisticalDialog from './analysis/StatisticalDialog.vue';
 import FilterChipsBar from './analysis/FilterChipsBar.vue';
 import IndustryTemplateBar from './analysis/IndustryTemplateBar.vue';
 import KPIStripPanel from './analysis/KPIStripPanel.vue';
+import AIInsightsStream from './analysis/AIInsightsStream.vue';
 import AIInsightPanel from '@/components/smartbi/AIInsightPanel.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 // T3.1: Lazy-load rarely-used components — only loaded when user triggers them
