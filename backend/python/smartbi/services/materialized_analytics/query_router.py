@@ -884,6 +884,115 @@ def _fmt_kpi_value(key: str, value: Any) -> str:
     return f"{value}{unit}" if unit else str(value)
 
 
+# Phase 3 (Apr 26 2026): query-intent → dim hint mapping.
+# When a query implies a specific dim (e.g. "卖得最好的菜" implies dish dim),
+# we want to pick the matching dim from a top_n_by_dim template's all_dims
+# rather than always using primary_dim (which is just "biggest spread").
+_QUERY_DIM_HINTS: Dict[str, List[str]] = {
+    'dish': ['菜品', '商品', '产品', '菜', '单品', '主推菜', '畅销品'],
+    'store': ['门店', '店', '店铺', '分店', '哪家店', '哪几家'],
+    'channel': ['渠道', '美团', '饿了么', '抖音', '点评', '堂食外卖', '外卖渠道'],
+    'time_slot': ['时段', '小时', '早餐', '午餐', '晚餐', '宵夜', '午晚市'],
+    'province': ['省份', '城市', '地区'],
+    'payment': ['支付', '付款', '微信', '支付宝', '现金'],
+    'category': ['分类', '类别', '品类'],
+    'member': ['会员', '客户', '用户', 'VIP'],
+}
+
+# Maps semantic class → keywords that may appear in dim NAMES (in all_dims keys)
+_DIM_NAME_HINTS: Dict[str, List[str]] = {
+    'dish': ['菜品', '商品', '产品', '商品分类', '商品编码', '菜', '单品'],
+    'store': ['门店', '店', '店铺', '分店'],
+    'channel': ['渠道', '来源', '订单来源'],
+    'time_slot': ['时段', '小时', '午晚', '早晚', '早餐', '午餐', '晚餐'],
+    'province': ['省份', '城市', '区域', '地区'],
+    'payment': ['付款', '支付', '订单付款'],
+    'category': ['分类', '类别', '品类'],
+    'member': ['会员', '客户', '用户', 'VIP'],
+}
+
+
+def pick_dim_from_query(query: str, available_dims: List[str]) -> Optional[str]:
+    """Phase 3: pick the dim from `available_dims` that best matches user intent.
+
+    First tries direct substring (e.g. user says "门店" and dim "门店" exists).
+    Falls back to semantic class match (e.g. user says "菜", dim "商品分类").
+    Returns None if no useful match — caller should keep primary_dim.
+    """
+    if not query or not available_dims:
+        return None
+    q = query.lower()
+
+    # Step 1: direct substring match (highest confidence)
+    for dim in available_dims:
+        if not dim or len(dim) < 2:
+            continue
+        if dim.lower() in q:
+            return dim
+
+    # Step 2: semantic class via query hints → matching dim name keywords
+    for sem_class, q_hints in _QUERY_DIM_HINTS.items():
+        if any(h in q for h in q_hints):
+            d_hints = _DIM_NAME_HINTS.get(sem_class, [])
+            for dim in available_dims:
+                if any(h in dim for h in d_hints):
+                    return dim
+    return None
+
+
+def regen_top_n_for_dim(data: Dict, target_dim: str, top_n: int = 10) -> Optional[Dict]:
+    """Phase 3: re-render top_n_by_dim insight + KPIs for a different dim from all_dims.
+
+    Mirrors the formatting in templates/top_n_by_dim.py compute() but uses
+    a non-primary dim. Returns dict with 'insight_text', 'kpis', 'top_rows'
+    if successful, or None if target_dim missing or has < 2 rows.
+    """
+    all_dims = data.get('all_dims', {}) if isinstance(data, dict) else {}
+    if not isinstance(all_dims, dict) or target_dim not in all_dims:
+        return None
+    rows = all_dims[target_dim]
+    if not isinstance(rows, list) or len(rows) < 2:
+        return None
+    rows = rows[:top_n]
+    measure = data.get('measure', '总计')
+    top_label = rows[0].get('label') if isinstance(rows[0], dict) else None
+    if top_label is None:
+        return None
+    total_of_top = sum(r.get('total', 0) or 0 for r in rows)
+    top_total = rows[0].get('total', 0) or 0
+    top_share_pct = (top_total / total_of_top * 100) if total_of_top > 0 else 0
+    dominance = "独占" if top_share_pct >= 30 else "占比"
+
+    if len(rows) >= 3:
+        bottom_label = rows[-1].get('label') if isinstance(rows[-1], dict) else None
+        bot_total = rows[-1].get('total', 0) or 0
+        gap_pct = round((top_total - bot_total) / top_total * 100, 0) if top_total > 0 else 0
+        action = (
+            f"建议: 针对【末位「{bottom_label}」 (与 Top「{top_label}」差距 {gap_pct:.0f}%)】"
+            f"复制 Top {target_dim} 运营 SOP 可拉高末位 {measure} 10-20% "
+            f"(前置: 对标走访「{top_label}」 + 末位 {target_dim} 负责人 KPI 重设, 本季度内完成)"
+        )
+    else:
+        action = (
+            f"建议: 针对【Top「{top_label}」 ({dominance} {top_share_pct:.1f}%)】"
+            f"复盘 Top 成功要素并输出到其他 {target_dim} 可拉升 {measure} 5-10% "
+            f"(前置: Top {target_dim} 案例总结 + 培训 + 跨域复制, 本月内完成)"
+        )
+    return {
+        'insight_text': (
+            f"{target_dim} Top {len(rows)}:{top_label} {dominance} "
+            f"{top_share_pct:.1f}%,余下梯队收敛明显。 {action}"
+        ),
+        'kpis': {
+            'top_label': top_label,
+            'top_value': top_total,
+            'top_share_pct': round(top_share_pct, 2),
+            'dim_count': len(all_dims),
+        },
+        'top_rows': rows,
+    }
+
+
 def format_cached_as_sse(
     template_result: Dict,
     query: str,
@@ -920,6 +1029,52 @@ def format_cached_as_sse(
     intent_signals = intent_signals or {}
     requested_n = intent_signals.get('n')
     requested_role = intent_signals.get('role')
+
+    # Phase 3 (Apr 26 2026): top_n_by_dim dim override.
+    # When query implies a specific dim (e.g. "卖得最好的菜" implies dish, not
+    # the cached primary_dim "门店"), regenerate insight from data.all_dims
+    # using the user's intended dim. all_dims is pre-computed at materialize
+    # time so this is fast (no LLM) and always correct dim semantics.
+    if code == 'top_n_by_dim' and isinstance(data, dict):
+        all_dim_keys = list((data.get('all_dims') or {}).keys())
+        primary = data.get('primary_dim')
+        intended = pick_dim_from_query(query, all_dim_keys)
+        if intended and intended != primary:
+            regen = regen_top_n_for_dim(data, intended, top_n=requested_n or 10)
+            if regen:
+                insight = regen['insight_text']
+                # Merge regenerated KPIs (keeps any non-overridden ones)
+                kpis = {**kpis, **regen['kpis']}
+                # Mutate data shallowly so chart re-render picks the new dim.
+                data = {**data, 'top_rows': regen['top_rows'], 'primary_dim': intended}
+                template_result = {
+                    **template_result, 'data': data,
+                    'insight_text': insight, 'kpis': kpis,
+                }
+                # Replace chart with new dim's bars (use top_rows as labels/values).
+                if isinstance(chart_config, dict):
+                    measure = data.get('measure', '总计')
+                    chart_config = {
+                        **chart_config,
+                        'title': {
+                            'text': f"Top {len(regen['top_rows'])} {intended} (按 {measure})",
+                            'left': 'center',
+                        },
+                        'xAxis': {
+                            'type': 'category',
+                            'data': [str(r.get('label')) for r in regen['top_rows']],
+                            'axisLabel': {'rotate': 30},
+                        },
+                        'series': [{
+                            'name': measure, 'type': 'bar',
+                            'data': [r.get('total') for r in regen['top_rows']],
+                            'label': {'show': True, 'position': 'top', 'formatter': '{c}'},
+                        }],
+                    }
+                logger.info(
+                    f"[format_cached] dim override: {primary!r} → {intended!r} "
+                    f"for query={query[:30]!r}"
+                )
 
     # Re-slice ranking by requested N (cheap; cached list already has top-N
     # capped at template default, usually 10 — narrow further if user asked

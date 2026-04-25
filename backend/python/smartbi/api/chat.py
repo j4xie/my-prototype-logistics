@@ -1184,28 +1184,83 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                             async with pool.acquire() as _conn:
                                 # Step 2: template_code → upload_id (semantic match)
                                 if matched_code:
-                                    _row = await _conn.fetchrow(
-                                        """
-                                        SELECT a.upload_id
-                                        FROM smart_bi_pg_analysis_results a
-                                        JOIN smart_bi_pg_excel_uploads u
-                                          ON u.id = a.upload_id
-                                        WHERE a.factory_id = $1
-                                          AND a.template_code = $2
-                                          AND u.upload_status = 'COMPLETED'
-                                          AND u.row_count > 0
-                                        ORDER BY u.row_count DESC, u.created_at DESC
-                                        LIMIT 1
-                                        """,
-                                        factory_id_for_select, matched_code,
-                                    )
-                                    if _row:
-                                        upload_id = _row['upload_id']
-                                        logger.info(
-                                            f"[stream] template-matched upload {upload_id} "
-                                            f"(factory={factory_id_for_select}, "
-                                            f"template={matched_code})"
+                                    # Phase 3 (Apr 26 2026): for top_n_by_dim, prefer
+                                    # upload whose all_dims contains a key matching
+                                    # the user's intended dim (e.g. "卖得最好的菜" →
+                                    # need upload with 商品/菜品 in all_dims, not just
+                                    # any upload with top_n_by_dim materialized).
+                                    upload_id_dim_aware = None
+                                    if matched_code == 'top_n_by_dim':
+                                        try:
+                                            from smartbi.services.materialized_analytics.query_router import (
+                                                pick_dim_from_query as _pick_dim
+                                            )
+                                            _dim_rows = await _conn.fetch(
+                                                """
+                                                SELECT a.upload_id, u.row_count,
+                                                       jsonb_object_keys(
+                                                         a.analysis_result -> 'data' -> 'all_dims'
+                                                       ) AS dim_key
+                                                FROM smart_bi_pg_analysis_results a
+                                                JOIN smart_bi_pg_excel_uploads u
+                                                  ON u.id = a.upload_id
+                                                WHERE a.factory_id = $1
+                                                  AND a.template_code = 'top_n_by_dim'
+                                                  AND u.upload_status = 'COMPLETED'
+                                                  AND u.row_count > 0
+                                                """,
+                                                factory_id_for_select,
+                                            )
+                                            # Group by upload_id with available dims.
+                                            uploads_dims: Dict[int, List[str]] = {}
+                                            uploads_rc: Dict[int, int] = {}
+                                            for r in _dim_rows:
+                                                uid = r['upload_id']
+                                                uploads_dims.setdefault(uid, []).append(r['dim_key'])
+                                                uploads_rc[uid] = r['row_count']
+                                            # Score each upload: does its dim list contain
+                                            # something matching user intent?
+                                            best_uid = None
+                                            best_rc = 0
+                                            for uid, dims in uploads_dims.items():
+                                                picked = _pick_dim(user_q, dims)
+                                                if picked and uploads_rc[uid] > best_rc:
+                                                    best_uid = uid
+                                                    best_rc = uploads_rc[uid]
+                                            if best_uid is not None:
+                                                upload_id_dim_aware = best_uid
+                                                logger.info(
+                                                    f"[stream] dim-aware top_n_by_dim upload "
+                                                    f"{best_uid} (factory={factory_id_for_select})"
+                                                )
+                                        except Exception as _e:
+                                            logger.warning(f"[stream] dim-aware select failed: {_e}")
+
+                                    if upload_id_dim_aware is not None:
+                                        upload_id = upload_id_dim_aware
+                                    else:
+                                        _row = await _conn.fetchrow(
+                                            """
+                                            SELECT a.upload_id
+                                            FROM smart_bi_pg_analysis_results a
+                                            JOIN smart_bi_pg_excel_uploads u
+                                              ON u.id = a.upload_id
+                                            WHERE a.factory_id = $1
+                                              AND a.template_code = $2
+                                              AND u.upload_status = 'COMPLETED'
+                                              AND u.row_count > 0
+                                            ORDER BY u.row_count DESC, u.created_at DESC
+                                            LIMIT 1
+                                            """,
+                                            factory_id_for_select, matched_code,
                                         )
+                                        if _row:
+                                            upload_id = _row['upload_id']
+                                            logger.info(
+                                                f"[stream] template-matched upload {upload_id} "
+                                                f"(factory={factory_id_for_select}, "
+                                                f"template={matched_code})"
+                                            )
                                 # Step 3 (fallback): largest non-empty when no
                                 # template match OR matched template has no upload.
                                 if not upload_id:
