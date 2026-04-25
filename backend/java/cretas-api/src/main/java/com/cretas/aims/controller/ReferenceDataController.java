@@ -223,18 +223,22 @@ public class ReferenceDataController {
             @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "50") int size) {
+        // R8 audit C2 fix: over-fetch (size*4 capped 200) so post-page isActive filter
+        // doesn't starve dropdowns when DB page 1 contains many inactive entries.
+        // Same pattern as /employees (the original size*4 design from R4).
+        int pageSize = clampSize(size);
         org.springframework.data.domain.PageRequest pageable = PageRequest.of(
-                Math.max(page - 1, 0), clampSize(size),
+                Math.max(page - 1, 0), Math.min(pageSize * 4, 200),
                 Sort.by(Sort.Direction.ASC, "name"));
         String esc = SqlLikeEscaper.escape(keyword);
         Page<Customer> result = (esc == null || esc.isBlank())
                 ? customerRepository.findByFactoryId(factoryId, pageable)
                 : customerRepository.searchByNamePaged(factoryId, esc, pageable);
-        // R6 audit follow-up: filter inactive entities. Same pattern as /employees.
-        // Post-filter (in-memory) is acceptable since reference dropdowns are paged
-        // small (size≤100) and entity tables stay manageable per factory.
-        List<Map<String, Object>> content = result.getContent().stream()
+        List<Customer> filtered = result.getContent().stream()
                 .filter(c -> Boolean.TRUE.equals(c.getIsActive()))
+                .collect(Collectors.toList());
+        List<Map<String, Object>> content = filtered.stream()
+                .limit(pageSize)
                 .map(c -> {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("id", c.getId());
@@ -244,7 +248,7 @@ public class ReferenceDataController {
                     return m;
                 })
                 .collect(Collectors.toList());
-        return wrap(content, content.size());
+        return wrap(content, filtered.size());
     }
 
     /** 供应商查找. */
@@ -255,15 +259,20 @@ public class ReferenceDataController {
             @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "50") int size) {
+        // R8 audit C2 fix: over-fetch + post-filter (see findCustomers).
+        int pageSize = clampSize(size);
         org.springframework.data.domain.PageRequest pageable = PageRequest.of(
-                Math.max(page - 1, 0), clampSize(size),
+                Math.max(page - 1, 0), Math.min(pageSize * 4, 200),
                 Sort.by(Sort.Direction.ASC, "name"));
         String esc = SqlLikeEscaper.escape(keyword);
         Page<Supplier> result = (esc == null || esc.isBlank())
                 ? supplierRepository.findByFactoryId(factoryId, pageable)
                 : supplierRepository.searchByNamePaged(factoryId, esc, pageable);
-        List<Map<String, Object>> content = result.getContent().stream()
+        List<Supplier> filtered = result.getContent().stream()
                 .filter(s -> Boolean.TRUE.equals(s.getIsActive()))
+                .collect(Collectors.toList());
+        List<Map<String, Object>> content = filtered.stream()
+                .limit(pageSize)
                 .map(s -> {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("id", s.getId());
@@ -273,7 +282,7 @@ public class ReferenceDataController {
                     return m;
                 })
                 .collect(Collectors.toList());
-        return wrap(content, content.size());
+        return wrap(content, filtered.size());
     }
 
     /** 产品/SKU 查找 (订单明细 productTypeId). */
@@ -284,15 +293,20 @@ public class ReferenceDataController {
             @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "50") int size) {
+        // R8 audit C2 fix: over-fetch + post-filter (see findCustomers).
+        int pageSize = clampSize(size);
         org.springframework.data.domain.PageRequest pageable = PageRequest.of(
-                Math.max(page - 1, 0), clampSize(size),
+                Math.max(page - 1, 0), Math.min(pageSize * 4, 200),
                 Sort.by(Sort.Direction.ASC, "name"));
         String esc = SqlLikeEscaper.escape(keyword);
         Page<ProductType> result = (esc == null || esc.isBlank())
                 ? productTypeRepository.findByFactoryId(factoryId, pageable)
                 : productTypeRepository.searchProductTypes(factoryId, esc, pageable);
-        List<Map<String, Object>> content = result.getContent().stream()
+        List<ProductType> filtered = result.getContent().stream()
                 .filter(p -> Boolean.TRUE.equals(p.getIsActive()))
+                .collect(Collectors.toList());
+        List<Map<String, Object>> content = filtered.stream()
+                .limit(pageSize)
                 .map(p -> {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("id", p.getId());
@@ -304,7 +318,7 @@ public class ReferenceDataController {
                     return m;
                 })
                 .collect(Collectors.toList());
-        return wrap(content, content.size());
+        return wrap(content, filtered.size());
     }
 
     /** 原材料查找 (bom.materialTypeId 等). Apr 25 2026 audit: bom DYNAMIC mode active vulnerable
@@ -316,15 +330,20 @@ public class ReferenceDataController {
             @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "50") int size) {
+        // R8 audit C2 fix: over-fetch + post-filter (see findCustomers).
+        int pageSize = clampSize(size);
         org.springframework.data.domain.PageRequest pageable = PageRequest.of(
-                Math.max(page - 1, 0), clampSize(size),
+                Math.max(page - 1, 0), Math.min(pageSize * 4, 200),
                 Sort.by(Sort.Direction.ASC, "name"));
         String esc = SqlLikeEscaper.escape(keyword);
         Page<RawMaterialType> result = (esc == null || esc.isBlank())
                 ? materialTypeRepository.findByFactoryId(factoryId, pageable)
                 : materialTypeRepository.searchMaterialTypes(factoryId, esc, pageable);
-        List<Map<String, Object>> content = result.getContent().stream()
+        List<RawMaterialType> filtered = result.getContent().stream()
                 .filter(m -> Boolean.TRUE.equals(m.getIsActive()))
+                .collect(Collectors.toList());
+        List<Map<String, Object>> content = filtered.stream()
+                .limit(pageSize)
                 .map(m -> {
                     Map<String, Object> mp = new LinkedHashMap<>();
                     mp.put("id", m.getId());
@@ -335,7 +354,7 @@ public class ReferenceDataController {
                     return mp;
                 })
                 .collect(Collectors.toList());
-        return wrap(content, content.size());
+        return wrap(content, filtered.size());
     }
 
     /** GET-by-id for material. Reviewer Issue #1 same pattern. */
@@ -358,25 +377,32 @@ public class ReferenceDataController {
                 .orElseGet(() -> ApiResponse.success(null));
     }
 
-    /** 报价单查找 (sales_order.quoteId 字段). R6 (Apr 25 2026): adds keyword search
-     *  + uses real entity field name 'quoteNo' (V20260425_04 schema mistakenly used 'quoteNumber'). */
+    /** 报价单查找 (sales_order.quoteId 字段). R6: adds keyword search.
+     *  R8 audit S1: filter to APPROVED + not-expired so users can't pick DRAFT/REJECTED/EXPIRED quotes. */
     @GetMapping("/quotes")
-    @Operation(summary = "报价单查找")
+    @Operation(summary = "报价单查找 (仅有效报价)")
     public ApiResponse<Map<String, Object>> findQuotes(
             @PathVariable String factoryId,
             @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "50") int size) {
+        // R8 C2 + S2: over-fetch + post-filter to avoid empty dropdowns when page 1 has many
+        // ineligible quotes (DRAFT/REJECTED/EXPIRED crowding the recent-first slot).
+        int pageSize = clampSize(size);
         org.springframework.data.domain.PageRequest pageable = PageRequest.of(
-                Math.max(page - 1, 0), clampSize(size),
+                Math.max(page - 1, 0), Math.min(pageSize * 4, 200),
                 Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<OperationalQuote> result = quoteRepository.findByFactoryIdAndDeletedAtIsNullOrderByCreatedAtDesc(
                 factoryId, pageable);
         String esc = keyword == null ? "" : keyword.trim();
-        List<Map<String, Object>> content = result.getContent().stream()
-                // In-memory keyword filter — quotes table is small, no JPQL search method exists
-                // and adding one for a defaultVisible=false field doesn't justify the index.
+        java.time.LocalDate today = java.time.LocalDate.now();
+        List<OperationalQuote> filtered = result.getContent().stream()
+                .filter(q -> "APPROVED".equals(q.getStatus()))
+                .filter(q -> q.getValidUntil() == null || !q.getValidUntil().isBefore(today))
                 .filter(q -> esc.isEmpty() || (q.getQuoteNo() != null && q.getQuoteNo().contains(esc)))
+                .collect(Collectors.toList());
+        List<Map<String, Object>> content = filtered.stream()
+                .limit(pageSize)
                 .map(q -> {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("id", q.getId());
@@ -386,7 +412,7 @@ public class ReferenceDataController {
                     return m;
                 })
                 .collect(Collectors.toList());
-        return wrap(content, content.size());
+        return wrap(content, filtered.size());
     }
 
     /** GET-by-id for quote. */

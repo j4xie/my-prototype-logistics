@@ -50,10 +50,11 @@ async function search(query: string) {
       })
       const data = res.data
       const list = Array.isArray(data) ? data : (data?.content || [])
-      // R4 audit fix: coerce option.value to String. Entities like SalesOrder store FK
-      // columns as String (e.g. salespersonId column type=varchar), but reference endpoints
-      // return Long → JSON number. Without coercion, el-select strict-eq fails ("146" !== 146)
-      // and displays raw modelValue instead of the matched option's label.
+      // R4 audit fix (updated R8): coerce option.value to String for el-select strict-eq.
+      // Some entity FKs are BIGINT (SalesOrder.salespersonId post-V20260425_09) → JSON
+      // number; others may be VARCHAR/UUID. Reference endpoints return Long User.id as
+      // JSON number. Coercing to String here means SchemaFormRenderer.readInitialForField
+      // (which also String() the formData side) gives consistent String===String matches.
       options.value = list.map((item: Record<string, unknown>) => ({
         label: String(item[props.config.displayField] || ''),
         value: String(item[props.config.valueField]),
@@ -132,9 +133,9 @@ async function fetchById(id: string | number) {
     const item = res.data?.data || res.data
     if (item && typeof item === 'object' && item[props.config.valueField] != null) {
       const realLabel = String(item[props.config.displayField] || id)
-      // R4 audit fix: coerce to String. Entity FK columns (e.g. salespersonId)
-      // are VARCHAR while reference endpoints return Long → JSON number. el-select
-      // strict-eq fails ("146" !== 146) → can't match modelValue → shows raw label.
+      // R4 audit fix (updated R8): coerce to String. Reference endpoints return Long
+      // User.id → JSON number 146; SchemaFormRenderer.readInitialForField also String()s
+      // the formData side. Strict-eq match needs both sides String.
       const realValue = String(item[props.config.valueField])
       options.value = [{ label: realLabel, value: realValue }]
       // Force el-select to re-mount so its cached currentLabel picks up the real label

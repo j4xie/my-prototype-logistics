@@ -33,7 +33,8 @@ class SalesServiceImplSalespersonTest {
         SalesOrder order = new SalesOrder();
         salesService.resolveSalespersonField(order, "1309", "F006");
 
-        assertEquals("1309", order.getSalespersonId());
+        // R6 (V20260425_09): salespersonId is now BIGINT/Long, was String previously.
+        assertEquals(1309L, order.getSalespersonId());
         assertEquals("张六膳", order.getSalesperson());
     }
 
