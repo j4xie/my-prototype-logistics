@@ -367,6 +367,14 @@ public class SalesServiceImpl implements SalesService {
     @Transactional
     public SalesOrder updateSalesOrder(String factoryId, String orderId, UpdateSalesOrderRequest request) {
         SalesOrder order = getSalesOrderById(factoryId, orderId);
+        // DEBUG 2026-04-24: 调查 PUT 总返"只有草稿状态" 的真因 (DB+GET 都 DRAFT)
+        log.warn("[SO-UPDATE-DEBUG] orderId={} status={} statusClass={} == DRAFT? {} equals DRAFT? {} version={}",
+                orderId,
+                order.getStatus(),
+                order.getStatus() != null ? order.getStatus().getClass().getName() : "null",
+                order.getStatus() == SalesOrderStatus.DRAFT,
+                order.getStatus() != null && order.getStatus().equals(SalesOrderStatus.DRAFT),
+                order.getVersion());
         if (order.getStatus() != SalesOrderStatus.DRAFT) {
             throw new BusinessException("只有草稿状态的订单可以编辑");
         }
