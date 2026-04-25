@@ -28,6 +28,8 @@ interface ItemField {
     apiEndpoint: string
   }
   computed?: string
+  /** Apr 25 2026: schema-driven initial value for new rows (e.g. items.unit defaultValue:'kg'). */
+  defaultValue?: unknown
   /** Round 4 Fix P2-23: per-row visibility expression (SpEL) evaluated against the row */
   visibleWhen?: string
 }
@@ -50,8 +52,16 @@ const rows = computed({
 function addRow() {
   const newRow: Record<string, unknown> = {}
   props.itemSchema.fields.forEach((f) => {
-    if (f.type === 'decimal' || f.type === 'integer') newRow[f.code] = 0
-    else newRow[f.code] = ''
+    // Apr 25 2026: respect schema-defined defaultValue (e.g. items.unit:'kg').
+    // Found by depth-first-e2e: addRow ignored defaultValue → user had to manually
+    // pick required fields like 单位 → silent submit failure with vague 400 toast.
+    if (f.defaultValue !== undefined && f.defaultValue !== null) {
+      newRow[f.code] = f.defaultValue
+    } else if (f.type === 'decimal' || f.type === 'integer') {
+      newRow[f.code] = 0
+    } else {
+      newRow[f.code] = ''
+    }
   })
   emit('update:modelValue', [...rows.value, newRow])
 }
