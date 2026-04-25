@@ -1055,6 +1055,27 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
 
     async def event_stream() -> AsyncGenerator[str, None]:
         start_time = time.time()
+        # Apr 24 2026 — C-quality.md C-rec 12 + Direction 1: extract N /
+        # frequency / role intent signals once per request, log for
+        # observability, and pass to format_cached_as_sse so cached
+        # template results honor user's requested top-N (re-slice) and
+        # annotate role mismatches. Pure regex, <1ms; safe to run always.
+        intent_signals: Dict[str, Any] = {}
+        try:
+            from smartbi.services.intent.query_intent_extractor import extract_intent
+            intent_signals = dict(extract_intent(request.effective_query or ""))
+            if intent_signals:
+                _parts = []
+                if 'n' in intent_signals:
+                    _parts.append(f"N={intent_signals['n']}")
+                if 'role' in intent_signals:
+                    _parts.append(f"role={intent_signals['role']}")
+                if 'frequency' in intent_signals:
+                    _parts.append(f"freq={intent_signals['frequency']}")
+                logger.info(f"[intent] extracted {' '.join(_parts)} from query")
+        except Exception as e:
+            logger.warning(f"[intent] extraction failed (non-fatal): {e}")
+            intent_signals = {}
         try:
             # Apr 24 2026 Plan C Phase 4: Restaurant daily-ops Gold router (runs
             # BEFORE xlsx template router). Routes queries about 损耗/盘点/领料/
@@ -1130,7 +1151,9 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                             cached_by_code = {r["code"]: r for r in cached_results}
                             if matched_code in cached_by_code:
                                 tpl = cached_by_code[matched_code]
-                                payload = format_cached_as_sse(tpl, user_q)
+                                payload = format_cached_as_sse(
+                                    tpl, user_q, intent_signals=intent_signals
+                                )
                                 # Stream as SSE
                                 yield _sse_event("status", f"命中预计算模板:{tpl['title']}")
                                 # Chunk the answer in small pieces for streaming feel

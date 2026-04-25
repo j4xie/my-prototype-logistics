@@ -863,8 +863,23 @@ def _fmt_kpi_value(key: str, value: Any) -> str:
     return f"{value}{unit}" if unit else str(value)
 
 
-def format_cached_as_sse(template_result: Dict, query: str) -> Dict:
+def format_cached_as_sse(
+    template_result: Dict,
+    query: str,
+    intent_signals: Optional[Dict] = None,
+) -> Dict:
     """Format a cached template result as a response dict suitable for SSE streaming.
+
+    Args:
+        template_result: Cached template row from DB.
+        query: Original user query (for context).
+        intent_signals: Optional dict with optional ``n``, ``frequency``,
+            ``role`` keys (see ``smartbi.services.intent.query_intent_extractor``).
+            When ``n`` is supplied and the template's data carries a
+            ``ranking`` list, the list is re-sliced to honor the user's
+            requested top-N. When ``role`` is supplied and the template's
+            ``role_type`` differs (e.g. user asked 收银员 but template
+            materialized 服务员), an explanatory note is appended.
 
     Returns dict with keys:
       - answer: str (insight_text + context)
@@ -878,9 +893,60 @@ def format_cached_as_sse(template_result: Dict, query: str) -> Dict:
     insight = template_result.get("insight_text") or ""
     chart_config = template_result.get("chart_config")
     kpis = template_result.get("kpis") or {}
+    data = template_result.get("data") or {}
+
+    # ── Honor extracted intent ─────────────────────────────────────
+    intent_signals = intent_signals or {}
+    requested_n = intent_signals.get('n')
+    requested_role = intent_signals.get('role')
+
+    # Re-slice ranking by requested N (cheap; cached list already has top-N
+    # capped at template default, usually 10 — narrow further if user asked
+    # less). We do NOT widen beyond the cache.
+    if (
+        requested_n
+        and isinstance(data, dict)
+        and isinstance(data.get('ranking'), list)
+        and len(data['ranking']) > requested_n
+    ):
+        try:
+            sliced = data['ranking'][:requested_n]
+            # Mutate a shallow copy so we don't taint the upstream cache.
+            data = {**data, 'ranking': sliced}
+            template_result = {**template_result, 'data': data}
+            # Adjust chart series to match (top-N rendering uses same list).
+            if chart_config and isinstance(chart_config, dict):
+                chart_config = _reslice_chart_topn(chart_config, requested_n)
+            # Refresh chart title to reflect new N (e.g. "Top 10" → "Top 5")
+            if chart_config and isinstance(chart_config.get('title'), dict):
+                tt = chart_config['title'].get('text') or ''
+                if 'Top' in tt:
+                    chart_config = {
+                        **chart_config,
+                        'title': {
+                            **chart_config['title'],
+                            'text': _re.sub(r'Top\s*\d+', f'Top {requested_n}', tt),
+                        },
+                    }
+        except Exception as e:
+            logger.warning(f"[format_cached] N reslice failed for {code}: {e}")
 
     # Build a rich answer that references the template + data
     answer = f"## {title}\n\n{insight}\n\n"
+
+    # Role mismatch annotation: template materialized one role column at
+    # upload time (preference 服务员 > 销售员 > 收银员), so a query for a
+    # different role can't be re-answered from cache — explain it.
+    if requested_role:
+        from smartbi.services.intent.query_intent_extractor import role_to_column
+        requested_col = role_to_column(requested_role)
+        actual_col = (data.get('role_type') if isinstance(data, dict) else None) or kpis.get('role_type')
+        if requested_col and actual_col and requested_col != actual_col:
+            answer += (
+                f"> **提示**:你询问的是「{requested_col}」,但当前数据集已按「{actual_col}」"
+                f"维度预聚合。如需精确按「{requested_col}」拆分,请上传含该列的数据。\n\n"
+            )
+
     if kpis:
         answer += "**关键指标:**\n"
         for k, v in list(kpis.items())[:8]:
@@ -902,3 +968,51 @@ def format_cached_as_sse(template_result: Dict, query: str) -> Dict:
         "source": "materialized_cache",
         "template_code": code,
     }
+
+
+def _reslice_chart_topn(chart_config: Dict, n: int) -> Dict:
+    """Re-slice an ECharts top-N bar chart's xAxis/yAxis category list and
+    series data to the first ``n`` items.
+
+    Templates emit horizontal bars with `yAxis.data` reversed (highest at
+    top). To honor a smaller N, we take the LAST n entries (which were the
+    top-N before reversal) and apply the same reversal again.
+
+    No-op if structure isn't recognized.
+    """
+    try:
+        cfg = {**chart_config}
+        # yAxis.data + series[].data both reversed: take last n, no need to re-reverse
+        yaxis = cfg.get('yAxis')
+        if isinstance(yaxis, dict) and isinstance(yaxis.get('data'), list):
+            cfg['yAxis'] = {**yaxis, 'data': yaxis['data'][-n:]}
+        elif isinstance(yaxis, dict) and isinstance(yaxis.get('data'), list) is False:
+            pass  # nothing to slice
+        series = cfg.get('series')
+        if isinstance(series, list):
+            new_series = []
+            for s in series:
+                if isinstance(s, dict) and isinstance(s.get('data'), list):
+                    new_series.append({**s, 'data': s['data'][-n:]})
+                else:
+                    new_series.append(s)
+            cfg['series'] = new_series
+        # xAxis with category (vertical bar) — slice from start (top-N first)
+        xaxis = cfg.get('xAxis')
+        if (
+            isinstance(xaxis, dict)
+            and xaxis.get('type') == 'category'
+            and isinstance(xaxis.get('data'), list)
+        ):
+            cfg['xAxis'] = {**xaxis, 'data': xaxis['data'][:n]}
+            if isinstance(series, list):
+                # For vertical bar, also re-slice from start
+                cfg['series'] = [
+                    {**s, 'data': s['data'][:n]}
+                    if isinstance(s, dict) and isinstance(s.get('data'), list)
+                    else s
+                    for s in series
+                ]
+        return cfg
+    except Exception:
+        return chart_config
