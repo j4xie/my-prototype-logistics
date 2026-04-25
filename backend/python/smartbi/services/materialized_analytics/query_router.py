@@ -242,8 +242,13 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
         [["异常", "异常值", "离群", "偏离", "突变"], ["检测", "发现", "找出", "分析"]],
     ),
     (
+        # Apr 26 2026 phase 4 P1: extend group-1 with "末位"/"差距" (qhj-27
+        # "末位店和头部差距多大") and group-2 with "店"/"菜品"/"商品" so
+        # store/dish ranking queries match the broader pattern. Phase 3's
+        # dim-aware override picks the right dim from all_dims when matched.
         "top_n_by_dim",
-        [["Top", "排名", "头部", "最高", "最多", "前", "第一", "最大"], ["门店", "区域", "分类"]],
+        [["Top", "排名", "头部", "最高", "最多", "前", "第一", "最大", "末位", "差距"],
+         ["门店", "区域", "分类", "店", "菜品", "商品"]],
     ),
     (
         "category_distribution",
