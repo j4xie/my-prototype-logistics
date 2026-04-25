@@ -861,14 +861,49 @@ deploy_jar() {
             fi
             echo "   ✓ upstream 切换完成"
 
-            # 切换后验证 (通过 139 本地 https)
-            sleep 1
-            VERIFY=$(ssh $GATEWAY "curl -sk -o /dev/null --max-time 5 -w '%{http_code}' -H 'Host: api.cretaceousfuture.com' https://127.0.0.1/api/mobile/health" 2>/dev/null)
-            if [ "$VERIFY" = "200" ]; then
-                echo "   ✓ 切换后验证通过 (HTTP 200 via nginx)"
-            else
-                echo "   ⚠️  切换后验证异常 (HTTP $VERIFY), 请手动排查"
+            # 切换后验证 — v5.3: 多次健康 check + auto-rollback
+            # 历史事故: 2026-04-24 by47kihv7 部署 corrupt jar (logback ClassNotFound),
+            # 单次 sleep 1 + 1次 verify 不够, jar 可能在 1s 后才 crash. 现在 5 轮
+            # 间隔 6s 持续监测, 任何一次 nginx 返非 2xx 就 auto-rollback (切回旧 upstream
+            # + 重启旧 active service).
+            POST_SWITCH_HEALTHY=true
+            for ROUND in 1 2 3 4 5; do
+                sleep 6
+                VERIFY=$(ssh $GATEWAY "curl -sk -o /dev/null --max-time 5 -w '%{http_code}' -H 'Host: api.cretaceousfuture.com' https://127.0.0.1/api/mobile/health" 2>/dev/null)
+                # 同时检查新 idle systemd 是否 still running (catch crashloop early)
+                IDLE_RUNNING=$(ssh $SERVER "systemctl is-active $IDLE_SERVICE 2>&1" 2>/dev/null)
+                if [ "$VERIFY" = "200" ] && [ "$IDLE_RUNNING" = "active" ]; then
+                    echo "   ✓ 切换后健康轮次 $ROUND/5: HTTP=$VERIFY systemd=$IDLE_RUNNING"
+                else
+                    echo "   ❌ 切换后健康轮次 $ROUND/5 失败: HTTP=$VERIFY systemd=$IDLE_RUNNING"
+                    POST_SWITCH_HEALTHY=false
+                    break
+                fi
+            done
+
+            if [ "$POST_SWITCH_HEALTHY" != "true" ]; then
+                echo "   🔄 auto-rollback: 切回旧 upstream ($ACTIVE_COLOR $ACTIVE_PORT) + 重启旧 active"
+                ssh $GATEWAY "
+                    sed -i 's|server 47.100.235.168:$IDLE_PORT;|server 47.100.235.168:$ACTIVE_PORT;|' $NGINX_UPSTREAM_FILE &&
+                    nginx -t >/dev/null 2>&1 &&
+                    nginx -s reload
+                " 2>/dev/null || echo "   ⚠️  rollback nginx 失败, 需手动: vi $NGINX_UPSTREAM_FILE && nginx -s reload"
+                # 重启旧 active (jar 文件已被新 jar 覆盖, 但可从最近备份恢复)
+                LAST_BAK=$(ssh $SERVER "ls -t /www/wwwroot/cretas/aims-0.0.1-SNAPSHOT.jar.bak.* 2>/dev/null | head -1")
+                if [ -n "$LAST_BAK" ]; then
+                    ssh $SERVER "
+                        cp '$LAST_BAK' /www/wwwroot/cretas/aims-0.0.1-SNAPSHOT.jar &&
+                        systemctl reset-failed $ACTIVE_SERVICE 2>/dev/null || true
+                        systemctl restart $ACTIVE_SERVICE
+                    " 2>/dev/null || echo "   ⚠️  rollback 重启 $ACTIVE_SERVICE 失败"
+                    echo "   ↻ 已恢复 jar 到 $LAST_BAK + 重启 $ACTIVE_COLOR"
+                else
+                    echo "   ⚠️  无可回滚的备份 jar — 当前 jar 仍是 corrupt 版本, 需 git 重新部署"
+                fi
+                ssh $SERVER "systemctl stop $IDLE_SERVICE" 2>/dev/null || true
+                exit 1
             fi
+            echo "   ✓ 切换后验证全部通过 (5/5 轮 nginx 200 + idle systemd active)"
 
             # [BG 4/4] 停旧 active (5s 优雅等待让现有连接完成)
             echo "   [BG 4/4] 停旧 active ($ACTIVE_COLOR $ACTIVE_SERVICE), 5s 优雅等待..."
