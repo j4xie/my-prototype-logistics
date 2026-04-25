@@ -5,30 +5,19 @@
         <div class="card-header">
           <span class="title"><span class="section-badge section-badge--chart" aria-hidden="true"></span> 智能数据分析</span>
           <div class="header-actions">
-            <el-select
-              v-if="uploadBatches.length > 1"
-              v-model="selectedBatchIndex"
+            <!-- Upload batch switcher — extracted to analysis/UploadSwitcher.vue (Item 1 phase 3f).
+                 Phase 6 dropdown switch async race guards live in selectBatch + enrichSheet/
+                 idleEnrichNext callbacks (script side, untouched). The child only forwards
+                 @change → selectBatch so race-guard semantics are preserved. -->
+            <UploadSwitcher
+              :batches="uploadBatches"
+              :selected-index="selectedBatchIndex"
+              :format-batch-label="formatBatchLabel"
+              :is-auto-sync-batch="isAutoSyncBatch"
+              :safe-batch-name="safeBatchName"
+              @update:selected-index="selectedBatchIndex = $event"
               @change="selectBatch"
-              style="width: 300px; margin-right: 8px;"
-              size="small"
-            >
-              <el-option
-                v-for="(batch, idx) in uploadBatches"
-                :key="idx"
-                :label="formatBatchLabel(batch)"
-                :value="idx"
-              >
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span>
-                    <el-tag v-if="isAutoSyncBatch(batch)" size="small" type="success" style="margin-right: 6px;">自动同步</el-tag>
-                    {{ safeBatchName(batch) }}
-                  </span>
-                  <span style="color: var(--color-text-secondary, #909399); font-size: 12px; margin-left: 12px;">
-                    {{ batch.uploadTime }} · {{ batch.sheetCount }} 表
-                  </span>
-                </div>
-              </el-option>
-            </el-select>
+            />
             <el-button v-if="uploadedSheets.length > 1" @click="openCrossSheetAnalysis" type="primary" size="small">
               <el-icon><DataAnalysis /></el-icon>
               综合分析
@@ -819,6 +808,7 @@ import IndustryTemplateBar from './analysis/IndustryTemplateBar.vue';
 import KPIStripPanel from './analysis/KPIStripPanel.vue';
 import AIInsightsStream from './analysis/AIInsightsStream.vue';
 import ExecutiveSummaryBanner from './analysis/ExecutiveSummaryBanner.vue';
+import UploadSwitcher from './analysis/UploadSwitcher.vue';
 import AIInsightPanel from '@/components/smartbi/AIInsightPanel.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 // T3.1: Lazy-load rarely-used components — only loaded when user triggers them
