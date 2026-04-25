@@ -1157,21 +1157,58 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                     except (ValueError, TypeError):
                         pass
                 user_q = (request.effective_query or "").strip()
-                # Bug G fix (Apr 26 2026): when no sheet_id, auto-select largest upload
-                # for this factory so template cache fast-path can still fire. Without
-                # this, qa-runner / Java callers without sheet_id always missed cache and
-                # fell through to 60s LLM path on potentially-wrong upload.
-                if not upload_id and user_q:
+                # Bug G phase 2 (Apr 26 2026): template-aware upload selection.
+                # Phase 1 picked largest upload — broke for qhj where 32K 卡详情
+                # (no menu data) was largest but 6K 营业概况月报 (with menu data)
+                # was the right answer. Phase 2 routes by template availability:
+                #   query → match_template_hybrid → template_code →
+                #   SQL "which factory upload has this template materialized?" →
+                #   pick that upload (semantic match).
+                # If no template matches OR no upload has it, fall back to phase 1
+                # (largest non-empty).
+                from smartbi.services.materialized_analytics.query_router import (
+                    match_template_hybrid, format_cached_as_sse
+                )
+                from smartbi.config import get_pg_pool
+                pool = await get_pg_pool()
+                matched_code = None  # captured here so cache-serve block can reuse
+                if not upload_id and user_q and pool is not None:
                     factory_id_for_select = (
                         getattr(http_request.state, 'factory_id', None)
                         if hasattr(http_request, 'state') else None
                     )
                     if factory_id_for_select:
                         try:
-                            from smartbi.config import get_pg_pool as _g_pool
-                            _pool = await _g_pool()
-                            if _pool:
-                                async with _pool.acquire() as _conn:
+                            # Step 1: query → template_code
+                            matched_code = await match_template_hybrid(user_q, pool)
+                            async with pool.acquire() as _conn:
+                                # Step 2: template_code → upload_id (semantic match)
+                                if matched_code:
+                                    _row = await _conn.fetchrow(
+                                        """
+                                        SELECT a.upload_id
+                                        FROM smart_bi_pg_analysis_results a
+                                        JOIN smart_bi_pg_excel_uploads u
+                                          ON u.id = a.upload_id
+                                        WHERE a.factory_id = $1
+                                          AND a.template_code = $2
+                                          AND u.upload_status = 'COMPLETED'
+                                          AND u.row_count > 0
+                                        ORDER BY u.row_count DESC, u.created_at DESC
+                                        LIMIT 1
+                                        """,
+                                        factory_id_for_select, matched_code,
+                                    )
+                                    if _row:
+                                        upload_id = _row['upload_id']
+                                        logger.info(
+                                            f"[stream] template-matched upload {upload_id} "
+                                            f"(factory={factory_id_for_select}, "
+                                            f"template={matched_code})"
+                                        )
+                                # Step 3 (fallback): largest non-empty when no
+                                # template match OR matched template has no upload.
+                                if not upload_id:
                                     _row = await _conn.fetchrow(
                                         """
                                         SELECT id FROM smart_bi_pg_excel_uploads
@@ -1186,18 +1223,18 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                     if _row:
                                         upload_id = _row['id']
                                         logger.info(
-                                            f"[stream] auto-selected upload {upload_id} "
-                                            f"(factory={factory_id_for_select}, no sheet_id)"
+                                            f"[stream] phase-1 fallback upload {upload_id} "
+                                            f"(factory={factory_id_for_select}, "
+                                            f"no template match)"
                                         )
                         except Exception as _e:
                             logger.warning(f"[stream] auto-select upload failed: {_e}")
                 if upload_id and user_q:
-                    from smartbi.services.materialized_analytics.query_router import (
-                        match_template_hybrid, format_cached_as_sse
-                    )
-                    from smartbi.config import get_pg_pool
-                    pool = await get_pg_pool()
-                    matched_code = await match_template_hybrid(user_q, pool)
+                    # Avoid double-call to match_template_hybrid if phase 2 already
+                    # resolved it. Still call here when sheet_id was explicit
+                    # (matched_code stays None until first call).
+                    if matched_code is None:
+                        matched_code = await match_template_hybrid(user_q, pool)
                     if matched_code:
                         # Factory-scoped load
                         from smartbi.services.materialized_analytics.persistence import (
