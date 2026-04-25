@@ -749,6 +749,84 @@ async def ai_recipe_draft(request: Request, body: RecipeDraftRequest) -> Dict[st
         return {"success": False, "message": f"LLM 调用失败: {e}"}
 
 
+@router.get("/restaurant-ops/recipes/auto-drafts")
+async def get_auto_drafts(request: Request) -> Dict[str, Any]:
+    """加速 D: read pre-generated AI recipe drafts (created in background after upload).
+
+    Returns: { drafts: [{dishName, ingredients, estimatedCostRatio, notes, generatedAt}], count }
+    Customer FE polls this endpoint when 配方管理 page opens; if drafts present,
+    show "AI 已为你预生成 N 条配方草稿" banner with one-click 采纳 button.
+    """
+    factory_id = _get_factory_id(request)
+    if not factory_id:
+        return {"success": False, "message": "missing factory context"}
+    try:
+        import asyncpg
+        from config import get_settings
+    except Exception as e:
+        return {"success": False, "message": f"config error: {e}"}
+    settings = get_settings()
+    conn = await asyncpg.connect(settings.food_kb_db_url)
+    try:
+        try:
+            rows = await conn.fetch("""
+                SELECT dish_name, drafts_json, estimated_cost_ratio, notes, generated_at
+                  FROM auto_recipe_drafts
+                 WHERE factory_id = $1 AND consumed_at IS NULL
+                 ORDER BY generated_at DESC
+            """, factory_id)
+        except Exception as e:
+            if "does not exist" in str(e):
+                return {"success": True, "data": {"drafts": [], "count": 0}}
+            raise
+        import json as _json
+        drafts = []
+        for r in rows:
+            payload = _json.loads(r["drafts_json"]) if isinstance(r["drafts_json"], str) else r["drafts_json"]
+            drafts.append({
+                "dishName": r["dish_name"],
+                "ingredients": payload.get("ingredients", []),
+                "estimatedCostRatio": float(r["estimated_cost_ratio"]) if r["estimated_cost_ratio"] else None,
+                "notes": r["notes"] or "",
+                "generatedAt": r["generated_at"].isoformat() if r["generated_at"] else None,
+            })
+        return {"success": True, "data": {"drafts": drafts, "count": len(drafts)}}
+    finally:
+        await conn.close()
+
+
+@router.post("/restaurant-ops/recipes/auto-drafts/consume")
+async def consume_auto_drafts(request: Request) -> Dict[str, Any]:
+    """加速 D: mark all drafts as consumed (called after customer clicks 采纳).
+    Drafts stay in auto_recipe_drafts for audit but are filtered out from /auto-drafts.
+    """
+    factory_id = _get_factory_id(request)
+    if not factory_id:
+        return {"success": False, "message": "missing factory context"}
+    try:
+        import asyncpg
+        from config import get_settings
+    except Exception as e:
+        return {"success": False, "message": f"config error: {e}"}
+    settings = get_settings()
+    conn = await asyncpg.connect(settings.food_kb_db_url)
+    try:
+        try:
+            result = await conn.execute(
+                "UPDATE auto_recipe_drafts SET consumed_at = NOW() WHERE factory_id = $1 AND consumed_at IS NULL",
+                factory_id,
+            )
+            consumed = int(result.rsplit(" ", 1)[-1]) if result else 0
+        except Exception as e:
+            if "does not exist" in str(e):
+                consumed = 0
+            else:
+                raise
+        return {"success": True, "data": {"consumed": consumed}}
+    finally:
+        await conn.close()
+
+
 @router.post("/restaurant-ops/recipes/ai-draft-batch")
 async def ai_recipe_draft_batch(request: Request, body: RecipeDraftBatchRequest) -> Dict[str, Any]:
     """Batch AI draft: N dishes concurrent (default 10 parallel).

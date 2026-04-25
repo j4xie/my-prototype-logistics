@@ -33,7 +33,8 @@ interface DishMargin {
   hasCost: boolean;
 }
 
-const totals = ref({ revenue: 0, profit: 0, rate: 0, dishCount: 0, withCost: 0, coverageRev: 0 });
+const totals = ref({ revenue: 0, profit: 0, rate: 0, dishCount: 0, withCost: 0, coverageRev: 0, profitWithEstimated: 0, rateWithEstimated: 0, industryDefault: 0.32 });
+const showEstimated = ref(false);  // 加速 E: toggle 估算/精确版显示
 
 // 默认营收覆盖目标 90% — 大多数商家录 top N 高营收菜品即可达成
 // 未来可做成系统设置让客户按行业调整 (快餐 95%, 精品餐厅 85%)
@@ -102,10 +103,15 @@ async function loadData() {
         totalRevenueWithCost?: number;
         totalProfit: number;
         avgRate: number;
+        // 加速 E: 估算毛利合并 (无配方菜按行业默认成本率)
+        totalProfitWithEstimated?: number;
+        avgRateWithEstimated?: number;
+        industryDefaultCostRatio?: number;
         coverage?: { dishCount: number; totalDishCount: number; revenueRatio: number };
         dishes: Array<{
           name: string; qty: number; revenue: number; foodCostUnit: number;
-          totalCost: number; grossProfit: number; marginRate: number; bills: number; hasCost: boolean;
+          totalCost: number; grossProfit: number; marginRate: number; bills: number;
+          hasCost: boolean; isEstimated?: boolean;
         }>;
       };
     };
@@ -113,6 +119,9 @@ async function loadData() {
       totals.value.revenue = res.data.totalRevenue || 0;
       totals.value.profit = res.data.totalProfit || 0;
       totals.value.rate = res.data.avgRate || 0;
+      totals.value.profitWithEstimated = res.data.totalProfitWithEstimated ?? res.data.totalProfit ?? 0;
+      totals.value.rateWithEstimated = res.data.avgRateWithEstimated ?? res.data.avgRate ?? 0;
+      totals.value.industryDefault = res.data.industryDefaultCostRatio ?? 0.32;
       dishes.value = res.data.dishes || [];
       totals.value.dishCount = res.data.coverage?.totalDishCount ?? dishes.value.length;
       totals.value.withCost = res.data.coverage?.dishCount ?? dishes.value.filter(d => d.hasCost).length;
@@ -211,6 +220,19 @@ function marginRateTag(rate: number) {
         </div>
       </template>
 
+      <!-- 加速 E: 估算/精确切换 toggle -->
+      <div v-if="totals.dishCount > 0 && totals.withCost < totals.dishCount" class="estimate-toggle" style="margin-bottom: 12px; display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: linear-gradient(135deg, #fff8e6, #ffeecc); border-radius: 6px; border: 1px solid #f0d8a0;">
+        <span style="font-size: 13px; font-weight: 600">📊 显示模式:</span>
+        <el-radio-group v-model="showEstimated" size="small">
+          <el-radio-button :value="false">仅精确 (有配方菜)</el-radio-button>
+          <el-radio-button :value="true">含估算 (按行业默认 {{ (totals.industryDefault * 100).toFixed(0) }}% 成本率)</el-radio-button>
+        </el-radio-group>
+        <span style="font-size: 12px; color: #909399; flex: 1; text-align: right">
+          精确版 {{ totals.withCost }} 道菜 ¥{{ totals.profit.toLocaleString('zh-CN', { maximumFractionDigits: 0 }) }} 毛利
+          <span v-if="showEstimated"> · 含估算共 {{ totals.dishCount }} 道菜 ¥{{ totals.profitWithEstimated.toLocaleString('zh-CN', { maximumFractionDigits: 0 }) }}</span>
+        </span>
+      </div>
+
       <!-- 营收覆盖进度条 — 默认目标 90%, 引导用户意识到这是可操作的 KPI -->
       <el-card v-if="totals.dishCount > 0" class="coverage-card" shadow="never" style="margin-bottom: 12px">
         <div class="coverage-row">
@@ -247,18 +269,19 @@ function marginRateTag(rate: number) {
         </el-col>
         <el-col :xs="12" :sm="6">
           <div class="stat-item">
-            <span class="stat-label">总毛利 <span class="stat-sub">(仅含配方菜)</span></span>
-            <span class="stat-value success">¥{{ totals.profit.toLocaleString('zh-CN', { maximumFractionDigits: 0 }) }}</span>
+            <span class="stat-label">总毛利 <span class="stat-sub">{{ showEstimated ? '(精确+估算)' : '(仅精确)' }}</span></span>
+            <span class="stat-value success">¥{{ (showEstimated ? totals.profitWithEstimated : totals.profit).toLocaleString('zh-CN', { maximumFractionDigits: 0 }) }}</span>
           </div>
         </el-col>
         <el-col :xs="12" :sm="6">
           <div class="stat-item">
-            <span class="stat-label">平均毛利率 <span class="stat-sub">(仅含配方菜)</span></span>
-            <span class="stat-value" :class="{ success: totals.rate >= 0.5, warning: totals.rate < 0.3 && totals.rate > 0 }">
-              {{ (totals.rate * 100).toFixed(1) }}%
+            <span class="stat-label">平均毛利率 <span class="stat-sub">{{ showEstimated ? '(精确+估算)' : '(仅精确)' }}</span></span>
+            <span class="stat-value" :class="{ success: (showEstimated ? totals.rateWithEstimated : totals.rate) >= 0.5, warning: (showEstimated ? totals.rateWithEstimated : totals.rate) < 0.3 && (showEstimated ? totals.rateWithEstimated : totals.rate) > 0 }">
+              {{ ((showEstimated ? totals.rateWithEstimated : totals.rate) * 100).toFixed(1) }}%
             </span>
             <span v-if="totals.dishCount > 0" class="stat-footnote">
-              覆盖 {{ totals.withCost }}/{{ totals.dishCount }} 菜品 · {{ (totals.coverageRev * 100).toFixed(1) }}% 营收
+              <span v-if="!showEstimated">覆盖 {{ totals.withCost }}/{{ totals.dishCount }} 菜品 · {{ (totals.coverageRev * 100).toFixed(1) }}% 营收</span>
+              <span v-else>{{ totals.dishCount }} 道菜 ({{ totals.withCost }} 精确, {{ totals.dishCount - totals.withCost }} 估算)</span>
             </span>
           </div>
         </el-col>

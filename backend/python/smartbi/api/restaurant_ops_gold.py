@@ -291,10 +291,26 @@ async def gross_margin(request: Request, days: int = Query(30, ge=1, le=365)) ->
             )
             cost_map = {r["product_source_pk"]: r["food_cost"] for r in cost_rows}
 
+    # P2-7 加速 E: industry default cost ratio fallback for dishes without recipes.
+    # Customer sees "估算毛利" (灰色 tag) instantly after upload; recipes overwrite later.
+    INDUSTRY_DEFAULT_COST_RATIO = {
+        "RESTAURANT_CHUAN": 0.35,    # 川菜
+        "RESTAURANT_HOTPOT": 0.28,   # 火锅
+        "RESTAURANT_FASTFOOD": 0.25, # 快餐
+        "RESTAURANT_WESTERN": 0.30,  # 西餐
+        "RESTAURANT_NOODLES": 0.30,  # 面食
+        "RESTAURANT_JAPANESE": 0.40, # 日料 (食材贵)
+        "RESTAURANT_CANTONESE": 0.32,
+        "DEFAULT": 0.32,
+    }
+    industry_cost_ratio = INDUSTRY_DEFAULT_COST_RATIO["DEFAULT"]
+
     dishes = []
     total_rev_all = 0.0         # all dishes (for display "总营收")
     total_rev_with_cost = 0.0   # dishes with recipes (for avgRate denominator)
     total_profit = 0.0
+    total_rev_estimated = 0.0   # 估算 (无配方) 部分营收
+    total_profit_estimated = 0.0  # 估算 profit
     for r in pos_rows:
         source_pk = cretas_map.get(r["normalized_name"])
         food_cost = cost_map.get(source_pk, 0) if source_pk else 0
@@ -302,16 +318,24 @@ async def gross_margin(request: Request, days: int = Query(30, ge=1, le=365)) ->
         gp = r["revenue"] - total_cost
         rate = gp / r["revenue"] if r["revenue"] > 0 else 0
         has_cost = food_cost > 0
+        # 加速 E: when no recipe, use industry default to give estimated margin
+        if not has_cost:
+            est_cost_total = r["revenue"] * industry_cost_ratio
+            est_gp = r["revenue"] - est_cost_total
+            est_rate = 1.0 - industry_cost_ratio
+            total_rev_estimated += r["revenue"]
+            total_profit_estimated += est_gp
         dishes.append({
             "name": r["dish_name"],
             "qty": r["qty"],
             "revenue": r["revenue"],
             "foodCostUnit": food_cost,
-            "totalCost": total_cost,
-            "grossProfit": gp if has_cost else 0,  # don't treat "no recipe" as pure profit
-            "marginRate": rate if has_cost else 0,
+            "totalCost": total_cost if has_cost else round(r["revenue"] * industry_cost_ratio, 2),
+            "grossProfit": gp if has_cost else round(r["revenue"] * (1 - industry_cost_ratio), 2),
+            "marginRate": rate if has_cost else (1 - industry_cost_ratio),
             "bills": r["bills"],
             "hasCost": has_cost,
+            "isEstimated": not has_cost,
         })
         total_rev_all += r["revenue"]
         if has_cost:
@@ -323,6 +347,10 @@ async def gross_margin(request: Request, days: int = Query(30, ge=1, le=365)) ->
     dishes_with_cost = sum(1 for d in dishes if d["hasCost"])
     coverage_revenue = total_rev_with_cost / total_rev_all if total_rev_all > 0 else 0
 
+    # 加速 E: 估算 totals 包含无配方菜 (按行业默认成本率), 客户立即看全菜估算毛利
+    total_profit_combined = total_profit + total_profit_estimated  # 精确 + 估算
+    avg_rate_combined = total_profit_combined / total_rev_all if total_rev_all > 0 else 0
+
     return {
         "success": True,
         "data": {
@@ -331,6 +359,10 @@ async def gross_margin(request: Request, days: int = Query(30, ge=1, le=365)) ->
             "totalRevenueWithCost": total_rev_with_cost,
             "totalProfit": total_profit,
             "avgRate": avg_rate,
+            # 加速 E 新字段: 精确+估算 合并版 (FE 可选切换显示)
+            "totalProfitWithEstimated": total_profit_combined,
+            "avgRateWithEstimated": avg_rate_combined,
+            "industryDefaultCostRatio": industry_cost_ratio,
             "coverage": {
                 "dishCount": dishes_with_cost,
                 "totalDishCount": len(dishes),
