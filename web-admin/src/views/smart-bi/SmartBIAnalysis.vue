@@ -216,63 +216,28 @@
                     <el-badge v-if="exploreDimensions.length" :value="exploreDimensions.length" type="primary" />
                   </el-button>
                 </div>
-                <el-collapse-transition>
-                  <div v-show="explorePanelVisible && hasChartData(sheet)" class="explore-panel">
-                    <div class="explore-panel-left">
-                      <div class="explore-section-title">可用维度</div>
-                      <div class="dimension-list available">
-                        <div v-for="dim in availableExploreDimensions(sheet)" :key="dim" class="dimension-chip"
-                             @click="addExploreDimension(dim)">
-                          <el-icon><Plus /></el-icon>
-                          {{ dim }}
-                          <span class="dim-count">{{ getDimensionValues(sheet, dim).length }}</span>
-                        </div>
-                        <div v-if="availableExploreDimensions(sheet).length === 0" class="explore-empty">
-                          所有维度已选择
-                        </div>
-                      </div>
-                    </div>
-                    <div class="explore-panel-right">
-                      <div class="explore-section-title">已选维度 (上下排序)</div>
-                      <div class="dimension-list selected">
-                        <div v-for="(dim, idx) in exploreDimensions" :key="dim" class="dimension-chip active">
-                          <div class="dim-header">
-                            <el-icon class="drag-handle"><Rank /></el-icon>
-                            <span>{{ dim }}</span>
-                            <div class="dim-actions">
-                              <el-button size="small" :icon="Top" circle text :disabled="idx === 0" @click="moveExploreDimension(idx, -1)" />
-                              <el-button size="small" :icon="Bottom" circle text :disabled="idx === exploreDimensions.length - 1" @click="moveExploreDimension(idx, 1)" />
-                              <el-button size="small" :icon="Close" circle text type="danger" @click="removeExploreDimension(idx)" />
-                            </div>
-                          </div>
-                          <div class="dim-values">
-                            <el-checkbox-group v-model="exploreDimensionFilters[dim]" size="small">
-                              <el-checkbox v-for="val in getDimensionValues(sheet, dim).slice(0, 20)" :key="val" :label="val" :value="val" />
-                            </el-checkbox-group>
-                            <span v-if="getDimensionValues(sheet, dim).length > 20" class="dim-more">
-                              +{{ getDimensionValues(sheet, dim).length - 20 }} 更多
-                            </span>
-                          </div>
-                        </div>
-                        <div v-if="!exploreDimensions.length" class="explore-empty">
-                          点击左侧维度添加到分析
-                        </div>
-                      </div>
-                      <div v-if="exploreDimensions.length" class="explore-actions">
-                        <el-button size="small" type="primary" @click="applyExploreFilter(sheet)">应用筛选</el-button>
-                        <el-button size="small" @click="clearExploreFilter(sheet)">清除</el-button>
-                      </div>
-                    </div>
-                  </div>
-                </el-collapse-transition>
+                <!-- Explore panel — extracted to analysis/ExplorePanel.vue (Item 1 phase 7) -->
+                <ExplorePanel
+                  :visible="explorePanelVisible && hasChartData(sheet)"
+                  :available-dimensions="availableExploreDimensions(sheet)"
+                  :selected-dimensions="exploreDimensions"
+                  :filters="exploreDimensionFilters"
+                  :get-dimension-values-preview="(dim) => getDimensionValues(sheet, dim).slice(0, 20)"
+                  :get-dimension-value-count="(dim) => getDimensionValues(sheet, dim).length"
+                  @add="addExploreDimension"
+                  @remove="removeExploreDimension"
+                  @move="moveExploreDimension"
+                  @apply="applyExploreFilter(sheet)"
+                  @clear="clearExploreFilter(sheet)"
+                  @filter-change="(dim, values) => { exploreDimensionFilters[dim] = values }"
+                />
 
-                <div v-if="enrichingSheets.has(sheet.sheetIndex) && !hasChartData(sheet)" class="chart-skeleton-wrapper">
-                  <div v-if="enrichPhases.get(sheet.sheetIndex)?.chartsTotal" class="chart-progress-hint">
-                    图表加载中 {{ enrichPhases.get(sheet.sheetIndex)?.charts || 0 }}/{{ enrichPhases.get(sheet.sheetIndex)?.chartsTotal }}...
-                  </div>
-                  <ChartSkeleton type="chart" />
-                  <ChartSkeleton type="chart" />
-                </div>
+                <!-- Chart skeleton wrapper — extracted to analysis/ChartSkeletonWrapper.vue -->
+                <ChartSkeletonWrapper
+                  :visible="enrichingSheets.has(sheet.sheetIndex) && !hasChartData(sheet)"
+                  :charts="enrichPhases.get(sheet.sheetIndex)?.charts || 0"
+                  :charts-total="enrichPhases.get(sheet.sheetIndex)?.chartsTotal || 0"
+                />
 
                 <!-- P6: 编排模式 — DashboardBuilder (v-show preserves ECharts DOM) -->
                 <div v-show="layoutEditMode && hasChartData(sheet)" class="builder-wrapper">
@@ -615,6 +580,8 @@ import FailedSheetView from './analysis/FailedSheetView.vue';
 import SheetInfoStrip from './analysis/SheetInfoStrip.vue';
 import IndexPageView from './analysis/IndexPageView.vue';
 import UploadArea from './analysis/UploadArea.vue';
+import ChartSkeletonWrapper from './analysis/ChartSkeletonWrapper.vue';
+import ExplorePanel from './analysis/ExplorePanel.vue';
 import AIInsightPanel from '@/components/smartbi/AIInsightPanel.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 // T3.1: Lazy-load rarely-used components — only loaded when user triggers them
