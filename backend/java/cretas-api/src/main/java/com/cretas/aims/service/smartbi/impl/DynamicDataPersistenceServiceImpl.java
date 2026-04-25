@@ -4,6 +4,7 @@ import com.cretas.aims.dto.smartbi.DataFeatureResult;
 import com.cretas.aims.dto.smartbi.ExcelParseResponse;
 import com.cretas.aims.dto.smartbi.FieldMappingResult;
 import com.cretas.aims.entity.smartbi.enums.UploadStatus;
+import com.cretas.aims.entity.smartbi.postgres.AggStrategy;
 import com.cretas.aims.entity.smartbi.postgres.SmartBiDynamicData;
 import com.cretas.aims.entity.smartbi.postgres.SmartBiPgExcelUpload;
 import com.cretas.aims.entity.smartbi.postgres.SmartBiPgFieldDefinition;
@@ -325,7 +326,7 @@ public class DynamicDataPersistenceServiceImpl implements DynamicDataPersistence
                     .sampleValues(sampleValues)
                     .displayOrder(order++)
                     .formatPattern(determineFormatPattern(mapping))
-                    .aggStrategy("sum")  // Python /reclassify γ-1c hook will refine post-commit
+                    .aggStrategy(AggStrategy.SUM)  // Python /reclassify γ-1c hook will refine post-commit
                     .build();
 
             definitions.add(def);
@@ -674,7 +675,7 @@ public class DynamicDataPersistenceServiceImpl implements DynamicDataPersistence
                     .isTime(isTime)
                     .displayOrder(order++)
                     .sampleValues(sampleValue != null ? java.util.List.of(sampleValue) : java.util.Collections.emptyList())
-                    .aggStrategy("sum")  // Python /reclassify γ-1c hook will refine post-commit
+                    .aggStrategy(AggStrategy.SUM)  // Python /reclassify γ-1c hook will refine post-commit
                     .build();
             toAdd.add(def);
         }

@@ -139,22 +139,24 @@ public class SmartBiPgFieldDefinition {
 
     /**
      * KPI aggregation strategy.
-     * Values: "sum" (default for measures), "mean" (1-5 ratings),
-     *         "none" (IDs and non-measures excluded from KPI cards).
+     * Values: SUM (default for measures), MEAN (1-5 ratings),
+     *         NONE (IDs and non-measures excluded from KPI cards).
      *
-     * Populated initially by Java with default "sum"; corrected by the Python
+     * Populated initially by Java with default SUM; corrected by the Python
      * /reclassify endpoint (γ-1c afterCommit hook in DynamicDataPersistence).
      *
      * Read by both backend (insight.py quick_summary) and frontend
      * (web-admin getSmartKPIs) — single source of truth, no client-side
      * heuristic.
      *
-     * See: backend/python/smartbi/services/field_classifier.py
-     *      infer_agg_strategy()
+     * Apr 26 2026: migrated String → AggStrategy enum (Apr 26 deferred backlog
+     * Item 2). DB still stores lowercase string ("sum"/"mean"/"none") via
+     * AggStrategyConverter — fully backwards compatible with V20260425_02.
      *
-     * Migration: V20260425_02__add_field_def_agg_strategy.sql
+     * See: backend/python/smartbi/services/field_classifier.py infer_agg_strategy()
      */
     @Builder.Default
+    @Convert(converter = AggStrategyConverter.class)
     @Column(name = "agg_strategy", length = 20, nullable = false)
-    private String aggStrategy = "sum";
+    private AggStrategy aggStrategy = AggStrategy.SUM;
 }
