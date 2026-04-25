@@ -50,52 +50,16 @@
 
       <!-- 上传/空数据区域 -->
       <div v-if="uploadedSheets.length === 0 && !uploading" class="upload-section">
-        <!-- P2-6 fix: 加载历史数据 + 延迟提示 (Python 冷启时 history 调用可能 >10s) -->
-        <div v-if="historyLoading" style="text-align: center; padding: 60px 0;">
-          <el-icon class="is-loading" :size="32"><Loading /></el-icon>
-          <p style="color: var(--color-text-secondary, #909399); margin-top: 12px;">正在加载历史数据...</p>
-          <p v-if="historyLoadingLong" style="color: #E6A23C; margin-top: 8px; font-size: 13px;">
-            首次访问 Python 需要 5-15 秒冷启动,请稍候...
-          </p>
-          <el-skeleton :rows="4" animated style="margin-top: 24px; max-width: 600px; margin-left: auto; margin-right: auto;" />
-        </div>
-        <!-- 管理员：显示上传区域 -->
-        <template v-else-if="canUpload">
-          <el-upload
-            ref="uploadRef"
-            class="upload-dragger"
-            drag
-            :auto-upload="false"
-            :limit="1"
-            accept=".xlsx,.xls"
-            :on-change="handleFileChange"
-            :file-list="fileList"
-          >
-            <el-icon class="el-icon--upload"><upload-filled /></el-icon>
-            <div class="el-upload__text">
-              拖拽 Excel 文件到此处或 <em>点击上传</em>
-            </div>
-            <template #tip>
-              <div class="el-upload__tip">
-                支持 .xlsx、.xls 格式，文件大小不超过 50MB
-              </div>
-            </template>
-          </el-upload>
-
-          <el-button
-            v-if="fileList.length > 0"
-            type="primary"
-            size="large"
-            :loading="uploading"
-            @click="uploadFile"
-            style="margin-top: 20px; width: 100%"
-          >
-            <el-icon><Upload /></el-icon>
-            开始分析
-          </el-button>
-        </template>
-        <!-- 只读用户：提示 -->
-        <SmartBIEmptyState v-else type="read-only" :showAction="false" />
+        <!-- 上传区域 — extracted to analysis/UploadArea.vue (Item 1 phase 6) -->
+        <UploadArea
+          :history-loading="historyLoading"
+          :history-loading-long="historyLoadingLong"
+          :can-upload="canUpload"
+          :file-list="fileList"
+          :uploading="uploading"
+          :on-file-change="handleFileChange"
+          @upload="uploadFile"
+        />
       </div>
 
       <!-- 上传进度 (SSE 流式) — extracted to analysis/UploadProgressPanel.vue (Item 1 phase 5) -->
@@ -153,42 +117,13 @@
               </span>
             </template>
 
-            <!-- 索引页特殊展示 -->
-            <div v-if="isIndexSheet(sheet)" class="index-page-view">
-              <div class="index-header">
-                <el-icon class="index-icon"><Tickets /></el-icon>
-                <h2>报表目录</h2>
-                <span class="index-count">共 {{ indexMetadata?.sheetMappings?.length || 0 }} 个报表</span>
-              </div>
-
-              <div class="index-list">
-                <div
-                  v-for="(mapping, idx) in indexMetadata?.sheetMappings || []"
-                  :key="mapping.index"
-                  class="index-item"
-                  :class="{ 'is-current': mapping.index === sheet.sheetIndex }"
-                  @click="navigateToSheet(mapping.index)"
-                >
-                  <div class="item-number">{{ idx + 1 }}</div>
-                  <div class="item-content">
-                    <div class="item-name">{{ mapping.reportName }}</div>
-                    <div v-if="mapping.sheetName !== mapping.reportName" class="item-sheet">
-                      Sheet: {{ mapping.sheetName }}
-                    </div>
-                    <div v-if="mapping.description" class="item-description">
-                      <el-icon><InfoFilled /></el-icon>
-                      {{ mapping.description }}
-                    </div>
-                  </div>
-                  <el-icon class="item-arrow"><ArrowRight /></el-icon>
-                </div>
-              </div>
-
-              <div class="index-footer">
-                <el-icon><Pointer /></el-icon>
-                <span>点击报表名称跳转到对应 Sheet</span>
-              </div>
-            </div>
+            <!-- 索引页特殊展示 — extracted to analysis/IndexPageView.vue (Item 1 phase 6) -->
+            <IndexPageView
+              v-if="isIndexSheet(sheet)"
+              :mappings="indexMetadata?.sheetMappings || []"
+              :current-sheet-index="sheet.sheetIndex"
+              @navigate="navigateToSheet"
+            />
 
             <!-- 失败的 Sheet — extracted to analysis/FailedSheetView.vue (Item 1 phase 5) -->
             <FailedSheetView
@@ -652,7 +587,7 @@ import type { FoodTemplate } from '@/api/smartbi';
 import type { UploadHistoryItem, EnrichResult, EnrichProgress, ColumnSummary, StructuredAIData, SmartKPI, DrillDownResult as DrillDownResultType, CrossSheetResult as CrossSheetResultType, FinancialMetrics, YoYResult, YoYComparisonItem, StatisticalResult, PythonHealthStatus } from '@/api/smartbi';
 import { ElMessage } from 'element-plus';
 import { UploadFilled, Upload, Refresh, CircleCheckFilled, CircleCloseFilled, Loading, List, Document, Tickets, InfoFilled, ArrowRight, Pointer, DataAnalysis, TrendCharts, Download, Filter, Warning, WarningFilled, QuestionFilled, Share, CopyDocument, Link, Timer, Operation, Plus, Rank, Top, Bottom, Close } from '@element-plus/icons-vue';
-import type { UploadFile, UploadUserFile, UploadInstance } from 'element-plus';
+import type { UploadFile, UploadUserFile } from 'element-plus';
 import echarts from '@/utils/echarts';
 import type { SmartBIChartOption, SmartBIChartItem } from '@/types/echarts';
 import DOMPurify from 'dompurify';
@@ -678,6 +613,8 @@ import UploadProgressPanel from './analysis/UploadProgressPanel.vue';
 import DemoCacheBanner from './analysis/DemoCacheBanner.vue';
 import FailedSheetView from './analysis/FailedSheetView.vue';
 import SheetInfoStrip from './analysis/SheetInfoStrip.vue';
+import IndexPageView from './analysis/IndexPageView.vue';
+import UploadArea from './analysis/UploadArea.vue';
 import AIInsightPanel from '@/components/smartbi/AIInsightPanel.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 // T3.1: Lazy-load rarely-used components — only loaded when user triggers them
@@ -686,7 +623,7 @@ const ChartTypeSelector = defineAsyncComponent(() => import('@/components/smartb
 const ChartConfigPanel = defineAsyncComponent(() => import('@/components/smartbi/ChartConfigPanel.vue'));
 const DashboardBuilder = defineAsyncComponent(() => import('@/components/smartbi/DashboardBuilder.vue'));
 const DemoTour = defineAsyncComponent(() => import('@/components/smartbi/DemoTour.vue'));
-const SmartBIEmptyState = defineAsyncComponent(() => import('@/components/smartbi/SmartBIEmptyState.vue'));
+// SmartBIEmptyState moved to analysis/UploadArea.vue (Item 1 phase 6)
 const ShortcutsHelpOverlay = defineAsyncComponent(() => import('@/components/smartbi/ShortcutsHelpOverlay.vue'));
 import type { DashboardLayout, DashboardCard, ChartDefinition } from '@/components/smartbi/DashboardBuilder.vue';
 import type { ComparisonData } from '@/components/smartbi/YoYMoMComparisonChart.vue';
@@ -773,8 +710,7 @@ const formatBatchLabel = (batch: UploadBatch): string => {
   return `${prefix}${safeBatchName(batch)} (${batch.sheetCount} 表)`;
 };
 
-// 上传相关
-const uploadRef = ref<UploadInstance>();
+// 上传相关 (uploadRef moved into analysis/UploadArea.vue — Item 1 phase 6)
 const fileList = ref<UploadUserFile[]>([]);
 const uploading = ref(false);
 const uploadProgress = ref(0);
