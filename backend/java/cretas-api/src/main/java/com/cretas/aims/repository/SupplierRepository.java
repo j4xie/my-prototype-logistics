@@ -52,6 +52,14 @@ public interface SupplierRepository extends JpaRepository<Supplier, String> {
            "OR s.supplierCode LIKE CONCAT(:keyword, '%') ESCAPE '\\')")
     List<Supplier> searchByName(@Param("factoryId") String factoryId, @Param("keyword") String keyword);
 
+    @Query("SELECT s FROM Supplier s WHERE s.factoryId = :factoryId " +
+           "AND (s.name LIKE CONCAT('%', :keyword, '%') ESCAPE '\\' " +
+           "OR s.supplierCode LIKE CONCAT(:keyword, '%') ESCAPE '\\' " +
+           "OR s.contactPerson LIKE CONCAT('%', :keyword, '%') ESCAPE '\\')")
+    Page<Supplier> searchByNamePaged(@Param("factoryId") String factoryId,
+                                     @Param("keyword") String keyword,
+                                     Pageable pageable);
+
     /**
      * 根据供应材料类型查找供应商
      */
