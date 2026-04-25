@@ -103,7 +103,8 @@ public class WhitelistServiceImpl implements WhitelistService {
         Page<Whitelist> page;
         // 根据查询条件选择不同的查询方法
         if (StringUtils.hasText(queryRequest.getKeyword())) {
-            page = whitelistRepository.search(factoryId, queryRequest.getKeyword(), pageable);
+            page = whitelistRepository.search(factoryId,
+                com.cretas.aims.util.SqlLikeEscaper.escape(queryRequest.getKeyword()), pageable);
         } else if (StringUtils.hasText(queryRequest.getStatus())) {
             WhitelistStatus status = WhitelistStatus.fromCode(queryRequest.getStatus());
             page = whitelistRepository.findByFactoryIdAndStatus(factoryId, status, pageable);
@@ -310,7 +311,8 @@ public class WhitelistServiceImpl implements WhitelistService {
     @Override
     public PageResponse<WhitelistDTO> searchWhitelist(String factoryId, String keyword, Pageable pageable) {
         log.debug("搜索白名单: factoryId={}, keyword={}", factoryId, keyword);
-        Page<Whitelist> page = whitelistRepository.search(factoryId, keyword, pageable);
+        Page<Whitelist> page = whitelistRepository.search(factoryId,
+            com.cretas.aims.util.SqlLikeEscaper.escape(keyword), pageable);
         List<WhitelistDTO> dtos = page.getContent().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());

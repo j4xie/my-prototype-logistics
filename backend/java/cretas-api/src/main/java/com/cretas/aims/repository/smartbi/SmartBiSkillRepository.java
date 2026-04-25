@@ -65,8 +65,8 @@ public interface SmartBiSkillRepository extends JpaRepository<SmartBiSkill, Long
      * @return list of matching skills
      */
     @Query("SELECT s FROM SmartBiSkill s WHERE s.enabled = true AND " +
-            "(LOWER(s.displayName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-            "LOWER(s.description) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) " +
+            "(LOWER(s.displayName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) ESCAPE '\\' OR " +
+            "LOWER(s.description) LIKE LOWER(CONCAT('%', :searchTerm, '%')) ESCAPE '\\') " +
             "ORDER BY s.priority ASC")
     List<SmartBiSkill> searchByDisplayNameOrDescription(@Param("searchTerm") String searchTerm);
 
