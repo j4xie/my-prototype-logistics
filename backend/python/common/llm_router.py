@@ -30,7 +30,9 @@ import asyncio
 import json
 import logging
 import os
+import time
 from enum import Enum
+from threading import Lock
 from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
 
 import httpx
@@ -38,6 +40,68 @@ import httpx
 from common.llm_client import get_llm_http_client
 
 logger = logging.getLogger(__name__)
+
+
+# ─── Per-account circuit breaker (J1 — Apr 24 2026) ───
+# When aliyun_b/glm-5 rate-limits, every chart-recommend currently pays the
+# full cascade (aliyun_b → aliyun_a → zhipu → deepseek = 28s observed in prod).
+# After CB_THRESHOLD consecutive failures of a provider, skip it for
+# CB_COOLDOWN seconds. Resets on first success or after cooldown expires.
+_CB_FAILURES: Dict[str, int] = {}        # provider name → consecutive failure count
+_CB_LAST_FAIL: Dict[str, float] = {}     # provider name → unix ts of last failure
+_CB_LOCK = Lock()
+
+CB_THRESHOLD = 3      # consecutive failures before skip kicks in
+CB_COOLDOWN = 60.0    # seconds to skip after threshold reached
+
+
+def _cb_should_skip(provider: str) -> bool:
+    """Return True if the provider is currently in cooldown.
+
+    Auto-resets the failure counter when cooldown elapses so the provider
+    gets one re-probe attempt; if that probe fails the counter starts again.
+    """
+    with _CB_LOCK:
+        fails = _CB_FAILURES.get(provider, 0)
+        if fails < CB_THRESHOLD:
+            return False
+        last = _CB_LAST_FAIL.get(provider, 0.0)
+        if (time.time() - last) < CB_COOLDOWN:
+            return True
+        # Cooldown elapsed — reset and allow a re-probe
+        _CB_FAILURES[provider] = 0
+        return False
+
+
+def _cb_record_failure(provider: str) -> None:
+    """Increment failure counter and stamp the failure time."""
+    with _CB_LOCK:
+        _CB_FAILURES[provider] = _CB_FAILURES.get(provider, 0) + 1
+        _CB_LAST_FAIL[provider] = time.time()
+
+
+def _cb_record_success(provider: str) -> None:
+    """Reset failure counter on a clean success."""
+    with _CB_LOCK:
+        if _CB_FAILURES.get(provider):
+            _CB_FAILURES[provider] = 0
+
+
+def get_cb_stats() -> Dict[str, Any]:
+    """Snapshot of circuit-breaker state for ops visibility."""
+    with _CB_LOCK:
+        now = time.time()
+        skip_now = [
+            p for p, n in _CB_FAILURES.items()
+            if n >= CB_THRESHOLD and (now - _CB_LAST_FAIL.get(p, 0.0)) < CB_COOLDOWN
+        ]
+        return {
+            "failures": dict(_CB_FAILURES),
+            "last_fail": dict(_CB_LAST_FAIL),
+            "skip_now": skip_now,
+            "threshold": CB_THRESHOLD,
+            "cooldown_seconds": CB_COOLDOWN,
+        }
 
 
 class SLOT(str, Enum):
@@ -161,6 +225,15 @@ async def call_chain(
         if not model:
             continue
 
+        # Circuit breaker — skip provider if in cooldown after CB_THRESHOLD fails
+        if _cb_should_skip(account):
+            logger.info(
+                f"[llm_router] slot={slot.value} skipping {account} "
+                f"(circuit breaker open, cooldown {CB_COOLDOWN}s)"
+            )
+            errors.append(f"{account}: cb_open")
+            continue
+
         base_url, api_key = _provider_config(account)
         if not api_key:
             logger.debug(f"[llm_router] {account}: no API key, skip")
@@ -183,21 +256,28 @@ async def call_chain(
             body_text = resp.text  # may trigger aread() internally
 
             if 200 <= resp.status_code < 300:
+                _cb_record_success(account)
                 logger.info(f"[llm_router] slot={slot.value} OK via {account}/{model}")
                 return resp.json()
 
             if _is_quota_exhausted(resp.status_code, body_text):
+                _cb_record_failure(account)
+                fails = _CB_FAILURES.get(account, 0)
                 logger.warning(
                     f"[llm_router] slot={slot.value} {account}/{model} "
-                    f"quota exhausted (status={resp.status_code}), falling back"
+                    f"quota exhausted (status={resp.status_code}, "
+                    f"cb_fails={fails}/{CB_THRESHOLD}), falling back"
                 )
                 errors.append(f"{account}/{model}: quota {resp.status_code}")
                 continue
 
             # Other errors: don't blindly fallback — log and raise
+            _cb_record_failure(account)
+            fails = _CB_FAILURES.get(account, 0)
             logger.error(
                 f"[llm_router] slot={slot.value} {account}/{model} "
-                f"error status={resp.status_code}: {body_text[:200]}"
+                f"error status={resp.status_code} (cb_fails={fails}/{CB_THRESHOLD}): "
+                f"{body_text[:200]}"
             )
             errors.append(f"{account}/{model}: http {resp.status_code}")
             # Non-quota errors still fall through to next provider since the
@@ -205,11 +285,21 @@ async def call_chain(
             continue
 
         except asyncio.TimeoutError:
-            logger.warning(f"[llm_router] {account}/{model} timeout")
+            _cb_record_failure(account)
+            fails = _CB_FAILURES.get(account, 0)
+            logger.warning(
+                f"[llm_router] {account}/{model} timeout "
+                f"(cb_fails={fails}/{CB_THRESHOLD})"
+            )
             errors.append(f"{account}/{model}: timeout")
             continue
         except Exception as e:
-            logger.warning(f"[llm_router] {account}/{model} exception: {e}")
+            _cb_record_failure(account)
+            fails = _CB_FAILURES.get(account, 0)
+            logger.warning(
+                f"[llm_router] {account}/{model} exception "
+                f"(cb_fails={fails}/{CB_THRESHOLD}): {e}"
+            )
             errors.append(f"{account}/{model}: {type(e).__name__}")
             continue
 
@@ -264,6 +354,15 @@ async def call_chain_stream(
         if not model:
             continue
 
+        # Circuit breaker — skip provider if in cooldown after CB_THRESHOLD fails
+        if _cb_should_skip(account):
+            logger.info(
+                f"[llm_router_stream] slot={slot.value} skipping {account} "
+                f"(circuit breaker open, cooldown {CB_COOLDOWN}s)"
+            )
+            errors.append(f"{account}: cb_open")
+            continue
+
         base_url, api_key = _provider_config(account)
         if not api_key:
             logger.debug(f"[llm_router_stream] {account}: no API key, skip")
@@ -288,16 +387,20 @@ async def call_chain_stream(
                 # Pre-stream error branch — fallback before content yielded
                 if resp.status_code >= 400:
                     body_text = (await resp.aread()).decode("utf-8", errors="replace")
+                    _cb_record_failure(account)
+                    fails = _CB_FAILURES.get(account, 0)
                     if _is_quota_exhausted(resp.status_code, body_text):
                         logger.warning(
                             f"[llm_router_stream] slot={slot.value} {account}/{model} "
-                            f"quota exhausted (status={resp.status_code}), falling back"
+                            f"quota exhausted (status={resp.status_code}, "
+                            f"cb_fails={fails}/{CB_THRESHOLD}), falling back"
                         )
                         errors.append(f"{account}/{model}: quota {resp.status_code}")
                         continue
                     logger.error(
                         f"[llm_router_stream] slot={slot.value} {account}/{model} "
-                        f"error status={resp.status_code}: {body_text[:200]}"
+                        f"error status={resp.status_code} (cb_fails={fails}/{CB_THRESHOLD}): "
+                        f"{body_text[:200]}"
                     )
                     errors.append(f"{account}/{model}: http {resp.status_code}")
                     continue
@@ -336,27 +439,40 @@ async def call_chain_stream(
                         total = int(usage.get("total_tokens") or 0)
                         if total:
                             yield {"type": "usage", "tokens": total}
-                # Successful stream — return
+                # Successful stream — record CB success and return
+                _cb_record_success(account)
                 return
 
         except (asyncio.TimeoutError, httpx.TimeoutException):
             if first_delta_yielded:
+                # Mid-stream errors don't trip CB (we got partial value from this provider)
                 logger.warning(
                     f"[llm_router_stream] {account}/{model} mid-stream timeout — "
                     "propagating partial result (no fallback)"
                 )
                 return
-            logger.warning(f"[llm_router_stream] {account}/{model} pre-stream timeout, falling back")
+            _cb_record_failure(account)
+            fails = _CB_FAILURES.get(account, 0)
+            logger.warning(
+                f"[llm_router_stream] {account}/{model} pre-stream timeout, "
+                f"falling back (cb_fails={fails}/{CB_THRESHOLD})"
+            )
             errors.append(f"{account}/{model}: timeout")
             continue
         except Exception as e:
             if first_delta_yielded:
+                # Mid-stream errors don't trip CB (we got partial value from this provider)
                 logger.warning(
                     f"[llm_router_stream] {account}/{model} mid-stream exception {type(e).__name__}: {e} — "
                     "propagating partial result (no fallback)"
                 )
                 return
-            logger.warning(f"[llm_router_stream] {account}/{model} pre-stream exception: {e}")
+            _cb_record_failure(account)
+            fails = _CB_FAILURES.get(account, 0)
+            logger.warning(
+                f"[llm_router_stream] {account}/{model} pre-stream exception "
+                f"(cb_fails={fails}/{CB_THRESHOLD}): {e}"
+            )
             errors.append(f"{account}/{model}: {type(e).__name__}")
             continue
 
