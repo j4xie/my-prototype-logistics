@@ -5,6 +5,10 @@ For each dim, pie chart showing % contribution. Quickly tells user
 """
 from __future__ import annotations
 
+from typing import ClassVar
+
+from smartbi.capability.contract import RequiresSpec
+
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
 from ..schema import DataSchema
@@ -22,6 +26,9 @@ class CategoryDistribution(AnalysisTemplate):
         "营收结构",
         "销售分布",
     ]
+
+    # 通用饼图 — 任意维度 × primary_measure 的占比分布. 由 schema 动态决定.
+    requires: ClassVar[RequiresSpec | None] = None
 
     @property
     def code(self) -> str:

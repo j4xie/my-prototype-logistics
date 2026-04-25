@@ -23,9 +23,11 @@ false-trigger on POS sales exports.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import polars as pl
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
@@ -56,6 +58,11 @@ class PurchaseInventoryInflow(AnalysisTemplate):
         "原料采购金额",
         "入库汇总",
     ]
+
+    # Deferred (B-stage): applies() requires 供应商 / 入库仓库 / 原料 / 入库数量
+    # — purchase / inventory schema fields NOT yet canonical in ALIAS_TO_ATTR
+    # (which currently covers only POS bill_flow + product_summary).
+    requires: ClassVar[RequiresSpec | None] = None
 
     @property
     def code(self) -> str:

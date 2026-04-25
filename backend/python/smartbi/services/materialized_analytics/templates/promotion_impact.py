@@ -9,9 +9,11 @@ treats 代金券优惠 as the aggregate coupon signal and 折扣率 for distribu
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import polars as pl
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
@@ -30,6 +32,13 @@ class PromotionImpact(AnalysisTemplate):
         "促销影响",
         "营销活动复盘",
     ]
+
+    # 代金券优惠 → discount_amount canonical (在 ALIAS_TO_ATTR).
+    # 折扣率 无 canonical 等价,作为可选辅助路径,不进 requires.
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        any=["discount_amount"],
+        description="优惠券效果分析 (折扣率列若存在则增强分析)",
+    )
 
     @property
     def code(self) -> str:

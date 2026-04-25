@@ -7,7 +7,9 @@ Applies whenever 桌位 exists in the schema.
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
@@ -30,6 +32,12 @@ class TableTypeComparison(AnalysisTemplate):
         "桌型客单价",
         "包房大厅营收",
     ]
+
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        all=["table_no"],
+        any=["net_amount", "gross_amount"],
+        description="桌型对比 (堂食/包厢/外卖)",
+    )
 
     @property
     def code(self) -> str:

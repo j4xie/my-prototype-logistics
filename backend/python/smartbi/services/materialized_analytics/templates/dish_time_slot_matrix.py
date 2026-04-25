@@ -17,7 +17,9 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, ClassVar, Dict, List, Optional, Tuple
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..compute.polars_backend import PolarsBackend
@@ -87,6 +89,11 @@ class DishTimeSlotMatrix(AnalysisTemplate):
         "时段菜品矩阵",
         "早晚菜品偏好",
     ]
+
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        all=["date", "combo_string"],
+        description="时段菜品热力 (订单时间 × 菜品销量矩阵)",
+    )
 
     @property
     def code(self) -> str:

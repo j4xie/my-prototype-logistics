@@ -14,9 +14,11 @@ Applies when 门店名称 + 客流量 both exist.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import polars as pl
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
@@ -51,6 +53,12 @@ class StoreCustomerStratification(AnalysisTemplate):
         "门店客流结构",
         "桌位人数统计",
     ]
+
+    # applies() requires both 门店 (store_name) AND 客流量/人数 (customer_count).
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        all=["store_name", "customer_count"],
+        description="门店客流分层 — 需 store_name + customer_count",
+    )
 
     @property
     def code(self) -> str:

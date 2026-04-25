@@ -12,9 +12,11 @@ available).
 from __future__ import annotations
 
 import statistics
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import polars as pl
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
@@ -44,6 +46,15 @@ class MonthlyAnomaly(AnalysisTemplate):
         "异常月识别",
         "月份突变",
     ]
+
+    # applies() requires date + (net_amount OR gross_amount OR primary_measure).
+    # The schema-helpers fallback to primary_measure isn't expressible in
+    # RequiresSpec, but date + a revenue measure covers the common path.
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        all=["date"],
+        any=["net_amount", "gross_amount"],
+        description="月度异常检测 — 需 date + 营收口径(net_amount 或 gross_amount)",
+    )
 
     @property
     def code(self) -> str:

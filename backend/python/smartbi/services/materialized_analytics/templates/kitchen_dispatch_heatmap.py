@@ -13,9 +13,11 @@ Outputs:
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import polars as pl
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
@@ -53,6 +55,12 @@ class KitchenDispatchHeatmap(AnalysisTemplate):
         "厨房业务量",
         "出菜份数统计",
     ]
+
+    # Deferred: applies() requires 传菜方案/档口 + 点菜数量 (kitchen-dispatch
+    # specific schema). product_name is canonical, but 传菜方案 and 点菜数量
+    # are POS-export columns not yet in ALIAS_TO_ATTR. The deviation from
+    # spec (which suggested combo_string + date) reflects actual applies().
+    requires: ClassVar[RequiresSpec | None] = None
 
     @property
     def code(self) -> str:

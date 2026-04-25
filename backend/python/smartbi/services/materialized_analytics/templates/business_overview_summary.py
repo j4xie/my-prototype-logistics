@@ -16,9 +16,11 @@ out qhj order-level data because qhj has 营业额 but no 订单数 as a column.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import polars as pl
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant import industry_benchmarks as bench
@@ -57,6 +59,17 @@ class BusinessOverviewSummary(AnalysisTemplate):
         "经营概览",
         "门店业绩汇总",
     ]
+
+    # applies() gates on 营业额(gross_amount) + 订单数 + ≥30 rows. 订单数 is
+    # day-aggregated (POS pre-aggregate report), no canonical equivalent yet
+    # in ALIAS_TO_ATTR. We surface the date + revenue dependency since those
+    # ARE canonical; the 订单数 implicit dependency is documented but not
+    # enforced (per spec — defer to None would be too strict).
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        all=["date"],
+        any=["gross_amount", "net_amount"],
+        description="营业概况报表 — 需 date + 营收口径(gross_amount/net_amount)；额外依赖 订单数(POS 预聚合,未 canonical)",
+    )
 
     @property
     def code(self) -> str:

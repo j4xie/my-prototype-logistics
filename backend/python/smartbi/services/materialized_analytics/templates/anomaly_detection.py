@@ -1,6 +1,10 @@
 """AnomalyDetection — ±2σ outliers on primary measure."""
 from __future__ import annotations
 
+from typing import ClassVar
+
+from smartbi.capability.contract import RequiresSpec
+
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec, format_data_insufficient
 from ..schema import DataSchema
@@ -19,6 +23,10 @@ class AnomalyDetection(AnalysisTemplate):
         "数据异常",
         "偏离均值的点",
     ]
+
+    # 通用 z-score 异常检测 — 任意 primary_measure 即可 (>= 30 行).
+    # 不强绑 date 因为 applies() 仅检查 row_count,outlier 计算不需时间字段.
+    requires: ClassVar[RequiresSpec | None] = None
 
     @property
     def code(self) -> str:

@@ -11,9 +11,11 @@ Helpful for "上个月 vs 本月 营业额涨了多少" type questions.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import polars as pl
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant import industry_benchmarks as bench
@@ -53,6 +55,13 @@ class PeriodComparisonTrend(AnalysisTemplate):
         "近期趋势",
         "月度对比",
     ]
+
+    # applies() requires date + (gross_amount OR net_amount).
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        all=["date"],
+        any=["gross_amount", "net_amount"],
+        description="周期对比趋势 — 需 date + 营收口径(gross_amount 或 net_amount)",
+    )
 
     @property
     def code(self) -> str:

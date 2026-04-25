@@ -5,6 +5,10 @@ what % of total. Classic 20% labels → 80% revenue insight.
 """
 from __future__ import annotations
 
+from typing import ClassVar
+
+from smartbi.capability.contract import RequiresSpec
+
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
 from ..schema import DataSchema
@@ -22,6 +26,10 @@ class ParetoAnalysis(AnalysisTemplate):
         "核心客户 80%",
         "二八法则",
     ]
+
+    # 通用 80/20 分析 — 任意维度 × primary_measure (>=5 distinct labels).
+    # 不绑特定 canonical, applies() 已自校验.
+    requires: ClassVar[RequiresSpec | None] = None
 
     @property
     def code(self) -> str:

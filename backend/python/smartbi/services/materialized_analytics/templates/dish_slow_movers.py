@@ -8,7 +8,9 @@ near-zero sellers.
 from __future__ import annotations
 
 from collections import Counter
-from typing import Any, Dict, List
+from typing import Any, ClassVar, Dict, List
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import (
@@ -42,6 +44,11 @@ class DishSlowMovers(AnalysisTemplate):
         "菜品销量倒数",
         "底部菜品",
     ]
+
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        all=["combo_string"],
+        description="销量末位菜品 (商品信息 列解析)",
+    )
 
     @property
     def code(self) -> str:

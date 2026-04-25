@@ -16,9 +16,11 @@ Optional time series (month) when schema.time_field is present.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import polars as pl
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
@@ -37,6 +39,12 @@ class MemberConsumption(AnalysisTemplate):
         "会员频次",
         "会员复购",
     ]
+
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        all=["customer_count"],
+        any=["net_amount", "gross_amount"],
+        description="人均消费分析 (会员卡列由 applies() 运行时检测)",
+    )
 
     @property
     def code(self) -> str:

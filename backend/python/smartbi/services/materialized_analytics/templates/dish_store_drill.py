@@ -13,7 +13,9 @@ Applies when schema has 商品信息 + store_col.
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from typing import Any, Dict, List
+from typing import Any, ClassVar, Dict, List
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
@@ -40,6 +42,14 @@ class DishStoreDrill(AnalysisTemplate):
         "菜品门店下钻",
         "菜店交叉分析",
     ]
+
+    # applies() requires 商品信息 (combo_string) + store_col (store_name).
+    # Revenue/qty are parsed from the combo_string blob via parse_items, so
+    # no separate revenue column is needed in the schema gate.
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        all=["combo_string", "store_name"],
+        description="菜品按店下钻 — 需 combo_string (商品信息 blob 含菜品+数量+金额) + store_name",
+    )
 
     @property
     def code(self) -> str:

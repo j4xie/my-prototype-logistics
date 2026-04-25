@@ -20,9 +20,11 @@ but not 卡号 as a primary identifier).
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import polars as pl
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
@@ -61,6 +63,12 @@ class MemberDeepAnalytics(AnalysisTemplate):
         "储值会员分析",
         "会员充值情况",
     ]
+
+    # Deferred: applies() gates on 卡号 (card-id) + 余额/充值 (member-card
+    # finance fields). NEITHER 卡号/卡状态/等级/余额/充值 has canonical
+    # equivalent in ALIAS_TO_ATTR — member-card schema is a separate domain
+    # not yet folded into bill_flow / product_summary.
+    requires: ClassVar[RequiresSpec | None] = None
 
     @property
     def code(self) -> str:

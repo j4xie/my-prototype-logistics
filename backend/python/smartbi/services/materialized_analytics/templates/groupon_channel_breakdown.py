@@ -20,9 +20,11 @@ Applies when schema contains at least one prefix-matching column.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import polars as pl
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
@@ -79,6 +81,11 @@ class GrouponChannelBreakdown(AnalysisTemplate):
         "美团订单",
         "抖音订单",
     ]
+
+    # Deferred: applies() prefix-matches 点评*/美团*/抖音* voucher columns
+    # which are POS-specific schemas, not yet folded into ALIAS_TO_ATTR.
+    # channel_origin canonical exists but applies() doesn't gate on it.
+    requires: ClassVar[RequiresSpec | None] = None
 
     @property
     def code(self) -> str:

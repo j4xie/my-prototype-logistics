@@ -21,9 +21,11 @@ If neither column is present → skip.
 from __future__ import annotations
 
 from collections import Counter
-from typing import Any, Dict, List
+from typing import Any, ClassVar, Dict, List
 
 import polars as pl
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec, format_data_insufficient
@@ -52,6 +54,13 @@ class ComboUsageRate(AnalysisTemplate):
         "套餐占比",
         "套餐数据",
     ]
+
+    # applies() OR-checks 商品信息 (combo_string) OR 商品类型 (category).
+    # Use any= so either canonical satisfies the requirement.
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        any=["combo_string", "category"],
+        description="套餐使用率 — 需 combo_string (商品信息) 或 category (商品类型) 之一",
+    )
 
     @property
     def code(self) -> str:

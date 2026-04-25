@@ -16,7 +16,9 @@ Applies only when schema contains a 商品信息 field (restaurant-style data).
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any, Dict, List, Set
+from typing import Any, ClassVar, Dict, List, Set
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
@@ -45,6 +47,11 @@ class DishCategoryBreakdown(AnalysisTemplate):
         "品类销量排名",
         "主食饮品哪个更好卖",
     ]
+
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        all=["combo_string"],
+        description="按品类销售分析 (推断分类: 菜品名前缀关键词)",
+    )
 
     @property
     def code(self) -> str:

@@ -5,6 +5,10 @@ Most useful template — 80% of user "ranking" questions answered here.
 """
 from __future__ import annotations
 
+from typing import ClassVar
+
+from smartbi.capability.contract import RequiresSpec
+
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
 from ..schema import DataSchema
@@ -23,6 +27,10 @@ class TopNByDim(AnalysisTemplate):
         "分类头部",
         "排名前几",
     ]
+
+    # 通用 Top-N — 依赖运行时 schema 的 dimensions + primary_measure.
+    # 任何含维度+度量的表都适用,不绑定具体 canonical 字段.
+    requires: ClassVar[RequiresSpec | None] = None
 
     @property
     def code(self) -> str:

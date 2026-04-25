@@ -13,7 +13,9 @@ Applies when schema contains both 商品信息 AND 桌位 (restaurant POS export
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from typing import Any, Dict, List
+from typing import Any, ClassVar, Dict, List
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
@@ -41,6 +43,11 @@ class DishByTableType(AnalysisTemplate):
         "包厢客人点什么",
         "大厅客人爱点什么",
     ]
+
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        all=["table_no", "combo_string"],
+        description="桌型菜品偏好 (包厢/大厅/外卖 × 菜品 Top N)",
+    )
 
     @property
     def code(self) -> str:

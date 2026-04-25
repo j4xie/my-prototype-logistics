@@ -15,9 +15,11 @@ Applies when 反结账时间 OR (订单状态 with reverse values) exists in sch
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import polars as pl
+
+from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
@@ -52,6 +54,11 @@ class ReverseCheckoutStats(AnalysisTemplate):
         "反结账门店分布",
         "哪些订单反结了",
     ]
+
+    # Deferred: applies() checks 反结账时间 / 订单状态; neither has a
+    # canonical equivalent in ALIAS_TO_ATTR (reverse-checkout flag is
+    # POS-specific and not yet generalized).
+    requires: ClassVar[RequiresSpec | None] = None
 
     @property
     def code(self) -> str:
