@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.item_parser import parse_items
 from ..restaurant.schema_helpers import find_customer_col, find_store_col
 from ..schema import DataSchema
@@ -215,6 +216,29 @@ class StoreCustomerStratification(AnalysisTemplate):
                 f" Top 门店：{top_store['store']}（{top_store['total_orders']} 单，"
                 f"主力人数 {top_store['dominant_bin']}）。"
             )
+        # Spec §4.3: drive dominant bin into segment-targeted upsell
+        if dominant_label == "1 人":
+            action_rec = format_action_rec(
+                object_target=f"1 人桌主力门店 ({dominant_share:.1f}% 客流)",
+                benefit_range="设计 1 人套餐 + 加饮品 / 小食搭售可拉高 1 人客单 8-15%",
+                prerequisite="POS 上架 1 人套餐 SKU + 服务员推菜话术培训",
+                timeline="本月内",
+            )
+        elif dominant_label in ("3-4 人", "5 人+"):
+            action_rec = format_action_rec(
+                object_target=f"{dominant_label}主力客群 ({dominant_share:.1f}% 客流)",
+                benefit_range=f"针对 {dominant_label} 推出多人套餐 + 拼桌优惠可拉高桌均 5-12%",
+                prerequisite="桌型设计复盘 + 套餐组合测算 + POS 推荐位调整",
+                timeline="本月内",
+            )
+        else:  # 2 人 or other
+            action_rec = format_action_rec(
+                object_target=f"主力人群「{dominant_label}」 ({dominant_share:.1f}%)",
+                benefit_range=f"针对 {dominant_label} 优化套餐 + 加菜推荐可拉高客单 5-10%",
+                prerequisite="复盘各人数段消费习惯 + 设计差异化推荐",
+                timeline="本月内",
+            )
+        insight_text += f" {action_rec}"
 
         # ECharts stacked bar: x=store, each bin = a series
         if stores:

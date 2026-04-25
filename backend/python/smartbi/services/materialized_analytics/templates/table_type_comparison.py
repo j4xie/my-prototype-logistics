@@ -10,6 +10,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.schema_helpers import find_table_col, measure_annotation, preferred_revenue_col
 from ..restaurant.table_classifier import classify_table
 from ..schema import DataSchema
@@ -232,4 +233,27 @@ def _build_insight(
             f"{dominant_type}占主导，订单占比 {dominant_share:.1f}%。"
         )
 
+    # Spec §4.3: pick action by dominant channel signal
+    if takeaway_share >= 60:
+        action_rec = format_action_rec(
+            object_target=f"外卖渠道 ({takeaway_share:.1f}% 订单)",
+            benefit_range="降低对单一外卖平台依赖 + 自营外卖 + 堂食回流可降抽佣 3-5%",
+            prerequisite="自有小程序 / 公众号外卖渠道搭建 + 堂食促销引导",
+            timeline="本季度内",
+        )
+    elif vip_avg is not None and hall_avg is not None and hall_avg > 0 and vip_avg > hall_avg * 1.5:
+        action_rec = format_action_rec(
+            object_target=f"大厅客群 (人均{hall_avg:.0f},低于包厢{(vip_avg - hall_avg) / hall_avg * 100:.0f}%)",
+            benefit_range="大厅推套餐 + 升级菜可拉高大厅客单 5-10%",
+            prerequisite="大厅 SOP 升级 + 服务员推菜话术 + 套餐定价测算",
+            timeline="本月内",
+        )
+    else:
+        action_rec = format_action_rec(
+            object_target=f"主力渠道「{dominant_type}」 ({dominant_share:.1f}%)",
+            benefit_range=f"加大{dominant_type}场景的菜品组合 + 营销投入可拉销量 5-10%",
+            prerequisite=f"复盘{dominant_type}客群偏好 + 针对性 SKU + 推荐位",
+            timeline="本月内",
+        )
+    parts.append(f" {action_rec}")
     return "".join(parts)

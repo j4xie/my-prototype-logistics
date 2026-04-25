@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.dish_name_normalizer import normalize_dish_name
 from ..restaurant.pos_placeholders import POS_PRODUCT_PLACEHOLDERS, filter_placeholder_rows
 from ..restaurant.schema_helpers import find_store_col
@@ -199,7 +200,38 @@ class KitchenDispatchHeatmap(AnalysisTemplate):
             parts.append(f"Top 菜品:{top_d['dish']} {top_d['ordered']:,.0f} 份。")
         if cancel_rate is not None and cancel_rate > 1:
             parts.append(f"⚠ 点菜未结账比例 {cancel_rate:.1f}%，存在退/改单流失。")
-        insight_text = " ".join(parts)
+        # Spec §4.3: drive cancel-rate or top-plan into action
+        if cancel_rate is not None and cancel_rate > 3:
+            action_rec = format_action_rec(
+                object_target=f"未结账比例 {cancel_rate:.1f}% (退 / 改单流失)",
+                benefit_range="排查改单流程 + 厨房沟通 SOP 可降流失 1-2 个百分点",
+                prerequisite="复盘高频改单菜品 + 服务员复述确认 + 后厨听单流程",
+                timeline="本周内",
+            )
+        elif by_plan:
+            top_p = by_plan[0]
+            action_rec = format_action_rec(
+                object_target=f"主力档口「{top_p['plan']}」 ({top_p['ordered']:,.0f} 份 / {top_p['ordered_share_pct']:.1f}%)",
+                benefit_range=f"该档口排班 + 出餐 SOP 优化可降出餐时间 10-20%",
+                prerequisite=f"{top_p['plan']}人手按峰值×1.2 + 标准化出餐流程 + 设备检修",
+                timeline="本月内",
+            )
+        elif top_dishes:
+            top_d = top_dishes[0]
+            action_rec = format_action_rec(
+                object_target=f"Top 菜品「{top_d['dish']}」 ({top_d['ordered']:,.0f} 份)",
+                benefit_range="主推菜备货 + 出餐速度优化可拉销量 5-10%",
+                prerequisite="备货量按峰值×1.2 + 标准化出餐工序",
+                timeline="本月内",
+            )
+        else:
+            action_rec = format_action_rec(
+                object_target=f"传菜整体 ({total_ordered:,.0f} 份)",
+                benefit_range="持续监控档口 / 菜品分布,异常波动立即复盘",
+                prerequisite="周期性档口分析 + 出菜速度 SLA",
+                timeline="本月内",
+            )
+        insight_text = " ".join(parts) + " " + action_rec
 
         chart_config = None
         if top_dishes:

@@ -11,6 +11,7 @@ from typing import Any, Dict, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
@@ -185,9 +186,31 @@ class WeekdayWeekendPattern(AnalysisTemplate):
             ],
         }
 
+        # Spec §4.3: drive weekday lift opportunity OR weekend over-reliance
+        if delta_pct >= 30:
+            action_rec = format_action_rec(
+                object_target=f"工作日客单 (低于周末 {delta_pct:.0f}%)",
+                benefit_range="工作日午市套餐 + 商务套餐 + 会员唤回可拉高工作日客单 8-15%",
+                prerequisite="工作日时段套餐组合测试 + 周边写字楼会员推广",
+                timeline="本月内",
+            )
+        elif weekend_rev_share >= 60:
+            action_rec = format_action_rec(
+                object_target=f"周末过度集中 ({weekend_rev_share:.1f}% 营收)",
+                benefit_range="工作日营销 + 排班再平衡可缓解周末压力,提升周中坪效 5-10%",
+                prerequisite="工作日午餐 / 晚餐促销 + 排班优化 + 商家联盟会员引导",
+                timeline="本月内",
+            )
+        else:
+            action_rec = format_action_rec(
+                object_target=f"周末-工作日均衡发展 (差 {delta_pct:+.1f}%)",
+                benefit_range="保持当前节奏,持续监控周末 / 工作日波动",
+                prerequisite="周报对比 + 节假日特别活动测算",
+                timeline="本月内",
+            )
         insight_text = (
             f"周末占 {weekend_rev_share:.1f}% 营收，"
-            f"人均 {weekend_avg:.0f} vs 工作日 {weekday_avg:.0f} (差 {delta_pct:+.1f}%)。"
+            f"人均 {weekend_avg:.0f} vs 工作日 {weekday_avg:.0f} (差 {delta_pct:+.1f}%)。 {action_rec}"
         )
 
         return TemplateResult(

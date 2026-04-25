@@ -18,6 +18,7 @@ import polars as pl
 
 from ..compute.base import ComputeBackend
 from ..compute.polars_backend import PolarsBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
@@ -190,10 +191,37 @@ class TimeSlotRevenue(AnalysisTemplate):
             "grid": {"left": "3%", "right": "4%", "bottom": "10%", "containLabel": True},
         }
 
+        # Spec §4.3: drive peak slot for staffing + low slot for promotion
+        # Identify lowest slot (across areas) for off-peak promotion lever
+        slot_totals = {sl: sum(r["revenue"] for r in rows if r["slot"] == sl) for sl in present_slots}
+        if slot_totals:
+            low_slot = min(slot_totals.keys(), key=lambda s: slot_totals[s])
+            low_total = slot_totals[low_slot]
+            if low_total > 0 and peak_revenue > low_total * 3:
+                action_rec = format_action_rec(
+                    object_target=f"低谷时段「{low_slot}」 (仅{low_total:,.0f}元)",
+                    benefit_range=f"低谷套餐 + 限时折扣 + 会员唤回可拉高{low_slot}营收 15-30%",
+                    prerequisite=f"{low_slot}时段限时菜单 + 排班缩减 + 营销推送",
+                    timeline="本月内",
+                )
+            else:
+                action_rec = format_action_rec(
+                    object_target=f"高峰「{peak_slot}」×「{peak_area}」",
+                    benefit_range=f"高峰排班 + 备货按峰值 ×1.2 + 出餐 SOP 可降流失 5-10%",
+                    prerequisite="高峰人手到位 + 备货预判 + 等位提示牌",
+                    timeline="本周内",
+                )
+        else:
+            action_rec = format_action_rec(
+                object_target=f"高峰「{peak_slot}」",
+                benefit_range="高峰备货 + 排班可降客流流失 5-10%",
+                prerequisite="高峰预判 + 排班 + 备货",
+                timeline="本周内",
+            )
         insight_text = (
             f"营业高峰:{peak_slot}时段的{peak_area}"
             f"(营收 {peak_revenue:,.0f})。"
-            f"全日累计 {total_revenue:,.0f}。"
+            f"全日累计 {total_revenue:,.0f}。 {action_rec}"
         )
 
         return TemplateResult(

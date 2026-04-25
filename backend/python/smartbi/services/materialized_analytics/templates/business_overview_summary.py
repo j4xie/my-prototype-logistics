@@ -22,6 +22,7 @@ import polars as pl
 
 from ..compute.base import ComputeBackend
 from ..restaurant import industry_benchmarks as bench
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.schema_helpers import (
     find_customer_col, find_date_col, find_store_col,
 )
@@ -241,7 +242,26 @@ class BusinessOverviewSummary(AnalysisTemplate):
             discount_pct = round(total_discount / total_revenue * 100, 2)
             parts.append(f" 折扣/优惠累计 {total_discount:,.0f} 元 (占营业额 {discount_pct:.1f}%)。")
         parts.append(bench.industry_footer_by_context("business_overview"))
-        insight_text = " ".join(parts)
+        # Spec §4.3: drive Top vs bottom store gap into SOP transfer
+        if len(by_store) >= 3:
+            top_s = by_store[0]
+            bottom_s = by_store[-1]
+            gap_pct = round((top_s["revenue"] - bottom_s["revenue"]) / top_s["revenue"] * 100, 0) \
+                if top_s["revenue"] > 0 else 0
+            action_rec = format_action_rec(
+                object_target=f"末位「{bottom_s['store']}」 (与 Top「{top_s['store']}」差距 {gap_pct:.0f}%)",
+                benefit_range=f"复制 Top 门店 SOP + 客流引导可拉高末位营业额 10-25%",
+                prerequisite=f"对标走访{top_s['store']} + 末位店店长 KPI 重设 + 公司层面调度支持",
+                timeline="本季度内",
+            )
+        else:
+            action_rec = format_action_rec(
+                object_target=f"全 {len(by_store) or 1} 家门店运营",
+                benefit_range="持续监控翻台率 / 客单 / 折扣占比,异常波动 5%+ 立即复盘",
+                prerequisite="周期性同比 / 环比对标 + 行业基准对照",
+                timeline="本月内",
+            )
+        insight_text = " ".join(parts) + " " + action_rec
 
         # ECharts bar — store ranking
         chart_config = None
