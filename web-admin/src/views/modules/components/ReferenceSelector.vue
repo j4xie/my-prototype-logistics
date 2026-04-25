@@ -50,9 +50,13 @@ async function search(query: string) {
       })
       const data = res.data
       const list = Array.isArray(data) ? data : (data?.content || [])
+      // R4 audit fix: coerce option.value to String. Entities like SalesOrder store FK
+      // columns as String (e.g. salespersonId column type=varchar), but reference endpoints
+      // return Long → JSON number. Without coercion, el-select strict-eq fails ("146" !== 146)
+      // and displays raw modelValue instead of the matched option's label.
       options.value = list.map((item: Record<string, unknown>) => ({
         label: String(item[props.config.displayField] || ''),
-        value: item[props.config.valueField] as string | number,
+        value: String(item[props.config.valueField]),
       }))
     } catch (e: any) {
       // Permission denied (403) or missing endpoint is expected when user has limited access.
@@ -128,7 +132,10 @@ async function fetchById(id: string | number) {
     const item = res.data?.data || res.data
     if (item && typeof item === 'object' && item[props.config.valueField] != null) {
       const realLabel = String(item[props.config.displayField] || id)
-      const realValue = item[props.config.valueField] as string | number
+      // R4 audit fix: coerce to String. Entity FK columns (e.g. salespersonId)
+      // are VARCHAR while reference endpoints return Long → JSON number. el-select
+      // strict-eq fails ("146" !== 146) → can't match modelValue → shows raw label.
+      const realValue = String(item[props.config.valueField])
       options.value = [{ label: realLabel, value: realValue }]
       // Force el-select to re-mount so its cached currentLabel picks up the real label
       // instead of the raw-id placeholder. Safe because dropdown isn't open during fetch.

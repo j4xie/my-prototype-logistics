@@ -1017,6 +1017,13 @@ public class SalesServiceImpl implements SalesService {
     public void resolveSalespersonField(SalesOrder order, String input, String factoryId) {
         if (input == null || input.isBlank()) return;
         if (USER_ID_PATTERN.matcher(input).matches()) {
+            // R4 audit S2: if input matches existing FK and user no longer exists
+            // (e.g. HR deleted user mid-edit), don't throw — silently keep the existing
+            // snapshot+FK. Only re-resolve when the input differs from current state.
+            String currentFkId = order.getSalespersonId();
+            if (input.equals(currentFkId)) {
+                return;  // no-op, user didn't actually change salesperson
+            }
             Long userId = Long.parseLong(input);
             User user = userRepository.findById(userId)
                 .filter(u -> factoryId.equals(u.getFactoryId()))
@@ -1024,6 +1031,14 @@ public class SalesServiceImpl implements SalesService {
             order.setSalespersonId(input);
             order.setSalesperson(user.getFullName());  // M1: snapshot name at save time
         } else {
+            // R4 audit C2: defensive — if input string equals existing snapshot AND existing
+            // FK is non-null, this is the legacy edit form re-PUTting the snapshot string
+            // unchanged (LEGACY-mode list.vue dialog only sends `salesperson` not the FK).
+            // Preserve the FK rather than wipe it, otherwise commission attribution silently
+            // breaks for ANY legacy edit of a DYNAMIC-created SO.
+            if (input.equals(order.getSalesperson()) && order.getSalespersonId() != null) {
+                return;  // no-op, snapshot unchanged + FK already linked
+            }
             order.setSalesperson(input);
             order.setSalespersonId(null);
         }
