@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.schema_helpers import (
     find_date_col, find_gross_revenue_col, find_net_revenue_col,
     measure_annotation, preferred_revenue_col,
@@ -174,11 +175,32 @@ class MonthlyAnomaly(AnalysisTemplate):
             if worst and worst.get("mom_delta_pct"):
                 delta = worst["mom_delta_pct"]
                 if delta < 0:
-                    parts.append(f"最大跌幅 {worst['month']} {delta:+.1f}% — 建议归因分析:促销撤回/客流流失/区域关店等。")
+                    parts.append(f"最大跌幅 {worst['month']} {delta:+.1f}%。")
+                    # K2 / C-rec 8: spec §4.3 action rec for跌幅
+                    parts.append(format_action_rec(
+                        object_target=f"{worst['month']} 营收跌幅 ({delta:+.1f}%)",
+                        benefit_range=f"找出根因后干预可挽回 5-15% 营收 (¥{abs(worst['revenue'] - mean):,.0f})",
+                        prerequisite="拉取该月按渠道/门店/品类拆分 + 对比促销日历 / 节假日 / 关店",
+                        timeline="本周内",
+                    ))
                 else:
-                    parts.append(f"最大涨幅 {worst['month']} {delta:+.1f}% — 可复盘成功因素用于复制。")
+                    parts.append(f"最大涨幅 {worst['month']} {delta:+.1f}%。")
+                    # K2 / C-rec 8: spec §4.3 action rec for涨幅
+                    parts.append(format_action_rec(
+                        object_target=f"{worst['month']} 营收涨幅 ({delta:+.1f}%) 成功因素",
+                        benefit_range=f"复制至其他月份可拉高均值 3-8% (¥{(worst['revenue'] - mean) * 0.5:,.0f}/月)",
+                        prerequisite="复盘该月促销/节庆/新品/客流来源 + 沉淀 SOP",
+                        timeline="近 30 天",
+                    ))
         else:
             parts.append("✅ 期内无月度异常波动。")
+            # K2 / C-rec 8: 无异常时也给可执行建议 (避免空 rec)
+            parts.append(format_action_rec(
+                object_target=f"稳定期 (峰值 {peak['month']}, 谷值 {trough['month']})",
+                benefit_range=f"在峰值月复制成功因素到谷值月可拉平 5-10% (¥{(peak['revenue'] - trough['revenue']) * 0.3:,.0f})",
+                prerequisite=f"对比 {peak['month']} vs {trough['month']} 客流/促销/天气数据",
+                timeline="本月内",
+            ))
         insight_text = " ".join(parts)
 
         # ECharts: bar chart with colors by anomaly

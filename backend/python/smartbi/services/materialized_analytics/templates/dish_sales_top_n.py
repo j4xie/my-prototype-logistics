@@ -12,6 +12,7 @@ from collections import Counter
 from typing import Any, Dict, List
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.dish_name_normalizer import normalize_dish_name
 from ..restaurant.item_parser import parse_items
 from ..schema import DataSchema, Domain
@@ -133,11 +134,19 @@ class DishSalesTopN(AnalysisTemplate):
             "grid": {"left": "3%", "right": "8%", "bottom": "20%", "containLabel": True},
         }
 
+        # K2 / C-rec 8: append spec §4.3 action rec (a对象 b收益区间 c前置 d时间窗)
+        action_rec = format_action_rec(
+            object_target=top_name,
+            benefit_range="加大主推位 + 备货充足后销量再提升 5-10%",
+            prerequisite="确认菜单首屏 / 首页排位 + 上架库存满足 1 周",
+            timeline="本周内",
+        )
         insight_text = (
             f"菜品销量 Top 1:{top_name},"
             f"共售出 {top_qty:.0f} 份,"
             f"贡献营业额 {top_revenue:,.0f} 元。"
-            f"全量菜单共 {distinct_dishes} 个菜品。"
+            f"全量菜单共 {distinct_dishes} 个菜品。 "
+            f"{action_rec}"
         )
 
         return TemplateResult(

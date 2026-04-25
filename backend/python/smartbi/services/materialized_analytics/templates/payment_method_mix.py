@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.schema_helpers import find_store_col
 from ..schema import DataSchema, Domain
 from .base import AnalysisTemplate, TemplateResult
@@ -200,6 +201,43 @@ class PaymentMethodMix(AnalysisTemplate):
         if len(buckets) >= 3:
             mix_str = "、".join(f"{b['bucket']} {b['share_pct']:.1f}%[按金额]" for b in buckets[:4])
             parts.append(f"结构:{mix_str}。")
+
+        # K2 / C-rec 8: append spec §4.3 action rec (a对象 b收益区间 c前置 d时间窗)
+        # Identify voucher/coupon-heavy buckets — they carry platform commission ~20%
+        # so high voucher share = margin leak opportunity
+        voucher_buckets = {"点评券", "美团券", "抖音券", "饿了么券", "京东券"}
+        voucher_share = sum(
+            b["share_pct"] for b in buckets if b["bucket"] in voucher_buckets
+        )
+        cash_share = next(
+            (b["share_pct"] for b in buckets if b["bucket"] == "现金"), 0.0
+        )
+        if voucher_share >= 30.0 and top_bucket:
+            action_rec = format_action_rec(
+                object_target=f"平台券类支付 ({voucher_share:.1f}%)",
+                benefit_range="降低券依赖度 5-10pp 可减少平台佣金 1-2 万/月/店",
+                prerequisite="对账核算佣金率 + 自有储值卡/会员卡推广承接",
+                timeline="本季度内",
+            )
+        elif cash_share >= 20.0:
+            action_rec = format_action_rec(
+                object_target=f"现金支付 ({cash_share:.1f}%)",
+                benefit_range="推广移动支付 + 储值卡可降现金管理成本 30-50%",
+                prerequisite="移动支付二维码醒目展示 + 储值卡赠送活动",
+                timeline="本月内",
+            )
+        elif top_bucket:
+            action_rec = format_action_rec(
+                object_target=f"{top_bucket['bucket']} ({top_bucket['share_pct']:.1f}%)",
+                benefit_range=f"该渠道继续做厚, 预计带量 5-10% / 节约其他渠道运营投入",
+                prerequisite="该渠道客户偏好画像 + 留存活动设计",
+                timeline="本月内",
+            )
+        else:
+            action_rec = ""
+
+        if action_rec:
+            parts.append(action_rec)
         insight_text = " ".join(parts)
 
         chart_config = None

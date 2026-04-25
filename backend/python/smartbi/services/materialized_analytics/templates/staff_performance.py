@@ -11,6 +11,7 @@ from typing import Any, Dict, List
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.pos_placeholders import POS_STAFF_PLACEHOLDERS
 from ..restaurant.schema_helpers import measure_annotation, preferred_revenue_col
 from ..schema import DataSchema
@@ -155,10 +156,31 @@ class StaffPerformance(AnalysisTemplate):
             "grid": {"left": "3%", "right": "8%", "bottom": "3%", "containLabel": True},
         }
 
+        # K2 / C-rec 8: append spec §4.3 action rec (a对象 b收益区间 c前置 d时间窗)
+        # Compute gap between top and bottom staff to size the upskill opportunity
+        if len(ranking) >= 2:
+            bottom = ranking[-1]
+            gap_pct = (
+                round((top["revenue"] - bottom["revenue"]) / max(top["revenue"], 1) * 100, 0)
+            )
+            action_rec = format_action_rec(
+                object_target=f"末位 {role_col} {bottom['staff']} (差距 {gap_pct:.0f}%)",
+                benefit_range=f"复制 {top_staff} 推单话术可拉高末位营收 15-25%",
+                prerequisite=f"录制 {top_staff} 推单视频 + 排班搭档轮训 1 周",
+                timeline="本月内",
+            )
+        else:
+            action_rec = format_action_rec(
+                object_target=f"{role_col} {top_staff}",
+                benefit_range="设为带教标杆, 1V1 培训新员工可缩短上手周期 30-50%",
+                prerequisite=f"评估 {top_staff} 业务知识 + 制定培训手册",
+                timeline="近 30 天",
+            )
         insight_text = (
             f"{role_col} Top 1:{top_staff} (销售额 {top_revenue:,.0f} 元,{top_orders:,} 单);"
-            f"共 {total_staff} 位{role_col}参与服务。"
-            f" {measure_annotation(measure)}"
+            f"共 {total_staff} 位{role_col}参与服务。 "
+            f"{action_rec} "
+            f"{measure_annotation(measure)}"
         )
 
         return TemplateResult(

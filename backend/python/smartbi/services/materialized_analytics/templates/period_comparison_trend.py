@@ -17,6 +17,7 @@ import polars as pl
 
 from ..compute.base import ComputeBackend
 from ..restaurant import industry_benchmarks as bench
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.schema_helpers import (
     find_customer_col, find_date_col, find_gross_revenue_col, find_net_revenue_col,
 )
@@ -190,6 +191,41 @@ class PeriodComparisonTrend(AnalysisTemplate):
                 parts.append(f"🎯 远超行业同期 ({industry:+.1f}%),表现优异。")
             elif local < industry - 5:
                 parts.append(f"⚠ 落后行业同期 ({industry:+.1f}%),需关注。")
+
+        # K2 / C-rec 8: append spec §4.3 action rec (a对象 b收益区间 c前置 d时间窗)
+        latest_delta = latest.get("revenue_delta_pct")
+        if latest_delta is not None and latest_delta < -10.0:
+            # Sharp drop — diagnose & remediate
+            action_rec = format_action_rec(
+                object_target=f"{latest['month']} 营收下滑 ({latest_delta:+.1f}%)",
+                benefit_range="找到 2-3 个核心原因后干预可挽回 50-80% 跌幅",
+                prerequisite="按渠道/门店/品类拆分 + 对比促销日历 / 客流/天气数据",
+                timeline="本周内",
+            )
+        elif latest_delta is not None and latest_delta > 10.0:
+            # Sharp rise — replicate
+            action_rec = format_action_rec(
+                object_target=f"{latest['month']} 营收涨幅 ({latest_delta:+.1f}%) 复盘",
+                benefit_range=f"提炼成功 SOP 复制到下月预计可保住 60-80% 涨幅 (¥{latest['revenue'] * 0.06:,.0f})",
+                prerequisite="复盘该月促销/新品/客流来源 + 销售团队访谈",
+                timeline="近 30 天",
+            )
+        elif dod_delta_pct is not None and dod_delta_pct < -20.0:
+            action_rec = format_action_rec(
+                object_target=f"近 2 日 DoD 跌幅 ({dod_delta_pct:+.1f}%)",
+                benefit_range="48 小时内介入可避免短期客流流失 5-15%",
+                prerequisite="检查门店开门状态 / 促销节奏 / 平台评分突变",
+                timeline="本周内",
+            )
+        else:
+            action_rec = format_action_rec(
+                object_target=f"周期趋势平稳 ({len(monthly)} 个月)",
+                benefit_range="设定下月营收目标比上月 +3-5% 的渐进增长",
+                prerequisite="拉取上月销售/客流明细 + 制定 1-2 个新促销节点",
+                timeline="本月内",
+            )
+        parts.append(action_rec)
+
         parts.append(bench.industry_footer_by_context("revenue"))
         insight_text = " ".join(parts)
 

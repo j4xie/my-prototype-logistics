@@ -11,6 +11,7 @@ from typing import Any, Dict, List
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.schema_helpers import (
     find_store_col,
     measure_annotation,
@@ -149,11 +150,33 @@ class StorePerformance(AnalysisTemplate):
             "grid": {"left": "3%", "right": "8%", "bottom": "3%", "containLabel": True},
         }
 
+        # K2 / C-rec 8: append spec §4.3 action rec (a对象 b收益区间 c前置 d时间窗)
+        # If gap is large, target the bottom store; otherwise replicate top store playbook
+        gap_pct = (
+            round((top["revenue"] - bottom["revenue"]) / max(top["revenue"], 1) * 100, 0)
+            if len(ranking) >= 2 else 0
+        )
+        if len(ranking) >= 2 and gap_pct >= 50:
+            action_rec = format_action_rec(
+                object_target=f"末位门店 {bottom['store']} (与 Top 差距 {gap_pct:.0f}%)",
+                benefit_range=f"复制 {top['store']} 运营 SOP 可拉高末位营收 20-40%",
+                prerequisite=f"对标走访 {top['store']} + 末位店店长培训 + KPI 重设",
+                timeline="本季度内",
+            )
+        else:
+            action_rec = format_action_rec(
+                object_target=f"客单价标杆 {top_avg['store']} (¥{top_avg['avg_per_order']:,.0f}/单)",
+                benefit_range=f"将 {top_avg['store']} 客单价做法推广到其余 {total_stores - 1} 店, 整体客单价拉高 5-10%",
+                prerequisite="高客单价菜品/套餐结构梳理 + 推销话术模板",
+                timeline="本月内",
+            )
         insight_text = (
             f"门店 Top 1:{top['store']} (销售额 {top['revenue']:,.0f} 元,{top['orders']:,} 单);"
             f" Top {len(ranking)} 末位:{bottom['store']} (销售额 {bottom['revenue']:,.0f} 元);"
             f" 客单价最高:{top_avg['store']} ({top_avg['avg_per_order']:,.2f} 元/单);"
-            f" 共 {total_stores} 家门店。 {measure_annotation(measure)}"
+            f" 共 {total_stores} 家门店。 "
+            f"{action_rec} "
+            f"{measure_annotation(measure)}"
         )
 
         return TemplateResult(

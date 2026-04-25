@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Tuple
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.schema_helpers import find_customer_col, measure_annotation, preferred_revenue_col
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
@@ -247,6 +248,36 @@ class ChannelAnalysis(AnalysisTemplate):
             parts.append(f" 堂食客单价 {dine_in_avg:.0f} 元/人。")
         elif takeaway_avg is not None:
             parts.append(f" 外卖客单价 {takeaway_avg:.0f} 元/人。")
+
+        # K2 / C-rec 8: append spec §4.3 action rec (a对象 b收益区间 c前置 d时间窗)
+        # Decide action by which channel dominates: takeaway >50% → 优化外卖运营,
+        # dine-in >70% → 增加外卖渠道, mid → 平衡补强 top channel.
+        if takeaway_share >= 50.0:
+            action_rec = format_action_rec(
+                object_target=f"外卖渠道 ({top_channel})",
+                benefit_range="优化首图/价格档位/时段促销可拉高外卖单量 8-12% / 客单价 5%",
+                prerequisite="抖音/美团 评分 ≥4.5 + 配送时效 < 35 分钟",
+                timeline="近 30 天",
+            )
+        elif dine_in_share >= 70.0:
+            action_rec = format_action_rec(
+                object_target="外卖渠道 (美团/饿了么)",
+                benefit_range="新开外卖渠道可增量营收 10-20%, 不影响堂食客流",
+                prerequisite="店内备餐能力评估 + 平台门店上线 + 外卖包装升级",
+                timeline="本季度内",
+            )
+        elif top_channel:
+            action_rec = format_action_rec(
+                object_target=f"主导渠道 {top_channel} ({top_channel_share:.1f}%)",
+                benefit_range="加大该渠道投放 / 优化定价档位可提升营收 5-8%",
+                prerequisite="该渠道毛利率核算 + 平台客户运营资源对接",
+                timeline="本月内",
+            )
+        else:
+            action_rec = ""
+
+        if action_rec:
+            parts.append(f" {action_rec}")
         insight_text = "".join(parts)
 
         return TemplateResult(

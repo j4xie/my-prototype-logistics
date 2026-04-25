@@ -11,6 +11,10 @@ from collections import Counter
 from typing import Any, Dict, List
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import (
+    format_action_rec,
+    format_data_insufficient,
+)
 from ..restaurant.dish_name_normalizer import normalize_dish_name
 from ..restaurant.item_parser import parse_items
 from ..schema import DataSchema
@@ -151,24 +155,45 @@ class DishSlowMovers(AnalysisTemplate):
         }
 
         # Build insight text
+        # K2 / C-rec 8: append spec §4.3 action rec (a对象 b收益区间 c前置 d时间窗)
         top3 = bottom_15[:3]
         if len(top3) >= 3:
             names_str = "、".join(d["name"] for d in top3)
             qtys_str = "/".join(str(int(d["total_qty"])) for d in top3)
+            action_rec = format_action_rec(
+                object_target=f"{names_str} 等 {len(top3)} 款慢销菜品",
+                benefit_range="试售 3 个月观察, 仍滞销则下架可节约采购 5-8 万/月",
+                prerequisite="食材供应链评估 + 厨师工序梳理 + 套餐替代方案",
+                timeline="本季度内",
+            )
             insight_text = (
                 f"最滞销 Top 3：{names_str}"
                 f"（仅售 {qtys_str} 份）。"
-                f"有 {near_zero_count} 个菜品月售<3 份，建议下架或优惠促销。"
+                f"有 {near_zero_count} 个菜品月售<3 份。 "
+                f"{action_rec}"
             )
         elif top3:
             names_str = "、".join(d["name"] for d in top3)
             qtys_str = "/".join(str(int(d["total_qty"])) for d in top3)
+            action_rec = format_action_rec(
+                object_target=f"{names_str} 慢销菜品",
+                benefit_range="下架可减少 SKU 复杂度, 节约采购 2-4 万/月",
+                prerequisite="客户偏好回访 + 厨房备料评估",
+                timeline="本月内",
+            )
             insight_text = (
                 f"最滞销菜品：{names_str}（仅售 {qtys_str} 份）。"
-                f"有 {near_zero_count} 个菜品月售<3 份，建议关注。"
+                f"有 {near_zero_count} 个菜品月售<3 份。 "
+                f"{action_rec}"
             )
         else:
-            insight_text = f"共追踪 {total_tracked} 个菜品，暂无滞销数据。"
+            insight_text = (
+                f"共追踪 {total_tracked} 个菜品，暂无滞销数据。 "
+                + format_data_insufficient(
+                    needed="补充菜单结构和近 30 天销量数据",
+                    next_action="完成上传后再触发滞销分析",
+                )
+            )
 
         return TemplateResult(
             code=self.code,

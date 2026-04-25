@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
@@ -153,9 +154,34 @@ class MemberConsumption(AnalysisTemplate):
                     "grid": {"left": "3%", "right": "8%", "bottom": "20%", "containLabel": True},
                 }
 
+        # K2 / C-rec 8: append spec §4.3 action rec (a对象 b收益区间 c前置 d时间窗)
+        # Member share <10% = 渗透率不足 (推会员); 10-30% = 中等 (拉提客单价);
+        # >30% = 高粘性 (维系 + LTV)
+        if member_share_pct < 10.0:
+            action_rec = format_action_rec(
+                object_target=f"会员渗透率 ({member_share_pct:.1f}%)",
+                benefit_range="提升至 20% 可拉高复购 8-15% / 月营收增 3-6%",
+                prerequisite="入会权益重新设计 + 收银/服务员推会员 SOP",
+                timeline="本季度内",
+            )
+        elif member_share_pct < 30.0:
+            action_rec = format_action_rec(
+                object_target=f"会员客单价 (¥{avg_member_spend:.0f}/单)",
+                benefit_range="差异化套餐 + 储值卡返充可拉高会员客单价 5-10%",
+                prerequisite="会员消费分层 + 高消费档位活动设计",
+                timeline="本月内",
+            )
+        else:
+            action_rec = format_action_rec(
+                object_target=f"高粘性会员 ({member_count} 单)",
+                benefit_range="LTV 维系 + 流失预警可保住 90% 高消费会员, 减少损失 5-10%",
+                prerequisite="近 90 天未消费会员名单 + 召回活动 (如生日券)",
+                timeline="近 30 天",
+            )
         insight_text = (
             f"{member_share_pct:.1f}% 营收来自会员卡支付"
-            f"({member_count} 单,人均 {avg_member_spend:.0f} 元)。"
+            f"({member_count} 单,人均 {avg_member_spend:.0f} 元)。 "
+            f"{action_rec}"
         )
 
         return TemplateResult(
