@@ -103,11 +103,18 @@ function looksLikeId(v: string | number): boolean {
 }
 
 async function fetchById(id: string | number) {
+  // R4 audit fix (Apr 25 2026): set a synchronous placeholder option BEFORE the async
+  // network call. Without this, el-select renders with empty options on first paint,
+  // displays the raw value (e.g., "129") as the label, and never updates when the async
+  // options arrive (Element Plus caches `currentLabel` from the first matching option).
+  // Pre-populating ensures el-select always has options[0].value === modelValue, so the
+  // initial label is the raw id (acceptable transient), then upgraded to the real
+  // displayField when the fetch completes.
+  options.value = [{ label: String(id), value: id }]
+
   // Skip lookup for non-ID-shaped values (legacy display-name strings, e.g., "张三")
-  if (!looksLikeId(id)) {
-    options.value = [{ label: String(id), value: id }]
-    return
-  }
+  if (!looksLikeId(id)) return
+
   loading.value = true
   try {
     // Strip /search or /active suffix — those are LIST endpoints, not single-item GET.
@@ -122,17 +129,14 @@ async function fetchById(id: string | number) {
         label: String(item[props.config.displayField] || id),
         value: item[props.config.valueField] as string | number,
       }]
-      return
     }
-  } catch (e: any) {
-    // 404 → endpoint pattern not supported; silently fall back to keyword search
-    // (no console.warn — this is expected for some entities)
+    // else: keep the synchronous placeholder (raw id as label) — backend returned null
+    // for stale/deleted reference. Better than showing "undefined".
+  } catch {
+    // 404 → endpoint pattern not supported; keep raw-id placeholder set above
   } finally {
     loading.value = false
   }
-  // fallback: render raw id as label (no API call to avoid 404 noise)
-  // user typing keyword still triggers search() via :remote-method
-  options.value = [{ label: String(id), value: id }]
 }
 
 onMounted(() => {
