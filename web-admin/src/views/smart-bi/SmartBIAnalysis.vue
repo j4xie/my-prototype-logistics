@@ -606,53 +606,12 @@
                 :sensitivity-count="getSensitivityAnalysis(sheet)?.length || 0"
               />
 
-              <!-- A6: 食品行业标准参考面板 -->
-              <el-collapse v-if="foodIndustryDetection?.is_food_industry && enrichedSheets.has(sheet.sheetIndex)" class="food-industry-panel">
-                <el-collapse-item>
-                  <template #title>
-                    <div class="food-industry-header">
-                      <el-tag type="success" size="small" effect="dark" style="margin-right: 8px;">
-                        食品行业
-                      </el-tag>
-                      <span>食品行业标准参考</span>
-                      <el-tag v-if="foodIndustryDetection.confidence > 0.5" type="info" size="small" style="margin-left: 8px;">
-                        置信度 {{ (foodIndustryDetection.confidence * 100).toFixed(0) }}%
-                      </el-tag>
-                    </div>
-                  </template>
-                  <div class="food-standards-content">
-                    <div v-if="foodIndustryDetection.suggested_standards?.length" class="standards-section">
-                      <h4>相关食品安全标准</h4>
-                      <ul>
-                        <li v-for="std in foodIndustryDetection.suggested_standards" :key="std">{{ std }}</li>
-                      </ul>
-                    </div>
-                    <div v-if="foodIndustryDetection.suggested_benchmarks?.length" class="benchmarks-section">
-                      <h4>建议对标指标</h4>
-                      <el-tag
-                        v-for="bm in foodIndustryDetection.suggested_benchmarks"
-                        :key="bm"
-                        size="small"
-                        type="info"
-                        style="margin: 2px 4px;"
-                      >
-                        {{ bm.replace(/_/g, ' ') }}
-                      </el-tag>
-                    </div>
-                    <div v-if="foodIndustryDetection.matched_keywords?.length" class="keywords-section">
-                      <h4>匹配关键词</h4>
-                      <el-tag
-                        v-for="kw in foodIndustryDetection.matched_keywords.slice(0, 10)"
-                        :key="kw"
-                        size="small"
-                        style="margin: 2px 4px;"
-                      >
-                        {{ kw }}
-                      </el-tag>
-                    </div>
-                  </div>
-                </el-collapse-item>
-              </el-collapse>
+              <!-- A6: 食品行业标准参考面板 — extracted to analysis/FoodIndustryPanel.vue (Item 1 phase 4a) -->
+              <FoodIndustryPanel
+                v-if="foodIndustryDetection"
+                :visible="!!foodIndustryDetection.is_food_industry && enrichedSheets.has(sheet.sheetIndex)"
+                :detection="foodIndustryDetection"
+              />
 
               <!-- AI 分析 — extracted to analysis/AIInsightsStream.vue (Item 1 phase 3d) -->
               <AIInsightsStream
@@ -664,47 +623,14 @@
                 :format-analysis="formatAnalysis"
               />
 
-              <!-- 敏感性分析 -->
-              <div v-if="getSensitivityAnalysis(sheet)?.length" class="sensitivity-analysis-section">
-                <h4 style="margin: 16px 0 8px; color: var(--el-text-color-primary); font-size: 14px;">
-                  <el-icon style="margin-right: 4px; vertical-align: middle;"><Warning /></el-icon>
-                  关键驱动因素敏感性分析
-                </h4>
-                <el-table
-                  :data="getSensitivityAnalysis(sheet)"
-                  size="small"
-                  stripe
-                  :border="false"
-                  style="width: 100%;"
-                >
-                  <el-table-column prop="factor" label="驱动因素" min-width="120">
-                    <template #default="{ row }">{{ row.factor || '-' }}</template>
-                  </el-table-column>
-                  <el-table-column prop="current_value" label="当前值" min-width="100">
-                    <template #default="{ row }">{{ row.current_value || '-' }}</template>
-                  </el-table-column>
-                  <el-table-column prop="impact_description" label="变动影响" min-width="240">
-                    <template #default="{ row }">{{ row.impact_description || '-' }}</template>
-                  </el-table-column>
-                </el-table>
-              </div>
+              <!-- 敏感性分析 — extracted to analysis/SensitivityAnalysisTable.vue (Item 1 phase 4b) -->
+              <SensitivityAnalysisTable :rows="getSensitivityAnalysis(sheet) || []" />
 
-              <!-- 无数据提示 -->
-              <div v-if="!hasChartData(sheet) && !sheet.flowResult?.aiAnalysis && !enrichingSheets.has(sheet.sheetIndex)" class="empty-sheet">
-                <el-empty description="该 Sheet 暂无可分析的数据">
-                  <el-button type="primary" size="small" @click="loadSheetData(sheet)">
-                    查看原始数据
-                  </el-button>
-                </el-empty>
-              </div>
-
-              <!-- 数据预览 -->
-              <div v-else class="data-preview-section">
-                <h3><span class="section-badge section-badge--data" aria-hidden="true"></span> 数据预览</h3>
-                <el-button @click="loadSheetData(sheet)" type="primary" size="small">
-                  查看原始数据
-                </el-button>
-              </div>
+              <!-- 无数据 / 数据预览 — extracted to analysis/EmptySheetPlaceholder.vue (Item 1 phase 4c) -->
+              <EmptySheetPlaceholder
+                :empty="!hasChartData(sheet) && !sheet.flowResult?.aiAnalysis && !enrichingSheets.has(sheet.sheetIndex)"
+                @view-data="loadSheetData(sheet)"
+              />
             </template>
           </el-tab-pane>
         </el-tabs>
@@ -809,6 +735,9 @@ import KPIStripPanel from './analysis/KPIStripPanel.vue';
 import AIInsightsStream from './analysis/AIInsightsStream.vue';
 import ExecutiveSummaryBanner from './analysis/ExecutiveSummaryBanner.vue';
 import UploadSwitcher from './analysis/UploadSwitcher.vue';
+import FoodIndustryPanel from './analysis/FoodIndustryPanel.vue';
+import SensitivityAnalysisTable from './analysis/SensitivityAnalysisTable.vue';
+import EmptySheetPlaceholder from './analysis/EmptySheetPlaceholder.vue';
 import AIInsightPanel from '@/components/smartbi/AIInsightPanel.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 // T3.1: Lazy-load rarely-used components — only loaded when user triggers them
