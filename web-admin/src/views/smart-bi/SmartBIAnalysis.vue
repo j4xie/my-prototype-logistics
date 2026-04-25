@@ -175,20 +175,13 @@
           show-icon
         />
 
-        <!-- P1: 食品行业分析模板 -->
-        <div v-if="foodIndustryDetection?.is_food_industry" class="industry-templates-bar">
-          <span class="templates-label">食品行业模板:</span>
-          <el-tag
-            v-for="tpl in foodTemplates"
-            :key="tpl.id"
-            :type="activeTemplate === tpl.id ? 'primary' : 'success'"
-            :effect="activeTemplate === tpl.id ? 'dark' : 'plain'"
-            class="template-chip"
-            @click="applyTemplate(tpl)"
-          >
-            {{ tpl.name }}
-          </el-tag>
-        </div>
+        <!-- P1: 食品行业分析模板 — extracted to analysis/IndustryTemplateBar.vue (Item 1 phase 3b) -->
+        <IndustryTemplateBar
+          :visible="!!foodIndustryDetection?.is_food_industry"
+          :templates="foodTemplates"
+          :active-template="activeTemplate"
+          @apply="applyTemplate"
+        />
 
         <el-tabs v-model="activeTab" class="sheet-tabs">
           <el-tab-pane
@@ -879,6 +872,7 @@ import CrossSheetDialog from './analysis/CrossSheetDialog.vue';
 import DrillDownDrawer from './analysis/DrillDownDrawer.vue';
 import StatisticalDialog from './analysis/StatisticalDialog.vue';
 import FilterChipsBar from './analysis/FilterChipsBar.vue';
+import IndustryTemplateBar from './analysis/IndustryTemplateBar.vue';
 import AIInsightPanel from '@/components/smartbi/AIInsightPanel.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 // T3.1: Lazy-load rarely-used components — only loaded when user triggers them
