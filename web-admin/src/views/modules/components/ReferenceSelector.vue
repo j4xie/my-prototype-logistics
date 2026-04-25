@@ -102,14 +102,16 @@ function looksLikeId(v: string | number): boolean {
   return /^[A-Za-z0-9_\-.]+$/.test(s)
 }
 
+// :key on the el-select forces re-mount when bumped — needed because element-plus
+// caches its internal currentLabel from the first option-match at render time,
+// and async fetchById updates to options.value don't trigger label re-evaluation.
+// Bumped exactly once per fetch when the real displayField label arrives.
+const selectKey = ref(0)
+
 async function fetchById(id: string | number) {
-  // R4 audit fix (Apr 25 2026): set a synchronous placeholder option BEFORE the async
-  // network call. Without this, el-select renders with empty options on first paint,
-  // displays the raw value (e.g., "129") as the label, and never updates when the async
-  // options arrive (Element Plus caches `currentLabel` from the first matching option).
-  // Pre-populating ensures el-select always has options[0].value === modelValue, so the
-  // initial label is the raw id (acceptable transient), then upgraded to the real
-  // displayField when the fetch completes.
+  // Synchronous placeholder so el-select has options[0].value === modelValue immediately.
+  // Without this, first paint sees empty options + raw modelValue → renders raw id as label,
+  // and Element Plus caches that "currentLabel" — async option updates don't refresh it.
   options.value = [{ label: String(id), value: id }]
 
   // Skip lookup for non-ID-shaped values (legacy display-name strings, e.g., "张三")
@@ -125,10 +127,12 @@ async function fetchById(id: string | number) {
     } as never)
     const item = res.data?.data || res.data
     if (item && typeof item === 'object' && item[props.config.valueField] != null) {
-      options.value = [{
-        label: String(item[props.config.displayField] || id),
-        value: item[props.config.valueField] as string | number,
-      }]
+      const realLabel = String(item[props.config.displayField] || id)
+      const realValue = item[props.config.valueField] as string | number
+      options.value = [{ label: realLabel, value: realValue }]
+      // Force el-select to re-mount so its cached currentLabel picks up the real label
+      // instead of the raw-id placeholder. Safe because dropdown isn't open during fetch.
+      if (realLabel !== String(id)) selectKey.value++
     }
     // else: keep the synchronous placeholder (raw id as label) — backend returned null
     // for stale/deleted reference. Better than showing "undefined".
@@ -157,6 +161,7 @@ watch(() => props.modelValue, (val) => {
 
 <template>
   <el-select
+    :key="selectKey"
     :model-value="modelValue"
     filterable
     remote
