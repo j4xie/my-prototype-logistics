@@ -241,6 +241,19 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
         "category_distribution",
         [["占比", "份额", "结构", "构成", "分布"], ["营业额", "销售额", "收入"]],
     ),
+    # Apr 26 2026 Bug G phase 2 follow-up: "哪类菜品贡献最大" / "哪种产品贡献"
+    # didn't match — dish_category_breakdown line above requires 分类/品类/类别
+    # (substring miss for "哪类") and previous category_distribution requires
+    # 占比/份额/结构. This entry catches the conversational form via 哪类 +
+    # 贡献/最大 paired with 菜品/商品/产品. Routes to category_distribution
+    # (materialized template) since dish_category_breakdown was never
+    # materialized as a real template (latent registry bug fixed).
+    (
+        "category_distribution",
+        [["哪类", "哪种", "哪个类", "哪一类"],
+         ["贡献", "最大", "最多", "贡献最大", "贡献最多",
+          "菜品", "商品", "产品", "类目", "品类"]],
+    ),
 ]
 
 
