@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     structure_detection_confidence_threshold: float = 0.7  # Minimum confidence for structure detection
     semantic_mapping_confidence_threshold: float = 0.8  # Minimum confidence for field mapping
     enable_multi_model_enhancement: bool = True  # Enable Layer 4 multi-model voting (structure_detector)
+    # J2 (Apr 24 2026): Layer 4 multi-model voting now CONDITIONAL on prior layer confidence.
+    # Only escalate to 3-model voting if best prior layer confidence < this threshold.
+    # Avoids ~30-60% redundant LLM calls when single-model already nailed structure.
+    multi_model_voting_confidence_threshold: float = 0.85
     enable_mapper_multi_model: bool = False  # D2: semantic_mapper Layer 3 (2x LLM voting) — off by default
     max_self_correction_rounds: int = 3  # Max rounds for self-correction loop
     use_llm_first: bool = True  # Use LLM as default detection method instead of rules

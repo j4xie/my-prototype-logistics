@@ -139,20 +139,30 @@ class StructureDetector:
         file_bytes: bytes,
         sheet_index: int = 0,
         max_header_rows: int = 10,
-        force_method: Optional[str] = None
+        force_method: Optional[str] = None,
+        enable_multi_model_enhancement: Optional[bool] = None,
     ) -> StructureDetectionResult:
         """
         Detect Excel structure automatically.
 
         Detection strategy (configurable via settings.use_llm_first):
         - LLM-first mode (default): LLM-fast → LLM-complex → rules (fallback)
-        - Rule-first mode: rules → LLM-fast → LLM-VL → multi-model
+        - Rule-first mode: rules → LLM-fast → LLM-VL → (optional) multi-model voting
 
         Args:
             file_bytes: Raw Excel file bytes
             sheet_index: Sheet index to analyze (0-based)
             max_header_rows: Maximum rows to scan for header detection
             force_method: Force a specific detection method (rule, llm_fast, llm_vl)
+            enable_multi_model_enhancement: Override Layer 4 voting decision.
+                - None (default): CONDITIONAL — escalate to voting only when best
+                  prior layer confidence < settings.multi_model_voting_confidence_threshold
+                - True: force multi-model voting regardless of prior confidence
+                - False: skip multi-model voting entirely
+
+                J2 (Apr 24 2026): Default flipped from "always vote when feature flag on"
+                to conditional gating. Saves ~30-60% LLM calls on uploads where single
+                model already produces high-confidence structure detection.
 
         Returns:
             StructureDetectionResult with detected structure
@@ -225,11 +235,21 @@ class StructureDetector:
                     logger.info(f"Complex structure detected via LLM: confidence={result.confidence:.2f}")
                     return result
 
+            # Track best prior result across layers 1-3 so Layer 4 gating
+            # can decide whether voting is worth the extra LLM calls.
+            best_prior: Optional[StructureDetectionResult] = None
+
+            def _update_best(candidate: StructureDetectionResult) -> None:
+                nonlocal best_prior
+                if best_prior is None or candidate.confidence > best_prior.confidence:
+                    best_prior = candidate
+
             # Layer 1: Rule-based detection (for simple cases)
             if force_method is None or force_method == "rule":
                 result = self._detect_with_rules(
                     raw_rows, merged_cells, sheet_name, total_rows, total_cols
                 )
+                _update_best(result)
                 if result.confidence >= self.settings.structure_detection_confidence_threshold:
                     logger.info(f"Structure detected via rules: confidence={result.confidence:.2f}")
                     return result
@@ -242,6 +262,7 @@ class StructureDetector:
                 result = await self._detect_with_llm_fast(
                     raw_rows, merged_cells, sheet_name, total_rows, total_cols
                 )
+                _update_best(result)
                 if result.confidence >= self.settings.structure_detection_confidence_threshold:
                     logger.info(f"Structure detected via LLM-fast: confidence={result.confidence:.2f}")
                     return result
@@ -255,6 +276,7 @@ class StructureDetector:
                     file_bytes, sheet_index, raw_rows, merged_cells,
                     sheet_name, total_rows, total_cols
                 )
+                _update_best(result)
                 if result.confidence >= self.settings.structure_detection_confidence_threshold:
                     logger.info(f"Structure detected via LLM-VL: confidence={result.confidence:.2f}")
                     return result
@@ -262,14 +284,58 @@ class StructureDetector:
                 if force_method == "llm_vl":
                     return result
 
-            # Layer 4: Multi-model enhancement
-            if self.settings.enable_multi_model_enhancement:
+            # Layer 4: Multi-model enhancement (CONDITIONAL since J2 Apr 24 2026)
+            #
+            # Decision matrix: see docstring on detect() for full table.
+            voting_threshold = self.settings.multi_model_voting_confidence_threshold
+            best_prior_conf = best_prior.confidence if best_prior is not None else 0.0
+
+            should_vote: bool
+            if enable_multi_model_enhancement is True:
+                should_vote = True
+                logger.info(
+                    f"[structure] multi-model voting FORCED by caller (best prior conf {best_prior_conf:.2f})"
+                )
+            elif enable_multi_model_enhancement is False:
+                should_vote = False
+                logger.info(
+                    f"[structure] multi-model voting SKIPPED (caller=False, best prior conf {best_prior_conf:.2f})"
+                )
+            else:
+                # Conditional path (default)
+                if not self.settings.enable_multi_model_enhancement:
+                    should_vote = False
+                    logger.info(
+                        f"[structure] multi-model voting disabled by settings flag (best prior conf {best_prior_conf:.2f})"
+                    )
+                elif best_prior_conf >= voting_threshold:
+                    should_vote = False
+                    logger.info(
+                        f"[structure] single-model confidence {best_prior_conf:.2f} >= "
+                        f"threshold {voting_threshold:.2f}, skipping voting"
+                    )
+                else:
+                    should_vote = True
+                    logger.info(
+                        f"[structure] single-model confidence {best_prior_conf:.2f} < "
+                        f"threshold {voting_threshold:.2f}, escalating to voting"
+                    )
+
+            if should_vote:
                 result = await self._detect_with_multi_model(
                     file_bytes, sheet_index, raw_rows, merged_cells,
                     sheet_name, total_rows, total_cols
                 )
                 logger.info(f"Structure detected via multi-model: confidence={result.confidence:.2f}")
                 return result
+
+            # Skip voting: prefer best prior result over fallback when available
+            if best_prior is not None:
+                logger.info(
+                    f"Returning best prior result without voting: method={best_prior.method}, "
+                    f"confidence={best_prior.confidence:.2f}"
+                )
+                return best_prior
 
             # Fallback: return best guess with low confidence
             logger.warning("All detection methods failed, returning best guess")
