@@ -26,6 +26,7 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec, format_data_insufficient
 from ..restaurant.schema_helpers import find_store_col
 from ..schema import DataSchema, Domain
 from .base import AnalysisTemplate, TemplateResult
@@ -209,7 +210,36 @@ class ProfitLossStatement(AnalysisTemplate):
             parts.append(
                 "⚠ 成本/人工/房租等数据未在上传中，无法计算真毛利/净利 — 仅展示营收结构（has_cost_data=false）。"
             )
-        insight_text = " ".join(parts)
+        # Spec §4.3: drive top deduction or net-share gap into action
+        if not has_cost:
+            action_rec = format_data_insufficient(
+                needed="补充成本 / 人工 / 房租数据 (建议上传财务月报或采购明细)",
+                next_action="联系财务部对接月度成本科目导出 + 上传到本系统",
+            )
+        elif net_share is not None and net_share < 80:
+            action_rec = format_action_rec(
+                object_target=f"到账率仅 {net_share:.1f}% (毛-净差额 {gross - net:,.0f} 元)",
+                benefit_range="收紧折扣阈值 + 协商平台抽成 + 减少分摊优惠可提净利率 1-3 个百分点",
+                prerequisite="按扣减项目排序复盘 + 修订折扣权限 + 重谈外卖平台抽成",
+                timeline="本月内",
+            )
+        elif deductions:
+            top_ded = max(deductions, key=lambda d: d["amount"])
+            ded_share = round(top_ded['amount'] / gross * 100, 1) if gross > 0 else 0
+            action_rec = format_action_rec(
+                object_target=f"最大扣减项「{top_ded['label']}」 ({top_ded['amount']:,.0f} 元 / {ded_share:.1f}%)",
+                benefit_range=f"{top_ded['label']}收紧阈值或重谈条款可降扣减 10-25%,提净利率 0.5-2 pct",
+                prerequisite=f"复盘{top_ded['label']}触发场景 + 流程加锁 + 谈判方案",
+                timeline="本月内",
+            )
+        else:
+            action_rec = format_action_rec(
+                object_target=f"利润结构 (毛利估算 {gross_profit:,.0f} 元)",
+                benefit_range="持续监控成本结构 + 季度对比可维持净利率 +1 pct",
+                prerequisite="月度财务对账 + 季度成本结构分析",
+                timeline="本月内",
+            )
+        insight_text = " ".join(parts) + " " + action_rec
 
         # ECharts — use horizontal bar for waterfall nodes (simple, robust)
         chart_config = {

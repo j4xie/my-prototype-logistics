@@ -28,6 +28,7 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.pos_placeholders import POS_PRODUCT_PLACEHOLDERS, filter_placeholder_rows
 from ..restaurant.schema_helpers import find_date_col, find_store_col
 from ..schema import DataSchema, Domain
@@ -249,7 +250,31 @@ class PurchaseInventoryInflow(AnalysisTemplate):
             "⚠ 真正 '商品进销存' 需要同步上传期末库存盘点或原料层销售消耗 — "
             "当前仅展示采购入库侧。"
         )
-        insight_text = " ".join(parts)
+        # Spec §4.3: drive top supplier concentration into bargaining or risk
+        if top_suppliers and top_suppliers[0]["share_pct"] >= 50:
+            top_s = top_suppliers[0]
+            action_rec = format_action_rec(
+                object_target=f"过度依赖供应商「{top_s['supplier']}」 ({top_s['share_pct']:.1f}% 采购额)",
+                benefit_range="开发 2 备选供应商 + 比价后,采购成本可降 3-8%,降单点风险",
+                prerequisite="备选供应商 BD + 比价采购 + 质量验收 SOP",
+                timeline="本季度内",
+            )
+        elif top_materials_by_amount:
+            top_m = top_materials_by_amount[0]
+            action_rec = format_action_rec(
+                object_target=f"主力采购原料「{top_m['material']}」 ({top_m['amount']:,.0f} 元)",
+                benefit_range="集中采购 + 议价 + 周转优化可降原料成本 5-10%",
+                prerequisite="议价谈判 + 储存条件优化 + 损耗排查 + 替代品评估",
+                timeline="本季度内",
+            )
+        else:
+            action_rec = format_action_rec(
+                object_target=f"采购整体 ({total_amount:,.0f} 元 / {distinct_materials or 0} 种)",
+                benefit_range="补完期末盘点 + 销售消耗后,真正进销存对账可揭示 5-10% 损耗",
+                prerequisite="上传期末库存盘点 + 原料层销售消耗 + 财务对账",
+                timeline="本月内",
+            )
+        insight_text = " ".join(parts) + " " + action_rec
 
         # ECharts — bar chart of top suppliers by amount
         chart_config = None

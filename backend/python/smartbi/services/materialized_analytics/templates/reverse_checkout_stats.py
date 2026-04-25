@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.schema_helpers import find_date_col, find_staff_col, find_store_col
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
@@ -141,6 +142,30 @@ class ReverseCheckoutStats(AnalysisTemplate):
             parts.append(
                 f"高发日：{top_d['dim']}（{top_d['count']} 笔）。"
             )
+        # Spec §4.3: drive top reverse-checkout cluster into store-level audit
+        if by_store and round(by_store[0]['count'] / reverse_count * 100, 1) >= 30:
+            top_s = by_store[0]
+            action_rec = format_action_rec(
+                object_target=f"反结账高发门店「{top_s['dim']}」 ({top_s['count']} 笔)",
+                benefit_range="店长走访 + 反结流程审计 + 服务员/收银员培训可降反结率 30-50%",
+                prerequisite=f"调取{top_s['dim']}反结订单详情 + 责任人复盘会 + 反结审批流程加锁",
+                timeline="本周内",
+            )
+        elif reverse_share_pct > 1:
+            action_rec = format_action_rec(
+                object_target=f"反结账率 {reverse_share_pct:.2f}% ({reverse_count} 笔)",
+                benefit_range="收银员培训 + 反结审批流程加锁可降反结率 0.5-1 个百分点",
+                prerequisite="按门店分析高发原因 + 收银台审批流程 + 培训",
+                timeline="本月内",
+            )
+        else:
+            action_rec = format_action_rec(
+                object_target=f"反结账 {reverse_count} 笔 (低位 {reverse_share_pct:.2f}%)",
+                benefit_range="保持当前管控,持续监控 + 异常爆量立即追溯",
+                prerequisite="周报跟踪 + 异常告警阈值 1%",
+                timeline="本月内",
+            )
+        parts.append(action_rec)
 
         # ECharts — stacked bar: reverse count by store
         chart_config = None

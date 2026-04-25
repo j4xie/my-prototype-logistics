@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Optional
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.schema_helpers import find_customer_col, find_table_col
 from ..restaurant.table_classifier import classify_table
 from ..schema import DataSchema, Domain
@@ -278,11 +279,30 @@ class RevenueManagementReport(AnalysisTemplate):
         else:
             revenue_basis_label = f"[按{revenue_col}]"
 
+        # Spec §4.3: drive top channel×slot for staffing + low cells for upsell
+        # Find lowest non-zero cell for off-peak lever
+        non_zero_cells = [(ch, sl, o, r) for (ch, sl, o, r) in all_cells if o > 0 and (ch, sl) != (top_ch, top_sl)]
+        if non_zero_cells and top_share >= 35:
+            low_cell = min(non_zero_cells, key=lambda c: c[3])
+            low_ch, low_sl, low_o, low_r = low_cell
+            action_rec = format_action_rec(
+                object_target=f"低谷「{low_ch}×{low_sl}」 (仅{low_r:,.0f} 元{revenue_basis_label})",
+                benefit_range=f"低谷套餐 + 时段限定优惠可拉高{low_ch}×{low_sl}营收 15-30%",
+                prerequisite=f"{low_ch}×{low_sl}排班缩减 / 引流活动 + POS 时段菜单设计",
+                timeline="本月内",
+            )
+        else:
+            action_rec = format_action_rec(
+                object_target=f"高峰「{top_ch}×{top_sl}」 ({top_share:.1f}% 营收)",
+                benefit_range="该格人手按峰值×1.2 + 备货充足 + 推餐 SOP 可降流失 5-10%",
+                prerequisite=f"{top_ch}×{top_sl}排班 + 备货预判 + 等位提示牌",
+                timeline="本周内",
+            )
         insight_text = (
             f"营收口径：{revenue_basis_label}（{revenue_col}）。"
             f" 营收高峰：{top_ch}×{top_sl} 贡献 {top_rev:,.0f} 元{revenue_basis_label}"
             f"（占 {top_share:.1f}%[按营业额] / {top_share_bills:.1f}%[按笔数]）, {top_orders} 单。"
-            f" 全渠道全时段 {grand_orders} 单、{grand_revenue:,.0f} 元{revenue_basis_label}。"
+            f" 全渠道全时段 {grand_orders} 单、{grand_revenue:,.0f} 元{revenue_basis_label}。 {action_rec}"
         )
 
         # ECharts — stacked bar: x=time_slot, each channel is a series
