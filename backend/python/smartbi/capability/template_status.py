@@ -12,11 +12,22 @@ from smartbi.capability.contract import RequiresSpec
 def get_registry():
     """Lazy import to avoid eager pandas/numpy load at module import time.
 
+    Also ensures `load_all_templates()` has run — registry is otherwise empty
+    until the first materialize call triggers it (see materializer.py line 129).
+    Capability endpoint can be queried before any materialize happens, so we
+    eagerly load here. Idempotent: registry's collision guard raises ValueError
+    on second register, which we swallow.
+
     Tests mock this symbol via patch('smartbi.capability.template_status.get_registry').
     """
     from smartbi.services.materialized_analytics.templates.registry import (
         get_registry as _get_registry,
+        load_all_templates,
     )
+    try:
+        load_all_templates()
+    except ValueError:
+        pass  # already loaded (idempotent)
     return _get_registry()
 
 

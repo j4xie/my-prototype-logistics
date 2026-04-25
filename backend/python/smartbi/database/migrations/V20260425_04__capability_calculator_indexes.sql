@@ -17,15 +17,19 @@
 
 -- Partial index: only COMPLETED uploads matter for capability (avoid bloating with
 -- PROCESSING / FAILED rows). 12 factories × tens of completed uploads = thin index.
+-- (factory_id, upload_status) composite is more selective than the existing
+-- single-column idx_pg_upload_factory + idx_pg_upload_status combo for our query.
 CREATE INDEX IF NOT EXISTS idx_uploads_factory_status_completed
   ON smart_bi_pg_excel_uploads (factory_id, upload_status)
   WHERE upload_status = 'COMPLETED';
 
--- Speed up the JOIN. field_definitions has hundreds of rows per upload; without this,
--- DISTINCT scan is sequential.
-CREATE INDEX IF NOT EXISTS idx_field_def_upload_id
-  ON smart_bi_pg_field_definitions (upload_id);
+-- Note (Apr 26 2026, deploy-time discovery on test env smartbi_db):
+-- smart_bi_pg_field_definitions ALREADY has `idx_pg_field_upload` btree (upload_id),
+-- which covers the JOIN in our calculator query. Day 3 spec §3.0.1 prescribed
+-- a second index `idx_field_def_upload_id` on the same column, but that would
+-- be a redundant duplicate. Skipped here. If a future query needs a different
+-- composite (e.g. (upload_id, original_name) for covering DISTINCT), add it
+-- in a new migration.
 
 -- Rollback:
---   DROP INDEX IF EXISTS idx_field_def_upload_id;
 --   DROP INDEX IF EXISTS idx_uploads_factory_status_completed;
