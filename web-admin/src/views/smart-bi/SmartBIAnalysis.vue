@@ -917,44 +917,8 @@
     <el-empty v-else description="暂无分析结果" />
   </el-drawer>
 
-  <!-- 分享链接对话框 -->
-  <el-dialog v-model="shareDialogVisible" title="分享分析报告" width="500px">
-    <div v-if="!shareLink" style="text-align: center; padding: 20px;">
-      <p style="margin-bottom: 16px; color: var(--color-text-regular, #606266);">生成公开链接，无需登录即可查看分析报告</p>
-      <el-form label-width="80px" style="max-width: 380px; margin: 0 auto;">
-        <el-form-item label="标题">
-          <el-input v-model="shareTitle" placeholder="分析报告标题" />
-        </el-form-item>
-        <el-form-item label="有效期">
-          <el-select v-model="shareTTL" style="width: 100%">
-            <el-option :value="1" label="1 天" />
-            <el-option :value="7" label="7 天" />
-            <el-option :value="30" label="30 天" />
-            <el-option :value="90" label="90 天" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <el-button type="primary" @click="createShareLink" :loading="shareCreating">
-        <el-icon><Link /></el-icon> 生成分享链接
-      </el-button>
-    </div>
-    <div v-else style="text-align: center; padding: 20px;">
-      <el-result icon="success" title="分享链接已生成" sub-title="复制链接发送给他人即可查看">
-        <template #extra>
-          <el-input v-model="shareFullUrl" readonly style="margin-bottom: 12px;">
-            <template #append>
-              <el-button @click="copyShareLink">
-                <el-icon><CopyDocument /></el-icon>
-              </el-button>
-            </template>
-          </el-input>
-          <div style="color: var(--color-text-secondary, #909399); font-size: 12px;">
-            有效期 {{ shareTTL }} 天 · 到期自动失效
-          </div>
-        </template>
-      </el-result>
-    </div>
-  </el-dialog>
+  <!-- 分享链接对话框 — extracted to analysis/ShareDialog.vue (Item 1 phase 2) -->
+  <ShareDialog ref="shareDialogRef" :factory-id="factoryId" :active-tab="activeTab" />
 
   <!-- 综合分析对话框 -->
   <el-dialog v-model="crossSheetVisible" title="全 Sheet 综合分析" width="90%" top="3vh" fullscreen>
@@ -1168,20 +1132,8 @@
     </template>
   </el-dialog>
 
-  <!-- 数据预览 Dialog -->
-  <el-dialog v-model="showDataPreview" :title="`数据预览 - ${previewSheetName}`" width="90%" top="5vh">
-    <div v-loading="previewLoading">
-      <el-table v-if="previewData?.data" :data="previewData.data" border stripe max-height="500" size="small">
-        <el-table-column v-for="header in previewData.headers" :key="header"
-          :prop="header" :label="getColumnLabel(header)" min-width="120" show-overflow-tooltip />
-      </el-table>
-      <div v-if="previewData?.total" style="margin-top: 12px; display: flex; justify-content: center;">
-        <el-pagination layout="prev, pager, next, total"
-          :total="previewData.total" :page-size="50" :current-page="previewPage"
-          @current-change="(p: number) => { previewPage = p; loadPreviewData(); }" />
-      </div>
-    </div>
-  </el-dialog>
+  <!-- 数据预览 Dialog — extracted to analysis/DataPreviewDialog.vue (Item 1 phase 2) -->
+  <DataPreviewDialog ref="dataPreviewRef" :get-column-label="getColumnLabel" />
 
   <!-- Demo 演示引导 -->
   <DemoTour
@@ -1211,6 +1163,8 @@ import type { SmartBIChartOption, SmartBIChartItem } from '@/types/echarts';
 import DOMPurify from 'dompurify';
 import { defineAsyncComponent } from 'vue';
 import KPICard from '@/components/smartbi/KPICard.vue';
+import ShareDialog from './analysis/ShareDialog.vue';
+import DataPreviewDialog from './analysis/DataPreviewDialog.vue';
 import AIInsightPanel from '@/components/smartbi/AIInsightPanel.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 // T3.1: Lazy-load rarely-used components — only loaded when user triggers them
@@ -1367,13 +1321,8 @@ const uploadResult = ref<BatchUploadResult | null>(null);
 const activeTab = ref('');
 const indexMetadata = ref<IndexMetadata | null>(null);
 
-// 数据预览
-const showDataPreview = ref(false);
-const previewLoading = ref(false);
-const previewData = ref<{ headers: string[]; data: Record<string, unknown>[]; total: number; totalPages: number } | null>(null);
-const previewPage = ref(1);
-const previewSheetName = ref('');
-const previewUploadId = ref<number>(0);
+// 数据预览 — Item 1 phase 2: moved to analysis/DataPreviewDialog.vue
+const dataPreviewRef = ref<InstanceType<typeof DataPreviewDialog> | null>(null);
 
 // Sheet retry 状态
 const retryingSheets = reactive<Record<number, boolean>>({});
@@ -1440,67 +1389,12 @@ let autoRefreshTimer: ReturnType<typeof setInterval> | null = null;
 
 // 综合分析状态
 // ========== Share Dialog ==========
-const shareDialogVisible = ref(false);
-const shareLink = ref('');
-const shareFullUrl = ref('');
-const shareTitle = ref('');
-const shareTTL = ref(7);
-const shareCreating = ref(false);
+// Item 1 phase 2: dialog state + methods extracted to analysis/ShareDialog.vue
+const shareDialogRef = ref<InstanceType<typeof ShareDialog> | null>(null);
 
 const openShareDialog = () => {
-  shareLink.value = '';
-  shareFullUrl.value = '';
   const batch = uploadBatches.value[selectedBatchIndex.value];
-  shareTitle.value = batch?.fileName || batch?.batchName || '数据分析报告';
-  shareTTL.value = 7;
-  shareDialogVisible.value = true;
-};
-
-const createShareLink = async () => {
-  const batch = uploadBatches.value[selectedBatchIndex.value];
-  if (!batch?.uploadId && !batch?.id) {
-    ElMessage.warning('请先选择一个上传数据');
-    return;
-  }
-  shareCreating.value = true;
-  try {
-    const fId = factoryId.value;
-    const uploadId = batch.uploadId || batch.id;
-    const resp = await post(`/${fId}/smart-bi/share`, {
-      uploadId,
-      title: shareTitle.value,
-      ttlDays: shareTTL.value,
-      sheetIndex: activeTab.value,
-    });
-    if (resp.success) {
-      const token = resp.data.token;
-      shareLink.value = token;
-      shareFullUrl.value = `${window.location.origin}/smart-bi/share/${token}`;
-    } else {
-      ElMessage.error(resp.message || '创建分享链接失败');
-    }
-  } catch (e: unknown) {
-    ElMessage.error('创建分享链接失败');
-    console.error('Share link creation failed:', e);
-  } finally {
-    shareCreating.value = false;
-  }
-};
-
-const copyShareLink = async () => {
-  try {
-    await navigator.clipboard.writeText(shareFullUrl.value);
-    ElMessage.success('链接已复制到剪贴板');
-  } catch {
-    // Fallback for older browsers
-    const input = document.createElement('input');
-    input.value = shareFullUrl.value;
-    document.body.appendChild(input);
-    input.select();
-    document.execCommand('copy');
-    document.body.removeChild(input);
-    ElMessage.success('链接已复制');
-  }
+  shareDialogRef.value?.open(batch);
 };
 
 // 综合分析 (composable)
@@ -4759,35 +4653,12 @@ const transformYoYData = (comparison: YoYComparisonItem[]): ComparisonData[] => 
 
 // P5: Statistical analysis — provided by useSmartBIStatistical composable
 
-// 加载 Sheet 数据
+// 加载 Sheet 数据 — delegates to extracted DataPreviewDialog component
 const loadSheetData = async (sheet: SheetResult) => {
-  if (!sheet.uploadId) {
-    ElMessage.warning('该 Sheet 没有持久化数据');
-    return;
-  }
-  previewUploadId.value = sheet.uploadId;
-  previewSheetName.value = sheet.sheetName;
-  previewPage.value = 1;
-  showDataPreview.value = true;
-  await loadPreviewData();
-};
-
-const loadPreviewData = async () => {
-  if (!previewUploadId.value) return;
-  previewLoading.value = true;
-  try {
-    const res = await getUploadTableData(previewUploadId.value, previewPage.value - 1, 50);
-    if (res.success && res.data) {
-      previewData.value = res.data;
-    } else {
-      ElMessage.error(res.message || '获取数据失败');
-    }
-  } catch (error) {
-    // Interceptor shows specific toast; dedupe fallback
-    console.error('[失败]', error);
-  } finally {
-    previewLoading.value = false;
-  }
+  await dataPreviewRef.value?.open({
+    uploadId: sheet.uploadId,
+    sheetName: sheet.sheetName,
+  });
 };
 
 // 导航到指定 Sheet
