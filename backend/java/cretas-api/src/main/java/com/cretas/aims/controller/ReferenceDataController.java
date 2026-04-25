@@ -6,11 +6,13 @@ import com.cretas.aims.entity.ProductType;
 import com.cretas.aims.entity.RawMaterialType;
 import com.cretas.aims.entity.Supplier;
 import com.cretas.aims.entity.User;
+import com.cretas.aims.entity.sales.OperationalQuote;
 import com.cretas.aims.repository.CustomerRepository;
 import com.cretas.aims.repository.ProductTypeRepository;
 import com.cretas.aims.repository.RawMaterialTypeRepository;
 import com.cretas.aims.repository.SupplierRepository;
 import com.cretas.aims.repository.UserRepository;
+import com.cretas.aims.repository.sales.OperationalQuoteRepository;
 import com.cretas.aims.util.SqlLikeEscaper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -60,6 +62,7 @@ public class ReferenceDataController {
     private final SupplierRepository supplierRepository;
     private final ProductTypeRepository productTypeRepository;
     private final RawMaterialTypeRepository materialTypeRepository;
+    private final OperationalQuoteRepository quoteRepository;
 
     /** Salesperson-eligible roles (department name fallback also applied). */
     private static final Set<String> SALES_ROLES = Set.of(
@@ -227,7 +230,11 @@ public class ReferenceDataController {
         Page<Customer> result = (esc == null || esc.isBlank())
                 ? customerRepository.findByFactoryId(factoryId, pageable)
                 : customerRepository.searchByNamePaged(factoryId, esc, pageable);
+        // R6 audit follow-up: filter inactive entities. Same pattern as /employees.
+        // Post-filter (in-memory) is acceptable since reference dropdowns are paged
+        // small (size≤100) and entity tables stay manageable per factory.
         List<Map<String, Object>> content = result.getContent().stream()
+                .filter(c -> Boolean.TRUE.equals(c.getIsActive()))
                 .map(c -> {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("id", c.getId());
@@ -237,7 +244,7 @@ public class ReferenceDataController {
                     return m;
                 })
                 .collect(Collectors.toList());
-        return wrap(content, result.getTotalElements());
+        return wrap(content, content.size());
     }
 
     /** 供应商查找. */
@@ -256,6 +263,7 @@ public class ReferenceDataController {
                 ? supplierRepository.findByFactoryId(factoryId, pageable)
                 : supplierRepository.searchByNamePaged(factoryId, esc, pageable);
         List<Map<String, Object>> content = result.getContent().stream()
+                .filter(s -> Boolean.TRUE.equals(s.getIsActive()))
                 .map(s -> {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("id", s.getId());
@@ -265,7 +273,7 @@ public class ReferenceDataController {
                     return m;
                 })
                 .collect(Collectors.toList());
-        return wrap(content, result.getTotalElements());
+        return wrap(content, content.size());
     }
 
     /** 产品/SKU 查找 (订单明细 productTypeId). */
@@ -284,6 +292,7 @@ public class ReferenceDataController {
                 ? productTypeRepository.findByFactoryId(factoryId, pageable)
                 : productTypeRepository.searchProductTypes(factoryId, esc, pageable);
         List<Map<String, Object>> content = result.getContent().stream()
+                .filter(p -> Boolean.TRUE.equals(p.getIsActive()))
                 .map(p -> {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("id", p.getId());
@@ -295,7 +304,7 @@ public class ReferenceDataController {
                     return m;
                 })
                 .collect(Collectors.toList());
-        return wrap(content, result.getTotalElements());
+        return wrap(content, content.size());
     }
 
     /** 原材料查找 (bom.materialTypeId 等). Apr 25 2026 audit: bom DYNAMIC mode active vulnerable
@@ -315,6 +324,7 @@ public class ReferenceDataController {
                 ? materialTypeRepository.findByFactoryId(factoryId, pageable)
                 : materialTypeRepository.searchMaterialTypes(factoryId, esc, pageable);
         List<Map<String, Object>> content = result.getContent().stream()
+                .filter(m -> Boolean.TRUE.equals(m.getIsActive()))
                 .map(m -> {
                     Map<String, Object> mp = new LinkedHashMap<>();
                     mp.put("id", m.getId());
@@ -325,7 +335,7 @@ public class ReferenceDataController {
                     return mp;
                 })
                 .collect(Collectors.toList());
-        return wrap(content, result.getTotalElements());
+        return wrap(content, content.size());
     }
 
     /** GET-by-id for material. Reviewer Issue #1 same pattern. */
@@ -343,6 +353,55 @@ public class ReferenceDataController {
                     mp.put("unit", m.getUnit());
                     mp.put("category", m.getCategory());
                     return mp;
+                })
+                .map(ApiResponse::success)
+                .orElseGet(() -> ApiResponse.success(null));
+    }
+
+    /** 报价单查找 (sales_order.quoteId 字段). R6 (Apr 25 2026): adds keyword search
+     *  + uses real entity field name 'quoteNo' (V20260425_04 schema mistakenly used 'quoteNumber'). */
+    @GetMapping("/quotes")
+    @Operation(summary = "报价单查找")
+    public ApiResponse<Map<String, Object>> findQuotes(
+            @PathVariable String factoryId,
+            @RequestParam(required = false, defaultValue = "") String keyword,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        org.springframework.data.domain.PageRequest pageable = PageRequest.of(
+                Math.max(page - 1, 0), clampSize(size),
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<OperationalQuote> result = quoteRepository.findByFactoryIdAndDeletedAtIsNullOrderByCreatedAtDesc(
+                factoryId, pageable);
+        String esc = keyword == null ? "" : keyword.trim();
+        List<Map<String, Object>> content = result.getContent().stream()
+                // In-memory keyword filter — quotes table is small, no JPQL search method exists
+                // and adding one for a defaultVisible=false field doesn't justify the index.
+                .filter(q -> esc.isEmpty() || (q.getQuoteNo() != null && q.getQuoteNo().contains(esc)))
+                .map(q -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("id", q.getId());
+                    m.put("quoteNo", q.getQuoteNo());
+                    m.put("status", q.getStatus());
+                    m.put("customerId", q.getCustomerId());
+                    return m;
+                })
+                .collect(Collectors.toList());
+        return wrap(content, content.size());
+    }
+
+    /** GET-by-id for quote. */
+    @GetMapping("/quotes/{id}")
+    @Operation(summary = "按 ID 查单个报价单")
+    public ApiResponse<Map<String, Object>> getQuote(@PathVariable String factoryId,
+                                                     @PathVariable String id) {
+        return quoteRepository.findByIdAndFactoryIdAndDeletedAtIsNull(id, factoryId)
+                .map(q -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("id", q.getId());
+                    m.put("quoteNo", q.getQuoteNo());
+                    m.put("status", q.getStatus());
+                    m.put("customerId", q.getCustomerId());
+                    return m;
                 })
                 .map(ApiResponse::success)
                 .orElseGet(() -> ApiResponse.success(null));

@@ -1017,18 +1017,18 @@ public class SalesServiceImpl implements SalesService {
     public void resolveSalespersonField(SalesOrder order, String input, String factoryId) {
         if (input == null || input.isBlank()) return;
         if (USER_ID_PATTERN.matcher(input).matches()) {
-            // R4 audit S2: if input matches existing FK and user no longer exists
-            // (e.g. HR deleted user mid-edit), don't throw — silently keep the existing
-            // snapshot+FK. Only re-resolve when the input differs from current state.
-            String currentFkId = order.getSalespersonId();
-            if (input.equals(currentFkId)) {
-                return;  // no-op, user didn't actually change salesperson
-            }
             Long userId = Long.parseLong(input);
+            // R4 audit S2: if numeric input matches existing FK, no-op (don't re-lookup)
+            // — covers the "user clicks save without touching salesperson, HR deleted user
+            // mid-edit" case where re-lookup would throw 404.
+            Long currentFkId = order.getSalespersonId();
+            if (currentFkId != null && currentFkId.equals(userId)) {
+                return;
+            }
             User user = userRepository.findById(userId)
                 .filter(u -> factoryId.equals(u.getFactoryId()))
                 .orElseThrow(() -> new ResourceNotFoundException("业务员不存在或不属于本工厂: " + input));
-            order.setSalespersonId(input);
+            order.setSalespersonId(userId);
             order.setSalesperson(user.getFullName());  // M1: snapshot name at save time
         } else {
             // R4 audit C2: defensive — if input string equals existing snapshot AND existing

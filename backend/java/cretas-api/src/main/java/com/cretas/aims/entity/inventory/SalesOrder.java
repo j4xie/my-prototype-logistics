@@ -122,9 +122,10 @@ public class SalesOrder extends BaseEntity {
     @Column(name = "salesperson", length = 100)
     private String salesperson;
 
-    /** 业务员 user_id (新数据). 老订单为 NULL, 用 salesperson 字符串字段兜底. */
-    @Column(name = "salesperson_id", length = 191)
-    private String salespersonId;
+    /** 业务员 user_id (新数据). 老订单为 NULL, 用 salesperson 字符串字段兜底.
+     *  R6 (V20260425_09): converted from VARCHAR to BIGINT + FK to users(id) ON DELETE SET NULL. */
+    @Column(name = "salesperson_id")
+    private Long salespersonId;
 
     /** 是否含运费 */
     @Column(name = "shipping_included")

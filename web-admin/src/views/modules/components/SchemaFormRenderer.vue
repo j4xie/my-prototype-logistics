@@ -107,7 +107,10 @@ function readInitialForField(field: { code: string; type?: string; extra?: { ref
   if (field.type === 'reference' && field.extra?.referenceConfig?.valueField === 'id') {
     const idKey = `${field.code}Id`
     if (initial[idKey] !== undefined && initial[idKey] !== null) {
-      return initial[idKey]
+      // R6 (Apr 25 2026): coerce to String. After V20260425_09, salespersonId is BIGINT
+      // so JSON returns number 146. ReferenceSelector's fetchById coerces options.value
+      // to String, so el-select needs String modelValue too for strict-eq match.
+      return String(initial[idKey])
     }
   }
   return initial[field.code]
