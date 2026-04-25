@@ -920,51 +920,18 @@
   <!-- 分享链接对话框 — extracted to analysis/ShareDialog.vue (Item 1 phase 2) -->
   <ShareDialog ref="shareDialogRef" :factory-id="factoryId" :active-tab="activeTab" />
 
-  <!-- 综合分析对话框 -->
-  <el-dialog v-model="crossSheetVisible" title="全 Sheet 综合分析" width="90%" top="3vh" fullscreen>
-    <div v-if="crossSheetLoading" class="cross-sheet-loading">
-      <el-icon class="is-loading" :size="48"><Loading /></el-icon>
-      <p>正在汇总所有 Sheet 数据，生成跨表综合分析...</p>
-    </div>
-
-    <div v-else-if="crossSheetResult">
-      <!-- 高管摘要 -->
-      <div v-if="crossSheetResult.aiSummary" class="cross-summary-banner">
-        <div class="summary-icon">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-        </div>
-        <div class="summary-text" v-html="formatAnalysis(crossSheetResult.aiSummary)"></div>
-      </div>
-
-      <!-- KPI 对比卡片 -->
-      <div v-if="crossSheetResult.kpiComparison?.length" class="cross-kpi-section">
-        <h3>各 Sheet 核心指标对比</h3>
-        <el-table :data="crossSheetResult.kpiComparison" border stripe size="small">
-          <el-table-column prop="sheetName" label="报表" min-width="180" fixed />
-          <template v-for="kpiKey in crossSheetKpiKeys" :key="kpiKey">
-            <el-table-column :label="getColumnLabel(kpiKey)" min-width="120">
-              <template #default="{ row }">
-                {{ row.kpis?.[kpiKey] != null ? Number(row.kpis[kpiKey]).toLocaleString() : '-' }}
-              </template>
-            </el-table-column>
-          </template>
-        </el-table>
-      </div>
-
-      <!-- 综合图表 -->
-      <div v-if="crossSheetResult.charts?.length" class="cross-charts-section">
-        <h3>综合可视化</h3>
-        <div class="cross-chart-grid">
-          <div v-for="(chart, idx) in crossSheetResult.charts" :key="idx" class="cross-chart-item">
-            <div class="chart-title">{{ cleanDisplayLabel(chart.title || '分析图表') }}</div>
-            <div :id="`cross-chart-${idx}`" class="cross-chart-container"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <el-empty v-else description="暂无综合分析数据" />
-  </el-dialog>
+  <!-- 综合分析对话框 — extracted to analysis/CrossSheetDialog.vue (Item 1 phase 2). The
+       composable's renderCrossSheetCharts callback writes ECharts into elements with ids
+       'cross-chart-${idx}' which the child renders identically — chart wiring preserved. -->
+  <CrossSheetDialog
+    v-model:visible="crossSheetVisible"
+    :loading="crossSheetLoading"
+    :result="crossSheetResult"
+    :kpi-keys="crossSheetKpiKeys"
+    :format-analysis="formatAnalysis"
+    :get-column-label="getColumnLabel"
+    :clean-display-label="cleanDisplayLabel"
+  />
 
   <!-- 同比分析对话框 — extracted to analysis/YoYDialog.vue (Item 1 phase 2) -->
   <YoYDialog ref="yoyDialogRef" :available-sheets="dataSheets" :get-sheet-display-name="getSheetDisplayName" />
@@ -1122,6 +1089,7 @@ import KPICard from '@/components/smartbi/KPICard.vue';
 import ShareDialog from './analysis/ShareDialog.vue';
 import DataPreviewDialog from './analysis/DataPreviewDialog.vue';
 import YoYDialog from './analysis/YoYDialog.vue';
+import CrossSheetDialog from './analysis/CrossSheetDialog.vue';
 import AIInsightPanel from '@/components/smartbi/AIInsightPanel.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 // T3.1: Lazy-load rarely-used components — only loaded when user triggers them
