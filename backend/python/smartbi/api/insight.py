@@ -15,7 +15,6 @@ from pydantic import BaseModel
 from common.responses import ApiException, ErrorCode
 
 from services.insight_generator import InsightGenerator
-from smartbi.services.field_classifier import RATING_NAME_SUFFIXES
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -297,21 +296,14 @@ def compute_quick_summary(
             col_max = df[col].max()
             col_mean = df[col].mean()
             col_sum = df[col].sum()
+            # Apr 26 2026 — DB is now the single source of truth for agg_strategy.
+            # The γ-2c precompute hook (analysis_cache.precompute_enrichment_cache_for_upload)
+            # populates statistics + re-runs infer_agg_strategy at upload ingest, so
+            # rating cols land in DB as 'mean' before this code ever sees them.
+            # The prior live name-suffix + value-range fallback was retired on Apr 26
+            # after verifying prod has 0 rating-suspect rows still relying on it
+            # (uploads 4147/4148 review fields explicitly migrated to 'mean').
             agg_strategy = agg_by_name.get(col, "sum")
-            # Apr 25 2026 — defense-in-depth: this live rating detection is
-            # now redundant for new uploads (the γ-2c precompute hook in
-            # analysis_cache.py populates statistics + re-runs
-            # infer_agg_strategy so 'mean' lands in DB before this code
-            # ever sees the column). Kept for: (a) historical uploads that
-            # haven't been backfilled yet, (b) safety net if the precompute
-            # hook fails / hasn't fired yet (large uploads, network blip).
-            # Plan: remove after 2 weeks of confirming backfill coverage.
-            if agg_strategy == "sum" and pd.notna(col_mean):
-                name_suggests_rating = any(
-                    col.endswith(s) for s in RATING_NAME_SUFFIXES
-                )
-                if name_suggests_rating and 1.0 <= float(col_mean) <= 5.0:
-                    agg_strategy = "mean"
             emit_sum = agg_strategy == "sum"
             semantic_type_hint = "rating" if agg_strategy == "mean" else None
             col_info.update({
