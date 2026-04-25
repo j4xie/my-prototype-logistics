@@ -6,6 +6,7 @@ For each dim, pie chart showing % contribution. Quickly tells user
 from __future__ import annotations
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
@@ -73,6 +74,22 @@ class CategoryDistribution(AnalysisTemplate):
             }],
         }
 
+        # Spec §4.3: surface bottom segment for retire / merge consideration
+        bottom = primary[-1] if len(primary) >= 3 else None
+        if bottom and bottom["share"] < 5.0:
+            action_rec = format_action_rec(
+                object_target=f"末位「{bottom['label']}」 (占{bottom['share']:.1f}% {measure})",
+                benefit_range=f"精简末位 + Top 类目加大投入可提升整体 {measure} 5-10%",
+                prerequisite=f"复盘末位 {primary_dim} 历史 + 评估合并 / 退出可行性",
+                timeline="本季度内",
+            )
+        else:
+            action_rec = format_action_rec(
+                object_target=f"Top 1「{primary[0]['label']}」 (占{primary[0]['share']:.1f}% {measure})",
+                benefit_range=f"加大 Top 1 投入可拉高 {measure} 5-10% (前提是不挤压末位资源)",
+                prerequisite=f"复盘 Top 1 成功要素 + 跨 {primary_dim} 输出 SOP",
+                timeline="本月内",
+            )
         return TemplateResult(
             code=self.code, title=self.title,
             data={
@@ -89,6 +106,6 @@ class CategoryDistribution(AnalysisTemplate):
             },
             insight_text=(
                 f"按 {primary_dim} 分类占比:Top 1 {primary[0]['label']} "
-                f"占 {primary[0]['share']}%,共 {len(primary)} 个分类。"
+                f"占 {primary[0]['share']}%,共 {len(primary)} 个分类。 {action_rec}"
             ),
         )

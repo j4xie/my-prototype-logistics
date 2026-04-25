@@ -16,6 +16,7 @@ from collections import Counter, defaultdict
 from typing import Any, Dict, List
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.dish_name_normalizer import normalize_dish_name
 from ..restaurant.item_parser import parse_items
 from ..restaurant.schema_helpers import find_store_col
@@ -133,7 +134,23 @@ class DishStoreDrill(AnalysisTemplate):
             parts.append(
                 f"🏆 「{repeater[0]}」拿下 {repeater[1]} 个菜品的头名,综合表现最突出。"
             )
-        insight_text = " ".join(parts)
+        # Spec §4.3: drive top-dish × top-store concentration into store-level SOP transfer
+        if drill and drill[0]["top_store_concentration_pct"] >= 30:
+            top_d = drill[0]
+            action_rec = format_action_rec(
+                object_target=f"非「{top_d['top_store']}」门店的「{top_d['dish']}」",
+                benefit_range=f"复制{top_d['top_store']}的备货+推菜 SOP 到其他门店,该菜跨店销量提升 10-20%",
+                prerequisite=f"对标走访{top_d['top_store']} + 厨师长培训菜品话术 + 各店首屏推位调整",
+                timeline="本月内",
+            )
+        else:
+            action_rec = format_action_rec(
+                object_target=f"Top {len(drill)} 菜品的跨店分布",
+                benefit_range="头部菜品在末位门店再推一轮可拉高单店该菜销量 8-15%",
+                prerequisite="按门店排查首屏推位 + 服务员推菜话术抽检",
+                timeline="本月内",
+            )
+        insight_text = " ".join(parts) + " " + action_rec
 
         # ECharts: horizontal stacked bar, dishes on Y, stores as series
         store_universe: List[str] = []

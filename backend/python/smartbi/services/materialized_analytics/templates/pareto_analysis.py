@@ -6,6 +6,7 @@ what % of total. Classic 20% labels → 80% revenue insight.
 from __future__ import annotations
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
@@ -88,6 +89,22 @@ class ParetoAnalysis(AnalysisTemplate):
             "tooltip": {"trigger": "axis"},
         }
 
+        # Spec §4.3: focus resources on the top-80 group, prune long-tail
+        top_label = best_rows[0]["label"] if best_rows else "-"
+        if labels_for_80_pct <= 30:
+            action_rec = format_action_rec(
+                object_target=f"末尾 {len(best_rows) - labels_for_80} 个 {best_dim} (合计仅占 20% 的 {measure})",
+                benefit_range="精简末尾长尾 + 资源向 Top 倾斜可提升整体效率 5-12%",
+                prerequisite=f"分析末尾 {best_dim} 的成本占用 + 评估退出影响 + Top 资源加配",
+                timeline="本季度内",
+            )
+        else:
+            action_rec = format_action_rec(
+                object_target=f"Top {labels_for_80} 个 {best_dim} (含「{top_label}」)",
+                benefit_range=f"把长尾资源整合给 Top 集群可拉高头部 {measure} 8-15%",
+                prerequisite=f"复盘 Top 头部成功要素 + SOP 输出到末位 {best_dim}",
+                timeline="本季度内",
+            )
         return TemplateResult(
             code=self.code, title=self.title,
             data={
@@ -104,6 +121,6 @@ class ParetoAnalysis(AnalysisTemplate):
             },
             insight_text=(
                 f"{labels_for_80}/{len(best_rows)} 个 {best_dim} "
-                f"({labels_for_80_pct}%) 贡献了 80% 的 {measure}。"
+                f"({labels_for_80_pct}%) 贡献了 80% 的 {measure}。 {action_rec}"
             ),
         )

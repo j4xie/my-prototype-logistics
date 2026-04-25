@@ -26,6 +26,7 @@ from typing import Any, Dict, List
 import polars as pl
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec, format_data_insufficient
 from ..restaurant.dish_name_normalizer import normalize_dish_name
 from ..restaurant.item_parser import parse_items
 from ..restaurant.pos_placeholders import POS_PRODUCT_PLACEHOLDERS, filter_placeholder_rows
@@ -132,16 +133,37 @@ class ComboUsageRate(AnalysisTemplate):
         ]
 
         if not top_combos:
+            action_rec = format_action_rec(
+                object_target=f"全 {total_orders} 笔订单 (套餐使用率 0%)",
+                benefit_range="新设 2-3 款主打套餐可拉高客单价 5-12% + 加快出餐速度",
+                prerequisite="梳理高频菜品组合 + 厨师长测算成本 + POS 上架套餐 SKU",
+                timeline="本月内",
+            )
             insight_text = (
-                f"共 {total_orders} 笔订单，未检出含套餐的消费（使用率 0%）。"
+                f"共 {total_orders} 笔订单，未检出含套餐的消费（使用率 0%）。 {action_rec}"
             )
         else:
             top = top_combos[0]
+            # Spec §4.3: tune action depending on usage rate band
+            if usage_rate_pct < 10:
+                action_rec = format_action_rec(
+                    object_target=f"套餐使用率仅 {usage_rate_pct:.1f}% (Top 1「{top['name']}」)",
+                    benefit_range="主推位 + 服务员话术 + 限时优惠后,套餐渗透率提升至 15-25%,客单提升 3-7%",
+                    prerequisite="POS 推荐位置顶 + 服务员推菜培训 + 套餐内容定期复盘",
+                    timeline="本月内",
+                )
+            else:
+                action_rec = format_action_rec(
+                    object_target=f"Top 套餐「{top['name']}」 (已贡献 {top['revenue']:,.0f} 元)",
+                    benefit_range="围绕 Top 1 套餐设计升级款 + 节假日限定可再拉销量 5-10%",
+                    prerequisite="复盘 Top 1 套餐毛利 + 厨师长测试升级版本 + 上线 A/B 测试",
+                    timeline="本月内",
+                )
             insight_text = (
                 f"共 {total_orders} 笔订单，{combo_orders} 笔含套餐消费，"
                 f"套餐使用率 {usage_rate_pct:.1f}%。"
                 f"Top 1 套餐：「{top['name']}」售出 {top['quantity']:.0f} 份，"
-                f"贡献 {top['revenue']:,.0f} 元。"
+                f"贡献 {top['revenue']:,.0f} 元。 {action_rec}"
             )
 
         chart_config = {
@@ -280,6 +302,21 @@ class ComboUsageRate(AnalysisTemplate):
                 f" Top 1：「{top['name']}」售出 {top['quantity']:.0f} 份，"
                 f"贡献 {top['revenue']:,.0f} 元。"
             )
+            action_rec = format_action_rec(
+                object_target=f"Top 套餐「{top['name']}」 ({top['revenue']:,.0f} 元)",
+                benefit_range="主推位 + 限时优惠组合后,套餐销量 / 客单可提升 5-12%",
+                prerequisite="POS 推荐位置顶 + 服务员推菜话术培训 + 节假日限定升级款",
+                timeline="本月内",
+            )
+            insight_text += f" {action_rec}"
+        else:
+            action_rec = format_action_rec(
+                object_target=f"商品记录 {total_rows} 条 (套餐占 {usage_rate_pct:.1f}%)",
+                benefit_range="新设 2-3 款主打套餐可拉高套餐渗透率 5-15% + 客单提升 3-7%",
+                prerequisite="高频菜品组合分析 + 厨师长成本测算 + POS 上架",
+                timeline="本月内",
+            )
+            insight_text += f" {action_rec}"
 
         chart_config = {
             "type": "bar",

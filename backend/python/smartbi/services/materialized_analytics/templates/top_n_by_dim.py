@@ -6,6 +6,7 @@ Most useful template — 80% of user "ranking" questions answered here.
 from __future__ import annotations
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
@@ -76,6 +77,25 @@ class TopNByDim(AnalysisTemplate):
         top_share_pct = (top_rows[0]["total"] / total_of_top * 100) if total_of_top > 0 else 0
         dominance = "独占" if top_share_pct >= 30 else "占比"
 
+        # Spec §4.3: drive bottom of top-N to learn from leader
+        bottom_label = top_rows[-1]["label"] if len(top_rows) >= 3 else None
+        if bottom_label and len(top_rows) >= 3:
+            top_val = top_rows[0]["total"]
+            bot_val = top_rows[-1]["total"]
+            gap_pct = round((top_val - bot_val) / top_val * 100, 0) if top_val > 0 else 0
+            action_rec = format_action_rec(
+                object_target=f"末位「{bottom_label}」 (与 Top「{top_label}」差距 {gap_pct:.0f}%)",
+                benefit_range=f"复制 Top {primary_dim} 运营 SOP 可拉高末位 {measure} 10-20%",
+                prerequisite=f"对标走访「{top_label}」 + 末位 {primary_dim} 负责人 KPI 重设",
+                timeline="本季度内",
+            )
+        else:
+            action_rec = format_action_rec(
+                object_target=f"Top「{top_label}」 ({dominance} {top_share_pct:.1f}%)",
+                benefit_range=f"复盘 Top 成功要素并输出到其他 {primary_dim} 可拉升 {measure} 5-10%",
+                prerequisite=f"Top {primary_dim} 案例总结 + 培训 + 跨域复制",
+                timeline="本月内",
+            )
         return TemplateResult(
             code=self.code,
             title=self.title,
@@ -95,6 +115,6 @@ class TopNByDim(AnalysisTemplate):
             },
             insight_text=(
                 f"{primary_dim} Top {len(top_rows)}:{top_label} {dominance} "
-                f"{top_share_pct:.1f}%,余下梯队收敛明显。"
+                f"{top_share_pct:.1f}%,余下梯队收敛明显。 {action_rec}"
             ),
         )

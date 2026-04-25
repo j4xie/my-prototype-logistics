@@ -16,6 +16,7 @@ from collections import Counter, defaultdict
 from typing import Any, Dict, List
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.dish_name_normalizer import normalize_dish_name
 from ..restaurant.item_parser import parse_items
 from ..restaurant.schema_helpers import find_table_col
@@ -129,9 +130,18 @@ class DishByTableType(AnalysisTemplate):
         sample_compare = ", ".join(
             f"{t}最爱「{n}」" for t, n in list(top_names_per_type.items())[:3]
         )
+        # Spec §4.3: drive top type's top dish into menu placement strategy
+        top_type = by_type[0]["table_type"]
+        top_type_dish = by_type[0]["top_dishes"][0]["name"] if by_type[0]["top_dishes"] else None
+        action_rec = format_action_rec(
+            object_target=f"{top_type}场景下的「{top_type_dish}」" if top_type_dish else f"{top_type}场景",
+            benefit_range=f"为该桌型定向加大菜单首屏推荐 + 套餐组合可拉高{top_type}客单 5-10%",
+            prerequisite=f"为{top_type}印制专属推荐卡 + POS 默认推荐位调整",
+            timeline="本月内",
+        )
         insight_text = (
             f"共 {len(observed_types)} 种桌型参与分析："
-            f"{sample_compare}。"
+            f"{sample_compare}。 {action_rec}"
         )
 
         # ECharts horizontal grouped bar — each series = one table type,

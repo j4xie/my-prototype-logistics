@@ -19,6 +19,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Set
 
 from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.dish_classifier import classify_dish
 from ..restaurant.dish_name_normalizer import normalize_dish_name
 from ..restaurant.item_parser import parse_items
@@ -152,12 +153,28 @@ class DishCategoryBreakdown(AnalysisTemplate):
         # C-rec 7: explicit basis "[按营业额]" on every percentage so customer
         # never confuses revenue% with quantity-sold%.
         top_qty_share = breakdown[0]["share_quantity_pct"] if breakdown else 0.0
+        # Spec §4.3: surface bottom 3 categories for menu retire decision
+        bottom = breakdown[-1] if len(breakdown) >= 4 else None
+        if bottom and bottom["share_pct"] < 5.0:
+            action_rec = format_action_rec(
+                object_target=f"末位类目「{bottom['category']}」(占{bottom['share_pct']:.1f}%/{bottom['item_count']}个菜)",
+                benefit_range="精简末位类目腾位 + 加强 Top 类目推广可拉高菜单整体毛利 3-7%",
+                prerequisite="确认末位类目菜品未在套餐 / 储值卡权益中绑定 + 与厨师长复盘食材重叠",
+                timeline="本月内",
+            )
+        else:
+            action_rec = format_action_rec(
+                object_target=f"Top 推断类目「{top_category}」(占{top_share:.1f}%营业额)",
+                benefit_range=f"加大{top_category}菜品备货 / 主推位 + 围绕该类目设计套餐可提销量 5-10%",
+                prerequisite="上传含「商品类别」字段的明细表后再做精细类目优化",
+                timeline="本月内",
+            )
         insight_text = (
             f"⚠ 推断分类 (基于菜品名前缀,无原始类别字段, inferred=true)。"
             f"{top_category} 贡献 {top_share:.1f}%[按营业额] / {top_qty_share:.1f}%[按销量] (最大推断类目);"
             f"前 3 类合计 {top3_pct:.1f}%[按营业额],"
             f"覆盖 {total_item_count} 个菜品。"
-            f"如需精确分类,请上传含「商品类别」字段的明细表。"
+            f"如需精确分类,请上传含「商品类别」字段的明细表。 {action_rec}"
         )
 
         return TemplateResult(

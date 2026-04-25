@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from ..compute.base import ComputeBackend
 from ..compute.polars_backend import PolarsBackend
+from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.dish_name_normalizer import normalize_dish_name
 from ..restaurant.item_parser import parse_items
 from ..schema import DataSchema
@@ -242,9 +243,16 @@ class DishTimeSlotMatrix(AnalysisTemplate):
 
         dish_count = len(dish_total)
         slot_count = len(present_slots)
+        # Spec §4.3: drive peak combination into time-slot-targeted promotion
+        action_rec = format_action_rec(
+            object_target=f"「{peak_dish}」在{peak_slot}时段",
+            benefit_range=f"该时段加大{peak_dish}主推位 + 备货充足可拉高时段销量 8-15%",
+            prerequisite=f"{peak_slot}排班配置专人推菜 + 备货量按峰值×1.2 储备",
+            timeline="本周内",
+        )
         insight_text = (
             f"最热组合:{peak_dish} × {peak_slot}时段 (销量 {peak_qty:.0f} 份);"
-            f"{dish_count} 个菜品跨 {slot_count} 个时段分布。"
+            f"{dish_count} 个菜品跨 {slot_count} 个时段分布。 {action_rec}"
         )
 
         return TemplateResult(
