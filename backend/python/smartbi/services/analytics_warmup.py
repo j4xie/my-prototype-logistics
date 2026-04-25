@@ -118,23 +118,26 @@ async def _auto_pregenerate_recipe_drafts(
     """
     logger.info(f"[recipe-pregenerate] factory={factory_id} top_n={top_n} starting")
 
-    # Step 1: Get top N unmatched dishes by revenue (read smartbi pool, no JWT context)
+    # Step 1: Get top N unmatched dishes by revenue (read smartbi pool, no JWT context).
+    # Explicit transaction required for set_config(..., true) to persist across
+    # multiple await conn.execute calls in same conn.
     async with pool.acquire() as conn:
-        await conn.execute("SELECT set_config('app.factory_id', $1, true)", factory_id)
-        try:
-            rows = await conn.fetch("""
-                SELECT p.normalized_name AS name,
-                       SUM(i.amount)::float AS revenue
-                  FROM fact_pos_item i
-                  JOIN dim_product p ON p.product_id = i.product_id
-                 WHERE i.factory_id = $1
-                 GROUP BY p.normalized_name
-                 ORDER BY revenue DESC
-                 LIMIT $2
-            """, factory_id, top_n)
-        except Exception as e:
-            logger.warning(f"[recipe-pregenerate] no POS data yet: {e}")
-            return
+        async with conn.transaction():
+            await conn.execute("SELECT set_config('app.factory_id', $1, true)", factory_id)
+            try:
+                rows = await conn.fetch("""
+                    SELECT p.normalized_name AS name,
+                           SUM(i.amount)::float AS revenue
+                      FROM fact_pos_item i
+                      JOIN dim_product p ON p.product_id = i.product_id
+                     WHERE i.factory_id = $1
+                     GROUP BY p.normalized_name
+                     ORDER BY revenue DESC
+                     LIMIT $2
+                """, factory_id, top_n)
+            except Exception as e:
+                logger.warning(f"[recipe-pregenerate] no POS data yet: {e}")
+                return
 
     if not rows:
         logger.info(f"[recipe-pregenerate] factory={factory_id} no POS dishes, skip")
