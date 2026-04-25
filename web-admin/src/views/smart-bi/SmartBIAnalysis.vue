@@ -285,31 +285,11 @@
                 />
               </div>
 
-              <!-- KPI 统计卡片 — skeleton while enriching, real cards once loaded -->
-              <div v-if="enrichingSheets.has(sheet.sheetIndex) && !sheet.flowResult?.kpiSummary" class="kpi-section">
-                <ChartSkeleton type="kpi" />
-              </div>
-              <div v-else-if="sheet.flowResult?.kpiSummary" class="kpi-section">
-                <div class="kpi-grid">
-                  <KPICard
-                    v-for="kpi in getSheetKPIs(sheet)"
-                    :key="kpi.title"
-                    :title="kpi.title"
-                    :value="kpi.value"
-                    :unit="kpi.unit"
-                    :trend="kpi.trend"
-                    :trendValue="kpi.trendValue"
-                    :changeRate="kpi.changeRate"
-                    :status="kpi.status"
-                    :displayMode="kpi.displayMode"
-                    :sparklineData="kpi.sparklineData"
-                    :benchmarkLabel="kpi.benchmarkLabel"
-                    :benchmarkGap="kpi.benchmarkGap"
-                    :precision="kpi.precision"
-                    format="custom"
-                  />
-                </div>
-              </div>
+              <!-- KPI 统计卡片 — extracted to analysis/KPIStripPanel.vue (Item 1 phase 3c) -->
+              <KPIStripPanel
+                :enriching="enrichingSheets.has(sheet.sheetIndex)"
+                :kpis="sheet.flowResult?.kpiSummary ? getSheetKPIs(sheet) : []"
+              />
 
               <!-- 图表展示（多图表仪表板） -->
               <div v-if="hasChartData(sheet) || enrichingSheets.has(sheet.sheetIndex)" class="chart-section">
@@ -873,6 +853,7 @@ import DrillDownDrawer from './analysis/DrillDownDrawer.vue';
 import StatisticalDialog from './analysis/StatisticalDialog.vue';
 import FilterChipsBar from './analysis/FilterChipsBar.vue';
 import IndustryTemplateBar from './analysis/IndustryTemplateBar.vue';
+import KPIStripPanel from './analysis/KPIStripPanel.vue';
 import AIInsightPanel from '@/components/smartbi/AIInsightPanel.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 // T3.1: Lazy-load rarely-used components — only loaded when user triggers them
