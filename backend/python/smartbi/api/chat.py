@@ -45,7 +45,9 @@ from common.insight_cache import get_insight_cache
 
 # P2 guardrail (Apr 24 2026): numeric hallucination detection
 # C-rec 7 (Apr 25 2026): numeric labeling enforcement (gross/net + basis)
+# C-rec 8+9 (Apr 25 2026): concrete actionable recommendations (spec §4.3)
 from smartbi.services.llm_guard import (
+    ACTION_REC_GUARD_CLAUSE,
     LABELING_GUARD_CLAUSE,
     NUMERIC_GUARD_CLAUSE,
     detect_numeric_hallucination,
@@ -1700,6 +1702,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 "你是食品企业的数据分析师。精炼回答，引用数字，给可执行建议。Markdown格式。"
                 + NUMERIC_GUARD_CLAUSE
                 + LABELING_GUARD_CLAUSE
+                + ACTION_REC_GUARD_CLAUSE
             )
 
             # ── Stream LLM response (lower max_tokens + temperature for speed) ──
@@ -2004,6 +2007,7 @@ async def drill_down_stream(request: DrillDownRequest, http_request: Request):
                 "你是食品企业的数据分析师。请用中文Markdown回答，300字以内，引用具体数字，给出可执行建议。"
                 + NUMERIC_GUARD_CLAUSE
                 + LABELING_GUARD_CLAUSE
+                + ACTION_REC_GUARD_CLAUSE
             )
             user_prompt = f"""请对以下维度拆分数据进行分析：
 {filter_desc}
@@ -2118,6 +2122,7 @@ async def root_cause_stream(request: RootCauseRequest, http_request: Request):
                 "你是食品企业的数据分析师。请用中文Markdown分析KPI变动的根本原因，300字以内，给出可执行建议。"
                 + NUMERIC_GUARD_CLAUSE
                 + LABELING_GUARD_CLAUSE
+                + ACTION_REC_GUARD_CLAUSE
             )
             user_prompt = f"""请分析 KPI「{request.kpi}」变动的根本原因：
 
@@ -2205,6 +2210,7 @@ async def benchmark_stream(request: BenchmarkRequest, http_request: Request):
                 "你是食品企业的数据分析师。请用中文Markdown对比企业指标与行业基准，300字以内，指出差距并给出改进建议。"
                 + NUMERIC_GUARD_CLAUSE
                 + LABELING_GUARD_CLAUSE
+                + ACTION_REC_GUARD_CLAUSE
             )
             user_prompt = f"""请分析企业指标与{industry_label}行业基准的差距：
 
@@ -2307,6 +2313,7 @@ async def multi_dimension_analysis_stream(request: MultiDimensionRequest, http_r
                 "你是食品企业的数据分析师。请用中文Markdown进行多维度分析，400字以内，结构清晰，引用数字，给出可执行建议。"
                 + NUMERIC_GUARD_CLAUSE
                 + LABELING_GUARD_CLAUSE
+                + ACTION_REC_GUARD_CLAUSE
             )
             user_prompt = f"""请对以下数据进行多维度分析：{dims_hint}{context_hint}
 

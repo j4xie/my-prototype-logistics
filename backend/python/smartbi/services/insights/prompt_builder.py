@@ -213,6 +213,17 @@ _LABELING_REQUIREMENT = (
     "如标记 inferred=true 则必须说明「推断分类」。"
 )
 
+# Apr 25 2026 quality audit C-rec 8+9: 9/14 audited template insights had no
+# actionable recommendation. Recommendations must follow Apr 23 Week 5 spec
+# §4.3 pattern (concrete店名/品类 + 收益区间 + 前置条件 + 时间窗口).
+_ACTION_REC_REQUIREMENT = (
+    "**可执行建议（C-rec 8+9 必遵）**：每条 recommendation / action_items 必须 4 要素齐全 — "
+    "(a) 具体对象 [店名/品类/菜品/员工/客群]，(b) 数字化收益 [预计提升 3-5%] / [节约 5-10万/月]，"
+    "(c) 前置条件 [需先做 X 培训] / [需 Y 部门确认]，(d) 时间窗口 [本月内] / [下季度] / [14 天试点]。"
+    "禁止使用：'加强营销' / '提高服务质量' / '优化经营策略' / '建立长效机制' 等空泛措辞 — "
+    "这类回答会被视为不合格。若数据不足，则诚实说明 '需要补充 X 数据才能给出建议'。"
+)
+
 _RULES = {
     "small": (
         "## 写作要求\n"
@@ -221,7 +232,8 @@ _RULES = {
         "3. risk_alerts 和 opportunities 各1条\n"
         "4. 使用中文，列名翻译为中文\n"
         "5. " + _LABELING_REQUIREMENT + "\n"
-        "6. 严格JSON输出，不要附加Markdown或解释文字"
+        "6. " + _ACTION_REC_REQUIREMENT + "\n"
+        "7. 严格JSON输出，不要附加Markdown或解释文字"
     ),
     "medium": (
         "## 写作铁律\n"
@@ -232,7 +244,8 @@ _RULES = {
         "5. risk_alerts 和 opportunities 各至少1条\n"
         "6. 列名翻译为中文\n"
         "7. " + _LABELING_REQUIREMENT + "\n"
-        "8. 严格JSON输出，不要附加Markdown或解释文字"
+        "8. " + _ACTION_REC_REQUIREMENT + "\n"
+        "9. 严格JSON输出，不要附加Markdown或解释文字"
     ),
     "large": (
         "## 写作铁律（违反任何一条即为不合格）\n\n"
@@ -247,7 +260,8 @@ _RULES = {
         "8. **精炼**: 每条 insight 的 text 控制在 80-150 字，executive_summary 不超过 80 字。\n"
         "9. **敏感性分析**: 识别2-3个关键驱动因素，输出sensitivity_analysis数组。\n"
         "10. " + _LABELING_REQUIREMENT + "\n"
-        "11. 严格以JSON格式输出，不要附加任何Markdown标记或解释文字。"
+        "11. " + _ACTION_REC_REQUIREMENT + "\n"
+        "12. 严格以JSON格式输出，不要附加任何Markdown标记或解释文字。"
     ),
 }
 

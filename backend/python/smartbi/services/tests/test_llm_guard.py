@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from smartbi.services.llm_guard import (
+    ACTION_REC_GUARD_CLAUSE,
+    LABELING_GUARD_CLAUSE,
     NUMERIC_GUARD_CLAUSE,
     detect_numeric_hallucination,
     extract_max_agg_value,
@@ -115,3 +117,44 @@ def test_guard_clause_non_empty_and_mentions_key_constraints():
     assert "亿" in NUMERIC_GUARD_CLAUSE
     assert "外推" in NUMERIC_GUARD_CLAUSE
     assert "此数据未提供" in NUMERIC_GUARD_CLAUSE
+
+
+# ─── ACTION_REC_GUARD_CLAUSE sanity (Apr 25 2026 C-rec 8+9) ─────────────────
+
+
+def test_action_rec_clause_has_four_components():
+    """Action recommendations must be 具体/数字化/前置条件/时间窗 — verify the
+    clause text covers all 4 spec §4.3 dimensions."""
+    assert len(ACTION_REC_GUARD_CLAUSE) > 200
+    # (a) 具体对象
+    assert "具体店名" in ACTION_REC_GUARD_CLAUSE
+    # (b) 数字化收益
+    assert "收益区间" in ACTION_REC_GUARD_CLAUSE
+    # (c) 前置条件
+    assert "前置条件" in ACTION_REC_GUARD_CLAUSE
+    # (d) 时间窗口
+    assert "时间" in ACTION_REC_GUARD_CLAUSE
+
+
+def test_action_rec_clause_bans_vague_phrases():
+    """The clause must explicitly call out the most common 空泛建议 patterns
+    so the LLM has examples of what NOT to write."""
+    assert "加强营销" in ACTION_REC_GUARD_CLAUSE
+    assert "提高服务质量" in ACTION_REC_GUARD_CLAUSE
+    # Must mark vague phrases as invalid output
+    assert "无效" in ACTION_REC_GUARD_CLAUSE or "不合格" in ACTION_REC_GUARD_CLAUSE
+
+
+def test_action_rec_clause_includes_data_insufficient_fallback():
+    """When data is insufficient, the LLM must say so honestly rather than
+    invent a generic recommendation."""
+    assert "数据不足" in ACTION_REC_GUARD_CLAUSE or "无法推荐" in ACTION_REC_GUARD_CLAUSE
+    assert "补充" in ACTION_REC_GUARD_CLAUSE
+
+
+def test_labeling_clause_still_intact():
+    """Sanity check — LABELING_GUARD_CLAUSE didn't get clobbered when adding
+    ACTION_REC_GUARD_CLAUSE below it."""
+    assert "毛" in LABELING_GUARD_CLAUSE
+    assert "净" in LABELING_GUARD_CLAUSE
+    assert "按营业额" in LABELING_GUARD_CLAUSE

@@ -261,10 +261,19 @@ async def call_llm_stream_text(
     Chain: aliyun_b/qwen3-max → aliyun_a/qwen3-max → zhipu/glm-4.5-air → deepseek-chat.
 
     Yields text chunks as they arrive.
+
+    Apr 25 2026 (C-rec 8+9): action-recommendation guard appended to the
+    default system_role so AIQuery answers carry concrete店名/收益区间/
+    前置条件/时间窗口 instead of vague '加强营销' / '优化经营策略'.
+    Callers that pass an explicit system_role already include the guard
+    via chat.py's NUMERIC + LABELING + ACTION_REC concatenation.
     """
+    # Local import (avoid hard cycle at module load — llm_guard has no deps).
+    from smartbi.services.llm_guard import ACTION_REC_GUARD_CLAUSE
     if not system_role:
         system_role = (
             "你是一位服务于食品加工企业的资深数据分析师。请用中文回复，使用Markdown格式。"
+            + ACTION_REC_GUARD_CLAUSE
         )
     payload = {
         "messages": [

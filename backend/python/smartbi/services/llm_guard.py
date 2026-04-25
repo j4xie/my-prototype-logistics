@@ -62,6 +62,28 @@ LABELING_GUARD_CLAUSE = (
 )
 
 
+# Apr 25 2026 quality audit C-rec 8+9: 9/14 audited template insights had no
+# actionable recommendation. Customer reads "Top 5 dishes" but doesn't know
+# what to do next. The Apr 23 Week 5 agent layer (Dashboard) scored 5/5 on
+# action_rec by following spec §4.3 — concrete店名+数字+收益区间+前置条件.
+# Port that pattern to chat-stream / drill-down / general-analysis prompts.
+ACTION_REC_GUARD_CLAUSE = (
+    "\n\n可执行建议强制规则（违反将被视为不合格回答）：\n"
+    "1. 回答必须以可执行的建议结尾，不能仅描述数据。每条建议必须同时满足：\n"
+    "   (a) 具体对象 — 指明 [具体店名/品类/菜品/员工/客群/渠道]，禁止笼统的'重点关注'/'加强管理';\n"
+    "   (b) 数字化收益 — 含 [收益区间]，例如 '预计提升营业额 3-5%' / '节约成本 5-10万/月' /"
+    " '降低退单率 2 个百分点';\n"
+    "   (c) 前置条件 — 写明 [需先做什么]，例如 '先完成服务员推销话术培训' /"
+    " '需要区域经理确认营销预算上限' / '上传当月折扣明细';\n"
+    "   (d) 时间窗口 — 写明 [实施时长]，例如 '本月内' / '下季度' / '14 天试点'。\n"
+    "2. 禁止输出空泛建议，下列措辞会被视为无效：\n"
+    "   '建议优化经营策略' / '加强营销' / '提高服务质量' / '提升运营效率' /"
+    " '扩大客源' / '密切关注' / '建立长效机制'。\n"
+    "3. 若数据不足以支撑明确建议，则坦诚说明 '当前数据无法推荐具体行动，建议先 [补充 X 数据来源]'，\n"
+    "   并指出补充什么样的字段或维度后即可给出建议。"
+)
+
+
 _HALLUC_PATTERN = re.compile(r"([-+]?\d+(?:\.\d+)?)\s*(亿|千万)")
 _NUMBER_PATTERN = re.compile(r"([-+]?\d+(?:,\d{3})*(?:\.\d+)?)")
 
