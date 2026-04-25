@@ -34,8 +34,16 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
          ["销量", "销售", "占比", "份额", "结构", "卖", "多", "最多"]],
     ),
     (
-        "dish_sales_top_n",
-        [["菜品", "商品", "产品"], ["销量", "销售", "卖", "热销", "畅销", "排名", "Top", "最多", "最高"]],
+        # Apr 26 2026 Bug G phase 2 follow-up: was "dish_sales_top_n" (template
+        # never materialized — latent registry bug). Real materialized template
+        # is `top_n_by_dim` which handles dish rankings. qhj-01 "卖得最好的菜
+        # Top 10" failed phase 2 because match returned non-existent template.
+        # Also extend group-1 with bare "菜" so conversational forms match.
+        # Group-2 still requires sales/ranking semantics so noise queries
+        # (e.g. "菜单怎么改") don't false-positive.
+        "top_n_by_dim",
+        [["菜品", "商品", "产品", "菜"],
+         ["销量", "销售", "卖", "热销", "畅销", "排名", "Top", "最多", "最高"]],
     ),
     (
         "dish_time_slot_matrix",
