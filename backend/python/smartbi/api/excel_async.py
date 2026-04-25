@@ -73,6 +73,20 @@ async def auto_parse_async(
     if not factory_id:
         raise HTTPException(status_code=400, detail="factory_id is required")
 
+    # Apr 26 2026 (S1 audit Bug B): fast-fail unsupported file extensions BEFORE
+    # streaming the multipart body to disk. S1 test showed 4MB xlsx wasted 100s
+    # of upload time before BG worker discovered the file was the wrong type.
+    # Sync /upload-and-analyze (excel.py:677-684) already enforces this whitelist;
+    # we mirror it here to give the user immediate 400 feedback.
+    _filename_lower = (file.filename or "").lower()
+    _allowed_exts = (".xlsx", ".xls", ".csv")
+    if not _filename_lower.endswith(_allowed_exts):
+        ext_actual = "." + _filename_lower.rsplit(".", 1)[-1] if "." in _filename_lower else "(no ext)"
+        raise HTTPException(
+            status_code=400,
+            detail=f"不支持的文件类型: {ext_actual}; 仅支持 .xlsx, .xls, .csv",
+        )
+
     if SessionLocal is None:
         raise HTTPException(status_code=503, detail="Database not available")
 
@@ -284,7 +298,21 @@ async def _async_worker_impl(
 
         unnamed_pat = _re.compile(r'^Unnamed:\s*\d+$')
 
+        # Apr 26 2026 (S1 audit Bug A): detect file ext to branch CSV vs XLSX/XLS readers.
+        # Pre-fix: _probe() blindly called pd.read_csv() on all files → xlsx binary
+        # raises UnicodeDecodeError → outer except @ line 511 marks FAILED ("crashed
+        # after 0 rows"). 8/8 xlsx in S1 test all hit this path. Sync /auto-parse
+        # already branches by ext (excel.py:380-401, 1136-1141); we mirror that here.
+        _filename_lower = (tmp_path or '').lower()
+        if _filename_lower.endswith('.xlsx') or _filename_lower.endswith('.xls'):
+            _file_kind = 'excel'
+        else:
+            _file_kind = 'csv'
+
         def _probe(skip):
+            if _file_kind == 'excel':
+                # pd.read_excel auto-detects xlsx vs xls via openpyxl/xlrd; no encoding arg.
+                return pd.read_excel(tmp_path, nrows=100, skiprows=skip), None
             try:
                 return pd.read_csv(tmp_path, nrows=100, skiprows=skip), None
             except UnicodeDecodeError:
@@ -413,20 +441,38 @@ async def _async_worker_impl(
             s = str(v)
             return s[:100] if len(s) > 100 else s
 
-        read_kwargs = dict(
-            filepath_or_buffer=tmp_path,
-            skiprows=csv_skiprows,
-            usecols=real_cols_idx,
-            chunksize=CHUNK_SIZE,
-        )
-        if encoding:
-            read_kwargs["encoding"] = encoding
+        # Apr 26 2026 (S1 audit Bug A): xlsx/xls path. pd.read_excel does NOT
+        # support chunksize, so we load full file once then yield in CHUNK_SIZE
+        # slices. Async upload caps at 50MB (line 343 threshold) so peak RSS is
+        # bounded — 9MB xlsx spike showed +961MB RSS, 50MB upper bound ~5GB
+        # which still fits in 16GB host.
+        if _file_kind == 'excel':
+            full_df = pd.read_excel(
+                tmp_path,
+                skiprows=csv_skiprows,
+                usecols=real_cols_idx,
+            )
 
-        try:
-            chunks_iter = pd.read_csv(**read_kwargs)
-        except UnicodeDecodeError:
-            read_kwargs["encoding"] = "gbk"
-            chunks_iter = pd.read_csv(**read_kwargs)
+            def _excel_chunks():
+                for i in range(0, len(full_df), CHUNK_SIZE):
+                    yield full_df.iloc[i:i + CHUNK_SIZE]
+
+            chunks_iter = _excel_chunks()
+        else:
+            read_kwargs = dict(
+                filepath_or_buffer=tmp_path,
+                skiprows=csv_skiprows,
+                usecols=real_cols_idx,
+                chunksize=CHUNK_SIZE,
+            )
+            if encoding:
+                read_kwargs["encoding"] = encoding
+
+            try:
+                chunks_iter = pd.read_csv(**read_kwargs)
+            except UnicodeDecodeError:
+                read_kwargs["encoding"] = "gbk"
+                chunks_iter = pd.read_csv(**read_kwargs)
 
         for chunk_df in chunks_iter:
             # NaN → None so JSON serialization writes null not NaN

@@ -1370,10 +1370,19 @@ def _sanitize_preview_value(val):
 
     Handles pandas Series/Timestamp, numpy arrays/scalars, and other
     non-primitive types that can leak from pd.read_excel() or MultiIndex ops.
+
+    Apr 26 2026 (S1 audit Bug E): NaN/Inf floats are valid Python objects
+    but FastAPI's default JSONResponse uses stdlib json.dumps with
+    allow_nan=False — raises ValueError "Out of range float values are not
+    JSON compliant" mid-response after parse already succeeded. Coerce to
+    None so the response serializes cleanly.
     """
+    import math
     if val is None:
         return None
     if isinstance(val, (int, float, bool)):
+        if isinstance(val, float) and not math.isfinite(val):
+            return None
         return val
     if isinstance(val, str):
         # Safety net: detect strings that are stringified pandas Series
