@@ -17,17 +17,17 @@
         drag
         :auto-upload="false"
         :limit="1"
-        accept=".xlsx,.xls"
+        accept=".xlsx,.xls,.csv"
         :on-change="onFileChange"
         :file-list="fileList"
       >
         <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
         <div class="el-upload__text">
-          拖拽 Excel 文件到此处或 <em>点击上传</em>
+          拖拽 Excel 或 CSV 文件到此处或 <em>点击上传</em>
         </div>
         <template #tip>
           <div class="el-upload__tip">
-            支持 .xlsx、.xls 格式，文件大小不超过 50MB
+            支持 .xlsx、.xls、.csv 格式，文件大小不超过 50MB
           </div>
         </template>
       </el-upload>
