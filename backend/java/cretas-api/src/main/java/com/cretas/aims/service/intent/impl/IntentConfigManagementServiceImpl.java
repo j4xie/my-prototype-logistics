@@ -66,6 +66,7 @@ public class IntentConfigManagementServiceImpl implements IntentConfigManagement
     }
 
     @Override
+    @Cacheable(value = "allIntents", key = "#factoryId")
     public List<AIIntentConfig> getAllIntents(String factoryId) {
         log.debug("getAllIntents(factoryId={})", factoryId);
         return intentRepository.findByFactoryIdOrPlatformLevel(factoryId);
@@ -73,6 +74,7 @@ public class IntentConfigManagementServiceImpl implements IntentConfigManagement
 
     @Override
     @Deprecated
+    @Cacheable(value = "allIntents_legacy")
     public List<AIIntentConfig> getAllIntents() {
         log.debug("getAllIntents()");
         return intentRepository.findByIsActiveTrueAndDeletedAtIsNullOrderByPriorityDesc();
