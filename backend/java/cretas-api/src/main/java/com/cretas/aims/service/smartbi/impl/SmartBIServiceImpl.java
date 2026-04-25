@@ -132,6 +132,19 @@ public class SmartBIServiceImpl implements SmartBIService {
     @Autowired(required = false)
     private com.cretas.aims.client.AgentInsightsClient agentInsightsClient;
 
+    /**
+     * Apr 25 Phase 9 backlog (I1): factory metadata for tenant-type aware
+     * dashboard routing. Restaurant tenants have 0 rows in legacy
+     * smart_bi_sales_data; the Apr 22 Gold cutover wired
+     * salesService.getSalesOverview to read from Gold. We need to detect
+     * RESTAURANT here so /dashboard/executive?period=month skips the legacy
+     * salesData precheck and routes directly to the Gold path.
+     * required=false: keep existing tests/wiring functional if a downstream
+     * harness omits this bean.
+     */
+    @Autowired(required = false)
+    private com.cretas.aims.repository.FactoryRepository factoryRepository;
+
     // ==================== 配置参数 ====================
 
     @Value("${smartbi.llm.enabled:true}")
@@ -260,6 +273,43 @@ public class SmartBIServiceImpl implements SmartBIService {
             return (DashboardResponse) cached.get();
         }
 
+        // ================================================================
+        // Apr 25 Phase 9 backlog (I1): RESTAURANT tenants route through Gold
+        // ----------------------------------------------------------------
+        // Background: legacy 自动检测 (步骤 2.1 below) queries
+        // smart_bi_sales_data which restaurants have 0 rows in. The auto-
+        // fallback then returns invalid range → range stays at current
+        // period → Gold returns empty → empty dashboard. The /custom
+        // endpoint works because user explicitly picks a 2025 range.
+        //
+        // Fix: for RESTAURANT tenants, skip the legacy precheck and route
+        // through salesService.getSalesOverview() (which is Gold-aware via
+        // SMARTBI_GOLD_READ_PRIMARY_ENABLED, Apr 22 Phase B4 cutover).
+        // Add a small fallback chain so first-load with no range still finds
+        // the most recent data window (mirrors Trends/Finance UX).
+        //
+        // Manufacturing tenants (FACTORY/HEADQUARTERS/CENTRAL_KITCHEN) keep
+        // the legacy 4-future parallel path unchanged.
+        // ================================================================
+        if (isRestaurantTenant(factoryId)) {
+            DashboardResponse goldResp = computeRestaurantDashboard(factoryId, period);
+            if (goldResp != null) {
+                Duration ttl = calculateCacheTtl(period);
+                saveToCache(factoryId, cacheKey, goldResp, ttl);
+                long elapsed = System.currentTimeMillis() - startTime;
+                log.info("驾驶舱(RESTAURANT/Gold): factoryId={}, period={}, kpis={}, elapsed={}ms",
+                        factoryId, period,
+                        goldResp.getKpiCards() == null ? 0 : goldResp.getKpiCards().size(),
+                        elapsed);
+                recordUsage(factoryId, null, ActionType.DASHBOARD.name(), 0, false);
+                return goldResp;
+            }
+            // null = restaurant + Gold path failed entirely → fall through
+            // to legacy (will likely be empty for restaurants but at least
+            // keeps the response shape consistent).
+            log.warn("Restaurant Gold dashboard returned null, falling back to legacy: factoryId={}", factoryId);
+        }
+
         // 2. 计算日期范围
         DateRange range = calculateDateRange(period);
 
@@ -363,6 +413,67 @@ public class SmartBIServiceImpl implements SmartBIService {
         recordUsage(factoryId, null, ActionType.DASHBOARD.name(), 0, false);
 
         return response;
+    }
+
+    /**
+     * Apr 25 Phase 9 backlog (I1): is this factory a restaurant tenant?
+     *
+     * Restaurant tenants (RESTAURANT, BRANCH) have 0 rows in legacy
+     * smart_bi_sales_data and must route through Gold (POS-backed).
+     * Defensive: if the FactoryRepository bean is missing or the lookup
+     * throws, return false so manufacturing path is preserved (legacy
+     * dashboard is the existing behavior, no regression).
+     */
+    private boolean isRestaurantTenant(String factoryId) {
+        if (factoryRepository == null || factoryId == null) {
+            return false;
+        }
+        try {
+            return factoryRepository.findById(factoryId)
+                    .map(f -> f.getType() != null
+                            && (f.getType() == com.cretas.aims.entity.enums.FactoryType.RESTAURANT
+                                || f.getType() == com.cretas.aims.entity.enums.FactoryType.BRANCH))
+                    .orElse(false);
+        } catch (Exception e) {
+            log.warn("Failed to check tenant type for {}: {}", factoryId, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Apr 25 Phase 9 backlog (I1): build dashboard for restaurant tenant via
+     * the Gold-aware sales overview path, with a simple fallback chain so
+     * first-load (no date picker) still finds the most recent data window.
+     *
+     * Order: requested period → previous year same month/period → 2024 same period.
+     * Returns null if all attempts produce empty (defensive — caller falls
+     * through to legacy path which will also be empty but preserves shape).
+     */
+    private DashboardResponse computeRestaurantDashboard(String factoryId, String period) {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.LocalDate[] primary = com.cretas.aims.util.DateRangeUtils.getDateRangeByPeriod(period, today);
+        java.time.LocalDate[] lastYear = com.cretas.aims.util.DateRangeUtils.getDateRangeByPeriod(period, today.minusYears(1));
+        java.time.LocalDate[] twoYearsAgo = com.cretas.aims.util.DateRangeUtils.getDateRangeByPeriod(period, today.minusYears(2));
+
+        java.time.LocalDate[][] attempts = new java.time.LocalDate[][] { primary, lastYear, twoYearsAgo };
+        for (int i = 0; i < attempts.length; i++) {
+            java.time.LocalDate start = attempts[i][0];
+            java.time.LocalDate end = attempts[i][1];
+            try {
+                DashboardResponse resp = salesService.getSalesOverview(factoryId, start, end);
+                if (resp != null && resp.getKpiCards() != null && !resp.getKpiCards().isEmpty()) {
+                    log.info("[restaurant-gold] factory={} period={} attempt={} ({}..{}) returned {} kpis",
+                            factoryId, period, i, start, end, resp.getKpiCards().size());
+                    return resp;
+                }
+                log.debug("[restaurant-gold] factory={} attempt {} ({}..{}) empty, trying next",
+                        factoryId, i, start, end);
+            } catch (Exception e) {
+                log.warn("[restaurant-gold] factory={} attempt {} ({}..{}) failed: {}",
+                        factoryId, i, start, end, e.getMessage());
+            }
+        }
+        return null;
     }
 
     @Override
