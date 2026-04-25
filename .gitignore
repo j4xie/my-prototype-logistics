@@ -223,3 +223,7 @@ video-training-data/*.mp4
 
 # Worktrees for subagent-driven development
 .worktrees/
+
+# Apr 26 deep-aiq test artifacts (unzipped data + screenshots — too large for repo)
+tests/e2e-comprehensive/results/depth-aiq-2026-04-26/unzipped/
+tests/e2e-comprehensive/results/depth-aiq-2026-04-26/screenshots-upload/
