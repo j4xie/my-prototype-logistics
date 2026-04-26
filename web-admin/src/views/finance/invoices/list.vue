@@ -6,6 +6,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { formatAmount } from '@/utils/tableFormatters';
+import { handleCatchError } from '@/utils/errorToast';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -110,7 +111,12 @@ async function handleAction(id: string, action: 'approve' | 'reject' | 'issue') 
     ElMessage.success(`${labels[action]}成功`);
     loadData();
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error(`操作失败`);
+    if (e === 'cancel') return;
+    // R26 follow-up (reviewer #16 concern #1): pre-fix this fired ElMessage.error('操作失败')
+    // on top of axios interceptor's rich actionHint toast for any backend 4xx/5xx
+    // (e.g. R18+R21+R23 invariant 409 with hint, or DataIntegrity unique 409 post-R25).
+    // handleCatchError gates on !err.status — only fires fallback for true network errors.
+    handleCatchError(e, '操作失败,请检查网络');
   }
 }
 

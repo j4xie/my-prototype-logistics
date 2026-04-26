@@ -64,8 +64,10 @@ async function handleApprove(row: ApprovalItem) {
     if (!err || (err.status !== 409 && !err.actionHint)) {
       ElMessage.error('审批失败');
     }
-    // Always reload — backend state may have changed (already APPROVED case).
-    loadData();
+    // R26 follow-up (reviewer #16 concern #4): only reload on 409 (already-processed
+    // race — backend state diverged from UI cache). On 502/network error, loadData()
+    // would just retry-and-fail too, doubling failed-request rate during outage.
+    if (err?.status === 409) loadData();
   }
 }
 
@@ -106,7 +108,8 @@ async function handleBatchApprove() {
     if (!err || (err.status !== 409 && !err.actionHint)) {
       ElMessage.error('批量审批失败');
     }
-    loadData();
+    // R26 follow-up (reviewer #16 concern #4): only reload on 409 race.
+    if (err?.status === 409) loadData();
   }
 }
 
