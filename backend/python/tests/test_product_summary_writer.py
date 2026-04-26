@@ -228,6 +228,8 @@ async def test_idempotent_rerun_uses_coalesce_on_conflict():
     ]
     conn = AsyncMock()
     conn.fetch = AsyncMock(return_value=rows)
+    # Phase 3: _fetch_period — None means SheetMergeAnalyzer hasn't run yet.
+    conn.fetchrow = AsyncMock(return_value=None)
     conn.executemany = AsyncMock(return_value=None)
 
     writer = ProductSummaryWriter(pool=_make_mock_pool(conn), orchestrator=MagicMock())
@@ -256,6 +258,7 @@ async def test_idempotent_rerun_uses_coalesce_on_conflict():
         _row({"门店": "A", "商品名称": "P", "单卖数量": "8", "销售金额": "240"}),
     ]
     conn.fetch = AsyncMock(return_value=rows_rerun)
+    conn.fetchrow = AsyncMock(return_value=None)  # Phase 3
     conn.executemany = AsyncMock(return_value=None)
     await writer.write(upload_id=1, factory_id="F001")
     sql_second = conn.executemany.await_args.args[0]

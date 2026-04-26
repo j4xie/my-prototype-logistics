@@ -44,6 +44,8 @@ async def test_writes_fact_rows_and_summary():
     ]
     conn = AsyncMock()
     conn.fetch = AsyncMock(return_value=rows)
+    # _fetch_period (Phase 3) calls conn.fetchrow first; return None → (None, None) period.
+    conn.fetchrow = AsyncMock(return_value=None)
     conn.executemany = AsyncMock(return_value=None)
     conn.execute = AsyncMock(return_value=None)
 
@@ -78,18 +80,21 @@ async def test_writes_fact_rows_and_summary():
     summary_sql = conn.execute.await_args.args[0]
     assert "dim_review_summary" in summary_sql
     summary_args = conn.execute.await_args.args
-    # New arg order: (sql, factory_id, upload_id, product_id, store_id,
-    #                 avg_rating, total, positive, negative, keywords, unmatched)
+    # Phase 3 arg order: (sql, factory_id, upload_id, product_id, store_id,
+    #                     period_start, period_end, avg_rating, total, positive,
+    #                     negative, keywords, unmatched)
     assert summary_args[1] == "F001"
     assert summary_args[2] == 1  # upload_id
+    assert summary_args[5] is None  # period_start (no SheetMergeAnalyzer run)
+    assert summary_args[6] is None  # period_end
     # avg_rating = (5+1)/2 = 3.0
-    assert summary_args[5] == 3.0
+    assert summary_args[7] == 3.0
     # total_count
-    assert summary_args[6] == 2
+    assert summary_args[8] == 2
     # positive (rating >= 4) count = 1
-    assert summary_args[7] == 1
+    assert summary_args[9] == 1
     # negative (rating <= 2) count = 1
-    assert summary_args[8] == 1
+    assert summary_args[10] == 1
 
 
 async def test_unresolved_product_appended_to_unmatched_names():
@@ -106,6 +111,7 @@ async def test_unresolved_product_appended_to_unmatched_names():
     ]
     conn = AsyncMock()
     conn.fetch = AsyncMock(return_value=rows)
+    conn.fetchrow = AsyncMock(return_value=None)  # Phase 3: _fetch_period
     conn.executemany = AsyncMock(return_value=None)
     conn.execute = AsyncMock(return_value=None)
 
@@ -126,7 +132,8 @@ async def test_unresolved_product_appended_to_unmatched_names():
     assert fact_batch[0][3] == 10  # store_id still resolved
 
     summary_args = conn.execute.await_args.args
-    unmatched_jsonb = summary_args[10]
+    # Phase 3 shifted args: unmatched_jsonb now at position 12 (was 10).
+    unmatched_jsonb = summary_args[12]
     parsed = json.loads(unmatched_jsonb)
     assert parsed == ["幽灵菜"]
 
@@ -136,6 +143,7 @@ async def test_keywords_placeholder_empty():
     rows = [_row({"门店": "A", "评分": "5"})]
     conn = AsyncMock()
     conn.fetch = AsyncMock(return_value=rows)
+    conn.fetchrow = AsyncMock(return_value=None)  # Phase 3: _fetch_period
     conn.executemany = AsyncMock(return_value=None)
     conn.execute = AsyncMock(return_value=None)
 
@@ -150,7 +158,8 @@ async def test_keywords_placeholder_empty():
     await writer.write(upload_id=1, factory_id="F001")
 
     summary_args = conn.execute.await_args.args
-    keywords_jsonb = summary_args[9]
+    # Phase 3: keywords now at position 11 (was 9).
+    keywords_jsonb = summary_args[11]
     assert json.loads(keywords_jsonb) == []
 
 
@@ -159,6 +168,7 @@ async def test_no_product_column_skips_product_resolve():
     rows = [_row({"门店": "A", "评分": "5", "评论内容": "good"})]
     conn = AsyncMock()
     conn.fetch = AsyncMock(return_value=rows)
+    conn.fetchrow = AsyncMock(return_value=None)  # Phase 3: _fetch_period
     conn.executemany = AsyncMock(return_value=None)
     conn.execute = AsyncMock(return_value=None)
 
@@ -185,6 +195,7 @@ async def test_sentiment_rating_3_neutral_only_counted_in_total():
     ]
     conn = AsyncMock()
     conn.fetch = AsyncMock(return_value=rows)
+    conn.fetchrow = AsyncMock(return_value=None)  # Phase 3: _fetch_period
     conn.executemany = AsyncMock(return_value=None)
     conn.execute = AsyncMock(return_value=None)
 
@@ -199,9 +210,10 @@ async def test_sentiment_rating_3_neutral_only_counted_in_total():
     summary = await writer.write(upload_id=1, factory_id="F001")
 
     summary_args = conn.execute.await_args.args
-    assert summary_args[6] == 2  # total
-    assert summary_args[7] == 0  # positive
-    assert summary_args[8] == 0  # negative
+    # Phase 3 shifted: total at 8, positive at 9, negative at 10.
+    assert summary_args[8] == 2  # total
+    assert summary_args[9] == 0  # positive
+    assert summary_args[10] == 0  # negative
     assert summary.rows_written == 2
 
 
@@ -209,6 +221,7 @@ async def test_no_rows_inserts_empty_summary():
     """Empty upload → no fact insert, summary INSERT still runs with zeros."""
     conn = AsyncMock()
     conn.fetch = AsyncMock(return_value=[])
+    conn.fetchrow = AsyncMock(return_value=None)  # Phase 3: _fetch_period
     conn.executemany = AsyncMock(return_value=None)
     conn.execute = AsyncMock(return_value=None)
 
@@ -220,8 +233,9 @@ async def test_no_rows_inserts_empty_summary():
     conn.executemany.assert_not_called()
     conn.execute.assert_awaited_once()
     summary_args = conn.execute.await_args.args
-    assert summary_args[5] is None  # avg_rating None
-    assert summary_args[6] == 0  # total_count 0
+    # Phase 3 shifted: avg_rating at 7, total_count at 8.
+    assert summary_args[7] is None  # avg_rating None
+    assert summary_args[8] == 0  # total_count 0
 
 
 async def test_unmatched_names_dedup():
@@ -233,6 +247,7 @@ async def test_unmatched_names_dedup():
     ]
     conn = AsyncMock()
     conn.fetch = AsyncMock(return_value=rows)
+    conn.fetchrow = AsyncMock(return_value=None)  # Phase 3: _fetch_period
     conn.executemany = AsyncMock(return_value=None)
     conn.execute = AsyncMock(return_value=None)
 
@@ -247,7 +262,8 @@ async def test_unmatched_names_dedup():
     await writer.write(upload_id=1, factory_id="F001")
 
     summary_args = conn.execute.await_args.args
-    unmatched = json.loads(summary_args[10])
+    # Phase 3 shifted: unmatched_jsonb now at position 12 (was 10).
+    unmatched = json.loads(summary_args[12])
     assert sorted(unmatched) == ["另一个", "幽灵菜"]
 
 
@@ -271,6 +287,7 @@ async def test_idempotent_rerun_uses_source_row_hash():
     ]
     conn = AsyncMock()
     conn.fetch = AsyncMock(return_value=rows)
+    conn.fetchrow = AsyncMock(return_value=None)  # Phase 3: _fetch_period
     conn.executemany = AsyncMock(return_value=None)
     conn.execute = AsyncMock(return_value=None)
 
@@ -309,6 +326,7 @@ async def test_idempotent_rerun_uses_source_row_hash():
 
     # Second run with same upload_id, same row → SQL identical, batch deterministic hash
     conn.fetch = AsyncMock(return_value=rows)
+    conn.fetchrow = AsyncMock(return_value=None)  # Phase 3: _fetch_period
     conn.executemany = AsyncMock(return_value=None)
     conn.execute = AsyncMock(return_value=None)
     await writer.write(upload_id=1, factory_id="F001")

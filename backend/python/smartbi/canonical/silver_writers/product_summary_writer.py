@@ -1,14 +1,17 @@
 """ProductSummaryWriter — batch INSERT into agg_product_period.
 
-Period inference deferred until Sheet Merger writes merge_inferred_period_*
-upload-level fields; until then period_start / period_end are NULL.
+Phase 3 wires `_fetch_period` to consume merge_inferred_period_* set by
+SheetMergeAnalyzer. Pre-Phase-3 uploads (analyzer not yet run) still get
+NULL period_start/period_end via graceful degrade.
+
 Row-by-row store + product resolution (forced ordering: store first), then
 batched executemany for the actual INSERT.
 """
 from __future__ import annotations
 
 import time
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
+from datetime import date
 
 from ._helpers import canonical_value, to_float, unwrap_row
 from .base import BaseWriter, WriteSummary
@@ -29,13 +32,11 @@ class ProductSummaryWriter(BaseWriter):
         admin_queue_count = 0
 
         async with self._pool.acquire() as conn:
+            period_start, period_end = await self._fetch_period(upload_id, conn)
             rows = await conn.fetch(
                 "SELECT row_data FROM smart_bi_dynamic_data WHERE upload_id = $1",
                 upload_id,
             )
-            # TODO: Sheet Merger integration — replace with upload-level
-            # merge_inferred_period_* lookup once available.
-            period_start, period_end = None, None
 
             for row_pg in rows:
                 row = unwrap_row(row_pg["row_data"])
@@ -113,3 +114,26 @@ class ProductSummaryWriter(BaseWriter):
             tentative_count=tentative_count,
             elapsed_ms=int((time.time() - t0) * 1000),
         )
+
+    async def _fetch_period(
+        self, upload_id: int, conn: Any
+    ) -> Tuple[Optional[date], Optional[date]]:
+        """Read merge_inferred_period_* set by SheetMergeAnalyzer; (None, None) if not yet inferred."""
+        try:
+            row = await conn.fetchrow(
+                """
+                SELECT merge_inferred_period_start AS p_start,
+                       merge_inferred_period_end AS p_end
+                FROM smart_bi_pg_excel_uploads
+                WHERE id = $1
+                """,
+                upload_id,
+            )
+        except Exception:
+            return None, None
+        if row is None:
+            return None, None
+        try:
+            return row["p_start"], row["p_end"]
+        except (KeyError, IndexError):
+            return None, None

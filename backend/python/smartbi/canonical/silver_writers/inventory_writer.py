@@ -7,7 +7,8 @@ Current simplifications:
   enabled by V20260428_02) so admins can resolve them; rows are skipped.
 - safe_stock_qty / reorder_point come from dim_ingredient_threshold via LEFT JOIN
   preferring a store-specific row, then a NULL-store global row.
-- snapshot_date defaults to today's date if no row-level date column present.
+- snapshot_date precedence (Phase 3): row-level date column → upload-level
+  merge_inferred_period_end (set by SheetMergeAnalyzer) → today's date.
 """
 from __future__ import annotations
 
@@ -51,6 +52,7 @@ class InventoryWriter(BaseWriter):
         queued_unresolved_names: set = set()
 
         async with self._pool.acquire() as conn:
+            _period_start, period_end = await self._fetch_period(upload_id, conn)
             rows = await conn.fetch(
                 "SELECT row_data FROM smart_bi_dynamic_data WHERE upload_id = $1",
                 upload_id,
@@ -93,7 +95,9 @@ class InventoryWriter(BaseWriter):
 
                 stock_qty = to_float(canonical_value(row, "stock_qty"), default=None)
                 unit_value = pick(row, _UNIT_KEYS)
-                snapshot_date = to_date(pick(row, _DATE_KEYS)) or date.today()
+                snapshot_date = (
+                    to_date(pick(row, _DATE_KEYS)) or period_end or date.today()
+                )
 
                 threshold = await self._fetch_threshold(
                     conn, factory_id, ingredient_id, store_result.entity_id
@@ -141,6 +145,29 @@ class InventoryWriter(BaseWriter):
             tentative_count=tentative_count,
             elapsed_ms=int((time.time() - t0) * 1000),
         )
+
+    async def _fetch_period(
+        self, upload_id: int, conn: "asyncpg.Connection"
+    ) -> Tuple[Optional[date], Optional[date]]:
+        """Read merge_inferred_period_* set by SheetMergeAnalyzer; (None, None) if not yet inferred."""
+        try:
+            row = await conn.fetchrow(
+                """
+                SELECT merge_inferred_period_start AS p_start,
+                       merge_inferred_period_end AS p_end
+                FROM smart_bi_pg_excel_uploads
+                WHERE id = $1
+                """,
+                upload_id,
+            )
+        except Exception:
+            return None, None
+        if row is None:
+            return None, None
+        try:
+            return row["p_start"], row["p_end"]
+        except (KeyError, IndexError):
+            return None, None
 
     async def _queue_unresolved_ingredient(
         self,

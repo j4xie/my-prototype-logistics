@@ -38,6 +38,7 @@ from fastapi.responses import JSONResponse
 
 from smartbi.database.connection import SessionLocal
 from smartbi.database.models import SmartBiPgExcelUpload
+from smartbi.canonical.sheet_merger import run_sheet_merge, sheet_merger_enabled
 from smartbi.gold.dual_write import run_silver_dual_write, silver_dual_write_enabled
 from smartbi.services.materialized_analytics.hooks import schedule_materialization
 
@@ -579,6 +580,20 @@ async def _async_worker_impl(
             "headers": real_headers,  # so status endpoint can return them
         }
         db.commit()
+        # 数据织网 B Phase 3 — Sheet Merger.
+        # Inference + merge decision must run AFTER field_definitions are
+        # committed (priority 1 row_date_column needs the canonical 'date'
+        # mapping) and BEFORE schedule_materialization (so capability /
+        # materialized analytics see merge_status / period columns).
+        # Failure swallowed — legacy upload status stays COMPLETED.
+        if sheet_merger_enabled():
+            try:
+                await run_sheet_merge(factory_id=factory_id, upload_id=upload_id)
+            except Exception:
+                logger.exception(
+                    f"[stream-worker] sheet_merge failed for upload={upload_id}; "
+                    f"upload remains COMPLETED, period stays unset"
+                )
         # Fire-and-forget: pre-warm materialized analytics cache.
         # field_defs are fully written above (db.commit() at line ~385) before
         # we reach this point, so the materializer will see all field metadata.

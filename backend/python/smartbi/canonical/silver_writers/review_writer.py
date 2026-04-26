@@ -3,8 +3,8 @@
 Current simplifications:
 - Keyword extraction is a placeholder — top_keywords always written as []. May
   swap in an LLM call to extract 5-10 keywords per period later.
-- Period inference deferred (None / None) until Sheet Merger upload-level
-  fields land.
+- Phase 3: `_fetch_period` reads merge_inferred_period_* set by SheetMergeAnalyzer.
+  Pre-Phase-3 uploads (analyzer not yet run) still get NULL via graceful degrade.
 - Sentiment classification: rating >= 4 → positive, rating <= 2 → negative,
   rating == 3 → neutral (counted in total only).
 """
@@ -13,6 +13,7 @@ from __future__ import annotations
 import hashlib
 import json
 import time
+from datetime import date
 from typing import Any, Dict, List, Optional, Tuple
 
 from ._helpers import canonical_value, to_date, to_float, unwrap_row
@@ -57,6 +58,7 @@ class ReviewWriter(BaseWriter):
         store_id_for_summary: Optional[int] = None
 
         async with self._pool.acquire() as conn:
+            period_start, period_end = await self._fetch_period(upload_id, conn)
             rows = await conn.fetch(
                 "SELECT row_data FROM smart_bi_dynamic_data WHERE upload_id = $1",
                 upload_id,
@@ -150,8 +152,8 @@ class ReviewWriter(BaseWriter):
                    period_start, period_end, avg_rating, total_count,
                    positive_count, negative_count, top_keywords,
                    unmatched_product_names)
-                VALUES ($1, $2, $3, $4, NULL, NULL, $5, $6, $7, $8,
-                        $9::jsonb, $10::jsonb)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+                        $11::jsonb, $12::jsonb)
                 ON CONFLICT (factory_id,
                              COALESCE(upload_id, 0),
                              COALESCE(product_id, 0),
@@ -169,6 +171,8 @@ class ReviewWriter(BaseWriter):
                 upload_id,
                 product_id_for_summary,
                 store_id_for_summary,
+                period_start,
+                period_end,
                 avg_rating,
                 total_count,
                 positive,
@@ -185,3 +189,26 @@ class ReviewWriter(BaseWriter):
             tentative_count=tentative_count,
             elapsed_ms=int((time.time() - t0) * 1000),
         )
+
+    async def _fetch_period(
+        self, upload_id: int, conn: Any
+    ) -> Tuple[Optional[date], Optional[date]]:
+        """Read merge_inferred_period_* set by SheetMergeAnalyzer; (None, None) if not yet inferred."""
+        try:
+            row = await conn.fetchrow(
+                """
+                SELECT merge_inferred_period_start AS p_start,
+                       merge_inferred_period_end AS p_end
+                FROM smart_bi_pg_excel_uploads
+                WHERE id = $1
+                """,
+                upload_id,
+            )
+        except Exception:
+            return None, None
+        if row is None:
+            return None, None
+        try:
+            return row["p_start"], row["p_end"]
+        except (KeyError, IndexError):
+            return None, None

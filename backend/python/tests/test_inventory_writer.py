@@ -39,8 +39,9 @@ async def test_resolves_ingredient_by_name():
     ]
     conn = AsyncMock()
     conn.fetch = AsyncMock(return_value=rows)
+    # Phase 3: _fetch_period is the first fetchrow call → return None (no period inferred yet).
     # ingredient SELECT returns id=88; threshold returns None
-    conn.fetchrow = AsyncMock(side_effect=[{"ingredient_id": 88}, None, None])
+    conn.fetchrow = AsyncMock(side_effect=[None, {"ingredient_id": 88}, None, None])
     conn.executemany = AsyncMock(return_value=None)
 
     writer = InventoryWriter(pool=_make_mock_pool(conn), orchestrator=MagicMock())
@@ -66,7 +67,7 @@ async def test_unmatched_ingredient_skipped():
     rows = [_row({"门店": "A", "物料": "未知食材", "库存数量": "10"})]
     conn = AsyncMock()
     conn.fetch = AsyncMock(return_value=rows)
-    # First fetchrow (ingredient lookup) returns None
+    # Phase 3: _fetch_period gets None first; ingredient lookup also returns None.
     conn.fetchrow = AsyncMock(return_value=None)
     conn.executemany = AsyncMock(return_value=None)
 
@@ -87,9 +88,11 @@ async def test_threshold_store_specific_preferred():
     rows = [_row({"门店": "A", "物料": "番茄", "库存数量": "5"})]
     conn = AsyncMock()
     conn.fetch = AsyncMock(return_value=rows)
+    # Phase 3: _fetch_period None first.
     # ingredient lookup → id=42; store-specific threshold returns row
     conn.fetchrow = AsyncMock(
         side_effect=[
+            None,
             {"ingredient_id": 42},
             {"safe_stock_qty": 10, "reorder_point": 8},
         ]
@@ -115,6 +118,7 @@ async def test_threshold_falls_back_to_global_null_store():
     conn.fetch = AsyncMock(return_value=rows)
     conn.fetchrow = AsyncMock(
         side_effect=[
+            None,  # Phase 3: _fetch_period
             {"ingredient_id": 1},
             None,  # store-specific threshold missing
             {"safe_stock_qty": 50, "reorder_point": 30},  # global NULL store
@@ -140,7 +144,7 @@ async def test_no_threshold_writes_null():
     conn = AsyncMock()
     conn.fetch = AsyncMock(return_value=rows)
     conn.fetchrow = AsyncMock(
-        side_effect=[{"ingredient_id": 7}, None, None]
+        side_effect=[None, {"ingredient_id": 7}, None, None]  # Phase 3 leading None
     )
     conn.executemany = AsyncMock(return_value=None)
 
@@ -164,9 +168,11 @@ async def test_ingredient_cache_dedups_lookup():
     ]
     conn = AsyncMock()
     conn.fetch = AsyncMock(return_value=rows)
+    # Phase 3: leading None for _fetch_period.
     # 1 ingredient SELECT (cached), then for each of 2 rows do 2 threshold lookups (each not found = 4)
     conn.fetchrow = AsyncMock(
         side_effect=[
+            None,  # Phase 3: _fetch_period
             {"ingredient_id": 99},
             None, None,  # row1 thresholds (store-specific + global)
             None, None,  # row2 thresholds
@@ -185,8 +191,8 @@ async def test_ingredient_cache_dedups_lookup():
     summary = await writer.write(upload_id=1, factory_id="F001")
 
     assert summary.rows_written == 2
-    # 1 ingredient + 4 threshold = 5 fetchrow calls (NOT 6, because ingredient cached)
-    assert conn.fetchrow.await_count == 5
+    # Phase 3: 1 period + 1 ingredient + 4 threshold = 6 fetchrow calls (NOT 7, ingredient cached)
+    assert conn.fetchrow.await_count == 6
 
 
 async def test_no_ingredient_column_skipped():
@@ -206,7 +212,8 @@ async def test_no_ingredient_column_skipped():
 
     assert summary.rows_written == 0
     assert summary.admin_queue_count == 1
-    conn.fetchrow.assert_not_called()
+    # Phase 3: _fetch_period is now called once before the row loop (which short-circuits).
+    assert conn.fetchrow.await_count == 1
 
 
 async def test_executemany_includes_on_conflict_unique_dedup():
@@ -214,7 +221,9 @@ async def test_executemany_includes_on_conflict_unique_dedup():
     rows = [_row({"物料": "X", "库存数量": "1"})]
     conn = AsyncMock()
     conn.fetch = AsyncMock(return_value=rows)
-    conn.fetchrow = AsyncMock(side_effect=[{"ingredient_id": 1}, None, None])
+    conn.fetchrow = AsyncMock(
+        side_effect=[None, {"ingredient_id": 1}, None, None]  # Phase 3 leading None
+    )
     conn.executemany = AsyncMock(return_value=None)
 
     writer = InventoryWriter(pool=_make_mock_pool(conn), orchestrator=MagicMock())
