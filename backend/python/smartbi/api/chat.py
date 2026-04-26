@@ -2337,6 +2337,11 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
             # queries. Skip when timeout/short answer (handled in cache.set()
             # via min-30-char filter) or when v2 conv memory was used (cached
             # answer would be stale for next turn anyway).
+            logger.info(
+                f"[llm-cache] write-check: chat_session_parent={bool(chat_session_parent)} "
+                f"factory_id={_session_factory_id} full_text_len={len(full_text)} "
+                f"truncated={_llm_truncated}"
+            )
             if (not chat_session_parent and _session_factory_id
                     and full_text and not _llm_truncated):
                 try:
