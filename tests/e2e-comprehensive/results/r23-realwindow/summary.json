@@ -1,0 +1,314 @@
+{
+  "round": "R23",
+  "phase": "P3",
+  "target": "http://localhost:10011",
+  "timestamp": "2026-04-26T18:52:26.168Z",
+  "branch": "e2e/v1-framework",
+  "head": "ee78b0495 (R23 P1+P2)",
+  "counts": {
+    "total": 23,
+    "pass": 21,
+    "fail": 0,
+    "warn": 0,
+    "deferred": 2
+  },
+  "depthBreakdown": {
+    "deep": 20,
+    "medium": 1,
+    "smoke": 0,
+    "n/a": 2
+  },
+  "pctPass": "100.0",
+  "pctDeep": "95.2",
+  "tests": [
+    {
+      "group": "A",
+      "id": "A1",
+      "name": "so_form_dropdowns_nonempty",
+      "depth": "medium",
+      "timestamp": "2026-04-26T18:51:11.570Z",
+      "cCount": 12,
+      "pCount": 4,
+      "eCount": 3,
+      "customersStatus": 200,
+      "productsStatus": 200,
+      "employeesStatus": 200,
+      "status": "PASS"
+    },
+    {
+      "group": "A",
+      "id": "A2",
+      "name": "ar_invoice_so_dropdown_invoiceable_only",
+      "depth": "deep",
+      "timestamp": "2026-04-26T18:51:15.416Z",
+      "dropdownCount": 9,
+      "sqlCount": 9,
+      "dropdownStatus": 200,
+      "sample": [
+        {
+          "id": "09165e59-b361-4849-9918-e2087bfd34ed",
+          "orderNumber": "SO-20260417-0001",
+          "customerId": "CUS-F001-001"
+        },
+        {
+          "id": "e9fed93b-8793-4456-95e8-552fc0b07a18",
+          "orderNumber": "SO-20260409-0001",
+          "customerId": "616c652a-d73f-4cbc-b553-18968cf867b3"
+        },
+        {
+          "id": "SO-F001-202501-002",
+          "orderNumber": "SO-202501-002",
+          "customerId": "CUS-F001-002"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "group": "A",
+      "id": "A3",
+      "name": "failsecure_typo_to_invoiceable",
+      "depth": "deep",
+      "timestamp": "2026-04-26T18:51:15.869Z",
+      "typoCount": 9,
+      "expected": 9,
+      "httpStatus": 200,
+      "status": "PASS"
+    },
+    {
+      "group": "A",
+      "id": "A4",
+      "name": "plannable_includes_confirmed_pending",
+      "depth": "deep",
+      "timestamp": "2026-04-26T18:51:19.274Z",
+      "dropdownCount": 6,
+      "sqlCount": 6,
+      "httpStatus": 200,
+      "status": "PASS"
+    },
+    {
+      "group": "A",
+      "id": "A5",
+      "name": "all_excludes_draft_cancelled",
+      "depth": "deep",
+      "timestamp": "2026-04-26T18:51:22.871Z",
+      "dropdownCount": 13,
+      "sqlCount": 13,
+      "httpStatus": 200,
+      "status": "PASS"
+    },
+    {
+      "group": "A",
+      "id": "A6",
+      "name": "po_invoiceable_dropdown",
+      "depth": "deep",
+      "timestamp": "2026-04-26T18:51:26.759Z",
+      "dropdownCount": 6,
+      "sqlCount": 6,
+      "httpStatus": 200,
+      "status": "PASS"
+    },
+    {
+      "group": "B",
+      "id": "B7",
+      "name": "draft_so_receivable_409",
+      "depth": "deep",
+      "timestamp": "2026-04-26T18:51:30.342Z",
+      "message": "销售订单状态不允许应收挂账 (当前: DRAFT). 仅财务审核通过及之后状态可挂账.",
+      "soId": "12bffc73-c880-47c3-a83a-bb7336611658",
+      "httpStatus": 409,
+      "status": "PASS"
+    },
+    {
+      "group": "B",
+      "id": "B8",
+      "name": "cancelled_so_receivable_409",
+      "depth": "deep",
+      "timestamp": "2026-04-26T18:51:30.844Z",
+      "message": "销售订单状态不允许应收挂账 (当前: CANCELLED). 仅财务审核通过及之后状态可挂账.",
+      "httpStatus": 409,
+      "status": "PASS"
+    },
+    {
+      "group": "B",
+      "id": "B9",
+      "name": "pending_finance_review_so_409",
+      "depth": "deep",
+      "timestamp": "2026-04-26T18:51:34.746Z",
+      "message": "销售订单状态不允许应收挂账 (当前: PENDING_FINANCE_REVIEW). 仅财务审核通过及之后状态可挂账.",
+      "httpStatus": 409,
+      "status": "PASS"
+    },
+    {
+      "group": "B",
+      "id": "B10",
+      "name": "fin_approved_so_receivable_200_or_dup_block",
+      "depth": "deep",
+      "timestamp": "2026-04-26T18:51:48.031Z",
+      "message": "该销售订单已生成应收记录",
+      "arInvoiceCountBefore": "1",
+      "arInvoiceCountAfter": "1",
+      "existingInv": "27ca5057-cb6c-4056-8265-f9b6b18fe078",
+      "passReason": "dup-check fired (V20260426_02 / app-level)",
+      "httpStatus": 400,
+      "status": "PASS"
+    },
+    {
+      "group": "B",
+      "id": "B11",
+      "name": "draft_po_payable_409",
+      "depth": "deep",
+      "timestamp": "2026-04-26T18:51:48.530Z",
+      "message": "采购订单状态不允许应付挂账 (当前: DRAFT). 仅财务审核通过及之后状态可挂账.",
+      "supplierUsed": "SUP-F001-001",
+      "poUsed": "3f45be8e-274d-4b4a-8142-ff6775a3bc06",
+      "httpStatus": 409,
+      "status": "PASS"
+    },
+    {
+      "group": "B",
+      "id": "B12",
+      "name": "draft_so_invoice_request_409",
+      "depth": "deep",
+      "timestamp": "2026-04-26T18:51:49.274Z",
+      "message": "销售订单状态不允许开票 (当前: DRAFT). 仅财务审核通过及之后状态可开票.",
+      "note": "409 expected for invariant fire",
+      "httpStatus": 409,
+      "status": "PASS"
+    },
+    {
+      "group": "C",
+      "id": "C13",
+      "name": "payment_record_draft_so_409",
+      "depth": "deep",
+      "timestamp": "2026-04-26T18:51:49.762Z",
+      "message": "销售订单状态不允许记录收款 (当前: DRAFT). 仅财务审核通过及之后状态可收款.",
+      "severity": null,
+      "httpStatus": 409,
+      "status": "PASS"
+    },
+    {
+      "group": "C",
+      "id": "C14",
+      "name": "cross_tenant_so_404_no_leak",
+      "depth": "deep",
+      "timestamp": "2026-04-26T18:51:53.248Z",
+      "message": "销售订单不存在: 405f1edb-6bc1-4b6c-896f-e77c04842804",
+      "f002SoUsed": "405f1edb-6bc1-4b6c-896f-e77c04842804",
+      "expectedPre": 200,
+      "expectedPost": 404,
+      "httpStatus": 404,
+      "status": "PASS"
+    },
+    {
+      "group": "D",
+      "id": "D15",
+      "name": "disable_finance_ap_blocks_payable",
+      "depth": "deep",
+      "timestamp": "2026-04-26T18:51:57.386Z",
+      "message": "模块 finance_ap 未启用",
+      "expected": "400 模块 finance_ap 未启用",
+      "sql": "INSERT factory_module_configs finance_ap enabled=false",
+      "httpStatus": 400,
+      "status": "PASS"
+    },
+    {
+      "group": "D",
+      "id": "C15",
+      "name": "payment_record_uses_finance_ar_not_ap",
+      "depth": "deep",
+      "timestamp": "2026-04-26T18:52:05.205Z",
+      "message": "销售订单状态不允许记录收款 (当前: DRAFT). 仅财务审核通过及之后状态可收款.",
+      "expected": "409 (status-block) NOT 400 (module-block)",
+      "httpStatus": 409,
+      "status": "PASS"
+    },
+    {
+      "group": "D",
+      "id": "D16",
+      "name": "disable_finance_ar_no_effect_on_payable",
+      "depth": "deep",
+      "timestamp": "2026-04-26T18:52:12.457Z",
+      "message": "供应商不存在",
+      "expected": "NOT 400 finance_ar (annotation correctly points to finance_ap now)",
+      "httpStatus": 404,
+      "status": "PASS"
+    },
+    {
+      "group": "E",
+      "id": "E17",
+      "name": "salesperson_no_finance_write_403",
+      "depth": "deep",
+      "timestamp": "2026-04-26T18:52:15.679Z",
+      "message": "您的角色 [销售主管] 在 [财务管理] 模块无 [读写] 权限",
+      "code": "FORBIDDEN",
+      "asUser": "sales_mgr1",
+      "httpStatus": 403,
+      "status": "PASS"
+    },
+    {
+      "group": "E",
+      "id": "E18",
+      "name": "adjustment_pending_balance_unchanged",
+      "depth": "deep",
+      "timestamp": "2026-04-26T18:52:22.005Z",
+      "message": "调整记录已提交, 等待审批",
+      "transactionId": "107e5a0f-07e7-45af-983e-ef23ef687ee4",
+      "approvalStatus": "PENDING",
+      "approvedBy": null,
+      "approvedAt": null,
+      "balanceBefore": 5000,
+      "balanceAfter": 5000,
+      "balanceDelta": 0,
+      "asUser": "factory_admin1",
+      "httpStatus": 200,
+      "status": "PASS"
+    },
+    {
+      "group": "E",
+      "id": "E19",
+      "name": "self_approve_4eye_blocked",
+      "depth": "deep",
+      "timestamp": "2026-04-26T18:52:22.599Z",
+      "message": "审批人不能与提交人相同 (4 眼原则)",
+      "asUser": "factory_admin1 (= submitter)",
+      "transactionId": "107e5a0f-07e7-45af-983e-ef23ef687ee4",
+      "httpStatus": 403,
+      "status": "PASS"
+    },
+    {
+      "group": "E",
+      "id": "E20",
+      "name": "different_user_approves_balance_changed",
+      "depth": "deep",
+      "timestamp": "2026-04-26T18:52:26.168Z",
+      "message": "调整已审批通过",
+      "approvalStatus": "APPROVED",
+      "approvedBy": 1347,
+      "balanceBefore": 5000,
+      "balanceFinal": 15000,
+      "balanceDelta": 10000,
+      "expectedDelta": 10000,
+      "asUser": "qhj_prod (≠ factory_admin1)",
+      "httpStatus": 200,
+      "status": "PASS"
+    },
+    {
+      "group": "F",
+      "id": "F19",
+      "name": "concurrent_unique_constraint_race",
+      "depth": "n/a",
+      "timestamp": "2026-04-26T18:52:26.168Z",
+      "reason": "stretch goal per handoff §F; V20260426_02 partial-unique-index already verified by Flyway success=t",
+      "status": "DEFERRED"
+    },
+    {
+      "group": "G",
+      "id": "G20",
+      "name": "soft_delete_race_during_form_submit",
+      "depth": "n/a",
+      "timestamp": "2026-04-26T18:52:26.168Z",
+      "reason": "stretch goal per handoff §G; UX bug-class, not invariant; not blocking R23 close",
+      "status": "DEFERRED"
+    }
+  ]
+}

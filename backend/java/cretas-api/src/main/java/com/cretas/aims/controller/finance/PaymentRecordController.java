@@ -29,7 +29,11 @@ public class PaymentRecordController {
 
     private final PaymentRecordService paymentRecordService;
 
-    @RequireModule("finance_ap")
+    // R23 P3 audit (independent reviewer #13): customer payment records settle SO
+    // receivables — semantically AR, not AP. Pre-R23 had @RequireModule("finance_ap")
+    // which would block AR-only tenants from recording customer payments. Fix matches
+    // the AR/AP module audit pattern from R22 C4 (ArApController.recordReceivable).
+    @RequireModule("finance_ar")
     @PostMapping("/record")
     @RequirePermission({"finance:read_write", "sales:read_write"})
     public ResponseEntity<?> recordPayment(
@@ -62,7 +66,7 @@ public class PaymentRecordController {
         return ResponseEntity.ok(Map.of("success", true, "data", record, "message", "收款记录已创建"));
     }
 
-    @RequireModule("finance_ap")
+    @RequireModule("finance_ar")  // R23 P3 audit: AR not AP (verify customer payment)
     @PostMapping("/{paymentId}/verify")
     @RequirePermission("finance:read_write")
     public ResponseEntity<?> verify(
@@ -72,7 +76,7 @@ public class PaymentRecordController {
         return ResponseEntity.ok(Map.of("success", true, "data", record, "message", "收款已确认"));
     }
 
-    @RequireModule("finance_ap")
+    @RequireModule("finance_ar")  // R23 P3 audit: AR not AP (reject customer payment)
     @PostMapping("/{paymentId}/reject")
     @RequirePermission("finance:read_write")
     public ResponseEntity<?> reject(
