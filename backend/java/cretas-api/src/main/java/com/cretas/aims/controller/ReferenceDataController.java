@@ -440,7 +440,7 @@ public class ReferenceDataController {
     public ApiResponse<Map<String, Object>> findSalesOrders(
             @PathVariable String factoryId,
             @RequestParam(required = false, defaultValue = "") String keyword,
-            @RequestParam(required = false, defaultValue = "all") String usage,
+            @RequestParam(required = false, defaultValue = "invoiceable") String usage,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "50") int size) {
         int pageSize = clampSize(size);
@@ -510,7 +510,7 @@ public class ReferenceDataController {
     public ApiResponse<Map<String, Object>> findPurchaseOrders(
             @PathVariable String factoryId,
             @RequestParam(required = false, defaultValue = "") String keyword,
-            @RequestParam(required = false, defaultValue = "all") String usage,
+            @RequestParam(required = false, defaultValue = "invoiceable") String usage,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "50") int size) {
         int pageSize = clampSize(size);

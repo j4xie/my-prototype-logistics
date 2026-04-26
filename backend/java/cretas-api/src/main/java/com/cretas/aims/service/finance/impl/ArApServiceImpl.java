@@ -36,6 +36,33 @@ public class ArApServiceImpl implements ArApService {
     private final CustomerRepository customerRepository;
     private final SupplierRepository supplierRepository;
 
+    /** R20 audit Q1: PO status validation for AP invariant. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.repository.inventory.PurchaseOrderRepository purchaseOrderRepository;
+
+    /** R20 audit: invariant — payable can only link to post-finance-approved PO.
+     *  Mirror of InvoiceServiceImpl.INVOICEABLE_SO_STATUSES (R18). */
+    private static final java.util.Set<com.cretas.aims.entity.enums.PurchaseOrderStatus> PAYABLE_PO_STATUSES =
+        java.util.Set.of(
+            com.cretas.aims.entity.enums.PurchaseOrderStatus.FINANCE_APPROVED,
+            com.cretas.aims.entity.enums.PurchaseOrderStatus.PARTIAL_RECEIVED,
+            com.cretas.aims.entity.enums.PurchaseOrderStatus.COMPLETED,
+            com.cretas.aims.entity.enums.PurchaseOrderStatus.CLOSED);
+
+    private void validatePayableStatus(String purchaseOrderId, String factoryId) {
+        if (purchaseOrderRepository == null) return;  // graceful: skip if repo not wired
+        com.cretas.aims.entity.inventory.PurchaseOrder po = purchaseOrderRepository.findById(purchaseOrderId)
+                .filter(p -> factoryId.equals(p.getFactoryId()))
+                .orElseThrow(() -> new ResourceNotFoundException("采购订单不存在: " + purchaseOrderId));
+        if (po.getStatus() == null || !PAYABLE_PO_STATUSES.contains(po.getStatus())) {
+            throw new com.cretas.aims.exception.BusinessException(409,
+                "采购订单状态不允许应付挂账 (当前: " + (po.getStatus() != null ? po.getStatus().name() : "null") +
+                "). 仅财务审核通过及之后状态可挂账.")
+                .withHint("先完成财务审核流程后再录入应付")
+                .withHintTarget("采购订单");
+        }
+    }
+
     /** Canvas V2: DB-driven validation rules */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
@@ -116,6 +143,13 @@ public class ArApServiceImpl implements ArApService {
         if (purchaseOrderId != null && transactionRepository.existsByFactoryIdAndPurchaseOrderIdAndTransactionType(
                 factoryId, purchaseOrderId, ArApTransactionType.AP_INVOICE)) {
             throw new BusinessException("该采购订单已生成应付记录");
+        }
+
+        // R20 audit Q1: enforce business invariant — payable can only be recorded against
+        // a post-finance-approved PO. Mirror of R18's invoice fix (which only covered AR).
+        // Without this, direct API POST with DRAFT/CANCELLED purchaseOrderId would bypass.
+        if (purchaseOrderId != null) {
+            validatePayableStatus(purchaseOrderId, factoryId);
         }
 
         BigDecimal newBalance = (supplier.getCurrentBalance() != null ? supplier.getCurrentBalance() : BigDecimal.ZERO)

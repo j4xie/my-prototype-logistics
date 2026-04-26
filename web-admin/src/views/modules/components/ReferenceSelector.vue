@@ -153,8 +153,16 @@ async function fetchById(id: string | number) {
   try {
     // Strip /search or /active suffix — those are LIST endpoints, not single-item GET.
     // Convention: /entities → /entities/{id} for single fetch.
-    const endpoint = resolveEndpoint().replace(/\/(search|active)$/, '')
-    const res = await request.get(`${endpoint}/${encodeURIComponent(String(id))}`, {
+    // R20 audit Q3 fix: split URL into path + query string before appending /id.
+    // Schemas now include ?usage=invoiceable etc. (V20260425_14). Naively appending
+    // /146 to /sales-orders?usage=invoiceable produces /sales-orders?usage=invoiceable/146
+    // which is an invalid URL — query param ends up inside the path segment.
+    const fullEndpoint = resolveEndpoint().replace(/\/(search|active)$/, '')
+    const queryIdx = fullEndpoint.indexOf('?')
+    const pathPart = queryIdx >= 0 ? fullEndpoint.slice(0, queryIdx) : fullEndpoint
+    const queryPart = queryIdx >= 0 ? fullEndpoint.slice(queryIdx) : ''
+    const idUrl = `${pathPart}/${encodeURIComponent(String(id))}${queryPart}`
+    const res = await request.get(idUrl, {
       _silent: true  // suppress global error toast for 404 lookups
     } as never)
     const item = res.data?.data || res.data
