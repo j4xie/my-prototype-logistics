@@ -66,6 +66,18 @@ class TopNByDim(AnalysisTemplate):
         top_rows = by_dim[primary_dim]
         total_of_top = sum(r["total"] for r in top_rows)
 
+        # Apr 26 2026 phase 4 P1.d: skip when all values are 0 — produces
+        # useless "Top 1 X 0 元 / 占比 0%" output that displaced better
+        # routing for qhj 4216 卡详情 (all 余额/本金 = 0). When data has no
+        # signal, applies=False signals downstream to keep current upload
+        # OR fall through to LLM rather than serving zero-value cache.
+        if total_of_top == 0:
+            return TemplateResult(
+                code=self.code, title=self.title, data={},
+                applies=False,
+                skip_reason=f"all {primary_dim} totals are 0 — no analytical signal",
+            )
+
         chart_config = {
             "type": "bar",
             "title": {"text": f"Top {len(top_rows)} {primary_dim} (按 {measure})", "left": "center"},
