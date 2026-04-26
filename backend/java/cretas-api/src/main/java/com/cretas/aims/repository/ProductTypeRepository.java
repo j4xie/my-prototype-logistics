@@ -55,6 +55,17 @@ public interface ProductTypeRepository extends JpaRepository<ProductType, String
                                          @Param("keyword") String keyword,
                                          Pageable pageable);
 
+    /** R10 CRIT-2: push-down isActive filter (see CustomerRepository). */
+    Page<ProductType> findByFactoryIdAndIsActiveTrue(String factoryId, Pageable pageable);
+
+    @Query("SELECT p FROM ProductType p WHERE p.factoryId = :factoryId AND p.isActive = true AND " +
+           "(LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+           "LOWER(p.code) LIKE LOWER(CONCAT(:keyword, '%')) ESCAPE '\\' OR " +
+           "LOWER(p.category) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\')")
+    Page<ProductType> searchActiveProductTypes(@Param("factoryId") String factoryId,
+                                                @Param("keyword") String keyword,
+                                                Pageable pageable);
+
     /**
      * V3 P0-2 修复 (Apr 7) — 按产品大类隔离查询.
      * 客户原话 (会议 1503-1510s): "选成品但能看到原料" — 此前 Service 完全忽略

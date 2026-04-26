@@ -58,6 +58,18 @@ public interface CustomerRepository extends JpaRepository<Customer, String> {
            "OR c.contactPerson LIKE CONCAT('%', :keyword, '%') ESCAPE '\\')")
     Page<Customer> searchByNamePaged(@Param("factoryId") String factoryId, @Param("keyword") String keyword, Pageable pageable);
 
+    /** R10 CRIT-2: push-down isActive filter for /reference-data/customers dropdown.
+     *  Replaces post-page filter that starved on factories with concentrated inactive blocks. */
+    Page<Customer> findByFactoryIdAndIsActiveTrue(String factoryId, Pageable pageable);
+
+    @Query("SELECT c FROM Customer c WHERE c.factoryId = :factoryId AND c.isActive = true " +
+           "AND (c.name LIKE CONCAT('%', :keyword, '%') ESCAPE '\\' " +
+           "OR c.customerCode LIKE CONCAT(:keyword, '%') ESCAPE '\\' " +
+           "OR c.contactPerson LIKE CONCAT('%', :keyword, '%') ESCAPE '\\')")
+    Page<Customer> searchActiveByNamePaged(@Param("factoryId") String factoryId,
+                                            @Param("keyword") String keyword,
+                                            Pageable pageable);
+
     /**
      * 根据客户类型查找客户
      */

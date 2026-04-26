@@ -53,6 +53,17 @@ public interface RawMaterialTypeRepository extends JpaRepository<RawMaterialType
     Page<RawMaterialType> searchMaterialTypes(@Param("factoryId") String factoryId,
                                               @Param("keyword") String keyword,
                                               Pageable pageable);
+
+    /** R10 CRIT-2: push-down isActive filter (see CustomerRepository). */
+    Page<RawMaterialType> findByFactoryIdAndIsActiveTrue(String factoryId, Pageable pageable);
+
+    @Query("SELECT r FROM RawMaterialType r WHERE r.factoryId = :factoryId AND r.isActive = true AND " +
+           "(LOWER(r.name) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+           "LOWER(r.code) LIKE LOWER(CONCAT(:keyword, '%')) ESCAPE '\\' OR " +
+           "LOWER(r.category) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\')")
+    Page<RawMaterialType> searchActiveMaterialTypes(@Param("factoryId") String factoryId,
+                                                    @Param("keyword") String keyword,
+                                                    Pageable pageable);
      /**
      * 检查代码是否存在
       */

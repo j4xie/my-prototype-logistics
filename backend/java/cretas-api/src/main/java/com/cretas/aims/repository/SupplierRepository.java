@@ -60,6 +60,17 @@ public interface SupplierRepository extends JpaRepository<Supplier, String> {
                                      @Param("keyword") String keyword,
                                      Pageable pageable);
 
+    /** R10 CRIT-2: push-down isActive filter (see CustomerRepository). */
+    Page<Supplier> findByFactoryIdAndIsActiveTrue(String factoryId, Pageable pageable);
+
+    @Query("SELECT s FROM Supplier s WHERE s.factoryId = :factoryId AND s.isActive = true " +
+           "AND (s.name LIKE CONCAT('%', :keyword, '%') ESCAPE '\\' " +
+           "OR s.supplierCode LIKE CONCAT(:keyword, '%') ESCAPE '\\' " +
+           "OR s.contactPerson LIKE CONCAT('%', :keyword, '%') ESCAPE '\\')")
+    Page<Supplier> searchActiveByNamePaged(@Param("factoryId") String factoryId,
+                                            @Param("keyword") String keyword,
+                                            Pageable pageable);
+
     /**
      * 根据供应材料类型查找供应商
      */

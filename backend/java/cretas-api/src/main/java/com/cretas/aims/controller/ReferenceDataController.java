@@ -223,22 +223,18 @@ public class ReferenceDataController {
             @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "50") int size) {
-        // R8 audit C2 fix: over-fetch (size*4 capped 200) so post-page isActive filter
-        // doesn't starve dropdowns when DB page 1 contains many inactive entries.
-        // Same pattern as /employees (the original size*4 design from R4).
-        int pageSize = clampSize(size);
+        // R10 CRIT-2 fix: JPQL push-down isActive filter via findByFactoryIdAndIsActiveTrue
+        // / searchActiveByNamePaged. Replaces R8's probabilistic post-page filter that
+        // starved on factories with concentrated inactive blocks (e.g. bulk-deactivated
+        // import). totalElements now correct, no over-fetch needed.
         org.springframework.data.domain.PageRequest pageable = PageRequest.of(
-                Math.max(page - 1, 0), Math.min(pageSize * 4, 200),
+                Math.max(page - 1, 0), clampSize(size),
                 Sort.by(Sort.Direction.ASC, "name"));
         String esc = SqlLikeEscaper.escape(keyword);
         Page<Customer> result = (esc == null || esc.isBlank())
-                ? customerRepository.findByFactoryId(factoryId, pageable)
-                : customerRepository.searchByNamePaged(factoryId, esc, pageable);
-        List<Customer> filtered = result.getContent().stream()
-                .filter(c -> Boolean.TRUE.equals(c.getIsActive()))
-                .collect(Collectors.toList());
-        List<Map<String, Object>> content = filtered.stream()
-                .limit(pageSize)
+                ? customerRepository.findByFactoryIdAndIsActiveTrue(factoryId, pageable)
+                : customerRepository.searchActiveByNamePaged(factoryId, esc, pageable);
+        List<Map<String, Object>> content = result.getContent().stream()
                 .map(c -> {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("id", c.getId());
@@ -248,7 +244,7 @@ public class ReferenceDataController {
                     return m;
                 })
                 .collect(Collectors.toList());
-        return wrap(content, filtered.size());
+        return wrap(content, result.getTotalElements());
     }
 
     /** 供应商查找. */
@@ -259,20 +255,15 @@ public class ReferenceDataController {
             @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "50") int size) {
-        // R8 audit C2 fix: over-fetch + post-filter (see findCustomers).
-        int pageSize = clampSize(size);
+        // R10 CRIT-2 fix: JPQL push-down (see findCustomers).
         org.springframework.data.domain.PageRequest pageable = PageRequest.of(
-                Math.max(page - 1, 0), Math.min(pageSize * 4, 200),
+                Math.max(page - 1, 0), clampSize(size),
                 Sort.by(Sort.Direction.ASC, "name"));
         String esc = SqlLikeEscaper.escape(keyword);
         Page<Supplier> result = (esc == null || esc.isBlank())
-                ? supplierRepository.findByFactoryId(factoryId, pageable)
-                : supplierRepository.searchByNamePaged(factoryId, esc, pageable);
-        List<Supplier> filtered = result.getContent().stream()
-                .filter(s -> Boolean.TRUE.equals(s.getIsActive()))
-                .collect(Collectors.toList());
-        List<Map<String, Object>> content = filtered.stream()
-                .limit(pageSize)
+                ? supplierRepository.findByFactoryIdAndIsActiveTrue(factoryId, pageable)
+                : supplierRepository.searchActiveByNamePaged(factoryId, esc, pageable);
+        List<Map<String, Object>> content = result.getContent().stream()
                 .map(s -> {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("id", s.getId());
@@ -282,7 +273,7 @@ public class ReferenceDataController {
                     return m;
                 })
                 .collect(Collectors.toList());
-        return wrap(content, filtered.size());
+        return wrap(content, result.getTotalElements());
     }
 
     /** 产品/SKU 查找 (订单明细 productTypeId). */
@@ -293,20 +284,15 @@ public class ReferenceDataController {
             @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "50") int size) {
-        // R8 audit C2 fix: over-fetch + post-filter (see findCustomers).
-        int pageSize = clampSize(size);
+        // R10 CRIT-2 fix: JPQL push-down (see findCustomers).
         org.springframework.data.domain.PageRequest pageable = PageRequest.of(
-                Math.max(page - 1, 0), Math.min(pageSize * 4, 200),
+                Math.max(page - 1, 0), clampSize(size),
                 Sort.by(Sort.Direction.ASC, "name"));
         String esc = SqlLikeEscaper.escape(keyword);
         Page<ProductType> result = (esc == null || esc.isBlank())
-                ? productTypeRepository.findByFactoryId(factoryId, pageable)
-                : productTypeRepository.searchProductTypes(factoryId, esc, pageable);
-        List<ProductType> filtered = result.getContent().stream()
-                .filter(p -> Boolean.TRUE.equals(p.getIsActive()))
-                .collect(Collectors.toList());
-        List<Map<String, Object>> content = filtered.stream()
-                .limit(pageSize)
+                ? productTypeRepository.findByFactoryIdAndIsActiveTrue(factoryId, pageable)
+                : productTypeRepository.searchActiveProductTypes(factoryId, esc, pageable);
+        List<Map<String, Object>> content = result.getContent().stream()
                 .map(p -> {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("id", p.getId());
@@ -318,7 +304,7 @@ public class ReferenceDataController {
                     return m;
                 })
                 .collect(Collectors.toList());
-        return wrap(content, filtered.size());
+        return wrap(content, result.getTotalElements());
     }
 
     /** 原材料查找 (bom.materialTypeId 等). Apr 25 2026 audit: bom DYNAMIC mode active vulnerable
@@ -330,20 +316,15 @@ public class ReferenceDataController {
             @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "50") int size) {
-        // R8 audit C2 fix: over-fetch + post-filter (see findCustomers).
-        int pageSize = clampSize(size);
+        // R10 CRIT-2 fix: JPQL push-down (see findCustomers).
         org.springframework.data.domain.PageRequest pageable = PageRequest.of(
-                Math.max(page - 1, 0), Math.min(pageSize * 4, 200),
+                Math.max(page - 1, 0), clampSize(size),
                 Sort.by(Sort.Direction.ASC, "name"));
         String esc = SqlLikeEscaper.escape(keyword);
         Page<RawMaterialType> result = (esc == null || esc.isBlank())
-                ? materialTypeRepository.findByFactoryId(factoryId, pageable)
-                : materialTypeRepository.searchMaterialTypes(factoryId, esc, pageable);
-        List<RawMaterialType> filtered = result.getContent().stream()
-                .filter(m -> Boolean.TRUE.equals(m.getIsActive()))
-                .collect(Collectors.toList());
-        List<Map<String, Object>> content = filtered.stream()
-                .limit(pageSize)
+                ? materialTypeRepository.findByFactoryIdAndIsActiveTrue(factoryId, pageable)
+                : materialTypeRepository.searchActiveMaterialTypes(factoryId, esc, pageable);
+        List<Map<String, Object>> content = result.getContent().stream()
                 .map(m -> {
                     Map<String, Object> mp = new LinkedHashMap<>();
                     mp.put("id", m.getId());
@@ -354,7 +335,7 @@ public class ReferenceDataController {
                     return mp;
                 })
                 .collect(Collectors.toList());
-        return wrap(content, filtered.size());
+        return wrap(content, result.getTotalElements());
     }
 
     /** GET-by-id for material. Reviewer Issue #1 same pattern. */
@@ -397,7 +378,7 @@ public class ReferenceDataController {
         String esc = keyword == null ? "" : keyword.trim();
         java.time.LocalDate today = java.time.LocalDate.now();
         List<OperationalQuote> filtered = result.getContent().stream()
-                .filter(q -> "APPROVED".equals(q.getStatus()))
+                .filter(q -> com.cretas.aims.service.sales.impl.OperationalQuoteServiceImpl.STATUS_APPROVED.equals(q.getStatus()))
                 .filter(q -> q.getValidUntil() == null || !q.getValidUntil().isBefore(today))
                 .filter(q -> esc.isEmpty() || (q.getQuoteNo() != null && q.getQuoteNo().contains(esc)))
                 .collect(Collectors.toList());

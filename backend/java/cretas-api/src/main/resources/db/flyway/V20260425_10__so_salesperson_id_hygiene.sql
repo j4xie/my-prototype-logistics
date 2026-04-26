@@ -17,6 +17,13 @@
 --
 -- 3. NOT a Java/Hibernate change — this is purely a data hygiene migration.
 --
+-- 4. NEW orphan creation is blocked at runtime by SalesServiceImpl.resolveSalespersonField:
+--    it does userRepository.findById(...) which Hibernate filters via @Where(deleted_at IS NULL)
+--    on User (BaseEntity:33), so soft-deleted users return Optional.empty → throws
+--    ResourceNotFoundException. So this migration is one-shot historical cleanup;
+--    NEW saves cannot create new orphans. Future raw-SQL batch scripts that bypass
+--    Hibernate (like V20260425_06 backfill did) MUST add `u.deleted_at IS NULL`.
+--
 -- Long-term: an ops-side hygiene job (cron or scheduled task) should periodically
 -- run a similar query and either alert or auto-clean. Tracked separately.
 
