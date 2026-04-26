@@ -418,7 +418,19 @@ public class GlobalExceptionHandler {
             // R27 P4 (reviewer #15 IMPORTANT-2): same wording fix as DuplicateKey above —
             // "刷新列表确认" implied opt-lock semantics. Unique violation is "field uniqueness
             // exhausted by prior commit" — user should check form, not refresh.
-            actionHint = "请检查表单中的唯一字段(如编号/名称),或返回列表查看已存在记录";
+            // R27.1 follow-up (reviewer #17 IMPORTANT-1): "(如编号/名称)" too narrow —
+            // codebase has unique constraints on phone/token/batch_number/employee_code/etc.
+            // Extract actual column from PG's "Key (col)=(val) already exists" pattern, or
+            // fall back to generic if extraction fails. Mirror of the FK-branch hintTarget logic.
+            java.util.regex.Matcher uvm = java.util.regex.Pattern
+                .compile("Key \\(([^)]+)\\)=\\(").matcher(raw);
+            if (uvm.find()) {
+                String col = uvm.group(1);
+                actionHint = "请检查表单中字段「" + col + "」是否已存在,或返回列表查看已存在记录";
+                hintTarget = col;
+            } else {
+                actionHint = "请检查表单中的唯一字段是否已存在,或返回列表查看已存在记录";
+            }
         } else if (isFkViolation) {
             // 尝试从错误消息提取被引用的目标表, 给用户清晰线索
             message = "无法删除: 该数据仍被其他记录引用";
