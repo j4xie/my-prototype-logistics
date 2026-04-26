@@ -47,12 +47,33 @@ class TopNByDim(AnalysisTemplate):
         return bool(schema.dimensions) and schema.primary_measure is not None
 
     def compute(self, backend: ComputeBackend, schema: DataSchema) -> TemplateResult:
+        import re as _re
         measure = schema.primary_measure
+        # Apr 26 2026 phase 6 (UX/F4 fix): skip dimensions whose top labels
+        # look like numbers. xmx 4228 (4月付款报表) had pandas-renamed
+        # duplicate 支付类型/.1/.2 columns where each "label" was actually a
+        # numeric string (e.g. "1481792.15"). These rendered as
+        # "支付类型 Top 10: 1481792.15 独占 99.2%" garbage. Now we filter:
+        # if ≥50% of a dim's top labels are pure numerics, skip that dim.
+        _NUM_LIKE = _re.compile(r'^-?\d+(\.\d+)?$')
+
+        def _dim_has_numeric_labels(rows):
+            if not rows:
+                return False
+            num_cnt = sum(
+                1 for r in rows
+                if isinstance(r.get('label'), (int, float))
+                or (isinstance(r.get('label'), str) and _NUM_LIKE.match(r['label'].strip()))
+            )
+            return num_cnt / len(rows) >= 0.5
+
         # Run on every dimension; pick the one with the most variation as "primary dim"
         by_dim = {}
         for dim in schema.dimensions[:4]:  # cap to avoid combinatorial blow-up
             top = backend.top_n(dim, measure, self.TOP_N)
             if len(top) >= 2:  # skip single-label dims (useless chart)
+                if _dim_has_numeric_labels(top):
+                    continue  # F4 fix: don't expose numeric labels as dim
                 by_dim[dim] = top
 
         if not by_dim:
