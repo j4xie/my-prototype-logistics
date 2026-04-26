@@ -73,14 +73,29 @@ def test_allow_cache_when_domain_aligned():
     ) is False
 
 
-def test_allow_when_template_unknown():
-    # top_n_by_dim is intentionally not in TEMPLATE_DOMAIN (multi-domain).
+def test_allow_top_n_by_dim_for_native_domains():
+    # top_n_by_dim is multi-domain. Native domains (dish/store/channel/etc.)
+    # should be allowed.
+    assert should_reject_cache("畅销品 Top 5", "top_n_by_dim") is False
+    assert should_reject_cache("哪家店业绩最好", "top_n_by_dim") is False
+    assert should_reject_cache("微信支付占比", "top_n_by_dim") is False
+
+
+def test_reject_top_n_by_dim_for_mismatch_domains():
+    # S4 audit P0 fix: top_n_by_dim is unsuitable for review/finance/staff/etc.
+    # qhj-fu-15-1 case: review query routed to top_n_by_dim sales — must reject.
     assert should_reject_cache(
-        "畅销品 Top 5", "top_n_by_dim"
-    ) is False
+        "Top 1 提及菜被夸什么", "top_n_by_dim"
+    ) is True
     assert should_reject_cache(
-        "哪家店业绩最好", "top_n_by_dim"
-    ) is False
+        "员工业绩排名", "top_n_by_dim"
+    ) is True
+    assert should_reject_cache(
+        "上月利润 Top 3 来源", "top_n_by_dim"
+    ) is True
+    assert should_reject_cache(
+        "异常订单 Top 5", "top_n_by_dim"
+    ) is True
 
 
 def test_allow_when_query_undetectable():

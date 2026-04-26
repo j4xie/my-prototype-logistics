@@ -54,6 +54,10 @@ def test_build_context_block_with_complete_parent():
     assert "上一轮回答" in block
     assert "15.4M" in block
     assert block.endswith("---\n\n")
+    # S4 audit P2 fix: prompt must require explicit "承上启下" not just
+    # inline references — boosts Coherence score.
+    assert "本轮回答规则" in block
+    assert "承上启下" in block
 
 
 def test_build_context_block_returns_empty_when_missing_fields():

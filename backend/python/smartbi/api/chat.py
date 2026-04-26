@@ -1287,6 +1287,30 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
 
                                     if upload_id_dim_aware is not None:
                                         upload_id = upload_id_dim_aware
+                                    elif matched_code == 'top_n_by_dim':
+                                        # S4 audit P0 fix (Apr 26 2026): when
+                                        # dim-aware search finds no upload with
+                                        # a dim matching user intent, AND user
+                                        # has clear domain hint, force LLM
+                                        # (with v2 parent context) instead of
+                                        # falling to "largest upload" with
+                                        # mismatched dim. xmx-fu-29-2 case:
+                                        # query 'store domain' but xmx data has
+                                        # no store dim → fallback gave 订单类型
+                                        # Top 2 instead of forcing LLM.
+                                        try:
+                                            from smartbi.services.cache_intent_classifier import (
+                                                classify_query_domain as _cdom,
+                                            )
+                                            if _cdom(user_q):
+                                                logger.info(
+                                                    f"[stream] top_n_by_dim dim-aware miss + "
+                                                    f"user has domain hint → forcing LLM "
+                                                    f"(query={user_q[:30]!r})"
+                                                )
+                                                matched_code = None  # fall through to LLM
+                                        except Exception:
+                                            pass
                                     else:
                                         _row = await _conn.fetchrow(
                                             """
@@ -2016,15 +2040,40 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
             )
 
             # ── Stream LLM response (lower max_tokens + temperature for speed) ──
+            # S4 audit P1 fix (Apr 26 2026): 25s soft cut-off. v2 conv memory
+            # adds ~500 token of parent context, which lengthens LLM chain-of-
+            # thought. S4 audit caught 5 new gml 30s+ timeouts with parent ctx.
+            # If LLM streaming exceeds 25s wall, yield whatever we have so far
+            # and append a note — users get a partial answer instead of 60s
+            # timeout 0 字. 25s is the soft threshold (not the FE 30s watchdog).
             full_text = ""
+            _llm_start = time.time()
+            _LLM_SOFT_TIMEOUT_S = 25.0
+            _llm_truncated = False
             async for chunk in insight_gen._call_llm_stream_text(
                 prompt, system_role, max_tokens=1500, temperature=0.2
             ):
                 if await http_request.is_disconnected():
                     logger.info("[stream] Client disconnected, stopping")
                     return
+                _llm_elapsed = time.time() - _llm_start
+                if _llm_elapsed > _LLM_SOFT_TIMEOUT_S and full_text:
+                    # We have at least some text — give up the rest gracefully.
+                    _llm_truncated = True
+                    logger.warning(
+                        f"[stream] LLM soft timeout {_llm_elapsed:.1f}s > "
+                        f"{_LLM_SOFT_TIMEOUT_S}s, truncating with "
+                        f"{len(full_text)} chars accumulated"
+                    )
+                    break
                 full_text += chunk
                 yield _sse_event("chunk", chunk)
+            if _llm_truncated:
+                # Add a stop marker so the user understands why the answer
+                # ends abruptly. Stays inside the answer text (not warning).
+                _trunc_note = "\n\n*(分析超过 25 秒已截断,可重问获取完整回答)*"
+                full_text += _trunc_note
+                yield _sse_event("chunk", _trunc_note)
 
             # ── Build charts in parallel (non-blocking) ──
             charts = []

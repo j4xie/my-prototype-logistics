@@ -97,7 +97,9 @@ QUERY_DOMAIN_HINTS: dict[str, list[str]] = {
     'payment': ['支付', '付款', '微信', '支付宝', '现金'],
     'member': ['会员', '客户', '用户', 'VIP', '储值', '充值', '复购'],
     'finance': ['利润', '毛利', '净利', '营收', '收入', '成本', '费用', '财报', '损益'],
-    'review': ['评价', '评论', '口碑', '差评', '好评', '星级', '评分'],
+    'review': ['评价', '评论', '口碑', '差评', '好评', '星级', '评分',
+               '提及', '被夸', '被赞', '被点赞', '提到', '被吐槽', '被批评',
+               '夸什么', '夸赞', '抱怨', '反馈'],
     'staff': ['员工', '服务员', '收银员', '厨师', '人效', '人均产出'],
     'refund': ['退款', '退单', '撤单', '反结算', '取消'],
     'promotion': ['促销', '优惠', '券', '满减', '打折', '活动'],
@@ -130,25 +132,60 @@ def classify_query_domain(query: str) -> Optional[str]:
     return None
 
 
+# Domains that top_n_by_dim should NOT serve. top_n_by_dim does "rank items
+# by a measure within a dimension" — it's a fit for dish/store/channel/etc.
+# but a misfit for review/finance/staff/etc. queries (which need narrative
+# analysis, not Top-N rankings).
+#
+# S4 audit (Apr 26 2026) caught two F4-class regressions both routing to
+# top_n_by_dim from review/store-comparison queries:
+#   - qhj-fu-15-1 "Top 1 提及菜被夸什么" (review domain) → top_n_by_dim sales
+#   - xmx-fu-29-2 "单店 vs 区域同业差距通常多少" (store-compare domain) →
+#     top_n_by_dim 订单类型 占比
+TOP_N_REJECT_DOMAINS: set[str] = {
+    'review',     # 评论/评价 → reviews_sentiment_summary or LLM
+    'finance',    # 利润/营收 → profit_loss_statement or revenue_*
+    'staff',      # 员工/人效 → staff_performance or LLM
+    'refund',     # 退款/撤单 → refund_analysis or LLM
+    'promotion',  # 促销/优惠 → promotion_impact or LLM
+    'inventory',  # 库存/进货 → purchase_inventory_inflow or LLM
+    'anomaly',    # 异常/突变 → anomaly_detection (specifically) or LLM
+}
+
+
 def should_reject_cache(query: str, template_code: str) -> bool:
     """Return True iff the query's detected domain conflicts with the
     matched template's domain.
 
     Conservative — returns False (allow cache) when:
     - Query domain undetectable (no hint keywords)
-    - Template not in TEMPLATE_DOMAIN (unknown / multi-domain like top_n_by_dim)
+    - Template not in TEMPLATE_DOMAIN AND not top_n_by_dim
     - Domains agree
 
-    Only rejects when both sides are known and DIFFERENT.
+    Special-case top_n_by_dim (multi-domain template): reject when query
+    domain is in TOP_N_REJECT_DOMAINS (domains where Top-N rankings are
+    inappropriate). S4 audit P0 fix.
     """
     if not query or not template_code:
         return False
-    template_domain = TEMPLATE_DOMAIN.get(template_code)
-    if template_domain is None:
-        return False  # unknown / multi-domain template — let it through
     query_domain = classify_query_domain(query)
     if query_domain is None:
         return False  # query domain undetectable — don't risk false positive
+
+    # Special-case: top_n_by_dim is multi-domain but unsuitable for a fixed
+    # set of analytical types. Reject those.
+    if template_code == 'top_n_by_dim':
+        if query_domain in TOP_N_REJECT_DOMAINS:
+            logger.info(
+                f"[intent-classifier] cache REJECTED (top_n_by_dim mis-route): "
+                f"query_domain={query_domain} not suitable for Top-N (template=top_n_by_dim)"
+            )
+            return True
+        return False  # other domains OK with top_n_by_dim
+
+    template_domain = TEMPLATE_DOMAIN.get(template_code)
+    if template_domain is None:
+        return False  # unknown / other multi-domain template — let it through
     if query_domain == template_domain:
         return False  # aligned, allow cache
     # Genuine mismatch — reject.

@@ -163,14 +163,25 @@ def build_context_block(parent: Dict[str, Any]) -> str:
 
     Returns Chinese-formatted block to prepend to the user_prompt. Empty
     string if parent dict missing required fields.
+
+    S4 audit P2 fix (Apr 26 2026): the prompt was too soft — only 4/270
+    follow-up answers explicitly said "上一轮", most used inline entity refs
+    which are harder to audit and weaker on Coherence (1-5). New prompt
+    requires the LLM to explicitly anchor: "上一轮已回答: [parent fact]" then
+    give the new analysis, so reviewers can verify continuity.
     """
     pq = (parent.get("parent_query") or "").strip()
     pa = (parent.get("parent_answer_summary") or "").strip()
     if not pq or not pa:
         return ""
     return (
-        "## 上一轮对话 (供本轮指代消解和延续分析)\n"
+        "## 上一轮对话 (本轮回答必须显式延续此处的实体和数字)\n"
         f"上一轮提问: {pq}\n\n"
         f"上一轮回答摘要: {pa}\n\n"
+        "**本轮回答规则**:\n"
+        "1. 开头第一句必须显式承上启下 — 例如 `基于上一轮 X 数据/Y 实体` 或 `上一轮已说明 X,本轮分析 Y`\n"
+        "2. 复用上一轮的具体数字 (金额/百分比/Top N 实体名),不要重新计算或介绍\n"
+        "3. 只回答本轮新问题,不要重复上一轮的全部内容\n"
+        "4. 如果上一轮没提到本轮所需信息,明确说 `上一轮未涉及 X,基于当前数据补充分析`\n\n"
         "---\n\n"
     )
