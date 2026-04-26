@@ -33,7 +33,7 @@ import uuid
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 
 from smartbi.database.connection import SessionLocal
@@ -168,12 +168,18 @@ async def auto_parse_async(
 
 
 @router.get("/auto-parse-status/{upload_id}")
-async def auto_parse_status(upload_id: int):
+async def auto_parse_status(upload_id: int, request: Request):
     """
     Poll status of async upload. Returns:
     - status (PENDING / PROCESSING / COMPLETED / FAILED)
     - fileName, rowCount, columnCount, detectedTableType (when COMPLETED)
     - error (when FAILED)
+
+    Apr 26 2026 IDOR fix (P0 from security audit): endpoint was in
+    PUBLIC_PREFIXES whitelist (/api/smartbi/excel/) so anyone could
+    enumerate upload_ids and read other tenants' data including
+    factoryId + 17 column names + 20 rows of preview business data.
+    Now: explicit factory_id check.
     """
     if SessionLocal is None:
         raise HTTPException(status_code=503, detail="Database not available")
@@ -184,6 +190,49 @@ async def auto_parse_status(upload_id: int):
         )
         if not upload:
             raise HTTPException(status_code=404, detail="Upload not found")
+
+        # Security check: verify caller's factory_id matches upload's.
+        # JWT path: request.state.factory_id populated by auth_middleware.
+        # Internal Java path: X-Internal-Secret + X-Factory-Id header.
+        # Public/anonymous: blocked.
+        caller_factory_id = (
+            getattr(request.state, "factory_id", None)
+            if hasattr(request, "state") else None
+        )
+        # The endpoint is currently in PUBLIC_PREFIXES; auth_middleware doesn't
+        # populate state. Re-extract from headers manually to enforce here.
+        if not caller_factory_id:
+            # Try X-Internal-Secret (Java internal)
+            internal_secret = request.headers.get("x-internal-secret", "")
+            expected = os.environ.get("INTERNAL_API_SECRET", "")
+            if expected and internal_secret == expected:
+                caller_factory_id = request.headers.get("x-factory-id") or "INTERNAL"
+            else:
+                # Try Bearer token (frontend)
+                auth_header = request.headers.get("authorization", "")
+                if auth_header.startswith("Bearer "):
+                    token = auth_header[7:]
+                    try:
+                        from jose import jwt
+                        secret = os.environ.get("JWT_SECRET", "default-secret")
+                        claims = jwt.decode(token, secret, algorithms=["HS256"])
+                        caller_factory_id = claims.get("factoryId")
+                    except Exception:
+                        caller_factory_id = None
+        if not caller_factory_id:
+            raise HTTPException(
+                status_code=401,
+                detail="Authentication required (Bearer token or X-Internal-Secret).",
+            )
+        # Internal callers can read any factory; JWT users restricted to own.
+        if caller_factory_id != "INTERNAL" and caller_factory_id != upload.factory_id:
+            raise HTTPException(
+                status_code=403,
+                detail=(
+                    f"Access denied: you belong to {caller_factory_id}, "
+                    f"upload {upload_id} belongs to {upload.factory_id}"
+                ),
+            )
 
         result = {
             "success": True,
