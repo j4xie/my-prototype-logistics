@@ -46,7 +46,8 @@ DECLARE
 BEGIN
   SELECT COUNT(*) INTO v_count
   FROM module_schemas, jsonb_array_elements(field_schema) f
-  WHERE f->>'fieldCode' IN ('batchId', 'productBatchId')
+  WHERE jsonb_typeof(field_schema) = 'array'  -- guard: some schemas are wrapper-shape {fields:[...]}
+    AND f->>'fieldCode' IN ('batchId', 'productBatchId')
     AND f->'referenceConfig'->>'apiEndpoint' = '/api/mobile/{factoryId}/reference-data/batches';
 
   RAISE NOTICE 'V20260425_12: % batch fields re-pointed to /batches endpoint', v_count;
