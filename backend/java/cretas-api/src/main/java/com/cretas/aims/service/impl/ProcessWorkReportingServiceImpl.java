@@ -65,7 +65,12 @@ public class ProcessWorkReportingServiceImpl implements ProcessWorkReportingServ
 
         // Idempotency: only approve if currently PENDING
         if (!"PENDING".equals(report.getApprovalStatus())) {
-            throw new BusinessException(409, "报工记录已被处理，当前状态: " + report.getApprovalStatus());
+            // R25 follow-up (reviewer #15 Critical-1, qa-prompt v2.4 Rule 15.b sweep):
+            // emit actionHint so FE interceptor differentiates from vanilla optimistic-lock
+            // 409 (no actionHint → suppressed). Pre-fix: silent failure on double-approve.
+            throw new BusinessException(409, "报工记录已被处理，当前状态: " + report.getApprovalStatus())
+                    .withHint("请刷新报工列表查看最新审批状态")
+                    .withHintTarget("报工记录");
         }
 
         report.setApprovalStatus("APPROVED");
@@ -94,7 +99,10 @@ public class ProcessWorkReportingServiceImpl implements ProcessWorkReportingServ
         }
 
         if (!"PENDING".equals(report.getApprovalStatus())) {
-            throw new BusinessException(409, "报工记录已被处理，当前状态: " + report.getApprovalStatus());
+            // R25 follow-up (reviewer #15 Critical-1)
+            throw new BusinessException(409, "报工记录已被处理，当前状态: " + report.getApprovalStatus())
+                    .withHint("请刷新报工列表查看最新审批状态")
+                    .withHintTarget("报工记录");
         }
 
         report.setApprovalStatus("REJECTED");

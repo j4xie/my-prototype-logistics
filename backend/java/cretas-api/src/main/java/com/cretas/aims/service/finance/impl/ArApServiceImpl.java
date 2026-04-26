@@ -354,7 +354,12 @@ public class ArApServiceImpl implements ArApService {
                 .orElseThrow(() -> new ResourceNotFoundException("调整记录不存在: " + transactionId));
 
         if (txn.getApprovalStatus() != com.cretas.aims.entity.enums.ArApApprovalStatus.PENDING) {
-            throw new BusinessException(409, "只能审批 PENDING 状态的调整, 当前: " + txn.getApprovalStatus());
+            // R25 follow-up (reviewer #15 Critical-1, qa-prompt v2.4 Rule 15.b sweep):
+            // emit actionHint so FE interceptor differentiates from vanilla optimistic-lock
+            // 409 (no actionHint → suppressed). Pre-fix: silent failure on double-approve.
+            throw new BusinessException(409, "只能审批 PENDING 状态的调整, 当前: " + txn.getApprovalStatus())
+                    .withHint("请刷新调整列表查看最新状态")
+                    .withHintTarget("调整记录");
         }
         if (txn.getTransactionType() != ArApTransactionType.AR_ADJUSTMENT
                 && txn.getTransactionType() != ArApTransactionType.AP_ADJUSTMENT) {
@@ -362,7 +367,9 @@ public class ArApServiceImpl implements ArApService {
         }
         // 4-eyes principle: approver must differ from submitter
         if (txn.getOperatedBy() != null && txn.getOperatedBy().equals(approvedBy)) {
-            throw new BusinessException(403, "审批人不能与提交人相同 (4 眼原则)");
+            throw new BusinessException(403, "审批人不能与提交人相同 (4 眼原则)")
+                    .withHint("请使用其他账号审批")
+                    .withHintTarget("审批人");
         }
 
         BigDecimal amount = txn.getAmount();
@@ -401,10 +408,15 @@ public class ArApServiceImpl implements ArApService {
                 .orElseThrow(() -> new ResourceNotFoundException("调整记录不存在: " + transactionId));
 
         if (txn.getApprovalStatus() != com.cretas.aims.entity.enums.ArApApprovalStatus.PENDING) {
-            throw new BusinessException(409, "只能驳回 PENDING 状态的调整, 当前: " + txn.getApprovalStatus());
+            // R25 follow-up (reviewer #15 Critical-1)
+            throw new BusinessException(409, "只能驳回 PENDING 状态的调整, 当前: " + txn.getApprovalStatus())
+                    .withHint("请刷新调整列表查看最新状态")
+                    .withHintTarget("调整记录");
         }
         if (txn.getOperatedBy() != null && txn.getOperatedBy().equals(approvedBy)) {
-            throw new BusinessException(403, "审批人不能与提交人相同 (4 眼原则)");
+            throw new BusinessException(403, "审批人不能与提交人相同 (4 眼原则)")
+                    .withHint("请使用其他账号驳回")
+                    .withHintTarget("审批人");
         }
 
         // 余额不动. 在 remark 末尾追加驳回原因, 历史可追溯.
