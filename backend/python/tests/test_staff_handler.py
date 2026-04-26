@@ -137,10 +137,13 @@ async def test_cross_store_match_autocreates_and_queues_admin():
     assert args[1] == "F001"          # factory_id
     assert args[2] == "王五"           # raw_name
     assert args[3] == 999             # candidate_entity_id (new staff)
-    # JSON candidate_staff_ids
+    # JSON dropped_row_refs is list-of-dicts per V20260426_01 column comment
     import json
     payload = json.loads(args[4])
-    assert payload == {"candidate_staff_ids": [100, 101]}
+    assert payload == [
+        {"candidate_staff_id": 100, "store_id": None},
+        {"candidate_staff_id": 101, "store_id": None},
+    ]
 
 
 async def test_cross_store_with_different_name_no_admin_queue():

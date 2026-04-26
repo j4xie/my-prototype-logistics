@@ -43,20 +43,19 @@ def _decide_slot(
 def _prompt_choice() -> Optional[Label]:
     """Read a single keystroke choice from stdin. Returns None on quit/skip."""
     raw = input("[m]atch / [n]o_match / [u]nsure / [s]kip / [q]uit: ").strip().lower()
-    match raw:
-        case "m" | "match":
-            return "match"
-        case "n" | "no" | "no_match":
-            return "no_match"
-        case "u" | "unsure":
-            return "unsure"
-        case "s" | "skip":
-            return None
-        case "q" | "quit" | "exit":
-            raise KeyboardInterrupt
-        case _:
-            print("  ? unrecognized — try again")
-            return _prompt_choice()
+    if raw in ("m", "match"):
+        return "match"
+    elif raw in ("n", "no", "no_match"):
+        return "no_match"
+    elif raw in ("u", "unsure"):
+        return "unsure"
+    elif raw in ("s", "skip"):
+        return None
+    elif raw in ("q", "quit", "exit"):
+        raise KeyboardInterrupt
+    else:
+        print("  ? unrecognized — try again")
+        return _prompt_choice()
 
 
 async def _fetch_pending(

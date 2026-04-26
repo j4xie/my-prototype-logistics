@@ -10,6 +10,7 @@ Current simplifications:
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 from datetime import date, datetime
@@ -57,6 +58,23 @@ def _to_date(value: Any) -> Optional[date]:
             except ValueError:
                 continue
     return None
+
+
+def _compute_review_row_hash(
+    row: Dict[str, Any], factory_id: str, upload_id: int
+) -> str:
+    """Deterministic hash for idempotent fact_review_event re-run."""
+    parts = [
+        str(factory_id),
+        str(upload_id),
+        str(_canonical_value(row, "review_text") or ""),
+        str(_canonical_value(row, "rating") or ""),
+        str(_canonical_value(row, "review_date") or ""),
+        str(_canonical_value(row, "store_name") or ""),
+        str(_canonical_value(row, "product_name") or ""),
+    ]
+    raw = "|".join(parts)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
 class ReviewWriter(BaseWriter):
@@ -120,6 +138,8 @@ class ReviewWriter(BaseWriter):
                         if product_id_for_summary is None:
                             product_id_for_summary = product_id_resolved
 
+                row_hash = _compute_review_row_hash(row, factory_id, upload_id)
+
                 fact_rows.append(
                     (
                         factory_id,
@@ -129,6 +149,7 @@ class ReviewWriter(BaseWriter):
                         rating,
                         str(review_text) if review_text is not None else None,
                         review_dt,
+                        row_hash,
                     )
                 )
 
@@ -141,12 +162,18 @@ class ReviewWriter(BaseWriter):
 
             for i in range(0, len(fact_rows), self.FACT_BATCH_SIZE):
                 batch = fact_rows[i : i + self.FACT_BATCH_SIZE]
+                # ON CONFLICT expression must EXACTLY match `uq_fre_natkey`
+                # (V20260428_01). PG 13 lacks NULLS NOT DISTINCT so COALESCE
+                # the nullable hash to '' as a sentinel.
                 await conn.executemany(
                     """
                     INSERT INTO fact_review_event
                       (factory_id, upload_id, product_id, store_id,
-                       rating, review_text, review_date)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7)
+                       rating, review_text, review_date, source_row_hash)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    ON CONFLICT (factory_id, upload_id,
+                                 COALESCE(source_row_hash, ''))
+                    DO NOTHING
                     """,
                     batch,
                 )
@@ -157,12 +184,27 @@ class ReviewWriter(BaseWriter):
             await conn.execute(
                 """
                 INSERT INTO dim_review_summary
-                  (factory_id, product_id, store_id, period_start, period_end,
-                   avg_rating, total_count, positive_count, negative_count,
-                   top_keywords, unmatched_product_names)
-                VALUES ($1, $2, $3, NULL, NULL, $4, $5, $6, $7, $8::jsonb, $9::jsonb)
+                  (factory_id, upload_id, product_id, store_id,
+                   period_start, period_end, avg_rating, total_count,
+                   positive_count, negative_count, top_keywords,
+                   unmatched_product_names)
+                VALUES ($1, $2, $3, $4, NULL, NULL, $5, $6, $7, $8,
+                        $9::jsonb, $10::jsonb)
+                ON CONFLICT (factory_id,
+                             COALESCE(upload_id, 0),
+                             COALESCE(product_id, 0),
+                             COALESCE(store_id, 0),
+                             COALESCE(period_start, DATE '0001-01-01'))
+                DO UPDATE SET
+                  avg_rating = EXCLUDED.avg_rating,
+                  total_count = EXCLUDED.total_count,
+                  positive_count = EXCLUDED.positive_count,
+                  negative_count = EXCLUDED.negative_count,
+                  top_keywords = EXCLUDED.top_keywords,
+                  unmatched_product_names = EXCLUDED.unmatched_product_names
                 """,
                 factory_id,
+                upload_id,
                 product_id_for_summary,
                 store_id_for_summary,
                 avg_rating,

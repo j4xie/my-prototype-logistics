@@ -85,5 +85,8 @@ async def _queue_staff_dedup_admin(
         VALUES ($1, 'staff', $2, $3, 0.5, 'cross_store_heuristic', $4::jsonb)
         """,
         factory_id, raw_name, new_staff_id,
-        json.dumps({"candidate_staff_ids": candidate_ids}),
+        json.dumps([
+            {"candidate_staff_id": sid, "store_id": None}
+            for sid in candidate_ids
+        ]),
     )

@@ -183,8 +183,8 @@ class EntityResolutionOrchestrator:
                 """
                 INSERT INTO entity_resolution_admin_queue
                   (factory_id, entity_type, raw_name, candidate_entity_id,
-                   confidence, decided_by_agent)
-                VALUES ($1, $2, $3, $4, $5, $6)
+                   confidence, decided_by_agent, reasoning, priority)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                 """,
                 input.factory_id,
                 input.entity_type.value,
@@ -192,4 +192,6 @@ class EntityResolutionOrchestrator:
                 output.matched_entity_id,
                 output.confidence,
                 output.decided_by_agent,
+                output.reasoning,
+                priority,
             )

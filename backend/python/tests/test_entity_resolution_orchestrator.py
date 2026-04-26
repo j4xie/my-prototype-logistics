@@ -178,7 +178,7 @@ async def test_record_history_called_on_match(input_store):
 
 
 async def test_admin_queue_called_on_no_match(input_store):
-    """All low → admin queue insert; no priority/reasoning column referenced."""
+    """All low → admin queue insert with priority='high' + reasoning."""
     pool, conn = _make_mock_pool()
     a1 = _FakeAgent(
         "deterministic",
@@ -189,10 +189,13 @@ async def test_admin_queue_called_on_no_match(input_store):
 
     await orch.resolve(input_store)
 
-    insert_sql = conn.execute.await_args_list[-1].args[0]
+    insert_call = conn.execute.await_args_list[-1]
+    insert_sql = insert_call.args[0]
     assert "entity_resolution_admin_queue" in insert_sql
-    assert "priority" not in insert_sql
-    assert "status" not in insert_sql
+    assert "priority" in insert_sql
+    assert "reasoning" in insert_sql
+    # priority is the 8th positional bind ($8); for no-match path it's "high"
+    assert insert_call.args[-1] == "high"
 
 
 async def test_history_skipped_when_no_match(input_store):

@@ -2,9 +2,9 @@
 
 Current simplifications:
 - Ingredient resolution is deterministic-only: SELECT dim_ingredient WHERE name=raw
-  (with normalized fallback). No Multi-Agent fuzzy match. Unmatched rows count
-  toward admin_queue_count and are skipped (no admin_queue insert — entity_type
-  'ingredient' isn't supported by V20260427_01 CHECK constraint).
+  (with normalized fallback). No Multi-Agent fuzzy match. Unmatched ingredient
+  names are queued to entity_resolution_admin_queue (entity_type='ingredient',
+  enabled by V20260428_02) so admins can resolve them; rows are skipped.
 - safe_stock_qty / reorder_point come from dim_ingredient_threshold via LEFT JOIN
   preferring a store-specific row, then a NULL-store global row.
 - snapshot_date defaults to today's date if no row-level date column present.
@@ -92,6 +92,7 @@ class InventoryWriter(BaseWriter):
         admin_queue_count = 0
         tentative_count = 0
         ingredient_cache: Dict[str, Optional[int]] = {}
+        queued_unresolved_names: set = set()
 
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
@@ -117,6 +118,11 @@ class InventoryWriter(BaseWriter):
                     )
                     ingredient_cache[norm] = ingredient_id
                 if ingredient_id is None:
+                    if norm not in queued_unresolved_names:
+                        await self._queue_unresolved_ingredient(
+                            conn, factory_id, str(ingredient_name), upload_id
+                        )
+                        queued_unresolved_names.add(norm)
                     admin_queue_count += 1
                     continue
 
@@ -178,6 +184,27 @@ class InventoryWriter(BaseWriter):
             admin_queue_count=admin_queue_count,
             tentative_count=tentative_count,
             elapsed_ms=int((time.time() - t0) * 1000),
+        )
+
+    async def _queue_unresolved_ingredient(
+        self,
+        conn: "asyncpg.Connection",
+        factory_id: str,
+        raw_name: str,
+        upload_id: int,
+    ) -> None:
+        """Insert pending ingredient row into entity_resolution_admin_queue."""
+        await conn.execute(
+            """
+            INSERT INTO entity_resolution_admin_queue
+              (factory_id, entity_type, raw_name, confidence,
+               decided_by_agent, source_upload_id, priority)
+            VALUES ($1, 'ingredient', $2, 0.0,
+                    'inventory_writer:no_match', $3, 'medium')
+            """,
+            factory_id,
+            raw_name,
+            upload_id,
         )
 
     async def _resolve_ingredient(
