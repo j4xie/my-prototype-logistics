@@ -1,16 +1,17 @@
 """EmbeddingAgent: cosine similarity over factory dim embeddings."""
 from __future__ import annotations
 
-from collections import OrderedDict
 from typing import (
     TYPE_CHECKING,
-    Awaitable,
-    Callable,
     List,
     Optional,
     Tuple,
 )
 
+from smartbi.canonical.entity_resolution._embedding_cache import (
+    EmbeddingCache,
+    EmbedFn,
+)
 from smartbi.canonical.entity_resolution.agents.base import BaseAgent
 from smartbi.canonical.entity_resolution.orchestrator import (
     AgentResult,
@@ -22,9 +23,6 @@ if TYPE_CHECKING:
     import asyncpg
 
 
-EmbedFn = Callable[[str], Awaitable[Optional[List[float]]]]
-
-
 class EmbeddingAgent(BaseAgent):
     """Cosine sim over per-factory dim embeddings, with bounded LRU cache."""
 
@@ -34,38 +32,20 @@ class EmbeddingAgent(BaseAgent):
 
     def __init__(self, embed_fn: Optional[EmbedFn] = None) -> None:
         self._embed_fn: Optional[EmbedFn] = embed_fn
-        self._cache: "OrderedDict[Tuple[str, str], List[float]]" = OrderedDict()
-
-    def _cache_get(self, key: Tuple[str, str]) -> Optional[List[float]]:
-        if key in self._cache:
-            self._cache.move_to_end(key)
-            return self._cache[key]
-        return None
-
-    def _cache_put(self, key: Tuple[str, str], value: List[float]) -> None:
-        if key in self._cache:
-            self._cache.move_to_end(key)
-            self._cache[key] = value
-        else:
-            self._cache[key] = value
-            if len(self._cache) > self.CACHE_MAX_SIZE:
-                self._cache.popitem(last=False)
+        self._cache = EmbeddingCache(max_size=self.CACHE_MAX_SIZE)
 
     async def _embed(self, text: str, factory_id: str) -> Optional[List[float]]:
-        key = (factory_id, text)
-        cached = self._cache_get(key)
-        if cached is not None:
-            return cached
         if self._embed_fn is None:
             from smartbi.services.llm_fallback_logger import (
                 get_embedding as default_embed,
             )
 
             self._embed_fn = default_embed
-        emb = await self._embed_fn(text)
-        if emb is not None:
-            self._cache_put(key, emb)
-        return emb
+        return await self._cache.get_or_embed(
+            self._embed_fn,
+            text,
+            key=("embedding", factory_id, text),
+        )
 
     @staticmethod
     def _cosine(a: List[float], b: List[float]) -> float:

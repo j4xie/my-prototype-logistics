@@ -1,11 +1,11 @@
 """Unit tests for DeterministicAgent + EmbeddingAgent."""
 from __future__ import annotations
 
-from collections import OrderedDict
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from smartbi.canonical.entity_resolution._embedding_cache import EmbeddingCache
 from smartbi.canonical.entity_resolution.agents.deterministic import (
     DeterministicAgent,
     normalize_for_dim,
@@ -148,34 +148,34 @@ async def test_deterministic_empty_name_short_circuits():
 
 
 def test_embedding_cache_lru_eviction():
-    """Cache evicts oldest entry when size > CACHE_MAX_SIZE."""
+    """Cache evicts oldest entry when size > max_size (shared EmbeddingCache)."""
     agent = EmbeddingAgent(embed_fn=AsyncMock())
-    agent.CACHE_MAX_SIZE = 3  # type: ignore[misc]
+    agent._cache = EmbeddingCache(max_size=3)
 
-    agent._cache_put(("F001", "a"), [1.0])
-    agent._cache_put(("F001", "b"), [2.0])
-    agent._cache_put(("F001", "c"), [3.0])
-    agent._cache_put(("F001", "d"), [4.0])  # evicts 'a'
+    agent._cache.put(("embedding", "F001", "a"), [1.0])
+    agent._cache.put(("embedding", "F001", "b"), [2.0])
+    agent._cache.put(("embedding", "F001", "c"), [3.0])
+    agent._cache.put(("embedding", "F001", "d"), [4.0])  # evicts 'a'
 
-    assert ("F001", "a") not in agent._cache
-    assert ("F001", "d") in agent._cache
+    assert agent._cache.get(("embedding", "F001", "a")) is None
+    assert agent._cache.get(("embedding", "F001", "d")) == [4.0]
     assert len(agent._cache) == 3
 
 
 def test_embedding_cache_lru_move_to_end():
     """Get a cached key → moves to end (most recent), so it survives next eviction."""
     agent = EmbeddingAgent(embed_fn=AsyncMock())
-    agent.CACHE_MAX_SIZE = 3  # type: ignore[misc]
+    agent._cache = EmbeddingCache(max_size=3)
 
-    agent._cache_put(("F001", "a"), [1.0])
-    agent._cache_put(("F001", "b"), [2.0])
-    agent._cache_put(("F001", "c"), [3.0])
+    agent._cache.put(("embedding", "F001", "a"), [1.0])
+    agent._cache.put(("embedding", "F001", "b"), [2.0])
+    agent._cache.put(("embedding", "F001", "c"), [3.0])
     # touch 'a' so it becomes most recent
-    agent._cache_get(("F001", "a"))
-    agent._cache_put(("F001", "d"), [4.0])  # should evict 'b' now, not 'a'
+    agent._cache.get(("embedding", "F001", "a"))
+    agent._cache.put(("embedding", "F001", "d"), [4.0])  # should evict 'b' now, not 'a'
 
-    assert ("F001", "a") in agent._cache
-    assert ("F001", "b") not in agent._cache
+    assert agent._cache.get(("embedding", "F001", "a")) == [1.0]
+    assert agent._cache.get(("embedding", "F001", "b")) is None
 
 
 async def test_embedding_cosine_above_threshold():

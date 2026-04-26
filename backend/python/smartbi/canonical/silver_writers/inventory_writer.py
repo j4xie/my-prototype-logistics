@@ -11,14 +11,12 @@ Current simplifications:
 """
 from __future__ import annotations
 
-import json
 import re
 import time
-from datetime import date, datetime
+from datetime import date
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
-from smartbi.canonical.aliases import ALIAS_TO_ATTR
-
+from ._helpers import canonical_value, pick, to_date, to_float, unwrap_row
 from .base import BaseWriter, WriteSummary
 
 if TYPE_CHECKING:
@@ -34,50 +32,8 @@ _UNIT_KEYS = ("unit", "单位", "stock_unit")
 _DATE_KEYS = ("snapshot_date", "date", "盘点日期", "库存日期", "日期")
 
 
-def _canonical_value(row: Dict[str, Any], canonical: str) -> Optional[Any]:
-    for raw_key, attr in ALIAS_TO_ATTR.items():
-        if attr != canonical:
-            continue
-        if raw_key in row and row[raw_key] not in (None, ""):
-            return row[raw_key]
-    if canonical in row and row[canonical] not in (None, ""):
-        return row[canonical]
-    return None
-
-
-def _pick(row: Dict[str, Any], keys: tuple[str, ...]) -> Optional[Any]:
-    for k in keys:
-        if k in row and row[k] not in (None, ""):
-            return row[k]
-    return None
-
-
-def _to_float(value: Any) -> Optional[float]:
-    if value is None or value == "":
-        return None
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
-
-
-def _to_date(value: Any) -> Optional[date]:
-    if value is None or value == "":
-        return None
-    if isinstance(value, date) and not isinstance(value, datetime):
-        return value
-    if isinstance(value, datetime):
-        return value.date()
-    if isinstance(value, str):
-        for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%Y-%m-%d %H:%M:%S", "%Y/%m/%d %H:%M:%S"):
-            try:
-                return datetime.strptime(value, fmt).date()
-            except ValueError:
-                continue
-    return None
-
-
 def _normalize_name(name: str) -> str:
+    """Ingredient-specific normalize — kept local; matches dim_ingredient.normalized_name."""
     return _WHITESPACE_RE.sub("", str(name)).lower()
 
 
@@ -101,8 +57,8 @@ class InventoryWriter(BaseWriter):
             )
 
             for row_pg in rows:
-                row = self._unwrap_row(row_pg["row_data"])
-                ingredient_name = _pick(row, _INGREDIENT_KEYS) or _canonical_value(
+                row = unwrap_row(row_pg["row_data"])
+                ingredient_name = pick(row, _INGREDIENT_KEYS) or canonical_value(
                     row, "inventory_item"
                 )
                 if not ingredient_name:
@@ -126,7 +82,7 @@ class InventoryWriter(BaseWriter):
                     admin_queue_count += 1
                     continue
 
-                store_name = _canonical_value(row, "store_name")
+                store_name = canonical_value(row, "store_name")
                 store_result = await self._resolve_store(
                     str(store_name) if store_name is not None else None,
                     factory_id,
@@ -135,9 +91,9 @@ class InventoryWriter(BaseWriter):
                 if store_result.is_tentative:
                     tentative_count += 1
 
-                stock_qty = _to_float(_canonical_value(row, "stock_qty"))
-                unit_value = _pick(row, _UNIT_KEYS)
-                snapshot_date = _to_date(_pick(row, _DATE_KEYS)) or date.today()
+                stock_qty = to_float(canonical_value(row, "stock_qty"), default=None)
+                unit_value = pick(row, _UNIT_KEYS)
+                snapshot_date = to_date(pick(row, _DATE_KEYS)) or date.today()
 
                 threshold = await self._fetch_threshold(
                     conn, factory_id, ingredient_id, store_result.entity_id
@@ -257,15 +213,3 @@ class InventoryWriter(BaseWriter):
             ingredient_id,
         )
         return dict(row) if row is not None else None
-
-    @staticmethod
-    def _unwrap_row(raw: Any) -> Dict[str, Any]:
-        if isinstance(raw, dict):
-            return raw
-        if isinstance(raw, str):
-            try:
-                parsed = json.loads(raw)
-                return parsed if isinstance(parsed, dict) else {}
-            except (ValueError, TypeError):
-                return {}
-        return {}

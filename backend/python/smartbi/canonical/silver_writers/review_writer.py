@@ -13,51 +13,13 @@ from __future__ import annotations
 import hashlib
 import json
 import time
-from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Tuple
 
-from smartbi.canonical.aliases import ALIAS_TO_ATTR
-
+from ._helpers import canonical_value, to_date, to_float, unwrap_row
 from .base import BaseWriter, WriteSummary
 
 
 _FACT_BATCH_SIZE = 5000
-
-
-def _canonical_value(row: Dict[str, Any], canonical: str) -> Optional[Any]:
-    for raw_key, attr in ALIAS_TO_ATTR.items():
-        if attr != canonical:
-            continue
-        if raw_key in row and row[raw_key] not in (None, ""):
-            return row[raw_key]
-    if canonical in row and row[canonical] not in (None, ""):
-        return row[canonical]
-    return None
-
-
-def _to_float(value: Any) -> Optional[float]:
-    if value is None or value == "":
-        return None
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
-
-
-def _to_date(value: Any) -> Optional[date]:
-    if value is None or value == "":
-        return None
-    if isinstance(value, date) and not isinstance(value, datetime):
-        return value
-    if isinstance(value, datetime):
-        return value.date()
-    if isinstance(value, str):
-        for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%Y-%m-%d %H:%M:%S", "%Y/%m/%d %H:%M:%S"):
-            try:
-                return datetime.strptime(value, fmt).date()
-            except ValueError:
-                continue
-    return None
 
 
 def _compute_review_row_hash(
@@ -67,11 +29,11 @@ def _compute_review_row_hash(
     parts = [
         str(factory_id),
         str(upload_id),
-        str(_canonical_value(row, "review_text") or ""),
-        str(_canonical_value(row, "rating") or ""),
-        str(_canonical_value(row, "review_date") or ""),
-        str(_canonical_value(row, "store_name") or ""),
-        str(_canonical_value(row, "product_name") or ""),
+        str(canonical_value(row, "review_text") or ""),
+        str(canonical_value(row, "rating") or ""),
+        str(canonical_value(row, "review_date") or ""),
+        str(canonical_value(row, "store_name") or ""),
+        str(canonical_value(row, "product_name") or ""),
     ]
     raw = "|".join(parts)
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
@@ -101,12 +63,12 @@ class ReviewWriter(BaseWriter):
             )
 
             for row_pg in rows:
-                row = self._unwrap_row(row_pg["row_data"])
-                store_name = _canonical_value(row, "store_name")
-                product_name = _canonical_value(row, "product_name")
-                review_text = _canonical_value(row, "review_text")
-                rating = _to_float(_canonical_value(row, "rating"))
-                review_dt = _to_date(_canonical_value(row, "review_date"))
+                row = unwrap_row(row_pg["row_data"])
+                store_name = canonical_value(row, "store_name")
+                product_name = canonical_value(row, "product_name")
+                review_text = canonical_value(row, "review_text")
+                rating = to_float(canonical_value(row, "rating"), default=None)
+                review_dt = to_date(canonical_value(row, "review_date"))
 
                 store_result = await self._resolve_store(
                     str(store_name) if store_name is not None else None,
@@ -223,15 +185,3 @@ class ReviewWriter(BaseWriter):
             tentative_count=tentative_count,
             elapsed_ms=int((time.time() - t0) * 1000),
         )
-
-    @staticmethod
-    def _unwrap_row(raw: Any) -> Dict[str, Any]:
-        if isinstance(raw, dict):
-            return raw
-        if isinstance(raw, str):
-            try:
-                parsed = json.loads(raw)
-                return parsed if isinstance(parsed, dict) else {}
-            except (ValueError, TypeError):
-                return {}
-        return {}

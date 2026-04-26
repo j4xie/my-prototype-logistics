@@ -8,34 +8,13 @@ batched executemany for the actual INSERT.
 from __future__ import annotations
 
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, List, Tuple
 
-from smartbi.canonical.aliases import ALIAS_TO_ATTR
-
+from ._helpers import canonical_value, to_float, unwrap_row
 from .base import BaseWriter, WriteSummary
 
 
 _BATCH_SIZE = 5000
-
-
-def _canonical_value(row: Dict[str, Any], canonical: str) -> Optional[Any]:
-    for raw_key, attr in ALIAS_TO_ATTR.items():
-        if attr != canonical:
-            continue
-        if raw_key in row and row[raw_key] not in (None, ""):
-            return row[raw_key]
-    if canonical in row and row[canonical] not in (None, ""):
-        return row[canonical]
-    return None
-
-
-def _to_float(value: Any) -> float:
-    if value is None or value == "":
-        return 0.0
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return 0.0
 
 
 class ProductSummaryWriter(BaseWriter):
@@ -59,9 +38,9 @@ class ProductSummaryWriter(BaseWriter):
             period_start, period_end = None, None
 
             for row_pg in rows:
-                row = self._unwrap_row(row_pg["row_data"])
-                store_name = _canonical_value(row, "store_name")
-                product_name = _canonical_value(row, "product_name")
+                row = unwrap_row(row_pg["row_data"])
+                store_name = canonical_value(row, "store_name")
+                product_name = canonical_value(row, "product_name")
 
                 store_result = await self._resolve_store(
                     str(store_name) if store_name is not None else None,
@@ -87,8 +66,8 @@ class ProductSummaryWriter(BaseWriter):
                 if store_result.is_tentative or product_result.is_tentative:
                     tentative_count += 1
 
-                qty = _to_float(_canonical_value(row, "qty_sold"))
-                revenue = _to_float(_canonical_value(row, "revenue"))
+                qty = to_float(canonical_value(row, "qty_sold"), default=0.0)
+                revenue = to_float(canonical_value(row, "revenue"), default=0.0)
                 avg_price = (revenue / qty) if qty else 0.0
                 records.append(
                     (
@@ -134,17 +113,3 @@ class ProductSummaryWriter(BaseWriter):
             tentative_count=tentative_count,
             elapsed_ms=int((time.time() - t0) * 1000),
         )
-
-    @staticmethod
-    def _unwrap_row(raw: Any) -> Dict[str, Any]:
-        if isinstance(raw, dict):
-            return raw
-        if isinstance(raw, str):
-            try:
-                import json
-
-                parsed = json.loads(raw)
-                return parsed if isinstance(parsed, dict) else {}
-            except (ValueError, TypeError):
-                return {}
-        return {}

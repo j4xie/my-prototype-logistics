@@ -12,12 +12,12 @@ Current simplifications:
 from __future__ import annotations
 
 import hashlib
-import json
 import re
 import time
-from datetime import date, datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from datetime import date
+from typing import TYPE_CHECKING, Dict, Optional
 
+from ._helpers import pick, to_date, to_float, unwrap_row
 from .base import BaseWriter, WriteSummary
 
 if TYPE_CHECKING:
@@ -36,39 +36,8 @@ _CREDIT_KEYS = ("credit_amount", "贷方金额", "贷方", "credit")
 _DESCRIPTION_KEYS = ("description", "摘要", "备注", "memo")
 
 
-def _pick(row: Dict[str, Any], keys: tuple[str, ...]) -> Optional[Any]:
-    for k in keys:
-        if k in row and row[k] not in (None, ""):
-            return row[k]
-    return None
-
-
-def _to_float(value: Any) -> float:
-    if value is None or value == "":
-        return 0.0
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return 0.0
-
-
-def _to_date(value: Any) -> Optional[date]:
-    if value is None or value == "":
-        return None
-    if isinstance(value, date) and not isinstance(value, datetime):
-        return value
-    if isinstance(value, datetime):
-        return value.date()
-    if isinstance(value, str):
-        for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%Y-%m-%d %H:%M:%S", "%Y/%m/%d %H:%M:%S"):
-            try:
-                return datetime.strptime(value, fmt).date()
-            except ValueError:
-                continue
-    return None
-
-
 def _normalize_subject(name: str) -> str:
+    """Subject-specific normalize — kept local; finance category UX may diverge."""
     return _WHITESPACE_RE.sub("", str(name)).lower()
 
 
@@ -106,8 +75,8 @@ class FinanceWriter(BaseWriter):
             )
 
             for row_pg in rows:
-                row = self._unwrap_row(row_pg["row_data"])
-                subject_name_raw = _pick(row, _SUBJECT_KEYS)
+                row = unwrap_row(row_pg["row_data"])
+                subject_name_raw = pick(row, _SUBJECT_KEYS)
                 if not subject_name_raw:
                     rows_skipped += 1
                     continue
@@ -124,11 +93,11 @@ class FinanceWriter(BaseWriter):
                     if was_new:
                         new_entity_count += 1
 
-                voucher_no = _pick(row, _VOUCHER_NO_KEYS)
-                voucher_date = _to_date(_pick(row, _VOUCHER_DATE_KEYS))
-                debit = _to_float(_pick(row, _DEBIT_KEYS))
-                credit = _to_float(_pick(row, _CREDIT_KEYS))
-                description = _pick(row, _DESCRIPTION_KEYS)
+                voucher_no = pick(row, _VOUCHER_NO_KEYS)
+                voucher_date = to_date(pick(row, _VOUCHER_DATE_KEYS))
+                debit = to_float(pick(row, _DEBIT_KEYS), default=0.0)
+                credit = to_float(pick(row, _CREDIT_KEYS), default=0.0)
+                description = pick(row, _DESCRIPTION_KEYS)
                 amount = debit + credit
                 row_hash = _hash_row(
                     str(voucher_no) if voucher_no is not None else None,
@@ -202,15 +171,3 @@ class FinanceWriter(BaseWriter):
             _DEFAULT_CATEGORY,
         )
         return int(inserted["subject_id"]), True
-
-    @staticmethod
-    def _unwrap_row(raw: Any) -> Dict[str, Any]:
-        if isinstance(raw, dict):
-            return raw
-        if isinstance(raw, str):
-            try:
-                parsed = json.loads(raw)
-                return parsed if isinstance(parsed, dict) else {}
-            except (ValueError, TypeError):
-                return {}
-        return {}
