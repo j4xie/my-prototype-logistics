@@ -482,6 +482,13 @@ const businessRoutes: RouteRecordRaw[] = [
             meta: { requiresAuth: true, title: 'LLM 用量监控', module: 'system' }
           },
           {
+            // 数据织网 A spec admin audit page (Phase 3 Day 10 + Phase 4.5 wire-up)
+            path: 'data-fabric/capability-audit',
+            name: 'CapabilityAudit',
+            component: () => import('@/views/system/data-fabric/capability-audit.vue'),
+            meta: { requiresAuth: true, title: '能力驱动渲染审计', module: 'system' }
+          },
+          {
             path: 'products',
             name: 'ProductManagement',
             component: () => import('@/views/system/products/index.vue'),
