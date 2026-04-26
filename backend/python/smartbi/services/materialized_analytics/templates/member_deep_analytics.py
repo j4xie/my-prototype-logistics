@@ -261,6 +261,73 @@ class MemberDeepAnalytics(AnalysisTemplate):
                         "bin": label, "members": 0, "members_share_pct": 0.0, "total_balance": 0.0,
                     })
 
+        # ── Top N members by 充值/余额 (Apr 26 2026 phase 5 UX) ──
+        # Without this, qhj-22 / xmx-22 类 "Top 10 储值持有者都是谁" gets only
+        # aggregate stats. Now we surface a real ranked list (anonymized
+        # phone tail) when the data has signal.
+        def _mask(name: Any) -> str:
+            s = str(name or '').strip()
+            if not s:
+                return '(空)'
+            if len(s) <= 1:
+                return s + '*'
+            if len(s) == 2:
+                return s[0] + '*'
+            return s[0] + '*' * (len(s) - 2) + s[-1]
+
+        top_recharge_members: List[Dict[str, Any]] = []
+        top_balance_members: List[Dict[str, Any]] = []
+        if recharge_col and total_recharge > 0:
+            select_cols = [pl.col(recharge_col).cast(pl.Float64, strict=False).fill_null(0.0).alias('_r')]
+            if name_col:
+                select_cols.append(pl.col(name_col).cast(pl.Utf8, strict=False).alias('_name'))
+            if level_col:
+                select_cols.append(pl.col(level_col).cast(pl.Utf8, strict=False).alias('_level'))
+            try:
+                top_rows = (
+                    df.select(select_cols)
+                    .filter(pl.col('_r') > 0)
+                    .sort('_r', descending=True)
+                    .head(_TOP_N)
+                    .to_dicts()
+                )
+                top_recharge_members = [
+                    {
+                        'rank': i + 1,
+                        'name': _mask(r.get('_name')) if name_col else f'会员#{i+1}',
+                        'level': r.get('_level') if level_col else None,
+                        'amount': round(float(r.get('_r') or 0), 2),
+                    }
+                    for i, r in enumerate(top_rows)
+                ]
+            except Exception:
+                pass
+        if balance_col and total_balance > 0:
+            select_cols = [pl.col(balance_col).cast(pl.Float64, strict=False).fill_null(0.0).alias('_b')]
+            if name_col:
+                select_cols.append(pl.col(name_col).cast(pl.Utf8, strict=False).alias('_name'))
+            if level_col:
+                select_cols.append(pl.col(level_col).cast(pl.Utf8, strict=False).alias('_level'))
+            try:
+                top_rows = (
+                    df.select(select_cols)
+                    .filter(pl.col('_b') > 0)
+                    .sort('_b', descending=True)
+                    .head(_TOP_N)
+                    .to_dicts()
+                )
+                top_balance_members = [
+                    {
+                        'rank': i + 1,
+                        'name': _mask(r.get('_name')) if name_col else f'会员#{i+1}',
+                        'level': r.get('_level') if level_col else None,
+                        'amount': round(float(r.get('_b') or 0), 2),
+                    }
+                    for i, r in enumerate(top_rows)
+                ]
+            except Exception:
+                pass
+
         # ── Gender distribution (optional) ──
         by_gender: List[Dict[str, Any]] = []
         if gender_col:
@@ -388,6 +455,10 @@ class MemberDeepAnalytics(AnalysisTemplate):
                 "total_gift": round(total_gift, 2) if gift_col else None,
                 "implied_consumed": round(implied_consumed, 2) if implied_consumed is not None else None,
                 "consumed_rate_pct": consumed_rate_pct,
+                # Apr 26 phase 5 UX: Top N member rankings (anonymized).
+                # Surfaces in qhj-22 / xmx-22 类 "Top 10 持有者" queries.
+                "top_recharge_members": top_recharge_members,
+                "top_balance_members": top_balance_members,
             },
             chart_config=chart_config,
             kpis={

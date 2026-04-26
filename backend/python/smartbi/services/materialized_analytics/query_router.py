@@ -1060,15 +1060,31 @@ def _disambiguate_for_query(query: str, code: str, data: Dict, kpis: Dict) -> Op
 
     # member_deep_analytics — common multi-query template (qhj-19/20/22/30)
     if code == 'member_deep_analytics':
-        # User asks for Top N list
+        # User asks for Top N list — surface real list if data has signal
         if any(p in q for p in _LIST_INTENT_PATTERNS):
             top_recharge = data.get('top_recharge_members') if isinstance(data, dict) else None
-            if not top_recharge:
-                return (
-                    "针对你问的「Top N 持有者/排行」: "
-                    "当前会员数据无个体明细排序 (会员姓名/手机均已脱敏或无消费记录), "
-                    "以下是会员整体汇总."
-                )
+            top_balance = data.get('top_balance_members') if isinstance(data, dict) else None
+            if top_recharge or top_balance:
+                # Build a Top N list inline so user sees the actual ranking.
+                target = top_recharge or top_balance
+                target_label = '充值' if top_recharge else '余额'
+                lines = [
+                    f"针对你问的「Top N 持有者/排行」: 以下是按{target_label}排序的 Top "
+                    f"{min(len(target), 10)} 会员 (姓名已脱敏):"
+                ]
+                for r in target[:10]:
+                    lvl = f" / {r['level']}" if r.get('level') else ''
+                    lines.append(
+                        f"  {r.get('rank')}. {r.get('name')}{lvl} — "
+                        f"¥{r.get('amount', 0):,.2f}"
+                    )
+                return '\n'.join(lines)
+            # No signal data — fall back to honest note
+            return (
+                "针对你问的「Top N 持有者/排行」: "
+                "当前会员数据无个体明细排序 (余额/充值字段全为 0, 无可排序数据), "
+                "以下是会员整体汇总."
+            )
         # User asks for specific 赠品/赠送 metric
         if '赠品' in q or '赠送' in q:
             total_gift = (kpis or {}).get('total_gift') if isinstance(kpis, dict) else None
