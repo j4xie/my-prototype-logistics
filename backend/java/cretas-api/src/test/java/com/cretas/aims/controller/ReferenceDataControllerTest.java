@@ -168,65 +168,76 @@ class ReferenceDataControllerTest {
 
     // ===== R15: coverage for /sales-orders, /purchase-orders, /batches, /quotes =====
 
-    @Test
-    void findSalesOrders_whitelistOnlyPostFinanceApproved() {
-        // R17 audit CRIT-1 fix: whitelist (FINANCE_APPROVED + PROCESSING + PARTIAL_DELIVERED
-        // + COMPLETED). Pre-finance states (CONFIRMED, PENDING_FINANCE_REVIEW) bypass the
-        // dual-control gate if invoiceable, so they must be excluded.
-        SalesOrder draft = newSO("d1", "SO-D", SalesOrderStatus.DRAFT);
-        SalesOrder cancelled = newSO("c1", "SO-C", SalesOrderStatus.CANCELLED);
-        SalesOrder rejected = newSO("r1", "SO-R", SalesOrderStatus.FINANCE_REJECTED);
-        SalesOrder confirmed = newSO("cf1", "SO-CF", SalesOrderStatus.CONFIRMED);          // pre-finance — excluded
-        SalesOrder pendingFin = newSO("pf1", "SO-PF", SalesOrderStatus.PENDING_FINANCE_REVIEW);  // pre-finance — excluded
-        SalesOrder approved = newSO("a1", "SO-A", SalesOrderStatus.FINANCE_APPROVED);
-        SalesOrder processing = newSO("p1", "SO-P", SalesOrderStatus.PROCESSING);
-        SalesOrder completed = newSO("co1", "SO-CO", SalesOrderStatus.COMPLETED);
-
+    /**
+     * R19 audit SER-A fix: parameterized test driven by enum source. Exhaustively asserts
+     * every SalesOrderStatus is correctly included/excluded per usage. R17/R18 hand-rolled
+     * tests had test-data cardinality < whitelist cardinality (PARTIAL_DELIVERED missing),
+     * so future drift in the whitelist Set wouldn't break the test.
+     */
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(SalesOrderStatus.class)
+    void findSalesOrders_invoiceable_whitelist_exhaustive(SalesOrderStatus status) {
+        SalesOrder so = newSO("id-" + status, "SO-" + status, status);
         when(salesOrderRepository.findByFactoryIdOrderByCreatedAtDesc(eq("F001"), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(draft, cancelled, rejected, confirmed, pendingFin, approved, processing, completed)));
-
-        ApiResponse<Map<String, Object>> resp = controller.findSalesOrders("F001", "", 1, 50);
+                .thenReturn(new PageImpl<>(List.of(so)));
+        ApiResponse<Map<String, Object>> resp = controller.findSalesOrders("F001", "", "invoiceable", 1, 50);
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> content = (List<Map<String, Object>>) resp.getData().get("content");
 
-        assertEquals(3, content.size(), "Only FINANCE_APPROVED + PROCESSING + COMPLETED should pass (whitelist)");
-        java.util.Set<String> orderNums = content.stream()
-                .map(m -> (String) m.get("orderNumber")).collect(java.util.stream.Collectors.toSet());
-        assertTrue(orderNums.contains("SO-A"));
-        assertTrue(orderNums.contains("SO-P"));
-        assertTrue(orderNums.contains("SO-CO"));
-        assertFalse(orderNums.contains("SO-CF"), "CONFIRMED bypasses finance review — excluded");
-        assertFalse(orderNums.contains("SO-PF"), "PENDING_FINANCE_REVIEW pre-finance — excluded");
+        java.util.Set<SalesOrderStatus> invoiceable = java.util.Set.of(
+                SalesOrderStatus.FINANCE_APPROVED, SalesOrderStatus.PROCESSING,
+                SalesOrderStatus.PARTIAL_DELIVERED, SalesOrderStatus.COMPLETED);
+        boolean expectedToPass = invoiceable.contains(status);
+        assertEquals(expectedToPass ? 1 : 0, content.size(),
+                "status=" + status + " should " + (expectedToPass ? "PASS" : "be excluded") + " from invoiceable whitelist");
     }
 
     @Test
-    void findPurchaseOrders_whitelistOnlyPostFinanceApproved() {
-        // R17 audit CRIT-1: PO whitelist is FINANCE_APPROVED + PARTIAL_RECEIVED + COMPLETED + CLOSED.
-        // APPROVED (operations-only) and SUBMITTED are pre-finance — excluded.
-        PurchaseOrder draft = newPO("d1", "PO-D", PurchaseOrderStatus.DRAFT);
-        PurchaseOrder cancelled = newPO("c1", "PO-C", PurchaseOrderStatus.CANCELLED);
-        PurchaseOrder rejected = newPO("r1", "PO-R", PurchaseOrderStatus.FINANCE_REJECTED);
-        PurchaseOrder opsApproved = newPO("o1", "PO-O", PurchaseOrderStatus.APPROVED);    // ops-only — excluded
-        PurchaseOrder submitted = newPO("s1", "PO-S", PurchaseOrderStatus.SUBMITTED);      // pre-approval — excluded
-        PurchaseOrder finApproved = newPO("a1", "PO-FA", PurchaseOrderStatus.FINANCE_APPROVED);
-        PurchaseOrder partial = newPO("p1", "PO-P", PurchaseOrderStatus.PARTIAL_RECEIVED);
-        PurchaseOrder completed = newPO("co1", "PO-CO", PurchaseOrderStatus.COMPLETED);
-
-        when(purchaseOrderRepository.findByFactoryIdOrderByCreatedAtDesc(eq("F001"), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(draft, cancelled, rejected, opsApproved, submitted, finApproved, partial, completed)));
-
-        ApiResponse<Map<String, Object>> resp = controller.findPurchaseOrders("F001", "", 1, 50);
+    void findSalesOrders_plannable_includesConfirmedExcludesCompleted() {
+        // R19 audit CRIT-A: production_plan.sourceOrderId needs CONFIRMED + PENDING_FINANCE_REVIEW
+        // — exactly the states finance whitelist excludes. Verify ?usage=plannable does the right thing.
+        SalesOrder confirmed = newSO("cf", "SO-CF", SalesOrderStatus.CONFIRMED);
+        SalesOrder completed = newSO("co", "SO-CO", SalesOrderStatus.COMPLETED);
+        when(salesOrderRepository.findByFactoryIdOrderByCreatedAtDesc(eq("F001"), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(confirmed, completed)));
+        ApiResponse<Map<String, Object>> resp = controller.findSalesOrders("F001", "", "plannable", 1, 50);
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> content = (List<Map<String, Object>>) resp.getData().get("content");
 
-        assertEquals(3, content.size(), "Only post-finance-approved POs should pass (whitelist)");
-        java.util.Set<String> poNums = content.stream()
-                .map(m -> (String) m.get("poNumber")).collect(java.util.stream.Collectors.toSet());
-        assertTrue(poNums.contains("PO-FA"));
-        assertTrue(poNums.contains("PO-P"));
-        assertTrue(poNums.contains("PO-CO"));
-        assertFalse(poNums.contains("PO-O"), "APPROVED is ops-only, pre-finance — excluded (R17 audit CRIT-1)");
-        assertFalse(poNums.contains("PO-S"), "SUBMITTED is pre-approval — excluded");
+        assertEquals(1, content.size(), "plannable: CONFIRMED in, COMPLETED out");
+        assertEquals("SO-CF", content.get(0).get("orderNumber"));
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(PurchaseOrderStatus.class)
+    void findPurchaseOrders_invoiceable_whitelist_exhaustive(PurchaseOrderStatus status) {
+        PurchaseOrder po = newPO("id-" + status, "PO-" + status, status);
+        when(purchaseOrderRepository.findByFactoryIdOrderByCreatedAtDesc(eq("F001"), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(po)));
+        ApiResponse<Map<String, Object>> resp = controller.findPurchaseOrders("F001", "", "invoiceable", 1, 50);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> content = (List<Map<String, Object>>) resp.getData().get("content");
+
+        java.util.Set<PurchaseOrderStatus> invoiceable = java.util.Set.of(
+                PurchaseOrderStatus.FINANCE_APPROVED, PurchaseOrderStatus.PARTIAL_RECEIVED,
+                PurchaseOrderStatus.COMPLETED, PurchaseOrderStatus.CLOSED);
+        boolean expectedToPass = invoiceable.contains(status);
+        assertEquals(expectedToPass ? 1 : 0, content.size(),
+                "status=" + status + " should " + (expectedToPass ? "PASS" : "be excluded") + " from invoiceable whitelist");
+    }
+
+    @Test
+    void findPurchaseOrders_receivable_includesApprovedOpsOnly() {
+        // R19 audit CRIT-B: inbound.purchaseOrderId allows receive-before-finance. APPROVED
+        // (ops-only) should pass for ?usage=receivable. Excluded under invoiceable.
+        PurchaseOrder opsApproved = newPO("o", "PO-O", PurchaseOrderStatus.APPROVED);
+        PurchaseOrder finApproved = newPO("a", "PO-FA", PurchaseOrderStatus.FINANCE_APPROVED);
+        when(purchaseOrderRepository.findByFactoryIdOrderByCreatedAtDesc(eq("F001"), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(opsApproved, finApproved)));
+        ApiResponse<Map<String, Object>> resp = controller.findPurchaseOrders("F001", "", "receivable", 1, 50);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> content = (List<Map<String, Object>>) resp.getData().get("content");
+        assertEquals(2, content.size(), "receivable: APPROVED + FINANCE_APPROVED both pass");
     }
 
     @Test

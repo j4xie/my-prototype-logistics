@@ -406,14 +406,41 @@ public class ReferenceDataController {
         return wrap(content, filtered.size());
     }
 
+    // R19 audit CRIT-A: /sales-orders shared by finance_ar (invoiceable), outbound (shippable),
+    // production_plan (plannable). R17's one-size-fits-all finance whitelist broke production
+    // planning's expected status set. Per-usage whitelists keep each module's semantics correct.
+    private static final java.util.Map<String, java.util.Set<com.cretas.aims.entity.enums.SalesOrderStatus>> SO_WHITELIST_BY_USAGE = java.util.Map.of(
+            "invoiceable", java.util.Set.of(  // finance_ar — only post-finance-approved
+                    com.cretas.aims.entity.enums.SalesOrderStatus.FINANCE_APPROVED,
+                    com.cretas.aims.entity.enums.SalesOrderStatus.PROCESSING,
+                    com.cretas.aims.entity.enums.SalesOrderStatus.PARTIAL_DELIVERED,
+                    com.cretas.aims.entity.enums.SalesOrderStatus.COMPLETED),
+            "shippable", java.util.Set.of(    // outbound — picking/shipping
+                    com.cretas.aims.entity.enums.SalesOrderStatus.FINANCE_APPROVED,
+                    com.cretas.aims.entity.enums.SalesOrderStatus.PROCESSING,
+                    com.cretas.aims.entity.enums.SalesOrderStatus.PARTIAL_DELIVERED),
+            "plannable", java.util.Set.of(    // production_plan — confirmed→partial, exclude COMPLETED
+                    com.cretas.aims.entity.enums.SalesOrderStatus.CONFIRMED,
+                    com.cretas.aims.entity.enums.SalesOrderStatus.PENDING_FINANCE_REVIEW,
+                    com.cretas.aims.entity.enums.SalesOrderStatus.FINANCE_APPROVED,
+                    com.cretas.aims.entity.enums.SalesOrderStatus.PROCESSING,
+                    com.cretas.aims.entity.enums.SalesOrderStatus.PARTIAL_DELIVERED),
+            "all", java.util.EnumSet.complementOf(java.util.EnumSet.of(  // catch-all: exclude only invalid states
+                    com.cretas.aims.entity.enums.SalesOrderStatus.DRAFT,
+                    com.cretas.aims.entity.enums.SalesOrderStatus.CANCELLED,
+                    com.cretas.aims.entity.enums.SalesOrderStatus.FINANCE_REJECTED))
+    );
+
     /** R12 audit S2 meta: 销售订单 dropdown for outbound/finance_ar/production_plan.
-     *  R13 audit SER-2/4 fixes: filter DRAFT/CANCELLED + over-fetch (size*4 cap 200)
-     *  for keyword reach + honest filtered.size() totalElements (mirror /quotes pattern). */
+     *  R19 audit CRIT-A: per-usage whitelist via ?usage param (V14 migration sets
+     *  per-module schema apiEndpoint to include the right usage). Default=all is broad
+     *  inclusive (only excludes DRAFT/CANCELLED/FINANCE_REJECTED) — safe legacy fallback. */
     @GetMapping("/sales-orders")
-    @Operation(summary = "销售订单查找 (DRAFT/CANCELLED 已过滤)")
+    @Operation(summary = "销售订单查找 (per-usage whitelist)")
     public ApiResponse<Map<String, Object>> findSalesOrders(
             @PathVariable String factoryId,
             @RequestParam(required = false, defaultValue = "") String keyword,
+            @RequestParam(required = false, defaultValue = "all") String usage,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "50") int size) {
         int pageSize = clampSize(size);
@@ -421,17 +448,10 @@ public class ReferenceDataController {
                 Math.max(page - 1, 0), Math.min(pageSize * 4, 200));
         Page<SalesOrder> result = salesOrderRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageable);
         String esc = keyword == null ? "" : keyword.trim();
-        // R17 audit CRIT-1: switch from denylist (R15) to whitelist. Denylist let
-        // CONFIRMED + PENDING_FINANCE_REVIEW pass — pre-finance-review states. Linking
-        // an invoice to a not-yet-finance-approved SO bypasses the dual-control gate.
-        // Whitelist: only post-finance-approval states are invoice-linkable.
-        java.util.Set<com.cretas.aims.entity.enums.SalesOrderStatus> invoiceableSO = java.util.Set.of(
-                com.cretas.aims.entity.enums.SalesOrderStatus.FINANCE_APPROVED,
-                com.cretas.aims.entity.enums.SalesOrderStatus.PROCESSING,
-                com.cretas.aims.entity.enums.SalesOrderStatus.PARTIAL_DELIVERED,
-                com.cretas.aims.entity.enums.SalesOrderStatus.COMPLETED);
+        java.util.Set<com.cretas.aims.entity.enums.SalesOrderStatus> whitelist =
+                SO_WHITELIST_BY_USAGE.getOrDefault(usage, SO_WHITELIST_BY_USAGE.get("all"));
         List<SalesOrder> filtered = result.getContent().stream()
-                .filter(so -> invoiceableSO.contains(so.getStatus()))
+                .filter(so -> whitelist.contains(so.getStatus()))
                 .filter(so -> esc.isEmpty() || (so.getOrderNumber() != null && so.getOrderNumber().contains(esc)))
                 .collect(Collectors.toList());
         List<Map<String, Object>> content = filtered.stream()
@@ -463,13 +483,34 @@ public class ReferenceDataController {
                 .orElseGet(() -> ApiResponse.success(null));
     }
 
+    // R19 audit CRIT-B: /purchase-orders shared by inbound (receivable) + finance_ap (invoiceable).
+    // inbound needs APPROVED+ (receive can happen pre-finance for fast-moving consumables).
+    // finance_ap needs only post-finance-approved.
+    private static final java.util.Map<String, java.util.Set<com.cretas.aims.entity.enums.PurchaseOrderStatus>> PO_WHITELIST_BY_USAGE = java.util.Map.of(
+            "invoiceable", java.util.Set.of(  // finance_ap — only post-finance-approved
+                    com.cretas.aims.entity.enums.PurchaseOrderStatus.FINANCE_APPROVED,
+                    com.cretas.aims.entity.enums.PurchaseOrderStatus.PARTIAL_RECEIVED,
+                    com.cretas.aims.entity.enums.PurchaseOrderStatus.COMPLETED,
+                    com.cretas.aims.entity.enums.PurchaseOrderStatus.CLOSED),
+            "receivable", java.util.Set.of(   // inbound — receive can happen post-ops-approval
+                    com.cretas.aims.entity.enums.PurchaseOrderStatus.APPROVED,
+                    com.cretas.aims.entity.enums.PurchaseOrderStatus.PENDING_FINANCE_REVIEW,
+                    com.cretas.aims.entity.enums.PurchaseOrderStatus.FINANCE_APPROVED,
+                    com.cretas.aims.entity.enums.PurchaseOrderStatus.PARTIAL_RECEIVED),
+            "all", java.util.EnumSet.complementOf(java.util.EnumSet.of(
+                    com.cretas.aims.entity.enums.PurchaseOrderStatus.DRAFT,
+                    com.cretas.aims.entity.enums.PurchaseOrderStatus.CANCELLED,
+                    com.cretas.aims.entity.enums.PurchaseOrderStatus.FINANCE_REJECTED))
+    );
+
     /** R12 audit S2 meta: 采购订单 dropdown for inbound/finance_ap.
-     *  R13 audit SER-2/4 fixes: filter DRAFT/CANCELLED + over-fetch + honest filtered.size(). */
+     *  R19 audit CRIT-B: per-usage whitelist via ?usage. inbound default=receivable. */
     @GetMapping("/purchase-orders")
-    @Operation(summary = "采购订单查找 (DRAFT/CANCELLED 已过滤)")
+    @Operation(summary = "采购订单查找 (per-usage whitelist)")
     public ApiResponse<Map<String, Object>> findPurchaseOrders(
             @PathVariable String factoryId,
             @RequestParam(required = false, defaultValue = "") String keyword,
+            @RequestParam(required = false, defaultValue = "all") String usage,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "50") int size) {
         int pageSize = clampSize(size);
@@ -477,17 +518,10 @@ public class ReferenceDataController {
                 Math.max(page - 1, 0), Math.min(pageSize * 4, 200));
         Page<PurchaseOrder> result = purchaseOrderRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageable);
         String esc = keyword == null ? "" : keyword.trim();
-        // R17 audit CRIT-1: switch to whitelist. APPROVED is operations-only (pre-finance);
-        // SUBMITTED/PENDING_FINANCE_REVIEW are also pre-finance. CLOSED is post-completion
-        // and can still need invoice linking. Only post-finance-approved + downstream
-        // statuses are invoice-linkable.
-        java.util.Set<com.cretas.aims.entity.enums.PurchaseOrderStatus> invoiceablePO = java.util.Set.of(
-                com.cretas.aims.entity.enums.PurchaseOrderStatus.FINANCE_APPROVED,
-                com.cretas.aims.entity.enums.PurchaseOrderStatus.PARTIAL_RECEIVED,
-                com.cretas.aims.entity.enums.PurchaseOrderStatus.COMPLETED,
-                com.cretas.aims.entity.enums.PurchaseOrderStatus.CLOSED);
+        java.util.Set<com.cretas.aims.entity.enums.PurchaseOrderStatus> whitelist =
+                PO_WHITELIST_BY_USAGE.getOrDefault(usage, PO_WHITELIST_BY_USAGE.get("all"));
         List<PurchaseOrder> filtered = result.getContent().stream()
-                .filter(po -> invoiceablePO.contains(po.getStatus()))
+                .filter(po -> whitelist.contains(po.getStatus()))
                 .filter(po -> esc.isEmpty() || (po.getOrderNumber() != null && po.getOrderNumber().contains(esc)))
                 .collect(Collectors.toList());
         List<Map<String, Object>> content = filtered.stream()
