@@ -208,16 +208,26 @@ async def auto_parse_status(upload_id: int, request: Request):
             if expected and internal_secret == expected:
                 caller_factory_id = request.headers.get("x-factory-id") or "INTERNAL"
             else:
-                # Try Bearer token (frontend)
+                # Try Bearer token (frontend) — must use pyjwt + match
+                # auth_middleware's secret padding (UTF-8, pad to 32 bytes)
+                # to align with Java JwtUtil HS256 key derivation.
                 auth_header = request.headers.get("authorization", "")
                 if auth_header.startswith("Bearer "):
                     token = auth_header[7:]
                     try:
-                        from jose import jwt
-                        secret = os.environ.get("JWT_SECRET", "default-secret")
-                        claims = jwt.decode(token, secret, algorithms=["HS256"])
+                        import jwt as pyjwt
+                        raw_secret = os.environ.get("JWT_SECRET", "default-secret")
+                        key_bytes = raw_secret.encode("utf-8")
+                        if len(key_bytes) < 32:
+                            key_bytes = key_bytes + b"\x00" * (32 - len(key_bytes))
+                        claims = pyjwt.decode(
+                            token, key_bytes,
+                            algorithms=["HS256"],
+                            options={"verify_exp": True},
+                        )
                         caller_factory_id = claims.get("factoryId")
-                    except Exception:
+                    except Exception as _e:
+                        logger.warning(f"[auto-parse-status] JWT verify failed: {_e}")
                         caller_factory_id = None
         if not caller_factory_id:
             raise HTTPException(
