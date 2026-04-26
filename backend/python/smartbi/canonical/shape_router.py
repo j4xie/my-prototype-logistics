@@ -19,10 +19,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-# Day 4 baseline: only bill_flow writer is wired. product_summary / review /
-# finance / inventory writers are placeholders — they map to a name but
-# get_writer returns None, which routes to admin queue (deferred to Day 8-9).
-# schedule / member are deferred entirely (writer name is None).
+# Maps detected shape → registered writer factory name. SCHEDULE / MEMBER are
+# deferred to C-stage (return None).
 WRITER_REGISTRY: dict[FileShape, Optional[str]] = {
     FileShape.BILL_FLOW: "bill_flow",
     FileShape.PRODUCT_SUMMARY: "product_summary",
@@ -54,11 +52,25 @@ def get_writer(
     orchestrator: "EntityResolutionOrchestrator",
 ) -> Optional["BaseWriter"]:
     """Resolve writer name → instance. Returns None for unimplemented writers."""
-    from smartbi.canonical.silver_writers import BillFlowWriter
+    from smartbi.canonical.silver_writers import (
+        BillFlowWriter,
+        FinanceWriter,
+        InventoryWriter,
+        ProductSummaryWriter,
+        ReviewWriter,
+    )
 
     if writer_name == "bill_flow":
         return BillFlowWriter(pool=pool, orchestrator=orchestrator)
-    # Day 8-9: ProductSummaryWriter / ReviewWriter / FinanceWriter / InventoryWriter
+    if writer_name == "product_summary":
+        return ProductSummaryWriter(pool=pool, orchestrator=orchestrator)
+    if writer_name == "review":
+        return ReviewWriter(pool=pool, orchestrator=orchestrator)
+    if writer_name == "finance":
+        return FinanceWriter(pool=pool, orchestrator=orchestrator)
+    if writer_name == "inventory":
+        return InventoryWriter(pool=pool, orchestrator=orchestrator)
+    # schedule / member still deferred to C-stage.
     return None
 
 

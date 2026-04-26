@@ -175,14 +175,15 @@ async def test_route_unknown_shape_queues_admin():
 
 
 async def test_route_unimplemented_writer_queues_admin():
-    """PRODUCT_SUMMARY shape → registry has 'product_summary' but get_writer returns None
-    (Day 8-9 not yet built) → admin queue with reasoning containing 'not yet implemented'."""
-    conn = _conn_with_columns(["商品名称", "销售金额"])
+    """SCHEDULE shape → registry maps to None (deferred to C-stage) →
+    admin queue. After Day 8-9, product/review/finance/inventory are all wired,
+    so SCHEDULE / MEMBER are the only remaining unwired shapes."""
+    conn = _conn_with_columns(["排班日期", "员工"])
     pool, _ = _make_mock_pool(conn=conn)
 
     detector = MagicMock(spec=ShapeDetector)
     detector.detect = AsyncMock(
-        return_value=DetectionResult(FileShape.PRODUCT_SUMMARY, 0.90, "rule"),
+        return_value=DetectionResult(FileShape.SCHEDULE, 0.90, "rule"),
     )
 
     orchestrator = MagicMock()
@@ -196,8 +197,7 @@ async def test_route_unimplemented_writer_queues_admin():
 
     assert result.queued_for_admin is True
     assert result.routed_to is None
-    assert result.shape == "product_summary"
-    assert "not yet implemented" in result.reasoning
+    assert result.shape == "schedule"
 
 
 async def test_route_passes_factory_id_in_admin_insert():
