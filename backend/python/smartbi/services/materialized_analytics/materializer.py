@@ -182,10 +182,18 @@ async def materialize_upload(
         if not batch:
             return
         if inferred_schema is None:
-            # Infer on first chunk so subsequent chunks use a stable schema —
-            # avoids `could not append value ... to builder` mid-stream if a
-            # later chunk has e.g. null-only columns.
-            df = pl.from_dicts(batch, infer_schema_length=min(1000, len(batch)))
+            # Apr 26 2026 fix: was infer_schema_length=min(1000, len(batch))
+            # — qhj 4216 卡详情 32K rows had `售卡人` column where first ~1000
+            # rows were all null, then later rows had "收银"/actual names.
+            # polars inferred Null type → ComputeError "could not append value
+            # 收银 of type str to builder" (misleadingly suffixed with
+            # "or value overflows data-type's capacity"). Scan whole batch
+            # (≤10K) — small upfront cost avoids type-mismatch crashes.
+            try:
+                df = pl.from_dicts(batch, infer_schema_length=len(batch))
+            except Exception:
+                # Last resort: schema=None (slowest but most permissive)
+                df = pl.from_dicts(batch, infer_schema_length=None)
             inferred_schema = dict(df.schema)
         else:
             try:
@@ -194,7 +202,7 @@ async def materialize_upload(
                 # Loose fallback: re-infer per chunk and let concat reconcile
                 # via diagonal merge. Only hit if a later chunk has a new
                 # non-null column that didn't appear in the first 10K.
-                df = pl.from_dicts(batch, infer_schema_length=min(1000, len(batch)))
+                df = pl.from_dicts(batch, infer_schema_length=len(batch))
         frames.append(df)
         batch.clear()
 
