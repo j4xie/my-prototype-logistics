@@ -370,19 +370,12 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     /**
      * R18 audit: enforce business invariant — invoice can only be requested against
-     * a post-finance-approved SO. Same whitelist as ReferenceDataController.findSalesOrders
-     * (R17 audit CRIT-1). Pre-finance states (DRAFT/CONFIRMED/PENDING_FINANCE_REVIEW) bypass
-     * the dual-control gate; FINANCE_REJECTED/CANCELLED are explicitly invalid.
+     * a post-finance-approved SO. R21 audit C2: now uses centralized OrderUsageWhitelists
+     * (single source of truth), no longer a local duplicate Set.
      */
-    private static final java.util.Set<com.cretas.aims.entity.enums.SalesOrderStatus> INVOICEABLE_SO_STATUSES =
-        java.util.Set.of(
-            com.cretas.aims.entity.enums.SalesOrderStatus.FINANCE_APPROVED,
-            com.cretas.aims.entity.enums.SalesOrderStatus.PROCESSING,
-            com.cretas.aims.entity.enums.SalesOrderStatus.PARTIAL_DELIVERED,
-            com.cretas.aims.entity.enums.SalesOrderStatus.COMPLETED);
-
     private void validateInvoiceableStatus(SalesOrder so) {
-        if (so.getStatus() == null || !INVOICEABLE_SO_STATUSES.contains(so.getStatus())) {
+        if (so.getStatus() == null
+                || !com.cretas.aims.domain.OrderUsageWhitelists.SO_INVOICEABLE.contains(so.getStatus())) {
             throw new com.cretas.aims.exception.BusinessException(409,
                 "销售订单状态不允许开票 (当前: " + (so.getStatus() != null ? so.getStatus().name() : "null") +
                 "). 仅财务审核通过及之后状态可开票.")

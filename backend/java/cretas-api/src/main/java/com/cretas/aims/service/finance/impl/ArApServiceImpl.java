@@ -36,30 +36,41 @@ public class ArApServiceImpl implements ArApService {
     private final CustomerRepository customerRepository;
     private final SupplierRepository supplierRepository;
 
-    /** R20 audit Q1: PO status validation for AP invariant. */
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    /** R20 audit Q1: PO status validation for AP invariant.
+     *  R21 audit S2: required=true (was =false fail-open hole). Repo is always present. */
+    @org.springframework.beans.factory.annotation.Autowired
     private com.cretas.aims.repository.inventory.PurchaseOrderRepository purchaseOrderRepository;
 
-    /** R20 audit: invariant — payable can only link to post-finance-approved PO.
-     *  Mirror of InvoiceServiceImpl.INVOICEABLE_SO_STATUSES (R18). */
-    private static final java.util.Set<com.cretas.aims.entity.enums.PurchaseOrderStatus> PAYABLE_PO_STATUSES =
-        java.util.Set.of(
-            com.cretas.aims.entity.enums.PurchaseOrderStatus.FINANCE_APPROVED,
-            com.cretas.aims.entity.enums.PurchaseOrderStatus.PARTIAL_RECEIVED,
-            com.cretas.aims.entity.enums.PurchaseOrderStatus.COMPLETED,
-            com.cretas.aims.entity.enums.PurchaseOrderStatus.CLOSED);
+    /** R21: SO repo for AR invariant (R20 audit C1 — recordReceivable was unprotected). */
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.cretas.aims.repository.inventory.SalesOrderRepository salesOrderRepository;
 
     private void validatePayableStatus(String purchaseOrderId, String factoryId) {
-        if (purchaseOrderRepository == null) return;  // graceful: skip if repo not wired
         com.cretas.aims.entity.inventory.PurchaseOrder po = purchaseOrderRepository.findById(purchaseOrderId)
                 .filter(p -> factoryId.equals(p.getFactoryId()))
                 .orElseThrow(() -> new ResourceNotFoundException("采购订单不存在: " + purchaseOrderId));
-        if (po.getStatus() == null || !PAYABLE_PO_STATUSES.contains(po.getStatus())) {
+        if (po.getStatus() == null
+                || !com.cretas.aims.domain.OrderUsageWhitelists.PO_INVOICEABLE.contains(po.getStatus())) {
             throw new com.cretas.aims.exception.BusinessException(409,
                 "采购订单状态不允许应付挂账 (当前: " + (po.getStatus() != null ? po.getStatus().name() : "null") +
                 "). 仅财务审核通过及之后状态可挂账.")
                 .withHint("先完成财务审核流程后再录入应付")
                 .withHintTarget("采购订单");
+        }
+    }
+
+    /** R21 audit C1: recordReceivable was unprotected. Mirror of validatePayableStatus. */
+    private void validateReceivableStatus(String salesOrderId, String factoryId) {
+        com.cretas.aims.entity.inventory.SalesOrder so = salesOrderRepository.findById(salesOrderId)
+                .filter(s -> factoryId.equals(s.getFactoryId()))
+                .orElseThrow(() -> new ResourceNotFoundException("销售订单不存在: " + salesOrderId));
+        if (so.getStatus() == null
+                || !com.cretas.aims.domain.OrderUsageWhitelists.SO_INVOICEABLE.contains(so.getStatus())) {
+            throw new com.cretas.aims.exception.BusinessException(409,
+                "销售订单状态不允许应收挂账 (当前: " + (so.getStatus() != null ? so.getStatus().name() : "null") +
+                "). 仅财务审核通过及之后状态可挂账.")
+                .withHint("先完成财务审核流程后再录入应收")
+                .withHintTarget("销售订单");
         }
     }
 
@@ -108,6 +119,14 @@ public class ArApServiceImpl implements ArApService {
         if (salesOrderId != null && transactionRepository.existsByFactoryIdAndSalesOrderIdAndTransactionType(
                 factoryId, salesOrderId, ArApTransactionType.AR_INVOICE)) {
             throw new BusinessException("该销售订单已生成应收记录");
+        }
+
+        // R21 audit C1: enforce SO status invariant (mirror of R18 InvoiceServiceImpl).
+        // Without this, direct API POST with DRAFT/CANCELLED salesOrderId silently writes
+        // an AR_INVOICE transaction. R18 fixed the parallel InvoiceRecord write path; this
+        // closes the ArApTransaction-side gap.
+        if (salesOrderId != null) {
+            validateReceivableStatus(salesOrderId, factoryId);
         }
 
         // 更新客户余额
