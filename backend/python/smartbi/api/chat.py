@@ -2057,41 +2057,75 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 + USER_FRIENDLY_TONE_CLAUSE
             )
 
-            # ── Stream LLM response (lower max_tokens + temperature for speed) ──
-            # S4 audit P1 fix (Apr 26 2026): 25s soft cut-off. v2 conv memory
-            # adds ~500 token of parent context, which lengthens LLM chain-of-
-            # thought. S4 audit caught 5 new gml 30s+ timeouts with parent ctx.
-            # If LLM streaming exceeds 25s wall, yield whatever we have so far
-            # and append a note — users get a partial answer instead of 60s
-            # timeout 0 字. 25s is the soft threshold (not the FE 30s watchdog).
+            # ── Stream LLM response with hard timeout enforcement ──
+            # S4 P1 + v4 P1-enhanced (Apr 26 2026): 25s soft cut-off enforced
+            # via per-chunk asyncio.wait_for. Old impl used `async for` which
+            # blocked on the next chunk indefinitely — when LLM was completely
+            # silent for 30+s (cold start), the elapsed-check inside the loop
+            # never got to run. v4 verification log shows 7 cases of LLM
+            # producing only 1-2 chars before timeout, plus xmx-fu-20-3 42s
+            # 0-char silent timeout. New impl:
+            #   1. Wraps each .__anext__() with wait_for(min(remaining, 5)s)
+            #   2. Tracks _silent_timeout (full_text == "" at expiry)
+            #   3. On silent timeout, emits actionable message instead of empty
             full_text = ""
             _llm_start = time.time()
             _LLM_SOFT_TIMEOUT_S = 25.0
             _llm_truncated = False
-            async for chunk in insight_gen._call_llm_stream_text(
+            _silent_timeout = False
+
+            _stream_gen = insight_gen._call_llm_stream_text(
                 prompt, system_role, max_tokens=1500, temperature=0.2
-            ):
+            )
+            _stream_iter = _stream_gen.__aiter__()
+
+            while True:
+                _elapsed = time.time() - _llm_start
+                _remaining = _LLM_SOFT_TIMEOUT_S - _elapsed
+                if _remaining <= 0:
+                    _llm_truncated = True
+                    _silent_timeout = (full_text == "")
+                    logger.warning(
+                        f"[stream] LLM soft timeout {_elapsed:.1f}s > "
+                        f"{_LLM_SOFT_TIMEOUT_S}s, accumulated={len(full_text)} "
+                        f"chars, silent={_silent_timeout}"
+                    )
+                    break
+
                 if await http_request.is_disconnected():
                     logger.info("[stream] Client disconnected, stopping")
                     return
-                _llm_elapsed = time.time() - _llm_start
-                if _llm_elapsed > _LLM_SOFT_TIMEOUT_S and full_text:
-                    # We have at least some text — give up the rest gracefully.
-                    _llm_truncated = True
-                    logger.warning(
-                        f"[stream] LLM soft timeout {_llm_elapsed:.1f}s > "
-                        f"{_LLM_SOFT_TIMEOUT_S}s, truncating with "
-                        f"{len(full_text)} chars accumulated"
+
+                try:
+                    # Per-chunk timeout — 5s ceiling lets the loop re-check
+                    # _elapsed even if LLM paused mid-stream.
+                    chunk = await asyncio.wait_for(
+                        _stream_iter.__anext__(),
+                        timeout=min(_remaining, 5.0),
                     )
-                    break
+                except StopAsyncIteration:
+                    break  # stream ended normally
+                except asyncio.TimeoutError:
+                    continue  # re-check loop condition (might trigger soft timeout)
+
                 full_text += chunk
                 yield _sse_event("chunk", chunk)
+
             if _llm_truncated:
-                # Add a stop marker so the user understands why the answer
-                # ends abruptly. Stays inside the answer text (not warning).
-                _trunc_note = "\n\n*(分析超过 25 秒已截断,可重问获取完整回答)*"
-                full_text += _trunc_note
-                yield _sse_event("chunk", _trunc_note)
+                if _silent_timeout:
+                    # LLM produced 0 chars — give an actionable message instead
+                    # of letting the user see "EMPTY 0 字" after 25s wait.
+                    _silent_msg = (
+                        "💡 AI 思考超时(>25 秒), 可能问题过于复杂或当前模型负载高.\n\n"
+                        "**建议**: 精简问题或换种问法 (例如用具体数字/时间范围限定) 后重试."
+                    )
+                    full_text = _silent_msg
+                    yield _sse_event("chunk", _silent_msg)
+                else:
+                    # Have partial answer — append truncation note.
+                    _trunc_note = "\n\n*(分析超过 25 秒已截断, 可重问获取完整回答)*"
+                    full_text += _trunc_note
+                    yield _sse_event("chunk", _trunc_note)
 
             # ── Build charts in parallel (non-blocking) ──
             charts = []
