@@ -58,3 +58,44 @@ ssh root@47.100.235.168 'crontab -l | grep -v capability-watch | crontab -'
 ```
 
 Or keep running indefinitely as a passive health probe (~5KB log per day at 15-min cadence is cheap).
+
+---
+
+## capability-soak-report.sh
+
+24h aggregation of capability-watch.sh log lines. Replaces manual "Day 12 24h soak" verification with automated daily summary.
+
+**Probes**: parses `/var/log/capability-watch.log` last 24h, computes:
+- Total runs (96 expected if 15-min cadence held)
+- PASS % vs ALERT %
+- Avg + p95 latency
+- Worst-latency line for context
+- VERDICT: pass (≥99% PASS) / warn (≥95%) / fail (<95%)
+
+**Output** (cron'd to `/var/log/capability-soak.log`):
+```
+[2026-04-26T09:00:00] DAILY-SUMMARY runs=96 pass=100% alert=0% lat_avg=18ms lat_p95=42ms worst="OK health=ok cap=20f/13s lat=48ms gate=ok"
+[2026-04-26T09:00:00] DAILY-VERDICT pass (threshold: pass≥99% / warn≥95% / fail<95%)
+```
+
+**Install on prod** (already done Apr 26 2026):
+```bash
+scp scripts/monitoring/capability-soak-report.sh root@47.100.235.168:/www/wwwroot/cretas/
+ssh root@47.100.235.168 'crontab -l | grep -v capability-soak > /tmp/cron; echo "0 9 * * * /www/wwwroot/cretas/capability-soak-report.sh >> /var/log/capability-soak.log 2>&1" >> /tmp/cron; crontab /tmp/cron'
+```
+
+**Tail**:
+```bash
+ssh root@47.100.235.168 'tail -20 /var/log/capability-soak.log'
+```
+
+**On-demand run** (e.g., before declaring "1-week observation passed"):
+```bash
+ssh root@47.100.235.168 'WINDOW_HOURS=168 bash /www/wwwroot/cretas/capability-soak-report.sh'
+```
+(168h = 7 days. Override `WINDOW_HOURS` env var for any window.)
+
+**Exit codes**:
+- 0 — pass or warn (cron continues silently)
+- 1 — fail (cron mailer fires if MAILTO set in crontab)
+- 2 — log file missing
