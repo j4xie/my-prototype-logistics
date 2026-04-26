@@ -32,13 +32,16 @@ logger = logging.getLogger(__name__)
 
 # Similarity thresholds tuned for DashScope text-embedding-v3.
 # Tuning history:
-#   Apr 23 2026 initial: 0.85 / 0.70 — too strict in practice; prod E2E showed
-#     two correct semantic matches falling to LLM at sim=0.824 / 0.839:
-#       "谁是销售冠军" → staff_performance (sim 0.824)
-#       "我想看付款方式" → payment_method_mix (sim 0.839)
-#     Both are valid intent matches; threshold was just 0.01-0.03 too high.
-#     Lowered HIGH to 0.80. MIN stays 0.70 (ambiguous band untouched).
-HIGH_CONFIDENCE = 0.80   # Vector-only match at/above this → serve template
+#   Apr 23 2026: 0.85 / 0.70 — too strict; lowered HIGH to 0.80 after prod
+#     showed "谁是销售冠军" (sim 0.824) / "我想看付款方式" (sim 0.839) wrongly
+#     dropped.
+#   Apr 26 2026 v4 B2-A: 0.80 → 0.78 — prod log analysis of 923 ambiguous
+#     misses showed 125 high-sim (≥0.78) cases for unambiguous templates:
+#       store_performance ×31, period_comparison_trend ×23, monthly_trend ×23,
+#       dish_slow_movers ×23, reviews_sentiment_summary ×16, member ×8 + misc.
+#     All single-domain templates with no real conflict at 0.78. Recovers
+#     ~125 cache hits/day with low false-positive risk.
+HIGH_CONFIDENCE = 0.78   # Vector-only match at/above this → serve template
 MIN_USEFUL = 0.70        # Below this → no hint, pure LLM fallback
 
 

@@ -429,6 +429,32 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"[startup] chat-session pruner init failed: {e}")
 
+    # v4 B2-B (Apr 26 2026): hourly pruner for LLM answer cache (24h TTL).
+    # Reuses smartbi pool; same pattern as chat-session pruner.
+    _llm_cache_pruner_task = None
+    try:
+        import asyncio as _asyncio
+        from smartbi.config import get_pg_pool as _get_pg_pool_lac
+        from smartbi.services.llm_answer_cache import LlmAnswerCache as _LAC
+
+        async def _prune_llm_cache_forever():
+            await _asyncio.sleep(120)
+            while True:
+                try:
+                    pool = await _get_pg_pool_lac()
+                    if pool is not None:
+                        deleted = await _LAC(pool).prune_expired()
+                        if deleted > 0:
+                            logger.info(f"[llm-cache] pruned {deleted} expired rows")
+                except Exception as ex:
+                    logger.warning(f"[llm-cache] prune failed: {ex}")
+                await _asyncio.sleep(3600)  # 1h cadence
+
+        _llm_cache_pruner_task = _asyncio.create_task(_prune_llm_cache_forever())
+        logger.info("[startup] llm-answer-cache hourly pruner armed")
+    except Exception as e:
+        logger.warning(f"[startup] llm-cache pruner init failed: {e}")
+
     yield
 
     # Shutdown: cancel narrative_cache pruner task
@@ -452,6 +478,14 @@ async def lifespan(app: FastAPI):
         _chat_session_pruner_task.cancel()
         try:
             await _chat_session_pruner_task
+        except Exception:
+            pass
+
+    # Shutdown: cancel llm-cache pruner task
+    if _llm_cache_pruner_task is not None:
+        _llm_cache_pruner_task.cancel()
+        try:
+            await _llm_cache_pruner_task
         except Exception:
             pass
 

@@ -2057,6 +2057,71 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 + USER_FRIENDLY_TONE_CLAUSE
             )
 
+            # v4 B2-B (Apr 26 2026): LLM-answer cache lookup BEFORE the LLM
+            # call. Skip when v2 conv memory has parent context (different turn
+            # → different expected answer). Cache key = (factory_id +
+            # normalized_q + upload_id), TTL 24h. ~80% of follow-ups go through
+            # LLM costing 10-12s; cache hit returns in 200ms.
+            _llm_cache_hit = None
+            if (not chat_session_parent and _session_factory_id
+                    and request.effective_query):
+                try:
+                    from smartbi.services.llm_answer_cache import LlmAnswerCache
+                    from smartbi.services.query_normalizer import normalize_for_match
+                    from smartbi.config import get_pg_pool as _get_pool_lac
+                    _normalized_q = normalize_for_match(request.effective_query)
+                    _lac_pool = await _get_pool_lac()
+                    if _lac_pool is not None:
+                        _lac_svc = LlmAnswerCache(_lac_pool)
+                        _llm_cache_hit = await _lac_svc.get(
+                            _session_factory_id, _normalized_q, upload_id
+                        )
+                        if _llm_cache_hit:
+                            logger.info(
+                                f"[llm-cache] HIT factory={_session_factory_id} "
+                                f"q='{_normalized_q[:30]}' hits={_llm_cache_hit['hit_count']}"
+                            )
+                except Exception as _lac_err:
+                    logger.warning(f"[llm-cache] lookup failed (non-fatal): {_lac_err}")
+
+            if _llm_cache_hit:
+                # Stream cached answer as if it were freshly generated.
+                _cached_text = _llm_cache_hit["answer_text"]
+                yield _sse_event("status", "⚡ 命中已有分析 (24h 内已问过同样问题)")
+                _chunk_size = 80
+                for i in range(0, len(_cached_text), _chunk_size):
+                    yield _sse_event("chunk", _cached_text[i:i + _chunk_size])
+                if _llm_cache_hit.get("charts"):
+                    yield _sse_event("charts", _llm_cache_hit["charts"])
+                yield _sse_event("done", {
+                    "success": True,
+                    "answer": _cached_text,
+                    "charts": _llm_cache_hit.get("charts", []),
+                    "warning": _llm_cache_hit.get("warning"),
+                    "source": "llm_answer_cache",
+                    "cache_hit_count": _llm_cache_hit["hit_count"],
+                    "processingTimeMs": int((time.time() - start_time) * 1000),
+                })
+                # Still write back v2 conv-memory parent context if session_id
+                # provided (cache hit ≠ skip session writeback).
+                if request.session_id and _session_factory_id:
+                    try:
+                        from smartbi.services.chat_session_service import ChatSessionService
+                        from smartbi.api.materialized_analytics import _spawn_bg
+                        _session_pool = await get_pg_pool()
+                        if _session_pool is not None:
+                            _spawn_bg(ChatSessionService(_session_pool).upsert(
+                                session_id=request.session_id,
+                                factory_id=_session_factory_id,
+                                parent_query=request.effective_query or "",
+                                parent_answer_summary=_cached_text,
+                                parent_template_code=None,
+                                parent_upload_id=upload_id,
+                            ))
+                    except Exception as _e:
+                        logger.warning(f"[chat-session] cache-hit writeback failed: {_e}")
+                return  # early exit — cache served the answer
+
             # ── Stream LLM response with hard timeout enforcement ──
             # S4 P1 + v4 P1-enhanced (Apr 26 2026): 25s soft cut-off enforced
             # via per-chunk asyncio.wait_for. Old impl used `async for` which
@@ -2267,6 +2332,30 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 "warning": _guard_warning,
                 "processingTimeMs": int((time.time() - start_time) * 1000)
             })
+
+            # v4 B2-B (Apr 26 2026): write LLM answer to cache for repeat
+            # queries. Skip when timeout/short answer (handled in cache.set()
+            # via min-30-char filter) or when v2 conv memory was used (cached
+            # answer would be stale for next turn anyway).
+            if (not chat_session_parent and _session_factory_id
+                    and full_text and not _llm_truncated):
+                try:
+                    from smartbi.services.llm_answer_cache import LlmAnswerCache as _LAC
+                    from smartbi.services.query_normalizer import normalize_for_match
+                    from smartbi.api.materialized_analytics import _spawn_bg as _spawn_lac
+                    _lac_w_pool = await get_pg_pool()
+                    if _lac_w_pool is not None:
+                        _normalized_q_w = normalize_for_match(request.effective_query or "")
+                        _spawn_lac(_LAC(_lac_w_pool).set(
+                            factory_id=_session_factory_id,
+                            normalized_q=_normalized_q_w,
+                            upload_id=upload_id,
+                            answer_text=full_text,
+                            charts=charts,
+                            warning=_guard_warning,
+                        ))
+                except Exception as _lac_w_err:
+                    logger.warning(f"[llm-cache] writeback failed (non-fatal): {_lac_w_err}")
 
             # Apr 26 2026 v2 conversation memory: write back parent context after
             # LLM streaming. Fire-and-forget; failure must not poison the user's
