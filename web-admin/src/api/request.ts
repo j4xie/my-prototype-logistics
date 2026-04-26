@@ -303,12 +303,23 @@ request.interceptors.response.use(
     } else {
       message = error.message;
     }
-    // 409 乐观锁冲突 — caller 弹 ElMessageBox 提供"刷新列表"选项, interceptor 不再追加 sticky toast
-    // (否则同一冲突出两次提示, UX 噪声). 2026-04-24 code-review LOW-1.
-    const isOptimisticLockConflict = status === 409;
+    // 409 differentiation (R24 P2 real-window finding):
+    //   - Optimistic lock 409: GlobalExceptionHandler emits {code:409, message:"数据已被其他用户修改..."}
+    //     with NO actionHint. Callers (suppliers/customers/sales-orders/DynamicModulePage)
+    //     catch status===409 and ElMessageBox.alert their own "刷新列表" dialog. Interceptor
+    //     toast would be redundant.
+    //   - Business 409: BusinessException(409, ...).withHint(...) emits {code:409, message:..,
+    //     actionHint:.., hintTarget:..}. R18+R21+R23 invariants (DRAFT/CANCELLED/PRE_FINANCE
+    //     SO/PO blocked from /finance/receivable, /finance/payable, /finance/invoices/request,
+    //     /finance/payments/record, etc.) all use this path. Pre-R24 the blanket-suppress
+    //     swallowed actionHint so users got NO feedback — captured by R24 real-window test
+    //     on /finance/invoices/request with CONFIRMED SO (toast log empty, network 409).
+    // Apr 24 LOW-1 fix was too broad; this re-narrows the suppression to vanilla optimistic
+    // lock only (no actionHint).
+    const rich = (error.response?.data as unknown as Record<string, string | null>) || {};
+    const isVanillaOptimisticLock = status === 409 && !rich.actionHint && !rich.hintTarget;
     // Allow callers to suppress error toast via _silent config flag
-    if (!originalRequest._silent && !isOptimisticLockConflict) {
-      const rich = (error.response?.data as unknown as Record<string, string | null>) || {};
+    if (!originalRequest._silent && !isVanillaOptimisticLock) {
       showRichError(message, {
         actionHint: rich.actionHint,
         severity: rich.severity,

@@ -211,9 +211,22 @@ public class MaterialBatchMapper {
         if (request.getQuantityUnit() != null) {
             batch.setQuantityUnit(request.getQuantityUnit());
         }
+        // R24 P1 (qa-prompt v2.4 Rule 17.2 sweep): pre-R24 weightPerUnit was only set
+        // indirectly via totalWeight.divide(qty). API consumers / mobile / AI tools
+        // sending weightPerUnit directly (without totalWeight) had it silent-dropped.
+        // UI form (warehouse/materials/list.vue) doesn't expose weightPerUnit so the
+        // gap was hidden — but the create path (toEntity line 113) does map it
+        // directly, so symmetry was broken. Fix: map directly first, then derive from
+        // totalWeight only if weightPerUnit wasn't explicitly sent.
+        if (request.getWeightPerUnit() != null) {
+            batch.setWeightPerUnit(request.getWeightPerUnit());
+        }
         // totalWeight is a transient computed property (weightPerUnit × receiptQuantity).
-        // If the form sends it, derive weightPerUnit from receiptQuantity to persist.
-        if (request.getTotalWeight() != null && request.getTotalWeight().compareTo(BigDecimal.ZERO) > 0) {
+        // If the form sends it (and weightPerUnit wasn't already set above), derive
+        // weightPerUnit from receiptQuantity to persist.
+        if (request.getWeightPerUnit() == null
+                && request.getTotalWeight() != null
+                && request.getTotalWeight().compareTo(BigDecimal.ZERO) > 0) {
             BigDecimal qty = batch.getReceiptQuantity();
             if (qty != null && qty.compareTo(BigDecimal.ZERO) > 0) {
                 batch.setWeightPerUnit(request.getTotalWeight().divide(qty, 4, RoundingMode.HALF_UP));
