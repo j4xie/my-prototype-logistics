@@ -1069,7 +1069,7 @@ def _disambiguate_for_query(query: str, code: str, data: Dict, kpis: Dict) -> Op
     # top_n_by_dim — when user query implies different scope than served dim
     if code == 'top_n_by_dim':
         primary_dim = data.get('primary_dim') if isinstance(data, dict) else None
-        # User asks specifically about 菜品 but dim is not 菜品-related
+        # User asks specifically about 菜品 but dim is not 菜品-related at all
         if any(k in q for k in ('卖得最好的菜', 'Top 10 菜', 'Top10菜')):
             if primary_dim and not any(
                 k in primary_dim for k in ('菜', '商品', '产品', '单品')
@@ -1077,6 +1077,14 @@ def _disambiguate_for_query(query: str, code: str, data: Dict, kpis: Dict) -> Op
                 return (
                     f"针对你问的「卖得最好的菜」: 当前数据按【{primary_dim}】聚合, "
                     f"非菜品级明细. 若需具体菜名 Top N 请上传带菜品名称的销量明细."
+                )
+            # Granularity note: dim is 商品分类/品类 (category-level) not SKU
+            if primary_dim and any(
+                k in primary_dim for k in ('分类', '品类', '类别', '类目')
+            ):
+                return (
+                    f"针对你问的「卖得最好的菜」: 当前按【{primary_dim}】(类别级) 排名, "
+                    f"非具体菜品名 (单品级). 若需 SKU/菜名 Top N 请上传含明细菜名的销量数据."
                 )
 
     return None
