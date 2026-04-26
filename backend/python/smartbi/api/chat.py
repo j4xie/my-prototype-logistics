@@ -2329,6 +2329,11 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
             # yield done, so any code after yield never runs. _spawn_bg
             # schedules background task which keeps running after this
             # generator closes (anchored in _PENDING_BG_TASKS).
+            logger.info(
+                f"[llm-cache] reached write-check: parent={bool(chat_session_parent)} "
+                f"factory={_session_factory_id} full_text_len={len(full_text)} "
+                f"truncated={_llm_truncated}"
+            )
             if (not chat_session_parent and _session_factory_id
                     and full_text and not _llm_truncated):
                 try:
