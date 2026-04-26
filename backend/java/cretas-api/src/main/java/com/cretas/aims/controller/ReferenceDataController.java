@@ -406,21 +406,28 @@ public class ReferenceDataController {
         return wrap(content, filtered.size());
     }
 
-    /** R12 audit S2 meta: 销售订单 dropdown for outbound/finance_ar/production_plan
-     *  modules that reference sourceOrderId/salesOrderId via DYNAMIC mode. */
+    /** R12 audit S2 meta: 销售订单 dropdown for outbound/finance_ar/production_plan.
+     *  R13 audit SER-2/4 fixes: filter DRAFT/CANCELLED + over-fetch (size*4 cap 200)
+     *  for keyword reach + honest filtered.size() totalElements (mirror /quotes pattern). */
     @GetMapping("/sales-orders")
-    @Operation(summary = "销售订单查找")
+    @Operation(summary = "销售订单查找 (DRAFT/CANCELLED 已过滤)")
     public ApiResponse<Map<String, Object>> findSalesOrders(
             @PathVariable String factoryId,
             @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "50") int size) {
+        int pageSize = clampSize(size);
         org.springframework.data.domain.PageRequest pageable = PageRequest.of(
-                Math.max(page - 1, 0), clampSize(size));
+                Math.max(page - 1, 0), Math.min(pageSize * 4, 200));
         Page<SalesOrder> result = salesOrderRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageable);
         String esc = keyword == null ? "" : keyword.trim();
-        List<Map<String, Object>> content = result.getContent().stream()
+        List<SalesOrder> filtered = result.getContent().stream()
+                .filter(so -> so.getStatus() != com.cretas.aims.entity.enums.SalesOrderStatus.DRAFT
+                           && so.getStatus() != com.cretas.aims.entity.enums.SalesOrderStatus.CANCELLED)
                 .filter(so -> esc.isEmpty() || (so.getOrderNumber() != null && so.getOrderNumber().contains(esc)))
+                .collect(Collectors.toList());
+        List<Map<String, Object>> content = filtered.stream()
+                .limit(pageSize)
                 .map(so -> {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("id", so.getId());
@@ -429,7 +436,7 @@ public class ReferenceDataController {
                     return m;
                 })
                 .collect(Collectors.toList());
-        return wrap(content, content.size());
+        return wrap(content, filtered.size());
     }
 
     @GetMapping("/sales-orders/{id}")
@@ -448,29 +455,36 @@ public class ReferenceDataController {
                 .orElseGet(() -> ApiResponse.success(null));
     }
 
-    /** R12 audit S2 meta: 采购订单 dropdown for inbound/finance_ap modules. */
+    /** R12 audit S2 meta: 采购订单 dropdown for inbound/finance_ap.
+     *  R13 audit SER-2/4 fixes: filter DRAFT/CANCELLED + over-fetch + honest filtered.size(). */
     @GetMapping("/purchase-orders")
-    @Operation(summary = "采购订单查找")
+    @Operation(summary = "采购订单查找 (DRAFT/CANCELLED 已过滤)")
     public ApiResponse<Map<String, Object>> findPurchaseOrders(
             @PathVariable String factoryId,
             @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "50") int size) {
+        int pageSize = clampSize(size);
         org.springframework.data.domain.PageRequest pageable = PageRequest.of(
-                Math.max(page - 1, 0), clampSize(size));
+                Math.max(page - 1, 0), Math.min(pageSize * 4, 200));
         Page<PurchaseOrder> result = purchaseOrderRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageable);
         String esc = keyword == null ? "" : keyword.trim();
-        List<Map<String, Object>> content = result.getContent().stream()
+        List<PurchaseOrder> filtered = result.getContent().stream()
+                .filter(po -> po.getStatus() != com.cretas.aims.entity.enums.PurchaseOrderStatus.DRAFT
+                           && po.getStatus() != com.cretas.aims.entity.enums.PurchaseOrderStatus.CANCELLED)
                 .filter(po -> esc.isEmpty() || (po.getOrderNumber() != null && po.getOrderNumber().contains(esc)))
+                .collect(Collectors.toList());
+        List<Map<String, Object>> content = filtered.stream()
+                .limit(pageSize)
                 .map(po -> {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("id", po.getId());
-                    m.put("poNumber", po.getOrderNumber());  // schema displayField=poNumber per V11 migration
+                    m.put("poNumber", po.getOrderNumber());  // schema displayField=poNumber per V13
                     m.put("supplierId", po.getSupplierId());
                     return m;
                 })
                 .collect(Collectors.toList());
-        return wrap(content, content.size());
+        return wrap(content, filtered.size());
     }
 
     @GetMapping("/purchase-orders/{id}")
