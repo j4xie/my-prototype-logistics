@@ -111,11 +111,26 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
         "channel_analysis",
         [["外卖", "堂食", "美团", "饿了么", "京东", "抖音", "渠道", "来源"], ["订单", "销售", "营收", "占比", "对比", "分析"]],
     ),
-    # stored_value_card_consumption must precede member_consumption — the latter
-    # lists 储值卡 in its keywords too, so ordering matters.
+    # Apr 26 2026 phase 4 P1.c: member_deep_analytics moved ABOVE
+    # stored_value_card_consumption. Previously stored_value matched qhj-20
+    # "储值卡余额总额多少" first (储值卡 + 多少) but qhj had no upload with
+    # stored_value_card_consumption materialized → fall back to LLM.
+    # member_deep_analytics IS materialized for member-level exports (qhj
+    # 4216) and answers 余额/总额/Top持有者/召回 queries via 等级分布/
+    # 余额分层/Top 充值 outputs. Promoted + extended keywords below.
+    (
+        "member_deep_analytics",
+        [["会员卡", "会员数据", "会员等级", "卡余额", "储值会员", "会员充值",
+          "储值卡", "储值", "持有者", "持有", "赠品", "赠送金", "赠送"],
+         ["分布", "数据", "等级", "余额", "多少", "统计", "分析",
+          "总额", "Top", "哪类", "哪些", "召回", "持有", "大户"]],
+    ),
+    # stored_value_card_consumption: now narrower — requires
+    # transaction-level keywords (消费/流水/使用) instead of generic 多少
+    # so it doesn't poach 储值卡余额 type queries that member_deep handles.
     (
         "stored_value_card_consumption",
-        [["储值卡", "预付卡"], ["消费", "流水", "金额", "使用", "报表", "分析", "多少"]],
+        [["储值卡", "预付卡"], ["消费", "流水", "使用", "报表"]],
     ),
     (
         "member_consumption",
@@ -173,15 +188,9 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
         [["营业概况", "营业汇总", "月度", "月报", "汇总", "概况", "日报"],
          ["报表", "分析", "多少", "总", "合计", "峰值", "最高", "最低"]],
     ),
-    # W3 会员深度 — must precede member_consumption / stored_value_card_consumption
-    # which look at order-level 会员卡/储值卡 columns. member_deep is triggered
-    # by member-level exports with 卡号/等级/余额 — more specific intent.
-    (
-        "member_deep_analytics",
-        # "会员卡数据" / "会员等级分布" / "会员余额"
-        [["会员卡", "会员数据", "会员等级", "卡余额", "储值会员", "会员充值"],
-         ["分布", "数据", "等级", "余额", "多少", "统计", "分析"]],
-    ),
+    # W3 会员深度 — promoted to top of pattern list above
+    # stored_value_card_consumption (Apr 26 2026 phase 4 P1.c). See
+    # earlier entry for full keyword set.
     # W4 专项报表 (Apr 22 2026)
     (
         "reviews_sentiment_summary",
