@@ -10,7 +10,10 @@ from typing import ClassVar
 from smartbi.capability.contract import RequiresSpec
 
 from ..compute.base import ComputeBackend
-from ..restaurant.action_rec_formatter import format_action_rec
+from ..restaurant.action_rec_formatter import (
+    dim_aware_top_n_action_rec,
+    format_action_rec,
+)
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
@@ -97,17 +100,20 @@ class TopNByDim(AnalysisTemplate):
         top_share_pct = (top_rows[0]["total"] / total_of_top * 100) if total_of_top > 0 else 0
         dominance = "独占" if top_share_pct >= 30 else "占比"
 
-        # Spec §4.3: drive bottom of top-N to learn from leader
+        # Spec §4.3: drive bottom of top-N to learn from leader.
+        # Apr 26 phase 5 UX: dim-aware variation — different dim types
+        # (门店/商品/渠道/时段/等级) call for different operational actions.
         bottom_label = top_rows[-1]["label"] if len(top_rows) >= 3 else None
         if bottom_label and len(top_rows) >= 3:
             top_val = top_rows[0]["total"]
             bot_val = top_rows[-1]["total"]
             gap_pct = round((top_val - bot_val) / top_val * 100, 0) if top_val > 0 else 0
-            action_rec = format_action_rec(
-                object_target=f"末位「{bottom_label}」 (与 Top「{top_label}」差距 {gap_pct:.0f}%)",
-                benefit_range=f"复制 Top {primary_dim} 运营 SOP 可拉高末位 {measure} 10-20%",
-                prerequisite=f"对标走访「{top_label}」 + 末位 {primary_dim} 负责人 KPI 重设",
-                timeline="本季度内",
+            action_rec = dim_aware_top_n_action_rec(
+                primary_dim=primary_dim,
+                measure=measure,
+                top_label=str(top_label),
+                bottom_label=str(bottom_label),
+                gap_pct=gap_pct,
             )
         else:
             action_rec = format_action_rec(

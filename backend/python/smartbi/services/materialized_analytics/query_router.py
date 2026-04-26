@@ -985,11 +985,23 @@ def regen_top_n_for_dim(data: Dict, target_dim: str, top_n: int = 10) -> Optiona
         bottom_label = rows[-1].get('label') if isinstance(rows[-1], dict) else None
         bot_total = rows[-1].get('total', 0) or 0
         gap_pct = round((top_total - bot_total) / top_total * 100, 0) if top_total > 0 else 0
-        action = (
-            f"建议: 针对【末位「{bottom_label}」 (与 Top「{top_label}」差距 {gap_pct:.0f}%)】"
-            f"复制 Top {target_dim} 运营 SOP 可拉高末位 {measure} 10-20% "
-            f"(前置: 对标走访「{top_label}」 + 末位 {target_dim} 负责人 KPI 重设, 本季度内完成)"
-        )
+        # Apr 26 phase 5 UX: dim-aware action rec (was hardcoded "复制 SOP")
+        try:
+            from .restaurant.action_rec_formatter import dim_aware_top_n_action_rec
+            action = dim_aware_top_n_action_rec(
+                primary_dim=str(target_dim),
+                measure=str(measure),
+                top_label=str(top_label),
+                bottom_label=str(bottom_label),
+                gap_pct=float(gap_pct),
+            )
+        except Exception:
+            # Fallback to original simpler phrasing if helper unavailable
+            action = (
+                f"建议: 针对【末位「{bottom_label}」 (与 Top「{top_label}」差距 {gap_pct:.0f}%)】"
+                f"复制 Top {target_dim} 运营 SOP 可拉高末位 {measure} 10-20% "
+                f"(前置: 对标走访「{top_label}」 + 末位 {target_dim} 负责人 KPI 重设, 本季度内完成)"
+            )
     else:
         action = (
             f"建议: 针对【Top「{top_label}」 ({dominance} {top_share_pct:.1f}%)】"
