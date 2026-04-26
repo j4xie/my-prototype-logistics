@@ -70,7 +70,10 @@ def _infer_dtype(fd: Dict[str, Any]) -> str:
     return 'string'
 
 
-def _pick_primary_measure(field_meta: List[Dict[str, Any]]) -> Optional[str]:
+def _pick_primary_measure(
+    field_meta: List[Dict[str, Any]],
+    sample_rows: Optional[List[Dict[str, Any]]] = None,
+) -> Optional[str]:
     # Apr 26 2026: filter out ID-like columns. See _ID_LIKE_PATTERNS.
     measures = [
         f['original_name'] for f in field_meta
@@ -79,7 +82,35 @@ def _pick_primary_measure(field_meta: List[Dict[str, Any]]) -> Optional[str]:
     for kw in _PRIORITY_MEASURE_KW:
         for m in measures:
             if kw in m:
-                return m
+                return m  # priority match — trust it (real revenue column)
+
+    # Fallback: first measure. But verify it has signal — qhj 4216 卡详情
+    # has 余额/本金/赠送金/押金 all 0 (member-card data, no transactions),
+    # so picking "本金" makes ALL revenue-dependent templates produce
+    # "Top 1 X 0 元 / 占比 0%" garbage. If sample shows no non-zero
+    # values, return None → templates' applies() returns False, no
+    # garbage cache served.
+    if measures and sample_rows:
+        candidate = measures[0]
+        non_zero_count = 0
+        for r in sample_rows[:100]:  # check up to 100 sample rows
+            v = r.get(candidate)
+            if v is None:
+                continue
+            try:
+                if float(v) != 0:
+                    non_zero_count += 1
+                    if non_zero_count >= 3:
+                        return candidate  # has signal — proceed
+            except (TypeError, ValueError):
+                pass
+        if non_zero_count == 0:
+            logger.info(
+                f"[materializer] fallback measure {candidate!r} has no non-zero "
+                f"values in sample — returning None primary_measure (revenue "
+                f"templates will skip via applies())"
+            )
+            return None
     return measures[0] if measures else None
 
 
@@ -111,7 +142,7 @@ def build_schema(
         )
         for fd in field_meta
     )
-    primary_measure = _pick_primary_measure(field_meta)
+    primary_measure = _pick_primary_measure(field_meta, sample_rows=sample_rows)
     time_field = _pick_time_field(field_meta)
 
     detector = get_default_detector()
