@@ -6,6 +6,12 @@
 v1.0 (2026-04-25): 初始搬家 + Day 0 audit 决策 (option 2) 加 product_summary 字段:
 - product_name / product_code / category / revenue / qty_sold / unit_price
 - product_unit / refund_qty / refund_amount / service_fee / tax
+
+v2.0 (2026-04-26): B-stage fields added (review/payment/SVC/inventory/period/
+dispatch/voucher) — 15 new canonical, 32 new alias entries. 解锁 14 deferred
+templates (reviews_sentiment_summary / payment_method_mix /
+stored_value_card_consumption / groupon_channel_breakdown /
+kitchen_dispatch_heatmap / member_deep_analytics 等).
 """
 from __future__ import annotations
 from typing import Dict
@@ -161,6 +167,100 @@ ALIAS_TO_ATTR: Dict[str, str] = {
 
     "invoice_amount": "invoice_amount",
     "开发票额": "invoice_amount",
+
+    # ====== v2.0 新增 B-stage 字段 (Apr 26 2026) ======
+
+    # review shape (B v2.0) — reviews_sentiment_summary
+    "review_text": "review_text",
+    "评论内容": "review_text",
+    "评论": "review_text",
+    "评价内容": "review_text",
+    "comment": "review_text",
+    "review": "review_text",
+
+    "rating": "rating",
+    "评分": "rating",
+    "星级": "rating",
+    "打分": "rating",
+    "评价星级": "rating",
+    "score": "rating",
+
+    "review_date": "review_date",
+    "评论时间": "review_date",
+    "评论日期": "review_date",
+    "comment_date": "review_date",
+
+    # payment shape (B v2.0) — payment_method_mix
+    # NOTE: payment_amount 是单笔支付级 (一张账单可拆 N 笔), 与 actual_receive (账单级实收) 区别
+    "payment_channel": "payment_channel",
+    "支付方式": "payment_channel",
+    "付款方式": "payment_channel",
+    "收款渠道": "payment_channel",
+    "payment_method": "payment_channel",
+    "channel": "payment_channel",
+
+    "payment_amount": "payment_amount",
+    "支付金额": "payment_amount",
+    "付款金额": "payment_amount",
+    "收款金额": "payment_amount",
+
+    # SVC (储值卡) shape (B v2.0) — stored_value_card_consumption
+    "card_no": "card_no",
+    "卡号": "card_no",
+    "会员卡号": "card_no",
+    "card_number": "card_no",
+
+    "card_balance": "card_balance",
+    "卡余额": "card_balance",
+    "余额": "card_balance",
+    "储值余额": "card_balance",
+
+    "card_recharge": "card_recharge",
+    "储值金额": "card_recharge",
+    "充值金额": "card_recharge",
+    "储值": "card_recharge",
+
+    # inventory shape (B v2.0)
+    "inventory_item": "inventory_item",
+    "库存物品": "inventory_item",
+    "物料": "inventory_item",
+    "物料名称": "inventory_item",
+    "sku": "inventory_item",
+
+    "stock_qty": "stock_qty",
+    "库存数量": "stock_qty",
+    "库存量": "stock_qty",
+    "当前库存": "stock_qty",
+    "stock": "stock_qty",
+
+    # period (B v2.0) — product_summary 报表的时间窗推断
+    "period": "period",
+    "时间段": "period",
+    "期间": "period",
+    "报表期间": "period",
+
+    # 厨房/出餐 shape (B v2.0) — kitchen_dispatch_heatmap
+    "dispatch_time": "dispatch_time",
+    "出餐时间": "dispatch_time",
+    "传菜时间": "dispatch_time",
+    "备餐时间": "dispatch_time",
+
+    "kitchen_station": "kitchen_station",
+    "出餐档口": "kitchen_station",
+    "厨房工位": "kitchen_station",
+    "备餐位": "kitchen_station",
+
+    # voucher (B v2.0) — groupon_channel_breakdown 优惠券补充
+    # NOTE: voucher_amount 是券面额 (单券 face value), 与 discount_amount (账单 sum 折扣) 区别
+    "voucher_code": "voucher_code",
+    "券号": "voucher_code",
+    "代金券号": "voucher_code",
+    "优惠券号": "voucher_code",
+
+    "voucher_amount": "voucher_amount",
+    "券面额": "voucher_amount",
+    "代金券面值": "voucher_amount",
+    "优惠券面值": "voucher_amount",
 }
 
 
