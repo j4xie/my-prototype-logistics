@@ -51,6 +51,69 @@ ASYNC_TMP_DIR = "/tmp/smartbi_async_uploads"
 _SYNC_PARSE_URL = "http://127.0.0.1:{port}/api/excel/auto-parse"
 
 
+def _b_writers_enabled() -> bool:
+    """Phase 3 wire-in opt-out switch. Default ON; flip to '0/false/no/off' to
+    disable B-stage writer dispatch in case of regression.
+    """
+    val = os.environ.get("SMARTBI_ENABLE_B_WRITERS", "1").strip().lower()
+    return val not in ("0", "false", "no", "off")
+
+
+async def run_b_writers(factory_id: str, upload_id: int) -> None:
+    """Phase 3 wire-in: invoke route_upload to dispatch B-stage Silver writers.
+
+    Detects file shape (bill_flow / product_summary / review / finance /
+    inventory / schedule / member / unknown) and dispatches to the
+    corresponding B-stage writer. ``bill_flow`` uploads short-circuit to the
+    legacy ``run_silver_dual_write`` path (already invoked elsewhere in this
+    handler) — no double-write of fact_pos_*. Other shapes write to their
+    respective Silver tables (agg_product_period, dim_review_summary,
+    fact_finance_voucher, fact_inventory_snapshot, etc).
+
+    Failures logged and swallowed — never block upload status. The legacy
+    Silver+Gold dual-write still runs even if this raises.
+    """
+    if not _b_writers_enabled():
+        return
+    try:
+        # Lazy imports — keep cold-start light + avoid circulars on module load.
+        from smartbi.canonical.shape_router import route_upload
+        from smartbi.canonical.entity_resolution import make_default_orchestrator
+        from smartbi.config import get_settings
+        from smartbi.tenant_ctx import set_factory_id, set_pg_connection_tenant
+        import asyncpg
+
+        settings = get_settings()
+        if not settings.postgres_url:
+            logger.warning(
+                "[b_writers] no postgres_url configured; skipping upload=%d",
+                upload_id,
+            )
+            return
+
+        set_factory_id(factory_id)
+        pool = await asyncpg.create_pool(
+            settings.postgres_url,
+            min_size=1, max_size=2,
+            setup=set_pg_connection_tenant,
+            timeout=10,
+        )
+        try:
+            orchestrator = make_default_orchestrator(pool)
+            result = await route_upload(upload_id, factory_id, pool, orchestrator)
+            logger.info(
+                "[b_writers] upload=%d factory=%s shape=%s routed_to=%s queued=%s",
+                upload_id, factory_id,
+                result.shape, result.routed_to, result.queued_for_admin,
+            )
+        finally:
+            await pool.close()
+    except Exception:
+        logger.exception(
+            "[b_writers] failed for upload=%d factory=%s", upload_id, factory_id,
+        )
+
+
 @router.post("/auto-parse-async", status_code=202)
 async def auto_parse_async(
     background_tasks: BackgroundTasks,
@@ -594,6 +657,17 @@ async def _async_worker_impl(
                     f"[stream-worker] sheet_merge failed for upload={upload_id}; "
                     f"upload remains COMPLETED, period stays unset"
                 )
+        # 数据织网 B Phase 3 wire-in: route to B-stage Silver writers
+        # (product_summary / review / finance / inventory). bill_flow shape
+        # short-circuits to the legacy run_silver_dual_write path below to
+        # avoid duplicate fact_pos_* writes. Failure swallowed — legacy
+        # upload status stays COMPLETED.
+        try:
+            await run_b_writers(factory_id, upload_id)
+        except Exception:
+            logger.exception(
+                "[stream-worker] run_b_writers failed for upload=%d", upload_id,
+            )
         # Fire-and-forget: pre-warm materialized analytics cache.
         # field_defs are fully written above (db.commit() at line ~385) before
         # we reach this point, so the materializer will see all field metadata.

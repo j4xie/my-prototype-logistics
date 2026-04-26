@@ -159,6 +159,24 @@ ssh root@47.100.235.168 "sudo -u postgres psql -d smartbi_prod_db -c \
 
 ---
 
+## M2 范围限定
+
+**Phase 3 已完成**: Sheet Merger (写 `merge_*` 列) + 4 MVP templates 代码 + 5 B-stage Silver writers + 5-agent 实体解析。
+
+**Phase 3 wire-in**: M2 fix-pack(本次)将 `route_upload` 接入 `excel_async.py`,在 `run_sheet_merge` 之后调用。BillFlow shape 由 legacy `run_silver_dual_write` 继续处理(防止 fact_pos_* 重复写入)。其他 shape (product_summary / review / finance / inventory) 由 B-stage writers 处理,写入对应 Silver 表。
+
+**M2 灰度可观察的**:
+- ✅ Sheet Merger 行为 (merge_status / merge_inferred_period_* 填值)
+- ✅ ProductSummary / Review / Finance / Inventory writers 触发 + 写入对应 B-stage Silver 表
+- ✅ 4 MVP templates 在对应 shape 上传后返回真实数据
+- ✅ smoke gate 第 3/4 项 (Review/Finance writer) 现在 prod 可达
+
+**M2 暂不验**:
+- 真客户多门店 entity resolution 准确率 (B2 ContextualAgent + LLMArbitrator 已部署但需真实 city/district 上下文,smoke test 用合成 label 偏差)
+- 跨上传场景的 `entity_resolution_history` 实际增长 + admin_queue PENDING 数量 (需 1 周观察)
+
+---
+
 ## 与 A 的关系
 
 A spec (能力驱动渲染) 已 prod live。B 上线后:

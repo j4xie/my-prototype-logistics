@@ -11,6 +11,7 @@ from smartbi.canonical.shape_detector import (
     ShapeDetector,
 )
 from smartbi.canonical.shape_router import (
+    _LEGACY_HANDLED,
     RouteResult,
     WRITER_REGISTRY,
     route_upload,
@@ -70,9 +71,12 @@ def test_writer_registry_covers_all_shapes():
         assert shape in WRITER_REGISTRY
 
 
-def test_writer_registry_bill_flow_wired():
-    """bill_flow is the only writer wired in Day 4 baseline."""
-    assert WRITER_REGISTRY[FileShape.BILL_FLOW] == "bill_flow"
+def test_writer_registry_bill_flow_short_circuits_to_legacy():
+    """bill_flow is short-circuited to the legacy run_silver_dual_write path
+    (excel_async.py owns it), so its WRITER_REGISTRY entry is the special
+    _LEGACY_HANDLED sentinel — NOT a B-stage writer name. SCHEDULE / MEMBER /
+    UNKNOWN remain None (admin queue path)."""
+    assert WRITER_REGISTRY[FileShape.BILL_FLOW] == _LEGACY_HANDLED
     assert WRITER_REGISTRY[FileShape.SCHEDULE] is None
     assert WRITER_REGISTRY[FileShape.MEMBER] is None
     assert WRITER_REGISTRY[FileShape.UNKNOWN] is None
@@ -81,8 +85,11 @@ def test_writer_registry_bill_flow_wired():
 # --- route_upload -------------------------------------------------------
 
 
-async def test_route_high_confidence_bill_flow_invokes_writer(monkeypatch):
-    """High-confidence BILL_FLOW → BillFlowWriter.write called."""
+async def test_route_bill_flow_short_circuits_to_legacy(monkeypatch):
+    """High-confidence BILL_FLOW → routed_to='legacy', NO writer invoked,
+    NO admin queue insert. The legacy path in excel_async.run_silver_dual_write
+    is responsible for writing fact_pos_* rows; the B-stage router must not
+    duplicate that work."""
     conn = _conn_with_columns(
         ["账单号", "营业日期", "商品信息"],
         sample_rows=[{"账单号": "B001"}],
@@ -94,14 +101,15 @@ async def test_route_high_confidence_bill_flow_invokes_writer(monkeypatch):
         return_value=DetectionResult(FileShape.BILL_FLOW, 0.95, "rule"),
     )
 
-    fake_summary = MagicMock()
-    fake_summary.rows_written = 50
-
-    fake_writer = MagicMock()
-    fake_writer.write = AsyncMock(return_value=fake_summary)
-
+    # Spy on get_writer — must NOT be invoked for bill_flow.
     import smartbi.canonical.shape_router as router
-    monkeypatch.setattr(router, "get_writer", lambda *args, **kwargs: fake_writer)
+    get_writer_calls = []
+
+    def _spy_get_writer(*args, **kwargs):
+        get_writer_calls.append((args, kwargs))
+        return None
+
+    monkeypatch.setattr(router, "get_writer", _spy_get_writer)
 
     orchestrator = MagicMock()
     result = await route_upload(
@@ -113,12 +121,14 @@ async def test_route_high_confidence_bill_flow_invokes_writer(monkeypatch):
     )
 
     assert isinstance(result, RouteResult)
-    assert result.routed_to == "bill_flow"
+    assert result.routed_to == "legacy"
     assert result.queued_for_admin is False
     assert result.shape == "bill_flow"
     assert result.confidence == 0.95
-    assert result.write_summary is fake_summary
-    fake_writer.write.assert_awaited_once_with(1, "F001")
+    assert result.write_summary is None
+    assert "run_silver_dual_write" in result.reasoning
+    # get_writer must NOT have been called for bill_flow
+    assert get_writer_calls == []
     # No admin queue insert
     insert_calls = [
         c for c in conn.execute.await_args_list

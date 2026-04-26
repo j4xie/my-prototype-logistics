@@ -17,9 +17,13 @@ async def compute_product_top10(
     period_end: Optional[date] = None,
     top_n: int = 10,
 ) -> TemplateResult:
-    """Top N products by revenue. Tenant: caller must set app.factory_id.
+    """Top N products by revenue from agg_product_period.
 
     period_start / period_end filter agg_product_period rows; None = all-time.
+
+    Tenant safety: caller MUST set ``app.factory_id`` (via tenant_ctx.set_factory_id
+    or pool setup callback) before invoking. Forgetting → FORCE RLS silently returns
+    0 rows. Mirrors BaseWriter.write contract.
     """
     where = ["a.factory_id = $1"]
     params: list = [factory_id]

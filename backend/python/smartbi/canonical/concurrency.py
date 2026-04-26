@@ -29,14 +29,15 @@ async def with_factory_serialization(
     conn: "asyncpg.Connection",
     work: Callable[["asyncpg.Connection"], Awaitable[T]],
 ) -> T:
-    """3-layer defense: asyncio.Lock + pg_advisory_xact_lock + dim cache invalidate.
+    """Per-factory serialization wrapper.
 
     Layer 1 (asyncio.Lock): prevents Python-process-internal concurrency on the
     same factory_id (multiple uvicorn coroutines).
     Layer 2 (pg_advisory_xact_lock): prevents cross-connection / cross-worker
-    concurrency at the Postgres layer.
-    Layer 3 (dim_resolver.clear_cache): prevents stale entity_id mappings after
-    entity resolution writes (in-memory cache not thread-safe per spec).
+    concurrency on the same factory at the Postgres layer.
+    Layer 3 (dim_resolver.clear_cache): protocol seam for future shared module-level
+    caches; currently a no-op stub since DimResolver caches are per-instance and
+    GC'd on task exit.
 
     Same factory uploads serialize; different factories run in parallel.
     """

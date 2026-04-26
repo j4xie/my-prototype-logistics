@@ -73,7 +73,12 @@ async def compute_review_rating_trend(
     period_start: Optional[date] = None,
     period_end: Optional[date] = None,
 ) -> TemplateResult:
-    """Average rating trend over time + aggregated Top keywords."""
+    """Average rating trend over time + aggregated Top keywords.
+
+    Tenant safety: caller MUST set ``app.factory_id`` (via tenant_ctx.set_factory_id
+    or pool setup callback) before invoking. Forgetting → FORCE RLS silently returns
+    0 rows. Mirrors BaseWriter.write contract.
+    """
     where = ["factory_id = $1"]
     params: list = [factory_id]
     if period_start is not None:

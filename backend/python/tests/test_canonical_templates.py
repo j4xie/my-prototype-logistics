@@ -352,3 +352,45 @@ async def test_inventory_alert_passes_factory_and_limit_to_sql():
     assert "dim_ingredient_threshold" in sql
     assert args[1] == "F042"
     assert args[2] == 25
+
+
+async def test_inventory_alert_picks_store_specific_over_null_threshold():
+    """SQL must use LEFT JOIN LATERAL with ORDER BY (store_id IS NULL) ASC LIMIT 1
+    so when BOTH a store-specific row AND a global (NULL store) threshold
+    exist for the same ingredient, the LATERAL subquery picks the
+    store-specific one. Without this guard, the older OR-style LEFT JOIN
+    produced two output rows (one per threshold), inflating n_alerts.
+
+    The DB-side dedup is the contract; here we verify (1) SQL shape +
+    (2) the template handles a single de-duplicated row correctly.
+    """
+    # DB returns ONLY 1 row because LATERAL+LIMIT 1 already picked the
+    # store-specific threshold (safe=20.0) over the global one (safe=15.0).
+    rows = [
+        {
+            "ingredient_id": 99,
+            "ingredient_name": "猪肉",
+            "store_id": 1,
+            "store_name": "门店A",
+            "stock_qty": 5.0,
+            "unit": "kg",
+            "snapshot_date": date(2026, 4, 25),
+            "safe_stock_qty": 20.0,  # store-specific value, NOT 15.0 global
+            "reorder_point": 12.0,
+        },
+    ]
+    conn = AsyncMock()
+    conn.fetch = AsyncMock(return_value=rows)
+
+    result = await compute_inventory_alert(_make_mock_pool(conn), factory_id="F001")
+
+    args = conn.fetch.await_args.args
+    sql = args[0]
+    # The new LATERAL pattern must be present
+    assert "LEFT JOIN LATERAL" in sql
+    assert "ORDER BY (store_id IS NULL) ASC" in sql
+    assert "LIMIT 1" in sql
+    # And the result is exactly 1 alert, not 2
+    assert result.applies is True
+    assert result.kpis["n_alerts"] == 1
+    assert result.data["items"][0]["safe_stock_qty"] == 20.0

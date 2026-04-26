@@ -16,7 +16,12 @@ async def compute_finance_monthly_balance(
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
 ) -> TemplateResult:
-    """Aggregate vouchers by month × subject category. Net = credit − debit."""
+    """Aggregate vouchers by month × subject category. Net = credit − debit.
+
+    Tenant safety: caller MUST set ``app.factory_id`` (via tenant_ctx.set_factory_id
+    or pool setup callback) before invoking. Forgetting → FORCE RLS silently returns
+    0 rows. Mirrors BaseWriter.write contract.
+    """
     where = ["v.factory_id = $1"]
     params: list = [factory_id]
     if date_from is not None:

@@ -21,10 +21,21 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-# Maps detected shape → registered writer factory name. SCHEDULE / MEMBER are
-# deferred to C-stage (return None).
+# WRITER_REGISTRY: shape → writer factory key. Special sentinel
+# ``_LEGACY_HANDLED`` means "legacy path handles this shape via
+# excel_async.run_silver_dual_write — skip the B-stage writer to avoid
+# duplicate fact_pos_* writes". ``None`` means "deferred to C-stage; admin
+# queue this for review". Currently:
+#   BILL_FLOW         — _LEGACY_HANDLED (run_silver_dual_write → backfill_upload)
+#   PRODUCT_SUMMARY   — ProductSummaryWriter (B-stage)
+#   REVIEW            — ReviewWriter (B-stage)
+#   FINANCE           — FinanceWriter (B-stage)
+#   INVENTORY         — InventoryWriter (B-stage)
+#   SCHEDULE/MEMBER/UNKNOWN — deferred to C-stage
+_LEGACY_HANDLED = "_legacy_run_silver_dual_write"
+
 WRITER_REGISTRY: dict[FileShape, Optional[str]] = {
-    FileShape.BILL_FLOW: "bill_flow",
+    FileShape.BILL_FLOW: _LEGACY_HANDLED,
     FileShape.PRODUCT_SUMMARY: "product_summary",
     FileShape.REVIEW: "review",
     FileShape.FINANCE: "finance",
@@ -53,17 +64,21 @@ def get_writer(
     pool: "asyncpg.Pool",
     orchestrator: "EntityResolutionOrchestrator",
 ) -> Optional["BaseWriter"]:
-    """Resolve writer name → instance. Returns None for unimplemented writers."""
+    """Resolve writer name → instance. Returns None for unimplemented writers.
+
+    Note: ``bill_flow`` is intentionally NOT instantiated here. The BILL_FLOW
+    shape is short-circuited at ``_route_upload_inner`` to the legacy
+    ``run_silver_dual_write`` path (called from excel_async.py) so we don't
+    double-write fact_pos_* rows. ``BillFlowWriter`` remains importable for
+    future reorg but is not wired into the dispatch path.
+    """
     from smartbi.canonical.silver_writers import (
-        BillFlowWriter,
         FinanceWriter,
         InventoryWriter,
         ProductSummaryWriter,
         ReviewWriter,
     )
 
-    if writer_name == "bill_flow":
-        return BillFlowWriter(pool=pool, orchestrator=orchestrator)
     if writer_name == "product_summary":
         return ProductSummaryWriter(pool=pool, orchestrator=orchestrator)
     if writer_name == "review":
@@ -108,7 +123,14 @@ async def _route_upload_inner(
     detector: ShapeDetector,
     conn: "asyncpg.Connection",
 ) -> RouteResult:
-    """Inner work after factory serialization is acquired."""
+    """Inner work after factory serialization is acquired.
+
+    Note: writer.write internally acquires its own conn from the pool. The
+    advisory_xact_lock on the wrapper conn does NOT cover those writer DB writes.
+    Writers rely on dim_resolver UPSERT atomicity (ON CONFLICT DO UPDATE) for
+    concurrent-safety. Full conn-passing refactor is deferred (would require
+    BaseWriter.write signature change + 5 writer impls).
+    """
     col_rows = await conn.fetch(
         "SELECT original_name FROM smart_bi_pg_field_definitions "
         "WHERE upload_id = $1",
@@ -134,6 +156,22 @@ async def _route_upload_inner(
             confidence=detection.confidence,
             queued_for_admin=True,
             reasoning=detection.reasoning,
+        )
+
+    # Legacy short-circuit: bill_flow uploads are written by
+    # excel_async.run_silver_dual_write (legacy path). Don't insert into
+    # admin_queue — the legacy path already persisted Silver/Gold rows.
+    if writer_name == _LEGACY_HANDLED:
+        return RouteResult(
+            routed_to="legacy",
+            shape=detection.shape.value,
+            confidence=detection.confidence,
+            queued_for_admin=False,
+            write_summary=None,
+            reasoning=(
+                f"bill_flow handled by run_silver_dual_write (legacy path); "
+                f"detector reasoning: {detection.reasoning}"
+            ),
         )
 
     writer = get_writer(writer_name, pool, orchestrator)

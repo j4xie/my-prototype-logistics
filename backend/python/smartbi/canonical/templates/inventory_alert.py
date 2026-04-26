@@ -17,7 +17,16 @@ async def compute_inventory_alert(
     """For each (ingredient × store) take most recent snapshot, compare to threshold.
 
     Threshold may live at (ingredient, store) granularity OR at (ingredient,
-    NULL store) for cross-store defaults — LEFT JOIN handles both.
+    NULL store) for cross-store defaults. We use ``LEFT JOIN LATERAL`` with
+    an ORDER-BY-then-LIMIT-1 inner query so a single (ingredient, store) pair
+    matches at most ONE threshold row — store-specific is preferred over
+    NULL/global. Without this, the older ``LEFT JOIN ... OR store_id IS NULL``
+    pattern produced 2 rows when both store-specific and global thresholds
+    existed for the same ingredient.
+
+    Tenant safety: caller MUST set ``app.factory_id`` (via tenant_ctx.set_factory_id
+    or pool setup callback) before invoking. Forgetting → FORCE RLS silently returns
+    0 rows. Mirrors BaseWriter.write contract.
     """
     sql = """
         WITH latest AS (
@@ -44,10 +53,15 @@ async def compute_inventory_alert(
         FROM latest l
         JOIN dim_ingredient i ON i.ingredient_id = l.ingredient_id
         LEFT JOIN dim_store st ON st.store_id = l.store_id
-        LEFT JOIN dim_ingredient_threshold th
-               ON th.factory_id = l.factory_id
-              AND th.ingredient_id = l.ingredient_id
-              AND (th.store_id = l.store_id OR th.store_id IS NULL)
+        LEFT JOIN LATERAL (
+            SELECT safe_stock_qty, reorder_point
+            FROM dim_ingredient_threshold
+            WHERE factory_id = l.factory_id
+              AND ingredient_id = l.ingredient_id
+              AND (store_id = l.store_id OR store_id IS NULL)
+            ORDER BY (store_id IS NULL) ASC, store_id NULLS LAST
+            LIMIT 1
+        ) th ON true
         WHERE l.rn = 1
           AND th.safe_stock_qty IS NOT NULL
           AND l.stock_qty < th.safe_stock_qty
