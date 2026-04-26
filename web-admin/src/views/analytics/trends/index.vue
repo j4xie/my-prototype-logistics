@@ -6,6 +6,12 @@ import { ElMessage } from 'element-plus';
 import echarts from '@/utils/echarts';
 import TemplateGrid from '@/views/smart-bi/components/TemplateGrid.vue';
 import { getDailyTrend, type DailyTrend } from '@/api/smartbi/gold';
+// Day 9 数据织网 Sub-Project A: capability-driven card visibility
+import { useCapability } from '@/composables/useCapability';
+import CapabilityGate from '@/components/CapabilityGate.vue';
+import UnlockMoreCTA from '@/components/UnlockMoreCTA.vue';
+
+const { fetchCapability } = useCapability();
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
@@ -272,6 +278,9 @@ function onTrendMetricChange() {
 }
 
 onMounted(() => {
+  // Day 9 数据织网 Sub-Project A: prime capability cache (fire-and-forget,
+  // useCapability handles errors and is fail-open).
+  fetchCapability();
   loadTrendData();
   loadGoldTrend();
   initCharts();
@@ -461,6 +470,7 @@ onUnmounted(() => {
     </el-alert>
 
     <!-- v1.2 Week 9 Gold flip: POS revenue+orders trend for restaurant tenants -->
+    <CapabilityGate card-id="trends_monthly" :requires="['date', 'net_amount']">
     <el-card v-show="goldTrend" class="chart-card gold-trend-card" style="margin-bottom: 16px; border-top: 3px solid #67C23A;">
       <template #header>
         <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; flex-wrap: wrap;">
@@ -484,6 +494,7 @@ onUnmounted(() => {
       </template>
       <div id="gold-revenue-chart" class="chart" style="height: 320px;"></div>
     </el-card>
+    </CapabilityGate>
 
     <!-- 餐饮租户不需要生产/质量/成本图 (P1-11) — 隐藏占屏的 0 值 chart -->
     <div v-if="!isRestaurantTenant" class="charts-container" v-loading="loading">
@@ -511,6 +522,8 @@ onUnmounted(() => {
 
     <!-- Week 6 Template Surfacing: show analysis results for this page -->
     <TemplateGrid page-key="trend" :factory-id="factoryId || 'F001'" />
+
+    <UnlockMoreCTA />
   </div>
 </template>
 

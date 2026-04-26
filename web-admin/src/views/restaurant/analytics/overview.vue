@@ -53,10 +53,12 @@
         <!-- KPI Cards -->
         <el-row :gutter="16" class="kpi-row">
           <el-col :xs="12" :sm="8" :md="4">
+            <CapabilityGate card-id="restaurant_overview_revenue" :requires="['date', 'net_amount']">
             <div class="kpi-card">
               <div class="kpi-label">总营收</div>
               <div class="kpi-value success">{{ formatMoney(totalRevenue) }}</div>
             </div>
+            </CapabilityGate>
           </el-col>
           <el-col :xs="12" :sm="8" :md="4">
             <div class="kpi-card">
@@ -65,10 +67,12 @@
             </div>
           </el-col>
           <el-col :xs="12" :sm="8" :md="4">
+            <CapabilityGate card-id="restaurant_overview_stores" :requires="['store_name']">
             <div class="kpi-card">
               <div class="kpi-label">门店数</div>
               <div class="kpi-value">{{ data.storeComparison.stores.length }}</div>
             </div>
+            </CapabilityGate>
           </el-col>
           <el-col :xs="12" :sm="8" :md="4">
             <div class="kpi-card">
@@ -96,6 +100,7 @@
         <el-row :gutter="16" style="margin-top: 16px">
           <!-- Quadrant mini scatter -->
           <el-col :xs="24" :md="12">
+            <CapabilityGate card-id="restaurant_overview_top_dish" :requires="['combo_string', 'qty_sold']">
             <el-card shadow="hover" class="chart-card" @click="$router.push('/restaurant/analytics/menu')">
               <template #header>
                 <div class="chart-title clickable">
@@ -105,6 +110,7 @@
               </template>
               <div id="chart-quadrant-mini" style="height: 280px" />
             </el-card>
+            </CapabilityGate>
           </el-col>
 
           <!-- Store ranking bar -->
@@ -325,6 +331,7 @@
           </el-col>
         </el-row>
       </template>
+      <UnlockMoreCTA />
     </el-card>
   </div>
 </template>
@@ -336,6 +343,14 @@ import echarts from '@/utils/echarts'
 import { useChartResize } from '@/composables/useChartResize'
 import { useRestaurantAnalytics } from '@/composables/useRestaurantAnalytics'
 import type { RestaurantAnalyticsResult } from '@/types/restaurant-analytics'
+// Day 9 数据织网 Sub-Project A: capability-driven card visibility
+import { useCapability } from '@/composables/useCapability'
+import CapabilityGate from '@/components/CapabilityGate.vue'
+import UnlockMoreCTA from '@/components/UnlockMoreCTA.vue'
+
+const { fetchCapability } = useCapability()
+// Prime capability cache (fire-and-forget, useCapability handles errors fail-open).
+fetchCapability()
 
 const containerRef = ref<HTMLElement>()
 useChartResize(containerRef)

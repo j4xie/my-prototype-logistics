@@ -49,11 +49,14 @@
         </el-row>
 
         <!-- Scatter chart -->
+        <CapabilityGate card-id="menu_top_dishes" :requires="['combo_string']">
         <el-card shadow="hover" style="margin-top: 16px">
           <div id="chart-quadrant-full" style="height: 480px" />
         </el-card>
+        </CapabilityGate>
 
         <!-- Filter + table -->
+        <CapabilityGate card-id="menu_dish_revenue" :requires="['combo_string', 'net_amount']">
         <el-card shadow="hover" style="margin-top: 16px">
           <div class="filter-bar">
             <el-radio-group v-model="filterQuadrant">
@@ -91,7 +94,9 @@
             style="margin-top: 12px; justify-content: flex-end"
           />
         </el-card>
+        </CapabilityGate>
       </template>
+      <UnlockMoreCTA />
     </el-card>
 
     <!-- Item detail drawer -->
@@ -122,6 +127,14 @@ import { useChartResize } from '@/composables/useChartResize'
 import { useRestaurantAnalytics } from '@/composables/useRestaurantAnalytics'
 import type { MenuQuadrantData, MenuQuadrantItem } from '@/types/restaurant-analytics'
 import { pythonFetch } from '@/api/smartbi/common'
+// Day 9 数据织网 Sub-Project A: capability-driven card visibility
+import { useCapability } from '@/composables/useCapability'
+import CapabilityGate from '@/components/CapabilityGate.vue'
+import UnlockMoreCTA from '@/components/UnlockMoreCTA.vue'
+
+const { fetchCapability } = useCapability()
+// Prime capability cache (fire-and-forget, useCapability handles errors fail-open).
+fetchCapability()
 
 // Apr 24 Plan C Phase 7+: mode toggle between legacy (品均收入) vs BCG-proper (毛利率)
 const mode = ref<'revenue' | 'margin'>('revenue')

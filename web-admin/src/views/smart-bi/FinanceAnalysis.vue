@@ -48,6 +48,10 @@ import ChartTypeSelector from '@/components/smartbi/ChartTypeSelector.vue';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
 import TemplateGrid from './components/TemplateGrid.vue';
 import type { ChartConfig } from '@/types/smartbi';
+// Day 9 数据织网 Sub-Project A: capability-driven card visibility
+import { useCapability } from '@/composables/useCapability';
+import CapabilityGate from '@/components/CapabilityGate.vue';
+import UnlockMoreCTA from '@/components/UnlockMoreCTA.vue';
 
 const route = useRoute();
 const authStore = useAuthStore();
@@ -623,7 +627,14 @@ async function loadGoldFinSummary() {
 }
 watch(dateRange, () => { if (isRestaurantTenant.value) loadGoldFinSummary(); });
 
+const { fetchCapability } = useCapability();
+
 onMounted(async () => {
+  // Day 9 数据织网 Sub-Project A: prime capability cache (fire-and-forget,
+  // useCapability handles errors and is fail-open). Drives <CapabilityGate>
+  // visibility for KPI cards below.
+  fetchCapability();
+
   // 默认选择最近365天（覆盖更多财务数据）
   const end = new Date();
   const start = new Date();
@@ -2023,11 +2034,13 @@ onUnmounted(() => {
         </span>
       </el-col>
       <el-col :xs="24" :sm="12" :md="6">
+        <CapabilityGate card-id="finance_revenue_mgmt" :requires="['date', 'gross_amount']">
         <el-card class="kpi-card kpi-accent-0">
           <div class="kpi-label">总营收</div>
           <div class="kpi-value">¥{{ goldFinSummary ? goldFinSummary.totalRevenue.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--' }}</div>
           <div class="kpi-sub">覆盖 {{ goldFinSummary?.dayCount ?? 0 }} 天</div>
         </el-card>
+        </CapabilityGate>
       </el-col>
       <el-col :xs="24" :sm="12" :md="6">
         <el-card class="kpi-card kpi-accent-1">
@@ -2057,18 +2070,22 @@ onUnmounted(() => {
       <!-- 利润分析 KPI -->
       <template v-if="analysisType === 'profit'">
         <el-col :xs="24" :sm="12" :md="6">
+          <CapabilityGate card-id="finance_pnl" :requires="['date', 'gross_amount', 'discount_amount', 'net_amount']">
           <el-card class="kpi-card kpi-accent-0">
             <div class="kpi-label">毛利润</div>
             <div class="kpi-value" :style="{ color: kpiData.grossProfit < 0 ? '#dc2626' : undefined }">{{ formatMoney(kpiData.grossProfit) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">毛利率 {{ formatPercent(kpiData.grossProfitMargin) }}</div>
           </el-card>
+          </CapabilityGate>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
+          <CapabilityGate card-id="finance_pnl" :requires="['date', 'gross_amount', 'discount_amount', 'net_amount']">
           <el-card class="kpi-card kpi-accent-1">
             <div class="kpi-label">净利润</div>
             <div class="kpi-value" :style="{ color: kpiData.netProfit < 0 ? '#dc2626' : undefined }">{{ formatMoney(kpiData.netProfit) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">净利率 {{ formatPercent(kpiData.netProfitMargin) }}</div>
           </el-card>
+          </CapabilityGate>
         </el-col>
       </template>
 
@@ -2411,6 +2428,9 @@ onUnmounted(() => {
 
     <!-- Week 6 Template Surfacing: show analysis results for this page -->
     <TemplateGrid page-key="finance" :factory-id="factoryId || 'F001'" />
+
+    <!-- Day 9 数据织网 Sub-Project A: unlock more analyses CTA -->
+    <UnlockMoreCTA />
   </div>
 </template>
 
