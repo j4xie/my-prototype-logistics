@@ -1103,6 +1103,36 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
         except Exception as e:
             logger.warning(f"[intent] extraction failed (non-fatal): {e}")
             intent_signals = {}
+
+        # Apr 26 2026 v2 conversation memory: Phase 0 session lookup. If FE sent
+        # session_id, fetch parent_query + parent_answer_summary so this turn can
+        # reference the previous answer (covers "为什么"/"怎么办" follow-ups
+        # measured at 2.98/3.15 in S3 audit, vs main 3.94). Tenant isolated by
+        # factory_id. Backward compat: no session_id → standalone path.
+        chat_session_parent: Optional[Dict[str, Any]] = None
+        _session_factory_id = (
+            getattr(http_request.state, 'factory_id', None)
+            if hasattr(http_request, 'state') else None
+        )
+        if request.session_id and _session_factory_id:
+            try:
+                from smartbi.services.chat_session_service import ChatSessionService
+                from smartbi.config import get_pg_pool as _get_pool_session
+                _session_pool = await _get_pool_session()
+                if _session_pool is not None:
+                    _svc = ChatSessionService(_session_pool)
+                    chat_session_parent = await _svc.lookup(
+                        request.session_id, _session_factory_id
+                    )
+                    if chat_session_parent:
+                        logger.info(
+                            f"[chat-session] HIT session={request.session_id[:8]}... "
+                            f"turn={chat_session_parent.get('turn_count')} "
+                            f"parent_template={chat_session_parent.get('parent_template_code')}"
+                        )
+            except Exception as e:
+                logger.warning(f"[chat-session] phase 0 lookup failed (non-fatal): {e}")
+
         try:
             # Apr 24 2026 Plan C Phase 4: Restaurant daily-ops Gold router (runs
             # BEFORE xlsx template router). Routes queries about 损耗/盘点/领料/
@@ -1141,6 +1171,24 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                     "processingTimeMs": wall_ms,
                                     "log_id": None,
                                 })
+                                # Apr 26 2026 v2 conversation memory: write back
+                                # parent context for the gold-ops cache path.
+                                if request.session_id and _session_factory_id:
+                                    try:
+                                        from smartbi.services.chat_session_service import (
+                                            ChatSessionService as _CSS_OPS,
+                                        )
+                                        from smartbi.api.materialized_analytics import _spawn_bg as _spawn_ops
+                                        _spawn_ops(_CSS_OPS(pool).upsert(
+                                            session_id=request.session_id,
+                                            factory_id=_session_factory_id,
+                                            parent_query=user_q,
+                                            parent_answer_summary=ops_answer.answer_text,
+                                            parent_template_code=ops_code,
+                                            parent_upload_id=None,
+                                        ))
+                                    except Exception as _e:
+                                        logger.warning(f"[chat-session] writeback (gold ops) failed: {_e}")
                                 logger.info(
                                     f"[stream] served via gold ops: template={ops_code}, wall={wall_ms}ms"
                                 )
@@ -1349,6 +1397,24 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                     "processingTimeMs": wall_ms,
                                     "log_id": tpl_log_id,
                                 })
+                                # Apr 26 2026 v2 conversation memory: write back
+                                # parent context for the template cache path.
+                                if request.session_id and _session_factory_id:
+                                    try:
+                                        from smartbi.services.chat_session_service import (
+                                            ChatSessionService as _CSS_TPL,
+                                        )
+                                        from smartbi.api.materialized_analytics import _spawn_bg as _spawn_tpl
+                                        _spawn_tpl(_CSS_TPL(pool).upsert(
+                                            session_id=request.session_id,
+                                            factory_id=_session_factory_id,
+                                            parent_query=user_q,
+                                            parent_answer_summary=answer_text,
+                                            parent_template_code=matched_code,
+                                            parent_upload_id=upload_id,
+                                        ))
+                                    except Exception as _e:
+                                        logger.warning(f"[chat-session] writeback (template) failed: {_e}")
                                 logger.info(f"[stream] served upload {upload_id} via cache: template={matched_code}, wall={time.time() - start_time:.2f}s, log_id={tpl_log_id}")
                                 return  # early exit — don't invoke LLM
             except Exception as e:
@@ -1894,7 +1960,19 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
             if 'real_aggregates_text' in locals() and real_aggregates_text:
                 real_agg_block = f"\n## 全量数据聚合 (权威，基于 DB 全部行计算，优先引用这些数字)\n{real_aggregates_text}\n"
 
-            prompt = f"""用户问题：{analysis_ctx}
+            # Apr 26 2026 v2 conversation memory: prepend parent (q, a_summary) if
+            # session lookup hit in Phase 0. Adds ~500 tokens on follow-up turns
+            # but lets the LLM resolve "末位是哪个" / "流失主因" without re-deriving
+            # context from scratch (which often timed out at 30s in S3 audit).
+            session_context_block = ""
+            if chat_session_parent:
+                try:
+                    from smartbi.services.chat_session_service import build_context_block
+                    session_context_block = build_context_block(chat_session_parent)
+                except Exception as e:
+                    logger.warning(f"[chat-session] context block build failed: {e}")
+
+            prompt = f"""{session_context_block}用户问题：{analysis_ctx}
 
 {field_summary}
 ## 数据概览 (样本)
@@ -1907,6 +1985,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
 - 按 dimensions 分组对比
 - **涉及总量/排名/占比时，必须引用"全量数据聚合"段的数字，不要从样本重新计算**
 - 不要引用非当前字段列表中的字段名 (避免幻觉)
+- **若提供了"上一轮对话"段, 优先延续上一轮的实体和数字, 不要重新介绍**
 引用具体数字，给出业务建议。中文Markdown，300字以内。"""
 
             system_role = (
@@ -2068,6 +2147,34 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 "warning": _guard_warning,
                 "processingTimeMs": int((time.time() - start_time) * 1000)
             })
+
+            # Apr 26 2026 v2 conversation memory: write back parent context after
+            # LLM streaming. Fire-and-forget; failure must not poison the user's
+            # answer. _spawn_bg anchors the task so it survives function return.
+            if request.session_id and _session_factory_id and full_text:
+                try:
+                    from smartbi.services.chat_session_service import ChatSessionService
+                    from smartbi.config import get_pg_pool as _get_pool_writeback
+                    from smartbi.api.materialized_analytics import _spawn_bg
+                    _wb_pool = await _get_pool_writeback()
+                    if _wb_pool is not None:
+                        _wb_svc = ChatSessionService(_wb_pool)
+                        _wb_upload = None
+                        try:
+                            if request.sheet_id:
+                                _wb_upload = int(request.sheet_id)
+                        except (ValueError, TypeError):
+                            pass
+                        _spawn_bg(_wb_svc.upsert(
+                            session_id=request.session_id,
+                            factory_id=_session_factory_id,
+                            parent_query=request.effective_query or "",
+                            parent_answer_summary=full_text,
+                            parent_template_code=None,  # LLM path, no template
+                            parent_upload_id=_wb_upload,
+                        ))
+                except Exception as e:
+                    logger.warning(f"[chat-session] writeback (LLM path) failed: {e}")
 
         except Exception as e:
             logger.error(f"[stream] General analysis stream failed: {e}", exc_info=True)
