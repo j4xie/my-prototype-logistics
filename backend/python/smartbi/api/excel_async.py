@@ -554,6 +554,23 @@ async def _async_worker_impl(
                 f"[stream-worker] narrative_cache invalidate failed for upload={upload_id}; "
                 f"cache will naturally expire via TTL"
             )
+
+        # 数据织网 A spec §3.2: invalidate capability cache so next /capability/{factory_id}
+        # call sees newly-available canonical fields. Without this, customers wait up to
+        # 5min (TTL) after upload to see new "解锁" cards. Fire-and-forget — failure
+        # falls back to TTL expiry which is correct but slower UX.
+        try:
+            from smartbi.capability.api import _get_calculator
+            calc = await _get_calculator()
+            calc.invalidate(factory_id)
+            logger.info(
+                f"[stream-worker] upload {upload_id}: invalidated capability cache for factory={factory_id}"
+            )
+        except Exception:
+            logger.exception(
+                f"[stream-worker] capability invalidate failed for upload={upload_id}; "
+                f"cache will naturally expire via 5min TTL"
+            )
     except Exception as e:
         logger.exception(f"[stream-worker] upload_id={upload_id} crashed after {total_rows} rows")
         try:
