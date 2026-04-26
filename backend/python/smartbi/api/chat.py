@@ -2324,24 +2324,11 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
             except Exception as guard_err:
                 logger.warning(f"[stream] numeric guard check failed: {guard_err}")
 
-            yield _sse_event("done", {
-                "success": True,
-                "answer": full_text,
-                "charts": charts,
-                "log_id": _log_id,
-                "warning": _guard_warning,
-                "processingTimeMs": int((time.time() - start_time) * 1000)
-            })
-
-            # v4 B2-B (Apr 26 2026): write LLM answer to cache for repeat
-            # queries. Skip when timeout/short answer (handled in cache.set()
-            # via min-30-char filter) or when v2 conv memory was used (cached
-            # answer would be stale for next turn anyway).
-            logger.info(
-                f"[llm-cache] write-check: chat_session_parent={bool(chat_session_parent)} "
-                f"factory_id={_session_factory_id} full_text_len={len(full_text)} "
-                f"truncated={_llm_truncated}"
-            )
+            # v4 B2-B (Apr 26 2026): write LLM answer to cache BEFORE done
+            # event — async generator gets cancelled by client right after
+            # yield done, so any code after yield never runs. _spawn_bg
+            # schedules background task which keeps running after this
+            # generator closes (anchored in _PENDING_BG_TASKS).
             if (not chat_session_parent and _session_factory_id
                     and full_text and not _llm_truncated):
                 try:
@@ -2362,9 +2349,8 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 except Exception as _lac_w_err:
                     logger.warning(f"[llm-cache] writeback failed (non-fatal): {_lac_w_err}")
 
-            # Apr 26 2026 v2 conversation memory: write back parent context after
-            # LLM streaming. Fire-and-forget; failure must not poison the user's
-            # answer. _spawn_bg anchors the task so it survives function return.
+            # Apr 26 2026 v2 conversation memory: write back parent context
+            # BEFORE done event for the same reason as cache write above.
             if request.session_id and _session_factory_id and full_text:
                 try:
                     from smartbi.services.chat_session_service import ChatSessionService
@@ -2389,6 +2375,21 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                         ))
                 except Exception as e:
                     logger.warning(f"[chat-session] writeback (LLM path) failed: {e}")
+
+            # Done event MUST be yielded last — async generator gets cancelled
+            # by client immediately after the done payload arrives, so any
+            # write-back code after this point would never run. Cache writes
+            # + chat-session upsert above use _spawn_bg to schedule background
+            # tasks anchored in _PENDING_BG_TASKS, so they survive generator
+            # cancellation.
+            yield _sse_event("done", {
+                "success": True,
+                "answer": full_text,
+                "charts": charts,
+                "log_id": _log_id,
+                "warning": _guard_warning,
+                "processingTimeMs": int((time.time() - start_time) * 1000)
+            })
 
         except Exception as e:
             logger.error(f"[stream] General analysis stream failed: {e}", exc_info=True)
