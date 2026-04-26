@@ -32,6 +32,19 @@ const loading = ref(false)
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 function resolveEndpoint(): string {
+  // R12 audit S2 fix: defensively detect missing apiEndpoint (legacy referenceModule-only
+  // schemas seeded by V20260410_08/09/10). Without this, the next .replace() throws
+  // "Cannot read properties of undefined (reading 'replace')" which the catch block
+  // swallows → silent empty dropdown. Now log loudly so devs can find the schema gap.
+  if (!props.config?.apiEndpoint) {
+    const refModule = (props.config as { referenceModule?: string })?.referenceModule
+    console.error(
+      `[ReferenceSelector] schema misconfigured for entity=${props.config?.entity || '(unknown)'}, ` +
+      `referenceModule=${refModule || '(none)'} — missing apiEndpoint. ` +
+      `Fix module_schemas.field_schema to include referenceConfig.apiEndpoint.`
+    )
+    return ''  // empty → request.get('') returns 404, dropdown empty + error in console
+  }
   // axios baseURL 已是 /api/mobile, 若 config.apiEndpoint 已带该前缀则 strip 掉,
   // 避免 /api/mobile/api/mobile/... 双前缀 (老配置可能写了完整路径).
   return props.config.apiEndpoint

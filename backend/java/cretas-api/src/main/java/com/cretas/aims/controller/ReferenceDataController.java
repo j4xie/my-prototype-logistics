@@ -6,12 +6,16 @@ import com.cretas.aims.entity.ProductType;
 import com.cretas.aims.entity.RawMaterialType;
 import com.cretas.aims.entity.Supplier;
 import com.cretas.aims.entity.User;
+import com.cretas.aims.entity.inventory.PurchaseOrder;
+import com.cretas.aims.entity.inventory.SalesOrder;
 import com.cretas.aims.entity.sales.OperationalQuote;
 import com.cretas.aims.repository.CustomerRepository;
 import com.cretas.aims.repository.ProductTypeRepository;
 import com.cretas.aims.repository.RawMaterialTypeRepository;
 import com.cretas.aims.repository.SupplierRepository;
 import com.cretas.aims.repository.UserRepository;
+import com.cretas.aims.repository.inventory.PurchaseOrderRepository;
+import com.cretas.aims.repository.inventory.SalesOrderRepository;
 import com.cretas.aims.repository.sales.OperationalQuoteRepository;
 import com.cretas.aims.service.sales.impl.OperationalQuoteServiceImpl;
 import com.cretas.aims.util.SqlLikeEscaper;
@@ -64,6 +68,8 @@ public class ReferenceDataController {
     private final ProductTypeRepository productTypeRepository;
     private final RawMaterialTypeRepository materialTypeRepository;
     private final OperationalQuoteRepository quoteRepository;
+    private final SalesOrderRepository salesOrderRepository;
+    private final PurchaseOrderRepository purchaseOrderRepository;
 
     /** Salesperson-eligible roles (department name fallback also applied). */
     private static final Set<String> SALES_ROLES = Set.of(
@@ -395,6 +401,89 @@ public class ReferenceDataController {
                 })
                 .collect(Collectors.toList());
         return wrap(content, filtered.size());
+    }
+
+    /** R12 audit S2 meta: 销售订单 dropdown for outbound/finance_ar/production_plan
+     *  modules that reference sourceOrderId/salesOrderId via DYNAMIC mode. */
+    @GetMapping("/sales-orders")
+    @Operation(summary = "销售订单查找")
+    public ApiResponse<Map<String, Object>> findSalesOrders(
+            @PathVariable String factoryId,
+            @RequestParam(required = false, defaultValue = "") String keyword,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        org.springframework.data.domain.PageRequest pageable = PageRequest.of(
+                Math.max(page - 1, 0), clampSize(size));
+        Page<SalesOrder> result = salesOrderRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageable);
+        String esc = keyword == null ? "" : keyword.trim();
+        List<Map<String, Object>> content = result.getContent().stream()
+                .filter(so -> esc.isEmpty() || (so.getOrderNumber() != null && so.getOrderNumber().contains(esc)))
+                .map(so -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("id", so.getId());
+                    m.put("orderNumber", so.getOrderNumber());
+                    m.put("customerId", so.getCustomerId());
+                    return m;
+                })
+                .collect(Collectors.toList());
+        return wrap(content, content.size());
+    }
+
+    @GetMapping("/sales-orders/{id}")
+    public ApiResponse<Map<String, Object>> getSalesOrder(@PathVariable String factoryId,
+                                                          @PathVariable String id) {
+        return salesOrderRepository.findById(id)
+                .filter(so -> factoryId.equals(so.getFactoryId()))
+                .map(so -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("id", so.getId());
+                    m.put("orderNumber", so.getOrderNumber());
+                    m.put("customerId", so.getCustomerId());
+                    return m;
+                })
+                .map(ApiResponse::success)
+                .orElseGet(() -> ApiResponse.success(null));
+    }
+
+    /** R12 audit S2 meta: 采购订单 dropdown for inbound/finance_ap modules. */
+    @GetMapping("/purchase-orders")
+    @Operation(summary = "采购订单查找")
+    public ApiResponse<Map<String, Object>> findPurchaseOrders(
+            @PathVariable String factoryId,
+            @RequestParam(required = false, defaultValue = "") String keyword,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        org.springframework.data.domain.PageRequest pageable = PageRequest.of(
+                Math.max(page - 1, 0), clampSize(size));
+        Page<PurchaseOrder> result = purchaseOrderRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageable);
+        String esc = keyword == null ? "" : keyword.trim();
+        List<Map<String, Object>> content = result.getContent().stream()
+                .filter(po -> esc.isEmpty() || (po.getOrderNumber() != null && po.getOrderNumber().contains(esc)))
+                .map(po -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("id", po.getId());
+                    m.put("poNumber", po.getOrderNumber());  // schema displayField=poNumber per V11 migration
+                    m.put("supplierId", po.getSupplierId());
+                    return m;
+                })
+                .collect(Collectors.toList());
+        return wrap(content, content.size());
+    }
+
+    @GetMapping("/purchase-orders/{id}")
+    public ApiResponse<Map<String, Object>> getPurchaseOrder(@PathVariable String factoryId,
+                                                             @PathVariable String id) {
+        return purchaseOrderRepository.findById(id)
+                .filter(po -> factoryId.equals(po.getFactoryId()))
+                .map(po -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("id", po.getId());
+                    m.put("poNumber", po.getOrderNumber());
+                    m.put("supplierId", po.getSupplierId());
+                    return m;
+                })
+                .map(ApiResponse::success)
+                .orElseGet(() -> ApiResponse.success(null));
     }
 
     /** GET-by-id for quote. */
