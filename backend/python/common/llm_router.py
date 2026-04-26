@@ -120,16 +120,20 @@ class SLOT(str, Enum):
 # All 4 are OpenAI-compatible via /chat/completions
 # Model names must match what each provider exposes.
 SLOT_MODELS: Dict[SLOT, Dict[str, Optional[str]]] = {
+    # Apr 26 2026 v4-quota-fix: replaced qwen3-max-2026-01-23 (free tier
+    # exhausted, 630 403 errors today) with qwen-plus (paid, validated).
+    # zhipu glm-4.5-air returned empty (model name no longer exists);
+    # replaced with glm-4-plus (validated). deepseek-chat works as-is.
     SLOT.CHAT: {
-        "aliyun_b": "qwen3-max-2026-01-23",
-        "aliyun_a": "qwen3-max-2026-01-23",
-        "zhipu":    "glm-4.5-air",
+        "aliyun_b": "qwen-plus",
+        "aliyun_a": "qwen-plus",
+        "zhipu":    "glm-4-plus",
         "deepseek": "deepseek-chat",
     },
     SLOT.INSIGHTS: {
-        "aliyun_b": "qwen3.5-flash",
-        "aliyun_a": "qwen3.5-flash",
-        "zhipu":    "glm-4.5-air",
+        "aliyun_b": "qwen-plus",
+        "aliyun_a": "qwen-plus",
+        "zhipu":    "glm-4-plus",
         "deepseek": "deepseek-chat",
     },
     SLOT.CHART: {
