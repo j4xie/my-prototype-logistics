@@ -18,6 +18,16 @@ from smartbi.capability.template_status import (
 
 router = APIRouter(prefix="/api/smartbi/capability", tags=["Capability"])
 
+# spec §9.2: backend per-factory 灰度 — return 503 for non-whitelisted factories.
+# FE useCapability 收到 503 → fail-open → 老体验. 灰度通过 env var 调整, 不需 redeploy FE.
+# Default = "F001,RES_3101_009" (Day 13 starter cohort, ~17% of 12 factories).
+# Set CAPABILITY_ROLLOUT_FACTORIES="*" to enable all (post-cohort observation period).
+import os
+_ROLLOUT_RAW = os.environ.get("CAPABILITY_ROLLOUT_FACTORIES", "F001,RES_3101_009")
+_ROLLOUT_FACTORIES: Optional[set[str]] = None if _ROLLOUT_RAW.strip() == "*" else {
+    f.strip() for f in _ROLLOUT_RAW.split(",") if f.strip()
+}
+
 # Module-level singleton (lazy). Multi-worker → see spec §3.4.
 _calculator: Optional[CapabilityCalculator] = None
 
@@ -43,6 +53,17 @@ def _check_factory_access(request: Request, factory_id: str) -> None:
         raise HTTPException(403, "Cross-tenant access denied")
 
 
+def _check_rollout(factory_id: str) -> None:
+    """spec §9.2 backend 灰度 gate: 503 for non-whitelisted factory.
+    FE 收到 503 → fail-open → 老体验, 不需 redeploy FE.
+    """
+    if _ROLLOUT_FACTORIES is not None and factory_id not in _ROLLOUT_FACTORIES:
+        raise HTTPException(
+            503,
+            f"Capability layer not enabled for factory={factory_id} (gradual rollout)",
+        )
+
+
 @router.get("/{factory_id}")
 async def get_capability(factory_id: str, request: Request):
     """返回 factory 当前可用的 canonical 字段 + 模板解锁状态.
@@ -51,6 +72,7 @@ async def get_capability(factory_id: str, request: Request):
     time_coverage v1.0 returns null; B 阶段 Sheet Merger backfill 后填真实数据 (spec §11).
     """
     _check_factory_access(request, factory_id)
+    _check_rollout(factory_id)
 
     calc = await _get_calculator()
     available = await calc.get_capabilities(factory_id)
@@ -70,6 +92,7 @@ async def get_capability(factory_id: str, request: Request):
 async def invalidate_cache(factory_id: str, request: Request):
     """Triggered after upload completion / deletion. spec §3.2."""
     _check_factory_access(request, factory_id)
+    _check_rollout(factory_id)
     calc = await _get_calculator()
     calc.invalidate(factory_id)
     return {"status": "ok"}
