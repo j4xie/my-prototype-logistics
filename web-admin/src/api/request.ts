@@ -327,7 +327,12 @@ request.interceptors.response.use(
       });
     }
 
-    return Promise.reject(new ApiError(message, error.response?.data?.code, status));
+    return Promise.reject(new ApiError(
+      message,
+      error.response?.data?.code,
+      status,
+      rich.actionHint || null,
+    ));
   }
 );
 

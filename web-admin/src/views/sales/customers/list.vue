@@ -198,9 +198,10 @@ async function handleSubmit() {
       ElMessage.error(res.message || '操作失败');
     }
   } catch (error) {
-    // 409 = optimistic lock conflict; interceptor already toasts. Offer explicit refresh flow.
-    const status = (error as { status?: number })?.status;
-    if (status === 409) {
+    // R24 P2 follow-up: 409 with actionHint = business invariant (already rich-toasted by
+    // interceptor). 409 without actionHint = vanilla optimistic-lock — show refresh dialog.
+    const err = error as { status?: number; actionHint?: string | null };
+    if (err?.status === 409 && !err.actionHint) {
       try {
         await ElMessageBox.confirm(
           '此客户数据已被其他用户修改。点击"确定"将刷新列表并放弃当前编辑。',

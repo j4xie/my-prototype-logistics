@@ -154,8 +154,10 @@ async function handleUpdate(formData: Record<string, unknown>) {
     currentView.value = 'list'
     loadTableData()
   } catch (e: any) {
-    // 409 optimistic lock — interceptor already showed sticky toast; offer refresh flow.
-    if (e?.status === 409) {
+    // R24 P2 follow-up: only treat 409 as optimistic-lock when actionHint is null.
+    // Business 409 (BusinessException withHint) is already rich-toasted by interceptor —
+    // firing "并发编辑冲突" dialog on top of an invariant-violation toast confuses the user.
+    if (e?.status === 409 && !e?.actionHint) {
       try {
         await ElMessageBox.confirm(
           '此记录已被其他用户修改。点击"确定"将刷新列表并放弃当前编辑。',
@@ -165,6 +167,11 @@ async function handleUpdate(formData: Record<string, unknown>) {
         currentView.value = 'list'
         loadTableData()
       } catch { /* user cancelled */ }
+      return
+    }
+    if (e?.status === 409) {
+      // Business 409 — interceptor already toasted; nothing to add. (Don't fall through
+      // to the generic ElMessage.error below or we'd double-toast.)
       return
     }
     ElMessage.error(e?.message || '保存失败')

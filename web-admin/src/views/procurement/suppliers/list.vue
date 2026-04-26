@@ -193,8 +193,12 @@ async function handleSubmit() {
     dialogVisible.value = false;
     loadData();
   } catch (error) {
-    const status = (error as { status?: number })?.status;
-    if (status === 409) {
+    const err = error as { status?: number; actionHint?: string | null };
+    // R24 P2 follow-up: only treat 409 as optimistic-lock when actionHint is null
+    // (vanilla 409 from GlobalExceptionHandler). Business 409 with actionHint
+    // (R18/R21/R23 invariants) is already toasted by interceptor — don't pile on
+    // a wrong "并发编辑冲突" dialog.
+    if (err?.status === 409 && !err.actionHint) {
       try {
         await ElMessageBox.confirm(
           '此供应商数据已被其他用户修改。点击"确定"将刷新列表并放弃当前编辑。',

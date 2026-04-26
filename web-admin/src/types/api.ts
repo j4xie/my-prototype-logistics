@@ -30,12 +30,23 @@ export interface PageRequest {
 export class ApiError extends Error {
   code?: string;
   status?: number;
+  /**
+   * R24 P2 audit follow-up: marker that distinguishes business 409s
+   * (BusinessException(409).withHint(actionHint)) from vanilla optimistic-lock
+   * 409 (GlobalExceptionHandler emits no actionHint). Callers checking
+   * `status===409` should also check `!actionHint` before treating as
+   * optimistic-lock conflict — otherwise R18/R21/R23 invariant violations
+   * trigger the wrong "并发编辑冲突" dialog on top of the interceptor's
+   * rich toast.
+   */
+  actionHint?: string | null;
 
-  constructor(message: string, code?: string, status?: number) {
+  constructor(message: string, code?: string, status?: number, actionHint?: string | null) {
     super(message);
     this.name = 'ApiError';
     this.code = code;
     this.status = status;
+    this.actionHint = actionHint ?? null;
   }
 }
 

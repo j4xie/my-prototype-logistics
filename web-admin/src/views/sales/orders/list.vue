@@ -395,8 +395,11 @@ async function handleSave() {
       if (res.success) { ElMessage.success('保存成功'); dialogVisible.value = false; editingOrderId.value = null; loadData(); }
       else { ElMessage.error(res.message || '保存失败'); }
     } catch (err) {
-      // 409 = optimistic lock conflict — offer refresh
-      if ((err as { status?: number })?.status === 409) {
+      // R24 P2 follow-up: only optimistic-lock dialog when no actionHint (vanilla 409).
+      // Business 409s from R18/R21/R23 invariants carry actionHint — interceptor already
+      // toasts the rich message; firing the wrong "并发编辑冲突" dialog on top would confuse.
+      const e = err as { status?: number; actionHint?: string | null };
+      if (e?.status === 409 && !e.actionHint) {
         try {
           await ElMessageBox.confirm(
             '此订单已被其他用户修改。点击"确定"将刷新列表并放弃当前编辑。',
@@ -406,7 +409,7 @@ async function handleSave() {
           dialogVisible.value = false; editingOrderId.value = null; loadData();
         } catch { /* user cancelled */ }
       }
-      /* axios interceptor already displayed error toast */
+      /* axios interceptor already displayed error toast for non-409 */
     }
   } else {
     await handleCreate();
