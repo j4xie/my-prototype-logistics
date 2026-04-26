@@ -550,13 +550,13 @@ public class SalesServiceImpl implements SalesService {
         customerRepository.findByIdAndFactoryId(request.getCustomerId(), factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("客户不存在或不属于当前组织"));
 
-        // 如果关联销售订单，验证状态
+        // R23 audit C3: was inline {FINANCE_APPROVED, CONFIRMED, PROCESSING, PARTIAL_DELIVERED}
+        // — distinct from SO_SHIPPABLE because delivery here allows CONFIRMED (e.g.,
+        // consignment / advance shipment). Centralized as SO_DELIVERABLE.
         if (request.getSalesOrderId() != null && !request.getSalesOrderId().isEmpty()) {
             SalesOrder order = getSalesOrderById(factoryId, request.getSalesOrderId());
-            if (order.getStatus() != SalesOrderStatus.FINANCE_APPROVED &&
-                    order.getStatus() != SalesOrderStatus.CONFIRMED &&
-                    order.getStatus() != SalesOrderStatus.PROCESSING &&
-                    order.getStatus() != SalesOrderStatus.PARTIAL_DELIVERED) {
+            if (order.getStatus() == null
+                    || !com.cretas.aims.domain.OrderUsageWhitelists.SO_DELIVERABLE.contains(order.getStatus())) {
                 throw new BusinessException("只有财务已批准/已确认/处理中/部分发货状态的订单可以创建发货单");
             }
         }
@@ -816,11 +816,11 @@ public class SalesServiceImpl implements SalesService {
         List<SalesOrder> monthlyOrders = salesOrderRepository.findByFactoryIdAndDateRange(factoryId, monthStart, now);
 
         long totalOrders = monthlyOrders.size();
+        // R23 audit C3: was inline {CONFIRMED, PENDING_FINANCE_REVIEW, FINANCE_APPROVED, PROCESSING}
+        // — semantically "still in flight, not yet delivered/cancelled". Centralized as SO_IN_FLIGHT.
         long pendingOrders = monthlyOrders.stream()
-                .filter(o -> o.getStatus() == SalesOrderStatus.CONFIRMED
-                        || o.getStatus() == SalesOrderStatus.PENDING_FINANCE_REVIEW
-                        || o.getStatus() == SalesOrderStatus.FINANCE_APPROVED
-                        || o.getStatus() == SalesOrderStatus.PROCESSING)
+                .filter(o -> o.getStatus() != null
+                        && com.cretas.aims.domain.OrderUsageWhitelists.SO_IN_FLIGHT.contains(o.getStatus()))
                 .count();
         BigDecimal monthlyRevenue = monthlyOrders.stream()
                 .filter(o -> o.getStatus() != SalesOrderStatus.CANCELLED)

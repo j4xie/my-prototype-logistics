@@ -9,7 +9,6 @@ import com.cretas.aims.dto.production.CreateProductionPlanRequest;
 import com.cretas.aims.dto.production.ProductionPlanDTO;
 import com.cretas.aims.entity.ProductionPlan;
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
-import com.cretas.aims.entity.enums.SalesOrderStatus;
 import com.cretas.aims.entity.inventory.SalesOrder;
 import com.cretas.aims.repository.ProductionPlanRepository;
 import com.cretas.aims.repository.inventory.SalesOrderRepository;
@@ -566,24 +565,13 @@ public class ProductionPlanController {
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId) {
 
-        List<SalesOrderStatus> selectableStatuses = List.of(
-                SalesOrderStatus.CONFIRMED,
-                SalesOrderStatus.PENDING_FINANCE_REVIEW,
-                SalesOrderStatus.FINANCE_APPROVED,
-                SalesOrderStatus.PROCESSING,
-                SalesOrderStatus.PARTIAL_DELIVERED
-        );
-
-        List<SalesOrder> orders = salesOrderRepository.findAll().stream()
-                .filter(so -> factoryId.equals(so.getFactoryId()))
-                .filter(so -> so.getStatus() != null && selectableStatuses.contains(so.getStatus()))
-                .sorted((a, b) -> {
-                    if (a.getCreatedAt() == null) return 1;
-                    if (b.getCreatedAt() == null) return -1;
-                    return b.getCreatedAt().compareTo(a.getCreatedAt());
-                })
-                .limit(200)
-                .collect(Collectors.toList());
+        // R23 audit C3+I6: was inline whitelist + findAll().stream().filter() — full table scan
+        // loading ALL factories' SOs into JVM heap before filtering (multi-tenant data leak risk).
+        // Now JPQL push-down + centralized SO_PLANNABLE.
+        List<SalesOrder> orders = salesOrderRepository.findByFactoryIdAndStatusInOrderByCreatedAtDesc(
+                factoryId,
+                com.cretas.aims.domain.OrderUsageWhitelists.SO_PLANNABLE,
+                org.springframework.data.domain.PageRequest.of(0, 200));
 
         List<Map<String, Object>> result = orders.stream().map(so -> {
             Map<String, Object> m = new HashMap<>();

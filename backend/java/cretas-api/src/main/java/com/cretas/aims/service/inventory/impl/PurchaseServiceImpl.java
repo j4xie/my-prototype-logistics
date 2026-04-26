@@ -426,12 +426,13 @@ public class PurchaseServiceImpl implements PurchaseService {
         supplierRepository.findByIdAndFactoryId(request.getSupplierId(), factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("供应商不存在或不属于当前组织"));
 
-        // 如果关联采购订单，验证订单状态
+        // R23 audit C3: was inline {APPROVED, FINANCE_APPROVED, PARTIAL_RECEIVED}
+        // — distinct from PO_RECEIVABLE because this stricter ops-side variant
+        // excludes PENDING_FINANCE_REVIEW (only operational receive). Centralized as PO_OPS_RECEIVABLE.
         if (request.getPurchaseOrderId() != null && !request.getPurchaseOrderId().isEmpty()) {
             PurchaseOrder order = getPurchaseOrderById(factoryId, request.getPurchaseOrderId());
-            if (order.getStatus() != PurchaseOrderStatus.APPROVED &&
-                    order.getStatus() != PurchaseOrderStatus.FINANCE_APPROVED &&
-                    order.getStatus() != PurchaseOrderStatus.PARTIAL_RECEIVED) {
+            if (order.getStatus() == null
+                    || !com.cretas.aims.domain.OrderUsageWhitelists.PO_OPS_RECEIVABLE.contains(order.getStatus())) {
                 throw new BusinessException("只有已审批、财务已审核或部分到货状态的订单可以入库");
             }
         }

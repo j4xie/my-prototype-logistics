@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,6 +20,14 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, String> 
     Page<SalesOrder> findByFactoryIdOrderByCreatedAtDesc(String factoryId, Pageable pageable);
 
     Page<SalesOrder> findByFactoryIdAndStatusOrderByCreatedAtDesc(String factoryId, SalesOrderStatus status, Pageable pageable);
+
+    /**
+     * R23 audit I6: JPQL push-down replacement for ProductionPlanController.findAll().stream().filter(...)
+     * which loaded ALL factories' SOs into JVM heap before filtering — full table scan + multi-tenant
+     * data leak risk. Now WHERE-clause filtered at DB level.
+     */
+    List<SalesOrder> findByFactoryIdAndStatusInOrderByCreatedAtDesc(
+            String factoryId, Collection<SalesOrderStatus> statuses, Pageable pageable);
 
     Optional<SalesOrder> findByFactoryIdAndOrderNumber(String factoryId, String orderNumber);
 

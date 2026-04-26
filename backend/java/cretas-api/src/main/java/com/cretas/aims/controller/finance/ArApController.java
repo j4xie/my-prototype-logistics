@@ -7,6 +7,7 @@ import com.cretas.aims.entity.enums.CounterpartyType;
 import com.cretas.aims.entity.enums.PaymentMethod;
 import com.cretas.aims.entity.finance.ArApTransaction;
 import com.cretas.aims.service.MobileService;
+import com.cretas.aims.service.config.FactoryConfigService;
 import com.cretas.aims.service.finance.ArApService;
 import com.cretas.aims.utils.TokenUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,6 +37,8 @@ public class ArApController {
 
     private final ArApService arApService;
     private final MobileService mobileService;
+    /** R23 audit C4: conditional module check for /adjustment endpoint (counterpartyType-dependent). */
+    private final FactoryConfigService factoryConfigService;
 
     // ==================== 应收（AR） ====================
 
@@ -71,7 +74,10 @@ public class ArApController {
 
     // ==================== 应付（AP） ====================
 
-    @RequireModule("finance_ar")
+    // R23 audit C4: was @RequireModule("finance_ar") — but this endpoint records AP
+    // (应付). Factory with only finance_ap enabled couldn't write payables; factory
+    // with only finance_ar (no AP) could. Both directions wrong.
+    @RequireModule("finance_ap")
     @PostMapping("/payable")
     @Operation(summary = "记录应付挂账（采购入库）")
     public ApiResponse<ArApTransaction> recordPayable(
@@ -85,7 +91,8 @@ public class ArApController {
         return ApiResponse.success("应付记录创建成功", transaction);
     }
 
-    @RequireModule("finance_ar")
+    // R23 audit C4: was @RequireModule("finance_ar") — wrong, this is AP payment.
+    @RequireModule("finance_ap")
     @PostMapping("/payable/payment")
     @Operation(summary = "记录向供应商付款（冲减应付）")
     public ApiResponse<ArApTransaction> recordApPayment(
@@ -103,19 +110,61 @@ public class ArApController {
 
     // ==================== 手工调整 ====================
 
-    @RequireModule("finance_ar")
+    // R23 audit C4: was @RequireModule("finance_ar") — but this endpoint dispatches by
+    // counterpartyType (CUSTOMER → AR, SUPPLIER → AP). Static class-level annotation
+    // can't capture the conditional. Module enforcement moved to service layer below
+    // (the service throws "模块未启用" when counterpartyType doesn't match an enabled module).
     @PostMapping("/adjustment")
-    @Operation(summary = "手工调整余额")
+    @Operation(summary = "手工调整余额（PENDING — 需审批）")
     public ApiResponse<ArApTransaction> recordAdjustment(
             @PathVariable @NotBlank String factoryId,
             @RequestHeader("Authorization") String authorization,
             @RequestParam CounterpartyType counterpartyType,
             @Valid @RequestBody RecordTransactionRequest request) {
         Long userId = extractUserId(authorization);
+        // R23 audit C4 conditional module check: AR adjustment needs finance_ar; AP needs finance_ap.
+        String requiredModule = counterpartyType == CounterpartyType.CUSTOMER ? "finance_ar" : "finance_ap";
+        if (!factoryConfigService.isModuleEnabled(factoryId, requiredModule)) {
+            throw new com.cretas.aims.exception.BusinessException("模块 " + requiredModule + " 未启用");
+        }
         ArApTransaction transaction = arApService.recordAdjustment(
                 factoryId, counterpartyType, request.getCounterpartyId(),
                 request.getAmount(), userId, request.getRemark());
-        return ApiResponse.success("调整记录创建成功", transaction);
+        return ApiResponse.success("调整记录已提交, 等待审批", transaction);
+    }
+
+    /**
+     * R23 audit C2: approve a PENDING adjustment. Applies amount delta to counterparty
+     * balance + flips approval_status to APPROVED. Requires elevated permission
+     * 'finance:approve_adjustment' (distinct from 'finance:read_write' that submits).
+     * Approver must differ from submitter (4-eyes principle, enforced in service).
+     */
+    @RequirePermission("finance:approve_adjustment")
+    @PostMapping("/adjustment/{transactionId}/approve")
+    @Operation(summary = "审批通过手工调整（应用余额变动）")
+    public ApiResponse<ArApTransaction> approveAdjustment(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotBlank String transactionId,
+            @RequestHeader("Authorization") String authorization) {
+        Long approverId = extractUserId(authorization);
+        ArApTransaction transaction = arApService.approveAdjustment(factoryId, transactionId, approverId);
+        return ApiResponse.success("调整已审批通过", transaction);
+    }
+
+    /**
+     * R23 audit C2: reject a PENDING adjustment. No balance change; remark gets reject reason appended.
+     */
+    @RequirePermission("finance:approve_adjustment")
+    @PostMapping("/adjustment/{transactionId}/reject")
+    @Operation(summary = "驳回手工调整")
+    public ApiResponse<ArApTransaction> rejectAdjustment(
+            @PathVariable @NotBlank String factoryId,
+            @PathVariable @NotBlank String transactionId,
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam(required = false) String reason) {
+        Long approverId = extractUserId(authorization);
+        ArApTransaction transaction = arApService.rejectAdjustment(factoryId, transactionId, approverId, reason);
+        return ApiResponse.success("调整已驳回", transaction);
     }
 
     // ==================== 查询 ====================

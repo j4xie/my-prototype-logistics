@@ -45,8 +45,23 @@ public class PaymentRecordServiceImpl implements PaymentRecordService {
                                         PaymentMethod method, LocalDate paymentDate,
                                         String paymentReference, String receiptUrl,
                                         Long recordedBy, String remark) {
+        // R23 audit C1: cross-tenant + status validation. Pre-R23 this called findById() with
+        // NO factoryId filter and NO status check — F001 user could POST F002's salesOrderId,
+        // leaking F002 customer data into F001 payment_records, AND any user could record
+        // payment against DRAFT/CANCELLED SO. R21 fixed parallel paths (recordReceivable,
+        // recordPayable) but missed this one. Mirror of ArApServiceImpl.validateReceivableStatus.
         SalesOrder so = salesOrderRepository.findById(salesOrderId)
-                .orElseThrow(() -> new IllegalArgumentException("销售订单不存在: " + salesOrderId));
+                .filter(s -> factoryId.equals(s.getFactoryId()))
+                .orElseThrow(() -> new com.cretas.aims.exception.ResourceNotFoundException(
+                        "销售订单不存在: " + salesOrderId));
+        if (so.getStatus() == null
+                || !com.cretas.aims.domain.OrderUsageWhitelists.SO_INVOICEABLE.contains(so.getStatus())) {
+            throw new com.cretas.aims.exception.BusinessException(409,
+                    "销售订单状态不允许记录收款 (当前: " + (so.getStatus() != null ? so.getStatus().name() : "null") +
+                    "). 仅财务审核通过及之后状态可收款.")
+                    .withHint("先完成财务审核流程后再录入收款")
+                    .withHintTarget("销售订单");
+        }
 
         PaymentRecord record = new PaymentRecord();
         record.setFactoryId(factoryId);

@@ -36,12 +36,30 @@ public interface ArApService {
                                      BigDecimal amount, PaymentMethod method,
                                      String paymentReference, Long operatedBy, String remark);
 
-    // ==================== 手工调整 ====================
+    // ==================== 手工调整（R23 audit C2: PENDING_APPROVAL workflow） ====================
 
-    /** 手工调整（正数增加，负数减少） */
+    /**
+     * R23 audit C2: creates AR_ADJUSTMENT/AP_ADJUSTMENT in PENDING state.
+     * Customer/supplier balance is NOT mutated until approveAdjustment() runs.
+     * Pre-R23 this immediately mutated balance — bypass of dual-control gate.
+     */
     ArApTransaction recordAdjustment(String factoryId, CounterpartyType counterpartyType,
                                       String counterpartyId, BigDecimal amount,
                                       Long operatedBy, String remark);
+
+    /**
+     * R23 audit C2: approve a PENDING adjustment. Applies amount delta to counterparty
+     * balance + flips approval_status to APPROVED. Requires elevated permission
+     * (controller enforces 'finance:approve_adjustment'). Approver must differ from
+     * operatedBy (4-eyes principle).
+     */
+    ArApTransaction approveAdjustment(String factoryId, String transactionId, Long approvedBy);
+
+    /**
+     * R23 audit C2: reject a PENDING adjustment. No balance change; row persists with
+     * approval_status=REJECTED + approver + reject reason in remark (appended).
+     */
+    ArApTransaction rejectAdjustment(String factoryId, String transactionId, Long approvedBy, String reason);
 
     // ==================== 查询 ====================
 

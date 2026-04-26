@@ -184,10 +184,10 @@ class ReferenceDataControllerTest {
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> content = (List<Map<String, Object>>) resp.getData().get("content");
 
-        java.util.Set<SalesOrderStatus> invoiceable = java.util.Set.of(
-                SalesOrderStatus.FINANCE_APPROVED, SalesOrderStatus.PROCESSING,
-                SalesOrderStatus.PARTIAL_DELIVERED, SalesOrderStatus.COMPLETED);
-        boolean expectedToPass = invoiceable.contains(status);
+        // R23 audit I3: was inline Set.of(...) re-encoding the whitelist — meaning the test
+        // asserted "controller agrees with TEST PIN", not "controller agrees with central
+        // OrderUsageWhitelists". Fix: import the actual constant under test.
+        boolean expectedToPass = com.cretas.aims.domain.OrderUsageWhitelists.SO_INVOICEABLE.contains(status);
         assertEquals(expectedToPass ? 1 : 0, content.size(),
                 "status=" + status + " should " + (expectedToPass ? "PASS" : "be excluded") + " from invoiceable whitelist");
     }
@@ -218,10 +218,8 @@ class ReferenceDataControllerTest {
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> content = (List<Map<String, Object>>) resp.getData().get("content");
 
-        java.util.Set<PurchaseOrderStatus> invoiceable = java.util.Set.of(
-                PurchaseOrderStatus.FINANCE_APPROVED, PurchaseOrderStatus.PARTIAL_RECEIVED,
-                PurchaseOrderStatus.COMPLETED, PurchaseOrderStatus.CLOSED);
-        boolean expectedToPass = invoiceable.contains(status);
+        // R23 audit I3: same fix as SO test above — import constant, don't pin a copy.
+        boolean expectedToPass = com.cretas.aims.domain.OrderUsageWhitelists.PO_INVOICEABLE.contains(status);
         assertEquals(expectedToPass ? 1 : 0, content.size(),
                 "status=" + status + " should " + (expectedToPass ? "PASS" : "be excluded") + " from invoiceable whitelist");
     }

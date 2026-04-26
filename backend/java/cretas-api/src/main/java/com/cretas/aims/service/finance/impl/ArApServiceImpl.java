@@ -313,37 +313,116 @@ public class ArApServiceImpl implements ArApService {
     public ArApTransaction recordAdjustment(String factoryId, CounterpartyType counterpartyType,
                                              String counterpartyId, BigDecimal amount,
                                              Long operatedBy, String remark) {
+        // R23 audit C2: Pre-R23 this immediately mutated balance and saved APPROVED — bypass
+        // of dual-control. R23: insert PENDING + DO NOT mutate balance. Customer/supplier
+        // balance changes only on approveAdjustment() by a 2nd user with elevated permission.
         String counterpartyName;
-        BigDecimal newBalance;
+        BigDecimal currentBalance;
 
         if (counterpartyType == CounterpartyType.CUSTOMER) {
             Customer customer = customerRepository.findByIdAndFactoryId(counterpartyId, factoryId)
                     .orElseThrow(() -> new ResourceNotFoundException("客户不存在"));
-            newBalance = (customer.getCurrentBalance() != null ? customer.getCurrentBalance() : BigDecimal.ZERO)
-                    .add(amount);
-            customer.setCurrentBalance(newBalance);
-            customerRepository.save(customer);
             counterpartyName = customer.getName();
+            currentBalance = customer.getCurrentBalance() != null ? customer.getCurrentBalance() : BigDecimal.ZERO;
         } else {
             Supplier supplier = supplierRepository.findByIdAndFactoryId(counterpartyId, factoryId)
                     .orElseThrow(() -> new ResourceNotFoundException("供应商不存在"));
-            newBalance = (supplier.getCurrentBalance() != null ? supplier.getCurrentBalance() : BigDecimal.ZERO)
-                    .add(amount);
-            supplier.setCurrentBalance(newBalance);
-            supplierRepository.save(supplier);
             counterpartyName = supplier.getName();
+            currentBalance = supplier.getCurrentBalance() != null ? supplier.getCurrentBalance() : BigDecimal.ZERO;
         }
 
         ArApTransactionType type = counterpartyType == CounterpartyType.CUSTOMER
                 ? ArApTransactionType.AR_ADJUSTMENT : ArApTransactionType.AP_ADJUSTMENT;
 
+        // balance_after captures CURRENT (un-mutated) balance — semantically "snapshot at submit time".
+        // On approve, we recompute and update balance_after to reflect the post-application value.
         ArApTransaction transaction = buildTransaction(
                 factoryId, type, counterpartyType, counterpartyId, counterpartyName,
-                amount, newBalance, null, operatedBy, remark);
+                amount, currentBalance, null, operatedBy, remark);
+        transaction.setApprovalStatus(com.cretas.aims.entity.enums.ArApApprovalStatus.PENDING);
 
-        log.info("手工调整: factoryId={}, type={}, counterpartyId={}, amount={}, balance={}",
-                factoryId, counterpartyType, counterpartyId, amount, newBalance);
+        log.info("手工调整 (PENDING): factoryId={}, type={}, counterpartyId={}, amount={}, currentBalance={}, operatedBy={}",
+                factoryId, counterpartyType, counterpartyId, amount, currentBalance, operatedBy);
         return transactionRepository.save(transaction);
+    }
+
+    @Override
+    @Transactional
+    public ArApTransaction approveAdjustment(String factoryId, String transactionId, Long approvedBy) {
+        ArApTransaction txn = transactionRepository.findById(transactionId)
+                .filter(t -> factoryId.equals(t.getFactoryId()))
+                .orElseThrow(() -> new ResourceNotFoundException("调整记录不存在: " + transactionId));
+
+        if (txn.getApprovalStatus() != com.cretas.aims.entity.enums.ArApApprovalStatus.PENDING) {
+            throw new BusinessException(409, "只能审批 PENDING 状态的调整, 当前: " + txn.getApprovalStatus());
+        }
+        if (txn.getTransactionType() != ArApTransactionType.AR_ADJUSTMENT
+                && txn.getTransactionType() != ArApTransactionType.AP_ADJUSTMENT) {
+            throw new BusinessException("非调整类型交易不可审批: " + txn.getTransactionType());
+        }
+        // 4-eyes principle: approver must differ from submitter
+        if (txn.getOperatedBy() != null && txn.getOperatedBy().equals(approvedBy)) {
+            throw new BusinessException(403, "审批人不能与提交人相同 (4 眼原则)");
+        }
+
+        BigDecimal amount = txn.getAmount();
+        BigDecimal newBalance;
+
+        if (txn.getCounterpartyType() == CounterpartyType.CUSTOMER) {
+            Customer customer = customerRepository.findByIdAndFactoryId(txn.getCounterpartyId(), factoryId)
+                    .orElseThrow(() -> new ResourceNotFoundException("客户不存在: " + txn.getCounterpartyId()));
+            newBalance = (customer.getCurrentBalance() != null ? customer.getCurrentBalance() : BigDecimal.ZERO)
+                    .add(amount);
+            customer.setCurrentBalance(newBalance);
+            customerRepository.save(customer);
+        } else {
+            Supplier supplier = supplierRepository.findByIdAndFactoryId(txn.getCounterpartyId(), factoryId)
+                    .orElseThrow(() -> new ResourceNotFoundException("供应商不存在: " + txn.getCounterpartyId()));
+            newBalance = (supplier.getCurrentBalance() != null ? supplier.getCurrentBalance() : BigDecimal.ZERO)
+                    .add(amount);
+            supplier.setCurrentBalance(newBalance);
+            supplierRepository.save(supplier);
+        }
+
+        txn.setBalanceAfter(newBalance);
+        txn.setApprovalStatus(com.cretas.aims.entity.enums.ArApApprovalStatus.APPROVED);
+        txn.setApprovedBy(approvedBy);
+        txn.setApprovedAt(java.time.LocalDateTime.now());
+        log.info("调整审批通过: txnId={}, factoryId={}, approvedBy={}, newBalance={}",
+                transactionId, factoryId, approvedBy, newBalance);
+        return transactionRepository.save(txn);
+    }
+
+    @Override
+    @Transactional
+    public ArApTransaction rejectAdjustment(String factoryId, String transactionId, Long approvedBy, String reason) {
+        ArApTransaction txn = transactionRepository.findById(transactionId)
+                .filter(t -> factoryId.equals(t.getFactoryId()))
+                .orElseThrow(() -> new ResourceNotFoundException("调整记录不存在: " + transactionId));
+
+        if (txn.getApprovalStatus() != com.cretas.aims.entity.enums.ArApApprovalStatus.PENDING) {
+            throw new BusinessException(409, "只能驳回 PENDING 状态的调整, 当前: " + txn.getApprovalStatus());
+        }
+        if (txn.getOperatedBy() != null && txn.getOperatedBy().equals(approvedBy)) {
+            throw new BusinessException(403, "审批人不能与提交人相同 (4 眼原则)");
+        }
+
+        // 余额不动. 在 remark 末尾追加驳回原因, 历史可追溯.
+        String existingRemark = txn.getRemark() != null ? txn.getRemark() : "";
+        String suffix = " [REJECTED by " + approvedBy + ": "
+                + (reason != null && !reason.isBlank() ? reason : "(无原因)") + "]";
+        // 防止 remark 超长 (DB column length=500)
+        String newRemark = existingRemark + suffix;
+        if (newRemark.length() > 500) {
+            newRemark = newRemark.substring(0, 500);
+        }
+        txn.setRemark(newRemark);
+        txn.setApprovalStatus(com.cretas.aims.entity.enums.ArApApprovalStatus.REJECTED);
+        txn.setApprovedBy(approvedBy);
+        txn.setApprovedAt(java.time.LocalDateTime.now());
+        log.info("调整审批驳回: txnId={}, factoryId={}, rejectedBy={}, reason={}",
+                transactionId, factoryId, approvedBy, reason);
+        return transactionRepository.save(txn);
     }
 
     // ==================== 查询 ====================
