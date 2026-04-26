@@ -1,11 +1,13 @@
 """Route uploads to the right Silver writer based on detected shape."""
 from __future__ import annotations
 
+import functools
 import json as _json
 import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
+from smartbi.canonical.concurrency import with_factory_serialization
 from smartbi.canonical.shape_detector import DetectionResult, FileShape, ShapeDetector
 
 if TYPE_CHECKING:
@@ -81,20 +83,42 @@ async def route_upload(
     orchestrator: "EntityResolutionOrchestrator",
     detector: Optional[ShapeDetector] = None,
 ) -> RouteResult:
-    """Detect shape + dispatch. Low-confidence or unimplemented → admin queue."""
+    """Detect shape + dispatch. Same factory uploads serialize via factory lock."""
     detector = detector or ShapeDetector()
-
     async with pool.acquire() as conn:
-        col_rows = await conn.fetch(
-            "SELECT original_name FROM smart_bi_pg_field_definitions "
-            "WHERE upload_id = $1",
-            upload_id,
+        return await with_factory_serialization(
+            factory_id,
+            conn,
+            functools.partial(
+                _route_upload_inner,
+                upload_id,
+                factory_id,
+                pool,
+                orchestrator,
+                detector,
+            ),
         )
-        sample_rows = await conn.fetch(
-            "SELECT row_data FROM smart_bi_dynamic_data "
-            "WHERE upload_id = $1 LIMIT 5",
-            upload_id,
-        )
+
+
+async def _route_upload_inner(
+    upload_id: int,
+    factory_id: str,
+    pool: "asyncpg.Pool",
+    orchestrator: "EntityResolutionOrchestrator",
+    detector: ShapeDetector,
+    conn: "asyncpg.Connection",
+) -> RouteResult:
+    """Inner work after factory serialization is acquired."""
+    col_rows = await conn.fetch(
+        "SELECT original_name FROM smart_bi_pg_field_definitions "
+        "WHERE upload_id = $1",
+        upload_id,
+    )
+    sample_rows = await conn.fetch(
+        "SELECT row_data FROM smart_bi_dynamic_data "
+        "WHERE upload_id = $1 LIMIT 5",
+        upload_id,
+    )
 
     column_names = [r["original_name"] for r in col_rows]
     samples = [_unwrap_row_data(r["row_data"]) for r in sample_rows]
@@ -103,7 +127,7 @@ async def route_upload(
 
     writer_name = WRITER_REGISTRY.get(detection.shape)
     if writer_name is None or detection.confidence < ShapeDetector.AUTO_ROUTE_THRESHOLD:
-        await _queue_unknown_for_admin(pool, upload_id, factory_id, detection)
+        await _queue_unknown_for_admin(conn, upload_id, factory_id, detection)
         return RouteResult(
             routed_to=None,
             shape=detection.shape.value,
@@ -115,7 +139,7 @@ async def route_upload(
     writer = get_writer(writer_name, pool, orchestrator)
     if writer is None:
         # Mapped name exists but writer not yet implemented — admin queue path.
-        await _queue_unknown_for_admin(pool, upload_id, factory_id, detection)
+        await _queue_unknown_for_admin(conn, upload_id, factory_id, detection)
         return RouteResult(
             routed_to=None,
             shape=detection.shape.value,
@@ -146,24 +170,23 @@ def _unwrap_row_data(raw):
 
 
 async def _queue_unknown_for_admin(
-    pool: "asyncpg.Pool",
+    conn: "asyncpg.Connection",
     upload_id: int,
     factory_id: str,
     detection: DetectionResult,
 ) -> None:
     """Insert a row marking the upload for admin shape review."""
-    async with pool.acquire() as conn:
-        await conn.execute(
-            """
-            INSERT INTO entity_resolution_admin_queue
-              (factory_id, entity_type, raw_name, candidate_entity_id, confidence,
-               decided_by_agent, source_upload_id)
-            VALUES ($1, $2, $3, NULL, $4, $5, $6)
-            """,
-            factory_id,
-            _SHAPE_DETECTION_ENTITY_TYPE,
-            f"upload:{upload_id}",
-            detection.confidence,
-            f"shape_detector:{detection.shape.value}",
-            upload_id,
-        )
+    await conn.execute(
+        """
+        INSERT INTO entity_resolution_admin_queue
+          (factory_id, entity_type, raw_name, candidate_entity_id, confidence,
+           decided_by_agent, source_upload_id)
+        VALUES ($1, $2, $3, NULL, $4, $5, $6)
+        """,
+        factory_id,
+        _SHAPE_DETECTION_ENTITY_TYPE,
+        f"upload:{upload_id}",
+        detection.confidence,
+        f"shape_detector:{detection.shape.value}",
+        upload_id,
+    )

@@ -293,3 +293,11 @@ class DimResolver:
             "discount": len(self._discount_cache),
             "cost_category": len(self._cost_category_cache),
         }
+
+
+def clear_cache(factory_id: str) -> None:
+    """No-op: DimResolver caches are per-instance and get GC'd when the upload task
+    completes. Called by concurrency.with_factory_serialization for protocol parity
+    with future module-level caches (e.g., embedding cache shared across resolvers).
+    """
+    pass

@@ -17,11 +17,21 @@ from smartbi.canonical.shape_router import (
 )
 
 
+def _attach_transaction_cm(conn):
+    """Attach a no-op async transaction context manager to a mock conn."""
+    txn = MagicMock()
+    txn.__aenter__ = AsyncMock(return_value=None)
+    txn.__aexit__ = AsyncMock(return_value=None)
+    conn.transaction = MagicMock(return_value=txn)
+    return conn
+
+
 def _make_mock_pool(conn=None):
     if conn is None:
         conn = AsyncMock()
         conn.fetch = AsyncMock(return_value=[])
         conn.execute = AsyncMock(return_value=None)
+        _attach_transaction_cm(conn)
     pool = MagicMock()
     acquire_ctx = MagicMock()
     acquire_ctx.__aenter__ = AsyncMock(return_value=conn)
@@ -47,6 +57,7 @@ def _conn_with_columns(column_names, sample_rows=None):
 
     conn.fetch = AsyncMock(side_effect=fetch_side_effect)
     conn.execute = AsyncMock(return_value=None)
+    _attach_transaction_cm(conn)
     return conn
 
 
