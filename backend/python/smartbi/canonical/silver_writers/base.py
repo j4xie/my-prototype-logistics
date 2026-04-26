@@ -115,14 +115,14 @@ class BaseWriter(ABC):
             return ResolveResult(entity_id=None, is_tentative=True, confidence=0.0)
         try:
             from smartbi.canonical.entity_resolution.staff_handler import (
-                resolve_staff_with_autoCreate,
+                resolve_staff_with_autocreate,
             )
         except ImportError as exc:
             raise NotImplementedError(
                 "staff_handler awaits Day 3+ implementation"
             ) from exc
         async with self._pool.acquire() as conn:
-            staff_id, was_auto = await resolve_staff_with_autoCreate(
+            staff_id, was_auto = await resolve_staff_with_autocreate(
                 raw_name, factory_id, store_id, conn
             )
         return ResolveResult(
