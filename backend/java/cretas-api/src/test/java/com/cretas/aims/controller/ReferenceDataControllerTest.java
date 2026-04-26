@@ -2,10 +2,16 @@ package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.Customer;
+import com.cretas.aims.entity.MaterialBatch;
 import com.cretas.aims.entity.ProductType;
 import com.cretas.aims.entity.RawMaterialType;
 import com.cretas.aims.entity.Supplier;
 import com.cretas.aims.entity.User;
+import com.cretas.aims.entity.enums.PurchaseOrderStatus;
+import com.cretas.aims.entity.enums.SalesOrderStatus;
+import com.cretas.aims.entity.inventory.PurchaseOrder;
+import com.cretas.aims.entity.inventory.SalesOrder;
+import com.cretas.aims.entity.sales.OperationalQuote;
 import com.cretas.aims.repository.CustomerRepository;
 import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.ProductTypeRepository;
@@ -158,5 +164,107 @@ class ReferenceDataControllerTest {
 
         ApiResponse<Map<String, Object>> resp = controller.getEmployee("F001", "146");
         assertNull(resp.getData(), "Cross-factory access must return null, not the user");
+    }
+
+    // ===== R15: coverage for /sales-orders, /purchase-orders, /batches, /quotes =====
+
+    @Test
+    void findSalesOrders_excludesDraftCancelledRejected() {
+        // R15 self-check Q2: SO dropdown for finance_ar should not include DRAFT/CANCELLED/FINANCE_REJECTED
+        SalesOrder draft = newSO("d1", "SO-D", SalesOrderStatus.DRAFT);
+        SalesOrder cancelled = newSO("c1", "SO-C", SalesOrderStatus.CANCELLED);
+        SalesOrder rejected = newSO("r1", "SO-R", SalesOrderStatus.FINANCE_REJECTED);
+        SalesOrder approved = newSO("a1", "SO-A", SalesOrderStatus.FINANCE_APPROVED);
+
+        when(salesOrderRepository.findByFactoryIdOrderByCreatedAtDesc(eq("F001"), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(draft, cancelled, rejected, approved)));
+
+        ApiResponse<Map<String, Object>> resp = controller.findSalesOrders("F001", "", 1, 50);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> content = (List<Map<String, Object>>) resp.getData().get("content");
+
+        assertEquals(1, content.size(), "Only FINANCE_APPROVED should pass the filter");
+        assertEquals("SO-A", content.get(0).get("orderNumber"));
+    }
+
+    @Test
+    void findPurchaseOrders_excludesDraftCancelledRejected() {
+        PurchaseOrder draft = newPO("d1", "PO-D", PurchaseOrderStatus.DRAFT);
+        PurchaseOrder cancelled = newPO("c1", "PO-C", PurchaseOrderStatus.CANCELLED);
+        PurchaseOrder rejected = newPO("r1", "PO-R", PurchaseOrderStatus.FINANCE_REJECTED);
+        PurchaseOrder approved = newPO("a1", "PO-A", PurchaseOrderStatus.APPROVED);
+
+        when(purchaseOrderRepository.findByFactoryIdOrderByCreatedAtDesc(eq("F001"), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(draft, cancelled, rejected, approved)));
+
+        ApiResponse<Map<String, Object>> resp = controller.findPurchaseOrders("F001", "", 1, 50);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> content = (List<Map<String, Object>>) resp.getData().get("content");
+
+        assertEquals(1, content.size(), "Only APPROVED should pass the filter");
+        assertEquals("PO-A", content.get(0).get("poNumber"));
+    }
+
+    @Test
+    void findBatches_returnsBatchNumber() {
+        MaterialBatch b = new MaterialBatch();
+        b.setId("b1");
+        b.setBatchNumber("BATCH-001");
+        when(materialBatchRepository.findByFactoryId(eq("F001"), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(b)));
+
+        ApiResponse<Map<String, Object>> resp = controller.findBatches("F001", "", 1, 50);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> content = (List<Map<String, Object>>) resp.getData().get("content");
+
+        assertEquals(1, content.size());
+        assertEquals("BATCH-001", content.get(0).get("batchNumber"));
+    }
+
+    @Test
+    void findQuotes_filtersApprovedAndNotExpired() {
+        // APPROVED + future validUntil → included
+        OperationalQuote ok = new OperationalQuote();
+        ok.setId("q-ok");
+        ok.setQuoteNo("QT-OK");
+        ok.setStatus("APPROVED");
+        ok.setValidUntil(java.time.LocalDate.now().plusDays(7));
+        // APPROVED + expired → excluded
+        OperationalQuote expired = new OperationalQuote();
+        expired.setId("q-exp");
+        expired.setQuoteNo("QT-EXP");
+        expired.setStatus("APPROVED");
+        expired.setValidUntil(java.time.LocalDate.now().minusDays(1));
+        // DRAFT → excluded
+        OperationalQuote draft = new OperationalQuote();
+        draft.setId("q-d");
+        draft.setQuoteNo("QT-D");
+        draft.setStatus("DRAFT");
+
+        when(quoteRepository.findByFactoryIdAndDeletedAtIsNullOrderByCreatedAtDesc(eq("F001"), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(ok, expired, draft)));
+
+        ApiResponse<Map<String, Object>> resp = controller.findQuotes("F001", "", 1, 50);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> content = (List<Map<String, Object>>) resp.getData().get("content");
+
+        assertEquals(1, content.size(), "Only APPROVED + non-expired should pass");
+        assertEquals("QT-OK", content.get(0).get("quoteNo"));
+    }
+
+    private SalesOrder newSO(String id, String num, SalesOrderStatus status) {
+        SalesOrder so = new SalesOrder();
+        so.setId(id);
+        so.setOrderNumber(num);
+        so.setStatus(status);
+        return so;
+    }
+
+    private PurchaseOrder newPO(String id, String num, PurchaseOrderStatus status) {
+        PurchaseOrder po = new PurchaseOrder();
+        po.setId(id);
+        po.setOrderNumber(num);
+        po.setStatus(status);
+        return po;
     }
 }

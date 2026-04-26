@@ -422,8 +422,11 @@ public class ReferenceDataController {
         Page<SalesOrder> result = salesOrderRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageable);
         String esc = keyword == null ? "" : keyword.trim();
         List<SalesOrder> filtered = result.getContent().stream()
+                // R15 self-check Q2: also exclude FINANCE_REJECTED — rejected orders
+                // shouldn't be linkable from finance_ar invoice creation either.
                 .filter(so -> so.getStatus() != com.cretas.aims.entity.enums.SalesOrderStatus.DRAFT
-                           && so.getStatus() != com.cretas.aims.entity.enums.SalesOrderStatus.CANCELLED)
+                           && so.getStatus() != com.cretas.aims.entity.enums.SalesOrderStatus.CANCELLED
+                           && so.getStatus() != com.cretas.aims.entity.enums.SalesOrderStatus.FINANCE_REJECTED)
                 .filter(so -> esc.isEmpty() || (so.getOrderNumber() != null && so.getOrderNumber().contains(esc)))
                 .collect(Collectors.toList());
         List<Map<String, Object>> content = filtered.stream()
@@ -470,8 +473,11 @@ public class ReferenceDataController {
         Page<PurchaseOrder> result = purchaseOrderRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageable);
         String esc = keyword == null ? "" : keyword.trim();
         List<PurchaseOrder> filtered = result.getContent().stream()
+                // R15 self-check Q2: also exclude FINANCE_REJECTED — rejected POs
+                // shouldn't be linkable from finance_ap invoice creation.
                 .filter(po -> po.getStatus() != com.cretas.aims.entity.enums.PurchaseOrderStatus.DRAFT
-                           && po.getStatus() != com.cretas.aims.entity.enums.PurchaseOrderStatus.CANCELLED)
+                           && po.getStatus() != com.cretas.aims.entity.enums.PurchaseOrderStatus.CANCELLED
+                           && po.getStatus() != com.cretas.aims.entity.enums.PurchaseOrderStatus.FINANCE_REJECTED)
                 .filter(po -> esc.isEmpty() || (po.getOrderNumber() != null && po.getOrderNumber().contains(esc)))
                 .collect(Collectors.toList());
         List<Map<String, Object>> content = filtered.stream()
@@ -513,8 +519,12 @@ public class ReferenceDataController {
             @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "50") int size) {
+        // R15 self-check Q5: explicit ORDER BY createdAt DESC — repo's findByFactoryId
+        // has no built-in sort, dropdown order would be undefined (DB insertion-order).
+        // For batch dropdowns most-recent-first is the expected UX.
         org.springframework.data.domain.PageRequest pageable = PageRequest.of(
-                Math.max(page - 1, 0), clampSize(size));
+                Math.max(page - 1, 0), clampSize(size),
+                Sort.by(Sort.Direction.DESC, "createdAt"));
         String esc = SqlLikeEscaper.escape(keyword);
         Page<MaterialBatch> result = (esc == null || esc.isBlank())
                 ? materialBatchRepository.findByFactoryId(factoryId, pageable)
