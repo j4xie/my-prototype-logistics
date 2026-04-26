@@ -1,0 +1,60 @@
+# Monitoring Scripts
+
+Lightweight observability scripts for Cretas / 数据织网 features.
+
+## capability-watch.sh
+
+Phase 4.5 observation period monitor for 数据织网 A spec capability endpoint.
+
+**Why**: spec §9.2 requires "F001 + RES_3101_009 跑 1 周, 0 投诉 → 扩白名单". This script gives passive evidence of "0 投诉" by checking endpoint health + latency + error rate every 15 min.
+
+**Probes**:
+1. Python /health endpoint returns 200
+2. /api/smartbi/capability/RES_3101_009 returns parseable JSON + measures wall latency
+3. Gate semantics: non-whitelisted factory returns 503
+4. journald scan for capability-related errors in last 15 min
+
+**Output** (single line per run):
+```
+[2026-04-26T10:16:14] OK health=ok cap=20f/13s lat=5ms gate=ok errs=0/15min
+```
+
+OK = exit 0. ALERT = exit 1 + reason emitted on STDOUT.
+
+**Install on prod (47.100.235.168)**:
+```bash
+# Copy script
+scp scripts/monitoring/capability-watch.sh root@47.100.235.168:/www/wwwroot/cretas/
+
+# Install cron (every 15 min)
+ssh root@47.100.235.168 'crontab -l | grep -v capability-watch > /tmp/cron; echo "*/15 * * * * /www/wwwroot/cretas/capability-watch.sh >> /var/log/capability-watch.log 2>&1" >> /tmp/cron; crontab /tmp/cron'
+
+# Verify
+ssh root@47.100.235.168 'crontab -l | grep capability'
+```
+
+**Tail log**:
+```bash
+ssh root@47.100.235.168 'tail -f /var/log/capability-watch.log'
+```
+
+**Alert response** (when ALERT line appears):
+- `health=000` → Python service down → `systemctl status cretas-python && journalctl -u cretas-python -n 50`
+- `cap=fail` or `cap=parse-fail` → endpoint returning malformed → check above
+- `lat=>500ms` → uvicorn worker saturated, OR Python pool exhausted → check `ss -tlnp \| grep 8083` + memory
+- `gate=` not 503 → rollout config broken (`CAPABILITY_ROLLOUT_FACTORIES` env var lost) → check systemd EnvironmentFile
+- `errs >5/15min` → exceptions spiking → grep journald for stack traces
+
+**Tunable env vars** (set in cron line if needed):
+- `PYTHON_HOST` (default: localhost)
+- `PYTHON_PORT` (default: 8083)
+- `INTERNAL_SECRET` (default: from server-operations.md)
+- `PROBE_FACTORY` (default: RES_3101_009; can change to any whitelisted factory)
+- `ALERT_LATENCY_MS` (default: 500)
+
+**Decommission** (after observation period ends + whitelist expanded to all):
+```bash
+ssh root@47.100.235.168 'crontab -l | grep -v capability-watch | crontab -'
+```
+
+Or keep running indefinitely as a passive health probe (~5KB log per day at 15-min cadence is cheap).

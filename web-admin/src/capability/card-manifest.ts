@@ -4,15 +4,21 @@
  * Per 数据织网/02-A-能力驱动渲染.md v1.5 §2.2.3 + §6.2 + §6.3.
  *
  * Each entry MUST correspond to a `<CapabilityGate :card-id="X" :requires="[...]"`
- * usage somewhere in views/. CI lint (Day 10) verifies bidirectional consistency.
+ * usage somewhere in views/, OR be marked as TemplateGrid-rendered in description
+ * (Day 10 lint suppresses warnings for entries with "TemplateGrid" in description).
  *
  * fallbackMode default = 'placeholder' (teach customer what to upload).
  * Use 'hide' for: admin pages, experiments, RBAC-restricted cards (§6.3).
+ *
+ * Apr 26 2026 cleanup (Phase 4.5): annotated 12 TemplateGrid-rendered entries to
+ * suppress lint warnings; removed 2 stale entries (restaurant_overview_avg/traffic
+ * — overview page doesn't render those KPIs, they live on Dashboard).
  */
 import type { CardManifestEntry } from '@/types/capability';
 
 export const CARD_MANIFEST: CardManifestEntry[] = [
-  // === Dashboard (~10) — spec §6.2 ===
+  // === Dashboard (10) — spec §6.2 ===
+  // 8 wrapped via <CapabilityGate> in Dashboard.vue (Day 8)
   { id: 'dashboard_revenue_month', page: '/smart-bi/dashboard', title: '本月销售额',
     requires: ['date', 'net_amount'] },
   { id: 'dashboard_order_count', page: '/smart-bi/dashboard', title: '订单数量',
@@ -29,49 +35,59 @@ export const CARD_MANIFEST: CardManifestEntry[] = [
     requires: ['date', 'net_amount'] },
   { id: 'dashboard_product_share', page: '/smart-bi/dashboard', title: '产品占比',
     requires: ['combo_string', 'net_amount'] },
+  // 2 TemplateGrid-rendered (page-key='dashboard'), capability-aware via backend template_status
   { id: 'dashboard_inventory_alert', page: '/smart-bi/dashboard', title: '库存预警',
-    requires: ['product_name'],   // B-stage adds inventory_item; for now product_name is sufficient
-    description: '需 B 阶段引入 inventory_item / stock_qty 才能完整支持' },
+    requires: ['product_name'],
+    description: 'TemplateGrid-rendered (page-key=dashboard); B 阶段引入 inventory_item / stock_qty 后可独立 wrap' },
   { id: 'dashboard_top_dishes', page: '/smart-bi/dashboard', title: '菜品 Top 10',
-    requires: ['store_name', 'combo_string'] },
+    requires: ['store_name', 'combo_string'],
+    description: 'TemplateGrid-rendered (page-key=dashboard)' },
 
-  // === Restaurant analytics overview (~5) ===
+  // === Restaurant analytics overview (3) ===
+  // 3 wrapped (Day 9). 2 entries removed Apr 26 (avg + traffic 在 overview 页无对应卡;
+  // 客单价 实际在 Dashboard 包装为 dashboard_avg_bill, 客流量 此页无 customer_count 卡).
   { id: 'restaurant_overview_revenue', page: '/restaurant/analytics/overview', title: '总营收',
     requires: ['date', 'net_amount'] },
-  { id: 'restaurant_overview_avg', page: '/restaurant/analytics/overview', title: '客单价',
-    requires: ['source_bill_no', 'net_amount'] },
-  { id: 'restaurant_overview_traffic', page: '/restaurant/analytics/overview', title: '客流量',
-    requires: ['customer_count'] },
   { id: 'restaurant_overview_stores', page: '/restaurant/analytics/overview', title: '门店数',
     requires: ['store_name'] },
   { id: 'restaurant_overview_top_dish', page: '/restaurant/analytics/overview', title: '热销菜品',
     requires: ['combo_string', 'qty_sold'] },
 
-  // === Restaurant analytics menu-board (~6) ===
+  // === Restaurant analytics menu-board (6) ===
+  // 2 wrapped (Day 9), 4 TemplateGrid-rendered or live in different page
   { id: 'menu_top_dishes', page: '/restaurant/analytics/menu-board', title: '菜品销量 Top',
-    requires: ['combo_string'] },
-  { id: 'menu_slow_movers', page: '/restaurant/analytics/menu-board', title: '滞销菜品',
-    requires: ['combo_string'] },
-  { id: 'menu_category_breakdown', page: '/restaurant/analytics/menu-board', title: '品类占比',
     requires: ['combo_string'] },
   { id: 'menu_dish_revenue', page: '/restaurant/analytics/menu-board', title: '菜品营收',
     requires: ['combo_string', 'net_amount'] },
+  { id: 'menu_slow_movers', page: '/restaurant/analytics/menu-board', title: '滞销菜品',
+    requires: ['combo_string'],
+    description: 'TemplateGrid-rendered (page-key=menu); 实际由 v-for sub-element of summary row 显示' },
+  { id: 'menu_category_breakdown', page: '/restaurant/analytics/menu-board', title: '品类占比',
+    requires: ['combo_string'],
+    description: 'TemplateGrid-rendered; 在 overview 页而非 menu-board' },
   { id: 'menu_combo_usage', page: '/restaurant/analytics/menu-board', title: '套餐使用率',
-    requires: ['combo_string'] },
+    requires: ['combo_string'],
+    description: 'TemplateGrid-rendered (page-key=menu)' },
   { id: 'menu_dish_by_table', page: '/restaurant/analytics/menu-board', title: '桌型菜品',
-    requires: ['table_no', 'combo_string'] },
+    requires: ['table_no', 'combo_string'],
+    description: 'TemplateGrid-rendered (page-key=menu)' },
 
-  // === Trends (~4) ===
+  // === Trends (4) ===
+  // 1 wrapped (Day 9), 3 TemplateGrid-rendered
   { id: 'trends_monthly', page: '/smart-bi/analytics/trends', title: '月度趋势',
     requires: ['date', 'net_amount'] },
   { id: 'trends_anomaly', page: '/smart-bi/analytics/trends', title: '异常检测',
-    requires: ['date', 'net_amount'] },
+    requires: ['date', 'net_amount'],
+    description: 'TemplateGrid-rendered (page-key=trend)' },
   { id: 'trends_weekday', page: '/smart-bi/analytics/trends', title: '工作日 vs 周末',
-    requires: ['date', 'net_amount'] },
+    requires: ['date', 'net_amount'],
+    description: 'TemplateGrid-rendered (page-key=trend)' },
   { id: 'trends_period_comparison', page: '/smart-bi/analytics/trends', title: '周期对比',
-    requires: ['date', 'net_amount'] },
+    requires: ['date', 'net_amount'],
+    description: 'TemplateGrid-rendered (page-key=trend)' },
 
-  // === Finance (~5) ===
+  // === Finance (5) ===
+  // 2 wrapped (Day 9), 3 TemplateGrid-rendered
   { id: 'finance_pnl', page: '/smart-bi/finance', title: '利润损益',
     requires: ['date', 'gross_amount', 'discount_amount', 'net_amount'] },
   { id: 'finance_revenue_mgmt', page: '/smart-bi/finance', title: '营收管理',
@@ -79,15 +95,16 @@ export const CARD_MANIFEST: CardManifestEntry[] = [
   { id: 'finance_payment_mix', page: '/smart-bi/finance', title: '支付方式分布',
     requires: ['source_bill_no'],
     fallbackMode: 'placeholder',
-    description: 'B-stage adds payment_channel; current shows source bill counts only' },
+    description: 'TemplateGrid-rendered (page-key=finance); B-stage adds payment_channel canonical for tighter requires' },
   { id: 'finance_groupon_breakdown', page: '/smart-bi/finance', title: '团购渠道',
-    requires: ['channel_origin', 'gross_amount'] },
+    requires: ['channel_origin', 'gross_amount'],
+    description: 'TemplateGrid-rendered (page-key=finance)' },
   { id: 'finance_svc_consumption', page: '/smart-bi/finance', title: '储值卡消费',
     requires: ['source_bill_no'],
     fallbackMode: 'placeholder',
-    description: 'B-stage adds SVC card fields' },
+    description: 'TemplateGrid-rendered (page-key=finance); B-stage adds SVC card canonical fields' },
 
-  // Total: ~30 cards
+  // Total: 28 entries (was 30 pre-cleanup; removed restaurant_overview_avg + restaurant_overview_traffic)
 ];
 
 // Lint helper: check duplicate IDs at module load (cheap, runs once)
