@@ -84,6 +84,26 @@ ACTION_REC_GUARD_CLAUSE = (
 )
 
 
+# Apr 26 2026 phase 5 (UX): tone/voice guidelines. Without this, LLM tail
+# answers feel like form-letter "此数据未提供. 当前数据中没有X字段...建议
+# 先补充Y来源" — same exact wording across 10+ queries, breaks user trust.
+# This clause applies WITH the guards above (which require honest "no
+# data" responses) — softens TONE without weakening the constraint.
+USER_FRIENDLY_TONE_CLAUSE = (
+    "\n\n答案语气要求 (UX 规则)：\n"
+    "1. **避免照搬模板词**: 不要硬性使用 '此数据未提供' / '建议先补充 X 数据来源' 等"
+    "刻板表达. 数据缺失时用更平易近人的话, 例如 '你的数据里有 X/Y/Z 这些维度, "
+    "但缺 W 字段无法直接算 [指标], 我能告诉你的是: ...' \n"
+    "2. **优先给现有数据能回答的**: 当无法直接回答时, 主动告知 '基于现有 X 数据, "
+    "我可以告诉你 [类似维度回答]' — 不要只说不能做.\n"
+    "3. **用 '你 / 我' 不用 '用户 / 系统'**: 增加亲近感, 体现是 '帮你分析' 不是 "
+    "'输出报告'.\n"
+    "4. **缺失说明 ≤50 字**: 不要长篇大论解释为什么缺数据, 用户已经知道了; 把"
+    "篇幅留给'我现在能给你什么'.\n"
+    "5. **Markdown 强约束**: 用 ## / ** / 列表分块, 不要纯段落; 关键数字加 **粗体**."
+)
+
+
 _HALLUC_PATTERN = re.compile(r"([-+]?\d+(?:\.\d+)?)\s*(亿|千万)")
 _NUMBER_PATTERN = re.compile(r"([-+]?\d+(?:,\d{3})*(?:\.\d+)?)")
 

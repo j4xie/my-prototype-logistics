@@ -50,6 +50,7 @@ from smartbi.services.llm_guard import (
     ACTION_REC_GUARD_CLAUSE,
     LABELING_GUARD_CLAUSE,
     NUMERIC_GUARD_CLAUSE,
+    USER_FRIENDLY_TONE_CLAUSE,
     detect_numeric_hallucination,
 )
 
@@ -1902,6 +1903,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 + NUMERIC_GUARD_CLAUSE
                 + LABELING_GUARD_CLAUSE
                 + ACTION_REC_GUARD_CLAUSE
+                + USER_FRIENDLY_TONE_CLAUSE
             )
 
             # ── Stream LLM response (lower max_tokens + temperature for speed) ──
@@ -2207,6 +2209,7 @@ async def drill_down_stream(request: DrillDownRequest, http_request: Request):
                 + NUMERIC_GUARD_CLAUSE
                 + LABELING_GUARD_CLAUSE
                 + ACTION_REC_GUARD_CLAUSE
+                + USER_FRIENDLY_TONE_CLAUSE
             )
             user_prompt = f"""请对以下维度拆分数据进行分析：
 {filter_desc}
@@ -2322,6 +2325,7 @@ async def root_cause_stream(request: RootCauseRequest, http_request: Request):
                 + NUMERIC_GUARD_CLAUSE
                 + LABELING_GUARD_CLAUSE
                 + ACTION_REC_GUARD_CLAUSE
+                + USER_FRIENDLY_TONE_CLAUSE
             )
             user_prompt = f"""请分析 KPI「{request.kpi}」变动的根本原因：
 
@@ -2410,6 +2414,7 @@ async def benchmark_stream(request: BenchmarkRequest, http_request: Request):
                 + NUMERIC_GUARD_CLAUSE
                 + LABELING_GUARD_CLAUSE
                 + ACTION_REC_GUARD_CLAUSE
+                + USER_FRIENDLY_TONE_CLAUSE
             )
             user_prompt = f"""请分析企业指标与{industry_label}行业基准的差距：
 
@@ -2513,6 +2518,7 @@ async def multi_dimension_analysis_stream(request: MultiDimensionRequest, http_r
                 + NUMERIC_GUARD_CLAUSE
                 + LABELING_GUARD_CLAUSE
                 + ACTION_REC_GUARD_CLAUSE
+                + USER_FRIENDLY_TONE_CLAUSE
             )
             user_prompt = f"""请对以下数据进行多维度分析：{dims_hint}{context_hint}
 
