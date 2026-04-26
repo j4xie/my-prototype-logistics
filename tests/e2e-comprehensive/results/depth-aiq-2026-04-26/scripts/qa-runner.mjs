@@ -168,6 +168,20 @@ function bucketize(totalMs, source) {
         writeFileSync(OUTPUT_FILE, JSON.stringify(results, null, 2));
       }
     }
+
+    if (phaseFilter === 'followup' || phaseFilter === 'all') {
+      const followups = questions[tenant].followup || [];
+      console.log(`  followups: ${followups.length}`);
+      for (let i = 0; i < followups.length; i++) {
+        const q = followups[i];
+        process.stdout.write(`  [fu ${i + 1}/${followups.length}] ${q.id} ${q.q.slice(0, 30)}... `);
+        const r = askQuestion(token, q.q);
+        const entry = { ...q, ...r, askedAt: new Date().toISOString() };
+        results.tenants[tenant].followup.push(entry);
+        console.log(`${r.totalMs}ms ${r.bucket}${r.warning ? ' ⚠️' : ''}`);
+        writeFileSync(OUTPUT_FILE, JSON.stringify(results, null, 2));
+      }
+    }
   }
 
   console.log(`\nResults: ${OUTPUT_FILE}`);
