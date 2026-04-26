@@ -110,13 +110,19 @@ class ChatSessionService:
         self._pool = pool
 
     async def lookup(
-        self, session_id: str, factory_id: str
+        self, session_id: str, factory_id: str,
+        user_id: Optional[int] = None,
     ) -> Optional[Dict[str, Any]]:
-        """Fetch session for (session_id, factory_id) if not expired.
+        """Fetch session for (session_id, factory_id, user_id) if not expired.
 
         Returns dict with keys: parent_query, parent_answer_summary,
         parent_template_code, parent_upload_id, turn_count.
         Returns None if session_id absent, factory mismatch, or expired.
+
+        Apr 26 2026 H2 (user_id binding): if user_id provided, also enforce
+        that the session was created by this user. Same factory but different
+        users on shared device → no context leak. Backward-compatible: when
+        user_id=None, only checks (session_id, factory_id).
         """
         from smartbi.services.smartbi_metrics import CHAT_SESSION_LOOKUP, CHAT_SESSION_TURN
         if not session_id or not factory_id:
@@ -124,17 +130,31 @@ class ChatSessionService:
             return None
         try:
             async with self._pool.acquire() as conn:
-                row = await conn.fetchrow(
-                    """
-                    SELECT parent_query, parent_answer_summary,
-                           parent_template_code, parent_upload_id, turn_count
-                    FROM smart_bi_chat_session
-                    WHERE session_id = $1
-                      AND factory_id = $2
-                      AND expires_at > NOW()
-                    """,
-                    session_id, factory_id,
-                )
+                if user_id is not None:
+                    row = await conn.fetchrow(
+                        """
+                        SELECT parent_query, parent_answer_summary,
+                               parent_template_code, parent_upload_id, turn_count
+                        FROM smart_bi_chat_session
+                        WHERE session_id = $1
+                          AND factory_id = $2
+                          AND (user_id = $3 OR user_id IS NULL)
+                          AND expires_at > NOW()
+                        """,
+                        session_id, factory_id, user_id,
+                    )
+                else:
+                    row = await conn.fetchrow(
+                        """
+                        SELECT parent_query, parent_answer_summary,
+                               parent_template_code, parent_upload_id, turn_count
+                        FROM smart_bi_chat_session
+                        WHERE session_id = $1
+                          AND factory_id = $2
+                          AND expires_at > NOW()
+                        """,
+                        session_id, factory_id,
+                    )
                 if not row:
                     CHAT_SESSION_LOOKUP.labels(outcome='miss_expired').inc()
                     return None

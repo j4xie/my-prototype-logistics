@@ -1114,6 +1114,17 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
             getattr(http_request.state, 'factory_id', None)
             if hasattr(http_request, 'state') else None
         )
+        # H2 (Apr 26 2026): also extract user_id for session binding so same
+        # factory + different user on shared device → no context leak.
+        _session_user_id = (
+            getattr(http_request.state, 'user_id', None)
+            if hasattr(http_request, 'state') else None
+        )
+        try:
+            _session_user_id = int(_session_user_id) if _session_user_id else None
+        except (ValueError, TypeError):
+            _session_user_id = None
+
         if request.session_id and _session_factory_id:
             try:
                 from smartbi.services.chat_session_service import ChatSessionService
@@ -1122,7 +1133,8 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 if _session_pool is not None:
                     _svc = ChatSessionService(_session_pool)
                     chat_session_parent = await _svc.lookup(
-                        request.session_id, _session_factory_id
+                        request.session_id, _session_factory_id,
+                        user_id=_session_user_id,
                     )
                     if chat_session_parent:
                         logger.info(
@@ -1186,6 +1198,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                             parent_answer_summary=ops_answer.answer_text,
                                             parent_template_code=ops_code,
                                             parent_upload_id=None,
+                                            user_id=_session_user_id,  # H2 binding
                                         ))
                                     except Exception as _e:
                                         logger.warning(f"[chat-session] writeback (gold ops) failed: {_e}")
@@ -1465,6 +1478,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                             parent_answer_summary=answer_text,
                                             parent_template_code=matched_code,
                                             parent_upload_id=upload_id,
+                                            user_id=_session_user_id,  # H2 binding
                                         ))
                                     except Exception as _e:
                                         logger.warning(f"[chat-session] writeback (template) failed: {_e}")
@@ -2127,6 +2141,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                 parent_answer_summary=_cached_text,
                                 parent_template_code=None,
                                 parent_upload_id=upload_id,
+                                user_id=_session_user_id,  # H2 binding
                             ))
                     except Exception as _e:
                         logger.warning(f"[chat-session] cache-hit writeback failed: {_e}")
@@ -2195,9 +2210,53 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 yield _sse_event("chunk", chunk)
 
             if _llm_truncated:
-                if _silent_timeout:
-                    # LLM produced 0 chars — give an actionable message instead
-                    # of letting the user see "EMPTY 0 字" after 25s wait.
+                # G2 (Apr 26 2026): try LLM-answer cache fallback BEFORE
+                # serving the timeout message. If the same query has a cached
+                # answer from a prior successful run, replace the truncated/
+                # empty text with the cached answer + note. Avoids forcing
+                # users to re-ask (which doubles LLM cost).
+                _cache_fallback = None
+                if _session_factory_id and request.effective_query and not chat_session_parent:
+                    try:
+                        from smartbi.services.llm_answer_cache import LlmAnswerCache as _LAC_FB
+                        from smartbi.services.query_normalizer import normalize_for_match
+                        _fb_pool = await get_pg_pool()
+                        if _fb_pool is not None:
+                            _norm_q_fb = normalize_for_match(request.effective_query)
+                            _cache_fallback = await _LAC_FB(_fb_pool).get(
+                                _session_factory_id, _norm_q_fb, upload_id
+                            )
+                    except Exception as _fb_err:
+                        logger.warning(f"[stream] cache fallback lookup failed: {_fb_err}")
+
+                if _cache_fallback:
+                    # Use cached answer instead of timeout message.
+                    _fb_text = _cache_fallback["answer_text"]
+                    _fb_note = (
+                        "\n\n*(本次 AI 思考超时, 已显示 24 小时内对相同问题的历史回答. "
+                        "如需最新分析请稍后重试或换种问法.)*"
+                    )
+                    full_text = _fb_text + _fb_note
+                    # FE may have already received a partial chunk — emit a
+                    # banner first to indicate the swap, then the cached text.
+                    yield _sse_event("chunk", "\n\n---\n\n")  # visual separator
+                    yield _sse_event("chunk", _fb_text)
+                    yield _sse_event("chunk", _fb_note)
+                    logger.info(
+                        f"[stream] truncated LLM → cache fallback served "
+                        f"(query='{request.effective_query[:30]}', "
+                        f"cached_hits={_cache_fallback['hit_count']})"
+                    )
+                    if _cache_fallback.get("charts"):
+                        charts_to_inject = _cache_fallback["charts"]
+                    else:
+                        charts_to_inject = None
+                    # Override charts later in the flow with cached charts.
+                    if charts_to_inject:
+                        # Stash for use after chart-build block.
+                        _cached_charts_override = charts_to_inject
+                elif _silent_timeout:
+                    # LLM produced 0 chars and no cache fallback — actionable msg.
                     _silent_msg = (
                         "💡 AI 思考超时(>25 秒), 可能问题过于复杂或当前模型负载高.\n\n"
                         "**建议**: 精简问题或换种问法 (例如用具体数字/时间范围限定) 后重试."
@@ -2267,6 +2326,12 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 # (debug logging removed after Bug #20/#24 verified)
             except Exception as chart_err:
                 logger.warning(f"[stream] Chart generation failed: {chart_err}")
+
+            # G2: if cache fallback was served above, prefer cached charts
+            # over freshly built ones (the cached ones matched the cached
+            # answer text).
+            if '_cached_charts_override' in locals() and _cached_charts_override:
+                charts = _cached_charts_override
 
             if charts:
                 yield _sse_event("charts", charts)
@@ -2390,6 +2455,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                             parent_answer_summary=full_text,
                             parent_template_code=None,  # LLM path, no template
                             parent_upload_id=_wb_upload,
+                            user_id=_session_user_id,  # H2 binding
                         ))
                 except Exception as e:
                     logger.warning(f"[chat-session] writeback (LLM path) failed: {e}")

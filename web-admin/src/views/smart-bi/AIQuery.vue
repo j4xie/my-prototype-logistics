@@ -12,6 +12,7 @@ import { chatAnalysis, chatAnalysisStream, getUploadHistory, deduplicateUploads,
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   ChatDotRound,
+  ChatRound,
   Promotion,
   Refresh,
   Delete,
@@ -89,6 +90,11 @@ interface ChatMessage {
   // P2 guardrail (Apr 24 2026): backend flags numeric hallucination in
   // LLM output (e.g. "合计 3.4 亿" on a 36M dataset).
   warning?: string | null;
+  // D1 (Apr 26 2026): set when backend response contains 25s timeout marker.
+  // FE shows a "重试" button so user doesn't need to retype.
+  truncated?: boolean;
+  // Original query for retry button to re-send.
+  origQuery?: string;
 }
 
 // 当前分析上下文 (用于连续对话)
@@ -346,6 +352,15 @@ function handleSseRetry() {
   clearSseDegradationTimers();
   inputQuery.value = pendingRetryQuery;
   pendingRetryQuery = '';
+  handleSendMessage();
+}
+
+// D1 (Apr 26 2026): re-send the same query when answer was truncated by 25s
+// soft timeout. Uses the original query stored on the message so user doesn't
+// need to retype.
+function handleTruncatedRetry(message: ChatMessage) {
+  if (!message.origQuery) return;
+  inputQuery.value = message.origQuery;
   handleSendMessage();
 }
 
@@ -629,6 +644,11 @@ async function handleSendMessage() {
         msg.templateCode = result.template_code;
         msg.logId = result.log_id ?? null;
         msg.warning = (result as { warning?: string | null }).warning ?? null;
+        // D1 (Apr 26 2026): detect 25s soft-timeout truncation marker
+        // (chat.py emits one of "*分析超过 25 秒已截断*" or
+        // "*本次 AI 思考超时, 已显示 24 小时内对相同问题的历史回答*")
+        msg.truncated = /分析超过 25 秒已截断|本次 AI 思考超时.*历史回答|AI 思考超时\(>25 秒\)/.test(finalContent);
+        msg.origQuery = query;
         msg.loading = false;
         msg.streaming = false;
 
@@ -1105,6 +1125,21 @@ function handleClearHistory() {
   }];
 }
 
+// D3 (Apr 26 2026): 新话题 — 仅重置服务端 session_id, 保留对话记录可见.
+// 适用场景: 用户想换话题但希望前文还能滚动查看.
+// 与"清空对话"的区别: 后者销毁图表+清屏+重置 session.
+function handleNewTopic() {
+  resetChatSession();
+  // 加一条系统消息说明 (用 assistant 风格但内容是状态提示).
+  chatHistory.value.push({
+    id: `topic-reset-${Date.now()}`,
+    role: 'assistant',
+    content: '✨ 已开新话题，下一句提问不再引用前文上下文（前文记录保留可见）',
+    timestamp: new Date()
+  });
+  scrollToBottom(true);
+}
+
 // 格式化时间
 function formatTime(date: Date): string {
   return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
@@ -1157,6 +1192,9 @@ function handleKeydown(event: KeyboardEvent) {
             :inactive-action-icon="Cpu"
           />
         </el-tooltip>
+        <el-tooltip content="开新会话: 下一句问题不引用前文上下文,但当前对话记录保留可见" placement="bottom">
+          <el-button :icon="ChatRound" @click="handleNewTopic">新话题</el-button>
+        </el-tooltip>
         <el-button :icon="Delete" @click="handleClearHistory">清空对话</el-button>
       </div>
     </div>
@@ -1202,6 +1240,17 @@ function handleKeydown(event: KeyboardEvent) {
                 <div v-if="message.role === 'assistant' && message.streaming" class="message-text streaming-text">{{ message.content }}</div>
                 <div v-else-if="message.role === 'assistant'" class="message-text markdown-body" v-html="renderMarkdown(message.content)"></div>
                 <div v-else class="message-text">{{ message.content }}</div>
+
+                <!-- D1 (Apr 26 2026): retry button when answer was truncated by 25s soft timeout -->
+                <div v-if="message.role === 'assistant' && !message.streaming && message.truncated" class="truncated-retry-bar">
+                  <el-button
+                    type="primary"
+                    size="small"
+                    :icon="Refresh"
+                    plain
+                    @click="handleTruncatedRetry(message)"
+                  >完整重试 (基于 25 秒截断,可换种问法)</el-button>
+                </div>
 
                 <!-- P2 guardrail: warn when backend detected numeric hallucination -->
                 <el-alert
