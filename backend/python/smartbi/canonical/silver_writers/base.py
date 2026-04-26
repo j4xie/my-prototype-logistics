@@ -38,7 +38,13 @@ class ResolveResult:
 
 
 class BaseWriter(ABC):
-    """All Silver writers must implement this. NOT thread-safe — instantiate per upload task."""
+    """All Silver writers must implement this. NOT thread-safe — instantiate per upload task.
+
+    Tenant safety: caller must set ``app.factory_id`` (via ``tenant_ctx.set_factory_id``
+    or pool setup callback) BEFORE invoking write(). FORCE RLS on Silver tables silently
+    drops 0 rows on factory_id mismatch (see dim_resolver docstring for the same
+    contract).
+    """
 
     def __init__(
         self,

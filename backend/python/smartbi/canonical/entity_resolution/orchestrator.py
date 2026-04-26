@@ -61,7 +61,13 @@ class ResolutionOutput:
 
 
 class EntityResolutionOrchestrator:
-    """Run agents in sequence; first to ship wins, else tentative or admin queue."""
+    """Run agents in sequence; first to ship wins, else tentative or admin queue.
+
+    Tenant safety: caller must set ``app.factory_id`` (via ``tenant_ctx.set_factory_id``
+    or the pool's setup callback) BEFORE invoking ``resolve()``. ``_record_history``
+    and ``_queue_for_admin`` write to FORCE-RLS tables which silently drop rows (or
+    raise InsufficientPrivilegeError) on factory_id mismatch.
+    """
 
     def __init__(
         self,
