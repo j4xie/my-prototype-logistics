@@ -365,13 +365,16 @@ public class GlobalExceptionHandler {
      * 业务层抛 DuplicateKeyException (e.g. invoice request 去重) — 专用 handler 保留具体消息.
      * 优先匹配, 避免被下方通用 DataIntegrityViolation handler 脱敏.
      * R4 2026-04-16: 支持 Bug #2 G1 并发去重的友好 409 消息.
+     * R25 (qa-prompt v2.4 reviewer #14 concern #3): emit actionHint so FE
+     * interceptor differentiates from vanilla optimistic-lock 409 and shows
+     * rich toast (pre-R25 was silenced by R24 P2 fix's vanilla-409 suppress).
      */
     @ExceptionHandler(org.springframework.dao.DuplicateKeyException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ApiResponse<?> handleDuplicateKeyException(org.springframework.dao.DuplicateKeyException e) {
         log.warn("重复提交拒绝: {}", e.getMessage());
         String msg = isSafeMessage(e.getMessage()) ? e.getMessage() : "数据已存在，请勿重复提交";
-        return ApiResponse.error(409, msg);
+        return ApiResponse.errorWithHint(409, msg, "请检查是否已提交过该记录,刷新列表确认", "warning", null);
     }
 
     /**
@@ -398,21 +401,32 @@ public class GlobalExceptionHandler {
             log.error("[{}] 数据完整性异常: {}", traceId, raw, e);
         }
 
+        // R25 (qa-prompt v2.4 reviewer #14 concern #3): every branch emits actionHint so
+        // FE interceptor differentiates from vanilla optimistic-lock 409 (which has no
+        // actionHint and routes to caller's "并发编辑冲突" dialog). Pre-R25 these returned
+        // ApiResponse.error(409, ...) — R24 P2 vanilla-409 suppress swallowed them, users
+        // saw nothing on duplicate / FK violation submissions.
         String message;
+        String actionHint;
+        String hintTarget = null;
         if (isUniqueViolation) {
             message = "数据已存在，请勿重复提交";
+            actionHint = "请检查是否已提交过该记录,或刷新列表确认";
         } else if (isFkViolation) {
             // 尝试从错误消息提取被引用的目标表, 给用户清晰线索
             message = "无法删除: 该数据仍被其他记录引用";
+            actionHint = "先处理引用该数据的相关记录后再删除";
             java.util.regex.Matcher m = java.util.regex.Pattern
                 .compile("referenced from table \"([^\"]+)\"").matcher(raw);
             if (m.find()) {
                 message = "无法删除: 该数据仍被 " + m.group(1) + " 引用，请先处理相关数据";
+                hintTarget = m.group(1);
             }
         } else {
             message = ErrorCode.DATA_INTEGRITY_ERROR.getUserMessage();
+            actionHint = "请联系管理员检查数据,traceId=" + traceId;
         }
-        return ApiResponse.error(409, message);
+        return ApiResponse.errorWithHint(409, message, actionHint, "warning", hintTarget);
     }
 
     /**

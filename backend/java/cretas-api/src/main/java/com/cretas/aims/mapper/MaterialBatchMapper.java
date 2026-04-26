@@ -113,8 +113,11 @@ public class MaterialBatchMapper {
             batch.setWeightPerUnit(request.getWeightPerUnit());
         } else if (request.getTotalWeight() != null && request.getReceiptQuantity() != null) {
             // 从totalWeight反算weightPerUnit
+            // R25 (reviewer #14 concern #4): align scale to 4, matching updateEntity (line 219).
+            // Pre-R25 create used scale=3, update used scale=4 → create→edit roundtrip with no
+            // weightPerUnit could shift the value by ~0.0009 (support-ticket risk).
             BigDecimal calculatedWeightPerUnit = request.getTotalWeight()
-                .divide(request.getReceiptQuantity(), 3, RoundingMode.HALF_UP);
+                .divide(request.getReceiptQuantity(), 4, RoundingMode.HALF_UP);
             batch.setWeightPerUnit(calculatedWeightPerUnit);
             log.info("自动计算每单位重量: totalWeight={}, receiptQuantity={}, weightPerUnit={}",
                 request.getTotalWeight(), request.getReceiptQuantity(), calculatedWeightPerUnit);
