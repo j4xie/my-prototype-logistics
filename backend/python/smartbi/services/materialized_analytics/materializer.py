@@ -35,6 +35,21 @@ _PRIORITY_MEASURE_KW = [
     '主营业务收入', '金额', '订单金额', '消费金额',
 ]
 
+# Apr 26 2026: ID-like column patterns to EXCLUDE from primary_measure
+# candidates even when is_measure=True. qhj 4216 卡详情 had 卡号 / 手机
+# numeric columns marked is_measure (because they're integer-typed) but
+# they're identifiers, not metrics. Picking 卡号 made top_n_by_dim render
+# "Top 值 497,533,214,596 元" garbage (sum of card-IDs).
+_ID_LIKE_PATTERNS = (
+    '卡号', '会员号', '会员编号', '卡编号', '手机', '电话',
+    '订单号', '账单号', 'ID', 'id', '编号', '工号',
+)
+
+
+def _is_id_like(name: str) -> bool:
+    """Detect identifier columns wrongly classified as measures."""
+    return any(p in name for p in _ID_LIKE_PATTERNS)
+
 
 def _field_role_from_def(fd: Dict[str, Any]) -> FieldRole:
     if fd.get('is_time'):
@@ -56,7 +71,11 @@ def _infer_dtype(fd: Dict[str, Any]) -> str:
 
 
 def _pick_primary_measure(field_meta: List[Dict[str, Any]]) -> Optional[str]:
-    measures = [f['original_name'] for f in field_meta if f.get('is_measure')]
+    # Apr 26 2026: filter out ID-like columns. See _ID_LIKE_PATTERNS.
+    measures = [
+        f['original_name'] for f in field_meta
+        if f.get('is_measure') and not _is_id_like(f['original_name'])
+    ]
     for kw in _PRIORITY_MEASURE_KW:
         for m in measures:
             if kw in m:
