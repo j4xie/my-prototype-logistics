@@ -5,11 +5,12 @@ import com.cretas.aims.entity.inventory.SalesOrder;
 import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.service.inventory.impl.SalesServiceImpl;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
 
@@ -20,7 +21,17 @@ import static org.mockito.Mockito.when;
 class SalesServiceImplSalespersonTest {
 
     @Mock UserRepository userRepository;
-    @InjectMocks SalesServiceImpl salesService;
+    SalesServiceImpl salesService;
+
+    @BeforeEach
+    void setUp() {
+        // R8/R9: SalesServiceImpl ctor takes 8 deps but resolveSalespersonField only
+        // touches userRepository. @InjectMocks couldn't satisfy ctor with our 1 mock,
+        // so manually new with nulls + reflectively set the userRepository field
+        // (which is @Autowired, not ctor-injected).
+        salesService = new SalesServiceImpl(null, null, null, null, null, null, null, null);
+        ReflectionTestUtils.setField(salesService, "userRepository", userRepository);
+    }
 
     @Test
     void resolveSalesperson_numericUserId_setsBothColumns() {

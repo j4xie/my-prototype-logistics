@@ -17,7 +17,11 @@ class FactoryConfigAutoGenerateTest {
     @Test
     @SuppressWarnings("unchecked")
     void buildEffectiveFields_includesAutoGenerateInExtra() throws Exception {
-        FactoryConfigServiceImpl svc = new FactoryConfigServiceImpl();
+        // R8 audit follow-up (R7 reviewer Q4): pre-existing tech debt — this test was
+        // calling 0-arg ctor but FactoryConfigServiceImpl now requires 5 dependencies.
+        // Reflection-only test (calls private buildEffectiveFields), so 5 nulls suffice —
+        // the method under test doesn't touch any field via the instance.
+        FactoryConfigServiceImpl svc = new FactoryConfigServiceImpl(null, null, null, null, null);
 
         Map<String, Object> field = new HashMap<>();
         field.put("code", "orderNumber");
