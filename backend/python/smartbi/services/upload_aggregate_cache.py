@@ -32,6 +32,22 @@ import threading
 import time
 from typing import Any, Dict, List, Optional
 
+# Apr 26 2026 phase 5 (UX): mirror _is_id_like from materializer.py.
+# Without filtering, qhj 4216 卡号 / 手机 (numeric is_measure=True) leaked
+# into LLM aggregation context as "实收 总计 = 1,643,645,749,770" garbage
+# (sum of card-IDs treated as money). qhj-24 / 06 / 29 LLM tail showed
+# "Top5发卡门店按卡号分布: 青花椒新世界新丸中心店(497,533,214,596)" —
+# user reads 497B as revenue. Trust 破坏.
+_ID_LIKE_PATTERNS = (
+    '卡号', '会员号', '会员编号', '卡编号', '手机', '电话',
+    '订单号', '账单号', 'ID', 'id', '编号', '工号',
+)
+
+
+def _is_id_like(name: str) -> bool:
+    return any(p in name for p in _ID_LIKE_PATTERNS)
+
+
 logger = logging.getLogger(__name__)
 
 _DEFAULT_TTL = 3600  # 1 hour
@@ -131,8 +147,17 @@ async def compute_upload_aggregates(
         )
         field_meta = [f for f in field_meta if f['original_name'] in actual_keys]
 
-    measures = [f['original_name'] for f in field_meta if f.get('is_measure')]
-    dims = [f['original_name'] for f in field_meta if f.get('is_dimension')]
+    # Phase 5 (UX): exclude ID-like columns from BOTH measures and dims so
+    # LLM prompt context doesn't show "Top5发卡门店按卡号分布: 青花椒新丸
+    # 中心店(497,533,214,596)" garbage that confuses user about real revenue.
+    measures = [
+        f['original_name'] for f in field_meta
+        if f.get('is_measure') and not _is_id_like(f['original_name'])
+    ]
+    dims = [
+        f['original_name'] for f in field_meta
+        if f.get('is_dimension') and not _is_id_like(f['original_name'])
+    ]
 
     # ── Total row count ──
     agg_row = await conn.fetchrow(
@@ -297,8 +322,15 @@ def compute_aggregates_from_polars(
 
     t_start = time.time()
     df = backend._df  # type: ignore[attr-defined]
-    measures = [f["original_name"] for f in field_meta if f.get("is_measure")]
-    dims = [f["original_name"] for f in field_meta if f.get("is_dimension")]
+    # Phase 5 (UX): same _is_id_like filter as the SQL path above.
+    measures = [
+        f["original_name"] for f in field_meta
+        if f.get("is_measure") and not _is_id_like(f["original_name"])
+    ]
+    dims = [
+        f["original_name"] for f in field_meta
+        if f.get("is_dimension") and not _is_id_like(f["original_name"])
+    ]
 
     real_total_rows = df.height
     agg_lines: List[str] = [
