@@ -42,6 +42,10 @@ import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 import { enhanceChartDefaults } from '@/composables/useChartEnhancer';
 import TemplateGrid from './components/TemplateGrid.vue';
+// Day 8 数据织网 Sub-Project A: capability-driven card visibility
+import { useCapability } from '@/composables/useCapability';
+import CapabilityGate from '@/components/CapabilityGate.vue';
+import UnlockMoreCTA from '@/components/UnlockMoreCTA.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -629,7 +633,14 @@ function putCached(factoryId: string, sourceId: string | number, data: unknown) 
   } catch { /* quota exceeded — ignore */ }
 }
 
+const { fetchCapability } = useCapability();
+
 onMounted(async () => {
+  // Day 8 数据织网 Sub-Project A: prime capability cache (fire-and-forget,
+  // useCapability handles errors and is fail-open). Drives <CapabilityGate>
+  // visibility for KPI cards below.
+  fetchCapability();
+
   // Apr 24 UX perf: fire /uploads list in background (non-blocking) — most users
   // stay on 'system' view and never open the dropdown. Old await blocked ~400ms
   // on network idle for a 200-item upload list. We only need it synchronously
@@ -1830,6 +1841,7 @@ onUnmounted(() => {
     </el-row>
     <el-row v-else :gutter="16" class="kpi-section kpi-fade-in" aria-label="KPI指标" aria-live="polite" :aria-busy="loading">
       <el-col :xs="24" :sm="12" :md="6">
+        <CapabilityGate card-id="dashboard_revenue_month" :requires="['date', 'net_amount']">
         <el-card class="kpi-card revenue">
           <div class="kpi-icon">
             <el-icon><DataLine /></el-icon>
@@ -1855,8 +1867,10 @@ onUnmounted(() => {
             </div>
           </div>
         </el-card>
+        </CapabilityGate>
       </el-col>
       <el-col :xs="24" :sm="12" :md="6">
+        <CapabilityGate card-id="dashboard_avg_bill" :requires="['source_bill_no', 'net_amount']">
         <el-card class="kpi-card profit">
           <div class="kpi-icon">
             <el-icon><Histogram /></el-icon>
@@ -1882,8 +1896,10 @@ onUnmounted(() => {
             </div>
           </div>
         </el-card>
+        </CapabilityGate>
       </el-col>
       <el-col :xs="24" :sm="12" :md="6">
+        <CapabilityGate card-id="dashboard_order_count" :requires="['date', 'source_bill_no']">
         <el-card class="kpi-card orders">
           <div class="kpi-icon">
             <el-icon><Goods /></el-icon>
@@ -1909,8 +1925,10 @@ onUnmounted(() => {
             </div>
           </div>
         </el-card>
+        </CapabilityGate>
       </el-col>
       <el-col :xs="24" :sm="12" :md="6">
+        <CapabilityGate card-id="dashboard_active_customers" :requires="['customer_count']">
         <el-card class="kpi-card customers">
           <div class="kpi-icon">
             <el-icon><Medal /></el-icon>
@@ -1936,12 +1954,14 @@ onUnmounted(() => {
             </div>
           </div>
         </el-card>
+        </CapabilityGate>
       </el-col>
     </el-row>
 
     <!-- 排行榜区 -->
     <el-row :gutter="16" class="ranking-section" v-loading="loading" aria-label="排行榜">
       <el-col v-if="departmentRanking.length > 0" :xs="24" :md="regionRanking.length > 0 ? 12 : 24">
+        <CapabilityGate card-id="dashboard_dept_ranking" :requires="['staff_name', 'net_amount']">
         <el-card class="ranking-card">
           <template #header>
             <div class="card-header">
@@ -1968,6 +1988,7 @@ onUnmounted(() => {
             </div>
           </div>
         </el-card>
+        </CapabilityGate>
       </el-col>
       <!-- P2-18: 区域销售分布空时整个 col 隐藏, 部门排行 col 自动扩宽到 24. 避免大片"暂无区域销售数据" 占屏 -->
       <el-col
@@ -1975,6 +1996,7 @@ onUnmounted(() => {
         :xs="24"
         :md="departmentRanking.length > 0 ? 12 : 24"
       >
+        <CapabilityGate card-id="dashboard_region_sales" :requires="['store_name', 'net_amount']">
         <el-card class="ranking-card">
           <template #header>
             <div class="card-header">
@@ -1999,6 +2021,7 @@ onUnmounted(() => {
             </div>
           </div>
         </el-card>
+        </CapabilityGate>
       </el-col>
     </el-row>
 
@@ -2028,6 +2051,7 @@ onUnmounted(() => {
       aria-label="图表区域"
     >
       <el-col :xs="24" :lg="14" v-show="loading || hasTrendData">
+        <CapabilityGate card-id="dashboard_sales_trend" :requires="['date', 'net_amount']">
         <el-card class="chart-card">
           <template #header>
             <div class="card-header">
@@ -2038,8 +2062,10 @@ onUnmounted(() => {
           <ChartSkeleton v-if="loading && !hasTrendData" type="chart" />
           <div ref="trendChartRef" class="chart-container" v-show="hasTrendData"></div>
         </el-card>
+        </CapabilityGate>
       </el-col>
       <el-col :xs="24" :lg="10" v-show="loading || hasPieData">
+        <CapabilityGate card-id="dashboard_product_share" :requires="['combo_string', 'net_amount']">
         <el-card class="chart-card">
           <template #header>
             <div class="card-header">
@@ -2050,6 +2076,7 @@ onUnmounted(() => {
           <ChartSkeleton v-if="loading && !hasPieData" type="chart" />
           <div ref="pieChartRef" class="chart-container" v-show="hasPieData"></div>
         </el-card>
+        </CapabilityGate>
       </el-col>
     </el-row>
 
@@ -2157,6 +2184,10 @@ onUnmounted(() => {
 
     <!-- Week 6 Template Surfacing: show analysis results for this page -->
     <TemplateGrid page-key="dashboard" :factory-id="factoryId || 'F001'" />
+
+    <!-- Day 8 数据织网 Sub-Project A: bottom CTA prompting users to unlock
+         capability-gated cards by uploading more comprehensive data -->
+    <UnlockMoreCTA />
   </div>
 </template>
 
