@@ -374,7 +374,11 @@ public class GlobalExceptionHandler {
     public ApiResponse<?> handleDuplicateKeyException(org.springframework.dao.DuplicateKeyException e) {
         log.warn("重复提交拒绝: {}", e.getMessage());
         String msg = isSafeMessage(e.getMessage()) ? e.getMessage() : "数据已存在，请勿重复提交";
-        return ApiResponse.errorWithHint(409, msg, "请检查是否已提交过该记录,刷新列表确认", "warning", null);
+        // R27 P4 (reviewer #15 IMPORTANT-2 wording fix): pre-fix actionHint mentioned
+        // "刷新列表确认" which sounds like optimistic-lock refresh suggestion. DuplicateKey
+        // is "user submitted same data twice" — refresh doesn't help, the data is committed.
+        // Replace with action-oriented hint: "请检查表单或返回列表查看已存在记录".
+        return ApiResponse.errorWithHint(409, msg, "请检查表单内容,或返回列表查看已存在记录", "warning", null);
     }
 
     /**
@@ -411,7 +415,10 @@ public class GlobalExceptionHandler {
         String hintTarget = null;
         if (isUniqueViolation) {
             message = "数据已存在，请勿重复提交";
-            actionHint = "请检查是否已提交过该记录,或刷新列表确认";
+            // R27 P4 (reviewer #15 IMPORTANT-2): same wording fix as DuplicateKey above —
+            // "刷新列表确认" implied opt-lock semantics. Unique violation is "field uniqueness
+            // exhausted by prior commit" — user should check form, not refresh.
+            actionHint = "请检查表单中的唯一字段(如编号/名称),或返回列表查看已存在记录";
         } else if (isFkViolation) {
             // 尝试从错误消息提取被引用的目标表, 给用户清晰线索
             message = "无法删除: 该数据仍被其他记录引用";
