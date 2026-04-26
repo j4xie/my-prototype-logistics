@@ -110,14 +110,11 @@ class LlmAnswerCache:
     ) -> None:
         """Write a new cache entry. ON CONFLICT updates the answer + resets TTL."""
         if not factory_id or not normalized_q or not answer_text:
-            logger.info(f"[llm-cache] SET skipped (empty input): factory={factory_id!r} q_len={len(normalized_q or '')} ans_len={len(answer_text or '')}")
             return
         # Skip caching very short answers (likely error/silent-timeout msgs).
         if len(answer_text.strip()) < 30:
-            logger.info(f"[llm-cache] SET skipped (short answer): {len(answer_text.strip())} chars")
             return
         key = compute_cache_key(factory_id, normalized_q, upload_id)
-        logger.info(f"[llm-cache] SET key={key[:12]}... factory={factory_id} q='{normalized_q[:30]}' ans_len={len(answer_text)}")
         try:
             async with self._pool.acquire() as conn:
                 await conn.execute(
@@ -141,9 +138,8 @@ class LlmAnswerCache:
                     _json.dumps(charts or [], ensure_ascii=False),
                     warning,
                 )
-                logger.info(f"[llm-cache] SET committed for key={key[:12]}...")
         except Exception as e:
-            logger.warning(f"[llm-answer-cache] set failed (non-fatal): {e}", exc_info=True)
+            logger.warning(f"[llm-answer-cache] set failed (non-fatal): {e}")
 
     async def invalidate_on_upload(self, factory_id: str) -> int:
         """Wipe all cache entries for a factory when they upload new data.
