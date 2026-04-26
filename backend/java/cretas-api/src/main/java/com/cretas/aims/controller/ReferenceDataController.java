@@ -421,12 +421,17 @@ public class ReferenceDataController {
                 Math.max(page - 1, 0), Math.min(pageSize * 4, 200));
         Page<SalesOrder> result = salesOrderRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageable);
         String esc = keyword == null ? "" : keyword.trim();
+        // R17 audit CRIT-1: switch from denylist (R15) to whitelist. Denylist let
+        // CONFIRMED + PENDING_FINANCE_REVIEW pass — pre-finance-review states. Linking
+        // an invoice to a not-yet-finance-approved SO bypasses the dual-control gate.
+        // Whitelist: only post-finance-approval states are invoice-linkable.
+        java.util.Set<com.cretas.aims.entity.enums.SalesOrderStatus> invoiceableSO = java.util.Set.of(
+                com.cretas.aims.entity.enums.SalesOrderStatus.FINANCE_APPROVED,
+                com.cretas.aims.entity.enums.SalesOrderStatus.PROCESSING,
+                com.cretas.aims.entity.enums.SalesOrderStatus.PARTIAL_DELIVERED,
+                com.cretas.aims.entity.enums.SalesOrderStatus.COMPLETED);
         List<SalesOrder> filtered = result.getContent().stream()
-                // R15 self-check Q2: also exclude FINANCE_REJECTED — rejected orders
-                // shouldn't be linkable from finance_ar invoice creation either.
-                .filter(so -> so.getStatus() != com.cretas.aims.entity.enums.SalesOrderStatus.DRAFT
-                           && so.getStatus() != com.cretas.aims.entity.enums.SalesOrderStatus.CANCELLED
-                           && so.getStatus() != com.cretas.aims.entity.enums.SalesOrderStatus.FINANCE_REJECTED)
+                .filter(so -> invoiceableSO.contains(so.getStatus()))
                 .filter(so -> esc.isEmpty() || (so.getOrderNumber() != null && so.getOrderNumber().contains(esc)))
                 .collect(Collectors.toList());
         List<Map<String, Object>> content = filtered.stream()
@@ -472,12 +477,17 @@ public class ReferenceDataController {
                 Math.max(page - 1, 0), Math.min(pageSize * 4, 200));
         Page<PurchaseOrder> result = purchaseOrderRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageable);
         String esc = keyword == null ? "" : keyword.trim();
+        // R17 audit CRIT-1: switch to whitelist. APPROVED is operations-only (pre-finance);
+        // SUBMITTED/PENDING_FINANCE_REVIEW are also pre-finance. CLOSED is post-completion
+        // and can still need invoice linking. Only post-finance-approved + downstream
+        // statuses are invoice-linkable.
+        java.util.Set<com.cretas.aims.entity.enums.PurchaseOrderStatus> invoiceablePO = java.util.Set.of(
+                com.cretas.aims.entity.enums.PurchaseOrderStatus.FINANCE_APPROVED,
+                com.cretas.aims.entity.enums.PurchaseOrderStatus.PARTIAL_RECEIVED,
+                com.cretas.aims.entity.enums.PurchaseOrderStatus.COMPLETED,
+                com.cretas.aims.entity.enums.PurchaseOrderStatus.CLOSED);
         List<PurchaseOrder> filtered = result.getContent().stream()
-                // R15 self-check Q2: also exclude FINANCE_REJECTED — rejected POs
-                // shouldn't be linkable from finance_ap invoice creation.
-                .filter(po -> po.getStatus() != com.cretas.aims.entity.enums.PurchaseOrderStatus.DRAFT
-                           && po.getStatus() != com.cretas.aims.entity.enums.PurchaseOrderStatus.CANCELLED
-                           && po.getStatus() != com.cretas.aims.entity.enums.PurchaseOrderStatus.FINANCE_REJECTED)
+                .filter(po -> invoiceablePO.contains(po.getStatus()))
                 .filter(po -> esc.isEmpty() || (po.getOrderNumber() != null && po.getOrderNumber().contains(esc)))
                 .collect(Collectors.toList());
         List<Map<String, Object>> content = filtered.stream()

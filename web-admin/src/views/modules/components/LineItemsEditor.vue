@@ -131,11 +131,14 @@ function isColumnVisible(field: ItemField): boolean {
           <template #default="{ row, $index }">
             <!-- Per-row visibility: render placeholder if cell hidden for this row -->
             <span v-if="!isCellVisible(field, row)" class="cell-hidden">—</span>
-            <!-- reference -->
+            <!-- reference. R17 audit SER-1: drop `&& field.referenceConfig` guard so
+                 ReferenceSelector handles missing config via its own loud-fail (R12 fix).
+                 Previously falling through to el-input was silent text-input for line-item
+                 references with broken schema (purchase_order/transfer items.materialTypeId). -->
             <ReferenceSelector
-              v-else-if="field.type === 'reference' && field.referenceConfig"
+              v-else-if="field.type === 'reference'"
               :model-value="(row[field.code] as string)"
-              :config="field.referenceConfig"
+              :config="(field.referenceConfig as never)"
               :disabled="disabled || !!field.computed"
               @update:model-value="(v) => updateField($index, field.code, v)"
             />

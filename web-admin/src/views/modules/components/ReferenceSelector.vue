@@ -72,6 +72,20 @@ async function search(query: string) {
         label: String(item[props.config.displayField] || ''),
         value: String(item[props.config.valueField]),
       }))
+      // R17 audit MIN-5: catch displayField/response-key mismatches (the V11→V13 class bug
+      // that 8 reviewers missed because labels resolved to '' silently). Warn ONCE per
+      // fetch when >50% labels are blank — clear signal that schema.displayField doesn't
+      // match any key in the API response.
+      if (options.value.length > 0) {
+        const blankCount = options.value.filter((o) => !o.label).length
+        if (blankCount * 2 > options.value.length) {
+          console.warn(
+            `[ReferenceSelector] entity=${props.config.entity} returned ${blankCount}/${options.value.length} ` +
+            `items with blank label. Schema displayField='${props.config.displayField}' likely doesn't match ` +
+            `any key in API response. Fix: align module_schemas.referenceConfig.displayField with controller projection.`
+          )
+        }
+      }
     } catch (e: any) {
       // Permission denied (403) or missing endpoint is expected when user has limited access.
       // Log as warning, not error — the dropdown just shows no options, which is acceptable UX.
