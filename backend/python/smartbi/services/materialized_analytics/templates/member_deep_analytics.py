@@ -36,10 +36,25 @@ _CARD_ID_CANDIDATES = ("卡号", "会员卡号", "会员编号", "卡编号")
 _MEMBER_NAME_CANDIDATES = ("会员", "会员姓名", "持卡人")
 _LEVEL_CANDIDATES = ("等级", "会员等级", "卡等级")
 _STATUS_CANDIDATES = ("卡状态", "会员状态", "状态")
-_BALANCE_CANDIDATES = ("当前余额(元)", "当前余额", "账户余额", "卡余额", "余额")
-_PRINCIPAL_BAL_CANDIDATES = ("当前本金余额(元)", "当前本金余额", "本金余额")
-_TOTAL_RECHARGE_CANDIDATES = ("充值总金额(元)", "充值总金额", "累计充值", "总充值")
-_GIFT_AMOUNT_CANDIDATES = ("充值赠送总额(元)", "充值赠送总额", "赠送金额", "当前赠送余额(元)")
+# Apr 26 2026 phase 4 P1.b: extend candidate lists with (元)/short-form
+# variants. qhj 4216 卡详情 had "余额(元)"/"本金"/"赠送金"/"押金" — none
+# matched original candidates exactly, so member_deep_analytics.applies()
+# returned False and 5 member-level queries (qhj-19/20/22/29/30) silently
+# fell through to LLM with empty cache.
+_BALANCE_CANDIDATES = (
+    "当前余额(元)", "当前余额", "账户余额", "卡余额", "余额", "余额(元)",
+)
+_PRINCIPAL_BAL_CANDIDATES = (
+    "当前本金余额(元)", "当前本金余额", "本金余额", "本金",
+)
+_TOTAL_RECHARGE_CANDIDATES = (
+    "充值总金额(元)", "充值总金额", "累计充值", "总充值",
+    "本金", "本金(元)",  # principal = total recharge for member-level exports
+)
+_GIFT_AMOUNT_CANDIDATES = (
+    "充值赠送总额(元)", "充值赠送总额", "赠送金额", "当前赠送余额(元)",
+    "赠送金", "赠送金(元)",
+)
 _OPEN_DATE_CANDIDATES = ("开卡时间", "开卡日期", "入会时间", "等级变动时间")
 _LAST_CONSUME_DATE_CANDIDATES = ("最近消费时间", "最后消费", "上次消费")
 _GENDER_CANDIDATES = ("性别",)
