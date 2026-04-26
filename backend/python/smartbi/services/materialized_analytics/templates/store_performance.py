@@ -16,6 +16,7 @@ from ..compute.base import ComputeBackend
 from ..restaurant.action_rec_formatter import format_action_rec
 from ..restaurant.schema_helpers import (
     find_store_col,
+    is_revenue_measure,
     measure_annotation,
     preferred_revenue_col,
 )
@@ -65,9 +66,14 @@ class StorePerformance(AnalysisTemplate):
 
     def applies(self, schema: DataSchema) -> bool:
         field_names = {f.name for f in schema.fields}
+        # Apr 26 2026 phase 5 (UX): also gate on is_revenue_measure — store_
+        # performance hardcodes "销售额 X 元 / 客单价 Y 元/单" which mislabels
+        # rating data (qhj 4212/4213 评价Q3 measure=星级分 → user reads
+        # "销售额 4,864 元" thinking it's revenue, gets confused).
         return (
             find_store_col(field_names) is not None
             and schema.primary_measure is not None
+            and is_revenue_measure(schema.primary_measure)
         )
 
     def compute(self, backend: ComputeBackend, schema: DataSchema) -> TemplateResult:

@@ -311,3 +311,36 @@ def measure_annotation(col: Optional[str]) -> str:
     if col in _GROSS_REVENUE_CANDIDATES:
         return f"(按{col}统计 - 含扣减前)"
     return f"(按{col}统计)"
+
+
+# Apr 26 2026 phase 5 (UX): non-monetary measure detection. Used by
+# revenue-oriented templates (store_performance, monthly_trend) to skip
+# materialization when measure is e.g. 星级分 / 评分 / 数量, since their
+# insight_text hardcodes "销售额 X 元 / 客单价 Y 元/单" which mislabels
+# rating data and confuses users.
+_NON_REVENUE_MEASURE_PATTERNS = (
+    '星级', '评分', '分数', '打分', '得分',  # ratings
+    '人数', '位数', '次数',  # counts (but allow 笔数 / 单数 for revenue ctx)
+)
+
+
+def is_revenue_measure(col: Optional[str]) -> bool:
+    """Return True if the measure is monetary (¥-denominated).
+
+    Use to gate revenue-oriented templates that label values as "销售额 X 元"
+    — those produce misleading output for non-monetary measures (e.g. 星级分,
+    评分人次).
+    """
+    if not col:
+        return False
+    # Explicit monetary candidates first (priority signal)
+    if col in _NET_REVENUE_CANDIDATES or col in _GROSS_REVENUE_CANDIDATES:
+        return True
+    if any(p in col for p in ('金额', '营业额', '营收', '收入', '销售额', '实收', '应收')):
+        return True
+    # Explicit non-revenue patterns
+    if any(p in col for p in _NON_REVENUE_MEASURE_PATTERNS):
+        return False
+    # Conservative default: if name doesn't match either, allow (avoids
+    # over-aggressive filtering on novel column names)
+    return True
