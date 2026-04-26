@@ -121,6 +121,33 @@ def test_reject_review_query_on_member_template():
     ) is True
 
 
+def test_classify_manufacturing_domains():
+    # Apr 26 2026 A1: F001/F002/F003 制造业租户的查询
+    assert classify_query_domain("不良率多少") == 'quality'
+    assert classify_query_domain("良品率走势") == 'quality'
+    assert classify_query_domain("客诉数") == 'quality'
+    assert classify_query_domain("设备 OEE") == 'equipment'
+    assert classify_query_domain("产线稼动率") == 'equipment'
+    assert classify_query_domain("机台故障次数") == 'equipment'
+    assert classify_query_domain("工单完成率") == 'production'
+    assert classify_query_domain("批次良率") == 'production'
+    assert classify_query_domain("工序排产") == 'production'
+
+
+def test_reject_top_n_for_manufacturing_domains():
+    # Manufacturing query routed to top_n_by_dim (餐饮 Top-N) → reject.
+    assert should_reject_cache("不良率 Top 5 工序", "top_n_by_dim") is True
+    assert should_reject_cache("OEE Top 10 设备", "top_n_by_dim") is True
+    assert should_reject_cache("良率最低工单 Top 3", "top_n_by_dim") is True
+
+
+def test_manufacturing_priority_over_time():
+    # "工序异常率本月" 含 quality(异常) + production(工序) + time(本月) — 制造业先
+    assert classify_query_domain("工序异常率本月") in ('production', 'quality')
+    # "本月不良率" — 含 finance(?) + time + quality — quality 先
+    assert classify_query_domain("本月不良率") == 'quality'
+
+
 def test_template_domain_coverage():
     # Sanity: TEMPLATE_DOMAIN covers the main known templates from the
     # Apr 26 audit. Specifically the F4 case template must be mapped.

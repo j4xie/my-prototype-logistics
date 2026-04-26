@@ -1385,13 +1385,23 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                 from smartbi.services.cache_intent_classifier import (
                                     should_reject_cache as _intent_reject,
                                 )
+                                from smartbi.services.smartbi_metrics import (
+                                    CACHE_REJECT, CACHE_HIT_KEPT,
+                                )
                                 if matched_code in cached_by_code and _intent_reject(user_q, matched_code):
+                                    reason = ('top_n_unsuitable' if matched_code == 'top_n_by_dim'
+                                              else 'domain_mismatch')
+                                    CACHE_REJECT.labels(reason=reason).inc()
                                     logger.info(
                                         f"[stream] cache rejected by intent-classifier "
                                         f"(query={user_q[:30]!r} template={matched_code})"
                                     )
                                     cached_by_code = {}  # force fall-through to LLM
+                                elif matched_code in cached_by_code:
+                                    CACHE_HIT_KEPT.labels(template_code=matched_code).inc()
                             except Exception as _intent_err:
+                                from smartbi.services.smartbi_metrics import CACHE_REJECT
+                                CACHE_REJECT.labels(reason='classifier_error').inc()
                                 logger.warning(f"[stream] intent classifier failed (non-fatal): {_intent_err}")
                             if matched_code in cached_by_code:
                                 tpl = cached_by_code[matched_code]
@@ -2150,6 +2160,14 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 if _remaining <= 0:
                     _llm_truncated = True
                     _silent_timeout = (full_text == "")
+                    try:
+                        from smartbi.services.smartbi_metrics import LLM_SOFT_TIMEOUT
+                        LLM_SOFT_TIMEOUT.labels(
+                            silent='true' if _silent_timeout else 'false',
+                            has_parent_ctx='true' if chat_session_parent else 'false',
+                        ).inc()
+                    except Exception:
+                        pass
                     logger.warning(
                         f"[stream] LLM soft timeout {_elapsed:.1f}s > "
                         f"{_LLM_SOFT_TIMEOUT_S}s, accumulated={len(full_text)} "

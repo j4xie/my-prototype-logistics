@@ -61,7 +61,9 @@ class LlmAnswerCache:
         - Entry not found / expired
         - DB error
         """
+        from smartbi.services.smartbi_metrics import LLM_CACHE_LOOKUP, LLM_CACHE_HIT_AGE
         if not factory_id or not normalized_q:
+            LLM_CACHE_LOOKUP.labels(outcome='miss').inc()
             return None
         key = compute_cache_key(factory_id, normalized_q, upload_id)
         try:
@@ -76,6 +78,7 @@ class LlmAnswerCache:
                     key,
                 )
                 if not row:
+                    LLM_CACHE_LOOKUP.labels(outcome='miss').inc()
                     return None
                 # Bump hit_count + last_hit_at — fire-and-forget UPDATE
                 await conn.execute(
@@ -87,6 +90,8 @@ class LlmAnswerCache:
                     """,
                     key,
                 )
+                LLM_CACHE_LOOKUP.labels(outcome='hit').inc()
+                LLM_CACHE_HIT_AGE.observe(row['hit_count'] + 1)
                 return {
                     "answer_text": row["answer_text"],
                     "charts": (
@@ -96,6 +101,7 @@ class LlmAnswerCache:
                     "hit_count": row["hit_count"] + 1,  # post-increment value
                 }
         except Exception as e:
+            LLM_CACHE_LOOKUP.labels(outcome='error').inc()
             logger.warning(f"[llm-answer-cache] get failed (non-fatal): {e}")
             return None
 
@@ -109,10 +115,13 @@ class LlmAnswerCache:
         warning: Optional[str] = None,
     ) -> None:
         """Write a new cache entry. ON CONFLICT updates the answer + resets TTL."""
+        from smartbi.services.smartbi_metrics import LLM_CACHE_WRITE
         if not factory_id or not normalized_q or not answer_text:
+            LLM_CACHE_WRITE.labels(outcome='skipped_short').inc()
             return
         # Skip caching very short answers (likely error/silent-timeout msgs).
         if len(answer_text.strip()) < 30:
+            LLM_CACHE_WRITE.labels(outcome='skipped_short').inc()
             return
         key = compute_cache_key(factory_id, normalized_q, upload_id)
         try:
@@ -138,7 +147,9 @@ class LlmAnswerCache:
                     _json.dumps(charts or [], ensure_ascii=False),
                     warning,
                 )
+                LLM_CACHE_WRITE.labels(outcome='ok').inc()
         except Exception as e:
+            LLM_CACHE_WRITE.labels(outcome='error').inc()
             logger.warning(f"[llm-answer-cache] set failed (non-fatal): {e}")
 
     async def invalidate_on_upload(self, factory_id: str) -> int:

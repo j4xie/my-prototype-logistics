@@ -415,12 +415,20 @@ async def lifespan(app: FastAPI):
             await _asyncio.sleep(90)  # let pool warm
             while True:
                 try:
+                    from smartbi.services.smartbi_metrics import PRUNER_RUNS, PRUNER_DELETED
                     pool = await _get_pg_pool_cs()
                     if pool is not None:
                         deleted = await _CSS(pool).prune_expired()
+                        PRUNER_RUNS.labels(table='chat_session', outcome='ok').inc()
                         if deleted > 0:
+                            PRUNER_DELETED.labels(table='chat_session').inc(deleted)
                             logger.info(f"[chat-session] pruned {deleted} expired sessions")
                 except Exception as ex:
+                    try:
+                        from smartbi.services.smartbi_metrics import PRUNER_RUNS
+                        PRUNER_RUNS.labels(table='chat_session', outcome='error').inc()
+                    except Exception:
+                        pass
                     logger.warning(f"[chat-session] prune failed: {ex}")
                 await _asyncio.sleep(1800)  # 30 min cadence
 
@@ -441,12 +449,20 @@ async def lifespan(app: FastAPI):
             await _asyncio.sleep(120)
             while True:
                 try:
+                    from smartbi.services.smartbi_metrics import PRUNER_RUNS, PRUNER_DELETED
                     pool = await _get_pg_pool_lac()
                     if pool is not None:
                         deleted = await _LAC(pool).prune_expired()
+                        PRUNER_RUNS.labels(table='llm_cache', outcome='ok').inc()
                         if deleted > 0:
+                            PRUNER_DELETED.labels(table='llm_cache').inc(deleted)
                             logger.info(f"[llm-cache] pruned {deleted} expired rows")
                 except Exception as ex:
+                    try:
+                        from smartbi.services.smartbi_metrics import PRUNER_RUNS
+                        PRUNER_RUNS.labels(table='llm_cache', outcome='error').inc()
+                    except Exception:
+                        pass
                     logger.warning(f"[llm-cache] prune failed: {ex}")
                 await _asyncio.sleep(3600)  # 1h cadence
 

@@ -106,6 +106,13 @@ QUERY_DOMAIN_HINTS: dict[str, list[str]] = {
     'category': ['品类', '类别'],  # narrower than 'dish'
     'inventory': ['库存', '进货', '采购', '出库', '入库'],
     'anomaly': ['异常', '突变', '波动'],
+    # Apr 26 2026 A1 manufacturing 跨域: F001/F002/F003 制造业租户的领域词
+    'quality': ['不良', '良品率', '合格率', '不合格', '质检', '抽检', '缺陷',
+                '客诉', '投诉', '召回', '质量问题', '一次合格率', 'fpy'],
+    'equipment': ['设备', 'oee', '稼动率', '故障', '停机', '产能', '机台',
+                  '机器', '产线', '工位', '设备效率'],
+    'production': ['工单', '产量', '良率', '在制品', '批次', '工序', '工艺',
+                   '排产', '排程', '加工', '生产计划', '生产进度'],
 }
 
 
@@ -119,8 +126,11 @@ def classify_query_domain(query: str) -> Optional[str]:
     if not query:
         return None
     q = query.lower()
-    # Order matters — more specific domains first.
+    # Order matters — more specific domains first. Manufacturing
+    # (quality/equipment/production) put before time so "工序异常率本月" matches
+    # quality/equipment first not time.
     priority_order = [
+        'quality', 'equipment', 'production',  # manufacturing first
         'finance', 'review', 'staff', 'refund', 'promotion', 'inventory',
         'anomaly', 'payment', 'member', 'channel', 'category', 'dish',
         'store', 'time',
@@ -150,6 +160,11 @@ TOP_N_REJECT_DOMAINS: set[str] = {
     'promotion',  # 促销/优惠 → promotion_impact or LLM
     'inventory',  # 库存/进货 → purchase_inventory_inflow or LLM
     'anomaly',    # 异常/突变 → anomaly_detection (specifically) or LLM
+    # Manufacturing — top_n_by_dim is restaurant Top-N logic, not appropriate
+    # for quality/equipment/production analytic style which need narrative.
+    'quality',    # 不良/良品率/合格率 → LLM (no manufacturing template yet)
+    'equipment',  # 设备/OEE/稼动率 → LLM
+    'production', # 工单/产量/良率 → LLM
 }
 
 
