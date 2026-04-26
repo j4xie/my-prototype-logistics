@@ -447,9 +447,19 @@ async def match_template_hybrid(query: str, pool) -> Optional[str]:
         logger.info(f"[query-router] hard modifier in '{query[:50]}' → LLM fallback")
         return None
 
-    # Layer 1: keyword match (existing logic)
+    # Apr 26 2026 UX-1: synonym normalization. Cache hit was 13% in S4 audit
+    # because users say "走势" but template patterns use "趋势", etc. Normalize
+    # before matching to lift cache hit toward 30%+.
+    try:
+        from smartbi.services.query_normalizer import normalize_for_match
+        normalized = normalize_for_match(query)
+    except Exception as e:
+        logger.warning(f"[query-router] normalizer failed (non-fatal): {e}")
+        normalized = query
+
+    # Layer 1: keyword match (existing logic, run on normalized query)
     keyword_code: Optional[str] = None
-    q_lower = query.lower()
+    q_lower = normalized.lower()
     for code, groups in _PATTERNS:
         hit = True
         for group in groups:
@@ -460,11 +470,12 @@ async def match_template_hybrid(query: str, pool) -> Optional[str]:
             keyword_code = code
             break
 
-    # Layer 2: vector RAG (if pool available). Fails safe to keyword-only.
+    # Layer 2: vector RAG (if pool available). Pass NORMALIZED query so
+    # embedding lookup also benefits from synonym substitution. Fails safe.
     if pool is not None:
         try:
             from smartbi.services.template_rag import hybrid_match
-            result = await hybrid_match(pool, query, keyword_code=keyword_code)
+            result = await hybrid_match(pool, normalized, keyword_code=keyword_code)
             if result is not None:
                 logger.info(
                     f"[query-router] hybrid matched '{query[:50]}' → "

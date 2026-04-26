@@ -1997,6 +1997,22 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                     lines.append(f"时间字段: {', '.join(times)}")
                 field_summary = "\n".join(lines) + "\n"
 
+            # Apr 26 2026 UX-2: dataset capability hint. Sparse-data tenants
+            # (e.g. xmx member-only) used to get "建议补充数据" non-answers when
+            # asked cross-domain. Now we tell LLM upfront what's IN/OUT of
+            # scope so it answers within scope or says "本数据无 X, 基于 Y..."
+            # in 1 sentence instead of a 11s wait + filler.
+            capability_hint = ""
+            if 'field_meta' in locals() and field_meta:
+                try:
+                    from smartbi.services.dataset_capabilities import (
+                        detect_capabilities, build_capability_prompt_hint,
+                    )
+                    _caps = detect_capabilities(field_meta)
+                    capability_hint = build_capability_prompt_hint(_caps)
+                except Exception as _ce:
+                    logger.warning(f"[stream] capability hint build failed: {_ce}")
+
             # Bug #19 fix (Apr 17 2026): inject authoritative full-data aggregates
             # so LLM doesn't guess from 200-row sample.
             real_agg_block = ""
@@ -2018,6 +2034,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
             prompt = f"""{session_context_block}用户问题：{analysis_ctx}
 
 {field_summary}
+{capability_hint}
 ## 数据概览 (样本)
 {data_summary}
 {real_agg_block}
@@ -2029,7 +2046,8 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
 - **涉及总量/排名/占比时，必须引用"全量数据聚合"段的数字，不要从样本重新计算**
 - 不要引用非当前字段列表中的字段名 (避免幻觉)
 - **若提供了"上一轮对话"段, 优先延续上一轮的实体和数字, 不要重新介绍**
-引用具体数字，给出业务建议。中文Markdown，300字以内。"""
+- **遵守"数据集能力边界"段, 不属本数据集的字段不要瞎答**
+**回答格式 (强制)**: 第一句直接给数字结论, 第二段最多 2-3 句给可执行建议. 总长 ≤ 200 字, 中文 Markdown."""
 
             system_role = (
                 "你是食品企业的数据分析师。精炼回答，引用数字，给可执行建议。Markdown格式。"
