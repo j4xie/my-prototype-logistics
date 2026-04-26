@@ -227,8 +227,9 @@ async def test_route_passes_factory_id_in_admin_insert():
     # args[1]=factory_id, args[2]=entity_type, args[3]=raw_name,
     # args[4]=confidence, args[5]=decided_by_agent, args[6]=upload_id
     assert args[1] == "F999"
-    # entity_type must satisfy CHECK constraint (store/product/staff)
-    assert args[2] in ("store", "product", "staff")
+    # entity_type must satisfy CHECK constraint (V20260427_01 broadens to
+    # include 'shape_detection' for upload-level routing failures).
+    assert args[2] == "shape_detection"
     assert args[3] == "upload:99"
     assert args[4] == 0.10
     assert args[5].startswith("shape_detector:")

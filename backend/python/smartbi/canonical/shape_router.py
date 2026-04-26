@@ -35,11 +35,7 @@ WRITER_REGISTRY: dict[FileShape, Optional[str]] = {
 }
 
 
-# entity_resolution_admin_queue.entity_type CHECK constraint allows only
-# 'store' / 'product' / 'staff'. Use 'store' as the placeholder when queueing
-# upload-level shape-detection failures; the real shape is captured in
-# decided_by_agent='shape_detector:<shape>' and source_upload_id.
-_SHAPE_ADMIN_PLACEHOLDER_ENTITY_TYPE = "store"
+_SHAPE_DETECTION_ENTITY_TYPE = "shape_detection"
 
 
 @dataclass(frozen=True)
@@ -153,7 +149,7 @@ async def _queue_unknown_for_admin(
             VALUES ($1, $2, $3, NULL, $4, $5, $6)
             """,
             factory_id,
-            _SHAPE_ADMIN_PLACEHOLDER_ENTITY_TYPE,
+            _SHAPE_DETECTION_ENTITY_TYPE,
             f"upload:{upload_id}",
             detection.confidence,
             f"shape_detector:{detection.shape.value}",
