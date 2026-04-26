@@ -71,6 +71,10 @@ public class InvoiceServiceImpl implements InvoiceService {
             "salesOrderId", salesOrderId != null ? salesOrderId : ""));
         SalesOrder so = salesOrderRepository.findById(salesOrderId)
                 .orElseThrow(() -> new IllegalArgumentException("销售订单不存在: " + salesOrderId));
+        // R18 audit: enforce business invariant — only post-finance-approved SOs can be invoiced.
+        // Previously only the dropdown UX (R17) gated this, but direct API POST would bypass.
+        // Same whitelist as ReferenceDataController.findSalesOrders.
+        validateInvoiceableStatus(so);
 
         InvoiceRecord record = new InvoiceRecord();
         record.setFactoryId(factoryId);
@@ -111,6 +115,9 @@ public class InvoiceServiceImpl implements InvoiceService {
         if (!factoryId.equals(so.getFactoryId())) {
             throw new IllegalArgumentException("销售订单不存在或无权访问: " + salesOrderId);
         }
+
+        // R18 audit: business invariant (see requestInvoice above).
+        validateInvoiceableStatus(so);
 
         // Bug #2 fix (R2 2026-04-16): prevent duplicate invoice requests for same SO.
         // Reject if an active (REQUESTED/APPROVED) invoice exists — caller must wait or cancel it first.
@@ -359,5 +366,28 @@ public class InvoiceServiceImpl implements InvoiceService {
         String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         long count = invoiceRecordRepository.count() + 1;
         return String.format("INV-%s-%04d", dateStr, count);
+    }
+
+    /**
+     * R18 audit: enforce business invariant — invoice can only be requested against
+     * a post-finance-approved SO. Same whitelist as ReferenceDataController.findSalesOrders
+     * (R17 audit CRIT-1). Pre-finance states (DRAFT/CONFIRMED/PENDING_FINANCE_REVIEW) bypass
+     * the dual-control gate; FINANCE_REJECTED/CANCELLED are explicitly invalid.
+     */
+    private static final java.util.Set<com.cretas.aims.entity.enums.SalesOrderStatus> INVOICEABLE_SO_STATUSES =
+        java.util.Set.of(
+            com.cretas.aims.entity.enums.SalesOrderStatus.FINANCE_APPROVED,
+            com.cretas.aims.entity.enums.SalesOrderStatus.PROCESSING,
+            com.cretas.aims.entity.enums.SalesOrderStatus.PARTIAL_DELIVERED,
+            com.cretas.aims.entity.enums.SalesOrderStatus.COMPLETED);
+
+    private void validateInvoiceableStatus(SalesOrder so) {
+        if (so.getStatus() == null || !INVOICEABLE_SO_STATUSES.contains(so.getStatus())) {
+            throw new com.cretas.aims.exception.BusinessException(409,
+                "销售订单状态不允许开票 (当前: " + (so.getStatus() != null ? so.getStatus().name() : "null") +
+                "). 仅财务审核通过及之后状态可开票.")
+                .withHint("先完成财务审核流程后再申请开票")
+                .withHintTarget("销售订单");
+        }
     }
 }
