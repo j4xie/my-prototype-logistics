@@ -108,6 +108,43 @@ const dataSourceLabel = computed(() => {
 const chatHistory = ref<ChatMessage[]>([]);
 const chatContainerRef = ref<HTMLDivElement | null>(null);
 
+// v2 conversation memory (Apr 26 2026): server-side session id persisted in
+// sessionStorage so a follow-up question on the same tab inherits the parent
+// answer summary. Survives page reload (sessionStorage), clears on tab close
+// or when user clicks "新会话". Key is namespaced per factory so switching
+// tenants does not leak.
+const CHAT_SESSION_KEY = computed(() => `smartbi.chatSessionId.${factoryId.value || 'anon'}`);
+function getOrCreateChatSessionId(): string {
+  try {
+    const key = CHAT_SESSION_KEY.value;
+    let id = sessionStorage.getItem(key);
+    if (!id) {
+      // Use crypto.randomUUID when available; fallback to RFC4122 v4 polyfill.
+      id = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+        ? crypto.randomUUID()
+        : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0;
+            return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+          });
+      sessionStorage.setItem(key, id);
+    }
+    return id;
+  } catch {
+    // sessionStorage may be blocked (private mode) — still return a per-call
+    // UUID so the request goes through, just without continuity.
+    return (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+}
+function resetChatSession(): void {
+  try {
+    sessionStorage.removeItem(CHAT_SESSION_KEY.value);
+  } catch {
+    // ignore — sessionStorage blocked
+  }
+}
+
 // 快捷问题 — 餐饮场景 + 命中模板秒回
 const quickQuestions = [
   '畅销品 Top 5',
@@ -472,6 +509,7 @@ async function handleSendMessage() {
     table_type: currentTableType.value || undefined,
     uploadId: selectedUploadId.value ? String(selectedUploadId.value) : undefined,
     history: historyForContext.length > 0 ? historyForContext : undefined,
+    sessionId: getOrCreateChatSessionId(),
   };
 
   // Helper to find the assistant message
@@ -1054,6 +1092,10 @@ function handleClearHistory() {
   // 销毁所有图表
   chartInstances.forEach(chart => chart.dispose());
   chartInstances.clear();
+
+  // v2 conversation memory: 清空对话同时重置服务端 session_id, 让下一句问从零
+  // 上下文开始(否则上轮 parent_answer_summary 还会注入到下一个 LLM prompt).
+  resetChatSession();
 
   chatHistory.value = [{
     id: 'welcome',

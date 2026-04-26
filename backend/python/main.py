@@ -403,6 +403,32 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.warning(f"[startup] restaurant-ops ETL init failed: {e}")
 
+    # Apr 26 2026 v2 conversation memory: half-hourly pruner for expired chat
+    # sessions (TTL 1h rolling). Cheap DELETE keyed on idx_chat_session_expires.
+    _chat_session_pruner_task = None
+    try:
+        import asyncio as _asyncio
+        from smartbi.config import get_pg_pool as _get_pg_pool_cs
+        from smartbi.services.chat_session_service import ChatSessionService as _CSS
+
+        async def _prune_chat_sessions_forever():
+            await _asyncio.sleep(90)  # let pool warm
+            while True:
+                try:
+                    pool = await _get_pg_pool_cs()
+                    if pool is not None:
+                        deleted = await _CSS(pool).prune_expired()
+                        if deleted > 0:
+                            logger.info(f"[chat-session] pruned {deleted} expired sessions")
+                except Exception as ex:
+                    logger.warning(f"[chat-session] prune failed: {ex}")
+                await _asyncio.sleep(1800)  # 30 min cadence
+
+        _chat_session_pruner_task = _asyncio.create_task(_prune_chat_sessions_forever())
+        logger.info("[startup] chat-session 30-min pruner armed")
+    except Exception as e:
+        logger.warning(f"[startup] chat-session pruner init failed: {e}")
+
     yield
 
     # Shutdown: cancel narrative_cache pruner task
@@ -418,6 +444,14 @@ async def lifespan(app: FastAPI):
         _restaurant_etl_task.cancel()
         try:
             await _restaurant_etl_task
+        except Exception:
+            pass
+
+    # Shutdown: cancel chat-session pruner task
+    if _chat_session_pruner_task is not None:
+        _chat_session_pruner_task.cancel()
+        try:
+            await _chat_session_pruner_task
         except Exception:
             pass
 
@@ -566,6 +600,14 @@ app.include_router(
     llm_fallback_admin.router,
     prefix="/api/smartbi/admin/fallback-log",
     tags=["LLM Fallback Log"],
+)
+
+# J1 (Apr 24 2026): LLM router circuit breaker stats
+from smartbi.api import llm_router_admin
+app.include_router(
+    llm_router_admin.router,
+    prefix="/api/smartbi/admin/llm-router",
+    tags=["LLM Router Admin"],
 )
 
 # Memory diagnostic / manual trim (Apr 23 2026, investigating post-materialize RSS retention)
