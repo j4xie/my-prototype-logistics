@@ -1355,7 +1355,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 # Router is best-effort; fall through to LLM on any error
                 logger.warning(f"[stream] template router failed, falling back to LLM: {e}")
 
-            yield _sse_event("status", "正在加载数据...")
+            yield _sse_event("status", "📊 加载你的数据中...")
 
             # ── Data loading (same as general_analysis) ──
             data = request.data
@@ -1428,8 +1428,14 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                     logger.warning(f"[stream] field_defs lookup failed: {fe}")
                                     field_meta = []
 
-                                # Heartbeat: resets FE 15s/30s watchdog while全量聚合 is slow
-                                yield _sse_event("status", f"正在汇总全量数据 ({len(data)} 行样本已加载)...")
+                                # Heartbeat: resets FE 15s/30s watchdog while全量聚合 is slow.
+                                # Phase 5 UX: friendly tone — confirm sample loaded ✓ before
+                                # diving into full aggregation, sets expectation that we have
+                                # data and are crunching numbers.
+                                yield _sse_event(
+                                    "status",
+                                    f"✓ 已读 {len(data)} 行样本, 正在聚合全量数据..."
+                                )
 
                                 # Bug #19 fix (Apr 17 2026): sample LIMIT 200 is insufficient
                                 # for aggregation queries ("Top N by dim", "总销售额"). LLM
@@ -1464,8 +1470,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                                 f"(original compute {_bundle.get('compute_time_s', 0):.1f}s)"
                                             )
                                             _hb_text = (
-                                                f"使用持久化聚合 ({_bundle['real_total_rows']:,} 行)，"
-                                                "正在排名..."
+                                                f"⚡ 已读取 {_bundle['real_total_rows']:,} 行预聚合, 正在排名..."
                                             )
                                     if _bundle is None:
                                         # L1+L2 cold: compute can take 30-70s on a 200K-row upload.
@@ -1505,8 +1510,8 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                             f"{_bundle['compute_time_s']:.1f}s (L1+L2 populated)"
                                         )
                                         _hb_text = (
-                                            f"聚合完成 ({_bundle['real_total_rows']:,} 行 / "
-                                            f"{_bundle['compute_time_s']:.1f}s)，正在排名..."
+                                            f"✓ 聚合完成 ({_bundle['real_total_rows']:,} 行, "
+                                            f"耗时 {_bundle['compute_time_s']:.1f}s), 正在排名..."
                                         )
                                         # Release transient allocations back to OS — cold-compute
                                         # path made 15+4+4 full JSONB scans whose result buffers
@@ -1519,8 +1524,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                     if _hb_text is None:
                                         logger.info(f"[stream] agg L1 hit upload={upload_id}")
                                         _hb_text = (
-                                            f"使用缓存聚合 ({_bundle['real_total_rows']:,} 行)，"
-                                            "正在排名..."
+                                            f"⚡ 内存命中 ({_bundle['real_total_rows']:,} 行 / <0.1s), 正在排名..."
                                         )
                                     # Unpack bundle into locals that the entity block + prompt builder use
                                     field_meta = _bundle['field_meta']
@@ -1849,7 +1853,14 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 df = df.drop(columns=cols_to_drop, errors='ignore')
                 data = [{k: v for k, v in row.items() if k not in cols_to_drop} for row in data]
 
-            yield _sse_event("status", "正在调用 AI 模型生成分析...")
+            # Apr 26 2026 phase 5 (UX): set user expectation for LLM tail wait.
+            # Previously just "正在调用 AI 模型生成分析..." — user doesn't know
+            # if 1s or 30s. Provide rough time estimate so 6-9s wait feels less
+            # like the system is hung.
+            yield _sse_event(
+                "status",
+                "🤔 AI 正在分析中 (~5-8 秒)... 待会儿就把答案流给你"
+            )
 
             # ── Use default qwen-plus but with optimized params ──
             insight_gen = InsightGenerator()
