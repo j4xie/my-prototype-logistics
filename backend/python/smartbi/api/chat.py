@@ -1350,6 +1350,25 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                                 pool, upload_id, factory_id=factory_id
                             )
                             cached_by_code = {r["code"]: r for r in cached_results}
+                            # Phase 6 P1 (Apr 26 2026): reject cache when query
+                            # intent diverges from template domain. Catches the
+                            # F4-class bug from S3 audit (xmx-fu-29-2 "单店 vs 同业"
+                            # mistakenly hitting payment_method_mix). Conservative —
+                            # only rejects when both sides are confidently classified
+                            # AND different. Falls through to LLM (which has v2
+                            # parent context to do better than a mis-routed cache).
+                            try:
+                                from smartbi.services.cache_intent_classifier import (
+                                    should_reject_cache as _intent_reject,
+                                )
+                                if matched_code in cached_by_code and _intent_reject(user_q, matched_code):
+                                    logger.info(
+                                        f"[stream] cache rejected by intent-classifier "
+                                        f"(query={user_q[:30]!r} template={matched_code})"
+                                    )
+                                    cached_by_code = {}  # force fall-through to LLM
+                            except Exception as _intent_err:
+                                logger.warning(f"[stream] intent classifier failed (non-fatal): {_intent_err}")
                             if matched_code in cached_by_code:
                                 tpl = cached_by_code[matched_code]
                                 payload = format_cached_as_sse(
