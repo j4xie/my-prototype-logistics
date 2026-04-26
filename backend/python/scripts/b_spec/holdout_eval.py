@@ -18,14 +18,14 @@ from __future__ import annotations
 import argparse
 import asyncio
 from dataclasses import dataclass
-from typing import Awaitable, Callable, Literal, Optional
+from typing import Awaitable, Callable, List, Literal, Optional
 
 from scripts.b_spec._db_helpers import DEFAULT_DSN, acquire_factory_conn
 from smartbi.canonical.entity_resolution.agents.deterministic import normalize_for_dim
 from smartbi.services.llm_fallback_logger import get_embedding as default_embed
 
 Pred = Literal["match", "no_match"]
-EmbedFn = Callable[[str], Awaitable[Optional[list[float]]]]
+EmbedFn = Callable[[str], Awaitable[Optional[List[float]]]]
 
 SPEC_THRESHOLDS = {"store": 0.88, "product": 0.88, "staff": 0.80}
 
@@ -40,7 +40,7 @@ class EvalCounts:
     embed_failures: int = 0
 
 
-def _cosine(a: list[float], b: list[float]) -> float:
+def _cosine(a: List[float], b: List[float]) -> float:
     dot = na = nb = 0.0
     for x, y in zip(a, b):
         dot += x * y
@@ -109,6 +109,19 @@ async def main_async(args: argparse.Namespace) -> int:
     if args.split not in ("train", "dev", "holdout"):
         print(f"ERROR: invalid split {args.split}")
         return 2
+
+    try:
+        from smartbi.config import get_settings
+        from food_kb.services.embedding import configure as configure_embedding
+        s = get_settings()
+        configure_embedding(
+            api_key=s.llm_api_key,
+            base_url=s.llm_base_url,
+            model=s.food_kb_embedding_model,
+            dims=s.food_kb_embedding_dims,
+        )
+    except Exception as exc:
+        print(f"WARN: embedding configure failed ({exc}); continuing with deterministic-only.")
 
     counts = EvalCounts()
     n_total = 0
