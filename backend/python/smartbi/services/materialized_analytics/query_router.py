@@ -1011,6 +1011,77 @@ def regen_top_n_for_dim(data: Dict, target_dim: str, top_n: int = 10) -> Optiona
     }
 
 
+# Apr 26 2026 phase 5 (UX): query-cache intent disambiguation.
+# When cache fast-path serves multiple distinct queries with the same
+# template result, user sees identical answer for different intents
+# (qhj-19/20/22/30 all got "32,997 会员 / 余额清零 100%" 4 times).
+# Detect specific intent patterns and prepend a disambiguation note
+# so user understands what was/wasn't covered.
+
+# Patterns that expect a LIST or specific entity, not just summary.
+_LIST_INTENT_PATTERNS = (
+    'top 10', 'top10', '都是谁', '都有谁', '哪些', '哪几', '前 10', '前10',
+    '排行', '排名', '名单', '列出', '列表',
+)
+
+# Specific entity-type intents — user wants concrete numbers for these.
+_SPECIFIC_METRIC_INTENTS = {
+    '赠品损失': ['赠送金', '赠品', '赠送'],
+    '赠品': ['赠送金', '赠品', '赠送'],
+    '余额总额': ['余额'],
+    '充值总额': ['充值', '本金'],
+    '客单价': ['客单价', '人均'],
+    '退单率': ['退单', '撤单'],
+    '投诉率': ['投诉'],
+}
+
+
+def _disambiguate_for_query(query: str, code: str, data: Dict, kpis: Dict) -> Optional[str]:
+    """Detect query-cache mismatch and return a clarifying note.
+
+    Returns short Chinese note (~50-80 chars) to prepend to answer, or
+    None if cache content actually addresses the query well.
+    """
+    if not query:
+        return None
+    q = query.lower()
+
+    # member_deep_analytics — common multi-query template (qhj-19/20/22/30)
+    if code == 'member_deep_analytics':
+        # User asks for Top N list
+        if any(p in q for p in _LIST_INTENT_PATTERNS):
+            top_recharge = data.get('top_recharge_members') if isinstance(data, dict) else None
+            if not top_recharge:
+                return (
+                    "针对你问的「Top N 持有者/排行」: "
+                    "当前会员数据无个体明细排序 (会员姓名/手机均已脱敏或无消费记录), "
+                    "以下是会员整体汇总."
+                )
+        # User asks for specific 赠品/赠送 metric
+        if '赠品' in q or '赠送' in q:
+            total_gift = (kpis or {}).get('total_gift') if isinstance(kpis, dict) else None
+            if total_gift is None or float(total_gift or 0) == 0:
+                return (
+                    "针对你问的「赠品损失」: 当前赠送金合计=0 元 (无赠品发放数据), "
+                    "若需评估滥发现象请补充赠品发放记录表."
+                )
+
+    # top_n_by_dim — when user query implies different scope than served dim
+    if code == 'top_n_by_dim':
+        primary_dim = data.get('primary_dim') if isinstance(data, dict) else None
+        # User asks specifically about 菜品 but dim is not 菜品-related
+        if any(k in q for k in ('卖得最好的菜', 'Top 10 菜', 'Top10菜')):
+            if primary_dim and not any(
+                k in primary_dim for k in ('菜', '商品', '产品', '单品')
+            ):
+                return (
+                    f"针对你问的「卖得最好的菜」: 当前数据按【{primary_dim}】聚合, "
+                    f"非菜品级明细. 若需具体菜名 Top N 请上传带菜品名称的销量明细."
+                )
+
+    return None
+
+
 def format_cached_as_sse(
     template_result: Dict,
     query: str,
@@ -1125,8 +1196,16 @@ def format_cached_as_sse(
         except Exception as e:
             logger.warning(f"[format_cached] N reslice failed for {code}: {e}")
 
+    # Phase 5 (UX): query-cache intent disambiguation. Prepend clarifying
+    # note when cache content doesn't directly address the user's specific
+    # query intent (multi-query reuse of same cache, granularity mismatch).
+    disambig = _disambiguate_for_query(query, code, data, kpis)
+
     # Build a rich answer that references the template + data
-    answer = f"## {title}\n\n{insight}\n\n"
+    answer = f"## {title}\n\n"
+    if disambig:
+        answer += f"> ℹ️ {disambig}\n\n"
+    answer += f"{insight}\n\n"
 
     # Role mismatch annotation: template materialized one role column at
     # upload time (preference 服务员 > 销售员 > 收银员), so a query for a
