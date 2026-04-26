@@ -44,13 +44,32 @@ async def save_materialization_results(
     Returns count written.
     """
     rows_to_write = [r for r in results if r.applies]
-    if not rows_to_write:
+    # Apr 26 2026: also collect codes that DIDN'T apply this time so we
+    # delete any stale rows from previous materializations. Without this,
+    # changing applies() (e.g. top_n_by_dim now returns False when total=0)
+    # leaves stale data serving wrong cache hits.
+    codes_to_remove = [r.code for r in results if not r.applies]
+
+    if not rows_to_write and not codes_to_remove:
         logger.info(f"[persistence] upload {upload_id}: no applicable results to save")
         return 0
 
     count = 0
     async with pool.acquire() as conn:
         async with conn.transaction():
+            # Phase 4 P1.d: clean up stale rows for templates that no longer
+            # apply (e.g. data signal changed since last materialize).
+            if codes_to_remove:
+                deleted = await conn.execute(
+                    """DELETE FROM smart_bi_pg_analysis_results
+                       WHERE upload_id = $1 AND template_code = ANY($2::text[])""",
+                    upload_id, codes_to_remove,
+                )
+                if deleted and deleted != 'DELETE 0':
+                    logger.info(
+                        f"[persistence] upload {upload_id}: pruned stale templates "
+                        f"({deleted}, codes={codes_to_remove})"
+                    )
             for r in rows_to_write:
                 fields = _result_to_row_fields(r)
                 # Upsert on (upload_id, template_code). analysis_type index matches.
