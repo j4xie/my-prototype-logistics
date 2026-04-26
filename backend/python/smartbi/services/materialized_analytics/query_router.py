@@ -120,10 +120,14 @@ _PATTERNS: List[Tuple[str, List[List[str]]]] = [
     # 余额分层/Top 充值 outputs. Promoted + extended keywords below.
     (
         "member_deep_analytics",
+        # group-1: member/card-level entities. "客户" added — combined with
+        # group-2 keywords like 召回/沉睡/流失 it's restrictive enough.
         [["会员卡", "会员数据", "会员等级", "卡余额", "储值会员", "会员充值",
-          "储值卡", "储值", "持有者", "持有", "赠品", "赠送金", "赠送"],
-         ["分布", "数据", "等级", "余额", "多少", "统计", "分析",
-          "总额", "Top", "哪类", "哪些", "召回", "持有", "大户"]],
+          "储值卡", "储值", "持有者", "持有", "赠品", "赠送金", "赠送", "客户"],
+         # group-2: include 多大 for "赠品损失多大"-type phrasing.
+         ["分布", "数据", "等级", "余额", "多少", "多大", "统计", "分析",
+          "总额", "Top", "哪类", "哪些", "召回", "持有", "大户",
+          "流失", "沉睡", "复购", "唤醒", "值得"]],
     ),
     # stored_value_card_consumption: now narrower — requires
     # transaction-level keywords (消费/流水/使用) instead of generic 多少
