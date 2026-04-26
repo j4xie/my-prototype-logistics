@@ -198,6 +198,33 @@ async def trigger_materialization(upload_id: int, request: Request) -> Dict[str,
     skipped = sum(1 for r in results if not r.applies and not r.error)
     errored = sum(1 for r in results if r.error)
 
+    # === Accuracy fix (Apr 25 2026): invalidate Agent narrative cache on new upload ===
+    # Without this, Week 5 Agent战略 insights would serve stale (up to 24h old)
+    # analysis based on the PREVIOUS upload's data. Since the customer just
+    # uploaded fresh data, any LLM-generated analytical narrative must be
+    # regenerated to reflect the new numbers.
+    narrative_invalidated = 0
+    try:
+        from smartbi.agent.narrative_cache import NarrativeCacheService
+        narrative_invalidated = await NarrativeCacheService(pool).invalidate_on_upload(user_factory)
+    except Exception as e:
+        # Don't fail the materialize if narrative_cache table isn't created yet
+        logger.warning(f"[materialize] narrative cache invalidation skipped: {e}")
+
+    # === Speed optimization: background warmup of Agent Insights ===
+    # Fire-and-forget async task to pre-populate the narrative_cache with
+    # analyses for the standard question set. Customer hitting Dashboard 30s
+    # later sees insights already warm (6ms cache hit) instead of 10-30s LLM call.
+    try:
+        import asyncio
+        from smartbi.services.analytics_warmup import warmup_factory_insights
+        asyncio.create_task(warmup_factory_insights(pool, user_factory, upload_id))
+    except ImportError:
+        # Module not yet present — accept 30s cold on first Dashboard access.
+        pass
+    except Exception as e:
+        logger.warning(f"[materialize] warmup task skip: {e}")
+
     return {
         "success": True,
         "upload_id": upload_id,
@@ -208,6 +235,7 @@ async def trigger_materialization(upload_id: int, request: Request) -> Dict[str,
         "skipped": skipped,
         "errored": errored,
         "saved": saved,
+        "narrative_invalidated": narrative_invalidated,
         "wall_ms": int((time.time() - t_start) * 1000),
     }
 
@@ -441,6 +469,24 @@ async def reclassify_upload(
 
         _spawn_bg(_warm_l2_aggregate_cache())
         remat_result["agg_cache_warm_scheduled"] = True
+
+    # 数据织网 A spec §3.2: invalidate capability cache so next /capability/{factory_id}
+    # call sees newly-detected canonical fields. This endpoint is the Java upload
+    # path's terminus (Java POST /reclassify/{id} after upload completes), so it
+    # complements the Python async path hook in excel_async.py.
+    # Fire-and-forget — failure falls back to 5min TTL expiry.
+    try:
+        from smartbi.capability.api import _get_calculator
+        _capability_calc = await _get_calculator()
+        _capability_calc.invalidate(user_factory)
+        logger.info(
+            f"[reclassify] upload {upload_id}: invalidated capability cache for factory={user_factory}"
+        )
+    except Exception:
+        logger.exception(
+            f"[reclassify] capability invalidate failed for upload={upload_id}; "
+            f"cache will naturally expire via 5min TTL"
+        )
 
     return {
         "success": True,
