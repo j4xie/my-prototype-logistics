@@ -13,6 +13,7 @@ import com.cretas.aims.repository.RawMaterialTypeRepository;
 import com.cretas.aims.repository.SupplierRepository;
 import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.repository.sales.OperationalQuoteRepository;
+import com.cretas.aims.service.sales.impl.OperationalQuoteServiceImpl;
 import com.cretas.aims.util.SqlLikeEscaper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -378,7 +379,7 @@ public class ReferenceDataController {
         String esc = keyword == null ? "" : keyword.trim();
         java.time.LocalDate today = java.time.LocalDate.now();
         List<OperationalQuote> filtered = result.getContent().stream()
-                .filter(q -> com.cretas.aims.service.sales.impl.OperationalQuoteServiceImpl.STATUS_APPROVED.equals(q.getStatus()))
+                .filter(q -> OperationalQuoteServiceImpl.STATUS_APPROVED.equals(q.getStatus()))
                 .filter(q -> q.getValidUntil() == null || !q.getValidUntil().isBefore(today))
                 .filter(q -> esc.isEmpty() || (q.getQuoteNo() != null && q.getQuoteNo().contains(esc)))
                 .collect(Collectors.toList());
