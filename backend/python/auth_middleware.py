@@ -36,6 +36,7 @@ PUBLIC_PATHS: Set[str] = {
     "/docs",
     "/redoc",
     "/openapi.json",
+    "/metrics",  # v4 E (Apr 26 2026): Prometheus scraper endpoint
 }
 
 # Path prefixes that do NOT require authentication
