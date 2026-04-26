@@ -2,6 +2,7 @@ package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.Customer;
+import com.cretas.aims.entity.MaterialBatch;
 import com.cretas.aims.entity.ProductType;
 import com.cretas.aims.entity.RawMaterialType;
 import com.cretas.aims.entity.Supplier;
@@ -10,6 +11,7 @@ import com.cretas.aims.entity.inventory.PurchaseOrder;
 import com.cretas.aims.entity.inventory.SalesOrder;
 import com.cretas.aims.entity.sales.OperationalQuote;
 import com.cretas.aims.repository.CustomerRepository;
+import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.ProductTypeRepository;
 import com.cretas.aims.repository.RawMaterialTypeRepository;
 import com.cretas.aims.repository.SupplierRepository;
@@ -70,6 +72,7 @@ public class ReferenceDataController {
     private final OperationalQuoteRepository quoteRepository;
     private final SalesOrderRepository salesOrderRepository;
     private final PurchaseOrderRepository purchaseOrderRepository;
+    private final MaterialBatchRepository materialBatchRepository;
 
     /** Salesperson-eligible roles (department name fallback also applied). */
     private static final Set<String> SALES_ROLES = Set.of(
@@ -480,6 +483,49 @@ public class ReferenceDataController {
                     m.put("id", po.getId());
                     m.put("poNumber", po.getOrderNumber());
                     m.put("supplierId", po.getSupplierId());
+                    return m;
+                })
+                .map(ApiResponse::success)
+                .orElseGet(() -> ApiResponse.success(null));
+    }
+
+    /** R13 (R12 audit Q6 fix): material batch dropdown for quality_inspection.batchId,
+     *  production_report.batchId, traceability.productBatchId. Replaces lossy /materials
+     *  fallback that V11 used (returned RawMaterialType, not MaterialBatch — wrong entity). */
+    @GetMapping("/batches")
+    @Operation(summary = "物料批次查找")
+    public ApiResponse<Map<String, Object>> findBatches(
+            @PathVariable String factoryId,
+            @RequestParam(required = false, defaultValue = "") String keyword,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        org.springframework.data.domain.PageRequest pageable = PageRequest.of(
+                Math.max(page - 1, 0), clampSize(size));
+        String esc = SqlLikeEscaper.escape(keyword);
+        Page<MaterialBatch> result = (esc == null || esc.isBlank())
+                ? materialBatchRepository.findByFactoryId(factoryId, pageable)
+                : materialBatchRepository.searchByKeyword(factoryId, esc, pageable);
+        List<Map<String, Object>> content = result.getContent().stream()
+                .map(b -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("id", b.getId());
+                    m.put("batchNumber", b.getBatchNumber());
+                    return m;
+                })
+                .collect(Collectors.toList());
+        return wrap(content, result.getTotalElements());
+    }
+
+    @GetMapping("/batches/{id}")
+    @Operation(summary = "按 ID 查单个物料批次")
+    public ApiResponse<Map<String, Object>> getBatch(@PathVariable String factoryId,
+                                                     @PathVariable String id) {
+        return materialBatchRepository.findById(id)
+                .filter(b -> factoryId.equals(b.getFactoryId()))
+                .map(b -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("id", b.getId());
+                    m.put("batchNumber", b.getBatchNumber());
                     return m;
                 })
                 .map(ApiResponse::success)
