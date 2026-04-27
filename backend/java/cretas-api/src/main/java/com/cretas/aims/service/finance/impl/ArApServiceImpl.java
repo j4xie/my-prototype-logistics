@@ -472,6 +472,109 @@ public class ArApServiceImpl implements ArApService {
         return PageResponse.of(result.getContent(), page, size, result.getTotalElements());
     }
 
+    /**
+     * R29 P1: filtered version. counterpartyType pushed to DB (typed @Query);
+     * amount + date filters applied in-Java post-fetch (avoids PG parameter-type-
+     * inference issue with `:p IS NULL` checks on dynamically-null params).
+     * Trade-off: amount/date filters require fetching full PENDING result first
+     * — acceptable since adjustment queues are typically small (tens to hundreds).
+     */
+    @Override
+    public PageResponse<ArApTransaction> getPendingAdjustments(
+            String factoryId, CounterpartyType counterpartyType,
+            BigDecimal minAmount, BigDecimal maxAmount,
+            java.time.LocalDate fromDate, java.time.LocalDate toDate,
+            int page, int size) {
+        boolean noFilters = counterpartyType == null && minAmount == null && maxAmount == null
+                && fromDate == null && toDate == null;
+        if (noFilters) return getPendingAdjustments(factoryId, page, size);
+
+        // Fetch wider result, then apply Java-level filters
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
+        PageRequest fullPage = PageRequest.of(0, 1000, sort); // upper bound; pending queues are bounded
+        Page<ArApTransaction> raw = counterpartyType != null
+                ? transactionRepository.findPendingAdjustmentsByType(factoryId, counterpartyType, fullPage)
+                : transactionRepository.findPendingAdjustments(factoryId, fullPage);
+
+        java.time.LocalDateTime fromDateTime = fromDate != null ? fromDate.atStartOfDay() : null;
+        java.time.LocalDateTime toDateTime = toDate != null ? toDate.plusDays(1).atStartOfDay() : null;
+        java.util.List<ArApTransaction> filtered = raw.getContent().stream()
+                .filter(t -> minAmount == null || t.getAmount() != null && t.getAmount().abs().compareTo(minAmount) >= 0)
+                .filter(t -> maxAmount == null || t.getAmount() != null && t.getAmount().abs().compareTo(maxAmount) <= 0)
+                .filter(t -> fromDateTime == null || t.getCreatedAt() != null && !t.getCreatedAt().isBefore(fromDateTime))
+                .filter(t -> toDateTime == null || t.getCreatedAt() != null && t.getCreatedAt().isBefore(toDateTime))
+                .collect(java.util.stream.Collectors.toList());
+
+        // In-memory paging
+        int total = filtered.size();
+        int from = Math.min((page - 1) * size, total);
+        int to = Math.min(from + size, total);
+        java.util.List<ArApTransaction> pageContent = filtered.subList(from, to);
+        return PageResponse.of(pageContent, page, size, (long) total);
+    }
+
+    /**
+     * R29 P2 batch approve. Per-id error capture — single failure doesn't abort
+     * the rest. Each approveAdjustment is its own @Transactional so failures are
+     * isolated.
+     */
+    @Override
+    public java.util.Map<String, Object> batchApproveAdjustments(
+            String factoryId, java.util.List<String> transactionIds, Long approvedBy) {
+        if (transactionIds == null || transactionIds.isEmpty()) {
+            throw new BusinessException("批量审批 ID 列表不能为空");
+        }
+        if (transactionIds.size() > 100) {
+            throw new BusinessException("批量审批一次不超过 100 条");
+        }
+        int approvedCount = 0;
+        java.util.List<java.util.Map<String, String>> failures = new java.util.ArrayList<>();
+        for (String id : transactionIds) {
+            try {
+                approveAdjustment(factoryId, id, approvedBy);
+                approvedCount++;
+            } catch (RuntimeException e) {
+                failures.add(java.util.Map.of("id", id, "reason", e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
+            }
+        }
+        java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("requested", transactionIds.size());
+        result.put("approvedCount", approvedCount);
+        result.put("failedCount", failures.size());
+        result.put("failures", failures);
+        return result;
+    }
+
+    /**
+     * R29 P2 batch reject. Same shape.
+     */
+    @Override
+    public java.util.Map<String, Object> batchRejectAdjustments(
+            String factoryId, java.util.List<String> transactionIds, Long approvedBy, String reason) {
+        if (transactionIds == null || transactionIds.isEmpty()) {
+            throw new BusinessException("批量驳回 ID 列表不能为空");
+        }
+        if (transactionIds.size() > 100) {
+            throw new BusinessException("批量驳回一次不超过 100 条");
+        }
+        int rejectedCount = 0;
+        java.util.List<java.util.Map<String, String>> failures = new java.util.ArrayList<>();
+        for (String id : transactionIds) {
+            try {
+                rejectAdjustment(factoryId, id, approvedBy, reason);
+                rejectedCount++;
+            } catch (RuntimeException e) {
+                failures.add(java.util.Map.of("id", id, "reason", e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
+            }
+        }
+        java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("requested", transactionIds.size());
+        result.put("rejectedCount", rejectedCount);
+        result.put("failedCount", failures.size());
+        result.put("failures", failures);
+        return result;
+    }
+
     @Override
     public Map<String, Object> getStatement(String factoryId, CounterpartyType counterpartyType,
                                              String counterpartyId,

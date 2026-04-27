@@ -38,6 +38,23 @@ public interface ArApTransactionRepository extends JpaRepository<ArApTransaction
             "ORDER BY t.createdAt DESC")
     Page<ArApTransaction> findPendingAdjustments(@Param("factoryId") String factoryId, Pageable pageable);
 
+    /**
+     * R29 P1 filtered: PENDING adjustments by counterpartyType.
+     * (Amount + date range filters applied in service layer to avoid PG
+     *  parameter-type-inference issue with `:p IS NULL` on dynamically-null params.)
+     */
+    @Query("SELECT t FROM ArApTransaction t WHERE t.factoryId = :factoryId " +
+            "AND t.approvalStatus = com.cretas.aims.entity.enums.ArApApprovalStatus.PENDING " +
+            "AND (t.transactionType = com.cretas.aims.entity.enums.ArApTransactionType.AR_ADJUSTMENT " +
+            "OR t.transactionType = com.cretas.aims.entity.enums.ArApTransactionType.AP_ADJUSTMENT) " +
+            "AND t.deletedAt IS NULL " +
+            "AND t.counterpartyType = :counterpartyType " +
+            "ORDER BY t.createdAt DESC")
+    Page<ArApTransaction> findPendingAdjustmentsByType(
+            @Param("factoryId") String factoryId,
+            @Param("counterpartyType") com.cretas.aims.entity.enums.CounterpartyType counterpartyType,
+            Pageable pageable);
+
     /** 查找某个交易对手的所有交易（用于对账单） */
     @Query("SELECT t FROM ArApTransaction t WHERE t.factoryId = :factoryId " +
             "AND t.counterpartyType = :type AND t.counterpartyId = :counterpartyId " +

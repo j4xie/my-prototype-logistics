@@ -188,16 +188,62 @@ public class ArApController {
      * AR_ADJUSTMENT + AP_ADJUSTMENT types where approval_status='PENDING'.
      * Read endpoint: accepts finance:read_write OR finance:read OR finance:approve_adjustment.
      * The approve_adjustment role needs read access to the queue to act on it.
+     *
+     * R29 P1: optional filters (counterpartyType / amount range / date range).
+     * All omitted = full PENDING list (matches R28 behavior).
      */
     @GetMapping("/adjustments/pending")
-    @Operation(summary = "待审批调整记录列表")
+    @Operation(summary = "待审批调整记录列表 (含筛选)")
     @RequirePermission({"finance:read_write", "finance:read", "finance:approve_adjustment"})
     public ApiResponse<PageResponse<ArApTransaction>> listPendingAdjustments(
             @PathVariable @NotBlank String factoryId,
+            @RequestParam(required = false) CounterpartyType counterpartyType,
+            @RequestParam(required = false) BigDecimal minAmount,
+            @RequestParam(required = false) BigDecimal maxAmount,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
-        PageResponse<ArApTransaction> result = arApService.getPendingAdjustments(factoryId, page, size);
+        PageResponse<ArApTransaction> result = arApService.getPendingAdjustments(
+                factoryId, counterpartyType, minAmount, maxAmount, fromDate, toDate, page, size);
         return ApiResponse.success("查询成功", result);
+    }
+
+    /**
+     * R29 P2: batch approve. Body shape: {ids: [String...]}. Returns
+     * {requested, approvedCount, failedCount, failures: [{id, reason}...]}.
+     * Per-id outcome — single failure (e.g., 4-eye violation) doesn't abort rest.
+     */
+    @RequirePermission("finance:approve_adjustment")
+    @PostMapping("/adjustments/batch-approve")
+    @Operation(summary = "批量审批调整 (最多 100 条)")
+    public ApiResponse<Map<String, Object>> batchApproveAdjustments(
+            @PathVariable @NotBlank String factoryId,
+            @RequestHeader("Authorization") String authorization,
+            @RequestBody Map<String, Object> body) {
+        Long approverId = extractUserId(authorization);
+        @SuppressWarnings("unchecked")
+        java.util.List<String> ids = (java.util.List<String>) body.get("ids");
+        Map<String, Object> result = arApService.batchApproveAdjustments(factoryId, ids, approverId);
+        return ApiResponse.success("批量审批完成", result);
+    }
+
+    /**
+     * R29 P2: batch reject. Body: {ids: [...], reason: "..."}.
+     */
+    @RequirePermission("finance:approve_adjustment")
+    @PostMapping("/adjustments/batch-reject")
+    @Operation(summary = "批量驳回调整 (最多 100 条)")
+    public ApiResponse<Map<String, Object>> batchRejectAdjustments(
+            @PathVariable @NotBlank String factoryId,
+            @RequestHeader("Authorization") String authorization,
+            @RequestBody Map<String, Object> body) {
+        Long approverId = extractUserId(authorization);
+        @SuppressWarnings("unchecked")
+        java.util.List<String> ids = (java.util.List<String>) body.get("ids");
+        String reason = body.get("reason") != null ? body.get("reason").toString() : null;
+        Map<String, Object> result = arApService.batchRejectAdjustments(factoryId, ids, approverId, reason);
+        return ApiResponse.success("批量驳回完成", result);
     }
 
     @GetMapping("/statement")

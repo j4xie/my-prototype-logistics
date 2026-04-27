@@ -76,6 +76,33 @@ public interface ArApService {
      */
     PageResponse<ArApTransaction> getPendingAdjustments(String factoryId, int page, int size);
 
+    /**
+     * R29 P1: list PENDING adjustments with filters. All filter params optional;
+     * null skips the corresponding clause. counterpartyType filters CUSTOMER vs
+     * SUPPLIER, amount range works on absolute amount, date range on createdAt.
+     */
+    PageResponse<ArApTransaction> getPendingAdjustments(
+            String factoryId, CounterpartyType counterpartyType,
+            BigDecimal minAmount, BigDecimal maxAmount,
+            LocalDate fromDate, LocalDate toDate,
+            int page, int size);
+
+    /**
+     * R29 P2 batch approve: process up to 100 PENDING adjustment ids, returning
+     * per-id outcome. Atomic at the row level (each id is its own @Transactional
+     * via approveAdjustment). 4-eyes still enforced — submitter ids are skipped
+     * with reason "审批人不能与提交人相同 (4 眼原则)".
+     */
+    java.util.Map<String, Object> batchApproveAdjustments(
+            String factoryId, java.util.List<String> transactionIds, Long approvedBy);
+
+    /**
+     * R29 P2 batch reject: same shape as batch approve. Reason applies to all.
+     */
+    java.util.Map<String, Object> batchRejectAdjustments(
+            String factoryId, java.util.List<String> transactionIds,
+            Long approvedBy, String reason);
+
     /** 对账单：指定期间的交易明细 + 期初/期末余额 */
     Map<String, Object> getStatement(String factoryId, CounterpartyType counterpartyType,
                                       String counterpartyId,
