@@ -315,7 +315,7 @@ async def test_put_rejects_diff_threshold_out_of_range():
             body=body,
         )
     assert exc.value.status_code == 400
-    assert "diffThreshold" in exc.value.detail
+    assert "差异阈值" in exc.value.detail
 
 
 @pytest.mark.asyncio
@@ -405,7 +405,7 @@ async def test_get_rejects_non_admin_role():
             factory_id=_TENANT,
         )
     assert exc.value.status_code == 403
-    assert "admin" in exc.value.detail.lower()
+    assert "管理员" in exc.value.detail
 
 
 @pytest.mark.asyncio

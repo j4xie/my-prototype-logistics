@@ -149,7 +149,8 @@ async def top_products(
                           OR fp_inner.field_name LIKE 'revenue@store\\_%' ESCAPE '\\')
                      AND fp_inner.superseded_by_id IS NULL
                    ORDER BY fp_inner.confidence DESC,
-                            fp_inner.valid_from DESC
+                            fp_inner.valid_from DESC,
+                            fp_inner.id DESC
                    LIMIT 1
               ) fp ON TRUE
              WHERE a.factory_id = $1

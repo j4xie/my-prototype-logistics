@@ -43,6 +43,8 @@ interface AuditRow {
 interface AuditResponse {
   current: AuditRow | null;
   history: AuditRow[];
+  truncated?: boolean;
+  historyLimit?: number;
   key: { factoryId: string; entityType: string; entityId: string; field: string };
 }
 
@@ -244,6 +246,9 @@ function goBack(): void {
           <div class="history-hdr">
             <strong>历史记录</strong>
             <span class="history-count">{{ data.history.length }} 条</span>
+            <el-tag v-if="data.truncated" size="small" type="warning" class="history-truncated">
+              仅显示最近 {{ data.historyLimit }} 条 — 完整历史请联系运维
+            </el-tag>
           </div>
         </template>
         <el-table
@@ -331,6 +336,10 @@ function goBack(): void {
 .history-count {
   color: var(--el-text-color-secondary);
   font-size: 12px;
+}
+
+.history-truncated {
+  margin-left: 8px;
 }
 
 .conf-tag {

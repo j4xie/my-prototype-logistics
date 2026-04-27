@@ -83,15 +83,12 @@ def _require_admin(request: Request) -> str:
         return factory_id or ""
 
     if role is None:
-        raise HTTPException(status_code=401, detail="Authentication required")
+        raise HTTPException(status_code=401, detail="未登录或会话已过期")
 
     if role not in _ADMIN_ROLES:
         raise HTTPException(
             status_code=403,
-            detail=(
-                "Provenance config requires admin role; "
-                f"current role={role!r} is not permitted"
-            ),
+            detail=f"Provenance 配置需要管理员权限 (当前角色 {role!r} 无权访问)",
         )
 
     return factory_id or ""
@@ -249,17 +246,14 @@ async def get_factory_provenance_config(
     if jwt_factory and factory_id != jwt_factory:
         raise HTTPException(
             status_code=403,
-            detail=(
-                f"factory_id query param {factory_id!r} doesn't match "
-                f"JWT tenant {jwt_factory!r}"
-            ),
+            detail=f"factory_id 参数 {factory_id!r} 与登录工厂 {jwt_factory!r} 不一致",
         )
 
     pool = await get_pg_pool()
     if pool is None:
         raise HTTPException(
             status_code=503,
-            detail="Postgres unavailable — cannot read factory_provenance_config",
+            detail="数据库不可用，无法读取 Provenance 配置",
         )
 
     try:
@@ -277,7 +271,7 @@ async def get_factory_provenance_config(
         raise
     except Exception as e:
         logger.exception("get_factory_provenance_config failed: %s", e)
-        raise HTTPException(status_code=500, detail=f"Config query failed: {e}")
+        raise HTTPException(status_code=500, detail=f"配置查询失败: {e}")
 
     if row is None:
         # No row → globals only. diff_threshold defaults to 0.30 (matches the
@@ -327,9 +321,8 @@ def _validate_body(body: ProvenanceConfigBody) -> None:
         raise HTTPException(
             status_code=400,
             detail=(
-                f"diffThreshold must be in "
-                f"[{_DIFF_THRESHOLD_MIN}, {_DIFF_THRESHOLD_MAX}]; "
-                f"got {body.diffThreshold}"
+                f"差异阈值必须在 [{_DIFF_THRESHOLD_MIN}, {_DIFF_THRESHOLD_MAX}] 之间，"
+                f"收到 {body.diffThreshold}"
             ),
         )
 
@@ -339,8 +332,8 @@ def _validate_body(body: ProvenanceConfigBody) -> None:
             raise HTTPException(
                 status_code=400,
                 detail=(
-                    f"Unknown source_type {st!r} in sourcePriorities; "
-                    f"expected one of {sorted(canonical_source_types)}"
+                    f"未知数据来源 {st!r}，仅支持以下 6 种: "
+                    f"{sorted(canonical_source_types)}"
                 ),
             )
         try:
@@ -348,14 +341,14 @@ def _validate_body(body: ProvenanceConfigBody) -> None:
         except (TypeError, ValueError):
             raise HTTPException(
                 status_code=400,
-                detail=f"sourcePriorities[{st!r}] must be an integer; got {prio!r}",
+                detail=f"来源 {st!r} 的优先级必须是整数，收到 {prio!r}",
             )
         if not (_PRIORITY_MIN <= p <= _PRIORITY_MAX):
             raise HTTPException(
                 status_code=400,
                 detail=(
-                    f"sourcePriorities[{st!r}] must be in "
-                    f"[{_PRIORITY_MIN}, {_PRIORITY_MAX}]; got {p}"
+                    f"来源 {st!r} 的优先级必须在 "
+                    f"[{_PRIORITY_MIN}, {_PRIORITY_MAX}] 之间，收到 {p}"
                 ),
             )
 
@@ -367,8 +360,7 @@ def _validate_body(body: ProvenanceConfigBody) -> None:
             raise HTTPException(
                 status_code=400,
                 detail=(
-                    f"Unknown industry category {cat!r}; expected one of "
-                    f"the {len(valid_categories)} known categories"
+                    f"未知品类 {cat!r}，仅支持系统已配置的 {len(valid_categories)} 个品类"
                 ),
             )
         try:
@@ -376,14 +368,14 @@ def _validate_body(body: ProvenanceConfigBody) -> None:
         except (TypeError, ValueError):
             raise HTTPException(
                 status_code=400,
-                detail=f"industryDefaults[{cat!r}] must be numeric; got {rate!r}",
+                detail=f"品类 {cat!r} 的成本率必须是数字，收到 {rate!r}",
             )
         if not (_COST_RATE_MIN <= r <= _COST_RATE_MAX):
             raise HTTPException(
                 status_code=400,
                 detail=(
-                    f"industryDefaults[{cat!r}] must be in "
-                    f"[{_COST_RATE_MIN}, {_COST_RATE_MAX}]; got {r}"
+                    f"品类 {cat!r} 的成本率必须在 "
+                    f"[{_COST_RATE_MIN}, {_COST_RATE_MAX}] 之间，收到 {r}"
                 ),
             )
 
@@ -409,10 +401,7 @@ async def put_factory_provenance_config(
     if jwt_factory and body.factoryId != jwt_factory:
         raise HTTPException(
             status_code=403,
-            detail=(
-                f"body.factoryId {body.factoryId!r} doesn't match JWT "
-                f"tenant {jwt_factory!r}"
-            ),
+            detail=f"请求体中的 factoryId {body.factoryId!r} 与登录工厂 {jwt_factory!r} 不一致",
         )
 
     _validate_body(body)
@@ -448,7 +437,7 @@ async def put_factory_provenance_config(
     if pool is None:
         raise HTTPException(
             status_code=503,
-            detail="Postgres unavailable — cannot save factory_provenance_config",
+            detail="数据库不可用，无法保存 Provenance 配置",
         )
 
     try:
@@ -478,7 +467,7 @@ async def put_factory_provenance_config(
         raise
     except Exception as e:
         logger.exception("put_factory_provenance_config UPSERT failed: %s", e)
-        raise HTTPException(status_code=500, detail=f"Config save failed: {e}")
+        raise HTTPException(status_code=500, detail=f"配置保存失败: {e}")
 
     # CRITICAL: drop the cached config so conflict_resolver picks up the new
     # priorities/threshold immediately. Without this, factory admins wait up

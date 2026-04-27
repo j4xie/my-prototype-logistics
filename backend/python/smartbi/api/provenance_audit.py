@@ -66,15 +66,12 @@ def _require_admin(request: Request) -> str:
         return factory_id or ""
 
     if role is None:
-        raise HTTPException(status_code=401, detail="Authentication required")
+        raise HTTPException(status_code=401, detail="未登录或会话已过期")
 
     if role not in _ADMIN_ROLES:
         raise HTTPException(
             status_code=403,
-            detail=(
-                "Cell-level audit requires admin role; "
-                f"current role={role!r} is not permitted"
-            ),
+            detail=f"字段血统审计需要管理员权限 (当前角色 {role!r} 无权访问)",
         )
 
     return factory_id or ""
@@ -90,12 +87,20 @@ def _parse_entity_id(raw: str) -> int:
     except (TypeError, ValueError):
         raise HTTPException(
             status_code=400,
-            detail=f"entity_id must be a positive integer, got {raw!r}",
+            detail=f"entity_id 必须是正整数，收到 {raw!r}",
         )
     if v <= 0:
         raise HTTPException(
             status_code=400,
-            detail=f"entity_id must be a positive integer, got {v}",
+            detail=f"entity_id 必须是正整数，收到 {v}",
+        )
+    # P2-12 (post-D27 review): PostgreSQL BIGINT 上限是 2^63-1。超过这个值
+    # asyncpg cast 会抛 numeric value out of range，被 except Exception 捕获
+    # 后变成 500 — 应该在边界明确拒绝并返 400。
+    if v > 9_223_372_036_854_775_807:
+        raise HTTPException(
+            status_code=400,
+            detail=f"entity_id 超出 BIGINT 范围 (最大 9223372036854775807)",
         )
     return v
 
@@ -199,13 +204,16 @@ async def get_cell_audit(
     if jwt_factory and factory_id != jwt_factory:
         raise HTTPException(
             status_code=403,
-            detail=(
-                f"factory_id query param {factory_id!r} doesn't match JWT tenant {jwt_factory!r}"
-            ),
+            detail=f"factory_id 参数 {factory_id!r} 与登录工厂 {jwt_factory!r} 不一致",
         )
 
     eid = _parse_entity_id(entity_id)
 
+    # P1-1 (post-D27 review): cap history to avoid DoS via pathological cell
+    # with thousands of rewrites. Fetch HISTORY_LIMIT+1 to detect overflow;
+    # if we got the extra row, drop it and surface ``truncated: true`` so the
+    # FE can prompt admins to contact ops for the full chain.
+    HISTORY_LIMIT = 500
     pool = await get_pg_pool()
     try:
         async with pool.acquire() as conn:
@@ -236,15 +244,19 @@ async def get_cell_audit(
                    AND fp.field_name = $4
                  ORDER BY fp.valid_from DESC NULLS LAST,
                           fp.created_at DESC
+                 LIMIT $5
                 """,
-                factory_id, entity_type, eid, field,
+                factory_id, entity_type, eid, field, HISTORY_LIMIT + 1,
             )
     except HTTPException:
         raise
     except Exception as e:
         logger.exception("provenance audit failed: %s", e)
-        raise HTTPException(status_code=500, detail=f"Audit query failed: {e}")
+        raise HTTPException(status_code=500, detail=f"审计查询失败: {e}")
 
+    truncated = len(rows) > HISTORY_LIMIT
+    if truncated:
+        rows = rows[:HISTORY_LIMIT]
     history: List[Dict[str, Any]] = [_row_to_audit(r) for r in rows]
 
     # Identify current (active) rows. There SHOULD be at most one for a
@@ -262,6 +274,8 @@ async def get_cell_audit(
     return {
         "current": current,
         "history": history,
+        "truncated": truncated,
+        "history_limit": HISTORY_LIMIT,
         "key": {
             "factory_id": factory_id,
             "entity_type": entity_type,

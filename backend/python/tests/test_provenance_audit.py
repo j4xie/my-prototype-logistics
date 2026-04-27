@@ -402,7 +402,7 @@ async def test_audit_rejects_non_admin_role():
             field="revenue",
         )
     assert exc.value.status_code == 403
-    assert "admin" in exc.value.detail.lower()
+    assert "管理员" in exc.value.detail
 
 
 @pytest.mark.asyncio
