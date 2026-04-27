@@ -18,6 +18,10 @@ import time
 from datetime import date
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
+from smartbi.canonical.provenance._lock import (
+    C_FIELD_LOCK_NAMESPACE,
+    field_lock_key,
+)
 from smartbi.canonical.provenance.types import ProvenanceValue
 from smartbi.canonical.provenance.writer import (
     read_authoritative_value,
@@ -285,20 +289,45 @@ async def resolve_conflict(
     Returns: ``{"action": "written" | "queued" | "no_change", "id": int | None,
     "reason": str}``.
 
-    Caller MUST be inside ``conn.transaction()`` — ``write_provenance`` grabs an
-    advisory lock on the cell key before INSERT, which only holds inside a tx.
+    Caller MUST be inside ``conn.transaction()`` — this function acquires
+    ``pg_advisory_xact_lock(99, field_lock_key(...))`` at entry to serialize
+    concurrent writers on the same cell across the read-decide-write window.
+    The lock is xact-scoped so it's released automatically on COMMIT/ROLLBACK
+    of the caller's transaction. Calling outside a transaction silently
+    no-ops the lock, which would defeat the whole point of the C2 fix.
+
+    Concurrency (Day 13+ C2 fix): without this entry-level lock, two writers
+    racing on the same ``(factory, entity_type, entity_id, field_name)`` cell
+    would both observe ``current=None`` (or both fetch the same prior_id),
+    both decide to INSERT, and one would silently lose to a swallowed
+    ``UniqueViolationError`` on ``uq_fp_dedup``. The lock makes the read-
+    decide-write sequence atomic per cell. ``write_provenance``'s inner lock
+    is reentrant (same session, same key) so it's a harmless no-op.
 
     Per spec §3.2 + §3.3:
-      1. Read factory config (cached) → diff_threshold, priority_overrides
-      2. Read current authoritative value via ``read_authoritative_value``
-      3. If no current: write directly
-      4. If current value == new value: ``no_change``
-      5. Compute new_priority + current_priority
-      6. If new_priority < current_priority: write + supersede current
-      7. Else (>= same priority):
+      1. Acquire field-conflict advisory lock (NEW: C2 fix)
+      2. Read factory config (cached) → diff_threshold, priority_overrides
+      3. Read current authoritative value via ``read_authoritative_value``
+      4. If no current: write directly
+      5. If current value == new value: ``no_change``
+      6. Compute new_priority + current_priority
+      7. If new_priority < current_priority: write + supersede current
+      8. Else (>= same priority):
          - significant diff → enqueue, no write
-         - non-significant diff → write (low priority but newer info)
+         - non-significant diff → no_change (avoid uq_fp_dedup churn)
     """
+    # C2 (Day 13+): take the field-conflict advisory lock BEFORE any read so
+    # the entire read-decide-write sequence is atomic per cell. Namespace=99
+    # mirrors writer.write_provenance — PG advisory locks are reentrant per
+    # (session, namespace, key) so the inner lock there is a no-op once we
+    # hold this outer one in the same transaction.
+    lock_key = field_lock_key(factory_id, entity_type, entity_id, field_name)
+    await conn.execute(
+        "SELECT pg_advisory_xact_lock($1::int, $2::int)",
+        C_FIELD_LOCK_NAMESPACE,
+        lock_key,
+    )
+
     factory_config = await _get_factory_config(conn, factory_id)
     diff_threshold = factory_config["diff_threshold"]
     new_priority = _compute_priority(source_type, factory_config)
@@ -392,7 +421,16 @@ async def resolve_conflict(
             )
         return {"action": "written", "id": new_id, "reason": "higher_priority"}
 
-    # Same-or-lower priority: only write if the change isn't "significant".
+    # I6 (Day 13+): split the previously-overloaded "minor_diff_same_or_lower_
+    # priority" branch into three explicit reasons so audit/debug can tell
+    # "rejected because lower priority" from "kept because diff was tiny".
+    #
+    # Strictly lower priority (new_priority > current_priority): the new
+    # value loses on rank alone — no need to inspect diff magnitude.
+    if new_priority > current_priority:
+        return {"action": "no_change", "id": None, "reason": "lower_priority"}
+
+    # Same priority: defer to the diff-significance test.
     if _is_significant_diff(current.field_value, new_value, field_type, diff_threshold):
         await _enqueue_field_conflict(
             conn,
@@ -411,10 +449,10 @@ async def resolve_conflict(
         return {
             "action": "queued",
             "id": None,
-            "reason": "significant_diff_same_or_lower_priority",
+            "reason": "significant_diff_same_priority",
         }
 
-    # Same-or-lower priority + minor diff: existing value already covers it.
+    # Same priority + minor diff: existing value already covers it.
     # We can't INSERT a new row at the same dedup key (factory, entity_type,
     # entity_id, field_name, valid_from) without superseding — and superseding
     # for a tiny float drift would churn history. Spec §3.3 doesn't mandate a
@@ -422,5 +460,5 @@ async def resolve_conflict(
     return {
         "action": "no_change",
         "id": None,
-        "reason": "minor_diff_same_or_lower_priority",
+        "reason": "minor_diff_same_priority",
     }

@@ -154,6 +154,36 @@ def sample_line_data():
     ]
 
 
+# ── Provenance env-flag cache ──────────────────────────────────
+@pytest.fixture(autouse=True)
+def _reset_provenance_env_cache():
+    """Clear ``SMARTBI_ENABLE_PROVENANCE`` cache before AND after each test.
+
+    :func:`smartbi.canonical.provenance._writer_hook.is_provenance_enabled` is
+    ``@functools.cache``-wrapped (I4 fix) so the first call's value sticks
+    for the lifetime of the process. That collides with ``monkeypatch.setenv``
+    in tests: a test that flips the env to "1" leaves the cache stuck at
+    True for every later test that calls :func:`is_provenance_enabled`,
+    which surprises tests asserting the hook is NOT called when the env is
+    unset.
+
+    Importing the helper is wrapped in ``try/except ImportError`` so this
+    fixture is harmless for any test environment that doesn't have the
+    canonical provenance module installed (e.g. lightweight tests that
+    don't touch the smartbi package).
+    """
+    try:
+        from smartbi.canonical.provenance._writer_hook import (
+            invalidate_provenance_flag_cache,
+        )
+    except ImportError:
+        yield
+        return
+    invalidate_provenance_flag_cache()
+    yield
+    invalidate_provenance_flag_cache()
+
+
 @pytest.fixture
 def sample_profit_data():
     """Sample profit data for insight generation."""

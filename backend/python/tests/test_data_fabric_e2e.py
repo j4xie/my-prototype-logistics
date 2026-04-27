@@ -105,7 +105,15 @@ async def clean_tenant(pg_pool: "asyncpg.Pool") -> AsyncIterator[None]:
     """
 
     async def _clean() -> None:
+        # I1 (Day 13+): order matters. ``field_provenance`` has
+        # ``source_upload_id REFERENCES smart_bi_pg_excel_uploads(id) ON DELETE
+        # RESTRICT``, so the provenance rows must be deleted BEFORE the upload
+        # rows or the FK blocks the upload-table cleanup. ``smart_bi_pg_excel_
+        # uploads`` itself contains a sentinel row (id=0, factory_id='_SYSTEM_')
+        # that must not be deleted — guarded below by an explicit ``id <> 0``.
         tables = (
+            "field_provenance",  # C — must precede smart_bi_pg_excel_uploads (FK RESTRICT)
+            "factory_provenance_config",  # C
             "agg_product_period",
             "fact_review_event",
             "dim_review_summary",
@@ -116,16 +124,26 @@ async def clean_tenant(pg_pool: "asyncpg.Pool") -> AsyncIterator[None]:
             "dim_product",
             "dim_store",
             "smart_bi_dynamic_data",
+            "smart_bi_pg_excel_uploads",  # last, with sentinel guard
         )
         async with pg_pool.acquire() as conn:
             async with conn.transaction():
                 await _set_tenant(conn, TEST_FACTORY)
                 for tbl in tables:
                     try:
-                        await conn.execute(
-                            f"DELETE FROM {tbl} WHERE factory_id = $1",
-                            TEST_FACTORY,
-                        )
+                        if tbl == "smart_bi_pg_excel_uploads":
+                            # Skip the sentinel id=0 row that V20260430_01
+                            # reserves for non-upload provenance sources.
+                            await conn.execute(
+                                f"DELETE FROM {tbl} "
+                                "WHERE factory_id = $1 AND id <> 0",
+                                TEST_FACTORY,
+                            )
+                        else:
+                            await conn.execute(
+                                f"DELETE FROM {tbl} WHERE factory_id = $1",
+                                TEST_FACTORY,
+                            )
                     except Exception:  # noqa: BLE001
                         # Table may not have factory_id column or may not exist
                         # in this environment; best-effort cleanup.
@@ -1531,3 +1549,119 @@ async def test_resolve_conflict_e2e_30_diff_enqueues(
                 except json.JSONDecodeError:
                     pass
             assert float(fv) == 60.0
+
+
+@pytest.mark.integration
+async def test_resolve_conflict_serializes_concurrent_same_cell_writes(
+    pg_pool: "asyncpg.Pool", clean_tenant: None
+) -> None:
+    """Day 13+ C2 verification: 5 parallel writers on the SAME cell serialize.
+
+    Without the entry-level ``pg_advisory_xact_lock(99, key)`` in
+    ``resolve_conflict``, two writers racing on the same
+    ``(factory, entity_type, entity_id, field_name)`` could both observe
+    "no prior" and both INSERT, with the second swallowing
+    ``UniqueViolationError`` on ``uq_fp_dedup``. Hidden data loss.
+
+    Five ``asyncio.gather`` tasks call ``resolve_conflict`` for the same
+    (product, "cost_per_unit", valid_from) with the SAME value. Expected:
+      - exactly 1 ``written`` (the first to acquire the lock)
+      - 4 ``no_change`` with reason='value_unchanged' (the rest see the
+        first task's freshly-inserted row)
+      - 0 silent drops (no exception leaks, no UniqueViolation in logs)
+      - exactly 1 active row in ``field_provenance`` for the cell
+
+    Setup note: ``dim_product`` must be seeded with a COMMITTED INSERT
+    BEFORE the gather starts, because each gathered task acquires its own
+    pool connection — uncommitted seed data wouldn't be visible cross-conn.
+    Cleanup is handled by the ``clean_tenant`` fixture (which now covers
+    ``field_provenance`` per I1) so we don't pollute the test factory.
+    """
+    import asyncio
+    from datetime import date
+
+    from smartbi.canonical.provenance import (
+        invalidate_factory_config_cache,
+        resolve_conflict,
+    )
+
+    invalidate_factory_config_cache()
+
+    # Seed dim_product OUTSIDE a transaction so the row is visible to the
+    # gathered worker connections. clean_tenant fixture already covers
+    # dim_product so post-test cleanup nukes it.
+    async with pg_pool.acquire() as setup_conn:
+        async with setup_conn.transaction():
+            await _set_tenant(setup_conn, TEST_FACTORY)
+            product_id = await _seed_dim_product(
+                setup_conn,
+                TEST_FACTORY,
+                "ConcurrencyTestDish",
+                "ConcurrencyTestDish",
+            )
+
+    async def _one_write() -> Dict[str, Any]:
+        async with pg_pool.acquire() as conn:
+            async with conn.transaction():
+                await _set_tenant(conn, TEST_FACTORY)
+                return await resolve_conflict(
+                    conn,
+                    factory_id=TEST_FACTORY,
+                    entity_type="product",
+                    entity_id=product_id,
+                    field_name="cost_per_unit",
+                    new_value=12.50,  # SAME value across all 5 callers
+                    confidence=0.9,
+                    source_type="manual",
+                    mapper_method="manual",
+                    valid_from=date(2026, 1, 1),
+                )
+
+    results = await asyncio.gather(
+        *[_one_write() for _ in range(5)], return_exceptions=True
+    )
+
+    # 1. No exceptions leaked from any worker.
+    leaked = [r for r in results if isinstance(r, Exception)]
+    assert not leaked, f"workers raised: {leaked}"
+
+    actions = [r["action"] for r in results]
+    written_count = sum(1 for a in actions if a == "written")
+    no_change_count = sum(1 for a in actions if a == "no_change")
+
+    # 2. Exactly 1 'written' (the first to acquire the lock); the other 4
+    # see the freshly-inserted row and return 'no_change' with
+    # reason='value_unchanged' because the value matches.
+    assert written_count == 1, (
+        f"expected exactly 1 'written', got {written_count}: {results}"
+    )
+    assert no_change_count == 4, (
+        f"expected 4 'no_change', got {no_change_count}: {results}"
+    )
+    no_change_reasons = [
+        r["reason"] for r in results if r["action"] == "no_change"
+    ]
+    assert all(reason == "value_unchanged" for reason in no_change_reasons), (
+        f"all no_change reasons should be 'value_unchanged', got "
+        f"{no_change_reasons}"
+    )
+
+    # 3. Exactly 1 active row in field_provenance for this cell.
+    async with pg_pool.acquire() as conn:
+        async with conn.transaction():
+            await _set_tenant(conn, TEST_FACTORY)
+            row_count = await conn.fetchval(
+                """
+                SELECT COUNT(*) FROM field_provenance
+                 WHERE factory_id = $1
+                   AND entity_type = 'product'
+                   AND entity_id = $2
+                   AND field_name = 'cost_per_unit'
+                   AND superseded_by_id IS NULL
+                """,
+                TEST_FACTORY,
+                product_id,
+            )
+            assert row_count == 1, (
+                f"expected exactly 1 active provenance row, found {row_count}"
+            )

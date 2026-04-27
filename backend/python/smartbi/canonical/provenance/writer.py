@@ -1,12 +1,15 @@
 """Provenance writer — INSERT field_provenance rows with sentinel + dedup."""
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 from datetime import date
 from typing import TYPE_CHECKING, Any, List, Optional
 
+from smartbi.canonical.provenance._lock import (
+    C_FIELD_LOCK_NAMESPACE as _C_FIELD_LOCK_NAMESPACE,
+    field_lock_key as _field_lock_key,
+)
 from smartbi.canonical.provenance.types import ProvenanceValue
 
 if TYPE_CHECKING:
@@ -20,24 +23,6 @@ logger = logging.getLogger(__name__)
 _SENTINEL_UPLOAD_ID = 0
 
 _VALID_MAPPER_METHODS = ("manual", "rule", "embedding", "llm")
-
-# Namespace=99 reserved for C field-conflict advisory locks. B uses the 1-arg
-# form per-factory (concurrency.py), so the 2-arg form with namespace 99
-# can't collide with B even if hash keys happen to match.
-_C_FIELD_LOCK_NAMESPACE = 99
-
-
-def _field_lock_key(
-    factory_id: str, entity_type: str, entity_id: int, field_name: str
-) -> int:
-    """Stable int4 hash for pg_advisory_xact_lock (signed 32-bit range).
-
-    Uses md5 (not Python's builtin hash) so it's stable across processes and
-    immune to PYTHONHASHSEED randomization. Mirrors B's _factory_lock_key
-    pattern in smartbi.canonical.concurrency.
-    """
-    payload = f"{factory_id}|{entity_type}|{entity_id}|{field_name}".encode("utf-8")
-    return int(hashlib.md5(payload).hexdigest()[:8], 16) % (2**31)
 
 
 async def write_provenance(

@@ -207,6 +207,71 @@ def test_is_significant_diff_string_any_change_significant():
     assert cr._is_significant_diff("墨鱼圈", "墨鱼圈", "string", 0.30) is False
 
 
+# ── resolve_conflict: C2 advisory lock ────────────────────────────────
+
+
+async def test_resolve_conflict_acquires_advisory_lock_before_read():
+    """C2 fix: pg_advisory_xact_lock(99, key) is taken BEFORE the read.
+
+    Without this, two writers racing on the same cell can both read
+    "no prior value", both write, and one gets a swallowed UniqueViolation.
+    The lock at function entry serializes the entire read-decide-write
+    window. We verify the lock SQL and namespace=99 and that it lands
+    BEFORE read_authoritative_value is called.
+    """
+    from smartbi.canonical.provenance._lock import (
+        C_FIELD_LOCK_NAMESPACE,
+        field_lock_key,
+    )
+
+    conn = _make_conn()
+    conn.fetchrow = AsyncMock(return_value=None)  # no factory cfg, no prior
+
+    call_order = []
+    original_execute = conn.execute
+
+    async def _record_execute(*args, **kwargs):
+        call_order.append(("execute", args[0] if args else None))
+        return await original_execute(*args, **kwargs)
+
+    conn.execute = AsyncMock(side_effect=_record_execute)
+
+    async def _fake_read(*_args, **_kwargs):
+        call_order.append(("read_authoritative_value", None))
+        return None
+
+    with patch.object(cr, "read_authoritative_value", new=_fake_read), patch.object(
+        cr, "write_provenance", new=AsyncMock(return_value=42)
+    ):
+        await resolve_conflict(
+            conn,
+            factory_id="F001",
+            entity_type="product",
+            entity_id=7,
+            field_name="cost_per_unit",
+            new_value=12.5,
+            confidence=0.95,
+            source_type="manual",
+            mapper_method="manual",
+        )
+
+    # First conn.execute call must be the advisory lock with namespace=99
+    # and key matching field_lock_key for the cell.
+    assert call_order[0][0] == "execute"
+    first_sql = call_order[0][1]
+    assert "pg_advisory_xact_lock" in (first_sql or "")
+    # The advisory lock execute call: SQL is positional, args are positional too.
+    first_call = conn.execute.await_args_list[0]
+    expected_key = field_lock_key("F001", "product", 7, "cost_per_unit")
+    assert first_call.args[1] == C_FIELD_LOCK_NAMESPACE
+    assert first_call.args[2] == expected_key
+    # Lock must precede read_authoritative_value.
+    read_idx = next(
+        i for i, (kind, _) in enumerate(call_order) if kind == "read_authoritative_value"
+    )
+    assert read_idx > 0, "advisory lock must execute before authoritative read"
+
+
 # ── resolve_conflict: behavior ────────────────────────────────────────
 
 
@@ -301,8 +366,9 @@ async def test_resolve_conflict_higher_priority_supersedes():
     assert out["id"] == 42
     assert out["reason"] == "higher_priority"
     wp.assert_awaited_once()
-    # Two UPDATE calls: 1) supersede prior to self-id, 2) re-point to new id
-    assert conn.execute.await_count == 2
+    # conn.execute calls: 1) C2 advisory_xact_lock at entry,
+    # 2) supersede prior to self-id, 3) re-point superseded_by_id to new id.
+    assert conn.execute.await_count == 3
 
 
 async def test_resolve_conflict_significant_diff_same_priority_queues():
@@ -335,11 +401,12 @@ async def test_resolve_conflict_significant_diff_same_priority_queues():
 
     assert out["action"] == "queued"
     assert out["id"] is None
-    assert out["reason"] == "significant_diff_same_or_lower_priority"
+    assert out["reason"] == "significant_diff_same_priority"
     wp.assert_not_awaited()
-    # _enqueue_field_conflict ran exactly one INSERT
-    assert conn.execute.await_count == 1
-    sql = conn.execute.await_args.args[0]
+    # conn.execute calls: 1 advisory_xact_lock (C2) + 1 enqueue INSERT.
+    assert conn.execute.await_count == 2
+    insert_call = conn.execute.await_args  # last call = enqueue INSERT
+    sql = insert_call.args[0]
     assert "entity_resolution_admin_queue" in sql
     assert "field_conflict" in sql
 
@@ -373,7 +440,7 @@ async def test_resolve_conflict_minor_diff_same_priority_no_change():
         )
 
     assert out["action"] == "no_change"
-    assert out["reason"] == "minor_diff_same_or_lower_priority"
+    assert out["reason"] == "minor_diff_same_priority"
     wp.assert_not_awaited()
 
 
@@ -441,8 +508,12 @@ async def test_resolve_conflict_zero_to_nonzero_significant():
     wp.assert_not_awaited()
 
 
-async def test_resolve_conflict_lower_priority_not_significant_no_change():
-    """new=industry_default (6), current=manual (1), small diff → no_change."""
+async def test_resolve_conflict_lower_priority_no_change():
+    """new=industry_default (6), current=manual (1) → no_change with reason='lower_priority'.
+
+    I6 split: strictly lower priority bypasses the diff-significance test
+    entirely. The new value loses on rank; diff magnitude is irrelevant.
+    """
     conn = _make_conn()
 
     async def _fake_read(*_args, **_kwargs):
@@ -463,14 +534,54 @@ async def test_resolve_conflict_lower_priority_not_significant_no_change():
             entity_type="product",
             entity_id=1,
             field_name="cost_per_unit",
-            new_value=102.0,  # 2% diff, sub-threshold
+            new_value=102.0,  # diff magnitude is irrelevant for lower_priority
             confidence=0.5,
             source_type="industry_default",
             mapper_method="rule",
         )
 
     assert out["action"] == "no_change"
+    assert out["reason"] == "lower_priority"
     wp.assert_not_awaited()
+
+
+async def test_resolve_conflict_lower_priority_large_diff_still_no_change():
+    """Lower priority + LARGE diff still rejects without queueing.
+
+    Verifies I6 split: strictly lower priority means the diff test is
+    skipped, so a 100% diff doesn't trigger admin_queue enqueue.
+    """
+    conn = _make_conn()
+
+    async def _fake_read(*_args, **_kwargs):
+        return ProvenanceValue(
+            field_value=100.0,
+            confidence=0.95,
+            source_upload_id=0,
+            source_type="manual",
+            mapper_method="manual",
+        )
+
+    with patch.object(cr, "read_authoritative_value", new=_fake_read), patch.object(
+        cr, "write_provenance", new=AsyncMock(return_value=99)
+    ) as wp:
+        out = await resolve_conflict(
+            conn,
+            factory_id="F001",
+            entity_type="product",
+            entity_id=1,
+            field_name="cost_per_unit",
+            new_value=200.0,  # 100% diff, but lower priority
+            confidence=0.5,
+            source_type="industry_default",  # priority 6
+            mapper_method="rule",
+        )
+
+    assert out["action"] == "no_change"
+    assert out["reason"] == "lower_priority"
+    wp.assert_not_awaited()
+    # Only 1 conn.execute call: the C2 advisory_xact_lock; no enqueue INSERT.
+    assert conn.execute.await_count == 1
 
 
 async def test_resolve_conflict_factory_override_changes_decision():
@@ -478,8 +589,10 @@ async def test_resolve_conflict_factory_override_changes_decision():
 
     Without override: review (4) vs manual (1) → manual wins, lower-priority
     review write would queue. With override making review=1, the new manual
-    (still 1) vs current review (1) becomes same-priority → significant
-    string diff queues anyway. Verify the override is consulted.
+    (priority 2 under override) is strictly lower priority than current
+    review (1) → no_change with reason='lower_priority'. Verify the override
+    is consulted (without it, manual=1 would equal review=4 → no, manual would
+    be HIGHER and supersede).
     """
     conn = _make_conn()
     # Factory has manual=2 in overrides, so a "manual" write becomes priority 2
@@ -516,6 +629,7 @@ async def test_resolve_conflict_factory_override_changes_decision():
             mapper_method="manual",
         )
 
-    # new(2) >= current(1): same/lower priority + string diff → queued
-    assert out["action"] == "queued"
+    # new(2) > current(1): I6 strictly-lower-priority branch.
+    assert out["action"] == "no_change"
+    assert out["reason"] == "lower_priority"
     wp.assert_not_awaited()
