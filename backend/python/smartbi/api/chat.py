@@ -2209,6 +2209,20 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 full_text += chunk
                 yield _sse_event("chunk", chunk)
 
+            # v5 safety net (Apr 26 2026): detect silent 0-chunk LLM completion
+            # — happens when call_chain_stream silently returns due to all
+            # providers exhausting their CB threshold mid-iteration without
+            # raising. v5 verification showed 230+ queries hitting this path.
+            # Force truncated state so cache fallback / silent-msg branch fires.
+            if not _llm_truncated and not full_text:
+                _llm_truncated = True
+                _silent_timeout = True
+                logger.warning(
+                    f"[stream] LLM produced 0 chunks without truncation "
+                    f"(elapsed={time.time()-_llm_start:.1f}s) — provider may "
+                    f"have silently exhausted. Treating as silent timeout."
+                )
+
             if _llm_truncated:
                 # G2 (Apr 26 2026): try LLM-answer cache fallback BEFORE
                 # serving the timeout message. If the same query has a cached
