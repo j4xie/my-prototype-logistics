@@ -192,12 +192,15 @@ def _provider_config(account: str) -> Tuple[str, str]:
     return mapping.get(account, ("", ""))
 
 
-# Apr 26 2026 v5 quota-fix: re-ordered after v5 verification revealed
-# aliyun_b/qwen-plus also exhausted free tier (450+ 403 errors during v5 run).
-# aliyun_a/qwen-plus still has quota; deepseek-chat is paid + reliable.
-# New order: aliyun_a (still has quota) → deepseek (paid, stable) →
-# zhipu → aliyun_b (last resort, expected to fail).
-DEFAULT_CHAIN: List[str] = ["aliyun_a", "deepseek", "zhipu", "aliyun_b"]
+# Apr 27 2026 v8 quota-fix: deepseek-chat verified stable (paid API, no
+# free-tier limit). Re-ordered to deepseek-first because:
+#   - deepseek-chat: paid, stable, ~$0.14/1M input + $0.28/1M output (cheap)
+#   - aliyun_a/qwen-plus: works but DashScope sometimes hits FreeTierOnly
+#     cap mid-day even on this account
+#   - zhipu/glm-4-plus: stable backup
+#   - aliyun_b/qwen-plus: free tier exhausted today (last resort)
+# Test: direct curl to deepseek streams 60-char Chinese answer in <2s.
+DEFAULT_CHAIN: List[str] = ["deepseek", "aliyun_a", "zhipu", "aliyun_b"]
 
 
 def _is_quota_exhausted(status_code: int, body_text: str) -> bool:
