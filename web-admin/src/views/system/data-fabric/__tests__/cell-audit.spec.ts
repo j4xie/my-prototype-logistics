@@ -15,22 +15,31 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
 
-// ── Mock auth store ───────────────────────────────────────────────────
+// ── Mock auth store (mutable for negative-path tests) ────────────────
+const mockAuth: { factoryId: string | null } = { factoryId: 'F001' };
 vi.mock('@/store/modules/auth', () => ({
-  useAuthStore: () => ({ factoryId: 'F001' }),
+  useAuthStore: () => mockAuth,
 }));
 
-// ── Mock vue-router ───────────────────────────────────────────────────
+// ── Mock vue-router (query is mutable for negative-path tests) ───────
 const backSpy = vi.fn();
-const mockQuery = { type: 'product', id: '42', field: 'cost_per_unit' };
+const mockQuery: Record<string, string | undefined> = {
+  type: 'product',
+  id: '42',
+  field: 'cost_per_unit',
+};
 vi.mock('vue-router', () => ({
   useRoute: () => ({ query: mockQuery }),
   useRouter: () => ({ back: backSpy }),
 }));
 
-// ── Mock Element Plus ElMessage (no-op) ──────────────────────────────
+// ── Mock Element Plus ElMessage (P2-10: spy is shared, reset per test)─
+// vi.hoisted() lifts the spy initialization to before vi.mock evaluates,
+// so the factory's lexical closure captures an already-initialized fn
+// instead of hitting the TDZ at import time.
+const { elMessageError } = vi.hoisted(() => ({ elMessageError: vi.fn() }));
 vi.mock('element-plus', () => ({
-  ElMessage: { error: vi.fn(), success: vi.fn(), warning: vi.fn() },
+  ElMessage: { error: elMessageError, success: vi.fn(), warning: vi.fn() },
 }));
 
 // ── Mock pythonFetch (the only API call this view makes) ─────────────
@@ -134,6 +143,12 @@ describe('cell-audit.vue (Sub-Project C Day 26)', () => {
   beforeEach(() => {
     backSpy.mockClear();
     mockPythonFetch.mockReset();
+    elMessageError.mockClear();
+    // P2-10: reset mocks so negative-path tests don't leak into happy-path.
+    mockAuth.factoryId = 'F001';
+    mockQuery.type = 'product';
+    mockQuery.id = '42';
+    mockQuery.field = 'cost_per_unit';
   });
 
   it('renders current value card with confidence tag + sentinel source label', async () => {
@@ -265,5 +280,45 @@ describe('cell-audit.vue (Sub-Project C Day 26)', () => {
     expect(html).toContain('此字段暂无 provenance 记录');
     // No history rows to render.
     expect(wrapper.findAll('.el-table__row')).toHaveLength(0);
+  });
+
+  // P2-10 (post-D27 review): error-path coverage.
+
+  it('shows missing-param error when URL is missing required query keys', async () => {
+    mockQuery.field = undefined;  // remove `field` → fail param check
+
+    const wrapper = mount(CellAudit, { global: { stubs: globalStubs } });
+    await flushPromises();
+
+    const html = wrapper.html();
+    expect(html).toContain('缺少必要参数');
+    // No fetch should have been issued — view rejects before calling backend.
+    expect(mockPythonFetch).not.toHaveBeenCalled();
+  });
+
+  it('shows factory-id error when auth store has no factoryId', async () => {
+    mockAuth.factoryId = null;
+
+    const wrapper = mount(CellAudit, { global: { stubs: globalStubs } });
+    await flushPromises();
+
+    const html = wrapper.html();
+    expect(html).toContain('factoryId');  // view inserts the literal token in the error
+    expect(mockPythonFetch).not.toHaveBeenCalled();
+  });
+
+  it('shows error toast and alert when API call rejects (network/server error)', async () => {
+    mockPythonFetch.mockRejectedValueOnce(new Error('factory_id 参数 unknown 与登录工厂 F001 不一致'));
+
+    const wrapper = mount(CellAudit, { global: { stubs: globalStubs } });
+    await flushPromises();
+
+    // ElMessage.error toast was called with a Chinese-prefixed message.
+    expect(elMessageError).toHaveBeenCalledTimes(1);
+    const errArg = elMessageError.mock.calls[0][0] as string;
+    expect(errArg).toContain('字段血统查询失败');
+    expect(errArg).toContain('factory_id 参数');
+    // Alert banner is also shown so the error is non-modal-persistent.
+    expect(wrapper.find('.el-alert').exists()).toBe(true);
   });
 });
