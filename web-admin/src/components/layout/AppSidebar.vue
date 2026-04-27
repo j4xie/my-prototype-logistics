@@ -237,7 +237,8 @@ const menuConfig: MenuItem[] = [
       { path: '/scheduling/plans', title: '调度计划', icon: '', module: 'scheduling' },
       { path: '/scheduling/realtime', title: '实时监控', icon: '', module: 'scheduling' },
       { path: '/scheduling/workers', title: '人员分配', icon: '', module: 'scheduling' },
-      { path: '/scheduling/alerts', title: '告警管理', icon: '', module: 'scheduling' }
+      { path: '/scheduling/alerts', title: '告警管理', icon: '', module: 'scheduling' },
+      { path: '/scheduling/settings', title: '排产设置', icon: '', module: 'scheduling' }
     ]
   },
   {

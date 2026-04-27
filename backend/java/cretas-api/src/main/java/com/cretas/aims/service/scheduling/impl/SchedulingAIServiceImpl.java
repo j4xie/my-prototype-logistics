@@ -457,12 +457,14 @@ public class SchedulingAIServiceImpl implements SchedulingAIService {
         settings.setLowRiskThreshold(getLowRiskThreshold(factoryId));
         settings.setMediumRiskThreshold(getMediumRiskThreshold(factoryId));
         settings.setEnableNotifications(getNotificationsEnabled(factoryId));
+        settings.setAutoTriggerEnabled(isAutoSchedulingEnabled(factoryId));
 
-        log.info("排产自动化设置: mode={}, lowRisk={}, mediumRisk={}, notifications={}",
+        log.info("排产自动化设置: mode={}, lowRisk={}, mediumRisk={}, notifications={}, autoTrigger={}",
             settings.getAutoSchedulingMode(),
             settings.getLowRiskThreshold(),
             settings.getMediumRiskThreshold(),
-            settings.getEnableNotifications());
+            settings.getEnableNotifications(),
+            settings.getAutoTriggerEnabled());
 
         return settings;
     }
@@ -499,6 +501,12 @@ public class SchedulingAIServiceImpl implements SchedulingAIService {
             saveOrUpdateRule(factoryId, "auto_scheduling_notifications_enabled",
                 String.valueOf(settings.getEnableNotifications()),
                 "自动排产通知开关配置", userId);
+        }
+
+        if (settings.getAutoTriggerEnabled() != null) {
+            saveOrUpdateRule(factoryId, "auto_trigger_enabled",
+                String.valueOf(settings.getAutoTriggerEnabled()),
+                "自动排产总开关 (R31): 控制 SO→PP→排程链是否自动触发", userId);
         }
 
         log.info("排产自动化设置更新完成: factoryId={}", factoryId);

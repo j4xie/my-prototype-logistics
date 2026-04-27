@@ -38,6 +38,14 @@ public class SchedulingSettingsDTO {
     private Boolean enableNotifications;
 
     /**
+     * 自动排产总开关 (R31)
+     * 控制 SchedulingAIService.isAutoSchedulingEnabled() 返回值
+     * 关闭后即便 autoSchedulingMode = FULLY_AUTO 也不会触发自动排产
+     * 持久化为 drools_rules.scheduling.auto_trigger_enabled
+     */
+    private Boolean autoTriggerEnabled;
+
+    /**
      * 构建默认设置
      */
     public static SchedulingSettingsDTO defaultSettings() {
@@ -46,6 +54,7 @@ public class SchedulingSettingsDTO {
         settings.setLowRiskThreshold(0.85);
         settings.setMediumRiskThreshold(0.70);
         settings.setEnableNotifications(true);
+        settings.setAutoTriggerEnabled(false);
         return settings;
     }
 }

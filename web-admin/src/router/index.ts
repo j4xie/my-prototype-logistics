@@ -687,6 +687,12 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'SchedulingAlerts',
             component: () => import('@/views/scheduling/alerts/index.vue'),
             meta: { requiresAuth: true, title: '告警管理', module: 'scheduling' }
+          },
+          {
+            path: 'settings',
+            name: 'SchedulingSettings',
+            component: () => import('@/views/scheduling/settings/index.vue'),
+            meta: { requiresAuth: true, title: '排产设置', module: 'scheduling' }
           }
         ]
       },
