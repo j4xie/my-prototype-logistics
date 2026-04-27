@@ -6,12 +6,22 @@ NULL period_start/period_end via graceful degrade.
 
 Row-by-row store + product resolution (forced ordering: store first), then
 batched executemany for the actual INSERT.
+
+Day 10-12 (Sub-Project C): if SMARTBI_ENABLE_PROVENANCE env flag is ON,
+each successfully-INSERTed row also records cell-level provenance for
+revenue / qty_sold / avg_unit_price. Default OFF — prod B writers don't
+write provenance until manually enabled.
 """
 from __future__ import annotations
 
 import time
 from typing import Any, List, Optional, Tuple
 from datetime import date
+
+from smartbi.canonical.provenance._writer_hook import (
+    is_provenance_enabled,
+    write_provenance_for_fields,
+)
 
 from ._helpers import canonical_value, to_float, unwrap_row
 from .base import BaseWriter, WriteSummary
@@ -105,6 +115,40 @@ class ProductSummaryWriter(BaseWriter):
                     """,
                     batch,
                 )
+
+            # Day 10-12: opt-in cell-level provenance dual-write. records
+            # tuple order is fixed above — index 2=product_id, 4=period_start,
+            # 5=period_end, 6=qty, 7=revenue, 8=avg_price. We anchor the
+            # provenance to the product (entity_type='product') because that
+            # is the spec-canonical entity for sales metrics; store_id is
+            # contextual but not the lineage subject. Wrapped in its own
+            # transaction so a hook failure is isolated from the main INSERT.
+            if is_provenance_enabled() and records:
+                async with conn.transaction():
+                    for rec in records:
+                        product_id = rec[2]
+                        period_start = rec[4]
+                        period_end = rec[5]
+                        qty = rec[6]
+                        revenue = rec[7]
+                        avg_price = rec[8]
+                        await write_provenance_for_fields(
+                            conn,
+                            factory_id=factory_id,
+                            entity_type="product",
+                            entity_id=product_id,
+                            fields={
+                                "revenue": revenue,
+                                "qty_sold": qty,
+                                "avg_unit_price": avg_price,
+                            },
+                            source_type="product_summary",
+                            mapper_method="rule",
+                            confidence=0.85,
+                            source_upload_id=upload_id,
+                            valid_from=period_start,
+                            valid_to=period_end,
+                        )
 
         return WriteSummary(
             rows_written=len(records),
