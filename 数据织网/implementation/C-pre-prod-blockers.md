@@ -206,12 +206,19 @@ Before any prod systemd `Environment=SMARTBI_ENABLE_PROVENANCE=1` change:
 - [x] **I5 fixed** ✅ — narrowed to `(UniqueViolationError, ForeignKeyViolationError, SerializationError, DeadlockDetectedError)`. RLS / OSError propagate.
 - [x] **I6 fixed** ✅ (bonus from Phase A) — branch split: `lower_priority` / `significant_diff_same_priority` / `minor_diff_same_priority`.
 - [x] **I7 fixed** ✅ (bonus from Phase A) — per-field `async with conn.transaction()` SAVEPOINT in writer hook.
-- [ ] **IMP-1 spec doc update** ⚠️ (NEW, post-Phase-B audit) — strongly recommended before flag flip. See section below.
-- [ ] Test smartbi_db migrations (V20260430_01, V20260501_01..03) applied to **prod smartbi_prod_db** (currently test only)
+- [x] **IMP-1 spec doc update** ✅ (Phase 1 `2d07b4520`) — 04-C v1.4 §3.1.5 documents compound field_name convention, reader query patterns, type lookup strip behavior, audit-page UI guidance.
+- [x] **IMP-2 NULL-anchor observability** ✅ (Phase 1) — FinanceWriter logs WARNING with skip count.
+- [x] **IMP-3 ReviewWriter limitation doc** ✅ (Phase 1) — 04-C §4.2 admonition + RES_3101_009 cohort workaround + Day 13+ promotion path documented.
+- [x] **IMP-4 field_name VARCHAR widen** ✅ (Phase 1, V20260502_01) — applied test smartbi_db.
+- [x] **MIN-3 error_swallowed wiring** ✅ (Phase 1) — 4 writers log WARNING with batch swallow count.
+- [x] **I-A get_industry_default cache divergence** ✅ (Phase 2 follow-up `812f09ebd`) — refactored to read through cached `_get_factory_config`.
+- [x] **I-B expired-recipe e2e gap** ✅ (Phase 2 follow-up `812f09ebd`) — new e2e validates valid_to filter + industry_default cascade chain.
+- [ ] Test smartbi_db migrations (V20260430_01, V20260501_01..03, V20260502_01) applied to **prod smartbi_prod_db** (currently test only)
 - [ ] One-week observation period in test environment with `SMARTBI_ENABLE_PROVENANCE=1` + real upload flows
 - [ ] Friendly customer cohort selected (suggest reuse A's `RES_3101_009` as first prod factory)
+- [ ] Investigate 5 pre-existing e2e failures (`dim_review_summary_upload_id_fkey` FK violations in writer hook tests, present in baseline) — diagnose to confirm unrelated to provenance writes.
 
-**Open non-gating cleanup** (carry to Day 13+): I2 / I3 / M1-M6 + new IMP-2..5 below.
+**Open non-gating cleanup** (carry to Day 16+): I2 / I3 / M1-M6 + Phase 1+2 re-audit MIN-A..F (cosmetic).
 
 ---
 
@@ -248,9 +255,36 @@ On inspection, `_clean()` runs both before AND after each test (lines 154-158 �
 ### Minor (re-audit): MIN-1..5
 - MIN-1: I7 SAVEPOINT only correct when caller is in transaction — add runtime assertion (`conn.is_in_transaction()` check). Defensive.
 - MIN-2: `_field_type` `@`-strip ambiguous for legitimate `@`-containing field names. Future-proofing only.
-- MIN-3: `error_swallowed` counter exists but no monitoring hookup. Wire to log/Prometheus before flag flip.
+- MIN-3: ✅ CLOSED in Phase 1 — `error_swallowed` counter wired to per-writer batch summary WARNING.
 - MIN-4: dim_finance_subject / dim_ingredient persistence between e2e tests — current scope-by-factory_id cleanup correct, just noting design.
 - MIN-5: `pos_excel` priority entry vestigial (carry-over M3 from prior audit).
+
+---
+
+## Phase 1+2 close-out (2026-04-27)
+
+**Phase 1 commit `2d07b4520`** closed: IMP-1, IMP-2, IMP-3, IMP-4, MIN-3.
+**Phase 2 commit `7836c3c87`** implemented Day 13-15 inheritance cascade engine:
+- `compute_dish_margin` (维度继承 — recipe → sales → margin with min(cost_conf, sales_conf))
+- `_get_industry_default_cost` (空缺降级 — category × cost_rate × avg_unit_price; None when no sales per C-9)
+- `infer_product_summary_period` (时间继承 — neighbor bill_flow uploads ±N days)
+- `industry_defaults.py` 27-category cost ratios + auto-derived margin rates
+- 28 unit + 3 e2e PASS real PG (98s)
+
+**Phase 2 follow-up `812f09ebd`** closed: I-A (cache divergence) + I-B (expired-recipe e2e gap).
+
+**Re-audit verdict (Phase 1+2)**: "Ready to push: Yes. Ready for flag flip: Pending soak."
+
+**Remaining pre-flag-flip items**:
+1. Apply 4 migrations (V20260430_01 + V20260501_01..03 + V20260502_01) to prod smartbi_prod_db
+2. One-week soak in test env with SMARTBI_ENABLE_PROVENANCE=1
+3. Confirm RES_3101_009 cohort assumption (single-product reviews)
+4. Diagnose 5 pre-existing dim_review_summary_upload_id_fkey e2e failures
+
+**Day 13+ next-session focus** (not gating flag-flip):
+- Day 16-22: BF1-3 backfill 1.31M historical fact rows → field_provenance
+- Day 23-30: Trust UI + admin config UI + actual flag flip + soak
+- Backlog cleanup: I2 / I3 / M1-M6 / MIN-1, 2, 4, 5 / IMP-3 promotion path / 粒度+属性 cascades
 
 ---
 
