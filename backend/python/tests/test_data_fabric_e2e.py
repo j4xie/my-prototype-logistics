@@ -2268,3 +2268,277 @@ async def test_review_dual_write_anchor_correct_sanity(
             assert queue_count == 0
     finally:
         await scoped_pool.close()
+
+
+# -- Day 13-15 cascade engine helpers + tests --------------------------------
+
+
+async def _seed_dim_product_with_category(
+    conn: "asyncpg.Connection",
+    factory_id: str,
+    name: str,
+    category: str,
+    normalized_name: Optional[str] = None,
+) -> int:
+    """Seed dim_product with explicit category for industry_default tests.
+
+    Mirrors ``_seed_dim_product`` but writes the optional ``category``
+    column. ON CONFLICT updates the category so re-running a test that
+    seeds the same product with a different category lands on the new value.
+    """
+    row = await conn.fetchrow(
+        """
+        INSERT INTO dim_product (factory_id, name, normalized_name, category)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (factory_id, normalized_name)
+        DO UPDATE SET category = EXCLUDED.category, updated_at = NOW()
+        RETURNING product_id
+        """,
+        factory_id,
+        name,
+        normalized_name or name,
+        category,
+    )
+    assert row is not None
+    return int(row["product_id"])
+
+
+@pytest.mark.integration
+async def test_compute_dish_margin_with_recipe_cost(
+    pg_pool: "asyncpg.Pool", clean_tenant: None,
+) -> None:
+    """End-to-end cascade: write recipe cost via provenance, write sales via
+    agg_product_period direct, compute_dish_margin returns correct margin.
+    """
+    from datetime import date
+
+    from smartbi.canonical.provenance import (
+        compute_dish_margin,
+        write_provenance,
+    )
+
+    async def _setup(conn: "asyncpg.Connection") -> None:
+        await conn.execute(
+            "SELECT set_config('app.factory_id', $1, false)", TEST_FACTORY
+        )
+
+    scoped_pool = await asyncpg.create_pool(
+        PG_DSN, min_size=1, max_size=2, timeout=5, setup=_setup
+    )
+    try:
+        async with scoped_pool.acquire() as conn:
+            async with conn.transaction():
+                product_id = await _seed_dim_product(
+                    conn, TEST_FACTORY, "招牌鱼"
+                )
+                store_id = await _seed_dim_store(
+                    conn, TEST_FACTORY, "测试店_cascade"
+                )
+
+                # Write recipe cost via provenance (manual, conf=0.95)
+                await write_provenance(
+                    conn,
+                    factory_id=TEST_FACTORY,
+                    entity_type="product",
+                    entity_id=product_id,
+                    field_name="cost_per_unit",
+                    field_value=12.50,
+                    confidence=0.95,
+                    source_type="manual",
+                    mapper_method="manual",
+                    valid_from=date(2026, 1, 1),
+                )
+
+                # Insert two real upload rows so agg_product_period rows
+                # carry distinct upload_id values (sales_conf rises with
+                # upload_count). Sentinel id=0 is reserved for non-upload
+                # provenance — using it here would create unique-key
+                # collisions on the second insert.
+                upload_a = await conn.fetchval(
+                    """
+                    INSERT INTO smart_bi_pg_excel_uploads
+                      (factory_id, file_name, upload_status)
+                    VALUES ($1, $2, 'COMPLETED')
+                    RETURNING id
+                    """,
+                    TEST_FACTORY, "cascade_test_a.xlsx",
+                )
+                upload_b = await conn.fetchval(
+                    """
+                    INSERT INTO smart_bi_pg_excel_uploads
+                      (factory_id, file_name, upload_status)
+                    VALUES ($1, $2, 'COMPLETED')
+                    RETURNING id
+                    """,
+                    TEST_FACTORY, "cascade_test_b.xlsx",
+                )
+
+                for up_id, qty, rev in (
+                    (upload_a, 60, 3000),
+                    (upload_b, 40, 2000),
+                ):
+                    await conn.execute(
+                        """
+                        INSERT INTO agg_product_period
+                          (factory_id, upload_id, product_id, store_id,
+                           period_start, period_end, qty_sold, revenue,
+                           avg_unit_price)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                        """,
+                        TEST_FACTORY, up_id, product_id, store_id,
+                        date(2026, 2, 1), date(2026, 2, 28),
+                        qty, rev, 50,
+                    )
+
+                result = await compute_dish_margin(
+                    conn, TEST_FACTORY, product_id,
+                    (date(2026, 2, 1), date(2026, 2, 28)),
+                )
+
+        assert result["status"] == "ok"
+        assert result["product_id"] == product_id
+        assert result["revenue"] == 5000.0  # 3000 + 2000
+        assert result["cost"] == 12.50 * 100  # qty=100 total
+        assert result["margin"] == 5000.0 - 1250.0
+        assert abs(result["margin_rate"] - (3750 / 5000)) < 1e-6
+        assert result["cost_source"] == "manual"
+        assert float(result["cost_confidence"]) == 0.95
+        # sales_conf = min(0.95, 0.5 + 0.1*2) = 0.7
+        assert abs(result["sales_confidence"] - 0.7) < 1e-6
+        assert abs(result["confidence"] - 0.7) < 1e-6
+    finally:
+        await scoped_pool.close()
+
+
+@pytest.mark.integration
+async def test_compute_dish_margin_industry_default_fallback(
+    pg_pool: "asyncpg.Pool", clean_tenant: None,
+) -> None:
+    """No recipe → fallback to industry_default with synthesised cost based
+    on dim_product.category × cost_rate × avg_unit_price.
+    """
+    from datetime import date
+
+    from smartbi.canonical.provenance import compute_dish_margin
+
+    async def _setup(conn: "asyncpg.Connection") -> None:
+        await conn.execute(
+            "SELECT set_config('app.factory_id', $1, false)", TEST_FACTORY
+        )
+
+    scoped_pool = await asyncpg.create_pool(
+        PG_DSN, min_size=1, max_size=2, timeout=5, setup=_setup
+    )
+    try:
+        async with scoped_pool.acquire() as conn:
+            async with conn.transaction():
+                product_id = await _seed_dim_product_with_category(
+                    conn, TEST_FACTORY, "麻婆豆腐", category="川菜",
+                )
+                store_id = await _seed_dim_store(
+                    conn, TEST_FACTORY, "测试店_idfallback"
+                )
+
+                upload_id = await conn.fetchval(
+                    """
+                    INSERT INTO smart_bi_pg_excel_uploads
+                      (factory_id, file_name, upload_status)
+                    VALUES ($1, $2, 'COMPLETED')
+                    RETURNING id
+                    """,
+                    TEST_FACTORY, "cascade_idfallback.xlsx",
+                )
+                await conn.execute(
+                    """
+                    INSERT INTO agg_product_period
+                      (factory_id, upload_id, product_id, store_id,
+                       period_start, period_end, qty_sold, revenue,
+                       avg_unit_price)
+                    VALUES ($1, $2, $3, $4, $5, $6, 50, 1500, 30)
+                    """,
+                    TEST_FACTORY, upload_id, product_id, store_id,
+                    date(2026, 2, 1), date(2026, 2, 28),
+                )
+
+                result = await compute_dish_margin(
+                    conn, TEST_FACTORY, product_id,
+                    (date(2026, 2, 1), date(2026, 2, 28)),
+                )
+
+        assert result["status"] == "ok"
+        assert result["cost_source"] == "industry_default"
+        assert float(result["cost_confidence"]) == 0.5
+        # 川菜 cost_rate=0.35; avg_unit_price=30; qty=50
+        # cost_per_unit = 30 * 0.35 = 10.5; cost = 10.5 * 50 = 525
+        assert abs(result["cost"] - 525.0) < 1e-3
+        assert abs(result["margin"] - (1500.0 - 525.0)) < 1e-3
+        # sales_conf = min(0.95, 0.6) = 0.6; result_conf = min(0.5, 0.6) = 0.5
+        assert abs(result["confidence"] - 0.5) < 1e-6
+    finally:
+        await scoped_pool.close()
+
+
+@pytest.mark.integration
+async def test_infer_product_summary_period_from_neighboring_bill_flow(
+    pg_pool: "asyncpg.Pool", clean_tenant: None,
+) -> None:
+    """End-to-end time inheritance: a product_summary upload borrows its
+    period from a neighbouring bill_flow upload's
+    merge_inferred_period_start/end (set by Sheet Merger in production).
+    """
+    from datetime import date
+
+    from smartbi.canonical.provenance import infer_product_summary_period
+
+    async def _setup(conn: "asyncpg.Connection") -> None:
+        await conn.execute(
+            "SELECT set_config('app.factory_id', $1, false)", TEST_FACTORY
+        )
+
+    scoped_pool = await asyncpg.create_pool(
+        PG_DSN, min_size=1, max_size=2, timeout=5, setup=_setup
+    )
+    try:
+        async with scoped_pool.acquire() as conn:
+            async with conn.transaction():
+                # bill_flow upload with explicit merge_inferred_period.
+                # created_at defaults to NOW() — the product_summary upload
+                # below is created in the same transaction, so both fall
+                # within the default 7-day window automatically.
+                bill_id = await conn.fetchval(
+                    """
+                    INSERT INTO smart_bi_pg_excel_uploads
+                      (factory_id, file_name, upload_status,
+                       detected_table_type,
+                       merge_inferred_period_start,
+                       merge_inferred_period_end)
+                    VALUES ($1, 'bill_flow_a.xlsx', 'COMPLETED',
+                            'bill_flow', $2, $3)
+                    RETURNING id
+                    """,
+                    TEST_FACTORY,
+                    date(2026, 2, 1), date(2026, 2, 28),
+                )
+
+                # product_summary upload — no merge_inferred_period of its own.
+                ps_id = await conn.fetchval(
+                    """
+                    INSERT INTO smart_bi_pg_excel_uploads
+                      (factory_id, file_name, upload_status,
+                       detected_table_type)
+                    VALUES ($1, 'product_summary_a.xlsx', 'COMPLETED',
+                            'product_summary')
+                    RETURNING id
+                    """,
+                    TEST_FACTORY,
+                )
+
+                result = await infer_product_summary_period(
+                    conn, TEST_FACTORY, ps_id
+                )
+
+        assert bill_id > 0  # sanity check seed
+        assert result is not None
+        assert result == (date(2026, 2, 1), date(2026, 2, 28))
+    finally:
+        await scoped_pool.close()
