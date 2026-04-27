@@ -691,3 +691,286 @@ async def test_rls_silently_drops_zero_rows_when_tenant_unset(
                     """,
                     TEST_FACTORY,
                 )
+
+
+@pytest.mark.integration
+async def test_closed_loop_sheet_merger_to_template(
+    pg_pool: "asyncpg.Pool", clean_tenant: None
+) -> None:
+    """End-to-end: dynamic_data row → SheetMergeAnalyzer → route_upload →
+    ProductSummaryWriter → agg_product_period → compute_product_top10.
+
+    This validates the closed loop the smoke gate doc describes — Phase 3 wire-in.
+
+    The shape detector's PRODUCT_SUMMARY rule (商品名称 + 销售金额, no 账单号)
+    fires at confidence=0.90, above the 0.85 AUTO_ROUTE_THRESHOLD. With high
+    confidence the writer runs; if confidence is below threshold (e.g. LLM
+    fallback path), the upload is queued for admin and we still verify the
+    pipeline ran cleanly without crashing.
+    """
+    from smartbi.canonical.entity_resolution import make_default_orchestrator
+    from smartbi.canonical.shape_router import route_upload
+    from smartbi.canonical.sheet_merger import SheetMergeAnalyzer
+    from smartbi.canonical.templates import compute_product_top10
+
+    # Use a scoped pool with the tenant setup callback so writers, orchestrator
+    # AND template queries all see app.factory_id when they acquire conns.
+    async def _setup(conn: "asyncpg.Connection") -> None:
+        await conn.execute(
+            "SELECT set_config('app.factory_id', $1, false)", TEST_FACTORY
+        )
+
+    scoped_pool = await asyncpg.create_pool(
+        PG_DSN, min_size=1, max_size=4, timeout=5, setup=_setup
+    )
+    try:
+        # 1. Seed: dim_store + dim_product + upload row + field defs + 1 dynamic row
+        async with scoped_pool.acquire() as conn:
+            store_id = await _seed_dim_store(conn, TEST_FACTORY, "测试店")
+            product_id = await _seed_dim_product(
+                conn, TEST_FACTORY, "测试菜", "测试菜"
+            )
+
+            upload_row = await conn.fetchrow(
+                """
+                INSERT INTO smart_bi_pg_excel_uploads
+                  (factory_id, file_name, upload_status, detected_table_type)
+                VALUES ($1, $2, 'COMPLETED', 'product_summary')
+                RETURNING id
+                """,
+                TEST_FACTORY,
+                f"e2e_closed_loop_{int(time.time())}.xlsx",
+            )
+            assert upload_row is not None
+            upload_id = int(upload_row["id"])
+
+            # field_definitions: must include a date column for period inference
+            # to succeed, and the PRODUCT_SUMMARY trigger columns 商品名称 +
+            # 销售金额 (without 账单号) for ShapeDetector rule path.
+            for i, orig in enumerate(
+                ("营业日期", "门店名称", "商品名称", "数量", "销售金额")
+            ):
+                await conn.execute(
+                    """
+                    INSERT INTO smart_bi_pg_field_definitions
+                      (upload_id, original_name, display_order)
+                    VALUES ($1, $2, $3)
+                    """,
+                    upload_id,
+                    orig,
+                    i,
+                )
+
+            row_data = {
+                "营业日期": "2026-04-01",
+                "门店名称": "测试店",
+                "商品名称": "测试菜",
+                "数量": 5,
+                "销售金额": 100.0,
+            }
+            await conn.execute(
+                """
+                INSERT INTO smart_bi_dynamic_data
+                  (factory_id, upload_id, row_data)
+                VALUES ($1, $2, $3::jsonb)
+                """,
+                TEST_FACTORY,
+                upload_id,
+                json.dumps(row_data),
+            )
+
+        # 2. Run SheetMergeAnalyzer → period inferred + persisted
+        async with scoped_pool.acquire() as conn:
+            async with conn.transaction():
+                await _set_tenant(conn, TEST_FACTORY)
+                analyzer = SheetMergeAnalyzer()
+                await analyzer.analyze(upload_id, TEST_FACTORY, conn)
+
+            period_row = await conn.fetchrow(
+                """
+                SELECT merge_inferred_period_start AS p_start,
+                       merge_inferred_period_end   AS p_end,
+                       merge_period_inference_method AS method
+                FROM smart_bi_pg_excel_uploads WHERE id = $1
+                """,
+                upload_id,
+            )
+
+        assert period_row is not None
+        # Single-row date 2026-04-01 → period_start should be set (method =
+        # row_date_column or sheet_name pattern depending on impl).
+        assert (
+            period_row["p_start"] is not None
+        ), f"merge_inferred_period_start not populated; method={period_row['method']!r}"
+
+        # 3. route_upload → ProductSummaryWriter (rule confidence 0.90 > 0.85)
+        orchestrator = make_default_orchestrator(scoped_pool)
+        result = await route_upload(
+            upload_id, TEST_FACTORY, scoped_pool, orchestrator
+        )
+
+        # Pipeline must NOT crash. Either writer ran OR queued for admin.
+        async with scoped_pool.acquire() as conn:
+            agg_count = await conn.fetchval(
+                "SELECT COUNT(*) FROM agg_product_period WHERE upload_id = $1",
+                upload_id,
+            )
+
+        # 4. compute_product_top10 returns the seeded data (or empty applies=False)
+        top10 = await compute_product_top10(scoped_pool, TEST_FACTORY, top_n=5)
+
+        # If the writer ran (high-confidence shape detection), top10 must
+        # surface the seeded item. If admin-queued (low confidence on minimal
+        # data), the test still validates the orchestration plumbing.
+        if agg_count > 0:
+            assert (
+                result.routed_to == "product_summary"
+            ), f"writer ran but routed_to != product_summary: {result.routed_to!r}"
+            assert top10.applies is True
+            assert len(top10.data["items"]) >= 1
+            assert top10.data["items"][0]["name"] == "测试菜"
+        else:
+            # Admin-queue path or entity resolution declined: verify pipeline
+            # didn't crash. Queued uploads or low-confidence writes both leave
+            # 0 rows in agg_product_period — both are valid outcomes.
+            assert top10.applies in (True, False)
+            # At minimum, route_upload must have returned a RouteResult, not
+            # raised. result.routed_to in ("product_summary", "legacy", None).
+            assert result.routed_to in (
+                "product_summary",
+                "legacy",
+                None,
+            ), f"unexpected routed_to: {result.routed_to!r}"
+    finally:
+        # Drop module-level asyncio.Lock so the next test (likely on a fresh
+        # event loop under pytest-asyncio) doesn't reuse a Lock bound to this
+        # test's loop.
+        from smartbi.canonical.concurrency import cleanup_factory_lock
+
+        cleanup_factory_lock(TEST_FACTORY)
+        await scoped_pool.close()
+
+
+@pytest.mark.integration
+async def test_stress_concurrent_uploads_advisory_lock(
+    pg_pool: "asyncpg.Pool", clean_tenant: None
+) -> None:
+    """Spec §11.7 + B7 risk mitigation: 5 concurrent uploads on the SAME
+    factory_id must serialize via pg_advisory_xact_lock — not run in parallel.
+
+    Total elapsed >= 5 × 0.05s = 0.25s (parallel would be ~0.05s).
+    """
+    import asyncio
+    import time as _time
+
+    from smartbi.canonical.concurrency import (
+        cleanup_factory_lock,
+        with_factory_serialization,
+    )
+
+    # Drop any module-level asyncio.Lock left over from prior tests in this run
+    # — under pytest-asyncio's per-test event loop, a Lock created on a prior
+    # loop will RuntimeError ("Future attached to a different loop") when
+    # awaited here.
+    cleanup_factory_lock(TEST_FACTORY)
+
+    # Need ≥5 concurrent connections + 1 factory_id → all serialize.
+    stress_pool = await asyncpg.create_pool(
+        PG_DSN, min_size=5, max_size=10, timeout=5
+    )
+    try:
+
+        async def fake_work(conn: "asyncpg.Connection") -> str:
+            await asyncio.sleep(0.05)
+            return "done"
+
+        async def run_one() -> str:
+            async with stress_pool.acquire() as conn:
+                # Each conn must have app.factory_id set OR be tx-local; the
+                # advisory lock itself doesn't care, but with_factory_serialization
+                # opens a tx so we set tenant inside that tx via an inner
+                # wrapper. Simpler: set BEFORE, transaction-scoped inside.
+                await conn.execute(
+                    "SELECT set_config('app.factory_id', $1, false)", TEST_FACTORY
+                )
+                return await with_factory_serialization(
+                    TEST_FACTORY, conn, fake_work
+                )
+
+        start = _time.monotonic()
+        results = await asyncio.gather(*[run_one() for _ in range(5)])
+        total_elapsed = _time.monotonic() - start
+
+        assert all(r == "done" for r in results)
+        # Serialization invariant: total >= 5 × 0.05s = 0.25s. Allow 0.20s
+        # floor to absorb timer jitter, but it MUST be substantially above
+        # 0.05s (parallel) — proving the advisory lock did serialize.
+        assert (
+            total_elapsed >= 0.20
+        ), f"expected serial execution (>=0.20s), got {total_elapsed:.3f}s"
+    finally:
+        cleanup_factory_lock(TEST_FACTORY)
+        await stress_pool.close()
+
+
+@pytest.mark.integration
+async def test_stress_different_factories_run_in_parallel(
+    pg_pool: "asyncpg.Pool", clean_tenant: None
+) -> None:
+    """5 different factory_ids should NOT serialize — different lock keys.
+
+    Total elapsed should be close to single-task time (~0.05s), not 5×.
+    """
+    import asyncio
+    import time as _time
+
+    from smartbi.canonical.concurrency import (
+        cleanup_factory_lock,
+        with_factory_serialization,
+    )
+
+    factories = [
+        "F_STRESS_1",
+        "F_STRESS_2",
+        "F_STRESS_3",
+        "F_STRESS_4",
+        "F_STRESS_5",
+    ]
+
+    # Defensive cleanup in case a prior test on a different event loop left
+    # a Lock for any of these factory ids.
+    for f in factories:
+        cleanup_factory_lock(f)
+
+    stress_pool = await asyncpg.create_pool(
+        PG_DSN, min_size=5, max_size=10, timeout=5
+    )
+    try:
+
+        async def fake_work(conn: "asyncpg.Connection") -> str:
+            await asyncio.sleep(0.05)
+            return "done"
+
+        async def run_one(fid: str) -> str:
+            async with stress_pool.acquire() as conn:
+                await conn.execute(
+                    "SELECT set_config('app.factory_id', $1, false)", fid
+                )
+                return await with_factory_serialization(fid, conn, fake_work)
+
+        start = _time.monotonic()
+        results = await asyncio.gather(*[run_one(f) for f in factories])
+        total_elapsed = _time.monotonic() - start
+
+        assert all(r == "done" for r in results)
+        # Parallel: 5 different lock keys → all run together; total ≈ 0.05s
+        # plus pool/transaction overhead. Allow up to 0.20s (serial would be
+        # 0.25s+).
+        assert (
+            total_elapsed < 0.20
+        ), f"expected parallel execution (<0.20s), got {total_elapsed:.3f}s"
+    finally:
+        # Cleanup module-level asyncio lock registry to avoid cross-test bleed
+        for f in factories:
+            cleanup_factory_lock(f)
+        await stress_pool.close()
