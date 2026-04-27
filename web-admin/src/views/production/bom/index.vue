@@ -118,9 +118,9 @@ async function loadProductTypes() {
         selectedProductTypeId.value = productTypes.value[0].id;
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to load product types:', error);
-    ElMessage.error('加载产品类型失败');
+    if (!error?.actionHint) ElMessage.error('加载产品类型失败');
   }
 }
 
@@ -132,9 +132,9 @@ async function loadMaterialTypes() {
     if (response.success && response.data) {
       materialTypes.value = Array.isArray(response.data) ? response.data : (response.data.content || []);
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to load material types:', error);
-    ElMessage.error('加载原料类型失败');
+    if (!error?.actionHint) ElMessage.error('加载原料类型失败');
   }
 }
 
@@ -147,9 +147,9 @@ async function loadBomItems() {
     if (response.success && response.data) {
       bomItems.value = response.data;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to load BOM items:', error);
-    ElMessage.error('Failed to load BOM data');
+    if (!error?.actionHint) ElMessage.error('Failed to load BOM data');
   } finally {
     loading.value = false;
   }
@@ -214,8 +214,8 @@ async function submitBomForm() {
     } else {
       ElMessage.error(response.message || 'Operation failed');
     }
-  } catch (error) {
-    ElMessage.error('Operation failed');
+  } catch (error: any) {
+    if (!error?.actionHint) ElMessage.error('Operation failed');
   } finally {
     bomDialogLoading.value = false;
   }
@@ -232,8 +232,8 @@ async function handleDeleteBomItem(row: Record<string, unknown>) {
     } else {
       ElMessage.error(response.message || 'Delete failed');
     }
-  } catch (error) {
-    if (error !== 'cancel') {
+  } catch (error: any) {
+    if (error !== 'cancel' && !error?.actionHint) {
       ElMessage.error('Delete failed');
     }
   }
@@ -249,9 +249,9 @@ async function loadLaborCosts() {
     if (response.success && response.data) {
       laborCosts.value = response.data;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to load labor costs:', error);
-    ElMessage.error('加载人工费用失败');
+    if (!error?.actionHint) ElMessage.error('加载人工费用失败');
   }
 }
 
@@ -262,9 +262,9 @@ async function loadAllLaborCosts() {
     if (response.success && response.data) {
       // Store all labor costs for reference
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to load all labor costs:', error);
-    ElMessage.error('加载人工费用汇总失败');
+    if (!error?.actionHint) ElMessage.error('加载人工费用汇总失败');
   }
 }
 
@@ -321,8 +321,8 @@ async function submitLaborForm() {
     } else {
       ElMessage.error(response.message || 'Operation failed');
     }
-  } catch (error) {
-    ElMessage.error('Operation failed');
+  } catch (error: any) {
+    if (!error?.actionHint) ElMessage.error('Operation failed');
   } finally {
     laborDialogLoading.value = false;
   }
@@ -339,8 +339,8 @@ async function handleDeleteLaborCost(row: Record<string, unknown>) {
     } else {
       ElMessage.error(response.message || 'Delete failed');
     }
-  } catch (error) {
-    if (error !== 'cancel') {
+  } catch (error: any) {
+    if (error !== 'cancel' && !error?.actionHint) {
       ElMessage.error('Delete failed');
     }
   }
@@ -354,9 +354,9 @@ async function loadOverheadCosts() {
     if (response.success && response.data) {
       overheadCosts.value = response.data;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to load overhead costs:', error);
-    ElMessage.error('加载均摊费用失败');
+    if (!error?.actionHint) ElMessage.error('加载均摊费用失败');
   }
 }
 
@@ -411,8 +411,8 @@ async function submitOverheadForm() {
     } else {
       ElMessage.error(response.message || 'Operation failed');
     }
-  } catch (error) {
-    ElMessage.error('Operation failed');
+  } catch (error: any) {
+    if (!error?.actionHint) ElMessage.error('Operation failed');
   } finally {
     overheadDialogLoading.value = false;
   }
@@ -429,8 +429,8 @@ async function handleDeleteOverheadCost(row: Record<string, unknown>) {
     } else {
       ElMessage.error(response.message || 'Delete failed');
     }
-  } catch (error) {
-    if (error !== 'cancel') {
+  } catch (error: any) {
+    if (error !== 'cancel' && !error?.actionHint) {
       ElMessage.error('Delete failed');
     }
   }
@@ -444,9 +444,9 @@ async function loadCostSummary() {
     if (response.success && response.data) {
       costSummary.value = response.data;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to load cost summary:', error);
-    ElMessage.error('加载成本汇总失败');
+    if (!error?.actionHint) ElMessage.error('加载成本汇总失败');
   }
 }
 

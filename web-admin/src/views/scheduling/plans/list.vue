@@ -57,7 +57,7 @@ async function loadData() {
     } else if (response.success === false) {
       ElMessage.error(response.message || '加载调度计划失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载失败:', error);
   } finally {
@@ -110,10 +110,10 @@ async function handleConfirm(row: SchedulingPlan) {
     } else {
       ElMessage.error(response.message || '确认失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     if (error !== 'cancel') {
       console.error('确认失败:', error);
-      ElMessage.error('确认失败');
+      if (!error?.actionHint) ElMessage.error('确认失败');
     }
   } finally {
     loading.value = false;
@@ -141,10 +141,10 @@ async function handleCancel(row: SchedulingPlan) {
     } else {
       ElMessage.error(response.message || '取消失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     if (error !== 'cancel') {
       console.error('取消失败:', error);
-      ElMessage.error('取消失败');
+      if (!error?.actionHint) ElMessage.error('取消失败');
     }
   } finally {
     loading.value = false;

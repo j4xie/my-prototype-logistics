@@ -103,9 +103,9 @@ async function loadData() {
       tableData.value = enriched;
       pagination.value.total = response.data.totalElements || 0;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to load batches:', error);
-    ElMessage.error('加载批次数据失败');
+    if (!error?.actionHint) ElMessage.error('加载批次数据失败');
   } finally {
     loading.value = false;
   }

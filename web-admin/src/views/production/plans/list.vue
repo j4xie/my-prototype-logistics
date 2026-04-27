@@ -147,7 +147,7 @@ async function loadData() {
     } else if (response.success === false) {
       ElMessage.error(response.message || '加载生产计划失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载失败:', error);
   } finally {
@@ -164,9 +164,9 @@ async function loadProductTypes() {
     } else if (response.success === false) {
       ElMessage.error(response.message || '加载产品类型失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('加载产品类型失败:', error);
-    ElMessage.error('加载产品类型失败');
+    if (!error?.actionHint) ElMessage.error('加载产品类型失败');
   }
 }
 
@@ -287,7 +287,7 @@ async function submitPlan() {
     } else {
       ElMessage.error(response.message || '创建失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     // Interceptor shows specific toast; dedupe fallback
     console.error('[失败]', error);
   } finally {
@@ -307,7 +307,7 @@ async function handleStart(row: Record<string, unknown>) {
     } else {
       ElMessage.error(response.message || '操作失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     // Interceptor already shows specific sticky toast for ApiError (request.ts).
     // Retained catch to prevent uncaught; log for debug.
     if (error !== 'cancel') console.error('[提交失败]', error);
@@ -333,7 +333,7 @@ async function handleComplete(row: Record<string, unknown>) {
     } else {
       ElMessage.error(response.message || '操作失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     // Interceptor already shows specific sticky toast for ApiError (request.ts).
     // Retained catch to prevent uncaught; log for debug.
     if (error !== 'cancel') console.error('[提交失败]', error);
@@ -357,7 +357,7 @@ async function handleCancel(row: Record<string, unknown>) {
     } else {
       ElMessage.error(response.message || '操作失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     // Interceptor already shows specific sticky toast for ApiError (request.ts).
     // Retained catch to prevent uncaught; log for debug.
     if (error !== 'cancel') console.error('[提交失败]', error);
@@ -383,7 +383,7 @@ async function handleCreateBatch(row: Record<string, unknown>) {
     } else {
       ElMessage.error(response.message || '转换失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     // Interceptor already shows specific sticky toast for ApiError (request.ts).
     // Retained catch to prevent uncaught; log for debug.
     if (error !== 'cancel') console.error('[提交失败]', error);
@@ -421,7 +421,7 @@ async function handleGenerateTransfer(row: Record<string, unknown>) {
         ElMessage.error(msg);
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     // Interceptor already shows specific sticky toast for ApiError (request.ts).
     // Retained catch to prevent uncaught; log for debug.
     if (error !== 'cancel') console.error('[提交失败]', error);
@@ -476,9 +476,9 @@ async function loadReferenceData() {
     } else if (supsRes && !supsRes.success) {
       ElMessage.error(supsRes.message || '加载主管数据失败');
     }
-  } catch (e) {
+  } catch (e: any) {
     console.warn('Failed to load reference data:', e);
-    ElMessage.error('加载参考数据失败');
+    if (!e?.actionHint) ElMessage.error('加载参考数据失败');
   }
 }
 
@@ -498,7 +498,7 @@ async function handleDownloadTemplate() {
     a.click();
     URL.revokeObjectURL(url);
     ElMessage.success('模板下载成功');
-  } catch (e) {
+  } catch (e: any) {
     // Interceptor shows specific toast; dedupe fallback
     console.error('[失败]', e);
   }
@@ -532,7 +532,7 @@ async function handleImportFile(uploadFile: { raw?: File }) {
     }
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : '请检查文件格式';
-    ElMessage.error('导入失败: ' + msg);
+    if (!e?.actionHint) ElMessage.error('导入失败: ' + msg);
   }
 }
 
@@ -554,7 +554,7 @@ async function handleExport() {
     a.click();
     URL.revokeObjectURL(url);
     ElMessage.success('导出成功');
-  } catch (e) {
+  } catch (e: any) {
     // Interceptor shows specific toast; dedupe fallback
     console.error('[失败]', e);
   }

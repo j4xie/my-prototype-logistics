@@ -70,9 +70,9 @@ async function loadPlans() {
     } else if (response.success === false) {
       ElMessage.error(response.message || '加载计划失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('加载计划失败:', error);
-    ElMessage.error('加载计划列表失败');
+    if (!error?.actionHint) ElMessage.error('加载计划列表失败');
   }
 }
 
@@ -93,9 +93,9 @@ async function loadWorkers() {
     } else if (response.success === false) {
       ElMessage.error(response.message || '加载工人列表失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('加载工人失败:', error);
-    ElMessage.error('加载工人列表失败');
+    if (!error?.actionHint) ElMessage.error('加载工人列表失败');
   }
 }
 
@@ -108,9 +108,9 @@ async function handlePlanChange() {
     if (response.success && response.data) {
       selectedPlan.value = response.data;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('加载计划详情失败:', error);
-    ElMessage.error('加载计划详情失败');
+    if (!error?.actionHint) ElMessage.error('加载计划详情失败');
   } finally {
     loading.value = false;
   }
@@ -144,9 +144,9 @@ async function handleAssign() {
     } else {
       ElMessage.error(response.message || '分配失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('分配失败:', error);
-    ElMessage.error('分配失败');
+    if (!error?.actionHint) ElMessage.error('分配失败');
   } finally {
     loading.value = false;
   }
@@ -168,10 +168,10 @@ async function handleRemoveAssignment(assignment: WorkerAssignment) {
     } else {
       ElMessage.error(response.message || '移除失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     if (error !== 'cancel') {
       console.error('移除失败:', error);
-      ElMessage.error('移除失败');
+      if (!error?.actionHint) ElMessage.error('移除失败');
     }
   } finally {
     loading.value = false;
@@ -188,9 +188,9 @@ async function handleCheckIn(assignment: WorkerAssignment) {
     } else {
       ElMessage.error(response.message || '签到失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('签到失败:', error);
-    ElMessage.error('签到失败');
+    if (!error?.actionHint) ElMessage.error('签到失败');
   } finally {
     loading.value = false;
   }
@@ -218,10 +218,10 @@ async function handleCheckOut(assignment: WorkerAssignment) {
     } else {
       ElMessage.error(response.message || '签退失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     if (error !== 'cancel') {
       console.error('签退失败:', error);
-      ElMessage.error('签退失败');
+      if (!error?.actionHint) ElMessage.error('签退失败');
     }
   } finally {
     loading.value = false;
@@ -260,9 +260,9 @@ async function handleOptimize() {
     } else {
       ElMessage.error(response.message || '优化失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('优化失败:', error);
-    ElMessage.error('优化失败');
+    if (!error?.actionHint) ElMessage.error('优化失败');
   } finally {
     loading.value = false;
   }

@@ -67,10 +67,10 @@ async function loadData(silent = false) {
       if (!silent) ElMessage.error(alertsRes.message || '加载告警失败');
     }
     lastUpdated.value = new Date();
-  } catch (error) {
+  } catch (error: any) {
     console.error('加载数据失败:', error);
     if (!silent) {
-      ElMessage.error('加载数据失败');
+      if (!error?.actionHint) ElMessage.error('加载数据失败');
     }
   } finally {
     loading.value = false;

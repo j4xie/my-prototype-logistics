@@ -87,9 +87,9 @@ async function loadPlans() {
     } else if (response.success === false) {
       ElMessage.error(response.message || '加载计划失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('加载计划失败:', error);
-    ElMessage.error('加载计划列表失败');
+    if (!error?.actionHint) ElMessage.error('加载计划列表失败');
   }
 }
 
@@ -113,10 +113,10 @@ async function loadData(silent = false) {
       updateCharts();
     }
     lastUpdated.value = new Date();
-  } catch (error) {
+  } catch (error: any) {
     console.error('加载数据失败:', error);
     if (!silent) {
-      ElMessage.error('加载数据失败');
+      if (!error?.actionHint) ElMessage.error('加载数据失败');
     }
   } finally {
     loading.value = false;

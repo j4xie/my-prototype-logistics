@@ -50,7 +50,7 @@ async function loadData() {
     } else if (response.success === false) {
       ElMessage.error(response.message || '加载告警数据失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载失败:', error);
   } finally {
@@ -89,9 +89,9 @@ async function handleAcknowledge(alert: SchedulingAlert) {
     } else {
       ElMessage.error(response.message || '确认失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('确认失败:', error);
-    ElMessage.error('确认失败');
+    if (!error?.actionHint) ElMessage.error('确认失败');
   } finally {
     loading.value = false;
   }
@@ -118,10 +118,10 @@ async function handleResolve(alert: SchedulingAlert) {
     } else {
       ElMessage.error(response.message || '解决失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     if (error !== 'cancel') {
       console.error('解决失败:', error);
-      ElMessage.error('解决失败');
+      if (!error?.actionHint) ElMessage.error('解决失败');
     }
   } finally {
     loading.value = false;
