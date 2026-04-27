@@ -7,6 +7,11 @@ Current simplifications:
   Pre-Phase-3 uploads (analyzer not yet run) still get NULL via graceful degrade.
 - Sentiment classification: rating >= 4 → positive, rating <= 2 → negative,
   rating == 3 → neutral (counted in total only).
+
+Day 10-12 (Sub-Project C): if SMARTBI_ENABLE_PROVENANCE env flag is ON, the
+roll-up summary fields (avg_rating / review_count / positive_count /
+negative_count) are also recorded as cell-level provenance anchored to the
+product (or the store if no product resolved). Default OFF.
 """
 from __future__ import annotations
 
@@ -15,6 +20,11 @@ import json
 import time
 from datetime import date
 from typing import Any, Dict, List, Optional, Tuple
+
+from smartbi.canonical.provenance._writer_hook import (
+    is_provenance_enabled,
+    write_provenance_for_fields,
+)
 
 from ._helpers import canonical_value, to_date, to_float, unwrap_row
 from .base import BaseWriter, WriteSummary
@@ -180,6 +190,43 @@ class ReviewWriter(BaseWriter):
                 json.dumps([]),
                 json.dumps(unmatched_dedup),
             )
+
+            # Day 10-12: opt-in cell-level provenance dual-write for the
+            # roll-up summary. Anchor to product_id_for_summary if a product
+            # resolved this upload; else anchor to store_id. If neither, skip
+            # — there's no canonical entity to attach the lineage to. Wrapped
+            # in its own transaction so a provenance failure is isolated.
+            if is_provenance_enabled() and total_count > 0:
+                if product_id_for_summary is not None:
+                    prov_entity_type = "product"
+                    prov_entity_id = product_id_for_summary
+                elif store_id_for_summary is not None:
+                    prov_entity_type = "store"
+                    prov_entity_id = store_id_for_summary
+                else:
+                    prov_entity_type = None
+                    prov_entity_id = None
+
+                if prov_entity_id is not None:
+                    async with conn.transaction():
+                        await write_provenance_for_fields(
+                            conn,
+                            factory_id=factory_id,
+                            entity_type=prov_entity_type,
+                            entity_id=prov_entity_id,
+                            fields={
+                                "avg_rating": avg_rating,
+                                "review_count": total_count,
+                                "positive_count": positive,
+                                "negative_count": negative,
+                            },
+                            source_type="review",
+                            mapper_method="rule",
+                            confidence=0.80,
+                            source_upload_id=upload_id,
+                            valid_from=period_start,
+                            valid_to=period_end,
+                        )
 
         return WriteSummary(
             rows_written=len(fact_rows),
