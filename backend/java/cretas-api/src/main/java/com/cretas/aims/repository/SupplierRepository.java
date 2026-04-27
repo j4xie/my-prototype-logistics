@@ -149,10 +149,19 @@ public interface SupplierRepository extends JpaRepository<Supplier, String> {
     Double calculateAverageRating(@Param("factoryId") String factoryId);
 
     /**
-     * 统计供应商的总欠款
+     * 统计供应商的总欠款 (仅正余额, 即工厂欠供应商的钱).
+     * R42 BUG-13 fix: 之前 SUM(currentBalance) 会把工厂预付供应商的钱(negative)抵消, 导致 AP 偏低/为负.
      */
-    @Query("SELECT SUM(s.currentBalance) FROM Supplier s WHERE s.factoryId = :factoryId")
+    @Query("SELECT COALESCE(SUM(s.currentBalance), 0) FROM Supplier s " +
+            "WHERE s.factoryId = :factoryId AND s.currentBalance > 0")
     BigDecimal calculateTotalOutstandingBalance(@Param("factoryId") String factoryId);
+
+    /**
+     * R42 BUG-13: 工厂预付供应商款 (negative balance 取绝对值).
+     */
+    @Query("SELECT COALESCE(SUM(-s.currentBalance), 0) FROM Supplier s " +
+            "WHERE s.factoryId = :factoryId AND s.currentBalance < 0")
+    BigDecimal calculateTotalSupplierPrepayments(@Param("factoryId") String factoryId);
 
     /**
      * 根据ID列表和工厂ID批量查找供应商

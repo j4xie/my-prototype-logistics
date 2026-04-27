@@ -153,10 +153,21 @@ public interface CustomerRepository extends JpaRepository<Customer, String> {
     Double calculateAverageRating(@Param("factoryId") String factoryId);
 
     /**
-     * 统计客户的总欠款
+     * 统计客户的总欠款 (仅正余额, 即客户欠工厂的钱).
+     * R42 BUG-13 fix: 之前 SUM(currentBalance) 把客户预付 (negative balance) 也加进去,
+     * 导致 reports/finance.accountsReceivable 显示负值 (e.g., -145K). 应付预付应分开统计.
      */
-    @Query("SELECT SUM(c.currentBalance) FROM Customer c WHERE c.factoryId = :factoryId")
+    @Query("SELECT COALESCE(SUM(c.currentBalance), 0) FROM Customer c " +
+            "WHERE c.factoryId = :factoryId AND c.currentBalance > 0")
     BigDecimal calculateTotalOutstandingBalance(@Param("factoryId") String factoryId);
+
+    /**
+     * R42 BUG-13: 统计客户预付款 (negative balance 取绝对值).
+     * 客户预付了钱但未消费, 在会计上是工厂的负债, 不应混在 AR 里.
+     */
+    @Query("SELECT COALESCE(SUM(-c.currentBalance), 0) FROM Customer c " +
+            "WHERE c.factoryId = :factoryId AND c.currentBalance < 0")
+    BigDecimal calculateTotalPrepayments(@Param("factoryId") String factoryId);
 
     /**
      * 统计客户的总信用额度

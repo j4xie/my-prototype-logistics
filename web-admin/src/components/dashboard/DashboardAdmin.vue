@@ -71,7 +71,12 @@ const statCards = computed(() => [
   },
   {
     title: '设备告警',
-    value: equipmentStats.value?.activeAlerts ?? 0,
+    // R42 BUG-14 fix: dashboard/equipment doesn't have activeAlerts field;
+    // dashboard/overview returns it nested at summary.activeAlerts.
+    value: (overview.value as any)?.summary?.activeAlerts
+      ?? (overview.value as any)?.alerts?.active
+      ?? equipmentStats.value?.activeAlerts
+      ?? 0,
     unit: '条',
     icon: Warning,
     color: '#FF5630',

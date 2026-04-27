@@ -85,13 +85,30 @@ public interface ArApTransactionRepository extends JpaRepository<ArApTransaction
             @Param("factoryId") String factoryId,
             @Param("today") LocalDate today);
 
-    /** 应收总额 */
-    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM ArApTransaction t " +
+    /**
+     * 应收余额 = 挂账增加 - 收款减少 - 退货冲减.
+     * R42 BUG-13 fix: 之前 SUM(amount) 把 AR_INVOICE + AR_PAYMENT 全加, 导致 ¥1,457K + ¥620K = ¥2,077K
+     * (错误地翻倍). 正确应是 1,457K - 620K = 837K.
+     */
+    @Query("SELECT COALESCE(SUM(CASE " +
+            "  WHEN t.transactionType IN (com.cretas.aims.entity.enums.ArApTransactionType.AR_INVOICE, " +
+            "                              com.cretas.aims.entity.enums.ArApTransactionType.AR_ADJUSTMENT) THEN t.amount " +
+            "  WHEN t.transactionType IN (com.cretas.aims.entity.enums.ArApTransactionType.AR_PAYMENT, " +
+            "                              com.cretas.aims.entity.enums.ArApTransactionType.AR_CREDIT_NOTE) THEN -t.amount " +
+            "  ELSE 0 END), 0) FROM ArApTransaction t " +
             "WHERE t.factoryId = :factoryId AND t.counterpartyType = 'CUSTOMER'")
     BigDecimal sumReceivables(@Param("factoryId") String factoryId);
 
-    /** 应付总额 */
-    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM ArApTransaction t " +
+    /**
+     * 应付余额 = 挂账增加 - 付款减少 - 退货冲减.
+     * R42 BUG-13 fix: 同 sumReceivables, 之前 SUM 全加 ¥247K + ¥197K = ¥444K (错). 正确是 50K.
+     */
+    @Query("SELECT COALESCE(SUM(CASE " +
+            "  WHEN t.transactionType IN (com.cretas.aims.entity.enums.ArApTransactionType.AP_INVOICE, " +
+            "                              com.cretas.aims.entity.enums.ArApTransactionType.AP_ADJUSTMENT) THEN t.amount " +
+            "  WHEN t.transactionType IN (com.cretas.aims.entity.enums.ArApTransactionType.AP_PAYMENT, " +
+            "                              com.cretas.aims.entity.enums.ArApTransactionType.AP_CREDIT_NOTE) THEN -t.amount " +
+            "  ELSE 0 END), 0) FROM ArApTransaction t " +
             "WHERE t.factoryId = :factoryId AND t.counterpartyType = 'SUPPLIER'")
     BigDecimal sumPayables(@Param("factoryId") String factoryId);
 
