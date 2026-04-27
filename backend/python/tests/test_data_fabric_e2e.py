@@ -819,28 +819,20 @@ async def test_closed_loop_sheet_merger_to_template(
         # 4. compute_product_top10 returns the seeded data (or empty applies=False)
         top10 = await compute_product_top10(scoped_pool, TEST_FACTORY, top_n=5)
 
-        # If the writer ran (high-confidence shape detection), top10 must
-        # surface the seeded item. If admin-queued (low confidence on minimal
-        # data), the test still validates the orchestration plumbing.
-        if agg_count > 0:
-            assert (
-                result.routed_to == "product_summary"
-            ), f"writer ran but routed_to != product_summary: {result.routed_to!r}"
-            assert top10.applies is True
-            assert len(top10.data["items"]) >= 1
-            assert top10.data["items"][0]["name"] == "测试菜"
-        else:
-            # Admin-queue path or entity resolution declined: verify pipeline
-            # didn't crash. Queued uploads or low-confidence writes both leave
-            # 0 rows in agg_product_period — both are valid outcomes.
-            assert top10.applies in (True, False)
-            # At minimum, route_upload must have returned a RouteResult, not
-            # raised. result.routed_to in ("product_summary", "legacy", None).
-            assert result.routed_to in (
-                "product_summary",
-                "legacy",
-                None,
-            ), f"unexpected routed_to: {result.routed_to!r}"
+        # Seed deterministically fires the rule-path detector at confidence
+        # 0.90 (商品名称 + 销售金额 + NO 账单号 → product_summary, > 0.85
+        # AUTO_ROUTE_THRESHOLD). If a future change drops confidence below
+        # 0.85 — or routes elsewhere — this test will FAIL and surface the
+        # regression rather than silently accepting an empty agg row count.
+        assert (
+            agg_count > 0
+        ), f"expected ProductSummaryWriter to write rows, got {agg_count}"
+        assert (
+            result.routed_to == "product_summary"
+        ), f"writer ran but routed_to != product_summary: {result.routed_to!r}"
+        assert top10.applies is True
+        assert len(top10.data["items"]) >= 1
+        assert top10.data["items"][0]["name"] == "测试菜"
     finally:
         # Drop module-level asyncio.Lock so the next test (likely on a fresh
         # event loop under pytest-asyncio) doesn't reuse a Lock bound to this
@@ -902,12 +894,14 @@ async def test_stress_concurrent_uploads_advisory_lock(
         total_elapsed = _time.monotonic() - start
 
         assert all(r == "done" for r in results)
-        # Serialization invariant: total >= 5 × 0.05s = 0.25s. Allow 0.20s
+        # Serialization invariant: total >= 5 × 0.05s = 0.25s. Allow 0.23s
         # floor to absorb timer jitter, but it MUST be substantially above
         # 0.05s (parallel) — proving the advisory lock did serialize.
+        # Pair with the parallel test's 0.18s ceiling for a 50ms gap proving
+        # the difference (CI-stable yet still discriminating).
         assert (
-            total_elapsed >= 0.20
-        ), f"expected serial execution (>=0.20s), got {total_elapsed:.3f}s"
+            total_elapsed >= 0.23
+        ), f"expected serial execution (>=0.23s), got {total_elapsed:.3f}s"
     finally:
         cleanup_factory_lock(TEST_FACTORY)
         await stress_pool.close()
@@ -964,13 +958,226 @@ async def test_stress_different_factories_run_in_parallel(
 
         assert all(r == "done" for r in results)
         # Parallel: 5 different lock keys → all run together; total ≈ 0.05s
-        # plus pool/transaction overhead. Allow up to 0.20s (serial would be
-        # 0.25s+).
+        # plus pool/transaction overhead. Allow up to 0.18s (serial floor is
+        # 0.23s above, so 50ms gap proves the difference). Tighter ceiling
+        # discriminates parallelism cleanly from CI jitter.
         assert (
-            total_elapsed < 0.20
-        ), f"expected parallel execution (<0.20s), got {total_elapsed:.3f}s"
+            total_elapsed < 0.18
+        ), f"expected parallel execution (<0.18s), got {total_elapsed:.3f}s"
     finally:
         # Cleanup module-level asyncio lock registry to avoid cross-test bleed
         for f in factories:
             cleanup_factory_lock(f)
         await stress_pool.close()
+
+
+# ── field_provenance integration tests (Sub-Project C Day 1-5) ─────────────
+# These cover the audit-flagged "16 tests are all mock-based" gap for the
+# provenance writer/reader. They run inside a transaction so cleanup happens
+# automatically on rollback; cross-tenant + FK-restrict tests use raw INSERTs
+# so they're independent of dim_* seeding.
+
+
+@pytest.mark.integration
+async def test_provenance_write_read_roundtrip(
+    pg_pool: "asyncpg.Pool", clean_tenant: None
+) -> None:
+    """write_provenance + read_authoritative_value round-trip on real PG.
+
+    Validates: sentinel upload_id=0 default, JSON serialization,
+    asyncpg date round-trip, and that the reader reconstructs the same
+    confidence / source_type / mapper_method we wrote.
+    """
+    from datetime import date
+
+    from smartbi.canonical.provenance import (
+        read_authoritative_value,
+        write_provenance,
+    )
+
+    async with pg_pool.acquire() as conn:
+        async with conn.transaction():
+            await _set_tenant(conn, TEST_FACTORY)
+            store_id = await _seed_dim_store(conn, TEST_FACTORY, "测试店")
+
+            inserted_id = await write_provenance(
+                conn,
+                factory_id=TEST_FACTORY,
+                entity_type="store",
+                entity_id=store_id,
+                field_name="brand",
+                field_value="桂满陇",
+                confidence=0.95,
+                source_type="manual",
+                mapper_method="manual",
+                valid_from=date(2026, 1, 1),
+            )
+            assert inserted_id > 0
+
+            # Read back
+            pv = await read_authoritative_value(
+                conn, TEST_FACTORY, "store", store_id, "brand"
+            )
+            assert pv is not None
+            # field_value is JSONB-serialized "桂满陇" → asyncpg returns a
+            # JSON string in this codebase (no global jsonb codec). Decode
+            # defensively so the test passes regardless of codec config.
+            fv = pv.field_value
+            if isinstance(fv, str):
+                try:
+                    fv = json.loads(fv)
+                except json.JSONDecodeError:
+                    pass  # leave as-is if codec already decoded
+            assert fv == "桂满陇"
+            assert float(pv.confidence) == 0.95
+            assert pv.source_upload_id == 0  # sentinel default
+            assert pv.source_type == "manual"
+            assert pv.mapper_method == "manual"
+            assert pv.valid_from == date(2026, 1, 1)
+
+
+@pytest.mark.integration
+async def test_provenance_dedup_unique_violation_on_concurrent_write(
+    pg_pool: "asyncpg.Pool", clean_tenant: None
+) -> None:
+    """uq_fp_dedup partial unique index prevents two active rows for the
+    same (factory, entity_type, entity_id, field_name, valid_from).
+
+    Day 1-5 simplification: no supersession yet, so the second write
+    raises UniqueViolationError. Day 6+ conflict resolution will mark
+    the first row superseded before re-INSERT.
+
+    Note: writer currently passes ``valid_from=None`` to asyncpg, which
+    sends NULL — DB column is NOT NULL DEFAULT '-infinity'. So we pass
+    valid_from explicitly here. Day 6+ blocker item 7 in
+    C-day6-blockers.md tracks the writer-side fix.
+    """
+    from datetime import date
+
+    from smartbi.canonical.provenance import write_provenance
+
+    async with pg_pool.acquire() as conn:
+        async with conn.transaction():
+            await _set_tenant(conn, TEST_FACTORY)
+            product_id = await _seed_dim_product(
+                conn, TEST_FACTORY, "招牌鱼", "招牌鱼"
+            )
+
+            # First write succeeds.
+            await write_provenance(
+                conn,
+                factory_id=TEST_FACTORY,
+                entity_type="product",
+                entity_id=product_id,
+                field_name="cost_per_unit",
+                field_value=12.50,
+                confidence=0.9,
+                source_type="manual",
+                mapper_method="manual",
+                valid_from=date(2026, 1, 1),
+            )
+
+            # Second write with SAME (factory, entity_type, entity_id,
+            # field_name, valid_from) and superseded_by_id NULL → raises
+            # UniqueViolationError per uq_fp_dedup partial index.
+            with pytest.raises(asyncpg.UniqueViolationError):
+                await write_provenance(
+                    conn,
+                    factory_id=TEST_FACTORY,
+                    entity_type="product",
+                    entity_id=product_id,
+                    field_name="cost_per_unit",
+                    field_value=15.00,
+                    confidence=0.85,
+                    source_type="manual",
+                    mapper_method="manual",
+                    valid_from=date(2026, 1, 1),
+                )
+
+
+@pytest.mark.integration
+async def test_provenance_rls_blocks_cross_tenant_insert(
+    pg_pool: "asyncpg.Pool", clean_tenant: None
+) -> None:
+    """RLS WITH CHECK rejects an INSERT into field_provenance with
+    factory_id != current tenant. Mirrors the
+    test_rls_blocks_cross_tenant_insert pattern used for
+    entity_resolution_history.
+    """
+    async with pg_pool.acquire() as conn:
+        async with conn.transaction():
+            await _set_tenant(conn, TEST_FACTORY)
+            with pytest.raises(
+                (
+                    asyncpg.InsufficientPrivilegeError,
+                    asyncpg.exceptions.InsufficientPrivilegeError,
+                )
+            ):
+                await conn.execute(
+                    """
+                    INSERT INTO field_provenance
+                      (factory_id, entity_type, entity_id, field_name,
+                       field_value, source_type, confidence, mapper_method)
+                    VALUES ('OTHER_FACTORY', 'store', 1, 'brand',
+                            '"x"'::jsonb, 'manual', 0.5, 'manual')
+                    """,
+                )
+
+
+@pytest.mark.integration
+async def test_provenance_fk_restrict_prevents_orphan(
+    pg_pool: "asyncpg.Pool", clean_tenant: None
+) -> None:
+    """ON DELETE RESTRICT on source_upload_id prevents deleting an upload
+    that has provenance rows pointing to it (per spec C-2).
+
+    Sentinel upload_id=0 doesn't apply here (it's the manual/inferred
+    fallback and isn't user-deletable), but a real upload row MUST fail
+    to DELETE if any field_provenance row still references it.
+
+    Note: writer currently passes ``valid_from=None`` to asyncpg, which
+    sends NULL — DB column is NOT NULL DEFAULT '-infinity'. So we pass
+    valid_from explicitly here. Day 6+ blocker item 7 in
+    C-day6-blockers.md tracks the writer-side fix.
+    """
+    from datetime import date
+
+    from smartbi.canonical.provenance import write_provenance
+
+    async with pg_pool.acquire() as conn:
+        async with conn.transaction():
+            await _set_tenant(conn, TEST_FACTORY)
+
+            # Create a real upload row + provenance pointing to it.
+            upload_id = await conn.fetchval(
+                """
+                INSERT INTO smart_bi_pg_excel_uploads
+                  (factory_id, file_name, upload_status)
+                VALUES ($1, 'test_fk.xlsx', 'COMPLETED')
+                RETURNING id
+                """,
+                TEST_FACTORY,
+            )
+
+            store_id = await _seed_dim_store(conn, TEST_FACTORY, "FK测试店")
+
+            await write_provenance(
+                conn,
+                factory_id=TEST_FACTORY,
+                entity_type="store",
+                entity_id=store_id,
+                field_name="city",
+                field_value="上海",
+                confidence=0.9,
+                source_type="pos_excel",
+                mapper_method="rule",
+                source_upload_id=upload_id,
+                valid_from=date(2026, 1, 1),
+            )
+
+            # Now try to DELETE the upload — must fail per ON DELETE RESTRICT.
+            with pytest.raises(asyncpg.ForeignKeyViolationError):
+                await conn.execute(
+                    "DELETE FROM smart_bi_pg_excel_uploads WHERE id = $1",
+                    upload_id,
+                )

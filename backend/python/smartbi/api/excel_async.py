@@ -80,7 +80,11 @@ async def run_b_writers(factory_id: str, upload_id: int) -> None:
         from smartbi.canonical.shape_router import route_upload
         from smartbi.canonical.entity_resolution import make_default_orchestrator
         from smartbi.config import get_settings
-        from smartbi.tenant_ctx import set_factory_id, set_pg_connection_tenant
+        from smartbi.tenant_ctx import (
+            reset_factory_id,
+            set_factory_id,
+            set_pg_connection_tenant,
+        )
         import asyncpg
 
         settings = get_settings()
@@ -91,23 +95,26 @@ async def run_b_writers(factory_id: str, upload_id: int) -> None:
             )
             return
 
-        set_factory_id(factory_id)
-        pool = await asyncpg.create_pool(
-            settings.postgres_url,
-            min_size=1, max_size=2,
-            setup=set_pg_connection_tenant,
-            timeout=10,
-        )
+        token = set_factory_id(factory_id)
         try:
-            orchestrator = make_default_orchestrator(pool)
-            result = await route_upload(upload_id, factory_id, pool, orchestrator)
-            logger.info(
-                "[b_writers] upload=%d factory=%s shape=%s routed_to=%s queued=%s",
-                upload_id, factory_id,
-                result.shape, result.routed_to, result.queued_for_admin,
+            pool = await asyncpg.create_pool(
+                settings.postgres_url,
+                min_size=1, max_size=2,
+                setup=set_pg_connection_tenant,
+                timeout=10,
             )
+            try:
+                orchestrator = make_default_orchestrator(pool)
+                result = await route_upload(upload_id, factory_id, pool, orchestrator)
+                logger.info(
+                    "[b_writers] upload=%d factory=%s shape=%s routed_to=%s queued=%s",
+                    upload_id, factory_id,
+                    result.shape, result.routed_to, result.queued_for_admin,
+                )
+            finally:
+                await pool.close()
         finally:
-            await pool.close()
+            reset_factory_id(token)
     except Exception:
         logger.exception(
             "[b_writers] failed for upload=%d factory=%s", upload_id, factory_id,

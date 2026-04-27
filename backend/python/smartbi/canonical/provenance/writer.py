@@ -85,13 +85,19 @@ async def write_provenance(
         except (TypeError, ValueError) as exc:
             raise ValueError(f"field_value is not JSON-serializable: {exc}") from exc
 
+    # COALESCE on valid_from: caller may pass None meaning "no anchor — use
+    # DB default '-infinity'::date". asyncpg sends Python None as explicit
+    # SQL NULL which bypasses column DEFAULT and trips NOT NULL constraint.
+    # COALESCE($9, '-infinity'::date) handles both None and a real date.
     new_id = await conn.fetchval(
         """
         INSERT INTO field_provenance
           (factory_id, entity_type, entity_id, field_name, field_value,
            source_upload_id, source_type, confidence, valid_from, valid_to,
            mapper_method, notes)
-        VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10, $11, $12)
+        VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8,
+                COALESCE($9::date, '-infinity'::date),
+                $10, $11, $12)
         RETURNING id
         """,
         factory_id,
