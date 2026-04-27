@@ -2542,3 +2542,95 @@ async def test_infer_product_summary_period_from_neighboring_bill_flow(
         assert result == (date(2026, 2, 1), date(2026, 2, 28))
     finally:
         await scoped_pool.close()
+
+
+@pytest.mark.integration
+async def test_compute_dish_margin_expired_recipe_falls_back_to_industry_default(
+    pg_pool: "asyncpg.Pool", clean_tenant: None,
+) -> None:
+    """I-B coverage: recipe with valid_to BEFORE the query period_end is
+    correctly excluded by read_authoritative_value (Day 6 valid_to filter
+    fix), and compute_dish_margin falls back to industry_default — exactly
+    as it would for a product with no recipe at all.
+
+    This is the most common production case as recipes age out: a recipe
+    written for 2026 Q1 (valid_to=2026-03-31) should NOT be used to compute
+    margins for 2026-06 sales — instead the cost should come from
+    industry_default (川菜 cost_rate × avg_unit_price).
+    """
+    from datetime import date
+    from smartbi.canonical.provenance import compute_dish_margin, write_provenance
+
+    async def _setup(conn: "asyncpg.Connection") -> None:
+        await conn.execute(
+            "SELECT set_config('app.factory_id', $1, false)", TEST_FACTORY
+        )
+
+    scoped_pool = await asyncpg.create_pool(
+        PG_DSN, min_size=1, max_size=2, timeout=5, setup=_setup
+    )
+    try:
+        async with scoped_pool.acquire() as conn:
+            async with conn.transaction():
+                product_id = await _seed_dim_product_with_category(
+                    conn, TEST_FACTORY, "宫保鸡丁_expired", category="川菜",
+                )
+                store_id = await _seed_dim_store(
+                    conn, TEST_FACTORY, "测试店_expired_recipe"
+                )
+
+                # 1. Write a recipe valid 2026-Q1 only — explicitly expired
+                #    by 2026-06-15 (the query date_range[1] below).
+                await write_provenance(
+                    conn,
+                    factory_id=TEST_FACTORY,
+                    entity_type="product",
+                    entity_id=product_id,
+                    field_name="cost_per_unit",
+                    field_value=8.00,  # if used, would give cost=400 (way off)
+                    confidence=0.95,
+                    source_type="manual",
+                    mapper_method="manual",
+                    valid_from=date(2026, 1, 1),
+                    valid_to=date(2026, 3, 31),  # ← expired before query
+                )
+
+                # 2. Sales in 2026-06 (after recipe expiry).
+                upload_id = await conn.fetchval(
+                    """
+                    INSERT INTO smart_bi_pg_excel_uploads
+                      (factory_id, file_name, upload_status)
+                    VALUES ($1, $2, 'COMPLETED')
+                    RETURNING id
+                    """,
+                    TEST_FACTORY, "cascade_expired_recipe.xlsx",
+                )
+                await conn.execute(
+                    """
+                    INSERT INTO agg_product_period
+                      (factory_id, upload_id, product_id, store_id,
+                       period_start, period_end, qty_sold, revenue,
+                       avg_unit_price)
+                    VALUES ($1, $2, $3, $4, $5, $6, 50, 1500, 30)
+                    """,
+                    TEST_FACTORY, upload_id, product_id, store_id,
+                    date(2026, 6, 1), date(2026, 6, 30),
+                )
+
+                # 3. Query for 2026-06 — recipe is expired, should fall back.
+                result = await compute_dish_margin(
+                    conn, TEST_FACTORY, product_id,
+                    (date(2026, 6, 1), date(2026, 6, 30)),
+                )
+
+        assert result["status"] == "ok"
+        # Critical assertion: NOT "manual" — the expired recipe must be excluded.
+        assert result["cost_source"] == "industry_default", (
+            f"expected industry_default fallback when recipe expired, "
+            f"got cost_source={result['cost_source']!r}"
+        )
+        # 川菜 cost_rate=0.35 × avg_unit_price=30 × qty=50 = 525 (not 8 × 50 = 400)
+        assert abs(result["cost"] - 525.0) < 1e-3
+        assert float(result["cost_confidence"]) == 0.5  # industry_default conf
+    finally:
+        await scoped_pool.close()

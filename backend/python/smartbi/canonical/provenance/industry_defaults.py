@@ -14,7 +14,6 @@ the form ``"<default_type>.<category>"`` (e.g. ``"cost_rate.川菜": 0.32``).
 """
 from __future__ import annotations
 
-import json
 import logging
 from typing import TYPE_CHECKING, Dict, Optional
 
@@ -104,37 +103,23 @@ async def get_industry_default(
         )
         return None
 
-    row = await conn.fetchrow(
-        """
-        SELECT industry_default_overrides
-          FROM factory_provenance_config
-         WHERE factory_id = $1
-        """,
-        factory_id,
-    )
-    if row and row["industry_default_overrides"] is not None:
-        overrides = row["industry_default_overrides"]
-        if isinstance(overrides, str):
+    # I-A fix: read overrides through the cached _get_factory_config (5min TTL)
+    # to avoid divergence with conflict_resolver's priority math. Admin updates
+    # propagate to BOTH paths via invalidate_factory_config_cache().
+    from smartbi.canonical.provenance.conflict_resolver import _get_factory_config
+    factory_config = await _get_factory_config(conn, factory_id)
+    overrides = factory_config.get("industry_default_overrides")
+    if isinstance(overrides, dict):
+        full_key = f"{default_type}.{key}"
+        if full_key in overrides:
             try:
-                overrides = json.loads(overrides)
-            except json.JSONDecodeError:
+                return float(overrides[full_key])
+            except (TypeError, ValueError):
                 logger.warning(
-                    "factory_provenance_config.industry_default_overrides "
-                    "is not valid JSON for factory_id=%s; ignoring override",
-                    factory_id,
+                    "industry_default_overrides[%r] is not numeric "
+                    "(factory_id=%s); falling through to global default",
+                    full_key, factory_id,
                 )
-                overrides = None
-        if isinstance(overrides, dict):
-            full_key = f"{default_type}.{key}"
-            if full_key in overrides:
-                try:
-                    return float(overrides[full_key])
-                except (TypeError, ValueError):
-                    logger.warning(
-                        "industry_default_overrides[%r] is not numeric "
-                        "(factory_id=%s); falling through to global default",
-                        full_key, factory_id,
-                    )
 
     # Global hardcode fallback.
     if default_type == "cost_rate":

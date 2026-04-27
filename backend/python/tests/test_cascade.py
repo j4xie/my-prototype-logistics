@@ -294,24 +294,47 @@ async def test_get_industry_default_cost_rate_unknown_returns_default():
 
 @pytest.mark.asyncio
 async def test_get_industry_default_factory_override_wins():
-    """Factory override JSONB takes precedence over global hardcode."""
+    """Factory override JSONB takes precedence over global hardcode.
+
+    Post-I-A refactor: get_industry_default reads via _get_factory_config
+    (5min cache) instead of direct conn.fetchrow, so we patch the cache helper.
+    """
     conn = AsyncMock()
-    conn.fetchrow.return_value = {
-        "industry_default_overrides": {"cost_rate.川菜": 0.32}
-    }
-    val = await get_industry_default(conn, "F999", "cost_rate", "川菜")
+    with patch(
+        "smartbi.canonical.provenance.conflict_resolver._get_factory_config",
+        new_callable=AsyncMock,
+    ) as mock_cfg:
+        mock_cfg.return_value = {
+            "diff_threshold": 0.30,
+            "priority_overrides": None,
+            "industry_default_overrides": {"cost_rate.川菜": 0.32},
+            "time_inheritance_window_days": 7,
+        }
+        val = await get_industry_default(conn, "F999", "cost_rate", "川菜")
     assert val == 0.32  # not the global 0.35
 
 
 @pytest.mark.asyncio
-async def test_get_industry_default_factory_override_string_jsonb():
-    """asyncpg may surface JSONB as JSON string; we normalize."""
+async def test_get_industry_default_factory_override_non_numeric_falls_through():
+    """Non-numeric override value falls through to global default with warning.
+
+    (Replaced prior test_get_industry_default_factory_override_string_jsonb —
+    string-JSONB normalization now lives in _get_factory_config, not here.)
+    """
     conn = AsyncMock()
-    conn.fetchrow.return_value = {
-        "industry_default_overrides": '{"cost_rate.川菜": 0.30}'
-    }
-    val = await get_industry_default(conn, "F999", "cost_rate", "川菜")
-    assert val == 0.30
+    with patch(
+        "smartbi.canonical.provenance.conflict_resolver._get_factory_config",
+        new_callable=AsyncMock,
+    ) as mock_cfg:
+        mock_cfg.return_value = {
+            "diff_threshold": 0.30,
+            "priority_overrides": None,
+            "industry_default_overrides": {"cost_rate.川菜": "not-a-number"},
+            "time_inheritance_window_days": 7,
+        }
+        val = await get_industry_default(conn, "F999", "cost_rate", "川菜")
+    # Falls through to global hardcode
+    assert val == INDUSTRY_DEFAULT_COST_RATIO["川菜"]
 
 
 @pytest.mark.asyncio
