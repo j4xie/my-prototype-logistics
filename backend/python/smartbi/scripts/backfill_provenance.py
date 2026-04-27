@@ -27,11 +27,12 @@ Conventions:
 Source-table column-name reality check (v1.4 spec §5.3 was loose):
 - agg_product_period: factory_id, upload_id, product_id, store_id,
   period_start, period_end, qty_sold, revenue, avg_unit_price.
-- dim_review_summary: factory_id, product_id, store_id (NOT *_for_summary —
+- dim_review_summary: factory_id, upload_id (added by V20260428_01:18-19
+  for review-writer idempotency), product_id, store_id (NOT *_for_summary —
   spec §5.3 used the writer-side variable names; actual table columns are
   unsuffixed per V20260427_02 schema), period_start, period_end, avg_rating,
-  total_count, positive_count, negative_count. NOTE: dim_review_summary has
-  no upload_id column — backfill writes source_upload_id = sentinel 0.
+  total_count, positive_count, negative_count. Backfill forwards real
+  upload_id when present; falls back to sentinel 0 only on NULL.
 - fact_finance_voucher: factory_id, upload_id, subject_id, voucher_date,
   debit_amount, credit_amount.
 - fact_inventory_snapshot: factory_id, upload_id, ingredient_id, store_id,
@@ -195,12 +196,11 @@ async def _backfill_agg_product_period_batch(
 # NOTE: dim_review_summary has columns product_id / store_id (NOT *_for_summary
 # as spec §5.3 implied — the *_for_summary names are local variable names
 # inside review_writer.py; actual table columns from V20260427_02 are bare).
-# Also: dim_review_summary does NOT have an upload_id column, so we use the
-# sentinel upload_id (0) for these provenance rows — consistent with the
-# writer hook which also writes one aggregate row per upload but loses the
-# direct linkage at the table level.
+# upload_id was added by V20260428_01:18-19 for review-writer idempotency
+# (one summary row per upload+product+store+period via uq_drs_natkey). Backfill
+# forwards real upload_id when present; falls back to sentinel 0 only on NULL.
 _DIM_REVIEW_SUMMARY_FETCH_SQL = """
-    SELECT id, factory_id, product_id, store_id,
+    SELECT id, factory_id, upload_id, product_id, store_id,
            period_start, period_end, avg_rating, total_count,
            positive_count, negative_count
       FROM dim_review_summary
@@ -232,6 +232,10 @@ async def _backfill_dim_review_summary_batch(
         else:
             continue  # skip — no anchor
 
+        # I1: forward real upload_id from V20260428_01-added column;
+        # only fall back to sentinel 0 when the column itself is NULL.
+        upload_id = src["upload_id"] if src["upload_id"] is not None else _SENTINEL_UPLOAD_ID
+
         for field_name, value, value_caster in (
             ("avg_rating", src["avg_rating"], lambda v: float(v) if v is not None else None),
             ("review_count", src["total_count"], lambda v: int(v) if v is not None else None),
@@ -242,7 +246,7 @@ async def _backfill_dim_review_summary_batch(
             if casted is None:
                 continue
             attempted += 1
-            value_json = json.dumps(casted)
+            value_json = json.dumps(casted, ensure_ascii=False)
             row = await conn.fetchrow(
                 """
                 INSERT INTO field_provenance
@@ -256,7 +260,7 @@ async def _backfill_dim_review_summary_batch(
                 RETURNING id
                 """,
                 src["factory_id"], entity_type, entity_id, field_name, value_json,
-                _SENTINEL_UPLOAD_ID,  # dim_review_summary has no upload_id column
+                upload_id,
                 src["period_start"], src["period_end"],
                 "backfill_from_dim_review_summary",
             )
@@ -316,7 +320,7 @@ async def _backfill_fact_finance_voucher_batch(
             if value == 0:
                 continue  # don't write zero-rolled-up rows
             attempted += 1
-            value_json = json.dumps(value)
+            value_json = json.dumps(value, ensure_ascii=False)
             row = await conn.fetchrow(
                 """
                 INSERT INTO field_provenance
@@ -373,7 +377,7 @@ async def _backfill_fact_inventory_snapshot_batch(
                 continue
             attempted += 1
             field_name = f"{field_base}{store_suffix}"
-            value_json = json.dumps(casted)
+            value_json = json.dumps(casted, ensure_ascii=False)
             row = await conn.fetchrow(
                 """
                 INSERT INTO field_provenance
@@ -487,6 +491,20 @@ async def backfill_table(
 async def main_async(args) -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
+    # I5 SAFETY GUARD: refuse to run when the live writer flag is ON.
+    # Concurrent backfill + live-writer writes on the same dedup key would
+    # race — backfill has ON CONFLICT DO NOTHING, but live writer.py raises
+    # UniqueViolation (no ON CONFLICT clause). Operator must set
+    # SMARTBI_ENABLE_PROVENANCE=0 first, run BF1, then re-enable.
+    flag_val = os.environ.get("SMARTBI_ENABLE_PROVENANCE", "0").strip().lower()
+    if flag_val in ("1", "true", "yes", "on"):
+        logger.error(
+            "SMARTBI_ENABLE_PROVENANCE=%s: refuse to run backfill with live "
+            "writer flag ON. Set flag=0 first to avoid UniqueViolation race "
+            "with concurrent live writes.", flag_val,
+        )
+        return 1
+
     dsn = os.environ.get("BACKFILL_PG_DSN") or os.environ.get("INTEGRATION_PG_DSN")
     if not dsn:
         logger.error("Set BACKFILL_PG_DSN or INTEGRATION_PG_DSN env var")
@@ -494,6 +512,41 @@ async def main_async(args) -> int:
 
     pool = await asyncpg.create_pool(dsn, min_size=1, max_size=2, timeout=10)
     try:
+        # C1 STARTUP GUARD: backfill needs either rolbypassrls=true OR a
+        # pre-set app.factory_id GUC. smartbi_user has FORCE ROW LEVEL
+        # SECURITY on field_provenance + 4 source tables; without app.factory_id
+        # set AND without BYPASSRLS, every SELECT silently returns 0 rows AND
+        # every INSERT is rejected by RLS WITH CHECK. Operator must use a
+        # superuser/postgres DSN for backfill.
+        async with pool.acquire() as conn:
+            check = await conn.fetchrow(
+                """
+                SELECT
+                  current_setting('app.factory_id', true) AS factory_id,
+                  current_user AS user_name,
+                  (SELECT rolbypassrls FROM pg_roles WHERE rolname = current_user) AS bypass_rls
+                """
+            )
+            has_factory = bool(check["factory_id"])
+            bypass_rls = bool(check["bypass_rls"])
+            if not has_factory and not bypass_rls:
+                logger.error(
+                    "Backfill cannot run as user=%r without app.factory_id set "
+                    "AND without rolbypassrls. RLS would silently return 0 rows "
+                    "from SELECT and reject every INSERT.",
+                    check["user_name"],
+                )
+                logger.error(
+                    "Fix: set BACKFILL_PG_DSN to a role with BYPASSRLS, e.g.\n"
+                    "  BACKFILL_PG_DSN='postgresql://postgres@localhost:5432/smartbi_prod_db' \\\n"
+                    "  python -m smartbi.scripts.backfill_provenance ..."
+                )
+                return 3
+            logger.info(
+                "RLS check OK: user=%s bypass_rls=%s factory_id=%r",
+                check["user_name"], bypass_rls, check["factory_id"],
+            )
+
         if args.reset:
             async with pool.acquire() as conn:
                 for tbl in args.table:

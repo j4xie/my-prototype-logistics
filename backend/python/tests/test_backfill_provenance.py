@@ -186,7 +186,7 @@ async def test_backfill_dim_review_summary_anchors_to_product_when_present():
     conn.fetchrow = AsyncMock(return_value={"id": 999})
     rows = [
         {
-            "id": 1, "factory_id": "F999",
+            "id": 1, "factory_id": "F999", "upload_id": 12,
             "product_id": 200, "store_id": 99,
             "period_start": date(2026, 1, 1), "period_end": date(2026, 1, 31),
             "avg_rating": 4.5, "total_count": 100, "positive_count": 80, "negative_count": 5,
@@ -209,7 +209,7 @@ async def test_backfill_dim_review_summary_falls_back_to_store_anchor():
     conn.fetchrow = AsyncMock(return_value={"id": 999})
     rows = [
         {
-            "id": 1, "factory_id": "F999",
+            "id": 1, "factory_id": "F999", "upload_id": 12,
             "product_id": None, "store_id": 10,
             "period_start": date(2026, 1, 1), "period_end": date(2026, 1, 31),
             "avg_rating": 4.0, "total_count": 50, "positive_count": 40, "negative_count": 5,
@@ -229,7 +229,7 @@ async def test_backfill_dim_review_summary_skips_when_no_anchor():
     conn.fetchrow = AsyncMock(return_value={"id": 999})
     rows = [
         {
-            "id": 1, "factory_id": "F999",
+            "id": 1, "factory_id": "F999", "upload_id": 12,
             "product_id": None, "store_id": None,
             "period_start": date(2026, 1, 1), "period_end": date(2026, 1, 31),
             "avg_rating": 4.0, "total_count": 50, "positive_count": 40, "negative_count": 5,
@@ -246,7 +246,7 @@ async def test_backfill_dim_review_summary_field_name_mapping():
     conn.fetchrow = AsyncMock(return_value={"id": 999})
     rows = [
         {
-            "id": 1, "factory_id": "F999",
+            "id": 1, "factory_id": "F999", "upload_id": 12,
             "product_id": 200, "store_id": None,
             "period_start": date(2026, 1, 1), "period_end": date(2026, 1, 31),
             "avg_rating": 4.5, "total_count": 100, "positive_count": 80, "negative_count": 5,
@@ -258,6 +258,49 @@ async def test_backfill_dim_review_summary_field_name_mapping():
     field_names = sorted(c.args[4] for c in conn.fetchrow.call_args_list)
     # Note: total_count → review_count
     assert field_names == sorted(["avg_rating", "review_count", "positive_count", "negative_count"])
+
+
+async def test_backfill_dim_review_summary_forwards_real_upload_id():
+    """I1: backfill must forward src['upload_id'] (added by V20260428_01),
+    not the sentinel 0. Otherwise audit lineage to the original Excel
+    upload is lost.
+    """
+    conn = MagicMock()
+    conn.fetchrow = AsyncMock(return_value={"id": 999})
+    rows = [
+        {
+            "id": 1, "factory_id": "F999", "upload_id": 4242,
+            "product_id": 200, "store_id": None,
+            "period_start": date(2026, 1, 1), "period_end": date(2026, 1, 31),
+            "avg_rating": 4.5, "total_count": 100, "positive_count": 80, "negative_count": 5,
+        }
+    ]
+    await _backfill_dim_review_summary_batch(conn, rows)
+    # args[6] = source_upload_id (factory_id, entity_type, entity_id, field_name,
+    # value_json, source_upload_id, period_start, period_end, created_by)
+    upload_ids = {c.args[6] for c in conn.fetchrow.call_args_list}
+    assert upload_ids == {4242}, f"expected real upload_id 4242, got {upload_ids}"
+
+
+async def test_backfill_dim_review_summary_falls_back_to_sentinel_on_null_upload():
+    """I1: when upload_id IS NULL (legacy rows pre-V20260428_01), fall back
+    to sentinel 0 so the FK to smart_bi_pg_excel_uploads(id) resolves.
+    """
+    from smartbi.scripts.backfill_provenance import _SENTINEL_UPLOAD_ID
+
+    conn = MagicMock()
+    conn.fetchrow = AsyncMock(return_value={"id": 999})
+    rows = [
+        {
+            "id": 1, "factory_id": "F999", "upload_id": None,
+            "product_id": 200, "store_id": None,
+            "period_start": date(2026, 1, 1), "period_end": date(2026, 1, 31),
+            "avg_rating": 4.5, "total_count": 100, "positive_count": 80, "negative_count": 5,
+        }
+    ]
+    await _backfill_dim_review_summary_batch(conn, rows)
+    upload_ids = {c.args[6] for c in conn.fetchrow.call_args_list}
+    assert upload_ids == {_SENTINEL_UPLOAD_ID}
 
 
 # ── fact_finance_voucher mapper ────────────────────────────────────
@@ -396,3 +439,54 @@ def test_supported_tables_match_dispatch_keys():
     """Drift guard: SUPPORTED_TABLES tuple matches _TABLE_DISPATCH keys."""
     from smartbi.scripts.backfill_provenance import _TABLE_DISPATCH
     assert set(SUPPORTED_TABLES) == set(_TABLE_DISPATCH.keys())
+
+
+# ── I5: SMARTBI_ENABLE_PROVENANCE refuse-to-run guard ──────────────
+
+
+async def test_main_async_refuses_to_run_when_provenance_flag_on(monkeypatch):
+    """I5: main_async must exit 1 (without ever opening a pool) when the
+    live writer flag is ON. Concurrent backfill + live writes on the same
+    dedup key would race because writer.py raises UniqueViolation while
+    backfill has ON CONFLICT DO NOTHING.
+    """
+    from smartbi.scripts import backfill_provenance as bf
+
+    monkeypatch.setenv("SMARTBI_ENABLE_PROVENANCE", "1")
+    # Sentinel guard against accidentally trying to connect: if main_async
+    # somehow proceeds past the I5 check, the pool factory below would raise
+    # AssertionError instead of the I5 returning 1.
+    pool_called = {"count": 0}
+
+    async def _fake_create_pool(*_args, **_kwargs):  # noqa: ANN001
+        pool_called["count"] += 1
+        raise AssertionError("create_pool should not be reached when flag ON")
+
+    monkeypatch.setattr(bf.asyncpg, "create_pool", _fake_create_pool)
+
+    args = MagicMock(
+        table=["agg_product_period"], reset=False,
+        batch_size=5000, sleep=0.2, dry_run=False,
+    )
+    rc = await bf.main_async(args)
+    assert rc == 1
+    assert pool_called["count"] == 0
+
+
+@pytest.mark.parametrize("flag_value", ["true", "yes", "on", "1", "TRUE", "On", " 1 "])
+async def test_main_async_refuses_for_truthy_flag_variants(monkeypatch, flag_value):
+    """I5: refuse-to-run accepts the same truthy spellings as
+    is_provenance_enabled() in _writer_hook.py (case + whitespace tolerant)."""
+    from smartbi.scripts import backfill_provenance as bf
+
+    monkeypatch.setenv("SMARTBI_ENABLE_PROVENANCE", flag_value)
+
+    async def _fake_create_pool(*_args, **_kwargs):  # noqa: ANN001
+        raise AssertionError(f"create_pool should not be reached for flag={flag_value!r}")
+
+    monkeypatch.setattr(bf.asyncpg, "create_pool", _fake_create_pool)
+    args = MagicMock(
+        table=["agg_product_period"], reset=False,
+        batch_size=5000, sleep=0.2, dry_run=False,
+    )
+    assert await bf.main_async(args) == 1

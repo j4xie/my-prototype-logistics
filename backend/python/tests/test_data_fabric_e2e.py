@@ -2929,3 +2929,74 @@ async def test_backfill_resumes_from_checkpoint(
     finally:
         await _reset_backfill_checkpoint(scoped_pool, "agg_product_period")
         await scoped_pool.close()
+
+
+@pytest.mark.integration
+async def test_backfill_aborts_when_smartbi_user_lacks_factory_id(
+    pg_pool: "asyncpg.Pool",
+) -> None:
+    """C1 verify: smartbi_user (no BYPASSRLS, no app.factory_id pre-set)
+    must hit the startup guard and exit 3 — NOT silently produce 0 rows
+    because RLS filtered every SELECT.
+
+    Runs the script as a real subprocess to exercise main() end-to-end
+    (covers env loading, pool acquisition, the new RLS check). Skips if
+    PG_DSN doesn't actually point at smartbi_user (e.g. a postgres-role
+    test override would not exercise this path).
+    """
+    import subprocess
+    import sys
+
+    if "smartbi_user" not in PG_DSN:
+        pytest.skip("PG_DSN must point at smartbi_user role to test RLS abort path")
+
+    env = os.environ.copy()
+    # Make sure I5 doesn't fire first — we want to test C1 specifically.
+    env["SMARTBI_ENABLE_PROVENANCE"] = "0"
+    env["BACKFILL_PG_DSN"] = PG_DSN
+    proc = subprocess.run(
+        [
+            sys.executable, "-m", "smartbi.scripts.backfill_provenance",
+            "--table", "agg_product_period", "--dry-run",
+        ],
+        env=env, capture_output=True, text=True, timeout=30,
+    )
+    assert proc.returncode == 3, (
+        f"expected exit 3, got {proc.returncode}\n"
+        f"--- stderr ---\n{proc.stderr}\n--- stdout ---\n{proc.stdout}"
+    )
+    # Stderr (or stdout, depending on logging config) should mention BYPASSRLS
+    # and/or rolbypassrls so operator knows what to fix.
+    combined = (proc.stderr or "") + (proc.stdout or "")
+    assert (
+        "rolbypassrls" in combined or "BYPASSRLS" in combined
+    ), f"expected RLS guard message, got:\n{combined}"
+
+
+@pytest.mark.integration
+async def test_backfill_aborts_when_provenance_flag_on(
+    pg_pool: "asyncpg.Pool",
+) -> None:
+    """I5 verify (real subprocess): SMARTBI_ENABLE_PROVENANCE=1 must
+    cause backfill to exit 1 BEFORE opening any pool. Belt-and-braces
+    over the unit test — confirms the guard fires in a real CLI invoke.
+    """
+    import subprocess
+    import sys
+
+    env = os.environ.copy()
+    env["SMARTBI_ENABLE_PROVENANCE"] = "1"
+    env["BACKFILL_PG_DSN"] = PG_DSN
+    proc = subprocess.run(
+        [
+            sys.executable, "-m", "smartbi.scripts.backfill_provenance",
+            "--table", "agg_product_period", "--dry-run",
+        ],
+        env=env, capture_output=True, text=True, timeout=30,
+    )
+    assert proc.returncode == 1, (
+        f"expected exit 1, got {proc.returncode}\n"
+        f"--- stderr ---\n{proc.stderr}\n--- stdout ---\n{proc.stdout}"
+    )
+    combined = (proc.stderr or "") + (proc.stdout or "")
+    assert "SMARTBI_ENABLE_PROVENANCE" in combined or "live writer flag" in combined
