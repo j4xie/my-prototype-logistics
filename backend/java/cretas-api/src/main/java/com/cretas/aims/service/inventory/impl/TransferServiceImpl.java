@@ -279,10 +279,12 @@ public class TransferServiceImpl implements TransferService {
         InternalTransfer transfer = loadForStateChange(factoryId, transferId);
         // 调出方或调入方都可取消, 但已发货后须走退货流程
         if (transfer.getStatus().isTerminal()) {
-            throw new BusinessException("终态调拨单不能取消");
+            throw new BusinessException(409, "终态调拨单不能取消")
+                    .withHint("请刷新调拨单列表查看最新状态");
         }
         if (transfer.getStatus() == TransferStatus.SHIPPED || transfer.getStatus() == TransferStatus.RECEIVED) {
-            throw new BusinessException("已发货或已签收的调拨单不能直接取消，请走退货流程");
+            throw new BusinessException(409, "已发货或已签收的调拨单不能直接取消，请走退货流程")
+                    .withHint("请前往退货单模块发起退货");
         }
         transfer.setStatus(TransferStatus.CANCELLED);
         transfer.setRejectReason(reason);
@@ -293,16 +295,18 @@ public class TransferServiceImpl implements TransferService {
     /** 校验当前 factoryId 必须是调拨单的调出方 */
     private void assertSourceFactory(String factoryId, InternalTransfer transfer, String action) {
         if (!factoryId.equals(transfer.getSourceFactoryId())) {
-            throw new BusinessException(action + "操作只允许调出方执行 (当前: " + factoryId
-                    + ", 调出方: " + transfer.getSourceFactoryId() + ")");
+            throw new BusinessException(403, action + "操作只允许调出方执行 (当前: " + factoryId
+                    + ", 调出方: " + transfer.getSourceFactoryId() + ")")
+                    .withHint("请使用调出方账号登录");
         }
     }
 
     /** 校验当前 factoryId 必须是调拨单的调入方 */
     private void assertTargetFactory(String factoryId, InternalTransfer transfer, String action) {
         if (!factoryId.equals(transfer.getTargetFactoryId())) {
-            throw new BusinessException(action + "操作只允许调入方执行 (当前: " + factoryId
-                    + ", 调入方: " + transfer.getTargetFactoryId() + ")");
+            throw new BusinessException(403, action + "操作只允许调入方执行 (当前: " + factoryId
+                    + ", 调入方: " + transfer.getTargetFactoryId() + ")")
+                    .withHint("请使用调入方账号登录");
         }
     }
 
@@ -331,8 +335,9 @@ public class TransferServiceImpl implements TransferService {
 
     private void assertStatus(InternalTransfer transfer, TransferStatus expected, String action) {
         if (transfer.getStatus() != expected) {
-            throw new BusinessException(String.format("当前状态[%s]不允许%s，需要[%s]",
-                    transfer.getStatus().getDisplayName(), action, expected.getDisplayName()));
+            throw new BusinessException(409, String.format("当前状态[%s]不允许%s，需要[%s]",
+                    transfer.getStatus().getDisplayName(), action, expected.getDisplayName()))
+                    .withHint("请刷新调拨单列表查看最新状态");
         }
     }
 
@@ -365,9 +370,10 @@ public class TransferServiceImpl implements TransferService {
                 log.info("扣减原料批次: batchId={}, deduct={}, remaining={}", batch.getId(), deduct, remaining);
             }
             if (remaining.compareTo(BigDecimal.ZERO) > 0) {
-                throw new BusinessException(String.format(
+                throw new BusinessException(409, String.format(
                     "原料库存不足: %s, 需要 %s, 缺少 %s",
-                    item.getMaterialTypeId(), item.getQuantity(), remaining));
+                    item.getMaterialTypeId(), item.getQuantity(), remaining))
+                        .withHint("请先采购或从其他工厂调入该原料");
             }
         } else {
             // 扣减成品库存
