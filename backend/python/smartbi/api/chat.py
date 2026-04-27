@@ -71,6 +71,91 @@ async def _log_template_hit_safe(pool, query, factory_id, upload_id, template_co
         return None
 
 
+# H4 (Apr 27 2026): shared helpers for v2 conv memory across multiple SSE
+# endpoints (drill_down_stream / root_cause_stream / benchmark_stream).
+# Keeps the lookup + writeback logic DRY across endpoints.
+async def _v2_conv_lookup(http_request, session_id: Optional[str]) -> tuple[Optional[Dict], Optional[str], Optional[int]]:
+    """Phase 0 v2 conv memory lookup. Returns (parent_dict, factory_id, user_id).
+
+    parent_dict is None when session_id absent / no factory / lookup fails.
+    factory_id and user_id are extracted regardless (used by writeback).
+    """
+    factory_id = (
+        getattr(http_request.state, 'factory_id', None)
+        if hasattr(http_request, 'state') else None
+    )
+    raw_user_id = (
+        getattr(http_request.state, 'user_id', None)
+        if hasattr(http_request, 'state') else None
+    )
+    try:
+        user_id = int(raw_user_id) if raw_user_id else None
+    except (ValueError, TypeError):
+        user_id = None
+
+    if not session_id or not factory_id:
+        return (None, factory_id, user_id)
+    try:
+        from smartbi.services.chat_session_service import ChatSessionService
+        from smartbi.config import get_pg_pool as _gp
+        pool = await _gp()
+        if pool is None:
+            return (None, factory_id, user_id)
+        parent = await ChatSessionService(pool).lookup(
+            session_id, factory_id, user_id=user_id
+        )
+        return (parent, factory_id, user_id)
+    except Exception as e:
+        logger.warning(f"[v2-conv-lookup] failed (non-fatal): {e}")
+        return (None, factory_id, user_id)
+
+
+def _v2_inject_context(parent: Optional[Dict], user_prompt: str) -> str:
+    """Prepend v2 conv memory context to user_prompt if parent available."""
+    if not parent:
+        return user_prompt
+    try:
+        from smartbi.services.chat_session_service import build_context_block
+        ctx = build_context_block(parent)
+        if ctx:
+            return ctx + user_prompt
+    except Exception as e:
+        logger.warning(f"[v2-conv-inject] failed (non-fatal): {e}")
+    return user_prompt
+
+
+def _v2_writeback_bg(session_id: Optional[str], factory_id: Optional[str],
+                      user_id: Optional[int], query: str, answer: str,
+                      template_code: Optional[str] = None,
+                      upload_id: Optional[int] = None) -> None:
+    """Fire-and-forget v2 writeback. Anchored in _PENDING_BG_TASKS so survives
+    generator cancellation. Skipped silently when session_id or factory_id missing.
+    """
+    if not session_id or not factory_id or not answer:
+        return
+    try:
+        from smartbi.services.chat_session_service import ChatSessionService
+        from smartbi.config import get_pg_pool as _gp
+        from smartbi.api.materialized_analytics import _spawn_bg
+
+        async def _do_upsert():
+            pool = await _gp()
+            if pool is None:
+                return
+            await ChatSessionService(pool).upsert(
+                session_id=session_id,
+                factory_id=factory_id,
+                parent_query=query,
+                parent_answer_summary=answer,
+                parent_template_code=template_code,
+                parent_upload_id=upload_id,
+                user_id=user_id,
+            )
+        _spawn_bg(_do_upsert())
+    except Exception as e:
+        logger.warning(f"[v2-conv-writeback] failed (non-fatal): {e}")
+
+
 # ============================================================================
 # Chat Cache Helpers
 # ============================================================================
@@ -125,6 +210,8 @@ class DrillDownRequest(BaseModel):
     hierarchy_type: Optional[str] = Field(None, description="Hierarchy type: time, geography, organization, product")
     current_level: Optional[int] = Field(None, description="Current level index in hierarchy")
     breadcrumb: Optional[List[Dict[str, str]]] = Field(default=None, description="Breadcrumb trail")
+    # H4 (Apr 27 2026): v2 conv memory hook
+    session_id: Optional[str] = Field(None, description="v2 conv memory session_id")
 
 
 class DrillDownResponse(BaseModel):
@@ -148,6 +235,8 @@ class BenchmarkRequest(BaseModel):
     industry: str = Field(..., description="Industry for comparison (food_processing, retail, etc.)")
     metrics: Dict[str, float] = Field(..., description="Company metrics to compare")
     metric_mapping: Optional[Dict[str, str]] = Field(None, description="Optional metric name mapping")
+    # H4 (Apr 27 2026): v2 conv memory hook
+    session_id: Optional[str] = Field(None, description="v2 conv memory session_id")
 
 
 class BenchmarkResponse(BaseModel):
@@ -165,6 +254,8 @@ class RootCauseRequest(BaseModel):
     kpi: str = Field(..., description="KPI to analyze")
     threshold: float = Field(default=0.1, description="Significance threshold")
     data: Optional[List[Dict[str, Any]]] = Field(None, description="Data to analyze")
+    # H4 (Apr 27 2026): v2 conv memory hook
+    session_id: Optional[str] = Field(None, description="v2 conv memory session_id")
 
 
 class RootCauseResponse(BaseModel):
@@ -2610,6 +2701,8 @@ async def drill_down_stream(request: DrillDownRequest, http_request: Request):
 
     async def event_stream() -> AsyncGenerator[str, None]:
         start_time = time.time()
+        # H4: v2 conv memory phase 0
+        v2_parent, v2_factory, v2_user = await _v2_conv_lookup(http_request, request.session_id)
         try:
             yield _sse_event("status", "正在加载数据...")
 
@@ -2669,6 +2762,8 @@ async def drill_down_stream(request: DrillDownRequest, http_request: Request):
 {data_preview}
 
 请总结各维度的表现，找出异常点，并给出业务建议。"""
+            # H4: inject v2 parent context if session has prior turn
+            user_prompt = _v2_inject_context(v2_parent, user_prompt)
 
             yield _sse_event("status", "正在分析...")
 
@@ -2679,6 +2774,14 @@ async def drill_down_stream(request: DrillDownRequest, http_request: Request):
                     return
                 full_text += chunk
                 yield _sse_event("chunk", chunk)
+
+            # H4: write back BEFORE done event (async generator gets cancelled after done)
+            _v2_writeback_bg(
+                request.session_id, v2_factory, v2_user,
+                query=f"drill-down: {filter_desc}",
+                answer=full_text,
+                upload_id=int(request.sheet_id) if request.sheet_id and request.sheet_id.isdigit() else None,
+            )
 
             yield _sse_event("done", {
                 "success": True,
@@ -2720,6 +2823,8 @@ async def root_cause_stream(request: RootCauseRequest, http_request: Request):
 
     async def event_stream() -> AsyncGenerator[str, None]:
         start_time = time.time()
+        # H4: v2 conv memory phase 0
+        v2_parent, v2_factory, v2_user = await _v2_conv_lookup(http_request, request.session_id)
         try:
             yield _sse_event("status", "正在加载数据...")
 
@@ -2786,6 +2891,8 @@ KPI统计: {stats_text}
 {corr_text}
 
 请结合以上数据，给出根因分析和改进建议。"""
+            # H4: inject v2 parent context if session has prior turn
+            user_prompt = _v2_inject_context(v2_parent, user_prompt)
 
             yield _sse_event("status", "正在分析根本原因...")
 
@@ -2796,6 +2903,14 @@ KPI统计: {stats_text}
                     return
                 full_text += chunk
                 yield _sse_event("chunk", chunk)
+
+            # H4: write back BEFORE done event
+            _v2_writeback_bg(
+                request.session_id, v2_factory, v2_user,
+                query=f"root-cause: {request.kpi}",
+                answer=full_text,
+                upload_id=int(request.sheet_id) if request.sheet_id and request.sheet_id.isdigit() else None,
+            )
 
             yield _sse_event("done", {
                 "success": True,
@@ -2836,6 +2951,8 @@ async def benchmark_stream(request: BenchmarkRequest, http_request: Request):
 
     async def event_stream() -> AsyncGenerator[str, None]:
         start_time = time.time()
+        # H4: v2 conv memory phase 0
+        v2_parent, v2_factory, v2_user = await _v2_conv_lookup(http_request, request.session_id)
         try:
             yield _sse_event("status", "正在加载行业基准数据...")
 
@@ -2873,6 +2990,8 @@ async def benchmark_stream(request: BenchmarkRequest, http_request: Request):
 {metrics_text}
 
 请根据行业通行标准，评估各指标所处水平（优秀/良好/一般/偏低），并给出针对性的改进建议。"""
+            # H4: inject v2 parent context if session has prior turn
+            user_prompt = _v2_inject_context(v2_parent, user_prompt)
 
             yield _sse_event("status", "正在对标分析...")
 
@@ -2883,6 +3002,14 @@ async def benchmark_stream(request: BenchmarkRequest, http_request: Request):
                     return
                 full_text += chunk
                 yield _sse_event("chunk", chunk)
+
+            # H4: write back BEFORE done event
+            _v2_writeback_bg(
+                request.session_id, v2_factory, v2_user,
+                query=f"benchmark: {industry_label}",
+                answer=full_text,
+                upload_id=int(request.sheet_id) if request.sheet_id and request.sheet_id.isdigit() else None,
+            )
 
             yield _sse_event("done", {
                 "success": True,

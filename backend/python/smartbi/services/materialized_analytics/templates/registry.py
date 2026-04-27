@@ -102,3 +102,8 @@ def load_all_templates():
     # W4 quality-audit fixes (Apr 22 2026)
     from . import dish_store_drill                # noqa: F401
     from . import monthly_anomaly                 # noqa: F401
+    # Manufacturing (Apr 27 2026 H4 deferred ship)
+    # First template — pattern others (equipment_oee, work_order_status,
+    # batch_yield, downtime_analysis) should follow when manufacturing data
+    # arrives in F001/F002/F003 prod uploads.
+    from . import defect_rate_top_n               # noqa: F401
