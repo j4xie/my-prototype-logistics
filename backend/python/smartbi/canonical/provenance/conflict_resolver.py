@@ -37,6 +37,7 @@ GLOBAL_PRIORITY_TABLE: Dict[str, int] = {
     "manual": 1,
     "bill_flow": 2,
     "product_summary": 3,
+    "inventory": 3,  # inventory snapshots are POS-derived — same tier as product_summary
     "review": 4,
     "external_platform": 4,
     "pos_excel": 3,  # alias used by writer for spreadsheet-derived values

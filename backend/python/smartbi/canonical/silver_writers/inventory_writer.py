@@ -9,6 +9,11 @@ Current simplifications:
   preferring a store-specific row, then a NULL-store global row.
 - snapshot_date precedence (Phase 3): row-level date column → upload-level
   merge_inferred_period_end (set by SheetMergeAnalyzer) → today's date.
+
+Day 10-12 (Sub-Project C): if SMARTBI_ENABLE_PROVENANCE env flag is ON, each
+inserted snapshot row also records cell-level provenance for stock_qty / unit
+anchored to the ingredient. valid_from = snapshot_date (open-ended valid_to).
+Default OFF.
 """
 from __future__ import annotations
 
@@ -16,6 +21,11 @@ import re
 import time
 from datetime import date
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+
+from smartbi.canonical.provenance._writer_hook import (
+    is_provenance_enabled,
+    write_provenance_for_fields,
+)
 
 from ._helpers import canonical_value, pick, to_date, to_float, unwrap_row
 from .base import BaseWriter, WriteSummary
@@ -136,6 +146,37 @@ class InventoryWriter(BaseWriter):
                     """,
                     batch,
                 )
+
+            # Day 10-12: opt-in cell-level provenance dual-write. records tuple
+            # order is fixed above — index 2=ingredient_id, 4=snapshot_date,
+            # 5=stock_qty, 6=unit. Anchor to ingredient (the canonical entity).
+            # safe_stock_qty / reorder_point come from dim_ingredient_threshold,
+            # not from this upload, so we deliberately don't record provenance
+            # for them — that's the threshold table's responsibility, not the
+            # inventory writer's. Wrapped in its own transaction so a hook
+            # failure is isolated from the main INSERT.
+            if is_provenance_enabled() and records:
+                async with conn.transaction():
+                    for rec in records:
+                        ingredient_id = rec[2]
+                        snapshot_date = rec[4]
+                        stock_qty = rec[5]
+                        unit = rec[6]
+                        await write_provenance_for_fields(
+                            conn,
+                            factory_id=factory_id,
+                            entity_type="ingredient",
+                            entity_id=ingredient_id,
+                            fields={
+                                "stock_qty": stock_qty,
+                                "unit": unit,
+                            },
+                            source_type="inventory",
+                            mapper_method="rule",
+                            confidence=0.80,
+                            source_upload_id=upload_id,
+                            valid_from=snapshot_date,
+                        )
 
         return WriteSummary(
             rows_written=len(records),
