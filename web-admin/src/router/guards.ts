@@ -40,6 +40,14 @@ export function setupRouterGuards(router: Router) {
     // 设置页面标题
     document.title = to.meta.title ? `${to.meta.title} - 白垩纪AI Agent` : '白垩纪AI Agent';
 
+    // R40 BUG-7 fix: ElMessage.error patched to sticky (Bug #312, 2026-04-18)
+    // means toasts persist across navigation. On route change, dismiss any
+    // visible error/notification toasts so they don't accumulate (R40 audit
+    // saw 4+ stale toasts visible simultaneously after a few clicks).
+    if (typeof document !== 'undefined') {
+      document.querySelectorAll('.el-message, .el-notification').forEach((el) => el.remove());
+    }
+
     // 白名单路由直接放行
     if (whiteList.includes(to.path)) {
       next();

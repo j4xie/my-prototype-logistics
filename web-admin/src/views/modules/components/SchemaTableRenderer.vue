@@ -30,9 +30,14 @@ const listFields = computed(() =>
 )
 
 // 当前行可用的工作流操作
+// R40 BUG-5 fix: filter out manualTrigger=false (auto-triggered by upstream events,
+// no backend endpoint — rendering button would 404). manualTrigger undefined defaults
+// to true (backward compat).
 function getAvailableTransitions(row: Record<string, unknown>): WorkflowTransition[] {
   const status = String(row.status || '')
-  return props.workflowTransitions.filter((t) => t.from === status && t.enabled)
+  return props.workflowTransitions.filter(
+    (t) => t.from === status && t.enabled && t.manualTrigger !== false,
+  )
 }
 
 /**

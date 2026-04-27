@@ -1203,6 +1203,11 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
                     if (condition != null) {
                         enabled = evaluateCondition(condition, options);
                     }
+                    // R40 BUG-5 fix: respect manualTrigger flag from schema (default true).
+                    // When false, transition exists in state machine but FE should hide the
+                    // button (auto-triggered by upstream event, no backend endpoint).
+                    Object manualTriggerRaw = t.get("manualTrigger");
+                    boolean manualTrigger = !Boolean.FALSE.equals(manualTriggerRaw);
                     return WorkflowTransitionDTO.builder()
                             .from((String) t.get("from"))
                             .to((String) t.get("to"))
@@ -1212,6 +1217,7 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
                             .enabled(enabled)
                             .condition(condition)
                             .allowedRoles(t.containsKey("allowedRoles") ? (List<String>) t.get("allowedRoles") : List.of())
+                            .manualTrigger(manualTrigger)
                             .build();
                 })
                 .collect(Collectors.toList());

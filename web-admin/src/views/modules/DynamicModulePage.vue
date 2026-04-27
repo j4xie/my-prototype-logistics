@@ -190,7 +190,10 @@ async function handleAction(row: Record<string, unknown>, transition: WorkflowTr
     ElMessage.success(`${transition.label}成功`)
     loadTableData()
   } catch (e: any) {
-    if (e !== 'cancel') {
+    // R40 BUG-6 fix (sister to R26): axios interceptor already toasts BusinessException
+    // 409+actionHint. Only fall through to generic toast when there's no actionHint
+    // (raw network/unknown errors). Avoids double toast on 404/409 from invariants.
+    if (e !== 'cancel' && !e?.actionHint) {
       ElMessage.error(e?.message || '操作失败')
     }
   }
