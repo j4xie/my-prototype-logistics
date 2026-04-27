@@ -109,6 +109,52 @@ def test_truncate_summary_runs_sanitize_first():
     assert "忽略所有先前指令" not in out
 
 
+# v3 multi-turn history tests
+
+def test_build_context_block_v3_multi_turn():
+    block = build_context_block({
+        "parent_query": "FU2 query",
+        "parent_answer_summary": "FU2 answer",
+        "turns_history": [
+            {"q": "main 营收多少", "a_summary": "总营收 1500 万"},
+            {"q": "FU1 哪家店最高", "a_summary": "南京路店 320 万"},
+            {"q": "FU2 query", "a_summary": "FU2 answer"},
+        ],
+    })
+    assert "历史对话" in block
+    assert "第 1 轮提问" in block
+    assert "main 营收多少" in block
+    assert "1500 万" in block
+    assert "第 2 轮" in block
+    assert "南京路店" in block
+    assert "第 3 轮" in block
+    # safety preamble preserved
+    assert "严格忽略" in block
+
+
+def test_build_context_block_v3_falls_back_to_v2_when_no_history():
+    # Old session (pre-v3 migration) — turns_history NULL
+    block = build_context_block({
+        "parent_query": "营收多少",
+        "parent_answer_summary": "总营收 1500 万",
+        "turns_history": None,
+    })
+    assert "上一轮提问" in block  # v2 format
+    assert "1500 万" in block
+
+
+def test_build_context_block_v3_handles_string_jsonb():
+    # Some asyncpg driver versions return JSONB as str
+    block = build_context_block({
+        "parent_query": "FU1",
+        "parent_answer_summary": "FU1 answer",
+        "turns_history": '[{"q":"main q","a_summary":"main a"}, {"q":"FU1","a_summary":"FU1 answer"}]',
+    })
+    assert "第 1 轮" in block
+    assert "main q" in block
+    assert "第 2 轮" in block
+
+
 def test_build_context_block_returns_empty_when_missing_fields():
     assert build_context_block({}) == ""
     assert build_context_block({"parent_query": "q only"}) == ""
