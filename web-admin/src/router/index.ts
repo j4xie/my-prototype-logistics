@@ -503,6 +503,25 @@ const businessRoutes: RouteRecordRaw[] = [
             meta: { requiresAuth: true, title: '能力驱动渲染审计', module: 'system' }
           },
           {
+            // 数据织网 C spec §6.3 — cell-level lineage detail (Day 26).
+            // Reached via TrustIndicator's "查看来源" button which pushes
+            // /audit/cell?type=&id=&field= (see the top-level CellAudit
+            // route below). Hidden from sidebar; admin-only via meta.roles.
+            //
+            // This sidebar entry is intentionally hidden — the canonical
+            // path is the top-level /audit/cell to match the spec NS-7 URL.
+            path: 'data-fabric/cell-audit',
+            name: 'CellAuditSystem',
+            component: () => import('@/views/system/data-fabric/cell-audit.vue'),
+            meta: {
+              requiresAuth: true,
+              title: '字段血统审计',
+              module: 'system',
+              hidden: true,
+              roles: ['factory_super_admin', 'platform_admin', 'permission_admin'],
+            },
+          },
+          {
             path: 'products',
             name: 'ProductManagement',
             component: () => import('@/views/system/products/index.vue'),
@@ -795,6 +814,22 @@ const businessRoutes: RouteRecordRaw[] = [
         meta: {
           title: '动态模块',
           requiresAuth: true,
+        },
+      },
+
+      // 数据织网 C spec §6.3 — cell-level lineage detail page (Day 26).
+      // Canonical URL per spec NS-7 — /audit/cell?type=&id=&field=
+      // (encodeURIComponent-safe). Reached from any TrustIndicator's
+      // "查看来源" button. Admin-only, hidden from sidebar.
+      {
+        path: 'audit/cell',
+        name: 'CellAudit',
+        component: () => import('@/views/system/data-fabric/cell-audit.vue'),
+        meta: {
+          title: '字段血统审计',
+          requiresAuth: true,
+          hidden: true,
+          roles: ['factory_super_admin', 'platform_admin', 'permission_admin'],
         },
       },
 

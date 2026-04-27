@@ -648,6 +648,15 @@ app.include_router(capability_router)
 from smartbi.api import gold_reads
 app.include_router(gold_reads.router, prefix="/api/smartbi", tags=["Gold Reads"])
 
+# Sub-Project C Day 26: cell-level field_provenance audit (§6.3).
+# Admin-gated read endpoint powering /audit/cell?type=&id=&field= page.
+from smartbi.api import provenance_audit
+app.include_router(
+    provenance_audit.router,
+    prefix="/api/smartbi/provenance",
+    tags=["Provenance Audit"],
+)
+
 # Week 5 Agent layer — gated by env flag until verified on test.
 # When flag is off, /api/smartbi/insights/custom does not exist.
 if os.getenv("SMARTBI_AGENT_LAYER_ENABLED", "false").lower() == "true":
