@@ -109,6 +109,13 @@ const costBreakdown = computed(() => [
   { name: '其他成本', value: financeData.value.otherCost ?? 0, percentage: getPercentage('other') }
 ]);
 
+// 当 4 个分类全部为 0 时, 显示空状态而不是 4 行 0.00 / 0.0%
+// (chart audit P0-2 副发现: structureChart.data 真空时 backend 返 [], FE 应区分
+// "0 数据" vs "全分类都是 0" — 前者是数据真空, 后者可能是分类未配置或时间窗内无成本)
+const hasCostBreakdown = computed(() =>
+  costBreakdown.value.some((row) => row.value > 0),
+);
+
 function getPercentage(type: string) {
   const total = financeData.value.totalCost ?? 1;
   const value = financeData.value[`${type}Cost` as keyof typeof financeData.value] as number ?? 0;
@@ -311,7 +318,13 @@ function handleExport() {
       <!-- 成本分解 -->
       <div class="section">
         <h3 class="section-title">成本分解</h3>
-        <el-table empty-text="暂无数据" :data="costBreakdown" stripe border style="width: 100%">
+        <el-table
+          v-if="hasCostBreakdown"
+          :data="costBreakdown"
+          stripe
+          border
+          style="width: 100%"
+        >
           <el-table-column prop="name" label="成本类型" width="180" />
           <el-table-column label="金额 (元)" min-width="200">
             <template #default="{ row }">
@@ -328,6 +341,12 @@ function handleExport() {
             </template>
           </el-table-column>
         </el-table>
+        <el-empty
+          v-else
+          description="该期无成本细分数据 — 可在「成本分析」页面查看明细或检查 Excel 上传是否包含 原材料 / 人工 / 制造费用 列"
+          :image-size="100"
+          class="cost-empty-state"
+        />
       </div>
 
       <!-- 提示信息 -->
@@ -459,6 +478,12 @@ function handleExport() {
 .cost-value {
   font-weight: 500;
   color: #303133;
+}
+
+.cost-empty-state {
+  padding: 32px 0;
+  background: #fafbfc;
+  border-radius: 4px;
 }
 
 .info-section {
