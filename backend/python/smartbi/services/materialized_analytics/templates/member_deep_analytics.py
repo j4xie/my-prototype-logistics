@@ -102,6 +102,13 @@ class MemberDeepAnalytics(AnalysisTemplate):
         "会员排行",
         "Top 10 会员",
         "充值排行",
+        # v8 #39 prod log analysis: real queries observed not yet matched
+        "Top 10 储值持有者",
+        "Top 10 储值持有者都是谁",
+        "持卡 Top 10",
+        "高储值会员",
+        "储值大户",
+        "充值最多的会员",
     ]
 
     # Deferred: applies() gates on 卡号 (card-id) + 余额/充值 (member-card

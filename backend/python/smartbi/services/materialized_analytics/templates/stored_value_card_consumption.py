@@ -63,6 +63,13 @@ class StoredValueCardConsumption(AnalysisTemplate):
         "本金 vs 赠送占比",
         "储值卡 Top 5 客户",
         "储值卡净留存",
+        # v8 #39 prod log analysis: real prod queries not matched yet
+        "储值卡余额总额",
+        "储值卡余额合计",
+        "储值卡余额总额多少",
+        "全店余额总和",
+        "储值卡使用情况怎么样",
+        "卡余额还剩多少",
     ]
 
     # spec §6.1: B 阶段引入 SVC fields 字段后再填
