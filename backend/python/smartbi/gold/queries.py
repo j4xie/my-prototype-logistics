@@ -105,6 +105,16 @@ async def top_products(
     FIRST-of-month falls within date_range — so a range '2025-04-15 to
     2025-05-10' covers April + May fully, not fractional. This matches
     how the FE uses "period=month" selectors.
+
+    Day 24-25 (Sub-Project C POC): LEFT JOIN field_provenance to expose
+    cell-level lineage for the `revenue` field. When provenance is empty
+    (prod-OFF state — SMARTBI_ENABLE_PROVENANCE=0) the JOIN returns NULL
+    and the row carries confidence=None / source=None. When populated, the
+    JOIN picks the highest-confidence active (non-superseded) row matching
+    EITHER the bare ``revenue`` field_name OR the per-store-suffixed
+    ``revenue@store_<id>`` form (per ProductSummaryWriter Phase B C1
+    encoding). LATERAL keeps it 1:1 per product even with multi-store
+    provenance fan-out.
     """
     start, end = date_range
     _validate_range(start, end)
@@ -119,12 +129,34 @@ async def top_products(
                    p.name,
                    SUM(a.qty_sold)::numeric(18,3) AS qty,
                    SUM(a.revenue)::numeric(18,2) AS revenue,
-                   SUM(a.bill_count)             AS bill_count
+                   SUM(a.bill_count)             AS bill_count,
+                   fp.confidence                  AS confidence,
+                   fp.source_type                 AS source,
+                   fp.source_upload_id            AS source_upload_id,
+                   fp.field_name                  AS prov_field_name
               FROM agg_product a
               JOIN dim_product p ON p.product_id = a.product_id
+              LEFT JOIN LATERAL (
+                  SELECT fp_inner.confidence,
+                         fp_inner.source_type,
+                         fp_inner.source_upload_id,
+                         fp_inner.field_name
+                    FROM field_provenance fp_inner
+                   WHERE fp_inner.factory_id  = a.factory_id
+                     AND fp_inner.entity_type = 'product'
+                     AND fp_inner.entity_id   = p.product_id
+                     AND (fp_inner.field_name = 'revenue'
+                          OR fp_inner.field_name LIKE 'revenue@store\\_%' ESCAPE '\\')
+                     AND fp_inner.superseded_by_id IS NULL
+                   ORDER BY fp_inner.confidence DESC,
+                            fp_inner.valid_from DESC
+                   LIMIT 1
+              ) fp ON TRUE
              WHERE a.factory_id = $1
                AND a.month BETWEEN $2 AND $3
-             GROUP BY p.product_id, p.name
+             GROUP BY p.product_id, p.name,
+                      fp.confidence, fp.source_type,
+                      fp.source_upload_id, fp.field_name
              ORDER BY SUM(a.revenue) DESC
              LIMIT $4
             """,
@@ -141,6 +173,22 @@ async def top_products(
                 "qty_sold": float(r["qty"]),
                 "revenue": float(r["revenue"]),
                 "bill_count": int(r["bill_count"]),
+                # Sub-Project C Day 24-25 POC: per-row provenance pass-through.
+                # confidence/source/source_upload_id are None when no field_
+                # provenance row matches (prod-OFF empty-table state).
+                # field_name is returned from the JOIN when matched (carries
+                # the @store_<id> suffix); when NULL, fall back to the
+                # deterministic 'revenue' so the FE can still construct the
+                # cell-audit URL (Day 26 page lands the lookup).
+                "confidence": (
+                    float(r["confidence"]) if r["confidence"] is not None else None
+                ),
+                "source": r["source"],
+                "source_upload_id": (
+                    int(r["source_upload_id"]) if r["source_upload_id"] is not None else None
+                ),
+                "entity_id": str(int(r["product_id"])),
+                "field_name": r["prov_field_name"] if r["prov_field_name"] else "revenue",
             }
             for r in rows
         ],

@@ -55,6 +55,16 @@ export interface TopProducts {
     qtySold: number;
     revenue: number;
     billCount: number;
+    // 数据织网 Sub-Project C Day 24-25 POC: optional cell-level provenance.
+    // All four fields are nullable — the backend returns null when
+    // field_provenance has no matching row (prod-OFF state, where
+    // SMARTBI_ENABLE_PROVENANCE=0). When populated, FE renders
+    // <TrustIndicator>; when null, FE shows a muted placeholder.
+    confidence?: number | null;
+    source?: string | null;
+    sourceUploadId?: number | null;
+    entityId?: string | null;
+    fieldName?: string | null;
   }>;
 }
 

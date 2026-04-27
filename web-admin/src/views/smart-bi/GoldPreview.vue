@@ -12,6 +12,7 @@
  */
 import { computed, onMounted, ref } from 'vue';
 import { ElMessage } from 'element-plus';
+import { useRouter } from 'vue-router';
 import {
   getChannelBreakdown,
   getDailyTrend,
@@ -27,8 +28,23 @@ import {
   type TopProducts,
 } from '@/api/smartbi/gold';
 import { useAuthStore } from '@/store/modules/auth';
+import TrustIndicator from '@/components/TrustIndicator.vue';
 
 const auth = useAuthStore();
+const router = useRouter();
+
+// 数据织网 Sub-Project C Day 24-25 POC: build cell-audit URL from a
+// product row. Returns undefined when entityId/fieldName missing so the
+// TrustIndicator hides its 查看来源 button (matches its prop contract).
+function cellAuditUrl(row: { entityId?: string | null; fieldName?: string | null }): string | undefined {
+  if (!row.entityId || !row.fieldName) return undefined;
+  return `/audit/cell?type=product&id=${encodeURIComponent(row.entityId)}&field=${encodeURIComponent(row.fieldName)}`;
+}
+
+function onAudit(row: { entityId?: string | null; fieldName?: string | null }): void {
+  const url = cellAuditUrl(row);
+  if (url) router.push(url);
+}
 
 const factoryId = ref<string>(auth.factoryId || 'F001');
 const startDate = ref<string>('2025-01-01');
@@ -185,6 +201,18 @@ onMounted(() => {
             <el-table-column label="营收" align="right" width="120">
               <template #default="{ row }">{{ rmb(row.revenue) }}</template>
             </el-table-column>
+            <el-table-column label="数据置信度" width="240">
+              <template #default="{ row }">
+                <TrustIndicator
+                  v-if="row.confidence != null"
+                  :confidence="row.confidence"
+                  :source="row.source ?? ''"
+                  :cell-audit-url="cellAuditUrl(row)"
+                  @audit="onAudit(row)"
+                />
+                <span v-else class="muted">—</span>
+              </template>
+            </el-table-column>
           </el-table>
         </el-card>
       </el-col>
@@ -307,5 +335,10 @@ onMounted(() => {
 
 .panel {
   margin-bottom: 16px;
+}
+
+.muted {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
 }
 </style>
