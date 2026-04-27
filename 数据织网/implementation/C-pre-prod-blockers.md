@@ -1,8 +1,10 @@
 # Sub-Project C — Pre-Prod-Activation Blockers
 
-**Date**: 2026-04-26 (post-Day-12 holistic audit)
-**Source**: superpowers:code-reviewer audit of commits `498a8ab56..4b82c98c0` (8 C commits Day 6-12)
-**Status**: Day 12 merge **SAFE** (env flag `SMARTBI_ENABLE_PROVENANCE` default OFF → writer hooks inert in prod). These items gate the Day 23+ flag-flip event, NOT the Day 12 merge.
+**Date**: 2026-04-26 (post-Day-12 holistic audit) — **Updated 2026-04-27 (Phase A+B re-audit)**
+**Source**: superpowers:code-reviewer audit of commits `498a8ab56..4b82c98c0` (Day 6-12) + re-audit of `db72592e5..a3dbbfccd` (Phase A+B fixes)
+**Status**: Day 12 merge **SAFE** (env flag `SMARTBI_ENABLE_PROVENANCE` default OFF → writer hooks inert in prod). These items gate the Day 23+ flag-flip event, NOT the merge.
+
+**2026-04-27 update**: Phase A (commit `db72592e5`) + Phase B (commit `a3dbbfccd`) closed C1 + C2 + I1 + I4 + I5 + I6 + I7. Re-audit verdict: "Ready to merge: Yes. Ready for flag flip: Pending soak (IMP-1 spec doc update strongly recommended before activation, otherwise Day 13+ subagents will read stale spec)." See "Phase A+B re-audit findings" section below for 5 new IMP items.
 
 This doc mirrors the `C-day6-blockers.md` pattern: track items that MUST be resolved before a specific future activation event so the "flip the switch" task has a clear go/no-go checklist.
 
@@ -196,27 +198,71 @@ else:
 
 Before any prod systemd `Environment=SMARTBI_ENABLE_PROVENANCE=1` change:
 
-- [ ] **C1 fixed** with multi-dimensional anchor implementation chosen + e2e tests added
-- [ ] **C2 fixed** with advisory lock at `resolve_conflict` entry + concurrent e2e test added
-- [ ] All 89+ unit + 7+ e2e + new tests still green
-- [ ] **I1 fixed** (test cleanup) — non-blocking but recommended before any QA cycle
-- [ ] **I4 fixed** (env flag cache) so flag flip is process-restart-only — clearer ops semantics
-- [ ] **I5 fixed** (narrow exception swallow) so misconfigured RLS / network errors surface
+- [x] **C1 fixed** ✅ (Phase B `a3dbbfccd`) — multi-dim anchor: ProductSummary/Inventory compound `field_name@store_<id>`, FinanceWriter hook-level rollup by `(subject_id, voucher_date)`, ReviewWriter unchanged (audit was false positive — aggregate-then-INSERT). 4 multi-dim e2e tests added.
+- [x] **C2 fixed** ✅ (Phase A `db72592e5`) — `pg_advisory_xact_lock(99, hash)` at `resolve_conflict` entry, BEFORE `read_authoritative_value`. `_field_lock_key` extracted to `provenance/_lock.py` shared with `writer.py`. Concurrent e2e test (5 parallel asyncio.gather) verifies 1 written + 4 no_change + 0 leaks.
+- [x] **All tests green** ✅ — 102 unit PASS + 11 targeted e2e PASS (real PG via SSH tunnel, 4m38s).
+- [x] **I1 fixed** ✅ — `clean_tenant` extended (field_provenance / factory_provenance_config / smart_bi_pg_excel_uploads with sentinel guard).
+- [x] **I4 fixed** ✅ — `@functools.cache` + `invalidate_provenance_flag_cache()` + autouse fixture in conftest.py.
+- [x] **I5 fixed** ✅ — narrowed to `(UniqueViolationError, ForeignKeyViolationError, SerializationError, DeadlockDetectedError)`. RLS / OSError propagate.
+- [x] **I6 fixed** ✅ (bonus from Phase A) — branch split: `lower_priority` / `significant_diff_same_priority` / `minor_diff_same_priority`.
+- [x] **I7 fixed** ✅ (bonus from Phase A) — per-field `async with conn.transaction()` SAVEPOINT in writer hook.
+- [ ] **IMP-1 spec doc update** ⚠️ (NEW, post-Phase-B audit) — strongly recommended before flag flip. See section below.
 - [ ] Test smartbi_db migrations (V20260430_01, V20260501_01..03) applied to **prod smartbi_prod_db** (currently test only)
 - [ ] One-week observation period in test environment with `SMARTBI_ENABLE_PROVENANCE=1` + real upload flows
 - [ ] Friendly customer cohort selected (suggest reuse A's `RES_3101_009` as first prod factory)
 
-I2 / I3 / I6 / I7 / M1-M6 are not gating but worthwhile cleanup before/during Day 13+ inheritance cascade work.
+**Open non-gating cleanup** (carry to Day 13+): I2 / I3 / M1-M6 + new IMP-2..5 below.
+
+---
+
+## Phase A+B re-audit findings (2026-04-27)
+
+Re-audit of commits `db72592e5..a3dbbfccd` confirmed all Critical + 5 Important from prior audit are properly closed. 5 NEW Important issues surfaced — none gate merge, IMP-1 strongly recommended before flag flip:
+
+### IMP-1. Spec doc out of sync with compound `field_name` convention (PRE-FLIP RECOMMENDED)
+**File**: `数据织网/04-C-字段血统与继承.md` v1.3 — needs §3.1.5 or §6.3 sub-section documenting:
+- Compound `field_name` convention `<base>@store_<id>` (Phase B introduced)
+- Reader query patterns: `WHERE field_name = 'revenue'` (bare/global) / `'revenue@store_42'` (specific) / `LIKE 'revenue@store_%'` (all stores) / `LIKE 'revenue%'` (everything)
+- `_field_type` `@`-strip behavior (preserves C-7 30%-diff numeric typing)
+- Audit-page UI must split base/qualifier when displaying
+
+**Why gating**: Day 13+ inheritance cascade engine (and audit page UI) subagents read this spec for reader code. Without IMP-1, those sessions write reader code that misses per-store rows.
+
+### IMP-2. Silent drop of NULL-voucher_date provenance has no observability
+**File**: `backend/python/smartbi/canonical/silver_writers/finance_writer.py:174-175`
+**Fix**: Add WARNING log with skip count when rollup loop drops rows. ~5 min.
+
+### IMP-3. ReviewWriter aggregation collapse not isolated to provenance
+**File**: `backend/python/smartbi/canonical/silver_writers/review_writer.py:67-113, 158-192`
+**Pre-existing issue**: `product_id_for_summary` set to FIRST non-null product_id; multi-product-per-upload reviews collapse to one row with misattributed aggregate stats. Phase B's "false positive" rationale only papers over the symptom at the provenance hook layer.
+**Fix options**: (1) Document as known limitation in spec §4.2 + verify cohort (RES_3101_009) only uploads single-product reviews (~10 min doc); OR (2) promote ReviewWriter to compound `field_name@product_<id>` for true per-product lineage (~1 hr code + 2 e2e).
+
+### IMP-4. `field_name` length budget not asserted; future fields could overflow VARCHAR(100)
+**File**: `backend/python/smartbi/database/migrations/V20260430_01__c_field_provenance.sql:55`
+**Fix**: Either widen to VARCHAR(200) in a new migration, OR add `assert len(field_name) <= 100` in `write_provenance` with clear error message. Migration is safer (DB-enforced).
+
+### IMP-5. Test isolation under failure scenarios (NIT, current state correct)
+**File**: `backend/python/tests/test_data_fabric_e2e.py:114-129`
+On inspection, `_clean()` runs both before AND after each test (lines 154-158 — `clean_tenant` fixture finally clause). So this is actually correct. Downgrade to NIT — verify under failure mode if questions arise.
+
+### Minor (re-audit): MIN-1..5
+- MIN-1: I7 SAVEPOINT only correct when caller is in transaction — add runtime assertion (`conn.is_in_transaction()` check). Defensive.
+- MIN-2: `_field_type` `@`-strip ambiguous for legitimate `@`-containing field names. Future-proofing only.
+- MIN-3: `error_swallowed` counter exists but no monitoring hookup. Wire to log/Prometheus before flag flip.
+- MIN-4: dim_finance_subject / dim_ingredient persistence between e2e tests — current scope-by-factory_id cleanup correct, just noting design.
+- MIN-5: `pos_excel` priority entry vestigial (carry-over M3 from prior audit).
 
 ---
 
 ## Day 13+ session continuation
 
-Suggested order:
-1. Fix C2 (cleanest, ~30 min, isolated to `conflict_resolver.py` + 1 new e2e)
-2. Fix I1 + I4 + I5 + I6 + I7 (~1 hr total, mostly tactical)
-3. Fix C1 (~2 hr, requires schema/anchor decision + 4 writers updated + 4 multi-dim e2e tests)
-4. Run full audit again before considering flag flip
-5. Then proceed to Day 13-15 inheritance cascade engine
+**Updated 2026-04-27**: Phase A+B closed all original Critical + 5 Important. Day 13+ next steps:
 
-**Don't flip the flag in prod** until items above complete + soak period.
+1. **Pre flag-flip required**: IMP-1 spec doc update (~30 min, doc-only) — gates Day 13+ subagent correctness.
+2. **Pre flag-flip recommended**: IMP-2 + MIN-3 (observability of skipped/swallowed counters) — combined ~20 min.
+3. **Pre flag-flip assess**: IMP-3 ReviewWriter cohort assumption (verify or add compound name).
+4. **Day 13+ cascade work** (separate session): Day 13-15 inheritance cascade engine (compute_dish_margin / 时间继承 / industry_default fallback).
+5. **Day 16-22 backlog**: BF1-3 backfill 1.31M historical rows.
+6. **Day 23-30 backlog**: Trust UI + admin config UI + flag flip soak.
+
+**Don't flip the flag in prod** until IMP-1 + soak period + cohort verification complete.
