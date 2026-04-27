@@ -43,6 +43,17 @@ interface IndustryDefaultRow {
   override: number | null;
 }
 
+interface BoundsRange {
+  min: number;
+  max: number;
+}
+
+interface ConfigBounds {
+  diffThreshold: BoundsRange;
+  priority: BoundsRange;
+  costRate: BoundsRange;
+}
+
 interface ConfigResponse {
   factoryId: string;
   diffThreshold: number;
@@ -50,7 +61,16 @@ interface ConfigResponse {
   industryDefaults: IndustryDefaultRow[];
   updatedAt: string | null;
   updatedBy: string | null;
+  bounds?: ConfigBounds;  // P1.5-4 (post-D27 review): server-driven bounds
 }
+
+// P1.5-4 fallback if server omits bounds (older builds): hardcoded mirrors
+// the migration's CHECK constraint, kept narrow.
+const FALLBACK_BOUNDS: ConfigBounds = {
+  diffThreshold: { min: 0.05, max: 0.5 },
+  priority: { min: 1, max: 6 },
+  costRate: { min: 0.0, max: 1.0 },
+};
 
 const auth = useAuthStore();
 
@@ -66,6 +86,10 @@ const serverSnapshot = ref<ConfigResponse | null>(null);
 const formDiffThreshold = ref<number>(0.30);
 const formSourcePriorities = ref<SourcePriorityRow[]>([]);
 const formIndustryDefaults = ref<IndustryDefaultRow[]>([]);
+
+const bounds = computed<ConfigBounds>(
+  () => serverSnapshot.value?.bounds ?? FALLBACK_BOUNDS,
+);
 
 const updatedAtDisplay = computed<string>(() => {
   if (!serverSnapshot.value?.updatedAt) return '尚未保存过';
@@ -230,8 +254,8 @@ onMounted(load);
         </p>
         <el-slider
           v-model="formDiffThreshold"
-          :min="0.05"
-          :max="0.5"
+          :min="bounds.diffThreshold.min"
+          :max="bounds.diffThreshold.max"
           :step="0.05"
           :format-tooltip="formatThresholdTooltip"
         />
@@ -260,8 +284,8 @@ onMounted(load);
             <template #default="{ row }">
               <el-input-number
                 v-model="row.factoryOverride"
-                :min="1"
-                :max="6"
+                :min="bounds.priority.min"
+                :max="bounds.priority.max"
                 :step="1"
                 :precision="0"
                 size="small"
@@ -298,8 +322,8 @@ onMounted(load);
             <template #default="{ row }">
               <el-input-number
                 v-model="row.override"
-                :min="0"
-                :max="1"
+                :min="bounds.costRate.min"
+                :max="bounds.costRate.max"
                 :step="0.01"
                 :precision="2"
                 size="small"
@@ -314,9 +338,19 @@ onMounted(load);
 
       <!-- Footer -->
       <div class="footer-bar">
-        <el-button :disabled="saveDisabled" :loading="saving" type="primary" @click="save">
-          保存
-        </el-button>
+        <!-- P2-9 (post-D27 review): tooltip when save is disabled tells the
+             user *why* — usually because they haven't edited anything yet. -->
+        <el-tooltip
+          :disabled="!saveDisabled || saving"
+          content="未做任何修改"
+          placement="top"
+        >
+          <span>
+            <el-button :disabled="saveDisabled" :loading="saving" type="primary" @click="save">
+              保存
+            </el-button>
+          </span>
+        </el-tooltip>
         <el-button :disabled="loading || saving" @click="cancel">
           取消
         </el-button>

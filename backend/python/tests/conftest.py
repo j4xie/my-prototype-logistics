@@ -204,3 +204,43 @@ def sample_quick_summary_data():
         {"name": "Bob", "revenue": 1500, "cost": 700},
         {"name": "Carol", "revenue": 2000, "cost": 900},
     ]
+
+
+# ─────────────────────────────────────────────────────────────────────
+# 数据织网 Sub-Project C — shared real-PG pool fixture (P2-7).
+#
+# Previously duplicated bit-for-bit across 3 test files
+# (test_top_products_provenance.py, test_provenance_audit.py,
+# test_factory_provenance_config.py). Each `clean_rows` fixture
+# stays per-file because the table sets to wipe differ; this one
+# centralizes the pool acquisition + skip-when-no-PG behavior.
+# ─────────────────────────────────────────────────────────────────────
+import pytest_asyncio
+
+
+@pytest_asyncio.fixture
+async def c_provenance_pool():
+    """asyncpg.Pool with the tenant-aware connection setup hook.
+
+    Skips the test cleanly when ``settings.postgres_url`` is unset
+    (matches the Sub-Project C real-PG canon: tunneled smartbi_db
+    on port 5433 has the C migrations applied; local dev DB usually
+    doesn't, hence skip-not-fail when no DSN configured).
+    """
+    import asyncpg
+    from smartbi.config import get_settings
+    from smartbi.tenant_ctx import set_pg_connection_tenant
+
+    settings = get_settings()
+    if not settings.postgres_url:
+        pytest.skip("No Postgres configured")
+    p = await asyncpg.create_pool(
+        settings.postgres_url,
+        min_size=1,
+        max_size=3,
+        setup=set_pg_connection_tenant,
+    )
+    try:
+        yield p
+    finally:
+        await p.close()

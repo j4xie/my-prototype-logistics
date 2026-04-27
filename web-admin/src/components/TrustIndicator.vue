@@ -1,6 +1,7 @@
 <!-- spec 数据织网/04-C-字段血统与继承.md §6.1 — confidence + source presentation badge -->
 <script setup lang="ts">
 import { computed } from 'vue';
+import { sourceLabel } from '@/utils/provenance-labels';
 
 const props = defineProps<{
   confidence: number; // 0-1
@@ -25,31 +26,15 @@ const confidenceLabel = computed<string>(() => {
   return '低置信';
 });
 
-/** spec §6.3 NC-4: source_type → friendly Chinese label, raw fallback so we never silently lose info */
-function sourceLabel(source: string): string {
-  switch (source) {
-    case 'manual':
-      return '客户手动确认';
-    case 'bill_flow':
-      return '账单流水';
-    case 'product_summary':
-      return '商品汇总';
-    case 'review':
-      return '评论数据';
-    case 'inferred':
-      return 'AI 推断';
-    case 'industry_default':
-      return '行业默认值';
-    case 'system':
-      return '系统生成';
-    default:
-      return source;
-  }
-}
+// P2-8 (a11y): aria-label on root container — tag color alone is not
+// distinguishable for color-blind users.
+const ariaLabel = computed<string>(
+  () => `数据置信度 ${confidenceLabel.value} 来源 ${sourceLabel(props.source)}`,
+);
 </script>
 
 <template>
-  <div class="trust-indicator">
+  <div class="trust-indicator" role="group" :aria-label="ariaLabel">
     <el-tag :type="tagType" size="small">{{ confidenceLabel }}</el-tag>
     <span class="source-badge">[{{ sourceLabel(source) }}]</span>
     <el-button v-if="cellAuditUrl" link size="small" @click="$emit('audit')">

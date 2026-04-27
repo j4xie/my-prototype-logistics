@@ -47,6 +47,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 
+from smartbi.canonical.provenance._admin_auth import require_admin
 from smartbi.canonical.provenance.conflict_resolver import (
     GLOBAL_PRIORITY_TABLE,
     invalidate_factory_config_cache,
@@ -61,37 +62,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-# ── RBAC (copied from provenance_audit.py — operator said "duplicate or
-#       import is fine, we can extract later"). Reimported via the symbol
-#       ``_require_admin`` to keep the call sites identical to Day 26's
-#       file so the next refactor is mechanical. ──────────────────────────
-_ADMIN_ROLES = {"platform_admin", "factory_super_admin", "permission_admin"}
-
-
-def _require_admin(request: Request) -> str:
-    """Return the JWT factory_id, or raise 403 if caller isn't admin.
-
-    Mirrors ``provenance_audit._require_admin`` exactly. Internal Java→Python
-    calls (``auth_method=='internal'``) bypass the role check but still get
-    factory_id RLS scoping downstream.
-    """
-    role = getattr(request.state, "role", None)
-    auth_method = getattr(request.state, "auth_method", None)
-    factory_id = getattr(request.state, "factory_id", None)
-
-    if auth_method == "internal":
-        return factory_id or ""
-
-    if role is None:
-        raise HTTPException(status_code=401, detail="未登录或会话已过期")
-
-    if role not in _ADMIN_ROLES:
-        raise HTTPException(
-            status_code=403,
-            detail=f"Provenance 配置需要管理员权限 (当前角色 {role!r} 无权访问)",
-        )
-
-    return factory_id or ""
+# RBAC: shared helper at smartbi.canonical.provenance._admin_auth.
+# P2-6 (post-D27 review extract): single source of truth for admin gate.
 
 
 # ── Display labels for the 6 canonical source types (Q2 table) ────────────
@@ -216,6 +188,15 @@ def _row_to_response(
         "industryDefaults": _build_industry_default_rows(ido),
         "updatedAt": updated_at.isoformat() if updated_at is not None else None,
         "updatedBy": updated_by,
+        # P1.5-4 (post-D27 review): expose bounds so FE input-number / slider
+        # max props don't have to hardcode them. Single source of truth lives
+        # in this module's _DIFF_THRESHOLD_*/_PRIORITY_*/_COST_RATE_* consts;
+        # migration CHECK + trigger keep DB as the hard floor.
+        "bounds": {
+            "diffThreshold": {"min": _DIFF_THRESHOLD_MIN, "max": _DIFF_THRESHOLD_MAX},
+            "priority": {"min": _PRIORITY_MIN, "max": _PRIORITY_MAX},
+            "costRate": {"min": _COST_RATE_MIN, "max": _COST_RATE_MAX},
+        },
     }
 
 
@@ -242,7 +223,7 @@ async def get_factory_provenance_config(
         "updatedBy": str|null,
       }
     """
-    jwt_factory = _require_admin(request)
+    jwt_factory = require_admin(request, action_name="Provenance 配置")
     if jwt_factory and factory_id != jwt_factory:
         raise HTTPException(
             status_code=403,
@@ -397,7 +378,7 @@ async def put_factory_provenance_config(
     On success: returns the same shape as GET so the FE can refresh state
     without a second roundtrip.
     """
-    jwt_factory = _require_admin(request)
+    jwt_factory = require_admin(request, action_name="Provenance 配置")
     if jwt_factory and body.factoryId != jwt_factory:
         raise HTTPException(
             status_code=403,

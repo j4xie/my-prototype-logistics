@@ -20,6 +20,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { pythonFetch } from '@/api/smartbi/common';
 import { useAuthStore } from '@/store/modules/auth';
+import { sourceLabel } from '@/utils/provenance-labels';
 
 interface AuditRow {
   id: number;
@@ -66,35 +67,6 @@ const headerTitle = computed<string>(() => {
   }
   return `字段血统: ${entityType.value} #${entityId.value} · ${fieldName.value}`;
 });
-
-/**
- * Spec §6.3 NC-4 — same translation map as TrustIndicator.vue#sourceLabel.
- * Kept inline (small, stable) rather than extracted to a shared util to
- * avoid a 4th file in this PR. If we add a 3rd consumer of this map,
- * extract to web-admin/src/utils/provenance-labels.ts.
- */
-function sourceLabel(s: string): string {
-  switch (s) {
-    case 'manual':
-      return '客户手动确认';
-    case 'bill_flow':
-      return '账单流水';
-    case 'product_summary':
-      return '商品汇总';
-    case 'review':
-      return '评论数据';
-    case 'inferred':
-      return 'AI 推断';
-    case 'industry_default':
-      return '行业默认值';
-    case 'system':
-      return '系统生成';
-    case 'pos_excel':
-      return 'POS Excel 上传';
-    default:
-      return s;
-  }
-}
 
 /**
  * NC-4: when source_upload_id is 0 (sentinel) or file_name is null,
@@ -185,6 +157,10 @@ async function load(): Promise<void> {
 }
 
 onMounted(load);
+// Vue's watch defaults to lazy (no `immediate: true`) — fires only on
+// subsequent route-query changes (e.g. user navigates from one cell to
+// another via in-app links). Single load on mount via onMounted is
+// intentional; do NOT add `{ immediate: true }`.
 watch([entityType, entityId, fieldName], load);
 
 function goBack(): void {

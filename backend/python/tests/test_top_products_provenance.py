@@ -26,25 +26,11 @@ from smartbi.gold import top_products
 _TENANT = "TEST_TPP_C"
 
 
+# P2-7: pool fixture extracted to conftest.py as c_provenance_pool. Local
+# alias keeps existing call sites stable.
 @pytest_asyncio.fixture
-async def pool():
-    import asyncpg
-    from smartbi.config import get_settings
-    from smartbi.tenant_ctx import set_pg_connection_tenant
-
-    settings = get_settings()
-    if not settings.postgres_url:
-        pytest.skip("No Postgres configured")
-    p = await asyncpg.create_pool(
-        settings.postgres_url,
-        min_size=1,
-        max_size=3,
-        setup=set_pg_connection_tenant,
-    )
-    try:
-        yield p
-    finally:
-        await p.close()
+async def pool(c_provenance_pool):
+    yield c_provenance_pool
 
 
 async def _clean(conn, tenant: str) -> None:

@@ -35,46 +35,12 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query, Request
 
+from smartbi.canonical.provenance._admin_auth import require_admin
 from smartbi.config import get_pg_pool
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-
-# Roles allowed to query cell-level provenance audit. Mirrors the Vue
-# router's ``meta.roles`` on the matching ``/audit/cell`` route entry —
-# any change here MUST be reflected there too.
-_ADMIN_ROLES = {"platform_admin", "factory_super_admin", "permission_admin"}
-
-
-def _require_admin(request: Request) -> str:
-    """Return the JWT factory_id, or raise 403 if caller isn't admin.
-
-    Raises:
-        HTTPException(401) when no auth state on the request (middleware
-            should already have rejected, but this is defense-in-depth).
-        HTTPException(403) when role isn't in the admin allow-list.
-    """
-    role = getattr(request.state, "role", None)
-    auth_method = getattr(request.state, "auth_method", None)
-    factory_id = getattr(request.state, "factory_id", None)
-
-    # Internal Java→Python calls bypass the role check (no JWT to inspect)
-    # but still benefit from the factory_id RLS filter below.
-    if auth_method == "internal":
-        return factory_id or ""
-
-    if role is None:
-        raise HTTPException(status_code=401, detail="未登录或会话已过期")
-
-    if role not in _ADMIN_ROLES:
-        raise HTTPException(
-            status_code=403,
-            detail=f"字段血统审计需要管理员权限 (当前角色 {role!r} 无权访问)",
-        )
-
-    return factory_id or ""
 
 
 def _parse_entity_id(raw: str) -> int:
@@ -197,7 +163,7 @@ async def get_cell_audit(
     tenant; mismatch → 403. Internal Java→Python calls bypass the role
     check but still get factory_id verification.
     """
-    jwt_factory = _require_admin(request)
+    jwt_factory = require_admin(request, action_name="字段血统审计")
 
     # Belt-and-suspenders: factory_id must match JWT (RLS already enforces,
     # but a mismatch is a sign of a misconfigured client and should fail loud).
