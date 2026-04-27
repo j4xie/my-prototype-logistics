@@ -62,6 +62,7 @@ public class SchedulingController {
     /**
      * 获取调度计划详情
      */
+    @RequireModule("scheduling")
     @GetMapping("/plans/{planId}")
     @Operation(summary = "获取调度计划详情", description = "获取调度计划完整信息，包含所有排程和工人分配")
     public ApiResponse<SchedulingPlanDTO> getPlan(
@@ -77,6 +78,7 @@ public class SchedulingController {
     /**
      * 获取调度计划列表 (分页)
      */
+    @RequireModule("scheduling")
     @GetMapping("/plans")
     @Operation(summary = "获取调度计划列表", description = "分页查询调度计划，支持按日期范围和状态过滤")
     public ApiResponse<Page<SchedulingPlanDTO>> getPlans(
@@ -160,6 +162,7 @@ public class SchedulingController {
     /**
      * 获取排程详情
      */
+    @RequireModule("scheduling")
     @GetMapping("/schedules/{scheduleId}")
     @Operation(summary = "获取排程详情", description = "获取单条产线排程的详细信息")
     public ApiResponse<LineScheduleDTO> getSchedule(
@@ -323,6 +326,7 @@ public class SchedulingController {
     /**
      * 获取工人分配列表 (按用户和日期)
      */
+    @RequireModule("scheduling")
     @GetMapping("/workers/assignments")
     @Operation(summary = "获取工人分配列表", description = "查询工人分配记录，支持按用户ID和日期过滤")
     public ApiResponse<List<WorkerAssignmentDTO>> getWorkerAssignments(
@@ -340,6 +344,7 @@ public class SchedulingController {
     /**
      * 获取可用工人列表
      */
+    @RequireModule("scheduling")
     @GetMapping("/workers/available")
     @Operation(summary = "获取可用工人列表", description = "获取指定日期可分配的工人列表，排除已有任务的工人")
     public ApiResponse<List<AvailableWorkerDTO>> getAvailableWorkers(
@@ -381,6 +386,7 @@ public class SchedulingController {
     /**
      * 获取员工任务历史
      */
+    @RequireModule("scheduling")
     @GetMapping("/workers/{userId}/task-history")
     @Operation(summary = "获取员工任务历史", description = "获取指定员工的近期任务执行记录，包含工时和完成状态")
     public ApiResponse<List<TaskHistoryDTO>> getEmployeeTaskHistory(
@@ -434,6 +440,7 @@ public class SchedulingController {
     /**
      * 计算排程完成概率
      */
+    @RequireModule("scheduling")
     @GetMapping("/schedules/{scheduleId}/probability")
     @Operation(summary = "计算完成概率", description = "AI预测排程按时完成的概率，用于风险预警")
     public ApiResponse<CompletionProbabilityResponse> calculateCompletionProbability(
@@ -449,6 +456,7 @@ public class SchedulingController {
     /**
      * 批量计算计划内所有排程的完成概率
      */
+    @RequireModule("scheduling")
     @GetMapping("/plans/{planId}/probabilities")
     @Operation(summary = "批量计算完成概率", description = "批量预测计划内所有排程的完成概率")
     public ApiResponse<List<CompletionProbabilityResponse>> calculateBatchProbabilities(
@@ -484,6 +492,7 @@ public class SchedulingController {
     /**
      * 获取未解决告警列表
      */
+    @RequireModule("scheduling")
     @GetMapping("/alerts/unresolved")
     @Operation(summary = "获取未解决告警", description = "获取所有未处理的调度告警，包括延误、资源冲突等")
     public ApiResponse<List<SchedulingAlertDTO>> getUnresolvedAlerts(
@@ -497,6 +506,7 @@ public class SchedulingController {
     /**
      * 获取告警列表 (分页)
      */
+    @RequireModule("scheduling")
     @GetMapping("/alerts")
     @Operation(summary = "获取告警列表", description = "分页查询调度告警，支持按严重程度和类型过滤")
     public ApiResponse<Page<SchedulingAlertDTO>> getAlerts(
@@ -561,6 +571,7 @@ public class SchedulingController {
     /**
      * 获取产线列表
      */
+    @RequireModule("scheduling")
     @GetMapping("/production-lines")
     @Operation(summary = "获取产线列表", description = "获取工厂所有产线信息，可按状态过滤")
     public ApiResponse<List<ProductionLineDTO>> getProductionLines(
@@ -631,6 +642,7 @@ public class SchedulingController {
     /**
      * 获取调度 Dashboard
      */
+    @RequireModule("scheduling")
     @GetMapping("/dashboard")
     @Operation(summary = "获取调度Dashboard", description = "获取调度概览数据，包括产能利用率、排程状态分布、告警等")
     public ApiResponse<SchedulingDashboardDTO> getDashboard(
@@ -649,6 +661,7 @@ public class SchedulingController {
     /**
      * 获取实时监控数据
      */
+    @RequireModule("scheduling")
     @GetMapping("/realtime/{planId}")
     @Operation(summary = "获取实时监控", description = "获取指定调度计划的实时生产进度和状态")
     public ApiResponse<SchedulingDashboardDTO> getRealtimeMonitor(
@@ -667,6 +680,7 @@ public class SchedulingController {
      * 获取待排产批次列表（带紧急状态）
      * 用于AI智能排产页面的待选批次展示
      */
+    @RequireModule("scheduling")
     @GetMapping("/pending-batches")
     @Operation(summary = "获取待排产批次", description = "获取待排产的生产计划列表，带紧急状态标识，用于AI智能排产")
     public ApiResponse<List<ProductionPlanDTO>> getPendingBatches(
@@ -685,6 +699,7 @@ public class SchedulingController {
     /**
      * 获取当前紧急阈值配置
      */
+    @RequireModule("scheduling")
     @GetMapping("/config/urgent-threshold")
     @Operation(summary = "获取紧急阈值配置", description = "获取完成概率低于此阈值时标记为紧急的配置值")
     public ApiResponse<java.util.Map<String, Object>> getUrgentThresholdConfig(
@@ -741,6 +756,7 @@ public class SchedulingController {
      * 获取可用的插单时段列表
      * 返回按推荐分数排序的时段，包含多维度评分和影响分析
      */
+    @RequireModule("scheduling")
     @GetMapping("/urgent-insert/slots")
     @Operation(summary = "获取可用插单时段", description = "获取可用于紧急插单的时段列表，按推荐分数排序，包含影响分析")
     public ApiResponse<List<InsertSlotDTO>> getInsertSlots(
@@ -771,6 +787,7 @@ public class SchedulingController {
     /**
      * 获取单个时段详情
      */
+    @RequireModule("scheduling")
     @GetMapping("/urgent-insert/slots/{slotId}")
     @Operation(summary = "获取时段详情", description = "获取插单时段的详细信息，包括产线状态、评分明细等")
     public ApiResponse<InsertSlotDTO> getSlotDetail(
@@ -787,6 +804,7 @@ public class SchedulingController {
      * 分析插单影响
      * 返回链式影响分析、资源检查、风险评估等详细信息
      */
+    @RequireModule("scheduling")
     @GetMapping("/urgent-insert/slots/{slotId}/impact")
     @Operation(summary = "分析插单影响", description = "分析在指定时段插单的链式影响、资源冲突和风险评估")
     public ApiResponse<java.util.Map<String, Object>> analyzeSlotImpact(
@@ -922,6 +940,7 @@ public class SchedulingController {
     /**
      * 获取紧急插单统计信息
      */
+    @RequireModule("scheduling")
     @GetMapping("/urgent-insert/statistics")
     @Operation(summary = "获取插单统计", description = "获取紧急插单的统计数据，包括成功率、平均影响等")
     public ApiResponse<java.util.Map<String, Object>> getUrgentInsertStatistics(
@@ -959,6 +978,7 @@ public class SchedulingController {
      * 获取待审批的强制插单列表
      * 注意：使用production包下的ProductionPlanDTO（审批流程需要完整的计划信息）
      */
+    @RequireModule("scheduling")
     @GetMapping("/approvals/pending")
     @Operation(summary = "获取待审批列表", description = "获取待审批的强制插单请求列表，需要管理员审批后才能执行")
     public ApiResponse<List<com.cretas.aims.dto.production.ProductionPlanDTO>> getPendingApprovals(
@@ -1055,6 +1075,7 @@ public class SchedulingController {
      * 获取分配给当前车间主任的排程任务
      * 用于车间主任APP首页显示待执行任务
      */
+    @RequireModule("scheduling")
     @GetMapping("/supervisor/tasks")
     @Operation(summary = "获取车间主任的排程任务", description = "获取分配给当前登录车间主任的待处理排程任务")
     public ApiResponse<List<SupervisorTaskDTO>> getSupervisorTasks(

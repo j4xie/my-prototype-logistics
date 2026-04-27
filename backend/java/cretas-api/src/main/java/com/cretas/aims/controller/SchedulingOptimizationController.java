@@ -39,6 +39,7 @@ public class SchedulingOptimizationController {
     /**
      * 获取工厂调度配置
      */
+    @RequireModule("scheduling")
     @GetMapping("/config")
     public ResponseEntity<ApiResponse<FactorySchedulingConfig>> getConfig(
             @PathVariable String factoryId) {
@@ -72,6 +73,7 @@ public class SchedulingOptimizationController {
     /**
      * 获取工人的有效配置（考虑临时工调整）
      */
+    @RequireModule("scheduling")
     @GetMapping("/config/effective/{workerId}")
     public ResponseEntity<ApiResponse<FactorySchedulingConfigService.EffectiveConfig>> getEffectiveConfig(
             @PathVariable String factoryId,
@@ -107,6 +109,7 @@ public class SchedulingOptimizationController {
     /**
      * 获取临时工统计
      */
+    @RequireModule("scheduling")
     @GetMapping("/temp-workers/stats")
     public ResponseEntity<ApiResponse<TempWorkerService.TempWorkerStats>> getTempWorkerStats(
             @PathVariable String factoryId) {
@@ -160,6 +163,7 @@ public class SchedulingOptimizationController {
     /**
      * 获取转正候选人
      */
+    @RequireModule("scheduling")
     @GetMapping("/temp-workers/conversion-candidates")
     public ResponseEntity<ApiResponse<List<TempWorkerService.TempWorkerConversionCandidate>>> getConversionCandidates(
             @PathVariable String factoryId) {
@@ -175,6 +179,7 @@ public class SchedulingOptimizationController {
     /**
      * 获取需要优先分配的临时工
      */
+    @RequireModule("scheduling")
     @GetMapping("/temp-workers/needs-assignment")
     public ResponseEntity<ApiResponse<List<Long>>> getTempWorkersNeedingAssignment(
             @PathVariable String factoryId) {
@@ -192,6 +197,7 @@ public class SchedulingOptimizationController {
     /**
      * 获取SKU复杂度
      */
+    @RequireModule("scheduling")
     @GetMapping("/sku/{skuCode}/complexity")
     public ResponseEntity<ApiResponse<SkuComplexityService.SkuProfile>> getSkuComplexity(
             @PathVariable String factoryId,
@@ -228,6 +234,7 @@ public class SchedulingOptimizationController {
     /**
      * 获取适合新人练习的SKU
      */
+    @RequireModule("scheduling")
     @GetMapping("/sku/training")
     public ResponseEntity<ApiResponse<List<String>>> getTrainingSkus(
             @PathVariable String factoryId) {
@@ -243,6 +250,7 @@ public class SchedulingOptimizationController {
     /**
      * 获取需要专家处理的SKU
      */
+    @RequireModule("scheduling")
     @GetMapping("/sku/expert")
     public ResponseEntity<ApiResponse<List<String>>> getExpertSkus(
             @PathVariable String factoryId) {
@@ -258,6 +266,7 @@ public class SchedulingOptimizationController {
     /**
      * 检测SKU复杂度漂移
      */
+    @RequireModule("scheduling")
     @GetMapping("/sku/drift")
     public ResponseEntity<ApiResponse<List<SkuComplexityService.SkuComplexityDrift>>> detectSkuDrift(
             @PathVariable String factoryId) {
@@ -275,6 +284,7 @@ public class SchedulingOptimizationController {
     /**
      * 获取公平性统计
      */
+    @RequireModule("scheduling")
     @GetMapping("/fairness/stats")
     public ResponseEntity<ApiResponse<FairMABService.FairnessStats>> getFairnessStats(
             @PathVariable String factoryId) {
@@ -290,6 +300,7 @@ public class SchedulingOptimizationController {
     /**
      * 检测公平性违规
      */
+    @RequireModule("scheduling")
     @GetMapping("/fairness/violations")
     public ResponseEntity<ApiResponse<List<FairMABService.FairnessViolation>>> getFairnessViolations(
             @PathVariable String factoryId,
@@ -343,6 +354,7 @@ public class SchedulingOptimizationController {
     /**
      * 获取调度优化总览
      */
+    @RequireModule("scheduling")
     @GetMapping("/overview")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getOverview(
             @PathVariable String factoryId) {

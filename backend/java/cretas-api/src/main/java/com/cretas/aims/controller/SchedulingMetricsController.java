@@ -47,6 +47,7 @@ public class SchedulingMetricsController {
             summary = "获取排班总览指标",
             description = "返回排班系统的综合指标，包括总分配数、平均效率、预测准确率、活跃工人数、任务多样性分数、接受率和完成率"
     )
+    @RequireModule("scheduling")
     @GetMapping("/overview")
     public ResponseEntity<Map<String, Object>> getSchedulingOverview(
             @Parameter(description = "工厂ID", example = "F001")
@@ -84,6 +85,7 @@ public class SchedulingMetricsController {
             summary = "获取排班趋势数据",
             description = "返回指定天数内的每日排班指标趋势，包括分配数、平均效率、预测误差、活跃工人数等"
     )
+    @RequireModule("scheduling")
     @GetMapping("/trends")
     public ResponseEntity<Map<String, Object>> getSchedulingTrends(
             @Parameter(description = "工厂ID", example = "F001")
@@ -125,6 +127,7 @@ public class SchedulingMetricsController {
             summary = "获取预测准确率详情",
             description = "返回预测准确率的详细分析，包括整体准确率、按工艺类型分解、准确率趋势、预测误差统计"
     )
+    @RequireModule("scheduling")
     @GetMapping("/prediction")
     public ResponseEntity<Map<String, Object>> getPredictionAccuracy(
             @Parameter(description = "工厂ID", example = "F001")
@@ -165,6 +168,7 @@ public class SchedulingMetricsController {
             summary = "获取多样性指标",
             description = "返回任务分配多样性指标，包括工厂整体多样性分数、需要轮换的工人数、技能覆盖率、工序覆盖统计、轮换建议"
     )
+    @RequireModule("scheduling")
     @GetMapping("/diversity")
     public ResponseEntity<Map<String, Object>> getDiversityMetrics(
             @Parameter(description = "工厂ID", example = "F001")
@@ -205,6 +209,7 @@ public class SchedulingMetricsController {
             summary = "获取所有排班指标",
             description = "一次性返回所有排班指标，包括总览、趋势、预测准确率和多样性指标"
     )
+    @RequireModule("scheduling")
     @GetMapping("/all")
     public ResponseEntity<Map<String, Object>> getAllMetrics(
             @Parameter(description = "工厂ID", example = "F001")
