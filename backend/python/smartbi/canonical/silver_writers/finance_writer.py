@@ -8,6 +8,11 @@ Current simplifications:
   column names directly (voucher_no / 凭证号 / 凭证日期 / 科目 / 借方 / 贷方).
 - source_row_hash = sha256(voucher_no|voucher_date|subject_name|amount); enables
   idempotent re-run via ON CONFLICT DO NOTHING.
+
+Day 10-12 (Sub-Project C): if SMARTBI_ENABLE_PROVENANCE env flag is ON, each
+non-skipped voucher row also records cell-level provenance (debit_amount /
+credit_amount) anchored to the finance_subject. valid_from = voucher_date.
+Default OFF.
 """
 from __future__ import annotations
 
@@ -15,7 +20,12 @@ import hashlib
 import re
 import time
 from datetime import date
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+
+from smartbi.canonical.provenance._writer_hook import (
+    is_provenance_enabled,
+    write_provenance_for_fields,
+)
 
 from ._helpers import pick, to_date, to_float, unwrap_row
 from .base import BaseWriter, WriteSummary
@@ -67,6 +77,12 @@ class FinanceWriter(BaseWriter):
         rows_skipped = 0
         new_entity_count = 0
         subject_cache: Dict[str, int] = {}
+        # Day 10-12: gather (subject_id, debit, credit, voucher_date) for any
+        # row that successfully INSERTed, so we can dual-write provenance after
+        # the main loop. Built only when env flag is ON to avoid memory cost
+        # when feature disabled.
+        provenance_enabled = is_provenance_enabled()
+        provenance_records: List[Tuple[int, float, float, Optional[date]]] = []
 
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
@@ -128,6 +144,34 @@ class FinanceWriter(BaseWriter):
                     rows_skipped += 1
                 else:
                     rows_written += 1
+                    if provenance_enabled:
+                        provenance_records.append(
+                            (subject_id, debit, credit, voucher_date)
+                        )
+
+            # Day 10-12: opt-in cell-level provenance dual-write per voucher
+            # row. Anchor to finance_subject (the canonical dimension entity).
+            # valid_from = voucher_date so subsequent reads pick the correct
+            # period's value. valid_to=None → open-ended (a voucher remains
+            # authoritative until a higher-priority source overrides it).
+            if provenance_enabled and provenance_records:
+                async with conn.transaction():
+                    for subject_id, debit, credit, voucher_date in provenance_records:
+                        await write_provenance_for_fields(
+                            conn,
+                            factory_id=factory_id,
+                            entity_type="finance_subject",
+                            entity_id=subject_id,
+                            fields={
+                                "debit_amount": debit,
+                                "credit_amount": credit,
+                            },
+                            source_type="bill_flow",
+                            mapper_method="rule",
+                            confidence=0.90,
+                            source_upload_id=upload_id,
+                            valid_from=voucher_date,
+                        )
 
         return WriteSummary(
             rows_written=rows_written,
