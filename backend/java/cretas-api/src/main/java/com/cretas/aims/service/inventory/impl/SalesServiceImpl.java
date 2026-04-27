@@ -584,7 +584,8 @@ public class SalesServiceImpl implements SalesService {
             SalesOrder order = getSalesOrderById(factoryId, request.getSalesOrderId());
             if (order.getStatus() == null
                     || !com.cretas.aims.domain.OrderUsageWhitelists.SO_DELIVERABLE.contains(order.getStatus())) {
-                throw new BusinessException("只有财务已批准/已确认/处理中/部分发货状态的订单可以创建发货单");
+                throw new BusinessException(409, "只有财务已批准/已确认/处理中/部分发货状态的订单可以创建发货单")
+                        .withHint("请刷新订单列表查看最新状态");
             }
         }
 
@@ -665,7 +666,8 @@ public class SalesServiceImpl implements SalesService {
     public SalesDeliveryRecord shipDelivery(String factoryId, String deliveryId, Long userId) {
         SalesDeliveryRecord record = getDeliveryRecordById(factoryId, deliveryId);
         if (record.getStatus() != SalesDeliveryStatus.DRAFT && record.getStatus() != SalesDeliveryStatus.PICKED) {
-            throw new BusinessException("只有草稿或已拣货状态的发货单可以发货");
+            throw new BusinessException(409, "只有草稿或已拣货状态的发货单可以发货")
+                    .withHint("请刷新发货单列表查看最新状态");
         }
 
         // P0-13 强制批次分配校验：发货行必须已完成批次分配才能发货
@@ -721,7 +723,8 @@ public class SalesServiceImpl implements SalesService {
     public SalesDeliveryRecord confirmDelivered(String factoryId, String deliveryId) {
         SalesDeliveryRecord record = getDeliveryRecordById(factoryId, deliveryId);
         if (record.getStatus() != SalesDeliveryStatus.SHIPPED) {
-            throw new BusinessException("只有已发货状态的发货单可以确认签收");
+            throw new BusinessException(409, "只有已发货状态的发货单可以确认签收")
+                    .withHint("请刷新发货单列表查看最新状态");
         }
         record.setStatus(SalesDeliveryStatus.DELIVERED);
         log.info("签收确认: deliveryId={}, deliveryNumber={}", deliveryId, record.getDeliveryNumber());

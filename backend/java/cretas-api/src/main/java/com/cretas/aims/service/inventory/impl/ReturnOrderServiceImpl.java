@@ -184,7 +184,8 @@ public class ReturnOrderServiceImpl implements ReturnOrderService {
     public ReturnOrder submitReturnOrder(String factoryId, String returnOrderId) {
         ReturnOrder order = getReturnOrderById(factoryId, returnOrderId);
         if (order.getStatus() != ReturnOrderStatus.DRAFT) {
-            throw new BusinessException("只有草稿状态的退货单可以提交");
+            throw new BusinessException(409, "只有草稿状态的退货单可以提交")
+                    .withHint("请刷新退货单列表查看最新状态");
         }
         order.setStatus(ReturnOrderStatus.SUBMITTED);
         log.info("提交退货单: returnOrderId={}, returnNumber={}", returnOrderId, order.getReturnNumber());
@@ -196,7 +197,8 @@ public class ReturnOrderServiceImpl implements ReturnOrderService {
     public ReturnOrder approveReturnOrder(String factoryId, String returnOrderId, Long approverId) {
         ReturnOrder order = getReturnOrderById(factoryId, returnOrderId);
         if (order.getStatus() != ReturnOrderStatus.SUBMITTED) {
-            throw new BusinessException("只有已提交状态的退货单可以审批");
+            throw new BusinessException(409, "只有已提交状态的退货单可以审批")
+                    .withHint("请刷新退货单列表查看最新状态");
         }
         order.setStatus(ReturnOrderStatus.APPROVED);
         order.setApprovedBy(approverId);
@@ -236,7 +238,8 @@ public class ReturnOrderServiceImpl implements ReturnOrderService {
     public ReturnOrder rejectReturnOrder(String factoryId, String returnOrderId) {
         ReturnOrder order = getReturnOrderById(factoryId, returnOrderId);
         if (order.getStatus() != ReturnOrderStatus.SUBMITTED) {
-            throw new BusinessException("只有已提交状态的退货单可以驳回");
+            throw new BusinessException(409, "只有已提交状态的退货单可以驳回")
+                    .withHint("请刷新退货单列表查看最新状态");
         }
         order.setStatus(ReturnOrderStatus.REJECTED);
         log.info("驳回退货单: returnOrderId={}, returnNumber={}", returnOrderId, order.getReturnNumber());
@@ -248,7 +251,8 @@ public class ReturnOrderServiceImpl implements ReturnOrderService {
     public ReturnOrder completeReturnOrder(String factoryId, String returnOrderId) {
         ReturnOrder order = getReturnOrderById(factoryId, returnOrderId);
         if (order.getStatus() != ReturnOrderStatus.APPROVED) {
-            throw new BusinessException("只有已审批状态的退货单可以完成");
+            throw new BusinessException(409, "只有已审批状态的退货单可以完成")
+                    .withHint("请刷新退货单列表查看最新状态");
         }
         order.setStatus(ReturnOrderStatus.COMPLETED);
         log.info("完成退货单: returnOrderId={}, returnNumber={}", returnOrderId, order.getReturnNumber());

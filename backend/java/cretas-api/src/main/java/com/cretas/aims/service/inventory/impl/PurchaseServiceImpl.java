@@ -256,7 +256,8 @@ public class PurchaseServiceImpl implements PurchaseService {
     public PurchaseOrder submitOrder(String factoryId, String orderId) {
         PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
         if (order.getStatus() != PurchaseOrderStatus.DRAFT) {
-            throw new BusinessException("只有草稿状态的订单可以提交");
+            throw new BusinessException(409, "只有草稿状态的订单可以提交")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         order.setStatus(PurchaseOrderStatus.SUBMITTED);
         log.info("提交采购订单: orderId={}, orderNumber={}", orderId, order.getOrderNumber());
@@ -268,7 +269,8 @@ public class PurchaseServiceImpl implements PurchaseService {
     public PurchaseOrder approveOrder(String factoryId, String orderId, Long approvedBy) {
         PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
         if (order.getStatus() != PurchaseOrderStatus.SUBMITTED) {
-            throw new BusinessException("只有已提交状态的订单可以审批");
+            throw new BusinessException(409, "只有已提交状态的订单可以审批")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         order.setStatus(PurchaseOrderStatus.APPROVED);
         order.setApprovedBy(approvedBy);
@@ -282,7 +284,8 @@ public class PurchaseServiceImpl implements PurchaseService {
     public PurchaseOrder submitForFinanceReview(String factoryId, String orderId) {
         PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
         if (order.getStatus() != PurchaseOrderStatus.APPROVED) {
-            throw new BusinessException("只有已审批状态的订单可以提交财务审核");
+            throw new BusinessException(409, "只有已审批状态的订单可以提交财务审核")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         order.setStatus(PurchaseOrderStatus.PENDING_FINANCE_REVIEW);
         log.info("采购订单提交财务审核: orderId={}", orderId);
@@ -294,7 +297,8 @@ public class PurchaseServiceImpl implements PurchaseService {
     public PurchaseOrder financeApproveOrder(String factoryId, String orderId, Long reviewedBy, String notes) {
         PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
         if (order.getStatus() != PurchaseOrderStatus.PENDING_FINANCE_REVIEW) {
-            throw new BusinessException("只有待财务审核状态的订单可以审核");
+            throw new BusinessException(409, "只有待财务审核状态的订单可以审核")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         order.setStatus(PurchaseOrderStatus.FINANCE_APPROVED);
         order.setFinanceReviewedBy(reviewedBy);
@@ -309,7 +313,8 @@ public class PurchaseServiceImpl implements PurchaseService {
     public PurchaseOrder financeRejectOrder(String factoryId, String orderId, Long reviewedBy, String notes) {
         PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
         if (order.getStatus() != PurchaseOrderStatus.PENDING_FINANCE_REVIEW) {
-            throw new BusinessException("只有待财务审核状态的订单可以驳回");
+            throw new BusinessException(409, "只有待财务审核状态的订单可以驳回")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         order.setStatus(PurchaseOrderStatus.FINANCE_REJECTED);
         order.setFinanceReviewedBy(reviewedBy);
@@ -341,7 +346,8 @@ public class PurchaseServiceImpl implements PurchaseService {
     public PurchaseOrder updateDraftOrder(String factoryId, String orderId, UpdatePurchaseOrderRequest request) {
         PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
         if (order.getStatus() != PurchaseOrderStatus.DRAFT) {
-            throw new BusinessException("只有草稿状态的订单可以编辑");
+            throw new BusinessException(409, "只有草稿状态的订单可以编辑")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         // Optimistic lock: explicit compare (see CustomerServiceImpl for rationale)
         if (request.getVersion() != null && !request.getVersion().equals(order.getVersion())) {
@@ -438,7 +444,8 @@ public class PurchaseServiceImpl implements PurchaseService {
             PurchaseOrder order = getPurchaseOrderById(factoryId, request.getPurchaseOrderId());
             if (order.getStatus() == null
                     || !com.cretas.aims.domain.OrderUsageWhitelists.PO_OPS_RECEIVABLE.contains(order.getStatus())) {
-                throw new BusinessException("只有已审批、财务已审核或部分到货状态的订单可以入库");
+                throw new BusinessException(409, "只有已审批、财务已审核或部分到货状态的订单可以入库")
+                        .withHint("请刷新订单列表查看最新状态");
             }
         }
 
@@ -513,7 +520,8 @@ public class PurchaseServiceImpl implements PurchaseService {
     public PurchaseReceiveRecord confirmReceive(String factoryId, String receiveId, Long userId) {
         PurchaseReceiveRecord record = getReceiveRecordById(factoryId, receiveId);
         if (record.getStatus() != PurchaseReceiveStatus.DRAFT && record.getStatus() != PurchaseReceiveStatus.PENDING_QC) {
-            throw new BusinessException("只有草稿或待质检状态的入库单可以确认");
+            throw new BusinessException(409, "只有草稿或待质检状态的入库单可以确认")
+                    .withHint("请刷新入库单列表查看最新状态");
         }
 
         // 确认入库：为每个行项目创建 MaterialBatch

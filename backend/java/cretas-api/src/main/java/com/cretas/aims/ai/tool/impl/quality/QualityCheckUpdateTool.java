@@ -151,7 +151,17 @@ public class QualityCheckUpdateTool extends AbstractBusinessTool {
         List<String> updatedFields = new ArrayList<>();
 
         if (finalResult != null && !finalResult.trim().isEmpty()) {
-            existing.setResult(finalResult.toUpperCase());
+            // R41 BUG-11 fix: normalize to canonical enum (PASS/FAIL/CONDITIONAL).
+            // Previously toUpperCase() let "passed"/"failed" sneak in → DB pollution.
+            String upper = finalResult.trim().toUpperCase();
+            String canonical = switch (upper) {
+                case "PASS", "PASSED" -> "PASS";
+                case "FAIL", "FAILED" -> "FAIL";
+                case "CONDITIONAL", "PARTIAL" -> "CONDITIONAL";
+                default -> throw new IllegalArgumentException(
+                        "检验结果只能是 PASS/FAIL/CONDITIONAL, 收到: " + finalResult);
+            };
+            existing.setResult(canonical);
             updatedFields.add("检验结果");
         }
 
