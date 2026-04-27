@@ -41,11 +41,28 @@ _TOP_N_STORES = 10
 class StoredValueCardConsumption(AnalysisTemplate):
 
     sample_queries = [
+        # original 5
         "储值卡消费情况",
         "预付卡使用流水",
         "储值卡金额统计",
         "会员储值消费",
         "储值卡核销",
+        # v7 #6 (Apr 26 2026): extended for xmx-style stored-value queries.
+        "储值卡使用率",
+        "充值卡使用频次",
+        "充值最多的客户",
+        "充值排行",
+        "充值总金额多少",
+        "充值赠送比例",
+        "充值赠送金额",
+        "卡内余额总额",
+        "余额未使用比例",
+        "押金总额",
+        "卡类型分布",
+        "卡类型 Top",
+        "本金 vs 赠送占比",
+        "储值卡 Top 5 客户",
+        "储值卡净留存",
     ]
 
     # spec §6.1: B 阶段引入 SVC fields 字段后再填

@@ -298,8 +298,25 @@ async def lifespan(app: FastAPI):
         _emb_pool = await _get_pool_emb()
         if _emb_pool is not None:
             existing = await count_embeddings(_emb_pool)
-            if existing == 0:
-                logger.info("[startup] template embedding index empty, populating in background")
+            # v7 #6 (Apr 26 2026): count expected sample_queries from
+            # registry; if existing < expected, run populate_all (idempotent
+            # ON CONFLICT DO UPDATE) to ingest new sample_queries from any
+            # template extensions deployed in this release.
+            expected = 0
+            try:
+                from smartbi.services.materialized_analytics.templates.registry import (
+                    get_registry, load_all_templates,
+                )
+                load_all_templates()
+                for t in get_registry().all():
+                    expected += len(getattr(t, 'sample_queries', []))
+            except Exception:
+                pass
+            if existing == 0 or (expected > 0 and existing < expected):
+                logger.info(
+                    f"[startup] template embedding index {existing}/{expected} — "
+                    f"populating in background"
+                )
                 import asyncio as _asyncio
                 _asyncio.create_task(populate_all(_emb_pool))
             else:

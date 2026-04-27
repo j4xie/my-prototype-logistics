@@ -72,11 +72,36 @@ _META_LABELS = ("合计", "总计", "小计", "汇总")
 class MemberDeepAnalytics(AnalysisTemplate):
 
     sample_queries = [
+        # original 5
         "会员卡数据",
         "会员等级分布",
         "会员余额统计",
         "储值会员分析",
         "会员充值情况",
+        # v7 #6 (Apr 26 2026): extended for xmx-style member analysis queries.
+        "会员都什么等级",
+        "会员等级占比",
+        "VIP 占比多少",
+        "VIP 客户有多少",
+        "高积分客户都是谁",
+        "积分总量多少",
+        "高积分会员",
+        "卡里余额还有多少",
+        "余额最多的会员",
+        "余额超过 500 的会员",
+        "高余额会员",
+        "新发卡多少",
+        "发卡量趋势",
+        "沉睡会员有哪些",
+        "流失会员",
+        "会员留存率",
+        "会员卡状态分布",
+        "活跃卡占比",
+        "会员卡数量",
+        "会员总数",
+        "会员排行",
+        "Top 10 会员",
+        "充值排行",
     ]
 
     # Deferred: applies() gates on 卡号 (card-id) + 余额/充值 (member-card

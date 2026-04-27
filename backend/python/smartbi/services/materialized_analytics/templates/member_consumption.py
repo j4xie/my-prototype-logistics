@@ -33,11 +33,28 @@ from .registry import register
 class MemberConsumption(AnalysisTemplate):
 
     sample_queries = [
+        # original 5
         "会员消费分析",
         "会员卡使用情况",
         "会员订单统计",
         "会员频次",
         "会员复购",
+        # v7 #6 (Apr 26 2026): extended for xmx tenant common queries.
+        # Lifts cache hit on member-data-only tenants from 2% → 20%+.
+        "会员消费水平怎么样",
+        "会员都什么消费水平",
+        "会员单均消费多少",
+        "会员人均消费",
+        "会员客单价",
+        "会员消费频次怎么样",
+        "会员复购率多少",
+        "会员消费排行",
+        "活跃会员有多少",
+        "会员里谁消费最多",
+        "高消费会员都是谁",
+        "会员消费排名",
+        "会员消费贡献占比",
+        "会员订单频次分布",
     ]
 
     requires: ClassVar[RequiresSpec | None] = RequiresSpec(
