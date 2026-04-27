@@ -180,6 +180,7 @@ const menuConfig: MenuItem[] = [
       { path: '/finance/ar-ap', title: '应收应付', icon: '', module: 'finance' },
       { path: '/finance/invoices', title: '开票管理', icon: '', module: 'finance' },
       { path: '/finance/payments', title: '收款管理', icon: '', module: 'finance' },
+      { path: '/finance/adjustments', title: '调整审批', icon: '', module: 'finance' },
       { path: '/finance/sku-margin', title: 'SKU毛利率分析', icon: '', module: 'finance' }
     ]
   },

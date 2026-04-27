@@ -69,6 +69,13 @@ public interface ArApService {
                                                    String counterpartyId,
                                                    int page, int size);
 
+    /**
+     * R28 P2 (R23 P5 deferred): list PENDING adjustments awaiting approval.
+     * Filters: factoryId + approval_status='PENDING' + transaction_type IN
+     * (AR_ADJUSTMENT, AP_ADJUSTMENT). Sorted newest first (created_at DESC).
+     */
+    PageResponse<ArApTransaction> getPendingAdjustments(String factoryId, int page, int size);
+
     /** 对账单：指定期间的交易明细 + 期初/期末余额 */
     Map<String, Object> getStatement(String factoryId, CounterpartyType counterpartyType,
                                       String counterpartyId,

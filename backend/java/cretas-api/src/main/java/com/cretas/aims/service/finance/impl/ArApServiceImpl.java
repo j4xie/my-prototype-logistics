@@ -460,6 +460,18 @@ public class ArApServiceImpl implements ArApService {
         return PageResponse.of(result.getContent(), page, size, result.getTotalElements());
     }
 
+    /**
+     * R28 P2 (R23 P5 deferred): list PENDING adjustments. Inline query over the
+     * existing transactionRepository's standard JPA findAll Specification — keeps
+     * the API surface narrow without adding a one-off named query.
+     */
+    @Override
+    public PageResponse<ArApTransaction> getPendingAdjustments(String factoryId, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<ArApTransaction> result = transactionRepository.findPendingAdjustments(factoryId, pageRequest);
+        return PageResponse.of(result.getContent(), page, size, result.getTotalElements());
+    }
+
     @Override
     public Map<String, Object> getStatement(String factoryId, CounterpartyType counterpartyType,
                                              String counterpartyId,

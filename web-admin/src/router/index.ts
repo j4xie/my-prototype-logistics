@@ -400,6 +400,13 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'FinancePayments',
             component: () => import('@/views/finance/payments/list.vue'),
             meta: { requiresAuth: true, title: '收款管理', module: 'finance' }
+          },
+          // R28 P2 (R23 P5 deferred): PENDING adjustment approval queue
+          {
+            path: 'adjustments',
+            name: 'FinanceAdjustments',
+            component: () => import('@/views/finance/adjustments/list.vue'),
+            meta: { requiresAuth: true, title: '调整审批', module: 'finance' }
           }
         ]
       },

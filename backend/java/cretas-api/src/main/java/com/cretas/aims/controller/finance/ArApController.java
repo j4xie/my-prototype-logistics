@@ -183,6 +183,23 @@ public class ArApController {
         return ApiResponse.success("查询成功", result);
     }
 
+    /**
+     * R28 P2 (R23 P5 deferred): list PENDING adjustments awaiting approval.
+     * AR_ADJUSTMENT + AP_ADJUSTMENT types where approval_status='PENDING'.
+     * Read endpoint: accepts finance:read_write OR finance:read OR finance:approve_adjustment.
+     * The approve_adjustment role needs read access to the queue to act on it.
+     */
+    @GetMapping("/adjustments/pending")
+    @Operation(summary = "待审批调整记录列表")
+    @RequirePermission({"finance:read_write", "finance:read", "finance:approve_adjustment"})
+    public ApiResponse<PageResponse<ArApTransaction>> listPendingAdjustments(
+            @PathVariable @NotBlank String factoryId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        PageResponse<ArApTransaction> result = arApService.getPendingAdjustments(factoryId, page, size);
+        return ApiResponse.success("查询成功", result);
+    }
+
     @GetMapping("/statement")
     @Operation(summary = "对账单（指定期间的交易明细+期初期末余额）")
     @RequirePermission({"finance:read_write", "finance:read"})
