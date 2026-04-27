@@ -14,6 +14,21 @@ from smartbi.canonical.provenance import (
 )
 
 
+def _make_conn_mock(fetchval_return: int = 1) -> AsyncMock:
+    """Build an AsyncMock conn with execute() + fetchval() both awaitable.
+
+    write_provenance now calls conn.execute() (advisory lock) before
+    conn.fetchval() (INSERT), so tests must mock both. Default AsyncMock
+    instances return another AsyncMock for any attribute access, but using
+    explicit AsyncMock() for each method keeps await_args inspection
+    behaving as the existing tests expect.
+    """
+    conn = AsyncMock()
+    conn.execute = AsyncMock(return_value=None)
+    conn.fetchval = AsyncMock(return_value=fetchval_return)
+    return conn
+
+
 # ── ProvenanceValue.from_row ────────────────────────────────────
 
 
@@ -267,6 +282,97 @@ async def test_write_provenance_returns_inserted_id():
     conn.fetchval.assert_awaited_once()
 
 
+async def test_write_provenance_acquires_advisory_lock_before_insert():
+    """Day 6+ blocker fix (spec C-3 / NS-3): write_provenance MUST acquire
+    pg_advisory_xact_lock with namespace=99 (C field-conflict reserved)
+    BEFORE the INSERT. Race-on-dedup-key serializes at the PG layer.
+    """
+    conn = _make_conn_mock(fetchval_return=1)
+
+    await write_provenance(
+        conn,
+        factory_id="F001",
+        entity_type="store",
+        entity_id=1,
+        field_name="brand",
+        field_value="x",
+        confidence=0.9,
+        source_type="manual",
+        mapper_method="manual",
+    )
+
+    # The lock must have been executed exactly once.
+    conn.execute.assert_awaited_once()
+    sql_arg = conn.execute.await_args.args[0]
+    bound_args = conn.execute.await_args.args[1:]
+    assert "pg_advisory_xact_lock" in sql_arg
+    # Namespace=99 reserved for C; second arg is the md5-derived key (just
+    # check it's an int — exact value is implementation detail).
+    assert bound_args[0] == 99
+    assert isinstance(bound_args[1], int)
+    assert 0 <= bound_args[1] < 2**31
+
+
+async def test_write_provenance_lock_key_stable_for_same_inputs():
+    """Same (factory, entity_type, entity_id, field_name) produces the same
+    lock key on every call — md5-derived, so stable across processes.
+    """
+    conn1 = _make_conn_mock(fetchval_return=1)
+    conn2 = _make_conn_mock(fetchval_return=2)
+
+    for conn in (conn1, conn2):
+        await write_provenance(
+            conn,
+            factory_id="F001",
+            entity_type="store",
+            entity_id=42,
+            field_name="brand",
+            field_value="x",
+            confidence=0.9,
+            source_type="manual",
+            mapper_method="manual",
+        )
+
+    key1 = conn1.execute.await_args.args[2]
+    key2 = conn2.execute.await_args.args[2]
+    assert key1 == key2
+
+
+async def test_write_provenance_lock_key_differs_for_different_fields():
+    """Different field_name → different lock key. Two writers on different
+    fields of the same entity must NOT serialize against each other.
+    """
+    conn_a = _make_conn_mock(fetchval_return=1)
+    conn_b = _make_conn_mock(fetchval_return=2)
+
+    await write_provenance(
+        conn_a,
+        factory_id="F001",
+        entity_type="store",
+        entity_id=42,
+        field_name="brand",
+        field_value="x",
+        confidence=0.9,
+        source_type="manual",
+        mapper_method="manual",
+    )
+    await write_provenance(
+        conn_b,
+        factory_id="F001",
+        entity_type="store",
+        entity_id=42,
+        field_name="city",
+        field_value="x",
+        confidence=0.9,
+        source_type="manual",
+        mapper_method="manual",
+    )
+
+    key_brand = conn_a.execute.await_args.args[2]
+    key_city = conn_b.execute.await_args.args[2]
+    assert key_brand != key_city
+
+
 # ── read_authoritative_value ───────────────────────────────────
 
 
@@ -311,7 +417,12 @@ async def test_read_authoritative_value_returns_provenance_object():
 
 
 async def test_read_authoritative_value_filters_as_of():
-    """Passing as_of adds a valid_from <= $5 clause and binds the date."""
+    """Passing as_of binds the date for both valid_from <= $5 AND valid_to filters.
+
+    Day 6+ blocker fix: valid_to is now ALWAYS filtered (not gated on
+    as_of presence). So even when caller passes as_of explicitly, the
+    valid_to clause uses the same date.
+    """
     conn = AsyncMock()
     conn.fetchrow = AsyncMock(return_value=None)
 
@@ -328,11 +439,39 @@ async def test_read_authoritative_value_filters_as_of():
     bound_args = conn.fetchrow.await_args.args[1:]
     assert "valid_from <= $5" in sql_arg
     assert "superseded_by_id IS NULL" in sql_arg
-    assert bound_args == ("F001", "store", 1, "name", cutoff)
+    # Both placeholders bind the same cutoff (target_date) — see writer.py
+    assert bound_args == ("F001", "store", 1, "name", cutoff, cutoff)
 
 
-async def test_read_authoritative_value_omits_as_of_clause_by_default():
-    """No as_of → no $5 placeholder, only the 4 base params."""
+async def test_read_authoritative_value_filters_valid_to():
+    """Result must satisfy (valid_to IS NULL OR valid_to >= target_date).
+
+    Day 6+ blocker fix (spec 04-C v1.3 §3.2): without this, a row with
+    valid_from=2025-01-01 + valid_to=2025-06-30 would leak into a query
+    asking for 2025-12, even though the validity window has expired.
+    """
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(return_value=None)
+
+    await read_authoritative_value(
+        conn,
+        factory_id="F001",
+        entity_type="store",
+        entity_id=1,
+        field_name="name",
+        as_of=date(2025, 12, 1),
+    )
+    sql_arg = conn.fetchrow.await_args.args[0]
+    assert "valid_to IS NULL OR valid_to >=" in sql_arg
+
+
+async def test_read_authoritative_value_default_as_of_is_today():
+    """Omitting as_of binds date.today() to both placeholders.
+
+    Day 6+ blocker fix: valid_to filter is always active. Default as_of
+    must be today (not "no filter") so expired rows don't leak just because
+    the caller didn't specify a date.
+    """
     conn = AsyncMock()
     conn.fetchrow = AsyncMock(return_value=None)
 
@@ -345,5 +484,12 @@ async def test_read_authoritative_value_omits_as_of_clause_by_default():
     )
     sql_arg = conn.fetchrow.await_args.args[0]
     bound_args = conn.fetchrow.await_args.args[1:]
-    assert "valid_from <=" not in sql_arg
-    assert bound_args == ("F001", "store", 1, "name")
+    # valid_from clause is always present now
+    assert "valid_from <= $5" in sql_arg
+    assert "valid_to IS NULL OR valid_to >=" in sql_arg
+    # 6 params bound: factory/entity_type/entity_id/field_name/today/today
+    assert len(bound_args) == 6
+    assert bound_args[:4] == ("F001", "store", 1, "name")
+    today = date.today()
+    assert bound_args[4] == today
+    assert bound_args[5] == today

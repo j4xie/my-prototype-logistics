@@ -1,6 +1,7 @@
 """Provenance writer — INSERT field_provenance rows with sentinel + dedup."""
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 from datetime import date
@@ -19,6 +20,24 @@ logger = logging.getLogger(__name__)
 _SENTINEL_UPLOAD_ID = 0
 
 _VALID_MAPPER_METHODS = ("manual", "rule", "embedding", "llm")
+
+# Namespace=99 reserved for C field-conflict advisory locks. B uses the 1-arg
+# form per-factory (concurrency.py), so the 2-arg form with namespace 99
+# can't collide with B even if hash keys happen to match.
+_C_FIELD_LOCK_NAMESPACE = 99
+
+
+def _field_lock_key(
+    factory_id: str, entity_type: str, entity_id: int, field_name: str
+) -> int:
+    """Stable int4 hash for pg_advisory_xact_lock (signed 32-bit range).
+
+    Uses md5 (not Python's builtin hash) so it's stable across processes and
+    immune to PYTHONHASHSEED randomization. Mirrors B's _factory_lock_key
+    pattern in smartbi.canonical.concurrency.
+    """
+    payload = f"{factory_id}|{entity_type}|{entity_id}|{field_name}".encode("utf-8")
+    return int(hashlib.md5(payload).hexdigest()[:8], 16) % (2**31)
 
 
 async def write_provenance(
@@ -42,11 +61,20 @@ async def write_provenance(
     tenant-scoped pool conn). FORCE RLS WITH CHECK rejects the INSERT
     otherwise.
 
-    Concurrency (spec C-3 / NS-3): callers should hold
-    ``pg_advisory_xact_lock(99::int, hashtext(factory||entity_type||entity_id||field_name)::int)``
-    around this call to prevent two writers racing on the same dedup key.
-    The 2-arg form with namespace ``99`` is reserved here so we don't collide
-    with B's 1-arg per-factory advisory lock.
+    Concurrency (spec C-3 / NS-3): this function acquires
+    ``pg_advisory_xact_lock(99, md5_int(factory||entity_type||entity_id||field_name))``
+    INTERNALLY before the INSERT — callers no longer need to manage the
+    lock manually. Namespace ``99`` is reserved for C field-conflict locks
+    so we don't collide with B's 1-arg per-factory lock.
+
+    Caller MUST already be inside ``conn.transaction()`` because
+    ``pg_advisory_xact_lock`` is transaction-scoped (released automatically
+    on COMMIT/ROLLBACK). Calling outside a transaction silently no-ops the
+    lock, which defeats the whole point.
+
+    PG advisory locks are reentrant within the same session, so a caller
+    that invokes ``write_provenance`` multiple times in one transaction
+    won't deadlock — the lock counter increments and decrements normally.
 
     Day 1-5 simplification: if a duplicate row already exists for the dedup
     key (same factory/entity/field/valid_from + active), this raises
@@ -84,6 +112,18 @@ async def write_provenance(
             value_json = json.dumps(field_value, ensure_ascii=False, default=str)
         except (TypeError, ValueError) as exc:
             raise ValueError(f"field_value is not JSON-serializable: {exc}") from exc
+
+    # Spec C-3 / NS-3: acquire field-conflict advisory lock BEFORE the
+    # INSERT so two writers racing on the same (factory, entity, field) dedup
+    # key serialize at the PG layer. xact-scoped → released on COMMIT/ROLLBACK.
+    # Reentrant within the same session, so multiple write_provenance calls
+    # in one transaction won't deadlock.
+    lock_key = _field_lock_key(factory_id, entity_type, entity_id, field_name)
+    await conn.execute(
+        "SELECT pg_advisory_xact_lock($1::int, $2::int)",
+        _C_FIELD_LOCK_NAMESPACE,
+        lock_key,
+    )
 
     # COALESCE on valid_from: caller may pass None meaning "no anchor — use
     # DB default '-infinity'::date". asyncpg sends Python None as explicit
@@ -130,19 +170,32 @@ async def read_authoritative_value(
     (then ``created_at``) where ``superseded_by_id IS NULL``. No
     factory_provenance_config priority resolution yet — that's Day 6+.
 
-    If ``as_of`` is given, restricts to rows whose ``valid_from <= as_of``.
+    Validity window (spec 04-C v1.3 §3.2): the result row must satisfy BOTH
+    ``valid_from <= as_of`` AND ``(valid_to IS NULL OR valid_to >= as_of)``
+    so a superseded-by-time-window row from a previous period doesn't leak
+    into a later query. ``as_of`` defaults to ``date.today()`` when omitted —
+    callers that want absolute-latest semantics still pay the valid_to filter
+    against today, which matches the intent (an expired row should not be
+    returned just because the caller forgot to specify the date).
     """
+    target_date = as_of if as_of is not None else date.today()
     where_clauses: List[str] = [
         "factory_id = $1",
         "entity_type = $2",
         "entity_id = $3",
         "field_name = $4",
         "superseded_by_id IS NULL",
+        "valid_from <= $5",
+        "(valid_to IS NULL OR valid_to >= $6)",
     ]
-    params: List[Any] = [factory_id, entity_type, entity_id, field_name]
-    if as_of is not None:
-        where_clauses.append(f"valid_from <= ${len(params) + 1}")
-        params.append(as_of)
+    params: List[Any] = [
+        factory_id,
+        entity_type,
+        entity_id,
+        field_name,
+        target_date,
+        target_date,
+    ]
     where_sql = " AND ".join(where_clauses)
 
     row = await conn.fetchrow(
