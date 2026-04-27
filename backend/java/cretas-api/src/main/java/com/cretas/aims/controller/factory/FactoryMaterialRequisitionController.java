@@ -1,5 +1,6 @@
 package com.cretas.aims.controller.factory;
 
+import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.entity.factory.FactoryMaterialRequisition;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.factory.FactoryMaterialRequisition.Status;
@@ -35,6 +36,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/material-requisitions")
 @RequiredArgsConstructor
+@RequireModule("production_plan")
 public class FactoryMaterialRequisitionController {
 
     private final FactoryMaterialRequisitionService service;

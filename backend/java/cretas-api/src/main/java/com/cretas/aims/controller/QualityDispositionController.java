@@ -49,6 +49,7 @@ import com.cretas.aims.annotation.RequireModule;
 @RequestMapping("/api/mobile/{factoryId}/quality-disposition")
 @RequiredArgsConstructor
 @Tag(name = "质检处置管理", description = "质检处置规则与执行管理")
+@RequireModule("quality_inspection")
 public class QualityDispositionController {
 
     private final QualityDispositionRuleService qualityDispositionRuleService;

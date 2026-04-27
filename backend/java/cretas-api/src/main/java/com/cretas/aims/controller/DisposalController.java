@@ -32,6 +32,7 @@ import com.cretas.aims.annotation.RequireModule;
 @RequestMapping("/api/mobile/{factoryId}/disposal-records")
 @RequiredArgsConstructor
 @Tag(name = "报废管理", description = "报废记录管理相关接口，包括报废记录的创建、查询、审批、统计分析等功能，支持按类型（原材料/产品/设备）分类管理")
+@RequireModule("quality_inspection")
 public class DisposalController {
 
     private final DisposalRecordService disposalRecordService;

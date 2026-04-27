@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.ProcessCheckinRecord;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/process-checkin")
 @RequiredArgsConstructor
+@RequireModule("production_report")
 public class ProcessCheckinController {
 
     private final ProcessCheckinRecordRepository checkinRepository;

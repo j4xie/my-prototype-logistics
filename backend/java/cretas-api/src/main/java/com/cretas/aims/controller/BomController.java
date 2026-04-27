@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.bom.BomCostSummaryDTO;
@@ -34,6 +35,7 @@ import java.util.List;
 @RequestMapping("/api/mobile/{factoryId}/bom")
 @RequiredArgsConstructor
 @Tag(name = "BOM成本管理", description = "BOM物料清单和成本配置管理")
+@RequireModule("bom")
 public class BomController {
 
     private final BomService bomService;

@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.dto.common.ApiResponse;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -29,6 +30,7 @@ import java.util.*;
 @Slf4j
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/dashboard")
+@RequireModule("production_plan")
 public class ProductionProgressDashboardController {
 
     @PersistenceContext

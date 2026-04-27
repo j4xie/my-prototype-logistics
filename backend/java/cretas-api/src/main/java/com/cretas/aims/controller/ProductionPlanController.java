@@ -52,6 +52,7 @@ import com.cretas.aims.annotation.RequireModule;
 @RequestMapping("/api/mobile/{factoryId}/production-plans")
 @RequiredArgsConstructor
 @Tag(name = "生产计划管理", description = "生产计划管理相关接口")
+@RequireModule("production_plan")
 public class ProductionPlanController {
 
     private final ProductionPlanService productionPlanService;

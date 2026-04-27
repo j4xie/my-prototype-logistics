@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.dto.ProductWorkProcessDTO;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
@@ -20,6 +21,7 @@ import java.util.List;
 @RequestMapping("/api/mobile/{factoryId}/product-work-processes")
 @Tag(name = "产品工序关联", description = "产品与工序的关联管理")
 @RequiredArgsConstructor
+@RequireModule("production_plan")
 public class ProductWorkProcessController {
 
     private final ProductWorkProcessService service;

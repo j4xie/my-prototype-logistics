@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.dto.MobileDTO;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.batch.AssignWorkersDTO;
@@ -50,6 +51,7 @@ import com.cretas.aims.util.ErrorSanitizer;
 @RequestMapping("/api/mobile/{factoryId}/processing")
 @RequiredArgsConstructor
 @Tag(name = "生产加工管理")
+@RequireModule("production_plan")
 public class ProcessingController {
 
     private final ProcessingService processingService;

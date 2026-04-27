@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.config.*;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "质检项配置", description = "质检项的增删改查、绑定管理和统计接口")
+@RequireModule("quality_inspection")
 public class QualityCheckItemController {
 
     private final QualityCheckItemService qualityCheckItemService;

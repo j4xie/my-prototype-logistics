@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.dto.ProcessTaskDTO;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
@@ -25,6 +26,7 @@ import java.util.Map;
 @RequestMapping("/api/mobile/{factoryId}/process-work-reporting")
 @Tag(name = "工序报工审批", description = "PROCESS模式下的报工审批、补报、冲销管理")
 @RequiredArgsConstructor
+@RequireModule("production_report")
 public class ProcessWorkReportingController {
 
     private final ProcessWorkReportingService service;

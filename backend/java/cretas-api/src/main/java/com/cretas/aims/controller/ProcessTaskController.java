@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.dto.ProcessTaskDTO;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/mobile/{factoryId}/process-tasks")
 @Tag(name = "工序任务管理", description = "PROCESS模式的工序任务调度管理")
 @RequiredArgsConstructor
+@RequireModule("production_plan")
 public class ProcessTaskController {
 
     private final ProcessTaskService processTaskService;
