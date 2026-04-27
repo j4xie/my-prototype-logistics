@@ -264,3 +264,111 @@ async def test_top_products_picks_active_over_superseded(pool, clean_rows):
     # (bill_flow @ 0.6).
     assert p["confidence"] == 0.95
     assert p["source"] == "manual"
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# P0-C2 (post-review test backfill): SMARTBI_ENABLE_PROVENANCE flag-gate.
+# The parallel session's F5 fix (queries.py:135-194) wraps the JOIN in a
+# branch on ``is_provenance_enabled()``. Both branches return the same
+# result shape with NULL provenance fields when no match — but they run
+# completely different SQL strings. The OFF branch is the one that runs
+# in prod (where the field_provenance table doesn't even exist) so it
+# MUST stay green. Without an explicit flag-off test, a regression in
+# the OFF SQL string is invisible until prod traffic hits it.
+# ─────────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_top_products_skips_join_when_flag_off(
+    pool, clean_rows, monkeypatch
+):
+    """SMARTBI_ENABLE_PROVENANCE=0 → the OFF SQL branch runs (no LEFT JOIN
+    LATERAL). Even if field_provenance has rows for this product, they are
+    NOT surfaced — the OFF branch returns NULL provenance fields by SELECT
+    NULL::numeric AS confidence. This is the prod-safe path that runs when
+    the C migrations haven't been applied yet.
+    """
+    monkeypatch.setenv("SMARTBI_ENABLE_PROVENANCE", "0")
+
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+
+    token = set_factory_id(_TENANT)
+    try:
+        async with pool.acquire() as conn:
+            pid = await _seed_product_with_revenue(conn, _TENANT, "p_off_branch", 750.0)
+            # Seed a high-confidence provenance row that WOULD be picked up
+            # by the ON branch's LATERAL join. The OFF branch must ignore it.
+            await _insert_provenance(
+                conn,
+                _TENANT,
+                pid,
+                "revenue@store_99",
+                750.0,
+                confidence=0.95,
+                source_type="product_summary",
+                source_upload_id=0,
+            )
+
+        out = await top_products(
+            pool, _TENANT, (date(2026, 4, 1), date(2026, 4, 30)), top_n=5,
+        )
+    finally:
+        reset_factory_id(token)
+
+    products = out["top_products"]
+    assert len(products) == 1
+    p = products[0]
+    # OFF branch returns NULL for all provenance fields regardless of
+    # what's in field_provenance.
+    assert p["confidence"] is None
+    assert p["source"] is None
+    assert p["source_upload_id"] is None
+    # Non-provenance fields still flow normally.
+    assert p["product_id"] == pid
+    assert p["revenue"] == 750.0
+    # field_name still falls back to deterministic 'revenue' so the FE can
+    # build cell-audit URLs whether the JOIN ran or not.
+    assert p["field_name"] == "revenue"
+
+
+@pytest.mark.asyncio
+async def test_top_products_uses_join_when_flag_on(
+    pool, clean_rows, monkeypatch
+):
+    """SMARTBI_ENABLE_PROVENANCE=1 → the ON branch runs and the LATERAL
+    JOIN surfaces provenance from a populated field_provenance row.
+
+    Pairs with the OFF test above to lock both branches.
+    """
+    monkeypatch.setenv("SMARTBI_ENABLE_PROVENANCE", "1")
+
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+
+    token = set_factory_id(_TENANT)
+    try:
+        async with pool.acquire() as conn:
+            pid = await _seed_product_with_revenue(conn, _TENANT, "p_on_branch", 600.0)
+            await _insert_provenance(
+                conn,
+                _TENANT,
+                pid,
+                "revenue@store_42",
+                600.0,
+                confidence=0.88,
+                source_type="bill_flow",
+                source_upload_id=0,
+            )
+
+        out = await top_products(
+            pool, _TENANT, (date(2026, 4, 1), date(2026, 4, 30)), top_n=5,
+        )
+    finally:
+        reset_factory_id(token)
+
+    products = out["top_products"]
+    assert len(products) == 1
+    p = products[0]
+    # ON branch picks up the seeded provenance.
+    assert p["confidence"] == 0.88
+    assert p["source"] == "bill_flow"
+    assert p["field_name"] == "revenue@store_42"

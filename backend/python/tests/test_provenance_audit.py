@@ -438,6 +438,213 @@ async def test_audit_rejects_non_integer_entity_id():
     assert exc.value.status_code == 400
 
 
+# ─────────────────────────────────────────────────────────────────────────
+# P0-C3 (post-review test backfill): _parse_entity_id boundary coverage.
+# Adds the 3 cases the original P2-12 commit `cc38b4270` shipped without:
+#   1. entity_id="0" → 400 (must be POSITIVE integer, 0 is not)
+#   2. entity_id="-5" → 400 (negative branch)
+#   3. entity_id="9999999999999999999999" → 400 (BIGINT overflow guard,
+#      added by `cc38b4270` to convert PG's 500 NumericOutOfRange into a
+#      friendly 400. Without this test the guard could be silently
+#      removed by a refactor and tests would still pass.)
+# ─────────────────────────────────────────────────────────────────────────
+
+class _AdminState:
+    role = "factory_super_admin"
+    auth_method = "jwt"
+    factory_id = _TENANT
+
+
+class _AdminRequest:
+    state = _AdminState()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "bad_entity_id,expected_substr",
+    [
+        ("0", "正整数"),                          # zero rejected by ``v <= 0`` branch
+        ("-5", "正整数"),                          # negative rejected by same branch
+        ("9999999999999999999999", "BIGINT 范围"), # overflows PG BIGINT max
+    ],
+)
+async def test_audit_rejects_entity_id_boundary(bad_entity_id, expected_substr):
+    """entity_id boundary cases: 0, negative, BIGINT-overflow → 400 with
+    Chinese detail mentioning the right keyword.
+    """
+    from fastapi import HTTPException
+    from smartbi.api.provenance_audit import get_cell_audit
+
+    with pytest.raises(HTTPException) as exc:
+        await get_cell_audit(
+            request=_AdminRequest(),  # type: ignore[arg-type]
+            factory_id=_TENANT,
+            entity_type="product",
+            entity_id=bad_entity_id,
+            field="revenue",
+        )
+    assert exc.value.status_code == 400
+    assert expected_substr in exc.value.detail
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# P0-C1 (post-review test backfill): truncated banner end-to-end.
+# Seeds 501 rows for one cell, verifies:
+#   - response.truncated is True
+#   - response.history has exactly 500 rows (HISTORY_LIMIT, +1 buffer dropped)
+#   - response.history_limit echoes the constant 500
+# Pair with the corresponding vitest in cell-audit.spec.ts that asserts the
+# UI banner appears when truncated:true is in the API response.
+# ─────────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_audit_truncated_when_history_exceeds_limit(pool, clean_rows):
+    """501 rows for one cell → response truncates to 500 + flags it.
+
+    All rows have superseded_by_id pointing at one "current" row so the
+    history is large but uq_fp_dedup partial unique stays clean (only
+    one active row).
+    """
+    from datetime import date as _date
+
+    from smartbi.api.provenance_audit import get_cell_audit
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+
+    token = set_factory_id(_TENANT)
+    try:
+        async with pool.acquire() as conn:
+            # Insert 1 active row first so we can point all the rest at it.
+            current_id = int(
+                await conn.fetchval(
+                    """
+                    INSERT INTO field_provenance
+                      (factory_id, entity_type, entity_id, field_name, field_value,
+                       source_upload_id, source_type, confidence, valid_from,
+                       mapper_method, created_by)
+                    VALUES ($1, 'product', 999, 'revenue', '{"v": 999}'::jsonb,
+                            0, 'manual', 0.95, $2,
+                            'rule', 'truncate_seed')
+                    RETURNING id
+                    """,
+                    _TENANT, _date(2026, 1, 1),
+                )
+            )
+
+            # Build 501 superseded rows in one batch (use executemany).
+            # valid_from steps from 2024-01-01 backwards by day so each row
+            # is distinct (avoids any uniq constraint on the dedup key).
+            rows = [
+                (
+                    _TENANT, "product", 999, "revenue",
+                    f'{{"v": {i}}}',
+                    0, "inferred", 0.5,
+                    _date(2024 - (i // 365), 1, 1).replace(
+                        # cheap distinct dates: month wraps using i, year decremented
+                        month=((i % 12) + 1),
+                    ),
+                    "rule", current_id, f"hist_{i}",
+                )
+                for i in range(501)
+            ]
+            await conn.executemany(
+                """
+                INSERT INTO field_provenance
+                  (factory_id, entity_type, entity_id, field_name, field_value,
+                   source_upload_id, source_type, confidence, valid_from,
+                   mapper_method, superseded_by_id, created_by)
+                VALUES ($1, $2, $3, $4, $5::jsonb,
+                        $6, $7, $8, $9, $10, $11, $12)
+                """,
+                rows,
+            )
+
+        result = await get_cell_audit(
+            request=_AdminRequest(),  # type: ignore[arg-type]
+            factory_id=_TENANT,
+            entity_type="product",
+            entity_id="999",
+            field="revenue",
+        )
+    finally:
+        reset_factory_id(token)
+
+    # Total seeded = 1 active + 501 superseded = 502 rows.
+    # Response should cap at HISTORY_LIMIT=500 and flag truncated.
+    assert result["truncated"] is True
+    assert result["history_limit"] == 500
+    assert len(result["history"]) == 500
+    # current still picked correctly (the one active row should be in
+    # the first 500 since they're ordered valid_from DESC and 2026-01-01
+    # is the most recent).
+    assert result["current"] is not None
+    assert result["current"]["id"] == current_id
+
+
+@pytest.mark.asyncio
+async def test_audit_not_truncated_at_exactly_limit(pool, clean_rows):
+    """500 rows total → truncated=False (boundary inclusive of LIMIT)."""
+    from datetime import date as _date
+
+    from smartbi.api.provenance_audit import get_cell_audit
+    from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+
+    token = set_factory_id(_TENANT)
+    try:
+        async with pool.acquire() as conn:
+            current_id = int(
+                await conn.fetchval(
+                    """
+                    INSERT INTO field_provenance
+                      (factory_id, entity_type, entity_id, field_name, field_value,
+                       source_upload_id, source_type, confidence, valid_from,
+                       mapper_method, created_by)
+                    VALUES ($1, 'product', 998, 'revenue', '{"v": 998}'::jsonb,
+                            0, 'manual', 0.95, $2,
+                            'rule', 'truncate_seed')
+                    RETURNING id
+                    """,
+                    _TENANT, _date(2026, 1, 1),
+                )
+            )
+            rows = [
+                (
+                    _TENANT, "product", 998, "revenue",
+                    f'{{"v": {i}}}',
+                    0, "inferred", 0.5,
+                    _date(2024 - (i // 365), ((i % 12) + 1), 1),
+                    "rule", current_id, f"hist_{i}",
+                )
+                for i in range(499)
+            ]
+            await conn.executemany(
+                """
+                INSERT INTO field_provenance
+                  (factory_id, entity_type, entity_id, field_name, field_value,
+                   source_upload_id, source_type, confidence, valid_from,
+                   mapper_method, superseded_by_id, created_by)
+                VALUES ($1, $2, $3, $4, $5::jsonb,
+                        $6, $7, $8, $9, $10, $11, $12)
+                """,
+                rows,
+            )
+
+        result = await get_cell_audit(
+            request=_AdminRequest(),  # type: ignore[arg-type]
+            factory_id=_TENANT,
+            entity_type="product",
+            entity_id="998",
+            field="revenue",
+        )
+    finally:
+        reset_factory_id(token)
+
+    # 1 active + 499 superseded = 500 rows total. At limit, NOT truncated.
+    assert result["truncated"] is False
+    assert result["history_limit"] == 500
+    assert len(result["history"]) == 500
+
+
 @pytest.mark.asyncio
 async def test_audit_rejects_factory_id_mismatch_with_jwt():
     """JWT tenant != query factory_id → 403."""

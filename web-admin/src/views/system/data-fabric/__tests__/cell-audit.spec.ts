@@ -321,4 +321,43 @@ describe('cell-audit.vue (Sub-Project C Day 26)', () => {
     // Alert banner is also shown so the error is non-modal-persistent.
     expect(wrapper.find('.el-alert').exists()).toBe(true);
   });
+
+  // P0-C1 (post-review test backfill): truncated banner.
+  // Backend caps history at HISTORY_LIMIT=500 + flags ``truncated:true`` so
+  // the FE shows "仅显示最近 500 条 — 完整历史请联系运维". Without this
+  // test the banner Chinese text could drift unverified, or the v-if
+  // could break in a refactor.
+
+  it('renders truncated banner when API reports truncated history', async () => {
+    mockPythonFetch.mockResolvedValueOnce({
+      current: makeRow(),
+      history: Array.from({ length: 500 }, (_, i) => makeRow({ id: 100 + i })),
+      truncated: true,
+      historyLimit: 500,
+      key: { factoryId: 'F001', entityType: 'product', entityId: '42', field: 'cost_per_unit' },
+    });
+
+    const wrapper = mount(CellAudit, { global: { stubs: globalStubs } });
+    await flushPromises();
+
+    const html = wrapper.html();
+    expect(html).toContain('仅显示最近 500 条');
+    expect(html).toContain('完整历史请联系运维');
+  });
+
+  it('does NOT render truncated banner when API truncated is false (or absent)', async () => {
+    mockPythonFetch.mockResolvedValueOnce({
+      current: makeRow(),
+      history: [makeRow()],
+      truncated: false,
+      historyLimit: 500,
+      key: { factoryId: 'F001', entityType: 'product', entityId: '42', field: 'cost_per_unit' },
+    });
+
+    const wrapper = mount(CellAudit, { global: { stubs: globalStubs } });
+    await flushPromises();
+
+    const html = wrapper.html();
+    expect(html).not.toContain('仅显示最近 500 条');
+  });
 });
