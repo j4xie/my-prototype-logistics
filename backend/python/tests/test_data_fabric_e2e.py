@@ -1181,3 +1181,199 @@ async def test_provenance_fk_restrict_prevents_orphan(
                     "DELETE FROM smart_bi_pg_excel_uploads WHERE id = $1",
                     upload_id,
                 )
+
+
+# ── conflict_resolver integration tests (Sub-Project C Day 8-9) ────────────
+
+
+@pytest.mark.integration
+async def test_resolve_conflict_e2e_higher_priority_supersedes(
+    pg_pool: "asyncpg.Pool", clean_tenant: None
+) -> None:
+    """resolve_conflict end-to-end: write inferred → resolve manual.
+
+    Validates the higher-priority branch on real PG: prior row gets
+    superseded_by_id pointing to new row, superseded_reason='higher_priority',
+    new row is the active authoritative value, and the dedup unique index
+    doesn't trip (because we supersede the prior BEFORE inserting the new).
+    """
+    from datetime import date
+
+    from smartbi.canonical.provenance import (
+        invalidate_factory_config_cache,
+        read_authoritative_value,
+        resolve_conflict,
+        write_provenance,
+    )
+
+    invalidate_factory_config_cache()  # ensure clean cache
+
+    async with pg_pool.acquire() as conn:
+        async with conn.transaction():
+            await _set_tenant(conn, TEST_FACTORY)
+            store_id = await _seed_dim_store(conn, TEST_FACTORY, "测试店CR1")
+
+            # 1. Write inferred (priority 5).
+            prior_id = await write_provenance(
+                conn,
+                factory_id=TEST_FACTORY,
+                entity_type="store",
+                entity_id=store_id,
+                field_name="brand",
+                field_value="老品牌",
+                confidence=0.5,
+                source_type="inferred",
+                mapper_method="rule",
+                valid_from=date(2026, 1, 1),
+            )
+            assert prior_id > 0
+
+            # 2. Resolve a manual write (priority 1) with same valid_from →
+            #    must supersede prior + write new without unique-violation.
+            out = await resolve_conflict(
+                conn,
+                factory_id=TEST_FACTORY,
+                entity_type="store",
+                entity_id=store_id,
+                field_name="brand",
+                new_value="新品牌",
+                confidence=0.95,
+                source_type="manual",
+                mapper_method="manual",
+                valid_from=date(2026, 1, 1),
+            )
+
+            assert out["action"] == "written", out
+            assert out["reason"] == "higher_priority", out
+            new_id = out["id"]
+            assert new_id is not None and new_id != prior_id
+
+            # 3. Prior row must have superseded_by_id = new_id and reason set.
+            prior_row = await conn.fetchrow(
+                """
+                SELECT superseded_by_id, superseded_reason
+                  FROM field_provenance WHERE id = $1
+                """,
+                prior_id,
+            )
+            assert prior_row is not None
+            assert prior_row["superseded_by_id"] == new_id
+            assert prior_row["superseded_reason"] == "higher_priority"
+
+            # 4. read_authoritative_value returns the new row.
+            pv = await read_authoritative_value(
+                conn, TEST_FACTORY, "store", store_id, "brand"
+            )
+            assert pv is not None
+            fv = pv.field_value
+            if isinstance(fv, str):
+                try:
+                    fv = json.loads(fv)
+                except json.JSONDecodeError:
+                    pass
+            assert fv == "新品牌"
+            assert pv.source_type == "manual"
+
+
+@pytest.mark.integration
+async def test_resolve_conflict_e2e_30_diff_enqueues(
+    pg_pool: "asyncpg.Pool", clean_tenant: None
+) -> None:
+    """30%+ diff at same priority must enqueue a field_conflict admin row
+    and NOT write to field_provenance.
+
+    Default diff_threshold=30%, manual=manual=priority 1, cost goes 60→100
+    (67% diff) → queued. Verifies V20260501_03 entity_type='field_conflict'
+    CHECK + extra JSONB carries full conflict context.
+    """
+    from datetime import date
+
+    from smartbi.canonical.provenance import (
+        invalidate_factory_config_cache,
+        read_authoritative_value,
+        resolve_conflict,
+        write_provenance,
+    )
+
+    invalidate_factory_config_cache()
+
+    async with pg_pool.acquire() as conn:
+        async with conn.transaction():
+            await _set_tenant(conn, TEST_FACTORY)
+            product_id = await _seed_dim_product(
+                conn, TEST_FACTORY, "测试菜CR2", "测试菜CR2"
+            )
+
+            # 1. Seed cost=60.0, manual.
+            await write_provenance(
+                conn,
+                factory_id=TEST_FACTORY,
+                entity_type="product",
+                entity_id=product_id,
+                field_name="cost_per_unit",
+                field_value=60.0,
+                confidence=0.95,
+                source_type="manual",
+                mapper_method="manual",
+                valid_from=date(2026, 1, 1),
+            )
+
+            # 2. Resolve cost=100.0 manual (same priority, 67% diff > 30%).
+            out = await resolve_conflict(
+                conn,
+                factory_id=TEST_FACTORY,
+                entity_type="product",
+                entity_id=product_id,
+                field_name="cost_per_unit",
+                new_value=100.0,
+                confidence=0.95,
+                source_type="manual",
+                mapper_method="manual",
+                valid_from=date(2026, 1, 1),
+            )
+
+            assert out["action"] == "queued", out
+            assert out["id"] is None
+
+            # 3. admin_queue row landed with entity_type='field_conflict' and
+            #    raw_name='product:<id>.cost_per_unit'.
+            queue = await conn.fetchrow(
+                """
+                SELECT entity_type, raw_name, candidate_entity_id, priority,
+                       reasoning, extra
+                  FROM entity_resolution_admin_queue
+                 WHERE factory_id = $1
+                   AND entity_type = 'field_conflict'
+                   AND raw_name = $2
+                """,
+                TEST_FACTORY,
+                f"product:{product_id}.cost_per_unit",
+            )
+            assert queue is not None, "field_conflict admin_queue row missing"
+            assert queue["candidate_entity_id"] == product_id
+            assert queue["priority"] == "medium"
+            assert "diff" in (queue["reasoning"] or "").lower() or \
+                   "差异" in (queue["reasoning"] or "")
+
+            # extra JSONB carries the conflict details.
+            extra = queue["extra"]
+            if isinstance(extra, str):
+                extra = json.loads(extra)
+            assert extra["field_name"] == "cost_per_unit"
+            assert float(extra["current_value"]) == 60.0
+            assert float(extra["new_value"]) == 100.0
+            assert extra["current_priority"] == 1
+            assert extra["new_priority"] == 1
+
+            # 4. Authoritative value still reads 60.0 (no write happened).
+            pv = await read_authoritative_value(
+                conn, TEST_FACTORY, "product", product_id, "cost_per_unit"
+            )
+            assert pv is not None
+            fv = pv.field_value
+            if isinstance(fv, str):
+                try:
+                    fv = json.loads(fv)
+                except json.JSONDecodeError:
+                    pass
+            assert float(fv) == 60.0
