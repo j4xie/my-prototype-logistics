@@ -95,6 +95,7 @@ const menuConfig: MenuItem[] = [
       { path: '/production/approval', title: '报工审批', icon: '', module: 'production' },
       { path: '/production/bom-achievement', title: 'BOM达成率分析', icon: '', module: 'production' },
       { path: '/production/process-io', title: '工序投入产出对比', icon: '', module: 'production' },
+      { path: '/production/material-requisitions', title: '物料需求单', icon: '', module: 'production' },
       { path: '/rd/samples', title: '研发样品', icon: '', module: 'production' }
     ]
   },
@@ -128,6 +129,7 @@ const menuConfig: MenuItem[] = [
     hideForFactoryTypes: ['RESTAURANT'],
     children: [
       { path: '/procurement/orders', title: '采购订单', icon: '', module: 'procurement' },
+      { path: '/procurement/receives', title: '采购入库', icon: '', module: 'procurement' },
       { path: '/procurement/suppliers', title: '供应商管理', icon: '', module: 'procurement' },
       { path: '/procurement/price-lists', title: '价格表管理', icon: '', module: 'procurement' }
     ]

@@ -246,6 +246,13 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'ProcurementPriceLists',
             component: () => import('@/views/procurement/price-lists/list.vue'),
             meta: { requiresAuth: true, title: '价格表管理', module: 'procurement' }
+          },
+          // 六扇门 V1 #9 — 采购入库管理 (audit fix 2026-04-26)
+          {
+            path: 'receives',
+            name: 'ProcurementReceives',
+            component: () => import('@/views/procurement/receives/list.vue'),
+            meta: { requiresAuth: true, title: '采购入库', module: 'procurement' }
           }
         ]
       },
