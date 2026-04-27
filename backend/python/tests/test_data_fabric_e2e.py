@@ -1276,6 +1276,160 @@ async def test_resolve_conflict_e2e_higher_priority_supersedes(
 
 
 @pytest.mark.integration
+async def test_b_writer_dual_write_provenance_when_env_set(
+    pg_pool: "asyncpg.Pool", clean_tenant: None, monkeypatch
+) -> None:
+    """End-to-end Day 10-12 hook: ProductSummaryWriter dual-writes provenance
+    when SMARTBI_ENABLE_PROVENANCE=1.
+
+    Validates on real PG that:
+      1. agg_product_period gets the silver row (existing path, unchanged).
+      2. field_provenance gets 3 rows (revenue / qty_sold / avg_unit_price)
+         tied to the resolved product.
+      3. read_authoritative_value returns the values we wrote.
+
+    Asserting all 3 fields proves the hook fan-out works under real RLS,
+    real advisory locks, and real ON CONFLICT semantics.
+    """
+    monkeypatch.setenv("SMARTBI_ENABLE_PROVENANCE", "1")
+
+    # Ensure a clean factory_provenance_config cache so this test reads the
+    # default (no override) — shared module state can leak between tests.
+    from smartbi.canonical.provenance import (
+        invalidate_factory_config_cache,
+        read_authoritative_value,
+    )
+    from smartbi.canonical.silver_writers import ProductSummaryWriter
+    from smartbi.canonical.silver_writers.base import ResolveResult
+
+    invalidate_factory_config_cache()
+
+    async def _setup(conn: "asyncpg.Connection") -> None:
+        await conn.execute(
+            "SELECT set_config('app.factory_id', $1, false)", TEST_FACTORY
+        )
+
+    scoped_pool = await asyncpg.create_pool(
+        PG_DSN, min_size=1, max_size=2, timeout=5, setup=_setup
+    )
+    try:
+        async with scoped_pool.acquire() as conn:
+            store_id = await _seed_dim_store(conn, TEST_FACTORY, "门店P")
+            product_id = await _seed_dim_product(
+                conn, TEST_FACTORY, "招牌P", "招牌P"
+            )
+
+            upload_row = await conn.fetchrow(
+                """
+                INSERT INTO smart_bi_pg_excel_uploads
+                  (factory_id, file_name, upload_status)
+                VALUES ($1, $2, 'COMPLETED')
+                RETURNING id
+                """,
+                TEST_FACTORY,
+                f"e2e_prov_{int(time.time())}.xlsx",
+            )
+            assert upload_row is not None
+            upload_id = int(upload_row["id"])
+
+            row_data: Dict[str, Any] = {
+                "门店": "门店P",
+                "商品名称": "招牌P",
+                "单卖数量": "10",
+                "销售金额": "300",
+            }
+            await conn.execute(
+                """
+                INSERT INTO smart_bi_dynamic_data
+                  (factory_id, upload_id, row_data)
+                VALUES ($1, $2, $3::jsonb)
+                """,
+                TEST_FACTORY,
+                upload_id,
+                json.dumps(row_data),
+            )
+
+        # Build writer with mock orchestrator returning canned IDs (we already
+        # have the dim rows seeded; resolution is fixed via mock).
+        orch = MagicMock()
+
+        async def _resolve_store(_, factory_id, context):
+            return ResolveResult(
+                entity_id=store_id, is_tentative=False, confidence=0.95
+            )
+
+        async def _resolve_product(_, factory_id, context):
+            return ResolveResult(
+                entity_id=product_id, is_tentative=False, confidence=0.95
+            )
+
+        writer = ProductSummaryWriter(pool=scoped_pool, orchestrator=orch)
+        writer._resolve_store = _resolve_store  # type: ignore[method-assign]
+        writer._resolve_product = _resolve_product  # type: ignore[method-assign]
+
+        summary = await writer.write(upload_id=upload_id, factory_id=TEST_FACTORY)
+        assert summary.rows_written == 1
+
+        # 1. Silver row landed
+        async with scoped_pool.acquire() as conn:
+            agg_count = await conn.fetchval(
+                "SELECT COUNT(*) FROM agg_product_period "
+                "WHERE factory_id = $1 AND upload_id = $2",
+                TEST_FACTORY,
+                upload_id,
+            )
+            assert agg_count == 1
+
+            # 2. field_provenance has 3 rows for this product (revenue, qty,
+            #    avg_unit_price), all source_type='product_summary'.
+            prov_rows = await conn.fetch(
+                """
+                SELECT field_name, field_value, source_type, mapper_method,
+                       source_upload_id, confidence
+                  FROM field_provenance
+                 WHERE factory_id = $1
+                   AND entity_type = 'product'
+                   AND entity_id = $2
+                 ORDER BY field_name
+                """,
+                TEST_FACTORY,
+                product_id,
+            )
+            field_names = sorted(r["field_name"] for r in prov_rows)
+            assert field_names == ["avg_unit_price", "qty_sold", "revenue"], (
+                f"expected 3 provenance fields, got {field_names}"
+            )
+            for r in prov_rows:
+                assert r["source_type"] == "product_summary"
+                assert r["mapper_method"] == "rule"
+                assert r["source_upload_id"] == upload_id
+                assert float(r["confidence"]) == 0.85
+
+            # 3. read_authoritative_value returns each value correctly
+            #    (numerics: 300 revenue, 10 qty, 30 avg_price).
+            for fname, expected in [
+                ("revenue", 300.0),
+                ("qty_sold", 10.0),
+                ("avg_unit_price", 30.0),
+            ]:
+                pv = await read_authoritative_value(
+                    conn, TEST_FACTORY, "product", product_id, fname
+                )
+                assert pv is not None, f"{fname}: missing"
+                fv = pv.field_value
+                if isinstance(fv, str):
+                    try:
+                        fv = json.loads(fv)
+                    except json.JSONDecodeError:
+                        pass
+                assert float(fv) == expected, (
+                    f"{fname}: got {fv}, want {expected}"
+                )
+    finally:
+        await scoped_pool.close()
+
+
+@pytest.mark.integration
 async def test_resolve_conflict_e2e_30_diff_enqueues(
     pg_pool: "asyncpg.Pool", clean_tenant: None
 ) -> None:
