@@ -192,7 +192,12 @@ def _provider_config(account: str) -> Tuple[str, str]:
     return mapping.get(account, ("", ""))
 
 
-DEFAULT_CHAIN: List[str] = ["aliyun_b", "aliyun_a", "zhipu", "deepseek"]
+# Apr 26 2026 v5 quota-fix: re-ordered after v5 verification revealed
+# aliyun_b/qwen-plus also exhausted free tier (450+ 403 errors during v5 run).
+# aliyun_a/qwen-plus still has quota; deepseek-chat is paid + reliable.
+# New order: aliyun_a (still has quota) → deepseek (paid, stable) →
+# zhipu → aliyun_b (last resort, expected to fail).
+DEFAULT_CHAIN: List[str] = ["aliyun_a", "deepseek", "zhipu", "aliyun_b"]
 
 
 def _is_quota_exhausted(status_code: int, body_text: str) -> bool:
