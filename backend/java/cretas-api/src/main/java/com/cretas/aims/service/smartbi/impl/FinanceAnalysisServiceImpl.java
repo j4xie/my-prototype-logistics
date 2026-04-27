@@ -294,11 +294,14 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
         }
 
         // 按周期聚合 COST
+        // P0-1 Bug B defensive fix: Excel 写入层历史数据可能存负值 cost (Bug A)，
+        // 这里 .abs() 强制取正，避免 revenue.subtract(cost) 把负 cost 变加法。
         Map<String, BigDecimal> costByPeriod = new TreeMap<>();
         for (SmartBiFinanceData c : costData) {
             if (c.getTotalCost() == null && c.getActualAmount() == null) continue;
             String key = getPeriodKey(c.getRecordDate(), period);
-            BigDecimal val = c.getTotalCost() != null ? c.getTotalCost() : c.getActualAmount();
+            BigDecimal raw = c.getTotalCost() != null ? c.getTotalCost() : c.getActualAmount();
+            BigDecimal val = raw.abs();
             costByPeriod.merge(key, val, BigDecimal::add);
         }
 
@@ -323,9 +326,13 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
             BigDecimal revenue = revenueByPeriod.getOrDefault(periodKey, BigDecimal.ZERO);
             BigDecimal cost = costByPeriod.getOrDefault(periodKey, BigDecimal.ZERO);
             BigDecimal grossProfit = revenue.subtract(cost);
-            BigDecimal grossMargin = revenue.compareTo(BigDecimal.ZERO) > 0
+            BigDecimal grossMarginRaw = revenue.compareTo(BigDecimal.ZERO) > 0
                     ? grossProfit.divide(revenue, SCALE, ROUNDING_MODE).multiply(new BigDecimal("100"))
                     : BigDecimal.ZERO;
+            // P0-1 Bug C: trendChart 毛利率与 getProfitMetrics 对齐 — >100% 或 <-100% 视为数据异常，置为 null
+            BigDecimal grossMargin = (grossMarginRaw.compareTo(new BigDecimal("100")) > 0
+                    || grossMarginRaw.compareTo(new BigDecimal("-100")) < 0)
+                    ? null : grossMarginRaw;
             BigDecimal netProfit = netProfitByPeriod.getOrDefault(periodKey, grossProfit);
 
             Map<String, Object> point = new LinkedHashMap<>();
@@ -334,7 +341,7 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
             point.put("cost", cost.setScale(DISPLAY_SCALE, ROUNDING_MODE));
             point.put("grossProfit", grossProfit.setScale(DISPLAY_SCALE, ROUNDING_MODE));
             point.put("netProfit", netProfit.setScale(DISPLAY_SCALE, ROUNDING_MODE));
-            point.put("grossMargin", grossMargin.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+            point.put("grossMargin", grossMargin != null ? grossMargin.setScale(DISPLAY_SCALE, ROUNDING_MODE) : null);
             chartData.add(point);
         }
 
@@ -365,9 +372,11 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
                     .filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+            // P0-1 Bug B: 历史数据可能存负值 cost (Excel 写入层 Bug A)，强制 .abs() 取正
             totalCost = costRecords.stream()
                     .map(r -> r.getTotalCost() != null ? r.getTotalCost() : r.getActualAmount())
                     .filter(Objects::nonNull)
+                    .map(BigDecimal::abs)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             // 从 REVENUE 记录中取"净利"类
@@ -386,9 +395,11 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
                     .map(SmartBiSalesData::getAmount)
                     .filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
+            // P0-1 Bug B: 同样防御性 .abs()，与 finance_data 路径对齐
             totalCost = salesData.stream()
                     .map(SmartBiSalesData::getCost)
                     .filter(Objects::nonNull)
+                    .map(BigDecimal::abs)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             netProfit = null; // will calculate below
         }
@@ -497,10 +508,11 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
         BigDecimal laborCost = BigDecimal.ZERO;
         BigDecimal overheadCost = BigDecimal.ZERO;
 
+        // P0-1 Bug B: Excel 历史数据可能存负值 (Bug A)，所有成本项 .abs() 强制取正
         for (SmartBiFinanceData data : costData) {
-            materialCost = materialCost.add(data.getMaterialCost() != null ? data.getMaterialCost() : BigDecimal.ZERO);
-            laborCost = laborCost.add(data.getLaborCost() != null ? data.getLaborCost() : BigDecimal.ZERO);
-            overheadCost = overheadCost.add(data.getOverheadCost() != null ? data.getOverheadCost() : BigDecimal.ZERO);
+            materialCost = materialCost.add(data.getMaterialCost() != null ? data.getMaterialCost().abs() : BigDecimal.ZERO);
+            laborCost = laborCost.add(data.getLaborCost() != null ? data.getLaborCost().abs() : BigDecimal.ZERO);
+            overheadCost = overheadCost.add(data.getOverheadCost() != null ? data.getOverheadCost().abs() : BigDecimal.ZERO);
         }
 
         BigDecimal totalCost = materialCost.add(laborCost).add(overheadCost);
@@ -1440,14 +1452,15 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
     private Map<String, BigDecimal[]> aggregateCostByPeriod(List<SmartBiFinanceData> costData, String period) {
         Map<String, BigDecimal[]> result = new TreeMap<>();
 
+        // P0-1 Bug B: Excel 历史数据可能存负值 (Bug A)，所有成本项 .abs() 强制取正
         for (SmartBiFinanceData data : costData) {
             String key = getPeriodKey(data.getRecordDate(), period);
             BigDecimal[] values = result.computeIfAbsent(key, k -> new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO});
 
-            values[0] = values[0].add(data.getMaterialCost() != null ? data.getMaterialCost() : BigDecimal.ZERO);
-            values[1] = values[1].add(data.getLaborCost() != null ? data.getLaborCost() : BigDecimal.ZERO);
-            values[2] = values[2].add(data.getOverheadCost() != null ? data.getOverheadCost() : BigDecimal.ZERO);
-            values[3] = values[3].add(data.getTotalCost() != null ? data.getTotalCost() : BigDecimal.ZERO);
+            values[0] = values[0].add(data.getMaterialCost() != null ? data.getMaterialCost().abs() : BigDecimal.ZERO);
+            values[1] = values[1].add(data.getLaborCost() != null ? data.getLaborCost().abs() : BigDecimal.ZERO);
+            values[2] = values[2].add(data.getOverheadCost() != null ? data.getOverheadCost().abs() : BigDecimal.ZERO);
+            values[3] = values[3].add(data.getTotalCost() != null ? data.getTotalCost().abs() : BigDecimal.ZERO);
         }
 
         return result;

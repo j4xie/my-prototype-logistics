@@ -22,7 +22,7 @@ const financeData = ref<{
   totalRevenue?: number;
   totalCost?: number;
   grossProfit?: number;
-  profitMargin?: number;
+  profitMargin?: number | null;
   materialCost?: number;
   laborCost?: number;
   equipmentCost?: number;
@@ -30,14 +30,49 @@ const financeData = ref<{
   dailyStats?: Array<{ date: string; revenue: number; cost: number; profit: number }>;
 }>({});
 
-const statCards = computed(() => [
+// 后端响应类型 (来自 GET /smart-bi/analysis/finance?analysisType=profit/cost)
+interface MetricResultDTO {
+  metricCode: string;
+  metricName: string;
+  value: number | null;
+  formattedValue?: string;
+  unit?: string;
+}
+interface ChartConfigDTO<T = Record<string, unknown>> {
+  chartType?: string;
+  title?: string;
+  data?: T[];
+}
+interface ProfitAnalysisResponse {
+  metrics?: MetricResultDTO[];
+  trendChart?: ChartConfigDTO<{ period: string; revenue: number; cost: number; grossProfit: number; netProfit?: number; grossMargin: number | null }>;
+}
+interface CostAnalysisResponse {
+  structureChart?: ChartConfigDTO<{ category?: string; name?: string; value: number; percentage?: number }>;
+  trendChart?: ChartConfigDTO;
+}
+
+// P0-2: 卡片 format 函数统一签名 (v: number | null | undefined => string)
+// 因为 profitMargin 可能为 null (后端 P0-1 Bug C 修复后，毛利率 >100% 或 <-100% 返 null)
+type StatFormat = (v: number | null | undefined) => string;
+const fmtCurrency: StatFormat = (v) => (v ?? 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 });
+const fmtPercent: StatFormat = (v) => v == null ? 'N/A' : v.toFixed(1);
+
+const statCards = computed<Array<{
+  title: string;
+  value: number | null | undefined;
+  unit: string;
+  icon: unknown;
+  color: string;
+  format: StatFormat;
+}>>(() => [
   {
     title: '总收入',
     value: financeData.value.totalRevenue ?? 0,
     unit: '元',
     icon: Money,
     color: '#409eff',
-    format: (v: number) => v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })
+    format: fmtCurrency
   },
   {
     title: '总成本',
@@ -45,7 +80,7 @@ const statCards = computed(() => [
     unit: '元',
     icon: Coin,
     color: '#e6a23c',
-    format: (v: number) => v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })
+    format: fmtCurrency
   },
   {
     title: '毛利润',
@@ -53,15 +88,16 @@ const statCards = computed(() => [
     unit: '元',
     icon: TrendCharts,
     color: '#67c23a',
-    format: (v: number) => v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })
+    format: fmtCurrency
   },
   {
     title: '利润率',
-    value: financeData.value.profitMargin ?? 0,
-    unit: '%',
+    // profitMargin 可能为 null — null 时显示 "N/A"，单位也清空
+    value: financeData.value.profitMargin,
+    unit: financeData.value.profitMargin == null ? '' : '%',
     icon: TrendCharts,
     color: '#f56c6c',
-    format: (v: number) => v.toFixed(1)
+    format: fmtPercent
   }
 ]);
 
@@ -93,18 +129,96 @@ async function loadFinanceData() {
     const startStr = formatDate(startDate);
     const endStr = formatDate(endDate);
 
-    const response = await get<Record<string, unknown>>(`/${factoryId.value}/smart-bi/analysis/finance?startDate=${startStr}&endDate=${endStr}`);
-    if (response.success && response.data) {
-      financeData.value = response.data;
-    } else {
+    // P0-2: 并行调用 analysisType=profit + analysisType=cost
+    // 后端返嵌套结构，前端需要 flat KPI 字段，所以双调用 + 字段映射
+    const baseUrl = `/${factoryId.value}/smart-bi/analysis/finance?startDate=${startStr}&endDate=${endStr}`;
+    const [profitRes, costRes] = await Promise.all([
+      get<ProfitAnalysisResponse>(`${baseUrl}&analysisType=profit`),
+      get<CostAnalysisResponse>(`${baseUrl}&analysisType=cost`)
+    ]);
+
+    if (!profitRes.success || !costRes.success) {
       ElMessage.error('加载财务数据失败');
+      return;
     }
+
+    financeData.value = mapResponses(profitRes.data, costRes.data);
   } catch (error) {
     console.error('加载财务数据失败:', error);
     ElMessage.error('加载财务数据失败，请检查网络连接');
   } finally {
     loading.value = false;
   }
+}
+
+/**
+ * 将后端两个响应映射为前端 flat 字段
+ * P0-2 字段映射：
+ *  - totalRevenue/totalCost ← profit.trendChart.data 加和
+ *  - grossProfit/profitMargin ← profit.metrics (metricCode 匹配)
+ *  - materialCost/laborCost/equipmentCost/otherCost ← cost.structureChart.data (按 name 匹配)
+ *  - dailyStats ← profit.trendChart.data (字段重命名 period→date, grossProfit→profit)
+ */
+function mapResponses(
+  profitData: ProfitAnalysisResponse | undefined,
+  costData: CostAnalysisResponse | undefined
+): typeof financeData.value {
+  const out: typeof financeData.value = {};
+
+  // --- Profit metrics (KPI cards) ---
+  const metrics = profitData?.metrics ?? [];
+  const findMetric = (code: string): number | null | undefined => {
+    const m = metrics.find(x => x.metricCode === code);
+    return m ? m.value : undefined;
+  };
+  // 毛利额 (元) — backend GROSS_PROFIT
+  const gp = findMetric('GROSS_PROFIT');
+  out.grossProfit = gp != null ? Number(gp) : 0;
+  // 毛利率 (%) — backend GROSS_MARGIN. 后端可能返 null (毛利率>100% 或 <-100% 时，P0-1 Bug C 修复)
+  const gm = findMetric('GROSS_MARGIN');
+  out.profitMargin = gm != null ? Number(gm) : null;
+
+  // --- Profit trendChart → totalRevenue/totalCost/dailyStats ---
+  const profitTrend = profitData?.trendChart?.data ?? [];
+  let totalRevenue = 0;
+  let totalCost = 0;
+  const dailyStats: Array<{ date: string; revenue: number; cost: number; profit: number }> = [];
+  for (const p of profitTrend) {
+    const revenue = Number(p.revenue ?? 0);
+    const cost = Number(p.cost ?? 0);
+    const profit = Number(p.grossProfit ?? 0);
+    totalRevenue += revenue;
+    totalCost += cost;
+    dailyStats.push({ date: p.period, revenue, cost, profit });
+  }
+  out.totalRevenue = totalRevenue;
+  out.totalCost = totalCost;
+  out.dailyStats = dailyStats;
+
+  // --- Cost structureChart → materialCost/laborCost/equipmentCost/otherCost ---
+  // 后端 PIE data items 来自 createPieDataItem(category, value, total) — 字段是 category/value/percentage
+  const costSlices = costData?.structureChart?.data ?? [];
+  for (const slice of costSlices) {
+    const name = String(slice.category ?? slice.name ?? '');
+    const value = Number(slice.value ?? 0);
+    if (name.includes('原材料')) {
+      out.materialCost = (out.materialCost ?? 0) + value;
+    } else if (name.includes('人工')) {
+      out.laborCost = (out.laborCost ?? 0) + value;
+    } else if (name.includes('制造费用') || name.includes('设备')) {
+      // 后端常量是 "制造费用" (overheadCost)，UI 显示为 "设备成本"，做兼容映射
+      out.equipmentCost = (out.equipmentCost ?? 0) + value;
+    } else {
+      out.otherCost = (out.otherCost ?? 0) + value;
+    }
+  }
+  // 默认值 fallback (如果某类没有)
+  out.materialCost = out.materialCost ?? 0;
+  out.laborCost = out.laborCost ?? 0;
+  out.equipmentCost = out.equipmentCost ?? 0;
+  out.otherCost = out.otherCost ?? 0;
+
+  return out;
 }
 
 function formatDate(date: Date | null | undefined) {
@@ -132,7 +246,7 @@ function handleExport() {
     ['  设备成本', String(data.equipmentCost ?? 0), getPercentage('equipment')],
     ['  其他成本', String(data.otherCost ?? 0), getPercentage('other')],
     ['毛利润', String(data.grossProfit ?? 0), '-'],
-    ['利润率(%)', String((data.profitMargin ?? 0).toFixed(1)), '-']
+    ['利润率(%)', data.profitMargin == null ? 'N/A' : data.profitMargin.toFixed(1), '-']
   ];
   const csvContent = '\uFEFF' + [
     [`财务报表 (${formatDate(startDate)} ~ ${formatDate(endDate)})`],
