@@ -148,10 +148,13 @@ public class SalesController {
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String orderId,
             @RequestHeader("Authorization") String authorization,
-            @Valid @RequestBody FinanceReviewRequest request) {
+            // R38 BUG-4 fix: DynamicModulePage transitions 不发 body, 改 required=false 接受空 POST
+            @RequestBody(required = false) FinanceReviewRequest request) {
         Long reviewerId = extractUserId(authorization);
+        String notes = request != null ? request.getNotes() : null;
+        java.math.BigDecimal estimatedCost = request != null ? request.getEstimatedCost() : null;
         SalesOrder order = salesService.financeApproveOrder(
-                factoryId, orderId, request.getNotes(), request.getEstimatedCost(), reviewerId);
+                factoryId, orderId, notes, estimatedCost, reviewerId);
         return ApiResponse.success("销售订单财务审核通过", order);
     }
 
@@ -162,9 +165,11 @@ public class SalesController {
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String orderId,
             @RequestHeader("Authorization") String authorization,
-            @Valid @RequestBody FinanceReviewRequest request) {
+            // R38 BUG-4 fix: DynamicModulePage transitions 不发 body
+            @RequestBody(required = false) FinanceReviewRequest request) {
         Long reviewerId = extractUserId(authorization);
-        SalesOrder order = salesService.financeRejectOrder(factoryId, orderId, request.getNotes(), reviewerId);
+        String notes = request != null ? request.getNotes() : null;
+        SalesOrder order = salesService.financeRejectOrder(factoryId, orderId, notes, reviewerId);
         return ApiResponse.success("销售订单财务审核已驳回", order);
     }
 
