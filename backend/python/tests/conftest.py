@@ -218,6 +218,50 @@ def sample_quick_summary_data():
 import pytest_asyncio
 
 
+# ─────────────────────────────────────────────────────────────────────
+# 数据织网 Sub-Project C — pytest_asyncio singleton-pool reset (post-test
+# audit gate finding).
+#
+# `smartbi.config._pg_pool` is a module-level asyncpg.Pool singleton. The
+# first real-PG test creates it bound to that test's event loop. pytest-
+# asyncio creates a fresh event loop for each test (default
+# function-scope), so test 2 hits `RuntimeError: Event loop is closed`
+# when `get_cell_audit` → `get_pg_pool()` → pool._acquire() inside the
+# now-closed loop.
+#
+# Fix: autouse fixture nulls the singleton before AND after each test.
+# Production behavior (web service) is unchanged because that env has a
+# single long-running event loop; the singleton works fine there.
+# ─────────────────────────────────────────────────────────────────────
+@pytest_asyncio.fixture(autouse=True)
+async def _reset_smartbi_pg_pool_singleton():
+    """Null the module-level asyncpg pool singleton between tests so each
+    test gets a pool bound to its own event loop.
+    """
+    try:
+        from smartbi import config as _smartbi_config
+    except ImportError:
+        yield
+        return
+    # before
+    prev = getattr(_smartbi_config, "_pg_pool", None)
+    if prev is not None and not prev._closed:
+        try:
+            await prev.close()
+        except Exception:
+            pass
+    _smartbi_config._pg_pool = None
+    yield
+    # after
+    cur = getattr(_smartbi_config, "_pg_pool", None)
+    if cur is not None and not cur._closed:
+        try:
+            await cur.close()
+        except Exception:
+            pass
+    _smartbi_config._pg_pool = None
+
+
 @pytest_asyncio.fixture
 async def c_provenance_pool():
     """asyncpg.Pool with the tenant-aware connection setup hook.

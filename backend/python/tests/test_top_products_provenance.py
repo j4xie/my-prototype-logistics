@@ -167,10 +167,15 @@ async def test_top_products_returns_null_provenance_when_table_empty(pool, clean
 
 
 @pytest.mark.asyncio
-async def test_top_products_surfaces_populated_provenance(pool, clean_rows):
+async def test_top_products_surfaces_populated_provenance(pool, clean_rows, monkeypatch):
     """One matching active provenance row (using the writer's
     ``revenue@store_<id>`` encoding) → its confidence/source flow through.
+
+    Post-test-audit fix: F5 wraps JOIN behind SMARTBI_ENABLE_PROVENANCE so
+    explicitly enable it for this test (default OFF means JOIN is skipped
+    and confidence stays NULL even with seeded provenance row).
     """
+    monkeypatch.setenv("SMARTBI_ENABLE_PROVENANCE", "1")
     from smartbi.tenant_ctx import set_factory_id, reset_factory_id
 
     token = set_factory_id(_TENANT)
@@ -208,11 +213,14 @@ async def test_top_products_surfaces_populated_provenance(pool, clean_rows):
 
 
 @pytest.mark.asyncio
-async def test_top_products_picks_active_over_superseded(pool, clean_rows):
+async def test_top_products_picks_active_over_superseded(pool, clean_rows, monkeypatch):
     """Two provenance rows for same product/field — one with
     ``superseded_by_id`` set (historical), one active. Only the active row
     surfaces in the JOIN.
+
+    Post-test-audit fix: F5 wraps JOIN behind SMARTBI_ENABLE_PROVENANCE.
     """
+    monkeypatch.setenv("SMARTBI_ENABLE_PROVENANCE", "1")
     from smartbi.tenant_ctx import set_factory_id, reset_factory_id
 
     token = set_factory_id(_TENANT)
