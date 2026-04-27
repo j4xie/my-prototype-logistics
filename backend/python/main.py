@@ -657,6 +657,15 @@ app.include_router(
     tags=["Provenance Audit"],
 )
 
+# Sub-Project C Day 27: factory-level provenance config admin (§6.4).
+# Admin GET + PUT for diff_threshold / priority_overrides / industry_default_overrides.
+from smartbi.api import factory_provenance_config
+app.include_router(
+    factory_provenance_config.router,
+    prefix="/api/smartbi/factory-config",
+    tags=["Factory Config"],
+)
+
 # Week 5 Agent layer — gated by env flag until verified on test.
 # When flag is off, /api/smartbi/insights/custom does not exist.
 if os.getenv("SMARTBI_AGENT_LAYER_ENABLED", "false").lower() == "true":

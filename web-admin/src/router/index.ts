@@ -522,6 +522,20 @@ const businessRoutes: RouteRecordRaw[] = [
             },
           },
           {
+            // 数据织网 C spec §6.4 — factory provenance config admin page (Day 27).
+            // Sidebar-discoverable (NOT hidden) — admins need to find this.
+            // GET + PUT live at /api/smartbi/factory-config/provenance.
+            path: 'data-fabric/provenance-config',
+            name: 'ProvenanceConfig',
+            component: () => import('@/views/system/data-fabric/provenance-config.vue'),
+            meta: {
+              requiresAuth: true,
+              title: 'Provenance 配置',
+              module: 'system',
+              roles: ['factory_super_admin', 'platform_admin', 'permission_admin'],
+            },
+          },
+          {
             path: 'products',
             name: 'ProductManagement',
             component: () => import('@/views/system/products/index.vue'),

@@ -1,7 +1,7 @@
 -- R38 BUG-3 P0 fix: module_schemas.sales_order.workflow_schema.transitions[].action
 -- 用 camelCase ('submitForReview', 'approveFinance', 'rejectFinance', 'resubmitForReview')
 -- 但 SalesController 实际 endpoint 是 kebab ('submit-for-review', 'finance-approve', 'finance-reject')
--- 后果: DynamicModulePage.vue:189 用 `${transition.action}` 直拼 URL → 404 → 5 个 SO 状态转移全断
+-- 后果: DynamicModulePage.vue:189 用 ` $ {transition.action} ` 直拼 URL → 404 → 5 个 SO 状态转移全断
 -- (CONFIRMED→PENDING_FINANCE_REVIEW / PENDING_FINANCE_REVIEW→FINANCE_APPROVED/FINANCE_REJECTED /
 --  FINANCE_REJECTED→PENDING_FINANCE_REVIEW)
 --
