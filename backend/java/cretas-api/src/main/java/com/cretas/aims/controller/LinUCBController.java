@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.entity.ml.LinUCBModel;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.service.LinUCBService;
@@ -31,6 +32,7 @@ import java.util.*;
 @RequestMapping("/api/mobile/{factoryId}/scheduling/linucb")
 @RequiredArgsConstructor
 @Tag(name = "LinUCB智能推荐", description = "LinUCB 上下文多臂老虎机算法 API，提供工人推荐、UCB分数计算、反馈记录、模型管理、训练与统计")
+@RequireModule("scheduling")
 public class LinUCBController {
 
     private final LinUCBService linUCBService;

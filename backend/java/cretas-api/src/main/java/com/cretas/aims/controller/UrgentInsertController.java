@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.production.ProductionPlanDTO;
 import com.cretas.aims.dto.scheduling.ConfirmUrgentInsertRequest;
@@ -32,6 +33,7 @@ import java.util.Map;
 @RequestMapping("/api/mobile/{factoryId}/urgent-insert")
 @RequiredArgsConstructor
 @Tag(name = "紧急插单管理", description = "紧急插单时段查询、影响分析、确认插单")
+@RequireModule("scheduling")
 public class UrgentInsertController {
 
     private final UrgentInsertService urgentInsertService;

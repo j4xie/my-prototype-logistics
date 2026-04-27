@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.dto.aps.GlobalDashboard;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
@@ -38,6 +39,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/mobile/{factoryId}/aps/adaptive")
 @RequiredArgsConstructor
 @Tag(name = "APS自适应排产", description = "自适应排产相关接口，包括进度追踪、预测、重排等功能")
+@RequireModule("scheduling")
 public class APSAdaptiveController {
 
     private final APSAdaptiveSchedulingService adaptiveService;

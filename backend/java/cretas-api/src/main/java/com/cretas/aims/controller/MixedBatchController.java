@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.dto.production.ProductionPlanDTO;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.scheduling.DetectMixedBatchRequest;
@@ -37,6 +38,7 @@ import java.util.Map;
 @RequestMapping("/api/mobile/{factoryId}/mixed-batch")
 @RequiredArgsConstructor
 @Tag(name = "混批排产管理", description = "混批检测、混批组管理、规则配置")
+@RequireModule("scheduling")
 public class MixedBatchController {
 
     private final MixedBatchService mixedBatchService;

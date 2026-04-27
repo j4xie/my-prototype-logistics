@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.dto.aps.WeightAdjustmentResult;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
@@ -36,6 +37,7 @@ import java.util.Map;
 @RequestMapping("/api/mobile/{factoryId}/aps/strategy-weights")
 @RequiredArgsConstructor
 @Tag(name = "APS策略权重自适应", description = "策略权重自适应调整接口，支持自动调整和手动设置")
+@RequireModule("scheduling")
 public class StrategyWeightAdaptationController {
 
     private final StrategyWeightAdaptationService adaptationService;

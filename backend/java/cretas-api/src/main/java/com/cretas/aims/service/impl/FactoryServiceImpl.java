@@ -5,7 +5,9 @@ import com.cretas.aims.dto.platform.FactoryDTO;
 import com.cretas.aims.dto.platform.UpdateFactoryRequest;
 import com.cretas.aims.entity.Factory;
 import com.cretas.aims.entity.enums.FactoryType;
+import com.cretas.aims.entity.rules.DroolsRule;
 import com.cretas.aims.exception.ResourceNotFoundException;
+import com.cretas.aims.repository.DroolsRuleRepository;
 import com.cretas.aims.repository.FactoryRepository;
 import com.cretas.aims.service.FactoryService;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -36,6 +39,7 @@ public class FactoryServiceImpl implements FactoryService {
     private static final Logger log = LoggerFactory.getLogger(FactoryServiceImpl.class);
 
     private final FactoryRepository factoryRepository;
+    private final DroolsRuleRepository droolsRuleRepository;
 
     /**
      * 获取所有工厂列表（不推荐，使用分页版本）
@@ -94,7 +98,38 @@ public class FactoryServiceImpl implements FactoryService {
         Factory savedFactory = factoryRepository.save(factory);
         log.info("工厂创建成功，factoryId: {}", savedFactory.getId());
 
+        // R34 P2 — close R33 reviewer P0-2: @Value default 改 false 后, 新工厂 fallback false silent OFF
+        // 显式 seed scheduling.auto_trigger_enabled=true 保留旧行为. 客户后续可在 /scheduling/settings UI 关闭.
+        seedDefaultSchedulingRule(savedFactory.getId());
+
         return convertToDTO(savedFactory);
+    }
+
+    /**
+     * 为新建工厂落 scheduling.auto_trigger_enabled=true rule (R34 P2).
+     * 不影响现有工厂 (V20260427_02 已 backfill). 不抛异常 (失败仅 log, 不阻塞 factory 创建).
+     */
+    private void seedDefaultSchedulingRule(String factoryId) {
+        try {
+            DroolsRule rule = new DroolsRule();
+            rule.setId(UUID.randomUUID().toString());
+            rule.setFactoryId(factoryId);
+            rule.setRuleGroup("scheduling");
+            rule.setRuleName("auto_trigger_enabled");
+            rule.setRuleContent("true");
+            rule.setRuleDescription("自动排产总开关 (R34 工厂创建时 seed): 控制 PP→排程链是否自动触发");
+            rule.setEnabled(true);
+            rule.setPriority(0);
+            rule.setVersion(1);
+            rule.setCreatedAt(LocalDateTime.now());
+            rule.setUpdatedAt(LocalDateTime.now());
+            droolsRuleRepository.save(rule);
+            log.info("新工厂 scheduling.auto_trigger_enabled rule 已 seed (true): factoryId={}", factoryId);
+        } catch (Exception e) {
+            // 不阻塞工厂创建, 仅 log. 后续 admin 仍可在 UI 设置.
+            log.warn("新工厂 scheduling rule seed 失败 (不影响工厂创建): factoryId={}, error={}",
+                factoryId, e.getMessage());
+        }
     }
 
     @Override
