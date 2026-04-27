@@ -182,10 +182,82 @@ log "🔍 验证..."
 HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://139.196.165.140:8086/" || echo "000")
 log "   HTTP $HTTP_CODE (http://139.196.165.140:8086/)"
 
-if [ "$HTTP_CODE" = "200" ]; then
-    log "✅ 部署完成"
-    exit 0
-else
+if [ "$HTTP_CODE" != "200" ]; then
     log "⚠️  验证失败 (HTTP $HTTP_CODE),请手动检查"
     exit 1
 fi
+
+# R43 fix: --env all 之前 silently 只部 test, 现在测试通过后 prompt 部 prod
+if [ "$ENV" = "all" ]; then
+    log "✅ Test 部署完成"
+    echo ""
+    echo "⚠️  ⚠️  ⚠️  PROD 部署 (第二阶段)  ⚠️  ⚠️  ⚠️"
+    echo "    目标: /www/wwwroot/web-admin (139:8086 / admin.cretaceousfuture.com)"
+    echo "    影响: 所有 prod 用户立刻看到新代码"
+    echo ""
+    read -p "    输 'YES-PROD' 继续部 prod, 其他跳过 prod: " confirm
+    if [ "$confirm" != "YES-PROD" ]; then
+        echo "✅ Test 已部署, 跳过 prod (你输: '$confirm')"
+        exit 0
+    fi
+
+    # 重新打包 + 上传 (test 那次已 rm'd /tmp/web-admin-dist.tar.gz)
+    log "📦 [prod 1/3] 重新打包..."
+    cd "$PROJECT_ROOT/web-admin/dist"
+    tar czf "$TMP_TAR" .
+    cd "$PROJECT_ROOT"
+    log "   ✓ Tarball: $(du -h "$TMP_TAR" | awk '{print $1}')"
+
+    log "📤 [prod 2/3] 上传 prod..."
+    scp -q "$TMP_TAR" "$GATEWAY:/tmp/web-admin-dist.tar.gz"
+    log "   ✓ 上传完成"
+
+    log "🚀 [prod 3/3] 原子交换 prod..."
+    REMOTE_PATH="/www/wwwroot/web-admin"  # prod target
+    ssh "$GATEWAY" bash <<REMOTE_DEPLOY_PROD
+set -e
+TS=\$(date +%Y%m%d_%H%M%S)
+STAGING="${REMOTE_PATH}.staging"
+CURRENT="$REMOTE_PATH"
+BACKUP_DIR="$REMOTE_BACKUP_DIR"
+
+mkdir -p "\$BACKUP_DIR"
+rm -rf "\$STAGING"
+mkdir -p "\$STAGING"
+tar xzf /tmp/web-admin-dist.tar.gz -C "\$STAGING"
+
+OLD_ASSET_COUNT=0
+if [ -d "\$CURRENT/assets" ]; then
+    OLD_ASSET_COUNT=\$(find "\$CURRENT/assets" -type f 2>/dev/null | wc -l)
+fi
+NEW_ASSET_COUNT=\$(find "\$STAGING/assets" -type f 2>/dev/null | wc -l)
+echo "   旧 assets: \$OLD_ASSET_COUNT → 新 assets: \$NEW_ASSET_COUNT"
+
+if [ -e "\$CURRENT" ]; then
+    mv "\$CURRENT" "\$BACKUP_DIR/web-admin.bak.\$TS"
+fi
+mv "\$STAGING" "\$CURRENT"
+echo "   ✓ Prod 原子交换完成 (backup: web-admin.bak.\$TS)"
+
+ls -1dt "\$BACKUP_DIR"/web-admin.bak.* 2>/dev/null | tail -n +$(($BACKUP_KEEP + 1)) | while read old; do
+    rm -rf "\$old"
+    echo "   - removed: \$(basename \$old)"
+done
+
+rm -f /tmp/web-admin-dist.tar.gz
+echo "   ✓ Prod index.html mtime: \$(stat -c '%y' "\$CURRENT/index.html" 2>/dev/null | cut -d. -f1)"
+REMOTE_DEPLOY_PROD
+    rm -f "$TMP_TAR"
+
+    log "🔍 验证 prod..."
+    PROD_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://139.196.165.140:8086/" || echo "000")
+    log "   HTTP $PROD_CODE (http://139.196.165.140:8086/)"
+    if [ "$PROD_CODE" = "200" ]; then
+        log "✅ Prod 部署完成"
+    else
+        log "⚠️  Prod 验证失败 (HTTP $PROD_CODE)"
+        exit 1
+    fi
+fi
+
+log "✅ 部署完成"

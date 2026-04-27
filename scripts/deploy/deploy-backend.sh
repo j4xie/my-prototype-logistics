@@ -251,6 +251,9 @@ mkdir -p "$UPLOAD_STATUS_DIR"
 cleanup() {
     rm -rf "$UPLOAD_STATUS_DIR"
     jobs -p | xargs -r kill 2>/dev/null || true
+    # R43 fix: 也清 deploy lock — 否则 trap cleanup 会覆盖 acquire_deploy_lock
+    # 注册的 lock cleanup trap, 导致 stale lock leak. 反复出现"另一deploy进程在跑".
+    rm -f /tmp/cretas-backend-deploy.lock 2>/dev/null || true
 }
 trap cleanup EXIT
 
