@@ -2634,3 +2634,298 @@ async def test_compute_dish_margin_expired_recipe_falls_back_to_industry_default
         assert float(result["cost_confidence"]) == 0.5  # industry_default conf
     finally:
         await scoped_pool.close()
+
+
+# ── Day 16 BF1: backfill_provenance e2e ────────────────────────────
+
+
+async def _reset_backfill_checkpoint(pool: "asyncpg.Pool", table_name: str) -> None:
+    """Helper: clear backfill_progress for a table so each e2e test starts clean."""
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "DELETE FROM backfill_progress WHERE table_name = $1", table_name
+        )
+
+
+@pytest.mark.integration
+async def test_backfill_agg_product_period_idempotent(
+    pg_pool: "asyncpg.Pool", clean_tenant: None
+) -> None:
+    """Seed agg_product_period rows + run backfill twice, verify idempotency.
+
+    Pass 1 inserts 3 fields × 2 rows = 6 provenance rows. Pass 2 produces 0 new
+    rows (uq_fp_dedup partial unique index + ON CONFLICT DO NOTHING).
+    backfill_progress.rows_inserted must reflect only pass-1 inserts; pass-2's
+    skipped rows accumulate into rows_skipped.
+    """
+    from datetime import date
+
+    from smartbi.scripts.backfill_provenance import backfill_table
+
+    async def _setup(conn: "asyncpg.Connection") -> None:
+        await conn.execute(
+            "SELECT set_config('app.factory_id', $1, false)", TEST_FACTORY
+        )
+
+    scoped_pool = await asyncpg.create_pool(
+        PG_DSN, min_size=1, max_size=2, timeout=5, setup=_setup
+    )
+    try:
+        # Reset checkpoint so prior test runs don't poison this one.
+        await _reset_backfill_checkpoint(scoped_pool, "agg_product_period")
+
+        async with scoped_pool.acquire() as conn:
+            store_a_id = await _seed_dim_store(conn, TEST_FACTORY, "BF门店A")
+            store_b_id = await _seed_dim_store(conn, TEST_FACTORY, "BF门店B")
+            product_id = await _seed_dim_product(conn, TEST_FACTORY, "BF产品X")
+
+            upload_row = await conn.fetchrow(
+                """
+                INSERT INTO smart_bi_pg_excel_uploads
+                  (factory_id, file_name, upload_status)
+                VALUES ($1, $2, 'COMPLETED') RETURNING id
+                """,
+                TEST_FACTORY, f"bf_e2e_{int(time.time())}.xlsx",
+            )
+            upload_id = int(upload_row["id"])
+
+            # Seed 2 agg_product_period rows (one per store)
+            for store_id, qty, rev, price in (
+                (store_a_id, 100, 5000.0, 50.0),
+                (store_b_id, 50, 3000.0, 60.0),
+            ):
+                await conn.execute(
+                    """
+                    INSERT INTO agg_product_period
+                      (factory_id, upload_id, product_id, store_id,
+                       period_start, period_end, qty_sold, revenue, avg_unit_price)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                    """,
+                    TEST_FACTORY, upload_id, product_id, store_id,
+                    date(2026, 4, 1), date(2026, 4, 30), qty, rev, price,
+                )
+
+        # Pass 1: backfill — sleep=0 so test runs fast.
+        result1 = await backfill_table(
+            scoped_pool, "agg_product_period", batch_size=100, sleep_between_batches_s=0,
+        )
+        assert result1["rows_processed"] == 2
+        assert result1["rows_inserted"] == 6  # 3 fields × 2 rows
+
+        async with scoped_pool.acquire() as conn:
+            count_after_1 = await conn.fetchval(
+                """
+                SELECT COUNT(*) FROM field_provenance
+                 WHERE factory_id = $1 AND entity_type = 'product'
+                   AND entity_id = $2 AND created_by = $3
+                """,
+                TEST_FACTORY, product_id, "backfill_from_agg_product_period",
+            )
+            assert count_after_1 == 6
+            # Verify @store_ suffix on revenue/qty/price
+            field_names = await conn.fetch(
+                """
+                SELECT field_name FROM field_provenance
+                 WHERE factory_id = $1 AND entity_type = 'product'
+                   AND entity_id = $2 ORDER BY field_name
+                """,
+                TEST_FACTORY, product_id,
+            )
+            names = sorted(r["field_name"] for r in field_names)
+            expected = sorted([
+                f"avg_unit_price@store_{store_a_id}",
+                f"avg_unit_price@store_{store_b_id}",
+                f"qty_sold@store_{store_a_id}",
+                f"qty_sold@store_{store_b_id}",
+                f"revenue@store_{store_a_id}",
+                f"revenue@store_{store_b_id}",
+            ])
+            assert names == expected
+
+        # Pass 2: re-run — must be idempotent.
+        # First reset checkpoint so the loop re-walks the same rows
+        # (otherwise it'd start past last_id and immediately exit).
+        await _reset_backfill_checkpoint(scoped_pool, "agg_product_period")
+        result2 = await backfill_table(
+            scoped_pool, "agg_product_period", batch_size=100, sleep_between_batches_s=0,
+        )
+        assert result2["rows_processed"] == 2  # walked rows again
+        assert result2["rows_inserted"] == 0   # but ON CONFLICT swallowed all
+
+        async with scoped_pool.acquire() as conn:
+            count_after_2 = await conn.fetchval(
+                """
+                SELECT COUNT(*) FROM field_provenance
+                 WHERE factory_id = $1 AND entity_type = 'product'
+                   AND entity_id = $2 AND created_by = $3
+                """,
+                TEST_FACTORY, product_id, "backfill_from_agg_product_period",
+            )
+            assert count_after_2 == 6  # no new rows
+    finally:
+        await _reset_backfill_checkpoint(scoped_pool, "agg_product_period")
+        await scoped_pool.close()
+
+
+@pytest.mark.integration
+async def test_backfill_finance_voucher_rolls_up_real_pg(
+    pg_pool: "asyncpg.Pool", clean_tenant: None
+) -> None:
+    """Seed 3 vouchers same (subject, date) different debit amounts → 1 rollup row."""
+    from datetime import date
+
+    from smartbi.scripts.backfill_provenance import backfill_table
+
+    async def _setup(conn: "asyncpg.Connection") -> None:
+        await conn.execute(
+            "SELECT set_config('app.factory_id', $1, false)", TEST_FACTORY
+        )
+
+    scoped_pool = await asyncpg.create_pool(
+        PG_DSN, min_size=1, max_size=2, timeout=5, setup=_setup
+    )
+    try:
+        await _reset_backfill_checkpoint(scoped_pool, "fact_finance_voucher")
+
+        async with scoped_pool.acquire() as conn:
+            # Seed dim_finance_subject
+            subject_row = await conn.fetchrow(
+                """
+                INSERT INTO dim_finance_subject (factory_id, name, normalized_name)
+                VALUES ($1, $2, $3) RETURNING subject_id
+                """,
+                TEST_FACTORY, "BF_应收账款", "bf_应收账款",
+            )
+            subject_id = int(subject_row["subject_id"])
+
+            upload_row = await conn.fetchrow(
+                """
+                INSERT INTO smart_bi_pg_excel_uploads
+                  (factory_id, file_name, upload_status)
+                VALUES ($1, $2, 'COMPLETED') RETURNING id
+                """,
+                TEST_FACTORY, f"bf_finance_{int(time.time())}.xlsx",
+            )
+            upload_id = int(upload_row["id"])
+
+            # 3 vouchers same (subject, date) with debits (100, 200, 300), credits = 0
+            for i, debit in enumerate((100.0, 200.0, 300.0), start=1):
+                await conn.execute(
+                    """
+                    INSERT INTO fact_finance_voucher
+                      (factory_id, upload_id, voucher_no, voucher_date,
+                       subject_id, debit_amount, credit_amount, source_row_hash)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    """,
+                    TEST_FACTORY, upload_id, f"V{i:04d}", date(2026, 4, 15),
+                    subject_id, debit, 0, f"hash_bf_{i}",
+                )
+
+        result = await backfill_table(
+            scoped_pool, "fact_finance_voucher", batch_size=100, sleep_between_batches_s=0,
+        )
+        assert result["rows_processed"] == 3
+        # 3 vouchers → 1 rollup → 1 INSERT (debit only, credit=0 skipped)
+        assert result["rows_inserted"] == 1
+
+        async with scoped_pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT field_name, field_value FROM field_provenance
+                 WHERE factory_id = $1 AND entity_type = 'finance_subject'
+                   AND entity_id = $2
+                """,
+                TEST_FACTORY, subject_id,
+            )
+            assert len(rows) == 1
+            assert rows[0]["field_name"] == "debit_amount"
+            # field_value JSONB → asyncpg returns str
+            value = json.loads(rows[0]["field_value"])
+            assert value == 600.0  # 100 + 200 + 300
+    finally:
+        await _reset_backfill_checkpoint(scoped_pool, "fact_finance_voucher")
+        await scoped_pool.close()
+
+
+@pytest.mark.integration
+async def test_backfill_resumes_from_checkpoint(
+    pg_pool: "asyncpg.Pool", clean_tenant: None
+) -> None:
+    """Seed 5 agg_product_period rows; set last_id to skip first 3; verify
+    only 2 rows processed.
+    """
+    from datetime import date
+
+    from smartbi.scripts.backfill_provenance import backfill_table
+
+    async def _setup(conn: "asyncpg.Connection") -> None:
+        await conn.execute(
+            "SELECT set_config('app.factory_id', $1, false)", TEST_FACTORY
+        )
+
+    scoped_pool = await asyncpg.create_pool(
+        PG_DSN, min_size=1, max_size=2, timeout=5, setup=_setup
+    )
+    try:
+        await _reset_backfill_checkpoint(scoped_pool, "agg_product_period")
+
+        async with scoped_pool.acquire() as conn:
+            store_id = await _seed_dim_store(conn, TEST_FACTORY, "BF_RESUME门店")
+            product_id = await _seed_dim_product(conn, TEST_FACTORY, "BF_RESUME产品")
+
+            upload_row = await conn.fetchrow(
+                """
+                INSERT INTO smart_bi_pg_excel_uploads
+                  (factory_id, file_name, upload_status)
+                VALUES ($1, $2, 'COMPLETED') RETURNING id
+                """,
+                TEST_FACTORY, f"bf_resume_{int(time.time())}.xlsx",
+            )
+            upload_id = int(upload_row["id"])
+
+            # Seed 5 rows (different period_start values to satisfy uq_app_natkey).
+            inserted_ids: List[int] = []
+            for day in range(1, 6):
+                row = await conn.fetchrow(
+                    """
+                    INSERT INTO agg_product_period
+                      (factory_id, upload_id, product_id, store_id,
+                       period_start, period_end, qty_sold, revenue, avg_unit_price)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                    RETURNING id
+                    """,
+                    TEST_FACTORY, upload_id, product_id, store_id,
+                    date(2026, 4, day), date(2026, 4, day),
+                    10 * day, 100.0 * day, 10.0,
+                )
+                inserted_ids.append(int(row["id"]))
+
+            # Set checkpoint = third row's id so backfill skips first 3.
+            checkpoint_id = inserted_ids[2]
+            await conn.execute(
+                """
+                INSERT INTO backfill_progress (table_name, last_id) VALUES ($1, $2)
+                ON CONFLICT (table_name) DO UPDATE SET last_id = $2
+                """,
+                "agg_product_period", checkpoint_id,
+            )
+
+        result = await backfill_table(
+            scoped_pool, "agg_product_period", batch_size=100, sleep_between_batches_s=0,
+        )
+        assert result["last_id_start"] == checkpoint_id
+        # Only ids 4 and 5 processed = 2 rows × 3 fields = 6 inserted
+        assert result["rows_processed"] == 2
+        assert result["rows_inserted"] == 6
+
+        # Verify checkpoint advanced
+        async with scoped_pool.acquire() as conn:
+            ckpt = await conn.fetchrow(
+                "SELECT last_id, completed_at FROM backfill_progress WHERE table_name = $1",
+                "agg_product_period",
+            )
+            assert ckpt["last_id"] == inserted_ids[-1]
+            assert ckpt["completed_at"] is not None
+    finally:
+        await _reset_backfill_checkpoint(scoped_pool, "agg_product_period")
+        await scoped_pool.close()
