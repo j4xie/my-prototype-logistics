@@ -83,3 +83,36 @@ def test_xmx_29_2_actual_scenario():
     # store-comparison answers.
     assert "门店/店铺" in hint
     assert "销售/营业额" in hint
+
+
+# v7 #2 short_circuit tests
+def test_short_circuit_xmx_sales_query():
+    from smartbi.services.dataset_capabilities import should_short_circuit
+    # xmx tenant: only member fields. Asked about sales → should short-circuit.
+    caps = detect_capabilities(_fields('会员卡号', '充值金额', '余额'))
+    msg = should_short_circuit('dish', caps)
+    assert msg is not None
+    assert "数据集" in msg
+    assert "菜品" in msg or "商品" in msg
+    assert "建议" in msg
+
+
+def test_short_circuit_no_action_when_capability_present():
+    from smartbi.services.dataset_capabilities import should_short_circuit
+    # gml: has sales + dish → should NOT short-circuit dish queries
+    caps = detect_capabilities(_fields('销售金额', '商品名称', '日期'))
+    assert should_short_circuit('dish', caps) is None
+    assert should_short_circuit('time', caps) is None
+
+
+def test_short_circuit_no_action_for_unmapped_domain():
+    from smartbi.services.dataset_capabilities import should_short_circuit
+    caps = detect_capabilities(_fields('会员卡号'))
+    # 'category' is not in _QUERY_DOMAIN_TO_CAP → should not short-circuit
+    assert should_short_circuit('category', caps) is None
+
+
+def test_short_circuit_no_action_for_empty_caps():
+    from smartbi.services.dataset_capabilities import should_short_circuit
+    caps = detect_capabilities([])
+    assert should_short_circuit('dish', caps) is None

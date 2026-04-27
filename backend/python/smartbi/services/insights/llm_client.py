@@ -37,10 +37,12 @@ logger = logging.getLogger(__name__)
 LLM_TIMEOUT_BASE = 60.0       # Base timeout in seconds
 LLM_TIMEOUT_INCREMENT = 15.0  # Added per retry attempt
 LLM_TIMEOUT_MAX = 120.0       # Hard cap (non-streaming)
-LLM_TIMEOUT_STREAM = 180.0    # Streaming timeout (per-chunk read timeout in httpx).
-                              # SSE streams can take longer than non-streaming because
-                              # LLMs emit chunks gradually. Bug #14: 120s was too short
-                              # for longer analyses -> raise to 180s.
+# v6 fix (Apr 26 2026): tightened from 180s → 30s based on v6 verification.
+# 180s was overkill — analytical answers should complete in ≤25s with the new
+# 3-paragraph 300-char prompt format. Tighter timeout makes hung providers
+# fail faster + fall through to next provider in chain. Combined with the
+# 25s soft-cutoff in chat.py, hard 30s = 5s grace for last-chunk arrival.
+LLM_TIMEOUT_STREAM = 30.0     # Streaming timeout (per-chunk read timeout in httpx)
 LLM_MAX_RETRIES = 2
 
 

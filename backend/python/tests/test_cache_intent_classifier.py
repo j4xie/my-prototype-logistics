@@ -148,6 +148,62 @@ def test_manufacturing_priority_over_time():
     assert classify_query_domain("本月不良率") == 'quality'
 
 
+def test_query_intent_kind_reason():
+    from smartbi.services.cache_intent_classifier import query_intent_kind
+    assert query_intent_kind("末位店营业额低的根因是什么") == 'reason'
+    assert query_intent_kind("为什么这家店业绩差") == 'reason'
+    assert query_intent_kind("差距在哪") == 'reason'
+
+
+def test_query_intent_kind_howto():
+    from smartbi.services.cache_intent_classifier import query_intent_kind
+    assert query_intent_kind("末位店该如何改善") == 'howto'
+    assert query_intent_kind("怎么提升业绩") == 'howto'
+    assert query_intent_kind("应该怎么做") == 'howto'
+
+
+def test_query_intent_kind_ranking_default():
+    from smartbi.services.cache_intent_classifier import query_intent_kind
+    assert query_intent_kind("Top 10 销量") == 'ranking'
+    assert query_intent_kind("哪家店业绩最好") == 'ranking'
+    assert query_intent_kind("营业额是多少") == 'ranking'
+
+
+def test_reject_ranking_template_for_reason_query():
+    # v7 #1: ranking template + 根因 query → reject
+    assert should_reject_cache(
+        "末位店营业额低的根因是什么", "store_performance"
+    ) is True
+    assert should_reject_cache(
+        "为什么 Top 1 卖得这么好", "dish_sales_top_n"
+    ) is True
+    assert should_reject_cache(
+        "晚餐时段差距的原因是什么", "time_slot_revenue"
+    ) is True
+
+
+def test_reject_ranking_template_for_howto_query():
+    assert should_reject_cache(
+        "末位店该如何改善", "store_performance"
+    ) is True
+    assert should_reject_cache(
+        "弱势菜品怎么提升销量", "dish_sales_top_n"
+    ) is True
+
+
+def test_allow_ranking_template_for_ranking_query():
+    # 不该 reject 的 case: pure ranking query on ranking template
+    assert should_reject_cache(
+        "Top 5 菜品销量", "dish_sales_top_n"
+    ) is False
+    assert should_reject_cache(
+        "门店业绩排名", "store_performance"
+    ) is False
+    assert should_reject_cache(
+        "晚餐时段营业额", "time_slot_revenue"
+    ) is False
+
+
 def test_template_domain_coverage():
     # Sanity: TEMPLATE_DOMAIN covers the main known templates from the
     # Apr 26 audit. Specifically the F4 case template must be mapped.

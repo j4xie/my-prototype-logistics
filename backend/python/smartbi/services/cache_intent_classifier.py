@@ -168,6 +168,62 @@ TOP_N_REJECT_DOMAINS: set[str] = {
 }
 
 
+# v7 #1 (Apr 26 2026): templates that produce ranking/Top-N answers.
+# When user asks for cause/why-class question, ranking template gives
+# "Top X 占比 Y" but doesn't explain WHY. Reject in favor of LLM.
+RANKING_TEMPLATES: set[str] = {
+    'top_n_by_dim',
+    'dish_sales_top_n',
+    'staff_performance',
+    'store_performance',
+    'dish_category_breakdown',
+    'channel_analysis',
+    'time_slot_revenue',
+    'weekday_weekend_pattern',
+    'payment_method_mix',
+    'pareto_analysis',
+    'member_consumption',
+}
+
+
+# Why-class intent words: user wants causal/reason analysis, not ranking.
+# When query has these AND template is ranking-class, reject cache.
+_WHY_INTENT_WORDS: list[str] = [
+    '为什么', '为啥', '是什么原因', '原因是什么', '根因', '根本原因',
+    '为何', '何故', '怎么造成', '什么导致', '哪里出问题',
+    '问题出在', '差距在哪', '差在哪', '哪里有问题', '问题在哪',
+]
+
+# How-class intent words: user wants prescriptive advice, not data.
+_HOWTO_INTENT_WORDS: list[str] = [
+    '怎么办', '如何', '怎么做', '怎么提升', '怎么改善', '怎么优化',
+    '如何提升', '如何改善', '如何优化', '怎么解决', '如何解决',
+    '应该怎么', '该如何', '建议怎么',
+]
+
+
+def query_intent_kind(query: str) -> str:
+    """Detect query's analytical intent kind.
+
+    Returns one of:
+    - 'reason'  — user wants causal analysis (why X happened)
+    - 'howto'   — user wants prescriptive advice (how to fix X)
+    - 'ranking' — user wants Top-N / breakdown (default for analytical Q)
+
+    Used by should_reject_cache to detect sub-intent mismatch within same
+    domain (e.g. store domain "为什么末位店差" → store_performance template
+    gives ranking, but user wants reason → reject).
+    """
+    if not query:
+        return 'ranking'
+    q = query.lower()
+    if any(w in q for w in _WHY_INTENT_WORDS):
+        return 'reason'
+    if any(w in q for w in _HOWTO_INTENT_WORDS):
+        return 'howto'
+    return 'ranking'
+
+
 def should_reject_cache(query: str, template_code: str) -> bool:
     """Return True iff the query's detected domain conflicts with the
     matched template's domain.
@@ -183,6 +239,21 @@ def should_reject_cache(query: str, template_code: str) -> bool:
     """
     if not query or not template_code:
         return False
+
+    # v7 #1 (Apr 26 2026): sub-intent mismatch detection. If query asks for
+    # causal/prescriptive analysis but template gives ranking/Top-N, reject
+    # cache → fall to LLM (which can explain WHY using the ranking data).
+    # Example: "末位店营业额低的根因是什么" hits store_performance (ranking),
+    # but user wants reason → cache returns "Top 10 排名" instead of analysis.
+    if template_code in RANKING_TEMPLATES:
+        intent_kind = query_intent_kind(query)
+        if intent_kind in ('reason', 'howto'):
+            logger.info(
+                f"[intent-classifier] cache REJECTED (sub-intent mismatch): "
+                f"query intent='{intent_kind}' vs template='{template_code}' is ranking"
+            )
+            return True
+
     query_domain = classify_query_domain(query)
     if query_domain is None:
         return False  # query domain undetectable — don't risk false positive

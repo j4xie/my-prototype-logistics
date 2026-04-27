@@ -99,6 +99,64 @@ def detect_capabilities(field_meta: list[dict]) -> DatasetCapabilities:
     return DatasetCapabilities(capabilities=caps, field_count=len(field_meta))
 
 
+# Apr 26 2026 v7 #2: maps query domain (from cache_intent_classifier) → required
+# capability flag. Used by short-circuit logic.
+_QUERY_DOMAIN_TO_CAP: dict[str, str] = {
+    'dish':       'has_dish',
+    'store':      'has_store',
+    'channel':    'has_channel',
+    'time':       'has_time',
+    'payment':    'has_payment',
+    'member':     'has_member',
+    'review':     'has_review',
+    'staff':      'has_staff',
+    'finance':    'has_finance',
+    'inventory':  'has_inventory',
+    'promotion':  'has_promotion',
+    # 'category' / 'anomaly' / 'refund' / quality/equipment/production: no
+    # 1-1 capability mapping yet → don't short-circuit, let LLM try.
+}
+
+
+def should_short_circuit(query_domain: Optional[str], caps: DatasetCapabilities) -> Optional[str]:
+    """If query_domain has a known capability requirement that this dataset
+    lacks, return a short-circuit message string. Else return None (proceed
+    to LLM normally).
+
+    Returns None when:
+    - query_domain unknown / undetectable
+    - query_domain has no capability mapping (let LLM try)
+    - dataset has the required capability
+    - dataset has 0 fields (don't short-circuit on no-data state)
+
+    Returns a markdown message when there's a hard mismatch (saves ~10s LLM
+    call for queries the data physically can't answer).
+    """
+    if not query_domain or caps.field_count == 0:
+        return None
+    required_cap = _QUERY_DOMAIN_TO_CAP.get(query_domain)
+    if not required_cap or caps.has(required_cap):
+        return None
+    # Hard mismatch — give actionable message instead of LLM round-trip.
+    domain_label = _CAPABILITY_LABELS.get(required_cap, required_cap)
+    present = caps.present_caps()
+    msg_parts = [
+        f"## 数据范围说明\n",
+        f"本数据集**不含 {domain_label}** 字段，无法回答关于「{query_domain}」的分析。",
+    ]
+    if present:
+        msg_parts.append(
+            f"\n\n**当前数据集包含**: {', '.join(present[:5])}"
+            + ("，等" if len(present) > 5 else "")
+            + "。"
+        )
+        msg_parts.append(
+            f"\n\n**建议**: 换问与上述维度相关的问题，"
+            f"或上传含 {domain_label} 字段的数据后重试。"
+        )
+    return "".join(msg_parts)
+
+
 def build_capability_prompt_hint(caps: DatasetCapabilities) -> str:
     """Build a one-section prompt hint describing dataset boundaries.
 

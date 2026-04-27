@@ -2027,15 +2027,52 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
             # scope so it answers within scope or says "本数据无 X, 基于 Y..."
             # in 1 sentence instead of a 11s wait + filler.
             capability_hint = ""
+            _caps_obj = None
             if 'field_meta' in locals() and field_meta:
                 try:
                     from smartbi.services.dataset_capabilities import (
                         detect_capabilities, build_capability_prompt_hint,
                     )
-                    _caps = detect_capabilities(field_meta)
-                    capability_hint = build_capability_prompt_hint(_caps)
+                    _caps_obj = detect_capabilities(field_meta)
+                    capability_hint = build_capability_prompt_hint(_caps_obj)
                 except Exception as _ce:
                     logger.warning(f"[stream] capability hint build failed: {_ce}")
+
+            # v7 #2 (Apr 26 2026): hard capability mismatch short-circuit.
+            # If user query domain (from cache_intent_classifier) maps to a
+            # capability the dataset DEFINITELY lacks (e.g. xmx asked about
+            # 销售/营业额 but only has 会员储值 fields), skip LLM and emit
+            # explainer directly. Saves ~10s per such query + reduces empty
+            # answers on sparse-data tenants. xmx v6 had 14% timeout — much
+            # of it was LLM thrashing on impossible queries.
+            if _caps_obj is not None and request.effective_query and not chat_session_parent:
+                try:
+                    from smartbi.services.cache_intent_classifier import (
+                        classify_query_domain,
+                    )
+                    from smartbi.services.dataset_capabilities import (
+                        should_short_circuit,
+                    )
+                    _query_domain = classify_query_domain(request.effective_query)
+                    _short_circuit_msg = should_short_circuit(_query_domain, _caps_obj)
+                    if _short_circuit_msg:
+                        logger.info(
+                            f"[stream] capability short-circuit: domain={_query_domain} "
+                            f"missing required capability — skipping LLM"
+                        )
+                        # Stream the message as if generated.
+                        for i in range(0, len(_short_circuit_msg), 60):
+                            yield _sse_event("chunk", _short_circuit_msg[i:i + 60])
+                        yield _sse_event("done", {
+                            "success": True,
+                            "answer": _short_circuit_msg,
+                            "charts": [],
+                            "source": "capability_short_circuit",
+                            "processingTimeMs": int((time.time() - start_time) * 1000),
+                        })
+                        return  # early exit — saved the LLM call
+                except Exception as _sc_err:
+                    logger.warning(f"[stream] capability short-circuit failed: {_sc_err}")
 
             # Bug #19 fix (Apr 17 2026): inject authoritative full-data aggregates
             # so LLM doesn't guess from 200-row sample.
@@ -2071,7 +2108,13 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
 - 不要引用非当前字段列表中的字段名 (避免幻觉)
 - **若提供了"上一轮对话"段, 优先延续上一轮的实体和数字, 不要重新介绍**
 - **遵守"数据集能力边界"段, 不属本数据集的字段不要瞎答**
-**回答格式 (强制)**: 第一句直接给数字结论, 第二段最多 2-3 句给可执行建议. 总长 ≤ 200 字, 中文 Markdown."""
+
+**回答格式 (强制 — 3 段落结构, 总长 ≤ 300 字)**:
+1. **结论** (1 句话, 含数字): 直接回答 user 的问题, 例如 "末位门店是 X, 占比仅 Y%, 比 Top 1 低 Z%."
+2. **关键发现** (2-3 句, 含数字 + 实体): 解释/支持结论, 例如 "样本显示 X 在 A/B/C 三个维度均落后, 其中 A 仅为 Top 1 的 30%."
+3. **行动建议** (2-3 项, 用 - 开头): 具体可做, 含负责人 + 时间 + 预期收益. 例如 "- 立即对 X 启动 30 天专项辅导 (店长培训 + Top 1 SOP 复制), 预期提升 8-12%."
+
+避免: 大段铺陈、套话、"建议补充数据" 类废话、超过 300 字的长答案."""
 
             system_role = (
                 "你是食品企业的数据分析师。精炼回答，引用数字，给可执行建议。Markdown格式。"
