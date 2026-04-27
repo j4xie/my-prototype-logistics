@@ -150,7 +150,8 @@ public class SalesController {
             @RequestHeader("Authorization") String authorization,
             @Valid @RequestBody FinanceReviewRequest request) {
         Long reviewerId = extractUserId(authorization);
-        SalesOrder order = salesService.financeApproveOrder(factoryId, orderId, request.getNotes(), reviewerId);
+        SalesOrder order = salesService.financeApproveOrder(
+                factoryId, orderId, request.getNotes(), request.getEstimatedCost(), reviewerId);
         return ApiResponse.success("销售订单财务审核通过", order);
     }
 

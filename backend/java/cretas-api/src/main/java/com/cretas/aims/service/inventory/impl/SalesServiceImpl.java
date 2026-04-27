@@ -312,6 +312,18 @@ public class SalesServiceImpl implements SalesService {
     @Override
     @Transactional
     public SalesOrder financeApproveOrder(String factoryId, String orderId, String notes, Long reviewerId) {
+        return financeApproveOrder(factoryId, orderId, notes, null, reviewerId);
+    }
+
+    /**
+     * 六扇门 V1 §2.2 audit fix #6: accept estimatedCost from finance reviewer dialog.
+     * Pre-fix: dialog only had notes prompt — finance had no place to record cost.
+     * Now: dialog shows totalAmount + cost input + auto-computed profit.
+     */
+    @Override
+    @Transactional
+    public SalesOrder financeApproveOrder(String factoryId, String orderId, String notes,
+                                           java.math.BigDecimal estimatedCost, Long reviewerId) {
         SalesOrder order = getSalesOrderById(factoryId, orderId);
         // 强制加载 items，防止事件处理器中 LazyInitializationException
         org.hibernate.Hibernate.initialize(order.getItems());
@@ -324,7 +336,12 @@ public class SalesServiceImpl implements SalesService {
         order.setFinanceReviewedAt(LocalDateTime.now());
         order.setFinanceReviewNotes(notes);
 
-        // 计算预估成本与利润（如果前端/财务未手动填写，此处可后续扩展从BOM自动计算）
+        // 六扇门 V1 §2.2 audit fix #6: persist finance-reviewer-input estimatedCost
+        if (estimatedCost != null) {
+            order.setEstimatedCost(estimatedCost);
+        }
+
+        // 计算预估利润（如果有 estimatedCost — 当前调用或历史值）
         if (order.getEstimatedCost() != null && order.getTotalAmount() != null) {
             order.setEstimatedProfit(order.getTotalAmount().subtract(order.getEstimatedCost()));
         }

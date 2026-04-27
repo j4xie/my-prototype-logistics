@@ -235,23 +235,61 @@ async function handleStartProduction() {
   });
 }
 
-async function handleFinanceAction(action: 'approve' | 'reject') {
-  if (submitting.value) return;
+// 六扇门 V1 §2.2 (audit fix 2026-04-26 #6): finance review dialog with cost breakdown
+// Pre-fix: only ElMessageBox.prompt with notes — no place to record cost.
+// Post-fix: rich dialog showing 订单总额 / 预估成本 (input) / 预估利润 (auto-calc) / 备注.
+const financeReviewVisible = ref(false);
+const financeReviewForm = ref<{
+  notes: string;
+  estimatedCost: number | null;
+  isApprove: boolean;
+}>({ notes: '', estimatedCost: null, isApprove: true });
+const financeReviewProfit = computed(() => {
+  const total = Number(order.value?.totalAmount || 0);
+  const cost = financeReviewForm.value.estimatedCost;
+  if (cost == null) return null;
+  return total - Number(cost);
+});
+
+function openFinanceReview(action: 'approve' | 'reject') {
   const isApprove = action === 'approve';
+  financeReviewForm.value = {
+    notes: '',
+    // Pre-populate with existing estimatedCost if already set (e.g. previously rejected then resubmitted)
+    estimatedCost: order.value?.estimatedCost ? Number(order.value.estimatedCost) : null,
+    isApprove,
+  };
+  financeReviewVisible.value = true;
+}
+
+async function submitFinanceReview() {
+  if (submitting.value) return;
+  const { isApprove, notes, estimatedCost } = financeReviewForm.value;
   const labelText = isApprove ? '审核通过' : '审核驳回';
+  if (!isApprove && !notes?.trim()) {
+    return ElMessage.warning('请填写驳回原因');
+  }
+  submitting.value = true;
   try {
-    const { value: notes } = await ElMessageBox.prompt(
-      isApprove ? '确认财务审核通过？可选填备注：' : '请填写驳回原因：',
-      labelText,
-      { confirmButtonText: labelText, cancelButtonText: '取消', inputPlaceholder: isApprove ? '（选填）' : '驳回原因' }
-    );
-    submitting.value = true;
     const url = `/${factoryId.value}/sales/orders/${orderId.value}/${isApprove ? 'finance-approve' : 'finance-reject'}`;
-    const res = await post(url, { notes: notes || '' });
-    if (res.success) { ElMessage.success(`${labelText}成功`); loadOrder(); }
-    else { ElMessage.error(res.message || `${labelText}失败`); }
-  } catch { /* cancelled */ }
-  finally { submitting.value = false; }
+    const body: Record<string, unknown> = { notes: notes || '' };
+    if (isApprove && estimatedCost != null) body.estimatedCost = estimatedCost;
+    const res = await post(url, body);
+    if (res.success) {
+      ElMessage.success(`${labelText}成功`);
+      financeReviewVisible.value = false;
+      loadOrder();
+    } else { ElMessage.error(res.message || `${labelText}失败`); }
+  } catch (e) {
+    handleCatchError(e, `${labelText}失败,请检查网络`);
+  } finally {
+    submitting.value = false;
+  }
+}
+
+// Backward-compat for any external caller (no longer used in template)
+async function handleFinanceAction(action: 'approve' | 'reject') {
+  openFinanceReview(action);
 }
 
 function openDeliveryDialog() {
@@ -793,8 +831,8 @@ async function handleCreatePayment() {
           <div class="header-right" v-if="order && canWrite">
             <el-button v-if="order.status === 'DRAFT'" type="success" :loading="submitting" @click="handleAction('confirm')">确认订单</el-button>
             <el-button v-if="order.status === 'CONFIRMED'" type="warning" :loading="submitting" @click="handleAction('submit-for-review')">提交财务审核</el-button>
-            <el-button v-if="order.status === 'PENDING_FINANCE_REVIEW'" type="success" :loading="submitting" @click="handleFinanceAction('approve')">审核通过</el-button>
-            <el-button v-if="order.status === 'PENDING_FINANCE_REVIEW'" type="danger" :loading="submitting" @click="handleFinanceAction('reject')">审核驳回</el-button>
+            <el-button v-if="order.status === 'PENDING_FINANCE_REVIEW'" type="success" :loading="submitting" @click="openFinanceReview('approve')">审核通过</el-button>
+            <el-button v-if="order.status === 'PENDING_FINANCE_REVIEW'" type="danger" :loading="submitting" @click="openFinanceReview('reject')">审核驳回</el-button>
             <el-button v-if="order.status === 'FINANCE_APPROVED'" type="primary" :loading="submitting" @click="handleStartProduction">开始生产</el-button>
             <el-button v-if="['CONFIRMED','FINANCE_APPROVED','PROCESSING','PARTIAL_DELIVERED'].includes(order.status)" type="primary" :loading="submitting" @click="openDeliveryDialog">{{ label('delivery') }}</el-button>
             <el-button v-if="['DRAFT','CONFIRMED'].includes(order.status)" type="danger" :disabled="submitting" @click="handleAction('cancel')">取消</el-button>
@@ -1261,6 +1299,63 @@ async function handleCreatePayment() {
       <template #footer>
         <el-button @click="paymentDialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="handleCreatePayment">登记收款</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 六扇门 V1 §2.2 (audit fix 2026-04-26 #6): finance review dialog with cost breakdown -->
+    <el-dialog
+      v-model="financeReviewVisible"
+      :title="financeReviewForm.isApprove ? '财务审核通过' : '财务审核驳回'"
+      width="560px"
+      :close-on-click-modal="false"
+    >
+      <el-form label-width="110px">
+        <el-form-item label="订单号">
+          <span style="font-family:monospace">{{ order?.orderNumber }}</span>
+        </el-form-item>
+        <el-form-item label="客户">
+          <span>{{ order?.customerName || order?.customerId }}</span>
+        </el-form-item>
+        <el-form-item label="订单总额">
+          <span style="font-weight:600;color:#67C23A">{{ formatAmount(Number(order?.totalAmount || 0)) }}</span>
+        </el-form-item>
+        <el-form-item v-if="financeReviewForm.isApprove" label="预估成本 (元)">
+          <el-input-number
+            v-model="financeReviewForm.estimatedCost"
+            :min="0" :precision="2"
+            placeholder="录入 BOM 材料成本 + 工时/制造费"
+            style="width:100%"
+            controls-position="right"
+          />
+          <div style="color:#909399;font-size:12px;margin-top:4px">
+            提示: V1.5 手动录入,V2 将自动从 BOM 推导
+          </div>
+        </el-form-item>
+        <el-form-item v-if="financeReviewForm.isApprove && financeReviewProfit !== null" label="预估利润">
+          <span :style="{ fontWeight: 600, color: financeReviewProfit >= 0 ? '#67C23A' : '#F56C6C' }">
+            {{ formatAmount(financeReviewProfit) }}
+            <span v-if="Number(order?.totalAmount || 0) > 0" style="color:#909399;font-size:12px;margin-left:8px">
+              (毛利率 {{ ((financeReviewProfit / Number(order?.totalAmount || 1)) * 100).toFixed(1) }}%)
+            </span>
+          </span>
+        </el-form-item>
+        <el-form-item :label="financeReviewForm.isApprove ? '审核备注' : '驳回原因'">
+          <el-input
+            v-model="financeReviewForm.notes"
+            type="textarea" :rows="3"
+            :placeholder="financeReviewForm.isApprove ? '(选填) 财务审核意见' : '请说明驳回原因'"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="financeReviewVisible = false">取消</el-button>
+        <el-button
+          :type="financeReviewForm.isApprove ? 'success' : 'danger'"
+          :loading="submitting"
+          @click="submitFinanceReview"
+        >
+          {{ financeReviewForm.isApprove ? '确认审核通过' : '确认驳回' }}
+        </el-button>
       </template>
     </el-dialog>
   </div>
