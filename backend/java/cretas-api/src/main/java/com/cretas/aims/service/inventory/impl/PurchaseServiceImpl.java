@@ -323,8 +323,13 @@ public class PurchaseServiceImpl implements PurchaseService {
     @Transactional
     public PurchaseOrder cancelOrder(String factoryId, String orderId) {
         PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
-        if (order.getStatus() == PurchaseOrderStatus.COMPLETED || order.getStatus() == PurchaseOrderStatus.CLOSED) {
-            throw new BusinessException("已完成或已关闭的订单不能取消");
+        // R39 BUG-8 sister fix: was only blocking COMPLETED/CLOSED → FINANCE_APPROVED/PARTIAL_RECEIVED/CANCELLED
+        // could be cancelled, breaking AP + inventory invariants. Use whitelist.
+        if (!com.cretas.aims.domain.OrderUsageWhitelists.PO_CANCELLABLE.contains(order.getStatus())) {
+            throw new BusinessException(409,
+                    "当前采购单状态(" + order.getStatus().getDisplayName() + ")不允许取消。"
+                  + "财务批准/部分到货后请通过退货流程处理")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         order.setStatus(PurchaseOrderStatus.CANCELLED);
         log.info("取消采购订单: orderId={}, orderNumber={}", orderId, order.getOrderNumber());

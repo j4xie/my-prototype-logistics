@@ -88,12 +88,24 @@ public final class OrderUsageWhitelists {
             SalesOrderStatus.CANCELLED,
             SalesOrderStatus.FINANCE_REJECTED));
 
+    /**
+     * R39 BUG-8: states that can be cancelled. Excludes FINANCE_APPROVED+ because
+     * downstream (production_plan, AR invoice) is committed; cancellation requires
+     * explicit rollback workflow, not a status flip.
+     */
+    public static final Set<SalesOrderStatus> SO_CANCELLABLE = EnumSet.of(
+            SalesOrderStatus.DRAFT,
+            SalesOrderStatus.CONFIRMED,
+            SalesOrderStatus.PENDING_FINANCE_REVIEW,
+            SalesOrderStatus.FINANCE_REJECTED);
+
     public static final Map<String, Set<SalesOrderStatus>> SO_BY_USAGE = Map.of(
             "invoiceable", SO_INVOICEABLE,
             "shippable", SO_SHIPPABLE,
             "deliverable", SO_DELIVERABLE,
             "in_flight", SO_IN_FLIGHT,
             "plannable", SO_PLANNABLE,
+            "cancellable", SO_CANCELLABLE,
             "all", SO_ALL);
 
     /** Strictest PO whitelist — used as fail-secure default. */
@@ -121,10 +133,22 @@ public final class OrderUsageWhitelists {
             PurchaseOrderStatus.CANCELLED,
             PurchaseOrderStatus.FINANCE_REJECTED));
 
+    /**
+     * R39 BUG-8: PO states cancellable. Excludes APPROVED+ (downstream supplier
+     * commitment), PARTIAL_RECEIVED (inventory partially received, AP posted).
+     */
+    public static final Set<PurchaseOrderStatus> PO_CANCELLABLE = EnumSet.of(
+            PurchaseOrderStatus.DRAFT,
+            PurchaseOrderStatus.SUBMITTED,
+            PurchaseOrderStatus.APPROVED,
+            PurchaseOrderStatus.PENDING_FINANCE_REVIEW,
+            PurchaseOrderStatus.FINANCE_REJECTED);
+
     public static final Map<String, Set<PurchaseOrderStatus>> PO_BY_USAGE = Map.of(
             "invoiceable", PO_INVOICEABLE,
             "receivable", PO_RECEIVABLE,
             "ops_receivable", PO_OPS_RECEIVABLE,
+            "cancellable", PO_CANCELLABLE,
             "all", PO_ALL);
 
     /**

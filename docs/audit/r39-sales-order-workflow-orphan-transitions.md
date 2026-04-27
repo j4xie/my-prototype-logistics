@@ -77,14 +77,28 @@ UPDATE workflow_schema.transitions array, 只保留 5 个有 backend endpoint �
 
 R38 BUG-3 (V20260428_02) 修了 4 个 transitions 的 camelCase. 但**没意识到**这些 transitions 其实有 backend endpoint, 而**剩下 6 个完全没有**. 这次 audit 揭示了更深层问题.
 
-## R38 真窗 evidence
+## R40 真窗 evidence (CONFIRMED 2026-04-28)
+
+点击 SO-20260428-0002 (财务通过 ¥5000) "开始生产" → 操作确认 dialog → 确定:
 
 ```
-点击 SO-20260428-0001 (财务通过) "开始生产" → 预计 ElNotification "请求的接口不存在 (POST /sales/orders/.../startProduction)" sticky+closable
-(R38 之后的 R23-R26 sister sweep modal pattern 应该会捕获)
+console: Failed to load resource: ...8310c74c-9da9-49cb-b9c3-2c414a6c1d3f/startProduction:0
+
+ElMessage (双发, sticky+closable):
+"请求的接口不存在 (POST /F001/sales/orders/8310c74c-9da9-49cb-b9c3-2c414a6c1d3f/startProduction)。
+ 可能是后端未上线该功能,或当前账号无权访问。"
 ```
 
-未真窗触发 — 文档化为 backlog. R39 implementer 应该先 真窗 verify 5 个 broken buttons.
+DOM 抓到 2 个相同 .el-message--error.is-closable.is-center, 时间戳相差 4ms — DynamicModulePage catch + axios interceptor 各喷一次. **同 R26 production/approval 双 toast 模式**, R39 P3 跟进 (BUG-6 候选).
+
+副 finding **R39 BUG-7**: SO list page 上残留 2 个旧 alert "销售订单不存在" 没自动消失 (来自之前 navigate `/sales/orders/list` 误路由的 stale toast). ElMessage duration 默认 3000ms 但这两个 sticky 没消 — 可能是 `[cretas] ElMessage.error patched: duration=...` console log 提示项目把 error toast 全 patch 成 sticky. 累积 toast UX 问题.
+
+## R39 backlog 完整列表 (2026-04-28 更新)
+
+- ✅ BUG-5 真窗 verify 完成 (本次)
+- BUG-5 fix (Option C manualTrigger flag) 仍 pending
+- BUG-6 双 toast (DynamicModulePage catch + axios interceptor) — 同 R26 模式 sweep
+- BUG-7 ElMessage.error patched sticky 累积旧 toast — 全局 UX
 
 ## R39 backlog 完整列表
 

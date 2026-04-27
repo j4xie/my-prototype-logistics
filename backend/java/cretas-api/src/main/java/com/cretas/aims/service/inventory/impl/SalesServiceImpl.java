@@ -267,7 +267,8 @@ public class SalesServiceImpl implements SalesService {
         runConfiguredValidation(factoryId, "STATUS_CHANGE", Map.of(
                 "status", order.getStatus().name(), "targetStatus", "CONFIRMED"));
         if (order.getStatus() != SalesOrderStatus.DRAFT) {
-            throw new BusinessException("只有草稿状态的订单可以确认");
+            throw new BusinessException(409, "只有草稿状态的订单可以确认")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         checkTransitionAllowed(factoryId, order.getStatus().name(), "CONFIRMED");
         order.setStatus(SalesOrderStatus.CONFIRMED);
@@ -296,7 +297,8 @@ public class SalesServiceImpl implements SalesService {
                 "status", order.getStatus().name(), "targetStatus", "PENDING_FINANCE_REVIEW"));
         if (order.getStatus() != SalesOrderStatus.CONFIRMED
                 && order.getStatus() != SalesOrderStatus.FINANCE_REJECTED) {
-            throw new BusinessException("只有已确认或财务驳回状态的订单可以提交财务审核");
+            throw new BusinessException(409, "只有已确认或财务驳回状态的订单可以提交财务审核")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         checkTransitionAllowed(factoryId, order.getStatus().name(), "PENDING_FINANCE_REVIEW");
         order.setStatus(SalesOrderStatus.PENDING_FINANCE_REVIEW);
@@ -328,7 +330,8 @@ public class SalesServiceImpl implements SalesService {
         // 强制加载 items，防止事件处理器中 LazyInitializationException
         org.hibernate.Hibernate.initialize(order.getItems());
         if (order.getStatus() != SalesOrderStatus.PENDING_FINANCE_REVIEW) {
-            throw new BusinessException("只有待财务审核状态的订单可以审批");
+            throw new BusinessException(409, "只有待财务审核状态的订单可以审批")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         checkTransitionAllowed(factoryId, order.getStatus().name(), "FINANCE_APPROVED");
         order.setStatus(SalesOrderStatus.FINANCE_APPROVED);
@@ -367,7 +370,8 @@ public class SalesServiceImpl implements SalesService {
     public SalesOrder financeRejectOrder(String factoryId, String orderId, String reason, Long reviewerId) {
         SalesOrder order = getSalesOrderById(factoryId, orderId);
         if (order.getStatus() != SalesOrderStatus.PENDING_FINANCE_REVIEW) {
-            throw new BusinessException("只有待财务审核状态的订单可以驳回");
+            throw new BusinessException(409, "只有待财务审核状态的订单可以驳回")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         checkTransitionAllowed(factoryId, order.getStatus().name(), "FINANCE_REJECTED");
         order.setStatus(SalesOrderStatus.FINANCE_REJECTED);
@@ -385,7 +389,8 @@ public class SalesServiceImpl implements SalesService {
     public SalesOrder updateSalesOrder(String factoryId, String orderId, UpdateSalesOrderRequest request) {
         SalesOrder order = getSalesOrderById(factoryId, orderId);
         if (order.getStatus() != SalesOrderStatus.DRAFT) {
-            throw new BusinessException("只有草稿状态的订单可以编辑");
+            throw new BusinessException(409, "只有草稿状态的订单可以编辑")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         // Optimistic lock: explicit compare (see CustomerServiceImpl for rationale)
         if (request.getVersion() != null && !request.getVersion().equals(order.getVersion())) {
@@ -495,8 +500,13 @@ public class SalesServiceImpl implements SalesService {
     @Transactional
     public SalesOrder cancelOrder(String factoryId, String orderId) {
         SalesOrder order = getSalesOrderById(factoryId, orderId);
-        if (order.getStatus() == SalesOrderStatus.COMPLETED) {
-            throw new BusinessException("已完成的订单不能取消");
+        // R39 BUG-8 fix: was only blocking COMPLETED → FINANCE_APPROVED+/PROCESSING/SHIPPED/CANCELLED
+        // could be cancelled, breaking AR + production_plan invariants. Use whitelist.
+        if (!com.cretas.aims.domain.OrderUsageWhitelists.SO_CANCELLABLE.contains(order.getStatus())) {
+            throw new BusinessException(409,
+                    "当前订单状态(" + order.getStatus().getDisplayName() + ")不允许取消。"
+                  + "财务批准后请通过驳回/退款流程处理")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         order.setStatus(SalesOrderStatus.CANCELLED);
         log.info("取消销售订单: orderId={}, orderNumber={}", orderId, order.getOrderNumber());
