@@ -3,6 +3,8 @@ package com.cretas.aims.controller.restaurant;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.restaurant.WastageRecord;
+import com.cretas.aims.exception.BusinessException;
+import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.restaurant.WastageRecordRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -116,17 +118,16 @@ public class WastageRecordController {
     public ApiResponse<WastageRecord> submit(
             @PathVariable String factoryId,
             @PathVariable String wastageId) {
-        return wastageRepository.findByIdAndFactoryId(wastageId, factoryId)
-                .map(record -> {
-                    if (record.getStatus() != WastageRecord.Status.DRAFT
-                            && record.getStatus() != WastageRecord.Status.REJECTED) {
-                        return ApiResponse.<WastageRecord>error("只有草稿或已驳回的损耗记录可以提交");
-                    }
-                    record.setStatus(WastageRecord.Status.SUBMITTED);
-                    WastageRecord updated = wastageRepository.save(record);
-                    return ApiResponse.success("损耗记录已提交", updated);
-                })
-                .orElse(ApiResponse.error("损耗记录不存在: " + wastageId));
+        WastageRecord record = wastageRepository.findByIdAndFactoryId(wastageId, factoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("损耗记录", "id", wastageId));
+        if (record.getStatus() != WastageRecord.Status.DRAFT
+                && record.getStatus() != WastageRecord.Status.REJECTED) {
+            throw new BusinessException(409, "只有草稿或已驳回的损耗记录可以提交")
+                    .withHint("请刷新损耗记录列表查看最新状态");
+        }
+        record.setStatus(WastageRecord.Status.SUBMITTED);
+        WastageRecord updated = wastageRepository.save(record);
+        return ApiResponse.success("损耗记录已提交", updated);
     }
 
     // ==================== 审批 ====================
@@ -139,18 +140,17 @@ public class WastageRecordController {
             @PathVariable String factoryId,
             @PathVariable String wastageId,
             @RequestAttribute("userId") @Parameter(hidden = true) Long approverId) {
-        return wastageRepository.findByIdAndFactoryId(wastageId, factoryId)
-                .map(record -> {
-                    if (record.getStatus() != WastageRecord.Status.SUBMITTED) {
-                        return ApiResponse.<WastageRecord>error("只有已提交的损耗记录可以审批");
-                    }
-                    record.setStatus(WastageRecord.Status.APPROVED);
-                    record.setApprovedBy(approverId);
-                    record.setApprovedAt(LocalDateTime.now());
-                    WastageRecord updated = wastageRepository.save(record);
-                    return ApiResponse.success("损耗记录已审批", updated);
-                })
-                .orElse(ApiResponse.error("损耗记录不存在: " + wastageId));
+        WastageRecord record = wastageRepository.findByIdAndFactoryId(wastageId, factoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("损耗记录", "id", wastageId));
+        if (record.getStatus() != WastageRecord.Status.SUBMITTED) {
+            throw new BusinessException(409, "只有已提交的损耗记录可以审批")
+                    .withHint("请刷新损耗记录列表查看最新状态");
+        }
+        record.setStatus(WastageRecord.Status.APPROVED);
+        record.setApprovedBy(approverId);
+        record.setApprovedAt(LocalDateTime.now());
+        WastageRecord updated = wastageRepository.save(record);
+        return ApiResponse.success("损耗记录已审批", updated);
     }
 
     // ==================== 驳回 ====================
@@ -164,21 +164,20 @@ public class WastageRecordController {
             @PathVariable String wastageId,
             @RequestAttribute("userId") @Parameter(hidden = true) Long approverId,
             @RequestBody(required = false) Map<String, Object> body) {
-        return wastageRepository.findByIdAndFactoryId(wastageId, factoryId)
-                .map(record -> {
-                    if (record.getStatus() != WastageRecord.Status.SUBMITTED) {
-                        return ApiResponse.<WastageRecord>error("只有已提交的损耗记录可以驳回");
-                    }
-                    record.setStatus(WastageRecord.Status.REJECTED);
-                    record.setApprovedBy(approverId);
-                    record.setApprovedAt(LocalDateTime.now());
-                    if (body != null && body.get("reason") != null) {
-                        record.setNotes(String.valueOf(body.get("reason")));
-                    }
-                    WastageRecord updated = wastageRepository.save(record);
-                    return ApiResponse.success("损耗记录已驳回", updated);
-                })
-                .orElse(ApiResponse.error("损耗记录不存在: " + wastageId));
+        WastageRecord record = wastageRepository.findByIdAndFactoryId(wastageId, factoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("损耗记录", "id", wastageId));
+        if (record.getStatus() != WastageRecord.Status.SUBMITTED) {
+            throw new BusinessException(409, "只有已提交的损耗记录可以驳回")
+                    .withHint("请刷新损耗记录列表查看最新状态");
+        }
+        record.setStatus(WastageRecord.Status.REJECTED);
+        record.setApprovedBy(approverId);
+        record.setApprovedAt(LocalDateTime.now());
+        if (body != null && body.get("reason") != null) {
+            record.setNotes(String.valueOf(body.get("reason")));
+        }
+        WastageRecord updated = wastageRepository.save(record);
+        return ApiResponse.success("损耗记录已驳回", updated);
     }
 
     // ==================== 统计 ====================

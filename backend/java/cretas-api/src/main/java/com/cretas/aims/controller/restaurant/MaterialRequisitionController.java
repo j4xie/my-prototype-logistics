@@ -3,6 +3,8 @@ package com.cretas.aims.controller.restaurant;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.restaurant.MaterialRequisition;
+import com.cretas.aims.exception.BusinessException;
+import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.restaurant.MaterialRequisitionRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -114,16 +116,15 @@ public class MaterialRequisitionController {
     public ApiResponse<MaterialRequisition> submit(
             @PathVariable String factoryId,
             @PathVariable String requisitionId) {
-        return requisitionRepository.findByIdAndFactoryId(requisitionId, factoryId)
-                .map(req -> {
-                    if (req.getStatus() != MaterialRequisition.Status.DRAFT) {
-                        return ApiResponse.<MaterialRequisition>error("只有草稿状态的领料单可以提交");
-                    }
-                    req.setStatus(MaterialRequisition.Status.SUBMITTED);
-                    MaterialRequisition updated = requisitionRepository.save(req);
-                    return ApiResponse.success("领料单已提交", updated);
-                })
-                .orElse(ApiResponse.error("领料单不存在: " + requisitionId));
+        MaterialRequisition req = requisitionRepository.findByIdAndFactoryId(requisitionId, factoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("领料单", "id", requisitionId));
+        if (req.getStatus() != MaterialRequisition.Status.DRAFT) {
+            throw new BusinessException(409, "只有草稿状态的领料单可以提交")
+                    .withHint("请刷新领料单列表查看最新状态");
+        }
+        req.setStatus(MaterialRequisition.Status.SUBMITTED);
+        MaterialRequisition updated = requisitionRepository.save(req);
+        return ApiResponse.success("领料单已提交", updated);
     }
 
     // ==================== 审批通过 ====================
@@ -137,27 +138,26 @@ public class MaterialRequisitionController {
             @PathVariable String requisitionId,
             @RequestAttribute("userId") @Parameter(hidden = true) Long approverId,
             @RequestBody(required = false) Map<String, Object> body) {
-        return requisitionRepository.findByIdAndFactoryId(requisitionId, factoryId)
-                .map(req -> {
-                    if (req.getStatus() != MaterialRequisition.Status.SUBMITTED) {
-                        return ApiResponse.<MaterialRequisition>error("只有已提交的领料单可以审批");
-                    }
-                    req.setStatus(MaterialRequisition.Status.APPROVED);
-                    req.setApprovedBy(approverId);
-                    req.setApprovedAt(LocalDateTime.now());
+        MaterialRequisition req = requisitionRepository.findByIdAndFactoryId(requisitionId, factoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("领料单", "id", requisitionId));
+        if (req.getStatus() != MaterialRequisition.Status.SUBMITTED) {
+            throw new BusinessException(409, "只有已提交的领料单可以审批")
+                    .withHint("请刷新领料单列表查看最新状态");
+        }
+        req.setStatus(MaterialRequisition.Status.APPROVED);
+        req.setApprovedBy(approverId);
+        req.setApprovedAt(LocalDateTime.now());
 
-                    // 如果 body 包含 actualQuantity，更新实际领用量
-                    if (body != null && body.containsKey("actualQuantity")) {
-                        req.setActualQuantity(new BigDecimal(body.get("actualQuantity").toString()));
-                    } else if (req.getActualQuantity() == null) {
-                        // 默认实际量等于申请量
-                        req.setActualQuantity(req.getRequestedQuantity());
-                    }
+        // 如果 body 包含 actualQuantity，更新实际领用量
+        if (body != null && body.containsKey("actualQuantity")) {
+            req.setActualQuantity(new BigDecimal(body.get("actualQuantity").toString()));
+        } else if (req.getActualQuantity() == null) {
+            // 默认实际量等于申请量
+            req.setActualQuantity(req.getRequestedQuantity());
+        }
 
-                    MaterialRequisition updated = requisitionRepository.save(req);
-                    return ApiResponse.success("领料单已审批通过", updated);
-                })
-                .orElse(ApiResponse.error("领料单不存在: " + requisitionId));
+        MaterialRequisition updated = requisitionRepository.save(req);
+        return ApiResponse.success("领料单已审批通过", updated);
     }
 
     // ==================== 驳回 ====================
@@ -171,21 +171,20 @@ public class MaterialRequisitionController {
             @PathVariable String requisitionId,
             @RequestAttribute("userId") @Parameter(hidden = true) Long approverId,
             @RequestBody(required = false) Map<String, Object> body) {
-        return requisitionRepository.findByIdAndFactoryId(requisitionId, factoryId)
-                .map(req -> {
-                    if (req.getStatus() != MaterialRequisition.Status.SUBMITTED) {
-                        return ApiResponse.<MaterialRequisition>error("只有已提交的领料单可以驳回");
-                    }
-                    req.setStatus(MaterialRequisition.Status.REJECTED);
-                    req.setApprovedBy(approverId);
-                    req.setApprovedAt(LocalDateTime.now());
-                    if (body != null && body.containsKey("reason")) {
-                        req.setNotes(body.get("reason").toString());
-                    }
-                    MaterialRequisition updated = requisitionRepository.save(req);
-                    return ApiResponse.success("领料单已驳回", updated);
-                })
-                .orElse(ApiResponse.error("领料单不存在: " + requisitionId));
+        MaterialRequisition req = requisitionRepository.findByIdAndFactoryId(requisitionId, factoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("领料单", "id", requisitionId));
+        if (req.getStatus() != MaterialRequisition.Status.SUBMITTED) {
+            throw new BusinessException(409, "只有已提交的领料单可以驳回")
+                    .withHint("请刷新领料单列表查看最新状态");
+        }
+        req.setStatus(MaterialRequisition.Status.REJECTED);
+        req.setApprovedBy(approverId);
+        req.setApprovedAt(LocalDateTime.now());
+        if (body != null && body.containsKey("reason")) {
+            req.setNotes(body.get("reason").toString());
+        }
+        MaterialRequisition updated = requisitionRepository.save(req);
+        return ApiResponse.success("领料单已驳回", updated);
     }
 
     // ==================== 日汇总 ====================
