@@ -116,31 +116,54 @@ class ProductSummaryWriter(BaseWriter):
                     batch,
                 )
 
-            # Day 10-12: opt-in cell-level provenance dual-write. records
-            # tuple order is fixed above — index 2=product_id, 4=period_start,
-            # 5=period_end, 6=qty, 7=revenue, 8=avg_price. We anchor the
-            # provenance to the product (entity_type='product') because that
-            # is the spec-canonical entity for sales metrics; store_id is
-            # contextual but not the lineage subject. Wrapped in its own
-            # transaction so a hook failure is isolated from the main INSERT.
+            # Day 10-12 (Phase B C1 fix): opt-in cell-level provenance dual-
+            # write. records tuple order is fixed above — index 2=product_id,
+            # 3=store_id, 4=period_start, 5=period_end, 6=qty, 7=revenue,
+            # 8=avg_price.
+            #
+            # Anchor the provenance to the product (entity_type='product')
+            # because that's the spec-canonical entity for sales metrics. To
+            # preserve store dimensionality (Silver dedup key includes
+            # store_id), we encode store as a compound suffix on field_name:
+            # ``revenue@store_42`` instead of plain ``revenue``. Each (product,
+            # store) pair gets distinct field_provenance dedup keys so a
+            # multi-store upload writes M*N rows successfully instead of
+            # silently queueing N-1 of them as 'field_conflict'. Reader queries
+            # for "all stores" use ``WHERE field_name LIKE 'revenue@store_%'``;
+            # for "specific store" use ``WHERE field_name = 'revenue@store_42'``.
+            #
+            # When store_id IS NULL (rare but possible if dim_store resolution
+            # fell back) we keep the bare field_name so the lineage isn't
+            # synthetically partitioned. conflict_resolver._field_type strips
+            # the ``@xxx`` suffix before _FIELD_TYPE_MAP lookup so the C-7
+            # 30%-diff numeric safety check still works.
+            #
+            # Wrapped in its own transaction so a hook failure is isolated
+            # from the main INSERT.
             if is_provenance_enabled() and records:
                 async with conn.transaction():
                     for rec in records:
                         product_id = rec[2]
+                        store_id_for_prov = rec[3]
                         period_start = rec[4]
                         period_end = rec[5]
                         qty = rec[6]
                         revenue = rec[7]
                         avg_price = rec[8]
+                        suffix = (
+                            f"@store_{store_id_for_prov}"
+                            if store_id_for_prov is not None
+                            else ""
+                        )
                         await write_provenance_for_fields(
                             conn,
                             factory_id=factory_id,
                             entity_type="product",
                             entity_id=product_id,
                             fields={
-                                "revenue": revenue,
-                                "qty_sold": qty,
-                                "avg_unit_price": avg_price,
+                                f"revenue{suffix}": revenue,
+                                f"qty_sold{suffix}": qty,
+                                f"avg_unit_price{suffix}": avg_price,
                             },
                             source_type="product_summary",
                             mapper_method="rule",

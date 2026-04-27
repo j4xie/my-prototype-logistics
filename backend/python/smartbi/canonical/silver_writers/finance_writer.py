@@ -149,23 +149,46 @@ class FinanceWriter(BaseWriter):
                             (subject_id, debit, credit, voucher_date)
                         )
 
-            # Day 10-12: opt-in cell-level provenance dual-write per voucher
-            # row. Anchor to finance_subject (the canonical dimension entity).
-            # valid_from = voucher_date so subsequent reads pick the correct
-            # period's value. valid_to=None → open-ended (a voucher remains
-            # authoritative until a higher-priority source overrides it).
+            # Day 10-12 (Phase B C1 fix): opt-in cell-level provenance dual-
+            # write. Per-voucher cell-level lineage isn't analytically useful —
+            # debits/credits are typically read at (subject, day) granularity,
+            # and per-voucher lineage would explode field_provenance rows
+            # (one upload with 10k vouchers same subject/day → 20k rows, all
+            # but the first as 'field_conflict' admin_queue noise).
+            #
+            # Strategy: roll up to one provenance write per (subject_id,
+            # voucher_date) with SUM(debit_amount) + SUM(credit_amount). The
+            # Silver layer (fact_finance_voucher) retains per-voucher detail
+            # — only the provenance dual-write is rolled up. Vouchers with
+            # NULL voucher_date are skipped from provenance (we can't anchor
+            # without a valid_from); the Silver row still landed normally.
             if provenance_enabled and provenance_records:
+                from collections import defaultdict
+
+                rollup: Dict[
+                    Tuple[int, date], Dict[str, float]
+                ] = defaultdict(
+                    lambda: {"debit_amount": 0.0, "credit_amount": 0.0}
+                )
+                for subject_id, debit, credit, voucher_date in provenance_records:
+                    if subject_id is None or voucher_date is None:
+                        continue
+                    key = (subject_id, voucher_date)
+                    rollup[key]["debit_amount"] += float(debit or 0)
+                    rollup[key]["credit_amount"] += float(credit or 0)
+
+                # Anchor: entity_type='finance_subject'. valid_from=voucher_date
+                # so subsequent reads pick the correct day's value.
+                # valid_to=None → open-ended (a voucher remains authoritative
+                # until a higher-priority source overrides it).
                 async with conn.transaction():
-                    for subject_id, debit, credit, voucher_date in provenance_records:
+                    for (subject_id, voucher_date), totals in rollup.items():
                         await write_provenance_for_fields(
                             conn,
                             factory_id=factory_id,
                             entity_type="finance_subject",
                             entity_id=subject_id,
-                            fields={
-                                "debit_amount": debit,
-                                "credit_amount": credit,
-                            },
+                            fields=totals,
                             source_type="bill_flow",
                             mapper_method="rule",
                             confidence=0.90,

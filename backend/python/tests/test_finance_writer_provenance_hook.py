@@ -44,8 +44,14 @@ def _make_conn_with_transaction():
 
 
 @pytest.mark.asyncio
-async def test_provenance_hook_called_per_inserted_row_when_enabled(monkeypatch):
-    """ENV=1 → 1 hook call per fact row that INSERT succeeded."""
+async def test_provenance_hook_called_per_subject_day_when_enabled(monkeypatch):
+    """ENV=1 → 1 hook call per UNIQUE (subject_id, voucher_date) roll-up.
+
+    Phase B C1 fix: per-voucher provenance was rolled up to per-(subject,
+    day) at the hook to avoid admin_queue noise. This test uses 2 vouchers
+    on DIFFERENT days (same subject) → 2 distinct rollup keys → 2 hook
+    calls (not 2 per-voucher writes that would collide on dedup).
+    """
     monkeypatch.setenv("SMARTBI_ENABLE_PROVENANCE", "1")
 
     rows = [
@@ -195,6 +201,118 @@ async def test_provenance_hook_skipped_when_no_subject_name(monkeypatch):
     assert summary.rows_written == 0
     assert summary.rows_skipped == 1
     assert mock_hook.await_count == 0
+
+
+@pytest.mark.asyncio
+async def test_provenance_hook_rolls_up_same_subject_same_day(monkeypatch):
+    """Phase B C1 fix: 3 vouchers same (subject, day) → 1 hook call with SUM.
+
+    Per-voucher provenance lineage isn't analytically useful and would
+    explode field_provenance rows (10k vouchers same subject/day → 20k rows,
+    all but the first as 'field_conflict' admin_queue noise). Roll-up to
+    one provenance row per (subject_id, voucher_date) preserves daily-
+    subject granularity which is the meaningful query level.
+    """
+    monkeypatch.setenv("SMARTBI_ENABLE_PROVENANCE", "1")
+
+    rows = [
+        _row(
+            {
+                "凭证号": "V001",
+                "凭证日期": "2026-04-20",
+                "科目": "营业收入",
+                "借方": "100",
+                "贷方": "0",
+            }
+        ),
+        _row(
+            {
+                "凭证号": "V002",
+                "凭证日期": "2026-04-20",
+                "科目": "营业收入",
+                "借方": "200",
+                "贷方": "0",
+            }
+        ),
+        _row(
+            {
+                "凭证号": "V003",
+                "凭证日期": "2026-04-20",
+                "科目": "营业收入",
+                "借方": "300",
+                "贷方": "0",
+            }
+        ),
+    ]
+    conn = _make_conn_with_transaction()
+    conn.fetch = AsyncMock(return_value=rows)
+    conn.fetchrow = AsyncMock(return_value={"subject_id": 42})
+    conn.execute = AsyncMock(return_value="INSERT 0 1")
+
+    writer = FinanceWriter(pool=_make_mock_pool(conn), orchestrator=MagicMock())
+
+    with patch(_HOOK_PATH, new_callable=AsyncMock) as mock_hook:
+        mock_hook.return_value = {"written": 2, "queued": 0, "no_change": 0, "skipped_null": 0}
+        summary = await writer.write(upload_id=1, factory_id="F001")
+
+    # Silver layer wrote 3 distinct voucher rows (per-voucher detail retained)
+    assert summary.rows_written == 3
+    # Provenance roll-up: 3 vouchers same (subject, day) → 1 hook call.
+    assert mock_hook.await_count == 1
+    kw = mock_hook.await_args.kwargs
+    assert kw["entity_type"] == "finance_subject"
+    assert kw["entity_id"] == 42
+    assert kw["valid_from"] == date(2026, 4, 20)
+    # SUM(100+200+300) = 600 debit; 0 credit.
+    assert kw["fields"]["debit_amount"] == 600.0
+    assert kw["fields"]["credit_amount"] == 0.0
+
+
+@pytest.mark.asyncio
+async def test_provenance_hook_skips_voucher_with_null_date(monkeypatch):
+    """Phase B C1 fix: voucher with NULL voucher_date can't be anchored.
+
+    Skip from provenance roll-up — Silver layer still wrote the row, but we
+    can't write provenance without a valid_from. The other voucher in the
+    same upload (with a real date) must still produce its provenance row.
+    """
+    monkeypatch.setenv("SMARTBI_ENABLE_PROVENANCE", "1")
+
+    rows = [
+        _row(
+            {
+                "凭证号": "V_NO_DATE",
+                "科目": "营业收入",
+                "借方": "100",
+                "贷方": "0",
+            }
+        ),
+        _row(
+            {
+                "凭证号": "V_OK",
+                "凭证日期": "2026-04-20",
+                "科目": "营业收入",
+                "借方": "200",
+                "贷方": "0",
+            }
+        ),
+    ]
+    conn = _make_conn_with_transaction()
+    conn.fetch = AsyncMock(return_value=rows)
+    conn.fetchrow = AsyncMock(return_value={"subject_id": 42})
+    conn.execute = AsyncMock(return_value="INSERT 0 1")
+
+    writer = FinanceWriter(pool=_make_mock_pool(conn), orchestrator=MagicMock())
+
+    with patch(_HOOK_PATH, new_callable=AsyncMock) as mock_hook:
+        mock_hook.return_value = {"written": 2, "queued": 0, "no_change": 0, "skipped_null": 0}
+        await writer.write(upload_id=1, factory_id="F001")
+
+    # NULL-date voucher doesn't enter rollup → only 1 hook call (the dated one).
+    assert mock_hook.await_count == 1
+    kw = mock_hook.await_args.kwargs
+    assert kw["valid_from"] == date(2026, 4, 20)
+    assert kw["fields"]["debit_amount"] == 200.0
 
 
 @pytest.mark.asyncio

@@ -96,8 +96,18 @@ _FIELD_TYPE_MAP: Dict[str, str] = {
 
 
 def _field_type(field_name: str) -> str:
-    """Return ``'decimal'`` / ``'int'`` / ``'string'`` / ``'array'`` / ``'object'``."""
-    return _FIELD_TYPE_MAP.get(field_name, "string")
+    """Return ``'decimal'`` / ``'int'`` / ``'string'`` / ``'array'`` / ``'object'``.
+
+    C1 (Day 13+ Phase B): strips compound suffixes (e.g. ``'@store_42'``,
+    ``'@source_<hash>'``) before ``_FIELD_TYPE_MAP`` lookup so that
+    ``'revenue@store_42'`` resolves to the same type as ``'revenue'``.
+    Without this strip the compound names would all fall to ``'string'``,
+    breaking C-7's 30%-diff numeric safety check (numeric churn would be
+    treated as opaque-string disagreement and force every multi-store
+    upload through the admin queue).
+    """
+    base = field_name.split("@", 1)[0]
+    return _FIELD_TYPE_MAP.get(base, "string")
 
 
 async def _get_factory_config(

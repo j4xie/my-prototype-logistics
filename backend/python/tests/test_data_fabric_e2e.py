@@ -119,6 +119,8 @@ async def clean_tenant(pg_pool: "asyncpg.Pool") -> AsyncIterator[None]:
             "dim_review_summary",
             "fact_finance_voucher",
             "fact_inventory_snapshot",
+            "dim_finance_subject",  # Phase B C1 e2e — finance writer test
+            "dim_ingredient",       # Phase B C1 e2e — inventory writer test
             "entity_resolution_history",
             "entity_resolution_admin_queue",
             "dim_product",
@@ -1399,7 +1401,9 @@ async def test_b_writer_dual_write_provenance_when_env_set(
             assert agg_count == 1
 
             # 2. field_provenance has 3 rows for this product (revenue, qty,
-            #    avg_unit_price), all source_type='product_summary'.
+            #    avg_unit_price), all source_type='product_summary'. Phase B
+            #    C1 fix: field_name now encodes the store dimension as a
+            #    ``@store_<id>`` suffix, so e.g. revenue → ``revenue@store_X``.
             prov_rows = await conn.fetch(
                 """
                 SELECT field_name, field_value, source_type, mapper_method,
@@ -1414,7 +1418,14 @@ async def test_b_writer_dual_write_provenance_when_env_set(
                 product_id,
             )
             field_names = sorted(r["field_name"] for r in prov_rows)
-            assert field_names == ["avg_unit_price", "qty_sold", "revenue"], (
+            expected_names = sorted(
+                [
+                    f"avg_unit_price@store_{store_id}",
+                    f"qty_sold@store_{store_id}",
+                    f"revenue@store_{store_id}",
+                ]
+            )
+            assert field_names == expected_names, (
                 f"expected 3 provenance fields, got {field_names}"
             )
             for r in prov_rows:
@@ -1424,12 +1435,14 @@ async def test_b_writer_dual_write_provenance_when_env_set(
                 assert float(r["confidence"]) == 0.85
 
             # 3. read_authoritative_value returns each value correctly
-            #    (numerics: 300 revenue, 10 qty, 30 avg_price).
-            for fname, expected in [
+            #    (numerics: 300 revenue, 10 qty, 30 avg_price). Field names
+            #    must include the @store_<id> suffix (Phase B C1 fix).
+            for fname_base, expected in [
                 ("revenue", 300.0),
                 ("qty_sold", 10.0),
                 ("avg_unit_price", 30.0),
             ]:
+                fname = f"{fname_base}@store_{store_id}"
                 pv = await read_authoritative_value(
                     conn, TEST_FACTORY, "product", product_id, fname
                 )
@@ -1665,3 +1678,593 @@ async def test_resolve_conflict_serializes_concurrent_same_cell_writes(
             assert row_count == 1, (
                 f"expected exactly 1 active provenance row, found {row_count}"
             )
+
+
+# ── Phase B C1 fix: anchor dimensionality e2e tests ──────────────────────────
+
+
+@pytest.mark.integration
+async def test_product_summary_dual_write_multi_store_no_admin_queue_noise(
+    pg_pool: "asyncpg.Pool", clean_tenant: None, monkeypatch
+) -> None:
+    """Phase B C1 verification: 2 stores × 1 product × 1 upload writes
+    distinct provenance rows per store, 0 admin_queue 'field_conflict'.
+
+    Pre-fix: provenance dedup key = (factory, product, "revenue", period) so
+    store 1 writes successfully but store 2's revenue (different value) hits
+    same dedup key → silently enqueued as 'field_conflict' admin_queue noise.
+    Post-fix: field_name encodes store dimension → store 1 writes
+    'revenue@store_X' and store 2 writes 'revenue@store_Y' — distinct dedup
+    keys, both succeed, admin_queue stays empty.
+    """
+    monkeypatch.setenv("SMARTBI_ENABLE_PROVENANCE", "1")
+    from smartbi.canonical.provenance import invalidate_factory_config_cache
+    from smartbi.canonical.provenance._writer_hook import (
+        invalidate_provenance_flag_cache,
+    )
+    from smartbi.canonical.silver_writers import ProductSummaryWriter
+    from smartbi.canonical.silver_writers.base import ResolveResult
+
+    invalidate_factory_config_cache()
+    invalidate_provenance_flag_cache()
+
+    async def _setup(conn: "asyncpg.Connection") -> None:
+        await conn.execute(
+            "SELECT set_config('app.factory_id', $1, false)", TEST_FACTORY
+        )
+
+    scoped_pool = await asyncpg.create_pool(
+        PG_DSN, min_size=1, max_size=2, timeout=5, setup=_setup
+    )
+    try:
+        async with scoped_pool.acquire() as conn:
+            store_a_id = await _seed_dim_store(conn, TEST_FACTORY, "门店A_C1")
+            store_b_id = await _seed_dim_store(conn, TEST_FACTORY, "门店B_C1")
+            product_id = await _seed_dim_product(
+                conn, TEST_FACTORY, "招牌C1", "招牌C1"
+            )
+
+            upload_row = await conn.fetchrow(
+                """
+                INSERT INTO smart_bi_pg_excel_uploads
+                  (factory_id, file_name, upload_status)
+                VALUES ($1, $2, 'COMPLETED')
+                RETURNING id
+                """,
+                TEST_FACTORY,
+                f"e2e_c1_ps_{int(time.time())}.xlsx",
+            )
+            assert upload_row is not None
+            upload_id = int(upload_row["id"])
+
+            # 2 rows: same product, two different stores, distinct revenue.
+            for store_name, qty, revenue in (
+                ("门店A_C1", "10", "300"),
+                ("门店B_C1", "5", "150"),
+            ):
+                row_data: Dict[str, Any] = {
+                    "门店": store_name,
+                    "商品名称": "招牌C1",
+                    "单卖数量": qty,
+                    "销售金额": revenue,
+                }
+                await conn.execute(
+                    """
+                    INSERT INTO smart_bi_dynamic_data
+                      (factory_id, upload_id, row_data)
+                    VALUES ($1, $2, $3::jsonb)
+                    """,
+                    TEST_FACTORY,
+                    upload_id,
+                    json.dumps(row_data),
+                )
+
+        # Dispatch correct store_id based on row's store_name. Capture-by-
+        # value pattern for the multiple distinct ResolveResult returns.
+        async def _resolve_store(name: Optional[str], factory_id: str, context: Any):
+            if name == "门店A_C1":
+                return ResolveResult(
+                    entity_id=store_a_id, is_tentative=False, confidence=0.95
+                )
+            return ResolveResult(
+                entity_id=store_b_id, is_tentative=False, confidence=0.95
+            )
+
+        async def _resolve_product(
+            name: Optional[str], factory_id: str, context: Any
+        ):
+            return ResolveResult(
+                entity_id=product_id, is_tentative=False, confidence=0.95
+            )
+
+        writer = ProductSummaryWriter(pool=scoped_pool, orchestrator=MagicMock())
+        writer._resolve_store = _resolve_store  # type: ignore[method-assign]
+        writer._resolve_product = _resolve_product  # type: ignore[method-assign]
+
+        summary = await writer.write(upload_id=upload_id, factory_id=TEST_FACTORY)
+        assert summary.rows_written == 2
+
+        async with scoped_pool.acquire() as conn:
+            # 1. agg_product_period: 2 rows (one per store)
+            agg_count = await conn.fetchval(
+                "SELECT COUNT(*) FROM agg_product_period "
+                "WHERE factory_id = $1 AND upload_id = $2",
+                TEST_FACTORY,
+                upload_id,
+            )
+            assert agg_count == 2, f"expected 2 agg rows, got {agg_count}"
+
+            # 2. field_provenance: 6 rows (3 fields × 2 stores), all with
+            #    @store_<id> suffix. Each (product, field_name) pair has its
+            #    own dedup key — all 6 rows are active (not superseded).
+            prov_rows = await conn.fetch(
+                """
+                SELECT field_name, field_value, source_type, superseded_by_id
+                  FROM field_provenance
+                 WHERE factory_id = $1
+                   AND entity_type = 'product'
+                   AND entity_id = $2
+                 ORDER BY field_name
+                """,
+                TEST_FACTORY,
+                product_id,
+            )
+            assert len(prov_rows) == 6, (
+                f"expected 6 provenance rows (3 fields × 2 stores), "
+                f"got {len(prov_rows)}: {[r['field_name'] for r in prov_rows]}"
+            )
+            for r in prov_rows:
+                assert "@store_" in r["field_name"], (
+                    f"field_name {r['field_name']!r} missing @store_ suffix"
+                )
+                assert r["source_type"] == "product_summary"
+                assert r["superseded_by_id"] is None  # all active
+            field_names = sorted(r["field_name"] for r in prov_rows)
+            expected = sorted(
+                [
+                    f"avg_unit_price@store_{store_a_id}",
+                    f"avg_unit_price@store_{store_b_id}",
+                    f"qty_sold@store_{store_a_id}",
+                    f"qty_sold@store_{store_b_id}",
+                    f"revenue@store_{store_a_id}",
+                    f"revenue@store_{store_b_id}",
+                ]
+            )
+            assert field_names == expected, (
+                f"unexpected field_names: {field_names} vs {expected}"
+            )
+
+            # 3. admin_queue has 0 'field_conflict' rows for this factory
+            queue_count = await conn.fetchval(
+                """
+                SELECT COUNT(*) FROM entity_resolution_admin_queue
+                 WHERE factory_id = $1 AND entity_type = 'field_conflict'
+                """,
+                TEST_FACTORY,
+            )
+            assert queue_count == 0, (
+                f"expected 0 'field_conflict' rows, got {queue_count} — "
+                "the C1 anchor-dim mismatch is back"
+            )
+    finally:
+        await scoped_pool.close()
+
+
+@pytest.mark.integration
+async def test_inventory_dual_write_multi_store_no_admin_queue_noise(
+    pg_pool: "asyncpg.Pool", clean_tenant: None, monkeypatch
+) -> None:
+    """Phase B C1 verification for InventoryWriter: 2 stores × 1 ingredient
+    writes distinct provenance rows, 0 admin_queue 'field_conflict' noise.
+    """
+    monkeypatch.setenv("SMARTBI_ENABLE_PROVENANCE", "1")
+    from smartbi.canonical.provenance import invalidate_factory_config_cache
+    from smartbi.canonical.provenance._writer_hook import (
+        invalidate_provenance_flag_cache,
+    )
+    from smartbi.canonical.silver_writers import InventoryWriter
+    from smartbi.canonical.silver_writers.base import ResolveResult
+
+    invalidate_factory_config_cache()
+    invalidate_provenance_flag_cache()
+
+    async def _setup(conn: "asyncpg.Connection") -> None:
+        await conn.execute(
+            "SELECT set_config('app.factory_id', $1, false)", TEST_FACTORY
+        )
+
+    scoped_pool = await asyncpg.create_pool(
+        PG_DSN, min_size=1, max_size=2, timeout=5, setup=_setup
+    )
+    try:
+        async with scoped_pool.acquire() as conn:
+            store_a_id = await _seed_dim_store(conn, TEST_FACTORY, "门店A_INV")
+            store_b_id = await _seed_dim_store(conn, TEST_FACTORY, "门店B_INV")
+            # Seed dim_ingredient row for "猪肉_C1". source_pk is NOT NULL +
+            # uniquely keyed by (factory_id, source_pk) per
+            # 2026_04_24_silver_restaurant_ops.sql; use a synthetic test PK.
+            ingredient_row = await conn.fetchrow(
+                """
+                INSERT INTO dim_ingredient
+                  (factory_id, source_pk, name, normalized_name)
+                VALUES ($1, $2, $3, $4)
+                ON CONFLICT (factory_id, source_pk) DO UPDATE
+                  SET updated_at = NOW()
+                RETURNING ingredient_id
+                """,
+                TEST_FACTORY,
+                "test_c1_pork_pk",
+                "猪肉_C1",
+                "猪肉_c1",
+            )
+            assert ingredient_row is not None
+            ingredient_id = int(ingredient_row["ingredient_id"])
+
+            upload_row = await conn.fetchrow(
+                """
+                INSERT INTO smart_bi_pg_excel_uploads
+                  (factory_id, file_name, upload_status)
+                VALUES ($1, $2, 'COMPLETED')
+                RETURNING id
+                """,
+                TEST_FACTORY,
+                f"e2e_c1_inv_{int(time.time())}.xlsx",
+            )
+            assert upload_row is not None
+            upload_id = int(upload_row["id"])
+
+            for store_name, qty in (("门店A_INV", "12.5"), ("门店B_INV", "8.0")):
+                row_data: Dict[str, Any] = {
+                    "门店": store_name,
+                    "物料": "猪肉_C1",
+                    "库存数量": qty,
+                    "单位": "kg",
+                    "盘点日期": "2026-04-22",
+                }
+                await conn.execute(
+                    """
+                    INSERT INTO smart_bi_dynamic_data
+                      (factory_id, upload_id, row_data)
+                    VALUES ($1, $2, $3::jsonb)
+                    """,
+                    TEST_FACTORY,
+                    upload_id,
+                    json.dumps(row_data),
+                )
+
+        async def _resolve_store(name: Optional[str], factory_id: str, context: Any):
+            if name == "门店A_INV":
+                return ResolveResult(
+                    entity_id=store_a_id, is_tentative=False, confidence=0.95
+                )
+            return ResolveResult(
+                entity_id=store_b_id, is_tentative=False, confidence=0.95
+            )
+
+        writer = InventoryWriter(pool=scoped_pool, orchestrator=MagicMock())
+        writer._resolve_store = _resolve_store  # type: ignore[method-assign]
+
+        summary = await writer.write(upload_id=upload_id, factory_id=TEST_FACTORY)
+        assert summary.rows_written == 2
+
+        async with scoped_pool.acquire() as conn:
+            # 1. fact_inventory_snapshot: 2 rows
+            snap_count = await conn.fetchval(
+                "SELECT COUNT(*) FROM fact_inventory_snapshot "
+                "WHERE factory_id = $1 AND upload_id = $2",
+                TEST_FACTORY,
+                upload_id,
+            )
+            assert snap_count == 2
+
+            # 2. field_provenance: 4 rows (2 fields × 2 stores), all with
+            #    @store_<id> suffix.
+            prov_rows = await conn.fetch(
+                """
+                SELECT field_name FROM field_provenance
+                 WHERE factory_id = $1
+                   AND entity_type = 'ingredient'
+                   AND entity_id = $2
+                 ORDER BY field_name
+                """,
+                TEST_FACTORY,
+                ingredient_id,
+            )
+            assert len(prov_rows) == 4, (
+                f"expected 4 provenance rows (2 fields × 2 stores), "
+                f"got {len(prov_rows)}: {[r['field_name'] for r in prov_rows]}"
+            )
+            for r in prov_rows:
+                assert "@store_" in r["field_name"]
+            field_names = sorted(r["field_name"] for r in prov_rows)
+            expected = sorted(
+                [
+                    f"stock_qty@store_{store_a_id}",
+                    f"stock_qty@store_{store_b_id}",
+                    f"unit@store_{store_a_id}",
+                    f"unit@store_{store_b_id}",
+                ]
+            )
+            assert field_names == expected
+
+            # 3. admin_queue: 0 'field_conflict' rows
+            queue_count = await conn.fetchval(
+                """
+                SELECT COUNT(*) FROM entity_resolution_admin_queue
+                 WHERE factory_id = $1 AND entity_type = 'field_conflict'
+                """,
+                TEST_FACTORY,
+            )
+            assert queue_count == 0
+    finally:
+        await scoped_pool.close()
+
+
+@pytest.mark.integration
+async def test_finance_dual_write_multi_voucher_same_day_rolls_up(
+    pg_pool: "asyncpg.Pool", clean_tenant: None, monkeypatch
+) -> None:
+    """Phase B C1 verification for FinanceWriter: 3 vouchers same (subject,
+    day) roll up to 1 provenance row with SUM, 0 admin_queue noise.
+
+    Pre-fix: 3 per-voucher provenance writes hit the same dedup key
+    (factory, finance_subject, "debit_amount", voucher_date) → first
+    succeeds, subsequent 2 enqueue as 'field_conflict' noise. Post-fix
+    rolls up at the hook so debit_amount = SUM(100+200+300) = 600 lands
+    in 1 row.
+    """
+    monkeypatch.setenv("SMARTBI_ENABLE_PROVENANCE", "1")
+    from smartbi.canonical.provenance import invalidate_factory_config_cache
+    from smartbi.canonical.provenance._writer_hook import (
+        invalidate_provenance_flag_cache,
+    )
+    from smartbi.canonical.silver_writers import FinanceWriter
+
+    invalidate_factory_config_cache()
+    invalidate_provenance_flag_cache()
+
+    async def _setup(conn: "asyncpg.Connection") -> None:
+        await conn.execute(
+            "SELECT set_config('app.factory_id', $1, false)", TEST_FACTORY
+        )
+
+    scoped_pool = await asyncpg.create_pool(
+        PG_DSN, min_size=1, max_size=2, timeout=5, setup=_setup
+    )
+    try:
+        async with scoped_pool.acquire() as conn:
+            upload_row = await conn.fetchrow(
+                """
+                INSERT INTO smart_bi_pg_excel_uploads
+                  (factory_id, file_name, upload_status)
+                VALUES ($1, $2, 'COMPLETED')
+                RETURNING id
+                """,
+                TEST_FACTORY,
+                f"e2e_c1_fin_{int(time.time())}.xlsx",
+            )
+            assert upload_row is not None
+            upload_id = int(upload_row["id"])
+
+            # 3 vouchers — same subject, same day.
+            for vno, debit in (("V001_C1", "100"), ("V002_C1", "200"), ("V003_C1", "300")):
+                row_data: Dict[str, Any] = {
+                    "凭证号": vno,
+                    "凭证日期": "2026-04-20",
+                    "科目": "营业收入_C1",
+                    "借方": debit,
+                    "贷方": "0",
+                }
+                await conn.execute(
+                    """
+                    INSERT INTO smart_bi_dynamic_data
+                      (factory_id, upload_id, row_data)
+                    VALUES ($1, $2, $3::jsonb)
+                    """,
+                    TEST_FACTORY,
+                    upload_id,
+                    json.dumps(row_data),
+                )
+
+        writer = FinanceWriter(pool=scoped_pool, orchestrator=MagicMock())
+        summary = await writer.write(upload_id=upload_id, factory_id=TEST_FACTORY)
+        assert summary.rows_written == 3, (
+            f"Silver layer must retain per-voucher detail, got {summary.rows_written}"
+        )
+
+        async with scoped_pool.acquire() as conn:
+            # 1. fact_finance_voucher: 3 rows (per-voucher detail preserved)
+            voucher_count = await conn.fetchval(
+                "SELECT COUNT(*) FROM fact_finance_voucher "
+                "WHERE factory_id = $1 AND upload_id = $2",
+                TEST_FACTORY,
+                upload_id,
+            )
+            assert voucher_count == 3
+
+            # 2. dim_finance_subject: 1 subject (营业收入_C1) — find subject_id
+            subject_id_row = await conn.fetchrow(
+                """
+                SELECT subject_id FROM dim_finance_subject
+                 WHERE factory_id = $1 AND name = $2
+                """,
+                TEST_FACTORY,
+                "营业收入_C1",
+            )
+            assert subject_id_row is not None
+            subject_id = int(subject_id_row["subject_id"])
+
+            # 3. field_provenance: 2 rows (debit_amount + credit_amount)
+            #    rolled up to single (subject, day) anchor, NOT 6 rows from
+            #    per-voucher writes.
+            prov_rows = await conn.fetch(
+                """
+                SELECT field_name, field_value FROM field_provenance
+                 WHERE factory_id = $1
+                   AND entity_type = 'finance_subject'
+                   AND entity_id = $2
+                 ORDER BY field_name
+                """,
+                TEST_FACTORY,
+                subject_id,
+            )
+            assert len(prov_rows) == 2, (
+                f"expected 2 provenance rows (debit + credit roll-up), "
+                f"got {len(prov_rows)}: {[r['field_name'] for r in prov_rows]}"
+            )
+            field_names = [r["field_name"] for r in prov_rows]
+            assert field_names == ["credit_amount", "debit_amount"]
+
+            # debit_amount = SUM(100, 200, 300) = 600
+            for r in prov_rows:
+                fv = r["field_value"]
+                if isinstance(fv, str):
+                    try:
+                        fv = json.loads(fv)
+                    except json.JSONDecodeError:
+                        pass
+                if r["field_name"] == "debit_amount":
+                    assert float(fv) == 600.0, (
+                        f"roll-up SUM debit failed: got {fv}, want 600.0"
+                    )
+                if r["field_name"] == "credit_amount":
+                    assert float(fv) == 0.0
+
+            # 4. admin_queue: 0 'field_conflict' rows
+            queue_count = await conn.fetchval(
+                """
+                SELECT COUNT(*) FROM entity_resolution_admin_queue
+                 WHERE factory_id = $1 AND entity_type = 'field_conflict'
+                """,
+                TEST_FACTORY,
+            )
+            assert queue_count == 0
+    finally:
+        await scoped_pool.close()
+
+
+@pytest.mark.integration
+async def test_review_dual_write_anchor_correct_sanity(
+    pg_pool: "asyncpg.Pool", clean_tenant: None, monkeypatch
+) -> None:
+    """Phase B C1 sanity: ReviewWriter aggregates per-upload BEFORE INSERT,
+    so the audit-flagged "drops review-instance granularity" is a false
+    positive — the writer's INSERT into dim_review_summary is itself a
+    single row per upload (1 product_id_for_summary + 1 store_id_for_summary).
+    Instance-level lineage isn't a concept here; the cell-level provenance
+    correctly anchors the aggregate values to the canonical product entity.
+
+    This test verifies the existing happy-path still works after the Phase B
+    edits to product/inventory/finance writers (no regression to Review).
+    Same-upload N reviews → 1 dim_review_summary row → 1 hook call → 4
+    provenance rows (avg_rating / review_count / positive_count / negative_count),
+    0 admin_queue noise.
+    """
+    monkeypatch.setenv("SMARTBI_ENABLE_PROVENANCE", "1")
+    from smartbi.canonical.provenance import invalidate_factory_config_cache
+    from smartbi.canonical.provenance._writer_hook import (
+        invalidate_provenance_flag_cache,
+    )
+    from smartbi.canonical.silver_writers import ReviewWriter
+    from smartbi.canonical.silver_writers.base import ResolveResult
+
+    invalidate_factory_config_cache()
+    invalidate_provenance_flag_cache()
+
+    async def _setup(conn: "asyncpg.Connection") -> None:
+        await conn.execute(
+            "SELECT set_config('app.factory_id', $1, false)", TEST_FACTORY
+        )
+
+    scoped_pool = await asyncpg.create_pool(
+        PG_DSN, min_size=1, max_size=2, timeout=5, setup=_setup
+    )
+    try:
+        async with scoped_pool.acquire() as conn:
+            store_id = await _seed_dim_store(conn, TEST_FACTORY, "门店R_C1")
+            product_id = await _seed_dim_product(
+                conn, TEST_FACTORY, "招牌R_C1", "招牌R_C1"
+            )
+
+            upload_row = await conn.fetchrow(
+                """
+                INSERT INTO smart_bi_pg_excel_uploads
+                  (factory_id, file_name, upload_status)
+                VALUES ($1, $2, 'COMPLETED')
+                RETURNING id
+                """,
+                TEST_FACTORY,
+                f"e2e_c1_rev_{int(time.time())}.xlsx",
+            )
+            assert upload_row is not None
+            upload_id = int(upload_row["id"])
+
+            for rating, txt in (("5", "好吃"), ("1", "难吃"), ("4", "还行")):
+                row_data: Dict[str, Any] = {
+                    "门店": "门店R_C1",
+                    "商品名称": "招牌R_C1",
+                    "评分": rating,
+                    "评论内容": txt,
+                    "评论日期": "2026-04-25",
+                }
+                await conn.execute(
+                    """
+                    INSERT INTO smart_bi_dynamic_data
+                      (factory_id, upload_id, row_data)
+                    VALUES ($1, $2, $3::jsonb)
+                    """,
+                    TEST_FACTORY,
+                    upload_id,
+                    json.dumps(row_data),
+                )
+
+        async def _resolve_store(_, factory_id: str, context: Any):
+            return ResolveResult(
+                entity_id=store_id, is_tentative=False, confidence=0.95
+            )
+
+        async def _resolve_product(_, factory_id: str, context: Any):
+            return ResolveResult(
+                entity_id=product_id, is_tentative=False, confidence=0.95
+            )
+
+        writer = ReviewWriter(pool=scoped_pool, orchestrator=MagicMock())
+        writer._resolve_store = _resolve_store  # type: ignore[method-assign]
+        writer._resolve_product = _resolve_product  # type: ignore[method-assign]
+
+        summary = await writer.write(upload_id=upload_id, factory_id=TEST_FACTORY)
+        assert summary.rows_written == 3
+
+        async with scoped_pool.acquire() as conn:
+            # field_provenance: 4 rows (avg_rating / review_count /
+            # positive_count / negative_count) anchored to product.
+            prov_rows = await conn.fetch(
+                """
+                SELECT field_name, field_value FROM field_provenance
+                 WHERE factory_id = $1
+                   AND entity_type = 'product'
+                   AND entity_id = $2
+                 ORDER BY field_name
+                """,
+                TEST_FACTORY,
+                product_id,
+            )
+            field_names = sorted(r["field_name"] for r in prov_rows)
+            assert field_names == [
+                "avg_rating",
+                "negative_count",
+                "positive_count",
+                "review_count",
+            ], f"got {field_names}"
+
+            # admin_queue: 0 'field_conflict'
+            queue_count = await conn.fetchval(
+                """
+                SELECT COUNT(*) FROM entity_resolution_admin_queue
+                 WHERE factory_id = $1 AND entity_type = 'field_conflict'
+                """,
+                TEST_FACTORY,
+            )
+            assert queue_count == 0
+    finally:
+        await scoped_pool.close()

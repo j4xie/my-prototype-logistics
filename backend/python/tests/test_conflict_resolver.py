@@ -160,6 +160,26 @@ def test_field_type_classification():
     assert cr._field_type("totally_unknown_field") == "string"
 
 
+def test_field_type_strips_compound_suffix():
+    """Phase B C1 fix: ``revenue@store_42`` resolves like ``revenue``.
+
+    Without the strip, compound field_names from Silver writers (Product
+    Summary / Inventory) would all fall to ``'string'`` and the C-7
+    30%-diff numeric safety check would treat numeric churn as opaque
+    string disagreement — every multi-store upload would force the value
+    through admin_queue.
+    """
+    assert cr._field_type("revenue@store_42") == "decimal"
+    assert cr._field_type("qty_sold@store_42") == "decimal"
+    assert cr._field_type("avg_unit_price@store_99") == "decimal"
+    assert cr._field_type("stock_qty@store_1") == "decimal"
+    assert cr._field_type("unit@store_1") == "string"
+    # Unknown base + suffix still falls to default 'string'.
+    assert cr._field_type("nonsense@store_1") == "string"
+    # Multiple @ chars: only the first split point matters.
+    assert cr._field_type("revenue@store_1@nested") == "decimal"
+
+
 def test_values_equal_decimal_tolerance():
     """Float-tolerance equality: numbers within 1e-9 considered equal."""
     assert cr._values_equal(1.0, 1.0 + 1e-12, "decimal")

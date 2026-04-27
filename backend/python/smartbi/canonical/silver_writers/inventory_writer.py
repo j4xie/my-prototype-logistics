@@ -147,29 +147,46 @@ class InventoryWriter(BaseWriter):
                     batch,
                 )
 
-            # Day 10-12: opt-in cell-level provenance dual-write. records tuple
-            # order is fixed above — index 2=ingredient_id, 4=snapshot_date,
-            # 5=stock_qty, 6=unit. Anchor to ingredient (the canonical entity).
-            # safe_stock_qty / reorder_point come from dim_ingredient_threshold,
-            # not from this upload, so we deliberately don't record provenance
-            # for them — that's the threshold table's responsibility, not the
+            # Day 10-12 (Phase B C1 fix): opt-in cell-level provenance dual-
+            # write. records tuple order is fixed above — index 2=ingredient_id,
+            # 3=store_id, 4=snapshot_date, 5=stock_qty, 6=unit. Anchor to
+            # ingredient (the canonical entity).
+            #
+            # To preserve store dimensionality (Silver dedup key includes
+            # store_id), we encode store as a compound suffix on field_name:
+            # ``stock_qty@store_42`` instead of plain ``stock_qty``. Each
+            # (ingredient, store) pair gets distinct field_provenance dedup
+            # keys so multi-store inventory uploads write N rows successfully
+            # instead of N-1 ending up as 'field_conflict' admin_queue noise.
+            # When store_id IS NULL (store-less / global inventory) we use the
+            # bare field_name so global lineage isn't synthetically partitioned.
+            #
+            # safe_stock_qty / reorder_point come from dim_ingredient_threshold
+            # (not the upload), so we deliberately don't record provenance for
+            # them — that's the threshold table's responsibility, not the
             # inventory writer's. Wrapped in its own transaction so a hook
             # failure is isolated from the main INSERT.
             if is_provenance_enabled() and records:
                 async with conn.transaction():
                     for rec in records:
                         ingredient_id = rec[2]
+                        store_id_for_prov = rec[3]
                         snapshot_date = rec[4]
                         stock_qty = rec[5]
                         unit = rec[6]
+                        suffix = (
+                            f"@store_{store_id_for_prov}"
+                            if store_id_for_prov is not None
+                            else ""
+                        )
                         await write_provenance_for_fields(
                             conn,
                             factory_id=factory_id,
                             entity_type="ingredient",
                             entity_id=ingredient_id,
                             fields={
-                                "stock_qty": stock_qty,
-                                "unit": unit,
+                                f"stock_qty{suffix}": stock_qty,
+                                f"unit{suffix}": unit,
                             },
                             source_type="inventory",
                             mapper_method="rule",
