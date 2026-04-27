@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import time
 from datetime import date
 from typing import Any, Dict, List, Optional, Tuple
@@ -29,6 +30,8 @@ from smartbi.canonical.provenance._writer_hook import (
 from ._helpers import canonical_value, to_date, to_float, unwrap_row
 from .base import BaseWriter, WriteSummary
 
+
+logger = logging.getLogger(__name__)
 
 _FACT_BATCH_SIZE = 5000
 
@@ -208,8 +211,14 @@ class ReviewWriter(BaseWriter):
                     prov_entity_id = None
 
                 if prov_entity_id is not None:
+                    # MIN-3 (2026-04-27): aggregate hook return counters and
+                    # log a single summary WARNING when any error_swallowed
+                    # occurred. ReviewWriter only writes ONE provenance call
+                    # per upload (aggregate-then-INSERT), so this is a
+                    # 1-record summary; we still keep the pattern consistent
+                    # with the other 3 writers.
                     async with conn.transaction():
-                        await write_provenance_for_fields(
+                        counts = await write_provenance_for_fields(
                             conn,
                             factory_id=factory_id,
                             entity_type=prov_entity_type,
@@ -226,6 +235,15 @@ class ReviewWriter(BaseWriter):
                             source_upload_id=upload_id,
                             valid_from=period_start,
                             valid_to=period_end,
+                        )
+                    swallowed = counts.get("error_swallowed", 0)
+                    if swallowed > 0:
+                        logger.warning(
+                            "ReviewWriter provenance: error_swallowed=%d "
+                            "out of 4 fields, upload_id=%s factory=%s",
+                            swallowed,
+                            upload_id,
+                            factory_id,
                         )
 
         return WriteSummary(

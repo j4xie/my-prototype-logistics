@@ -17,6 +17,7 @@ Default OFF.
 from __future__ import annotations
 
 import hashlib
+import logging
 import re
 import time
 from datetime import date
@@ -33,6 +34,8 @@ from .base import BaseWriter, WriteSummary
 if TYPE_CHECKING:
     import asyncpg
 
+
+logger = logging.getLogger(__name__)
 
 _DEFAULT_CATEGORY = "unknown"
 _WHITESPACE_RE = re.compile(r"\s+")
@@ -165,6 +168,28 @@ class FinanceWriter(BaseWriter):
             if provenance_enabled and provenance_records:
                 from collections import defaultdict
 
+                # IMP-2 (2026-04-27): observability for silent NULL-anchor drops.
+                # Rollup loop below skips rows where subject_id or voucher_date is
+                # NULL — without this WARNING log, those skipped rows leave NO trace
+                # (no admin_queue, no metric). One log line per upload-batch keeps
+                # noise low while making the silent path visible to ops.
+                null_anchor_skipped = sum(
+                    1
+                    for (subject_id, _debit, _credit, voucher_date)
+                    in provenance_records
+                    if subject_id is None or voucher_date is None
+                )
+                if null_anchor_skipped > 0:
+                    logger.warning(
+                        "FinanceWriter provenance: %d/%d rows skipped "
+                        "(NULL subject_id or voucher_date), "
+                        "upload_id=%s factory=%s",
+                        null_anchor_skipped,
+                        len(provenance_records),
+                        upload_id,
+                        factory_id,
+                    )
+
                 rollup: Dict[
                     Tuple[int, date], Dict[str, float]
                 ] = defaultdict(
@@ -181,9 +206,17 @@ class FinanceWriter(BaseWriter):
                 # so subsequent reads pick the correct day's value.
                 # valid_to=None → open-ended (a voucher remains authoritative
                 # until a higher-priority source overrides it).
+                # MIN-3 (2026-04-27): aggregate hook return counters per
+                # rollup-batch and log a single summary WARNING when any
+                # error_swallowed occurred. Per-error WARNING already lives in
+                # _writer_hook.py; this is the batch-level rollup so ops can
+                # alert on "FinanceWriter provenance: error_swallowed=" lines
+                # without scraping per-error noise.
+                total_swallowed = 0
+                total_rows = 0
                 async with conn.transaction():
                     for (subject_id, voucher_date), totals in rollup.items():
-                        await write_provenance_for_fields(
+                        counts = await write_provenance_for_fields(
                             conn,
                             factory_id=factory_id,
                             entity_type="finance_subject",
@@ -195,6 +228,17 @@ class FinanceWriter(BaseWriter):
                             source_upload_id=upload_id,
                             valid_from=voucher_date,
                         )
+                        total_swallowed += counts.get("error_swallowed", 0)
+                        total_rows += 1
+                if total_swallowed > 0:
+                    logger.warning(
+                        "FinanceWriter provenance: error_swallowed=%d across "
+                        "%d rollup rows, upload_id=%s factory=%s",
+                        total_swallowed,
+                        total_rows,
+                        upload_id,
+                        factory_id,
+                    )
 
         return WriteSummary(
             rows_written=rows_written,

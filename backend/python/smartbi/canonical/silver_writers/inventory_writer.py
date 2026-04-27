@@ -17,6 +17,7 @@ Default OFF.
 """
 from __future__ import annotations
 
+import logging
 import re
 import time
 from datetime import date
@@ -33,6 +34,8 @@ from .base import BaseWriter, WriteSummary
 if TYPE_CHECKING:
     import asyncpg
 
+
+logger = logging.getLogger(__name__)
 
 _BATCH_SIZE = 5000
 _WHITESPACE_RE = re.compile(r"\s+")
@@ -167,6 +170,10 @@ class InventoryWriter(BaseWriter):
             # inventory writer's. Wrapped in its own transaction so a hook
             # failure is isolated from the main INSERT.
             if is_provenance_enabled() and records:
+                # MIN-3 (2026-04-27): aggregate hook return counters and log a
+                # single summary WARNING per upload-batch when any
+                # error_swallowed occurred.
+                total_swallowed = 0
                 async with conn.transaction():
                     for rec in records:
                         ingredient_id = rec[2]
@@ -179,7 +186,7 @@ class InventoryWriter(BaseWriter):
                             if store_id_for_prov is not None
                             else ""
                         )
-                        await write_provenance_for_fields(
+                        counts = await write_provenance_for_fields(
                             conn,
                             factory_id=factory_id,
                             entity_type="ingredient",
@@ -194,6 +201,16 @@ class InventoryWriter(BaseWriter):
                             source_upload_id=upload_id,
                             valid_from=snapshot_date,
                         )
+                        total_swallowed += counts.get("error_swallowed", 0)
+                if total_swallowed > 0:
+                    logger.warning(
+                        "InventoryWriter provenance: error_swallowed=%d "
+                        "across %d records, upload_id=%s factory=%s",
+                        total_swallowed,
+                        len(records),
+                        upload_id,
+                        factory_id,
+                    )
 
         return WriteSummary(
             rows_written=len(records),

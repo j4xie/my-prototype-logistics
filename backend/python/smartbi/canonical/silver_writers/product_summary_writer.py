@@ -14,6 +14,7 @@ write provenance until manually enabled.
 """
 from __future__ import annotations
 
+import logging
 import time
 from typing import Any, List, Optional, Tuple
 from datetime import date
@@ -26,6 +27,8 @@ from smartbi.canonical.provenance._writer_hook import (
 from ._helpers import canonical_value, to_float, unwrap_row
 from .base import BaseWriter, WriteSummary
 
+
+logger = logging.getLogger(__name__)
 
 _BATCH_SIZE = 5000
 
@@ -141,6 +144,11 @@ class ProductSummaryWriter(BaseWriter):
             # Wrapped in its own transaction so a hook failure is isolated
             # from the main INSERT.
             if is_provenance_enabled() and records:
+                # MIN-3 (2026-04-27): aggregate hook return counters and log a
+                # single summary WARNING per upload-batch when any
+                # error_swallowed occurred (per-error WARNING already in
+                # _writer_hook.py).
+                total_swallowed = 0
                 async with conn.transaction():
                     for rec in records:
                         product_id = rec[2]
@@ -155,7 +163,7 @@ class ProductSummaryWriter(BaseWriter):
                             if store_id_for_prov is not None
                             else ""
                         )
-                        await write_provenance_for_fields(
+                        counts = await write_provenance_for_fields(
                             conn,
                             factory_id=factory_id,
                             entity_type="product",
@@ -172,6 +180,16 @@ class ProductSummaryWriter(BaseWriter):
                             valid_from=period_start,
                             valid_to=period_end,
                         )
+                        total_swallowed += counts.get("error_swallowed", 0)
+                if total_swallowed > 0:
+                    logger.warning(
+                        "ProductSummaryWriter provenance: error_swallowed=%d "
+                        "across %d records, upload_id=%s factory=%s",
+                        total_swallowed,
+                        len(records),
+                        upload_id,
+                        factory_id,
+                    )
 
         return WriteSummary(
             rows_written=len(records),
