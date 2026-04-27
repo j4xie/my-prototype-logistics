@@ -2147,65 +2147,42 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                         logger.warning(f"[chat-session] cache-hit writeback failed: {_e}")
                 return  # early exit — cache served the answer
 
-            # ── Stream LLM response with hard timeout enforcement ──
-            # S4 P1 + v4 P1-enhanced (Apr 26 2026): 25s soft cut-off enforced
-            # via per-chunk asyncio.wait_for. Old impl used `async for` which
-            # blocked on the next chunk indefinitely — when LLM was completely
-            # silent for 30+s (cold start), the elapsed-check inside the loop
-            # never got to run. v4 verification log shows 7 cases of LLM
-            # producing only 1-2 chars before timeout, plus xmx-fu-20-3 42s
-            # 0-char silent timeout. New impl:
-            #   1. Wraps each .__anext__() with wait_for(min(remaining, 5)s)
-            #   2. Tracks _silent_timeout (full_text == "" at expiry)
-            #   3. On silent timeout, emits actionable message instead of empty
+            # ── Stream LLM response ──
+            # v5 fix (Apr 26 2026): rollback P1-enhanced wait_for(__anext__())
+            # pattern which broke stream consumption (v5 verification: 86%
+            # empty answers — wait_for somehow consumes chunks but they don't
+            # propagate). Back to traditional `async for chunk in stream`.
+            # Soft 25s cut-off uses elapsed check between chunks (only fires
+            # when LLM produces something then stalls). Pure silent (0-chunk)
+            # case is caught by post-loop safety net below.
             full_text = ""
             _llm_start = time.time()
             _LLM_SOFT_TIMEOUT_S = 25.0
             _llm_truncated = False
             _silent_timeout = False
 
-            _stream_gen = insight_gen._call_llm_stream_text(
+            async for chunk in insight_gen._call_llm_stream_text(
                 prompt, system_role, max_tokens=1500, temperature=0.2
-            )
-            _stream_iter = _stream_gen.__aiter__()
-
-            while True:
+            ):
+                if await http_request.is_disconnected():
+                    logger.info("[stream] Client disconnected, stopping")
+                    return
                 _elapsed = time.time() - _llm_start
-                _remaining = _LLM_SOFT_TIMEOUT_S - _elapsed
-                if _remaining <= 0:
+                if _elapsed > _LLM_SOFT_TIMEOUT_S and full_text:
                     _llm_truncated = True
-                    _silent_timeout = (full_text == "")
                     try:
                         from smartbi.services.smartbi_metrics import LLM_SOFT_TIMEOUT
                         LLM_SOFT_TIMEOUT.labels(
-                            silent='true' if _silent_timeout else 'false',
+                            silent='false',
                             has_parent_ctx='true' if chat_session_parent else 'false',
                         ).inc()
                     except Exception:
                         pass
                     logger.warning(
                         f"[stream] LLM soft timeout {_elapsed:.1f}s > "
-                        f"{_LLM_SOFT_TIMEOUT_S}s, accumulated={len(full_text)} "
-                        f"chars, silent={_silent_timeout}"
+                        f"{_LLM_SOFT_TIMEOUT_S}s, truncating with {len(full_text)} chars"
                     )
                     break
-
-                if await http_request.is_disconnected():
-                    logger.info("[stream] Client disconnected, stopping")
-                    return
-
-                try:
-                    # Per-chunk timeout — 5s ceiling lets the loop re-check
-                    # _elapsed even if LLM paused mid-stream.
-                    chunk = await asyncio.wait_for(
-                        _stream_iter.__anext__(),
-                        timeout=min(_remaining, 5.0),
-                    )
-                except StopAsyncIteration:
-                    break  # stream ended normally
-                except asyncio.TimeoutError:
-                    continue  # re-check loop condition (might trigger soft timeout)
-
                 full_text += chunk
                 yield _sse_event("chunk", chunk)
 
