@@ -1018,7 +1018,9 @@ public class SchedulingController {
 
     /**
      * 获取排产自动化设置
+     * R32 C2 fix: 加 @RequireModule (避免未启 scheduling 模块的工厂拿到内部阈值)
      */
+    @RequireModule("scheduling")
     @GetMapping("/settings")
     @Operation(summary = "获取排产设置", description = "获取排产自动化配置，包括自动排产模式、风险阈值、通知开关等")
     public ApiResponse<SchedulingSettingsDTO> getSchedulingSettings(

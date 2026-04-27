@@ -479,21 +479,40 @@ public class SchedulingAIServiceImpl implements SchedulingAIService {
                 "自动排产模式配置", userId);
         }
 
+        // R32 P4 (I7) — 跨字段一致性校验: low 必须 > medium (high < medium <= low <= 1)
+        // 同 update 内若两个字段都给, 用新值; 若只给一个, 用 DB 中已存的另一个值
+        Double effectiveLow = settings.getLowRiskThreshold() != null
+            ? settings.getLowRiskThreshold()
+            : getLowRiskThreshold(factoryId);
+        Double effectiveMedium = settings.getMediumRiskThreshold() != null
+            ? settings.getMediumRiskThreshold()
+            : getMediumRiskThreshold(factoryId);
+        if (settings.getLowRiskThreshold() != null || settings.getMediumRiskThreshold() != null) {
+            if (effectiveLow <= effectiveMedium) {
+                throw new IllegalArgumentException(
+                    String.format("低风险阈值必须严格大于中风险阈值 (low=%s, medium=%s)",
+                        effectiveLow, effectiveMedium));
+            }
+        }
+
         if (settings.getLowRiskThreshold() != null) {
-            if (settings.getLowRiskThreshold() < 0 || settings.getLowRiskThreshold() > 1) {
-                throw new IllegalArgumentException("低风险阈值必须在 0-1 之间");
+            // R32 P2 (C4) — NaN/Infinity guard: NaN < 0 是 false 会绕过 0-1 检查, 显式拒绝
+            Double low = settings.getLowRiskThreshold();
+            if (low.isNaN() || low.isInfinite() || low < 0 || low > 1) {
+                throw new IllegalArgumentException("低风险阈值必须在 0-1 之间且为有限数值");
             }
             saveOrUpdateRule(factoryId, "auto_trigger_low_risk_threshold",
-                String.valueOf(settings.getLowRiskThreshold()),
+                String.valueOf(low),
                 "自动排产低风险阈值配置", userId);
         }
 
         if (settings.getMediumRiskThreshold() != null) {
-            if (settings.getMediumRiskThreshold() < 0 || settings.getMediumRiskThreshold() > 1) {
-                throw new IllegalArgumentException("中风险阈值必须在 0-1 之间");
+            Double medium = settings.getMediumRiskThreshold();
+            if (medium.isNaN() || medium.isInfinite() || medium < 0 || medium > 1) {
+                throw new IllegalArgumentException("中风险阈值必须在 0-1 之间且为有限数值");
             }
             saveOrUpdateRule(factoryId, "auto_trigger_medium_risk_threshold",
-                String.valueOf(settings.getMediumRiskThreshold()),
+                String.valueOf(medium),
                 "自动排产中风险阈值配置", userId);
         }
 
@@ -1046,7 +1065,12 @@ public class SchedulingAIServiceImpl implements SchedulingAIService {
 
         if (factoryRule.isPresent() && factoryRule.get().getEnabled()) {
             try {
-                return Double.parseDouble(factoryRule.get().getRuleContent());
+                double value = Double.parseDouble(factoryRule.get().getRuleContent());
+                // R32 P2 (C4) — 即使 DB 中存了 NaN/Infinity (历史脏数据), 解析后仍 fallback
+                if (Double.isFinite(value)) {
+                    return value;
+                }
+                log.warn("工厂 {} 的低风险阈值是非有限数值: {}, 使用默认值", factoryId, value);
             } catch (NumberFormatException e) {
                 log.warn("工厂 {} 的低风险阈值配置格式错误: {}", factoryId, factoryRule.get().getRuleContent());
             }
@@ -1061,7 +1085,11 @@ public class SchedulingAIServiceImpl implements SchedulingAIService {
 
         if (factoryRule.isPresent() && factoryRule.get().getEnabled()) {
             try {
-                return Double.parseDouble(factoryRule.get().getRuleContent());
+                double value = Double.parseDouble(factoryRule.get().getRuleContent());
+                if (Double.isFinite(value)) {
+                    return value;
+                }
+                log.warn("工厂 {} 的中风险阈值是非有限数值: {}, 使用默认值", factoryId, value);
             } catch (NumberFormatException e) {
                 log.warn("工厂 {} 的中风险阈值配置格式错误: {}", factoryId, factoryRule.get().getRuleContent());
             }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import {
@@ -27,6 +27,13 @@ const form = ref<SchedulingSettings>({
 
 onMounted(() => {
   loadSettings();
+});
+
+// R32 P6 (I5) — 总闸 OFF 时, 把模式归位到 MANUAL_CONFIRM, 避免"看似配了 FULLY_AUTO 但被 OFF 屏蔽"的歧义
+watch(() => form.value.autoTriggerEnabled, (enabled) => {
+  if (!enabled && form.value.autoSchedulingMode === 'FULLY_AUTO') {
+    form.value.autoSchedulingMode = 'MANUAL_CONFIRM';
+  }
 });
 
 async function loadSettings() {
@@ -108,7 +115,7 @@ const modeDescription = computed(() => {
       :closable="false"
     >
       <template #title>
-        排产链路: 销售订单财务审核通过 → 自动建生产计划 (CUSTOMER_ORDER) → 调度系统判定风险 → 按本页设置触发排程
+        排产链路两阶段: ① SO 财审 → 自动建生产计划 PP (供应链联动, 不受本页控制) ② PP 生成后是否进入排程 (本页设置 = 此阶段开关)
       </template>
     </el-alert>
 
@@ -128,7 +135,7 @@ const modeDescription = computed(() => {
             inactive-text="关闭"
           />
           <div class="form-hint">
-            关闭后即便模式为"完全自动"也不会触发自动排产 (硬性总闸)
+            控制 PP 创建后是否进入排程链 (是 isAutoSchedulingEnabled gate). 关闭后, 模式与阈值都不生效, PP 仍由供应链自动创建但停留在 PENDING 等人工排程.
           </div>
         </el-form-item>
 
