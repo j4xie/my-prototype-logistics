@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>白垩纪餐饮版产品使用手册</title>
+<!-- last-verified-against-product: 2026-04-28 -->
+<style>
+body{font-family:-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;max-width:960px;margin:30px auto;padding:0 20px;color:#1f2937;line-height:1.7}
+h1{color:#1e40af;border-bottom:3px solid #1e40af;padding-bottom:8px;margin-top:40px}
+h2{color:#0369a1;border-left:4px solid #0369a1;padding-left:10px;margin-top:32px}
+h3{color:#0f172a;margin-top:24px;padding:6px 10px;background:#f1f5f9;border-radius:4px}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{border:1px solid #cbd5e1;padding:6px 10px;text-align:left}
+th{background:#e2e8f0;font-weight:600}
+.warn{background:#fef3c7;border-left:4px solid #f59e0b;padding:10px 14px;margin:10px 0;font-size:14px}
+.tip{background:#dbeafe;border-left:4px solid #3b82f6;padding:10px 14px;margin:10px 0;font-size:14px}
+.formula{background:#f8fafc;border:1px solid #cbd5e1;padding:8px 12px;font-family:'Consolas',monospace;font-size:14px;margin:8px 0;border-radius:4px}
+.field-label{font-weight:600;color:#0369a1;margin-top:10px}
+.benchmark-row{padding:4px 0;border-bottom:1px dashed #e2e8f0}
+.benchmark-row:last-child{border-bottom:none}
+.cretas-default{display:inline-block;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:3px;font-size:12px;margin-left:6px}
+code{background:#f1f5f9;padding:2px 5px;border-radius:3px;font-size:13px}
+.doc-header{border-bottom:4px solid #1e40af;padding-bottom:20px;margin-bottom:32px}
+.doc-header h1{border-bottom:none;margin-top:0}
+.subtitle{color:#6b7280;font-size:16px;margin-top:4px}
+nav.toc{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:20px 28px;margin-bottom:40px}
+nav.toc h2{margin-top:0;border-left:none;padding-left:0}
+nav.toc ol,nav.toc ul{margin:4px 0;padding-left:20px}
+nav.toc li{margin:4px 0}
+nav.toc a{color:#0369a1;text-decoration:none}
+nav.toc a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header class="doc-header">
+  <h1>白垩纪餐饮版产品使用手册</h1>
+  <p class="subtitle">含培训 onboarding · 24 章 · 4 培训路径 · 6 决策合成</p>
+</header>
+
+<nav class="toc">
+  <h2>目录</h2>
+  <ol>
+    <li><a href="#ch1">§1 智能数据分析 (AI Query)</a></li>
+    <li><a href="#ch2">§2 财务 PBI 看板</a></li>
+    <li><a href="#ch3">§3 Excel 上传与字段识别</a></li>
+    <li><a href="#ch4">§4 登录 + 工厂/门店切换</a></li>
+    <li><a href="#ch5">§5 Dashboard 首页</a></li>
+    <li><a href="#ch6">§6 报表中心 + 数据导出</a></li>
+    <li><a href="#ch7">§7 设置 (用户/角色/通知)</a></li>
+    <li><a href="#ch8">§8 移动端 RN app 使用</a></li>
+    <li><a href="#ch9">§9 供应链 / 采购下单</a></li>
+    <li><a href="#ch10">§10 库存管理 + 盘点 + 预警</a></li>
+    <li><a href="#ch11">§11 菜品 / 配方管理</a></li>
+    <li><a href="#ch12">§12 食安 / 合规检查</a></li>
+    <li><a href="#ch13">§13 多门店对比分析</a></li>
+    <li><a href="#ch14">§14 收银 / POS 对接</a></li>
+    <li><a href="#ch15">§15 外卖平台对接</a></li>
+    <li><a href="#ch16">§16 会员分析</a></li>
+    <li><a href="#ch17">§17 评价管理</a></li>
+    <li><a href="#ch18">§18 营销 / 优惠券 / 活动</a></li>
+    <li><a href="#ch19">§19 客户投诉与售后</a></li>
+    <li><a href="#ch20">§20 数据治理 (完整度 + 质量队列)</a></li>
+    <li><a href="#ch21">§21 排班 / 人效 / 员工绩效</a></li>
+    <li><a href="#ch22">§22 实时人效识别 (VL 摄像头)</a></li>
+    <li><a href="#ch23">§23 数据备份与恢复</a></li>
+    <li><a href="#ch24">§24 第三方 API 对接</a></li>
+  </ol>
+
+  <h2>附录</h2>
+  <ul>
+    <li><a href="#path-a1">路径 A1: 前台/收银 新员工首周</a></li>
+    <li><a href="#path-a2">路径 A2: 中台/财务文员 新员工首周</a></li>
+    <li><a href="#path-b">路径 B: 店长首月</a></li>
+    <li><a href="#path-c">路径 C: 老板月度回顾</a></li>
+    <li><a href="#synthesis">§B 决策场景合成 (6 主题)</a></li>
+  </ul>
+</nav>
+
+<section id="ch1">
+  <h1>§1 智能数据分析 (AI Query)</h1>
+  <!-- TODO Phase 1a Task 9 -->
+</section>
+
+<section id="ch2">
+  <h1>§2 财务 PBI 看板</h1>
+  <!-- TODO Phase 1a Task 10 -->
+</section>
+
+<section id="ch3">
+  <h1>§3 Excel 上传与字段识别</h1>
+  <!-- TODO Phase 1a Task 11 -->
+</section>
+
+<section id="ch4">
+  <h1>§4 登录 + 工厂/门店切换</h1>
+  <!-- TODO Phase 1b Batch 1 -->
+</section>
+
+<section id="ch5">
+  <h1>§5 Dashboard 首页</h1>
+  <!-- TODO Phase 1b Batch 1 -->
+</section>
+
+<section id="ch6">
+  <h1>§6 报表中心 + 数据导出</h1>
+  <!-- TODO Phase 1b Batch 1 -->
+</section>
+
+<section id="ch7">
+  <h1>§7 设置 (用户/角色/通知)</h1>
+  <!-- TODO Phase 1b Batch 1 -->
+</section>
+
+<section id="ch8">
+  <h1>§8 移动端 RN app 使用</h1>
+  <!-- TODO Phase 1b Batch 2 -->
+</section>
+
+<section id="ch9">
+  <h1>§9 供应链 / 采购下单</h1>
+  <!-- TODO Phase 1b Batch 2 -->
+</section>
+
+<section id="ch10">
+  <h1>§10 库存管理 + 盘点 + 预警</h1>
+  <!-- TODO Phase 1b Batch 2 -->
+</section>
+
+<section id="ch11">
+  <h1>§11 菜品 / 配方管理</h1>
+  <!-- TODO Phase 1b Batch 2 -->
+</section>
+
+<section id="ch12">
+  <h1>§12 食安 / 合规检查</h1>
+  <!-- TODO Phase 1b Batch 3 -->
+</section>
+
+<section id="ch13">
+  <h1>§13 多门店对比分析</h1>
+  <!-- TODO Phase 1b Batch 3 -->
+</section>
+
+<section id="ch14">
+  <h1>§14 收银 / POS 对接</h1>
+  <!-- TODO Phase 1b Batch 3 -->
+</section>
+
+<section id="ch15">
+  <h1>§15 外卖平台对接</h1>
+  <!-- TODO Phase 1b Batch 3 -->
+</section>
+
+<section id="ch16">
+  <h1>§16 会员分析</h1>
+  <!-- TODO Phase 1b Batch 4 -->
+</section>
+
+<section id="ch17">
+  <h1>§17 评价管理</h1>
+  <!-- TODO Phase 1b Batch 4 -->
+</section>
+
+<section id="ch18">
+  <h1>§18 营销 / 优惠券 / 活动</h1>
+  <!-- TODO Phase 1b Batch 4 -->
+</section>
+
+<section id="ch19">
+  <h1>§19 客户投诉与售后</h1>
+  <!-- TODO Phase 1b Batch 4 -->
+</section>
+
+<section id="ch20">
+  <h1>§20 数据治理 (完整度 + 质量队列)</h1>
+  <!-- TODO Phase 1b Batch 4 -->
+</section>
+
+<section id="ch21">
+  <h1>§21 排班 / 人效 / 员工绩效</h1>
+  <!-- TODO Phase 1b Batch 4 -->
+</section>
+
+<section id="ch22">
+  <h1>§22 实时人效识别 (VL 摄像头)</h1>
+  <!-- TODO Phase 1b Batch 4 -->
+</section>
+
+<section id="ch23">
+  <h1>§23 数据备份与恢复</h1>
+  <!-- TODO Phase 1b Batch 4 -->
+</section>
+
+<section id="ch24">
+  <h1>§24 第三方 API 对接</h1>
+  <!-- TODO Phase 1b Batch 4 -->
+</section>
+
+<section id="path-a1">
+  <h1>路径 A1: 前台/收银 新员工首周</h1>
+  <!-- TODO Phase 1b Batch 5 -->
+</section>
+
+<section id="path-a2">
+  <h1>路径 A2: 中台/财务文员 新员工首周</h1>
+  <!-- TODO Phase 1b Batch 5 -->
+</section>
+
+<section id="path-b">
+  <h1>路径 B: 店长首月</h1>
+  <!-- TODO Phase 1b Batch 5 -->
+</section>
+
+<section id="path-c">
+  <h1>路径 C: 老板月度回顾</h1>
+  <!-- TODO Phase 1b Batch 5 -->
+</section>
+
+<section id="synthesis">
+  <h1>§B 决策场景合成</h1>
+  <!-- TODO Phase 1b Batch 5 — 6 cross-chapter decision scenarios -->
+</section>
+
+</div>
+</body>
+</html>
