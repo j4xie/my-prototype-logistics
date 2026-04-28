@@ -61,7 +61,8 @@ public class TimeClockServiceImpl implements TimeClockService {
         
         // 验证用户是否属于该工厂
         if (!user.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("用户不属于该工厂");
+            throw new BusinessException(403, "用户不属于该工厂")
+                    .withHint("当前用户不属于该工厂, 无法打卡");
         }
         
         LocalDate today = LocalDate.now();
@@ -96,7 +97,8 @@ public class TimeClockServiceImpl implements TimeClockService {
                 }
             } else if (record.getClockInTime() != null) {
                 // 已打过上班卡但未打下班卡，不能再次打上班卡
-                throw new BusinessException("您已经打过上班卡了，请先进行下班打卡");
+                throw new BusinessException(409, "您已经打过上班卡了")
+                        .withHint("请先进行下班打卡");
             } else {
                 // 记录存在但没有打卡时间，更新上班打卡时间
                 record.setClockInTime(now);
@@ -142,7 +144,8 @@ public class TimeClockServiceImpl implements TimeClockService {
 
         // 验证用户是否属于该工厂
         if (!user.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("用户不属于该工厂");
+            throw new BusinessException(403, "用户不属于该工厂")
+                    .withHint("当前用户不属于该工厂, 无法打卡");
         }
 
         LocalDate today = LocalDate.now();
@@ -170,7 +173,8 @@ public class TimeClockServiceImpl implements TimeClockService {
                 record.setStatus("WORKING");
                 record.setAttendanceStatus(now.toLocalTime().isAfter(STANDARD_START_TIME) ? "LATE" : "NORMAL");
             } else if (record.getClockInTime() != null) {
-                throw new BusinessException("您已经打过上班卡了，请先进行下班打卡");
+                throw new BusinessException(409, "您已经打过上班卡了")
+                        .withHint("请先进行下班打卡");
             } else {
                 record.setClockInTime(now);
                 record.setClockLocation(location);
@@ -213,7 +217,8 @@ public class TimeClockServiceImpl implements TimeClockService {
 
         // 验证用户是否属于该工厂
         if (!user.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("用户不属于该工厂");
+            throw new BusinessException(403, "用户不属于该工厂")
+                    .withHint("当前用户不属于该工厂, 无法打卡");
         }
 
         LocalDate today = LocalDate.now();
@@ -228,12 +233,14 @@ public class TimeClockServiceImpl implements TimeClockService {
         
         // 检查是否已经打过下班卡
         if (record.getClockOutTime() != null) {
-            throw new BusinessException("今天已经打过下班卡了");
+            throw new BusinessException(409, "今天已经打过下班卡了")
+                    .withHint("今日打卡已完成, 请勿重复操作");
         }
         
         // 检查是否打了上班卡
         if (record.getClockInTime() == null) {
-            throw new BusinessException("今天还没有打上班卡，请先进行上班打卡");
+            throw new BusinessException(409, "今天还没有打上班卡")
+                    .withHint("请先进行上班打卡");
         }
         
         // 更新下班打卡时间
@@ -277,17 +284,20 @@ public class TimeClockServiceImpl implements TimeClockService {
         
         // 检查是否已经打过上班卡
         if (record.getClockInTime() == null) {
-            throw new BusinessException("今天还没有打上班卡，请先进行上班打卡");
+            throw new BusinessException(409, "今天还没有打上班卡")
+                    .withHint("请先进行上班打卡");
         }
         
         // 检查是否已经打过下班卡
         if (record.getClockOutTime() != null) {
-            throw new BusinessException("已经下班，无法开始休息");
+            throw new BusinessException(409, "已经下班，无法开始休息")
+                    .withHint("已完成下班打卡, 请刷新打卡记录查看最新状态");
         }
         
         // 检查是否已经在休息中
         if (record.getBreakStartTime() != null && record.getBreakEndTime() == null) {
-            throw new BusinessException("已经在休息中");
+            throw new BusinessException(409, "已经在休息中")
+                    .withHint("休息已开始, 如需结束请使用结束休息按钮");
         }
         
         record.setBreakStartTime(now);
@@ -315,12 +325,14 @@ public class TimeClockServiceImpl implements TimeClockService {
         
         // 检查是否已经开始休息
         if (record.getBreakStartTime() == null) {
-            throw new BusinessException("还没有开始休息");
+            throw new BusinessException(409, "还没有开始休息")
+                    .withHint("请先开始休息后再结束休息");
         }
         
         // 检查是否已经结束休息
         if (record.getBreakEndTime() != null) {
-            throw new BusinessException("休息已经结束");
+            throw new BusinessException(409, "休息已经结束")
+                    .withHint("休息已完成, 请勿重复操作");
         }
         
         record.setBreakEndTime(now);
@@ -424,7 +436,8 @@ public class TimeClockServiceImpl implements TimeClockService {
         
         // 验证记录是否属于该工厂
         if (!existingRecord.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("记录不属于该工厂");
+            throw new BusinessException(403, "记录不属于该工厂")
+                    .withHint("当前打卡记录不属于该工厂, 无法操作");
         }
         
         // 更新记录
