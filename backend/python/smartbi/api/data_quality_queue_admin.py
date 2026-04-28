@@ -368,30 +368,44 @@ async def _update_queue_resolved(
                 "SELECT set_config('app.factory_id', $1, true)", factory_id
             )
 
+            # Two static SQL templates (no f-string interpolation) for safety —
+            # reviewer Task 3.3 concern: f-string + dynamic SQL is a foot-gun even
+            # when current values are constant.
             if single_admin_degraded:
-                extra_expr = (
-                    "COALESCE(extra, '{}'::jsonb) || "
-                    "jsonb_build_object('single_admin_degraded', true, "
-                    "'submitter_was_resolver', true)"
+                updated = await conn.fetchval(
+                    """
+                    UPDATE entity_resolution_admin_queue
+                       SET status                    = 'CONFIRMED',
+                           admin_action              = $1,
+                           admin_user                = $2,
+                           admin_at                  = NOW(),
+                           admin_resolved_to_entity_id = $3,
+                           extra                     = COALESCE(extra, '{}'::jsonb)
+                                                       || jsonb_build_object(
+                                                            'single_admin_degraded', true,
+                                                            'submitter_was_resolver', true
+                                                          )
+                     WHERE id = $4
+                       AND status = 'PENDING'
+                    RETURNING id
+                    """,
+                    action, admin_user, resolved_to_entity_id, item_id,
                 )
             else:
-                extra_expr = "extra"
-
-            updated = await conn.fetchval(
-                f"""
-                UPDATE entity_resolution_admin_queue
-                   SET status                    = 'CONFIRMED',
-                       admin_action              = $1,
-                       admin_user                = $2,
-                       admin_at                  = NOW(),
-                       admin_resolved_to_entity_id = $3,
-                       extra                     = {extra_expr}
-                 WHERE id = $4
-                   AND status = 'PENDING'
-                RETURNING id
-                """,
-                action, admin_user, resolved_to_entity_id, item_id,
-            )
+                updated = await conn.fetchval(
+                    """
+                    UPDATE entity_resolution_admin_queue
+                       SET status                    = 'CONFIRMED',
+                           admin_action              = $1,
+                           admin_user                = $2,
+                           admin_at                  = NOW(),
+                           admin_resolved_to_entity_id = $3
+                     WHERE id = $4
+                       AND status = 'PENDING'
+                    RETURNING id
+                    """,
+                    action, admin_user, resolved_to_entity_id, item_id,
+                )
     return updated is not None
 
 
@@ -543,28 +557,44 @@ async def reject_queue(
                 "SELECT set_config('app.factory_id', $1, true)", item["factoryId"]
             )
 
-            extra_parts = "jsonb_build_object('reject_reason', $2::text)"
+            # Two static SQL templates (no f-string interpolation) for safety —
+            # reviewer Task 3.3 concern: f-string + dynamic SQL is a foot-gun.
             if single_admin_degraded:
-                extra_parts = (
-                    f"{extra_parts} || "
-                    "jsonb_build_object('single_admin_degraded', true, "
-                    "'submitter_was_resolver', true)"
+                updated = await conn.fetchval(
+                    """
+                    UPDATE entity_resolution_admin_queue
+                       SET status       = 'REJECTED',
+                           admin_action = 'reject',
+                           admin_user   = $1,
+                           admin_at     = NOW(),
+                           extra        = COALESCE(extra, '{}'::jsonb)
+                                          || jsonb_build_object('reject_reason', $2::text)
+                                          || jsonb_build_object(
+                                               'single_admin_degraded', true,
+                                               'submitter_was_resolver', true
+                                             )
+                     WHERE id = $3
+                       AND status = 'PENDING'
+                    RETURNING id
+                    """,
+                    current_user, body.reason, id,
                 )
-
-            updated = await conn.fetchval(
-                f"""
-                UPDATE entity_resolution_admin_queue
-                   SET status       = 'REJECTED',
-                       admin_action = 'reject',
-                       admin_user   = $1,
-                       admin_at     = NOW(),
-                       extra        = COALESCE(extra, '{{}}') || {extra_parts}
-                 WHERE id = $3
-                   AND status = 'PENDING'
-                RETURNING id
-                """,
-                current_user, body.reason, id,
-            )
+            else:
+                updated = await conn.fetchval(
+                    """
+                    UPDATE entity_resolution_admin_queue
+                       SET status       = 'REJECTED',
+                           admin_action = 'reject',
+                           admin_user   = $1,
+                           admin_at     = NOW(),
+                           extra        = COALESCE(extra, '{}'::jsonb)
+                                          || jsonb_build_object('reject_reason', $2::text)
+                     WHERE id = $3
+                       AND status = 'PENDING'
+                    RETURNING id
+                    """,
+                    current_user, body.reason, id,
+                )
 
     if updated is None:
         raise HTTPException(
