@@ -21,9 +21,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[4]
 # Sources to ingest
 MANUAL_SOURCES = [
     {
-        "path": "docs/plans/operation-manual-full.html",
-        "title_prefix": "操作手册",
-        "source": "operation-manual-full.html",
+        "path": "docs/plans/factory-operation-manual.html",
+        "title_prefix": "工厂操作手册",
+        "source": "factory-operation-manual.html",
         "type": "html",
     },
     {
