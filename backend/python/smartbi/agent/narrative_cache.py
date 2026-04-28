@@ -76,18 +76,26 @@ class NarrativeCacheService:
     async def get(
         self, factory_id: str, question_hash: str
     ) -> Optional[Dict[str, Any]]:
-        """Return cached answer if present AND not expired, else None."""
+        """Return cached answer if present AND not expired, else None.
+
+        Apr 27 2026 (F12 fix): RLS GUC for tenant_isolation on narrative_cache.
+        """
         async with self._pool.acquire() as conn:
-            row = await conn.fetchrow(
-                """
-                SELECT answer, chart_config, tokens, created_at, expires_at
-                  FROM narrative_cache
-                 WHERE factory_id    = $1
-                   AND question_hash = $2
-                   AND expires_at    > NOW()
-                """,
-                factory_id, question_hash,
-            )
+            async with conn.transaction():
+                await conn.execute(
+                    "SELECT set_config('app.factory_id', $1, true)",
+                    factory_id,
+                )
+                row = await conn.fetchrow(
+                    """
+                    SELECT answer, chart_config, tokens, created_at, expires_at
+                      FROM narrative_cache
+                     WHERE factory_id    = $1
+                       AND question_hash = $2
+                       AND expires_at    > NOW()
+                    """,
+                    factory_id, question_hash,
+                )
         if row is None:
             return None
         # asyncpg returns JSONB as a string unless a codec is registered
@@ -117,34 +125,48 @@ class NarrativeCacheService:
         # asyncpg maps None → NULL, dict → jsonb via explicit cast.
         chart_json = json.dumps(chart_config) if chart_config is not None else None
         async with self._pool.acquire() as conn:
-            await conn.execute(
-                """
-                INSERT INTO narrative_cache
-                    (factory_id, question_hash, answer, chart_config,
-                     tokens, expires_at)
-                VALUES ($1, $2, $3, $4::jsonb, $5, $6)
-                ON CONFLICT (factory_id, question_hash) DO UPDATE
-                    SET answer       = EXCLUDED.answer,
-                        chart_config = EXCLUDED.chart_config,
-                        tokens       = EXCLUDED.tokens,
-                        expires_at   = EXCLUDED.expires_at,
-                        created_at   = NOW()
-                """,
-                factory_id, question_hash, answer, chart_json,
-                int(tokens), expires_at,
-            )
+            async with conn.transaction():
+                await conn.execute(
+                    "SELECT set_config('app.factory_id', $1, true)",
+                    factory_id,
+                )
+                await conn.execute(
+                    """
+                    INSERT INTO narrative_cache
+                        (factory_id, question_hash, answer, chart_config,
+                         tokens, expires_at)
+                    VALUES ($1, $2, $3, $4::jsonb, $5, $6)
+                    ON CONFLICT (factory_id, question_hash) DO UPDATE
+                        SET answer       = EXCLUDED.answer,
+                            chart_config = EXCLUDED.chart_config,
+                            tokens       = EXCLUDED.tokens,
+                            expires_at   = EXCLUDED.expires_at,
+                            created_at   = NOW()
+                    """,
+                    factory_id, question_hash, answer, chart_json,
+                    int(tokens), expires_at,
+                )
 
     async def invalidate_on_upload(self, factory_id: str) -> int:
         """Delete all cache rows for this factory. Returns row count.
 
         Called when a new Excel upload lands (data has changed; any
         cached insights are potentially stale). Coarse but correct.
+
+        F11.1 fix: tenant_isolation RLS policy filters by app.factory_id GUC.
+        Without SET, DELETE finds 0 rows when caller is outside per-request
+        context (cron / upload event handler).
         """
         async with self._pool.acquire() as conn:
-            result = await conn.execute(
-                "DELETE FROM narrative_cache WHERE factory_id = $1",
-                factory_id,
-            )
+            async with conn.transaction():
+                await conn.execute(
+                    "SELECT set_config('app.factory_id', $1, true)",
+                    factory_id,
+                )
+                result = await conn.execute(
+                    "DELETE FROM narrative_cache WHERE factory_id = $1",
+                    factory_id,
+                )
         # asyncpg returns "DELETE <n>"; parse count defensively.
         try:
             return int(result.rsplit(" ", 1)[-1])

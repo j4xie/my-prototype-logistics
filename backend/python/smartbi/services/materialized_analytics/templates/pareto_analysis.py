@@ -5,6 +5,7 @@ what % of total. Classic 20% labels → 80% revenue insight.
 """
 from __future__ import annotations
 
+import re as _re
 from typing import ClassVar
 
 from smartbi.capability.contract import RequiresSpec
@@ -14,6 +15,20 @@ from ..restaurant.action_rec_formatter import format_action_rec
 from ..schema import DataSchema
 from .base import AnalysisTemplate, TemplateResult
 from .registry import register
+
+_NUM_LIKE = _re.compile(r'^-?\d+(\.\d+)?$')
+
+
+def _is_numeric_label(v):
+    if isinstance(v, (int, float)):
+        return True
+    if isinstance(v, str) and _NUM_LIKE.match(v.strip()):
+        return True
+    return False
+
+
+def _filter_numeric_rows(rows):
+    return [r for r in rows if not _is_numeric_label(r.get('label'))]
 
 
 @register
@@ -48,6 +63,7 @@ class ParetoAnalysis(AnalysisTemplate):
         best_rows = None
         for dim in schema.dimensions[:4]:
             rows = backend.group_sum(dim, measure)
+            rows = _filter_numeric_rows(rows)
             if len(rows) >= 5:  # need enough points for Pareto to be meaningful
                 best_dim = dim
                 best_rows = rows

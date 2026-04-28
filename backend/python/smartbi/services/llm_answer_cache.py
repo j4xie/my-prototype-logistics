@@ -60,6 +60,13 @@ class LlmAnswerCache:
         - Inputs incomplete (no factory_id or no query)
         - Entry not found / expired
         - DB error
+
+        Apr 27 2026 (F11 fix): SET app.factory_id GUC in transaction so the
+        RLS tenant_isolation policy on smart_bi_llm_answer_cache evaluates
+        truthy. Without this, smartbi_user's RLS check fails silently — get
+        returns None on existing rows, set is rejected with "new row violates
+        row-level security policy". Cache had 0 entries in prod+test for
+        months because writes silently failed.
         """
         from smartbi.services.smartbi_metrics import LLM_CACHE_LOOKUP, LLM_CACHE_HIT_AGE
         if not factory_id or not normalized_q:
@@ -68,38 +75,43 @@ class LlmAnswerCache:
         key = compute_cache_key(factory_id, normalized_q, upload_id)
         try:
             async with self._pool.acquire() as conn:
-                row = await conn.fetchrow(
-                    """
-                    SELECT answer_text, charts_json, warning, hit_count
-                    FROM smart_bi_llm_answer_cache
-                    WHERE cache_key = $1
-                      AND expires_at > NOW()
-                    """,
-                    key,
-                )
-                if not row:
-                    LLM_CACHE_LOOKUP.labels(outcome='miss').inc()
-                    return None
-                # Bump hit_count + last_hit_at — fire-and-forget UPDATE
-                await conn.execute(
-                    """
-                    UPDATE smart_bi_llm_answer_cache
-                    SET hit_count = hit_count + 1,
-                        last_hit_at = NOW()
-                    WHERE cache_key = $1
-                    """,
-                    key,
-                )
-                LLM_CACHE_LOOKUP.labels(outcome='hit').inc()
-                LLM_CACHE_HIT_AGE.observe(row['hit_count'] + 1)
-                return {
-                    "answer_text": row["answer_text"],
-                    "charts": (
-                        _json.loads(row["charts_json"]) if row["charts_json"] else []
-                    ) if isinstance(row["charts_json"], str) else (row["charts_json"] or []),
-                    "warning": row["warning"],
-                    "hit_count": row["hit_count"] + 1,  # post-increment value
-                }
+                async with conn.transaction():
+                    await conn.execute(
+                        "SELECT set_config('app.factory_id', $1, true)",
+                        factory_id,
+                    )
+                    row = await conn.fetchrow(
+                        """
+                        SELECT answer_text, charts_json, warning, hit_count
+                        FROM smart_bi_llm_answer_cache
+                        WHERE cache_key = $1
+                          AND expires_at > NOW()
+                        """,
+                        key,
+                    )
+                    if not row:
+                        LLM_CACHE_LOOKUP.labels(outcome='miss').inc()
+                        return None
+                    # Bump hit_count + last_hit_at — fire-and-forget UPDATE
+                    await conn.execute(
+                        """
+                        UPDATE smart_bi_llm_answer_cache
+                        SET hit_count = hit_count + 1,
+                            last_hit_at = NOW()
+                        WHERE cache_key = $1
+                        """,
+                        key,
+                    )
+                    LLM_CACHE_LOOKUP.labels(outcome='hit').inc()
+                    LLM_CACHE_HIT_AGE.observe(row['hit_count'] + 1)
+                    return {
+                        "answer_text": row["answer_text"],
+                        "charts": (
+                            _json.loads(row["charts_json"]) if row["charts_json"] else []
+                        ) if isinstance(row["charts_json"], str) else (row["charts_json"] or []),
+                        "warning": row["warning"],
+                        "hit_count": row["hit_count"] + 1,  # post-increment value
+                    }
         except Exception as e:
             LLM_CACHE_LOOKUP.labels(outcome='error').inc()
             logger.warning(f"[llm-answer-cache] get failed (non-fatal): {e}")
@@ -126,27 +138,36 @@ class LlmAnswerCache:
         key = compute_cache_key(factory_id, normalized_q, upload_id)
         try:
             async with self._pool.acquire() as conn:
-                await conn.execute(
-                    """
-                    INSERT INTO smart_bi_llm_answer_cache (
-                        cache_key, factory_id, upload_id, normalized_q,
-                        answer_text, charts_json, warning, expires_at
+                # Apr 27 2026 (F11 fix): set GUC for RLS tenant_isolation
+                # policy (factory_id = current_setting('app.factory_id')).
+                # Without GUC, INSERT fails with "new row violates row-level
+                # security policy" — silently swallowed by the except below.
+                async with conn.transaction():
+                    await conn.execute(
+                        "SELECT set_config('app.factory_id', $1, true)",
+                        factory_id,
                     )
-                    VALUES (
-                        $1, $2, $3, $4, $5, $6::jsonb, $7,
-                        NOW() + INTERVAL '24 hours'
+                    await conn.execute(
+                        """
+                        INSERT INTO smart_bi_llm_answer_cache (
+                            cache_key, factory_id, upload_id, normalized_q,
+                            answer_text, charts_json, warning, expires_at
+                        )
+                        VALUES (
+                            $1, $2, $3, $4, $5, $6::jsonb, $7,
+                            NOW() + INTERVAL '24 hours'
+                        )
+                        ON CONFLICT (cache_key) DO UPDATE SET
+                            answer_text = EXCLUDED.answer_text,
+                            charts_json = EXCLUDED.charts_json,
+                            warning     = EXCLUDED.warning,
+                            expires_at  = NOW() + INTERVAL '24 hours'
+                        """,
+                        key, factory_id, upload_id, normalized_q,
+                        answer_text,
+                        _json.dumps(charts or [], ensure_ascii=False),
+                        warning,
                     )
-                    ON CONFLICT (cache_key) DO UPDATE SET
-                        answer_text = EXCLUDED.answer_text,
-                        charts_json = EXCLUDED.charts_json,
-                        warning     = EXCLUDED.warning,
-                        expires_at  = NOW() + INTERVAL '24 hours'
-                    """,
-                    key, factory_id, upload_id, normalized_q,
-                    answer_text,
-                    _json.dumps(charts or [], ensure_ascii=False),
-                    warning,
-                )
                 LLM_CACHE_WRITE.labels(outcome='ok').inc()
         except Exception as e:
             LLM_CACHE_WRITE.labels(outcome='error').inc()
@@ -157,13 +178,22 @@ class LlmAnswerCache:
 
         Simple > precise: rather than tracking which entries depend on which
         upload, just nuke the factory. New cache builds in 24h naturally.
+
+        F11.1 fix: tenant_isolation RLS policy filters by app.factory_id GUC.
+        Without SET, DELETE finds 0 rows when caller is outside per-request
+        context (cron / upload event handler).
         """
         try:
             async with self._pool.acquire() as conn:
-                result = await conn.execute(
-                    "DELETE FROM smart_bi_llm_answer_cache WHERE factory_id = $1",
-                    factory_id,
-                )
+                async with conn.transaction():
+                    await conn.execute(
+                        "SELECT set_config('app.factory_id', $1, true)",
+                        factory_id,
+                    )
+                    result = await conn.execute(
+                        "DELETE FROM smart_bi_llm_answer_cache WHERE factory_id = $1",
+                        factory_id,
+                    )
                 if isinstance(result, str) and result.startswith("DELETE "):
                     return int(result.split()[1])
                 return 0

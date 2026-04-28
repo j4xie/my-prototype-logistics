@@ -277,9 +277,24 @@ async def call_llm_stream_text(
             "你是一位服务于食品加工企业的资深数据分析师。请用中文回复，使用Markdown格式。"
             + ACTION_REC_GUARD_CLAUSE
         )
+    # Apr 27 2026 (F3): wrap system_role in array-content with cache_control
+    # so DashScope explicit cache (90% off vs implicit 80%) fires on hot
+    # chat path. system_role contains stable GUARD_CLAUSE text repeated
+    # every query — prime cache target. DeepSeek silently ignores the
+    # cache_control field (verified API probe), so safe to send to chain.
+    # Zhipu/glm-4-plus: per OpenAI spec arrays are tolerated.
     payload = {
         "messages": [
-            {"role": "system", "content": system_role},
+            {
+                "role": "system",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": system_role,
+                        "cache_control": {"type": "ephemeral"},
+                    }
+                ],
+            },
             {"role": "user", "content": prompt},
         ],
         "temperature": temperature,
@@ -319,16 +334,25 @@ async def generate_text_analysis(
     Returns the analysis as plain text (not JSON). Provider chain provides
     fallback on DashScope outage.
     """
+    # F3.1 fix: array-content + cache_control for explicit DashScope context
+    # cache (90% off vs implicit 80% off). Sister sweep with call_llm_stream_text.
+    system_role = (
+        "你是一位服务于食品加工企业的资深分析师。"
+        "请根据提供的数据进行深入分析，给出关键发现和可执行建议。"
+        "要求：引用具体数字，分析因果关系，给出量化建议。"
+        "用中文回复，使用Markdown格式。"
+    )
     payload = {
         "messages": [
             {
                 "role": "system",
-                "content": (
-                    "你是一位服务于食品加工企业的资深分析师。"
-                    "请根据提供的数据进行深入分析，给出关键发现和可执行建议。"
-                    "要求：引用具体数字，分析因果关系，给出量化建议。"
-                    "用中文回复，使用Markdown格式。"
-                ),
+                "content": [
+                    {
+                        "type": "text",
+                        "text": system_role,
+                        "cache_control": {"type": "ephemeral"},
+                    }
+                ],
             },
             {"role": "user", "content": text},
         ],
