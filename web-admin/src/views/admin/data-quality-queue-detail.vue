@@ -42,9 +42,15 @@ const loading = ref<boolean>(false);
 const loadError = ref<string | null>(null);
 const historyItems = ref<HistoryItem[]>([]);
 
-// First item in the DESC-ordered list is the most-recent / current record.
+// Match the URL ID exactly. The "DESC-ordered list" assumption fails when
+// multiple rows share the same created_at (PG returns them in undefined order)
+// — found in real-window verify where /detail/117 was showing row 115's data
+// because items[0] happened to be the lowest-id row, not the URL's id.
 const currentItem = computed<HistoryItem | null>(
-  () => historyItems.value[0] ?? null
+  () =>
+    historyItems.value.find((it) => it.id === itemId.value) ??
+    historyItems.value[0] ??
+    null
 );
 
 // ── Data loading ───────────────────────────────────────────────────────────

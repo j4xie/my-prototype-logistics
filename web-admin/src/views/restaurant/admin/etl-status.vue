@@ -323,7 +323,7 @@ onBeforeUnmount(() => {
         <el-table-column label="重试次数" prop="attempt" width="90" align="center" />
         <el-table-column label="错误类型" prop="errorClass" min-width="160" />
         <el-table-column label="错误信息" prop="errorMessage" min-width="240" />
-        <el-table-column label="状态" prop="status" width="110" />
+        <el-table-column label="状态" prop="status" min-width="120" />
         <el-table-column label="耗时(ms)" prop="durationMs" width="100" />
       </el-table>
       <template #footer>

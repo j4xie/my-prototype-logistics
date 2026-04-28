@@ -127,12 +127,19 @@ def _coverage_score(count: int, window_days: int) -> int:
 # Async DB helpers
 # ---------------------------------------------------------------------------
 
-async def _factory_age_days(factory_id: str, smartbi_pool) -> int:
-    """Return the age of the factory in days based on its earliest upload.
+async def _factory_age_days(factory_id: str, smartbi_pool, cretas_pool) -> int:
+    """Return the age of the factory in days based on its earliest data signal.
 
-    Falls back to 1 if no uploads are found (very new factory).
-    Uses MIN(created_at) from smart_bi_pg_excel_uploads.
+    Tries multiple sources in order:
+      1. smart_bi_pg_excel_uploads.MIN(created_at) — uploads
+      2. cretas_db material_requisitions / wastage_records / stocktaking_records
+         MIN(created_at) — manual data entries (R_XMX edge case fix)
+      3. Fall back to 1 if no data anywhere.
+
+    Returns the EARLIEST date across all signals so factoryAge reflects
+    when the factory truly started, not just when they started uploading.
     """
+    candidates = []
     try:
         async with smartbi_pool.acquire() as conn:
             earliest = await conn.fetchval(
@@ -140,17 +147,41 @@ async def _factory_age_days(factory_id: str, smartbi_pool) -> int:
                 " WHERE factory_id = $1",
                 factory_id,
             )
-        if earliest is None:
-            return 1
-        # earliest is a datetime; compute days from now
-        now = datetime.now(timezone.utc)
-        if earliest.tzinfo is None:
-            earliest = earliest.replace(tzinfo=timezone.utc)
-        delta = now - earliest
-        return max(1, delta.days)
+            if earliest is not None:
+                candidates.append(earliest)
     except Exception as exc:
-        logger.debug(f"[completeness] _factory_age_days({factory_id}) fallback: {exc}")
+        logger.debug(f"[completeness] uploads age check failed: {exc}")
+
+    # Fallback: cretas_db data tables (may have data without corresponding upload)
+    if cretas_pool is not None:
+        for table, date_col in [
+            ('material_requisitions', 'created_at'),
+            ('wastage_records', 'created_at'),
+            ('stocktaking_records', 'created_at'),
+            ('recipes', 'created_at'),
+        ]:
+            try:
+                async with cretas_pool.acquire() as conn:
+                    val = await conn.fetchval(
+                        f"SELECT MIN({date_col}) FROM {table}"
+                        f" WHERE factory_id = $1 AND deleted_at IS NULL",
+                        factory_id,
+                    )
+                    if val is not None:
+                        candidates.append(val)
+            except Exception as exc:
+                logger.debug(f"[completeness] {table} age check failed: {exc}")
+
+    if not candidates:
         return 1
+    # Pick the EARLIEST signal across all sources
+    earliest = min(candidates)
+    # earliest is a datetime; compute days from now
+    now = datetime.now(timezone.utc)
+    if earliest.tzinfo is None:
+        earliest = earliest.replace(tzinfo=timezone.utc)
+    delta = now - earliest
+    return max(1, delta.days)
 
 
 async def _fetch_module_stats(
@@ -428,7 +459,7 @@ async def get_completeness(
         )
 
     # ── Factory age → coverage window ────────────────────────────────────
-    age_days = await _factory_age_days(factoryId, smartbi_pool)
+    age_days = await _factory_age_days(factoryId, smartbi_pool, cretas_pool)
     window_days = _coverage_window_days(age_days)
 
     # ── Fetch all 6 module stats ─────────────────────────────────────────
