@@ -48,7 +48,11 @@ CREATE POLICY tenant_select ON smart_bi_pg_excel_uploads FOR SELECT
 CREATE POLICY tenant_insert ON smart_bi_pg_excel_uploads FOR INSERT
   WITH CHECK (factory_id IS NOT NULL);
 CREATE POLICY tenant_update ON smart_bi_pg_excel_uploads FOR UPDATE
-  USING (factory_id = current_setting('app.factory_id', true))
+  USING (
+    factory_id = current_setting('app.factory_id', true)
+    OR current_setting('app.factory_id', true) = ''
+    OR current_setting('app.factory_id', true) IS NULL
+  )
   WITH CHECK (factory_id IS NOT NULL);
 CREATE POLICY tenant_delete ON smart_bi_pg_excel_uploads FOR DELETE
   USING (factory_id = current_setting('app.factory_id', true));
@@ -68,7 +72,11 @@ CREATE POLICY tenant_select ON smart_bi_pg_analysis_results FOR SELECT
 CREATE POLICY tenant_insert ON smart_bi_pg_analysis_results FOR INSERT
   WITH CHECK (factory_id IS NOT NULL);
 CREATE POLICY tenant_update ON smart_bi_pg_analysis_results FOR UPDATE
-  USING (factory_id = current_setting('app.factory_id', true))
+  USING (
+    factory_id = current_setting('app.factory_id', true)
+    OR current_setting('app.factory_id', true) = ''
+    OR current_setting('app.factory_id', true) IS NULL
+  )
   WITH CHECK (factory_id IS NOT NULL);
 CREATE POLICY tenant_delete ON smart_bi_pg_analysis_results FOR DELETE
   USING (factory_id = current_setting('app.factory_id', true));
@@ -88,7 +96,11 @@ CREATE POLICY tenant_select ON smart_bi_llm_fallback_log FOR SELECT
 CREATE POLICY tenant_insert ON smart_bi_llm_fallback_log FOR INSERT
   WITH CHECK (factory_id IS NOT NULL);
 CREATE POLICY tenant_update ON smart_bi_llm_fallback_log FOR UPDATE
-  USING (factory_id = current_setting('app.factory_id', true))
+  USING (
+    factory_id = current_setting('app.factory_id', true)
+    OR current_setting('app.factory_id', true) = ''
+    OR current_setting('app.factory_id', true) IS NULL
+  )
   WITH CHECK (factory_id IS NOT NULL);
 CREATE POLICY tenant_delete ON smart_bi_llm_fallback_log FOR DELETE
   USING (factory_id = current_setting('app.factory_id', true));
