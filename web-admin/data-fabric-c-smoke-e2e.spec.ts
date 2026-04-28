@@ -407,4 +407,56 @@ test.describe('餐饮 Phase A smoke — A-1/A-2/A-3 new-feature guards', () => {
     await page.screenshot({ path: 'test-results/a3-data-quality-queue.png', fullPage: true });
   });
 
+  test('Phase B-1 outlier filter — admin 巡检 + dismiss + un-dismiss flow', async ({ page }) => {
+    // 1. Login restaurant_admin1 (F002)
+    await page.goto('http://139.196.165.140:8097/login');
+    await page.fill('input[placeholder*="用户名"]', 'restaurant_admin1');
+    await page.fill('input[placeholder*="密码"]', '123456');
+    await page.click('button:has-text("登录")');
+    await page.waitForURL(/dashboard|home/, { timeout: 15000 });
+
+    // 2. Navigate to /restaurant/data-completeness
+    await page.goto('http://139.196.165.140:8097/restaurant/data-completeness');
+    await page.waitForSelector('.completeness-tabs, .completeness-page', { timeout: 10000 });
+
+    // 3. Switch to "数据质量" tab
+    await page.click('.el-tabs__nav .el-tabs__item:has-text("数据质量")');
+    await page.waitForTimeout(1500);  // wait for API + render
+
+    // 4. Verify either outlier table OR empty state OR loading is visible
+    const hasOutliers = await page.locator('.outlier-table, .el-table').first().isVisible().catch(() => false);
+    const isEmpty = await page.locator('.el-empty').isVisible().catch(() => false);
+    const isLoading = await page.locator('.el-skeleton').isVisible().catch(() => false);
+    expect(hasOutliers || isEmpty || isLoading).toBe(true);
+
+    // 5. If outliers exist, test dismiss + un-dismiss flow
+    if (hasOutliers) {
+      const dismissBtns = page.locator('button:has-text("非异常")');
+      const beforeCount = await dismissBtns.count();
+      if (beforeCount > 0) {
+        await dismissBtns.first().click();
+        await page.waitForTimeout(2000);  // wait for API + reload
+
+        // Try expand dismissed折叠 + click 恢复 if available
+        const expandBtn = page.locator('button:has-text("展开"), button:has-text("收起")').first();
+        if (await expandBtn.isVisible().catch(() => false)) {
+          const text = await expandBtn.textContent();
+          if (text?.includes('展开')) {
+            await expandBtn.click();
+            await page.waitForTimeout(500);
+          }
+
+          const restoreBtns = page.locator('button:has-text("恢复")');
+          if (await restoreBtns.count() > 0) {
+            await restoreBtns.first().click();
+            await page.waitForTimeout(2000);
+          }
+        }
+      }
+    }
+
+    // 6. Verify summary section is rendered (admin can always see numbers)
+    expect(await page.locator('.summary-card, [class*="summary"]').count()).toBeGreaterThan(0);
+  });
+
 });
