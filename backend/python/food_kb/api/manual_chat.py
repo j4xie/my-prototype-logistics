@@ -128,6 +128,38 @@ _QUERY_EXPANSIONS: Dict[str, str] = {
 _SIMPLE_KEYWORDS = {"是什么", "什么是", "在哪", "哪里", "多少", "几个", "有没有", "支持吗", "能不能"}
 _COMPLEX_KEYWORDS = {"怎么", "如何", "步骤", "流程", "对比", "分析", "区别", "原理", "为什么", "详细"}
 
+
+# ---------------------------------------------------------------------------
+# Reviewer C1: query domain detection — when user query contains restaurant
+# keywords, restrict retrieval to subcategory='restaurant' to prevent factory
+# manual chunks from polluting results.
+# ---------------------------------------------------------------------------
+RESTAURANT_KEYWORDS = frozenset([
+    # Stores & operations
+    "门店", "店长", "餐厅", "餐饮", "翻台", "翻台率", "上座率", "排队", "等位",
+    "堂食", "外卖", "外带", "桌台", "桌位", "客单价", "营收", "营业额",
+    # Menu & food
+    "菜品", "菜单", "套餐", "招牌", "畅销", "毛利率", "食材成本", "食材",
+    "厨房", "厨师", "出品", "口味", "咸淡", "份量",
+    # Customer & marketing
+    "会员", "复购", "流失", "美团", "饿了么", "点评", "差评", "好评", "投诉",
+    "优惠券", "活动", "营销", "拉新", "客流",
+    # Compliance & inventory
+    "食安", "HACCP", "留样", "保质期", "效期", "盘点", "进货", "采购单",
+    # Multi-store
+    "连锁", "总部", "区域", "加盟", "直营", "对比",
+])
+
+
+def _detect_restaurant_domain(query: str) -> bool:
+    """Return True if query contains any restaurant keyword.
+
+    Reviewer C1 — when True, restrict retrieval to subcategory='restaurant'.
+    Returns False for ambiguous/factory queries → use full retrieval (legacy).
+    """
+    return any(kw in query for kw in RESTAURANT_KEYWORDS)
+
+
 # ---------------------------------------------------------------------------
 # System prompt (improvement #4)
 # ---------------------------------------------------------------------------
@@ -428,11 +460,21 @@ async def manual_chat(request: ManualChatRequest) -> dict:
     # ------ Improvement #3: query expansion for short queries ------
     expanded_question = _expand_query(retrieval_question)
 
+    # ------ Reviewer C1: domain-aware routing ------
+    subcategories: Optional[List[str]] = None
+    if _detect_restaurant_domain(retrieval_question):
+        subcategories = ["restaurant"]
+        logger.info(
+            f"Restaurant domain detected → filtering to subcategory=restaurant "
+            f"(query='{retrieval_question[:40]}...')"
+        )
+
     # ------ Improvement #3: lower threshold + higher top_k ------
     try:
         results = await retriever.retrieve(
             query=expanded_question,
             categories=["operation_manual"],
+            subcategories=subcategories,
             top_k=8,
             similarity_threshold=0.40,
         )
