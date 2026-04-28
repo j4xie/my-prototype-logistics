@@ -10,11 +10,11 @@ from __future__ import annotations
 import logging
 import asyncio
 from dataclasses import dataclass, field
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Tuple
 from datetime import date
 
 from smartbi.utils.outlier_stats import (
-    OutlierAlgorithm, iqr_fence, find_outliers_iqr, IQRFence,
+    iqr_fence, find_outliers_iqr, IQRFence,
 )
 
 logger = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ class OutlierService:
         factory_id: str,
         window_days: int = DEFAULT_WINDOW_DAYS,
         kpi_kinds: Optional[List[str]] = None,
-    ) -> tuple[List[DetectedOutlier], List[str]]:
+    ) -> Tuple[List[DetectedOutlier], List[str]]:
         """主入口. 返 (outliers, insufficient_kpis).
 
         insufficient_kpis = 全网都 N<10 的 kpi_kind list, 前端显示 "样本不足".
@@ -99,7 +99,7 @@ class OutlierService:
 
     async def _detect_one_kpi(
         self, pool, factory_id: str, kpi_kind: str, window_days: int
-    ) -> tuple[List[DetectedOutlier], bool]:
+    ) -> Tuple[List[DetectedOutlier], bool]:
         """检测单个 kpi. 返 (outliers, was_insufficient_locally_AND_globally)."""
         # Step 1: query 本工厂 30 天
         local_data = await self._query_local(pool, factory_id, kpi_kind, window_days)
@@ -126,7 +126,7 @@ class OutlierService:
 
     async def _query_local(
         self, pool, factory_id: str, kpi_kind: str, window_days: int
-    ) -> list[tuple[date, float]]:
+    ) -> List[Tuple[date, float]]:
         """查询本工厂 N 天数据. 返 [(date, value), ...].
 
         ⚠️ W0.4 finding 3: RLS FORCE, 必须 GUC + transaction.
@@ -154,7 +154,7 @@ class OutlierService:
 
     async def _query_global_baseline(
         self, pool, kpi_kind: str, window_days: int
-    ) -> dict | None:
+    ) -> Optional[dict]:
         """调用 SECURITY DEFINER function. 不需 GUC (function bypass RLS)."""
         async with pool.acquire() as conn:
             row = await conn.fetchrow(
@@ -193,17 +193,35 @@ class OutlierService:
     def _build_outliers(
         self, local_data, fence, kpi_kind, baseline_source, baseline_n,
     ) -> List[DetectedOutlier]:
-        outliers = []
-        for d, v in local_data:
-            if v > fence.upper:
-                dev = (v - fence.upper) / fence.iqr if fence.iqr > 0 else 0
-                outliers.append(self._make_outlier(d, kpi_kind, v, fence, dev, 'above', baseline_source, baseline_n))
-            elif v < fence.lower:
-                dev = (fence.lower - v) / fence.iqr if fence.iqr > 0 else 0
-                outliers.append(self._make_outlier(d, kpi_kind, v, fence, dev, 'below', baseline_source, baseline_n))
-        return outliers
+        """Use find_outliers_iqr from utils to detect outliers, avoiding DRY violation."""
+        values = [v for _, v in local_data]
+        raw_outliers = find_outliers_iqr(values, fence)
+        return [
+            self._make_outlier(
+                anomaly_date=local_data[o.index][0],
+                kpi_kind=kpi_kind,
+                value=o.value,
+                fence=fence,
+                dev=o.deviation_x,
+                direction=o.direction,
+                source=baseline_source,
+                n=baseline_n,
+            )
+            for o in raw_outliers
+        ]
 
-    def _make_outlier(self, anomaly_date, kpi_kind, value, fence, dev, direction, source, n):
+    def _make_outlier(
+        self,
+        anomaly_date: date,
+        kpi_kind: str,
+        value: float,
+        fence: IQRFence,
+        dev: float,
+        direction: str,
+        source: str,
+        n: str,
+    ) -> DetectedOutlier:
+        """Create a DetectedOutlier from raw outlier data."""
         return DetectedOutlier(
             anomaly_date=anomaly_date, kpi_kind=kpi_kind, value=value,
             q1=fence.q1, q3=fence.q3, iqr=fence.iqr,
