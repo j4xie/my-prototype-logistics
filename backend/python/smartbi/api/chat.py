@@ -2097,19 +2097,60 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
             analysis_ctx = _build_analysis_ctx(query, request.context)
 
             # Bug #17 fix: include field_definitions in prompt so LLM knows
-            # which columns are measures/dimensions/times for the selected upload
+            # which columns are measures/dimensions/times for the selected upload.
+            # Apr 28 2026 (post-review P1 follow-up): annotate each dim with its
+            # cardinality so LLM avoids ranking on cardinality=1 dims (e.g. multi-
+            # period single-store pivot where `_门店或时段` is forward-filled to
+            # one store across all rows). Without this, LLM falls back to
+            # ranking on a numeric measure col misnamed "_门店名称" → labels
+            # rows by index instead of saying "data is single-store".
             field_summary = ""
             if 'field_meta' in locals() and field_meta:
                 measures = [f['original_name'] for f in field_meta if f.get('is_measure')]
-                dims = [f['original_name'] for f in field_meta if f.get('is_dimension')]
+                dim_names = [f['original_name'] for f in field_meta if f.get('is_dimension')]
                 times = [f['original_name'] for f in field_meta if f.get('is_time')]
+                # Enrich dim names with cardinality + sample value when df is available
+                dims_enriched: list[str] = []
+                single_value_dims: list[str] = []
+                try:
+                    df_for_card = df if 'df' in locals() else None
+                except Exception:
+                    df_for_card = None
+                for dn in dim_names:
+                    if df_for_card is not None and dn in df_for_card.columns:
+                        try:
+                            uniq = df_for_card[dn].dropna().unique()
+                            n_uniq = len(uniq)
+                            if n_uniq == 1:
+                                sample = str(uniq[0])[:40]
+                                dims_enriched.append(f"{dn} (cardinality=1, 单一值: {sample})")
+                                single_value_dims.append(f"{dn}={sample}")
+                            elif n_uniq <= 5:
+                                samples = ", ".join(str(v)[:20] for v in uniq[:5])
+                                dims_enriched.append(f"{dn} (cardinality={n_uniq}: {samples})")
+                            else:
+                                dims_enriched.append(f"{dn} (cardinality={n_uniq})")
+                        except Exception:
+                            dims_enriched.append(dn)
+                    else:
+                        dims_enriched.append(dn)
                 lines = ["## 当前数据源字段分类 (权威信息，优先使用)"]
                 if measures:
                     lines.append(f"可聚合数值字段 (measures, 用于 sum/avg/count): {', '.join(measures)}")
-                if dims:
-                    lines.append(f"分类维度字段 (dimensions, 用于分组): {', '.join(dims)}")
+                if dims_enriched:
+                    lines.append(f"分类维度字段 (dimensions, 用于分组): {', '.join(dims_enriched)}")
                 if times:
                     lines.append(f"时间字段: {', '.join(times)}")
+                # cardinality=1 short-circuit hint: tell LLM not to "rank" or
+                # "compare" on single-value dims — instead state the single value
+                # and aggregate across all rows.
+                if single_value_dims:
+                    lines.append(
+                        f"**重要 — 单一值维度提醒**: {', '.join(single_value_dims)} 在本数据集只有 1 个唯一值, "
+                        f"不存在 '排名/对比/最高最低' 的概念. 当用户问这类维度的排名时, 应直接回答 "
+                        f"'本数据集只有 1 个 {dim_names[0] if dim_names else 'X'}', 然后给出聚合数字 (sum/avg) 而非排名. "
+                        f"不要选 measure 字段当作排名维度."
+                    )
                 field_summary = "\n".join(lines) + "\n"
 
             # Apr 26 2026 UX-2: dataset capability hint. Sparse-data tenants
