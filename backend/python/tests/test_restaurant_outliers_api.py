@@ -1,0 +1,114 @@
+"""Tests for restaurant_outliers API (Phase B-1).
+
+Pattern mirrors test_restaurant_etl_admin.py: mount only the target router
+inside a minimal FastAPI test app, inject request.state fields via tiny
+middleware. No global exception handlers — FastAPI default {detail: "..."}
+format is used in test responses.
+
+Reviewer R2 critical: response payload MUST include baselineSource + baselineN.
+Quick-Win 3 pattern: cross-factory check returns 403 with 'platform_admin'
+mention in detail.
+"""
+from __future__ import annotations
+
+from datetime import date, datetime, timezone, timedelta
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+
+def _build_app():
+    """Build minimal FastAPI app with restaurant_outliers router + auth middleware mock."""
+    from smartbi.api.restaurant_outliers import router
+
+    app = FastAPI()
+
+    # Inject role + factory_id into request.state (Phase A pattern)
+    @app.middleware("http")
+    async def _mock_auth(request, call_next):
+        request.state.role = request.headers.get('x-role', 'factory_super_admin')
+        request.state.factory_id = request.headers.get('x-factory-id', 'F002')
+        request.state.auth_method = 'jwt'
+        return await call_next(request)
+
+    app.include_router(router, prefix="/api/restaurant")
+    return app
+
+
+def _mock_outlier(anomaly_date, kpi='wastage_cost_total', value=8500, baseline='self'):
+    from smartbi.services.outlier_service import DetectedOutlier
+    return DetectedOutlier(
+        anomaly_date=anomaly_date, kpi_kind=kpi, value=value,
+        q1=1200, q3=3400, iqr=2200,
+        lower_fence=-2100, upper_fence=6700,
+        deviation_x=0.82, severity='medium', direction='above',
+        baseline_source=baseline, baseline_n='100-499' if baseline == 'global' else '10-49',
+    )
+
+
+class TestGetOutliersAPI:
+    def test_get_outliers_admin_success_returns_baseline_source_field(self):
+        app = _build_app()
+        client = TestClient(app)
+
+        mock_outliers = [_mock_outlier(date.today() - timedelta(days=2))]
+        mock_service = AsyncMock()
+        mock_service.detect_totals = AsyncMock(return_value=(mock_outliers, []))
+
+        with patch('smartbi.api.restaurant_outliers._service', mock_service), \
+             patch('smartbi.api.restaurant_outliers._query_dismissed_this_month',
+                   new=AsyncMock(return_value=[])):
+            r = client.get('/api/restaurant/outliers?factoryId=F002')
+
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert body['factoryId'] == 'F002'
+        assert body['windowDays'] == 30
+        assert body['summary']['totalAnomalies'] == 1
+        assert len(body['outliers']) == 1
+        # Reviewer R2 critical: baselineSource MUST be in response
+        assert 'baselineSource' in body['outliers'][0]
+        assert 'baselineN' in body['outliers'][0]
+        assert body['outliers'][0]['baselineSource'] == 'self'
+
+    def test_cross_factory_blocked_403(self):
+        app = _build_app()
+        client = TestClient(app)
+        # Admin of F001 tries to query F002
+        r = client.get(
+            '/api/restaurant/outliers?factoryId=F002',
+            headers={'x-role': 'factory_super_admin', 'x-factory-id': 'F001'},
+        )
+        assert r.status_code == 403
+        assert 'platform_admin' in r.json()['detail']
+
+    def test_platform_admin_can_query_any_factory(self):
+        app = _build_app()
+        client = TestClient(app)
+
+        mock_service = AsyncMock()
+        mock_service.detect_totals = AsyncMock(return_value=([], []))
+
+        with patch('smartbi.api.restaurant_outliers._service', mock_service), \
+             patch('smartbi.api.restaurant_outliers._query_dismissed_this_month',
+                   new=AsyncMock(return_value=[])):
+            r = client.get(
+                '/api/restaurant/outliers?factoryId=F002',
+                headers={'x-role': 'platform_admin', 'x-factory-id': 'F999'},
+            )
+        assert r.status_code == 200
+
+    def test_invalid_factory_id_400(self):
+        app = _build_app()
+        client = TestClient(app)
+        r = client.get('/api/restaurant/outliers?factoryId=' + 'X' * 51)
+        assert r.status_code == 400
+
+    def test_window_days_out_of_range_validation(self):
+        app = _build_app()
+        client = TestClient(app)
+        r = client.get('/api/restaurant/outliers?factoryId=F002&windowDays=400')
+        # FastAPI Query(ge=1, le=365) returns 422
+        assert r.status_code == 422
