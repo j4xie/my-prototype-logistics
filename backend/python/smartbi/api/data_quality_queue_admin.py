@@ -87,53 +87,57 @@ async def _fetch_queue_items(
     offset = (page - 1) * page_size
 
     async with pool.acquire() as conn:
-        # W0.4 finding 3: MUST set GUC inside the same connection before SELECT
-        # so that the RLS FORCE policy on entity_resolution_admin_queue sees the
-        # correct factory_id and does not silently return 0 rows.
-        await conn.execute(
-            "SELECT set_config('app.factory_id', $1, true)", factory_id
-        )
+        # W0.4 finding 3: MUST set GUC inside an EXPLICIT TRANSACTION before
+        # the SELECT — set_config(..., is_local=true) is transaction-scoped,
+        # so without an explicit txn wrapper asyncpg auto-commits the SELECT
+        # set_config call, the GUC is wiped, and the next query sees no
+        # app.factory_id → RLS FORCE silently returns 0 rows. Pattern matches
+        # smartbi/agent/budget_tracker.py:101-107 and narrative_cache.py:83-88.
+        async with conn.transaction():
+            await conn.execute(
+                "SELECT set_config('app.factory_id', $1, true)", factory_id
+            )
 
-        rows = await conn.fetch(
-            f"""
-            SELECT q.id,
-                   q.factory_id,
-                   q.entity_type,
-                   q.raw_name,
-                   q.candidate_entity_id,
-                   q.confidence,
-                   q.decided_by_agent,
-                   q.status,
-                   q.priority,
-                   q.source_upload_id,
-                   q.admin_user,
-                   q.admin_at,
-                   q.admin_action,
-                   q.admin_resolved_to_entity_id,
-                   q.reasoning,
-                   q.extra,
-                   q.created_at,
-                   u.uploaded_by AS submitter
-              FROM entity_resolution_admin_queue q
-              LEFT JOIN smart_bi_pg_excel_uploads u
-                     ON u.id = q.source_upload_id
-              {where_sql}
-             ORDER BY q.priority DESC, q.created_at DESC
-             LIMIT ${p_idx} OFFSET ${p_idx + 1}
-            """,
-            *params,
-            page_size,
-            offset,
-        )
+            rows = await conn.fetch(
+                f"""
+                SELECT q.id,
+                       q.factory_id,
+                       q.entity_type,
+                       q.raw_name,
+                       q.candidate_entity_id,
+                       q.confidence,
+                       q.decided_by_agent,
+                       q.status,
+                       q.priority,
+                       q.source_upload_id,
+                       q.admin_user,
+                       q.admin_at,
+                       q.admin_action,
+                       q.admin_resolved_to_entity_id,
+                       q.reasoning,
+                       q.extra,
+                       q.created_at,
+                       u.uploaded_by AS submitter
+                  FROM entity_resolution_admin_queue q
+                  LEFT JOIN smart_bi_pg_excel_uploads u
+                         ON u.id = q.source_upload_id
+                  {where_sql}
+                 ORDER BY q.priority DESC, q.created_at DESC
+                 LIMIT ${p_idx} OFFSET ${p_idx + 1}
+                """,
+                *params,
+                page_size,
+                offset,
+            )
 
-        total = await conn.fetchval(
-            f"""
-            SELECT COUNT(*)
-              FROM entity_resolution_admin_queue q
-              {where_sql}
-            """,
-            *params,
-        )
+            total = await conn.fetchval(
+                f"""
+                SELECT COUNT(*)
+                  FROM entity_resolution_admin_queue q
+                  {where_sql}
+                """,
+                *params,
+            )
 
     items: List[Dict[str, Any]] = [
         {
