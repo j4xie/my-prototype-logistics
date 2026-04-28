@@ -37,7 +37,7 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 
-from smartbi.canonical.provenance._admin_auth import require_admin, ADMIN_ROLES
+from smartbi.canonical.provenance._admin_auth import require_admin
 
 logger = logging.getLogger(__name__)
 
@@ -67,8 +67,15 @@ async def _enqueue_job(job_id: str, factory_id: str) -> None:
     The job entry in _running_jobs is pre-created by trigger_etl before this
     is called, so patching this as a no-op in tests still leaves the job
     visible in _running_jobs with status='queued'.
+
+    Stores the Task in _running_jobs[job_id]["_task"] to keep a strong ref —
+    asyncio.create_task() returns a Task that the GC may collect mid-run if
+    no reference is held, producing "Task was destroyed but it is pending!"
+    warnings under load.
     """
-    asyncio.create_task(_run_job(job_id, factory_id))
+    task = asyncio.create_task(_run_job(job_id, factory_id))
+    if job_id in _running_jobs:
+        _running_jobs[job_id]["_task"] = task
 
 
 async def _run_job(job_id: str, factory_id: str) -> None:
