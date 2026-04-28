@@ -277,7 +277,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
 
         // 只能更新待处理的计划
         if (plan.getStatus() != ProductionPlanStatus.PENDING) {
-            throw new BusinessException("只能修改待处理的生产计划");
+            throw new BusinessException(409, "只能修改待处理的生产计划")
+                    .withHint("请刷新生产计划列表查看最新状态");
         }
 
         // P0-12: 校验销售订单来源 + 回填客户名
@@ -304,7 +305,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
 
         // 只能删除待处理的计划
         if (plan.getStatus() != ProductionPlanStatus.PENDING) {
-            throw new BusinessException("只能删除待处理的生产计划");
+            throw new BusinessException(409, "只能删除待处理的生产计划")
+                    .withHint("已开始或已完成的计划不可删除, 请取消代替");
         }
 
         productionPlanRepository.delete(plan);
@@ -413,7 +415,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
 
         // 验证状态
         if (plan.getStatus() != ProductionPlanStatus.PENDING) {
-            throw new BusinessException("只能开始待处理的生产计划");
+            throw new BusinessException(409, "只能开始待处理的生产计划")
+                    .withHint("请刷新生产计划列表查看最新状态");
         }
 
         runConfiguredValidation(factoryId, "START", java.util.Map.of("planId", planId));
@@ -443,7 +446,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
             throw new BusinessException("无权操作该生产计划");
         }
         if (plan.getStatus() != ProductionPlanStatus.IN_PROGRESS) {
-            throw new BusinessException("只能完成进行中的生产计划");
+            throw new BusinessException(409, "只能完成进行中的生产计划")
+                    .withHint("请刷新生产计划列表查看最新状态");
         }
 
         runConfiguredValidation(factoryId, "COMPLETE", java.util.Map.of(
@@ -480,7 +484,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
 
         // 已完成的计划不能取消
         if (plan.getStatus() == ProductionPlanStatus.COMPLETED) {
-            throw new BusinessException("已完成的生产计划不能取消");
+            throw new BusinessException(409, "已完成的生产计划不能取消")
+                    .withHint("请刷新生产计划列表查看最新状态");
         }
 
         // 更新状态
@@ -524,7 +529,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
 
         // 只能暂停进行中的计划
         if (plan.getStatus() != ProductionPlanStatus.IN_PROGRESS) {
-            throw new BusinessException("只能暂停进行中的生产计划");
+            throw new BusinessException(409, "只能暂停进行中的生产计划")
+                    .withHint("请刷新生产计划列表查看最新状态");
         }
 
         plan.setStatus(ProductionPlanStatus.PAUSED);
@@ -547,7 +553,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
 
         // 只能恢复暂停的计划
         if (plan.getStatus() != ProductionPlanStatus.PAUSED) {
-            throw new BusinessException("只能恢复暂停的生产计划");
+            throw new BusinessException(409, "只能恢复暂停的生产计划")
+                    .withHint("请刷新生产计划列表查看最新状态");
         }
 
         plan.setStatus(ProductionPlanStatus.IN_PROGRESS);
