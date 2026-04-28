@@ -46,7 +46,7 @@ import com.cretas.aims.util.ErrorSanitizer;
 public class SmartBIUploadController {
 
     /**
-     * 单文件上传大小 sanity 上限 (30MB)。
+     * 单文件上传大小 sanity 上限 (300MB)。
      * 这只挡掉极端文件 (例如 251MB pivot CSV 整库导出)。真正防 OOM 的是 Python
      * 端按 cell budget 截断 (15M cells, 跟 CSV 路径一致), 见 fixed_executor.py 的
      * pd.read_excel nrows 截断逻辑。
@@ -54,7 +54,7 @@ public class SmartBIUploadController {
      * 没有 cell-budget cap (CSV 路径有, 见 excel.py L1053)。修了 xlsx 路径之后
      * 这个上限只起 sanity 作用, 防 251MB+ 文件直接打爆 multipart parser 内存。
      */
-    private static final long MAX_UPLOAD_BYTES = 30L * 1024 * 1024;
+    private static final long MAX_UPLOAD_BYTES = 300L * 1024 * 1024;
 
     private final ExcelDynamicParserService excelParserService;
     private final SmartBIUploadFlowService uploadFlowService;

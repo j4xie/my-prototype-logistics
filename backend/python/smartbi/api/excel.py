@@ -33,7 +33,7 @@ from services.table_classifier import TableClassifier, TableType
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50MB
+MAX_UPLOAD_SIZE = 300 * 1024 * 1024  # 300MB
 
 
 def _fix_filename(filename: str) -> str:
@@ -58,7 +58,7 @@ async def _validate_upload(file: UploadFile) -> bytes:
     content = await file.read()
     if len(content) > MAX_UPLOAD_SIZE:
         raise ApiException(
-            f"文件过大 ({len(content) // 1024 // 1024}MB)，限制 50MB",
+            f"文件过大 ({len(content) // 1024 // 1024}MB)，限制 300MB",
             ErrorCode.VALIDATION_ERROR, 413,
         )
     return content
@@ -699,13 +699,13 @@ async def auto_parse_excel(
         # Read file content
         content = await file.read()
 
-        # 2026-04-29: 30MB sanity 上限 (跟 Java 端同步)。真正防 OOM 在 fixed_executor
-        # 的 cell-budget cap, 这里只挡极端文件防 multipart 内存爆。
-        _MAX_BYTES = 30 * 1024 * 1024
+        # sanity 上限 300MB (跟 Java 端同步)。真正防 OOM 在 fixed_executor
+        # 的 cell-budget cap / smart-merge-oom-guard, 这里只挡极端文件。
+        _MAX_BYTES = 300 * 1024 * 1024
         if len(content) > _MAX_BYTES:
             mb = len(content) / 1024.0 / 1024.0
             raise ApiException(
-                f"文件过大 ({mb:.1f} MB),单次上传最大 30 MB。建议按月或按门店拆分后上传。",
+                f"文件过大 ({mb:.1f} MB),单次上传最大 300 MB。建议按月或按门店拆分后上传。",
                 ErrorCode.VALIDATION_ERROR, 413,
             )
 
