@@ -39,3 +39,7 @@ COMMENT ON COLUMN outlier_dismissals.expires_at IS
     'Phase B-1 第一版 NULL (永久 dismiss); 后续 UI 加临时 dismiss (e.g. 节假日 7 天后重新触发)';
 COMMENT ON COLUMN outlier_dismissals.snapshot_value IS
     'dismiss 当时的异常值, 后续 cache 失效阈值变了让 admin 能回看 "我当时为什么 dismiss"';
+
+-- App role grants (跟 V20260501_02 pattern 一致)
+GRANT SELECT, INSERT, UPDATE, DELETE ON outlier_dismissals TO smartbi_user;
+GRANT USAGE, SELECT ON SEQUENCE outlier_dismissals_id_seq TO smartbi_user;
