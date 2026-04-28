@@ -2122,8 +2122,9 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 _ENTITY_TOKENS = ("名称", "门店", "客户", "员工", "供应商", "店铺")
                 row_index_cols: list[dict] = []
                 def _is_row_index(col_name: str) -> bool:
-                    if not df_for_card is not None:
-                        return False
+                    # Reviewer round 2 P2: dropped redundant guard (line 2127
+                    # already covers None case; the prior `not df_for_card is
+                    # not None` was a confusing double-negative).
                     if df_for_card is None or col_name not in df_for_card.columns:
                         return False
                     if not any(tok in col_name for tok in _ENTITY_TOKENS):
@@ -2143,11 +2144,31 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                             return False
                         int_vals.sort()
                         n_total = len(df_for_card)
-                        return (
-                            len(int_vals) >= 2
-                            and int_vals[0] >= 0
-                            and int_vals[-1] <= n_total + 5
-                        )
+                        # Reviewer round 2 P1 #2: actually verify row-index
+                        # pattern, not just min/max bounds. A real row index
+                        # has values densely packed in a contiguous range AND
+                        # has roughly one unique value per row. Without these,
+                        # legit small-integer ID columns ({2, 5, 7} or {3, 7})
+                        # would false-positive.
+                        if len(int_vals) < 2:
+                            return False
+                        if int_vals[0] < 0:
+                            return False
+                        if int_vals[-1] > n_total + 5:
+                            return False
+                        # Density: ≥50% of the int range must be present.
+                        # Catches `{1..10}` (1.0), `{1,2,3,4,5,6,7,10}` (0.8),
+                        # but rejects `{2, 5, 7}` (0.5 — borderline; combined
+                        # with row-coverage check below it fails).
+                        span = int_vals[-1] - int_vals[0] + 1
+                        if span > 0 and len(int_vals) / span < 0.5:
+                            return False
+                        # Row coverage: row-index has ~1 unique value per row.
+                        # Real entity-ID columns in a small report typically
+                        # cover <50% of rows (3 employees in 10-row report).
+                        if len(int_vals) < n_total * 0.5:
+                            return False
+                        return True
                     except Exception:
                         return False
 

@@ -1447,19 +1447,55 @@ async def auto_parse_excel(
             # rarely have ≥6 distinct short labels in a row without numbers.
             if n_text >= 6:
                 return True
-            # Short row (3-5 text cells): if ≥30% of text values appear as
-            # tokens in actual column headers, treat as sub-header. Otherwise
-            # could be a real catalog row.
+            # Short row (3-5 text cells): require ≥30% header-overlap to flag.
+            # Reviewer round 2 P2 #4: prior version split on whitespace which
+            # broke CJK (e.g. '门店名称' became one token) and substring-matched
+            # short Latin tokens (e.g. 'ID' in 'ProductID' → spurious match).
+            # Now: split header tokens explicitly, require token length ≥3 for
+            # Latin substring path, and add character-overlap fallback for CJK.
             if headers and text_values:
-                hdr_text = " ".join(str(h) for h in headers if h is not None).lower()
-                overlap = sum(
-                    1 for tv in text_values
-                    if any(
-                        tok in hdr_text
-                        for tok in tv.lower().split()
-                        if len(tok) >= 2
-                    ) or tv.lower() in hdr_text
-                )
+                import re as _re
+                hdr_str = " ".join(str(h) for h in headers if h is not None)
+                hdr_lower = hdr_str.lower()
+                hdr_tokens = [
+                    t for t in _re.split(r'[\s_\-/\.,()（）]+', hdr_lower)
+                    if t
+                ]
+
+                def _overlaps(tv: str) -> bool:
+                    tv_lower = tv.lower()
+                    # CJK path: char-level overlap. Compute fraction of tv
+                    # CJK chars that appear in hdr_lower; ≥50% counts as match.
+                    cjk_chars = [c for c in tv if '一' <= c <= '鿿']
+                    if cjk_chars:
+                        hits = sum(1 for c in cjk_chars if c in hdr_lower)
+                        if hits / len(cjk_chars) >= 0.5:
+                            return True
+                    # Latin token path: split on common separators, exact-match
+                    # against header tokens (no substring), or substring only
+                    # when token length ≥3.
+                    tv_tokens = [
+                        t for t in _re.split(r'[\s_\-/\.,()（）]+', tv_lower)
+                        if t
+                    ]
+                    for tok in tv_tokens:
+                        if len(tok) < 2:
+                            continue
+                        # Exact token match
+                        if tok in hdr_tokens:
+                            return True
+                        # Substring match only for tokens length ≥3 (avoids
+                        # 'ID'/'TO' false positives)
+                        if len(tok) >= 3 and tok in hdr_lower:
+                            return True
+                    # Whole-string match: only for tokens length ≥3 (avoids
+                    # 2-char Latin like 'ID' / 'NA' substring-matching into
+                    # 'ProductID' / 'BrandNA' etc.). CJK already handled above.
+                    if len(tv_lower) >= 3 and tv_lower in hdr_lower:
+                        return True
+                    return False
+
+                overlap = sum(1 for tv in text_values if _overlaps(tv))
                 if overlap / len(text_values) < 0.3:
                     return False
             return True
