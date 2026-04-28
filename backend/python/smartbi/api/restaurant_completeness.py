@@ -139,6 +139,19 @@ async def _factory_age_days(factory_id: str, smartbi_pool, cretas_pool) -> int:
     Returns the EARLIEST date across all signals so factoryAge reflects
     when the factory truly started, not just when they started uploading.
     """
+    # All datetimes normalized to UTC-aware before min() comparison —
+    # asyncpg returns naive datetime for TIMESTAMP (no time zone) and aware
+    # for TIMESTAMPTZ; mixed comparison raises TypeError.
+    from datetime import date as _date
+
+    def _to_utc_aware(val):
+        """Normalize date / naive datetime / aware datetime → UTC-aware datetime."""
+        if isinstance(val, _date) and not isinstance(val, datetime):
+            return datetime.combine(val, datetime.min.time(), tzinfo=timezone.utc)
+        if val.tzinfo is None:
+            return val.replace(tzinfo=timezone.utc)
+        return val.astimezone(timezone.utc)
+
     candidates = []
     try:
         async with smartbi_pool.acquire() as conn:
@@ -148,7 +161,7 @@ async def _factory_age_days(factory_id: str, smartbi_pool, cretas_pool) -> int:
                 factory_id,
             )
             if earliest is not None:
-                candidates.append(earliest)
+                candidates.append(_to_utc_aware(earliest))
     except Exception as exc:
         logger.debug(f"[completeness] uploads age check failed: {exc}")
 
@@ -173,23 +186,15 @@ async def _factory_age_days(factory_id: str, smartbi_pool, cretas_pool) -> int:
                         factory_id,
                     )
                     if val is not None:
-                        # Some date columns are pure DATE (not TIMESTAMP) — convert to
-                        # datetime in UTC for unified comparison below.
-                        from datetime import date as _date
-                        if isinstance(val, _date) and not isinstance(val, datetime):
-                            val = datetime.combine(val, datetime.min.time(), tzinfo=timezone.utc)
-                        candidates.append(val)
+                        candidates.append(_to_utc_aware(val))
             except Exception as exc:
                 logger.debug(f"[completeness] {table} age check failed: {exc}")
 
     if not candidates:
         return 1
-    # Pick the EARLIEST signal across all sources
+    # All candidates are UTC-aware now — safe to compare
     earliest = min(candidates)
-    # earliest is a datetime; compute days from now
     now = datetime.now(timezone.utc)
-    if earliest.tzinfo is None:
-        earliest = earliest.replace(tzinfo=timezone.utc)
     delta = now - earliest
     return max(1, delta.days)
 
