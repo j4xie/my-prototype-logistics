@@ -10,10 +10,13 @@
 import { pythonFetch } from '@/api/smartbi/common';
 
 export interface EtlFailure {
-  runAt: string;
+  factoryId: string;
+  runAt: string | null;
   attempt: number;
-  errorClass: string;
-  errorMsgShort: string;
+  status: 'failed' | 'retrying' | 'failed_final';
+  errorClass: string | null;
+  errorMessage: string | null;
+  durationMs: number | null;
 }
 
 export interface EtlStatusResponse {

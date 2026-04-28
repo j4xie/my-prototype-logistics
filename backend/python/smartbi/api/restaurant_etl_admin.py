@@ -160,23 +160,29 @@ async def _recent_failures(pool, factory_id: str) -> list:
     """
     try:
         async with pool.acquire() as conn:
+            # Column names match V20260501_04 migration:
+            # error_msg / run_at / attempt (not error_message/failed_at/attempt_number).
             rows = await conn.fetch(
                 """
-                SELECT factory_id, error_message, failed_at, attempt_number
-                FROM restaurant_etl_failures
-                WHERE factory_id = $1
-                  AND failed_at >= NOW() - INTERVAL '7 days'
-                ORDER BY failed_at DESC
-                LIMIT 10
+                SELECT factory_id, error_msg, error_class, run_at,
+                       attempt, status, duration_ms
+                  FROM restaurant_etl_failures
+                 WHERE factory_id = $1
+                   AND run_at >= NOW() - INTERVAL '7 days'
+                 ORDER BY run_at DESC
+                 LIMIT 10
                 """,
                 factory_id,
             )
         return [
             {
                 "factoryId": r["factory_id"],
-                "errorMessage": r["error_message"],
-                "failedAt": r["failed_at"].isoformat() if hasattr(r["failed_at"], "isoformat") else str(r["failed_at"]),
-                "attemptNumber": r["attempt_number"],
+                "errorMessage": r["error_msg"],
+                "errorClass": r["error_class"],
+                "runAt": r["run_at"].isoformat() if r["run_at"] is not None else None,
+                "attempt": r["attempt"],
+                "status": r["status"],  # 'failed' | 'retrying' | 'failed_final'
+                "durationMs": r["duration_ms"],
             }
             for r in rows
         ]
