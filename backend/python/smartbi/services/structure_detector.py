@@ -204,6 +204,62 @@ class StructureDetector:
             StructureDetectionResult with detected structure
         """
         try:
+            # Apr 28 2026 (audit P0): pre-detect .xls (BIFF) vs .xlsx (ZIP)
+            # via magic bytes. openpyxl ONLY handles .xlsx (zip container).
+            # 50% of real customer files are .xls (Excel 97-2003) — without
+            # this fallback they ALL fail with "文件不是有效的 xlsx 格式"
+            # despite UI saying .xls is supported. Convert .xls in-memory
+            # to .xlsx buffer via pandas+xlrd<2.0, then re-load with openpyxl.
+            _is_xls = file_bytes[:8] == b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'  # OLE2/BIFF8
+            if _is_xls:
+                try:
+                    # Use xlrd 1.2 directly (pandas 1.5+ requires xlrd>=2 which
+                    # dropped .xls support). xlrd 1.2 reads BIFF8 .xls natively.
+                    import xlrd as _xlrd
+                    import io as _io
+                    import openpyxl as _openpyxl
+                    _book = _xlrd.open_workbook(file_contents=file_bytes)
+                    if _book.nsheets == 0:
+                        return StructureDetectionResult(
+                            success=False,
+                            error="文件无可读取的 sheet (空 .xls). 请确认文件包含数据后重新上传."
+                        )
+                    _xlsx_wb = _openpyxl.Workbook()
+                    _xlsx_wb.remove(_xlsx_wb.active)
+                    _total_rows = 0
+                    for _si in range(_book.nsheets):
+                        _xs = _book.sheet_by_index(_si)
+                        _ws = _xlsx_wb.create_sheet(title=(_xs.name or f"Sheet{_si+1}")[:30])
+                        for _r in range(_xs.nrows):
+                            _row_vals = []
+                            for _c in range(_xs.ncols):
+                                _v = _xs.cell_value(_r, _c)
+                                _ct = _xs.cell_type(_r, _c)
+                                # xlrd date is float; convert
+                                if _ct == _xlrd.XL_CELL_DATE:
+                                    try:
+                                        _v = _xlrd.xldate_as_datetime(_v, _book.datemode)
+                                    except Exception:
+                                        pass
+                                _row_vals.append(_v)
+                            _ws.append(_row_vals)
+                        _total_rows += _xs.nrows
+                    _xlsx_buf = _io.BytesIO()
+                    _xlsx_wb.save(_xlsx_buf)
+                    _xlsx_wb.close()
+                    _xlsx_buf.seek(0)
+                    file_bytes = _xlsx_buf.getvalue()
+                    logger.info(
+                        f"[xls→xlsx] converted .xls to .xlsx in-memory via xlrd "
+                        f"({_book.nsheets} sheets, {_total_rows} total rows)"
+                    )
+                except Exception as _xls_err:
+                    logger.warning(f"[xls→xlsx] conversion failed: {_xls_err}", exc_info=True)
+                    return StructureDetectionResult(
+                        success=False,
+                        error=f"旧 .xls 格式转换失败: {_xls_err}. 建议: 用 Excel 打开后另存为 .xlsx 格式再上传."
+                    )
+
             # Load workbook
             wb = openpyxl.load_workbook(io.BytesIO(file_bytes), data_only=True)
             if sheet_index >= len(wb.sheetnames):

@@ -699,6 +699,56 @@ async def auto_parse_excel(
         # Read file content
         content = await file.read()
 
+        # Apr 28 2026 (audit P0): convert .xls (BIFF8) → .xlsx in-memory at
+        # entrypoint so ALL downstream code (structure_detector, fixed_executor,
+        # context_extractor, etc.) receives .xlsx bytes. openpyxl-based readers
+        # cannot handle .xls; previously each path tried separately, leading
+        # to "File is not a zip file" deep in the call chain. Now: convert ONCE
+        # at the boundary using xlrd<2.0 → openpyxl write.
+        # 50% of real customer files are .xls (Excel 97-2003), this fixes them.
+        if content[:8] == b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1':  # OLE2/BIFF8 magic
+            try:
+                import xlrd as _xlrd
+                import openpyxl as _openpyxl
+                _book = _xlrd.open_workbook(file_contents=content)
+                _xlsx_wb = _openpyxl.Workbook()
+                _xlsx_wb.remove(_xlsx_wb.active)
+                _total_rows = 0
+                for _si in range(_book.nsheets):
+                    _xs = _book.sheet_by_index(_si)
+                    _ws = _xlsx_wb.create_sheet(title=(_xs.name or f"Sheet{_si+1}")[:30])
+                    for _r in range(_xs.nrows):
+                        _row_vals = []
+                        for _c in range(_xs.ncols):
+                            _v = _xs.cell_value(_r, _c)
+                            _ct = _xs.cell_type(_r, _c)
+                            if _ct == _xlrd.XL_CELL_DATE:
+                                try:
+                                    _v = _xlrd.xldate_as_datetime(_v, _book.datemode)
+                                except Exception:
+                                    pass
+                            _row_vals.append(_v)
+                        _ws.append(_row_vals)
+                    _total_rows += _xs.nrows
+                import io as _io
+                _xlsx_buf = _io.BytesIO()
+                _xlsx_wb.save(_xlsx_buf)
+                _xlsx_wb.close()
+                content = _xlsx_buf.getvalue()
+                # Update extension hint so downstream sees .xlsx
+                if ext == ".xls":
+                    ext = ".xlsx"
+                logger.info(
+                    f"[xls→xlsx@entrypoint] converted .xls → .xlsx in-memory "
+                    f"({_book.nsheets} sheets, {_total_rows} rows, {len(content)} bytes)"
+                )
+            except Exception as _xls_err:
+                logger.warning(f"[xls→xlsx@entrypoint] conversion failed: {_xls_err}", exc_info=True)
+                raise ApiException(
+                    f"旧 .xls 格式转换失败: {_xls_err}. 建议: 用 Excel 打开后另存为 .xlsx 格式再上传.",
+                    ErrorCode.VALIDATION_ERROR, 400,
+                )
+
         # Determine sheet - by name or by index
         effective_sheet_name = sheet_name or sheetName
         effective_index = sheet_index if sheet_index is not None else sheetIndex
