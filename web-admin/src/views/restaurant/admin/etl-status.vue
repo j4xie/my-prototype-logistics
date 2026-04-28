@@ -12,7 +12,7 @@
   No `as any` — all types defined in @/api/restaurant/etl-admin.
 -->
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, onBeforeUnmount, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Refresh } from '@element-plus/icons-vue';
 import {
@@ -137,6 +137,11 @@ async function handleTrigger(factoryId: string): Promise<void> {
   }
 }
 
+// Track active polling intervals so onBeforeUnmount can clean them up.
+// Without this, navigating away during a poll continues firing fetch
+// requests against a destroyed component.
+const activeIntervals = new Set<ReturnType<typeof setInterval>>();
+
 function pollUntilDone(factoryId: string): void {
   const intervalId = setInterval(async () => {
     try {
@@ -144,6 +149,7 @@ function pollUntilDone(factoryId: string): void {
       statusMap.value = { ...statusMap.value, [factoryId]: detail };
       if (detail.lastStatus !== 'running' && detail.lastStatus !== 'queued') {
         clearInterval(intervalId);
+        activeIntervals.delete(intervalId);
         triggeringMap.value = { ...triggeringMap.value, [factoryId]: false };
         if (detail.lastStatus === 'success') {
           ElMessage.success(`${factoryId} ETL 同步完成`);
@@ -153,9 +159,11 @@ function pollUntilDone(factoryId: string): void {
       }
     } catch {
       clearInterval(intervalId);
+      activeIntervals.delete(intervalId);
       triggeringMap.value = { ...triggeringMap.value, [factoryId]: false };
     }
   }, 5000);
+  activeIntervals.add(intervalId);
 }
 
 // ── Failure log dialog ─────────────────────────────────────────────────
@@ -170,6 +178,11 @@ function openFailureLog(factoryId: string): void {
 // ── Lifecycle ──────────────────────────────────────────────────────────
 
 onMounted(loadAll);
+
+onBeforeUnmount(() => {
+  activeIntervals.forEach(clearInterval);
+  activeIntervals.clear();
+});
 </script>
 
 <template>
