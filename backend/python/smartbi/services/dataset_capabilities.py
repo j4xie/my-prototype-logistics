@@ -47,7 +47,7 @@ _CAPABILITY_KEYWORDS: dict[str, list[str]] = {
         'review', 'rating', 'star', 'comment', 'feedback', 'pingjia',
     ],
     'has_dish':     [
-        '菜品', '商品', '产品', '菜', '套餐',
+        '菜品', '商品', '产品', '菜', '套餐', '主食', '小吃', '饮品', '酒水',
         # English / pinyin
         'dish', 'product', 'item', 'sku', 'menu', 'caipin',
     ],
@@ -57,7 +57,8 @@ _CAPABILITY_KEYWORDS: dict[str, list[str]] = {
         'store', 'shop', 'branch', 'outlet', 'mendian',
     ],
     'has_time':     [
-        '日期', '时间', '月份', '年份', '周',
+        '日期', '时间', '月份', '年份', '周', '时段', '午市', '晚市',
+        '早市', '夜市', '工作日', '周末',
         # English / pinyin
         'time', 'date', 'month', 'year', 'week', 'day', 'period',
         'riqi', 'shijian',
@@ -69,9 +70,14 @@ _CAPABILITY_KEYWORDS: dict[str, list[str]] = {
     ],
     'has_channel':  [
         '渠道', '美团', '饿了么', '抖音', '点评',
+        # Apr 28 2026 (P3 backlog): restaurant industry — 堂食 (dine-in) and
+        # 外卖 (takeout/delivery) are channel categories. Without these keys,
+        # B5-style queries "堂食外卖占比" route to short-circuit "channel
+        # 字段不存在" even when the dataset has 堂食_实际收入 + 外卖_实际收入.
+        '堂食', '外卖', '到店', '到家', '自提',
         # English / pinyin
         'channel', 'platform', 'meituan', 'eleme', 'douyin', 'dianping',
-        'qudao',
+        'qudao', 'tangshi', 'waimai', 'dinein', 'takeout', 'delivery',
     ],
     'has_staff':    [
         '员工', '服务员', '收银员', '厨师',
