@@ -80,7 +80,8 @@ public class ProcurementSuggestionService {
                                                     String productionPlanId,
                                                     List<MaterialShortfall> shortfalls) {
         if (shortfalls == null || shortfalls.isEmpty()) {
-            throw new BusinessException("原辅料短缺列表为空，无需生成采购建议");
+            throw new BusinessException(400, "原辅料短缺列表为空，无需生成采购建议")
+                    .withHint("请先确认生产计划存在原辅料短缺").withHintTarget("shortfalls");
         }
 
         List<PurchaseOrder> suggestions = new ArrayList<>();
