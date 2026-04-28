@@ -766,6 +766,14 @@ app.include_router(
     tags=["Restaurant Completeness"],
 )
 
+# Restaurant outliers API (餐饮 Phase B-1 Task 7 — outlier detection + dismissal)
+from smartbi.api import restaurant_outliers
+app.include_router(
+    restaurant_outliers.router,
+    prefix="/api/restaurant",
+    tags=["RestaurantOutliers"],
+)
+
 # Phase A A-3 Data quality queue admin (餐饮 Phase A Task 3.2 — list endpoint)
 # Tasks 3.3/3.4/3.6 will add resolve/reject/batch/history to the same module.
 from smartbi.api import data_quality_queue_admin
