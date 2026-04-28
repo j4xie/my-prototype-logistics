@@ -603,3 +603,113 @@ async def reject_queue(
         )
 
     return {"rejected": True}
+
+
+# ---------------------------------------------------------------------------
+# Task 3.4: batch-resolve with per-id transactions + partial success
+# ---------------------------------------------------------------------------
+
+class BatchResolveBody(BaseModel):
+    ids: List[int]
+    action: str  # 'confirm' | 'create_new'
+    resolvedToEntityId: Optional[int] = None
+
+
+@router.post("/batch-resolve")
+async def batch_resolve_queue(
+    request: Request, body: BatchResolveBody,
+) -> Dict[str, Any]:
+    """Per-id transactional batch resolve with 4-eye + partial success.
+
+    Each ID is processed in its own loop iteration with isolated transaction.
+    Single-ID failures (not found / status / 4-eye / race) do NOT block the rest.
+
+    Returns:
+        {successCount: int, failedItems: [{id, reason}]}
+    """
+    require_admin(request, action_name="数据质量队列批量处理")
+
+    if not body.ids:
+        raise HTTPException(status_code=400, detail="ids 不能为空")
+    if body.action not in ("confirm", "create_new"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"action 必须是 'confirm' 或 'create_new', 收到 {body.action!r}",
+        )
+
+    pool = await get_pg_pool()
+    if pool is None:
+        raise HTTPException(status_code=503, detail="数据库不可用")
+
+    # Determine current user: prefer numeric user_id, fall back to username string.
+    current_user = str(
+        getattr(request.state, "user_id", None)
+        or getattr(request.state, "username", "")
+        or ""
+    )
+
+    success_count = 0
+    failed_items: List[Dict[str, Any]] = []
+
+    for item_id in body.ids:
+        # --- Per-id isolation: each iteration is its own transaction boundary ---
+        item = await _get_queue_item(pool, item_id)
+        if not item:
+            failed_items.append({"id": item_id, "reason": "队列项不存在"})
+            continue
+
+        if item["status"] != "PENDING":
+            failed_items.append({
+                "id": item_id,
+                "reason": f"状态 {item['status']}, 无法处理",
+            })
+            continue
+
+        # 4-eye check per item (same logic as resolve_queue)
+        submitter = item["submitter"]
+        single_admin_degraded = False
+        # W0.4 finding 1: if submitter is None, treat as "no conflict known" → allow.
+        if current_user and submitter and current_user == submitter:
+            admin_count = await _get_admin_count_for_factory(item["factoryId"])
+            if admin_count > 1:
+                failed_items.append({
+                    "id": item_id,
+                    "reason": "您是提交者, 需另一管理员审核 (4-eye 原则)",
+                })
+                continue
+            # admin_count == 1 → single-admin degradation, allow but tag
+            single_admin_degraded = True
+            logger.info(
+                "Single-admin degradation (batch): factory=%s item=%d user=%s",
+                item["factoryId"], item_id, current_user,
+            )
+
+        try:
+            ok = await _update_queue_resolved(
+                pool,
+                item_id,
+                item["factoryId"],
+                body.action,
+                body.resolvedToEntityId,
+                current_user,
+                None,  # notes not supported in batch mode
+                single_admin_degraded,
+            )
+            if ok:
+                success_count += 1
+            else:
+                failed_items.append({
+                    "id": item_id,
+                    "reason": "已被其他管理员处理 (race condition)",
+                })
+        except Exception as e:
+            logger.exception("Batch resolve failed for item %d: %s", item_id, e)
+            failed_items.append({
+                "id": item_id,
+                "reason": f"处理失败: {str(e)[:200]}",
+            })
+
+    return {
+        "successCount": success_count,
+        "failedItems": failed_items,
+    }
