@@ -750,6 +750,14 @@ app.include_router(
     tags=["LLM Router Admin"],
 )
 
+# Phase A A-1 Restaurant ETL admin (Apr 28 2026): trigger + status endpoints
+from smartbi.api import restaurant_etl_admin
+app.include_router(
+    restaurant_etl_admin.router,
+    prefix="/api/smartbi/restaurant/etl",
+    tags=["Restaurant ETL Admin"],
+)
+
 # Memory diagnostic / manual trim (Apr 23 2026, investigating post-materialize RSS retention)
 from smartbi.api import memory_admin
 app.include_router(memory_admin.router, prefix="/api/smartbi/admin/memory", tags=["Memory Admin"])
