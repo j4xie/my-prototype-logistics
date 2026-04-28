@@ -292,3 +292,119 @@ test.describe('数据织网 C smoke — 真窗 user-experience guards', () => {
   });
 
 });
+
+// ─── 餐饮 Phase A smoke — Task 4.1 (2026-04-28) ──────────────────────────────
+//
+// 3 tests for:
+//   A-1  /restaurant/admin/etl-status   — ETL admin 列表 + 立即同步按钮
+//   A-2  /restaurant/data-completeness  — 6 模块完整度卡片 + 总体完整度
+//   A-3  /system/data-quality-queue     — entity_type tabs + 列表渲染
+//
+// 运行 (复用 data-fabric-c-smoke project, 同 storageState):
+//   E2E_BASE_URL=http://139.196.165.140:8097 \
+//   npx playwright test --project data-fabric-c-smoke --grep "餐饮 Phase A"
+//
+// 注意: 这些测试在 Task 4.3 final gate 才实际运行 (依赖 Task 1.6 部署完成).
+// 现在仅做结构性验证 (--list 解析通过).
+
+test.describe('餐饮 Phase A smoke — A-1/A-2/A-3 new-feature guards', () => {
+
+  test('A-1 ETL admin status — 列表 + 立即同步按钮可点击', async ({ page }) => {
+    // 验证 /restaurant/admin/etl-status 页面可达 + 核心 UI 渲染.
+    // 两种合法状态: (a) 有工厂行的表格, (b) "暂无数据" 空状态.
+    // 无论哪种, 页面的 "餐饮 ETL 状态" 文字必须可见 (regression guard: 页面不 404/白屏).
+    await gotoAndWait(page, '/restaurant/admin/etl-status', '餐饮 ETL 状态');
+
+    // 立即同步按钮 — 至少存在一个 (可能出现在每行, 也可能是页面级全局按钮).
+    // 不要求必须 enabled (工厂行为空时按钮可能 disabled), 只要 DOM 中存在.
+    const syncBtnCount = await page.getByRole('button', { name: /立即同步/ }).count();
+    expect(
+      syncBtnCount,
+      'A-1: "立即同步" 按钮至少存在 1 个 (表格行级或页面级). 如果 0 个说明按钮 label 改了或页面结构变了.',
+    ).toBeGreaterThanOrEqual(1);
+
+    // 表格容器存在 — el-table 或 .etl-table 或类似. 用宽容 selector.
+    // "暂无数据" 也满足 (el-table 在空状态下仍渲染 el-empty 在 table 容器内).
+    const tableOrEmpty = await page.locator(
+      'table, .el-table, [class*="el-table"], .etl-table, .el-empty',
+    ).count();
+    expect(
+      tableOrEmpty,
+      'A-1: 页面应有表格容器或空状态 (.el-table / table / .el-empty).',
+    ).toBeGreaterThanOrEqual(1);
+
+    await page.screenshot({ path: 'test-results/a1-etl-admin-status.png', fullPage: true });
+  });
+
+  test('A-2 餐饮完整度 — 6 模块卡片 + 总体完整度', async ({ page }) => {
+    // 验证 /restaurant/data-completeness 渲染 6 个模块名称 + "总体完整度" 文字.
+    // 这些文字是 Phase A A-2 的核心 deliverable — 如果任何一个模块名缺失说明
+    // 组件 props / API 响应映射断了.
+    await gotoAndWait(page, '/restaurant/data-completeness', '餐饮数据完整度');
+
+    // "总体完整度" 聚合标签必须可见.
+    await expect(
+      page.getByText('总体完整度').first(),
+      'A-2: "总体完整度" 聚合标签应可见.',
+    ).toBeVisible({ timeout: 15000 });
+
+    // 6 个模块名称全部可见 (或其合理缩写形式).
+    // 使用 partial match (getByText 默认 exact:false 的效果用 page.locator).
+    const moduleNames = [
+      'POS 销售数据',
+      '菜单',        // 可能是 "菜单/配方" 全称也可能截断, 用前缀 partial match
+      '领料记录',
+      '损耗记录',
+      '盘点记录',
+      '顾客评价',
+    ];
+    for (const name of moduleNames) {
+      // page.getByText uses substring match when text is not exact
+      await expect(
+        page.getByText(name).first(),
+        `A-2: 模块名 "${name}" 应在页面中可见.`,
+      ).toBeVisible({ timeout: 15000 });
+    }
+
+    await page.screenshot({ path: 'test-results/a2-data-completeness.png', fullPage: true });
+  });
+
+  test('A-3 数据质量队列 — entity_type tabs + 列表渲染', async ({ page }) => {
+    // 路径: /system/data-quality-queue (Task 3.5 中放在 /system/* 目录下).
+    // 验证: ≥5 个 entity_type tab 可见 + 表格或空状态渲染.
+    // 不要求全 8 个 tab, 防止迭代中 tab 数目有轻微调整导致测试脆化.
+    await gotoAndWait(page, '/system/data-quality-queue', '数据质量队列');
+
+    // entity_type tab 候选集 (至少其中 5 个可见).
+    const expectedTabs = [
+      '门店',       // store
+      '产品',       // product
+      '员工',       // staff
+      '食材',       // ingredient
+      '字段冲突',   // field_conflict (可能用英文 label)
+    ];
+    let visibleTabCount = 0;
+    for (const tabLabel of expectedTabs) {
+      const tabEl = page.getByRole('tab', { name: tabLabel }).first();
+      const isVisible = await tabEl.isVisible().catch(() => false);
+      if (isVisible) visibleTabCount++;
+    }
+    expect(
+      visibleTabCount,
+      `A-3: entity_type tab 至少 5 个可见, 实际可见 ${visibleTabCount} 个. ` +
+      `如果 <5, 检查 DataQualityQueuePage.vue tab 定义 或路由是否正确部署.`,
+    ).toBeGreaterThanOrEqual(5);
+
+    // 列表区域: 表格 OR 空状态 (没有质量问题时 el-empty 合法).
+    const listOrEmpty = await page.locator(
+      'table, .el-table, [class*="el-table"], .el-empty',
+    ).count();
+    expect(
+      listOrEmpty,
+      'A-3: 应有表格容器或空状态 (.el-table / table / .el-empty).',
+    ).toBeGreaterThanOrEqual(1);
+
+    await page.screenshot({ path: 'test-results/a3-data-quality-queue.png', fullPage: true });
+  });
+
+});
