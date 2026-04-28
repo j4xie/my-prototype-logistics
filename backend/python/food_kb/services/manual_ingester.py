@@ -78,7 +78,11 @@ def parse_html_to_sections(html_content: str) -> List[Dict[str, str]]:
                 text = "\n".join(current_content_parts).strip()
                 if text:
                     sections.append({"title": current_title, "content": text})
-            current_title = element.get_text(strip=True)
+            # Use space separator so adjacent inline spans don't smush together
+            # ("房租占比 (Rent %)白垩纪默认" → "房租占比 (Rent %) 白垩纪默认"),
+            # then strip cosmetic suffix tags that pollute source citation display.
+            raw_title = element.get_text(separator=" ", strip=True)
+            current_title = re.sub(r"\s*白垩纪默认\s*$", "", raw_title).strip()
             current_content_parts = []
         else:
             text = element.get_text(separator=" ", strip=True)

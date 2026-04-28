@@ -111,16 +111,11 @@ _QUERY_EXPANSIONS: Dict[str, str] = {
     "盘点": "盘点 库存盘点 月底盘存 日清",
     "日清": "日清 日清日结 库存对账 盘存校验",
     "招牌菜": "招牌菜 Star 明星菜 高利高销 4 象限",
-    # 英文术语 (大小写双覆盖,因为 keyword in question 是 case-sensitive)
+    # 英文术语 (大小写双覆盖通过 _expand_query.lower() 自动实现,无需重复 key)
     "ARPU": "ARPU 客单价 人均消费",
-    "arpu": "ARPU 客单价 人均消费",
     "GMV": "GMV 营业额 总成交 成交额",
-    "gmv": "GMV 营业额 总成交 成交额",
     "LTV": "LTV 客户终身价值 customer lifetime value 长期价值",
-    "ltv": "LTV 客户终身价值 customer lifetime value 长期价值",
     "ROI": "ROI 回报率 投资回报 营销 ROI",
-    "roi": "ROI 回报率 投资回报 营销 ROI",
-    "rfm": "RFM Recency Frequency Monetary 会员分层",
     # 二次 audit 补充: 短词 / 客户高频说法
     "瀑布图": "瀑布图 损益瀑布 现金流瀑布 waterfall",
     "现金流": "现金流 cashflow 经营现金流 投资现金流 筹资现金流",
@@ -232,14 +227,19 @@ def _expand_query(question: str) -> str:
     BM25 and vector recall.  Returns the original question if no expansion
     applies or the question is already long enough.
 
+    Case-insensitive substring match: lowercases both side once before compare,
+    so "ROI" / "roi" / "Roi" all hit the same expansion entry. This deduplicates
+    the keys (no need for separate "ROI"/"roi" pairs).
+
     Iterates keys longest-first so specific overlaps win:
     "AI 洞察" must match before "AI"; "存货周转" before "周转".
     """
     if len(question) >= 10:
         return question
 
+    q_lower = question.lower()
     for keyword in sorted(_QUERY_EXPANSIONS.keys(), key=len, reverse=True):
-        if keyword in question:
+        if keyword.lower() in q_lower:
             return f"{question} {_QUERY_EXPANSIONS[keyword]}"
 
     return question

@@ -27,8 +27,11 @@ CARD_COUNT=$(find "$CARDS_DIR" -maxdepth 1 -name "*.vue" -not -name "RawJsonCard
 H3_COUNT=$(grep -c "<h3>" "$GLOSSARY" || echo 0)
 
 # 期望: 每个 chat card 对应 1+ 字典条目 (有些 card 含多个指数)
-# 阈值: cards × 4 = 84 (cards 21 时), 加硬底 75 防 cards 数下降时阈值过宽
-HARD_FLOOR=75
+# 阈值: max(cards × 4, hard_floor 90)
+# - hard floor 90 防 h3 dropped to 89 仍然 PASS 的场景 (round-3 audit I4 + batch-2 提议)
+# - cards × 4 防 cards 大幅扩张时漏 detect (新 cards 没补字典)
+# - margin 加严: 当前 cards 21 → cards × 4 = 84, hard floor 90 → 实际 90, h3 ~ 97 → margin 7
+HARD_FLOOR=90
 EXPECTED_MIN=$((CARD_COUNT * 4))
 if [ "$EXPECTED_MIN" -lt "$HARD_FLOOR" ]; then
   EXPECTED_MIN=$HARD_FLOOR
