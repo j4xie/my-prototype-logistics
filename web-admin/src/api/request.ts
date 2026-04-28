@@ -10,7 +10,32 @@ import { ApiResponse, ApiError } from '@/types/api';
 // Apr 18 2026 UX 优化: error 类 toast 默认 3s 闪过对业务流程错误 (库存不足/并发冲突/
 // 批次未分配) 太短 — 用户需时间看清具体原因 + 去依赖流程处理. 改成 duration: 0 (sticky,
 // 必须用户手动关) + showClose: true. warning/success/info 保持 3s.
+// Apr 28 2026 (Bug C): dedup identical error messages within a short window.
+// qa-prompt v2.4 Phase 6 caught: 3 init APIs failing simultaneously emit
+// 3 identical "服务暂时不可用,请稍后重试 (后端未就绪)" toasts. User sees
+// noise. Dedupe by exact message+type within 2s window.
+const _toastSeen: Map<string, number> = new Map();
+const _TOAST_DEDUP_MS = 2000;
+
 const showMessage = async (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'error') => {
+  // Dedup error/warning toasts only — success/info usually deliberate.
+  if (type === 'error' || type === 'warning') {
+    const key = `${type}::${message}`;
+    const now = Date.now();
+    const last = _toastSeen.get(key);
+    if (last !== undefined && now - last < _TOAST_DEDUP_MS) {
+      _toastSeen.set(key, now);
+      return; // suppress duplicate within window
+    }
+    _toastSeen.set(key, now);
+    // Periodic cleanup to avoid unbounded map growth.
+    if (_toastSeen.size > 50) {
+      for (const [k, t] of _toastSeen) {
+        if (now - t > _TOAST_DEDUP_MS * 2) _toastSeen.delete(k);
+      }
+    }
+  }
+
   const { ElMessage } = await import('element-plus');
   ElMessage({
     message,

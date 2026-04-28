@@ -461,21 +461,41 @@ onMounted(async () => {
         return !name.startsWith('[自动同步]');
       });
       const candidates = nonAutoSync.length > 0 ? nonAutoSync : deduped;
-      // Apr 24 2026 — review xlsx detection: file name contains review/comment
-      // keywords (评价/评论/大众点评/美团评价/评分). When user uploads review
-      // data they want review analysis as default, NOT the biggest POS table.
+      // Apr 28 2026 (Bug D): recency bias — user just uploaded a new file
+      // expects to use it. Prior logic picked biggest rowCount, which made
+      // a fresh 16-row 收入管理报表 lose to an older 12,903-row 评价下载.
+      // qa-prompt v2.4 Phase 6 confirmed: AI Query showed "暂无上传数据"
+      // post-upload because selector kept old dataset selected.
+      //
+      // New rule: most recent upload wins by default. Tiebreaker = rowCount.
+      // Review-keyword bias retained but lowered priority — only kicks in
+      // when no recent (< 1h) non-review upload exists.
       const REVIEW_KEYWORDS = ['评价', '评论', '大众点评', '美团评价', '评分', 'review', 'comment'];
       const isReviewFile = (d: any) => {
         const name = (d.fileName || d.originalFileName || '').toLowerCase();
         return REVIEW_KEYWORDS.some(kw => name.includes(kw.toLowerCase()));
       };
-      const reviewCands = candidates.filter(isReviewFile);
-      // Sort each group by rowCount desc (richer = better within group)
-      const sortByRows = (a: any, b: any) => (b.rowCount || 0) - (a.rowCount || 0);
-      const sorted = reviewCands.length > 0
-        ? [...reviewCands].sort(sortByRows)            // review-aware: review xlsx wins
-        : [...candidates].sort(sortByRows);            // legacy: biggest rowCount
-      selectedUploadId.value = sorted[0].id;
+      const ts = (d: any) => {
+        const t = d.createdAt || d.created_at || d.uploadTime || d.upload_time;
+        return t ? new Date(t).getTime() : 0;
+      };
+      const sortByRecency = (a: any, b: any) => {
+        const dt = ts(b) - ts(a);
+        if (dt !== 0) return dt;
+        return (b.rowCount || 0) - (a.rowCount || 0);
+      };
+      const sorted = [...candidates].sort(sortByRecency);
+      // If most-recent file is < 1 hour old, pick it directly (user just
+      // uploaded). Otherwise apply legacy review-keyword bias.
+      const ONE_HOUR = 60 * 60 * 1000;
+      const newest = sorted[0];
+      const isFresh = newest && (Date.now() - ts(newest)) < ONE_HOUR;
+      let chosen = newest;
+      if (!isFresh) {
+        const reviewCands = candidates.filter(isReviewFile).sort(sortByRecency);
+        chosen = reviewCands[0] || sorted[0];
+      }
+      selectedUploadId.value = chosen.id;
     }
   } catch (e) {
     console.warn('加载上传列表失败:', e);

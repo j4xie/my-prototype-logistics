@@ -1315,6 +1315,38 @@ async def auto_parse_excel(
             for row in preview_data
         ]
 
+        # F2-v3 (Apr 28 2026): drop pseudo-rows that pollute downstream AI
+        # context. qa-prompt v2.4 Phase 10 Q7 caught: AI saw "总计 ... 73,761"
+        # row and treated 73,761 as a single store's max revenue (real max
+        # was 39,617). Filter at API response layer so all downstream
+        # consumers (AI Query, template materializer) see clean rows.
+        _PSEUDO_PREFIXES = (
+            '总计', '合计', '小计', '汇总',
+            'total', 'sum', 'subtotal', 'grand total',
+            '注：', '注:', '注 :', '说明：', '说明:', '备注：', '备注:',
+            'note:', 'note ：', 'remark:',
+        )
+        _PREFIX_LOWER = tuple(p.lower() for p in _PSEUDO_PREFIXES)
+
+        def _is_pseudo_row(row_dict):
+            for v in row_dict.values():
+                if v is None or v == '':
+                    continue
+                if isinstance(v, str) and not v.strip():
+                    continue
+                s = str(v).strip().lower()
+                return s.startswith(_PREFIX_LOWER)
+            return False
+
+        before_n = len(preview_data)
+        preview_data = [r for r in preview_data if not _is_pseudo_row(r)]
+        dropped_n = before_n - len(preview_data)
+        if dropped_n > 0:
+            logger.info(
+                f"[F2-v3] dropped {dropped_n} pseudo-rows "
+                f"(总计/合计/注：/etc) of {before_n} preview rows"
+            )
+
         return AutoParseResponse(
             # Core Java-compatible fields
             success=True,
