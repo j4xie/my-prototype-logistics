@@ -151,17 +151,94 @@ function resetChatSession(): void {
   }
 }
 
-// 快捷问题 — 餐饮场景 + 命中模板秒回
-const quickQuestions = [
-  '畅销品 Top 5',
-  '哪家店业绩最好',
-  '员工里谁最厉害',
-  '外卖占比多少',
-  '慢销菜品',
-  '周末周中对比',
-  '峰值月份',
-  '优惠券使用情况'
-];
+// Apr 27 2026 (F6): caps-aware 快捷问题 — chip 内容根据当前数据集 domain
+// 动态切换. 之前固定 8 个 sales-focused chips 在 reviews/finance/member 数据集
+// 上点了会触发 capability_short_circuit 拒绝, UX 误导.
+//
+// Heuristic: 用 file_name + sheet_name 关键词推断 domain. 错了无功能损失,
+// 只是少一个相关 chip — fallback 到通用销售 chip 组.
+const QUICK_QUESTIONS_BY_DOMAIN: Record<string, string[]> = {
+  // 评价/口碑数据
+  review: [
+    '客户评价怎么样', '差评最多的门店', '哪些菜品差评多',
+    'VIP 评价情况', '投诉最集中的问题', '哪个城市评价最低',
+    '服务分排名', '环境分对比'
+  ],
+  // 会员/储值/会员卡数据
+  member: [
+    '会员卡数据有什么发现', 'VIP 占比', '充值最多的会员',
+    '会员等级分布', '余额最高的客户', '会员消费频次',
+    '储值卡使用率', '会员流失率'
+  ],
+  // 财务/利润/收入报表
+  finance: [
+    '总营业额', '哪家店利润最高', '成本结构',
+    '毛利率排名', '门店营收对比', '同比增长',
+    '费用占比', '收入趋势'
+  ],
+  // 库存/进销存
+  inventory: [
+    '库存周转情况', '滞销库存', '采购金额排名',
+    '损耗率', '进货 Top 10', '库存预警'
+  ],
+  // 默认 — 餐饮销售场景 (sales + dish + store + staff)
+  default: [
+    '畅销品 Top 5', '哪家店业绩最好', '员工里谁最厉害',
+    '外卖占比多少', '慢销菜品', '周末周中对比',
+    '峰值月份', '优惠券使用情况'
+  ],
+};
+
+// Some uploads have filenames that arrive as GBK bytes mis-decoded as
+// Latin-1 (e.g. "评价下载" → "ÆÀ¼ÛÏÂÔØ"). The Excel parser reads .xls/.csv
+// names from Windows-style file systems where Chinese is GBK; the byte
+// sequence is then JSON-serialized as if Latin-1. To recover, re-encode
+// each char's code-point as a GBK byte and decode as GBK.
+//
+// Try BOTH GBK and UTF-8 since some filenames may legitimately be UTF-8
+// mis-decoded (different upload paths). Use GBK first since prod uploads
+// (qhj_*) all match GBK pattern.
+function recoverUtf8(s: string): string {
+  if (!s) return '';
+  // Already-Chinese: untouched.
+  if (/[一-鿿]/.test(s)) return s;
+  try {
+    const bytes = new Uint8Array([...s].map(c => c.charCodeAt(0)));
+    if (bytes.some(b => b > 0xFF)) return s;
+    // Try GBK first (most common on prod uploads).
+    try {
+      const gbk = new TextDecoder('gbk', { fatal: true }).decode(bytes);
+      if (/[一-鿿]/.test(gbk)) return gbk;
+    } catch { /* not GBK */ }
+    // Fallback UTF-8.
+    try {
+      const utf8 = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+      if (/[一-鿿]/.test(utf8)) return utf8;
+    } catch { /* not UTF-8 either */ }
+    return s;
+  } catch {
+    return s;
+  }
+}
+
+function inferDomainFromFilename(name: string): string {
+  if (!name) return 'default';
+  const n = (recoverUtf8(name) + ' ' + name).toLowerCase();
+  // Order matters: review checks first since "会员" + "评价" overlap less
+  if (/评价|评论|review|rating|comment/.test(n)) return 'review';
+  if (/会员|储值|membership|vip|member|card|huiyuan|会员卡|卡详情/.test(n)) return 'member';
+  if (/收入管理|利润|损益|资产负债|财务|finance|profit|revenue|income|p[\W_]?l/.test(n)) return 'finance';
+  if (/库存|进销存|采购|inventory|stock|purchase|kucun/.test(n)) return 'inventory';
+  return 'default';
+}
+
+const quickQuestions = computed<string[]>(() => {
+  const item = dataSources.value.find(d => d.id === selectedUploadId.value);
+  const fname = item?.fileName || item?.originalFileName || '';
+  const sname = (item as any)?.sheetName || '';
+  const domain = inferDomainFromFilename(fname + ' ' + sname);
+  return QUICK_QUESTIONS_BY_DOMAIN[domain] || QUICK_QUESTIONS_BY_DOMAIN.default;
+});
 
 // 自动补全候选 — 覆盖 35 个模板的高频 sample_queries(177 中精选)
 // 命中这里的任何 query → Python RAG 秒回(sim=1.0 via template embedding)
@@ -404,13 +481,6 @@ onMounted(async () => {
     console.warn('加载上传列表失败:', e);
   }
 
-  // 检查 URL 中是否有预设问题
-  const query = route.query.q as string;
-  if (query) {
-    inputQuery.value = query;
-    handleSendMessage();
-  }
-
   // 添加欢迎消息
   if (chatHistory.value.length === 0) {
     const sourceHint = dataSourceLabel.value ? `\n\n当前${dataSourceLabel.value}` : '\n\n提示：暂无上传数据，建议先在"数据分析"页面上传 Excel 文件。';
@@ -422,9 +492,10 @@ onMounted(async () => {
     });
   }
 
-  // Apr 24 2026 Plan C Phase 5: accept `?q=` query param from "AI 分析" buttons
-  // on restaurant daily pages (requisitions/wastage/recipes/stocktaking).
-  // Pre-fill input + auto-send so users land directly on the answer.
+  // R47 BUG-18 fix: 之前两段 logic (一段立即 send + 一段 nextTick+300ms)
+  // 都监听 route.query.q, 导致快捷问答 button 双发. 保留 nextTick 那段 (等
+  // data-source auto-select), 删掉立即 send 那段.
+  // 同时支持 Apr 24 Phase 5 餐饮日常页 "AI 分析" 按钮 ?q= 跳转.
   const qFromRoute = typeof route.query.q === 'string' ? route.query.q : null;
   if (qFromRoute) {
     inputQuery.value = qFromRoute;

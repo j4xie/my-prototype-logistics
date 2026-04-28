@@ -36,9 +36,22 @@ router = APIRouter()
 MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50MB
 
 
+def _fix_filename(filename: str) -> str:
+    """R47 BUG-19 fix: FastAPI/python-multipart decodes filename header as Latin-1
+    per RFC 7578. Chinese UTF-8 filenames arrive as garbled (e.g. 'qhj_25_¿¨ÏêÇéÒ»ÀÀ.csv'
+    instead of 'qhj_25_卡详情一览.csv'). Re-decode bytes as UTF-8.
+    """
+    if not filename:
+        return filename
+    try:
+        return filename.encode('latin-1').decode('utf-8')
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return filename
+
+
 async def _validate_upload(file: UploadFile) -> bytes:
     """Read and validate uploaded file size + type."""
-    filename = file.filename or ""
+    filename = _fix_filename(file.filename or "")
     ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
     if ext not in (".xlsx", ".xls", ".csv"):
         raise ApiException("仅支持 .xlsx, .xls, .csv 文件", ErrorCode.VALIDATION_ERROR, 400)
@@ -362,7 +375,7 @@ async def detect_table_regions(
     """
     try:
         content = await _validate_upload(file)
-        filename = file.filename or ""
+        filename = _fix_filename(file.filename or "")
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         effective_index = sheet_index if sheet_index is not None else sheetIndex
@@ -504,7 +517,7 @@ async def analyze_sheets(file: UploadFile = File(...)):
 
     try:
         # Validate file type
-        filename = file.filename or ""
+        filename = _fix_filename(file.filename or "")
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls"]:
@@ -674,7 +687,7 @@ async def auto_parse_excel(
 
     try:
         # Validate file type
-        filename = file.filename or ""
+        filename = _fix_filename(file.filename or "")
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls", ".csv"]:
@@ -1536,7 +1549,7 @@ async def extract_context(
 
     try:
         # Validate file type
-        filename = file.filename or ""
+        filename = _fix_filename(file.filename or "")
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls"]:
@@ -1638,7 +1651,7 @@ async def export_excel(
 
     try:
         # Validate file type
-        filename = file.filename or ""
+        filename = _fix_filename(file.filename or "")
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls"]:
@@ -1808,7 +1821,7 @@ async def get_export_metadata(
 
     try:
         # Validate file type
-        filename = file.filename or ""
+        filename = _fix_filename(file.filename or "")
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls"]:
@@ -2661,7 +2674,7 @@ async def raw_export_excel(
     start_time = time.time()
 
     try:
-        filename = file.filename or ""
+        filename = _fix_filename(file.filename or "")
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls"]:
@@ -2873,7 +2886,7 @@ async def analyze_excel_structure(
     start_time = time.time()
 
     try:
-        filename = file.filename or ""
+        filename = _fix_filename(file.filename or "")
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls"]:
@@ -3211,7 +3224,7 @@ async def analyze_workbook(
 
     try:
         # Validate file type
-        filename = file.filename or ""
+        filename = _fix_filename(file.filename or "")
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls"]:
@@ -3503,7 +3516,7 @@ async def analyze_workbook_stream(
     """
     import json
 
-    filename = file.filename or ""
+    filename = _fix_filename(file.filename or "")
     ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
     if ext not in [".xlsx", ".xls"]:
         raise ApiException("Supported file types: .xlsx, .xls", ErrorCode.VALIDATION_ERROR, 400)
