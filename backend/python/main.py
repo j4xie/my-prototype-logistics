@@ -354,8 +354,11 @@ async def lifespan(app: FastAPI):
             logger.warning(f"[startup] narrative_cache pruner init failed: {e}")
 
     # Apr 24 2026 Plan C Phase 6: hourly restaurant ops ETL for all RESTAURANT
-    # factories. Keeps Gold fresh without user intervention. First run 120s
+    # factories. Keeps Gold fresh without user intervention. First run 30s
     # after startup so pools/warmers settle; subsequent runs every hour.
+    # Apr 28 2026 P1-11: shortened initial sleep 120s→30s for faster recovery;
+    # added startup catchup tick (runs immediately if last ETL > 1.5h ago);
+    # switched per-factory call to run_full_etl_with_retry (3 retries, logged).
     _restaurant_etl_task = None
     if os.getenv("RESTAURANT_OPS_ETL_ENABLED", "true").lower() in ("1", "true", "yes"):
         try:
@@ -363,10 +366,52 @@ async def lifespan(app: FastAPI):
             import asyncpg as _asyncpg
             from config import get_settings as _get_settings
             from smartbi.config import get_pg_pool as _get_pg_pool_etl
-            from smartbi.gold.restaurant_ops_etl import run_full_etl
+            from smartbi.gold.restaurant_ops_etl import run_full_etl, run_full_etl_with_retry
 
             async def _run_restaurant_ops_etl_forever():
-                await _asyncio.sleep(120)
+                await _asyncio.sleep(30)  # post-audit P1-11: shortened for faster recovery
+
+                # ── startup catchup tick ──────────────────────────────────────
+                # If the cron worker was down 1.5h+, run once immediately so
+                # Gold doesn't stay stale until the first scheduled tick.
+                try:
+                    smartbi_pool_catchup = await _get_pg_pool_etl()
+                    if smartbi_pool_catchup is not None:
+                        cretas_url_catchup = _get_settings().food_kb_db_url
+                        cretas_conn_catchup = await _asyncpg.connect(cretas_url_catchup)
+                        try:
+                            f_rows_catchup = await cretas_conn_catchup.fetch(
+                                "SELECT id FROM factories WHERE type = 'RESTAURANT'"
+                            )
+                            factory_ids_catchup = [r["id"] for r in f_rows_catchup]
+                        finally:
+                            await cretas_conn_catchup.close()
+
+                        if factory_ids_catchup:
+                            last_agg = await smartbi_pool_catchup.fetchval(
+                                "SELECT MAX(updated_at) FROM agg_restaurant_daily_ops"
+                                " WHERE factory_id = ANY($1::varchar[])",
+                                factory_ids_catchup,
+                            )
+                            if not last_agg or (datetime.utcnow() - last_agg).total_seconds() > 5400:  # 1.5h
+                                logger.info("[startup catchup] last ETL > 1.5h ago, running tick now")
+                                cretas_pool_catchup = await _asyncpg.create_pool(
+                                    cretas_url_catchup, min_size=1, max_size=3, command_timeout=60,
+                                )
+                                try:
+                                    for fid in factory_ids_catchup:
+                                        try:
+                                            await run_full_etl_with_retry(
+                                                cretas_pool_catchup, smartbi_pool_catchup, fid
+                                            )
+                                        except Exception as e:
+                                            logger.warning(f"[startup catchup] ETL failed for {fid}: {e}")
+                                finally:
+                                    await cretas_pool_catchup.close()
+                except Exception as e:
+                    logger.warning(f"[startup catchup] check failed, skipping catchup: {e}")
+                # ── end catchup tick ──────────────────────────────────────────
+
                 while True:
                     try:
                         smartbi_pool = await _get_pg_pool_etl()
@@ -394,7 +439,9 @@ async def lifespan(app: FastAPI):
                                     summary_counts = {"total": 0, "errors": 0}
                                     for fid in factory_ids:
                                         try:
-                                            stats = await run_full_etl(cretas_pool, smartbi_pool, fid)
+                                            stats = await run_full_etl_with_retry(
+                                                cretas_pool, smartbi_pool, fid
+                                            )
                                             summary_counts["total"] += 1
                                             if stats.errors:
                                                 summary_counts["errors"] += 1
@@ -402,8 +449,10 @@ async def lifespan(app: FastAPI):
                                                     f"[restaurant-etl] {fid} errors={stats.errors}"
                                                 )
                                         except Exception as fe:
+                                            # already logged + persisted in run_full_etl_with_retry
                                             summary_counts["errors"] += 1
-                                            logger.warning(f"[restaurant-etl] {fid} failed: {fe}")
+                                            logger.warning(f"[restaurant-etl] ETL final failure for {fid}: {fe}")
+                                            continue  # 不阻塞下个工厂
                                     logger.info(
                                         f"[restaurant-etl] tick done: {summary_counts['total']} factories, "
                                         f"{summary_counts['errors']} errors"
