@@ -181,11 +181,14 @@ const QUICK_QUESTIONS_BY_DOMAIN: Record<string, string[]> = {
     '库存周转情况', '滞销库存', '采购金额排名',
     '损耗率', '进货 Top 10', '库存预警'
   ],
-  // 默认 — 餐饮销售场景 (sales + dish + store + staff)
+  // 默认 — 餐饮销售场景. Apr 28 2026 (UX audit): trimmed chips that often
+  // hit capability_short_circuit on minimal sales datasets (e.g. xmx_real
+  // doesn't have staff/coupon/payment cols). Kept ones that work on any
+  // sales dataset with 商品/门店/销售金额 columns.
   default: [
-    '畅销品 Top 5', '哪家店业绩最好', '员工里谁最厉害',
-    '外卖占比多少', '慢销菜品', '周末周中对比',
-    '峰值月份', '优惠券使用情况'
+    '畅销品 Top 5', '哪家店业绩最好', '慢销菜品',
+    '周末周中对比', '总营业额', '门店销售对比',
+    '商品分类占比', '客单价分析'
   ],
 };
 

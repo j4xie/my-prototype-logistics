@@ -157,13 +157,16 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
                 selectedRegionStart, selectedRegionEnd);
 
         // 1. 验证文件
+        // Apr 28 2026 (UX audit): add actionHint to error messages so user knows
+        // next step. Empty/named-empty files were dead-end with generic "文件不能为空"
+        // — now suggest re-export or check source file.
         if (file == null || file.isEmpty()) {
-            return UploadFlowResult.failure("文件不能为空");
+            return UploadFlowResult.failure("文件不能为空 (0 字节). 请确认源文件未损坏或重新导出后再上传.");
         }
 
         String fileName = file.getOriginalFilename();
         if (fileName == null) {
-            return UploadFlowResult.failure("文件名不能为空");
+            return UploadFlowResult.failure("文件名不能为空. 请重命名文件 (含 .xlsx/.xls/.csv 后缀) 后再上传.");
         }
         String lowerName = fileName.toLowerCase();
         if (!lowerName.endsWith(".xlsx") && !lowerName.endsWith(".xls") && !lowerName.endsWith(".csv")) {

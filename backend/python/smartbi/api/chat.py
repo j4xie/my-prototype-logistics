@@ -2078,12 +2078,14 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 data = [{k: v for k, v in row.items() if k not in cols_to_drop} for row in data]
 
             # Apr 26 2026 phase 5 (UX): set user expectation for LLM tail wait.
-            # Previously just "正在调用 AI 模型生成分析..." — user doesn't know
-            # if 1s or 30s. Provide rough time estimate so 6-9s wait feels less
-            # like the system is hung.
+            # Apr 28 2026 (UX audit): tightened time estimate. Real measured
+            # latency on prod (qhj_prod 收入管理报表 + xmx_real, 8 cells):
+            # LLM full path 25-35s p50 (qwen-plus + 3-paragraph guard +
+            # capability hint). The previous "5-8s" was wrong — set realistic
+            # expectation so user doesn't think system hung at 15s mark.
             yield _sse_event(
                 "status",
-                "🤔 AI 正在分析中 (~5-8 秒)... 待会儿就把答案流给你"
+                "🤔 AI 正在分析中 (~20-30 秒)... 待会儿就把答案流给你"
             )
 
             # ── Use default qwen-plus but with optimized params ──
@@ -2251,6 +2253,24 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                         f"不存在 '排名/对比/最高最低' 的概念. 当用户问这类维度的排名时, 应直接回答 "
                         f"'本数据集只有 1 个 {single_value_dims[0].split('=')[0]} ({single_value_dims[0].split('=', 1)[1]})', "
                         f"然后给出聚合数字 (sum/avg) 而非排名."
+                    )
+                # Apr 28 2026 (UX audit): date inference safety. When dataset
+                # has no explicit per-row date column (only a time-range string
+                # like "10.9-10.13" in a single dim), LLM was inferring
+                # "row 2 = 10月10日" without basis. Tell LLM to reference rows
+                # by index/sequence number, not invented dates.
+                has_explicit_time = bool(clean_times) and any(
+                    df_for_card is not None and tn in df_for_card.columns
+                    and df_for_card[tn].dropna().nunique() > 1
+                    for tn in clean_times
+                )
+                if not has_explicit_time:
+                    lines.append(
+                        "**日期推断约束**: 本数据集没有逐行的明确日期字段 (per-row date). "
+                        "如时间范围出现在某个 dim 字段 (例如 '10.9-10.13'), 不要把行索引/排名编号"
+                        "推断为具体日期 ('第 2 行 ≠ 10月10日'). 用户问'哪一天'时, 回答"
+                        "'数据没有明确的日期列, 但行 2 (在 X 时段内) 表现最高 / 最低, 具体日期需要"
+                        "查询源数据确认' — 不要编造日期."
                     )
                 field_summary = "\n".join(lines) + "\n"
 
