@@ -2195,17 +2195,18 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
 基于上述**当前数据源**回答用户问题。严格按字段分类:
 - 用 measures 做统计 (sum/avg/count)
 - 按 dimensions 分组对比
+- **不要把 measure 字段的数值当作维度名称引用** — 用户问"门店/品类/客户/员工"等实体时, 必须从 dimensions 列表中选 dim 字段名作为分组维度, 即使某个 measure 字段名含"名称/门店/客户"等字符串也不要选 (它的 values 是数字, 不是真实体名). 优先使用 `_` 前缀的合成 dim 字段 (例如 `_门店或时段`), 它由 ETL 从段落表头 forward-fill 而来.
 - **涉及总量/排名/占比时，必须引用"全量数据聚合"段的数字，不要从样本重新计算**
 - 不要引用非当前字段列表中的字段名 (避免幻觉)
 - **若提供了"上一轮对话"段, 优先延续上一轮的实体和数字, 不要重新介绍**
 - **遵守"数据集能力边界"段, 不属本数据集的字段不要瞎答**
 
-**回答格式 (强制 — 3 段落结构, 总长 ≤ 300 字)**:
+**回答格式 (强制 — 3 段落结构, 总长 ≤ 200 字)**:
 1. **结论** (1 句话, 含数字): 直接回答 user 的问题, 例如 "末位门店是 X, 占比仅 Y%, 比 Top 1 低 Z%."
-2. **关键发现** (2-3 句, 含数字 + 实体): 解释/支持结论, 例如 "样本显示 X 在 A/B/C 三个维度均落后, 其中 A 仅为 Top 1 的 30%."
-3. **行动建议** (2-3 项, 用 - 开头): 具体可做, 含负责人 + 时间 + 预期收益. 例如 "- 立即对 X 启动 30 天专项辅导 (店长培训 + Top 1 SOP 复制), 预期提升 8-12%."
+2. **关键发现** (1-2 句, 含数字 + 实体): 解释/支持结论, 例如 "样本显示 X 在 A/B/C 三个维度均落后, 其中 A 仅为 Top 1 的 30%."
+3. **行动建议** (2 项, 用 - 开头): 具体可做, 含负责人 + 时间 + 预期收益. 例如 "- 立即对 X 启动 30 天专项辅导 (店长培训 + Top 1 SOP 复制), 预期提升 8-12%."
 
-避免: 大段铺陈、套话、"建议补充数据" 类废话、超过 300 字的长答案."""
+避免: 大段铺陈、套话、"建议补充数据" 类废话、超过 200 字的长答案. 严格控制字数 — LLM 输出每多 100 字, 用户多等 3 秒."""
 
             system_role = (
                 "你是食品企业的数据分析师。精炼回答，引用数字，给可执行建议。Markdown格式。"
@@ -2296,7 +2297,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
             _silent_timeout = False
 
             async for chunk in insight_gen._call_llm_stream_text(
-                prompt, system_role, max_tokens=1500, temperature=0.2
+                prompt, system_role, max_tokens=400, temperature=0.2
             ):
                 if await http_request.is_disconnected():
                     logger.info("[stream] Client disconnected, stopping")
