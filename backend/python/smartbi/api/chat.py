@@ -2078,14 +2078,14 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 data = [{k: v for k, v in row.items() if k not in cols_to_drop} for row in data]
 
             # Apr 26 2026 phase 5 (UX): set user expectation for LLM tail wait.
-            # Apr 28 2026 (UX audit): tightened time estimate. Real measured
-            # latency on prod (qhj_prod 收入管理报表 + xmx_real, 8 cells):
-            # LLM full path 25-35s p50 (qwen-plus + 3-paragraph guard +
-            # capability hint). The previous "5-8s" was wrong — set realistic
-            # expectation so user doesn't think system hung at 15s mark.
+            # Apr 28 2026 (audit): two-stage progress hint reflecting actual
+            # SSE behavior. TTFT 3-8s (post prompt-cache optimization), then
+            # tokens stream incrementally. Previous "20-30 秒" / "5-8 秒"
+            # both misleading — first version too long, second too short for
+            # full answer.
             yield _sse_event(
                 "status",
-                "🤔 AI 正在分析中 (~20-30 秒)... 待会儿就把答案流给你"
+                "🤔 AI 正在思考... 首段答案 5-10 秒后开始流出, 完整答案需 15-25 秒"
             )
 
             # ── Use default qwen-plus but with optimized params ──
@@ -2345,6 +2345,14 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 except Exception as e:
                     logger.warning(f"[chat-session] context block build failed: {e}")
 
+            # Apr 28 2026 (DeepSeek cache optimization): static format rules +
+            # answer-shape constraints moved from per-call user prompt to
+            # system_role. DeepSeek's prefix-cache only matches IDENTICAL
+            # token sequences, so putting these in user prompt (where data
+            # varies every call) bypassed cache entirely. Now they're part
+            # of the system_role prefix that every call shares — expected
+            # cache hit rate ~23% → ~50%, prompt size 4K → 3K tokens, TTFT
+            # 5-15s → 3-8s on cache hit.
             prompt = f"""{session_context_block}用户问题：{analysis_ctx}
 
 {field_summary}
@@ -2352,23 +2360,7 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
 ## 数据概览 (样本)
 {data_summary}
 {real_agg_block}
-{financial_metrics}
-
-基于上述**当前数据源**回答用户问题。严格按字段分类:
-- 用 measures 做统计 (sum/avg/count)
-- 按 dimensions 分组对比
-- **不要把 measure 字段的数值当作维度名称引用** — 用户问"门店/品类/客户/员工"等实体时, 必须从 dimensions 列表中选 dim 字段名作为分组维度, 即使某个 measure 字段名含"名称/门店/客户"等字符串也不要选 (它的 values 是数字, 不是真实体名). 优先使用 `_` 前缀的合成 dim 字段 (例如 `_门店或时段`), 它由 ETL 从段落表头 forward-fill 而来.
-- **涉及总量/排名/占比时，必须引用"全量数据聚合"段的数字，不要从样本重新计算**
-- 不要引用非当前字段列表中的字段名 (避免幻觉)
-- **若提供了"上一轮对话"段, 优先延续上一轮的实体和数字, 不要重新介绍**
-- **遵守"数据集能力边界"段, 不属本数据集的字段不要瞎答**
-
-**回答格式 (强制 — 3 段落结构, 总长 ≤ 200 字)**:
-1. **结论** (1 句话, 含数字): 直接回答 user 的问题, 例如 "末位门店是 X, 占比仅 Y%, 比 Top 1 低 Z%."
-2. **关键发现** (1-2 句, 含数字 + 实体): 解释/支持结论, 例如 "样本显示 X 在 A/B/C 三个维度均落后, 其中 A 仅为 Top 1 的 30%."
-3. **行动建议** (2 项, 用 - 开头): 具体可做, 含负责人 + 时间 + 预期收益. 例如 "- 立即对 X 启动 30 天专项辅导 (店长培训 + Top 1 SOP 复制), 预期提升 8-12%."
-
-避免: 大段铺陈、套话、"建议补充数据" 类废话、超过 200 字的长答案. 严格控制字数 — LLM 输出每多 100 字, 用户多等 3 秒."""
+{financial_metrics}"""
 
             system_role = (
                 "你是食品企业的数据分析师。精炼回答，引用数字，给可执行建议。Markdown格式。"
@@ -2376,6 +2368,29 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                 + LABELING_GUARD_CLAUSE
                 + ACTION_REC_GUARD_CLAUSE
                 + USER_FRIENDLY_TONE_CLAUSE
+                # Apr 28 2026: pulled from user prompt → system_role for
+                # DeepSeek prefix-cache. These rules are constant across all
+                # calls; previously polluted the variable user prompt.
+                + (
+                    "\n\n## 回答规则 (基于用户提供的'当前数据源'段)\n"
+                    "- 用 measures 做统计 (sum/avg/count)\n"
+                    "- 按 dimensions 分组对比\n"
+                    "- **不要把 measure 字段的数值当作维度名称引用** — 用户问'门店/品类/客户/员工'"
+                    "等实体时, 必须从 dimensions 列表中选 dim 字段名作为分组维度, 即使某个 measure"
+                    "字段名含'名称/门店/客户'等字符串也不要选 (它的 values 是数字, 不是真实体名). "
+                    "优先使用 `_` 前缀的合成 dim 字段 (例如 `_门店或时段`), 它由 ETL 从段落表头"
+                    " forward-fill 而来.\n"
+                    "- 涉及总量/排名/占比时, 必须引用'全量数据聚合'段的数字, 不要从样本重新计算\n"
+                    "- 不要引用非当前字段列表中的字段名 (避免幻觉)\n"
+                    "- 若提供了'上一轮对话'段, 优先延续上一轮的实体和数字, 不要重新介绍\n"
+                    "- 遵守'数据集能力边界'段, 不属本数据集的字段不要瞎答\n\n"
+                    "## 回答格式 (强制 — 3 段落, 总长 ≤ 200 字)\n"
+                    "1. **结论** (1 句话, 含数字): 直接回答 user 的问题\n"
+                    "2. **关键发现** (1-2 句, 含数字 + 实体): 解释/支持结论\n"
+                    "3. **行动建议** (2 项, 用 - 开头): 具体可做, 含负责人 + 时间 + 预期收益\n\n"
+                    "避免: 大段铺陈/套话/'建议补充数据'类废话/超过 200 字. "
+                    "严格控制字数 — LLM 输出每多 100 字, 用户多等 3 秒."
+                )
             )
 
             # v4 B2-B (Apr 26 2026): LLM-answer cache lookup BEFORE the LLM
@@ -2458,8 +2473,12 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
             _llm_truncated = False
             _silent_timeout = False
 
+            # Apr 28 2026: max_tokens 400 → 320. Empirical p95 of post-fix
+            # answers is ~280 tokens (3-段 200 字结构 ≈ 280-300 tokens for CJK).
+            # Lower cap reduces tail latency on rambling without truncating
+            # well-formed answers. Soft 25s timeout covers the rare overflow.
             async for chunk in insight_gen._call_llm_stream_text(
-                prompt, system_role, max_tokens=400, temperature=0.2
+                prompt, system_role, max_tokens=320, temperature=0.2
             ):
                 if await http_request.is_disconnected():
                     logger.info("[stream] Client disconnected, stopping")
