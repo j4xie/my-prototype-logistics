@@ -256,7 +256,7 @@ GET /api/smartbi/restaurant/completeness?factoryId=F001
 
 ### 2.3 A-3: 共享数据质量队列 (跟 C handoff 协调)
 
-⚠️ **本节路径取决于 W0.3 协调结果**。spec v2 假设 W0.3 选 (协-α) 或 (协-β)。决策后回填本段。
+**W0.3 决策已定 (2026-04-28)**: 路径 = **(协-α)** — 全新页面 `/admin/data-quality-queue`，不动 C 的 cell-audit.vue。本节以下内容全部按 (协-α) 执行。
 
 **v1 错的假设 vs 真 schema** (post-audit P0-1 修复):
 
@@ -304,6 +304,12 @@ GET /api/smartbi/restaurant/completeness?factoryId=F001
 - `web-admin/src/api/admin/data-quality-queue.ts` (~120 行)
 - `backend/python/smartbi/api/data_quality_queue_admin.py` (~350 行)
 
+**Python 实施约束** (W0.4 findings 补充):
+- Admin 鉴权: 必须复用 `from smartbi.canonical.provenance._admin_auth import require_admin`，不得在新文件重复实现。新 role 加到 `_admin_auth.py` 的 `_ADMIN_ROLES` set。
+- RLS GUC: 每次 acquire conn 后，同一 transaction 内先 `await conn.execute("SELECT set_config('app.factory_id', $1, true)", factory_id)`，再做业务查询。参考 `narrative_cache.py:85-88`。
+- EntityType 校验: `VALID_ENTITY_TYPES = frozenset({"store","product","staff","ingredient","shape_detection","sheet_merge","period_inference","field_conflict"})` 硬编码，不从 orchestrator.py enum import（enum 只有 3 项，不完整）。
+- Python 类型: `created_at: Optional[datetime]`（DB 列可 NULL，虽有 DEFAULT）。
+
 **修改文件**:
 - `web-admin/src/router/index.ts` — `/admin/data-quality-queue` (admin only)
 - `web-admin/src/components/layout/AppSidebar.vue` — 主 admin 菜单加 "数据质量队列"
@@ -335,8 +341,11 @@ POST /api/smartbi/admin/data-quality-queue/{id}/resolve
     resolvedToEntityId: int | null,    // confirm 时必填
     notes: string | null
   }
-  4-eye check: 拒绝 current_user == submitter (除非工厂 admin 数 = 1)
-  RLS: SET app.factory_id = q.factory_id 在 transaction 开头
+  4-eye check: 拒绝 current_user == submitter (除非工厂 admin 数 = 1，或 LEFT JOIN 返回 NULL 无上传记录)
+  RLS 强制要求: 必须在同一 transaction 内先执行
+    `SELECT set_config('app.factory_id', $factory_id, true)`
+  再做任何对 entity_resolution_admin_queue 的读写。GUC 未设置时 FORCE RLS 返回 0 行（不报错），
+  是最危险的静默 bug。参考模式: narrative_cache.py:85-88。
   Side effects:
     - UPDATE queue.status='CONFIRMED', admin_action, admin_user, admin_at, admin_resolved_to_entity_id
     - 不直接写 entity_resolution_labels（B-2 LLM 上线时再做 cache 写入）

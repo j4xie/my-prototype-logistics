@@ -467,6 +467,83 @@ No cross-link from entity_resolution_admin_queue to cell-audit is planned in A-3
 
 ---
 
+---
+
+## W0.4 Review Meeting Decisions
+
+**meeting date**: 2026-04-28
+**Status**: All 3 W0 spikes complete (W0.1/W0.2/W0.3). 12 reviewer findings consolidated.
+
+### 决策 (3 binding)
+
+**D1 — spec v3 needed?**: **NO**.
+- W0.1 confirmed schema matches spec v2 §2.3 exactly (1 minor gap: no `updated_at`, non-blocking)
+- W0.3 confirmed default 协-α path is correct
+- W0.2 schema divergence (column naming: `is_dimension`/`is_measure`/`is_time` vs plan template names) is in the plan template only — spec v2 already abstracts away from those names; the spec talks about the *output* of classification, not the column names
+- Spec v2 stands as implementation reference. No re-review needed.
+
+**D2 — B-2 LLM in Phase A scope?**: **NO** (defer to Phase B).
+- Restaurant miss rate ~26% places it in spec §1.2's 10-30% band ("LLM bottom-fill warranted"), but Phase A scope is data closure (ETL+completeness+queue), not classifier improvements
+- Quick keyword expansion (6 keywords to BOTH classifiers) is also deferred to Phase B unless miss rate degrades during A deploy and hits > 30%
+- Phase B brainstorm trigger: Phase A complete + 5+ more restaurant uploads ingested; re-measure proxy then
+
+**D3 — Confirm A-3 path = 协-α**: **CONFIRMED**.
+- New separate `/admin/data-quality-queue` page (admin-scoped)
+- No edits to C's `cell-audit.vue` or `provenance-config.vue`
+- `field_conflict` rows in queue do NOT deep-link to cell-audit in A-3 (defer to Phase B)
+- First visible admin queue UI entry in sidebar (C's cell-audit entries remain `hidden: true`)
+
+---
+
+### 12 Findings → A-1 / A-3 Implementation Checklist
+
+Each finding below is binding for the implementer subagent that runs the task. Transcribe into the implementation prompt verbatim — do not paraphrase away the technical specifics.
+
+**A-3 (Tasks 3.1–3.6):**
+
+1. **source_upload_id has no FK constraint** → A-3 LEFT JOIN must handle `uploaded_by IS NULL` gracefully. The 4-eye bypass condition must check `join_result IS NULL` (not just `admin_count == 1`): if the LEFT JOIN returns no upload row, treat as "submitter unknown" → bypass 4-eye and record `{"four_eye_bypassed": "no_upload_row"}` in `extra` JSONB.
+
+2. **created_at nullable despite DEFAULT now()** → Python typing for the queue row model must use `Optional[datetime]` for `created_at`. Do not use `datetime` (non-optional) or the Pydantic model will crash on any row where DEFAULT was not applied.
+
+3. **RLS FORCE with single tenant_isolation policy** → A-3 FastAPI MUST execute `SELECT set_config('app.factory_id', $1, true)` **inside the same transaction** before any query on `entity_resolution_admin_queue`. A connection acquired from the pool that does not have the GUC set will return 0 rows silently (FORCE RLS — no permission error, just empty result). Pattern reference: `backend/python/smartbi/agent/narrative_cache.py` lines 85-88 (proven pattern already in use). Failure to set GUC is the single most dangerous silent correctness bug in A-3.
+
+4. **Partial indexes** `idx_er_admin_queue_pending` (WHERE admin_at IS NULL) and `idx_eraq_pending_priority` (WHERE status='PENDING') are present → A-3 list API MUST default to `status=PENDING` filter when no `status` query param is provided. A full-table scan (omitting the WHERE status='PENDING' clause) will not use the partial indexes even if the table grows large. This is a performance correctness requirement, not just a UX default.
+
+5. **Reuse `require_admin`** from `backend/python/smartbi/canonical/provenance/_admin_auth.py` — this function is already shared with `provenance_audit.py` and `factory_provenance_config.py`. DO NOT re-implement admin auth in `data_quality_queue_admin.py`. Import path: `from smartbi.canonical.provenance._admin_auth import require_admin`. If you add new roles, add them to the `_ADMIN_ROLES` set in `_admin_auth.py`, not inline in the new file.
+
+6. **Frontend `pythonFetch` wrapper** — A-3's `web-admin/src/api/admin/data-quality-queue.ts` must use the existing `pythonFetch` utility (provides snake_case → camelCase auto-convert) for consistency with `cell-audit.vue`. Do NOT use raw `axios` or `request` for Python backend calls.
+
+7. **Python EntityType enum is incomplete** — `backend/python/smartbi/canonical/entity_resolution/orchestrator.py` defines only 3 values (STORE/PRODUCT/STAFF). The DB CHECK constraint has 8. A-3 must hardcode the full set directly from the DB CHECK (do not import from the orchestrator enum):
+   ```python
+   VALID_ENTITY_TYPES = frozenset({
+       "store", "product", "staff", "ingredient",
+       "shape_detection", "sheet_merge", "period_inference", "field_conflict"
+   })
+   ```
+   Validate incoming `entityType` query param against this set. Return HTTP 422 if invalid.
+
+8. **Sidebar precedent** — all existing C data-fabric pages (`cell-audit`, `provenance-config`) are `hidden: true` in `web-admin/src/router/index.ts`. A-3's `/admin/data-quality-queue` will be the **first non-hidden** data-fabric admin queue UI. Place the sidebar entry under the existing "管理" / "数据治理" group in `AppSidebar.vue`. If this group does not yet exist in the sidebar (it is only in the router), create it. Check the sidebar group structure at implementation time.
+
+9. **field_conflict rows deep-link to cell-audit** — defer to Phase B (NOT in A-3 scope). A-3's detail page for `entity_type='field_conflict'` rows shows the same UI as other types (raw_name + candidate + resolve/reject). The "view field lineage →" cross-link to cell-audit is explicitly out of scope. Record this as a known omission in the A-3 smoke test doc so reviewers do not flag it.
+
+**A-1 (Tasks 1.1–1.6):**
+
+10. **Dual-classifier alert** — keyword additions must update BOTH `backend/python/smartbi/services/field_classifier.py` (writes to `smart_bi_pg_field_definitions.semantic_type`) AND `backend/python/smartbi/services/field_detector.py` (returns `semanticType`/`chartRole` in API response) **in the same commit**. The two files are independent implementations that must stay in lockstep. Owner: whichever A-1 subtask touches keyword files. This is NOT a separate task — it is a constraint on A-1 keyword work.
+
+11. **Quick-win keyword expansion (6 keywords)** is **Phase B candidate, NOT A-1 work**. The 6 keywords (`预算`, `实际`, `净利`, `本月实际`, `本年实际`, `本季实际`) would resolve ~62.6% of factory-data miss, but Phase A scope is ETL data closure, not classifier improvements. Do NOT add these keywords during A-1 unless the miss rate measured post-A-1 deploy degrades past 30% on the restaurant subset. If added later, remember finding 10 (dual-file update).
+
+**General:**
+
+12. **No spec v3 needed** — W0 confirmed all 3 critical assumptions (schema correct, classifier extensible without redesign, A-3 path stable). Spec v2 stands as the sole implementation reference. W0.5 is cancelled. Phase A proceeds directly to Task 1.1.
+
+---
+
+### Phase A plan structure unchanged
+
+Total 21 tasks across 5 sections (W0 done × 4, A-1 × 6, A-2 × 2, A-3 × 6, Smoke × 3). No re-numbering. No path changes. W0.5 cancelled (not needed). Proceeds straight to Task 1.1.
+
+---
+
 ## W0.2 — W0.5 Status
 
 | Task | Status | Notes |
@@ -474,5 +551,5 @@ No cross-link from entity_resolution_admin_queue to cell-audit is planned in A-3
 | W0.1 entity_resolution_admin_queue schema verify | **DONE** | spec v2 §2.3 confirmed accurate |
 | W0.2 normalizer hit-rate baseline | **DONE** | full miss-rate breakdown; see section above |
 | W0.3 C-handoff coordination decision | **DONE** | 选 (协-α): 全新页面 /admin/data-quality-queue; cell-audit 是不同域 (field_provenance lineage), 无侵入 |
-| W0.4 W0 review meeting | PENDING | depends on W0.1-W0.3 |
-| W0.5 (if needed) spec v3 amendments | PENDING | likely NOT needed given W0.1 confirms spec |
+| W0.4 W0 review meeting | **DONE** | 3 decisions (D1/D2/D3) + 12 findings checklist; spec v2 stands |
+| W0.5 (if needed) spec v3 amendments | **NOT NEEDED** | W0 confirmed all assumptions; spec v2 is implementation reference |
