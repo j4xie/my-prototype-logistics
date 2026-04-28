@@ -82,30 +82,25 @@ async def _run_job(job_id: str, factory_id: str) -> None:
     """Execute run_full_etl_with_retry in the background.
 
     Pool acquisition is deferred to inside this coroutine to avoid importing
-    main.py at module load time (circular import).  The smartbi pool is
-    fetched from smartbi.config; the cretas pool is created transiently.
+    main.py at module load time (circular import).  Both pools are app-lifetime
+    singletons from smartbi.config (get_pg_pool / get_cretas_pool).
     """
     _running_jobs[job_id]["status"] = "running"
     _running_jobs[job_id]["started_at"] = datetime.now(timezone.utc).isoformat()
 
     try:
-        import asyncpg
-        from smartbi.config import get_pg_pool, get_settings
+        from smartbi.config import get_pg_pool, get_cretas_pool
         from smartbi.gold.restaurant_ops_etl import run_full_etl_with_retry
 
         smartbi_pool = await get_pg_pool()
         if smartbi_pool is None:
             raise RuntimeError("SmartBI pool unavailable — check POSTGRES_URL setting")
 
-        settings = get_settings()
-        cretas_url = settings.food_kb_db_url
-        cretas_pool = await asyncpg.create_pool(
-            cretas_url, min_size=1, max_size=3, command_timeout=60
-        )
-        try:
-            await run_full_etl_with_retry(cretas_pool, smartbi_pool, factory_id)
-        finally:
-            await cretas_pool.close()
+        cretas_pool = await get_cretas_pool()
+        if cretas_pool is None:
+            raise RuntimeError("Cretas pool unavailable — check FOOD_KB_DB_URL / food_kb_postgres_* settings")
+
+        await run_full_etl_with_retry(cretas_pool, smartbi_pool, factory_id)
 
         _running_jobs[job_id]["status"] = "success"
         logger.info(f"[etl-admin] job {job_id} factory={factory_id} completed")

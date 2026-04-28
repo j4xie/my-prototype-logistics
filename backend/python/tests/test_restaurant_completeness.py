@@ -69,6 +69,14 @@ async def test_completeness_returns_6_modules():
     client = TestClient(app, raise_server_exceptions=False)
 
     with patch(
+        "smartbi.config.get_pg_pool",
+        new_callable=AsyncMock,
+        return_value=AsyncMock(),
+    ), patch(
+        "smartbi.config.get_cretas_pool",
+        new_callable=AsyncMock,
+        return_value=AsyncMock(),
+    ), patch(
         "smartbi.api.restaurant_completeness._fetch_module_stats",
         new_callable=AsyncMock,
         return_value=fake_stats,

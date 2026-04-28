@@ -22,10 +22,9 @@ workers (Phase A simplification; replace with Redis for multi-worker prod).
 Pool acquisition
 ----------------
 Pools are acquired lazily inside the endpoint to avoid circular imports at
-module-load time.  The pattern follows restaurant_etl_admin.py:
+module-load time.  Both pools are app-lifetime singletons from smartbi.config:
   - SmartBI pool → ``smartbi.config.get_pg_pool``
-  - Cretas (Java app DB) pool → transient asyncpg pool via
-    ``settings.food_kb_db_url``
+  - Cretas (Java app DB) pool → ``smartbi.config.get_cretas_pool``
 
 Each of the 6 module SQL queries is wrapped in its own try/except so a
 missing table (e.g. restaurant_reviews not yet migrated) returns count=0
@@ -406,18 +405,15 @@ async def get_completeness(
 
     # ── Acquire pools lazily (avoid circular import from main) ───────────────
     try:
-        import asyncpg
-        from smartbi.config import get_pg_pool, get_settings
+        from smartbi.config import get_pg_pool, get_cretas_pool
 
         smartbi_pool = await get_pg_pool()
         if smartbi_pool is None:
             raise RuntimeError("SmartBI pool unavailable — check POSTGRES_URL setting")
 
-        settings = get_settings()
-        cretas_url = settings.food_kb_db_url
-        cretas_pool = await asyncpg.create_pool(
-            cretas_url, min_size=1, max_size=3, command_timeout=15
-        )
+        cretas_pool = await get_cretas_pool()
+        if cretas_pool is None:
+            raise RuntimeError("Cretas pool unavailable — check FOOD_KB_DB_URL / food_kb_postgres_* settings")
     except Exception as exc:
         logger.error(f"[completeness] pool acquisition failed: {exc}")
         raise HTTPException(
@@ -425,37 +421,30 @@ async def get_completeness(
             detail=f"数据库连接失败: {exc}",
         )
 
-    try:
-        # ── Factory age → coverage window ────────────────────────────────────
-        age_days = await _factory_age_days(factoryId, smartbi_pool)
-        window_days = _coverage_window_days(age_days)
+    # ── Factory age → coverage window ────────────────────────────────────
+    age_days = await _factory_age_days(factoryId, smartbi_pool)
+    window_days = _coverage_window_days(age_days)
 
-        # ── Fetch all 6 module stats ─────────────────────────────────────────
-        stats = await _fetch_module_stats(factoryId, window_days, cretas_pool, smartbi_pool)
+    # ── Fetch all 6 module stats ─────────────────────────────────────────
+    stats = await _fetch_module_stats(factoryId, window_days, cretas_pool, smartbi_pool)
 
-        # ── Build response ───────────────────────────────────────────────────
-        modules = [
-            _build_module_response(mod_id, stats.get(mod_id, {"count": 0, "last_updated": None}), window_days)
-            for mod_id in _EXPECTED_MODULE_IDS
-        ]
+    # ── Build response ───────────────────────────────────────────────────
+    modules = [
+        _build_module_response(mod_id, stats.get(mod_id, {"count": 0, "last_updated": None}), window_days)
+        for mod_id in _EXPECTED_MODULE_IDS
+    ]
 
-        overall = int(sum(m["coverage"] for m in modules) / len(modules))
-        cached_at = datetime.now(timezone.utc).isoformat()
+    overall = int(sum(m["coverage"] for m in modules) / len(modules))
+    cached_at = datetime.now(timezone.utc).isoformat()
 
-        body: Dict[str, Any] = {
-            "factoryId": factoryId,
-            "modules": modules,
-            "overallCompleteness": overall,
-            "cachedAt": cached_at,
-        }
+    body: Dict[str, Any] = {
+        "factoryId": factoryId,
+        "modules": modules,
+        "overallCompleteness": overall,
+        "cachedAt": cached_at,
+    }
 
-        # ── Store in cache ────────────────────────────────────────────────────
-        _cache[factoryId] = (now_ts, body)
+    # ── Store in cache ────────────────────────────────────────────────────
+    _cache[factoryId] = (now_ts, body)
 
-        return body
-
-    finally:
-        try:
-            await cretas_pool.close()
-        except Exception:
-            pass
+    return body

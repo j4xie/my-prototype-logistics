@@ -191,3 +191,56 @@ async def get_pg_pool():
             setup=set_pg_connection_tenant,
         )
     return _pg_pool
+
+
+# ==========================================
+# Shared asyncpg pool for Cretas app DB (cretas_db)
+# ==========================================
+_cretas_pool: Optional[asyncpg.Pool] = None  # type: ignore[name-defined]
+_cretas_pool_lock = None  # initialised lazily (asyncio.Lock must be created inside event loop)
+
+
+async def get_cretas_pool():
+    """Get cached asyncpg connection pool for the Cretas app database (cretas_db).
+
+    Singleton — lives for the full application lifetime.  Never close the
+    returned pool (it is shared across all callers).
+
+    Uses the same food_kb_db_url setting as the per-request pools that
+    restaurant_completeness.py and restaurant_etl_admin.py previously created
+    (legacy name; the URL points to cretas_db, not a separate food-kb DB).
+
+    Pool size 2-8: larger than the old per-request 1-3 because this pool is
+    shared and amortises the connection overhead across all concurrent requests.
+    """
+    import asyncio
+    import asyncpg as _asyncpg
+
+    global _cretas_pool, _cretas_pool_lock
+
+    # Fast path — pool already initialised
+    if _cretas_pool is not None and not _cretas_pool._closed:
+        return _cretas_pool
+
+    # Lazily create the lock inside the running event loop
+    if _cretas_pool_lock is None:
+        _cretas_pool_lock = asyncio.Lock()
+
+    async with _cretas_pool_lock:
+        # Double-check after acquiring lock
+        if _cretas_pool is not None and not _cretas_pool._closed:
+            return _cretas_pool
+
+        settings = get_settings()
+        url = settings.food_kb_db_url
+        if not url:
+            return None
+
+        _cretas_pool = await _asyncpg.create_pool(
+            url,
+            min_size=2,
+            max_size=8,
+            command_timeout=30,
+        )
+
+    return _cretas_pool
