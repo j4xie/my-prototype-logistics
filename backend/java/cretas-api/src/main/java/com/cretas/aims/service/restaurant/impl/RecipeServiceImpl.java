@@ -38,7 +38,8 @@ public class RecipeServiceImpl implements RecipeService {
 
         if (recipeRepository.existsByFactoryIdAndProductTypeIdAndRawMaterialTypeIdAndIsActiveTrue(
                 factoryId, recipe.getProductTypeId(), recipe.getRawMaterialTypeId())) {
-            throw new BusinessException("该菜品已存在此食材的配方行");
+            throw new BusinessException(409, "该菜品已存在此食材的配方行")
+                    .withHint("请编辑已有配方行, 或选择其他食材").withHintTarget("rawMaterialTypeId");
         }
 
         recipe.setFactoryId(factoryId);
@@ -125,7 +126,8 @@ public class RecipeServiceImpl implements RecipeService {
 
         List<Recipe> recipes = recipeRepository.findActiveByFactoryIdAndProductTypeId(factoryId, productTypeId);
         if (recipes.isEmpty()) {
-            throw new BusinessException("该菜品暂无配方数据");
+            throw new BusinessException(404, "该菜品暂无配方数据")
+                    .withHint("请先在配方管理中创建该菜品的配方").withHintTarget("productTypeId");
         }
 
         BigDecimal qty = BigDecimal.valueOf(dishQuantity);

@@ -109,7 +109,8 @@ public class ArApServiceImpl implements ArApService {
         }
 
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BusinessException("应收金额必须大于0");
+            throw new BusinessException(400, "应收金额必须大于0")
+                    .withHint("请输入大于 0 的金额").withHintTarget("amount");
         }
 
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
@@ -118,7 +119,8 @@ public class ArApServiceImpl implements ArApService {
         // 检查是否已挂账
         if (salesOrderId != null && transactionRepository.existsByFactoryIdAndSalesOrderIdAndTransactionType(
                 factoryId, salesOrderId, ArApTransactionType.AR_INVOICE)) {
-            throw new BusinessException("该销售订单已生成应收记录");
+            throw new BusinessException(409, "该销售订单已生成应收记录")
+                    .withHint("请勿重复挂账, 如需调整请使用收款或调整流程").withHintTarget("salesOrderId");
         }
 
         // R21 audit C1: enforce SO status invariant (mirror of R18 InvoiceServiceImpl).
@@ -153,7 +155,8 @@ public class ArApServiceImpl implements ArApService {
                                           String purchaseOrderId, BigDecimal amount,
                                           LocalDate dueDate, Long operatedBy, String remark) {
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BusinessException("应付金额必须大于0");
+            throw new BusinessException(400, "应付金额必须大于0")
+                    .withHint("请输入大于 0 的金额").withHintTarget("amount");
         }
 
         Supplier supplier = supplierRepository.findByIdAndFactoryId(supplierId, factoryId)
@@ -161,7 +164,8 @@ public class ArApServiceImpl implements ArApService {
 
         if (purchaseOrderId != null && transactionRepository.existsByFactoryIdAndPurchaseOrderIdAndTransactionType(
                 factoryId, purchaseOrderId, ArApTransactionType.AP_INVOICE)) {
-            throw new BusinessException("该采购订单已生成应付记录");
+            throw new BusinessException(409, "该采购订单已生成应付记录")
+                    .withHint("请勿重复挂账, 如需调整请使用付款或调整流程").withHintTarget("purchaseOrderId");
         }
 
         // R20 audit Q1: enforce business invariant — payable can only be recorded against
@@ -207,13 +211,15 @@ public class ArApServiceImpl implements ArApService {
             catch (Exception e) { log.warn("Canvas validation non-blocking: {}", e.getMessage()); }
         }
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BusinessException("收款金额必须大于0");
+            throw new BusinessException(400, "收款金额必须大于0")
+                    .withHint("请输入大于 0 的金额").withHintTarget("amount");
         }
 
         // 幂等检查：同一 paymentReference 不能重复收款
         if (paymentReference != null && !paymentReference.isBlank()
                 && transactionRepository.existsByFactoryIdAndPaymentReference(factoryId, paymentReference)) {
-            throw new BusinessException("收款单号已存在，请勿重复提交: " + paymentReference);
+            throw new BusinessException(409, "收款单号已存在，请勿重复提交: " + paymentReference)
+                    .withHint("请使用其他收款单号, 或刷新查看已有记录").withHintTarget("paymentReference");
         }
 
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
@@ -222,7 +228,8 @@ public class ArApServiceImpl implements ArApService {
         // 超额防护：收款金额不能超过客户应收余额
         BigDecimal currentBalance = customer.getCurrentBalance() != null ? customer.getCurrentBalance() : BigDecimal.ZERO;
         if (currentBalance.compareTo(BigDecimal.ZERO) > 0 && amount.compareTo(currentBalance) > 0) {
-            throw new BusinessException("收款金额(" + amount + ")超过客户应收余额(" + currentBalance + ")");
+            throw new BusinessException(409, "收款金额(" + amount + ")超过客户应收余额(" + currentBalance + ")")
+                    .withHint("请减少收款金额, 或先核对客户应收余额").withHintTarget("amount");
         }
 
         // 付款冲减余额（amount为正数，存为负数表示减少应收）
@@ -276,13 +283,15 @@ public class ArApServiceImpl implements ArApService {
             catch (Exception e) { log.warn("Canvas validation non-blocking: {}", e.getMessage()); }
         }
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BusinessException("付款金额必须大于0");
+            throw new BusinessException(400, "付款金额必须大于0")
+                    .withHint("请输入大于 0 的金额").withHintTarget("amount");
         }
 
         // 幂等检查：同一 paymentReference 不能重复付款
         if (paymentReference != null && !paymentReference.isBlank()
                 && transactionRepository.existsByFactoryIdAndPaymentReference(factoryId, paymentReference)) {
-            throw new BusinessException("付款单号已存在，请勿重复提交: " + paymentReference);
+            throw new BusinessException(409, "付款单号已存在，请勿重复提交: " + paymentReference)
+                    .withHint("请使用其他付款单号, 或刷新查看已有记录").withHintTarget("paymentReference");
         }
 
         Supplier supplier = supplierRepository.findByIdAndFactoryId(supplierId, factoryId)
@@ -363,7 +372,8 @@ public class ArApServiceImpl implements ArApService {
         }
         if (txn.getTransactionType() != ArApTransactionType.AR_ADJUSTMENT
                 && txn.getTransactionType() != ArApTransactionType.AP_ADJUSTMENT) {
-            throw new BusinessException("非调整类型交易不可审批: " + txn.getTransactionType());
+            throw new BusinessException(409, "非调整类型交易不可审批: " + txn.getTransactionType())
+                    .withHint("仅 AR/AP 调整类型交易需要审批, 请刷新交易列表");
         }
         // 4-eyes principle: approver must differ from submitter
         if (txn.getOperatedBy() != null && txn.getOperatedBy().equals(approvedBy)) {
@@ -522,10 +532,12 @@ public class ArApServiceImpl implements ArApService {
     public java.util.Map<String, Object> batchApproveAdjustments(
             String factoryId, java.util.List<String> transactionIds, Long approvedBy) {
         if (transactionIds == null || transactionIds.isEmpty()) {
-            throw new BusinessException("批量审批 ID 列表不能为空");
+            throw new BusinessException(400, "批量审批 ID 列表不能为空")
+                    .withHint("请选择至少 1 条交易").withHintTarget("ids");
         }
         if (transactionIds.size() > 100) {
-            throw new BusinessException("批量审批一次不超过 100 条");
+            throw new BusinessException(400, "批量审批一次不超过 100 条")
+                    .withHint("请分批操作, 每次最多 100 条").withHintTarget("ids");
         }
         int approvedCount = 0;
         java.util.List<java.util.Map<String, String>> failures = new java.util.ArrayList<>();
@@ -552,10 +564,12 @@ public class ArApServiceImpl implements ArApService {
     public java.util.Map<String, Object> batchRejectAdjustments(
             String factoryId, java.util.List<String> transactionIds, Long approvedBy, String reason) {
         if (transactionIds == null || transactionIds.isEmpty()) {
-            throw new BusinessException("批量驳回 ID 列表不能为空");
+            throw new BusinessException(400, "批量驳回 ID 列表不能为空")
+                    .withHint("请选择至少 1 条交易").withHintTarget("ids");
         }
         if (transactionIds.size() > 100) {
-            throw new BusinessException("批量驳回一次不超过 100 条");
+            throw new BusinessException(400, "批量驳回一次不超过 100 条")
+                    .withHint("请分批操作, 每次最多 100 条").withHintTarget("ids");
         }
         int rejectedCount = 0;
         java.util.List<java.util.Map<String, String>> failures = new java.util.ArrayList<>();

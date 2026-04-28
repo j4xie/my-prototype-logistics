@@ -152,7 +152,8 @@ public class ReturnOrderServiceImpl implements ReturnOrderService {
         ReturnOrder order = returnOrderRepository.findById(returnOrderId)
                 .orElseThrow(() -> new ResourceNotFoundException("退货单不存在"));
         if (!order.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权访问该退货单");
+            throw new BusinessException(403, "无权访问该退货单")
+                    .withHint("当前退货单不属于该工厂, 无法访问");
         }
         return order;
     }

@@ -38,7 +38,8 @@ public class StocktakingRecordServiceImpl implements StocktakingRecordService {
 
         if (stocktakingRecordRepository.existsByFactoryIdAndRawMaterialTypeIdAndStatus(
                 factoryId, record.getRawMaterialTypeId(), StocktakingRecord.Status.IN_PROGRESS)) {
-            throw new BusinessException("该食材已有进行中的盘点记录");
+            throw new BusinessException(409, "该食材已有进行中的盘点记录")
+                    .withHint("请先完成或取消已有盘点记录").withHintTarget("rawMaterialTypeId");
         }
 
         record.setFactoryId(factoryId);
@@ -87,7 +88,8 @@ public class StocktakingRecordServiceImpl implements StocktakingRecordService {
                 .orElseThrow(() -> new ResourceNotFoundException("StocktakingRecord", "id", recordId));
 
         if (record.getStatus() != StocktakingRecord.Status.IN_PROGRESS) {
-            throw new BusinessException("只有进行中的盘点记录才能完成");
+            throw new BusinessException(409, "只有进行中的盘点记录才能完成")
+                    .withHint("请刷新盘点记录列表查看最新状态");
         }
 
         record.setActualQuantity(actualQuantity);
@@ -111,7 +113,8 @@ public class StocktakingRecordServiceImpl implements StocktakingRecordService {
                 .orElseThrow(() -> new ResourceNotFoundException("StocktakingRecord", "id", recordId));
 
         if (record.getStatus() != StocktakingRecord.Status.IN_PROGRESS) {
-            throw new BusinessException("只有进行中的盘点记录才能取消");
+            throw new BusinessException(409, "只有进行中的盘点记录才能取消")
+                    .withHint("请刷新盘点记录列表查看最新状态");
         }
 
         record.setStatus(StocktakingRecord.Status.CANCELLED);

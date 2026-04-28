@@ -32,7 +32,8 @@ public class EmployeeProcessSegmentServiceImpl implements EmployeeProcessSegment
         List<EmployeeProcessSegment> existing = repository
                 .findByFactoryIdAndEmployeeIdAndStatusAndDeletedAtIsNull(factoryId, employeeId, SegmentStatus.ACTIVE);
         if (!existing.isEmpty()) {
-            throw new BusinessException("员工 " + employeeId + " 已有进行中的工序片段, 请先结束或切换工种");
+            throw new BusinessException(409, "员工 " + employeeId + " 已有进行中的工序片段")
+                    .withHint("请先结束当前工序或使用切换工种").withHintTarget("employeeId");
         }
 
         EmployeeProcessSegment seg = new EmployeeProcessSegment();
@@ -57,7 +58,8 @@ public class EmployeeProcessSegmentServiceImpl implements EmployeeProcessSegment
         List<EmployeeProcessSegment> active = repository
                 .findByFactoryIdAndEmployeeIdAndStatusAndDeletedAtIsNull(factoryId, employeeId, SegmentStatus.ACTIVE);
         if (active.isEmpty()) {
-            throw new BusinessException("员工 " + employeeId + " 当前无进行中的工序片段");
+            throw new BusinessException(409, "员工 " + employeeId + " 当前无进行中的工序片段")
+                    .withHint("请先开启工序片段").withHintTarget("employeeId");
         }
         if (active.size() > 1) {
             log.warn("[P1-1] 员工 {} 有多于 1 个 ACTIVE segment (数据异常, 共 {} 条)", employeeId, active.size());

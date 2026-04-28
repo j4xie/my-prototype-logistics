@@ -115,7 +115,8 @@ public class MaterialRequisitionServiceImpl implements MaterialRequisitionServic
                 .orElseThrow(() -> new ResourceNotFoundException("MaterialRequisition", "id", requisitionId));
 
         if (req.getStatus() != MaterialRequisition.Status.DRAFT) {
-            throw new BusinessException("只有草稿状态的领料单才能提交");
+            throw new BusinessException(409, "只有草稿状态的领料单才能提交")
+                    .withHint("请刷新领料单列表查看最新状态");
         }
 
         req.setStatus(MaterialRequisition.Status.SUBMITTED);
@@ -134,7 +135,8 @@ public class MaterialRequisitionServiceImpl implements MaterialRequisitionServic
                 .orElseThrow(() -> new ResourceNotFoundException("MaterialRequisition", "id", requisitionId));
 
         if (req.getStatus() != MaterialRequisition.Status.SUBMITTED) {
-            throw new BusinessException("只有已提交状态的领料单才能审批");
+            throw new BusinessException(409, "只有已提交状态的领料单才能审批")
+                    .withHint("请刷新领料单列表查看最新审批状态");
         }
 
         req.setActualQuantity(actualQuantity);
@@ -157,7 +159,8 @@ public class MaterialRequisitionServiceImpl implements MaterialRequisitionServic
                 .orElseThrow(() -> new ResourceNotFoundException("MaterialRequisition", "id", requisitionId));
 
         if (req.getStatus() != MaterialRequisition.Status.SUBMITTED) {
-            throw new BusinessException("只有已提交状态的领料单才能驳回");
+            throw new BusinessException(409, "只有已提交状态的领料单才能驳回")
+                    .withHint("请刷新领料单列表查看最新审批状态");
         }
 
         req.setStatus(MaterialRequisition.Status.REJECTED);

@@ -181,7 +181,8 @@ public class PurchaseServiceImpl implements PurchaseService {
         PurchaseOrder order = purchaseOrderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("采购订单不存在"));
         if (!order.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权访问该采购订单");
+            throw new BusinessException(403, "无权访问该采购订单")
+                    .withHint("当前采购订单不属于该工厂, 无法访问");
         }
         hydrateSalesOrderNumber(order);
         return order;
@@ -580,7 +581,8 @@ public class PurchaseServiceImpl implements PurchaseService {
         PurchaseReceiveRecord record = receiveRecordRepository.findById(receiveId)
                 .orElseThrow(() -> new ResourceNotFoundException("入库单不存在"));
         if (!record.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权访问该入库单");
+            throw new BusinessException(403, "无权访问该入库单")
+                    .withHint("当前入库单不属于该工厂, 无法访问");
         }
         return record;
     }
@@ -642,7 +644,8 @@ public class PurchaseServiceImpl implements PurchaseService {
         RawMaterialType materialType = materialTypeRepository.findById(materialTypeId)
                 .orElseThrow(() -> new ResourceNotFoundException("原料类型不存在: " + materialTypeId));
         if (!materialType.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权访问该原料类型");
+            throw new BusinessException(403, "无权访问该原料类型")
+                    .withHint("当前原料类型不属于该工厂, 无法访问");
         }
         return buildPriceComparison(factoryId, materialTypeId, materialType.getName(), currentPrice);
     }

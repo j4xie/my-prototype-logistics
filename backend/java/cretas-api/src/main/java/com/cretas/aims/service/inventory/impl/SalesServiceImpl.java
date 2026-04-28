@@ -154,7 +154,8 @@ public class SalesServiceImpl implements SalesService {
         Set<String> seenProductIds = new HashSet<>();
         for (CreateSalesOrderRequest.SalesOrderItemDTO itemDTO : request.getItems()) {
             if (!seenProductIds.add(itemDTO.getProductTypeId())) {
-                throw new BusinessException("同一订单不能添加重复的产品: " + (itemDTO.getProductName() != null ? itemDTO.getProductName() : itemDTO.getProductTypeId()));
+                throw new BusinessException(409, "同一订单不能添加重复的产品: " + (itemDTO.getProductName() != null ? itemDTO.getProductName() : itemDTO.getProductTypeId()))
+                        .withHint("请合并相同产品行, 或选择其他产品").withHintTarget("productTypeId");
             }
         }
 
@@ -225,7 +226,8 @@ public class SalesServiceImpl implements SalesService {
         SalesOrder order = salesOrderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("销售订单不存在"));
         if (!order.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权访问该销售订单");
+            throw new BusinessException(403, "无权访问该销售订单")
+                    .withHint("当前销售订单不属于该工厂, 无法访问");
         }
         return order;
     }
@@ -680,7 +682,7 @@ public class SalesServiceImpl implements SalesService {
                     String productLabel = item.getProductName() != null
                             ? item.getProductName()
                             : (item.getProductTypeId() != null ? item.getProductTypeId() : "未知产品");
-                    throw new BusinessException("发货行 " + itemIdStr
+                    throw new BusinessException(409, "发货行 " + itemIdStr
                             + "（产品：" + productLabel + "）未完成批次分配，无法确认发货")
                             .withHint("请在「发货记录」Tab 点击「分配批次」按钮,完成所有行的批次分配后再确认发货")
                             .withHintTarget("发货记录 Tab");
@@ -741,7 +743,8 @@ public class SalesServiceImpl implements SalesService {
         SalesDeliveryRecord record = deliveryRecordRepository.findById(deliveryId)
                 .orElseThrow(() -> new ResourceNotFoundException("发货单不存在"));
         if (!record.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权访问该发货单");
+            throw new BusinessException(403, "无权访问该发货单")
+                    .withHint("当前发货单不属于该工厂, 无法访问");
         }
         return record;
     }
@@ -952,7 +955,8 @@ public class SalesServiceImpl implements SalesService {
         if (factoryConfigService != null) {
             try {
                 if (!factoryConfigService.isTransitionAllowed(factoryId, "sales_order", fromStatus, toStatus)) {
-                    throw new BusinessException("当前配置不允许从 " + fromStatus + " 转换到 " + toStatus);
+                    throw new BusinessException(409, "当前配置不允许从 " + fromStatus + " 转换到 " + toStatus)
+                            .withHint("请刷新订单列表查看最新状态");
                 }
             } catch (BusinessException e) {
                 throw e;
