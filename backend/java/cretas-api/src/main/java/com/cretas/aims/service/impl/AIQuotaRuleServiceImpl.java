@@ -104,7 +104,8 @@ public class AIQuotaRuleServiceImpl implements AIQuotaRuleService {
 
             // 检查是否已存在规则
             if (quotaRuleRepository.existsByFactoryId(request.getFactoryId())) {
-                throw new BusinessException("工厂已存在配额规则，请使用更新接口: " + request.getFactoryId());
+                throw new BusinessException(409, "工厂已存在配额规则: " + request.getFactoryId())
+                        .withHint("请使用更新接口修改现有规则, 而非重复创建").withHintTarget("factoryId");
             }
         }
 

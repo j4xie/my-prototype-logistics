@@ -64,7 +64,8 @@ public class DeviceActivationServiceImpl implements DeviceActivationService {
         DeviceActivation activation = activationRepository.findByActivationCode(activationCode)
                 .orElseThrow(() -> new BusinessException("激活码不存在"));
         if (!activation.isValid()) {
-            throw new BusinessException("激活码无效或已过期");
+            throw new BusinessException(409, "激活码无效或已过期")
+                    .withHint("请联系管理员获取新的激活码").withHintTarget("activationCode");
         }
         return convertToDTO(activation);
     }
@@ -81,7 +82,8 @@ public class DeviceActivationServiceImpl implements DeviceActivationService {
                 .findByFactoryIdAndDeviceId(activation.getFactoryId(), request.getDeviceId());
         if (existingActivation.isPresent() &&
             !existingActivation.get().getId().equals(activation.getId())) {
-            throw new BusinessException("设备已被其他激活码激活");
+            throw new BusinessException(409, "设备已被其他激活码激活")
+                    .withHint("请使用原激活码登录, 或联系管理员重置设备绑定").withHintTarget("deviceId");
         }
         // 更新激活信息
         activation.setDeviceId(request.getDeviceId());
@@ -105,7 +107,8 @@ public class DeviceActivationServiceImpl implements DeviceActivationService {
         DeviceActivation activation = activationRepository.findById(activationId)
                 .orElseThrow(() -> new BusinessException("激活记录不存在"));
         if (!activation.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权访问该激活记录");
+            throw new BusinessException(403, "无权访问该激活记录")
+                    .withHint("当前激活记录不属于该工厂, 无法访问");
         }
         activation.setStatus("REVOKED");
         activationRepository.save(activation);
@@ -126,7 +129,8 @@ public class DeviceActivationServiceImpl implements DeviceActivationService {
         DeviceActivation activation = activationRepository.findById(activationId)
                 .orElseThrow(() -> new BusinessException("激活记录不存在"));
         if (!activation.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权访问该激活记录");
+            throw new BusinessException(403, "无权访问该激活记录")
+                    .withHint("当前激活记录不属于该工厂, 无法访问");
         }
         activation.setStatus(status);
         activation = activationRepository.save(activation);
@@ -138,7 +142,8 @@ public class DeviceActivationServiceImpl implements DeviceActivationService {
         DeviceActivation activation = activationRepository.findById(activationId)
                 .orElseThrow(() -> new BusinessException("激活记录不存在"));
         if (!activation.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权访问该激活记录");
+            throw new BusinessException(403, "无权访问该激活记录")
+                    .withHint("当前激活记录不属于该工厂, 无法访问");
         }
         return convertToDTO(activation);
     }
@@ -280,7 +285,8 @@ public class DeviceActivationServiceImpl implements DeviceActivationService {
         DeviceActivation activation = activationRepository.findById(activationId)
                 .orElseThrow(() -> new BusinessException("激活记录不存在"));
         if (!activation.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权访问该激活记录");
+            throw new BusinessException(403, "无权访问该激活记录")
+                    .withHint("当前激活记录不属于该工厂, 无法访问");
         }
         LocalDateTime newExpiry = activation.getExpiresAt() != null ?
                 activation.getExpiresAt().plusDays(additionalDays) :
@@ -375,7 +381,8 @@ public class DeviceActivationServiceImpl implements DeviceActivationService {
         // 检查新设备是否已激活
         if (activationRepository.existsByFactoryIdAndDeviceIdAndStatus(
                 factoryId, newDeviceId, "ACTIVATED")) {
-            throw new BusinessException("新设备已被激活");
+            throw new BusinessException(409, "新设备已被激活")
+                    .withHint("请先解除新设备已有绑定, 再执行转移操作").withHintTarget("newDeviceId");
         }
         activation.setDeviceId(newDeviceId);
         activation.setLastActiveAt(LocalDateTime.now());

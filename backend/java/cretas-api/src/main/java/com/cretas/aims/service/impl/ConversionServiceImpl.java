@@ -66,7 +66,8 @@ public class ConversionServiceImpl implements ConversionService {
         // 检查是否已存在相同配置
         if (conversionRepository.existsByFactoryIdAndMaterialTypeIdAndProductTypeId(
                 factoryId, dto.getMaterialTypeId(), dto.getProductTypeId())) {
-            throw new BusinessException("该转换率配置已存在");
+            throw new BusinessException(409, "该转换率配置已存在")
+                    .withHint("请编辑已有转换率配置, 而非重复创建");
         }
         // 验证原材料类型存在
         RawMaterialType materialType = materialTypeRepository.findById(dto.getMaterialTypeId())
@@ -101,7 +102,8 @@ public class ConversionServiceImpl implements ConversionService {
         MaterialProductConversion conversion = conversionRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("转换率配置不存在"));
         if (!conversion.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权访问该转换率配置");
+            throw new BusinessException(403, "无权访问该转换率配置")
+                    .withHint("当前转换率配置不属于该工厂, 无法访问");
         }
 
         // 如果要更改原材料或产品类型，检查是否会重复
@@ -109,7 +111,8 @@ public class ConversionServiceImpl implements ConversionService {
             !conversion.getProductTypeId().equals(dto.getProductTypeId())) {
             if (conversionRepository.existsByFactoryIdAndMaterialTypeIdAndProductTypeId(
                     factoryId, dto.getMaterialTypeId(), dto.getProductTypeId())) {
-                throw new BusinessException("该转换率配置已存在");
+                throw new BusinessException(409, "该转换率配置已存在")
+                    .withHint("请编辑已有转换率配置, 而非重复创建");
             }
         }
 
@@ -150,7 +153,8 @@ public class ConversionServiceImpl implements ConversionService {
         MaterialProductConversion conversion = conversionRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("转换率配置不存在"));
         if (!conversion.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权访问该转换率配置");
+            throw new BusinessException(403, "无权访问该转换率配置")
+                    .withHint("当前转换率配置不属于该工厂, 无法访问");
         }
 
         // 记录删除历史（在删除前记录）
@@ -166,7 +170,8 @@ public class ConversionServiceImpl implements ConversionService {
         MaterialProductConversion conversion = conversionRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("转换率配置不存在"));
         if (!conversion.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权访问该转换率配置");
+            throw new BusinessException(403, "无权访问该转换率配置")
+                    .withHint("当前转换率配置不属于该工厂, 无法访问");
         }
         RawMaterialType materialType = materialTypeRepository.findById(conversion.getMaterialTypeId()).orElse(null);
         ProductType productType = productTypeRepository.findById(conversion.getProductTypeId()).orElse(null);
@@ -693,7 +698,8 @@ public class ConversionServiceImpl implements ConversionService {
         // 验证转换率配置属于该工厂
         MaterialProductConversion conversion = conversionRepository.findById(conversionId).orElse(null);
         if (conversion != null && !conversion.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权访问该转换率配置");
+            throw new BusinessException(403, "无权访问该转换率配置")
+                    .withHint("当前转换率配置不属于该工厂, 无法访问");
         }
 
         Page<ConversionChangeHistory> page = historyRepository.findByConversionIdOrderByChangedAtDesc(conversionId, pageable);
