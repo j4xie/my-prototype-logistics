@@ -107,7 +107,7 @@ function renderCharts() {
 }
 
 function renderTrendChart() {
-  if (!trendChartRef.value || !dashboard.value) return;
+  if (!trendChartRef.value || !dashboard.value || !hasTrendData.value) return;
   if (!trendChart || trendChart.isDisposed?.()) trendChart = echarts.init(trendChartRef.value, 'cretas');
   const data = dashboard.value.dailyTrend;
   const dates = data.map(d => String(d.date).slice(5));
@@ -126,7 +126,7 @@ function renderTrendChart() {
 }
 
 function renderYieldChart() {
-  if (!yieldChartRef.value || !dashboard.value) return;
+  if (!yieldChartRef.value || !dashboard.value || !hasYieldData.value) return;
   if (!yieldChart || yieldChart.isDisposed?.()) yieldChart = echarts.init(yieldChartRef.value, 'cretas');
   const data = dashboard.value.dailyTrend;
   const dates = data.map(d => String(d.date).slice(5));
@@ -151,7 +151,7 @@ function renderYieldChart() {
 }
 
 function renderProductChart() {
-  if (!productChartRef.value || !dashboard.value) return;
+  if (!productChartRef.value || !dashboard.value || !hasProductData.value) return;
   if (!productChart || productChart.isDisposed?.()) productChart = echarts.init(productChartRef.value, 'cretas');
   const data = dashboard.value.byProduct;
   productChart.setOption({
@@ -167,7 +167,7 @@ function renderProductChart() {
 }
 
 function renderProcessChart() {
-  if (!processChartRef.value || !dashboard.value) return;
+  if (!processChartRef.value || !dashboard.value || !hasProcessData.value) return;
   if (!processChart || processChart.isDisposed?.()) processChart = echarts.init(processChartRef.value, 'cretas');
   const data = dashboard.value.byProcess;
   processChart.setOption({
@@ -181,6 +181,32 @@ function renderProcessChart() {
     }],
   });
 }
+
+// chart audit P1-3: per-chart hasData computeds. 8 echarts in
+// production-analytics + efficiency-analysis previously rendered nude
+// axes + legend without "暂无数据" placeholder when data was 0/null,
+// looking like the system was broken. Now render <el-empty> branch when
+// the underlying series has no meaningful data.
+
+const hasTrendData = computed(() => {
+  const data = dashboard.value?.dailyTrend ?? [];
+  return data.some(d => Number(d.output) > 0 || Number(d.good) > 0 || Number(d.defect) > 0);
+});
+
+const hasYieldData = computed(() => {
+  const data = dashboard.value?.dailyTrend ?? [];
+  return data.some(d => Number(d.output) > 0);
+});
+
+const hasProductData = computed(() => {
+  const data = dashboard.value?.byProduct ?? [];
+  return data.some(d => Number(d.output) > 0);
+});
+
+const hasProcessData = computed(() => {
+  const data = dashboard.value?.byProcess ?? [];
+  return data.some(d => Number(d.output) > 0);
+});
 
 // ==================== 明细数据 ====================
 
@@ -275,19 +301,23 @@ onBeforeUnmount(() => {
     <div class="charts-grid">
       <div class="chart-card">
         <div class="chart-title">日产出趋势</div>
-        <div ref="trendChartRef" class="chart-body" />
+        <div v-show="hasTrendData" ref="trendChartRef" class="chart-body" />
+        <el-empty v-if="!hasTrendData" description="该期暂无生产报工" :image-size="80" class="chart-empty" />
       </div>
       <div class="chart-card">
         <div class="chart-title">良率趋势</div>
-        <div ref="yieldChartRef" class="chart-body" />
+        <div v-show="hasYieldData" ref="yieldChartRef" class="chart-body" />
+        <el-empty v-if="!hasYieldData" description="该期暂无良率数据" :image-size="80" class="chart-empty" />
       </div>
       <div class="chart-card">
         <div class="chart-title">产品产出对比</div>
-        <div ref="productChartRef" class="chart-body" />
+        <div v-show="hasProductData" ref="productChartRef" class="chart-body" />
+        <el-empty v-if="!hasProductData" description="该期暂无产品产出" :image-size="80" class="chart-empty" />
       </div>
       <div class="chart-card">
         <div class="chart-title">工序产出分布</div>
-        <div ref="processChartRef" class="chart-body" />
+        <div v-show="hasProcessData" ref="processChartRef" class="chart-body" />
+        <el-empty v-if="!hasProcessData" description="该期暂无工序数据" :image-size="80" class="chart-empty" />
       </div>
     </div>
 
@@ -402,6 +432,13 @@ onBeforeUnmount(() => {
 
 .chart-body {
   height: 300px;
+}
+
+.chart-empty {
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .detail-section {

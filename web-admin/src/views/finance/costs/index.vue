@@ -107,6 +107,9 @@ function getTransactionTypeText(type: string) {
     RECEIVABLE: '应收挂账',
     AR_INVOICE: '应收开票',
     AR_PAYMENT: '客户付款',
+    // chart audit P2-1: AR/AP adjustment 之前显 raw enum.
+    AR_ADJUSTMENT: '应收调整',
+    AP_ADJUSTMENT: '应付调整',
     PAYABLE: '应付挂账',
     AP_INVOICE: '应付开票',
     AP_PAYMENT: '供应商付款',

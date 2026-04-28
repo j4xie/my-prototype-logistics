@@ -184,6 +184,12 @@ function getAlertTypeText(type: string) {
     POWER: '电力异常',
     MALFUNCTION: '设备故障',
     MAINTENANCE_DUE: '维护到期',
+    // chart audit P2-1: backend may emit these without FE translations.
+    PERFORMANCE_LOW: '性能下降',
+    PERFORMANCE_HIGH: '性能异常上升',
+    PRESSURE: '压力异常',
+    HUMIDITY: '湿度异常',
+    OFFLINE: '设备离线',
     OTHER: '其他'
   };
   return map[type] || type;

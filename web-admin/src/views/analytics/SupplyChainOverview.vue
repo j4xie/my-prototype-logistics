@@ -266,6 +266,8 @@ function getStatusType(status: string): string {
   const map: Record<string, string> = {
     PLANNED: 'info', PENDING: 'info', DRAFT: 'info',
     IN_PROGRESS: 'warning', PROCESSING: 'warning', APPROVED: 'warning',
+    PARTIAL_RECEIVED: 'warning', PARTIAL_DELIVERED: 'warning',
+    FINANCE_APPROVED: 'warning', PENDING_FINANCE_REVIEW: 'info',
     COMPLETED: 'success', DELIVERED: 'success', RECEIVED: 'success',
     CANCELLED: 'danger', REJECTED: 'danger',
   };
@@ -273,9 +275,13 @@ function getStatusType(status: string): string {
 }
 
 function getStatusText(status: string): string {
+  // chart audit P2-1: backend may emit raw enums for partial-flow states
+  // (PARTIAL_RECEIVED / FINANCE_APPROVED / etc.). Add translations.
   const map: Record<string, string> = {
     PLANNED: '待处理', PENDING: '待处理', DRAFT: '草稿',
     IN_PROGRESS: '进行中', PROCESSING: '处理中', APPROVED: '已审批',
+    PARTIAL_RECEIVED: '部分到货', PARTIAL_DELIVERED: '部分发货',
+    FINANCE_APPROVED: '财务已审', PENDING_FINANCE_REVIEW: '财务审核中',
     COMPLETED: '已完成', DELIVERED: '已交付', RECEIVED: '已收货',
     CANCELLED: '已取消', REJECTED: '已拒绝',
   };
