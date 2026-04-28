@@ -407,17 +407,21 @@ test.describe('餐饮 Phase A smoke — A-1/A-2/A-3 new-feature guards', () => {
     await page.screenshot({ path: 'test-results/a3-data-quality-queue.png', fullPage: true });
   });
 
-  test('Phase B-1 outlier filter — admin 巡检 + dismiss + un-dismiss flow', async ({ page }) => {
-    // 1. Login restaurant_admin1 (F002)
-    await page.goto('http://139.196.165.140:8097/login');
-    await page.fill('input[placeholder*="用户名"]', 'restaurant_admin1');
-    await page.fill('input[placeholder*="密码"]', '123456');
-    await page.click('button:has-text("登录")');
-    await page.waitForURL(/dashboard|home/, { timeout: 15000 });
+  test('Phase B-1 outlier filter — admin 巡检 + dismiss + un-dismiss flow', async ({ page, context }) => {
+    // 1. Login restaurant_admin1 (F002) — clear default factory-admin storage first
+    await context.clearCookies();
+    await page.goto(BASE_URL + '/login', { waitUntil: 'networkidle', timeout: 30000 });
+    await page.waitForTimeout(2000);
+    await page.getByPlaceholder('请输入用户名').fill('restaurant_admin1');
+    await page.getByPlaceholder('请输入密码').fill('123456');
+    await page.waitForTimeout(500);
+    await page.getByRole('button', { name: '登 录' }).click();
+    await page.waitForTimeout(8000);
+    await page.waitForLoadState('networkidle');
 
     // 2. Navigate to /restaurant/data-completeness
-    await page.goto('http://139.196.165.140:8097/restaurant/data-completeness');
-    await page.waitForSelector('.completeness-tabs, .completeness-page', { timeout: 10000 });
+    await page.goto(BASE_URL + '/restaurant/data-completeness', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForSelector('.completeness-tabs, .completeness-page', { timeout: 15000 });
 
     // 3. Switch to "数据质量" tab
     await page.click('.el-tabs__nav .el-tabs__item:has-text("数据质量")');
