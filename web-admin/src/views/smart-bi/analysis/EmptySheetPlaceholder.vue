@@ -1,12 +1,5 @@
 <template>
-  <div v-if="empty" class="empty-sheet">
-    <el-empty description="该 Sheet 暂无可分析的数据">
-      <el-button type="primary" size="small" @click="$emit('view-data')">
-        查看原始数据
-      </el-button>
-    </el-empty>
-  </div>
-  <div v-else class="data-preview-section">
+  <div v-if="!empty" class="data-preview-section">
     <h3><span class="section-badge section-badge--data" aria-hidden="true"></span> 数据预览</h3>
     <el-button @click="$emit('view-data')" type="primary" size="small">
       查看原始数据
