@@ -44,7 +44,8 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
     @Transactional
     public WorkflowTemplate create(WorkflowTemplate template) {
         if (template.getWorkflowJson() == null || template.getWorkflowJson().isEmpty()) {
-            throw new BusinessException("workflowJson is required");
+            throw new BusinessException(400, "workflowJson is required")
+                    .withHint("请提供工作流模板的 JSON 配置").withHintTarget("workflowJson");
         }
         return repository.save(template);
     }
@@ -56,7 +57,8 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
                 .orElseThrow(() -> new ResourceNotFoundException("WorkflowTemplate", "id", id.toString()));
 
         if (!"pending_review".equals(template.getReviewStatus())) {
-            throw new BusinessException("Only pending_review templates can be approved");
+            throw new BusinessException(409, "只有待审核状态的模板可以通过审核")
+                    .withHint("请刷新模板列表查看最新审核状态");
         }
 
         template.setReviewStatus("approved");
@@ -73,7 +75,8 @@ public class WorkflowTemplateServiceImpl implements WorkflowTemplateService {
                 .orElseThrow(() -> new ResourceNotFoundException("WorkflowTemplate", "id", id.toString()));
 
         if (!"pending_review".equals(template.getReviewStatus())) {
-            throw new BusinessException("Only pending_review templates can be rejected");
+            throw new BusinessException(409, "只有待审核状态的模板可以驳回")
+                    .withHint("请刷新模板列表查看最新审核状态");
         }
 
         template.setReviewStatus("rejected");

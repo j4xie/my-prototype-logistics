@@ -236,7 +236,8 @@ public class FactorySettingsServiceImpl implements FactorySettingsService {
                 settings.setEnableAttendance(enabled);
                 break;
             default:
-                throw new BusinessException("未知的功能开关: " + feature);
+                throw new BusinessException(400, "未知的功能开关: " + feature)
+                        .withHint("请使用支持的功能开关名称").withHintTarget("feature");
         }
 
         settingsRepository.save(settings);
@@ -348,7 +349,8 @@ public class FactorySettingsServiceImpl implements FactorySettingsService {
             return json;
         } catch (JsonProcessingException e) {
             log.error("导出工厂设置失败: factoryId={}", factoryId, e);
-            throw new BusinessException("导出设置失败: " + e.getMessage());
+            throw new BusinessException(500, "导出设置失败: " + e.getMessage())
+                    .withHint("请稍后重试, 如果问题持续请联系管理员");
         }
     }
 
@@ -365,7 +367,8 @@ public class FactorySettingsServiceImpl implements FactorySettingsService {
 
         } catch (JsonProcessingException e) {
             log.error("导入工厂设置失败: factoryId={}", factoryId, e);
-            throw new BusinessException("导入设置失败: " + e.getMessage());
+            throw new BusinessException(400, "导入设置失败: " + e.getMessage())
+                    .withHint("请检查 JSON 格式是否正确, 字段是否匹配").withHintTarget("settingsJson");
         }
     }
 

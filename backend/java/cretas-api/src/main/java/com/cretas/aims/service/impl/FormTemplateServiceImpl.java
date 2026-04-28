@@ -85,7 +85,8 @@ public class FormTemplateServiceImpl implements FormTemplateService {
 
         // 检查是否已存在同类型模板
         if (formTemplateRepository.existsByFactoryIdAndEntityTypeAndIsActiveTrue(factoryId, entityType)) {
-            throw new BusinessException("该工厂已存在此类型的表单模板: " + entityType);
+            throw new BusinessException(409, "该工厂已存在此类型的表单模板: " + entityType)
+                    .withHint("请编辑已有模板, 或先停用旧模板").withHintTarget("entityType");
         }
 
         // 创建模板
@@ -324,11 +325,13 @@ public class FormTemplateServiceImpl implements FormTemplateService {
      */
     private void validateEntityType(String entityType) {
         if (entityType == null || entityType.isEmpty()) {
-            throw new BusinessException("实体类型不能为空");
+            throw new BusinessException(400, "实体类型不能为空")
+                    .withHint("请选择实体类型").withHintTarget("entityType");
         }
         if (!SUPPORTED_ENTITY_TYPES.contains(entityType)) {
-            throw new BusinessException("不支持的实体类型: " + entityType +
-                    ", 支持的类型: " + String.join(", ", SUPPORTED_ENTITY_TYPES));
+            throw new BusinessException(400, "不支持的实体类型: " + entityType +
+                    ", 支持的类型: " + String.join(", ", SUPPORTED_ENTITY_TYPES))
+                    .withHint("请从支持的实体类型中选择").withHintTarget("entityType");
         }
     }
 
@@ -338,7 +341,8 @@ public class FormTemplateServiceImpl implements FormTemplateService {
      */
     private void validateSchemaJson(String schemaJson) {
         if (schemaJson == null || schemaJson.isEmpty()) {
-            throw new BusinessException("Schema JSON 不能为空");
+            throw new BusinessException(400, "Schema JSON 不能为空")
+                    .withHint("请填写表单 Schema 配置").withHintTarget("schemaJson");
         }
 
         try {
@@ -348,27 +352,32 @@ public class FormTemplateServiceImpl implements FormTemplateService {
 
             // 检查必须是对象
             if (!root.isObject()) {
-                throw new BusinessException("Schema JSON 必须是对象格式");
+                throw new BusinessException(400, "Schema JSON 必须是对象格式")
+                        .withHint("Schema 根节点必须是 JSON 对象, 而非数组或基本类型").withHintTarget("schemaJson");
             }
 
             // 检查必须有 type 字段
             if (!root.has("type")) {
-                throw new BusinessException("Schema JSON 必须包含 'type' 字段");
+                throw new BusinessException(400, "Schema JSON 必须包含 'type' 字段")
+                        .withHint("Schema 必须含有 type 字段, 通常为 'object'").withHintTarget("schemaJson");
             }
 
             // 检查 type 必须是 'object'
             String type = root.get("type").asText();
             if (!"object".equals(type)) {
-                throw new BusinessException("Schema JSON 的 type 必须是 'object'");
+                throw new BusinessException(400, "Schema JSON 的 type 必须是 'object'")
+                        .withHint("Schema 根节点 type 字段必须为 'object'").withHintTarget("schemaJson");
             }
 
             // 检查必须有 properties 字段
             if (!root.has("properties")) {
-                throw new BusinessException("Schema JSON 必须包含 'properties' 字段");
+                throw new BusinessException(400, "Schema JSON 必须包含 'properties' 字段")
+                        .withHint("Schema 必须含有 properties 字段定义表单字段集").withHintTarget("schemaJson");
             }
 
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-            throw new BusinessException("Schema JSON 格式无效: " + e.getMessage());
+            throw new BusinessException(400, "Schema JSON 格式无效: " + e.getMessage())
+                    .withHint("请检查 JSON 语法 (大括号/引号/逗号匹配)").withHintTarget("schemaJson");
         }
     }
 }
