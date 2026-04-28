@@ -19,22 +19,124 @@ from dataclasses import dataclass
 
 
 # Capability detection: keyword in field name → capability flag.
-# Field names are Chinese (e.g. "营业额" / "会员卡号" / "评分"). We check each
-# field's lowercased name for capability keywords.
+# Field names are usually Chinese (e.g. "营业额" / "会员卡号" / "评分") but real
+# Excel uploads from finance teams often use English/pinyin names (e.g.
+# "net_profit_3", "gross_margin", "actual_revenue", "vip_count"). Apr 27 2026
+# QA audit (F1): finance dataset with `net_profit_3` was misclassified as
+# "no finance" → all 营收/利润 queries got rejected. Fix: include English +
+# pinyin synonyms for each capability.
+#
+# Each entry's keyword is matched as substring against lowercase field name.
+# So "net_profit_3" matches "profit", "actual_revenue" matches "revenue".
 _CAPABILITY_KEYWORDS: dict[str, list[str]] = {
-    'has_sales':    ['销售', '营业额', '销售额', '营收', '收入', '销量', '订单'],
-    'has_member':   ['会员', '客户', '用户', 'vip', '充值', '储值', '余额', '积分'],
-    'has_review':   ['评价', '评论', '评分', '星级', '差评', '好评'],
-    'has_dish':     ['菜品', '商品', '产品', '菜', '套餐'],
-    'has_store':    ['门店', '店铺', '分店', '店名'],
-    'has_time':     ['日期', '时间', '月份', '年份', '周', 'time', 'date'],
-    'has_payment':  ['支付', '付款', '微信', '支付宝', '现金'],
-    'has_channel':  ['渠道', '美团', '饿了么', '抖音', '点评'],
-    'has_staff':    ['员工', '服务员', '收银员', '厨师'],
-    'has_finance':  ['利润', '毛利', '成本', '费用', '损益'],
-    'has_inventory':['库存', '进货', '采购'],
-    'has_promotion':['促销', '优惠', '折扣', '满减'],
+    'has_sales':    [
+        '销售', '营业额', '销售额', '营收', '收入', '销量', '订单',
+        # English / pinyin
+        'sales', 'revenue', 'order', 'turnover', 'gmv', 'invoice',
+        'xiaoshou', 'yingshou',
+    ],
+    'has_member':   [
+        '会员', '客户', '用户', 'vip', '充值', '储值', '余额', '积分',
+        # English / pinyin
+        'member', 'customer', 'user', 'recharge', 'balance', 'point',
+        'huiyuan',
+    ],
+    'has_review':   [
+        '评价', '评论', '评分', '星级', '差评', '好评',
+        # English / pinyin
+        'review', 'rating', 'star', 'comment', 'feedback', 'pingjia',
+    ],
+    'has_dish':     [
+        '菜品', '商品', '产品', '菜', '套餐',
+        # English / pinyin
+        'dish', 'product', 'item', 'sku', 'menu', 'caipin',
+    ],
+    'has_store':    [
+        '门店', '店铺', '分店', '店名',
+        # English / pinyin
+        'store', 'shop', 'branch', 'outlet', 'mendian',
+    ],
+    'has_time':     [
+        '日期', '时间', '月份', '年份', '周',
+        # English / pinyin
+        'time', 'date', 'month', 'year', 'week', 'day', 'period',
+        'riqi', 'shijian',
+    ],
+    'has_payment':  [
+        '支付', '付款', '微信', '支付宝', '现金',
+        # English / pinyin
+        'payment', 'pay', 'cash', 'wechat', 'alipay', 'zhifu',
+    ],
+    'has_channel':  [
+        '渠道', '美团', '饿了么', '抖音', '点评',
+        # English / pinyin
+        'channel', 'platform', 'meituan', 'eleme', 'douyin', 'dianping',
+        'qudao',
+    ],
+    'has_staff':    [
+        '员工', '服务员', '收银员', '厨师',
+        # English / pinyin
+        'staff', 'employee', 'waiter', 'cashier', 'chef', 'yuangong',
+    ],
+    'has_finance':  [
+        '利润', '毛利', '成本', '费用', '损益',
+        # English / pinyin (finance teams use English heavily — F1 audit)
+        'profit', 'margin', 'cost', 'expense', 'loss',
+        'net_profit', 'gross_margin', 'gross_profit', 'net_income',
+        'lirun', 'maoli', 'chengben',
+    ],
+    'has_inventory':[
+        '库存', '进货', '采购',
+        # English / pinyin
+        'inventory', 'stock', 'purchase', 'kucun', 'caigou',
+    ],
+    'has_promotion':[
+        '促销', '优惠', '折扣', '满减',
+        # English / pinyin
+        'promotion', 'discount', 'coupon', 'voucher', 'youhui', 'cuxiao',
+    ],
 }
+
+
+# Apr 27 2026 (F1) + Apr 28 2026 (F1.1): strip trailing period suffixes
+# from field names before keyword matching. Excel multi-sheet pivot exports
+# produce columns like:
+#   "net_profit_1" / "net_profit_2" / "net_profit_3" — period index
+#   "net_profit_v2" — version tag
+#   "revenue_M1" / "revenue_M12" — month tag
+#   "revenue_Q1" / "revenue_Y2024" — quarter / year
+#   "revenue_2024Q1" — year+quarter combo
+#   "revenue (1)" / "revenue (2)" — Excel duplicate column rename
+# Without stripping, AI capability check fails to recognize "net_profit_3"
+# as a finance field. Strip these tags before keyword match.
+import re as _re
+
+# Multiple suffix patterns, applied in order until none match. Each strips
+# ONE suffix per pass so layered suffixes (rare but possible) get cleaned:
+#   "net_profit_2024Q1_v2" → strip _v2 → strip _2024Q1 → "net_profit"
+_SUFFIX_PATTERNS = [
+    _re.compile(r'\s*\(\d+\)$'),                   # Excel dedup: " (1)"
+    _re.compile(r'_v\d+$'),                        # Version: _v2
+    _re.compile(r'_\d{4}[QqMm]\d{1,2}$'),          # Year+QM: _2024Q1
+    _re.compile(r'_[YyMmQqWw]\d{1,4}$'),           # Period: _M1 _Q3 _Y2024 _W12
+    _re.compile(r'_\d+$'),                         # Plain index: _3 _12
+]
+
+
+def _normalize_field_name(name: str) -> str:
+    """Lowercase + strip trailing period/version/index suffix.
+
+    Multi-period pivot artifacts: net_profit_3, revenue_v2, revenue_M1,
+    revenue_2024Q1, revenue (1) all normalize to base name.
+    """
+    n = (name or '').lower().strip()
+    for _ in range(3):  # cap iterations to avoid pathological loops
+        before = n
+        for pat in _SUFFIX_PATTERNS:
+            n = pat.sub('', n)
+        if n == before:
+            break
+    return n
 
 
 # Human-readable labels for prompt hint
@@ -83,18 +185,26 @@ def detect_capabilities(field_meta: list[dict]) -> DatasetCapabilities:
     """Inspect field_meta to determine what queries this dataset can answer.
 
     field_meta entries should have 'original_name' (Chinese field name).
+
+    Apr 27 2026 (F1): each name is lowercased + trailing _N suffix stripped,
+    then matched against bilingual (Chinese/English/pinyin) keyword lists.
+    Catches finance-team uploads with `net_profit_3` / `gross_margin_2` /
+    `actual_revenue` style headers that previously fell through.
     """
     if not field_meta:
         return DatasetCapabilities(capabilities={}, field_count=0)
-    field_names_lower = [
-        str(f.get('original_name') or '').lower()
-        for f in field_meta
-    ]
+    # Keep BOTH the normalized form (for keyword match) AND the raw lowercase
+    # form (so e.g. "vip" still matches "vip" exactly even though it has no
+    # _N suffix). Match against either is enough.
+    norm_names = [_normalize_field_name(str(f.get('original_name') or ''))
+                  for f in field_meta]
+    raw_names = [str(f.get('original_name') or '').lower()
+                 for f in field_meta]
     caps: dict[str, bool] = {}
     for cap, keywords in _CAPABILITY_KEYWORDS.items():
         caps[cap] = any(
             any(kw in fname for kw in keywords)
-            for fname in field_names_lower
+            for fname in (norm_names + raw_names)
         )
     return DatasetCapabilities(capabilities=caps, field_count=len(field_meta))
 

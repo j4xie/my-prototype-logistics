@@ -1377,18 +1377,62 @@ async def auto_parse_excel(
             label = ' '.join(label_parts).strip()
             return True, label
 
+        # F2-v5 (Apr 28 2026): also drop DENSE all-text sub-header rows.
+        # Multi-section pivot like 收入管理报表 has rows like
+        # "门店名称 汇总实际收入 本期 环比 ..." that have ≥30% cells filled
+        # (so F2-v4 sparse check doesn't catch them) but ALL cells are short
+        # text labels (no numbers). These are sub-headers, not data.
+        # Heuristic: if a row has 0 numeric cells AND ≥3 text cells AND avg
+        # cell length ≤ 12 chars, it's a sub-header — drop it.
+        def _is_dense_subheader(row_dict, headers):
+            non_empty = [v for v in row_dict.values()
+                          if v is not None and (not isinstance(v, str) or v.strip())]
+            if len(non_empty) < 3:
+                return False
+            n_num = 0
+            n_text = 0
+            text_lens = []
+            for v in non_empty:
+                if isinstance(v, (int, float)):
+                    n_num += 1
+                    continue
+                s = str(v).strip()
+                # Numeric-looking string?
+                try:
+                    float(s.replace(',', ''))
+                    n_num += 1
+                except ValueError:
+                    n_text += 1
+                    text_lens.append(len(s))
+            if n_num > 0:
+                return False  # any numeric → real data row
+            if n_text < 3:
+                return False
+            avg_len = sum(text_lens) / len(text_lens)
+            return avg_len <= 12
+
         f2v4_header = list(extracted.headers)
         f2v4_rows: list = []
         f2v4_section_count = 0
+        f2v5_subheader_count = 0
         for row in preview_data:
             is_sec, label = _is_section_header(row, f2v4_header)
             if is_sec:
                 _section_label = label
                 f2v4_section_count += 1
                 continue  # drop the section header row
+            # F2-v5: drop dense all-text sub-header rows
+            if _is_dense_subheader(row, f2v4_header):
+                f2v5_subheader_count += 1
+                continue
             if _section_label is not None:
                 row[_SECTION_COL] = _section_label
             f2v4_rows.append(row)
+        if f2v5_subheader_count > 0:
+            logger.info(
+                f"[F2-v5] dropped {f2v5_subheader_count} dense all-text "
+                f"sub-header rows (e.g. '门店名称 实际收入...')"
+            )
 
         if f2v4_section_count > 0:
             preview_data = f2v4_rows
