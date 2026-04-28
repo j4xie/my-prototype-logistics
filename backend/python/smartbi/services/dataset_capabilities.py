@@ -114,12 +114,21 @@ import re as _re
 # Multiple suffix patterns, applied in order until none match. Each strips
 # ONE suffix per pass so layered suffixes (rare but possible) get cleaned:
 #   "net_profit_2024Q1_v2" → strip _v2 → strip _2024Q1 → "net_profit"
+#
+# Apr 28 2026 (post-review P2): tightened period regex to reject invalid
+# values (Q5/Q9/M0/M13/W54/etc) which previously matched and got stripped.
+# Real-world impact small (base name still matches keywords), but reduces
+# noise on diagnostic logs and avoids false-positive period detection.
 _SUFFIX_PATTERNS = [
-    _re.compile(r'\s*\(\d+\)$'),                   # Excel dedup: " (1)"
-    _re.compile(r'_v\d+$'),                        # Version: _v2
-    _re.compile(r'_\d{4}[QqMm]\d{1,2}$'),          # Year+QM: _2024Q1
-    _re.compile(r'_[YyMmQqWw]\d{1,4}$'),           # Period: _M1 _Q3 _Y2024 _W12
-    _re.compile(r'_\d+$'),                         # Plain index: _3 _12
+    _re.compile(r'\s*\(\d+\)$'),                              # Excel dedup: " (1)"
+    _re.compile(r'_v\d+$'),                                    # Version: _v2 _v10
+    _re.compile(r'_\d{4}[Qq][1-4]$'),                          # Year+Q1-4: _2024Q1
+    _re.compile(r'_\d{4}[Mm](?:0?[1-9]|1[0-2])$'),             # Year+M01-12: _2024M3
+    _re.compile(r'_[Yy]\d{2,4}$'),                             # Year only: _Y2024 _Y24
+    _re.compile(r'_[Qq][1-4]$'),                               # Quarter: _Q1-Q4
+    _re.compile(r'_[Mm](?:0?[1-9]|1[0-2])$'),                  # Month: _M01-M12 (no _M0/_M13)
+    _re.compile(r'_[Ww](?:[1-9]|[1-4]\d|5[0-3])$'),            # Week: _W1-W53 (no _W0/_W54)
+    _re.compile(r'_\d+$'),                                     # Plain index: _3 _12
 ]
 
 
