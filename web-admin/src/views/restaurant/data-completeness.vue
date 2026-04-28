@@ -52,6 +52,17 @@ const ringColor = computed(() => {
 
 const isCacheHit = computed(() => data.value?.cachedAt === 'hit');
 
+// Latest module update across all 6 modules — used for "更新于 X" display when
+// cache miss. cachedAt is a 'hit'|'miss' marker from the API, NOT a timestamp.
+const lastModuleUpdated = computed(() => {
+  const updates = (data.value?.modules ?? [])
+    .map((m) => m.lastUpdated)
+    .filter((u): u is string => !!u);
+  if (updates.length === 0) return null;
+  // Return the latest by ISO string sort (lex sort works for ISO-8601)
+  return updates.sort().slice(-1)[0];
+});
+
 // ── Helpers ────────────────────────────────────────────────────────────
 function coverageColor(coverage: number): string {
   if (coverage >= 70) return '#67c23a'; // green
@@ -163,8 +174,8 @@ onMounted(load);
               </el-tag>
               <el-tag v-else type="warning" size="small">实时计算</el-tag>
             </div>
-            <p v-if="!isCacheHit && data.cachedAt" class="updated-at">
-              更新于 {{ formatLastUpdated(data.cachedAt) }}
+            <p v-if="!isCacheHit && lastModuleUpdated" class="updated-at">
+              更新于 {{ formatLastUpdated(lastModuleUpdated) }}
             </p>
           </div>
 
@@ -205,7 +216,6 @@ onMounted(load);
               :color="coverageColor(mod.coverage)"
               :show-text="true"
               :stroke-width="12"
-              status="success"
             />
           </div>
 
