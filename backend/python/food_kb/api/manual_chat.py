@@ -48,6 +48,85 @@ _QUERY_EXPANSIONS: Dict[str, str] = {
     "调拨": "调拨 内部调拨 转库 物料转移 仓间调拨",
     "首页": "首页 主页 工作台 快捷操作 布局 卡片",
     "登录": "登录 注册 认证 密码 账号 token",
+    # === 餐饮指数字典关键词扩展 (2026-04-28 added by restaurant-metrics-glossary) ===
+    # 客流与门店
+    "翻台率": "翻台率 翻台 turn over 桌次 接待 翻桌",
+    "上座率": "上座率 上座 occupancy 满桌",
+    "坪效": "坪效 平效 平均面积 营业额面积",
+    "客单价": "客单价 人均 ARPU 单客 average check",
+    "复购率": "复购率 复购 重复消费 retention",
+    "新客占比": "新客占比 新客 拉新 first time",
+    # 财务结构
+    "毛利率": "毛利率 毛利 gross margin 毛利润",
+    "食材率": "食材率 食材成本率 cost of goods 原料率",
+    "人力成本": "人力成本 工资率 人工率 labor cost",
+    "充卡": "充卡 储值 储值卡 预收 预付 充卡依赖度",
+    "成本刚性": "成本刚性 cost rigidity 调整空间",
+    "桑基图": "桑基图 sankey 资金流 成本流向",
+    "净利率": "净利率 净利 net profit 净利润",
+    "EBITDA": "EBITDA 息税折旧摊销前利润",
+    # 财务比率
+    "周转率": "周转率 turnover 流转",
+    "存货周转": "存货周转 库存周转 inventory turnover",
+    "流动比率": "流动比率 short term liquidity 偿债能力",
+    "资产负债率": "资产负债率 leverage 杠杆率 负债",
+    "营业利润率": "营业利润率 operating margin 主业",
+    # 菜品分析
+    "4 象限": "4 象限 四象限 Kasavana Smith 菜品工程",
+    "象限": "象限 quadrant 4 象限 菜品工程",
+    "Kasavana": "Kasavana Smith 菜品工程 4 象限",
+    "菜品工程": "菜品工程 menu engineering Kasavana",
+    "Star": "Star 招牌菜 明星菜 高利高销",
+    "Cash Cow": "Cash Cow 走量 引流款 高销低利",
+    "Puzzle": "Puzzle 高利无人点 低销高利",
+    "Dog": "Dog 淘汰 低销低利",
+    "套餐": "套餐 combo 拆单 套餐拆分",
+    # 会员
+    "RFM": "RFM Recency Frequency Monetary 会员分层",
+    "Champions": "Champions 冠军客户 RFM 高 R 高 F 高 M",
+    "Loyal": "Loyal 忠实客户 RFM",
+    "AtRisk": "AtRisk 流失风险 RFM 召回",
+    "会员分层": "会员分层 RFM Champions Loyal Potential AtRisk Hibernating Lost",
+    # 方法论
+    "校准因子": "校准因子 calibration factor 基准修正",
+    "可信度": "可信度 confidence score 数据完整度 数据可信度",
+    "AI 洞察": "AI 洞察 insights 积极发现 风险关注 改进建议",
+    "异常值": "异常值 anomaly outlier 2σ 离群 异常检测",
+    "诊断引擎": "诊断引擎 diagnostics 处方 prescription",
+    # 看板与术语
+    "PBI": "PBI 财务PBI 财务看板 financial dashboard",
+    "看板": "看板 dashboard 仪表盘",
+    "指数": "指数 指标 KPI 数据 metrics",
+    "指标": "指标 KPI 指数 metrics",
+    "红线": "红线 警戒 阈值 threshold benchmark",
+    "基准": "基准 benchmark 标准 行业平均",
+    "对标": "对标 benchmark 行业 中位数",
+    # 行业类目
+    "正餐": "正餐 中餐 西餐 fine dining 堂食",
+    "快餐": "快餐 fast food 茶饮 饮品",
+    "火锅": "火锅 烧烤 自助",
+    # 客户日常说法变体 (audit Phase 2 反馈)
+    "翻桌": "翻桌 翻台 翻台率 桌次",
+    "提成": "提成 计件 工资 奖金 计件提成",
+    "盘点": "盘点 库存盘点 月底盘存 日清",
+    "日清": "日清 日清日结 库存对账 盘存校验",
+    "招牌菜": "招牌菜 Star 明星菜 高利高销 4 象限",
+    # 英文术语 (大小写双覆盖,因为 keyword in question 是 case-sensitive)
+    "ARPU": "ARPU 客单价 人均消费",
+    "arpu": "ARPU 客单价 人均消费",
+    "GMV": "GMV 营业额 总成交 成交额",
+    "gmv": "GMV 营业额 总成交 成交额",
+    "LTV": "LTV 客户终身价值 customer lifetime value 长期价值",
+    "ltv": "LTV 客户终身价值 customer lifetime value 长期价值",
+    "ROI": "ROI 回报率 投资回报 营销 ROI",
+    "roi": "ROI 回报率 投资回报 营销 ROI",
+    "rfm": "RFM Recency Frequency Monetary 会员分层",
+    # 二次 audit 补充: 短词 / 客户高频说法
+    "瀑布图": "瀑布图 损益瀑布 现金流瀑布 waterfall",
+    "现金流": "现金流 cashflow 经营现金流 投资现金流 筹资现金流",
+    "账龄": "账龄 应收账龄 AR aging 应收分布",
+    "人均": "人均 人均消费 客单价 ARPU",
+    "加盟主": "加盟主 加盟商 franchise 加盟店店长",
 }
 
 # Complexity keywords for token budget (improvement #5)
@@ -152,13 +231,16 @@ def _expand_query(question: str) -> str:
     For short queries (< 10 chars), expand with domain synonyms to improve
     BM25 and vector recall.  Returns the original question if no expansion
     applies or the question is already long enough.
+
+    Iterates keys longest-first so specific overlaps win:
+    "AI 洞察" must match before "AI"; "存货周转" before "周转".
     """
     if len(question) >= 10:
         return question
 
-    for keyword, expansion in _QUERY_EXPANSIONS.items():
+    for keyword in sorted(_QUERY_EXPANSIONS.keys(), key=len, reverse=True):
         if keyword in question:
-            return f"{question} {expansion}"
+            return f"{question} {_QUERY_EXPANSIONS[keyword]}"
 
     return question
 

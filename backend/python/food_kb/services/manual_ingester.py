@@ -27,6 +27,12 @@ MANUAL_SOURCES = [
         "type": "html",
     },
     {
+        "path": "docs/plans/restaurant-metrics-glossary.html",
+        "title_prefix": "餐饮指数字典",
+        "source": "restaurant-metrics-glossary.html",
+        "type": "html",
+    },
+    {
         "path": "docs/plans/factory-requisition-detailed-flow.md",
         "title_prefix": "工厂下单详细流程",
         "source": "factory-requisition-detailed-flow.md",
@@ -164,22 +170,86 @@ async def ingest_all():
 
         logger.info(f"  Parsed {len(sections)} sections from {file_path.name}")
 
+        # ATOMIC SWAP PATTERN (round-3 audit A2):
+        # 1. Ingest new chunks under TEMP source name (.NEW suffix)
+        # 2. If any ingest fails → cleanup temp, skip swap, KB retains old chunks intact
+        # 3. If all succeed → atomic transaction: DELETE old WHERE source=canonical
+        #    + UPDATE source=canonical WHERE source=temp
+        # This prevents the half-empty-KB risk if embedding API hangs mid-ingest.
+        canonical_source = source_info["source"]
+        temp_source = f"{canonical_source}.NEW"
+
+        # Pre-cleanup any orphan .NEW from previous failed run
+        async with ingester._pool.acquire() as conn:
+            await conn.execute(
+                "DELETE FROM food_knowledge_documents WHERE source = $1",
+                temp_source,
+            )
+
+        source_chunks = 0
+        source_docs = 0
+        ingest_failed = False
+
         for section in sections:
             title = f"{source_info['title_prefix']} - {section['title']}"
             result = await ingester.ingest_document(
                 title=title,
                 content=section["content"],
                 category="operation_manual",
-                source=source_info["source"],
+                source=temp_source,  # Ingest under temp name
                 version="1.0",
                 operator="manual_ingester",
             )
-
             if result.get("success"):
-                total_chunks += result.get("chunk_count", 0)
-                total_docs += 1
+                source_chunks += result.get("chunk_count", 0)
+                source_docs += 1
             else:
-                logger.warning(f"  Failed to ingest section '{title}': {result.get('error')}")
+                logger.error(
+                    f"  Failed to ingest section '{title}': {result.get('error')}"
+                )
+                ingest_failed = True
+                break  # Abort ingest for this source
+
+        if ingest_failed:
+            # Rollback: drop temp chunks. Old canonical chunks stay intact.
+            async with ingester._pool.acquire() as conn:
+                await conn.execute(
+                    "DELETE FROM food_knowledge_documents WHERE source = $1",
+                    temp_source,
+                )
+            logger.error(
+                f"  Aborted ingest for source '{canonical_source}'. "
+                f"Cleaned up temp. KB retains previous chunks (no data loss)."
+            )
+            continue
+
+        # All sections ingested OK. Atomic swap inside single transaction.
+        async with ingester._pool.acquire() as conn:
+            async with conn.transaction():
+                old_deleted = await conn.execute(
+                    "DELETE FROM food_knowledge_documents WHERE source = $1",
+                    canonical_source,
+                )
+                await conn.execute(
+                    "UPDATE food_knowledge_documents SET source = $1 WHERE source = $2",
+                    canonical_source,
+                    temp_source,
+                )
+            try:
+                old_count = (
+                    int(old_deleted.split()[1])
+                    if old_deleted and old_deleted.startswith("DELETE")
+                    else 0
+                )
+            except (IndexError, ValueError, AttributeError, TypeError):
+                old_count = 0
+
+        logger.info(
+            f"  Atomically swapped to {source_docs} sections / {source_chunks} chunks "
+            f"for '{canonical_source}' (replaced {old_count} prior chunks)"
+        )
+        total_docs += source_docs
+        total_chunks += source_chunks
 
     logger.info(f"Ingestion complete: {total_docs} documents, {total_chunks} chunks")
 
