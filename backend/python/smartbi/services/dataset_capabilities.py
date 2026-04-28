@@ -57,8 +57,11 @@ _CAPABILITY_KEYWORDS: dict[str, list[str]] = {
         'store', 'shop', 'branch', 'outlet', 'mendian',
     ],
     'has_time':     [
+        # Reviewer round 3 P3: '周末' is redundant — '周' already matches via
+        # substring. Removed cosmetic dup. Kept '工作日' since '工' alone is
+        # not a time keyword.
         '日期', '时间', '月份', '年份', '周', '时段', '午市', '晚市',
-        '早市', '夜市', '工作日', '周末',
+        '早市', '夜市', '工作日',
         # English / pinyin
         'time', 'date', 'month', 'year', 'week', 'day', 'period',
         'riqi', 'shijian',
