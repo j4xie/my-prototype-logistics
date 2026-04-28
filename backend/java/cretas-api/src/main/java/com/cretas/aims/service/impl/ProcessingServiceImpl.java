@@ -76,7 +76,8 @@ public class ProcessingServiceImpl implements ProcessingService {
         try {
             return Long.parseLong(batchId);
         } catch (NumberFormatException e) {
-            throw new BusinessException("无效的生产批次ID: \"" + batchId + "\"，生产批次ID应为数字");
+            throw new BusinessException(400, "无效的生产批次ID: \"" + batchId + "\"，生产批次ID应为数字")
+                    .withHint("请刷新批次列表后重新选择").withHintTarget("batchId");
         }
     }
 
@@ -345,13 +346,15 @@ public class ProcessingServiceImpl implements ProcessingService {
     public MaterialBatch createMaterialReceipt(String factoryId, MaterialBatch materialBatch) {
         log.info("创建原材料接收记录: factoryId={}, batchNumber={}", factoryId, materialBatch.getBatchNumber());
         if (materialBatchRepository.existsByFactoryIdAndBatchNumber(factoryId, materialBatch.getBatchNumber())) {
-            throw new BusinessException("原材料批次号已存在: " + materialBatch.getBatchNumber());
+            throw new BusinessException(409, "原材料批次号已存在: " + materialBatch.getBatchNumber())
+                    .withHint("请使用其他批次号").withHintTarget("batchNumber");
         }
 
         // 获取初始数量（支持多种字段名）
         BigDecimal initialQty = materialBatch.getInitialQuantity();
         if (initialQty == null) {
-            throw new BusinessException("原材料数量不能为空");
+            throw new BusinessException(400, "原材料数量不能为空")
+                    .withHint("请填写原材料初始数量").withHintTarget("initialQuantity");
         }
 
         // 从原材料类型获取单位
@@ -411,7 +414,8 @@ public class ProcessingServiceImpl implements ProcessingService {
         MaterialBatch batch = materialBatchRepository.findById(batchId)
                 .orElseThrow(() -> new ResourceNotFoundException("原材料批次不存在"));
         if (!batch.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作此批次");
+            throw new BusinessException(403, "无权操作此批次")
+                    .withHint("当前批次不属于该工厂, 无法操作");
         }
         // 更新允许修改的字段
         if (updates.getStorageLocation() != null) {
@@ -457,7 +461,8 @@ public class ProcessingServiceImpl implements ProcessingService {
 
             // 检查库存
             if (materialBatch.getRemainingQuantity().compareTo(quantity) < 0) {
-                throw new BusinessException("原材料库存不足: " + materialBatch.getBatchNumber());
+                throw new BusinessException(409, "原材料库存不足: " + materialBatch.getBatchNumber())
+                        .withHint("请减少消耗数量, 或选择其他批次");
             }
             // 更新库存
             // 注意: remainingQuantity 和 currentQuantity 是计算属性，会自动重新计算
@@ -2115,7 +2120,8 @@ public class ProcessingServiceImpl implements ProcessingService {
             status != ProductionBatchStatus.PRODUCING &&
             status != ProductionBatchStatus.PLANNED &&
             status != ProductionBatchStatus.PLANNING) {
-            throw new BusinessException("只有计划中或进行中的批次可以分配员工");
+            throw new BusinessException(409, "只有计划中或进行中的批次可以分配员工")
+                    .withHint("已完成或已取消的批次无法分配员工, 请刷新批次列表查看最新状态");
         }
 
         // 2. 验证分配人存在
@@ -2139,7 +2145,8 @@ public class ProcessingServiceImpl implements ProcessingService {
                 }
 
                 if (!factoryId.equals(worker.getFactoryId())) {
-                    throw new BusinessException("员工不属于该工厂: " + workerId);
+                    throw new BusinessException(403, "员工不属于该工厂: " + workerId)
+                            .withHint("分配人员中包含其他工厂的员工, 请重新选择").withHintTarget("workerIds");
                 }
 
                 // 4. 检查员工是否已分配到该批次

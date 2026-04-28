@@ -139,7 +139,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
                 SalesOrder so = salesOrderRepository.findById(request.getSourceOrderId())
                         .orElseThrow(() -> new BusinessException("关联的销售订单不存在: " + request.getSourceOrderId()));
                 if (!factoryId.equals(so.getFactoryId())) {
-                    throw new BusinessException("无权关联其他工厂的销售订单");
+                    throw new BusinessException(403, "无权关联其他工厂的销售订单")
+                            .withHint("销售订单不属于该工厂, 请选择本工厂的订单").withHintTarget("sourceOrderId");
                 }
                 if ((request.getSourceCustomerName() == null || request.getSourceCustomerName().isBlank())
                         && so.getCustomerName() != null) {
@@ -147,21 +148,26 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
                 }
                 return;
             }
-            throw new BusinessException("选择客户订单来源时,必须指定关联的销售订单产品行 (sourceOrderItemId)");
+            throw new BusinessException(400, "选择客户订单来源时,必须指定关联的销售订单产品行 (sourceOrderItemId)")
+                    .withHint("请选择销售订单中具体的产品行").withHintTarget("sourceOrderItemId");
         }
 
         Long itemId;
         try {
             itemId = Long.parseLong(itemIdStr);
         } catch (NumberFormatException e) {
-            throw new BusinessException("销售订单行ID格式无效: " + itemIdStr);
+            throw new BusinessException(400, "销售订单行ID格式无效: " + itemIdStr)
+                    .withHint("销售订单行 ID 应为数字, 请重新选择").withHintTarget("sourceOrderItemId");
         }
         SalesOrderItem item = salesOrderItemRepository.findById(itemId)
-                .orElseThrow(() -> new BusinessException("销售订单行不存在或不属于本工厂"));
+                .orElseThrow(() -> new BusinessException(404, "销售订单行不存在或不属于本工厂")
+                        .withHint("请刷新销售订单列表后重新选择").withHintTarget("sourceOrderItemId"));
         SalesOrder so = salesOrderRepository.findById(item.getSalesOrderId())
-                .orElseThrow(() -> new BusinessException("销售订单行不存在或不属于本工厂"));
+                .orElseThrow(() -> new BusinessException(404, "销售订单行不存在或不属于本工厂")
+                        .withHint("请刷新销售订单列表后重新选择").withHintTarget("sourceOrderItemId"));
         if (!factoryId.equals(so.getFactoryId())) {
-            throw new BusinessException("销售订单行不存在或不属于本工厂");
+            throw new BusinessException(404, "销售订单行不存在或不属于本工厂")
+                    .withHint("请刷新销售订单列表后重新选择").withHintTarget("sourceOrderItemId");
         }
 
         // 自动回填: 订单ID/客户名/产品类型
@@ -202,10 +208,12 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         // P1-4: 客户订单来源必须填写工序名称和批次日期
         if (request.getSourceType() == PlanSourceType.CUSTOMER_ORDER) {
             if (request.getProcessName() == null || request.getProcessName().isBlank()) {
-                throw new BusinessException("客户订单来源的生产计划必须填写工序名称");
+                throw new BusinessException(400, "客户订单来源的生产计划必须填写工序名称")
+                        .withHint("请填写工序名称").withHintTarget("processName");
             }
             if (request.getBatchDate() == null) {
-                throw new BusinessException("客户订单来源的生产计划必须填写批次日期");
+                throw new BusinessException(400, "客户订单来源的生产计划必须填写批次日期")
+                        .withHint("请选择批次日期").withHintTarget("batchDate");
             }
         }
 
@@ -272,7 +280,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
 
         // 验证工厂ID
         if (!plan.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该生产计划");
+            throw new BusinessException(403, "无权操作该生产计划")
+                    .withHint("当前生产计划不属于该工厂, 无法操作");
         }
 
         // 只能更新待处理的计划
@@ -300,7 +309,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
 
         // 验证工厂ID
         if (!plan.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该生产计划");
+            throw new BusinessException(403, "无权操作该生产计划")
+                    .withHint("当前生产计划不属于该工厂, 无法操作");
         }
 
         // 只能删除待处理的计划
@@ -321,7 +331,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
 
         // 验证工厂ID
         if (!plan.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权查看该生产计划");
+            throw new BusinessException(403, "无权查看该生产计划")
+                    .withHint("当前生产计划不属于该工厂, 无法查看");
         }
 
         return toDTOWithConversionInfo(plan);
@@ -410,7 +421,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
 
         // 验证工厂ID
         if (!plan.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该生产计划");
+            throw new BusinessException(403, "无权操作该生产计划")
+                    .withHint("当前生产计划不属于该工厂, 无法操作");
         }
 
         // 验证状态
@@ -443,7 +455,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
                 .orElseThrow(() -> new ResourceNotFoundException("生产计划", "id", planId));
 
         if (!plan.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该生产计划");
+            throw new BusinessException(403, "无权操作该生产计划")
+                    .withHint("当前生产计划不属于该工厂, 无法操作");
         }
         if (plan.getStatus() != ProductionPlanStatus.IN_PROGRESS) {
             throw new BusinessException(409, "只能完成进行中的生产计划")
@@ -479,7 +492,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
 
         // 验证工厂ID
         if (!plan.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该生产计划");
+            throw new BusinessException(403, "无权操作该生产计划")
+                    .withHint("当前生产计划不属于该工厂, 无法操作");
         }
 
         // 已完成的计划不能取消
@@ -524,7 +538,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
 
         // 验证工厂ID
         if (!plan.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该生产计划");
+            throw new BusinessException(403, "无权操作该生产计划")
+                    .withHint("当前生产计划不属于该工厂, 无法操作");
         }
 
         // 只能暂停进行中的计划
@@ -548,7 +563,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
 
         // 验证工厂ID
         if (!plan.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该生产计划");
+            throw new BusinessException(403, "无权操作该生产计划")
+                    .withHint("当前生产计划不属于该工厂, 无法操作");
         }
 
         // 只能恢复暂停的计划
@@ -576,7 +592,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
 
         // 验证工厂ID
         if (!plan.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该生产计划");
+            throw new BusinessException(403, "无权操作该生产计划")
+                    .withHint("当前生产计划不属于该工厂, 无法操作");
         }
 
         // 更新实际成本
@@ -607,7 +624,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
 
         // 验证工厂ID
         if (!plan.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该生产计划");
+            throw new BusinessException(403, "无权操作该生产计划")
+                    .withHint("当前生产计划不属于该工厂, 无法操作");
         }
 
         assignMaterialBatchesToPlan(plan, batchIds);
@@ -622,7 +640,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
 
         // 验证工厂ID
         if (!plan.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该生产计划");
+            throw new BusinessException(403, "无权操作该生产计划")
+                    .withHint("当前生产计划不属于该工厂, 无法操作");
         }
 
         MaterialBatch batch = materialBatchRepository.findById(batchId)
@@ -630,7 +649,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
 
         // 检查库存是否足够
         if (batch.getCurrentQuantity().compareTo(quantity) < 0) {
-            throw new BusinessException("批次库存不足");
+            throw new BusinessException(409, "批次库存不足")
+                    .withHint("请减少计划数量, 或先入库补货");
         }
 
         // 创建消耗记录
@@ -737,7 +757,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         try {
             excelData = excelUtil.importFromExcel(inputStream, ProductionPlanImportDTO.class);
         } catch (Exception e) {
-            throw new BusinessException("Excel文件解析失败: " + e.getMessage());
+            throw new BusinessException(400, "Excel文件解析失败: " + e.getMessage())
+                    .withHint("请检查 Excel 文件格式是否正确, 列是否匹配模板").withHintTarget("file");
         }
 
         ImportResult<ProductionPlanDTO> result = ImportResult.create(excelData.size());
@@ -811,7 +832,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
 
             // 检查批次状态
             if (batch.getStatus() != MaterialBatchStatus.AVAILABLE) {
-                throw new BusinessException("批次 " + batch.getBatchNumber() + " 不可用");
+                throw new BusinessException(409, "批次 " + batch.getBatchNumber() + " 不可用")
+                        .withHint("请刷新批次列表后重新选择, 或选择其他可用批次");
             }
 
             // 创建关联
@@ -902,10 +924,12 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
                 .orElseThrow(() -> new ResourceNotFoundException("生产计划", "id", planId));
 
         if (!plan.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该生产计划");
+            throw new BusinessException(403, "无权操作该生产计划")
+                    .withHint("当前生产计划不属于该工厂, 无法操作");
         }
         if (plan.getStatus() != ProductionPlanStatus.PENDING) {
-            throw new BusinessException("只有待处理的计划可以转为批次");
+            throw new BusinessException(409, "只有待处理的计划可以转为批次")
+                    .withHint("请刷新生产计划列表查看最新状态");
         }
 
         // 查产品名称
