@@ -766,6 +766,15 @@ app.include_router(
     tags=["Restaurant Completeness"],
 )
 
+# Phase A A-3 Data quality queue admin (餐饮 Phase A Task 3.2 — list endpoint)
+# Tasks 3.3/3.4/3.6 will add resolve/reject/batch/history to the same module.
+from smartbi.api import data_quality_queue_admin
+app.include_router(
+    data_quality_queue_admin.router,
+    prefix="/api/smartbi/admin/data-quality-queue",
+    tags=["Data Quality Queue Admin"],
+)
+
 # Memory diagnostic / manual trim (Apr 23 2026, investigating post-materialize RSS retention)
 from smartbi.api import memory_admin
 app.include_router(memory_admin.router, prefix="/api/smartbi/admin/memory", tags=["Memory Admin"])
