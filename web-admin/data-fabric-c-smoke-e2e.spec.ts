@@ -158,4 +158,137 @@ test.describe('数据织网 C smoke — 真窗 user-experience guards', () => {
     await page.screenshot({ path: 'test-results/c-smoke-supply-chain.png', fullPage: true });
   });
 
+  // ─── 细分补充 (post-initial 6-test review) ───────────────────────────────
+
+  test('Day 27 — 全保存往返: edit → save → reload → 时间戳更新', async ({ page }) => {
+    await gotoAndWait(page, '/system/data-fabric/provenance-config', '差异阈值');
+    // 抓初始 "上次保存" 时间戳 (可能是 "尚未保存过" 或先前已存的具体时间).
+    const headerLocator = page.locator('.hdr-meta, [class*="hdr-meta"]').first();
+    const initialMeta = (await headerLocator.textContent())?.trim() || '';
+    // 增 川菜 cost rate 1 步 (0.01) — 第 1 行的 increase 按钮 (川菜).
+    const firstIncrease = page.locator('.el-input-number__increase').first();
+    await firstIncrease.click();
+    // 保存按钮启用.
+    const saveBtn = page.getByRole('button', { name: '保存' });
+    await expect(saveBtn).toBeEnabled({ timeout: 5000 });
+    await saveBtn.click();
+    // 等成功 toast "配置已保存".
+    await expect(page.getByText('配置已保存').first()).toBeVisible({ timeout: 10000 });
+    // 时间戳应更新 (不再是 initialMeta).
+    await page.waitForTimeout(2000);
+    const afterMeta = (await headerLocator.textContent())?.trim() || '';
+    expect(
+      afterMeta,
+      `Day 27 PUT 端到端: 保存后 "上次保存" 元信息应改变. before="${initialMeta}", after="${afterMeta}"`,
+    ).not.toBe(initialMeta);
+    // Reload 后应仍显新时间戳 (持久化 verify, 不是 in-memory 假象).
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
+    await expect(page.getByText('差异阈值').first()).toBeVisible({ timeout: 30000 });
+    await page.waitForTimeout(2000);
+    const reloadedMeta = (await headerLocator.textContent())?.trim() || '';
+    expect(
+      reloadedMeta,
+      'Reload 后元信息应跟保存后一致 (持久化验证)',
+    ).toBe(afterMeta);
+  });
+
+  test('TrustIndicator (P0-1 + Day 23) — 3 级 confidence 渲染 + aria-label (P2-8)', async ({ page }) => {
+    // 用 page.route 注入 mocked top-products 响应, 模拟 3 行不同 confidence.
+    // 这样不需要 seed DB 数据, 测试稳定.
+    await page.route('**/api/smartbi/gold/top-products**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          factoryId: 'F001',
+          startMonth: '2025-01-01',
+          endMonth: '2025-12-31',
+          topProducts: [
+            {
+              productId: 1, productName: 'TI高置信测试', qtySold: 100, revenue: 1000, billCount: 10,
+              confidence: 0.95, source: 'product_summary', sourceUploadId: 0,
+              entityId: '1', fieldName: 'revenue',
+            },
+            {
+              productId: 2, productName: 'TI中置信测试', qtySold: 80, revenue: 800, billCount: 8,
+              confidence: 0.78, source: 'review', sourceUploadId: 0,
+              entityId: '2', fieldName: 'revenue',
+            },
+            {
+              productId: 3, productName: 'TI低置信测试', qtySold: 50, revenue: 500, billCount: 5,
+              confidence: 0.50, source: 'industry_default', sourceUploadId: 0,
+              entityId: '3', fieldName: 'revenue',
+            },
+          ],
+        }),
+      });
+    });
+    // GoldPreview 不自动加载, 需要点 "刷新 5 路 Gold 查询".
+    await gotoAndWait(page, '/smart-bi/gold-preview', 'Gold Layer Preview');
+    const refreshBtn = page.getByRole('button', { name: /刷新.*Gold.*查询/ });
+    await refreshBtn.click();
+    await page.waitForTimeout(3000); // chart + table render
+    // 应出现 3 个 TrustIndicator (3 个商品行 + confidence!=null).
+    const trustCount = await page.locator('.trust-indicator').count();
+    expect(trustCount, '3 个 mocked 高/中/低 confidence 行应渲染 3 个 TrustIndicator').toBe(3);
+    // P2-8 a11y: 第 1 行 (高置信) 必须有 role="group" + aria-label.
+    const firstTrust = page.locator('.trust-indicator').first();
+    await expect(firstTrust).toHaveAttribute('role', 'group');
+    const ariaLabel = await firstTrust.getAttribute('aria-label');
+    expect(
+      ariaLabel,
+      `P2-8 a11y: TrustIndicator 必须有 aria-label, 实际="${ariaLabel}"`,
+    ).toMatch(/数据置信度.*高置信.*商品汇总/);
+    // 验 3 级 tag 颜色 — 高=success, 中=warning, 低=info.
+    const successTags = await page.locator('.trust-indicator .el-tag--success, .trust-indicator [class*="el-tag--success"]').count();
+    const warningTags = await page.locator('.trust-indicator .el-tag--warning, .trust-indicator [class*="el-tag--warning"]').count();
+    const infoTags = await page.locator('.trust-indicator .el-tag--info, .trust-indicator [class*="el-tag--info"]').count();
+    expect(successTags, '高置信行应有 success tag (绿)').toBeGreaterThanOrEqual(1);
+    expect(warningTags, '中置信行应有 warning tag (橙)').toBeGreaterThanOrEqual(1);
+    expect(infoTags, '低置信行应有 info tag (灰)').toBeGreaterThanOrEqual(1);
+    // sourceLabel (P1.5-5 extracted util) 在 DOM 中显示中文.
+    const html = await page.content();
+    expect(html).toContain('商品汇总');  // product_summary
+    expect(html).toContain('评论数据');  // review
+    expect(html).toContain('行业默认值'); // industry_default
+  });
+
+  test('finance/reports — 4 KPI 卡各自有非 0 千分位金额或合理百分比', async ({ page }) => {
+    await gotoAndWait(page, '/finance/reports', '财务报表');
+    // 4 个 stat-card 应该显示 4 个独立数字, 各自非 0/不缺失.
+    // 用 .stat-card-content 或 KPI 数字所在的 selector.
+    // 实测 finance/reports 用的是 statCards computed → 渲染为 .stat-card 卡, 数字在 .stat-value.
+    // 拿不到精确 selector 时 fallback: 总收入 / 总成本 / 毛利润 / 利润率 4 个 label 各邻近一个数字.
+    for (const label of ['总收入', '总成本', '毛利润', '利润率']) {
+      const labelLoc = page.getByText(label, { exact: true }).first();
+      await expect(labelLoc, `KPI 卡 "${label}" 应可见`).toBeVisible({ timeout: 10000 });
+      // 拿邻近文本 — 找最近的祖先 stat-card, 然后看里面是否有 ≥1 个非 0 数字.
+      // 取 stat-card 的 textContent, 检查是否含非 0 数字.
+      const card = labelLoc.locator('xpath=ancestor::*[contains(@class, "stat-card") or contains(@class, "kpi-card") or contains(@class, "el-card")][1]');
+      const cardText = (await card.first().textContent()) || '';
+      const numbers = cardText.match(/[\d]{1,}(?:,[\d]{3})*(?:\.\d+)?/g) || [];
+      const nonZero = numbers.filter(n => parseFloat(n.replace(/,/g, '')) > 0);
+      expect(
+        nonZero.length,
+        `KPI 卡 "${label}" 应有 ≥1 非 0 数字 (实际数字: ${JSON.stringify(numbers)})`,
+      ).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  test('Day 26 cell-audit — URL @store_X 特殊字符 encodeURIComponent 正确', async ({ page }) => {
+    // 测试 multi-dim field_name (revenue@store_5) 的 URL 解析 — encodeURIComponent
+    // 把 @ → %40, _ 保留. 服务端用 fp.field_name = $4 严格匹配, 解析错就 404.
+    const fieldName = 'revenue@store_5';
+    const url = `/audit/cell?type=product&id=42&field=${encodeURIComponent(fieldName)}`;
+    await page.goto(BASE_URL + url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await expect(page).not.toHaveURL(/\/login/, { timeout: 10000 });
+    // 页面标题应正确 decodeURIComponent 显示 @store_5 (而不是 %40store_5).
+    await expect(
+      page.getByText(`字段血统: product #42 · ${fieldName}`),
+    ).toBeVisible({ timeout: 30000 });
+    await page.waitForTimeout(2000);
+    const html = await page.content();
+    expect(html, '不应渲染 URL-encoded %40 (encodeURIComponent 转义未 decode 回来)').not.toContain('%40store');
+  });
+
 });
