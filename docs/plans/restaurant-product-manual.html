@@ -81,7 +81,151 @@ nav.toc a:hover{text-decoration:underline}
 
 <section id="ch1">
   <h1>§1 智能数据分析 (AI Query)</h1>
-  <!-- TODO Phase 1a Task 9 -->
+  <p class="overview">智能数据分析 (AI Query) 是白垩纪 SaaS 的核心分析入口，允许用户用自然语言直接提问，例如"本月畅销菜品是什么？"或"哪家门店毛利率最低？"，无需编写 SQL 或配置报表。系统自动识别数据集字段、执行聚合计算、生成图表并输出文字解读。解决了传统 BI 工具需要专业配置人员的痛点，适用于经营分析、成本监控、门店对比等日常场景，让前台员工和管理层都能独立获取数据洞察。</p>
+
+  <!-- 入门 / 怎么用 (新员工视角) -->
+  <h2 id="ch1-1">§1.1 进入路径</h2>
+  <p>进入 AI Query 有两条路径：</p>
+  <ol>
+    <li><strong>菜单导航路径（推荐）</strong>：登录系统后，点击左侧导航栏"智能 BI"分组，再点击"智能数据分析"，即可进入 AI Query 主页面。</li>
+    <li><strong>Dashboard 快捷入口</strong>：在首页 Dashboard 右上角区域，找到"快捷分析"卡片，点击其中的分析场景按钮（如"畅销品 Top 5"、"本月营业额"），系统会直接带着预设问题跳转到 AI Query 并自动发送提问。</li>
+  </ol>
+  <div class="tip">新员工提示：第一次使用前，请确认负责人已为你的账号配置了数据集访问权限。若进入后看不到任何数据集，联系门店管理员开通权限。</div>
+
+  <h2 id="ch1-2">§1.2 主界面 layout</h2>
+  <p>AI Query 页面由四个主要区块组成：</p>
+  <table>
+    <thead><tr><th>区块</th><th>位置</th><th>功能说明</th></tr></thead>
+    <tbody>
+      <tr><td><strong>顶部工具栏</strong></td><td>页面顶部</td><td>数据集选择下拉菜单（选择已上传的 Excel 数据集）、上传新 Excel 按钮、历史对话按钮</td></tr>
+      <tr><td><strong>中央查询输入区</strong></td><td>页面中部</td><td>自然语言输入框 + 发送按钮；下方显示快捷问题按钮（系统根据数据集字段自动推荐）</td></tr>
+      <tr><td><strong>结果展示区</strong></td><td>输入区下方</td><td>AI 回答文字 + 可视化图表（柱状图/折线图/饼图，图表右上角有下载按钮）</td></tr>
+      <tr><td><strong>左侧历史面板</strong></td><td>页面左侧</td><td>历史问答列表，按时间倒序排列，点击可重新加载该次对话上下文</td></tr>
+    </tbody>
+  </table>
+  <div class="tip">快捷问题按钮会根据当前选择的数据集动态变化。切换数据集后建议先看一眼新出现的快捷问题，了解该数据集适合回答哪类问题。</div>
+
+  <h2 id="ch1-3">§1.3 常用操作步骤</h2>
+  <ol>
+    <li><strong>选择或上传数据集</strong>：点击顶部工具栏"数据集"下拉，选择已上传的数据集；若没有合适数据集，点击"上传 Excel"按钮，上传 .xlsx / .xls / .csv 文件（详见 <a href="#ch3">§3</a>）。</li>
+    <li><strong>确认数据预览</strong>：系统上传后会自动识别字段并显示数据预览（前 5 行），检查列名和数据是否正确。</li>
+    <li><strong>输入自然语言问题</strong>：在中央输入框输入问题，如"本月各门店营业额对比"或"上周食材成本最高的五个菜品"。也可点击下方快捷问题按钮直接提问。</li>
+    <li><strong>发送并等待</strong>：点击发送按钮（或按回车），AI 处理通常需 5-15 秒，期间显示"正在分析中..."。</li>
+    <li><strong>查看回答</strong>：结果展示区出现 AI 文字回答，下方附带对应图表（图表类型由 AI 自动选择）。</li>
+    <li><strong>追问</strong>：可直接在输入框继续追问，如"刚才最高的那家门店上个月呢？"，AI 会引用上一轮回答的上下文。</li>
+    <li><strong>导出结果</strong>：点击图表右上角下载图标，可保存图表为 PNG；点击数据表格右上角导出图标，可下载 CSV。</li>
+    <li><strong>查阅历史</strong>：点击左侧历史面板中的记录，可重新加载该轮对话，继续追问或分享截图。</li>
+  </ol>
+
+  <h2 id="ch1-4">§1.4 常见错误处理</h2>
+  <table>
+    <thead><tr><th>错误提示</th><th>原因</th><th>处理方法</th></tr></thead>
+    <tbody>
+      <tr><td>"未找到数据集" / "请先上传数据"</td><td>当前账号下没有可用数据集，或数据集权限未开通</td><td>前往 <a href="#ch3">§3</a> 上传 Excel 文件；若权限问题联系管理员</td></tr>
+      <tr><td>"分析超时" / 长时间无响应</td><td>数据量过大（超 5 万行）或问题过于复杂</td><td>先筛选时间范围（如指定"本月"而非"全年"），分批提问；或先在 Excel 里按条件过滤后再上传</td></tr>
+      <tr><td>"回答内容与预期不符"</td><td>问题描述不够具体，AI 选错字段或聚合维度</td><td>问题中加入门店名称、日期范围、具体指标名称；例如把"最近业绩"改为"2026年4月各门店营业额"</td></tr>
+      <tr><td>"字段未识别" / AI 回答不认识某列</td><td>Excel 列名为英文缩写、空格或语义模糊</td><td>检查并修改 Excel 列名为清晰中文（见 <a href="#ch3">§3.2</a>），重新上传</td></tr>
+      <tr><td>"图表无法显示"</td><td>数据行数不足（&lt;3 行）或浏览器渲染异常</td><td>刷新页面；若数据集确实只有少数行，图表不会生成，查看文字回答即可</td></tr>
+    </tbody>
+  </table>
+  <div class="warn">若 AI 回答中出现数字与看板明显不符，优先核对所选数据集的时间范围和来源是否一致，见 <a href="#ch1-faq">FAQ §4</a>。</div>
+
+  <!-- 管理 / 怎么解读 (店长/老板视角) -->
+  <h2 id="ch1-5">§1.5 关键指标速查</h2>
+  <p>以下为餐饮经营核心 KPI，在 AI Query 中直接用指标名提问即可获取对应数据：</p>
+  <div class="benchmark-row"><span class="field-label">营业额 (Revenue)</span> — 时段内所有订单收入合计，是经营健康度的第一信号。见 <a href="restaurant-metrics-glossary.html#revenue">指数字典 §营业额</a></div>
+  <div class="benchmark-row"><span class="field-label">客单价 (ATV, Average Transaction Value)</span> — 营业额 ÷ 成交笔数。餐饮行业均值约 ¥45-80（快餐偏低，正餐偏高），持续低于均值需关注菜单结构和套餐设计。见 <a href="restaurant-metrics-glossary.html#atv">指数字典 §客单价</a></div>
+  <div class="benchmark-row"><span class="field-label">翻台率</span> — 桌位在一天内被使用的次数（翻转次数）。正餐均值 3-4 次/天；低于 2 次需排查服务流程效率或门店动线。见 <a href="restaurant-metrics-glossary.html#table-turnover">指数字典 §翻台率</a></div>
+  <div class="benchmark-row"><span class="field-label">毛利率</span> — (营业额 - 食材成本) ÷ 营业额。餐饮正常区间 55-70%；低于 50% 表示食材成本或损耗偏高，需介入菜品结构审查。见 <a href="restaurant-metrics-glossary.html#gross-margin">指数字典 §毛利率</a></div>
+  <div class="benchmark-row"><span class="field-label">食材成本率</span> — 食材采购成本 ÷ 营业额。健康区间 28-35%；超过 38% 必须介入，优先排查高成本菜品（见 <a href="#ch11">§11</a>）和损耗记录（见 <a href="#ch10">§10</a>）。见 <a href="restaurant-metrics-glossary.html#food-cost-ratio">指数字典 §食材成本率</a></div>
+  <div class="benchmark-row"><span class="field-label">复购率</span> — 回头客占总顾客数的比例。低于 30% 说明顾客粘性不足，需关注服务质量和会员运营（见 <a href="#ch16">§16</a>）。见 <a href="restaurant-metrics-glossary.html#repurchase-rate">指数字典 §复购率</a></div>
+  <div class="benchmark-row"><span class="field-label">外卖占比</span> — 外卖订单营业额 ÷ 总营业额。超过 60% 说明堂食流量不足，需关注门店体验和营销（见 <a href="#ch15">§15</a>）。</div>
+
+  <h2 id="ch1-6">§1.6 业务判断框架</h2>
+  <p>当 AI Query 返回数据后，按以下路径进行业务判断：</p>
+  <h3>营业额下滑</h3>
+  <p>先问 AI "本月 vs 上月营业额各门店差异" → 定位下滑门店 → 再问"该门店客单价和客流量趋势"：</p>
+  <ul>
+    <li><strong>客单价正常，客流量下滑</strong> → 转 <a href="#ch16">§16 会员分析</a> 看老客流失率；看 <a href="#ch15">§15 外卖平台</a> 评分是否下降</li>
+    <li><strong>客单价下滑，客流量正常</strong> → 转 <a href="#ch11">§11 菜品管理</a> 检查高价菜品点单率；审查促销活动是否过度折扣（见 <a href="#ch18">§18</a>）</li>
+    <li><strong>客单价和客流量均下滑</strong> → 查 <a href="#ch17">§17 评价管理</a> 和 <a href="#ch19">§19 投诉记录</a> 是否有集中负面反馈</li>
+  </ul>
+  <h3>食材成本率超警戒线 (38%)</h3>
+  <p>问 AI "本月食材成本率最高的 5 个菜品" → 找出毛利倒挂菜品 → 转 <a href="#ch11">§11 配方管理</a> 核实配方用料成本 → 联系供应商（见 <a href="#ch9">§9</a>）议价，或调整菜品定价、暂停该菜品。</p>
+  <h3>某门店翻台率突然降低</h3>
+  <p>问 AI "该门店近 7 天翻台率趋势" → 排查 <a href="#ch21">§21 排班记录</a> 是否人员不足 → 查 <a href="#ch17">§17 客诉</a> 是否出现服务问题 → 对比该门店外卖单量变化（见 <a href="#ch15">§15</a>），判断是堂食问题还是整体流量问题。</p>
+
+  <h2 id="ch1-7">§1.7 跨章节联动</h2>
+  <p>AI Query 是数据分析的起点，发现问题后通常需要跳转到专项章节深入处理：</p>
+  <table>
+    <thead><tr><th>联动章节</th><th>触发场景</th><th>联动方式</th></tr></thead>
+    <tbody>
+      <tr><td><a href="#ch3">§3 Excel 上传与字段识别</a></td><td>AI Query 无可用数据集，或字段未被识别</td><td>AI Query 的数据 gateway，必须先上传数据才能分析</td></tr>
+      <tr><td><a href="#ch2">§2 财务 PBI 看板</a></td><td>需要固定周期财务报表（月报/季报）对比</td><td>PBI 看板拉实时数据库，AI Query 依赖上传数据集，两者互补验证</td></tr>
+      <tr><td><a href="#ch11">§11 菜品/配方管理</a></td><td>AI Query 发现食材成本率超标或毛利倒挂菜品</td><td>下钻到单菜品维度，核查配方和采购价格</td></tr>
+      <tr><td><a href="#ch16">§16 会员分析</a></td><td>AI Query 显示复购率低或客流量下滑</td><td>在会员分析模块定位流失客群，制定召回方案</td></tr>
+      <tr><td><a href="#ch13">§13 多门店对比分析</a></td><td>AI Query 发现门店间差异明显</td><td>使用多门店对比模块进行标准化横向比较，排除规模差异</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="ch1-8">§1.8 常见决策场景</h2>
+  <h3>场景 A：月度营收下滑 5%</h3>
+  <p><strong>背景</strong>：月末数据出来后，老板/店长发现本月营业额同比上月下滑 5%，需要快速定位原因。</p>
+  <p><strong>分析步骤</strong>：</p>
+  <ol>
+    <li>在 AI Query 选择本月销售数据集，问："本月 vs 上月营业额差异来自哪些门店？"</li>
+    <li>AI 回答列出各门店差异后，追问表现最差的门店："该门店本月客单价和客流量趋势如何？"</li>
+    <li>若客单价正常但客流量下滑，转 <a href="#ch16">§16</a> 会员分析，问"该门店近 30 天新客与回头客比例变化"。</li>
+    <li>若同时发现外卖评分下滑（见 <a href="#ch15">§15</a>），联合判断：是服务问题导致差评，还是平台流量政策变化。</li>
+    <li>形成改善方案后，在 AI Query 设置跟踪问题（如"本周该门店日均营业额"），每日跟踪恢复进度。</li>
+  </ol>
+  <h3>场景 B：食材成本率突破 38%</h3>
+  <p><strong>背景</strong>：财务月报显示食材成本率从上月 32% 升至本月 39%，需要找出根因。</p>
+  <p><strong>分析步骤</strong>：</p>
+  <ol>
+    <li>在 AI Query 上传本月采购和销售数据，问："本月食材成本率最高的 5 个菜品是什么？"</li>
+    <li>找出毛利倒挂菜品（成本率 &gt; 40%）后，转 <a href="#ch11">§11</a> 菜品配方管理，核查该菜品理论用料量与实际用料量的偏差。</li>
+    <li>若理论与实际偏差 &gt; 10%，检查 <a href="#ch10">§10</a> 库存损耗记录，判断是损耗过高还是配方本身不合理。</li>
+    <li>联系供应商（<a href="#ch9">§9</a>）查询原材料近期涨价情况，决定是议价、换供应商还是调整菜品定价。</li>
+    <li>处理后下月在 AI Query 跟踪"食材成本率环比变化"，确认改善效果。</li>
+  </ol>
+  <h3>场景 C：新店开业数据监控</h3>
+  <p><strong>背景</strong>：新门店开业第 1 周，老板需要每日监控经营健康度，与预期目标对比。</p>
+  <p><strong>分析步骤</strong>：</p>
+  <ol>
+    <li>每日将当天收银数据导出上传到 AI Query，问："今日营业额、翻台率、客单价达标情况如何？"（设定目标值参考：开业首周营业额目标、翻台率 ≥ 2 次）</li>
+    <li>前 7 天建立基线数据，第 8 天起追问："本周各日营业额趋势，是否有明显波动？"</li>
+    <li>若发现某天数据异常（如翻台率骤降），立即排查当日排班（<a href="#ch21">§21</a>）和设备状况（收银机/厨房设备）。</li>
+    <li>开业第 30 天，在 <a href="#ch13">§13</a> 多门店对比模块，把新店与同区域老店同期数据横向对比，定位差距所在维度。</li>
+    <li>前 30 天数据积累后，AI Query 可开始回答趋势类问题（"本店客单价增长趋势"），指导后续运营策略。</li>
+  </ol>
+
+  <h2 id="ch1-faq">FAQ</h2>
+  <dl>
+    <dt><strong>Q：AI Query 支持哪些数据格式？</strong></dt>
+    <dd>目前支持 Excel 文件（.xlsx / .xls）和 CSV 文件（.csv）。上传后系统自动解析字段并生成预览。详细上传规范见 <a href="#ch3">§3</a>。单文件建议不超过 30MB，超大文件请先按时间段拆分。</dd>
+
+    <dt><strong>Q：历史问答能保留多久？</strong></dt>
+    <dd>系统保留当前账号最近 50 条问答记录（含追问轮次）。超出后最早的记录会被清除。重要分析结论建议截图或导出 CSV 保存。</dd>
+
+    <dt><strong>Q：为什么不同时间问同一问题会得到不同答案？</strong></dt>
+    <dd>最常见原因是切换了数据集，或上传了新数据覆盖了旧版本。建议每次提问明确指定时间范围（如"2026年4月"）和门店，避免歧义。也可检查顶部工具栏当前选中的数据集名称是否一致。</dd>
+
+    <dt><strong>Q：AI 给出的数字和财务 PBI 看板不一样，哪个准确？</strong></dt>
+    <dd>两者数据源不同：AI Query 计算依赖你上传的 Excel 文件（静态快照），PBI 看板（见 <a href="#ch2">§2</a>）直连实时数据库。若 Excel 导出时间与看板口径不一致，数字会有差异。核对方法：确认 Excel 的导出时间范围与看板显示时间范围完全一致。</dd>
+
+    <dt><strong>Q：能否让 AI 一次分析多个 Excel 文件的跨文件关联？</strong></dt>
+    <dd>目前每次分析基于单一数据集。若需要跨文件关联（如销售数据 + 采购数据联合分析），请先在 Excel 中手动合并为一个文件，再上传。跨 Sheet 分析功能请参考 <a href="#ch2">§2</a> 财务 PBI 看板。</dd>
+  </dl>
+
+  <h2 id="ch1-related">相关章节</h2>
+  <ul>
+    <li><a href="#ch3">§3 Excel 上传与字段识别</a> — AI Query 的数据入口，上传前必读字段命名规范</li>
+    <li><a href="#ch2">§2 财务 PBI 看板</a> — 固定看板形式的财务分析，与 AI Query 互补验证数字</li>
+    <li><a href="#ch11">§11 菜品/配方管理</a> — AI Query 发现成本问题后的下钻入口</li>
+    <li><a href="#ch16">§16 会员分析</a> — AI Query 显示复购率异常后的深度分析模块</li>
+    <li><a href="#ch13">§13 多门店对比分析</a> — 跨门店标准化对比，补充 AI Query 的横向维度</li>
+  </ul>
 </section>
 
 <section id="ch2">
