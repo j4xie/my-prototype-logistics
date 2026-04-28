@@ -388,8 +388,14 @@ async def lifespan(app: FastAPI):
                             await cretas_conn_catchup.close()
 
                         if factory_ids_catchup:
+                            # NOTE: agg_restaurant_daily_ops has FORCE RLS on app.factory_id GUC.
+                            # Query without GUC set returns NULL silently (rows filtered by RLS),
+                            # which causes catchup to over-run on every startup. Acceptable cost
+                            # — retry helper handles per-factory failures, and catchup runs are
+                            # rare (only on cron restart). Refine in Task 1.6 if real-window
+                            # verify shows a problem.
                             last_agg = await smartbi_pool_catchup.fetchval(
-                                "SELECT MAX(updated_at) FROM agg_restaurant_daily_ops"
+                                "SELECT MAX(computed_at) FROM agg_restaurant_daily_ops"
                                 " WHERE factory_id = ANY($1::varchar[])",
                                 factory_ids_catchup,
                             )
