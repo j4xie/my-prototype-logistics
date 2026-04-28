@@ -78,3 +78,63 @@ async def test_list_returns_paginated():
     assert len(result["items"]) == 1
     assert result["page"] == 1
     assert result["pageSize"] == 50
+
+
+@pytest.mark.asyncio
+async def test_resolve_rejects_self_when_multi_admin():
+    """Submitter == current_user, admin_count > 1 → 403 中文."""
+    from smartbi.api.data_quality_queue_admin import resolve_queue, ResolveBody
+
+    class _S:
+        role = "factory_super_admin"
+        auth_method = "jwt"
+        factory_id = "F001"
+        user_id = 1
+        username = "admin1"
+
+    class _Req:
+        state = _S()
+
+    with patch('smartbi.api.data_quality_queue_admin._get_queue_item',
+               new=AsyncMock(return_value={"id": 1, "factoryId": "F001", "status": "PENDING", "submitter": "1"})):
+        with patch('smartbi.api.data_quality_queue_admin._get_admin_count_for_factory',
+                   new=AsyncMock(return_value=2)):
+            with patch('smartbi.api.data_quality_queue_admin.get_pg_pool',
+                       new=AsyncMock(return_value=AsyncMock())):
+                with pytest.raises(HTTPException) as exc:
+                    await resolve_queue(request=_Req(), id=1, body=ResolveBody(action="confirm", resolvedToEntityId=99))
+
+    assert exc.value.status_code == 403
+    assert "提交" in exc.value.detail or "审核" in exc.value.detail
+
+
+@pytest.mark.asyncio
+async def test_resolve_allows_self_when_single_admin():
+    """Submitter == current_user but admin_count == 1 → allows (degradation)."""
+    from smartbi.api.data_quality_queue_admin import resolve_queue, ResolveBody
+
+    class _S:
+        role = "factory_super_admin"
+        auth_method = "jwt"
+        factory_id = "F001"
+        user_id = 1
+        username = "admin1"
+
+    class _Req:
+        state = _S()
+
+    with patch('smartbi.api.data_quality_queue_admin._get_queue_item',
+               new=AsyncMock(return_value={"id": 1, "factoryId": "F001", "status": "PENDING", "submitter": "1"})):
+        with patch('smartbi.api.data_quality_queue_admin._get_admin_count_for_factory',
+                   new=AsyncMock(return_value=1)):
+            with patch('smartbi.api.data_quality_queue_admin._update_queue_resolved',
+                       new=AsyncMock(return_value=True)):
+                with patch('smartbi.api.data_quality_queue_admin.get_pg_pool',
+                           new=AsyncMock(return_value=AsyncMock())):
+                    result = await resolve_queue(
+                        request=_Req(), id=1,
+                        body=ResolveBody(action="confirm", resolvedToEntityId=99),
+                    )
+
+    assert result["resolved"] is True
+    assert result.get("singleAdminDegraded") is True

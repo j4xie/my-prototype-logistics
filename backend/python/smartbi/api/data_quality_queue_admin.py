@@ -21,9 +21,11 @@ Per W0.4 binding findings:
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import APIRouter, HTTPException, Query, Request
+from pydantic import BaseModel
 
 from smartbi.canonical.provenance._admin_auth import require_admin
 from smartbi.config import get_pg_pool
@@ -249,3 +251,325 @@ async def list_queue(
         "page": page,
         "pageSize": pageSize,
     }
+
+
+# ---------------------------------------------------------------------------
+# Task 3.3: resolve / reject endpoints + 4-eye gate
+# ---------------------------------------------------------------------------
+
+class ResolveBody(BaseModel):
+    action: str  # 'confirm' | 'create_new'
+    resolvedToEntityId: Optional[int] = None
+    notes: Optional[str] = None
+
+
+class RejectBody(BaseModel):
+    reason: str
+
+
+async def _get_queue_item(pool, item_id: int) -> Optional[Dict[str, Any]]:
+    """Fetch a single queue row + submitter via LEFT JOIN.
+
+    W0.4 finding 1: LEFT JOIN — submitter may be NULL when source_upload_id
+    is NULL or the upload row was deleted. Caller treats None submitter as
+    "no conflict possible → allow" (cannot enforce 4-eye without a submitter).
+
+    Security note: this SELECT runs without setting app.factory_id GUC because
+    we look up by integer id (bounded), only admins reach this path (require_admin
+    is the security boundary), and the subsequent UPDATE sets the GUC inside a
+    transaction. Phase A acceptable; Phase B can add BYPASSRLS SECURITY DEFINER.
+    """
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            r = await conn.fetchrow(
+                """
+                SELECT q.id,
+                       q.factory_id,
+                       q.status,
+                       u.uploaded_by AS submitter
+                  FROM entity_resolution_admin_queue q
+                  LEFT JOIN smart_bi_pg_excel_uploads u
+                         ON u.id = q.source_upload_id
+                 WHERE q.id = $1
+                """,
+                item_id,
+            )
+    if not r:
+        return None
+    return {
+        "id": int(r["id"]),
+        "factoryId": r["factory_id"],
+        "status": r["status"],
+        # W0.4 finding 1: uploaded_by (BIGINT) may be None
+        "submitter": str(r["submitter"]) if r["submitter"] is not None else None,
+    }
+
+
+async def _get_admin_count_for_factory(factory_id: str) -> int:
+    """Call Java GET /api/mobile/{factoryId}/users/admin-count.
+
+    Phase A note: this endpoint requires a factory-scoped JWT (it is NOT on
+    the JwtAuthInterceptor whitelist). The X-Internal-Key header is only checked
+    for /api/internal/* paths, so this call will return 401 until Phase B adds
+    either a whitelist entry or a SECURITY DEFINER function. Any failure
+    (401, network, timeout) falls back to 2 = safer default (4-eye enforced).
+
+    Plan template line 2200: "default to 2 (safe)".
+    """
+    import httpx
+    java_base = os.environ.get("JAVA_API_BASE", "http://localhost:10010")
+    java_url = f"{java_base}/api/mobile/{factory_id}/users/admin-count"
+    internal_key = os.environ.get("INTERNAL_API_SECRET", "")
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            resp = await client.get(
+                java_url,
+                headers={"X-Internal-Key": internal_key},
+            )
+            if resp.status_code != 200:
+                logger.warning(
+                    "admin-count for %s returned %s, defaulting to 2 (safer)",
+                    factory_id, resp.status_code,
+                )
+                return 2
+            data = resp.json()
+            count = int(data.get("data", {}).get("count", 2))
+            return count
+    except Exception as exc:
+        logger.warning(
+            "Failed to fetch admin count for %s: %s, defaulting to 2 (safer)",
+            factory_id, exc,
+        )
+        return 2
+
+
+async def _update_queue_resolved(
+    pool,
+    item_id: int,
+    factory_id: str,
+    action: str,
+    resolved_to_entity_id: Optional[int],
+    admin_user: str,
+    notes: Optional[str],
+    single_admin_degraded: bool,
+) -> bool:
+    """Single transaction: SET GUC + UPDATE queue status to CONFIRMED.
+
+    W0.4 finding 3: set_config MUST be inside conn.transaction() so RLS FORCE
+    sees the GUC for the duration of the UPDATE (transaction-scoped local GUC).
+
+    Race condition: UPDATE conditioned on status='PENDING' so concurrent resolves
+    return no rows (fetchval → None → caller maps to 409).
+    """
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            # W0.4 finding 3: GUC inside transaction
+            await conn.execute(
+                "SELECT set_config('app.factory_id', $1, true)", factory_id
+            )
+
+            if single_admin_degraded:
+                extra_expr = (
+                    "COALESCE(extra, '{}'::jsonb) || "
+                    "jsonb_build_object('single_admin_degraded', true, "
+                    "'submitter_was_resolver', true)"
+                )
+            else:
+                extra_expr = "extra"
+
+            updated = await conn.fetchval(
+                f"""
+                UPDATE entity_resolution_admin_queue
+                   SET status                    = 'CONFIRMED',
+                       admin_action              = $1,
+                       admin_user                = $2,
+                       admin_at                  = NOW(),
+                       admin_resolved_to_entity_id = $3,
+                       extra                     = {extra_expr}
+                 WHERE id = $4
+                   AND status = 'PENDING'
+                RETURNING id
+                """,
+                action, admin_user, resolved_to_entity_id, item_id,
+            )
+    return updated is not None
+
+
+@router.post("/{id}/resolve")
+async def resolve_queue(
+    request: Request,
+    id: int,
+    body: ResolveBody,
+) -> Dict[str, Any]:
+    """Resolve a PENDING queue item (confirm entity match or create new entity).
+
+    4-eye gate: if the current admin is the same person who submitted the upload
+    that generated this queue item AND the factory has more than one admin, a 403
+    is returned — a second admin must resolve it.
+
+    Single-admin degradation: if the factory has only 1 admin (admin_count == 1)
+    the same-person check is bypassed; the resolution is allowed and tagged in
+    extra JSONB with single_admin_degraded=true for audit purposes.
+
+    Race condition safety: UPDATE conditioned on status='PENDING' so two
+    concurrent requests cannot both succeed — the second returns 409.
+    """
+    require_admin(request, action_name="数据质量队列处理")
+
+    if body.action not in ("confirm", "create_new"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"action 必须是 'confirm' 或 'create_new', 收到 {body.action!r}",
+        )
+
+    pool = await get_pg_pool()
+    if pool is None:
+        raise HTTPException(status_code=503, detail="数据库不可用")
+
+    item = await _get_queue_item(pool, id)
+    if not item:
+        raise HTTPException(status_code=404, detail="队列项不存在")
+
+    if item["status"] != "PENDING":
+        raise HTTPException(
+            status_code=409,
+            detail=f"队列项当前状态为 {item['status']}，无法处理（非 PENDING）",
+        )
+
+    # Determine current user: prefer numeric user_id (matches uploaded_by BIGINT),
+    # fall back to username string.
+    current_user = str(
+        getattr(request.state, "user_id", None)
+        or getattr(request.state, "username", "")
+        or ""
+    )
+    submitter = item["submitter"]  # None when LEFT JOIN found no upload row
+
+    single_admin_degraded = False
+    # W0.4 finding 1: if submitter is None, treat as "no conflict known" → allow.
+    if current_user and submitter and current_user == submitter:
+        admin_count = await _get_admin_count_for_factory(item["factoryId"])
+        if admin_count > 1:
+            raise HTTPException(
+                status_code=403,
+                detail="您是该队列项的提交者，需要另一位管理员审核（4-eye 原则）",
+            )
+        # admin_count == 1 → single-admin degradation, allow but tag
+        single_admin_degraded = True
+        logger.info(
+            "Single-admin degradation: factory=%s item=%d user=%s",
+            item["factoryId"], id, current_user,
+        )
+
+    success = await _update_queue_resolved(
+        pool,
+        id,
+        item["factoryId"],
+        body.action,
+        body.resolvedToEntityId,
+        current_user,
+        body.notes,
+        single_admin_degraded,
+    )
+
+    if not success:
+        raise HTTPException(
+            status_code=409,
+            detail="队列项已被其他管理员处理（race condition），请刷新列表",
+        )
+
+    return {
+        "resolved": True,
+        "singleAdminDegraded": single_admin_degraded,
+    }
+
+
+@router.post("/{id}/reject")
+async def reject_queue(
+    request: Request,
+    id: int,
+    body: RejectBody,
+) -> Dict[str, Any]:
+    """Reject a PENDING queue item with a mandatory reason.
+
+    Same 4-eye gate and single-admin degradation as resolve_queue.
+    Reject reason is stored in extra JSONB (no separate column per W0.1 spec).
+    Race condition: UPDATE conditioned on status='PENDING'.
+    """
+    require_admin(request, action_name="数据质量队列拒绝")
+
+    if not body.reason or not body.reason.strip():
+        raise HTTPException(status_code=400, detail="reason 不能为空")
+
+    pool = await get_pg_pool()
+    if pool is None:
+        raise HTTPException(status_code=503, detail="数据库不可用")
+
+    item = await _get_queue_item(pool, id)
+    if not item:
+        raise HTTPException(status_code=404, detail="队列项不存在")
+
+    if item["status"] != "PENDING":
+        raise HTTPException(
+            status_code=409,
+            detail=f"队列项当前状态为 {item['status']}，无法拒绝（非 PENDING）",
+        )
+
+    current_user = str(
+        getattr(request.state, "user_id", None)
+        or getattr(request.state, "username", "")
+        or ""
+    )
+    submitter = item["submitter"]
+
+    single_admin_degraded = False
+    if current_user and submitter and current_user == submitter:
+        admin_count = await _get_admin_count_for_factory(item["factoryId"])
+        if admin_count > 1:
+            raise HTTPException(
+                status_code=403,
+                detail="您是该队列项的提交者，需要另一位管理员审核（4-eye 原则）",
+            )
+        single_admin_degraded = True
+        logger.info(
+            "Single-admin degradation (reject): factory=%s item=%d user=%s",
+            item["factoryId"], id, current_user,
+        )
+
+    async with pool.acquire() as conn:
+        # W0.4 finding 3: GUC inside transaction
+        async with conn.transaction():
+            await conn.execute(
+                "SELECT set_config('app.factory_id', $1, true)", item["factoryId"]
+            )
+
+            extra_parts = "jsonb_build_object('reject_reason', $2::text)"
+            if single_admin_degraded:
+                extra_parts = (
+                    f"{extra_parts} || "
+                    "jsonb_build_object('single_admin_degraded', true, "
+                    "'submitter_was_resolver', true)"
+                )
+
+            updated = await conn.fetchval(
+                f"""
+                UPDATE entity_resolution_admin_queue
+                   SET status       = 'REJECTED',
+                       admin_action = 'reject',
+                       admin_user   = $1,
+                       admin_at     = NOW(),
+                       extra        = COALESCE(extra, '{{}}') || {extra_parts}
+                 WHERE id = $3
+                   AND status = 'PENDING'
+                RETURNING id
+                """,
+                current_user, body.reason, id,
+            )
+
+    if updated is None:
+        raise HTTPException(
+            status_code=409,
+            detail="队列项已被其他管理员处理（race condition），请刷新列表",
+        )
+
+    return {"rejected": True}
