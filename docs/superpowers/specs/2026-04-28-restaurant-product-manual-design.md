@@ -172,18 +172,23 @@
 
 后续 Tier 2-5 按使用反馈扩到重模板 production-grade, 终版预估 ~24000-29000 行.
 
-### 4.4 Per-chapter chunk 预算 (reviewer I1 — 防 Tier 1 霸占 top-K)
+### 4.4 Per-chapter chunk 预算 (reviewer I1 — 防 Tier 1 霸占 top-K, R2 fix N1)
 
-为防止 Tier 1 重模板 (30-50 chunks/章) 在 cosine top-8 retrieval 数学上霸占 Tier 2-5 轻模板 (4-8 chunks/章), 设 chunk 预算上限 + 下限:
+为防止 Tier 1 重模板在 cosine top-8 retrieval 数学上霸占 Tier 2-5 轻模板, 设 chunk 预算软约束:
 
-| Tier | chunk 上限 | chunk 下限 | 控制手段 |
+| Tier | chunk 上限 (硬) | chunk 下限 (软) | 控制手段 |
 |---|---|---|---|
-| 1 (重模板) | **12** | 8 | 章节内若超 12 chunks, 合并 §N.1-N.4 入门四块为 §N.入门 (单 chunk), §N.5-N.8 管理四块同理 |
-| 2-5 (轻模板骨架) | 8 | **6** | 章节若不足 6 chunks, 加 FAQ / 决策场景 padding 到 6 |
+| 1 (重模板) | **12** | 8 | 章节内若超 12 chunks, 合并 §N.1-N.4 入门四块为 §N.入门 (单 chunk 含子标题), §N.5-N.8 管理四块同理 |
+| 2-5 (轻模板骨架) | 8 | **4** | §4.2 模板天然产 4 chunks (入门/管理/FAQ/相关章节), 跟 §4.4 floor 对齐. 长内容章节 (e.g. §3 Excel) 可加 §N.5 决策场景到 6-8 |
 
-技术实现: ingester 按 h2 切 chunk, max_chars 1200 (`document_ingester.py:46`). Tier 1 章节实测 chunk 数若超 12, **作者层面**合并 h2 → 多个 h3 共用 1 个 h2. 不改 ingester.
+**关键修正 (R2 N1)**: 之前 Tier 2-5 floor=6 跟 §4.2 4-section 模板矛盾 — 强行加 padding 反而 content-bloat-by-budget-fitting. 改成 floor=4 跟自然模板对齐, 长内容章节自然 6-8 chunks.
 
-副作用: 强制每章 chunk 数处于 [6, 12] 区间, 让 retrieval cosine 排序更公平.
+**技术实现**:
+- 上限 **enforce**: ingester 加 warn (不 hard-block) — `if chunk_count_for_source > 12: log.warn("source X exceeded chunk budget, consider merging h2")`. 让作者长期偏离时可视, 而不是 silent rot. 一次性 ~10 行 Python 加在 `manual_ingester.py:241` 附近.
+- 下限 **soft**: 不实施, 作者自检. ingester 不报错.
+- chunk 切分: ingester 按 h2 切, max_chars 1200 (`document_ingester.py:46`). 作者控制 h2 数量即控制 chunk 数.
+
+副作用: 强制每章 chunk 数处于 [4, 12] 区间, 让 retrieval cosine 排序更公平.
 
 ---
 
@@ -253,7 +258,7 @@
    - `restaurant-metrics-glossary.html` → `subcategory="restaurant"`
    - `restaurant-product-manual.html` → `subcategory="restaurant"`
 3. **retriever 改动** — `KnowledgeRetriever.retrieve()` 加 `subcategories` 参数, 默认 None (不过滤 = 老行为). `manual_chat.py` 加 query domain detection: 若 query 含餐饮关键词 (门店/翻台/菜品/外卖等 ~30 个) → 传 `subcategories=["restaurant"]`, 否则 None (兼容工厂场景).
-4. **counter-test** — Phase 1 ingest 后跑 10 条 representative queries (5 餐饮 + 5 中性), assert ≥4/5 餐饮 query 的 top-8 全部来自 restaurant subcategory.
+4. **counter-test** — Phase 1 ingest 后跑 10 条 representative queries (5 餐饮 + 5 中性), assert ≥4/5 餐饮 query 的 top-8 中 ≥6 个来自 restaurant subcategory (R2 修正: 跟 §10.2 metric "≥6/8" 对齐, 之前写 "全部来自" 是 8/8 太严格不现实).
 
 **为什么不用 source field BM25 boost**: 实施成本高 (改 reranker), 也不解决 Tier 1 vs Tier 2-5 内部 imbalance (I1 走 chunk 预算). subcategory 是 schema-level fix, 一次改长期受益.
 
@@ -338,18 +343,28 @@
 
 ## 8. 培训路径 (Q1 / Tier 4 内容)
 
-3 条路径:
+4 条路径 (reviewer R2 — Path A 拆 A1/A2 跟 §3.6 对齐):
 
-### 路径 A: 新员工首周
+### 路径 A1: 前台 / 收银 (新员工首周)
 
-> 适合岗位: 前台/收银/中台 — 第一次接触系统
+> 适合岗位: 前台 / 收银 — 不上传 Excel 不用 AI Query, 走 POS / 移动端 / 合规线
+>
+> Day 1: §4 登录 + 切换门店 (10 分钟)
+> Day 2: §5 Dashboard 首页 (15 分钟, 看本店当日营收)
+> Day 3: §14 收银 / POS 对接 (30 分钟, 操作核心)
+> Day 4: §8 移动端 RN app (15 分钟)
+> Day 5-7: §12 食安合规 (前台留样 / 异常报备)
+
+### 路径 A2: 中台 / 排班 / 财务文员 (新员工首周)
+
+> 适合岗位: 中台经营 / 排班员 / 财务文员 — 这条才需要 Excel + AI Query
 >
 > Day 1: §4 登录 + 切换门店 (10 分钟)
 > Day 2: §5 Dashboard 首页 (15 分钟)
 > Day 3: §3 Excel 上传 (20 分钟, 老员工带做一次)
 > Day 4: §1 智能数据分析 (30 分钟, 老员工演示一个 query)
-> Day 5: §8 移动端 RN app (10 分钟)
-> Day 6-7: §12 食安合规 (合规岗必学)
+> Day 5: §21 排班 / 人效 (15 分钟)
+> Day 6-7: §6 报表中心 + 数据导出 (15 分钟)
 
 附录在 `restaurant-product-manual.html` 末尾, 列锚点 + 1 段引导, 不重复正文内容.
 
@@ -381,14 +396,29 @@
 
 实施 §6.2 的 subcategory 路由 (C1 fix), 这是后续 ingest 能正常路由餐饮 query 的前提.
 
-- DDL: `food_kb` 加 `subcategory` 列 + 复合索引
+- DDL: `food_kb` 加 `subcategory` 列 (default null) + 复合索引 `(category, subcategory)`. **保留旧索引 `(category)` 一周不删** (rollback 兼容).
 - ingester: `MANUAL_SOURCES` 每条加 `subcategory`
-- retriever: `KnowledgeRetriever.retrieve()` 加 `subcategories` 参数
+- retriever: `KnowledgeRetriever.retrieve()` 加 `subcategories` 参数 (default None = 老行为)
 - `manual_chat.py`: 加 query domain detection (~30 餐饮关键词列表)
 - 重新 ingest factory + glossary (现有 2 manual 也要打上 subcategory)
 - counter-test: 10 query 验证 (5 餐饮 + 5 中性)
 
 工时估计: **1 session (4-6 hr)**. Schema 改动 + DDL + 4 处代码改动 + 现有 2 manual 重 ingest + 验证.
+
+**Rollback 计划 (R2 N3 fix)** — Phase 0 出问题时:
+
+```sql
+-- 1. drop new composite index, restore old single-column index (前提: 旧索引保留)
+DROP INDEX IF EXISTS idx_food_kb_category_subcategory;
+-- old idx_food_kb_category 保留中, 不需重建
+
+-- 2. (optional) drop subcategory column — 只在确认完全回退时
+ALTER TABLE food_kb DROP COLUMN IF EXISTS subcategory;
+```
+
+代码层面: `manual_chat.py` query domain detection + retriever `subcategories` 参数都 default None, 所以不传 = 老行为, 不需要代码 rollback. 只 DB 层面回退即可.
+
+风险窗: Phase 0 ship 后 1 周内若发现 retrieval 异常, 上述 SQL 1 分钟回退. 老索引保留期 ≥7 天保证回退能力.
 
 ### Phase 1a: Tier 1 重模板深章 (3 章 production-grade)
 
@@ -468,7 +498,7 @@
 | 3 | 24 章骨架一次写太长, 容易并发 session 串入 (Apr 28 事故 5b) | **高** | 严格用 `git commit -- file1 file2` --only 模式. Phase 1b 拆 5 batch 每 batch 5 章, 每 batch 立即 commit (里程碑式 commit, 规则 1) |
 | 4 | Tier 1 production-grade 章节最终 8000+ 行, 单文件总 30000 行后浏览器加载慢 | 低 | restaurant-metrics-glossary 330KB 已 prove out 30000 行不是问题. 真慢再拆 |
 | 5 | 培训路径跟实际新员工 onboarding 流不匹配 | 中 | Phase 1b ship 后跟客户运营负责人对一次, 调路径顺序. A1/A2 拆分已经按 reviewer M1 修过 |
-| **6** | **KB 内容随产品迭代腐化** (reviewer I3 — 高风险, 高频迭代模块 4-6 周必偏差) | **高** | **三层防护**: (a) PR-checklist gate — `web-admin/src/views/smart-bi/**`, `backend/python/smartbi/**`, finance 任一改动 → CODEOWNERS 提醒 reviewer 看 §1/§2 是否需要更新; (b) 季度 KB drift audit — 抽 20 真实客户 query, score AI 答案 vs 当前产品行为, 偏差 >20% 触发改章节; (c) §1 / §2 / §11 章节文件头加 `<!-- last-verified-against-product: 2026-04-28 -->` meta, 6 周不刷新 → 红色 banner 提示 |
+| **6** | **KB 内容随产品迭代腐化** (reviewer I3 — 高风险, 高频迭代模块 4-6 周必偏差) | **高** | **三层防护 (R2 修订)**: (a) **PR-checklist gate** — `web-admin/src/views/smart-bi/**`, `backend/python/smartbi/**`, finance 任一改动 → CODEOWNERS 文件指定 PM (Steve) 为 reviewer, PR 模板加 "本改动是否影响 §1/§2/§11? 若是, 同 PR 改 KB". 实施: `.github/CODEOWNERS` 加 5 行 + `.github/pull_request_template.md` 加 1 段. **owner = PM**. (b) **季度 KB drift audit** — 每季度抽 20 真实客户 query, score AI 答案 vs 当前产品行为, 偏差 >20% 触发改章节. **owner = PM**, 跑 audit 时间窗 = 季度首月最后 1 周, 写到 PM 的季度 OKR. 工时估计 4-6 hr/季度. (c) **章节头 last-verified meta** — §1 / §2 / §11 加 `<!-- last-verified-against-product: 2026-04-28 -->` 注释 + **CI lint 检查** (不是 JS banner): GitHub Actions 跑一个 Python script 扫这 3 章 meta 行, 6 周以上 → workflow fail + 提醒 PM. ~30 行 Python + 1 个 workflow yml. **不**自动加 banner — HTML comment 不渲染, JS banner 是 over-engineering. **owner = PM 修 meta + dev 看 CI**. (d) **§6.5 合成 chunk anchor 检查** — 任何章节 renumber PR 自动跑 `grep "§\d" docs/plans/restaurant-product-manual.html` 对比 §3 章节列表, 不一致即 fail. **owner = dev 看 CI**. |
 | 7 | subcategory 域检测词表覆盖不全, 餐饮 query 漏走 restaurant 路由 | 中 | Phase 0 counter-test 跑 10 query 验证. 词表初版 30 词不够 → Phase 1a 后扩到 50-80 词 (从真实客户 query log 提取) |
 | 8 | §B 合成 chunk 写得不准, 误导用户 | 中 | 6 个合成主题 Phase 1b Batch 5 写完先内审, 跟 §1/§2/§11 章节对照看建议步骤是否符合产品现状 |
 
@@ -492,6 +522,14 @@
   - "餐饮路由": §10.2 — 餐饮 query top-8 中 ≥6 个来自 restaurant subcategory
 - [x] **(reviewer M2)** **断言 vs 实证**: 关键技术断言已配实证步骤 — §6.2 subcategory 路由配 Phase 0 counter-test (10 query 验证); §6.5 合成 chunk 配 §10.2 跨章命中 metric; §11 风险 6 drift 配三层防护 (PR-checklist gate + 季度 audit + 章节头 last-verified meta).
 - [x] **Reviewer round 1 fixes 已应用**: C1 (§6.2) / C2 (§9) / I1 (§4.4 + §10.2) / I2 (§6.5) / I3 (§11 row 6) / I4 (§3.3 砍 ⑪) / M1 (§3.6 拆 A1/A2) / M2 (本节实证 check) / M3 (§12 docs/manuals 归宿).
+- [x] **Reviewer round 2 fixes 已应用**:
+  - R2 #1: §8 Path A → A1/A2 跟 §3.6 同步, "3 条路径" → "4 条路径"
+  - R2 #2 / N1: §4.4 Tier 2-5 floor 6→4 跟 §4.2 4-section 模板对齐, 加 ingester warn (≤12 hard cap, 软 floor)
+  - R2 #3: §11 row 6 layer (c) 从"红色 banner"改成"CI lint 检查"具体 (~30 行 Python + 1 workflow yml). 加 layer (d) 章节 renumber anchor 检查
+  - R2 #4 / N2: §6.2 counter-test bar "全部来自 restaurant" → "≥6 个来自 restaurant" 跟 §10.2 ≥6/8 对齐
+  - R2 #5 / N3: §9 Phase 0 加 rollback 计划 (drop 复合索引 + 保留旧单索引 7 天)
+  - R2 #6: §11 row 6 三层防护全部 named owner (PM 主导, dev 看 CI)
+  - R2 #7: §14 加 §8 path sync checkbox
 
 ---
 
@@ -524,9 +562,11 @@
 - [ ] 季度 KB drift audit (20 query 抽样)
 - [ ] 章节头 `last-verified-against-product` meta 标记
 
-**培训路径 (reviewer M1)**
+**培训路径 (reviewer M1 + R2)**
 - [ ] Path A 拆 A1 (前台/收银) + A2 (中台/财务文员) 接受
+- [ ] §8 Path A 已同步成 A1+A2 (跟 §3.6 锚点一致, R2 fix #1)
 - [ ] B/C 路径锚点跟随章节重编号 (16=会员 21=排班) 接受
+- [ ] §8 开头 "4 条路径" 跟 §3.6 / §14 一致 (R2 fix #1)
 
 ---
 
