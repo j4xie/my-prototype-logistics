@@ -294,6 +294,93 @@ def _estimate_max_tokens(question: str) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Multi-turn follow-up query rewriter (G3 — audit round 5)
+# ---------------------------------------------------------------------------
+
+# Pronouns / referential phrases that indicate a follow-up needs rewriting
+_FOLLOWUP_INDICATORS = (
+    "它", "这个", "那个", "刚才", "刚刚", "上面", "前面", "之前",
+    "它的", "这个的", "那个的", "其",
+    "怎么算", "分子分母", "公式", "具体",  # context-dependent without clear referent
+)
+
+
+def _is_followup_query(question: str, history: Optional[List[ChatMessage]]) -> bool:
+    """Detect if question is a multi-turn follow-up needing rewrite.
+    Returns True if there's history AND question contains pronouns or
+    short query without clear standalone subject.
+    """
+    if not history or len(history) == 0:
+        return False
+    # Short query (< 12 chars) is likely follow-up
+    if len(question.strip()) < 12:
+        return True
+    # Contains pronouns/referentials
+    if any(kw in question for kw in _FOLLOWUP_INDICATORS):
+        return True
+    return False
+
+
+async def _rewrite_followup(question: str, history: List[ChatMessage]) -> str:
+    """Rewrite follow-up query into standalone retrievable query using qwen-flash.
+
+    Example:
+    - history: ["翻台率怎么算"]
+    - question: "那它分子分母都是什么"
+    - rewritten: "翻台率的分子分母是什么"
+
+    Falls back to original question on any error.
+    """
+    try:
+        from config import get_settings
+        from common.llm_client import get_llm_http_client
+
+        settings = get_settings()
+        client = get_llm_http_client()
+
+        # Build conversation context (last 2 turns)
+        history_text = "\n".join(
+            f"{'用户' if m.role == 'user' else 'AI'}: {m.content[:200]}"
+            for m in history[-4:]  # last 2 user+assistant pairs
+        )
+
+        rewrite_prompt = f"""上下文对话:
+{history_text}
+
+当前用户提问: {question}
+
+请把"当前提问"改写为可独立检索的完整问题, 解析所有代词(它/这个/那个) 和省略主语. 只输出改写后的问题, 不要任何解释."""
+
+        # Use qwen-flash via existing llm_* config (cheap + fast for 单 task)
+        resp = await client.post(
+            f"{settings.llm_base_url}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {settings.llm_api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": settings.llm_fast_model,  # qwen3.5-flash
+                "messages": [{"role": "user", "content": rewrite_prompt}],
+                "max_tokens": 100,
+                "temperature": 0.1,  # deterministic rewrite
+                "enable_thinking": False,
+            },
+            timeout=10.0,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        rewritten = data["choices"][0]["message"]["content"].strip()
+        # Sanity: rewriting should be longer than original (no truncation)
+        if rewritten and len(rewritten) > len(question) * 0.6:
+            logger.info(f"Follow-up rewrite: '{question}' → '{rewritten}'")
+            return rewritten
+        return question
+    except Exception as e:
+        logger.warning(f"Follow-up rewrite failed: {e}, using original")
+        return question
+
+
+# ---------------------------------------------------------------------------
 # Main chat endpoint
 # ---------------------------------------------------------------------------
 
@@ -330,8 +417,16 @@ async def manual_chat(request: ManualChatRequest) -> dict:
             "related_questions": [],
         }
 
+    # ------ G3: rewrite follow-up queries for retrieval ------
+    # When client asks "那它分子分母都是什么" with history, rewrite into
+    # standalone "翻台率的分子分母是什么" so retrieval can find right chunks.
+    # Original question still used for LLM gen (sees full conversation context).
+    retrieval_question = request.question
+    if _is_followup_query(request.question, request.history):
+        retrieval_question = await _rewrite_followup(request.question, request.history)
+
     # ------ Improvement #3: query expansion for short queries ------
-    expanded_question = _expand_query(request.question)
+    expanded_question = _expand_query(retrieval_question)
 
     # ------ Improvement #3: lower threshold + higher top_k ------
     try:
