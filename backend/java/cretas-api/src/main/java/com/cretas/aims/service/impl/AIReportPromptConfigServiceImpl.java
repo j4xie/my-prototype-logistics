@@ -223,12 +223,14 @@ public class AIReportPromptConfigServiceImpl implements AIReportPromptConfigServ
      */
     private void validateReportType(String reportType) {
         if (reportType == null || reportType.isEmpty()) {
-            throw new BusinessException("报告类型不能为空");
+            throw new BusinessException(400, "报告类型不能为空")
+                    .withHint("请选择报告类型").withHintTarget("reportType");
         }
 
         if (!reportType.matches("^(daily|weekly|monthly|quarterly|yearly)$")) {
-            throw new BusinessException("无效的报告类型: " + reportType +
-                    "，必须是 daily/weekly/monthly/quarterly/yearly 之一");
+            throw new BusinessException(400, "无效的报告类型: " + reportType +
+                    "，必须是 daily/weekly/monthly/quarterly/yearly 之一")
+                    .withHint("请从 daily/weekly/monthly/quarterly/yearly 中选择").withHintTarget("reportType");
         }
     }
 

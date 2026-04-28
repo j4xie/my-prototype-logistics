@@ -4,6 +4,7 @@ import com.cretas.aims.dto.TimeStatsDTO;
 import com.cretas.aims.entity.TimeClockRecord;
 import com.cretas.aims.entity.User;
 import com.cretas.aims.exception.BusinessException;
+import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.TimeClockRecordRepository;
 import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.service.TimeStatsService;
@@ -206,7 +207,8 @@ public class TimeStatsServiceImpl implements TimeStatsService {
         log.info("获取日期范围统计: factoryId={}, startDate={}, endDate={}",
                 factoryId, startDate, endDate);
         if (startDate.isAfter(endDate)) {
-            throw new BusinessException("开始日期不能晚于结束日期");
+            throw new BusinessException(400, "开始日期不能晚于结束日期")
+                    .withHint("请调整查询日期范围").withHintTarget("startDate");
         }
         TimeStatsDTO stats = new TimeStatsDTO();
         stats.setPeriod("range");
@@ -780,7 +782,7 @@ public class TimeStatsServiceImpl implements TimeStatsService {
         // 查询用户信息
         Optional<User> userOpt = userRepository.findById(workerId.longValue());
         if (!userOpt.isPresent()) {
-            throw new BusinessException("员工不存在: " + workerId);
+            throw new ResourceNotFoundException("员工不存在: " + workerId);
         }
         User user = userOpt.get();
 

@@ -264,7 +264,8 @@ public class MixedBatchServiceImpl implements MixedBatchService {
                 .orElseThrow(() -> new BusinessException("混批组不存在: " + groupId));
 
         if (!group.isPending()) {
-            throw new BusinessException("混批组状态不是待确认，当前状态: " + group.getStatusDisplayName());
+            throw new BusinessException(409, "混批组状态不是待确认，当前状态: " + group.getStatusDisplayName())
+                    .withHint("请刷新混批组列表查看最新状态");
         }
 
         // 创建混批生产计划
@@ -330,7 +331,8 @@ public class MixedBatchServiceImpl implements MixedBatchService {
                 .orElseThrow(() -> new BusinessException("混批组不存在: " + groupId));
 
         if (!group.isPending()) {
-            throw new BusinessException("混批组状态不是待确认，当前状态: " + group.getStatusDisplayName());
+            throw new BusinessException(409, "混批组状态不是待确认，当前状态: " + group.getStatusDisplayName())
+                    .withHint("请刷新混批组列表查看最新状态");
         }
 
         group.setStatus("rejected");
@@ -349,14 +351,16 @@ public class MixedBatchServiceImpl implements MixedBatchService {
                 .orElseThrow(() -> new BusinessException("混批组不存在: " + groupId));
 
         if (!group.isPending()) {
-            throw new BusinessException("只能修改待确认的混批组");
+            throw new BusinessException(409, "只能修改待确认的混批组")
+                    .withHint("已确认或已拒绝的混批组无法修改, 请刷新列表查看最新状态");
         }
 
         try {
             group.setOrderIds(objectMapper.writeValueAsString(orderIds));
             group.setOrderCount(orderIds.size());
         } catch (JsonProcessingException e) {
-            throw new BusinessException("序列化订单ID失败", e);
+            throw new BusinessException(500, "序列化订单ID失败", e)
+                    .withHint("请稍后重试, 如果问题持续请联系管理员");
         }
 
         group = groupRepository.save(group);
