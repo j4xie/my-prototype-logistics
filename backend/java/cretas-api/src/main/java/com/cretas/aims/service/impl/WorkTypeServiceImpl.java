@@ -41,7 +41,8 @@ public class WorkTypeServiceImpl implements WorkTypeService {
 
         // 检查名称是否已存在
         if (workTypeRepository.existsByFactoryIdAndName(factoryId, dto.getName())) {
-            throw new BusinessException("工作类型名称已存在: " + dto.getName());
+            throw new BusinessException(409, "工作类型名称已存在: " + dto.getName())
+                    .withHint("请使用其他工作类型名称").withHintTarget("name");
         }
 
         WorkType workType = new WorkType();
@@ -140,7 +141,8 @@ public class WorkTypeServiceImpl implements WorkTypeService {
         // 检查新名称是否与其他工作类型冲突
         if (!workType.getName().equals(dto.getName()) &&
             workTypeRepository.existsByFactoryIdAndName(factoryId, dto.getName())) {
-            throw new BusinessException("工作类型名称已存在: " + dto.getName());
+            throw new BusinessException(409, "工作类型名称已存在: " + dto.getName())
+                    .withHint("请使用其他工作类型名称").withHintTarget("name");
         }
 
         // 更新基本字段
@@ -198,7 +200,8 @@ public class WorkTypeServiceImpl implements WorkTypeService {
                 .orElseThrow(() -> new ResourceNotFoundException("工作类型不存在: " + id));
 
         if (Boolean.TRUE.equals(workType.getIsDefault())) {
-            throw new BusinessException("不能删除默认工作类型");
+            throw new BusinessException(403, "不能删除默认工作类型")
+                    .withHint("默认工作类型受系统保护, 无法删除");
         }
 
         // TODO: 检查是否有关联的考勤记录

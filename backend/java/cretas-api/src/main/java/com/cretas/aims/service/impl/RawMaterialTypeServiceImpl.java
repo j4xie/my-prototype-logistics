@@ -87,7 +87,8 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
 
         // 检查编码是否已存在
         if (materialTypeRepository.existsByFactoryIdAndCode(factoryId, dto.getCode())) {
-            throw new BusinessException("原材料编码已存在: " + dto.getCode());
+            throw new BusinessException(409, "原材料编码已存在: " + dto.getCode())
+                    .withHint("请使用其他原材料编码").withHintTarget("code");
         }
 
         RawMaterialType materialType = new RawMaterialType();
@@ -132,13 +133,15 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
                 .orElseThrow(() -> new ResourceNotFoundException("原材料类型不存在: " + id));
 
         if (!materialType.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权限操作此原材料类型");
+            throw new BusinessException(403, "无权限操作此原材料类型")
+                    .withHint("当前原材料类型不属于该工厂, 无法操作");
         }
 
         // 检查编码是否重复
         if (dto.getCode() != null && !dto.getCode().equals(materialType.getCode())) {
             if (materialTypeRepository.existsByFactoryIdAndCode(factoryId, dto.getCode())) {
-                throw new BusinessException("原材料编码已存在: " + dto.getCode());
+                throw new BusinessException(409, "原材料编码已存在: " + dto.getCode())
+                    .withHint("请使用其他原材料编码").withHintTarget("code");
             }
             materialType.setCode(dto.getCode());
         }
@@ -172,7 +175,8 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
                 .orElseThrow(() -> new ResourceNotFoundException("原材料类型不存在: " + id));
 
         if (!materialType.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权限操作此原材料类型");
+            throw new BusinessException(403, "无权限操作此原材料类型")
+                    .withHint("当前原材料类型不属于该工厂, 无法操作");
         }
 
         // 检查是否有关联的批次（使用原生SQL查询，避免触发枚举转换错误）
@@ -186,7 +190,8 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
             
             if (batchCount > 0) {
                 log.warn("原材料类型有关联的批次，无法删除: id={}, batchCount={}", id, batchCount);
-                throw new BusinessException("原材料类型有关联的批次（" + batchCount + "个），无法删除。请先删除或转移相关批次。");
+                throw new BusinessException(409, "原材料类型有关联的批次（" + batchCount + "个），无法删除")
+                        .withHint("请先删除或转移相关批次后再删除该原材料类型");
             }
         } catch (BusinessException e) {
             // 如果是业务异常（有关联数据），直接抛出
@@ -207,7 +212,8 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
             
             if (conversionCount > 0) {
                 log.warn("原材料类型有关联的转换率，无法删除: id={}, conversionCount={}", id, conversionCount);
-                throw new BusinessException("原材料类型有关联的转换率（" + conversionCount + "个），无法删除。请先删除相关转换率。");
+                throw new BusinessException(409, "原材料类型有关联的转换率（" + conversionCount + "个），无法删除")
+                        .withHint("请先删除相关转换率后再删除该原材料类型");
             }
         } catch (BusinessException e) {
             // 如果是业务异常（有关联数据），直接抛出
@@ -222,9 +228,11 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
         } catch (Exception e) {
             log.error("删除原材料类型失败: id={}, error={}", id, e.getMessage(), e);
             if (e.getMessage() != null && e.getMessage().contains("foreign key constraint")) {
-                throw new BusinessException("原材料类型有关联数据，无法删除。请先删除相关批次或转换率。");
+                throw new BusinessException(409, "原材料类型有关联数据，无法删除")
+                        .withHint("请先删除相关批次或转换率后再删除该原材料类型");
             }
-            throw new BusinessException("删除失败: " + e.getMessage());
+            throw new BusinessException(500, "删除失败: " + e.getMessage())
+                    .withHint("请稍后重试, 如果问题持续请联系管理员");
         }
     }
 
@@ -236,7 +244,8 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
                 .orElseThrow(() -> new ResourceNotFoundException("原材料类型不存在: " + id));
 
         if (!materialType.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权限查看此原材料类型");
+            throw new BusinessException(403, "无权限查看此原材料类型")
+                    .withHint("当前原材料类型不属于该工厂, 无法查看");
         }
 
         return convertToDTO(materialType);
@@ -356,7 +365,8 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
                     .orElseThrow(() -> new ResourceNotFoundException("原材料类型不存在: " + id));
 
             if (!materialType.getFactoryId().equals(factoryId)) {
-                throw new BusinessException("无权限操作原材料类型: " + id);
+                throw new BusinessException(403, "无权限操作原材料类型: " + id)
+                        .withHint("批量操作中包含其他工厂的原材料类型, 请重新选择");
             }
 
             materialType.setIsActive(isActive);

@@ -181,7 +181,8 @@ public class EquipmentServiceImpl implements EquipmentService {
 
         // 检查是否有使用记录
         if (equipmentRepository.hasUsageRecords(equipmentIdLong)) {
-            throw new BusinessException("设备有使用记录，无法删除");
+            throw new BusinessException(409, "设备有使用记录，无法删除")
+                    .withHint("请先归档或转移该设备的使用记录后再删除");
         }
 
         equipmentRepository.delete(equipment);
@@ -284,7 +285,8 @@ public class EquipmentServiceImpl implements EquipmentService {
             log.warn("设备已处于active状态: id={}", equipment.getId());
         }
         if ("maintenance".equals(equipment.getStatus())) {
-            throw new BusinessException("设备正在维护中，无法启动");
+            throw new BusinessException(409, "设备正在维护中，无法启动")
+                    .withHint("请先完成设备维护后再启动").withHintTarget("status");
         }
 
         equipment.setStatus("active");  // 启动设备，设置为active
