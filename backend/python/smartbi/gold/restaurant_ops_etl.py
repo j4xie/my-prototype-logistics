@@ -27,7 +27,10 @@ Design notes:
 """
 from __future__ import annotations
 
+import asyncio
 import logging
+import time
+import traceback
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
@@ -798,3 +801,80 @@ async def run_full_etl(
         logger.exception("[etl] gold materialize failed for %s", factory_id)
 
     return stats
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Retry wrapper
+# ─────────────────────────────────────────────────────────────────────
+
+_RETRY_BACKOFFS_SEC = [60, 300, 900]  # 1m, 5m, 15m
+_MAX_ATTEMPTS = 3
+
+
+async def run_full_etl_with_retry(
+    cretas_pool: asyncpg.Pool,
+    smartbi_pool: asyncpg.Pool,
+    factory_id: str,
+) -> EtlStats:
+    """run_full_etl wrapper with 3 retries + failure persistence.
+
+    Retry intervals: 1m / 5m / 15m. All-failures raise. Each attempt writes
+    one row to restaurant_etl_failures (status: 'retrying' or 'failed_final').
+
+    Args:
+        cretas_pool: cretas_db connection pool
+        smartbi_pool: smartbi_db connection pool (for failure-log writes)
+        factory_id: factory ID to run ETL for
+
+    Returns:
+        EtlStats from run_full_etl on success
+
+    Raises:
+        Exception: re-raises last exception if all 3 attempts fail
+    """
+    last_exc = None
+    for attempt in range(1, _MAX_ATTEMPTS + 1):
+        start = time.monotonic()
+        try:
+            result = await run_full_etl(cretas_pool, smartbi_pool, factory_id)
+            if attempt > 1:
+                logger.info(f"ETL succeeded on attempt {attempt} for {factory_id}")
+            return result
+        except Exception as exc:
+            last_exc = exc
+            duration_ms = int((time.monotonic() - start) * 1000)
+            is_final = attempt == _MAX_ATTEMPTS
+            status = "failed_final" if is_final else "retrying"
+
+            # Write failure log row (best-effort — don't let log write failure mask original exception)
+            try:
+                async with await smartbi_pool.acquire() as conn:
+                    await conn.execute(
+                        """
+                        INSERT INTO restaurant_etl_failures
+                          (factory_id, run_at, status, attempt, error_msg,
+                           error_class, duration_ms, trace)
+                        VALUES ($1, NOW(), $2, $3, $4, $5, $6, $7)
+                        """,
+                        factory_id, status, attempt,
+                        str(exc)[:1000],
+                        exc.__class__.__name__,
+                        duration_ms,
+                        traceback.format_exc()[:4096],
+                    )
+            except Exception as log_exc:
+                logger.warning(f"Failed to write ETL failure log: {log_exc}")
+
+            if not is_final:
+                backoff = _RETRY_BACKOFFS_SEC[attempt - 1]
+                logger.warning(
+                    f"ETL attempt {attempt} failed for {factory_id}, "
+                    f"retrying in {backoff}s: {exc}"
+                )
+                await asyncio.sleep(backoff)
+            else:
+                logger.error(f"ETL attempt {attempt} failed for {factory_id} (final): {exc}")
+                raise
+
+    # Defensive: should not be reachable since the final attempt re-raises above
+    raise last_exc
