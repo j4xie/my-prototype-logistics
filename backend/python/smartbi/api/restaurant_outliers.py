@@ -19,16 +19,19 @@ from __future__ import annotations
 import logging
 import time
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Body, HTTPException, Path, Query, Request
 
 from smartbi.canonical.provenance._admin_auth import require_admin
 from smartbi.services.outlier_service import (
+    DEFAULT_KPI_KINDS,
     DEFAULT_WINDOW_DAYS,
     KPI_LABELS,
     OutlierService,
 )
+
+_VALID_BASELINE_SOURCES = frozenset({'self', 'global'})
 
 logger = logging.getLogger(__name__)
 logger.warning(
@@ -248,3 +251,199 @@ async def get_outliers(
     }
     _cache[cache_key] = (now_ts, body)
     return body
+
+
+# ─────────────────────────────────────────────────────
+# POST /api/restaurant/outliers/dismiss
+# ─────────────────────────────────────────────────────
+@router.post("/outliers/dismiss", status_code=201)
+async def dismiss_outlier(
+    request: Request,
+    body: Dict[str, Any] = Body(...),
+) -> Dict[str, Any]:
+    """Mark an outlier as 已确认 (non-anomaly) for the calendar month.
+
+    Auth: admin-tier (factory_super_admin / permission_admin / platform_admin).
+    Cross-factory: non-platform_admin can only dismiss own factory.
+    Validation:
+      - factoryId: non-empty + ≤ 50 chars
+      - anomalyDate: required (ISO date string)
+      - kpiKind: must be in DEFAULT_KPI_KINDS
+      - snapshotBaselineSource: must be 'self' or 'global'
+      - snapshotValue / snapshotQ1 / snapshotQ3: all required
+
+    W0.4 finding 3: RLS GUC set_config MUST be inside conn.transaction().
+    UNIQUE (factory_id, anomaly_date, kpi_kind) → 409.
+    Cache invalidation triggered on success (wipes all factory_id:* keys).
+    """
+    require_admin(request, action_name="餐饮 outlier dismiss")
+
+    # Validate factoryId
+    factory_id = (body.get("factoryId") or "").strip()
+    if not factory_id:
+        raise HTTPException(status_code=400, detail="factoryId 不能为空")
+    if len(factory_id) > 50:
+        raise HTTPException(
+            status_code=400,
+            detail=f"factoryId 长度不能超过 50 (收到 {len(factory_id)})",
+        )
+    _validate_factory_access(request, factory_id)
+
+    # Validate anomalyDate
+    anomaly_date = body.get("anomalyDate")
+    if not anomaly_date:
+        raise HTTPException(status_code=400, detail="anomalyDate 不能为空")
+
+    # Validate kpiKind
+    kpi_kind = body.get("kpiKind")
+    if kpi_kind not in DEFAULT_KPI_KINDS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"无效 kpiKind: {kpi_kind!r} (必须是 {DEFAULT_KPI_KINDS})",
+        )
+
+    # Validate baseline source
+    baseline_source = body.get("snapshotBaselineSource")
+    if baseline_source not in _VALID_BASELINE_SOURCES:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"无效 snapshotBaselineSource: {baseline_source!r} "
+                f"(必须是 'self' 或 'global')"
+            ),
+        )
+
+    # Validate snapshot values
+    snapshot_value = body.get("snapshotValue")
+    snapshot_q1 = body.get("snapshotQ1")
+    snapshot_q3 = body.get("snapshotQ3")
+    if snapshot_value is None or snapshot_q1 is None or snapshot_q3 is None:
+        raise HTTPException(
+            status_code=400,
+            detail="snapshotValue / snapshotQ1 / snapshotQ3 必填",
+        )
+
+    # Resolve dismissed_by from JWT state (fall back to unknown_admin)
+    dismissed_by = (
+        getattr(request.state, "username", None)
+        or getattr(request.state, "user_name", None)
+        or "unknown_admin"
+    )
+
+    from smartbi.config import get_pg_pool
+
+    pool = await get_pg_pool()
+    if pool is None:
+        raise HTTPException(status_code=503, detail="数据库连接失败")
+
+    try:
+        async with pool.acquire() as conn:
+            # W0.4 finding 3: GUC inside transaction
+            async with conn.transaction():
+                await conn.execute(
+                    "SELECT set_config('app.factory_id', $1, true)", factory_id
+                )
+                row = await conn.fetchrow(
+                    """
+                    INSERT INTO outlier_dismissals
+                        (factory_id, anomaly_date, kpi_kind, dismissed_by,
+                         snapshot_value, snapshot_q1, snapshot_q3,
+                         snapshot_baseline_source)
+                    VALUES ($1, $2::date, $3, $4, $5, $6, $7, $8)
+                    RETURNING id, dismissed_at
+                    """,
+                    factory_id,
+                    anomaly_date,
+                    kpi_kind,
+                    dismissed_by,
+                    snapshot_value,
+                    snapshot_q1,
+                    snapshot_q3,
+                    baseline_source,
+                )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        # asyncpg UniqueViolationError → 409 (string check is version-safe)
+        msg = str(exc).lower()
+        if 'unique' in msg or 'duplicate' in msg:
+            raise HTTPException(
+                status_code=409,
+                detail="该异常已被标记 ✓ 非异常",
+            )
+        logger.exception("[outlier] dismiss insert failed for %s", factory_id)
+        raise HTTPException(status_code=500, detail="dismiss 内部错误")
+
+    _invalidate_cache(factory_id)
+
+    return {
+        "id": int(row["id"]),
+        "factoryId": factory_id,
+        "anomalyDate": anomaly_date,
+        "kpiKind": kpi_kind,
+        "dismissedBy": dismissed_by,
+        "dismissedAt": row["dismissed_at"].isoformat(),
+    }
+
+
+# ─────────────────────────────────────────────────────
+# DELETE /api/restaurant/outliers/dismiss/{dismissal_id}
+# ─────────────────────────────────────────────────────
+@router.delete("/outliers/dismiss/{dismissal_id}", status_code=204)
+async def undismiss_outlier(
+    request: Request,
+    dismissal_id: int = Path(..., ge=1),
+):
+    """Restore a previously dismissed outlier (un-dismiss).
+
+    Auth: admin-tier.
+    RLS: SELECT under jwt factory_id GUC; if row not visible → 404
+    (covers both not-exist AND cross-factory cases).
+
+    Phase B-1 first version limitation: platform_admin uses own jwt
+    factory_id GUC for the lookup (B-N backlog: add ?factoryId=X param
+    for cross-factory delete).
+
+    W0.4 finding 3: RLS GUC + transaction wrapper enforced.
+    """
+    require_admin(request, action_name="餐饮 outlier undismiss")
+
+    jwt_factory_id = getattr(request.state, "factory_id", None) or ""
+    role = getattr(request.state, "role", None)
+
+    # platform_admin (B-1): also constrained to own jwt_factory_id for now.
+    # B-N backlog: add ?factoryId param.
+    if role == "platform_admin":
+        effective_fid = jwt_factory_id or "NONE"
+    else:
+        effective_fid = jwt_factory_id
+
+    from smartbi.config import get_pg_pool
+
+    pool = await get_pg_pool()
+    if pool is None:
+        raise HTTPException(status_code=503, detail="数据库连接失败")
+
+    async with pool.acquire() as conn:
+        # W0.4 finding 3: GUC inside transaction
+        async with conn.transaction():
+            await conn.execute(
+                "SELECT set_config('app.factory_id', $1, true)", effective_fid
+            )
+            row = await conn.fetchrow(
+                "SELECT factory_id FROM outlier_dismissals WHERE id = $1",
+                dismissal_id,
+            )
+            if row is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="dismissal 记录不存在或无权访问",
+                )
+
+            await conn.execute(
+                "DELETE FROM outlier_dismissals WHERE id = $1",
+                dismissal_id,
+            )
+
+    _invalidate_cache(row["factory_id"])
+    return None

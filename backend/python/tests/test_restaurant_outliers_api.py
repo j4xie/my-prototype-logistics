@@ -11,6 +11,7 @@ mention in detail.
 """
 from __future__ import annotations
 
+import time
 from datetime import date, datetime, timezone, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -132,3 +133,90 @@ class TestGetOutliersAPI:
         r = client.get('/api/restaurant/outliers?factoryId=F002')
         # require_admin raises 401 when role is missing
         assert r.status_code == 401
+
+
+class TestDismissOutlierAPI:
+    def test_dismiss_inserts_and_invalidates_cache(self):
+        from smartbi.api.restaurant_outliers import _cache
+        app = _build_app()
+        client = TestClient(app)
+
+        # Pre-populate cache to verify invalidation. Task 5 changed cache key
+        # to f"{factoryId}:{windowDays}" so use 'F002:30'.
+        _cache['F002:30'] = (time.monotonic(), {'cached': True})
+
+        mock_pool = AsyncMock()
+        mock_conn = AsyncMock()
+        mock_conn.execute = AsyncMock(return_value=None)
+        mock_conn.fetchrow = AsyncMock(return_value={
+            'id': 99, 'dismissed_at': datetime.now(timezone.utc),
+        })
+        mock_conn.transaction = MagicMock()
+        mock_conn.transaction.return_value.__aenter__ = AsyncMock(return_value=None)
+        mock_conn.transaction.return_value.__aexit__ = AsyncMock(return_value=None)
+        mock_pool.acquire = MagicMock()
+        mock_pool.acquire.return_value.__aenter__ = AsyncMock(return_value=mock_conn)
+        mock_pool.acquire.return_value.__aexit__ = AsyncMock(return_value=None)
+
+        with patch('smartbi.config.get_pg_pool', new=AsyncMock(return_value=mock_pool)):
+            r = client.post('/api/restaurant/outliers/dismiss', json={
+                'factoryId': 'F002',
+                'anomalyDate': '2026-04-25',
+                'kpiKind': 'wastage_cost_total',
+                'snapshotValue': 8500.0,
+                'snapshotQ1': 1200.0,
+                'snapshotQ3': 3400.0,
+                'snapshotBaselineSource': 'self',
+            })
+
+        assert r.status_code == 201, r.text
+        assert r.json()['id'] == 99
+        # Cache invalidated — Task 5 wipes by prefix f"{factoryId}:"
+        remaining = [k for k in _cache if k.startswith('F002:')]
+        assert remaining == [], f"expected no F002:* cache keys, got {remaining}"
+
+    def test_dismiss_invalid_baseline_source_400(self):
+        app = _build_app()
+        client = TestClient(app)
+        r = client.post('/api/restaurant/outliers/dismiss', json={
+            'factoryId': 'F002',
+            'anomalyDate': '2026-04-25',
+            'kpiKind': 'wastage_cost_total',
+            'snapshotValue': 8500, 'snapshotQ1': 1200, 'snapshotQ3': 3400,
+            'snapshotBaselineSource': 'INVALID',
+        })
+        assert r.status_code == 400
+
+    def test_dismiss_unknown_kpi_kind_400(self):
+        app = _build_app()
+        client = TestClient(app)
+        r = client.post('/api/restaurant/outliers/dismiss', json={
+            'factoryId': 'F002',
+            'anomalyDate': '2026-04-25',
+            'kpiKind': 'unknown_kpi',
+            'snapshotValue': 100, 'snapshotQ1': 50, 'snapshotQ3': 150,
+            'snapshotBaselineSource': 'self',
+        })
+        assert r.status_code == 400
+
+
+class TestUndismissOutlierAPI:
+    def test_undismiss_404_when_not_exist(self):
+        app = _build_app()
+        client = TestClient(app)
+
+        mock_pool = AsyncMock()
+        mock_conn = AsyncMock()
+        mock_conn.execute = AsyncMock(return_value=None)
+        mock_conn.fetchrow = AsyncMock(return_value=None)  # not found
+        mock_conn.transaction = MagicMock()
+        mock_conn.transaction.return_value.__aenter__ = AsyncMock(return_value=None)
+        mock_conn.transaction.return_value.__aexit__ = AsyncMock(return_value=None)
+        mock_pool.acquire = MagicMock()
+        mock_pool.acquire.return_value.__aenter__ = AsyncMock(return_value=mock_conn)
+        mock_pool.acquire.return_value.__aexit__ = AsyncMock(return_value=None)
+
+        with patch('smartbi.config.get_pg_pool', new=AsyncMock(return_value=mock_pool)):
+            r = client.delete('/api/restaurant/outliers/dismiss/9999')
+
+        assert r.status_code == 404
