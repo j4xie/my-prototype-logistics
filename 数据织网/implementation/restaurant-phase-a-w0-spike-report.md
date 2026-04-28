@@ -334,7 +334,9 @@ Note: the combined miss proxy (83.2%) significantly **overstates** true misclass
 
 **Key finding**: 93.9% of all field rows belong to factory uploads (F003/F004 dominate with 165 uploads / 3,782 fields). The restaurant-domain sample is tiny — only 254 rows across 8 uploads. The extremely high dim-no-semantic rate is driven almost entirely by factory financial Excel files with `预算数_N` / `本月实际_N` column patterns, not restaurant data.
 
-For **restaurant factories only**: 24/254 = 9.4% dim-no-semantic, 42/254 = 16.5% measure-no-semantic, combined = 66/254 = 26.0% no-semantic proxy. Time classification is strong for restaurant data (152/254 = 59.8% `is_time`), likely reflecting POS-format timestamps.
+For **restaurant factories only**: 24/254 = 9.4% dim-no-semantic, 42/254 = 16.5% measure-no-semantic, **combined = 66/254 = 26.0% no-semantic proxy** (this is the metric used in §决策 below). Time classification is strong for restaurant data (152/254 = 59.8% `is_time`), likely reflecting POS-format timestamps.
+
+⚠️ **Sample bias caveat**: 8 uploads / 6 factories is statistically thin. Treat 26% as a point estimate with high variance. Heterogeneous restaurant Excel formats may push this number meaningfully in either direction once more factories onboard.
 
 ---
 
@@ -358,6 +360,8 @@ File: `backend/python/smartbi/services/field_classifier.py` (395 lines)
 
 **Notable gap**: `_MEASURE_KEYWORDS` has no entry for `预算`, `实际`, `净利`, `本月`, `本年`, `本季` patterns. These are extremely common in Chinese management Excel exports (budget vs actual reporting) and are the primary driver of the high miss rate observed above (2,675 rows / 62.6%).
 
+**Parallel classifier alert**: `backend/python/smartbi/services/field_detector.py` exists as a second, independent classifier used for the API response path (returns `semanticType`/`chartRole` camelCase). It does **not** write to `smart_bi_pg_field_definitions` — only `field_classifier.py` does. Any keyword additions for A-1 must update BOTH files in lockstep, or the API response will diverge from what is stored. Task 0.4 review meeting must confirm this dual-update plan.
+
 ---
 
 ### 决策
@@ -368,15 +372,17 @@ Per spec v2 §1.2 thresholds:
 - **10-30% miss** → spec v3 需要 B-2 LLM 兜底罕见列名
 - **> 30% miss** → spec v3 需要 LLM + 重新设计 hardcoded 库
 
-**This run's miss rate (wrong role, conservative estimate)**: **~62.6%** using factory-dominated data; **~26.0%** for restaurant-only data.
+**Decision metric**: combined no-semantic proxy on the **restaurant-only subset** = **26.0%** (66/254 rows). This is the metric used because Phase A scope is restaurant factories — the full-dataset 83.2% headline is driven by factory financial reports (F003/F004 budget/actual columns) that are out of scope.
 
-**Recommendation**: **> 30% miss threshold applies when evaluating the full dataset** — spec v3 needs LLM + redesign of hardcoded library. However, the data is highly skewed: 93.9% of rows come from factory financial reports with `预算数_N`/`本月实际_N` column patterns not covered by any keyword. For **restaurant-only scope**, the miss rate falls to ~26% (10–30% band) where LLM bottom-fill without full redesign is sufficient.
+**Threshold band**: 26% sits in the **10–30% band** → spec §1.2 says **B-2 LLM bottom-fill warranted, no redesign needed**.
 
-**Rationale**: The headline miss rate is dominated by a single pattern class — budget/actual Excel files from F003/F004 — that is outside restaurant Phase A scope. The restaurant-domain data (254 rows, 8 factories) shows a much healthier 9.4% dim-no-semantic rate (below the < 10% threshold) but a 26% combined no-semantic proxy that suggests 10–30% miss territory. Given the restaurant Phase A focus, the practical recommendation is:
+**Recommendation** (single, unambiguous):
 
-1. **Immediately**: add `予算`, `実際` → wait, these are Japanese. Add `预算`, `实际`, `净利`, `本月实际`, `本年实际`, `本季实际` to `_MEASURE_KEYWORDS` — this would resolve 62.6% of the full-dataset miss with zero LLM cost.
-2. **B-2 LLM**: Still warranted for restaurant domain (26% combined rate) to handle novel column names in diverse restaurant export formats. Not needed for the F003/F004 factory data.
-3. **No full redesign required** — the hardcoded library structure is sound; keyword coverage for known restaurant patterns (POS timestamps, store dimensions) is already strong. Extension, not redesign.
+1. **Immediate quick-win** (zero LLM cost): add `预算`, `实际`, `净利`, `本月实际`, `本年实际`, `本季实际` to `_MEASURE_KEYWORDS` in BOTH `field_classifier.py` AND `field_detector.py` (see "Parallel classifier alert" above). This resolves the 62.6% factory-data miss and may also pull restaurant miss below 10% if any restaurants use `本月实际` patterns.
+2. **B-2 LLM bottom-fill** is still warranted for restaurant domain (26% combined rate post-keyword-expansion may still leave novel column names uncovered, especially across diverse POS formats from new restaurant customers).
+3. **No full redesign** — the hardcoded library structure is sound. Keyword coverage for known restaurant patterns (POS timestamps, store dimensions) is already strong. Extension, not redesign.
+
+**Confidence**: Medium-high for the threshold-band placement. Lower for the absolute 26% figure due to thin restaurant sample (8 uploads / 6 factories — see sample-bias caveat above). After 5+ more restaurant uploads, the proxy should be re-measured and the recommendation revisited.
 
 ---
 
