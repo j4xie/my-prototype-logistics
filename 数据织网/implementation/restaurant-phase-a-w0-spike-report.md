@@ -386,12 +386,93 @@ Per spec v2 §1.2 thresholds:
 
 ---
 
+## W0.3 跟 C Handoff 协调
+
+**verify date**: 2026-04-28
+
+---
+
+### C handoff doc summary
+
+`C-trust-ui-startup-prompt.md` 关键点:
+
+- C session 范围: Day 23-30, Trust UI + admin config (TrustIndicator 组件 + 卡片集成 + cell-audit 页 + provenance-config 页)
+- C Day 26 spec (§6.3): 新建 `web-admin/src/views/system/data-fabric/cell-audit.vue`, URL 为 `/audit/cell?type=<entity_type>&id=<entity_id>&field=<field_name>`, 用途是**字段血统 lineage audit** (field_provenance 表), 不是 entity_resolution_admin_queue 的 admin UI
+- C Day 27 spec (§6.4): 新建 `provenance-config.vue`, 管理 `factory_provenance_config` 表配置 (差异阈值/来源优先级/行业默认成本率)
+- API: cell-audit 消费 `GET /api/smartbi/provenance/audit?factory_id=X&entity_type=Y&entity_id=Z&field=W` (field_provenance 表的 lineage 详情), 与 entity_resolution_admin_queue 完全无交叉
+- C 的 `entity_type` 在 cell-audit context 中是 field_provenance 的 `entity_type` 字段 (product/review/finance/inventory 等 B-stage writer 产生的), 不是 entity_resolution_admin_queue 的 8 个枚举值
+- Memory 记录 ("C Day 23-30 + post-review + 2 finance P0 fixes — Trust UI sub-project complete"): TrustIndicator + GoldPreview + cell-audit (Day 26) + provenance-config (Day 27) 全部 ship 并 push origin
+
+### C cell-audit page 当前状态
+
+- **File exists**: YES — `web-admin/src/views/system/data-fabric/cell-audit.vue`
+- **Last 3 commits touching it**:
+  - `126fe3f5c` 2026-04-27 refactor(数据织网 C): post-review P1.5+P2-cleanup — extract shared code, server-driven bounds
+  - `cc38b4270` 2026-04-27 fix(数据织网 C): post-review P1+P2-12 — security/correctness/UX hardening
+  - `6249bec46` 2026-04-27 feat(数据织网 C): Day 26 — cell-level lineage audit page + admin endpoint
+- **Wired into router**: YES — two entries in `web-admin/src/router/index.ts`:
+  1. `/system/data-fabric/cell-audit` (name: `CellAuditSystem`, `hidden: true`, admin roles only)
+  2. `/audit/cell` (name: `CellAudit`, `hidden: true`, admin roles only) — canonical NS-7 URL per spec
+- **Wired into sidebar**: NO — both router entries have `hidden: true`; no entry in `AppSidebar.vue`
+- **entity_type scope**: **COMPLETELY DIFFERENT DOMAIN** — cell-audit.vue queries `GET /api/smartbi/provenance/audit` which reads `field_provenance` table (B-stage cascade engine). The `entity_type` URL param in cell-audit refers to field_provenance entity types (product, review, finance, inventory from B-stage writers). It has **zero coupling** to `entity_resolution_admin_queue` and its 8 entity_type enums (store/product/staff/ingredient/shape_detection/sheet_merge/period_inference/field_conflict)
+- **API endpoints used**: `GET /api/smartbi/provenance/audit?factory_id=&entity_type=&entity_id=&field=` (via `pythonFetch` wrapper)
+- **Active development status**: Code is stable. Last commit 2026-04-27. Post-review cleanup already done (P1.5+P2 hardening). No in-flight changes expected.
+
+### 决策
+
+**Selected: (协-α)** — Build a NEW page `/admin/data-quality-queue` separate from C's cell-audit.
+
+**Rationale**: C's cell-audit page is purpose-built for `field_provenance` lineage display (B-stage cascade engine output), not for `entity_resolution_admin_queue` admin workflow. The two tables solve fundamentally different problems:
+- `field_provenance`: "What data sources contributed to this KPI field value, and with what confidence?" (lineage audit, read-only display)
+- `entity_resolution_admin_queue`: "Does this raw string match an existing entity, and should an admin confirm/reject/create?" (entity resolution approval workflow with write operations)
+
+Extending cell-audit.vue (协-β) would require invasive changes to a shipped, post-reviewed, stable component — replacing its read-only lineage display with a stateful approve/reject workflow — creating two fundamentally different UX modes in one file. That tightly couples B-stage provenance UI to A-stage entity resolution admin UI with no shared rendering logic, at the cost of destabilizing C's working code.
+
+协-γ (linking into cell-audit as a detail tab) is also rejected: cell-audit is hardcoded to `field_provenance` lineage queries and cannot render entity_resolution_admin_queue rows without rewriting the API call layer.
+
+협-α is the default spec v2 §2.3 path and requires zero changes to C's code. The two admin queues (`/audit/cell` for field lineage, `/admin/data-quality-queue` for entity resolution) serve different admin workflows and are not redundant.
+
+### Spec v2 §2.3 影响
+
+A-3 路径 in spec v2 §2.3 (lines 294-310): **default (协-α) confirmed — no change to spec required**. The "假设 (协-α) 路径" qualifier at line 301 can now be considered resolved.
+
+Selected file paths (unchanged from spec v2 §2.3):
+- `web-admin/src/views/admin/data-quality-queue.vue` (~600 lines) — list + entity_type tabs + filter + bulk action
+- `web-admin/src/views/admin/data-quality-queue-detail.vue` (~250 lines) — single item detail + history + approve UI
+- `web-admin/src/api/admin/data-quality-queue.ts` (~120 lines)
+- `backend/python/smartbi/api/data_quality_queue_admin.py` (~350 lines)
+
+New routes:
+- `web-admin/src/router/index.ts`: `/admin/data-quality-queue` (admin only)
+- `web-admin/src/components/layout/AppSidebar.vue`: "数据质量队列" menu item under admin section
+
+No cross-link from entity_resolution_admin_queue to cell-audit is planned in A-3 scope (the two tables are accessed from different admin workflows). A future "view field lineage" link from the data-quality-queue detail page TO cell-audit is a Phase B enhancement, not A-3.
+
+### handoff 备忘录 (协-α)
+
+**Safe zones** — things A-3 must NOT touch in C's code:
+- `web-admin/src/views/system/data-fabric/cell-audit.vue` — no edits
+- `web-admin/src/views/system/data-fabric/provenance-config.vue` — no edits
+- `web-admin/src/utils/provenance-labels.ts` — may READ to reuse `sourceLabel()` if entity_resolution_admin_queue rows need source display (the `decided_by_agent` field maps to 'llm'/'normalizer' strings that are different from provenance source types, so reuse is unlikely but check at implementation time)
+- `backend/python/smartbi/canonical/provenance/` — no edits (C's lineage engine)
+- Router entries `CellAudit` and `CellAuditSystem` — no changes (they are already `hidden: true`, admin-roles-only, and stable)
+
+**Duplication concerns**:
+- `entity_type` filter tabs in data-quality-queue.vue will look similar to C's entity_type handling in cell-audit, but the underlying data is `entity_resolution_admin_queue.entity_type` (8 values), not `field_provenance.entity_type`. No code sharing needed.
+- Admin role guards (`factory_super_admin`, `platform_admin`, `permission_admin`) are the same as C's cell-audit. Reuse the same meta.roles pattern.
+
+**Sharing strategy for sidebar**: AppSidebar.vue does NOT currently have a "data fabric admin" section visible in the sidebar (C's cell-audit entries are both `hidden: true`). A-3 will add the first visible admin entry for data-quality-queue. Consider grouping future data-fabric admin links together if A-3 also wants to surface a link to provenance-config.
+
+**For Task 0.4 review meeting**: Confirm whether A-3's data-quality-queue should include any "cross-link" to cell-audit for rows with `entity_type = 'field_conflict'` (since field_conflict rows originated from the C provenance cascade and MIGHT have a corresponding field_provenance record). This cross-link is out of A-3 scope but the spec reviewer should explicitly acknowledge the omission.
+
+---
+
 ## W0.2 — W0.5 Status
 
 | Task | Status | Notes |
 |---|---|---|
 | W0.1 entity_resolution_admin_queue schema verify | **DONE** | spec v2 §2.3 confirmed accurate |
 | W0.2 normalizer hit-rate baseline | **DONE** | full miss-rate breakdown; see section above |
-| W0.3 C-handoff coordination decision | PENDING | blocks A-3 path choice (协-α/β/γ) |
+| W0.3 C-handoff coordination decision | **DONE** | 选 (协-α): 全新页面 /admin/data-quality-queue; cell-audit 是不同域 (field_provenance lineage), 无侵入 |
 | W0.4 W0 review meeting | PENDING | depends on W0.1-W0.3 |
 | W0.5 (if needed) spec v3 amendments | PENDING | likely NOT needed given W0.1 confirms spec |
