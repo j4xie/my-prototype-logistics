@@ -136,7 +136,8 @@ public class EquipmentAlertsServiceImpl implements EquipmentAlertsService {
                 .orElseThrow(() -> new ResourceNotFoundException("告警不存在: " + alertId));
 
         if (alert.getStatus() != AlertStatus.ACTIVE) {
-            throw new IllegalStateException("只能确认活跃状态的告警");
+            throw new com.cretas.aims.exception.BusinessException(409, "只能确认活跃状态的告警")
+                    .withHint("请刷新告警列表查看最新状态");
         }
 
         alert.setStatus(AlertStatus.ACKNOWLEDGED);
@@ -171,7 +172,8 @@ public class EquipmentAlertsServiceImpl implements EquipmentAlertsService {
                 .orElseThrow(() -> new ResourceNotFoundException("告警不存在: " + alertId));
 
         if (alert.getStatus() == AlertStatus.RESOLVED) {
-            throw new IllegalStateException("告警已处理");
+            throw new com.cretas.aims.exception.BusinessException(409, "告警已处理")
+                    .withHint("请刷新告警列表查看最新状态");
         }
 
         alert.setStatus(AlertStatus.RESOLVED);
