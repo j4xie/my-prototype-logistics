@@ -699,15 +699,13 @@ async def auto_parse_excel(
         # Read file content
         content = await file.read()
 
-        # 2026-04-29: 5MB hard limit. 47 服务器 14GB RAM + swap 100% used 时,
-        # Python LLM 结构检测 + DataFrame load 大文件触发 OOM-kill (status=9)。
-        # Java 端 SmartBIUploadController 也有同样的检查 (defense in depth)。
-        # 大众点评 audit 实测: 9MB 唏嘛香会员数据.xlsx + 4.3MB+1.37MB 桂满陇 全部 OOM。
-        _MAX_BYTES = 5 * 1024 * 1024
+        # 2026-04-29: 30MB sanity 上限 (跟 Java 端同步)。真正防 OOM 在 fixed_executor
+        # 的 cell-budget cap, 这里只挡极端文件防 multipart 内存爆。
+        _MAX_BYTES = 30 * 1024 * 1024
         if len(content) > _MAX_BYTES:
             mb = len(content) / 1024.0 / 1024.0
             raise ApiException(
-                f"文件过大 ({mb:.1f} MB),AI 分析仅支持 5 MB 以内的文件。建议按月/按门店拆分后上传。",
+                f"文件过大 ({mb:.1f} MB),单次上传最大 30 MB。建议按月或按门店拆分后上传。",
                 ErrorCode.VALIDATION_ERROR, 413,
             )
 

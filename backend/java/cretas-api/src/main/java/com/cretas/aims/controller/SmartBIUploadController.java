@@ -46,13 +46,15 @@ import com.cretas.aims.util.ErrorSanitizer;
 public class SmartBIUploadController {
 
     /**
-     * 单文件上传大小上限 (5MB)。
-     * 超过此值会触发 Python 端 LLM 结构检测 + DataFrame 加载的内存峰值,在
-     * 47 服务器 (14GB RAM) 上容易 OOM-kill Python 进程。2026-04-29 大众点评
-     * 154 真实文件批量审计中,9MB 唏嘛香会员数据.xlsx + 4.3MB 桂满陇.csv
-     * + 1.37MB 桂满陇.xlsx 全部触发 OOM,导致熔断器 OPEN 30s + 雪崩。
+     * 单文件上传大小 sanity 上限 (30MB)。
+     * 这只挡掉极端文件 (例如 251MB pivot CSV 整库导出)。真正防 OOM 的是 Python
+     * 端按 cell budget 截断 (15M cells, 跟 CSV 路径一致), 见 fixed_executor.py 的
+     * pd.read_excel nrows 截断逻辑。
+     * 历史: 2026-04-29 v1 限 5MB → v2 限 2MB 都太激进伤 UX, 真问题是 xlsx 路径
+     * 没有 cell-budget cap (CSV 路径有, 见 excel.py L1053)。修了 xlsx 路径之后
+     * 这个上限只起 sanity 作用, 防 251MB+ 文件直接打爆 multipart parser 内存。
      */
-    private static final long MAX_UPLOAD_BYTES = 5L * 1024 * 1024;
+    private static final long MAX_UPLOAD_BYTES = 30L * 1024 * 1024;
 
     private final ExcelDynamicParserService excelParserService;
     private final SmartBIUploadFlowService uploadFlowService;
@@ -69,7 +71,7 @@ public class SmartBIUploadController {
         log.warn("Upload rejected — file too large: name={} size={} bytes (limit {} bytes)",
                 file.getOriginalFilename(), file.getSize(), MAX_UPLOAD_BYTES);
         String msg = String.format(
-                "文件过大 (%.1f MB)，AI 分析仅支持 %d MB 以内的文件。建议按月/按门店拆分后上传。",
+                "文件过大 (%.2f MB)，AI 分析仅支持 %d MB 以内的文件。建议按月/按门店拆分后上传。",
                 mb, limitMb);
         return ResponseEntity.ok(ApiResponse.error(msg));
     }
@@ -363,7 +365,7 @@ public class SmartBIUploadController {
                     log.warn("Stream upload rejected — file too large: name={} size={} bytes",
                             file.getOriginalFilename(), file.getSize());
                     sendEvent(emitter, UploadProgressEvent.error(String.format(
-                            "文件过大 (%.1f MB)，AI 分析仅支持 %d MB 以内的文件。建议按月/按门店拆分后上传。",
+                            "文件过大 (%.2f MB)，AI 分析仅支持 %d MB 以内的文件。建议按月/按门店拆分后上传。",
                             mb, limitMb)));
                     emitter.complete();
                     return;

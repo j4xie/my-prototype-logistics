@@ -298,6 +298,35 @@ class FixedExecutor:
                 # Bug #25b (2026-04-18): honour options["nrows"] to crop to a
                 # user-selected region. Default is read-all (historical behaviour).
                 _nrows_opt = options.get("nrows")
+                # 2026-04-29: cell-budget safety cap (parity with CSV path in
+                # excel.py L1053). xlsx 路径之前没有 cap, 1.37MB×4000行×112列
+                # 这种文件会让 pd.read_excel 全量加载 → 加 openpyxl XML 解析峰值
+                # → 14GB swap-full 服务器上必 OOM。Probe 行数 + 列数 via openpyxl
+                # read_only 模式 (cheap), 按 15M cells 截断, 跟 CSV 一致。
+                if not _nrows_opt or _nrows_opt <= 0:
+                    try:
+                        import openpyxl as _opxl_probe
+                        _wb_probe = _opxl_probe.load_workbook(
+                            io.BytesIO(file_bytes), read_only=True, data_only=True
+                        )
+                        _sheet_name = structure_config.sheet_name or _wb_probe.sheetnames[0]
+                        _ws_probe = _wb_probe[_sheet_name] if _sheet_name in _wb_probe.sheetnames else _wb_probe[_wb_probe.sheetnames[0]]
+                        _probe_rows = _ws_probe.max_row or 0
+                        _probe_cols = _ws_probe.max_column or 1
+                        _wb_probe.close()
+                        _CELL_BUDGET = 15_000_000
+                        _safety_cap = max(1000, _CELL_BUDGET // max(1, _probe_cols))
+                        if _probe_rows > _safety_cap:
+                            logger.warning(
+                                f"[xlsx-safety-cap] {_probe_rows} rows × {_probe_cols} cols "
+                                f"= {_probe_rows*_probe_cols:,} cells exceeds budget "
+                                f"({_CELL_BUDGET:,}). Capping to {_safety_cap} rows. "
+                                f"TODO: streaming persist for full coverage."
+                            )
+                            _nrows_opt = _safety_cap
+                    except Exception as _probe_e:
+                        logger.warning(f"[xlsx-safety-cap] probe failed: {_probe_e}, reading full file")
+
                 df = pd.read_excel(
                     io.BytesIO(file_bytes),
                     sheet_name=structure_config.sheet_name or 0,
