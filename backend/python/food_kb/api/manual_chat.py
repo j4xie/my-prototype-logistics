@@ -223,20 +223,19 @@ def _cache_put(key: str, value: dict) -> None:
 
 def _expand_query(question: str) -> str:
     """
-    For short queries (< 10 chars), expand with domain synonyms to improve
-    BM25 and vector recall.  Returns the original question if no expansion
-    applies or the question is already long enough.
+    Expand query with domain synonyms to improve BM25 and vector recall.
 
-    Case-insensitive substring match: lowercases both side once before compare,
-    so "ROI" / "roi" / "Roi" all hit the same expansion entry. This deduplicates
-    the keys (no need for separate "ROI"/"roi" pairs).
+    No length gate (batch-3 audit M1 fix): even long natural-language queries
+    benefit from synonym injection — the expansion is additive context that
+    doesn't override the original semantic, and longest-match ensures we only
+    inject the single most-specific synonym set.
+
+    Case-insensitive substring match: lowercases both sides once before compare,
+    so "ROI" / "roi" / "Roi" all hit the same expansion entry.
 
     Iterates keys longest-first so specific overlaps win:
     "AI 洞察" must match before "AI"; "存货周转" before "周转".
     """
-    if len(question) >= 10:
-        return question
-
     q_lower = question.lower()
     for keyword in sorted(_QUERY_EXPANSIONS.keys(), key=len, reverse=True):
         if keyword.lower() in q_lower:

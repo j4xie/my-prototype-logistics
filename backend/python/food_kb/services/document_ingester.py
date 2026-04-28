@@ -97,6 +97,40 @@ class DocumentIngester:
     def is_ready(self) -> bool:
         return self._ready and self._pool is not None
 
+    @property
+    def pool(self) -> Optional["asyncpg.Pool"]:
+        """Public accessor for the connection pool.
+
+        Trusted callers (e.g. manual_ingester atomic-swap re-ingest) may use
+        this to compose multi-statement transactions. Non-transactional cases
+        should prefer the higher-level methods (`delete_by_source`,
+        `ingest_document`, etc.) which encapsulate connection handling.
+        """
+        return self._pool
+
+    async def delete_by_source(self, source: str) -> int:
+        """Delete all chunks with the given source. Returns count deleted.
+
+        Used by the atomic-swap re-ingest pattern (manual_ingester) to clean
+        orphan ".NEW" temp chunks from a previously-failed run before
+        re-ingesting fresh content under the canonical source name.
+        """
+        if not self.is_ready():
+            return 0
+        async with self._pool.acquire() as conn:
+            result = await conn.execute(
+                "DELETE FROM food_knowledge_documents WHERE source = $1",
+                source,
+            )
+            try:
+                return (
+                    int(result.split()[1])
+                    if result and result.startswith("DELETE")
+                    else 0
+                )
+            except (IndexError, ValueError, AttributeError, TypeError):
+                return 0
+
     async def ingest_document(
         self,
         title: str,

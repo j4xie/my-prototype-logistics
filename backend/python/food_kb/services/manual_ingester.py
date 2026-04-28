@@ -184,11 +184,8 @@ async def ingest_all():
         temp_source = f"{canonical_source}.NEW"
 
         # Pre-cleanup any orphan .NEW from previous failed run
-        async with ingester._pool.acquire() as conn:
-            await conn.execute(
-                "DELETE FROM food_knowledge_documents WHERE source = $1",
-                temp_source,
-            )
+        # Uses public `delete_by_source` (batch-3 audit A1: replaced raw _pool access)
+        await ingester.delete_by_source(temp_source)
 
         source_chunks = 0
         source_docs = 0
@@ -216,11 +213,7 @@ async def ingest_all():
 
         if ingest_failed:
             # Rollback: drop temp chunks. Old canonical chunks stay intact.
-            async with ingester._pool.acquire() as conn:
-                await conn.execute(
-                    "DELETE FROM food_knowledge_documents WHERE source = $1",
-                    temp_source,
-                )
+            await ingester.delete_by_source(temp_source)
             logger.error(
                 f"  Aborted ingest for source '{canonical_source}'. "
                 f"Cleaned up temp. KB retains previous chunks (no data loss)."
@@ -228,7 +221,8 @@ async def ingest_all():
             continue
 
         # All sections ingested OK. Atomic swap inside single transaction.
-        async with ingester._pool.acquire() as conn:
+        # Uses public `pool` property (batch-3 audit A1: replaced raw _pool access)
+        async with ingester.pool.acquire() as conn:
             async with conn.transaction():
                 old_deleted = await conn.execute(
                     "DELETE FROM food_knowledge_documents WHERE source = $1",
