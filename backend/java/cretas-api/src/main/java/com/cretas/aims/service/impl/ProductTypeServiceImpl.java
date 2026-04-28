@@ -70,7 +70,8 @@ public class ProductTypeServiceImpl implements ProductTypeService {
 
         // 检查产品编码是否已存在
         if (productTypeRepository.existsByFactoryIdAndCode(factoryId, dto.getCode())) {
-            throw new BusinessException("产品编码已存在: " + dto.getCode());
+            throw new BusinessException(409, "产品编码已存在: " + dto.getCode())
+                    .withHint("请使用其他产品编码").withHintTarget("code");
         }
 
         ProductType productType = new ProductType();
@@ -128,13 +129,15 @@ public class ProductTypeServiceImpl implements ProductTypeService {
                 .orElseThrow(() -> new ResourceNotFoundException("产品类型不存在: " + id));
 
         if (!productType.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权限操作此产品类型");
+            throw new BusinessException(403, "无权限操作此产品类型")
+                    .withHint("当前产品类型不属于该工厂, 无法操作");
         }
 
         // 检查产品编码是否重复
         if (dto.getCode() != null && !dto.getCode().equals(productType.getCode())) {
             if (productTypeRepository.existsByFactoryIdAndCode(factoryId, dto.getCode())) {
-                throw new BusinessException("产品编码已存在: " + dto.getCode());
+                throw new BusinessException(409, "产品编码已存在: " + dto.getCode())
+                    .withHint("请使用其他产品编码").withHintTarget("code");
             }
             productType.setCode(dto.getCode());
         }
@@ -189,7 +192,8 @@ public class ProductTypeServiceImpl implements ProductTypeService {
                 .orElseThrow(() -> new ResourceNotFoundException("产品类型不存在: " + id));
 
         if (!productType.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权限操作此产品类型");
+            throw new BusinessException(403, "无权限操作此产品类型")
+                    .withHint("当前产品类型不属于该工厂, 无法操作");
         }
 
         // TODO: 检查是否有关联的生产计划
@@ -209,7 +213,8 @@ public class ProductTypeServiceImpl implements ProductTypeService {
                 .orElseThrow(() -> new ResourceNotFoundException("产品类型不存在: " + id));
 
         if (!productType.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权限查看此产品类型");
+            throw new BusinessException(403, "无权限查看此产品类型")
+                    .withHint("当前产品类型不属于该工厂, 无法查看");
         }
 
         return convertToDTO(productType);
@@ -330,7 +335,8 @@ public class ProductTypeServiceImpl implements ProductTypeService {
                     .orElseThrow(() -> new ResourceNotFoundException("产品类型不存在: " + id));
 
             if (!productType.getFactoryId().equals(factoryId)) {
-                throw new BusinessException("无权限操作产品类型: " + id);
+                throw new BusinessException(403, "无权限操作产品类型: " + id)
+                        .withHint("批量操作中包含其他工厂的产品类型, 请重新选择");
             }
 
             productType.setIsActive(isActive);
