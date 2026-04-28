@@ -65,7 +65,8 @@ public class MobilePasswordServiceImpl implements MobilePasswordService {
 
         // 验证旧密码
         if (!passwordEncoder.matches(oldPassword, user.getPasswordHash())) {
-            throw new BusinessException("原密码错误");
+            throw new BusinessException(401, "原密码错误")
+                    .withHint("请输入正确的当前密码").withHintTarget("oldPassword");
         }
 
         // 更新密码
@@ -101,7 +102,8 @@ public class MobilePasswordServiceImpl implements MobilePasswordService {
         // 检查该手机号是否存在用户
         List<User> users = userRepository.findAllByPhone(phoneNumber);
         if (users.isEmpty()) {
-            throw new BusinessException("该手机号未注册");
+            throw new BusinessException(404, "该手机号未注册")
+                    .withHint("请检查手机号或先注册账号").withHintTarget("phoneNumber");
         }
 
         // 检查是否在冷却期（60秒内只能发送一次）
@@ -153,25 +155,29 @@ public class MobilePasswordServiceImpl implements MobilePasswordService {
         VerificationCodeData codeData = verificationCodes.get(cacheKey);
 
         if (codeData == null) {
-            throw new BusinessException("验证码不存在或已过期");
+            throw new BusinessException(409, "验证码不存在或已过期")
+                    .withHint("请重新发送验证码").withHintTarget("verificationCode");
         }
 
         // 检查是否过期
         if (LocalDateTime.now().isAfter(codeData.expiresAt)) {
             verificationCodes.remove(cacheKey);
-            throw new BusinessException("验证码已过期");
+            throw new BusinessException(409, "验证码已过期")
+                    .withHint("请重新发送验证码").withHintTarget("verificationCode");
         }
 
         // 验证码错误次数限制（最多3次）
         if (codeData.retryCount >= 3) {
             verificationCodes.remove(cacheKey);
-            throw new BusinessException("验证码错误次数过多，请重新获取");
+            throw new BusinessException(429, "验证码错误次数过多")
+                    .withHint("请重新发送新验证码").withHintTarget("verificationCode");
         }
 
         // 验证码校验
         if (!codeData.code.equals(inputCode)) {
             codeData.retryCount++;
-            throw new BusinessException("验证码错误");
+            throw new BusinessException(401, "验证码错误")
+                    .withHint("请检查验证码后重试").withHintTarget("verificationCode");
         }
 
         // 验证成功，生成重置令牌（30分钟有效）
@@ -204,13 +210,15 @@ public class MobilePasswordServiceImpl implements MobilePasswordService {
         // 验证重置令牌
         String phoneFromToken = tempTokenService.validateAndGetPhone(resetToken);
         if (phoneFromToken == null || !phoneFromToken.equals(phoneNumber)) {
-            throw new BusinessException("重置令牌无效或已过期");
+            throw new BusinessException(401, "重置令牌无效或已过期")
+                    .withHint("请重新发起密码重置流程").withHintTarget("resetToken");
         }
 
         // 查找用户（手机号可能对应多个用户）
         List<User> users = userRepository.findAllByPhone(phoneNumber);
         if (users.isEmpty()) {
-            throw new BusinessException("该手机号未注册");
+            throw new BusinessException(404, "该手机号未注册")
+                    .withHint("请检查手机号或先注册账号").withHintTarget("phoneNumber");
         }
 
         // 更新所有匹配用户的密码

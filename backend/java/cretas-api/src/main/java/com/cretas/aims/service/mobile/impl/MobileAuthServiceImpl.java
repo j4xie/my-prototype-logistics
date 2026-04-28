@@ -76,13 +76,15 @@ public class MobileAuthServiceImpl implements MobileAuthService {
             List<User> users = userRepository.findAllByUsername(username);
 
             if (users.isEmpty()) {
-                throw new BusinessException("用户名或密码错误");
+                throw new BusinessException(401, "用户名或密码错误")
+                        .withHint("请检查用户名和密码后重试").withHintTarget("password");
             } else if (users.size() == 1) {
                 factoryId = users.get(0).getFactoryId();
                 log.info("智能推断成功: username={}, factoryId={}", username, factoryId);
             } else {
                 // 存在多个同名用户，必须提供 factoryId
-                throw new BusinessException("存在多个同名用户，请提供工厂ID进行登录");
+                throw new BusinessException(409, "存在多个同名用户，请提供工厂ID进行登录")
+                    .withHint("请在登录界面选择具体工厂").withHintTarget("factoryId");
             }
         }
 
@@ -97,14 +99,16 @@ public class MobileAuthServiceImpl implements MobileAuthService {
             // 密码错误是客户端输入问题, 不是服务端 bug. 但保持 WARN 级别
             // 有助于审计暴力破解 (同用户连续失败次数可被 SIEM 规则聚合).
             log.warn("密码验证失败 - 用户: {}", username);
-            throw new BusinessException("用户名或密码错误");
+            throw new BusinessException(401, "用户名或密码错误")
+                    .withHint("请检查用户名和密码后重试").withHintTarget("password");
         }
 
         log.info("密码验证成功 - 用户: {}", username);
 
         // 检查用户状态
         if (!user.getIsActive()) {
-            throw new BusinessException("用户账号已被禁用");
+            throw new BusinessException(403, "用户账号已被禁用")
+                    .withHint("请联系工厂管理员重新启用账号");
         }
 
         // 记录设备信息
@@ -153,12 +157,14 @@ public class MobileAuthServiceImpl implements MobileAuthService {
                                                          MobileDTO.DeviceInfo deviceInfo) {
         // 验证密码
         if (!passwordEncoder.matches(password, admin.getPassword())) {
-            throw new BusinessException("用户名或密码错误");
+            throw new BusinessException(401, "用户名或密码错误")
+                    .withHint("请检查用户名和密码后重试").withHintTarget("password");
         }
 
         // 检查账号状态
         if (!admin.isActive()) {
-            throw new BusinessException("账号已被禁用");
+            throw new BusinessException(403, "账号已被禁用")
+                    .withHint("请联系管理员重新启用账号");
         }
 
         // 记录设备信息
@@ -205,7 +211,8 @@ public class MobileAuthServiceImpl implements MobileAuthService {
 
         // 验证刷新令牌
         if (!jwtUtil.validateToken(refreshToken)) {
-            throw new BusinessException("无效的刷新令牌");
+            throw new BusinessException(401, "无效的刷新令牌")
+                    .withHint("请重新登录").withHintTarget("refreshToken");
         }
 
         String userIdStr = jwtUtil.getUserIdFromTokenAsString(refreshToken);
@@ -230,7 +237,8 @@ public class MobileAuthServiceImpl implements MobileAuthService {
                         .role(admin.getPlatformRole().name())
                         .build();
             } catch (NumberFormatException e) {
-                throw new BusinessException("无效的平台管理员ID格式");
+                throw new BusinessException(400, "无效的平台管理员ID格式")
+                        .withHint("请重新登录获取有效令牌");
             }
         }
 
@@ -260,7 +268,8 @@ public class MobileAuthServiceImpl implements MobileAuthService {
                     .role(role)
                     .build();
         } catch (NumberFormatException e) {
-            throw new BusinessException("无效的用户ID格式: " + userIdStr);
+            throw new BusinessException(400, "无效的用户ID格式: " + userIdStr)
+                    .withHint("请重新登录获取有效令牌");
         }
     }
 
@@ -340,7 +349,8 @@ public class MobileAuthServiceImpl implements MobileAuthService {
                         .isActive(true)
                         .build();
             } catch (NumberFormatException e) {
-                throw new BusinessException("无效的平台管理员ID格式");
+                throw new BusinessException(400, "无效的平台管理员ID格式")
+                        .withHint("请重新登录获取有效令牌");
             }
         }
 
@@ -355,7 +365,8 @@ public class MobileAuthServiceImpl implements MobileAuthService {
             }
             return userMapper.toDTO(user, factoryType);
         } catch (NumberFormatException e) {
-            throw new BusinessException("无效的用户ID格式: " + userIdStr);
+            throw new BusinessException(400, "无效的用户ID格式: " + userIdStr)
+                    .withHint("请重新登录获取有效令牌");
         }
     }
 
@@ -371,13 +382,15 @@ public class MobileAuthServiceImpl implements MobileAuthService {
             List<Whitelist> whitelists = whitelistRepository.findAllByPhoneNumber(phoneNumber);
 
             if (whitelists.isEmpty()) {
-                throw new BusinessException("该手机号未在任何工厂白名单中，请联系管理员添加");
+                throw new BusinessException(403, "该手机号未在任何工厂白名单中")
+                        .withHint("请联系管理员将该手机号加入工厂白名单").withHintTarget("phoneNumber");
             } else if (whitelists.size() == 1) {
                 factoryId = whitelists.get(0).getFactoryId();
                 log.info("智能推断成功: phone={}, factoryId={}", phoneNumber, factoryId);
             } else {
                 // 手机号在多个工厂白名单中，必须指定
-                throw new BusinessException("该手机号在多个工厂白名单中，请提供工厂ID进行注册");
+                throw new BusinessException(409, "该手机号在多个工厂白名单中")
+                        .withHint("请在注册界面选择具体工厂").withHintTarget("factoryId");
             }
         }
 
@@ -390,9 +403,11 @@ public class MobileAuthServiceImpl implements MobileAuthService {
         // 检查状态和有效性
         if (!whitelist.isValid()) {
             if (whitelist.getStatus() != WhitelistStatus.ACTIVE) {
-                throw new BusinessException("该手机号已被禁用");
+                throw new BusinessException(403, "该手机号已被禁用")
+                        .withHint("请联系管理员重新启用");
             } else {
-                throw new BusinessException("该手机号白名单已过期");
+                throw new BusinessException(403, "该手机号白名单已过期")
+                        .withHint("请联系管理员续期或重新加入白名单");
             }
         }
 
@@ -424,7 +439,8 @@ public class MobileAuthServiceImpl implements MobileAuthService {
         // 验证临时令牌
         String phoneNumber = tempTokenService.validateAndGetPhone(request.getTempToken());
         if (phoneNumber == null) {
-            throw new BusinessException("临时令牌无效或已过期，请重新验证手机号");
+            throw new BusinessException(401, "临时令牌无效或已过期")
+                    .withHint("请重新验证手机号");
         }
 
         // 获取或推断 factoryId
@@ -433,18 +449,21 @@ public class MobileAuthServiceImpl implements MobileAuthService {
             // 从白名单推断 factoryId
             List<Whitelist> whitelists = whitelistRepository.findAllByPhoneNumber(phoneNumber);
             if (whitelists.isEmpty()) {
-                throw new BusinessException("无法推断工厂ID，请提供factoryId");
+                throw new BusinessException(400, "无法推断工厂ID")
+                        .withHint("请在注册界面选择具体工厂").withHintTarget("factoryId");
             } else if (whitelists.size() == 1) {
                 factoryId = whitelists.get(0).getFactoryId();
                 log.info("从白名单推断factoryId: phone={}, factoryId={}", phoneNumber, factoryId);
             } else {
-                throw new BusinessException("该手机号在多个工厂白名单中，请提供factoryId");
+                throw new BusinessException(409, "该手机号在多个工厂白名单中")
+                        .withHint("请在注册界面选择具体工厂").withHintTarget("factoryId");
             }
         }
 
         // 检查用户名是否已存在（用户名全局唯一）
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new BusinessException("该用户名已被使用");
+            throw new BusinessException(409, "该用户名已被使用")
+                    .withHint("请使用其他用户名").withHintTarget("username");
         }
 
         // 创建用户
