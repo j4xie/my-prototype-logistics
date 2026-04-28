@@ -186,6 +186,11 @@ export async function pythonFetch(path: string, options: RequestInit & { timeout
       throw new Error(`Python service error: ${response.status} ${response.statusText}`);
     }
 
+    // Handle 204 No Content (e.g., DELETE endpoints) without attempting JSON parse
+    if (response.status === 204) {
+      return null as unknown;
+    }
+
     const json = await response.json();
     return transformKeys(json);
   } catch (error) {
