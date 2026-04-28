@@ -419,10 +419,16 @@ async def get_completeness(
     if role is None:
         raise HTTPException(status_code=401, detail="未登录，请先认证")
 
-    if not factoryId:
+    if not factoryId or not factoryId.strip():
         raise HTTPException(
             status_code=400,
             detail="factoryId 不能为空",
+        )
+    factoryId = factoryId.strip()
+    if len(factoryId) > 50:
+        raise HTTPException(
+            status_code=400,
+            detail=f"factoryId 长度不能超过 50 字符 (收到 {len(factoryId)} 字符)",
         )
 
     is_admin = role in _ADMIN_ROLES
