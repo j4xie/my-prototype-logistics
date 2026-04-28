@@ -12,8 +12,16 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
-async def _trigger_materialization(upload_id: int) -> None:
-    """Internal: run materialize + persist. Swallow all errors."""
+async def _trigger_materialization(upload_id: int, factory_id: Optional[str] = None) -> None:
+    """Internal: run materialize + persist. Swallow all errors.
+
+    Apr 28 2026 (post V20260502 RLS sweep): factory_id is now passed in by
+    the caller. Without it, the asyncpg pool's setup callback applies the
+    INTERNAL sentinel GUC, which RLS policies on smart_bi_pg_excel_uploads
+    do NOT match — making this hook silently no-op since V20260502_03.
+    The ContextVar is set explicitly here so all DB ops use the right tenant.
+    """
+    tenant_token = None
     try:
         from smartbi.config import get_pg_pool
         from smartbi.services.materialized_analytics.materializer import (
@@ -23,6 +31,14 @@ async def _trigger_materialization(upload_id: int) -> None:
             save_materialization_results,
         )
         from smartbi.services.materialized_analytics.schema import Domain
+        from smartbi.tenant_ctx import set_factory_id, reset_factory_id
+
+        # Set ContextVar BEFORE any pool.acquire() so the setup callback
+        # applies the correct GUC. None falls back to INTERNAL sentinel which
+        # is the legacy pre-V20260502 behavior (works for owner tables before
+        # FORCE RLS was applied, fails after — caller MUST pass factory_id).
+        if factory_id:
+            tenant_token = set_factory_id(factory_id)
 
         pool = await get_pg_pool()
         if pool is None:
@@ -43,7 +59,10 @@ async def _trigger_materialization(upload_id: int) -> None:
                 upload_id
             )
             if upload_row is None:
-                logger.warning(f"[hook] upload {upload_id} vanished before materialization")
+                logger.warning(
+                    f"[hook] upload {upload_id} vanished before materialization "
+                    f"(factory_id={factory_id!r} — RLS may have filtered the row)"
+                )
                 return
             field_rows = await conn.fetch(
                 """SELECT original_name, is_measure, is_dimension, is_time
@@ -53,6 +72,11 @@ async def _trigger_materialization(upload_id: int) -> None:
             )
 
         factory_id = upload_row['factory_id']
+        if tenant_token is None:
+            # Caller didn't pass factory_id; we just learned it from the row.
+            # Set ContextVar now so save_bundle_to_db's UPDATE clause matches
+            # under the factory's GUC instead of __internal__.
+            tenant_token = set_factory_id(factory_id)
         field_meta = [dict(r) for r in field_rows]
         if field_meta:
             schema = build_schema(
@@ -137,13 +161,26 @@ async def _trigger_materialization(upload_id: int) -> None:
             f"[hook] upload {upload_id}: materialization failed: {e}",
             exc_info=True
         )
+    finally:
+        if tenant_token is not None:
+            try:
+                from smartbi.tenant_ctx import reset_factory_id
+                reset_factory_id(tenant_token)
+            except Exception:
+                pass
 
 
-def schedule_materialization(upload_id: int) -> Optional[asyncio.Task]:
+def schedule_materialization(
+    upload_id: int, factory_id: Optional[str] = None
+) -> Optional[asyncio.Task]:
     """Kick off materialization in the background. Returns Task for testing.
 
     Safe to call from sync or async context — uses running event loop if
     available, otherwise logs and no-ops.
+
+    Apr 28 2026: factory_id should be passed by caller (excel_async stream
+    worker has it as parameter) so that post-V20260502 RLS sweep doesn't
+    silently no-op the hook under __internal__ GUC.
     """
     try:
         loop = asyncio.get_running_loop()
@@ -153,5 +190,5 @@ def schedule_materialization(upload_id: int) -> Optional[asyncio.Task]:
             "materialization skipped"
         )
         return None
-    task = loop.create_task(_trigger_materialization(upload_id))
+    task = loop.create_task(_trigger_materialization(upload_id, factory_id))
     return task

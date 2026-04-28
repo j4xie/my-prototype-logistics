@@ -679,7 +679,10 @@ async def _async_worker_impl(
         # field_defs are fully written above (db.commit() at line ~385) before
         # we reach this point, so the materializer will see all field metadata.
         # schedule_materialization() is a no-op if no event loop is running.
-        schedule_materialization(upload_id)
+        # Pass factory_id explicitly: post V20260502 RLS sweep, the bg task's
+        # asyncpg pool needs the GUC set or its first SELECT silently filters
+        # to 0 rows under the __internal__ sentinel.
+        schedule_materialization(upload_id, factory_id=factory_id)
         logger.info(
             f"[stream-worker] upload {upload_id} COMPLETED in "
             f"{int((time.time() - start) * 1000)}ms: {total_rows} rows × {len(real_headers)} cols"
