@@ -2473,12 +2473,14 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
             _llm_truncated = False
             _silent_timeout = False
 
-            # Apr 28 2026: max_tokens 400 → 320. Empirical p95 of post-fix
-            # answers is ~280 tokens (3-段 200 字结构 ≈ 280-300 tokens for CJK).
-            # Lower cap reduces tail latency on rambling without truncating
-            # well-formed answers. Soft 25s timeout covers the rare overflow.
+            # Apr 28 2026: max_tokens 400 → 380. Initial reduction to 320
+            # truncated real answers mid-sentence (verified prod test cut
+            # at "(约 **170"). p95 of well-formed 3-段 answer is ~340 tokens
+            # for CJK with action items + numbers. 380 gives 40-token buffer
+            # while still capping rambling models at ~50% of prior 800-token
+            # ceiling.
             async for chunk in insight_gen._call_llm_stream_text(
-                prompt, system_role, max_tokens=320, temperature=0.2
+                prompt, system_role, max_tokens=380, temperature=0.2
             ):
                 if await http_request.is_disconnected():
                     logger.info("[stream] Client disconnected, stopping")
