@@ -134,7 +134,7 @@ _COMPLEX_KEYWORDS = {"怎么", "如何", "步骤", "流程", "对比", "分析",
 # keywords, restrict retrieval to subcategory='restaurant' to prevent factory
 # manual chunks from polluting results.
 # ---------------------------------------------------------------------------
-RESTAURANT_KEYWORDS = frozenset([
+_RESTAURANT_KEYWORDS = frozenset([
     # Stores & operations
     "门店", "店长", "餐厅", "餐饮", "翻台", "翻台率", "上座率", "排队", "等位",
     "堂食", "外卖", "外带", "桌台", "桌位", "客单价", "营收", "营业额",
@@ -142,22 +142,23 @@ RESTAURANT_KEYWORDS = frozenset([
     "菜品", "菜单", "套餐", "招牌", "畅销", "毛利率", "食材成本", "食材",
     "厨房", "厨师", "出品", "口味", "咸淡", "份量",
     # Customer & marketing
-    "会员", "复购", "流失", "美团", "饿了么", "点评", "差评", "好评", "投诉",
-    "优惠券", "活动", "营销", "拉新", "客流",
+    "会员", "复购", "流失", "美团", "饿了么", "点评", "差评", "好评",
+    "优惠券", "营销", "拉新", "客流",
     # Compliance & inventory
-    "食安", "HACCP", "留样", "保质期", "效期", "盘点", "进货", "采购单",
+    "食安", "HACCP", "留样",
     # Multi-store
-    "连锁", "总部", "区域", "加盟", "直营", "对比",
+    "连锁", "加盟", "直营",
 ])
 
 
 def _detect_restaurant_domain(query: str) -> bool:
-    """Return True if query contains any restaurant keyword.
+    """Return True if query contains any restaurant keyword (case-insensitive).
 
     Reviewer C1 — when True, restrict retrieval to subcategory='restaurant'.
     Returns False for ambiguous/factory queries → use full retrieval (legacy).
     """
-    return any(kw in query for kw in RESTAURANT_KEYWORDS)
+    q_lower = query.lower()
+    return any(kw.lower() in q_lower for kw in _RESTAURANT_KEYWORDS)
 
 
 # ---------------------------------------------------------------------------
@@ -464,7 +465,7 @@ async def manual_chat(request: ManualChatRequest) -> dict:
     subcategories: Optional[List[str]] = None
     if _detect_restaurant_domain(retrieval_question):
         subcategories = ["restaurant"]
-        logger.info(
+        logger.debug(
             f"Restaurant domain detected → filtering to subcategory=restaurant "
             f"(query='{retrieval_question[:40]}...')"
         )
