@@ -75,7 +75,8 @@ public class CustomerServiceImpl implements CustomerService {
         log.info("创建客户: factoryId={}, name={}", factoryId, request.getName());
         // 检查客户名称是否重复
         if (customerRepository.existsByFactoryIdAndName(factoryId, request.getName())) {
-            throw new BusinessException("客户名称已存在");
+            throw new BusinessException(409, "客户名称已存在")
+                    .withHint("请使用其他客户名称").withHintTarget("customerName");
         }
         // 创建客户实体
         Customer customer = customerMapper.toEntity(request, factoryId, userId);
@@ -118,7 +119,8 @@ public class CustomerServiceImpl implements CustomerService {
         // 检查名称是否与其他客户重复
         if (request.getName() != null && !request.getName().equals(customer.getName())) {
             if (customerRepository.existsByFactoryIdAndNameAndIdNot(factoryId, request.getName(), customerId)) {
-                throw new BusinessException("客户名称已存在");
+                throw new BusinessException(409, "客户名称已存在")
+                    .withHint("请使用其他客户名称").withHintTarget("customerName");
             }
         }
         // 更新客户信息
@@ -140,7 +142,8 @@ public class CustomerServiceImpl implements CustomerService {
                 .orElseThrow(() -> new EntityNotFoundException("Customer", customerId));
         // 检查是否有关联的出货记录
         if (customerRepository.hasRelatedShipments(customerId)) {
-            throw new BusinessException("客户有关联的出货记录，无法删除");
+            throw new BusinessException(409, "客户有关联的出货记录，无法删除")
+                    .withHint("请先归档或转移该客户的出货记录后再删除");
         }
         customerRepository.delete(customer);
         log.info("客户删除成功: id={}", customerId);
@@ -243,7 +246,8 @@ public class CustomerServiceImpl implements CustomerService {
         log.info("更新客户评级: factoryId={}, customerId={}, rating={}",
                 factoryId, customerId, rating);
         if (rating < 1 || rating > 5) {
-            throw new BusinessException("评级必须在1-5之间");
+            throw new BusinessException(400, "评级必须在1-5之间")
+                    .withHint("请输入 1 到 5 的整数").withHintTarget("rating");
         }
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
                 .orElseThrow(() -> new EntityNotFoundException("Customer", customerId));
@@ -261,7 +265,8 @@ public class CustomerServiceImpl implements CustomerService {
         log.info("更新客户信用额度: factoryId={}, customerId={}, creditLimit={}",
                 factoryId, customerId, creditLimit);
         if (creditLimit.compareTo(BigDecimal.ZERO) < 0) {
-            throw new BusinessException("信用额度不能为负数");
+            throw new BusinessException(400, "信用额度不能为负数")
+                    .withHint("请输入大于等于 0 的金额").withHintTarget("creditLimit");
         }
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
                 .orElseThrow(() -> new EntityNotFoundException("Customer", customerId));

@@ -69,7 +69,8 @@ public class SupplierServiceImpl implements SupplierService {
         log.info("创建供应商: factoryId={}, name={}", factoryId, request.getName());
         // 检查供应商名称是否重复
         if (supplierRepository.existsByFactoryIdAndName(factoryId, request.getName())) {
-            throw new BusinessException("供应商名称已存在");
+            throw new BusinessException(409, "供应商名称已存在")
+                    .withHint("请使用其他供应商名称").withHintTarget("supplierName");
         }
         // 创建供应商实体
         Supplier supplier = supplierMapper.toEntity(request, factoryId, userId);
@@ -106,7 +107,8 @@ public class SupplierServiceImpl implements SupplierService {
         // 检查名称是否与其他供应商重复
         if (request.getName() != null && !request.getName().equals(supplier.getName())) {
             if (supplierRepository.existsByFactoryIdAndNameAndIdNot(factoryId, request.getName(), supplierId)) {
-                throw new BusinessException("供应商名称已存在");
+                throw new BusinessException(409, "供应商名称已存在")
+                    .withHint("请使用其他供应商名称").withHintTarget("supplierName");
             }
         }
         // 更新供应商信息
@@ -123,7 +125,8 @@ public class SupplierServiceImpl implements SupplierService {
                 .orElseThrow(() -> new EntityNotFoundException("Supplier", supplierId));
         // 检查是否有关联的原材料批次
         if (supplierRepository.hasRelatedMaterialBatches(supplierId)) {
-            throw new BusinessException("供应商有关联的原材料批次，无法删除");
+            throw new BusinessException(409, "供应商有关联的原材料批次，无法删除")
+                    .withHint("请先归档或转移该供应商的原材料批次后再删除");
         }
         supplierRepository.delete(supplier);
         log.info("供应商删除成功: id={}", supplierId);
@@ -209,7 +212,8 @@ public class SupplierServiceImpl implements SupplierService {
         Supplier supplier = supplierRepository.findByIdAndFactoryId(supplierId, factoryId)
                 .orElseThrow(() -> new EntityNotFoundException("Supplier", supplierId));
         if (rating < 1 || rating > 5) {
-            throw new BusinessException("评级必须在1-5之间");
+            throw new BusinessException(400, "评级必须在1-5之间")
+                    .withHint("请输入 1 到 5 的整数").withHintTarget("rating");
         }
         supplier.setRating(rating);
         supplier.setRatingNotes(notes);
@@ -225,7 +229,8 @@ public class SupplierServiceImpl implements SupplierService {
         Supplier supplier = supplierRepository.findByIdAndFactoryId(supplierId, factoryId)
                 .orElseThrow(() -> new EntityNotFoundException("Supplier", supplierId));
         if (creditLimit.compareTo(BigDecimal.ZERO) < 0) {
-            throw new BusinessException("信用额度不能为负数");
+            throw new BusinessException(400, "信用额度不能为负数")
+                    .withHint("请输入大于等于 0 的金额").withHintTarget("creditLimit");
         }
         supplier.setCreditLimit(creditLimit);
         supplier = supplierRepository.save(supplier);

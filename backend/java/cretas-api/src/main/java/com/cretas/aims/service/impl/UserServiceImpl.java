@@ -66,11 +66,13 @@ public class UserServiceImpl implements UserService {
     public UserDTO createUser(String factoryId, CreateUserRequest request) {
         // Apr 20 Bug BR-13 fix: DTO 去 @NotBlank 后, 此处补 create 场景校验
         if (request.getUsername() == null || request.getUsername().isBlank()) {
-            throw new BusinessException("用户名不能为空");
+            throw new BusinessException(400, "用户名不能为空")
+                    .withHint("请填写用户名").withHintTarget("username");
         }
         // 检查用户名是否已存在（用户名全局唯一）
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new BusinessException("用户名已存在");
+            throw new BusinessException(409, "用户名已存在")
+                    .withHint("请使用不同的用户名").withHintTarget("username");
         }
 
         // 创建用户实体
@@ -98,7 +100,8 @@ public class UserServiceImpl implements UserService {
 
         // 验证工厂ID
         if (!user.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该用户");
+            throw new BusinessException(403, "无权操作该用户")
+                    .withHint("当前用户不属于该工厂, 无法操作");
         }
 
         // 更新用户信息
@@ -130,14 +133,16 @@ public class UserServiceImpl implements UserService {
 
         // 验证工厂ID
         if (!user.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该用户");
+            throw new BusinessException(403, "无权操作该用户")
+                    .withHint("当前用户不属于该工厂, 无法操作");
         }
 
         // 不允许删除超级管理员（通过职位判断）
         if (user.getPosition() != null &&
             (user.getPosition().equals("factory_super_admin") ||
              user.getPosition().equals("超级管理员"))) {
-            throw new BusinessException("不能删除超级管理员");
+            throw new BusinessException(403, "不能删除超级管理员")
+                    .withHint("超级管理员账号受系统保护, 无法删除");
         }
 
         userRepository.delete(user);
@@ -151,7 +156,8 @@ public class UserServiceImpl implements UserService {
 
         // 验证工厂ID
         if (!user.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权查看该用户");
+            throw new BusinessException(403, "无权查看该用户")
+                    .withHint("当前用户不属于该工厂, 无法查看");
         }
 
         return userMapper.toDTO(user);
@@ -202,7 +208,8 @@ public class UserServiceImpl implements UserService {
 
         // 验证工厂ID
         if (!user.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该用户");
+            throw new BusinessException(403, "无权操作该用户")
+                    .withHint("当前用户不属于该工厂, 无法操作");
         }
 
         user.setIsActive(true);
@@ -219,14 +226,16 @@ public class UserServiceImpl implements UserService {
 
         // 验证工厂ID
         if (!user.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该用户");
+            throw new BusinessException(403, "无权操作该用户")
+                    .withHint("当前用户不属于该工厂, 无法操作");
         }
 
         // 不允许停用超级管理员（通过职位判断）
         if (user.getPosition() != null &&
             (user.getPosition().equals("factory_super_admin") ||
              user.getPosition().equals("超级管理员"))) {
-            throw new BusinessException("不能停用超级管理员");
+            throw new BusinessException(403, "不能停用超级管理员")
+                    .withHint("超级管理员账号受系统保护, 无法停用");
         }
 
         user.setIsActive(false);
@@ -243,7 +252,8 @@ public class UserServiceImpl implements UserService {
 
         // 验证工厂ID
         if (!user.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该用户");
+            throw new BusinessException(403, "无权操作该用户")
+                    .withHint("当前用户不属于该工厂, 无法操作");
         }
 
         // 更新职位字段（roleCode已删除）
@@ -556,12 +566,14 @@ public class UserServiceImpl implements UserService {
     public void updateEmployeeCode(String factoryId, Long userId, String employeeCode) {
         // 验证工号格式 (001-999)
         if (!employeeCode.matches("^\\d{3}$")) {
-            throw new BusinessException("工号格式错误，必须是3位数字 (001-999)");
+            throw new BusinessException(400, "工号格式错误，必须是3位数字 (001-999)")
+                    .withHint("请输入3位数字, 如 001 / 042 / 100").withHintTarget("employeeCode");
         }
 
         int code = Integer.parseInt(employeeCode);
         if (code < 1 || code > 999) {
-            throw new BusinessException("工号必须在 001-999 范围内");
+            throw new BusinessException(400, "工号必须在 001-999 范围内")
+                    .withHint("有效范围 001-999").withHintTarget("employeeCode");
         }
 
         User user = userRepository.findById(userId)
@@ -569,13 +581,15 @@ public class UserServiceImpl implements UserService {
 
         // 验证工厂ID
         if (!user.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该用户");
+            throw new BusinessException(403, "无权操作该用户")
+                    .withHint("当前用户不属于该工厂, 无法操作");
         }
 
         // 检查工号是否已被其他用户使用
         userRepository.findByEmployeeCode(employeeCode).ifPresent(existingUser -> {
             if (!existingUser.getId().equals(userId)) {
-                throw new BusinessException("工号已被使用: " + employeeCode);
+                throw new BusinessException(409, "工号已被使用: " + employeeCode)
+                        .withHint("请使用其他工号, 或先停用占用该工号的员工").withHintTarget("employeeCode");
             }
         });
 
@@ -591,7 +605,8 @@ public class UserServiceImpl implements UserService {
 
         // 验证工厂ID
         if (!user.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权查看该用户");
+            throw new BusinessException(403, "无权查看该用户")
+                    .withHint("当前用户不属于该工厂, 无法查看");
         }
 
         return parseSkillLevels(user.getSkillLevels());
@@ -605,13 +620,15 @@ public class UserServiceImpl implements UserService {
 
         // 验证工厂ID
         if (!user.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该用户");
+            throw new BusinessException(403, "无权操作该用户")
+                    .withHint("当前用户不属于该工厂, 无法操作");
         }
 
         // 验证技能等级范围 (1-5)
         for (Map.Entry<String, Integer> entry : skillLevels.entrySet()) {
             if (entry.getValue() < 1 || entry.getValue() > 5) {
-                throw new BusinessException("技能等级必须在 1-5 范围内: " + entry.getKey());
+                throw new BusinessException(400, "技能等级必须在 1-5 范围内: " + entry.getKey())
+                        .withHint("请将该技能等级调整为 1-5 之间的整数").withHintTarget("skillLevel");
             }
         }
 
@@ -672,7 +689,8 @@ public class UserServiceImpl implements UserService {
         }
 
         if (nextCode > 999) {
-            throw new BusinessException("工号已用尽 (001-999)");
+            throw new BusinessException(409, "工号已用尽 (001-999)")
+                    .withHint("请联系管理员清理离职员工或扩展工号位数");
         }
 
         return String.format("%03d", nextCode);
