@@ -2106,17 +2106,88 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
             # rows by index instead of saying "data is single-store".
             field_summary = ""
             if 'field_meta' in locals() and field_meta:
-                measures = [f['original_name'] for f in field_meta if f.get('is_measure')]
-                dim_names = [f['original_name'] for f in field_meta if f.get('is_dimension')]
-                times = [f['original_name'] for f in field_meta if f.get('is_time')]
-                # Enrich dim names with cardinality + sample value when df is available
-                dims_enriched: list[str] = []
-                single_value_dims: list[str] = []
+                measures_all = [f['original_name'] for f in field_meta if f.get('is_measure')]
+                dim_names_all = [f['original_name'] for f in field_meta if f.get('is_dimension')]
+                times_all = [f['original_name'] for f in field_meta if f.get('is_time')]
                 try:
                     df_for_card = df if 'df' in locals() else None
                 except Exception:
                     df_for_card = None
-                for dn in dim_names:
+                # Apr 28 2026 (post-review #2 + #3): row-index heuristic.
+                # Check measures AND dims AND times — pivot Excel exports
+                # often misclassify the row-index column. Pattern: name has
+                # entity tokens (名称/门店/客户/员工) but values are sequential
+                # integers 1..N within row count + buffer. Flag and tell LLM
+                # NOT to use this as ranking/grouping dim.
+                _ENTITY_TOKENS = ("名称", "门店", "客户", "员工", "供应商", "店铺")
+                row_index_cols: list[dict] = []
+                def _is_row_index(col_name: str) -> bool:
+                    if not df_for_card is not None:
+                        return False
+                    if df_for_card is None or col_name not in df_for_card.columns:
+                        return False
+                    if not any(tok in col_name for tok in _ENTITY_TOKENS):
+                        return False
+                    try:
+                        col_vals = df_for_card[col_name].dropna()
+                        int_vals = []
+                        for v in col_vals.unique():
+                            try:
+                                fv = float(v)
+                            except (TypeError, ValueError):
+                                return False
+                            if fv != int(fv):
+                                return False
+                            int_vals.append(int(fv))
+                        if not int_vals:
+                            return False
+                        int_vals.sort()
+                        n_total = len(df_for_card)
+                        return (
+                            len(int_vals) >= 2
+                            and int_vals[0] >= 0
+                            and int_vals[-1] <= n_total + 5
+                        )
+                    except Exception:
+                        return False
+
+                def _row_index_info(col_name: str) -> dict:
+                    col_vals = df_for_card[col_name].dropna()
+                    int_vals = sorted(int(float(v)) for v in col_vals.unique())
+                    return {"name": col_name, "sample": int_vals[:5],
+                            "min": int_vals[0], "max": int_vals[-1]}
+
+                clean_measures: list[str] = []
+                clean_dims: list[str] = []
+                clean_times: list[str] = []
+                seen_row_idx = set()
+                for mn in measures_all:
+                    if _is_row_index(mn):
+                        if mn not in seen_row_idx:
+                            row_index_cols.append(_row_index_info(mn))
+                            seen_row_idx.add(mn)
+                    else:
+                        clean_measures.append(mn)
+                for dn in dim_names_all:
+                    if _is_row_index(dn):
+                        if dn not in seen_row_idx:
+                            row_index_cols.append(_row_index_info(dn))
+                            seen_row_idx.add(dn)
+                    else:
+                        clean_dims.append(dn)
+                for tn in times_all:
+                    if _is_row_index(tn):
+                        if tn not in seen_row_idx:
+                            row_index_cols.append(_row_index_info(tn))
+                            seen_row_idx.add(tn)
+                    else:
+                        clean_times.append(tn)
+                # Enrich dims (after row-index filter) with cardinality + sample.
+                # Also enrich times (since time fields like _门店或时段 may have
+                # been auto-classified as time but user-facing they're a dim).
+                dims_enriched: list[str] = []
+                single_value_dims: list[str] = []
+                for dn in clean_dims + clean_times:
                     if df_for_card is not None and dn in df_for_card.columns:
                         try:
                             uniq = df_for_card[dn].dropna().unique()
@@ -2135,21 +2206,30 @@ async def general_analysis_stream(request: GeneralAnalysisRequest, http_request:
                     else:
                         dims_enriched.append(dn)
                 lines = ["## 当前数据源字段分类 (权威信息，优先使用)"]
-                if measures:
-                    lines.append(f"可聚合数值字段 (measures, 用于 sum/avg/count): {', '.join(measures)}")
+                if clean_measures:
+                    lines.append(f"可聚合数值字段 (measures, 用于 sum/avg/count): {', '.join(clean_measures)}")
                 if dims_enriched:
-                    lines.append(f"分类维度字段 (dimensions, 用于分组): {', '.join(dims_enriched)}")
-                if times:
-                    lines.append(f"时间字段: {', '.join(times)}")
-                # cardinality=1 short-circuit hint: tell LLM not to "rank" or
-                # "compare" on single-value dims — instead state the single value
-                # and aggregate across all rows.
+                    lines.append(f"分类维度/时间字段 (dimensions, 用于分组): {', '.join(dims_enriched)}")
+                # Row-index block: explicitly call out columns where name
+                # suggests entity but values are row index 1..N.
+                if row_index_cols:
+                    lines.append("**禁止使用 — 伪实体列 (row-index, 不是真实体)**:")
+                    for ri in row_index_cols:
+                        sample_str = ", ".join(str(s) for s in ri["sample"])
+                        lines.append(
+                            f"  - `{ri['name']}` 字段名暗示实体但值是连续整数 {sample_str}... "
+                            f"(范围 {ri['min']}-{ri['max']}). 这是行索引/编号, "
+                            f"不是真实的门店/客户/员工标识. 当用户问门店/客户/员工排名时, **绝对不要** "
+                            f"使用此字段做分组或排名维度. 真实实体见 dimensions 列表的 `_` 前缀字段."
+                        )
+                    logger.info(f"[stream] row_index_cols flagged: {[ri['name'] for ri in row_index_cols]}")
+                # cardinality=1 short-circuit hint
                 if single_value_dims:
                     lines.append(
                         f"**重要 — 单一值维度提醒**: {', '.join(single_value_dims)} 在本数据集只有 1 个唯一值, "
                         f"不存在 '排名/对比/最高最低' 的概念. 当用户问这类维度的排名时, 应直接回答 "
-                        f"'本数据集只有 1 个 {dim_names[0] if dim_names else 'X'}', 然后给出聚合数字 (sum/avg) 而非排名. "
-                        f"不要选 measure 字段当作排名维度."
+                        f"'本数据集只有 1 个 {single_value_dims[0].split('=')[0]} ({single_value_dims[0].split('=', 1)[1]})', "
+                        f"然后给出聚合数字 (sum/avg) 而非排名."
                     )
                 field_summary = "\n".join(lines) + "\n"
 

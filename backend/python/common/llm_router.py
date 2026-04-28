@@ -302,11 +302,17 @@ async def call_chain(
 
         try:
             logger.debug(f"[llm_router] slot={slot.value} try {account}/{model}")
+            # Apr 28 2026 (post-review P1): use httpx.Timeout to enforce
+            # per-phase timeouts (connect+read+write+pool each = `timeout`s).
+            # Previously bare `timeout=timeout` made httpx treat it as the
+            # TOTAL timeout (sum of all 4 phases), so a 30s value meant ~7.5s
+            # per phase — much harsher than intended. Now matches call_chain_stream
+            # behavior where each phase gets the full budget.
             resp = await client.post(
                 f"{base_url}/chat/completions",
                 headers=headers,
                 json=req_payload,
-                timeout=timeout,
+                timeout=httpx.Timeout(timeout),
             )
             body_text = resp.text  # may trigger aread() internally
 

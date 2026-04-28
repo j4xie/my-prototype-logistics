@@ -1360,6 +1360,13 @@ async def auto_parse_excel(
             # Sparse threshold: ≤ 30% of columns
             if n_filled / n_total > 0.30:
                 return False, None
+            # Apr 28 2026 (post-review P1): require at least 2 non-empty cells
+            # to call this a section header — single-cell partial-data rows
+            # (e.g. one column has a leftover comment or data continuation)
+            # were getting misclassified and forward-filled as section labels,
+            # contaminating subsequent rows with the wrong label.
+            if n_filled < 2:
+                return False, None
             # First non-empty cell must be a text label (not numeric)
             first_v = non_empty[0][1]
             if not isinstance(first_v, str):
@@ -1372,6 +1379,25 @@ async def auto_parse_excel(
                 return False, None  # purely numeric, not a label
             except ValueError:
                 pass
+            # Apr 28 2026 (post-review P1): require at least 1 of the non-empty
+            # cells to be text (not just the first cell). Some pivot exports
+            # have leftover string in col 0 + numeric in col 1 — those are
+            # partial data rows, not section headers.
+            def _is_numeric_str(s_val):
+                if not isinstance(s_val, str):
+                    return False
+                try:
+                    float(s_val.strip().replace(',', ''))
+                    return True
+                except ValueError:
+                    return False
+            text_cell_count = sum(
+                1 for _, v in non_empty
+                if isinstance(v, str) and v.strip()
+                and not _is_numeric_str(v)
+            )
+            if text_cell_count < 1:
+                return False, None
             # Build label from non-empty values (e.g. "颛桥龙湖店 10.9-10.13")
             label_parts = [str(v).strip() for _, v in non_empty if isinstance(v, str)]
             label = ' '.join(label_parts).strip()
@@ -1392,6 +1418,7 @@ async def auto_parse_excel(
             n_num = 0
             n_text = 0
             text_lens = []
+            text_values = []
             for v in non_empty:
                 if isinstance(v, (int, float)):
                     n_num += 1
@@ -1404,12 +1431,38 @@ async def auto_parse_excel(
                 except ValueError:
                     n_text += 1
                     text_lens.append(len(s))
+                    text_values.append(s)
             if n_num > 0:
                 return False  # any numeric → real data row
             if n_text < 3:
                 return False
             avg_len = sum(text_lens) / len(text_lens)
-            return avg_len <= 12
+            if avg_len > 12:
+                return False
+            # Apr 28 2026 (post-review P1): for SHORTER rows (3-5 text cells),
+            # add header-overlap check to avoid dropping product catalogs like
+            # ['Apple', 'iPhone', 'USD']. For LONGER rows (≥6 text cells, all
+            # short), it's almost certainly a sub-header (sub-headers tend to
+            # span all/most cols of a section), not a catalog. Catalog rows
+            # rarely have ≥6 distinct short labels in a row without numbers.
+            if n_text >= 6:
+                return True
+            # Short row (3-5 text cells): if ≥30% of text values appear as
+            # tokens in actual column headers, treat as sub-header. Otherwise
+            # could be a real catalog row.
+            if headers and text_values:
+                hdr_text = " ".join(str(h) for h in headers if h is not None).lower()
+                overlap = sum(
+                    1 for tv in text_values
+                    if any(
+                        tok in hdr_text
+                        for tok in tv.lower().split()
+                        if len(tok) >= 2
+                    ) or tv.lower() in hdr_text
+                )
+                if overlap / len(text_values) < 0.3:
+                    return False
+            return True
 
         f2v4_header = list(extracted.headers)
         f2v4_rows: list = []
