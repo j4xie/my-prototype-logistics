@@ -1,7 +1,7 @@
 <!--
   数据质量队列管理页 — 餐饮 Phase A A-3 (Task 3.5).
 
-  URL: /admin/data-quality-queue
+  URL: /system/data-quality-queue
   Roles: factory_super_admin | platform_admin | permission_admin
 
   Features:
@@ -68,10 +68,10 @@ const currentUserId = computed<string>(() => {
 
 // ── State ──────────────────────────────────────────────────────────────────
 
-// Filter state
+// Filter state.
+// Priority filter removed pending Python list endpoint support (Phase B).
 const filterFactoryId = ref<string>('');
 const filterStatus = ref<string>('PENDING');
-const filterPriority = ref<string>('');
 
 // Active entity_type tab
 const activeEntityType = ref<string>('store');
@@ -279,11 +279,7 @@ async function submitModal(): Promise<void> {
     ? parseInt(modalEntityId.value.trim(), 10)
     : undefined;
 
-  if (
-    (modalAction.value === 'confirm' || modalAction.value === 'create_new') &&
-    modalAction.value === 'confirm' &&
-    entityIdNum == null
-  ) {
+  if (modalAction.value === 'confirm' && entityIdNum == null) {
     ElMessage.warning('请填写解析到的实体 ID');
     return;
   }
@@ -383,16 +379,8 @@ onMounted(() => {
           </el-select>
         </el-form-item>
 
-        <el-form-item label="优先级" style="margin-bottom: 0; margin-right: 16px;">
-          <el-select v-model="filterPriority" placeholder="全部" clearable style="width: 120px;">
-            <el-option
-              v-for="opt in PRIORITY_OPTIONS"
-              :key="opt.value"
-              :label="opt.label"
-              :value="opt.value"
-            />
-          </el-select>
-        </el-form-item>
+        <!-- Priority filter omitted: Python list endpoint does not yet
+             accept a priority query param (Phase B). -->
 
         <el-button type="primary" @click="loadList">查询</el-button>
 
