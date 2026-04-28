@@ -54,7 +54,16 @@ MANUAL_SOURCES = [
 
 
 def parse_html_to_sections(html_content: str) -> List[Dict[str, str]]:
-    """Parse HTML file into sections split by h2/h3 headers."""
+    """Parse HTML file into sections split by h2/h3 headers, with h1 chapter context.
+
+    Chunk title format: "[chapter短标签] subsection | metric" so that LLM sees the
+    full hierarchical path even though h1 itself doesn't trigger a section split.
+    Solves audit W1 — previously h1 was ignored, chunk title lost chapter context.
+
+    Examples:
+    - 财务健康 | 1.2 成本结构 | 食材成本率 (Food Cost %)
+    - 真实业务细颗粒 | 12.1 支付与结算 | 支付方式分布
+    """
     try:
         from bs4 import BeautifulSoup
     except ImportError:
@@ -67,22 +76,58 @@ def parse_html_to_sections(html_content: str) -> List[Dict[str, str]]:
     for tag in soup.find_all(["script", "style"]):
         tag.decompose()
 
+    def _shorten_chapter(h1_text: str) -> str:
+        """Extract concise chapter label from h1.
+        '第 1 章 · 财务健康 (Financial Health)' → '财务健康'
+        '附录 · 模块入口对照表' → '附录'
+        '白垩纪餐饮指数字典' (file root) → ''  (no prefix for top-level)
+        """
+        # Remove "第 X 章 · " prefix
+        text = re.sub(r"^第\s*\d+\s*章\s*[·\-：:]\s*", "", h1_text)
+        # Remove "(English Name)" suffix
+        text = re.sub(r"\s*\([^)]*\)\s*$", "", text)
+        # Remove " · " sub-titles (元章节)
+        text = text.split(" · ")[0].strip()
+        # Skip top-level title (the document name)
+        if text == "白垩纪餐饮指数字典":
+            return ""
+        return text.strip()
+
+    def _build_title(chapter: str, subsection: str, metric: str) -> str:
+        parts = [p for p in [chapter, subsection, metric] if p]
+        return " | ".join(parts) if parts else "概述"
+
     sections = []
-    current_title = "概述"
+    current_chapter = ""  # h1 short label
+    current_subsection = ""  # h2 label
+    current_metric = "概述"  # h3 label (or h2 if no h3 yet)
     current_content_parts = []
 
-    for element in soup.find_all(["h2", "h3", "p", "div", "ul", "ol", "table", "li"]):
-        if element.name in ("h2", "h3"):
-            # Save previous section
-            if current_content_parts:
-                text = "\n".join(current_content_parts).strip()
-                if text:
-                    sections.append({"title": current_title, "content": text})
-            # Use space separator so adjacent inline spans don't smush together
-            # ("房租占比 (Rent %)白垩纪默认" → "房租占比 (Rent %) 白垩纪默认"),
-            # then strip cosmetic suffix tags that pollute source citation display.
-            raw_title = element.get_text(separator=" ", strip=True)
-            current_title = re.sub(r"\s*白垩纪默认\s*$", "", raw_title).strip()
+    def _flush():
+        if current_content_parts:
+            text = "\n".join(current_content_parts).strip()
+            if text:
+                title = _build_title(current_chapter, current_subsection, current_metric)
+                sections.append({"title": title, "content": text})
+
+    for element in soup.find_all(["h1", "h2", "h3", "p", "div", "ul", "ol", "table", "li"]):
+        if element.name == "h1":
+            _flush()
+            raw = element.get_text(separator=" ", strip=True)
+            current_chapter = _shorten_chapter(raw)
+            current_subsection = ""
+            current_metric = "概述"
+            current_content_parts = []
+        elif element.name == "h2":
+            _flush()
+            raw = element.get_text(separator=" ", strip=True)
+            current_subsection = re.sub(r"\s*白垩纪默认\s*$", "", raw).strip()
+            current_metric = ""  # h2 title used as metric placeholder; will be overridden by next h3
+            current_content_parts = []
+        elif element.name == "h3":
+            _flush()
+            raw = element.get_text(separator=" ", strip=True)
+            current_metric = re.sub(r"\s*白垩纪默认\s*$", "", raw).strip()
             current_content_parts = []
         else:
             text = element.get_text(separator=" ", strip=True)
@@ -90,10 +135,7 @@ def parse_html_to_sections(html_content: str) -> List[Dict[str, str]]:
                 current_content_parts.append(text)
 
     # Last section
-    if current_content_parts:
-        text = "\n".join(current_content_parts).strip()
-        if text:
-            sections.append({"title": current_title, "content": text})
+    _flush()
 
     return sections
 
