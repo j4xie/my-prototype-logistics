@@ -399,7 +399,8 @@ public class MobileAuthServiceImpl implements MobileAuthService {
 
         // 检查白名单
         Whitelist whitelist = whitelistRepository.findByFactoryIdAndPhoneNumber(factoryId, phoneNumber)
-                .orElseThrow(() -> new BusinessException("该手机号未在白名单中，无法注册"));
+                .orElseThrow(() -> new BusinessException(403, "该手机号未在白名单中，无法注册")
+                        .withHint("请联系管理员将该手机号加入工厂白名单").withHintTarget("phoneNumber"));
 
         // 检查状态和有效性
         if (!whitelist.isValid()) {

@@ -415,7 +415,8 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
         // Try DRAFT first (normal flow), then APPROVED (审核通过→立即发布 flow).
         FactoryConfiguration draft = factoryConfigurationRepository.findDraft(factoryId)
                 .or(() -> factoryConfigurationRepository.findLatestApproved(factoryId))
-                .orElseThrow(() -> new BusinessException("没有待发布的配置 (需 DRAFT 或 APPROVED 状态)"));
+                .orElseThrow(() -> new BusinessException(409, "没有待发布的配置 (需 DRAFT 或 APPROVED 状态)")
+                        .withHint("请先创建草稿或审核通过后再发布"));
 
         // Archive current published
         factoryConfigurationRepository.findLatestPublished(factoryId)
@@ -457,7 +458,8 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
     public void rollbackConfig(String factoryId, int targetVersion, Long operatorId) {
         FactoryConfiguration target = factoryConfigurationRepository
                 .findByFactoryIdAndConfigVersion(factoryId, targetVersion)
-                .orElseThrow(() -> new BusinessException("目标版本不存在: " + targetVersion));
+                .orElseThrow(() -> new BusinessException(404, "目标版本不存在: " + targetVersion)
+                        .withHint("请检查版本号是否正确").withHintTarget("targetVersion"));
 
         FactoryConfiguration newDraft = new FactoryConfiguration();
         newDraft.setFactoryId(factoryId);
@@ -523,10 +525,12 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
     @SuppressWarnings("unchecked")
     public void applyTemplate(String factoryId, String templateCode, Long operatorId) {
         if (factoryTemplateRepository == null) {
-            throw new BusinessException("模板系统未就绪");
+            throw new BusinessException(503, "模板系统未就绪")
+                    .withHint("请联系管理员启用模板系统");
         }
         FactoryTemplate template = factoryTemplateRepository.findByTemplateCodeIgnoreCase(templateCode)
-                .orElseThrow(() -> new BusinessException("模板不存在: " + templateCode));
+                .orElseThrow(() -> new BusinessException(404, "模板不存在: " + templateCode)
+                        .withHint("请刷新模板列表后重新选择").withHintTarget("templateCode"));
 
         // 1. Create draft
         FactoryConfiguration config = getOrCreateDraft(factoryId, operatorId);
@@ -785,7 +789,8 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
     @SuppressWarnings("unchecked")
     public Map<String, Object> importConfig(String factoryId, Map<String, Object> bundle, Long operatorId) {
         if (bundle == null || !bundle.containsKey("modules")) {
-            throw new BusinessException("Invalid config bundle: missing 'modules' key");
+            throw new BusinessException(400, "Invalid config bundle: missing 'modules' key")
+                    .withHint("请检查导入的配置 JSON 是否完整").withHintTarget("bundle");
         }
 
         // Get or create a DRAFT version for this factory
@@ -946,7 +951,8 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
                                                     String moduleCategory, String description, Long operatorId) {
         // Reject if moduleCode already exists
         if (moduleSchemaRepository.findByModuleCode(moduleCode).isPresent()) {
-            throw new BusinessException("模块已存在: " + moduleCode);
+            throw new BusinessException(409, "模块已存在: " + moduleCode)
+                    .withHint("请使用其他模块代码").withHintTarget("moduleCode");
         }
 
         // Create minimal ModuleSchema
@@ -986,7 +992,8 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
                 log.info("Custom module table created: {}", tableName);
             } catch (Exception e) {
                 log.error("Failed to create custom module table {}: {}", tableName, e.getMessage());
-                throw new BusinessException("创建模块表失败: " + e.getMessage());
+                throw new BusinessException(500, "创建模块表失败: " + e.getMessage())
+                        .withHint("请联系管理员检查数据库 DDL 权限");
             }
         }
 
@@ -1297,12 +1304,14 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
                                               Long operatorId) {
         // 1. Find DRAFT
         FactoryConfiguration draft = factoryConfigurationRepository.findDraft(factoryId)
-                .orElseThrow(() -> new BusinessException("没有 DRAFT 配置可重排字段 — 请先创建草稿"));
+                .orElseThrow(() -> new BusinessException(409, "没有 DRAFT 配置可重排字段")
+                        .withHint("请先创建草稿配置后再重排字段"));
 
         // 2. Optimistic lock check
         if (draft.getRowVersion() == null || !draft.getRowVersion().equals(expectedVersion)) {
-            throw new BusinessException("版本冲突: 当前版本 " + draft.getRowVersion()
-                    + ", 请求版本 " + expectedVersion + " — 请刷新后重试");
+            throw new BusinessException(409, "版本冲突: 当前版本 " + draft.getRowVersion()
+                    + ", 请求版本 " + expectedVersion)
+                    .withHint("配置已被其他用户修改, 请刷新后重试").withHintTarget("expectedVersion");
         }
 
         int targetVersion = draft.getConfigVersion();

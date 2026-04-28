@@ -70,7 +70,8 @@ public class FactoryMaterialRequisitionServiceImpl implements FactoryMaterialReq
             "status", "PENDING",
             "planId", productionPlanId != null ? productionPlanId : ""));
         ProductionPlan plan = productionPlanRepository.findByIdAndFactoryId(productionPlanId, factoryId)
-                .orElseThrow(() -> new BusinessException("生产计划不存在: " + productionPlanId));
+                .orElseThrow(() -> new BusinessException(404, "生产计划不存在: " + productionPlanId)
+                        .withHint("请刷新生产计划列表后重新选择").withHintTarget("productionPlanId"));
 
         // 按 BOM 展开
         List<BomItem> bomItems = bomItemRepository
@@ -135,7 +136,8 @@ public class FactoryMaterialRequisitionServiceImpl implements FactoryMaterialReq
     @Transactional(readOnly = true)
     public FactoryMaterialRequisition getById(String factoryId, String id) {
         FactoryMaterialRequisition mr = repository.findByIdAndFactoryIdAndDeletedAtIsNull(id, factoryId)
-                .orElseThrow(() -> new BusinessException("物料需求单不存在: " + id));
+                .orElseThrow(() -> new BusinessException(404, "物料需求单不存在: " + id)
+                        .withHint("请刷新物料需求单列表后重新选择").withHintTarget("id"));
         // 触发懒加载
         mr.getItems().size();
         return mr;

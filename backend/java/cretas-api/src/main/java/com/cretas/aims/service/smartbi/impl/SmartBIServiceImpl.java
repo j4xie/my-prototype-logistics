@@ -605,7 +605,8 @@ public class SmartBIServiceImpl implements SmartBIService {
                 break;
 
             default:
-                throw new BusinessException("不支持的分析类型: " + analysisType);
+                throw new BusinessException(400, "不支持的分析类型: " + analysisType)
+                        .withHint("请选择支持的分析类型: production / inventory / sales / finance").withHintTarget("analysisType");
         }
 
         result.put("dateRange", DateRange.custom(startDate, endDate));
@@ -624,7 +625,8 @@ public class SmartBIServiceImpl implements SmartBIService {
 
         // 1. 检查配额 (readOnly query, no transaction needed)
         if (!checkQuota(factoryId)) {
-            throw new BusinessException("今日查询配额已用完，请明日再试或升级套餐");
+            throw new BusinessException(429, "今日查询配额已用完")
+                    .withHint("请明日再试或联系管理员升级套餐");
         }
 
         // 2. 指代消解 - 解析多轮对话中的指代词（复用 AI Chat 会话记忆能力）
@@ -1052,7 +1054,8 @@ public class SmartBIServiceImpl implements SmartBIService {
                 break;
 
             default:
-                throw new BusinessException("不支持的下钻维度: " + request.getDimension());
+                throw new BusinessException(400, "不支持的下钻维度: " + request.getDimension())
+                        .withHint("请选择支持的下钻维度").withHintTarget("dimension");
         }
 
         result.put("drillPath", request.getDrillPath());
@@ -1625,7 +1628,8 @@ public class SmartBIServiceImpl implements SmartBIService {
                     }
                 }
                 log.warn("未支持的意图类型: {}", intent);
-                throw new BusinessException("暂不支持该查询类型: " + intent.getName());
+                throw new BusinessException(400, "暂不支持该查询类型: " + intent.getName())
+                        .withHint("请尝试其他查询方式, 或联系管理员添加该查询类型支持");
         }
     }
 
@@ -1635,7 +1639,8 @@ public class SmartBIServiceImpl implements SmartBIService {
     private Object handleForecastIntent(String factoryId, IntentResult intentResult,
                                         LocalDate startDate, LocalDate endDate) {
         if (forecastService == null) {
-            throw new BusinessException("预测服务未配置");
+            throw new BusinessException(503, "预测服务未配置")
+                    .withHint("请联系管理员开启预测服务");
         }
 
         // 默认预测未来7天

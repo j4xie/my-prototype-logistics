@@ -156,7 +156,8 @@ public class DeviceActivationServiceImpl implements DeviceActivationService {
     @Transactional(readOnly = true)
     public DeviceActivationDTO getActivationByCode(String activationCode) {
         return convertToDTO(activationRepository.findByActivationCode(activationCode)
-                .orElseThrow(() -> new BusinessException("激活码不存在")));
+                .orElseThrow(() -> new BusinessException(404, "激活码不存在")
+                        .withHint("请检查激活码是否正确").withHintTarget("activationCode")));
     }
     @Override
     @Transactional(readOnly = true)

@@ -54,7 +54,8 @@ public class PosIntegrationService {
                                            Long userId, String remark) {
         // 检查是否已有同品牌连接
         connectionRepository.findByFactoryIdAndBrand(factoryId, brand).ifPresent(existing -> {
-            throw new BusinessException("该工厂已存在" + brand.getDisplayName() + "的POS连接");
+            throw new BusinessException(409, "该工厂已存在" + brand.getDisplayName() + "的POS连接")
+                    .withHint("请编辑已有 POS 连接, 或先停用").withHintTarget("brand");
         });
 
         if (!adapterRegistry.isSupported(brand)) {
@@ -125,7 +126,8 @@ public class PosIntegrationService {
     public List<PosOrderSync> syncOrders(String factoryId, String connectionId) {
         PosConnection connection = getConnection(factoryId, connectionId);
         if (!connection.getIsActive()) {
-            throw new BusinessException("POS连接已停用");
+            throw new BusinessException(409, "POS连接已停用")
+                    .withHint("请先启用 POS 连接再同步");
         }
 
         PosAdapter adapter = getAdapterOrThrow(connection.getBrand());
@@ -141,7 +143,8 @@ public class PosIntegrationService {
         } catch (Exception e) {
             connection.setLastError("同步失败: " + e.getMessage());
             connectionRepository.save(connection);
-            throw new BusinessException("POS订单同步失败: " + e.getMessage());
+            throw new BusinessException(502, "POS订单同步失败: " + e.getMessage())
+                    .withHint("请检查 POS 系统连接状态, 或稍后重试");
         }
 
         List<PosOrderSync> syncResults = new ArrayList<>();
@@ -193,7 +196,8 @@ public class PosIntegrationService {
 
         // 验证签名
         if (!adapter.verifyWebhookSignature(connection, payload, signature)) {
-            throw new BusinessException("Webhook签名验证失败");
+            throw new BusinessException(401, "Webhook签名验证失败")
+                    .withHint("请检查 POS 应用密钥是否正确");
         }
 
         // 处理回调数据
