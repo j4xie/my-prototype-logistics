@@ -675,8 +675,13 @@ public class SalesServiceImpl implements SalesService {
             for (SalesDeliveryItem item : record.getItems()) {
                 String itemIdStr = String.valueOf(item.getId());
                 if (!batchAllocationService.isFullyAllocated(factoryId, itemIdStr)) {
+                    // R49 BUG-22 fix: 之前 productName null 时 message 显示 "产品：null".
+                    // 现 fallback 到 productTypeId, 再 fallback 到 itemIdStr.
+                    String productLabel = item.getProductName() != null
+                            ? item.getProductName()
+                            : (item.getProductTypeId() != null ? item.getProductTypeId() : "未知产品");
                     throw new BusinessException("发货行 " + itemIdStr
-                            + "（产品：" + item.getProductName() + "）未完成批次分配，无法确认发货")
+                            + "（产品：" + productLabel + "）未完成批次分配，无法确认发货")
                             .withHint("请在「发货记录」Tab 点击「分配批次」按钮,完成所有行的批次分配后再确认发货")
                             .withHintTarget("发货记录 Tab");
                 }
