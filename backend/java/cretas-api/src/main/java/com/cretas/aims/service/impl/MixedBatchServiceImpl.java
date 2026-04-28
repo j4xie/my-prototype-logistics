@@ -250,7 +250,8 @@ public class MixedBatchServiceImpl implements MixedBatchService {
     @Override
     public MixedBatchGroupDTO getGroupDetail(String factoryId, String groupId) {
         MixedBatchGroup group = groupRepository.findByIdAndFactoryId(groupId, factoryId)
-                .orElseThrow(() -> new BusinessException("混批组不存在: " + groupId));
+                .orElseThrow(() -> new BusinessException(404, "混批组不存在: " + groupId)
+                        .withHint("请刷新混批组列表后重新选择"));
 
         return toDTO(group);
     }
@@ -261,7 +262,8 @@ public class MixedBatchServiceImpl implements MixedBatchService {
         log.info("确认混批: factoryId={}, groupId={}, userId={}", factoryId, groupId, userId);
 
         MixedBatchGroup group = groupRepository.findByIdAndFactoryId(groupId, factoryId)
-                .orElseThrow(() -> new BusinessException("混批组不存在: " + groupId));
+                .orElseThrow(() -> new BusinessException(404, "混批组不存在: " + groupId)
+                        .withHint("请刷新混批组列表后重新选择"));
 
         if (!group.isPending()) {
             throw new BusinessException(409, "混批组状态不是待确认，当前状态: " + group.getStatusDisplayName())
@@ -328,7 +330,8 @@ public class MixedBatchServiceImpl implements MixedBatchService {
         log.info("拒绝混批: factoryId={}, groupId={}, userId={}", factoryId, groupId, userId);
 
         MixedBatchGroup group = groupRepository.findByIdAndFactoryId(groupId, factoryId)
-                .orElseThrow(() -> new BusinessException("混批组不存在: " + groupId));
+                .orElseThrow(() -> new BusinessException(404, "混批组不存在: " + groupId)
+                        .withHint("请刷新混批组列表后重新选择"));
 
         if (!group.isPending()) {
             throw new BusinessException(409, "混批组状态不是待确认，当前状态: " + group.getStatusDisplayName())
@@ -348,7 +351,8 @@ public class MixedBatchServiceImpl implements MixedBatchService {
     @Transactional
     public MixedBatchGroupDTO updateGroupOrders(String factoryId, String groupId, List<String> orderIds) {
         MixedBatchGroup group = groupRepository.findByIdAndFactoryId(groupId, factoryId)
-                .orElseThrow(() -> new BusinessException("混批组不存在: " + groupId));
+                .orElseThrow(() -> new BusinessException(404, "混批组不存在: " + groupId)
+                        .withHint("请刷新混批组列表后重新选择"));
 
         if (!group.isPending()) {
             throw new BusinessException(409, "只能修改待确认的混批组")
@@ -409,7 +413,8 @@ public class MixedBatchServiceImpl implements MixedBatchService {
     @Transactional
     public void toggleRule(String factoryId, MixedBatchType ruleType, boolean enabled) {
         MixedBatchRule rule = ruleRepository.findByFactoryIdAndRuleType(factoryId, ruleType)
-                .orElseThrow(() -> new BusinessException("规则不存在: " + ruleType));
+                .orElseThrow(() -> new BusinessException(404, "规则不存在: " + ruleType)
+                        .withHint("请刷新混批规则列表后重新选择").withHintTarget("ruleType"));
 
         rule.setIsEnabled(enabled);
         ruleRepository.save(rule);

@@ -552,7 +552,8 @@ public class FactorySettingsServiceImpl implements FactorySettingsService {
             return objectMapper.writeValueAsString(obj);
         } catch (JsonProcessingException e) {
             log.error("对象转JSON失败: class={}", obj.getClass().getSimpleName(), e);
-            throw new BusinessException("JSON序列化失败: " + e.getMessage());
+            throw new BusinessException(500, "JSON序列化失败: " + e.getMessage())
+                    .withHint("请稍后重试, 如果问题持续请联系管理员");
         }
     }
 
@@ -606,7 +607,8 @@ public class FactorySettingsServiceImpl implements FactorySettingsService {
 
         } catch (Exception e) {
             log.error("创建默认对象失败: class={}", clazz.getSimpleName(), e);
-            throw new BusinessException("创建默认对象失败: " + e.getMessage());
+            throw new BusinessException(500, "创建默认对象失败: " + e.getMessage())
+                    .withHint("请稍后重试, 如果问题持续请联系管理员");
         }
     }
 }

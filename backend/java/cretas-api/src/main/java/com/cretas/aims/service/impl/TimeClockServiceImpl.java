@@ -229,7 +229,8 @@ public class TimeClockServiceImpl implements TimeClockService {
         // 查找今日打卡记录
         TimeClockRecord record = timeClockRecordRepository
                 .findByFactoryIdAndUserIdAndClockDate(factoryId, userId, startOfDay, endOfDay)
-                .orElseThrow(() -> new BusinessException("今天还没有打上班卡，请先进行上班打卡"));
+                .orElseThrow(() -> new BusinessException(409, "今天还没有打上班卡")
+                        .withHint("请先进行上班打卡"));
         
         // 检查是否已经打过下班卡
         if (record.getClockOutTime() != null) {
@@ -280,7 +281,8 @@ public class TimeClockServiceImpl implements TimeClockService {
         // 查找今日打卡记录
         TimeClockRecord record = timeClockRecordRepository
                 .findByFactoryIdAndUserIdAndClockDate(factoryId, userId, startOfDay, endOfDay)
-                .orElseThrow(() -> new BusinessException("今天还没有打上班卡，请先进行上班打卡"));
+                .orElseThrow(() -> new BusinessException(409, "今天还没有打上班卡")
+                        .withHint("请先进行上班打卡"));
         
         // 检查是否已经打过上班卡
         if (record.getClockInTime() == null) {
@@ -321,7 +323,8 @@ public class TimeClockServiceImpl implements TimeClockService {
         // 查找今日打卡记录
         TimeClockRecord record = timeClockRecordRepository
                 .findByFactoryIdAndUserIdAndClockDate(factoryId, userId, startOfDay, endOfDay)
-                .orElseThrow(() -> new BusinessException("今天还没有打上班卡，请先进行上班打卡"));
+                .orElseThrow(() -> new BusinessException(409, "今天还没有打上班卡")
+                        .withHint("请先进行上班打卡"));
         
         // 检查是否已经开始休息
         if (record.getBreakStartTime() == null) {

@@ -137,7 +137,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
             if (request.getSourceOrderId() != null && !request.getSourceOrderId().isBlank()) {
                 // 向后兼容: 旧调用只传 sourceOrderId — 仅校验订单, 不回填行
                 SalesOrder so = salesOrderRepository.findById(request.getSourceOrderId())
-                        .orElseThrow(() -> new BusinessException("关联的销售订单不存在: " + request.getSourceOrderId()));
+                        .orElseThrow(() -> new BusinessException(404, "关联的销售订单不存在: " + request.getSourceOrderId())
+                                .withHint("请刷新销售订单列表后重新选择").withHintTarget("sourceOrderId"));
                 if (!factoryId.equals(so.getFactoryId())) {
                     throw new BusinessException(403, "无权关联其他工厂的销售订单")
                             .withHint("销售订单不属于该工厂, 请选择本工厂的订单").withHintTarget("sourceOrderId");

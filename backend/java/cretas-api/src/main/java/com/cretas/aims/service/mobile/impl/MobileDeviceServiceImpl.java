@@ -39,7 +39,8 @@ public class MobileDeviceServiceImpl implements MobileDeviceService {
         // 查找激活码
         DeviceActivation activation = deviceActivationRepository
                 .findByActivationCode(request.getActivationCode())
-                .orElseThrow(() -> new BusinessException("无效的激活码"));
+                .orElseThrow(() -> new BusinessException(404, "无效的激活码")
+                        .withHint("请联系管理员获取有效激活码").withHintTarget("activationCode"));
 
         // 验证激活码状态
         if (!"PENDING".equals(activation.getStatus())) {

@@ -142,11 +142,17 @@ public class GlobalExceptionHandler {
         } else {
             body = ApiResponse.error(e.getCode(), message);
         }
-        // Map business code to HTTP status (409 stays 409, 403 stays 403, else 400).
+        // Map business code to HTTP status. Default 400 for unknown / 4xx-validation paths.
         HttpStatus status = switch (e.getCode() != null ? e.getCode() : 400) {
-            case 409 -> HttpStatus.CONFLICT;
+            case 401 -> HttpStatus.UNAUTHORIZED;
             case 403 -> HttpStatus.FORBIDDEN;
             case 404 -> HttpStatus.NOT_FOUND;
+            case 409 -> HttpStatus.CONFLICT;
+            case 429 -> HttpStatus.TOO_MANY_REQUESTS;
+            case 500 -> HttpStatus.INTERNAL_SERVER_ERROR;
+            case 502 -> HttpStatus.BAD_GATEWAY;
+            case 503 -> HttpStatus.SERVICE_UNAVAILABLE;
+            case 504 -> HttpStatus.GATEWAY_TIMEOUT;
             default -> HttpStatus.BAD_REQUEST;
         };
         return org.springframework.http.ResponseEntity.status(status).body(body);

@@ -92,7 +92,8 @@ public class MobileAuthServiceImpl implements MobileAuthService {
 
         // 根据工厂ID和用户名查找用户
         User user = userRepository.findByFactoryIdAndUsername(factoryId, username)
-                .orElseThrow(() -> new BusinessException("用户名或密码错误"));
+                .orElseThrow(() -> new BusinessException(401, "用户名或密码错误")
+                        .withHint("请检查用户名和密码后重试").withHintTarget("password"));
 
         // 验证密码
         if (!passwordEncoder.matches(password, user.getPassword())) {

@@ -62,7 +62,8 @@ public class DeviceActivationServiceImpl implements DeviceActivationService {
     public DeviceActivationDTO validateActivationCode(String activationCode) {
         log.debug("验证激活码: {}", activationCode);
         DeviceActivation activation = activationRepository.findByActivationCode(activationCode)
-                .orElseThrow(() -> new BusinessException("激活码不存在"));
+                .orElseThrow(() -> new BusinessException(404, "激活码不存在")
+                        .withHint("请检查激活码是否正确").withHintTarget("activationCode"));
         if (!activation.isValid()) {
             throw new BusinessException(409, "激活码无效或已过期")
                     .withHint("请联系管理员获取新的激活码").withHintTarget("activationCode");
@@ -76,7 +77,8 @@ public class DeviceActivationServiceImpl implements DeviceActivationService {
                 request.getActivationCode(), request.getDeviceId());
         DeviceActivation activation = activationRepository
                 .findByActivationCode(request.getActivationCode())
-                .orElseThrow(() -> new BusinessException("激活码不存在"));
+                .orElseThrow(() -> new BusinessException(404, "激活码不存在")
+                        .withHint("请检查激活码是否正确").withHintTarget("activationCode"));
         // 检查设备是否已被其他激活码激活
         Optional<DeviceActivation> existingActivation = activationRepository
                 .findByFactoryIdAndDeviceId(activation.getFactoryId(), request.getDeviceId());
@@ -105,7 +107,8 @@ public class DeviceActivationServiceImpl implements DeviceActivationService {
     public void revokeActivation(String factoryId, Integer activationId) {
         log.info("撤销激活: factoryId={}, activationId={}", factoryId, activationId);
         DeviceActivation activation = activationRepository.findById(activationId)
-                .orElseThrow(() -> new BusinessException("激活记录不存在"));
+                .orElseThrow(() -> new BusinessException(404, "激活记录不存在")
+                        .withHint("请刷新激活列表后重新选择"));
         if (!activation.getFactoryId().equals(factoryId)) {
             throw new BusinessException(403, "无权访问该激活记录")
                     .withHint("当前激活记录不属于该工厂, 无法访问");
@@ -127,7 +130,8 @@ public class DeviceActivationServiceImpl implements DeviceActivationService {
         log.info("更新激活状态: factoryId={}, activationId={}, status={}",
                 factoryId, activationId, status);
         DeviceActivation activation = activationRepository.findById(activationId)
-                .orElseThrow(() -> new BusinessException("激活记录不存在"));
+                .orElseThrow(() -> new BusinessException(404, "激活记录不存在")
+                        .withHint("请刷新激活列表后重新选择"));
         if (!activation.getFactoryId().equals(factoryId)) {
             throw new BusinessException(403, "无权访问该激活记录")
                     .withHint("当前激活记录不属于该工厂, 无法访问");
@@ -140,7 +144,8 @@ public class DeviceActivationServiceImpl implements DeviceActivationService {
     @Transactional(readOnly = true)
     public DeviceActivationDTO getActivation(String factoryId, Integer activationId) {
         DeviceActivation activation = activationRepository.findById(activationId)
-                .orElseThrow(() -> new BusinessException("激活记录不存在"));
+                .orElseThrow(() -> new BusinessException(404, "激活记录不存在")
+                        .withHint("请刷新激活列表后重新选择"));
         if (!activation.getFactoryId().equals(factoryId)) {
             throw new BusinessException(403, "无权访问该激活记录")
                     .withHint("当前激活记录不属于该工厂, 无法访问");
@@ -158,7 +163,8 @@ public class DeviceActivationServiceImpl implements DeviceActivationService {
     public DeviceActivationDTO getActivationByDevice(String factoryId, String deviceId) {
         return convertToDTO(activationRepository
                 .findByFactoryIdAndDeviceId(factoryId, deviceId)
-                .orElseThrow(() -> new BusinessException("设备未激活")));
+                .orElseThrow(() -> new BusinessException(409, "设备未激活")
+                        .withHint("请先激活该设备").withHintTarget("deviceId")));
     }
     @Override
     @Transactional(readOnly = true)
@@ -283,7 +289,8 @@ public class DeviceActivationServiceImpl implements DeviceActivationService {
         log.info("延长激活有效期: factoryId={}, activationId={}, days={}",
                 factoryId, activationId, additionalDays);
         DeviceActivation activation = activationRepository.findById(activationId)
-                .orElseThrow(() -> new BusinessException("激活记录不存在"));
+                .orElseThrow(() -> new BusinessException(404, "激活记录不存在")
+                        .withHint("请刷新激活列表后重新选择"));
         if (!activation.getFactoryId().equals(factoryId)) {
             throw new BusinessException(403, "无权访问该激活记录")
                     .withHint("当前激活记录不属于该工厂, 无法访问");
@@ -377,7 +384,8 @@ public class DeviceActivationServiceImpl implements DeviceActivationService {
                 factoryId, oldDeviceId, newDeviceId);
         DeviceActivation activation = activationRepository
                 .findByFactoryIdAndDeviceId(factoryId, oldDeviceId)
-                .orElseThrow(() -> new BusinessException("原设备未激活"));
+                .orElseThrow(() -> new BusinessException(409, "原设备未激活")
+                        .withHint("请先激活原设备").withHintTarget("oldDeviceId"));
         // 检查新设备是否已激活
         if (activationRepository.existsByFactoryIdAndDeviceIdAndStatus(
                 factoryId, newDeviceId, "ACTIVATED")) {
