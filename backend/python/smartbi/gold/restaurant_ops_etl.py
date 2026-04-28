@@ -848,7 +848,7 @@ async def run_full_etl_with_retry(
 
             # Write failure log row (best-effort — don't let log write failure mask original exception)
             try:
-                async with await smartbi_pool.acquire() as conn:
+                async with smartbi_pool.acquire() as conn:
                     await conn.execute(
                         """
                         INSERT INTO restaurant_etl_failures
