@@ -20,10 +20,9 @@ RETURNS TABLE (
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = pg_catalog, pg_temp
 AS $$
 DECLARE
-    v_n INT;
     v_value_col TEXT;
 BEGIN
     -- 校验 kpi_kind 防 SQL injection
@@ -55,7 +54,7 @@ BEGIN
                 WHEN COUNT(*) FILTER (WHERE %I IS NOT NULL) < 500 THEN ''100-499''::VARCHAR
                 ELSE ''500+''::VARCHAR
             END AS n_bucket
-         FROM agg_restaurant_daily_totals
+         FROM public.agg_restaurant_daily_totals
          WHERE date >= CURRENT_DATE - ($1 || '' days'')::interval
            AND %I IS NOT NULL',
         v_value_col, v_value_col, v_value_col,
@@ -71,3 +70,6 @@ COMMENT ON FUNCTION get_global_kpi_stats(VARCHAR, INT) IS
 -- 撤销 PUBLIC 权限, 仅特定 role 可调
 REVOKE ALL ON FUNCTION get_global_kpi_stats(VARCHAR, INT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION get_global_kpi_stats(VARCHAR, INT) TO smartbi_user;
+
+-- Rollback:
+--   DROP FUNCTION IF EXISTS get_global_kpi_stats(VARCHAR, INT);
