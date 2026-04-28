@@ -20,6 +20,7 @@ import {
   type CompletenessModule,
   type CompletenessResponse,
 } from '@/api/restaurant/completeness';
+import DataQualityTab from './data-quality-tab.vue';
 
 // ── Router / auth ──────────────────────────────────────────────────────
 const router = useRouter();
@@ -30,6 +31,7 @@ const factoryId = computed(() => authStore.factoryId);
 const loading = ref<boolean>(false);
 const errorMsg = ref<string>('');
 const data = ref<CompletenessResponse | null>(null);
+const activeTab = ref<string>('completeness');
 
 // ── Derived ────────────────────────────────────────────────────────────
 const overallPercent = computed(() =>
@@ -128,115 +130,125 @@ onMounted(load);
       class="error-alert"
     />
 
-    <!-- ── Main content ── -->
+    <!-- ── Main content with tabs ── -->
     <template v-else-if="data">
-      <!-- Header card -->
-      <el-card class="header-card" shadow="never">
-        <div class="header-inner">
-          <!-- Ring chart (SVG) -->
-          <div class="ring-wrap">
-            <svg viewBox="0 0 100 100" class="ring-svg">
-              <!-- background track -->
-              <circle cx="50" cy="50" r="45" fill="none" stroke="#e4e7ed" stroke-width="10" />
-              <!-- progress arc -->
-              <circle
-                cx="50" cy="50" r="45"
-                fill="none"
-                :stroke="ringColor"
-                stroke-width="10"
-                stroke-linecap="round"
-                :stroke-dasharray="ringDasharray"
-                stroke-dashoffset="0"
-                transform="rotate(-90 50 50)"
-              />
-              <!-- center text -->
-              <text x="50" y="50" text-anchor="middle" dominant-baseline="central"
-                    class="ring-text" :fill="ringColor">
-                {{ overallPercent }}%
-              </text>
-            </svg>
-            <p class="ring-label">整体完整度</p>
-          </div>
+      <el-tabs v-model="activeTab" class="completeness-tabs">
+        <!-- Tab 1: Data Completeness -->
+        <el-tab-pane label="数据完整度" name="completeness">
+          <!-- Header card -->
+          <el-card class="header-card" shadow="never">
+            <div class="header-inner">
+              <!-- Ring chart (SVG) -->
+              <div class="ring-wrap">
+                <svg viewBox="0 0 100 100" class="ring-svg">
+                  <!-- background track -->
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="#e4e7ed" stroke-width="10" />
+                  <!-- progress arc -->
+                  <circle
+                    cx="50" cy="50" r="45"
+                    fill="none"
+                    :stroke="ringColor"
+                    stroke-width="10"
+                    stroke-linecap="round"
+                    :stroke-dasharray="ringDasharray"
+                    stroke-dashoffset="0"
+                    transform="rotate(-90 50 50)"
+                  />
+                  <!-- center text -->
+                  <text x="50" y="50" text-anchor="middle" dominant-baseline="central"
+                        class="ring-text" :fill="ringColor">
+                    {{ overallPercent }}%
+                  </text>
+                </svg>
+                <p class="ring-label">整体完整度</p>
+              </div>
 
-          <!-- Factory info -->
-          <div class="factory-info">
-            <h2 class="factory-name">{{ data.factoryName }}</h2>
-            <div class="tags">
-              <el-tag type="info" size="small">
-                建档 {{ data.factoryAgeDays }} 天
-              </el-tag>
-              <el-tag
-                v-if="isCacheHit"
-                type="success"
-                size="small"
-              >
-                缓存命中
-              </el-tag>
-              <el-tag v-else type="warning" size="small">实时计算</el-tag>
+              <!-- Factory info -->
+              <div class="factory-info">
+                <h2 class="factory-name">{{ data.factoryName }}</h2>
+                <div class="tags">
+                  <el-tag type="info" size="small">
+                    建档 {{ data.factoryAgeDays }} 天
+                  </el-tag>
+                  <el-tag
+                    v-if="isCacheHit"
+                    type="success"
+                    size="small"
+                  >
+                    缓存命中
+                  </el-tag>
+                  <el-tag v-else type="warning" size="small">实时计算</el-tag>
+                </div>
+                <p v-if="!isCacheHit && lastModuleUpdated" class="updated-at">
+                  更新于 {{ formatLastUpdated(lastModuleUpdated) }}
+                </p>
+              </div>
+
+              <!-- Refresh -->
+              <div class="header-actions">
+                <el-button :loading="loading" @click="load" size="small">
+                  刷新
+                </el-button>
+              </div>
             </div>
-            <p v-if="!isCacheHit && lastModuleUpdated" class="updated-at">
-              更新于 {{ formatLastUpdated(lastModuleUpdated) }}
-            </p>
-          </div>
+          </el-card>
 
-          <!-- Refresh -->
-          <div class="header-actions">
-            <el-button :loading="loading" @click="load" size="small">
-              刷新
-            </el-button>
-          </div>
-        </div>
-      </el-card>
+          <!-- Module cards grid -->
+          <div class="modules-grid">
+            <el-card
+              v-for="mod in data.modules"
+              :key="mod.id"
+              class="module-card"
+              shadow="hover"
+            >
+              <!-- Card header: name + status tag -->
+              <template #header>
+                <div class="module-header">
+                  <span class="module-name">{{ mod.name }}</span>
+                  <el-tag
+                    :type="mod.hasData ? 'success' : 'info'"
+                    size="small"
+                  >
+                    {{ mod.hasData ? '有数据' : '暂无数据' }}
+                  </el-tag>
+                </div>
+              </template>
 
-      <!-- Module cards grid -->
-      <div class="modules-grid">
-        <el-card
-          v-for="mod in data.modules"
-          :key="mod.id"
-          class="module-card"
-          shadow="hover"
-        >
-          <!-- Card header: name + status tag -->
-          <template #header>
-            <div class="module-header">
-              <span class="module-name">{{ mod.name }}</span>
-              <el-tag
-                :type="mod.hasData ? 'success' : 'info'"
-                size="small"
-              >
-                {{ mod.hasData ? '有数据' : '暂无数据' }}
-              </el-tag>
-            </div>
-          </template>
+              <!-- Coverage progress bar -->
+              <div class="coverage-row">
+                <el-progress
+                  :percentage="Math.round(mod.coverage)"
+                  :color="coverageColor(mod.coverage)"
+                  :show-text="true"
+                  :stroke-width="12"
+                />
+              </div>
 
-          <!-- Coverage progress bar -->
-          <div class="coverage-row">
-            <el-progress
-              :percentage="Math.round(mod.coverage)"
-              :color="coverageColor(mod.coverage)"
-              :show-text="true"
-              :stroke-width="12"
-            />
-          </div>
+              <!-- Stats line -->
+              <div class="stats-row">
+                <span class="stat-item">记录数：{{ mod.recordCount.toLocaleString() }}</span>
+                <span class="stat-sep">·</span>
+                <span class="stat-item">
+                  最近更新：{{ formatLastUpdated(mod.lastUpdated) }}
+                </span>
+              </div>
 
-          <!-- Stats line -->
-          <div class="stats-row">
-            <span class="stat-item">记录数：{{ mod.recordCount.toLocaleString() }}</span>
-            <span class="stat-sep">·</span>
-            <span class="stat-item">
-              最近更新：{{ formatLastUpdated(mod.lastUpdated) }}
-            </span>
+              <!-- Missing hint + upload CTA -->
+              <div v-if="!mod.hasData" class="missing-row">
+                <p v-if="firstHint(mod)" class="missing-hint">{{ firstHint(mod) }}</p>
+                <el-button type="primary" size="small" plain @click="goUpload">
+                  上传缺失数据
+                </el-button>
+              </div>
+            </el-card>
           </div>
+        </el-tab-pane>
 
-          <!-- Missing hint + upload CTA -->
-          <div v-if="!mod.hasData" class="missing-row">
-            <p v-if="firstHint(mod)" class="missing-hint">{{ firstHint(mod) }}</p>
-            <el-button type="primary" size="small" plain @click="goUpload">
-              上传缺失数据
-            </el-button>
-          </div>
-        </el-card>
-      </div>
+        <!-- Tab 2: Data Quality -->
+        <el-tab-pane label="数据质量" name="quality">
+          <DataQualityTab />
+        </el-tab-pane>
+      </el-tabs>
     </template>
   </div>
 </template>
@@ -248,6 +260,14 @@ onMounted(load);
 
 .error-alert {
   margin-bottom: 20px;
+}
+
+.completeness-tabs {
+  /* Allow tab panes to style themselves */
+}
+
+:deep(.el-tabs__content) {
+  padding: 20px 0;
 }
 
 /* Header */

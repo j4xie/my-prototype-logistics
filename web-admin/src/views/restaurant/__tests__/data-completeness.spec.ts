@@ -62,6 +62,17 @@ const globalStubs = {
     emits: ['click'],
     template: '<button class="el-button" @click="$emit(\'click\')"><slot /></button>',
   },
+  'el-tabs': {
+    props: ['modelValue'],
+    template: '<div class="el-tabs"><slot /></div>',
+  },
+  'el-tab-pane': {
+    props: ['label', 'name'],
+    template: '<div class="el-tab-pane"><slot /></div>',
+  },
+  'DataQualityTab': {
+    template: '<div class="data-quality-tab" />',
+  },
 };
 
 // v-loading stub
