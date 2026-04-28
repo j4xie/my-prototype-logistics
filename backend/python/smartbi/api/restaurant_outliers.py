@@ -16,6 +16,7 @@ Phase A reuse:
 """
 from __future__ import annotations
 
+import asyncpg
 import logging
 import time
 from datetime import datetime, timezone
@@ -294,6 +295,16 @@ async def dismiss_outlier(
     if not anomaly_date:
         raise HTTPException(status_code=400, detail="anomalyDate 不能为空")
 
+    # Validate ISO format upfront — convert future 500 to 400
+    from datetime import date as _date
+    try:
+        _date.fromisoformat(anomaly_date)
+    except (TypeError, ValueError):
+        raise HTTPException(
+            status_code=400,
+            detail=f"anomalyDate 格式无效（需 YYYY-MM-DD）: {anomaly_date!r}"
+        )
+
     # Validate kpiKind
     kpi_kind = body.get("kpiKind")
     if kpi_kind not in DEFAULT_KPI_KINDS:
@@ -361,16 +372,14 @@ async def dismiss_outlier(
                     snapshot_q3,
                     baseline_source,
                 )
+    except asyncpg.exceptions.UniqueViolationError:
+        raise HTTPException(
+            status_code=409,
+            detail="该异常已被标记 ✓ 非异常",
+        )
     except HTTPException:
         raise
-    except Exception as exc:
-        # asyncpg UniqueViolationError → 409 (string check is version-safe)
-        msg = str(exc).lower()
-        if 'unique' in msg or 'duplicate' in msg:
-            raise HTTPException(
-                status_code=409,
-                detail="该异常已被标记 ✓ 非异常",
-            )
+    except Exception:
         logger.exception("[outlier] dismiss insert failed for %s", factory_id)
         raise HTTPException(status_code=500, detail="dismiss 内部错误")
 

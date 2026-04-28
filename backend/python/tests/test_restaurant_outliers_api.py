@@ -199,6 +199,56 @@ class TestDismissOutlierAPI:
         })
         assert r.status_code == 400
 
+    def test_dismiss_duplicate_returns_409(self):
+        """UniqueViolation on (factory_id, anomaly_date, kpi_kind) → 409."""
+        import asyncpg
+        app = _build_app()
+        client = TestClient(app)
+
+        mock_pool = AsyncMock()
+        mock_conn = AsyncMock()
+        mock_conn.execute = AsyncMock(return_value=None)
+        # Simulate asyncpg raising UniqueViolationError on INSERT
+        mock_conn.fetchrow = AsyncMock(
+            side_effect=asyncpg.exceptions.UniqueViolationError(
+                "duplicate key value violates unique constraint"
+            )
+        )
+        mock_conn.transaction = MagicMock()
+        mock_conn.transaction.return_value.__aenter__ = AsyncMock(return_value=None)
+        mock_conn.transaction.return_value.__aexit__ = AsyncMock(return_value=None)
+        mock_pool.acquire = MagicMock()
+        mock_pool.acquire.return_value.__aenter__ = AsyncMock(return_value=mock_conn)
+        mock_pool.acquire.return_value.__aexit__ = AsyncMock(return_value=None)
+
+        with patch('smartbi.config.get_pg_pool', new=AsyncMock(return_value=mock_pool)):
+            r = client.post('/api/restaurant/outliers/dismiss', json={
+                'factoryId': 'F002',
+                'anomalyDate': '2026-04-25',
+                'kpiKind': 'wastage_cost_total',
+                'snapshotValue': 8500.0,
+                'snapshotQ1': 1200.0,
+                'snapshotQ3': 3400.0,
+                'snapshotBaselineSource': 'self',
+            })
+
+        assert r.status_code == 409
+        assert "已被标记" in r.json()['detail']
+
+    def test_dismiss_invalid_anomaly_date_format_400(self):
+        """Invalid ISO date string → 400 (not 500)."""
+        app = _build_app()
+        client = TestClient(app)
+        r = client.post('/api/restaurant/outliers/dismiss', json={
+            'factoryId': 'F002',
+            'anomalyDate': 'not-a-date',
+            'kpiKind': 'wastage_cost_total',
+            'snapshotValue': 8500.0, 'snapshotQ1': 1200.0, 'snapshotQ3': 3400.0,
+            'snapshotBaselineSource': 'self',
+        })
+        assert r.status_code == 400
+        assert "anomalyDate 格式无效" in r.json()['detail']
+
 
 class TestUndismissOutlierAPI:
     def test_undismiss_404_when_not_exist(self):
@@ -220,3 +270,60 @@ class TestUndismissOutlierAPI:
             r = client.delete('/api/restaurant/outliers/dismiss/9999')
 
         assert r.status_code == 404
+
+    def test_undismiss_happy_path_204_and_invalidates_cache(self):
+        """DELETE returns 204 + uses row's factory_id for cache invalidation."""
+        from smartbi.api.restaurant_outliers import _cache
+        app = _build_app()
+        client = TestClient(app)
+
+        # Pre-populate cache with row's factory_id
+        _cache['F002:30'] = (time.monotonic(), {'cached': True})
+
+        mock_pool = AsyncMock()
+        mock_conn = AsyncMock()
+        mock_conn.execute = AsyncMock(return_value=None)
+        # SELECT returns row, DELETE succeeds
+        mock_conn.fetchrow = AsyncMock(return_value={'factory_id': 'F002'})
+        mock_conn.transaction = MagicMock()
+        mock_conn.transaction.return_value.__aenter__ = AsyncMock(return_value=None)
+        mock_conn.transaction.return_value.__aexit__ = AsyncMock(return_value=None)
+        mock_pool.acquire = MagicMock()
+        mock_pool.acquire.return_value.__aenter__ = AsyncMock(return_value=mock_conn)
+        mock_pool.acquire.return_value.__aexit__ = AsyncMock(return_value=None)
+
+        with patch('smartbi.config.get_pg_pool', new=AsyncMock(return_value=mock_pool)):
+            r = client.delete('/api/restaurant/outliers/dismiss/123')
+
+        assert r.status_code == 204
+        assert r.text == ""
+        # Cache invalidated by row's factory_id (not jwt's)
+        assert 'F002:30' not in _cache
+
+    def test_undismiss_cross_factory_returns_404_not_403(self):
+        """Cross-factory delete attempt returns 404 (security-by-obscurity, not 403)."""
+        app = _build_app()
+        client = TestClient(app)
+
+        # F001 admin tries to delete; row is F002's so RLS hides it
+        mock_pool = AsyncMock()
+        mock_conn = AsyncMock()
+        mock_conn.execute = AsyncMock(return_value=None)
+        # RLS-blocked → fetchrow returns None
+        mock_conn.fetchrow = AsyncMock(return_value=None)
+        mock_conn.transaction = MagicMock()
+        mock_conn.transaction.return_value.__aenter__ = AsyncMock(return_value=None)
+        mock_conn.transaction.return_value.__aexit__ = AsyncMock(return_value=None)
+        mock_pool.acquire = MagicMock()
+        mock_pool.acquire.return_value.__aenter__ = AsyncMock(return_value=mock_conn)
+        mock_pool.acquire.return_value.__aexit__ = AsyncMock(return_value=None)
+
+        with patch('smartbi.config.get_pg_pool', new=AsyncMock(return_value=mock_pool)):
+            r = client.delete(
+                '/api/restaurant/outliers/dismiss/9999',
+                headers={'x-role': 'factory_super_admin', 'x-factory-id': 'F001'},
+            )
+
+        # Must be 404, NOT 403 — don't leak existence
+        assert r.status_code == 404
+        assert r.status_code != 403
