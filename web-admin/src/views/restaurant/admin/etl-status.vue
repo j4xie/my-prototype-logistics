@@ -79,7 +79,24 @@ function isActiveSyncing(factoryId: string): boolean {
 async function loadAll(): Promise<void> {
   loading.value = true;
   try {
-    const resp = await fetchAllEtlStatus();
+    // /all-status is platform_admin only — factory_super_admin / permission_admin
+    // get 403 from this endpoint. Fall back to single-factory status using the
+    // user's own factory_id from the auth store. This way factory admins can
+    // still trigger ETL + see status for their own factory.
+    let resp: { factories: Array<{ factoryId: string; factoryName?: string | null; lastSuccessRun: string | null }> };
+    try {
+      resp = await fetchAllEtlStatus();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const isForbidden = /403|Forbidden/i.test(msg);
+      const myFactory = auth.factoryId;
+      if (isForbidden && myFactory) {
+        // Single-factory fallback for factory_super_admin / permission_admin
+        resp = { factories: [{ factoryId: myFactory, factoryName: myFactory, lastSuccessRun: null }] };
+      } else {
+        throw err;
+      }
+    }
     factories.value = resp.factories;
     // Load detailed status for each factory in parallel
     await Promise.allSettled(

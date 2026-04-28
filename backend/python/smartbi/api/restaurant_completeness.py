@@ -439,6 +439,11 @@ async def get_completeness(
 
     body: Dict[str, Any] = {
         "factoryId": factoryId,
+        # Phase A: factoryName == factoryId, factoryType hardcoded RESTAURANT.
+        # Phase B: lookup factories table for real factoryName + type.
+        "factoryName": factoryId,
+        "factoryType": "RESTAURANT",
+        "factoryAgeDays": age_days,
         "modules": modules,
         "overallCompleteness": overall,
         "cachedAt": cached_at,
