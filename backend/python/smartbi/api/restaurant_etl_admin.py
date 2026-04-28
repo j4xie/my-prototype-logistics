@@ -115,15 +115,23 @@ async def _run_job(job_id: str, factory_id: str) -> None:
 async def _row_count(pool, table: str, factory_id: str) -> int:
     """Return COUNT(*) for *table* WHERE factory_id = factory_id.
 
-    Returns -1 on any error (missing table, RLS block, etc.) so the
-    caller's status response is never fully aborted by a single table issue.
+    Some tables (agg_restaurant_daily_ops, fact_pos_item) have FORCE RLS on
+    `app.factory_id` GUC — without setting it, the query silently returns 0
+    even when rows exist (real-window verify caught this on F002 trigger).
+    Set GUC inside conn.transaction() so RLS sees the right factory.
+
+    Returns -1 on any error (missing table, etc.).
     """
     try:
         async with pool.acquire() as conn:
-            return await conn.fetchval(
-                f"SELECT COUNT(*) FROM {table} WHERE factory_id = $1",
-                factory_id,
-            )
+            async with conn.transaction():
+                await conn.execute(
+                    "SELECT set_config('app.factory_id', $1, true)", factory_id
+                )
+                return await conn.fetchval(
+                    f"SELECT COUNT(*) FROM {table} WHERE factory_id = $1",
+                    factory_id,
+                )
     except Exception as exc:
         logger.debug(f"[etl-admin] row_count({table}, {factory_id}) failed: {exc}")
         return -1
@@ -133,15 +141,20 @@ async def _last_success_run(pool, factory_id: str) -> Optional[str]:
     """Return ISO-8601 string of MAX(computed_at) from agg_restaurant_daily_ops.
 
     Uses ``computed_at`` (not ``updated_at``) — Task 1.3 naming.
-    Returns None when no rows exist or RLS filters them all out.
+    agg_restaurant_daily_ops has FORCE RLS — must set app.factory_id GUC
+    inside conn.transaction() else silently returns NULL even on success.
     """
     try:
         async with pool.acquire() as conn:
-            val = await conn.fetchval(
-                "SELECT MAX(computed_at) FROM agg_restaurant_daily_ops"
-                " WHERE factory_id = $1",
-                factory_id,
-            )
+            async with conn.transaction():
+                await conn.execute(
+                    "SELECT set_config('app.factory_id', $1, true)", factory_id
+                )
+                val = await conn.fetchval(
+                    "SELECT MAX(computed_at) FROM agg_restaurant_daily_ops"
+                    " WHERE factory_id = $1",
+                    factory_id,
+                )
         if val is None:
             return None
         # asyncpg returns datetime objects for TIMESTAMPTZ columns
@@ -156,6 +169,7 @@ async def _last_success_run(pool, factory_id: str) -> Optional[str]:
 async def _recent_failures(pool, factory_id: str) -> list:
     """Return up to 10 failure records from restaurant_etl_failures (last 7 days).
 
+    restaurant_etl_failures (V20260501_04) has no RLS — direct query is fine.
     Returns [] on any error (table not yet created in test environments, etc.).
     """
     try:

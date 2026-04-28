@@ -291,20 +291,26 @@ async def _fetch_module_stats(
 
     # ── 6. Reviews: restaurant_reviews in smartbi_db ───────────────────────
     async def _review() -> Dict[str, Any]:
+        # restaurant_reviews has FORCE RLS (V20260502_04 migration). Must set
+        # app.factory_id GUC inside conn.transaction() else silently 0 rows.
         try:
             async with smartbi_pool.acquire() as conn:
-                row = await conn.fetchrow(
-                    """
-                    SELECT
-                        COUNT(*)                  AS cnt,
-                        MAX(review_time)::text    AS last_upd
-                    FROM restaurant_reviews
-                    WHERE factory_id = $1
-                      AND review_time >= NOW() - ($2 || ' days')::interval
-                    """,
-                    factory_id,
-                    str(window_days),
-                )
+                async with conn.transaction():
+                    await conn.execute(
+                        "SELECT set_config('app.factory_id', $1, true)", factory_id
+                    )
+                    row = await conn.fetchrow(
+                        """
+                        SELECT
+                            COUNT(*)                  AS cnt,
+                            MAX(review_time)::text    AS last_upd
+                        FROM restaurant_reviews
+                        WHERE factory_id = $1
+                          AND review_time >= NOW() - ($2 || ' days')::interval
+                        """,
+                        factory_id,
+                        str(window_days),
+                    )
             return {"count": row["cnt"] or 0, "last_updated": row["last_upd"]}
         except Exception as exc:
             logger.debug(f"[completeness] review fallback: {exc}")
