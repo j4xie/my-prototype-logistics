@@ -152,13 +152,18 @@ async def _factory_age_days(factory_id: str, smartbi_pool, cretas_pool) -> int:
     except Exception as exc:
         logger.debug(f"[completeness] uploads age check failed: {exc}")
 
-    # Fallback: cretas_db data tables (may have data without corresponding upload)
+    # Fallback: cretas_db data tables (may have data without corresponding upload).
+    # Use BUSINESS date columns (requisition_date / wastage_date / stocktaking_date)
+    # not created_at — to match the date columns used by the module filters
+    # (_requisition / _wastage / _stocktaking). R_XMX edge case: created_at=4 days
+    # ago but requisition_date=15 days ago → window=4 filtered out all data.
+    # Aligning factoryAge with business dates fixes this mismatch.
     if cretas_pool is not None:
         for table, date_col in [
-            ('material_requisitions', 'created_at'),
-            ('wastage_records', 'created_at'),
-            ('stocktaking_records', 'created_at'),
-            ('recipes', 'created_at'),
+            ('material_requisitions', 'requisition_date'),
+            ('wastage_records', 'wastage_date'),
+            ('stocktaking_records', 'stocktaking_date'),
+            ('recipes', 'created_at'),  # recipes has no business date column; created_at OK
         ]:
             try:
                 async with cretas_pool.acquire() as conn:
@@ -168,6 +173,11 @@ async def _factory_age_days(factory_id: str, smartbi_pool, cretas_pool) -> int:
                         factory_id,
                     )
                     if val is not None:
+                        # Some date columns are pure DATE (not TIMESTAMP) — convert to
+                        # datetime in UTC for unified comparison below.
+                        from datetime import date as _date
+                        if isinstance(val, _date) and not isinstance(val, datetime):
+                            val = datetime.combine(val, datetime.min.time(), tzinfo=timezone.utc)
                         candidates.append(val)
             except Exception as exc:
                 logger.debug(f"[completeness] {table} age check failed: {exc}")

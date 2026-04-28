@@ -228,6 +228,18 @@ async def list_queue(
             status_code=400,
             detail="factoryId 不能为空 (Phase A 不支持跨工厂查询，Phase B 实现)",
         )
+    factoryId = factoryId.strip()
+
+    # Phase B fix: factory_super_admin / permission_admin / factory_admin
+    # 只能查自己工厂; 仅 platform_admin 跨工厂. 之前 require_admin 接受任意 admin
+    # tier 导致 F002 admin 能查 R_BEJ data (deep test round 2 finding).
+    role = getattr(request.state, "role", None)
+    jwt_factory_id = getattr(request.state, "factory_id", None)
+    if role != "platform_admin" and jwt_factory_id and factoryId != jwt_factory_id:
+        raise HTTPException(
+            status_code=403,
+            detail=f"非 platform_admin 仅可查询自己工厂的队列 (当前工厂 {jwt_factory_id!r})",
+        )
 
     # W0.4 finding 4: default to PENDING to hit the partial index
     effective_status = (status or "PENDING").upper()
@@ -444,6 +456,15 @@ async def resolve_queue(
     if not item:
         raise HTTPException(status_code=404, detail="队列项不存在")
 
+    # Phase B cross-factory tightening: non-platform_admin 仅能操作自己工厂.
+    role = getattr(request.state, "role", None)
+    jwt_factory_id = getattr(request.state, "factory_id", None)
+    if role != "platform_admin" and jwt_factory_id and item["factoryId"] != jwt_factory_id:
+        raise HTTPException(
+            status_code=403,
+            detail=f"非 platform_admin 仅可处理自己工厂的队列项 (该项属于 {item['factoryId']!r})",
+        )
+
     if item["status"] != "PENDING":
         raise HTTPException(
             status_code=409,
@@ -522,6 +543,15 @@ async def reject_queue(
     item = await _get_queue_item(pool, id)
     if not item:
         raise HTTPException(status_code=404, detail="队列项不存在")
+
+    # Phase B cross-factory tightening: non-platform_admin 仅能操作自己工厂.
+    role = getattr(request.state, "role", None)
+    jwt_factory_id = getattr(request.state, "factory_id", None)
+    if role != "platform_admin" and jwt_factory_id and item["factoryId"] != jwt_factory_id:
+        raise HTTPException(
+            status_code=403,
+            detail=f"非 platform_admin 仅可处理自己工厂的队列项 (该项属于 {item['factoryId']!r})",
+        )
 
     if item["status"] != "PENDING":
         raise HTTPException(
@@ -647,6 +677,10 @@ async def batch_resolve_queue(
         or getattr(request.state, "username", "")
         or ""
     )
+    # Phase B: cross-factory tightening for batch (per-id check below)
+    role = getattr(request.state, "role", None)
+    jwt_factory_id = getattr(request.state, "factory_id", None)
+    is_platform_admin = role == "platform_admin"
 
     success_count = 0
     failed_items: List[Dict[str, Any]] = []
@@ -656,6 +690,14 @@ async def batch_resolve_queue(
         item = await _get_queue_item(pool, item_id)
         if not item:
             failed_items.append({"id": item_id, "reason": "队列项不存在"})
+            continue
+
+        # Phase B: non-platform_admin 仅能操作自己工厂
+        if not is_platform_admin and jwt_factory_id and item["factoryId"] != jwt_factory_id:
+            failed_items.append({
+                "id": item_id,
+                "reason": f"非 platform_admin 仅可处理自己工厂的项 (该项属于 {item['factoryId']!r})",
+            })
             continue
 
         if item["status"] != "PENDING":

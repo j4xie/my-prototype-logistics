@@ -380,25 +380,42 @@ async def manual_chat(request: ManualChatRequest) -> dict:
     max_tokens = _estimate_max_tokens(request.question)
 
     # Call LLM for the answer
+    # G4 audit round 5 — KB chat uses DeepSeek by default (30-60x cheaper than qwen)
+    # Falls back to llm_* if kb_chat_api_key not configured
     try:
         from config import get_settings
         from common.llm_client import get_llm_http_client
+        import os
 
         settings = get_settings()
         client = get_llm_http_client()
 
+        # Pick provider: kb_chat_* if configured, else fallback to llm_*
+        kb_api_key = settings.kb_chat_api_key or os.getenv("LLM_DEEPSEEK_API_KEY", "")
+        if settings.kb_chat_provider == "deepseek" and kb_api_key:
+            base_url = settings.kb_chat_base_url
+            api_key = kb_api_key
+            model = settings.kb_chat_model
+            # DeepSeek API does NOT accept enable_thinking field — must omit it
+            extra_payload = {}
+        else:
+            base_url = settings.llm_base_url
+            api_key = settings.llm_api_key
+            model = settings.llm_fast_model
+            extra_payload = {"enable_thinking": False}
+
         resp = await client.post(
-            f"{settings.llm_base_url}/chat/completions",
+            f"{base_url}/chat/completions",
             headers={
-                "Authorization": f"Bearer {settings.llm_api_key}",
+                "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
             },
             json={
-                "model": settings.llm_fast_model,
+                "model": model,
                 "messages": messages,
                 "max_tokens": max_tokens,
                 "temperature": 0.3,
-                "enable_thinking": False,
+                **extra_payload,
             },
             timeout=30.0,
         )

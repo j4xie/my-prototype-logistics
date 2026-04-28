@@ -40,6 +40,17 @@ class Settings(BaseSettings):
     # LLM Configuration - Mapper Model (field mapping, data cleaning, structure analysis)
     llm_mapper_model: str = "qwen3.5-122b-a10b"  # Balanced MoE for mapping tasks
 
+    # KB Chat Configuration (G4 — DeepSeek for cost optimization, audit round 5)
+    # KB chat (manual_chat) uses DeepSeek by default for 30-60x cost saving:
+    # - Input cache miss: ¥1/1M (vs qwen ¥40/1M) — 40x
+    # - Input cache hit: ¥0.02/1M — 1/50 (system prompt + chunks 重复场景受益)
+    # - Output: ¥2/1M (vs qwen ¥120/1M) — 60x
+    # OpenAI-compatible API. Falls back to llm_* if kb_chat_api_key empty.
+    kb_chat_provider: str = "deepseek"  # "deepseek" | "qwen" | "" (use default llm_*)
+    kb_chat_base_url: str = "https://api.deepseek.com"  # OpenAI-compatible, no /v1 prefix
+    kb_chat_api_key: str = ""  # Set via LLM_DEEPSEEK_API_KEY env var
+    kb_chat_model: str = "deepseek-chat"  # = deepseek-v4-flash alias, supports thinking + non-thinking
+
     # Zero-Code Configuration
     structure_detection_confidence_threshold: float = 0.7  # Minimum confidence for structure detection
     semantic_mapping_confidence_threshold: float = 0.8  # Minimum confidence for field mapping
