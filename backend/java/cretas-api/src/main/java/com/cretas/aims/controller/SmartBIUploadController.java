@@ -199,6 +199,25 @@ public class SmartBIUploadController {
                     "AI 分析服务正在自动恢复中，请稍后重试。如果反复失败，可能是当前文件过大或服务繁忙。"));
         }
 
+        // 大文件（> 50MB）走 Python 异步解析路径，避免同步 HTTP 超时。
+        // Python worker 流式读 + bulk insert，内存占用与文件大小无关。
+        if (file.getSize() > PythonSmartBIClient.LARGE_FILE_ASYNC_BYTES) {
+            log.info("Large file detected ({}MB), routing to async parse: file={} factory={}",
+                    file.getSize() / 1024 / 1024, file.getOriginalFilename(), factoryId);
+            try {
+                com.cretas.aims.dto.smartbi.ExcelParseResponse asyncResult =
+                        pythonClient.parseExcelViaAsync(file, factoryId, sheetIndex != null ? sheetIndex : 0,
+                                selectedRegionStart, selectedRegionEnd);
+                if (!asyncResult.isSuccess()) {
+                    return ResponseEntity.ok(ApiResponse.error(asyncResult.getErrorMessage()));
+                }
+                return ResponseEntity.ok(ApiResponse.success("大文件解析完成（异步路径）", asyncResult));
+            } catch (Exception e) {
+                log.error("Async parse failed: {}", e.getMessage(), e);
+                return ResponseEntity.ok(ApiResponse.error("大文件解析失败: " + ErrorSanitizer.sanitize(e)));
+            }
+        }
+
         try {
             SmartBIUploadFlowService.UploadFlowResult result = uploadFlowService.executeUploadFlow(
                     factoryId, file, dataType, sheetIndex, headerRow, Boolean.TRUE.equals(autoConfirm),

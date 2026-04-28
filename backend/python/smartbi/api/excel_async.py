@@ -239,7 +239,7 @@ async def auto_parse_async(
 
 
 @router.get("/auto-parse-status/{upload_id}")
-async def auto_parse_status(upload_id: int, request: Request):
+async def auto_parse_status(upload_id: int, request: Request, factory_id: Optional[str] = None):
     """
     Poll status of async upload. Returns:
     - status (PENDING / PROCESSING / COMPLETED / FAILED)
@@ -272,6 +272,9 @@ async def auto_parse_status(upload_id: int, request: Request):
         )
         # The endpoint is currently in PUBLIC_PREFIXES; auth_middleware doesn't
         # populate state. Re-extract from headers manually to enforce here.
+        # Java internal poll: factory_id query param matches upload.factory_id.
+        if not caller_factory_id and factory_id and factory_id == upload.factory_id:
+            caller_factory_id = factory_id
         if not caller_factory_id:
             # Try X-Internal-Secret (Java internal)
             internal_secret = request.headers.get("x-internal-secret", "")

@@ -30,6 +30,8 @@ function listFiles(dir, depth = 0) {
   return out;
 }
 
+const TIMEOUT_MS = 180_000; // 3 min per file
+
 async function fetch(url, opts = {}) {
   const u = new URL(url);
   const lib = u.protocol === 'https:' ? https : http;
@@ -47,6 +49,9 @@ async function fetch(url, opts = {}) {
       res.on('end', () => resolve({ status: res.statusCode, body, headers: res.headers }));
     });
     req.on('error', reject);
+    req.setTimeout(TIMEOUT_MS, () => {
+      req.destroy(new Error(`timeout after ${TIMEOUT_MS / 1000}s`));
+    });
     if (opts.body) req.write(opts.body);
     req.end();
   });

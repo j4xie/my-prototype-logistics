@@ -261,6 +261,153 @@ public class PythonSmartBIClient {
         return executeWithRetry(request, ExcelParseResponse.class);
     }
 
+    // ==================== 大文件异步解析 ====================
+
+    public static final long LARGE_FILE_ASYNC_BYTES = 50L * 1024 * 1024; // 50MB
+    private static final int ASYNC_POLL_INTERVAL_MS = 3_000;
+    private static final int ASYNC_POLL_MAX_ATTEMPTS = 200; // 200 × 3s = 10 min
+
+    /**
+     * 对大文件（> 50MB）透明切换到 Python 异步解析路径。
+     * 调用方不感知：接口与 parseExcel 相同，返回同样的 ExcelParseResponse。
+     * 流程：POST /auto-parse-async → 202 uploadId → 轮询 status 至 COMPLETED。
+     */
+    @SuppressWarnings("unchecked")
+    public ExcelParseResponse parseExcelViaAsync(MultipartFile file, String factoryId,
+                                                  int sheetIndex,
+                                                  Integer selectedRegionStart,
+                                                  Integer selectedRegionEnd) throws IOException {
+        final String filename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "upload.bin";
+        log.info("[async-parse] 大文件 {}MB, 启动异步解析: file={} factory={}",
+                file.getSize() / 1024 / 1024, filename, factoryId);
+
+        // 1. 写临时文件（OkHttp 重试安全）
+        final File tempFile = java.io.File.createTempFile("cretas-async-", "-" + filename);
+        tempFile.deleteOnExit();
+        file.transferTo(tempFile);
+
+        // 2. POST /api/smartbi/excel/auto-parse-async
+        MultipartBody.Builder bodyBuilder = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("file", filename, RequestBody.create(MediaType.parse(guessMimeFromName(filename)), tempFile))
+                .addFormDataPart("factory_id", factoryId != null ? factoryId : "")
+                .addFormDataPart("sheetIndex", String.valueOf(sheetIndex))
+                .addFormDataPart("max_rows", "500000");
+        if (selectedRegionStart != null) bodyBuilder.addFormDataPart("selected_region_start", String.valueOf(selectedRegionStart));
+        if (selectedRegionEnd != null)   bodyBuilder.addFormDataPart("selected_region_end",   String.valueOf(selectedRegionEnd));
+
+        Request asyncReq = new Request.Builder()
+                .url(config.getUrl() + "/api/smartbi/excel/auto-parse-async")
+                .post(bodyBuilder.build())
+                .build();
+
+        Map<String, Object> asyncResp;
+        try (Response resp = httpClient.newCall(asyncReq).execute()) {
+            String body = resp.body() != null ? resp.body().string() : "{}";
+            if (resp.code() != 202 && resp.code() != 200) {
+                log.error("[async-parse] POST failed: HTTP {} body={}", resp.code(), body.substring(0, Math.min(200, body.length())));
+                ExcelParseResponse err = new ExcelParseResponse();
+                err.setSuccess(false);
+                err.setErrorMessage("异步上传失败: HTTP " + resp.code());
+                return err;
+            }
+            asyncResp = objectMapper.readValue(body, Map.class);
+        }
+
+        Object uploadIdRaw = asyncResp.get("uploadId");
+        if (uploadIdRaw == null) {
+            ExcelParseResponse err = new ExcelParseResponse();
+            err.setSuccess(false);
+            err.setErrorMessage("异步上传未返回 uploadId");
+            return err;
+        }
+        int uploadId = ((Number) uploadIdRaw).intValue();
+        log.info("[async-parse] uploadId={}, 开始轮询 (间隔 {}s, 最多 {}次)",
+                uploadId, ASYNC_POLL_INTERVAL_MS / 1000, ASYNC_POLL_MAX_ATTEMPTS);
+
+        // 3. 轮询 /auto-parse-status/{uploadId}?factory_id=xxx
+        String pollUrl = config.getUrl() + "/api/smartbi/excel/auto-parse-status/" + uploadId
+                + "?factory_id=" + java.net.URLEncoder.encode(factoryId != null ? factoryId : "", java.nio.charset.StandardCharsets.UTF_8);
+        for (int attempt = 0; attempt < ASYNC_POLL_MAX_ATTEMPTS; attempt++) {
+            try { Thread.sleep(ASYNC_POLL_INTERVAL_MS); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); break; }
+
+            Request pollReq = new Request.Builder().url(pollUrl).get().build();
+            Map<String, Object> status;
+            try (Response resp = httpClient.newCall(pollReq).execute()) {
+                String body = resp.body() != null ? resp.body().string() : "{}";
+                if (!resp.isSuccessful()) {
+                    log.warn("[async-parse] poll attempt {} HTTP {}", attempt, resp.code());
+                    continue;
+                }
+                status = objectMapper.readValue(body, Map.class);
+            }
+
+            String st = (String) status.get("status");
+            log.debug("[async-parse] uploadId={} attempt={} status={}", uploadId, attempt, st);
+
+            if ("COMPLETED".equals(st)) {
+                log.info("[async-parse] uploadId={} COMPLETED after {}s",
+                        uploadId, (attempt + 1) * ASYNC_POLL_INTERVAL_MS / 1000);
+                return buildParseResponseFromAsyncStatus(status, uploadId);
+            }
+            if ("FAILED".equals(st)) {
+                String errMsg = (String) status.getOrDefault("error", "异步解析失败");
+                log.error("[async-parse] uploadId={} FAILED: {}", uploadId, errMsg);
+                ExcelParseResponse err = new ExcelParseResponse();
+                err.setSuccess(false);
+                err.setErrorMessage(errMsg);
+                return err;
+            }
+        }
+
+        log.error("[async-parse] uploadId={} poll timed out after {}min", uploadId,
+                (long) ASYNC_POLL_MAX_ATTEMPTS * ASYNC_POLL_INTERVAL_MS / 60_000);
+        ExcelParseResponse err = new ExcelParseResponse();
+        err.setSuccess(false);
+        err.setErrorMessage("大文件解析超时（10 分钟），请尝试拆分后上传");
+        return err;
+    }
+
+    @SuppressWarnings("unchecked")
+    private ExcelParseResponse buildParseResponseFromAsyncStatus(Map<String, Object> status, int uploadId) {
+        ExcelParseResponse pr = new ExcelParseResponse();
+        pr.setSuccess(true);
+        pr.setUploadId((long) uploadId);
+        pr.setRowCount(status.get("rowCount") instanceof Number n ? n.intValue() : null);
+        pr.setColumnCount(status.get("columnCount") instanceof Number n ? n.intValue() : null);
+
+        Object headersRaw = status.get("headers");
+        if (headersRaw instanceof List<?> hl) {
+            pr.setHeaders(hl.stream().map(Object::toString).collect(java.util.stream.Collectors.toList()));
+        }
+
+        Object fmRaw = status.get("fieldMappings");
+        if (fmRaw instanceof List<?> fml) {
+            List<com.cretas.aims.dto.smartbi.FieldMappingResult> mappings = new java.util.ArrayList<>();
+            for (Object fmObj : fml) {
+                if (fmObj instanceof Map<?, ?> fmMap) {
+                    com.cretas.aims.dto.smartbi.FieldMappingResult fm = new com.cretas.aims.dto.smartbi.FieldMappingResult();
+                    Object orig = fmMap.get("originalColumn"); if (orig != null) fm.setOriginalColumn(orig.toString());
+                    Object std  = fmMap.get("standardField");  if (std  != null) fm.setStandardField(std.toString());
+                    Object conf = fmMap.get("confidence");      if (conf instanceof Number cn) fm.setConfidence(cn.doubleValue());
+                    mappings.add(fm);
+                }
+            }
+            pr.setFieldMappings(mappings);
+        }
+
+        Object previewRaw = status.get("previewData");
+        if (previewRaw instanceof List<?> pvl) {
+            List<Map<String, Object>> preview = new java.util.ArrayList<>();
+            for (Object row : pvl) { if (row instanceof Map<?, ?> rm) preview.add((Map<String, Object>) rm); }
+            pr.setPreviewData(preview);
+        }
+
+        Object tableType = status.get("detectedTableType");
+        if (tableType != null) pr.setTableType(tableType.toString());
+        return pr;
+    }
+
     // ==================== 指标计算 ====================
 
     /**
