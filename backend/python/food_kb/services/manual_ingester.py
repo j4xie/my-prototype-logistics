@@ -25,30 +25,42 @@ MANUAL_SOURCES = [
         "title_prefix": "工厂操作手册",
         "source": "factory-operation-manual.html",
         "type": "html",
+        "subcategory": "factory",
     },
     {
         "path": "docs/plans/restaurant-metrics-glossary.html",
         "title_prefix": "餐饮指数字典",
         "source": "restaurant-metrics-glossary.html",
         "type": "html",
+        "subcategory": "restaurant",
+    },
+    {
+        "path": "docs/plans/restaurant-product-manual.html",
+        "title_prefix": "餐饮产品使用手册",
+        "source": "restaurant-product-manual.html",
+        "type": "html",
+        "subcategory": "restaurant",
     },
     {
         "path": "docs/plans/factory-requisition-detailed-flow.md",
         "title_prefix": "工厂下单详细流程",
         "source": "factory-requisition-detailed-flow.md",
         "type": "markdown",
+        "subcategory": "factory",
     },
     {
         "path": "docs/plans/factory-requisition-operation-guide.md",
         "title_prefix": "工厂下单操作指南",
         "source": "factory-requisition-operation-guide.md",
         "type": "markdown",
+        "subcategory": "factory",
     },
     {
         "path": ".claude/projects/C--Users-Steve-my-prototype-logistics/memory/project_feature_inventory.md",
         "title_prefix": "系统功能清单",
         "source": "project_feature_inventory.md",
         "type": "markdown",
+        "subcategory": None,
     },
 ]
 
@@ -242,6 +254,7 @@ async def ingest_all():
                 source=temp_source,  # Ingest under temp name
                 version="1.0",
                 operator="manual_ingester",
+                subcategory=source_info.get("subcategory"),
             )
             if result.get("success"):
                 source_chunks += result.get("chunk_count", 0)
@@ -288,6 +301,26 @@ async def ingest_all():
             f"  Atomically swapped to {source_docs} sections / {source_chunks} chunks "
             f"for '{canonical_source}' (replaced {old_count} prior chunks)"
         )
+
+        # Reviewer R2 N1: chunk budget [4, 12] warn for restaurant-product-manual chapters
+        # Soft monitoring — log only, no hard block. Heuristic: avg = total_chunks / num_sections.
+        # source_docs counts sections (h2/h3 splits), not strictly h1 chapters; approximation
+        # good enough for warn signal.
+        if canonical_source == "restaurant-product-manual.html":
+            avg_chunks_per_chapter = source_chunks / max(1, source_docs)
+            if avg_chunks_per_chapter > 12:
+                logger.warning(
+                    f"  ⚠️  chunk budget exceeded: {canonical_source} "
+                    f"avg {avg_chunks_per_chapter:.1f} chunks/chapter (target ≤12). "
+                    f"Consider merging h2 sections in Tier 1 chapters."
+                )
+            elif avg_chunks_per_chapter < 4:
+                logger.warning(
+                    f"  ⚠️  chunk budget under-floor: {canonical_source} "
+                    f"avg {avg_chunks_per_chapter:.1f} chunks/chapter (target ≥4). "
+                    f"Tier 2-5 skeleton chapters too thin."
+                )
+
         total_docs += source_docs
         total_chunks += source_chunks
 
