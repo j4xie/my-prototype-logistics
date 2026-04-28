@@ -549,6 +549,19 @@ const businessRoutes: RouteRecordRaw[] = [
             },
           },
           {
+            // 餐饮 Phase A A-3 Task 3.6: data quality queue detail page (history)
+            path: 'data-quality-queue/:id',
+            name: 'AdminDataQualityQueueDetail',
+            component: () => import('@/views/admin/data-quality-queue-detail.vue'),
+            meta: {
+              requiresAuth: true,
+              title: '数据质量队列详情',
+              module: 'system',
+              hidden: true,
+              roles: ['factory_super_admin', 'platform_admin', 'permission_admin'],
+            },
+          },
+          {
             path: 'products',
             name: 'ProductManagement',
             component: () => import('@/views/system/products/index.vue'),

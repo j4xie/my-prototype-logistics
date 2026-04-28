@@ -141,3 +141,33 @@ export async function getAdminCount(factoryId: string): Promise<number> {
   ) as ApiResponse<{ count: number }>;
   return resp.data?.count ?? 1;
 }
+
+// ── History types & API (Task 3.6) ──────────────────────────────────────────
+
+export interface HistoryItem {
+  id: number;
+  rawName: string;
+  entityType: string;
+  status: string;
+  adminAction: string | null;
+  adminAt: string | null;
+  adminUser: string | null;
+  resolvedToEntityId: number | null;
+  candidateEntityId: number | null;
+  confidence: number | null;
+  decidedByAgent: string | null;
+  createdAt: string | null;
+  priority: string;
+  reasoning: string | null;
+  extra: Record<string, unknown> | null;
+}
+
+/**
+ * Fetch all history rows for the same (factoryId, entityType, rawName) as
+ * the given queue item id.  Ordered by createdAt DESC.
+ */
+export async function fetchQueueHistory(id: number): Promise<{ items: HistoryItem[] }> {
+  return pythonFetch(
+    `/api/smartbi/admin/data-quality-queue/${id}/history`
+  ) as Promise<{ items: HistoryItem[] }>;
+}

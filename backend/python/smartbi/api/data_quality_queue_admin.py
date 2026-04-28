@@ -713,3 +713,109 @@ async def batch_resolve_queue(
         "successCount": success_count,
         "failedItems": failed_items,
     }
+
+
+# ---------------------------------------------------------------------------
+# Task 3.6: history endpoint
+# ---------------------------------------------------------------------------
+
+@router.get("/{id}/history")
+async def get_history(
+    request: Request, id: int,
+) -> Dict[str, Any]:
+    """Return all queue rows for the same (factory_id, entity_type, raw_name).
+
+    Ordered by created_at DESC so the most-recent (current) row is first.
+
+    W0.4 finding 3: GUC set_config inside conn.transaction() so RLS FORCE
+    sees app.factory_id for the SELECT.  Pattern matches _fetch_queue_items.
+
+    Security boundary: require_admin() is the gate; _get_queue_item fetches
+    by integer id without setting the GUC (same as Task 3.3 pattern — Phase A
+    acceptable, Phase B can add BYPASSRLS SECURITY DEFINER).
+    """
+    require_admin(request, action_name="数据质量队列历史")
+
+    pool = await get_pg_pool()
+    if pool is None:
+        raise HTTPException(status_code=503, detail="数据库不可用")
+
+    # Step 1: look up the item to obtain factory_id.
+    # _get_queue_item returns {id, factoryId, status, submitter} (no entity_type / raw_name).
+    item = await _get_queue_item(pool, id)
+    if not item:
+        raise HTTPException(status_code=404, detail="队列项不存在")
+
+    # Step 2: fetch entity_type + raw_name, then historical rows — all in one
+    # transaction so the GUC covers both SELECTs.
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            # W0.4 finding 3: GUC must be inside same transaction as the SELECT.
+            await conn.execute(
+                "SELECT set_config('app.factory_id', $1, true)", item["factoryId"]
+            )
+
+            # Fetch entity_type + raw_name from the target row.
+            current = await conn.fetchrow(
+                """
+                SELECT entity_type, raw_name
+                  FROM entity_resolution_admin_queue
+                 WHERE id = $1
+                """,
+                id,
+            )
+            if not current:
+                raise HTTPException(status_code=404, detail="队列项不存在")
+
+            rows = await conn.fetch(
+                """
+                SELECT q.id, q.raw_name, q.entity_type, q.status,
+                       q.admin_action, q.admin_at, q.admin_user,
+                       q.admin_resolved_to_entity_id, q.candidate_entity_id,
+                       q.confidence, q.decided_by_agent, q.created_at,
+                       q.priority, q.reasoning, q.extra
+                  FROM entity_resolution_admin_queue q
+                 WHERE q.factory_id = $1
+                   AND q.entity_type = $2
+                   AND q.raw_name = $3
+                 ORDER BY q.created_at DESC
+                """,
+                item["factoryId"], current["entity_type"], current["raw_name"],
+            )
+
+    return {
+        "items": [
+            {
+                "id": int(r["id"]),
+                "rawName": r["raw_name"],
+                "entityType": r["entity_type"],
+                "status": r["status"],
+                "adminAction": r["admin_action"],
+                # W0.4 finding 2: admin_at is nullable
+                "adminAt": r["admin_at"].isoformat() if r["admin_at"] is not None else None,
+                "adminUser": r["admin_user"],
+                "resolvedToEntityId": (
+                    int(r["admin_resolved_to_entity_id"])
+                    if r["admin_resolved_to_entity_id"] is not None
+                    else None
+                ),
+                "candidateEntityId": (
+                    int(r["candidate_entity_id"])
+                    if r["candidate_entity_id"] is not None
+                    else None
+                ),
+                "confidence": (
+                    float(r["confidence"]) if r["confidence"] is not None else None
+                ),
+                "decidedByAgent": r["decided_by_agent"],
+                # W0.4 finding 2: created_at nullable despite DEFAULT now()
+                "createdAt": (
+                    r["created_at"].isoformat() if r["created_at"] is not None else None
+                ),
+                "priority": r["priority"],
+                "reasoning": r["reasoning"],
+                "extra": r["extra"],
+            }
+            for r in rows
+        ],
+    }
