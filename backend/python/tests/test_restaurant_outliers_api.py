@@ -19,6 +19,15 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 
+@pytest.fixture(autouse=True)
+def _clear_cache():
+    """Reset module-level cache between tests to avoid cross-test bleed."""
+    from smartbi.api.restaurant_outliers import _cache
+    _cache.clear()
+    yield
+    _cache.clear()
+
+
 def _build_app():
     """Build minimal FastAPI app with restaurant_outliers router + auth middleware mock."""
     from smartbi.api.restaurant_outliers import router
@@ -112,3 +121,14 @@ class TestGetOutliersAPI:
         r = client.get('/api/restaurant/outliers?factoryId=F002&windowDays=400')
         # FastAPI Query(ge=1, le=365) returns 422
         assert r.status_code == 422
+
+    def test_unauthenticated_returns_401(self):
+        """No auth middleware → require_admin should raise 401."""
+        from smartbi.api.restaurant_outliers import router
+        app = FastAPI()
+        # NO auth middleware — request.state.role will be missing
+        app.include_router(router, prefix="/api/restaurant")
+        client = TestClient(app)
+        r = client.get('/api/restaurant/outliers?factoryId=F002')
+        # require_admin raises 401 when role is missing
+        assert r.status_code == 401

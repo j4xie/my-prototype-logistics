@@ -44,8 +44,13 @@ _cache: Dict[str, Tuple[float, Dict[str, Any]]] = {}
 
 
 def _invalidate_cache(factory_id: str) -> None:
-    """Invalidate cached outlier response for a factory (used by POST/DELETE)."""
-    _cache.pop(factory_id, None)
+    """Invalidate all cached outlier responses for a factory (used by POST/DELETE).
+
+    Wipes all cache entries matching factory_id:* pattern (all windowDays variants).
+    """
+    keys_to_remove = [k for k in _cache if k.startswith(f"{factory_id}:")]
+    for k in keys_to_remove:
+        _cache.pop(k, None)
 
 
 def _validate_factory_access(request: Request, factory_id: str) -> None:
@@ -195,7 +200,8 @@ async def get_outliers(
 
     # Cache check (5-minute TTL)
     now_ts = time.monotonic()
-    cached = _cache.get(factoryId)
+    cache_key = f"{factoryId}:{windowDays}"
+    cached = _cache.get(cache_key)
     if cached:
         cached_ts, cached_body = cached
         if now_ts - cached_ts < _CACHE_TTL_S:
@@ -214,7 +220,11 @@ async def get_outliers(
         raise HTTPException(status_code=500, detail="outlier 检测内部错误")
 
     # Query dismissed this calendar month
-    dismissed = await _query_dismissed_this_month(factoryId)
+    try:
+        dismissed = await _query_dismissed_this_month(factoryId)
+    except Exception:
+        logger.exception("[outlier] dismiss query failed for %s", factoryId)
+        raise HTTPException(status_code=500, detail="dismiss 查询内部错误")
     dismissed_keys = {(d["anomalyDate"], d["kpiKind"]) for d in dismissed}
 
     # Filter pending = outliers not in dismissed set
@@ -236,5 +246,5 @@ async def get_outliers(
         "outliers": [_outlier_to_json(o) for o in pending],
         "dismissed": dismissed,
     }
-    _cache[factoryId] = (now_ts, body)
+    _cache[cache_key] = (now_ts, body)
     return body
