@@ -51,7 +51,7 @@ _CB_FAILURES: Dict[str, int] = {}        # provider name → consecutive failure
 _CB_LAST_FAIL: Dict[str, float] = {}     # provider name → unix ts of last failure
 _CB_LOCK = Lock()
 
-CB_THRESHOLD = 3      # consecutive failures before skip kicks in
+CB_THRESHOLD = 2      # consecutive failures before skip kicks in (Apr 28 was 3)
 CB_COOLDOWN = 60.0    # seconds to skip after threshold reached
 
 
@@ -120,39 +120,54 @@ class SLOT(str, Enum):
 # All 4 are OpenAI-compatible via /chat/completions
 # Model names must match what each provider exposes.
 SLOT_MODELS: Dict[SLOT, Dict[str, Optional[str]]] = {
-    # Apr 26 2026 v4-quota-fix: replaced qwen3-max-2026-01-23 (free tier
-    # exhausted, 630 403 errors today) with qwen-plus (paid, validated).
-    # zhipu glm-4.5-air returned empty (model name no longer exists);
-    # replaced with glm-4-plus (validated). deepseek-chat works as-is.
+    # Apr 27 2026 v4-fix: DeepSeek API rev'd to V4 only (v4-flash + v4-pro).
+    # Per api-docs.deepseek.com:
+    #   - deepseek-v4-flash: standard chat (= legacy `deepseek-chat` alias)
+    #   - deepseek-v4-pro: reasoning (= legacy `deepseek-reasoner` alias,
+    #     2026-07-24 retire)
+    #   - deepseek-chat / deepseek-reasoner: back-compat aliases (deprecated
+    #     but still routed)
+    # CRITICAL: V4 default `thinking.type=enabled` adds ~5s of invisible
+    # reasoning before visible answer + truncates output. We force
+    # `thinking: {"type": "disabled"}` in _normalize_payload_for_provider
+    # for chat-class slots. Reasoning slots opt-in by NOT setting that key.
     SLOT.CHAT: {
-        "aliyun_b": "qwen-plus",
+        # Apr 27 2026 (F4): aliyun_b changed qwen-plus → qwen-flash for chain
+        # diversity. Both aliyun_a + aliyun_b previously hit qwen-plus → shared
+        # DashScope rate-limit, when DashScope hiccups both fail at once.
+        # qwen-flash is the smaller/faster qwen variant (~3-5s in API probe vs
+        # ~10s for qwen-plus). RICH 412-468 char answer with full GUARD
+        # structure preserved (3 段 + 量化 + 时间窗口). Chain order means it's
+        # only used as last fallback after deepseek-v4-flash + aliyun_a/qwen-plus
+        # + zhipu/glm-4-plus exhaust — rare but valuable灾备.
+        "aliyun_b": "qwen-flash",
         "aliyun_a": "qwen-plus",
         "zhipu":    "glm-4-plus",
-        "deepseek": "deepseek-chat",
+        "deepseek": "deepseek-v4-flash",
     },
     SLOT.INSIGHTS: {
-        "aliyun_b": "qwen-plus",
+        "aliyun_b": "qwen-flash",  # F4 same diversification logic as CHAT
         "aliyun_a": "qwen-plus",
         "zhipu":    "glm-4-plus",
-        "deepseek": "deepseek-chat",
+        "deepseek": "deepseek-v4-flash",
     },
     SLOT.CHART: {
         "aliyun_b": "glm-5",
         "aliyun_a": "glm-5",
         "zhipu":    "glm-4.5-air",
-        "deepseek": "deepseek-chat",
+        "deepseek": "deepseek-v4-flash",
     },
     SLOT.MAPPER: {
         "aliyun_b": "qwen-turbo-1101",       # 10M tokens on Account B
         "aliyun_a": "qwen3.5-122b-a10b",
         "zhipu":    "glm-4.5-air",
-        "deepseek": "deepseek-chat",
+        "deepseek": "deepseek-v4-flash",
     },
     SLOT.REASONING: {
         "aliyun_b": "deepseek-v3.2-exp",      # DeepSeek via 百炼 = free!
         "aliyun_a": "qwen3.5-397b-a17b",
         "zhipu":    "glm-4.5-air",
-        "deepseek": "deepseek-reasoner",
+        "deepseek": "deepseek-v4-pro",
     },
     SLOT.VL: {
         "aliyun_b": "qwen3-vl-plus-2025-05-07",
@@ -164,7 +179,7 @@ SLOT_MODELS: Dict[SLOT, Dict[str, Optional[str]]] = {
         "aliyun_b": "deepseek-v3.2",           # DeepSeek via 百炼 = free!
         "aliyun_a": "deepseek-v3",
         "zhipu":    "glm-4.5-air",
-        "deepseek": "deepseek-chat",
+        "deepseek": "deepseek-v4-pro",
     },
 }
 
@@ -213,14 +228,42 @@ def _is_quota_exhausted(status_code: int, body_text: str) -> bool:
     return False
 
 
+def _normalize_payload_for_provider(payload: Dict[str, Any], account: str) -> Dict[str, Any]:
+    """Adjust payload per provider's accepted schema.
+
+    Apr 27 2026: DeepSeek V4 (api-docs.deepseek.com) defaults thinking.type
+    to "enabled" with reasoning_effort "high". On v4-flash that adds ~5s of
+    invisible reasoning before the visible answer (observed: 8.2s LLM with
+    only 25-76 char visible output vs 3.8s + 449 chars on v3 alias).
+    For chat/insights slots we want thinking OFF — explicit answer first.
+
+    Also: DashScope/Aliyun-style payloads use `enable_thinking` (which we
+    historically set everywhere) but DeepSeek's API doesn't recognize that
+    key. Strip it so DeepSeek doesn't 400 — and replace with the official
+    `thinking: {"type": "disabled"}` form.
+    """
+    out = {**payload}
+    if account == "deepseek":
+        out.pop("enable_thinking", None)
+        # Caller must explicitly opt into thinking for v4 reasoner-style use.
+        # Default OFF for chat-class fast paths.
+        out.setdefault("thinking", {"type": "disabled"})
+    return out
+
+
 async def call_chain(
     slot: SLOT,
     payload: Dict[str, Any],
     chain: Optional[List[str]] = None,
-    timeout: float = 120.0,
+    timeout: float = 30.0,
 ) -> Dict[str, Any]:
     """
     Call LLM via provider chain with automatic fallback on 403 FreeTierOnly / 429.
+
+    Per-call timeout: 30s default (Apr 28 2026 optimization, was 120s).
+    Worst-case full chain (4 providers) = 120s instead of 480s. DeepSeek-flash
+    typical 5-15s, qwen-plus 15-30s, so 30s is comfortable margin while
+    failing fast on overloaded providers.
 
     The payload's `model` field is OVERWRITTEN per-provider based on SLOT_MODELS.
     Other fields (messages, temperature, max_tokens, etc.) are preserved.
@@ -251,7 +294,7 @@ async def call_chain(
             logger.debug(f"[llm_router] {account}: no API key, skip")
             continue
 
-        req_payload = {**payload, "model": model}
+        req_payload = _normalize_payload_for_provider({**payload, "model": model}, account)
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
@@ -326,9 +369,14 @@ async def call_chain_stream(
     slot: SLOT,
     payload: Dict[str, Any],
     chain: Optional[List[str]] = None,
-    timeout: float = 180.0,
+    timeout: float = 45.0,
 ) -> AsyncIterator[Dict[str, Any]]:
     """Streaming variant of call_chain — yields token deltas with provider fallback.
+
+    Per-call timeout: 45s default (Apr 28 2026 optimization, was 180s).
+    Streaming completion can take longer than non-streaming (token-by-token),
+    so cap is higher than call_chain. Worst-case 4-provider chain = 180s.
+    Mid-stream timeouts after first delta still propagate (no retry by design).
 
     The payload's `model` field is OVERWRITTEN per-provider based on SLOT_MODELS.
     `stream=True` is forced. Other fields preserved.
@@ -380,7 +428,7 @@ async def call_chain_stream(
             logger.debug(f"[llm_router_stream] {account}: no API key, skip")
             continue
 
-        req_payload = {**payload, "model": model}
+        req_payload = _normalize_payload_for_provider({**payload, "model": model}, account)
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
@@ -449,6 +497,25 @@ async def call_chain_stream(
                     usage = obj.get("usage")
                     if usage:
                         total = int(usage.get("total_tokens") or 0)
+                        # Apr 27 2026 (F8 audit): log cache hit on streaming
+                        # path so prod cache behavior is observable.
+                        # DeepSeek emits prompt_tokens_details.cached_tokens
+                        # AND prompt_cache_hit_tokens; DashScope emits
+                        # prompt_tokens_details.cached_tokens. Read both.
+                        prompt_total = int(usage.get("prompt_tokens") or 0)
+                        details = usage.get("prompt_tokens_details") or {}
+                        cached = int(
+                            details.get("cached_tokens")
+                            or usage.get("prompt_cache_hit_tokens")
+                            or 0
+                        )
+                        if prompt_total > 0:
+                            pct = 100 * cached // prompt_total if cached else 0
+                            logger.info(
+                                f"[cache] slot={slot.value} via {account}/{model}: "
+                                f"prompt={prompt_total} cached={cached} ({pct}%) "
+                                f"completion={int(usage.get('completion_tokens') or 0)}"
+                            )
                         if total:
                             yield {"type": "usage", "tokens": total}
                 # Successful stream — record CB success and return
