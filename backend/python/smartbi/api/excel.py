@@ -1315,6 +1315,99 @@ async def auto_parse_excel(
             for row in preview_data
         ]
 
+        # F2-v4 (Apr 28 2026): forward-fill section labels into new column.
+        # Multi-section pivot Excel (qhj 收入管理报表) has structure like:
+        #   Row N (sparse): "颛桥龙湖店 10.9-10.13" — section header
+        #   Row N+1: sub-header column names
+        #   Row N+2..M: data rows (rank 1, 2, 3, ...)
+        #   Row M+1: another section header for next store/period
+        # Without F2-v4, AI sees data rows but doesn't know which store/section
+        # they belong to (Q7 user problem: "排名第二的门店" instead of "颛桥龙湖店").
+        #
+        # Algorithm: scan rows in order, track current_section_label. A row is a
+        # section header if: ≤ 30% cells filled AND first non-empty cell is text
+        # (not numeric / not pseudo-row prefix). For non-section data rows, set
+        # row["_门店或时段"] = current_section_label. Drop the section header
+        # rows themselves (they're metadata, no business data).
+        _section_label = None
+        _SECTION_COL = '_门店或时段'
+
+        def _looks_like_label(v):
+            if not isinstance(v, str):
+                return False
+            s = v.strip()
+            if not s:
+                return False
+            # Reject pure numeric strings
+            try:
+                float(s.replace(',', ''))
+                return False
+            except ValueError:
+                pass
+            # Reject pseudo-row prefixes (those handled by F2-v3 below)
+            return not s.lower().startswith(_PREFIX_LOWER) if False else True
+        # forward-define _PREFIX_LOWER below; do simpler check:
+
+        def _is_section_header(row_dict, headers):
+            if not headers:
+                return False, None
+            n_total = len(headers)
+            non_empty = [(k, v) for k, v in row_dict.items()
+                          if v is not None and (not isinstance(v, str) or v.strip())]
+            n_filled = len(non_empty)
+            if n_filled == 0:
+                return False, None
+            # Sparse threshold: ≤ 30% of columns
+            if n_filled / n_total > 0.30:
+                return False, None
+            # First non-empty cell must be a text label (not numeric)
+            first_v = non_empty[0][1]
+            if not isinstance(first_v, str):
+                return False, None
+            s = first_v.strip()
+            if not s:
+                return False, None
+            try:
+                float(s.replace(',', ''))
+                return False, None  # purely numeric, not a label
+            except ValueError:
+                pass
+            # Build label from non-empty values (e.g. "颛桥龙湖店 10.9-10.13")
+            label_parts = [str(v).strip() for _, v in non_empty if isinstance(v, str)]
+            label = ' '.join(label_parts).strip()
+            return True, label
+
+        f2v4_header = list(extracted.headers)
+        f2v4_rows: list = []
+        f2v4_section_count = 0
+        for row in preview_data:
+            is_sec, label = _is_section_header(row, f2v4_header)
+            if is_sec:
+                _section_label = label
+                f2v4_section_count += 1
+                continue  # drop the section header row
+            if _section_label is not None:
+                row[_SECTION_COL] = _section_label
+            f2v4_rows.append(row)
+
+        if f2v4_section_count > 0:
+            preview_data = f2v4_rows
+            if _SECTION_COL not in f2v4_header:
+                f2v4_header.append(_SECTION_COL)
+                # Update extracted.headers so downstream code sees the column.
+                # extracted is a typed object from parser; we mutate its headers
+                # only when we added a new col (keeps non-pivot files unchanged).
+                try:
+                    extracted.headers = f2v4_header
+                    extracted.column_count = len(f2v4_header)
+                except Exception:
+                    pass
+            logger.info(
+                f"[F2-v4] forward-filled section label into '{_SECTION_COL}' for "
+                f"{len(f2v4_rows)} data rows (dropped {f2v4_section_count} section "
+                f"header rows). Sample label: {_section_label!r}"
+            )
+
         # F2-v3 (Apr 28 2026): drop pseudo-rows that pollute downstream AI
         # context. qa-prompt v2.4 Phase 10 Q7 caught: AI saw "总计 ... 73,761"
         # row and treated 73,761 as a single store's max revenue (real max
