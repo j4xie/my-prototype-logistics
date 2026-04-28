@@ -291,7 +291,7 @@ code{background:#f1f5f9;padding:2px 5px;border-radius:3px;font-size:13px}
 <p class="field-label">示例数值</p>
 <p>预测下周日营收 ¥18.5 万,置信区间 ¥15.7-21.3 万。实际 ¥17.2 万,落在区间内,准。</p>
 <p class="field-label">数据来源</p>
-<p>系统 ForecastCard 输出,基于销售历史 + Prophet 模型。</p>
+<p><strong>客户视角</strong>: "营收预测"模块基于历史 + 季节性。<br><strong>实施视角</strong> (技术参考): 系统 ForecastCard 输出,基于销售历史 + Prophet 模型。</p>
 <p class="field-label">入口路径</p>
 <p>AI 问答 → 输入"下周营收预测"或"未来 7 天营业额"。</p>
 
@@ -315,7 +315,7 @@ code{background:#f1f5f9;padding:2px 5px;border-radius:3px;font-size:13px}
 <p class="field-label">示例数值</p>
 <p>3 月目标 ¥220 万,3 月 15 日已实现 ¥118 万,完成度 53.6%,时间过半 48%,健康。</p>
 <p class="field-label">数据来源</p>
-<p>SalesPlanCard 字段: 目标 / 实际 / 完成度。</p>
+<p><strong>客户视角</strong>: "销售计划"模块目标/实际/完成度。<br><strong>实施视角</strong> (技术参考): SalesPlanCard 字段: 目标 / 实际 / 完成度。</p>
 <p class="field-label">入口路径</p>
 <p>AI 问答 → "本月销售计划进度"或"目标达成情况"。</p>
 
@@ -338,7 +338,7 @@ code{background:#f1f5f9;padding:2px 5px;border-radius:3px;font-size:13px}
 <p class="field-label">示例数值</p>
 <p>3 月营收 ¥210 万,目标 ¥220 万(95.5% 达成),历史 6 月均值 ¥195 万,行业同店均值 ¥200 万。实际值同时高于历史和基准,但未达目标,目标定得偏激进。</p>
 <p class="field-label">数据来源</p>
-<p>backend/python/smartbi/services/financial/bullet_chart.py。</p>
+<p><strong>客户视角</strong>: 财务模块按月汇总目标 vs 实际。<br><strong>实施视角</strong> (技术参考): backend/python/smartbi/services/financial/bullet_chart.py。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务PBI看板 → 目标达成进度 (子弹图)。</p>
 
@@ -363,7 +363,7 @@ code{background:#f1f5f9;padding:2px 5px;border-radius:3px;font-size:13px}
 <p class="field-label">示例数值</p>
 <p>3 月营销预算 ¥10 万,实际花了 ¥13.4 万,达成率 134%,因为加了店庆活动。需补审批单。</p>
 <p class="field-label">数据来源</p>
-<p>backend/python/smartbi/services/financial/budget_achievement.py + variance_analysis.py。</p>
+<p><strong>客户视角</strong>: 财务"预算管理"模块按月汇总。<br><strong>实施视角</strong> (技术参考): backend/python/smartbi/services/financial/budget_achievement.py + variance_analysis.py。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务PBI看板 → 预算达成分析 / 财务分析 → 预算分析 tab。</p>
 
@@ -388,7 +388,7 @@ code{background:#f1f5f9;padding:2px 5px;border-radius:3px;font-size:13px}
 <p class="field-label">示例数值</p>
 <p>3 月凉菜 ¥35 万 vs 去年 3 月 ¥28 万 (+25% YoY),占比从 13% 涨到 16.7%,与"夏季前移"+"加了新凉菜 5 个"两个动作匹配。</p>
 <p class="field-label">数据来源</p>
-<p>backend/python/smartbi/services/financial/category_yoy.py。</p>
+<p><strong>客户视角</strong>: 销售订单按品类聚合,与去年同期对比。<br><strong>实施视角</strong> (技术参考): backend/python/smartbi/services/financial/category_yoy.py。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务PBI看板 → 品类同期对比。</p>
 
@@ -431,7 +431,7 @@ code{background:#f1f5f9;padding:2px 5px;border-radius:3px;font-size:13px}
 <p class="field-label">示例数值</p>
 <p>3 月营收 ¥210 万 → 食材 ¥67 万 (32%) + 人力 ¥48 万 (23%) + 房租 ¥21 万 (10%) + 营销 ¥13 万 (6%) + 其他 ¥35 万 (17%) → 利润 ¥26 万 (12%)。健康正餐结构。</p>
 <p class="field-label">数据来源</p>
-<p>backend/python/smartbi/services/financial/cost_flow_sankey.py + charts/financial/sankey.py。</p>
+<p><strong>客户视角</strong>: 财务总账 + 销售/采购/HR 成本科目自动聚合。<br><strong>实施视角</strong> (技术参考): backend/python/smartbi/services/financial/cost_flow_sankey.py + charts/financial/sankey.py。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务PBI看板 → 成本流向桑基图。</p>
 
@@ -449,6 +449,7 @@ code{background:#f1f5f9;padding:2px 5px;border-radius:3px;font-size:13px}
 <p class="field-label">行业基准红线</p>
 <table>
 <tr><th>品类</th><th>健康食材率</th><th>红线</th></tr>
+<tr style="background:#fef3c7"><td colspan="3"><strong>快速判断</strong>: 公式 = 食材消耗 ÷ 营收。健康区间 — 快餐 28-32% / 正餐 30-35% / 火锅 38-42%。超 3% 警惕采购涨价或后厨用量超标。</td></tr>
 <tr><td>快餐 / 茶饮</td><td>28-32%</td><td>&gt; 35%</td></tr>
 <tr><td>正餐 / 中餐 / 西餐</td><td>30-35%</td><td>&gt; 38%</td></tr>
 <tr><td>火锅 / 烧烤 / 自助</td><td>38-42%</td><td>&gt; 45%</td></tr>
@@ -476,6 +477,7 @@ code{background:#f1f5f9;padding:2px 5px;border-radius:3px;font-size:13px}
 <p class="field-label">行业基准红线</p>
 <table>
 <tr><th>品类</th><th>健康人力占比</th><th>预警</th></tr>
+<tr style="background:#fef3c7"><td colspan="3"><strong>快速判断</strong>: 健康区间 — 快餐 15-22% / 正餐 18-25% / 火锅 22-28%。超预警线启动排班 + 招聘 + 兼职配比调整。</td></tr>
 <tr><td>快餐 / 茶饮 (自助点单)</td><td>15-22%</td><td>&gt; 26%</td></tr>
 <tr><td>正餐</td><td>18-25%</td><td>&gt; 28%</td></tr>
 <tr><td>火锅 / 烧烤 (服务密集)</td><td>22-28%</td><td>&gt; 32%</td></tr>
@@ -486,7 +488,7 @@ code{background:#f1f5f9;padding:2px 5px;border-radius:3px;font-size:13px}
 <p class="field-label">示例数值</p>
 <p>3 月营收 ¥210 万,人力支出 ¥48 万,占比 22.9%,正餐健康。月底新规要求多缴 1% 公积金,人力涨到 ¥51 万 (24.3%),仍可控。</p>
 <p class="field-label">数据来源</p>
-<p>backend/python/smartbi/services/financial/hr_cost_analysis.py + HR 工资模块。</p>
+<p><strong>客户视角</strong>: HR 工资模块 + 财务月度数据。<br><strong>实施视角</strong> (技术参考): backend/python/smartbi/services/financial/hr_cost_analysis.py + HR 工资模块。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务PBI看板 → 人力成本分析 / AI 问答 → "本月人力占比"。</p>
 
@@ -644,7 +646,7 @@ dominant_factor = 谁绝对值大谁是主因</div>
 <p class="field-label">示例数值</p>
 <p>3 月: ¥210 万 营收 → -67 食材 → -48 人力 → -21 房租 → -13 营销 → -12 折旧 → -23 其他 → -3 税 = ¥23 万 净利。瀑布图清晰展示 12 个步骤,净利率 11%。</p>
 <p class="field-label">数据来源</p>
-<p>backend/python/smartbi/services/financial/pnl_waterfall.py + charts/financial/waterfall.py。</p>
+<p><strong>客户视角</strong>: 财务损益表逐项扣减。<br><strong>实施视角</strong> (技术参考): backend/python/smartbi/services/financial/pnl_waterfall.py + charts/financial/waterfall.py。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务PBI看板 → 损益表瀑布图。</p>
 
@@ -664,6 +666,7 @@ dominant_factor = 谁绝对值大谁是主因</div>
 <p class="field-label">行业基准红线</p>
 <table>
 <tr><th>品类</th><th>健康毛利率</th><th>预警</th></tr>
+<tr style="background:#fef3c7"><td colspan="3"><strong>快速判断</strong>: 毛利率 = 1 - 食材率。快餐 68-72% / 正餐 65-70% / 火锅 58-62% 健康。低于下限 5pp+ 启动菜品 4 象限分析(§3.1)清理 Dog 菜。</td></tr>
 <tr><td>快餐 / 茶饮</td><td>68-72% (即食材率 28-32%)</td><td>&lt; 65%</td></tr>
 <tr><td>正餐</td><td>65-70%</td><td>&lt; 62%</td></tr>
 <tr><td>火锅</td><td>58-62%</td><td>&lt; 55%</td></tr>
@@ -671,7 +674,7 @@ dominant_factor = 谁绝对值大谁是主因</div>
 <p class="field-label">示例数值</p>
 <p>正餐 3 月毛利率 68.1% (210−67=143 ÷ 210)。某门店连续 3 月走 65% / 64% / 62%,触发预警 → 启动 4 象限,发现 4 道 Dog 菜+2 道 Puzzle 菜拉低均值,下架 + 调价后回升到 67%。</p>
 <p class="field-label">数据来源</p>
-<p>backend/python/smartbi/services/financial/gross_margin_trend.py。</p>
+<p><strong>客户视角</strong>: 销售订单 × BOM 食材成本 → 毛利率按月。<br><strong>实施视角</strong> (技术参考): backend/python/smartbi/services/financial/gross_margin_trend.py。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务PBI看板 → 利润分析 / 财务分析 → 利润分析 tab → grossProfitMargin 字段 / AI 问答 → "本月毛利率"。</p>
 
@@ -720,7 +723,7 @@ dominant_factor = 谁绝对值大谁是主因</div>
 <p class="field-label">示例数值</p>
 <p>3 月: 堂食 70% + 美团 20% + 自有 8% + 团购 2%,正餐健康。某店外卖占比 55%,堂食 35%,定位为"外卖型"店,开始减大堂面积。</p>
 <p class="field-label">数据来源</p>
-<p>backend/python/smartbi/services/financial/channel_analysis.py。</p>
+<p><strong>客户视角</strong>: 销售订单按渠道(堂食/外卖/团购)聚合。<br><strong>实施视角</strong> (技术参考): backend/python/smartbi/services/financial/channel_analysis.py。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务PBI看板 → 渠道分析。</p>
 
@@ -834,7 +837,7 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <p class="field-label">示例数值</p>
 <p>3 月: 经营现金流 +¥28 万 (营收 ¥210 收齐) - (人力 + 食材 + 房租付清 ¥182) - 税 = +¥28 万。投资 -¥5 万(新设备)。筹资 0。净流入 +¥23 万。</p>
 <p class="field-label">数据来源</p>
-<p>backend/python/smartbi/services/financial/cashflow_trend.py。</p>
+<p><strong>客户视角</strong>: 财务现金流量表按月。<br><strong>实施视角</strong> (技术参考): backend/python/smartbi/services/financial/cashflow_trend.py。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务PBI看板 → 现金流趋势。</p>
 
@@ -858,7 +861,7 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <p class="field-label">示例数值</p>
 <p>3 月: 期初 ¥85 万 → 经营流入 ¥210 → 经营流出 -¥182 → 投资流出 -¥5 → 期末 ¥108 万。期末占月营收 51%,资金充足。</p>
 <p class="field-label">数据来源</p>
-<p>backend/python/smartbi/services/financial/cash_flow_waterfall.py。</p>
+<p><strong>客户视角</strong>: 财务现金流量表分项。<br><strong>实施视角</strong> (技术参考): backend/python/smartbi/services/financial/cash_flow_waterfall.py。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务PBI看板 → 现金流量瀑布图。</p>
 
@@ -882,7 +885,7 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <p class="field-label">示例数值</p>
 <p>3 月末应收合计 ¥45 万: 0-30 天 ¥34 万 (76%) / 31-60 天 ¥8 万 (18%) / 61-90 天 ¥2 万 (4%) / 90+ 天 ¥1 万 (2%)。健康。某团餐客户单一拖欠 ¥6 万 90+ 天,启动法务。</p>
 <p class="field-label">数据来源</p>
-<p>backend/python/smartbi/services/financial/ar_aging.py + 财务"应收"模块。</p>
+<p><strong>客户视角</strong>: 财务"应收"模块按账龄分桶。<br><strong>实施视角</strong> (技术参考): backend/python/smartbi/services/financial/ar_aging.py + 财务"应收"模块。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务分析 → 应收 tab。</p>
 
@@ -946,7 +949,7 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <p class="field-label">示例数值</p>
 <p>3 月得分 82 (健康): 营收达成 95% 黄 / 客单 102% 绿 / 翻台 88% 红 / 毛利 105% 绿 / 净利 92% 黄。诊断: 翻台拖了后腿,周末客流不足,启动促销。</p>
 <p class="field-label">数据来源</p>
-<p>backend/python/smartbi/services/financial/kpi_scorecard.py。</p>
+<p><strong>客户视角</strong>: 多个核心指标加权汇总。<br><strong>实施视角</strong> (技术参考): backend/python/smartbi/services/financial/kpi_scorecard.py。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务PBI看板 → KPI 计分卡。</p>
 
@@ -965,13 +968,13 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <li><strong>YoY 负 + MoM 负</strong>: 双下降,危险,立即诊断。</li>
 </ul>
 <p class="field-label">怎么用</p>
-<p>每月看。多个指标(营收 / 客单 / 客流 / 毛利 / 净利)同时摆开,识别哪个指标最"病"。</p>
+<p><strong>每月初看一次</strong>(数据封账后 1 周内)。具体步骤:<br>① 4 个核心指标(营收 / 客单 / 客流 / 净利率)按"YoY + MoM"四象限分类。<br>② 落入"YoY 负 + MoM 负"象限 (双下降) 的指标必须立即诊断 — 30 天内启动专项 action(如客单价 YoY -8% 启动菜单价审核 / 客流 YoY -12% 启动选址 + 营销复盘)。<br>③ "YoY 负 + MoM 正"象限 (回稳中) 的指标继续观察 1-2 月。<br>④ 不可孤立判断单指标 — 营收涨但客单降 = 平台促销虚假繁荣;客流涨但毛利降 = 引流款占比过高。<br>⑤ 配合"诊断引擎"(§6.4) drill-down 到具体根因。</p>
 <p class="field-label">行业基准红线</p>
 <p>每个指标自己的基准(见对应章节)。本图表本身无独立红线。</p>
 <p class="field-label">示例数值</p>
 <p>3 月: 营收 +9.8% YoY / +27% MoM(春节回升) / 客单 +3% YoY / -2% MoM / 翻台 -8% YoY / +5% MoM。综合判断: 客单稳、翻台需关注、整体健康。</p>
 <p class="field-label">数据来源</p>
-<p>backend/python/smartbi/services/financial/yoy_mom_comparison.py。</p>
+<p><strong>客户视角</strong>: 业务指标按"年-月"时间错位计算。<br><strong>实施视角</strong> (技术参考): backend/python/smartbi/services/financial/yoy_mom_comparison.py。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务PBI看板 → 同环比分析表格。</p>
 
@@ -995,7 +998,7 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <p class="field-label">示例数值</p>
 <p>3 月营销费用 ¥13 万 vs 预算 ¥10 万 (+30%) vs 去年 ¥11 万 (+18%)。属于"真超 + 预算偏低",建议下月预算调到 ¥12 万。</p>
 <p class="field-label">数据来源</p>
-<p>backend/python/smartbi/services/financial/expense_yoy_budget.py。</p>
+<p><strong>客户视角</strong>: 费用科目同比 + 预算对比。<br><strong>实施视角</strong> (技术参考): backend/python/smartbi/services/financial/expense_yoy_budget.py。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务PBI看板 → 费用同比预算差异。</p>
 
@@ -1009,7 +1012,7 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <p class="field-label">解读</p>
 <p>Top 5 偏差科目 = 当期主要"账面意外"。绝对偏差大 + 占总成本比例小的科目要看相对偏差;反之。</p>
 <p class="field-label">怎么用</p>
-<p>月度财务结算后立即看。控费的"哪里漏水"指南。</p>
+<p><strong>月度财务结算后 3 天内看</strong>(每月 5-7 号)。具体动作:<br>① Top 5 偏差科目重点审 — 偏差 &gt; ±15% 必须解释,&gt; ±30% 必须立项整改。<br>② 区分"真超" vs "假超":同比也涨 = 真超(启动控费 + 找上游原因);同比稳定 = 预算定低了(下季度预算调整)。<br>③ 营销 / 装修维护 偏差 &gt; ±30% 立即报区域经理审批,不可"先花再补单"。<br>④ 持续 2 月以上同科目超支 → 触发预算重定 + 责任人改进计划。<br>⑤ 偏差 &lt; ±5% 持续 3 月以上 → 预算可适度调减释放资金。</p>
 <p class="field-label">行业基准红线</p>
 <table>
 <tr><th>偏差水平</th><th>判断</th></tr>
@@ -1021,7 +1024,7 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <p class="field-label">示例数值</p>
 <p>3 月差异 Top 5: 营销 +30% / 装修维护 +85% (新店开业) / 食材 -3% (谈到好供应商) / 营业税 +5% / 水电 -8% (节能改造)。前 2 项需要审视。</p>
 <p class="field-label">数据来源</p>
-<p>backend/python/smartbi/services/financial/variance_analysis.py。</p>
+<p><strong>客户视角</strong>: 财务"预算管理"模块差异分析。<br><strong>实施视角</strong> (技术参考): backend/python/smartbi/services/financial/variance_analysis.py。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务分析 → 预算分析 tab → 偏差排序。</p>
 <h2>1.6 财务比率 (Financial Ratios)</h2>
@@ -1059,7 +1062,7 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <p class="field-label">示例数值</p>
 <p>3 月营收 ¥210 万 - 营业成本 ¥165 万 - 三费 ¥25.5 万 - 税金 ¥1.2 万 = 营业利润 ¥18.3 万,营业利润率 8.7%。略低于正餐基准,可能因为新开 2 店摊销重。</p>
 <p class="field-label">数据来源</p>
-<p>industry_benchmark.py + 财务总账。</p>
+<p><strong>客户视角</strong>: 系统内置 8 行业 5 财务比率基准数据。<br><strong>实施视角</strong> (技术参考): industry_benchmark.py + 财务总账。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务分析 → 利润分析 tab。</p>
 
@@ -1084,7 +1087,7 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <p class="field-label">示例数值</p>
 <p>3 月销售成本(食材消耗)¥67 万,期初库存 ¥12 万 + 期末库存 ¥15 万 = 平均 ¥13.5 万。月周转率 = 67÷13.5 = 4.96 次/月,周转天数 ≈ 6 天。正餐合格。</p>
 <p class="field-label">数据来源</p>
-<p>industry_benchmark.py + 库存表 + 销售成本。</p>
+<p><strong>客户视角</strong>: 系统内置 8 行业 5 财务比率基准数据。<br><strong>实施视角</strong> (技术参考): industry_benchmark.py + 库存表 + 销售成本。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务分析 → 成本分析 tab / AI 问答 → "本月存货周转"。</p>
 
@@ -1109,7 +1112,7 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <p class="field-label">示例数值</p>
 <p>某连锁有团餐业务,3 月营收 ¥210 万(其中团餐 ¥40 万),应收期初 ¥35 万 + 期末 ¥45 万 = 平均 ¥40 万。月周转率 = 40÷40 = 1 次/月,DSO ≈ 30 天。团餐客户回款正常。</p>
 <p class="field-label">数据来源</p>
-<p>industry_benchmark.py + 财务"应收"模块。</p>
+<p><strong>客户视角</strong>: 系统内置 8 行业 5 财务比率基准数据。<br><strong>实施视角</strong> (技术参考): industry_benchmark.py + 财务"应收"模块。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务分析 → 应收 tab。</p>
 
@@ -1134,7 +1137,7 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <p class="field-label">示例数值</p>
 <p>4 店连锁: 流动资产 ¥220 万(现金 ¥108 + 应收 ¥45 + 存货 ¥15 + 预付 ¥52) / 流动负债 ¥130 万(应付供应商 ¥35 + 应付工资 ¥45 + 应付税 ¥3 + 储值池 ¥47) = 1.69。健康。剔除储值后 1.69 → ¥220÷¥83 = 2.65,真实经营资金水位很好。</p>
 <p class="field-label">数据来源</p>
-<p>industry_benchmark.py + 资产负债表。</p>
+<p><strong>客户视角</strong>: 系统内置 8 行业 5 财务比率基准数据。<br><strong>实施视角</strong> (技术参考): industry_benchmark.py + 资产负债表。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务分析 → 偿债能力 (在预算分析 / 财务比率视图中)。</p>
 
@@ -1159,7 +1162,7 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <p class="field-label">示例数值</p>
 <p>4 店连锁: 总负债 ¥260 万 / 总资产 ¥520 万 = 50%。剔除储值池 ¥47 万 后 (¥213÷¥473) = 45%。健康偏稳健。</p>
 <p class="field-label">数据来源</p>
-<p>industry_benchmark.py + 资产负债表。</p>
+<p><strong>客户视角</strong>: 系统内置 8 行业 5 财务比率基准数据。<br><strong>实施视角</strong> (技术参考): industry_benchmark.py + 资产负债表。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务分析 → 偿债能力。</p>
 <h2>1.7 财务分析模块 (FinanceAnalysis 5 Tab)</h2>
@@ -1241,7 +1244,7 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <p class="field-label">示例数值</p>
 <p>3 月 15 日: 营销预算 ¥10 万,已花 ¥4.2 万,预算使用率 42%。时间过半 48%,基本节奏对齐。</p>
 <p class="field-label">数据来源</p>
-<p>FinanceAnalysis.vue:1404 budgetUsageRate 字段。</p>
+<p><strong>客户视角</strong>: 财务分析模块"预算分析" tab。<br><strong>实施视角</strong> (技术参考): FinanceAnalysis.vue:1404 budgetUsageRate 字段。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务分析 → 预算分析 tab → 顶部 KPI 卡。</p>
 
@@ -1265,7 +1268,7 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <p class="field-label">示例数值</p>
 <p>3 月营销预算 ¥10 万,3 月 26 日已花 ¥7.5 万,剩余 ¥2.5 万。剩余 5 天,日均剩 ¥5000;月内日均花 ¥2884,剩余日均 ¥5000 远 &gt; ¥2884,可继续花。</p>
 <p class="field-label">数据来源</p>
-<p>FinanceAnalysis.vue:1424 budgetRemaining 字段。</p>
+<p><strong>客户视角</strong>: 财务分析模块"预算分析" tab。<br><strong>实施视角</strong> (技术参考): FinanceAnalysis.vue:1424 budgetRemaining 字段。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务分析 → 预算分析 tab → 顶部 KPI 卡。</p>
 
@@ -1297,6 +1300,7 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <p class="field-label">行业基准红线</p>
 <table>
 <tr><th>品类</th><th>健康日翻台率</th><th>预警</th></tr>
+<tr style="background:#fef3c7"><td colspan="3"><strong>快速判断</strong>: 看品类 — 正餐 1.5-3 次 / 快餐 4-6 次 / 火锅 2-3 次 / 高端 0.8-1.5 次。低于下限就预警。</td></tr>
 <tr><td>快餐 / 茶饮 (流转快)</td><td>4-6 次</td><td>&lt; 3 次</td></tr>
 <tr><td>正餐 (中餐 / 西餐)</td><td>1.5-3 次</td><td>&lt; 1.2 次</td></tr>
 <tr><td>火锅 / 烧烤 (餐时长)</td><td>2-3 次</td><td>&lt; 1.5 次</td></tr>
@@ -1333,7 +1337,7 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <p class="field-label">示例数值</p>
 <p>某正餐 100 座位,12:30 实测 85 人,时点上座率 85%,健康繁忙。15:30 实测 8 人,时点上座率 8%,可考虑下午茶时段闲时套餐。</p>
 <p class="field-label">数据来源</p>
-<p>SeatOccupancyCard + POS 实时占座状态(部分系统从订单流水反推)。</p>
+<p><strong>客户视角</strong>: 取号系统 + POS 实时占座 / 订单流水反推。<br><strong>实施视角</strong> (技术参考): SeatOccupancyCard + POS 实时占座状态(部分系统从订单流水反推)。</p>
 <p class="field-label">入口路径</p>
 <p>AI 问答 → "今日各时段上座率" / 餐饮 V2 看板 → 营业时段热力图。</p>
 
@@ -1358,7 +1362,7 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <p class="field-label">示例数值</p>
 <p>某正餐 25 桌(2 人桌 5 / 4 人桌 12 / 6 人桌 5 / 包间 3)。3 月数据: 2 人桌缺口 +18 / 4 人桌缺口 -6(闲)/ 包间缺口 +12 / 6 人桌缺口 -2。诊断: 缺 2 人桌和包间,改造方案 — 2 个 4 人桌改 4 个 2 人桌。</p>
 <p class="field-label">数据来源</p>
-<p>SeatOccupancyCard 卡片字段 demand_count / table_count / gap。</p>
+<p><strong>客户视角</strong>: 取号系统 + POS 实时占座 / 订单流水反推。<br><strong>实施视角</strong> (技术参考): SeatOccupancyCard 卡片字段 demand_count / table_count / gap。</p>
 <p class="field-label">入口路径</p>
 <p>AI 问答 → "桌位配置分析" / "桌型缺口"。</p>
 
@@ -1439,6 +1443,7 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <p class="field-label">行业基准红线</p>
 <table>
 <tr><th>品类</th><th>健康客单价区间</th><th>预警</th></tr>
+<tr style="background:#fef3c7"><td colspan="3"><strong>快速判断</strong>: 看品类 — 快餐 ¥15-40 / 正餐(大众)¥50-150 / 正餐(商务)¥200-600 / 火锅 ¥80-250。月波动超 ±20% 排查促销 / 套餐 / 平台扣点。</td></tr>
 <tr><td>快餐 / 茶饮</td><td>15-40 元</td><td>波动 &gt; 25%</td></tr>
 <tr><td>正餐 (一二线大众)</td><td>50-150 元</td><td>波动 &gt; 20%</td></tr>
 <tr><td>正餐 (商务 / 高端)</td><td>200-600 元</td><td>波动 &gt; 15%</td></tr>
@@ -1526,7 +1531,7 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <p class="field-label">示例数值</p>
 <p>3 月: 总人数 22,全职 14 + 兼职 8,全职占比 63.6%,正餐健康。系统建议: 维持现状。</p>
 <p class="field-label">数据来源</p>
-<p>ShiftAnalysisCard 字段 total_headcount / full_time_count / part_time_count / full_time_ratio / benchmark。</p>
+<p><strong>客户视角</strong>: 排班表 + HR 主数据。<br><strong>实施视角</strong> (技术参考): ShiftAnalysisCard 字段 total_headcount / full_time_count / part_time_count / full_time_ratio / benchmark。</p>
 <p class="field-label">入口路径</p>
 <p>AI 问答 → "排班结构分析"。</p>
 
@@ -1544,7 +1549,7 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <p class="field-label">示例数值</p>
 <p>建议 "正餐健康全职占比 50-65%。当前 63.6%,在区间内,维持。"</p>
 <p class="field-label">数据来源</p>
-<p>ShiftAnalysisCard.benchmark 字段。</p>
+<p><strong>客户视角</strong>: 排班表 + HR 主数据。<br><strong>实施视角</strong> (技术参考): ShiftAnalysisCard.benchmark 字段。</p>
 <p class="field-label">入口路径</p>
 <p>AI 问答 → "排班建议"。</p>
 
@@ -1662,7 +1667,7 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <p class="field-label">示例数值</p>
 <p>3 月营收 ¥210 万 / 22 人 = 月人效 ¥9.5 万。系统 thresholds.low = ¥6 万 / .high = ¥12 万,在区间内,健康。</p>
 <p class="field-label">数据来源</p>
-<p>LaborProductivityCard 字段 revenue / headcount + thresholds.low/.high。</p>
+<p><strong>客户视角</strong>: 财务月营收 / HR 员工数。<br><strong>实施视角</strong> (技术参考): LaborProductivityCard 字段 revenue / headcount + thresholds.low/.high。</p>
 <p class="field-label">入口路径</p>
 <p>AI 问答 → "人效监控" / "人均月营收"。</p>
 
@@ -1679,7 +1684,7 @@ EBITDA 率 = EBITDA ÷ 营业收入 × 100%</div>
 <p class="field-label">解读</p>
 <p><strong>校准因子 &gt; 1.0</strong>: 该指标历史好于行业,行业基准对本店偏严,系统会上调本店预期;<strong>= 1.0</strong>: 持平;<strong>&lt; 1.0</strong>: 本店历史弱于行业,行业基准偏高,系统会适当放宽。</p>
 <p class="field-label">怎么用</p>
-<p>主要是系统内部用,客户偶尔在 RestaurantV2 看板看到这个指标。可作为"我的店相对行业的位置"参考。</p>
+<p><strong>季度战略复盘必看 1 次</strong>。具体应用:<br>① 校准因子 &gt; 1.3 的指标 = 品牌核心优势,作为加盟招商 / 融资讲故事的素材(如"翻台率 1.7 显著跑赢行业")。<br>② 校准因子 &lt; 0.8 的指标 = 品牌真实短板,要么投入修复(培训 + 流程 + 装修)要么战略放弃(改定位避开正面竞争)。<br>③ 校准因子从 1.2+ 跌到 0.9- 是危险的"竞品超车"信号 — 启动竞品 deep dive,看对手哪些动作把行业基准抬高了。<br>④ 不要单独看一项,看 4-6 项核心指标的校准因子全貌(如翻台 1.6 + 客单 0.9 + 毛利 1.05 = 翻台型品牌 / 客单偏低有提价空间)。<br>⑤ 月度校准历史 (§2.4) 看趋势,持续上升 = 加投扩张 / 持续下降 = 战略收缩。</p>
 <p class="field-label">行业基准红线</p>
 <table>
 <tr><th>校准因子区间</th><th>判断</th></tr>
@@ -1898,7 +1903,7 @@ Y 轴 (毛利率): (售价 − 食材成本) ÷ 售价 × 100%
 <p class="field-label">示例数值</p>
 <p>某正餐共 66 道菜:Star 12 道 (18%) / Cash Cow 22 道 (33%) / Puzzle 18 道 (27% ⚠ 偏高) / Dog 14 道 (21% ⚠ 红线)。诊断: 启动菜单清理 — 下架 8 道 Dog (保留 6 道做季节限定) + 14 道 Puzzle 改名 + 改图 + 加服务员推介话术。</p>
 <p class="field-label">数据来源</p>
-<p>MenuQuadrantCard 字段 quadrants.star / cash_cow / puzzle / dog,基于销售订单明细 × 产品 BOM 食材成本(系统自动计算)。</p>
+<p><strong>客户视角</strong>: 销售订单明细 × 产品 BOM 食材成本。<br><strong>实施视角</strong> (技术参考): MenuQuadrantCard 字段 quadrants.star / cash_cow / puzzle / dog,基于销售订单明细 × 产品 BOM 食材成本(系统自动计算)。</p>
 <p class="field-label">入口路径</p>
 <p>AI 问答 → "做一个菜品 4 象限分析" / "本月菜品工程"。</p>
 
@@ -1923,7 +1928,7 @@ Y 轴 (毛利率): (售价 − 食材成本) ÷ 售价 × 100%
 <p class="field-label">示例数值</p>
 <p>"双人套餐" 月售 320 套。拆单: 主菜A 320 / 配菜B 320 / 配菜C 320 / 饮料D 320。但单点销量: 配菜B 580 / 配菜C 45。说明 C 在套餐中是搭头,可换成 D 或新品。</p>
 <p class="field-label">数据来源</p>
-<p>ComboSplitCard 卡片,基于销售订单明细 × 套餐 BOM。</p>
+<p><strong>客户视角</strong>: 系统从业务数据 (销售/成本/HR/营销) 自动聚合。<br><strong>实施视角</strong> (技术参考): ComboSplitCard 卡片,基于销售订单明细 × 套餐 BOM。</p>
 <p class="field-label">入口路径</p>
 <p>AI 问答 → "套餐拆单分析"。</p>
 
@@ -1949,7 +1954,7 @@ Y 轴 (毛利率): (售价 − 食材成本) ÷ 售价 × 100%
 <p class="field-label">示例数值</p>
 <p>3 月: 主食 18% + 热菜 47% + 凉菜 9% + 饮品 13% + 酒水 8% + 套餐 5%。健康正餐结构。</p>
 <p class="field-label">数据来源</p>
-<p>backend/python/smartbi/services/financial/category_structure.py。</p>
+<p><strong>客户视角</strong>: 销售订单按品类聚合占比。<br><strong>实施视角</strong> (技术参考): backend/python/smartbi/services/financial/category_structure.py。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务PBI看板 → 产品结构。</p>
 
@@ -1972,7 +1977,7 @@ Y 轴 (毛利率): (售价 − 食材成本) ÷ 售价 × 100%
 <p class="field-label">示例数值</p>
 <p>3 月 Top 10 菜销售 ¥83 万,占总 ¥210 万的 39.5%,健康。Bottom 10 合计仅 ¥4.2 万 (2%),其中 6 个菜月销量 &lt; 8 份,候选下架。</p>
 <p class="field-label">数据来源</p>
-<p>backend/python/smartbi/services/financial/product_ranking.py。</p>
+<p><strong>客户视角</strong>: 销售订单按产品聚合排名。<br><strong>实施视角</strong> (技术参考): backend/python/smartbi/services/financial/product_ranking.py。</p>
 <p class="field-label">入口路径</p>
 <p>智能分析 → 财务PBI看板 → 产品结构 → 排名视图 / AI 问答 → "Top 10 畅销菜"。</p>
 
@@ -2045,7 +2050,7 @@ Y 轴 (毛利率): (售价 − 食材成本) ÷ 售价 × 100%
 <p class="field-label">示例数值</p>
 <p>3 月整店退货率 1.4% (健康)。Top 5 退货菜品: 麻婆豆腐 4.2% / 红烧肉 2.8% / 凉拌黄瓜 2.5% / 番茄汤 2.1% / 米饭 1.9%。</p>
 <p class="field-label">数据来源</p>
-<p>ReturnAnomalyCard.return_pct + 销售订单退菜流水。</p>
+<p><strong>客户视角</strong>: 系统从业务数据 (销售/成本/HR/营销) 自动聚合。<br><strong>实施视角</strong> (技术参考): ReturnAnomalyCard.return_pct + 销售订单退菜流水。</p>
 <p class="field-label">入口路径</p>
 <p>AI 问答 → "本月退货率"。</p>
 
@@ -2074,7 +2079,7 @@ Y 轴 (毛利率): (售价 − 食材成本) ÷ 售价 × 100%
 <p class="field-label">示例数值</p>
 <p>3 月 12 日叫货单: 共 86 种食材,需下单 32 种,提前期 1 天 + 安全系数 1.2。明日营收预测 ¥7.2 万,相应增加猪肉 12kg + 蔬菜 28kg。</p>
 <p class="field-label">数据来源</p>
-<p>SmartReorderCard 卡片字段 total_ingredients / ingredients_to_order / lead_days / safety_factor。</p>
+<p><strong>客户视角</strong>: 系统从业务数据 (销售/成本/HR/营销) 自动聚合。<br><strong>实施视角</strong> (技术参考): SmartReorderCard 卡片字段 total_ingredients / ingredients_to_order / lead_days / safety_factor。</p>
 <p class="field-label">入口路径</p>
 <p>AI 问答 → "今日叫货单" / "明天需要订什么"。</p>
 
@@ -2092,7 +2097,7 @@ Y 轴 (毛利率): (售价 − 食材成本) ÷ 售价 × 100%
 <p class="field-label">示例数值</p>
 <p>预测未来 7 天: 总营收 ¥51 万 / 总客数 5800 人 / 总采购金额 ¥17 万 (33.3% 食材率,正餐健康)。</p>
 <p class="field-label">数据来源</p>
-<p>ProcurementForecastCard 字段 days_planned / total_forecast_revenue / total_forecast_covers。</p>
+<p><strong>客户视角</strong>: "营收预测"模块基于历史 + 季节性。<br><strong>实施视角</strong> (技术参考): ProcurementForecastCard 字段 days_planned / total_forecast_revenue / total_forecast_covers。</p>
 <p class="field-label">入口路径</p>
 <p>AI 问答 → "未来 7 天采购预测"。</p>
 
@@ -2116,7 +2121,7 @@ Y 轴 (毛利率): (售价 − 食材成本) ÷ 售价 × 100%
 <p class="field-label">示例数值</p>
 <p>3 月 12 日日清: 86 种食材,82 种 OK,4 种偏差 &gt; 5%(青菜 -8% / 牛肉 +12% / 面粉 -6% / 食用油 -7%)。原因: 青菜午市快卖完临时补货未入账 / 牛肉员工误退到冰箱重数 / 面粉湿度膨胀 / 油桶滴漏。</p>
 <p class="field-label">数据来源</p>
-<p>DailyReconciliationCard 字段 date / total_ingredients / tolerance_pct + 销售订单 × BOM × 盘存。</p>
+<p><strong>客户视角</strong>: 系统从业务数据 (销售/成本/HR/营销) 自动聚合。<br><strong>实施视角</strong> (技术参考): DailyReconciliationCard 字段 date / total_ingredients / tolerance_pct + 销售订单 × BOM × 盘存。</p>
 <p class="field-label">入口路径</p>
 <p>AI 问答 → "今日日清结果" / 餐饮 V2 看板 → 日清日结。</p>
 
@@ -2237,7 +2242,7 @@ Y 轴 (毛利率): (售价 − 食材成本) ÷ 售价 × 100%
 <p class="field-label">示例数值</p>
 <p>本店 4.32 vs 同区域竞品: A 4.51 / B 4.38 / C 4.18 / D 4.05。本店在中游。差评关键词 Top 3: "等位太久" / "服务慢" / "贵"。改进方向: 优化叫号系统 + 加峰时人手。</p>
 <p class="field-label">数据来源</p>
-<p>ReviewCompetitiveCard 卡片字段 ranking / insight。</p>
+<p><strong>客户视角</strong>: 系统从业务数据 (销售/成本/HR/营销) 自动聚合。<br><strong>实施视角</strong> (技术参考): ReviewCompetitiveCard 卡片字段 ranking / insight。</p>
 <p class="field-label">入口路径</p>
 <p>AI 问答 → "竞品评论对比" / "我家在区域排名"。</p>
 
@@ -2291,7 +2296,7 @@ Y 轴 (毛利率): (售价 − 食材成本) ÷ 售价 × 100%
 <p class="field-label">示例数值</p>
 <p>3 号店: 财务绿 (净利 11%) / 客流黄 (翻台 1.4 略低) / 运营红 (退货 3.8%)。alerts: ["退货率连续 2 月超 3%","翻台率与基准差 28%"]。立项: 品控整改 30 天观察。</p>
 <p class="field-label">数据来源</p>
-<p>StoreKpiDashboardCard 卡片字段 dim 数组 + alerts 列表。</p>
+<p><strong>客户视角</strong>: 系统从业务数据 (销售/成本/HR/营销) 自动聚合。<br><strong>实施视角</strong> (技术参考): StoreKpiDashboardCard 卡片字段 dim 数组 + alerts 列表。</p>
 <p class="field-label">入口路径</p>
 <p>AI 问答 → "店长 KPI 三维度" / "3 号店健康度"。</p>
 
@@ -2311,7 +2316,7 @@ Y 轴 (毛利率): (售价 − 食材成本) ÷ 售价 × 100%
 <p class="field-label">示例数值</p>
 <p>本品牌 vs 行业 5 家可比连锁: 翻台率排第 2 / 客单价排第 4 / 复购率排第 1 / 净利率排第 3。综合: 复购 + 翻台型品牌,客单偏低,有提价空间。</p>
 <p class="field-label">数据来源</p>
-<p>CrossChainCard 卡片。数据来自系统集成的行业数据 / 公开年报。</p>
+<p><strong>客户视角</strong>: 系统从业务数据 (销售/成本/HR/营销) 自动聚合。<br><strong>实施视角</strong> (技术参考): CrossChainCard 卡片。数据来自系统集成的行业数据 / 公开年报。</p>
 <p class="field-label">入口路径</p>
 <p>AI 问答 → "跨连锁对标" / "我们在行业排名"。</p>
 
@@ -2362,7 +2367,7 @@ Y 轴 (毛利率): (售价 − 食材成本) ÷ 售价 × 100%
 <p class="field-label">示例数值</p>
 <p>3 月预警: 食材率 31.9% (vs 行业中位数 33%,健康 ✓) / 人力占比 22.9% (vs 21%,略高 ⚠) / 翻台 2.32 (vs 2.5,-7% 略低 ⚠) / 净利率 11% (vs 10%,健康 ✓)。</p>
 <p class="field-label">数据来源</p>
-<p>BenchmarkBarsCard, "行业中位数" title 字段。industry_benchmark.py 提供基准数据。</p>
+<p><strong>客户视角</strong>: 系统内置 8 行业 5 财务比率基准数据。<br><strong>实施视角</strong> (技术参考): BenchmarkBarsCard, "行业中位数" title 字段。industry_benchmark.py 提供基准数据。</p>
 <p class="field-label">入口路径</p>
 <p>AI 问答 → "本月对标预警" / 餐饮 V2 看板 → 对标预警。</p>
 
@@ -2406,7 +2411,7 @@ Y 轴 (毛利率): (售价 − 食材成本) ÷ 售价 × 100%
 <p class="field-label">示例数值</p>
 <p>3 号店店长 Q1 绩效: 财务 28/30 + 客流 18/25 + 运营 12/20 + 品控 8/15 + 团队 9/10 = 75/100 = C 级。改进重点: 客流 + 运营。</p>
 <p class="field-label">数据来源</p>
-<p>PerformanceEvalCard 字段 total_score / grade / KPI 子项明细。</p>
+<p><strong>客户视角</strong>: 系统从业务数据 (销售/成本/HR/营销) 自动聚合。<br><strong>实施视角</strong> (技术参考): PerformanceEvalCard 字段 total_score / grade / KPI 子项明细。</p>
 <p class="field-label">入口路径</p>
 <p>AI 问答 → "3 号店店长本季绩效" / "加盟商 Q1 评估"。</p>
 
@@ -2435,7 +2440,7 @@ Y 轴 (毛利率): (售价 − 食材成本) ÷ 售价 × 100%
 <p class="field-label">示例数值</p>
 <p>3 月计件: 厨师 6 人 + 切配 3 人 + 服务员 8 人 = 17 个计件岗位 / 总提成 ¥6.8 万 / 占人力成本 14.2%。健康偏上限。</p>
 <p class="field-label">数据来源</p>
-<p>PieceworkCalcCard 字段 roles_counted / total_payout / 各岗位明细。</p>
+<p><strong>客户视角</strong>: 系统从业务数据 (销售/成本/HR/营销) 自动聚合。<br><strong>实施视角</strong> (技术参考): PieceworkCalcCard 字段 roles_counted / total_payout / 各岗位明细。</p>
 <p class="field-label">入口路径</p>
 <p>AI 问答 → "本月计件提成" / "厨师本月提成"。</p>
 

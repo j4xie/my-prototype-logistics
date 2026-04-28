@@ -984,14 +984,23 @@ class ExcelParser:
         if not value or not value.strip():
             return False
 
-        # Remove common formatting
-        cleaned = value.strip().replace(',', '').replace(' ', '')
+        # Apr 28 2026 (audit): also strip CJK comma + currency CN symbols
+        # + accounting parens. Real Chinese exports use ， (full-width) and
+        # 元/￥/人民币. Without these, "(1,500)" / "1，234" / "39617 元" all
+        # fail _is_numeric → field_detector falls back to STRING type.
+        cleaned = value.strip().replace(',', '').replace('，', '').replace(' ', '')
 
-        # Check for currency symbols and percentage
-        if cleaned.startswith(('¥', '$', '€', '£')):
+        # Accounting negative: (1500) → -1500
+        if cleaned.startswith('(') and cleaned.endswith(')'):
+            cleaned = '-' + cleaned[1:-1]
+
+        # Check for currency symbols (prefix + suffix) and percentage
+        if cleaned.startswith(('¥', '￥', '$', '€', '£')):
             cleaned = cleaned[1:]
-        if cleaned.endswith('%'):
-            cleaned = cleaned[:-1]
+        for suffix in ('元', '人民币', '%'):
+            if cleaned.endswith(suffix):
+                cleaned = cleaned[:-len(suffix)]
+                break
 
         try:
             float(cleaned)
