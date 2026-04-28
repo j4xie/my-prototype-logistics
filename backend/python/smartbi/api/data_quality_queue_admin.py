@@ -318,24 +318,24 @@ async def _get_queue_item(pool, item_id: int) -> Optional[Dict[str, Any]]:
 
 
 async def _get_admin_count_for_factory(factory_id: str) -> int:
-    """Call Java GET /api/mobile/{factoryId}/users/admin-count.
+    """Call Java GET /api/internal/users/admin-count?factoryId=X.
 
-    Phase A note: this endpoint requires a factory-scoped JWT (it is NOT on
-    the JwtAuthInterceptor whitelist). The X-Internal-Key header is only checked
-    for /api/internal/* paths, so this call will return 401 until Phase B adds
-    either a whitelist entry or a SECURITY DEFINER function. Any failure
-    (401, network, timeout) falls back to 2 = safer default (4-eye enforced).
+    2026-04-29 (Phase B): Java endpoint moved from /api/mobile/{factoryId}/users/admin-count
+    to /api/internal/users/admin-count, so JwtAuthInterceptor's existing /api/internal/*
+    handler validates X-Internal-Key against INTERNAL_API_SECRET. No JWT required.
 
-    Plan template line 2200: "default to 2 (safe)".
+    Any failure (network, timeout, non-200) falls back to 2 = safer default (4-eye enforced).
+    Returns the actual admin count when Java is reachable + auth succeeds.
     """
     import httpx
     java_base = os.environ.get("JAVA_API_BASE", "http://localhost:10010")
-    java_url = f"{java_base}/api/mobile/{factory_id}/users/admin-count"
+    java_url = f"{java_base}/api/internal/users/admin-count"
     internal_key = os.environ.get("INTERNAL_API_SECRET", "")
     try:
         async with httpx.AsyncClient(timeout=3.0) as client:
             resp = await client.get(
                 java_url,
+                params={"factoryId": factory_id},
                 headers={"X-Internal-Key": internal_key},
             )
             if resp.status_code != 200:

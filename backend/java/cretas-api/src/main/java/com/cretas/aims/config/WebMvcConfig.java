@@ -43,8 +43,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
         };
 
         // 1. JWT认证拦截器 - 验证Token，设置用户信息
+        // /api/internal/** 走 X-Internal-Key 校验分支 (JwtAuthInterceptor:155)，同样由此拦截器处理
         registry.addInterceptor(jwtAuthInterceptor)
-                .addPathPatterns("/api/mobile/**", "/api/platform/**", "/api/admin/**")  // 拦截所有API
+                .addPathPatterns("/api/mobile/**", "/api/platform/**", "/api/admin/**", "/api/internal/**")
                 .excludePathPatterns(swaggerWhitelist)  // 排除Swagger
                 .order(1);  // 最高优先级
 

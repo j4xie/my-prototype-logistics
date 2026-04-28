@@ -5,8 +5,8 @@ import com.cretas.aims.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -20,11 +20,16 @@ import java.util.Map;
  *
  * platform_admin is intentionally excluded (cross-factory role, not bound to one factory).
  *
+ * 2026-04-29: Moved from /api/mobile/{factoryId}/users/admin-count to /api/internal/users/admin-count
+ *             so that JwtAuthInterceptor's existing /api/internal/* + X-Internal-Key validation
+ *             handles auth (Phase B follow-up — was returning 401 from /api/mobile path).
+ *             Python sends X-Internal-Key header with INTERNAL_API_SECRET value.
+ *
  * @author Cretas Team
- * @since 2026-04-28
+ * @since 2026-04-28 (Phase A) / 2026-04-29 (Phase B path move)
  */
 @RestController
-@RequestMapping("/api/mobile")
+@RequestMapping("/api/internal/users")
 public class UserCountController {
 
     /**
@@ -39,16 +44,19 @@ public class UserCountController {
     private UserRepository userRepository;
 
     /**
-     * GET /api/mobile/{factoryId}/users/admin-count
+     * GET /api/internal/users/admin-count?factoryId=F002
      *
      * Returns the count of non-deleted users in the factory whose roleCode is one of
      * factory_super_admin, permission_admin, or factory_admin.
      *
+     * Auth: X-Internal-Key header must match INTERNAL_API_SECRET env var
+     *       (validated by JwtAuthInterceptor for all /api/internal/* paths).
+     *
      * Response: { success: true, data: { count: long } }
      */
-    @GetMapping("/{factoryId}/users/admin-count")
+    @GetMapping("/admin-count")
     public ResponseEntity<ApiResponse<Map<String, Long>>> adminCount(
-            @PathVariable String factoryId) {
+            @RequestParam String factoryId) {
         long count = userRepository.countByFactoryIdAndRoleCodeIn(factoryId, ADMIN_ROLES);
         return ResponseEntity.ok(ApiResponse.success(Map.of("count", count)));
     }
