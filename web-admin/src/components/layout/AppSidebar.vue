@@ -254,7 +254,10 @@ const menuConfig: MenuItem[] = [
       { path: '/restaurant/requisitions', title: '领料管理', icon: '', module: 'restaurant', groupLabel: '日常管理' },
       { path: '/restaurant/wastage', title: '损耗管理', icon: '', module: 'restaurant' },
       { path: '/restaurant/recipes', title: '配方管理', icon: '', module: 'restaurant' },
-      { path: '/restaurant/stocktaking', title: '盘点管理', icon: '', module: 'restaurant' }
+      { path: '/restaurant/stocktaking', title: '盘点管理', icon: '', module: 'restaurant' },
+      // 餐饮 Phase A-1 Task 1.5: ETL admin page (admin-only)
+      { path: '/restaurant/admin/etl-status', title: 'ETL 状态', icon: '', module: 'restaurant',
+        roles: ['factory_super_admin', 'platform_admin', 'permission_admin'] }
     ]
   },
   // UX P2-5 merged: /calibration 并入 系统管理, /production-analytics 并入 智能BI

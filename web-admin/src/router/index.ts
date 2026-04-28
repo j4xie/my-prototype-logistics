@@ -791,6 +791,19 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'RestaurantGrossMargin',
             component: () => import('@/views/restaurant/analytics/gross-margin.vue'),
             meta: { requiresAuth: true, title: '菜品毛利分析', module: 'restaurant' }
+          },
+          {
+            // 餐饮 Phase A-1 Task 1.5: ETL admin status page
+            path: 'admin/etl-status',
+            name: 'RestaurantETLStatus',
+            component: () => import('@/views/restaurant/admin/etl-status.vue'),
+            meta: {
+              requiresAuth: true,
+              title: '餐饮 ETL 状态',
+              module: 'restaurant',
+              roles: ['factory_super_admin', 'platform_admin', 'permission_admin'],
+              hidden: false,
+            },
           }
         ]
       },
