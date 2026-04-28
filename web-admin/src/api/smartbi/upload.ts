@@ -57,9 +57,13 @@ export async function detectTableRegions(
   try {
     const res = await request.post('/smartbi-api/api/excel/detect-regions', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
-      baseURL: '',  // absolute path; don't prepend /api/mobile
-      timeout: 600000,  // P0-1 (Apr 20): Bug #45 fix — match uploadAndAnalyze (10min). Large xlsx detect-regions can take 30-60s.
-    });
+      baseURL: '',
+      timeout: 600000,
+      // Apr 28 2026: caller falls through to full-file parse on failure (see
+      // ExcelUpload.vue handleBeforeUpload line 327). Suppress the interceptor's
+      // "操作失败" generic toast — the real error comes from uploadAndAnalyze.
+      _silent: true,
+    } as Parameters<typeof request.post>[2] & { _silent: true });
     return (res.data || res) as DetectRegionsResponse;
   } catch (error) {
     console.error('detectTableRegions failed:', error);

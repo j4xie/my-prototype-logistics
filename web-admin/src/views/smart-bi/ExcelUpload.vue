@@ -365,7 +365,11 @@ async function runUploadAndAnalyze(rawFile: File, region?: TableRegion) {
     uploadStage.value = 'done';
 
     if (!result.success) {
-      ElMessage.error(result.error || '解析失败');
+      // Apr 28 2026: axios interceptor (request.ts:168 showRichError) already
+      // emits the rich actionHint toast for any success=false response.
+      // uploadAndAnalyze.catch then converts it to {success:false, error: msg}.
+      // Re-firing here = duplicate toast (3ms apart, captured during qa-prompt
+      // v2.4 deep E2E Phase 4). Skip to keep one toast per error event.
       uploading.value = false;
       return false;
     }
@@ -466,7 +470,8 @@ async function runUploadAsync(rawFile: File, region?: TableRegion) {
     });
 
     if (!uploadResult.success || !uploadResult.uploadId) {
-      ElMessage.error(uploadResult.error || '异步上传失败');
+      // Apr 28 2026: axios interceptor already emitted toast for success=false.
+      // Same pattern as runUploadAndAnalyze (sync path) — skip duplicate.
       return false;
     }
 
