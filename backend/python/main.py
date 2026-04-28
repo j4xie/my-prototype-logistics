@@ -758,6 +758,14 @@ app.include_router(
     tags=["Restaurant ETL Admin"],
 )
 
+# Restaurant completeness API (餐饮 Phase A Task 2.1)
+from smartbi.api import restaurant_completeness
+app.include_router(
+    restaurant_completeness.router,
+    prefix="/api/smartbi/restaurant",
+    tags=["Restaurant Completeness"],
+)
+
 # Memory diagnostic / manual trim (Apr 23 2026, investigating post-materialize RSS retention)
 from smartbi.api import memory_admin
 app.include_router(memory_admin.router, prefix="/api/smartbi/admin/memory", tags=["Memory Admin"])
