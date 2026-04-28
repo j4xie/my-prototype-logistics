@@ -213,7 +213,10 @@ const menuConfig: MenuItem[] = [
         hideForFactoryTypes: ['RESTAURANT'] },
       // UX P2-5: 行为校准 (1 项) 合并入系统管理下, 不单做顶级组
       { path: '/calibration/list', title: '行为校准', icon: '', module: 'system',
-        hideForFactoryTypes: ['RESTAURANT'] }
+        hideForFactoryTypes: ['RESTAURANT'] },
+      // 餐饮 Phase A A-3 Task 3.5: data quality queue admin page
+      { path: '/system/data-quality-queue', title: '数据质量队列', icon: '', module: 'system',
+        roles: ['factory_super_admin', 'platform_admin', 'permission_admin'] }
     ]
   },
   {
