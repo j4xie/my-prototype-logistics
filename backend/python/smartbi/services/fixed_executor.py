@@ -282,9 +282,61 @@ class FixedExecutor:
             else:
                 # 对于复杂多层表头 (>2行)，使用智能合并而不是 pandas 默认拼接
                 if header_rows > 2 or structure_config.merged_cells:
-                    return self._execute_with_smart_header_merge(
-                        file_bytes, structure_config, mapping_config, options
-                    )
+                    # OOM guard: smart_merge 调 openpyxl.load_workbook(data_only=True) 全量加载
+                    # 所有 cell 对象 (~500-2000 bytes/cell), 宽文件在 swap-full 服务器上 OOM。
+                    # pandas 1.5.3 内部用 read_only=True 按行流式读, 内存安全。
+                    # 超出 300K cells → 降级到 pandas 路径 + nrows cap。
+                    _should_use_smart = True
+                    if file_bytes:
+                        try:
+                            import openpyxl as _opxl_pre
+                            _wb_pre = _opxl_pre.load_workbook(
+                                io.BytesIO(file_bytes), read_only=True, data_only=True
+                            )
+                            _sname_pre = structure_config.sheet_name or _wb_pre.sheetnames[0]
+                            _ws_pre = (_wb_pre[_sname_pre]
+                                       if _sname_pre in _wb_pre.sheetnames
+                                       else _wb_pre[_wb_pre.sheetnames[0]])
+                            _pre_rows = _ws_pre.max_row or 0
+                            _pre_cols = _ws_pre.max_column or 1
+                            _wb_pre.close()
+                            _SMART_BUDGET = 300_000
+                            logger.info(
+                                f"[smart-merge-probe] rows={_pre_rows} cols={_pre_cols} "
+                                f"cells={_pre_rows*_pre_cols:,} budget={_SMART_BUDGET:,} "
+                                f"file={len(file_bytes)//1024}KB"
+                            )
+                            _dim_unreliable = _pre_rows <= 1  # xlsx 无 dimension 标签
+                            if _pre_rows > 1 and _pre_rows * _pre_cols > _SMART_BUDGET:
+                                # 确切维度 × cells 超预算
+                                _cap = max(1000, _SMART_BUDGET // max(1, _pre_cols))
+                                logger.warning(
+                                    f"[smart-merge-oom-guard] {_pre_rows}r × {_pre_cols}c "
+                                    f"= {_pre_rows*_pre_cols:,} cells > budget {_SMART_BUDGET:,}. "
+                                    f"Downgrade to pandas read_only path, cap={_cap} rows."
+                                )
+                                options = dict(options)
+                                options["nrows"] = _cap
+                                _should_use_smart = False
+                            elif _dim_unreliable and len(file_bytes) > 300_000:
+                                # xlsx 无 dimension tag + 大文件 → openpyxl 全量加载估算不出行数,
+                                # 但实际数据量可能很大。用保守 cap 避免 OOM。
+                                _cap_safe = 2000
+                                logger.warning(
+                                    f"[smart-merge-oom-guard] {len(file_bytes)//1024}KB xlsx "
+                                    f"+ no dimension tag (max_row={_pre_rows}). "
+                                    f"Downgrade to pandas path, cap={_cap_safe} rows."
+                                )
+                                options = dict(options)
+                                options["nrows"] = _cap_safe
+                                _should_use_smart = False
+                        except Exception as _pre_e:
+                            logger.warning(f"[smart-merge-oom-guard] probe failed: {_pre_e}")
+                    if _should_use_smart:
+                        return self._execute_with_smart_header_merge(
+                            file_bytes, structure_config, mapping_config, options
+                        )
+                    # else: fall through to pandas read_only path with capped nrows
 
                 # 简单表头情况，使用 pandas 默认处理
                 if header_rows == 2:
@@ -314,16 +366,26 @@ class FixedExecutor:
                         _probe_rows = _ws_probe.max_row or 0
                         _probe_cols = _ws_probe.max_column or 1
                         _wb_probe.close()
-                        _CELL_BUDGET = 15_000_000
+                        # xlsx openpyxl Cell 对象开销约 500-2000 bytes/cell (Python 对象开销).
+                        # CSV 路径 excel.py 用 15M cells, 但 CSV 用 C 解析器, 开销低 50x.
+                        # 300K cells × ~1KB/cell ≈ 300MB 峰值 — 在 swap-full 服务器上安全。
+                        # 真实例: 1.37MB xlsx, 4033 rows × 112 cols = 451K cells → OOM。
+                        _CELL_BUDGET = 300_000
                         _safety_cap = max(1000, _CELL_BUDGET // max(1, _probe_cols))
                         if _probe_rows > _safety_cap:
                             logger.warning(
                                 f"[xlsx-safety-cap] {_probe_rows} rows × {_probe_cols} cols "
                                 f"= {_probe_rows*_probe_cols:,} cells exceeds budget "
-                                f"({_CELL_BUDGET:,}). Capping to {_safety_cap} rows. "
+                                f"({_CELL_BUDGET:,}). Capping to {_safety_cap} rows "
+                                f"({100*_safety_cap//_probe_rows}% of data). "
                                 f"TODO: streaming persist for full coverage."
                             )
                             _nrows_opt = _safety_cap
+                        else:
+                            logger.info(
+                                f"[xlsx-probe] {_probe_rows} rows × {_probe_cols} cols "
+                                f"= {_probe_rows*_probe_cols:,} cells — within budget, full load."
+                            )
                     except Exception as _probe_e:
                         logger.warning(f"[xlsx-safety-cap] probe failed: {_probe_e}, reading full file")
 

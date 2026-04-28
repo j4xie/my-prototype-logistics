@@ -13,8 +13,9 @@ const FACTORY_ID = 'RES_3101_009';
 const USER = 'qhj_prod';
 const PW = '123456';
 
-// Skip dirs that are too deep / not real customer data
-const SKIP_DIRS = ['xlsx_converted', '桂满陇1月_商品销量报表', '桂满陇2月_', '桂满陇3月_'];
+// Skip xlsx_converted (dup of original .xls). Apr 28 2026: include 桂满陇 dirs
+// added by user in 2nd batch.
+const SKIP_DIRS = ['xlsx_converted'];
 
 function listFiles(dir, depth = 0) {
   if (depth > 2) return [];
@@ -99,15 +100,18 @@ async function main() {
   const token = await login();
   console.log(`Logged in (token: ${token.slice(0, 20)}...)\n`);
 
+  // Apr 28 2026: parallel upload pool (CONCURRENCY=6) to amortize LLM
+  // structure-detector latency. Single-file ~30s × 154 files = 80 min serial.
+  // 6 parallel × 30s avg = ~13 min. DeepSeek rate limit handles this fine.
+  const CONCURRENCY = 6;
   const results = [];
-  let i = 0;
-  for (const f of files) {
-    i++;
+  let processed = 0;
+  async function worker(idx) {
+    const f = files[idx];
     const rel = path.relative(ROOT, f);
-    process.stdout.write(`[${i}/${files.length}] ${rel}: `);
+    let entry;
     try {
       const r = await uploadOne(f, token);
-      // Java wraps: {code, message, data:{success, parseResult:{headers, rowCount, columnCount, detectedTableType, fieldMappings}}}
       const top = r.json?.data || {};
       const pr = top.parseResult || {};
       const detectedRows = pr.rowCount ?? top.rowCount ?? null;
@@ -115,19 +119,27 @@ async function main() {
       const tableType = pr.detectedTableType ?? top.detectedTableType ?? null;
       const fieldCount = (pr.fieldMappings || top.fieldMappings || pr.headers || []).length;
       const status = r.httpStatus === 200 && r.json?.code === 200 && pr.success !== false ? 'OK' : 'FAIL';
-      results.push({
-        rel, status, httpStatus: r.httpStatus,
+      entry = { rel, status, httpStatus: r.httpStatus,
         rows: detectedRows, cols: detectedCols, tableType,
         fieldCount, message: r.json?.message || r.raw.slice(0, 150),
-      });
-      console.log(`${status} (${detectedRows ?? '?'}行 × ${detectedCols ?? '?'}列, ${tableType ?? '-'})`);
+      };
+      processed++;
+      console.log(`[${processed}/${files.length}] ${rel}: ${status} (${detectedRows ?? '?'}行 × ${detectedCols ?? '?'}列, ${tableType ?? '-'})`);
     } catch (e) {
-      results.push({ rel, status: 'EXCEPTION', error: e.message });
-      console.log(`EXCEPTION: ${e.message}`);
+      entry = { rel, status: 'EXCEPTION', error: e.message };
+      processed++;
+      console.log(`[${processed}/${files.length}] ${rel}: EXCEPTION: ${e.message}`);
     }
-    // Small delay to avoid hammering
-    await new Promise(r => setTimeout(r, 500));
+    results[idx] = entry;
   }
+  let nextIdx = 0;
+  async function pool() {
+    while (nextIdx < files.length) {
+      const myIdx = nextIdx++;
+      await worker(myIdx);
+    }
+  }
+  await Promise.all(Array.from({ length: CONCURRENCY }, () => pool()));
 
   // Summary
   console.log('\n=== SUMMARY ===');
