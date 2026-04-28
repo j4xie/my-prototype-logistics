@@ -804,6 +804,13 @@ const businessRoutes: RouteRecordRaw[] = [
               roles: ['factory_super_admin', 'platform_admin', 'permission_admin'],
               hidden: false,
             },
+          },
+          {
+            // 餐饮 Phase A-2 Task 2.2: data completeness page
+            path: 'data-completeness',
+            name: 'RestaurantDataCompleteness',
+            component: () => import('@/views/restaurant/data-completeness.vue'),
+            meta: { requiresAuth: true, title: '数据完整度', module: 'restaurant' },
           }
         ]
       },
