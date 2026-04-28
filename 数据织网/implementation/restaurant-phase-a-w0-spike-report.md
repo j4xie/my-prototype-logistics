@@ -215,14 +215,177 @@ The real schema matches all claims in the spec v2 §2.3 correction table (lines 
 
 ---
 
-## W0.2 — W0.5 (Pending)
+## W0.2 Hardcoded Normalizer Hit Rate Baseline
 
-Tasks W0.2 through W0.5 are not yet completed. This report covers W0.1 only.
+**verify date**: 2026-04-28
+
+---
+
+### smart_bi_pg_field_definitions schema (verify)
+
+```
+                                        Table "public.smart_bi_pg_field_definitions"
+     Column     |          Type          | Collation | Nullable |                          Default
+----------------+------------------------+-----------+----------+-----------------------------------------------------------
+ id             | bigint                 |           | not null | nextval('smart_bi_pg_field_definitions_id_seq'::regclass)
+ upload_id      | bigint                 |           | not null |
+ original_name  | text                   |           |          |
+ standard_name  | character varying(500) |           |          |
+ field_type     | character varying(50)  |           |          |
+ semantic_type  | character varying(50)  |           |          |
+ chart_role     | character varying(50)  |           |          |
+ is_dimension   | boolean                |           |          | false
+ is_measure     | boolean                |           |          | false
+ is_time        | boolean                |           |          | false
+ sample_values  | jsonb                  |           |          |
+ statistics     | jsonb                  |           |          |
+ display_order  | integer                |           |          | 0
+ format_pattern | character varying(50)  |           |          |
+ agg_strategy   | character varying(20)  |           | not null | 'sum'::character varying
+```
+
+**Schema divergence from plan template**: SIGNIFICANT. The plan assumed columns `raw_column_name`, `identified_role`, `default_to_dimension` (boolean), and `dtype_fallback_to_measure` (boolean). None of these exist. The real table stores the *output* of classification (three boolean flags: `is_dimension`, `is_measure`, `is_time`) plus `semantic_type` (string label) and `agg_strategy`. There are no `created_at`/`updated_at` columns on this table — timestamp filtering must be done via JOIN to `smart_bi_pg_excel_uploads.created_at`.
+
+**Miss-rate proxy approach**: Because `default_to_dimension` and `dtype_fallback_*` flags do not exist in the schema, the equivalent proxies were derived from `semantic_type IS NULL`:
+- `semantic_type IS NULL AND is_dimension AND NOT is_time` → row fell through to `default_to_dimension` path (step 8 of `classify_column`) or `dtype_fallback_text` (step 7), or matched a `_DIMENSION_KEYWORDS` keyword without a fine-grained semantic label
+- `semantic_type IS NULL AND is_measure` → row fell through to `dtype_fallback_numeric` (step 7)
+- The real "miss" = rows that were assigned the **wrong role** due to keyword coverage gap, not merely rows lacking a semantic label
+
+---
+
+### 90 天数据统计
+
+No `created_at` on `smart_bi_pg_field_definitions` — date filter applied via JOIN to `smart_bi_pg_excel_uploads.created_at`.
+
+- **Total rows in last 90 days**: **4,273** (= 100% of all rows in the table — the table is fully within the 90-day window, no older data exists)
+- **Distinct column names**: 416 unique `original_name` values across 4,273 rows (10.3:1 duplication factor — same column names appear across many uploads)
+
+**Role flag distribution (full population = 90-day population):**
+
+| Flag | Count | % |
+|---|---|---|
+| `is_measure = true` | 521 | 12.2% |
+| `is_dimension = true` | 3,563 | 83.4% |
+| `is_time = true` | 189 | 4.4% |
+| Truly unclassified (all false) | 0 | 0.0% |
+| Overlap (any two flags simultaneously) | 0 | 0.0% |
+
+Every row got exactly one role — the classifier never produces ambiguous output.
+
+**Semantic_type coverage (hit rate proxy):**
+
+| semantic_type | Count | % |
+|---|---|---|
+| NULL / empty (no keyword matched finely) | 3,554 | 83.2% |
+| profit | 258 | 6.0% |
+| cost | 202 | 4.7% |
+| date | 189 | 4.4% |
+| product | 32 | 0.7% |
+| region | 21 | 0.5% |
+| store | 9 | 0.2% |
+| payment | 4 | 0.1% |
+| revenue | 4 | 0.1% |
+
+**Miss-rate breakdown using "wrong role" definition:**
+
+`dim_no_semantic` = 3,507 rows classified as `is_dimension=true` with no semantic label. Of these, manual inspection of the top distinct names reveals:
+
+| Sub-category | Count (rows) | Notes |
+|---|---|---|
+| `预算/实际/净利/收入` suffix patterns (should be measure) | ~2,675 | 预算数_N, 本月实际_N, 本年实际, 净利_N, 收入_N, 实际收入, 实际收入_N — numeric budget/actual columns that classify as dimension because `实际` and `预算` are not in `_MEASURE_KEYWORDS` |
+| Month columns `N月` (e.g. `10月`, `1月`) | 252 | Should be time; blocked by deliberate single-char exclusion rule in `_TIME_KEYWORDS` |
+| Quarter columns `Q1`–`Q4` | 64 | Should be time; not in `_TIME_KEYWORDS` |
+| Year columns `2020`–`2025` | 60 | Should be time or dimension depending on context |
+| `月份` (should be time) | 15 | Unambiguous time dimension name, not in `_TIME_KEYWORDS` |
+| Other ambiguous names | ~441 | 产品, 项目, 预算, 收入 (base name without _N dedup), etc |
+
+`measure_no_semantic` = 47 rows classified as `is_measure=true` with no semantic label — these are `dtype_fallback_numeric` path hits (e.g. `rate_percent_3`, `数量金额_N`, `销售金额`, `销售单价`). The role assignment is correct; only the fine-grained label is missing.
+
+| Metric | Count | % |
+|---|---|---|
+| Hit: correct role AND has semantic label | 719 | **16.8%** |
+| Dimension with semantic label (has named role) | 56 | 1.3% |
+| Time with semantic label (date) | 189 | 4.4% |
+| Measure with semantic label | 474 | 11.1% |
+| **Definite miss: `预算/实际/净利/收入` classified as dimension** | **~2,675** | **~62.6%** |
+| Ambiguous miss: month/quarter/year as dimension | 391 | 9.1% |
+| Acceptable no-label: measure+dim without semantic label | 498 | 11.7% |
+| **Combined miss (wrong role assigned)** | **~2,675–3,066** | **~62–72%** |
+
+**Simplified 4-metric table (best proxies given real schema):**
+
+| Metric | Count | % |
+|---|---|---|
+| Hit (correct role, has semantic_type) | 719 | 16.8% |
+| `default_to_dimension` proxy (dim + no semantic) | 3,507 | 82.1% |
+| `dtype_fallback_numeric` proxy (measure + no semantic) | 47 | 1.1% |
+| **Combined miss proxy (B OR C)** | **3,554** | **83.2%** |
+
+Note: the combined miss proxy (83.2%) significantly **overstates** true misclassification because it counts `数量金额`, `折后金额`, `分摊优惠` etc (correctly classified measures without needing a semantic label) as "misses." The narrower "wrong role" miss (budget/actual columns classified as dimension) is ~62.6%.
+
+---
+
+### Factory vs Restaurant breakdown (90-day window)
+
+| Scope | Factories | Uploads | Fields | Miss (dim+no-semantic) |
+|---|---|---|---|---|
+| Factory (F001–F004) | F001, F002, F003, F004 | 196 | 4,019 | 3,483 (86.7%) |
+| Restaurant (R_*) | R_BEJ, R_GML, R_ITE, R_SMH, R_XMX, R_YJJ | 8 | 254 | 24 (9.4%) |
+
+**Key finding**: 93.9% of all field rows belong to factory uploads (F003/F004 dominate with 165 uploads / 3,782 fields). The restaurant-domain sample is tiny — only 254 rows across 8 uploads. The extremely high dim-no-semantic rate is driven almost entirely by factory financial Excel files with `预算数_N` / `本月实际_N` column patterns, not restaurant data.
+
+For **restaurant factories only**: 24/254 = 9.4% dim-no-semantic, 42/254 = 16.5% measure-no-semantic, combined = 66/254 = 26.0% no-semantic proxy. Time classification is strong for restaurant data (152/254 = 59.8% `is_time`), likely reflecting POS-format timestamps.
+
+---
+
+### Hardcoded keyword coverage in field_classifier.py
+
+File: `backend/python/smartbi/services/field_classifier.py` (395 lines)
+
+- `_EXPLICIT_OVERRIDES`: **7 entries** (exact-name dict; highest priority)
+  - First 7: `商品结账总数`, `账单号`, `外部单号`, `关联单号`, `发票号`, `商品信息`, `整单备注`
+- `_TIME_KEYWORDS`: **23 entries** (substring match)
+  - First 10: `时间`, `日期`, `周期`, `时段`, `时刻`, `year`, `month`, `period`, `date`, `time`
+- `_ID_LIKE_KEYWORDS`: **11 entries** (substring match; routes to dimension)
+  - First 10: `账单号`, `单号`, `编号`, `流水号`, `发票号`, `会员号`, `员工号`, `房号`, `id`, `uuid`
+- `_MEASURE_KEYWORDS`: **46 entries** (substring match)
+  - First 10: `营业额`, `实收额`, `实收`, `应收金额`, `应收`, `销售额`, `收款金额`, `实收金额`, `营收`, `利润`
+- `_DIMENSION_KEYWORDS`: **43 entries** (substring match)
+  - First 10: `门店`, `店铺`, `区域`, `省份`, `城市`, `大区`, `品牌`, `类别`, `分类`, `状态`
+- `RATING_NAME_SUFFIXES`: **3 entries** (suffix match for agg_strategy; `分`, `评分`, `星级`)
+
+**Total hardcoded entries**: 133 across 6 collections.
+
+**Notable gap**: `_MEASURE_KEYWORDS` has no entry for `预算`, `实际`, `净利`, `本月`, `本年`, `本季` patterns. These are extremely common in Chinese management Excel exports (budget vs actual reporting) and are the primary driver of the high miss rate observed above (2,675 rows / 62.6%).
+
+---
+
+### 决策
+
+Per spec v2 §1.2 thresholds:
+
+- **< 10% miss** → spec v3 不需要 B-2 LLM, 仅扩 hardcoded keyword list
+- **10-30% miss** → spec v3 需要 B-2 LLM 兜底罕见列名
+- **> 30% miss** → spec v3 需要 LLM + 重新设计 hardcoded 库
+
+**This run's miss rate (wrong role, conservative estimate)**: **~62.6%** using factory-dominated data; **~26.0%** for restaurant-only data.
+
+**Recommendation**: **> 30% miss threshold applies when evaluating the full dataset** — spec v3 needs LLM + redesign of hardcoded library. However, the data is highly skewed: 93.9% of rows come from factory financial reports with `预算数_N`/`本月实际_N` column patterns not covered by any keyword. For **restaurant-only scope**, the miss rate falls to ~26% (10–30% band) where LLM bottom-fill without full redesign is sufficient.
+
+**Rationale**: The headline miss rate is dominated by a single pattern class — budget/actual Excel files from F003/F004 — that is outside restaurant Phase A scope. The restaurant-domain data (254 rows, 8 factories) shows a much healthier 9.4% dim-no-semantic rate (below the < 10% threshold) but a 26% combined no-semantic proxy that suggests 10–30% miss territory. Given the restaurant Phase A focus, the practical recommendation is:
+
+1. **Immediately**: add `予算`, `実際` → wait, these are Japanese. Add `预算`, `实际`, `净利`, `本月实际`, `本年实际`, `本季实际` to `_MEASURE_KEYWORDS` — this would resolve 62.6% of the full-dataset miss with zero LLM cost.
+2. **B-2 LLM**: Still warranted for restaurant domain (26% combined rate) to handle novel column names in diverse restaurant export formats. Not needed for the F003/F004 factory data.
+3. **No full redesign required** — the hardcoded library structure is sound; keyword coverage for known restaurant patterns (POS timestamps, store dimensions) is already strong. Extension, not redesign.
+
+---
+
+## W0.2 — W0.5 Status
 
 | Task | Status | Notes |
 |---|---|---|
 | W0.1 entity_resolution_admin_queue schema verify | **DONE** | spec v2 §2.3 confirmed accurate |
-| W0.2 normalizer hit-rate baseline | PENDING | |
+| W0.2 normalizer hit-rate baseline | **DONE** | full miss-rate breakdown; see section above |
 | W0.3 C-handoff coordination decision | PENDING | blocks A-3 path choice (协-α/β/γ) |
 | W0.4 W0 review meeting | PENDING | depends on W0.1-W0.3 |
 | W0.5 (if needed) spec v3 amendments | PENDING | likely NOT needed given W0.1 confirms spec |
