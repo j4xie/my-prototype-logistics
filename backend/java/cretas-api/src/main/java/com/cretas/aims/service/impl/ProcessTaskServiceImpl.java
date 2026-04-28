@@ -164,10 +164,12 @@ public class ProcessTaskServiceImpl implements ProcessTaskService {
                 .orElseThrow(() -> new ResourceNotFoundException("ProcessTask", "id", id));
 
         if (entity.getStatus() == ProcessTaskStatus.CLOSED) {
-            throw new BusinessException("任务已关闭");
+            throw new BusinessException(409, "任务已关闭")
+                    .withHint("请刷新任务列表查看最新状态");
         }
         if (entity.getStatus() == ProcessTaskStatus.SUPPLEMENTING) {
-            throw new BusinessException("任务正在补报中，请等待补报完成");
+            throw new BusinessException(409, "任务正在补报中，请等待补报完成")
+                    .withHint("请等待补报审批完成后再操作");
         }
 
         entity.setStatus(ProcessTaskStatus.CLOSED);
@@ -266,24 +268,28 @@ public class ProcessTaskServiceImpl implements ProcessTaskService {
         switch (current) {
             case PENDING:
                 if (target != ProcessTaskStatus.IN_PROGRESS && target != ProcessTaskStatus.CLOSED) {
-                    throw new BusinessException("待开始的任务只能转为进行中或关闭");
+                    throw new BusinessException(409, "待开始的任务只能转为进行中或关闭")
+                            .withHint("请刷新任务列表查看最新状态");
                 }
                 break;
             case IN_PROGRESS:
                 if (target != ProcessTaskStatus.COMPLETED && target != ProcessTaskStatus.CLOSED) {
-                    throw new BusinessException("进行中的任务只能转为已完成或已关闭");
+                    throw new BusinessException(409, "进行中的任务只能转为已完成或已关闭")
+                            .withHint("请刷新任务列表查看最新状态");
                 }
                 break;
             case COMPLETED:
             case CLOSED:
                 if (target != ProcessTaskStatus.SUPPLEMENTING) {
-                    throw new BusinessException("已完成/已关闭的任务只能转为补报中");
+                    throw new BusinessException(409, "已完成/已关闭的任务只能转为补报中")
+                            .withHint("请刷新任务列表查看最新状态");
                 }
                 entity.setPreviousTerminalStatus(current.name());
                 break;
             case SUPPLEMENTING:
                 // SUPPLEMENTING exits automatically when all supplements are approved
-                throw new BusinessException("补报中的任务状态由系统自动管理");
+                throw new BusinessException(409, "补报中的任务状态由系统自动管理")
+                        .withHint("请等待补报流程完成");
         }
     }
 
@@ -299,7 +305,8 @@ public class ProcessTaskServiceImpl implements ProcessTaskService {
                 .findByFactoryIdAndProductTypeIdOrderByProcessOrderAsc(factoryId, productTypeId);
 
         if (associations.isEmpty()) {
-            throw new BusinessException("该产品未关联任何工序，请先在产品-工序管理中配置");
+            throw new BusinessException(404, "该产品未关联任何工序，请先在产品-工序管理中配置")
+                    .withHint("请前往「系统管理 → 产品-工序配置」配置工序关联");
         }
 
         // Auto-fill customer name from ProductType if not provided

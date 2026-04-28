@@ -331,7 +331,11 @@ public class MaterialConsumptionController {
         String reason = (String) body.getOrDefault("reason", "手工调整");
 
         if (materialTypeId == null || rawQty == null) {
-            return ApiResponse.error(400, "materialTypeId和actualQuantity必填");
+            // R50 BUG-25 fix: 同 BUG-17 anti-pattern, ApiResponse.error → throw exception
+            throw new com.cretas.aims.exception.BusinessException(400,
+                    "materialTypeId和actualQuantity必填")
+                    .withHint("请填写物料类型 ID 和实际消耗量")
+                    .withHintTarget("materialTypeId / actualQuantity");
         }
         BigDecimal actualQuantity = new BigDecimal(rawQty.toString());
 
