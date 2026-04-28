@@ -65,9 +65,11 @@ public class PythonSmartBIConfig {
     private boolean fallbackOnError = false;
 
     /**
-     * 健康检查间隔（毫秒）
+     * 健康检查间隔（毫秒）。
+     * 2026-04-29: 30000 → 5000. Python OOM 重启后 ~10s 内恢复,30s 缓存让客户即使
+     * Python 已健康也得继续等。5s 缓存让 isAvailable() 检测能更快感知到恢复。
      */
-    private int healthCheckInterval = 30000;
+    private int healthCheckInterval = 5000;
 
     /**
      * 最大重试次数

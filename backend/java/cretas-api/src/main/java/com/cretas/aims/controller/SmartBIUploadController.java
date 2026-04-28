@@ -7,6 +7,7 @@ import com.cretas.aims.entity.smartbi.postgres.SmartBiDynamicData;
 import com.cretas.aims.entity.smartbi.postgres.SmartBiPgExcelUpload;
 import com.cretas.aims.client.PythonSmartBIClient;
 import com.cretas.aims.config.smartbi.PythonSmartBIConfig;
+import com.cretas.aims.exception.PythonServiceUnavailableException;
 import com.cretas.aims.service.smartbi.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -44,6 +45,15 @@ import com.cretas.aims.util.ErrorSanitizer;
 @Tag(name = "SmartBI Upload", description = "SmartBI Excel upload and data management API")
 public class SmartBIUploadController {
 
+    /**
+     * 单文件上传大小上限 (5MB)。
+     * 超过此值会触发 Python 端 LLM 结构检测 + DataFrame 加载的内存峰值,在
+     * 47 服务器 (14GB RAM) 上容易 OOM-kill Python 进程。2026-04-29 大众点评
+     * 154 真实文件批量审计中,9MB 唏嘛香会员数据.xlsx + 4.3MB 桂满陇.csv
+     * + 1.37MB 桂满陇.xlsx 全部触发 OOM,导致熔断器 OPEN 30s + 雪崩。
+     */
+    private static final long MAX_UPLOAD_BYTES = 5L * 1024 * 1024;
+
     private final ExcelDynamicParserService excelParserService;
     private final SmartBIUploadFlowService uploadFlowService;
     private final PythonSmartBIClient pythonClient;
@@ -51,6 +61,28 @@ public class SmartBIUploadController {
     private final ObjectMapper objectMapper;
     private final DynamicAnalysisService dynamicAnalysisService;
     private final SmartBiPgExcelUploadRepository pgUploadRepository;
+
+    private ResponseEntity<ApiResponse<?>> rejectIfTooLarge(MultipartFile file) {
+        if (file == null || file.getSize() <= MAX_UPLOAD_BYTES) return null;
+        double mb = file.getSize() / 1024.0 / 1024.0;
+        long limitMb = MAX_UPLOAD_BYTES / 1024 / 1024;
+        log.warn("Upload rejected — file too large: name={} size={} bytes (limit {} bytes)",
+                file.getOriginalFilename(), file.getSize(), MAX_UPLOAD_BYTES);
+        String msg = String.format(
+                "文件过大 (%.1f MB)，AI 分析仅支持 %d MB 以内的文件。建议按月/按门店拆分后上传。",
+                mb, limitMb);
+        return ResponseEntity.ok(ApiResponse.error(msg));
+    }
+
+    private ResponseEntity<ApiResponse<?>> handleServiceUnavailable(PythonServiceUnavailableException e) {
+        log.warn("Python SmartBI 服务熔断中: state={}, retryAfterMs={}",
+                e.getCircuitState(), e.getRetryAfterMs());
+        long retrySec = Math.max(1, (e.getRetryAfterMs() + 999) / 1000);
+        String msg = String.format(
+                "AI 分析服务正在自动恢复中，请 %d 秒后重试。如果反复失败，可能是当前文件过大或服务繁忙。",
+                retrySec);
+        return ResponseEntity.ok(ApiResponse.error(msg));
+    }
 
     @Autowired
     public SmartBIUploadController(
@@ -88,11 +120,20 @@ public class SmartBIUploadController {
         log.info("Upload Excel: factoryId={}, fileName={}, dataType={}, sheetIndex={}, headerRow={}, transpose={}",
                 factoryId, file.getOriginalFilename(), dataType, sheetIndex, headerRow, transpose);
 
+        ResponseEntity<ApiResponse<?>> sizeReject = rejectIfTooLarge(file);
+        if (sizeReject != null) {
+            // unchecked cast: ApiResponse<?> 与 ApiResponse<ExcelParseResponse> 在错误分支只用 message 字段
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            ResponseEntity typed = sizeReject;
+            return typed;
+        }
+
         if (!pythonConfig.isEnabled()) {
             return ResponseEntity.ok(ApiResponse.error("Python SmartBI service not enabled"));
         }
         if (!pythonClient.isAvailable()) {
-            return ResponseEntity.ok(ApiResponse.error("Python SmartBI service unavailable at " + pythonConfig.getUrl()));
+            return ResponseEntity.ok(ApiResponse.error(
+                    "AI 分析服务正在自动恢复中，请稍后重试。如果反复失败，可能是当前文件过大或服务繁忙。"));
         }
 
         try {
@@ -111,6 +152,10 @@ public class SmartBIUploadController {
             }
 
             return ResponseEntity.ok(ApiResponse.success("Excel parsed successfully", response));
+        } catch (PythonServiceUnavailableException e) {
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            ResponseEntity typed = handleServiceUnavailable(e);
+            return typed;
         } catch (IOException e) {
             log.error("Excel file read failed: {}", e.getMessage(), e);
             return ResponseEntity.ok(ApiResponse.error("File read failed: " + ErrorSanitizer.sanitize(e)));
@@ -141,11 +186,15 @@ public class SmartBIUploadController {
                 factoryId, file.getOriginalFilename(), dataType, autoConfirm,
                 selectedRegionStart, selectedRegionEnd);
 
+        ResponseEntity<ApiResponse<?>> sizeReject = rejectIfTooLarge(file);
+        if (sizeReject != null) return sizeReject;
+
         if (uploadFlowService == null) {
             return ResponseEntity.ok(ApiResponse.error("SmartBI upload flow service not configured"));
         }
         if (!pythonConfig.isEnabled() || !pythonClient.isAvailable()) {
-            return ResponseEntity.ok(ApiResponse.error("Python SmartBI service unavailable at " + pythonConfig.getUrl()));
+            return ResponseEntity.ok(ApiResponse.error(
+                    "AI 分析服务正在自动恢复中，请稍后重试。如果反复失败，可能是当前文件过大或服务繁忙。"));
         }
 
         try {
@@ -157,6 +206,8 @@ public class SmartBIUploadController {
             } else {
                 return ResponseEntity.ok(ApiResponse.error(result.getMessage()));
             }
+        } catch (PythonServiceUnavailableException e) {
+            return handleServiceUnavailable(e);
         } catch (Exception e) {
             log.error("Upload and analyze failed: {}", e.getMessage(), e);
             return ResponseEntity.ok(ApiResponse.error("Upload and analyze failed: " + ErrorSanitizer.sanitize(e)));
@@ -216,6 +267,13 @@ public class SmartBIUploadController {
 
         log.info("List sheets: factoryId={}, fileName={}", factoryId, file.getOriginalFilename());
 
+        ResponseEntity<ApiResponse<?>> sizeReject = rejectIfTooLarge(file);
+        if (sizeReject != null) {
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            ResponseEntity typed = sizeReject;
+            return typed;
+        }
+
         try {
             List<SheetInfo> sheets = excelParserService.listSheets(file.getInputStream());
             return ResponseEntity.ok(ApiResponse.success("Success", sheets));
@@ -237,6 +295,13 @@ public class SmartBIUploadController {
             @Parameter(description = "Sheet configs JSON array") @RequestParam("sheetConfigs") String sheetConfigsJson) {
 
         log.info("Batch upload: factoryId={}, fileName={}", factoryId, file.getOriginalFilename());
+
+        ResponseEntity<ApiResponse<?>> sizeReject = rejectIfTooLarge(file);
+        if (sizeReject != null) {
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            ResponseEntity typed = sizeReject;
+            return typed;
+        }
 
         if (uploadFlowService == null) {
             return ResponseEntity.ok(ApiResponse.error("Batch upload service not available"));
@@ -292,6 +357,17 @@ public class SmartBIUploadController {
 
         new Thread(() -> {
             try {
+                if (file != null && file.getSize() > MAX_UPLOAD_BYTES) {
+                    double mb = file.getSize() / 1024.0 / 1024.0;
+                    long limitMb = MAX_UPLOAD_BYTES / 1024 / 1024;
+                    log.warn("Stream upload rejected — file too large: name={} size={} bytes",
+                            file.getOriginalFilename(), file.getSize());
+                    sendEvent(emitter, UploadProgressEvent.error(String.format(
+                            "文件过大 (%.1f MB)，AI 分析仅支持 %d MB 以内的文件。建议按月/按门店拆分后上传。",
+                            mb, limitMb)));
+                    emitter.complete();
+                    return;
+                }
                 if (uploadFlowService == null) {
                     sendEvent(emitter, UploadProgressEvent.error("Batch upload service not available"));
                     emitter.complete();
