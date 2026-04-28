@@ -263,7 +263,11 @@ class KnowledgeRetriever:
 
         try:
             # Tokenize query with jieba
-            query_tokens = " & ".join(
+            # Use OR (|) instead of AND (&) for tolerant matching:
+            # query expansion adds synonyms ("翻台 turn over 桌次") that won't all
+            # exist in any single chunk; AND matching → 0 results forever.
+            # ts_rank_cd ordering still surfaces best matches first. (Round 5 audit fix)
+            query_tokens = " | ".join(
                 t for t in jieba.cut(query) if t.strip() and len(t.strip()) > 1
             )
             if not query_tokens:

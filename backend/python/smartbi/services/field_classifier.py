@@ -80,6 +80,11 @@ _MEASURE_KEYWORDS: Tuple[str, ...] = (
     # These were previously masked because semantic_mapper renamed them to
     # "amount_score"; preserving Chinese now requires explicit measure rules.
     "星级", "口味分", "环境分", "服务分",
+    # Apr 28 2026 (Phase B quick-win): budget/actual columns from Chinese
+    # management Excel exports. W0.2 normalizer hit-rate report found these
+    # 6 patterns drove ~62.6% of all dim-no-semantic mis-classifications
+    # (2675 / 4273 rows). Adding to keyword list is zero-LLM-cost.
+    "预算", "实际", "净利", "本月实际", "本年实际", "本季实际",
     # English suffixes
     "amount", "count", "revenue", "profit", "sum", "total", "rate",
 )

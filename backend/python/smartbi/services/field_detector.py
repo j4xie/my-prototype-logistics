@@ -72,8 +72,8 @@ class FieldDetector:
 
     # Patterns for semantic type detection
     AMOUNT_PATTERNS = [
-        r'(sales|revenue|income|cost|expense|price|amount|payment|fee|total)',
-        r'(金额|销售额|收入|成本|费用|价格|总计|营收)'
+        r'(sales|revenue|income|cost|expense|price|amount|payment|fee|total|budget|actual|profit)',
+        r'(金额|销售额|收入|成本|费用|价格|总计|营收|预算|实际|净利|本月实际|本年实际|本季实际)'
     ]
 
     QUANTITY_PATTERNS = [
