@@ -107,18 +107,59 @@ def factory_token() -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 
 
-def assert_schema_match(actual: Any, expected: Any, *, path: str = "$") -> None:
-    """Recursive structural comparison.
+def _types_compatible(actual: Any, expected: Any) -> bool:
+    """JSON-equivalent type check for schema comparison.
 
-    - Top-level keys must match (ignore expected keys whose value is None).
-    - Lists: same length; element-wise key compare.
-    - Floats: tolerate 1e-6 absolute or 1% relative.
+    int and float are interchangeable here because JSON does not
+    distinguish 42 from 42.0, and Python deserialisation of a Java
+    BigDecimal often surfaces as float on one side and int on the
+    other depending on rounding/scale.
+
+    bool is treated as distinct from numeric, even though
+    ``isinstance(True, int)`` is True in Python: a golden field
+    recorded as a number must not silently match a boolean response,
+    and vice versa.
+    """
+    if actual is None and expected is None:
+        return True
+    # Reject bool <-> int/float confusion in either direction.
+    if isinstance(expected, bool) or isinstance(actual, bool):
+        return type(actual) is type(expected)
+    if isinstance(expected, (int, float)) and isinstance(actual, (int, float)):
+        return True
+    return isinstance(actual, type(expected))
+
+
+def assert_schema_match(actual: Any, expected: Any, *, path: str = "$") -> None:
+    """Recursive structural comparison of actual vs expected JSON.
+
+    Semantics:
+    - dict: expected keys must exist in actual; extra actual keys are allowed.
+    - list: lengths must match; element-wise comparison.
+    - float: 1e-6 absolute or 1% relative tolerance, whichever larger.
+    - NaN: matches None or NaN.
+    - numeric: int and float are interchangeable (see _types_compatible);
+      bool is distinct from numeric.
+
+    Known limitation (null-as-wildcard, accepted for Phase 2A PoC):
+        When ``expected`` is None, ANY actual value passes (None, 0, "",
+        {}, structurally wrong nested objects, etc).
+        Reason: Java often emits ``{"trend": null}`` where Python may
+        emit nothing or a different shape; without knowing whether
+        Java's null means "field absent" or "field present and null",
+        we cannot pick a strict comparison.
+        Risk: regressions in null-valued fields are silently masked.
+        Future fix (T5+): the golden recorder must mark provenance
+        ("Java emitted null" vs "Java omitted key") so this function
+        can pick the right semantics. Tracked as follow-up; do NOT
+        remove this limitation without first updating the recorder.
     """
     if expected is None:
-        return  # null in golden is treated as wildcard (Java often omits)
-    assert isinstance(actual, type(expected)) or (
-        actual is None and expected is None
-    ), f"type mismatch at {path}: {type(actual).__name__} vs {type(expected).__name__}"
+        return  # See "Known limitation" in docstring.
+    assert _types_compatible(actual, expected), (
+        f"type mismatch at {path}: "
+        f"{type(actual).__name__} vs {type(expected).__name__}"
+    )
     if isinstance(expected, dict):
         non_null_expected = {k: v for k, v in expected.items() if v is not None}
         actual_keys = set(actual.keys())
@@ -162,3 +203,57 @@ def test_data_date_range_F001_matches_golden(client, factory_token, goldens):
     assert body.get("message") == expected.get("message")
     # Verify the business payload.
     assert_schema_match(body["data"], expected_data)
+
+
+# Schema-helper unit tests (I-1 review fix) ---
+
+
+def test_assert_schema_match_accepts_int_float_interchange():
+    """JSON does not distinguish 42 from 42.0 — schema match must allow
+    either side to come back as int or float (Java BigDecimal often
+    deserialises to float on the Python side, vice versa)."""
+    # Should not raise in either direction.
+    assert_schema_match({"x": 42.0}, {"x": 42})
+    assert_schema_match({"x": 42}, {"x": 42.0})
+
+
+def test_assert_schema_match_rejects_bool_int_confusion():
+    """bool is a subclass of int in Python but for schema purposes True
+    and 1 are distinct values — silently matching them would mask
+    regressions in flag-shaped fields like hasData."""
+    with pytest.raises(AssertionError, match="type mismatch"):
+        assert_schema_match({"x": True}, {"x": 1})
+    with pytest.raises(AssertionError, match="type mismatch"):
+        assert_schema_match({"x": 1}, {"x": True})
+
+
+# False-branch contract test (I-3 review fix) ---
+
+
+def test_data_date_range_F001_no_data_returns_no_data_envelope(
+    client, factory_token, monkeypatch
+):
+    """Monkey-patch the DB seam to simulate a factory with no sales data.
+
+    Verifies the hasData=false branch matches Java
+    SmartBIDashboardController.java:367-369:
+        ApiResponse.success(
+            "No sales data detected",
+            {"hasData": false, "message": "No sales data detected"})
+    """
+    from smartbi_compat.api import dashboard
+
+    monkeypatch.setattr(
+        dashboard, "_query_date_range", lambda fid: None
+    )
+
+    r = client.get(
+        "/api/mobile/F001/smart-bi/data-date-range",
+        headers={"Authorization": f"Bearer {factory_token}"},
+    )
+    assert r.status_code == 200, f"unexpected status {r.status_code}: {r.text}"
+    body = r.json()
+    assert body["success"] is True
+    assert body["message"] == "No sales data detected"
+    assert body["data"]["hasData"] is False
+    assert body["data"]["message"] == "No sales data detected"
