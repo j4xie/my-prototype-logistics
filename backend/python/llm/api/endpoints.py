@@ -49,6 +49,7 @@ class LLMRequest(BaseModel):
     enable_thinking: Optional[bool] = None
     tools: Optional[List[Dict[str, Any]]] = None
     tool_choice: Optional[Union[str, Dict[str, Any]]] = None
+    extra_body: Optional[Dict[str, Any]] = None
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -81,6 +82,8 @@ def _build_payload(req: LLMRequest) -> Dict[str, Any]:
         payload["tools"] = req.tools
     if req.tool_choice is not None:
         payload["tool_choice"] = req.tool_choice
+    if req.extra_body is not None:
+        payload["extra_body"] = req.extra_body
     return payload
 
 

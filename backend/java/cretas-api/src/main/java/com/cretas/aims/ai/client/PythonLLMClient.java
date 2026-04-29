@@ -157,6 +157,10 @@ public class PythonLLMClient {
                             }
                         } else if ("done".equals(type) || "finish".equals(type)) {
                             finishReason = node.path("finish_reason").asText("stop");
+                        } else if ("error".equals(type)) {
+                            String errorMsg = node.path("message").asText("unknown error");
+                            log.error("PythonLLMClient stream received error event: {}", errorMsg);
+                            throw new RuntimeException("Python LLM stream error: " + errorMsg);
                         }
                     } catch (Exception e) {
                         log.trace("PythonLLMClient stream: skip non-JSON line: {}", data);
