@@ -37,8 +37,8 @@ const dialogVisible = ref(false);
 const editingId = ref<string | null>(null);
 const form = ref({
   plateNumber: '',
-  driverName: '',
-  driverPhone: '',
+  driver: '',
+  phone: '',
   vehicleType: '货车',
   capacity: 0,
   status: 'available',
@@ -49,7 +49,7 @@ const submitting = ref(false);
 
 function openCreate() {
   editingId.value = null;
-  form.value = { plateNumber: '', driverName: '', driverPhone: '', vehicleType: '货车', capacity: 0, status: 'available', notes: '' };
+  form.value = { plateNumber: '', driver: '', phone: '', vehicleType: '货车', capacity: 0, status: 'available', notes: '' };
   dialogVisible.value = true;
 }
 
@@ -57,8 +57,8 @@ function openEdit(row: Record<string, unknown>) {
   editingId.value = String(row.id || '');
   form.value = {
     plateNumber: String(row.plateNumber || ''),
-    driverName: String(row.driverName || ''),
-    driverPhone: String(row.driverPhone || ''),
+    driver: String(row.driver || ''),
+    phone: String(row.phone || ''),
     vehicleType: String(row.vehicleType || '货车'),
     capacity: Number(row.capacity || 0),
     status: String(row.status || 'available'),
@@ -119,8 +119,8 @@ const statusMap: Record<string, { text: string; type: string }> = {
       <el-table v-loading="loading" :data="tableData" stripe>
         <el-table-column prop="plateNumber" label="车牌号" width="140" />
         <el-table-column prop="vehicleType" label="车型" width="120" />
-        <el-table-column prop="driverName" label="司机" width="120" />
-        <el-table-column prop="driverPhone" label="联系电话" width="140" />
+        <el-table-column prop="driver" label="司机" width="120" />
+        <el-table-column prop="phone" label="联系电话" width="140" />
         <el-table-column prop="capacity" label="载重 (kg)" width="120" />
         <el-table-column prop="currentLoad" label="当前载重 (kg)" width="140" />
         <el-table-column label="状态" width="100">
@@ -148,10 +148,10 @@ const statusMap: Record<string, { text: string; type: string }> = {
           <el-input v-model="form.vehicleType" placeholder="如 厢式货车 / 冷藏车" />
         </el-form-item>
         <el-form-item label="司机姓名">
-          <el-input v-model="form.driverName" />
+          <el-input v-model="form.driver" />
         </el-form-item>
         <el-form-item label="司机电话">
-          <el-input v-model="form.driverPhone" />
+          <el-input v-model="form.phone" />
         </el-form-item>
         <el-form-item label="载重 (kg)">
           <el-input-number v-model="form.capacity" :min="0" :precision="2" style="width: 100%" />
