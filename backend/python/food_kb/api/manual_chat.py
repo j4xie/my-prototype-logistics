@@ -391,10 +391,12 @@ async def _ocr_extract_text(image_b64: str) -> str:
             logger.warning("OCR called with empty base64 after stripping prefix")
             return ""
 
-        # qwen3-vl-plus on DashScope OpenAI-compatible endpoint
+        # qwen-vl-plus on DashScope OpenAI-compatible endpoint
         # Prefer aliyun_a credentials (LLM_ALIYUN_A_*) — these are the DashScope keys
         # that host vision models. Fall back to the generic llm_* settings.
-        vl_model = os.getenv("LLM_VL_MODEL", "qwen3-vl-plus-2025-12-19")
+        # OCR 用通用 qwen-vl-plus（避免特定日期版本的 free tier 限制）
+        # 优先读 LLM_OCR_MODEL（专用 env），fallback 到 qwen-vl-plus
+        vl_model = os.getenv("LLM_OCR_MODEL", "qwen-vl-plus")
         vl_base_url = os.getenv("LLM_ALIYUN_A_BASE_URL", "") or settings.llm_base_url
         vl_api_key = os.getenv("LLM_ALIYUN_A_API_KEY", "") or settings.llm_api_key
 
