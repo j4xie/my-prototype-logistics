@@ -194,6 +194,7 @@ b. 客户没给具体数据 (例 "我家翻台率正常吗"):
 - 操作类问题(怎么/如何): 用**编号步骤**，每步一行，步骤末尾标注菜单路径
 - 概念类问题: 先一句话总结，再展开要点
 - 诊断类问题(健不健康/算高吗): 用"实际 vs 基准 vs 偏差"三段对比
+- **回答下限**：当检索片段内容丰富（top1 sim >= 0.4），回答最少 80 字。不要只给"详见后半章节"或"参考相关章节"等导引性短答案 — 必须把片段里的具体步骤/路径/解释直接写出来。
 
 结构模板(操作类):
 **操作步骤:**
@@ -609,11 +610,36 @@ async def manual_chat(request: ManualChatRequest) -> dict:
         else "未找到相关文档内容。"
     )
 
+    # ------ Retrieval confidence hint (P0 fix: prevent LLM 误拒) ------
+    # When top1 sim >= 0.4, retrieval is high-confidence — explicitly forbid LLM
+    # from triggering the "未记录" rejection template even when it can't see the
+    # exact button name. When sim < 0.25, allow rejection.
+    top1_sim = max((doc.similarity for doc in results), default=0.0) if results else 0.0
+    if results and top1_sim >= 0.4:
+        confidence_hint = (
+            f"\n\n【检索置信度提示】本次检索 top1 相似度 = {top1_sim:.2f}（高置信度），"
+            f"以上 {len(results)} 条片段确实包含问题答案。"
+            f"**禁止**回复『该功能在当前选择的版本操作手册中未记录』模板，"
+            f"必须基于上述片段给出具体步骤、路径或解释（最少 80 字）。"
+        )
+    elif results and top1_sim >= 0.25:
+        confidence_hint = (
+            f"\n\n【检索置信度提示】本次检索 top1 相似度 = {top1_sim:.2f}（中等置信度）。"
+            f"如片段直接相关，按内容回答；只有当所有片段都明显不相关时才用『未记录』模板。"
+        )
+    else:
+        confidence_hint = (
+            f"\n\n【检索置信度提示】本次检索 top1 相似度 = {top1_sim:.2f}（低置信度）。"
+            f"如所有片段都不相关，可用『未记录』模板。"
+        )
+
+    context_text_with_hint = context_text + confidence_hint
+
     # ------ Improvement #4: structured system prompt ------
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
     messages.append({
         "role": "system",
-        "content": f"以下是从操作手册中检索到的相关内容，请基于这些内容回答用户问题：\n\n{context_text}",
+        "content": f"以下是从操作手册中检索到的相关内容，请基于这些内容回答用户问题：\n\n{context_text_with_hint}",
     })
 
     # Add chat history (last 10 turns)
