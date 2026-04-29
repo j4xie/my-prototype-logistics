@@ -122,10 +122,20 @@ if [ ! -f "dist/index.html" ]; then
     exit 1
 fi
 
-# 验证 dist 是新鲜的 (build 跑完应该 < 60s 前 modify)
+# Apr 29 2026 强化: build 跑完 dist 应 < 120s. 之前是 warning, 现在 hard fail.
+# 防止 build 被 silent skip / npm cache 复用旧 dist 等情况.
 DIST_AGE=$(($(date +%s) - $(stat -c %Y dist/index.html 2>/dev/null || stat -f %m dist/index.html)))
-if [ "$DIST_AGE" -gt 300 ]; then
-    log "⚠️  警告: dist/index.html 修改时间已 ${DIST_AGE}s 前, build 可能未真正运行"
+if [ "$DIST_AGE" -gt 120 ]; then
+    log "❌ dist/index.html 修改时间已 ${DIST_AGE}s 前 (> 120s 阈值)"
+    log "   build 可能未真正运行. 拒绝继续部署."
+    log "   排查: cd web-admin && rm -rf dist && npm run build 看错误"
+    exit 1
+fi
+
+# 提取本地 dist 的 entry chunk hash, 用于部署后内容验证
+LOCAL_ENTRY_HASH=$(grep -oP 'assets/index-[A-Za-z0-9_-]+\.js' dist/index.html | head -1)
+if [ -z "$LOCAL_ENTRY_HASH" ]; then
+    log "⚠️  无法提取本地 dist 的 entry chunk, 跳过 post-deploy 内容验证"
 fi
 
 ASSET_COUNT=$(find dist/assets -type f 2>/dev/null | wc -l | tr -d ' ')

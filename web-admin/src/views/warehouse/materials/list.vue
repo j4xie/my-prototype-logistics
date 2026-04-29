@@ -259,6 +259,9 @@ async function handleFormSubmit() {
             <span class="data-count">共 {{ pagination.total }} 条记录</span>
           </div>
           <div class="header-right">
+            <el-button v-if="canWrite" @click="router.push('/warehouse/material-types')">
+              管理原料类型字典
+            </el-button>
             <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleCreate">入库登记</el-button>
           </div>
         </div>
