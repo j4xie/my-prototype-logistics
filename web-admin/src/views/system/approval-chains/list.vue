@@ -68,7 +68,7 @@ function openCreate() {
 function openEdit(row: Record<string, unknown>) {
   editingId.value = String(row.id || '');
   form.value = {
-    decisionType: String(row.decisionType || 'FINANCE_APPROVAL'),
+    decisionType: String(row.decisionType || 'FORCE_INSERT'),
     name: String(row.name || ''),
     description: String(row.description || ''),
     approvalLevel: Number(row.approvalLevel || 1),
@@ -93,17 +93,13 @@ async function handleSave() {
   if (!form.value.name) return ElMessage.warning('请填写审批链名称');
   if (!form.value.approverRoles?.trim()) return ElMessage.warning('请填写审批角色 (逗号分隔多个)');
 
-  // 后端 validateConfig 要求 approverRoles 是 JSON 数组格式 (如 ["finance_manager","factory_super_admin"]),
-  // 用户输入逗号分隔字符串, 这里转换成 JSON 字符串.
+  // 后端 validateConfig 要求 approverRoles 是 JSON 数组格式
+  // 用户输入逗号分隔字符串, 这里转换成 JSON
   const roles = form.value.approverRoles
     .split(/[,，]/)
     .map(r => r.trim())
     .filter(r => r.length > 0);
-
-  const payload = {
-    ...form.value,
-    approverRoles: JSON.stringify(roles),
-  };
+  const payload = { ...form.value, approverRoles: JSON.stringify(roles) };
 
   submitting.value = true;
   try {
