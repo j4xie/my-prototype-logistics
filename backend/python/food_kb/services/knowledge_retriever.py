@@ -232,6 +232,17 @@ class KnowledgeRetriever:
             else:
                 results = results[:top_k]
 
+            # Normalize similarity to [0, 1] for consistent UI display.
+            # Priority: rerank_score (cross-encoder, [0,1]) > clamped raw similarity.
+            # BM25 ts_rank_cd has no upper bound and can return values > 1, which is
+            # confusing for callers / users who expect cosine-like [0,1] scores.
+            for doc in results:
+                meta = doc.metadata if isinstance(doc.metadata, dict) else None
+                if meta and "rerank_score" in meta:
+                    doc.similarity = float(meta["rerank_score"])
+                else:
+                    doc.similarity = max(0.0, min(1.0, float(doc.similarity)))
+
             elapsed = (time.time() - start_time) * 1000
             logger.info(
                 f"Knowledge retrieval ({retrieval_method}): query='{query[:40]}', "
