@@ -27,8 +27,13 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-def _row_to_dict(row) -> dict:
+def _row_to_dict(row: Any) -> dict:
     """Convert a smart_bi_query_templates row to a Java-shape JSON dict.
+
+    ``row`` is duck-typed: production passes a SQLAlchemy ``Row``, tests
+    pass ``types.SimpleNamespace``. Both expose columns as attributes
+    (``row.created_at``, ``row.factory_id``, etc.), so we annotate the
+    parameter as ``Any`` rather than a structural protocol.
 
     Field key order MUST match Jackson serialisation of
     SmartBiQueryTemplate (Lombok @Data on BaseEntity superclass first,
