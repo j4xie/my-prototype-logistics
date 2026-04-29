@@ -33,12 +33,17 @@ the @Where soft-delete derived flag (deletedAt != null).
 from __future__ import annotations
 
 import logging
-from typing import Any, List
+import uuid
+from datetime import datetime, timedelta
+from decimal import Decimal, ROUND_HALF_UP
+from typing import Any, Iterable, List
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 
+from smartbi_compat.alert_thresholds import load_thresholds
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
+from smartbi_compat.date_range import DateRange
 from smartbi_compat.schema_compat import wrap_response
 
 router = APIRouter()
@@ -222,6 +227,217 @@ def _query_datasources(factory_id: str) -> List[dict]:
     with get_db_context() as db:
         rows = db.execute(sql, {"fid": factory_id}).all()
     return [_datasource_row_to_dict(r) for r in rows]
+
+
+_SCALE_4 = Decimal("0.0001")
+
+_THRESHOLDS = load_thresholds()
+
+
+def _sum_field(rows: Iterable, attr: str) -> Decimal:
+    """Sum ``getattr(row, attr)`` over rows, skipping None values.
+
+    Mirrors Java sumField(data, ::getX) — null entries are treated as zero.
+    """
+    total = Decimal("0")
+    for r in rows:
+        v = getattr(r, attr, None)
+        if v is not None:
+            total += Decimal(str(v))
+    return total
+
+
+def _calculate_rate(numerator: Decimal, denominator: Decimal) -> Decimal:
+    """Return (numerator / denominator) * 100, scale 4, HALF_UP rounding.
+
+    Returns Decimal("0") when denominator is zero (matches Java behavior:
+    BigDecimal.divide on zero would throw, but the Java helper guards against it).
+    """
+    if denominator == 0:
+        return Decimal("0")
+    return (numerator / denominator * 100).quantize(_SCALE_4, rounding=ROUND_HALF_UP)
+
+
+def _calculate_growth_rate(current: Decimal, previous: Decimal) -> Decimal:
+    """Return ((current - previous) / previous) * 100, scale 4, HALF_UP rounding.
+
+    Returns Decimal("0") when previous is zero.
+    """
+    if previous == 0:
+        return Decimal("0")
+    return ((current - previous) / previous * 100).quantize(_SCALE_4, rounding=ROUND_HALF_UP)
+
+
+def _prev_month_start(current_start):
+    """First day of the month before current_start."""
+    if current_start.month == 1:
+        return current_start.replace(year=current_start.year - 1, month=12)
+    return current_start.replace(month=current_start.month - 1)
+
+
+def _prev_month_end(current_start):
+    """Last day of the month before current_start."""
+    return current_start - timedelta(days=1)
+
+
+def _query_sales_data(factory_id: str, range_) -> list:
+    """Return smart_bi_sales_data rows for a factory in a date range.
+
+    Mirrors Java SmartBiSalesDataRepository.findByFactoryIdAndOrderDateBetween.
+    Module-level seam so contract tests can monkey-patch without standing up PG.
+    """
+    from smartbi.database.connection import get_db_context, is_postgres_enabled
+
+    if not is_postgres_enabled():
+        logger.warning(
+            "alerts/sales: postgres not enabled; returning [] (factory_id=%s)",
+            factory_id,
+        )
+        return []
+
+    sql = text(
+        "SELECT salesperson_name, amount, monthly_target "
+        "FROM smart_bi_sales_data "
+        "WHERE factory_id = :fid AND order_date BETWEEN :start AND :end"
+    )
+    with get_db_context() as db:
+        return db.execute(
+            sql,
+            {"fid": factory_id, "start": range_.start_date, "end": range_.end_date},
+        ).all()
+
+
+def _new_alert_dict(
+    *,
+    level: str,
+    category: str,
+    title: str,
+    message: str,
+    metric: str,
+    value: Decimal,
+    threshold: Decimal,
+    suggestion: str,
+    related_entity_id: str | None = None,
+    related_entity_name: str | None = None,
+) -> dict:
+    """Build a Java-shape Alert dict — 13 keys in Jackson order."""
+    return {
+        "id": str(uuid.uuid4()),
+        "level": level,
+        "category": category,
+        "title": title,
+        "message": message,
+        "metric": metric,
+        "value": value,
+        "threshold": threshold,
+        "gapPercent": None,
+        "suggestion": suggestion,
+        "relatedEntityId": related_entity_id,
+        "relatedEntityName": related_entity_name,
+        "createdAt": datetime.now().isoformat(),
+    }
+
+
+def _generate_sales_alerts(factory_id: str, range_: DateRange) -> list[dict]:
+    """Mirror RecommendationServiceImpl.generateSalesAlerts (Java line 162-274)."""
+    sales_data = _query_sales_data(factory_id, range_)
+    if not sales_data:
+        return []
+    alerts: list[dict] = []
+    th = _THRESHOLDS.sales
+
+    # 1. Overall completion rate
+    total_sales = _sum_field(sales_data, "amount")
+    total_target = _sum_field(sales_data, "monthly_target")
+    completion_rate = _calculate_rate(total_sales, total_target)
+
+    if completion_rate < th.completion_red:
+        alerts.append(_new_alert_dict(
+            level="RED",
+            category="sales",
+            title="销售目标严重滞后",
+            message=f"当前完成率仅为 {completion_rate:.1f}%，远低于预期",
+            metric="目标完成率",
+            value=completion_rate,
+            threshold=th.completion_red,
+            suggestion="建议立即召开销售会议，分析原因并制定追赶计划",
+        ))
+    elif completion_rate < th.completion_yellow:
+        alerts.append(_new_alert_dict(
+            level="YELLOW",
+            category="sales",
+            title="销售目标需加速",
+            message=f"当前完成率为 {completion_rate:.1f}%，需要加快进度",
+            metric="目标完成率",
+            value=completion_rate,
+            threshold=th.completion_yellow,
+            suggestion="建议加强客户跟进，提高成交转化率",
+        ))
+
+    # 2. Month-over-month growth
+    prev_start = _prev_month_start(range_.start_date)
+    prev_end = _prev_month_end(range_.start_date)
+    prev_range = DateRange(prev_start, prev_end)
+    previous_data = _query_sales_data(factory_id, prev_range)
+    if previous_data:
+        previous_sales = _sum_field(previous_data, "amount")
+        growth_rate = _calculate_growth_rate(total_sales, previous_sales)
+        if growth_rate < th.growth_red:
+            alerts.append(_new_alert_dict(
+                level="RED",
+                category="sales",
+                title="销售额大幅下降",
+                message=f"销售额环比下降 {abs(growth_rate):.1f}%，需紧急关注",
+                metric="环比增长率",
+                value=growth_rate,
+                threshold=th.growth_red,
+                suggestion="建议分析下降原因，检查是否存在市场变化或竞争加剧",
+            ))
+        elif growth_rate < th.growth_yellow:
+            alerts.append(_new_alert_dict(
+                level="YELLOW",
+                category="sales",
+                title="销售额有所下降",
+                message=f"销售额环比下降 {abs(growth_rate):.1f}%，需关注趋势",
+                metric="环比增长率",
+                value=growth_rate,
+                threshold=th.growth_yellow,
+                suggestion="建议分析原因，制定应对措施",
+            ))
+
+    # 3. Per-salesperson alerts (sorted by name to match Java TreeMap fix)
+    per_person_sales: dict[str, Decimal] = {}
+    per_person_target: dict[str, Decimal] = {}
+    for d in sales_data:
+        if d.salesperson_name is None:
+            continue
+        per_person_sales[d.salesperson_name] = (
+            per_person_sales.get(d.salesperson_name, Decimal("0"))
+            + (Decimal(str(d.amount)) if d.amount is not None else Decimal("0"))
+        )
+        per_person_target[d.salesperson_name] = (
+            per_person_target.get(d.salesperson_name, Decimal("0"))
+            + (Decimal(str(d.monthly_target)) if d.monthly_target is not None else Decimal("0"))
+        )
+
+    for name in sorted(per_person_sales.keys()):
+        sales = per_person_sales[name]
+        target = per_person_target.get(name, Decimal("0"))
+        rate = _calculate_rate(sales, target)
+        if rate < th.completion_red:
+            alerts.append(_new_alert_dict(
+                level="RED",
+                category="sales",
+                title=f"销售员 {name} 业绩预警",
+                message=f"{name} 目标完成率仅为 {rate:.1f}%",
+                metric="个人完成率",
+                value=rate,
+                threshold=th.completion_red,
+                suggestion="建议一对一沟通，了解困难并提供支持",
+                related_entity_name=name,
+            ))
+
+    return alerts
 
 
 @router.get("/api/mobile/{factory_id}/smart-bi/datasource/list")
