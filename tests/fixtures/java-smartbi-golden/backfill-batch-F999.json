@@ -12,7 +12,7 @@
     "path": "/api/mobile/{factory_id}/smart-bi/backfill/batch",
     "query": null,
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:20:26.843Z",
+    "recordedAt": "2026-04-29T21:55:44.743Z",
     "javaPort": 10011
   }
 }

@@ -7,7 +7,7 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:20:27.948294716",
+    "timestamp": "2026-04-30T05:55:45.848029009",
     "data": {
       "period": null,
       "startDate": null,
@@ -78,10 +78,10 @@
             }
           ],
           "options": {
+            "period": "WEEK",
             "series": [
               "未知部门"
-            ],
-            "period": "WEEK"
+            ]
           },
           "xaxisField": "period",
           "yaxisField": "amount"
@@ -123,7 +123,7 @@
       "period": "month"
     },
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:20:28.284Z",
+    "recordedAt": "2026-04-29T21:55:46.179Z",
     "javaPort": 10011
   }
 }

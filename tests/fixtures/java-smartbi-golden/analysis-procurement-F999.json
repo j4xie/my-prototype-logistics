@@ -7,7 +7,7 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:20:17.230264409",
+    "timestamp": "2026-04-30T05:55:35.078219248",
     "data": {
       "overview": {
         "period": null,
@@ -33,7 +33,7 @@
           "请先录入采购数据以开始分析"
         ],
         "generatedAt": null,
-        "lastUpdated": "2026-04-30T05:20:17.230122545",
+        "lastUpdated": "2026-04-30T05:55:35.078083354",
         "fromCache": false,
         "cacheExpireAt": null
       },
@@ -50,7 +50,7 @@
       "endDate": "2025-12-31"
     },
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:20:17.605Z",
+    "recordedAt": "2026-04-29T21:55:35.452Z",
     "javaPort": 10011
   }
 }

@@ -7,7 +7,7 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:20:11.736964706",
+    "timestamp": "2026-04-30T05:55:30.008018996",
     "data": {
       "heatmap": {
         "chartType": "MAP",
@@ -29,7 +29,7 @@
         "valid": true
       },
       "opportunityScores": [],
-      "generatedAt": "2026-04-30T05:20:11.736853292",
+      "generatedAt": "2026-04-30T05:55:30.007893892",
       "ranking": []
     }
   },
@@ -42,7 +42,7 @@
       "endDate": "2025-12-31"
     },
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:20:12.111Z",
+    "recordedAt": "2026-04-29T21:55:30.385Z",
     "javaPort": 10011
   }
 }

@@ -12,7 +12,7 @@
     "path": "/api/mobile/{factory_id}/smart-bi/upload-batch-stream",
     "query": null,
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:20:24.398Z",
+    "recordedAt": "2026-04-29T21:55:42.298Z",
     "javaPort": 10011
   }
 }

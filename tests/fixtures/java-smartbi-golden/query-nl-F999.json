@@ -7,11 +7,11 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:20:18.69144977",
+    "timestamp": "2026-04-30T05:55:36.677975081",
     "data": {
       "intent": "sales_overview",
       "confidence": 0,
-      "responseText": "老板，目前系统里没有本月销售数据。我查到的信息显示，时间范围内暂无销售记录。建议你先上传销售报表，比如每日营收汇总表，这样我才能帮你算总额。",
+      "responseText": "老板，目前系统里没有本月销售数据，显示“当前时间范围内暂无销售数据”。请先上传本月的销售报表，比如日结单或收银汇总，我才能帮你算销售总额。",
       "data": null,
       "parameters": {
         "timeRange": {
@@ -54,7 +54,7 @@
     "path": "/api/mobile/F999/smart-bi/query",
     "query": null,
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:20:19.021Z",
+    "recordedAt": "2026-04-29T21:55:37.004Z",
     "javaPort": 10011
   }
 }

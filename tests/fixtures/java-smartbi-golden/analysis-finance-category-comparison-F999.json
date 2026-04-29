@@ -7,7 +7,7 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:20:15.044486946",
+    "timestamp": "2026-04-30T05:55:33.26781265",
     "data": {
       "chartType": "BAR",
       "title": "2025年 vs 2024年 品类结构对比",
@@ -27,28 +27,28 @@
         ],
         "series": [
           {
-            "color": "#5470c6",
+            "yAxisIndex": 0,
+            "type": "bar",
             "name": "2025年",
-            "type": "bar",
-            "yAxisIndex": 0
+            "color": "#5470c6"
           },
           {
-            "color": "#91cc75",
+            "yAxisIndex": 0,
+            "type": "bar",
             "name": "2024年",
-            "type": "bar",
-            "yAxisIndex": 0
+            "color": "#91cc75"
           },
           {
-            "color": "#ee6666",
-            "name": "同比增长率",
+            "yAxisIndex": 1,
             "type": "line",
-            "yAxisIndex": 1
+            "name": "同比增长率",
+            "color": "#ee6666"
           }
         ],
         "summary": {
-          "compareTotal": 0,
+          "currentTotal": 0,
           "totalYoyGrowthRate": 0,
-          "currentTotal": 0
+          "compareTotal": 0
         }
       },
       "xaxisField": "category",
@@ -64,7 +64,7 @@
       "compareYear": "2024"
     },
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:20:15.414Z",
+    "recordedAt": "2026-04-29T21:55:33.644Z",
     "javaPort": 10011
   }
 }

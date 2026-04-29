@@ -7,7 +7,7 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:20:14.560018835",
+    "timestamp": "2026-04-30T05:55:32.774403401",
     "data": {
       "chartType": "LINE_BAR",
       "title": "收入同比环比分析",
@@ -37,28 +37,28 @@
         ],
         "series": [
           {
-            "color": "#5470c6",
+            "yAxisIndex": 0,
+            "type": "bar",
             "name": "本期",
-            "type": "bar",
-            "yAxisIndex": 0
+            "color": "#5470c6"
           },
           {
-            "color": "#91cc75",
+            "yAxisIndex": 0,
+            "type": "bar",
             "name": "同期",
-            "type": "bar",
-            "yAxisIndex": 0
+            "color": "#91cc75"
           },
           {
-            "color": "#ee6666",
+            "yAxisIndex": 1,
+            "type": "line",
             "name": "同比增长率",
-            "type": "line",
-            "yAxisIndex": 1
+            "color": "#ee6666"
           },
           {
-            "color": "#fac858",
-            "name": "环比增长率",
+            "yAxisIndex": 1,
             "type": "line",
-            "yAxisIndex": 1
+            "name": "环比增长率",
+            "color": "#fac858"
           }
         ],
         "tooltip": {
@@ -80,7 +80,7 @@
       "metric": "revenue"
     },
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:20:14.924Z",
+    "recordedAt": "2026-04-29T21:55:33.154Z",
     "javaPort": 10011
   }
 }

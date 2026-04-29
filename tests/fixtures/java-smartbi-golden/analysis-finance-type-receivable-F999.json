@@ -7,7 +7,7 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:20:13.677818411",
+    "timestamp": "2026-04-30T05:55:31.890604985",
     "data": {
       "endDate": "2025-12-31",
       "overdueRanking": [],
@@ -157,7 +157,7 @@
       "analysisType": "receivable"
     },
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:20:14.007Z",
+    "recordedAt": "2026-04-29T21:55:32.221Z",
     "javaPort": 10011
   }
 }

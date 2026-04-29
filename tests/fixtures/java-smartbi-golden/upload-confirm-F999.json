@@ -7,12 +7,12 @@
     "code": 400,
     "success": false,
     "message": "解析结果不能为空",
-    "timestamp": "2026-04-30T05:20:24.021073646",
+    "timestamp": "2026-04-30T05:55:41.916830397",
     "data": {
       "code": 400,
       "message": "解析结果不能为空",
       "data": null,
-      "timestamp": "2026-04-30T05:20:24.021073646",
+      "timestamp": "2026-04-30T05:55:41.916830397",
       "success": false,
       "actionHint": null,
       "severity": null,
@@ -25,7 +25,7 @@
     "path": "/api/mobile/F999/smart-bi/upload/confirm",
     "query": null,
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:20:24.395Z",
+    "recordedAt": "2026-04-29T21:55:42.297Z",
     "javaPort": 10011
   }
 }

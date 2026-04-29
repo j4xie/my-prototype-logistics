@@ -7,7 +7,7 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:20:31.681987037",
+    "timestamp": "2026-04-30T05:55:46.29398616",
     "data": [
       {
         "level": "YELLOW",
@@ -47,7 +47,7 @@
       "period": "month"
     },
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:20:32.007Z",
+    "recordedAt": "2026-04-29T21:55:46.617Z",
     "javaPort": 10011
   }
 }

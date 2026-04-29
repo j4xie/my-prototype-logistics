@@ -7,7 +7,7 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:20:26.467645771",
+    "timestamp": "2026-04-30T05:55:44.369500254",
     "data": {
       "missingFieldsCount": 0,
       "totalUploads": 0,
@@ -20,7 +20,7 @@
     "path": "/api/mobile/F999/smart-bi/uploads-missing-fields",
     "query": null,
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:20:26.842Z",
+    "recordedAt": "2026-04-29T21:55:44.742Z",
     "javaPort": 10011
   }
 }

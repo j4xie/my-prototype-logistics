@@ -7,7 +7,7 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:20:14.120084904",
+    "timestamp": "2026-04-30T05:55:32.335050351",
     "data": {
       "chartType": "LINE_BAR",
       "title": "2025年收入预算达成分析",
@@ -117,35 +117,35 @@
             "name": "金额"
           },
           {
-            "max": 150,
-            "name": "达成率(%)",
+            "position": "right",
             "min": 0,
-            "position": "right"
+            "name": "达成率(%)",
+            "max": 150
           }
         ],
         "series": [
           {
-            "color": "#5470c6",
+            "yAxisIndex": 0,
+            "type": "bar",
             "name": "预算",
-            "type": "bar",
-            "yAxisIndex": 0
+            "color": "#5470c6"
           },
           {
-            "color": "#91cc75",
+            "yAxisIndex": 0,
+            "type": "bar",
             "name": "实际",
-            "type": "bar",
-            "yAxisIndex": 0
+            "color": "#91cc75"
           },
           {
-            "color": "#ee6666",
-            "name": "达成率",
+            "yAxisIndex": 1,
             "type": "line",
-            "yAxisIndex": 1
+            "name": "达成率",
+            "color": "#ee6666"
           }
         ],
         "referenceLine": {
-          "value": 100,
-          "label": "目标线"
+          "label": "目标线",
+          "value": 100
         }
       },
       "xaxisField": "month",
@@ -161,7 +161,7 @@
       "metric": "revenue"
     },
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:20:14.445Z",
+    "recordedAt": "2026-04-29T21:55:32.659Z",
     "javaPort": 10011
   }
 }

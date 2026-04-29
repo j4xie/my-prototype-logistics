@@ -7,7 +7,7 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:20:12.232749822",
+    "timestamp": "2026-04-30T05:55:30.50814082",
     "data": {
       "overview": {
         "period": null,
@@ -23,7 +23,7 @@
         "recommendations": null,
         "suggestions": [],
         "generatedAt": null,
-        "lastUpdated": "2026-04-30T05:20:12.225188851",
+        "lastUpdated": "2026-04-30T05:55:30.500427855",
         "fromCache": false,
         "cacheExpireAt": null
       },
@@ -52,7 +52,7 @@
         "days": 365,
         "valid": true
       },
-      "generatedAt": "2026-04-30T05:20:12.232606858",
+      "generatedAt": "2026-04-30T05:55:30.507999236",
       "profitMetrics": [
         {
           "metricCode": "GROSS_PROFIT",
@@ -173,7 +173,7 @@
       "endDate": "2025-12-31"
     },
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:20:12.566Z",
+    "recordedAt": "2026-04-29T21:55:30.839Z",
     "javaPort": 10011
   }
 }

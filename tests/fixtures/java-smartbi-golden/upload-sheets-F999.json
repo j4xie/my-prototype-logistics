@@ -12,7 +12,7 @@
     "path": "/api/mobile/{factory_id}/smart-bi/sheets",
     "query": null,
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:20:24.396Z",
+    "recordedAt": "2026-04-29T21:55:42.298Z",
     "javaPort": 10011
   }
 }

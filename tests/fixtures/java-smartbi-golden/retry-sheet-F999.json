@@ -7,12 +7,12 @@
     "code": 400,
     "success": false,
     "message": "未找到上传记录: 1",
-    "timestamp": "2026-04-30T05:20:24.513551281",
+    "timestamp": "2026-04-30T05:55:42.413063532",
     "data": {
       "code": 400,
       "message": "未找到上传记录: 1",
       "data": null,
-      "timestamp": "2026-04-30T05:20:24.513551281",
+      "timestamp": "2026-04-30T05:55:42.413063532",
       "success": false,
       "actionHint": null,
       "severity": null,
@@ -25,7 +25,7 @@
     "path": "/api/mobile/F999/smart-bi/retry-sheet/1",
     "query": null,
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:20:24.883Z",
+    "recordedAt": "2026-04-29T21:55:42.787Z",
     "javaPort": 10011
   }
 }

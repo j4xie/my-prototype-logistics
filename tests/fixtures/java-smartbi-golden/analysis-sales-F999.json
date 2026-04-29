@@ -7,7 +7,7 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:20:10.364657359",
+    "timestamp": "2026-04-30T05:55:28.619067183",
     "data": {
       "overview": {
         "period": null,
@@ -33,7 +33,7 @@
           "请先上传销售数据以开始分析"
         ],
         "generatedAt": null,
-        "lastUpdated": "2026-04-30T05:20:10.356017785",
+        "lastUpdated": "2026-04-30T05:55:28.610154391",
         "fromCache": false,
         "cacheExpireAt": null
       },
@@ -49,7 +49,7 @@
         "valid": true
       },
       "salespersonRanking": [],
-      "generatedAt": "2026-04-30T05:20:10.364496134",
+      "generatedAt": "2026-04-30T05:55:28.618863586",
       "trendChart": {
         "chartType": "LINE",
         "title": "销售趋势",
@@ -73,7 +73,7 @@
       "endDate": "2025-12-31"
     },
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:20:10.692Z",
+    "recordedAt": "2026-04-29T21:55:28.948Z",
     "javaPort": 10011
   }
 }

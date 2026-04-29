@@ -7,7 +7,7 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:20:35.532144945",
+    "timestamp": "2026-04-30T05:55:48.2247831",
     "data": {
       "period": "month",
       "startDate": "2026-04-01",
@@ -132,7 +132,7 @@
         "recommendations": null,
         "suggestions": [],
         "generatedAt": null,
-        "lastUpdated": "2026-04-30T05:20:35.52904516",
+        "lastUpdated": "2026-04-30T05:55:48.22116108",
         "fromCache": false,
         "cacheExpireAt": null
       },
@@ -160,7 +160,7 @@
           "请先录入库存数据以开始分析"
         ],
         "generatedAt": null,
-        "lastUpdated": "2026-04-30T05:20:35.526330567",
+        "lastUpdated": "2026-04-30T05:55:48.217862939",
         "fromCache": false,
         "cacheExpireAt": null
       },
@@ -626,8 +626,8 @@
           "故障次数较多，建议加强预防性维护，制定设备保养计划",
           "性能指标偏低，建议检查设备速度设定、消除微停机"
         ],
-        "generatedAt": "2026-04-30T05:20:35.526805862",
-        "lastUpdated": "2026-04-30T05:20:35.526807402",
+        "generatedAt": "2026-04-30T05:55:48.219054575",
+        "lastUpdated": "2026-04-30T05:55:48.219056395",
         "fromCache": false,
         "cacheExpireAt": null
       },
@@ -1123,8 +1123,8 @@
           "返工率较高，建议评估返工工艺，考虑是否可通过工艺改进降低返工率",
           "报废成本高于返工成本，建议评估是否可以通过返工挽救更多不良品"
         ],
-        "generatedAt": "2026-04-30T05:20:35.525913685",
-        "lastUpdated": "2026-04-30T05:20:35.525915214",
+        "generatedAt": "2026-04-30T05:55:48.218723525",
+        "lastUpdated": "2026-04-30T05:55:48.218725876",
         "fromCache": false,
         "cacheExpireAt": null
       },
@@ -1152,11 +1152,36 @@
           "请先录入采购数据以开始分析"
         ],
         "generatedAt": null,
-        "lastUpdated": "2026-04-30T05:20:35.526205933",
+        "lastUpdated": "2026-04-30T05:55:48.219551661",
         "fromCache": false,
         "cacheExpireAt": null
       },
-      "departmentRanking": [],
+      "departmentRanking": [
+        {
+          "rank": 1,
+          "name": "销售部",
+          "value": 150000,
+          "target": 0,
+          "completionRate": 0,
+          "alertLevel": "RED"
+        },
+        {
+          "rank": 2,
+          "name": "研发部",
+          "value": 100000,
+          "target": 0,
+          "completionRate": 0,
+          "alertLevel": "RED"
+        },
+        {
+          "rank": 3,
+          "name": "行政部",
+          "value": 50000,
+          "target": 0,
+          "completionRate": 0,
+          "alertLevel": "RED"
+        }
+      ],
       "regionRanking": [
         {
           "rank": 1,
@@ -1191,10 +1216,130 @@
           "alertLevel": "GREEN"
         }
       ],
-      "alerts": [],
+      "alerts": [
+        {
+          "id": "04bc28dc-6846-4503-abe8-a7fd9e49467e",
+          "level": "RED",
+          "category": "finance",
+          "title": "应收账款严重逾期",
+          "message": "客户 逾期客户A 应收款 200000.00 元已逾期 95 天",
+          "metric": "账龄天数",
+          "value": 95,
+          "threshold": 90,
+          "gapPercent": null,
+          "suggestion": "建议立即联系客户催收，必要时采取法律手段",
+          "relatedEntityId": null,
+          "relatedEntityName": null,
+          "createdAt": "2026-04-30T05:55:48.223569843",
+          "levelName": "RED",
+          "urgent": true
+        },
+        {
+          "id": "3e6404ab-667f-46f6-a72a-cdbfcff971fd",
+          "level": "RED",
+          "category": "finance",
+          "title": "应收账款严重逾期",
+          "message": "客户 逾期客户B 应收款 800000.00 元已逾期 100 天",
+          "metric": "账龄天数",
+          "value": 100,
+          "threshold": 90,
+          "gapPercent": null,
+          "suggestion": "建议立即联系客户催收，必要时采取法律手段",
+          "relatedEntityId": null,
+          "relatedEntityName": null,
+          "createdAt": "2026-04-30T05:55:48.223602924",
+          "levelName": "RED",
+          "urgent": true
+        },
+        {
+          "id": "84698f12-989a-435c-87ae-76b9cdf4a0bd",
+          "level": "RED",
+          "category": "finance",
+          "title": "应收账款总额过高",
+          "message": "应收账款总额达 2500000.00 元，资金压力大",
+          "metric": "应收总额",
+          "value": 2500000,
+          "threshold": 1000000,
+          "gapPercent": null,
+          "suggestion": "建议制定催收计划，加速资金回笼",
+          "relatedEntityId": null,
+          "relatedEntityName": null,
+          "createdAt": "2026-04-30T05:55:48.223694817",
+          "levelName": "RED",
+          "urgent": true
+        },
+        {
+          "id": "260a19c9-b633-49e4-a80c-1455a52371e6",
+          "level": "RED",
+          "category": "department",
+          "title": "研发部 人均产出过低",
+          "message": "研发部 人均销售额仅为 20000.00 元，严重低于标准",
+          "metric": "人均产出",
+          "value": 20000,
+          "threshold": 50000,
+          "gapPercent": null,
+          "suggestion": "建议分析人员效能，考虑调整人员配置或加强培训",
+          "relatedEntityId": null,
+          "relatedEntityName": null,
+          "createdAt": "2026-04-30T05:55:48.224502912",
+          "levelName": "RED",
+          "urgent": true
+        },
+        {
+          "id": "5944d4fc-b113-404a-b7d4-bee207bcb023",
+          "level": "RED",
+          "category": "department",
+          "title": "行政部 人均产出过低",
+          "message": "行政部 人均销售额仅为 10000.00 元，严重低于标准",
+          "metric": "人均产出",
+          "value": 10000,
+          "threshold": 50000,
+          "gapPercent": null,
+          "suggestion": "建议分析人员效能，考虑调整人员配置或加强培训",
+          "relatedEntityId": null,
+          "relatedEntityName": null,
+          "createdAt": "2026-04-30T05:55:48.224553433",
+          "levelName": "RED",
+          "urgent": true
+        },
+        {
+          "id": "a08c4528-000d-449f-be97-84bef1e32aa7",
+          "level": "RED",
+          "category": "department",
+          "title": "销售部 人均产出过低",
+          "message": "销售部 人均销售额仅为 30000.00 元，严重低于标准",
+          "metric": "人均产出",
+          "value": 30000,
+          "threshold": 50000,
+          "gapPercent": null,
+          "suggestion": "建议分析人员效能，考虑调整人员配置或加强培训",
+          "relatedEntityId": null,
+          "relatedEntityName": null,
+          "createdAt": "2026-04-30T05:55:48.224580924",
+          "levelName": "RED",
+          "urgent": true
+        },
+        {
+          "id": "56b5e486-66db-49dc-aa1e-3dc96be88ad8",
+          "level": "YELLOW",
+          "category": "finance",
+          "title": "应收账款即将逾期",
+          "message": "客户 大额客户C 应收款 1500000.00 元账龄已达 75 天",
+          "metric": "账龄天数",
+          "value": 75,
+          "threshold": 60,
+          "gapPercent": null,
+          "suggestion": "建议跟进客户付款计划，发送催款提醒",
+          "relatedEntityId": null,
+          "relatedEntityName": null,
+          "createdAt": "2026-04-30T05:55:48.223630555",
+          "levelName": "YELLOW",
+          "urgent": false
+        }
+      ],
       "recommendations": [
         {
-          "id": "c143c40c-dfa2-4b6c-9d3c-78dc5ebf5949",
+          "id": "618406e1-5b62-4054-bdaf-19a5acc42fa4",
           "type": "SALES_IMPROVEMENT",
           "title": "缩小销售团队业绩差距",
           "description": "销售员业绩差异较大，建议加强团队协作",
@@ -1208,19 +1353,19 @@
           "relatedData": {},
           "targetId": null,
           "targetName": null,
-          "createdAt": "2026-04-30T05:20:35.527935256",
+          "createdAt": "2026-04-30T05:55:48.221434038",
           "typeName": "销售提升",
           "highPriority": true
         }
       ],
       "aiInsights": null,
-      "generatedAt": "2026-04-30T05:20:35.522911433",
+      "generatedAt": "2026-04-30T05:55:48.215544308",
       "fromCache": false,
       "cacheExpireAt": null,
-      "dataVersion": "1777497635522",
-      "highPriorityRecommendationCount": 1,
-      "alertCount": 0,
-      "urgentAlertCount": 0
+      "dataVersion": "1777499748215",
+      "alertCount": 7,
+      "urgentAlertCount": 6,
+      "highPriorityRecommendationCount": 1
     }
   },
   "_meta": {
@@ -1231,7 +1376,7 @@
       "period": "month"
     },
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:20:35.861Z",
+    "recordedAt": "2026-04-29T21:55:48.341Z",
     "javaPort": 10011
   }
 }

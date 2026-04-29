@@ -7,7 +7,7 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:20:36.475169466",
+    "timestamp": "2026-04-30T05:55:48.965009217",
     "data": {
       "uploadId": 1,
       "tableType": null,
@@ -26,7 +26,7 @@
       "analysisType": "auto"
     },
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:20:36.845Z",
+    "recordedAt": "2026-04-29T21:55:49.333Z",
     "javaPort": 10011
   }
 }
