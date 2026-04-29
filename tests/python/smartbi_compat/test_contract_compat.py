@@ -41,6 +41,7 @@ import json
 import math
 import os
 import pathlib
+import re
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Optional, Tuple
 
@@ -154,6 +155,52 @@ def _types_compatible(actual: Any, expected: Any) -> bool:
     return isinstance(actual, type(expected))
 
 
+# Java's LocalDateTime via Jackson default looks like
+# "2026-04-29T12:43:08.971343681" (nanoseconds, no timezone). Python's
+# datetime.now().isoformat() produces "2026-04-29T12:43:08.971343"
+# (microseconds, no timezone). Both fit this pattern; the precision
+# difference is the documented compromise — recorded goldens cannot
+# byte-equal a freshly emitted timestamp anyway, so we assert shape only.
+_ISO_LOCAL_DATETIME_RE = re.compile(
+    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$"
+)
+
+
+def assert_envelope(
+    body: Any, *, expected_code: int = 200, expected_success: bool = True
+) -> None:
+    """Assert the response is a Java-compatible ApiResponse envelope (5 keys).
+
+    The envelope mirrors com.cretas.aims.dto.common.ApiResponse declared
+    field order: code, message, data, timestamp, success. Phase 2A's
+    ``wrap_response`` MUST emit all five so RN/web-admin clients see a
+    byte-shape-equivalent response after T6 nginx cutover.
+
+    The current golden recorder (scripts/phase2a/record-java-golden.mjs)
+    drops ``code`` and ``timestamp`` when persisting goldens, so this
+    helper hardcodes the success-case ``code`` (200) rather than reading
+    it from the golden. When the recorder is upgraded to capture all
+    five envelope keys, callers can pass ``expected_code=g["response"]["code"]``.
+    """
+    assert isinstance(body, dict), f"body not a dict: {type(body).__name__}"
+    missing = {"code", "message", "data", "timestamp", "success"} - set(body.keys())
+    assert not missing, f"envelope missing keys: {missing}"
+    assert body["code"] == expected_code, (
+        f"envelope.code: {body['code']!r} (expected {expected_code})"
+    )
+    assert isinstance(body["message"], str), (
+        f"envelope.message not str: {type(body['message']).__name__}"
+    )
+    ts = body["timestamp"]
+    assert isinstance(ts, str), f"envelope.timestamp not str: {ts!r}"
+    assert _ISO_LOCAL_DATETIME_RE.match(ts), (
+        f"envelope.timestamp not ISO 8601 LocalDateTime: {ts!r}"
+    )
+    assert body["success"] is expected_success, (
+        f"envelope.success: {body['success']!r} (expected {expected_success})"
+    )
+
+
 def assert_schema_match(actual: Any, expected: Any, *, path: str = "$") -> None:
     """Recursive structural comparison of actual vs expected JSON.
 
@@ -220,12 +267,12 @@ def test_data_date_range_F001_matches_golden(client, factory_token, goldens):
     body = r.json()
     expected = g["response"]
     expected_data = expected["data"]
-    # Verify envelope (success/message — httpStatus is golden-recorder metadata,
-    # not part of Java's actual ApiResponse wrapper, so we don't assert on it).
-    assert body.get("success") is True
-    assert "data" in body
-    assert body.get("message") == expected.get("message")
-    # Verify the business payload.
+    # Envelope: 5-key Java ApiResponse shape (code/message/data/timestamp/success).
+    # `httpStatus` in the golden is recorder metadata, not Java's ApiResponse
+    # wrapper, so we don't assert on it here.
+    assert_envelope(body, expected_code=200, expected_success=True)
+    assert body["message"] == expected.get("message")
+    # Business payload.
     assert_schema_match(body["data"], expected_data)
 
 
@@ -277,7 +324,7 @@ def test_data_date_range_F001_no_data_returns_no_data_envelope(
     )
     assert r.status_code == 200, f"unexpected status {r.status_code}: {r.text}"
     body = r.json()
-    assert body["success"] is True
+    assert_envelope(body, expected_code=200, expected_success=True)
     assert body["message"] == "No sales data detected"
     assert body["data"]["hasData"] is False
     assert body["data"]["message"] == "No sales data detected"

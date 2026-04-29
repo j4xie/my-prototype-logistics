@@ -674,10 +674,18 @@ async function main() {
         .replace('{targetType}', ep.targetType || 'salesperson')
         .replace('{targetId}', ep.targetId || 'test');
 
+      // Capture all 5 keys of Java's ApiResponse envelope (code, message,
+      // data, timestamp, success) so contract tests can byte-shape compare
+      // against the recorded golden. Goldens predating I-6 (Apr 29 2026)
+      // omitted code+timestamp; the contract test currently hardcodes
+      // code=200 for those legacy fixtures and will switch to golden-driven
+      // assertions once all 56 fixtures are re-recorded.
       const responsePayload = {
         httpStatus: result.status,
+        code: result.json?.code ?? null,
         success: result.json?.success ?? null,
         message: result.json?.message ?? null,
+        timestamp: result.json?.timestamp ?? null,
         data: result.json?.data ?? (result.json ?? { _rawText: result.raw }),
       };
       // Flag in fixture so T5 contract test can handle success:false goldens correctly
