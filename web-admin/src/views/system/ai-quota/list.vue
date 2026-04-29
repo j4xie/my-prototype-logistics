@@ -27,7 +27,14 @@ async function loadData() {
   try {
     const res = await get(`/${factoryId.value}/ai-quota-configs`);
     if (res.success && res.data) {
-      tableData.value = Array.isArray(res.data) ? res.data : (res.data.content || []);
+      // 后端返回 { factoryConfigs, globalConfigs, total }, factory 配置 + 平台全局兜底
+      const d = res.data;
+      const factory = Array.isArray(d.factoryConfigs) ? d.factoryConfigs : [];
+      const global = Array.isArray(d.globalConfigs) ? d.globalConfigs : [];
+      // 兼容多种格式: factoryConfigs / content / 直接 array
+      tableData.value = factory.length || global.length
+        ? [...factory, ...global.map((g: Record<string, unknown>) => ({ ...g, _isGlobal: true }))]
+        : (Array.isArray(d) ? d : (d.content || []));
     }
   } catch (e) { console.error(e); }
   finally { loading.value = false; }
