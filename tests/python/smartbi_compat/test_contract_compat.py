@@ -516,3 +516,242 @@ def test_row_to_dict_soft_deleted_row():
         "parameters",
         "deleted",
     ]
+
+
+# ---------------------------------------------------------------------------
+# T5c: GET /smart-bi/datasource/list contract test
+# ---------------------------------------------------------------------------
+#
+# Java reference: SmartBIAnalysisController.listDatasources (line 731-745)
+# backed by SmartBiSchemaServiceImpl.listDatasources, which returns
+# List<SmartBiDatasource> via SmartBiDatasourceRepository
+# .findByFactoryIdAndIsActiveTrue (BaseEntity adds @Where deleted_at IS NULL
+# auto-filter). Lombok @Data on BaseEntity then SmartBiDatasource fixes
+# Jackson key order (BaseEntity getters first, then subclass fields in
+# declaration order, then BaseEntity.isDeleted() last):
+#     createdAt, updatedAt, deletedAt, id, name, sourceType, factoryId,
+#     schemaVersion, lastSchemaChange, description, connectionConfig,
+#     isActive, code, refreshInterval, linkedUploadId, fieldDefinitions,
+#     deleted
+#
+# ``fieldDefinitions`` is a Hibernate lazy @OneToMany collection that the
+# list query never loads, so it always serialises as ``[]``. The Python
+# alias unconditionally emits ``[]`` for this key — never queries the
+# field-definitions table.
+#
+# DB seam ``_query_datasources`` is monkey-patched at module scope so the
+# assertion is deterministic without a Postgres dependency. Production hits
+# the real smart_bi_datasource table via smartbi.database.connection.
+
+
+def test_datasource_list_F001_matches_golden(
+    client, factory_token, goldens, monkeypatch
+):
+    """Mirror Java's GET /smart-bi/datasource/list against the recorded golden.
+
+    The DB seam returns the post-_datasource_row_to_dict shape (already a
+    list of JSON-ready dicts), so monkey-patching with the golden's ``data``
+    array directly exercises the full envelope/route/serialisation path
+    without a Postgres dependency.
+
+    Per-row serialisation correctness is covered by the
+    ``test_datasource_row_to_dict_*`` unit tests below (Jackson key order,
+    fieldDefinitions=[] passthrough, soft-delete derivation, null fields).
+    """
+    g = goldens["datasource-list-F001"]
+    expected = g["response"]
+    expected_data = expected["data"]
+
+    from smartbi_compat.api import analysis as analysis_router
+
+    monkeypatch.setattr(
+        analysis_router,
+        "_query_datasources",
+        lambda factory_id: expected_data,
+    )
+
+    r = client.get(
+        g["path"].replace("{factory_id}", g["factory"]),
+        headers={"Authorization": f"Bearer {factory_token}"},
+    )
+    assert r.status_code == 200, f"unexpected status {r.status_code}: {r.text}"
+    body = r.json()
+    assert_envelope(body, expected_code=200, expected_success=True)
+    assert body["message"] == expected.get("message")
+    assert_schema_match(body["data"], expected_data)
+
+
+# ---------------------------------------------------------------------------
+# T5c: _datasource_row_to_dict unit tests
+# ---------------------------------------------------------------------------
+#
+# The contract test above monkey-patches ``_query_datasources`` (the
+# post-conversion seam), so the row-to-Jackson-dict mapping in
+# ``_datasource_row_to_dict`` is never actually invoked there. These
+# unit tests exercise that mapping directly with lightweight stand-in
+# row objects (SimpleNamespace mimics SQLAlchemy ``Row`` attribute access
+# without requiring SQLAlchemy or a live DB), covering:
+#   - Jackson key order (BaseEntity-then-subclass + @Where ``deleted``)
+#   - datetime.isoformat() rendering (microsecond precision)
+#   - Null-timestamp passthrough (None stays None, not "None"/"null")
+#   - Soft-delete derivation (deleted_at is None -> deleted == False;
+#     deleted_at set -> deleted == True, even though the @Where SQL
+#     filter normally hides such rows)
+#   - fieldDefinitions always [] (Hibernate lazy @OneToMany never loaded
+#     by findByFactoryIdAndIsActiveTrue)
+#   - Pass-through for the 14 SmartBiDatasource data columns
+
+
+def test_datasource_row_to_dict_jackson_key_order_and_active_row():
+    """Verify ``_datasource_row_to_dict`` produces Jackson-order keys
+    and derives ``deleted`` correctly for a non-soft-deleted row.
+
+    This is the only test that actually exercises the SQL-row-to-dict
+    mapping; the contract test patches the post-conversion seam.
+    """
+    from types import SimpleNamespace
+
+    from smartbi_compat.api import analysis
+
+    row = SimpleNamespace(
+        id=13,
+        name="青花椒2约销量报表.csv",
+        source_type="EXCEL",
+        factory_id="F001",
+        schema_version=1,
+        last_schema_change=None,
+        description="SALES · 4052 行",
+        connection_config=None,
+        is_active=True,
+        code="EXCEL_3910",
+        refresh_interval=None,
+        linked_upload_id=3910,
+        created_at=datetime(2026, 4, 16, 16, 1, 39, 650315),
+        updated_at=datetime(2026, 4, 16, 16, 1, 39, 650315),
+        deleted_at=None,
+    )
+
+    result = analysis._datasource_row_to_dict(row)
+
+    # Jackson order is fixed by Lombok @Data declaration order:
+    # BaseEntity getters first (createdAt, updatedAt, deletedAt), then
+    # SmartBiDatasource fields in declaration order (id, name, sourceType,
+    # factoryId, schemaVersion, lastSchemaChange, description,
+    # connectionConfig, isActive, code, refreshInterval, linkedUploadId,
+    # fieldDefinitions), then the @Where-derived ``deleted`` flag last.
+    # list(result.keys()) preserves insertion order — set equality would
+    # silently accept a reshuffled dict that wire-breaks Jackson clients.
+    assert list(result.keys()) == [
+        "createdAt",
+        "updatedAt",
+        "deletedAt",
+        "id",
+        "name",
+        "sourceType",
+        "factoryId",
+        "schemaVersion",
+        "lastSchemaChange",
+        "description",
+        "connectionConfig",
+        "isActive",
+        "code",
+        "refreshInterval",
+        "linkedUploadId",
+        "fieldDefinitions",
+        "deleted",
+    ]
+    # Pass-through values for the 14 entity data fields.
+    assert result["id"] == 13
+    assert result["name"] == "青花椒2约销量报表.csv"
+    assert result["sourceType"] == "EXCEL"
+    assert result["factoryId"] == "F001"
+    assert result["schemaVersion"] == 1
+    assert result["lastSchemaChange"] is None
+    assert result["description"] == "SALES · 4052 行"
+    assert result["connectionConfig"] is None
+    assert result["isActive"] is True
+    assert result["code"] == "EXCEL_3910"
+    assert result["refreshInterval"] is None
+    assert result["linkedUploadId"] == 3910
+    # fieldDefinitions: Hibernate lazy @OneToMany never loaded by
+    # findByFactoryIdAndIsActiveTrue — always emits empty list.
+    assert result["fieldDefinitions"] == []
+    # Timestamp formatting: datetime.isoformat() with microseconds.
+    assert result["createdAt"] == "2026-04-16T16:01:39.650315"
+    assert result["updatedAt"] == "2026-04-16T16:01:39.650315"
+    # Null-timestamp passthrough (None stays None, not stringified).
+    assert result["deletedAt"] is None
+    # Soft-delete derivation: deleted_at IS NULL -> deleted == False.
+    assert result["deleted"] is False
+
+
+def test_datasource_row_to_dict_soft_deleted_row():
+    """Even with the @Where SQL filter usually hiding these, the dict
+    converter must still derive ``deleted == True`` when ``deleted_at``
+    is set, and render the timestamp via ``.isoformat()``.
+
+    Also exercises a row with ``last_schema_change`` populated (covering
+    the non-null branch of the nullable timestamp column) and asserts
+    fieldDefinitions stays [] independent of the soft-delete flag.
+    """
+    from types import SimpleNamespace
+
+    from smartbi_compat.api import analysis
+
+    row = SimpleNamespace(
+        id=99,
+        name="archived datasource",
+        source_type="DB",
+        factory_id="F001",
+        schema_version=2,
+        last_schema_change=datetime(2026, 1, 2, 6, 30, 0),
+        description=None,  # null-description passthrough
+        connection_config="{\"url\":\"jdbc:postgresql://...\"}",
+        is_active=False,
+        code=None,  # null-code passthrough
+        refresh_interval=3600,
+        linked_upload_id=None,  # null-linkedUploadId passthrough
+        created_at=datetime(2026, 1, 1, 0, 0, 0),
+        updated_at=datetime(2026, 1, 2, 0, 0, 0),
+        deleted_at=datetime(2026, 1, 3, 12, 0, 0),
+    )
+
+    result = analysis._datasource_row_to_dict(row)
+
+    # Soft-delete branch: derived flag must flip true.
+    assert result["deleted"] is True
+    # Timestamp rendering for a deleted_at value (no microseconds).
+    assert result["deletedAt"] == "2026-01-03T12:00:00"
+    # last_schema_change non-null timestamp branch.
+    assert result["lastSchemaChange"] == "2026-01-02T06:30:00"
+    # And the other timestamps still format correctly.
+    assert result["createdAt"] == "2026-01-01T00:00:00"
+    assert result["updatedAt"] == "2026-01-02T00:00:00"
+    # Null passthroughs (None stays None, not "" / "None" / "null").
+    assert result["description"] is None
+    assert result["code"] is None
+    assert result["linkedUploadId"] is None
+    # isActive=False round-trips as Python bool False (not int 0).
+    assert result["isActive"] is False
+    # fieldDefinitions always [] regardless of soft-delete flag.
+    assert result["fieldDefinitions"] == []
+    # Key order is still Jackson — regression guard.
+    assert list(result.keys()) == [
+        "createdAt",
+        "updatedAt",
+        "deletedAt",
+        "id",
+        "name",
+        "sourceType",
+        "factoryId",
+        "schemaVersion",
+        "lastSchemaChange",
+        "description",
+        "connectionConfig",
+        "isActive",
+        "code",
+        "refreshInterval",
+        "linkedUploadId",
+        "fieldDefinitions",
+        "deleted",
+    ]
