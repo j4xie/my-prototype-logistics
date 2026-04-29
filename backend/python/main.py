@@ -148,6 +148,15 @@ except ImportError as e:
     import logging as _log
     _log.getLogger(__name__).warning(f"Foreign Object Detection not available: {e}")
 
+# Import LLM API router (multi-provider with fallback chain)
+try:
+    from llm.api import endpoints as llm_api
+    _llm_available = True
+except ImportError as e:
+    _llm_available = False
+    import logging as _log
+    _log.getLogger(__name__).warning(f"LLM Router not available: {e}")
+
 # Configure logging with rotation
 _log_level = logging.DEBUG if get_settings().debug else logging.INFO
 _log_format = "%(asctime)s - %(name)s - %(levelname)s - [%(correlation_id)s] - %(message)s"
@@ -874,6 +883,18 @@ if _completeness_available:
 else:
     logger.warning("Completeness Calculator routes not registered (asyncpg not available)")
 
+# =====================================================
+# LLM Router API Routes (multi-provider with fallback)
+# =====================================================
+if _llm_available:
+    app.include_router(
+        llm_api.router,
+        prefix="/api/llm",
+        tags=["LLM Router"]
+    )
+else:
+    logger.warning("LLM Router routes not registered")
+
 
 @app.get("/health")
 async def health_check():
@@ -905,6 +926,7 @@ async def health_check():
                 *( ["food_knowledge_base"] if _food_kb_available else []),
                 *( ["food_kb_feedback"] if _food_kb_feedback_available else []),
                 *( ["foreign_object_detection"] if _fod_available else []),
+                *( ["llm_router"] if _llm_available else []),
             ],
             "postgres": postgres_status
         }
@@ -942,6 +964,7 @@ async def root():
             **({"food_knowledge_base": "/api/food-kb"} if _food_kb_available else {}),
             **({"food_kb_feedback": "/api/food-kb/feedback"} if _food_kb_feedback_available else {}),
             **({"foreign_object_detection": "/api/fod"} if _fod_available else {}),
+            **({"llm_router": "/api/llm"} if _llm_available else {}),
         },
         "endpoints": {
             "health": "/health",
