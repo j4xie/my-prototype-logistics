@@ -104,11 +104,28 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$PROJECT_ROOT/web-admin"
 
+# Apr 29 2026 fix (张权 banner deploy 故障): 之前 `npm run build 2>&1 | tail -5`
+# 通过 pipe 把 npm 的 exit code 吃掉了 (pipe 的 exit code 是 tail 的 0), build 失败但
+# 后续 dist/index.html 检查仍通过 (旧 dist 还在), 部署上传旧 dist + 报"成功".
+# 用 PIPESTATUS 拿到 npm 的真实 exit code, 失败立即 exit.
+set -o pipefail
 npm run build 2>&1 | tail -5
+BUILD_RC=${PIPESTATUS[0]}
+set +o pipefail
+if [ "$BUILD_RC" != "0" ]; then
+    log "❌ 构建失败 (npm run build exit=$BUILD_RC) — 拒绝继续部署"
+    exit 1
+fi
 
 if [ ! -f "dist/index.html" ]; then
     log "❌ 构建失败: dist/index.html 不存在"
     exit 1
+fi
+
+# 验证 dist 是新鲜的 (build 跑完应该 < 60s 前 modify)
+DIST_AGE=$(($(date +%s) - $(stat -c %Y dist/index.html 2>/dev/null || stat -f %m dist/index.html)))
+if [ "$DIST_AGE" -gt 300 ]; then
+    log "⚠️  警告: dist/index.html 修改时间已 ${DIST_AGE}s 前, build 可能未真正运行"
 fi
 
 ASSET_COUNT=$(find dist/assets -type f 2>/dev/null | wc -l | tr -d ' ')
