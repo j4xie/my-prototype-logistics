@@ -3,9 +3,9 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
-import { get } from '@/api/request';
+import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Search, Refresh } from '@element-plus/icons-vue';
+import { Plus, Edit, Delete as DeleteIcon, Search, Refresh } from '@element-plus/icons-vue';
 
 const router = useRouter();
 
@@ -130,12 +130,82 @@ function handleMaintenance(row: Record<string, unknown>) {
   router.push({ path: '/equipment/maintenance', query: { equipmentId: row.id as string } });
 }
 
-function handleEdit(row: Record<string, unknown>) {
-  ElMessage.info('编辑功能开发中');
-}
+// ==================== Create / Edit Dialog ====================
+// 张权 Apr 29 2026 audit P0 fix: handleAdd/handleEdit 之前是 "开发中" stub.
+// 后端 /equipment 全 CRUD 齐全 (POST/PUT/DELETE/GET), 补完 dialog form.
+const formDialogVisible = ref(false);
+const editingId = ref<string | null>(null);
+const form = ref({
+  equipmentCode: '',
+  name: '',
+  model: '',
+  location: '',
+  manufacturer: '',
+  status: 'IDLE',
+  notes: '',
+});
+const dialogTitle = computed(() => (editingId.value ? '编辑设备' : '新建设备'));
+const submitting = ref(false);
 
 function handleAdd() {
-  ElMessage.info('添加设备功能开发中');
+  editingId.value = null;
+  form.value = {
+    equipmentCode: '',
+    name: '',
+    model: '',
+    location: '',
+    manufacturer: '',
+    status: 'IDLE',
+    notes: '',
+  };
+  formDialogVisible.value = true;
+}
+
+function handleEdit(row: Record<string, unknown>) {
+  editingId.value = String(row.id || '');
+  form.value = {
+    equipmentCode: String(row.equipmentCode || ''),
+    name: String(row.name || ''),
+    model: String(row.model || ''),
+    location: String(row.location || ''),
+    manufacturer: String(row.manufacturer || ''),
+    status: String(row.status || 'IDLE'),
+    notes: String(row.notes || ''),
+  };
+  formDialogVisible.value = true;
+}
+
+async function handleSave() {
+  if (!form.value.name) return ElMessage.warning('请填写设备名称');
+  if (!form.value.equipmentCode) return ElMessage.warning('请填写设备编号');
+  submitting.value = true;
+  try {
+    if (editingId.value) {
+      const res = await put(`/${factoryId.value}/equipment/${editingId.value}`, form.value);
+      if (res.success) ElMessage.success('更新成功');
+    } else {
+      const res = await post(`/${factoryId.value}/equipment`, form.value);
+      if (res.success) ElMessage.success('创建成功');
+    }
+    formDialogVisible.value = false;
+    loadData();
+  } catch (e) { console.error(e); }
+  finally { submitting.value = false; }
+}
+
+async function handleDelete(row: Record<string, unknown>) {
+  try {
+    await ElMessageBox.confirm(
+      `确定删除设备「${row.name}」? 该设备的维护记录、告警历史仍保留, 但无法新分配工单.`,
+      '删除确认',
+      { type: 'warning' },
+    );
+    const res = await del(`/${factoryId.value}/equipment/${row.id}`);
+    if (res.success) {
+      ElMessage.success('删除成功');
+      loadData();
+    }
+  } catch { /* user cancelled */ }
 }
 </script>
 
@@ -180,11 +250,12 @@ function handleAdd() {
           </template>
         </el-table-column>
         <el-table-column prop="lastMaintenanceDate" label="上次维护" width="120" />
-        <el-table-column label="操作" width="200" fixed="right" align="center">
+        <el-table-column label="操作" width="280" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="handleView(row)">查看</el-button>
             <el-button v-if="canWrite" type="primary" link size="small" @click="handleMaintenance(row)">维护</el-button>
-            <el-button v-if="canWrite" type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button v-if="canWrite" type="primary" link size="small" :icon="Edit" @click="handleEdit(row)">编辑</el-button>
+            <el-button v-if="canWrite" type="danger" link size="small" :icon="DeleteIcon" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -201,6 +272,42 @@ function handleAdd() {
         />
       </div>
     </el-card>
+
+    <el-dialog v-model="formDialogVisible" :title="dialogTitle" width="600px" destroy-on-close>
+      <el-form :model="form" label-width="100px">
+        <el-form-item label="设备编号" required>
+          <el-input v-model="form.equipmentCode" placeholder="如 EQ001" :disabled="!!editingId" />
+        </el-form-item>
+        <el-form-item label="设备名称" required>
+          <el-input v-model="form.name" placeholder="如 卤煮锅 1 号 / 真空包装机" />
+        </el-form-item>
+        <el-form-item label="型号">
+          <el-input v-model="form.model" placeholder="如 LZG-200L" />
+        </el-form-item>
+        <el-form-item label="生产厂商">
+          <el-input v-model="form.manufacturer" placeholder="如 苏泊尔" />
+        </el-form-item>
+        <el-form-item label="位置">
+          <el-input v-model="form.location" placeholder="如 一楼车间 A 区" />
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="form.status" style="width: 100%">
+            <el-option label="空闲 (IDLE)" value="IDLE" />
+            <el-option label="运行中 (RUNNING)" value="RUNNING" />
+            <el-option label="维护中 (MAINTENANCE)" value="MAINTENANCE" />
+            <el-option label="故障 (FAULT)" value="FAULT" />
+            <el-option label="离线 (OFFLINE)" value="OFFLINE" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="form.notes" type="textarea" :rows="2" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="formDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleSave">保存</el-button>
+      </template>
+    </el-dialog>
 
     <el-dialog v-model="detailVisible" title="设备详情" width="500px">
       <el-descriptions :column="1" border>

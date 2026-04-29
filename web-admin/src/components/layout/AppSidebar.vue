@@ -158,7 +158,8 @@ const menuConfig: MenuItem[] = [
       { path: '/hr/employees', title: '员工管理', icon: '', module: 'hr' },
       { path: '/hr/attendance', title: '考勤管理', icon: '', module: 'hr' },
       { path: '/hr/whitelist', title: '白名单管理', icon: '', module: 'hr' },
-      { path: '/hr/departments', title: '部门管理', icon: '', module: 'hr' }
+      { path: '/hr/departments', title: '部门管理', icon: '', module: 'hr' },
+      { path: '/hr/work-types', title: '工种字典', icon: '', module: 'hr' }
     ]
   },
   // UX P2-5 merged into 仓储管理: /transfer 原独立顶级组 (1 项), 合并节省 1 顶级项
