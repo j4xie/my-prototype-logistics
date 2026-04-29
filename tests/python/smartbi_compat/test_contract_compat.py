@@ -7,20 +7,18 @@ Each file: {"verb": "...", "path": "...", "factory": "...", "response": {...},
 
 Test app construction
 ---------------------
-The Phase 2A T5 plan template imagines mounting the production
-``main:app``. In this worktree the production app cannot be imported in
-tests because ``backend/python/main.py`` line 755 imports
-``smartbi.api.llm_router_admin`` which is created by a parallel branch
-and is not part of the phase2a/t5-poc tree. Mounting just the alias
-routers (the unit under test) is therefore both necessary and
-preferable: it exercises the same FastAPI app the production process
-mounts (smartbi_compat/api/dashboard.py), without hauling in the rest of
-the Python service. This matches the pattern already used in
-tests/python/smartbi_compat/test_jwt_middleware.py.
+The fixture imports the production ``main:app`` so contract tests
+exercise the same FastAPI process that runs in prod (route registration,
+auth middleware, optional-router gating, exception handlers). The DB
+seam ``_query_date_range`` is monkey-patched at module scope so the
+assertion is deterministic without a Postgres dependency. Optional
+modules that aren't on this branch (e.g. ``smartbi.api.llm_router_admin``)
+are guarded by try/except in main.py and skipped with a warning.
 
 PoC scope (T5a, single endpoint)
 --------------------------------
-- Route registration: real APIRouter from smartbi_compat.api.dashboard.
+- Route registration: real APIRouter from smartbi_compat.api.dashboard,
+  mounted by main.py alongside the other alias routers.
 - JWT middleware: real verify_jwt_and_factory dependency.
 - Response shape: real wrap_response envelope; granularity computed by
   the real _infer_granularity port of Java DateRange.inferGranularity.
@@ -38,6 +36,7 @@ wrapper does not actually emit it, so we compare only the business
 """
 from __future__ import annotations
 
+import importlib.util
 import json
 import math
 import os
@@ -60,6 +59,37 @@ GOLDEN_DIR = (
 )
 
 
+def _load_production_main() -> Any:
+    """Load backend/python/main.py by absolute path.
+
+    A naive ``from main import app`` is ambiguous in this repo: pytest's
+    backend/python/conftest.py adds ``backend/python/smartbi/`` to sys.path,
+    and that directory also contains a legacy ``main.py``. Resolving by
+    absolute path forces the production entry point regardless of sys.path
+    order.
+    """
+    main_py = (
+        pathlib.Path(__file__).resolve().parents[3]
+        / "backend"
+        / "python"
+        / "main.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "phase2a_production_main", main_py
+    )
+    assert spec is not None and spec.loader is not None, (
+        f"could not build importlib spec for {main_py}"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+# Load the production main module once for the whole test module so each
+# test reuses the same FastAPI app (route registration is expensive).
+_production_main = _load_production_main()
+
+
 @pytest.fixture(scope="module")
 def goldens() -> dict[str, Any]:
     out: dict[str, Any] = {}
@@ -70,10 +100,7 @@ def goldens() -> dict[str, Any]:
 
 @pytest.fixture
 def app(monkeypatch: pytest.MonkeyPatch) -> FastAPI:
-    """Minimal FastAPI app mounting just the Phase 2A alias routers.
-
-    See module docstring for why ``main:app`` is not used here.
-    """
+    """Production main:app — same FastAPI process that runs in prod."""
     # Force the data-date-range query to return the golden's recorded range
     # so the contract assertion is deterministic in CI.
     from smartbi_compat.api import dashboard as dashboard_router
@@ -83,10 +110,7 @@ def app(monkeypatch: pytest.MonkeyPatch) -> FastAPI:
 
     monkeypatch.setattr(dashboard_router, "_query_date_range", _fake_query_date_range)
 
-    a = FastAPI()
-    a.include_router(dashboard_router.router)
-    # Future PoC sub-tasks will mount analysis + upload routers here too.
-    return a
+    return _production_main.app
 
 
 @pytest.fixture

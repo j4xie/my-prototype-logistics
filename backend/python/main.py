@@ -752,12 +752,18 @@ app.include_router(
 )
 
 # J1 (Apr 24 2026): LLM router circuit breaker stats
-from smartbi.api import llm_router_admin
-app.include_router(
-    llm_router_admin.router,
-    prefix="/api/smartbi/admin/llm-router",
-    tags=["LLM Router Admin"],
-)
+# Optional: lives on a parallel branch (e2e/v1-framework). On branches where
+# it's absent the rest of the service still starts; the admin route is just
+# unavailable. Same pattern as the SmartBI compat block below.
+try:
+    from smartbi.api import llm_router_admin
+    app.include_router(
+        llm_router_admin.router,
+        prefix="/api/smartbi/admin/llm-router",
+        tags=["LLM Router Admin"],
+    )
+except ImportError as e:
+    logger.warning(f"LLM Router admin routes not registered: {e}")
 
 # Phase A A-1 Restaurant ETL admin (Apr 28 2026): trigger + status endpoints
 from smartbi.api import restaurant_etl_admin
