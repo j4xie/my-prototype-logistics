@@ -26,7 +26,7 @@ from __future__ import annotations
 import base64
 import json
 import logging
-from typing import Any, AsyncIterator, Dict, List, Optional
+from typing import Any, AsyncIterator, Dict, List, Optional, Union
 
 from fastapi import APIRouter, Form, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
@@ -48,7 +48,7 @@ class LLMRequest(BaseModel):
     max_tokens: Optional[int] = None
     enable_thinking: Optional[bool] = None
     tools: Optional[List[Dict[str, Any]]] = None
-    tool_choice: Optional[Any] = None
+    tool_choice: Optional[Union[str, Dict[str, Any]]] = None
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -84,6 +84,8 @@ def _build_payload(req: LLMRequest) -> Dict[str, Any]:
     return payload
 
 
+MAX_IMAGE_BYTES = 10 * 1024 * 1024  # 10 MB
+
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 
@@ -102,8 +104,11 @@ async def chat_stream(req: LLMRequest) -> StreamingResponse:
     payload = _build_payload(req)
 
     async def _generate() -> AsyncIterator[str]:
-        async for event in call_chain_stream(slot, payload):
-            yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+        try:
+            async for event in call_chain_stream(slot, payload):
+                yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+        except RuntimeError as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)}, ensure_ascii=False)}\n\n"
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(
@@ -144,7 +149,9 @@ async def vision(
     parsed_slot = _parse_slot(slot)
 
     # Read image bytes and encode to base64 data-URI
-    image_bytes = await image.read()
+    image_bytes = await image.read(MAX_IMAGE_BYTES + 1)
+    if len(image_bytes) > MAX_IMAGE_BYTES:
+        raise HTTPException(status_code=413, detail="Image exceeds 10 MB limit")
     mime_type = image.content_type or "image/jpeg"
     b64_data = base64.b64encode(image_bytes).decode("ascii")
     data_uri = f"data:{mime_type};base64,{b64_data}"

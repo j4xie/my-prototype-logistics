@@ -352,3 +352,22 @@ def test_chat_stream_missing_messages_returns_422(client):
     with patch("llm.api.endpoints.call_chain_stream"):
         resp = client.post("/api/llm/chat-stream", json={"slot": "chat"})
     assert resp.status_code == 422
+
+
+def test_chat_stream_error_yields_error_event_before_done(client):
+    """When call_chain_stream raises RuntimeError, SSE stream emits an error event then [DONE]."""
+
+    async def _error_stream(*args, **kwargs):
+        raise RuntimeError("all providers exhausted")
+        yield  # makes this an async generator
+
+    with patch("llm.api.endpoints.call_chain_stream", new=_error_stream):
+        resp = client.post(
+            "/api/llm/chat-stream",
+            json={"messages": [{"role": "user", "content": "hi"}]},
+        )
+    assert resp.status_code == 200
+    body = resp.text
+    assert "[DONE]" in body
+    assert '"type": "error"' in body
+    assert "all providers exhausted" in body
