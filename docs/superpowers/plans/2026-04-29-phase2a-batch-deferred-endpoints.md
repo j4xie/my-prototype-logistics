@@ -101,14 +101,24 @@ read-path batch.
 
 ---
 
-## §4 Original handoff candidates — needed work bigger than estimated
+## §4 SmartBIAnalysisController GET endpoints — most are 1000+ LOC business services, NOT thin Z
+
+T0 classified many `/analysis/*` endpoints as Z (thin) because the controller method body is short. The **service** behind each, however, is large:
 
 | Endpoint | Surveyed complexity |
 |---|---|
 | `GET /alerts` | 600+ LOC business logic in `RecommendationServiceImpl` (3 alert generators × ~200 LOC each + threshold config + per-salesperson loops). Empty-pass-through port would be a sham — would silently break for any factory with real data after T6 cutover. **Full port**: 1 generator at a time, 2-4 hours each, plus alert threshold config externalisation. |
+| `GET /recommendations` | Backed by `RecommendationServiceImpl` (998 LOC total). Golden has 1 entry × 13 fields but the generator chain is large. Same class as alerts. |
+| `GET /analysis/procurement` | Backed by `ProcurementAnalysisServiceImpl` (1144 LOC). Default branch returns `DashboardResponse` with kpiCards / rankings / charts / aiInsights / suggestions etc. The `analysisType=cost\|supplier\|trend` query param branches into different sub-service calls — each is its own non-trivial port. |
+| `GET /analysis/region` | Backed by `RegionAnalysisServiceImpl` (1209 LOC). Same shape pattern as procurement (heatmap / targetCompletion / opportunityScores / ranking). |
+| `GET /analysis/department` `/analysis/sales` `/analysis/finance` `/analysis/production` `/analysis/quality` `/analysis/inventory` | Same class — each has a 1000+ LOC service generating `DashboardResponse`. |
 | `GET /analysis/finance/budget-achievement` | Java is GET with query params (`year`, `metric`); Python `analysis.py:1513` already has a same-named POST route taking `BudgetAchievementByPeriodRequest`. NOT a thin proxy — the Python POST has its own business logic and request shape. Alias must do GET→POST bridging + reshape Python's response into Java's `ChartConfig` envelope. |
 | `GET /analysis/finance/yoy-mom` | Same pattern as budget-achievement. |
 | `GET /analysis/finance/category-comparison` | Same pattern as budget-achievement. |
+
+**Scope reality** (discovered Apr 29 batch chat): of the 50 Phase 2A endpoints, only **2** turned out to be true "thin DB-list Z" suitable for the dashboard-py PoC pattern: `GET /query-templates` and `GET /smart-bi/datasource/list`. Both were ported in this batch. Every other read-path GET in `SmartBIAnalysisController` is backed by a service ≥ 600 LOC.
+
+This means the original Phase 2A 256h estimate is likely **off by 2-3×** for the analysis subdomain. The "thin Z" assumption that made the time estimate small for many endpoints does not hold once the service implementation is read.
 
 Recommendation: pair each finance endpoint with a **Phase 2A** ADR
 covering the bridge pattern (GET→POST adapter + response reshape) so all
@@ -136,11 +146,11 @@ documented.
 
 ---
 
-## Active batch (this Apr 29 chat) — for reference
+## Active batch (this Apr 29 chat) — actual outcome
 
-1. `GET /query-templates` — list query templates from DB (success golden, real data)
-2. `GET /smart-bi/datasource/list` — list datasources (success golden, real data)
-3. `GET /smart-bi/analysis/procurement` — small dict shape (success golden)
-4. `GET /smart-bi/analysis/region` — medium dict with heatmap/ranking (success golden)
+1. `GET /query-templates` — **SHIPPED** (commits `29e0ee773` impl + `455f27501` test rigor + `a339b4de6` typing fix)
+2. `GET /smart-bi/datasource/list` — **SHIPPED** (commit `86aff34ef`)
+3. ~~`GET /smart-bi/analysis/procurement`~~ — **defer** (1144 LOC service; see §4)
+4. ~~`GET /smart-bi/analysis/region`~~ — **defer** (1209 LOC service; see §4)
 
-Per the PoC pattern: 30-60 min wallclock each via subagent-driven-development.
+Per the PoC pattern: ~60-90 min wallclock per shipped endpoint via subagent-driven-development (impl + spec review + ≥1 fix loop + code review + ≥1 fix loop). Endpoint 1 had 6 subagent calls (impl + spec review → spec fix → spec re-review → code review → code-review fix). Endpoint 2 had 3 subagent calls (impl → spec review → code review, both reviews approved without fix loops because the implementer carried over endpoint 1's lessons).
