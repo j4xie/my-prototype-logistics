@@ -1,0 +1,84 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/incentive-plan/salesperson/SP001",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T05:20:21.084774569",
+    "data": {
+      "id": "74dcbedd-dde4-43e0-8abc-e63f5ae99992",
+      "targetType": "salesperson",
+      "targetId": "SP001",
+      "targetName": "SP001",
+      "currentPerformance": 0,
+      "targetGoal": 100000,
+      "gapAmount": 100000,
+      "completionRate": 0,
+      "levels": [
+        {
+          "levelName": "铜牌",
+          "description": "完成率达到 60%-80%",
+          "targetFrom": 60,
+          "targetTo": 80,
+          "rewardAmount": 500,
+          "rewardRate": null,
+          "current": false,
+          "achieved": false,
+          "gap": null
+        },
+        {
+          "levelName": "银牌",
+          "description": "完成率达到 80%-100%",
+          "targetFrom": 80,
+          "targetTo": 100,
+          "rewardAmount": 1000,
+          "rewardRate": null,
+          "current": false,
+          "achieved": false,
+          "gap": null
+        },
+        {
+          "levelName": "金牌",
+          "description": "完成率达到 100%-120%",
+          "targetFrom": 100,
+          "targetTo": 120,
+          "rewardAmount": 2000,
+          "rewardRate": null,
+          "current": false,
+          "achieved": false,
+          "gap": null
+        },
+        {
+          "levelName": "钻石",
+          "description": "完成率达到 120%-%",
+          "targetFrom": 120,
+          "targetTo": null,
+          "rewardAmount": 5000,
+          "rewardRate": null,
+          "current": false,
+          "achieved": false,
+          "gap": null
+        }
+      ],
+      "currentLevelName": null,
+      "nextLevelName": "铜牌",
+      "gapToNextLevel": 60,
+      "motivationalMessage": "SP001 当前完成率 0.0%，需要加速冲刺！每一笔订单都是向目标迈进！",
+      "estimatedReward": null,
+      "potentialReward": 500,
+      "createdAt": "2026-04-30T05:20:21.082465168"
+    }
+  },
+  "_meta": {
+    "name": "incentive-plan-salesperson",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/incentive-plan/salesperson/SP001",
+    "query": null,
+    "factory": "F999",
+    "recordedAt": "2026-04-29T21:20:21.413Z",
+    "javaPort": 10011
+  }
+}

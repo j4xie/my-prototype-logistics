@@ -1,0 +1,60 @@
+{
+  "verb": "POST",
+  "path": "/api/mobile/F999/smart-bi/query",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T05:20:18.69144977",
+    "data": {
+      "intent": "sales_overview",
+      "confidence": 0,
+      "responseText": "老板，目前系统里没有本月销售数据。我查到的信息显示，时间范围内暂无销售记录。建议你先上传销售报表，比如每日营收汇总表，这样我才能帮你算总额。",
+      "data": null,
+      "parameters": {
+        "timeRange": {
+          "startDate": "2026-04-01",
+          "endDate": "2026-04-30",
+          "granularity": "MONTH",
+          "originalExpression": "本月",
+          "relative": true,
+          "days": 30,
+          "valid": true
+        }
+      },
+      "chartConfig": null,
+      "charts": [],
+      "suggestions": null,
+      "followUpQuestions": [
+        "各部门的销售情况如何？",
+        "哪个销售员表现最好？",
+        "和上月相比增长了多少？"
+      ],
+      "needsClarification": false,
+      "clarificationQuestion": null,
+      "forecast": null,
+      "intentCode": null,
+      "toolName": null,
+      "skillName": null,
+      "sections": null,
+      "followUpChips": null,
+      "message": null,
+      "effectiveSuggestions": [
+        "各部门的销售情况如何？",
+        "哪个销售员表现最好？",
+        "和上月相比增长了多少？"
+      ]
+    }
+  },
+  "_meta": {
+    "name": "query-nl",
+    "verb": "POST",
+    "path": "/api/mobile/F999/smart-bi/query",
+    "query": null,
+    "factory": "F999",
+    "recordedAt": "2026-04-29T21:20:19.021Z",
+    "javaPort": 10011
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/{factory_id}/smart-bi/dashboard/executive/insights/custom/stream",
+  "factory": "F999",
+  "response": {
+    "_skipped": true,
+    "reason": "SSE streaming endpoint — not suitable for JSON golden snapshot; use dedicated SSE test"
+  },
+  "_meta": {
+    "name": "dashboard-executive-insights-custom-stream",
+    "verb": "GET",
+    "path": "/api/mobile/{factory_id}/smart-bi/dashboard/executive/insights/custom/stream",
+    "query": null,
+    "factory": "F999",
+    "recordedAt": "2026-04-29T21:20:34.439Z",
+    "javaPort": 10011
+  }
+}

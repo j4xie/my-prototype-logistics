@@ -1,0 +1,22 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/uploads/1/fields",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T05:20:25.483723621",
+    "data": []
+  },
+  "_meta": {
+    "name": "uploads-fields",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/uploads/1/fields",
+    "query": null,
+    "factory": "F999",
+    "recordedAt": "2026-04-29T21:20:25.858Z",
+    "javaPort": 10011
+  }
+}

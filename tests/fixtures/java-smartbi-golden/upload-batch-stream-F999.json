@@ -1,0 +1,18 @@
+{
+  "verb": "POST",
+  "path": "/api/mobile/{factory_id}/smart-bi/upload-batch-stream",
+  "factory": "F999",
+  "response": {
+    "_skipped": true,
+    "reason": "SSE streaming batch upload — skip; SSE not compatible with JSON golden recording"
+  },
+  "_meta": {
+    "name": "upload-batch-stream",
+    "verb": "POST",
+    "path": "/api/mobile/{factory_id}/smart-bi/upload-batch-stream",
+    "query": null,
+    "factory": "F999",
+    "recordedAt": "2026-04-29T21:20:24.398Z",
+    "javaPort": 10011
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "verb": "POST",
+  "path": "/api/mobile/{factory_id}/smart-bi/backfill/fields/{uploadId}",
+  "factory": "F999",
+  "response": {
+    "_skipped": true,
+    "reason": "Write backfill op — skip to avoid mutating field definitions in test env"
+  },
+  "_meta": {
+    "name": "backfill-fields",
+    "verb": "POST",
+    "path": "/api/mobile/{factory_id}/smart-bi/backfill/fields/{uploadId}",
+    "query": null,
+    "factory": "F999",
+    "recordedAt": "2026-04-29T21:20:26.842Z",
+    "javaPort": 10011
+  }
+}

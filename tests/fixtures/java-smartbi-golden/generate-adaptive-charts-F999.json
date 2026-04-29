@@ -1,0 +1,31 @@
+{
+  "verb": "POST",
+  "path": "/api/mobile/F999/smart-bi/generate-adaptive-charts",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 400,
+    "success": false,
+    "message": "Chart generation failed: Upload not found: 1",
+    "timestamp": "2026-04-30T05:20:26.95959289",
+    "data": {
+      "code": 400,
+      "message": "Chart generation failed: Upload not found: 1",
+      "data": null,
+      "timestamp": "2026-04-30T05:20:26.95959289",
+      "success": false,
+      "actionHint": null,
+      "severity": null,
+      "hintTarget": null
+    }
+  },
+  "_meta": {
+    "name": "generate-adaptive-charts",
+    "verb": "POST",
+    "path": "/api/mobile/F999/smart-bi/generate-adaptive-charts",
+    "query": null,
+    "factory": "F999",
+    "recordedAt": "2026-04-29T21:20:27.329Z",
+    "javaPort": 10011
+  }
+}

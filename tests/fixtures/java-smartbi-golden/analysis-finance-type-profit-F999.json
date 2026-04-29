@@ -1,0 +1,143 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/analysis/finance",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T05:20:12.680718499",
+    "data": {
+      "endDate": "2025-12-31",
+      "metrics": [
+        {
+          "metricCode": "GROSS_PROFIT",
+          "metricName": "毛利额",
+          "value": 0,
+          "formattedValue": "0.00",
+          "unit": "元",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": "销售收入减去销售成本"
+        },
+        {
+          "metricCode": "GROSS_MARGIN",
+          "metricName": "毛利率",
+          "value": 0,
+          "formattedValue": "0.00%",
+          "unit": "%",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "RED",
+          "dimensionValue": null,
+          "description": "毛利额占销售收入的比例"
+        },
+        {
+          "metricCode": "NET_PROFIT",
+          "metricName": "净利润",
+          "value": null,
+          "formattedValue": "N/A",
+          "unit": "元",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": "毛利减去各项费用后的利润"
+        },
+        {
+          "metricCode": "NET_MARGIN",
+          "metricName": "净利率",
+          "value": null,
+          "formattedValue": "N/A",
+          "unit": "%",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": "净利润占销售收入的比例"
+        },
+        {
+          "metricCode": "ROI",
+          "metricName": "投入产出比",
+          "value": 0,
+          "formattedValue": "0.00%",
+          "unit": "%",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "YELLOW",
+          "dimensionValue": null,
+          "description": "毛利额与成本的比率"
+        }
+      ],
+      "trendChart": {
+        "chartType": "LINE_BAR",
+        "title": "利润趋势分析",
+        "seriesField": "metric",
+        "data": [],
+        "options": {
+          "yAxis": [
+            {
+              "position": "left",
+              "name": "金额"
+            },
+            {
+              "position": "right",
+              "name": "毛利率(%)"
+            }
+          ],
+          "series": [
+            {
+              "name": "营业收入",
+              "yAxisIndex": 0,
+              "type": "bar"
+            },
+            {
+              "name": "营业成本",
+              "yAxisIndex": 0,
+              "type": "bar"
+            },
+            {
+              "name": "毛利额",
+              "yAxisIndex": 0,
+              "type": "bar"
+            },
+            {
+              "name": "净利润",
+              "yAxisIndex": 0,
+              "type": "line"
+            },
+            {
+              "name": "毛利率",
+              "yAxisIndex": 1,
+              "type": "line"
+            }
+          ]
+        },
+        "xaxisField": "period",
+        "yaxisField": "grossProfit"
+      },
+      "startDate": "2025-01-01"
+    }
+  },
+  "_meta": {
+    "name": "analysis-finance-type-profit",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/analysis/finance",
+    "query": {
+      "startDate": "2025-01-01",
+      "endDate": "2025-12-31",
+      "analysisType": "profit"
+    },
+    "factory": "F999",
+    "recordedAt": "2026-04-29T21:20:13.085Z",
+    "javaPort": 10011
+  }
+}

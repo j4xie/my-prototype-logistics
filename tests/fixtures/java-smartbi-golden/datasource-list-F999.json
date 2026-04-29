@@ -1,0 +1,22 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/datasource/list",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T05:20:22.027235113",
+    "data": []
+  },
+  "_meta": {
+    "name": "datasource-list",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/datasource/list",
+    "query": null,
+    "factory": "F999",
+    "recordedAt": "2026-04-29T21:20:22.411Z",
+    "javaPort": 10011
+  }
+}

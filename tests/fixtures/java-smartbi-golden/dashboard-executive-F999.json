@@ -1,0 +1,129 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/dashboard/executive",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T05:20:27.948294716",
+    "data": {
+      "period": null,
+      "startDate": null,
+      "endDate": null,
+      "kpiCards": [],
+      "metricCards": null,
+      "rankings": {
+        "region": [
+          {
+            "rank": 1,
+            "name": "浙江分部",
+            "value": 3318734.3,
+            "target": 3650607.73,
+            "completionRate": 90.91,
+            "alertLevel": "GREEN"
+          },
+          {
+            "rank": 2,
+            "name": "江苏分部",
+            "value": 1578844.3,
+            "target": 1736728.73,
+            "completionRate": 90.91,
+            "alertLevel": "GREEN"
+          },
+          {
+            "rank": 3,
+            "name": "赣皖区域",
+            "value": 830253.4,
+            "target": 913278.74,
+            "completionRate": 90.91,
+            "alertLevel": "GREEN"
+          },
+          {
+            "rank": 4,
+            "name": "上海分部",
+            "value": 367884,
+            "target": 404672.4,
+            "completionRate": 90.91,
+            "alertLevel": "GREEN"
+          }
+        ]
+      },
+      "charts": {
+        "department_trend": {
+          "chartType": "LINE",
+          "title": "部门销售趋势对比",
+          "seriesField": "department",
+          "data": [
+            {
+              "period": "2026-W14",
+              "未知部门": 114706.9
+            },
+            {
+              "period": "2026-W15",
+              "未知部门": 2222609.1
+            },
+            {
+              "period": "2026-W16",
+              "未知部门": 1470560.8
+            },
+            {
+              "period": "2026-W17",
+              "未知部门": 1926722.7
+            },
+            {
+              "period": "2026-W18",
+              "未知部门": 361116.5
+            }
+          ],
+          "options": {
+            "series": [
+              "未知部门"
+            ],
+            "period": "WEEK"
+          },
+          "xaxisField": "period",
+          "yaxisField": "amount"
+        }
+      },
+      "chartList": null,
+      "aiInsights": [
+        {
+          "level": "YELLOW",
+          "category": "数据状态",
+          "message": "当前时间范围内暂无销售数据",
+          "relatedEntity": null,
+          "actionSuggestion": "请上传销售数据或调整时间范围"
+        },
+        {
+          "level": "YELLOW",
+          "category": "数据状态",
+          "message": "当前时间范围内暂无销售数据",
+          "relatedEntity": null,
+          "actionSuggestion": "请上传销售数据或调整时间范围"
+        }
+      ],
+      "alerts": null,
+      "recommendations": null,
+      "suggestions": [
+        "请先上传销售数据以开始分析"
+      ],
+      "generatedAt": null,
+      "lastUpdated": "2026-04-30T05:20:27.938170837",
+      "fromCache": false,
+      "cacheExpireAt": null
+    }
+  },
+  "_meta": {
+    "name": "dashboard-executive",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/dashboard/executive",
+    "query": {
+      "period": "month"
+    },
+    "factory": "F999",
+    "recordedAt": "2026-04-29T21:20:28.284Z",
+    "javaPort": 10011
+  }
+}

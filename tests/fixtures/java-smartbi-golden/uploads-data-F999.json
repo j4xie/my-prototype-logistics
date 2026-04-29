@@ -1,0 +1,29 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/uploads/1/data",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T05:20:25.975715082",
+    "data": {
+      "headers": [],
+      "data": [],
+      "total": 0,
+      "page": 0,
+      "size": 50,
+      "totalPages": 0
+    }
+  },
+  "_meta": {
+    "name": "uploads-data",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/uploads/1/data",
+    "query": null,
+    "factory": "F999",
+    "recordedAt": "2026-04-29T21:20:26.356Z",
+    "javaPort": 10011
+  }
+}

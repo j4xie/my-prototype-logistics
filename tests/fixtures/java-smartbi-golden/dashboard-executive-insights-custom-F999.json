@@ -1,0 +1,33 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/dashboard/executive/insights/custom",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T05:20:34.071727857",
+    "data": [
+      {
+        "level": "INFO",
+        "category": "AI 分析",
+        "message": "根据您提供的数据，**2025年全年无任何营业记录（0个营业日、0家门店），总营业额为¥0.00，订单数为0**。因此，无法对营业额、门店表现或折扣结构进行任何有意义的分析或提出基于数据的建议。\n\n**需要补充以下数据才能进行判断：**\n- 至少包含1个营业日、1家门店的实际经营数据（如营业额、订单数、折扣金额等）。\n- 若数据为模拟或测试环境，请提供真实经营周期内的完整数据集。",
+        "relatedEntity": "range:2025-01-01~2025-12-31",
+        "actionSuggestion": null
+      }
+    ]
+  },
+  "_meta": {
+    "name": "dashboard-executive-insights-custom",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/dashboard/executive/insights/custom",
+    "query": {
+      "startDate": "2025-01-01",
+      "endDate": "2025-12-31"
+    },
+    "factory": "F999",
+    "recordedAt": "2026-04-29T21:20:34.438Z",
+    "javaPort": 10011
+  }
+}

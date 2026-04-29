@@ -1,0 +1,70 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/analysis/finance",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T05:20:13.197430685",
+    "data": {
+      "endDate": "2025-12-31",
+      "trendChart": {
+        "chartType": "BAR",
+        "title": "成本趋势分析",
+        "seriesField": "costType",
+        "data": [],
+        "options": {
+          "stack": true,
+          "series": [
+            {
+              "stack": "cost",
+              "name": "原材料"
+            },
+            {
+              "stack": "cost",
+              "name": "人工"
+            },
+            {
+              "stack": "cost",
+              "name": "制造费用"
+            }
+          ]
+        },
+        "xaxisField": "period",
+        "yaxisField": "totalCost"
+      },
+      "startDate": "2025-01-01",
+      "structureChart": {
+        "chartType": "PIE",
+        "title": "成本结构分析",
+        "seriesField": null,
+        "data": [],
+        "options": {
+          "showPercentage": true,
+          "colors": [
+            "#5470c6",
+            "#91cc75",
+            "#fac858"
+          ]
+        },
+        "xaxisField": "category",
+        "yaxisField": "value"
+      }
+    }
+  },
+  "_meta": {
+    "name": "analysis-finance-type-cost",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/analysis/finance",
+    "query": {
+      "startDate": "2025-01-01",
+      "endDate": "2025-12-31",
+      "analysisType": "cost"
+    },
+    "factory": "F999",
+    "recordedAt": "2026-04-29T21:20:13.564Z",
+    "javaPort": 10011
+  }
+}

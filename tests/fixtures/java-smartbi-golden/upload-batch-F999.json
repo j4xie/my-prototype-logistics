@@ -1,0 +1,18 @@
+{
+  "verb": "POST",
+  "path": "/api/mobile/{factory_id}/smart-bi/upload-batch",
+  "factory": "F999",
+  "response": {
+    "_skipped": true,
+    "reason": "Multipart batch upload — skip to avoid polluting test data"
+  },
+  "_meta": {
+    "name": "upload-batch",
+    "verb": "POST",
+    "path": "/api/mobile/{factory_id}/smart-bi/upload-batch",
+    "query": null,
+    "factory": "F999",
+    "recordedAt": "2026-04-29T21:20:24.397Z",
+    "javaPort": 10011
+  }
+}

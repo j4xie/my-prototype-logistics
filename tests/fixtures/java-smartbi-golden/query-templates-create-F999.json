@@ -1,0 +1,18 @@
+{
+  "verb": "POST",
+  "path": "/api/mobile/{factory_id}/smart-bi/query-templates",
+  "factory": "F999",
+  "response": {
+    "_skipped": true,
+    "reason": "Creates persistent data in test DB — skip in golden recording pass"
+  },
+  "_meta": {
+    "name": "query-templates-create",
+    "verb": "POST",
+    "path": "/api/mobile/{factory_id}/smart-bi/query-templates",
+    "query": null,
+    "factory": "F999",
+    "recordedAt": "2026-04-29T21:20:23.895Z",
+    "javaPort": 10011
+  }
+}

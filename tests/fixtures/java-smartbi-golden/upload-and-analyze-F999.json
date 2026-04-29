@@ -1,0 +1,18 @@
+{
+  "verb": "POST",
+  "path": "/api/mobile/{factory_id}/smart-bi/upload-and-analyze",
+  "factory": "F999",
+  "response": {
+    "_skipped": true,
+    "reason": "Multipart upload+analyze — skip to avoid creating upload records"
+  },
+  "_meta": {
+    "name": "upload-and-analyze",
+    "verb": "POST",
+    "path": "/api/mobile/{factory_id}/smart-bi/upload-and-analyze",
+    "query": null,
+    "factory": "F999",
+    "recordedAt": "2026-04-29T21:20:23.897Z",
+    "javaPort": 10011
+  }
+}

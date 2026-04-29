@@ -1,0 +1,32 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/analysis/dynamic",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T05:20:36.475169466",
+    "data": {
+      "uploadId": 1,
+      "tableType": null,
+      "kpiCards": null,
+      "charts": null,
+      "insights": null,
+      "fieldDefinitions": null
+    }
+  },
+  "_meta": {
+    "name": "analysis-dynamic",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/analysis/dynamic",
+    "query": {
+      "uploadId": "1",
+      "analysisType": "auto"
+    },
+    "factory": "F999",
+    "recordedAt": "2026-04-29T21:20:36.845Z",
+    "javaPort": 10011
+  }
+}

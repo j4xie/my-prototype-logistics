@@ -1,0 +1,70 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/analysis/finance/category-comparison",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T05:20:15.044486946",
+    "data": {
+      "chartType": "BAR",
+      "title": "2025年 vs 2024年 品类结构对比",
+      "seriesField": "year",
+      "data": [],
+      "options": {
+        "groupedBar": true,
+        "yAxis": [
+          {
+            "position": "left",
+            "name": "金额"
+          },
+          {
+            "position": "right",
+            "name": "同比增长率(%)"
+          }
+        ],
+        "series": [
+          {
+            "color": "#5470c6",
+            "name": "2025年",
+            "type": "bar",
+            "yAxisIndex": 0
+          },
+          {
+            "color": "#91cc75",
+            "name": "2024年",
+            "type": "bar",
+            "yAxisIndex": 0
+          },
+          {
+            "color": "#ee6666",
+            "name": "同比增长率",
+            "type": "line",
+            "yAxisIndex": 1
+          }
+        ],
+        "summary": {
+          "compareTotal": 0,
+          "totalYoyGrowthRate": 0,
+          "currentTotal": 0
+        }
+      },
+      "xaxisField": "category",
+      "yaxisField": "currentAmount"
+    }
+  },
+  "_meta": {
+    "name": "analysis-finance-category-comparison",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/analysis/finance/category-comparison",
+    "query": {
+      "year": "2025",
+      "compareYear": "2024"
+    },
+    "factory": "F999",
+    "recordedAt": "2026-04-29T21:20:15.414Z",
+    "javaPort": 10011
+  }
+}
