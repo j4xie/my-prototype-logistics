@@ -1,0 +1,93 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/alerts",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T06:34:43.916753094",
+    "data": [
+      {
+        "id": "45ca0445-28a4-4057-bca2-5b83f976ba98",
+        "level": "RED",
+        "category": "finance",
+        "title": "应收账款严重逾期",
+        "message": "客户 逾期客户A 应收款 200000.00 元已逾期 95 天",
+        "metric": "账龄天数",
+        "value": 95,
+        "threshold": 90,
+        "gapPercent": null,
+        "suggestion": "建议立即联系客户催收，必要时采取法律手段",
+        "relatedEntityId": null,
+        "relatedEntityName": null,
+        "createdAt": "2026-04-30T06:34:43.916423944",
+        "levelName": "RED",
+        "urgent": true
+      },
+      {
+        "id": "9dbc7b17-06e4-4397-bb90-3162380c30af",
+        "level": "RED",
+        "category": "finance",
+        "title": "应收账款严重逾期",
+        "message": "客户 逾期客户B 应收款 800000.00 元已逾期 100 天",
+        "metric": "账龄天数",
+        "value": 100,
+        "threshold": 90,
+        "gapPercent": null,
+        "suggestion": "建议立即联系客户催收，必要时采取法律手段",
+        "relatedEntityId": null,
+        "relatedEntityName": null,
+        "createdAt": "2026-04-30T06:34:43.916468475",
+        "levelName": "RED",
+        "urgent": true
+      },
+      {
+        "id": "670d6889-d8d6-4c56-a914-36d082ad0daa",
+        "level": "YELLOW",
+        "category": "finance",
+        "title": "应收账款即将逾期",
+        "message": "客户 大额客户C 应收款 1500000.00 元账龄已达 75 天",
+        "metric": "账龄天数",
+        "value": 75,
+        "threshold": 60,
+        "gapPercent": null,
+        "suggestion": "建议跟进客户付款计划，发送催款提醒",
+        "relatedEntityId": null,
+        "relatedEntityName": null,
+        "createdAt": "2026-04-30T06:34:43.916496226",
+        "levelName": "YELLOW",
+        "urgent": false
+      },
+      {
+        "id": "7037c20e-75fb-4022-97ae-3ad8df055f67",
+        "level": "RED",
+        "category": "finance",
+        "title": "应收账款总额过高",
+        "message": "应收账款总额达 2500000.00 元，资金压力大",
+        "metric": "应收总额",
+        "value": 2500000,
+        "threshold": 1000000,
+        "gapPercent": null,
+        "suggestion": "建议制定催收计划，加速资金回笼",
+        "relatedEntityId": null,
+        "relatedEntityName": null,
+        "createdAt": "2026-04-30T06:34:43.916579188",
+        "levelName": "RED",
+        "urgent": true
+      }
+    ]
+  },
+  "_meta": {
+    "name": "alerts-category-finance",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/alerts",
+    "query": {
+      "category": "finance"
+    },
+    "factory": "F999",
+    "recordedAt": "2026-04-29T22:34:44.243Z",
+    "javaPort": 10011
+  }
+}

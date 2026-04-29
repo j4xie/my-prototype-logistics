@@ -20,6 +20,8 @@ import os
 import pathlib
 import re
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
+from types import SimpleNamespace
 from typing import Any
 
 import jwt
@@ -144,15 +146,130 @@ def test_alerts_sales_data_matches_f999_golden_when_empty(client: TestClient, f9
 # 3 dept). Task E2 (aggregator contract test) replaces it with a proper
 # monkey-patched-all-seams + strip-volatile + deep-equal test.
 
-def test_alerts_finance_category_returns_empty_phase2a_chat2(client: TestClient, f999_token: str) -> None:
-    """Phase 2A chat 2: finance/department branches return [] until chat 3 (Phase C/D)."""
+# ─── Chat 3 contract tests: finance / department / aggregator vs F999 goldens ──
+#
+# These tests monkey-patch all 3 seams with the SAME data Java's V20260430_02
+# trip-rows migration inserted, then compare Python output to recorded Java
+# golden after stripping volatile fields (id, createdAt, envelope.timestamp).
+#
+# Volatile field rationale: id is fresh per Alert.builder() invocation;
+# createdAt is datetime.now(); envelope.timestamp is wrap_response timestamp.
+# All three are inherently non-byte-equal; stripped before deep-compare.
+#
+# value/threshold are sometimes ints in Java goldens (record-level fields like
+# aging_days where Java passes Integer to BigDecimal); Python emits Decimal.
+# JSON serialization renders both as numbers; FastAPI's default jsonable_encoder
+# emits Decimal as float — we coerce both sides to float for compare.
+
+
+_F999_FINANCE_TRIP_ROWS = [
+    # Mirror V20260430_02__phase2a_F999_alert_trip_rows.sql
+    SimpleNamespace(customer_name="逾期客户A", receivable_amount=Decimal("200000"),
+                    aging_days=95, budget_amount=None, actual_amount=None),
+    SimpleNamespace(customer_name="逾期客户B", receivable_amount=Decimal("800000"),
+                    aging_days=100, budget_amount=None, actual_amount=None),
+    SimpleNamespace(customer_name="大额客户C", receivable_amount=Decimal("1500000"),
+                    aging_days=75, budget_amount=None, actual_amount=None),
+]
+
+
+_F999_DEPT_TRIP_ROWS = [
+    SimpleNamespace(department="研发部", sales_amount=Decimal("100000"), headcount=5),
+    SimpleNamespace(department="销售部", sales_amount=Decimal("150000"), headcount=5),
+    SimpleNamespace(department="行政部", sales_amount=Decimal("50000"), headcount=5),
+]
+
+
+_VOLATILE_ALERT_KEYS = {"id", "createdAt"}
+
+
+def _strip_volatile(alerts: list) -> list:
+    """Strip per-alert volatile keys + coerce numerics to float for byte-shape compare."""
+    out = []
+    for a in alerts:
+        stripped = {k: v for k, v in a.items() if k not in _VOLATILE_ALERT_KEYS}
+        # Coerce numerics: Java BigDecimal renders as int/float in JSON, Python
+        # Decimal renders as float via FastAPI's jsonable_encoder
+        for numeric_key in ("value", "threshold", "gapPercent"):
+            if numeric_key in stripped and stripped[numeric_key] is not None:
+                stripped[numeric_key] = float(stripped[numeric_key])
+        out.append(stripped)
+    return out
+
+
+@pytest.fixture
+def app_with_finance_seam(monkeypatch: pytest.MonkeyPatch) -> FastAPI:
+    """Production app with _query_finance_data monkey-patched to F999 trip-rows."""
+    from smartbi_compat.api import analysis as analysis_router
+    monkeypatch.setattr(analysis_router, "_query_sales_data", lambda fid, range_: [])
+    monkeypatch.setattr(analysis_router, "_query_finance_data", lambda fid, range_: _F999_FINANCE_TRIP_ROWS)
+    monkeypatch.setattr(analysis_router, "_query_department_data", lambda fid, range_: [])
+    return _production_main.app
+
+
+@pytest.fixture
+def app_with_dept_seam(monkeypatch: pytest.MonkeyPatch) -> FastAPI:
+    """Production app with _query_department_data monkey-patched to F999 trip-rows."""
+    from smartbi_compat.api import analysis as analysis_router
+    monkeypatch.setattr(analysis_router, "_query_sales_data", lambda fid, range_: [])
+    monkeypatch.setattr(analysis_router, "_query_finance_data", lambda fid, range_: [])
+    monkeypatch.setattr(analysis_router, "_query_department_data", lambda fid, range_: _F999_DEPT_TRIP_ROWS)
+    return _production_main.app
+
+
+@pytest.fixture
+def app_with_all_seams(monkeypatch: pytest.MonkeyPatch) -> FastAPI:
+    """Production app with all 3 seams monkey-patched (aggregator test)."""
+    from smartbi_compat.api import analysis as analysis_router
+    monkeypatch.setattr(analysis_router, "_query_sales_data", lambda fid, range_: [])
+    monkeypatch.setattr(analysis_router, "_query_finance_data", lambda fid, range_: _F999_FINANCE_TRIP_ROWS)
+    monkeypatch.setattr(analysis_router, "_query_department_data", lambda fid, range_: _F999_DEPT_TRIP_ROWS)
+    return _production_main.app
+
+
+def test_alerts_finance_matches_f999_golden(app_with_finance_seam: FastAPI, f999_token: str) -> None:
+    """Python /alerts?category=finance matches F999 Java golden (4 alerts: 2 RED aging + 1 YELLOW aging + 1 RED total)."""
+    client = TestClient(app_with_finance_seam)
     resp = client.get(
         "/api/mobile/F999/smart-bi/alerts?category=finance",
         headers={"Authorization": f"Bearer {f999_token}"},
     )
+    assert resp.status_code == 200
     body = resp.json()
     _assert_envelope(body)
-    assert body["data"] == []
+    actual = _strip_volatile(body["data"])
+    expected = _strip_volatile(_load_golden("alerts-category-finance-F999")["response"]["data"])
+    assert actual == expected
+
+
+def test_alerts_department_matches_f999_golden(app_with_dept_seam: FastAPI, f999_token: str) -> None:
+    """Python /alerts?category=department matches F999 Java golden (3 RED, sorted Unicode 研→行→销)."""
+    client = TestClient(app_with_dept_seam)
+    resp = client.get(
+        "/api/mobile/F999/smart-bi/alerts?category=department",
+        headers={"Authorization": f"Bearer {f999_token}"},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    _assert_envelope(body)
+    actual = _strip_volatile(body["data"])
+    expected = _strip_volatile(_load_golden("alerts-category-department-F999")["response"]["data"])
+    assert actual == expected
+
+
+def test_alerts_aggregator_matches_f999_golden(app_with_all_seams: FastAPI, f999_token: str) -> None:
+    """Python /alerts (no category) matches F999 Java golden (7 alerts: 6 RED + 1 YELLOW, severity DESC)."""
+    client = TestClient(app_with_all_seams)
+    resp = client.get(
+        "/api/mobile/F999/smart-bi/alerts",
+        headers={"Authorization": f"Bearer {f999_token}"},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    _assert_envelope(body)
+    actual = _strip_volatile(body["data"])
+    expected = _strip_volatile(_load_golden("alerts-F999")["response"]["data"])
+    assert actual == expected
 
 
 def test_alerts_unauthorized_returns_401(client: TestClient) -> None:
