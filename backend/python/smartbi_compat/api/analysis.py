@@ -296,7 +296,8 @@ def _query_sales_data(factory_id: str, range_) -> list:
         return []
 
     sql = text(
-        "SELECT salesperson_name, amount, monthly_target "
+        "SELECT salesperson_name, amount, monthly_target, "
+        "       product_category, customer_name "
         "FROM smart_bi_sales_data "
         "WHERE factory_id = :fid AND order_date BETWEEN :start AND :end"
     )
@@ -324,7 +325,8 @@ def _query_finance_data(factory_id: str, range_) -> list:
 
     sql = text(
         "SELECT customer_name, receivable_amount, aging_days, "
-        "       budget_amount, actual_amount "
+        "       budget_amount, actual_amount, "
+        "       material_cost, labor_cost, overhead_cost "
         "FROM smart_bi_finance_data "
         "WHERE factory_id = :fid AND record_date BETWEEN :start AND :end"
     )
@@ -672,6 +674,238 @@ def _generate_all_alerts(factory_id: str, range_: DateRange) -> list[dict]:
     return all_alerts
 
 
+# ─── /recommendations port ───────────────────────────────────────────────────
+# Mirrors RecommendationServiceImpl.generateRecommendations (Java line 463-491)
+# + 3 sub-generators (sales/cost/customer). Sort by priority ASC.
+
+# Maps RecommendationType enum → Chinese display name (Java getDisplayName())
+_RECOMMENDATION_TYPE_DISPLAY = {
+    "SALES_IMPROVEMENT": "销售提升",
+    "COST_REDUCTION": "成本优化",
+    "CUSTOMER_RETENTION": "客户维护",
+    "PRODUCT_FOCUS": "产品聚焦",
+    "REGION_EXPANSION": "区域拓展",
+    "COLLECTION_ALERT": "催收提醒",
+    "INCENTIVE_PLAN": "激励方案",
+    "OPERATION_OPTIMIZATION": "运营优化",
+    "RISK_WARNING": "风险预警",
+}
+
+
+def _new_recommendation_dict(
+    *,
+    rec_type: str,
+    title: str,
+    description: str,
+    priority: int,
+    impact: str,
+    action_items: list[str],
+    related_data: dict | None = None,
+    target_id: str | None = None,
+    target_name: str | None = None,
+) -> dict:
+    """Build a Java-shape Recommendation dict — 13 keys in Jackson order.
+
+    Java's Recommendation.java has 11 declared fields + 2 derived getters
+    (getTypeName, isHighPriority). Lombok @Data exposes both. Jackson order:
+    11 declared first, then alphabetical-ish for derived (typeName, highPriority).
+    """
+    return {
+        "id": str(uuid.uuid4()),
+        "type": rec_type,
+        "title": title,
+        "description": description,
+        "priority": priority,
+        "impact": impact,
+        "actionItems": action_items,
+        "relatedData": related_data if related_data is not None else {},
+        "targetId": target_id,
+        "targetName": target_name,
+        "createdAt": datetime.now().isoformat(),
+        "typeName": _RECOMMENDATION_TYPE_DISPLAY.get(rec_type, ""),
+        "highPriority": priority <= 2,
+    }
+
+
+def _generate_sales_recommendations(factory_id: str, range_: DateRange) -> list[dict]:
+    """Mirror RecommendationServiceImpl.generateSalesRecommendations (Java line 495-573)."""
+    sales_data = _query_sales_data(factory_id, range_)
+    if not sales_data:
+        return []
+    recommendations: list[dict] = []
+
+    # 1. Product concentration check (top single category > 60% → PRODUCT_FOCUS priority 2)
+    product_sales: dict[str, Decimal] = {}
+    for d in sales_data:
+        if d.product_category is None:
+            continue
+        product_sales[d.product_category] = (
+            product_sales.get(d.product_category, Decimal("0"))
+            + (Decimal(str(d.amount)) if d.amount is not None else Decimal("0"))
+        )
+
+    total_sales = sum(product_sales.values(), Decimal("0"))
+    if total_sales > 0 and product_sales:
+        top_product = max(product_sales.values())
+        concentration = (top_product / total_sales * 100).quantize(_SCALE_4, rounding=ROUND_HALF_UP)
+        if concentration > Decimal("60"):
+            recommendations.append(_new_recommendation_dict(
+                rec_type="PRODUCT_FOCUS",
+                title="优化产品结构",
+                description=f"单一产品占比达 {concentration:.1f}%，建议分散风险",
+                priority=2,
+                impact="降低对单一产品的依赖，提高业务稳定性",
+                action_items=[
+                    "分析其他产品的市场潜力",
+                    "制定新产品推广计划",
+                    "对销售团队进行产品培训",
+                ],
+            ))
+
+    # 2. Salesperson variance check (max/min > 3x → SALES_IMPROVEMENT priority 1)
+    salesperson_sales: dict[str, Decimal] = {}
+    for d in sales_data:
+        if d.salesperson_name is None:
+            continue
+        salesperson_sales[d.salesperson_name] = (
+            salesperson_sales.get(d.salesperson_name, Decimal("0"))
+            + (Decimal(str(d.amount)) if d.amount is not None else Decimal("0"))
+        )
+
+    if len(salesperson_sales) > 1:
+        max_sales = max(salesperson_sales.values())
+        min_sales = min(salesperson_sales.values())
+        if max_sales > 0 and min_sales > 0:
+            variance = (max_sales / min_sales).quantize(_SCALE_4, rounding=ROUND_HALF_UP)
+            if variance > Decimal("3"):
+                # Find topSeller (max-by-value); ties broken by earliest sorted name
+                top_seller = max(
+                    sorted(salesperson_sales.keys()),
+                    key=lambda name: salesperson_sales[name],
+                )
+                recommendations.append(_new_recommendation_dict(
+                    rec_type="SALES_IMPROVEMENT",
+                    title="缩小销售团队业绩差距",
+                    description="销售员业绩差异较大，建议加强团队协作",
+                    priority=1,
+                    impact="提升团队整体销售能力，增加总销售额",
+                    action_items=[
+                        f"安排销冠 {top_seller} 分享成功经验",
+                        "对业绩落后人员进行一对一辅导",
+                        "建立销售技能提升计划",
+                    ],
+                ))
+
+    return recommendations
+
+
+def _generate_cost_recommendations(factory_id: str, range_: DateRange) -> list[dict]:
+    """Mirror RecommendationServiceImpl.generateCostRecommendations (Java line 577-612)."""
+    finance_data = _query_finance_data(factory_id, range_)
+    if not finance_data:
+        return []
+    recommendations: list[dict] = []
+
+    material_cost = _sum_field(finance_data, "material_cost")
+    labor_cost = _sum_field(finance_data, "labor_cost")
+    overhead_cost = _sum_field(finance_data, "overhead_cost")
+    total_cost = material_cost + labor_cost + overhead_cost
+
+    if total_cost > 0:
+        material_ratio = (material_cost / total_cost * 100).quantize(_SCALE_4, rounding=ROUND_HALF_UP)
+        if material_ratio > Decimal("60"):
+            recommendations.append(_new_recommendation_dict(
+                rec_type="COST_REDUCTION",
+                title="优化原材料成本",
+                description=f"原材料成本占比达 {material_ratio:.1f}%，建议优化采购",
+                priority=2,
+                impact="降低原材料成本，提高利润率",
+                action_items=[
+                    "寻找替代供应商进行比价",
+                    "与现有供应商谈判优惠价格",
+                    "优化库存管理减少损耗",
+                ],
+            ))
+
+    return recommendations
+
+
+def _generate_customer_recommendations(factory_id: str, range_: DateRange) -> list[dict]:
+    """Mirror RecommendationServiceImpl.generateCustomerRecommendations (Java line 616-680)."""
+    sales_data = _query_sales_data(factory_id, range_)
+    if not sales_data:
+        return []
+    recommendations: list[dict] = []
+
+    customer_sales: dict[str, Decimal] = {}
+    for d in sales_data:
+        if d.customer_name is None:
+            continue
+        customer_sales[d.customer_name] = (
+            customer_sales.get(d.customer_name, Decimal("0"))
+            + (Decimal(str(d.amount)) if d.amount is not None else Decimal("0"))
+        )
+
+    total_sales = sum(customer_sales.values(), Decimal("0"))
+    if total_sales > 0 and customer_sales:
+        # 1. Top 3 customer concentration > 50% → CUSTOMER_RETENTION priority 1
+        sorted_values = sorted(customer_sales.values(), reverse=True)
+        top_3_sum = sum(sorted_values[:3], Decimal("0"))
+        top_ratio = (top_3_sum / total_sales * 100).quantize(_SCALE_4, rounding=ROUND_HALF_UP)
+        if top_ratio > Decimal("50"):
+            recommendations.append(_new_recommendation_dict(
+                rec_type="CUSTOMER_RETENTION",
+                title="加强核心客户维护",
+                description=f"Top 3 客户贡献 {top_ratio:.1f}% 销售额，需重点维护",
+                priority=1,
+                impact="稳定核心客户，降低客户流失风险",
+                action_items=[
+                    "为核心客户制定专属服务方案",
+                    "定期进行客户满意度调研",
+                    "安排高层拜访加强合作关系",
+                ],
+            ))
+
+        # 2. Small customers (<10000) > 50% of total customer count → REGION_EXPANSION priority 2
+        small_customer_count = sum(1 for v in customer_sales.values() if v < Decimal("10000"))
+        if small_customer_count > len(customer_sales) // 2:
+            recommendations.append(_new_recommendation_dict(
+                rec_type="REGION_EXPANSION",
+                title="发展中大型客户",
+                description="小客户占比过高，建议拓展中大型客户",
+                priority=2,
+                impact="提高客单价，提升运营效率",
+                action_items=[
+                    "识别潜在中大型客户目标",
+                    "制定针对性的销售策略",
+                    "安排专人负责大客户开发",
+                ],
+            ))
+
+    return recommendations
+
+
+def _generate_recommendations(factory_id: str, range_: DateRange, analysis_type: str | None) -> list[dict]:
+    """Mirror RecommendationServiceImpl.generateRecommendations (Java line 463-491).
+
+    Sort by priority ASC (lower priority value = higher priority).
+    """
+    recs: list[dict] = []
+    type_lc = (analysis_type or "all").lower()
+    if type_lc == "sales":
+        recs.extend(_generate_sales_recommendations(factory_id, range_))
+    elif type_lc == "finance":
+        recs.extend(_generate_cost_recommendations(factory_id, range_))
+    elif type_lc == "customer":
+        recs.extend(_generate_customer_recommendations(factory_id, range_))
+    else:  # "all" or any other value
+        recs.extend(_generate_sales_recommendations(factory_id, range_))
+        recs.extend(_generate_cost_recommendations(factory_id, range_))
+        recs.extend(_generate_customer_recommendations(factory_id, range_))
+    recs.sort(key=lambda r: r["priority"])
+    return recs
+
+
 @router.get("/api/mobile/{factory_id}/smart-bi/datasource/list")
 async def list_datasources(
     factory_id: str,
@@ -711,3 +945,25 @@ async def get_alerts(
     else:
         alerts = _generate_all_alerts(auth.factory_id, range_)
     return wrap_response(alerts)
+
+
+@router.get("/api/mobile/{factory_id}/smart-bi/recommendations")
+async def get_recommendations(
+    factory_id: str,
+    analysisType: Optional[str] = None,
+    auth: AuthContext = Depends(verify_jwt_and_factory),
+) -> dict[str, Any]:
+    """Java-compatible alias: GET /smart-bi/recommendations[?analysisType=sales|finance|customer|all].
+
+    Java reference: SmartBIAnalysisController.getRecommendations (line 621-637)
+    backed by RecommendationServiceImpl.generateRecommendations.
+
+    analysisType branches:
+      - sales: only sales recommendations (product concentration + salesperson variance)
+      - finance: only cost recommendations (material cost ratio)
+      - customer: only customer recommendations (top 3 + small customer count)
+      - all (default): all 3 generators concatenated, sorted by priority ASC
+    """
+    range_ = DateRange.by_period("month")
+    recs = _generate_recommendations(auth.factory_id, range_, analysisType)
+    return wrap_response(recs)

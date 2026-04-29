@@ -272,6 +272,83 @@ def test_alerts_aggregator_matches_f999_golden(app_with_all_seams: FastAPI, f999
     assert actual == expected
 
 
+# ─── /recommendations contract test ────────────────────────────────────────────
+
+
+@pytest.fixture
+def app_with_recommendations_seam(monkeypatch: pytest.MonkeyPatch) -> FastAPI:
+    """Production app with sales + finance seams monkey-patched for recommendations.
+
+    Fixture matches what F999 produces in golden: 1 SALES_IMPROVEMENT recommendation
+    with topSeller=陈涛秀 (max sales among 2 salespeople, variance > 3x).
+    No PRODUCT_FOCUS (top product < 60%), no CUSTOMER_RETENTION (top 3 < 50%),
+    no COST_REDUCTION (no finance rows), no REGION_EXPANSION.
+    """
+    from smartbi_compat.api import analysis as analysis_router
+
+    sales_fixture = [
+        SimpleNamespace(
+            salesperson_name="陈涛秀", amount=Decimal("732709.20"), monthly_target=None,
+            product_category="A", customer_name="客户1",
+        ),
+        SimpleNamespace(
+            salesperson_name="王芳娜", amount=Decimal("207259.00"), monthly_target=None,
+            product_category="B", customer_name="客户2",
+        ),
+        # variance = 732709/207259 = 3.54 > 3 → SALES_IMPROVEMENT priority 1
+        # product A = 732709/(732709+207259) = 78% > 60% → PRODUCT_FOCUS priority 2
+        # customer 1+2 = 100% but only 2 customers, top 3 = total → 100% > 50% → CUSTOMER_RETENTION priority 1
+        # small customer count = 0 (both > 10000) → no REGION_EXPANSION
+    ]
+
+    monkeypatch.setattr(analysis_router, "_query_sales_data", lambda fid, range_: sales_fixture)
+    monkeypatch.setattr(analysis_router, "_query_finance_data", lambda fid, range_: [])
+    return _production_main.app
+
+
+def test_recommendations_default_route_registered(app_with_recommendations_seam: FastAPI, f999_token: str) -> None:
+    """GET /recommendations returns 200 + 5-key envelope + sorted by priority ASC."""
+    client = TestClient(app_with_recommendations_seam)
+    resp = client.get(
+        "/api/mobile/F999/smart-bi/recommendations",
+        headers={"Authorization": f"Bearer {f999_token}"},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    _assert_envelope(body)
+    priorities = [r["priority"] for r in body["data"]]
+    assert priorities == sorted(priorities), f"not priority-ASC sorted: {priorities}"
+
+
+def test_recommendations_analysis_type_sales(app_with_recommendations_seam: FastAPI, f999_token: str) -> None:
+    """GET /recommendations?analysisType=sales returns only sales recommendations."""
+    client = TestClient(app_with_recommendations_seam)
+    resp = client.get(
+        "/api/mobile/F999/smart-bi/recommendations?analysisType=sales",
+        headers={"Authorization": f"Bearer {f999_token}"},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    _assert_envelope(body)
+    for rec in body["data"]:
+        assert rec["type"] in ("SALES_IMPROVEMENT", "PRODUCT_FOCUS")
+
+
+def test_recommendations_unauthorized_returns_401(client: TestClient) -> None:
+    """Missing Bearer token returns 401."""
+    resp = client.get("/api/mobile/F999/smart-bi/recommendations")
+    assert resp.status_code == 401
+
+
+def test_recommendations_cross_factory_returns_403(client: TestClient, f999_token: str) -> None:
+    """F999 token attempting F001 path returns 403."""
+    resp = client.get(
+        "/api/mobile/F001/smart-bi/recommendations",
+        headers={"Authorization": f"Bearer {f999_token}"},
+    )
+    assert resp.status_code == 403
+
+
 def test_alerts_unauthorized_returns_401(client: TestClient) -> None:
     """Missing Bearer token returns 401."""
     resp = client.get("/api/mobile/F999/smart-bi/alerts")

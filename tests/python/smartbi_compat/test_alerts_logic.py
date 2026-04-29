@@ -444,3 +444,157 @@ def test_aggregator_empty_when_all_generators_empty():
         mod._query_sales_data = orig_s
         mod._query_finance_data = orig_f
         mod._query_department_data = orig_d
+
+
+# ─── /recommendations tests ────────────────────────────────────────────────────
+
+
+def test_recommendations_sales_product_concentration_red():
+    """Single product > 60% concentration → PRODUCT_FOCUS priority 2."""
+    from smartbi_compat.api.analysis import _generate_recommendations
+    import smartbi_compat.api.analysis as mod
+    rows = [
+        SimpleNamespace(salesperson_name=None, amount=Decimal("700"), monthly_target=None,
+                        product_category="A", customer_name=None),
+        SimpleNamespace(salesperson_name=None, amount=Decimal("100"), monthly_target=None,
+                        product_category="B", customer_name=None),
+        SimpleNamespace(salesperson_name=None, amount=Decimal("100"), monthly_target=None,
+                        product_category="C", customer_name=None),
+    ]
+    orig = mod._query_sales_data
+    mod._query_sales_data = lambda f, r: rows
+    try:
+        from smartbi_compat.date_range import DateRange
+        recs = _generate_recommendations("F999", DateRange.by_period("month"), "sales")
+    finally:
+        mod._query_sales_data = orig
+
+    pf = [r for r in recs if r["type"] == "PRODUCT_FOCUS"]
+    assert len(pf) == 1
+    assert pf[0]["priority"] == 2
+    assert pf[0]["typeName"] == "产品聚焦"
+    assert pf[0]["highPriority"] is True
+
+
+def test_recommendations_sales_variance_topseller():
+    """Salesperson variance > 3x → SALES_IMPROVEMENT priority 1 with topSeller."""
+    from smartbi_compat.api.analysis import _generate_recommendations
+    import smartbi_compat.api.analysis as mod
+    rows = [
+        SimpleNamespace(salesperson_name="王五", amount=Decimal("100"), monthly_target=None,
+                        product_category=None, customer_name=None),
+        SimpleNamespace(salesperson_name="陈涛秀", amount=Decimal("1000"), monthly_target=None,
+                        product_category=None, customer_name=None),
+    ]
+    orig = mod._query_sales_data
+    mod._query_sales_data = lambda f, r: rows
+    try:
+        from smartbi_compat.date_range import DateRange
+        recs = _generate_recommendations("F999", DateRange.by_period("month"), "sales")
+    finally:
+        mod._query_sales_data = orig
+
+    si = [r for r in recs if r["type"] == "SALES_IMPROVEMENT"]
+    assert len(si) == 1
+    assert si[0]["priority"] == 1
+    assert "陈涛秀" in si[0]["actionItems"][0]
+
+
+def test_recommendations_cost_material_ratio_red():
+    """Material cost > 60% of total → COST_REDUCTION priority 2."""
+    from smartbi_compat.api.analysis import _generate_recommendations
+    import smartbi_compat.api.analysis as mod
+    rows = [
+        SimpleNamespace(material_cost=Decimal("700"), labor_cost=Decimal("200"),
+                        overhead_cost=Decimal("100"), receivable_amount=None, aging_days=None,
+                        budget_amount=None, actual_amount=None, customer_name=None),
+    ]
+    orig = mod._query_finance_data
+    mod._query_finance_data = lambda f, r: rows
+    try:
+        from smartbi_compat.date_range import DateRange
+        recs = _generate_recommendations("F999", DateRange.by_period("month"), "finance")
+    finally:
+        mod._query_finance_data = orig
+
+    cr = [r for r in recs if r["type"] == "COST_REDUCTION"]
+    assert len(cr) == 1
+    assert cr[0]["priority"] == 2
+    assert cr[0]["typeName"] == "成本优化"
+
+
+def test_recommendations_customer_top3_concentration_red():
+    """Top 3 customers > 50% concentration → CUSTOMER_RETENTION priority 1."""
+    from smartbi_compat.api.analysis import _generate_recommendations
+    import smartbi_compat.api.analysis as mod
+    rows = [
+        SimpleNamespace(salesperson_name=None, amount=Decimal("1000"), monthly_target=None,
+                        product_category=None, customer_name="A"),
+        SimpleNamespace(salesperson_name=None, amount=Decimal("1000"), monthly_target=None,
+                        product_category=None, customer_name="B"),
+        SimpleNamespace(salesperson_name=None, amount=Decimal("1000"), monthly_target=None,
+                        product_category=None, customer_name="C"),
+        SimpleNamespace(salesperson_name=None, amount=Decimal("100"), monthly_target=None,
+                        product_category=None, customer_name="D"),
+        SimpleNamespace(salesperson_name=None, amount=Decimal("100"), monthly_target=None,
+                        product_category=None, customer_name="E"),
+    ]
+    orig = mod._query_sales_data
+    mod._query_sales_data = lambda f, r: rows
+    try:
+        from smartbi_compat.date_range import DateRange
+        recs = _generate_recommendations("F999", DateRange.by_period("month"), "customer")
+    finally:
+        mod._query_sales_data = orig
+
+    cr = [r for r in recs if r["type"] == "CUSTOMER_RETENTION"]
+    assert len(cr) == 1
+    assert cr[0]["priority"] == 1
+
+
+def test_recommendations_all_aggregator_sort_by_priority():
+    """All 3 generators concat → output sorted by priority ASC."""
+    from smartbi_compat.api.analysis import _generate_recommendations
+    import smartbi_compat.api.analysis as mod
+    sales_rows = [
+        SimpleNamespace(salesperson_name="A", amount=Decimal("100"), monthly_target=None,
+                        product_category="X", customer_name="C1"),
+        SimpleNamespace(salesperson_name="B", amount=Decimal("1000"), monthly_target=None,
+                        product_category="X", customer_name="C1"),
+    ]
+    # Product X = 1100/1100 = 100% > 60% RED priority 2
+    # Salesperson variance 1000/100 = 10x > 3 RED priority 1
+    finance_rows = [
+        SimpleNamespace(material_cost=Decimal("700"), labor_cost=Decimal("200"),
+                        overhead_cost=Decimal("100"), receivable_amount=None, aging_days=None,
+                        budget_amount=None, actual_amount=None, customer_name=None),
+    ]
+    # Material 70% > 60% RED priority 2
+    orig_s = mod._query_sales_data
+    orig_f = mod._query_finance_data
+    mod._query_sales_data = lambda f, r: sales_rows
+    mod._query_finance_data = lambda f, r: finance_rows
+    try:
+        from smartbi_compat.date_range import DateRange
+        recs = _generate_recommendations("F999", DateRange.by_period("month"), None)
+    finally:
+        mod._query_sales_data = orig_s
+        mod._query_finance_data = orig_f
+
+    priorities = [r["priority"] for r in recs]
+    assert priorities == sorted(priorities), f"not priority-ASC sorted: {priorities}"
+
+
+def test_recommendations_empty_returns_empty():
+    from smartbi_compat.api.analysis import _generate_recommendations
+    import smartbi_compat.api.analysis as mod
+    orig_s = mod._query_sales_data
+    orig_f = mod._query_finance_data
+    mod._query_sales_data = lambda f, r: []
+    mod._query_finance_data = lambda f, r: []
+    try:
+        from smartbi_compat.date_range import DateRange
+        assert _generate_recommendations("F999", DateRange.by_period("month"), "all") == []
+    finally:
+        mod._query_sales_data = orig_s
+        mod._query_finance_data = orig_f
