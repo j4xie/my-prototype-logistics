@@ -251,10 +251,9 @@ public class DashScopeVisionClient {
     /**
      * 通用图片分析方法
      *
-     * 注意: 当前实现假设 imageUrl 指向本地文件系统或可直接访问的 URL。
-     * 若需要从 URL 下载图片，需在 Python 端添加支持。
+     * 从给定 URL 下载图片字节，然后委托给 PythonLLMClient.visionChat() 进行分析。
      *
-     * @param imageUrl 图片URL
+     * @param imageUrl 图片URL（HTTP/HTTPS）
      * @param prompt   分析提示词
      * @return 分析结果文本
      */
@@ -264,14 +263,19 @@ public class DashScopeVisionClient {
         }
 
         try {
-            // 注: 此方法保留签名以保证向后兼容，但当前委托实现只支持字节数组
-            // 实际使用场景中，调用方应改用 parseScaleImage 或其他方法
-            log.warn("analyzeImage(imageUrl) 已废弃 — Python visionChat 仅支持字节数组输入");
-            throw new RuntimeException("analyzeImage(imageUrl) 已废弃，请改用基于字节数组的方法");
-
+            okhttp3.OkHttpClient httpClient = new okhttp3.OkHttpClient();
+            okhttp3.Request req = new okhttp3.Request.Builder().url(imageUrl).build();
+            try (okhttp3.Response resp = httpClient.newCall(req).execute()) {
+                if (!resp.isSuccessful() || resp.body() == null) {
+                    throw new RuntimeException("无法下载图片: " + imageUrl + " (HTTP " + resp.code() + ")");
+                }
+                byte[] imageBytes = resp.body().bytes();
+                String contentType = resp.header("Content-Type", "image/jpeg");
+                return delegate.visionChat(imageBytes, contentType, prompt);
+            }
         } catch (Exception e) {
-            log.error("图片分析失败", e);
-            throw new RuntimeException("图片分析失败: " + e.getMessage(), e);
+            log.error("图片分析失败: {}", imageUrl, e);
+            throw new RuntimeException("analyzeImage 失败: " + e.getMessage(), e);
         }
     }
 
