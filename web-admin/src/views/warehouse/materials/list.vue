@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put } from '@/api/request';
@@ -9,6 +10,7 @@ import { Plus, Search, Refresh } from '@element-plus/icons-vue';
 import { formatDateTimeCell } from '@/utils/tableFormatters';
 import type { FormInstance } from 'element-plus';
 
+const router = useRouter();
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
@@ -241,11 +243,30 @@ async function handleFormSubmit() {
 <template>
   <CanvasAwareWrapper module-code="material_batch">
   <div class="page-wrapper">
+    <!-- UX P1 (张权 2026-04-29 反馈): 用户混淆"原料类型"vs"产品类型".
+         banner 明确这里的语义边界, 减少歧义. -->
+    <el-alert
+      type="info"
+      :closable="false"
+      style="margin-bottom: 12px"
+      show-icon
+    >
+      <template #title>
+        <strong>这里是「原料 / 物料」管理</strong> — <strong>采购入库</strong>的原材料、包材、辅料（如「冻猪蹄」「吸塑盒」）
+      </template>
+      <template #default>
+        <span style="font-size: 13px">
+          ⚠️ 如果你想录入的是<strong>本厂生产的成品 / SKU</strong>（如「叮咚好食光卤猪蹄 200g」），请到
+          <el-link type="primary" :underline="false" style="font-weight: 600" @click="router.push('/system/products')">系统管理 → 成品 / SKU (本厂生产)</el-link>
+          创建。
+        </span>
+      </template>
+    </el-alert>
     <el-card class="page-card" shadow="never">
       <template #header>
         <div class="card-header">
           <div class="header-left">
-            <span class="page-title">原材料批次管理</span>
+            <span class="page-title">原料 / 物料管理 (采购入库)</span>
             <span class="data-count">共 {{ pagination.total }} 条记录</span>
           </div>
           <div class="header-right">
