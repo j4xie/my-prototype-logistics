@@ -721,6 +721,14 @@ const businessRoutes: RouteRecordRaw[] = [
       // the editor regardless of role. Restricted to canvas config admins only.
       // (Backend @RequireRole already gates the mutation endpoints, but the UI should
       //  not even render for unprivileged users to avoid "button visible then 403" UX.)
+      //
+      // R18 fix (2026-04-15): roles list must match backend @RequireRole on
+      // ConfigController / CanvasAIController, which is
+      // {"factory_super_admin", "permission_admin"}. The prior list
+      // ['platform_admin', 'permission_admin'] desynced router from backend and
+      // locked factory_super_admin (the highest FACTORY role) out of the UI even
+      // though the backend would have accepted their requests. `platform_admin`
+      // is kept for platform-level operators; `factory_super_admin` restored.
       {
         path: 'canvas-editor',
         name: 'CanvasEditor',
@@ -730,7 +738,7 @@ const businessRoutes: RouteRecordRaw[] = [
           icon: 'Setting',
           requiresAuth: true,
           showInMenu: true,
-          roles: ['factory_super_admin', 'permission_admin'],
+          roles: ['factory_super_admin', 'platform_admin', 'permission_admin'],
         },
       },
       // 动态模块页 (Canvas配置系统)

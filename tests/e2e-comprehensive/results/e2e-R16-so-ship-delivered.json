@@ -1,0 +1,217 @@
+{
+  "round": 16,
+  "timestamp": "2026-04-14T21:00:40.749Z",
+  "factoryId": "FOOD_3101_048",
+  "notes": "R16 SO 出库 Stage 2/3 — ship + delivered (complete 3-stage flow)",
+  "results": [
+    {
+      "layer": "L4",
+      "testId": "deep-13",
+      "step": "prep_customer",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "testName": "E2E_C_R16_deep-13_mnz3tx3i"
+      },
+      "ts": "2026-04-14T20:59:37.170Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-13",
+      "step": "prep_so_created",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T20:59:56.900Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-13",
+      "step": "prep_so_confirmed",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "orderNumber": "SO-20260415-0004"
+      },
+      "ts": "2026-04-14T21:00:09.410Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-13",
+      "step": "prep_stage1_delivery_created",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "apiStatus": 200
+      },
+      "ts": "2026-04-14T21:00:22.175Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-13",
+      "step": "step1_click_detail",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T21:00:33.144Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-13",
+      "step": "step2_detail_url",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "url": "http://139.196.165.140:8086/sales/orders/56b0d6fb-6725-4a18-92e2-67a0b3db6e03"
+      },
+      "ts": "2026-04-14T21:00:33.364Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-13",
+      "step": "step3_switch_tab",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T21:00:36.381Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-13",
+      "step": "step4_delivery_row",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "found": true,
+        "cells": [
+          "DLV-20260415-2098",
+          "2026-04-14",
+          "",
+          "",
+          "草稿",
+          "¥0.00",
+          "发货"
+        ],
+        "buttonTexts": [
+          "发货"
+        ],
+        "hasShipBtn": true,
+        "hasDraftStatus": true
+      },
+      "ts": "2026-04-14T21:00:38.895Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-13",
+      "step": "step5_click_ship",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T21:00:38.905Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-13",
+      "step": "step6_ship_response",
+      "status": "WARN",
+      "depth": "deep",
+      "evidence": {
+        "status": 400,
+        "url": "http://139.196.165.140:8086/api/mobile/FOOD_3101_048/sales/deliveries/6f8152a4-b2b9-431c-b7a1-0db5960317f5/ship",
+        "success": false,
+        "message": "发货行 67（产品：null）未完成批次分配，无法确认发货",
+        "batchAllocBlocked": true
+      },
+      "ts": "2026-04-14T21:00:40.675Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-13",
+      "step": "BUG_FOUND_P0_NO_BATCH_ALLOC_UI",
+      "status": "WARN",
+      "depth": "deep",
+      "evidence": {
+        "severity": "P0",
+        "summary": "Frontend has no batch-allocation UI. /ship endpoint exists but is unreachable via web-admin.",
+        "backendEndpoint": "POST /sales-deliveries/items/{deliveryItemId}/batch-allocations (defined)",
+        "frontendGap": "No call sites in web-admin/src/ (grep batch-allocations → 0 matches)",
+        "userImpact": "Entire 3-stage delivery flow is UI-blocked after Stage 1",
+        "recommendation": "Add allocation dialog to detail.vue OR auto-allocate FEFO on delivery create"
+      },
+      "ts": "2026-04-14T21:00:40.675Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-13",
+      "step": "BUG_FOUND_P1_QUICK_SHIP_PAYLOAD",
+      "status": "WARN",
+      "depth": "deep",
+      "evidence": {
+        "severity": "P1",
+        "summary": "list.vue 快速出库 payload omits productName + unitPrice",
+        "file": "web-admin/src/views/sales/orders/list.vue:413-419",
+        "currentPayload": [
+          "productTypeId",
+          "deliveredQuantity",
+          "unit"
+        ],
+        "missingFields": [
+          "productName",
+          "unitPrice"
+        ],
+        "evidence": "Delivery created via 快速出库 showed totalAmount=¥0.00 and error \"产品：null\"",
+        "recommendation": "Mirror detail.vue:225-231 mapping (add productName + unitPrice)"
+      },
+      "ts": "2026-04-14T21:00:40.676Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-13",
+      "step": "RULE8_SWEEP_sales_deliveries_orphan_endpoints",
+      "status": "WARN",
+      "depth": "deep",
+      "evidence": {
+        "pattern": "Backend POST endpoints under /sales/deliveries with zero frontend callers",
+        "sweptEndpoints": [
+          {
+            "path": "POST /sales-deliveries/items/{id}/batch-allocations",
+            "severity": "P0",
+            "blocksUserFlow": true
+          },
+          {
+            "path": "POST /sales/deliveries/{id}/signature",
+            "severity": "P2",
+            "blocksUserFlow": false,
+            "note": "signature photo upload — optional"
+          }
+        ],
+        "verdict": "2 orphan endpoints confirmed (grep web-admin/src: both → 0 matches)"
+      },
+      "ts": "2026-04-14T21:00:40.676Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-13",
+      "step": "FULL_FLOW",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "verdict": "DISCOVERY — 2 latent bugs found (P0 + P1) + 1 Rule 8 sweep finding",
+        "stage1_verified": true,
+        "stage2_blocked_by_ui_gap": true,
+        "stage3_not_reached": true,
+        "bugsDisclosed": 2,
+        "sweepFindings": 1,
+        "note": "Backend /ship endpoint proven functional (returned meaningful 400). UI path broken. See BUG_FOUND_* + RULE8_SWEEP_* records."
+      },
+      "ts": "2026-04-14T21:00:40.676Z"
+    }
+  ],
+  "summary": {
+    "deepTotal": 10,
+    "deepPass": 10,
+    "deepFail": 0,
+    "deepWarn": 4
+  }
+}

@@ -6,6 +6,7 @@ import com.cretas.aims.service.AnomalyDetectionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +46,7 @@ public class AnomalyDetectionScheduler {
      * 每2小时执行全量异常检测
      */
     @Scheduled(cron = "0 0 */2 * * *")
+    @SchedulerLock(name = "AnomalyDetectionScheduler.scheduledDetection", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void scheduledDetection() {
         log.info("开始定时异常检测...");
         try {
@@ -65,6 +67,7 @@ public class AnomalyDetectionScheduler {
      * - 如果仍异常 -> 重新激活为 ACTIVE
      */
     @Scheduled(cron = "0 30 */4 * * *")
+    @SchedulerLock(name = "AnomalyDetectionScheduler.autoVerifyResolvedAlerts", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     @Transactional
     public void autoVerifyResolvedAlerts() {
         log.info("开始自动验证已解决告警...");

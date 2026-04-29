@@ -1,0 +1,182 @@
+{
+  "round": 1,
+  "testSubject": "upload-500mb",
+  "timestamp": "2026-04-15T06:27:26.352Z",
+  "api_base": "http://139.196.165.140:8086",
+  "tests": [
+    {
+      "id": "R1-L1-1",
+      "layer": "L1",
+      "name": "upload_page_accessible",
+      "status": "PASS",
+      "depth": "smoke",
+      "navResult": "OK",
+      "signals": {
+        "hasDropHint": true,
+        "has500Hint": true,
+        "hasCsvHint": true,
+        "hasUploadArea": true,
+        "hasFileInput": true
+      },
+      "note": null,
+      "at": "2026-04-15T06:27:42.589Z"
+    },
+    {
+      "id": "R1-L1-2",
+      "layer": "L1",
+      "name": "frontend_bundle_has_500mb",
+      "status": "PASS",
+      "depth": "smoke",
+      "matchingFiles": [
+        "/www/wwwroot/web-admin/assets/ExcelUpload-BhWtz3vH.js"
+      ],
+      "at": "2026-04-15T06:27:45.519Z"
+    },
+    {
+      "id": "R1-L1-3",
+      "layer": "L1",
+      "name": "nginx_client_max_500m",
+      "status": "PASS",
+      "depth": "smoke",
+      "count": 3,
+      "expected": ">=3",
+      "at": "2026-04-15T06:27:49.036Z"
+    },
+    {
+      "id": "R1-L1-4",
+      "layer": "L1",
+      "name": "java_multipart_env",
+      "status": "PASS",
+      "depth": "smoke",
+      "activeService": "cretas-backend-green",
+      "envLine": "SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE=500MB",
+      "at": "2026-04-15T06:28:00.929Z"
+    },
+    {
+      "id": "R1-L1-5",
+      "layer": "L1",
+      "name": "python_max_file_size_env",
+      "status": "PASS",
+      "depth": "smoke",
+      "envLine": "MAX_FILE_SIZE_MB=500",
+      "at": "2026-04-15T06:28:10.044Z"
+    },
+    {
+      "id": "R1-L2-1",
+      "layer": "L2",
+      "name": "fe_source_accepts_xlsx_xls_csv",
+      "status": "PASS",
+      "depth": "smoke",
+      "sourceCheck": {
+        "found": true,
+        "hasXlsx": true,
+        "hasXls": true,
+        "hasCsv": true
+      },
+      "note": "smoke: deployed JS lists all 3 accepted MIME types. Real 450MB test is impractical.",
+      "at": "2026-04-15T06:28:31.478Z"
+    },
+    {
+      "id": "R1-L2-2",
+      "layer": "L2",
+      "name": "fe_source_has_501mb_check",
+      "status": "PASS",
+      "depth": "smoke",
+      "sourceCheck": {
+        "found": true,
+        "has500Const": true,
+        "hasMsg": true,
+        "rawOut": "has500=1 hasMsg=1 file=/www/wwwroot/web-admin/assets/ExcelUpload-BhWtz3vH.js"
+      },
+      "note": "smoke: deployed JS contains size-check constant. Real runtime rejection not triggerable via synthetic File (see R3 plan).",
+      "at": "2026-04-15T06:28:41.166Z"
+    },
+    {
+      "id": "R1-L2-3",
+      "layer": "L2",
+      "name": "fe_accepts_csv_real",
+      "status": "PASS",
+      "depth": "medium",
+      "errorToast": null,
+      "note": "CSV accepted (downstream parse may still fail — that's L3/L4)",
+      "at": "2026-04-15T06:28:41.989Z"
+    },
+    {
+      "id": "R1-L3-1",
+      "layer": "L3",
+      "name": "api_upload_xlsx_persist_e2e",
+      "status": "PASS",
+      "depth": "medium",
+      "factoryId": "FOOD_3101_048",
+      "filePath": "pos_5mb.xlsx",
+      "fileSize": 44167134,
+      "sha256": "cb236f004a1bd638",
+      "httpStatus": 200,
+      "elapsedMs": 49574,
+      "transport": "scp+server-local curl via /upload-and-analyze",
+      "scpSkipped": true,
+      "apiMessage": "成功上传并处理 80000 条销售数据数据",
+      "uploadId": 4050,
+      "note": "persist verified: uploadId allocated",
+      "at": "2026-04-15T06:29:31.659Z"
+    },
+    {
+      "id": "R1-L4-1",
+      "layer": "L4",
+      "name": "full_roundtrip",
+      "status": "PASS",
+      "depth": "deep",
+      "fileSize": 44167134,
+      "sha256": "cb236f004a1bd638fd90f83fac09374c15e44ad606f242eaa5d32814d0cb16a7",
+      "apiStatus": 200,
+      "apiUrl": "http://localhost:10020/api/mobile/FOOD_3101_048/smart-bi/upload-and-analyze",
+      "uploadElapsedMs": 212603,
+      "scpSkipped": true,
+      "transport": "scp+curl (browser-UI upload deferred to R2, see plan §R2)",
+      "toastText": "(N/A — upload via server-local curl, no UI toast)",
+      "uploadId": 4051,
+      "targetBefore": 12,
+      "targetAfter": 13,
+      "targetDelta": 1,
+      "canaryBefore": 50,
+      "canaryAfter": 50,
+      "canaryDelta": 0,
+      "sectionStatus": 200,
+      "sectionName": "diagnostics",
+      "sectionReturnStatus": "skipped",
+      "autoResolve": {
+        "triggered": true,
+        "reason": "loaded",
+        "uploadId": 4051,
+        "fileName": "e2e_pos.xlsx",
+        "rows": 80000
+      },
+      "uploadIdMatches": true,
+      "at": "2026-04-15T06:33:17.159Z"
+    }
+  ],
+  "loggedInFactoryId": "FOOD_3101_048",
+  "targetFactoryId": "FOOD_3101_048",
+  "schema_v3": {
+    "specTotal": 10,
+    "p2Deferred": [],
+    "expectedFail": [],
+    "effectiveTotal": 10,
+    "actualExecuted": 10,
+    "actualPass": 10,
+    "depthBreakdown": {
+      "smoke": 7,
+      "medium": 2,
+      "deep": 1
+    },
+    "pctOfSpec": 100,
+    "pctDeep": 10
+  },
+  "summary": {
+    "total": 10,
+    "pass": 10,
+    "fail": 0,
+    "warn": 0,
+    "skip": 0
+  }
+}

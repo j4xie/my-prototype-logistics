@@ -149,8 +149,12 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
         }
 
         String fileName = file.getOriginalFilename();
-        if (fileName == null || (!fileName.endsWith(".xlsx") && !fileName.endsWith(".xls"))) {
-            return UploadFlowResult.failure("仅支持 .xlsx 或 .xls 格式的文件");
+        if (fileName == null) {
+            return UploadFlowResult.failure("文件名不能为空");
+        }
+        String lowerName = fileName.toLowerCase();
+        if (!lowerName.endsWith(".xlsx") && !lowerName.endsWith(".xls") && !lowerName.endsWith(".csv")) {
+            return UploadFlowResult.failure("仅支持 .xlsx、.xls 或 .csv 格式的文件");
         }
 
         try {
@@ -294,8 +298,24 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             log.error("读取文件失败: {}", e.getMessage(), e);
             return UploadFlowResult.failure("读取文件失败: " + e.getMessage());
         } catch (Exception e) {
-            log.error("上传流程执行失败: {}", e.getMessage(), e);
-            return UploadFlowResult.failure("处理失败: " + e.getMessage());
+            // Distinguish user-correctable input errors from real server failures.
+            // A BadZipFile / wrong-format / manual-abort upload is the user's job
+            // to fix (re-save as xlsx, re-upload); flooding ERROR drowns real bugs.
+            // The message text we surface is authored by our own Python / Java code
+            // (see excel.py BadZipFile branch + SmartBIUploadFlowServiceImpl:576),
+            // so keyword matching against it is stable.
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+            boolean userCorrectable =
+                msg.contains("文件不是有效的 xlsx")
+                    || msg.contains("BadZipFile")
+                    || msg.contains("File is not a zip")
+                    || msg.contains("上传被中断");
+            if (userCorrectable) {
+                log.warn("上传被拒 (用户需修正): {}", msg);
+            } else {
+                log.error("上传流程执行失败: {}", msg, e);
+            }
+            return UploadFlowResult.failure("处理失败: " + msg);
         }
     }
 

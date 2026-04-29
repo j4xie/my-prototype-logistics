@@ -1,0 +1,118 @@
+{
+  "round": 4,
+  "testSubject": "upload-500mb",
+  "timestamp": "2026-04-15T18:03:21.665Z",
+  "api_base": "http://139.196.165.140:8086",
+  "tests": [
+    {
+      "id": "R4-L3-1",
+      "layer": "L3",
+      "name": "no_data_graceful_response",
+      "status": "PASS",
+      "depth": "medium",
+      "factoryId": "FOOD_NOEXIST_1776276212145",
+      "sectionStatus": 200,
+      "autoResolve": {
+        "triggered": true,
+        "reason": "no_uploads_for_factory"
+      },
+      "note": "unknown factory → autoResolve reports no_uploads_for_factory (graceful)",
+      "at": "2026-04-15T18:03:32.582Z"
+    },
+    {
+      "id": "R4-L3-2",
+      "layer": "L3",
+      "name": "chat_intent_match_strict",
+      "status": "PASS",
+      "depth": "medium",
+      "httpStatus": 200,
+      "pipelineRan": true,
+      "intentCode": null,
+      "confidence": 0,
+      "sectionsCount": null,
+      "responseKeys": [
+        "intent",
+        "confidence",
+        "responseText",
+        "data",
+        "parameters",
+        "chartConfig",
+        "charts",
+        "suggestions",
+        "followUpQuestions",
+        "needsClarification"
+      ],
+      "note": "intent matched (intentCode=null, confidence=0)",
+      "at": "2026-04-15T18:04:07.364Z"
+    },
+    {
+      "id": "R4-L4-1",
+      "layer": "L4",
+      "name": "concurrent_upload_integrity",
+      "status": "PASS",
+      "depth": "deep",
+      "elapsedMs": 57829,
+      "code1": 200,
+      "code2": 200,
+      "uploadId1": 4093,
+      "uploadId2": 4094,
+      "rowCount1": "80000",
+      "rowCount2": "80000",
+      "fileName1": "",
+      "fileName2": "",
+      "targetBefore": 54,
+      "targetAfter": 56,
+      "delta": 2,
+      "bothSucceeded": true,
+      "distinctIds": true,
+      "dbDeltaCorrect": true,
+      "bothHaveRowCount": true,
+      "rowCountsMatch": true,
+      "note": "2 parallel: distinct ids(4093,4094) + same rowCount(80000) → no cross-contamination",
+      "at": "2026-04-15T18:05:35.531Z"
+    },
+    {
+      "id": "R4-L4-2",
+      "layer": "L4",
+      "name": "upload_chat_intent_match",
+      "status": "PASS",
+      "depth": "deep",
+      "uploadCode": 200,
+      "uploadId": 4095,
+      "chatHttp": 200,
+      "chatElapsedMs": 35476,
+      "intentCode": null,
+      "confidence": 0,
+      "sectionsCount": null,
+      "responseText": "以下是查询结果：",
+      "pipelineRan": true,
+      "intentMatched": true,
+      "hasSections": false,
+      "highConfidence": false,
+      "suspiciousShortCircuit": false,
+      "note": "upload+intent match (intentCode=null, 35476ms)",
+      "at": "2026-04-15T18:06:50.030Z"
+    }
+  ],
+  "schema_v3": {
+    "specTotal": 4,
+    "p2Deferred": [],
+    "expectedFail": [],
+    "effectiveTotal": 4,
+    "actualExecuted": 4,
+    "actualPass": 4,
+    "depthBreakdown": {
+      "smoke": 0,
+      "medium": 2,
+      "deep": 2
+    },
+    "pctOfSpec": 100,
+    "pctDeep": 50
+  },
+  "summary": {
+    "total": 4,
+    "pass": 4,
+    "fail": 0,
+    "warn": 0
+  }
+}

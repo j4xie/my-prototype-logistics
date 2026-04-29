@@ -124,6 +124,26 @@ public class BusinessRuleController {
         return ApiResponse.success(formulaRepo.save(formula));
     }
 
+    // R7 Issue 2: close CRUD gap — PUT creates formulas, but there was no DELETE endpoint.
+    // Test env accumulated test formulas per J1 run (phaseI creates one with SUFFIX-scoped code).
+    // Prod admins had no API way to remove a formula (only direct SQL). This closes the gap.
+    //
+    // Unique constraint on (factory_id, module_code, formula_code) means the same formulaCode
+    // can exist for different moduleCodes → moduleCode must be specified as a query param.
+    // Idempotent: if formula doesn't exist, returns success (no 404) — friendly for cleanup
+    // scripts that may run DELETE even when the resource was already removed.
+    @DeleteMapping("/formulas/{formulaCode}")
+    @Operation(summary = "删除公式")
+    @RequireRole({"factory_super_admin", "permission_admin"})
+    public ApiResponse<Void> deleteFormula(
+            @PathVariable String factoryId,
+            @PathVariable String formulaCode,
+            @RequestParam String moduleCode) {
+        formulaRepo.findByFactoryIdAndModuleCodeAndFormulaCode(factoryId, moduleCode, formulaCode)
+            .ifPresent(formulaRepo::delete);
+        return ApiResponse.success("已删除公式 (或已不存在): " + formulaCode, null);
+    }
+
     @GetMapping("/scheduler")
     @Operation(summary = "获取工厂定时任务列表")
     public ApiResponse<List<FactorySchedulerConfig>> getSchedulerConfigs(@PathVariable String factoryId) {

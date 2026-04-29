@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +51,7 @@ public class ApprovalTimeoutScheduler {
      * 每5分钟检查超时的审批申请
      */
     @Scheduled(fixedRate = 300000)
+    @SchedulerLock(name = "ApprovalTimeoutScheduler.checkApprovalTimeouts", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     @Transactional
     public void checkApprovalTimeouts() {
         log.debug("开始检查审批超时...");

@@ -39,18 +39,28 @@ public class FactorySettingsServiceImpl implements FactorySettingsService {
     private final FactoryRepository factoryRepository;
 
     @Override
+    @Transactional
     public FactorySettingsDTO getSettings(String factoryId) {
-        FactorySettings settings = settingsRepository.findByFactoryId(factoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("工厂设置不存在"));
+        // R21-F3 fix: lazy-init default settings row on first read instead of 404
+        // Frontend /system/settings calls GET /settings + GET /settings/full on mount; returning 404
+        // causes silent fallback to hardcoded defaults and prevents any subsequent save from working.
         Factory factory = factoryRepository.findById(factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("工厂不存在，ID: " + factoryId));
-        if(null != factory){
-            settings.setFactoryName(factory.getName());
-            settings.setFactoryAddress(factory.getAddress());
-            settings.setContactPhone(factory.getContactPhone());
-            settings.setContactEmail(factory.getContactEmail());
-            settings.setWorkingHours(10);
-        }
+
+        FactorySettings settings = settingsRepository.findByFactoryId(factoryId)
+                .orElseGet(() -> {
+                    log.info("工厂设置不存在，自动创建默认配置: factoryId={}", factoryId);
+                    FactorySettings seed = FactorySettings.builder()
+                            .factoryId(factoryId)
+                            .build();
+                    return settingsRepository.save(seed);
+                });
+
+        settings.setFactoryName(factory.getName());
+        settings.setFactoryAddress(factory.getAddress());
+        settings.setContactPhone(factory.getContactPhone());
+        settings.setContactEmail(factory.getContactEmail());
+        settings.setWorkingHours(10);
 
         return convertToDTO(settings);
     }
@@ -354,8 +364,17 @@ public class FactorySettingsServiceImpl implements FactorySettingsService {
      * 获取工厂设置实体
      */
     private FactorySettings getSettingsEntity(String factoryId) {
+        // R21-F3 fix: lazy-init row instead of 404 so downstream sub-setting GETs
+        // (/ai, /notifications, /work-time, /production, /inventory, /data-retention, /features, /display)
+        // and PUT handlers both work for factories that have never been configured before.
         return settingsRepository.findByFactoryId(factoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("工厂设置不存在: " + factoryId));
+                .orElseGet(() -> {
+                    log.info("工厂设置不存在，自动创建默认配置: factoryId={}", factoryId);
+                    FactorySettings seed = FactorySettings.builder()
+                            .factoryId(factoryId)
+                            .build();
+                    return settingsRepository.save(seed);
+                });
     }
 
     /**

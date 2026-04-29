@@ -104,6 +104,22 @@ const PERMISSION_MATRIX: Record<string, ModulePermissions> = {
     finance: '-', system: '-', analytics: '-', scheduling: 'r', restaurant: '-'
   },
 
+  // Level 25 - 大组长 (管理多个小组, 批次+报工查看)
+  // R4 fix: was missing from matrix → all routes were 403 (spec §3, backend FactoryUserRole enum 25)
+  team_leader: {
+    dashboard: 'r', production: 'r', warehouse: '-', quality: '-',
+    procurement: '-', sales: '-', hr: 'r', equipment: 'r',
+    finance: '-', system: '-', analytics: '-', scheduling: 'r', restaurant: '-'
+  },
+
+  // Level 28 - 小组长 (单组 + 批次内操作)
+  // R4 fix: was missing from matrix → all routes were 403 (spec §3, backend FactoryUserRole enum 28)
+  group_leader: {
+    dashboard: 'r', production: 'w', warehouse: '-', quality: '-',
+    procurement: '-', sales: '-', hr: '-', equipment: 'r',
+    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-'
+  },
+
   // Level 30 - 一线员工
   quality_inspector: {
     dashboard: 'r', production: 'r', warehouse: '-', quality: 'w',

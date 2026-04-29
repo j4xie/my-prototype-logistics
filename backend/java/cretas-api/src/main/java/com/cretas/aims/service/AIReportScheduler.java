@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -53,6 +54,7 @@ public class AIReportScheduler {
      * - 星期: MON（周一）
      */
     @Scheduled(cron = "0 0 6 * * MON")
+    @SchedulerLock(name = "AIReportScheduler.generateWeeklyReportsForAllFactories", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void generateWeeklyReportsForAllFactories() {
         log.info("========== 开始生成周报告 ==========");
         long startTime = System.currentTimeMillis();
@@ -115,6 +117,7 @@ public class AIReportScheduler {
      * 分析当天的生产、质量、成本、设备、库存数据
      */
     @Scheduled(cron = "0 0 20 * * *")
+    @SchedulerLock(name = "AIReportScheduler.generateDailyReportsForAllFactories", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void generateDailyReportsForAllFactories() {
         log.info("========== 开始生成日报分析 ==========");
         long startTime = System.currentTimeMillis();
@@ -169,6 +172,7 @@ public class AIReportScheduler {
      * - 星期: *（任意）
      */
     @Scheduled(cron = "0 0 6 1 * *")
+    @SchedulerLock(name = "AIReportScheduler.generateMonthlyReportsForAllFactories", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void generateMonthlyReportsForAllFactories() {
         log.info("========== 开始生成月报告 ==========");
         long startTime = System.currentTimeMillis();
@@ -229,6 +233,7 @@ public class AIReportScheduler {
      * - 星期: *（任意）
      */
     @Scheduled(cron = "0 0 2 * * *")
+    @SchedulerLock(name = "AIReportScheduler.cleanExpiredReports", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void cleanExpiredReports() {
         log.info("========== 开始清理过期报告 ==========");
         long startTime = System.currentTimeMillis();
@@ -258,6 +263,7 @@ public class AIReportScheduler {
      * - 星期: SUN（周日）
      */
     @Scheduled(cron = "0 0 3 * * SUN")
+    @SchedulerLock(name = "AIReportScheduler.cleanOldQuotaRecords", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void cleanOldQuotaRecords() {
         log.info("========== 开始清理旧配额记录 ==========");
         long startTime = System.currentTimeMillis();
@@ -288,6 +294,7 @@ public class AIReportScheduler {
      * - 星期: *（任意）
      */
     @Scheduled(cron = "0 0 4 1 * *")
+    @SchedulerLock(name = "AIReportScheduler.cleanOldAuditLogs", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void cleanOldAuditLogs() {
         log.info("========== 开始清理旧审计日志 ==========");
         long startTime = System.currentTimeMillis();

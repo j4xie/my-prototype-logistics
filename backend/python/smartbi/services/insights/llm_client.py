@@ -23,7 +23,11 @@ logger = logging.getLogger(__name__)
 
 LLM_TIMEOUT_BASE = 60.0       # Base timeout in seconds
 LLM_TIMEOUT_INCREMENT = 15.0  # Added per retry attempt
-LLM_TIMEOUT_MAX = 120.0       # Hard cap
+LLM_TIMEOUT_MAX = 120.0       # Hard cap (non-streaming)
+LLM_TIMEOUT_STREAM = 180.0    # Streaming timeout (per-chunk read timeout in httpx).
+                              # SSE streams can take longer than non-streaming because
+                              # LLMs emit chunks gradually. Bug #14: 120s was too short
+                              # for longer analyses -> raise to 180s.
 LLM_MAX_RETRIES = 2
 
 
@@ -201,7 +205,7 @@ async def call_llm_stream(
             f"{settings.llm_base_url}/chat/completions",
             headers=headers,
             json=payload,
-            timeout=httpx.Timeout(LLM_TIMEOUT_MAX),
+            timeout=httpx.Timeout(LLM_TIMEOUT_STREAM),
         ) as response:
             response.raise_for_status()
             async for line in response.aiter_lines():
@@ -269,7 +273,7 @@ async def call_llm_stream_text(
             f"{settings.llm_base_url}/chat/completions",
             headers=headers,
             json=payload,
-            timeout=httpx.Timeout(LLM_TIMEOUT_MAX),
+            timeout=httpx.Timeout(LLM_TIMEOUT_STREAM),
         ) as response:
             response.raise_for_status()
             async for line in response.aiter_lines():

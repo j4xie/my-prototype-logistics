@@ -5,7 +5,8 @@
  */
 import { ref, onMounted, computed } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
-import { get, put, post } from '@/api/request'
+import { get, post } from '@/api/request'
+import request from '@/api/request'
 import { useAuthStore } from '@/store/modules/auth'
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
@@ -186,7 +187,16 @@ async function triggerDetection() {
 async function acknowledgeAlert(alert: AlertRecord) {
   try {
     const userId = authStore.user?.id || authStore.user?.userId
-    const res = await put<unknown>(`/${factoryId.value}/alerts/${alert.id}/acknowledge`, { userId })
+    if (!userId) {
+      ElMessage.error('无法获取当前用户信息')
+      return
+    }
+    // 后端 userId 是 @RequestParam，必须走 query string
+    const res = await request.put(
+      `/${factoryId.value}/alerts/${alert.id}/acknowledge`,
+      null,
+      { params: { userId } }
+    ) as unknown as { success: boolean; message?: string }
     if (res?.success) {
       ElMessage.success('已确认')
       await loadData()
@@ -209,10 +219,17 @@ async function resolveAlert() {
   resolving.value = true
   try {
     const userId = authStore.user?.id || authStore.user?.userId
-    const res = await put<unknown>(`/${factoryId.value}/alerts/${selectedAlert.value.id}/resolve`, {
-      userId,
-      resolutionNotes: resolutionNotes.value
-    })
+    if (!userId) {
+      ElMessage.error('无法获取当前用户信息')
+      resolving.value = false
+      return
+    }
+    // 后端 userId 是 @RequestParam（走 query）, resolutionNotes 是 body
+    const res = await request.put(
+      `/${factoryId.value}/alerts/${selectedAlert.value.id}/resolve`,
+      { resolutionNotes: resolutionNotes.value },
+      { params: { userId } }
+    ) as unknown as { success: boolean; message?: string }
     if (res?.success) {
       ElMessage.success('已解决')
       resolveDialogVisible.value = false

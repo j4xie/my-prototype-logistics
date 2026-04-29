@@ -18,6 +18,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.core.ParameterizedTypeReference;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -62,6 +63,7 @@ public class ModelTrainingScheduler {
      * cron: 秒 分 时 日 月 周
      */
     @Scheduled(cron = "${ml.training.schedule:0 0 2 * * ?}")
+    @SchedulerLock(name = "ModelTrainingScheduler.scheduledTrainingCheck", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void scheduledTrainingCheck() {
         if (!trainingEnabled) {
             log.debug("模型训练已禁用，跳过定时检查");

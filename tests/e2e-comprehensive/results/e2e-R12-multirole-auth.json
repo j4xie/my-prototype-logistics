@@ -1,0 +1,215 @@
+{
+  "round": 12,
+  "timestamp": "2026-04-14T22:24:09.696Z",
+  "factoryId": "FOOD_3101_048",
+  "notes": "R12 multi-role auth-cache — TS→mjs port verification",
+  "rolesTested": [
+    {
+      "username": "e2e_factory_admin",
+      "role": "factory_super_admin"
+    },
+    {
+      "username": "e2e_sales_mgr",
+      "role": "sales_manager"
+    },
+    {
+      "username": "e2e_finance_mgr",
+      "role": "finance_manager"
+    },
+    {
+      "username": "e2e_viewer",
+      "role": "viewer"
+    }
+  ],
+  "results": [
+    {
+      "layer": "L1",
+      "testId": "setup-e2e_factory_admin",
+      "step": "login_or_cached",
+      "status": "PASS",
+      "depth": "medium",
+      "evidence": {
+        "cached": false,
+        "elapsed_ms": 31472,
+        "authFile": "tests\\e2e-comprehensive\\results\\auth-cache\\e2e_factory_admin-auth.json"
+      },
+      "ts": "2026-04-14T22:21:59.467Z"
+    },
+    {
+      "layer": "L1",
+      "testId": "setup-e2e_sales_mgr",
+      "step": "login_or_cached",
+      "status": "PASS",
+      "depth": "medium",
+      "evidence": {
+        "cached": false,
+        "elapsed_ms": 26396,
+        "authFile": "tests\\e2e-comprehensive\\results\\auth-cache\\e2e_sales_mgr-auth.json"
+      },
+      "ts": "2026-04-14T22:22:25.864Z"
+    },
+    {
+      "layer": "L1",
+      "testId": "setup-e2e_finance_mgr",
+      "step": "login_or_cached",
+      "status": "PASS",
+      "depth": "medium",
+      "evidence": {
+        "cached": false,
+        "elapsed_ms": 24019,
+        "authFile": "tests\\e2e-comprehensive\\results\\auth-cache\\e2e_finance_mgr-auth.json"
+      },
+      "ts": "2026-04-14T22:22:49.883Z"
+    },
+    {
+      "layer": "L1",
+      "testId": "setup-e2e_viewer",
+      "step": "login_or_cached",
+      "status": "PASS",
+      "depth": "medium",
+      "evidence": {
+        "cached": false,
+        "elapsed_ms": 24955,
+        "authFile": "tests\\e2e-comprehensive\\results\\auth-cache\\e2e_viewer-auth.json"
+      },
+      "ts": "2026-04-14T22:23:14.838Z"
+    },
+    {
+      "layer": "L1",
+      "testId": "restore-e2e_factory_admin",
+      "step": "verify_session",
+      "status": "PASS",
+      "depth": "medium",
+      "evidence": {
+        "restore_ms": 4351,
+        "atDashboard": true,
+        "menuReady": true,
+        "userRole": "(none)",
+        "userFactoryId": "(none)",
+        "expectedRole": "factory_super_admin",
+        "urlMatch": "/dashboard"
+      },
+      "ts": "2026-04-14T22:23:28.442Z"
+    },
+    {
+      "layer": "L1",
+      "testId": "restore-e2e_sales_mgr",
+      "step": "verify_session",
+      "status": "PASS",
+      "depth": "medium",
+      "evidence": {
+        "restore_ms": 4300,
+        "atDashboard": true,
+        "menuReady": true,
+        "userRole": "(none)",
+        "userFactoryId": "(none)",
+        "expectedRole": "sales_manager",
+        "urlMatch": "/dashboard"
+      },
+      "ts": "2026-04-14T22:23:43.924Z"
+    },
+    {
+      "layer": "L1",
+      "testId": "restore-e2e_finance_mgr",
+      "step": "verify_session",
+      "status": "PASS",
+      "depth": "medium",
+      "evidence": {
+        "restore_ms": 4107,
+        "atDashboard": true,
+        "menuReady": true,
+        "userRole": "(none)",
+        "userFactoryId": "(none)",
+        "expectedRole": "finance_manager",
+        "urlMatch": "/dashboard"
+      },
+      "ts": "2026-04-14T22:23:56.671Z"
+    },
+    {
+      "layer": "L1",
+      "testId": "restore-e2e_viewer",
+      "step": "verify_session",
+      "status": "PASS",
+      "depth": "medium",
+      "evidence": {
+        "restore_ms": 4303,
+        "atDashboard": true,
+        "menuReady": true,
+        "userRole": "(none)",
+        "userFactoryId": "(none)",
+        "expectedRole": "viewer",
+        "urlMatch": "/dashboard"
+      },
+      "ts": "2026-04-14T22:24:09.583Z"
+    },
+    {
+      "layer": "L1",
+      "testId": "idempotent-e2e_factory_admin",
+      "step": "second_call_cached",
+      "status": "PASS",
+      "depth": "medium",
+      "evidence": {
+        "cached": true,
+        "elapsed_ms": 1
+      },
+      "ts": "2026-04-14T22:24:09.590Z"
+    },
+    {
+      "layer": "L1",
+      "testId": "idempotent-e2e_sales_mgr",
+      "step": "second_call_cached",
+      "status": "PASS",
+      "depth": "medium",
+      "evidence": {
+        "cached": true,
+        "elapsed_ms": 0
+      },
+      "ts": "2026-04-14T22:24:09.590Z"
+    },
+    {
+      "layer": "L1",
+      "testId": "idempotent-e2e_finance_mgr",
+      "step": "second_call_cached",
+      "status": "PASS",
+      "depth": "medium",
+      "evidence": {
+        "cached": true,
+        "elapsed_ms": 1
+      },
+      "ts": "2026-04-14T22:24:09.591Z"
+    },
+    {
+      "layer": "L1",
+      "testId": "idempotent-e2e_viewer",
+      "step": "second_call_cached",
+      "status": "PASS",
+      "depth": "medium",
+      "evidence": {
+        "cached": true,
+        "elapsed_ms": 0
+      },
+      "ts": "2026-04-14T22:24:09.591Z"
+    },
+    {
+      "layer": "L1",
+      "testId": "rate_limit_defense",
+      "step": "login_count_verification",
+      "status": "PASS",
+      "depth": "medium",
+      "evidence": {
+        "totalRoles": 4,
+        "actualLoginsRound1": 4,
+        "wouldBeLoginsWithoutCache": 8,
+        "savedLogins": 4,
+        "rateLimitThreshold": "5 logins / 60s"
+      },
+      "ts": "2026-04-14T22:24:09.592Z"
+    }
+  ],
+  "summary": {
+    "pass": 13,
+    "fail": 0,
+    "warn": 0,
+    "total": 13
+  }
+}

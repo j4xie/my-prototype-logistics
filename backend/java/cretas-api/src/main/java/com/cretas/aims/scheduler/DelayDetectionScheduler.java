@@ -7,6 +7,7 @@ import com.cretas.aims.repository.LineScheduleRepository;
 import com.cretas.aims.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +39,7 @@ public class DelayDetectionScheduler {
      * 检测所有进行中的排程，如果超过计划结束时间则标记为延期
      */
     @Scheduled(fixedRate = 30 * 60 * 1000)  // 30分钟
+    @SchedulerLock(name = "DelayDetectionScheduler.detectDelayedSchedules", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     @Transactional
     public void detectDelayedSchedules() {
         log.info("开始执行延期检测定时任务...");
@@ -108,6 +110,7 @@ public class DelayDetectionScheduler {
      * 检测进行中的排程，如果进度严重落后则提前预警
      */
     @Scheduled(fixedRate = 60 * 60 * 1000)  // 1小时
+    @SchedulerLock(name = "DelayDetectionScheduler.detectEfficiencyWarnings", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     @Transactional
     public void detectEfficiencyWarnings() {
         log.info("开始执行效率预警检测...");

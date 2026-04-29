@@ -72,8 +72,16 @@ public class FactoryConfigServiceImpl implements FactoryConfigService {
     @Override
     @SuppressWarnings("unchecked")
     public EffectiveModuleConfig getEffectiveConfig(String factoryId, String moduleCode, String roleCode) {
-        ModuleSchema schema = moduleSchemaRepository.findByModuleCode(moduleCode)
-                .orElseThrow(() -> new ResourceNotFoundException("ModuleSchema", "moduleCode", moduleCode));
+        Optional<ModuleSchema> schemaOpt = moduleSchemaRepository.findByModuleCode(moduleCode);
+        if (schemaOpt.isEmpty()) {
+            // Module not canvas-configured — return LEGACY default
+            EffectiveModuleConfig legacy = new EffectiveModuleConfig();
+            legacy.setModuleCode(moduleCode);
+            legacy.setRenderingMode("LEGACY");
+            legacy.setEnabled(true);
+            return legacy;
+        }
+        ModuleSchema schema = schemaOpt.get();
 
         // Layer 1: Schema defaults
         Map<String, Object> effectiveFieldConfig = new HashMap<>(

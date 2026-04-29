@@ -39,7 +39,7 @@ import com.cretas.aims.util.ErrorSanitizer;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/admin/smartbi-config")
+@RequestMapping("/api/mobile/smartbi-config")
 @RequiredArgsConstructor
 @Tag(name = "SmartBI 配置管理", description = "SmartBI 动态配置管理 API（管理员专用）")
 public class SmartBIConfigController {

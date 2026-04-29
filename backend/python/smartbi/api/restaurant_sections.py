@@ -16,8 +16,9 @@ calls.
 import logging
 import tempfile
 from pathlib import Path as FsPath
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
+import pandas as pd
 from fastapi import APIRouter, HTTPException, Path
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -140,7 +141,7 @@ class SectionRequestBody(BaseModel):
     store_id: Optional[str] = Field(None, description="Store identifier")
     store_name: Optional[str] = Field(None, description="Store display name")
     period: str = Field("current", description="Period label")
-    params: dict[str, Any] = Field(default_factory=dict, description="Section-specific inputs")
+    params: Dict[str, Any] = Field(default_factory=dict, description="Section-specific inputs")
 
 
 @router.post("/{section_name}")
@@ -175,11 +176,64 @@ def compute_section(
     cache_key = handler.cache_key(req)
     cached = _cache.get(cache_key)
     if cached is not None:
-        # Return a copy with fromCache=True; do NOT mutate the stored dict.
         return {**cached, "fromCache": True}
 
+    # ── Auto-resolve upload data when called from Tool-Skill pipeline ──
+    # If no upload_id and no POS data in params, try loading from latest upload.
+    context: dict[str, Any] = {}
+    auto_resolve_meta: dict[str, Any] = {"triggered": False, "reason": "not_attempted"}
+    if not body.upload_id and not body.params.get("pos_df"):
+        auto_resolve_meta["triggered"] = True
+        try:
+            from smartbi.database import get_db
+            from smartbi.database.repository import UploadRepository, DynamicDataRepository
+
+            db = next(get_db())
+            try:
+                upload_repo = UploadRepository(db)
+                uploads = upload_repo.get_by_factory(body.factory_id, limit=1)
+                if uploads:
+                    latest = uploads[0]
+                    req = SectionRequest(
+                        factory_id=body.factory_id,
+                        upload_id=str(latest.id),
+                        sub_sector=body.sub_sector,
+                        store_id=body.store_id,
+                        store_name=body.store_name,
+                        period=body.period,
+                        params=body.params,
+                    )
+                    # Load rows as DataFrame
+                    data_repo = DynamicDataRepository(db)
+                    row_dicts = data_repo.get_by_upload_id(body.factory_id, latest.id)
+                    if row_dicts:
+                        df = pd.DataFrame(row_dicts)
+                        context["pos_df"] = df
+                        context["upload_id"] = latest.id
+                        context["file_name"] = latest.file_name
+                        auto_resolve_meta.update({
+                            "reason": "loaded",
+                            "uploadId": latest.id,
+                            "fileName": latest.file_name,
+                            "rows": len(df),
+                        })
+                        logger.info(
+                            "Auto-resolved upload %d (%s) for factory %s: %d rows",
+                            latest.id, latest.file_name, body.factory_id, len(df),
+                        )
+                    else:
+                        auto_resolve_meta["reason"] = "upload_found_but_no_rows"
+                        auto_resolve_meta["uploadId"] = latest.id
+                else:
+                    auto_resolve_meta["reason"] = "no_uploads_for_factory"
+            finally:
+                db.close()
+        except Exception as e:
+            auto_resolve_meta["reason"] = f"error: {e}"
+            logger.warning("Auto-resolve upload failed: %s", e)
+
     try:
-        response = handler.compute(req, context={})
+        response = handler.compute(req, context=context)
     except Exception as exc:
         # Section handlers should normally return SKIPPED instead of raising,
         # but if one slips through we surface it as 500 rather than crashing
@@ -196,6 +250,9 @@ def compute_section(
         "cacheKey": response.cache_key,
         "computedAtMs": response.computed_at_ms,
         "fromCache": False,
+        # Echo auto-resolve evidence so E2E tests can verify the code path ran
+        # (not just "endpoint returned 200 but skipped without loading data").
+        "autoResolve": auto_resolve_meta,
     }
     # Only cache OK responses — SKIPPED/FAILED may resolve on next request
     # (e.g. after the caller uploads more data).

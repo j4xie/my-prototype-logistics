@@ -142,6 +142,38 @@ class SmallMultiplesBuilder(AbstractFinancialChartBuilder):
             for m in range(len(month_range))
         ]
 
+        # Scale detection (global across all categories) — computed BEFORE KPIs.
+        # NOTE: Historically we used genexpr/listcomp like:
+        #   next(([round(v / divisor, 2) for v in c['values']] for c in cat_data ...), None)
+        # which caused NameError: "free variable 'divisor' referenced before assignment"
+        # because CPython's nested comprehensions create closures that capture `divisor`
+        # as a cell variable. The nested listcomp inside a genexpr makes this fragile.
+        # Fix: compute sparkline arrays explicitly (no closure), pass by value.
+        all_values = [v for c in cat_data for v in c['values']]
+        scale = _detect_value_scale(all_values)
+        divisor = scale['divisor']
+
+        # Pre-compute sparklines explicitly (avoid closure issues with `divisor`)
+        def _scale_values(vals: list, div: float) -> list:
+            """Scale values by divisor. Pure function, no closure."""
+            return [round(v / div, 2) for v in vals]
+
+        best_sparkline = None
+        if best_cat[0]:
+            for c in cat_data:
+                if c['name'] == best_cat[0]:
+                    best_sparkline = _scale_values(c['values'], divisor)
+                    break
+
+        worst_sparkline = None
+        if worst_cat[0]:
+            for c in cat_data:
+                if c['name'] == worst_cat[0]:
+                    worst_sparkline = _scale_values(c['values'], divisor)
+                    break
+
+        avg_sparkline = _scale_values(monthly_totals, divisor)
+
         # --- KPIs ---
         kpis = [
             {
@@ -155,27 +187,21 @@ class SmallMultiplesBuilder(AbstractFinancialChartBuilder):
                 "value": f"{best_cat[0]} ({best_cat[1]:+.1f}%)" if best_cat[0] else "-",
                 "unit": "",
                 "trend": "up",
-                "sparkline": next(
-                    ([round(v / divisor, 2) for v in c['values']] for c in cat_data if c['name'] == best_cat[0]),
-                    None,
-                ) if best_cat[0] else None,
+                "sparkline": best_sparkline,
             },
             {
                 "label": "下降最快品类",
                 "value": f"{worst_cat[0]} ({worst_cat[1]:+.1f}%)" if worst_cat[0] else "-",
                 "unit": "",
                 "trend": "down",
-                "sparkline": next(
-                    ([round(v / divisor, 2) for v in c['values']] for c in cat_data if c['name'] == worst_cat[0]),
-                    None,
-                ) if worst_cat[0] else None,
+                "sparkline": worst_sparkline,
             },
             {
                 "label": "平均增长率",
                 "value": f"{avg_growth:+.1f}",
                 "unit": "%",
                 "trend": self._trend_from_value(avg_growth),
-                "sparkline": [round(v / divisor, 2) for v in monthly_totals],
+                "sparkline": avg_sparkline,
             },
         ]
 
@@ -186,10 +212,8 @@ class SmallMultiplesBuilder(AbstractFinancialChartBuilder):
         padding_x = 0.04  # horizontal padding between grids
         padding_y = 0.08  # vertical padding (room for sub-title)
 
-        # Scale detection (global across all categories)
-        all_values = [v for c in cat_data for v in c['values']]
-        scale = _detect_value_scale(all_values)
-        divisor = scale['divisor']
+        # (scale + divisor computed earlier — moved up because KPI sparklines
+        # capture `divisor` in genexpr closures)
 
         # --- Build ECharts option with multiple grids ---
         option = {

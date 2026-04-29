@@ -379,7 +379,16 @@ const DEMO_RAW_DATA: Record<string, unknown>[] = [
 ];
 
 // ---- Methods ----
+// Bug #2: track in-flight generate so double-clicks and unmount can cancel/dedupe.
+// `isComponentUnmounted` flag prevents state updates after the view is torn down.
+let isComponentUnmounted = false;
+
 async function generate(useDemo?: boolean) {
+  // Bug #2: dedupe — ignore if a generate is already in flight (prevents double-click canceled errors)
+  if (isGenerating.value) {
+    ElMessage.info('正在生成中，请稍候...');
+    return;
+  }
   // If not explicitly passed, use tracked demo mode
   if (useDemo === undefined) useDemo = isInDemoMode.value;
   if (useDemo) isInDemoMode.value = true;
@@ -417,6 +426,8 @@ async function generate(useDemo?: boolean) {
 
   try {
     const resp = await batchGenerate(payload);
+    // Bug #2: bail if the component unmounted while the request was in flight
+    if (isComponentUnmounted) return;
     if (resp.success) {
       dashboardResponse.value = resp;
       // Fix 72: Extract available filter dimensions from response
@@ -456,6 +467,7 @@ async function generate(useDemo?: boolean) {
 /**
  * Auto-analyze all charts after dashboard generation.
  * Requests run with concurrency limit of 3 to avoid API overload.
+ * Bug #2: stop iterating if the component unmounts — prevents request cancel noise.
  */
 async function autoAnalyzeAllCharts() {
   const allChartTypes = charts.value.map(c => c.chartType);
@@ -465,7 +477,7 @@ async function autoAnalyzeAllCharts() {
   let idx = 0;
 
   async function next(): Promise<void> {
-    while (idx < allChartTypes.length) {
+    while (idx < allChartTypes.length && !isComponentUnmounted) {
       const ct = allChartTypes[idx++];
       if (analysisByType.value[ct]) continue; // already loaded
       await requestAnalysis(ct);
@@ -483,6 +495,10 @@ function forceRequestAnalysis(chartType: string) {
 }
 
 async function requestAnalysis(chartType: string) {
+  // Guard: skip if component has been unmounted (user navigated away)
+  // Prevents TypeError: Failed to fetch when pending requests are cancelled.
+  if (isComponentUnmounted) return;
+
   const chart = getChart(chartType);
   if (!chart) return;
 
@@ -499,16 +515,28 @@ async function requestAnalysis(chartType: string) {
       chart_type: chartType,
       analysis_context: chart.analysisContext || '',
     });
+    // After await, re-check unmounted — state updates would be wasted + throw
+    if (isComponentUnmounted) return;
     if (resp.success) {
       analysisByType.value[chartType] = resp.analysis || '暂无分析结果';
     } else {
       analysisByType.value[chartType] = resp.error || 'AI分析暂时不可用';
     }
   } catch (err) {
+    // Swallow abort-style errors silently when unmounted (expected on navigation).
+    if (isComponentUnmounted) return;
+    const name = err instanceof Error ? err.name : '';
+    // "Failed to fetch" happens when browser aborts a pending fetch on navigation.
+    if (name === 'AbortError' || (err instanceof TypeError && String(err).includes('fetch'))) {
+      // Silent — expected race on page leave
+      return;
+    }
     console.error('analyzeChart failed:', err);
     analysisByType.value[chartType] = '分析请求失败，请重试';
   } finally {
-    analysisLoadingByType.value[chartType] = false;
+    if (!isComponentUnmounted) {
+      analysisLoadingByType.value[chartType] = false;
+    }
   }
 }
 
@@ -897,6 +925,7 @@ function toggleGroup(groupName: string) {
 }
 
 async function generateConclusions() {
+  if (isComponentUnmounted) return;
   conclusionsLoading.value = true;
   try {
     const allAnalysis = Object.entries(analysisByType.value)
@@ -916,16 +945,20 @@ async function generateConclusions() {
       chart_type: 'overall_summary',
       analysis_context: allAnalysis,
     });
+    if (isComponentUnmounted) return;
     if (resp.success) {
       conclusionsText.value = resp.analysis || '暂无分析结论';
     } else {
       conclusionsText.value = resp.error || '分析暂不可用';
     }
   } catch (err) {
+    if (isComponentUnmounted) return;
+    const name = err instanceof Error ? err.name : '';
+    if (name === 'AbortError' || (err instanceof TypeError && String(err).includes('fetch'))) return;
     console.error('generateConclusions failed:', err);
     conclusionsText.value = '生成结论失败，请重试';
   } finally {
-    conclusionsLoading.value = false;
+    if (!isComponentUnmounted) conclusionsLoading.value = false;
   }
 }
 
@@ -943,6 +976,7 @@ async function submitFollowUp(chartType: string) {
     fullAnalysis += `\n\n用户追问: ${item.question}\n回复: ${item.answer}`;
   }
 
+  if (isComponentUnmounted) return;
   followUpLoading.value = true;
   followUpInput.value = '';
 
@@ -953,6 +987,7 @@ async function submitFollowUp(chartType: string) {
       follow_up_question: question,
       previous_analysis: fullAnalysis,
     });
+    if (isComponentUnmounted) return;
 
     if (!followUpsByType.value[chartType]) followUpsByType.value[chartType] = [];
     followUpsByType.value[chartType].push({
@@ -960,11 +995,14 @@ async function submitFollowUp(chartType: string) {
       answer: resp.success ? (resp.analysis || '暂无回复') : (resp.error || '请求失败'),
     });
   } catch (err) {
+    if (isComponentUnmounted) return;
+    const name = err instanceof Error ? err.name : '';
+    if (name === 'AbortError' || (err instanceof TypeError && String(err).includes('fetch'))) return;
     console.error('followUp failed:', err);
     if (!followUpsByType.value[chartType]) followUpsByType.value[chartType] = [];
     followUpsByType.value[chartType].push({ question, answer: '请求失败，请重试' });
   } finally {
-    followUpLoading.value = false;
+    if (!isComponentUnmounted) followUpLoading.value = false;
   }
 }
 
@@ -1337,6 +1375,9 @@ watch(() => charts.value.length, () => {
 
 // Cleanup on unmount
 onBeforeUnmount(() => {
+  // Bug #2: mark unmount so in-flight generate() stops touching reactive state,
+  // avoiding "canceled" console noise when the user navigates away mid-request.
+  isComponentUnmounted = true;
   if (autoRefreshTimer) clearInterval(autoRefreshTimer);
   if (resizeRafId) cancelAnimationFrame(resizeRafId);
   kpiRafIds.forEach((id) => cancelAnimationFrame(id));

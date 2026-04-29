@@ -19,8 +19,13 @@ const __dirname = dirname(__filename);
 // ---------------------------------------------------------------------------
 export const API_BASE =
   process.env.E2E_API_BASE || 'http://localhost:10011/api/mobile';
+// R2-⑥ fix (2026-04-14): default WEB_URL to local vite dev so tests target a build
+// with the latest commits (e.g. 46d1925a3 canvas-editor meta.roles narrowing).
+// Prod web-admin at 139.196.165.140:8086 lags behind the test backend on 10011
+// and would produce environment-drift FAILs (see canvas-e2e-r2-results-audit.md).
+// Override via E2E_WEB_URL env var when running against a prod/staging build.
 export const WEB_URL =
-  process.env.E2E_WEB_URL || 'http://139.196.165.140:8086';
+  process.env.E2E_WEB_URL || 'http://localhost:5173';
 // Test DB accounts: F001 has full role matrix (8 roles), F002 is restaurant
 // F002 has 27 sales orders + 4 customers (data-rich). F006 is empty (good attacker).
 export const FACTORY_A = process.env.E2E_FACTORY_A || 'F002';
@@ -72,7 +77,15 @@ export function createResultCollector(journeyName) {
       tests,
     };
 
-    const outPath = join(RESULTS_DIR, `${journeyName}-results.json`);
+    // R3 P1a: support CANVAS_E2E_RUN_ID env var for run isolation. When set (e.g.
+    // "R3-run1"), write to `${journey}-results-${RUN_ID}.json` so two independent
+    // runs coexist in `results/` without manual cp/mv. When unset, keep legacy
+    // `${journey}-results.json` filename for backwards compatibility.
+    const runId = process.env.CANVAS_E2E_RUN_ID;
+    const fileName = runId
+      ? `${journeyName}-results-${runId}.json`
+      : `${journeyName}-results.json`;
+    const outPath = join(RESULTS_DIR, fileName);
     writeFileSync(outPath, JSON.stringify(summary, null, 2), 'utf8');
 
     console.log('\n--- Summary ---');
@@ -231,6 +244,24 @@ export async function createBrowser() {
  */
 export async function webLogin(page, username, password = DEFAULT_PASSWORD) {
   await page.goto(`${WEB_URL}/login`);
+
+  // R3 P1b: WEB_URL drift self-check — if page.url()'s origin does not match the
+  // resolved WEB_URL origin (e.g. WEB_URL points to 5173 but the environment
+  // silently redirected to a different host), FAIL fast. This prevents
+  // the whole test suite from silently running against the wrong frontend
+  // build (R2 incident: suite ran against prod web-admin 139:8086 instead of
+  // local vite 5173, producing 3 "false FAIL"s from a route guard difference).
+  //
+  // Let URL parse errors surface naturally — malformed WEB_URL should crash the
+  // run immediately, not be swallowed. Only the drift assertion is domain logic.
+  const expectedOrigin = new URL(WEB_URL).origin;
+  const actualOrigin = new URL(page.url()).origin;
+  if (expectedOrigin !== actualOrigin) {
+    throw new Error(
+      `WEB_URL drift: expected ${expectedOrigin}, got ${actualOrigin}. ` +
+      `Check E2E_WEB_URL env var and network config before re-running.`
+    );
+  }
 
   const inputs = page.locator('input');
   await inputs.nth(0).fill(username);

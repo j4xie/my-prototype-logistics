@@ -4,8 +4,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
@@ -34,6 +36,51 @@ public class DynamicTableService {
             throw new IllegalArgumentException("非法列名: " + key);
         }
         return colName;
+    }
+
+    // R4 Fix P0-7 (discovered by R4-④ Phase F test): sub-table parent_id casting
+    // was hardcoded `?::uuid` / `CAST(? AS uuid)`. This is only correct when the
+    // parent table's `id` is UUID. Canvas V3 has mixed id types:
+    // - sales_orders.id: VARCHAR (e.g. "SO-F001-202501-001")
+    // - bom_items.id: BIGINT
+    // - most others: UUID
+    // For VARCHAR-id parents (like sales_orders), the hardcoded cast rejected
+    // every sub-table CRUD call with "ERROR: invalid input syntax for type uuid".
+    // Fix: detect the sub-table's declared parent_id column type at runtime and
+    // build the appropriate cast. Cached per-subTableName.
+    private final Map<String, String> parentIdTypeCache = new ConcurrentHashMap<>();
+
+    private String getParentIdColumnType(String subTableName) {
+        return parentIdTypeCache.computeIfAbsent(subTableName, t -> {
+            try {
+                String type = jdbcTemplate.queryForObject(
+                    "SELECT data_type FROM information_schema.columns " +
+                    "WHERE table_name = ? AND column_name = 'parent_id'",
+                    String.class, t);
+                return type != null ? type.toLowerCase() : "uuid";
+            } catch (Exception e) {
+                log.warn("Cannot determine parent_id column type for {}, defaulting to uuid: {}",
+                    t, e.getMessage());
+                return "uuid";
+            }
+        });
+    }
+
+    /**
+     * Build the cast placeholder appropriate for parent_id comparison / insertion.
+     * - UUID column: returns "?::uuid" for WHERE clauses, "CAST(? AS uuid)" for INSERT VALUES
+     * - VARCHAR/TEXT column: returns "?" (no cast needed, PG auto-binds String)
+     * - BIGINT/INTEGER column: returns "?" (JDBC auto-binds)
+     *
+     * For INSERT placeholders where the value is bound as String, use forInsert=true.
+     */
+    private String parentIdPlaceholder(String subTableName, boolean forInsert) {
+        String type = getParentIdColumnType(subTableName);
+        if (type.contains("uuid")) {
+            return forInsert ? "CAST(? AS uuid)" : "?::uuid";
+        }
+        // varchar/text/bigint/integer: no cast needed, JDBC parameter binding handles it
+        return "?";
     }
 
     /**
@@ -92,8 +139,9 @@ public class DynamicTableService {
      */
     public List<Map<String, Object>> getRows(String subTableName, String parentId, Map<String, Object> filters) {
         validateTableName(subTableName);
+        // R4 Fix P0-7: type-aware parent_id cast (see parentIdPlaceholder Javadoc)
         StringBuilder sql = new StringBuilder("SELECT * FROM ").append(subTableName)
-                .append(" WHERE parent_id = ?::uuid");
+                .append(" WHERE parent_id = ").append(parentIdPlaceholder(subTableName, false));
         List<Object> params = new ArrayList<>();
         params.add(parentId);
 
@@ -130,11 +178,22 @@ public class DynamicTableService {
         return jdbcTemplate.queryForList(sql.toString(), params.toArray());
     }
 
+    // R4 Fix (depth-first-e2e Rule 8 same-cause sweep): the next 3 methods all use raw
+    // JdbcTemplate writes for sub-table CRUD. Combined with HikariCP `auto-commit=false`
+    // (application-pg-prod.properties), they need an explicit @Transactional boundary,
+    // otherwise the connection-level implicit transaction is never committed and the
+    // change rolls back when the connection returns to the pool. Same root cause as R3
+    // discovered in DynamicFieldController.setCustomFields. R4 fixes the 3 sibling
+    // endpoints (addSubTableRow / updateSubTableRow / deleteSubTableRow) at the service
+    // layer for a cleaner architecture than R3's controller-level fix.
+    // See `tests/canvas-security-e2e/EVIDENCE.md` §12.
+    @Transactional
     public Map<String, Object> addRow(String subTableName, String parentId, Map<String, Object> row) {
         validateTableName(subTableName);
         List<String> columns = new ArrayList<>(List.of("parent_id"));
         List<Object> values = new ArrayList<>(List.of(parentId));
-        List<String> placeholders = new ArrayList<>(List.of("CAST(? AS uuid)"));
+        // R4 Fix P0-7: type-aware parent_id cast (see parentIdPlaceholder Javadoc)
+        List<String> placeholders = new ArrayList<>(List.of(parentIdPlaceholder(subTableName, true)));
 
         for (Map.Entry<String, Object> entry : row.entrySet()) {
             columns.add(safeColumnName(entry.getKey()));
@@ -146,6 +205,7 @@ public class DynamicTableService {
         return jdbcTemplate.queryForMap(sql, values.toArray());
     }
 
+    @Transactional
     public void updateRow(String subTableName, String parentId, String rowId, Map<String, Object> row) {
         validateTableName(subTableName);
         List<String> setClauses = new ArrayList<>();
@@ -159,14 +219,18 @@ public class DynamicTableService {
         params.add(rowId);
         params.add(parentId);
 
+        // R4 Fix P0-7: parent_id cast is type-aware; sub-table id column is ALWAYS UUID (auto-gen DEFAULT gen_random_uuid()), so "?::uuid" for id stays correct.
         String sql = "UPDATE " + subTableName + " SET " + String.join(", ", setClauses)
-            + " WHERE id = ?::uuid AND parent_id = ?::uuid";
+            + " WHERE id = ?::uuid AND parent_id = " + parentIdPlaceholder(subTableName, false);
         jdbcTemplate.update(sql, params.toArray());
     }
 
+    @Transactional
     public void deleteRow(String subTableName, String parentId, String rowId) {
         validateTableName(subTableName);
-        jdbcTemplate.update("DELETE FROM " + subTableName + " WHERE id = ?::uuid AND parent_id = ?::uuid",
+        // R4 Fix P0-7: same id (UUID) / parent_id (type-aware) split as updateRow
+        jdbcTemplate.update(
+            "DELETE FROM " + subTableName + " WHERE id = ?::uuid AND parent_id = " + parentIdPlaceholder(subTableName, false),
             rowId, parentId);
     }
 }

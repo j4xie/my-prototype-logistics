@@ -1,9 +1,13 @@
 package com.cretas.aims.utils;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -90,14 +94,40 @@ public class JwtUtil {
      * 验证Token
      */
     public boolean validateToken(String token) {
+        // Short-circuit null/empty before jjwt throws IllegalArgumentException.
+        // Hitting an unauthenticated endpoint with no Authorization header is
+        // routine — logging this as ERROR ("JWT String argument cannot be null
+        // or empty") was just noise.
+        if (token == null || token.isEmpty()) {
+            log.debug("Token 为空 (预期, 客户端未携带 Authorization)");
+            return false;
+        }
         try {
             Jwts.parserBuilder()
                     .setSigningKey(getSigningKey())
                     .build()
                     .parseClaimsJws(token);
             return true;
+        } catch (ExpiredJwtException e) {
+            // Expected — access tokens expire after 24h, refresh after 7d.
+            // Client should refresh or re-login. Not a server bug.
+            log.debug("Token 已过期 (预期): {}", e.getMessage());
+            return false;
+        } catch (MalformedJwtException | UnsupportedJwtException | SignatureException e) {
+            // Client sent a token that's not JWT / wrong format / forged signature.
+            // Still "client problem", not server — WARN so it's searchable if
+            // someone suspects abuse, but not ERROR-level pager noise.
+            log.warn("Token 格式/签名无效: {}", e.getMessage());
+            return false;
+        } catch (IllegalArgumentException e) {
+            // jjwt throws this for null/empty token after we've already
+            // short-circuited, OR for oddly-formed strings that aren't caught
+            // by MalformedJwtException. Still a client-side problem.
+            log.debug("Token 参数非法: {}", e.getMessage());
+            return false;
         } catch (Exception e) {
-            log.error("Token验证失败: {}", e.getMessage());
+            // Anything else is unexpected — keep ERROR so real bugs surface.
+            log.error("Token验证失败 (未预期异常): {}", e.getMessage());
             return false;
         }
     }
@@ -106,14 +136,27 @@ public class JwtUtil {
      * 从Token中获取Claims
      */
     private Claims getClaimsFromToken(String token) {
+        if (token == null || token.isEmpty()) {
+            log.debug("Token 为空, 无 Claims 可解析");
+            return null;
+        }
         try {
             return Jwts.parserBuilder()
                     .setSigningKey(getSigningKey())
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
+        } catch (ExpiredJwtException e) {
+            log.debug("Token 已过期, 无法解析 Claims (预期): {}", e.getMessage());
+            return null;
+        } catch (MalformedJwtException | UnsupportedJwtException | SignatureException e) {
+            log.warn("Token 格式/签名无效, 无法解析 Claims: {}", e.getMessage());
+            return null;
+        } catch (IllegalArgumentException e) {
+            log.debug("Token 参数非法, 无法解析 Claims: {}", e.getMessage());
+            return null;
         } catch (Exception e) {
-            log.error("解析Token失败: {}", e.getMessage());
+            log.error("解析Token失败 (未预期异常): {}", e.getMessage());
             return null;
         }
     }

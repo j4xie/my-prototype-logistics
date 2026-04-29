@@ -48,7 +48,7 @@ async function checkWorkflowTab(token) {
       rc.log(
         'J2-1',
         'FAIL',
-        `effective config returned HTTP ${result.status}: ${result.message || '(no message)'}`
+        `[depth=smoke] effective config returned HTTP ${result.status}: ${result.message || '(no message)'}`
       );
       return null;
     }
@@ -72,7 +72,7 @@ async function checkWorkflowTab(token) {
       rc.log(
         'J2-1',
         'WARN',
-        `effective config HTTP 200 but workflowStates not found — top-level keys: [${keys}]`
+        `[depth=smoke] effective config HTTP 200 but workflowStates not found — top-level keys: [${keys}]`
       );
       return config;
     }
@@ -81,19 +81,19 @@ async function checkWorkflowTab(token) {
       rc.log(
         'J2-1',
         'PASS',
-        `workflowStates array has ${workflowStates.length} state(s)`
+        `[depth=smoke] workflowStates array has ${workflowStates.length} state(s)`
       );
     } else {
       rc.log(
         'J2-1',
         'WARN',
-        'workflowStates array is present but empty — module may have no workflow configured'
+        '[depth=smoke] workflowStates array is present but empty — module may have no workflow configured'
       );
     }
 
     return config;
   } catch (err) {
-    rc.log('J2-1', 'FAIL', `effective config request error: ${err.message}`);
+    rc.log('J2-1', 'FAIL', `[depth=smoke] effective config request error: ${err.message}`);
     return null;
   }
 }
@@ -112,7 +112,7 @@ async function checkTriggerChainsTab(token) {
       rc.log(
         'J2-2',
         'FAIL',
-        `trigger-chains returned HTTP ${result.status}: ${result.message || '(no message)'}`
+        `[depth=smoke] trigger-chains returned HTTP ${result.status}: ${result.message || '(no message)'}`
       );
       return false;
     }
@@ -125,14 +125,14 @@ async function checkTriggerChainsTab(token) {
         rc.log(
           'J2-2',
           'PASS',
-          `trigger-chains HTTP 200 — paginated array with ${result.data.content.length} item(s)`
+          `[depth=smoke] trigger-chains HTTP 200 — paginated array with ${result.data.content.length} item(s)`
         );
         return true;
       }
       rc.log(
         'J2-2',
         'WARN',
-        `trigger-chains HTTP 200 but data is not an array — shape: ${result.data ? typeof result.data : 'null'}`
+        `[depth=smoke] trigger-chains HTTP 200 but data is not an array — shape: ${result.data ? typeof result.data : 'null'}`
       );
       return true; // endpoint is live; shape variance is non-critical
     }
@@ -140,11 +140,11 @@ async function checkTriggerChainsTab(token) {
     rc.log(
       'J2-2',
       'PASS',
-      `trigger-chains HTTP 200 — array with ${result.data.length} chain(s)`
+      `[depth=smoke] trigger-chains HTTP 200 — array with ${result.data.length} chain(s)`
     );
     return true;
   } catch (err) {
-    rc.log('J2-2', 'FAIL', `trigger-chains request error: ${err.message}`);
+    rc.log('J2-2', 'FAIL', `[depth=smoke] trigger-chains request error: ${err.message}`);
     return false;
   }
 }
@@ -163,7 +163,7 @@ async function checkValidationRulesTab(token) {
       rc.log(
         'J2-3',
         'FAIL',
-        `validation-rules returned HTTP ${result.status}: ${result.message || '(no message)'}`
+        `[depth=smoke] validation-rules returned HTTP ${result.status}: ${result.message || '(no message)'}`
       );
       return false;
     }
@@ -176,19 +176,19 @@ async function checkValidationRulesTab(token) {
       rc.log(
         'J2-3',
         'PASS',
-        `validation-rules HTTP 200 — ${count} rule(s) for sales_order`
+        `[depth=smoke] validation-rules HTTP 200 — ${count} rule(s) for sales_order`
       );
     } else {
       rc.log(
         'J2-3',
         'WARN',
-        `validation-rules HTTP 200 but data shape unknown — type: ${typeof result.data}`
+        `[depth=smoke] validation-rules HTTP 200 but data shape unknown — type: ${typeof result.data}`
       );
     }
 
     return true;
   } catch (err) {
-    rc.log('J2-3', 'FAIL', `validation-rules request error: ${err.message}`);
+    rc.log('J2-3', 'FAIL', `[depth=smoke] validation-rules request error: ${err.message}`);
     return false;
   }
 }
@@ -198,7 +198,7 @@ async function checkValidationRulesTab(token) {
 // ---------------------------------------------------------------------------
 async function checkFieldConfigTab(effectiveConfig) {
   if (effectiveConfig === null) {
-    rc.log('J2-4', 'FAIL', 'Skipped — effective config unavailable (J2-1 failed)');
+    rc.log('J2-4', 'FAIL', '[depth=smoke] Skipped — effective config unavailable (J2-1 failed)');
     return false;
   }
 
@@ -220,7 +220,7 @@ async function checkFieldConfigTab(effectiveConfig) {
       rc.log(
         'J2-4',
         'WARN',
-        `effective config has no recognisable fields array — top-level keys: [${keys}]`
+        `[depth=smoke] effective config has no recognisable fields array — top-level keys: [${keys}]`
       );
       return true; // non-fatal; endpoint was reachable
     }
@@ -229,7 +229,7 @@ async function checkFieldConfigTab(effectiveConfig) {
       rc.log(
         'J2-4',
         'PASS',
-        `field config has ${fields.length} field(s)`
+        `[depth=smoke] field config has ${fields.length} field(s)`
       );
       return true;
     }
@@ -237,11 +237,11 @@ async function checkFieldConfigTab(effectiveConfig) {
     rc.log(
       'J2-4',
       'WARN',
-      'fields array is present but empty — module may have no dynamic fields'
+      '[depth=smoke] fields array is present but empty — module may have no dynamic fields'
     );
     return true;
   } catch (err) {
-    rc.log('J2-4', 'FAIL', `field config check error: ${err.message}`);
+    rc.log('J2-4', 'FAIL', `[depth=smoke] field config check error: ${err.message}`);
     return false;
   }
 }
@@ -251,7 +251,7 @@ async function checkFieldConfigTab(effectiveConfig) {
 // ---------------------------------------------------------------------------
 async function checkPermissionMatrixTab(effectiveConfig) {
   if (effectiveConfig === null) {
-    rc.log('J2-5', 'FAIL', 'Skipped — effective config unavailable (J2-1 failed)');
+    rc.log('J2-5', 'FAIL', '[depth=smoke] Skipped — effective config unavailable (J2-1 failed)');
     return false;
   }
 
@@ -269,7 +269,7 @@ async function checkPermissionMatrixTab(effectiveConfig) {
       rc.log(
         'J2-5',
         'PASS',
-        `permission matrix active — ${fields.filter(f => f.visible === false).length} hidden, ${fields.filter(f => f.readonly === true).length} readonly fields`
+        `[depth=smoke] permission matrix active — ${fields.filter(f => f.visible === false).length} hidden, ${fields.filter(f => f.readonly === true).length} readonly fields`
       );
       return true;
     }
@@ -278,11 +278,11 @@ async function checkPermissionMatrixTab(effectiveConfig) {
     rc.log(
       'J2-5',
       'PASS',
-      `permission matrix available — all ${fields.length} fields are visible+editable (no overrides configured)`
+      `[depth=smoke] permission matrix available — all ${fields.length} fields are visible+editable (no overrides configured)`
     );
     return true;
   } catch (err) {
-    rc.log('J2-5', 'FAIL', `permission matrix check error: ${err.message}`);
+    rc.log('J2-5', 'FAIL', `[depth=smoke] permission matrix check error: ${err.message}`);
     return false;
   }
 }
@@ -306,7 +306,7 @@ async function checkToolsTab(token) {
       rc.log(
         'J2-6',
         'PASS',
-        `tools endpoint HTTP 200 — ${count} tool(s) in response`
+        `[depth=smoke] tools endpoint HTTP 200 — ${count} tool(s) in response`
       );
       return true;
     }
@@ -314,11 +314,11 @@ async function checkToolsTab(token) {
     rc.log(
       'J2-6',
       'FAIL',
-      `tools endpoint returned HTTP ${result.status}: ${result.message || '(no message)'}`
+      `[depth=smoke] tools endpoint returned HTTP ${result.status}: ${result.message || '(no message)'}`
     );
     return false;
   } catch (err) {
-    rc.log('J2-6', 'FAIL', `tools request error: ${err.message}`);
+    rc.log('J2-6', 'FAIL', `[depth=smoke] tools request error: ${err.message}`);
     return false;
   }
 }
@@ -344,7 +344,7 @@ async function checkSchedulerValidCron(token) {
       rc.log(
         'J2-7a',
         'PASS',
-        `scheduler/${SCHEDULER_ID} accepted valid cron "0 0 2 * * ?" — HTTP 200`
+        `[depth=medium] scheduler/${SCHEDULER_ID} accepted valid cron "0 0 2 * * ?" — HTTP 200`
       );
       return true;
     }
@@ -352,11 +352,11 @@ async function checkSchedulerValidCron(token) {
     rc.log(
       'J2-7a',
       'FAIL',
-      `scheduler/${SCHEDULER_ID} returned HTTP ${result.status} for valid cron: ${result.message || '(no message)'}`
+      `[depth=medium] scheduler/${SCHEDULER_ID} returned HTTP ${result.status} for valid cron: ${result.message || '(no message)'}`
     );
     return false;
   } catch (err) {
-    rc.log('J2-7a', 'FAIL', `scheduler valid cron request error: ${err.message}`);
+    rc.log('J2-7a', 'FAIL', `[depth=medium] scheduler valid cron request error: ${err.message}`);
     return false;
   }
 }
@@ -382,7 +382,7 @@ async function checkSchedulerInvalidCron(token) {
       rc.log(
         'J2-7b',
         'PASS',
-        `scheduler rejected too-frequent cron "* * * * * ?" with HTTP ${result.status} (Fix 11 enforced)`
+        `[depth=medium] scheduler rejected too-frequent cron "* * * * * ?" with HTTP ${result.status} (Fix 11 enforced)`
       );
       return true;
     }
@@ -390,11 +390,11 @@ async function checkSchedulerInvalidCron(token) {
     rc.log(
       'J2-7b',
       'FAIL',
-      `scheduler accepted invalid/too-frequent cron — expected HTTP ≥400, got ${result.status}. Fix 11 may not be deployed.`
+      `[depth=medium] scheduler accepted invalid/too-frequent cron — expected HTTP ≥400, got ${result.status}. Fix 11 may not be deployed.`
     );
     return false;
   } catch (err) {
-    rc.log('J2-7b', 'FAIL', `scheduler invalid cron request error: ${err.message}`);
+    rc.log('J2-7b', 'FAIL', `[depth=medium] scheduler invalid cron request error: ${err.message}`);
     return false;
   }
 }
@@ -420,7 +420,7 @@ async function cleanupScheduler(token) {
       rc.log(
         'J2-7c',
         'PASS',
-        `scheduler/${SCHEDULER_ID} disabled successfully — HTTP 200`
+        `[depth=medium] scheduler/${SCHEDULER_ID} disabled successfully — HTTP 200`
       );
       return true;
     }
@@ -430,7 +430,7 @@ async function cleanupScheduler(token) {
       rc.log(
         'J2-7c',
         'WARN',
-        `scheduler/${SCHEDULER_ID} not found during cleanup (HTTP 404) — may not have been created`
+        `[depth=medium] scheduler/${SCHEDULER_ID} not found during cleanup (HTTP 404) — may not have been created`
       );
       return true;
     }
@@ -438,11 +438,11 @@ async function cleanupScheduler(token) {
     rc.log(
       'J2-7c',
       'FAIL',
-      `scheduler cleanup returned HTTP ${result.status}: ${result.message || '(no message)'}`
+      `[depth=medium] scheduler cleanup returned HTTP ${result.status}: ${result.message || '(no message)'}`
     );
     return false;
   } catch (err) {
-    rc.log('J2-7c', 'FAIL', `scheduler cleanup request error: ${err.message}`);
+    rc.log('J2-7c', 'FAIL', `[depth=medium] scheduler cleanup request error: ${err.message}`);
     return false;
   }
 }
@@ -474,31 +474,31 @@ async function checkPermissionBoundary(token) {
       rc.log(
         'J2-8',
         'PASS',
-        'submit-review HTTP 200 — draft config submitted for review'
+        '[depth=medium] submit-review HTTP 200 — draft config submitted for review'
       );
     } else if (submitResult.status === 400 || submitResult.status === 409) {
       // 400/409 = no draft or already submitted — informative error, not a permission failure
       rc.log(
         'J2-8',
         'WARN',
-        `submit-review HTTP ${submitResult.status} — ${submitResult.message || 'no draft pending (expected in clean environment)'}`
+        `[depth=medium] submit-review HTTP ${submitResult.status} — ${submitResult.message || 'no draft pending (expected in clean environment)'}`
       );
     } else if (submitResult.status === 403) {
       rc.log(
         'J2-8',
         'FAIL',
-        `submit-review HTTP 403 — admin role should be permitted to submit`
+        `[depth=medium] submit-review HTTP 403 — admin role should be permitted to submit`
       );
       return false;
     } else {
       rc.log(
         'J2-8',
         'WARN',
-        `submit-review HTTP ${submitResult.status}: ${submitResult.message || '(no message)'}`
+        `[depth=medium] submit-review HTTP ${submitResult.status}: ${submitResult.message || '(no message)'}`
       );
     }
   } catch (err) {
-    rc.log('J2-8', 'FAIL', `submit-review request error: ${err.message}`);
+    rc.log('J2-8', 'FAIL', `[depth=medium] submit-review request error: ${err.message}`);
     return false;
   }
 
@@ -515,29 +515,266 @@ async function checkPermissionBoundary(token) {
         rc.log(
           'J2-8-approve',
           'PASS',
-          'approve HTTP 200 — super_admin can approve submitted review'
+          '[depth=medium] approve HTTP 200 — super_admin can approve submitted review'
         );
       } else if (approveResult.status === 403) {
         rc.log(
           'J2-8-approve',
           'FAIL',
-          'approve HTTP 403 — super_admin should be allowed to approve'
+          '[depth=medium] approve HTTP 403 — super_admin should be allowed to approve'
         );
         return false;
       } else {
         rc.log(
           'J2-8-approve',
           'WARN',
-          `approve HTTP ${approveResult.status}: ${approveResult.message || '(no message)'}`
+          `[depth=medium] approve HTTP ${approveResult.status}: ${approveResult.message || '(no message)'}`
         );
       }
     } catch (err) {
-      rc.log('J2-8-approve', 'FAIL', `approve request error: ${err.message}`);
+      rc.log('J2-8-approve', 'FAIL', `[depth=medium] approve request error: ${err.message}`);
       return false;
     }
   }
 
   return true;
+}
+
+// ---------------------------------------------------------------------------
+// J2-7d — Scheduler actual execution (deep, gray-area G2 closure)
+// ---------------------------------------------------------------------------
+//
+// J2-7a only verifies PUT scheduler returns 200 (config saved). It does NOT
+// verify the configured cron actually fires the tool. R7 G2 added
+// last_executed_at + execution_count columns to factory_scheduler_configs,
+// written by DynamicSchedulerService.executeTask via @Transactional(REQUIRES_NEW).
+//
+// J2-7d sets a scheduler with cron "N * * * * ?" where N is ~5s in the future,
+// waits up to 75s past the fire point, then reads the scheduler config back
+// and asserts:
+//   - execution_count increased by ≥1
+//   - last_executed_at is non-null (within the wait window)
+//
+// If the Quartz cron engine is broken, the thread pool is saturated, or the
+// metadata REQUIRES_NEW write path is broken, J2-7d FAILs.
+//
+// depth: deep — specific state assertion post-fire.
+async function checkSchedulerActualExecution(token) {
+  const SCHEDULER_ID = 'e2e_fire_verify_sched';
+  // Pick target second ~5s in future. cron "N * * * * ?" fires at second N every minute.
+  // If N is past the current second, it fires in < 60s at the next minute boundary.
+  const now = new Date();
+  const currentSec = now.getSeconds();
+  const targetSec = (currentSec + 5) % 60;
+  const cronExpr = `${targetSec} * * * * ?`;
+  // Wait budget: worst case target is 65s away (if target just wrapped past current).
+  // Give ourselves 75s total to include Spring task-scheduler jitter + persist commit.
+  const waitMs = 75_000;
+
+  try {
+    // Step 1: read baseline
+    const beforeList = await apiGet(`${FACTORY_A}/config/v2/scheduler`, token);
+    const beforeItem = (Array.isArray(beforeList.data) ? beforeList.data : [])
+      .find(s => s.taskCode === SCHEDULER_ID);
+    const baselineCount = beforeItem?.executionCount ?? 0;
+
+    // Step 2: configure scheduler with target cron.
+    // canvas_toggle_module fails under scheduler context (no userId) but that's fine —
+    // we record FAILED status and execution_count bumps regardless, which is what we test.
+    const putResult = await apiPut(
+      `${FACTORY_A}/config/v2/scheduler/${SCHEDULER_ID}`,
+      {
+        cronExpression: cronExpr,
+        enabled: true,
+        toolOrMethod: 'canvas_toggle_module',
+        params: { moduleCode: 'bom', enabled: true },
+      },
+      token
+    );
+    if (putResult.status !== 200) {
+      rc.log('J2-7d', 'FAIL',
+        `[depth=deep] Could not configure scheduler — PUT HTTP ${putResult.status}: ${putResult.message}`);
+      return false;
+    }
+
+    // Step 3: wait for cron fire + metadata commit
+    console.log(`  [J2-7d] Waiting ${waitMs/1000}s for cron "${cronExpr}" to fire...`);
+    await new Promise(r => setTimeout(r, waitMs));
+
+    // Step 4: read scheduler back
+    const afterList = await apiGet(`${FACTORY_A}/config/v2/scheduler`, token);
+    const afterItem = (Array.isArray(afterList.data) ? afterList.data : [])
+      .find(s => s.taskCode === SCHEDULER_ID);
+    if (!afterItem) {
+      rc.log('J2-7d', 'FAIL',
+        `[depth=deep] Scheduler ${SCHEDULER_ID} not found in GET list — config not persisted`);
+      return false;
+    }
+    const afterCount = afterItem.executionCount ?? 0;
+    const lastExecuted = afterItem.lastExecutedAt;
+    const lastStatus = afterItem.lastExecutionStatus;
+
+    // Cleanup: disable scheduler (best-effort, before assertion)
+    try {
+      await apiPut(
+        `${FACTORY_A}/config/v2/scheduler/${SCHEDULER_ID}`,
+        { cronExpression: '0 0 2 * * ?', enabled: false, toolOrMethod: 'canvas_toggle_module', params: {} },
+        token
+      );
+    } catch { /* ignore */ }
+
+    const bumped = afterCount > baselineCount;
+    const hasTimestamp = !!lastExecuted;
+    if (bumped && hasTimestamp) {
+      rc.log('J2-7d', 'PASS',
+        `[depth=deep] Scheduler cron fired — executionCount ${baselineCount} → ${afterCount}, ` +
+        `lastExecutedAt=${lastExecuted}, lastExecutionStatus=${lastStatus}. ` +
+        `DynamicSchedulerService.executeTask (Spring TaskScheduler → ToolRegistry → REQUIRES_NEW persist) verified alive.`);
+      return true;
+    }
+    rc.log('J2-7d', 'FAIL',
+      `[depth=deep] Scheduler did NOT fire in ${waitMs/1000}s — executionCount ${baselineCount} → ${afterCount} ` +
+      `(expected bump), lastExecutedAt=${lastExecuted || '(null)'}. Either Spring TaskScheduler broken, ` +
+      `thread pool saturated, or REQUIRES_NEW persist path failed silently.`);
+    return false;
+  } catch (err) {
+    rc.log('J2-7d', 'FAIL', `[depth=deep] Scheduler fire test error: ${err.message}`);
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// J2-9 — Trigger chain actual firing (deep, gray-area G3 closure)
+// ---------------------------------------------------------------------------
+//
+// J2-2 only verifies GET /trigger-chains returns 200. It does NOT verify that
+// a configured enabled chain actually fires when its event is published. R7 G3
+// added last_executed_at + execution_count to factory_trigger_chains, written
+// by TriggerChainExecutor.executeChain.
+//
+// J2-9 creates/ensures an enabled chain listening to SalesOrderCreatedEvent
+// (one of the whitelisted HANDLED_EVENTS), then creates a sales order via API
+// which publishes that event, then reads the chain config back and asserts:
+//   - execution_count increased by ≥1
+//   - last_executed_at set within the test window
+//
+// The chain is configured with tool "canvas_toggle_module" (no-op: re-enables
+// an already-enabled module) so it's idempotent and safe to fire repeatedly.
+//
+// depth: deep — state assertion post-event-fire.
+async function checkTriggerChainActualFiring(token) {
+  const CHAIN_CODE = 'e2e_fire_verify_chain';
+  const EVENT = 'SalesOrderCreatedEvent';
+
+  try {
+    // Step 1: configure chain
+    const putChain = await apiPut(
+      `${FACTORY_A}/config/v2/trigger-chains/${CHAIN_CODE}`,
+      {
+        chainCode: CHAIN_CODE,
+        eventType: EVENT,
+        enabled: true,
+        errorStrategy: 'CONTINUE',
+        steps: [
+          { tool: 'canvas_toggle_module', params: { moduleCode: 'bom', enabled: true }, order: 0 },
+        ],
+        description: 'J2-9 canvas-e2e fire verification — idempotent no-op',
+      },
+      token
+    );
+    if (putChain.status !== 200) {
+      rc.log('J2-9', 'FAIL',
+        `[depth=deep] Could not configure chain — PUT HTTP ${putChain.status}: ${putChain.message}`);
+      return false;
+    }
+
+    // Step 2: read baseline
+    const beforeList = await apiGet(`${FACTORY_A}/config/v2/trigger-chains`, token);
+    const beforeItem = (Array.isArray(beforeList.data) ? beforeList.data : [])
+      .find(c => c.chainCode === CHAIN_CODE);
+    const baselineCount = beforeItem?.executionCount ?? 0;
+
+    // Step 3: fire the event by creating a sales order.
+    // Payload matches existing F002 SO structure probed from /sales/orders/F002-SO-T10:
+    //   customerId is the F002 customer PK; items[] required for non-empty order.
+    // The event publishes on CREATE regardless of status (DRAFT is fine).
+    const suffix = Date.now().toString(36);
+    const soCode = `E2E_J29_${suffix}`;
+    const createSo = await apiPost(
+      `${FACTORY_A}/sales/orders`,
+      {
+        orderNumber: soCode,
+        customerId: 'F002-CUS-002',
+        customerName: 'J2-9 event fire test',
+        orderDate: new Date().toISOString().slice(0, 10),
+        status: 'DRAFT',
+        items: [
+          {
+            productTypeId: 'F002-PT-001',
+            productName: '宫保鸡丁',
+            quantity: 1,
+            unit: '份',
+            unitPrice: 38,
+            lineAmount: 38,
+          },
+        ],
+        totalAmount: 38,
+        discountAmount: 0,
+      },
+      token
+    );
+    const soCreatedOk = createSo.status === 200 || createSo.status === 201;
+    if (!soCreatedOk) {
+      // Still worth checking — maybe another concurrent test just created a SO
+      // and the event fired. But log this for diagnostics.
+      console.log(`  [J2-9] SO creation HTTP ${createSo.status} (${createSo.message || 'no msg'}) — ` +
+        `proceeding to check chain fire anyway in case another event fired`);
+    }
+
+    // Step 4: wait briefly for async event dispatch + metadata write
+    await new Promise(r => setTimeout(r, 3_000));
+
+    // Step 5: read chain back
+    const afterList = await apiGet(`${FACTORY_A}/config/v2/trigger-chains`, token);
+    const afterItem = (Array.isArray(afterList.data) ? afterList.data : [])
+      .find(c => c.chainCode === CHAIN_CODE);
+    if (!afterItem) {
+      rc.log('J2-9', 'FAIL',
+        `[depth=deep] Chain ${CHAIN_CODE} disappeared between PUT and GET — persistence broken`);
+      return false;
+    }
+    const afterCount = afterItem.executionCount ?? 0;
+    const lastExecuted = afterItem.lastExecutedAt;
+    const lastStatus = afterItem.lastExecutionStatus;
+
+    // Cleanup: disable the chain
+    try {
+      await apiPut(
+        `${FACTORY_A}/config/v2/trigger-chains/${CHAIN_CODE}`,
+        { ...afterItem, enabled: false },
+        token
+      );
+    } catch { /* ignore */ }
+
+    const bumped = afterCount > baselineCount;
+    const hasTimestamp = !!lastExecuted;
+    if (bumped && hasTimestamp) {
+      rc.log('J2-9', 'PASS',
+        `[depth=deep] Trigger chain fired on ${EVENT} — executionCount ${baselineCount} → ${afterCount}, ` +
+        `lastExecutedAt=${lastExecuted}, lastExecutionStatus=${lastStatus}. ` +
+        `TriggerChainExecutor (@EventListener → HANDLED_EVENTS whitelist → executeChain → ToolRegistry) verified alive.`);
+      return true;
+    }
+    rc.log('J2-9', 'FAIL',
+      `[depth=deep] Trigger chain did NOT fire after ${EVENT} — executionCount ${baselineCount} → ${afterCount} ` +
+      `(expected bump), lastExecutedAt=${lastExecuted || '(null)'}. ` +
+      `SO create was HTTP ${createSo.status}. ` +
+      `Either event wasn't published, or TriggerChainExecutor filtered it out, or metadata write path broke.`);
+    return false;
+  } catch (err) {
+    rc.log('J2-9', 'FAIL', `[depth=deep] Trigger chain fire test error: ${err.message}`);
+    return false;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -601,9 +838,17 @@ async function main() {
   const cleanupOk = await cleanupScheduler(token);
   if (!cleanupOk) fails.push('J2-7c');
 
+  // J2-7d Scheduler actual execution (deep, gray-area G2 closure, ~75s wait)
+  const schedulerFireOk = await checkSchedulerActualExecution(token);
+  if (!schedulerFireOk) fails.push('J2-7d');
+
   // J2-8 Permission boundary
   const permBoundaryOk = await checkPermissionBoundary(token);
   if (!permBoundaryOk) fails.push('J2-8');
+
+  // J2-9 Trigger chain actual firing (deep, gray-area G3 closure)
+  const chainFireOk = await checkTriggerChainActualFiring(token);
+  if (!chainFireOk) fails.push('J2-9');
 
   // Save results and exit
   const summary = rc.save();

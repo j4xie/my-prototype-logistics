@@ -21,7 +21,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.annotation.PostConstruct;
+import okio.BufferedSink;
+import okio.Okio;
+import okio.Source;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -208,13 +213,19 @@ public class PythonSmartBIClient {
      */
     public ExcelParseResponse parseExcel(MultipartFile file, String factoryId, String dataType,
                                           int sheetIndex, int headerRows) throws IOException {
-        log.info("调用 Python SmartBI /auto-parse: fileName={}, factoryId={}, dataType={}, sheetIndex={} (headerRows={} 将被忽略)",
-                file.getOriginalFilename(), factoryId, dataType, sheetIndex, headerRows);
+        log.info("调用 Python SmartBI /auto-parse: fileName={}, factoryId={}, dataType={}, sheetIndex={}, size={}MB (headerRows={} 将被忽略)",
+                file.getOriginalFilename(), factoryId, dataType, sheetIndex,
+                file.getSize() / 1024 / 1024, headerRows);
 
-        RequestBody fileBody = RequestBody.create(
-                MediaType.parse("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
-                file.getBytes()
-        );
+        // 流式传输 — 避免 file.getBytes() 对 60MB CSV 触发 OOM (BUG-2, 2026-04-15).
+        // Copy to a stable temp File so executeWithRetry can re-read on retry
+        // (MultipartFile.getInputStream() can return exhausted stream on 2nd attempt).
+        final String filename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "upload.bin";
+        final File tempFile = java.io.File.createTempFile("cretas-upload-", "-" + filename);
+        tempFile.deleteOnExit();
+        file.transferTo(tempFile);
+        final MediaType mediaType = MediaType.parse(guessMimeFromName(filename));
+        RequestBody fileBody = RequestBody.create(mediaType, tempFile);
 
         // 注意：/auto-parse 端点使用 StructureDetector 自动检测，不需要 header_rows
         MultipartBody.Builder bodyBuilder = new MultipartBody.Builder()
@@ -449,8 +460,14 @@ public class PythonSmartBIClient {
                 throw new IOException("Python SmartBI 请求失败: status=" + response.code() + ", body=" + errorBody);
             }
 
-            String responseBody = response.body() != null ? response.body().string() : "";
-            return objectMapper.readValue(responseBody, responseType);
+            // Stream-parse instead of buffering full body to String (see TypeReference
+            // variant below for the OOM history).
+            if (response.body() == null) {
+                return objectMapper.readValue("{}", responseType);
+            }
+            try (java.io.InputStream in = response.body().byteStream()) {
+                return objectMapper.readValue(in, responseType);
+            }
         }
     }
 
@@ -460,12 +477,23 @@ public class PythonSmartBIClient {
     private <T> T execute(Request request, TypeReference<T> typeReference) throws IOException {
         try (Response response = httpClient.newCall(request).execute()) {
             if (!response.isSuccessful()) {
+                // Error body is expected to be small; buffer to String is fine here.
                 String errorBody = response.body() != null ? response.body().string() : "No response body";
                 throw new IOException("Python SmartBI 请求失败: status=" + response.code() + ", body=" + errorBody);
             }
 
-            String responseBody = response.body() != null ? response.body().string() : "";
-            return objectMapper.readValue(responseBody, typeReference);
+            // Stream-parse the JSON body instead of buffering to String first.
+            // /auto-parse responses for large uploads (60MB CSV → 100MB+ JSON) used
+            // to load the full body as a single String before Jackson built the object
+            // graph on top — peak heap ≈ 3× response size, which blew -Xmx1280m with
+            // "Self-suppression not permitted" / OutOfMemoryError. byteStream() keeps
+            // only the active parse frame in memory.
+            if (response.body() == null) {
+                return objectMapper.readValue("{}", typeReference);
+            }
+            try (java.io.InputStream in = response.body().byteStream()) {
+                return objectMapper.readValue(in, typeReference);
+            }
         }
     }
 
@@ -874,13 +902,18 @@ public class PythonSmartBIClient {
         }
 
         try {
-            log.info("调用 Python SmartBI 解析 Excel V2: fileName={}, factoryId={}, dataType={}",
-                    file.getOriginalFilename(), request.getFactoryId(), request.getDataType());
+            log.info("调用 Python SmartBI 解析 Excel V2: fileName={}, factoryId={}, dataType={}, size={}MB",
+                    file.getOriginalFilename(), request.getFactoryId(), request.getDataType(),
+                    file.getSize() / 1024 / 1024);
 
-            RequestBody fileBody = RequestBody.create(
-                    MediaType.parse("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
-                    file.getBytes()
-            );
+            // 流式传输避免 OOM — 同 parseExcel (BUG-2 修复 2026-04-15).
+            // Copy to temp File so OkHttp retries can re-read safely.
+            final String vfilename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "upload.bin";
+            final File vtempFile = java.io.File.createTempFile("cretas-upload-", "-" + vfilename);
+            vtempFile.deleteOnExit();
+            file.transferTo(vtempFile);
+            final MediaType vmediaType = MediaType.parse(guessMimeFromName(vfilename));
+            RequestBody fileBody = RequestBody.create(vmediaType, vtempFile);
 
             MultipartBody.Builder bodyBuilder = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
@@ -1633,5 +1666,20 @@ public class PythonSmartBIClient {
             result.add(val);
         }
         return result;
+    }
+
+    /**
+     * 根据文件名推断 MIME 类型 — 支持 xlsx/xls/csv/pdf，其他默认 octet-stream。
+     * 用于 Python 服务调用时正确设置 multipart body 的 Content-Type，避免 Python
+     * 侧根据 MIME 而不是扩展名做 xlsx-only 判断。
+     */
+    private String guessMimeFromName(String filename) {
+        if (filename == null) return "application/octet-stream";
+        String lower = filename.toLowerCase();
+        if (lower.endsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        if (lower.endsWith(".xls")) return "application/vnd.ms-excel";
+        if (lower.endsWith(".csv")) return "text/csv";
+        if (lower.endsWith(".pdf")) return "application/pdf";
+        return "application/octet-stream";
     }
 }

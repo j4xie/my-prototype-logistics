@@ -1,0 +1,183 @@
+{
+  "round": 9.8,
+  "timestamp": "2026-04-14T20:20:55.139Z",
+  "factoryId": "FOOD_3101_048",
+  "notes": "R9-deep-8 — SO finance review 2-stage state machine",
+  "results": [
+    {
+      "layer": "L4",
+      "testId": "deep-8",
+      "step": "prep_customer",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "testName": "E2E_C_R98_deep-8_mnz2evr1"
+      },
+      "ts": "2026-04-14T20:19:54.565Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-8",
+      "step": "prep_so_created",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "apiStatus": 200
+      },
+      "ts": "2026-04-14T20:20:18.494Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-8",
+      "step": "prep_so_in_list",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "orderNumber": "SO-20260415-0001"
+      },
+      "ts": "2026-04-14T20:20:28.077Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-8",
+      "step": "prep_so_confirmed",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T20:20:31.357Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-8",
+      "step": "step1_nav_detail",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "orderId": "272b8e0d-bf19-411d-8a15-dbc5f90891f8"
+      },
+      "ts": "2026-04-14T20:20:44.848Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-8",
+      "step": "step2_initial_state",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "statusText": "CONFIRMED",
+        "hasSubmitForReviewBtn": true
+      },
+      "ts": "2026-04-14T20:20:46.853Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-8",
+      "step": "step3_click_submit_review",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T20:20:46.860Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-8",
+      "step": "step4_submit_review_api",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "status": 200,
+        "url": "/api/mobile/FOOD_3101_048/sales/orders/272b8e0d-bf19-411d-8a15-dbc5f90891f8/submit-for-review"
+      },
+      "ts": "2026-04-14T20:20:48.141Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-8",
+      "step": "step5_submit_toast",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "toastText": "提交财务审核成功"
+      },
+      "ts": "2026-04-14T20:20:48.155Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-8",
+      "step": "step6_state_pending",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "statusText": "PENDING_FINANCE_REVIEW",
+        "hasApproveBtn": true
+      },
+      "ts": "2026-04-14T20:20:50.664Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-8",
+      "step": "step7_click_approve",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T20:20:50.674Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-8",
+      "step": "step8_approve_api",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "status": 200,
+        "url": "/api/mobile/FOOD_3101_048/sales/orders/272b8e0d-bf19-411d-8a15-dbc5f90891f8/finance-approve"
+      },
+      "ts": "2026-04-14T20:20:52.508Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-8",
+      "step": "step9_approve_toast",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "toastText": "审核通过成功"
+      },
+      "ts": "2026-04-14T20:20:52.519Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-8",
+      "step": "step10_final_state",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "statusText": "FINANCE_APPROVED"
+      },
+      "ts": "2026-04-14T20:20:55.036Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-8",
+      "step": "FULL_FLOW",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "customerName": "E2E_C_R98_deep-8_mnz2evr1",
+        "orderNumber": "SO-20260415-0001",
+        "orderId": "272b8e0d-bf19-411d-8a15-dbc5f90891f8",
+        "stateTransitions": "CONFIRMED → PENDING_FINANCE_REVIEW → FINANCE_APPROVED",
+        "submitToast": "提交财务审核成功",
+        "approveToast": "审核通过成功",
+        "finalState": "FINANCE_APPROVED"
+      },
+      "ts": "2026-04-14T20:20:55.037Z"
+    }
+  ],
+  "summary": {
+    "deepTotal": 1,
+    "deepPass": 1,
+    "deepFail": 0
+  }
+}

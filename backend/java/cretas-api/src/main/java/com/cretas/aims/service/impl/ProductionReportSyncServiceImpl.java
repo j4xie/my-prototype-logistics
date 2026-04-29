@@ -12,6 +12,7 @@ import com.cretas.aims.repository.smartbi.postgres.SmartBiPgFieldDefinitionRepos
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -220,6 +221,7 @@ public class ProductionReportSyncServiceImpl {
     }
 
     @Scheduled(cron = "0 0 2 * * ?")
+    @SchedulerLock(name = "ProductionReportSyncServiceImpl.scheduledSync", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void scheduledSync() {
         log.info("开始定时SmartBI同步任务");
         try {

@@ -35,13 +35,13 @@ async function checkHealth() {
   try {
     const res = await fetch(`${API_BASE}/health`);
     if (res.ok || res.status === 200) {
-      rc.log('J0-1', 'PASS', `API reachable — HTTP ${res.status} from ${API_BASE}/health`);
+      rc.log('J0-1', 'PASS', `[depth=smoke] API reachable — HTTP ${res.status} from ${API_BASE}/health`);
       return true;
     }
-    rc.log('J0-1', 'FAIL', `Health endpoint returned HTTP ${res.status}`);
+    rc.log('J0-1', 'FAIL', `[depth=smoke] Health endpoint returned HTTP ${res.status}`);
     return false;
   } catch (err) {
-    rc.log('J0-1', 'FAIL', `Cannot reach API at ${API_BASE}: ${err.message}`);
+    rc.log('J0-1', 'FAIL', `[depth=smoke] Cannot reach API at ${API_BASE}: ${err.message}`);
     return false;
   }
 }
@@ -53,17 +53,17 @@ async function loginFactoryA() {
   try {
     const session = await login(ADMIN_A, '123456');
     if (!session.token) {
-      rc.log('J0-2', 'FAIL', 'Login succeeded but no token returned');
+      rc.log('J0-2', 'FAIL', '[depth=smoke] Login succeeded but no token returned');
       return null;
     }
     rc.log(
       'J0-2',
       'PASS',
-      `Factory A admin logged in — factoryId=${session.factoryId} role=${session.role} userId=${session.userId}`
+      `[depth=smoke] Factory A admin logged in — factoryId=${session.factoryId} role=${session.role} userId=${session.userId}`
     );
     return session;
   } catch (err) {
-    rc.log('J0-2', 'FAIL', `Factory A admin login error: ${err.message}`);
+    rc.log('J0-2', 'FAIL', `[depth=smoke] Factory A admin login error: ${err.message}`);
     return null;
   }
 }
@@ -79,18 +79,18 @@ async function checkDynamicFields(token) {
       rc.log(
         'J0-3',
         'PASS',
-        `dynamic-fields returned HTTP 200 — ${count} field(s) in response`
+        `[depth=smoke] dynamic-fields returned HTTP 200 — ${count} field(s) in response`
       );
       return true;
     }
     rc.log(
       'J0-3',
       'FAIL',
-      `dynamic-fields returned HTTP ${result.status}: ${result.message || '(no message)'}`
+      `[depth=smoke] dynamic-fields returned HTTP ${result.status}: ${result.message || '(no message)'}`
     );
     return false;
   } catch (err) {
-    rc.log('J0-3', 'FAIL', `dynamic-fields request error: ${err.message}`);
+    rc.log('J0-3', 'FAIL', `[depth=smoke] dynamic-fields request error: ${err.message}`);
     return false;
   }
 }
@@ -106,7 +106,7 @@ async function checkModuleSchemas(token) {
       rc.log(
         'J0-4',
         'FAIL',
-        `/config/modules returned HTTP ${result.status}: ${result.message || '(no message)'}`
+        `[depth=smoke] /config/modules returned HTTP ${result.status}: ${result.message || '(no message)'}`
       );
       return false;
     }
@@ -131,7 +131,7 @@ async function checkModuleSchemas(token) {
       rc.log(
         'J0-4',
         'WARN',
-        `/config/modules HTTP 200 but unknown data shape — keys: [${shape}]. Cannot count modules.`
+        `[depth=smoke] /config/modules HTTP 200 but unknown data shape — keys: [${shape}]. Cannot count modules.`
       );
       return true; // non-blocking warning
     }
@@ -140,7 +140,7 @@ async function checkModuleSchemas(token) {
       rc.log(
         'J0-4',
         'PASS',
-        `module_schemas has ${modules.length} module(s) (≥${MIN_MODULES} required)`
+        `[depth=smoke] module_schemas has ${modules.length} module(s) (≥${MIN_MODULES} required)`
       );
       return true;
     }
@@ -148,11 +148,11 @@ async function checkModuleSchemas(token) {
     rc.log(
       'J0-4',
       'FAIL',
-      `module_schemas only has ${modules.length} module(s) — expected ≥${MIN_MODULES}`
+      `[depth=smoke] module_schemas only has ${modules.length} module(s) — expected ≥${MIN_MODULES}`
     );
     return false;
   } catch (err) {
-    rc.log('J0-4', 'FAIL', `module schemas request error: ${err.message}`);
+    rc.log('J0-4', 'FAIL', `[depth=smoke] module schemas request error: ${err.message}`);
     return false;
   }
 }
@@ -164,13 +164,13 @@ async function loginFactoryB() {
   try {
     const session = await login(ADMIN_B, '123456');
     if (!session.token) {
-      rc.log('J0-5', 'WARN', 'Factory B login returned no token — cross-factory tests may be limited');
+      rc.log('J0-5', 'WARN', '[depth=smoke] Factory B login returned no token — cross-factory tests may be limited');
       return null;
     }
     rc.log(
       'J0-5',
       'PASS',
-      `Factory B admin logged in — factoryId=${session.factoryId} role=${session.role}`
+      `[depth=smoke] Factory B admin logged in — factoryId=${session.factoryId} role=${session.role}`
     );
     return session;
   } catch (err) {
@@ -178,7 +178,7 @@ async function loginFactoryB() {
     rc.log(
       'J0-5',
       'WARN',
-      `Factory B admin unavailable (${err.message}) — cross-factory isolation tests will be skipped`
+      `[depth=smoke] Factory B admin unavailable (${err.message}) — cross-factory isolation tests will be skipped`
     );
     return null;
   }
@@ -204,8 +204,8 @@ async function main() {
   if (!sessionA) {
     fails.push('J0-2');
     // Cannot proceed without a valid token
-    rc.log('J0-3', 'FAIL', 'Skipped — Factory A token unavailable');
-    rc.log('J0-4', 'FAIL', 'Skipped — Factory A token unavailable');
+    rc.log('J0-3', 'FAIL', '[depth=smoke] Skipped — Factory A token unavailable');
+    rc.log('J0-4', 'FAIL', '[depth=smoke] Skipped — Factory A token unavailable');
     fails.push('J0-3', 'J0-4');
   } else {
     // J0-3 Dynamic fields

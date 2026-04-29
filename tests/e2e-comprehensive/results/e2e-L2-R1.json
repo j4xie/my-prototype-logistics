@@ -1,0 +1,115 @@
+{
+  "round": 1,
+  "timestamp": "2026-04-14T05:14:41.343Z",
+  "factoryId": "FOOD_3101_048",
+  "results": [
+    {
+      "module": "dashboard",
+      "action": "render",
+      "status": "PASS",
+      "evidence": {
+        "contentLength": 325
+      },
+      "timestamp": "2026-04-14T05:14:56.017Z"
+    },
+    {
+      "module": "production_batches",
+      "action": "list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0,
+        "note": "New factory — expect 0 rows"
+      },
+      "timestamp": "2026-04-14T05:15:06.248Z"
+    },
+    {
+      "module": "warehouse_materials",
+      "action": "list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0
+      },
+      "timestamp": "2026-04-14T05:15:17.464Z"
+    },
+    {
+      "module": "customers",
+      "action": "list",
+      "status": "PASS",
+      "evidence": {
+        "evidence": "Table rendered"
+      },
+      "timestamp": "2026-04-14T05:15:25.130Z"
+    },
+    {
+      "module": "customers",
+      "action": "fill_name",
+      "status": "PASS",
+      "evidence": {
+        "filled": "E2E客户_R1_mny64712"
+      },
+      "timestamp": "2026-04-14T05:15:27.264Z"
+    },
+    {
+      "module": "customers",
+      "action": "create",
+      "status": "WARNING",
+      "evidence": {
+        "filled": "E2E客户_R1_mny64712",
+        "toast": "no toast detected"
+      },
+      "timestamp": "2026-04-14T05:15:30.319Z"
+    },
+    {
+      "module": "suppliers",
+      "action": "list",
+      "status": "PASS",
+      "evidence": {
+        "evidence": "Table rendered"
+      },
+      "timestamp": "2026-04-14T05:15:38.996Z"
+    },
+    {
+      "module": "suppliers",
+      "action": "create",
+      "status": "WARNING",
+      "evidence": {
+        "filled": "E2E供应商_R1_mny64hot",
+        "toast": "none"
+      },
+      "timestamp": "2026-04-14T05:15:44.135Z"
+    },
+    {
+      "module": "sales_orders",
+      "action": "list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0
+      },
+      "timestamp": "2026-04-14T05:15:56.386Z"
+    },
+    {
+      "module": "sales_orders",
+      "action": "create_dialog",
+      "status": "PASS",
+      "evidence": {
+        "evidence": "Create button clicked"
+      },
+      "timestamp": "2026-04-14T05:15:58.498Z"
+    },
+    {
+      "module": "employees",
+      "action": "list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0
+      },
+      "timestamp": "2026-04-14T05:16:06.673Z"
+    }
+  ],
+  "summary": {
+    "pass": 9,
+    "fail": 0,
+    "warn": 2,
+    "skip": 0
+  }
+}

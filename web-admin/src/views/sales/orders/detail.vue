@@ -32,6 +32,15 @@ const deliveryForm = ref<{ deliveryAddress: string; logisticsCompany: string; it
   deliveryAddress: '', logisticsCompany: '', items: [],
 });
 
+// 批次分配对话框 (P0-13 强制批次追溯 — R16 深度测试后补完)
+const batchAllocDialogVisible = ref(false);
+const batchAllocLoading = ref(false);
+type AllocRow = { finishedGoodsBatchId: string; batchNumber: string; productionDate: string; availableQuantity: number; allocatedQty: number };
+type AllocItem = { deliveryItemId: string; productName: string; deliveredQuantity: number; allocations: AllocRow[] };
+const batchAllocForm = ref<{ deliveryId: string; deliveryNumber: string; items: AllocItem[] }>({
+  deliveryId: '', deliveryNumber: '', items: [],
+});
+
 // 开票申请对话框
 const invoiceDialogVisible = ref(false);
 const invoiceForm = ref<{ invoiceType: string; remark: string }>({ invoiceType: 'NORMAL', remark: '' });
@@ -282,6 +291,113 @@ async function handleDelivered(deliveryId: string) {
     else { ElMessage.error(res.message || '签收确认失败，请重试'); }
   } catch { ElMessage.error('签收确认失败，请检查网络'); }
   finally { submitting.value = false; }
+}
+
+// 批次分配 (P0-13) — /ship endpoint 校验总分配量必须等于发货量, 否则返回
+// "未完成批次分配". 此对话框调用 GET /recommend-fifo 预填 FIFO 推荐, 用户可调整.
+async function openBatchAllocDialog(deliveryId: string, deliveryNumber: string) {
+  batchAllocLoading.value = true;
+  try {
+    const detailRes = await get<Record<string, unknown>>(`/${factoryId.value}/sales/deliveries/${deliveryId}`);
+    if (!detailRes.success || !detailRes.data) { ElMessage.error('加载发货单明细失败'); return; }
+    const rawItems = (detailRes.data.items as Record<string, unknown>[]) || [];
+    if (!rawItems.length) { ElMessage.warning('发货单无明细'); return; }
+
+    const items: AllocItem[] = [];
+    for (const it of rawItems) {
+      const productTypeId = (it.productTypeId || (it.productType as Record<string, unknown>)?.id) as string;
+      const deliveredQuantity = Number(it.deliveredQuantity || 0);
+      const productName = (it.productName as string) || ((it.productType as Record<string, unknown>)?.name as string) || '未命名产品';
+      const deliveryItemId = it.id as string;
+
+      let allocations: AllocRow[] = [];
+      if (productTypeId && deliveredQuantity > 0) {
+        const recRes = await get<Array<Record<string, unknown>>>(
+          `/${factoryId.value}/sales-deliveries/items/${deliveryItemId}/batch-allocations/recommend-fifo?productTypeId=${productTypeId}&requiredQty=${deliveredQuantity}`
+        );
+        if (recRes.success && Array.isArray(recRes.data)) {
+          allocations = recRes.data.map(r => ({
+            finishedGoodsBatchId: String(r.batchId),
+            batchNumber: String(r.batchNumber || ''),
+            productionDate: String(r.productionDate || ''),
+            availableQuantity: Number(r.availableQuantity || 0),
+            allocatedQty: Number(r.recommendedQuantity || 0),
+          }));
+        }
+      }
+      items.push({ deliveryItemId, productName, deliveredQuantity, allocations });
+    }
+    batchAllocForm.value = { deliveryId, deliveryNumber, items };
+    batchAllocDialogVisible.value = true;
+  } catch {
+    ElMessage.error('加载失败，请检查网络');
+  } finally {
+    batchAllocLoading.value = false;
+  }
+}
+
+function sumAllocated(item: AllocItem): number {
+  return item.allocations.reduce((s, a) => s + Number(a.allocatedQty || 0), 0);
+}
+
+async function handleBatchAllocate() {
+  if (submitting.value) return;
+  // Zero-quantity items don't need allocation (skip them from validation + submission).
+  const activeItems = batchAllocForm.value.items.filter(it => it.deliveredQuantity > 0);
+  if (activeItems.length === 0) {
+    return ElMessage.warning('无需分配 (所有发货行数量为 0)');
+  }
+  // Validation: per-item total must equal deliveredQuantity (backend enforces)
+  for (const item of activeItems) {
+    if (item.allocations.length === 0) {
+      return ElMessage.warning(`${item.productName}: 没有可用成品批次, 请先生产`);
+    }
+    const total = sumAllocated(item);
+    if (Math.abs(total - item.deliveredQuantity) > 0.001) {
+      return ElMessage.warning(`${item.productName}: 分配合计 ${total} 必须等于发货量 ${item.deliveredQuantity}`);
+    }
+    // Duplicate batch guard — backend 先清空再写入 would accept dupes silently.
+    const uniqueIds = new Set(item.allocations.map(a => a.finishedGoodsBatchId));
+    if (uniqueIds.size !== item.allocations.length) {
+      return ElMessage.warning(`${item.productName}: 同一批次不能重复分配`);
+    }
+  }
+  submitting.value = true;
+  let success = 0, failed = 0;
+  const errors: string[] = [];
+  // Per-item try/catch — the axios interceptor rejects on success:false, so a
+  // single outer try would abort the loop after the first failure and leave the
+  // remaining items un-attempted (bug caught in code review).
+  for (const item of activeItems) {
+    try {
+      const allocations = item.allocations
+        .filter(a => Number(a.allocatedQty) > 0)
+        .map(a => ({ finishedGoodsBatchId: a.finishedGoodsBatchId, allocatedQty: Number(a.allocatedQty) }));
+      const res = await post(
+        `/${factoryId.value}/sales-deliveries/items/${item.deliveryItemId}/batch-allocations`,
+        { allocations },
+      );
+      if (res.success) success++;
+      else { failed++; errors.push(`${item.productName}: ${res.message || '失败'}`); }
+    } catch (e: unknown) {
+      failed++;
+      const msg = (e && typeof e === 'object' && 'message' in e)
+        ? String((e as { message: unknown }).message)
+        : '网络错误';
+      errors.push(`${item.productName}: ${msg}`);
+    }
+  }
+  submitting.value = false;
+  if (failed === 0) {
+    ElMessage.success(`批次分配成功 (${success} 项)`);
+    batchAllocDialogVisible.value = false;
+    loadDeliveries();
+  } else {
+    // Reload regardless — partial successes persisted on the server, user should
+    // see current state before deciding whether to retry failed items.
+    loadDeliveries();
+    ElMessage.error(`${success} 成功 / ${failed} 失败:\n${errors.join('\n')}`);
+  }
 }
 
 // ──────────────────────────────────────────────
@@ -793,8 +909,9 @@ async function handleCreatePayment() {
               <el-table-column prop="totalAmount" label="金额" width="130" align="right">
                 <template #default="{ row }">{{ formatAmount(row.totalAmount) }}</template>
               </el-table-column>
-              <el-table-column label="操作" width="150" align="center">
+              <el-table-column label="操作" width="230" align="center">
                 <template #default="{ row }">
+                  <el-button v-if="['DRAFT','PICKED'].includes(row.status) && canWrite" type="primary" link size="small" :disabled="submitting || batchAllocLoading" :loading="batchAllocLoading" @click="openBatchAllocDialog(row.id, row.deliveryNumber)">分配批次</el-button>
                   <el-button v-if="['DRAFT','PICKED'].includes(row.status) && canWrite" type="warning" link size="small" :disabled="submitting" @click="handleShip(row.id)">发货</el-button>
                   <el-button v-if="row.status === 'SHIPPED' && canWrite" type="success" link size="small" :disabled="submitting" @click="handleDelivered(row.id)">签收</el-button>
                 </template>
@@ -897,6 +1014,54 @@ async function handleCreatePayment() {
       <template #footer>
         <el-button @click="deliveryDialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="handleCreateDelivery">创建发货单</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- ─── 批次分配对话框 (P0-13 强制批次追溯) ─── -->
+    <el-dialog v-model="batchAllocDialogVisible" title="成品批次分配" width="880px" destroy-on-close>
+      <el-alert
+        type="info"
+        :closable="false"
+        title="系统已按 FIFO (生产日期升序) 预填推荐批次"
+        description="每行 '分配合计' 必须等于发货数量才能提交。可手动调整分配数量或选择其他批次。"
+        style="margin-bottom: 12px"
+      />
+      <div v-if="batchAllocForm.deliveryNumber" style="margin-bottom: 8px; color: #606266;">
+        发货单: <strong>{{ batchAllocForm.deliveryNumber }}</strong>
+      </div>
+      <div v-for="(item, idx) in batchAllocForm.items" :key="idx" style="margin-bottom: 20px; padding: 10px; border: 1px solid #ebeef5; border-radius: 4px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+          <span style="font-weight: 500;">{{ item.productName }}</span>
+          <span>
+            发货数量: <strong>{{ item.deliveredQuantity }}</strong>
+            <span style="margin-left: 16px;" :style="{ color: Math.abs(sumAllocated(item) - item.deliveredQuantity) < 0.001 ? '#67c23a' : '#f56c6c' }">
+              分配合计: <strong>{{ sumAllocated(item) }}</strong>
+            </span>
+          </span>
+        </div>
+        <el-table v-if="item.allocations.length > 0" :data="item.allocations" border size="small">
+          <el-table-column prop="batchNumber" label="批次号" width="200" />
+          <el-table-column prop="productionDate" label="生产日期" width="120" />
+          <el-table-column label="可用数量" width="110" align="right">
+            <template #default="{ row }">{{ row.availableQuantity }}</template>
+          </el-table-column>
+          <el-table-column label="分配数量" width="180" align="center">
+            <template #default="{ row }">
+              <el-input-number v-model="row.allocatedQty" :min="0" :max="row.availableQuantity" :precision="2" :step="1" size="small" style="width: 150px" />
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-alert
+          v-else
+          type="warning"
+          :closable="false"
+          title="没有可用成品批次"
+          description="请先完成此产品的生产入库, 或联系仓管检查库存状态。"
+        />
+      </div>
+      <template #footer>
+        <el-button @click="batchAllocDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleBatchAllocate">确认分配</el-button>
       </template>
     </el-dialog>
 

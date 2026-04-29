@@ -1,0 +1,207 @@
+{
+  "round": 4,
+  "timestamp": "2026-04-14T17:11:18.848Z",
+  "factoryId": "FOOD_3101_048",
+  "results": [
+    {
+      "module": "dashboard",
+      "action": "render",
+      "status": "PASS",
+      "evidence": {
+        "length": 325,
+        "hasCards": true,
+        "hasMenu": true
+      },
+      "timestamp": "2026-04-14T17:09:25.368Z"
+    },
+    {
+      "module": "customers",
+      "action": "list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0
+      },
+      "timestamp": "2026-04-14T17:09:32.717Z"
+    },
+    {
+      "module": "customers",
+      "action": "fill_required_fields",
+      "status": "PASS",
+      "evidence": {
+        "count": 3,
+        "fields": [
+          "联系人=E2E_customers_R2_mnyvm2yd_1",
+          "联系电话=13886574898",
+          "收货地址=E2E测试地址_上海市浦东新区"
+        ]
+      },
+      "timestamp": "2026-04-14T17:09:34.939Z"
+    },
+    {
+      "module": "customers",
+      "action": "create",
+      "status": "PASS",
+      "evidence": {
+        "filled": "E2E_customers_R2_mnyvm2yd",
+        "apiStatus": 200,
+        "apiUrl": "/api/mobile/FOOD_3101_048/customers"
+      },
+      "timestamp": "2026-04-14T17:09:35.814Z"
+    },
+    {
+      "module": "customers",
+      "action": "persistence",
+      "status": "PASS",
+      "evidence": {
+        "rowsBefore": 0,
+        "rowsAfter": 1,
+        "delta": 1,
+        "note": "expected delta=1",
+        "submitResultOk": true
+      },
+      "timestamp": "2026-04-14T17:09:48.156Z"
+    },
+    {
+      "module": "suppliers",
+      "action": "list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0
+      },
+      "timestamp": "2026-04-14T17:09:55.480Z"
+    },
+    {
+      "module": "suppliers",
+      "action": "fill_required_fields",
+      "status": "PASS",
+      "evidence": {
+        "count": 3,
+        "fields": [
+          "联系人=E2E_suppliers_R2_mnyvm2yd_1",
+          "联系电话=13886597633",
+          "地址=E2E测试地址_上海市浦东新区"
+        ]
+      },
+      "timestamp": "2026-04-14T17:09:57.670Z"
+    },
+    {
+      "module": "suppliers",
+      "action": "create",
+      "status": "PASS",
+      "evidence": {
+        "filled": "E2E_suppliers_R2_mnyvm2yd",
+        "apiStatus": 200,
+        "apiUrl": "/api/mobile/FOOD_3101_048/suppliers"
+      },
+      "timestamp": "2026-04-14T17:09:57.945Z"
+    },
+    {
+      "module": "suppliers",
+      "action": "persistence",
+      "status": "PASS",
+      "evidence": {
+        "rowsBefore": 0,
+        "rowsAfter": 1,
+        "delta": 1,
+        "note": "expected delta=1",
+        "submitResultOk": true
+      },
+      "timestamp": "2026-04-14T17:10:11.670Z"
+    },
+    {
+      "module": "sales_orders",
+      "action": "list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0,
+        "note": "Empty (new factory)",
+        "testType": "page-accessibility"
+      },
+      "timestamp": "2026-04-14T17:10:22.369Z"
+    },
+    {
+      "module": "procurement_orders",
+      "action": "list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0,
+        "note": "Empty (new factory)",
+        "testType": "page-accessibility"
+      },
+      "timestamp": "2026-04-14T17:10:31.529Z"
+    },
+    {
+      "module": "production_batches",
+      "action": "list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0,
+        "note": "Empty (new factory)",
+        "testType": "page-accessibility"
+      },
+      "timestamp": "2026-04-14T17:10:40.158Z"
+    },
+    {
+      "module": "warehouse_materials",
+      "action": "list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0,
+        "note": "Empty (new factory)",
+        "testType": "page-accessibility"
+      },
+      "timestamp": "2026-04-14T17:10:47.771Z"
+    },
+    {
+      "module": "employees",
+      "action": "list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 10,
+        "note": "",
+        "testType": "page-accessibility"
+      },
+      "timestamp": "2026-04-14T17:10:56.404Z"
+    },
+    {
+      "module": "quality_inspections",
+      "action": "list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0,
+        "note": "Empty (new factory)",
+        "testType": "page-accessibility"
+      },
+      "timestamp": "2026-04-14T17:11:04.018Z"
+    },
+    {
+      "module": "equipment",
+      "action": "list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0,
+        "note": "Empty (new factory)",
+        "testType": "page-accessibility"
+      },
+      "timestamp": "2026-04-14T17:11:11.141Z"
+    },
+    {
+      "module": "finance_costs",
+      "action": "list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0,
+        "note": "Empty (new factory)",
+        "testType": "page-accessibility"
+      },
+      "timestamp": "2026-04-14T17:11:18.781Z"
+    }
+  ],
+  "summary": {
+    "pass": 17,
+    "fail": 0,
+    "warn": 0,
+    "skip": 0
+  },
+  "notes": "R4 baseline — clean DB (E2E data deleted)"
+}

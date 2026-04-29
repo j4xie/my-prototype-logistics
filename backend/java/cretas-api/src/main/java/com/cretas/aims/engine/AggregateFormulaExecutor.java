@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,8 +33,23 @@ public class AggregateFormulaExecutor {
     // which would read aggregate stats from a tenant-unscoped table (users, platform_admins,
     // config_change_log) because the factory_id filter was silently omitted when the target
     // table lacked the column. This guard now rejects those formulas outright.
-    private boolean isTenantScopedTable(String tableName) {
-        return hasColumn(tableName, "factory_id");
+    //
+    // R6 P0-1b (canvas-security-e2e R6): the original guard rejected ALL sub-tables
+    // because sub-tables legitimately don't have factory_id — they derive tenancy
+    // from parent_id chaining to the factory-scoped parent table. This blocked
+    // legitimate use cases like GROUP_BY(sales_order_prepay_items, 'cf_pay_date',
+    // SUM('cf_amount')) for a specific sales order. The relaxed guard accepts such
+    // sub-tables IFF the caller provides parentId, which forces a parent_id filter
+    // (tenant scoping is still enforced, just indirectly via parent).
+    private boolean isAcceptableForAggregation(String tableName, String parentId) {
+        if (hasColumn(tableName, "factory_id")) return true;
+        // Sub-table path: must have parent_id or order_id AND caller must provide parentId
+        if (parentId != null) {
+            if (hasColumn(tableName, "parent_id") || hasColumn(tableName, "order_id")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public List<Map<String, Object>> execute(String expression, Map<String, Object> context) {
@@ -66,15 +82,18 @@ public class AggregateFormulaExecutor {
             tableName = sourceTable;
         }
 
-        // Round 6 Fix Angle-6: cross-tenant guard — reject tables without factory_id.
-        if (!isTenantScopedTable(tableName)) {
-            log.warn("Aggregate formula rejected — target table '{}' has no factory_id column: {}",
+        String parentId = (String) context.get("parentId");
+        String factoryId = (String) context.get("factoryId");
+
+        // Round 6 Fix Angle-6 + R6 P0-1b: cross-tenant guard — reject tables that aren't
+        // tenant-scoped. Sub-tables are acceptable IFF caller provides parentId (scoping
+        // via parent_id chain). See isAcceptableForAggregation Javadoc.
+        if (!isAcceptableForAggregation(tableName, parentId)) {
+            log.warn("Aggregate formula rejected — target table '{}' is not tenant-scoped " +
+                    "(no factory_id, and no parentId-based sub-table scoping): {}",
                     tableName, expression);
             return List.of();
         }
-
-        String parentId = (String) context.get("parentId");
-        String factoryId = (String) context.get("factoryId");
 
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT ").append(groupField).append(", ").append(aggFunc).append("(").append(valueField).append(") as agg_value");
@@ -83,11 +102,12 @@ public class AggregateFormulaExecutor {
         List<Object> params = new ArrayList<>();
         List<String> wheres = new ArrayList<>();
         if (parentId != null) {
+            // R6 Fix P0-1: type-aware cast (was hardcoded "?::uuid" — broke VARCHAR-id parents)
             if (hasColumn(tableName, "parent_id")) {
-                wheres.add("parent_id = ?::uuid");
+                wheres.add("parent_id = " + columnCastPlaceholder(tableName, "parent_id"));
                 params.add(parentId);
             } else if (hasColumn(tableName, "order_id")) {
-                wheres.add("order_id = ?::uuid");
+                wheres.add("order_id = " + columnCastPlaceholder(tableName, "order_id"));
                 params.add(parentId);
             }
         }
@@ -117,15 +137,15 @@ public class AggregateFormulaExecutor {
             tableName = sourceTable;
         }
 
-        // Round 6 Fix Angle-6: cross-tenant guard (same as GROUP_BY)
-        if (!isTenantScopedTable(tableName)) {
-            log.warn("Ratio formula rejected — target table '{}' has no factory_id column",
+        String parentId = (String) context.get("parentId");
+        String factoryId = (String) context.get("factoryId");
+
+        // R6 P0-1b: same guard as GROUP_BY — accept factory_id tables OR sub-tables with parentId scoping
+        if (!isAcceptableForAggregation(tableName, parentId)) {
+            log.warn("Ratio formula rejected — target table '{}' is not tenant-scoped",
                     tableName);
             return List.of();
         }
-
-        String parentId = (String) context.get("parentId");
-        String factoryId = (String) context.get("factoryId");
 
         // PostgreSQL: NULLIF protects against divide-by-zero
         StringBuilder sql = new StringBuilder();
@@ -138,11 +158,12 @@ public class AggregateFormulaExecutor {
         List<Object> params = new ArrayList<>();
         List<String> wheres = new ArrayList<>();
         if (parentId != null) {
+            // R6 Fix P0-1: type-aware cast (same as GROUP_BY above)
             if (hasColumn(tableName, "parent_id")) {
-                wheres.add("parent_id = ?::uuid");
+                wheres.add("parent_id = " + columnCastPlaceholder(tableName, "parent_id"));
                 params.add(parentId);
             } else if (hasColumn(tableName, "order_id")) {
-                wheres.add("order_id = ?::uuid");
+                wheres.add("order_id = " + columnCastPlaceholder(tableName, "order_id"));
                 params.add(parentId);
             }
         }
@@ -168,5 +189,43 @@ public class AggregateFormulaExecutor {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    // R6 Fix P0-1 (R4/R5 same-cause sweep carryover): parent_id cast was hardcoded
+    // `?::uuid` in GROUP_BY and RATIO SQL (lines 87-91 and 141-147 above). After R4
+    // made DDLExecutor create sub-tables with parent_id type matching the parent
+    // table's id type (VARCHAR/BIGINT/UUID), this hardcoded cast breaks for all
+    // non-UUID parents. E.g., for sales_orders (VARCHAR id), formula evaluation
+    // throws "ERROR: invalid input syntax for type uuid".
+    //
+    // Fix: query the actual sub-table column's data_type at runtime and return a
+    // type-appropriate cast placeholder. Cached per (tableName, columnName) pair.
+    // Matches R4's `DynamicTableService.parentIdPlaceholder` pattern.
+    private final Map<String, String> columnCastCache = new ConcurrentHashMap<>();
+
+    /**
+     * Return a SQL placeholder appropriate for the given column's actual data_type.
+     * - UUID column: "?::uuid"
+     * - VARCHAR/TEXT/BIGINT/INTEGER: "?" (JDBC parameter binding handles it)
+     * Used for WHERE clauses like `parent_id = <placeholder>` or `order_id = <placeholder>`.
+     */
+    private String columnCastPlaceholder(String tableName, String columnName) {
+        String cacheKey = tableName + "." + columnName;
+        return columnCastCache.computeIfAbsent(cacheKey, k -> {
+            try {
+                String type = jdbcTemplate.queryForObject(
+                    "SELECT data_type FROM information_schema.columns " +
+                    "WHERE table_name = ? AND column_name = ?",
+                    String.class, tableName, columnName);
+                if (type != null && type.toLowerCase().contains("uuid")) {
+                    return "?::uuid";
+                }
+                return "?";
+            } catch (Exception e) {
+                log.warn("Cannot determine type for {}.{}, defaulting to no cast: {}",
+                    tableName, columnName, e.getMessage());
+                return "?";
+            }
+        });
     }
 }

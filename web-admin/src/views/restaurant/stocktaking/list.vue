@@ -120,6 +120,9 @@
             <el-option v-for="mt in materialTypes" :key="mt.id" :label="mt.name" :value="mt.id" />
           </el-select>
         </el-form-item>
+        <el-form-item label="盘点日期" prop="stocktakingDate">
+          <el-date-picker v-model="dialogForm.stocktakingDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 200px" />
+        </el-form-item>
         <el-form-item label="单位">
           <el-input v-model="dialogForm.unit" placeholder="kg / L" style="width: 120px" />
         </el-form-item>
@@ -233,10 +236,14 @@ const completeDialogVisible = ref(false);
 const detailVisible = ref(false);
 const detailData = ref<StocktakingRecord | null>(null);
 
-const dialogForm = ref({ rawMaterialTypeId: '', unit: 'kg', notes: '' });
+// 后端 StocktakingRecord 必填字段: rawMaterialTypeId, stocktakingDate（@NotNull）
+// 若前端不传 stocktakingDate, JPA @Valid 会直接返回 400, 而不会进入 controller 的"默认为今天"分支
+const today = () => new Date().toISOString().slice(0, 10);
+const dialogForm = ref({ rawMaterialTypeId: '', stocktakingDate: today(), unit: 'kg', notes: '' });
 const createFormRef = ref<FormInstance>();
 const createFormRules = {
   rawMaterialTypeId: [{ required: true, message: '请选择食材', trigger: 'change' }],
+  stocktakingDate: [{ required: true, message: '请选择盘点日期', trigger: 'change' }],
 };
 const completeForm = ref({ id: '', systemQuantity: 0, unit: '', actualQuantity: 0, adjustmentReason: '' });
 const completeFormRef = ref<FormInstance>();
@@ -280,7 +287,10 @@ async function loadData() {
 
 function handleSearch() { pagination.value.page = 1; loadData(); }
 function handleRefresh() { filterStatus.value = ''; filterDateRange.value = null; handleSearch(); }
-function handleCreate() { dialogForm.value = { rawMaterialTypeId: '', unit: 'kg', notes: '' }; dialogVisible.value = true; }
+function handleCreate() {
+  dialogForm.value = { rawMaterialTypeId: '', stocktakingDate: today(), unit: 'kg', notes: '' };
+  dialogVisible.value = true;
+}
 async function showDetail(row: StocktakingRecord) {
   detailData.value = row;
   detailVisible.value = true;

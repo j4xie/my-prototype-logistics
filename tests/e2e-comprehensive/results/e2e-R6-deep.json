@@ -1,0 +1,447 @@
+{
+  "round": 6,
+  "timestamp": "2026-04-14T18:56:20.500Z",
+  "factoryId": "FOOD_3101_048",
+  "notes": "R6 true-depth L4 tests — each passes 12-step depth checklist",
+  "results": [
+    {
+      "layer": "L4",
+      "testId": "deep-1",
+      "step": "step2_baseline",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "rowsBefore": 0
+      },
+      "ts": "2026-04-14T18:54:42.561Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-1",
+      "step": "step3_dialog",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "clicked": "新增"
+      },
+      "ts": "2026-04-14T18:54:44.657Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-1",
+      "step": "step4_fill_name",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "testName": "E2E_C_DEEP_mnyzdc5e"
+      },
+      "ts": "2026-04-14T18:54:44.672Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-1",
+      "step": "step5_fill_required",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "count": 3,
+        "fields": [
+          "联系人=E2E_C_DEEP_mnyzdc5e_1",
+          "联系电话=13892884740",
+          "收货地址=E2E测试地址_上海市浦东新区"
+        ]
+      },
+      "ts": "2026-04-14T18:54:44.780Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-1",
+      "step": "step6_submit",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "apiStatus": 200,
+        "apiUrl": "/api/mobile/FOOD_3101_048/customers"
+      },
+      "ts": "2026-04-14T18:54:45.071Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-1",
+      "step": "step8_toast",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "toastText": "新增成功"
+      },
+      "ts": "2026-04-14T18:54:45.081Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-1",
+      "step": "step9_nav_back",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T18:54:54.794Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-1",
+      "step": "step10_delta",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "rowsBefore": 0,
+        "rowsAfter": 1,
+        "delta": 1,
+        "note": "expected delta=1"
+      },
+      "ts": "2026-04-14T18:54:54.796Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-1",
+      "step": "step11_find_row",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "firstRowContainsTestName": true,
+        "firstRowPreview": "CUS-1776192884984-5B2B\n\t\nE2E_C_DEEP_mnyzdc5e\n\t\nE2E_C_DEEP_mnyzdc5e_1\n\t\n13892884740\n\t\nE2E测试地址_上海市浦东新区"
+      },
+      "ts": "2026-04-14T18:54:54.797Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-1",
+      "step": "step12_roundtrip",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "testName": "E2E_C_DEEP_mnyzdc5e",
+        "foundInList": true
+      },
+      "ts": "2026-04-14T18:54:54.797Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-1",
+      "step": "FULL_FLOW",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "testName": "E2E_C_DEEP_mnyzdc5e",
+        "filledFields": 3,
+        "apiStatus": 200,
+        "toastText": "新增成功",
+        "delta": 1,
+        "roundtripOk": true
+      },
+      "ts": "2026-04-14T18:54:54.797Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-2",
+      "step": "step2_baseline",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "rowsBefore": 0
+      },
+      "ts": "2026-04-14T18:55:01.885Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-2",
+      "step": "step5_fill_required",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "count": 3
+      },
+      "ts": "2026-04-14T18:55:04.094Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-2",
+      "step": "step6_submit",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "apiStatus": 200,
+        "apiUrl": "/api/mobile/FOOD_3101_048/suppliers"
+      },
+      "ts": "2026-04-14T18:55:04.372Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-2",
+      "step": "step8_toast",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "toastText": "新增成功"
+      },
+      "ts": "2026-04-14T18:55:04.380Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-2",
+      "step": "step10_delta",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "rowsBefore": 0,
+        "rowsAfter": 1,
+        "delta": 1,
+        "note": "expected delta=1"
+      },
+      "ts": "2026-04-14T18:55:14.259Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-2",
+      "step": "step12_roundtrip",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "testName": "E2E_S_DEEP_mnyzdc5e",
+        "foundInList": true
+      },
+      "ts": "2026-04-14T18:55:14.261Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-2",
+      "step": "FULL_FLOW",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "testName": "E2E_S_DEEP_mnyzdc5e",
+        "filledFields": 3,
+        "apiStatus": 200,
+        "toastText": "新增成功",
+        "delta": 1,
+        "roundtripOk": true
+      },
+      "ts": "2026-04-14T18:55:14.261Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-3",
+      "step": "create_customer_first",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "testName": "E2E_C_DROP_mnyzdc5e",
+        "apiStatus": 200
+      },
+      "ts": "2026-04-14T18:55:24.704Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-3",
+      "step": "find_customer_select",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T18:55:38.969Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-3",
+      "step": "customer_in_dropdown",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "searchedFor": "E2E_C_DROP_mnyzdc5e",
+        "optionsCount": 16,
+        "optionsSample": [
+          "草稿",
+          "已确认",
+          "待财务审核",
+          "财务已批准",
+          "财务已驳回"
+        ],
+        "foundInDropdown": true
+      },
+      "ts": "2026-04-14T18:55:41.014Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-3",
+      "step": "FULL_FLOW",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "testName": "E2E_C_DROP_mnyzdc5e",
+        "realDropdownVerification": true,
+        "foundInDropdown": true
+      },
+      "ts": "2026-04-14T18:55:41.014Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-4",
+      "step": "find_edit_button",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T18:55:48.585Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-4",
+      "step": "edit_dialog_open",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T18:55:50.610Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-4",
+      "step": "fill_edit",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "oldValue": "E2E_C_DROP_mnyzdc5e",
+        "newValue": "E2E_C_DROP_mnyzdc5e_EDITED_mnyzdc5e"
+      },
+      "ts": "2026-04-14T18:55:50.626Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-4",
+      "step": "edit_submit",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "apiStatus": 200,
+        "apiMethod": "PUT (expected)",
+        "apiUrl": "/api/mobile/FOOD_3101_048/customers/045d025c-6867-4252-bb3b-a459827c4d92"
+      },
+      "ts": "2026-04-14T18:55:50.917Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-4",
+      "step": "edit_toast",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "toastText": "编辑成功"
+      },
+      "ts": "2026-04-14T18:55:50.925Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-4",
+      "step": "FULL_FLOW",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "editedSuffix": "_EDITED_mnyzdc5e",
+        "visibleInList": true,
+        "apiStatus": 200,
+        "toastText": "编辑成功"
+      },
+      "ts": "2026-04-14T18:56:01.195Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-5",
+      "step": "baseline",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "rowsBefore": 2
+      },
+      "ts": "2026-04-14T18:56:08.641Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-5",
+      "step": "find_delete_button",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T18:56:08.649Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-5",
+      "step": "find_confirm_button",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {},
+      "ts": "2026-04-14T18:56:10.165Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-5",
+      "step": "delete_api",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "apiStatus": 200,
+        "apiUrl": "/api/mobile/FOOD_3101_048/customers/045d025c-6867-4252-bb3b-a459827c4d92"
+      },
+      "ts": "2026-04-14T18:56:10.400Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-5",
+      "step": "delete_toast",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "toastText": "删除成功"
+      },
+      "ts": "2026-04-14T18:56:10.422Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-5",
+      "step": "delete_delta",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "rowsBefore": 2,
+        "rowsAfter": 1,
+        "delta": -1,
+        "expected": -1
+      },
+      "ts": "2026-04-14T18:56:20.427Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "deep-5",
+      "step": "FULL_FLOW",
+      "status": "PASS",
+      "depth": "deep",
+      "evidence": {
+        "depth": "deep",
+        "toastText": "删除成功",
+        "delta": -1,
+        "rowsBefore": 2,
+        "rowsAfter": 1
+      },
+      "ts": "2026-04-14T18:56:20.427Z"
+    }
+  ],
+  "summary": {
+    "deepTotal": 5,
+    "deepPass": 5,
+    "deepFail": 0,
+    "deepSkip": 0,
+    "deepWarn": 0
+  }
+}

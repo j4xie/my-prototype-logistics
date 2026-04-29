@@ -2,7 +2,10 @@
  * SmartBI 配置管理 API
  * 提供数据源、图表模板、公式、阈值等配置管理
  */
-import { adminGet as get, adminPost as post, adminPut as put, adminDel as del } from './request';
+// R21-F4 fix: route through /api/mobile/* (nginx-proxied) instead of unroutable /api/admin/*
+// Backend controller moved from /api/admin/smartbi-config to /api/mobile/smartbi-config
+// to match nginx proxy rules (same pattern as R20-F2 workflow-designer fix).
+import { get, post, put, del } from './request';
 import type { ApiResponse } from '@/types/api';
 
 // ==================== 类型定义 ====================
@@ -96,42 +99,42 @@ export function getDataSources(params?: {
   type?: string;
   isActive?: boolean;
 }): Promise<ApiResponse<PageResponse<DataSource>>> {
-  return get('/api/admin/smartbi-config/data-sources', { params });
+  return get('/smartbi-config/data-sources', { params });
 }
 
 /**
  * 获取单个数据源
  */
 export function getDataSource(id: number): Promise<ApiResponse<DataSource>> {
-  return get(`/api/admin/smartbi-config/data-sources/${id}`);
+  return get(`/smartbi-config/data-sources/${id}`);
 }
 
 /**
  * 创建数据源
  */
 export function createDataSource(data: Partial<DataSource>): Promise<ApiResponse<DataSource>> {
-  return post('/api/admin/smartbi-config/data-sources', data);
+  return post('/smartbi-config/data-sources', data);
 }
 
 /**
  * 更新数据源
  */
 export function updateDataSource(id: number, data: Partial<DataSource>): Promise<ApiResponse<DataSource>> {
-  return put(`/api/admin/smartbi-config/data-sources/${id}`, data);
+  return put(`/smartbi-config/data-sources/${id}`, data);
 }
 
 /**
  * 删除数据源
  */
 export function deleteDataSource(id: number): Promise<ApiResponse<void>> {
-  return del(`/api/admin/smartbi-config/data-sources/${id}`);
+  return del(`/smartbi-config/data-sources/${id}`);
 }
 
 /**
  * 测试数据源连接
  */
 export function testDataSourceConnection(id: number): Promise<ApiResponse<{ success: boolean; message: string }>> {
-  return post(`/api/admin/smartbi-config/data-sources/${id}/test`);
+  return post(`/smartbi-config/data-sources/${id}/test`);
 }
 
 // ==================== 图表模板 API ====================
@@ -147,42 +150,42 @@ export function getChartTemplates(params?: {
   category?: string;
   isActive?: boolean;
 }): Promise<ApiResponse<PageResponse<ChartTemplate>>> {
-  return get('/api/admin/smartbi-config/charts', { params });
+  return get('/smartbi-config/charts', { params });
 }
 
 /**
  * 获取单个图表模板
  */
 export function getChartTemplate(id: number): Promise<ApiResponse<ChartTemplate>> {
-  return get(`/api/admin/smartbi-config/charts/${id}`);
+  return get(`/smartbi-config/charts/${id}`);
 }
 
 /**
  * 创建图表模板
  */
 export function createChartTemplate(data: Partial<ChartTemplate>): Promise<ApiResponse<ChartTemplate>> {
-  return post('/api/admin/smartbi-config/charts', data);
+  return post('/smartbi-config/charts', data);
 }
 
 /**
  * 更新图表模板
  */
 export function updateChartTemplate(id: number, data: Partial<ChartTemplate>): Promise<ApiResponse<ChartTemplate>> {
-  return put(`/api/admin/smartbi-config/charts/${id}`, data);
+  return put(`/smartbi-config/charts/${id}`, data);
 }
 
 /**
  * 删除图表模板
  */
 export function deleteChartTemplate(id: number): Promise<ApiResponse<void>> {
-  return del(`/api/admin/smartbi-config/charts/${id}`);
+  return del(`/smartbi-config/charts/${id}`);
 }
 
 /**
  * 预览图表
  */
 export function previewChart(id: number): Promise<ApiResponse<unknown>> {
-  return get(`/api/admin/smartbi-config/charts/${id}/preview`);
+  return get(`/smartbi-config/charts/${id}/preview`);
 }
 
 // ==================== 公式 API ====================
@@ -197,42 +200,42 @@ export function getFormulas(params?: {
   resultType?: string;
   isActive?: boolean;
 }): Promise<ApiResponse<PageResponse<Formula>>> {
-  return get('/api/admin/smartbi-config/formulas', { params });
+  return get('/smartbi-config/formulas', { params });
 }
 
 /**
  * 获取单个公式
  */
 export function getFormula(id: number): Promise<ApiResponse<Formula>> {
-  return get(`/api/admin/smartbi-config/formulas/${id}`);
+  return get(`/smartbi-config/formulas/${id}`);
 }
 
 /**
  * 创建公式
  */
 export function createFormula(data: Partial<Formula>): Promise<ApiResponse<Formula>> {
-  return post('/api/admin/smartbi-config/formulas', data);
+  return post('/smartbi-config/formulas', data);
 }
 
 /**
  * 更新公式
  */
 export function updateFormula(id: number, data: Partial<Formula>): Promise<ApiResponse<Formula>> {
-  return put(`/api/admin/smartbi-config/formulas/${id}`, data);
+  return put(`/smartbi-config/formulas/${id}`, data);
 }
 
 /**
  * 删除公式
  */
 export function deleteFormula(id: number): Promise<ApiResponse<void>> {
-  return del(`/api/admin/smartbi-config/formulas/${id}`);
+  return del(`/smartbi-config/formulas/${id}`);
 }
 
 /**
  * 验证公式表达式
  */
 export function validateFormula(expression: string): Promise<ApiResponse<{ valid: boolean; error?: string }>> {
-  return post('/api/admin/smartbi-config/formulas/validate', { expression });
+  return post('/smartbi-config/formulas/validate', { expression });
 }
 
 // ==================== 阈值 API ====================
@@ -244,19 +247,19 @@ export function getThresholds(params?: {
   keyword?: string;
   isActive?: boolean;
 }): Promise<ApiResponse<ThresholdConfig[]>> {
-  return get('/api/admin/smartbi-config/thresholds', { params });
+  return get('/smartbi-config/thresholds', { params });
 }
 
 /**
  * 批量更新阈值配置
  */
 export function updateThresholds(data: Partial<ThresholdConfig>[]): Promise<ApiResponse<void>> {
-  return put('/api/admin/smartbi-config/thresholds', data);
+  return put('/smartbi-config/thresholds', data);
 }
 
 /**
  * 更新单个阈值配置
  */
 export function updateThreshold(id: number, data: Partial<ThresholdConfig>): Promise<ApiResponse<ThresholdConfig>> {
-  return put(`/api/admin/smartbi-config/thresholds/${id}`, data);
+  return put(`/smartbi-config/thresholds/${id}`, data);
 }

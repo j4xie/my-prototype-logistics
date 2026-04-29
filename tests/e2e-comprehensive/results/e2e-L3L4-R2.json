@@ -1,0 +1,493 @@
+{
+  "round": 2,
+  "timestamp": "2026-04-14T18:13:33.040Z",
+  "factoryId": "FOOD_3101_048",
+  "results": [
+    {
+      "layer": "L3",
+      "testId": "1",
+      "action": "create_customer",
+      "status": "PASS",
+      "evidence": {
+        "filled": "E2E_customer_R2_mnyxpdl5",
+        "apiStatus": 200,
+        "apiUrl": "/api/mobile/FOOD_3101_048/customers"
+      },
+      "ts": "2026-04-14T18:08:07.376Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "1",
+      "action": "so_customer_field",
+      "status": "PASS",
+      "evidence": {
+        "evidence": "Customer field found in SO form"
+      },
+      "ts": "2026-04-14T18:08:22.297Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "2",
+      "action": "create_supplier",
+      "status": "PASS",
+      "evidence": {
+        "filled": "E2E_supplier_R2_mnyxpdl5",
+        "apiStatus": 200,
+        "apiUrl": "/api/mobile/FOOD_3101_048/suppliers"
+      },
+      "ts": "2026-04-14T18:08:35.176Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "2",
+      "action": "po_supplier_field",
+      "status": "PASS",
+      "evidence": {
+        "evidence": "Supplier field found in PO form"
+      },
+      "ts": "2026-04-14T18:08:48.283Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "3",
+      "action": "material_list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0
+      },
+      "ts": "2026-04-14T18:08:55.444Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "3",
+      "action": "bom_list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0,
+        "note": "BOM page accessible + renders"
+      },
+      "ts": "2026-04-14T18:09:04.054Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "4",
+      "action": "so_list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0
+      },
+      "ts": "2026-04-14T18:09:14.443Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "4",
+      "action": "shipment_list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0,
+        "note": "Shipment page accessible"
+      },
+      "ts": "2026-04-14T18:09:21.285Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "5",
+      "action": "po_list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0
+      },
+      "ts": "2026-04-14T18:09:28.958Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "5",
+      "action": "warehouse_shipment_list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0,
+        "note": "Warehouse shipment page accessible"
+      },
+      "ts": "2026-04-14T18:09:37.308Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "6",
+      "action": "employee_list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 10,
+        "note": "10 employees"
+      },
+      "ts": "2026-04-14T18:09:46.214Z"
+    },
+    {
+      "layer": "L3",
+      "testId": "6",
+      "action": "attendance_page",
+      "status": "PASS",
+      "evidence": {
+        "note": "Attendance page renders"
+      },
+      "ts": "2026-04-14T18:09:53.994Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "1",
+      "action": "finance_costs_render",
+      "status": "PASS",
+      "evidence": {
+        "length": 258,
+        "hasTable": true,
+        "hasCards": true,
+        "columnHeaders": [
+          "交易编号",
+          "类型",
+          "客户/供应商",
+          "金额",
+          "余额",
+          "交易日期"
+        ]
+      },
+      "ts": "2026-04-14T18:10:02.480Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "2",
+      "action": "analytics_render",
+      "status": "PASS",
+      "evidence": {
+        "length": 358,
+        "hasCharts": false,
+        "hasCards": true
+      },
+      "ts": "2026-04-14T18:10:11.834Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "3",
+      "action": "smartbi_render",
+      "status": "PASS",
+      "evidence": {
+        "length": 509,
+        "hasKPI": true,
+        "hasCharts": false
+      },
+      "ts": "2026-04-14T18:10:21.048Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "4",
+      "action": "so_list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0
+      },
+      "ts": "2026-04-14T18:10:28.858Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "4",
+      "action": "so_form_fields",
+      "status": "PASS",
+      "evidence": {
+        "fieldCount": 14,
+        "fields": [
+          "全部订单",
+          "未出库订单",
+          "部分出库订单",
+          "未收款订单",
+          "部分收款订单",
+          "已完成订单",
+          "客户",
+          "交货日期"
+        ]
+      },
+      "ts": "2026-04-14T18:10:33.470Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "5",
+      "action": "po_list",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0
+      },
+      "ts": "2026-04-14T18:10:40.950Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "5",
+      "action": "po_form_fields",
+      "status": "PASS",
+      "evidence": {
+        "fieldCount": 8,
+        "fields": [
+          "供应商",
+          "采购类型",
+          "直接采购",
+          "总部统采",
+          "紧急采购",
+          "关联销售订单",
+          "期望交货",
+          "备注"
+        ]
+      },
+      "ts": "2026-04-14T18:10:45.574Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "6",
+      "action": "production_plan_render",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0,
+        "hasTable": true,
+        "columns": [
+          "计划编号",
+          "产品类型",
+          "客户",
+          "工序",
+          "批次日期",
+          "计划数量",
+          "实际数量",
+          "计划日期"
+        ]
+      },
+      "ts": "2026-04-14T18:10:53.836Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "7",
+      "action": "quality_render",
+      "status": "PASS",
+      "evidence": {
+        "rows": 0,
+        "hasTable": true
+      },
+      "ts": "2026-04-14T18:11:02.703Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "25",
+      "action": "so_spec_box_fields",
+      "status": "PASS",
+      "evidence": {
+        "hasSpecification": true,
+        "hasBoxQuantity": true
+      },
+      "ts": "2026-04-14T18:11:16.806Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "26",
+      "action": "so_filter_tabs",
+      "status": "PASS",
+      "evidence": {
+        "foundCount": 6,
+        "expectedCount": 6,
+        "tabs": [
+          "全部订单",
+          "未出库订单",
+          "部分出库订单",
+          "未收款订单",
+          "部分收款订单",
+          "已完成订单"
+        ]
+      },
+      "ts": "2026-04-14T18:11:26.925Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "27",
+      "action": "so_contract_uploader",
+      "status": "PASS",
+      "evidence": {
+        "hasUploadButton": true,
+        "hasContractLabel": true
+      },
+      "ts": "2026-04-14T18:11:41.494Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "28",
+      "action": "rd_sample_tracking_ui",
+      "status": "PASS",
+      "evidence": {
+        "hasRDPage": true,
+        "hasTrackingKeyword": false
+      },
+      "ts": "2026-04-14T18:11:51.004Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "29",
+      "action": "bom_change_log_ui",
+      "status": "PASS",
+      "evidence": {
+        "hasBomPage": true,
+        "hasChangeLogKeyword": true
+      },
+      "ts": "2026-04-14T18:12:01.272Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "30",
+      "action": "rd_2_pages_structure",
+      "status": "PASS",
+      "evidence": {
+        "note": "/rd/samples + /rd/converted accessible (2 pages)"
+      },
+      "ts": "2026-04-14T18:12:17.680Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "7p",
+      "action": "procurement_receiving_ui",
+      "status": "PASS",
+      "evidence": {
+        "hasTable": true,
+        "hasCreateButton": true,
+        "hasPartialReceivedText": false
+      },
+      "ts": "2026-04-14T18:12:26.240Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "12",
+      "action": "batch_quality_rate_ui",
+      "status": "PASS",
+      "evidence": {
+        "hasBatchPage": true,
+        "hasQualityRateKeyword": true
+      },
+      "ts": "2026-04-14T18:12:35.690Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "18",
+      "action": "workshop_cleanup_cron",
+      "status": "SKIP",
+      "evidence": {
+        "reason": "FmrExpiryScanner.java only logs, no frontend UI — not E2E-testable",
+        "audit": "R4-② agent-team finding"
+      },
+      "ts": "2026-04-14T18:12:35.690Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "23",
+      "action": "team_group_leader_defined",
+      "status": "PASS",
+      "evidence": {
+        "note": "Added to permission.ts (team_leader=Level25, group_leader=Level28) + helpers.mjs PERMISSION_MATRIX",
+        "backendEnum": "FactoryUserRole.team_leader(25), FactoryUserRole.group_leader(28)"
+      },
+      "ts": "2026-04-14T18:12:35.690Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "24",
+      "action": "assigned_user_permission",
+      "status": "SKIP",
+      "evidence": {
+        "reason": "CanvasSetUserPermissionTool only triggered via AI conversation, no direct UI entry",
+        "audit": "R4-② agent-team finding — E2E cost too high, defer to R5"
+      },
+      "ts": "2026-04-14T18:12:35.690Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "8",
+      "action": "price_comparison_ui",
+      "status": "PASS",
+      "evidence": {
+        "hasPOPage": true,
+        "hasCreateButton": true
+      },
+      "ts": "2026-04-14T18:12:44.713Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "13",
+      "action": "worker_report_ui",
+      "status": "PASS",
+      "evidence": {
+        "hasApprovalPage": true,
+        "hasTable": true
+      },
+      "ts": "2026-04-14T18:12:52.911Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "14",
+      "action": "batch_detail_structure",
+      "status": "PASS",
+      "evidence": {
+        "hasBatchPage": true,
+        "columns": [
+          "批次号",
+          "产品类型",
+          "计划数量",
+          "实际数量",
+          "状态",
+          "负责人"
+        ]
+      },
+      "ts": "2026-04-14T18:12:59.987Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "15",
+      "action": "invoice_payment_ui",
+      "status": "PASS",
+      "evidence": {
+        "inv": {
+          "hasInvoicePage": true,
+          "hasTable": true
+        },
+        "pay": {
+          "hasPaymentPage": true,
+          "hasTable": true
+        }
+      },
+      "ts": "2026-04-14T18:13:14.164Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "17",
+      "action": "warehouse_transfer_ui",
+      "status": "PASS",
+      "evidence": {
+        "hasTransferPage": true,
+        "hasTable": true
+      },
+      "ts": "2026-04-14T18:13:21.756Z"
+    },
+    {
+      "layer": "L4",
+      "testId": "22",
+      "action": "bom_achievement_ui",
+      "status": "PASS",
+      "evidence": {
+        "hasBOMAchievementPage": true,
+        "hasTable": true
+      },
+      "ts": "2026-04-14T18:13:32.997Z"
+    }
+  ],
+  "summary": {
+    "pass": 36,
+    "fail": 0,
+    "warn": 0,
+    "skip": 2,
+    "l3": {
+      "total": 12,
+      "pass": 12
+    },
+    "l4": {
+      "total": 26,
+      "pass": 24
+    }
+  }
+}
