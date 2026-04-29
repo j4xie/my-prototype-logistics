@@ -339,6 +339,12 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'HRDepartments',
             component: () => import('@/views/hr/departments/index.vue'),
             meta: { requiresAuth: true, title: '部门管理', module: 'hr' }
+          },
+          {
+            path: 'work-types',
+            name: 'HRWorkTypes',
+            component: () => import('@/views/hr/work-types/list.vue'),
+            meta: { requiresAuth: true, title: '工种字典', module: 'hr' }
           }
         ]
       },
