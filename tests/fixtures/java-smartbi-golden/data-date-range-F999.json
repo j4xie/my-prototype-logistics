@@ -7,7 +7,7 @@
     "code": 200,
     "success": true,
     "message": "Data date range detected",
-    "timestamp": "2026-04-30T05:55:47.724380158",
+    "timestamp": "2026-04-30T06:34:57.727675944",
     "data": {
       "endDate": "2026-12-28",
       "granularity": "YEAR",
@@ -22,7 +22,7 @@
     "path": "/api/mobile/F999/smart-bi/data-date-range",
     "query": null,
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:55:48.100Z",
+    "recordedAt": "2026-04-29T22:34:58.104Z",
     "javaPort": 10011
   }
 }

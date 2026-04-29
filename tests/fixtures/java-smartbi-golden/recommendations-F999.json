@@ -7,10 +7,10 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:55:38.540849229",
+    "timestamp": "2026-04-30T06:34:44.80069088",
     "data": [
       {
-        "id": "b1779f71-b4c2-457c-87e9-126a8065f561",
+        "id": "0048a4e9-b4c1-4cf5-911e-093528faf83b",
         "type": "SALES_IMPROVEMENT",
         "title": "缩小销售团队业绩差距",
         "description": "销售员业绩差异较大，建议加强团队协作",
@@ -24,7 +24,7 @@
         "relatedData": {},
         "targetId": null,
         "targetName": null,
-        "createdAt": "2026-04-30T05:55:38.537828587",
+        "createdAt": "2026-04-30T06:34:44.796854163",
         "typeName": "销售提升",
         "highPriority": true
       }
@@ -36,7 +36,7 @@
     "path": "/api/mobile/F999/smart-bi/recommendations",
     "query": null,
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:55:38.913Z",
+    "recordedAt": "2026-04-29T22:34:45.177Z",
     "javaPort": 10011
   }
 }

@@ -7,7 +7,7 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:55:31.890604985",
+    "timestamp": "2026-04-30T06:34:37.421755844",
     "data": {
       "endDate": "2025-12-31",
       "overdueRanking": [],
@@ -128,16 +128,16 @@
         "options": {
           "series": [
             {
-              "type": "bar",
-              "name": "应收金额"
+              "name": "应收金额",
+              "type": "bar"
             },
             {
-              "type": "bar",
-              "name": "回款金额"
+              "name": "回款金额",
+              "type": "bar"
             },
             {
-              "type": "line",
-              "name": "应收余额"
+              "name": "应收余额",
+              "type": "line"
             }
           ]
         },
@@ -157,7 +157,7 @@
       "analysisType": "receivable"
     },
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:55:32.221Z",
+    "recordedAt": "2026-04-29T22:34:37.756Z",
     "javaPort": 10011
   }
 }

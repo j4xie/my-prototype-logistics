@@ -7,7 +7,7 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:55:30.95567485",
+    "timestamp": "2026-04-30T06:34:36.495689182",
     "data": {
       "endDate": "2025-12-31",
       "metrics": [
@@ -85,12 +85,12 @@
         "options": {
           "yAxis": [
             {
-              "position": "left",
-              "name": "金额"
+              "name": "金额",
+              "position": "left"
             },
             {
-              "position": "right",
-              "name": "毛利率(%)"
+              "name": "毛利率(%)",
+              "position": "right"
             }
           ],
           "series": [
@@ -137,7 +137,7 @@
       "analysisType": "profit"
     },
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:55:31.279Z",
+    "recordedAt": "2026-04-29T22:34:36.819Z",
     "javaPort": 10011
   }
 }

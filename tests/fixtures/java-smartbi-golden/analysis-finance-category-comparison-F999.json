@@ -7,7 +7,7 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:55:33.26781265",
+    "timestamp": "2026-04-30T06:34:38.800297885",
     "data": {
       "chartType": "BAR",
       "title": "2025年 vs 2024年 品类结构对比",
@@ -17,12 +17,12 @@
         "groupedBar": true,
         "yAxis": [
           {
-            "position": "left",
-            "name": "金额"
+            "name": "金额",
+            "position": "left"
           },
           {
-            "position": "right",
-            "name": "同比增长率(%)"
+            "name": "同比增长率(%)",
+            "position": "right"
           }
         ],
         "series": [
@@ -64,7 +64,7 @@
       "compareYear": "2024"
     },
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:55:33.644Z",
+    "recordedAt": "2026-04-29T22:34:39.174Z",
     "javaPort": 10011
   }
 }

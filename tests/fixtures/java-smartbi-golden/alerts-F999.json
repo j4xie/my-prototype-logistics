@@ -7,10 +7,10 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:55:37.61106064",
+    "timestamp": "2026-04-30T06:34:42.987207855",
     "data": [
       {
-        "id": "1d38e2b9-b482-4cb3-8923-4f5f6b1810a3",
+        "id": "cbacac61-4e6e-4968-a27c-3a5853681d42",
         "level": "RED",
         "category": "finance",
         "title": "应收账款严重逾期",
@@ -22,12 +22,12 @@
         "suggestion": "建议立即联系客户催收，必要时采取法律手段",
         "relatedEntityId": null,
         "relatedEntityName": null,
-        "createdAt": "2026-04-30T05:55:37.609801091",
+        "createdAt": "2026-04-30T06:34:42.985660598",
         "levelName": "RED",
         "urgent": true
       },
       {
-        "id": "4e9aa7ff-0bbf-4ae5-a140-66d0fcd10263",
+        "id": "e14c74bd-2bc2-43d5-b204-ad08529a3876",
         "level": "RED",
         "category": "finance",
         "title": "应收账款严重逾期",
@@ -39,12 +39,12 @@
         "suggestion": "建议立即联系客户催收，必要时采取法律手段",
         "relatedEntityId": null,
         "relatedEntityName": null,
-        "createdAt": "2026-04-30T05:55:37.609847283",
+        "createdAt": "2026-04-30T06:34:42.985700859",
         "levelName": "RED",
         "urgent": true
       },
       {
-        "id": "8a82c51e-a6ec-4fa0-8ed9-2cdc8e7b830f",
+        "id": "404bfa3f-6154-4566-8252-58519f56b2aa",
         "level": "RED",
         "category": "finance",
         "title": "应收账款总额过高",
@@ -56,12 +56,12 @@
         "suggestion": "建议制定催收计划，加速资金回笼",
         "relatedEntityId": null,
         "relatedEntityName": null,
-        "createdAt": "2026-04-30T05:55:37.609926745",
+        "createdAt": "2026-04-30T06:34:42.985994538",
         "levelName": "RED",
         "urgent": true
       },
       {
-        "id": "cf29bf38-50f5-404c-8bd0-c4ae8808ea06",
+        "id": "a21290e6-d9a5-4544-9484-3c2eba8fa4a7",
         "level": "RED",
         "category": "department",
         "title": "研发部 人均产出过低",
@@ -73,12 +73,12 @@
         "suggestion": "建议分析人员效能，考虑调整人员配置或加强培训",
         "relatedEntityId": null,
         "relatedEntityName": null,
-        "createdAt": "2026-04-30T05:55:37.610780792",
+        "createdAt": "2026-04-30T06:34:42.986758401",
         "levelName": "RED",
         "urgent": true
       },
       {
-        "id": "20d5f9d1-7ade-42ae-bcb3-188f429a5488",
+        "id": "8fdd1930-afe0-4073-8727-310f8d5e2c06",
         "level": "RED",
         "category": "department",
         "title": "行政部 人均产出过低",
@@ -90,12 +90,12 @@
         "suggestion": "建议分析人员效能，考虑调整人员配置或加强培训",
         "relatedEntityId": null,
         "relatedEntityName": null,
-        "createdAt": "2026-04-30T05:55:37.610820923",
+        "createdAt": "2026-04-30T06:34:42.986804043",
         "levelName": "RED",
         "urgent": true
       },
       {
-        "id": "44632673-1664-4065-82f4-e4fa5ee56913",
+        "id": "89246770-057a-4864-a539-ec870747d9f2",
         "level": "RED",
         "category": "department",
         "title": "销售部 人均产出过低",
@@ -107,12 +107,12 @@
         "suggestion": "建议分析人员效能，考虑调整人员配置或加强培训",
         "relatedEntityId": null,
         "relatedEntityName": null,
-        "createdAt": "2026-04-30T05:55:37.610851343",
+        "createdAt": "2026-04-30T06:34:42.986839084",
         "levelName": "RED",
         "urgent": true
       },
       {
-        "id": "48e66d1d-d6f0-4dc4-9387-e1d97c37ceb1",
+        "id": "625950d0-b246-4efe-b08f-53af986c3882",
         "level": "YELLOW",
         "category": "finance",
         "title": "应收账款即将逾期",
@@ -124,7 +124,7 @@
         "suggestion": "建议跟进客户付款计划，发送催款提醒",
         "relatedEntityId": null,
         "relatedEntityName": null,
-        "createdAt": "2026-04-30T05:55:37.609881954",
+        "createdAt": "2026-04-30T06:34:42.98573683",
         "levelName": "YELLOW",
         "urgent": false
       }
@@ -136,7 +136,7 @@
     "path": "/api/mobile/F999/smart-bi/alerts",
     "query": null,
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:55:37.936Z",
+    "recordedAt": "2026-04-29T22:34:43.313Z",
     "javaPort": 10011
   }
 }

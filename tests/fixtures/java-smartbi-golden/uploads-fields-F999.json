@@ -7,7 +7,7 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:55:43.389366619",
+    "timestamp": "2026-04-30T06:34:49.676386405",
     "data": []
   },
   "_meta": {
@@ -16,7 +16,7 @@
     "path": "/api/mobile/F999/smart-bi/uploads/1/fields",
     "query": null,
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:55:43.763Z",
+    "recordedAt": "2026-04-29T22:34:50.054Z",
     "javaPort": 10011
   }
 }

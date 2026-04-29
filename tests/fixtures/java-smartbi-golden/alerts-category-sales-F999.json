@@ -7,7 +7,7 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:55:38.051295427",
+    "timestamp": "2026-04-30T06:34:43.428977107",
     "data": []
   },
   "_meta": {
@@ -18,7 +18,7 @@
       "category": "sales"
     },
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:55:38.423Z",
+    "recordedAt": "2026-04-29T22:34:43.803Z",
     "javaPort": 10011
   }
 }

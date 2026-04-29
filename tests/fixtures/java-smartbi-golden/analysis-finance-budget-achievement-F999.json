@@ -7,7 +7,7 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:55:32.335050351",
+    "timestamp": "2026-04-30T06:34:37.871353855",
     "data": {
       "chartType": "LINE_BAR",
       "title": "2025年收入预算达成分析",
@@ -113,8 +113,8 @@
       "options": {
         "yAxis": [
           {
-            "position": "left",
-            "name": "金额"
+            "name": "金额",
+            "position": "left"
           },
           {
             "position": "right",
@@ -161,7 +161,7 @@
       "metric": "revenue"
     },
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:55:32.659Z",
+    "recordedAt": "2026-04-29T22:34:38.194Z",
     "javaPort": 10011
   }
 }

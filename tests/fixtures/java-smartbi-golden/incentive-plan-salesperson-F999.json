@@ -7,9 +7,9 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:55:39.027286275",
+    "timestamp": "2026-04-30T06:34:45.292593052",
     "data": {
-      "id": "653d3b89-1769-47eb-a316-8ac3cb200936",
+      "id": "eb5449aa-0162-4de7-b45d-444c672496b8",
       "targetType": "salesperson",
       "targetId": "SP001",
       "targetName": "SP001",
@@ -69,7 +69,7 @@
       "motivationalMessage": "SP001 当前完成率 0.0%，需要加速冲刺！每一笔订单都是向目标迈进！",
       "estimatedReward": null,
       "potentialReward": 500,
-      "createdAt": "2026-04-30T05:55:39.026316066"
+      "createdAt": "2026-04-30T06:34:45.291581472"
     }
   },
   "_meta": {
@@ -78,7 +78,7 @@
     "path": "/api/mobile/F999/smart-bi/incentive-plan/salesperson/SP001",
     "query": null,
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:55:39.357Z",
+    "recordedAt": "2026-04-29T22:34:45.619Z",
     "javaPort": 10011
   }
 }

@@ -12,7 +12,7 @@
     "path": "/api/mobile/{factory_id}/smart-bi/dashboard/executive/insights/custom/stream",
     "query": null,
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:55:47.118Z",
+    "recordedAt": "2026-04-29T22:34:57.126Z",
     "javaPort": 10011
   }
 }

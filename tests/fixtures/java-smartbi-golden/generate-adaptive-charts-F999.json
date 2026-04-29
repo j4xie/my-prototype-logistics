@@ -7,12 +7,12 @@
     "code": 400,
     "success": false,
     "message": "Chart generation failed: Upload not found: 1",
-    "timestamp": "2026-04-30T05:55:44.861726627",
+    "timestamp": "2026-04-30T06:34:51.15131831",
     "data": {
       "code": 400,
       "message": "Chart generation failed: Upload not found: 1",
       "data": null,
-      "timestamp": "2026-04-30T05:55:44.861726627",
+      "timestamp": "2026-04-30T06:34:51.15131831",
       "success": false,
       "actionHint": null,
       "severity": null,
@@ -25,7 +25,7 @@
     "path": "/api/mobile/F999/smart-bi/generate-adaptive-charts",
     "query": null,
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:55:45.236Z",
+    "recordedAt": "2026-04-29T22:34:51.521Z",
     "javaPort": 10011
   }
 }

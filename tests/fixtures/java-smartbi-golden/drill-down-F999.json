@@ -7,7 +7,7 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:55:37.122781548",
+    "timestamp": "2026-04-30T06:34:42.497599182",
     "data": {
       "drillPath": "华东",
       "data": [],
@@ -22,7 +22,7 @@
     "path": "/api/mobile/F999/smart-bi/drill-down",
     "query": null,
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:55:37.492Z",
+    "recordedAt": "2026-04-29T22:34:42.868Z",
     "javaPort": 10011
   }
 }

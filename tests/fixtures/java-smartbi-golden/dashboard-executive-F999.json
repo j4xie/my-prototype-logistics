@@ -7,7 +7,7 @@
     "code": 200,
     "success": true,
     "message": "操作成功",
-    "timestamp": "2026-04-30T05:55:45.848029009",
+    "timestamp": "2026-04-30T06:34:52.140714036",
     "data": {
       "period": null,
       "startDate": null,
@@ -15,6 +15,32 @@
       "kpiCards": [],
       "metricCards": null,
       "rankings": {
+        "department": [
+          {
+            "rank": 1,
+            "name": "销售部",
+            "value": 150000,
+            "target": 0,
+            "completionRate": 0,
+            "alertLevel": "RED"
+          },
+          {
+            "rank": 2,
+            "name": "研发部",
+            "value": 100000,
+            "target": 0,
+            "completionRate": 0,
+            "alertLevel": "RED"
+          },
+          {
+            "rank": 3,
+            "name": "行政部",
+            "value": 50000,
+            "target": 0,
+            "completionRate": 0,
+            "alertLevel": "RED"
+          }
+        ],
         "region": [
           {
             "rank": 1,
@@ -78,10 +104,10 @@
             }
           ],
           "options": {
-            "period": "WEEK",
             "series": [
               "未知部门"
-            ]
+            ],
+            "period": "WEEK"
           },
           "xaxisField": "period",
           "yaxisField": "amount"
@@ -110,7 +136,7 @@
         "请先上传销售数据以开始分析"
       ],
       "generatedAt": null,
-      "lastUpdated": "2026-04-30T05:20:27.938170837",
+      "lastUpdated": "2026-04-30T06:34:52.132445514",
       "fromCache": false,
       "cacheExpireAt": null
     }
@@ -123,7 +149,7 @@
       "period": "month"
     },
     "factory": "F999",
-    "recordedAt": "2026-04-29T21:55:46.179Z",
+    "recordedAt": "2026-04-29T22:34:52.464Z",
     "javaPort": 10011
   }
 }
