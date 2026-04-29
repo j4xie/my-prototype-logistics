@@ -41,7 +41,7 @@ from typing import Any, Iterable, List, Optional
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 
-from smartbi_compat.alert_thresholds import load_thresholds
+from smartbi_compat.alert_thresholds import ALERT_SEVERITY, load_thresholds
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.date_range import DateRange
 from smartbi_compat.schema_compat import wrap_response
@@ -307,6 +307,57 @@ def _query_sales_data(factory_id: str, range_) -> list:
         ).all()
 
 
+def _query_finance_data(factory_id: str, range_) -> list:
+    """Mirror SmartBiFinanceDataRepository.findByFactoryIdAndRecordDateBetween.
+
+    Returns rows with columns needed by the finance generator: customer_name,
+    receivable_amount, aging_days, budget_amount, actual_amount.
+    """
+    from smartbi.database.connection import get_db_context, is_postgres_enabled
+
+    if not is_postgres_enabled():
+        logger.warning(
+            "alerts/finance: postgres not enabled; returning [] (factory_id=%s)",
+            factory_id,
+        )
+        return []
+
+    sql = text(
+        "SELECT customer_name, receivable_amount, aging_days, "
+        "       budget_amount, actual_amount "
+        "FROM smart_bi_finance_data "
+        "WHERE factory_id = :fid AND record_date BETWEEN :start AND :end"
+    )
+    with get_db_context() as db:
+        return db.execute(
+            sql,
+            {"fid": factory_id, "start": range_.start_date, "end": range_.end_date},
+        ).all()
+
+
+def _query_department_data(factory_id: str, range_) -> list:
+    """Mirror SmartBiDepartmentDataRepository.findByFactoryIdAndRecordDateBetween."""
+    from smartbi.database.connection import get_db_context, is_postgres_enabled
+
+    if not is_postgres_enabled():
+        logger.warning(
+            "alerts/department: postgres not enabled; returning [] (factory_id=%s)",
+            factory_id,
+        )
+        return []
+
+    sql = text(
+        "SELECT department, sales_amount, headcount "
+        "FROM smart_bi_department_data "
+        "WHERE factory_id = :fid AND record_date BETWEEN :start AND :end"
+    )
+    with get_db_context() as db:
+        return db.execute(
+            sql,
+            {"fid": factory_id, "start": range_.start_date, "end": range_.end_date},
+        ).all()
+
+
 def _new_alert_dict(
     *,
     level: str,
@@ -451,6 +502,176 @@ def _generate_sales_alerts(factory_id: str, range_: DateRange) -> list[dict]:
     return alerts
 
 
+def _generate_finance_alerts(factory_id: str, range_: DateRange) -> list[dict]:
+    """Mirror RecommendationServiceImpl.generateFinanceAlerts (Java line 278-376).
+
+    3 alert types:
+      1. Per-record aging (red >90, yellow >60) — List iteration, already stable
+      2. Cost over-budget (max 1 alert; uses _calculate_growth_rate semantics)
+      3. Large receivable total (max 1 alert; sum vs amount thresholds)
+    """
+    finance_data = _query_finance_data(factory_id, range_)
+    if not finance_data:
+        return []
+    alerts: list[dict] = []
+    th = _THRESHOLDS.finance
+
+    # 1. Per-receivable aging alerts
+    for d in finance_data:
+        receivable = Decimal(str(d.receivable_amount)) if d.receivable_amount is not None else Decimal("0")
+        if receivable <= 0:
+            continue
+        aging = d.aging_days if d.aging_days is not None else 0
+
+        if aging > th.aging_red:
+            alerts.append(_new_alert_dict(
+                level="RED",
+                category="finance",
+                title="应收账款严重逾期",
+                message=f"客户 {d.customer_name} 应收款 {receivable:.2f} 元已逾期 {aging} 天",
+                metric="账龄天数",
+                value=Decimal(aging),
+                threshold=Decimal(th.aging_red),
+                suggestion="建议立即联系客户催收，必要时采取法律手段",
+            ))
+        elif aging > th.aging_yellow:
+            alerts.append(_new_alert_dict(
+                level="YELLOW",
+                category="finance",
+                title="应收账款即将逾期",
+                message=f"客户 {d.customer_name} 应收款 {receivable:.2f} 元账龄已达 {aging} 天",
+                metric="账龄天数",
+                value=Decimal(aging),
+                threshold=Decimal(th.aging_yellow),
+                suggestion="建议跟进客户付款计划，发送催款提醒",
+            ))
+
+    # 2. Cost over-budget (max 1 alert)
+    total_budget = _sum_field(finance_data, "budget_amount")
+    total_actual = _sum_field(finance_data, "actual_amount")
+    if total_budget > 0:
+        variance = _calculate_growth_rate(total_actual, total_budget)
+        if variance > th.cost_variance_red:
+            alerts.append(_new_alert_dict(
+                level="RED",
+                category="finance",
+                title="成本严重超支",
+                message=f"实际支出超预算 {variance:.1f}%，需严格控制",
+                metric="预算偏差率",
+                value=variance,
+                threshold=th.cost_variance_red,
+                suggestion="建议立即审查各项支出，暂停非必要开支",
+            ))
+        elif variance > th.cost_variance_yellow:
+            alerts.append(_new_alert_dict(
+                level="YELLOW",
+                category="finance",
+                title="成本有所超支",
+                message=f"实际支出超预算 {variance:.1f}%，需关注",
+                metric="预算偏差率",
+                value=variance,
+                threshold=th.cost_variance_yellow,
+                suggestion="建议优化支出结构，控制成本增长",
+            ))
+
+    # 3. Large receivable total (max 1 alert)
+    total_receivable = _sum_field(finance_data, "receivable_amount")
+    if total_receivable > th.amount_red:
+        alerts.append(_new_alert_dict(
+            level="RED",
+            category="finance",
+            title="应收账款总额过高",
+            message=f"应收账款总额达 {total_receivable:.2f} 元，资金压力大",
+            metric="应收总额",
+            value=total_receivable,
+            threshold=th.amount_red,
+            suggestion="建议制定催收计划，加速资金回笼",
+        ))
+    elif total_receivable > th.amount_yellow:
+        alerts.append(_new_alert_dict(
+            level="YELLOW",
+            category="finance",
+            title="应收账款总额较高",
+            message=f"应收账款总额达 {total_receivable:.2f} 元，需关注回款",
+            metric="应收总额",
+            value=total_receivable,
+            threshold=th.amount_yellow,
+            suggestion="建议加强应收账款管理，定期跟进回款",
+        ))
+
+    return alerts
+
+
+def _generate_department_alerts(factory_id: str, range_: DateRange) -> list[dict]:
+    """Mirror RecommendationServiceImpl.generateDepartmentAlerts (Java line 380-434).
+
+    Per-department per_capita check (sorted by name to match Java TreeMap fix).
+    """
+    dept_data = _query_department_data(factory_id, range_)
+    if not dept_data:
+        return []
+    alerts: list[dict] = []
+    th = _THRESHOLDS.department
+
+    by_dept: dict[str, list] = {}
+    for d in dept_data:
+        if d.department is None:
+            continue
+        by_dept.setdefault(d.department, []).append(d)
+
+    for dept_name in sorted(by_dept.keys()):
+        rows = by_dept[dept_name]
+        total_sales = _sum_field(rows, "sales_amount")
+        headcount_max = max(
+            (r.headcount for r in rows if r.headcount is not None),
+            default=1,
+        )
+        if headcount_max <= 0:
+            continue
+        per_capita = (total_sales / Decimal(headcount_max)).quantize(
+            _SCALE_4, rounding=ROUND_HALF_UP
+        )
+
+        if per_capita < th.per_capita_red:
+            alerts.append(_new_alert_dict(
+                level="RED",
+                category="department",
+                title=f"{dept_name} 人均产出过低",
+                message=f"{dept_name} 人均销售额仅为 {per_capita:.2f} 元，严重低于标准",
+                metric="人均产出",
+                value=per_capita,
+                threshold=th.per_capita_red,
+                suggestion="建议分析人员效能，考虑调整人员配置或加强培训",
+            ))
+        elif per_capita < th.per_capita_yellow:
+            alerts.append(_new_alert_dict(
+                level="YELLOW",
+                category="department",
+                title=f"{dept_name} 人均产出偏低",
+                message=f"{dept_name} 人均销售额为 {per_capita:.2f} 元，低于期望",
+                metric="人均产出",
+                value=per_capita,
+                threshold=th.per_capita_yellow,
+                suggestion="建议提升人员效率，优化工作流程",
+            ))
+
+    return alerts
+
+
+def _generate_all_alerts(factory_id: str, range_: DateRange) -> list[dict]:
+    """Mirror RecommendationServiceImpl.generateAllAlerts (Java line 438-454).
+
+    Concatenates sales+finance+department alerts, then sorts by severity DESC.
+    Python list.sort is stable so within-severity preserves sub-generator order.
+    """
+    all_alerts: list[dict] = []
+    all_alerts.extend(_generate_sales_alerts(factory_id, range_))
+    all_alerts.extend(_generate_finance_alerts(factory_id, range_))
+    all_alerts.extend(_generate_department_alerts(factory_id, range_))
+    all_alerts.sort(key=lambda a: -ALERT_SEVERITY[a["level"]])
+    return all_alerts
+
+
 @router.get("/api/mobile/{factory_id}/smart-bi/datasource/list")
 async def list_datasources(
     factory_id: str,
@@ -477,14 +698,16 @@ async def get_alerts(
     Java reference: SmartBIAnalysisController.getAlerts (line 590-617)
     backed by RecommendationServiceImpl.generateSales/Finance/Department/All.
 
-    Phase 2A chat 2: only sales generator ported; finance / department / aggregator
-    return [] until chat 3 (Phase C/D/E). Default branch returns sales for now.
+    Default branch (no category) returns aggregator: sales+finance+department
+    concatenated and sorted by AlertLevel severity DESC (matches Java line 438-454).
     """
     range_ = DateRange.by_period("month")
     if category == "sales":
         alerts = _generate_sales_alerts(auth.factory_id, range_)
-    elif category in ("finance", "department"):
-        alerts = []
+    elif category == "finance":
+        alerts = _generate_finance_alerts(auth.factory_id, range_)
+    elif category == "department":
+        alerts = _generate_department_alerts(auth.factory_id, range_)
     else:
-        alerts = _generate_sales_alerts(auth.factory_id, range_)
+        alerts = _generate_all_alerts(auth.factory_id, range_)
     return wrap_response(alerts)

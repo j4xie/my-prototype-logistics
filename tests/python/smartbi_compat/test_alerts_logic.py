@@ -188,3 +188,259 @@ def test_sales_per_salesperson_alerts_sorted_by_name():
     # Python str sort on Chinese: 张/李/王 by unicode (matches Java TreeMap natural order)
     assert names == sorted(names)
     assert len(per_person) == 3  # all 3 below red threshold
+
+
+# ─── Finance generator tests (C1) ──────────────────────────────────────────────
+
+
+def test_query_finance_data_returns_empty_when_postgres_disabled(monkeypatch):
+    monkeypatch.setenv("POSTGRES_ENABLED", "false")
+    from smartbi_compat.api.analysis import _query_finance_data
+    from smartbi_compat.date_range import DateRange
+    assert _query_finance_data("F999", DateRange.by_period("month")) == []
+
+
+def test_finance_aging_red_alert():
+    """receivable=5000, aging=100 days -> > red(90) -> RED alert per record."""
+    from smartbi_compat.api.analysis import _generate_finance_alerts
+    import smartbi_compat.api.analysis as mod
+    rows = [
+        SimpleNamespace(customer_name="客户A", receivable_amount=Decimal("5000"),
+                        aging_days=100, budget_amount=None, actual_amount=None),
+    ]
+    orig = mod._query_finance_data
+    mod._query_finance_data = lambda f, r: rows
+    try:
+        from smartbi_compat.date_range import DateRange
+        alerts = _generate_finance_alerts("F999", DateRange.by_period("month"))
+    finally:
+        mod._query_finance_data = orig
+
+    aging = [a for a in alerts if a["title"] == "应收账款严重逾期"]
+    assert len(aging) == 1
+    assert aging[0]["level"] == "RED"
+    assert "客户A" in aging[0]["message"]
+
+
+def test_finance_aging_yellow_alert():
+    """aging=70 between 60-90 -> YELLOW alert."""
+    from smartbi_compat.api.analysis import _generate_finance_alerts
+    import smartbi_compat.api.analysis as mod
+    rows = [
+        SimpleNamespace(customer_name="客户Y", receivable_amount=Decimal("5000"),
+                        aging_days=70, budget_amount=None, actual_amount=None),
+    ]
+    orig = mod._query_finance_data
+    mod._query_finance_data = lambda f, r: rows
+    try:
+        from smartbi_compat.date_range import DateRange
+        alerts = _generate_finance_alerts("F999", DateRange.by_period("month"))
+    finally:
+        mod._query_finance_data = orig
+
+    aging = [a for a in alerts if a["title"] == "应收账款即将逾期"]
+    assert len(aging) == 1
+    assert aging[0]["level"] == "YELLOW"
+
+
+def test_finance_aging_skips_zero_receivable():
+    """receivable=0 -> skip aging alert even if aging > red threshold."""
+    from smartbi_compat.api.analysis import _generate_finance_alerts
+    import smartbi_compat.api.analysis as mod
+    rows = [
+        SimpleNamespace(customer_name="客户Z", receivable_amount=Decimal("0"),
+                        aging_days=200, budget_amount=None, actual_amount=None),
+    ]
+    orig = mod._query_finance_data
+    mod._query_finance_data = lambda f, r: rows
+    try:
+        from smartbi_compat.date_range import DateRange
+        alerts = _generate_finance_alerts("F999", DateRange.by_period("month"))
+    finally:
+        mod._query_finance_data = orig
+
+    assert all(a["title"] not in ("应收账款严重逾期", "应收账款即将逾期") for a in alerts)
+
+
+def test_finance_cost_variance_red_alert():
+    """budget=100, actual=150 -> variance=50% > red(20) -> RED alert."""
+    from smartbi_compat.api.analysis import _generate_finance_alerts
+    import smartbi_compat.api.analysis as mod
+    rows = [
+        SimpleNamespace(customer_name=None, receivable_amount=None, aging_days=None,
+                        budget_amount=Decimal("100"), actual_amount=Decimal("150")),
+    ]
+    orig = mod._query_finance_data
+    mod._query_finance_data = lambda f, r: rows
+    try:
+        from smartbi_compat.date_range import DateRange
+        alerts = _generate_finance_alerts("F999", DateRange.by_period("month"))
+    finally:
+        mod._query_finance_data = orig
+
+    variance = [a for a in alerts if a["title"] == "成本严重超支"]
+    assert len(variance) == 1
+    assert variance[0]["level"] == "RED"
+
+
+def test_finance_large_receivable_red_alert():
+    """sum(receivable) > red(1,000,000) -> RED alert."""
+    from smartbi_compat.api.analysis import _generate_finance_alerts
+    import smartbi_compat.api.analysis as mod
+    rows = [
+        SimpleNamespace(customer_name="客户B", receivable_amount=Decimal("1500000"),
+                        aging_days=10, budget_amount=None, actual_amount=None),
+    ]
+    orig = mod._query_finance_data
+    mod._query_finance_data = lambda f, r: rows
+    try:
+        from smartbi_compat.date_range import DateRange
+        alerts = _generate_finance_alerts("F999", DateRange.by_period("month"))
+    finally:
+        mod._query_finance_data = orig
+
+    total = [a for a in alerts if a["title"] == "应收账款总额过高"]
+    assert len(total) == 1
+    assert total[0]["level"] == "RED"
+
+
+def test_finance_empty_returns_empty():
+    from smartbi_compat.api.analysis import _generate_finance_alerts
+    import smartbi_compat.api.analysis as mod
+    orig = mod._query_finance_data
+    mod._query_finance_data = lambda f, r: []
+    try:
+        from smartbi_compat.date_range import DateRange
+        assert _generate_finance_alerts("F999", DateRange.by_period("month")) == []
+    finally:
+        mod._query_finance_data = orig
+
+
+# ─── Department generator tests (D1) ───────────────────────────────────────────
+
+
+def test_query_department_data_returns_empty_when_postgres_disabled(monkeypatch):
+    monkeypatch.setenv("POSTGRES_ENABLED", "false")
+    from smartbi_compat.api.analysis import _query_department_data
+    from smartbi_compat.date_range import DateRange
+    assert _query_department_data("F999", DateRange.by_period("month")) == []
+
+
+def test_department_per_capita_red_alert():
+    """sales=10, headcount=1 -> per_capita=10 < red(50000) -> RED."""
+    from smartbi_compat.api.analysis import _generate_department_alerts
+    import smartbi_compat.api.analysis as mod
+    rows = [SimpleNamespace(department="研发部", sales_amount=Decimal("10"), headcount=1)]
+    orig = mod._query_department_data
+    mod._query_department_data = lambda f, r: rows
+    try:
+        from smartbi_compat.date_range import DateRange
+        alerts = _generate_department_alerts("F999", DateRange.by_period("month"))
+    finally:
+        mod._query_department_data = orig
+
+    assert len(alerts) == 1
+    assert alerts[0]["level"] == "RED"
+    assert "研发部" in alerts[0]["title"]
+
+
+def test_department_per_capita_yellow_alert():
+    """sales=70000, headcount=1 -> per_capita=70000 (between red=50K and yellow=80K) -> YELLOW."""
+    from smartbi_compat.api.analysis import _generate_department_alerts
+    import smartbi_compat.api.analysis as mod
+    rows = [SimpleNamespace(department="销售部", sales_amount=Decimal("70000"), headcount=1)]
+    orig = mod._query_department_data
+    mod._query_department_data = lambda f, r: rows
+    try:
+        from smartbi_compat.date_range import DateRange
+        alerts = _generate_department_alerts("F999", DateRange.by_period("month"))
+    finally:
+        mod._query_department_data = orig
+
+    assert len(alerts) == 1
+    assert alerts[0]["level"] == "YELLOW"
+
+
+def test_department_alerts_sorted_by_name():
+    """Multiple departments -> output sorted alphabetically (matches Java TreeMap fix)."""
+    from smartbi_compat.api.analysis import _generate_department_alerts
+    import smartbi_compat.api.analysis as mod
+    rows = [
+        SimpleNamespace(department="销售部", sales_amount=Decimal("10"), headcount=1),
+        SimpleNamespace(department="研发部", sales_amount=Decimal("10"), headcount=1),
+        SimpleNamespace(department="行政部", sales_amount=Decimal("10"), headcount=1),
+    ]
+    orig = mod._query_department_data
+    mod._query_department_data = lambda f, r: rows
+    try:
+        from smartbi_compat.date_range import DateRange
+        alerts = _generate_department_alerts("F999", DateRange.by_period("month"))
+    finally:
+        mod._query_department_data = orig
+
+    departments = [a["title"].split()[0] for a in alerts]
+    assert departments == sorted(departments)
+    assert len(alerts) == 3
+
+
+def test_department_empty_returns_empty():
+    from smartbi_compat.api.analysis import _generate_department_alerts
+    import smartbi_compat.api.analysis as mod
+    orig = mod._query_department_data
+    mod._query_department_data = lambda f, r: []
+    try:
+        from smartbi_compat.date_range import DateRange
+        assert _generate_department_alerts("F999", DateRange.by_period("month")) == []
+    finally:
+        mod._query_department_data = orig
+
+
+# ─── Aggregator tests (E1) ─────────────────────────────────────────────────────
+
+
+def test_aggregator_concat_and_sort_by_severity():
+    """All 3 generators contribute -> output sorted by severity DESC."""
+    from smartbi_compat.api.analysis import _generate_all_alerts
+    import smartbi_compat.api.analysis as mod
+    sales_rows = [SimpleNamespace(salesperson_name=None, amount=Decimal("100"),
+                                  monthly_target=Decimal("1000"))]  # YELLOW completion
+    finance_rows = [SimpleNamespace(customer_name="X", receivable_amount=Decimal("5000"),
+                                    aging_days=100, budget_amount=None, actual_amount=None)]  # RED aging
+    dept_rows = [SimpleNamespace(department="研发部", sales_amount=Decimal("10"),
+                                 headcount=1)]  # RED per-capita
+    orig_s = mod._query_sales_data
+    orig_f = mod._query_finance_data
+    orig_d = mod._query_department_data
+    mod._query_sales_data = lambda f, r: sales_rows if r.start_date.day == 1 else []
+    mod._query_finance_data = lambda f, r: finance_rows
+    mod._query_department_data = lambda f, r: dept_rows
+    try:
+        from smartbi_compat.date_range import DateRange
+        alerts = _generate_all_alerts("F999", DateRange.by_period("month"))
+    finally:
+        mod._query_sales_data = orig_s
+        mod._query_finance_data = orig_f
+        mod._query_department_data = orig_d
+
+    levels = [a["level"] for a in alerts]
+    last_red_idx = max((i for i, l in enumerate(levels) if l == "RED"), default=-1)
+    first_yellow_idx = next((i for i, l in enumerate(levels) if l == "YELLOW"), len(levels))
+    assert last_red_idx < first_yellow_idx, f"levels not severity-sorted: {levels}"
+
+
+def test_aggregator_empty_when_all_generators_empty():
+    from smartbi_compat.api.analysis import _generate_all_alerts
+    import smartbi_compat.api.analysis as mod
+    orig_s = mod._query_sales_data
+    orig_f = mod._query_finance_data
+    orig_d = mod._query_department_data
+    mod._query_sales_data = lambda f, r: []
+    mod._query_finance_data = lambda f, r: []
+    mod._query_department_data = lambda f, r: []
+    try:
+        from smartbi_compat.date_range import DateRange
+        assert _generate_all_alerts("F999", DateRange.by_period("month")) == []
+    finally:
+        mod._query_sales_data = orig_s
+        mod._query_finance_data = orig_f
+        mod._query_department_data = orig_d
