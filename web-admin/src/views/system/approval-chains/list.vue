@@ -68,12 +68,20 @@ function openCreate() {
 function openEdit(row: Record<string, unknown>) {
   editingId.value = String(row.id || '');
   form.value = {
-    decisionType: String(row.decisionType || 'FINANCE_APPROVAL'),
+    decisionType: String(row.decisionType || 'FORCE_INSERT'),
     name: String(row.name || ''),
     description: String(row.description || ''),
     approvalLevel: Number(row.approvalLevel || 1),
     requiredApprovers: Number(row.requiredApprovers || 1),
-    approverRoles: String(row.approverRoles || ''),
+    // 后端存的是 JSON 数组字符串, 编辑时转回逗号分隔友好格式
+    approverRoles: (() => {
+      const raw = row.approverRoles;
+      if (!raw) return '';
+      try {
+        const arr = JSON.parse(String(raw));
+        return Array.isArray(arr) ? arr.join(',') : String(raw);
+      } catch { return String(raw); }
+    })(),
     timeoutMinutes: row.timeoutMinutes as number | null ?? null,
     priority: Number(row.priority || 0),
     enabled: row.enabled !== false,
@@ -83,13 +91,23 @@ function openEdit(row: Record<string, unknown>) {
 
 async function handleSave() {
   if (!form.value.name) return ElMessage.warning('请填写审批链名称');
+  if (!form.value.approverRoles?.trim()) return ElMessage.warning('请填写审批角色 (逗号分隔多个)');
+
+  // 后端 validateConfig 要求 approverRoles 是 JSON 数组格式
+  // 用户输入逗号分隔字符串, 这里转换成 JSON
+  const roles = form.value.approverRoles
+    .split(/[,，]/)
+    .map(r => r.trim())
+    .filter(r => r.length > 0);
+  const payload = { ...form.value, approverRoles: JSON.stringify(roles) };
+
   submitting.value = true;
   try {
     if (editingId.value) {
-      const res = await put(`/${factoryId.value}/approval-chains/${editingId.value}`, form.value);
+      const res = await put(`/${factoryId.value}/approval-chains/${editingId.value}`, payload);
       if (res.success) ElMessage.success('更新成功');
     } else {
-      const res = await post(`/${factoryId.value}/approval-chains`, form.value);
+      const res = await post(`/${factoryId.value}/approval-chains`, payload);
       if (res.success) ElMessage.success('创建成功');
     }
     dialogVisible.value = false;
