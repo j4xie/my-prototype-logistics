@@ -865,9 +865,12 @@
     var openManualBtn = $('open-manual');
     if (openManualBtn) {
       openManualBtn.addEventListener('click', function() {
+        // aiassist.cretaceousfuture.com nginx 只放行 /aiassist.html + /api/*，
+        // 完整手册 HTML 部署在 admin 子域名，跨域打开新窗口
+        var manualBase = 'https://admin.cretaceousfuture.com';
         var manualUrl = state.category === 'restaurant'
-          ? '/restaurant-product-manual.html'
-          : '/factory-operation-manual.html';
+          ? manualBase + '/restaurant-product-manual.html'
+          : manualBase + '/factory-operation-manual.html';
         window.open(manualUrl, '_blank');
       });
     }
