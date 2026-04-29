@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#3b82f6">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%233b82f6'/><text x='16' y='22' font-size='18' fill='white' text-anchor='middle' font-family='sans-serif' font-weight='bold'>AI</text></svg>">
 <title>白垩纪 AI 助手</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -23,8 +24,9 @@
 
   /* ---------- Screen 1 / 2 shared centered card ---------- */
   .center-shell {
-    min-height: 100%;
+    min-height: 100vh;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 24px 16px;
@@ -234,13 +236,13 @@
   .msg {
     display: flex;
     flex-direction: column;
-    max-width: 86%;
+    max-width: 85%;
   }
   .msg.user { align-self: flex-end; align-items: flex-end; }
   .msg.assistant { align-self: flex-start; align-items: flex-start; }
   .msg.error { align-self: flex-start; align-items: flex-start; }
   .bubble {
-    padding: 10px 14px;
+    padding: 12px 16px;
     border-radius: 12px;
     font-size: 14px;
     word-break: break-word;
@@ -253,10 +255,58 @@
     border-bottom-right-radius: 4px;
   }
   .msg.assistant .bubble {
-    background: #fff;
+    background: #f9fafb;
     color: #1f2937;
     border: 1px solid #e5e7eb;
     border-bottom-left-radius: 4px;
+  }
+  .bullet-line {
+    display: block;
+    padding-left: 12px;
+    text-indent: -10px;
+    line-height: 1.7;
+  }
+  .sources-collapse {
+    margin-top: 6px;
+    font-size: 11.5px;
+    color: #6b7280;
+  }
+  .sources-collapse summary {
+    cursor: pointer;
+    color: #4b5563;
+    font-weight: 500;
+    padding: 2px 0;
+    user-select: none;
+  }
+  .sources-collapse summary:hover { color: #1d4ed8; }
+  .sources-collapse[open] summary { margin-bottom: 4px; }
+  .sources-list { line-height: 1.6; }
+  .quick-asks {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  @media (max-width: 600px) {
+    .quick-asks { grid-template-columns: 1fr; }
+  }
+  .quick-ask-btn {
+    background: #fff;
+    border: 1px solid #93c5fd;
+    border-radius: 8px;
+    color: #1d4ed8;
+    font-size: 13px;
+    padding: 10px 12px;
+    text-align: left;
+    line-height: 1.4;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .quick-ask-btn:hover {
+    background: #eff6ff;
+    border-color: #3b82f6;
   }
   .msg.error .bubble {
     background: #fef2f2;
@@ -381,13 +431,14 @@
   textarea.input {
     flex: 1 1 auto;
     min-height: 40px;
-    max-height: 140px;
+    max-height: 120px;
     padding: 9px 12px;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     font-size: 14px;
     background: #f9fafb;
     resize: none;
+    overflow-y: auto;
     line-height: 1.5;
     transition: border-color 0.15s, background 0.15s;
   }
@@ -418,6 +469,9 @@
     color: #9ca3af;
     margin-top: 6px;
     text-align: center;
+  }
+  @media (max-width: 600px) {
+    .composer-hint { display: none; }
   }
 
   /* ---------- Misc ---------- */
@@ -487,11 +541,7 @@
   </div>
   <div class="chat-body" id="chat-body">
     <div class="msg-list" id="msg-list">
-      <div class="empty-tip" id="empty-tip">
-        <strong>欢迎使用白垩纪 AI 助手</strong><br>
-        基于操作手册的智能问答，您可以提问任何关于系统使用的问题，<br>
-        也可以上传截图让 AI 识别界面后回答。
-      </div>
+      <!-- Welcome tip is rendered by JS so that quick-ask buttons reflect the current category. -->
     </div>
   </div>
   <div class="composer">
@@ -564,13 +614,15 @@
   }
 
   // Lightweight markdown → HTML (escape first, then promote a few patterns).
-  // Supports: **bold**, line breaks, leading numbered list "1. xxx".
+  // Supports: **bold**, "- item" / "* item" bullet lines.
   // We never feed user/AI raw text into innerHTML — only the escaped + transformed version.
   function renderAnswer(text) {
     if (!text) return '';
     var escaped = escapeHtml(text);
     // Bold
     escaped = escaped.replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>');
+    // Convert lines starting with "- " or "* " into a styled bullet line
+    escaped = escaped.replace(/^[\-\*]\s+(.+)$/gm, '<span class="bullet-line">• $1</span>');
     // Line breaks (preserve paragraphs visually via white-space: pre-wrap CSS too)
     return escaped;
   }
@@ -584,7 +636,7 @@
 
   function autoGrow(ta) {
     ta.style.height = 'auto';
-    ta.style.height = Math.min(ta.scrollHeight, 140) + 'px';
+    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
   }
 
   // ---------- Auth flow ----------
@@ -694,6 +746,9 @@
     if (!state.category) { gotoSelect(); return; }
     $('chat-badge').textContent = CATEGORY_LABELS[state.category] || '';
     show('chat');
+    // Render welcome + category-specific quick-ask buttons if chat is empty.
+    var list = $('msg-list');
+    if (list && !list.children.length) resetMessageList();
     setTimeout(function() { $('input-text').focus(); }, 50);
   }
 
@@ -784,15 +839,56 @@
   }
 
   // ---------- Chat rendering ----------
+  var QUICK_ASKS = {
+    restaurant: [
+      '什么是翻台率？',
+      '怎么查看本月营业额？',
+      '怎么处理顾客差评？',
+      '食材成本率多少算正常？'
+    ],
+    factory: [
+      '怎么开始一个生产批次？',
+      '如何录入原料入库？',
+      '质检流程是怎样的？',
+      '什么是 SKU 组装？'
+    ]
+  };
+
+  function quickAsk(text) {
+    var input = $('input-text');
+    input.value = text;
+    autoGrow(input);
+    sendMessage();
+  }
+
   function resetMessageList() {
     var list = $('msg-list');
     list.innerHTML = '';
     var tip = document.createElement('div');
     tip.className = 'empty-tip';
     tip.id = 'empty-tip';
-    tip.innerHTML = '<strong>欢迎使用白垩纪 AI 助手</strong><br>'
+
+    var welcome = document.createElement('div');
+    welcome.innerHTML = '<strong>欢迎使用白垩纪 AI 助手</strong><br>'
       + '基于操作手册的智能问答，您可以提问任何关于系统使用的问题，<br>'
       + '也可以上传截图让 AI 识别界面后回答。';
+    tip.appendChild(welcome);
+
+    var asks = (state.category && QUICK_ASKS[state.category]) || [];
+    if (asks.length) {
+      var grid = document.createElement('div');
+      grid.className = 'quick-asks';
+      asks.forEach(function(q) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'quick-ask-btn';
+        btn.textContent = q;
+        btn.addEventListener('click', function() { quickAsk(q); });
+        grid.appendChild(btn);
+      });
+      tip.appendChild(grid);
+    }
+
     list.appendChild(tip);
   }
 
@@ -840,22 +936,29 @@
     bubble.innerHTML = renderAnswer(answer);  // renderAnswer escapes first
 
     if (sources && sources.length) {
-      var srcWrap = document.createElement('div');
-      srcWrap.className = 'sources';
-      var labelSpan = document.createElement('span');
-      labelSpan.className = 'label';
-      labelSpan.textContent = '参考章节：';
-      srcWrap.appendChild(labelSpan);
+      var details = document.createElement('details');
+      details.className = 'sources-collapse';
+      var summary = document.createElement('summary');
+      summary.textContent = '参考章节 (' + sources.length + ')';
+      details.appendChild(summary);
+      var listWrap = document.createElement('div');
+      listWrap.className = 'sources sources-list';
       sources.forEach(function(s) {
-        var sim = (typeof s.similarity === 'number') ? s.similarity.toFixed(4) : '';
+        var simRaw = (typeof s.similarity === 'number') ? s.similarity : null;
+        // Clamp to [0, 1] — backend reranker scores can exceed 1 due to mixing with cosine.
+        var simStr = '';
+        if (simRaw !== null) {
+          var simClamped = Math.max(0, Math.min(1, simRaw));
+          simStr = ' 相似度 ' + simClamped.toFixed(4);
+        }
         var item = document.createElement('span');
         item.className = 'src-item';
         // Build text — title may contain unsafe chars; textContent handles escaping.
-        item.textContent = '[' + (s.title || s.source || '未命名') + ']'
-          + (sim ? ' 相似度 ' + sim : '');
-        srcWrap.appendChild(item);
+        item.textContent = '[' + (s.title || s.source || '未命名') + ']' + simStr;
+        listWrap.appendChild(item);
       });
-      node.appendChild(srcWrap);
+      details.appendChild(listWrap);
+      node.appendChild(details);
     }
     scrollToBottom();
   }
