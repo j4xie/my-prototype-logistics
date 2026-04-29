@@ -1,6 +1,7 @@
 package com.cretas.aims.entity;
 
 import lombok.*;
+import org.hibernate.annotations.Where;
 
 import jakarta.persistence.*;
 import java.time.DayOfWeek;
@@ -26,6 +27,7 @@ import java.util.Map;
            @Index(name = "idx_factory_id", columnList = "factory_id"),
            @Index(name = "idx_enabled", columnList = "enabled")
        })
+@Where(clause = "deleted_at IS NULL")
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Builder

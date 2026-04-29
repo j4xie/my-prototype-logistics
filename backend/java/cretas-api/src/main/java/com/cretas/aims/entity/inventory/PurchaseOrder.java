@@ -9,6 +9,7 @@ import com.cretas.aims.entity.enums.PurchaseType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.hibernate.annotations.Formula;
+import org.hibernate.annotations.Where;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -44,6 +45,7 @@ import java.util.UUID;
                 @Index(name = "idx_po_type", columnList = "purchase_type")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class PurchaseOrder extends BaseEntity {
 
     @Id
