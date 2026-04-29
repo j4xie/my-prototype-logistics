@@ -224,6 +224,8 @@ class ChatMessage(BaseModel):
 class ManualChatRequest(BaseModel):
     question: str = Field(..., description="用户问题")
     history: Optional[List[ChatMessage]] = Field(default=None, description="历史对话")
+    category: Optional[str] = Field(default=None, description="显式分类: 'restaurant' | 'factory' | None（自动检测）")
+    image_base64: Optional[str] = Field(default=None, description="截图 base64（含 data:image/...;base64, 前缀或不含都接受）")
 
 
 class RelatedQuestionsRequest(BaseModel):
@@ -356,6 +358,88 @@ def _is_followup_query(question: str, history: Optional[List[ChatMessage]]) -> b
     return False
 
 
+async def _ocr_extract_text(image_b64: str) -> str:
+    """Extract visible text from a screenshot using qwen3-vl-plus (DashScope compatible mode).
+
+    Accepts base64 string with or without `data:image/...;base64,` prefix.
+    Returns the extracted text on success, empty string on any failure
+    (logs warning, never raises) so the caller can degrade gracefully.
+    """
+    try:
+        import os
+        from config import get_settings
+        from common.llm_client import get_llm_http_client
+
+        settings = get_settings()
+        client = get_llm_http_client()
+
+        # Strip optional data URI prefix → keep raw base64 only
+        # Also parse mime type from prefix (e.g. data:image/jpeg;base64,...) so we
+        # don't lie to the VL model about the format. Default to png if absent.
+        mime_type = "image/png"
+        stripped_b64 = image_b64
+        if "," in stripped_b64 and stripped_b64.lstrip().lower().startswith("data:"):
+            header, stripped_b64 = stripped_b64.split(",", 1)
+            # header looks like "data:image/jpeg;base64"
+            try:
+                parsed_mime = header.split(":", 1)[1].split(";", 1)[0].strip()
+                if parsed_mime:
+                    mime_type = parsed_mime
+            except (IndexError, AttributeError):
+                pass  # keep default
+        stripped_b64 = stripped_b64.strip()
+
+        if not stripped_b64:
+            logger.warning("OCR called with empty base64 after stripping prefix")
+            return ""
+
+        # OCR via DashScope OpenAI-compatible endpoint.
+        # Prefer aliyun_a credentials (LLM_ALIYUN_A_*) — DashScope keys hosting vision models.
+        # 默认 qwen-vl-ocr (专用 OCR 模型, 中文小字精度 ≥ qwen-vl-plus, 同价位).
+        # 可通过 LLM_OCR_MODEL env 切换到 qwen-vl-plus / qwen-vl-max 等通用 VL.
+        vl_model = os.getenv("LLM_OCR_MODEL", "qwen-vl-ocr")
+        vl_base_url = os.getenv("LLM_ALIYUN_A_BASE_URL", "") or settings.llm_base_url
+        vl_api_key = os.getenv("LLM_ALIYUN_A_API_KEY", "") or settings.llm_api_key
+
+        resp = await client.post(
+            f"{vl_base_url}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {vl_api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": vl_model,
+                "messages": [{
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:{mime_type};base64,{stripped_b64}"},
+                        },
+                        {
+                            "type": "text",
+                            "text": (
+                                "Read all the text in the image. "
+                                "按从上到下、从左到右顺序输出原文，不解释、不补充。"
+                                "如果完全识别不出文字返回空字符串。"
+                            ),
+                        },
+                    ],
+                }],
+                "max_tokens": 2000,
+                "temperature": 0.0,
+            },
+            timeout=30.0,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        extracted = (data["choices"][0]["message"]["content"] or "").strip()
+        return extracted
+    except Exception as e:
+        logger.warning(f"OCR extraction failed (non-critical): {e}")
+        return ""
+
+
 async def _rewrite_followup(question: str, history: List[ChatMessage]) -> str:
     """Rewrite follow-up query into standalone retrievable query using qwen-flash.
 
@@ -432,11 +516,29 @@ async def manual_chat(request: ManualChatRequest) -> dict:
     - Adaptive max_tokens budget
     - Related questions generated in background task
     """
+    # ------ Screenshot OCR (if image provided) — must run BEFORE cache key ------
+    # Extracted text is prepended to question so RAG retrieval and LLM both see it.
+    if request.image_base64:
+        extracted_text = await _ocr_extract_text(request.image_base64)
+        if extracted_text:
+            request.question = f"【截图内容】\n{extracted_text}\n\n【用户问题】\n{request.question}"
+            logger.info(f"OCR extracted {len(extracted_text)} chars, prepended to question")
+
     has_history = bool(request.history and len(request.history) > 0)
 
     # ------ Improvement #2: cache lookup (skip for contextual questions) ------
-    c_key = _cache_key(request.question)
-    if not has_history:
+    # Cache key includes category + image marker to prevent contamination across
+    # different routing intents and avoid serving non-image cached answers to
+    # an image-bearing request.
+    c_key = _cache_key(
+        request.question
+        + (request.category or "")
+        + ("HAS_IMG" if request.image_base64 else "")
+    )
+    # Image-bearing requests skip cache entirely: cache key cannot disambiguate
+    # different images sharing the same question text + category, so caching would
+    # cross-contaminate answers across distinct uploads.
+    if not has_history and not request.image_base64:
         cached = _cache_get(c_key)
         if cached is not None:
             logger.info(f"Cache hit for question: {request.question[:40]}...")
@@ -463,9 +565,14 @@ async def manual_chat(request: ManualChatRequest) -> dict:
     # ------ Improvement #3: query expansion for short queries ------
     expanded_question = _expand_query(retrieval_question)
 
-    # ------ Reviewer C1: domain-aware routing ------
+    # ------ Reviewer C1: domain-aware routing (explicit > auto-detect) ------
     subcategories: Optional[List[str]] = None
-    if _detect_restaurant_domain(retrieval_question):
+    if request.category in ("restaurant", "factory"):
+        subcategories = [request.category]
+        logger.debug(
+            f"Explicit category={request.category} → subcategory filter applied"
+        )
+    elif _detect_restaurant_domain(retrieval_question):
         subcategories = ["restaurant"]
         logger.debug(
             f"Restaurant domain detected → filtering to subcategory=restaurant "
@@ -587,8 +694,10 @@ async def manual_chat(request: ManualChatRequest) -> dict:
         "related_questions": related_questions,
     }
 
-    # ------ Improvement #2: populate cache (skip contextual) ------
-    if not has_history:
+    # ------ Improvement #2: populate cache (skip contextual + image requests) ------
+    # See cache lookup gate above: image requests must not write cache to avoid
+    # poisoning future text-only or different-image queries with the same question.
+    if not has_history and not request.image_base64:
         _cache_put(c_key, response)
 
     return response
