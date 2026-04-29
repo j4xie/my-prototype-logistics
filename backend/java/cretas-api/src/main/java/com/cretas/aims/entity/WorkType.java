@@ -2,6 +2,7 @@ package com.cretas.aims.entity;
 
 import lombok.*;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 import java.math.BigDecimal;
 /**
  * 工作类型实体类
@@ -23,6 +24,7 @@ import java.math.BigDecimal;
            @Index(name = "idx_work_type_code", columnList = "factory_id,code"),
            @Index(name = "idx_work_type_active", columnList = "factory_id,is_active")
        })
+@Where(clause = "deleted_at IS NULL")
 public class WorkType extends BaseEntity {
     @Id
     @Column(name = "id", nullable = false, length = 191)

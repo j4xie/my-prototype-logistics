@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -94,6 +95,7 @@ import java.util.List;
            @Index(name = "idx_material_is_active", columnList = "is_active")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class RawMaterialType extends BaseEntity {
 
     // ========== 主键 ==========

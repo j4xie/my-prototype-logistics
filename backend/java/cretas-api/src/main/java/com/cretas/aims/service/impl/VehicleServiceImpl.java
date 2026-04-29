@@ -2,6 +2,7 @@ package com.cretas.aims.service.impl;
 
 import com.cretas.aims.dto.warehouse.VehicleDTO;
 import com.cretas.aims.entity.Vehicle;
+import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.VehicleRepository;
 import com.cretas.aims.service.VehicleService;
@@ -73,7 +74,9 @@ public class VehicleServiceImpl implements VehicleService {
 
         // 检查车牌号是否已存在
         if (vehicleRepository.findByFactoryIdAndPlateNumber(factoryId, request.getPlateNumber()).isPresent()) {
-            throw new IllegalArgumentException("车牌号已存在: " + request.getPlateNumber());
+            throw new BusinessException(409, "车牌号已存在: " + request.getPlateNumber())
+                    .withHint("请使用其他车牌号, 或编辑现有车辆")
+                    .withHintTarget("plateNumber");
         }
 
         Vehicle vehicle = new Vehicle();
@@ -103,7 +106,9 @@ public class VehicleServiceImpl implements VehicleService {
         // 如果修改了车牌号，检查是否重复
         if (request.getPlateNumber() != null && !request.getPlateNumber().equals(vehicle.getPlateNumber())) {
             if (vehicleRepository.findByFactoryIdAndPlateNumber(factoryId, request.getPlateNumber()).isPresent()) {
-                throw new IllegalArgumentException("车牌号已存在: " + request.getPlateNumber());
+                throw new BusinessException(409, "车牌号已存在: " + request.getPlateNumber())
+                        .withHint("请使用其他车牌号")
+                        .withHintTarget("plateNumber");
             }
             vehicle.setPlateNumber(request.getPlateNumber());
         }
@@ -150,7 +155,9 @@ public class VehicleServiceImpl implements VehicleService {
             log.info("车辆状态更新成功: id={}, status={}", saved.getId(), newStatus);
             return toDTO(saved);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("无效的车辆状态: " + status);
+            throw new BusinessException(400, "无效的车辆状态: " + status)
+                    .withHint("请使用合法的状态值: available / loading / in_use / maintenance / retired")
+                    .withHintTarget("status");
         }
     }
 

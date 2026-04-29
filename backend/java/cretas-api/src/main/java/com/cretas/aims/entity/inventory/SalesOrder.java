@@ -12,6 +12,7 @@ import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Type;
+import org.hibernate.annotations.Where;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -48,6 +49,7 @@ import java.util.UUID;
                 @Index(name = "idx_so_order_date", columnList = "order_date")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class SalesOrder extends BaseEntity {
 
     @Id

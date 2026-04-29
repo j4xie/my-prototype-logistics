@@ -355,14 +355,20 @@ public class GlobalExceptionHandler {
      * 处理非法状态异常 (BUG-048: P5-005) - 需脱敏
      * 用于处理重复操作、状态流转错误等业务规则违反
      * 例如：重复确认告警、完成已完成的批次等
+     *
+     * R67 (qa-prompt v2.4 reviewer): R39 BUG-9 策略要求状态机错误返回 409, 不是 400.
+     * 调整 status code 并加 actionHint 让 FE 知道这是状态冲突 (而非参数错).
      */
     @ExceptionHandler(IllegalStateException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.CONFLICT)
     public ApiResponse<?> handleIllegalStateException(IllegalStateException e) {
         log.warn("非法状态: {}", e.getMessage());
         // 检查消息是否安全
         String message = isSafeMessage(e.getMessage()) ? e.getMessage() : ErrorCode.STATE_CONFLICT.getUserMessage();
-        return ApiResponse.error(400, message);
+        ApiResponse<?> resp = ApiResponse.error(409, message);
+        resp.setActionHint("请刷新页面查看最新状态后再操作");
+        resp.setSeverity("warning");
+        return resp;
     }
 
     // ==================== 数据库相关异常 - 需严格脱敏 ====================

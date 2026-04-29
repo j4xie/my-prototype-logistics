@@ -5,6 +5,7 @@ import com.cretas.aims.entity.enums.MaterialBatchStatus;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import org.hibernate.annotations.Type;
+import org.hibernate.annotations.Where;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
@@ -35,6 +36,7 @@ import java.util.Map;
            @Index(name = "idx_batch_material", columnList = "material_type_id")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class MaterialBatch extends BaseEntity {
     @Id
     @Column(name = "id", nullable = false, length = 191)
