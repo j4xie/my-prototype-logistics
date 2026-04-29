@@ -36,7 +36,7 @@ import logging
 import uuid
 from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
-from typing import Any, Iterable, List
+from typing import Any, Iterable, List, Optional
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
@@ -453,3 +453,27 @@ async def list_datasources(
     """
     rows = _query_datasources(auth.factory_id)
     return wrap_response(rows)
+
+
+@router.get("/api/mobile/{factory_id}/smart-bi/alerts")
+async def get_alerts(
+    factory_id: str,
+    category: Optional[str] = None,
+    auth: AuthContext = Depends(verify_jwt_and_factory),
+) -> dict[str, Any]:
+    """Java-compatible alias: GET /smart-bi/alerts[?category=sales|finance|department].
+
+    Java reference: SmartBIAnalysisController.getAlerts (line 590-617)
+    backed by RecommendationServiceImpl.generateSales/Finance/Department/All.
+
+    Phase 2A chat 2: only sales generator ported; finance / department / aggregator
+    return [] until chat 3 (Phase C/D/E). Default branch returns sales for now.
+    """
+    range_ = DateRange.by_period("month")
+    if category == "sales":
+        alerts = _generate_sales_alerts(auth.factory_id, range_)
+    elif category in ("finance", "department"):
+        alerts = []
+    else:
+        alerts = _generate_sales_alerts(auth.factory_id, range_)
+    return wrap_response(alerts)

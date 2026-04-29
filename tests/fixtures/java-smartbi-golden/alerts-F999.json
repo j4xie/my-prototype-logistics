@@ -1,0 +1,22 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/alerts",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T05:20:19.622883587",
+    "data": []
+  },
+  "_meta": {
+    "name": "alerts",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/alerts",
+    "query": null,
+    "factory": "F999",
+    "recordedAt": "2026-04-29T21:20:19.992Z",
+    "javaPort": 10011
+  }
+}
