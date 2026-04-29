@@ -8,6 +8,7 @@ import lombok.experimental.SuperBuilder;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * 通知实体类
@@ -33,6 +34,7 @@ import java.time.LocalDateTime;
            @Index(name = "idx_notification_type", columnList = "type")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class Notification extends BaseEntity {
 
     @Id

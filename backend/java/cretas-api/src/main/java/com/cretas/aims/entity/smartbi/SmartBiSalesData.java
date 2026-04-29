@@ -7,6 +7,7 @@ import lombok.experimental.SuperBuilder;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import org.hibernate.annotations.Where;
 
 /**
  * SmartBI Sales Data Entity - Sales data parsed from Excel
@@ -36,6 +37,7 @@ import java.time.LocalDate;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class SmartBiSalesData extends BaseEntity {
 
     @Id

@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * 销售发货/出库单
@@ -41,6 +42,7 @@ import java.util.UUID;
                 @Index(name = "idx_sdr_delivery_date", columnList = "delivery_date")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class SalesDeliveryRecord extends BaseEntity {
 
     @Id

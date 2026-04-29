@@ -3,6 +3,7 @@ package com.cretas.aims.entity;
 import lombok.*;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * 设备注册实体类
@@ -31,6 +32,7 @@ import java.time.LocalDateTime;
            @Index(name = "idx_last_active", columnList = "last_active_at")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class DeviceRegistration extends BaseEntity {
 
     @Id

@@ -5,6 +5,7 @@ import com.cretas.aims.entity.common.UnifiedDeviceType;
 import lombok.*;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * IoT设备实体类
@@ -30,6 +31,7 @@ import java.time.LocalDateTime;
            @Index(name = "idx_iot_device_type", columnList = "device_type")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class IotDevice extends BaseEntity {
 
     @Id

@@ -4,6 +4,7 @@ import com.cretas.aims.entity.enums.WhitelistStatus;
 import lombok.*;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * 白名单实体类
@@ -30,6 +31,7 @@ import java.time.LocalDateTime;
            @Index(name = "idx_whitelist_expires", columnList = "expires_at")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class Whitelist extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

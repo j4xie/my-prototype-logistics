@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * 工人日效率汇总实体
@@ -45,6 +46,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class WorkerDailyEfficiency extends BaseEntity {
 
     @Id

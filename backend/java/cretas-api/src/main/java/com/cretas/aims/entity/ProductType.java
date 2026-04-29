@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 /**
  * 产品类型实体类
  *
@@ -33,6 +34,7 @@ import java.util.UUID;
            @Index(name = "idx_product_customer", columnList = "customer_id")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class ProductType extends BaseEntity {
     @Id
     @Column(name = "id", length = 100)

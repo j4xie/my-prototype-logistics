@@ -8,6 +8,7 @@ import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.hibernate.annotations.Where;
 
 /**
  * 调度计划实体
@@ -18,6 +19,7 @@ import java.util.List;
 @Entity
 @Table(name = "scheduling_plans",
        uniqueConstraints = @UniqueConstraint(columnNames = {"factory_id", "plan_date"}))
+@Where(clause = "deleted_at IS NULL")
 public class SchedulingPlan extends BaseEntity {
 
     @Id

@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * 销售运营报价单 — V3 P0-4 (会议 1670-1750s).
@@ -46,6 +47,7 @@ import java.util.UUID;
                 @Index(name = "idx_oq_quoted_by", columnList = "quoted_by_user_id"),
                 @Index(name = "idx_oq_factory_quote_no", columnList = "factory_id,quote_no", unique = true)
         })
+@Where(clause = "deleted_at IS NULL")
 public class OperationalQuote extends BaseEntity {
 
     @Id

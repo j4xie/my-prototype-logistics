@@ -7,6 +7,7 @@ import lombok.*;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import org.hibernate.annotations.Where;
 
 /**
  * 发货行项目
@@ -29,6 +30,7 @@ import java.math.BigDecimal;
                 @Index(name = "idx_sdi_batch", columnList = "finished_goods_batch_id")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class SalesDeliveryItem extends BaseEntity {
 
     @Id

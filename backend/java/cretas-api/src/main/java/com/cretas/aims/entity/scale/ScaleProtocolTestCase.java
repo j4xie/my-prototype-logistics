@@ -5,6 +5,7 @@ import lombok.*;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import org.hibernate.annotations.Where;
 
 /**
  * 秤协议测试用例实体
@@ -20,6 +21,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
+@Where(clause = "deleted_at IS NULL")
 public class ScaleProtocolTestCase extends BaseEntity {
 
     @Id

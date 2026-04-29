@@ -6,6 +6,7 @@ import lombok.experimental.SuperBuilder;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 @Entity
 @Table(name = "tool_metadata", indexes = {
@@ -18,6 +19,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
+@Where(clause = "deleted_at IS NULL")
 public class ToolMetadata extends BaseEntity {
 
     @Id

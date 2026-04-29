@@ -4,6 +4,7 @@ import lombok.*;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 /**
  * 原材料批次调整记录实体类
  *
@@ -23,6 +24,7 @@ import java.time.LocalDateTime;
            @Index(name = "idx_adjustment_time", columnList = "adjustment_time")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class MaterialBatchAdjustment extends BaseEntity {
     @Id
     @Column(name = "id", nullable = false, length = 191)

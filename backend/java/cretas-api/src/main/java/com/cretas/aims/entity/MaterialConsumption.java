@@ -5,6 +5,7 @@ import lombok.*;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 /**
  * 原材料消耗记录实体类
  *
@@ -28,6 +29,7 @@ import java.time.LocalDateTime;
            @Index(name = "idx_consumption_material_type", columnList = "material_type_id")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class MaterialConsumption extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

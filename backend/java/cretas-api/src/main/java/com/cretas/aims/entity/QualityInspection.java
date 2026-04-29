@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
+import org.hibernate.annotations.Where;
 /**
  * 质量检验实体类
  *
@@ -31,6 +32,7 @@ import java.util.Map;
            @Index(name = "idx_inspection_date", columnList = "inspection_date")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class QualityInspection extends BaseEntity {
     @Id
     @Column(name = "id", nullable = false, length = 191)

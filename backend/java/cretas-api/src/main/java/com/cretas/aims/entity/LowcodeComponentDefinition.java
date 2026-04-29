@@ -2,6 +2,7 @@ package com.cretas.aims.entity;
 
 import lombok.*;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 
 /**
  * 低代码组件定义实体类
@@ -25,6 +26,7 @@ import jakarta.persistence.*;
            @Index(name = "idx_component_factory", columnList = "factory_id")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class LowcodeComponentDefinition extends BaseEntity {
 
     @Id

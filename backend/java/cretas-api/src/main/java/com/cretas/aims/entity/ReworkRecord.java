@@ -6,6 +6,7 @@ import lombok.*;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * 返工记录实体类
@@ -32,6 +33,7 @@ import java.time.LocalDateTime;
            @Index(name = "idx_rework_date", columnList = "start_time")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class ReworkRecord extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

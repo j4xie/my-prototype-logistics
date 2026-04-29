@@ -8,6 +8,7 @@ import org.hibernate.annotations.GenericGenerator;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import org.hibernate.annotations.Where;
 
 /**
  * 错误归因统计实体（按日汇总）
@@ -36,6 +37,7 @@ import java.time.LocalDate;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class ErrorAttributionStatistics extends BaseEntity {
 
     @Id

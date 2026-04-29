@@ -2,6 +2,7 @@ package com.cretas.aims.entity;
 
 import lombok.*;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -13,6 +14,7 @@ import jakarta.persistence.*;
     @Index(name = "idx_wp_factory", columnList = "factory_id"),
     @Index(name = "idx_wp_factory_active", columnList = "factory_id, is_active")
 })
+@Where(clause = "deleted_at IS NULL")
 public class WorkProcess extends BaseEntity {
 
     @Id

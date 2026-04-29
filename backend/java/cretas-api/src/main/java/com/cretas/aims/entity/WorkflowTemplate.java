@@ -5,6 +5,7 @@ import lombok.experimental.SuperBuilder;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 @Entity
 @Table(name = "workflow_templates", indexes = {
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
+@Where(clause = "deleted_at IS NULL")
 public class WorkflowTemplate extends BaseEntity {
 
     @Id

@@ -4,6 +4,7 @@ import lombok.*;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * 批次工作会话关联实体类
@@ -30,6 +31,7 @@ import java.time.LocalDateTime;
            @Index(name = "idx_batchwork_status", columnList = "status")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class BatchWorkSession extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -8,6 +8,7 @@ import org.hibernate.annotations.GenericGenerator;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * SKU 复杂度实体
@@ -44,6 +45,7 @@ import java.time.LocalDateTime;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class SkuComplexity extends BaseEntity {
 
     @Id

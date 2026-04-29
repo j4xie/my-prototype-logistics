@@ -9,6 +9,7 @@ import lombok.experimental.SuperBuilder;
 import lombok.Builder;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 
 /**
  * 表单模板实体
@@ -34,6 +35,7 @@ import jakarta.persistence.*;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class FormTemplate extends BaseEntity {
 
     @Id

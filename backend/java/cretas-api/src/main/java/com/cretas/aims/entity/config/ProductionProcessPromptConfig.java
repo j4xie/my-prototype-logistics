@@ -6,6 +6,7 @@ import lombok.*;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import org.hibernate.annotations.Where;
 
 /**
  * 生产工序Prompt配置实体
@@ -41,6 +42,7 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class ProductionProcessPromptConfig extends BaseEntity {
 
     @Id

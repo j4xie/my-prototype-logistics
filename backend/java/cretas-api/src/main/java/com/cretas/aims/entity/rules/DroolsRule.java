@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 
 /**
  * Drools 规则实体
@@ -31,6 +32,7 @@ import jakarta.persistence.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
+@Where(clause = "deleted_at IS NULL")
 public class DroolsRule extends BaseEntity {
 
     @Id

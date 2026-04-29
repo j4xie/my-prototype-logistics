@@ -6,6 +6,7 @@ import lombok.experimental.SuperBuilder;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import org.hibernate.annotations.Where;
 
 /**
  * SmartBI Incentive Rule Entity - Dynamic incentive rule configuration
@@ -34,6 +35,7 @@ import java.math.BigDecimal;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class SmartBiIncentiveRule extends BaseEntity {
 
     @Id

@@ -8,6 +8,7 @@ import org.hibernate.annotations.Type;
 
 import java.util.Map;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * BOM 变更痕迹记录 (P1-9, v1 §2.2.6 痕迹追踪).
@@ -34,6 +35,7 @@ import java.util.UUID;
                 @Index(name = "idx_bcl_factory_time", columnList = "factory_id,changed_at")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class BomChangeLog extends BaseEntity {
 
     @Id

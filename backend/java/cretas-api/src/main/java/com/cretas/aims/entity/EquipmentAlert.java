@@ -9,6 +9,7 @@ import lombok.experimental.SuperBuilder;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * 设备告警实体类
@@ -34,6 +35,7 @@ import java.time.LocalDateTime;
            @Index(name = "idx_alert_triggered_at", columnList = "triggered_at")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class EquipmentAlert extends BaseEntity {
 
     @Id

@@ -7,6 +7,7 @@ import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.GenericGenerator;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 
 /**
  * AI Agent 规则配置实体
@@ -38,6 +39,7 @@ import jakarta.persistence.*;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class AiAgentRule extends BaseEntity {
 
     @Id

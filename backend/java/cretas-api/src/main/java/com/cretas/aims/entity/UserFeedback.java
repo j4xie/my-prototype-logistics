@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * 用户反馈实体类
@@ -27,6 +28,7 @@ import java.time.LocalDateTime;
            @Index(name = "idx_feedback_created_at", columnList = "created_at")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class UserFeedback extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

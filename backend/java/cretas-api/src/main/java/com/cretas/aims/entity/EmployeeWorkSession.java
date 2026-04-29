@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.hibernate.annotations.Where;
 /**
  * 员工工作会话实体类
  *
@@ -29,6 +30,7 @@ import java.util.List;
            @Index(name = "idx_worksession_status", columnList = "status")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class EmployeeWorkSession extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -7,6 +7,7 @@ import lombok.*;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import org.hibernate.annotations.Where;
 
 /**
  * 套餐/组合商品明细
@@ -30,6 +31,7 @@ import java.math.BigDecimal;
                 @Index(name = "idx_ci_factory", columnList = "factory_id")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class ComboItem extends BaseEntity {
 
     @Id

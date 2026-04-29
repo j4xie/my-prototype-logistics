@@ -4,6 +4,7 @@ import lombok.*;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 /**
  * 批次设备使用记录实体类
  *
@@ -23,6 +24,7 @@ import java.time.LocalDateTime;
            @Index(name = "idx_equipusage_equipment", columnList = "equipment_id")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class BatchEquipmentUsage extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
