@@ -155,7 +155,7 @@ try:
 except ImportError as e:
     _llm_available = False
     import logging as _log
-    _log.getLogger(__name__).warning(f"LLM Router not available: {e}")
+    _log.getLogger(__name__).error(f"LLM Router not available: {e}")
 
 # Configure logging with rotation
 _log_level = logging.DEBUG if get_settings().debug else logging.INFO
@@ -893,7 +893,7 @@ if _llm_available:
         tags=["LLM Router"]
     )
 else:
-    logger.warning("LLM Router routes not registered")
+    logger.error("LLM Router routes not registered")
 
 
 @app.get("/health")
