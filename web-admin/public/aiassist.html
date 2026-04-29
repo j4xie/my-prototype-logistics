@@ -462,12 +462,12 @@
       <button class="btn-text" id="logout-from-select">退出登录</button>
     </div>
     <div class="select-grid">
-      <div class="type-card restaurant" data-category="restaurant">
+      <div class="type-card restaurant" data-category="restaurant" tabindex="0" role="button" aria-label="选择餐饮版">
         <div class="icon">餐</div>
         <h3>餐饮版</h3>
         <p>适用餐厅 / 连锁门店 / 茶饮店等</p>
       </div>
-      <div class="type-card factory" data-category="factory">
+      <div class="type-card factory" data-category="factory" tabindex="0" role="button" aria-label="选择工厂版">
         <div class="icon">厂</div>
         <h3>工厂版</h3>
         <p>适用食品加工厂 / 生产车间</p>
@@ -524,6 +524,7 @@
   var API_ENDPOINT = '/api/food-kb/manual-chat';
   var MAX_HISTORY_PAIRS = 5;
   var IMAGE_COMPRESS_THRESHOLD = 1024 * 1024; // 1 MB
+  var IMAGE_MAX_PIXEL_AREA = 1024 * 1024;     // 1M pixels (~1024×1024)
   var IMAGE_MAX_WIDTH = 1024;
   var IMAGE_JPEG_QUALITY = 0.85;
   var CATEGORY_LABELS = { restaurant: '餐饮版', factory: '工厂版' };
@@ -634,6 +635,12 @@
           gotoChat();
         }
       });
+      card.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          card.click();
+        }
+      });
     });
     $('logout-from-select').addEventListener('click', logout);
   }
@@ -643,6 +650,8 @@
       // Reset chat state, go back to select
       state.category = null;
       state.history = [];
+      state.sending = false;
+      setSending(false);
       clearImage();
       try { sessionStorage.removeItem('aiassist_category'); } catch (e) {}
       resetMessageList();
@@ -669,6 +678,8 @@
     clearAuth();
     state.category = null;
     state.history = [];
+    state.sending = false;
+    setSending(false);
     clearImage();
     resetMessageList();
     show('login');
@@ -698,16 +709,32 @@
     var reader = new FileReader();
     reader.onload = function(ev) {
       var dataUri = ev.target.result;
-      // Compress only when the original raw size is large
-      if (file.size > IMAGE_COMPRESS_THRESHOLD) {
+      // Compress when: pixel area is large, non-JPEG (BMP/TIFF/PNG balloon after base64),
+      // or raw byte size is large. Falls back to compress pipeline when image can't decode (e.g. HEIC).
+      var img = new Image();
+      img.onload = function() {
+        var pixelCount = img.width * img.height;
+        var isJpeg = /^data:image\/jpe?g/i.test(dataUri);
+        var shouldCompress = !isJpeg || pixelCount > IMAGE_MAX_PIXEL_AREA || file.size > IMAGE_COMPRESS_THRESHOLD;
+        if (shouldCompress) {
+          compressImage(dataUri).then(function(compressed) {
+            setImage(compressed, file.name, true);
+          }).catch(function() {
+            setImage(dataUri, file.name, false);
+          });
+        } else {
+          setImage(dataUri, file.name, false);
+        }
+      };
+      img.onerror = function() {
+        // Can't decode (HEIC/some TIFF) — try compress pipeline; if that also fails, send original.
         compressImage(dataUri).then(function(compressed) {
           setImage(compressed, file.name, true);
         }).catch(function() {
           setImage(dataUri, file.name, false);
         });
-      } else {
-        setImage(dataUri, file.name, false);
-      }
+      };
+      img.src = dataUri;
     };
     reader.onerror = function() { showError('读取图片失败'); };
     reader.readAsDataURL(file);
@@ -907,7 +934,7 @@
       return resp.json();
     }).then(function(data) {
       if (!data || data.success === false) {
-        var msg = (data && data.message) || (data && data.answer) || '出错了，请稍后重试';
+        var msg = (data && data.message) || '出错了，请稍后重试';
         // Replace placeholder bubble with error styling
         placeholder.classList.remove('assistant');
         placeholder.classList.add('error');
