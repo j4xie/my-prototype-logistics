@@ -12,6 +12,7 @@ import { PURCHASE_ORDER_CONFIG } from '@/components/ai-entry/types';
 import { formatAmount } from '@/utils/tableFormatters';
 import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
+import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -273,6 +274,13 @@ function handleAiFill(params: Record<string, unknown>) {
 <template>
   <CanvasAwareWrapper module-code="purchase_order">
   <div class="page-wrapper">
+    <ConceptDisambiguationAlert
+      here-name="采购订单"
+      here="我们向供应商下的订单（进货方向、应付账款）"
+      other-name="销售管理 → 销售订单"
+      other="客户向我们下的订单（出货方向、应收账款）"
+      other-path="/sales/orders"
+    />
     <el-card class="page-card" shadow="never">
       <template #header>
         <div class="card-header">

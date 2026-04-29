@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
+import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -510,26 +511,14 @@ function handleAiFill(params: Record<string, unknown>) {
 
 <template>
   <div class="page-wrapper">
-    <!-- UX P1 (张权 2026-04-29 反馈): 用户混淆"产品类型"vs"原料类型",
-         把采购入库的"冻猪蹄/吸塑盒"建到了产品类型, 导致采购订单 dropdown 空.
-         用 banner 明确两个概念区别 + 跳转入口. -->
-    <el-alert
-      type="info"
-      :closable="false"
-      style="margin-bottom: 12px"
-      show-icon
-    >
-      <template #title>
-        <strong>这里是「成品 / SKU」管理</strong> — 本厂自己<strong>生产</strong>的成品（如「叮咚好食光卤猪蹄 200g」）
-      </template>
-      <template #default>
-        <span style="font-size: 13px">
-          ⚠️ 如果你想录入的是<strong>采购入库的原料 / 包材</strong>（如「冻猪蹄」「吸塑盒」），请到
-          <el-link type="primary" :underline="false" style="font-weight: 600" @click="router.push('/warehouse/materials')">仓储管理 → 原料 / 物料 (采购入库)</el-link>
-          创建。建错位置会导致采购订单的「原料」下拉看不到选项。
-        </span>
-      </template>
-    </el-alert>
+    <ConceptDisambiguationAlert
+      here-name="成品 / SKU"
+      here="本厂自己生产的成品（如「叮咚好食光卤猪蹄 200g」）"
+      other-name="仓储管理 → 原料 / 物料 (采购入库)"
+      other="采购入库的原料 / 包材（如「冻猪蹄」「吸塑盒」）"
+      other-path="/warehouse/materials"
+      consequence="建错位置会导致采购订单的「原料」下拉看不到选项"
+    />
     <el-card class="page-card" shadow="never">
       <!-- 页面标题和操作 -->
       <template #header>

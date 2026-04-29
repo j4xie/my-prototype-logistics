@@ -5,6 +5,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, post } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Search, Refresh, DataAnalysis, Edit, View, Download, Warning } from '@element-plus/icons-vue';
+import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -265,6 +266,13 @@ function getStatusText(status: string) {
 
 <template>
   <div class="page-wrapper">
+    <ConceptDisambiguationAlert
+      here-name="盘点管理"
+      here="清点仓库实际库存与系统数对比，发现差异（盘盈 / 盘亏，不搬动物料）"
+      other-name="仓储管理 → 调拨单"
+      other="把物料从一个工厂/仓库搬到另一个工厂/仓库（实际搬动物料）"
+      other-path="/transfer/list"
+    />
     <!-- 统计卡片 -->
     <div class="statistics-row">
       <el-card class="stat-card" shadow="hover">

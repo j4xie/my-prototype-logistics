@@ -5,6 +5,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh } from '@element-plus/icons-vue';
+import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -241,6 +242,13 @@ async function handleDelete(row: Record<string, unknown>) {
 
 <template>
   <div class="page-wrapper">
+    <ConceptDisambiguationAlert
+      here-name="供应商"
+      here="向我们供货的上游卖家（如肉联厂、包材厂），用于采购订单 / 应付账款"
+      other-name="销售管理 → 客户"
+      other="向我们采购的下游买家（如「叮咚」「盒马」），用于销售订单 / 应收账款"
+      other-path="/sales/customers"
+    />
     <el-card class="page-card" shadow="never">
       <!-- 页面标题和操作 -->
       <template #header>

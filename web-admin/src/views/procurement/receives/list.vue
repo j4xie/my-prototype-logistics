@@ -18,6 +18,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Refresh, Check, Document } from '@element-plus/icons-vue';
+import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 
 interface ReceiveRow {
   id: string;
@@ -249,6 +250,13 @@ onMounted(() => { loadData(); loadOptions(); });
 
 <template>
   <div class="page-wrapper" v-loading="loading">
+    <ConceptDisambiguationAlert
+      here-name="采购入库"
+      here="把供应商发来的物料正式收货登记，更新原料库存（采购订单的执行环节）"
+      other-name="采购管理 → 采购订单"
+      other="向供应商下的订单（金额、付款条款）。入库是采购订单的物流接收环节"
+      other-path="/procurement/orders"
+    />
     <el-card shadow="never">
       <template #header>
         <div style="display:flex;justify-content:space-between;align-items:center">

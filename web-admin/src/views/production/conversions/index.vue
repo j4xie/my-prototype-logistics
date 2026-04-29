@@ -5,6 +5,7 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh, Edit, Delete } from '@element-plus/icons-vue';
+import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -181,6 +182,13 @@ async function handleDelete(row: Record<string, unknown>) {
 
 <template>
   <div class="page-wrapper">
+    <ConceptDisambiguationAlert
+      here-name="转换率配置"
+      here="单一原料 → 单一成品的「出成率」（如 1kg 冻猪蹄 → 600g 卤猪蹄，60%）"
+      other-name="生产管理 → BOM 成本管理"
+      other="一个成品需要哪些原料、各多少量、成本如何拆分（多对多 + 成本核算）"
+      other-path="/production/bom"
+    />
     <el-card class="page-card" shadow="never">
       <template #header>
         <div class="card-header">

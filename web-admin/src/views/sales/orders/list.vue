@@ -13,6 +13,7 @@ import { formatAmount } from '@/utils/tableFormatters';
 import TaxGroupInvoiceDialog from './components/TaxGroupInvoiceDialog.vue';
 import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
+import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import { getFinanceSummary, type FinanceSummary } from '@/api/smartbi/gold';
 
 // G1: 税率分组开票对话框 (客户原话 2645-2660s)
@@ -623,6 +624,13 @@ async function submitQuickPayment() {
 
   <CanvasAwareWrapper module-code="sales_order">
   <div class="page-wrapper">
+    <ConceptDisambiguationAlert
+      here-name="销售订单"
+      here="客户向我们下的订单（出货方向、应收账款）"
+      other-name="采购管理 → 采购订单"
+      other="我们向供应商下的订单（进货方向、应付账款）"
+      other-path="/procurement/orders"
+    />
     <el-card class="page-card" shadow="never">
       <template #header>
         <div class="card-header">
