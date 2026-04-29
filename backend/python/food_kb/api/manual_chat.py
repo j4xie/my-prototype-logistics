@@ -130,9 +130,23 @@ _COMPLEX_KEYWORDS = {"怎么", "如何", "步骤", "流程", "对比", "分析",
 
 
 # ---------------------------------------------------------------------------
+# 域检测关键词集（auto-detect 路径，仅当请求未传 category 字段时生效）
+#
 # Reviewer C1: query domain detection — when user query contains restaurant
 # keywords, restrict retrieval to subcategory='restaurant' to prevent factory
 # manual chunks from polluting results.
+#
+# 注意：当前生产前端 (aiassist) 总是显式传 category="restaurant" / "factory"，
+# 这套关键词检测是兜底路径，主要服务 web-admin AI Query 等历史调用。
+#
+# 与 _QUERY_EXPANSIONS（line 34）的差异：
+# - _QUERY_EXPANSIONS：BM25 查询前的同义词扩展（命中关键词 → 加入相关同义词）
+# - _RESTAURANT_KEYWORDS：仅用于域检测（命中 → 设置 subcategories=["restaurant"]）
+#
+# 维护：新增餐饮指标时，需同时考虑：
+# 1. 是否加到 _QUERY_EXPANSIONS（提升 BM25 召回）
+# 2. 是否加到 _RESTAURANT_KEYWORDS（在 auto-detect 路径触发餐饮域路由）
+# 通常两个都加。
 # ---------------------------------------------------------------------------
 _RESTAURANT_KEYWORDS = frozenset([
     # Stores & operations
