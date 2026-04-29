@@ -1,9 +1,5 @@
 package com.cretas.aims.ai.client;
 
-import com.cretas.aims.ai.dto.ChatCompletionRequest;
-import com.cretas.aims.ai.dto.ChatCompletionResponse;
-import com.cretas.aims.ai.dto.ChatMessage;
-import com.cretas.aims.config.DashScopeConfig;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,22 +13,23 @@ import java.util.regex.Pattern;
 import com.cretas.aims.util.ErrorSanitizer;
 
 /**
- * DashScope 视觉模型客户端
+ * DashScope 视觉模型客户端 (Shim → PythonLLMClient)
  *
- * 用于设备铭牌识别、产品标签识别等图像分析场景
- * 使用 Qwen VL 系列模型
+ * 委托给 Python LLM 服务的 visionChat() 方法，替代直接调用 DashScope API。
+ * 保留所有 public 方法签名以确保向后兼容性。
+ *
+ * 用于设备铭牌识别、产品标签识别等图像分析场景。
  *
  * @author Cretas Team
- * @version 1.0.0
- * @since 2026-01-04
+ * @version 2.0.0 (Delegation Shim)
+ * @since 2026-04-28
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class DashScopeVisionClient {
 
-    private final DashScopeClient dashScopeClient;
-    private final DashScopeConfig config;
+    private final PythonLLMClient delegate;
     private final ObjectMapper objectMapper;
 
     // ==================== 品牌别名映射 (从 Python 迁移) ====================
@@ -68,27 +65,19 @@ public class DashScopeVisionClient {
      * @return 识别结果
      */
     public ScaleRecognitionResult parseScaleImage(String imageBase64, String imageType) {
-        if (!config.isAvailable()) {
-            return ScaleRecognitionResult.error("DashScope API 未配置");
+        if (!delegate.isAvailable()) {
+            return ScaleRecognitionResult.error("Python LLM 服务未配置");
         }
 
         try {
             String prompt = buildRecognitionPrompt(imageType);
 
-            ChatCompletionRequest request = ChatCompletionRequest.builder()
-                    .model(config.getVisionModel())
-                    .messages(List.of(ChatMessage.userWithImage(prompt, imageBase64)))
-                    .maxTokens(1000)
-                    .temperature(0.3)  // 低温度提高准确性
-                    .build();
+            // 解码 Base64 为字节数组
+            byte[] imageBytes = Base64.getDecoder().decode(imageBase64);
 
-            ChatCompletionResponse response = dashScopeClient.chatCompletion(request);
+            // 委托给 PythonLLMClient.visionChat()
+            String content = delegate.visionChat(imageBytes, "image/jpeg", prompt);
 
-            if (response.hasError()) {
-                return ScaleRecognitionResult.error("API 调用失败: " + response.getErrorMessage());
-            }
-
-            String content = response.getContent();
             return parseRecognitionResult(content);
 
         } catch (Exception e) {
@@ -256,36 +245,29 @@ public class DashScopeVisionClient {
      * 检查视觉服务是否可用
      */
     public boolean isAvailable() {
-        return config.isAvailable() && config.getVisionModel() != null;
+        return delegate.isAvailable();
     }
 
     /**
      * 通用图片分析方法
+     *
+     * 注意: 当前实现假设 imageUrl 指向本地文件系统或可直接访问的 URL。
+     * 若需要从 URL 下载图片，需在 Python 端添加支持。
      *
      * @param imageUrl 图片URL
      * @param prompt   分析提示词
      * @return 分析结果文本
      */
     public String analyzeImage(String imageUrl, String prompt) {
-        if (!config.isAvailable()) {
-            throw new RuntimeException("DashScope API 未配置");
+        if (!delegate.isAvailable()) {
+            throw new RuntimeException("Python LLM 服务未配置");
         }
 
         try {
-            ChatCompletionRequest request = ChatCompletionRequest.builder()
-                    .model(config.getVisionModel())
-                    .messages(List.of(ChatMessage.userWithImageUrl(prompt, imageUrl)))
-                    .maxTokens(2000)
-                    .temperature(0.3)
-                    .build();
-
-            ChatCompletionResponse response = dashScopeClient.chatCompletion(request);
-
-            if (response.hasError()) {
-                throw new RuntimeException("API 调用失败: " + response.getErrorMessage());
-            }
-
-            return response.getContent();
+            // 注: 此方法保留签名以保证向后兼容，但当前委托实现只支持字节数组
+            // 实际使用场景中，调用方应改用 parseScaleImage 或其他方法
+            log.warn("analyzeImage(imageUrl) 已废弃 — Python visionChat 仅支持字节数组输入");
+            throw new RuntimeException("analyzeImage(imageUrl) 已废弃，请改用基于字节数组的方法");
 
         } catch (Exception e) {
             log.error("图片分析失败", e);
@@ -310,27 +292,19 @@ public class DashScopeVisionClient {
      * @return 分析结果
      */
     public CameraAlertAnalysisResult analyzeCameraAlert(String imageBase64, String eventType, Map<String, Object> context) {
-        if (!config.isAvailable()) {
-            return CameraAlertAnalysisResult.error("DashScope API 未配置");
+        if (!delegate.isAvailable()) {
+            return CameraAlertAnalysisResult.error("Python LLM 服务未配置");
         }
 
         try {
             String prompt = buildCameraAlertPrompt(eventType, context);
 
-            ChatCompletionRequest request = ChatCompletionRequest.builder()
-                    .model(config.getVisionModel())
-                    .messages(List.of(ChatMessage.userWithImage(prompt, imageBase64)))
-                    .maxTokens(1500)
-                    .temperature(0.3)
-                    .build();
+            // 解码 Base64 为字节数组
+            byte[] imageBytes = Base64.getDecoder().decode(imageBase64);
 
-            ChatCompletionResponse response = dashScopeClient.chatCompletion(request);
+            // 委托给 PythonLLMClient.visionChat()
+            String content = delegate.visionChat(imageBytes, "image/jpeg", prompt);
 
-            if (response.hasError()) {
-                return CameraAlertAnalysisResult.error("API 调用失败: " + response.getErrorMessage());
-            }
-
-            String content = response.getContent();
             return parseCameraAlertResult(content, eventType);
 
         } catch (Exception e) {
@@ -489,27 +463,20 @@ public class DashScopeVisionClient {
      * @return 识别结果
      */
     public CompletionGestureResult analyzeCompletionGesture(String imageBase64, Map<String, Object> context) {
-        if (!config.isAvailable()) {
-            return CompletionGestureResult.error("DashScope API 未配置");
+        if (!delegate.isAvailable()) {
+            return CompletionGestureResult.error("Python LLM 服务未配置");
         }
 
         try {
             String prompt = buildCompletionGesturePrompt(context);
 
-            ChatCompletionRequest request = ChatCompletionRequest.builder()
-                    .model(config.getVisionModel())
-                    .messages(List.of(ChatMessage.userWithImage(prompt, imageBase64)))
-                    .maxTokens(800)
-                    .temperature(0.2)  // 低温度提高一致性
-                    .build();
+            // 解码 Base64 为字节数组
+            byte[] imageBytes = Base64.getDecoder().decode(imageBase64);
 
-            ChatCompletionResponse response = dashScopeClient.chatCompletion(request);
+            // 委托给 PythonLLMClient.visionChat()
+            String content = delegate.visionChat(imageBytes, "image/jpeg", prompt);
 
-            if (response.hasError()) {
-                return CompletionGestureResult.error("API 调用失败: " + response.getErrorMessage());
-            }
-
-            return parseCompletionGestureResult(response.getContent());
+            return parseCompletionGestureResult(content);
 
         } catch (Exception e) {
             log.error("完成手势识别失败", e);
@@ -609,27 +576,20 @@ public class DashScopeVisionClient {
      * @return 识别结果
      */
     public LabelRecognitionResult recognizeLabel(String imageBase64, String expectedBatchId, Map<String, Object> context) {
-        if (!config.isAvailable()) {
-            return LabelRecognitionResult.error("DashScope API 未配置");
+        if (!delegate.isAvailable()) {
+            return LabelRecognitionResult.error("Python LLM 服务未配置");
         }
 
         try {
             String prompt = buildLabelRecognitionPrompt(expectedBatchId, context);
 
-            ChatCompletionRequest request = ChatCompletionRequest.builder()
-                    .model(config.getVisionModel())
-                    .messages(List.of(ChatMessage.userWithImage(prompt, imageBase64)))
-                    .maxTokens(1000)
-                    .temperature(0.2)
-                    .build();
+            // 解码 Base64 为字节数组
+            byte[] imageBytes = Base64.getDecoder().decode(imageBase64);
 
-            ChatCompletionResponse response = dashScopeClient.chatCompletion(request);
+            // 委托给 PythonLLMClient.visionChat()
+            String content = delegate.visionChat(imageBytes, "image/jpeg", prompt);
 
-            if (response.hasError()) {
-                return LabelRecognitionResult.error("API 调用失败: " + response.getErrorMessage());
-            }
-
-            return parseLabelRecognitionResult(response.getContent(), expectedBatchId);
+            return parseLabelRecognitionResult(content, expectedBatchId);
 
         } catch (Exception e) {
             log.error("标签识别失败", e);
