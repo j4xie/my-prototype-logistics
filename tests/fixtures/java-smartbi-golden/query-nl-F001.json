@@ -1,13 +1,7 @@
 {
-  "_meta": {
-    "name": "query-nl",
-    "verb": "POST",
-    "path": "/api/mobile/F001/smart-bi/query",
-    "query": null,
-    "factory": "F001",
-    "recordedAt": "2026-04-29T04:43:22.822Z",
-    "javaPort": 10011
-  },
+  "verb": "POST",
+  "path": "/api/mobile/F001/smart-bi/query",
+  "factory": "F001",
   "response": {
     "httpStatus": 200,
     "success": true,
@@ -51,5 +45,14 @@
         "和上月相比增长了多少？"
       ]
     }
+  },
+  "_meta": {
+    "name": "query-nl",
+    "verb": "POST",
+    "path": "/api/mobile/F001/smart-bi/query",
+    "query": null,
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:22.822Z",
+    "javaPort": 10011
   }
 }

@@ -1,18 +1,7 @@
 {
-  "_meta": {
-    "name": "analysis-finance-yoy-mom",
-    "verb": "GET",
-    "path": "/api/mobile/F001/smart-bi/analysis/finance/yoy-mom",
-    "query": {
-      "periodType": "MONTH",
-      "startPeriod": "2025-01",
-      "endPeriod": "2025-12",
-      "metric": "revenue"
-    },
-    "factory": "F001",
-    "recordedAt": "2026-04-29T04:43:15.364Z",
-    "javaPort": 10011
-  },
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/analysis/finance/yoy-mom",
+  "factory": "F001",
   "response": {
     "httpStatus": 200,
     "success": true,
@@ -77,5 +66,19 @@
       "xaxisField": "period",
       "yaxisField": "currentValue"
     }
+  },
+  "_meta": {
+    "name": "analysis-finance-yoy-mom",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/finance/yoy-mom",
+    "query": {
+      "periodType": "MONTH",
+      "startPeriod": "2025-01",
+      "endPeriod": "2025-12",
+      "metric": "revenue"
+    },
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:15.364Z",
+    "javaPort": 10011
   }
 }

@@ -1,15 +1,7 @@
 {
-  "_meta": {
-    "name": "dashboard-executive-insights",
-    "verb": "GET",
-    "path": "/api/mobile/F001/smart-bi/dashboard/executive/insights",
-    "query": {
-      "period": "month"
-    },
-    "factory": "F001",
-    "recordedAt": "2026-04-29T04:43:46.870Z",
-    "javaPort": 10011
-  },
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/dashboard/executive/insights",
+  "factory": "F001",
   "response": {
     "httpStatus": 200,
     "success": true,
@@ -44,5 +36,16 @@
         "actionSuggestion": "建议总结浙江分部的成功经验，并在其他区域推广，以提升整体业绩。"
       }
     ]
+  },
+  "_meta": {
+    "name": "dashboard-executive-insights",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/dashboard/executive/insights",
+    "query": {
+      "period": "month"
+    },
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:46.870Z",
+    "javaPort": 10011
   }
 }

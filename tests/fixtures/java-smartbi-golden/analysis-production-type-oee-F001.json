@@ -1,17 +1,7 @@
 {
-  "_meta": {
-    "name": "analysis-production-type-oee",
-    "verb": "GET",
-    "path": "/api/mobile/F001/smart-bi/analysis/production",
-    "query": {
-      "startDate": "2025-01-01",
-      "endDate": "2025-12-31",
-      "analysisType": "oee"
-    },
-    "factory": "F001",
-    "recordedAt": "2026-04-29T04:43:17.863Z",
-    "javaPort": 10011
-  },
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/analysis/production",
+  "factory": "F001",
   "response": {
     "httpStatus": 200,
     "success": true,
@@ -2721,5 +2711,18 @@
       },
       "startDate": "2025-01-01"
     }
+  },
+  "_meta": {
+    "name": "analysis-production-type-oee",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/production",
+    "query": {
+      "startDate": "2025-01-01",
+      "endDate": "2025-12-31",
+      "analysisType": "oee"
+    },
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:17.863Z",
+    "javaPort": 10011
   }
 }

@@ -1,16 +1,7 @@
 {
-  "_meta": {
-    "name": "analysis-dynamic",
-    "verb": "GET",
-    "path": "/api/mobile/F001/smart-bi/analysis/dynamic",
-    "query": {
-      "uploadId": "1",
-      "analysisType": "auto"
-    },
-    "factory": "F001",
-    "recordedAt": "2026-04-29T04:44:12.286Z",
-    "javaPort": 10011
-  },
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/analysis/dynamic",
+  "factory": "F001",
   "response": {
     "httpStatus": 200,
     "success": true,
@@ -23,5 +14,17 @@
       "insights": null,
       "fieldDefinitions": null
     }
+  },
+  "_meta": {
+    "name": "analysis-dynamic",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/dynamic",
+    "query": {
+      "uploadId": "1",
+      "analysisType": "auto"
+    },
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:44:12.286Z",
+    "javaPort": 10011
   }
 }

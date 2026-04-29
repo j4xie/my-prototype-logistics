@@ -1,13 +1,7 @@
 {
-  "_meta": {
-    "name": "recommendations",
-    "verb": "GET",
-    "path": "/api/mobile/F001/smart-bi/recommendations",
-    "query": null,
-    "factory": "F001",
-    "recordedAt": "2026-04-29T04:43:26.811Z",
-    "javaPort": 10011
-  },
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/recommendations",
+  "factory": "F001",
   "response": {
     "httpStatus": 200,
     "success": true,
@@ -33,5 +27,14 @@
         "highPriority": true
       }
     ]
+  },
+  "_meta": {
+    "name": "recommendations",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/recommendations",
+    "query": null,
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:26.811Z",
+    "javaPort": 10011
   }
 }

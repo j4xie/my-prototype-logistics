@@ -1,17 +1,7 @@
 {
-  "_meta": {
-    "name": "analysis-finance-type-receivable",
-    "verb": "GET",
-    "path": "/api/mobile/F001/smart-bi/analysis/finance",
-    "query": {
-      "startDate": "2025-01-01",
-      "endDate": "2025-12-31",
-      "analysisType": "receivable"
-    },
-    "factory": "F001",
-    "recordedAt": "2026-04-29T04:43:14.236Z",
-    "javaPort": 10011
-  },
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/analysis/finance",
+  "factory": "F001",
   "response": {
     "httpStatus": 200,
     "success": true,
@@ -154,5 +144,18 @@
       },
       "startDate": "2025-01-01"
     }
+  },
+  "_meta": {
+    "name": "analysis-finance-type-receivable",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/finance",
+    "query": {
+      "startDate": "2025-01-01",
+      "endDate": "2025-12-31",
+      "analysisType": "receivable"
+    },
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:14.236Z",
+    "javaPort": 10011
   }
 }

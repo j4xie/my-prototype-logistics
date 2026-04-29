@@ -1,16 +1,7 @@
 {
-  "_meta": {
-    "name": "analysis-finance-budget-achievement",
-    "verb": "GET",
-    "path": "/api/mobile/F001/smart-bi/analysis/finance/budget-achievement",
-    "query": {
-      "year": "2025",
-      "metric": "revenue"
-    },
-    "factory": "F001",
-    "recordedAt": "2026-04-29T04:43:14.786Z",
-    "javaPort": 10011
-  },
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/analysis/finance/budget-achievement",
+  "factory": "F001",
   "response": {
     "httpStatus": 200,
     "success": true,
@@ -158,5 +149,17 @@
       "xaxisField": "month",
       "yaxisField": "budget"
     }
+  },
+  "_meta": {
+    "name": "analysis-finance-budget-achievement",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/finance/budget-achievement",
+    "query": {
+      "year": "2025",
+      "metric": "revenue"
+    },
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:14.786Z",
+    "javaPort": 10011
   }
 }

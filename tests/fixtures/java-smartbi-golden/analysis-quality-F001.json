@@ -1,16 +1,7 @@
 {
-  "_meta": {
-    "name": "analysis-quality",
-    "verb": "GET",
-    "path": "/api/mobile/F001/smart-bi/analysis/quality",
-    "query": {
-      "startDate": "2025-01-01",
-      "endDate": "2025-12-31"
-    },
-    "factory": "F001",
-    "recordedAt": "2026-04-29T04:43:18.393Z",
-    "javaPort": 10011
-  },
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/analysis/quality",
+  "factory": "F001",
   "response": {
     "httpStatus": 200,
     "success": true,
@@ -2526,5 +2517,17 @@
       "endDate": "2025-12-31",
       "startDate": "2025-01-01"
     }
+  },
+  "_meta": {
+    "name": "analysis-quality",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/quality",
+    "query": {
+      "startDate": "2025-01-01",
+      "endDate": "2025-12-31"
+    },
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:18.393Z",
+    "javaPort": 10011
   }
 }

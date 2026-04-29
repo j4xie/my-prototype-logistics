@@ -1,13 +1,7 @@
 {
-  "_meta": {
-    "name": "incentive-plan-salesperson",
-    "verb": "GET",
-    "path": "/api/mobile/F001/smart-bi/incentive-plan/salesperson/SP001",
-    "query": null,
-    "factory": "F001",
-    "recordedAt": "2026-04-29T04:43:28.568Z",
-    "javaPort": 10011
-  },
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/incentive-plan/salesperson/SP001",
+  "factory": "F001",
   "response": {
     "httpStatus": 200,
     "success": true,
@@ -75,5 +69,14 @@
       "potentialReward": 500,
       "createdAt": "2026-04-29T12:43:27.665211128"
     }
+  },
+  "_meta": {
+    "name": "incentive-plan-salesperson",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/incentive-plan/salesperson/SP001",
+    "query": null,
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:28.568Z",
+    "javaPort": 10011
   }
 }

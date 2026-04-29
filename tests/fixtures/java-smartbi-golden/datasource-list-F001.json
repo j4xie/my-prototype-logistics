@@ -1,13 +1,7 @@
 {
-  "_meta": {
-    "name": "datasource-list",
-    "verb": "GET",
-    "path": "/api/mobile/F001/smart-bi/datasource/list",
-    "query": null,
-    "factory": "F001",
-    "recordedAt": "2026-04-29T04:43:30.029Z",
-    "javaPort": 10011
-  },
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/datasource/list",
+  "factory": "F001",
   "response": {
     "httpStatus": 200,
     "success": true,
@@ -432,5 +426,14 @@
         "deleted": false
       }
     ]
+  },
+  "_meta": {
+    "name": "datasource-list",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/datasource/list",
+    "query": null,
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:30.029Z",
+    "javaPort": 10011
   }
 }

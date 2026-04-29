@@ -1,13 +1,7 @@
 {
-  "_meta": {
-    "name": "datasource-preview",
-    "verb": "GET",
-    "path": "/api/mobile/F001/smart-bi/datasource/1/preview",
-    "query": null,
-    "factory": "F001",
-    "recordedAt": "2026-04-29T04:43:29.129Z",
-    "javaPort": 10011
-  },
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/datasource/1/preview",
+  "factory": "F001",
   "response": {
     "httpStatus": 200,
     "success": true,
@@ -32,5 +26,14 @@
       "estimatedMigrationTime": null,
       "confirmationRequiredCount": 0
     }
+  },
+  "_meta": {
+    "name": "datasource-preview",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/datasource/1/preview",
+    "query": null,
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:29.129Z",
+    "javaPort": 10011
   }
 }

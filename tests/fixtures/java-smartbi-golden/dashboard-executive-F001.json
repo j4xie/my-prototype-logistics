@@ -1,15 +1,7 @@
 {
-  "_meta": {
-    "name": "dashboard-executive",
-    "verb": "GET",
-    "path": "/api/mobile/F001/smart-bi/dashboard/executive",
-    "query": {
-      "period": "month"
-    },
-    "factory": "F001",
-    "recordedAt": "2026-04-29T04:43:42.877Z",
-    "javaPort": 10011
-  },
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/dashboard/executive",
+  "factory": "F001",
   "response": {
     "httpStatus": 200,
     "success": true,
@@ -120,5 +112,16 @@
       "fromCache": false,
       "cacheExpireAt": null
     }
+  },
+  "_meta": {
+    "name": "dashboard-executive",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/dashboard/executive",
+    "query": {
+      "period": "month"
+    },
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:42.877Z",
+    "javaPort": 10011
   }
 }

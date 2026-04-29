@@ -1,16 +1,7 @@
 {
-  "_meta": {
-    "name": "analysis-finance-category-comparison",
-    "verb": "GET",
-    "path": "/api/mobile/F001/smart-bi/analysis/finance/category-comparison",
-    "query": {
-      "year": "2025",
-      "compareYear": "2024"
-    },
-    "factory": "F001",
-    "recordedAt": "2026-04-29T04:43:15.913Z",
-    "javaPort": 10011
-  },
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/analysis/finance/category-comparison",
+  "factory": "F001",
   "response": {
     "httpStatus": 200,
     "success": true,
@@ -61,5 +52,17 @@
       "xaxisField": "category",
       "yaxisField": "currentAmount"
     }
+  },
+  "_meta": {
+    "name": "analysis-finance-category-comparison",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/finance/category-comparison",
+    "query": {
+      "year": "2025",
+      "compareYear": "2024"
+    },
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:15.913Z",
+    "javaPort": 10011
   }
 }

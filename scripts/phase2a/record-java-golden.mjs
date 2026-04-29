@@ -556,17 +556,23 @@ console.log(`Total endpoint definitions: ${ENDPOINTS.length}`);
 function saveFixture(outDir, name, factory, verb, resolvedPath, query, response) {
   const filename = `${name}-${factory}.json`;
   const filepath = path.join(outDir, filename);
+  const meta = {
+    name,
+    verb,
+    path: resolvedPath,
+    query: query || null,
+    factory,
+    recordedAt: new Date().toISOString(),
+    javaPort: 10011,
+  };
   const fixture = {
-    _meta: {
-      name,
-      verb,
-      path: resolvedPath,
-      query: query || null,
-      factory,
-      recordedAt: new Date().toISOString(),
-      javaPort: 10011,
-    },
+    // Spec-required top-level fields (T5 contract test reads these)
+    verb,
+    path: resolvedPath,
+    factory,
     response,
+    // Detail metadata (recordedAt, javaPort, query, etc.)
+    _meta: meta,
   };
   fs.writeFileSync(filepath, JSON.stringify(fixture, null, 2), 'utf-8');
   return filepath;
@@ -635,7 +641,15 @@ async function main() {
 
       const isOk = result.status >= 200 && result.status < 300;
       const isExpectedError = ep.expectError && !isOk;
-      const label = isOk ? 'OK' : (isExpectedError ? 'ERR(expected)' : 'ERR');
+
+      // Detect HTTP 200 but success:false — possible Java bug, warn loudly
+      const serverSuccessFalse = isOk && result.json && result.json.success === false && !ep.expectError;
+      if (serverSuccessFalse) {
+        console.warn(`\nWARN: ${ep.name} returned HTTP ${result.status} but success:false — possible Java bug`);
+        console.warn(`  message: ${(result.json.message || '').slice(0, 100)}`);
+      }
+
+      const label = isOk ? (serverSuccessFalse ? 'OK(success:false!)' : 'OK') : (isExpectedError ? 'ERR(expected)' : 'ERR');
       console.log(`${result.status} ${label}`);
 
       if (!isOk && !ep.expectError) {
@@ -660,12 +674,18 @@ async function main() {
         .replace('{targetType}', ep.targetType || 'salesperson')
         .replace('{targetId}', ep.targetId || 'test');
 
-      saveFixture(cfg.outDir, ep.name, cfg.factory, ep.verb, resolvedPath, ep.query, {
+      const responsePayload = {
         httpStatus: result.status,
         success: result.json?.success ?? null,
         message: result.json?.message ?? null,
         data: result.json?.data ?? (result.json ?? { _rawText: result.raw }),
-      });
+      };
+      // Flag in fixture so T5 contract test can handle success:false goldens correctly
+      if (serverSuccessFalse) {
+        responsePayload._serverSuccessFalse = true;
+      }
+
+      saveFixture(cfg.outDir, ep.name, cfg.factory, ep.verb, resolvedPath, ep.query, responsePayload);
     } catch (e) {
       console.log(`NETWORK_ERROR: ${e.message}`);
       summary.failed.push({

@@ -1,13 +1,7 @@
 {
-  "_meta": {
-    "name": "query-templates",
-    "verb": "GET",
-    "path": "/api/mobile/F001/smart-bi/query-templates",
-    "query": null,
-    "factory": "F001",
-    "recordedAt": "2026-04-29T04:43:33.392Z",
-    "javaPort": 10011
-  },
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/query-templates",
+  "factory": "F001",
   "response": {
     "httpStatus": 200,
     "success": true,
@@ -183,5 +177,14 @@
         "deleted": false
       }
     ]
+  },
+  "_meta": {
+    "name": "query-templates",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/query-templates",
+    "query": null,
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:33.392Z",
+    "javaPort": 10011
   }
 }

@@ -1,4 +1,13 @@
 {
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/alerts",
+  "factory": "F001",
+  "response": {
+    "httpStatus": 200,
+    "success": true,
+    "message": "操作成功",
+    "data": []
+  },
   "_meta": {
     "name": "alerts-category-sales",
     "verb": "GET",
@@ -9,11 +18,5 @@
     "factory": "F001",
     "recordedAt": "2026-04-29T04:43:24.826Z",
     "javaPort": 10011
-  },
-  "response": {
-    "httpStatus": 200,
-    "success": true,
-    "message": "操作成功",
-    "data": []
   }
 }
