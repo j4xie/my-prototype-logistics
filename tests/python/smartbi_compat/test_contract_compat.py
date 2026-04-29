@@ -328,3 +328,59 @@ def test_data_date_range_F001_no_data_returns_no_data_envelope(
     assert body["message"] == "No sales data detected"
     assert body["data"]["hasData"] is False
     assert body["data"]["message"] == "No sales data detected"
+
+
+# ---------------------------------------------------------------------------
+# T5b: GET /query-templates contract test
+# ---------------------------------------------------------------------------
+#
+# Java reference: SmartBIAnalysisController.getQueryTemplates (line 954-962)
+# backed by SmartBiQueryTemplateRepository.findByFactoryIdOrderByCreatedAtDesc,
+# which returns a List<SmartBiQueryTemplate> (BaseEntity + 7 fields). Lombok
+# @Data on BaseEntity then SmartBiQueryTemplate yields Jackson key order:
+#     createdAt, updatedAt, deletedAt, id, factoryId, name, category,
+#     description, queryTemplate, parameters, deleted
+# where ``deleted`` is the @Where soft-delete flag (deletedAt is None).
+#
+# DB seam ``_query_templates`` is monkey-patched at module scope so the
+# assertion is deterministic without a Postgres dependency. Production hits
+# the real smart_bi_query_templates table via smartbi.database.connection.
+
+
+def test_query_templates_F001_matches_golden(
+    client, factory_token, goldens, monkeypatch
+):
+    """Mirror Java's GET /query-templates list shape against the recorded golden.
+
+    The DB seam returns the post-_row_to_dict shape (already a list of
+    JSON-ready dicts), so monkey-patching with the golden's ``data`` array
+    directly exercises the full envelope/route/serialisation path without
+    a Postgres dependency.
+
+    Note: this means the schema match is strong against the envelope and
+    list framing, but weak against per-row serialisation correctness
+    (the helper isn't actually exercised in this test). The PoC accepts
+    that — the seam itself is unit-testable separately, and a live-
+    backend integration test is out of scope for the PoC contract phase.
+    """
+    g = goldens["query-templates-F001"]
+    expected = g["response"]
+    expected_data = expected["data"]
+
+    from smartbi_compat.api import analysis as analysis_router
+
+    monkeypatch.setattr(
+        analysis_router,
+        "_query_templates",
+        lambda factory_id: expected_data,
+    )
+
+    r = client.get(
+        g["path"].replace("{factory_id}", g["factory"]),
+        headers={"Authorization": f"Bearer {factory_token}"},
+    )
+    assert r.status_code == 200, f"unexpected status {r.status_code}: {r.text}"
+    body = r.json()
+    assert_envelope(body, expected_code=200, expected_success=True)
+    assert body["message"] == expected.get("message")
+    assert_schema_match(body["data"], expected_data)
