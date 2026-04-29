@@ -126,21 +126,31 @@
 
 ---
 
-## 3. 本次 Phase 0 范围（约 1 小时）
+## 3. 本次 Phase 0 范围（约 2-3 小时 / 1-2 sessions）
+
+### 3.0 已就绪基础设施（不需要再做）
+
+- ✅ `ManualChatRequest` 已含 `category: Optional[str]` 和 `image_base64: Optional[str]` 字段（main 分支 commit `d6330fad5`+ 后续）
+- ✅ `manual_chat` endpoint 在 `request.category in ("restaurant", "factory")` 时显式设 `subcategories=[request.category]`（main 第 552-564 行）
+- ✅ aiassist 前端按 sessionStorage 选择填 `category`，工厂版必带 `"category":"factory"`
+- ✅ 数据库已有 287 chunks subcategory='factory'，路由生效
 
 ### 3.1 必做项
 
 1. **写 §0A 智能数据分析 (AI Query)** — Tier 1 production-grade，约 200 行 HTML
 2. **写 §0B 财务 PBI 看板** — Tier 1 production-grade，约 200 行 HTML
-3. **更新目录** — TOC 加 §0A + §0B 链接
-4. **更新 last-verified meta** — `<!-- last-verified-against-product: 2026-04-29 -->`
-5. **重新入库** — 触发 `manual_ingester.py` 把 factory manual 重新入 KB（增量约 +33 chunks）
-6. **部署** — `factory-operation-manual.html` scp 到 139 (aiassist + web-admin 都读这个)
-7. **Smoke test** — 工厂版 aiassist 问 "AI Query 怎么用" / "财务看板看什么"，验证返回新写的 §0A / §0B 内容
+3. **更新目录** — TOC 加 §0A + §0B 链接，HTML 锚点统一用全小写：`id="ch0a"` / `id="ch0a-1"` / `id="ch0a-faq"` / `id="ch0b"` / `id="ch0b-1"` 等
+4. **更新 last-verified meta** — 文件头 `<!-- last-verified-against-product: 2026-04-29 -->`，§0A / §0B / §6 / §7 / §10 / §14 章节内也加章级 meta
+5. **重新入库** — 触发 `manual_ingester.py` 重入 factory manual（atomic swap，全部替换；预计新 total 约 309-315 chunks，比当前 287 多 22-28 个）
+6. **部署** — `factory-operation-manual.html` scp 到 139（aiassist 子域名 + web-admin 都读这个）
+7. **Smoke test**（必经全过）：
+   - **Test A**：工厂版 aiassist 问 "AI Query 怎么用"，response 含至少 1 个工厂 KPI 关键词（OEE/良品率/损耗率/工序合格率/OTIF）
+   - **Test B**：工厂版 aiassist 问 "财务看板看什么"，response 含至少 1 个 §0B 指标关键词（损益瀑布/桑基/应收账龄）
+   - **Test C**：餐饮版 aiassist 问 "怎么开始一个生产批次"，response 仍是"该功能在当前选择的版本（餐饮版）操作手册中未记录..."（跨域拒绝不被破坏）
 
 ### 3.2 不做项（留给后续 Phase）
 
-- 工厂域关键词检测 `_FACTORY_KEYWORDS`（aiassist 已用 explicit category，影响小）
+- `_FACTORY_KEYWORDS` auto-detect（已经用 explicit category 路由，auto-detect 仅影响 web-admin AIQuery 等其他入口，不影响 aiassist）
 - §1-§20 章节模板补强（Phase 1b）
 - 5 条培训路径（Phase 1b）
 - 24 个决策合成场景（Phase 1b）
@@ -156,7 +166,7 @@
 
 ### 4.1 概述（200-300 字）
 
-智能数据分析 (AI Query) 是白垩纪 SaaS 的核心分析入口，允许工厂用户用自然语言直接提问，例如"本月哪条产线 OEE 最低？"或"上周哪个 SKU 损耗率最高？"，无需编写 SQL 或配置 BI 报表。系统自动识别字段、执行聚合、生成图表并输出文字解读。适合厂长、生产主管、品控经理等管理岗位日常监控经营数据，让前线班组长也能独立获取数据洞察，无需依赖 IT 配置。
+智能数据分析 (AI Query) 是白垩纪 SaaS 的**数据分析入口**，允许工厂用户用自然语言直接提问，例如"本月哪条产线 OEE 最低？"或"上周哪个 SKU 损耗率最高？"，无需编写 SQL 或配置 BI 报表。系统自动识别字段、执行聚合、生成图表并输出文字解读。适合厂长、生产主管、品控经理等管理岗位日常监控经营数据。**与本手册 §12 "AI 对话" 章节的区别**：§12 描述的是系统内置 LLM 助手用于辅助操作（如 AI 创建生产计划、AI 推荐配方），属于**操作辅助**；§0A 是**Excel 上传 + 数据集分析**，专注于数据洞察 — 一个执行命令，一个解读数字，不重叠。让前线班组长也能独立获取数据洞察，无需依赖 IT 配置。
 
 ### 4.2 §0A.1 进入路径（2 条）
 
@@ -190,14 +200,15 @@
 
 ### 4.6 §0A.5 关键指标速查（厂长视角）
 
-| 指标 | 计算口径 | 健康区间 | 红线 |
+| 指标 | 计算口径 | 健康区间（食品深加工） | 红线 |
 |------|----------|----------|------|
-| OEE (设备综合效率) | 可用率 × 性能率 × 良品率 | 70-85% | <60% 红线 |
+| OEE (设备综合效率) | 可用率 × 性能率 × 良品率 | 食品加工 55-75%（连续生产线偏低于离散制造） | <50% 红线 |
 | 良品率 | 合格件 / 投产件 | 95-99% | <93% 红线 |
 | 工序合格率 | 合格批次 / 总批次 | 98%+ | <95% 红线 |
-| 损耗率 | 实际用料 / 标准用料 - 1 | <5% | >10% 红线 |
+| 损耗率 | (实际用料 - 标准用料) / 标准用料 | <5% | >10% 红线 |
 | 设备利用率 | 实际运行时间 / 计划时间 | 75-90% | <60% 红线 |
-| 人均产值 | 营收 / 在线工人数 | 行业基准 | 季度对标 |
+| **准时交付率 (OTIF)** | 准时全量交付订单数 / 总订单数 | 95%+ | <90% 红线（直接影响客户关系） |
+| 人均产值 | 月营收 / 在线工人数 | 食品加工 ¥3-8 万/人/月（视品类） | 季度环比下降 >5% 警示 |
 
 ### 4.7 §0A.6 业务判断框架
 
@@ -230,7 +241,7 @@
 
 ### 5.1 概述（200-300 字）
 
-财务 PBI 看板是白垩纪 SaaS 的标准财务可视化入口，自动从生产报工、采购入库、销售出货、人工工资等系统数据汇总成月度损益、成本结构、应收应付、现金流四大视图。无需会计手工整理，看板自动按月聚合，支持多工厂切换、按 SKU/客户/产线下钻，让厂长和财务文员快速识别成本异常、回款风险和利润趋势。
+财务 PBI 看板是白垩纪 SaaS 的**标准财务可视化解读入口**，自动从生产报工、采购入库、销售出货、人工工资等系统数据汇总成月度损益、成本结构、应收应付、现金流四大视图。**与本手册 §14 "财务管理" 章节的区别**：§14 是**财务操作模块**（开发票、记凭证、做付款、对账），属于会计文员日常操作；§0B 是**财务数据解读层**，看板自动按月聚合并展示趋势，给厂长和老板看不动手 — 一个录入数据，一个解读数字，互补不重叠。无需会计手工整理，看板自动按月聚合，支持多工厂切换、按 SKU/客户/产线下钻，让厂长和财务文员快速识别成本异常、回款风险和利润趋势。
 
 ### 5.2 §0B.1 进入路径（1 条）
 
@@ -258,11 +269,12 @@
 
 | 指标 | 计算 | 健康区间 |
 |------|------|----------|
-| 毛利率 | (营收 - 直接成本) / 营收 | 食品加工 25-35% |
-| 营业利润率 | 营业利润 / 营收 | 8-15% |
-| 应收账龄 | 30/60/90/90+ 天分布 | 90+ <10% |
-| 现金流 | 经营 / 投资 / 筹资 | 经营为正 |
-| 单位成本 | 总成本 / 产量 | 工厂自定 |
+| 毛利率 | (营收 - 直接成本) / 营收 | **品类差异大**：初加工（分切/屠宰）8-15%；中等加工 20-28%；深加工（预制菜/调味品）30-45% |
+| 营业利润率 | 营业利润 / 营收 | 食品加工综合 5-12% |
+| 应收账龄 | 30/60/90/90+ 天分布 | 90+ <10% 健康，>20% 警示 |
+| 现金流 | 经营 / 投资 / 筹资 三大类 | 经营现金流为正、覆盖投资 + 筹资 |
+| 单位成本 | 总成本 / 产量 | 工厂自定（按 SKU 跟踪环比） |
+| **回款周转 DSO** | 应收账款余额 × 365 / 年营收 | 30-60 天健康，>90 天警示 |
 
 ### 5.7 §0B.6 业务判断框架
 
@@ -315,7 +327,7 @@ WHERE source = 'factory-operation-manual.html'
 GROUP BY subcategory;
 ```
 
-期望：subcategory='factory' chunks 增加约 +33（§0A ~16 chunks + §0B ~17 chunks）
+期望：subcategory='factory' chunks 增加约 **+22~28**（§0A ~11-14 chunks + §0B ~11-14 chunks，参考餐饮版 §1/§2 实际数量）。total 从 287 → 309~315。
 
 ---
 
@@ -345,7 +357,7 @@ GROUP BY subcategory;
 - [ ] §0A + §0B 两章在 HTML 中渲染正确（h1/h2 层级、表格、tip/warn 样式）
 - [ ] TOC 更新含 §0A / §0B
 - [ ] last-verified meta 含 §0A / §0B（如果决定也加 ch_intro 章节级 meta）
-- [ ] KB 重新入库后 factory chunks 增加 ≥ 25
+- [ ] KB 重新入库后 factory chunks 增加 ≥ 20（保守阈值，避免分块策略变化误报）
 - [ ] aiassist 工厂版问 "AI Query 怎么用" 返回新写的 §0A 内容（不是引用 §12 旧 AI 章节）
 - [ ] aiassist 工厂版问 "财务看板看什么" 返回 §0B 内容
 - [ ] 餐饮版问相同问题不受影响（仍返回 restaurant chunks）
@@ -354,19 +366,25 @@ GROUP BY subcategory;
 
 ## 9. 风险与回滚
 
-**风险 1**：§0A 内容跟现有 §12 (AI 对话 + 常见问题) 重复
-- 缓解：§0A 是 BI 分析视角，§12 是 LLM 助手视角，定位区分清晰；§0A 概述里点明"详见 §12 AI 对话"
+**风险 1**：§0A 内容跟现有 §12 (AI 对话) chunks 在 RAG 检索中竞争
+- 缓解：§0A 概述明确写"§12 是操作辅助，§0A 是数据分析"，给 RAG 增加区分语义；smoke test Test A 用"AI Query 怎么用"专门验证 §0A 优先
 
-**风险 2**：重新入库失败 / chunks 数量异常
-- 缓解：先 dry-run（只 print 不写库），确认章节切分合理后再真入库；保留入库前 chunks count 作为回滚基准
+**风险 2**：§0B 内容跟现有 §14 (财务管理) chunks 在 RAG 检索中竞争
+- 缓解：§0B 概述明确写"§14 是财务操作，§0B 是数据解读"；smoke test Test B 用"财务看板看什么"专门验证 §0B 优先
 
-**风险 3**：Tier 1 章节模板不够工厂化（直接复制餐饮版导致工厂用户违和）
-- 缓解：例子都用工厂场景（OEE/产线/SKU/批次），不是餐厅场景（翻台/客单价）
+**风险 3**：重新入库失败 / chunks 数量异常 / atomic swap 出错
+- 缓解：`manual_ingester.py` 已支持 atomic swap（先 .NEW source 写入 → 全部成功后事务 DELETE 旧 + RENAME），失败自动回滚。先在 prod 跑一次 dry-run 确认 chunks 数量在 22-28 区间再真入库
+
+**风险 4**：HTML 部署期间用户访问到不一致版本
+- 缓解：scp 是原子的（先写临时文件再 mv），不会出现半文件状态。即使旧 HTML 还在浏览器缓存，刷新后会拿新版（nginx 已 set `Cache-Control: no-cache, no-store, must-revalidate`）
+
+**风险 5**：Tier 1 章节模板不够工厂化（直接复制餐饮版导致工厂用户违和）
+- 缓解：例子全用工厂场景（OEE/产线/SKU/批次），不是餐厅场景（翻台/客单价）；指标区间用食品加工实际行业数据（OEE 55-75% 而非通用 70-85%）
 
 回滚：
-- 文件：`git revert`
-- 入库：删除新增 chunks `DELETE FROM food_knowledge_documents WHERE source='factory-operation-manual.html' AND created_at > '2026-04-29'`
-- 部署：scp 旧版 HTML 回 139
+- 文件：`git revert <commit-hash>` 恢复旧版 HTML
+- 入库：`manual_ingester.py` 用 atomic swap 模式（写 `.NEW` source → 验证 → 事务 DELETE 旧 + RENAME `.NEW` 为 canonical）。所以**回滚就是用旧版 HTML 重跑 ingester**，让它再做一次 atomic swap。**不要**手工写 DELETE SQL（会按 source 删光所有 287+ chunks，没办法只删新增的）
+- 部署：scp 旧版 HTML 回 139（路径 `/www/wwwroot/web-admin/factory-operation-manual.html`）
 
 ---
 
@@ -382,4 +400,8 @@ GROUP BY subcategory;
 
 ## 11. Open Questions
 
-无。所有决策点已通过 brainstorm 对齐：策略 C / 22 章 / 5 路径 / 24 场景 / 本次 Phase 0 only.
+实施前需用户确认（实施时遇到再问也行）：
+
+1. **§0B 损益瀑布图 / 成本桑基图是否已 ship**？spec §5.3 layout 描述含这两个图，但需要核对 web-admin 财务 PBI 实际 UI。如果还在规划中而不在产品里，应改写为"瀑布图（规划中）/ 桑基图（规划中）"避免误导。
+2. **§0A FAQ 数据集保留期限**：餐饮版 §1 提"历史问答最近 50 条"，工厂版应该保持一致还是分开？建议保持 50 条一致。
+3. **章节级 last-verified meta 是否要给 §0A / §0B**？餐饮版 Phase 2 CI 监控 §1 / §2 / §11 三个 Tier 1 章节，工厂版同等的"Tier 1 关键章节"应该是 §0A / §0B / §6 / §7 / §10？还是只 §0A / §0B？建议先只 §0A / §0B（简单），其他章节 Phase 1a 时再加。
