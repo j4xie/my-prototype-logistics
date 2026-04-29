@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
+import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import { Plus, Search, Refresh } from '@element-plus/icons-vue';
 import { formatDateTimeCell } from '@/utils/tableFormatters';
 import type { FormInstance } from 'element-plus';
 
+const router = useRouter();
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
@@ -241,14 +244,24 @@ async function handleFormSubmit() {
 <template>
   <CanvasAwareWrapper module-code="material_batch">
   <div class="page-wrapper">
+    <ConceptDisambiguationAlert
+      here-name="原料 / 物料"
+      here="采购入库的原材料、包材、辅料（如「冻猪蹄」「吸塑盒」）"
+      other-name="系统管理 → 成品 / SKU (本厂生产)"
+      other="本厂生产的成品 / SKU（如「叮咚好食光卤猪蹄 200g」）"
+      other-path="/system/products"
+    />
     <el-card class="page-card" shadow="never">
       <template #header>
         <div class="card-header">
           <div class="header-left">
-            <span class="page-title">原材料批次管理</span>
+            <span class="page-title">原料 / 物料管理 (采购入库)</span>
             <span class="data-count">共 {{ pagination.total }} 条记录</span>
           </div>
           <div class="header-right">
+            <el-button v-if="canWrite" @click="router.push('/warehouse/material-types')">
+              管理原料类型字典
+            </el-button>
             <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleCreate">入库登记</el-button>
           </div>
         </div>

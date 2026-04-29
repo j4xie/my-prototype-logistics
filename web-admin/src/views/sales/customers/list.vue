@@ -8,6 +8,7 @@ import { Plus, Search, Refresh } from '@element-plus/icons-vue';
 import type { FormInstance } from 'element-plus';
 import DynamicEntityForm from '@/components/DynamicEntityForm.vue';
 import type { FieldConfig } from '@/config/entityFieldConfigs';
+import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 
 // 客户扩展字段 — 添加新字段只需在此数组加一行
 const customerExtendedFields: FieldConfig[] = [
@@ -245,6 +246,13 @@ async function handleDelete(row: Record<string, unknown>) {
 
 <template>
   <div class="page-wrapper">
+    <ConceptDisambiguationAlert
+      here-name="客户"
+      here="向我们采购的下游买家（如「叮咚」「盒马」「永辉」），用于销售订单 / 应收账款"
+      other-name="采购管理 → 供应商"
+      other="向我们供货的上游卖家（如肉联厂、包材厂），用于采购订单 / 应付账款"
+      other-path="/procurement/suppliers"
+    />
     <el-card class="page-card" shadow="never">
       <template #header>
         <div class="card-header">

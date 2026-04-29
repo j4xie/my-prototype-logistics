@@ -7,6 +7,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Edit, Delete, Download, Refresh } from '@element-plus/icons-vue';
 import BomChangeLog from './BomChangeLog.vue'
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue'
+import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue'
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -578,6 +579,14 @@ function refreshData() {
 <template>
   <CanvasAwareWrapper module-code="bom">
   <div class="bom-page">
+    <ConceptDisambiguationAlert
+      here-name="BOM 成本管理"
+      here="一个成品需要哪些原料、各多少量、成本如何拆分（多对多结构 + 成本核算）"
+      other-name="生产管理 → 转换率配置"
+      other="单一原料 → 单一成品的「出成率」（如 1kg 冻猪蹄 → 600g 卤猪蹄，60%）"
+      other-path="/production/conversions"
+      consequence="复杂配方用 BOM，简单出成率用转换率"
+    />
     <!-- Header -->
     <el-card class="header-card" shadow="never">
       <div class="header-content">

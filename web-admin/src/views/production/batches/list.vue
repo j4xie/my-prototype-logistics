@@ -7,6 +7,7 @@ import { get, post } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Plus, Search, Refresh } from '@element-plus/icons-vue';
 import { formatDateTimeCell } from '@/utils/tableFormatters';
+import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 
 const router = useRouter();
 
@@ -177,6 +178,13 @@ function getStatusText(status: string) {
 
 <template>
   <div class="page-wrapper">
+    <ConceptDisambiguationAlert
+      here-name="生产批次"
+      here="已开工的实际「批次」（IN_PROGRESS / COMPLETED，记录实际产量、消耗、报工）"
+      other-name="生产管理 → 生产计划"
+      other="未来要做什么的「计划」（PENDING / 待开工状态，可调整数量、日期）"
+      other-path="/production/plans"
+    />
     <el-card class="page-card" shadow="never">
       <template #header>
         <div class="card-header">

@@ -266,6 +266,42 @@
     text-indent: -10px;
     line-height: 1.7;
   }
+  .bullet-line.bullet-sub {
+    padding-left: 28px;
+    text-indent: -10px;
+    color: #4b5563;
+    font-size: 14px;
+  }
+  .ans-h3 {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 12px 0 6px;
+    color: #1f2937;
+  }
+  .ans-h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 10px 0 4px;
+    color: #374151;
+  }
+  .ans-table {
+    border-collapse: collapse;
+    margin: 8px 0;
+    font-size: 13px;
+    display: block;
+    overflow-x: auto;
+    max-width: 100%;
+  }
+  .ans-table th, .ans-table td {
+    border: 1px solid #e5e7eb;
+    padding: 6px 10px;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .ans-table th {
+    background: #f3f4f6;
+    font-weight: 600;
+  }
   .sources-collapse {
     margin-top: 6px;
     font-size: 11.5px;
@@ -614,15 +650,36 @@
   }
 
   // Lightweight markdown → HTML (escape first, then promote a few patterns).
-  // Supports: **bold**, "- item" / "* item" bullet lines.
+  // Supports: **bold**, ### / #### headings, "- item" bullet, "  * sub-item" sub-bullet,
+  // and simple | a | b | tables.
   // We never feed user/AI raw text into innerHTML — only the escaped + transformed version.
   function renderAnswer(text) {
     if (!text) return '';
     var escaped = escapeHtml(text);
     // Bold
     escaped = escaped.replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>');
-    // Convert lines starting with "- " or "* " into a styled bullet line
+    // Headings: #### / ### (single-line, must be at start of line)
+    escaped = escaped.replace(/^####\s+(.+)$/gm, '<h4 class="ans-h4">$1</h4>');
+    escaped = escaped.replace(/^###\s+(.+)$/gm, '<h3 class="ans-h3">$1</h3>');
+    // Sub-bullet: indented "* foo" (2+ spaces or tab) — must run BEFORE top-level bullet
+    escaped = escaped.replace(/^(?:\s{2,}|\t)\*\s+(.+)$/gm, '<span class="bullet-line bullet-sub">∘ $1</span>');
+    // Top-level bullet: "- foo" or "* foo" at line start
     escaped = escaped.replace(/^[\-\*]\s+(.+)$/gm, '<span class="bullet-line">• $1</span>');
+    // Simple markdown table: 2+ consecutive lines that look like | a | b |
+    escaped = escaped.replace(/((?:^\|[^\n]+\|[^\n]*\n){2,})/gm, function(block) {
+      var lines = block.trim().split('\n');
+      // Skip the separator line "| --- | --- |" if present
+      var rows = lines.filter(function(l) { return !/^\|[\s\-:|]+\|$/.test(l); });
+      if (rows.length < 2) return block;
+      var html = '<table class="ans-table">';
+      rows.forEach(function(line, idx) {
+        var cells = line.split('|').slice(1, -1).map(function(c) { return c.trim(); });
+        var tag = idx === 0 ? 'th' : 'td';
+        html += '<tr>' + cells.map(function(c) { return '<' + tag + '>' + c + '</' + tag + '>'; }).join('') + '</tr>';
+      });
+      html += '</table>';
+      return html;
+    });
     // Line breaks (preserve paragraphs visually via white-space: pre-wrap CSS too)
     return escaped;
   }

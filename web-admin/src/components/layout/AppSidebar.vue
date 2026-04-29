@@ -105,7 +105,8 @@ const menuConfig: MenuItem[] = [
     path: '/warehouse', title: '仓储管理', icon: 'Box', module: 'warehouse',
     hideForFactoryTypes: ['RESTAURANT'],
     children: [
-      { path: '/warehouse/materials', title: '原材料批次', icon: '', module: 'warehouse' },
+      { path: '/warehouse/material-types', title: '原料类型字典 (新建原料)', icon: '', module: 'warehouse' },
+      { path: '/warehouse/materials', title: '原料入库登记 (具体批次)', icon: '', module: 'warehouse' },
       { path: '/warehouse/shipments', title: '出货管理', icon: '', module: 'warehouse' },
       { path: '/warehouse/inventory', title: '盘点管理', icon: '', module: 'warehouse' },
       { path: '/warehouse/material-price-trend', title: '物料均价趋势', icon: '', module: 'warehouse' },
@@ -197,7 +198,7 @@ const menuConfig: MenuItem[] = [
       { path: '/system/ai-intents', title: 'AI意图配置', icon: '', module: 'system' },
       { path: '/system/skill-tools', title: 'Skill/Tool治理', icon: '', module: 'system' },
       { path: '/system/llm-usage', title: 'LLM 用量监控', icon: '', module: 'system' },
-      { path: '/system/products', title: '产品信息管理', icon: '', module: 'system' },
+      { path: '/system/products', title: '成品 / SKU (本厂生产)', icon: '', module: 'system' },
       { path: '/system/work-processes', title: '工序管理', icon: '', module: 'system',
         hideForFactoryTypes: ['RESTAURANT'] },
       { path: '/system/product-processes', title: '产品-工序配置', icon: '', module: 'system',

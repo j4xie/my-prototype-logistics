@@ -7,6 +7,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search, Refresh, Ship, Check, Close } from '@element-plus/icons-vue';
 import { formatDateTime } from '@/utils/dateFormat';
 import { emptyCell } from '@/utils/tableFormatters';
+import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -134,7 +135,7 @@ function handleSizeChange(size: number) {
   loadData();
 }
 
-function handleCreate() {
+async function handleCreate() {
   shipmentForm.value = {
     customerId: '',
     productBatchId: '',
@@ -145,6 +146,9 @@ function handleCreate() {
     driverPhone: '',
     notes: ''
   };
+  // 张权 Apr 28 反馈: dropdown 显示 onMounted 时的旧 cache.
+  // 强制刷新让用户刚建的客户/批次立即可选.
+  await Promise.all([loadCustomers(), loadProductBatches()]);
   dialogVisible.value = true;
 }
 
@@ -287,6 +291,13 @@ function getStatusText(status: string) {
 
 <template>
   <div class="page-wrapper">
+    <ConceptDisambiguationAlert
+      here-name="出货管理"
+      here="把成品发给客户的物流操作（车牌号、司机、批次分配）"
+      other-name="销售管理 → 销售订单"
+      other="客户下的销售订单（金额、收款）。出货是销售订单的物流执行环节"
+      other-path="/sales/orders"
+    />
     <el-card class="page-card" shadow="never">
       <template #header>
         <div class="card-header">

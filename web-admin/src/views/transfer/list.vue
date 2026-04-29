@@ -8,6 +8,7 @@ import { get, post } from '@/api/request';
 import { ElMessage } from 'element-plus';
 import { Plus, Refresh } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
+import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -65,6 +66,13 @@ function isOutbound(row: Record<string, unknown>) { return row.sourceFactoryId =
 
 <template>
   <div class="page-wrapper">
+    <ConceptDisambiguationAlert
+      here-name="调拨单"
+      here="把物料从一个工厂/仓库搬到另一个工厂/仓库（实际搬动物料、转移所有权）"
+      other-name="仓储管理 → 盘点管理"
+      other="清点仓库实际库存与系统数对比，发现差异（盘盈/盘亏，不搬动物料）"
+      other-path="/warehouse/inventory"
+    />
     <el-card class="page-card" shadow="never">
       <template #header>
         <div class="card-header">

@@ -104,11 +104,38 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$PROJECT_ROOT/web-admin"
 
+# Apr 29 2026 fix (张权 banner deploy 故障): 之前 `npm run build 2>&1 | tail -5`
+# 通过 pipe 把 npm 的 exit code 吃掉了 (pipe 的 exit code 是 tail 的 0), build 失败但
+# 后续 dist/index.html 检查仍通过 (旧 dist 还在), 部署上传旧 dist + 报"成功".
+# 用 PIPESTATUS 拿到 npm 的真实 exit code, 失败立即 exit.
+set -o pipefail
 npm run build 2>&1 | tail -5
+BUILD_RC=${PIPESTATUS[0]}
+set +o pipefail
+if [ "$BUILD_RC" != "0" ]; then
+    log "❌ 构建失败 (npm run build exit=$BUILD_RC) — 拒绝继续部署"
+    exit 1
+fi
 
 if [ ! -f "dist/index.html" ]; then
     log "❌ 构建失败: dist/index.html 不存在"
     exit 1
+fi
+
+# Apr 29 2026 强化: build 跑完 dist 应 < 120s. 之前是 warning, 现在 hard fail.
+# 防止 build 被 silent skip / npm cache 复用旧 dist 等情况.
+DIST_AGE=$(($(date +%s) - $(stat -c %Y dist/index.html 2>/dev/null || stat -f %m dist/index.html)))
+if [ "$DIST_AGE" -gt 120 ]; then
+    log "❌ dist/index.html 修改时间已 ${DIST_AGE}s 前 (> 120s 阈值)"
+    log "   build 可能未真正运行. 拒绝继续部署."
+    log "   排查: cd web-admin && rm -rf dist && npm run build 看错误"
+    exit 1
+fi
+
+# 提取本地 dist 的 entry chunk hash, 用于部署后内容验证
+LOCAL_ENTRY_HASH=$(grep -oP 'assets/index-[A-Za-z0-9_-]+\.js' dist/index.html | head -1)
+if [ -z "$LOCAL_ENTRY_HASH" ]; then
+    log "⚠️  无法提取本地 dist 的 entry chunk, 跳过 post-deploy 内容验证"
 fi
 
 ASSET_COUNT=$(find dist/assets -type f 2>/dev/null | wc -l | tr -d ' ')

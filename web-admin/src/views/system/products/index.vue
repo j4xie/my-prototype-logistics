@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
+import ConceptDisambiguationAlert from '@/components/common/ConceptDisambiguationAlert.vue';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, put, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -73,6 +75,7 @@ interface ProductType {
   [key: string]: unknown;
 }
 
+const router = useRouter();
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const factoryId = computed(() => authStore.factoryId);
@@ -508,12 +511,20 @@ function handleAiFill(params: Record<string, unknown>) {
 
 <template>
   <div class="page-wrapper">
+    <ConceptDisambiguationAlert
+      here-name="成品 / SKU"
+      here="本厂自己生产的成品（如「叮咚好食光卤猪蹄 200g」）"
+      other-name="仓储管理 → 原料 / 物料 (采购入库)"
+      other="采购入库的原料 / 包材（如「冻猪蹄」「吸塑盒」）"
+      other-path="/warehouse/materials"
+      consequence="建错位置会导致采购订单的「原料」下拉看不到选项"
+    />
     <el-card class="page-card" shadow="never">
       <!-- 页面标题和操作 -->
       <template #header>
         <div class="card-header">
           <div class="header-left">
-            <span class="page-title">产品信息管理</span>
+            <span class="page-title">成品 / SKU 管理 (本厂生产)</span>
             <span class="data-count">共 {{ pagination.total }} 条记录</span>
           </div>
           <div class="header-right">
