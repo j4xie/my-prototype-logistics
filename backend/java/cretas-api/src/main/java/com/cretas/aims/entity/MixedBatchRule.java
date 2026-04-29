@@ -6,6 +6,7 @@ import org.hibernate.annotations.GenericGenerator;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import org.hibernate.annotations.Where;
 
 /**
  * 混批规则配置实体
@@ -24,6 +25,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
+@Where(clause = "deleted_at IS NULL")
 public class MixedBatchRule extends BaseEntity {
 
     @Id

@@ -6,6 +6,7 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 
 /**
  * SmartBI Analysis Config Entity - Configuration for different analysis types
@@ -35,6 +36,7 @@ import jakarta.persistence.*;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class SmartBiAnalysisConfig extends BaseEntity {
 
     @Id

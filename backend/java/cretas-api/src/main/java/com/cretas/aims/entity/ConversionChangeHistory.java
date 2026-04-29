@@ -6,6 +6,7 @@ import lombok.*;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * 转换率变更历史记录实体类
@@ -28,6 +29,7 @@ import java.time.LocalDateTime;
            @Index(name = "idx_cch_changed_at", columnList = "changed_at")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class ConversionChangeHistory extends BaseEntity {
 
     @Id

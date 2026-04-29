@@ -6,6 +6,7 @@ import lombok.experimental.SuperBuilder;
 
 import jakarta.persistence.*;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * SOP (Standard Operating Procedure) 配置实体
@@ -43,6 +44,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
+@Where(clause = "deleted_at IS NULL")
 public class SopConfig extends BaseEntity {
 
     @Id

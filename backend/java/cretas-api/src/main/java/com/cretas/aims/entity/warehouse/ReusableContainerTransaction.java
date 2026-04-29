@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import org.hibernate.annotations.Where;
 
 /**
  * 周转耗材流水 — SHIP_OUT 随货发出 / RETURN_IN 客户归还 / LOSS 丢失赔偿 / ADJUST 手工调整
@@ -14,6 +15,7 @@ import java.math.BigDecimal;
 @Table(name = "reusable_container_transactions")
 @Getter
 @Setter
+@Where(clause = "deleted_at IS NULL")
 public class ReusableContainerTransaction extends BaseEntity {
 
     @Id

@@ -10,6 +10,7 @@ import lombok.experimental.SuperBuilder;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * 语义缓存实体
@@ -37,6 +38,7 @@ import java.time.LocalDateTime;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class SemanticCache extends BaseEntity {
 
     @Id

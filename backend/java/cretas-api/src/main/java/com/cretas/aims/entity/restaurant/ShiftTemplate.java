@@ -8,6 +8,7 @@ import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import org.hibernate.annotations.Where;
 
 /**
  * Shift template: defines a recurring shift pattern for a store.
@@ -18,6 +19,7 @@ import java.util.Map;
 @Table(name = "restaurant_shift_templates")
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
+@Where(clause = "deleted_at IS NULL")
 public class ShiftTemplate extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.UUID) @Column(length = 36)
     private String id;

@@ -11,6 +11,7 @@ import org.hibernate.annotations.GenericGenerator;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * 配置变更集实体
@@ -38,6 +39,7 @@ import java.time.LocalDateTime;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class ConfigChangeSet extends BaseEntity {
 
     @Id

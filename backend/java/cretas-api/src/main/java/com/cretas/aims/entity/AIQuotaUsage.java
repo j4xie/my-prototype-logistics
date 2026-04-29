@@ -4,6 +4,7 @@ import lombok.*;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import org.hibernate.annotations.Where;
 
 /**
  * AI配额使用实体 - 管理工厂每周AI分析配额
@@ -33,6 +34,7 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class AIQuotaUsage extends BaseEntity {
 
     @Id

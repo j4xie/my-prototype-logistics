@@ -8,6 +8,7 @@ import lombok.*;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * POS订单同步日志
@@ -38,6 +39,7 @@ import java.time.LocalDateTime;
                 @Index(name = "idx_pos_sync_time", columnList = "synced_at")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class PosOrderSync extends BaseEntity {
 
     @Id

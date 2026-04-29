@@ -18,6 +18,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import org.hibernate.annotations.Where;
 /**
  * 生产批次实体
  *
@@ -39,6 +40,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class ProductionBatch extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

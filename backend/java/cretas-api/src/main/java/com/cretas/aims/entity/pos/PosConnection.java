@@ -7,6 +7,7 @@ import lombok.*;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * POS系统连接配置
@@ -36,6 +37,7 @@ import java.util.UUID;
                 @Index(name = "idx_posc_active", columnList = "is_active")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class PosConnection extends BaseEntity {
 
     @Id

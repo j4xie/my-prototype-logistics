@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * 领料/日消耗记录实体（餐饮版）
@@ -40,6 +41,7 @@ import java.util.UUID;
                 @Index(name = "idx_req_factory_date_status", columnList = "factory_id,requisition_date,status")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class MaterialRequisition extends BaseEntity {
 
     // ========== 主键 ==========

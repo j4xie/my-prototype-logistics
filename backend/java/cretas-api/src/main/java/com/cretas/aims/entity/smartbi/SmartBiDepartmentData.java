@@ -7,6 +7,7 @@ import lombok.experimental.SuperBuilder;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import org.hibernate.annotations.Where;
 
 /**
  * SmartBI Department Data Entity - Department performance data
@@ -32,6 +33,7 @@ import java.time.LocalDate;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class SmartBiDepartmentData extends BaseEntity {
 
     @Id

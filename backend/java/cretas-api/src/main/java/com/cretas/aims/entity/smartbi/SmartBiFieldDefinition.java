@@ -9,6 +9,7 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 
 /**
  * SmartBI Field Definition Entity - Defines schema fields for a datasource
@@ -38,6 +39,7 @@ import jakarta.persistence.*;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class SmartBiFieldDefinition extends BaseEntity {
 
     @Id

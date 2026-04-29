@@ -5,6 +5,7 @@ import lombok.EqualsAndHashCode;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * 标签实体类
@@ -18,6 +19,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "labels")
 @EqualsAndHashCode(callSuper = true)
+@Where(clause = "deleted_at IS NULL")
 public class Label extends BaseEntity {
 
     @Id

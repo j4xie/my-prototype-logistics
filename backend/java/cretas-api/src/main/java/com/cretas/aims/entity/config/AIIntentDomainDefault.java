@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 
 /**
  * AI意图域默认配置实体
@@ -31,6 +32,7 @@ import jakarta.persistence.*;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class AIIntentDomainDefault extends BaseEntity {
 
     @Id

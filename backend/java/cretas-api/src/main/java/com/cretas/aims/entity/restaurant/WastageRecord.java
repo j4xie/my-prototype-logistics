@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * 食材损耗记录实体（餐饮版）
@@ -37,6 +38,7 @@ import java.util.UUID;
                 @Index(name = "idx_wastage_factory_date", columnList = "factory_id,wastage_date")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class WastageRecord extends BaseEntity {
 
     // ========== 主键 ==========

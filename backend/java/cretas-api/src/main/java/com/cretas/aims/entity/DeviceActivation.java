@@ -3,6 +3,7 @@ package com.cretas.aims.entity;
 import lombok.*;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 /**
  * 设备激活实体类
  *
@@ -28,6 +29,7 @@ import java.time.LocalDateTime;
            @Index(name = "idx_activation_device", columnList = "device_id")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class DeviceActivation extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

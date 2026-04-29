@@ -5,6 +5,7 @@ import lombok.*;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * 样品档案 — 研发人员创建并追踪样品开发过程
@@ -21,6 +22,7 @@ import java.util.UUID;
                 @Index(name = "idx_ps_request", columnList = "rd_request_id"),
                 @Index(name = "idx_ps_status", columnList = "status")
         })
+@Where(clause = "deleted_at IS NULL")
 public class ProductSample extends BaseEntity {
 
     @Id

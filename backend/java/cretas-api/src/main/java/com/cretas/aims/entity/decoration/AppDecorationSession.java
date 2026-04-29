@@ -8,6 +8,7 @@ import jakarta.persistence.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.hibernate.annotations.Where;
 
 /**
  * AI装饰会话实体
@@ -34,6 +35,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class AppDecorationSession extends BaseEntity {
 
     @Id

@@ -4,6 +4,7 @@ import lombok.*;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import org.hibernate.annotations.Where;
 
 /**
  * 计件单价规则实体类
@@ -30,6 +31,7 @@ import java.time.LocalDate;
            @Index(name = "idx_piece_rate_effective", columnList = "factory_id,effective_from,effective_to"),
            @Index(name = "idx_piece_rate_priority", columnList = "factory_id,priority")
        })
+@Where(clause = "deleted_at IS NULL")
 public class PieceRateRule extends BaseEntity {
 
     @Id

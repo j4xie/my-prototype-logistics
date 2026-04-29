@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 
 /**
  * SmartBI Skill Entity - Defines AI skill capabilities for SmartBI
@@ -34,6 +35,7 @@ import jakarta.persistence.*;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class SmartBiSkill extends BaseEntity {
 
     @Id

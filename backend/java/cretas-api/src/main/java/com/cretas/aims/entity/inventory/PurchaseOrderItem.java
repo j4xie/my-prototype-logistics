@@ -9,6 +9,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
+import org.hibernate.annotations.Where;
 
 /**
  * 采购订单行项目
@@ -29,6 +30,7 @@ import java.math.BigDecimal;
                 @Index(name = "idx_poi_material", columnList = "material_type_id")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class PurchaseOrderItem extends BaseEntity {
 
     @Id

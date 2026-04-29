@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * 报价任务 — 样品审核通过后自动创建，报价人员完成成本测算
@@ -22,6 +23,7 @@ import java.util.UUID;
                 @Index(name = "idx_qt_sample", columnList = "sample_id"),
                 @Index(name = "idx_qt_status", columnList = "status")
         })
+@Where(clause = "deleted_at IS NULL")
 public class QuotationTask extends BaseEntity {
 
     @Id

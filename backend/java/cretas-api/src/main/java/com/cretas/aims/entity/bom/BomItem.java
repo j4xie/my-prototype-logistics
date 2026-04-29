@@ -6,6 +6,7 @@ import lombok.experimental.SuperBuilder;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import org.hibernate.annotations.Where;
 
 /**
  * BOM (Bill of Materials) 项目实体
@@ -24,6 +25,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
+@Where(clause = "deleted_at IS NULL")
 public class BomItem extends BaseEntity {
 
     @Id

@@ -6,6 +6,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * 员工工序片段 (P1-1, v1 §2.x 工人欠退扫码).
@@ -39,6 +40,7 @@ import java.util.UUID;
                 @Index(name = "idx_eps_active", columnList = "factory_id,status")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class EmployeeProcessSegment extends BaseEntity {
 
     @Id

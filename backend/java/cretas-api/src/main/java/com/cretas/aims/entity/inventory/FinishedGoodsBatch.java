@@ -13,6 +13,7 @@ import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * 成品库存批次
@@ -40,6 +41,7 @@ import java.util.UUID;
                 @Index(name = "idx_fgb_expire_date", columnList = "expire_date")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class FinishedGoodsBatch extends BaseEntity {
 
     @Id

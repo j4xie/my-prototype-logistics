@@ -11,6 +11,7 @@ import lombok.experimental.SuperBuilder;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 /**
  * 考勤打卡记录实体
  *
@@ -26,6 +27,7 @@ import java.time.LocalDateTime;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class TimeClockRecord extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

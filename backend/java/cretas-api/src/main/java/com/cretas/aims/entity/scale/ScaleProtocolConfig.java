@@ -4,6 +4,7 @@ import com.cretas.aims.entity.BaseEntity;
 import lombok.*;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 
 /**
  * 秤协议配置实体
@@ -19,6 +20,7 @@ import jakarta.persistence.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
+@Where(clause = "deleted_at IS NULL")
 public class ScaleProtocolConfig extends BaseEntity {
 
     @Id

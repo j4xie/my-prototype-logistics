@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * 价格表（总部统一定价）
@@ -32,6 +33,7 @@ import java.util.UUID;
                 @Index(name = "idx_pl_customer", columnList = "factory_id,customer_id,price_type")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class PriceList extends BaseEntity {
 
     @Id

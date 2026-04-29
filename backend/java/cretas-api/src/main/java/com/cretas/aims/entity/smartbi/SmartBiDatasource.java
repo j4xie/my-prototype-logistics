@@ -9,6 +9,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.hibernate.annotations.Where;
 
 /**
  * SmartBI Datasource Entity - Represents a data source for BI analysis
@@ -40,6 +41,7 @@ import java.util.List;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class SmartBiDatasource extends BaseEntity {
 
     @Id

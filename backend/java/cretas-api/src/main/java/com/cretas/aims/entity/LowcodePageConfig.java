@@ -2,6 +2,7 @@ package com.cretas.aims.entity;
 
 import lombok.*;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 
 /**
  * 低代码页面配置实体类
@@ -27,6 +28,7 @@ import jakarta.persistence.*;
            @UniqueConstraint(columnNames = {"page_id", "factory_id", "role_code"})
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class LowcodePageConfig extends BaseEntity {
 
     @Id

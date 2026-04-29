@@ -3,6 +3,7 @@ package com.cretas.aims.entity;
 import lombok.*;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 
 /**
  * 原材料规格配置实体类
@@ -29,6 +30,7 @@ import jakarta.persistence.*;
            @Index(name = "idx_spec_category", columnList = "category")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class MaterialSpecConfig extends BaseEntity {
 
     @Id

@@ -9,6 +9,7 @@ import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Map;
+import org.hibernate.annotations.Where;
 
 @Entity
 @Table(name = "restaurant_sales_plans",
@@ -18,6 +19,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
+@Where(clause = "deleted_at IS NULL")
 public class SalesPlan extends BaseEntity {
 
     @Id

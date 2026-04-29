@@ -7,6 +7,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * PC 端销售发货行的批次分配明细（P0-13 昆山六扇门客户需求）。
@@ -26,6 +27,7 @@ import java.util.UUID;
         })
 @Getter
 @Setter
+@Where(clause = "deleted_at IS NULL")
 public class SalesDeliveryItemBatchAllocation extends BaseEntity {
 
     @Id

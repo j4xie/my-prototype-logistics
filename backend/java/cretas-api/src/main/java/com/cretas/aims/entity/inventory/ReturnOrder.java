@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -34,6 +35,7 @@ import java.util.UUID;
                 @Index(name = "idx_ro_return_date", columnList = "return_date")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class ReturnOrder extends BaseEntity {
 
     @Id

@@ -6,6 +6,7 @@ import lombok.experimental.SuperBuilder;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 @Entity
 @Table(name = "smart_bi_share_tokens",
@@ -18,6 +19,7 @@ import java.time.LocalDateTime;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class SmartBiShareToken extends BaseEntity {
 
     @Id

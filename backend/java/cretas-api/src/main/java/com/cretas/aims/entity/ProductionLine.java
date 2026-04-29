@@ -6,6 +6,7 @@ import lombok.EqualsAndHashCode;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * 产线配置实体
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "production_lines")
+@Where(clause = "deleted_at IS NULL")
 public class ProductionLine extends BaseEntity {
 
     @Id

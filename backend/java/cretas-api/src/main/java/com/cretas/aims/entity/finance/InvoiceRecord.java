@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * 开票记录 — 独立于 ArApTransaction 的开票工作流
@@ -31,6 +32,7 @@ import java.util.UUID;
                 @Index(name = "idx_inv_customer", columnList = "customer_id"),
                 @Index(name = "idx_inv_status", columnList = "status")
         })
+@Where(clause = "deleted_at IS NULL")
 public class InvoiceRecord extends BaseEntity {
 
     @Id
