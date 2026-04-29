@@ -320,7 +320,16 @@ def _new_alert_dict(
     related_entity_id: str | None = None,
     related_entity_name: str | None = None,
 ) -> dict:
-    """Build a Java-shape Alert dict — 13 keys in Jackson order."""
+    """Build a Java-shape Alert dict — 15 keys in Jackson order.
+
+    Java's Alert.java has 13 declared fields + 2 derived getters (getLevelName,
+    isUrgent). Lombok @Data exposes both — Jackson serializes declared fields
+    first, then getter-only properties at end (alphabetical-ish but observed
+    order is levelName, then urgent).
+
+    AlertLevel.needsAction() returns true when severity >= RED.severity (so
+    RED + CRITICAL both urgent, GREEN + YELLOW are not).
+    """
     return {
         "id": str(uuid.uuid4()),
         "level": level,
@@ -335,6 +344,8 @@ def _new_alert_dict(
         "relatedEntityId": related_entity_id,
         "relatedEntityName": related_entity_name,
         "createdAt": datetime.now().isoformat(),
+        "levelName": level,
+        "urgent": level in ("RED", "CRITICAL"),
     }
 
 

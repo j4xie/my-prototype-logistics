@@ -44,10 +44,12 @@ def test_query_sales_data_returns_empty_when_postgres_disabled(monkeypatch):
 
 
 def _build_alert_dict_keys():
+    """Java-shape Alert: 13 declared fields + 2 derived getters (levelName, urgent)."""
     return [
         "id", "level", "category", "title", "message", "metric",
         "value", "threshold", "gapPercent", "suggestion",
         "relatedEntityId", "relatedEntityName", "createdAt",
+        "levelName", "urgent",
     ]
 
 def test_sales_completion_red_alert():
@@ -76,7 +78,7 @@ def test_sales_completion_red_alert():
     assert a["metric"] == "目标完成率"
     # value rounded to 1 decimal in title (Java: "%.1f%%"), but stored as scale 4 Decimal
     assert "30.0%" in a["message"]
-    # All 13 keys must be present
+    # All 15 keys must be present (13 declared + 2 derived getLevelName/isUrgent)
     assert list(a.keys()) == _build_alert_dict_keys()
 
 

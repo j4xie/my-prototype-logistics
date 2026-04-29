@@ -139,16 +139,10 @@ def test_alerts_sales_data_matches_f999_golden_when_empty(client: TestClient, f9
     assert body["data"] == golden["response"]["data"]
 
 
-def test_alerts_default_data_matches_f999_golden_when_empty(client: TestClient, f999_token: str) -> None:
-    """Python /alerts (no category) data array matches F999 Java golden (empty)."""
-    resp = client.get(
-        "/api/mobile/F999/smart-bi/alerts",
-        headers={"Authorization": f"Bearer {f999_token}"},
-    )
-    body = resp.json()
-    golden = _load_golden("alerts-F999")
-    assert body["data"] == golden["response"]["data"]
-
+# NOTE: The empty-default-vs-golden test was removed in chat 3 after V20260430_02
+# trip-rows migration made the F999 aggregator golden contain 7 alerts (4 finance +
+# 3 dept). Task E2 (aggregator contract test) replaces it with a proper
+# monkey-patched-all-seams + strip-volatile + deep-equal test.
 
 def test_alerts_finance_category_returns_empty_phase2a_chat2(client: TestClient, f999_token: str) -> None:
     """Phase 2A chat 2: finance/department branches return [] until chat 3 (Phase C/D)."""
