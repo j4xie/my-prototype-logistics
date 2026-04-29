@@ -3,8 +3,9 @@ package com.cretas.aims.ai.client;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -26,11 +27,20 @@ import com.cretas.aims.util.ErrorSanitizer;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class DashScopeVisionClient {
 
     private final PythonLLMClient delegate;
     private final ObjectMapper objectMapper;
+    private final OkHttpClient httpClient;
+
+    public DashScopeVisionClient(
+            PythonLLMClient delegate,
+            ObjectMapper objectMapper,
+            @Qualifier("aiServiceHttpClient") OkHttpClient httpClient) {
+        this.delegate = delegate;
+        this.objectMapper = objectMapper;
+        this.httpClient = httpClient;
+    }
 
     // ==================== 品牌别名映射 (从 Python 迁移) ====================
     private static final Map<String, List<String>> BRAND_ALIASES = Map.ofEntries(
@@ -263,7 +273,6 @@ public class DashScopeVisionClient {
         }
 
         try {
-            okhttp3.OkHttpClient httpClient = new okhttp3.OkHttpClient();
             okhttp3.Request req = new okhttp3.Request.Builder().url(imageUrl).build();
             try (okhttp3.Response resp = httpClient.newCall(req).execute()) {
                 if (!resp.isSuccessful() || resp.body() == null) {
