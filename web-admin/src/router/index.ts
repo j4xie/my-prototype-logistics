@@ -305,6 +305,12 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'SalesShipments',
             component: () => import('@/views/sales/shipments/list.vue'),
             meta: { requiresAuth: true, title: '出货记录', module: 'sales', hideForFactoryTypes: ['RESTAURANT'] }
+          },
+          {
+            path: 'vehicles',
+            name: 'SalesVehicles',
+            component: () => import('@/views/sales/vehicles/list.vue'),
+            meta: { requiresAuth: true, title: '车辆字典', module: 'sales', hideForFactoryTypes: ['RESTAURANT'] }
           }
         ]
       },
@@ -476,6 +482,24 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'SystemLogs',
             component: () => import('@/views/system/logs/index.vue'),
             meta: { requiresAuth: true, title: '操作日志', module: 'system' }
+          },
+          {
+            path: 'encoding-rules',
+            name: 'SystemEncodingRules',
+            component: () => import('@/views/system/encoding-rules/list.vue'),
+            meta: { requiresAuth: true, title: '编码规则字典', module: 'system' }
+          },
+          {
+            path: 'approval-chains',
+            name: 'SystemApprovalChains',
+            component: () => import('@/views/system/approval-chains/list.vue'),
+            meta: { requiresAuth: true, title: '审批链配置', module: 'system' }
+          },
+          {
+            path: 'ai-quota',
+            name: 'SystemAIQuota',
+            component: () => import('@/views/system/ai-quota/list.vue'),
+            meta: { requiresAuth: true, title: 'AI 配额规则', module: 'system' }
           },
           {
             path: 'role-permissions',

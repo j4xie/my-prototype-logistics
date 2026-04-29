@@ -147,6 +147,8 @@ const menuConfig: MenuItem[] = [
         hideForFactoryTypes: ['RESTAURANT'] },
       { path: '/sales/customers', title: '客户管理', icon: '', module: 'sales' },
       { path: '/sales/shipments', title: '出货记录', icon: '', module: 'sales',
+        hideForFactoryTypes: ['RESTAURANT'] },
+      { path: '/sales/vehicles', title: '车辆字典', icon: '', module: 'sales',
         hideForFactoryTypes: ['RESTAURANT'] }
     ]
   },
@@ -199,6 +201,9 @@ const menuConfig: MenuItem[] = [
       { path: '/system/ai-intents', title: 'AI意图配置', icon: '', module: 'system' },
       { path: '/system/skill-tools', title: 'Skill/Tool治理', icon: '', module: 'system' },
       { path: '/system/llm-usage', title: 'LLM 用量监控', icon: '', module: 'system' },
+      { path: '/system/encoding-rules', title: '编码规则字典', icon: '', module: 'system' },
+      { path: '/system/approval-chains', title: '审批链配置', icon: '', module: 'system' },
+      { path: '/system/ai-quota', title: 'AI 配额规则', icon: '', module: 'system' },
       { path: '/system/products', title: '成品 / SKU (本厂生产)', icon: '', module: 'system' },
       { path: '/system/work-processes', title: '工序管理', icon: '', module: 'system',
         hideForFactoryTypes: ['RESTAURANT'] },
