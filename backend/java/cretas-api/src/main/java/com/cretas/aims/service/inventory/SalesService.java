@@ -22,6 +22,9 @@ public interface SalesService {
 
     PageResponse<SalesOrder> getSalesOrders(String factoryId, int page, int size);
 
+    /** Bug G fix: keyword search overload (qa-prompt v2.3 Rule 12.1) */
+    PageResponse<SalesOrder> getSalesOrders(String factoryId, String keyword, int page, int size);
+
     PageResponse<SalesOrder> getSalesOrdersByStatus(String factoryId, SalesOrderStatus status, int page, int size);
 
     SalesOrder confirmOrder(String factoryId, String orderId);
@@ -31,6 +34,14 @@ public interface SalesService {
 
     /** 财务审核通过: PENDING_FINANCE_REVIEW -> FINANCE_APPROVED, 触发供应链联动 */
     SalesOrder financeApproveOrder(String factoryId, String orderId, String notes, Long reviewerId);
+
+    /**
+     * 六扇门 V1 §2.2 (audit fix 2026-04-26 #6): finance approve with optional
+     * estimatedCost. If provided, persists to sales_orders.estimated_cost and
+     * auto-computes estimated_profit = totalAmount - estimatedCost.
+     */
+    SalesOrder financeApproveOrder(String factoryId, String orderId, String notes,
+                                    java.math.BigDecimal estimatedCost, Long reviewerId);
 
     /** 财务审核驳回: PENDING_FINANCE_REVIEW -> FINANCE_REJECTED */
     SalesOrder financeRejectOrder(String factoryId, String orderId, String reason, Long reviewerId);

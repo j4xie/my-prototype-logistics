@@ -1,0 +1,4 @@
+# KB-related changes require PM review
+/docs/plans/restaurant-product-manual.html @stevenj4xie
+/web-admin/src/views/smart-bi/ @stevenj4xie
+/backend/python/smartbi/ @stevenj4xie

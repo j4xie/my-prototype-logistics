@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.decoration.*;
 import com.cretas.aims.service.decoration.DecorationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -45,6 +46,7 @@ public class DecorationController {
     /**
      * 保存布局草稿
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/home-layout")
     @Operation(summary = "保存布局草稿", description = "保存首页布局配置草稿，不会立即生效，需要发布后才会应用")
     public ApiResponse<HomeLayoutDTO> saveDraft(
@@ -58,6 +60,7 @@ public class DecorationController {
     /**
      * 发布布局配置
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/home-layout/publish")
     @Operation(summary = "发布布局", description = "将当前草稿发布为正式布局，发布后立即生效")
     public ApiResponse<HomeLayoutDTO> publishLayout(
@@ -70,6 +73,7 @@ public class DecorationController {
     /**
      * AI生成布局
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/home-layout/ai-generate")
     @Operation(summary = "AI生成布局", description = "根据用户描述和偏好，使用AI生成个性化的首页布局配置")
     public ApiResponse<AILayoutResponse> generateLayoutWithAI(
@@ -95,6 +99,7 @@ public class DecorationController {
     /**
      * 记录模块点击
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/home-layout/track-click")
     @Operation(summary = "记录模块点击", description = "记录用户点击模块的行为，用于使用行为分析")
     public ApiResponse<Void> trackModuleClick(
@@ -108,6 +113,7 @@ public class DecorationController {
     /**
      * 重置为默认布局
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/home-layout/reset")
     @Operation(summary = "重置布局", description = "将首页布局重置为系统默认配置")
     public ApiResponse<HomeLayoutDTO> resetLayout(

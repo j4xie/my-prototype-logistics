@@ -33,13 +33,16 @@ public class SalesDeliveryBatchAllocationServiceImpl implements SalesDeliveryBat
     @Transactional
     public void allocateBatches(String factoryId, String deliveryItemId, List<BatchAllocationDTO> allocations) {
         if (factoryId == null || factoryId.isBlank()) {
-            throw new BusinessException("factoryId 不能为空");
+            throw new BusinessException(400, "factoryId 不能为空")
+                    .withHint("请重新登录获取有效的工厂上下文").withHintTarget("factoryId");
         }
         if (deliveryItemId == null || deliveryItemId.isBlank()) {
-            throw new BusinessException("deliveryItemId 不能为空");
+            throw new BusinessException(400, "deliveryItemId 不能为空")
+                    .withHint("请选择具体的发货行").withHintTarget("deliveryItemId");
         }
         if (allocations == null || allocations.isEmpty()) {
-            throw new BusinessException("批次分配列表不能为空");
+            throw new BusinessException(400, "批次分配列表不能为空")
+                    .withHint("请添加至少 1 条批次分配").withHintTarget("allocations");
         }
 
         // 1. 查发货行
@@ -47,12 +50,15 @@ public class SalesDeliveryBatchAllocationServiceImpl implements SalesDeliveryBat
         try {
             itemIdLong = Long.valueOf(deliveryItemId);
         } catch (NumberFormatException e) {
-            throw new BusinessException("非法的 deliveryItemId: " + deliveryItemId);
+            throw new BusinessException(400, "非法的 deliveryItemId: " + deliveryItemId)
+                    .withHint("发货行 ID 应为数字").withHintTarget("deliveryItemId");
         }
         SalesDeliveryItem item = deliveryItemRepository.findById(itemIdLong)
-                .orElseThrow(() -> new BusinessException("发货行不存在: " + deliveryItemId));
+                .orElseThrow(() -> new BusinessException(404, "发货行不存在: " + deliveryItemId)
+                        .withHint("请刷新发货单后重新选择").withHintTarget("deliveryItemId"));
         if (item.getDeliveredQuantity() == null) {
-            throw new BusinessException("发货行数量未设置: " + deliveryItemId);
+            throw new BusinessException(409, "发货行数量未设置: " + deliveryItemId)
+                    .withHint("请先在发货单中设置发货数量").withHintTarget("deliveredQuantity");
         }
 
         // 2. 校验每一条 allocation：batch 存在、同工厂、有足够可用库存
@@ -60,22 +66,27 @@ public class SalesDeliveryBatchAllocationServiceImpl implements SalesDeliveryBat
         List<SalesDeliveryItemBatchAllocation> toPersist = new ArrayList<>();
         for (BatchAllocationDTO dto : allocations) {
             if (dto.getFinishedGoodsBatchId() == null || dto.getAllocatedQty() == null) {
-                throw new BusinessException("批次分配字段不完整");
+                throw new BusinessException(400, "批次分配字段不完整")
+                        .withHint("请填写成品批次 ID 和分配数量").withHintTarget("allocations");
             }
             if (dto.getAllocatedQty().signum() <= 0) {
-                throw new BusinessException("分配数量必须大于 0");
+                throw new BusinessException(400, "分配数量必须大于 0")
+                        .withHint("请输入大于 0 的分配数量").withHintTarget("allocatedQty");
             }
             FinishedGoodsBatch batch = finishedGoodsBatchRepository.findById(dto.getFinishedGoodsBatchId())
-                    .orElseThrow(() -> new BusinessException("成品批次不存在: " + dto.getFinishedGoodsBatchId()));
+                    .orElseThrow(() -> new BusinessException(404, "成品批次不存在: " + dto.getFinishedGoodsBatchId())
+                            .withHint("请刷新成品库存后重新选择").withHintTarget("finishedGoodsBatchId"));
             if (!factoryId.equals(batch.getFactoryId())) {
-                throw new BusinessException("成品批次不属于当前工厂: " + dto.getFinishedGoodsBatchId());
+                throw new BusinessException(403, "成品批次不属于当前工厂: " + dto.getFinishedGoodsBatchId())
+                        .withHint("跨工厂调用被拒绝, 请选择本工厂的成品批次").withHintTarget("finishedGoodsBatchId");
             }
             BigDecimal available = batch.getProducedQuantity()
                     .subtract(batch.getShippedQuantity() == null ? BigDecimal.ZERO : batch.getShippedQuantity())
                     .subtract(batch.getReservedQuantity() == null ? BigDecimal.ZERO : batch.getReservedQuantity());
             if (available.compareTo(dto.getAllocatedQty()) < 0) {
-                throw new BusinessException("成品批次 " + batch.getBatchNumber()
-                        + " 可用库存不足（可用=" + available + "，申请=" + dto.getAllocatedQty() + "）");
+                throw new BusinessException(409, "成品批次 " + batch.getBatchNumber()
+                        + " 可用库存不足（可用=" + available + "，申请=" + dto.getAllocatedQty() + "）")
+                        .withHint("请减少分配数量, 或选择其他批次").withHintTarget("allocatedQty");
             }
 
             SalesDeliveryItemBatchAllocation alloc = new SalesDeliveryItemBatchAllocation();
@@ -91,8 +102,9 @@ public class SalesDeliveryBatchAllocationServiceImpl implements SalesDeliveryBat
 
         // 3. 总量必须等于发货行数量
         if (total.compareTo(item.getDeliveredQuantity()) != 0) {
-            throw new BusinessException("批次分配总量 " + total
-                    + " 不等于发货行数量 " + item.getDeliveredQuantity());
+            throw new BusinessException(400, "批次分配总量 " + total
+                    + " 不等于发货行数量 " + item.getDeliveredQuantity())
+                    .withHint("分配总量必须等于发货行数量").withHintTarget("allocations");
         }
 
         // 4. 先清空旧分配，再写入
@@ -117,13 +129,16 @@ public class SalesDeliveryBatchAllocationServiceImpl implements SalesDeliveryBat
     @Override
     public List<Map<String, Object>> recommendFifo(String factoryId, String productTypeId, BigDecimal requiredQty) {
         if (factoryId == null || factoryId.isBlank()) {
-            throw new BusinessException("factoryId 不能为空");
+            throw new BusinessException(400, "factoryId 不能为空")
+                    .withHint("请重新登录获取有效的工厂上下文").withHintTarget("factoryId");
         }
         if (productTypeId == null || productTypeId.isBlank()) {
-            throw new BusinessException("productTypeId 不能为空");
+            throw new BusinessException(400, "productTypeId 不能为空")
+                    .withHint("请指定产品类型").withHintTarget("productTypeId");
         }
         if (requiredQty == null || requiredQty.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BusinessException("requiredQty 必须大于 0");
+            throw new BusinessException(400, "requiredQty 必须大于 0")
+                    .withHint("请输入大于 0 的需求数量").withHintTarget("requiredQty");
         }
 
         var batches = finishedGoodsBatchRepository.findAvailableBatchesFifo(factoryId, productTypeId);

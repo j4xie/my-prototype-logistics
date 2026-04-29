@@ -148,6 +148,16 @@ public interface SmartBIUploadFlowService {
                                         Integer sheetIndex, Integer headerRow, boolean autoConfirm);
 
     /**
+     * Bug #25b (2026-04-18): multi-stacked-table overload.
+     * When selectedRegionStart/End are provided, only rows [start, end] are parsed.
+     */
+    default UploadFlowResult executeUploadFlow(String factoryId, MultipartFile file, String dataType,
+                                                Integer sheetIndex, Integer headerRow, boolean autoConfirm,
+                                                Integer selectedRegionStart, Integer selectedRegionEnd) {
+        return executeUploadFlow(factoryId, file, dataType, sheetIndex, headerRow, autoConfirm);
+    }
+
+    /**
      * 确认字段映射并持久化数据
      *
      * 当 executeUploadFlow 返回 requiresConfirmation=true 时，
@@ -163,6 +173,21 @@ public interface SmartBIUploadFlowService {
                                         ExcelParseResponse parseResponse,
                                         List<FieldMappingResult> confirmedMappings,
                                         String dataType);
+
+    /**
+     * Bug #43 fix (2026-04-18): uploadId-aware confirm.
+     * When uploadId is non-null (pre-persisted during executeUploadFlow), skip
+     * re-persistence and only update smart_bi_pg_field_definitions with the
+     * user's confirmed mappings. Prevents the 50-row trim bug where frontend
+     * sends back truncated previewData.
+     */
+    default UploadFlowResult confirmAndPersist(String factoryId,
+                                                Long uploadId,
+                                                ExcelParseResponse parseResponse,
+                                                List<FieldMappingResult> confirmedMappings,
+                                                String dataType) {
+        return confirmAndPersist(factoryId, parseResponse, confirmedMappings, dataType);
+    }
 
     /**
      * 为已持久化的数据生成图表

@@ -56,6 +56,35 @@ class MergedCellInfo:
 
 
 @dataclass
+class TableRegion:
+    """
+    Bug #25b (2026-04-18): Independent table region within a single Excel sheet.
+
+    A sheet may stack multiple tables separated by blank rows. Each region is a
+    contiguous block [start_row, end_row] with its own header row and data rows.
+    Single-table sheets yield exactly one region spanning the whole data range.
+    """
+    index: int  # 0-based region ordinal
+    start_row: int  # 0-indexed first non-blank row (usually the header)
+    end_row: int  # 0-indexed last non-blank row of this region (inclusive)
+    header_row: int  # row containing column headers (defaults to start_row)
+    preview_cols: List[str] = field(default_factory=list)
+    sample_rows: int = 0  # data rows excluding the header
+    preview_data: List[List[Any]] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "index": self.index,
+            "start_row": self.start_row,
+            "end_row": self.end_row,
+            "header_row": self.header_row,
+            "preview_cols": self.preview_cols,
+            "sample_rows": self.sample_rows,
+            "preview_data": self.preview_data,
+        }
+
+
+@dataclass
 class StructureDetectionResult:
     """Result of structure detection"""
     version: str = "1.0"
@@ -86,6 +115,11 @@ class StructureDetectionResult:
     error: Optional[str] = None
     note: Optional[str] = None
 
+    # Bug #16 fix (Apr 17 2026): CSV skiprows persisted for cache roundtrip
+    # so executor can re-read from correct row when structure_result is served
+    # from cache instead of being freshly detected.
+    csv_skiprows: int = 0
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
         result = {
@@ -105,7 +139,8 @@ class StructureDetectionResult:
             },
             "merged_cells": [asdict(m) for m in self.merged_cells],
             "columns": [asdict(c) for c in self.columns],
-            "preview_rows": self.preview_rows
+            "preview_rows": self.preview_rows,
+            "csv_skiprows": self.csv_skiprows,
         }
         if self.error:
             result["error"] = self.error
@@ -140,25 +175,91 @@ class StructureDetector:
         file_bytes: bytes,
         sheet_index: int = 0,
         max_header_rows: int = 10,
-        force_method: Optional[str] = None
+        force_method: Optional[str] = None,
+        enable_multi_model_enhancement: Optional[bool] = None,
     ) -> StructureDetectionResult:
         """
         Detect Excel structure automatically.
 
         Detection strategy (configurable via settings.use_llm_first):
         - LLM-first mode (default): LLM-fast → LLM-complex → rules (fallback)
-        - Rule-first mode: rules → LLM-fast → LLM-VL → multi-model
+        - Rule-first mode: rules → LLM-fast → LLM-VL → (optional) multi-model voting
 
         Args:
             file_bytes: Raw Excel file bytes
             sheet_index: Sheet index to analyze (0-based)
             max_header_rows: Maximum rows to scan for header detection
             force_method: Force a specific detection method (rule, llm_fast, llm_vl)
+            enable_multi_model_enhancement: Override Layer 4 voting decision.
+                - None (default): CONDITIONAL — escalate to voting only when best
+                  prior layer confidence < settings.multi_model_voting_confidence_threshold
+                - True: force multi-model voting regardless of prior confidence
+                - False: skip multi-model voting entirely
+
+                J2 (Apr 24 2026): Default flipped from "always vote when feature flag on"
+                to conditional gating. Saves ~30-60% LLM calls on uploads where single
+                model already produces high-confidence structure detection.
 
         Returns:
             StructureDetectionResult with detected structure
         """
         try:
+            # Apr 28 2026 (audit P0): pre-detect .xls (BIFF) vs .xlsx (ZIP)
+            # via magic bytes. openpyxl ONLY handles .xlsx (zip container).
+            # 50% of real customer files are .xls (Excel 97-2003) — without
+            # this fallback they ALL fail with "文件不是有效的 xlsx 格式"
+            # despite UI saying .xls is supported. Convert .xls in-memory
+            # to .xlsx buffer via pandas+xlrd<2.0, then re-load with openpyxl.
+            _is_xls = file_bytes[:8] == b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'  # OLE2/BIFF8
+            if _is_xls:
+                try:
+                    # Use xlrd 1.2 directly (pandas 1.5+ requires xlrd>=2 which
+                    # dropped .xls support). xlrd 1.2 reads BIFF8 .xls natively.
+                    import xlrd as _xlrd
+                    import io as _io
+                    import openpyxl as _openpyxl
+                    _book = _xlrd.open_workbook(file_contents=file_bytes)
+                    if _book.nsheets == 0:
+                        return StructureDetectionResult(
+                            success=False,
+                            error="文件无可读取的 sheet (空 .xls). 请确认文件包含数据后重新上传."
+                        )
+                    _xlsx_wb = _openpyxl.Workbook()
+                    _xlsx_wb.remove(_xlsx_wb.active)
+                    _total_rows = 0
+                    for _si in range(_book.nsheets):
+                        _xs = _book.sheet_by_index(_si)
+                        _ws = _xlsx_wb.create_sheet(title=(_xs.name or f"Sheet{_si+1}")[:30])
+                        for _r in range(_xs.nrows):
+                            _row_vals = []
+                            for _c in range(_xs.ncols):
+                                _v = _xs.cell_value(_r, _c)
+                                _ct = _xs.cell_type(_r, _c)
+                                # xlrd date is float; convert
+                                if _ct == _xlrd.XL_CELL_DATE:
+                                    try:
+                                        _v = _xlrd.xldate_as_datetime(_v, _book.datemode)
+                                    except Exception:
+                                        pass
+                                _row_vals.append(_v)
+                            _ws.append(_row_vals)
+                        _total_rows += _xs.nrows
+                    _xlsx_buf = _io.BytesIO()
+                    _xlsx_wb.save(_xlsx_buf)
+                    _xlsx_wb.close()
+                    _xlsx_buf.seek(0)
+                    file_bytes = _xlsx_buf.getvalue()
+                    logger.info(
+                        f"[xls→xlsx] converted .xls to .xlsx in-memory via xlrd "
+                        f"({_book.nsheets} sheets, {_total_rows} total rows)"
+                    )
+                except Exception as _xls_err:
+                    logger.warning(f"[xls→xlsx] conversion failed: {_xls_err}", exc_info=True)
+                    return StructureDetectionResult(
+                        success=False,
+                        error=f"旧 .xls 格式转换失败: {_xls_err}. 建议: 用 Excel 打开后另存为 .xlsx 格式再上传."
+                    )
+
             # Load workbook
             wb = openpyxl.load_workbook(io.BytesIO(file_bytes), data_only=True)
             if sheet_index >= len(wb.sheetnames):
@@ -226,11 +327,21 @@ class StructureDetector:
                     logger.info(f"Complex structure detected via LLM: confidence={result.confidence:.2f}")
                     return result
 
+            # Track best prior result across layers 1-3 so Layer 4 gating
+            # can decide whether voting is worth the extra LLM calls.
+            best_prior: Optional[StructureDetectionResult] = None
+
+            def _update_best(candidate: StructureDetectionResult) -> None:
+                nonlocal best_prior
+                if best_prior is None or candidate.confidence > best_prior.confidence:
+                    best_prior = candidate
+
             # Layer 1: Rule-based detection (for simple cases)
             if force_method is None or force_method == "rule":
                 result = self._detect_with_rules(
                     raw_rows, merged_cells, sheet_name, total_rows, total_cols
                 )
+                _update_best(result)
                 if result.confidence >= self.settings.structure_detection_confidence_threshold:
                     logger.info(f"Structure detected via rules: confidence={result.confidence:.2f}")
                     return result
@@ -243,6 +354,7 @@ class StructureDetector:
                 result = await self._detect_with_llm_fast(
                     raw_rows, merged_cells, sheet_name, total_rows, total_cols
                 )
+                _update_best(result)
                 if result.confidence >= self.settings.structure_detection_confidence_threshold:
                     logger.info(f"Structure detected via LLM-fast: confidence={result.confidence:.2f}")
                     return result
@@ -256,6 +368,7 @@ class StructureDetector:
                     file_bytes, sheet_index, raw_rows, merged_cells,
                     sheet_name, total_rows, total_cols
                 )
+                _update_best(result)
                 if result.confidence >= self.settings.structure_detection_confidence_threshold:
                     logger.info(f"Structure detected via LLM-VL: confidence={result.confidence:.2f}")
                     return result
@@ -263,14 +376,65 @@ class StructureDetector:
                 if force_method == "llm_vl":
                     return result
 
-            # Layer 4: Multi-model enhancement
-            if self.settings.enable_multi_model_enhancement:
+            # Layer 4: Multi-model enhancement (CONDITIONAL since J2 Apr 24 2026)
+            #
+            # Decision matrix:
+            #   enable_multi_model_enhancement param  | settings.enable_multi_model_enhancement | action
+            #   ─────────────────────────────────────────────────────────────────────────────────
+            #   True  (force on)                       | (any)                                   | always vote
+            #   False (force off)                      | (any)                                   | never vote
+            #   None  (conditional, default)           | False                                   | never vote (feature off)
+            #   None  (conditional, default)           | True + best prior conf >= threshold     | skip vote (already confident)
+            #   None  (conditional, default)           | True + best prior conf <  threshold     | escalate to voting
+            voting_threshold = self.settings.multi_model_voting_confidence_threshold
+            best_prior_conf = best_prior.confidence if best_prior is not None else 0.0
+
+            should_vote: bool
+            if enable_multi_model_enhancement is True:
+                should_vote = True
+                logger.info(
+                    f"[structure] multi-model voting FORCED by caller (best prior conf {best_prior_conf:.2f})"
+                )
+            elif enable_multi_model_enhancement is False:
+                should_vote = False
+                logger.info(
+                    f"[structure] multi-model voting SKIPPED (caller=False, best prior conf {best_prior_conf:.2f})"
+                )
+            else:
+                # Conditional path (default): require feature flag AND low prior confidence
+                if not self.settings.enable_multi_model_enhancement:
+                    should_vote = False
+                    logger.info(
+                        f"[structure] multi-model voting disabled by settings flag (best prior conf {best_prior_conf:.2f})"
+                    )
+                elif best_prior_conf >= voting_threshold:
+                    should_vote = False
+                    logger.info(
+                        f"[structure] single-model confidence {best_prior_conf:.2f} >= "
+                        f"threshold {voting_threshold:.2f}, skipping voting"
+                    )
+                else:
+                    should_vote = True
+                    logger.info(
+                        f"[structure] single-model confidence {best_prior_conf:.2f} < "
+                        f"threshold {voting_threshold:.2f}, escalating to voting"
+                    )
+
+            if should_vote:
                 result = await self._detect_with_multi_model(
                     file_bytes, sheet_index, raw_rows, merged_cells,
                     sheet_name, total_rows, total_cols
                 )
                 logger.info(f"Structure detected via multi-model: confidence={result.confidence:.2f}")
                 return result
+
+            # Skip voting: prefer best prior result over fallback when available
+            if best_prior is not None:
+                logger.info(
+                    f"Returning best prior result without voting: method={best_prior.method}, "
+                    f"confidence={best_prior.confidence:.2f}"
+                )
+                return best_prior
 
             # Fallback: return best guess with low confidence
             logger.warning("All detection methods failed, returning best guess")
@@ -1154,29 +1318,44 @@ Return JSON:
         return None
 
     async def _call_llm(self, prompt: str, model: str = "default") -> Optional[str]:
-        """Call LLM API"""
+        """
+        Call LLM via multi-provider router with cache (Bug #13, Apr 17 2026).
+
+        Routes through call_chain(SLOT.INSIGHTS) so structure detection shares
+        the free-first provider chain and is captured by smart_bi_llm_usage.
+        Same header_content → same LLM output → 24h cache skips repeat calls.
+        """
         try:
-            from openai import AsyncOpenAI
+            from common.llm_router import call_chain, SLOT
+            from common.llm_metrics import llm_caller_context
+            from common.llm_cache import cache_get, cache_put, cache_key
 
-            model_name = {
-                "default": self.settings.llm_model,
-                "fast": self.settings.llm_fast_model,
-                "reasoning": self.settings.llm_reasoning_model
-            }.get(model, self.settings.llm_model)
+            # Bug #13: dedup
+            slot_tag = f"structure_{model}"
+            ckey = cache_key(prompt, slot=slot_tag)
+            cached = cache_get(ckey)
+            if cached is not None:
+                logger.info(f"[llm_cache] HIT structure({model}), prompt_hash={ckey[:8]}")
+                return cached
 
-            client = AsyncOpenAI(
-                api_key=self.settings.llm_api_key,
-                base_url=self.settings.llm_base_url
-            )
+            # Use INSIGHTS slot (fast model) for structure detection
+            slot = SLOT.INSIGHTS if model == "fast" else SLOT.CHAT
+            payload = {
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.1,
+                "max_tokens": 1000,
+            }
 
-            response = await client.chat.completions.create(
-                model=model_name,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,
-                max_tokens=1000
-            )
+            with llm_caller_context("structure_detector"):
+                resp_json = await call_chain(slot, payload)
 
-            return response.choices[0].message.content
+            choices = resp_json.get("choices") or []
+            if not choices:
+                return None
+            content = choices[0].get("message", {}).get("content")
+            if content:
+                cache_put(ckey, content)
+            return content
 
         except Exception as e:
             logger.error(f"LLM call failed: {e}")
@@ -1226,3 +1405,200 @@ Return JSON:
         except json.JSONDecodeError as e:
             logger.warning(f"Failed to parse LLM response as JSON: {e}")
             return None
+
+    def detect_multiple_table_regions(
+        self,
+        file_bytes: bytes,
+        sheet_index: int = 0,
+        min_blank_separator: int = 2,
+        max_rows_to_scan: int = 5000,
+        preview_row_count: int = 3,
+    ) -> List[TableRegion]:
+        """
+        Bug #25b (2026-04-18): Detect independent table regions stacked in one sheet.
+
+        Algorithm: consecutive non-blank rows separated by >= min_blank_separator
+        blank rows are treated as distinct regions. The first non-blank row of
+        each region is taken as the header. Regions whose header is fully numeric
+        are dropped — those look like continuation data, not a new table.
+
+        Single-table sheets yield exactly one region. Empty sheets yield [].
+        """
+        try:
+            wb = openpyxl.load_workbook(
+                io.BytesIO(file_bytes), data_only=True, read_only=True
+            )
+            if sheet_index >= len(wb.sheetnames):
+                wb.close()
+                return []
+            ws = wb[wb.sheetnames[sheet_index]]
+
+            rows: List[List[Any]] = []
+            for row in ws.iter_rows(max_row=max_rows_to_scan, values_only=True):
+                rows.append(list(row))
+            wb.close()
+        except zipfile.BadZipFile:
+            logger.warning("detect_multiple_table_regions: not a valid xlsx")
+            return []
+        except Exception as e:
+            logger.error(f"detect_multiple_table_regions load failed: {e}", exc_info=True)
+            return []
+
+        return self._split_regions_from_rows(
+            rows, min_blank_separator=min_blank_separator,
+            preview_row_count=preview_row_count,
+        )
+
+    def _split_regions_from_rows(
+        self,
+        rows: List[List[Any]],
+        min_blank_separator: int = 2,
+        preview_row_count: int = 3,
+    ) -> List[TableRegion]:
+        """Pure-python region splitter — shared by xlsx and CSV paths.
+
+        Extracted so tests and the CSV adapter can feed pre-loaded rows without
+        re-implementing the openpyxl load step.
+        """
+        if not rows:
+            return []
+
+        is_blank = [
+            all(v is None or (isinstance(v, str) and v.strip() == "") for v in r)
+            for r in rows
+        ]
+
+        region_bounds: List[Tuple[int, int]] = []
+        current_start: Optional[int] = None
+        blank_run = 0
+        last_non_blank_idx: Optional[int] = None
+
+        for idx, blank in enumerate(is_blank):
+            if not blank:
+                if current_start is None:
+                    current_start = idx
+                last_non_blank_idx = idx
+                blank_run = 0
+            else:
+                blank_run += 1
+                if current_start is not None and blank_run >= min_blank_separator:
+                    region_bounds.append((current_start, last_non_blank_idx))
+                    current_start = None
+                    last_non_blank_idx = None
+                    blank_run = 0
+
+        if current_start is not None and last_non_blank_idx is not None:
+            region_bounds.append((current_start, last_non_blank_idx))
+
+        regions: List[TableRegion] = []
+        for r_idx, (start, end) in enumerate(region_bounds):
+            header_cells = rows[start]
+            preview_cols = [
+                str(c).strip() for c in header_cells
+                if c is not None and str(c).strip() != ""
+            ]
+
+            if self._is_all_numeric(header_cells):
+                logger.debug(
+                    f"region {r_idx} rejected: header row {start} is fully numeric "
+                    f"(continuation data, not a new table)"
+                )
+                continue
+
+            preview_data: List[List[Any]] = []
+            for i in range(start + 1, min(end + 1, start + 1 + preview_row_count)):
+                preview_data.append([
+                    str(v) if v is not None else "" for v in rows[i]
+                ])
+
+            regions.append(TableRegion(
+                index=len(regions),
+                start_row=start,
+                end_row=end,
+                header_row=start,
+                preview_cols=preview_cols,
+                sample_rows=max(0, end - start),
+                preview_data=preview_data,
+            ))
+
+        # Fix A (Apr 22 2026): filter "header-only" regions when the sheet
+        # clearly has at least one real data region. Catches dashboard-template
+        # xlsx like 收入管理报表.xlsx where rows 3-4 / 20-21 / 38-39 hold just a
+        # coarse header + sub-header with no body — they currently pollute the
+        # region-selection dialog alongside the one region with real data.
+        #
+        # Heuristic: a region is "header-only" when
+        #   sample_rows == 0 (just a header row), OR
+        #   sample_rows == 1 AND the one "data row" contains NO numeric cells
+        #   (i.e., both rows look like header labels — two-level header template
+        #    with no body). Regions with sample_rows >= 2 are always kept.
+        # We only apply the filter when the sheet has at least one region with
+        # real data (sample_rows >= 2). This preserves small single-table uploads
+        # `[header, one_data_row]` and stacked small tables where each region
+        # has exactly 1 data row.
+        def _looks_like_header_only(r: TableRegion) -> bool:
+            if r.sample_rows == 0:
+                return True
+            if r.sample_rows == 1:
+                # Inspect the one "data row" — if all cells are non-numeric text,
+                # it is another header row (two-level header template).
+                data_row_idx = r.start_row + 1
+                if 0 <= data_row_idx < len(rows):
+                    row_cells = rows[data_row_idx]
+                    has_number = any(
+                        c is not None and str(c).strip() != ""
+                        and self._looks_numeric(c)
+                        for c in row_cells
+                    )
+                    return not has_number
+            return False
+
+        if len(regions) > 1:
+            has_real_data_region = any(r.sample_rows >= 2 for r in regions)
+            if has_real_data_region:
+                kept = [r for r in regions if not _looks_like_header_only(r)]
+                if kept and len(kept) < len(regions):
+                    dropped = len(regions) - len(kept)
+                    logger.info(
+                        f"_split_regions_from_rows: dropped {dropped} header-only region(s) "
+                        f"alongside {len(kept)} data region(s)"
+                    )
+                    for i, r in enumerate(kept):
+                        r.index = i
+                    regions = kept
+
+        logger.info(
+            f"detect_multiple_table_regions: scanned {len(rows)} rows, "
+            f"found {len(regions)} regions"
+        )
+        return regions
+
+    @staticmethod
+    def _is_all_numeric(cells: List[Any]) -> bool:
+        """True when every non-empty cell parses as a number."""
+        saw_value = False
+        for v in cells:
+            if v is None:
+                continue
+            s = str(v).strip()
+            if s == "":
+                continue
+            saw_value = True
+            if not StructureDetector._looks_numeric(v):
+                return False
+        return saw_value  # all-empty row is not "all numeric"
+
+    @staticmethod
+    def _looks_numeric(v: Any) -> bool:
+        """True when a single cell value parses as a number (accepts currency /
+        percent / thousands-separator variants)."""
+        if v is None:
+            return False
+        s = str(v).strip()
+        if s == "":
+            return False
+        try:
+            float(s.replace(",", "").replace("¥", "").replace("$", "").replace("%", ""))
+            return True
+        except (ValueError, TypeError):
+            return False

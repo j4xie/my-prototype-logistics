@@ -754,7 +754,8 @@ async function handleSave() {
       ElMessage.error(res.message || '保存失败')
     }
   } catch (e) {
-    ElMessage.error('保存失败')
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', e);
   } finally {
     saving.value = false
   }

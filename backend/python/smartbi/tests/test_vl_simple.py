@@ -13,7 +13,7 @@ if env_path.exists():
             line = line.strip()
             if line and not line.startswith('#') and '=' in line:
                 key, value = line.split('=', 1)
-                os.environ[key.strip()] = value.strip()
+                os.environ.setdefault(key.strip(), value.strip())
 
 API_KEY = os.getenv("LLM_API_KEY", "")
 BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"

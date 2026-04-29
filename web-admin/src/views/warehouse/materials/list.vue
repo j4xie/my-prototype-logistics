@@ -64,8 +64,8 @@ async function loadData() {
       ElMessage.error(response.message || '加载原材料批次失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载失败:', error);
-    ElMessage.error('加载数据失败');
   } finally {
     loading.value = false;
   }
@@ -153,6 +153,9 @@ const formRules = {
 };
 
 // Bug C5: auto-calculate totalWeight and totalValue from selected material's base info
+// W-02 fix (Round 7): when material has no unit price, hint the user so they don't
+// stare at an empty required field wondering why auto-calc skipped it.
+let w02HintShown = false;
 function autoCalcWeightAndValue() {
   const qty = formData.receiptQuantity;
   if (!formData.materialTypeId || qty == null || qty <= 0) return;
@@ -164,6 +167,11 @@ function autoCalcWeightAndValue() {
   const unitPrice = Number(mat.unitPrice || mat.movingAvgPrice || 0);
   if (unitPrice > 0) {
     formData.totalValue = Number((qty * unitPrice).toFixed(2));
+    w02HintShown = false;
+  } else if (!w02HintShown) {
+    // Show hint once per dialog session so user knows why totalValue wasn't auto-filled
+    ElMessage.info({ message: `原料「${mat.name || '该原料'}」未配置单价，请手动输入总价值`, duration: 4000 });
+    w02HintShown = true;
   }
 }
 
@@ -173,6 +181,7 @@ watch(() => formData.receiptQuantity, () => { autoCalcWeightAndValue(); });
 function handleCreate() {
   editingId.value = null;
   formDialogTitle.value = '入库登记';
+  w02HintShown = false;
   Object.assign(formData, { batchNumber: '', materialTypeId: '', supplierId: '', receiptDate: new Date().toISOString().slice(0, 10), receiptQuantity: null, quantityUnit: 'kg', totalWeight: null, totalValue: null, expireDate: '', notes: '' });
   formDialogVisible.value = true;
 }
@@ -180,6 +189,7 @@ function handleCreate() {
 function handleEdit(row: Record<string, unknown>) {
   editingId.value = String(row.id || '');
   formDialogTitle.value = '编辑批次';
+  w02HintShown = false;
   Object.assign(formData, {
     batchNumber: row.batchNumber || '',
     materialTypeId: row.materialTypeId || '',
@@ -202,7 +212,10 @@ async function handleFormSubmit() {
 
   formSaving.value = true;
   try {
-    const payload = { ...formData, factoryId: factoryId.value };
+    // W-05 fix (Round 8): factoryId was being spread into the body even though
+    // the URL path already carries it — redundant noise in server logs. Backend
+    // reads the path variable and ignores any body factoryId.
+    const payload = { ...formData };
     let response;
     if (editingId.value) {
       response = await put(`/${factoryId.value}/material-batches/${editingId.value}`, payload);
@@ -314,7 +327,10 @@ async function handleFormSubmit() {
     <el-dialog v-model="formDialogVisible" :title="formDialogTitle" width="500px" destroy-on-close>
       <el-form ref="formRef" :model="formData" :rules="formRules" label-width="80px">
         <el-form-item label="批次号" prop="batchNumber">
-          <el-input v-model="formData.batchNumber" placeholder="如 MB-2026-001" :disabled="!!editingId" />
+          <el-tooltip v-if="!!editingId" content="批次号作为追溯标识, 创建后不可修改" placement="top-start">
+            <el-input v-model="formData.batchNumber" placeholder="如 MB-2026-001" :disabled="true" />
+          </el-tooltip>
+          <el-input v-else v-model="formData.batchNumber" placeholder="如 MB-2026-001" />
         </el-form-item>
         <el-form-item label="原料类型" prop="materialTypeId">
           <el-select v-model="formData.materialTypeId" placeholder="选择原料类型" filterable style="width: 100%">

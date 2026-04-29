@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,6 +20,14 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, String> 
     Page<SalesOrder> findByFactoryIdOrderByCreatedAtDesc(String factoryId, Pageable pageable);
 
     Page<SalesOrder> findByFactoryIdAndStatusOrderByCreatedAtDesc(String factoryId, SalesOrderStatus status, Pageable pageable);
+
+    /**
+     * R23 audit I6: JPQL push-down replacement for ProductionPlanController.findAll().stream().filter(...)
+     * which loaded ALL factories' SOs into JVM heap before filtering — full table scan + multi-tenant
+     * data leak risk. Now WHERE-clause filtered at DB level.
+     */
+    List<SalesOrder> findByFactoryIdAndStatusInOrderByCreatedAtDesc(
+            String factoryId, Collection<SalesOrderStatus> statuses, Pageable pageable);
 
     Optional<SalesOrder> findByFactoryIdAndOrderNumber(String factoryId, String orderNumber);
 
@@ -43,4 +52,19 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, String> 
      */
     @Query("SELECT MAX(so.orderNumber) FROM SalesOrder so WHERE so.factoryId = :factoryId AND so.orderNumber LIKE :prefix")
     String findMaxOrderNumberByPrefix(@Param("factoryId") String factoryId, @Param("prefix") String prefix);
+
+    /**
+     * Bug G fix: keyword search (qa-prompt v2.3 Rule 12.1).
+     * Searches orderNumber + salesperson + remark (display fields visible in list).
+     * customerName is @Formula and not directly queryable, so we JOIN customer entity.
+     * Audit H1: ESCAPE '\' so user-typed % and _ are literal (service layer pre-escapes).
+     */
+    @Query("SELECT so FROM SalesOrder so LEFT JOIN Customer c ON c.id = so.customerId " +
+            "WHERE so.factoryId = :factoryId AND (" +
+            "LOWER(so.orderNumber) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+            "LOWER(COALESCE(so.salesperson, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+            "LOWER(COALESCE(c.name, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+            "LOWER(COALESCE(so.remark, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\'" +
+            ") ORDER BY so.createdAt DESC")
+    Page<SalesOrder> searchByFactoryAndKeyword(@Param("factoryId") String factoryId, @Param("keyword") String keyword, Pageable pageable);
 }

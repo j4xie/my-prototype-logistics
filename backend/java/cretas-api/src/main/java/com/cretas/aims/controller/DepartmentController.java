@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.DepartmentDTO;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.service.DepartmentService;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * 部门管理控制器
@@ -43,6 +45,8 @@ public class DepartmentController {
     /**
      * 创建部门
      */
+    @RequirePermission({"hr:read_write"})
+    @RequireModule("hr_employee")
     @PostMapping
     @Operation(summary = "创建部门", description = "创建新的部门，需要管理员权限。部门编码必须唯一，可设置上级部门形成层级结构")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -59,6 +63,7 @@ public class DepartmentController {
     /**
      * 分页查询部门列表
      */
+    @RequirePermission({"hr:read"})
     @GetMapping
     @Operation(summary = "获取部门列表", description = "分页查询工厂下的所有部门，支持自定义排序。默认按显示顺序升序排列")
     public ApiResponse<PageResponse<DepartmentDTO>> getDepartments(
@@ -87,6 +92,7 @@ public class DepartmentController {
     /**
      * 获取所有活跃部门
      */
+    @RequirePermission({"hr:read"})
     @GetMapping("/active")
     @Operation(summary = "获取所有活跃部门", description = "获取工厂下所有启用状态的部门列表，常用于下拉选择框数据源")
     public ApiResponse<List<DepartmentDTO>> getAllActiveDepartments(
@@ -100,6 +106,7 @@ public class DepartmentController {
     /**
      * 获取部门详情
      */
+    @RequirePermission({"hr:read"})
     @GetMapping("/{id}")
     @Operation(summary = "获取部门详情", description = "根据部门ID获取部门的详细信息，包含上级部门、员工数量等")
     public ApiResponse<DepartmentDTO> getDepartmentById(
@@ -115,6 +122,8 @@ public class DepartmentController {
     /**
      * 更新部门
      */
+    @RequirePermission({"hr:read_write"})
+    @RequireModule("hr_employee")
     @PutMapping("/{id}")
     @Operation(summary = "更新部门", description = "更新部门信息，需要管理员权限。可修改名称、编码、上级部门、排序等属性")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -133,6 +142,8 @@ public class DepartmentController {
     /**
      * 删除部门
      */
+    @RequirePermission({"hr:read_write"})
+    @RequireModule("hr_employee")
     @DeleteMapping("/{id}")
     @Operation(summary = "删除部门", description = "删除指定部门，需要管理员权限。如果部门下有员工或子部门，删除将失败")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -149,6 +160,7 @@ public class DepartmentController {
     /**
      * 搜索部门
      */
+    @RequirePermission({"hr:read"})
     @GetMapping("/search")
     @Operation(summary = "搜索部门", description = "根据关键词搜索部门，支持按部门名称和编码模糊匹配")
     public ApiResponse<PageResponse<DepartmentDTO>> searchDepartments(
@@ -172,6 +184,7 @@ public class DepartmentController {
     /**
      * 获取部门树形结构
      */
+    @RequirePermission({"hr:read"})
     @GetMapping("/tree")
     @Operation(summary = "获取部门树形结构", description = "获取工厂下所有部门的层级树形结构，包含父子关系")
     public ApiResponse<List<DepartmentDTO>> getDepartmentTree(
@@ -203,6 +216,8 @@ public class DepartmentController {
     /**
      * 初始化默认部门
      */
+    @RequirePermission({"hr:read_write"})
+    @RequireModule("hr_employee")
     @PostMapping("/initialize")
     @Operation(summary = "初始化默认部门", description = "为新工厂初始化默认的部门结构，包含生产、质检、仓储等基础部门。需要管理员权限")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -217,6 +232,8 @@ public class DepartmentController {
     /**
      * 批量更新部门状态
      */
+    @RequirePermission({"hr:read_write"})
+    @RequireModule("hr_employee")
     @PutMapping("/batch-status")
     @Operation(summary = "批量更新部门状态", description = "批量启用或禁用多个部门，需要管理员权限。请求体需包含 ids (部门ID数组) 和 isActive (目标状态)")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")

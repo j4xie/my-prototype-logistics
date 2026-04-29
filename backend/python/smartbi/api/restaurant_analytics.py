@@ -43,10 +43,43 @@ _YIELD_PER_CHUNK = 5_000
 
 # ─── Helpers ─────────────────────────────────────────────────────
 
+
+def _persist_restaurant_flag(db, upload_id: int, is_restaurant: bool) -> None:
+    """Persist detection result into upload.context_info.is_restaurant.
+
+    Avoids re-running detect_restaurant_chain on every uploads list call.
+    Uses a targeted UPDATE (not full entity save) so we don't clash with
+    concurrent streaming workers writing context_info.
+    """
+    try:
+        from sqlalchemy import text
+        db.execute(
+            text(
+                "UPDATE smart_bi_pg_excel_uploads "
+                "SET context_info = COALESCE(context_info, '{}'::jsonb) "
+                "  || jsonb_build_object('is_restaurant', :flag) "
+                "WHERE id = :uid"
+            ),
+            {"uid": upload_id, "flag": is_restaurant},
+        )
+        db.commit()
+    except Exception as exc:  # pragma: no cover — best-effort cache write
+        logger.warning("persist is_restaurant=%s for upload %s failed: %s",
+                       is_restaurant, upload_id, exc)
+        try:
+            db.rollback()
+        except Exception:
+            pass
+
+
+
 def _load_upload_df(db, upload_id: int) -> tuple[pd.DataFrame, bool]:
-    """Load all dynamic_data rows for an upload into a DataFrame.
-    Uses yield_per for chunked streaming to limit memory peak.
-    Returns (df, is_large) — is_large=True if rows exceed threshold (NOT truncated).
+    """Load dynamic_data rows for an upload into a DataFrame.
+    Caps at 30K rows (LARGE_DATASET_THRESHOLD) to bound memory — 200K × 231
+    JSONB cols materialized would OOM a 1-2GB Python worker. The 30K sample
+    drives restaurant operations analytics (门店 ranking, 时段客流, 菜品
+    贡献); full-scale aggregates belong in AI 问答 which uses SQL-side agg.
+    Returns (df, is_large) — is_large=True if total rows exceed threshold.
     """
     row_count = (
         db.query(SmartBiDynamicData.id)
@@ -58,15 +91,20 @@ def _load_upload_df(db, upload_id: int) -> tuple[pd.DataFrame, bool]:
 
     is_large = row_count > _LARGE_DATASET_THRESHOLD
     if is_large:
-        logger.warning(f"Upload {upload_id}: {row_count} rows (large dataset, streaming)")
+        logger.warning(
+            f"Upload {upload_id}: {row_count} rows (large; sampling first "
+            f"{_LARGE_DATASET_THRESHOLD} rows to bound memory)"
+        )
 
-    # Stream rows in chunks to control memory peak
+    # Stream rows in chunks; apply hard cap for large datasets.
     query = (
         db.query(SmartBiDynamicData.row_data)
         .filter(SmartBiDynamicData.upload_id == upload_id)
         .order_by(SmartBiDynamicData.row_index)
-        .yield_per(_YIELD_PER_CHUNK)
     )
+    if is_large:
+        query = query.limit(_LARGE_DATASET_THRESHOLD)
+    query = query.yield_per(_YIELD_PER_CHUNK)
     data = [r[0] for r in query if r[0]]
     return pd.DataFrame(data), is_large
 
@@ -277,14 +315,19 @@ def list_restaurant_uploads(request: Request):
                     if "restaurant" in ttype or "餐饮" in ttype or "pos" in ttype:
                         is_restaurant = True
 
-                # Slow path: check column names via field_mappings
-                if not is_restaurant and field_mappings:
+                # Slow path: check column names via field_mappings or
+                # context_info.headers (streaming worker writes headers there).
+                if not is_restaurant:
                     col_names = []
-                    if isinstance(field_mappings, list):
-                        col_names = [m.get("original", "") for m in field_mappings if isinstance(m, dict)]
-                    elif isinstance(field_mappings, dict):
-                        col_names = list(field_mappings.keys())
-
+                    if field_mappings:
+                        if isinstance(field_mappings, list):
+                            col_names = [m.get("original") or m.get("originalColumn") or "" for m in field_mappings if isinstance(m, dict)]
+                        elif isinstance(field_mappings, dict):
+                            col_names = list(field_mappings.keys())
+                    if not col_names and isinstance(ctx, dict):
+                        hdrs = ctx.get("headers")
+                        if isinstance(hdrs, list):
+                            col_names = [str(h) for h in hdrs]
                     if col_names:
                         detection = detect_restaurant_chain(col_names)
                         is_restaurant = detection.get("is_restaurant_chain", False)
@@ -296,6 +339,9 @@ def list_restaurant_uploads(request: Request):
                         "createdAt": created_at.isoformat() if created_at else None,
                         "hasCachedAnalytics": False,
                     })
+                    # Persist detection to context_info so next call hits fast path
+                    if not (ctx or {}).get("is_restaurant"):
+                        _persist_restaurant_flag(db, uid, True)
                 else:
                     needs_fallback.append((uid, file_name, sheet_name, row_count, created_at))
 
@@ -334,6 +380,38 @@ def list_restaurant_uploads(request: Request):
                             "createdAt": created_at.isoformat() if created_at else None,
                             "hasCachedAnalytics": False,
                         })
+
+            # Pass 3 (Apr 24 2026): if restaurant detection yielded zero but the tenant
+            # still has uploads, widen net using filename hints. Many merchant xlsx
+            # exports don't carry the strict POS columns (点单方式/套餐内销量) that
+            # detect_restaurant_chain looks for — but their filename says "销量报表"
+            # or "营业数据". Restaurant tenants would otherwise see a blank dropdown
+            # and the "前往上传" dead-end even though they just uploaded. Trust the
+            # filename signal for restaurant contexts.
+            if len(restaurant_uploads) == 0 and len(uploads) > 0:
+                _RESTAURANT_FILENAME_HINTS = (
+                    "销量", "销售", "营业", "营收", "门店", "餐饮", "POS", "pos",
+                    "订单", "点餐", "菜品", "堂食", "外卖", "小票",
+                )
+                included_ids = set()
+                for uid, file_name, sheet_name, row_count, created_at, _fid, _ctx, _ttype, _fm in uploads:
+                    fname = file_name or ""
+                    if any(hint in fname for hint in _RESTAURANT_FILENAME_HINTS):
+                        if uid in included_ids:
+                            continue
+                        included_ids.add(uid)
+                        restaurant_uploads.append({
+                            "id": uid, "fileName": file_name, "sheetName": sheet_name,
+                            "rowCount": row_count,
+                            "createdAt": created_at.isoformat() if created_at else None,
+                            "hasCachedAnalytics": False,
+                            "softInferred": True,
+                        })
+                if restaurant_uploads:
+                    logger.info(
+                        f"list_restaurant_uploads: pass-3 filename hint matched "
+                        f"{len(restaurant_uploads)} uploads as soft-restaurant"
+                    )
 
             # Sort: cached first, then by row_count descending (in-place, stable)
             restaurant_uploads.sort(

@@ -28,6 +28,7 @@ import java.time.LocalTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * 原材料消耗记录控制器
@@ -317,6 +318,7 @@ public class MaterialConsumptionController {
     /**
      * 8. 差异调整
      */
+    @RequireModule("production_plan")
     @PostMapping("/batch/{productionBatchId}/adjust")
     @Operation(summary = "调整物料消耗", description = "调整生产批次中某种物料的实际消耗量")
     public ApiResponse<Void> adjustConsumption(
@@ -329,7 +331,11 @@ public class MaterialConsumptionController {
         String reason = (String) body.getOrDefault("reason", "手工调整");
 
         if (materialTypeId == null || rawQty == null) {
-            return ApiResponse.error(400, "materialTypeId和actualQuantity必填");
+            // R50 BUG-25 fix: 同 BUG-17 anti-pattern, ApiResponse.error → throw exception
+            throw new com.cretas.aims.exception.BusinessException(400,
+                    "materialTypeId和actualQuantity必填")
+                    .withHint("请填写物料类型 ID 和实际消耗量")
+                    .withHintTarget("materialTypeId / actualQuantity");
         }
         BigDecimal actualQuantity = new BigDecimal(rawQty.toString());
 

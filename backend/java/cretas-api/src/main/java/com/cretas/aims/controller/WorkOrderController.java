@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.WorkOrder;
 import com.cretas.aims.service.WorkOrderService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,6 +19,7 @@ import com.cretas.aims.util.ErrorSanitizer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * 工单控制器
@@ -38,6 +40,7 @@ public class WorkOrderController {
     /**
      * 获取工单列表（分页）
      */
+    @RequirePermission({"production:read"})
     @GetMapping
     @Operation(summary = "获取工单列表", description = "分页查询指定工厂的工单")
     public ResponseEntity<?> getWorkOrders(
@@ -75,6 +78,7 @@ public class WorkOrderController {
     /**
      * 获取工单统计
      */
+    @RequirePermission({"production:read"})
     @GetMapping("/stats")
     @Operation(summary = "获取工单统计", description = "获取工厂工单统计数据")
     public ResponseEntity<?> getStats(
@@ -104,6 +108,7 @@ public class WorkOrderController {
     /**
      * 获取逾期工单
      */
+    @RequirePermission({"production:read"})
     @GetMapping("/overdue")
     @Operation(summary = "获取逾期工单", description = "获取未完成且已逾期的工单")
     public ResponseEntity<?> getOverdueWorkOrders(
@@ -155,6 +160,7 @@ public class WorkOrderController {
     /**
      * 获取单个工单详情
      */
+    @RequirePermission({"production:read"})
     @GetMapping("/{id}")
     @Operation(summary = "获取工单详情", description = "根据ID获取工单详情")
     public ResponseEntity<?> getWorkOrder(
@@ -179,6 +185,8 @@ public class WorkOrderController {
     /**
      * 创建工单
      */
+    @RequirePermission({"production:read_write"})
+    @RequireModule("production_plan")
     @PostMapping
     @Operation(summary = "创建工单", description = "创建新的工单")
     public ResponseEntity<?> createWorkOrder(
@@ -206,6 +214,8 @@ public class WorkOrderController {
     /**
      * 更新工单
      */
+    @RequirePermission({"production:read_write"})
+    @RequireModule("production_plan")
     @PutMapping("/{id}")
     @Operation(summary = "更新工单", description = "更新工单信息")
     public ResponseEntity<?> updateWorkOrder(
@@ -233,6 +243,8 @@ public class WorkOrderController {
     /**
      * 开始工单
      */
+    @RequirePermission({"production:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/{id}/start")
     @Operation(summary = "开始工单", description = "将工单状态改为进行中")
     public ResponseEntity<?> startWorkOrder(
@@ -258,6 +270,8 @@ public class WorkOrderController {
     /**
      * 完成工单
      */
+    @RequirePermission({"production:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/{id}/complete")
     @Operation(summary = "完成工单", description = "将工单标记为已完成")
     public ResponseEntity<?> completeWorkOrder(
@@ -283,6 +297,8 @@ public class WorkOrderController {
     /**
      * 取消工单
      */
+    @RequirePermission({"production:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/{id}/cancel")
     @Operation(summary = "取消工单", description = "取消工单")
     public ResponseEntity<?> cancelWorkOrder(
@@ -310,6 +326,8 @@ public class WorkOrderController {
     /**
      * 分配工单
      */
+    @RequirePermission({"production:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/{id}/assign")
     @Operation(summary = "分配工单", description = "将工单分配给指定用户")
     public ResponseEntity<?> assignWorkOrder(
@@ -337,6 +355,8 @@ public class WorkOrderController {
     /**
      * 删除工单
      */
+    @RequirePermission({"production:read_write"})
+    @RequireModule("production_plan")
     @DeleteMapping("/{id}")
     @Operation(summary = "删除工单", description = "删除指定的工单")
     public ResponseEntity<?> deleteWorkOrder(

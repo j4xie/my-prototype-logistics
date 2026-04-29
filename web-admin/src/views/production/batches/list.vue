@@ -56,9 +56,9 @@ async function loadData() {
     } else if (response.success === false) {
       ElMessage.error(response.message || '加载数据失败');
     }
-  } catch (error) {
+  } catch (error: any) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载失败:', error);
-    ElMessage.error('加载数据失败');
   } finally {
     loading.value = false;
   }
@@ -104,9 +104,9 @@ async function handleCreate() {
       if (res.success) {
         productTypes.value = res.data || [];
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('加载产品类型失败:', e);
-      ElMessage.error('加载产品类型失败');
+      if (!e?.actionHint) ElMessage.error('加载产品类型失败');
     }
   }
 }
@@ -146,7 +146,7 @@ async function submitCreate() {
       ElMessage.error(response.message || '创建失败');
     }
   } catch (error: unknown) {
-    ElMessage.error(error?.response?.data?.message || '创建失败');
+    if (!error?.actionHint) ElMessage.error(error?.response?.data?.message || '创建失败');
   } finally {
     creating.value = false;
   }

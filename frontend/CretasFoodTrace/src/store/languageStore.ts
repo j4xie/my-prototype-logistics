@@ -51,7 +51,12 @@ export const useLanguageStore = create<LanguageState>()(
   persist(
     (set, get) => ({
       language: DEFAULT_LANGUAGE,
-      isSystemLanguage: true,
+      // Apr 19 2026 i18n gap fix: 默认不跟随系统语言,新装/未做过设置的用户直接看中文.
+      // 之前 isSystemLanguage: true 会让 onRehydrateStorage + initializeLanguage 调用
+      // detectSystemLanguage() → 设备 en 时切 en-US, 覆盖了 i18n/index.ts 里
+      // "lng: DEFAULT_LANGUAGE // 默认中文,用户可在设置里切换" 的 Mar 25 commit 意图.
+      // 用户想跟随系统可在 设置→语言 页面 toggle isSystemLanguage=true.
+      isSystemLanguage: false,
 
       setLanguage: (lang: SupportedLanguage) => {
         // 验证语言是否支持

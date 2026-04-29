@@ -100,11 +100,13 @@ async function loadData() {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
     } else if (response.success === false) {
-      ElMessage.error(response.message || '加载数据失败');
+      ElMessage.error(response.message || '加载数据源失败');
     }
   } catch (error) {
-    console.error('加载失败:', error);
-    ElMessage.error('加载数据失败');
+    // Apr 18 2026 bug #55: 去掉 catch 里的 fallback toast — axios interceptor
+    // 已经显示后端精确 message (含 status + url), 这里再 toast 泛泛"加载数据失败"
+    // 覆盖了真实原因。Rule 7 "前端吞 message" 违规。
+    console.error('加载数据源失败:', error);
   } finally {
     loading.value = false;
   }
@@ -170,8 +172,8 @@ async function handleSubmit() {
       ElMessage.error(response.message || '保存失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('保存失败:', error);
-    ElMessage.error('保存失败');
   } finally {
     dialogLoading.value = false;
   }
@@ -198,10 +200,8 @@ async function handleDelete(row: DataSource) {
       ElMessage.error(response.message || '删除失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('删除失败:', error);
-      ElMessage.error('删除失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError.
+    if (error !== 'cancel') console.error('删除失败:', error);
   }
 }
 

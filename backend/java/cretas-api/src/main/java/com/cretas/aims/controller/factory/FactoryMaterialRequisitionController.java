@@ -1,6 +1,8 @@
 package com.cretas.aims.controller.factory;
 
+import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.entity.factory.FactoryMaterialRequisition;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.factory.FactoryMaterialRequisition.Status;
 import com.cretas.aims.service.factory.FactoryMaterialRequisitionService;
 import lombok.RequiredArgsConstructor;
@@ -34,10 +36,12 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/material-requisitions")
 @RequiredArgsConstructor
+@RequireModule("production_plan")
 public class FactoryMaterialRequisitionController {
 
     private final FactoryMaterialRequisitionService service;
 
+    @RequirePermission({"warehouse:read_write", "production:read_write"})
     @PostMapping("/generate")
     public ResponseEntity<?> generate(
             @PathVariable String factoryId,
@@ -70,6 +74,7 @@ public class FactoryMaterialRequisitionController {
         return ResponseEntity.ok(Map.of("success", true, "data", list));
     }
 
+    @RequirePermission({"warehouse:read_write", "production:read_write"})
     @PutMapping("/{id}/start-picking")
     public ResponseEntity<?> startPicking(
             @PathVariable String factoryId, @PathVariable String id,
@@ -77,6 +82,7 @@ public class FactoryMaterialRequisitionController {
         return ResponseEntity.ok(Map.of("success", true, "data", service.startPicking(factoryId, id, userId)));
     }
 
+    @RequirePermission({"warehouse:read_write", "production:read_write"})
     @PutMapping("/{id}/confirm-picking")
     @SuppressWarnings("unchecked")
     public ResponseEntity<?> confirmPicking(
@@ -87,6 +93,7 @@ public class FactoryMaterialRequisitionController {
         return ResponseEntity.ok(Map.of("success", true, "data", service.confirmPicking(factoryId, id, userId, items)));
     }
 
+    @RequirePermission({"warehouse:read_write", "production:read_write"})
     @PutMapping("/{id}/transfer")
     public ResponseEntity<?> transfer(
             @PathVariable String factoryId, @PathVariable String id,
@@ -94,6 +101,7 @@ public class FactoryMaterialRequisitionController {
         return ResponseEntity.ok(Map.of("success", true, "data", service.transferToFactory(factoryId, id, userId)));
     }
 
+    @RequirePermission({"warehouse:read_write", "production:read_write"})
     @PutMapping("/{id}/receive")
     public ResponseEntity<?> receive(
             @PathVariable String factoryId, @PathVariable String id,
@@ -101,6 +109,7 @@ public class FactoryMaterialRequisitionController {
         return ResponseEntity.ok(Map.of("success", true, "data", service.receive(factoryId, id, userId)));
     }
 
+    @RequirePermission({"warehouse:read_write", "production:read_write"})
     @PutMapping("/{id}/close")
     public ResponseEntity<?> close(
             @PathVariable String factoryId, @PathVariable String id,
@@ -108,6 +117,7 @@ public class FactoryMaterialRequisitionController {
         return ResponseEntity.ok(Map.of("success", true, "data", service.close(factoryId, id, userId), "message", "已关单, 退料已按 issued-consumed 自动计算"));
     }
 
+    @RequirePermission({"warehouse:read_write", "production:read_write"})
     @PutMapping("/{id}/cancel")
     public ResponseEntity<?> cancel(
             @PathVariable String factoryId, @PathVariable String id,

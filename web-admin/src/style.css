@@ -604,3 +604,23 @@ textarea:focus-visible {
     print-color-adjust: exact !important;
   }
 }
+
+/* ============================================================
+ * UX 进阶 2026-04-18: Pulse hint animation — backend errors with
+ * hintTarget label cause the matching button to pulse for 5s,
+ * giving users a visual breadcrumb to the next action.
+ * ============================================================ */
+@keyframes cretas-pulse-hint {
+  0%   { box-shadow: 0 0 0 0 rgba(245, 108, 108, 0.7); }
+  50%  { box-shadow: 0 0 0 12px rgba(245, 108, 108, 0.1); }
+  100% { box-shadow: 0 0 0 0 rgba(245, 108, 108, 0); }
+}
+
+.cretas-pulse-hint {
+  position: relative !important;
+  outline: 3px solid #F56C6C !important;
+  outline-offset: 2px !important;
+  animation: cretas-pulse-hint 1.2s ease-out infinite !important;
+  transition: outline 0.2s ease;
+  z-index: 10 !important;
+}

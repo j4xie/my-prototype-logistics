@@ -58,7 +58,8 @@ public class ProductionWorkflowOrchestrator {
         // Step 1: 加载计划 — FUTURE TOOL: production_plan_query
         ProductionPlanDTO plan = productionPlanService.getProductionPlanById(factoryId, planId);
         if (plan == null) {
-            throw new BusinessException("生产计划不存在: " + planId);
+            throw new BusinessException(404, "生产计划不存在: " + planId)
+                    .withHint("请刷新生产计划列表后重新选择").withHintTarget("planId");
         }
         log.info("开始为生产计划生成调拨单: planId={}, product={}, qty={}",
                 planId, plan.getProductTypeId(), plan.getPlannedQuantity());
@@ -68,7 +69,9 @@ public class ProductionWorkflowOrchestrator {
                 factoryId, plan.getProductTypeId(), plan.getPlannedQuantity());
 
         if (requirements.isEmpty()) {
-            throw new BusinessException("该产品无 BOM 配置，无法生成调拨单。请先在 Web 端配置产品的原辅料转换关系。");
+            throw new BusinessException(409, "该产品未配置转换率，无法生成调拨单")
+                    .withHint("请在 [生产管理 → BOM 成本管理 → 转换率 tab] 为该产品添加原料 → 产品的转换率配置 (conversionRate)")
+                    .withHintTarget("productTypeId");
         }
 
         // Step 3: 库存校验 (可选，记录日志但不阻断)

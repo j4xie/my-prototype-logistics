@@ -155,7 +155,8 @@ public class KeruyunPosAdapter implements PosAdapter {
                         pageNo - 1, orders.size(), totalCount);
             } catch (Exception e) {
                 log.error("客如云订单同步异常: page={}, error={}", pageNo, e.getMessage());
-                throw new BusinessException("客如云订单同步失败: " + e.getMessage());
+                throw new BusinessException(502, "客如云订单同步失败: " + e.getMessage())
+                        .withHint("请检查客如云连接配置或稍后重试");
             }
         }
 
@@ -209,7 +210,8 @@ public class KeruyunPosAdapter implements PosAdapter {
                 pageNo++;
             } catch (Exception e) {
                 log.error("客如云商品同步异常: page={}, error={}", pageNo, e.getMessage());
-                throw new BusinessException("客如云商品同步失败: " + e.getMessage());
+                throw new BusinessException(502, "客如云商品同步失败: " + e.getMessage())
+                        .withHint("请检查客如云连接配置或稍后重试");
             }
         }
 
@@ -238,7 +240,8 @@ public class KeruyunPosAdapter implements PosAdapter {
 
             Map<String, Object> responseBody = parseResponse(response.getBody());
             if (!isSuccessResponse(responseBody)) {
-                throw new BusinessException("客如云库存查询失败: " + responseBody.get("message"));
+                throw new BusinessException(502, "客如云库存查询失败: " + responseBody.get("message"))
+                        .withHint("请检查客如云连接配置或稍后重试");
             }
 
             Map<String, Object> data = getDataMap(responseBody);
@@ -256,7 +259,8 @@ public class KeruyunPosAdapter implements PosAdapter {
             throw e;
         } catch (Exception e) {
             log.error("客如云库存同步异常: error={}", e.getMessage());
-            throw new BusinessException("客如云库存同步失败: " + e.getMessage());
+            throw new BusinessException(502, "客如云库存同步失败: " + e.getMessage())
+                    .withHint("请检查客如云连接配置或稍后重试");
         }
     }
 
@@ -287,7 +291,8 @@ public class KeruyunPosAdapter implements PosAdapter {
             }
         } catch (Exception e) {
             log.error("客如云Webhook处理异常: error={}", e.getMessage());
-            throw new BusinessException("客如云Webhook处理失败: " + e.getMessage());
+            throw new BusinessException(502, "客如云Webhook处理失败: " + e.getMessage())
+                    .withHint("请检查 Webhook 配置或稍后重试");
         }
     }
 
@@ -357,7 +362,8 @@ public class KeruyunPosAdapter implements PosAdapter {
 
             Map<String, Object> responseBody = parseResponse(response.getBody());
             if (!isSuccessResponse(responseBody)) {
-                throw new BusinessException("客如云Token刷新失败: " + responseBody.get("message"));
+                throw new BusinessException(401, "客如云Token刷新失败: " + responseBody.get("message"))
+                        .withHint("请重新完成 OAuth2 授权");
             }
 
             Map<String, Object> data = getDataMap(responseBody);
@@ -380,7 +386,8 @@ public class KeruyunPosAdapter implements PosAdapter {
             // endpoints is expected; WARN keeps observability without polluting
             // ERROR-level alerts for something we know is a stub.
             log.warn("客如云Token刷新异常 (adapter 骨架代码, URL 占位符): error={}", e.getMessage());
-            throw new BusinessException("客如云Token刷新失败: " + e.getMessage());
+            throw new BusinessException(502, "客如云Token刷新失败: " + e.getMessage())
+                    .withHint("请检查客如云连接或稍后重试");
         }
     }
 
@@ -415,7 +422,8 @@ public class KeruyunPosAdapter implements PosAdapter {
 
             Map<String, Object> responseBody = parseResponse(response.getBody());
             if (!isSuccessResponse(responseBody)) {
-                throw new BusinessException("客如云授权失败: " + responseBody.get("message"));
+                throw new BusinessException(401, "客如云授权失败: " + responseBody.get("message"))
+                        .withHint("请重新完成 OAuth2 授权");
             }
 
             Map<String, Object> data = getDataMap(responseBody);
@@ -438,7 +446,8 @@ public class KeruyunPosAdapter implements PosAdapter {
             throw e;
         } catch (Exception e) {
             log.error("客如云OAuth2授权异常: error={}", e.getMessage());
-            throw new BusinessException("客如云授权失败: " + e.getMessage());
+            throw new BusinessException(502, "客如云授权失败: " + e.getMessage())
+                    .withHint("请检查客如云连接或稍后重试");
         }
     }
 
@@ -589,7 +598,8 @@ public class KeruyunPosAdapter implements PosAdapter {
      */
     private void ensureValidToken(PosConnection connection) {
         if (connection.getAccessToken() == null || connection.getAccessToken().isEmpty()) {
-            throw new BusinessException("客如云未授权，请先完成OAuth2授权");
+            throw new BusinessException(401, "客如云未授权")
+                    .withHint("请先完成 OAuth2 授权后再操作");
         }
 
         // Token即将过期（提前5分钟刷新）
@@ -641,7 +651,8 @@ public class KeruyunPosAdapter implements PosAdapter {
             byte[] hash = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
             return bytesToHex(hash);
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
-            throw new BusinessException("HMAC-SHA256签名计算失败: " + e.getMessage());
+            throw new BusinessException(500, "HMAC-SHA256签名计算失败: " + e.getMessage())
+                    .withHint("请联系管理员检查 JVM 加密配置");
         }
     }
 
@@ -661,7 +672,8 @@ public class KeruyunPosAdapter implements PosAdapter {
             return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
         } catch (Exception e) {
             log.error("JSON解析失败: {}", e.getMessage());
-            throw new BusinessException("客如云响应解析失败");
+            throw new BusinessException(502, "客如云响应解析失败")
+                    .withHint("请稍后重试, 或联系管理员检查客如云接口契约");
         }
     }
 

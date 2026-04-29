@@ -1,9 +1,13 @@
 package com.cretas.aims.entity.smartbi.postgres;
 
 import com.cretas.aims.entity.smartbi.enums.UploadStatus;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Type;
+import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -71,12 +75,71 @@ public class SmartBiPgExcelUpload {
     private Map<String, Object> detectedStructure;
 
     /**
-     * Field mappings resolved by AI (JSONB)
-     * Maps original column names to semantic field names
+     * Field mappings resolved by AI (JSONB, stored as raw String).
+     *
+     * Shape drift: excel_async.py writes a Map&lt;original, standard&gt; dict,
+     * older excel.py legacy path writes a List&lt;Map&lt;source, dataType,
+     * standardField, originalColumn, confidence&gt;&gt;.
+     *
+     * Apr 23 2026 fix: stopped using @Type(JsonBinaryType.class) with Object —
+     * hypersistence-utils 3.7.3 在某些加载路径下推断 javaType=LinkedHashMap&lt;String,String&gt;
+     * 当碰到数组 JSONB 直接 MismatchedInputException. 改为 @JdbcTypeCode(SqlTypes.JSON)
+     * + String 字段, 把 deserialize 完全从 Hibernate 剥离,调用方通过
+     * {@link #getFieldMappingsAsMap()} 手动 parse 两种形状.
+     *
+     * Upload 3970 (qhj) 和其他 legacy uploads 触发的 array shape 不再崩.
      */
-    @Type(JsonBinaryType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "field_mappings", columnDefinition = "jsonb")
-    private Map<String, String> fieldMappings;
+    private String fieldMappings;
+
+    /**
+     * Shared ObjectMapper for parsing fieldMappings JSONB raw string.
+     * transient + @Transient 保证 Jackson / Hibernate 都忽略此字段.
+     */
+    @Transient
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private static final transient ObjectMapper FIELD_MAPPINGS_PARSER = new ObjectMapper();
+
+    /**
+     * Normalize both JSONB shapes into a Map&lt;original, standard&gt;.
+     * Returns empty map if field is null/blank, parse fails, or shape unrecognized.
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, String> getFieldMappingsAsMap() {
+        String raw = this.fieldMappings;
+        if (raw == null || raw.isBlank()) return java.util.Collections.emptyMap();
+
+        Object parsed;
+        try {
+            parsed = FIELD_MAPPINGS_PARSER.readValue(raw, new TypeReference<Object>() {});
+        } catch (Exception e) {
+            return java.util.Collections.emptyMap();
+        }
+
+        if (parsed instanceof Map) {
+            Map<String, String> out = new java.util.HashMap<>();
+            ((Map<Object, Object>) parsed).forEach((k, v) ->
+                out.put(String.valueOf(k), v == null ? null : String.valueOf(v)));
+            return out;
+        }
+        if (parsed instanceof List) {
+            Map<String, String> out = new java.util.HashMap<>();
+            for (Object item : (List<Object>) parsed) {
+                if (item instanceof Map) {
+                    Map<String, Object> m = (Map<String, Object>) item;
+                    Object orig = m.get("originalColumn");
+                    Object std  = m.get("standardField");
+                    if (orig != null) {
+                        out.put(String.valueOf(orig),
+                                std == null ? String.valueOf(orig) : String.valueOf(std));
+                    }
+                }
+            }
+            return out;
+        }
+        return java.util.Collections.emptyMap();
+    }
 
     /**
      * Additional context info (JSONB)

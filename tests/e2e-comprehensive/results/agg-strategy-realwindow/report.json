@@ -1,0 +1,133 @@
+{
+  "startedAt": "2026-04-24T07:49:12.875Z",
+  "finishedAt": "2026-04-24T07:50:12.876Z",
+  "target": "https://admin.cretaceousfuture.com",
+  "user": "qhj_prod",
+  "summary": {
+    "total": 13,
+    "passed": 13,
+    "failed": 0,
+    "consoleErrors": 0,
+    "networkFails": 0
+  },
+  "tests": [
+    {
+      "id": "L0",
+      "pass": true,
+      "summary": "logged in as qhj_prod (URL: https://admin.cretaceousfuture.com/dashboard)",
+      "detail": {}
+    },
+    {
+      "id": "review-4172-min-cards",
+      "pass": true,
+      "summary": "≥3 cards (got 4)",
+      "detail": {}
+    },
+    {
+      "id": "review-4172-pattern-平均",
+      "pass": true,
+      "summary": "≥3 cards contain \"平均\" (matched: 平均服务分, 平均星级分, 平均环境分, 平均口味分)",
+      "detail": {}
+    },
+    {
+      "id": "review-4172-forbidden-评价ID",
+      "pass": true,
+      "summary": "correctly excludes \"评价ID\"",
+      "detail": {}
+    },
+    {
+      "id": "review-4172-forbidden-团购ID",
+      "pass": true,
+      "summary": "correctly excludes \"团购ID\"",
+      "detail": {}
+    },
+    {
+      "id": "review-4172-forbidden-门店美团ID",
+      "pass": true,
+      "summary": "correctly excludes \"门店美团ID\"",
+      "detail": {}
+    },
+    {
+      "id": "review-4172-value-range",
+      "pass": true,
+      "summary": "≥3 values in [4.5, 5] for \"平均/分\" cards (matched: 平均服务分=4.83, 平均星级分=4.83, 平均环境分=4.82, 平均口味分=4.82)",
+      "detail": {}
+    },
+    {
+      "id": "review-4172-unit-分",
+      "pass": true,
+      "summary": "unit \"分\" present",
+      "detail": {}
+    },
+    {
+      "id": "pos-4169-min-cards",
+      "pass": true,
+      "summary": "≥1 cards (got 4)",
+      "detail": {}
+    },
+    {
+      "id": "pos-4169-forbidden-账单号",
+      "pass": true,
+      "summary": "correctly excludes \"账单号\"",
+      "detail": {}
+    },
+    {
+      "id": "pos-4169-forbidden-外部单号",
+      "pass": true,
+      "summary": "correctly excludes \"外部单号\"",
+      "detail": {}
+    },
+    {
+      "id": "Z1",
+      "pass": true,
+      "summary": "no console errors across full run",
+      "detail": {}
+    },
+    {
+      "id": "Z2",
+      "pass": true,
+      "summary": "no 4xx/5xx responses on /api endpoints",
+      "detail": {}
+    }
+  ],
+  "reviewKPIs": {
+    "titles": [
+      "平均服务分",
+      "平均星级分",
+      "平均环境分",
+      "平均口味分"
+    ],
+    "values": [
+      "4.83 分",
+      "4.83 分",
+      "4.82 分",
+      "4.82 分"
+    ],
+    "units": [
+      "分",
+      "分",
+      "分",
+      "分"
+    ]
+  },
+  "posKPIs": {
+    "titles": [
+      "平均服务分",
+      "平均星级分",
+      "平均环境分",
+      "平均口味分"
+    ],
+    "values": [
+      "4.83 分",
+      "4.83 分",
+      "4.82 分",
+      "4.82 分"
+    ],
+    "units": [
+      "分",
+      "分",
+      "分",
+      "分"
+    ]
+  }
+}

@@ -8,10 +8,11 @@ import { ref, computed, onMounted, onUnmounted, onBeforeUnmount, nextTick, watch
 import { useChartResize } from '@/composables/useChartResize';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
-import { chatAnalysis, chatAnalysisStream, getUploadHistory, deduplicateUploads, nl2sql, type AnalysisResult, type AIInsightData, type ChartConfig, type UploadHistoryItem, type NL2SQLResponse } from '@/api/smartbi';
-import { ElMessage } from 'element-plus';
+import { chatAnalysis, chatAnalysisStream, getUploadHistory, deduplicateUploads, nl2sql, logFeedback, type AnalysisResult, type AIInsightData, type ChartConfig, type UploadHistoryItem, type NL2SQLResponse } from '@/api/smartbi';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   ChatDotRound,
+  ChatRound,
   Promotion,
   Refresh,
   Delete,
@@ -35,8 +36,10 @@ import {
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import echarts from '@/utils/echarts';
+import { processEChartsOptions } from '@/utils/echarts-fmt';
 import { AIInsightPanel } from '@/components/smartbi';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
+import MaterializedAnalysisPanel from '@/components/smart-bi/MaterializedAnalysisPanel.vue';
 
 // Render markdown content safely
 function renderMarkdown(text: string): string {
@@ -75,6 +78,23 @@ interface ChatMessage {
   sqlResult?: NL2SQLResponse;
   loading?: boolean;
   streaming?: boolean;
+  // Fix 3 (Apr 23 2026): source tags so the UI can render a "深入分析"
+  // CTA after pre-computed template answers. LLM fallback answers already
+  // contain analysis, so no CTA for those.
+  source?: string;
+  templateCode?: string;
+  // Phase 1 (Apr 23 2026): log id of the fallback log row (LLM answers only)
+  logId?: number | null;
+  feedbackValue?: 1 | -1 | 0;  // local optimistic state
+  feedbackPending?: boolean;  // Phase 1.5 Task 1 nit: prevent double-click POSTs
+  // P2 guardrail (Apr 24 2026): backend flags numeric hallucination in
+  // LLM output (e.g. "合计 3.4 亿" on a 36M dataset).
+  warning?: string | null;
+  // D1 (Apr 26 2026): set when backend response contains 25s timeout marker.
+  // FE shows a "重试" button so user doesn't need to retype.
+  truncated?: boolean;
+  // Original query for retry button to re-send.
+  origQuery?: string;
 }
 
 // 当前分析上下文 (用于连续对话)
@@ -94,16 +114,164 @@ const dataSourceLabel = computed(() => {
 const chatHistory = ref<ChatMessage[]>([]);
 const chatContainerRef = ref<HTMLDivElement | null>(null);
 
-// 快捷问题 (保留作为后备)
-const quickQuestions = [
-  '本月销售额是多少?',
-  '销售额最高的产品是什么?',
-  '本月利润率如何?',
-  '哪个部门业绩最好?',
-  '库存周转情况怎样?',
-  '应收账款逾期情况?',
-  '与上月相比销售变化如何?',
-  '客户数量增长情况?'
+// v2 conversation memory (Apr 26 2026): server-side session id persisted in
+// sessionStorage so a follow-up question on the same tab inherits the parent
+// answer summary. Survives page reload (sessionStorage), clears on tab close
+// or when user clicks "新会话". Key is namespaced per factory so switching
+// tenants does not leak.
+const CHAT_SESSION_KEY = computed(() => `smartbi.chatSessionId.${factoryId.value || 'anon'}`);
+function getOrCreateChatSessionId(): string {
+  try {
+    const key = CHAT_SESSION_KEY.value;
+    let id = sessionStorage.getItem(key);
+    if (!id) {
+      // Use crypto.randomUUID when available; fallback to RFC4122 v4 polyfill.
+      id = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+        ? crypto.randomUUID()
+        : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0;
+            return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+          });
+      sessionStorage.setItem(key, id);
+    }
+    return id;
+  } catch {
+    // sessionStorage may be blocked (private mode) — still return a per-call
+    // UUID so the request goes through, just without continuity.
+    return (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+}
+function resetChatSession(): void {
+  try {
+    sessionStorage.removeItem(CHAT_SESSION_KEY.value);
+  } catch {
+    // ignore — sessionStorage blocked
+  }
+}
+
+// Apr 27 2026 (F6): caps-aware 快捷问题 — chip 内容根据当前数据集 domain
+// 动态切换. 之前固定 8 个 sales-focused chips 在 reviews/finance/member 数据集
+// 上点了会触发 capability_short_circuit 拒绝, UX 误导.
+//
+// Heuristic: 用 file_name + sheet_name 关键词推断 domain. 错了无功能损失,
+// 只是少一个相关 chip — fallback 到通用销售 chip 组.
+const QUICK_QUESTIONS_BY_DOMAIN: Record<string, string[]> = {
+  // 评价/口碑数据
+  review: [
+    '客户评价怎么样', '差评最多的门店', '哪些菜品差评多',
+    'VIP 评价情况', '投诉最集中的问题', '哪个城市评价最低',
+    '服务分排名', '环境分对比'
+  ],
+  // 会员/储值/会员卡数据
+  member: [
+    '会员卡数据有什么发现', 'VIP 占比', '充值最多的会员',
+    '会员等级分布', '余额最高的客户', '会员消费频次',
+    '储值卡使用率', '会员流失率'
+  ],
+  // 财务/利润/收入报表
+  finance: [
+    '总营业额', '哪家店利润最高', '成本结构',
+    '毛利率排名', '门店营收对比', '同比增长',
+    '费用占比', '收入趋势'
+  ],
+  // 库存/进销存
+  inventory: [
+    '库存周转情况', '滞销库存', '采购金额排名',
+    '损耗率', '进货 Top 10', '库存预警'
+  ],
+  // 默认 — 餐饮销售场景. Apr 28 2026 (UX audit): trimmed chips that often
+  // hit capability_short_circuit on minimal sales datasets (e.g. xmx_real
+  // doesn't have staff/coupon/payment cols). Kept ones that work on any
+  // sales dataset with 商品/门店/销售金额 columns.
+  default: [
+    '畅销品 Top 5', '哪家店业绩最好', '慢销菜品',
+    '周末周中对比', '总营业额', '门店销售对比',
+    '商品分类占比', '客单价分析'
+  ],
+};
+
+// Some uploads have filenames that arrive as GBK bytes mis-decoded as
+// Latin-1 (e.g. "评价下载" → "ÆÀ¼ÛÏÂÔØ"). The Excel parser reads .xls/.csv
+// names from Windows-style file systems where Chinese is GBK; the byte
+// sequence is then JSON-serialized as if Latin-1. To recover, re-encode
+// each char's code-point as a GBK byte and decode as GBK.
+//
+// Try BOTH GBK and UTF-8 since some filenames may legitimately be UTF-8
+// mis-decoded (different upload paths). Use GBK first since prod uploads
+// (qhj_*) all match GBK pattern.
+function recoverUtf8(s: string): string {
+  if (!s) return '';
+  // Already-Chinese: untouched.
+  if (/[一-鿿]/.test(s)) return s;
+  try {
+    const bytes = new Uint8Array([...s].map(c => c.charCodeAt(0)));
+    if (bytes.some(b => b > 0xFF)) return s;
+    // Try GBK first (most common on prod uploads).
+    try {
+      const gbk = new TextDecoder('gbk', { fatal: true }).decode(bytes);
+      if (/[一-鿿]/.test(gbk)) return gbk;
+    } catch { /* not GBK */ }
+    // Fallback UTF-8.
+    try {
+      const utf8 = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+      if (/[一-鿿]/.test(utf8)) return utf8;
+    } catch { /* not UTF-8 either */ }
+    return s;
+  } catch {
+    return s;
+  }
+}
+
+function inferDomainFromFilename(name: string): string {
+  if (!name) return 'default';
+  const n = (recoverUtf8(name) + ' ' + name).toLowerCase();
+  // Order matters: review checks first since "会员" + "评价" overlap less
+  if (/评价|评论|review|rating|comment/.test(n)) return 'review';
+  if (/会员|储值|membership|vip|member|card|huiyuan|会员卡|卡详情/.test(n)) return 'member';
+  if (/收入管理|利润|损益|资产负债|财务|finance|profit|revenue|income|p[\W_]?l/.test(n)) return 'finance';
+  if (/库存|进销存|采购|inventory|stock|purchase|kucun/.test(n)) return 'inventory';
+  return 'default';
+}
+
+const quickQuestions = computed<string[]>(() => {
+  const item = dataSources.value.find(d => d.id === selectedUploadId.value);
+  const fname = item?.fileName || item?.originalFileName || '';
+  const sname = (item as any)?.sheetName || '';
+  const domain = inferDomainFromFilename(fname + ' ' + sname);
+  return QUICK_QUESTIONS_BY_DOMAIN[domain] || QUICK_QUESTIONS_BY_DOMAIN.default;
+});
+
+// 自动补全候选 — 覆盖 35 个模板的高频 sample_queries(177 中精选)
+// 命中这里的任何 query → Python RAG 秒回(sim=1.0 via template embedding)
+const autocompleteSuggestions = [
+  // 菜品
+  '畅销品 Top 5', '畅销品排行', '热销菜品', '爆款菜品有哪些',
+  '慢销菜品', '滞销菜品', '哪些菜卖不出去', '销量垫底',
+  '哪个菜品类别卖得多', '品类销量排名',
+  // 门店
+  '哪家店业绩最好', '哪家店业绩最差', '业绩冠军是哪家店',
+  '门店业绩排名', '哪家店客单价最高', '门店营收对比',
+  // 员工
+  '员工里谁最厉害', '最厉害的员工', '谁是销售冠军',
+  '服务员业绩排名', '员工绩效排名',
+  // 时间
+  '峰值月份', '营收最高的月份', '月度趋势', '哪个月营业额最高',
+  '周末周中对比', '周末生意好还是平日', '礼拜几卖得最好',
+  // 异常
+  '最近销售异常吗', '营收暴跌月份', '异常月识别',
+  // 渠道/付款
+  '外卖占比多少', '堂食外卖对比', '付款方式占比',
+  '移动支付占比', '美团订单',
+  // 套餐/优惠
+  '套餐使用率', '优惠券使用情况', '折扣率',
+  // 桌位
+  '包厢客人点什么菜', '桌位类型对比',
+  // 反结账
+  '反结账情况', '反结账多吗',
+  // 会员
+  '会员消费情况', '储值卡使用'
 ];
 
 // 分析模板系统
@@ -159,6 +327,86 @@ const useTemplate = (tpl: QueryTemplate) => {
   handleSendMessage();
 };
 
+// Fix 3 (Apr 23 2026): deep-analysis CTA handlers. Both just feed a
+// follow-up query into the regular chat pipeline; because Fix 2 passes
+// the last 6 turns as context, the LLM understands "that" / "这个" / etc.
+// and gives grounded analysis on top of the template's numbers.
+function triggerDeepAnalysis(templateMsg: ChatMessage) {
+  const tplHint = templateMsg.templateCode
+    ? `（基于刚才的「${templateMsg.templateCode}」结果）`
+    : '';
+  inputQuery.value = `请结合上面这些数字，分析原因和影响${tplHint}，给出可执行的业务判断`;
+  handleSendMessage();
+}
+
+function triggerImprovementSuggestions(templateMsg: ChatMessage) {
+  const tplHint = templateMsg.templateCode
+    ? `针对「${templateMsg.templateCode}」暴露的问题`
+    : '针对上面这些数字';
+  inputQuery.value = `${tplHint}，给我3-5条可落地的改进建议，说明预期效果和优先级`;
+  handleSendMessage();
+}
+
+// 相关追问 — 每个模板 3 条交叉维度问题,引导用户深入分析
+const RELATED_FOLLOWUPS: Record<string, string[]> = {
+  store_performance: ['哪家店客单价最高', '员工里谁最厉害', '峰值月份'],
+  staff_performance: ['哪家店业绩最好', '畅销品 Top 5', '反结账情况'],
+  dish_sales_top_n: ['慢销菜品', '哪个菜品类别卖得多', '套餐使用率'],
+  dish_slow_movers: ['畅销品 Top 5', '优惠券使用情况', '哪家店业绩最差'],
+  dish_category_breakdown: ['畅销品 Top 5', '套餐使用率', '包厢客人点什么菜'],
+  channel_analysis: ['付款方式占比', '外卖占比多少', '周末周中对比'],
+  monthly_trend: ['峰值月份', '最近销售异常吗', '周末周中对比'],
+  monthly_anomaly: ['月度趋势', '哪家店业绩最差', '慢销菜品'],
+  payment_method_mix: ['优惠券使用情况', '外卖占比多少', '储值卡使用'],
+  promotion_impact: ['付款方式占比', '套餐使用率', '反结账情况'],
+  weekday_weekend_pattern: ['哪家店业绩最好', '时段销售分布', '优惠券使用情况'],
+  combo_usage_rate: ['畅销品 Top 5', '哪个菜品类别卖得多', '哪家店业绩最好'],
+  reverse_checkout_stats: ['哪家店业绩最差', '客户评价怎么样', '员工里谁最厉害'],
+  member_consumption: ['储值卡使用', '付款方式占比', '优惠券使用情况'],
+  dish_by_table_type: ['畅销品 Top 5', '哪家店业绩最好', '套餐使用率'],
+};
+
+function relatedFollowups(templateCode?: string): string[] {
+  if (!templateCode) return [];
+  return RELATED_FOLLOWUPS[templateCode] || [];
+}
+
+function triggerRelatedFollowup(query: string) {
+  inputQuery.value = query;
+  handleSendMessage();
+}
+
+async function sendFeedback(msg: ChatMessage, value: 1 | -1) {
+  if (!msg.logId) return;
+  if (msg.feedbackPending) return;  // in-flight, ignore rapid double-click
+  if (msg.feedbackValue === value) return;  // already this value, no-op
+  const prevValue = msg.feedbackValue;
+  msg.feedbackPending = true;
+  msg.feedbackValue = value;  // optimistic
+  let comment: string | undefined;
+  if (value === -1) {
+    const result = await ElMessageBox.prompt('说一下哪里不准确? (可选)', '反馈', {
+      confirmButtonText: '提交',
+      cancelButtonText: '取消',
+      inputRequired: false,
+    }).catch(() => null);
+    if (result === null) {
+      msg.feedbackValue = prevValue;
+      msg.feedbackPending = false;
+      return;
+    }
+    comment = result.value || undefined;
+  }
+  const ok = await logFeedback(msg.logId, value, comment);
+  if (!ok) {
+    msg.feedbackValue = prevValue;
+    ElMessage.warning('反馈提交失败, 请稍后重试');
+  } else {
+    ElMessage.success(value === 1 ? '感谢反馈 👍' : '已记录, 我们会改进');
+  }
+  msg.feedbackPending = false;
+}
+
 // NL2SQL 模式
 const nl2sqlMode = ref(false);
 
@@ -187,6 +435,15 @@ function handleSseRetry() {
   handleSendMessage();
 }
 
+// D1 (Apr 26 2026): re-send the same query when answer was truncated by 25s
+// soft timeout. Uses the original query stored on the message so user doesn't
+// need to retype.
+function handleTruncatedRetry(message: ChatMessage) {
+  if (!message.origQuery) return;
+  inputQuery.value = message.origQuery;
+  handleSendMessage();
+}
+
 // 图表实例缓存
 const chartInstances: Map<string, echarts.ECharts> = new Map();
 
@@ -201,25 +458,50 @@ onMounted(async () => {
       const deduped = deduplicateUploads(res.data);
       dataSources.value = deduped;
 
-      // Prefer non-auto-sync uploads with the most rows (richer data = better analysis)
+      // Prefer non-auto-sync uploads
       const nonAutoSync = deduped.filter(d => {
         const name = d.fileName || d.originalFileName || '';
         return !name.startsWith('[自动同步]');
       });
       const candidates = nonAutoSync.length > 0 ? nonAutoSync : deduped;
-      // Sort by rowCount descending — larger sheets produce better charts
-      const sorted = [...candidates].sort((a, b) => (b.rowCount || 0) - (a.rowCount || 0));
-      selectedUploadId.value = sorted[0].id;
+      // Apr 28 2026 (Bug D): recency bias — user just uploaded a new file
+      // expects to use it. Prior logic picked biggest rowCount, which made
+      // a fresh 16-row 收入管理报表 lose to an older 12,903-row 评价下载.
+      // qa-prompt v2.4 Phase 6 confirmed: AI Query showed "暂无上传数据"
+      // post-upload because selector kept old dataset selected.
+      //
+      // New rule: most recent upload wins by default. Tiebreaker = rowCount.
+      // Review-keyword bias retained but lowered priority — only kicks in
+      // when no recent (< 1h) non-review upload exists.
+      const REVIEW_KEYWORDS = ['评价', '评论', '大众点评', '美团评价', '评分', 'review', 'comment'];
+      const isReviewFile = (d: any) => {
+        const name = (d.fileName || d.originalFileName || '').toLowerCase();
+        return REVIEW_KEYWORDS.some(kw => name.includes(kw.toLowerCase()));
+      };
+      const ts = (d: any) => {
+        const t = d.createdAt || d.created_at || d.uploadTime || d.upload_time;
+        return t ? new Date(t).getTime() : 0;
+      };
+      const sortByRecency = (a: any, b: any) => {
+        const dt = ts(b) - ts(a);
+        if (dt !== 0) return dt;
+        return (b.rowCount || 0) - (a.rowCount || 0);
+      };
+      const sorted = [...candidates].sort(sortByRecency);
+      // If most-recent file is < 1 hour old, pick it directly (user just
+      // uploaded). Otherwise apply legacy review-keyword bias.
+      const ONE_HOUR = 60 * 60 * 1000;
+      const newest = sorted[0];
+      const isFresh = newest && (Date.now() - ts(newest)) < ONE_HOUR;
+      let chosen = newest;
+      if (!isFresh) {
+        const reviewCands = candidates.filter(isReviewFile).sort(sortByRecency);
+        chosen = reviewCands[0] || sorted[0];
+      }
+      selectedUploadId.value = chosen.id;
     }
   } catch (e) {
     console.warn('加载上传列表失败:', e);
-  }
-
-  // 检查 URL 中是否有预设问题
-  const query = route.query.q as string;
-  if (query) {
-    inputQuery.value = query;
-    handleSendMessage();
   }
 
   // 添加欢迎消息
@@ -230,6 +512,19 @@ onMounted(async () => {
       role: 'assistant',
       content: `您好！我是 SmartBI 智能助手，可以帮您分析销售、财务、库存等数据。您可以选择下方的分析模板快速开始，或直接输入问题。${sourceHint}`,
       timestamp: new Date()
+    });
+  }
+
+  // R47 BUG-18 fix: 之前两段 logic (一段立即 send + 一段 nextTick+300ms)
+  // 都监听 route.query.q, 导致快捷问答 button 双发. 保留 nextTick 那段 (等
+  // data-source auto-select), 删掉立即 send 那段.
+  // 同时支持 Apr 24 Phase 5 餐饮日常页 "AI 分析" 按钮 ?q= 跳转.
+  const qFromRoute = typeof route.query.q === 'string' ? route.query.q : null;
+  if (qFromRoute) {
+    inputQuery.value = qFromRoute;
+    // Wait one tick so the data-source auto-select above finishes, then send.
+    nextTick(() => {
+      setTimeout(() => handleSendMessage(), 300);
     });
   }
 });
@@ -304,24 +599,39 @@ async function handleSendMessage() {
 
   isTyping.value = true;
 
+  // Fix 2 (Apr 23 2026): pass last 3 Q+A pairs as conversation history so
+  // backend LLM can resolve pronominal/temporal references ("这个月"/"它"/
+  // "那家") from previous turns. Exclude the welcome message, loading
+  // placeholder, and the current user message just pushed above.
+  const historyForContext = chatHistory.value
+    .filter((m) => m.id !== 'welcome' && m.id !== assistantId && !m.loading && m.content.trim())
+    .slice(-7, -1) // last 6 before current user msg (the 7th from end)
+    .map((m) => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+    }));
+
   const requestParams = {
     query,
     data: currentData.value.length > 0 ? currentData.value : undefined,
     fields: currentFields.value.length > 0 ? currentFields.value : undefined,
     table_type: currentTableType.value || undefined,
     uploadId: selectedUploadId.value ? String(selectedUploadId.value) : undefined,
+    history: historyForContext.length > 0 ? historyForContext : undefined,
+    sessionId: getOrCreateChatSessionId(),
   };
 
   // Helper to find the assistant message
   const getMessageIndex = () => chatHistory.value.findIndex(m => m.id === assistantId);
 
-  // SSE degradation watchdog: 8s warning + 15s retry button
+  // SSE degradation watchdog: 30s warning + 60s retry button (backend status 心跳会 reset)
+  // 200K 行冷缓存聚合实测 35s — 30s 有 brief "网络不稳定" 警告是可接受的,60s 才 retry 兜底
   let firstChunkReceived = false;
   pendingRetryQuery = query;
 
   const startSseWatchdog = () => {
     clearSseDegradationTimers();
-    // 8s: show inline warning
+    // 30s: 显示 inline 警告 (每次 backend status 心跳都会 reset 此 timer)
     sseWarningTimer = setTimeout(() => {
       if (!firstChunkReceived) {
         sseWarningVisible.value = true;
@@ -333,8 +643,8 @@ async function handleSendMessage() {
         }
         scrollToBottom();
       }
-    }, 8000);
-    // 15s: show retry button
+    }, 30000);
+    // 60s: 显示 retry 按钮 (200K 行首次冷缓存 + LLM TTFT 最坏情况;缓存命中只需 12-15s)
     sseRetryTimer = setTimeout(() => {
       if (!firstChunkReceived) {
         sseRetryVisible.value = true;
@@ -346,7 +656,7 @@ async function handleSendMessage() {
         }
         scrollToBottom();
       }
-    }, 15000);
+    }, 60000);
   };
   const clearSseWatchdog = () => {
     clearSseDegradationTimers();
@@ -363,7 +673,7 @@ async function handleSendMessage() {
         msg.loading = true;
       }
       scrollToBottom();
-      // Start watchdog after first status — expect chunks within 5s
+      // 每次 status 都 reset watchdog — 连续心跳 = 后端还活着,只要 30s 内有新 status 或第一个 chunk 就不超时
       if (!firstChunkReceived) startSseWatchdog();
     },
 
@@ -424,6 +734,15 @@ async function handleSendMessage() {
         msg.chartConfig = msg.chartConfig || result.charts?.[0];
         msg.insights = result.insights;
         msg.table = result.table as ChatMessage['table'];
+        msg.source = result.source;
+        msg.templateCode = result.template_code;
+        msg.logId = result.log_id ?? null;
+        msg.warning = (result as { warning?: string | null }).warning ?? null;
+        // D1 (Apr 26 2026): detect 25s soft-timeout truncation marker
+        // (chat.py emits one of "*分析超过 25 秒已截断*" or
+        // "*本次 AI 思考超时, 已显示 24 小时内对相同问题的历史回答*")
+        msg.truncated = /分析超过 25 秒已截断|本次 AI 思考超时.*历史回答|AI 思考超时\(>25 秒\)/.test(finalContent);
+        msg.origQuery = query;
         msg.loading = false;
         msg.streaming = false;
 
@@ -650,9 +969,14 @@ function renderChartFromConfig(messageId: string, chartConfig: ChartConfig) {
     const chart = echarts.init(chartDom, 'cretas');
     chartInstances.set(messageId, chart);
 
-    // Use option directly if available (proper ECharts config from Python)
+    // Use option directly if available (proper ECharts config from Python).
+    // Bug #20 fix (Apr 17 2026): Python emits __FMT__/__ANIM__ sentinel strings
+    // in place of callbacks. Resolve them via processEChartsOptions, otherwise
+    // ECharts throws "TypeError: f is not a function" when trying to call the
+    // sentinel string as a formatter.
     if (chartConfig.option && typeof chartConfig.option === 'object') {
-      chart.setOption(chartConfig.option as echarts.EChartsOption);
+      const resolvedOption = processEChartsOptions(chartConfig.option as Record<string, unknown>);
+      chart.setOption(resolvedOption as echarts.EChartsOption);
       return;
     }
 
@@ -858,11 +1182,34 @@ function handleQuickQuestion(question: string) {
   handleSendMessage();
 }
 
+// 自动补全 — 从 autocompleteSuggestions 按 substring 过滤
+function fetchAutocomplete(
+  queryString: string,
+  cb: (suggestions: { value: string }[]) => void,
+) {
+  const q = (queryString || '').trim().toLowerCase();
+  const list = autocompleteSuggestions
+    .filter((s) => !q || s.toLowerCase().includes(q))
+    .slice(0, 15)
+    .map((value) => ({ value }));
+  cb(list);
+}
+
+// 选中建议后自动发送
+function handleSuggestionSelect(item: { value: string }) {
+  inputQuery.value = item.value;
+  handleSendMessage();
+}
+
 // 清空对话
 function handleClearHistory() {
   // 销毁所有图表
   chartInstances.forEach(chart => chart.dispose());
   chartInstances.clear();
+
+  // v2 conversation memory: 清空对话同时重置服务端 session_id, 让下一句问从零
+  // 上下文开始(否则上轮 parent_answer_summary 还会注入到下一个 LLM prompt).
+  resetChatSession();
 
   chatHistory.value = [{
     id: 'welcome',
@@ -870,6 +1217,21 @@ function handleClearHistory() {
     content: '您好！我是 SmartBI 智能助手，可以帮您分析销售、财务、库存等数据。您可以选择下方的分析模板快速开始，或直接输入问题。',
     timestamp: new Date()
   }];
+}
+
+// D3 (Apr 26 2026): 新话题 — 仅重置服务端 session_id, 保留对话记录可见.
+// 适用场景: 用户想换话题但希望前文还能滚动查看.
+// 与"清空对话"的区别: 后者销毁图表+清屏+重置 session.
+function handleNewTopic() {
+  resetChatSession();
+  // 加一条系统消息说明 (用 assistant 风格但内容是状态提示).
+  chatHistory.value.push({
+    id: `topic-reset-${Date.now()}`,
+    role: 'assistant',
+    content: '✨ 已开新话题，下一句提问不再引用前文上下文（前文记录保留可见）',
+    timestamp: new Date()
+  });
+  scrollToBottom(true);
 }
 
 // 格式化时间
@@ -924,11 +1286,20 @@ function handleKeydown(event: KeyboardEvent) {
             :inactive-action-icon="Cpu"
           />
         </el-tooltip>
+        <el-tooltip content="开新会话: 下一句问题不引用前文上下文,但当前对话记录保留可见" placement="bottom">
+          <el-button :icon="ChatRound" @click="handleNewTopic">新话题</el-button>
+        </el-tooltip>
         <el-button :icon="Delete" @click="handleClearHistory">清空对话</el-button>
       </div>
     </div>
 
     <div class="chat-container">
+      <!-- 物化分析面板：仅在选择了数据源时展示，位于对话历史区上方 -->
+      <MaterializedAnalysisPanel
+        v-if="selectedUploadId"
+        :upload-id="selectedUploadId"
+      />
+
       <!-- 对话历史区 -->
       <div class="chat-history" ref="chatContainerRef" @scroll="onChatScroll">
         <div
@@ -963,6 +1334,28 @@ function handleKeydown(event: KeyboardEvent) {
                 <div v-if="message.role === 'assistant' && message.streaming" class="message-text streaming-text">{{ message.content }}</div>
                 <div v-else-if="message.role === 'assistant'" class="message-text markdown-body" v-html="renderMarkdown(message.content)"></div>
                 <div v-else class="message-text">{{ message.content }}</div>
+
+                <!-- D1 (Apr 26 2026): retry button when answer was truncated by 25s soft timeout -->
+                <div v-if="message.role === 'assistant' && !message.streaming && message.truncated" class="truncated-retry-bar">
+                  <el-button
+                    type="primary"
+                    size="small"
+                    :icon="Refresh"
+                    plain
+                    @click="handleTruncatedRetry(message)"
+                  >完整重试 (基于 25 秒截断,可换种问法)</el-button>
+                </div>
+
+                <!-- P2 guardrail: warn when backend detected numeric hallucination -->
+                <el-alert
+                  v-if="message.role === 'assistant' && !message.streaming && message.warning"
+                  :title="message.warning"
+                  type="warning"
+                  :closable="false"
+                  show-icon
+                  class="message-warning"
+                />
+
 
                 <!-- AI 洞察面板 (only show if insights has actual content) -->
                 <div v-if="message.insights && ((message.insights.positive?.items?.length ?? 0) > 0 || (message.insights.negative?.items?.length ?? 0) > 0 || (message.insights.suggestions?.items?.length ?? 0) > 0)" class="message-insights">
@@ -1016,6 +1409,73 @@ function handleKeydown(event: KeyboardEvent) {
                       min-width="100"
                     />
                   </el-table>
+                </div>
+
+                <!-- Fix 3 (Apr 23 2026): deep-analysis CTA after template hits.
+                     Only shown for assistant messages that were served from the
+                     materialized cache — i.e. templated answer with structured
+                     numbers but no LLM reasoning. LLM fallback answers already
+                     contain analysis, so no CTA for those. -->
+                <div
+                  v-if="message.role === 'assistant' && !message.loading && !message.streaming && message.source === 'materialized_cache'"
+                  class="message-deep-analysis"
+                >
+                  <el-button
+                    size="small"
+                    type="primary"
+                    plain
+                    :icon="ChatDotRound"
+                    @click="triggerDeepAnalysis(message)"
+                  >
+                    深入分析 / 为什么这样
+                  </el-button>
+                  <el-button
+                    size="small"
+                    plain
+                    @click="triggerImprovementSuggestions(message)"
+                  >
+                    给出改进建议
+                  </el-button>
+                </div>
+
+                <!-- Related follow-ups: 3 cross-dim template-hit queries per code -->
+                <div
+                  v-if="message.role === 'assistant' && !message.loading && !message.streaming && message.source === 'materialized_cache' && relatedFollowups(message.templateCode).length > 0"
+                  class="message-related-followups"
+                >
+                  <span class="related-label">相关追问:</span>
+                  <el-button
+                    v-for="(q, i) in relatedFollowups(message.templateCode)"
+                    :key="i"
+                    size="small"
+                    type="info"
+                    plain
+                    round
+                    @click="triggerRelatedFollowup(q)"
+                  >
+                    {{ q }}
+                  </el-button>
+                </div>
+
+                <!-- Feedback for both LLM and template answers (Apr 24 2026 extended).
+                     Template hits get a logId via _log_template_hit_safe in chat.py. -->
+                <div
+                  v-if="message.role === 'assistant' && !message.loading && !message.streaming && message.logId"
+                  class="message-feedback"
+                >
+                  <span class="feedback-label">这个回答有用吗?</span>
+                  <el-button
+                    size="small"
+                    :type="message.feedbackValue === 1 ? 'success' : 'default'"
+                    plain
+                    @click="sendFeedback(message, 1)"
+                  >👍 有用</el-button>
+                  <el-button
+                    size="small"
+                    :type="message.feedbackValue === -1 ? 'danger' : 'default'"
+                    plain
+                    @click="sendFeedback(message, -1)"
+                  >👎 不准确</el-button>
                 </div>
               </template>
             </div>
@@ -1086,15 +1546,27 @@ function handleKeydown(event: KeyboardEvent) {
 
       <!-- 输入区域 -->
       <div class="input-area">
-        <el-input
+        <el-autocomplete
           v-model="inputQuery"
           ref="inputRef"
-          type="textarea"
-          :rows="2"
-          :placeholder="nl2sqlMode ? '输入数据查询，例如：各产品的销售额汇总' : '输入您的问题，例如：本月销售额是多少？'"
+          class="query-autocomplete"
+          :fetch-suggestions="fetchAutocomplete"
+          :placeholder="nl2sqlMode ? '输入数据查询，例如：各产品的销售额汇总' : '输入您的问题（下拉有 40+ 模板秒回问题可选）'"
           :disabled="isTyping"
+          :trigger-on-focus="true"
+          popper-class="query-autocomplete-popper"
+          value-key="value"
+          clearable
           @keydown="handleKeydown"
-        />
+          @select="handleSuggestionSelect"
+        >
+          <template #default="{ item }">
+            <div class="suggestion-item">
+              <span class="suggestion-text">{{ item.value }}</span>
+              <span class="suggestion-tag">⚡ 秒回</span>
+            </div>
+          </template>
+        </el-autocomplete>
         <el-button
           type="primary"
           :icon="Promotion"
@@ -1123,8 +1595,13 @@ function handleKeydown(event: KeyboardEvent) {
   align-items: flex-start;
   margin-bottom: 16px;
   flex-shrink: 0;
+  flex-wrap: wrap;  // E1 Apr 17 2026: mobile 窄屏 header-left + header-right 换行, 避免标题被挤竖排
+  gap: 8px;
 
   .header-left {
+    flex-shrink: 0;
+    min-width: 0;  // allow flex child to shrink below content size
+
     h1 {
       display: flex;
       align-items: center;
@@ -1132,6 +1609,7 @@ function handleKeydown(event: KeyboardEvent) {
       margin: 12px 0 0;
       font-size: 20px;
       font-weight: 600;
+      white-space: nowrap;  // 禁止 "AI 智能问答" 4 字竖排换行
 
       .el-icon {
         color: var(--color-primary);
@@ -1330,6 +1808,12 @@ function handleKeydown(event: KeyboardEvent) {
     max-width: 500px;
   }
 
+  .message-warning {
+    margin-top: 12px;
+    max-width: 640px;
+    font-size: 13px;
+  }
+
   .message-chart {
     margin-top: 16px;
 
@@ -1343,6 +1827,41 @@ function handleKeydown(event: KeyboardEvent) {
   .message-table {
     margin-top: 16px;
     max-width: 500px;
+  }
+
+  // Fix 3 (Apr 23 2026): deep-analysis CTA after template answers
+  .message-deep-analysis {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  .message-related-followups {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+
+    .related-label {
+      font-size: 12px;
+      color: var(--el-text-color-secondary, #909399);
+      margin-right: 4px;
+    }
+  }
+
+  // Phase 1 (Apr 23 2026): feedback for LLM answers
+  .message-feedback {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    align-items: center;
+
+    .feedback-label {
+      font-size: 12px;
+      color: var(--el-text-color-secondary);
+    }
   }
 }
 
@@ -1372,6 +1891,14 @@ function handleKeydown(event: KeyboardEvent) {
   padding: 16px 20px;
   border-top: 1px solid var(--el-border-color-lighter, #ebeef5);
   background: var(--el-bg-color, #fff);
+
+  .query-autocomplete {
+    flex: 1;
+
+    :deep(.el-input__wrapper) {
+      border-radius: 8px;
+    }
+  }
 
   :deep(.el-textarea) {
     flex: 1;
@@ -1506,6 +2033,22 @@ function handleKeydown(event: KeyboardEvent) {
     height: calc(100vh - var(--header-height, 56px) - 24px);
   }
 
+  // E1 Apr 17 2026: 窄屏 header 改纵向排 (标题在上, 数据源在下)
+  // 避免 "AI 智能问答" 4 字被容器挤到竖排 (用户截图 bug)
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+
+    .header-left h1 {
+      font-size: 18px;
+      margin: 0;
+    }
+
+    .header-right {
+      width: 100%;
+    }
+  }
+
   .chat-message {
     .message-content {
       max-width: 90%;
@@ -1521,6 +2064,30 @@ function handleKeydown(event: KeyboardEvent) {
 
   .template-grid {
     grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<style lang="scss">
+.query-autocomplete-popper {
+  .suggestion-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    line-height: 1.4;
+    padding: 2px 0;
+  }
+  .suggestion-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .suggestion-tag {
+    font-size: 11px;
+    color: #67c23a;
+    margin-left: 12px;
+    flex-shrink: 0;
   }
 }
 </style>

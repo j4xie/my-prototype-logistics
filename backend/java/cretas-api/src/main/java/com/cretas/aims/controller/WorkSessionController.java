@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.entity.EmployeeWorkSession;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.service.EmployeeWorkSessionService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
@@ -97,6 +98,7 @@ public class WorkSessionController {
     /**
      * 开始工作会话
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/start")
     @Operation(summary = "开始工作会话", description = "为员工创建并开始一个新的工作会话，同一员工只能有一个活跃会话")
     public ResponseEntity<?> startSession(
@@ -128,6 +130,7 @@ public class WorkSessionController {
     /**
      * 结束工作会话
      */
+    @RequirePermission({"production:read_write"})
     @PutMapping("/{id}/end")
     @Operation(summary = "结束工作会话", description = "结束指定的工作会话，可记录休息时间和备注，系统自动计算工时")
     public ResponseEntity<?> endSession(
@@ -162,6 +165,7 @@ public class WorkSessionController {
     /**
      * 取消工作会话
      */
+    @RequirePermission({"production:read_write"})
     @PutMapping("/{id}/cancel")
     @Operation(summary = "取消工作会话", description = "取消指定的工作会话，取消后不计入工时统计")
     public ResponseEntity<?> cancelSession(
@@ -192,6 +196,7 @@ public class WorkSessionController {
     /**
      * 更新工作会话
      */
+    @RequirePermission({"production:read_write"})
     @PutMapping("/{id}")
     @Operation(summary = "更新工作会话", description = "更新工作会话信息，如工作类型、备注等")
     public ResponseEntity<?> updateSession(

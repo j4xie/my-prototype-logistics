@@ -9,6 +9,7 @@
             <span class="data-count">共 {{ pagination.total }} 条</span>
           </div>
           <div class="header-right">
+            <el-button type="info" plain @click="handleAiAnalyze">🤖 AI 分析</el-button>
             <el-button :icon="Download" @click="handleExport">导出</el-button>
             <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleCreate">新建领料单</el-button>
           </div>
@@ -42,6 +43,19 @@
           </div>
         </el-col>
       </el-row>
+
+      <!-- Apr 24 P1 analytics strip: trend + ranking from current table rows -->
+      <AnalyticsStrip
+        :rows="tableData"
+        date-field="requisitionDate"
+        value-field="requestedQuantity"
+        category-field="rawMaterialTypeId"
+        :category-name-map="materialNameMap"
+        trend-title="领料数量趋势"
+        ranking-title="食材领料量 Top 10"
+        value-unit="kg"
+        :top-n="10"
+      />
 
       <div class="search-bar" role="search" aria-label="领料记录筛选">
         <el-date-picker v-model="filterDateRange" type="daterange" range-separator="至" start-placeholder="开始日期"
@@ -186,6 +200,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { Plus, Search, Refresh, Download } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus';
 import { useFactoryId } from '@/composables/useFactoryId';
@@ -195,6 +210,8 @@ import { emptyCell, formatDateCell, exportTableToExcel } from '@/utils/tableForm
 import { formatDate } from '@/utils/dateFormat';
 import type { RequisitionItem } from '@/types/restaurant';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
+import { handleCatchError } from '@/utils/errorToast';
+import AnalyticsStrip from '../components/AnalyticsStrip.vue';
 
 const factoryId = useFactoryId();
 const permissionStore = usePermissionStore();
@@ -356,6 +373,11 @@ async function loadData() {
   }
 }
 
+function handleAiAnalyze() {
+  // Plan C Phase 5: jump to AI Query with pre-filled prompt that the Gold ops router picks up
+  router.push({ path: '/smart-bi/query', query: { q: '最近30天领料趋势, top 10 食材领用量和异常' } });
+}
+
 function handleSearch() { pagination.value.page = 1; loadData(); }
 function handleRefresh() { filterDateRange.value = null; filterStatus.value = ''; filterType.value = ''; handleSearch(); }
 function handleCreate() { dialogForm.value = emptyForm(); dialogVisible.value = true; }
@@ -401,7 +423,7 @@ async function handleSubmit(row: RequisitionItem) {
     } else {
       ElMessage.error(res.message || '提交失败');
     }
-  } catch { ElMessage.error('提交失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '提交失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 
@@ -429,7 +451,7 @@ async function handleApprove(row: RequisitionItem) {
     } else {
       ElMessage.error(res.message || '审批失败');
     }
-  } catch { ElMessage.error('审批失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '审批失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 
@@ -449,7 +471,7 @@ async function handleReject(row: RequisitionItem) {
     } else {
       ElMessage.error(res.message || '驳回失败');
     }
-  } catch { ElMessage.error('驳回失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '驳回失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 
@@ -482,7 +504,19 @@ async function handleExport() {
   ], '领料记录');
 }
 
-onMounted(() => { loadData(); loadSelectOptions(); loadStatistics(); });
+// Apr 20 Bug BR-03 fix: DashboardRestaurant 的"待审批"卡片现传 ?status=SUBMITTED
+// 进来, 这里读 route query 预设 filterStatus, 让用户看到筛选后列表而不是全列表.
+const route = useRoute();
+const router = useRouter();
+onMounted(() => {
+  const qs = route.query.status;
+  if (typeof qs === 'string' && ['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED'].includes(qs)) {
+    filterStatus.value = qs;
+  }
+  loadData();
+  loadSelectOptions();
+  loadStatistics();
+});
 
 // Handle full-page reload: factoryId may not be ready at mount time
 watch(factoryId, (val) => { if (val) { loadData(); loadStatistics(); } });

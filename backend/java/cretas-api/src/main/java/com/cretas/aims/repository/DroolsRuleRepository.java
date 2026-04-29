@@ -80,7 +80,7 @@ public interface DroolsRuleRepository extends JpaRepository<DroolsRule, String> 
      * 搜索规则
      */
     @Query("SELECT r FROM DroolsRule r WHERE r.factoryId = :factoryId " +
-           "AND (r.ruleName LIKE %:keyword% OR r.ruleDescription LIKE %:keyword%)")
+           "AND (r.ruleName LIKE %:keyword% ESCAPE '\\' OR r.ruleDescription LIKE %:keyword% ESCAPE '\\')")
     Page<DroolsRule> searchByKeyword(@Param("factoryId") String factoryId,
                                       @Param("keyword") String keyword,
                                       Pageable pageable);

@@ -4,6 +4,7 @@ import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.supplier.CreateSupplierRequest;
 import com.cretas.aims.dto.supplier.SupplierDTO;
+import com.cretas.aims.dto.supplier.UpdateSupplierRequest;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +23,7 @@ public interface SupplierService {
      /**
      * 更新供应商
       */
-    SupplierDTO updateSupplier(String factoryId, String supplierId, CreateSupplierRequest request);
+    SupplierDTO updateSupplier(String factoryId, String supplierId, UpdateSupplierRequest request);
      /**
      * 删除供应商
       */

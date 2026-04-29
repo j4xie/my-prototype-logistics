@@ -109,7 +109,8 @@ public class DDLExecutor {
                 logEntry.setStatus("FAILED");
                 logEntry.setErrorMessage(e.getMessage());
                 ddlLogRepo.save(logEntry);
-                throw new BusinessException("DDL execution failed [" + field.getModuleCode() + "." + field.getFieldCode() + "]: " + e.getMessage());
+                throw new BusinessException(500, "DDL execution failed [" + field.getModuleCode() + "." + field.getFieldCode() + "]: " + e.getMessage())
+                        .withHint("请联系管理员检查数据库 DDL 权限或字段定义");
             }
         }
     }
@@ -214,7 +215,8 @@ public class DDLExecutor {
                 String code = (String) col.get("code");
                 // Round 5 Fix SEC-3: validate sub-column code before SQL concatenation
                 if (code == null || !code.matches("^[a-zA-Z_][a-zA-Z0-9_]{0,60}$")) {
-                    throw new BusinessException("Invalid sub-table column code: " + code);
+                    throw new BusinessException(400, "Invalid sub-table column code: " + code)
+                            .withHint("列代码必须以字母或下划线开头, 仅含字母数字下划线, 最多 61 字符").withHintTarget("code");
                 }
                 String type = (String) col.getOrDefault("type", "TEXT");
                 sb.append("cf_").append(code).append(" ").append(mapFieldTypeToSQL(type)).append(", ");

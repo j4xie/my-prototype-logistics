@@ -266,6 +266,11 @@ function getStatusType(status: string): string {
   const map: Record<string, string> = {
     PLANNED: 'info', PENDING: 'info', DRAFT: 'info',
     IN_PROGRESS: 'warning', PROCESSING: 'warning', APPROVED: 'warning',
+    PARTIAL_RECEIVED: 'warning', PARTIAL_DELIVERED: 'warning',
+    FINANCE_APPROVED: 'warning', PENDING_FINANCE_REVIEW: 'info',
+    // 批次状态 (material batches in 入库记录 tab)
+    AVAILABLE: 'success', RESERVED: 'warning', DEPLETED: 'info',
+    EXPIRED: 'danger', QUARANTINE: 'danger',
     COMPLETED: 'success', DELIVERED: 'success', RECEIVED: 'success',
     CANCELLED: 'danger', REJECTED: 'danger',
   };
@@ -273,9 +278,17 @@ function getStatusType(status: string): string {
 }
 
 function getStatusText(status: string): string {
+  // chart audit P2-1: backend may emit raw enums for partial-flow states
+  // (PARTIAL_RECEIVED / FINANCE_APPROVED / etc.). 还有批次状态 (AVAILABLE
+  // / RESERVED / 等), 真窗 verify 揭示后补.
   const map: Record<string, string> = {
     PLANNED: '待处理', PENDING: '待处理', DRAFT: '草稿',
     IN_PROGRESS: '进行中', PROCESSING: '处理中', APPROVED: '已审批',
+    PARTIAL_RECEIVED: '部分到货', PARTIAL_DELIVERED: '部分发货',
+    FINANCE_APPROVED: '财务已审', PENDING_FINANCE_REVIEW: '财务审核中',
+    // 批次状态翻译 (入库记录 tab)
+    AVAILABLE: '可用', RESERVED: '已预留', DEPLETED: '已用尽',
+    EXPIRED: '已过期', QUARANTINE: '隔离中',
     COMPLETED: '已完成', DELIVERED: '已交付', RECEIVED: '已收货',
     CANCELLED: '已取消', REJECTED: '已拒绝',
   };
@@ -424,7 +437,9 @@ function getStatusText(status: string): string {
               style="width: 100%"
             >
               <el-table-column prop="batchNumber" label="批次号" min-width="150" show-overflow-tooltip />
-              <el-table-column prop="productTypeName" label="产品名称" min-width="150" show-overflow-tooltip />
+              <el-table-column label="产品名称" min-width="150" show-overflow-tooltip>
+                <template #default="{ row }">{{ row.productTypeName || row.productName || row.productTypeId || '-' }}</template>
+              </el-table-column>
               <el-table-column prop="plannedQuantity" label="计划数量" width="110" align="right" />
               <el-table-column prop="actualQuantity" label="实际数量" width="110" align="right">
                 <template #default="{ row }">

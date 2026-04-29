@@ -30,6 +30,7 @@ def load_api_key():
         Path.cwd() / ".env"
     ]
 
+    # Bug #18 fix (Apr 17 2026): setdefault, don't clobber existing env vars.
     for env_path in env_paths:
         if env_path.exists():
             with open(env_path, 'r', encoding='utf-8') as f:
@@ -37,7 +38,7 @@ def load_api_key():
                     line = line.strip()
                     if line and not line.startswith('#') and '=' in line:
                         key, value = line.split('=', 1)
-                        os.environ[key.strip()] = value.strip()
+                        os.environ.setdefault(key.strip(), value.strip())
 
     return os.getenv("LLM_API_KEY", os.getenv("DASHSCOPE_API_KEY", ""))
 

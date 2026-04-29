@@ -37,6 +37,7 @@ const defaultForm = {
   bankAccount: '',
   taxId: '',
   notes: '',
+  version: null as number | null,  // optimistic lock — server returns 409 on stale
 };
 const form = reactive({ ...defaultForm });
 
@@ -73,8 +74,8 @@ async function loadData() {
       ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载失败:', error);
-    ElMessage.error('加载数据失败');
   } finally {
     loading.value = false;
   }
@@ -151,6 +152,7 @@ function handleEdit(row: Record<string, unknown>) {
     bankAccount: row.bankAccount || '',
     taxId: row.taxId || '',
     notes: row.notes || '',
+    version: typeof row.version === 'number' ? row.version : null,
   });
   dialogMode.value = 'edit';
   dialogVisible.value = true;
@@ -162,7 +164,7 @@ async function handleSubmit() {
 
   submitting.value = true;
   try {
-    const payload = {
+    const payload: Record<string, unknown> = {
       name: form.name,
       contactPerson: form.contactPerson,
       phone: form.phone,
@@ -177,6 +179,9 @@ async function handleSubmit() {
     if (dialogMode.value === 'create') {
       res = await post(`/${factoryId.value}/suppliers`, payload);
     } else {
+      if (form.version !== null && form.version !== undefined) {
+        payload.version = form.version;
+      }
       res = await put(`/${factoryId.value}/suppliers/${form.id}`, payload);
     }
 
@@ -188,8 +193,26 @@ async function handleSubmit() {
     dialogVisible.value = false;
     loadData();
   } catch (error) {
+    const err = error as { status?: number; actionHint?: string | null };
+    // R24 P2 follow-up: only treat 409 as optimistic-lock when actionHint is null
+    // (vanilla 409 from GlobalExceptionHandler). Business 409 with actionHint
+    // (R18/R21/R23 invariants) is already toasted by interceptor — don't pile on
+    // a wrong "并发编辑冲突" dialog.
+    if (err?.status === 409 && !err.actionHint) {
+      try {
+        await ElMessageBox.confirm(
+          '此供应商数据已被其他用户修改。点击"确定"将刷新列表并放弃当前编辑。',
+          '并发编辑冲突',
+          { type: 'warning', confirmButtonText: '刷新列表', cancelButtonText: '取消' }
+        );
+        dialogVisible.value = false;
+        loadData();
+      } catch {
+        // user cancelled — keep dialog open
+      }
+    }
+    // Interceptor already shows specific sticky toast; this is debug-only log.
     console.error('Submit failed:', error);
-    ElMessage.error('操作失败');
   } finally {
     submitting.value = false;
   }
@@ -210,10 +233,8 @@ async function handleDelete(row: Record<string, unknown>) {
     ElMessage.success('删除成功');
     loadData();
   } catch (e) {
-    if (e !== 'cancel') {
-      console.error('Delete supplier failed:', e);
-      ElMessage.error('删除失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError.
+    if (e !== 'cancel') console.error('Delete supplier failed:', e);
   }
 }
 </script>

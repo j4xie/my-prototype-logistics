@@ -33,19 +33,32 @@ from services.table_classifier import TableClassifier, TableType
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50MB
+MAX_UPLOAD_SIZE = 300 * 1024 * 1024  # 300MB
+
+
+def _fix_filename(filename: str) -> str:
+    """R47 BUG-19 fix: FastAPI/python-multipart decodes filename header as Latin-1
+    per RFC 7578. Chinese UTF-8 filenames arrive as garbled (e.g. 'qhj_25_¿¨ÏêÇéÒ»ÀÀ.csv'
+    instead of 'qhj_25_卡详情一览.csv'). Re-decode bytes as UTF-8.
+    """
+    if not filename:
+        return filename
+    try:
+        return filename.encode('latin-1').decode('utf-8')
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return filename
 
 
 async def _validate_upload(file: UploadFile) -> bytes:
     """Read and validate uploaded file size + type."""
-    filename = file.filename or ""
+    filename = _fix_filename(file.filename or "")
     ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
     if ext not in (".xlsx", ".xls", ".csv"):
         raise ApiException("仅支持 .xlsx, .xls, .csv 文件", ErrorCode.VALIDATION_ERROR, 400)
     content = await file.read()
     if len(content) > MAX_UPLOAD_SIZE:
         raise ApiException(
-            f"文件过大 ({len(content) // 1024 // 1024}MB)，限制 50MB",
+            f"文件过大 ({len(content) // 1024 // 1024}MB)，限制 300MB",
             ErrorCode.VALIDATION_ERROR, 413,
         )
     return content
@@ -157,6 +170,26 @@ class MultiHeaderDetectionResponse(BaseModel):
     recommendedHeaderRows: int = 1
     previewRows: Optional[List[list]] = None
     error: Optional[str] = None
+
+
+class TableRegionDTO(BaseModel):
+    """Bug #25b: Single detected table region within a stacked sheet."""
+    index: int
+    startRow: int
+    endRow: int
+    headerRow: int
+    previewCols: List[str] = []
+    sampleRows: int = 0
+    previewData: List[List[str]] = []
+
+
+class DetectRegionsResponse(BaseModel):
+    """Bug #25b: List of independent table regions detected in a sheet."""
+    success: bool
+    sheetName: Optional[str] = None
+    totalRegions: int = 0
+    regions: List[TableRegionDTO] = []
+    errorMessage: Optional[str] = None
 
 
 def _perform_analysis(
@@ -321,6 +354,95 @@ async def detect_multi_header(
         return MultiHeaderDetectionResponse(success=False, error="Excel处理失败，请检查文件格式后重试")
 
 
+@router.post("/detect-regions", response_model=DetectRegionsResponse)
+async def detect_table_regions(
+    file: UploadFile = File(...),
+    sheet_index: Optional[int] = Form(None),
+    sheetIndex: Optional[int] = Form(None),
+    sheet_name: Optional[str] = Form(None),
+    min_blank_separator: int = Form(2),
+):
+    """
+    Bug #25b (2026-04-18): Detect multiple independent table regions in one sheet.
+
+    Returns preview info for each region so the client can show a
+    "请选择表范围" dialog. Does NOT persist — preview only.
+
+    - **file**: .xlsx, .xls, or .csv
+    - **sheet_index** / **sheetIndex**: 0-based sheet index (default 0)
+    - **sheet_name**: sheet name (takes priority over index)
+    - **min_blank_separator**: min consecutive blank rows between regions (default 2)
+    """
+    try:
+        content = await _validate_upload(file)
+        filename = _fix_filename(file.filename or "")
+        ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
+
+        effective_index = sheet_index if sheet_index is not None else sheetIndex
+        if sheet_name and ext != ".csv":
+            import io as _io
+            xl = pd.ExcelFile(_io.BytesIO(content))
+            if sheet_name in xl.sheet_names:
+                effective_index = xl.sheet_names.index(sheet_name)
+        if effective_index is None:
+            effective_index = 0
+
+        detector = get_structure_detector()
+        resolved_sheet_name: Optional[str] = None
+
+        if ext == ".csv":
+            # CSV: single-region heuristic — blank-row-separated CSVs are rare.
+            import io as _io
+            try:
+                df_csv = pd.read_csv(_io.BytesIO(content), header=None, nrows=5000)
+            except UnicodeDecodeError:
+                df_csv = pd.read_csv(_io.BytesIO(content), header=None, nrows=5000, encoding="gbk")
+            rows_list = df_csv.where(df_csv.notna(), None).values.tolist()
+            regions = detector._split_regions_from_rows(
+                rows_list, min_blank_separator=min_blank_separator
+            )
+            resolved_sheet_name = filename.rsplit(".", 1)[0]
+        else:
+            import io as _io
+            xl = pd.ExcelFile(_io.BytesIO(content))
+            if effective_index < len(xl.sheet_names):
+                resolved_sheet_name = xl.sheet_names[effective_index]
+            regions = detector.detect_multiple_table_regions(
+                content,
+                sheet_index=effective_index,
+                min_blank_separator=min_blank_separator,
+            )
+
+        region_dtos = [
+            TableRegionDTO(
+                index=r.index,
+                startRow=r.start_row,
+                endRow=r.end_row,
+                headerRow=r.header_row,
+                previewCols=r.preview_cols,
+                sampleRows=r.sample_rows,
+                previewData=r.preview_data,
+            )
+            for r in regions
+        ]
+
+        return DetectRegionsResponse(
+            success=True,
+            sheetName=resolved_sheet_name,
+            totalRegions=len(region_dtos),
+            regions=region_dtos,
+        )
+
+    except ApiException:
+        raise
+    except Exception as e:
+        logger.error(f"detect_table_regions error: {e}", exc_info=True)
+        return DetectRegionsResponse(
+            success=False,
+            errorMessage="区域检测失败，请检查文件格式后重试",
+        )
+
+
 @router.post("/preview")
 async def preview_excel(
     file: UploadFile = File(...),
@@ -395,7 +517,7 @@ async def analyze_sheets(file: UploadFile = File(...)):
 
     try:
         # Validate file type
-        filename = file.filename or ""
+        filename = _fix_filename(file.filename or "")
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls"]:
@@ -515,12 +637,20 @@ async def auto_parse_excel(
     sheetName: Optional[str] = Form(None),  # Alias for Java client compatibility
     factory_id: Optional[str] = Form(None),
     use_cache: bool = Form(True),
-    max_rows: int = Form(10000),
+    max_rows: int = Form(500000),  # P0-3 (Apr 20): was 10000 silent cap, customer lost rows. 500K safe; 0 = unlimited
     skip_empty_rows: bool = Form(True),
     calculate_stats: bool = Form(True),
     transpose: bool = Form(False),
     header_rows_override: Optional[int] = Form(None),
-    headerRowsOverride: Optional[int] = Form(None)  # Alias for Java client
+    headerRowsOverride: Optional[int] = Form(None),  # Alias for Java client
+    # Bug #25b (2026-04-18): multi-stacked-table region selection. When both are
+    # provided, the pipeline crops to rows [start, end] (0-indexed, inclusive)
+    # and treats start_row as the header. Header auto-detection and LLM structure
+    # detection are bypassed — the user's selection is authoritative.
+    selected_region_start: Optional[int] = Form(None),
+    selected_region_end: Optional[int] = Form(None),
+    selectedRegionStart: Optional[int] = Form(None),  # Java alias
+    selectedRegionEnd: Optional[int] = Form(None),  # Java alias
 ):
     """
     Zero-Code Excel Auto-Parse
@@ -557,7 +687,7 @@ async def auto_parse_excel(
 
     try:
         # Validate file type
-        filename = file.filename or ""
+        filename = _fix_filename(file.filename or "")
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls", ".csv"]:
@@ -568,6 +698,66 @@ async def auto_parse_excel(
 
         # Read file content
         content = await file.read()
+
+        # sanity 上限 300MB (跟 Java 端同步)。真正防 OOM 在 fixed_executor
+        # 的 cell-budget cap / smart-merge-oom-guard, 这里只挡极端文件。
+        _MAX_BYTES = 300 * 1024 * 1024
+        if len(content) > _MAX_BYTES:
+            mb = len(content) / 1024.0 / 1024.0
+            raise ApiException(
+                f"文件过大 ({mb:.1f} MB),单次上传最大 300 MB。建议按月或按门店拆分后上传。",
+                ErrorCode.VALIDATION_ERROR, 413,
+            )
+
+        # Apr 28 2026 (audit P0): convert .xls (BIFF8) → .xlsx in-memory at
+        # entrypoint so ALL downstream code (structure_detector, fixed_executor,
+        # context_extractor, etc.) receives .xlsx bytes. openpyxl-based readers
+        # cannot handle .xls; previously each path tried separately, leading
+        # to "File is not a zip file" deep in the call chain. Now: convert ONCE
+        # at the boundary using xlrd<2.0 → openpyxl write.
+        # 50% of real customer files are .xls (Excel 97-2003), this fixes them.
+        if content[:8] == b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1':  # OLE2/BIFF8 magic
+            try:
+                import xlrd as _xlrd
+                import openpyxl as _openpyxl
+                _book = _xlrd.open_workbook(file_contents=content)
+                _xlsx_wb = _openpyxl.Workbook()
+                _xlsx_wb.remove(_xlsx_wb.active)
+                _total_rows = 0
+                for _si in range(_book.nsheets):
+                    _xs = _book.sheet_by_index(_si)
+                    _ws = _xlsx_wb.create_sheet(title=(_xs.name or f"Sheet{_si+1}")[:30])
+                    for _r in range(_xs.nrows):
+                        _row_vals = []
+                        for _c in range(_xs.ncols):
+                            _v = _xs.cell_value(_r, _c)
+                            _ct = _xs.cell_type(_r, _c)
+                            if _ct == _xlrd.XL_CELL_DATE:
+                                try:
+                                    _v = _xlrd.xldate_as_datetime(_v, _book.datemode)
+                                except Exception:
+                                    pass
+                            _row_vals.append(_v)
+                        _ws.append(_row_vals)
+                    _total_rows += _xs.nrows
+                import io as _io
+                _xlsx_buf = _io.BytesIO()
+                _xlsx_wb.save(_xlsx_buf)
+                _xlsx_wb.close()
+                content = _xlsx_buf.getvalue()
+                # Update extension hint so downstream sees .xlsx
+                if ext == ".xls":
+                    ext = ".xlsx"
+                logger.info(
+                    f"[xls→xlsx@entrypoint] converted .xls → .xlsx in-memory "
+                    f"({_book.nsheets} sheets, {_total_rows} rows, {len(content)} bytes)"
+                )
+            except Exception as _xls_err:
+                logger.warning(f"[xls→xlsx@entrypoint] conversion failed: {_xls_err}", exc_info=True)
+                raise ApiException(
+                    f"旧 .xls 格式转换失败: {_xls_err}. 建议: 用 Excel 打开后另存为 .xlsx 格式再上传.",
+                    ErrorCode.VALIDATION_ERROR, 400,
+                )
 
         # Determine sheet - by name or by index
         effective_sheet_name = sheet_name or sheetName
@@ -630,7 +820,25 @@ async def auto_parse_excel(
         # Determine header_rows override
         effective_header_override = header_rows_override if header_rows_override is not None else headerRowsOverride
 
-        logger.info(f"Auto-parse starting: file={filename}, sheet={effective_index}, transpose={transpose}, header_override={effective_header_override}")
+        # Bug #25b (2026-04-18): resolve selected region bounds (camelCase + snake_case)
+        effective_region_start = (
+            selected_region_start if selected_region_start is not None else selectedRegionStart
+        )
+        effective_region_end = (
+            selected_region_end if selected_region_end is not None else selectedRegionEnd
+        )
+        if effective_region_start is not None and effective_region_end is not None:
+            if effective_region_end < effective_region_start:
+                raise ApiException(
+                    f"selected_region_end ({effective_region_end}) < start ({effective_region_start})",
+                    ErrorCode.VALIDATION_ERROR, 400,
+                )
+
+        logger.info(
+            f"Auto-parse starting: file={filename}, sheet={effective_index}, "
+            f"transpose={transpose}, header_override={effective_header_override}, "
+            f"region=[{effective_region_start},{effective_region_end}]"
+        )
 
         # Initialize services
         detector = get_structure_detector()
@@ -643,25 +851,271 @@ async def auto_parse_excel(
         structure_result = None
         mapping_result = None
 
-        if use_cache:
+        # Bug #42 fix (2026-04-18): when user picked a specific region, skip cache
+        # because the cache key is (file, sheet_index) and doesn't distinguish
+        # region bounds — hitting region 1's cached schema when user picked region 2
+        # would leak region 1 fields into region 2 persistence.
+        _region_selected = (
+            effective_region_start is not None
+            and effective_region_end is not None
+            and ext != ".csv"
+        )
+        if use_cache and not _region_selected:
             cached = cache.get(content, effective_index)
             if cached:
                 structure_result, mapping_result = cached
                 logger.info("Using cached schema")
+        elif _region_selected:
+            logger.info("Region selected — bypassing schema cache (Bug #42)")
 
         # Step 2: Detect structure if not cached
+        # Bug #25b (2026-04-18): when the caller picked a region, crop to it and
+        # synthesize a structure_result — bypass LLM detection entirely. This is
+        # mutually exclusive with CSV fast-path below.
+        if (
+            structure_result is None
+            and effective_region_start is not None
+            and effective_region_end is not None
+            and ext != ".csv"
+        ):
+            import io as _io_region
+            from services.structure_detector import (
+                StructureDetectionResult, RowInfo, ColumnInfo,
+            )
+
+            region_nrows = effective_region_end - effective_region_start  # data rows only
+            try:
+                df_region = pd.read_excel(
+                    _io_region.BytesIO(content),
+                    sheet_name=effective_index,
+                    skiprows=effective_region_start,
+                    nrows=max(region_nrows, 0) if region_nrows > 0 else None,
+                    header=0,
+                )
+            except Exception as e:
+                logger.error(f"Failed to crop region [{effective_region_start},{effective_region_end}]: {e}")
+                return AutoParseResponse(
+                    success=False,
+                    autoDetected=True,
+                    errorMessage=f"区域裁剪失败: {e}",
+                )
+
+            region_headers = [str(c) for c in df_region.columns]
+            region_preview = df_region.head(20).fillna("").values.tolist()
+
+            try:
+                import openpyxl as _opxl_region
+                _wb_r = _opxl_region.load_workbook(
+                    _io_region.BytesIO(content), read_only=True, data_only=True
+                )
+                sheet_display_name = _wb_r.sheetnames[effective_index] if effective_index < len(_wb_r.sheetnames) else filename
+                _wb_r.close()
+            except Exception:
+                sheet_display_name = filename.rsplit(".", 1)[0]
+
+            structure_result = StructureDetectionResult(
+                success=True,
+                confidence=1.0,
+                method="region_selected",
+                sheet_name=sheet_display_name,
+                total_rows=len(df_region),
+                total_cols=len(region_headers),
+                header_row_count=1,
+                data_start_row=1,
+                header_rows=[RowInfo(
+                    index=0, type="column_names", content=",".join(region_headers)
+                )],
+                merged_cells=[],
+                columns=[
+                    ColumnInfo(
+                        index=i, name=h, data_type="text",
+                        sample_values=list(df_region[h].dropna().head(3).astype(str))
+                        if h in df_region.columns else []
+                    )
+                    for i, h in enumerate(region_headers)
+                ],
+                preview_rows=region_preview,
+                csv_skiprows=0,  # not a CSV, but keep the field for executor passthrough
+                note=f"Region [{effective_region_start}, {effective_region_end}] selected by user (Bug #25b)",
+            )
+            logger.info(
+                f"Region-selected path: skiprows={effective_region_start}, "
+                f"nrows={region_nrows}, cols={len(region_headers)}"
+            )
+
         if structure_result is None:
             if ext == ".csv":
                 # CSV fast-path: StructureDetector uses openpyxl which cannot read CSV.
                 # Build StructureDetectionResult directly from pandas.
+                # FIX (Apr 15 2026, BUG #4): honour effective_header_override so CSVs with
+                # leading metadata rows (大众点评/美团/客如云 export format) get parsed with
+                # the right header row instead of treating row 0 ("订单销售明细表" title) as columns.
                 import io
                 from services.structure_detector import (
                     StructureDetectionResult, RowInfo, ColumnInfo,
                 )
+                # effective_header_override semantics: 1 == row 0 is header (default).
+                # 4 == rows 0-2 are metadata, row 3 is real header.
+                # pandas read_csv(skiprows=N) skips first N rows then treats the next as header.
+                csv_skiprows = max(0, (effective_header_override or 1) - 1)
+                # P0-3 (Apr 20): honor form max_rows instead of hardcoded 10000 silent cap
+                csv_nrows = max_rows if max_rows > 0 else None
+
+                # P0-9 (Apr 20, Step 1b fix): prevent OOM on 263MB CSV with 232-col
+                # comma-padded headers. Previously the title-row auto-skip loop
+                # re-read the full file (up to 5 times!) with 200K × 232 cols each,
+                # blowing 7GB RSS → OOM. Now we PROBE with nrows=100 to detect
+                # the real skiprows and the real column count, then do ONE final
+                # read with usecols=<real_cols>. This scales memory with real_cols
+                # (typically 60) × rows, not padded_cols (232) × rows × retries.
+                import re as _re_hdr
+                _unnamed_pat = _re_hdr.compile(r'^Unnamed:\s*\d+$')
+
+                def _probe(skip):
+                    try:
+                        return pd.read_csv(io.BytesIO(content), nrows=100, skiprows=skip), None
+                    except UnicodeDecodeError:
+                        return pd.read_csv(io.BytesIO(content), nrows=100, skiprows=skip, encoding="gbk"), "gbk"
+
+                df_probe, detected_encoding = _probe(csv_skiprows)
+
+                # Title-row auto-skip loop — now on probe (nrows=100), not full file
+                if effective_header_override is None:
+                    def looks_like_title_row(hdrs):
+                        if not hdrs: return False
+                        unnamed_count = sum(1 for h in hdrs if _unnamed_pat.match(h))
+                        if unnamed_count >= 0.8 * len(hdrs):
+                            return True
+                        data_like = sum(1 for h in hdrs if _re_hdr.match(r'^[\d\s\-./年月日:]+$', h))
+                        if data_like >= 0.8 * len(hdrs):
+                            return True
+                        return False
+                    tried_skiprows = csv_skiprows
+                    headers_preview = [str(c) for c in df_probe.columns]
+                    while looks_like_title_row(headers_preview) and tried_skiprows < 5:
+                        tried_skiprows += 1
+                        df_probe, detected_encoding = _probe(tried_skiprows)
+                        headers_preview = [str(c) for c in df_probe.columns]
+                        logger.info(f"CSV title-row auto-skip (probe): skiprows={tried_skiprows}, headers={headers_preview[:3]}")
+                    csv_skiprows = tried_skiprows
+
+                # Identify real cols from the probe: drop trailing Unnamed cols
+                # whose entire 100-row probe is NaN. usecols= in the main read
+                # then tells pandas NOT to allocate 172 padding cols × 200K rows.
+                cols_to_keep_idx = [
+                    i for i, c in enumerate(df_probe.columns)
+                    if not (_unnamed_pat.match(str(c)) and df_probe[c].isna().all())
+                ]
+
+                read_kwargs = dict(skiprows=csv_skiprows, nrows=csv_nrows)
+                if len(cols_to_keep_idx) < len(df_probe.columns):
+                    read_kwargs["usecols"] = cols_to_keep_idx
+                    dropped = len(df_probe.columns) - len(cols_to_keep_idx)
+                    logger.info(
+                        f"[csv-trim-preload] dropping {dropped} padding cols BEFORE main read "
+                        f"(real={len(cols_to_keep_idx)}, padded={len(df_probe.columns)}) "
+                        f"→ memory saved ~{dropped / len(df_probe.columns) * 100:.0f}%"
+                    )
+                if detected_encoding:
+                    read_kwargs["encoding"] = detected_encoding
+
+                # P0-10 (Apr 20, Step 1b OOM fix v2): wide-column CSVs (>80 real cols)
+                # with 200K+ rows exhaust 14GB server RAM (each 100K × 200-col object
+                # dtype ≈ 3GB pandas + 1GB overhead). Until chunked persist lands
+                # (see TODO), cap nrows to 100K for such files. Customer gets first
+                # 100K rows which is representative for AI analytics on POS detail.
+                real_cols = len(cols_to_keep_idx) if cols_to_keep_idx else len(df_probe.columns)
+                file_size_mb = len(content) / 1024 / 1024
+                # P0-10 v3: empirical: 100K × 231 cols still OOMs on 14GB server
+                # (7.5GB RSS observed). Scale cap with col width to keep pandas
+                # working-set under ~1.5GB:
+                #   col_cnt ≤  40 → 500K
+                #   col_cnt ≤  80 → 200K
+                #   col_cnt ≤ 150 → 80K
+                #   col_cnt > 150 → 30K  (e.g. 231-col POS detail)
+                # v4 (Apr 20 post-OOM): empirical cell-budget cap. OOM happens
+                # downstream of read_csv (~4 passes convert df → nested list →
+                # dict → sanitized dict), each ~rows×cols×500B ≈ 4× multiplier.
+                # Target peak working set <1.5GB → cell budget = 500K cells.
+                #   40 cols → 12500 rows  |   80 cols → 6250 rows
+                #  150 cols → 3333 rows   |  231 cols → 2164 rows
+                # Customer gets a representative sample; true full-volume
+                # support needs streaming persist (tracked TODO).
+                # Scaling measured Apr 20 2026 on prod 14GB server:
+                #   1M cells → 884MB RSS · 2M → 1.08GB · 5M → 1.92GB ·
+                #  10M → 3.13GB. Linear ~200-250MB per 1M cells.
+                # 15M budget → ~4.0GB peak, leaves ~2GB headroom on 6GB free.
+                # For 231-col file: 15M / 231 ≈ 65K rows (~32% of 200K).
+                # This is the practical ceiling before streaming persist
+                # refactor (which would lift this to full 200K+).
+                CELL_BUDGET = 15_000_000
+                budget_cap = max(1000, CELL_BUDGET // max(1, real_cols))
+                if real_cols <= 40:
+                    safety_cap = min(500_000, max(budget_cap, 100_000))
+                else:
+                    safety_cap = budget_cap
+                if csv_nrows is None or csv_nrows > safety_cap:
+                    logger.warning(
+                        f"[csv-safety-cap] wide CSV: {file_size_mb:.0f}MB × {real_cols} real cols → "
+                        f"nrows {csv_nrows} capped to {safety_cap} to prevent OOM. "
+                        f"TODO: migrate to chunksize-based streaming persist for full coverage."
+                    )
+                    read_kwargs["nrows"] = safety_cap
+                    csv_nrows = safety_cap
+
+                # DIAG: memory checkpoint before main read
                 try:
-                    df_csv = pd.read_csv(io.BytesIO(content), nrows=10000)
+                    import resource as _res
+                    import os as _os
+                    _rss_before = _res.getrusage(_res.RUSAGE_SELF).ru_maxrss / 1024
+                    logger.warning(f"[mem-diag] BEFORE main read_csv: peak-RSS={_rss_before:.0f}MB pid={_os.getpid()}")
+                except Exception:
+                    _rss_before = 0
+
+                try:
+                    df_csv = pd.read_csv(io.BytesIO(content), **read_kwargs)
                 except UnicodeDecodeError:
-                    df_csv = pd.read_csv(io.BytesIO(content), nrows=10000, encoding="gbk")
+                    read_kwargs["encoding"] = "gbk"
+                    df_csv = pd.read_csv(io.BytesIO(content), **read_kwargs)
+
+                # DIAG: memory after
+                try:
+                    _rss_after = _res.getrusage(_res.RUSAGE_SELF).ru_maxrss / 1024
+                    _df_mem = df_csv.memory_usage(deep=True).sum() / 1024 / 1024
+                    logger.warning(
+                        f"[mem-diag] AFTER main read_csv: peak-RSS={_rss_after:.0f}MB "
+                        f"(Δ{_rss_after-_rss_before:+.0f}MB), df.memory_usage(deep)={_df_mem:.0f}MB, "
+                        f"df.shape={df_csv.shape}"
+                    )
+                except Exception as _me:
+                    logger.warning(f"[mem-diag] failed: {_me}")
+
+                # P0-7 safety net: re-trim if probe missed some edge-case padding.
+                # Most of the time this is a no-op because usecols already pruned.
+                unnamed_pattern = _unnamed_pat
+                cols_to_drop = [
+                    c for c in df_csv.columns
+                    if unnamed_pattern.match(str(c))
+                    and df_csv[c].isna().all()
+                ]
+                if cols_to_drop:
+                    logger.info(f"[csv-trim-fallback] dropping {len(cols_to_drop)} empty Unnamed cols "
+                                f"(probe missed); kept {len(df_csv.columns) - len(cols_to_drop)} cols")
+                    df_csv = df_csv.drop(columns=cols_to_drop)
+
+                # Step 1d (Apr 20 2026): stash df_csv for executor reuse and
+                # release the 263MB `content` bytes now. executor accepts
+                # preparsed_df so no re-read is needed — cuts the memory
+                # duplication that was keeping Python at 7GB RSS on wide+large
+                # CSVs. `content` is also referenced in the outer function
+                # scope, so we just rebind to None instead of `del` (avoids
+                # NameError if any late-binding code path touches it).
+                _csv_preparsed_df = df_csv  # keep reference for executor call
+                content = None  # release 263MB bytes buffer
+                import gc as _gc
+                _gc.collect()
+                logger.info(f"[mem-free] released content buffer after CSV parse; df_csv={df_csv.shape}")
+
                 headers_csv = [str(c) for c in df_csv.columns]
                 preview = df_csv.head(20).fillna("").values.tolist()
                 structure_result = StructureDetectionResult(
@@ -680,8 +1134,9 @@ async def auto_parse_excel(
                         for i, h in enumerate(headers_csv)
                     ],
                     preview_rows=preview,
+                    csv_skiprows=csv_skiprows,
                 )
-                logger.info(f"CSV fast-path: {len(headers_csv)} cols, {len(df_csv)} rows")
+                logger.info(f"CSV fast-path: {len(headers_csv)} cols, {len(df_csv)} rows, skiprows={csv_skiprows} (header_override={effective_header_override})")
             else:
                 structure_result = await detector.detect(
                     content,
@@ -741,7 +1196,15 @@ async def auto_parse_excel(
 
             # Read DataFrame for classification
             if ext == ".csv":
-                df = pd.read_csv(io.BytesIO(content), nrows=50)
+                # Step 1d: reuse preparsed df_csv instead of re-reading content
+                # (which was released to free 263MB buffer).
+                _csv_df_for_classifier = locals().get("_csv_preparsed_df")
+                if _csv_df_for_classifier is not None:
+                    df = _csv_df_for_classifier.head(50)
+                elif content is not None:
+                    df = pd.read_csv(io.BytesIO(content), nrows=50)
+                else:
+                    df = None
             else:
                 df = pd.read_excel(
                     io.BytesIO(content),
@@ -763,7 +1226,12 @@ async def auto_parse_excel(
             logger.warning(f"TableClassifier failed, using semantic mapper result: {e}")
 
         # Step 4: Cache results
-        if use_cache and structure_result and mapping_result:
+        # Bug #42 fix: do NOT write region-selected results to the shared cache
+        # (same key as non-region) — it would pollute a subsequent non-region upload.
+        # Step 1d: skip cache write when content buffer has been released
+        # (CSV fast-path does this to avoid holding 263MB). Cache is an
+        # optimization — losing one entry is fine; losing 200MB of RAM isn't.
+        if use_cache and structure_result and mapping_result and not _region_selected and content is not None:
             cache_key = cache.set(
                 content, effective_index,
                 structure_result, mapping_result,
@@ -771,6 +1239,39 @@ async def auto_parse_excel(
             )
 
         # Step 5: Extract data
+        # Pass effective_header_override so executor's CSV-passthrough path can skip
+        # leading metadata rows. Without this, the executor reads CSV with default
+        # header=0 and treats title rows as columns (BUG #4 fix, Apr 15 2026).
+        #
+        # Bug #16 fix (Apr 17 2026): csv_skiprows must survive the cache roundtrip,
+        # otherwise cache-hit path re-reads CSV from row 0 with Unnamed:* headers,
+        # hangs 60+s → Java 10011 timeout → 502. Prefer structure_result.csv_skiprows
+        # (persists through cache), fall back to locals (fresh detection), then to
+        # header_override-derived value.
+        _structure_skiprows = getattr(structure_result, "csv_skiprows", 0) or 0
+        _local_skiprows = locals().get("csv_skiprows")
+        if _structure_skiprows > 0:
+            _executor_skiprows = _structure_skiprows
+        elif _local_skiprows is not None:
+            _executor_skiprows = _local_skiprows
+        else:
+            _executor_skiprows = max(0, (effective_header_override or 1) - 1)
+        # Bug #25b (2026-04-18): when a region is selected, tell the executor
+        # to skip to the region's header row and read exactly region_nrows data rows.
+        _region_skip_rows = 0
+        _region_nrows: Optional[int] = None
+        if (
+            effective_region_start is not None
+            and effective_region_end is not None
+            and ext != ".csv"
+        ):
+            _region_skip_rows = effective_region_start
+            _region_nrows = max(0, effective_region_end - effective_region_start)
+
+        # Step 1d: if CSV fast-path already parsed into df, reuse it so
+        # executor doesn't re-read 263MB content bytes. For non-CSV (Excel),
+        # content is still needed since the executor may call openpyxl.
+        _preparsed_df = locals().get("_csv_preparsed_df")
         extracted = executor.execute_with_pandas(
             content,
             structure_result,
@@ -779,8 +1280,12 @@ async def auto_parse_excel(
                 "max_rows": max_rows,
                 "skip_empty_rows": skip_empty_rows,
                 "calculate_stats": calculate_stats,
-                "transpose": transpose
-            }
+                "transpose": transpose,
+                "csv_skiprows": _executor_skiprows,
+                "skip_rows": _region_skip_rows,
+                "nrows": _region_nrows,
+            },
+            preparsed_df=_preparsed_df,
         )
 
         if not extracted.success:
@@ -870,6 +1375,264 @@ async def auto_parse_excel(
             for row in preview_data
         ]
 
+        # F2-v4 (Apr 28 2026): forward-fill section labels into new column.
+        # Multi-section pivot Excel (qhj 收入管理报表) has structure like:
+        #   Row N (sparse): "颛桥龙湖店 10.9-10.13" — section header
+        #   Row N+1: sub-header column names
+        #   Row N+2..M: data rows (rank 1, 2, 3, ...)
+        #   Row M+1: another section header for next store/period
+        # Without F2-v4, AI sees data rows but doesn't know which store/section
+        # they belong to (Q7 user problem: "排名第二的门店" instead of "颛桥龙湖店").
+        #
+        # Algorithm: scan rows in order, track current_section_label. A row is a
+        # section header if: ≤ 30% cells filled AND first non-empty cell is text
+        # (not numeric / not pseudo-row prefix). For non-section data rows, set
+        # row["_门店或时段"] = current_section_label. Drop the section header
+        # rows themselves (they're metadata, no business data).
+        _section_label = None
+        _SECTION_COL = '_门店或时段'
+
+        def _looks_like_label(v):
+            if not isinstance(v, str):
+                return False
+            s = v.strip()
+            if not s:
+                return False
+            # Reject pure numeric strings
+            try:
+                float(s.replace(',', ''))
+                return False
+            except ValueError:
+                pass
+            # Reject pseudo-row prefixes (those handled by F2-v3 below)
+            return not s.lower().startswith(_PREFIX_LOWER) if False else True
+        # forward-define _PREFIX_LOWER below; do simpler check:
+
+        def _is_section_header(row_dict, headers):
+            if not headers:
+                return False, None
+            n_total = len(headers)
+            non_empty = [(k, v) for k, v in row_dict.items()
+                          if v is not None and (not isinstance(v, str) or v.strip())]
+            n_filled = len(non_empty)
+            if n_filled == 0:
+                return False, None
+            # Sparse threshold: ≤ 30% of columns
+            if n_filled / n_total > 0.30:
+                return False, None
+            # Apr 28 2026 (post-review P1): require at least 2 non-empty cells
+            # to call this a section header — single-cell partial-data rows
+            # (e.g. one column has a leftover comment or data continuation)
+            # were getting misclassified and forward-filled as section labels,
+            # contaminating subsequent rows with the wrong label.
+            if n_filled < 2:
+                return False, None
+            # First non-empty cell must be a text label (not numeric)
+            first_v = non_empty[0][1]
+            if not isinstance(first_v, str):
+                return False, None
+            s = first_v.strip()
+            if not s:
+                return False, None
+            try:
+                float(s.replace(',', ''))
+                return False, None  # purely numeric, not a label
+            except ValueError:
+                pass
+            # Apr 28 2026 (post-review P1): require at least 1 of the non-empty
+            # cells to be text (not just the first cell). Some pivot exports
+            # have leftover string in col 0 + numeric in col 1 — those are
+            # partial data rows, not section headers.
+            def _is_numeric_str(s_val):
+                if not isinstance(s_val, str):
+                    return False
+                try:
+                    float(s_val.strip().replace(',', ''))
+                    return True
+                except ValueError:
+                    return False
+            text_cell_count = sum(
+                1 for _, v in non_empty
+                if isinstance(v, str) and v.strip()
+                and not _is_numeric_str(v)
+            )
+            if text_cell_count < 1:
+                return False, None
+            # Build label from non-empty values (e.g. "颛桥龙湖店 10.9-10.13")
+            label_parts = [str(v).strip() for _, v in non_empty if isinstance(v, str)]
+            label = ' '.join(label_parts).strip()
+            return True, label
+
+        # F2-v5 (Apr 28 2026): also drop DENSE all-text sub-header rows.
+        # Multi-section pivot like 收入管理报表 has rows like
+        # "门店名称 汇总实际收入 本期 环比 ..." that have ≥30% cells filled
+        # (so F2-v4 sparse check doesn't catch them) but ALL cells are short
+        # text labels (no numbers). These are sub-headers, not data.
+        # Heuristic: if a row has 0 numeric cells AND ≥3 text cells AND avg
+        # cell length ≤ 12 chars, it's a sub-header — drop it.
+        def _is_dense_subheader(row_dict, headers):
+            non_empty = [v for v in row_dict.values()
+                          if v is not None and (not isinstance(v, str) or v.strip())]
+            if len(non_empty) < 3:
+                return False
+            n_num = 0
+            n_text = 0
+            text_lens = []
+            text_values = []
+            for v in non_empty:
+                if isinstance(v, (int, float)):
+                    n_num += 1
+                    continue
+                s = str(v).strip()
+                # Numeric-looking string?
+                try:
+                    float(s.replace(',', ''))
+                    n_num += 1
+                except ValueError:
+                    n_text += 1
+                    text_lens.append(len(s))
+                    text_values.append(s)
+            if n_num > 0:
+                return False  # any numeric → real data row
+            if n_text < 3:
+                return False
+            avg_len = sum(text_lens) / len(text_lens)
+            if avg_len > 12:
+                return False
+            # Apr 28 2026 (post-review P1): for SHORTER rows (3-5 text cells),
+            # add header-overlap check to avoid dropping product catalogs like
+            # ['Apple', 'iPhone', 'USD']. For LONGER rows (≥6 text cells, all
+            # short), it's almost certainly a sub-header (sub-headers tend to
+            # span all/most cols of a section), not a catalog. Catalog rows
+            # rarely have ≥6 distinct short labels in a row without numbers.
+            if n_text >= 6:
+                return True
+            # Short row (3-5 text cells): require ≥30% header-overlap to flag.
+            # Reviewer round 2 P2 #4: prior version split on whitespace which
+            # broke CJK (e.g. '门店名称' became one token) and substring-matched
+            # short Latin tokens (e.g. 'ID' in 'ProductID' → spurious match).
+            # Now: split header tokens explicitly, require token length ≥3 for
+            # Latin substring path, and add character-overlap fallback for CJK.
+            if headers and text_values:
+                import re as _re
+                hdr_str = " ".join(str(h) for h in headers if h is not None)
+                hdr_lower = hdr_str.lower()
+                hdr_tokens = [
+                    t for t in _re.split(r'[\s_\-/\.,()（）]+', hdr_lower)
+                    if t
+                ]
+
+                def _overlaps(tv: str) -> bool:
+                    tv_lower = tv.lower()
+                    # CJK path: char-level overlap. Compute fraction of tv
+                    # CJK chars that appear in hdr_lower; ≥50% counts as match.
+                    cjk_chars = [c for c in tv if '一' <= c <= '鿿']
+                    if cjk_chars:
+                        hits = sum(1 for c in cjk_chars if c in hdr_lower)
+                        if hits / len(cjk_chars) >= 0.5:
+                            return True
+                    # Latin token path: split on common separators, exact-match
+                    # against header tokens (no substring), or substring only
+                    # when token length ≥3.
+                    tv_tokens = [
+                        t for t in _re.split(r'[\s_\-/\.,()（）]+', tv_lower)
+                        if t
+                    ]
+                    for tok in tv_tokens:
+                        if len(tok) < 2:
+                            continue
+                        # Exact token match
+                        if tok in hdr_tokens:
+                            return True
+                        # Substring match only for tokens length ≥3 (avoids
+                        # 'ID'/'TO' false positives)
+                        if len(tok) >= 3 and tok in hdr_lower:
+                            return True
+                    # Whole-string match: only for tokens length ≥3 (avoids
+                    # 2-char Latin like 'ID' / 'NA' substring-matching into
+                    # 'ProductID' / 'BrandNA' etc.). CJK already handled above.
+                    if len(tv_lower) >= 3 and tv_lower in hdr_lower:
+                        return True
+                    return False
+
+                overlap = sum(1 for tv in text_values if _overlaps(tv))
+                if overlap / len(text_values) < 0.3:
+                    return False
+            return True
+
+        f2v4_header = list(extracted.headers)
+        f2v4_rows: list = []
+        f2v4_section_count = 0
+        f2v5_subheader_count = 0
+        for row in preview_data:
+            is_sec, label = _is_section_header(row, f2v4_header)
+            if is_sec:
+                _section_label = label
+                f2v4_section_count += 1
+                continue  # drop the section header row
+            # F2-v5: drop dense all-text sub-header rows
+            if _is_dense_subheader(row, f2v4_header):
+                f2v5_subheader_count += 1
+                continue
+            if _section_label is not None:
+                row[_SECTION_COL] = _section_label
+            f2v4_rows.append(row)
+        if f2v5_subheader_count > 0:
+            logger.info(
+                f"[F2-v5] dropped {f2v5_subheader_count} dense all-text "
+                f"sub-header rows (e.g. '门店名称 实际收入...')"
+            )
+
+        if f2v4_section_count > 0:
+            preview_data = f2v4_rows
+            if _SECTION_COL not in f2v4_header:
+                f2v4_header.append(_SECTION_COL)
+                # Update extracted.headers so downstream code sees the column.
+                # extracted is a typed object from parser; we mutate its headers
+                # only when we added a new col (keeps non-pivot files unchanged).
+                try:
+                    extracted.headers = f2v4_header
+                    extracted.column_count = len(f2v4_header)
+                except Exception:
+                    pass
+            logger.info(
+                f"[F2-v4] forward-filled section label into '{_SECTION_COL}' for "
+                f"{len(f2v4_rows)} data rows (dropped {f2v4_section_count} section "
+                f"header rows). Sample label: {_section_label!r}"
+            )
+
+        # F2-v3 (Apr 28 2026): drop pseudo-rows that pollute downstream AI
+        # context. qa-prompt v2.4 Phase 10 Q7 caught: AI saw "总计 ... 73,761"
+        # row and treated 73,761 as a single store's max revenue (real max
+        # was 39,617). Filter at API response layer so all downstream
+        # consumers (AI Query, template materializer) see clean rows.
+        _PSEUDO_PREFIXES = (
+            '总计', '合计', '小计', '汇总',
+            'total', 'sum', 'subtotal', 'grand total',
+            '注：', '注:', '注 :', '说明：', '说明:', '备注：', '备注:',
+            'note:', 'note ：', 'remark:',
+        )
+        _PREFIX_LOWER = tuple(p.lower() for p in _PSEUDO_PREFIXES)
+
+        def _is_pseudo_row(row_dict):
+            for v in row_dict.values():
+                if v is None or v == '':
+                    continue
+                if isinstance(v, str) and not v.strip():
+                    continue
+                s = str(v).strip().lower()
+                return s.startswith(_PREFIX_LOWER)
+            return False
+
+        before_n = len(preview_data)
+        preview_data = [r for r in preview_data if not _is_pseudo_row(r)]
+        dropped_n = before_n - len(preview_data)
+        if dropped_n > 0:
+            logger.info(
+                f"[F2-v3] dropped {dropped_n} pseudo-rows "
+                f"(总计/合计/注：/etc) of {before_n} preview rows"
+            )
+
         return AutoParseResponse(
             # Core Java-compatible fields
             success=True,
@@ -938,10 +1701,19 @@ def _sanitize_preview_value(val):
 
     Handles pandas Series/Timestamp, numpy arrays/scalars, and other
     non-primitive types that can leak from pd.read_excel() or MultiIndex ops.
+
+    Apr 26 2026 (S1 audit Bug E): NaN/Inf floats are valid Python objects
+    but FastAPI's default JSONResponse uses stdlib json.dumps with
+    allow_nan=False — raises ValueError "Out of range float values are not
+    JSON compliant" mid-response after parse already succeeded. Coerce to
+    None so the response serializes cleanly.
     """
+    import math
     if val is None:
         return None
     if isinstance(val, (int, float, bool)):
+        if isinstance(val, float) and not math.isfinite(val):
+            return None
         return val
     if isinstance(val, str):
         # Safety net: detect strings that are stringified pandas Series
@@ -1095,7 +1867,7 @@ async def extract_context(
 
     try:
         # Validate file type
-        filename = file.filename or ""
+        filename = _fix_filename(file.filename or "")
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls"]:
@@ -1197,7 +1969,7 @@ async def export_excel(
 
     try:
         # Validate file type
-        filename = file.filename or ""
+        filename = _fix_filename(file.filename or "")
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls"]:
@@ -1367,7 +2139,7 @@ async def get_export_metadata(
 
     try:
         # Validate file type
-        filename = file.filename or ""
+        filename = _fix_filename(file.filename or "")
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls"]:
@@ -2220,7 +2992,7 @@ async def raw_export_excel(
     start_time = time.time()
 
     try:
-        filename = file.filename or ""
+        filename = _fix_filename(file.filename or "")
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls"]:
@@ -2432,7 +3204,7 @@ async def analyze_excel_structure(
     start_time = time.time()
 
     try:
-        filename = file.filename or ""
+        filename = _fix_filename(file.filename or "")
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls"]:
@@ -2770,7 +3542,7 @@ async def analyze_workbook(
 
     try:
         # Validate file type
-        filename = file.filename or ""
+        filename = _fix_filename(file.filename or "")
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
         if ext not in [".xlsx", ".xls"]:
@@ -3062,7 +3834,7 @@ async def analyze_workbook_stream(
     """
     import json
 
-    filename = file.filename or ""
+    filename = _fix_filename(file.filename or "")
     ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
     if ext not in [".xlsx", ".xls"]:
         raise ApiException("Supported file types: .xlsx, .xls", ErrorCode.VALIDATION_ERROR, 400)

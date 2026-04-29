@@ -169,7 +169,7 @@ public interface IsapiDeviceRepository extends JpaRepository<IsapiDevice, String
      * 按名称或IP模糊搜索
      */
     @Query("SELECT d FROM IsapiDevice d WHERE d.factoryId = :factoryId " +
-            "AND (d.deviceName LIKE %:keyword% OR d.ipAddress LIKE %:keyword% OR d.serialNumber LIKE %:keyword%)")
+            "AND (d.deviceName LIKE %:keyword% ESCAPE '\\' OR d.ipAddress LIKE %:keyword% ESCAPE '\\' OR d.serialNumber LIKE %:keyword% ESCAPE '\\')")
     Page<IsapiDevice> searchByKeyword(
             @Param("factoryId") String factoryId,
             @Param("keyword") String keyword,

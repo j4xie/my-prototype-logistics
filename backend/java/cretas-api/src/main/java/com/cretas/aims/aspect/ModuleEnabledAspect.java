@@ -42,7 +42,8 @@ public class ModuleEnabledAspect {
 
         if (!configService.isModuleEnabled(factoryId, moduleCode)) {
             log.info("模块 {} 在工厂 {} 中未启用，拒绝访问", moduleCode, factoryId);
-            throw new BusinessException("模块 " + moduleCode + " 未启用");
+            throw new BusinessException(403, "模块 " + moduleCode + " 未启用")
+                    .withHint("请在 [系统设置 → 工厂功能配置] 启用该模块, 或联系管理员");
         }
     }
 

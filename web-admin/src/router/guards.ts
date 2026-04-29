@@ -21,6 +21,7 @@ const MOBILE_ONLY_ROLES = [
 const ROLE_PATH_WHITELIST: Record<string, string[]> = {
   finance_manager: [
     '/dashboard',
+    '/finance',
     '/smart-bi/dashboard',
     '/smart-bi/finance',
     '/smart-bi/financial-dashboard',
@@ -38,6 +39,14 @@ export function setupRouterGuards(router: Router) {
   router.beforeEach(async (to, _from, next) => {
     // 设置页面标题
     document.title = to.meta.title ? `${to.meta.title} - 白垩纪AI Agent` : '白垩纪AI Agent';
+
+    // R40 BUG-7 fix: ElMessage.error patched to sticky (Bug #312, 2026-04-18)
+    // means toasts persist across navigation. On route change, dismiss any
+    // visible error/notification toasts so they don't accumulate (R40 audit
+    // saw 4+ stale toasts visible simultaneously after a few clicks).
+    if (typeof document !== 'undefined') {
+      document.querySelectorAll('.el-message, .el-notification').forEach((el) => el.remove());
+    }
 
     // 白名单路由直接放行
     if (whiteList.includes(to.path)) {
@@ -99,6 +108,14 @@ export function setupRouterGuards(router: Router) {
         next('/403');
         return;
       }
+    }
+
+    // Apr 24 UX: 工厂类型黑名单 (sidebar hideForFactoryTypes 的 route-level 对应)
+    // 防止餐饮租户手输 URL 绕过侧边栏访问 manufacturing-only 页面
+    const hideForTypes = to.meta.hideForFactoryTypes as string[] | undefined;
+    if (hideForTypes && authStore.factoryType && hideForTypes.includes(authStore.factoryType)) {
+      next('/403');
+      return;
     }
 
     // 检查角色权限（如果路由指定了 roles）

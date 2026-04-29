@@ -1,0 +1,289 @@
+id,upload_id,original_name,standard_name,field_type,semantic_type,chart_role,is_dimension,is_measure,is_time,sample_values,statistics,display_order,format_pattern,agg_strategy
+61683,4169,系统损益额,系统损益额,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",131,,sum
+61684,4169,人工损益额,人工损益额,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": -0.96, ""sum"": -471.93000000000006, ""mean"": -0.009438600000000002, ""nullCount"": 0, ""uniqueCount"": 18}",132,,sum
+61686,4169,外送费(火小二),外送费(火小二),NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",134,,sum
+61687,4169,外送费(第三方),外送费(第三方),NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",135,,sum
+61689,4169,小费,小费,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",137,,sum
+61690,4169,税费,税费,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",138,,sum
+61691,4169,开发票额,开发票额,NUMERIC,,,f,t,f,,"{""max"": 646.3, ""min"": 0.0, ""sum"": 111935.47, ""mean"": 2.2387094, ""nullCount"": 0, ""uniqueCount"": 357}",139,,sum
+61693,4169,[美团],[美团],NUMERIC,,,f,t,f,,"{""max"": 587.06, ""min"": 0.0, ""sum"": 498007.68000000005, ""mean"": 9.960153600000002, ""nullCount"": 0, ""uniqueCount"": 3291}",141,,sum
+61694,4169,[美团套餐券],[美团套餐券],NUMERIC,,,f,t,f,,"{""max"": 738.0, ""min"": 0.0, ""sum"": 1276236.9000000001, ""mean"": 25.524738000000003, ""nullCount"": 0, ""uniqueCount"": 70}",142,,sum
+61695,4169,[微信],[微信],NUMERIC,,,f,t,f,,"{""max"": 1153.6, ""min"": 0.0, ""sum"": 1675980.4200000002, ""mean"": 33.5196084, ""nullCount"": 0, ""uniqueCount"": 2676}",143,,sum
+61696,4169,[饿了么],[饿了么],NUMERIC,,,f,t,f,,"{""max"": 510.37, ""min"": 0.0, ""sum"": 900744.72, ""mean"": 18.0148944, ""nullCount"": 0, ""uniqueCount"": 4915}",144,,sum
+61697,4169,招行买单,招行买单,NUMERIC,,,f,t,f,,"{""max"": 636.0, ""min"": 0.0, ""sum"": 89957.0, ""mean"": 1.79914, ""nullCount"": 0, ""uniqueCount"": 291}",145,,sum
+61698,4169,[支付宝],[支付宝],NUMERIC,,,f,t,f,,"{""max"": 1554.1, ""min"": 0.0, ""sum"": 775213.6900000001, ""mean"": 15.504273800000002, ""nullCount"": 0, ""uniqueCount"": 2098}",146,,sum
+61699,4169,[美团代金券],[美团代金券],NUMERIC,,,f,t,f,,"{""max"": 686.0, ""min"": 0.0, ""sum"": 1153280.0, ""mean"": 23.0656, ""nullCount"": 0, ""uniqueCount"": 33}",147,,sum
+61700,4169,[抖音套餐券],[抖音套餐券],NUMERIC,,,f,t,f,,"{""max"": 366.0, ""min"": 0.0, ""sum"": 41723.3, ""mean"": 0.834466, ""nullCount"": 0, ""uniqueCount"": 30}",148,,sum
+61701,4169,[云闪付],[云闪付],NUMERIC,,,f,t,f,,"{""max"": 444.0, ""min"": 0.0, ""sum"": 3836.22, ""mean"": 0.0767244, ""nullCount"": 0, ""uniqueCount"": 25}",149,,sum
+61702,4169,交行买单,交行买单,NUMERIC,,,f,t,f,,"{""max"": 594.0, ""min"": 0.0, ""sum"": 116078.9, ""mean"": 2.3215779999999997, ""nullCount"": 0, ""uniqueCount"": 305}",150,,sum
+61703,4169,鱼羊鲜38元代金券,鱼羊鲜38元代金券,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",151,,sum
+61704,4169,[抖音代金券],[抖音代金券],NUMERIC,,,f,t,f,,"{""max"": 686.0, ""min"": 0.0, ""sum"": 157506.0, ""mean"": 3.15012, ""nullCount"": 0, ""uniqueCount"": 30}",152,,sum
+61705,4169,银联二维码,银联二维码,NUMERIC,,,f,t,f,,"{""max"": 1000.0, ""min"": 0.0, ""sum"": 55436.6, ""mean"": 1.108732, ""nullCount"": 0, ""uniqueCount"": 150}",153,,sum
+61706,4169,现金,现金,NUMERIC,,,f,t,f,,"{""max"": 551.0, ""min"": 0.0, ""sum"": 88289.45000000001, ""mean"": 1.7657890000000003, ""nullCount"": 0, ""uniqueCount"": 244}",154,,sum
+61707,4169,商场代金券-百联,商场代金券-百联,NUMERIC,,,f,t,f,,"{""max"": 462.0, ""min"": 0.0, ""sum"": 32882.740000000005, ""mean"": 0.6576548000000001, ""nullCount"": 0, ""uniqueCount"": 138}",155,,sum
+61708,4169,银行卡,银行卡,NUMERIC,,,f,t,f,,"{""max"": 539.0, ""min"": 0.0, ""sum"": 12486.199999999999, ""mean"": 0.24972399999999997, ""nullCount"": 0, ""uniqueCount"": 43}",156,,sum
+61709,4169,饿了么,饿了么,NUMERIC,,,f,t,f,,"{""max"": 136.12, ""min"": 0.0, ""sum"": 415.28, ""mean"": 0.0083056, ""nullCount"": 0, ""uniqueCount"": 7}",157,,sum
+61710,4169,商场代金券,商场代金券,NUMERIC,,,f,t,f,,"{""max"": 537.0, ""min"": 0.0, ""sum"": 52594.0, ""mean"": 1.05188, ""nullCount"": 0, ""uniqueCount"": 14}",158,,sum
+61711,4169,点评98代100,点评98代100,NUMERIC,,,f,t,f,,"{""max"": 490.0, ""min"": 0.0, ""sum"": 882.0, ""mean"": 0.01764, ""nullCount"": 0, ""uniqueCount"": 3}",159,,sum
+61712,4169,[京东],[京东],NUMERIC,,,f,t,f,,"{""max"": 321.45, ""min"": 0.0, ""sum"": 34016.72, ""mean"": 0.6803344, ""nullCount"": 0, ""uniqueCount"": 356}",160,,sum
+61713,4169,点评235代300,点评235代300,NUMERIC,,,f,t,f,,"{""max"": 235.0, ""min"": 0.0, ""sum"": 235.0, ""mean"": 0.0047, ""nullCount"": 0, ""uniqueCount"": 2}",161,,sum
+61714,4169,闪购286代322.1,闪购286代322.1,NUMERIC,,,f,t,f,,"{""max"": 286.0, ""min"": 0.0, ""sum"": 286.0, ""mean"": 0.00572, ""nullCount"": 0, ""uniqueCount"": 2}",162,,sum
+61715,4169,闪购206代243.2,闪购206代243.2,NUMERIC,,,f,t,f,,"{""max"": 206.0, ""min"": 0.0, ""sum"": 206.0, ""mean"": 0.00412, ""nullCount"": 0, ""uniqueCount"": 2}",163,,sum
+61716,4169,享库138代201,享库138代201,NUMERIC,,,f,t,f,,"{""max"": 138.0, ""min"": 0.0, ""sum"": 690.0, ""mean"": 0.0138, ""nullCount"": 0, ""uniqueCount"": 2}",164,,sum
+61717,4169,闪购95代100,闪购95代100,NUMERIC,,,f,t,f,,"{""max"": 190.0, ""min"": 0.0, ""sum"": 190.0, ""mean"": 0.0038, ""nullCount"": 0, ""uniqueCount"": 2}",165,,sum
+61718,4169,[美团支付],[美团支付],NUMERIC,,,f,t,f,,"{""max"": 99.2, ""min"": 0.0, ""sum"": 18029.4, ""mean"": 0.360588, ""nullCount"": 0, ""uniqueCount"": 301}",166,,sum
+61719,4169,闪购96.5代100,闪购96.5代100,NUMERIC,,,f,t,f,,"{""max"": 193.0, ""min"": 0.0, ""sum"": 193.0, ""mean"": 0.00386, ""nullCount"": 0, ""uniqueCount"": 2}",167,,sum
+61720,4169,鱼羊鲜50元优惠券,鱼羊鲜50元优惠券,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",168,,sum
+61721,4169,探探糖0代220,探探糖0代220,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",169,,sum
+61722,4169,网络支付,网络支付,NUMERIC,,,f,t,f,,"{""max"": 134.0, ""min"": 0.0, ""sum"": 174.48, ""mean"": 0.0034896, ""nullCount"": 0, ""uniqueCount"": 3}",170,,sum
+61723,4169,消费券55元代金券,消费券55元代金券,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",171,,sum
+61724,4169,美团,美团,NUMERIC,,,f,t,f,,"{""max"": 31.12, ""min"": 0.0, ""sum"": 31.12, ""mean"": 0.0006224000000000001, ""nullCount"": 0, ""uniqueCount"": 2}",172,,sum
+61725,4169,京东外卖,京东外卖,NUMERIC,,,f,t,f,,"{""max"": 213.7, ""min"": 0.0, ""sum"": 357.59999999999997, ""mean"": 0.0071519999999999995, ""nullCount"": 0, ""uniqueCount"": 5}",173,,sum
+61726,4169,商场饭卡,商场饭卡,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",174,,sum
+61727,4169,商场积分,商场积分,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",175,,sum
+61728,4169,储值卡,储值卡,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",176,,sum
+61733,4169,地推50元优惠券,地推50元优惠券,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",181,,sum
+61734,4169,微信,微信,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",182,,sum
+61735,4169,商家支付宝,商家支付宝,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",183,,sum
+61736,4169,闪购186代216,闪购186代216,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",184,,sum
+61737,4169,点评218代300,点评218代300,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",185,,sum
+61738,4169,晚市微醺0代130,晚市微醺0代130,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",186,,sum
+61739,4169,晚市微醺0代140,晚市微醺0代140,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",187,,sum
+61740,4169,闪购186代214,闪购186代214,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",188,,sum
+61741,4169,新美大,新美大,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",189,,sum
+61742,4169,会员卡,会员卡,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",190,,sum
+61743,4169,抖音138代201,抖音138代201,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",191,,sum
+61744,4169,抖音168代201,抖音168代201,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",192,,sum
+61745,4169,商场泷珠支付,商场泷珠支付,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",193,,sum
+61746,4169,霸王餐0代140,霸王餐0代140,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",194,,sum
+61747,4169,点评219代300,点评219代300,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",195,,sum
+61748,4169,点评160代200,点评160代200,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",196,,sum
+61749,4169,点评139代200,点评139代200,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",197,,sum
+61750,4169,点评198代253.48,点评198代253.48,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",198,,sum
+61751,4169,点评12.9代18,点评12.9代18,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",199,,sum
+61752,4169,抖音138代212,抖音138代212,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",200,,sum
+61753,4169,闪购196代255.48,闪购196代255.48,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",201,,sum
+61754,4169,闪购328代407.36,闪购328代407.36,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",202,,sum
+61755,4169,闪购326代407.36,闪购326代407.36,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",203,,sum
+61756,4169,闪购296代384.36,闪购296代384.36,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",204,,sum
+61757,4169,抖音189代220,抖音189代220,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",205,,sum
+61758,4169,抖音299代340,抖音299代340,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",206,,sum
+61759,4169,闪购246代269,闪购246代269,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",207,,sum
+61760,4169,商场100元代金券.,商场100元代金券.,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",208,,sum
+61761,4169,[美团优惠](不计),[美团优惠](不计),NUMERIC,,,f,t,f,,"{""max"": 262.48, ""min"": 0.0, ""sum"": 361890.8, ""mean"": 7.237816, ""nullCount"": 0, ""uniqueCount"": 3476}",209,,sum
+61762,4169,[美团套餐券优惠](不计),[美团套餐券优惠](不计),NUMERIC,,,f,t,f,,"{""max"": 150.0, ""min"": 0.0, ""sum"": 247696.7, ""mean"": 4.953934, ""nullCount"": 0, ""uniqueCount"": 82}",210,,sum
+61763,4169,[饿了么优惠](不计),[饿了么优惠](不计),NUMERIC,,,f,t,f,,"{""max"": 224.58, ""min"": 0.0, ""sum"": 765804.02, ""mean"": 15.3160804, ""nullCount"": 0, ""uniqueCount"": 4883}",211,,sum
+61764,4169,[美团代金券优惠](不计),[美团代金券优惠](不计),NUMERIC,,,f,t,f,,"{""max"": 188.0, ""min"": 0.0, ""sum"": 61220.0, ""mean"": 1.2244, ""nullCount"": 0, ""uniqueCount"": 33}",212,,sum
+61765,4169,[抖音套餐券优惠](不计),[抖音套餐券优惠](不计),NUMERIC,,,f,t,f,,"{""max"": 159.1, ""min"": 0.0, ""sum"": 14829.500000000002, ""mean"": 0.29659, ""nullCount"": 0, ""uniqueCount"": 46}",213,,sum
+61766,4169,[单品兑换券在线优惠](不计),[单品兑换券在线优惠](不计),NUMERIC,,,f,t,f,,"{""max"": 22.0, ""min"": 0.0, ""sum"": 616.0, ""mean"": 0.01232, ""nullCount"": 0, ""uniqueCount"": 5}",214,,sum
+61767,4169,[抖音代金券优惠](不计),[抖音代金券优惠](不计),NUMERIC,,,f,t,f,,"{""max"": 164.0, ""min"": 0.0, ""sum"": 28694.0, ""mean"": 0.57388, ""nullCount"": 0, ""uniqueCount"": 30}",215,,sum
+61768,4169,[本店在线优惠](不计),[本店在线优惠](不计),NUMERIC,,,f,t,f,,"{""max"": 100.0, ""min"": 0.0, ""sum"": 14591.759999999998, ""mean"": 0.29183519999999996, ""nullCount"": 0, ""uniqueCount"": 84}",216,,sum
+61769,4169,储值卡(不计),储值卡(不计),NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",217,,sum
+61770,4169,储值卡赠送金(不计),储值卡赠送金(不计),NUMERIC,,,f,t,f,,"{""max"": 380.4, ""min"": 0.0, ""sum"": 6550.0, ""mean"": 0.131, ""nullCount"": 0, ""uniqueCount"": 27}",218,,sum
+61771,4169,达人探店(不计)(不计),达人探店(不计)(不计),NUMERIC,,,f,t,f,,"{""max"": 236.0, ""min"": 0.0, ""sum"": 3462.0, ""mean"": 0.06924, ""nullCount"": 0, ""uniqueCount"": 5}",219,,sum
+61772,4169,客诉免单(不计),客诉免单(不计),NUMERIC,,,f,t,f,,"{""max"": 259.5, ""min"": 0.0, ""sum"": 1009.7, ""mean"": 0.020194, ""nullCount"": 0, ""uniqueCount"": 5}",220,,sum
+61773,4169,[京东优惠](不计),[京东优惠](不计),NUMERIC,,,f,t,f,,"{""max"": 36.32, ""min"": -2.49, ""sum"": 11033.19, ""mean"": 0.22066380000000002, ""nullCount"": 0, ""uniqueCount"": 200}",221,,sum
+61774,4169,员工餐(不计),员工餐(不计),NUMERIC,,,f,t,f,,"{""max"": 336.0, ""min"": 0.0, ""sum"": 1104.0, ""mean"": 0.02208, ""nullCount"": 0, ""uniqueCount"": 3}",222,,sum
+61775,4169,30元代金券(不计),30元代金券(不计),NUMERIC,,,f,t,f,,"{""max"": 30.0, ""min"": 0.0, ""sum"": 90.0, ""mean"": 0.0018, ""nullCount"": 0, ""uniqueCount"": 2}",223,,sum
+61776,4169,招待(不计),招待(不计),NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",224,,sum
+61777,4169,达人探店(不计),达人探店(不计),NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",225,,sum
+61778,4169,会员卡赠送金(不计),会员卡赠送金(不计),NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",226,,sum
+61779,4169,霸王餐(不计),霸王餐(不计),NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",227,,sum
+61567,4169,营业额,数量金额,NUMERIC,revenue,,f,t,f,,"{""max"": 1586.1, ""min"": 0.3, ""sum"": 8642839.229999999, ""mean"": 172.85678459999997, ""nullCount"": 0, ""uniqueCount"": 3963}",15,,sum
+61571,4169,应收金额,数量金额_2,NUMERIC,payment,,f,t,f,,"{""max"": 1554.1, ""min"": 0.0, ""sum"": 8555732.620000001, ""mean"": 171.1146524, ""nullCount"": 0, ""uniqueCount"": 4026}",19,,sum
+61572,4169,收款金额,数量金额_3,NUMERIC,,,f,t,f,,"{""max"": 1554.1, ""min"": 0.0, ""sum"": 8555260.69, ""mean"": 171.1052138, ""nullCount"": 0, ""uniqueCount"": 3965}",20,,sum
+61573,4169,代金券优惠,数量金额_4,NUMERIC,,,f,t,f,,"{""max"": 220.0, ""min"": 0.0, ""sum"": 24803.3, ""mean"": 0.496066, ""nullCount"": 0, ""uniqueCount"": 12}",21,,sum
+61574,4169,实收(不计),数量金额_5,NUMERIC,payment,,f,t,f,,"{""max"": 380.4, ""min"": -2.49, ""sum"": 1544498.9700000002, ""mean"": 30.889979400000005, ""nullCount"": 0, ""uniqueCount"": 6421}",22,,sum
+61575,4169,商品结账总数,product,NUMERIC,product,,f,t,f,,"{""max"": 79.0, ""min"": 1.0, ""sum"": 288837.68, ""mean"": 5.7767536, ""nullCount"": 0, ""uniqueCount"": 250}",23,,sum
+61579,4169,招行折扣(不计),数量金额_8,NUMERIC,,,f,t,f,,"{""max"": 100.0, ""min"": 0.0, ""sum"": 8083.0, ""mean"": 0.16166, ""nullCount"": 0, ""uniqueCount"": 11}",27,,sum
+61580,4169,交行折扣(不计),数量金额_9,NUMERIC,,,f,t,f,,"{""max"": 278.0, ""min"": 0.0, ""sum"": 5597.5, ""mean"": 0.11195, ""nullCount"": 0, ""uniqueCount"": 13}",28,,sum
+61581,4169,商场折扣(不计),数量金额_10,NUMERIC,,,f,t,f,,"{""max"": 66.0, ""min"": 0.0, ""sum"": 10809.56, ""mean"": 0.2161912, ""nullCount"": 0, ""uniqueCount"": 121}",29,,sum
+61582,4169,客诉折扣(不计),数量金额_11,NUMERIC,,,f,t,f,,"{""max"": 255.2, ""min"": 0.0, ""sum"": 1175.6599999999999, ""mean"": 0.023513199999999998, ""nullCount"": 0, ""uniqueCount"": 12}",30,,sum
+61583,4169,饿了么折扣(不计),数量金额_12,NUMERIC,,,f,t,f,,"{""max"": 60.22, ""min"": 0.0, ""sum"": 147.18, ""mean"": 0.0029436, ""nullCount"": 0, ""uniqueCount"": 4}",31,,sum
+61584,4169,京东外卖优惠(不计),数量金额_13,NUMERIC,,,f,t,f,,"{""max"": 24.2, ""min"": 0.0, ""sum"": 94.39999999999999, ""mean"": 0.001888, ""nullCount"": 0, ""uniqueCount"": 4}",32,,sum
+61585,4169,美团折扣(不计),数量金额_14,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",33,,sum
+61586,4169,点评买单折扣(不计),数量金额_15,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",34,,sum
+61587,4169,笔记红书10元优惠(不计),数量金额_16,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",35,,sum
+61588,4169,新美大折扣(不计),数量金额_17,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",36,,sum
+61589,4169,鱼羊鲜38元代金券[38-0]数量,数量金额_18,NUMERIC,,,f,t,f,,"{""max"": 1.0, ""min"": 0.0, ""sum"": 115.0, ""mean"": 0.0023, ""nullCount"": 0, ""uniqueCount"": 2}",37,,sum
+61590,4169,鱼羊鲜38元代金券[38-0]金额,数量金额_19,NUMERIC,,,f,t,f,,"{""max"": 38.0, ""min"": 0.0, ""sum"": 4370.0, ""mean"": 0.0874, ""nullCount"": 0, ""uniqueCount"": 2}",38,,sum
+61591,4169,点评98代100[100-98]数量,数量金额_20,NUMERIC,,,f,t,f,,"{""max"": 5.0, ""min"": 0.0, ""sum"": 9.0, ""mean"": 0.00018, ""nullCount"": 0, ""uniqueCount"": 3}",39,,sum
+61592,4169,点评98代100[100-98]金额,数量金额_21,NUMERIC,,,f,t,f,,"{""max"": 10.0, ""min"": 0.0, ""sum"": 18.0, ""mean"": 0.00036, ""nullCount"": 0, ""uniqueCount"": 3}",40,,sum
+61593,4169,点评235代300[300-235]数量,数量金额_22,NUMERIC,,,f,t,f,,"{""max"": 1.0, ""min"": 0.0, ""sum"": 1.0, ""mean"": 0.00002, ""nullCount"": 0, ""uniqueCount"": 2}",41,,sum
+61594,4169,点评235代300[300-235]金额,数量金额_23,NUMERIC,,,f,t,f,,"{""max"": 65.0, ""min"": 0.0, ""sum"": 65.0, ""mean"": 0.0013, ""nullCount"": 0, ""uniqueCount"": 2}",42,,sum
+61595,4169,闪购286代322.1[322.1-286]数量,数量金额_24,NUMERIC,,,f,t,f,,"{""max"": 1.0, ""min"": 0.0, ""sum"": 1.0, ""mean"": 0.00002, ""nullCount"": 0, ""uniqueCount"": 2}",43,,sum
+61596,4169,闪购286代322.1[322.1-286]金额,数量金额_25,NUMERIC,,,f,t,f,,"{""max"": 36.1, ""min"": 0.0, ""sum"": 36.1, ""mean"": 0.000722, ""nullCount"": 0, ""uniqueCount"": 2}",44,,sum
+61597,4169,闪购206代243.2[243.2-206]数量,数量金额_26,NUMERIC,,,f,t,f,,"{""max"": 1.0, ""min"": 0.0, ""sum"": 1.0, ""mean"": 0.00002, ""nullCount"": 0, ""uniqueCount"": 2}",45,,sum
+61598,4169,闪购206代243.2[243.2-206]金额,数量金额_27,NUMERIC,,,f,t,f,,"{""max"": 37.2, ""min"": 0.0, ""sum"": 37.2, ""mean"": 0.0007440000000000001, ""nullCount"": 0, ""uniqueCount"": 2}",46,,sum
+61599,4169,享库138代201[201-138]数量,数量金额_28,NUMERIC,,,f,t,f,,"{""max"": 1.0, ""min"": 0.0, ""sum"": 5.0, ""mean"": 0.0001, ""nullCount"": 0, ""uniqueCount"": 2}",47,,sum
+61600,4169,享库138代201[201-138]金额,数量金额_29,NUMERIC,,,f,t,f,,"{""max"": 63.0, ""min"": 0.0, ""sum"": 315.0, ""mean"": 0.0063, ""nullCount"": 0, ""uniqueCount"": 2}",48,,sum
+61601,4169,闪购95代100[100-95]数量,数量金额_30,NUMERIC,,,f,t,f,,"{""max"": 2.0, ""min"": 0.0, ""sum"": 2.0, ""mean"": 0.00004, ""nullCount"": 0, ""uniqueCount"": 2}",49,,sum
+61602,4169,闪购95代100[100-95]金额,数量金额_31,NUMERIC,,,f,t,f,,"{""max"": 10.0, ""min"": 0.0, ""sum"": 10.0, ""mean"": 0.0002, ""nullCount"": 0, ""uniqueCount"": 2}",50,,sum
+61603,4169,闪购96.5代100[100-96.5]数量,数量金额_32,NUMERIC,,,f,t,f,,"{""max"": 2.0, ""min"": 0.0, ""sum"": 2.0, ""mean"": 0.00004, ""nullCount"": 0, ""uniqueCount"": 2}",51,,sum
+61604,4169,闪购96.5代100[100-96.5]金额,数量金额_33,NUMERIC,,,f,t,f,,"{""max"": 7.0, ""min"": 0.0, ""sum"": 7.0, ""mean"": 0.00014, ""nullCount"": 0, ""uniqueCount"": 2}",52,,sum
+61605,4169,鱼羊鲜50元优惠券[50-0]数量,数量金额_34,NUMERIC,discount,,f,t,f,,"{""max"": 1.0, ""min"": 0.0, ""sum"": 37.0, ""mean"": 0.00074, ""nullCount"": 0, ""uniqueCount"": 2}",53,,sum
+61606,4169,鱼羊鲜50元优惠券[50-0]金额,数量金额_35,NUMERIC,,,f,t,f,,"{""max"": 50.0, ""min"": 0.0, ""sum"": 1850.0, ""mean"": 0.037, ""nullCount"": 0, ""uniqueCount"": 2}",54,,sum
+61607,4169,探探糖0代220[220-0]数量,数量金额_36,NUMERIC,,,f,t,f,,"{""max"": 1.0, ""min"": 0.0, ""sum"": 81.0, ""mean"": 0.00162, ""nullCount"": 0, ""uniqueCount"": 2}",55,,sum
+61608,4169,探探糖0代220[220-0]金额,数量金额_37,NUMERIC,,,f,t,f,,"{""max"": 220.0, ""min"": 0.0, ""sum"": 17820.0, ""mean"": 0.3564, ""nullCount"": 0, ""uniqueCount"": 2}",56,,sum
+61609,4169,消费券55元代金券[55-0]数量,数量金额_38,NUMERIC,,,f,t,f,,"{""max"": 1.0, ""min"": 0.0, ""sum"": 5.0, ""mean"": 0.0001, ""nullCount"": 0, ""uniqueCount"": 2}",57,,sum
+61610,4169,消费券55元代金券[55-0]金额,数量金额_39,NUMERIC,,,f,t,f,,"{""max"": 55.0, ""min"": 0.0, ""sum"": 275.0, ""mean"": 0.0055, ""nullCount"": 0, ""uniqueCount"": 2}",58,,sum
+61611,4169,无刺套餐42元代金券[42-0]数量,数量金额_40,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",59,,sum
+61612,4169,无刺套餐42元代金券[42-0]金额,数量金额_41,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",60,,sum
+61613,4169,无刺套餐32元代金券[32-0]数量,数量金额_42,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",61,,sum
+61614,4169,无刺套餐32元代金券[32-0]金额,数量金额_43,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",62,,sum
+61615,4169,地推30元优惠券[30-0]数量,数量金额_44,NUMERIC,discount,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",63,,sum
+61616,4169,地推30元优惠券[30-0]金额,数量金额_45,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",64,,sum
+61617,4169,地推50元优惠券[50-0]数量,数量金额_46,NUMERIC,discount,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",65,,sum
+61618,4169,地推50元优惠券[50-0]金额,数量金额_47,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",66,,sum
+61619,4169,闪购186代216[216-186]数量,数量金额_48,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",67,,sum
+61620,4169,闪购186代216[216-186]金额,数量金额_49,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",68,,sum
+61621,4169,点评218代300[300-218]数量,数量金额_50,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",69,,sum
+61622,4169,点评218代300[300-218]金额,数量金额_51,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",70,,sum
+61623,4169,晚市微醺0代130[130-0]数量,数量金额_52,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",71,,sum
+61624,4169,晚市微醺0代130[130-0]金额,数量金额_53,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",72,,sum
+61625,4169,晚市微醺0代140[130-0]数量,数量金额_54,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",73,,sum
+61626,4169,晚市微醺0代140[130-0]金额,数量金额_55,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",74,,sum
+61627,4169,晚市微醺0代140[140-0]数量,数量金额_56,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",75,,sum
+61628,4169,晚市微醺0代140[140-0]金额,数量金额_57,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",76,,sum
+61629,4169,闪购186代214[214-186]数量,数量金额_58,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",77,,sum
+61630,4169,闪购186代214[214-186]金额,数量金额_59,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",78,,sum
+61631,4169,笔记红书10元优惠(不计)[10-0]数量,数量金额_60,NUMERIC,discount,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",79,,sum
+61632,4169,笔记红书10元优惠(不计)[10-0]金额,数量金额_61,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",80,,sum
+61633,4169,抖音138代201[201-138]数量,数量金额_62,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",81,,sum
+61634,4169,抖音138代201[201-138]金额,数量金额_63,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",82,,sum
+61635,4169,抖音168代201[201-168]数量,数量金额_64,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",83,,sum
+61636,4169,抖音168代201[201-168]金额,数量金额_65,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",84,,sum
+61637,4169,霸王餐0代140[140-0]数量,数量金额_66,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",85,,sum
+61638,4169,霸王餐0代140[140-0]金额,数量金额_67,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",86,,sum
+61639,4169,点评219代300[300-219]数量,数量金额_68,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",87,,sum
+61640,4169,点评219代300[300-219]金额,数量金额_69,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",88,,sum
+61641,4169,点评160代200[200-160]数量,数量金额_70,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",89,,sum
+61642,4169,点评160代200[200-160]金额,数量金额_71,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",90,,sum
+61643,4169,点评139代200[200-139]数量,数量金额_72,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",91,,sum
+61644,4169,点评139代200[200-139]金额,数量金额_73,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",92,,sum
+61645,4169,点评198代253.48[253.48-198]数量,数量金额_74,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",93,,sum
+61646,4169,点评198代253.48[253.48-198]金额,数量金额_75,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",94,,sum
+61647,4169,点评12.9代18[18-12.9]数量,数量金额_76,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",95,,sum
+61648,4169,点评12.9代18[18-12.9]金额,数量金额_77,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",96,,sum
+61649,4169,[本店在线优惠](不计)[50-0]数量,数量金额_78,NUMERIC,discount,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",97,,sum
+61652,4169,新美大折扣(不计)[30-0]金额,数量金额_81,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",100,,sum
+61653,4169,抖音138代212[212-138]数量,数量金额_82,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",101,,sum
+61654,4169,抖音138代212[212-138]金额,数量金额_83,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",102,,sum
+61655,4169,闪购196代255.48[255.48-196]数量,数量金额_84,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",103,,sum
+61656,4169,闪购196代255.48[255.48-196]金额,数量金额_85,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",104,,sum
+61657,4169,闪购328代407.36[407.36-328]数量,数量金额_86,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",105,,sum
+61658,4169,闪购328代407.36[407.36-328]金额,数量金额_87,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",106,,sum
+61659,4169,闪购326代407.36[407.36-326]数量,数量金额_88,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",107,,sum
+61660,4169,闪购326代407.36[407.36-326]金额,数量金额_89,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",108,,sum
+61661,4169,闪购296代384.36[384.36-296]数量,数量金额_90,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",109,,sum
+61662,4169,闪购296代384.36[384.36-296]金额,数量金额_91,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",110,,sum
+61663,4169,抖音189代220[220-189]数量,数量金额_92,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",111,,sum
+61664,4169,抖音189代220[220-189]金额,数量金额_93,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",112,,sum
+61665,4169,抖音299代340[340-299]数量,数量金额_94,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",113,,sum
+61666,4169,抖音299代340[340-299]金额,数量金额_95,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",114,,sum
+61667,4169,闪购246代269[269-246]数量,数量金额_96,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",115,,sum
+61668,4169,闪购246代269[269-246]金额,数量金额_97,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",116,,sum
+61669,4169,新美大折扣(不计)[2-0]数量,数量金额_98,NUMERIC,discount,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",117,,sum
+61670,4169,新美大折扣(不计)[2-0]金额,数量金额_99,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",118,,sum
+61672,4169,账单号,账单号,NUMERIC,id,,t,f,f,,"{""max"": 2025120920032.0, ""min"": 202501010001.0, ""sum"": null, ""mean"": 203271749867.48233, ""nullCount"": 0, ""uniqueCount"": 43713}",120,,none
+61680,4169,客流量,客流量,NUMERIC,customer,,f,t,f,,"{""max"": 43.0, ""min"": 0.0, ""sum"": 84426.0, ""mean"": 1.68852, ""nullCount"": 0, ""uniqueCount"": 18}",128,,sum
+61682,4169,折扣额,折扣额,NUMERIC,discount,,f,t,f,,"{""max"": 154.8, ""min"": 0.0, ""sum"": 87106.61, ""mean"": 1.7421322, ""nullCount"": 0, ""uniqueCount"": 218}",130,,sum
+61685,4169,实收额,实收额,NUMERIC,payment,,f,t,f,,"{""max"": 1554.1, ""min"": 0.0, ""sum"": 6985960.420000001, ""mean"": 139.7192084, ""nullCount"": 0, ""uniqueCount"": 9912}",133,,sum
+61780,4169,[应收打折优惠](不计),[应收打折优惠](不计),NUMERIC,payment,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",228,,sum
+61781,4169,外部单号,外部单号,NUMERIC,id,,t,f,f,,"{""max"": 8099996103515991000, ""min"": 312248612702.0, ""sum"": null, ""mean"": 5561672002824284000, ""nullCount"": 21137, ""uniqueCount"": 28862}",229,,none
+61577,4169,商品折前金额,数量金额_6,NUMERIC,product,,t,f,f,,"{""max"": 1586.1, ""min"": 0.3, ""sum"": null, ""mean"": 172.85678459999997, ""nullCount"": 0, ""uniqueCount"": 3963}",25,,none
+61578,4169,商品折后金额,数量金额_7,NUMERIC,product,,t,f,f,,"{""max"": 1554.1, ""min"": 0.0, ""sum"": null, ""mean"": 171.1146524, ""nullCount"": 0, ""uniqueCount"": 4026}",26,,none
+61553,4169,营业日期,time_period,DATE,date,,f,f,t,,,1,,none
+61560,4169,开单时间,time_period_2,TEXT,date,,f,f,t,,,8,,none
+61561,4169,结单时间,time_period_3,TEXT,date,,f,f,t,,,9,,none
+61562,4169,反结账时间,time_period_4,TEXT,date,,f,f,t,,,10,,none
+61563,4169,分单时间,time_period_5,TEXT,date,,f,f,t,,,11,,none
+61564,4169,并单时间,time_period_6,TEXT,date,,f,f,t,,,12,,none
+61565,4169,转桌时间,time_period_7,TEXT,date,,f,f,t,,,13,,none
+61566,4169,撤单时间,time_period_8,TEXT,date,,f,f,t,,,14,,none
+61576,4169,商品信息,product_2,TEXT,product,,t,f,f,,,24,,none
+61688,4169,服务费,服务费,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",136,,sum
+61681,4169,人均消费,人均消费,NUMERIC,,,f,t,f,,"{""max"": 587.06, ""min"": 0.0, ""sum"": 3789102.23, ""mean"": 75.81843744997599, ""nullCount"": 24, ""uniqueCount"": 10071}",129,,sum
+61729,4169,无刺套餐42元代金券,无刺套餐42元代金券,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",177,,sum
+61730,4169,无刺套餐32元代金券,无刺套餐32元代金券,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",178,,sum
+61731,4169,地推30元优惠券,地推30元优惠券,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",179,,sum
+61732,4169,点评买单,点评买单,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",180,,sum
+61568,4169,折扣率,rate_percent,NUMERIC,discount,,f,t,f,,,16,,sum
+61650,4169,[本店在线优惠](不计)[50-0]金额,数量金额_79,NUMERIC,,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",98,,sum
+61651,4169,新美大折扣(不计)[30-0]数量,数量金额_80,NUMERIC,discount,,f,t,f,,"{""max"": 0.0, ""min"": 0.0, ""sum"": 0.0, ""mean"": 0.0, ""nullCount"": 0, ""uniqueCount"": 1}",99,,sum
+61671,4169,大区,大区,TEXT,region,,t,f,f,,,119,,none
+61676,4169,服务员,服务员,TEXT,staff,,t,f,f,,,124,,none
+61677,4169,销售员,销售员,TEXT,staff,,t,f,f,,,125,,none
+61692,4169,发票号,发票号,TEXT,id,,t,f,f,,,140,,none
+61782,4169,关联单号,关联单号,TEXT,id,,t,f,f,,,230,,none
+61552,4169,门店名称,category_name,TEXT,store,,t,f,f,,,0,,none
+61554,4169,省份,category_name_2,TEXT,,,t,f,f,,,2,,none
+61555,4169,城市,category_name_3,TEXT,,,t,f,f,,,3,,none
+61556,4169,品牌,category_name_4,TEXT,,,t,f,f,,,4,,none
+61557,4169,订单类型,category_name_5,TEXT,,,t,f,f,,,5,,none
+61558,4169,区域,category_name_6,TEXT,region,,t,f,f,,,6,,none
+61559,4169,订单来源,category_name_7,TEXT,,,t,f,f,,,7,,none
+61569,4169,折扣类型,category_name_8,TEXT,discount,,t,f,f,,,17,,none
+61570,4169,折扣名称,category_name_9,TEXT,discount,,t,f,f,,,18,,none
+61673,4169,订单状态,订单状态,TEXT,,,t,f,f,,,121,,none
+61674,4169,桌位,桌位,TEXT,,,t,f,f,,,122,,none
+61675,4169,班次,班次,TEXT,,,t,f,f,,,123,,none
+61678,4169,收银员,收银员,TEXT,,,t,f,f,,,126,,none
+61679,4169,整单备注,整单备注,TEXT,,,t,f,f,,,127,,none
+61783,4170,账单号,,NUMERIC,id,y_axis,t,f,f,,"{""max"": 1003.0, ""min"": 1001.0, ""sum"": null, ""mean"": 1002.0, ""nullCount"": 0, ""uniqueCount"": 3}",0,"#,##0.##",none
+61784,4170,服务员,,TEXT,staff,,t,f,f,,,1,,none
+61785,4170,数量金额,数量金额,NUMERIC,,,f,t,f,[1000.0],"{""max"": 2000.0, ""min"": 1000.0, ""sum"": 4500.0, ""mean"": 1500.0, ""nullCount"": 0, ""uniqueCount"": 3}",2,,sum
+61786,4170,数量金额_2,数量金额_2,NUMERIC,,,f,t,f,[5000.0],"{""max"": 6000.0, ""min"": 4500.0, ""sum"": 15500.0, ""mean"": 5166.666666666667, ""nullCount"": 0, ""uniqueCount"": 3}",3,,sum
+61787,4170,time_period,time_period,DATE,date,,f,f,t,"[""2026-01-15""]",,4,,none
+61800,4172,星级分,星级分,NUMERIC,,y_axis,f,t,f,,"{""max"": 5.0, ""min"": 0.5, ""sum"": null, ""mean"": 4.826164457878013, ""nullCount"": 0, ""uniqueCount"": 10}",7,"#,##0.##",mean
+61801,4172,口味分,口味分,NUMERIC,,y_axis,f,t,f,,"{""max"": 5.0, ""min"": 0.0, ""sum"": null, ""mean"": 4.82112686972022, ""nullCount"": 0, ""uniqueCount"": 11}",8,"#,##0.##",mean
+61802,4172,环境分,环境分,NUMERIC,,y_axis,f,t,f,,"{""max"": 5.0, ""min"": 0.0, ""sum"": null, ""mean"": 4.824924436177633, ""nullCount"": 0, ""uniqueCount"": 11}",9,"#,##0.##",mean
+61803,4172,服务分,服务分,NUMERIC,,y_axis,f,t,f,,"{""max"": 5.0, ""min"": 0.0, ""sum"": null, ""mean"": 4.830000775013563, ""nullCount"": 0, ""uniqueCount"": 11}",10,"#,##0.##",mean
+61793,4172,评价ID,评价ID,NUMERIC,id,dimension,t,f,f,,"{""max"": 9196634915.0, ""min"": 2701881606.0, ""sum"": null, ""mean"": 2974621900.4033947, ""nullCount"": 0, ""uniqueCount"": 12903}",0,"#,##0.##",none
+61794,4172,省份,省份,TEXT,,,t,f,f,,,1,,none
+61795,4172,城市,城市,TEXT,,,t,f,f,,,2,,none
+61796,4172,评价门店,评价门店,TEXT,store,,t,f,f,,,3,,none
+61797,4172,门店美团ID,门店美团ID,NUMERIC,id,dimension,t,f,f,,"{""max"": 1891082089.0, ""min"": 2511163.0, ""sum"": null, ""mean"": 610596609.3699139, ""nullCount"": 0, ""uniqueCount"": 23}",4,"#,##0.##",none
+61798,4172,团购ID,团购ID,NUMERIC,id,dimension,t,f,f,,"{""max"": 1623986002.0, ""min"": 8966038.0, ""sum"": null, ""mean"": 1090349932.9986014, ""nullCount"": 10043, ""uniqueCount"": 137}",5,"#,##0.##",none
+61799,4172,平台,平台,TEXT,,,t,f,f,,,6,,none
+61804,4172,评价来源,评价来源,TEXT,,,t,f,f,,,11,,none
+61805,4172,菜品标签,菜品标签,TEXT,product,,t,f,f,,,12,,none
+61806,4172,服务标签,服务标签,TEXT,,,t,f,f,,,13,,none
+61807,4172,环境标签,环境标签,TEXT,,,t,f,f,,,14,,none
+61808,4172,用户等级,用户等级,TEXT,,,t,f,f,,,15,,none
+61809,4172,投诉类型,投诉类型,TEXT,,,t,f,f,,,16,,none
+61810,4172,评价团购,,TEXT,,,t,f,f,,,17,,none
+61811,4172,评价详情,,TEXT,,,t,f,f,,,18,,none
+61812,4172,评价质量,,TEXT,,,t,f,f,,,19,,none
+61813,4172,用户昵称,,TEXT,,,t,f,f,,,20,,none
+61814,4172,是否vip,,TEXT,,,t,f,f,,,21,,none
+61815,4172,回复状态,,TEXT,,,t,f,f,,,22,,none
+61816,4172,最新回复内容,,TEXT,,,t,f,f,,,23,,none
+61817,4172,盖楼内容,,TEXT,,,t,f,f,,,24,,none
+61818,4172,投诉状态,,TEXT,,,t,f,f,,,25,,none
+61819,4172,投诉理由,,TEXT,,,t,f,f,,,26,,none
+61820,4172,time_period,time_period,DATE,date,,f,f,t,"[""2025-09-30 23:27:44""]",,27,,none
+61821,4172,time_period_2,time_period_2,DATE,date,,f,f,t,"[""2025-10-01 16:57:11""]",,28,,none
+61822,4172,time_period_3,time_period_3,TEXT,date,,f,f,t,[],,29,,none
+61788,4171,账单号,,,id,,t,f,f,,"{""max"": 1003.0, ""min"": 1001.0, ""sum"": null, ""mean"": 1002.0, ""nullCount"": 0, ""uniqueCount"": 3}",0,,none
+61789,4171,服务员,,,staff,,t,f,f,,,1,,none
+61790,4171,数量金额,数量金额,NUMERIC,,,f,t,f,[1000.0],"{""max"": 2000.0, ""min"": 1000.0, ""sum"": 4500.0, ""mean"": 1500.0, ""nullCount"": 0, ""uniqueCount"": 3}",2,,sum
+61791,4171,数量金额_2,数量金额_2,NUMERIC,,,f,t,f,[5000.0],"{""max"": 6000.0, ""min"": 4500.0, ""sum"": 15500.0, ""mean"": 5166.666666666667, ""nullCount"": 0, ""uniqueCount"": 3}",3,,sum
+61792,4171,time_period,time_period,DATE,date,,f,f,t,"[""2026-01-15""]",,4,,none
+61823,4175,门店名称,门店名称,TEXT,store,,t,f,f,,,0,,sum
+61824,4175,商品分类,category,TEXT,product,,t,f,f,,,1,,sum
+61825,4175,收入分组,revenue_group,TEXT,,,t,f,f,,,2,,sum
+61826,4175,商品编码,商品编码,TEXT,product,,t,f,f,,,3,,sum
+61827,4175,商品名称,商品名称,TEXT,product,,t,f,f,,,4,,sum
+61828,4175,商品类型,商品类型,TEXT,product,,t,f,f,,,5,,sum
+61829,4175,单卖数量(不含套餐子商品),数量金额,NUMERIC,product,,f,t,f,,,6,,sum
+61830,4175,退货数量(不含套餐子商品),数量金额_2,NUMERIC,product,,f,t,f,,,7,,sum
+61831,4175,销售单价,数量金额_3,NUMERIC,,,f,t,f,,,8,,sum
+61832,4175,销售金额,数量金额_4,NUMERIC,amount,,f,t,f,,,9,,sum
+61833,4175,折后金额,数量金额_5,NUMERIC,amount,,f,t,f,,,10,,sum
+61834,4175,分摊优惠,数量金额_6,NUMERIC,amount,,f,t,f,,,11,,sum
+61835,4175,实退金额,数量金额_7,NUMERIC,amount,,f,t,f,,,12,,sum
+61836,4175,实收,数量金额_8,NUMERIC,payment,,f,t,f,,,13,,sum
+61837,4175,规格,规格,TEXT,,,t,f,f,,,14,,sum
+61838,4175,点单方式,点单方式,TEXT,,,t,f,f,,,15,,sum
+61839,4175,单位,单位,TEXT,,,t,f,f,,,16,,sum

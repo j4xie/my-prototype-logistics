@@ -36,6 +36,44 @@ public class ArApServiceImpl implements ArApService {
     private final CustomerRepository customerRepository;
     private final SupplierRepository supplierRepository;
 
+    /** R20 audit Q1: PO status validation for AP invariant.
+     *  R21 audit S2: required=true (was =false fail-open hole). Repo is always present. */
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.cretas.aims.repository.inventory.PurchaseOrderRepository purchaseOrderRepository;
+
+    /** R21: SO repo for AR invariant (R20 audit C1 — recordReceivable was unprotected). */
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.cretas.aims.repository.inventory.SalesOrderRepository salesOrderRepository;
+
+    private void validatePayableStatus(String purchaseOrderId, String factoryId) {
+        com.cretas.aims.entity.inventory.PurchaseOrder po = purchaseOrderRepository.findById(purchaseOrderId)
+                .filter(p -> factoryId.equals(p.getFactoryId()))
+                .orElseThrow(() -> new ResourceNotFoundException("采购订单不存在: " + purchaseOrderId));
+        if (po.getStatus() == null
+                || !com.cretas.aims.domain.OrderUsageWhitelists.PO_INVOICEABLE.contains(po.getStatus())) {
+            throw new com.cretas.aims.exception.BusinessException(409,
+                "采购订单状态不允许应付挂账 (当前: " + (po.getStatus() != null ? po.getStatus().name() : "null") +
+                "). 仅财务审核通过及之后状态可挂账.")
+                .withHint("先完成财务审核流程后再录入应付")
+                .withHintTarget("采购订单");
+        }
+    }
+
+    /** R21 audit C1: recordReceivable was unprotected. Mirror of validatePayableStatus. */
+    private void validateReceivableStatus(String salesOrderId, String factoryId) {
+        com.cretas.aims.entity.inventory.SalesOrder so = salesOrderRepository.findById(salesOrderId)
+                .filter(s -> factoryId.equals(s.getFactoryId()))
+                .orElseThrow(() -> new ResourceNotFoundException("销售订单不存在: " + salesOrderId));
+        if (so.getStatus() == null
+                || !com.cretas.aims.domain.OrderUsageWhitelists.SO_INVOICEABLE.contains(so.getStatus())) {
+            throw new com.cretas.aims.exception.BusinessException(409,
+                "销售订单状态不允许应收挂账 (当前: " + (so.getStatus() != null ? so.getStatus().name() : "null") +
+                "). 仅财务审核通过及之后状态可挂账.")
+                .withHint("先完成财务审核流程后再录入应收")
+                .withHintTarget("销售订单");
+        }
+    }
+
     /** Canvas V2: DB-driven validation rules */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.ValidationRuleEvaluator validationRuleEvaluator;
@@ -71,7 +109,8 @@ public class ArApServiceImpl implements ArApService {
         }
 
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BusinessException("应收金额必须大于0");
+            throw new BusinessException(400, "应收金额必须大于0")
+                    .withHint("请输入大于 0 的金额").withHintTarget("amount");
         }
 
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
@@ -80,7 +119,16 @@ public class ArApServiceImpl implements ArApService {
         // 检查是否已挂账
         if (salesOrderId != null && transactionRepository.existsByFactoryIdAndSalesOrderIdAndTransactionType(
                 factoryId, salesOrderId, ArApTransactionType.AR_INVOICE)) {
-            throw new BusinessException("该销售订单已生成应收记录");
+            throw new BusinessException(409, "该销售订单已生成应收记录")
+                    .withHint("请勿重复挂账, 如需调整请使用收款或调整流程").withHintTarget("salesOrderId");
+        }
+
+        // R21 audit C1: enforce SO status invariant (mirror of R18 InvoiceServiceImpl).
+        // Without this, direct API POST with DRAFT/CANCELLED salesOrderId silently writes
+        // an AR_INVOICE transaction. R18 fixed the parallel InvoiceRecord write path; this
+        // closes the ArApTransaction-side gap.
+        if (salesOrderId != null) {
+            validateReceivableStatus(salesOrderId, factoryId);
         }
 
         // 更新客户余额
@@ -107,7 +155,8 @@ public class ArApServiceImpl implements ArApService {
                                           String purchaseOrderId, BigDecimal amount,
                                           LocalDate dueDate, Long operatedBy, String remark) {
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BusinessException("应付金额必须大于0");
+            throw new BusinessException(400, "应付金额必须大于0")
+                    .withHint("请输入大于 0 的金额").withHintTarget("amount");
         }
 
         Supplier supplier = supplierRepository.findByIdAndFactoryId(supplierId, factoryId)
@@ -115,7 +164,15 @@ public class ArApServiceImpl implements ArApService {
 
         if (purchaseOrderId != null && transactionRepository.existsByFactoryIdAndPurchaseOrderIdAndTransactionType(
                 factoryId, purchaseOrderId, ArApTransactionType.AP_INVOICE)) {
-            throw new BusinessException("该采购订单已生成应付记录");
+            throw new BusinessException(409, "该采购订单已生成应付记录")
+                    .withHint("请勿重复挂账, 如需调整请使用付款或调整流程").withHintTarget("purchaseOrderId");
+        }
+
+        // R20 audit Q1: enforce business invariant — payable can only be recorded against
+        // a post-finance-approved PO. Mirror of R18's invoice fix (which only covered AR).
+        // Without this, direct API POST with DRAFT/CANCELLED purchaseOrderId would bypass.
+        if (purchaseOrderId != null) {
+            validatePayableStatus(purchaseOrderId, factoryId);
         }
 
         BigDecimal newBalance = (supplier.getCurrentBalance() != null ? supplier.getCurrentBalance() : BigDecimal.ZERO)
@@ -154,13 +211,15 @@ public class ArApServiceImpl implements ArApService {
             catch (Exception e) { log.warn("Canvas validation non-blocking: {}", e.getMessage()); }
         }
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BusinessException("收款金额必须大于0");
+            throw new BusinessException(400, "收款金额必须大于0")
+                    .withHint("请输入大于 0 的金额").withHintTarget("amount");
         }
 
         // 幂等检查：同一 paymentReference 不能重复收款
         if (paymentReference != null && !paymentReference.isBlank()
                 && transactionRepository.existsByFactoryIdAndPaymentReference(factoryId, paymentReference)) {
-            throw new BusinessException("收款单号已存在，请勿重复提交: " + paymentReference);
+            throw new BusinessException(409, "收款单号已存在，请勿重复提交: " + paymentReference)
+                    .withHint("请使用其他收款单号, 或刷新查看已有记录").withHintTarget("paymentReference");
         }
 
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
@@ -169,7 +228,8 @@ public class ArApServiceImpl implements ArApService {
         // 超额防护：收款金额不能超过客户应收余额
         BigDecimal currentBalance = customer.getCurrentBalance() != null ? customer.getCurrentBalance() : BigDecimal.ZERO;
         if (currentBalance.compareTo(BigDecimal.ZERO) > 0 && amount.compareTo(currentBalance) > 0) {
-            throw new BusinessException("收款金额(" + amount + ")超过客户应收余额(" + currentBalance + ")");
+            throw new BusinessException(409, "收款金额(" + amount + ")超过客户应收余额(" + currentBalance + ")")
+                    .withHint("请减少收款金额, 或先核对客户应收余额").withHintTarget("amount");
         }
 
         // 付款冲减余额（amount为正数，存为负数表示减少应收）
@@ -223,13 +283,15 @@ public class ArApServiceImpl implements ArApService {
             catch (Exception e) { log.warn("Canvas validation non-blocking: {}", e.getMessage()); }
         }
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BusinessException("付款金额必须大于0");
+            throw new BusinessException(400, "付款金额必须大于0")
+                    .withHint("请输入大于 0 的金额").withHintTarget("amount");
         }
 
         // 幂等检查：同一 paymentReference 不能重复付款
         if (paymentReference != null && !paymentReference.isBlank()
                 && transactionRepository.existsByFactoryIdAndPaymentReference(factoryId, paymentReference)) {
-            throw new BusinessException("付款单号已存在，请勿重复提交: " + paymentReference);
+            throw new BusinessException(409, "付款单号已存在，请勿重复提交: " + paymentReference)
+                    .withHint("请使用其他付款单号, 或刷新查看已有记录").withHintTarget("paymentReference");
         }
 
         Supplier supplier = supplierRepository.findByIdAndFactoryId(supplierId, factoryId)
@@ -260,37 +322,129 @@ public class ArApServiceImpl implements ArApService {
     public ArApTransaction recordAdjustment(String factoryId, CounterpartyType counterpartyType,
                                              String counterpartyId, BigDecimal amount,
                                              Long operatedBy, String remark) {
+        // R23 audit C2: Pre-R23 this immediately mutated balance and saved APPROVED — bypass
+        // of dual-control. R23: insert PENDING + DO NOT mutate balance. Customer/supplier
+        // balance changes only on approveAdjustment() by a 2nd user with elevated permission.
         String counterpartyName;
-        BigDecimal newBalance;
+        BigDecimal currentBalance;
 
         if (counterpartyType == CounterpartyType.CUSTOMER) {
             Customer customer = customerRepository.findByIdAndFactoryId(counterpartyId, factoryId)
                     .orElseThrow(() -> new ResourceNotFoundException("客户不存在"));
-            newBalance = (customer.getCurrentBalance() != null ? customer.getCurrentBalance() : BigDecimal.ZERO)
-                    .add(amount);
-            customer.setCurrentBalance(newBalance);
-            customerRepository.save(customer);
             counterpartyName = customer.getName();
+            currentBalance = customer.getCurrentBalance() != null ? customer.getCurrentBalance() : BigDecimal.ZERO;
         } else {
             Supplier supplier = supplierRepository.findByIdAndFactoryId(counterpartyId, factoryId)
                     .orElseThrow(() -> new ResourceNotFoundException("供应商不存在"));
-            newBalance = (supplier.getCurrentBalance() != null ? supplier.getCurrentBalance() : BigDecimal.ZERO)
-                    .add(amount);
-            supplier.setCurrentBalance(newBalance);
-            supplierRepository.save(supplier);
             counterpartyName = supplier.getName();
+            currentBalance = supplier.getCurrentBalance() != null ? supplier.getCurrentBalance() : BigDecimal.ZERO;
         }
 
         ArApTransactionType type = counterpartyType == CounterpartyType.CUSTOMER
                 ? ArApTransactionType.AR_ADJUSTMENT : ArApTransactionType.AP_ADJUSTMENT;
 
+        // balance_after captures CURRENT (un-mutated) balance — semantically "snapshot at submit time".
+        // On approve, we recompute and update balance_after to reflect the post-application value.
         ArApTransaction transaction = buildTransaction(
                 factoryId, type, counterpartyType, counterpartyId, counterpartyName,
-                amount, newBalance, null, operatedBy, remark);
+                amount, currentBalance, null, operatedBy, remark);
+        transaction.setApprovalStatus(com.cretas.aims.entity.enums.ArApApprovalStatus.PENDING);
 
-        log.info("手工调整: factoryId={}, type={}, counterpartyId={}, amount={}, balance={}",
-                factoryId, counterpartyType, counterpartyId, amount, newBalance);
+        log.info("手工调整 (PENDING): factoryId={}, type={}, counterpartyId={}, amount={}, currentBalance={}, operatedBy={}",
+                factoryId, counterpartyType, counterpartyId, amount, currentBalance, operatedBy);
         return transactionRepository.save(transaction);
+    }
+
+    @Override
+    @Transactional
+    public ArApTransaction approveAdjustment(String factoryId, String transactionId, Long approvedBy) {
+        ArApTransaction txn = transactionRepository.findById(transactionId)
+                .filter(t -> factoryId.equals(t.getFactoryId()))
+                .orElseThrow(() -> new ResourceNotFoundException("调整记录不存在: " + transactionId));
+
+        if (txn.getApprovalStatus() != com.cretas.aims.entity.enums.ArApApprovalStatus.PENDING) {
+            // R25 follow-up (reviewer #15 Critical-1, qa-prompt v2.4 Rule 15.b sweep):
+            // emit actionHint so FE interceptor differentiates from vanilla optimistic-lock
+            // 409 (no actionHint → suppressed). Pre-fix: silent failure on double-approve.
+            throw new BusinessException(409, "只能审批 PENDING 状态的调整, 当前: " + txn.getApprovalStatus())
+                    .withHint("请刷新调整列表查看最新状态")
+                    .withHintTarget("调整记录");
+        }
+        if (txn.getTransactionType() != ArApTransactionType.AR_ADJUSTMENT
+                && txn.getTransactionType() != ArApTransactionType.AP_ADJUSTMENT) {
+            throw new BusinessException(409, "非调整类型交易不可审批: " + txn.getTransactionType())
+                    .withHint("仅 AR/AP 调整类型交易需要审批, 请刷新交易列表");
+        }
+        // 4-eyes principle: approver must differ from submitter
+        if (txn.getOperatedBy() != null && txn.getOperatedBy().equals(approvedBy)) {
+            throw new BusinessException(403, "审批人不能与提交人相同 (4 眼原则)")
+                    .withHint("请使用其他账号审批")
+                    .withHintTarget("审批人");
+        }
+
+        BigDecimal amount = txn.getAmount();
+        BigDecimal newBalance;
+
+        if (txn.getCounterpartyType() == CounterpartyType.CUSTOMER) {
+            Customer customer = customerRepository.findByIdAndFactoryId(txn.getCounterpartyId(), factoryId)
+                    .orElseThrow(() -> new ResourceNotFoundException("客户不存在: " + txn.getCounterpartyId()));
+            newBalance = (customer.getCurrentBalance() != null ? customer.getCurrentBalance() : BigDecimal.ZERO)
+                    .add(amount);
+            customer.setCurrentBalance(newBalance);
+            customerRepository.save(customer);
+        } else {
+            Supplier supplier = supplierRepository.findByIdAndFactoryId(txn.getCounterpartyId(), factoryId)
+                    .orElseThrow(() -> new ResourceNotFoundException("供应商不存在: " + txn.getCounterpartyId()));
+            newBalance = (supplier.getCurrentBalance() != null ? supplier.getCurrentBalance() : BigDecimal.ZERO)
+                    .add(amount);
+            supplier.setCurrentBalance(newBalance);
+            supplierRepository.save(supplier);
+        }
+
+        txn.setBalanceAfter(newBalance);
+        txn.setApprovalStatus(com.cretas.aims.entity.enums.ArApApprovalStatus.APPROVED);
+        txn.setApprovedBy(approvedBy);
+        txn.setApprovedAt(java.time.LocalDateTime.now());
+        log.info("调整审批通过: txnId={}, factoryId={}, approvedBy={}, newBalance={}",
+                transactionId, factoryId, approvedBy, newBalance);
+        return transactionRepository.save(txn);
+    }
+
+    @Override
+    @Transactional
+    public ArApTransaction rejectAdjustment(String factoryId, String transactionId, Long approvedBy, String reason) {
+        ArApTransaction txn = transactionRepository.findById(transactionId)
+                .filter(t -> factoryId.equals(t.getFactoryId()))
+                .orElseThrow(() -> new ResourceNotFoundException("调整记录不存在: " + transactionId));
+
+        if (txn.getApprovalStatus() != com.cretas.aims.entity.enums.ArApApprovalStatus.PENDING) {
+            // R25 follow-up (reviewer #15 Critical-1)
+            throw new BusinessException(409, "只能驳回 PENDING 状态的调整, 当前: " + txn.getApprovalStatus())
+                    .withHint("请刷新调整列表查看最新状态")
+                    .withHintTarget("调整记录");
+        }
+        if (txn.getOperatedBy() != null && txn.getOperatedBy().equals(approvedBy)) {
+            throw new BusinessException(403, "审批人不能与提交人相同 (4 眼原则)")
+                    .withHint("请使用其他账号驳回")
+                    .withHintTarget("审批人");
+        }
+
+        // 余额不动. 在 remark 末尾追加驳回原因, 历史可追溯.
+        String existingRemark = txn.getRemark() != null ? txn.getRemark() : "";
+        String suffix = " [REJECTED by " + approvedBy + ": "
+                + (reason != null && !reason.isBlank() ? reason : "(无原因)") + "]";
+        // 防止 remark 超长 (DB column length=500)
+        String newRemark = existingRemark + suffix;
+        if (newRemark.length() > 500) {
+            newRemark = newRemark.substring(0, 500);
+        }
+        txn.setRemark(newRemark);
+        txn.setApprovalStatus(com.cretas.aims.entity.enums.ArApApprovalStatus.REJECTED);
+        txn.setApprovedBy(approvedBy);
+        txn.setApprovedAt(java.time.LocalDateTime.now());
+        log.info("调整审批驳回: txnId={}, factoryId={}, rejectedBy={}, reason={}",
+                transactionId, factoryId, approvedBy, reason);
+        return transactionRepository.save(txn);
     }
 
     // ==================== 查询 ====================
@@ -314,6 +468,125 @@ public class ArApServiceImpl implements ArApService {
         }
 
         return PageResponse.of(result.getContent(), page, size, result.getTotalElements());
+    }
+
+    /**
+     * R28 P2 (R23 P5 deferred): list PENDING adjustments. Inline query over the
+     * existing transactionRepository's standard JPA findAll Specification — keeps
+     * the API surface narrow without adding a one-off named query.
+     */
+    @Override
+    public PageResponse<ArApTransaction> getPendingAdjustments(String factoryId, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<ArApTransaction> result = transactionRepository.findPendingAdjustments(factoryId, pageRequest);
+        return PageResponse.of(result.getContent(), page, size, result.getTotalElements());
+    }
+
+    /**
+     * R29 P1: filtered version. counterpartyType pushed to DB (typed @Query);
+     * amount + date filters applied in-Java post-fetch (avoids PG parameter-type-
+     * inference issue with `:p IS NULL` checks on dynamically-null params).
+     * Trade-off: amount/date filters require fetching full PENDING result first
+     * — acceptable since adjustment queues are typically small (tens to hundreds).
+     */
+    @Override
+    public PageResponse<ArApTransaction> getPendingAdjustments(
+            String factoryId, CounterpartyType counterpartyType,
+            BigDecimal minAmount, BigDecimal maxAmount,
+            java.time.LocalDate fromDate, java.time.LocalDate toDate,
+            int page, int size) {
+        boolean noFilters = counterpartyType == null && minAmount == null && maxAmount == null
+                && fromDate == null && toDate == null;
+        if (noFilters) return getPendingAdjustments(factoryId, page, size);
+
+        // Fetch wider result, then apply Java-level filters
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
+        PageRequest fullPage = PageRequest.of(0, 1000, sort); // upper bound; pending queues are bounded
+        Page<ArApTransaction> raw = counterpartyType != null
+                ? transactionRepository.findPendingAdjustmentsByType(factoryId, counterpartyType, fullPage)
+                : transactionRepository.findPendingAdjustments(factoryId, fullPage);
+
+        java.time.LocalDateTime fromDateTime = fromDate != null ? fromDate.atStartOfDay() : null;
+        java.time.LocalDateTime toDateTime = toDate != null ? toDate.plusDays(1).atStartOfDay() : null;
+        java.util.List<ArApTransaction> filtered = raw.getContent().stream()
+                .filter(t -> minAmount == null || t.getAmount() != null && t.getAmount().abs().compareTo(minAmount) >= 0)
+                .filter(t -> maxAmount == null || t.getAmount() != null && t.getAmount().abs().compareTo(maxAmount) <= 0)
+                .filter(t -> fromDateTime == null || t.getCreatedAt() != null && !t.getCreatedAt().isBefore(fromDateTime))
+                .filter(t -> toDateTime == null || t.getCreatedAt() != null && t.getCreatedAt().isBefore(toDateTime))
+                .collect(java.util.stream.Collectors.toList());
+
+        // In-memory paging
+        int total = filtered.size();
+        int from = Math.min((page - 1) * size, total);
+        int to = Math.min(from + size, total);
+        java.util.List<ArApTransaction> pageContent = filtered.subList(from, to);
+        return PageResponse.of(pageContent, page, size, (long) total);
+    }
+
+    /**
+     * R29 P2 batch approve. Per-id error capture — single failure doesn't abort
+     * the rest. Each approveAdjustment is its own @Transactional so failures are
+     * isolated.
+     */
+    @Override
+    public java.util.Map<String, Object> batchApproveAdjustments(
+            String factoryId, java.util.List<String> transactionIds, Long approvedBy) {
+        if (transactionIds == null || transactionIds.isEmpty()) {
+            throw new BusinessException(400, "批量审批 ID 列表不能为空")
+                    .withHint("请选择至少 1 条交易").withHintTarget("ids");
+        }
+        if (transactionIds.size() > 100) {
+            throw new BusinessException(400, "批量审批一次不超过 100 条")
+                    .withHint("请分批操作, 每次最多 100 条").withHintTarget("ids");
+        }
+        int approvedCount = 0;
+        java.util.List<java.util.Map<String, String>> failures = new java.util.ArrayList<>();
+        for (String id : transactionIds) {
+            try {
+                approveAdjustment(factoryId, id, approvedBy);
+                approvedCount++;
+            } catch (RuntimeException e) {
+                failures.add(java.util.Map.of("id", id, "reason", e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
+            }
+        }
+        java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("requested", transactionIds.size());
+        result.put("approvedCount", approvedCount);
+        result.put("failedCount", failures.size());
+        result.put("failures", failures);
+        return result;
+    }
+
+    /**
+     * R29 P2 batch reject. Same shape.
+     */
+    @Override
+    public java.util.Map<String, Object> batchRejectAdjustments(
+            String factoryId, java.util.List<String> transactionIds, Long approvedBy, String reason) {
+        if (transactionIds == null || transactionIds.isEmpty()) {
+            throw new BusinessException(400, "批量驳回 ID 列表不能为空")
+                    .withHint("请选择至少 1 条交易").withHintTarget("ids");
+        }
+        if (transactionIds.size() > 100) {
+            throw new BusinessException(400, "批量驳回一次不超过 100 条")
+                    .withHint("请分批操作, 每次最多 100 条").withHintTarget("ids");
+        }
+        int rejectedCount = 0;
+        java.util.List<java.util.Map<String, String>> failures = new java.util.ArrayList<>();
+        for (String id : transactionIds) {
+            try {
+                rejectAdjustment(factoryId, id, approvedBy, reason);
+                rejectedCount++;
+            } catch (RuntimeException e) {
+                failures.add(java.util.Map.of("id", id, "reason", e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
+            }
+        }
+        java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("requested", transactionIds.size());
+        result.put("rejectedCount", rejectedCount);
+        result.put("failedCount", failures.size());
+        result.put("failures", failures);
+        return result;
     }
 
     @Override

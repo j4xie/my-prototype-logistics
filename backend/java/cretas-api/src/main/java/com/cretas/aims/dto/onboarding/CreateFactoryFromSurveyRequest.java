@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.Map;
 
@@ -19,13 +20,19 @@ import java.util.Map;
 public class CreateFactoryFromSurveyRequest {
 
     // Basic info
+    @Size(max = 200, message = "工厂名称长度不能超过200个字符")
     private String factoryName;
+    @Size(max = 100, message = "联系人长度不能超过100个字符")
     private String contactName;
+    @Size(max = 20, message = "联系电话长度不能超过20个字符")
     private String contactPhone;
+    @Size(max = 50, message = "行业代码长度不能超过50个字符")
     private String industryCode;
+    @Size(max = 50, message = "地区代码长度不能超过50个字符")
     private String regionCode;
 
     // Survey linkage
+    @Size(max = 191, message = "问卷ID长度不能超过191个字符")
     private String surveyCompanyId;
 
     // Module configs (from AI assessment)

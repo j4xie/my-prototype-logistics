@@ -8,6 +8,7 @@
             <span class="data-count">共 {{ pagination.total }} 条</span>
           </div>
           <div class="header-right">
+            <el-button type="info" plain @click="handleAiAnalyze">🤖 AI 分析</el-button>
             <el-button :icon="Download" @click="handleExport">导出</el-button>
             <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleCreate">新建盘点</el-button>
           </div>
@@ -41,6 +42,19 @@
           </div>
         </el-col>
       </el-row>
+
+      <!-- Apr 24 P1 analytics strip: trend of差异 + ranking by food -->
+      <AnalyticsStrip
+        :rows="tableData"
+        date-field="stocktakingDate"
+        value-field="differenceQuantity"
+        category-field="rawMaterialTypeId"
+        :category-name-map="materialNameMap"
+        trend-title="盘点差异趋势"
+        ranking-title="食材盘亏/盈 Top 10"
+        value-unit="kg"
+        :top-n="10"
+      />
 
       <div class="search-bar" role="search" aria-label="盘点记录筛选">
         <el-date-picker v-model="filterDateRange" type="daterange" range-separator="至" start-placeholder="开始日期"
@@ -176,6 +190,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { Plus, Search, Refresh, Download } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus';
 import { useFactoryId } from '@/composables/useFactoryId';
@@ -184,6 +199,7 @@ import { getStocktakingRecords, getStocktakingRecord, getStocktakingSummary, cre
 import { emptyCell, formatDateCell, exportTableToExcel } from '@/utils/tableFormatters';
 import { formatDate } from '@/utils/dateFormat';
 import type { StocktakingRecord } from '@/types/restaurant';
+import AnalyticsStrip from '../components/AnalyticsStrip.vue';
 
 const factoryId = useFactoryId();
 const permissionStore = usePermissionStore();
@@ -285,6 +301,11 @@ async function loadData() {
   } finally { loading.value = false; }
 }
 
+const router = useRouter();
+function handleAiAnalyze() {
+  router.push({ path: '/smart-bi/query', query: { q: '最近30天盘亏最严重的食材 top 10' } });
+}
+
 function handleSearch() { pagination.value.page = 1; loadData(); }
 function handleRefresh() { filterStatus.value = ''; filterDateRange.value = null; handleSearch(); }
 function handleCreate() {
@@ -315,8 +336,8 @@ async function submitCreateForm() {
       ElMessage.error(res.message || '创建失败');
     }
   } catch (e) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('Create stocktaking failed:', e);
-    ElMessage.error('创建失败');
   } finally { submitting.value = false; }
 }
 

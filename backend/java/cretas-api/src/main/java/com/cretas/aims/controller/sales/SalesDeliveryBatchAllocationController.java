@@ -1,6 +1,7 @@
 package com.cretas.aims.controller.sales;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.sales.BatchAllocationDTO;
 import com.cretas.aims.entity.sales.SalesDeliveryItemBatchAllocation;
 import com.cretas.aims.service.sales.SalesDeliveryBatchAllocationService;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * PC 端销售发货批次分配 REST 接口（P0-13 昆山六扇门）。
@@ -34,6 +36,8 @@ public class SalesDeliveryBatchAllocationController {
         return ApiResponse.success("查询成功", service.listByDeliveryItem(factoryId, deliveryItemId));
     }
 
+    @RequirePermission({"sales:read_write"})
+    @RequireModule("sales_order")
     @PostMapping
     @Operation(summary = "设置发货行的批次分配（先清空再写入）")
     public ApiResponse<Map<String, Object>> allocate(
@@ -56,6 +60,8 @@ public class SalesDeliveryBatchAllocationController {
         return ApiResponse.success("FIFO 推荐 (按生产日期升序)", service.recommendFifo(factoryId, productTypeId, requiredQty));
     }
 
+    @RequirePermission({"sales:read_write"})
+    @RequireModule("sales_order")
     @DeleteMapping
     @Operation(summary = "清空发货行的批次分配")
     public ApiResponse<Void> clear(

@@ -5,7 +5,9 @@ import com.cretas.aims.enums.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.dao.QueryTimeoutException;
+import org.hibernate.PropertyValueException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
@@ -126,12 +128,34 @@ public class GlobalExceptionHandler {
      * 处理业务异常 - 业务异常消息通常是安全的
      */
     @ExceptionHandler(BusinessException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiResponse<?> handleBusinessException(BusinessException e) {
+    public org.springframework.http.ResponseEntity<ApiResponse<?>> handleBusinessException(BusinessException e) {
         log.warn("业务异常: code={}, message={}", e.getCode(), e.getMessage());
         // 业务异常的消息通常是开发者定义的，但仍需检查
         String message = isSafeMessage(e.getMessage()) ? e.getMessage() : ErrorCode.BUSINESS_RULE_VIOLATION.getUserMessage();
-        return ApiResponse.error(e.getCode(), message);
+        // UX 2026-04-18 进阶: propagate actionHint/severity/hintTarget so frontend
+        // interceptor can render ElNotification with button, ElMessageBox modal,
+        // or pulse-hint animation instead of plain ElMessage toast.
+        ApiResponse<?> body;
+        if (e.getActionHint() != null || e.getSeverity() != null || e.getHintTarget() != null) {
+            body = ApiResponse.errorWithHint(e.getCode(), message,
+                    e.getActionHint(), e.getSeverity(), e.getHintTarget());
+        } else {
+            body = ApiResponse.error(e.getCode(), message);
+        }
+        // Map business code to HTTP status. Default 400 for unknown / 4xx-validation paths.
+        HttpStatus status = switch (e.getCode() != null ? e.getCode() : 400) {
+            case 401 -> HttpStatus.UNAUTHORIZED;
+            case 403 -> HttpStatus.FORBIDDEN;
+            case 404 -> HttpStatus.NOT_FOUND;
+            case 409 -> HttpStatus.CONFLICT;
+            case 429 -> HttpStatus.TOO_MANY_REQUESTS;
+            case 500 -> HttpStatus.INTERNAL_SERVER_ERROR;
+            case 502 -> HttpStatus.BAD_GATEWAY;
+            case 503 -> HttpStatus.SERVICE_UNAVAILABLE;
+            case 504 -> HttpStatus.GATEWAY_TIMEOUT;
+            default -> HttpStatus.BAD_REQUEST;
+        };
+        return org.springframework.http.ResponseEntity.status(status).body(body);
     }
 
     /**
@@ -169,16 +193,46 @@ public class GlobalExceptionHandler {
 
     /**
      * 处理参数验证异常
+     *
+     * W-08 fix (Round 12, qa-prompt v2.4 Rule 8): previous version joined only
+     * FieldError::getDefaultMessage, so entity annotations written as bare
+     * `@NotNull` / `@NotBlank` (without custom message) produced useless
+     * "must not be null" response with no field name. Now include the field
+     * name + Chinese phrasing for the common default messages.
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponse<?> handleValidationException(MethodArgumentNotValidException e) {
         String message = e.getBindingResult().getFieldErrors().stream()
-                .map(FieldError::getDefaultMessage)
+                .map(GlobalExceptionHandler::formatFieldError)
                 .collect(Collectors.joining(", "));
         // 4xx — 客户端 form 没填全, 不是服务端 bug
         log.warn("参数验证失败: {}", message);
+        // actionHint: first field with violation
+        String firstField = e.getBindingResult().getFieldErrors().stream()
+                .map(FieldError::getField).findFirst().orElse(null);
+        if (firstField != null) {
+            return ApiResponse.errorWithHint(400, message,
+                    "请检查「" + firstField + "」字段", "error", firstField);
+        }
         return ApiResponse.error(400, message);
+    }
+
+    /**
+     * Format a single field validation error into a user-readable Chinese string.
+     * Intercepts Bean Validation's default English messages for common constraints.
+     */
+    private static String formatFieldError(FieldError err) {
+        String msg = err.getDefaultMessage();
+        String field = err.getField();
+        if (msg == null) return "字段 '" + field + "' 校验失败";
+        // Common Bean Validation defaults — translate to Chinese + include field
+        if ("must not be null".equals(msg) || "must not be blank".equals(msg) || "must not be empty".equals(msg)) {
+            return "字段 '" + field + "' 不能为空";
+        }
+        // Custom messages (entity/DTO provided @NotNull(message = "xxx不能为空")) — keep as-is
+        // since they already read naturally in Chinese.
+        return msg.contains(field) ? msg : field + ": " + msg;
     }
 
     /**
@@ -314,6 +368,26 @@ public class GlobalExceptionHandler {
     // ==================== 数据库相关异常 - 需严格脱敏 ====================
 
     /**
+     * 业务层抛 DuplicateKeyException (e.g. invoice request 去重) — 专用 handler 保留具体消息.
+     * 优先匹配, 避免被下方通用 DataIntegrityViolation handler 脱敏.
+     * R4 2026-04-16: 支持 Bug #2 G1 并发去重的友好 409 消息.
+     * R25 (qa-prompt v2.4 reviewer #14 concern #3): emit actionHint so FE
+     * interceptor differentiates from vanilla optimistic-lock 409 and shows
+     * rich toast (pre-R25 was silenced by R24 P2 fix's vanilla-409 suppress).
+     */
+    @ExceptionHandler(org.springframework.dao.DuplicateKeyException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ApiResponse<?> handleDuplicateKeyException(org.springframework.dao.DuplicateKeyException e) {
+        log.warn("重复提交拒绝: {}", e.getMessage());
+        String msg = isSafeMessage(e.getMessage()) ? e.getMessage() : "数据已存在，请勿重复提交";
+        // R27 P4 (reviewer #15 IMPORTANT-2 wording fix): pre-fix actionHint mentioned
+        // "刷新列表确认" which sounds like optimistic-lock refresh suggestion. DuplicateKey
+        // is "user submitted same data twice" — refresh doesn't help, the data is committed.
+        // Replace with action-oriented hint: "请检查表单或返回列表查看已存在记录".
+        return ApiResponse.errorWithHint(409, msg, "请检查表单内容,或返回列表查看已存在记录", "warning", null);
+    }
+
+    /**
      * 处理数据完整性异常（唯一约束、外键约束等）
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
@@ -337,21 +411,71 @@ public class GlobalExceptionHandler {
             log.error("[{}] 数据完整性异常: {}", traceId, raw, e);
         }
 
+        // R25 (qa-prompt v2.4 reviewer #14 concern #3): every branch emits actionHint so
+        // FE interceptor differentiates from vanilla optimistic-lock 409 (which has no
+        // actionHint and routes to caller's "并发编辑冲突" dialog). Pre-R25 these returned
+        // ApiResponse.error(409, ...) — R24 P2 vanilla-409 suppress swallowed them, users
+        // saw nothing on duplicate / FK violation submissions.
         String message;
+        String actionHint;
+        String hintTarget = null;
         if (isUniqueViolation) {
             message = "数据已存在，请勿重复提交";
+            // R27 P4 (reviewer #15 IMPORTANT-2): same wording fix as DuplicateKey above —
+            // "刷新列表确认" implied opt-lock semantics. Unique violation is "field uniqueness
+            // exhausted by prior commit" — user should check form, not refresh.
+            // R27.1 follow-up (reviewer #17 IMPORTANT-1): "(如编号/名称)" too narrow —
+            // codebase has unique constraints on phone/token/batch_number/employee_code/etc.
+            // Extract actual column from PG's "Key (col)=(val) already exists" pattern, or
+            // fall back to generic if extraction fails. Mirror of the FK-branch hintTarget logic.
+            java.util.regex.Matcher uvm = java.util.regex.Pattern
+                .compile("Key \\(([^)]+)\\)=\\(").matcher(raw);
+            if (uvm.find()) {
+                String col = uvm.group(1);
+                actionHint = "请检查表单中字段「" + col + "」是否已存在,或返回列表查看已存在记录";
+                hintTarget = col;
+            } else {
+                actionHint = "请检查表单中的唯一字段是否已存在,或返回列表查看已存在记录";
+            }
         } else if (isFkViolation) {
             // 尝试从错误消息提取被引用的目标表, 给用户清晰线索
             message = "无法删除: 该数据仍被其他记录引用";
+            actionHint = "先处理引用该数据的相关记录后再删除";
             java.util.regex.Matcher m = java.util.regex.Pattern
                 .compile("referenced from table \"([^\"]+)\"").matcher(raw);
             if (m.find()) {
                 message = "无法删除: 该数据仍被 " + m.group(1) + " 引用，请先处理相关数据";
+                hintTarget = m.group(1);
             }
         } else {
             message = ErrorCode.DATA_INTEGRITY_ERROR.getUserMessage();
+            actionHint = "请联系管理员检查数据,traceId=" + traceId;
         }
-        return ApiResponse.error(409, message);
+        return ApiResponse.errorWithHint(409, message, actionHint, "warning", hintTarget);
+    }
+
+    /**
+     * R27-F2: Hibernate not-null property violations → 400 with field name
+     * (Spring wraps PropertyValueException as InvalidDataAccessApiUsageException,
+     *  which extends DataAccessException but NOT DataIntegrityViolationException,
+     *  so without this specific handler it falls through to generic 500.)
+     */
+    @ExceptionHandler(InvalidDataAccessApiUsageException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiResponse<?> handleInvalidDataAccessApiUsageException(InvalidDataAccessApiUsageException e) {
+        String traceId = generateTraceId();
+        Throwable root = e.getCause();
+        while (root != null && root.getCause() != null && root.getCause() != root) {
+            if (root instanceof PropertyValueException) break;
+            root = root.getCause();
+        }
+        if (root instanceof PropertyValueException pve) {
+            log.warn("[{}] 必填字段缺失: entity={}, property={}", traceId,
+                pve.getEntityName(), pve.getPropertyName());
+            return ApiResponse.error(400, "必填字段缺失: " + pve.getPropertyName());
+        }
+        log.warn("[{}] 数据访问参数非法: {}", traceId, e.getMessage());
+        return ApiResponse.error(400, "请求参数不符合要求");
     }
 
     /**
@@ -436,12 +560,83 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 处理 multipart 请求缺少 @RequestPart。MissingServletRequestPartException 继承
+     * ServletException 而非 MultipartException, 没有专门 handler 时会落到 generic
+     * RuntimeException 兜底,返回 500。这里映射为 400 并带出 part 名称。
+     */
+    @ExceptionHandler(org.springframework.web.multipart.support.MissingServletRequestPartException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiResponse<?> handleMissingServletRequestPartException(
+            org.springframework.web.multipart.support.MissingServletRequestPartException e) {
+        log.warn("缺少 multipart 请求部分: {}", e.getRequestPartName());
+        return ApiResponse.error(400, "缺少必要文件字段: " + e.getRequestPartName());
+    }
+
+    /**
      * 处理请求体解析失败
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponse<?> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
         log.warn("请求体解析失败: {}", e.getMessage());
+        // PR1.5 O4 (revised QA Round 6): broader Jackson date error detection.
+        // Patterns covered:
+        //   - "Cannot deserialize value of type `java.time.LocalDate` from String \"TODAY\""
+        //   - "JSON parse error: Text 'NOT_A_DATE' could not be parsed at index 0"
+        //   - DateTimeParseException class name in stack
+        String msg = e.getMessage() == null ? "" : e.getMessage();
+        boolean isDateError = msg.contains("java.time.LocalDate") || msg.contains("java.time.LocalDateTime")
+            || msg.contains("DateTimeParseException") || msg.contains("could not be parsed at index");
+        if (isDateError) {
+            // extract problematic value: try double-quote pattern first, then single-quote
+            String badValue = "";
+            java.util.regex.Matcher dq = java.util.regex.Pattern
+                .compile("from String \"([^\"]+)\"").matcher(msg);
+            if (dq.find()) {
+                badValue = dq.group(1);
+            } else {
+                java.util.regex.Matcher sq = java.util.regex.Pattern
+                    .compile("Text '([^']+)' could not be parsed").matcher(msg);
+                if (sq.find()) badValue = sq.group(1);
+            }
+            String fieldHint = badValue.isEmpty() ? "" : "（值: \"" + badValue + "\"）";
+            return ApiResponse.error(400, "日期格式不正确" + fieldHint + "，请重新选择日期");
+        }
+        if (msg.contains("Cannot deserialize value of type")) {
+            // W-10 fix (Round 12, qa-prompt v2.4 Rule 8): previous message was
+            // "字段类型不正确，请检查表单后重新提交" — no field name, no type hint,
+            // no actionHint. Users got "请检查表单" with no clue which field is wrong.
+            // Mirror the O4 date-error pattern: extract field + expected type from
+            // Jackson's message, build a specific Chinese message, populate actionHint.
+            // Jackson message shape:
+            //   "Cannot deserialize value of type `com.cretas.aims.entity.Department`
+            //    from String \"FINANCE\": ... (through reference chain: ...["department"])"
+            String expectedType = "";
+            String badValue = "";
+            String fieldName = "";
+            java.util.regex.Matcher typeM = java.util.regex.Pattern
+                .compile("type `([^`]+)`").matcher(msg);
+            if (typeM.find()) {
+                String fq = typeM.group(1);
+                expectedType = fq.substring(fq.lastIndexOf('.') + 1); // simple class name
+            }
+            java.util.regex.Matcher valM = java.util.regex.Pattern
+                .compile("from String \"([^\"]+)\"").matcher(msg);
+            if (valM.find()) badValue = valM.group(1);
+            java.util.regex.Matcher fieldM = java.util.regex.Pattern
+                .compile("\\[\"([^\"]+)\"\\](?!.*\\[\")").matcher(msg); // last [""] in chain
+            if (fieldM.find()) fieldName = fieldM.group(1);
+            StringBuilder userMsg = new StringBuilder("字段");
+            if (!fieldName.isEmpty()) userMsg.append(" '").append(fieldName).append("' ");
+            userMsg.append("类型不正确");
+            if (!expectedType.isEmpty()) userMsg.append("，期望 ").append(expectedType);
+            if (!badValue.isEmpty()) userMsg.append("，收到 \"").append(badValue).append("\"");
+            String hint = fieldName.isEmpty()
+                    ? "请检查表单字段类型后重新提交"
+                    : "请检查「" + fieldName + "」字段的值";
+            return ApiResponse.errorWithHint(400, userMsg.toString(), hint, "error",
+                    fieldName.isEmpty() ? null : fieldName);
+        }
         return ApiResponse.error(400, "请求格式不正确，请检查JSON格式");
     }
 
@@ -453,6 +648,22 @@ public class GlobalExceptionHandler {
     public ApiResponse<?> handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException e) {
         log.warn("不支持的请求方法: {}", e.getMethod());
         return ApiResponse.error(405, "不支持的请求方法: " + e.getMethod());
+    }
+
+    /**
+     * 处理 Content-Type 不匹配. 客户端发错类型(例 text/plain 发给 application/json endpoint)
+     * 时 Spring 抛 HttpMediaTypeNotSupportedException, 无 handler 落到 generic RuntimeException
+     * 兜底返回 500. 这里映射到 415 + 明确提示支持的 Content-Type.
+     */
+    @ExceptionHandler(org.springframework.web.HttpMediaTypeNotSupportedException.class)
+    @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+    public ApiResponse<?> handleHttpMediaTypeNotSupportedException(
+            org.springframework.web.HttpMediaTypeNotSupportedException e) {
+        String supported = e.getSupportedMediaTypes().isEmpty() ? "application/json"
+                : e.getSupportedMediaTypes().toString();
+        String actual = e.getContentType() != null ? e.getContentType().toString() : "(empty)";
+        log.warn("不支持的 Content-Type: 实际={}, 期望={}", actual, supported);
+        return ApiResponse.error(415, "不支持的 Content-Type (" + actual + "), 请改用: " + supported);
     }
 
     /**
@@ -574,6 +785,21 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Spring 6 AsyncRequestNotUsableException — 客户端在 async 完成阶段断开,
+     * ServletOutputStream 写入失败 (ClosedChannelException / Broken pipe).
+     * 这类异常绕过了 @ExceptionHandler(RuntimeException.class) 的兜底 (Spring
+     * async resolver 不走 @ExceptionHandler chain), 需单独 handler 避免刷 ERROR.
+     */
+    @ExceptionHandler(org.springframework.web.context.request.async.AsyncRequestNotUsableException.class)
+    @ResponseStatus(HttpStatus.OK)
+    public void handleAsyncRequestNotUsable(
+            org.springframework.web.context.request.async.AsyncRequestNotUsableException e) {
+        // SSE (text/event-stream) 不支持 ApiResponse JSON 序列化, 返 void 不写 body 避免
+        // HttpMessageNotWritableException 二次噪音. 客户端已断连, 写什么也没人读.
+        log.warn("Async 请求通道已关闭 (客户端断开): {}", e.getMessage());
+    }
+
+    /**
      * Unwrap 异常链判断 root cause 是不是 client-abort / EOF.
      * (Tomcat 版本差异: 可能嵌套 2-3 层, e.g. MultipartException →
      * IOFileUploadException → ClientAbortException → EOFException)
@@ -619,6 +845,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiResponse<?> handleException(Exception e) {
+        // 兜底也查一次 client-abort 链, 以防新的 async 包装类绕过上面的
+        // 专用 handler (Spring 6 迭代里这类 wrapper 还会增加).
+        if (isClientAbort(e)) {
+            log.warn("客户端中断 (未预期的包装类): {}", e.getClass().getSimpleName(), e.getMessage());
+            return ApiResponse.error(499, "client aborted");
+        }
         String traceId = generateTraceId();
         log.error("[{}] 未捕获异常: {}", traceId, e.getClass().getName(), e);
         return buildSanitizedResponse(ErrorCode.SYSTEM_ERROR, traceId);

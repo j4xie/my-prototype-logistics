@@ -5,6 +5,7 @@ import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.material.ConvertToFrozenRequest;
 import com.cretas.aims.dto.material.UndoFrozenRequest;
 import com.cretas.aims.dto.material.CreateMaterialBatchRequest;
+import com.cretas.aims.dto.material.UpdateMaterialBatchRequest;
 import com.cretas.aims.dto.material.MaterialBatchDTO;
 import com.cretas.aims.dto.material.MaterialBatchExportDTO;
 import com.cretas.aims.utils.ExcelUtil;
@@ -269,28 +270,34 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         switch (type) {
             case "MANUAL_ADJUST":
                 if (request.getNotes() == null || request.getNotes().isBlank()) {
-                    throw new BusinessException("手工调整入库必须填写备注作为凭证");
+                    throw new BusinessException(400, "手工调整入库必须填写备注作为凭证")
+                            .withHint("请在备注栏填写调整原因/凭证号").withHintTarget("notes");
                 }
                 break;
             case "PURCHASE_RECEIVE":
                 if (id == null || id.isBlank()) {
-                    throw new BusinessException("入库必须关联有效的发起单 (PURCHASE_RECEIVE sourceDocId 为空)");
+                    throw new BusinessException(400, "入库必须关联有效的发起单 (PURCHASE_RECEIVE sourceDocId 为空)")
+                            .withHint("请选择关联的采购到货通知").withHintTarget("sourceDocId");
                 }
                 if (purchaseReceiveRecordRepository == null || !purchaseReceiveRecordRepository.existsById(id)) {
-                    throw new BusinessException("入库必须关联有效的发起单: 采购到货通知 " + id + " 不存在");
+                    throw new BusinessException(404, "入库必须关联有效的发起单: 采购到货通知 " + id + " 不存在")
+                            .withHint("请确认到货通知单号或重新选择");
                 }
                 break;
             case "MATERIAL_REQUISITION_RETURN":
                 if (id == null || id.isBlank()) {
-                    throw new BusinessException("入库必须关联有效的发起单 (MATERIAL_REQUISITION_RETURN sourceDocId 为空)");
+                    throw new BusinessException(400, "入库必须关联有效的发起单 (MATERIAL_REQUISITION_RETURN sourceDocId 为空)")
+                            .withHint("请选择关联的领料退料单").withHintTarget("sourceDocId");
                 }
                 if (factoryMaterialRequisitionRepository == null || !factoryMaterialRequisitionRepository.existsById(id)) {
-                    throw new BusinessException("入库必须关联有效的发起单: 领料退料单 " + id + " 不存在");
+                    throw new BusinessException(404, "入库必须关联有效的发起单: 领料退料单 " + id + " 不存在")
+                            .withHint("请确认领料退料单号或重新选择");
                 }
                 break;
             case "SALES_RETURN":
                 if (id == null || id.isBlank()) {
-                    throw new BusinessException("入库必须关联有效的发起单 (SALES_RETURN sourceDocId 为空)");
+                    throw new BusinessException(400, "入库必须关联有效的发起单 (SALES_RETURN sourceDocId 为空)")
+                            .withHint("请选择关联的销售退货单").withHintTarget("sourceDocId");
                 }
                 // SalesReturn entity 暂未建, 仅记录引用, 不强校验存在性
                 log.info("P0-17: 销售退货入库 sourceDocId={} (SalesReturn 单据校验暂 skip)", id);
@@ -298,14 +305,16 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
             case "INVENTORY_GAIN":
                 // B9 (客户原话 4850s): 仓库盘点产生的盘盈入库, 不需 sourceDocId, 但 notes 必填说明盘点单号/原因
                 if (request.getNotes() == null || request.getNotes().isBlank()) {
-                    throw new BusinessException("盘盈入库必须在备注中说明盘点单号或原因");
+                    throw new BusinessException(400, "盘盈入库必须在备注中说明盘点单号或原因")
+                            .withHint("请在备注栏填写盘点单号/原因").withHintTarget("notes");
                 }
                 log.info("B9: 盘盈入库 notes={}", request.getNotes());
                 break;
             case "FREE_GIFT":
                 // B10 (客户原话 4929s): 供应商赠品入库, 不需 sourceDocId, 但 notes 必填说明来源供应商
                 if (request.getNotes() == null || request.getNotes().isBlank()) {
-                    throw new BusinessException("赠品入库必须在备注中说明来源供应商");
+                    throw new BusinessException(400, "赠品入库必须在备注中说明来源供应商")
+                            .withHint("请在备注栏填写来源供应商").withHintTarget("notes");
                 }
                 log.info("B10: 赠品入库 notes={}", request.getNotes());
                 break;
@@ -313,13 +322,14 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
             //   出库链路不走 MaterialBatchService.createMaterialBatch (这里只管入库),
             //   需在 sales shipment / warehouse outbound service 另开分支, 本轮范围外.
             default:
-                throw new BusinessException("不支持的 sourceDocType: " + type);
+                throw new BusinessException(400, "不支持的 sourceDocType: " + type)
+                        .withHint("请使用支持的入库类型 (MANUAL_ADJUST/PURCHASE_RECEIVE/MATERIAL_REQUISITION_RETURN/SALES_RETURN/INVENTORY_GAIN/FREE_GIFT)");
         }
     }
 
     @Override
     @Transactional
-    public MaterialBatchDTO updateMaterialBatch(String factoryId, String batchId, CreateMaterialBatchRequest request) {
+    public MaterialBatchDTO updateMaterialBatch(String factoryId, String batchId, UpdateMaterialBatchRequest request) {
         runConfiguredValidation(factoryId, "UPDATE", java.util.Map.of(
             "batchId", batchId,
             "quantity", request.getReceiptQuantity() != null ? request.getReceiptQuantity() : java.math.BigDecimal.ZERO,
@@ -329,12 +339,14 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         // 验证工厂ID
         if (!batch.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该批次");
+            throw new BusinessException(403, "无权操作该批次")
+                    .withHint("请联系管理员确认批次归属或切换工厂账号");
         }
 
         // 只能更新可用状态的批次
         if (batch.getStatus() != MaterialBatchStatus.AVAILABLE) {
-            throw new BusinessException("只能修改可用状态的批次");
+            throw new BusinessException(409, "只能修改可用状态的批次")
+                    .withHint("请刷新批次列表查看最新状态");
         }
 
         // 更新批次信息
@@ -352,12 +364,14 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         // 验证工厂ID
         if (!batch.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该批次");
+            throw new BusinessException(403, "无权操作该批次")
+                    .withHint("请联系管理员确认批次归属或切换工厂账号");
         }
 
         // 只能删除未使用的批次
         if (!batch.getCurrentQuantity().equals(batch.getReceiptQuantity())) {
-            throw new BusinessException("已使用的批次不能删除");
+            throw new BusinessException(409, "已使用的批次不能删除")
+                    .withHint("已部分消耗的批次不可删除, 请联系管理员调整或盘亏处理");
         }
 
         materialBatchRepository.delete(batch);
@@ -371,7 +385,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         // 验证工厂ID
         if (!batch.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权查看该批次");
+            throw new BusinessException(403, "无权查看该批次")
+                    .withHint("请联系管理员确认批次归属或切换工厂账号");
         }
 
         return materialBatchMapper.toDTO(batch);
@@ -421,7 +436,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         // 如果提供了关键词，使用搜索方法；否则使用普通查询
         if (pageRequest.getKeyword() != null && !pageRequest.getKeyword().trim().isEmpty()) {
             log.debug("搜索原材料批次: factoryId={}, keyword={}", factoryId, pageRequest.getKeyword());
-            batchPage = materialBatchRepository.searchByKeyword(factoryId, pageRequest.getKeyword().trim(), pageable);
+            batchPage = materialBatchRepository.searchByKeyword(factoryId,
+                com.cretas.aims.util.SqlLikeEscaper.escape(pageRequest.getKeyword().trim()), pageable);
         } else {
             batchPage = materialBatchRepository.findByFactoryId(factoryId, pageable);
         }
@@ -487,13 +503,15 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         // 验证工厂ID
         if (!batch.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该批次");
+            throw new BusinessException(403, "无权操作该批次")
+                    .withHint("请联系管理员确认批次归属或切换工厂账号");
         }
 
         // 计算新数量
         BigDecimal newQuantity = batch.getCurrentQuantity().add(adjustmentQuantity);
         if (newQuantity.compareTo(BigDecimal.ZERO) < 0) {
-            throw new BusinessException("调整后数量不能为负数");
+            throw new BusinessException(400, "调整后数量不能为负数")
+                    .withHint("请检查输入数量, 必须 ≥ 0");
         }
 
         // 记录调整
@@ -532,7 +550,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         // 验证工厂ID
         if (!batch.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该批次");
+            throw new BusinessException(403, "无权操作该批次")
+                    .withHint("请联系管理员确认批次归属或切换工厂账号");
         }
 
         batch.setStatus(MaterialBatchStatus.EXPIRED);
@@ -548,7 +567,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         // 验证工厂ID
         if (!batch.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该批次");
+            throw new BusinessException(403, "无权操作该批次")
+                    .withHint("请联系管理员确认批次归属或切换工厂账号");
         }
 
         batch.setStatus(MaterialBatchStatus.USED_UP);
@@ -567,12 +587,14 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         // 验证工厂ID
         if (!batch.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该批次");
+            throw new BusinessException(403, "无权操作该批次")
+                    .withHint("请联系管理员确认批次归属或切换工厂账号");
         }
 
         // 检查可用数量
         if (batch.getCurrentQuantity().compareTo(quantity) < 0) {
-            throw new BusinessException("批次可用数量不足");
+            throw new BusinessException(409, "批次可用数量不足")
+                    .withHint("请刷新批次库存或选择其他批次");
         }
 
         // 增加预留数量，减少可用库存
@@ -591,13 +613,15 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         // 验证工厂ID
         if (!batch.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该批次");
+            throw new BusinessException(403, "无权操作该批次")
+                    .withHint("请联系管理员确认批次归属或切换工厂账号");
         }
 
         // 释放预留数量
         BigDecimal currentReserved = batch.getReservedQuantity() != null ? batch.getReservedQuantity() : BigDecimal.ZERO;
         if (currentReserved.compareTo(quantity) < 0) {
-            throw new BusinessException("释放数量超过已预留数量");
+            throw new BusinessException(409, "释放数量超过已预留数量")
+                    .withHint("请刷新批次预留数据");
         }
         batch.setReservedQuantity(currentReserved.subtract(quantity));
 
@@ -613,7 +637,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         // 验证工厂ID
         if (!batch.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该批次");
+            throw new BusinessException(403, "无权操作该批次")
+                    .withHint("请联系管理员确认批次归属或切换工厂账号");
         }
 
         // 检查可用数量是否充足
@@ -896,7 +921,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
                 .orElseThrow(() -> new ResourceNotFoundException("原材料批次不存在"));
 
         if (batch.getRemainingQuantity().compareTo(quantity) < 0) {
-            throw new BusinessException("批次剩余数量不足");
+            throw new BusinessException(409, "批次剩余数量不足")
+                    .withHint("请刷新批次库存或选择其他批次");
         }
 
         // 更新已使用数量 (remainingQuantity 会自动重新计算)
@@ -932,7 +958,17 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         // 验证工厂ID
         if (!batch.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该批次");
+            throw new BusinessException(403, "无权操作该批次")
+                    .withHint("请联系管理员确认批次归属或切换工厂账号");
+        }
+
+        // W-03 defense (Round 7): reject negative newQuantity before it reaches the
+        // receipt_quantity arithmetic — otherwise it propagated to a DB constraint
+        // and surfaced as a generic 500. Matches the guard in the older
+        // adjustBatchQuantity(4-arg) overload.
+        if (newQuantity == null || newQuantity.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessException(400, "调整后数量不能为负数")
+                    .withHint("请检查输入数量, 必须 ≥ 0");
         }
 
         BigDecimal oldQuantity = batch.getRemainingQuantity();
@@ -967,7 +1003,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         // 验证工厂ID
         if (!batch.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该批次");
+            throw new BusinessException(403, "无权操作该批次")
+                    .withHint("请联系管理员确认批次归属或切换工厂账号");
         }
 
         batch.setStatus(status);
@@ -983,11 +1020,13 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         // 验证工厂ID
         if (!batch.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该批次");
+            throw new BusinessException(403, "无权操作该批次")
+                    .withHint("请联系管理员确认批次归属或切换工厂账号");
         }
 
         if (batch.getRemainingQuantity().compareTo(quantity) < 0) {
-            throw new BusinessException("批次剩余数量不足以预留");
+            throw new BusinessException(409, "批次剩余数量不足以预留")
+                    .withHint("请刷新批次库存或减少预留数量");
         }
 
         // 更新预留数量 (remainingQuantity 会自动重新计算)
@@ -1022,12 +1061,14 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         // 验证工厂ID
         if (!batch.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该批次");
+            throw new BusinessException(403, "无权操作该批次")
+                    .withHint("请联系管理员确认批次归属或切换工厂账号");
         }
 
         // 验证预留数量是否充足
         if (batch.getReservedQuantity().compareTo(quantity) < 0) {
-            throw new BusinessException("预留数量不足以释放");
+            throw new BusinessException(409, "预留数量不足以释放")
+                    .withHint("请刷新批次预留数据");
         }
 
         // 释放预留数量 (remainingQuantity 会自动增加)
@@ -1066,14 +1107,16 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
                 .orElseThrow(() -> new ResourceNotFoundException("原材料批次", "id", batchId));
 
         if (!batch.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权操作该批次");
+            throw new BusinessException(403, "无权操作该批次")
+                    .withHint("请联系管理员确认批次归属或切换工厂账号");
         }
 
         runConfiguredValidation(factoryId, "CONSUME",
                 java.util.Map.of("batchId", batchId, "quantity", quantity != null ? quantity : BigDecimal.ZERO));
 
         if (batch.getReservedQuantity().compareTo(quantity) < 0) {
-            throw new BusinessException("预留数量不足以消耗");
+            throw new BusinessException(409, "预留数量不足以消耗")
+                    .withHint("请确认预留数量或重新预留");
         }
 
         batch.setReservedQuantity(batch.getReservedQuantity().subtract(quantity));
@@ -1180,12 +1223,14 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         // 2. 验证工厂ID
         if (!factoryId.equals(batch.getFactoryId())) {
-            throw new BusinessException("批次不属于该工厂");
+            throw new BusinessException(403, "批次不属于该工厂")
+                    .withHint("请联系管理员确认批次归属或切换工厂账号");
         }
 
         // 3. 验证批次状态（只有鲜品可以转冻品）
         if (batch.getStatus() != MaterialBatchStatus.FRESH) {
-            throw new BusinessException("只有鲜品批次可以转为冻品，当前状态: " + batch.getStatus());
+            throw new BusinessException(409, "只有鲜品批次可以转为冻品，当前状态: " + batch.getStatus())
+                    .withHint("请刷新批次状态或选择鲜品批次");
         }
 
         // 4. 保存原始存储位置（用于撤销时恢复）
@@ -1229,12 +1274,14 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         // 2. 验证工厂ID
         if (!factoryId.equals(batch.getFactoryId())) {
-            throw new BusinessException("批次不属于该工厂");
+            throw new BusinessException(403, "批次不属于该工厂")
+                    .withHint("请联系管理员确认批次归属或切换工厂账号");
         }
 
         // 3. 验证批次状态（只有冻品可以撤销）
         if (batch.getStatus() != MaterialBatchStatus.FROZEN) {
-            throw new BusinessException("只有冻品批次可以撤销，当前状态: " + batch.getStatus());
+            throw new BusinessException(409, "只有冻品批次可以撤销，当前状态: " + batch.getStatus())
+                    .withHint("请刷新批次状态或选择冻品批次");
         }
 
         // 4. 从notes中解析最后转换时间并验证时间窗口
@@ -1242,7 +1289,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         LocalDateTime convertedTime = extractLastConvertTime(notes);
 
         if (convertedTime == null) {
-            throw new BusinessException("无法找到转换时间记录，无法撤销");
+            throw new BusinessException(409, "无法找到转换时间记录，无法撤销")
+                    .withHint("数据缺失, 请联系管理员手工处理");
         }
 
         LocalDateTime now = LocalDateTime.now();

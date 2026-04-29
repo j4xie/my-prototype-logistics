@@ -79,6 +79,10 @@ export interface WorkflowTransition {
   enabled: boolean
   condition: string | null
   allowedRoles: string[]
+  // R40 BUG-5: when false, transition is auto-triggered by upstream event;
+  // FE must NOT render manual button (no backend endpoint, would 404).
+  // Default true (backward compat for existing schemas without flag).
+  manualTrigger?: boolean
 }
 
 // ========== 模块摘要 ==========

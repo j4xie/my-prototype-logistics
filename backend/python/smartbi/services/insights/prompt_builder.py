@@ -203,6 +203,27 @@ _OUTPUT_SCHEMAS = {
 }""",
 }
 
+# Apr 25 2026 quality audit C-rec 7: enforce gross/net + amount/bills basis
+# labeling on every numeric mention. Same wording reused across all tiers.
+_LABELING_REQUIREMENT = (
+    "**口径标注（C-rec 7 必遵）**：金额数字必须紧跟 [毛] 或 [净]（毛=折扣前/应收口径，"
+    "净=折后/实收/到账）；百分比必须紧跟 [按营业额]/[按订单数]/[按笔数] 等基准说明。"
+    "示例：「毛利率32.5%[按营业额]」「营收 ¥3,190,000[毛]」。"
+    "如数据中标记 has_cost_data=false 则必须说明「未含成本」；"
+    "如标记 inferred=true 则必须说明「推断分类」。"
+)
+
+# Apr 25 2026 quality audit C-rec 8+9: 9/14 audited template insights had no
+# actionable recommendation. Recommendations must follow Apr 23 Week 5 spec
+# §4.3 pattern (concrete店名/品类 + 收益区间 + 前置条件 + 时间窗口).
+_ACTION_REC_REQUIREMENT = (
+    "**可执行建议（C-rec 8+9 必遵）**：每条 recommendation / action_items 必须 4 要素齐全 — "
+    "(a) 具体对象 [店名/品类/菜品/员工/客群]，(b) 数字化收益 [预计提升 3-5%] / [节约 5-10万/月]，"
+    "(c) 前置条件 [需先做 X 培训] / [需 Y 部门确认]，(d) 时间窗口 [本月内] / [下季度] / [14 天试点]。"
+    "禁止使用：'加强营销' / '提高服务质量' / '优化经营策略' / '建立长效机制' 等空泛措辞 — "
+    "这类回答会被视为不合格。若数据不足，则诚实说明 '需要补充 X 数据才能给出建议'。"
+)
+
 _RULES = {
     "small": (
         "## 写作要求\n"
@@ -210,7 +231,9 @@ _RULES = {
         "2. insights 2-3条，覆盖 what_happened 和 recommendation\n"
         "3. risk_alerts 和 opportunities 各1条\n"
         "4. 使用中文，列名翻译为中文\n"
-        "5. 严格JSON输出，不要附加Markdown或解释文字"
+        "5. " + _LABELING_REQUIREMENT + "\n"
+        "6. " + _ACTION_REC_REQUIREMENT + "\n"
+        "7. 严格JSON输出，不要附加Markdown或解释文字"
     ),
     "medium": (
         "## 写作铁律\n"
@@ -220,12 +243,14 @@ _RULES = {
         "4. insights 3-4条，覆盖 what_happened / why_happened / recommendation\n"
         "5. risk_alerts 和 opportunities 各至少1条\n"
         "6. 列名翻译为中文\n"
-        "7. 严格JSON输出，不要附加Markdown或解释文字"
+        "7. " + _LABELING_REQUIREMENT + "\n"
+        "8. " + _ACTION_REC_REQUIREMENT + "\n"
+        "9. 严格JSON输出，不要附加Markdown或解释文字"
     ),
     "large": (
         "## 写作铁律（违反任何一条即为不合格）\n\n"
         '1. **数字驱动**: 每条 insight 至少引用 1 个来自上方数据的具体数字。禁止「较高」「较低」「有所增长」等模糊表述。\n'
-        '   - 反面：「毛利率较高」 / 正面：「毛利率32.5%，高于行业均值28%达4.5个百分点」\n'
+        '   - 反面：「毛利率较高」 / 正面：「毛利率32.5%[按营业额]，高于行业均值28%达4.5个百分点」\n'
         "2. **对比基准**: 每条分析必须有参照系 — 环比（上月/上期）、同比（去年同期）、行业基准、或目标值。\n"
         '3. **因果归因**: 不仅描述「是什么」，更要分析「为什么」。例：净利下降 → 因原料采购成本上涨 + 产能利用率不足。\n'
         "4. **建议落地**: 每条 recommendation 需含：做什么 + 预期效果 + 时间节点。\n"
@@ -234,7 +259,9 @@ _RULES = {
         '7. **列名翻译**: 将「2025-01-01」解读为「1月」，英文字段名翻译为中文。\n'
         "8. **精炼**: 每条 insight 的 text 控制在 80-150 字，executive_summary 不超过 80 字。\n"
         "9. **敏感性分析**: 识别2-3个关键驱动因素，输出sensitivity_analysis数组。\n"
-        "10. 严格以JSON格式输出，不要附加任何Markdown标记或解释文字。"
+        "10. " + _LABELING_REQUIREMENT + "\n"
+        "11. " + _ACTION_REC_REQUIREMENT + "\n"
+        "12. 严格以JSON格式输出，不要附加任何Markdown标记或解释文字。"
     ),
 }
 

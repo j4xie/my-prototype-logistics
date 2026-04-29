@@ -141,6 +141,13 @@ public class EquipmentServiceImpl implements EquipmentService {
         Long equipmentIdLong = Long.parseLong(equipmentId);
         FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentIdLong, factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("设备不存在"));
+        // Optimistic lock: explicit compare. NOTE: entity.version is Integer but DTO is Long —
+        // compare via primitive longValue() so Long.equals(Integer) doesn't always return false.
+        if (request.getVersion() != null
+                && equipment.getVersion().longValue() != request.getVersion().longValue()) {
+            throw new org.springframework.orm.ObjectOptimisticLockingFailureException(
+                FactoryEquipment.class, equipmentId);
+        }
 
         if (request.getName() != null) equipment.setEquipmentName(request.getName());
         if (request.getType() != null) equipment.setType(request.getType());
@@ -174,7 +181,8 @@ public class EquipmentServiceImpl implements EquipmentService {
 
         // 检查是否有使用记录
         if (equipmentRepository.hasUsageRecords(equipmentIdLong)) {
-            throw new BusinessException("设备有使用记录，无法删除");
+            throw new BusinessException(409, "设备有使用记录，无法删除")
+                    .withHint("请先归档或转移该设备的使用记录后再删除");
         }
 
         equipmentRepository.delete(equipment);
@@ -200,7 +208,8 @@ public class EquipmentServiceImpl implements EquipmentService {
         String keyword = pageRequest.getKeyword();
         Page<FactoryEquipment> equipmentPage;
         if (keyword != null && !keyword.trim().isEmpty()) {
-            equipmentPage = equipmentRepository.searchByKeyword(factoryId, keyword.trim(), pageable);
+            equipmentPage = equipmentRepository.searchByKeyword(factoryId,
+                com.cretas.aims.util.SqlLikeEscaper.escape(keyword.trim()), pageable);
         } else {
             equipmentPage = equipmentRepository.findByFactoryId(factoryId, pageable);
         }
@@ -238,7 +247,8 @@ public class EquipmentServiceImpl implements EquipmentService {
 
     @Override
     public List<EquipmentDTO> searchEquipment(String factoryId, String keyword) {
-        List<FactoryEquipment> equipment = equipmentRepository.searchByKeyword(factoryId, keyword);
+        String safeKeyword = com.cretas.aims.util.SqlLikeEscaper.escape(keyword);
+        List<FactoryEquipment> equipment = equipmentRepository.searchByKeyword(factoryId, safeKeyword);
         return equipment.stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
@@ -275,7 +285,8 @@ public class EquipmentServiceImpl implements EquipmentService {
             log.warn("设备已处于active状态: id={}", equipment.getId());
         }
         if ("maintenance".equals(equipment.getStatus())) {
-            throw new BusinessException("设备正在维护中，无法启动");
+            throw new BusinessException(409, "设备正在维护中，无法启动")
+                    .withHint("请先完成设备维护后再启动").withHintTarget("status");
         }
 
         equipment.setStatus("active");  // 启动设备，设置为active
@@ -836,6 +847,7 @@ public class EquipmentServiceImpl implements EquipmentService {
                 .updatedAt(equipment.getUpdatedAt())
                 .createdBy(equipment.getCreatedBy())
                 .operatorId(equipment.getOperatorId())
+                .version(equipment.getVersion())
                 .build();
 
         // 填充操作员姓名

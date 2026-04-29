@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.scale.ScaleBrandModelDTO;
 import com.cretas.aims.dto.scale.ScaleProtocolDTO;
 import com.cretas.aims.entity.scale.ScaleBrandModel;
@@ -99,6 +100,7 @@ public class ScaleProtocolController {
 
     // ==================== 创建协议 ====================
 
+    @RequirePermission({"equipment:read_write"})
     @PostMapping
     @Operation(summary = "创建协议", description = "创建新的秤协议配置（平台管理员）")
     public ApiResponse<ScaleProtocolDTO> createProtocol(
@@ -145,6 +147,7 @@ public class ScaleProtocolController {
 
     // ==================== 更新协议 ====================
 
+    @RequirePermission({"equipment:read_write"})
     @PutMapping("/{protocolId}")
     @Operation(summary = "更新协议", description = "更新协议配置（内置协议不可修改关键字段）")
     public ApiResponse<ScaleProtocolDTO> updateProtocol(
@@ -195,6 +198,7 @@ public class ScaleProtocolController {
 
     // ==================== 删除协议 ====================
 
+    @RequirePermission({"equipment:read_write"})
     @DeleteMapping("/{protocolId}")
     @Operation(summary = "删除协议", description = "删除协议配置（内置协议不可删除）")
     public ApiResponse<Void> deleteProtocol(
@@ -267,6 +271,7 @@ public class ScaleProtocolController {
         return ApiResponse.success(ScaleBrandModelDTO.fromEntity(model));
     }
 
+    @RequirePermission({"equipment:read_write"})
     @PostMapping("/brand-models")
     @Operation(summary = "创建品牌型号", description = "添加新的秤品牌型号（平台管理员）")
     public ApiResponse<ScaleBrandModelDTO> createBrandModel(
@@ -318,6 +323,7 @@ public class ScaleProtocolController {
         return ApiResponse.success(ScaleBrandModelDTO.fromEntity(model));
     }
 
+    @RequirePermission({"equipment:read_write"})
     @PutMapping("/brand-models/{modelId}")
     @Operation(summary = "更新品牌型号", description = "更新秤品牌型号信息")
     public ApiResponse<ScaleBrandModelDTO> updateBrandModel(

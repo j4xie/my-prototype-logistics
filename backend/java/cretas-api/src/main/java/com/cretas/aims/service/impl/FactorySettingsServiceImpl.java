@@ -47,13 +47,24 @@ public class FactorySettingsServiceImpl implements FactorySettingsService {
         Factory factory = factoryRepository.findById(factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("工厂不存在，ID: " + factoryId));
 
+        // Race-safe lazy-init (Apr 21 2026): FE calls GET /settings + GET
+        // /settings/full in parallel on page mount. Both race to insert the
+        // default row; the loser hits the unique constraint on factory_id
+        // and returns 409 to the user as a red toast. Catch the conflict
+        // and re-read — the winner's row is now visible.
         FactorySettings settings = settingsRepository.findByFactoryId(factoryId)
                 .orElseGet(() -> {
                     log.info("工厂设置不存在，自动创建默认配置: factoryId={}", factoryId);
                     FactorySettings seed = FactorySettings.builder()
                             .factoryId(factoryId)
                             .build();
-                    return settingsRepository.save(seed);
+                    try {
+                        return settingsRepository.saveAndFlush(seed);
+                    } catch (org.springframework.dao.DataIntegrityViolationException dup) {
+                        log.info("并发创建撞 unique, 重读已存在行: factoryId={}", factoryId);
+                        return settingsRepository.findByFactoryId(factoryId)
+                                .orElseThrow(() -> dup);
+                    }
                 });
 
         settings.setFactoryName(factory.getName());
@@ -225,7 +236,8 @@ public class FactorySettingsServiceImpl implements FactorySettingsService {
                 settings.setEnableAttendance(enabled);
                 break;
             default:
-                throw new BusinessException("未知的功能开关: " + feature);
+                throw new BusinessException(400, "未知的功能开关: " + feature)
+                        .withHint("请使用支持的功能开关名称").withHintTarget("feature");
         }
 
         settingsRepository.save(settings);
@@ -337,7 +349,8 @@ public class FactorySettingsServiceImpl implements FactorySettingsService {
             return json;
         } catch (JsonProcessingException e) {
             log.error("导出工厂设置失败: factoryId={}", factoryId, e);
-            throw new BusinessException("导出设置失败: " + e.getMessage());
+            throw new BusinessException(500, "导出设置失败: " + e.getMessage())
+                    .withHint("请稍后重试, 如果问题持续请联系管理员");
         }
     }
 
@@ -354,7 +367,8 @@ public class FactorySettingsServiceImpl implements FactorySettingsService {
 
         } catch (JsonProcessingException e) {
             log.error("导入工厂设置失败: factoryId={}", factoryId, e);
-            throw new BusinessException("导入设置失败: " + e.getMessage());
+            throw new BusinessException(400, "导入设置失败: " + e.getMessage())
+                    .withHint("请检查 JSON 格式是否正确, 字段是否匹配").withHintTarget("settingsJson");
         }
     }
 
@@ -538,7 +552,8 @@ public class FactorySettingsServiceImpl implements FactorySettingsService {
             return objectMapper.writeValueAsString(obj);
         } catch (JsonProcessingException e) {
             log.error("对象转JSON失败: class={}", obj.getClass().getSimpleName(), e);
-            throw new BusinessException("JSON序列化失败: " + e.getMessage());
+            throw new BusinessException(500, "JSON序列化失败: " + e.getMessage())
+                    .withHint("请稍后重试, 如果问题持续请联系管理员");
         }
     }
 
@@ -592,7 +607,8 @@ public class FactorySettingsServiceImpl implements FactorySettingsService {
 
         } catch (Exception e) {
             log.error("创建默认对象失败: class={}", clazz.getSimpleName(), e);
-            throw new BusinessException("创建默认对象失败: " + e.getMessage());
+            throw new BusinessException(500, "创建默认对象失败: " + e.getMessage())
+                    .withHint("请稍后重试, 如果问题持续请联系管理员");
         }
     }
 }

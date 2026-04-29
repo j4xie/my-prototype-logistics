@@ -24,6 +24,25 @@ const equipmentStats = ref<EquipmentStats | null>(null);
 
 const factoryId = computed(() => authStore.factoryId);
 
+// UX Round 5: 新工厂 onboarding — 所有 KPI 都为 0 时显示快速开始引导
+const isNewFactory = computed(() => {
+  const todayOutput = overview.value?.todayOutput ?? 0;
+  const completedBatches = overview.value?.completedBatches ?? 0;
+  const running = equipmentStats.value?.running ?? 0;
+  const activeAlerts = equipmentStats.value?.activeAlerts ?? 0;
+  return !loading.value
+    && todayOutput === 0
+    && completedBatches === 0
+    && running === 0
+    && activeAlerts === 0;
+});
+
+const onboardingSteps = [
+  { title: '上传 Excel 数据', desc: '财务/销售/采购报表导入 AI 分析', route: '/smart-bi/analysis', icon: '📤' },
+  { title: '配置工厂模块', desc: '按业务启用/禁用功能模块', route: '/system/features', icon: '⚙️' },
+  { title: '添加员工账号', desc: '邀请团队成员登录协作', route: '/system/users', icon: '👥' },
+];
+
 // 统计卡片 - 管理员看全部
 const statCards = computed(() => [
   {
@@ -52,7 +71,12 @@ const statCards = computed(() => [
   },
   {
     title: '设备告警',
-    value: equipmentStats.value?.activeAlerts ?? 0,
+    // R42 BUG-14 fix: dashboard/equipment doesn't have activeAlerts field;
+    // dashboard/overview returns it nested at summary.activeAlerts.
+    value: (overview.value as any)?.summary?.activeAlerts
+      ?? (overview.value as any)?.alerts?.active
+      ?? equipmentStats.value?.activeAlerts
+      ?? 0,
     unit: '条',
     icon: Warning,
     color: '#FF5630',
@@ -129,6 +153,28 @@ function navigateTo(route: string) {
         </el-button>
       </div>
     </div>
+
+    <!-- UX Round 5: 新工厂 onboarding 引导卡 (仅当所有 KPI=0 时显示) -->
+    <el-card v-if="isNewFactory" class="onboarding-card" shadow="always">
+      <div class="onboarding-header">
+        <span class="onboarding-icon">🚀</span>
+        <div>
+          <h3>快速开始 3 步, 激活您的 AI 工厂</h3>
+          <p>当前工厂暂无数据。跟着这 3 步上手, 几分钟见 AI 分析效果.</p>
+        </div>
+      </div>
+      <div class="onboarding-steps">
+        <div v-for="(step, idx) in onboardingSteps" :key="step.route" class="onboarding-step" @click="navigateTo(step.route)">
+          <div class="step-num">{{ idx + 1 }}</div>
+          <div class="step-icon">{{ step.icon }}</div>
+          <div class="step-body">
+            <div class="step-title">{{ step.title }}</div>
+            <div class="step-desc">{{ step.desc }}</div>
+          </div>
+          <el-icon class="step-arrow">→</el-icon>
+        </div>
+      </div>
+    </el-card>
 
     <!-- 统计卡片 -->
     <el-row :gutter="20" class="stat-cards">
@@ -234,6 +280,76 @@ function navigateTo(route: string) {
     .overview-item {
       border-bottom-style: solid;
     }
+  }
+}
+
+/* UX Round 5: 新工厂 onboarding 卡片 */
+.onboarding-card {
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #e8f4ff 0%, #f0f9ff 100%);
+  border: 1px solid #1B65A8;
+
+  .onboarding-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+
+    .onboarding-icon { font-size: 36px; }
+    h3 { margin: 0 0 4px; color: #1B65A8; }
+    p { margin: 0; color: #606266; font-size: 13px; }
+  }
+
+  .onboarding-steps {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+
+    @media (max-width: 900px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .onboarding-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: #fff;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid #e6ebf2;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(27, 101, 168, 0.15);
+      border-color: #1B65A8;
+
+      .step-arrow { color: #1B65A8; transform: translateX(4px); }
+    }
+
+    .step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #1B65A8;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-icon { font-size: 22px; }
+    .step-body {
+      flex: 1;
+      min-width: 0;
+    }
+    .step-title { font-size: 14px; font-weight: 600; color: #303133; }
+    .step-desc { font-size: 12px; color: #909399; margin-top: 2px; }
+    .step-arrow { color: #c0c4cc; transition: all 0.2s; }
   }
 }
 </style>

@@ -59,7 +59,10 @@ public class StocktakingRecord extends BaseEntity {
 
     // ========== 归属与单号 ==========
 
-    @NotBlank
+    /**
+     * Apr 20 Bug BR-05 fix: 移除 @NotBlank — controller.create 在 @Valid 之后
+     * setFactoryId(pathFactoryId). DB 列仍 NOT NULL.
+     */
     @Column(name = "factory_id", nullable = false, length = 100)
     private String factoryId;
 
@@ -71,8 +74,10 @@ public class StocktakingRecord extends BaseEntity {
 
     /**
      * 盘点日期
+     * Apr 20 Bug BR-05 fix: 移除 @NotNull — controller auto-fill LocalDate.now() 如 null.
+     * @Valid 先跑导致"不能为空"误报 (尽管前端发日期, 某些 edge 边界 null 仍会到).
+     * DB 列仍 NOT NULL.
      */
-    @NotNull
     @Column(name = "stocktaking_date", nullable = false)
     private LocalDate stocktakingDate;
 

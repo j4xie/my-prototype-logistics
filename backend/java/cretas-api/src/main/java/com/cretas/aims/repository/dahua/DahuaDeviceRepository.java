@@ -72,10 +72,10 @@ public interface DahuaDeviceRepository extends JpaRepository<DahuaDevice, String
      * 按名称、IP、型号或序列号模糊搜索
      */
     @Query("SELECT d FROM DahuaDevice d WHERE d.factoryId = :factoryId " +
-            "AND (d.deviceName LIKE %:keyword% " +
-            "OR d.ipAddress LIKE %:keyword% " +
-            "OR d.deviceModel LIKE %:keyword% " +
-            "OR d.serialNumber LIKE %:keyword%)")
+            "AND (d.deviceName LIKE %:keyword% ESCAPE '\\' " +
+            "OR d.ipAddress LIKE %:keyword% ESCAPE '\\' " +
+            "OR d.deviceModel LIKE %:keyword% ESCAPE '\\' " +
+            "OR d.serialNumber LIKE %:keyword% ESCAPE '\\')")
     Page<DahuaDevice> searchByKeyword(
             @Param("factoryId") String factoryId,
             @Param("keyword") String keyword,
@@ -85,10 +85,10 @@ public interface DahuaDeviceRepository extends JpaRepository<DahuaDevice, String
      * 按名称、IP、型号或序列号模糊搜索（列表形式）
      */
     @Query("SELECT d FROM DahuaDevice d WHERE d.factoryId = :factoryId " +
-            "AND (d.deviceName LIKE %:keyword% " +
-            "OR d.ipAddress LIKE %:keyword% " +
-            "OR d.deviceModel LIKE %:keyword% " +
-            "OR d.serialNumber LIKE %:keyword%)")
+            "AND (d.deviceName LIKE %:keyword% ESCAPE '\\' " +
+            "OR d.ipAddress LIKE %:keyword% ESCAPE '\\' " +
+            "OR d.deviceModel LIKE %:keyword% ESCAPE '\\' " +
+            "OR d.serialNumber LIKE %:keyword% ESCAPE '\\')")
     List<DahuaDevice> searchByKeyword(
             @Param("factoryId") String factoryId,
             @Param("keyword") String keyword);

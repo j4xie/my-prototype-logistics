@@ -224,10 +224,11 @@ class FixedExecutor:
 
     def execute_with_pandas(
         self,
-        file_bytes: bytes,
+        file_bytes: Optional[bytes],
         structure_config: StructureDetectionResult,
         mapping_config: SemanticMappingResult,
-        options: Optional[Dict[str, Any]] = None
+        options: Optional[Dict[str, Any]] = None,
+        preparsed_df: Optional["pd.DataFrame"] = None,
     ) -> ExtractedData:
         """
         Execute data extraction using pandas for better performance.
@@ -255,17 +256,87 @@ class FixedExecutor:
             # prod OOM at 2026-04-15 23:36 — -Xmx1280m heap can't hold 470K
             # Map<String,Object> entries). Default 10000 matches the xlsx path.
             csv_max_rows = options.get("max_rows", 10000)
+            # FIX (Apr 15 2026, BUG #4): honour csv_skiprows so CSV files with leading
+            # metadata rows (大众点评/美团/客如云 export format) are parsed correctly.
+            # auto_parse passes csv_skiprows = max(0, (effective_header_override or 1) - 1).
+            csv_skiprows = options.get("csv_skiprows", 0)
             if structure_config.method == "csv_passthrough":
-                try:
-                    df = pd.read_csv(io.BytesIO(file_bytes), nrows=csv_max_rows)
-                except UnicodeDecodeError:
-                    df = pd.read_csv(io.BytesIO(file_bytes), encoding="gbk", nrows=csv_max_rows)
+                # Step 1d (Apr 20 2026): caller may pass already-parsed DataFrame
+                # so we don't re-parse from 263MB+ content bytes. This is what
+                # lets auto_parse_excel `del content` safely after its own
+                # read_csv — cuts ~3× 263MB memory duplication on the BG
+                # worker self-call path. Validate the df has the expected
+                # columns; otherwise fall back to re-parse.
+                if preparsed_df is not None and not preparsed_df.empty:
+                    df = preparsed_df
+                else:
+                    if file_bytes is None:
+                        return ExtractedData(
+                            success=False,
+                            error="execute_with_pandas: file_bytes is None and no preparsed_df provided",
+                        )
+                    try:
+                        df = pd.read_csv(io.BytesIO(file_bytes), nrows=csv_max_rows, skiprows=csv_skiprows)
+                    except UnicodeDecodeError:
+                        df = pd.read_csv(io.BytesIO(file_bytes), encoding="gbk", nrows=csv_max_rows, skiprows=csv_skiprows)
             else:
                 # 对于复杂多层表头 (>2行)，使用智能合并而不是 pandas 默认拼接
                 if header_rows > 2 or structure_config.merged_cells:
-                    return self._execute_with_smart_header_merge(
-                        file_bytes, structure_config, mapping_config, options
-                    )
+                    # OOM guard: smart_merge 调 openpyxl.load_workbook(data_only=True) 全量加载
+                    # 所有 cell 对象 (~500-2000 bytes/cell), 宽文件在 swap-full 服务器上 OOM。
+                    # pandas 1.5.3 内部用 read_only=True 按行流式读, 内存安全。
+                    # 超出 300K cells → 降级到 pandas 路径 + nrows cap。
+                    _should_use_smart = True
+                    if file_bytes:
+                        try:
+                            import openpyxl as _opxl_pre
+                            _wb_pre = _opxl_pre.load_workbook(
+                                io.BytesIO(file_bytes), read_only=True, data_only=True
+                            )
+                            _sname_pre = structure_config.sheet_name or _wb_pre.sheetnames[0]
+                            _ws_pre = (_wb_pre[_sname_pre]
+                                       if _sname_pre in _wb_pre.sheetnames
+                                       else _wb_pre[_wb_pre.sheetnames[0]])
+                            _pre_rows = _ws_pre.max_row or 0
+                            _pre_cols = _ws_pre.max_column or 1
+                            _wb_pre.close()
+                            _SMART_BUDGET = 300_000
+                            logger.info(
+                                f"[smart-merge-probe] rows={_pre_rows} cols={_pre_cols} "
+                                f"cells={_pre_rows*_pre_cols:,} budget={_SMART_BUDGET:,} "
+                                f"file={len(file_bytes)//1024}KB"
+                            )
+                            _dim_unreliable = _pre_rows <= 1  # xlsx 无 dimension 标签
+                            if _pre_rows > 1 and _pre_rows * _pre_cols > _SMART_BUDGET:
+                                # 确切维度 × cells 超预算
+                                _cap = max(1000, _SMART_BUDGET // max(1, _pre_cols))
+                                logger.warning(
+                                    f"[smart-merge-oom-guard] {_pre_rows}r × {_pre_cols}c "
+                                    f"= {_pre_rows*_pre_cols:,} cells > budget {_SMART_BUDGET:,}. "
+                                    f"Downgrade to pandas read_only path, cap={_cap} rows."
+                                )
+                                options = dict(options)
+                                options["nrows"] = _cap
+                                _should_use_smart = False
+                            elif _dim_unreliable and len(file_bytes) > 300_000:
+                                # xlsx 无 dimension tag + 大文件 → openpyxl 全量加载估算不出行数,
+                                # 但实际数据量可能很大。用保守 cap 避免 OOM。
+                                _cap_safe = 2000
+                                logger.warning(
+                                    f"[smart-merge-oom-guard] {len(file_bytes)//1024}KB xlsx "
+                                    f"+ no dimension tag (max_row={_pre_rows}). "
+                                    f"Downgrade to pandas path, cap={_cap_safe} rows."
+                                )
+                                options = dict(options)
+                                options["nrows"] = _cap_safe
+                                _should_use_smart = False
+                        except Exception as _pre_e:
+                            logger.warning(f"[smart-merge-oom-guard] probe failed: {_pre_e}")
+                    if _should_use_smart:
+                        return self._execute_with_smart_header_merge(
+                            file_bytes, structure_config, mapping_config, options
+                        )
+                    # else: fall through to pandas read_only path with capped nrows
 
                 # 简单表头情况，使用 pandas 默认处理
                 if header_rows == 2:
@@ -276,40 +347,158 @@ class FixedExecutor:
                     header = data_start_row - 1 if data_start_row > 0 else 0
 
                 # Read with pandas
+                # Bug #25b (2026-04-18): honour options["nrows"] to crop to a
+                # user-selected region. Default is read-all (historical behaviour).
+                _nrows_opt = options.get("nrows")
+                # 2026-04-29: cell-budget safety cap (parity with CSV path in
+                # excel.py L1053). xlsx 路径之前没有 cap, 1.37MB×4000行×112列
+                # 这种文件会让 pd.read_excel 全量加载 → 加 openpyxl XML 解析峰值
+                # → 14GB swap-full 服务器上必 OOM。Probe 行数 + 列数 via openpyxl
+                # read_only 模式 (cheap), 按 15M cells 截断, 跟 CSV 一致。
+                if not _nrows_opt or _nrows_opt <= 0:
+                    try:
+                        import openpyxl as _opxl_probe
+                        _wb_probe = _opxl_probe.load_workbook(
+                            io.BytesIO(file_bytes), read_only=True, data_only=True
+                        )
+                        _sheet_name = structure_config.sheet_name or _wb_probe.sheetnames[0]
+                        _ws_probe = _wb_probe[_sheet_name] if _sheet_name in _wb_probe.sheetnames else _wb_probe[_wb_probe.sheetnames[0]]
+                        _probe_rows = _ws_probe.max_row or 0
+                        _probe_cols = _ws_probe.max_column or 1
+                        _wb_probe.close()
+                        # xlsx openpyxl Cell 对象开销约 500-2000 bytes/cell (Python 对象开销).
+                        # CSV 路径 excel.py 用 15M cells, 但 CSV 用 C 解析器, 开销低 50x.
+                        # 300K cells × ~1KB/cell ≈ 300MB 峰值 — 在 swap-full 服务器上安全。
+                        # 真实例: 1.37MB xlsx, 4033 rows × 112 cols = 451K cells → OOM。
+                        _CELL_BUDGET = 300_000
+                        _safety_cap = max(1000, _CELL_BUDGET // max(1, _probe_cols))
+                        if _probe_rows > _safety_cap:
+                            logger.warning(
+                                f"[xlsx-safety-cap] {_probe_rows} rows × {_probe_cols} cols "
+                                f"= {_probe_rows*_probe_cols:,} cells exceeds budget "
+                                f"({_CELL_BUDGET:,}). Capping to {_safety_cap} rows "
+                                f"({100*_safety_cap//_probe_rows}% of data). "
+                                f"TODO: streaming persist for full coverage."
+                            )
+                            _nrows_opt = _safety_cap
+                        else:
+                            logger.info(
+                                f"[xlsx-probe] {_probe_rows} rows × {_probe_cols} cols "
+                                f"= {_probe_rows*_probe_cols:,} cells — within budget, full load."
+                            )
+                    except Exception as _probe_e:
+                        logger.warning(f"[xlsx-safety-cap] probe failed: {_probe_e}, reading full file")
+
                 df = pd.read_excel(
                     io.BytesIO(file_bytes),
                     sheet_name=structure_config.sheet_name or 0,
                     header=header,
-                    skiprows=options.get("skip_rows", 0)
+                    skiprows=options.get("skip_rows", 0),
+                    nrows=_nrows_opt if _nrows_opt and _nrows_opt > 0 else None,
                 )
 
             # Flatten multi-level columns if needed
             if isinstance(df.columns, pd.MultiIndex):
-                df.columns = [
-                    '_'.join(str(c) for c in col if str(c) != 'nan' and str(c) != '')
-                    for col in df.columns.values
-                ]
+                import re as _re_unnamed
+                _unnamed_re = _re_unnamed.compile(r'^Unnamed:?\s*\d+', _re_unnamed.IGNORECASE)
+
+                def _level_is_noise(cell: str) -> bool:
+                    """Pandas injects 'Unnamed: X_level_N' when header row cell is empty
+                    or part of a merged-cell span. Treat as noise."""
+                    s = str(cell).strip()
+                    return (s == 'nan' or s == '' or bool(_unnamed_re.match(s)))
+
+                # Pass 1: flatten keeping only meaningful level parts
+                flat_cols = []
+                for i, col in enumerate(df.columns.values):
+                    parts = [str(c) for c in col if not _level_is_noise(c)]
+                    flat_cols.append('_'.join(parts) if parts else f'Column_{i}')
+
+                # Bug #25 true fix (Apr 17 2026): if header detection picked wrong rows,
+                # most flat columns will be Column_N placeholders. In that case re-scan
+                # the sheet via openpyxl to find the real header row (first row that's
+                # >=50% non-empty AND >=80% text cells), then re-read with that header.
+                placeholder_count = sum(1 for c in flat_cols if str(c).startswith('Column_'))
+                if placeholder_count > len(flat_cols) * 0.5 and structure_config.method != "csv_passthrough":
+                    try:
+                        import openpyxl
+                        wb = openpyxl.load_workbook(io.BytesIO(file_bytes), data_only=True, read_only=True)
+                        sheet = wb[structure_config.sheet_name] if structure_config.sheet_name in wb.sheetnames else wb[wb.sheetnames[0]]
+                        detected_header_row = None
+                        for row_idx, row in enumerate(sheet.iter_rows(values_only=True, max_row=20)):
+                            cells = list(row)
+                            non_empty = [v for v in cells if v is not None and str(v).strip() != '']
+                            if len(non_empty) < max(3, len(cells) * 0.5):
+                                continue
+                            text_vals = [
+                                v for v in non_empty
+                                if isinstance(v, str) and not str(v).replace('.', '').replace('-', '').replace(',', '').strip().isdigit()
+                            ]
+                            if len(text_vals) >= len(non_empty) * 0.8:
+                                detected_header_row = row_idx
+                                logger.info(
+                                    f"Bug #25 auto-header-detect: row_idx={row_idx} headers={[str(v)[:20] for v in non_empty[:5]]}"
+                                )
+                                break
+                        wb.close()
+                        if detected_header_row is not None:
+                            df = pd.read_excel(
+                                io.BytesIO(file_bytes),
+                                sheet_name=structure_config.sheet_name or 0,
+                                header=detected_header_row,
+                                skiprows=None,
+                            )
+                            logger.info(f"Bug #25 re-read success: {len(df.columns)} cols, {len(df)} rows")
+                    except Exception as _e:
+                        logger.warning(f"Bug #25 auto-header-detect failed (keeping placeholders): {_e}")
+                        df.columns = flat_cols
+                else:
+                    df.columns = flat_cols
 
             # Store original headers
             result.original_headers = df.columns.tolist()
 
             # Build column mapping and rename
             column_map = self._build_column_map(structure_config, mapping_config)
-            renamed_columns = {orig: column_map.get(orig, orig) for orig in df.columns}
-            df = df.rename(columns=renamed_columns)
 
-            # Deduplicate column names to prevent df[col] returning DataFrame
-            # when multiple columns share the same mapped name (e.g. both 日期 and 月份 → period)
-            seen: Dict[str, int] = {}
-            new_cols = []
-            for c in df.columns:
-                if c in seen:
-                    seen[c] += 1
-                    new_cols.append(f"{c}_{seen[c]}")
-                else:
-                    seen[c] = 1
-                    new_cols.append(c)
-            df.columns = new_cols
+            # FIX (Apr 15 2026, BUG #3): if the rename would produce duplicate target names
+            # (e.g. 开单时间/分单时间/结单时间 all → "period") OR if csv_passthrough method,
+            # PRESERVE original Chinese column names. Restaurant section handlers expect literal
+            # business names (开单时间/营业日期/区域 etc), the generic English aliases break them.
+            from collections import Counter
+            target_names = [column_map.get(orig, orig) for orig in df.columns]
+            target_counts = Counter(target_names)
+            has_collision = any(c > 1 for c in target_counts.values())
+            is_csv_passthrough = structure_config.method == "csv_passthrough"
+
+            if has_collision or is_csv_passthrough:
+                logger.info(
+                    f"Column rename SKIPPED — preserving original headers ({'collision' if has_collision else 'csv_passthrough'}): {df.columns.tolist()[:5]}..."
+                )
+                # Don't rename, but still ensure no duplicate original names (rare edge case)
+                seen: Dict[str, int] = {}
+                new_cols = []
+                for c in df.columns:
+                    if c in seen:
+                        seen[c] += 1
+                        new_cols.append(f"{c}_{seen[c]}")
+                    else:
+                        seen[c] = 1
+                        new_cols.append(c)
+                df.columns = new_cols
+            else:
+                renamed_columns = {orig: column_map.get(orig, orig) for orig in df.columns}
+                df = df.rename(columns=renamed_columns)
+                seen: Dict[str, int] = {}
+                new_cols = []
+                for c in df.columns:
+                    if c in seen:
+                        seen[c] += 1
+                        new_cols.append(f"{c}_{seen[c]}")
+                    else:
+                        seen[c] = 1
+                        new_cols.append(c)
+                df.columns = new_cols
 
             result.headers = df.columns.tolist()
 
@@ -317,10 +506,16 @@ class FixedExecutor:
             data_type_map = self._build_data_type_map(structure_config, mapping_config, result.original_headers)
             result.data_types = data_type_map
 
-            for col_idx in range(len(df.columns)):
-                col_name = df.columns[col_idx]
-                data_type = data_type_map.get(col_name, "text")
-                df.iloc[:, col_idx] = df.iloc[:, col_idx].apply(lambda x: self._clean_value(x, data_type))
+            # Step 1e (Apr 20 2026): skip per-cell clean_value loop for
+            # csv_passthrough — pandas CSV values are already JSON-scalar
+            # (str/int/float/nan). The lambda apply was doing N*M function
+            # calls creating N*M new objects, doubling memory churn for wide
+            # CSVs. For xlsx still needed (type coercion, timestamps).
+            if structure_config.method != "csv_passthrough":
+                for col_idx in range(len(df.columns)):
+                    col_name = df.columns[col_idx]
+                    data_type = data_type_map.get(col_name, "text")
+                    df.iloc[:, col_idx] = df.iloc[:, col_idx].apply(lambda x: self._clean_value(x, data_type))
 
             # Remove empty rows if configured
             if options.get("skip_empty_rows", True):
@@ -331,10 +526,15 @@ class FixedExecutor:
             # Convert to records and ensure all values are JSON-safe scalars
             df = df.replace({np.nan: None})
             raw_rows = df.to_dict(orient='records')
-            result.rows = [
-                {k: self._ensure_scalar(v) for k, v in row.items()}
-                for row in raw_rows
-            ]
+            if structure_config.method == "csv_passthrough":
+                # Step 1e: CSV values from pandas are already scalar. Skip the
+                # ensure_scalar dict rebuild (halves peak memory for wide CSVs).
+                result.rows = raw_rows
+            else:
+                result.rows = [
+                    {k: self._ensure_scalar(v) for k, v in row.items()}
+                    for row in raw_rows
+                ]
             result.row_count = len(result.rows)
             result.column_count = len(result.headers)
 

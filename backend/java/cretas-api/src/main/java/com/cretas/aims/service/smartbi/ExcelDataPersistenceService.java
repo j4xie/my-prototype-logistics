@@ -29,6 +29,8 @@ public interface ExcelDataPersistenceService {
         SALES("销售数据"),
         FINANCE("财务数据"),
         DEPARTMENT("部门数据"),
+        REVIEW("评价数据"),     // Apr 20: qhj_reviews 被误分类成 SALES. 评价字段 (评价/评分/评论/星级) → REVIEW.
+        PURCHASE("采购数据"),   // Apr 20: dongmenkou_purchase 被误分类成 FINANCE. 采购入库字段 (供应商/原料/入库) → PURCHASE.
         GENERAL("通用数据"),
         UNKNOWN("未知数据");
 

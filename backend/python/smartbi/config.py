@@ -40,10 +40,26 @@ class Settings(BaseSettings):
     # LLM Configuration - Mapper Model (field mapping, data cleaning, structure analysis)
     llm_mapper_model: str = "qwen3.5-122b-a10b"  # Balanced MoE for mapping tasks
 
+    # KB Chat Configuration (G4 — DeepSeek for cost optimization, audit round 5)
+    # KB chat (manual_chat) uses DeepSeek by default for 30-60x cost saving:
+    # - Input cache miss: ¥1/1M (vs qwen ¥40/1M) — 40x
+    # - Input cache hit: ¥0.02/1M — 1/50 (system prompt + chunks 重复场景受益)
+    # - Output: ¥2/1M (vs qwen ¥120/1M) — 60x
+    # OpenAI-compatible API. Falls back to llm_* if kb_chat_api_key empty.
+    kb_chat_provider: str = "deepseek"  # "deepseek" | "qwen" | "" (use default llm_*)
+    kb_chat_base_url: str = "https://api.deepseek.com"  # OpenAI-compatible, no /v1 prefix
+    kb_chat_api_key: str = ""  # Set via LLM_DEEPSEEK_API_KEY env var
+    kb_chat_model: str = "deepseek-chat"  # = deepseek-v4-flash alias, supports thinking + non-thinking
+
     # Zero-Code Configuration
     structure_detection_confidence_threshold: float = 0.7  # Minimum confidence for structure detection
     semantic_mapping_confidence_threshold: float = 0.8  # Minimum confidence for field mapping
-    enable_multi_model_enhancement: bool = True  # Enable Layer 4 multi-model voting
+    enable_multi_model_enhancement: bool = True  # Enable Layer 4 multi-model voting (structure_detector)
+    # J2 (Apr 24 2026): Layer 4 multi-model voting now CONDITIONAL on prior layer confidence.
+    # Only escalate to 3-model voting if best prior layer confidence < this threshold.
+    # Avoids ~30-60% redundant LLM calls when single-model already nailed structure.
+    multi_model_voting_confidence_threshold: float = 0.85
+    enable_mapper_multi_model: bool = False  # D2: semantic_mapper Layer 3 (2x LLM voting) — off by default
     max_self_correction_rounds: int = 3  # Max rounds for self-correction loop
     use_llm_first: bool = True  # Use LLM as default detection method instead of rules
 
@@ -163,10 +179,18 @@ _pg_pool = None
 
 
 async def get_pg_pool():
-    """Get or create shared asyncpg connection pool for SmartBI database."""
+    """Get or create shared asyncpg connection pool for SmartBI database.
+
+    Apr 22 2026 (Week 1 Day 1 of Unified Data Layer v1 spec): every borrowed
+    connection gets `app.factory_id` set from smartbi.tenant_ctx contextvar.
+    Downstream RLS policies on fact/dim tables use
+      USING (factory_id = current_setting('app.factory_id'))
+    so queries without tenant scope return zero rows by default.
+    """
     global _pg_pool
     if _pg_pool is None or _pg_pool._closed:
         import asyncpg
+        from smartbi.tenant_ctx import set_pg_connection_tenant
         settings = get_settings()
         pg_url = settings.postgres_url
         if not pg_url:
@@ -175,5 +199,59 @@ async def get_pg_pool():
             pg_url,
             min_size=2,
             max_size=settings.postgres_pool_size or 5,
+            setup=set_pg_connection_tenant,
         )
     return _pg_pool
+
+
+# ==========================================
+# Shared asyncpg pool for Cretas app DB (cretas_db)
+# ==========================================
+_cretas_pool: Optional[asyncpg.Pool] = None  # type: ignore[name-defined]
+_cretas_pool_lock = None  # initialised lazily (asyncio.Lock must be created inside event loop)
+
+
+async def get_cretas_pool():
+    """Get cached asyncpg connection pool for the Cretas app database (cretas_db).
+
+    Singleton — lives for the full application lifetime.  Never close the
+    returned pool (it is shared across all callers).
+
+    Uses the same food_kb_db_url setting as the per-request pools that
+    restaurant_completeness.py and restaurant_etl_admin.py previously created
+    (legacy name; the URL points to cretas_db, not a separate food-kb DB).
+
+    Pool size 2-8: larger than the old per-request 1-3 because this pool is
+    shared and amortises the connection overhead across all concurrent requests.
+    """
+    import asyncio
+    import asyncpg as _asyncpg
+
+    global _cretas_pool, _cretas_pool_lock
+
+    # Fast path — pool already initialised
+    if _cretas_pool is not None and not _cretas_pool._closed:
+        return _cretas_pool
+
+    # Lazily create the lock inside the running event loop
+    if _cretas_pool_lock is None:
+        _cretas_pool_lock = asyncio.Lock()
+
+    async with _cretas_pool_lock:
+        # Double-check after acquiring lock
+        if _cretas_pool is not None and not _cretas_pool._closed:
+            return _cretas_pool
+
+        settings = get_settings()
+        url = settings.food_kb_db_url
+        if not url:
+            return None
+
+        _cretas_pool = await _asyncpg.create_pool(
+            url,
+            min_size=2,
+            max_size=8,
+            command_timeout=30,
+        )
+
+    return _cretas_pool

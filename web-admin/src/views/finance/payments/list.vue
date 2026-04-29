@@ -13,7 +13,7 @@ const canWrite = computed(() => permissionStore.canWrite('finance'));
 
 const loading = ref(false);
 const tableData = ref<Record<string, unknown>[]>([]);
-const pagination = ref({ page: 0, size: 20, total: 0 });
+const pagination = ref({ page: 1, size: 20, total: 0 });
 const statusFilter = ref('');
 
 const statusMap: Record<string, { text: string; type: string }> = {
@@ -27,7 +27,35 @@ const methodMap: Record<string, string> = {
   CHECK: '支票', CREDIT: '信用', POS: 'POS', OTHER: '其他',
 };
 
-onMounted(() => loadData());
+onMounted(() => {
+  loadData();
+  loadSalesOrderOptions();
+});
+
+// Apr 21 2026: load confirmed sales orders for dropdown in 录入收款 dialog
+interface SalesOrderOption { id: string; orderNumber: string; customerName: string; totalAmount?: number }
+const salesOrderOptions = ref<SalesOrderOption[]>([]);
+async function loadSalesOrderOptions() {
+  if (!factoryId.value) return;
+  try {
+    // Note: endpoint is /sales/orders (SalesController), not /sales-orders.
+    // List all then filter to payable statuses client-side (CONFIRMED through
+    // COMPLETED; exclude DRAFT / CANCELLED).
+    const res = await get<{ content: (SalesOrderOption & { status?: string })[] }>(
+      `/${factoryId.value}/sales/orders`,
+      { params: { page: 1, size: 200 } }
+    );
+    if (res.success && res.data) {
+      const payableStatuses = new Set([
+        'CONFIRMED', 'PENDING_FINANCE_REVIEW', 'FINANCE_APPROVED',
+        'PROCESSING', 'PARTIAL_DELIVERED', 'COMPLETED',
+      ]);
+      salesOrderOptions.value = (res.data.content || []).filter(
+        o => !o.status || payableStatuses.has(o.status)
+      );
+    }
+  } catch { /* silent */ }
+}
 
 async function loadData() {
   if (!factoryId.value) return;
@@ -37,12 +65,28 @@ async function loadData() {
     if (statusFilter.value) params.status = statusFilter.value;
     const res = await get(`/${factoryId.value}/finance/payments`, { params });
     if (res.success) {
-      tableData.value = res.data.content || [];
+      let rows = res.data.content || [];
+      // Apr 20 Bug BR-12 fix: 加前端 keyword 搜索 (客户 / 收款单号 / 发票号)
+      const kw = searchKeyword.value.trim();
+      if (kw) {
+        const lower = kw.toLowerCase();
+        rows = rows.filter((r: Record<string, unknown>) =>
+          String(r.customerName || '').toLowerCase().includes(lower) ||
+          String(r.paymentNumber || '').toLowerCase().includes(lower) ||
+          String(r.invoiceNumber || '').toLowerCase().includes(lower)
+        );
+      }
+      tableData.value = rows;
       pagination.value.total = res.data.totalElements || 0;
     }
-  } catch { ElMessage.error('加载收款列表失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { loading.value = false; }
 }
+
+// Apr 20 Bug BR-12 fix: keyword state
+const searchKeyword = ref('');
+function handleSearch() { pagination.value.page = 1; loadData(); }
+function handleReset() { searchKeyword.value = ''; statusFilter.value = ''; handleSearch(); }
 
 async function handleVerify(id: string) {
   try {
@@ -50,7 +94,7 @@ async function handleVerify(id: string) {
     const res = await post(`/${factoryId.value}/finance/payments/${id}/verify`);
     if (res.success) { ElMessage.success('收款已确认'); loadData(); }
     else { ElMessage.error(res.message || '确认失败'); }
-  } catch (e) { if (e !== 'cancel') ElMessage.error('操作失败'); }
+  } catch (e) { /* axios interceptor handles API errors; cancel from MessageBox is silent */ }
 }
 
 async function handleReject(id: string) {
@@ -59,7 +103,7 @@ async function handleReject(id: string) {
     const res = await post(`/${factoryId.value}/finance/payments/${id}/reject`, { reason });
     if (res.success) { ElMessage.success('已驳回'); loadData(); }
     else { ElMessage.error(res.message || '驳回失败'); }
-  } catch (e) { if (e !== 'cancel') ElMessage.error('操作失败'); }
+  } catch (e) { /* axios interceptor handles API errors; cancel from MessageBox is silent */ }
 }
 
 // 录入收款弹窗
@@ -82,7 +126,7 @@ async function handleRecordSubmit() {
       recordDialogVisible.value = false;
       loadData();
     } else { ElMessage.error(res.message || '创建失败'); }
-  } catch { ElMessage.error('创建失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { submitting.value = false; }
 }
 </script>
@@ -94,9 +138,13 @@ async function handleRecordSubmit() {
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:16px;font-weight:600">收款管理</span>
           <div style="display:flex;gap:8px">
+            <!-- Apr 20 Bug BR-12 fix: 加 keyword 搜索 (客户 / 收款单号 / 发票号) -->
+            <el-input v-model="searchKeyword" placeholder="搜索 客户/收款单号/发票号" clearable style="width:220px" @keyup.enter="handleSearch" />
             <el-select v-model="statusFilter" placeholder="全部状态" clearable style="width:140px" @change="loadData">
               <el-option v-for="(v,k) in statusMap" :key="k" :label="v.text" :value="k" />
             </el-select>
+            <el-button type="primary" @click="handleSearch">搜索</el-button>
+            <el-button @click="handleReset">重置</el-button>
             <el-button v-if="canWrite" type="primary" @click="recordDialogVisible = true">录入收款</el-button>
           </div>
         </div>
@@ -146,8 +194,23 @@ async function handleRecordSubmit() {
     <!-- 录入收款弹窗 -->
     <el-dialog v-model="recordDialogVisible" title="录入收款" width="480px" destroy-on-close>
       <el-form label-width="90px">
-        <el-form-item label="销售订单ID" required>
-          <el-input v-model="recordForm.salesOrderId" placeholder="输入销售订单ID" />
+        <el-form-item label="销售订单" required>
+          <el-select
+            v-model="recordForm.salesOrderId"
+            placeholder="选择已确认的销售订单"
+            filterable
+            style="width:100%"
+          >
+            <el-option
+              v-for="o in salesOrderOptions"
+              :key="o.id"
+              :value="o.id"
+              :label="`${o.orderNumber} · ${o.customerName || '-'} · ¥${(o.totalAmount || 0).toLocaleString()}`"
+            />
+            <template #empty>
+              <div style="padding:8px 12px;color:#909399">暂无已确认的销售订单</div>
+            </template>
+          </el-select>
         </el-form-item>
         <el-form-item label="收款金额" required>
           <el-input-number v-model="recordForm.amount" :min="0" :precision="2" style="width:100%" />

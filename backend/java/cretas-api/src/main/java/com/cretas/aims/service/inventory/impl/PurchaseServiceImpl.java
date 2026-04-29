@@ -3,6 +3,7 @@ package com.cretas.aims.service.inventory.impl;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.inventory.CreatePurchaseOrderRequest;
 import com.cretas.aims.dto.inventory.CreateReceiveRecordRequest;
+import com.cretas.aims.dto.inventory.UpdatePurchaseOrderRequest;
 import com.cretas.aims.dto.inventory.MaterialPriceComparisonDTO;
 import com.cretas.aims.entity.MaterialBatch;
 import com.cretas.aims.entity.RawMaterialType;
@@ -21,6 +22,7 @@ import com.cretas.aims.repository.bom.BomItemRepository;
 import com.cretas.aims.repository.inventory.PurchaseOrderItemRepository;
 import com.cretas.aims.repository.inventory.PurchaseOrderRepository;
 import com.cretas.aims.repository.inventory.PurchaseReceiveRecordRepository;
+import com.cretas.aims.repository.inventory.SalesOrderRepository;
 import com.cretas.aims.event.MaterialReceivedEvent;
 import com.cretas.aims.service.inventory.PurchaseService;
 import org.slf4j.Logger;
@@ -53,6 +55,10 @@ public class PurchaseServiceImpl implements PurchaseService {
     private final BomItemRepository bomItemRepository;
     private final com.cretas.aims.service.finance.ArApService arApService;
     private final ApplicationEventPublisher applicationEventPublisher;
+
+    /** Rule 2 hydration: lookup SO orderNumber for PO.salesOrderNumber @Transient. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private SalesOrderRepository salesOrderRepository;
 
     /** Canvas V2: DB-driven validation rules */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
@@ -122,6 +128,8 @@ public class PurchaseServiceImpl implements PurchaseService {
         order.setOrderDate(request.getOrderDate());
         order.setExpectedDeliveryDate(request.getExpectedDeliveryDate());
         order.setRemark(request.getRemark());
+        // W-12 fix: persist salesOrderId for cross-module tracking (SO detail "关联采购" tab)
+        order.setSalesOrderId(request.getSalesOrderId());
         order.setStatus(PurchaseOrderStatus.DRAFT);
         order.setCreatedBy(userId);
 
@@ -173,15 +181,57 @@ public class PurchaseServiceImpl implements PurchaseService {
         PurchaseOrder order = purchaseOrderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("采购订单不存在"));
         if (!order.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权访问该采购订单");
+            throw new BusinessException(403, "无权访问该采购订单")
+                    .withHint("当前采购订单不属于该工厂, 无法访问");
         }
+        hydrateSalesOrderNumber(order);
         return order;
+    }
+
+    /**
+     * Rule 2 hydration: 给 PO 填 salesOrderNumber (@Transient). 前端"关联销售订单"
+     * 展示直接用, 免去 1+N 查询 SO. Null-safe — 无 salesOrderId 时不查.
+     */
+    private void hydrateSalesOrderNumber(PurchaseOrder order) {
+        if (order == null || order.getSalesOrderId() == null || salesOrderRepository == null) return;
+        try {
+            salesOrderRepository.findById(order.getSalesOrderId())
+                    .ifPresent(so -> order.setSalesOrderNumber(so.getOrderNumber()));
+        } catch (Exception e) {
+            log.debug("hydrate salesOrderNumber failed for PO {}: {}", order.getId(), e.getMessage());
+        }
+    }
+
+    /**
+     * Rule 2 hydration (batch): 给 list 结果一次性填 salesOrderNumber, 避免 1+N.
+     * 收集唯一 salesOrderIds → findAllById → map → set 回每个 PO.
+     */
+    private void hydrateSalesOrderNumbers(List<PurchaseOrder> orders) {
+        if (orders == null || orders.isEmpty() || salesOrderRepository == null) return;
+        Set<String> ids = orders.stream()
+                .map(PurchaseOrder::getSalesOrderId)
+                .filter(id -> id != null && !id.isEmpty())
+                .collect(Collectors.toSet());
+        if (ids.isEmpty()) return;
+        try {
+            Map<String, String> idToNumber = new HashMap<>();
+            salesOrderRepository.findAllById(ids).forEach(so -> idToNumber.put(so.getId(), so.getOrderNumber()));
+            for (PurchaseOrder po : orders) {
+                if (po.getSalesOrderId() != null) {
+                    String num = idToNumber.get(po.getSalesOrderId());
+                    if (num != null) po.setSalesOrderNumber(num);
+                }
+            }
+        } catch (Exception e) {
+            log.debug("batch hydrate salesOrderNumber failed: {}", e.getMessage());
+        }
     }
 
     @Override
     public PageResponse<PurchaseOrder> getPurchaseOrders(String factoryId, int page, int size) {
         PageRequest pageRequest = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<PurchaseOrder> result = purchaseOrderRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageRequest);
+        hydrateSalesOrderNumbers(result.getContent());
         return PageResponse.of(result.getContent(), page, size, result.getTotalElements());
     }
 
@@ -189,6 +239,16 @@ public class PurchaseServiceImpl implements PurchaseService {
     public PageResponse<PurchaseOrder> getPurchaseOrdersByStatus(String factoryId, PurchaseOrderStatus status, int page, int size) {
         PageRequest pageRequest = PageRequest.of(page - 1, size);
         Page<PurchaseOrder> result = purchaseOrderRepository.findByFactoryIdAndStatusOrderByCreatedAtDesc(factoryId, status, pageRequest);
+        hydrateSalesOrderNumbers(result.getContent());
+        return PageResponse.of(result.getContent(), page, size, result.getTotalElements());
+    }
+
+    @Override
+    public PageResponse<PurchaseOrder> getPurchaseOrdersBySalesOrder(String factoryId, String salesOrderId, int page, int size) {
+        // W-12 fix: SO detail page's "关联采购" tab needs this filter
+        PageRequest pageRequest = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<PurchaseOrder> result = purchaseOrderRepository.findByFactoryIdAndSalesOrderId(factoryId, salesOrderId, pageRequest);
+        hydrateSalesOrderNumbers(result.getContent());
         return PageResponse.of(result.getContent(), page, size, result.getTotalElements());
     }
 
@@ -197,7 +257,8 @@ public class PurchaseServiceImpl implements PurchaseService {
     public PurchaseOrder submitOrder(String factoryId, String orderId) {
         PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
         if (order.getStatus() != PurchaseOrderStatus.DRAFT) {
-            throw new BusinessException("只有草稿状态的订单可以提交");
+            throw new BusinessException(409, "只有草稿状态的订单可以提交")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         order.setStatus(PurchaseOrderStatus.SUBMITTED);
         log.info("提交采购订单: orderId={}, orderNumber={}", orderId, order.getOrderNumber());
@@ -209,7 +270,8 @@ public class PurchaseServiceImpl implements PurchaseService {
     public PurchaseOrder approveOrder(String factoryId, String orderId, Long approvedBy) {
         PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
         if (order.getStatus() != PurchaseOrderStatus.SUBMITTED) {
-            throw new BusinessException("只有已提交状态的订单可以审批");
+            throw new BusinessException(409, "只有已提交状态的订单可以审批")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         order.setStatus(PurchaseOrderStatus.APPROVED);
         order.setApprovedBy(approvedBy);
@@ -223,7 +285,8 @@ public class PurchaseServiceImpl implements PurchaseService {
     public PurchaseOrder submitForFinanceReview(String factoryId, String orderId) {
         PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
         if (order.getStatus() != PurchaseOrderStatus.APPROVED) {
-            throw new BusinessException("只有已审批状态的订单可以提交财务审核");
+            throw new BusinessException(409, "只有已审批状态的订单可以提交财务审核")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         order.setStatus(PurchaseOrderStatus.PENDING_FINANCE_REVIEW);
         log.info("采购订单提交财务审核: orderId={}", orderId);
@@ -235,7 +298,8 @@ public class PurchaseServiceImpl implements PurchaseService {
     public PurchaseOrder financeApproveOrder(String factoryId, String orderId, Long reviewedBy, String notes) {
         PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
         if (order.getStatus() != PurchaseOrderStatus.PENDING_FINANCE_REVIEW) {
-            throw new BusinessException("只有待财务审核状态的订单可以审核");
+            throw new BusinessException(409, "只有待财务审核状态的订单可以审核")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         order.setStatus(PurchaseOrderStatus.FINANCE_APPROVED);
         order.setFinanceReviewedBy(reviewedBy);
@@ -250,7 +314,8 @@ public class PurchaseServiceImpl implements PurchaseService {
     public PurchaseOrder financeRejectOrder(String factoryId, String orderId, Long reviewedBy, String notes) {
         PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
         if (order.getStatus() != PurchaseOrderStatus.PENDING_FINANCE_REVIEW) {
-            throw new BusinessException("只有待财务审核状态的订单可以驳回");
+            throw new BusinessException(409, "只有待财务审核状态的订单可以驳回")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         order.setStatus(PurchaseOrderStatus.FINANCE_REJECTED);
         order.setFinanceReviewedBy(reviewedBy);
@@ -264,8 +329,13 @@ public class PurchaseServiceImpl implements PurchaseService {
     @Transactional
     public PurchaseOrder cancelOrder(String factoryId, String orderId) {
         PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
-        if (order.getStatus() == PurchaseOrderStatus.COMPLETED || order.getStatus() == PurchaseOrderStatus.CLOSED) {
-            throw new BusinessException("已完成或已关闭的订单不能取消");
+        // R39 BUG-8 sister fix: was only blocking COMPLETED/CLOSED → FINANCE_APPROVED/PARTIAL_RECEIVED/CANCELLED
+        // could be cancelled, breaking AP + inventory invariants. Use whitelist.
+        if (!com.cretas.aims.domain.OrderUsageWhitelists.PO_CANCELLABLE.contains(order.getStatus())) {
+            throw new BusinessException(409,
+                    "当前采购单状态(" + order.getStatus().getDisplayName() + ")不允许取消。"
+                  + "财务批准/部分到货后请通过退货流程处理")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         order.setStatus(PurchaseOrderStatus.CANCELLED);
         log.info("取消采购订单: orderId={}, orderNumber={}", orderId, order.getOrderNumber());
@@ -274,31 +344,53 @@ public class PurchaseServiceImpl implements PurchaseService {
 
     @Override
     @Transactional
-    public PurchaseOrder updateDraftOrder(String factoryId, String orderId, CreatePurchaseOrderRequest request) {
+    public PurchaseOrder updateDraftOrder(String factoryId, String orderId, UpdatePurchaseOrderRequest request) {
         PurchaseOrder order = getPurchaseOrderById(factoryId, orderId);
         if (order.getStatus() != PurchaseOrderStatus.DRAFT) {
-            throw new BusinessException("只有草稿状态的订单可以编辑");
+            throw new BusinessException(409, "只有草稿状态的订单可以编辑")
+                    .withHint("请刷新订单列表查看最新状态");
+        }
+        // Optimistic lock: explicit compare (see CustomerServiceImpl for rationale)
+        if (request.getVersion() != null && !request.getVersion().equals(order.getVersion())) {
+            throw new org.springframework.orm.ObjectOptimisticLockingFailureException(
+                PurchaseOrder.class, orderId);
         }
 
-        // Validate supplier
-        supplierRepository.findByIdAndFactoryId(request.getSupplierId(), factoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("供应商不存在或不属于当前组织"));
+        // Partial update — only touch fields the caller sent
+        if (request.getSupplierId() != null) {
+            // Validate supplier only when changed
+            supplierRepository.findByIdAndFactoryId(request.getSupplierId(), factoryId)
+                    .orElseThrow(() -> new ResourceNotFoundException("供应商不存在或不属于当前组织"));
+            order.setSupplierId(request.getSupplierId());
+        }
+        if (request.getPurchaseType() != null) {
+            order.setPurchaseType(PurchaseType.valueOf(request.getPurchaseType()));
+        }
+        if (request.getOrderDate() != null) {
+            order.setOrderDate(request.getOrderDate());
+        }
+        if (request.getExpectedDeliveryDate() != null) {
+            order.setExpectedDeliveryDate(request.getExpectedDeliveryDate());
+        }
+        if (request.getRemark() != null) {
+            order.setRemark(request.getRemark());
+        }
+        // W-12 fix: also update salesOrderId (null-safe — null means caller didn't send, not unlink)
+        if (request.getSalesOrderId() != null) {
+            order.setSalesOrderId(request.getSalesOrderId());
+        }
 
-        // Update mutable fields
-        order.setSupplierId(request.getSupplierId());
-        order.setPurchaseType(PurchaseType.valueOf(request.getPurchaseType()));
-        order.setOrderDate(request.getOrderDate());
-        order.setExpectedDeliveryDate(request.getExpectedDeliveryDate());
-        order.setRemark(request.getRemark());
+        // Replace items only when request.items is provided (null = keep existing)
+        BigDecimal totalAmount = order.getTotalAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO;
+        BigDecimal taxAmount = order.getTaxAmount() != null ? order.getTaxAmount() : BigDecimal.ZERO;
+        List<PurchaseOrderItem> items = new ArrayList<>();
 
-        // Replace items: delete old, create new
+        if (request.getItems() != null) {
         purchaseOrderItemRepository.deleteAll(
                 purchaseOrderItemRepository.findByPurchaseOrderId(orderId));
 
-        BigDecimal totalAmount = BigDecimal.ZERO;
-        BigDecimal taxAmount = BigDecimal.ZERO;
-        List<PurchaseOrderItem> items = new ArrayList<>();
-
+        totalAmount = BigDecimal.ZERO;
+        taxAmount = BigDecimal.ZERO;
         for (CreatePurchaseOrderRequest.PurchaseOrderItemDTO itemDTO : request.getItems()) {
             PurchaseOrderItem item = new PurchaseOrderItem();
             item.setPurchaseOrderId(orderId);
@@ -319,6 +411,7 @@ public class PurchaseServiceImpl implements PurchaseService {
         purchaseOrderItemRepository.saveAll(items);
         order.setTotalAmount(totalAmount);
         order.setTaxAmount(taxAmount);
+        } // end if (request.getItems() != null)
         order = purchaseOrderRepository.save(order);
 
         log.info("编辑草稿采购订单: orderId={}, orderNumber={}", orderId, order.getOrderNumber());
@@ -345,13 +438,15 @@ public class PurchaseServiceImpl implements PurchaseService {
         supplierRepository.findByIdAndFactoryId(request.getSupplierId(), factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("供应商不存在或不属于当前组织"));
 
-        // 如果关联采购订单，验证订单状态
+        // R23 audit C3: was inline {APPROVED, FINANCE_APPROVED, PARTIAL_RECEIVED}
+        // — distinct from PO_RECEIVABLE because this stricter ops-side variant
+        // excludes PENDING_FINANCE_REVIEW (only operational receive). Centralized as PO_OPS_RECEIVABLE.
         if (request.getPurchaseOrderId() != null && !request.getPurchaseOrderId().isEmpty()) {
             PurchaseOrder order = getPurchaseOrderById(factoryId, request.getPurchaseOrderId());
-            if (order.getStatus() != PurchaseOrderStatus.APPROVED &&
-                    order.getStatus() != PurchaseOrderStatus.FINANCE_APPROVED &&
-                    order.getStatus() != PurchaseOrderStatus.PARTIAL_RECEIVED) {
-                throw new BusinessException("只有已审批、财务已审核或部分到货状态的订单可以入库");
+            if (order.getStatus() == null
+                    || !com.cretas.aims.domain.OrderUsageWhitelists.PO_OPS_RECEIVABLE.contains(order.getStatus())) {
+                throw new BusinessException(409, "只有已审批、财务已审核或部分到货状态的订单可以入库")
+                        .withHint("请刷新订单列表查看最新状态");
             }
         }
 
@@ -426,7 +521,8 @@ public class PurchaseServiceImpl implements PurchaseService {
     public PurchaseReceiveRecord confirmReceive(String factoryId, String receiveId, Long userId) {
         PurchaseReceiveRecord record = getReceiveRecordById(factoryId, receiveId);
         if (record.getStatus() != PurchaseReceiveStatus.DRAFT && record.getStatus() != PurchaseReceiveStatus.PENDING_QC) {
-            throw new BusinessException("只有草稿或待质检状态的入库单可以确认");
+            throw new BusinessException(409, "只有草稿或待质检状态的入库单可以确认")
+                    .withHint("请刷新入库单列表查看最新状态");
         }
 
         // 确认入库：为每个行项目创建 MaterialBatch
@@ -485,7 +581,8 @@ public class PurchaseServiceImpl implements PurchaseService {
         PurchaseReceiveRecord record = receiveRecordRepository.findById(receiveId)
                 .orElseThrow(() -> new ResourceNotFoundException("入库单不存在"));
         if (!record.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权访问该入库单");
+            throw new BusinessException(403, "无权访问该入库单")
+                    .withHint("当前入库单不属于该工厂, 无法访问");
         }
         return record;
     }
@@ -547,7 +644,8 @@ public class PurchaseServiceImpl implements PurchaseService {
         RawMaterialType materialType = materialTypeRepository.findById(materialTypeId)
                 .orElseThrow(() -> new ResourceNotFoundException("原料类型不存在: " + materialTypeId));
         if (!materialType.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权访问该原料类型");
+            throw new BusinessException(403, "无权访问该原料类型")
+                    .withHint("当前原料类型不属于该工厂, 无法访问");
         }
         return buildPriceComparison(factoryId, materialTypeId, materialType.getName(), currentPrice);
     }

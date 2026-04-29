@@ -51,7 +51,8 @@ public class ConfigChangeSetServiceImpl implements ConfigChangeSetService {
 
         // 检查是否有未完成的变更
         if (changeSetRepository.existsPendingChangeForConfig(configId)) {
-            throw new BusinessException("该配置存在待审批的变更，请先处理");
+            throw new BusinessException(409, "该配置存在待审批的变更，请先处理")
+                    .withHint("请先审批或拒绝待处理的变更, 再创建新变更");
         }
 
         // 计算版本号 (取最新 APPLIED 版本, 若无则从 0 开始)
@@ -280,7 +281,8 @@ public class ConfigChangeSetServiceImpl implements ConfigChangeSetService {
         ConfigChangeSet changeSet = getChangeSetById(changeSetId);
 
         if (!changeSet.canApprove()) {
-            throw new BusinessException("该变更集无法审批，当前状态: " + changeSet.getStatus());
+            throw new BusinessException(409, "该变更集无法审批，当前状态: " + changeSet.getStatus())
+                    .withHint("只有待审批的变更集可以审批, 请刷新列表查看最新状态");
         }
 
         changeSet.approve(approverId, approverName, comment);
@@ -301,7 +303,8 @@ public class ConfigChangeSetServiceImpl implements ConfigChangeSetService {
         ConfigChangeSet changeSet = getChangeSetById(changeSetId);
 
         if (!changeSet.canApprove()) {
-            throw new BusinessException("该变更集无法拒绝，当前状态: " + changeSet.getStatus());
+            throw new BusinessException(409, "该变更集无法拒绝，当前状态: " + changeSet.getStatus())
+                    .withHint("只有待审批的变更集可以拒绝, 请刷新列表查看最新状态");
         }
 
         changeSet.reject(approverId, approverName, reason);
@@ -319,7 +322,8 @@ public class ConfigChangeSetServiceImpl implements ConfigChangeSetService {
         ConfigChangeSet changeSet = getChangeSetById(changeSetId);
 
         if (changeSet.getStatus() != ChangeStatus.APPROVED) {
-            throw new BusinessException("只有已审批的变更集才能应用，当前状态: " + changeSet.getStatus());
+            throw new BusinessException(409, "只有已审批的变更集才能应用，当前状态: " + changeSet.getStatus())
+                    .withHint("请先审批通过该变更集, 再执行应用操作");
         }
 
         // 标记之前的变更为不可回滚 (因为有新变更了)
@@ -347,8 +351,9 @@ public class ConfigChangeSetServiceImpl implements ConfigChangeSetService {
         ConfigChangeSet changeSet = getChangeSetById(changeSetId);
 
         if (!changeSet.canRollback()) {
-            throw new BusinessException("该变更集无法回滚，当前状态: " + changeSet.getStatus() +
-                    ", 可回滚: " + changeSet.getIsRollbackable());
+            throw new BusinessException(409, "该变更集无法回滚，当前状态: " + changeSet.getStatus() +
+                    ", 可回滚: " + changeSet.getIsRollbackable())
+                    .withHint("只有已应用且标记可回滚的变更集才能回滚");
         }
 
         changeSet.rollback(userId, reason);

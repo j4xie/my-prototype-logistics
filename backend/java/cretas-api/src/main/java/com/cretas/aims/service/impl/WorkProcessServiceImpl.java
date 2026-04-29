@@ -32,7 +32,8 @@ public class WorkProcessServiceImpl implements WorkProcessService {
         log.info("Creating work process '{}' for factory: {}", dto.getProcessName(), factoryId);
 
         if (workProcessRepository.existsByFactoryIdAndProcessName(factoryId, dto.getProcessName())) {
-            throw new BusinessException("工序名称已存在: " + dto.getProcessName());
+            throw new BusinessException(409, "工序名称已存在: " + dto.getProcessName())
+                    .withHint("请使用其他工序名称").withHintTarget("processName");
         }
 
         WorkProcess entity = WorkProcess.builder()

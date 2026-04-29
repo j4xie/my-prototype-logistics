@@ -6,7 +6,7 @@ INSERT INTO factory_validation_rules (factory_id, module_code, rule_code, operat
 (NULL, 'sales_order', 'ITEMS_REQUIRED', 'CREATE', '#itemCount == 0', '订单必须包含至少一个行项目', 'BLOCK', 40),
 (NULL, 'sales_order', 'POSITIVE_AMOUNT', 'CREATE', '#totalAmount <= 0', '订单总金额必须大于0', 'BLOCK', 50),
 (NULL, 'sales_order', 'CONFIRM_DRAFT_ONLY', 'STATUS_CHANGE', '#status != ''DRAFT'' AND #targetStatus == ''CONFIRMED''', '只有草稿状态可以确认', 'BLOCK', 60),
-(NULL, 'sales_order', 'FINANCE_CONFIRM_ONLY', 'STATUS_CHANGE', '#status != ''CONFIRMED'' AND #targetStatus == ''PENDING_FINANCE_REVIEW''', '只有已确认的订单可以提交财务审核', 'BLOCK', 70),
+(NULL, 'sales_order', 'FINANCE_CONFIRM_ONLY', 'STATUS_CHANGE', '(#status != ''CONFIRMED'' AND #status != ''FINANCE_REJECTED'') AND #targetStatus == ''PENDING_FINANCE_REVIEW''', '只有已确认或财务驳回状态的订单可以提交财务审核', 'BLOCK', 70),
 (NULL, 'sales_order', 'STOCK_SUFFICIENT', 'STATUS_CHANGE', '#stockInsufficient == true AND #targetStatus == ''DELIVERING''', '成品库存不足，无法发货', 'WARN', 80),
 (NULL, 'finance_ar', 'POSITIVE_AMOUNT', 'CREATE', '#amount <= 0', '应收金额必须大于0', 'BLOCK', 10),
 (NULL, 'finance_ar', 'DUPLICATE_SO_AR', 'CREATE', '#existingArForSO == true', '该销售订单已生成应收记录', 'BLOCK', 20),

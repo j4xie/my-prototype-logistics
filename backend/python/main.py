@@ -44,6 +44,7 @@ from smartbi.config import get_settings
 # Import SmartBI API routers
 from smartbi.api import (
     excel,
+    excel_async,  # B MVP (Apr 20 2026, task #323): async upload endpoints
     field,
     metrics,
     forecast,
@@ -64,6 +65,8 @@ from smartbi.api import (
     finance_extract,
     data_sync,
     restaurant_analytics,
+    restaurant_ops_gold,
+    restaurant_ops_recipes,
     production_ai,
     financial_dashboard,
     layout,
@@ -74,6 +77,8 @@ from smartbi.api import (
 )
 from smartbi.api import restaurant_sections
 from smartbi.api import intent_analysis
+from smartbi.api.materialized_analytics import router as materialized_analytics_router
+from smartbi.capability.api import router as capability_router
 
 # Import Efficiency Recognition API routers (optional - requires opencv)
 try:
@@ -275,9 +280,309 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Shared LLM client initialization failed: {e}")
 
+    # Enable LLM usage metrics (writes to smart_bi_llm_usage via pg pool)
+    try:
+        from common.llm_metrics import enable_llm_metrics
+        enable_llm_metrics()
+    except Exception as e:
+        logger.warning(f"LLM metrics enable failed: {e}")
+
+    # Phase 3 (Apr 23 2026): template embedding index population.
+    # Populates smart_bi_template_embeddings on first boot. Re-runs are
+    # idempotent (ON CONFLICT). Fires in background — no blocking.
+    try:
+        from smartbi.services.template_embedding_index import (
+            count_embeddings, populate_all,
+        )
+        from smartbi.config import get_pg_pool as _get_pool_emb
+        _emb_pool = await _get_pool_emb()
+        if _emb_pool is not None:
+            existing = await count_embeddings(_emb_pool)
+            # v7 #6 (Apr 26 2026): count expected sample_queries from
+            # registry; if existing < expected, run populate_all (idempotent
+            # ON CONFLICT DO UPDATE) to ingest new sample_queries from any
+            # template extensions deployed in this release.
+            expected = 0
+            try:
+                from smartbi.services.materialized_analytics.templates.registry import (
+                    get_registry, load_all_templates,
+                )
+                load_all_templates()
+                for t in get_registry().all():
+                    expected += len(getattr(t, 'sample_queries', []))
+            except Exception:
+                pass
+            if existing == 0 or (expected > 0 and existing < expected):
+                logger.info(
+                    f"[startup] template embedding index {existing}/{expected} — "
+                    f"populating in background"
+                )
+                import asyncio as _asyncio
+                _asyncio.create_task(populate_all(_emb_pool))
+            else:
+                logger.info(f"[startup] template embedding index has {existing} rows, skipping populate")
+    except Exception as e:
+        logger.warning(f"[startup] template embedding warmer failed: {e}")
+
+    # Agent layer narrative_cache TTL pruner — hourly background task.
+    # Gated on SMARTBI_AGENT_LAYER_ENABLED so disabled tenants don't touch the table.
+    _narrative_pruner_task = None
+    if os.getenv("SMARTBI_AGENT_LAYER_ENABLED", "").lower() in ("1", "true", "yes"):
+        try:
+            import asyncio as _asyncio
+            from smartbi.agent.narrative_cache import NarrativeCacheService
+            from smartbi.config import get_pg_pool as _get_pg_pool
+
+            async def _prune_narrative_cache_forever():
+                # First tick delayed 60s to let pool/warmers settle post-startup.
+                await _asyncio.sleep(60)
+                while True:
+                    try:
+                        pool = await _get_pg_pool()
+                        svc = NarrativeCacheService(pool)
+                        deleted = await svc.prune_expired()
+                        if deleted > 0:
+                            logger.info(f"[narrative-cache] pruned {deleted} expired rows")
+                    except Exception as ex:
+                        logger.warning(f"[narrative-cache] prune failed: {ex}")
+                    # 1 hour between prunes — cache TTL is 24h, so max stale window is ~1h.
+                    await _asyncio.sleep(3600)
+
+            _narrative_pruner_task = _asyncio.create_task(_prune_narrative_cache_forever())
+            logger.info("[startup] narrative_cache hourly pruner armed")
+        except Exception as e:
+            logger.warning(f"[startup] narrative_cache pruner init failed: {e}")
+
+    # Apr 24 2026 Plan C Phase 6: hourly restaurant ops ETL for all RESTAURANT
+    # factories. Keeps Gold fresh without user intervention. First run 30s
+    # after startup so pools/warmers settle; subsequent runs every hour.
+    # Apr 28 2026 P1-11: shortened initial sleep 120s→30s for faster recovery;
+    # added startup catchup tick (runs immediately if last ETL > 1.5h ago);
+    # switched per-factory call to run_full_etl_with_retry (3 retries, logged).
+    _restaurant_etl_task = None
+    if os.getenv("RESTAURANT_OPS_ETL_ENABLED", "true").lower() in ("1", "true", "yes"):
+        try:
+            import asyncio as _asyncio
+            import asyncpg as _asyncpg
+            from config import get_settings as _get_settings
+            from smartbi.config import get_pg_pool as _get_pg_pool_etl
+            from smartbi.gold.restaurant_ops_etl import run_full_etl, run_full_etl_with_retry
+
+            async def _run_restaurant_ops_etl_forever():
+                await _asyncio.sleep(30)  # post-audit P1-11: shortened for faster recovery
+
+                # ── startup catchup tick ──────────────────────────────────────
+                # If the cron worker was down 1.5h+, run once immediately so
+                # Gold doesn't stay stale until the first scheduled tick.
+                try:
+                    smartbi_pool_catchup = await _get_pg_pool_etl()
+                    if smartbi_pool_catchup is not None:
+                        cretas_url_catchup = _get_settings().food_kb_db_url
+                        cretas_conn_catchup = await _asyncpg.connect(cretas_url_catchup)
+                        try:
+                            f_rows_catchup = await cretas_conn_catchup.fetch(
+                                "SELECT id FROM factories WHERE type = 'RESTAURANT'"
+                            )
+                            factory_ids_catchup = [r["id"] for r in f_rows_catchup]
+                        finally:
+                            await cretas_conn_catchup.close()
+
+                        if factory_ids_catchup:
+                            # NOTE: agg_restaurant_daily_ops has FORCE RLS on app.factory_id GUC.
+                            # Query without GUC set returns NULL silently (rows filtered by RLS),
+                            # which causes catchup to over-run on every startup. Acceptable cost
+                            # — retry helper handles per-factory failures, and catchup runs are
+                            # rare (only on cron restart). Refine in Task 1.6 if real-window
+                            # verify shows a problem.
+                            last_agg = await smartbi_pool_catchup.fetchval(
+                                "SELECT MAX(computed_at) FROM agg_restaurant_daily_ops"
+                                " WHERE factory_id = ANY($1::varchar[])",
+                                factory_ids_catchup,
+                            )
+                            if not last_agg or (datetime.utcnow() - last_agg).total_seconds() > 5400:  # 1.5h
+                                logger.info("[startup catchup] last ETL > 1.5h ago, running tick now")
+                                cretas_pool_catchup = await _asyncpg.create_pool(
+                                    cretas_url_catchup, min_size=1, max_size=3, command_timeout=60,
+                                )
+                                try:
+                                    for fid in factory_ids_catchup:
+                                        try:
+                                            await run_full_etl_with_retry(
+                                                cretas_pool_catchup, smartbi_pool_catchup, fid
+                                            )
+                                        except Exception as e:
+                                            logger.warning(f"[startup catchup] ETL failed for {fid}: {e}")
+                                finally:
+                                    await cretas_pool_catchup.close()
+                except Exception as e:
+                    logger.warning(f"[startup catchup] check failed, skipping catchup: {e}")
+                # ── end catchup tick ──────────────────────────────────────────
+
+                while True:
+                    try:
+                        smartbi_pool = await _get_pg_pool_etl()
+                        if smartbi_pool is None:
+                            logger.warning("[restaurant-etl] smartbi pool unavailable, skipping tick")
+                        else:
+                            # Discover RESTAURANT factories from cretas_db.factories.type.
+                            cretas_url = _get_settings().food_kb_db_url
+                            cretas_conn = await _asyncpg.connect(cretas_url)
+                            try:
+                                f_rows = await cretas_conn.fetch(
+                                    "SELECT id FROM factories WHERE type = 'RESTAURANT'"
+                                )
+                                factory_ids = [r["id"] for r in f_rows]
+                            finally:
+                                await cretas_conn.close()
+
+                            if not factory_ids:
+                                logger.info("[restaurant-etl] no RESTAURANT factories to sync")
+                            else:
+                                cretas_pool = await _asyncpg.create_pool(
+                                    cretas_url, min_size=1, max_size=3, command_timeout=60,
+                                )
+                                try:
+                                    summary_counts = {"total": 0, "errors": 0}
+                                    for fid in factory_ids:
+                                        try:
+                                            stats = await run_full_etl_with_retry(
+                                                cretas_pool, smartbi_pool, fid
+                                            )
+                                            summary_counts["total"] += 1
+                                            if stats.errors:
+                                                summary_counts["errors"] += 1
+                                                logger.warning(
+                                                    f"[restaurant-etl] {fid} errors={stats.errors}"
+                                                )
+                                        except Exception as fe:
+                                            # already logged + persisted in run_full_etl_with_retry
+                                            summary_counts["errors"] += 1
+                                            logger.warning(f"[restaurant-etl] ETL final failure for {fid}: {fe}")
+                                            continue  # 不阻塞下个工厂
+                                    logger.info(
+                                        f"[restaurant-etl] tick done: {summary_counts['total']} factories, "
+                                        f"{summary_counts['errors']} errors"
+                                    )
+                                finally:
+                                    await cretas_pool.close()
+                    except Exception as ex:
+                        logger.warning(f"[restaurant-etl] tick failed: {ex}")
+                    # 1 hour between runs — ETL is idempotent so overlap risk is low.
+                    await _asyncio.sleep(3600)
+
+            _restaurant_etl_task = _asyncio.create_task(_run_restaurant_ops_etl_forever())
+            logger.info("[startup] restaurant-ops hourly ETL armed")
+        except Exception as e:
+            logger.warning(f"[startup] restaurant-ops ETL init failed: {e}")
+
+    # Apr 26 2026 v2 conversation memory: half-hourly pruner for expired chat
+    # sessions (TTL 1h rolling). Cheap DELETE keyed on idx_chat_session_expires.
+    _chat_session_pruner_task = None
+    try:
+        import asyncio as _asyncio
+        from smartbi.config import get_pg_pool as _get_pg_pool_cs
+        from smartbi.services.chat_session_service import ChatSessionService as _CSS
+
+        async def _prune_chat_sessions_forever():
+            await _asyncio.sleep(90)  # let pool warm
+            while True:
+                try:
+                    from smartbi.services.smartbi_metrics import PRUNER_RUNS, PRUNER_DELETED
+                    pool = await _get_pg_pool_cs()
+                    if pool is not None:
+                        deleted = await _CSS(pool).prune_expired()
+                        PRUNER_RUNS.labels(table='chat_session', outcome='ok').inc()
+                        if deleted > 0:
+                            PRUNER_DELETED.labels(table='chat_session').inc(deleted)
+                            logger.info(f"[chat-session] pruned {deleted} expired sessions")
+                except Exception as ex:
+                    try:
+                        from smartbi.services.smartbi_metrics import PRUNER_RUNS
+                        PRUNER_RUNS.labels(table='chat_session', outcome='error').inc()
+                    except Exception:
+                        pass
+                    logger.warning(f"[chat-session] prune failed: {ex}")
+                await _asyncio.sleep(1800)  # 30 min cadence
+
+        _chat_session_pruner_task = _asyncio.create_task(_prune_chat_sessions_forever())
+        logger.info("[startup] chat-session 30-min pruner armed")
+    except Exception as e:
+        logger.warning(f"[startup] chat-session pruner init failed: {e}")
+
+    # v4 B2-B (Apr 26 2026): hourly pruner for LLM answer cache (24h TTL).
+    # Reuses smartbi pool; same pattern as chat-session pruner.
+    _llm_cache_pruner_task = None
+    try:
+        import asyncio as _asyncio
+        from smartbi.config import get_pg_pool as _get_pg_pool_lac
+        from smartbi.services.llm_answer_cache import LlmAnswerCache as _LAC
+
+        async def _prune_llm_cache_forever():
+            await _asyncio.sleep(120)
+            while True:
+                try:
+                    from smartbi.services.smartbi_metrics import PRUNER_RUNS, PRUNER_DELETED
+                    pool = await _get_pg_pool_lac()
+                    if pool is not None:
+                        deleted = await _LAC(pool).prune_expired()
+                        PRUNER_RUNS.labels(table='llm_cache', outcome='ok').inc()
+                        if deleted > 0:
+                            PRUNER_DELETED.labels(table='llm_cache').inc(deleted)
+                            logger.info(f"[llm-cache] pruned {deleted} expired rows")
+                except Exception as ex:
+                    try:
+                        from smartbi.services.smartbi_metrics import PRUNER_RUNS
+                        PRUNER_RUNS.labels(table='llm_cache', outcome='error').inc()
+                    except Exception:
+                        pass
+                    logger.warning(f"[llm-cache] prune failed: {ex}")
+                await _asyncio.sleep(3600)  # 1h cadence
+
+        _llm_cache_pruner_task = _asyncio.create_task(_prune_llm_cache_forever())
+        logger.info("[startup] llm-answer-cache hourly pruner armed")
+    except Exception as e:
+        logger.warning(f"[startup] llm-cache pruner init failed: {e}")
+
     yield
 
+    # Shutdown: cancel narrative_cache pruner task
+    if _narrative_pruner_task is not None:
+        _narrative_pruner_task.cancel()
+        try:
+            await _narrative_pruner_task
+        except Exception:
+            pass
+
+    # Shutdown: cancel restaurant-ops ETL task
+    if _restaurant_etl_task is not None:
+        _restaurant_etl_task.cancel()
+        try:
+            await _restaurant_etl_task
+        except Exception:
+            pass
+
+    # Shutdown: cancel chat-session pruner task
+    if _chat_session_pruner_task is not None:
+        _chat_session_pruner_task.cancel()
+        try:
+            await _chat_session_pruner_task
+        except Exception:
+            pass
+
+    # Shutdown: cancel llm-cache pruner task
+    if _llm_cache_pruner_task is not None:
+        _llm_cache_pruner_task.cancel()
+        try:
+            await _llm_cache_pruner_task
+        except Exception:
+            pass
+
     # Shutdown: close shared LLM HTTP client
+    try:
+        from common.llm_metrics import disable_llm_metrics
+        await disable_llm_metrics()
+    except Exception as e:
+        logger.warning(f"LLM metrics disable error: {e}")
     try:
         from common.llm_client import close_llm_client
         await close_llm_client()
@@ -361,6 +666,9 @@ app.add_middleware(CorrelationIdMiddleware)
 # SmartBI API Routes
 # =====================================================
 app.include_router(excel.router, prefix="/api/excel", tags=["Excel"])
+# B MVP (task #323): excel_async already carries /api/smartbi/excel prefix
+# internally; don't prepend /api/excel here.
+app.include_router(excel_async.router, tags=["Excel Async"])
 app.include_router(field.router, prefix="/api/field", tags=["Field Detection"])
 app.include_router(metrics.router, prefix="/api/metrics", tags=["Metrics"])
 app.include_router(forecast.router, prefix="/api/forecast", tags=["Forecast"])
@@ -378,6 +686,8 @@ app.include_router(analysis_cache.router, prefix="/api/smartbi", tags=["Analysis
 app.include_router(benchmark.router, prefix="/api/smartbi", tags=["Industry Benchmark"])
 app.include_router(finance_extract.router, prefix="/api/finance", tags=["Finance Extract"])
 app.include_router(restaurant_analytics.router, prefix="/api/smartbi", tags=["Restaurant Analytics"])
+app.include_router(restaurant_ops_gold.router, prefix="/api/smartbi", tags=["Restaurant Ops Gold"])
+app.include_router(restaurant_ops_recipes.router, prefix="/api/smartbi", tags=["Restaurant Ops Recipes"])
 app.include_router(restaurant_sections.router, tags=["Restaurant Sections"])
 app.include_router(production_ai.router, prefix="/api/smartbi", tags=["Production AI"])
 app.include_router(financial_dashboard.router, prefix="/api/smartbi/financial-dashboard", tags=["Financial Dashboard"])
@@ -386,6 +696,96 @@ app.include_router(nl_to_sql.router, prefix="/api/smartbi", tags=["NL2SQL"])
 app.include_router(whatif.router, prefix="/api/smartbi/whatif", tags=["WhatIf Simulator"])
 app.include_router(rfm.router, prefix="/api/smartbi", tags=["Customer RFM"])
 app.include_router(financial_ratios.router, prefix="/api/smartbi", tags=["Financial Ratios"])
+app.include_router(materialized_analytics_router, prefix="/api/smartbi", tags=["MaterializedAnalytics"])
+app.include_router(capability_router)
+
+# Gold layer reads — v1 Phase B pilot (§5). Finance-summary from agg_daily.
+from smartbi.api import gold_reads
+app.include_router(gold_reads.router, prefix="/api/smartbi", tags=["Gold Reads"])
+
+# Sub-Project C Day 26: cell-level field_provenance audit (§6.3).
+# Admin-gated read endpoint powering /audit/cell?type=&id=&field= page.
+from smartbi.api import provenance_audit
+app.include_router(
+    provenance_audit.router,
+    prefix="/api/smartbi/provenance",
+    tags=["Provenance Audit"],
+)
+
+# Sub-Project C Day 27: factory-level provenance config admin (§6.4).
+# Admin GET + PUT for diff_threshold / priority_overrides / industry_default_overrides.
+from smartbi.api import factory_provenance_config
+app.include_router(
+    factory_provenance_config.router,
+    prefix="/api/smartbi/factory-config",
+    tags=["Factory Config"],
+)
+
+# Week 5 Agent layer — gated by env flag until verified on test.
+# When flag is off, /api/smartbi/insights/custom does not exist.
+if os.getenv("SMARTBI_AGENT_LAYER_ENABLED", "false").lower() == "true":
+    from smartbi.agent.api import router as agent_router
+    app.include_router(agent_router, prefix="/api/smartbi", tags=["Agent Insights"])
+    logger.info("Week 5 Agent layer ENABLED — /api/smartbi/insights/custom registered")
+else:
+    logger.info("Week 5 Agent layer disabled (set SMARTBI_AGENT_LAYER_ENABLED=true to enable)")
+
+# LLM usage admin (BUG-9 + 模型切换监控)
+from smartbi.api import llm_usage_admin
+app.include_router(llm_usage_admin.router, prefix="/api/smartbi/admin/llm-usage", tags=["LLM Usage Admin"])
+
+# Phase 1 (Apr 23 2026): LLM fallback query log admin + feedback write
+from smartbi.api import llm_fallback_admin
+app.include_router(
+    llm_fallback_admin.router,
+    prefix="/api/smartbi/admin/fallback-log",
+    tags=["LLM Fallback Log"],
+)
+
+# J1 (Apr 24 2026): LLM router circuit breaker stats
+from smartbi.api import llm_router_admin
+app.include_router(
+    llm_router_admin.router,
+    prefix="/api/smartbi/admin/llm-router",
+    tags=["LLM Router Admin"],
+)
+
+# Phase A A-1 Restaurant ETL admin (Apr 28 2026): trigger + status endpoints
+from smartbi.api import restaurant_etl_admin
+app.include_router(
+    restaurant_etl_admin.router,
+    prefix="/api/smartbi/restaurant/etl",
+    tags=["Restaurant ETL Admin"],
+)
+
+# Restaurant completeness API (餐饮 Phase A Task 2.1)
+from smartbi.api import restaurant_completeness
+app.include_router(
+    restaurant_completeness.router,
+    prefix="/api/smartbi/restaurant",
+    tags=["Restaurant Completeness"],
+)
+
+# Restaurant outliers API (餐饮 Phase B-1 Task 7 — outlier detection + dismissal)
+from smartbi.api import restaurant_outliers
+app.include_router(
+    restaurant_outliers.router,
+    prefix="/api/restaurant",
+    tags=["RestaurantOutliers"],
+)
+
+# Phase A A-3 Data quality queue admin (餐饮 Phase A Task 3.2 — list endpoint)
+# Tasks 3.3/3.4/3.6 will add resolve/reject/batch/history to the same module.
+from smartbi.api import data_quality_queue_admin
+app.include_router(
+    data_quality_queue_admin.router,
+    prefix="/api/smartbi/admin/data-quality-queue",
+    tags=["Data Quality Queue Admin"],
+)
+
+# Memory diagnostic / manual trim (Apr 23 2026, investigating post-materialize RSS retention)
+from smartbi.api import memory_admin
+app.include_router(memory_admin.router, prefix="/api/smartbi/admin/memory", tags=["Memory Admin"])
 
 # Optional: Data sync endpoint (auto-adaptation for system tables)
 if hasattr(data_sync, 'router') and data_sync.router is not None:
@@ -557,6 +957,33 @@ async def api_exception_handler(request, exc: ApiException):
     return JSONResponse(
         status_code=exc.status_code,
         content=error_response(exc.message, exc.code),
+    )
+
+
+# Bug #35 fix (Apr 18 2026): FastAPI 默认 HTTPException 响应是 {detail:"..."},
+# 和项目契约 {success:false, message, code} 不一致 → 前端 interceptor 拿不到
+# .message → 用户看 axios 通用 "Request failed with status code 404".
+# 统一转成项目格式.
+from fastapi import HTTPException as FastAPIHTTPException
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+
+@app.exception_handler(FastAPIHTTPException)
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request, exc):
+    """Convert FastAPI/Starlette HTTPException.detail → unified project format."""
+    code_map = {
+        400: ErrorCode.VALIDATION_ERROR,
+        401: ErrorCode.AUTH_ERROR,
+        403: ErrorCode.AUTH_ERROR,
+        404: ErrorCode.NOT_FOUND,
+        422: ErrorCode.VALIDATION_ERROR,
+    }
+    code = code_map.get(exc.status_code, ErrorCode.INTERNAL_ERROR)
+    message = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=error_response(message, code),
     )
 
 

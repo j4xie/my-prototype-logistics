@@ -5,30 +5,19 @@
         <div class="card-header">
           <span class="title"><span class="section-badge section-badge--chart" aria-hidden="true"></span> 智能数据分析</span>
           <div class="header-actions">
-            <el-select
-              v-if="uploadBatches.length > 1"
-              v-model="selectedBatchIndex"
+            <!-- Upload batch switcher — extracted to analysis/UploadSwitcher.vue (Item 1 phase 3f).
+                 Phase 6 dropdown switch async race guards live in selectBatch + enrichSheet/
+                 idleEnrichNext callbacks (script side, untouched). The child only forwards
+                 @change → selectBatch so race-guard semantics are preserved. -->
+            <UploadSwitcher
+              :batches="uploadBatches"
+              :selected-index="selectedBatchIndex"
+              :format-batch-label="formatBatchLabel"
+              :is-auto-sync-batch="isAutoSyncBatch"
+              :safe-batch-name="safeBatchName"
+              @update:selected-index="selectedBatchIndex = $event"
               @change="selectBatch"
-              style="width: 300px; margin-right: 8px;"
-              size="small"
-            >
-              <el-option
-                v-for="(batch, idx) in uploadBatches"
-                :key="idx"
-                :label="formatBatchLabel(batch)"
-                :value="idx"
-              >
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span>
-                    <el-tag v-if="isAutoSyncBatch(batch)" size="small" type="success" style="margin-right: 6px;">自动同步</el-tag>
-                    {{ safeBatchName(batch) }}
-                  </span>
-                  <span style="color: var(--color-text-secondary, #909399); font-size: 12px; margin-left: 12px;">
-                    {{ batch.uploadTime }} · {{ batch.sheetCount }} 表
-                  </span>
-                </div>
-              </el-option>
-            </el-select>
+            />
             <el-button v-if="uploadedSheets.length > 1" @click="openCrossSheetAnalysis" type="primary" size="small">
               <el-icon><DataAnalysis /></el-icon>
               综合分析
@@ -56,111 +45,42 @@
         </div>
       </template>
 
-      <!-- Python 服务降级警告 -->
-      <el-alert
-        v-if="pythonUnavailable"
-        title="AI 分析服务暂时不可用"
-        description="Python SmartBI 服务无法连接，智能图表推荐和 AI 洞察功能暂时禁用。已上传的数据仍可正常查看。"
-        type="warning"
-        :closable="true"
-        show-icon
-        style="margin-bottom: 12px;"
-      />
+      <!-- Python 服务降级警告 — extracted to analysis/PythonUnavailableAlert.vue (Item 1 phase 5) -->
+      <PythonUnavailableAlert :visible="pythonUnavailable" />
 
       <!-- 上传/空数据区域 -->
       <div v-if="uploadedSheets.length === 0 && !uploading" class="upload-section">
-        <!-- 加载中 -->
-        <div v-if="historyLoading" style="text-align: center; padding: 60px 0;">
-          <el-icon class="is-loading" :size="32"><Loading /></el-icon>
-          <p style="color: var(--color-text-secondary, #909399); margin-top: 12px;">正在加载历史数据...</p>
-        </div>
-        <!-- 管理员：显示上传区域 -->
-        <template v-else-if="canUpload">
-          <el-upload
-            ref="uploadRef"
-            class="upload-dragger"
-            drag
-            :auto-upload="false"
-            :limit="1"
-            accept=".xlsx,.xls"
-            :on-change="handleFileChange"
-            :file-list="fileList"
-          >
-            <el-icon class="el-icon--upload"><upload-filled /></el-icon>
-            <div class="el-upload__text">
-              拖拽 Excel 文件到此处或 <em>点击上传</em>
-            </div>
-            <template #tip>
-              <div class="el-upload__tip">
-                支持 .xlsx、.xls 格式，文件大小不超过 50MB
-              </div>
-            </template>
-          </el-upload>
-
-          <el-button
-            v-if="fileList.length > 0"
-            type="primary"
-            size="large"
-            :loading="uploading"
-            @click="uploadFile"
-            style="margin-top: 20px; width: 100%"
-          >
-            <el-icon><Upload /></el-icon>
-            开始分析
-          </el-button>
-        </template>
-        <!-- 只读用户：提示 -->
-        <SmartBIEmptyState v-else type="read-only" :showAction="false" />
+        <!-- 上传区域 — extracted to analysis/UploadArea.vue (Item 1 phase 6) -->
+        <UploadArea
+          :history-loading="historyLoading"
+          :history-loading-long="historyLoadingLong"
+          :can-upload="canUpload"
+          :file-list="fileList"
+          :uploading="uploading"
+          :on-file-change="handleFileChange"
+          @upload="uploadFile"
+        />
       </div>
 
-      <!-- 上传进度 (SSE 流式) -->
-      <div v-if="uploading" class="progress-section">
-        <el-progress :percentage="uploadProgress" :status="uploadStatus" :stroke-width="20" striped striped-flow></el-progress>
-        <p class="progress-text">{{ progressText }}</p>
+      <!-- 上传进度 (SSE 流式) — extracted to analysis/UploadProgressPanel.vue (Item 1 phase 5) -->
+      <UploadProgressPanel
+        :uploading="uploading"
+        :progress="uploadProgress"
+        :status="uploadStatus"
+        :progress-text="progressText"
+        :sheets="sheetProgressList"
+        :completed-count="completedSheetCount"
+        :total-count="totalSheetCount"
+        :dictionary-hits="dictionaryHits"
+        :llm-analyzed-fields="llmAnalyzedFields"
+      />
 
-        <!-- 详细进度面板 -->
-        <div v-if="sheetProgressList.length > 0" class="sheet-progress-panel">
-          <div class="progress-header">
-            <span><span class="section-badge section-badge--chart" aria-hidden="true"></span> Sheet 处理进度 ({{ completedSheetCount }}/{{ totalSheetCount }})</span>
-            <el-tag v-if="dictionaryHits > 0" type="success" size="small">
-              字典命中: {{ dictionaryHits }}
-            </el-tag>
-            <el-tag v-if="llmAnalyzedFields > 0" type="warning" size="small">
-              LLM分析: {{ llmAnalyzedFields }}
-            </el-tag>
-          </div>
-
-          <div class="sheet-progress-list">
-            <div
-              v-for="sheet in sheetProgressList"
-              :key="sheet.sheetIndex"
-              class="sheet-progress-item"
-              :class="{ 'is-complete': sheet.status === 'complete', 'is-failed': sheet.status === 'failed' }"
-            >
-              <div class="sheet-name">
-                <el-icon v-if="sheet.status === 'complete'" class="status-icon success"><CircleCheckFilled /></el-icon>
-                <el-icon v-else-if="sheet.status === 'failed'" class="status-icon error"><CircleCloseFilled /></el-icon>
-                <el-icon v-else class="status-icon loading"><Loading /></el-icon>
-                {{ sheet.sheetName }}
-              </div>
-              <div class="sheet-stage">{{ sheet.stage }}</div>
-              <div class="sheet-message">{{ sheet.message }}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Demo 缓存提示条 -->
-      <div v-if="usingDemoCache && uploadedSheets.length > 0 && !uploading" class="demo-cache-banner">
-        <div class="cache-banner-left">
-          <el-icon><CircleCheckFilled /></el-icon>
-          <span>已从缓存加载「{{ demoCacheFileName }}」的分析结果，无需等待</span>
-        </div>
-        <el-button type="primary" link size="small" @click="refreshFromServer">
-          <el-icon><Refresh /></el-icon>
-          从服务器刷新
-        </el-button>
-      </div>
+      <!-- Demo 缓存提示条 — extracted to analysis/DemoCacheBanner.vue (Item 1 phase 5) -->
+      <DemoCacheBanner
+        :visible="usingDemoCache && uploadedSheets.length > 0 && !uploading"
+        :file-name="demoCacheFileName"
+        @refresh="refreshFromServer"
+      />
 
       <!-- 结果展示 -->
       <div v-if="uploadedSheets.length > 0 && !uploading" v-loading="batchSwitching" element-loading-text="正在切换数据源..." class="result-section">
@@ -171,20 +91,13 @@
           show-icon
         />
 
-        <!-- P1: 食品行业分析模板 -->
-        <div v-if="foodIndustryDetection?.is_food_industry" class="industry-templates-bar">
-          <span class="templates-label">食品行业模板:</span>
-          <el-tag
-            v-for="tpl in foodTemplates"
-            :key="tpl.id"
-            :type="activeTemplate === tpl.id ? 'primary' : 'success'"
-            :effect="activeTemplate === tpl.id ? 'dark' : 'plain'"
-            class="template-chip"
-            @click="applyTemplate(tpl)"
-          >
-            {{ tpl.name }}
-          </el-tag>
-        </div>
+        <!-- P1: 食品行业分析模板 — extracted to analysis/IndustryTemplateBar.vue (Item 1 phase 3b) -->
+        <IndustryTemplateBar
+          :visible="!!foodIndustryDetection?.is_food_industry"
+          :templates="foodTemplates"
+          :active-template="activeTemplate"
+          @apply="applyTemplate"
+        />
 
         <el-tabs v-model="activeTab" class="sheet-tabs">
           <el-tab-pane
@@ -192,627 +105,215 @@
             :key="sheet.sheetIndex"
             :name="String(sheet.sheetIndex)"
           >
-            <!-- 自定义 Tab 标签 -->
+            <!-- 自定义 Tab 标签 — extracted to analysis/SheetTabLabel.vue (Item 1 phase 9) -->
             <template #label>
-              <span class="custom-tab-label" :class="{ 'is-index': isIndexSheet(sheet), 'is-failed': !sheet.success }">
-                <el-icon v-if="!sheet.success" color="#F56C6C"><WarningFilled /></el-icon>
-                <el-icon v-else-if="isIndexSheet(sheet)"><List /></el-icon>
-                <el-icon v-else><Document /></el-icon>
-                <span>{{ getSheetDisplayName(sheet) }}</span>
-                <el-tag v-if="!sheet.success" size="small" type="danger">失败</el-tag>
-                <el-tag v-else-if="!isIndexSheet(sheet)" size="small" type="info">{{ sheet.savedRows }}行</el-tag>
-              </span>
+              <SheetTabLabel
+                :is-index="isIndexSheet(sheet)"
+                :success="sheet.success"
+                :display-name="getSheetDisplayName(sheet)"
+                :saved-rows="sheet.savedRows"
+              />
             </template>
 
-            <!-- 索引页特殊展示 -->
-            <div v-if="isIndexSheet(sheet)" class="index-page-view">
-              <div class="index-header">
-                <el-icon class="index-icon"><Tickets /></el-icon>
-                <h2>报表目录</h2>
-                <span class="index-count">共 {{ indexMetadata?.sheetMappings?.length || 0 }} 个报表</span>
-              </div>
+            <!-- 索引页特殊展示 — extracted to analysis/IndexPageView.vue (Item 1 phase 6) -->
+            <IndexPageView
+              v-if="isIndexSheet(sheet)"
+              :mappings="indexMetadata?.sheetMappings || []"
+              :current-sheet-index="sheet.sheetIndex"
+              @navigate="navigateToSheet"
+            />
 
-              <div class="index-list">
-                <div
-                  v-for="(mapping, idx) in indexMetadata?.sheetMappings || []"
-                  :key="mapping.index"
-                  class="index-item"
-                  :class="{ 'is-current': mapping.index === sheet.sheetIndex }"
-                  @click="navigateToSheet(mapping.index)"
-                >
-                  <div class="item-number">{{ idx + 1 }}</div>
-                  <div class="item-content">
-                    <div class="item-name">{{ mapping.reportName }}</div>
-                    <div v-if="mapping.sheetName !== mapping.reportName" class="item-sheet">
-                      Sheet: {{ mapping.sheetName }}
-                    </div>
-                    <div v-if="mapping.description" class="item-description">
-                      <el-icon><InfoFilled /></el-icon>
-                      {{ mapping.description }}
-                    </div>
-                  </div>
-                  <el-icon class="item-arrow"><ArrowRight /></el-icon>
-                </div>
-              </div>
-
-              <div class="index-footer">
-                <el-icon><Pointer /></el-icon>
-                <span>点击报表名称跳转到对应 Sheet</span>
-              </div>
-            </div>
-
-            <!-- 失败的 Sheet - 显示重试按钮 -->
-            <div v-else-if="!sheet.success" class="failed-sheet-view">
-              <el-result icon="error" :title="'Sheet 处理失败'" :sub-title="sheet.message">
-                <template #extra>
-                  <el-button
-                    v-if="sheet.uploadId"
-                    type="primary"
-                    :loading="retryingSheets[sheet.sheetIndex]"
-                    @click="handleRetrySheet(sheet)"
-                  >
-                    {{ retryingSheets[sheet.sheetIndex] ? '重试中...' : '重新处理' }}
-                  </el-button>
-                  <el-text v-else type="info" style="margin-top: 8px">
-                    该 Sheet 未生成上传记录，请重新上传整个文件
-                  </el-text>
-                </template>
-              </el-result>
-            </div>
+            <!-- 失败的 Sheet — extracted to analysis/FailedSheetView.vue (Item 1 phase 5) -->
+            <FailedSheetView
+              v-else-if="!sheet.success"
+              :message="sheet.message"
+              :can-retry="!!sheet.uploadId"
+              :retrying="!!retryingSheets[sheet.sheetIndex]"
+              @retry="handleRetrySheet(sheet)"
+            />
 
             <!-- 普通 Sheet 展示 -->
             <template v-else>
-              <!-- Sheet 信息 -->
-              <div class="sheet-info">
-                <el-descriptions :column="3" border>
-                  <el-descriptions-item label="数据类型">
-                    <el-tag>{{ sheet.detectedDataType && sheet.detectedDataType !== 'UNKNOWN' ? sheet.detectedDataType : '通用数据' }}</el-tag>
-                  </el-descriptions-item>
-                  <el-descriptions-item label="推荐图表">
-                    <el-tag type="success">{{ sheet.flowResult?.recommendedChartType && sheet.flowResult.recommendedChartType !== 'N/A' ? sheet.flowResult.recommendedChartType : '自动推荐' }}</el-tag>
-                  </el-descriptions-item>
-                  <el-descriptions-item label="保存行数">
-                    {{ sheet.savedRows }}
-                  </el-descriptions-item>
-                </el-descriptions>
+              <!-- Sheet 信息 — extracted to analysis/SheetInfoStrip.vue (Item 1 phase 5) -->
+              <SheetInfoStrip
+                :detected-data-type="sheet.detectedDataType"
+                :recommended-chart-type="sheet.flowResult?.recommendedChartType"
+                :saved-rows="sheet.savedRows"
+                :description="getSheetDescription(sheet)"
+              />
 
-                <!-- 显示编制说明（如有） -->
-                <el-alert
-                  v-if="getSheetDescription(sheet)"
-                  :title="'编制说明'"
-                  type="info"
-                  :description="getSheetDescription(sheet)"
-                  show-icon
-                  :closable="false"
-                  style="margin-top: 16px"
-                />
-              </div>
-
-              <!-- KPI 统计卡片 — skeleton while enriching, real cards once loaded -->
-              <div v-if="enrichingSheets.has(sheet.sheetIndex) && !sheet.flowResult?.kpiSummary" class="kpi-section">
-                <ChartSkeleton type="kpi" />
-              </div>
-              <div v-else-if="sheet.flowResult?.kpiSummary" class="kpi-section">
-                <div class="kpi-grid">
-                  <KPICard
-                    v-for="kpi in getSheetKPIs(sheet)"
-                    :key="kpi.title"
-                    :title="kpi.title"
-                    :value="kpi.value"
-                    :unit="kpi.unit"
-                    :trend="kpi.trend"
-                    :trendValue="kpi.trendValue"
-                    :changeRate="kpi.changeRate"
-                    :status="kpi.status"
-                    :displayMode="kpi.displayMode"
-                    :sparklineData="kpi.sparklineData"
-                    :benchmarkLabel="kpi.benchmarkLabel"
-                    :benchmarkGap="kpi.benchmarkGap"
-                    format="custom"
-                  />
-                </div>
-              </div>
+              <!-- KPI 统计卡片 — extracted to analysis/KPIStripPanel.vue (Item 1 phase 3c) -->
+              <KPIStripPanel
+                :enriching="enrichingSheets.has(sheet.sheetIndex)"
+                :kpis="sheet.flowResult?.kpiSummary ? getSheetKPIs(sheet) : []"
+              />
 
               <!-- 图表展示（多图表仪表板） -->
               <div v-if="hasChartData(sheet) || enrichingSheets.has(sheet.sheetIndex)" class="chart-section">
-                <div class="chart-section-header">
-                  <h3>数据可视化</h3>
-                  <div class="chart-section-actions">
-                    <span v-if="hasChartData(sheet) && !layoutEditMode" class="drill-hint">点击图表数据点可下钻分析</span>
-                    <!-- 刷新分析按钮 -->
-                    <el-button
-                      v-if="hasChartData(sheet)"
-                      :icon="Refresh"
-                      size="small"
-                      :loading="enrichingSheets.has(sheet.sheetIndex)"
-                      @click="handleRefreshAnalysis(sheet)"
-                      style="margin-left: 8px;"
-                    >刷新分析</el-button>
-                    <!-- Q2: Auto-refresh dropdown -->
-                    <el-dropdown v-if="hasChartData(sheet)" @command="setAutoRefresh" trigger="click" style="margin-left: 4px;">
-                      <el-button size="small" :type="autoRefreshInterval > 0 ? 'success' : 'default'">
-                        <el-icon><Timer /></el-icon>
-                        {{ autoRefreshInterval > 0 ? `${autoRefreshInterval/1000}s` : '自动' }}
-                      </el-button>
-                      <template #dropdown>
-                        <el-dropdown-menu>
-                          <el-dropdown-item :command="0">关闭自动刷新</el-dropdown-item>
-                          <el-dropdown-item :command="30000">每 30 秒</el-dropdown-item>
-                          <el-dropdown-item :command="60000">每 1 分钟</el-dropdown-item>
-                          <el-dropdown-item :command="300000">每 5 分钟</el-dropdown-item>
-                        </el-dropdown-menu>
-                      </template>
-                    </el-dropdown>
-                    <!-- P6: 编排模式切换 -->
-                    <el-switch
-                      v-if="hasChartData(sheet)"
-                      v-model="layoutEditMode"
-                      active-text="编排"
-                      inactive-text="标准"
-                      size="small"
-                      style="margin-left: 12px;"
-                    />
-                  </div>
-                </div>
+                <!-- Chart section header — extracted to analysis/ChartSectionHeader.vue (Item 1 phase 9) -->
+                <ChartSectionHeader
+                  :has-data="hasChartData(sheet)"
+                  :refreshing="enrichingSheets.has(sheet.sheetIndex)"
+                  v-model:layout-edit-mode="layoutEditMode"
+                  :auto-refresh-interval="autoRefreshInterval"
+                  @refresh="handleRefreshAnalysis(sheet)"
+                  @set-auto-refresh="setAutoRefresh"
+                />
 
-                <!-- Global Filter Bar (Power BI / Tableau style) -->
-                <div v-if="hasChartData(sheet)" class="global-filter-bar">
-                  <el-icon class="filter-bar-icon"><Filter /></el-icon>
-                  <el-select
-                    v-model="globalFilterDimension"
-                    placeholder="维度筛选"
-                    size="small"
-                    clearable
-                    filterable
-                    style="width: 140px"
-                    @change="handleGlobalFilterChange(sheet)"
-                  >
-                    <el-option
-                      v-for="col in getFilterableDimensions(sheet)"
-                      :key="col"
-                      :label="col"
-                      :value="col"
-                    />
-                  </el-select>
-                  <el-select
-                    v-if="globalFilterDimension"
-                    v-model="globalFilterValues"
-                    placeholder="选择值"
-                    size="small"
-                    multiple
-                    filterable
-                    collapse-tags
-                    collapse-tags-tooltip
-                    :max-collapse-tags="2"
-                    style="width: 240px"
-                    @change="handleGlobalFilterApply(sheet)"
-                  >
-                    <el-option
-                      v-for="val in getDimensionValues(sheet, globalFilterDimension)"
-                      :key="val"
-                      :label="val"
-                      :value="val"
-                    />
-                  </el-select>
-                  <el-button
-                    v-if="globalFilterDimension || globalFilterValues.length"
-                    size="small"
-                    type="info"
-                    link
-                    @click="clearGlobalFilter(sheet)"
-                  >清除筛选</el-button>
-                  <span v-if="globalFilterValues.length" class="filter-count-badge">
-                    已筛选 {{ globalFilterValues.length }} 项
-                  </span>
-                  <span v-if="filteredRawData" class="filter-count-badge filter-data-badge">
-                    数据过滤: {{ filteredRowCount }}/{{ totalRowCount }} 行
-                  </span>
-                </div>
+                <!-- Global Filter Bar (Power BI / Tableau style) — extracted to analysis/FilterChipsBar.vue (Item 1 phase 3a) -->
+                <FilterChipsBar
+                  v-if="hasChartData(sheet)"
+                  :dimension="globalFilterDimension"
+                  :values="globalFilterValues"
+                  :available-dimensions="getFilterableDimensions(sheet)"
+                  :dimension-values="getDimensionValues(sheet, globalFilterDimension)"
+                  :filtered-row-count="filteredRawData ? filteredRowCount : 0"
+                  :total-row-count="totalRowCount"
+                  @update:dimension="globalFilterDimension = $event"
+                  @update:values="globalFilterValues = $event"
+                  @dimension-change="handleGlobalFilterChange(sheet)"
+                  @apply="handleGlobalFilterApply(sheet)"
+                  @clear="clearGlobalFilter(sheet)"
+                />
 
-                <!-- Explore Panel Toggle (Superset-style multi-dimension) -->
-                <div v-if="hasChartData(sheet)" class="explore-panel-toggle">
-                  <el-button size="small" text @click="explorePanelVisible = !explorePanelVisible">
-                    <el-icon><Operation /></el-icon>
-                    {{ explorePanelVisible ? '收起探索面板' : '展开探索面板' }}
-                    <el-badge v-if="exploreDimensions.length" :value="exploreDimensions.length" type="primary" />
-                  </el-button>
-                </div>
-                <el-collapse-transition>
-                  <div v-show="explorePanelVisible && hasChartData(sheet)" class="explore-panel">
-                    <div class="explore-panel-left">
-                      <div class="explore-section-title">可用维度</div>
-                      <div class="dimension-list available">
-                        <div v-for="dim in availableExploreDimensions(sheet)" :key="dim" class="dimension-chip"
-                             @click="addExploreDimension(dim)">
-                          <el-icon><Plus /></el-icon>
-                          {{ dim }}
-                          <span class="dim-count">{{ getDimensionValues(sheet, dim).length }}</span>
-                        </div>
-                        <div v-if="availableExploreDimensions(sheet).length === 0" class="explore-empty">
-                          所有维度已选择
-                        </div>
-                      </div>
-                    </div>
-                    <div class="explore-panel-right">
-                      <div class="explore-section-title">已选维度 (上下排序)</div>
-                      <div class="dimension-list selected">
-                        <div v-for="(dim, idx) in exploreDimensions" :key="dim" class="dimension-chip active">
-                          <div class="dim-header">
-                            <el-icon class="drag-handle"><Rank /></el-icon>
-                            <span>{{ dim }}</span>
-                            <div class="dim-actions">
-                              <el-button size="small" :icon="Top" circle text :disabled="idx === 0" @click="moveExploreDimension(idx, -1)" />
-                              <el-button size="small" :icon="Bottom" circle text :disabled="idx === exploreDimensions.length - 1" @click="moveExploreDimension(idx, 1)" />
-                              <el-button size="small" :icon="Close" circle text type="danger" @click="removeExploreDimension(idx)" />
-                            </div>
-                          </div>
-                          <div class="dim-values">
-                            <el-checkbox-group v-model="exploreDimensionFilters[dim]" size="small">
-                              <el-checkbox v-for="val in getDimensionValues(sheet, dim).slice(0, 20)" :key="val" :label="val" :value="val" />
-                            </el-checkbox-group>
-                            <span v-if="getDimensionValues(sheet, dim).length > 20" class="dim-more">
-                              +{{ getDimensionValues(sheet, dim).length - 20 }} 更多
-                            </span>
-                          </div>
-                        </div>
-                        <div v-if="!exploreDimensions.length" class="explore-empty">
-                          点击左侧维度添加到分析
-                        </div>
-                      </div>
-                      <div v-if="exploreDimensions.length" class="explore-actions">
-                        <el-button size="small" type="primary" @click="applyExploreFilter(sheet)">应用筛选</el-button>
-                        <el-button size="small" @click="clearExploreFilter(sheet)">清除</el-button>
-                      </div>
-                    </div>
-                  </div>
-                </el-collapse-transition>
+                <!-- Explore Panel Toggle — extracted to analysis/ExplorePanelToggle.vue (Item 1 phase 9) -->
+                <ExplorePanelToggle
+                  :visible="hasChartData(sheet)"
+                  :expanded="explorePanelVisible"
+                  :selected-count="exploreDimensions.length"
+                  @toggle="explorePanelVisible = !explorePanelVisible"
+                />
+                <!-- Explore panel — extracted to analysis/ExplorePanel.vue (Item 1 phase 7) -->
+                <ExplorePanel
+                  :visible="explorePanelVisible && hasChartData(sheet)"
+                  :available-dimensions="availableExploreDimensions(sheet)"
+                  :selected-dimensions="exploreDimensions"
+                  :filters="exploreDimensionFilters"
+                  :get-dimension-values-preview="(dim) => getDimensionValues(sheet, dim).slice(0, 20)"
+                  :get-dimension-value-count="(dim) => getDimensionValues(sheet, dim).length"
+                  @add="addExploreDimension"
+                  @remove="removeExploreDimension"
+                  @move="moveExploreDimension"
+                  @apply="applyExploreFilter(sheet)"
+                  @clear="clearExploreFilter(sheet)"
+                  @filter-change="(dim, values) => { exploreDimensionFilters[dim] = values }"
+                />
 
-                <div v-if="enrichingSheets.has(sheet.sheetIndex) && !hasChartData(sheet)" class="chart-skeleton-wrapper">
-                  <div v-if="enrichPhases.get(sheet.sheetIndex)?.chartsTotal" class="chart-progress-hint">
-                    图表加载中 {{ enrichPhases.get(sheet.sheetIndex)?.charts || 0 }}/{{ enrichPhases.get(sheet.sheetIndex)?.chartsTotal }}...
-                  </div>
-                  <ChartSkeleton type="chart" />
-                  <ChartSkeleton type="chart" />
-                </div>
+                <!-- Chart skeleton wrapper — extracted to analysis/ChartSkeletonWrapper.vue -->
+                <ChartSkeletonWrapper
+                  :visible="enrichingSheets.has(sheet.sheetIndex) && !hasChartData(sheet)"
+                  :charts="enrichPhases.get(sheet.sheetIndex)?.charts || 0"
+                  :charts-total="enrichPhases.get(sheet.sheetIndex)?.chartsTotal || 0"
+                />
 
-                <!-- P6: 编排模式 — DashboardBuilder (v-show preserves ECharts DOM) -->
-                <div v-show="layoutEditMode && hasChartData(sheet)" class="builder-wrapper">
-                  <DashboardBuilder
-                    :layout="getCachedLayout(sheet)"
-                    :available-charts="availableChartDefinitions"
-                    :editable="true"
-                    @layout-change="handleLayoutChange"
-                    @save="(layout: DashboardLayout) => handleLayoutSave(layout, sheet.uploadId, sheet.sheetIndex)"
-                    @card-configure="(card: DashboardCard) => {}"
-                  >
-                    <template #card-content="{ card }">
-                      <div :id="`builder-chart-${card.id}`" class="builder-chart-el" style="width:100%;height:100%;"></div>
-                    </template>
-                  </DashboardBuilder>
-                </div>
+                <!-- P6: 编排模式 — extracted to analysis/DashboardBuilderWrapper.vue (Item 1 phase 11) -->
+                <DashboardBuilderWrapper
+                  :visible="layoutEditMode && hasChartData(sheet)"
+                  :layout="getCachedLayout(sheet)"
+                  :available-charts="availableChartDefinitions"
+                  @layout-change="handleLayoutChange"
+                  @save="(layout) => handleLayoutSave(layout, sheet.uploadId, sheet.sheetIndex)"
+                />
 
                 <!-- 标准模式 (v-show preserves ECharts DOM) -->
                 <div v-show="!layoutEditMode || !hasChartData(sheet)" class="chart-dashboard" :class="`layout-${chartLayoutMode}`">
-                  <!-- Chart action bar -->
-                  <div class="chart-action-bar">
-                    <el-button
-                      size="small"
-                      type="primary"
-                      plain
-                      :loading="refreshAllChartsLoading"
-                      @click="handleRefreshAllCharts(sheet)"
-                    >
-                      <el-icon><Refresh /></el-icon>
-                      换一批图表
-                    </el-button>
-                    <el-button
-                      size="small"
-                      type="success"
-                      plain
-                      @click="handleExportExcel(sheet)"
-                    >
-                      <el-icon><Download /></el-icon>
-                      导出 Excel
-                    </el-button>
-                    <el-button
-                      size="small"
-                      type="warning"
-                      plain
-                      @click="handleExportPDF(sheet)"
-                    >
-                      <el-icon><Document /></el-icon>
-                      导出 PDF
-                    </el-button>
-                    <span class="chart-count-hint">{{ getSheetCharts(sheet).filter(c => !isChartDataEmpty(c.config)).length }} 个图表</span>
-                    <!-- P2: Layout mode toggle -->
-                    <el-radio-group v-model="chartLayoutMode" size="small" style="margin-left: auto;">
-                      <el-radio-button value="compact">紧凑</el-radio-button>
-                      <el-radio-button value="comfortable">舒适</el-radio-button>
-                      <el-radio-button value="presentation">演示</el-radio-button>
-                    </el-radio-group>
-                  </div>
-                  <!-- Cross-chart filter bar -->
-                  <div v-if="activeFilter" class="chart-filter-bar">
-                    <el-icon><Filter /></el-icon>
-                    <span>过滤: {{ activeFilter.dimension }} = <strong>{{ activeFilter.value }}</strong></span>
-                    <el-button type="primary" link size="small" @click="clearChartFilter">清除过滤</el-button>
-                  </div>
+                  <!-- Chart action bar — extracted to analysis/ChartActionBar.vue (Item 1 phase 8) -->
+                  <ChartActionBar
+                    :refresh-all-loading="refreshAllChartsLoading"
+                    :chart-count="getSheetCharts(sheet).filter(c => !isChartDataEmpty(c.config)).length"
+                    v-model:layout-mode="chartLayoutMode"
+                    @refresh-all="handleRefreshAllCharts(sheet)"
+                    @export-excel="handleExportExcel(sheet)"
+                    @export-pdf="handleExportPDF(sheet)"
+                  />
+
+                  <!-- Cross-chart filter bar — extracted to analysis/ChartFilterBar.vue -->
+                  <ChartFilterBar :filter="activeFilter" @clear="clearChartFilter" />
                   <!-- P2: Grouped charts with section headers (when enough charts to group) -->
                   <template v-if="getGroupedCharts(sheet).length > 1">
                     <template v-for="(group, gIdx) in getGroupedCharts(sheet)" :key="`group-${gIdx}`">
-                      <div class="chart-section-header">
-                        <span class="section-icon">{{ group.icon }}</span>
-                        <span class="section-label">{{ group.label }}</span>
-                        <span class="section-count">{{ group.charts.length }}</span>
-                      </div>
-                      <div v-for="{ chart, originalIndex } in group.charts" :key="`chart-${sheet.sheetIndex}-${chart.title || originalIndex}`" class="chart-grid-item"
-                           :class="[getChartSizeClass(chart), { 'chart-empty': isChartDataEmpty(chart.config) }]">
-                        <template v-if="isChartDataEmpty(chart.config)">
-                          <div class="chart-title-row">
-                            <div class="chart-title" style="margin-bottom:0">{{ cleanDisplayLabel(chart.title || '数据分析') }}</div>
-                            <div class="chart-controls">
-                              <el-button size="small" @click="handleRefreshChart(sheet, originalIndex)">
-                                <el-icon><Refresh /></el-icon> 重新生成
-                              </el-button>
-                            </div>
-                          </div>
-                          <div class="chart-no-data">
-                            <el-empty description="暂无数据" :image-size="60" />
-                          </div>
-                        </template>
-                        <template v-else>
-                        <div class="chart-title-row">
-                          <div class="chart-title" style="margin-bottom:0">{{ cleanDisplayLabel(chart.title || '数据分析') }}</div>
-                          <div class="chart-controls">
-                            <ChartTypeSelector
-                              :current-type="chart.chartType || 'bar'"
-                              :numeric-columns="getSheetColumns(sheet).filter(c => c.type === 'numeric').map(c => c.name)"
-                              :categorical-columns="getSheetColumns(sheet).filter(c => c.type === 'categorical').map(c => c.name)"
-                              :date-columns="getSheetColumns(sheet).filter(c => c.type === 'date').map(c => c.name)"
-                              :row-count="sheet.flowResult?.kpiSummary?.rowCount || 0"
-                              :loading="switchingChart?.sheetIndex === sheet.sheetIndex && switchingChart?.chartIndex === originalIndex"
-                              @switch-type="(type: string) => handleSwitchChartType(sheet, originalIndex, type)"
-                              @refresh="handleRefreshChart(sheet, originalIndex)"
-                            />
-                            <ChartConfigPanel
-                              :columns="getSheetColumns(sheet)"
-                              :current-config="{ chartType: chart.chartType || 'bar', xField: chart.xField, yFields: extractYFieldsFromConfig(chart.config) }"
-                              :loading="switchingChart?.sheetIndex === sheet.sheetIndex && switchingChart?.chartIndex === originalIndex"
-                              @apply="(config: { xField: string; yFields: string[]; seriesField?: string; aggregation?: string }) => handleApplyChartConfig(sheet, originalIndex, config)"
-                            />
-                            <el-dropdown class="chart-export-btn" trigger="click" @command="(cmd: string) => handleChartExport(cmd, sheet.sheetIndex, originalIndex, chart.title)">
-                              <el-button :icon="Download" circle size="small" />
-                              <template #dropdown>
-                                <el-dropdown-menu>
-                                  <el-dropdown-item command="png">导出 PNG</el-dropdown-item>
-                                  <el-dropdown-item command="svg">导出 SVG</el-dropdown-item>
-                                </el-dropdown-menu>
-                              </template>
-                            </el-dropdown>
-                          </div>
-                        </div>
-                        <div :id="`chart-${sheet.sheetIndex}-${originalIndex}`" class="chart-container"></div>
-                        <div v-if="getChartMiniInsight(chart)" class="chart-mini-insight">
-                          <span class="mini-insight-icon">📊</span>
-                          <span class="mini-insight-text">{{ getChartMiniInsight(chart) }}</span>
-                        </div>
-                        <div v-if="chart.totalItems" class="chart-view-more">
-                          <el-button type="primary" link size="small" @click="handleViewMoreData(sheet, originalIndex, chart)">
-                            查看更多 (共 {{ chart.totalItems }} 项，当前显示 {{ getDisplayedCount(chart) }} 项)
-                          </el-button>
-                        </div>
-                        </template>
-                      </div>
+                      <ChartGroupHeader :icon="group.icon" :label="group.label" :count="group.charts.length" />
+                      <ChartGridItem
+                        v-for="{ chart, originalIndex } in group.charts"
+                        :key="`chart-${sheet.sheetIndex}-${chart.title || originalIndex}`"
+                        :chart="chart"
+                        :container-id="`chart-${sheet.sheetIndex}-${originalIndex}`"
+                        :is-empty="isChartDataEmpty(chart.config)"
+                        :size-class="getChartSizeClass(chart)"
+                        :title-label="cleanDisplayLabel(chart.title || '数据分析')"
+                        :columns="getSheetColumns(sheet)"
+                        :y-fields="extractYFieldsFromConfig(chart.config)"
+                        :row-count="sheet.flowResult?.kpiSummary?.rowCount || 0"
+                        :switching="switchingChart?.sheetIndex === sheet.sheetIndex && switchingChart?.chartIndex === originalIndex"
+                        :mini-insight="getChartMiniInsight(chart)"
+                        :displayed-count="getDisplayedCount(chart)"
+                        @switch-type="(type) => handleSwitchChartType(sheet, originalIndex, type)"
+                        @apply-config="(config) => handleApplyChartConfig(sheet, originalIndex, config)"
+                        @refresh="handleRefreshChart(sheet, originalIndex)"
+                        @export="(cmd) => handleChartExport(cmd, sheet.sheetIndex, originalIndex, chart.title)"
+                        @view-more="handleViewMoreData(sheet, originalIndex, chart)"
+                      />
                     </template>
                   </template>
                   <!-- Flat layout (few charts or no grouping match) -->
                   <template v-else>
-                  <div v-for="(chart, idx) in getSheetCharts(sheet)" :key="`chart-${sheet.sheetIndex}-${chart.title || idx}`" class="chart-grid-item"
-                       :class="[getChartSizeClass(chart), { 'chart-empty': isChartDataEmpty(chart.config) }]">
-                    <template v-if="isChartDataEmpty(chart.config)">
-                      <div class="chart-title-row">
-                        <div class="chart-title" style="margin-bottom:0">{{ cleanDisplayLabel(chart.title || '数据分析') }}</div>
-                        <div class="chart-controls">
-                          <el-button size="small" @click="handleRefreshChart(sheet, idx)">
-                            <el-icon><Refresh /></el-icon> 重新生成
-                          </el-button>
-                        </div>
-                      </div>
-                      <div class="chart-no-data">
-                        <el-empty description="暂无数据" :image-size="60" />
-                      </div>
-                    </template>
-                    <template v-else>
-                    <div class="chart-title-row">
-                      <div class="chart-title" style="margin-bottom:0">{{ cleanDisplayLabel(chart.title || '数据分析') }}</div>
-                      <div class="chart-controls">
-                        <ChartTypeSelector
-                          :current-type="chart.chartType || 'bar'"
-                          :numeric-columns="getSheetColumns(sheet).filter(c => c.type === 'numeric').map(c => c.name)"
-                          :categorical-columns="getSheetColumns(sheet).filter(c => c.type === 'categorical').map(c => c.name)"
-                          :date-columns="getSheetColumns(sheet).filter(c => c.type === 'date').map(c => c.name)"
-                          :row-count="sheet.flowResult?.kpiSummary?.rowCount || 0"
-                          :loading="switchingChart?.sheetIndex === sheet.sheetIndex && switchingChart?.chartIndex === idx"
-                          @switch-type="(type: string) => handleSwitchChartType(sheet, idx, type)"
-                          @refresh="handleRefreshChart(sheet, idx)"
-                        />
-                        <ChartConfigPanel
-                          :columns="getSheetColumns(sheet)"
-                          :current-config="{ chartType: chart.chartType || 'bar', xField: chart.xField, yFields: extractYFieldsFromConfig(chart.config) }"
-                          :loading="switchingChart?.sheetIndex === sheet.sheetIndex && switchingChart?.chartIndex === idx"
-                          @apply="(config: { xField: string; yFields: string[]; seriesField?: string; aggregation?: string }) => handleApplyChartConfig(sheet, idx, config)"
-                        />
-                        <el-dropdown class="chart-export-btn" trigger="click" @command="(cmd: string) => handleChartExport(cmd, sheet.sheetIndex, idx, chart.title)">
-                          <el-button :icon="Download" circle size="small" />
-                          <template #dropdown>
-                            <el-dropdown-menu>
-                              <el-dropdown-item command="png">导出 PNG</el-dropdown-item>
-                              <el-dropdown-item command="svg">导出 SVG</el-dropdown-item>
-                            </el-dropdown-menu>
-                          </template>
-                        </el-dropdown>
-                      </div>
-                    </div>
-                    <div :id="`chart-${sheet.sheetIndex}-${idx}`" class="chart-container"></div>
-                    <div v-if="getChartMiniInsight(chart)" class="chart-mini-insight">
-                      <span class="mini-insight-icon">📊</span>
-                      <span class="mini-insight-text">{{ getChartMiniInsight(chart) }}</span>
-                    </div>
-                    <div v-if="chart.totalItems" class="chart-view-more">
-                      <el-button type="primary" link size="small" @click="handleViewMoreData(sheet, idx, chart)">
-                        查看更多 (共 {{ chart.totalItems }} 项，当前显示 {{ getDisplayedCount(chart) }} 项)
-                      </el-button>
-                    </div>
-                    </template>
-                  </div>
+                  <ChartGridItem
+                    v-for="(chart, idx) in getSheetCharts(sheet)"
+                    :key="`chart-${sheet.sheetIndex}-${chart.title || idx}`"
+                    :chart="chart"
+                    :container-id="`chart-${sheet.sheetIndex}-${idx}`"
+                    :is-empty="isChartDataEmpty(chart.config)"
+                    :size-class="getChartSizeClass(chart)"
+                    :title-label="cleanDisplayLabel(chart.title || '数据分析')"
+                    :columns="getSheetColumns(sheet)"
+                    :y-fields="extractYFieldsFromConfig(chart.config)"
+                    :row-count="sheet.flowResult?.kpiSummary?.rowCount || 0"
+                    :switching="switchingChart?.sheetIndex === sheet.sheetIndex && switchingChart?.chartIndex === idx"
+                    :mini-insight="getChartMiniInsight(chart)"
+                    :displayed-count="getDisplayedCount(chart)"
+                    @switch-type="(type) => handleSwitchChartType(sheet, idx, type)"
+                    @apply-config="(config) => handleApplyChartConfig(sheet, idx, config)"
+                    @refresh="handleRefreshChart(sheet, idx)"
+                    @export="(cmd) => handleChartExport(cmd, sheet.sheetIndex, idx, chart.title)"
+                    @view-more="handleViewMoreData(sheet, idx, chart)"
+                  />
                   </template>
                 </div>
               </div>
 
-              <!-- 高管摘要横幅 (Power BI Copilot + Narrative BI) -->
-              <div v-if="getExecutiveSummary(sheet)" class="executive-summary-banner">
-                <div class="summary-icon">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-                </div>
-                <div class="summary-body">
-                  <div class="summary-text">{{ getExecutiveSummary(sheet) }}</div>
-                  <!-- Inline KPIs from top 3 -->
-                  <div v-if="getSheetKPIs(sheet).length" class="summary-inline-kpis">
-                    <div v-for="kpi in getSheetKPIs(sheet).slice(0, 3)" :key="kpi.title" class="inline-kpi">
-                      <span class="inline-kpi-label">{{ kpi.title }}</span>
-                      <span class="inline-kpi-value">{{ kpi.value }}{{ kpi.unit }}</span>
-                      <span v-if="kpi.trendValue" class="inline-kpi-trend" :class="kpi.trend">{{ kpi.trendValue }}</span>
-                    </div>
-                  </div>
-                  <!-- Risk/Opportunity/Sensitivity tags -->
-                  <div v-if="getStructuredInsight(sheet)" class="summary-tags">
-                    <el-tag v-if="getStructuredInsight(sheet)?.riskAlerts?.length" type="danger" size="small" effect="plain">
-                      {{ getStructuredInsight(sheet)!.riskAlerts.length }} 个风险
-                    </el-tag>
-                    <el-tag v-if="getStructuredInsight(sheet)?.opportunities?.length" type="success" size="small" effect="plain">
-                      {{ getStructuredInsight(sheet)!.opportunities.length }} 个机会
-                    </el-tag>
-                    <el-tag v-if="getSensitivityAnalysis(sheet)?.length" type="warning" size="small" effect="plain">
-                      {{ getSensitivityAnalysis(sheet)!.length }} 项敏感性
-                    </el-tag>
-                  </div>
-                </div>
-              </div>
+              <!-- 高管摘要横幅 — extracted to analysis/ExecutiveSummaryBanner.vue (Item 1 phase 3e) -->
+              <ExecutiveSummaryBanner
+                :summary="getExecutiveSummary(sheet)"
+                :kpis="getSheetKPIs(sheet)"
+                :structured-insight="getStructuredInsight(sheet)"
+                :sensitivity-count="getSensitivityAnalysis(sheet)?.length || 0"
+              />
 
-              <!-- A6: 食品行业标准参考面板 -->
-              <el-collapse v-if="foodIndustryDetection?.is_food_industry && enrichedSheets.has(sheet.sheetIndex)" class="food-industry-panel">
-                <el-collapse-item>
-                  <template #title>
-                    <div class="food-industry-header">
-                      <el-tag type="success" size="small" effect="dark" style="margin-right: 8px;">
-                        食品行业
-                      </el-tag>
-                      <span>食品行业标准参考</span>
-                      <el-tag v-if="foodIndustryDetection.confidence > 0.5" type="info" size="small" style="margin-left: 8px;">
-                        置信度 {{ (foodIndustryDetection.confidence * 100).toFixed(0) }}%
-                      </el-tag>
-                    </div>
-                  </template>
-                  <div class="food-standards-content">
-                    <div v-if="foodIndustryDetection.suggested_standards?.length" class="standards-section">
-                      <h4>相关食品安全标准</h4>
-                      <ul>
-                        <li v-for="std in foodIndustryDetection.suggested_standards" :key="std">{{ std }}</li>
-                      </ul>
-                    </div>
-                    <div v-if="foodIndustryDetection.suggested_benchmarks?.length" class="benchmarks-section">
-                      <h4>建议对标指标</h4>
-                      <el-tag
-                        v-for="bm in foodIndustryDetection.suggested_benchmarks"
-                        :key="bm"
-                        size="small"
-                        type="info"
-                        style="margin: 2px 4px;"
-                      >
-                        {{ bm.replace(/_/g, ' ') }}
-                      </el-tag>
-                    </div>
-                    <div v-if="foodIndustryDetection.matched_keywords?.length" class="keywords-section">
-                      <h4>匹配关键词</h4>
-                      <el-tag
-                        v-for="kw in foodIndustryDetection.matched_keywords.slice(0, 10)"
-                        :key="kw"
-                        size="small"
-                        style="margin: 2px 4px;"
-                      >
-                        {{ kw }}
-                      </el-tag>
-                    </div>
-                  </div>
-                </el-collapse-item>
-              </el-collapse>
+              <!-- A6: 食品行业标准参考面板 — extracted to analysis/FoodIndustryPanel.vue (Item 1 phase 4a) -->
+              <FoodIndustryPanel
+                v-if="foodIndustryDetection"
+                :visible="!!foodIndustryDetection.is_food_industry && enrichedSheets.has(sheet.sheetIndex)"
+                :detection="foodIndustryDetection"
+              />
 
-              <!-- AI 分析 -->
-              <div v-if="sheet.flowResult?.aiAnalysis || sheet.flowResult?.chartConfig?.aiAnalysis || enrichingSheets.has(sheet.sheetIndex)" class="ai-analysis-section">
-                <!-- 结构化 AI 面板 -->
-                <AIInsightPanel
-                  v-if="getStructuredInsight(sheet)"
-                  :insight="getStructuredInsight(sheet)"
-                  :loading="enrichingSheets.has(sheet.sheetIndex) && !sheet.flowResult?.aiAnalysis"
-                />
+              <!-- AI 分析 — extracted to analysis/AIInsightsStream.vue (Item 1 phase 3d) -->
+              <AIInsightsStream
+                :visible="!!(sheet.flowResult?.aiAnalysis || sheet.flowResult?.chartConfig?.aiAnalysis || enrichingSheets.has(sheet.sheetIndex))"
+                :enriching="enrichingSheets.has(sheet.sheetIndex)"
+                :structured-insight="getStructuredInsight(sheet)"
+                :raw-analysis="getAIAnalysis(sheet)"
+                :cache-hint="getCacheHint(sheet)"
+                :format-analysis="formatAnalysis"
+              />
 
-                <!-- 回退：纯文本展示 -->
-                <template v-else>
-                  <h3><span class="section-badge section-badge--ai" aria-hidden="true"></span> AI 智能分析</h3>
-                  <div v-if="enrichingSheets.has(sheet.sheetIndex) && !sheet.flowResult?.aiAnalysis">
-                    <ChartSkeleton type="ai" />
-                  </div>
-                  <el-card v-else shadow="never" class="analysis-card">
-                    <div class="analysis-content" v-html="formatAnalysis(getAIAnalysis(sheet))"></div>
-                  </el-card>
-                </template>
-                <!-- 缓存状态提示 -->
-                <div v-if="getCacheHint(sheet)" class="cache-hint">
-                  {{ getCacheHint(sheet) }}
-                </div>
-              </div>
+              <!-- 敏感性分析 — extracted to analysis/SensitivityAnalysisTable.vue (Item 1 phase 4b) -->
+              <SensitivityAnalysisTable :rows="getSensitivityAnalysis(sheet) || []" />
 
-              <!-- 敏感性分析 -->
-              <div v-if="getSensitivityAnalysis(sheet)?.length" class="sensitivity-analysis-section">
-                <h4 style="margin: 16px 0 8px; color: var(--el-text-color-primary); font-size: 14px;">
-                  <el-icon style="margin-right: 4px; vertical-align: middle;"><Warning /></el-icon>
-                  关键驱动因素敏感性分析
-                </h4>
-                <el-table
-                  :data="getSensitivityAnalysis(sheet)"
-                  size="small"
-                  stripe
-                  :border="false"
-                  style="width: 100%;"
-                >
-                  <el-table-column prop="factor" label="驱动因素" min-width="120">
-                    <template #default="{ row }">{{ row.factor || '-' }}</template>
-                  </el-table-column>
-                  <el-table-column prop="current_value" label="当前值" min-width="100">
-                    <template #default="{ row }">{{ row.current_value || '-' }}</template>
-                  </el-table-column>
-                  <el-table-column prop="impact_description" label="变动影响" min-width="240">
-                    <template #default="{ row }">{{ row.impact_description || '-' }}</template>
-                  </el-table-column>
-                </el-table>
-              </div>
-
-              <!-- 无数据提示 -->
-              <div v-if="!hasChartData(sheet) && !sheet.flowResult?.aiAnalysis && !enrichingSheets.has(sheet.sheetIndex)" class="empty-sheet">
-                <el-empty description="该 Sheet 暂无可分析的数据">
-                  <el-button type="primary" size="small" @click="loadSheetData(sheet)">
-                    查看原始数据
-                  </el-button>
-                </el-empty>
-              </div>
-
-              <!-- 数据预览 -->
-              <div v-else class="data-preview-section">
-                <h3><span class="section-badge section-badge--data" aria-hidden="true"></span> 数据预览</h3>
-                <el-button @click="loadSheetData(sheet)" type="primary" size="small">
-                  查看原始数据
-                </el-button>
-              </div>
+              <!-- 无数据 / 数据预览 — extracted to analysis/EmptySheetPlaceholder.vue (Item 1 phase 4c) -->
+              <EmptySheetPlaceholder
+                :empty="!hasChartData(sheet) && !sheet.flowResult?.aiAnalysis && !enrichingSheets.has(sheet.sheetIndex)"
+                @view-data="loadSheetData(sheet)"
+              />
             </template>
           </el-tab-pane>
         </el-tabs>
@@ -821,362 +322,61 @@
   </div>
 
   <!-- 下钻分析抽屉 -->
-  <el-drawer v-model="drillDownVisible" title="深度分析" size="55%" direction="rtl" @close="drillStack = []">
-    <template #header>
-      <div class="drill-down-header">
-        <span class="drill-title">深度分析</span>
-        <el-tag v-if="drillDownContext.dimension" type="info" size="small">
-          {{ drillDownContext.dimension }}: {{ drillDownContext.filterValue }}
-        </el-tag>
-        <el-tag v-if="drillDownResult?.hierarchy" type="success" size="small" style="margin-left: 4px;">
-          {{ drillDownResult.hierarchy.type }} 层级
-        </el-tag>
-      </div>
-    </template>
+  <!-- 下钻分析抽屉 — extracted to analysis/DrillDownDrawer.vue (Item 1 phase 2). The
+       composable's callback writes ECharts into id 'drill-down-chart' which the child
+       renders identically — chart wiring preserved. -->
+  <DrillDownDrawer
+    v-model:visible="drillDownVisible"
+    :loading="drillDownLoading"
+    :result="drillDownResult"
+    :context="drillDownContext"
+    :stack="drillStack"
+    :format-analysis="formatAnalysis"
+    :get-column-label="getColumnLabel"
+    @drill-by-dimension="drillByDimension"
+    @back-to-root="drillBackToRoot"
+    @back-to="drillBackTo"
+    @close="drillStack.splice(0)"
+  />
 
-    <!-- P4: 面包屑导航 -->
-    <div v-if="drillStack.length > 0" class="drill-breadcrumb">
-      <el-breadcrumb separator="/">
-        <el-breadcrumb-item>
-          <el-button type="primary" link size="small" @click="drillBackToRoot">全部数据</el-button>
-        </el-breadcrumb-item>
-        <el-breadcrumb-item v-for="(level, i) in drillStack" :key="i">
-          <el-button type="primary" link size="small" @click="drillBackTo(i)">
-            {{ level.dimension }}: {{ level.filterValue }}
-          </el-button>
-        </el-breadcrumb-item>
-      </el-breadcrumb>
-    </div>
+  <!-- 分享链接对话框 — extracted to analysis/ShareDialog.vue (Item 1 phase 2) -->
+  <ShareDialog ref="shareDialogRef" :factory-id="factoryId" :active-tab="activeTab" />
 
-    <div v-if="drillDownLoading" class="drill-loading">
-      <el-icon class="is-loading" :size="40"><Loading /></el-icon>
-      <p>正在分析 "{{ drillDownContext.filterValue }}" 的详细数据...</p>
-    </div>
+  <!-- 综合分析对话框 — extracted to analysis/CrossSheetDialog.vue (Item 1 phase 2). The
+       composable's renderCrossSheetCharts callback writes ECharts into elements with ids
+       'cross-chart-${idx}' which the child renders identically — chart wiring preserved. -->
+  <CrossSheetDialog
+    v-model:visible="crossSheetVisible"
+    :loading="crossSheetLoading"
+    :result="crossSheetResult"
+    :kpi-keys="crossSheetKpiKeys"
+    :format-analysis="formatAnalysis"
+    :get-column-label="getColumnLabel"
+    :clean-display-label="cleanDisplayLabel"
+  />
 
-    <div v-else-if="drillDownResult">
-      <!-- P4: 可用下钻维度按钮组 -->
-      <div v-if="drillDownResult.available_dimensions?.length" class="drill-dimensions">
-        <span class="drill-dim-label">可继续下钻:</span>
-        <el-button v-for="dim in drillDownResult.available_dimensions" :key="dim" size="small" @click="drillByDimension(dim)">
-          {{ getColumnLabel(dim) }}
-        </el-button>
-      </div>
-
-      <!-- 下钻图表 (点击可继续下钻) -->
-      <div v-if="drillDownResult.chartConfig" class="drill-chart-section">
-        <h4>数据分布 <span class="drill-hint-inline">(点击柱状图可继续下钻)</span></h4>
-        <div id="drill-down-chart" class="drill-chart-container"></div>
-      </div>
-
-      <!-- 下钻数据摘要 -->
-      <div v-if="drillDownResult.result?.summary" class="drill-summary-section">
-        <h4>数据摘要</h4>
-        <el-descriptions :column="2" border size="small">
-          <el-descriptions-item label="维度">{{ drillDownResult.result.dimension }}</el-descriptions-item>
-          <el-descriptions-item label="筛选值">{{ drillDownResult.result.filterValue }}</el-descriptions-item>
-          <template v-for="(val, key) in drillDownResult.result.summary" :key="key">
-            <el-descriptions-item v-if="key !== 'dimension'" :label="getColumnLabel(String(key))">
-              {{ typeof val === 'number' ? val.toLocaleString() : val }}
-            </el-descriptions-item>
-          </template>
-        </el-descriptions>
-      </div>
-
-      <!-- AI 洞察 -->
-      <div v-if="drillDownResult.aiInsight" class="drill-ai-section">
-        <h4>AI 洞察</h4>
-        <el-card shadow="never" class="drill-insight-card">
-          <div class="analysis-content" v-html="formatAnalysis(drillDownResult.aiInsight)"></div>
-        </el-card>
-      </div>
-
-      <!-- 下钻数据表格 -->
-      <div v-if="drillDownResult.result?.data?.length" class="drill-table-section">
-        <h4>详细数据 ({{ drillDownResult.result.data.length }} 条)</h4>
-        <el-table :data="drillDownResult.result.data.slice(0, 20)" border stripe size="small" max-height="300">
-          <el-table-column v-for="col in Object.keys(drillDownResult.result.data[0] || {})" :key="col"
-            :prop="col" :label="getColumnLabel(col)" min-width="100" show-overflow-tooltip />
-        </el-table>
-      </div>
-
-      <!-- 错误态：API 返回失败 -->
-      <div v-if="!drillDownResult.success" class="drill-error">
-        <el-empty :description="drillDownResult.error || '下钻分析失败，请稍后重试'" />
-      </div>
-      <!-- 空数据态：成功但无任何可展示内容 -->
-      <div v-else-if="!drillDownResult.chartConfig && !drillDownResult.result?.summary && !drillDownResult.aiInsight && !drillDownResult.result?.data?.length" class="drill-empty">
-        <el-empty description="该数据点暂无可展开的明细数据" />
-      </div>
-    </div>
-
-    <el-empty v-else description="暂无分析结果" />
-  </el-drawer>
-
-  <!-- 分享链接对话框 -->
-  <el-dialog v-model="shareDialogVisible" title="分享分析报告" width="500px">
-    <div v-if="!shareLink" style="text-align: center; padding: 20px;">
-      <p style="margin-bottom: 16px; color: var(--color-text-regular, #606266);">生成公开链接，无需登录即可查看分析报告</p>
-      <el-form label-width="80px" style="max-width: 380px; margin: 0 auto;">
-        <el-form-item label="标题">
-          <el-input v-model="shareTitle" placeholder="分析报告标题" />
-        </el-form-item>
-        <el-form-item label="有效期">
-          <el-select v-model="shareTTL" style="width: 100%">
-            <el-option :value="1" label="1 天" />
-            <el-option :value="7" label="7 天" />
-            <el-option :value="30" label="30 天" />
-            <el-option :value="90" label="90 天" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <el-button type="primary" @click="createShareLink" :loading="shareCreating">
-        <el-icon><Link /></el-icon> 生成分享链接
-      </el-button>
-    </div>
-    <div v-else style="text-align: center; padding: 20px;">
-      <el-result icon="success" title="分享链接已生成" sub-title="复制链接发送给他人即可查看">
-        <template #extra>
-          <el-input v-model="shareFullUrl" readonly style="margin-bottom: 12px;">
-            <template #append>
-              <el-button @click="copyShareLink">
-                <el-icon><CopyDocument /></el-icon>
-              </el-button>
-            </template>
-          </el-input>
-          <div style="color: var(--color-text-secondary, #909399); font-size: 12px;">
-            有效期 {{ shareTTL }} 天 · 到期自动失效
-          </div>
-        </template>
-      </el-result>
-    </div>
-  </el-dialog>
-
-  <!-- 综合分析对话框 -->
-  <el-dialog v-model="crossSheetVisible" title="全 Sheet 综合分析" width="90%" top="3vh" fullscreen>
-    <div v-if="crossSheetLoading" class="cross-sheet-loading">
-      <el-icon class="is-loading" :size="48"><Loading /></el-icon>
-      <p>正在汇总所有 Sheet 数据，生成跨表综合分析...</p>
-    </div>
-
-    <div v-else-if="crossSheetResult">
-      <!-- 高管摘要 -->
-      <div v-if="crossSheetResult.aiSummary" class="cross-summary-banner">
-        <div class="summary-icon">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-        </div>
-        <div class="summary-text" v-html="formatAnalysis(crossSheetResult.aiSummary)"></div>
-      </div>
-
-      <!-- KPI 对比卡片 -->
-      <div v-if="crossSheetResult.kpiComparison?.length" class="cross-kpi-section">
-        <h3>各 Sheet 核心指标对比</h3>
-        <el-table :data="crossSheetResult.kpiComparison" border stripe size="small">
-          <el-table-column prop="sheetName" label="报表" min-width="180" fixed />
-          <template v-for="kpiKey in crossSheetKpiKeys" :key="kpiKey">
-            <el-table-column :label="getColumnLabel(kpiKey)" min-width="120">
-              <template #default="{ row }">
-                {{ row.kpis?.[kpiKey] != null ? Number(row.kpis[kpiKey]).toLocaleString() : '-' }}
-              </template>
-            </el-table-column>
-          </template>
-        </el-table>
-      </div>
-
-      <!-- 综合图表 -->
-      <div v-if="crossSheetResult.charts?.length" class="cross-charts-section">
-        <h3>综合可视化</h3>
-        <div class="cross-chart-grid">
-          <div v-for="(chart, idx) in crossSheetResult.charts" :key="idx" class="cross-chart-item">
-            <div class="chart-title">{{ cleanDisplayLabel(chart.title || '分析图表') }}</div>
-            <div :id="`cross-chart-${idx}`" class="cross-chart-container"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <el-empty v-else description="暂无综合分析数据" />
-  </el-dialog>
-
-  <!-- 同比分析对话框 -->
-  <el-dialog v-model="yoyVisible" title="年度同比分析" width="90%" top="3vh">
-    <!-- Sheet 选择器 -->
-    <div v-if="!yoyLoading && !yoyResult" class="yoy-sheet-selector">
-      <p style="margin-bottom: 12px; color: var(--color-text-regular, #606266);">选择要进行同比分析的报表：</p>
-      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-        <el-button
-          v-for="sheet in dataSheets"
-          :key="sheet.uploadId"
-          @click="runYoYForSheet(sheet)"
-          size="default"
-        >
-          {{ getSheetDisplayName(sheet) }}
-        </el-button>
-      </div>
-    </div>
-
-    <div v-if="yoyLoading" class="cross-sheet-loading">
-      <el-icon class="is-loading" :size="48"><Loading /></el-icon>
-      <p>正在查询历史数据并生成同比分析...</p>
-    </div>
-
-    <div v-else-if="yoyResult && yoyResult.success && yoyResult.comparison.length > 0">
-      <div style="margin-bottom: 16px; color: var(--color-text-secondary, #909399); font-size: 13px;">
-        <span v-if="yoyResult.currentPeriod">当期: {{ yoyResult.currentPeriod }}</span>
-        <span v-if="yoyResult.comparePeriod"> vs 对比期: {{ yoyResult.comparePeriod }}</span>
-      </div>
-      <YoYMoMComparisonChart
-        :title="yoySheetName"
-        :data="transformYoYData(yoyResult.comparison)"
-        metric="金额"
-        unit="元"
-        :showViewToggle="true"
-        defaultViewMode="yoy"
-        :height="450"
-      />
-    </div>
-
-    <div v-else-if="yoyResult && !yoyResult.success">
-      <el-empty :description="yoyResult.error || '同比分析失败'" />
-    </div>
-
-    <div v-else-if="yoyResult && yoyResult.comparison.length === 0">
-      <el-empty description="未找到可对比的历史数据。请确保已上传不同期间的同类报表。" />
-    </div>
-  </el-dialog>
+  <!-- 同比分析对话框 — extracted to analysis/YoYDialog.vue (Item 1 phase 2) -->
+  <YoYDialog ref="yoyDialogRef" :available-sheets="dataSheets" :get-sheet-display-name="getSheetDisplayName" />
 
   <!-- P5: 因果分析对话框 -->
-  <el-dialog v-model="statisticalVisible" title="因果分析" width="90%" top="3vh" destroy-on-close @close="disposeStatHeatmap">
-    <!-- Sheet 选择器 -->
-    <div v-if="!statisticalLoading && !statisticalResult" class="yoy-sheet-selector">
-      <p style="margin-bottom: 12px; color: var(--color-text-regular, #606266);">选择要分析的报表：</p>
-      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-        <el-button
-          v-for="sheet in dataSheets"
-          :key="sheet.uploadId"
-          @click="runStatisticalAnalysis(sheet)"
-          size="default"
-        >
-          {{ getSheetDisplayName(sheet) }}
-        </el-button>
-      </div>
-    </div>
+  <!-- 因果分析对话框 — extracted to analysis/StatisticalDialog.vue (Item 1 phase 2). The
+       composable's correlation chart mounts into id 'stat-heatmap-chart' which the child
+       renders identically — chart + dispose-on-close path preserved. -->
+  <StatisticalDialog
+    v-model:visible="statisticalVisible"
+    :loading="statisticalLoading"
+    :result="statisticalResult"
+    :distribution-table-data="distributionTableData"
+    :distribution-type-label="distributionTypeLabel"
+    :available-sheets="dataSheets"
+    :get-sheet-display-name="getSheetDisplayName"
+    @run-for-sheet="runStatisticalAnalysis"
+    @reset="statisticalResult = null"
+    @close="disposeStatHeatmap"
+  />
 
-    <div v-else-if="statisticalLoading" class="cross-sheet-loading">
-      <el-icon class="is-loading" :size="48"><Loading /></el-icon>
-      <p>正在进行统计分析...</p>
-    </div>
-
-    <div v-else-if="statisticalResult && statisticalResult.success">
-      <!-- 相关性热力图 -->
-      <div v-if="statisticalResult.correlations?.matrix && Object.keys(statisticalResult.correlations.matrix).length >= 2" class="stat-section">
-        <h3>相关性热力图</h3>
-        <div id="stat-heatmap-chart" class="stat-chart-container" style="height: 450px;"></div>
-
-        <!-- 强相关 pairs -->
-        <div v-if="statisticalResult.correlations.strongPositive?.length || statisticalResult.correlations.strongNegative?.length" class="stat-pairs">
-          <h4>关键相关性发现</h4>
-          <div class="stat-pair-list">
-            <el-tag v-for="(pair, i) in statisticalResult.correlations.strongPositive" :key="'pos-'+i" type="success" effect="light" size="default" style="margin: 4px;">
-              {{ pair.var1 }} &harr; {{ pair.var2 }} (r={{ pair.correlation.toFixed(2) }}, 强正相关)
-            </el-tag>
-            <el-tag v-for="(pair, i) in statisticalResult.correlations.strongNegative" :key="'neg-'+i" type="danger" effect="light" size="default" style="margin: 4px;">
-              {{ pair.var1 }} &harr; {{ pair.var2 }} (r={{ pair.correlation.toFixed(2) }}, 强负相关)
-            </el-tag>
-          </div>
-        </div>
-      </div>
-
-      <!-- 分布分析 -->
-      <div v-if="Object.keys(statisticalResult.distributions || {}).length" class="stat-section">
-        <h3>分布分析</h3>
-        <el-table :data="distributionTableData" border stripe size="small" max-height="350">
-          <el-table-column prop="column" label="指标" min-width="150" fixed />
-          <el-table-column prop="mean" label="均值" min-width="100" />
-          <el-table-column prop="median" label="中位数" min-width="100" />
-          <el-table-column prop="std" label="标准差" min-width="100" />
-          <el-table-column prop="min" label="最小值" min-width="100" />
-          <el-table-column prop="max" label="最大值" min-width="100" />
-          <el-table-column prop="distributionType" label="分布类型" min-width="120">
-            <template #default="{ row }">
-              <el-tag :type="row.isNormal ? 'success' : 'warning'" size="small">
-                {{ distributionTypeLabel(row.distributionType) }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="cv" label="变异系数" min-width="100" />
-        </el-table>
-      </div>
-
-      <!-- 对比分析 (Pareto, 集中度) -->
-      <div v-if="Object.keys(statisticalResult.comparisons || {}).length" class="stat-section">
-        <h3>集中度分析</h3>
-        <div v-for="(comp, dim) in statisticalResult.comparisons" :key="dim" class="stat-comparison-card">
-          <el-descriptions :title="`维度: ${dim}`" :column="3" border size="small">
-            <el-descriptions-item label="CR3 (前3集中度)">{{ (comp.cr3 ?? 0).toFixed(1) }}%</el-descriptions-item>
-            <el-descriptions-item label="CR5 (前5集中度)">{{ (comp.cr5 ?? 0).toFixed(1) }}%</el-descriptions-item>
-            <el-descriptions-item label="基尼系数">{{ (comp.giniCoefficient ?? 0).toFixed(3) }}</el-descriptions-item>
-            <el-descriptions-item label="帕累托数量">{{ comp.paretoCount ?? 0 }} / {{ comp.totalItems ?? 0 }}</el-descriptions-item>
-            <el-descriptions-item label="帕累托比例">{{ (comp.paretoRatio ?? 0).toFixed(1) }}%</el-descriptions-item>
-            <el-descriptions-item label="度量">{{ comp.measure }}</el-descriptions-item>
-          </el-descriptions>
-          <div class="stat-top-bottom">
-            <div>
-              <h5>Top 3</h5>
-              <el-tag v-for="(val, key) in comp.top3" :key="'top-'+key" type="success" effect="plain" style="margin: 2px;">
-                {{ key }}: {{ Number(val).toLocaleString() }}
-              </el-tag>
-            </div>
-            <div>
-              <h5>Bottom 3</h5>
-              <el-tag v-for="(val, key) in comp.bottom3" :key="'bot-'+key" type="info" effect="plain" style="margin: 2px;">
-                {{ key }}: {{ Number(val).toLocaleString() }}
-              </el-tag>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 异常值 -->
-      <div v-if="Object.keys(statisticalResult.outlierSummary || {}).length" class="stat-section">
-        <h3>异常值检测</h3>
-        <div class="stat-outlier-list">
-          <el-tag v-for="(info, col) in statisticalResult.outlierSummary" :key="col" type="warning" effect="light" style="margin: 4px;">
-            {{ col }}: {{ info.count }} 个异常值
-          </el-tag>
-        </div>
-      </div>
-
-      <div style="margin-top: 12px; color: var(--color-text-secondary, #909399); font-size: 12px;">
-        分析耗时: {{ statisticalResult.processingTimeMs }}ms
-      </div>
-    </div>
-
-    <div v-else-if="statisticalResult && !statisticalResult.success">
-      <el-empty :description="statisticalResult.error || '分析失败'" />
-    </div>
-
-    <template #footer>
-      <div v-if="statisticalResult">
-        <el-button @click="statisticalResult = null">返回选择</el-button>
-        <el-button v-if="statisticalResult.success" type="primary" @click="statisticalVisible = false">关闭</el-button>
-      </div>
-    </template>
-  </el-dialog>
-
-  <!-- 数据预览 Dialog -->
-  <el-dialog v-model="showDataPreview" :title="`数据预览 - ${previewSheetName}`" width="90%" top="5vh">
-    <div v-loading="previewLoading">
-      <el-table v-if="previewData?.data" :data="previewData.data" border stripe max-height="500" size="small">
-        <el-table-column v-for="header in previewData.headers" :key="header"
-          :prop="header" :label="getColumnLabel(header)" min-width="120" show-overflow-tooltip />
-      </el-table>
-      <div v-if="previewData?.total" style="margin-top: 12px; display: flex; justify-content: center;">
-        <el-pagination layout="prev, pager, next, total"
-          :total="previewData.total" :page-size="50" :current-page="previewPage"
-          @current-change="(p: number) => { previewPage = p; loadPreviewData(); }" />
-      </div>
-    </div>
-  </el-dialog>
+  <!-- 数据预览 Dialog — extracted to analysis/DataPreviewDialog.vue (Item 1 phase 2) -->
+  <DataPreviewDialog ref="dataPreviewRef" :get-column-label="getColumnLabel" />
 
   <!-- Demo 演示引导 -->
   <DemoTour
@@ -1200,23 +400,54 @@ import type { FoodTemplate } from '@/api/smartbi';
 import type { UploadHistoryItem, EnrichResult, EnrichProgress, ColumnSummary, StructuredAIData, SmartKPI, DrillDownResult as DrillDownResultType, CrossSheetResult as CrossSheetResultType, FinancialMetrics, YoYResult, YoYComparisonItem, StatisticalResult, PythonHealthStatus } from '@/api/smartbi';
 import { ElMessage } from 'element-plus';
 import { UploadFilled, Upload, Refresh, CircleCheckFilled, CircleCloseFilled, Loading, List, Document, Tickets, InfoFilled, ArrowRight, Pointer, DataAnalysis, TrendCharts, Download, Filter, Warning, WarningFilled, QuestionFilled, Share, CopyDocument, Link, Timer, Operation, Plus, Rank, Top, Bottom, Close } from '@element-plus/icons-vue';
-import type { UploadFile, UploadUserFile, UploadInstance } from 'element-plus';
+import type { UploadFile, UploadUserFile } from 'element-plus';
 import echarts from '@/utils/echarts';
 import type { SmartBIChartOption, SmartBIChartItem } from '@/types/echarts';
 import DOMPurify from 'dompurify';
 import { defineAsyncComponent } from 'vue';
 import KPICard from '@/components/smartbi/KPICard.vue';
+import ShareDialog from './analysis/ShareDialog.vue';
+import DataPreviewDialog from './analysis/DataPreviewDialog.vue';
+import YoYDialog from './analysis/YoYDialog.vue';
+import CrossSheetDialog from './analysis/CrossSheetDialog.vue';
+import DrillDownDrawer from './analysis/DrillDownDrawer.vue';
+import StatisticalDialog from './analysis/StatisticalDialog.vue';
+import FilterChipsBar from './analysis/FilterChipsBar.vue';
+import IndustryTemplateBar from './analysis/IndustryTemplateBar.vue';
+import KPIStripPanel from './analysis/KPIStripPanel.vue';
+import AIInsightsStream from './analysis/AIInsightsStream.vue';
+import ExecutiveSummaryBanner from './analysis/ExecutiveSummaryBanner.vue';
+import UploadSwitcher from './analysis/UploadSwitcher.vue';
+import FoodIndustryPanel from './analysis/FoodIndustryPanel.vue';
+import SensitivityAnalysisTable from './analysis/SensitivityAnalysisTable.vue';
+import EmptySheetPlaceholder from './analysis/EmptySheetPlaceholder.vue';
+import PythonUnavailableAlert from './analysis/PythonUnavailableAlert.vue';
+import UploadProgressPanel from './analysis/UploadProgressPanel.vue';
+import DemoCacheBanner from './analysis/DemoCacheBanner.vue';
+import FailedSheetView from './analysis/FailedSheetView.vue';
+import SheetInfoStrip from './analysis/SheetInfoStrip.vue';
+import IndexPageView from './analysis/IndexPageView.vue';
+import UploadArea from './analysis/UploadArea.vue';
+import ChartSkeletonWrapper from './analysis/ChartSkeletonWrapper.vue';
+import ExplorePanel from './analysis/ExplorePanel.vue';
+import ChartActionBar from './analysis/ChartActionBar.vue';
+import ChartFilterBar from './analysis/ChartFilterBar.vue';
+import SheetTabLabel from './analysis/SheetTabLabel.vue';
+import ChartSectionHeader from './analysis/ChartSectionHeader.vue';
+import ExplorePanelToggle from './analysis/ExplorePanelToggle.vue';
+import ChartGridItem from './analysis/ChartGridItem.vue';
+import ChartGroupHeader from './analysis/ChartGroupHeader.vue';
+import DashboardBuilderWrapper from './analysis/DashboardBuilderWrapper.vue';
 import AIInsightPanel from '@/components/smartbi/AIInsightPanel.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 // T3.1: Lazy-load rarely-used components — only loaded when user triggers them
 const YoYMoMComparisonChart = defineAsyncComponent(() => import('@/components/smartbi/YoYMoMComparisonChart.vue'));
-const ChartTypeSelector = defineAsyncComponent(() => import('@/components/smartbi/ChartTypeSelector.vue'));
-const ChartConfigPanel = defineAsyncComponent(() => import('@/components/smartbi/ChartConfigPanel.vue'));
-const DashboardBuilder = defineAsyncComponent(() => import('@/components/smartbi/DashboardBuilder.vue'));
+// ChartTypeSelector + ChartConfigPanel moved into analysis/ChartGridItem.vue (Item 1 phase 10)
+// DashboardBuilder moved into analysis/DashboardBuilderWrapper.vue (Item 1 phase 11)
 const DemoTour = defineAsyncComponent(() => import('@/components/smartbi/DemoTour.vue'));
-const SmartBIEmptyState = defineAsyncComponent(() => import('@/components/smartbi/SmartBIEmptyState.vue'));
+// SmartBIEmptyState moved to analysis/UploadArea.vue (Item 1 phase 6)
 const ShortcutsHelpOverlay = defineAsyncComponent(() => import('@/components/smartbi/ShortcutsHelpOverlay.vue'));
-import type { DashboardLayout, DashboardCard, ChartDefinition } from '@/components/smartbi/DashboardBuilder.vue';
+// DashboardLayout/DashboardCard/ChartDefinition types moved into analysis/DashboardBuilderWrapper.vue
 import type { ComparisonData } from '@/components/smartbi/YoYMoMComparisonChart.vue';
 import type { AIInsight } from '@/components/smartbi/AIInsightPanel.vue';
 import { saveDemoCache, loadDemoCache } from '@/utils/demo-cache';
@@ -1301,8 +532,7 @@ const formatBatchLabel = (batch: UploadBatch): string => {
   return `${prefix}${safeBatchName(batch)} (${batch.sheetCount} 表)`;
 };
 
-// 上传相关
-const uploadRef = ref<UploadInstance>();
+// 上传相关 (uploadRef moved into analysis/UploadArea.vue — Item 1 phase 6)
 const fileList = ref<UploadUserFile[]>([]);
 const uploading = ref(false);
 const uploadProgress = ref(0);
@@ -1362,13 +592,8 @@ const uploadResult = ref<BatchUploadResult | null>(null);
 const activeTab = ref('');
 const indexMetadata = ref<IndexMetadata | null>(null);
 
-// 数据预览
-const showDataPreview = ref(false);
-const previewLoading = ref(false);
-const previewData = ref<{ headers: string[]; data: Record<string, unknown>[]; total: number; totalPages: number } | null>(null);
-const previewPage = ref(1);
-const previewSheetName = ref('');
-const previewUploadId = ref<number>(0);
+// 数据预览 — Item 1 phase 2: moved to analysis/DataPreviewDialog.vue
+const dataPreviewRef = ref<InstanceType<typeof DataPreviewDialog> | null>(null);
 
 // Sheet retry 状态
 const retryingSheets = reactive<Record<number, boolean>>({});
@@ -1435,67 +660,12 @@ let autoRefreshTimer: ReturnType<typeof setInterval> | null = null;
 
 // 综合分析状态
 // ========== Share Dialog ==========
-const shareDialogVisible = ref(false);
-const shareLink = ref('');
-const shareFullUrl = ref('');
-const shareTitle = ref('');
-const shareTTL = ref(7);
-const shareCreating = ref(false);
+// Item 1 phase 2: dialog state + methods extracted to analysis/ShareDialog.vue
+const shareDialogRef = ref<InstanceType<typeof ShareDialog> | null>(null);
 
 const openShareDialog = () => {
-  shareLink.value = '';
-  shareFullUrl.value = '';
   const batch = uploadBatches.value[selectedBatchIndex.value];
-  shareTitle.value = batch?.fileName || batch?.batchName || '数据分析报告';
-  shareTTL.value = 7;
-  shareDialogVisible.value = true;
-};
-
-const createShareLink = async () => {
-  const batch = uploadBatches.value[selectedBatchIndex.value];
-  if (!batch?.uploadId && !batch?.id) {
-    ElMessage.warning('请先选择一个上传数据');
-    return;
-  }
-  shareCreating.value = true;
-  try {
-    const fId = factoryId.value;
-    const uploadId = batch.uploadId || batch.id;
-    const resp = await post(`/${fId}/smart-bi/share`, {
-      uploadId,
-      title: shareTitle.value,
-      ttlDays: shareTTL.value,
-      sheetIndex: activeTab.value,
-    });
-    if (resp.success) {
-      const token = resp.data.token;
-      shareLink.value = token;
-      shareFullUrl.value = `${window.location.origin}/smart-bi/share/${token}`;
-    } else {
-      ElMessage.error(resp.message || '创建分享链接失败');
-    }
-  } catch (e: unknown) {
-    ElMessage.error('创建分享链接失败');
-    console.error('Share link creation failed:', e);
-  } finally {
-    shareCreating.value = false;
-  }
-};
-
-const copyShareLink = async () => {
-  try {
-    await navigator.clipboard.writeText(shareFullUrl.value);
-    ElMessage.success('链接已复制到剪贴板');
-  } catch {
-    // Fallback for older browsers
-    const input = document.createElement('input');
-    input.value = shareFullUrl.value;
-    document.body.appendChild(input);
-    input.select();
-    document.execCommand('copy');
-    document.body.removeChild(input);
-    ElMessage.success('链接已复制');
-  }
+  shareDialogRef.value?.open(batch);
 };
 
 // 综合分析 (composable)
@@ -1513,10 +683,8 @@ const {
 const openCrossSheetAnalysis = () => _openCrossSheet(uploadedSheets.value);
 
 // 同比分析状态
-const yoyVisible = ref(false);
-const yoyLoading = ref(false);
-const yoyResult = ref<YoYResult | null>(null);
-const yoySheetName = ref('');
+// Item 1 phase 2: yoy state moved to analysis/YoYDialog.vue
+const yoyDialogRef = ref<InstanceType<typeof YoYDialog> | null>(null);
 const dataSheets = computed(() => uploadedSheets.value.filter(s => !isIndexSheet(s) && s.uploadId && s.success));
 
 // 因果分析 (composable)
@@ -3562,10 +2730,13 @@ const idleEnrichNext = (currentSheetIndex: number) => {
 
     if (nextSheet?.uploadId) {
       // 静默预加载（无加载 UI）
-      enrichSheetAnalysis(nextSheet.uploadId).then(result => {
+      const preCacheUploadId = nextSheet.uploadId;
+      enrichSheetAnalysis(preCacheUploadId).then(result => {
         if (result && result.success) {
+          // STALENESS GUARD: pre-cache fires async; user may have switched
+          // uploads in the meantime. Verify uploadId still matches.
           const sheet = uploadedSheets.value.find(s => s.sheetIndex === nextSheet.sheetIndex);
-          if (sheet) {
+          if (sheet && sheet.uploadId === preCacheUploadId) {
             if (!sheet.flowResult) {
               sheet.flowResult = {};
             }
@@ -3619,8 +2790,12 @@ const enrichSheet = async (sheet: SheetResult, forceRefresh = false) => {
 
   try {
     const result: EnrichResult = await enrichSheetAnalysis(uploadId, forceRefresh, (progress: EnrichProgress) => {
+      // STALENESS GUARD: After upload-dropdown switch, the sheet at this
+      // sheetIndex may belong to a NEW upload. Verify uploadId still matches
+      // before writing — otherwise old upload's data bleeds into new upload's
+      // KPI cards (the "review-carryover" false positive caught Apr 24 2026).
       const currentSheet = uploadedSheets.value.find(s => s.sheetIndex === sheetIndex);
-      if (!currentSheet) return;
+      if (!currentSheet || currentSheet.uploadId !== uploadId) return;
       if (!currentSheet.flowResult) currentSheet.flowResult = {};
 
       const phase = enrichPhases.value.get(sheetIndex);
@@ -3670,8 +2845,10 @@ const enrichSheet = async (sheet: SheetResult, forceRefresh = false) => {
     });
 
     if (result.success) {
+      // STALENESS GUARD (final sync): Same risk as the progress callback above —
+      // user may have switched uploads while the request was in flight.
       const currentSheet = uploadedSheets.value.find(s => s.sheetIndex === sheetIndex);
-      if (currentSheet) {
+      if (currentSheet && currentSheet.uploadId === uploadId) {
         if (!currentSheet.flowResult) currentSheet.flowResult = {};
         // Final sync — ensure all data is set (handles cache-hit path where onProgress fires 'complete' only)
         if (result.charts?.length) {
@@ -4698,81 +3875,19 @@ onBeforeUnmount(() => {
 
 // Cross-sheet analysis — provided by useSmartBICrossSheet composable
 
-// 打开同比分析对话框
+// 打开同比分析对话框 — delegates to extracted YoYDialog component
 const openYoYComparison = () => {
-  yoyResult.value = null;
-  yoyLoading.value = false;
-  yoySheetName.value = '';
-  yoyVisible.value = true;
-};
-
-// 为指定 Sheet 运行同比分析
-const runYoYForSheet = async (sheet: SheetResult) => {
-  if (!sheet.uploadId) {
-    ElMessage.warning('该 Sheet 没有持久化数据');
-    return;
-  }
-
-  yoySheetName.value = getSheetDisplayName(sheet);
-  yoyLoading.value = true;
-  yoyResult.value = null;
-
-  try {
-    const result = await yoyComparison({ uploadId: sheet.uploadId });
-    yoyResult.value = result;
-  } catch (error) {
-    console.error('YoY comparison failed:', error);
-    yoyResult.value = {
-      success: false,
-      currentUploadId: sheet.uploadId,
-      comparison: [],
-      error: '同比分析失败'
-    };
-  } finally {
-    yoyLoading.value = false;
-  }
-};
-
-// 转换 YoY API 数据为组件格式
-const transformYoYData = (comparison: YoYComparisonItem[]): ComparisonData[] => {
-  return comparison.map(item => ({
-    period: item.label,
-    current: item.currentValue,
-    lastYearSame: item.previousValue,
-    yoyGrowth: item.yoyGrowth ?? 0
-  }));
+  yoyDialogRef.value?.open();
 };
 
 // P5: Statistical analysis — provided by useSmartBIStatistical composable
 
-// 加载 Sheet 数据
+// 加载 Sheet 数据 — delegates to extracted DataPreviewDialog component
 const loadSheetData = async (sheet: SheetResult) => {
-  if (!sheet.uploadId) {
-    ElMessage.warning('该 Sheet 没有持久化数据');
-    return;
-  }
-  previewUploadId.value = sheet.uploadId;
-  previewSheetName.value = sheet.sheetName;
-  previewPage.value = 1;
-  showDataPreview.value = true;
-  await loadPreviewData();
-};
-
-const loadPreviewData = async () => {
-  if (!previewUploadId.value) return;
-  previewLoading.value = true;
-  try {
-    const res = await getUploadTableData(previewUploadId.value, previewPage.value - 1, 50);
-    if (res.success && res.data) {
-      previewData.value = res.data;
-    } else {
-      ElMessage.error(res.message || '获取数据失败');
-    }
-  } catch (error) {
-    ElMessage.error('加载数据失败');
-  } finally {
-    previewLoading.value = false;
-  }
+  await dataPreviewRef.value?.open({
+    uploadId: sheet.uploadId,
+    sheetName: sheet.sheetName,
+  });
 };
 
 // 导航到指定 Sheet
@@ -4928,6 +4043,13 @@ const selectBatch = (index: number) => {
   enrichingSheets.value = new Set();
   enrichPhases.value = new Map();
   kpiCache.clear();
+  // Staleness fix (Apr 24 2026): clear cross-upload UI/detection state too,
+  // otherwise prior upload's filter chips and food-industry templates leak
+  // into the new upload's render.
+  globalFilterDimension.value = '';
+  globalFilterValues.value = [];
+  foodIndustryDetection.value = null;
+  activeTemplate.value = '';
   activeTab.value = '0';
   nextTick(() => {
     // U6: Clear loading after DOM updates with new batch data
@@ -4941,9 +4063,16 @@ const selectBatch = (index: number) => {
   });
 };
 
+// P2-6 fix: show "冷启动" hint if history load takes >5s
+const historyLoadingLong = ref(false);
+let _historyLongTimer: ReturnType<typeof setTimeout> | null = null;
+
 // 加载历史上传记录（按文件名 + 时间窗口分组为批次）
 const loadHistory = async () => {
   historyLoading.value = true;
+  historyLoadingLong.value = false;
+  if (_historyLongTimer) clearTimeout(_historyLongTimer);
+  _historyLongTimer = setTimeout(() => { historyLoadingLong.value = true; }, 5000);
   try {
     const response = await getUploadHistory();
     if (!response.success || !response.data?.length) return;
@@ -4992,6 +4121,8 @@ const loadHistory = async () => {
     ElMessage.error('加载历史记录失败');
   } finally {
     historyLoading.value = false;
+    historyLoadingLong.value = false;
+    if (_historyLongTimer) { clearTimeout(_historyLongTimer); _historyLongTimer = null; }
   }
 };
 
@@ -5083,1406 +4214,5 @@ onMounted(() => {
 });
 </script>
 
-<style scoped lang="scss">
-.smart-bi-analysis {
-  padding: 20px;
 
-  .upload-card {
-    max-width: 1400px;
-    margin: 0 auto;
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
-
-      .title {
-        font-size: 18px;
-        font-weight: bold;
-        white-space: nowrap;
-      }
-    }
-  }
-
-  .upload-section {
-    padding: 40px 20px;
-    text-align: center;
-
-    .upload-dragger {
-      :deep(.el-upload-dragger) {
-        width: min(600px, 100%);
-        padding: 60px 40px;
-      }
-
-      .el-icon--upload {
-        font-size: 80px;
-        color: var(--color-primary);
-        margin-bottom: 20px;
-      }
-    }
-  }
-
-  .progress-section {
-    padding: 40px var(--page-padding, 100px);
-
-    .progress-text {
-      text-align: center;
-      margin-top: 16px;
-      color: var(--color-text-regular, #606266);
-      font-size: 14px;
-    }
-
-    .sheet-progress-panel {
-      margin-top: 24px;
-      padding: 16px;
-      background: var(--color-bg-page, #f5f7fa);
-      border-radius: 8px;
-      border: 1px solid var(--color-border, #e4e7ed);
-
-      .progress-header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 16px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid var(--color-border, #e4e7ed);
-
-        span {
-          font-weight: 600;
-          color: var(--color-text-primary, #303133);
-        }
-
-        .el-tag {
-          margin-left: auto;
-        }
-
-        .el-tag + .el-tag {
-          margin-left: 8px;
-        }
-      }
-
-      .sheet-progress-list {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        max-height: 300px;
-        overflow-y: auto;
-
-        .sheet-progress-item {
-          display: grid;
-          grid-template-columns: 200px 120px 1fr;
-          gap: 16px;
-          align-items: center;
-          padding: 12px 16px;
-          background: var(--color-bg-card, #fff);
-          border-radius: 6px;
-          border: 1px solid var(--color-border, #e4e7ed);
-          transition: all 0.3s ease;
-
-          &.is-complete {
-            background: #f0f9eb;
-            border-color: #c2e7b0;
-          }
-
-          &.is-failed {
-            background: #fef0f0;
-            border-color: #fbc4c4;
-          }
-
-          .sheet-name {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 500;
-            color: var(--color-text-primary, #303133);
-
-            .status-icon {
-              font-size: 16px;
-
-              &.success {
-                color: #67c23a;
-              }
-
-              &.error {
-                color: #f56c6c;
-              }
-
-              &.loading {
-                color: var(--color-primary);
-                animation: rotating 2s linear infinite;
-              }
-            }
-          }
-
-          .sheet-stage {
-            font-size: 13px;
-            color: var(--color-text-secondary, #909399);
-            padding: 4px 8px;
-            background: var(--el-fill-color-light, #f4f4f5);
-            border-radius: 4px;
-            text-align: center;
-          }
-
-          .sheet-message {
-            font-size: 13px;
-            color: var(--color-text-regular, #606266);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-          }
-        }
-      }
-    }
-  }
-
-  @keyframes rotating {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  .demo-cache-banner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 16px;
-    margin-bottom: 12px;
-    background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
-    border: 1px solid #86efac;
-    border-radius: 8px;
-    font-size: 13px;
-    color: #166534;
-
-    .cache-banner-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-
-      .el-icon {
-        color: #22c55e;
-        font-size: 16px;
-      }
-    }
-  }
-
-  .result-section {
-    margin-top: 20px;
-
-    .industry-templates-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 16px;
-      margin-top: 12px;
-      background: linear-gradient(135deg, #f0f9eb 0%, #e1f3d8 100%);
-      border-radius: 8px;
-      border: 1px solid #e1f3d8;
-      flex-wrap: wrap;
-
-      .templates-label {
-        font-size: 13px;
-        font-weight: 600;
-        color: #67c23a;
-        white-space: nowrap;
-      }
-
-      .template-chip {
-        cursor: pointer;
-        transition: all 0.2s;
-        &:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 2px 6px rgba(103, 194, 58, 0.3);
-        }
-      }
-    }
-
-    .sheet-tabs {
-      margin-top: 24px;
-
-      .sheet-info {
-        margin-bottom: 24px;
-      }
-
-      .kpi-section {
-        margin-bottom: 20px;
-
-        .kpi-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 16px;
-        }
-      }
-
-      // 高管摘要横幅 (Power BI Copilot + Narrative BI)
-      .executive-summary-banner {
-        display: flex;
-        align-items: flex-start;
-        gap: 14px;
-        padding: 18px 22px;
-        margin-bottom: 20px;
-        background: linear-gradient(135deg, #2D8B5706 0%, #2B7EC106 100%);
-        border: 1px solid #2D8B5720;
-        border-left: 4px solid #2D8B57;
-        border-radius: 12px;
-
-        .summary-icon {
-          flex-shrink: 0;
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #2D8B57 0%, #2B7EC1 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-        }
-
-        .summary-body {
-          flex: 1;
-          min-width: 0;
-        }
-
-        .summary-text {
-          font-size: 14px;
-          line-height: 1.6;
-          color: var(--color-text-primary, #1f2937);
-          font-weight: 500;
-        }
-
-        .summary-inline-kpis {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 16px;
-          margin-top: 10px;
-          padding-top: 10px;
-          border-top: 1px solid var(--color-border, #e5e7eb);
-
-          .inline-kpi {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-
-            .inline-kpi-label {
-              font-size: 11px;
-              color: var(--color-text-secondary, #9ca3af);
-              font-weight: 500;
-            }
-
-            .inline-kpi-value {
-              font-size: 16px;
-              font-weight: 700;
-              color: var(--color-text-primary, #1f2937);
-            }
-
-            .inline-kpi-trend {
-              font-size: 11px;
-              font-weight: 600;
-              &.up { color: #059669; }
-              &.down { color: #dc2626; }
-            }
-          }
-        }
-
-        .summary-tags {
-          display: flex;
-          gap: 8px;
-          margin-top: 10px;
-        }
-      }
-
-      .chart-section {
-        margin: 24px 0;
-
-        h3 {
-          margin-bottom: 16px;
-          font-size: 16px;
-          color: var(--color-text-primary, #303133);
-        }
-
-        .chart-dashboard {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 20px;
-
-          // Responsive breakpoints — 2 cols default, 3 cols only on ultra-wide
-          @media (min-width: 1920px) { grid-template-columns: repeat(3, 1fr); }
-          @media (max-width: 900px) { grid-template-columns: 1fr; }
-
-          .chart-action-bar {
-            grid-column: 1 / -1;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 4px;
-            padding: 8px 12px;
-            background: var(--color-bg-page, #f5f7fa);
-            border-radius: 6px;
-          }
-
-          .chart-count-hint {
-            font-size: 12px;
-            color: var(--color-text-secondary, #909399);
-          }
-
-          .chart-grid-item {
-            background: var(--color-bg-card, #fff);
-            border-radius: 12px;
-            border: none;
-            padding: 20px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            /* T5.1: Use paint containment only — layout/content-visibility removed to fix blank chart rendering */
-            contain: paint;
-            /* G3: Stagger animation — cards fade in sequentially */
-            animation: chartCardFadeIn 0.4s ease-out both;
-            &:nth-child(1) { animation-delay: 0s; }
-            &:nth-child(2) { animation-delay: 0.08s; }
-            &:nth-child(3) { animation-delay: 0.16s; }
-            &:nth-child(4) { animation-delay: 0.2s; }
-            &:nth-child(5) { animation-delay: 0.24s; }
-            &:nth-child(6) { animation-delay: 0.28s; }
-            &:nth-child(7) { animation-delay: 0.32s; }
-            &:nth-child(8) { animation-delay: 0.36s; }
-
-            &:hover {
-              box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.06);
-              transform: translateY(-2px);
-            }
-
-            .chart-title-row {
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-              margin-bottom: 16px;
-            }
-
-            .chart-title {
-              font-size: 14px;
-              font-weight: 600;
-              color: var(--color-text-primary, #374151);
-              margin-bottom: 16px;
-              padding-bottom: 0;
-              border-bottom: none;
-              display: flex;
-              align-items: center;
-              gap: 8px;
-              overflow: hidden;
-              text-overflow: ellipsis;
-              white-space: nowrap;
-              max-width: 100%;
-            }
-
-            .chart-export-btn {
-              opacity: 0;
-              transition: opacity 0.2s;
-            }
-
-            .chart-controls {
-              display: flex;
-              gap: 4px;
-              align-items: center;
-              opacity: 0;
-              transition: opacity 0.2s;
-            }
-
-            &:hover .chart-export-btn {
-              opacity: 1;
-            }
-
-            &:hover .chart-controls {
-              opacity: 1;
-            }
-
-            .chart-container {
-              width: 100%;
-              height: 400px;
-            }
-
-            // Hero chart (first) — full width
-            &:first-child {
-              grid-column: 1 / -1;
-
-              .chart-container {
-                height: 480px;
-              }
-            }
-
-            // Smart sizing: wide charts span full row
-            &.chart-size-wide {
-              grid-column: 1 / -1;
-
-              .chart-container {
-                height: 420px;
-              }
-            }
-
-            // Smart sizing: square charts (pie/radar) — constrain to square aspect ratio
-            &.chart-size-square {
-              .chart-container {
-                width: 100%;
-                max-width: 560px;
-                max-height: 560px;
-                margin: 0 auto;
-                aspect-ratio: 1 / 1;
-              }
-            }
-          }
-
-          // Single chart fills width
-          &:has(.chart-grid-item:only-child) {
-            grid-template-columns: 1fr;
-
-            .chart-container {
-              height: 500px;
-            }
-          }
-
-          // Active filter indicator
-          .chart-filter-bar {
-            grid-column: 1 / -1;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: var(--el-color-primary-light-9, #eff6ff);
-            border-radius: 8px;
-            font-size: 13px;
-            color: var(--color-primary, #2D8B57);
-          }
-
-          // P2: Section headers for chart grouping
-          .chart-section-header {
-            grid-column: 1 / -1;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 0 6px;
-            margin-top: 8px;
-            border-bottom: 2px solid var(--el-color-primary-light-7, #a0cfff);
-
-            &:first-of-type {
-              margin-top: 0;
-            }
-
-            .section-icon {
-              font-size: 18px;
-              line-height: 1;
-            }
-
-            .section-label {
-              font-size: 15px;
-              font-weight: 600;
-              color: var(--color-text-primary, #303133);
-            }
-
-            .section-count {
-              font-size: 12px;
-              color: var(--color-text-secondary, #909399);
-              background: var(--el-fill-color-light, #f0f2f5);
-              padding: 1px 8px;
-              border-radius: 10px;
-            }
-          }
-
-          // P2: Layout modes
-          &.layout-compact {
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-
-            @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
-            @media (max-width: 600px) { grid-template-columns: 1fr; }
-
-            .chart-grid-item {
-              padding: 10px;
-              border-radius: 8px;
-
-              .chart-title { font-size: 12px; margin-bottom: 8px; }
-              .chart-container { height: 260px; }
-
-              &:first-of-type .chart-container,
-              &.chart-size-wide .chart-container { height: 280px; }
-
-              &.chart-size-square .chart-container {
-                max-width: 320px;
-                max-height: 320px;
-              }
-            }
-          }
-
-          &.layout-presentation {
-            grid-template-columns: 1fr;
-            gap: 28px;
-
-            .chart-grid-item {
-              padding: 28px;
-
-              .chart-title { font-size: 18px; }
-              .chart-container { height: 520px; }
-
-              &:first-of-type .chart-container { height: 560px; }
-
-              &.chart-size-wide .chart-container { height: 520px; }
-
-              &.chart-size-square .chart-container {
-                max-width: 640px;
-                max-height: 640px;
-              }
-            }
-
-            @media (max-width: 900px) {
-              .chart-grid-item {
-                padding: 16px;
-                .chart-container { height: 400px; }
-              }
-            }
-          }
-        }
-
-        .global-filter-bar {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 8px 16px;
-          margin-bottom: 12px;
-          background: linear-gradient(135deg, #f0f5ff 0%, #e6f0ff 100%);
-          border: 1px solid #d6e4ff;
-          border-radius: 8px;
-          font-size: 13px;
-
-          .filter-bar-icon {
-            color: #4080ff;
-            font-size: 16px;
-          }
-
-          .filter-count-badge {
-            padding: 2px 10px;
-            background: #4080ff;
-            color: white;
-            border-radius: 10px;
-            font-size: 12px;
-
-            &.filter-data-badge {
-              background: #67c23a;
-              margin-left: 8px;
-            }
-          }
-        }
-
-        .chart-container {
-          width: 100%;
-          height: 500px;
-          border-radius: 8px;
-        }
-
-        .chart-empty {
-          .chart-no-data {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 200px;
-            border: 1px dashed #dcdfe6;
-            border-radius: 8px;
-            background: var(--color-bg-page, #fafafa);
-          }
-        }
-
-        .chart-loading {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          height: 300px;
-          color: var(--color-text-secondary, #909399);
-
-          p {
-            margin-top: 12px;
-            font-size: 14px;
-          }
-        }
-
-        .chart-skeleton-wrapper {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-          gap: 16px;
-
-          .chart-progress-hint {
-            grid-column: 1 / -1;
-            text-align: center;
-            color: var(--color-text-secondary, #909399);
-            font-size: 13px;
-            padding: 4px 0;
-            animation: pulse-opacity 1.5s ease-in-out infinite;
-          }
-        }
-
-        @keyframes pulse-opacity {
-          0%, 100% { opacity: 0.6; }
-          50% { opacity: 1; }
-        }
-      }
-
-      .ai-analysis-section {
-        margin: 24px 0;
-
-        h3 {
-          margin-bottom: 16px;
-          font-size: 16px;
-          color: var(--color-text-primary, #303133);
-        }
-
-        .analysis-card {
-          background: var(--color-bg-page, #f9fafc);
-
-          .analysis-content {
-            line-height: 1.8;
-            color: var(--color-text-regular, #606266);
-
-            :deep(p) {
-              margin: 0 0 10px;
-              &:last-child { margin-bottom: 0; }
-            }
-
-            :deep(.highlight) {
-              color: var(--color-primary);
-              font-weight: 500;
-            }
-
-            :deep(strong) {
-              color: var(--color-text-primary, #303133);
-              font-weight: 600;
-            }
-          }
-        }
-
-        // AIInsightPanel 间距
-        :deep(.ai-insight-panel) {
-          margin-top: 0;
-        }
-
-        .cache-hint {
-          margin-top: 12px;
-          font-size: 12px;
-          color: var(--color-text-secondary, #909399);
-          text-align: right;
-        }
-      }
-
-      .data-preview-section {
-        margin: 24px 0;
-
-        h3 {
-          margin-bottom: 16px;
-          font-size: 16px;
-          color: var(--color-text-primary, #303133);
-        }
-      }
-
-      .empty-sheet {
-        padding: 60px 20px;
-        background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-        border-radius: 12px;
-        margin: 24px 0;
-        text-align: center;
-
-        .empty-illustration {
-          margin-bottom: 16px;
-          opacity: 0.6;
-        }
-
-        :deep(.el-empty__description p) {
-          color: var(--color-text-secondary, #6b7280);
-          font-size: 14px;
-        }
-      }
-
-      // 自定义 Tab 标签样式
-      .custom-tab-label {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-
-        .el-icon {
-          font-size: 14px;
-        }
-
-        .el-tag {
-          margin-left: 4px;
-        }
-
-        &.is-index {
-          color: #8b5cf6;
-          font-weight: 600;
-
-          .el-icon {
-            color: #8b5cf6;
-          }
-        }
-
-        &.is-failed {
-          color: #F56C6C;
-        }
-      }
-
-      .failed-sheet-view {
-        padding: 40px 20px;
-        text-align: center;
-      }
-
-      // 图表区域头部（含下钻提示）
-      .chart-section-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 16px;
-
-        h3 {
-          font-size: 16px;
-          color: var(--color-text-primary, #303133);
-          margin: 0;
-        }
-
-        .chart-section-actions {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .drill-hint {
-          font-size: 12px;
-          color: var(--color-text-secondary, #909399);
-          background: var(--el-fill-color-light, #f4f4f5);
-          padding: 4px 10px;
-          border-radius: 12px;
-        }
-      }
-
-      .header-actions {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        flex-wrap: wrap;
-      }
-
-      // 索引页视图样式
-      .index-page-view {
-        padding: 24px;
-
-        .index-header {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-bottom: 24px;
-          padding-bottom: 16px;
-          border-bottom: 2px solid var(--color-border, #e5e7eb);
-
-          .index-icon {
-            font-size: 28px;
-            color: #8b5cf6;
-          }
-
-          h2 {
-            font-size: 20px;
-            font-weight: 600;
-            color: var(--color-text-primary, #1f2937);
-            margin: 0;
-            flex: 1;
-          }
-
-          .index-count {
-            font-size: 14px;
-            color: var(--color-text-secondary, #6b7280);
-            background: var(--color-bg-page, #f3f4f6);
-            padding: 4px 12px;
-            border-radius: 16px;
-          }
-        }
-
-        .index-list {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-
-          .index-item {
-            display: flex;
-            align-items: center;
-            padding: 16px;
-            background: var(--color-bg-card, #fff);
-            border: 1px solid var(--color-border, #e5e7eb);
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-
-            &:hover {
-              border-color: #3b82f6;
-              box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-              transform: translateY(-2px);
-            }
-
-            &.is-current {
-              border-color: #8b5cf6;
-              background: #f5f3ff;
-            }
-
-            .item-number {
-              width: 36px;
-              height: 36px;
-              border-radius: 50%;
-              background: var(--color-bg-page, #f3f4f6);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-weight: 600;
-              color: var(--color-text-secondary, #4b5563);
-              margin-right: 16px;
-              flex-shrink: 0;
-            }
-
-            &:hover .item-number,
-            &.is-current .item-number {
-              background: #dbeafe;
-              color: #3b82f6;
-            }
-
-            .item-content {
-              flex: 1;
-              min-width: 0;
-
-              .item-name {
-                font-size: 15px;
-                font-weight: 600;
-                color: var(--color-text-primary, #1f2937);
-                margin-bottom: 4px;
-              }
-
-              .item-sheet {
-                font-size: 12px;
-                color: var(--color-text-secondary, #9ca3af);
-                margin-bottom: 4px;
-              }
-
-              .item-description {
-                display: flex;
-                align-items: flex-start;
-                gap: 6px;
-                font-size: 13px;
-                color: var(--color-text-secondary, #6b7280);
-                line-height: 1.5;
-                margin-top: 8px;
-                padding: 8px 12px;
-                background: var(--color-bg-page, #f9fafb);
-                border-radius: 6px;
-
-                .el-icon {
-                  color: #8b5cf6;
-                  margin-top: 2px;
-                  flex-shrink: 0;
-                }
-              }
-            }
-
-            .item-arrow {
-              font-size: 20px;
-              color: var(--color-text-secondary, #9ca3af);
-              margin-left: 12px;
-              flex-shrink: 0;
-            }
-
-            &:hover .item-arrow {
-              color: #3b82f6;
-            }
-          }
-        }
-
-        .index-footer {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          margin-top: 24px;
-          padding-top: 16px;
-          border-top: 1px solid var(--color-border, #e5e7eb);
-          color: var(--color-text-secondary, #9ca3af);
-          font-size: 13px;
-
-          .el-icon {
-            font-size: 16px;
-          }
-        }
-      }
-    }
-  }
-}
-
-// 下钻抽屉样式（scoped 外部组件需要 :deep 或全局选择器）
-.drill-down-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  .drill-title {
-    font-size: 16px;
-    font-weight: 600;
-  }
-}
-
-// P4: 面包屑导航
-.drill-breadcrumb {
-  margin-bottom: 16px;
-  padding: 8px 12px;
-  background: var(--color-bg-page, #f5f7fa);
-  border-radius: 4px;
-}
-
-// P4: 可下钻维度
-.drill-dimensions {
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-
-  .drill-dim-label {
-    color: var(--color-text-regular, #606266);
-    font-size: 13px;
-  }
-}
-
-.drill-hint-inline {
-  font-size: 12px;
-  color: var(--color-text-secondary, #909399);
-  font-weight: normal;
-}
-
-.drill-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 300px;
-  color: var(--color-text-secondary, #909399);
-
-  p {
-    margin-top: 16px;
-    font-size: 14px;
-  }
-}
-
-.drill-chart-section,
-.drill-summary-section,
-.drill-ai-section,
-.drill-table-section {
-  margin-bottom: 24px;
-
-  h4 {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--color-text-primary, #1f2937);
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid var(--color-border-light, #f0f0f0);
-  }
-}
-
-.drill-chart-container {
-  width: 100%;
-  height: 300px;
-}
-
-.drill-insight-card {
-  background: var(--color-bg-page, #f9fafc);
-
-  .analysis-content {
-    line-height: 1.8;
-    color: var(--color-text-regular, #606266);
-
-    :deep(p) {
-      margin: 0 0 10px;
-      &:last-child { margin-bottom: 0; }
-    }
-
-    :deep(strong) {
-      color: var(--color-text-primary, #303133);
-      font-weight: 600;
-    }
-  }
-}
-
-// 综合分析样式
-.cross-sheet-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 400px;
-  color: var(--color-text-secondary, #909399);
-
-  p {
-    margin-top: 16px;
-    font-size: 15px;
-  }
-}
-
-.cross-summary-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 20px 24px;
-  margin-bottom: 24px;
-  background: linear-gradient(135deg, #667eea08 0%, #764ba208 100%);
-  border: 1px solid #667eea30;
-  border-left: 4px solid #667eea;
-  border-radius: 8px;
-
-  .summary-icon {
-    flex-shrink: 0;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-  }
-
-  .summary-text {
-    font-size: 14px;
-    line-height: 1.7;
-    color: var(--color-text-primary, #1f2937);
-  }
-}
-
-.cross-kpi-section,
-.cross-charts-section {
-  margin-bottom: 28px;
-
-  h3 {
-    font-size: 17px;
-    font-weight: 600;
-    color: var(--color-text-primary, #1f2937);
-    margin-bottom: 16px;
-  }
-}
-
-.cross-chart-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-
-  .cross-chart-item {
-    background: var(--color-bg-card, #fff);
-    border-radius: 8px;
-    border: 1px solid var(--color-border-light, #ebeef5);
-    padding: 16px;
-
-    &:first-child {
-      grid-column: 1 / -1;
-    }
-
-    .chart-title {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--color-text-primary, #1f2937);
-      margin-bottom: 12px;
-    }
-
-    .cross-chart-container {
-      width: 100%;
-      height: 350px;
-    }
-  }
-
-  // P5: 因果分析样式
-  .stat-section {
-    margin-bottom: 24px;
-
-    h3 {
-      margin: 0 0 12px;
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--color-text-primary, #303133);
-    }
-  }
-
-  .stat-chart-container {
-    width: 100%;
-    border: 1px solid var(--color-border-light, #ebeef5);
-    border-radius: 4px;
-    margin-bottom: 16px;
-  }
-
-  .stat-pairs {
-    margin-top: 12px;
-
-    h4 {
-      margin: 0 0 8px;
-      font-size: 14px;
-      color: var(--color-text-regular, #606266);
-    }
-  }
-
-  .stat-pair-list {
-    display: flex;
-    flex-wrap: wrap;
-  }
-
-  .stat-comparison-card {
-    margin-bottom: 16px;
-  }
-
-  .stat-top-bottom {
-    display: flex;
-    gap: 24px;
-    margin-top: 12px;
-
-    h5 {
-      margin: 0 0 6px;
-      font-size: 13px;
-      color: var(--color-text-regular, #606266);
-    }
-  }
-
-  .stat-outlier-list {
-    display: flex;
-    flex-wrap: wrap;
-  }
-
-  // P6: 编排模式样式
-  .layout-mode-switch {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .builder-wrapper {
-    min-height: 500px;
-
-    .builder-chart-el {
-      min-height: 200px;
-    }
-  }
-}
-
-// A6: 食品行业标准参考面板
-.food-industry-panel {
-  margin-bottom: 20px;
-  border: 1px solid #b7eb8f;
-  border-radius: 8px;
-  overflow: hidden;
-
-  :deep(.el-collapse-item__header) {
-    background: linear-gradient(135deg, #f6ffed 0%, #fcffe6 100%);
-    padding: 0 16px;
-    height: 44px;
-    border-bottom: none;
-  }
-
-  :deep(.el-collapse-item__wrap) {
-    border-top: 1px solid #d9f7be;
-  }
-
-  .food-industry-header {
-    display: flex;
-    align-items: center;
-    font-size: 14px;
-    font-weight: 600;
-    color: #389e0d;
-  }
-
-  .food-standards-content {
-    padding: 16px;
-
-    .standards-section,
-    .benchmarks-section,
-    .keywords-section {
-      margin-bottom: 14px;
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-
-      h4 {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--color-text-primary, #1f2937);
-        margin: 0 0 8px;
-      }
-
-      ul {
-        margin: 0;
-        padding-left: 20px;
-        color: var(--color-text-secondary, #4b5563);
-        font-size: 13px;
-        line-height: 1.8;
-      }
-    }
-  }
-}
-
-// Per-chart mini insight
-.chart-mini-insight {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  margin-top: 6px;
-  background: linear-gradient(135deg, #f0f5ff 0%, #e8f4f8 100%);
-  border-radius: 6px;
-  font-size: 12px;
-  color: var(--color-text-secondary, #606266);
-  line-height: 1.5;
-
-  .mini-insight-icon {
-    flex-shrink: 0;
-    font-size: 13px;
-  }
-
-  .mini-insight-text {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
-
-// P1.3: 查看更多按钮
-.chart-view-more {
-  text-align: center;
-  padding: 6px 0 2px;
-  border-top: 1px dashed #e5e7eb;
-  margin-top: 4px;
-}
-
-/* G3: Chart card stagger entrance animation */
-@keyframes chartCardFadeIn {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* ========== Explore Panel (Superset-style) ========== */
-.explore-panel-toggle {
-  margin: 8px 0 4px;
-}
-
-.explore-panel {
-  display: flex;
-  gap: 16px;
-  padding: 16px;
-  background: var(--el-fill-color-lighter, #fafafa);
-  border-radius: 8px;
-  border: 1px solid var(--el-border-color-lighter, #ebeef5);
-  margin-bottom: 12px;
-}
-
-.explore-panel-left,
-.explore-panel-right {
-  flex: 1;
-  min-width: 0;
-}
-
-.explore-section-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-  margin-bottom: 8px;
-}
-
-.dimension-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.dimension-chip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.15s;
-
-  &:hover {
-    border-color: var(--el-color-primary);
-    background: var(--el-color-primary-light-9);
-  }
-
-  &.active {
-    border-color: var(--el-color-primary);
-    background: var(--el-color-primary-light-9);
-    flex-direction: column;
-    align-items: stretch;
-    cursor: default;
-  }
-
-  .dim-count {
-    margin-left: auto;
-    font-size: 11px;
-    color: var(--el-text-color-secondary);
-    background: var(--el-fill-color);
-    padding: 1px 6px;
-    border-radius: 10px;
-  }
-}
-
-.dim-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-
-  .drag-handle {
-    cursor: grab;
-    color: var(--el-text-color-secondary);
-  }
-
-  .dim-actions {
-    margin-left: auto;
-    display: flex;
-    gap: 2px;
-  }
-}
-
-.dim-values {
-  padding-top: 6px;
-  border-top: 1px solid var(--el-border-color-lighter);
-  margin-top: 6px;
-
-  .el-checkbox {
-    margin-right: 8px;
-    margin-bottom: 4px;
-  }
-
-  .dim-more {
-    font-size: 11px;
-    color: var(--el-text-color-secondary);
-    margin-left: 4px;
-  }
-}
-
-.explore-empty {
-  text-align: center;
-  padding: 24px;
-  color: var(--el-text-color-placeholder);
-  font-size: 13px;
-}
-
-.explore-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--el-border-color-lighter);
-}
-</style>
+<style scoped lang="scss" src="./analysis/SmartBIAnalysis.scss"></style>

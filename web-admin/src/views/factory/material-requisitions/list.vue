@@ -106,8 +106,9 @@ async function openDetail(row: Record<string, unknown>) {
       detailData.value = res.data;
       detailDialogVisible.value = true;
     }
-  } catch {
-    ElMessage.error('加载详情失败');
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', e);
   }
 }
 

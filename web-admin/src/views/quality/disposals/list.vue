@@ -57,9 +57,9 @@ async function loadData() {
     } else if (response.success === false) {
       ElMessage.error(response.message || '加载数据失败');
     }
-  } catch (error) {
+  } catch (error: any) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载失败:', error);
-    ElMessage.error('加载数据失败');
   } finally {
     loading.value = false;
   }
@@ -74,9 +74,9 @@ async function loadBatches() {
     if (response.success && response.data) {
       batches.value = response.data.content || response.data || [];
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('加载批次列表失败:', error);
-    ElMessage.error('加载批次列表失败');
+    if (!error?.actionHint) ElMessage.error('加载批次列表失败');
   }
 }
 
@@ -129,8 +129,9 @@ async function submitDisposal() {
     } else {
       ElMessage.error(response.message || '创建失败');
     }
-  } catch (error) {
-    ElMessage.error('创建失败');
+  } catch (error: any) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', error);
   } finally {
     dialogLoading.value = false;
   }
@@ -152,8 +153,9 @@ async function handleApprove(row: Record<string, unknown>) {
     } else {
       ElMessage.error(response.message || '操作失败');
     }
-  } catch {
-    ElMessage.error('操作失败');
+  } catch (e: any) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[操作失败]', e);
   } finally {
     actionLoading.value = false;
   }
@@ -181,8 +183,9 @@ async function handleReject(row: Record<string, unknown>) {
     } else {
       ElMessage.error(response.message || '操作失败');
     }
-  } catch {
-    ElMessage.error('操作失败');
+  } catch (e: any) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[操作失败]', e);
   } finally {
     actionLoading.value = false;
   }

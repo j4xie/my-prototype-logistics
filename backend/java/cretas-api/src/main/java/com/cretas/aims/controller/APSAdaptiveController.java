@@ -1,6 +1,8 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.dto.aps.GlobalDashboard;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.scheduling.*;
 import com.cretas.aims.service.aps.APSAdaptiveSchedulingService;
@@ -37,6 +39,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/mobile/{factoryId}/aps/adaptive")
 @RequiredArgsConstructor
 @Tag(name = "APS自适应排产", description = "自适应排产相关接口，包括进度追踪、预测、重排等功能")
+@RequireModule("scheduling")
 public class APSAdaptiveController {
 
     private final APSAdaptiveSchedulingService adaptiveService;
@@ -47,6 +50,7 @@ public class APSAdaptiveController {
     /**
      * 更新任务进度
      */
+    @RequirePermission({"scheduling:read_write"})
     @PostMapping("/tasks/{taskId}/progress")
     @Operation(summary = "更新任务进度", description = "上报任务当前完成数量和实际效率，系统将自动计算完成概率和风险等级")
     public ApiResponse<ProgressUpdateResponse> updateProgress(
@@ -146,6 +150,7 @@ public class APSAdaptiveController {
     /**
      * 触发自适应重排
      */
+    @RequirePermission({"scheduling:read_write"})
     @PostMapping("/reschedule")
     @Operation(summary = "触发自适应重排", description = "根据指定模式执行重排：full-全量重排，partial-仅重排受影响任务")
     public ApiResponse<AdaptiveRescheduleResponse> triggerReschedule(
@@ -182,6 +187,7 @@ public class APSAdaptiveController {
     /**
      * 手动触发策略权重调整
      */
+    @RequirePermission({"scheduling:read_write"})
     @PostMapping("/adjust-weights")
     @Operation(summary = "手动触发策略权重调整", description = "根据历史效果数据自动调整各排产策略的权重")
     public ApiResponse<WeightAdjustmentResponse> adjustWeights(

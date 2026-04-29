@@ -49,16 +49,20 @@ public class WorkReportingServiceImpl {
         // P0-15: 报工模式差异化校验
         ReportMode mode = request.getReportMode() != null ? request.getReportMode() : ReportMode.MODE_1;
         if (request.getOutputQuantity() == null) {
-            throw new BusinessException("产量(outputQuantity)必填");
+            throw new BusinessException(400, "产量(outputQuantity)必填")
+                    .withHint("请输入本次报工产量").withHintTarget("outputQuantity");
         }
         if (request.getTotalWorkMinutes() == null || request.getTotalWorkMinutes() <= 0) {
-            throw new BusinessException("耗时(totalWorkMinutes)必填且>0");
+            throw new BusinessException(400, "耗时(totalWorkMinutes)必填且>0")
+                    .withHint("请输入大于 0 的本次报工耗时(分钟)").withHintTarget("totalWorkMinutes");
         }
         if (mode == ReportMode.MODE_2 && request.getBatchId() == null) {
-            throw new BusinessException("MODE_2 按批次报工必须关联生产批次(batchId)");
+            throw new BusinessException(400, "MODE_2 按批次报工必须关联生产批次(batchId)")
+                    .withHint("请选择关联的生产批次").withHintTarget("batchId");
         }
         if (mode == ReportMode.MODE_3 && (request.getWorkerIds() == null || request.getWorkerIds().isEmpty())) {
-            throw new BusinessException("MODE_3 按人头报工必须提供 workerIds 列表");
+            throw new BusinessException(400, "MODE_3 按人头报工必须提供 workerIds 列表")
+                    .withHint("请选择参与报工的工人").withHintTarget("workerIds");
         }
 
         // P1-2: 防重提交 — 同一工人+同一批次+同一报工类型+同一日期只能提交一次
@@ -72,7 +76,8 @@ public class WorkReportingServiceImpl {
                         factoryId, workerId, request.getReportType(), request.getReportDate());
             }
             if (duplicate) {
-                throw new BusinessException("您今天已对该批次提交过报工，如需修改请编辑已有记录");
+                throw new BusinessException(409, "您今天已对该批次提交过报工")
+                        .withHint("如需修改请编辑已有记录, 而非重复提交");
             }
         }
 

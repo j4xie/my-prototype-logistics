@@ -1,5 +1,6 @@
 package com.cretas.aims.controller.inventory;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.inventory.CreatePriceListRequest;
@@ -27,6 +28,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Bug #318 fix: method-level @RequirePermission on write methods (定价敏感影响订单金额).
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/price-lists")
@@ -38,6 +42,7 @@ public class PriceListController {
     private final PriceListItemRepository priceListItemRepository;
     private final MobileService mobileService;
 
+    @RequirePermission({"sales:read_write", "finance:read_write"})
     @PostMapping
     @Operation(summary = "创建价格表")
     public ApiResponse<PriceList> createPriceList(
@@ -166,6 +171,7 @@ public class PriceListController {
         return items.isEmpty() ? null : items.get(0);
     }
 
+    @RequirePermission({"sales:read_write", "finance:read_write"})
     @DeleteMapping("/{priceListId}")
     @Operation(summary = "删除价格表")
     public ApiResponse<Void> deletePriceList(

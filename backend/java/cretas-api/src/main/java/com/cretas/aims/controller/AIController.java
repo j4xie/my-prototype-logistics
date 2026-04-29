@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.AIRequestDTO;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.AIResponseDTO;
 import com.cretas.aims.dto.MobileDTO;
 import com.cretas.aims.dto.ai.AIBusinessDataRequest;
@@ -99,6 +100,7 @@ public class AIController {
      * 2. Follow-up对话（有question + sessionId）- 追问，少量消耗配额
      * 3. 历史综合报告（历史批次）- 深度分析，较多消耗配额
      */
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/analysis/cost/batch")
     @Operation(summary = "AI批次成本分析",
                description = "对指定批次进行AI成本分析，支持默认分析、follow-up对话和历史综合报告")
@@ -127,6 +129,7 @@ public class AIController {
      *
      * 分析指定时间段内的成本数据
      */
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/analysis/cost/time-range")
     @Operation(summary = "AI时间范围成本分析",
                description = "分析指定时间范围内的成本数据，支持日/周/月等不同维度")
@@ -167,6 +170,7 @@ public class AIController {
      * 实时返回AI分析过程，包括思考过程和最终答案
      * 适用于需要实时展示分析进度的场景
      */
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/analysis/cost/time-range/stream")
     @Operation(summary = "AI时间范围成本分析 - 流式响应",
                description = "流式返回AI分析过程，支持实时显示思考过程和答案")
@@ -209,6 +213,7 @@ public class AIController {
      *
      * 对比多个批次的成本效率
      */
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/analysis/cost/compare")
     @Operation(summary = "AI批次对比分析",
                description = "对比2-5个批次的成本、效率、质量等指标")
@@ -257,6 +262,7 @@ public class AIController {
     /**
      * 更新AI配额（仅供平台管理员使用）
      */
+    @RequirePermission({"analytics:read_write"})
     @PutMapping("/quota")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @Operation(summary = "更新AI配额",
@@ -337,6 +343,7 @@ public class AIController {
     /**
      * 关闭AI对话会话
      */
+    @RequirePermission({"analytics:read_write"})
     @DeleteMapping("/conversations/{sessionId}")
     @Operation(summary = "关闭AI对话会话",
                description = "结束指定的AI对话会话")
@@ -410,6 +417,7 @@ public class AIController {
     /**
      * 生成新报告（手动触发）
      */
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/reports/generate")
     @Operation(summary = "生成AI报告",
                description = "手动触发生成AI分析报告（周报/月报等）")
@@ -508,6 +516,7 @@ public class AIController {
      * 3. 生产贡献 - 参与批次、产量、良品率
      * 4. 技能分布 - 各工序参与度和熟练程度
      */
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/analysis/employee/{employeeId}")
     @Operation(summary = "员工AI综合分析",
                description = "对指定员工进行AI综合绩效分析，包含考勤、工时、生产贡献、技能等多维度")
@@ -538,6 +547,7 @@ public class AIController {
      *
      * 基于已有分析结果进行追问
      */
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/analysis/employee/{employeeId}/followup")
     @Operation(summary = "员工AI追问",
                description = "基于已有的员工分析结果进行追问")
@@ -652,6 +662,7 @@ public class AIController {
      * 初始化业务数据
      * 根据 AI 建议的数据创建产品类型、原材料类型和转换率配置
      */
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/business-data/initialize")
     @Operation(summary = "初始化业务数据", description = "根据AI建议的数据批量创建产品类型、原材料类型和转换率配置")
     public ResponseEntity<AIBusinessDataResponse> initializeBusinessData(
@@ -814,6 +825,7 @@ public class AIController {
      * 预览业务数据
      * 检查哪些数据会被创建，哪些会被跳过
      */
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/business-data/preview")
     @Operation(summary = "预览业务数据", description = "预检AI建议的业务数据，返回哪些数据会被创建、哪些会被跳过")
     public ResponseEntity<Map<String, Object>> previewBusinessData(

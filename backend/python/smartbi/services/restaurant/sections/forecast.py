@@ -76,6 +76,15 @@ class RestaurantForecastHandler(AbstractSectionHandler):
                 import pandas as pd
                 pos_df = pos_df.copy()
                 pos_df[datetime_col] = pd.to_datetime(pos_df[datetime_col], errors="coerce")
+                # Coerce revenue column to numeric FIRST — user-uploaded CSVs
+                # often store amounts as strings ("71.5"). Without this,
+                # pandas .sum() concatenates strings ("71.560.6131.0...") and
+                # numpy float() later raises "could not convert string to
+                # float" on a 1MB blob. Invalid entries become NaN (ignored
+                # by .sum()).
+                pos_df[revenue_col] = pd.to_numeric(
+                    pos_df[revenue_col], errors="coerce"
+                )
                 monthly = (
                     pos_df.dropna(subset=[datetime_col])
                     .set_index(datetime_col)

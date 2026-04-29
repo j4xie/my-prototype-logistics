@@ -119,6 +119,7 @@ class SmartBiPgFieldDefinition(Base):
     statistics = Column(JSONB)
     display_order = Column(Integer, default=0)
     format_pattern = Column(String(50))
+    agg_strategy = Column(String(20), nullable=False, default="sum")
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -134,6 +135,7 @@ class SmartBiPgFieldDefinition(Base):
             "statistics": self.statistics,
             "displayOrder": self.display_order,
             "formatPattern": self.format_pattern,
+            "aggStrategy": self.agg_strategy,
         }
 
 

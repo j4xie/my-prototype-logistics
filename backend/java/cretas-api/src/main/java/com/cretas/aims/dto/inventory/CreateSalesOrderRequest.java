@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -20,21 +21,26 @@ import java.util.Map;
 public class CreateSalesOrderRequest {
 
     @NotBlank(message = "客户ID不能为空")
+    @Size(max = 191, message = "客户ID长度不能超过191个字符")
     private String customerId;
 
     private LocalDate orderDate;
 
     private LocalDate requiredDeliveryDate;
 
+    @Size(max = 500, message = "发货地址长度不能超过500个字符")
     private String deliveryAddress;
 
     private BigDecimal discountAmount;
 
+    @Size(max = 5000, message = "备注长度不能超过5000个字符")
     private String remark;
 
+    @Size(max = 100, message = "业务员长度不能超过100个字符")
     private String salesperson;
 
     /** 关联报价单 ID (OperationalQuote.id), 实现报价→订单数据联动 */
+    @Size(max = 191, message = "报价单ID长度不能超过191个字符")
     private String quoteId;
 
     private Boolean shippingIncluded;
@@ -61,14 +67,17 @@ public class CreateSalesOrderRequest {
     public static class SalesOrderItemDTO {
 
         @NotBlank(message = "产品ID不能为空")
+        @Size(max = 191, message = "产品ID长度不能超过191个字符")
         private String productTypeId;
 
+        @Size(max = 200, message = "产品名称长度不能超过200个字符")
         private String productName;
 
         @NotNull(message = "数量不能为空")
         private BigDecimal quantity;
 
         @NotBlank(message = "单位不能为空")
+        @Size(max = 20, message = "单位长度不能超过20个字符")
         private String unit;
 
         private BigDecimal unitPrice;
@@ -77,8 +86,10 @@ public class CreateSalesOrderRequest {
 
         private BigDecimal taxRate;
 
+        @Size(max = 5000, message = "备注长度不能超过5000个字符")
         private String remark;
 
+        @Size(max = 500, message = "规格长度不能超过500个字符")
         private String specification;
 
         private BigDecimal boxQuantity;

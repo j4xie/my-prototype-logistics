@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.entity.Label;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.service.LabelService;
 import com.cretas.aims.util.ErrorSanitizer;
 import io.swagger.v3.oas.annotations.Operation;
@@ -248,6 +249,7 @@ public class LabelController {
     /**
      * 创建标签
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping
     @Operation(summary = "创建标签", description = "创建新的标签")
     public ResponseEntity<?> createLabel(
@@ -275,6 +277,7 @@ public class LabelController {
     /**
      * 批量创建标签
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/batch")
     @Operation(summary = "批量创建标签", description = "批量创建多个标签")
     public ResponseEntity<?> createLabels(
@@ -304,6 +307,7 @@ public class LabelController {
     /**
      * 更新标签
      */
+    @RequirePermission({"production:read_write"})
     @PutMapping("/{id}")
     @Operation(summary = "更新标签", description = "更新标签信息")
     public ResponseEntity<?> updateLabel(
@@ -329,6 +333,7 @@ public class LabelController {
     /**
      * 打印标签
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/{id}/print")
     @Operation(summary = "打印标签", description = "记录标签打印操作")
     public ResponseEntity<?> printLabel(
@@ -354,6 +359,7 @@ public class LabelController {
     /**
      * 贴标操作
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/{id}/apply")
     @Operation(summary = "贴标操作", description = "记录标签贴附操作")
     public ResponseEntity<?> applyLabel(
@@ -379,6 +385,7 @@ public class LabelController {
     /**
      * 作废标签
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/{id}/void")
     @Operation(summary = "作废标签", description = "将标签标记为作废")
     public ResponseEntity<?> voidLabel(
@@ -404,6 +411,7 @@ public class LabelController {
     /**
      * 删除标签
      */
+    @RequirePermission({"production:read_write"})
     @DeleteMapping("/{id}")
     @Operation(summary = "删除标签", description = "删除指定的标签")
     public ResponseEntity<?> deleteLabel(

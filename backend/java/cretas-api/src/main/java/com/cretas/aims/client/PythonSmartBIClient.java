@@ -8,7 +8,7 @@ import com.cretas.aims.dto.python.ClassifierBatchResponse;
 import com.cretas.aims.dto.python.PythonAnalysisRequest;
 import com.cretas.aims.dto.python.PythonAnalysisResponse;
 import com.cretas.aims.dto.smartbi.ExcelParseResponse;
-import com.cretas.aims.dto.smartbi.ForecastResult;
+import com.cretas.aims.dto.smartbi.PythonForecastResponse;
 import com.cretas.aims.dto.smartbi.MetricResult;
 import com.cretas.aims.exception.PythonServiceUnavailableException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -27,7 +27,6 @@ import okio.Source;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -213,9 +212,19 @@ public class PythonSmartBIClient {
      */
     public ExcelParseResponse parseExcel(MultipartFile file, String factoryId, String dataType,
                                           int sheetIndex, int headerRows) throws IOException {
-        log.info("调用 Python SmartBI /auto-parse: fileName={}, factoryId={}, dataType={}, sheetIndex={}, size={}MB (headerRows={} 将被忽略)",
+        return parseExcel(file, factoryId, dataType, sheetIndex, headerRows, null, null);
+    }
+
+    /**
+     * Bug #25b (2026-04-18): overload accepting multi-stacked-table region bounds.
+     * When both start/end are non-null, the Python pipeline crops to that region.
+     */
+    public ExcelParseResponse parseExcel(MultipartFile file, String factoryId, String dataType,
+                                          int sheetIndex, int headerRows,
+                                          Integer selectedRegionStart, Integer selectedRegionEnd) throws IOException {
+        log.info("调用 Python SmartBI /auto-parse: fileName={}, factoryId={}, dataType={}, sheetIndex={}, size={}MB (headerRows={} 将被忽略), region=[{},{}]",
                 file.getOriginalFilename(), factoryId, dataType, sheetIndex,
-                file.getSize() / 1024 / 1024, headerRows);
+                file.getSize() / 1024 / 1024, headerRows, selectedRegionStart, selectedRegionEnd);
 
         // 流式传输 — 避免 file.getBytes() 对 60MB CSV 触发 OOM (BUG-2, 2026-04-15).
         // Copy to a stable temp File so executeWithRetry can re-read on retry
@@ -238,12 +247,165 @@ public class PythonSmartBIClient {
             bodyBuilder.addFormDataPart("factory_id", factoryId);
         }
 
+        // Bug #25b: forward region bounds when the user picked a specific stacked table.
+        if (selectedRegionStart != null && selectedRegionEnd != null) {
+            bodyBuilder.addFormDataPart("selectedRegionStart", String.valueOf(selectedRegionStart));
+            bodyBuilder.addFormDataPart("selectedRegionEnd", String.valueOf(selectedRegionEnd));
+        }
+
         Request request = new Request.Builder()
                 .url(config.getParseExcelUrl())
                 .post(bodyBuilder.build())
                 .build();
 
         return executeWithRetry(request, ExcelParseResponse.class);
+    }
+
+    // ==================== 大文件异步解析 ====================
+
+    public static final long LARGE_FILE_ASYNC_BYTES = 50L * 1024 * 1024; // 50MB
+    private static final int ASYNC_POLL_INTERVAL_MS = 3_000;
+    private static final int ASYNC_POLL_MAX_ATTEMPTS = 200; // 200 × 3s = 10 min
+
+    /**
+     * 对大文件（> 50MB）透明切换到 Python 异步解析路径。
+     * 调用方不感知：接口与 parseExcel 相同，返回同样的 ExcelParseResponse。
+     * 流程：POST /auto-parse-async → 202 uploadId → 轮询 status 至 COMPLETED。
+     */
+    @SuppressWarnings("unchecked")
+    public ExcelParseResponse parseExcelViaAsync(MultipartFile file, String factoryId,
+                                                  int sheetIndex,
+                                                  Integer selectedRegionStart,
+                                                  Integer selectedRegionEnd) throws IOException {
+        final String filename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "upload.bin";
+        log.info("[async-parse] 大文件 {}MB, 启动异步解析: file={} factory={}",
+                file.getSize() / 1024 / 1024, filename, factoryId);
+
+        // 1. 写临时文件（OkHttp 重试安全）
+        final File tempFile = java.io.File.createTempFile("cretas-async-", "-" + filename);
+        tempFile.deleteOnExit();
+        file.transferTo(tempFile);
+
+        // 2. POST /api/smartbi/excel/auto-parse-async
+        MultipartBody.Builder bodyBuilder = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("file", filename, RequestBody.create(MediaType.parse(guessMimeFromName(filename)), tempFile))
+                .addFormDataPart("factory_id", factoryId != null ? factoryId : "")
+                .addFormDataPart("sheetIndex", String.valueOf(sheetIndex))
+                .addFormDataPart("max_rows", "500000");
+        if (selectedRegionStart != null) bodyBuilder.addFormDataPart("selected_region_start", String.valueOf(selectedRegionStart));
+        if (selectedRegionEnd != null)   bodyBuilder.addFormDataPart("selected_region_end",   String.valueOf(selectedRegionEnd));
+
+        Request asyncReq = new Request.Builder()
+                .url(config.getUrl() + "/api/smartbi/excel/auto-parse-async")
+                .post(bodyBuilder.build())
+                .build();
+
+        Map<String, Object> asyncResp;
+        try (Response resp = httpClient.newCall(asyncReq).execute()) {
+            String body = resp.body() != null ? resp.body().string() : "{}";
+            if (resp.code() != 202 && resp.code() != 200) {
+                log.error("[async-parse] POST failed: HTTP {} body={}", resp.code(), body.substring(0, Math.min(200, body.length())));
+                ExcelParseResponse err = new ExcelParseResponse();
+                err.setSuccess(false);
+                err.setErrorMessage("异步上传失败: HTTP " + resp.code());
+                return err;
+            }
+            asyncResp = objectMapper.readValue(body, Map.class);
+        }
+
+        Object uploadIdRaw = asyncResp.get("uploadId");
+        if (uploadIdRaw == null) {
+            ExcelParseResponse err = new ExcelParseResponse();
+            err.setSuccess(false);
+            err.setErrorMessage("异步上传未返回 uploadId");
+            return err;
+        }
+        int uploadId = ((Number) uploadIdRaw).intValue();
+        log.info("[async-parse] uploadId={}, 开始轮询 (间隔 {}s, 最多 {}次)",
+                uploadId, ASYNC_POLL_INTERVAL_MS / 1000, ASYNC_POLL_MAX_ATTEMPTS);
+
+        // 3. 轮询 /auto-parse-status/{uploadId}?factory_id=xxx
+        String pollUrl = config.getUrl() + "/api/smartbi/excel/auto-parse-status/" + uploadId
+                + "?factory_id=" + java.net.URLEncoder.encode(factoryId != null ? factoryId : "", java.nio.charset.StandardCharsets.UTF_8);
+        for (int attempt = 0; attempt < ASYNC_POLL_MAX_ATTEMPTS; attempt++) {
+            try { Thread.sleep(ASYNC_POLL_INTERVAL_MS); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); break; }
+
+            Request pollReq = new Request.Builder().url(pollUrl).get().build();
+            Map<String, Object> status;
+            try (Response resp = httpClient.newCall(pollReq).execute()) {
+                String body = resp.body() != null ? resp.body().string() : "{}";
+                if (!resp.isSuccessful()) {
+                    log.warn("[async-parse] poll attempt {} HTTP {}", attempt, resp.code());
+                    continue;
+                }
+                status = objectMapper.readValue(body, Map.class);
+            }
+
+            String st = (String) status.get("status");
+            log.debug("[async-parse] uploadId={} attempt={} status={}", uploadId, attempt, st);
+
+            if ("COMPLETED".equals(st)) {
+                log.info("[async-parse] uploadId={} COMPLETED after {}s",
+                        uploadId, (attempt + 1) * ASYNC_POLL_INTERVAL_MS / 1000);
+                return buildParseResponseFromAsyncStatus(status, uploadId);
+            }
+            if ("FAILED".equals(st)) {
+                String errMsg = (String) status.getOrDefault("error", "异步解析失败");
+                log.error("[async-parse] uploadId={} FAILED: {}", uploadId, errMsg);
+                ExcelParseResponse err = new ExcelParseResponse();
+                err.setSuccess(false);
+                err.setErrorMessage(errMsg);
+                return err;
+            }
+        }
+
+        log.error("[async-parse] uploadId={} poll timed out after {}min", uploadId,
+                (long) ASYNC_POLL_MAX_ATTEMPTS * ASYNC_POLL_INTERVAL_MS / 60_000);
+        ExcelParseResponse err = new ExcelParseResponse();
+        err.setSuccess(false);
+        err.setErrorMessage("大文件解析超时（10 分钟），请尝试拆分后上传");
+        return err;
+    }
+
+    @SuppressWarnings("unchecked")
+    private ExcelParseResponse buildParseResponseFromAsyncStatus(Map<String, Object> status, int uploadId) {
+        ExcelParseResponse pr = new ExcelParseResponse();
+        pr.setSuccess(true);
+        pr.setUploadId((long) uploadId);
+        pr.setRowCount(status.get("rowCount") instanceof Number n ? n.intValue() : null);
+        pr.setColumnCount(status.get("columnCount") instanceof Number n ? n.intValue() : null);
+
+        Object headersRaw = status.get("headers");
+        if (headersRaw instanceof List<?> hl) {
+            pr.setHeaders(hl.stream().map(Object::toString).collect(java.util.stream.Collectors.toList()));
+        }
+
+        Object fmRaw = status.get("fieldMappings");
+        if (fmRaw instanceof List<?> fml) {
+            List<com.cretas.aims.dto.smartbi.FieldMappingResult> mappings = new java.util.ArrayList<>();
+            for (Object fmObj : fml) {
+                if (fmObj instanceof Map<?, ?> fmMap) {
+                    com.cretas.aims.dto.smartbi.FieldMappingResult fm = new com.cretas.aims.dto.smartbi.FieldMappingResult();
+                    Object orig = fmMap.get("originalColumn"); if (orig != null) fm.setOriginalColumn(orig.toString());
+                    Object std  = fmMap.get("standardField");  if (std  != null) fm.setStandardField(std.toString());
+                    Object conf = fmMap.get("confidence");      if (conf instanceof Number cn) fm.setConfidence(cn.doubleValue());
+                    mappings.add(fm);
+                }
+            }
+            pr.setFieldMappings(mappings);
+        }
+
+        Object previewRaw = status.get("previewData");
+        if (previewRaw instanceof List<?> pvl) {
+            List<Map<String, Object>> preview = new java.util.ArrayList<>();
+            for (Object row : pvl) { if (row instanceof Map<?, ?> rm) preview.add((Map<String, Object>) rm); }
+            pr.setPreviewData(preview);
+        }
+
+        Object tableType = status.get("detectedTableType");
+        if (tableType != null) pr.setTableType(tableType.toString());
+        return pr;
     }
 
     // ==================== 指标计算 ====================
@@ -303,69 +465,33 @@ public class PythonSmartBIClient {
     // ==================== 预测分析 ====================
 
     /**
-     * 使用 Python 服务进行销售预测
+     * 方案 E (2026-04-17): Java 查历史数据后调用 Python 纯算端点。
      *
-     * @param factoryId    工厂ID
-     * @param startDate    开始日期
-     * @param endDate      结束日期
-     * @param forecastDays 预测天数
-     * @return 预测结果
-     * @throws IOException 如果请求失败
+     * <p>Python /api/forecast/predict 的 pydantic 契约要求 data 字段为 List[float], min_items=3.
+     * 调用方应在 Java 侧通过 Repository SQL GROUP BY 组装 data 后再调。
+     *
+     * @param data      历史数据序列 (至少 3 个点，调用方预检)
+     * @param periods   预测期数
+     * @param algorithm 算法名 (小写，如 "auto"/"moving_average"/"linear_trend"/"exponential_smoothing")
+     * @return Python 原始响应结构
+     * @throws IOException 网络失败或 Python 返回非 2xx
      */
-    public ForecastResult forecastSales(String factoryId, LocalDate startDate,
-                                         LocalDate endDate, int forecastDays) throws IOException {
-        log.info("调用 Python SmartBI 销售预测: factoryId={}, startDate={}, endDate={}, forecastDays={}",
-                factoryId, startDate, endDate, forecastDays);
+    public PythonForecastResponse forecastWithData(List<Double> data, int periods, String algorithm) throws IOException {
+        log.info("调用 Python forecast (方案 E): dataPoints={}, periods={}, algorithm={}",
+                data.size(), periods, algorithm);
 
-        Map<String, Object> requestBody = Map.of(
-                "factoryId", factoryId,
-                "startDate", startDate.toString(),
-                "endDate", endDate.toString(),
-                "forecastDays", forecastDays,
-                "metricType", "sales_amount"
-        );
+        Map<String, Object> requestBody = new java.util.HashMap<>();
+        requestBody.put("data", data);
+        requestBody.put("algorithm", algorithm != null ? algorithm : "auto");
+        requestBody.put("periods", periods);
+        requestBody.put("confidenceLevel", 0.95);
 
         Request request = new Request.Builder()
                 .url(config.getForecastUrl())
                 .post(RequestBody.create(JSON, objectMapper.writeValueAsString(requestBody)))
                 .build();
 
-        return executeWithRetry(request, ForecastResult.class);
-    }
-
-    /**
-     * 使用 Python 服务进行通用指标预测
-     *
-     * @param factoryId    工厂ID
-     * @param metricType   指标类型
-     * @param startDate    开始日期
-     * @param endDate      结束日期
-     * @param forecastDays 预测天数
-     * @param algorithm    预测算法（可选）
-     * @return 预测结果
-     * @throws IOException 如果请求失败
-     */
-    public ForecastResult forecastMetric(String factoryId, String metricType,
-                                          LocalDate startDate, LocalDate endDate,
-                                          int forecastDays, String algorithm) throws IOException {
-        log.info("调用 Python SmartBI 指标预测: factoryId={}, metricType={}, algorithm={}",
-                factoryId, metricType, algorithm);
-
-        Map<String, Object> requestBody = Map.of(
-                "factoryId", factoryId,
-                "metricType", metricType,
-                "startDate", startDate.toString(),
-                "endDate", endDate.toString(),
-                "forecastDays", forecastDays,
-                "algorithm", algorithm != null ? algorithm : "AUTO"
-        );
-
-        Request request = new Request.Builder()
-                .url(config.getForecastUrl())
-                .post(RequestBody.create(JSON, objectMapper.writeValueAsString(requestBody)))
-                .build();
-
-        return executeWithRetry(request, ForecastResult.class);
+        return executeWithRetry(request, PythonForecastResponse.class);
     }
 
     // ==================== 通用请求执行 ====================
@@ -1588,6 +1714,17 @@ public class PythonSmartBIClient {
             return Optional.empty();
         }
 
+        // Belt-and-suspenders guard. The primary caller (SmartBIUploadFlowServiceImpl)
+        // already checks this, but other callers shouldn't have to learn it the hard
+        // way. objectMapper.writeValueAsString on a Map with 500K+ cells easily
+        // doubles past Xmx=768m due to UTF-16 string materialization.
+        long cellCount = (data != null ? data.size() : 0L) * (columns != null ? columns.size() : 0L);
+        if (cellCount > 500_000L) {
+            log.warn("财务数据提取跳过(client 级): sheetName={}, size={}cells > 500K (heap 保护)",
+                    sheetName, cellCount);
+            return Optional.empty();
+        }
+
         try {
             log.info("调用 Python 财务数据提取: sheetName={}, dataSize={}, columns={}",
                     sheetName,
@@ -1666,6 +1803,93 @@ public class PythonSmartBIClient {
             result.add(val);
         }
         return result;
+    }
+
+    /**
+     * γ-1c: 触发 Python 对已持久化 upload 的 field_definitions 重新分类 + re-materialize.
+     * 同步 Java 上传路径在 saveFieldDefinitions+backfill 后调用，让 Python 的统一 classifier
+     * 覆盖 Java 遗留规则（年/月/日 时间误判、账单号 id 缺失等）。
+     *
+     * 非阻塞：Python 不可用时返回 false，upload 仍成功（field_definitions 保留 Java 结果，
+     * 用户可稍后手动调 POST /api/smartbi/analytics/reclassify/{id} 补救）。
+     *
+     * @param uploadId  已 persist 的 upload id
+     * @param factoryId 当前上传归属的 factory（Python 做 cross-tenant 校验用）
+     * @return true=reclassify+rematerialize 均成功；false=任一步失败
+     */
+    public boolean reclassifyUpload(Long uploadId, String factoryId) {
+        if (!config.isEnabled() || uploadId == null || factoryId == null) {
+            return false;
+        }
+        String url = config.getFullUrl("/api/smartbi/analytics/reclassify/" + uploadId);
+        try {
+            Request httpRequest = new Request.Builder()
+                    .url(url)
+                    .post(RequestBody.create(JSON, "{}"))
+                    .header("X-Factory-Id", factoryId)
+                    .build();
+            try (Response response = httpClient.newCall(httpRequest).execute()) {
+                if (!response.isSuccessful()) {
+                    log.warn("γ-1c reclassify HTTP {} for upload {}: {}",
+                            response.code(), uploadId,
+                            response.body() != null ? response.body().string() : "<empty>");
+                    return false;
+                }
+                log.info("γ-1c reclassify OK for upload {} (factory={})", uploadId, factoryId);
+                return true;
+            }
+        } catch (IOException e) {
+            log.warn("γ-1c reclassify IO failure for upload {}: {}", uploadId, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * γ-2c (Apr 25 2026 / Task C / PROD-1 fix): pre-materialize the cheap part
+     * of enrichment (KPI summary via /quick-summary, no LLM) and persist as a
+     * partial enrichment_cache row, so the FE cache-first branch hits an
+     * instant cache on first visit and renders KPI cards in <1s instead of
+     * timing out at 120s on 200K-row POS uploads.
+     *
+     * Non-blocking: any HTTP/IO failure is logged but does not affect upload
+     * status (FE will fall back to running the full enrichment pipeline on
+     * first visit, same as before this hook existed).
+     *
+     * @param uploadId  ID of the upload that just committed
+     * @param factoryId factory the upload belongs to (for cross-tenant check)
+     * @return true on 2xx + success=true; false on any failure
+     */
+    public boolean precomputeEnrichmentCache(Long uploadId, String factoryId) {
+        if (!config.isEnabled() || uploadId == null || factoryId == null) {
+            return false;
+        }
+        // Endpoint lives on the materialized_analytics router (JWT-protected)
+        // because /api/smartbi/analysis-cache/ is in PUBLIC_PREFIXES and can't
+        // see request.state.factory_id from the auth_middleware.
+        String url = config.getFullUrl(
+                "/api/smartbi/analytics/precompute-cache/" + uploadId);
+        try {
+            Request httpRequest = new Request.Builder()
+                    .url(url)
+                    .post(RequestBody.create(JSON, "{}"))
+                    .header("X-Factory-Id", factoryId)
+                    .build();
+            try (Response response = httpClient.newCall(httpRequest).execute()) {
+                if (!response.isSuccessful()) {
+                    log.warn("γ-2c precompute-cache HTTP {} for upload {}: {}",
+                            response.code(), uploadId,
+                            response.body() != null ? response.body().string() : "<empty>");
+                    return false;
+                }
+                log.info("γ-2c precompute-cache OK for upload {} (factory={})",
+                        uploadId, factoryId);
+                return true;
+            }
+        } catch (IOException e) {
+            log.warn("γ-2c precompute-cache IO failure for upload {}: {}",
+                    uploadId, e.getMessage());
+            return false;
+        }
     }
 
     /**

@@ -78,6 +78,11 @@ public interface UserService {
     PageResponse<UserDTO> searchUsers(String factoryId, String keyword, PageRequest pageRequest);
 
     /**
+     * 搜索用户（支持角色筛选）
+     */
+    PageResponse<UserDTO> searchUsers(String factoryId, String keyword, String role, PageRequest pageRequest);
+
+    /**
      * 批量导入用户
      */
     List<UserDTO> batchImportUsers(String factoryId, List<CreateUserRequest> requests);

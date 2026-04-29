@@ -32,6 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.annotation.PreDestroy;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.time.Duration;
@@ -124,6 +125,26 @@ public class SmartBIServiceImpl implements SmartBIService {
     @Lazy
     private IntentExecutorService intentExecutorService;
 
+    /**
+     * Week 5 Agent layer HTTP client — calls Python /api/smartbi/insights/custom.
+     * required=false: works even if Python is down (endpoint returns empty list).
+     */
+    @Autowired(required = false)
+    private com.cretas.aims.client.AgentInsightsClient agentInsightsClient;
+
+    /**
+     * Apr 25 Phase 9 backlog (I1): factory metadata for tenant-type aware
+     * dashboard routing. Restaurant tenants have 0 rows in legacy
+     * smart_bi_sales_data; the Apr 22 Gold cutover wired
+     * salesService.getSalesOverview to read from Gold. We need to detect
+     * RESTAURANT here so /dashboard/executive?period=month skips the legacy
+     * salesData precheck and routes directly to the Gold path.
+     * required=false: keep existing tests/wiring functional if a downstream
+     * harness omits this bean.
+     */
+    @Autowired(required = false)
+    private com.cretas.aims.repository.FactoryRepository factoryRepository;
+
     // ==================== 配置参数 ====================
 
     @Value("${smartbi.llm.enabled:true}")
@@ -185,8 +206,8 @@ public class SmartBIServiceImpl implements SmartBIService {
     /** 缓存类型：全部 */
     private static final String CACHE_TYPE_ALL = "ALL";
 
-    /** 默认每日配额 */
-    private static final int DEFAULT_DAILY_QUOTA = 50;
+    /** 默认每日配额 (Apr 15 2026: 50 → 1000, demo 中老板 30 题就到顶, 远低于 SaaS 业界基线) */
+    private static final int DEFAULT_DAILY_QUOTA = 1000;
 
     /**
      * 餐饮诊断查询关键词 (P5.6).
@@ -250,6 +271,43 @@ public class SmartBIServiceImpl implements SmartBIService {
             log.info("命中驾驶舱缓存: factoryId={}, period={}", factoryId, period);
             recordUsage(factoryId, null, ActionType.DASHBOARD.name(), 0, true);
             return (DashboardResponse) cached.get();
+        }
+
+        // ================================================================
+        // Apr 25 Phase 9 backlog (I1): RESTAURANT tenants route through Gold
+        // ----------------------------------------------------------------
+        // Background: legacy 自动检测 (步骤 2.1 below) queries
+        // smart_bi_sales_data which restaurants have 0 rows in. The auto-
+        // fallback then returns invalid range → range stays at current
+        // period → Gold returns empty → empty dashboard. The /custom
+        // endpoint works because user explicitly picks a 2025 range.
+        //
+        // Fix: for RESTAURANT tenants, skip the legacy precheck and route
+        // through salesService.getSalesOverview() (which is Gold-aware via
+        // SMARTBI_GOLD_READ_PRIMARY_ENABLED, Apr 22 Phase B4 cutover).
+        // Add a small fallback chain so first-load with no range still finds
+        // the most recent data window (mirrors Trends/Finance UX).
+        //
+        // Manufacturing tenants (FACTORY/HEADQUARTERS/CENTRAL_KITCHEN) keep
+        // the legacy 4-future parallel path unchanged.
+        // ================================================================
+        if (isRestaurantTenant(factoryId)) {
+            DashboardResponse goldResp = computeRestaurantDashboard(factoryId, period);
+            if (goldResp != null) {
+                Duration ttl = calculateCacheTtl(period);
+                saveToCache(factoryId, cacheKey, goldResp, ttl);
+                long elapsed = System.currentTimeMillis() - startTime;
+                log.info("驾驶舱(RESTAURANT/Gold): factoryId={}, period={}, kpis={}, elapsed={}ms",
+                        factoryId, period,
+                        goldResp.getKpiCards() == null ? 0 : goldResp.getKpiCards().size(),
+                        elapsed);
+                recordUsage(factoryId, null, ActionType.DASHBOARD.name(), 0, false);
+                return goldResp;
+            }
+            // null = restaurant + Gold path failed entirely → fall through
+            // to legacy (will likely be empty for restaurants but at least
+            // keeps the response shape consistent).
+            log.warn("Restaurant Gold dashboard returned null, falling back to legacy: factoryId={}", factoryId);
         }
 
         // 2. 计算日期范围
@@ -357,6 +415,67 @@ public class SmartBIServiceImpl implements SmartBIService {
         return response;
     }
 
+    /**
+     * Apr 25 Phase 9 backlog (I1): is this factory a restaurant tenant?
+     *
+     * Restaurant tenants (RESTAURANT, BRANCH) have 0 rows in legacy
+     * smart_bi_sales_data and must route through Gold (POS-backed).
+     * Defensive: if the FactoryRepository bean is missing or the lookup
+     * throws, return false so manufacturing path is preserved (legacy
+     * dashboard is the existing behavior, no regression).
+     */
+    private boolean isRestaurantTenant(String factoryId) {
+        if (factoryRepository == null || factoryId == null) {
+            return false;
+        }
+        try {
+            return factoryRepository.findById(factoryId)
+                    .map(f -> f.getType() != null
+                            && (f.getType() == com.cretas.aims.entity.enums.FactoryType.RESTAURANT
+                                || f.getType() == com.cretas.aims.entity.enums.FactoryType.BRANCH))
+                    .orElse(false);
+        } catch (Exception e) {
+            log.warn("Failed to check tenant type for {}: {}", factoryId, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Apr 25 Phase 9 backlog (I1): build dashboard for restaurant tenant via
+     * the Gold-aware sales overview path, with a simple fallback chain so
+     * first-load (no date picker) still finds the most recent data window.
+     *
+     * Order: requested period → previous year same month/period → 2024 same period.
+     * Returns null if all attempts produce empty (defensive — caller falls
+     * through to legacy path which will also be empty but preserves shape).
+     */
+    private DashboardResponse computeRestaurantDashboard(String factoryId, String period) {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.LocalDate[] primary = com.cretas.aims.util.DateRangeUtils.getDateRangeByPeriod(period, today);
+        java.time.LocalDate[] lastYear = com.cretas.aims.util.DateRangeUtils.getDateRangeByPeriod(period, today.minusYears(1));
+        java.time.LocalDate[] twoYearsAgo = com.cretas.aims.util.DateRangeUtils.getDateRangeByPeriod(period, today.minusYears(2));
+
+        java.time.LocalDate[][] attempts = new java.time.LocalDate[][] { primary, lastYear, twoYearsAgo };
+        for (int i = 0; i < attempts.length; i++) {
+            java.time.LocalDate start = attempts[i][0];
+            java.time.LocalDate end = attempts[i][1];
+            try {
+                DashboardResponse resp = salesService.getSalesOverview(factoryId, start, end);
+                if (resp != null && resp.getKpiCards() != null && !resp.getKpiCards().isEmpty()) {
+                    log.info("[restaurant-gold] factory={} period={} attempt={} ({}..{}) returned {} kpis",
+                            factoryId, period, i, start, end, resp.getKpiCards().size());
+                    return resp;
+                }
+                log.debug("[restaurant-gold] factory={} attempt {} ({}..{}) empty, trying next",
+                        factoryId, i, start, end);
+            } catch (Exception e) {
+                log.warn("[restaurant-gold] factory={} attempt {} ({}..{}) failed: {}",
+                        factoryId, i, start, end, e.getMessage());
+            }
+        }
+        return null;
+    }
+
     @Override
     public List<AIInsight> getDashboardLLMInsights(String factoryId, String period) {
         log.info("获取驾驶舱 LLM 洞察: factoryId={}, period={}", factoryId, period);
@@ -405,6 +524,45 @@ public class SmartBIServiceImpl implements SmartBIService {
         return llmInsights;
     }
 
+    @Override
+    public List<AIInsight> getDashboardLLMInsightsCustomRange(
+            String factoryId, LocalDate startDate, LocalDate endDate) {
+        log.info("Agent insights custom: factoryId={} range={}..{}", factoryId, startDate, endDate);
+
+        if (agentInsightsClient == null) {
+            log.warn("AgentInsightsClient not wired — returning empty");
+            return java.util.Collections.emptyList();
+        }
+
+        try {
+            Map<String, Object> resp = agentInsightsClient.fetchInsightsCustom(
+                    factoryId, startDate, endDate, null);
+            String answer = resp.get("answer") instanceof String ? (String) resp.get("answer") : "";
+            String source = resp.get("source") instanceof String ? (String) resp.get("source") : "llm";
+            if (answer.isBlank()) {
+                return java.util.Collections.emptyList();
+            }
+            // Degraded responses (budget exhausted / LLM down) map to YELLOW so
+            // the UI shows them distinctly from fresh LLM answers.
+            String level = "degraded".equals(source) ? "YELLOW" : "INFO";
+            String category = "cache".equals(source) ? "AI 分析 (缓存)" : "AI 分析";
+            AIInsight insight = AIInsight.builder()
+                    .level(level)
+                    .category(category)
+                    .message(answer)
+                    .relatedEntity("range:" + startDate + "~" + endDate)
+                    .actionSuggestion(null)
+                    .build();
+            return java.util.Collections.singletonList(insight);
+        } catch (IOException e) {
+            log.error("Agent insights failed: {}", e.getMessage());
+            return java.util.Collections.emptyList();
+        } catch (Exception e) {
+            log.error("Agent insights unexpected failure", e);
+            return java.util.Collections.emptyList();
+        }
+    }
+
     // ==================== 综合分析 ====================
 
     @Override
@@ -447,7 +605,8 @@ public class SmartBIServiceImpl implements SmartBIService {
                 break;
 
             default:
-                throw new BusinessException("不支持的分析类型: " + analysisType);
+                throw new BusinessException(400, "不支持的分析类型: " + analysisType)
+                        .withHint("请选择支持的分析类型: production / inventory / sales / finance").withHintTarget("analysisType");
         }
 
         result.put("dateRange", DateRange.custom(startDate, endDate));
@@ -466,7 +625,8 @@ public class SmartBIServiceImpl implements SmartBIService {
 
         // 1. 检查配额 (readOnly query, no transaction needed)
         if (!checkQuota(factoryId)) {
-            throw new BusinessException("今日查询配额已用完，请明日再试或升级套餐");
+            throw new BusinessException(429, "今日查询配额已用完")
+                    .withHint("请明日再试或联系管理员升级套餐");
         }
 
         // 2. 指代消解 - 解析多轮对话中的指代词（复用 AI Chat 会话记忆能力）
@@ -499,7 +659,11 @@ public class SmartBIServiceImpl implements SmartBIService {
         Object data = executeIntent(factoryId, intentResult);
 
         // 6. 生成响应文本
-        String responseText = generateResponseText(intentResult, data);
+        // FIX BUG #5 (Apr 15 2026): try LLM-summarized analysis first; fall back to template only if LLM fails
+        String responseText = generateLLMResponseText(factoryId, request.getEffectiveQuery(), intentResult, data);
+        if (responseText == null || responseText.isBlank()) {
+            responseText = generateResponseText(intentResult, data);
+        }
 
         // 7. 生成图表配置
         List<ChartConfig> charts = generateChartConfig(intentResult, data);
@@ -890,7 +1054,8 @@ public class SmartBIServiceImpl implements SmartBIService {
                 break;
 
             default:
-                throw new BusinessException("不支持的下钻维度: " + request.getDimension());
+                throw new BusinessException(400, "不支持的下钻维度: " + request.getDimension())
+                        .withHint("请选择支持的下钻维度").withHintTarget("dimension");
         }
 
         result.put("drillPath", request.getDrillPath());
@@ -1463,7 +1628,8 @@ public class SmartBIServiceImpl implements SmartBIService {
                     }
                 }
                 log.warn("未支持的意图类型: {}", intent);
-                throw new BusinessException("暂不支持该查询类型: " + intent.getName());
+                throw new BusinessException(400, "暂不支持该查询类型: " + intent.getName())
+                        .withHint("请尝试其他查询方式, 或联系管理员添加该查询类型支持");
         }
     }
 
@@ -1473,7 +1639,8 @@ public class SmartBIServiceImpl implements SmartBIService {
     private Object handleForecastIntent(String factoryId, IntentResult intentResult,
                                         LocalDate startDate, LocalDate endDate) {
         if (forecastService == null) {
-            throw new BusinessException("预测服务未配置");
+            throw new BusinessException(503, "预测服务未配置")
+                    .withHint("请联系管理员开启预测服务");
         }
 
         // 默认预测未来7天
@@ -1572,6 +1739,68 @@ public class SmartBIServiceImpl implements SmartBIService {
                 .build();
 
         return processDrillDown(factoryId, request);
+    }
+
+    /**
+     * BUG #5 FIX (Apr 15 2026): generate analytical responseText via LLM instead of static template.
+     * Returns null on any failure so caller falls back to {@link #generateResponseText}.
+     *
+     * Performance: ~3-8s LLM round-trip (qwen3.5-plus). Timeout protection inside DashScopeClient.
+     * Quota guard: shares the same daily quota check as insights pipeline.
+     */
+    private String generateLLMResponseText(String factoryId, String userQuery, IntentResult intentResult, Object data) {
+        if (!llmInsightEnabled || dashScopeClient == null) return null;
+        if (data == null) return null;
+        if (!checkQuota(factoryId)) return null;
+
+        try {
+            String dataJson;
+            try {
+                dataJson = objectMapper.writeValueAsString(data);
+            } catch (Exception e) {
+                return null;
+            }
+            // Avoid huge payloads — truncate if needed
+            if (dataJson.length() > 6000) {
+                dataJson = dataJson.substring(0, 6000) + "...(truncated)";
+            }
+
+            String intentName = intentResult.getIntent() != null ? intentResult.getIntent().name() : "UNKNOWN";
+            String systemPrompt = "你是青花椒餐饮老板的 AI 经营助手, 用 60-200 字直接回答老板的问题。\n" +
+                    "要求:\n" +
+                    "1. 引用具体业务数字 (金额/百分比/门店名/菜品名), 不要泛泛而谈\n" +
+                    "2. 找出 1-2 个关键发现, 给具体可执行建议\n" +
+                    "3. 用口语化中文, 不要 markdown 标题\n" +
+                    "4. 如果数据为空或不足以回答, 直接说\"暂无足够数据回答, 请确认上传了 X 报表\"\n" +
+                    "5. 不要说\"以下是 XX 分析\"这种空话开头";
+            String userPrompt = String.format(
+                    "老板问: %s\n意图: %s\n数据片段(JSON): %s\n请直接回答。",
+                    userQuery, intentName, dataJson
+            );
+
+            ChatCompletionRequest request = ChatCompletionRequest.builder()
+                    .messages(List.of(
+                            ChatMessage.system(systemPrompt),
+                            ChatMessage.user(userPrompt)
+                    ))
+                    .temperature(0.4)
+                    .maxTokens(400)
+                    .enableThinking(false)
+                    .build();
+
+            ChatCompletionResponse response = dashScopeClient.chatCompletion(request);
+            if (response != null && response.getChoices() != null && !response.getChoices().isEmpty()) {
+                String content = response.getChoices().get(0).getMessage().getContent();
+                if (content != null && !content.isBlank() && content.length() > 30) {
+                    log.info("LLM responseText 生成成功: factoryId={}, intent={}, len={}",
+                            factoryId, intentName, content.length());
+                    return content.trim();
+                }
+            }
+        } catch (Exception e) {
+            log.warn("LLM responseText 生成失败, 回退模板: factoryId={}, error={}", factoryId, e.getMessage());
+        }
+        return null;
     }
 
     /**

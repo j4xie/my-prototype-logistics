@@ -78,6 +78,31 @@ git commit -m "..."
 - **已推送** → 无法干净回滚 (不违反 no-destructive-git 规则), 只能写 follow-up commit 补 doc
 - **未推送** → `git reset --soft HEAD~1` 退回 staging, 分两个 commit 重写 (soft reset 不丢工作)
 
+### 5b. 并发-安全 commit 命令 (Apr 28 2026 incident-driven fix)
+
+Apr 28 2026 一晚连续踩 3 次同样事故: `git add F1 F2 && git commit -m "msg"` 把并发 session 已 staged 的不相关文件吞进我的 commit. 修法:
+
+```bash
+# ❌ 不安全: 把所有 staged 文件包括并发 session 的全 commit
+git add backend/foo.py backend/bar.py
+git commit -m "feat: my change"
+
+# ✅ 安全: --only mode (default when paths given) — 仅 commit 这 2 个文件
+#         即使别 session staged 了 X / Y, 它们 stay staged 不进我的 commit
+git commit -m "feat: my change" -- backend/foo.py backend/bar.py
+
+# ✅ 更安全: 用 wrapper 脚本, 自动 verify-after-commit
+./scripts/safe-commit.sh "feat: my change" backend/foo.py backend/bar.py
+```
+
+**Git 行为参考**: per `git-commit(1)`, "When PATHS are given, the command makes a commit that only includes the changes made to the named paths." `--only` 是 paths 提供时的 default, index 中其他 staged 文件不受影响.
+
+**适用场景**: 任何时候有 2+ chat / IDE 同时活跃. **应该是默认 commit 习惯**, 不仅"怀疑并发"时才用.
+
+**`safe-commit.sh` 额外好处**:
+- pre-commit verify: 列出其他 staged/dirty 文件 (不会进 commit) 让你看清现状
+- post-commit verify: `git show --name-only HEAD` 对比预期 vs 实际, 抓 husky/lint-staged 偷加的
+
 ### 6. 避免同时打开同一文件
 
 - **Cursor/VSCode auto-save** 会覆盖外部修改. Claude 正在改的文件不要在 IDE 里打开 (哪怕只是查看).
@@ -93,7 +118,7 @@ git commit -m "..."
 | 单 session 内改 3+ 文件 | 里程碑 commit (规则 1) |
 | 2+ chat 都要改同一文件 | git worktree 隔离 (规则 2) |
 | 不确定是否并发 | git status 防御 (规则 4) + 关闭其他 editor (规则 6) |
-| **Commit 阶段保护 scope** | **commit 前 git status** (规则 5) — 防 pre-commit hook 串入并发文件 |
+| **Commit 阶段保护 scope** | **`git commit -- F1 F2` 或 `safe-commit.sh`** (规则 5b) — 即使 staged 区被并发 session 污染, 仅 commit 列出的文件 |
 | 长期约束 | 这个 rule 本身 + memory `feedback_concurrent_edit_safety.md` |
 
 **Apr 8 事故正确做法**: Phase C 产品化应该用 **规则 1 + 规则 2** — 开 worktree 跑完整流程, 每个 phase 完成立即 commit.

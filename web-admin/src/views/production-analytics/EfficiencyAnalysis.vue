@@ -37,7 +37,7 @@ async function loadBudgetVsActual() {
       ElMessage.warning(res.message || '加载预算数据失败');
     }
   } catch (e: unknown) {
-    ElMessage.error('加载预算 vs 实际数据失败');
+    if (!e?.actionHint) ElMessage.error('加载预算 vs 实际数据失败');
     console.error(e);
   } finally {
     budgetLoading.value = false;
@@ -84,7 +84,7 @@ async function loadData() {
       ElMessage.warning(res.message || '加载失败');
     }
   } catch (e: unknown) {
-    ElMessage.error('加载人效分析数据失败');
+    if (!e?.actionHint) ElMessage.error('加载人效分析数据失败');
     console.error(e);
   } finally {
     loading.value = false;
@@ -152,7 +152,7 @@ function renderCharts() {
 }
 
 function renderTrendChart() {
-  if (!trendChartRef.value || !dashboard.value) return;
+  if (!trendChartRef.value || !dashboard.value || !hasEffTrendData.value) return;
   trendChart?.dispose();
   trendChart = echarts.init(trendChartRef.value);
   const data = dashboard.value.dailyTrend;
@@ -172,7 +172,7 @@ function renderTrendChart() {
 }
 
 function renderRankingChart() {
-  if (!rankingChartRef.value || !dashboard.value) return;
+  if (!rankingChartRef.value || !dashboard.value || !hasRankingData.value) return;
   rankingChart?.dispose();
   rankingChart = echarts.init(rankingChartRef.value);
   const data = dashboard.value.workerRanking.slice(0, 15).reverse();
@@ -202,7 +202,7 @@ function renderRankingChart() {
 }
 
 function renderHoursChart() {
-  if (!hoursChartRef.value || !dashboard.value) return;
+  if (!hoursChartRef.value || !dashboard.value || !hasHoursData.value) return;
   hoursChart?.dispose();
   hoursChart = echarts.init(hoursChartRef.value);
   const data = dashboard.value.hoursByProduct;
@@ -219,7 +219,7 @@ function renderHoursChart() {
 }
 
 function renderHeatmapChart() {
-  if (!heatmapChartRef.value || !dashboard.value) return;
+  if (!heatmapChartRef.value || !dashboard.value || !hasHeatmapData.value) return;
   heatmapChart?.dispose();
   heatmapChart = echarts.init(heatmapChartRef.value);
   const raw = dashboard.value.workerProcessCross;
@@ -258,6 +258,30 @@ function renderHeatmapChart() {
 }
 
 // ==================== 排名表格 ====================
+
+// chart audit P1-4: per-chart hasData computeds (mirror P1-3 in
+// ProductionAnalysis.vue). Empty echarts skeleton is replaced by
+// <el-empty> "该期暂无XX数据" so users distinguish "no data" from "broken".
+
+const hasEffTrendData = computed(() => {
+  const data = dashboard.value?.dailyTrend ?? [];
+  return data.some(d => Number(d.efficiency) > 0);
+});
+
+const hasRankingData = computed(() => {
+  const data = dashboard.value?.workerRanking ?? [];
+  return data.some(d => Number(d.efficiency) > 0);
+});
+
+const hasHoursData = computed(() => {
+  const data = dashboard.value?.hoursByProduct ?? [];
+  return data.some(d => Number(d.total_minutes) > 0);
+});
+
+const hasHeatmapData = computed(() => {
+  const data = dashboard.value?.workerProcessCross ?? [];
+  return data.length > 0;
+});
 
 const rankingTable = computed(() => {
   if (!dashboard.value) return [];
@@ -352,19 +376,23 @@ onBeforeUnmount(() => {
     <div class="charts-grid">
       <div class="chart-card">
         <div class="chart-title">人效趋势</div>
-        <div ref="trendChartRef" class="chart-body" />
+        <div v-show="hasEffTrendData" ref="trendChartRef" class="chart-body" />
+        <el-empty v-if="!hasEffTrendData" description="该期暂无人效数据" :image-size="80" class="chart-empty" />
       </div>
       <div class="chart-card">
         <div class="chart-title">员工人效排名 (Top 15)</div>
-        <div ref="rankingChartRef" class="chart-body" />
+        <div v-show="hasRankingData" ref="rankingChartRef" class="chart-body" />
+        <el-empty v-if="!hasRankingData" description="该期暂无员工排名数据" :image-size="80" class="chart-empty" />
       </div>
       <div class="chart-card">
         <div class="chart-title">产品工时分布</div>
-        <div ref="hoursChartRef" class="chart-body" />
+        <div v-show="hasHoursData" ref="hoursChartRef" class="chart-body" />
+        <el-empty v-if="!hasHoursData" description="该期暂无工时数据" :image-size="80" class="chart-empty" />
       </div>
       <div class="chart-card">
         <div class="chart-title">员工 × 工序 热力图</div>
-        <div ref="heatmapChartRef" class="chart-body" />
+        <div v-show="hasHeatmapData" ref="heatmapChartRef" class="chart-body" />
+        <el-empty v-if="!hasHeatmapData" description="该期暂无员工×工序数据" :image-size="80" class="chart-empty" />
       </div>
     </div>
 
@@ -540,6 +568,13 @@ onBeforeUnmount(() => {
 
 .chart-body {
   height: 300px;
+}
+
+.chart-empty {
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .detail-section {

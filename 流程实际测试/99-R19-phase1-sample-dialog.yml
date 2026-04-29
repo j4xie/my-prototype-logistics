@@ -1,0 +1,215 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - img "Logo" [ref=e6]
+      - generic [ref=e7]: 白垩纪AI Agent
+    - menubar [ref=e11]:
+      - menuitem "首页" [ref=e12] [cursor=pointer]:
+        - img [ref=e14]
+        - text: 首页
+      - menuitem "生产管理" [ref=e16]:
+        - generic [ref=e17] [cursor=pointer]:
+          - img [ref=e19]
+          - generic [ref=e21]: 生产管理
+          - img [ref=e23]
+      - menuitem "仓储管理" [ref=e25]:
+        - generic [ref=e26] [cursor=pointer]:
+          - img [ref=e28]
+          - generic [ref=e32]: 仓储管理
+          - img [ref=e34]
+      - menuitem "质量管理" [ref=e36]:
+        - generic [ref=e37] [cursor=pointer]:
+          - img [ref=e39]
+          - generic [ref=e41]: 质量管理
+          - img [ref=e43]
+      - menuitem "采购管理" [ref=e45]:
+        - generic [ref=e46] [cursor=pointer]:
+          - img [ref=e48]
+          - generic [ref=e50]: 采购管理
+          - img [ref=e52]
+      - menuitem "销售管理" [ref=e54]:
+        - generic [ref=e55] [cursor=pointer]:
+          - img [ref=e57]
+          - generic [ref=e59]: 销售管理
+          - img [ref=e61]
+      - menuitem "调拨管理" [ref=e63]:
+        - generic [ref=e64] [cursor=pointer]:
+          - img [ref=e66]
+          - generic [ref=e68]: 调拨管理
+          - img [ref=e70]
+      - menuitem "设备管理" [ref=e72]:
+        - generic [ref=e73] [cursor=pointer]:
+          - img [ref=e75]
+          - generic [ref=e77]: 设备管理
+          - img [ref=e79]
+      - menuitem "研发管理" [expanded] [ref=e81]:
+        - generic [ref=e82] [cursor=pointer]:
+          - generic [ref=e84]: 研发管理
+          - img [ref=e86]
+        - menu [ref=e88]:
+          - menuitem "研发样品管理" [ref=e89] [cursor=pointer]
+      - menuitem "数据分析" [ref=e90]:
+        - generic [ref=e91] [cursor=pointer]:
+          - img [ref=e93]
+          - generic [ref=e95]: 数据分析
+          - img [ref=e97]
+      - menuitem "智能调度" [ref=e99]:
+        - generic [ref=e100] [cursor=pointer]:
+          - img [ref=e102]
+          - generic [ref=e104]: 智能调度
+          - img [ref=e106]
+      - menuitem "生产分析" [ref=e108]:
+        - generic [ref=e109] [cursor=pointer]:
+          - img [ref=e111]
+          - generic [ref=e113]: 生产分析
+          - img [ref=e115]
+      - menuitem "智能BI" [ref=e117]:
+        - generic [ref=e118] [cursor=pointer]:
+          - img [ref=e120]
+          - generic [ref=e122]: 智能BI
+          - img [ref=e124]
+  - generic [ref=e126]:
+    - banner [ref=e127]:
+      - generic [ref=e128]:
+        - img [ref=e130] [cursor=pointer]
+        - navigation "面包屑" [ref=e132]:
+          - generic [ref=e133]:
+            - link "研发管理" [ref=e134]
+            - text: /
+          - link "研发样品管理" [ref=e136]
+      - generic [ref=e137]:
+        - img [ref=e139] [cursor=pointer]
+        - img [ref=e142] [cursor=pointer]
+        - button "dispatcher1 调度" [ref=e145] [cursor=pointer]:
+          - img [ref=e148]
+          - generic [ref=e150]:
+            - generic [ref=e151]: dispatcher1
+            - generic [ref=e152]: 调度
+    - main [ref=e153]:
+      - generic [ref=e154]:
+        - generic [ref=e155]:
+          - generic [ref=e157]:
+            - generic [ref=e158]:
+              - generic [ref=e159]: 研发管理
+              - radiogroup "radio-group" [ref=e160]:
+                - generic [ref=e161]:
+                  - radio "研发需求" [ref=e162]
+                  - generic [ref=e163] [cursor=pointer]: 研发需求
+                - generic [ref=e164]:
+                  - radio "样品管理" [checked] [ref=e165]
+                  - generic [ref=e166] [cursor=pointer]: 样品管理
+                - generic [ref=e167]:
+                  - radio "报价任务" [ref=e168]
+                  - generic [ref=e169] [cursor=pointer]: 报价任务
+            - button "新建样品" [ref=e171] [cursor=pointer]:
+              - generic [ref=e172]: 新建样品
+          - generic [ref=e173]:
+            - generic [ref=e174]:
+              - generic [ref=e176]:
+                - img [ref=e179]
+                - textbox "样品名称" [ref=e181]
+              - textbox "客户筛选" [ref=e184]
+              - generic [ref=e186] [cursor=pointer]:
+                - generic:
+                  - combobox [ref=e188]
+                  - generic [ref=e189]: 产品状态
+                - img [ref=e192]
+              - button "搜索" [ref=e194] [cursor=pointer]:
+                - img [ref=e196]
+                - generic [ref=e198]: 搜索
+              - button "重置" [ref=e199] [cursor=pointer]:
+                - img [ref=e201]
+                - generic [ref=e203]: 重置
+            - generic [ref=e205]:
+              - table [ref=e207]:
+                - rowgroup [ref=e218]:
+                  - row "样品编码 样品名称 客户名称 成品规格 产品级别 业务员 储存方式 产品状态 操作" [ref=e219]:
+                    - columnheader "样品编码" [ref=e220]:
+                      - generic [ref=e221]: 样品编码
+                    - columnheader "样品名称" [ref=e222]:
+                      - generic [ref=e223]: 样品名称
+                    - columnheader "客户名称" [ref=e224]:
+                      - generic [ref=e225]: 客户名称
+                    - columnheader "成品规格" [ref=e226]:
+                      - generic [ref=e227]: 成品规格
+                    - columnheader "产品级别" [ref=e228]:
+                      - generic [ref=e229]: 产品级别
+                    - columnheader "业务员" [ref=e230]:
+                      - generic [ref=e231]: 业务员
+                    - columnheader "储存方式" [ref=e232]:
+                      - generic [ref=e233]: 储存方式
+                    - columnheader "产品状态" [ref=e234]:
+                      - generic [ref=e235]: 产品状态
+                    - columnheader "操作" [ref=e236]:
+                      - generic [ref=e237]: 操作
+              - table [ref=e242]:
+                - rowgroup [ref=e253]:
+                  - row "SP-20260417-1182 黑胡椒牛肉酱-V1-QA-0417 永辉超市 200g/盒, 310g×42袋/箱 - - 样品通过 追踪记录 提交报价申请" [ref=e254]:
+                    - cell "SP-20260417-1182" [ref=e255]:
+                      - generic [ref=e256]: SP-20260417-1182
+                    - cell "黑胡椒牛肉酱-V1-QA-0417" [ref=e257]:
+                      - generic [ref=e258]: 黑胡椒牛肉酱-V1-QA-0417
+                    - cell "永辉超市" [ref=e259]:
+                      - generic [ref=e260]: 永辉超市
+                    - cell "200g/盒, 310g×42袋/箱" [ref=e261]:
+                      - generic [ref=e262]: 200g/盒, 310g×42袋/箱
+                    - cell "-" [ref=e263]:
+                      - generic [ref=e264]: "-"
+                    - cell [ref=e265]
+                    - cell "-" [ref=e266]:
+                      - generic [ref=e267]: "-"
+                    - cell "样品通过" [ref=e268]:
+                      - generic [ref=e271]: 样品通过
+                    - cell "追踪记录 提交报价申请" [ref=e272]:
+                      - generic [ref=e273]:
+                        - button "追踪记录" [ref=e274] [cursor=pointer]:
+                          - generic [ref=e275]: 追踪记录
+                        - button "提交报价申请" [ref=e276] [cursor=pointer]:
+                          - generic [ref=e277]: 提交报价申请
+        - dialog "新建样品" [ref=e280]:
+          - generic [active] [ref=e281]:
+            - generic [ref=e282]:
+              - heading "新建样品" [level=2] [ref=e283]
+              - button "关闭此对话框" [ref=e284] [cursor=pointer]:
+                - img [ref=e286]
+            - generic [ref=e289]:
+              - generic [ref=e290]:
+                - generic [ref=e291]: 客户名称
+                - textbox "客户名称" [ref=e295]
+              - generic [ref=e296]:
+                - generic [ref=e297]: 业务员
+                - generic [ref=e300]:
+                  - generic [ref=e301]:
+                    - combobox "业务员" [ref=e303]
+                    - generic [ref=e304]: 选择业务员
+                  - img [ref=e307] [cursor=pointer]
+              - generic [ref=e309]:
+                - generic [ref=e310]: "* 样品名称"
+                - textbox "* 样品名称" [ref=e314]
+              - generic [ref=e315]:
+                - generic [ref=e316]: 成品规格
+                - textbox "成品规格" [ref=e320]:
+                  - /placeholder: 如 200g/盒, 310g*42袋/箱
+              - generic [ref=e321]:
+                - generic [ref=e322]: 产品级别
+                - generic [ref=e325] [cursor=pointer]:
+                  - generic:
+                    - combobox "产品级别" [ref=e327]
+                    - generic [ref=e328]: 选择产品级别
+                  - img [ref=e331]
+              - generic [ref=e333]:
+                - generic [ref=e334]: 储存方式
+                - generic [ref=e337] [cursor=pointer]:
+                  - generic:
+                    - combobox "储存方式" [ref=e339]
+                    - generic [ref=e340]: 选择储存方式
+                  - img [ref=e343]
+              - generic [ref=e345]:
+                - generic [ref=e346]: 关联需求
+                - textbox "关联需求" [ref=e350]:
+                  - /placeholder: 研发需求ID（可选）
+            - generic [ref=e351]:
+              - button "取消" [ref=e352] [cursor=pointer]:
+                - generic [ref=e353]: 取消
+              - button "创建" [ref=e354] [cursor=pointer]:
+                - generic [ref=e355]: 创建

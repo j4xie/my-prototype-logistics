@@ -220,8 +220,8 @@ async function loadData() {
       ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载失败:', error);
-    ElMessage.error('加载数据失败');
   } finally {
     loading.value = false;
   }
@@ -311,10 +311,8 @@ async function handleDelete(row: ProductType) {
       ElMessage.error(response.message || '删除失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('删除失败:', error);
-      ElMessage.error('删除失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError.
+    if (error !== 'cancel') console.error('删除失败:', error);
   }
 }
 
@@ -359,8 +357,8 @@ async function handleSubmit() {
       ElMessage.error(response.message || '提交失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('提交失败:', error);
-    ElMessage.error('提交失败');
   } finally {
     submitting.value = false;
   }
@@ -464,7 +462,8 @@ async function handleRemoveProcess(item: ProductWorkProcessItem) {
       ElMessage.success('已取消关联');
     }
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error('操作失败');
+    // Interceptor shows specific toast; dedupe fallback
+    if (e !== 'cancel') console.error('[操作失败]', e);
   }
 }
 
@@ -520,7 +519,7 @@ function handleAiFill(params: Record<string, unknown>) {
           <div class="header-right">
             <el-button :icon="Download" @click="handleExport">导出</el-button>
             <el-button :icon="Upload" @click="handleImport">导入</el-button>
-            <el-button type="success" :icon="ChatDotRound" @click="aiEntryVisible = true">
+            <el-button v-if="canWrite" type="success" :icon="ChatDotRound" @click="aiEntryVisible = true">
               AI录入
             </el-button>
             <el-tooltip content="选择产品模板+客户+配方组装为定制SKU" placement="bottom">

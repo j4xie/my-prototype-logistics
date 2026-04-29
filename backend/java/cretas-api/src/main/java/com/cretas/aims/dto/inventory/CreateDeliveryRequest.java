@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -19,20 +20,26 @@ import java.util.Map;
 public class CreateDeliveryRequest {
 
     /** 关联的销售订单ID（可选，支持无单出库） */
+    @Size(max = 191, message = "销售订单ID长度不能超过191个字符")
     private String salesOrderId;
 
     @NotBlank(message = "客户ID不能为空")
+    @Size(max = 191, message = "客户ID长度不能超过191个字符")
     private String customerId;
 
     @NotNull(message = "发货日期不能为空")
     private LocalDate deliveryDate;
 
+    @Size(max = 500, message = "发货地址长度不能超过500个字符")
     private String deliveryAddress;
 
+    @Size(max = 200, message = "物流公司长度不能超过200个字符")
     private String logisticsCompany;
 
+    @Size(max = 100, message = "物流单号长度不能超过100个字符")
     private String trackingNumber;
 
+    @Size(max = 5000, message = "备注长度不能超过5000个字符")
     private String remark;
 
     @Valid
@@ -55,18 +62,22 @@ public class CreateDeliveryRequest {
     public static class DeliveryItemDTO {
 
         @NotBlank(message = "产品ID不能为空")
+        @Size(max = 191, message = "产品ID长度不能超过191个字符")
         private String productTypeId;
 
+        @Size(max = 200, message = "产品名称长度不能超过200个字符")
         private String productName;
 
         @NotNull(message = "发货数量不能为空")
         private BigDecimal deliveredQuantity;
 
         @NotBlank(message = "单位不能为空")
+        @Size(max = 20, message = "单位长度不能超过20个字符")
         private String unit;
 
         private BigDecimal unitPrice;
 
+        @Size(max = 5000, message = "备注长度不能超过5000个字符")
         private String remark;
     }
 }

@@ -1,0 +1,441 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - img "Logo" [ref=e6]
+      - generic [ref=e7]: 白垩纪AI Agent
+    - menubar [ref=e11]:
+      - menuitem "首页" [ref=e12] [cursor=pointer]:
+        - img [ref=e14]
+        - text: 首页
+      - menuitem "生产管理" [ref=e16]:
+        - generic [ref=e17] [cursor=pointer]:
+          - img [ref=e19]
+          - generic [ref=e21]: 生产管理
+          - img [ref=e23]
+      - menuitem "仓储管理" [ref=e25]:
+        - generic [ref=e26] [cursor=pointer]:
+          - img [ref=e28]
+          - generic [ref=e32]: 仓储管理
+          - img [ref=e34]
+      - menuitem "质量管理" [ref=e36]:
+        - generic [ref=e37] [cursor=pointer]:
+          - img [ref=e39]
+          - generic [ref=e41]: 质量管理
+          - img [ref=e43]
+      - menuitem "采购管理" [ref=e45]:
+        - generic [ref=e46] [cursor=pointer]:
+          - img [ref=e48]
+          - generic [ref=e50]: 采购管理
+          - img [ref=e52]
+      - menuitem "销售管理" [expanded] [ref=e54]:
+        - generic [ref=e55] [cursor=pointer]:
+          - img [ref=e57]
+          - generic [ref=e59]: 销售管理
+          - img [ref=e61]
+        - menu [ref=e63]:
+          - menuitem "销售订单" [ref=e64] [cursor=pointer]
+          - menuitem "成品库存" [ref=e65] [cursor=pointer]
+          - menuitem "客户管理" [ref=e66] [cursor=pointer]
+          - menuitem "出货记录" [ref=e67] [cursor=pointer]
+      - menuitem "人事管理" [ref=e68]:
+        - generic [ref=e69] [cursor=pointer]:
+          - img [ref=e71]
+          - generic [ref=e73]: 人事管理
+          - img [ref=e75]
+      - menuitem "调拨管理" [ref=e77]:
+        - generic [ref=e78] [cursor=pointer]:
+          - img [ref=e80]
+          - generic [ref=e82]: 调拨管理
+          - img [ref=e84]
+      - menuitem "设备管理" [ref=e86]:
+        - generic [ref=e87] [cursor=pointer]:
+          - img [ref=e89]
+          - generic [ref=e91]: 设备管理
+          - img [ref=e93]
+      - menuitem "财务管理" [ref=e95]:
+        - generic [ref=e96] [cursor=pointer]:
+          - img [ref=e98]
+          - generic [ref=e102]: 财务管理
+          - img [ref=e104]
+      - menuitem "研发管理" [ref=e106]:
+        - generic [ref=e107] [cursor=pointer]:
+          - generic [ref=e109]: 研发管理
+          - img [ref=e111]
+      - menuitem "系统管理" [ref=e113]:
+        - generic [ref=e114] [cursor=pointer]:
+          - img [ref=e116]
+          - generic [ref=e118]: 系统管理
+          - img [ref=e120]
+      - menuitem "数据分析" [ref=e122]:
+        - generic [ref=e123] [cursor=pointer]:
+          - img [ref=e125]
+          - generic [ref=e127]: 数据分析
+          - img [ref=e129]
+      - menuitem "智能调度" [ref=e131]:
+        - generic [ref=e132] [cursor=pointer]:
+          - img [ref=e134]
+          - generic [ref=e136]: 智能调度
+          - img [ref=e138]
+      - menuitem "行为校准" [ref=e140]:
+        - generic [ref=e141] [cursor=pointer]:
+          - img [ref=e143]
+          - generic [ref=e146]: 行为校准
+          - img [ref=e148]
+      - menuitem "生产分析" [ref=e150]:
+        - generic [ref=e151] [cursor=pointer]:
+          - img [ref=e153]
+          - generic [ref=e155]: 生产分析
+          - img [ref=e157]
+      - menuitem "智能BI" [ref=e159]:
+        - generic [ref=e160] [cursor=pointer]:
+          - img [ref=e162]
+          - generic [ref=e164]: 智能BI
+          - img [ref=e166]
+  - generic [ref=e168]:
+    - banner [ref=e169]:
+      - generic [ref=e170]:
+        - img [ref=e172] [cursor=pointer]
+        - navigation "面包屑" [ref=e174]:
+          - generic [ref=e175]:
+            - link "销售管理" [ref=e176]
+            - text: /
+          - link "销售订单" [ref=e178]
+      - generic [ref=e179]:
+        - img [ref=e181] [cursor=pointer]
+        - img [ref=e184] [cursor=pointer]
+        - button "factory_admin1 工厂总监" [ref=e187] [cursor=pointer]:
+          - img [ref=e190]
+          - generic [ref=e192]:
+            - generic [ref=e193]: factory_admin1
+            - generic [ref=e194]: 工厂总监
+    - main [ref=e195]:
+      - generic [ref=e207]:
+        - generic [ref=e209]:
+          - generic [ref=e210]:
+            - generic [ref=e211]: 销售订单管理
+            - generic [ref=e212]: 共 14 条记录
+          - generic [ref=e213]:
+            - button "AI录入" [ref=e214] [cursor=pointer]:
+              - img [ref=e216]
+              - generic [ref=e219]: AI录入
+            - button "新建销售订单" [ref=e220] [cursor=pointer]:
+              - img [ref=e222]
+              - generic [ref=e224]: 新建销售订单
+        - generic [ref=e225]:
+          - radiogroup "radio-group" [ref=e226]:
+            - generic [ref=e227]:
+              - radio "全部订单 10" [checked] [ref=e228]
+              - generic [ref=e229] [cursor=pointer]: 全部订单 10
+            - generic [ref=e230]:
+              - radio "未出库订单 5" [ref=e231]
+              - generic [ref=e232] [cursor=pointer]: 未出库订单 5
+            - generic [ref=e233]:
+              - radio "部分出库订单" [ref=e234]
+              - generic [ref=e235] [cursor=pointer]: 部分出库订单
+            - generic [ref=e236]:
+              - radio "未收款订单 9" [ref=e237]
+              - generic [ref=e238] [cursor=pointer]: 未收款订单 9
+            - generic [ref=e239]:
+              - radio "部分收款订单" [ref=e240]
+              - generic [ref=e241] [cursor=pointer]: 部分收款订单
+            - generic [ref=e242]:
+              - radio "已完成订单 4" [ref=e243]
+              - generic [ref=e244] [cursor=pointer]: 已完成订单 4
+          - generic [ref=e245]:
+            - generic [ref=e247] [cursor=pointer]:
+              - generic:
+                - combobox [ref=e249]
+                - generic [ref=e250]: 按状态筛选
+              - img [ref=e253]
+            - button "重置" [ref=e255] [cursor=pointer]:
+              - img [ref=e257]
+              - generic [ref=e259]: 重置
+          - generic [ref=e261]:
+            - table [ref=e263]:
+              - rowgroup [ref=e274]:
+                - row "订单编号 客户 业务员 下单日期 总金额 运费 折扣 状态 操作" [ref=e275]:
+                  - columnheader "订单编号" [ref=e276]:
+                    - generic [ref=e277]: 订单编号
+                  - columnheader "客户" [ref=e278]:
+                    - generic [ref=e279]: 客户
+                  - columnheader "业务员" [ref=e280]:
+                    - generic [ref=e281]: 业务员
+                  - columnheader "下单日期" [ref=e282]:
+                    - generic [ref=e283]: 下单日期
+                  - columnheader "总金额" [ref=e284]:
+                    - generic [ref=e285]: 总金额
+                  - columnheader "运费" [ref=e286]:
+                    - generic [ref=e287]: 运费
+                  - columnheader "折扣" [ref=e288]:
+                    - generic [ref=e289]: 折扣
+                  - columnheader "状态" [ref=e290]:
+                    - generic [ref=e291]: 状态
+                  - columnheader "操作" [ref=e292]:
+                    - generic [ref=e293]: 操作
+            - table [ref=e298]:
+              - rowgroup [ref=e309]:
+                - row "SO-20260418-0002 永辉超市 2026-04-18 ¥1,300.00 - - 草稿 详情 编辑 确认 取消" [ref=e310]:
+                  - cell "SO-20260418-0002" [ref=e311]:
+                    - generic [ref=e312]: SO-20260418-0002
+                  - cell "永辉超市" [ref=e313]:
+                    - generic [ref=e314]: 永辉超市
+                  - cell [ref=e315]
+                  - cell "2026-04-18" [ref=e316]:
+                    - generic [ref=e317]: 2026-04-18
+                  - cell "¥1,300.00" [ref=e318]:
+                    - generic [ref=e319]: ¥1,300.00
+                  - cell "-" [ref=e320]:
+                    - generic [ref=e321]: "-"
+                  - cell "-" [ref=e322]:
+                    - generic [ref=e323]: "-"
+                  - cell "草稿" [ref=e324]:
+                    - generic [ref=e327]: 草稿
+                  - cell "详情 编辑 确认 取消" [ref=e328]:
+                    - generic [ref=e329]:
+                      - button "详情" [ref=e330] [cursor=pointer]:
+                        - generic [ref=e331]: 详情
+                      - button "编辑" [ref=e332] [cursor=pointer]:
+                        - generic [ref=e333]: 编辑
+                      - button "确认" [ref=e334] [cursor=pointer]:
+                        - generic [ref=e335]: 确认
+                      - button "取消" [ref=e336] [cursor=pointer]:
+                        - generic [ref=e337]: 取消
+                - row "SO-20260418-0001 永辉超市 2026-04-18 ¥5,000.00 - - 已确认 详情 取消 出库 开票 税率分组开票 收款" [ref=e338]:
+                  - cell "SO-20260418-0001" [ref=e339]:
+                    - generic [ref=e340]: SO-20260418-0001
+                  - cell "永辉超市" [ref=e341]:
+                    - generic [ref=e342]: 永辉超市
+                  - cell [ref=e343]
+                  - cell "2026-04-18" [ref=e344]:
+                    - generic [ref=e345]: 2026-04-18
+                  - cell "¥5,000.00" [ref=e346]:
+                    - generic [ref=e347]: ¥5,000.00
+                  - cell "-" [ref=e348]:
+                    - generic [ref=e349]: "-"
+                  - cell "-" [ref=e350]:
+                    - generic [ref=e351]: "-"
+                  - cell "已确认" [ref=e352]:
+                    - generic [ref=e355]: 已确认
+                  - cell "详情 取消 出库 开票 税率分组开票 收款" [ref=e356]:
+                    - generic [ref=e357]:
+                      - button "详情" [ref=e358] [cursor=pointer]:
+                        - generic [ref=e359]: 详情
+                      - button "取消" [ref=e360] [cursor=pointer]:
+                        - generic [ref=e361]: 取消
+                      - button "出库" [ref=e362] [cursor=pointer]:
+                        - generic [ref=e363]: 出库
+                      - button "开票" [ref=e364] [cursor=pointer]:
+                        - generic [ref=e365]: 开票
+                      - button "税率分组开票" [ref=e366] [cursor=pointer]:
+                        - generic [ref=e367]: 税率分组开票
+                      - button "收款" [ref=e368] [cursor=pointer]:
+                        - generic [ref=e369]: 收款
+                - row "SO-20260417-0001 永辉超市 2026-04-17 ¥5,000.00 - - 已完成 详情 税率分组开票" [ref=e370]:
+                  - cell "SO-20260417-0001" [ref=e371]:
+                    - generic [ref=e372]: SO-20260417-0001
+                  - cell "永辉超市" [ref=e373]:
+                    - generic [ref=e374]: 永辉超市
+                  - cell [ref=e375]
+                  - cell "2026-04-17" [ref=e376]:
+                    - generic [ref=e377]: 2026-04-17
+                  - cell "¥5,000.00" [ref=e378]:
+                    - generic [ref=e379]: ¥5,000.00
+                  - cell "-" [ref=e380]:
+                    - generic [ref=e381]: "-"
+                  - cell "-" [ref=e382]:
+                    - generic [ref=e383]: "-"
+                  - cell "已完成" [ref=e384]:
+                    - generic [ref=e387]: 已完成
+                  - cell "详情 税率分组开票" [ref=e388]:
+                    - generic [ref=e389]:
+                      - button "详情" [ref=e390] [cursor=pointer]:
+                        - generic [ref=e391]: 详情
+                      - button "税率分组开票" [ref=e392] [cursor=pointer]:
+                        - generic [ref=e393]: 税率分组开票
+                - row "SO-20260409-0003 JSON导入客户2 E2E Tester 2026-04-09 ¥4,500.00 ¥50.00 - 已取消 详情" [ref=e394]:
+                  - cell "SO-20260409-0003" [ref=e395]:
+                    - generic [ref=e396]: SO-20260409-0003
+                  - cell "JSON导入客户2" [ref=e397]:
+                    - generic [ref=e398]: JSON导入客户2
+                  - cell "E2E Tester" [ref=e399]:
+                    - generic [ref=e400]: E2E Tester
+                  - cell "2026-04-09" [ref=e401]:
+                    - generic [ref=e402]: 2026-04-09
+                  - cell "¥4,500.00" [ref=e403]:
+                    - generic [ref=e404]: ¥4,500.00
+                  - cell "¥50.00" [ref=e405]:
+                    - generic [ref=e406]: ¥50.00
+                  - cell "-" [ref=e407]:
+                    - generic [ref=e408]: "-"
+                  - cell "已取消" [ref=e409]:
+                    - generic [ref=e412]: 已取消
+                  - cell "详情" [ref=e413]:
+                    - button "详情" [ref=e415] [cursor=pointer]:
+                      - generic [ref=e416]: 详情
+                - row "SO-20260409-0002 JSON导入客户2 E2E Tester 2026-04-09 ¥4,500.00 ¥50.00 - 已确认 详情 取消 出库 开票 税率分组开票 收款" [ref=e417]:
+                  - cell "SO-20260409-0002" [ref=e418]:
+                    - generic [ref=e419]: SO-20260409-0002
+                  - cell "JSON导入客户2" [ref=e420]:
+                    - generic [ref=e421]: JSON导入客户2
+                  - cell "E2E Tester" [ref=e422]:
+                    - generic [ref=e423]: E2E Tester
+                  - cell "2026-04-09" [ref=e424]:
+                    - generic [ref=e425]: 2026-04-09
+                  - cell "¥4,500.00" [ref=e426]:
+                    - generic [ref=e427]: ¥4,500.00
+                  - cell "¥50.00" [ref=e428]:
+                    - generic [ref=e429]: ¥50.00
+                  - cell "-" [ref=e430]:
+                    - generic [ref=e431]: "-"
+                  - cell "已确认" [ref=e432]:
+                    - generic [ref=e435]: 已确认
+                  - cell "详情 取消 出库 开票 税率分组开票 收款" [ref=e436]:
+                    - generic [ref=e437]:
+                      - button "详情" [ref=e438] [cursor=pointer]:
+                        - generic [ref=e439]: 详情
+                      - button "取消" [ref=e440] [cursor=pointer]:
+                        - generic [ref=e441]: 取消
+                      - button "出库" [ref=e442] [cursor=pointer]:
+                        - generic [ref=e443]: 出库
+                      - button "开票" [ref=e444] [cursor=pointer]:
+                        - generic [ref=e445]: 开票
+                      - button "税率分组开票" [ref=e446] [cursor=pointer]:
+                        - generic [ref=e447]: 税率分组开票
+                      - button "收款" [ref=e448] [cursor=pointer]:
+                        - generic [ref=e449]: 收款
+                - row "SO-20260409-0001 JSON导入客户2 E2E Tester 2026-04-09 ¥4,500.00 ¥50.00 - 已完成 详情 税率分组开票" [ref=e450]:
+                  - cell "SO-20260409-0001" [ref=e451]:
+                    - generic [ref=e452]: SO-20260409-0001
+                  - cell "JSON导入客户2" [ref=e453]:
+                    - generic [ref=e454]: JSON导入客户2
+                  - cell "E2E Tester" [ref=e455]:
+                    - generic [ref=e456]: E2E Tester
+                  - cell "2026-04-09" [ref=e457]:
+                    - generic [ref=e458]: 2026-04-09
+                  - cell "¥4,500.00" [ref=e459]:
+                    - generic [ref=e460]: ¥4,500.00
+                  - cell "¥50.00" [ref=e461]:
+                    - generic [ref=e462]: ¥50.00
+                  - cell "-" [ref=e463]:
+                    - generic [ref=e464]: "-"
+                  - cell "已完成" [ref=e465]:
+                    - generic [ref=e468]: 已完成
+                  - cell "详情 税率分组开票" [ref=e469]:
+                    - generic [ref=e470]:
+                      - button "详情" [ref=e471] [cursor=pointer]:
+                        - generic [ref=e472]: 详情
+                      - button "税率分组开票" [ref=e473] [cursor=pointer]:
+                        - generic [ref=e474]: 税率分组开票
+                - row "SO-202502-003 永辉超市 2025-02-18 ¥280,000.00 - ¥5,000.00 已确认 详情 取消 出库 开票 税率分组开票 收款" [ref=e475]:
+                  - cell "SO-202502-003" [ref=e476]:
+                    - generic [ref=e477]: SO-202502-003
+                  - cell "永辉超市" [ref=e478]:
+                    - generic [ref=e479]: 永辉超市
+                  - cell [ref=e480]
+                  - cell "2025-02-18" [ref=e481]:
+                    - generic [ref=e482]: 2025-02-18
+                  - cell "¥280,000.00" [ref=e483]:
+                    - generic [ref=e484]: ¥280,000.00
+                  - cell "-" [ref=e485]:
+                    - generic [ref=e486]: "-"
+                  - cell "¥5,000.00" [ref=e487]:
+                    - generic [ref=e488]: ¥5,000.00
+                  - cell "已确认" [ref=e489]:
+                    - generic [ref=e492]: 已确认
+                  - cell "详情 取消 出库 开票 税率分组开票 收款" [ref=e493]:
+                    - generic [ref=e494]:
+                      - button "详情" [ref=e495] [cursor=pointer]:
+                        - generic [ref=e496]: 详情
+                      - button "取消" [ref=e497] [cursor=pointer]:
+                        - generic [ref=e498]: 取消
+                      - button "出库" [ref=e499] [cursor=pointer]:
+                        - generic [ref=e500]: 出库
+                      - button "开票" [ref=e501] [cursor=pointer]:
+                        - generic [ref=e502]: 开票
+                      - button "税率分组开票" [ref=e503] [cursor=pointer]:
+                        - generic [ref=e504]: 税率分组开票
+                      - button "收款" [ref=e505] [cursor=pointer]:
+                        - generic [ref=e506]: 收款
+                - row "SO-202501-001 永辉超市 2025-01-13 ¥245,000.00 - ¥5,000.00 已完成 详情 税率分组开票" [ref=e507]:
+                  - cell "SO-202501-001" [ref=e508]:
+                    - generic [ref=e509]: SO-202501-001
+                  - cell "永辉超市" [ref=e510]:
+                    - generic [ref=e511]: 永辉超市
+                  - cell [ref=e512]
+                  - cell "2025-01-13" [ref=e513]:
+                    - generic [ref=e514]: 2025-01-13
+                  - cell "¥245,000.00" [ref=e515]:
+                    - generic [ref=e516]: ¥245,000.00
+                  - cell "-" [ref=e517]:
+                    - generic [ref=e518]: "-"
+                  - cell "¥5,000.00" [ref=e519]:
+                    - generic [ref=e520]: ¥5,000.00
+                  - cell "已完成" [ref=e521]:
+                    - generic [ref=e524]: 已完成
+                  - cell "详情 税率分组开票" [ref=e525]:
+                    - generic [ref=e526]:
+                      - button "详情" [ref=e527] [cursor=pointer]:
+                        - generic [ref=e528]: 详情
+                      - button "税率分组开票" [ref=e529] [cursor=pointer]:
+                        - generic [ref=e530]: 税率分组开票
+                - row "SO-202502-001 永辉超市 2025-02-06 ¥198,000.00 - - 已完成 详情 税率分组开票" [ref=e531]:
+                  - cell "SO-202502-001" [ref=e532]:
+                    - generic [ref=e533]: SO-202502-001
+                  - cell "永辉超市" [ref=e534]:
+                    - generic [ref=e535]: 永辉超市
+                  - cell [ref=e536]
+                  - cell "2025-02-06" [ref=e537]:
+                    - generic [ref=e538]: 2025-02-06
+                  - cell "¥198,000.00" [ref=e539]:
+                    - generic [ref=e540]: ¥198,000.00
+                  - cell "-" [ref=e541]:
+                    - generic [ref=e542]: "-"
+                  - cell "-" [ref=e543]:
+                    - generic [ref=e544]: "-"
+                  - cell "已完成" [ref=e545]:
+                    - generic [ref=e548]: 已完成
+                  - cell "详情 税率分组开票" [ref=e549]:
+                    - generic [ref=e550]:
+                      - button "详情" [ref=e551] [cursor=pointer]:
+                        - generic [ref=e552]: 详情
+                      - button "税率分组开票" [ref=e553] [cursor=pointer]:
+                        - generic [ref=e554]: 税率分组开票
+                - row "SO-202502-004 盒马鲜生 2025-02-24 ¥95,000.00 - - 待财务审核 详情" [ref=e555]:
+                  - cell "SO-202502-004" [ref=e556]:
+                    - generic [ref=e557]: SO-202502-004
+                  - cell "盒马鲜生" [ref=e558]:
+                    - generic [ref=e559]: 盒马鲜生
+                  - cell [ref=e560]
+                  - cell "2025-02-24" [ref=e561]:
+                    - generic [ref=e562]: 2025-02-24
+                  - cell "¥95,000.00" [ref=e563]:
+                    - generic [ref=e564]: ¥95,000.00
+                  - cell "-" [ref=e565]:
+                    - generic [ref=e566]: "-"
+                  - cell "-" [ref=e567]:
+                    - generic [ref=e568]: "-"
+                  - cell "待财务审核" [ref=e569]:
+                    - generic [ref=e572]: 待财务审核
+                  - cell "详情" [ref=e573]:
+                    - button "详情" [ref=e575] [cursor=pointer]:
+                      - generic [ref=e576]: 详情
+          - generic [ref=e579]:
+            - generic [ref=e580]: 共 14 条
+            - generic [ref=e583] [cursor=pointer]:
+              - generic:
+                - combobox [ref=e585]
+                - generic [ref=e586]: 10条/页
+              - img [ref=e589]
+            - button "上一页" [disabled] [ref=e591]:
+              - generic:
+                - img
+            - list [ref=e592]:
+              - listitem "第 1 页" [ref=e593]: "1"
+              - listitem "第 2 页" [ref=e594] [cursor=pointer]: "2"
+            - button "下一页" [ref=e595] [cursor=pointer]:
+              - generic:
+                - img
+            - generic [ref=e596]:
+              - generic [ref=e597]: 前往
+              - spinbutton "页" [ref=e600]: "1"
+              - generic [ref=e601]: 页

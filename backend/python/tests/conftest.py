@@ -12,7 +12,11 @@ from pathlib import Path
 
 import pytest
 import httpx
-import pandas as pd
+
+# pandas is imported lazily inside excel_ground_truth fixture below.
+# Reason: some local dev envs (anaconda) have broken numpy installs that
+# crash on `import pandas`; making it lazy lets unit tests that don't need
+# Excel parsing run without triggering the dependency chain.
 
 # ── Paths ──────────────────────────────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent  # my-prototype-logistics/
@@ -82,6 +86,8 @@ def excel_ground_truth():
     if not EXCEL_PATH.exists():
         pytest.skip(f"Test.xlsx not found at {EXCEL_PATH}")
 
+    import pandas as pd  # lazy: only needed when this fixture runs
+
     xls = pd.ExcelFile(EXCEL_PATH)
     ground_truth = {}
 
@@ -148,6 +154,36 @@ def sample_line_data():
     ]
 
 
+# ── Provenance env-flag cache ──────────────────────────────────
+@pytest.fixture(autouse=True)
+def _reset_provenance_env_cache():
+    """Clear ``SMARTBI_ENABLE_PROVENANCE`` cache before AND after each test.
+
+    :func:`smartbi.canonical.provenance._writer_hook.is_provenance_enabled` is
+    ``@functools.cache``-wrapped (I4 fix) so the first call's value sticks
+    for the lifetime of the process. That collides with ``monkeypatch.setenv``
+    in tests: a test that flips the env to "1" leaves the cache stuck at
+    True for every later test that calls :func:`is_provenance_enabled`,
+    which surprises tests asserting the hook is NOT called when the env is
+    unset.
+
+    Importing the helper is wrapped in ``try/except ImportError`` so this
+    fixture is harmless for any test environment that doesn't have the
+    canonical provenance module installed (e.g. lightweight tests that
+    don't touch the smartbi package).
+    """
+    try:
+        from smartbi.canonical.provenance._writer_hook import (
+            invalidate_provenance_flag_cache,
+        )
+    except ImportError:
+        yield
+        return
+    invalidate_provenance_flag_cache()
+    yield
+    invalidate_provenance_flag_cache()
+
+
 @pytest.fixture
 def sample_profit_data():
     """Sample profit data for insight generation."""
@@ -168,3 +204,87 @@ def sample_quick_summary_data():
         {"name": "Bob", "revenue": 1500, "cost": 700},
         {"name": "Carol", "revenue": 2000, "cost": 900},
     ]
+
+
+# ─────────────────────────────────────────────────────────────────────
+# 数据织网 Sub-Project C — shared real-PG pool fixture (P2-7).
+#
+# Previously duplicated bit-for-bit across 3 test files
+# (test_top_products_provenance.py, test_provenance_audit.py,
+# test_factory_provenance_config.py). Each `clean_rows` fixture
+# stays per-file because the table sets to wipe differ; this one
+# centralizes the pool acquisition + skip-when-no-PG behavior.
+# ─────────────────────────────────────────────────────────────────────
+import pytest_asyncio
+
+
+# ─────────────────────────────────────────────────────────────────────
+# 数据织网 Sub-Project C — pytest_asyncio singleton-pool reset (post-test
+# audit gate finding).
+#
+# `smartbi.config._pg_pool` is a module-level asyncpg.Pool singleton. The
+# first real-PG test creates it bound to that test's event loop. pytest-
+# asyncio creates a fresh event loop for each test (default
+# function-scope), so test 2 hits `RuntimeError: Event loop is closed`
+# when `get_cell_audit` → `get_pg_pool()` → pool._acquire() inside the
+# now-closed loop.
+#
+# Fix: autouse fixture nulls the singleton before AND after each test.
+# Production behavior (web service) is unchanged because that env has a
+# single long-running event loop; the singleton works fine there.
+# ─────────────────────────────────────────────────────────────────────
+@pytest_asyncio.fixture(autouse=True)
+async def _reset_smartbi_pg_pool_singleton():
+    """Null the module-level asyncpg pool singleton between tests so each
+    test gets a pool bound to its own event loop.
+    """
+    try:
+        from smartbi import config as _smartbi_config
+    except ImportError:
+        yield
+        return
+    # before
+    prev = getattr(_smartbi_config, "_pg_pool", None)
+    if prev is not None and not prev._closed:
+        try:
+            await prev.close()
+        except Exception:
+            pass
+    _smartbi_config._pg_pool = None
+    yield
+    # after
+    cur = getattr(_smartbi_config, "_pg_pool", None)
+    if cur is not None and not cur._closed:
+        try:
+            await cur.close()
+        except Exception:
+            pass
+    _smartbi_config._pg_pool = None
+
+
+@pytest_asyncio.fixture
+async def c_provenance_pool():
+    """asyncpg.Pool with the tenant-aware connection setup hook.
+
+    Skips the test cleanly when ``settings.postgres_url`` is unset
+    (matches the Sub-Project C real-PG canon: tunneled smartbi_db
+    on port 5433 has the C migrations applied; local dev DB usually
+    doesn't, hence skip-not-fail when no DSN configured).
+    """
+    import asyncpg
+    from smartbi.config import get_settings
+    from smartbi.tenant_ctx import set_pg_connection_tenant
+
+    settings = get_settings()
+    if not settings.postgres_url:
+        pytest.skip("No Postgres configured")
+    p = await asyncpg.create_pool(
+        settings.postgres_url,
+        min_size=1,
+        max_size=3,
+        setup=set_pg_connection_tenant,
+    )
+    try:
+        yield p
+    finally:
+        await p.close()

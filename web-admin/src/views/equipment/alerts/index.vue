@@ -53,8 +53,8 @@ async function loadData() {
       ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载失败:', error);
-    ElMessage.error('加载数据失败');
   } finally {
     loading.value = false;
   }
@@ -116,9 +116,8 @@ async function handleResolve(row: Record<string, unknown>) {
       ElMessage.error(response.message || '处理失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('处理失败');
-    }
+    // Interceptor shows specific toast; dedupe fallback
+    if (error !== 'cancel') console.error('[失败]', error);
   }
 }
 
@@ -134,9 +133,9 @@ async function handleAcknowledge(row: Record<string, unknown>) {
       ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('操作失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError (request.ts).
+    // Retained catch to prevent uncaught; log for debug.
+    if (error !== 'cancel') console.error('[提交失败]', error);
   }
 }
 
@@ -185,6 +184,12 @@ function getAlertTypeText(type: string) {
     POWER: '电力异常',
     MALFUNCTION: '设备故障',
     MAINTENANCE_DUE: '维护到期',
+    // chart audit P2-1: backend may emit these without FE translations.
+    PERFORMANCE_LOW: '性能下降',
+    PERFORMANCE_HIGH: '性能异常上升',
+    PRESSURE: '压力异常',
+    HUMIDITY: '湿度异常',
+    OFFLINE: '设备离线',
     OTHER: '其他'
   };
   return map[type] || type;

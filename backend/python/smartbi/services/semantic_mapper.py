@@ -27,6 +27,7 @@ class FieldMapping:
     method: str  # rule, llm, multi_model
     category: Optional[str] = None  # Field category (amount, rate, category, time, etc.)
     description: Optional[str] = None  # Human-readable description
+    data_type: Optional[str] = None  # A3: NUMERIC/DATE/TEXT (inferred from sample)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -35,7 +36,8 @@ class FieldMapping:
             "confidence": self.confidence,
             "method": self.method,
             "category": self.category,
-            "description": self.description
+            "description": self.description,
+            "data_type": self.data_type,
         }
 
 
@@ -274,13 +276,80 @@ class SemanticMapper:
         rule_mappings, rule_unmapped = self._map_with_rules(columns, factory_id)
         mappings.extend(rule_mappings)
 
-        # If all mapped with high confidence, return
-        if not rule_unmapped or all(m.confidence >= self.settings.semantic_mapping_confidence_threshold for m in mappings):
+        # Bug #12 fix (Apr 17 2026): only return early when every field got a
+        # rule mapping. Previously `all(... for m in mappings)` returned True
+        # when mappings=[] (vacuous truth), which short-circuited Layer 2 LLM
+        # fallback on all-unmapped files — the exact scenario LLM is meant for.
+        if not rule_unmapped:
+            # A1+A3: dedupe standard names + infer data_type before returning
+            self._dedupe_standard_names(mappings)
+            self._enrich_data_types(mappings, columns, sample_data)
             result.field_mappings = mappings
             result.unmapped_fields = rule_unmapped
             result.confidence = sum(m.confidence for m in mappings) / len(mappings) if mappings else 0.5
             result.method = "rule"
             return result
+
+        # Layer 1.5 (C1 MVP, Apr 20 2026): Embedding-first lookup between
+        # rules and LLM. Cheap (~50ms cached + one DashScope batch call for
+        # all unmapped). Accept cos>=0.82; borderline falls through to LLM.
+        if rule_unmapped:
+            try:
+                from smartbi.services.standard_field_embedder import (
+                    find_best_matches_batch,
+                )
+                # Build per-column samples
+                col_idx = {c: i for i, c in enumerate(columns)}
+                samples_per_col: Dict[str, List[object]] = {}
+                if sample_data:
+                    for col in rule_unmapped:
+                        idx = col_idx.get(col)
+                        if idx is None:
+                            continue
+                        samples_per_col[col] = [
+                            row[idx] for row in sample_data[:3] if idx < len(row)
+                        ]
+
+                matches = await find_best_matches_batch(
+                    rule_unmapped, samples_per_col, top_k=2
+                )
+                emb_mapped: Set[str] = set()
+                # DashScope text-embedding-v3 cosine distribution is narrow
+                # on Chinese financial terms: good matches are typically
+                # 0.60-0.75. We accept top >= 0.65 AND margin(top - 2nd) >= 0.03
+                # to reduce false positives. Borderline (0.55-0.65) falls
+                # through to LLM which has broader semantic understanding.
+                EMB_MIN = 0.65
+                EMB_MARGIN = 0.03
+                for col, hits in matches.items():
+                    if not hits:
+                        continue
+                    std, cat, score = hits[0]
+                    margin = (
+                        score - hits[1][2] if len(hits) > 1 else score
+                    )
+                    if score >= EMB_MIN and margin >= EMB_MARGIN:
+                        field_info = STANDARD_FIELDS.get(std, {})
+                        mappings.append(FieldMapping(
+                            original=col,
+                            standard=std,
+                            confidence=min(0.95, score),
+                            method="embedding",
+                            category=cat or field_info.get("category"),
+                            description=f"embedding cos={score:.3f} margin={margin:.3f}",
+                        ))
+                        emb_mapped.add(col)
+                        logger.info(
+                            f"[embedder] {col!r} → {std} cos={score:.3f} margin={margin:.3f}"
+                        )
+                    else:
+                        logger.debug(
+                            f"[embedder] {col!r} too weak: top={std}@{score:.3f} margin={margin:.3f} — fall to LLM"
+                        )
+                rule_unmapped = [c for c in rule_unmapped if c not in emb_mapped]
+            except Exception as e:
+                # Embedding layer is opportunistic — never block LLM fallback
+                logger.warning(f"[embedder] skipped: {e}")
 
         # Layer 2: LLM mapping for unmapped fields
         if rule_unmapped:
@@ -294,13 +363,22 @@ class SemanticMapper:
         # Check overall confidence
         avg_confidence = sum(m.confidence for m in mappings) / len(mappings) if mappings else 0.0
 
-        if avg_confidence < self.settings.semantic_mapping_confidence_threshold and unmapped:
-            # Layer 3: Multi-model enhancement
+        if (
+            avg_confidence < self.settings.semantic_mapping_confidence_threshold
+            and unmapped
+            and getattr(self.settings, "enable_mapper_multi_model", False)
+        ):
+            # Layer 3: Multi-model enhancement (2 LLM calls — opt-in via
+            # enable_mapper_multi_model, default off since D2 Apr 17 2026)
             enhanced_mappings = await self._map_with_multi_model(
                 unmapped, columns, sample_data, table_context
             )
             mappings.extend(enhanced_mappings)
             unmapped = [c for c in unmapped if c not in {m.original for m in enhanced_mappings if m.standard}]
+
+        # A1+A3: dedupe standard names + infer data_type before returning
+        self._dedupe_standard_names(mappings)
+        self._enrich_data_types(mappings, columns, sample_data)
 
         result.field_mappings = mappings
         result.unmapped_fields = unmapped
@@ -314,6 +392,11 @@ class SemanticMapper:
     ) -> Tuple[List[FieldMapping], List[str]]:
         """
         Rule-based field mapping (Layer 1).
+
+        D1 enhancement (Apr 16 2026): Priority regex layer classifies columns
+        by Chinese suffix patterns BEFORE synonym matching. Fixes the bug where
+        "单卖数量(不含套餐子商品)" wrongly matched `product` category because
+        the column text happened to contain "商品".
         """
         mappings = []
         unmapped = []
@@ -322,7 +405,6 @@ class SemanticMapper:
         custom_map = self._custom_mappings.get(factory_id, {}) if factory_id else {}
 
         for col in columns:
-            col_lower = col.lower().strip()
             col_cleaned = self._clean_column_name(col)
 
             # Check custom mapping
@@ -333,6 +415,24 @@ class SemanticMapper:
                     confidence=0.95,
                     method="custom",
                     description="Custom factory mapping"
+                ))
+                continue
+
+            # D1 Layer 0: Priority regex patterns (Chinese semantic suffixes)
+            # High-confidence classification that wins over substring-matching synonyms
+            priority = self._classify_by_priority_regex(col)
+            if priority is not None:
+                category, std_name, confidence = priority
+                if category == 'skip':
+                    # Unnamed: * columns — don't save field_def at all
+                    continue
+                mappings.append(FieldMapping(
+                    original=col,
+                    standard=std_name,
+                    confidence=confidence,
+                    method="regex_priority",
+                    category=category,
+                    description=f"Matched priority pattern → {category}"
                 ))
                 continue
 
@@ -358,6 +458,170 @@ class SemanticMapper:
                 unmapped.append(col)
 
         return mappings, unmapped
+
+    def _dedupe_standard_names(self, mappings: List[FieldMapping]) -> None:
+        """
+        A1 (Apr 20 2026): Ensure each `standard` name is unique across mappings.
+        N-th occurrence of the same standard gets suffix `_2`, `_3`, ...
+
+        Why: Java saveFieldDefinitions uses (upload_id, field_name=standard) as
+        natural key; collisions silently overwrite earlier mappings, leaving
+        only the last column's data_type/semantic_type in DB. This breaks
+        chart_recommender which reads per-column type to decide x/y axis.
+
+        Mutates mappings in place.
+        """
+        usage: Dict[str, int] = {}
+        for m in mappings:
+            if not m.standard:
+                continue
+            base = m.standard
+            count = usage.get(base, 0)
+            if count > 0:
+                m.standard = f"{base}_{count + 1}"
+            usage[base] = count + 1
+
+    def _enrich_data_types(
+        self,
+        mappings: List[FieldMapping],
+        columns: List[str],
+        sample_data: Optional[List[List[Any]]],
+    ) -> None:
+        """
+        A3 (Apr 20 2026): Infer `data_type` (NUMERIC/DATE/TEXT) from sample
+        values and attach to each FieldMapping.
+
+        Java `saveFieldDefinitions` reads `mapping.getDataType()`; when this is
+        null, downstream cross_sheet_aggregator / chart_recommender get
+        empty `data_type` columns, so measure vs dimension classification
+        collapses to defaults (everything becomes CATEGORICAL).
+
+        Mutates mappings in place.
+        """
+        if not sample_data or not columns:
+            return
+        col_idx = {c: i for i, c in enumerate(columns)}
+        for m in mappings:
+            if m.data_type is not None:
+                continue
+            idx = col_idx.get(m.original)
+            if idx is None:
+                continue
+            values = [row[idx] for row in sample_data if idx < len(row)]
+            m.data_type = self._infer_data_type(values)
+
+    @staticmethod
+    def _infer_data_type(values: List[Any]) -> str:
+        """Infer NUMERIC / DATE / TEXT from a list of raw sample values."""
+        if not values:
+            return "TEXT"
+        non_null = [
+            v for v in values
+            if v is not None and str(v).strip() not in ("", "nan", "NaN", "None", "null")
+        ]
+        if not non_null:
+            return "TEXT"
+
+        # NUMERIC: >=80% of values parse as float after stripping ,/%/¥/空白
+        numeric_count = 0
+        for v in non_null:
+            s = str(v).replace(",", "").replace("%", "").replace("¥", "").strip()
+            try:
+                float(s)
+                numeric_count += 1
+            except (ValueError, TypeError):
+                pass
+        if numeric_count / len(non_null) >= 0.8:
+            return "NUMERIC"
+
+        # DATE: >=60% match common Chinese/ISO date patterns
+        date_pattern = re.compile(
+            r"^\d{4}[-/年]\d{1,2}[-/月]\d{1,2}日?$|"
+            r"^\d{4}[-/]\d{1,2}月?$|"
+            r"^\d{4}年?$|"
+            r"^\d{1,2}[-/]\d{1,2}$"
+        )
+        date_count = sum(1 for v in non_null if date_pattern.match(str(v).strip()))
+        if date_count / len(non_null) >= 0.6:
+            return "DATE"
+
+        return "TEXT"
+
+    def _classify_by_priority_regex(self, col: str) -> Optional[Tuple[str, str, float]]:
+        """
+        D1 priority classifier based on Chinese semantic suffix patterns.
+
+        Returns (category, standard_name, confidence) if a priority pattern
+        matches; None if caller should fall through to synonym matching.
+
+        Category values mapping to Java is_measure/is_dimension/is_time:
+        - 'amount' / 'rate' → is_measure=true
+        - 'time'            → is_time=true
+        - 'category'        → is_dimension=true
+        - 'skip'            → don't save field_def (for Unnamed: * columns)
+        """
+        # Skip obviously broken columns (Unnamed: 0..N — means header row was wrong)
+        if re.match(r'^Unnamed:\s*\d+$', col, re.IGNORECASE):
+            return ('skip', '_skip_unnamed', 1.0)
+
+        # A2 (Apr 20 2026): 收入分组/销售类型 等 "金额/数量 词 + 分组/类型" 组合
+        # 必须优先于 amount regex, 否则 "收入" 先命中 measure 导致分组字段被当度量.
+        if re.search(r'(收入|营业|销售|金额|数量|成本|利润).{0,3}(分组|组别|类型|分类|维度)', col):
+            return ('category', 'revenue_group', 0.9)
+
+        # Measure — amount patterns (金额/数量/总额 等后缀)
+        # Suffix match at end of token or before (
+        if re.search(
+            r'(金额|金额合计|数量|件数|份数|人次|人数|销量|产量|出货量|入库量|'
+            r'成本|利润|毛利|净利|营收|营业额|销售额|收入|支出|费用|税额|'
+            r'单价|均价|总价|总额|总量|合计|总计|小计|'
+            r'实收|实退|实付|应收|应付|分摊|折扣|优惠)(\(|（|\s|$)',
+            col
+        ):
+            # Use Chinese keyword as standard — Java isMeasure's zh regex will catch it
+            return ('amount', '数量金额', 0.92)
+
+        # Measure — rate patterns (率/占比/系数)
+        if re.search(r'(率|比例|占比|系数|百分比|比率)(\(|（|\s|$)', col):
+            # Standard name "rate_percent" matches Java `.*rate.*` → isMeasure=true
+            return ('rate', 'rate_percent', 0.92)
+
+        # Measure — rating patterns (评分相关, sample val 0-5 or 0-100)
+        # Allow optional `分` suffix (e.g. "星级分") and allow any boundary
+        if re.search(r'(星级|口味|环境|服务|评)分?(\(|（|\s|$)', col) or \
+           re.search(r'(评分|分数|打分|评级)(\(|（|\s|$)', col):
+            # Apr 24 2026: preserve original Chinese col name so review templates'
+            # applies() can resolve "星级"/"口味分"/etc. Python field_classifier
+            # NUMERIC-dtype fallback + explicit measure keywords classify this as
+            # measure without needing the "amount_score" rename shim for Java.
+            return ('amount', col, 0.88)
+
+        # Time patterns
+        if re.search(
+            r'(时间|日期|月份|年份|季度|周次|开单|下单|业务日|交易时间|'
+            r'创建时间|最新.*时间|投诉时间|更新时间|起始.*时间|结束.*时间)',
+            col
+        ):
+            # Standard name includes "time" → Java isTimeField matches
+            return ('time', 'time_period', 0.92)
+
+        # Category — ID/code patterns (numeric but should be dim)
+        if re.search(r'(编码|编号|代码|ID|id)$', col):
+            # Apr 24 2026: preserve original. field_classifier._ID_LIKE_KEYWORDS
+            # already catches this class + marks is_dimension=true.
+            return ('category', col, 0.9)
+
+        # Category — known dimensional patterns (名称/分类/类型/门店/商品/标签)
+        if re.search(
+            r'(名称|分类|类型|类别|门店|店铺|商品名|产品名|品牌|渠道|'
+            r'平台|来源|分组|组别|等级|城市|省份|区域|地区|标签)(\(|（|\s|$)',
+            col
+        ) and not re.search(r'(金额|数量|率|量|额|分)', col):
+            # Apr 24 2026: preserve original. field_classifier._DIMENSION_KEYWORDS
+            # resolves is_dimension regardless of Chinese vs English name.
+            return ('category', col, 0.85)
+
+        return None
 
     def _match_synonym(self, column: str, synonym: str) -> bool:
         """Check if column matches a synonym"""
@@ -399,9 +663,40 @@ class SemanticMapper:
     ) -> List[FieldMapping]:
         """
         LLM-based field mapping (Layer 2).
+
+        Bug #13 (Apr 17 2026): cache by (unmapped + all_columns + table_context)
+        — deterministic identity across files with same headers. Sample_data
+        is in the prompt for LLM context but NOT part of cache key (per-file
+        data rows vary).
         """
         if not unmapped_columns:
             return []
+
+        # Bug #13: structural cache key — same headers → same mapping regardless of data
+        from common.llm_cache import cache_get, cache_put, cache_key
+        mapper_key = cache_key(
+            "|".join(sorted(unmapped_columns)) + "||" +
+            "|".join(sorted(all_columns[:50])) + "||" +
+            (table_context or ""),
+            slot="mapper_structural"
+        )
+        cached_result = cache_get(mapper_key)
+        if cached_result is not None:
+            logger.info(f"[llm_cache] HIT mapper_structural, hash={mapper_key[:8]}, skipping LLM")
+            # Rebuild FieldMapping objects from cached (list of dicts)
+            result = []
+            for m in cached_result:
+                std = m.get("standard")
+                field_info = STANDARD_FIELDS.get(std, {}) if std else {}
+                result.append(FieldMapping(
+                    original=m["original"],
+                    standard=std,
+                    confidence=m.get("confidence", 0.7),
+                    method="llm_cached",
+                    category=field_info.get("category"),
+                    description=m.get("reasoning"),
+                ))
+            return result
 
         try:
             # Prepare context
@@ -462,6 +757,8 @@ Return JSON only:
                                 method="llm",
                                 description="No matching standard field"
                             ))
+                    # Bug #13: cache structural result (columns-only key)
+                    cache_put(mapper_key, parsed["mappings"])
                     return result
 
         except Exception as e:
@@ -690,28 +987,43 @@ Return JSON: {{"mappings": [{{"original": "col", "standard": "field_or_null", "c
 """
 
     async def _call_llm(self, prompt: str, model: str = "default") -> Optional[str]:
-        """Call LLM API"""
+        """
+        Call LLM via multi-provider router (D2, Apr 17 2026).
+        Bug #13 (Apr 17 2026): cache identical prompt → response for 24h.
+
+        Routes through `call_chain(SLOT.MAPPER)` so mapper shares the
+        aliyun_b → aliyun_a → zhipu → deepseek free-first chain and every
+        request is captured by smart_bi_llm_usage via the response hook.
+        """
         try:
-            from openai import AsyncOpenAI
+            from common.llm_router import call_chain, SLOT
+            from common.llm_metrics import llm_caller_context
+            from common.llm_cache import cache_get, cache_put, cache_key
 
-            model_name = {
-                "default": self.settings.llm_model,
-                "fast": self.settings.llm_fast_model
-            }.get(model, self.settings.llm_model)
+            # Bug #13: dedup identical prompts within 24h TTL
+            ckey = cache_key(prompt, slot="mapper")
+            cached = cache_get(ckey)
+            if cached is not None:
+                logger.info(f"[llm_cache] HIT mapper, prompt_hash={ckey[:8]}, skipping LLM")
+                return cached
 
-            client = AsyncOpenAI(
-                api_key=self.settings.llm_api_key,
-                base_url=self.settings.llm_base_url
-            )
+            payload = {
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.1,
+                "max_tokens": 1000,
+            }
 
-            response = await client.chat.completions.create(
-                model=model_name,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,
-                max_tokens=1000
-            )
+            with llm_caller_context("semantic_mapper"):
+                resp_json = await call_chain(SLOT.MAPPER, payload)
 
-            return response.choices[0].message.content
+            choices = resp_json.get("choices") or []
+            if not choices:
+                logger.warning("LLM response has no choices")
+                return None
+            content = choices[0].get("message", {}).get("content")
+            if content:
+                cache_put(ckey, content)
+            return content
 
         except Exception as e:
             logger.error(f"LLM call failed: {e}")

@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.rules.DroolsRule;
 import com.cretas.aims.repository.DroolsRuleRepository;
 import com.cretas.aims.service.RuleEngineService;
@@ -88,6 +89,7 @@ public class RuleController {
     /**
      * 创建规则
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping
     @Operation(summary = "创建规则", description = "创建新的 DRL 规则")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -136,6 +138,7 @@ public class RuleController {
     /**
      * 更新规则
      */
+    @RequirePermission({"system:read_write"})
     @PutMapping("/{ruleId}")
     @Operation(summary = "更新规则", description = "更新规则内容")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -190,6 +193,7 @@ public class RuleController {
     /**
      * 删除规则
      */
+    @RequirePermission({"system:read_write"})
     @DeleteMapping("/{ruleId}")
     @Operation(summary = "删除规则", description = "软删除规则")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -222,6 +226,7 @@ public class RuleController {
     /**
      * 验证 DRL 规则语法
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/validate")
     @Operation(summary = "验证规则语法", description = "验证 DRL 规则语法是否正确")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -244,6 +249,7 @@ public class RuleController {
      * 用于在规则发布前测试新规则的执行效果，不会影响已保存的规则或数据。
      * 支持 ChangeSet 发布前的预览功能。
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/dry-run")
     @Operation(summary = "Dry-Run 规则执行", description = "在沙箱环境中测试未保存的规则，预览执行效果")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -301,6 +307,7 @@ public class RuleController {
      * 用于前端 useRuleHooks 的 testRule 功能
      * 在不实际修改数据的情况下测试规则执行效果
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/{ruleId}/test")
     @Operation(summary = "测试规则执行", description = "使用测试数据执行指定规则，返回执行结果")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin', 'workshop_supervisor', 'quality_inspector')")
@@ -401,6 +408,7 @@ public class RuleController {
     /**
      * 上传决策表
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/decision-table")
     @Operation(summary = "上传决策表", description = "上传 Excel 决策表并生成 DRL 规则")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -510,6 +518,7 @@ public class RuleController {
     /**
      * 创建或更新状态机
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/state-machines/{entityType}")
     @Operation(summary = "保存状态机配置", description = "创建或更新状态机配置")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -530,6 +539,7 @@ public class RuleController {
     /**
      * 删除状态机
      */
+    @RequirePermission({"system:read_write"})
     @DeleteMapping("/state-machines/{entityType}")
     @Operation(summary = "删除状态机配置", description = "删除指定实体类型的状态机配置")
     @PreAuthorize("hasAuthority('factory_super_admin')")
@@ -669,6 +679,7 @@ public class RuleController {
 
     // ==================== 状态机执行 API ====================
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/state-machines/{entityType}/validate")
     @Operation(summary = "验证状态转换", description = "验证状态转换是否允许，检查守卫条件")
     public ResponseEntity<ApiResponse<TransitionValidation>> validateTransition(
@@ -703,6 +714,7 @@ public class RuleController {
         }
     }
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/state-machines/{entityType}/execute")
     @Operation(summary = "执行状态转换", description = "执行状态转换并返回结果")
     public ResponseEntity<ApiResponse<StateMachineService.TransitionResult>> executeTransition(

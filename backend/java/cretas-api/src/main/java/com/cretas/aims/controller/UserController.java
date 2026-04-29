@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.format.annotation.DateTimeFormat;
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * 用户管理控制器
@@ -52,6 +53,7 @@ public class UserController {
     /**
      * 创建用户
      */
+    @RequireModule("hr_employee")
     @PostMapping
     @Operation(summary = "创建用户")
     @RequirePermission("hr:read_write")
@@ -67,6 +69,7 @@ public class UserController {
     /**
      * 更新用户信息
      */
+    @RequireModule("hr_employee")
     @PutMapping("/{userId}")
     @Operation(summary = "更新用户信息")
     @RequirePermission("hr:read_write")
@@ -84,6 +87,7 @@ public class UserController {
     /**
      * 删除用户
      */
+    @RequireModule("hr_employee")
     @DeleteMapping("/{userId}")
     @Operation(summary = "删除用户")
     @RequirePermission("hr:read_write")
@@ -160,6 +164,7 @@ public class UserController {
     /**
      * 激活用户
      */
+    @RequireModule("hr_employee")
     @PostMapping("/{userId}/activate")
     @Operation(summary = "激活用户")
     @RequirePermission("hr:read_write")
@@ -176,6 +181,7 @@ public class UserController {
     /**
      * 停用用户
      */
+    @RequireModule("hr_employee")
     @PostMapping("/{userId}/deactivate")
     @Operation(summary = "停用用户")
     @RequirePermission("hr:read_write")
@@ -192,6 +198,7 @@ public class UserController {
     /**
      * 更新用户角色
      */
+    @RequireModule("hr_employee")
     @PutMapping("/{userId}/role")
     @Operation(summary = "更新用户角色")
     @RequirePermission("hr:read_write")
@@ -244,10 +251,12 @@ public class UserController {
     public ApiResponse<PageResponse<UserDTO>> searchUsers(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "搜索关键词", required = true, example = "张三")
-            @RequestParam @NotBlank String keyword,
+            @Parameter(description = "搜索关键词，为空时返回所有", required = false, example = "张三")
+            @RequestParam(required = false, defaultValue = "") String keyword,
+            @Parameter(description = "角色筛选，为空时不筛选", required = false, example = "salesperson")
+            @RequestParam(required = false) String role,
             @Valid PageRequest pageRequest) {
-        PageResponse<UserDTO> response = userService.searchUsers(factoryId, keyword, pageRequest);
+        PageResponse<UserDTO> response = userService.searchUsers(factoryId, keyword, role, pageRequest);
         return ApiResponse.success(response);
     }
 
@@ -282,6 +291,7 @@ public class UserController {
     /**
      * 从Excel文件批量导入用户
      */
+    @RequireModule("hr_employee")
     @PostMapping("/import")
     @Operation(summary = "从Excel文件批量导入用户")
     @RequirePermission("hr:read_write")
@@ -397,6 +407,7 @@ public class UserController {
     /**
      * 绑定/更新工号
      */
+    @RequireModule("hr_employee")
     @PutMapping("/{userId}/employee-code")
     @Operation(summary = "绑定或更新用户工号")
     @RequirePermission("hr:read_write")
@@ -429,6 +440,7 @@ public class UserController {
     /**
      * 更新用户技能
      */
+    @RequireModule("hr_employee")
     @PutMapping("/{userId}/skills")
     @Operation(summary = "更新用户技能等级")
     @RequirePermission("hr:read_write")

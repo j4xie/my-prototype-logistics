@@ -91,6 +91,10 @@ class DataSummary:
     measures: List[str] = field(default_factory=list)
     time_columns: List[str] = field(default_factory=list)
     category_columns: List[str] = field(default_factory=list)
+    # A4 (Apr 20 2026): per-column unique_count — chart recommender uses this
+    # to refuse x-axis with cardinality < 2 (single-store upload like qhj shows
+    # only "表E-份" as x-axis because the only dim column collapsed to 1 value).
+    cardinality: Dict[str, int] = field(default_factory=dict)
 
     @classmethod
     def from_feature_results(cls, features: List[Dict], row_count: int = 0) -> "DataSummary":
@@ -105,6 +109,7 @@ class DataSummary:
         measures = []
         time_columns = []
         category_columns = []
+        cardinality: Dict[str, int] = {}
 
         for f in features:
             col_name = f.get("columnName", f.get("column_name", ""))
@@ -121,13 +126,22 @@ class DataSummary:
             elif data_type == "ID":
                 dimensions.append(col_name)
 
+            # A4: cache unique count (supports camelCase + snake_case + fallback)
+            uc = f.get("uniqueCount", f.get("unique_count", f.get("unique_values")))
+            if uc is not None and col_name:
+                try:
+                    cardinality[col_name] = int(uc)
+                except (TypeError, ValueError):
+                    pass
+
         return cls(
             columns=features,
             row_count=row_count,
             dimensions=dimensions,
             measures=measures,
             time_columns=time_columns,
-            category_columns=category_columns
+            category_columns=category_columns,
+            cardinality=cardinality,
         )
 
 
@@ -164,29 +178,46 @@ class ChartRecommendationCache:
         """
         Generate cache key from data structure and scenario.
 
-        Key is based on:
-        - Column names and types
-        - Time/category/measure dimensions
+        Apr 25 (D2.B1): Cache key dropped column NAMES — keeps column COUNT
+        + sorted dtype signature only. The previous key included sorted
+        column names, so two customers' POS exports that both have 232
+        columns but use slightly different headers (e.g. 「门店」 vs
+        「门店名称」) would never share a cache entry. Production stats
+        showed only 1 entry / 1 hit total. Dropping names lets similar-
+        shape Excels hit cache regardless of header naming.
+
+        Key is now based on:
+        - Column count (cardinality) + sorted dtype histogram
+        - Row-count bucket (so tiny vs large files don't share charts)
+        - Counts of time/category/measure dimensions
         - Business scenario
         - User intent (if provided)
         """
-        # Build signature from data structure
-        col_names = sorted([
-            c.get("columnName", c.get("column_name", ""))
-            for c in data_summary.columns
-        ])
+        # Apr 25 (D2.B1): drop names, keep dtype histogram + counts.
         col_types = sorted([
             c.get("dataType", c.get("data_type", ""))
             for c in data_summary.columns
         ])
 
+        # Bucket row_count so small variations don't bust cache. Buckets
+        # mirror the LLM-skip threshold (50) and common dataset sizes.
+        rc = int(getattr(data_summary, 'row_count', 0))
+        if rc < 50:
+            rc_bucket = "tiny"
+        elif rc < 1000:
+            rc_bucket = "small"
+        elif rc < 50_000:
+            rc_bucket = "med"
+        else:
+            rc_bucket = "large"
+
         signature_parts = [
-            "|".join(col_names),
-            "|".join(col_types),
-            str(getattr(data_summary, 'row_count', 0)),
-            "|".join(sorted(data_summary.time_columns[:5])),
-            "|".join(sorted(data_summary.category_columns[:5])),
-            "|".join(sorted(data_summary.measures[:5])),
+            f"cols={len(col_types)}",
+            "types=" + "|".join(col_types),
+            f"rc={rc_bucket}",
+            f"time={len(data_summary.time_columns)}",
+            f"cat={len(data_summary.category_columns)}",
+            f"meas={len(data_summary.measures)}",
             scenario,
             user_intent or ""
         ]
@@ -493,8 +524,30 @@ class ChartRecommender:
         if use_cache:
             cached = self._cache.get(data_summary, scenario, user_intent)
             if cached:
-                logger.info(f"Using cached chart recommendations")
-                return cached[:max_recommendations]
+                # Apr 25 (D2.B1): cache key now drops column names. The cached
+                # recommendation may carry x_axis/y_axis values that don't exist
+                # in the current data_summary's columns — remap them to the
+                # actual columns using dtype/role before returning, so the
+                # frontend chart builder doesn't render an empty chart.
+                remapped = self._remap_cached_recommendations(cached, data_summary)
+                logger.info(f"Using cached chart recommendations (remapped to current columns)")
+                return remapped[:max_recommendations]
+
+        # 1b. Apr 25 (D2.B1): skip LLM entirely for tiny uploads. The 24s
+        # qwen-plus round-trip is wasted on 5–50 row test/synthetic data —
+        # the rule-based fallback produces a perfectly fine default chart
+        # (column 1 = x-axis, first numeric = y-axis). Saves ~24s per
+        # tiny-upload sheet analysis.
+        TINY_ROW_THRESHOLD = 50
+        if data_summary.row_count > 0 and data_summary.row_count < TINY_ROW_THRESHOLD:
+            logger.info(
+                f"Tiny upload ({data_summary.row_count} rows < {TINY_ROW_THRESHOLD}) — "
+                f"using rule-based fallback, skipping LLM"
+            )
+            recommendations = self._minimal_fallback(data_summary, scenario)
+            if use_cache and recommendations:
+                self._cache.set(data_summary, scenario, recommendations, user_intent)
+            return recommendations[:max_recommendations]
 
         # 2. Fallback if no LLM configured
         if not self.settings.llm_api_key:
@@ -643,7 +696,7 @@ class ChartRecommender:
 **数据概览:**
 - 数据行数: {data_summary.row_count} 行
 - 时间维度: {data_summary.time_columns or '无'}
-- 分类维度: {data_summary.category_columns or '无'}
+- 分类维度: {self._format_cat_cols_with_cardinality(data_summary) or '无'}
 - 度量指标: {data_summary.measures or '无'}
 
 **业务场景:** {scenario_desc}
@@ -692,8 +745,20 @@ class ChartRecommender:
 - **多样性要求**: 推荐的图表类型必须尽可能多样化，不允许连续2个相同类型
 - **高级类型**: 如果数据有层级结构推荐 sunburst，如果需要80/20分析推荐 pareto，如果有目标/实际对比推荐 bullet，如果有不同量纲指标推荐 dual_axis
 - **最少4种不同类型**: 你的推荐中至少包含4种不同的图表类型
+- **A4 cardinality 守卫**: 若某分类维度 unique_count<2（即全部行只有1个取值），绝对不要把它作为 x_axis 推荐对比/占比图；这种情况应优先推 kpi/scorecard 单值卡片或依靠时间维度作趋势图。
 """
         return prompt
+
+    @staticmethod
+    def _format_cat_cols_with_cardinality(data_summary: DataSummary) -> str:
+        """Render category_columns with their unique counts for LLM context (A4)."""
+        if not data_summary.category_columns:
+            return ""
+        parts = []
+        for c in data_summary.category_columns:
+            uc = data_summary.cardinality.get(c)
+            parts.append(f"{c}(unique={uc})" if uc is not None else c)
+        return ", ".join(parts)
 
     def _build_dashboard_prompt(
         self,
@@ -742,42 +807,98 @@ class ChartRecommender:
         return base_prompt + dashboard_instruction
 
     async def _call_llm(self, prompt: str) -> str:
-        """Call LLM API"""
-        headers = {
-            "Authorization": f"Bearer {self.settings.llm_api_key}",
-            "Content-Type": "application/json"
-        }
+        """Call LLM via multi-provider router (chart slot).
+
+        Chain: aliyun_b (glm-5) → aliyun_a (glm-5) → zhipu (glm-4.5-air) → deepseek.
+        403 FreeTierOnly / 429 triggers automatic fallback to next provider.
+        Caller context ("chart") + factory_id (from JWT middleware) are
+        recorded in smart_bi_llm_usage automatically.
+        """
+        from common.llm_router import call_chain, SLOT
+        from common.llm_metrics import llm_caller_context
 
         payload = {
-            "model": self.settings.llm_chart_model,
             "messages": [
-                {
-                    "role": "system",
-                    "content": (
-                        "你是专业的数据可视化分析师，擅长根据数据特征推荐最佳图表类型。"
-                        "你的推荐应该基于数据的实际特征，而不是固定规则。"
-                        "请用 JSON 格式回复，确保字段名和值都正确。"
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
+                {"role": "system", "content": (
+                    "你是专业的数据可视化分析师，擅长根据数据特征推荐最佳图表类型。"
+                    "你的推荐应该基于数据的实际特征，而不是固定规则。"
+                    "请用 JSON 格式回复，确保字段名和值都正确。"
+                )},
+                {"role": "user", "content": prompt},
             ],
             "temperature": 0.5,
             "max_tokens": 3500,
-            "enable_thinking": False
+            "enable_thinking": False,
         }
 
-        response = await self.client.post(
-            f"{self.settings.llm_base_url}/chat/completions",
-            headers=headers,
-            json=payload
-        )
-        response.raise_for_status()
-
-        result = response.json()
+        with llm_caller_context("chart"):
+            result = await call_chain(SLOT.CHART, payload)
         return result["choices"][0]["message"]["content"]
+
+    def _remap_cached_recommendations(
+        self,
+        cached: List[ChartRecommendation],
+        data_summary: DataSummary,
+    ) -> List[ChartRecommendation]:
+        """
+        Remap cached recommendation x/y/series fields to current data columns.
+
+        Apr 25 (D2.B1): cache key drops column NAMES so similar-shape data
+        hits cache. But the cached ChartRecommendation still carries the
+        original x_axis/y_axis names — which may not exist in the new data.
+        Map them by role/dtype:
+          - x_axis: prefer time_columns[0], else category_columns[0], else dimensions[0]
+          - y_axis: prefer first N measures matching original count
+          - series: prefer second category_column if any
+        Returns a fresh list of ChartRecommendation (does not mutate cache).
+        """
+        actual_columns = [
+            c.get("columnName", c.get("column_name", ""))
+            for c in data_summary.columns
+        ]
+        remapped: List[ChartRecommendation] = []
+        for rec in cached:
+            # If x_axis still exists, keep it (rare — but common when same
+            # tenant re-uploads identical-schema file).
+            new_x = rec.x_axis if rec.x_axis in actual_columns else None
+            if new_x is None:
+                if data_summary.time_columns:
+                    new_x = data_summary.time_columns[0]
+                elif data_summary.category_columns:
+                    new_x = data_summary.category_columns[0]
+                elif data_summary.dimensions:
+                    new_x = data_summary.dimensions[0]
+
+            # Y-axis: keep ones that still exist, fill from measures
+            new_y: List[str] = []
+            if rec.y_axis:
+                for y in rec.y_axis:
+                    if y in actual_columns:
+                        new_y.append(y)
+            if not new_y and data_summary.measures:
+                # Cached y count → take same many from measures (capped at 3)
+                want = max(1, min(len(rec.y_axis or []) or 1, 3))
+                new_y = data_summary.measures[:want]
+
+            # Series: try to keep, else use 2nd category column if cached one was set
+            new_series = rec.series if rec.series in actual_columns else None
+            if rec.series is not None and new_series is None:
+                if len(data_summary.category_columns) >= 2:
+                    new_series = data_summary.category_columns[1]
+
+            remapped.append(ChartRecommendation(
+                chart_type=rec.chart_type,
+                title=rec.title,
+                reason=rec.reason,
+                x_axis=new_x,
+                y_axis=new_y if new_y else None,
+                series=new_series,
+                priority=rec.priority,
+                category=rec.category,
+                confidence=rec.confidence,
+                config_hints=dict(rec.config_hints) if rec.config_hints else {},
+            ))
+        return remapped
 
     def _validate_column_name(
         self,
@@ -797,6 +918,17 @@ class ChartRecommender:
             Valid column name or None
         """
         if column is None:
+            return fallback_columns[0] if fallback_columns else None
+
+        # LLM occasionally returns x_axis/series as ["商品名称"] instead of "商品名称".
+        # Unwrap singletons; for lists with multiple values keep the first (caller
+        # only handles one column here — multi-column case lives on the y_axis path).
+        if isinstance(column, list):
+            column = column[0] if column else None
+            if column is None:
+                return fallback_columns[0] if fallback_columns else None
+
+        if not isinstance(column, str):
             return fallback_columns[0] if fallback_columns else None
 
         # 1. Exact match
@@ -838,7 +970,10 @@ class ChartRecommender:
                 for c in data_summary.columns
             ]
 
-            for rec in result.get("recommendations", []):
+            raw_recs = result.get("recommendations") or []
+            for rec in raw_recs:
+                if not isinstance(rec, dict):
+                    continue
                 # Validate chart type
                 chart_type = rec.get("chart_type", "bar")
                 if chart_type not in self.CHART_TYPES:
@@ -853,8 +988,10 @@ class ChartRecommender:
                     data_summary.dimensions or data_summary.category_columns
                 )
 
-                # Validate and resolve y_axis
-                y_axis_raw = rec.get("y_axis", rec.get("yAxis", []))
+                # Validate and resolve y_axis (LLM 返 null 时 rec.get 返 None, 非 [])
+                y_axis_raw = rec.get("y_axis", rec.get("yAxis"))
+                if y_axis_raw is None:
+                    y_axis_raw = []
                 if isinstance(y_axis_raw, str):
                     y_axis_raw = [y_axis_raw]
 
@@ -1041,6 +1178,20 @@ class ChartRecommender:
         cat_col = data_summary.category_columns[0] if has_categories else None
         time_col = data_summary.time_columns[0] if has_time else None
 
+        # A4 (Apr 20 2026): cardinality gate — a category is only useful as an
+        # x-axis when it has >=2 distinct values. Without this gate, single-store
+        # uploads (or any file where the "店名" column collapses to 1 value)
+        # produce empty/misleading bar/pie charts.
+        def _cat_has_variety(col: Optional[str]) -> bool:
+            if not col:
+                return False
+            # Default to True when unknown (backwards-compat: no cardinality
+            # data → trust existing behavior rather than hide charts)
+            uc = data_summary.cardinality.get(col)
+            return uc is None or uc >= 2
+
+        cat_has_variety = _cat_has_variety(cat_col)
+
         # 1. Time series → line chart
         if has_time and has_measures:
             recommendations.append(ChartRecommendation(
@@ -1054,7 +1205,7 @@ class ChartRecommender:
             ))
 
         # 2. Category comparison → bar chart
-        if has_categories and has_measures:
+        if has_categories and has_measures and cat_has_variety:
             recommendations.append(ChartRecommendation(
                 chart_type="bar",
                 title="分类对比",
@@ -1066,7 +1217,7 @@ class ChartRecommender:
             ))
 
         # 3. Small category count (<=8) → pie chart for composition
-        if has_categories and has_measures and row_count <= 15:
+        if has_categories and has_measures and row_count <= 15 and cat_has_variety:
             recommendations.append(ChartRecommendation(
                 chart_type="pie",
                 title="占比分析",
@@ -1078,7 +1229,7 @@ class ChartRecommender:
             ))
 
         # 4. Financial/hierarchical data → waterfall
-        if has_categories and has_measures and 3 <= row_count <= 30:
+        if has_categories and has_measures and 3 <= row_count <= 30 and cat_has_variety:
             # Detect financial keywords in column names
             financial_keywords = ['收入', '支出', '费用', '利润', '成本', '净利', 'revenue', 'cost', 'profit', 'expense']
             col_names_lower = ' '.join([c.get('columnName', c.get('column_name', '')) for c in data_summary.columns]).lower()
@@ -1094,7 +1245,7 @@ class ChartRecommender:
                 ))
 
         # 5. Multiple measures (>=3) → radar chart
-        if has_categories and num_measures >= 3 and row_count <= 10:
+        if has_categories and num_measures >= 3 and row_count <= 10 and cat_has_variety:
             recommendations.append(ChartRecommendation(
                 chart_type="radar",
                 title="多维对比",
@@ -1118,7 +1269,7 @@ class ChartRecommender:
             ))
 
         # 7. Pareto chart — when categories have skewed distribution
-        if has_categories and has_measures and row_count >= 5:
+        if has_categories and has_measures and row_count >= 5 and cat_has_variety:
             recommendations.append(ChartRecommendation(
                 chart_type="pareto",
                 title="帕累托分析",
@@ -1142,7 +1293,7 @@ class ChartRecommender:
             ))
 
         # 9. Horizontal bar — long category labels
-        if has_categories and has_measures:
+        if has_categories and has_measures and cat_has_variety:
             recommendations.append(ChartRecommendation(
                 chart_type="bar_horizontal",
                 title="横向排行",
@@ -1154,7 +1305,7 @@ class ChartRecommender:
             ))
 
         # 10. Treemap — hierarchical or categorical data with values
-        if has_categories and has_measures and 3 <= row_count <= 50:
+        if has_categories and has_measures and 3 <= row_count <= 50 and cat_has_variety:
             recommendations.append(ChartRecommendation(
                 chart_type="treemap",
                 title="面积占比分析",
@@ -1166,7 +1317,7 @@ class ChartRecommender:
             ))
 
         # 11. Wordcloud — text column with frequency/count data
-        if has_categories and has_measures:
+        if has_categories and has_measures and cat_has_variety:
             # Detect text-heavy columns (many unique values, short text)
             col_names_lower = ' '.join([
                 c.get('columnName', c.get('column_name', ''))

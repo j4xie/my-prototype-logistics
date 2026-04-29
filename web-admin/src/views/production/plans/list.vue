@@ -147,9 +147,9 @@ async function loadData() {
     } else if (response.success === false) {
       ElMessage.error(response.message || '加载生产计划失败');
     }
-  } catch (error) {
+  } catch (error: any) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载失败:', error);
-    ElMessage.error('加载数据失败');
   } finally {
     loading.value = false;
   }
@@ -164,9 +164,9 @@ async function loadProductTypes() {
     } else if (response.success === false) {
       ElMessage.error(response.message || '加载产品类型失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('加载产品类型失败:', error);
-    ElMessage.error('加载产品类型失败');
+    if (!error?.actionHint) ElMessage.error('加载产品类型失败');
   }
 }
 
@@ -287,8 +287,9 @@ async function submitPlan() {
     } else {
       ElMessage.error(response.message || '创建失败');
     }
-  } catch (error) {
-    ElMessage.error('创建失败');
+  } catch (error: any) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', error);
   } finally {
     dialogLoading.value = false;
   }
@@ -306,10 +307,10 @@ async function handleStart(row: Record<string, unknown>) {
     } else {
       ElMessage.error(response.message || '操作失败');
     }
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('操作失败');
-    }
+  } catch (error: any) {
+    // Interceptor already shows specific sticky toast for ApiError (request.ts).
+    // Retained catch to prevent uncaught; log for debug.
+    if (error !== 'cancel') console.error('[提交失败]', error);
   } finally {
     actionLoading.value = false;
   }
@@ -332,10 +333,10 @@ async function handleComplete(row: Record<string, unknown>) {
     } else {
       ElMessage.error(response.message || '操作失败');
     }
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('操作失败');
-    }
+  } catch (error: any) {
+    // Interceptor already shows specific sticky toast for ApiError (request.ts).
+    // Retained catch to prevent uncaught; log for debug.
+    if (error !== 'cancel') console.error('[提交失败]', error);
   } finally {
     actionLoading.value = false;
   }
@@ -356,10 +357,10 @@ async function handleCancel(row: Record<string, unknown>) {
     } else {
       ElMessage.error(response.message || '操作失败');
     }
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('操作失败');
-    }
+  } catch (error: any) {
+    // Interceptor already shows specific sticky toast for ApiError (request.ts).
+    // Retained catch to prevent uncaught; log for debug.
+    if (error !== 'cancel') console.error('[提交失败]', error);
   } finally {
     actionLoading.value = false;
   }
@@ -382,10 +383,10 @@ async function handleCreateBatch(row: Record<string, unknown>) {
     } else {
       ElMessage.error(response.message || '转换失败');
     }
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('操作失败');
-    }
+  } catch (error: any) {
+    // Interceptor already shows specific sticky toast for ApiError (request.ts).
+    // Retained catch to prevent uncaught; log for debug.
+    if (error !== 'cancel') console.error('[提交失败]', error);
   } finally {
     actionLoading.value = false;
   }
@@ -420,10 +421,10 @@ async function handleGenerateTransfer(row: Record<string, unknown>) {
         ElMessage.error(msg);
       }
     }
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('操作失败');
-    }
+  } catch (error: any) {
+    // Interceptor already shows specific sticky toast for ApiError (request.ts).
+    // Retained catch to prevent uncaught; log for debug.
+    if (error !== 'cancel') console.error('[提交失败]', error);
   } finally {
     actionLoading.value = false;
   }
@@ -475,9 +476,9 @@ async function loadReferenceData() {
     } else if (supsRes && !supsRes.success) {
       ElMessage.error(supsRes.message || '加载主管数据失败');
     }
-  } catch (e) {
+  } catch (e: any) {
     console.warn('Failed to load reference data:', e);
-    ElMessage.error('加载参考数据失败');
+    if (!e?.actionHint) ElMessage.error('加载参考数据失败');
   }
 }
 
@@ -497,8 +498,9 @@ async function handleDownloadTemplate() {
     a.click();
     URL.revokeObjectURL(url);
     ElMessage.success('模板下载成功');
-  } catch {
-    ElMessage.error('模板下载失败');
+  } catch (e: any) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', e);
   }
 }
 
@@ -530,7 +532,7 @@ async function handleImportFile(uploadFile: { raw?: File }) {
     }
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : '请检查文件格式';
-    ElMessage.error('导入失败: ' + msg);
+    if (!e?.actionHint) ElMessage.error('导入失败: ' + msg);
   }
 }
 
@@ -552,8 +554,9 @@ async function handleExport() {
     a.click();
     URL.revokeObjectURL(url);
     ElMessage.success('导出成功');
-  } catch {
-    ElMessage.error('导出失败');
+  } catch (e: any) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', e);
   }
 }
 
@@ -613,7 +616,7 @@ function handleAiFill(params: Record<string, unknown>) {
             <el-button type="info" :icon="Download" @click="handleExport" style="margin-left: 8px;">
               导出Excel
             </el-button>
-            <el-button type="success" :icon="ChatDotRound" @click="aiEntryVisible = true" style="margin-left: 8px;">
+            <el-button v-if="canWrite" type="success" :icon="ChatDotRound" @click="aiEntryVisible = true" style="margin-left: 8px;">
               AI对话创建
             </el-button>
             <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleCreate" style="margin-left: 8px;">
@@ -644,7 +647,9 @@ function handleAiFill(params: Record<string, unknown>) {
 
       <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="planNumber" label="计划编号" width="160" />
-        <el-table-column prop="productTypeName" label="产品类型" min-width="150" show-overflow-tooltip />
+        <el-table-column label="产品类型" min-width="150" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.productTypeName || row.productName || row.productTypeId || '-' }}</template>
+        </el-table-column>
         <el-table-column prop="sourceCustomerName" label="客户" min-width="120" show-overflow-tooltip />
         <el-table-column prop="processName" label="工序" width="120" show-overflow-tooltip />
         <el-table-column prop="batchDate" label="批次日期" width="120" />
@@ -735,7 +740,7 @@ function handleAiFill(params: Record<string, unknown>) {
     <el-dialog v-model="viewDialogVisible" title="计划详情" width="560px" destroy-on-close>
       <el-descriptions v-if="viewPlan" :column="2" border>
         <el-descriptions-item label="计划编号">{{ viewPlan.planNumber }}</el-descriptions-item>
-        <el-descriptions-item label="产品类型">{{ viewPlan.productTypeName }}</el-descriptions-item>
+        <el-descriptions-item label="产品类型">{{ viewPlan.productTypeName || viewPlan.productName || viewPlan.productTypeId || '-' }}</el-descriptions-item>
         <el-descriptions-item label="客户">{{ viewPlan.sourceCustomerName || '-' }}</el-descriptions-item>
         <el-descriptions-item label="工序">{{ viewPlan.processName || '-' }}</el-descriptions-item>
         <el-descriptions-item label="计划数量">{{ viewPlan.plannedQuantity }}</el-descriptions-item>

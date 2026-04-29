@@ -1,7 +1,10 @@
 package com.cretas.aims.controller.restaurant;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.restaurant.StocktakingRecord;
+import com.cretas.aims.exception.BusinessException;
+import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.restaurant.StocktakingRecordRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -18,6 +21,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * 库存盘点管理 Controller
@@ -68,6 +72,8 @@ public class StocktakingRecordController {
 
     // ==================== 创建 ====================
 
+    @RequirePermission({"inventory:read_write"})
+    @RequireModule("restaurant")
     @PostMapping
     @Operation(summary = "创建盘点单", description = "创建食材盘点单，自动读取系统库存")
     public ApiResponse<StocktakingRecord> create(
@@ -79,7 +85,8 @@ public class StocktakingRecordController {
         // 检查是否已有该食材的进行中盘点
         if (stocktakingRepository.existsByFactoryIdAndRawMaterialTypeIdAndStatus(
                 factoryId, record.getRawMaterialTypeId(), StocktakingRecord.Status.IN_PROGRESS)) {
-            return ApiResponse.error("该食材已有进行中的盘点单，请先完成或取消");
+            throw new BusinessException(409, "该食材已有进行中的盘点单，请先完成或取消")
+                    .withHint("请前往盘点列表查看进行中的盘点");
         }
 
         record.setId(null);
@@ -101,6 +108,8 @@ public class StocktakingRecordController {
 
     // ==================== 完成盘点 ====================
 
+    @RequirePermission({"inventory:read_write"})
+    @RequireModule("restaurant")
     @PostMapping("/{recordId}/complete")
     @Operation(summary = "完成盘点", description = "录入实盘数量并计算差异")
     public ApiResponse<StocktakingRecord> complete(
@@ -108,50 +117,51 @@ public class StocktakingRecordController {
             @PathVariable String recordId,
             @RequestAttribute("userId") @Parameter(hidden = true) Long userId,
             @RequestBody Map<String, Object> body) {
-        return stocktakingRepository.findByIdAndFactoryId(recordId, factoryId)
-                .map(record -> {
-                    if (record.getStatus() != StocktakingRecord.Status.IN_PROGRESS) {
-                        return ApiResponse.<StocktakingRecord>error("只有进行中的盘点单可以完成");
-                    }
-                    if (body == null || !body.containsKey("actualQuantity")) {
-                        return ApiResponse.<StocktakingRecord>error("请填写实盘数量 (actualQuantity)");
-                    }
+        StocktakingRecord record = stocktakingRepository.findByIdAndFactoryId(recordId, factoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("盘点记录", "id", recordId));
+        if (record.getStatus() != StocktakingRecord.Status.IN_PROGRESS) {
+            throw new BusinessException(409, "只有进行中的盘点单可以完成")
+                    .withHint("请刷新盘点列表查看最新状态");
+        }
+        if (body == null || !body.containsKey("actualQuantity")) {
+            throw new BusinessException(400, "请填写实盘数量 (actualQuantity)")
+                    .withHint("请在表单中填写实盘数量").withHintTarget("actualQuantity");
+        }
 
-                    record.setActualQuantity(new BigDecimal(body.get("actualQuantity").toString()));
-                    record.setVerifiedBy(userId);
-                    record.setCompletedAt(LocalDateTime.now());
-                    record.setStatus(StocktakingRecord.Status.COMPLETED);
+        record.setActualQuantity(new BigDecimal(body.get("actualQuantity").toString()));
+        record.setVerifiedBy(userId);
+        record.setCompletedAt(LocalDateTime.now());
+        record.setStatus(StocktakingRecord.Status.COMPLETED);
 
-                    if (body.containsKey("adjustmentReason")) {
-                        record.setAdjustmentReason(body.get("adjustmentReason").toString());
-                    }
+        if (body.containsKey("adjustmentReason")) {
+            record.setAdjustmentReason(body.get("adjustmentReason").toString());
+        }
 
-                    // 自动计算差异
-                    record.calculateDifference();
+        // 自动计算差异
+        record.calculateDifference();
 
-                    StocktakingRecord updated = stocktakingRepository.save(record);
-                    return ApiResponse.success("盘点完成", updated);
-                })
-                .orElse(ApiResponse.error("盘点记录不存在: " + recordId));
+        StocktakingRecord updated = stocktakingRepository.save(record);
+        return ApiResponse.success("盘点完成", updated);
     }
 
     // ==================== 取消 ====================
 
+    @RequirePermission({"inventory:read_write"})
+    @RequireModule("restaurant")
     @PostMapping("/{recordId}/cancel")
     @Operation(summary = "取消盘点")
     public ApiResponse<StocktakingRecord> cancel(
             @PathVariable String factoryId,
             @PathVariable String recordId) {
-        return stocktakingRepository.findByIdAndFactoryId(recordId, factoryId)
-                .map(record -> {
-                    if (record.getStatus() != StocktakingRecord.Status.IN_PROGRESS) {
-                        return ApiResponse.<StocktakingRecord>error("只有进行中的盘点单可以取消");
-                    }
-                    record.setStatus(StocktakingRecord.Status.CANCELLED);
-                    StocktakingRecord updated = stocktakingRepository.save(record);
-                    return ApiResponse.success("盘点已取消", updated);
-                })
-                .orElse(ApiResponse.error("盘点记录不存在: " + recordId));
+        StocktakingRecord record = stocktakingRepository.findByIdAndFactoryId(recordId, factoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("盘点记录", "id", recordId));
+        if (record.getStatus() != StocktakingRecord.Status.IN_PROGRESS) {
+            throw new BusinessException(409, "只有进行中的盘点单可以取消")
+                    .withHint("请刷新盘点列表查看最新状态");
+        }
+        record.setStatus(StocktakingRecord.Status.CANCELLED);
+        StocktakingRecord updated = stocktakingRepository.save(record);
+        return ApiResponse.success("盘点已取消", updated);
     }
 
     // ==================== 最新盘点汇总 ====================

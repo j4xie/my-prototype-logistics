@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.smartbi.AiAgentRule;
 import com.cretas.aims.repository.smartbi.AiAgentRuleRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -108,6 +109,7 @@ public class AiAgentRuleController {
 
     // ==================== 规则管理 ====================
 
+    @RequirePermission({"system:read_write"})
     @PostMapping
     @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
     @Operation(summary = "创建规则", description = "创建新的 AI Agent 规则（仅工厂管理员）")
@@ -137,6 +139,7 @@ public class AiAgentRuleController {
         return ResponseEntity.ok(ApiResponse.success("规则创建成功", saved));
     }
 
+    @RequirePermission({"system:read_write"})
     @PutMapping("/{ruleId}")
     @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
     @Operation(summary = "更新规则", description = "更新现有的 AI Agent 规则（仅工厂管理员）")
@@ -177,6 +180,7 @@ public class AiAgentRuleController {
         return ResponseEntity.ok(ApiResponse.success("规则更新成功", saved));
     }
 
+    @RequirePermission({"system:read_write"})
     @DeleteMapping("/{ruleId}")
     @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
     @Operation(summary = "删除规则", description = "删除 AI Agent 规则（仅工厂管理员）")
@@ -205,6 +209,7 @@ public class AiAgentRuleController {
         return ResponseEntity.ok(ApiResponse.successMessage("规则删除成功"));
     }
 
+    @RequirePermission({"system:read_write"})
     @PostMapping("/{ruleId}/toggle")
     @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
     @Operation(summary = "切换规则状态", description = "启用或禁用 AI Agent 规则（仅工厂管理员）")
@@ -237,6 +242,7 @@ public class AiAgentRuleController {
         return ResponseEntity.ok(ApiResponse.success("规则已" + action, saved));
     }
 
+    @RequirePermission({"system:read_write"})
     @PatchMapping("/{ruleId}/priority")
     @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
     @Operation(summary = "调整规则优先级", description = "调整 AI Agent 规则的优先级（数值越小越优先）")

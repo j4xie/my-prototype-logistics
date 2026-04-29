@@ -31,7 +31,8 @@ import {
   Document,
   InfoFilled,
   User,
-  Clock
+  Clock,
+  Loading
 } from '@element-plus/icons-vue';
 import echarts from '@/utils/echarts';
 import { formatNumber, formatCount, formatAxisValue } from '@/utils/format-number';
@@ -40,6 +41,11 @@ import { sparklinePath } from '@/utils/sparkline';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
 import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
 import { enhanceChartDefaults } from '@/composables/useChartEnhancer';
+import TemplateGrid from './components/TemplateGrid.vue';
+// Day 8 数据织网 Sub-Project A: capability-driven card visibility
+import { useCapability } from '@/composables/useCapability';
+import CapabilityGate from '@/components/CapabilityGate.vue';
+import UnlockMoreCTA from '@/components/UnlockMoreCTA.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -101,6 +107,16 @@ function toggleDarkMode() {
 const loading = ref(false);
 const hasError = ref(false);
 const errorMessage = ref('');
+// Apr 24 UX: separate LLM insights loading state so insight card shows
+// skeleton/"生成中" instead of the "暂无分析" empty state during the 1-8s
+// async LLM call (Python cold-start on first visit of day is 5-10s).
+const insightsLoading = ref(false);
+const insightsTookLong = ref(false);
+// Phase 9 Apr 24: live-streaming text from SSE endpoint for the
+// custom-range path. While streaming, shows as a "正在生成..." insight
+// that updates character-by-character; finalizes on done event.
+const streamingInsightText = ref('');
+const streamingInsightMeta = ref<{ source?: string; tokens_used_today?: number } | null>(null);
 
 // 数据源选择 — default empty, will be set after loading sources
 const dataSources = ref<UploadHistoryItem[]>([]);
@@ -122,15 +138,23 @@ function getSignal(): AbortSignal {
 
 // KPI 数据 (从 kpiCards 提取)
 const kpiData = computed(() => {
+  // Always-populated default so the template's `kpiData.revenueLabel || ...`
+  // chain has a real string to hit instead of `undefined` → Chinese fallback
+  // which masked xlsx column titles. If data hasn't loaded yet, labels stay
+  // as the generic Chinese strings; once data loads they get overwritten.
   const defaultKpi = {
     totalRevenue: null as number | null,
     revenueGrowth: null as number | null,
+    revenueLabel: '本月销售额',
     totalProfit: null as number | null,
     profitGrowth: null as number | null,
+    profitLabel: '本月利润',
     orderCount: null as number | null,
     orderGrowth: null as number | null,
+    orderLabel: '订单数量',
     customerCount: null as number | null,
     customerGrowth: null as number | null,
+    customerLabel: '活跃客户',
   };
 
   if (!dashboardData.value?.kpiCards || dashboardData.value.kpiCards.length === 0) {
@@ -144,6 +168,29 @@ const kpiData = computed(() => {
     (c.title || '').toLowerCase().includes(keyword)
   );
 
+  // Gold-mode mapping (restaurant POS): total_revenue / bill_count / avg_bill_value / store_count.
+  // Restaurants don't track profit or unique customers at this layer, so relabel slots 2-4 accordingly.
+  const goldRev = findCard('total_revenue');
+  const goldBills = findCard('bill_count');
+  const goldAvg = findCard('avg_bill_value');
+  const goldStores = findCard('store_count');
+  if (goldRev && goldBills && goldAvg && goldStores) {
+    return {
+      totalRevenue: goldRev.rawValue ?? null,
+      revenueGrowth: null as number | null,
+      totalProfit: goldAvg.rawValue ?? null,
+      profitGrowth: null as number | null,
+      profitLabel: '客单价',
+      profitUnit: '元',
+      orderCount: goldBills.rawValue ?? null,
+      orderGrowth: null as number | null,
+      customerCount: goldStores.rawValue ?? null,
+      customerGrowth: null as number | null,
+      customerLabel: '门店数',
+      customerUnit: '家',
+    };
+  }
+
   const salesCard = findCard('SALES_AMOUNT') || findCard('REVENUE') || findCard('销售额')
     || findByTitle('销售') || findByTitle('收入') || findByTitle('revenue');
   const profitCard = findCard('PROFIT') || findCard('PROFIT_AMOUNT') || findCard('利润')
@@ -153,19 +200,26 @@ const kpiData = computed(() => {
   const customerCard = findCard('CUSTOMER_COUNT') || findCard('ACTIVE_CUSTOMERS') || findCard('客户数')
     || findByTitle('客户') || findByTitle('customer');
 
-  // If no recognized KPI cards matched but we have kpiCards, use them in order as fallback
+  // If no recognized KPI cards matched but we have kpiCards, use them in order as fallback.
+  // Keep the original (humanized) titles instead of relabeling to 销售/利润/订单/客户 —
+  // the positional fallback fires for xlsx uploads where cards[0..3] are typically 4
+  // different "数量金额" columns (not revenue/profit/orders/customers), so relabeling
+  // misleads users.
   const hasMatch = salesCard || profitCard || orderCard || customerCard;
   if (!hasMatch && cards.length > 0) {
-    // Map first N cards to KPI slots by position
     return {
       totalRevenue: cards[0]?.rawValue ?? null,
       revenueGrowth: cards[0]?.changeRate ?? null,
+      revenueLabel: cards[0]?.title || '指标 1',
       totalProfit: cards[1]?.rawValue ?? null,
       profitGrowth: cards[1]?.changeRate ?? null,
+      profitLabel: cards[1]?.title || '指标 2',
       orderCount: cards[2]?.rawValue ?? null,
       orderGrowth: cards[2]?.changeRate ?? null,
+      orderLabel: cards[2]?.title || '指标 3',
       customerCount: cards[3]?.rawValue ?? null,
       customerGrowth: cards[3]?.changeRate ?? null,
+      customerLabel: cards[3]?.title || '指标 4',
     };
   }
 
@@ -173,18 +227,23 @@ const kpiData = computed(() => {
   const targetCard = findCard('TARGET_COMPLETION') || findByTitle('目标') || findByTitle('完成率');
   const growthCard = findCard('MOM_GROWTH') || findByTitle('环比') || findByTitle('增长');
 
+  // If a card matched but its title is more specific than the fixed Chinese label
+  // (e.g. "数量金额 (指标 4)"), prefer the actual card title so users see what the
+  // column really represents. Chinese fallback kicks in only when no card matched.
   return {
     totalRevenue: salesCard?.rawValue ?? null,
     revenueGrowth: salesCard?.changeRate ?? null,
+    revenueLabel: salesCard?.title || '本月销售额',
     totalProfit: profitCard?.rawValue ?? (targetCard?.rawValue ?? null),
     profitGrowth: profitCard?.changeRate ?? null,
-    profitLabel: profitCard ? '本月利润' : (targetCard ? '目标完成率' : '本月利润'),
+    profitLabel: profitCard?.title || (targetCard ? '目标完成率' : '本月利润'),
     profitUnit: profitCard ? '' : (targetCard ? '%' : ''),
     orderCount: orderCard?.rawValue ?? null,
     orderGrowth: orderCard?.changeRate ?? null,
+    orderLabel: orderCard?.title || '订单数量',
     customerCount: customerCard?.rawValue ?? (growthCard?.rawValue ?? null),
     customerGrowth: customerCard?.changeRate ?? null,
-    customerLabel: customerCard ? '活跃客户' : (growthCard ? '环比增长' : '活跃客户'),
+    customerLabel: customerCard?.title || (growthCard ? '环比增长' : '活跃客户'),
     customerUnit: customerCard ? '' : (growthCard ? '%' : ''),
   };
 });
@@ -367,13 +426,28 @@ function goToUpload() {
   router.push({ name: 'SmartBIAnalysis' });
 }
 
-// 快捷问答
-const quickQuestions = [
+// 快捷问答 — 按 factoryType 切换 (餐饮 vs 制造业)
+// 餐饮 8 问 keep in sync with web-admin/src/views/smart-bi/AIQuery.vue quickQuestions (Apr 24 RAG polish)
+const isRestaurantTenant = computed(() => authStore.factoryType === 'RESTAURANT');
+const restaurantQuickQuestions = [
+  { text: '畅销品 Top 5', icon: Goods },
+  { text: '哪家店业绩最好', icon: Location },
+  { text: '员工里谁最厉害', icon: Medal },
+  { text: '外卖占比多少', icon: TrendCharts },
+  { text: '慢销菜品', icon: ArrowDown },
+  { text: '周末周中对比', icon: Clock },
+  { text: '峰值月份', icon: DataLine },
+  { text: '优惠券使用情况', icon: Histogram }
+];
+const manufacturingQuickQuestions = [
   { text: '本月销售额如何?', icon: TrendCharts },
   { text: '哪个部门业绩最好?', icon: Histogram },
   { text: '利润率变化趋势如何?', icon: DataLine },
   { text: '客户增长情况怎样?', icon: User }
 ];
+const quickQuestions = computed(() =>
+  isRestaurantTenant.value ? restaurantQuickQuestions : manufacturingQuickQuestions
+);
 
 // 图表 DOM refs
 const dashboardRef = ref<HTMLElement>();
@@ -385,6 +459,9 @@ let trendChart: echarts.ECharts | null = null;
 let pieChart: echarts.ECharts | null = null;
 const hasTrendData = ref(false);
 const hasPieData = ref(false);
+// C Apr 17 2026: 当上传的数据无时间列 (如销量汇总报表) 时, "销售趋势" 标题误导.
+// 根据 x-axis 第一个值判断: 像日期 → 趋势; 否则 → 按类别分布/排行
+const trendChartTitle = ref('销售趋势');
 
 // Cross-filter state
 const crossFilterValue = ref<string | null>(null);
@@ -451,11 +528,173 @@ function scrollToChart(chartIndex: number) {
 
 // ==================== 生命周期 ====================
 
-onMounted(async () => {
-  // Load upload list first (needed for auto-switch fallback)
-  await loadDataSources();
+// FIX-12 (Apr 16 2026) — persist dashboard state across refresh:
+//  C) remember selected uploadId so 刷新后 user doesn't have to re-select
+//  A) cache the loaded KPI/chart payload (TTL 5min) so refresh shows data instantly
+//     while a fresh API call runs silently in the background.
+function cacheKeyFor(factoryId: string, sourceId: string | number) {
+  return `smartbi-dashboard:${factoryId}:${sourceId}`;
+}
+function savedSourceKey(factoryId: string) {
+  return `smartbi-dashboard-src:${factoryId}`;
+}
+function savedRangeKey(factoryId: string) {
+  return `smartbi-dashboard-range:${factoryId}`;
+}
 
-  // Default to system data, auto-switch to uploads if system is empty
+// Date range override — null means 默认 period=month (server side).
+// Needed because qhj 2025 historical data is invisible under 本月 default.
+// When set, routes through /executive/custom (same Gold-cutover code path).
+const dateRange = ref<[string, string] | null>(null);
+
+// Apr 24 2026 UX fallback: when 本月 is empty AND user didn't pick a range,
+// auto-probe 近90天 → 上年 → 前年 and silently load the first non-empty range.
+// Tag below the picker explains the switch. Pattern mirrors Trends/RestaurantV2.
+const fallbackRangeLabel = ref<string>('');
+const fallbackDateRange = ref<[string, string] | null>(null);
+function savedFallbackKey(factoryId: string) {
+  return `smartbi-dashboard-fallback:${factoryId}`;
+}
+
+const dateRangeShortcuts = [
+  {
+    text: '本月',
+    value: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setDate(1);
+      return [fmtYmd(start), fmtYmd(end)];
+    },
+  },
+  {
+    text: '本年',
+    value: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setMonth(0, 1);
+      return [fmtYmd(start), fmtYmd(end)];
+    },
+  },
+  {
+    text: '近 12 个月',
+    value: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setFullYear(start.getFullYear() - 1);
+      return [fmtYmd(start), fmtYmd(end)];
+    },
+  },
+  {
+    text: '近 24 个月',
+    value: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setFullYear(start.getFullYear() - 2);
+      return [fmtYmd(start), fmtYmd(end)];
+    },
+  },
+  { text: '2025 全年', value: () => ['2025-01-01', '2025-12-31'] },
+  { text: '2024 全年', value: () => ['2024-01-01', '2024-12-31'] },
+];
+
+function fmtYmd(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function onDateRangeChange(range: [string, string] | null) {
+  if (!factoryId.value) return;
+  if (range) {
+    try { localStorage.setItem(savedRangeKey(factoryId.value), JSON.stringify(range)); } catch {}
+  } else {
+    try { localStorage.removeItem(savedRangeKey(factoryId.value)); } catch {}
+  }
+  // Switch back to system view so the new range actually drives the Gold-backed dashboard.
+  // Otherwise we'd stay on the upload fallback and the picker would silently do nothing.
+  if (selectedDataSource.value !== 'system') {
+    selectedDataSource.value = 'system';
+  }
+  loadDashboardData();
+}
+function getCached<T>(factoryId: string, sourceId: string | number): T | null {
+  try {
+    const raw = localStorage.getItem(cacheKeyFor(factoryId, sourceId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { ts: number; data: T };
+    if (Date.now() - parsed.ts > 5 * 60 * 1000) return null;  // 5min TTL
+    return parsed.data;
+  } catch { return null; }
+}
+function putCached(factoryId: string, sourceId: string | number, data: unknown) {
+  try {
+    localStorage.setItem(cacheKeyFor(factoryId, sourceId), JSON.stringify({ ts: Date.now(), data }));
+  } catch { /* quota exceeded — ignore */ }
+}
+
+const { fetchCapability } = useCapability();
+
+onMounted(async () => {
+  // Day 8 数据织网 Sub-Project A: prime capability cache (fire-and-forget,
+  // useCapability handles errors and is fail-open). Drives <CapabilityGate>
+  // visibility for KPI cards below.
+  fetchCapability();
+
+  // Apr 24 UX perf: fire /uploads list in background (non-blocking) — most users
+  // stay on 'system' view and never open the dropdown. Old await blocked ~400ms
+  // on network idle for a 200-item upload list. We only need it synchronously
+  // when restoring a specific remembered upload-ID (cold path).
+  const dataSourcesPromise = loadDataSources();
+
+  // Restore date range from localStorage (per factory) — qhj needs wider default to see 2025 data
+  if (factoryId.value) {
+    const rawRange = localStorage.getItem(savedRangeKey(factoryId.value));
+    if (rawRange) {
+      try {
+        const parsed = JSON.parse(rawRange) as [string, string];
+        if (Array.isArray(parsed) && parsed.length === 2 && parsed[0] && parsed[1]) {
+          dateRange.value = parsed;
+        }
+      } catch { /* ignore */ }
+    }
+  }
+
+  // If user had picked an explicit date range, that overrides any persisted upload-source choice
+  // (otherwise FIX-12 restore would pin them to stale upload data even after they opted into 2025 Gold).
+  if (dateRange.value && factoryId.value) {
+    selectedDataSource.value = 'system';
+    await loadDashboardData();
+    return;
+  }
+
+  // FIX-12: restore last-selected data source from localStorage so 刷新 doesn't reset to 'system'
+  const remembered = factoryId.value ? localStorage.getItem(savedSourceKey(factoryId.value)) : null;
+  if (remembered === 'system') {
+    selectedDataSource.value = 'system';
+    if (factoryId.value) {
+      const cached = getCached<DashboardResponse>(factoryId.value, 'system');
+      if (cached) dashboardData.value = cached;
+    }
+    await loadDashboardData();
+    return;
+  }
+  if (remembered && remembered !== 'system') {
+    // Cold path: need dataSources loaded to validate remembered upload still exists
+    await dataSourcesPromise;
+    if (dataSources.value.some(d => String(d.id) === remembered)) {
+      selectedDataSource.value = remembered;
+      if (factoryId.value) {
+        const cached = getCached<DashboardResponse>(factoryId.value, remembered);
+        if (cached) dashboardData.value = cached;
+      }
+      await loadDynamicDashboardData(Number(remembered));
+      return;
+    }
+    // Remembered upload no longer exists — fall through to default
+  }
+
+  // Default to system data
   selectedDataSource.value = 'system';
   await loadDashboardData();
 });
@@ -470,7 +709,124 @@ watch(() => dashboardData.value?.charts, (newCharts) => {
   }
 });
 
+// FIX-12 (Apr 16 2026): persist selectedDataSource to localStorage on every change,
+// including auto-switch from fallback path (not just manual onDataSourceChange).
+watch(selectedDataSource, (newSrc) => {
+  if (newSrc && factoryId.value) {
+    try { localStorage.setItem(savedSourceKey(factoryId.value), newSrc); } catch {}
+  }
+});
+
 // ==================== API 调用 ====================
+
+// Apr 24 2026 UX fallback helper: probe historical date ranges when current
+// month is empty. Returns true if a non-empty range was loaded into dashboardData.
+// Populates localStorage cache so subsequent visits skip the serial probe.
+//
+// Perf (Apr 24 late): cache hit still serial (1 req), cache miss parallelizes
+// the 3 ladder probes (近90天 / 上年 / 前年) via Promise.allSettled — prior
+// serial version added ~900ms on cold start. Picks non-empty in priority order
+// (closest range first).
+async function tryFallbackRanges(): Promise<boolean> {
+  if (!factoryId.value) return false;
+  const y = new Date().getFullYear();
+  const iso = (d: Date): string => d.toISOString().slice(0, 10);
+  const cacheKey = savedFallbackKey(factoryId.value);
+  const cached = (() => {
+    try { return JSON.parse(localStorage.getItem(cacheKey) || 'null') as { s: string; e: string; label: string } | null; }
+    catch { return null; }
+  })();
+
+  type ProbeRange = [string, string, string];
+  const extractData = (resp: { success?: boolean; data?: unknown }): DashboardResponse | null => {
+    if (!resp.success || !resp.data) return null;
+    const raw = resp.data as Record<string, unknown>;
+    return (raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data) && raw.code)
+      ? (raw.data as DashboardResponse) : (resp.data as DashboardResponse);
+  };
+  const hasRealKpi = (d: DashboardResponse | null): boolean =>
+    !!d && (d.kpiCards || []).some(c => c.rawValue != null && c.rawValue !== 0);
+  // Apr 25 2026 P1 fix: chart-aware predicate. The Apr 23 Gold KPI flip
+  // started returning non-empty kpiCards from the year fallback, but the
+  // executive endpoint's `charts` payload (sales_trend / category_distribution)
+  // can still be empty for the same range. When that happens, the user sees
+  // "本月销售额 2064万" above + "暂无图表 — 数据正在分析中" below — visual
+  // contradiction. Now the fallback chain prefers a range with BOTH non-empty
+  // KPI AND non-empty charts (two-pass: first chart-and-kpi, then kpi-only).
+  const hasNonEmptyCharts = (d: DashboardResponse | null): boolean => {
+    if (!d) return false;
+    const charts = d.charts || {};
+    return Object.keys(charts).length > 0 && Object.values(charts).some(c => {
+      const cfg = c as Record<string, unknown>;
+      const series = cfg.series;
+      if (Array.isArray(series) && series.length > 0) {
+        return series.some(s => Array.isArray((s as Record<string, unknown>).data) && ((s as Record<string, unknown>).data as unknown[]).length > 0);
+      }
+      const data = cfg.data;
+      return Array.isArray(data) && data.length > 0;
+    });
+  };
+
+  const applyFound = (data: DashboardResponse, s: string, e: string, label: string) => {
+    dashboardData.value = data;
+    fallbackRangeLabel.value = label;
+    fallbackDateRange.value = [s, e];
+    if (factoryId.value) putCached(factoryId.value, 'system', data);
+    try { localStorage.setItem(cacheKey, JSON.stringify({ s, e, label })); } catch {}
+  };
+
+  // 1. Cache first (synchronously serial — fastest path when known-good range cached)
+  // Apr 25 2026: cache hit must satisfy BOTH KPI and charts — otherwise we'd
+  // pin the user on a chart-empty range forever. If cached range fails the
+  // chart check, fall through to ladder probe (a different range may have charts).
+  if (cached) {
+    try {
+      const resp = await get(`/${factoryId.value}/smart-bi/dashboard/executive/custom?startDate=${cached.s}&endDate=${cached.e}`);
+      const data = extractData(resp);
+      if (hasRealKpi(data) && hasNonEmptyCharts(data)) {
+        applyFound(data!, cached.s, cached.e, cached.label);
+        return true;
+      }
+    } catch { /* fall through to parallel probe */ }
+  }
+
+  // 2. Ladder probes in parallel (cache missed or empty)
+  const ladder: ProbeRange[] = [
+    (() => { const e = new Date(); const s = new Date(); s.setDate(s.getDate() - 89); return [iso(s), iso(e), '近90天']; })(),
+    [`${y - 1}-01-01`, `${y - 1}-12-31`, `${y - 1}全年`],
+    [`${y - 2}-01-01`, `${y - 2}-12-31`, `${y - 2}全年`],
+  ];
+  // De-dupe against cache range (avoid re-firing the probe that just failed)
+  const ladderFiltered = cached
+    ? ladder.filter(([s, e]) => !(s === cached.s && e === cached.e))
+    : ladder;
+
+  const results = await Promise.allSettled(
+    ladderFiltered.map(async ([s, e, label]) => {
+      const resp = await get(`/${factoryId.value}/smart-bi/dashboard/executive/custom?startDate=${s}&endDate=${e}`);
+      return { s, e, label, data: extractData(resp) };
+    })
+  );
+
+  // Apr 25 2026 P1 fix: two-pass selection in ladder priority order.
+  // Pass 1: prefer a range where BOTH KPI and charts are non-empty (no visual
+  // contradiction). Pass 2: fall back to any range with non-empty KPI (legacy
+  // behaviour — at least the KPI strip shows real numbers, charts may render
+  // "暂无图表" if the server has no chart data for any range).
+  for (const r of results) {
+    if (r.status === 'fulfilled' && hasRealKpi(r.value.data) && hasNonEmptyCharts(r.value.data)) {
+      applyFound(r.value.data!, r.value.s, r.value.e, r.value.label);
+      return true;
+    }
+  }
+  for (const r of results) {
+    if (r.status === 'fulfilled' && hasRealKpi(r.value.data)) {
+      applyFound(r.value.data!, r.value.s, r.value.e, r.value.label);
+      return true;
+    }
+  }
+  return false;
+}
 
 async function loadDashboardData() {
   if (!factoryId.value) {
@@ -485,7 +841,13 @@ async function loadDashboardData() {
   errorMessage.value = '';
 
   try {
-    const response = await get(`/${factoryId.value}/smart-bi/dashboard/executive?period=month`);
+    // If user picked a custom date range, route through /executive/custom
+    // (which calls salesAnalysisService.getSalesOverview with the Gold-cutover code path).
+    // Else fall back to the default period=month behavior.
+    const url = dateRange.value
+      ? `/${factoryId.value}/smart-bi/dashboard/executive/custom?startDate=${dateRange.value[0]}&endDate=${dateRange.value[1]}`
+      : `/${factoryId.value}/smart-bi/dashboard/executive?period=month`;
+    const response = await get(url);
 
     if (response.success && response.data) {
       // Handle double-wrapped response: interceptor wraps {code,data:{...}} into {success,data:{code,data:{...}}}
@@ -494,6 +856,8 @@ async function loadDashboardData() {
         ? raw.data
         : raw;
       dashboardData.value = actualData as DashboardResponse;
+      // FIX-12: cache system-view payload so 刷新 shows instant (5min TTL)
+      if (factoryId.value) putCached(factoryId.value, 'system', actualData);
       // data loaded
 
       // Auto-switch: if system data is effectively empty (no KPIs with real values),
@@ -507,13 +871,40 @@ async function loadDashboardData() {
           (c && 'data' in c && Array.isArray(c.data) && c.data.length > 0)
         );
 
-      if (!hasRealKpi && !hasCharts && dataSources.value.length > 0) {
-        // system data empty, auto-switch to uploaded data
-        const best = dataSources.value.find(d => d.id != null);
-        if (!best) return;
-        selectedDataSource.value = String(best.id);
-        await loadDynamicDashboardData(best.id);
-        return;
+      // Apr 24 2026 UX P0-2/P0-3 fix: never auto-switch to uploads — picking a
+      // random smoke Excel (e.g. gamma1c with 李四/王五/1001.0) as "dashboard
+      // KPIs" is misleading. Apr 24 UX continuation: instead, when 本月 is
+      // empty AND user hasn't picked a range, silently probe 近90天 → 上年 →
+      // 前年 to show genuine historical Gold data (same fallback pattern as
+      // Trends/RestaurantV2 KPI strip). A warning tag explains the switch.
+      // Apr 25 2026 P1 fix: also trigger fallback when KPI is non-empty but
+      // charts are empty — prior logic pinned the user on an all-chart-empty
+      // range, creating a "本月销售额 2064万 + 暂无图表" contradiction.
+      if (!dateRange.value && (!hasRealKpi || !hasCharts)) {
+        const ok = await tryFallbackRanges();
+        if (!ok) {
+          fallbackRangeLabel.value = '';
+          fallbackDateRange.value = null;
+
+          // Apr 24 P0-2 fix: Gold fallback chain all empty AND user has upload(s) →
+          // auto-switch to latest upload's dynamic analysis (previously disabled
+          // because test env had smoke Excel files like gamma1c polluting. For new
+          // merchants with real upload, this IS the right data). Show alert
+          // "已切换到您上传的数据" so user understands the source swap.
+          // Only triggers when Gold chain fails AND uploads exist — not for seed-
+          // data factories (F001 test) that already had Gold.
+          const uploads = dataSources.value.filter(d => d.id != null);
+          if (uploads.length > 0) {
+            const latest = uploads[0];  // already sorted newest-first from API
+            const shortName = (latest.fileName || '未命名').slice(0, 30);
+            fallbackRangeLabel.value = `Gold 层暂无数据,已切换到您上传的 ${shortName}`;
+            selectedDataSource.value = String(latest.id);
+            await loadDynamicDashboardData(Number(latest.id));
+          }
+        }
+      } else {
+        fallbackRangeLabel.value = '';
+        fallbackDateRange.value = null;
       }
 
       // Async load LLM insights (non-blocking, renders after KPIs+charts)
@@ -528,16 +919,9 @@ async function loadDashboardData() {
     ElMessage.error(errorMessage.value);
     dashboardData.value = null;
 
-    // On error, also try uploaded data as fallback
-    const fallback = dataSources.value.find(d => d.id != null);
-    if (fallback) {
-      // system API failed, falling back to uploaded data
-      hasError.value = false;
-      errorMessage.value = '';
-      selectedDataSource.value = String(fallback.id);
-      await loadDynamicDashboardData(fallback.id);
-      return;
-    }
+    // Apr 24 2026 UX P0-2/P0-3 fix: don't fallback to upload on error either.
+    // Silent override with random upload's dynamic analysis masked the real
+    // failure and showed misleading KPI. Keep the error visible to the user.
   } finally {
     loading.value = false;
   }
@@ -547,9 +931,28 @@ async function loadLLMInsights() {
   if (!factoryId.value || !dashboardData.value) return;
   const sourceAtStart = selectedDataSource.value;
   const signal = abortController?.signal;
+  insightsLoading.value = true;
+  insightsTookLong.value = false;
+  streamingInsightText.value = '';
+  streamingInsightMeta.value = null;
+  // Show "冷启中" hint after 5s (typical Python warm ~2s, cold ~8-10s)
+  const longRunTimer = setTimeout(() => { insightsTookLong.value = true; }, 5000);
   try {
-    const res = await get(`/${factoryId.value}/smart-bi/dashboard/executive/insights?period=month`, { timeout: 120000, signal });
-    // Guard: if user switched data source during await, discard stale result
+    const effectiveRange = dateRange.value || fallbackDateRange.value;
+
+    // Phase 9 Apr 24: for custom-range path, prefer SSE streaming so first
+    // token appears ~2-3s instead of user waiting 8-10s for full response.
+    // Fall back to legacy JSON for period=month path (agent not wired there).
+    if (effectiveRange) {
+      const ok = await loadLLMInsightsStream(effectiveRange[0], effectiveRange[1], sourceAtStart, signal);
+      if (ok) return;
+      // SSE failed → fall through to legacy JSON path as backup
+    }
+
+    const insightsUrl = effectiveRange
+      ? `/${factoryId.value}/smart-bi/dashboard/executive/insights/custom?startDate=${effectiveRange[0]}&endDate=${effectiveRange[1]}`
+      : `/${factoryId.value}/smart-bi/dashboard/executive/insights?period=month`;
+    const res = await get(insightsUrl, { timeout: 120000, signal });
     if (selectedDataSource.value !== sourceAtStart) return;
     if (res.success && res.data) {
       const raw = res.data as Record<string, unknown>;
@@ -564,9 +967,107 @@ async function loadLLMInsights() {
       }
     }
   } catch (e) {
-    // Silently ignore aborted requests (user switched data source or navigated away)
     if (e instanceof DOMException && e.name === 'AbortError') return;
     console.warn('LLM insights load failed (non-critical):', e);
+  } finally {
+    clearTimeout(longRunTimer);
+    insightsLoading.value = false;
+    insightsTookLong.value = false;
+  }
+}
+
+// Phase 9 Apr 24: SSE streaming for LLM insights. Returns true on success
+// (user sees tokens streaming live), false if the stream fails early so
+// caller can fall back to the legacy JSON endpoint.
+async function loadLLMInsightsStream(
+  startDate: string,
+  endDate: string,
+  sourceAtStart: string,
+  signal: AbortSignal | undefined,
+): Promise<boolean> {
+  if (!factoryId.value) return false;
+  // Use the same key that request.ts interceptor reads
+  const authHeader = localStorage.getItem('cretas_access_token') || '';
+  const url = `/api/mobile/${factoryId.value}/smart-bi/dashboard/executive/insights/custom/stream?startDate=${startDate}&endDate=${endDate}`;
+
+  try {
+    const resp = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': authHeader ? `Bearer ${authHeader}` : '',
+        'Accept': 'text/event-stream',
+      },
+      signal,
+    });
+    if (!resp.ok || !resp.body) return false;
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+    let accumulated = '';
+    let done = false;
+    let gotAnyDelta = false;
+
+    while (!done) {
+      const { value, done: readerDone } = await reader.read();
+      if (readerDone) break;
+      buffer += decoder.decode(value, { stream: true });
+      // I3 fix (reviewer Apr 24): cancel reader on source switch mid-stream,
+      // not just break — otherwise fetch connection keeps consuming bytes.
+      if (selectedDataSource.value !== sourceAtStart) {
+        try { await reader.cancel(); } catch { /* ignore */ }
+        return gotAnyDelta;
+      }
+      // Parse SSE events (separated by blank line)
+      let idx;
+      while ((idx = buffer.indexOf('\n\n')) >= 0) {
+        const eventBlock = buffer.slice(0, idx).trim();
+        buffer = buffer.slice(idx + 2);
+        if (!eventBlock.startsWith('data:')) continue;
+        const dataStr = eventBlock.replace(/^data:\s*/, '').trim();
+        if (!dataStr) continue;
+        try {
+          const event = JSON.parse(dataStr);
+          if (selectedDataSource.value !== sourceAtStart) {
+            try { await reader.cancel(); } catch { /* ignore */ }
+            return gotAnyDelta;
+          }
+          if (event.type === 'meta') {
+            streamingInsightMeta.value = {
+              source: event.source,
+              tokens_used_today: event.tokens_used_today,
+            };
+          } else if (event.type === 'delta' && event.text) {
+            accumulated += event.text;
+            streamingInsightText.value = accumulated;
+            gotAnyDelta = true;
+          } else if (event.type === 'done') {
+            // Finalize: append as regular insight
+            if (accumulated && dashboardData.value) {
+              const existing = dashboardData.value.aiInsights || [];
+              dashboardData.value = {
+                ...dashboardData.value,
+                aiInsights: [
+                  ...existing,
+                  { level: 'normal', category: 'AI 洞察', message: accumulated, actionSuggestion: null } as never
+                ],
+              };
+              insightTimestamp.value = new Date();
+            }
+            streamingInsightText.value = '';
+            done = true;
+          } else if (event.type === 'error') {
+            console.warn('SSE error event:', event.message);
+            return gotAnyDelta;  // If we got some text, count as partial success
+          }
+        } catch { /* malformed event, skip */ }
+      }
+    }
+    return gotAnyDelta;
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') return false;
+    console.warn('SSE stream failed (will fallback):', e);
+    return false;
   }
 }
 
@@ -596,6 +1097,18 @@ async function loadDataSources() {
 async function onDataSourceChange(sourceId: string) {
   // Cancel any pending requests from previous data source
   getSignal();
+
+  // FIX-12: remember selection so 刷新后 restore
+  if (factoryId.value && sourceId) {
+    try { localStorage.setItem(savedSourceKey(factoryId.value), sourceId); } catch {}
+  }
+
+  // Serve cached dashboard data immediately if available (instant UI, no white flash)
+  if (factoryId.value) {
+    const cached = getCached<DashboardResponse>(factoryId.value, sourceId);
+    if (cached) dashboardData.value = cached;
+  }
+
   if (sourceId === 'system') {
     dynamicInsights.value = [];
     await loadDashboardData();
@@ -622,9 +1135,10 @@ async function loadDynamicDashboardData(uploadId: number) {
       const data = res.data as DynamicAnalysisResponse;
 
       // Map dynamic kpiCards → DashboardResponse.kpiCards format
-      const kpiCards: KPICard[] = (data.kpiCards || []).map(kpi => ({
+      // Apr 24 P0-1: humanize "_N" dedupe suffix from column name leakage
+      const kpiCards: KPICard[] = (data.kpiCards || []).map((kpi, idx) => ({
         key: detectKpiKey(kpi.title || ''),
-        title: kpi.title || '',
+        title: humanizeKpiLabel(kpi.title || '', idx),
         displayValue: kpi.value != null ? String(kpi.value) : String(kpi.rawValue ?? 0),
         rawValue: kpi.rawValue ?? 0,
         changeRate: kpi.changeRate ?? null,
@@ -726,6 +1240,9 @@ async function loadDynamicDashboardData(uploadId: number) {
         lastUpdated: new Date().toISOString(),
       } as unknown as DashboardResponse;
 
+      // FIX-12: cache per-uploadId dashboard payload (5min TTL) for instant refresh
+      if (factoryId.value) putCached(factoryId.value, uploadId, dashboardData.value);
+
       // dynamic data loaded from upload
     } else {
       throw new Error(res.message || '加载上传数据分析失败');
@@ -746,6 +1263,19 @@ async function loadDynamicDashboardData(uploadId: number) {
   } finally {
     loading.value = false;
   }
+}
+
+/**
+ * Apr 24 P0-1 fix: humanize dedupe "_N" suffix. Backend dedupe_column_names
+ * adds _2/_3 to duplicate columns ("数量金额_3") — render as "数量金额 (指标 3)"
+ * so users don't see DB column names directly.
+ */
+function humanizeKpiLabel(rawTitle: string, idx: number): string {
+  if (!rawTitle) return `指标 ${idx + 1}`;
+  const t = rawTitle.trim();
+  const m = t.match(/^(.+?)_(\d+)$/);
+  if (m) return `${m[1]} (指标 ${m[2]})`;
+  return t;
 }
 
 /**
@@ -822,6 +1352,43 @@ function initTrendChart(chartConfig?: ChartConfig) {
 
   // 如果有后端数据，使用后端数据
   hasTrendData.value = !!(chartConfig && chartConfig.series && chartConfig.series.length > 0);
+
+  // C Apr 17 2026: 根据 x-axis 第一个值判断是"趋势"(时间) 还是"排行"(类别)
+  // Apr 24 2026: drop zero/null datapoints so "all values = 0" doesn't produce a flat
+  // line-at-zero chart that looks broken. Re-evaluate hasTrendData after filtering.
+  if (hasTrendData.value && chartConfig) {
+    const xData = (chartConfig.xAxis as { data?: unknown[] } | undefined)?.data || [];
+    for (const s of chartConfig.series) {
+      if (Array.isArray(s.data)) {
+        const zipped = (s.data as (number | null | undefined)[]).map((v, i) => ({
+          x: xData[i], v: (typeof v === 'number' && isFinite(v) && v !== 0) ? v : null
+        }));
+        const kept = zipped.filter(z => z.v !== null);
+        if (kept.length > 0 && kept.length !== zipped.length) {
+          s.data = kept.map(z => z.v as number);
+          // Keep xAxis alignment — need to rebuild it too
+          (chartConfig.xAxis as { data?: unknown[] }).data = kept.map(z => z.x);
+        }
+      }
+    }
+    const seriesHasData = chartConfig.series.some(s =>
+      Array.isArray(s.data) && (s.data as unknown[]).length > 0
+    );
+    hasTrendData.value = seriesHasData;
+  }
+
+  if (hasTrendData.value) {
+    const xData = (chartConfig?.xAxis as { data?: unknown[] } | undefined)?.data || [];
+    const firstX = xData.length > 0 ? String(xData[0]) : '';
+    const isTime = /^\d{4}[-/]\d{1,2}/.test(firstX) ||
+                   /\d{1,4}[年月日]/.test(firstX) ||
+                   /^Q[1-4]$/i.test(firstX) ||
+                   /^\d{4}$/.test(firstX);
+    trendChartTitle.value = isTime ? '销售趋势' : '按类别排行';
+  } else {
+    trendChartTitle.value = '销售趋势';
+  }
+
   if (hasTrendData.value) {
     const option: echarts.EChartsOption = {
       tooltip: {
@@ -900,7 +1467,7 @@ function initPieChart(chartConfig?: ChartConfig) {
   if (hasPieData.value) {
     const seriesData = chartConfig!.series[0];
     // 假设后端返回的数据格式是 { name, data } 或 { data: [{name, value}] }
-    const pieData = Array.isArray(seriesData.data)
+    const pieDataRaw = Array.isArray(seriesData.data)
       ? seriesData.data.map((value, index) => {
           // Support multiple data formats: number, {value}, {name, value}
           const isObj = typeof value === 'object' && value !== null;
@@ -913,6 +1480,15 @@ function initPieChart(chartConfig?: ChartConfig) {
           };
         })
       : [];
+    // Drop zero-value and sentinel "合计/total" slices that pollute the donut with "0%" labels.
+    const pieData = pieDataRaw.filter(p =>
+      p.value > 0 && !/^(合计|总计|total|grand[_ ]?total)$/i.test(p.name || '')
+    );
+    // All-zero or only-sentinels => fall back to empty state instead of rendering a useless donut.
+    if (pieData.length === 0) {
+      hasPieData.value = false;
+      return;
+    }
 
     const option: echarts.EChartsOption = {
       tooltip: {
@@ -1143,10 +1719,11 @@ onUnmounted(() => {
         <el-button size="small" @click="toggleDarkMode" :title="isDarkMode ? '切换亮色' : '切换暗色'" :aria-label="isDarkMode ? '切换亮色模式' : '切换暗色模式'">{{ isDarkMode ? '☀️' : '🌙' }}</el-button>
         <el-button type="primary" :icon="Refresh" @click="handleRefresh" :loading="loading">刷新数据</el-button>
         <el-button type="success" :icon="ChatDotRound" @click="goToAIQuery()">AI 问答</el-button>
+        <el-button type="info" plain @click="$router.push('/smart-bi/gold-preview')">Gold 预览</el-button>
       </div>
     </div>
 
-    <!-- 数据源选择器 -->
+    <!-- 数据源 + 时间范围 -->
     <el-card class="datasource-card">
       <div class="datasource-bar">
         <div class="datasource-item">
@@ -1173,6 +1750,27 @@ onUnmounted(() => {
               </div>
             </el-option>
           </el-select>
+        </div>
+        <div class="datasource-item">
+          <span class="datasource-label">
+            <el-icon><Clock /></el-icon>
+            时间范围
+          </span>
+          <el-date-picker
+            v-model="dateRange"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始"
+            end-placeholder="结束"
+            :shortcuts="dateRangeShortcuts"
+            value-format="YYYY-MM-DD"
+            style="width: 280px"
+            clearable
+            @change="onDateRangeChange"
+          />
+          <span v-if="!dateRange && selectedDataSource === 'system' && !fallbackRangeLabel" class="datasource-meta" style="margin-left: 8px;">默认: 本月</span>
+          <span v-else-if="!dateRange && selectedDataSource === 'system' && fallbackRangeLabel" class="datasource-meta" style="margin-left: 8px; color: #E6A23C;">本月无数据 · 显示 {{ fallbackRangeLabel }}</span>
+          <span v-else-if="selectedDataSource !== 'system'" class="datasource-meta" style="margin-left: 8px;">(选择范围将返回系统视图)</span>
         </div>
         <el-tag v-if="selectedDataSource && selectedDataSource !== 'system'" type="success" size="small">来自上传数据</el-tag>
       </div>
@@ -1222,6 +1820,19 @@ onUnmounted(() => {
       @action="goToUpload"
     />
 
+    <!-- Apr 24 UX: fallback-range notice (本月 empty, auto-switched to historical) -->
+    <el-alert
+      v-if="fallbackRangeLabel && !dateRange && !loading"
+      type="warning"
+      :closable="false"
+      show-icon
+      style="margin-bottom: 12px;"
+    >
+      <template #title>
+        本月暂无销售数据,已自动显示 <strong>{{ fallbackRangeLabel }}</strong> 的历史数据。如需查看其他区间,请使用上方时间范围选择器。
+      </template>
+    </el-alert>
+
     <!-- KPI 卡片区 -->
     <el-row v-if="loading && !kpiData.totalRevenue" :gutter="16" class="kpi-section" aria-label="KPI指标加载中">
       <el-col :xs="24" :sm="12" :md="6" v-for="i in 4" :key="i">
@@ -1230,12 +1841,13 @@ onUnmounted(() => {
     </el-row>
     <el-row v-else :gutter="16" class="kpi-section kpi-fade-in" aria-label="KPI指标" aria-live="polite" :aria-busy="loading">
       <el-col :xs="24" :sm="12" :md="6">
+        <CapabilityGate card-id="dashboard_revenue_month" :requires="['date', 'net_amount']">
         <el-card class="kpi-card revenue">
           <div class="kpi-icon">
             <el-icon><DataLine /></el-icon>
           </div>
           <div class="kpi-content">
-            <div class="kpi-label">本月销售额</div>
+            <div class="kpi-label">{{ kpiData.revenueLabel || '本月销售额' }}</div>
             <div class="kpi-value-row">
               <div class="kpi-value">{{ formatKpiValue(kpiData.totalRevenue) }}</div>
               <el-tooltip v-if="kpiSparklines.revenue.length >= 2" :content="sparklineTooltip(kpiSparklines.revenue, kpiSparklines.labels)" placement="top" :show-after="300" raw-content>
@@ -1255,8 +1867,10 @@ onUnmounted(() => {
             </div>
           </div>
         </el-card>
+        </CapabilityGate>
       </el-col>
       <el-col :xs="24" :sm="12" :md="6">
+        <CapabilityGate card-id="dashboard_avg_bill" :requires="['source_bill_no', 'net_amount']">
         <el-card class="kpi-card profit">
           <div class="kpi-icon">
             <el-icon><Histogram /></el-icon>
@@ -1282,14 +1896,16 @@ onUnmounted(() => {
             </div>
           </div>
         </el-card>
+        </CapabilityGate>
       </el-col>
       <el-col :xs="24" :sm="12" :md="6">
+        <CapabilityGate card-id="dashboard_order_count" :requires="['date', 'source_bill_no']">
         <el-card class="kpi-card orders">
           <div class="kpi-icon">
             <el-icon><Goods /></el-icon>
           </div>
           <div class="kpi-content">
-            <div class="kpi-label">订单数量</div>
+            <div class="kpi-label">{{ kpiData.orderLabel || '订单数量' }}</div>
             <div class="kpi-value-row">
               <div class="kpi-value">{{ kpiData.orderCount != null ? formatCount(kpiData.orderCount) : '--' }}</div>
               <el-tooltip v-if="kpiSparklines.orders.length >= 2" :content="sparklineTooltip(kpiSparklines.orders, kpiSparklines.labels)" placement="top" :show-after="300" raw-content>
@@ -1309,8 +1925,10 @@ onUnmounted(() => {
             </div>
           </div>
         </el-card>
+        </CapabilityGate>
       </el-col>
       <el-col :xs="24" :sm="12" :md="6">
+        <CapabilityGate card-id="dashboard_active_customers" :requires="['customer_count']">
         <el-card class="kpi-card customers">
           <div class="kpi-icon">
             <el-icon><Medal /></el-icon>
@@ -1336,12 +1954,14 @@ onUnmounted(() => {
             </div>
           </div>
         </el-card>
+        </CapabilityGate>
       </el-col>
     </el-row>
 
     <!-- 排行榜区 -->
     <el-row :gutter="16" class="ranking-section" v-loading="loading" aria-label="排行榜">
-      <el-col v-if="departmentRanking.length > 0" :xs="24" :md="12">
+      <el-col v-if="departmentRanking.length > 0" :xs="24" :md="regionRanking.length > 0 ? 12 : 24">
+        <CapabilityGate card-id="dashboard_dept_ranking" :requires="['staff_name', 'net_amount']">
         <el-card class="ranking-card">
           <template #header>
             <div class="card-header">
@@ -1368,8 +1988,15 @@ onUnmounted(() => {
             </div>
           </div>
         </el-card>
+        </CapabilityGate>
       </el-col>
-      <el-col :xs="24" :md="departmentRanking.length > 0 ? 12 : 24">
+      <!-- P2-18: 区域销售分布空时整个 col 隐藏, 部门排行 col 自动扩宽到 24. 避免大片"暂无区域销售数据" 占屏 -->
+      <el-col
+        v-if="regionRanking.length > 0"
+        :xs="24"
+        :md="departmentRanking.length > 0 ? 12 : 24"
+      >
+        <CapabilityGate card-id="dashboard_region_sales" :requires="['store_name', 'net_amount']">
         <el-card class="ranking-card">
           <template #header>
             <div class="card-header">
@@ -1377,7 +2004,7 @@ onUnmounted(() => {
               <span>区域销售分布</span>
             </div>
           </template>
-          <div class="ranking-list" v-if="regionRanking.length > 0">
+          <div class="ranking-list">
             <div
               v-for="item in regionRanking"
               :key="item.name"
@@ -1393,11 +2020,8 @@ onUnmounted(() => {
               </div>
             </div>
           </div>
-          <div v-else class="compact-empty">
-            <el-icon :size="24" color="#c0c4cc"><Location /></el-icon>
-            <span>暂无区域销售数据</span>
-          </div>
         </el-card>
+        </CapabilityGate>
       </el-col>
     </el-row>
 
@@ -1408,21 +2032,40 @@ onUnmounted(() => {
     </div>
 
     <!-- 图表区 -->
-    <el-row :gutter="16" class="chart-section" aria-label="图表区域">
-      <el-col :xs="24" :lg="14">
+    <!-- Apr 25 2026 P1 fix: hide chart cards visually (v-show) when no chart
+         data comes back from the executive endpoint. Showing "暂无图表 - 数据
+         正在分析中,图表即将生成..." right under "本月销售额 2064万" was a
+         visual contradiction (Apr 24 audit finding). Gold-backed KPI cutover
+         added kpiCards but did not include sales_trend / category_distribution
+         payloads — the Week 6 TemplateGrid below already provides chart
+         analytics from the materialised templates, so the empty placeholder
+         here is dead space and confuses the customer. Use v-show (not v-if)
+         so the chart-container ref stays in the DOM, allowing initCharts to
+         find the ref when data does arrive (e.g. user picks a different
+         range or upload). Skeletons during loading still render so the
+         layout doesn't pop on first paint. -->
+    <el-row
+      v-show="loading || hasTrendData || hasPieData"
+      :gutter="16"
+      class="chart-section"
+      aria-label="图表区域"
+    >
+      <el-col :xs="24" :lg="14" v-show="loading || hasTrendData">
+        <CapabilityGate card-id="dashboard_sales_trend" :requires="['date', 'net_amount']">
         <el-card class="chart-card">
           <template #header>
             <div class="card-header">
               <el-icon><TrendCharts /></el-icon>
-              <span>销售趋势</span>
+              <span>{{ trendChartTitle }}</span>
             </div>
           </template>
           <ChartSkeleton v-if="loading && !hasTrendData" type="chart" />
           <div ref="trendChartRef" class="chart-container" v-show="hasTrendData"></div>
-          <SmartBIEmptyState v-if="!loading && !hasTrendData" type="no-charts" :show-action="false" />
         </el-card>
+        </CapabilityGate>
       </el-col>
-      <el-col :xs="24" :lg="10">
+      <el-col :xs="24" :lg="10" v-show="loading || hasPieData">
+        <CapabilityGate card-id="dashboard_product_share" :requires="['combo_string', 'net_amount']">
         <el-card class="chart-card">
           <template #header>
             <div class="card-header">
@@ -1432,8 +2075,8 @@ onUnmounted(() => {
           </template>
           <ChartSkeleton v-if="loading && !hasPieData" type="chart" />
           <div ref="pieChartRef" class="chart-container" v-show="hasPieData"></div>
-          <SmartBIEmptyState v-if="!loading && !hasPieData" type="no-charts" :show-action="false" />
         </el-card>
+        </CapabilityGate>
       </el-col>
     </el-row>
 
@@ -1450,7 +2093,24 @@ onUnmounted(() => {
               </span>
             </div>
           </template>
-          <div class="insight-list" role="list" v-if="aiInsights.length > 0">
+          <!-- Phase 9 Apr 24: live streaming insight text (SSE) — shows chars arriving -->
+          <div v-if="streamingInsightText" class="insight-streaming" role="status">
+            <el-tag size="small" type="info">
+              <el-icon class="is-loading"><Loading /></el-icon> 生成中
+            </el-tag>
+            <div class="streaming-text">{{ streamingInsightText }}<span class="cursor">▌</span></div>
+          </div>
+
+          <!-- Apr 24 UX: skeleton while LLM insights are being fetched (1-10s async) -->
+          <div v-else-if="insightsLoading && aiInsights.length === 0" class="insight-loading" role="status">
+            <el-skeleton :rows="3" animated />
+            <p class="insight-loading-hint">
+              <el-icon class="is-loading"><Loading /></el-icon>
+              {{ insightsTookLong ? 'AI 分析首次运行需 5-10 秒 (大模型冷启动)...' : 'AI 智能洞察生成中...' }}
+            </p>
+          </div>
+
+          <div class="insight-list" role="list" v-else-if="aiInsights.length > 0">
             <div
               v-for="(insight, index) in (insightsExpanded ? aiInsights : aiInsights.slice(0, INSIGHT_COLLAPSE_LIMIT))"
               :key="index"
@@ -1521,6 +2181,13 @@ onUnmounted(() => {
         </el-card>
       </el-col>
     </el-row>
+
+    <!-- Week 6 Template Surfacing: show analysis results for this page -->
+    <TemplateGrid page-key="dashboard" :factory-id="factoryId || 'F001'" />
+
+    <!-- Day 8 数据织网 Sub-Project A: bottom CTA prompting users to unlock
+         capability-gated cards by uploading more comprehensive data -->
+    <UnlockMoreCTA />
   </div>
 </template>
 
@@ -2001,6 +2668,55 @@ onUnmounted(() => {
 // AI 洞察区
 .insight-section {
   margin-bottom: 16px;
+}
+
+.insight-loading {
+  padding: 8px 4px;
+
+  .insight-loading-hint {
+    margin-top: 12px;
+    color: #909399;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    .is-loading {
+      animation: rotating 2s linear infinite;
+    }
+  }
+}
+
+.insight-streaming {
+  padding: 12px 4px;
+
+  .is-loading {
+    animation: rotating 2s linear infinite;
+  }
+
+  .streaming-text {
+    margin-top: 10px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #303133;
+    white-space: pre-wrap;
+    word-break: break-word;
+
+    .cursor {
+      color: #409EFF;
+      animation: blink 1s step-end infinite;
+      margin-left: 1px;
+    }
+  }
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+@keyframes rotating {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .insight-card {

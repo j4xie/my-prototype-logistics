@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.config.AIIntentConfig;
 import com.cretas.aims.entity.intent.ErrorAttributionStatistics;
 import com.cretas.aims.util.ErrorSanitizer;
@@ -362,6 +363,7 @@ public class IntentAnalysisController {
      * 采纳建议
      */
     @Operation(summary = "采纳建议", description = "标记某条优化建议为已采纳状态，并记录操作人")
+    @RequirePermission({"system:read_write"})
     @PostMapping("/suggestions/{suggestionId}/apply")
     public ResponseEntity<ApiResponse<Void>> applySuggestion(
             @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
@@ -386,6 +388,7 @@ public class IntentAnalysisController {
      * 拒绝建议
      */
     @Operation(summary = "拒绝建议", description = "标记某条优化建议为已拒绝状态，并记录拒绝原因")
+    @RequirePermission({"system:read_write"})
     @PostMapping("/suggestions/{suggestionId}/reject")
     public ResponseEntity<ApiResponse<Void>> rejectSuggestion(
             @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
@@ -515,6 +518,7 @@ public class IntentAnalysisController {
      */
     @Operation(summary = "审批并创建新意图",
             description = "审批通过创建新意图建议，系统将自动创建对应的 AIIntentConfig。这是自学习机制的核心功能。")
+    @RequirePermission({"system:read_write"})
     @PostMapping("/suggestions/{suggestionId}/approve-create-intent")
     public ResponseEntity<ApiResponse<Map<String, Object>>> approveCreateIntent(
             @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
@@ -680,6 +684,7 @@ public class IntentAnalysisController {
      * 手动触发统计聚合
      */
     @Operation(summary = "手动触发统计聚合", description = "管理员手动触发指定日期的意图识别统计聚合任务")
+    @RequirePermission({"system:read_write"})
     @PostMapping("/admin/aggregate")
     public ResponseEntity<ApiResponse<ErrorAttributionStatistics>> triggerAggregation(
             @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
@@ -698,6 +703,7 @@ public class IntentAnalysisController {
      * 手动生成优化建议
      */
     @Operation(summary = "手动生成优化建议", description = "管理员手动触发基于近期数据的优化建议生成任务")
+    @RequirePermission({"system:read_write"})
     @PostMapping("/admin/generate-suggestions")
     public ResponseEntity<ApiResponse<List<IntentOptimizationSuggestion>>> triggerSuggestionGeneration(
             @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
@@ -737,6 +743,7 @@ public class IntentAnalysisController {
      */
     @Operation(summary = "请求晋升为平台级意图",
             description = "工厂管理员申请将工厂级意图晋升为平台级共享意图，需要平台管理员审批")
+    @RequirePermission({"system:read_write"})
     @PostMapping("/intents/{intentCode}/request-promotion")
     public ResponseEntity<ApiResponse<Map<String, Object>>> requestPromotion(
             @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
@@ -825,6 +832,7 @@ public class IntentAnalysisController {
      */
     @Operation(summary = "审批意图晋升请求",
             description = "平台管理员审批工厂级意图晋升为平台级的请求")
+    @RequirePermission({"system:read_write"})
     @PostMapping("/platform/promotions/{suggestionId}/approve")
     public ResponseEntity<ApiResponse<Map<String, Object>>> approvePromotion(
             @Parameter(description = "工厂ID (用于路由，平台管理员可传PLATFORM)", example = "PLATFORM")
@@ -956,6 +964,7 @@ public class IntentAnalysisController {
      */
     @Operation(summary = "刷新语义路由器缓存",
             description = "管理员手动刷新语义路由器的意图向量缓存")
+    @RequirePermission({"system:read_write"})
     @PostMapping("/semantic-router/refresh-cache")
     public ResponseEntity<ApiResponse<Void>> refreshSemanticRouterCache(
             @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId) {

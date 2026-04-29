@@ -68,18 +68,25 @@ interface MenuItem {
 // 财务主管专用菜单 - 简化版
 const financeManagerMenu: MenuItem[] = [
   { path: '/smart-bi/dashboard', title: '经营驾驶舱', icon: 'Odometer', module: 'analytics' },
-  { path: '/smart-bi/financial-dashboard', title: '财务分析看板', icon: 'TrendCharts', module: 'analytics' },
+  { path: '/smart-bi/financial-dashboard', title: '财务 PBI 看板', icon: 'TrendCharts', module: 'analytics' },
   { path: '/smart-bi/finance', title: '财务分析', icon: 'Money', module: 'analytics' },
   { path: '/smart-bi/sales', title: '销售分析', icon: 'TrendCharts', module: 'sales' },
   { path: '/smart-bi/query', title: 'AI问答', icon: 'ChatDotRound', module: 'analytics' },
   { path: '/smart-bi/query-templates', title: '查询模板管理', icon: 'Tickets', module: 'analytics' },
-  { path: '/smart-bi/analysis', title: '智能数据分析', icon: 'DataAnalysis', module: 'analytics' }
+  { path: '/smart-bi/analysis', title: '智能数据分析', icon: 'DataAnalysis', module: 'analytics' },
+  // Bug #40: finance_manager 需审核开票申请, 加 ERP 财务操作入口
+  { path: '/finance/invoices?status=REQUESTED', title: '开票审核', icon: 'Tickets', module: 'finance' },
+  { path: '/finance/payments', title: '收款管理', icon: 'Money', module: 'finance' }
 ];
 
 const menuConfig: MenuItem[] = [
   { path: '/dashboard', title: '首页', icon: 'House', module: 'dashboard' },
   {
+    // P1-5: restaurants 默认不见 "生产管理" (BOM/批次是 manufacturing 语言,
+    // 餐饮用配方/备餐在 /restaurant/recipes)
+    // UX P2-5: 合并"研发管理" 1-item 组, 减少顶级菜单
     path: '/production', title: '生产管理', icon: 'Operation', module: 'production',
+    hideForFactoryTypes: ['RESTAURANT'],
     children: [
       { path: '/production/batches', title: '生产批次', icon: '', module: 'production' },
       { path: '/production/plans', title: '生产计划', icon: '', module: 'production' },
@@ -87,20 +94,28 @@ const menuConfig: MenuItem[] = [
       { path: '/production/bom', title: 'BOM成本管理', icon: '', module: 'production' },
       { path: '/production/approval', title: '报工审批', icon: '', module: 'production' },
       { path: '/production/bom-achievement', title: 'BOM达成率分析', icon: '', module: 'production' },
-      { path: '/production/process-io', title: '工序投入产出对比', icon: '', module: 'production' }
+      { path: '/production/process-io', title: '工序投入产出对比', icon: '', module: 'production' },
+      { path: '/production/material-requisitions', title: '物料需求单', icon: '', module: 'production' },
+      { path: '/rd/samples', title: '研发样品', icon: '', module: 'production' }
     ]
   },
   {
+    // P1-5: restaurants 默认不见 "仓储管理" (食材库存在 /restaurant/stocktaking)
+    // UX P2-5: 合并"调拨管理" 1-item 组到这里,减少顶级菜单数
     path: '/warehouse', title: '仓储管理', icon: 'Box', module: 'warehouse',
+    hideForFactoryTypes: ['RESTAURANT'],
     children: [
       { path: '/warehouse/materials', title: '原材料批次', icon: '', module: 'warehouse' },
       { path: '/warehouse/shipments', title: '出货管理', icon: '', module: 'warehouse' },
       { path: '/warehouse/inventory', title: '盘点管理', icon: '', module: 'warehouse' },
-      { path: '/warehouse/material-price-trend', title: '物料均价趋势', icon: '', module: 'warehouse' }
+      { path: '/warehouse/material-price-trend', title: '物料均价趋势', icon: '', module: 'warehouse' },
+      { path: '/transfer/list', title: '调拨单', icon: '', module: 'warehouse' }
     ]
   },
   {
+    // P1-5: restaurants 默认不见 "质量管理" (食品安全走 食检,不是 ISO 质检)
     path: '/quality', title: '质量管理', icon: 'Checked', module: 'quality',
+    hideForFactoryTypes: ['RESTAURANT'],
     children: [
       { path: '/quality/inspections', title: '质检记录', icon: '', module: 'quality' },
       { path: '/quality/disposals', title: '废弃处理', icon: '', module: 'quality' },
@@ -108,9 +123,13 @@ const menuConfig: MenuItem[] = [
     ]
   },
   {
+    // P1-5 fix: restaurants 默认不见 "采购管理" (进货走 /restaurant/requisitions)
+    // Canvas 管理员可细粒度开启 purchase_order 码解锁.
     path: '/procurement', title: '采购管理', icon: 'ShoppingCart', module: 'procurement',
+    hideForFactoryTypes: ['RESTAURANT'],
     children: [
       { path: '/procurement/orders', title: '采购订单', icon: '', module: 'procurement' },
+      { path: '/procurement/receives', title: '采购入库', icon: '', module: 'procurement' },
       { path: '/procurement/suppliers', title: '供应商管理', icon: '', module: 'procurement' },
       { path: '/procurement/price-lists', title: '价格表管理', icon: '', module: 'procurement' }
     ]
@@ -119,13 +138,21 @@ const menuConfig: MenuItem[] = [
     path: '/sales', title: '销售管理', icon: 'Goods', module: 'sales',
     children: [
       { path: '/sales/orders', title: '销售订单', icon: '', module: 'sales' },
-      { path: '/sales/finished-goods', title: '成品库存', icon: '', module: 'sales' },
+      // Apr 24 UX: manufacturing-only concepts (批次号/生产数量/库位 / 物流发货).
+      // Restaurants don't carry finished-goods batch inventory or ship physical
+      // product, so hide from restaurant sidebar. Also /sales/shipments returns
+      // 400 "数据处理失败" for F002 (no data) — hiding removes the bad toast.
+      { path: '/sales/finished-goods', title: '成品库存', icon: '', module: 'sales',
+        hideForFactoryTypes: ['RESTAURANT'] },
       { path: '/sales/customers', title: '客户管理', icon: '', module: 'sales' },
-      { path: '/sales/shipments', title: '出货记录', icon: '', module: 'sales' }
+      { path: '/sales/shipments', title: '出货记录', icon: '', module: 'sales',
+        hideForFactoryTypes: ['RESTAURANT'] }
     ]
   },
   {
+    // P1-5: restaurants 默认不见 "人事管理" (小连锁常无 HR 系统,Canvas 可开启 hr_employee)
     path: '/hr', title: '人事管理', icon: 'User', module: 'hr',
+    hideForFactoryTypes: ['RESTAURANT'],
     children: [
       { path: '/hr/employees', title: '员工管理', icon: '', module: 'hr' },
       { path: '/hr/attendance', title: '考勤管理', icon: '', module: 'hr' },
@@ -133,14 +160,11 @@ const menuConfig: MenuItem[] = [
       { path: '/hr/departments', title: '部门管理', icon: '', module: 'hr' }
     ]
   },
+  // UX P2-5 merged into 仓储管理: /transfer 原独立顶级组 (1 项), 合并节省 1 顶级项
   {
-    path: '/transfer', title: '调拨管理', icon: 'Sell', module: 'warehouse',
-    children: [
-      { path: '/transfer/list', title: '调拨单列表', icon: '', module: 'warehouse' }
-    ]
-  },
-  {
+    // P1-5: restaurants 默认不见 "设备管理" (manufacturing 专属)
     path: '/equipment', title: '设备管理', icon: 'Monitor', module: 'equipment',
+    hideForFactoryTypes: ['RESTAURANT'],
     children: [
       { path: '/equipment/list', title: '设备列表', icon: '', module: 'equipment' },
       { path: '/equipment/maintenance', title: '维护记录', icon: '', module: 'equipment' },
@@ -148,22 +172,21 @@ const menuConfig: MenuItem[] = [
     ]
   },
   {
+    // P1-5: restaurants 默认不见 "财务管理" (SmartBI 有 /smart-bi/finance 简化版,
+    // manufacturing 的 ar-ap/invoices/sku-margin 对餐饮无意义)
     path: '/finance', title: '财务管理', icon: 'Money', module: 'finance',
+    hideForFactoryTypes: ['RESTAURANT'],
     children: [
-      { path: '/finance/costs', title: '成本分析', icon: '', module: 'finance' },
+      { path: '/finance/costs', title: '财务概览', icon: '', module: 'finance' },
       { path: '/finance/reports', title: '财务报表', icon: '', module: 'finance' },
       { path: '/finance/ar-ap', title: '应收应付', icon: '', module: 'finance' },
       { path: '/finance/invoices', title: '开票管理', icon: '', module: 'finance' },
       { path: '/finance/payments', title: '收款管理', icon: '', module: 'finance' },
+      { path: '/finance/adjustments', title: '调整审批', icon: '', module: 'finance' },
       { path: '/finance/sku-margin', title: 'SKU毛利率分析', icon: '', module: 'finance' }
     ]
   },
-  {
-    path: '/rd', title: '研发管理', icon: 'Opportunity', module: 'production',
-    children: [
-      { path: '/rd/samples', title: '研发样品管理', icon: '', module: 'production' }
-    ]
-  },
+  // UX P2-5 merged into 生产管理: /rd 原独立顶级组 (1 项), 研发样品并入生产
   {
     path: '/system', title: '系统管理', icon: 'Setting', module: 'system',
     children: [
@@ -173,25 +196,39 @@ const menuConfig: MenuItem[] = [
       { path: '/system/settings', title: '系统设置', icon: '', module: 'system' },
       { path: '/system/ai-intents', title: 'AI意图配置', icon: '', module: 'system' },
       { path: '/system/skill-tools', title: 'Skill/Tool治理', icon: '', module: 'system' },
+      { path: '/system/llm-usage', title: 'LLM 用量监控', icon: '', module: 'system' },
       { path: '/system/products', title: '产品信息管理', icon: '', module: 'system' },
-      { path: '/system/work-processes', title: '工序管理', icon: '', module: 'system' },
-      { path: '/system/product-processes', title: '产品-工序配置', icon: '', module: 'system' },
+      { path: '/system/work-processes', title: '工序管理', icon: '', module: 'system',
+        hideForFactoryTypes: ['RESTAURANT'] },
+      { path: '/system/product-processes', title: '产品-工序配置', icon: '', module: 'system',
+        hideForFactoryTypes: ['RESTAURANT'] },
       { path: '/system/workflow-designer', title: '工作流设计器', icon: '', module: 'system' },
       { path: '/system/features', title: '功能模块配置', icon: '', module: 'system' },
-      { path: '/canvas-editor', title: 'Canvas 配置编辑器', icon: '', module: 'system' },
+      // Apr 18 2026 bug #48: Canvas 编辑器 router 限制 roles, sidebar 跟上不让 dispatcher/
+      // 其他 system:read 角色看到菜单 (否则点进去 /403 体验差)
+      { path: '/canvas-editor', title: 'Canvas 配置编辑器', icon: '', module: 'system', roles: ['factory_super_admin', 'platform_admin', 'permission_admin'] },
       { path: '/system/pos', title: 'POS集成', icon: '', module: 'system' },
       { path: '/system/smartbi-config', title: 'SmartBI配置', icon: '', module: 'system' },
-      { path: '/system/badge-generator', title: '员工工牌生成', icon: '', module: 'system' }
+      { path: '/system/badge-generator', title: '员工工牌生成', icon: '', module: 'system',
+        hideForFactoryTypes: ['RESTAURANT'] },
+      // UX P2-5: 行为校准 (1 项) 合并入系统管理下, 不单做顶级组
+      { path: '/calibration/list', title: '行为校准', icon: '', module: 'system',
+        hideForFactoryTypes: ['RESTAURANT'] },
+      // 餐饮 Phase A A-3 Task 3.5: data quality queue admin page
+      { path: '/system/data-quality-queue', title: '数据质量队列', icon: '', module: 'system',
+        roles: ['factory_super_admin', 'platform_admin', 'permission_admin'] }
     ]
   },
   {
-    path: '/analytics', title: '数据分析', icon: 'DataAnalysis', module: 'analytics',
+    // UX Round 4 改名: "数据分析" → "经营报表" 与 "智能分析" 消歧 (固定报表 vs AI 探索)
+    path: '/analytics', title: '经营报表', icon: 'Histogram', module: 'analytics',
     children: [
       { path: '/analytics/overview', title: '分析概览', icon: '', module: 'analytics' },
       { path: '/analytics/trends', title: '趋势分析', icon: '', module: 'analytics' },
       { path: '/analytics/ai-reports', title: 'AI分析报告', icon: '', module: 'analytics' },
       { path: '/analytics/kpi', title: 'KPI看板', icon: '', module: 'analytics' },
-      { path: '/analytics/production-report', title: '车间实时生产报表', icon: '', module: 'analytics' },
+      { path: '/analytics/production-report', title: '车间实时生产报表', icon: '', module: 'analytics',
+        hideForFactoryTypes: ['RESTAURANT'] },
       { path: '/analytics/alert-dashboard', title: '异常预警', icon: '', module: 'analytics' },
       { path: '/analytics/supply-chain', title: '进销存闭环总览', icon: '', module: 'analytics' }
     ]
@@ -203,43 +240,39 @@ const menuConfig: MenuItem[] = [
       { path: '/scheduling/plans', title: '调度计划', icon: '', module: 'scheduling' },
       { path: '/scheduling/realtime', title: '实时监控', icon: '', module: 'scheduling' },
       { path: '/scheduling/workers', title: '人员分配', icon: '', module: 'scheduling' },
-      { path: '/scheduling/alerts', title: '告警管理', icon: '', module: 'scheduling' }
+      { path: '/scheduling/alerts', title: '告警管理', icon: '', module: 'scheduling' },
+      { path: '/scheduling/settings', title: '排产设置', icon: '', module: 'scheduling' }
     ]
   },
   {
     path: '/restaurant', title: '餐饮运营', icon: 'KnifeFork', module: 'restaurant',
+    // Restaurant-only group: hide for pure FACTORY tenants (manufacturing)
+    hideForFactoryTypes: ['FACTORY'],
     children: [
       { path: '/restaurant/analytics', title: '运营总览', icon: '', module: 'restaurant', groupLabel: '运营分析' },
       { path: '/restaurant/analytics/menu', title: '菜品四象限', icon: '', module: 'restaurant' },
       { path: '/restaurant/analytics/stores', title: '门店对比', icon: '', module: 'restaurant' },
       { path: '/restaurant/analytics/dianping', title: '经营与平台分析', icon: '', module: 'restaurant' },
+      { path: '/restaurant/analytics/gross-margin', title: '菜品毛利分析', icon: '', module: 'restaurant' },
       { path: '/restaurant/requisitions', title: '领料管理', icon: '', module: 'restaurant', groupLabel: '日常管理' },
       { path: '/restaurant/wastage', title: '损耗管理', icon: '', module: 'restaurant' },
       { path: '/restaurant/recipes', title: '配方管理', icon: '', module: 'restaurant' },
-      { path: '/restaurant/stocktaking', title: '盘点管理', icon: '', module: 'restaurant' }
+      { path: '/restaurant/stocktaking', title: '盘点管理', icon: '', module: 'restaurant' },
+      // 餐饮 Phase A-1 Task 1.5: ETL admin page (admin-only)
+      { path: '/restaurant/admin/etl-status', title: 'ETL 状态', icon: '', module: 'restaurant',
+        roles: ['factory_super_admin', 'platform_admin', 'permission_admin'] },
+      // 餐饮 Phase A-2 Task 2.2: data completeness page
+      { path: '/restaurant/data-completeness', title: '数据完整度', icon: '', module: 'restaurant' }
     ]
   },
+  // UX P2-5 merged: /calibration 并入 系统管理, /production-analytics 并入 智能BI
   {
-    path: '/calibration', title: '行为校准', icon: 'Aim', module: 'system',
-    hideForFactoryTypes: ['RESTAURANT'],
-    children: [
-      { path: '/calibration/list', title: '校准管理', icon: '', module: 'system' }
-    ]
-  },
-  {
-    path: '/production-analytics', title: '生产分析', icon: 'Histogram', module: 'analytics',
-    hideForFactoryTypes: ['RESTAURANT'],
-    children: [
-      { path: '/production-analytics/production', title: '生产数据分析', icon: 'Histogram', module: 'analytics' },
-      { path: '/production-analytics/efficiency', title: '人效分析', icon: 'User', module: 'analytics' }
-    ]
-  },
-  {
-    path: '/smart-bi', title: '智能BI', icon: 'TrendCharts', module: 'analytics',
+    // UX Round 4 改名: "智能BI" → "智能分析" (AI 问答 / Excel 探索 / 追问)
+    path: '/smart-bi', title: '智能分析', icon: 'TrendCharts', module: 'analytics',
     children: [
       // -- 分析入口 --
       { path: '/smart-bi/dashboard', title: '经营驾驶舱', icon: 'Monitor', module: 'analytics', groupLabel: '分析入口' },
-      { path: '/smart-bi/financial-dashboard', title: '财务分析看板', icon: 'TrendCharts', module: 'analytics' },
+      { path: '/smart-bi/financial-dashboard', title: '财务 PBI 看板', icon: 'TrendCharts', module: 'analytics' },
       { path: '/smart-bi/analysis', title: '智能数据分析', icon: 'DataAnalysis', module: 'analytics' },
       { path: '/smart-bi/query', title: 'AI问答', icon: 'ChatDotRound', module: 'analytics' },
       // -- 预定义报表 --
@@ -250,7 +283,13 @@ const menuConfig: MenuItem[] = [
       { path: '/smart-bi/query-templates', title: '查询模板', icon: 'Tickets', module: 'analytics' },
       { path: '/smart-bi/data-completeness', title: '数据完整度', icon: 'DataAnalysis', module: 'analytics' },
       { path: '/smart-bi/food-kb-feedback', title: '知识库反馈', icon: 'ChatDotRound', module: 'analytics', groupLabel: '质量管理' },
-      { path: '/smart-bi/calibration', title: '行为校准监控', icon: 'Aim', module: 'analytics', roles: ['platform_admin'] }
+      { path: '/smart-bi/fallback-log', title: 'AI 追问日志', icon: 'DataLine', module: 'analytics' },
+      { path: '/smart-bi/calibration', title: '行为校准监控', icon: 'Aim', module: 'analytics', roles: ['platform_admin'] },
+      // UX P2-5: 生产分析 (2 项) 合并入智能BI, 不单做顶级组
+      { path: '/production-analytics/production', title: '生产数据分析', icon: 'Histogram', module: 'analytics', groupLabel: '生产分析',
+        hideForFactoryTypes: ['RESTAURANT'] },
+      { path: '/production-analytics/efficiency', title: '人效分析', icon: 'User', module: 'analytics',
+        hideForFactoryTypes: ['RESTAURANT'] }
     ]
   }
 ];
@@ -287,6 +326,21 @@ const filteredMenu = computed(() => {
     })
     .filter(item => !item.children || item.children.length > 0);  // 移除没有可见子菜单的父菜单
 });
+
+// Apr 24 2026 Plan C: restaurant-specific sidebar title overrides for
+// manufacturing-origin pages that stay shared. "产品" makes no sense in
+// restaurant context — dishes are the product. One-line map kept close to
+// filteredMenu so it's obvious how to add more overrides.
+const RESTAURANT_TITLE_OVERRIDES: Record<string, string> = {
+  '/system/products': '菜品信息管理',
+};
+
+function titleForItem(item: MenuItem): string {
+  if (authStore.factoryType === 'RESTAURANT' && RESTAURANT_TITLE_OVERRIDES[item.path]) {
+    return RESTAURANT_TITLE_OVERRIDES[item.path];
+  }
+  return item.title;
+}
 
 // 当前激活的菜单
 const activeMenu = computed(() => route.path);
@@ -347,14 +401,14 @@ function handleSelect(path: string) {
           <el-sub-menu v-if="item.children?.length" :index="item.path">
             <template #title>
               <el-icon><component :is="iconMap[item.icon]" /></el-icon>
-              <span>{{ item.title }}</span>
+              <span>{{ titleForItem(item) }}</span>
             </template>
             <template v-for="child in item.children" :key="child.path">
               <div v-if="child.groupLabel && !appStore.sidebarCollapsed" class="menu-group-label">
                 {{ child.groupLabel }}
               </div>
               <el-menu-item :index="child.path">
-                {{ child.title }}
+                {{ titleForItem(child) }}
               </el-menu-item>
             </template>
           </el-sub-menu>
@@ -362,7 +416,7 @@ function handleSelect(path: string) {
           <!-- 无子菜单 -->
           <el-menu-item v-else :index="item.path">
             <el-icon><component :is="iconMap[item.icon]" /></el-icon>
-            <template #title>{{ item.title }}</template>
+            <template #title>{{ titleForItem(item) }}</template>
           </el-menu-item>
         </template>
       </el-menu>

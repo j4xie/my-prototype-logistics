@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.smartbi.*;
 import com.cretas.aims.dto.smartbi.chart.AdaptiveChartRequest;
 import com.cretas.aims.dto.smartbi.chart.AdaptiveChartResponse;
@@ -50,6 +51,15 @@ public class SmartBIDashboardController {
     private final SmartBIService smartBIService;
     private final AdaptiveChartGenerator adaptiveChartGenerator;
     private final DynamicAnalysisService dynamicAnalysisService;
+    // FIX-13 (Apr 16 2026): cache dashboard payload in smart_bi_pg_analysis_results
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.repository.smartbi.postgres.SmartBiPgAnalysisResultRepository analysisResultRepository;
+
+    // Phase 9 Apr 24: SSE relay to Python /insights/custom/stream
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.client.AgentInsightsClient agentInsightsClient;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.fasterxml.jackson.databind.ObjectMapper cacheObjectMapper;
 
     @Autowired
     public SmartBIDashboardController(
@@ -81,6 +91,7 @@ public class SmartBIDashboardController {
 
     // ==================== Adaptive Chart Generation ====================
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/generate-adaptive-charts")
     @Operation(summary = "Generate adaptive charts", description = "Auto-evaluate data and generate optimal chart configs")
     public ResponseEntity<ApiResponse<AdaptiveChartResponse>> generateAdaptiveCharts(
@@ -105,6 +116,7 @@ public class SmartBIDashboardController {
         }
     }
 
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/generate-chart")
     @Operation(summary = "Quick generate single chart", description = "Generate single chart by specified type")
     public ResponseEntity<ApiResponse<AdaptiveChartResponse.GeneratedChart>> generateSingleChart(
@@ -194,6 +206,112 @@ public class SmartBIDashboardController {
             log.error("Get dashboard LLM insights failed: {}", e.getMessage(), e);
             return ResponseEntity.ok(ApiResponse.success(java.util.Collections.emptyList()));
         }
+    }
+
+    @GetMapping("/dashboard/executive/insights/custom")
+    @Operation(summary = "Agent layer LLM insights (custom range)",
+               description = "Week 5: AgentOrchestrator returns Gold-backed insights for an arbitrary date range. Falls back to empty list if Python Agent layer is disabled or unreachable.")
+    public ResponseEntity<ApiResponse<java.util.List<AIInsight>>> getDashboardLLMInsightsCustomRange(
+            @Parameter(description = "Factory ID") @PathVariable String factoryId,
+            @Parameter(description = "Start date (yyyy-MM-dd)")
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "End date (yyyy-MM-dd)")
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        log.info("Get agent insights custom: factoryId={}, startDate={}, endDate={}",
+                factoryId, startDate, endDate);
+
+        try {
+            if (smartBIService != null) {
+                java.util.List<AIInsight> insights =
+                        smartBIService.getDashboardLLMInsightsCustomRange(factoryId, startDate, endDate);
+                return ResponseEntity.ok(ApiResponse.success(insights));
+            }
+            return ResponseEntity.ok(ApiResponse.success(java.util.Collections.emptyList()));
+        } catch (Exception e) {
+            log.error("Agent insights custom failed: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.success(java.util.Collections.emptyList()));
+        }
+    }
+
+    /**
+     * Phase 9 Apr 24: SSE streaming variant of /insights/custom.
+     * Relays Python SSE stream to client. Client uses EventSource to
+     * consume tokens as they arrive (~2-3s first byte vs 8-10s full).
+     *
+     * Response content-type: text/event-stream. Events are JSON per spec
+     * in AgentOrchestrator.stream_insight (meta / delta / done / error).
+     */
+    @GetMapping(value = "/dashboard/executive/insights/custom/stream",
+                produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "Streaming LLM insights (SSE)",
+               description = "Server-sent-events relay to Python AgentOrchestrator. Each data: line is a JSON event.")
+    public org.springframework.web.servlet.mvc.method.annotation.SseEmitter streamInsightsCustom(
+            @Parameter(description = "Factory ID") @PathVariable String factoryId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        // 120s timeout — longer than Python's 90s read timeout on LLM
+        org.springframework.web.servlet.mvc.method.annotation.SseEmitter emitter =
+                new org.springframework.web.servlet.mvc.method.annotation.SseEmitter(120_000L);
+
+        if (agentInsightsClient == null) {
+            try {
+                emitter.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event()
+                        .data("{\"type\":\"error\",\"message\":\"Agent layer not wired\"}"));
+            } catch (java.io.IOException ignored) {}
+            emitter.complete();
+            return emitter;
+        }
+
+        // I1 fix (reviewer Apr 24): shared ref to Response + callbacks so
+        // timeout/client-disconnect closes OkHttp resource (was leaking).
+        final okhttp3.Response[] respRef = new okhttp3.Response[1];
+        emitter.onTimeout(() -> { if (respRef[0] != null) respRef[0].close(); emitter.complete(); });
+        emitter.onError((t) -> { if (respRef[0] != null) respRef[0].close(); });
+        emitter.onCompletion(() -> { if (respRef[0] != null) respRef[0].close(); });
+
+        // Async pump from Python SSE → client SSE
+        new Thread(() -> {
+            try {
+                respRef[0] = agentInsightsClient.streamInsightsCustom(factoryId, startDate, endDate, null);
+                okhttp3.Response resp = respRef[0];
+                if (resp == null || resp.body() == null) {
+                    emitter.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event()
+                            .data("{\"type\":\"error\",\"message\":\"upstream unreachable\"}"));
+                    emitter.complete();
+                    return;
+                }
+                java.io.BufferedReader reader = new java.io.BufferedReader(
+                        new java.io.InputStreamReader(resp.body().byteStream(), java.nio.charset.StandardCharsets.UTF_8));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    line = line.trim();
+                    if (line.isEmpty()) continue;
+                    if (!line.startsWith("data:")) continue;
+                    String data = line.substring(5).trim();
+                    try {
+                        emitter.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event().data(data));
+                    } catch (java.io.IOException ioe) {
+                        // Client disconnected — break loop so OkHttp Response gets closed in finally
+                        log.debug("SSE client disconnected for factory={}: {}", factoryId, ioe.getMessage());
+                        break;
+                    }
+                }
+                emitter.complete();
+            } catch (Exception e) {
+                log.warn("SSE relay failed for factory={}: {}", factoryId, e.getMessage());
+                try {
+                    emitter.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event()
+                            .data("{\"type\":\"error\",\"message\":\"" + e.getMessage().replace("\"", "'") + "\"}"));
+                } catch (java.io.IOException ignored) {}
+                emitter.completeWithError(e);
+            } finally {
+                if (respRef[0] != null) respRef[0].close();
+            }
+        }, "sse-relay-" + factoryId).start();
+
+        return emitter;
     }
 
     @GetMapping("/dashboard/executive/custom")
@@ -370,12 +488,42 @@ public class SmartBIDashboardController {
     public ResponseEntity<ApiResponse<DynamicAnalysisService.DashboardResponse>> analyzeDynamicData(
             @Parameter(description = "Factory ID") @PathVariable String factoryId,
             @Parameter(description = "Upload ID") @RequestParam Long uploadId,
-            @Parameter(description = "Analysis type: auto/finance/sales/inventory") @RequestParam(defaultValue = "auto") String analysisType) {
+            @Parameter(description = "Analysis type: auto/finance/sales/inventory") @RequestParam(defaultValue = "auto") String analysisType,
+            @Parameter(description = "Bypass cache (for refresh button)") @RequestParam(defaultValue = "false") boolean forceRefresh) {
 
-        log.info("Dynamic data analysis: factoryId={}, uploadId={}, type={}", factoryId, uploadId, analysisType);
+        log.info("Dynamic data analysis: factoryId={}, uploadId={}, type={}, forceRefresh={}",
+                factoryId, uploadId, analysisType, forceRefresh);
 
         if (dynamicAnalysisService == null) {
             return ResponseEntity.ok(ApiResponse.error("Dynamic analysis service not enabled, set smartbi.postgres.enabled=true"));
+        }
+
+        String cacheType = "dashboard_" + analysisType;  // 'dashboard_auto'
+
+        // Cache lookup — serve from DB cache indefinitely; upload data is
+        // immutable (each upload_id is an append-only snapshot) so the
+        // analysis result for a given (uploadId, analysisType) never goes
+        // stale without a new upload. Force-refresh still triggers recompute.
+        // 7-day guardrail in case schema evolves between server upgrades.
+        final long CACHE_TTL_SECONDS = 7L * 24 * 60 * 60;
+        if (!forceRefresh && analysisResultRepository != null) {
+            try {
+                var cached = analysisResultRepository.findByUploadIdAndAnalysisType(uploadId, cacheType);
+                if (cached.isPresent()) {
+                    var row = cached.get();
+                    long ageSec = java.time.Duration.between(row.getCreatedAt(), java.time.LocalDateTime.now()).getSeconds();
+                    if (ageSec < CACHE_TTL_SECONDS) {
+                        DynamicAnalysisService.DashboardResponse cachedResp = cacheObjectMapper.convertValue(
+                                row.getAnalysisResult(), DynamicAnalysisService.DashboardResponse.class);
+                        log.info("Dashboard cache HIT: uploadId={}, age={}s", uploadId, ageSec);
+                        return ResponseEntity.ok(ApiResponse.success(cachedResp));
+                    } else {
+                        log.info("Dashboard cache EXPIRED: uploadId={}, age={}s (>7d)", uploadId, ageSec);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Cache lookup failed, falling back to live compute: {}", e.getMessage());
+            }
         }
 
         try {
@@ -384,6 +532,25 @@ public class SmartBIDashboardController {
             if (result == null) {
                 return ResponseEntity.ok(ApiResponse.error("Analysis result empty, please verify data was uploaded"));
             }
+
+            // FIX-13 cache write — persist for next refresh (upsert)
+            if (analysisResultRepository != null) {
+                try {
+                    @SuppressWarnings("unchecked")
+                    java.util.Map<String, Object> resultMap = cacheObjectMapper.convertValue(result, java.util.Map.class);
+                    var existing = analysisResultRepository.findByUploadIdAndAnalysisType(uploadId, cacheType);
+                    var entity = existing.orElseGet(() ->
+                            com.cretas.aims.entity.smartbi.postgres.SmartBiPgAnalysisResult.builder()
+                                    .uploadId(uploadId).factoryId(factoryId).analysisType(cacheType).build());
+                    entity.setAnalysisResult(resultMap);
+                    entity.setCreatedAt(java.time.LocalDateTime.now());  // reset TTL on refresh
+                    analysisResultRepository.save(entity);
+                    log.info("Dashboard cache WRITE: uploadId={}", uploadId);
+                } catch (Exception e) {
+                    log.warn("Cache write failed (non-blocking): {}", e.getMessage());
+                }
+            }
+
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("Dynamic data analysis failed: {}", e.getMessage(), e);

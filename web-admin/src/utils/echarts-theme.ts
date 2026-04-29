@@ -7,7 +7,7 @@
  * Color palette mirrors CHART_COLORS from @/constants/chart-colors.ts
  * and the CSS custom properties --chart-color-1 through --chart-color-10.
  */
-import echarts from '@/utils/echarts'
+// echarts imported lazily inside registerEChartsTheme() to keep it out of the main chunk
 
 const CHART_COLORS = [
   '#2D8B57', // brand blue        (--chart-color-1)
@@ -129,7 +129,8 @@ const darkTheme: Record<string, unknown> = {
  * Register the 'cretas' and 'cretas-dark' themes with ECharts.
  * Call this once before any chart is initialised (typically in main.ts).
  */
-export function registerEChartsTheme(): void {
+export async function registerEChartsTheme(): Promise<void> {
+  const { default: echarts } = await import('@/utils/echarts')
   echarts.registerTheme('cretas', theme)
   echarts.registerTheme('cretas-dark', darkTheme)
 }

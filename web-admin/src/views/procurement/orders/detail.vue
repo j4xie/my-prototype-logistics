@@ -7,7 +7,9 @@ import { useBusinessMode } from '@/composables/useBusinessMode';
 import { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { ArrowLeft } from '@element-plus/icons-vue';
+import { handleCatchError } from '@/utils/errorToast';
 import { formatAmount } from '@/utils/tableFormatters';
+import NotFoundEmpty from '@/components/common/NotFoundEmpty.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -21,6 +23,8 @@ const orderId = computed(() => route.params.id as string);
 const loading = ref(false);
 const submitting = ref(false);
 const order = ref<Record<string, unknown> | null>(null);
+const notFound = ref(false);
+const notFoundMessage = ref('');
 const receives = ref<Record<string, unknown>[]>([]);
 const receiveDialogVisible = ref(false);
 const receiveForm = ref<{ supplierId: string; receiveDate: string; items: { materialTypeId: string; receivedQuantity: number; unit: string; unitPrice: number }[] }>({ supplierId: '', receiveDate: '', items: [] });
@@ -70,7 +74,15 @@ async function loadOrder() {
   try {
     const res = await get(`/${factoryId.value}/purchase/orders/${orderId.value}`);
     if (res.success) order.value = res.data;
-  } catch { ElMessage.error('加载订单失败'); }
+  } catch (err: any) {
+    const status = err?.status ?? err?.response?.status;
+    const code = err?.code ?? err?.response?.data?.code;
+    if (status === 404 || status === 403 || code === 'NOT_FOUND' || code === 'FORBIDDEN') {
+      notFound.value = true;
+      notFoundMessage.value = err?.message || err?.response?.data?.message || '记录不存在';
+    }
+    // axios interceptor shows toast already (Bug #319 fix), component doesn't add fallback
+  }
   finally { loading.value = false; }
 }
 
@@ -102,7 +114,7 @@ async function handleAction(action: string) {
     const res = await post(a.url);
     if (res.success) { ElMessage.success(`${a.label}成功`); loadOrder(); }
     else { ElMessage.error(res.message || `${a.label}失败，请重试`); }
-  } catch { ElMessage.error(`${a.label}失败，请检查网络`); }
+  } catch (e) { handleCatchError(e, `${a.label}失败，请检查网络`); }
   finally { submitting.value = false; }
 }
 
@@ -136,7 +148,7 @@ async function handleCreateReceive() {
       receiveDialogVisible.value = false;
       loadOrder(); loadReceives();
     } else { ElMessage.error(res.message || '创建失败，请重试'); }
-  } catch { ElMessage.error('创建失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '创建失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 
@@ -149,7 +161,7 @@ async function loadPriceComparison() {
       priceComparisons.value = Array.isArray(res.data) ? res.data : [];
       priceLoaded.value = true;
     }
-  } catch { ElMessage.error('加载三价对比失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { priceLoading.value = false; }
 }
 
@@ -178,13 +190,16 @@ async function confirmReceive(receiveId: string) {
     const res = await post(`/${factoryId.value}/purchase/receives/${receiveId}/confirm`);
     if (res.success) { ElMessage.success('入库确认成功'); loadReceives(); loadOrder(); }
     else { ElMessage.error(res.message || '入库确认失败，请重试'); }
-  } catch { ElMessage.error('入库确认失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '入库确认失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 </script>
 
 <template>
-  <div class="page-wrapper" v-loading="loading">
+  <NotFoundEmpty v-if="notFound"
+    :description="notFoundMessage"
+    return-path="/procurement/orders" />
+  <div v-else class="page-wrapper" v-loading="loading">
     <el-card class="page-card" shadow="never">
       <template #header>
         <div class="card-header">

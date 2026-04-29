@@ -1,8 +1,22 @@
 /**
  * 权限状态管理
+ *
+ * 4-layer resolution (per design spec 2026-04-18-permission-matrix-ai-driven-design.md):
+ * - L2 (factory override from DB) → L1 (platform default from DB) → hardcoded fallback
+ *
+ * Hardcoded PERMISSION_MATRIX below is kept as FALLBACK for DB-unavailable scenarios
+ * (initial load race, network error, offline). Primary source is API at login:
+ * GET /api/admin/role-permissions + GET /F001/canvas/role-module-override.
  */
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import {
+  getPlatformPermissions,
+  getFactoryOverride,
+  type PlatformPermission,
+  type RoleModuleOverride,
+  type PermissionLevel as ApiPermissionLevel,
+} from '@/api/permissionApi';
 
 // 权限矩阵 - 定义每个角色对每个模块的权限
 type PermissionLevel = 'rw' | 'r' | 'w' | '-';
@@ -21,6 +35,7 @@ interface ModulePermissions {
   analytics: PermissionLevel;
   scheduling: PermissionLevel;
   restaurant: PermissionLevel;
+  rd: PermissionLevel;
 }
 
 const PERMISSION_MATRIX: Record<string, ModulePermissions> = {
@@ -38,70 +53,85 @@ const PERMISSION_MATRIX: Record<string, ModulePermissions> = {
     system: 'rw',
     analytics: 'rw',
     scheduling: 'rw',
-    restaurant: 'rw'
+    restaurant: 'rw',
+    rd: 'rw'
   },
 
   // Level 10 - 职能部门经理
   hr_admin: {
     dashboard: 'r', production: '-', warehouse: '-', quality: '-',
     procurement: '-', sales: '-', hr: 'rw', equipment: '-',
-    finance: '-', system: 'r', analytics: '-', scheduling: '-', restaurant: '-'
+    finance: '-', system: 'r', analytics: '-', scheduling: '-', restaurant: '-', rd: '-'
   },
   procurement_manager: {
     dashboard: 'r', production: 'r', warehouse: 'r', quality: '-',
     procurement: 'rw', sales: '-', hr: '-', equipment: '-',
-    finance: 'r', system: '-', analytics: '-', scheduling: '-', restaurant: '-'
+    finance: 'r', system: '-', analytics: '-', scheduling: '-', restaurant: '-', rd: '-'
   },
   sales_manager: {
     dashboard: 'r', production: 'r', warehouse: 'r', quality: '-',
     procurement: '-', sales: 'rw', hr: '-', equipment: '-',
-    finance: 'r', system: '-', analytics: 'r', scheduling: '-', restaurant: '-'  // SmartBI 只读访问
+    finance: 'r', system: '-', analytics: 'r', scheduling: '-', restaurant: '-',
+    rd: 'rw'  // 销售驱动 RD 需求/样品
   },
   // 调度 (dispatcher) - 生产调度、数据分析、趋势监控
+  // R18-B3: finance/hr/system 继续锁死 (越权敏感).
+  // Apr 18 2026 bug #53 (回调): 原 R18-B3 把 sales 也设 '-', 但调度员业务上需要
+  // 看 SO 并协调"财务审核通过 → 创建生产计划"闭环 (Doc3 用户测试报告 SO 审核
+  // 按钮 404 的真实场景). sales 改 'rw' 与后端 dispatcherPerms 对齐, 确保调度员
+  // 能提交审核/开始生产。procurement 只读: 调度需看上游物料情况。
+  // Apr 24 2026: hr/finance/system 硬编码 '-' 与 DB ('r') 不一致导致 router guard 首屏错拒. 对齐 DB.
   dispatcher: {
     dashboard: 'rw', production: 'rw', warehouse: 'r', quality: 'r',
-    procurement: 'r', sales: 'r', hr: 'r', equipment: 'r',
-    finance: 'r', system: 'r', analytics: 'rw', scheduling: 'rw', restaurant: 'r'
+    procurement: 'r', sales: 'rw', hr: 'r', equipment: 'r',
+    finance: 'r', system: 'r', analytics: 'rw', scheduling: 'rw', restaurant: '-',
+    rd: 'rw'  // 调度协调 RD 样品到生产
   },
   // production_manager (已废弃，保留向后兼容，映射到 dispatcher)
+  // Apr 24: 同步 dispatcher 的 DB 对齐
   production_manager: {
     dashboard: 'rw', production: 'rw', warehouse: 'r', quality: 'r',
-    procurement: 'r', sales: 'r', hr: 'r', equipment: 'r',
-    finance: 'r', system: 'r', analytics: 'rw', scheduling: 'rw', restaurant: 'r'
+    procurement: 'r', sales: 'rw', hr: 'r', equipment: 'r',
+    finance: 'r', system: 'r', analytics: 'rw', scheduling: 'rw', restaurant: '-',
+    rd: 'rw'
   },
   warehouse_manager: {
     dashboard: 'r', production: 'r', warehouse: 'rw', quality: '-',
     procurement: 'r', sales: 'r', hr: '-', equipment: '-',
-    finance: '-', system: '-', analytics: '-', scheduling: 'r', restaurant: '-'
+    finance: '-', system: '-', analytics: '-', scheduling: 'r', restaurant: '-', rd: '-'
   },
   equipment_admin: {
     dashboard: 'r', production: 'r', warehouse: '-', quality: '-',
     procurement: '-', sales: '-', hr: '-', equipment: 'rw',
-    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-'
+    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-', rd: '-'
   },
   quality_manager: {
     dashboard: 'r', production: 'r', warehouse: '-', quality: 'rw',
     procurement: '-', sales: '-', hr: '-', equipment: '-',
-    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-'
+    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-',
+    rd: 'r'  // QA 审核样品, 只读
   },
+  // Apr 24: procurement 硬编码 '-' 与 DB 'r' 不一致 (finance 经理需 read 采购数据做成本分析). 对齐 DB.
   finance_manager: {
-    dashboard: 'r', production: '-', warehouse: '-', quality: '-',
-    procurement: '-', sales: 'r', hr: '-', equipment: '-',
-    finance: 'rw', system: '-', analytics: 'r', scheduling: '-', restaurant: '-'
+    dashboard: 'r', production: 'r', warehouse: '-', quality: '-',
+    procurement: 'r', sales: 'r', hr: '-', equipment: '-',
+    finance: 'rw', system: '-', analytics: 'rw', scheduling: '-', restaurant: '-',
+    rd: 'r'  // 定价参考 (analytics rw 对齐后端 SmartBI 完整权限)
   },
 
   // 餐饮管理
   restaurant_manager: {
     dashboard: 'r', production: '-', warehouse: '-', quality: '-',
     procurement: 'r', sales: '-', hr: '-', equipment: '-',
-    finance: 'r', system: '-', analytics: 'r', scheduling: '-', restaurant: 'rw'
+    finance: 'r', system: '-', analytics: 'r', scheduling: '-', restaurant: 'rw', rd: '-'
   },
 
   // Level 20 - 车间管理 (只看计划，执行在批次/报工模块)
   workshop_supervisor: {
     dashboard: 'r', production: 'r', warehouse: 'r', quality: 'w',
     procurement: '-', sales: '-', hr: 'r', equipment: 'r',
-    finance: '-', system: '-', analytics: '-', scheduling: 'r', restaurant: '-'
+    finance: '-', system: '-', analytics: '-', scheduling: 'r', restaurant: '-',
+    rd: 'r'
   },
 
   // Level 25 - 大组长 (管理多个小组, 批次+报工查看)
@@ -109,7 +139,8 @@ const PERMISSION_MATRIX: Record<string, ModulePermissions> = {
   team_leader: {
     dashboard: 'r', production: 'r', warehouse: '-', quality: '-',
     procurement: '-', sales: '-', hr: 'r', equipment: 'r',
-    finance: '-', system: '-', analytics: '-', scheduling: 'r', restaurant: '-'
+    finance: '-', system: '-', analytics: '-', scheduling: 'r', restaurant: '-',
+    rd: 'r'
   },
 
   // Level 28 - 小组长 (单组 + 批次内操作)
@@ -117,45 +148,51 @@ const PERMISSION_MATRIX: Record<string, ModulePermissions> = {
   group_leader: {
     dashboard: 'r', production: 'w', warehouse: '-', quality: '-',
     procurement: '-', sales: '-', hr: '-', equipment: 'r',
-    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-'
+    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-', rd: '-'
   },
 
   // Level 30 - 一线员工
   quality_inspector: {
     dashboard: 'r', production: 'r', warehouse: '-', quality: 'w',
     procurement: '-', sales: '-', hr: '-', equipment: '-',
-    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-'
+    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-', rd: '-'
   },
   operator: {
     dashboard: 'r', production: 'w', warehouse: '-', quality: '-',
     procurement: '-', sales: '-', hr: '-', equipment: '-',
-    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-'
+    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-', rd: '-'
   },
   warehouse_worker: {
     dashboard: 'r', production: '-', warehouse: 'w', quality: '-',
     procurement: '-', sales: '-', hr: '-', equipment: '-',
-    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-'
+    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-', rd: '-'
   },
 
-  // Level 50 - 查看者
+  // Level 50 - 查看者 (Apr 24 2026: 对齐 DB L1 platform permissions — 之前 hr/finance 硬编码 '-',
+  // DB 里是 'r'. permissionStore.loadFromDb 是 async, 首屏 router guard 用 hardcoded 快路径判断时
+  // 会错拒 viewer 访问 /hr/*、/finance/* 直接 redirect /403.
+  // 结果 sidebar (等 DB 加载完) 显示人事/财务管理, 但点进去 /403 — 矛盾体验.
+  // 对齐后: hardcoded 与 DB 一致, 初次路由正确放行, UX 一致.)
   viewer: {
     dashboard: 'r', production: 'r', warehouse: 'r', quality: 'r',
-    procurement: 'r', sales: 'r', hr: '-', equipment: 'r',
-    finance: '-', system: '-', analytics: 'r', scheduling: 'r', restaurant: 'r'
+    procurement: 'r', sales: 'r', hr: 'r', equipment: 'r',
+    finance: 'r', system: '-', analytics: 'r', scheduling: 'r', restaurant: 'r',
+    rd: 'r'
   },
 
   // 平台管理员
   platform_admin: {
     dashboard: 'rw', production: 'rw', warehouse: 'rw', quality: 'rw',
     procurement: 'rw', sales: 'rw', hr: 'rw', equipment: 'rw',
-    finance: 'rw', system: 'rw', analytics: 'rw', scheduling: 'rw', restaurant: 'rw'
+    finance: 'rw', system: 'rw', analytics: 'rw', scheduling: 'rw', restaurant: 'rw',
+    rd: 'rw'
   },
 
   // 默认
   unactivated: {
     dashboard: '-', production: '-', warehouse: '-', quality: '-',
     procurement: '-', sales: '-', hr: '-', equipment: '-',
-    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-'
+    finance: '-', system: '-', analytics: '-', scheduling: '-', restaurant: '-', rd: '-'
   }
 };
 
@@ -188,15 +225,91 @@ export const usePermissionStore = defineStore('permission', () => {
   const currentFactoryId = ref<string>('');
   const currentFactoryType = ref<string>('');
 
+  // DB-driven state (Phase 3 Task 3.2)
+  const dbPermissions = ref<ModulePermissions | null>(null);
+  const isDbLoaded = ref(false);
+  const dbLoadError = ref<string | null>(null);
+  const lastLoadTs = ref<number>(0);
+  const LOAD_DEBOUNCE_MS = 30_000;  // Avoid redundant fetches within 30s
+
   function setRole(role: string, factoryId?: string, factoryType?: string) {
+    const roleChanged = currentRole.value !== (role || 'unactivated')
+      || currentFactoryId.value !== (factoryId || '');
     currentRole.value = role || 'unactivated';
     currentFactoryId.value = factoryId || '';
     currentFactoryType.value = factoryType || '';
+    if (roleChanged) {
+      // Invalidate DB cache when identity changes
+      dbPermissions.value = null;
+      isDbLoaded.value = false;
+      dbLoadError.value = null;
+      lastLoadTs.value = 0;
+    }
+    // Fire-and-forget async load (non-blocking)
+    if (role && role !== 'unactivated' && factoryId) {
+      void loadFromDb();
+    }
+  }
+
+  /**
+   * Load permissions from L1 + L2 API, merge for current role, fill dbPermissions.
+   * Failures set dbLoadError and leave dbPermissions null (canWrite falls back to hardcoded).
+   */
+  async function loadFromDb(): Promise<void> {
+    const now = Date.now();
+    if (now - lastLoadTs.value < LOAD_DEBOUNCE_MS && isDbLoaded.value) return;
+    lastLoadTs.value = now;
+    dbLoadError.value = null;
+    try {
+      const [l1Rows, l2Map] = await Promise.all([
+        getPlatformPermissions(),
+        currentFactoryId.value
+          ? getFactoryOverride(currentFactoryId.value).catch(() => ({} as RoleModuleOverride))
+          : Promise.resolve({} as RoleModuleOverride),
+      ]);
+      dbPermissions.value = mergeLayers(l1Rows, l2Map, currentRole.value);
+      isDbLoaded.value = true;
+    } catch (e) {
+      dbLoadError.value = (e as Error)?.message || 'Failed to load permissions';
+      isDbLoaded.value = false;
+      dbPermissions.value = null;
+    }
+  }
+
+  /**
+   * Merge L1 (platform defaults for this role) + L2 (factory override for this role).
+   * Returns ModulePermissions map for the role (fallback rw/r/w/- strings).
+   */
+  function mergeLayers(
+    l1Rows: PlatformPermission[],
+    l2Map: RoleModuleOverride,
+    role: string,
+  ): ModulePermissions {
+    const result: Partial<ModulePermissions> = {};
+    // L1 — rows for this role only
+    for (const p of l1Rows) {
+      if (p.roleCode === role) {
+        (result as Record<string, PermissionLevel>)[p.moduleCode] = p.permissionLevel;
+      }
+    }
+    // L2 — overlay override for this role
+    const override = l2Map[role];
+    if (override) {
+      for (const [mod, level] of Object.entries(override)) {
+        (result as Record<string, PermissionLevel>)[mod] = level as PermissionLevel;
+      }
+    }
+    return result as ModulePermissions;
   }
 
   // Getters
+  // Phase 3: prefer DB-driven dbPermissions, fallback to hardcoded for race/offline/error.
   const currentPermissions = computed((): ModulePermissions => {
-    const rolePerms = { ...(PERMISSION_MATRIX[currentRole.value] || PERMISSION_MATRIX['unactivated']) };
+    // Source selection: DB (L1+L2 merged) when loaded and for current role, else hardcoded fallback.
+    const source = (isDbLoaded.value && dbPermissions.value)
+      ? dbPermissions.value
+      : (PERMISSION_MATRIX[currentRole.value] || PERMISSION_MATRIX['unactivated']);
+    const rolePerms: ModulePermissions = { ...source };
     const typeFilter = currentFactoryType.value ? FACTORY_TYPE_MODULE_FILTER[currentFactoryType.value] : undefined;
     if (typeFilter) {
       for (const [mod, level] of Object.entries(typeFilter)) {
@@ -265,6 +378,11 @@ export const usePermissionStore = defineStore('permission', () => {
     loadedRoutes,
     currentRole,
     currentPermissions,
+    // DB-driven state (Phase 3)
+    dbPermissions,
+    isDbLoaded,
+    dbLoadError,
+    loadFromDb,
     setRole,
     canAccess,
     canWrite,

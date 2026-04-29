@@ -2,6 +2,7 @@ package com.cretas.aims.mapper;
 
 import com.cretas.aims.dto.customer.CreateCustomerRequest;
 import com.cretas.aims.dto.customer.CustomerDTO;
+import com.cretas.aims.dto.customer.UpdateCustomerRequest;
 import com.cretas.aims.entity.Customer;
 import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
@@ -47,6 +48,7 @@ public class CustomerMapper {
                 .createdAt(customer.getCreatedAt())
                 .updatedAt(customer.getUpdatedAt())
                 .createdBy(customer.getCreatedBy())
+                .version(customer.getVersion())
                 .build();
         // 设置创建人姓名
         if (customer.getCreatedByUser() != null) {
@@ -86,7 +88,12 @@ public class CustomerMapper {
         customer.setCurrentBalance(BigDecimal.ZERO);
         customer.setRating(request.getRating() != null ? request.getRating() : 3);
         customer.setRatingNotes(request.getRatingNotes());
-        customer.setIsActive(true);
+        // Bug D fix + audit M3 validation: status must be ACTIVE/INACTIVE if provided
+        String status = request.getStatus();
+        if (status != null && !"ACTIVE".equalsIgnoreCase(status) && !"INACTIVE".equalsIgnoreCase(status)) {
+            throw new IllegalArgumentException("status 必须是 ACTIVE 或 INACTIVE");
+        }
+        customer.setIsActive(status == null || "ACTIVE".equalsIgnoreCase(status));
         customer.setNotes(request.getNotes());
         customer.setCreatedBy(createdBy);
         customer.setCreatedAt(LocalDateTime.now());
@@ -96,7 +103,7 @@ public class CustomerMapper {
     /**
      * 更新实体
      */
-    public void updateEntity(Customer customer, CreateCustomerRequest request) {
+    public void updateEntity(Customer customer, UpdateCustomerRequest request) {
         if (request.getName() != null) {
             customer.setName(request.getName());
         }
@@ -141,6 +148,14 @@ public class CustomerMapper {
         }
         if (request.getRatingNotes() != null) {
             customer.setRatingNotes(request.getRatingNotes());
+        }
+        // Bug D fix (qa-prompt Rule 11) + audit M3 validation: status only ACTIVE/INACTIVE
+        if (request.getStatus() != null) {
+            String s = request.getStatus();
+            if (!"ACTIVE".equalsIgnoreCase(s) && !"INACTIVE".equalsIgnoreCase(s)) {
+                throw new IllegalArgumentException("status 必须是 ACTIVE 或 INACTIVE");
+            }
+            customer.setIsActive("ACTIVE".equalsIgnoreCase(s));
         }
         if (request.getNotes() != null) {
             customer.setNotes(request.getNotes());

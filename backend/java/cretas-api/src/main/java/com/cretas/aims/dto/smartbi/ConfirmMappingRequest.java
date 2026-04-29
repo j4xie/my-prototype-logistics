@@ -10,6 +10,15 @@ import java.util.Map;
  */
 @Data
 public class ConfirmMappingRequest {
+    /**
+     * Bug #43 fix (2026-04-18): uploadId returned from /upload-and-analyze.
+     * When set, confirmAndPersist skips re-persistence (rows already in DB with
+     * full fidelity) and only updates smart_bi_pg_field_definitions with user's
+     * confirmed mappings. Avoids the 50-row previewData truncation bug where
+     * frontend sends back trimmed preview instead of full data.
+     */
+    private Long uploadId;
+
     /** Original parse response (from /upload or /upload-and-analyze) */
     private ExcelParseResponse parseResponse;
 

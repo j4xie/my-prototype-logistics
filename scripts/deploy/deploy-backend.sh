@@ -41,6 +41,14 @@ else
             echo "${size:-0}B"
         fi
     }
+    # 无 deploy-common.sh 时不加锁
+    acquire_deploy_lock() { return 0; }
+fi
+
+# 防止多个 chat/terminal 同时跑 deploy 覆盖 jar
+# 锁定到进程退出自动释放, 支持 flock (首选) 或 PID 文件 (fallback)
+if command -v acquire_deploy_lock >/dev/null 2>&1 || declare -F acquire_deploy_lock >/dev/null 2>&1; then
+    acquire_deploy_lock "cretas-backend-deploy" || exit 1
 fi
 
 # ==================== 配置 ====================
@@ -93,13 +101,23 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --git)
             MODE="git"
-            ARG="${2:-steven}"
-            shift 2
+            if [ -n "$2" ] && [[ ! "$2" =~ ^- ]]; then
+                ARG="$2"
+                shift 2
+            else
+                ARG="steven"
+                shift
+            fi
             ;;
         --jar)
             MODE="jar"
-            ARG="$2"
-            shift 2
+            # --jar 可选 version 参数, 若下一个是 flag (-开头) 或无则跳过
+            if [ -n "$2" ] && [[ ! "$2" =~ ^- ]]; then
+                ARG="$2"
+                shift 2
+            else
+                shift
+            fi
             ;;
         --dry-run)
             MODE="dry-run"
@@ -233,6 +251,9 @@ mkdir -p "$UPLOAD_STATUS_DIR"
 cleanup() {
     rm -rf "$UPLOAD_STATUS_DIR"
     jobs -p | xargs -r kill 2>/dev/null || true
+    # R43 fix: 也清 deploy lock — 否则 trap cleanup 会覆盖 acquire_deploy_lock
+    # 注册的 lock cleanup trap, 导致 stale lock leak. 反复出现"另一deploy进程在跑".
+    rm -f /tmp/cretas-backend-deploy.lock 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -289,19 +310,62 @@ deploy_jar() {
         exit 1
     fi
 
+    # ----- 0. Windows-only: clean up stale Java zombies before mvn -----
+    # R32 (Apr 24 2026): Windows git-bash + cygwin accumulates orphan java.exe
+    # processes from old IDE/test runs. Once 10+ stale JVMs pile up, cygheap
+    # memory exhausts and mvnw.cmd hits `cygheap read copy failed` → Maven fork
+    # fails and script crashes with "❌ Maven 打包失败". Session of Round 9 W-07
+    # wasted ~15 min debugging this. Kill stale (>1 day old) java.exe first.
+    if [[ "$OSTYPE" != "darwin"* ]] && [[ "$OSTYPE" != "linux"* ]] && command -v powershell >/dev/null 2>&1; then
+        STALE_COUNT=$(powershell -NoProfile -Command "(Get-Process -Name java -ErrorAction SilentlyContinue | Where-Object { \$_.StartTime -lt (Get-Date).AddDays(-1) } | Measure-Object).Count" 2>/dev/null | tr -d '[:space:]')
+        if [ -n "$STALE_COUNT" ] && [ "$STALE_COUNT" -gt 0 ]; then
+            echo "🧹 清理 $STALE_COUNT 个 >1 天老 java.exe zombie (Windows cygwin 资源防护)..."
+            powershell -NoProfile -Command "Get-Process -Name java -ErrorAction SilentlyContinue | Where-Object { \$_.StartTime -lt (Get-Date).AddDays(-1) } | ForEach-Object { try { Stop-Process -Id \$_.Id -Force -ErrorAction SilentlyContinue } catch {} }" 2>/dev/null || true
+        fi
+    fi
+
     # ----- 1. 本地 Maven 打包 -----
+    # R25: 默认 `clean package` 强制全量重编, 防 incremental cache 漏新 Controller/DTO 签名 (R24 事故教训)
+    # 如需保留 incremental build (快, 但不安全), 传 SKIP_CLEAN=1
     echo ""
     if [ -n "$SKIP_BUILD" ] && [ -f "backend/java/cretas-api/target/$JAR_NAME" ]; then
         echo "📦 [1/4] 跳过 Maven 打包 (SKIP_BUILD=1, 使用已有 JAR)"
     else
-        echo "📦 [1/4] 本地 Maven 打包..."
-        cd backend/java/cretas-api
-        if [[ "$OSTYPE" == "darwin"* ]] || [[ "$OSTYPE" == "linux"* ]]; then
-            chmod +x mvnw 2>/dev/null
-            ./mvnw package -Dmaven.test.skip=true -q
+        MVN_GOALS="clean package"
+        if [ -n "$SKIP_CLEAN" ]; then
+            MVN_GOALS="package"
+            echo "📦 [1/4] 本地 Maven 打包 (SKIP_CLEAN=1, 增量模式 — 如遇奇怪 bug 去掉 SKIP_CLEAN 重试)..."
         else
-            export JAVA_HOME="${JAVA_HOME:-C:/Program Files/Java/jdk-17}"
-            ./mvnw.cmd package -Dmaven.test.skip=true -q
+            echo "📦 [1/4] 本地 Maven 打包 (clean + package, ~90s)..."
+        fi
+        cd backend/java/cretas-api
+        # R29: maven clean 遇 target/ 被锁时 (Windows 并发 build), 自动 rm -rf 后重试 package
+        # 常见原因: 另一 session 刚跑过 mvn, JVM 未退出就锁住 protoc-dependencies
+        run_mvn() {
+            if [[ "$OSTYPE" == "darwin"* ]] || [[ "$OSTYPE" == "linux"* ]]; then
+                chmod +x mvnw 2>/dev/null
+                ./mvnw "$@" -Dmaven.test.skip=true -q
+            else
+                # R4 (Apr 16 2026): project requires Java 21 per pom.xml <maven.compiler.release>21</...>
+                # Use existing JAVA_HOME (Zulu 21 typical install) instead of hardcoding jdk-17
+                if [ -z "$JAVA_HOME" ]; then
+                    for J in "C:/Program Files/Zulu/zulu-21" "C:/Program Files/Java/jdk-21" "C:/Program Files/Java/jdk-17"; do
+                        [ -x "$J/bin/java.exe" ] && export JAVA_HOME="$J" && break
+                    done
+                fi
+                ./mvnw.cmd "$@" -Dmaven.test.skip=true -q
+            fi
+        }
+        if ! run_mvn $MVN_GOALS; then
+            if [ -z "$SKIP_CLEAN" ]; then
+                echo "   ⚠️  Maven clean 失败 (可能 target/ 被其他进程锁定), 强制 rm + retry package..."
+                rm -rf target 2>/dev/null || true
+                # 二次尝试: 直接 package (clean 已无意义因 target 已 rm)
+                run_mvn package || { echo "❌ Maven 打包失败 (已 retry)"; cd ../../..; exit 1; }
+                echo "   ✓ retry 打包成功"
+            else
+                echo "❌ Maven 打包失败"; cd ../../..; exit 1
+            fi
         fi
         cd ../../..
     fi
@@ -319,6 +383,40 @@ deploy_jar() {
     # 计算本地 MD5 checksum
     LOCAL_MD5=$(md5sum "$JAR_PATH" | cut -d' ' -f1)
     echo "   ✓ MD5: $LOCAL_MD5"
+
+    # ----- 1b. Jar 完整性预检 (防 corrupt jar 上线) -----
+    # 历史事故 2026-04-24: maven 增量编译偶发产生 corrupt fat jar — 缺
+    # ch.qos.logback.classic.spi.ThrowableProxy class. Spring Boot 启动后
+    # 任何 exception 触发 logback rendering 都 cascade ClassNotFound, 服务
+    # crashloop 但 nginx 健康检查可能仍 200 (短暂窗口). 本地预检挡在最早,
+    # 早于上传 152M jar 到 R2 + 服务器部署.
+    INTEGRITY_OK=true
+    LOGBACK_NESTED=$(unzip -l "$JAR_PATH" 2>/dev/null | grep -oE 'BOOT-INF/lib/logback-classic-[0-9.]+\.jar' | head -1)
+    if [ -z "$LOGBACK_NESTED" ]; then
+        echo "❌ Jar 完整性预检失败: 缺 logback-classic-*.jar"
+        INTEGRITY_OK=false
+    else
+        # 解 nested jar 验证 ThrowableProxy.class 存在
+        TMPDIR_INT=$(mktemp -d)
+        if unzip -j -q -o "$JAR_PATH" "$LOGBACK_NESTED" -d "$TMPDIR_INT" 2>/dev/null; then
+            NESTED_BASENAME=$(basename "$LOGBACK_NESTED")
+            if ! unzip -l "$TMPDIR_INT/$NESTED_BASENAME" 2>/dev/null | grep -q 'ch/qos/logback/classic/spi/ThrowableProxy.class'; then
+                echo "❌ Jar 完整性预检失败: logback nested jar 缺 ThrowableProxy.class"
+                INTEGRITY_OK=false
+            fi
+        else
+            echo "❌ Jar 完整性预检失败: 无法解 logback nested jar"
+            INTEGRITY_OK=false
+        fi
+        rm -rf "$TMPDIR_INT"
+    fi
+    if [ "$INTEGRITY_OK" = "true" ]; then
+        echo "   ✓ Jar 完整性预检通过 ($LOGBACK_NESTED 含 ThrowableProxy)"
+    else
+        echo "   建议: cd backend/java/cretas-api && mvn clean package, 或 mvn dependency:purge-local-repository -DreResolve=false"
+        cd ../../..
+        exit 1
+    fi
 
     # ----- 2. 并行上传 -----
     echo ""
@@ -480,7 +578,12 @@ deploy_jar() {
     # - 所有公共镜像 (ghproxy.cc/ghfast.top/...) 都不持有用户 token
     # - 直连下载 curl 也不带 token，结果一样
     # - 走 fallback (rsync/OSS/R2) 更稳
-    if [ "$HAS_GH" = "true" ] && [ "$IS_PRIVATE_REPO" != "true" ]; then
+    #
+    # 环境变量 SKIP_GITHUB=1 (默认 true, R4 2026-04-16) 直接走 R2 fallback —
+    # GitHub Release 阶段在国内网络极不稳定, 60s 超时浪费时间, R2 更快.
+    # 如需恢复 GitHub: export SKIP_GITHUB=0
+    SKIP_GITHUB="${SKIP_GITHUB:-1}"
+    if [ "$HAS_GH" = "true" ] && [ "$IS_PRIVATE_REPO" != "true" ] && [ "$SKIP_GITHUB" != "1" ]; then
         echo "   [阶段1] GitHub 并行上传 (直连 + ${#GITHUB_MIRRORS[@]}镜像)..."
 
         # 先创建 Release (stderr 写日志，不要吞)
@@ -538,12 +641,14 @@ deploy_jar() {
         fi
     elif [ "$IS_PRIVATE_REPO" = "true" ]; then
         echo "   [阶段1] 跳过 GitHub (private repo — 见预检警告)"
+    elif [ "$SKIP_GITHUB" = "1" ]; then
+        echo "   [阶段1] 跳过 GitHub (SKIP_GITHUB=1, 直接 R2 优先 — R4 2026-04-16 默认)"
     fi
 
     # 等待 GitHub 方式完成 (最多60秒)
-    # private repo / 无 gh 时，GitHub 阶段从没启动过，直接跳到 fallback
+    # private repo / 无 gh / SKIP_GITHUB=1 时，GitHub 阶段从没启动过，直接跳到 fallback
     WINNER=""
-    if [ "$HAS_GH" = "true" ] && [ "$IS_PRIVATE_REPO" != "true" ] && [ "${#UPLOAD_PIDS[@]}" -gt 0 ]; then
+    if [ "$HAS_GH" = "true" ] && [ "$IS_PRIVATE_REPO" != "true" ] && [ "$SKIP_GITHUB" != "1" ] && [ "${#UPLOAD_PIDS[@]}" -gt 0 ]; then
         echo ""
         echo "   等待 GitHub 下载完成 (超时: 60秒)..."
         GITHUB_TIMEOUT=60
@@ -793,14 +898,49 @@ deploy_jar() {
             fi
             echo "   ✓ upstream 切换完成"
 
-            # 切换后验证 (通过 139 本地 https)
-            sleep 1
-            VERIFY=$(ssh $GATEWAY "curl -sk -o /dev/null --max-time 5 -w '%{http_code}' -H 'Host: api.cretaceousfuture.com' https://127.0.0.1/api/mobile/health" 2>/dev/null)
-            if [ "$VERIFY" = "200" ]; then
-                echo "   ✓ 切换后验证通过 (HTTP 200 via nginx)"
-            else
-                echo "   ⚠️  切换后验证异常 (HTTP $VERIFY), 请手动排查"
+            # 切换后验证 — v5.3: 多次健康 check + auto-rollback
+            # 历史事故: 2026-04-24 by47kihv7 部署 corrupt jar (logback ClassNotFound),
+            # 单次 sleep 1 + 1次 verify 不够, jar 可能在 1s 后才 crash. 现在 5 轮
+            # 间隔 6s 持续监测, 任何一次 nginx 返非 2xx 就 auto-rollback (切回旧 upstream
+            # + 重启旧 active service).
+            POST_SWITCH_HEALTHY=true
+            for ROUND in 1 2 3 4 5; do
+                sleep 6
+                VERIFY=$(ssh $GATEWAY "curl -sk -o /dev/null --max-time 5 -w '%{http_code}' -H 'Host: api.cretaceousfuture.com' https://127.0.0.1/api/mobile/health" 2>/dev/null)
+                # 同时检查新 idle systemd 是否 still running (catch crashloop early)
+                IDLE_RUNNING=$(ssh $SERVER "systemctl is-active $IDLE_SERVICE 2>&1" 2>/dev/null)
+                if [ "$VERIFY" = "200" ] && [ "$IDLE_RUNNING" = "active" ]; then
+                    echo "   ✓ 切换后健康轮次 $ROUND/5: HTTP=$VERIFY systemd=$IDLE_RUNNING"
+                else
+                    echo "   ❌ 切换后健康轮次 $ROUND/5 失败: HTTP=$VERIFY systemd=$IDLE_RUNNING"
+                    POST_SWITCH_HEALTHY=false
+                    break
+                fi
+            done
+
+            if [ "$POST_SWITCH_HEALTHY" != "true" ]; then
+                echo "   🔄 auto-rollback: 切回旧 upstream ($ACTIVE_COLOR $ACTIVE_PORT) + 重启旧 active"
+                ssh $GATEWAY "
+                    sed -i 's|server 47.100.235.168:$IDLE_PORT;|server 47.100.235.168:$ACTIVE_PORT;|' $NGINX_UPSTREAM_FILE &&
+                    nginx -t >/dev/null 2>&1 &&
+                    nginx -s reload
+                " 2>/dev/null || echo "   ⚠️  rollback nginx 失败, 需手动: vi $NGINX_UPSTREAM_FILE && nginx -s reload"
+                # 重启旧 active (jar 文件已被新 jar 覆盖, 但可从最近备份恢复)
+                LAST_BAK=$(ssh $SERVER "ls -t /www/wwwroot/cretas/aims-0.0.1-SNAPSHOT.jar.bak.* 2>/dev/null | head -1")
+                if [ -n "$LAST_BAK" ]; then
+                    ssh $SERVER "
+                        cp '$LAST_BAK' /www/wwwroot/cretas/aims-0.0.1-SNAPSHOT.jar &&
+                        systemctl reset-failed $ACTIVE_SERVICE 2>/dev/null || true
+                        systemctl restart $ACTIVE_SERVICE
+                    " 2>/dev/null || echo "   ⚠️  rollback 重启 $ACTIVE_SERVICE 失败"
+                    echo "   ↻ 已恢复 jar 到 $LAST_BAK + 重启 $ACTIVE_COLOR"
+                else
+                    echo "   ⚠️  无可回滚的备份 jar — 当前 jar 仍是 corrupt 版本, 需 git 重新部署"
+                fi
+                ssh $SERVER "systemctl stop $IDLE_SERVICE" 2>/dev/null || true
+                exit 1
             fi
+            echo "   ✓ 切换后验证全部通过 (5/5 轮 nginx 200 + idle systemd active)"
 
             # [BG 4/4] 停旧 active (5s 优雅等待让现有连接完成)
             echo "   [BG 4/4] 停旧 active ($ACTIVE_COLOR $ACTIVE_SERVICE), 5s 优雅等待..."

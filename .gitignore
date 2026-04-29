@@ -51,6 +51,13 @@ temp/
 temp*
 !backend/python/smartbi/shared/temporal_comparator.py
 !backend/python/smartbi/services/restaurant/sections/temporal_comparison.py
+!backend/python/smartbi/services/materialized_analytics/templates/
+!backend/python/smartbi/canonical/templates/
+!backend/python/smartbi/services/template_rag.py
+!backend/python/smartbi/services/template_embedding_index.py
+!web-admin/src/views/smart-bi/components/Template*.vue
+!backend/python/smartbi/capability/template_status.py
+!backend/python/tests/test_template_status.py
 .tmp/
 *.tmp
 *.temp
@@ -154,6 +161,18 @@ frontend/CretasFoodTrace/batch-*.json
 frontend/CretasFoodTrace/hr-i18n-*.json
 frontend/CretasFoodTrace/warehouse-*.json
 frontend/CretasFoodTrace/migrate-*.sh~$*
+
+# 防止凭证在脚本中泄露（SSH、API key 等不应硬编码）
+**/password
+**/passwd
+**/token
+**/api_key
+**/apikey
+**/secret_key
+**/ssh_key
+credentials.txt
+secrets.txt
+
 nul
 scripts/run_new_server.py
 scripts/run_old_server.py
@@ -189,3 +208,25 @@ tests/e2e-comprehensive/results/auth-cache/
 # Android build artifacts
 frontend/CretasFoodTrace/android/app/src/main/assets/
 
+# Playwright MCP snapshots + network logs (transient test artifacts)
+.playwright-mcp/
+
+# Claude Code runtime locks
+.claude/scheduled_tasks.lock
+
+# Transient debug/batch artifacts (ad-hoc shell output)
+/p1_batch*.txt
+/p1_all.txt
+/prod_batch*.txt
+/NOW()
+/TASK_*_COMPLETE.txt
+
+video-training-data/2*/
+video-training-data/*.mp4
+
+# Worktrees for subagent-driven development
+.worktrees/
+
+# Apr 26 deep-aiq test artifacts (unzipped data + screenshots — too large for repo)
+tests/e2e-comprehensive/results/depth-aiq-2026-04-26/unzipped/
+tests/e2e-comprehensive/results/depth-aiq-2026-04-26/screenshots-upload/

@@ -61,8 +61,8 @@ public interface DepartmentRepository extends JpaRepository<Department, Integer>
      * 注意：code使用右模糊（可使用索引），name使用双向模糊（无法使用索引）
      */
     @Query("SELECT d FROM Department d WHERE d.factoryId = :factoryId " +
-           "AND (LOWER(d.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "OR LOWER(d.code) LIKE LOWER(CONCAT(:keyword, '%')))")
+           "AND (LOWER(d.name) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' " +
+           "OR LOWER(d.code) LIKE LOWER(CONCAT(:keyword, '%')) ESCAPE '\\')")
     Page<Department> searchDepartments(@Param("factoryId") String factoryId,
                                        @Param("keyword") String keyword,
                                        Pageable pageable);

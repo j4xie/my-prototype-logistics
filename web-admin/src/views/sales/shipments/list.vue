@@ -4,7 +4,7 @@ import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post } from '@/api/request';
 import { ElMessage, type FormInstance } from 'element-plus';
-import { Plus } from '@element-plus/icons-vue';
+import { Plus, Search } from '@element-plus/icons-vue';
 import { formatDateTimeCell } from '@/utils/tableFormatters';
 
 const authStore = useAuthStore();
@@ -16,6 +16,9 @@ const loading = ref(false);
 const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const customerMap = ref<Record<string, string>>({});
+const searchKeyword = ref('');
+const dateRange = ref<[string, string] | null>(null);
+const statusFilter = ref('');
 
 onMounted(() => {
   loadData();
@@ -34,7 +37,7 @@ async function loadCustomers() {
     } else if (res.success === false) {
       ElMessage.error(res.message || '加载客户数据失败');
     }
-  } catch { ElMessage.error('加载客户数据失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
 }
 
 async function loadData() {
@@ -42,18 +45,34 @@ async function loadData() {
 
   loading.value = true;
   try {
-    const response = await get(`/${factoryId.value}/shipments`, {
-      params: { page: pagination.value.page - 1, size: pagination.value.size }
-    });
+    const params: Record<string, unknown> = {
+      page: pagination.value.page - 1,
+      size: pagination.value.size,
+    };
+    const kw = searchKeyword.value.trim();
+    if (kw) params.keyword = kw;
+    if (statusFilter.value) params.status = statusFilter.value;
+    const response = await get(`/${factoryId.value}/shipments`, { params });
     if (response.success && response.data) {
-      tableData.value = response.data.content || [];
+      let rows = response.data.content || [];
+      // Client-side date filter (Apr 21 2026) — backend supports status
+      // and keyword server-side; daterange filtered locally until backend
+      // accepts startDate/endDate params.
+      if (dateRange.value && dateRange.value[0] && dateRange.value[1]) {
+        const [from, to] = dateRange.value;
+        rows = rows.filter((r: Record<string, unknown>) => {
+          const d = String(r.shipmentDate || r.createdAt || '').slice(0, 10);
+          return d && d >= from && d <= to;
+        });
+      }
+      tableData.value = rows;
       pagination.value.total = response.data.totalElements || 0;
     } else if (response.success === false) {
       ElMessage.error(response.message || '加载出货记录失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载失败:', error);
-    ElMessage.error('加载数据失败');
   } finally {
     loading.value = false;
   }
@@ -62,6 +81,15 @@ async function loadData() {
 function handlePageChange(page: number) {
   pagination.value.page = page;
   loadData();
+}
+
+function handleSearch() { pagination.value.page = 1; loadData(); }
+function handleSearchClear() { searchKeyword.value = ''; handleSearch(); }
+function handleReset() {
+  searchKeyword.value = '';
+  statusFilter.value = '';
+  dateRange.value = null;
+  handleSearch();
 }
 
 // ==================== View ====================
@@ -156,8 +184,8 @@ async function submitCreateForm() {
       ElMessage.error(res.message || '创建失败');
     }
   } catch (e) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('Create shipment failed:', e);
-    ElMessage.error('创建失败');
   } finally {
     submitting.value = false;
   }
@@ -170,7 +198,37 @@ async function submitCreateForm() {
       <template #header>
         <div class="card-header">
           <span>出货记录管理</span>
-          <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleCreate">新建出货</el-button>
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <el-input
+              v-model="searchKeyword"
+              placeholder="搜索出货单号 / 产品"
+              clearable
+              :prefix-icon="Search"
+              style="width: 240px;"
+              @keyup.enter="handleSearch"
+              @clear="handleSearchClear"
+            />
+            <el-date-picker
+              v-model="dateRange"
+              type="daterange"
+              range-separator="至"
+              start-placeholder="出货起始"
+              end-placeholder="出货结束"
+              value-format="YYYY-MM-DD"
+              style="width: 280px;"
+              @change="handleSearch"
+            />
+            <el-select v-model="statusFilter" placeholder="状态" clearable style="width: 140px" @change="handleSearch">
+              <el-option label="草稿" value="DRAFT" />
+              <el-option label="待发货" value="PENDING" />
+              <el-option label="已发货" value="SHIPPED" />
+              <el-option label="已签收" value="DELIVERED" />
+              <el-option label="已取消" value="CANCELLED" />
+            </el-select>
+            <el-button type="primary" @click="handleSearch">搜索</el-button>
+            <el-button @click="handleReset">重置</el-button>
+            <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleCreate">新建出货</el-button>
+          </div>
         </div>
       </template>
 

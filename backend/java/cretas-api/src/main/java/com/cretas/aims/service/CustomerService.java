@@ -4,6 +4,7 @@ import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.customer.CreateCustomerRequest;
 import com.cretas.aims.dto.customer.CustomerDTO;
+import com.cretas.aims.dto.customer.UpdateCustomerRequest;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +23,7 @@ public interface CustomerService {
      /**
      * 更新客户
       */
-    CustomerDTO updateCustomer(String factoryId, String customerId, CreateCustomerRequest request);
+    CustomerDTO updateCustomer(String factoryId, String customerId, UpdateCustomerRequest request);
      /**
      * 删除客户
       */
@@ -35,6 +36,10 @@ public interface CustomerService {
      * 获取客户列表（分页）
       */
     PageResponse<CustomerDTO> getCustomerList(String factoryId, PageRequest pageRequest);
+     /**
+     * 获取客户列表（分页, 支持 keyword 过滤）
+      */
+    PageResponse<CustomerDTO> getCustomerList(String factoryId, PageRequest pageRequest, String keyword);
      /**
      * 获取所有活跃客户
       */

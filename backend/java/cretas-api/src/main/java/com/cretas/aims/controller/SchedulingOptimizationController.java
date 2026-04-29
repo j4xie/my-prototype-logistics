@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.FactorySchedulingConfig;
 import com.cretas.aims.entity.FactoryTempWorker;
 import com.cretas.aims.service.scheduling.*;
@@ -15,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * 调度优化 API Controller
@@ -37,6 +39,7 @@ public class SchedulingOptimizationController {
     /**
      * 获取工厂调度配置
      */
+    @RequireModule("scheduling")
     @GetMapping("/config")
     public ResponseEntity<ApiResponse<FactorySchedulingConfig>> getConfig(
             @PathVariable String factoryId) {
@@ -52,6 +55,8 @@ public class SchedulingOptimizationController {
     /**
      * 更新工厂调度配置
      */
+    @RequirePermission({"scheduling:read_write"})
+    @RequireModule("scheduling")
     @PutMapping("/config")
     public ResponseEntity<ApiResponse<FactorySchedulingConfig>> updateConfig(
             @PathVariable String factoryId,
@@ -68,6 +73,7 @@ public class SchedulingOptimizationController {
     /**
      * 获取工人的有效配置（考虑临时工调整）
      */
+    @RequireModule("scheduling")
     @GetMapping("/config/effective/{workerId}")
     public ResponseEntity<ApiResponse<FactorySchedulingConfigService.EffectiveConfig>> getEffectiveConfig(
             @PathVariable String factoryId,
@@ -84,6 +90,8 @@ public class SchedulingOptimizationController {
     /**
      * 手动触发自适应学习
      */
+    @RequirePermission({"scheduling:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/config/adapt")
     public ResponseEntity<ApiResponse<String>> triggerAdaptation(
             @PathVariable String factoryId) {
@@ -101,6 +109,7 @@ public class SchedulingOptimizationController {
     /**
      * 获取临时工统计
      */
+    @RequireModule("scheduling")
     @GetMapping("/temp-workers/stats")
     public ResponseEntity<ApiResponse<TempWorkerService.TempWorkerStats>> getTempWorkerStats(
             @PathVariable String factoryId) {
@@ -116,6 +125,8 @@ public class SchedulingOptimizationController {
     /**
      * 注册临时工
      */
+    @RequirePermission({"scheduling:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/temp-workers/{workerId}")
     public ResponseEntity<ApiResponse<FactoryTempWorker>> registerTempWorker(
             @PathVariable String factoryId,
@@ -134,6 +145,8 @@ public class SchedulingOptimizationController {
     /**
      * 临时工转正
      */
+    @RequirePermission({"scheduling:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/temp-workers/{workerId}/convert")
     public ResponseEntity<ApiResponse<FactoryTempWorker>> convertToPermanent(
             @PathVariable String factoryId,
@@ -150,6 +163,7 @@ public class SchedulingOptimizationController {
     /**
      * 获取转正候选人
      */
+    @RequireModule("scheduling")
     @GetMapping("/temp-workers/conversion-candidates")
     public ResponseEntity<ApiResponse<List<TempWorkerService.TempWorkerConversionCandidate>>> getConversionCandidates(
             @PathVariable String factoryId) {
@@ -165,6 +179,7 @@ public class SchedulingOptimizationController {
     /**
      * 获取需要优先分配的临时工
      */
+    @RequireModule("scheduling")
     @GetMapping("/temp-workers/needs-assignment")
     public ResponseEntity<ApiResponse<List<Long>>> getTempWorkersNeedingAssignment(
             @PathVariable String factoryId) {
@@ -182,6 +197,7 @@ public class SchedulingOptimizationController {
     /**
      * 获取SKU复杂度
      */
+    @RequireModule("scheduling")
     @GetMapping("/sku/{skuCode}/complexity")
     public ResponseEntity<ApiResponse<SkuComplexityService.SkuProfile>> getSkuComplexity(
             @PathVariable String factoryId,
@@ -199,6 +215,8 @@ public class SchedulingOptimizationController {
     /**
      * 设置SKU复杂度
      */
+    @RequirePermission({"scheduling:read_write"})
+    @RequireModule("scheduling")
     @PutMapping("/sku/{skuCode}/complexity")
     public ResponseEntity<ApiResponse<String>> setSkuComplexity(
             @PathVariable String factoryId,
@@ -216,6 +234,7 @@ public class SchedulingOptimizationController {
     /**
      * 获取适合新人练习的SKU
      */
+    @RequireModule("scheduling")
     @GetMapping("/sku/training")
     public ResponseEntity<ApiResponse<List<String>>> getTrainingSkus(
             @PathVariable String factoryId) {
@@ -231,6 +250,7 @@ public class SchedulingOptimizationController {
     /**
      * 获取需要专家处理的SKU
      */
+    @RequireModule("scheduling")
     @GetMapping("/sku/expert")
     public ResponseEntity<ApiResponse<List<String>>> getExpertSkus(
             @PathVariable String factoryId) {
@@ -246,6 +266,7 @@ public class SchedulingOptimizationController {
     /**
      * 检测SKU复杂度漂移
      */
+    @RequireModule("scheduling")
     @GetMapping("/sku/drift")
     public ResponseEntity<ApiResponse<List<SkuComplexityService.SkuComplexityDrift>>> detectSkuDrift(
             @PathVariable String factoryId) {
@@ -263,6 +284,7 @@ public class SchedulingOptimizationController {
     /**
      * 获取公平性统计
      */
+    @RequireModule("scheduling")
     @GetMapping("/fairness/stats")
     public ResponseEntity<ApiResponse<FairMABService.FairnessStats>> getFairnessStats(
             @PathVariable String factoryId) {
@@ -278,6 +300,7 @@ public class SchedulingOptimizationController {
     /**
      * 检测公平性违规
      */
+    @RequireModule("scheduling")
     @GetMapping("/fairness/violations")
     public ResponseEntity<ApiResponse<List<FairMABService.FairnessViolation>>> getFairnessViolations(
             @PathVariable String factoryId,
@@ -294,6 +317,8 @@ public class SchedulingOptimizationController {
     /**
      * 重置公平性统计周期
      */
+    @RequirePermission({"scheduling:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/fairness/reset")
     public ResponseEntity<ApiResponse<String>> resetFairnessPeriod(
             @PathVariable String factoryId) {
@@ -311,6 +336,8 @@ public class SchedulingOptimizationController {
     /**
      * 评估调度复杂度
      */
+    @RequirePermission({"scheduling:read_write"})
+    @RequireModule("scheduling")
     @PostMapping("/complexity/evaluate")
     public ResponseEntity<ApiResponse<SchedulingComplexityRouter.SchedulingComplexity>> evaluateComplexity(
             @PathVariable String factoryId,
@@ -327,6 +354,7 @@ public class SchedulingOptimizationController {
     /**
      * 获取调度优化总览
      */
+    @RequireModule("scheduling")
     @GetMapping("/overview")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getOverview(
             @PathVariable String factoryId) {

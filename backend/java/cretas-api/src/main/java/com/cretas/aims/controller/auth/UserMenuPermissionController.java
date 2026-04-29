@@ -1,6 +1,7 @@
 package com.cretas.aims.controller.auth;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.auth.UserMenuPermission;
 import com.cretas.aims.entity.enums.FactoryUserRole;
 import com.cretas.aims.service.auth.UserMenuPermissionService;
@@ -54,6 +55,7 @@ public class UserMenuPermissionController {
     }
 
     /** 追加授权 */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/grant")
     @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN')")
     public ResponseEntity<ApiResponse<UserMenuPermission>> grant(
@@ -71,6 +73,7 @@ public class UserMenuPermissionController {
     }
 
     /** 撤销授权 */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/revoke")
     @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN')")
     public ResponseEntity<ApiResponse<UserMenuPermission>> revoke(
@@ -88,6 +91,7 @@ public class UserMenuPermissionController {
     }
 
     /** 清除 override, 回归 role 默认 */
+    @RequirePermission({"system:read_write"})
     @DeleteMapping("/{menuCode}")
     @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'PERMISSION_ADMIN', 'FACTORY_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> clear(

@@ -4,6 +4,7 @@ import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.inventory.CreatePurchaseOrderRequest;
 import com.cretas.aims.dto.inventory.CreateReceiveRecordRequest;
+import com.cretas.aims.dto.inventory.UpdatePurchaseOrderRequest;
 import com.cretas.aims.dto.inventory.MaterialPriceComparisonDTO;
 import com.cretas.aims.entity.enums.PurchaseOrderStatus;
 import com.cretas.aims.entity.inventory.PurchaseOrder;
@@ -24,6 +25,7 @@ import jakarta.validation.constraints.NotBlank;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import com.cretas.aims.annotation.RequireModule;
 
 @Slf4j
 @RestController
@@ -37,6 +39,7 @@ public class PurchaseController {
 
     // ==================== 采购订单 ====================
 
+    @RequireModule("purchase_order")
     @PostMapping("/orders")
     @Operation(summary = "创建采购订单")
     @RequirePermission("procurement:read_write")
@@ -51,13 +54,16 @@ public class PurchaseController {
     }
 
     @GetMapping("/orders")
-    @Operation(summary = "采购订单列表")
+    @Operation(summary = "采购订单列表", description = "支持可选 salesOrderId 过滤 (W-12 fix: SO 详情页'关联采购' tab 依赖)")
     @RequirePermission({"procurement:read_write", "procurement:read"})
     public ApiResponse<PageResponse<PurchaseOrder>> listOrders(
             @PathVariable @NotBlank String factoryId,
+            @RequestParam(required = false) String salesOrderId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
-        PageResponse<PurchaseOrder> result = purchaseService.getPurchaseOrders(factoryId, page, size);
+        PageResponse<PurchaseOrder> result = (salesOrderId != null && !salesOrderId.isBlank())
+                ? purchaseService.getPurchaseOrdersBySalesOrder(factoryId, salesOrderId, page, size)
+                : purchaseService.getPurchaseOrders(factoryId, page, size);
         return ApiResponse.success("查询成功", result);
     }
 
@@ -83,18 +89,20 @@ public class PurchaseController {
         return ApiResponse.success("查询成功", order);
     }
 
+    @RequireModule("purchase_order")
     @PutMapping("/orders/{orderId}")
-    @Operation(summary = "编辑草稿采购订单")
+    @Operation(summary = "编辑草稿采购订单 (partial update: 所有字段可选)")
     @RequirePermission("procurement:read_write")
     public ApiResponse<PurchaseOrder> updateDraftOrder(
             @PathVariable @NotBlank String factoryId,
             @PathVariable @NotBlank String orderId,
-            @Valid @RequestBody CreatePurchaseOrderRequest request) {
+            @Valid @RequestBody UpdatePurchaseOrderRequest request) {
         log.info("编辑草稿采购订单: factoryId={}, orderId={}", factoryId, orderId);
         PurchaseOrder order = purchaseService.updateDraftOrder(factoryId, orderId, request);
         return ApiResponse.success("采购订单更新成功", order);
     }
 
+    @RequireModule("purchase_order")
     @PostMapping("/orders/{orderId}/submit")
     @Operation(summary = "提交采购订单")
     @RequirePermission("procurement:read_write")
@@ -105,6 +113,7 @@ public class PurchaseController {
         return ApiResponse.success("采购订单已提交", order);
     }
 
+    @RequireModule("purchase_order")
     @PostMapping("/orders/{orderId}/approve")
     @Operation(summary = "审批采购订单")
     @RequirePermission("procurement:read_write")
@@ -117,6 +126,7 @@ public class PurchaseController {
         return ApiResponse.success("采购订单已审批", order);
     }
 
+    @RequireModule("purchase_order")
     @PostMapping("/orders/{orderId}/cancel")
     @Operation(summary = "取消采购订单")
     @RequirePermission("procurement:read_write")
@@ -129,6 +139,7 @@ public class PurchaseController {
 
     // ==================== 财务审核 ====================
 
+    @RequireModule("purchase_order")
     @PostMapping("/orders/{orderId}/submit-for-finance-review")
     @Operation(summary = "提交采购订单财务审核")
     @RequirePermission("procurement:read_write")
@@ -139,6 +150,7 @@ public class PurchaseController {
         return ApiResponse.success("已提交财务审核", order);
     }
 
+    @RequireModule("purchase_order")
     @PostMapping("/orders/{orderId}/finance-approve")
     @Operation(summary = "采购订单财务审核通过")
     @RequirePermission("finance:read_write")
@@ -153,6 +165,7 @@ public class PurchaseController {
         return ApiResponse.success("财务审核通过", order);
     }
 
+    @RequireModule("purchase_order")
     @PostMapping("/orders/{orderId}/finance-reject")
     @Operation(summary = "采购订单财务审核驳回")
     @RequirePermission("finance:read_write")
@@ -168,6 +181,7 @@ public class PurchaseController {
 
     // ==================== 入库管理 ====================
 
+    @RequireModule("purchase_order")
     @PostMapping("/receives")
     @Operation(summary = "创建入库单")
     @RequirePermission({"procurement:read_write", "inventory:write"})
@@ -202,6 +216,7 @@ public class PurchaseController {
         return ApiResponse.success("查询成功", record);
     }
 
+    @RequireModule("purchase_order")
     @PostMapping("/receives/{receiveId}/confirm")
     @Operation(summary = "确认入库（生成物料批次）")
     @RequirePermission({"procurement:read_write", "inventory:write"})

@@ -352,9 +352,16 @@ async function loadTemplates() {
   }
 }
 
+function serializeTemplate(template: QueryTemplate): Record<string, unknown> {
+  return {
+    ...template,
+    parameters: JSON.stringify(template.parameters || [])
+  };
+}
+
 async function createTemplate(template: QueryTemplate) {
   try {
-    const response = await post(`/${factoryId.value}/smart-bi/query-templates`, template);
+    const response = await post(`/${factoryId.value}/smart-bi/query-templates`, serializeTemplate(template));
     if (response.success) {
       ElMessage.success('创建成功');
       await loadTemplates();
@@ -372,7 +379,7 @@ async function createTemplate(template: QueryTemplate) {
 
 async function updateTemplate(id: number, template: QueryTemplate) {
   try {
-    const response = await put(`/${factoryId.value}/smart-bi/query-templates/${id}`, template);
+    const response = await put(`/${factoryId.value}/smart-bi/query-templates/${id}`, serializeTemplate(template));
     if (response.success) {
       ElMessage.success('更新成功');
       await loadTemplates();

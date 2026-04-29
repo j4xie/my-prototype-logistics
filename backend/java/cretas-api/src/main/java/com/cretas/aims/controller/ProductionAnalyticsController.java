@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.dto.analytics.EfficiencyDashboardResponse;
 import com.cretas.aims.dto.analytics.ProductionDashboardResponse;
 import com.cretas.aims.dto.common.ApiResponse;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/mobile/{factoryId}/production-analytics")
 @RequiredArgsConstructor
 @Tag(name = "生产分析与人效分析")
+@RequireModule("production_plan")
 public class ProductionAnalyticsController {
 
     private final ProductionAnalyticsServiceImpl analyticsService;

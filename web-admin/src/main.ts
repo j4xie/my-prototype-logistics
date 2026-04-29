@@ -23,6 +23,49 @@ async function bootstrap() {
     locale: zhCn.default,
   });
 
+  // Bug #312 fix (2026-04-18): monkey-patch ElMessage.error / ElMessage({type:'error'})
+  // so all 608 call-sites across 114 files get sticky (duration:0 + showClose:true)
+  // by default. Rationale: 业务依赖错误 (库存不足/批次未分配/并发冲突) 3s 闪过用户
+  // 错过关键信息. 方案 A 仅覆盖 axios interceptor; 组件级直接 ElMessage.error 也需同样
+  // 行为. Global override 避免 114 文件逐一改.
+  //
+  // 允许调用方显式传 duration 覆盖本默认, 不影响 success/warning/info 默认 3s.
+  // See QA prompt v2.2 Rule 8 + 专章.
+  try {
+    const EM = ElementPlus.ElMessage as unknown as {
+      (options: unknown): unknown;
+      error: (options: unknown) => unknown;
+    };
+    if (EM && typeof EM.error === 'function' && !(EM as unknown as { __cretasErrorPatched?: boolean }).__cretasErrorPatched) {
+      const origError = EM.error.bind(EM);
+      EM.error = function(options: unknown) {
+        if (typeof options === 'string') {
+          return origError({ message: options, duration: 0, showClose: true });
+        }
+        const opts = options as Record<string, unknown>;
+        return origError({ duration: 0, showClose: true, ...opts });
+      };
+      // Also wrap the plain ElMessage(...) fn when called with type:'error'
+      const origFn = EM as unknown as (options: unknown) => unknown;
+      const wrappedFn = function(options: unknown) {
+        const opts = typeof options === 'string' ? { message: options } : (options as Record<string, unknown>);
+        if (opts.type === 'error') {
+          return origFn({ duration: 0, showClose: true, ...opts });
+        }
+        return origFn(opts);
+      };
+      // Preserve sub-methods (success/warning/info/error) on wrapped fn
+      Object.assign(wrappedFn, EM);
+      (wrappedFn as unknown as { error: typeof EM.error }).error = EM.error;
+      // Re-export — note: direct assignment to ElementPlus.ElMessage is cosmetic;
+      // component imports already bound at module load time.
+      (EM as unknown as { __cretasErrorPatched: boolean }).__cretasErrorPatched = true;
+      console.info('[cretas] ElMessage.error patched: duration=0 + showClose=true default');
+    }
+  } catch (e) {
+    console.warn('[cretas] ElMessage.error monkey-patch failed:', e);
+  }
+
   // 3. 注册 Element Plus 图标
   const ElementPlusIconsVue = await import('@element-plus/icons-vue');
   for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
@@ -43,7 +86,7 @@ async function bootstrap() {
   setupRouterGuards(router);
   app.use(router);
 
-  // 6. Register ECharts theme (before any chart component mounts)
+  // 6. Register ECharts theme (fire-and-forget, lazy loads echarts off the critical path)
   registerEChartsTheme();
 
   // 7. 挂载应用

@@ -9,6 +9,26 @@ package com.cretas.aims.exception;
  */
 public class BusinessException extends RuntimeException {
     private Integer code;
+    /**
+     * UX: optional hint text telling the user what to do next.
+     * Rendered as ElNotification with action button on frontend.
+     * Example: "请先点'分配批次'再发货" / "请先处理或撤销已有的发票申请".
+     */
+    private String actionHint;
+    /**
+     * UX severity: BLOCKING → ElMessageBox (modal, must click OK),
+     * NORMAL (default) → ElMessage (sticky toast, 方案 A).
+     * Use BLOCKING for errors users MUST acknowledge (permission
+     * denied, destructive-confirm, critical business-rule violation).
+     */
+    private String severity;
+    /**
+     * UX: optional DOM target label for pulse-hint animation.
+     * Example: "分配批次" → frontend finds button labeled "分配批次"
+     * and applies pulse ring for 5s as visual breadcrumb.
+     */
+    private String hintTarget;
+
     public BusinessException(String message) {
         super(message);
         this.code = 400;
@@ -31,5 +51,25 @@ public class BusinessException extends RuntimeException {
 
     public Integer getCode() {
         return code;
+    }
+
+    public String getActionHint() { return actionHint; }
+    public String getSeverity() { return severity; }
+    public String getHintTarget() { return hintTarget; }
+
+    /** Fluent builder — chain after constructor. */
+    public BusinessException withHint(String actionHint) {
+        this.actionHint = actionHint;
+        return this;
+    }
+
+    public BusinessException withSeverity(String severity) {
+        this.severity = severity;
+        return this;
+    }
+
+    public BusinessException withHintTarget(String hintTarget) {
+        this.hintTarget = hintTarget;
+        return this;
     }
 }

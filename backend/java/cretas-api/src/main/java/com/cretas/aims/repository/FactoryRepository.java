@@ -41,9 +41,9 @@ public interface FactoryRepository extends JpaRepository<Factory, String> {
      * 如果性能成为问题，考虑添加 factory_code 字段并使用右模糊
       */
     @Query("SELECT f FROM Factory f WHERE " +
-           "(LOWER(f.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(f.address) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(f.contactName) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "(LOWER(f.name) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+           "LOWER(f.address) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+           "LOWER(f.contactName) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\') " +
            "AND f.isActive = :isActive")
     Page<Factory> searchFactories(@Param("keyword") String keyword,
                                   @Param("isActive") Boolean isActive,

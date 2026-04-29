@@ -58,6 +58,9 @@ public class EquipmentDTO {
     private LocalDateTime updatedAt;
     private Long createdBy;
     private String createdByName;
+
+    /** Optimistic lock version — FE must echo on PUT to detect concurrent edits (409 on mismatch) */
+    private Integer version;
     // 操作员信息
     private Long operatorId;
     private String operatorName;

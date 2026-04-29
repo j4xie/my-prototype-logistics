@@ -79,9 +79,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * 注意：username/phone使用右模糊（可使用索引），fullName使用双向模糊（无法使用索引）
      */
     @Query("SELECT u FROM User u WHERE u.factoryId = :factoryId AND " +
-           "(LOWER(u.username) LIKE LOWER(CONCAT(:keyword, '%')) OR " +
-           "LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "u.phone LIKE CONCAT(:keyword, '%'))")
+           "(LOWER(u.username) LIKE LOWER(CONCAT(:keyword, '%')) ESCAPE '\\' OR " +
+           "LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+           "u.phone LIKE CONCAT(:keyword, '%') ESCAPE '\\')")
     Page<User> searchUsers(@Param("factoryId") String factoryId,
                           @Param("keyword") String keyword,
                           Pageable pageable);
@@ -279,10 +279,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @since 2025-12-28
      */
     @Query("SELECT u FROM User u WHERE u.factoryId = :factoryId AND " +
-           "(LOWER(u.username) LIKE LOWER(CONCAT(:keyword, '%')) OR " +
-           "LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "u.phone LIKE CONCAT(:keyword, '%') OR " +
-           "u.employeeCode LIKE CONCAT(:keyword, '%'))")
+           "(LOWER(u.username) LIKE LOWER(CONCAT(:keyword, '%')) ESCAPE '\\' OR " +
+           "LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+           "u.phone LIKE CONCAT(:keyword, '%') ESCAPE '\\' OR " +
+           "u.employeeCode LIKE CONCAT(:keyword, '%') ESCAPE '\\')")
     Page<User> searchUsersWithEmployeeCode(@Param("factoryId") String factoryId,
                                            @Param("keyword") String keyword,
                                            Pageable pageable);
@@ -293,4 +293,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return 用户列表
      */
     List<User> findByIdIn(Collection<Long> ids);
+
+    /**
+     * 统计工厂内指定角色的管理员数量（排除软删除用户）
+     *
+     * 用于 A-3 数据质量队列 4-eye 降级判断：当工厂只有 1 个管理员时，
+     * 自动降级为单人审核模式。platform_admin 不计入（跨工厂角色）。
+     *
+     * @param factoryId 工厂ID
+     * @param roleCodes 角色代码列表（factory_super_admin / permission_admin / factory_admin）
+     * @return 符合条件的用户数
+     * @since 2026-04-28
+     */
+    long countByFactoryIdAndRoleCodeIn(String factoryId, List<String> roleCodes);
 }

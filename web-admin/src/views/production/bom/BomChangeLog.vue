@@ -35,8 +35,8 @@ async function fetchLogs() {
     } else {
       ElMessage.error(res.message || '获取变更记录失败')
     }
-  } catch (e) {
-    ElMessage.error('获取变更记录失败')
+  } catch (e: any) {
+    if (!e?.actionHint) ElMessage.error('获取变更记录失败')
   } finally {
     loading.value = false
   }

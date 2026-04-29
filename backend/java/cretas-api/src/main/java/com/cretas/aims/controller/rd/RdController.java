@@ -1,5 +1,6 @@
 package com.cretas.aims.controller.rd;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.service.rd.ProductSampleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -19,6 +20,7 @@ public class RdController {
 
     // ==================== 研发需求 ====================
 
+    @RequirePermission({"rd:read_write"})
     @PostMapping("/requests")
     public ResponseEntity<?> createRequest(
             @PathVariable String factoryId,
@@ -30,12 +32,14 @@ public class RdController {
         return ResponseEntity.ok(Map.of("success", true, "data", req, "message", "研发需求已创建"));
     }
 
+    @RequirePermission({"rd:read_write"})
     @PostMapping("/requests/{requestId}/assign")
     public ResponseEntity<?> assignRequest(@PathVariable String requestId, @RequestBody Map<String, Object> body) {
         var req = sampleService.assignRequest(requestId, Long.valueOf(body.get("assignedTo").toString()));
         return ResponseEntity.ok(Map.of("success", true, "data", req));
     }
 
+    @RequirePermission({"rd:read"})
     @GetMapping("/requests")
     public ResponseEntity<?> listRequests(@PathVariable String factoryId,
                                            @RequestParam(required = false) String status,
@@ -47,6 +51,7 @@ public class RdController {
 
     // ==================== 样品管理 ====================
 
+    @RequirePermission({"rd:read_write"})
     @PostMapping("/samples")
     public ResponseEntity<?> createSample(
             @PathVariable String factoryId, @RequestBody Map<String, Object> body,
@@ -62,6 +67,7 @@ public class RdController {
     }
 
     /** 单独的更新字段 endpoint, 给前端编辑用 */
+    @RequirePermission({"rd:read_write"})
     @PutMapping("/samples/{sampleId}")
     public ResponseEntity<?> updateSampleFields(@PathVariable String factoryId, @PathVariable String sampleId,
                                                   @RequestBody Map<String, Object> body) {
@@ -104,6 +110,7 @@ public class RdController {
         return needSave;
     }
 
+    @RequirePermission({"rd:read_write"})
     @PostMapping("/samples/{sampleId}/progress")
     public ResponseEntity<?> updateProgress(@PathVariable String factoryId, @PathVariable String sampleId,
                                              @RequestBody Map<String, String> body) {
@@ -111,12 +118,14 @@ public class RdController {
         return ResponseEntity.ok(Map.of("success", true, "data", sample));
     }
 
+    @RequirePermission({"rd:read_write"})
     @PostMapping("/samples/{sampleId}/submit")
     public ResponseEntity<?> submitForApproval(@PathVariable String factoryId, @PathVariable String sampleId,
                                                 @RequestAttribute(value = "userId", required = false) Long userId) {
         return ResponseEntity.ok(Map.of("success", true, "data", sampleService.submitForApproval(factoryId, sampleId, userId)));
     }
 
+    @RequirePermission({"rd:read_write"})
     @PostMapping("/samples/{sampleId}/approve")
     public ResponseEntity<?> approve(@PathVariable String factoryId, @PathVariable String sampleId,
                                       @RequestBody(required = false) Map<String, String> body,
@@ -125,6 +134,7 @@ public class RdController {
         return ResponseEntity.ok(Map.of("success", true, "data", sample, "message", "样品审核通过，报价任务已自动创建"));
     }
 
+    @RequirePermission({"rd:read_write"})
     @PostMapping("/samples/{sampleId}/reject")
     public ResponseEntity<?> reject(@PathVariable String factoryId, @PathVariable String sampleId,
                                      @RequestBody Map<String, String> body,
@@ -133,6 +143,7 @@ public class RdController {
                 sampleService.rejectSample(factoryId, sampleId, userId, body.get("notes"))));
     }
 
+    @RequirePermission({"rd:read"})
     @GetMapping("/samples")
     public ResponseEntity<?> listSamples(@PathVariable String factoryId,
                                           @RequestParam(required = false) String status,
@@ -142,6 +153,7 @@ public class RdController {
                 sampleService.listSamples(factoryId, status, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")))));
     }
 
+    @RequirePermission({"rd:read"})
     @GetMapping("/samples/{sampleId}")
     public ResponseEntity<?> getSample(@PathVariable String factoryId, @PathVariable String sampleId) {
         return ResponseEntity.ok(Map.of("success", true, "data", sampleService.getSample(factoryId, sampleId)));
@@ -151,6 +163,7 @@ public class RdController {
      * P1-8: 读取样品追踪记录（新独立表）.
      * 前端 openTrackingDialog 调此接口取代从 progressNotes JSON 解析.
      */
+    @RequirePermission({"rd:read"})
     @GetMapping("/samples/{sampleId}/tracking-records")
     public ResponseEntity<?> getTrackingRecords(@PathVariable String factoryId, @PathVariable String sampleId) {
         return ResponseEntity.ok(Map.of("success", true, "data",
@@ -159,6 +172,7 @@ public class RdController {
 
     // ==================== 报价任务 ====================
 
+    @RequirePermission({"rd:read_write"})
     @PostMapping("/quotations/{taskId}/submit")
     public ResponseEntity<?> submitQuotation(@PathVariable String taskId, @RequestBody Map<String, Object> body,
                                               @RequestAttribute(value = "userId", required = false) Long userId) {
@@ -175,6 +189,7 @@ public class RdController {
         return ResponseEntity.ok(Map.of("success", true, "data", task, "message", "报价已提交"));
     }
 
+    @RequirePermission({"rd:read_write"})
     @PostMapping("/quotations/{taskId}/confirm")
     public ResponseEntity<?> confirmQuotation(@PathVariable String taskId, @RequestBody Map<String, Object> body,
                                                @RequestAttribute(value = "userId", required = false) Long userId) {
@@ -185,6 +200,7 @@ public class RdController {
         return ResponseEntity.ok(Map.of("success", true, "data", task, "message", "报价已确认"));
     }
 
+    @RequirePermission({"rd:read"})
     @GetMapping("/quotations")
     public ResponseEntity<?> listQuotations(@PathVariable String factoryId,
                                              @RequestParam(required = false) String status,

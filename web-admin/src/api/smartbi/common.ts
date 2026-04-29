@@ -107,7 +107,10 @@ export function abortSmartBIRequest(key: string): void {
  */
 export const PYTHON_SMARTBI_URL = import.meta.env.VITE_SMARTBI_URL || '/smartbi-api';
 const PYTHON_TIMEOUT_MS = 30000;
-export const PYTHON_LLM_TIMEOUT_MS = 200000; // LLM-heavy calls — must exceed Python retry chain (max ~139s after reduction)
+// Apr 18 2026 bug #56: 从 200s → 300s. Doc3 #16/#17 用户报告"财务看板/智能数据分析
+// 超时", 大 dashboard + 多图片 LLM 链调用在负载高时会超 200s. 300s 兜底给 Python 侧
+// 完成多轮 LLM + 图表渲染的时间. 若仍超时, 需后端优化 (非客户端单点能解决)。
+export const PYTHON_LLM_TIMEOUT_MS = 300000;
 export const PYTHON_HEADERS: Record<string, string> = {
   'Content-Type': 'application/json',
   'X-Internal-Secret': import.meta.env.VITE_PYTHON_SECRET || '',
@@ -181,6 +184,11 @@ export async function pythonFetch(path: string, options: RequestInit & { timeout
 
     if (!response.ok) {
       throw new Error(`Python service error: ${response.status} ${response.statusText}`);
+    }
+
+    // Handle 204 No Content (e.g., DELETE endpoints) without attempting JSON parse
+    if (response.status === 204) {
+      return null as unknown;
     }
 
     const json = await response.json();
@@ -374,6 +382,15 @@ export interface AnalysisResult {
     data: Record<string, unknown>[];
   };
   error?: string;
+  // Apr 23 2026 (Fix 3): whether the answer came from the pre-computed
+  // template cache ('materialized_cache') or LLM fallback (undefined).
+  // Used by the FE to decide whether to show a "深入分析" follow-up CTA.
+  source?: string;
+  template_code?: string;
+  // Phase 1 (Apr 23 2026): id of the row written to smart_bi_llm_fallback_log.
+  // Present only when source !== 'materialized_cache' (i.e. LLM fallback
+  // actually ran). FE uses it to POST feedback.
+  log_id?: number | null;
 }
 
 /**
@@ -421,6 +438,15 @@ export interface ColumnSummary {
   sparkline?: number[];
   trend?: string;
   trendPercent?: number | null;
+  // Apr 25 2026 — KPI aggregation strategy persisted on
+  // smart_bi_pg_field_definitions.agg_strategy. Backed by
+  // field_classifier.infer_agg_strategy() (Python). Read by getSmartKPIs.
+  //   "sum"  → display SUM(col) as KPI (default for measures)
+  //   "mean" → display AVG(col) as KPI (e.g. 平均星级 = 4.83 分)
+  //   "none" → exclude this col from KPI cards (IDs, dimensions)
+  aggStrategy?: 'sum' | 'mean' | 'none';
+  // Hint for label prefix; FE displays "平均X" when this is "rating".
+  semanticType?: 'rating' | 'id' | string | null;
 }
 
 /**
@@ -575,6 +601,9 @@ export interface SmartKPI {
   sparklineData: number[];
   benchmarkLabel?: string;
   benchmarkGap?: number;
+  // Apr 24 2026 — explicit precision for KPICard (defaults to 0). Ratings
+  // need precision=2 (4.83 not 5 — huge semantic diff for 1-5 scale).
+  precision?: number;
 }
 
 /**

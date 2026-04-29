@@ -67,6 +67,12 @@ const smartBIRoutes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, title: '知识库反馈', icon: 'ChatDotRound', module: 'analytics' },
       },
       {
+        path: 'fallback-log',
+        name: 'SmartBIFallbackLog',
+        component: () => import('@/views/smart-bi/FallbackLogAdmin.vue'),
+        meta: { requiresAuth: true, title: 'AI 追问日志', icon: 'DataLine', module: 'analytics' },
+      },
+      {
         path: 'calibration',
         name: 'SmartBICalibration',
         component: () => import('@/views/calibration/CalibrationListView.vue'),
@@ -76,7 +82,7 @@ const smartBIRoutes: RouteRecordRaw[] = [
         path: 'financial-dashboard',
         name: 'FinancialDashboardPBI',
         component: () => import('@/views/smart-bi/FinancialDashboardPBI.vue'),
-        meta: { requiresAuth: true, title: '财务分析看板', icon: 'TrendCharts', module: 'analytics' },
+        meta: { requiresAuth: true, title: '财务 PBI 看板', icon: 'TrendCharts', module: 'analytics' },
       },
       {
         path: 'whatif',
@@ -89,6 +95,12 @@ const smartBIRoutes: RouteRecordRaw[] = [
         name: 'SmartBIRestaurantV2',
         component: () => import('@/views/smart-bi/RestaurantV2Dashboard.vue'),
         meta: { requiresAuth: true, title: '餐饮 V2 Dashboard', icon: 'DataAnalysis', module: 'analytics' },
+      },
+      {
+        path: 'gold-preview',
+        name: 'SmartBIGoldPreview',
+        component: () => import('@/views/smart-bi/GoldPreview.vue'),
+        meta: { requiresAuth: true, title: 'Gold 预览', icon: 'Cpu', module: 'analytics' },
       },
     ],
   },

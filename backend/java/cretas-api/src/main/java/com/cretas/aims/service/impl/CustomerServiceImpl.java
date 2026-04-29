@@ -3,6 +3,7 @@ package com.cretas.aims.service.impl;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.customer.CreateCustomerRequest;
+import com.cretas.aims.dto.customer.UpdateCustomerRequest;
 import com.cretas.aims.dto.customer.CustomerDTO;
 import com.cretas.aims.entity.Customer;
 import com.cretas.aims.exception.BusinessException;
@@ -74,7 +75,8 @@ public class CustomerServiceImpl implements CustomerService {
         log.info("创建客户: factoryId={}, name={}", factoryId, request.getName());
         // 检查客户名称是否重复
         if (customerRepository.existsByFactoryIdAndName(factoryId, request.getName())) {
-            throw new BusinessException("客户名称已存在");
+            throw new BusinessException(409, "客户名称已存在")
+                    .withHint("请使用其他客户名称").withHintTarget("customerName");
         }
         // 创建客户实体
         Customer customer = customerMapper.toEntity(request, factoryId, userId);
@@ -99,17 +101,26 @@ public class CustomerServiceImpl implements CustomerService {
         @CacheEvict(value = "customerList", key = "#factoryId"),
         @CacheEvict(value = "customerStats", key = "#factoryId")
     })
-    public CustomerDTO updateCustomer(String factoryId, String customerId, CreateCustomerRequest request) {
+    public CustomerDTO updateCustomer(String factoryId, String customerId, UpdateCustomerRequest request) {
         runConfiguredValidation(factoryId, "UPDATE", java.util.Map.of(
             "customerId", customerId,
             "customerName", request.getName() != null ? request.getName() : ""));
         log.info("更新客户: factoryId={}, customerId={}", factoryId, customerId);
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
                 .orElseThrow(() -> new EntityNotFoundException("Customer", customerId));
+        // Optimistic lock: compare client-supplied version against DB version.
+        // Note: we can't just setVersion() on the managed entity — Hibernate locks its
+        // dirty-check against the version observed at findById time, so setVersion()
+        // is silently ignored for UPDATE conflict detection. Manual compare instead.
+        if (request.getVersion() != null && !request.getVersion().equals(customer.getVersion())) {
+            throw new org.springframework.orm.ObjectOptimisticLockingFailureException(
+                Customer.class, customerId);
+        }
         // 检查名称是否与其他客户重复
         if (request.getName() != null && !request.getName().equals(customer.getName())) {
             if (customerRepository.existsByFactoryIdAndNameAndIdNot(factoryId, request.getName(), customerId)) {
-                throw new BusinessException("客户名称已存在");
+                throw new BusinessException(409, "客户名称已存在")
+                    .withHint("请使用其他客户名称").withHintTarget("customerName");
             }
         }
         // 更新客户信息
@@ -131,7 +142,8 @@ public class CustomerServiceImpl implements CustomerService {
                 .orElseThrow(() -> new EntityNotFoundException("Customer", customerId));
         // 检查是否有关联的出货记录
         if (customerRepository.hasRelatedShipments(customerId)) {
-            throw new BusinessException("客户有关联的出货记录，无法删除");
+            throw new BusinessException(409, "客户有关联的出货记录，无法删除")
+                    .withHint("请先归档或转移该客户的出货记录后再删除");
         }
         customerRepository.delete(customer);
         log.info("客户删除成功: id={}", customerId);
@@ -146,19 +158,23 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public PageResponse<CustomerDTO> getCustomerList(String factoryId, PageRequest pageRequest) {
-        // 创建分页请求
+        return getCustomerList(factoryId, pageRequest, null);
+    }
+
+    @Override
+    public PageResponse<CustomerDTO> getCustomerList(String factoryId, PageRequest pageRequest, String keyword) {
         org.springframework.data.domain.PageRequest pageable = org.springframework.data.domain.PageRequest.of(
                 pageRequest.getPage() - 1,
                 pageRequest.getSize(),
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
-        // 查询客户
-        Page<Customer> customerPage = customerRepository.findByFactoryId(factoryId, pageable);
-        // 转换为DTO
+        Page<Customer> customerPage = (keyword != null && !keyword.trim().isEmpty())
+                ? customerRepository.searchByNamePaged(factoryId,
+                    com.cretas.aims.util.SqlLikeEscaper.escape(keyword.trim()), pageable)
+                : customerRepository.findByFactoryId(factoryId, pageable);
         List<CustomerDTO> customerDTOs = customerPage.getContent().stream()
                 .map(customerMapper::toDTO)
                 .collect(Collectors.toList());
-        // 构建分页响应
         PageResponse<CustomerDTO> response = new PageResponse<>();
         response.setContent(customerDTOs);
         response.setPage(pageRequest.getPage());
@@ -181,7 +197,8 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public List<CustomerDTO> searchCustomersByName(String factoryId, String keyword) {
-        List<Customer> customers = customerRepository.searchByName(factoryId, keyword);
+        String safeKeyword = com.cretas.aims.util.SqlLikeEscaper.escape(keyword);
+        List<Customer> customers = customerRepository.searchByName(factoryId, safeKeyword);
         return customers.stream()
                 .map(customerMapper::toDTO)
                 .collect(Collectors.toList());
@@ -229,7 +246,8 @@ public class CustomerServiceImpl implements CustomerService {
         log.info("更新客户评级: factoryId={}, customerId={}, rating={}",
                 factoryId, customerId, rating);
         if (rating < 1 || rating > 5) {
-            throw new BusinessException("评级必须在1-5之间");
+            throw new BusinessException(400, "评级必须在1-5之间")
+                    .withHint("请输入 1 到 5 的整数").withHintTarget("rating");
         }
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
                 .orElseThrow(() -> new EntityNotFoundException("Customer", customerId));
@@ -247,7 +265,8 @@ public class CustomerServiceImpl implements CustomerService {
         log.info("更新客户信用额度: factoryId={}, customerId={}, creditLimit={}",
                 factoryId, customerId, creditLimit);
         if (creditLimit.compareTo(BigDecimal.ZERO) < 0) {
-            throw new BusinessException("信用额度不能为负数");
+            throw new BusinessException(400, "信用额度不能为负数")
+                    .withHint("请输入大于等于 0 的金额").withHintTarget("creditLimit");
         }
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
                 .orElseThrow(() -> new EntityNotFoundException("Customer", customerId));

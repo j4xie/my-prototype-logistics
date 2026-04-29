@@ -321,6 +321,13 @@ export async function getCachedAnalysis(uploadId: number): Promise<{
   structuredAI?: unknown;
   financialMetrics?: unknown;
   chartConfig?: unknown;
+  /**
+   * Apr 25 2026 (Task C / PROD-1 fix): true when the cache row was created
+   * by the Java γ-2c afterCommit hook (KPI-only precompute, no LLM yet).
+   * FE should render KPIs immediately AND continue running the regular
+   * enrichment pipeline to fill in charts/aiAnalysis/structuredAI.
+   */
+  _partial?: boolean;
 } | null> {
   try {
     const data = await pythonFetch(`/api/smartbi/analysis-cache/${uploadId}`) as Record<string, unknown>;
@@ -335,6 +342,7 @@ export async function getCachedAnalysis(uploadId: number): Promise<{
         structuredAI: data.structuredAI,
         financialMetrics: data.financialMetrics,
         chartConfig: data.chartConfig,
+        _partial: data._partial === true,
       };
     }
     return null;

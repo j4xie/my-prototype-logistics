@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.scale.*;
 import com.cretas.aims.entity.FactoryEquipment;
@@ -121,6 +122,7 @@ public class ScaleDeviceController {
 
     // ==================== 创建设备 ====================
 
+    @RequirePermission({"equipment:read_write"})
     @PostMapping
     @Operation(summary = "创建秤设备", description = "添加新的 IoT 电子秤设备")
     public ApiResponse<ScaleDeviceDTO> createScaleDevice(
@@ -193,6 +195,7 @@ public class ScaleDeviceController {
 
     // ==================== 更新设备 ====================
 
+    @RequirePermission({"equipment:read_write"})
     @PutMapping("/{equipmentId}")
     @Operation(summary = "更新秤设备", description = "更新 IoT 电子秤设备信息")
     public ApiResponse<ScaleDeviceDTO> updateScaleDevice(
@@ -250,6 +253,7 @@ public class ScaleDeviceController {
 
     // ==================== 删除设备 ====================
 
+    @RequirePermission({"equipment:read_write"})
     @DeleteMapping("/{equipmentId}")
     @Operation(summary = "删除秤设备", description = "删除指定的 IoT 电子秤设备")
     public ApiResponse<Void> deleteScaleDevice(
@@ -279,6 +283,7 @@ public class ScaleDeviceController {
 
     // ==================== 绑定协议 ====================
 
+    @RequirePermission({"equipment:read_write"})
     @PostMapping("/{equipmentId}/bind-protocol")
     @Operation(summary = "绑定协议", description = "为设备绑定通信协议")
     public ApiResponse<ScaleDeviceDTO> bindProtocol(
@@ -308,6 +313,7 @@ public class ScaleDeviceController {
 
     // ==================== 测试数据解析 ====================
 
+    @RequirePermission({"equipment:read_write"})
     @PostMapping("/test-parse")
     @Operation(summary = "测试数据解析", description = "使用指定协议解析原始数据帧")
     public ApiResponse<ScaleDeviceDTO.TestParseResponse> testParse(

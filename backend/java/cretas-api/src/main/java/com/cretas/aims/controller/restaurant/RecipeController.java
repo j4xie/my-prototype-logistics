@@ -1,7 +1,10 @@
 package com.cretas.aims.controller.restaurant;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.restaurant.Recipe;
+import com.cretas.aims.exception.BusinessException;
+import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.restaurant.RecipeRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -17,6 +20,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * BOM 配方管理 Controller
@@ -62,13 +66,15 @@ public class RecipeController {
     public ApiResponse<Recipe> detail(
             @PathVariable String factoryId,
             @PathVariable String recipeId) {
-        return recipeRepository.findByIdAndFactoryId(recipeId, factoryId)
-                .map(ApiResponse::success)
-                .orElse(ApiResponse.error("配方不存在: " + recipeId));
+        Recipe recipe = recipeRepository.findByIdAndFactoryId(recipeId, factoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("配方", "id", recipeId));
+        return ApiResponse.success(recipe);
     }
 
     // ==================== 创建 ====================
 
+    @RequirePermission({"production:read_write", "rd:read_write"})
+    @RequireModule("restaurant")
     @PostMapping
     @Operation(summary = "创建配方")
     public ApiResponse<Recipe> create(
@@ -81,7 +87,8 @@ public class RecipeController {
         // 检查重复
         if (recipeRepository.existsByFactoryIdAndProductTypeIdAndRawMaterialTypeIdAndIsActiveTrue(
                 factoryId, recipe.getProductTypeId(), recipe.getRawMaterialTypeId())) {
-            return ApiResponse.error("该菜品已存在此食材的配方");
+            throw new BusinessException(409, "该菜品已存在此食材的配方")
+                    .withHint("请前往配方管理停用现有配方或修改其用量");
         }
 
         recipe.setId(null); // 由 @PrePersist 生成
@@ -96,40 +103,40 @@ public class RecipeController {
 
     // ==================== 更新 ====================
 
+    @RequirePermission({"production:read_write", "rd:read_write"})
+    @RequireModule("restaurant")
     @PutMapping("/{recipeId}")
     @Operation(summary = "更新配方")
     public ApiResponse<Recipe> update(
             @PathVariable String factoryId,
             @PathVariable String recipeId,
             @RequestBody @Valid Recipe recipe) {
-        return recipeRepository.findByIdAndFactoryId(recipeId, factoryId)
-                .map(existing -> {
-                    existing.setStandardQuantity(recipe.getStandardQuantity());
-                    existing.setUnit(recipe.getUnit());
-                    existing.setNetYieldRate(recipe.getNetYieldRate());
-                    existing.setIsMainIngredient(recipe.getIsMainIngredient());
-                    existing.setNotes(recipe.getNotes());
-                    existing.setIsActive(recipe.getIsActive());
-                    Recipe updated = recipeRepository.save(existing);
-                    return ApiResponse.success("配方更新成功", updated);
-                })
-                .orElse(ApiResponse.error("配方不存在: " + recipeId));
+        Recipe existing = recipeRepository.findByIdAndFactoryId(recipeId, factoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("配方", "id", recipeId));
+        existing.setStandardQuantity(recipe.getStandardQuantity());
+        existing.setUnit(recipe.getUnit());
+        existing.setNetYieldRate(recipe.getNetYieldRate());
+        existing.setIsMainIngredient(recipe.getIsMainIngredient());
+        existing.setNotes(recipe.getNotes());
+        existing.setIsActive(recipe.getIsActive());
+        Recipe updated = recipeRepository.save(existing);
+        return ApiResponse.success("配方更新成功", updated);
     }
 
     // ==================== 软删除 ====================
 
+    @RequirePermission({"production:read_write", "rd:read_write"})
+    @RequireModule("restaurant")
     @DeleteMapping("/{recipeId}")
     @Operation(summary = "停用配方（软删除）")
     public ApiResponse<Void> softDelete(
             @PathVariable String factoryId,
             @PathVariable String recipeId) {
-        return recipeRepository.findByIdAndFactoryId(recipeId, factoryId)
-                .map(recipe -> {
-                    recipe.setIsActive(false);
-                    recipeRepository.save(recipe);
-                    return ApiResponse.successMessage("配方已停用");
-                })
-                .orElse(ApiResponse.error("配方不存在: " + recipeId));
+        Recipe recipe = recipeRepository.findByIdAndFactoryId(recipeId, factoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("配方", "id", recipeId));
+        recipe.setIsActive(false);
+        recipeRepository.save(recipe);
+        return ApiResponse.successMessage("配方已停用");
     }
 
     // ==================== 菜品配方 ====================
@@ -151,7 +158,7 @@ public class RecipeController {
             @RequestParam(defaultValue = "1") int quantity) {
         List<Recipe> recipes = recipeRepository.findActiveByFactoryIdAndProductTypeId(factoryId, productTypeId);
         if (recipes.isEmpty()) {
-            return ApiResponse.error("该菜品暂无配方数据");
+            throw new ResourceNotFoundException("配方", "productTypeId", productTypeId);
         }
         BigDecimal qty = BigDecimal.valueOf(quantity);
         List<Map<String, Object>> items = recipes.stream().map(r -> {

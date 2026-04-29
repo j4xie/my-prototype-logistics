@@ -102,6 +102,10 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
     @Autowired(required = false)
     private com.cretas.aims.repository.smartbi.SmartBiAnalysisCacheRepository analysisCacheRepository;
 
+    // Unified DataSource registry — sync upload to data-source page (Apr 16 2026)
+    @Autowired(required = false)
+    private com.cretas.aims.service.smartbi.DataSourceRegistryService dataSourceRegistryService;
+
     @org.springframework.beans.factory.annotation.Value("${smartbi.postgres.enabled:false}")
     private boolean postgresEnabled;
 
@@ -140,17 +144,29 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
     @Transactional
     public UploadFlowResult executeUploadFlow(String factoryId, MultipartFile file, String dataType,
                                                Integer sheetIndex, Integer headerRow, boolean autoConfirm) {
-        log.info("开始执行上传流程: factoryId={}, fileName={}, dataType={}, sheetIndex={}, headerRow={}, autoConfirm={}",
-                factoryId, file.getOriginalFilename(), dataType, sheetIndex, headerRow, autoConfirm);
+        return executeUploadFlow(factoryId, file, dataType, sheetIndex, headerRow, autoConfirm, null, null);
+    }
+
+    @Override
+    @Transactional
+    public UploadFlowResult executeUploadFlow(String factoryId, MultipartFile file, String dataType,
+                                               Integer sheetIndex, Integer headerRow, boolean autoConfirm,
+                                               Integer selectedRegionStart, Integer selectedRegionEnd) {
+        log.info("开始执行上传流程: factoryId={}, fileName={}, dataType={}, sheetIndex={}, headerRow={}, autoConfirm={}, region=[{},{}]",
+                factoryId, file.getOriginalFilename(), dataType, sheetIndex, headerRow, autoConfirm,
+                selectedRegionStart, selectedRegionEnd);
 
         // 1. 验证文件
+        // Apr 28 2026 (UX audit): add actionHint to error messages so user knows
+        // next step. Empty/named-empty files were dead-end with generic "文件不能为空"
+        // — now suggest re-export or check source file.
         if (file == null || file.isEmpty()) {
-            return UploadFlowResult.failure("文件不能为空");
+            return UploadFlowResult.failure("文件不能为空 (0 字节). 请确认源文件未损坏或重新导出后再上传.");
         }
 
         String fileName = file.getOriginalFilename();
         if (fileName == null) {
-            return UploadFlowResult.failure("文件名不能为空");
+            return UploadFlowResult.failure("文件名不能为空. 请重命名文件 (含 .xlsx/.xls/.csv 后缀) 后再上传.");
         }
         String lowerName = fileName.toLowerCase();
         if (!lowerName.endsWith(".xlsx") && !lowerName.endsWith(".xls") && !lowerName.endsWith(".csv")) {
@@ -169,7 +185,8 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
                     .businessScene(dataType)
                     .build();
 
-            ExcelParseResponse parseResult = parseExcelWithFallback(file, factoryId, dataType, parseRequest);
+            ExcelParseResponse parseResult = parseExcelWithFallback(file, factoryId, dataType, parseRequest,
+                    selectedRegionStart, selectedRegionEnd);
 
             if (!parseResult.isSuccess()) {
                 log.warn("Excel 解析失败: {}", parseResult.getErrorMessage());
@@ -188,12 +205,37 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             boolean needsConfirmation = !autoConfirm && checkNeedsConfirmation(parseResult);
 
             if (needsConfirmation) {
-                log.info("字段映射需要用户确认");
+                log.info("字段映射需要用户确认 — 先 pre-persist 全量行, 防 50 行截断 (Bug #43)");
+                // Bug #43 fix (2026-04-18): persist ALL rows BEFORE trimForResponse
+                // truncates previewData to 50. Otherwise /upload/confirm would
+                // receive the trimmed 50-row preview and only persist 50 rows,
+                // even though Python returned all 4051 rows in parseResult.
+                // After this pre-persist, /upload/confirm uses uploadId to skip
+                // re-persist and only update field_definitions.
+                Long prePersistUploadId = null;
+                try {
+                    if (postgresEnabled && dynamicPersistenceService != null) {
+                        DynamicPersistenceResult prePersist = dynamicPersistenceService.persistDynamic(
+                                factoryId, parseResult, fileName);
+                        if (prePersist.isSuccess()) {
+                            prePersistUploadId = prePersist.getUploadId();
+                            log.info("Pre-persist 完成: uploadId={}, savedRows={} (全量)",
+                                    prePersistUploadId, prePersist.getSavedRows());
+                        } else {
+                            log.warn("Pre-persist 失败, 回退到老流程 (confirm 时再存): {}",
+                                    prePersist.getMessage());
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Pre-persist 异常, 回退到老流程: {}", e.getMessage());
+                }
+
                 return UploadFlowResult.builder()
                         .success(true)
                         .message("字段映射需要用户确认")
-                        .parseResult(parseResult)
+                        .parseResult(trimForResponse(parseResult))
                         .requiresConfirmation(true)
+                        .uploadId(prePersistUploadId)  // Bug #43: frontend passes back on confirm
                         .detectedDataType(detectedTypeStr)
                         .recommendedTemplates(getDefaultTemplates(detectedTypeStr, factoryId))
                         .build();
@@ -241,10 +283,29 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
                 log.warn("清除分析缓存失败: {}", e.getMessage());
             }
 
+            // 5.08 同步到数据源注册表 (Apr 16 2026) — 让 /smartbi-config/data-sources 页能看到上传的 Excel
+            try {
+                if (dataSourceRegistryService != null && persistResult.getUploadId() != null) {
+                    dataSourceRegistryService.upsertFromExcelUpload(
+                        factoryId,
+                        persistResult.getUploadId(),
+                        fileName,
+                        detectedTypeStr,
+                        (int) persistResult.getSavedRows()
+                    );
+                }
+            } catch (Exception e) {
+                // 非阻塞 — sync 失败不影响上传成功
+                log.warn("DataSource 注册表同步失败 (不影响上传): {}", e.getMessage());
+            }
+
             // 5.1 自动提取财务数据（非阻塞）
+            // Apr 17 2026: catch Throwable (not Exception) so OutOfMemoryError on
+            // large-column files (232 cols × 10K rows = 2.3M cells) doesn't fail
+            // the upload response. Upload already persisted by this point.
             try {
                 tryExtractAndSaveFinanceData(factoryId, persistResult.getUploadId(), parseResult);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 log.warn("财务数据自动提取失败(不影响上传): {}", e.getMessage());
             }
 
@@ -253,37 +314,31 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             List<SmartBiChartTemplate> recommendedTemplates = recommendTemplates(factoryId, parseResult);
 
             // 7. 生成默认图表配置
+            //
+            // FIX (Apr 15 2026): 之前 chartConfig + aiAnalysis 在 executeUploadFlow 内**同步**生成,
+            // 包括 JSONB 聚合 SQL (10-20 条) + 1 次 LLM aiAnalysis 调用, 总耗时 30-60s,
+            // 导致小文件 (667KB) 上传也要 38s, 用户体验差.
+            //
+            // 现策略: 上传只负责 "解析 + 持久化", 图表 + AI 分析**按需生成** (客户在 chart UI /
+            // chat 里触发时, 后端用 smart_bi_dynamic_data 里的数据即时构图 + 调 LLM).
+            // 这样大文件上传从 60s → ~5s (只剩解析 + insert), 用户看到 "上传成功" 更快,
+            // 再点 AI 问答才付 LLM latency 的代价.
             Map<String, Object> chartConfig = null;
             String aiAnalysis = null;
 
-            if (!recommendedTemplates.isEmpty()) {
-                SmartBiChartTemplate primaryTemplate = recommendedTemplates.get(0);
-                Map<String, Object> chartData = buildChartData(
-                        factoryId, persistResult.getUploadId(), detectedType);
-
-                Map<String, Object> chartWithAnalysis = chartTemplateService.buildChartWithAnalysis(
-                        primaryTemplate.getTemplateCode(), chartData, factoryId);
-
-                chartConfig = chartWithAnalysis;
-                aiAnalysis = (String) chartWithAnalysis.get("aiAnalysis");
-            } else {
-                // Fallback: 当没有匹配的模板时，使用 Python 返回的 recommendedCharts 或生成动态图表
-                log.info("没有匹配的图表模板，尝试生成动态图表");
-                List<String> recommendedCharts = parseResult.getRecommendedCharts();
-                String chartType = (recommendedCharts != null && !recommendedCharts.isEmpty())
-                        ? recommendedCharts.get(0).toUpperCase()
-                        : recommendedChartType;
-
-                // 从 parseResult 构建动态图表配置
-                chartConfig = buildFallbackChartConfig(parseResult, chartType, detectedTypeStr);
-            }
+            List<String> recommendedCharts = parseResult.getRecommendedCharts();
+            String chartType = (recommendedCharts != null && !recommendedCharts.isEmpty())
+                    ? recommendedCharts.get(0).toUpperCase()
+                    : recommendedChartType;
+            // 轻量 fallback chart config — 只用 parseResult 里已有的 preview_data, 不跑额外 SQL/LLM
+            chartConfig = buildFallbackChartConfig(parseResult, chartType, detectedTypeStr);
 
             // 8. 构建完整结果
             return UploadFlowResult.builder()
                     .success(true)
                     .message(String.format("成功上传并处理 %d 条%s数据",
                             persistResult.getSavedRows(), detectedType.getDisplayName()))
-                    .parseResult(parseResult)
+                    .parseResult(trimForResponse(parseResult))
                     .persistResult(persistResult)
                     .detectedDataType(detectedTypeStr)
                     .recommendedChartType(recommendedChartType)
@@ -317,6 +372,62 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             }
             return UploadFlowResult.failure("处理失败: " + msg);
         }
+    }
+
+    @Override
+    @Transactional
+    public UploadFlowResult confirmAndPersist(String factoryId,
+                                               Long uploadId,
+                                               ExcelParseResponse parseResponse,
+                                               List<FieldMappingResult> confirmedMappings,
+                                               String dataType) {
+        // Bug #43 fix (2026-04-18): if uploadId is set, skip re-persist entirely
+        // — rows were pre-persisted during executeUploadFlow. Only update
+        // field_definitions with user-confirmed mappings.
+        if (uploadId != null && postgresEnabled && dynamicPersistenceService != null) {
+            log.info("Bug #43 path: confirm with uploadId={} — skip re-persist, update field_defs only", uploadId);
+            try {
+                if (confirmedMappings != null && !confirmedMappings.isEmpty()) {
+                    dynamicPersistenceService.saveFieldDefinitions(uploadId, confirmedMappings);
+                    log.info("Field definitions updated: uploadId={}, mappings={}",
+                            uploadId, confirmedMappings.size());
+                }
+                // Recommend chart + generate config (same as normal path)
+                DataType detectedType = parseDataType(dataType);
+                if (detectedType == DataType.UNKNOWN) detectedType = DataType.GENERAL;
+                String recommendedChartType = recommendChartType(parseResponse, dataType);
+                List<SmartBiChartTemplate> recommendedTemplates = recommendTemplates(factoryId, parseResponse);
+                Map<String, Object> chartConfig = null;
+                String aiAnalysis = null;
+                if (!recommendedTemplates.isEmpty()) {
+                    try {
+                        SmartBiChartTemplate primaryTemplate = recommendedTemplates.get(0);
+                        Map<String, Object> chartData = buildChartData(factoryId, uploadId, detectedType);
+                        Map<String, Object> chartWithAnalysis = chartTemplateService.buildChartWithAnalysis(
+                                primaryTemplate.getTemplateCode(), chartData, factoryId);
+                        chartConfig = chartWithAnalysis;
+                        aiAnalysis = (String) chartWithAnalysis.get("aiAnalysis");
+                    } catch (Exception e) {
+                        log.warn("Chart generation 失败 (不影响 save): {}", e.getMessage());
+                    }
+                }
+                saveManualMappingsToDatabase(factoryId, confirmedMappings);
+                return UploadFlowResult.builder()
+                        .success(true)
+                        .message("数据已保存")
+                        .uploadId(uploadId)
+                        .detectedDataType(detectedType.name())
+                        .recommendedChartType(recommendedChartType)
+                        .recommendedTemplates(recommendedTemplates)
+                        .chartConfig(chartConfig)
+                        .aiAnalysis(aiAnalysis)
+                        .build();
+            } catch (Exception e) {
+                log.error("Bug #43 path failed, fallback to full confirm: {}", e.getMessage(), e);
+                // fall through to legacy path below
+            }
+        }
+        return confirmAndPersist(factoryId, parseResponse, confirmedMappings, dataType);
     }
 
     @Override
@@ -552,6 +663,16 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
      */
     private ExcelParseResponse parseExcelWithFallback(MultipartFile file, String factoryId,
                                                        String dataType, ExcelParseRequest parseRequest) throws IOException {
+        return parseExcelWithFallback(file, factoryId, dataType, parseRequest, null, null);
+    }
+
+    /**
+     * Bug #25b (2026-04-18): overload that forwards multi-stacked-table region bounds
+     * to the Python parser.
+     */
+    private ExcelParseResponse parseExcelWithFallback(MultipartFile file, String factoryId,
+                                                       String dataType, ExcelParseRequest parseRequest,
+                                                       Integer selectedRegionStart, Integer selectedRegionEnd) throws IOException {
         // Python SmartBI 服务必须启用
         if (!pythonConfig.isEnabled()) {
             throw new RuntimeException("Python SmartBI 服务未启用。SmartBI 功能完全依赖 Python 服务 (端口 8083)，请确保服务已启动。");
@@ -578,7 +699,9 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
         log.info("使用 Python SmartBI 服务解析 Excel: fileName={}, sheetIndex={}, headerRow={}",
                 file.getOriginalFilename(), sheetIndex, headerRow);
 
-        ExcelParseResponse pythonResult = pythonClient.parseExcel(file, factoryId, dataType, sheetIndex, headerRow);
+        ExcelParseResponse pythonResult = pythonClient.parseExcel(
+                file, factoryId, dataType, sheetIndex, headerRow,
+                selectedRegionStart, selectedRegionEnd);
 
         if (pythonResult != null && pythonResult.isSuccess()) {
             log.info("Python SmartBI 解析成功: headers={}, rows={}",
@@ -625,6 +748,27 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             log.info("自动学习完成: 已保存 {} 条用户手动确认的字段映射到字典 (factoryId={})",
                     savedCount, factoryId);
         }
+    }
+
+    /**
+     * P4-opt (Apr 17 2026): 给 FE 返回前把 parseResult 瘦身.
+     * 原始 response 带全量 previewData 导致 10K 行文件响应体到 10+MB,
+     * 慢网浏览器上传卡 90% 进度条. FE 预览表只用前 ~20 行,
+     * 诊断字段 (dataFeatures / metadata / structureInfo) 前端完全不用.
+     *
+     * 全量数据已通过 uploadId 持久化到 DB, 不影响后续分析.
+     */
+    private static final int PREVIEW_ROW_LIMIT = 50;
+
+    private ExcelParseResponse trimForResponse(ExcelParseResponse pr) {
+        if (pr == null) return null;
+        if (pr.getPreviewData() != null && pr.getPreviewData().size() > PREVIEW_ROW_LIMIT) {
+            pr.setPreviewData(new ArrayList<>(pr.getPreviewData().subList(0, PREVIEW_ROW_LIMIT)));
+        }
+        pr.setDataFeatures(null);
+        pr.setMetadata(null);
+        pr.setStructureInfo(null);
+        return pr;
     }
 
     /**
@@ -1753,7 +1897,7 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
                 UploadFlowResult flowResult = UploadFlowResult.builder()
                         .success(true)
                         .message("字段映射需要用户确认")
-                        .parseResult(parseResult)
+                        .parseResult(trimForResponse(parseResult))
                         .requiresConfirmation(true)
                         .detectedDataType(detectedTypeStr)
                         .build();
@@ -1858,7 +2002,7 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             UploadFlowResult flowResult = UploadFlowResult.builder()
                     .success(true)
                     .message(String.format("成功处理 %d 条%s数据", persistResult.getSavedRows(), detectedType.getDisplayName()))
-                    .parseResult(parseResult)
+                    .parseResult(trimForResponse(parseResult))
                     .persistResult(persistResult)
                     .detectedDataType(detectedTypeStr)
                     .recommendedChartType(recommendedChartType)
@@ -1975,7 +2119,7 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
         return UploadFlowResult.builder()
                 .success(true)
                 .message(String.format("重试成功，已保存 %d 行数据", retryResult.getSavedRows()))
-                .parseResult(parseResult)
+                .parseResult(trimForResponse(parseResult))
                 .uploadId(uploadId)
                 .build();
     }
@@ -2110,7 +2254,7 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
                 UploadFlowResult flowResult = UploadFlowResult.builder()
                         .success(true)
                         .message("字段映射需要用户确认")
-                        .parseResult(parseResult)
+                        .parseResult(trimForResponse(parseResult))
                         .requiresConfirmation(true)
                         .detectedDataType(detectedTypeStr)
                         .build();
@@ -2183,7 +2327,7 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
                     .success(true)
                     .message(String.format("成功处理 %d 条%s数据",
                             persistResult.getSavedRows(), detectedType.getDisplayName()))
-                    .parseResult(parseResult)
+                    .parseResult(trimForResponse(parseResult))
                     .persistResult(persistResult)
                     .detectedDataType(detectedTypeStr)
                     .recommendedChartType(recommendedChartType)
@@ -2262,6 +2406,26 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
                 ? parseResult.getMetadata().getSheetName() : "";
 
         if (data == null || data.isEmpty() || columns == null || columns.isEmpty()) {
+            return;
+        }
+
+        // Skip when the JSON serialization of (data × columns) would blow the heap.
+        // Apr 17 2026 prod OOM: user uploaded 9976 × 232 CSV, serializing the Map<>
+        // payload to JSON peaked ~230MB (UTF-16 String) and tripped Xmx=768m.
+        // Threshold 500K cells ≈ 25MB JSON — comfortably under any heap config.
+        // Per Javadoc this extractor is best-effort; skipping big files preserves
+        // the upload flow instead of failing the request.
+        //
+        // FIX (Apr 17 2026): use max(columns.size(), actual row key count) because
+        // Python can under-report columns when CSV title-row misparse. Each row's
+        // actual Map<> can have 232 keys even though columns[] has 1 entry.
+        int actualColsPerRow = data.get(0) != null ? data.get(0).size() : 0;
+        int effectiveCols = Math.max(columns.size(), actualColsPerRow);
+        long cellCount = (long) data.size() * effectiveCols;
+        final long EXTRACT_CELL_LIMIT = 500_000L;
+        if (cellCount > EXTRACT_CELL_LIMIT) {
+            log.warn("财务数据提取跳过: uploadId={}, sheetName={}, size={}行×{}列(effective)={}cells > {} (heap 保护)",
+                    uploadId, sheetName, data.size(), effectiveCols, cellCount, EXTRACT_CELL_LIMIT);
             return;
         }
 

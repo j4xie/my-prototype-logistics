@@ -388,6 +388,9 @@ class SchedulingApiClient {
 
   /**
    * 18. AI 优化人员分配
+   * Apr 18 2026 bug #46: 全局 axios timeout 120s 对 LLM+OR-Tools 调度不够,
+   * optimize-workers 单独放宽到 300s 防"加载优化建议失败"。真实瓶颈(后端 LLM
+   * 调用/OR-Tools 求解) 需后续排查, 这是前端兜底。
    */
   async optimizeWorkers(
     data: {
@@ -397,7 +400,9 @@ class SchedulingApiClient {
     },
     factoryId?: string
   ): Promise<ApiResponse<WorkerAssignment[]>> {
-    return await apiClient.post(`${this.getPath(factoryId)}/optimize-workers`, data);
+    return await apiClient.post(`${this.getPath(factoryId)}/optimize-workers`, data, {
+      timeout: 300000,
+    });
   }
 
   /**

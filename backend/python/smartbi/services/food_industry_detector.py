@@ -314,17 +314,36 @@ def detect_available_dimensions(
     has_store: bool = False,
     has_category: bool = False,
     has_procurement: bool = False,
+    has_product: bool = False,
+    has_amount: bool = False,
+    menu_quadrant_row_count: int = 0,
 ) -> List[Dict[str, Any]]:
     """
     Report which analysis dimensions are available vs missing based on detected columns.
     Returns a list of dimension hints for frontend display.
+
+    Bug #38 fix: menuQuadrant.available was hardcoded True. Now reflects:
+      - column schema (has_product + has_amount) AND
+      - runtime computed row count (menu_quadrant_row_count > 0)
+    Frontend filter `!d.available && d.hint` now correctly surfaces hint when
+    data is too sparse to produce quadrant classification.
     """
+    menu_quadrant_col_ok = has_product and has_amount
+    menu_quadrant_available = menu_quadrant_col_ok and menu_quadrant_row_count > 0
+    if menu_quadrant_col_ok and not menu_quadrant_available:
+        menu_quadrant_hint = "字段齐全但本次数据行数/去重商品数过少,未产出四象限分类 (建议 ≥10 行 + 5+ 种商品)"
+    elif not menu_quadrant_col_ok:
+        menu_quadrant_hint = "上传数据需包含「商品名称」和「实收/销售金额」列"
+    else:
+        menu_quadrant_hint = None
+
     dimensions = [
         {
             "key": "menuQuadrant",
             "label": "菜品四象限",
-            "available": True,  # Always available if product+amount cols exist
+            "available": menu_quadrant_available,
             "requiredCols": "商品名称, 实收/销售金额",
+            "hint": menu_quadrant_hint,
         },
         {
             "key": "storeComparison",
@@ -395,10 +414,28 @@ def detect_restaurant_chain(
     col_set = set(str(c).strip() for c in column_names)
     combined = " ".join(col_set)
 
-    # Sales signal: 门店名称 + 商品名称 + (销售金额 or 实收)
-    sales_signals = {"门店名称", "商品名称"}
-    sales_amount_signals = {"销售金额", "实收", "折后金额"}
-    has_sales = sales_signals.issubset(col_set) and bool(sales_amount_signals & col_set)
+    # Sales signal: 门店 + any product/item col + any amount col
+    # Apr 21 2026: broadened for POS-detail (billNo-grained) style —
+    # qhj upload 4169 uses 门店名称/商品信息/营业额/实收额 rather than the
+    # narrower 门店名称/商品名称/销售金额 triple.
+    sales_store_signals = {"门店名称", "门店", "店铺名称", "店铺"}
+    sales_product_signals = {"商品名称", "商品信息", "商品名", "菜品名称", "菜品", "品名"}
+    sales_amount_signals = {
+        "销售金额", "实收", "实收额", "实收金额", "折后金额", "折后",
+        "营业额", "营业收入", "应收金额", "成交金额",
+    }
+    has_sales = (
+        bool(sales_store_signals & col_set)
+        and bool(sales_product_signals & col_set)
+        and bool(sales_amount_signals & col_set)
+    )
+    # POS order-detail alternate: 账单号 + 门店 + 营业/实收 — no product col
+    # required because one bill can have multiple items rolled into totals.
+    pos_order_signals = {"账单号", "订单号", "billNo", "order_no"}
+    if not has_sales and bool(pos_order_signals & col_set) \
+            and bool(sales_store_signals & col_set) \
+            and bool(sales_amount_signals & col_set):
+        has_sales = True
 
     # Procurement signal: 供应商 + (原料名称 or 商品名称) + (入库数量 or 入库金额)
     proc_col_signals = {"供应商"}
@@ -406,8 +443,12 @@ def detect_restaurant_chain(
     has_procurement = bool(proc_col_signals & col_set) and bool(proc_amount_signals & col_set)
 
     if not has_sales and not has_procurement:
-        # Fallback: check broad restaurant keywords
-        restaurant_kw = ["餐饮商品", "点单方式", "堂食", "外卖", "套餐子商品"]
+        # Fallback: broad restaurant keywords — expanded POS operations terms
+        restaurant_kw = [
+            "餐饮商品", "点单方式", "堂食", "外卖", "套餐子商品",
+            "客流量", "人均消费", "服务员", "收银员", "桌位", "班次",
+            "整单备注", "[美团]", "[饿了么]", "[抖音", "代金券",
+        ]
         if sum(1 for kw in restaurant_kw if kw in combined) < 2:
             return {
                 "is_restaurant_chain": False,

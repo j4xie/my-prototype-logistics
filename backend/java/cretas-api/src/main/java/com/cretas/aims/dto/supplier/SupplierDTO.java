@@ -54,6 +54,9 @@ public class SupplierDTO {
     private Long createdBy;
     private String createdByName;
 
+    /** Optimistic lock version — FE must send back on PUT to detect concurrent edits (409 Conflict on mismatch) */
+    private Long version;
+
     // ===================================================================
     // 前端字段别名（兼容前端）
     // ===================================================================

@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
@@ -23,6 +24,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * 原材料批次管理控制器
@@ -147,6 +149,8 @@ public class MaterialBatchController {
      * @param request 创建请求参数
      * @return 创建成功的批次信息
      */
+    @RequirePermission({"warehouse:read_write", "inventory:read_write"})
+    @RequireModule("warehouse")
     @PostMapping
     @Operation(summary = "创建原材料批次", description = "创建新的原材料批次，记录入库信息")
     public ApiResponse<MaterialBatchDTO> createMaterialBatch(
@@ -183,14 +187,16 @@ public class MaterialBatchController {
      * @param request 更新请求参数
      * @return 更新后的批次信息
      */
+    @RequirePermission({"warehouse:read_write", "inventory:read_write"})
+    @RequireModule("warehouse")
     @PutMapping("/{batchId}")
-    @Operation(summary = "更新原材料批次", description = "更新指定批次的信息")
+    @Operation(summary = "更新原材料批次", description = "更新指定批次的信息 — 允许 partial body (qa-prompt Rule 17.6)")
     public ApiResponse<MaterialBatchDTO> updateMaterialBatch(
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "批次ID", required = true, example = "MB-2025-001")
             @PathVariable @NotBlank String batchId,
-            @Valid @RequestBody CreateMaterialBatchRequest request) {
+            @Valid @RequestBody UpdateMaterialBatchRequest request) {
 
         log.info("更新原材料批次: factoryId={}, batchId={}", factoryId, batchId);
         MaterialBatchDTO batch = materialBatchService.updateMaterialBatch(factoryId, batchId, request);
@@ -200,6 +206,8 @@ public class MaterialBatchController {
     /**
      * 删除原材料批次
      */
+    @RequirePermission({"warehouse:read_write", "inventory:read_write"})
+    @RequireModule("warehouse")
     @DeleteMapping("/{batchId}")
     @Operation(summary = "删除原材料批次")
     public ApiResponse<Void> deleteMaterialBatch(
@@ -435,6 +443,8 @@ public class MaterialBatchController {
      * 1. RequestBody: {"quantity": 100, "productionPlanId": "xxx"}
      * 2. URL Params: ?quantity=100&productionPlanId=xxx
      */
+    @RequirePermission({"warehouse:read_write", "inventory:read_write"})
+    @RequireModule("warehouse")
     @PostMapping("/{batchId}/use")
     @Operation(summary = "使用批次材料")
     public ApiResponse<MaterialBatchDTO> useBatchMaterial(
@@ -476,6 +486,8 @@ public class MaterialBatchController {
      * 1. URL参数：newQuantity, reason（前端当前使用）
      * 2. RequestBody：quantity, reason, adjustmentType
      */
+    @RequirePermission({"warehouse:read_write", "inventory:read_write"})
+    @RequireModule("warehouse")
     @PostMapping("/{batchId}/adjust")
     @Operation(summary = "调整批次数量")
     public ApiResponse<MaterialBatchDTO> adjustBatchQuantity(
@@ -519,6 +531,8 @@ public class MaterialBatchController {
     /**
      * 更新批次状态
      */
+    @RequirePermission({"warehouse:read_write", "inventory:read_write"})
+    @RequireModule("warehouse")
     @PutMapping("/{batchId}/status")
     @Operation(summary = "更新批次状态")
     public ApiResponse<MaterialBatchDTO> updateBatchStatus(
@@ -540,6 +554,8 @@ public class MaterialBatchController {
      * 1. RequestBody: {"quantity": 100, "planId": "xxx"}
      * 2. URL Params: ?quantity=100&productionPlanId=xxx
      */
+    @RequirePermission({"warehouse:read_write", "inventory:read_write"})
+    @RequireModule("warehouse")
     @PostMapping("/{batchId}/reserve")
     @Operation(summary = "预留批次材料")
     public ApiResponse<Void> reserveBatchMaterial(
@@ -584,6 +600,8 @@ public class MaterialBatchController {
      * 1. RequestBody: {"quantity": 100, "productionPlanId": "xxx"}
      * 2. URL Params: ?quantity=100&productionPlanId=xxx
      */
+    @RequirePermission({"warehouse:read_write", "inventory:read_write"})
+    @RequireModule("warehouse")
     @PostMapping("/{batchId}/release")
     @Operation(summary = "释放预留材料")
     public ApiResponse<Void> releaseBatchReservation(
@@ -626,6 +644,8 @@ public class MaterialBatchController {
      * 1. RequestBody: {"quantity": 100, "processId": "xxx"}
      * 2. URL Params: ?quantity=100&processId=xxx
      */
+    @RequirePermission({"warehouse:read_write", "inventory:read_write"})
+    @RequireModule("warehouse")
     @PostMapping("/{batchId}/consume")
     @Operation(summary = "消耗批次材料")
     public ApiResponse<Void> consumeBatchMaterial(
@@ -940,6 +960,8 @@ public class MaterialBatchController {
     /**
      * 批量创建材料批次
      */
+    @RequirePermission({"warehouse:read_write", "inventory:read_write"})
+    @RequireModule("warehouse")
     @PostMapping("/batch")
     @Operation(summary = "批量创建材料批次")
     public ApiResponse<List<MaterialBatchDTO>> batchCreateMaterialBatches(
@@ -993,6 +1015,8 @@ public class MaterialBatchController {
     /**
      * 处理过期批次
      */
+    @RequirePermission({"warehouse:read_write", "inventory:read_write"})
+    @RequireModule("warehouse")
     @PostMapping("/handle-expired")
     @Operation(summary = "处理过期批次")
     public ApiResponse<Integer> handleExpiredBatches(
@@ -1053,6 +1077,8 @@ public class MaterialBatchController {
      * @since 2025-11-20
      * @see #undoFrozen 撤销转冻品操作
      */
+    @RequirePermission({"warehouse:read_write", "inventory:read_write"})
+    @RequireModule("warehouse")
     @PostMapping("/{batchId}/convert-to-frozen")
     @Operation(summary = "将原材料批次转为冻品",
                description = "将鲜品批次转换为冻品，更新批次状态和存储条件。转换后10分钟内可撤销。")
@@ -1131,6 +1157,8 @@ public class MaterialBatchController {
      * @since 2025-11-20
      * @see #convertToFrozen 转冻品操作
      */
+    @RequirePermission({"warehouse:read_write", "inventory:read_write"})
+    @RequireModule("warehouse")
     @PostMapping("/{batchId}/undo-frozen")
     @Operation(summary = "撤销转冻品操作",
                description = "撤销误操作的转冻品，仅允许转换后10分钟内撤销。超时需联系管理员。")

@@ -48,18 +48,125 @@ _QUERY_EXPANSIONS: Dict[str, str] = {
     "调拨": "调拨 内部调拨 转库 物料转移 仓间调拨",
     "首页": "首页 主页 工作台 快捷操作 布局 卡片",
     "登录": "登录 注册 认证 密码 账号 token",
+    # === 餐饮指数字典关键词扩展 (2026-04-28 added by restaurant-metrics-glossary) ===
+    # 客流与门店
+    "翻台率": "翻台率 翻台 turn over 桌次 接待 翻桌",
+    "上座率": "上座率 上座 occupancy 满桌",
+    "坪效": "坪效 平效 平均面积 营业额面积",
+    "客单价": "客单价 人均 ARPU 单客 average check",
+    "复购率": "复购率 复购 重复消费 retention",
+    "新客占比": "新客占比 新客 拉新 first time",
+    # 财务结构
+    "毛利率": "毛利率 毛利 gross margin 毛利润",
+    "食材率": "食材率 食材成本率 cost of goods 原料率",
+    "人力成本": "人力成本 工资率 人工率 labor cost",
+    "充卡": "充卡 储值 储值卡 预收 预付 充卡依赖度",
+    "成本刚性": "成本刚性 cost rigidity 调整空间",
+    "桑基图": "桑基图 sankey 资金流 成本流向",
+    "净利率": "净利率 净利 net profit 净利润",
+    "EBITDA": "EBITDA 息税折旧摊销前利润",
+    # 财务比率
+    "周转率": "周转率 turnover 流转",
+    "存货周转": "存货周转 库存周转 inventory turnover",
+    "流动比率": "流动比率 short term liquidity 偿债能力",
+    "资产负债率": "资产负债率 leverage 杠杆率 负债",
+    "营业利润率": "营业利润率 operating margin 主业",
+    # 菜品分析
+    "4 象限": "4 象限 四象限 Kasavana Smith 菜品工程",
+    "象限": "象限 quadrant 4 象限 菜品工程",
+    "Kasavana": "Kasavana Smith 菜品工程 4 象限",
+    "菜品工程": "菜品工程 menu engineering Kasavana",
+    "Star": "Star 招牌菜 明星菜 高利高销",
+    "Cash Cow": "Cash Cow 走量 引流款 高销低利",
+    "Puzzle": "Puzzle 高利无人点 低销高利",
+    "Dog": "Dog 淘汰 低销低利",
+    "套餐": "套餐 combo 拆单 套餐拆分",
+    # 会员
+    "RFM": "RFM Recency Frequency Monetary 会员分层",
+    "Champions": "Champions 冠军客户 RFM 高 R 高 F 高 M",
+    "Loyal": "Loyal 忠实客户 RFM",
+    "AtRisk": "AtRisk 流失风险 RFM 召回",
+    "会员分层": "会员分层 RFM Champions Loyal Potential AtRisk Hibernating Lost",
+    # 方法论
+    "校准因子": "校准因子 calibration factor 基准修正",
+    "可信度": "可信度 confidence score 数据完整度 数据可信度",
+    "AI 洞察": "AI 洞察 insights 积极发现 风险关注 改进建议",
+    "异常值": "异常值 anomaly outlier 2σ 离群 异常检测",
+    "诊断引擎": "诊断引擎 diagnostics 处方 prescription",
+    # 看板与术语
+    "PBI": "PBI 财务PBI 财务看板 financial dashboard",
+    "看板": "看板 dashboard 仪表盘",
+    "指数": "指数 指标 KPI 数据 metrics",
+    "指标": "指标 KPI 指数 metrics",
+    "红线": "红线 警戒 阈值 threshold benchmark",
+    "基准": "基准 benchmark 标准 行业平均",
+    "对标": "对标 benchmark 行业 中位数",
+    # 行业类目
+    "正餐": "正餐 中餐 西餐 fine dining 堂食",
+    "快餐": "快餐 fast food 茶饮 饮品",
+    "火锅": "火锅 烧烤 自助",
+    # 客户日常说法变体 (audit Phase 2 反馈)
+    "翻桌": "翻桌 翻台 翻台率 桌次",
+    "提成": "提成 计件 工资 奖金 计件提成",
+    "盘点": "盘点 库存盘点 月底盘存 日清",
+    "日清": "日清 日清日结 库存对账 盘存校验",
+    "招牌菜": "招牌菜 Star 明星菜 高利高销 4 象限",
+    # 英文术语 (大小写双覆盖通过 _expand_query.lower() 自动实现,无需重复 key)
+    "ARPU": "ARPU 客单价 人均消费",
+    "GMV": "GMV 营业额 总成交 成交额",
+    "LTV": "LTV 客户终身价值 customer lifetime value 长期价值",
+    "ROI": "ROI 回报率 投资回报 营销 ROI",
+    # 二次 audit 补充: 短词 / 客户高频说法
+    "瀑布图": "瀑布图 损益瀑布 现金流瀑布 waterfall",
+    "现金流": "现金流 cashflow 经营现金流 投资现金流 筹资现金流",
+    "账龄": "账龄 应收账龄 AR aging 应收分布",
+    "人均": "人均 人均消费 客单价 ARPU",
+    "加盟主": "加盟主 加盟商 franchise 加盟店店长",
 }
 
 # Complexity keywords for token budget (improvement #5)
 _SIMPLE_KEYWORDS = {"是什么", "什么是", "在哪", "哪里", "多少", "几个", "有没有", "支持吗", "能不能"}
 _COMPLEX_KEYWORDS = {"怎么", "如何", "步骤", "流程", "对比", "分析", "区别", "原理", "为什么", "详细"}
 
+
+# ---------------------------------------------------------------------------
+# Reviewer C1: query domain detection — when user query contains restaurant
+# keywords, restrict retrieval to subcategory='restaurant' to prevent factory
+# manual chunks from polluting results.
+# ---------------------------------------------------------------------------
+_RESTAURANT_KEYWORDS = frozenset([
+    # Stores & operations
+    "门店", "店长", "餐厅", "餐饮", "翻台", "翻台率", "上座率", "排队", "等位",
+    "堂食", "外卖", "外带", "桌台", "桌位", "客单价", "营收", "营业额",
+    # Menu & food
+    "菜品", "菜单", "套餐", "招牌", "畅销", "毛利率", "食材成本", "食材",
+    "厨房", "厨师", "出品", "口味", "咸淡", "份量",
+    # Customer & marketing
+    "会员", "复购", "流失", "美团", "饿了么", "点评", "差评", "好评",
+    "优惠券", "营销", "拉新", "客流",
+    # Compliance & inventory
+    "食安", "HACCP", "留样",
+    # Multi-store
+    "连锁", "加盟", "直营",
+])
+
+
+def _detect_restaurant_domain(query: str) -> bool:
+    """Return True if query contains any restaurant keyword (case-insensitive).
+
+    Reviewer C1 — when True, restrict retrieval to subcategory='restaurant'.
+    Returns False for ambiguous/factory queries → use full retrieval (legacy).
+    """
+    q_lower = query.lower()
+    return any(kw.lower() in q_lower for kw in _RESTAURANT_KEYWORDS)
+
+
 # ---------------------------------------------------------------------------
 # System prompt (improvement #4)
 # ---------------------------------------------------------------------------
 
 SYSTEM_PROMPT = """\
-你是「白垩纪 AI Agent」操作手册助手。
+你是「白垩纪 AI Agent」操作手册助手 + 餐饮经营顾问。
 
 回答原则:
 1. 严格基于检索文档回答，文档未提及的功能回答「该功能暂未记录在操作手册中」
@@ -67,10 +174,24 @@ SYSTEM_PROMPT = """\
 3. 不使用 emoji，保持专业简洁
 4. 菜单路径用 → 连接，如: 首页 → 仓储管理 → 入库
 
+诊断型问题处理 (audit P1 fusion 强化):
+当客户问 "我家 X 怎么样 / 健不健康 / 算高吗 / 该不该担心" 等带主观判断的问题时:
+
+a. 客户给了具体数据 (例 "我家月营收 ¥210 万 22 员工"):
+   - 必须把客户实际值 vs 基准值 vs 偏差% 三者一起列出
+   - 不能只搬基准, 要给出"健康 / 偏低 / 偏高"明确判断
+   - 加 1 个最重要的下一步行动建议 (e.g. "建议下月排查 X")
+
+b. 客户没给具体数据 (例 "我家翻台率正常吗"):
+   - 第一步反问 1-2 个最关键的客户实际数据 (例: "请告知您门店的品类(快餐/正餐/火锅) + 当月翻台率数值")
+   - 第二步给基准对照框架 (三档红线 + 解读标准)
+   - 不要只搬基准就完事 — 客户期望诊断, 不是百科
+
 格式规范:
 - 简单问题(是什么/在哪): 直接回答，不超过3行
 - 操作类问题(怎么/如何): 用**编号步骤**，每步一行，步骤末尾标注菜单路径
 - 概念类问题: 先一句话总结，再展开要点
+- 诊断类问题(健不健康/算高吗): 用"实际 vs 基准 vs 偏差"三段对比
 
 结构模板(操作类):
 **操作步骤:**
@@ -78,8 +199,15 @@ SYSTEM_PROMPT = """\
 2. 点击「按钮名」
 3. 填写/选择 ...
 
+结构模板(诊断类 — 客户给了数据):
+**您的数据**: X
+**行业基准** (品类: 正餐/快餐/火锅): Y
+**偏差与判断**: 高于/低于/持平基准 N%, 属于 健康/偏低/偏高
+**建议**: 下一步具体动作
+
 **注意事项:** (如有)
-- 仅在有重要提醒时添加此节"""
+- 仅在有重要提醒时添加此节
+- 行业基准为 2026-Q1 调研均值, 6-12 月复核, 真实场景与基准可能差异 ±5-10%"""
 
 
 # ---------------------------------------------------------------------------
@@ -149,16 +277,23 @@ def _cache_put(key: str, value: dict) -> None:
 
 def _expand_query(question: str) -> str:
     """
-    For short queries (< 10 chars), expand with domain synonyms to improve
-    BM25 and vector recall.  Returns the original question if no expansion
-    applies or the question is already long enough.
-    """
-    if len(question) >= 10:
-        return question
+    Expand query with domain synonyms to improve BM25 and vector recall.
 
-    for keyword, expansion in _QUERY_EXPANSIONS.items():
-        if keyword in question:
-            return f"{question} {expansion}"
+    No length gate (batch-3 audit M1 fix): even long natural-language queries
+    benefit from synonym injection — the expansion is additive context that
+    doesn't override the original semantic, and longest-match ensures we only
+    inject the single most-specific synonym set.
+
+    Case-insensitive substring match: lowercases both sides once before compare,
+    so "ROI" / "roi" / "Roi" all hit the same expansion entry.
+
+    Iterates keys longest-first so specific overlaps win:
+    "AI 洞察" must match before "AI"; "存货周转" before "周转".
+    """
+    q_lower = question.lower()
+    for keyword in sorted(_QUERY_EXPANSIONS.keys(), key=len, reverse=True):
+        if keyword.lower() in q_lower:
+            return f"{question} {_QUERY_EXPANSIONS[keyword]}"
 
     return question
 
@@ -189,6 +324,93 @@ def _estimate_max_tokens(question: str) -> int:
 
     # Default: moderate
     return 600
+
+
+# ---------------------------------------------------------------------------
+# Multi-turn follow-up query rewriter (G3 — audit round 5)
+# ---------------------------------------------------------------------------
+
+# Pronouns / referential phrases that indicate a follow-up needs rewriting
+_FOLLOWUP_INDICATORS = (
+    "它", "这个", "那个", "刚才", "刚刚", "上面", "前面", "之前",
+    "它的", "这个的", "那个的", "其",
+    "怎么算", "分子分母", "公式", "具体",  # context-dependent without clear referent
+)
+
+
+def _is_followup_query(question: str, history: Optional[List[ChatMessage]]) -> bool:
+    """Detect if question is a multi-turn follow-up needing rewrite.
+    Returns True if there's history AND question contains pronouns or
+    short query without clear standalone subject.
+    """
+    if not history or len(history) == 0:
+        return False
+    # Short query (< 12 chars) is likely follow-up
+    if len(question.strip()) < 12:
+        return True
+    # Contains pronouns/referentials
+    if any(kw in question for kw in _FOLLOWUP_INDICATORS):
+        return True
+    return False
+
+
+async def _rewrite_followup(question: str, history: List[ChatMessage]) -> str:
+    """Rewrite follow-up query into standalone retrievable query using qwen-flash.
+
+    Example:
+    - history: ["翻台率怎么算"]
+    - question: "那它分子分母都是什么"
+    - rewritten: "翻台率的分子分母是什么"
+
+    Falls back to original question on any error.
+    """
+    try:
+        from config import get_settings
+        from common.llm_client import get_llm_http_client
+
+        settings = get_settings()
+        client = get_llm_http_client()
+
+        # Build conversation context (last 2 turns)
+        history_text = "\n".join(
+            f"{'用户' if m.role == 'user' else 'AI'}: {m.content[:200]}"
+            for m in history[-4:]  # last 2 user+assistant pairs
+        )
+
+        rewrite_prompt = f"""上下文对话:
+{history_text}
+
+当前用户提问: {question}
+
+请把"当前提问"改写为可独立检索的完整问题, 解析所有代词(它/这个/那个) 和省略主语. 只输出改写后的问题, 不要任何解释."""
+
+        # Use qwen-flash via existing llm_* config (cheap + fast for 单 task)
+        resp = await client.post(
+            f"{settings.llm_base_url}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {settings.llm_api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": settings.llm_fast_model,  # qwen3.5-flash
+                "messages": [{"role": "user", "content": rewrite_prompt}],
+                "max_tokens": 100,
+                "temperature": 0.1,  # deterministic rewrite
+                "enable_thinking": False,
+            },
+            timeout=10.0,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        rewritten = data["choices"][0]["message"]["content"].strip()
+        # Sanity: rewriting should be longer than original (no truncation)
+        if rewritten and len(rewritten) > len(question) * 0.6:
+            logger.info(f"Follow-up rewrite: '{question}' → '{rewritten}'")
+            return rewritten
+        return question
+    except Exception as e:
+        logger.warning(f"Follow-up rewrite failed: {e}, using original")
+        return question
 
 
 # ---------------------------------------------------------------------------
@@ -228,14 +450,32 @@ async def manual_chat(request: ManualChatRequest) -> dict:
             "related_questions": [],
         }
 
+    # ------ G3: rewrite follow-up queries for retrieval ------
+    # When client asks "那它分子分母都是什么" with history, rewrite into
+    # standalone "翻台率的分子分母是什么" so retrieval can find right chunks.
+    # Original question still used for LLM gen (sees full conversation context).
+    retrieval_question = request.question
+    if _is_followup_query(request.question, request.history):
+        retrieval_question = await _rewrite_followup(request.question, request.history)
+
     # ------ Improvement #3: query expansion for short queries ------
-    expanded_question = _expand_query(request.question)
+    expanded_question = _expand_query(retrieval_question)
+
+    # ------ Reviewer C1: domain-aware routing ------
+    subcategories: Optional[List[str]] = None
+    if _detect_restaurant_domain(retrieval_question):
+        subcategories = ["restaurant"]
+        logger.debug(
+            f"Restaurant domain detected → filtering to subcategory=restaurant "
+            f"(query='{retrieval_question[:40]}...')"
+        )
 
     # ------ Improvement #3: lower threshold + higher top_k ------
     try:
         results = await retriever.retrieve(
             query=expanded_question,
             categories=["operation_manual"],
+            subcategories=subcategories,
             top_k=8,
             similarity_threshold=0.40,
         )
@@ -278,25 +518,42 @@ async def manual_chat(request: ManualChatRequest) -> dict:
     max_tokens = _estimate_max_tokens(request.question)
 
     # Call LLM for the answer
+    # G4 audit round 5 — KB chat uses DeepSeek by default (30-60x cheaper than qwen)
+    # Falls back to llm_* if kb_chat_api_key not configured
     try:
         from config import get_settings
         from common.llm_client import get_llm_http_client
+        import os
 
         settings = get_settings()
         client = get_llm_http_client()
 
+        # Pick provider: kb_chat_* if configured, else fallback to llm_*
+        kb_api_key = settings.kb_chat_api_key or os.getenv("LLM_DEEPSEEK_API_KEY", "")
+        if settings.kb_chat_provider == "deepseek" and kb_api_key:
+            base_url = settings.kb_chat_base_url
+            api_key = kb_api_key
+            model = settings.kb_chat_model
+            # DeepSeek API does NOT accept enable_thinking field — must omit it
+            extra_payload = {}
+        else:
+            base_url = settings.llm_base_url
+            api_key = settings.llm_api_key
+            model = settings.llm_fast_model
+            extra_payload = {"enable_thinking": False}
+
         resp = await client.post(
-            f"{settings.llm_base_url}/chat/completions",
+            f"{base_url}/chat/completions",
             headers={
-                "Authorization": f"Bearer {settings.llm_api_key}",
+                "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
             },
             json={
-                "model": settings.llm_fast_model,
+                "model": model,
                 "messages": messages,
                 "max_tokens": max_tokens,
                 "temperature": 0.3,
-                "enable_thinking": False,
+                **extra_payload,
             },
             timeout=30.0,
         )

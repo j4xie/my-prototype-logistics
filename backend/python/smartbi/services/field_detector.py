@@ -72,8 +72,8 @@ class FieldDetector:
 
     # Patterns for semantic type detection
     AMOUNT_PATTERNS = [
-        r'(sales|revenue|income|cost|expense|price|amount|payment|fee|total)',
-        r'(金额|销售额|收入|成本|费用|价格|总计|营收)'
+        r'(sales|revenue|income|cost|expense|price|amount|payment|fee|total|budget|actual|profit)',
+        r'(金额|销售额|收入|成本|费用|价格|总计|营收|预算|实际|净利|本月实际|本年实际|本季实际)'
     ]
 
     QUANTITY_PATTERNS = [
@@ -161,17 +161,87 @@ class FieldDetector:
 
         Returns:
             List of field detection results
-        """
-        results = []
 
+        Apr 27 2026 (F2-v2): pre-filter section-header-like rows before type
+        inference. qhj 4148 收入管理报表 contains 4 vertical sections per
+        sheet — each section starts with a 1-2 row sub-header (all strings)
+        followed by data. Section sub-headers leak into the SAME column
+        position as numeric data of OTHER sections, polluting type
+        detection. A row that has high string ratio + sparse content (≤ 50%
+        cells filled) and short cell values is a section header — drop it.
+        """
         # Convert to DataFrame for easier analysis
         df = pd.DataFrame(rows, columns=headers)
 
+        # F2-v2: filter section-header rows before type detection
+        if len(df) > 3 and len(headers) >= 4:
+            mask_keep = []
+            for i in range(len(df)):
+                row = df.iloc[i]
+                n_filled = sum(1 for v in row if not pd.isna(v) and str(v).strip())
+                if n_filled == 0:
+                    mask_keep.append(False)  # empty row
+                    continue
+                fill_ratio = n_filled / len(headers)
+                # Count non-numeric strings (real text, not "1234")
+                n_str = sum(1 for v in row
+                            if isinstance(v, str) and v.strip()
+                            and not _looks_numeric_str(v))
+                # Count numeric values (real numbers OR numeric-looking strings)
+                n_num = sum(1 for v in row
+                            if (isinstance(v, (int, float)) and not pd.isna(v))
+                            or (isinstance(v, str) and _looks_numeric_str(v)))
+                str_ratio = n_str / max(n_filled, 1)
+                avg_str_len = (
+                    sum(len(str(v)) for v in row
+                        if isinstance(v, str) and v.strip()
+                        and not _looks_numeric_str(v)) / max(n_str, 1)
+                )
+                # Two section-header signals (any one fires):
+                # A) sparse + mostly-text + short strings (e.g. row with just
+                #    "环比 | 可选择时间段 | 午市晚市" 3/14 filled)
+                sparse_text = (
+                    fill_ratio <= 0.5
+                    and str_ratio >= 0.7
+                    and avg_str_len <= 12
+                )
+                # B) DENSE all-text row with NO numbers and short strings
+                #    (e.g. "门店名称 | 汇总实际收入 | 本期 | 环比 | ..."
+                #     all 13 cells filled but ZERO numbers).
+                all_text = (
+                    n_num == 0
+                    and n_str >= 3
+                    and avg_str_len <= 8
+                )
+                is_section_header = sparse_text or all_text
+                mask_keep.append(not is_section_header)
+            df = df[mask_keep].reset_index(drop=True)
+            import logging as _log
+            _log.getLogger(__name__).info(
+                f"[F2-v2] kept {sum(mask_keep)}/{len(mask_keep)} rows after "
+                f"section-header filter for type detection"
+            )
+
+        results = []
         for col in headers:
             field_info = self.detect_single_field(col, df[col])
             results.append(field_info)
 
         return results
+
+
+def _looks_numeric_str(v) -> bool:
+    """Cheap check — string parses as float?"""
+    if not isinstance(v, str):
+        return False
+    s = v.strip().replace(',', '')
+    if not s:
+        return False
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
 
     def detect_single_field(self, field_name: str, values: pd.Series) -> dict:
         """
@@ -231,7 +301,40 @@ class FieldDetector:
             return DataType.BOOLEAN
 
         # Check for numeric FIRST (before date, because pd.to_datetime can parse numbers as timestamps)
-        numeric_sample = pd.to_numeric(sample, errors='coerce')
+        # Apr 28 2026 (audit fix): pre-clean common money formats before
+        # pd.to_numeric so we don't miss-classify formatted-string numerics
+        # as STRING. Real-world Excel exports often have:
+        #   "1,234.50"     ← thousands separator
+        #   "￥1,234.50" / "$1,234.50"  ← currency prefix
+        #   "1,234.50 元"  ← currency suffix
+        #   "(1,234.50)"   ← accounting negative
+        # Without this pre-clean, all such fields fall through to STRING and
+        # get is_dimension=True instead of is_measure=True (silent
+        # misclassification — user-facing symptom: "AI says no measures"
+        # or "无可聚合数值字段").
+        def _coerce_money_str(s):
+            if not isinstance(s, str):
+                return s
+            t = s.strip()
+            if not t:
+                return t
+            # Accounting negative: (1,234) → -1234
+            negative = False
+            if t.startswith('(') and t.endswith(')'):
+                negative = True
+                t = t[1:-1].strip()
+            # Strip currency prefixes/suffixes (CJK + Latin)
+            for sym in ('¥', '￥', '$', '€', '￡', '元', '人民币', 'CNY', 'USD', 'EUR'):
+                if t.startswith(sym):
+                    t = t[len(sym):].strip()
+                if t.endswith(sym):
+                    t = t[:-len(sym)].strip()
+            # Strip thousand separators
+            t = t.replace(',', '').replace('，', '')
+            return ('-' + t) if negative and t else t
+
+        cleaned_sample = sample.apply(_coerce_money_str)
+        numeric_sample = pd.to_numeric(cleaned_sample, errors='coerce')
         if numeric_sample.notna().sum() > len(sample) * 0.8:
             # Check if integer or float
             non_null = numeric_sample.dropna()

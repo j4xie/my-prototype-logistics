@@ -44,7 +44,8 @@ public class OperationalQuoteServiceImpl implements OperationalQuoteService {
      */
     private static final String STATUS_PENDING_QUOTE = "PENDING_QUOTE";
     private static final String STATUS_PENDING_APPROVAL = "PENDING_APPROVAL";
-    private static final String STATUS_APPROVED = "APPROVED";
+    /** R10 audit IMP-5: exposed for ReferenceDataController to filter dropdown to active quotes. */
+    public static final String STATUS_APPROVED = "APPROVED";
     private static final String STATUS_REJECTED = "REJECTED";
 
     @Override

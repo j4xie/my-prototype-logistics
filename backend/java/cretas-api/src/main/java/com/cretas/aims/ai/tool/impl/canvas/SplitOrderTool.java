@@ -115,6 +115,10 @@ public class SplitOrderTool extends AbstractBusinessTool {
             child.setRequiredDeliveryDate(source.getRequiredDeliveryDate());
             child.setDeliveryAddress(source.getDeliveryAddress());
             child.setSalesperson(source.getSalesperson());
+            // R4 audit C1 (Apr 25 2026): also copy FK so child SO inherits the dual-field link.
+            // Pre-V20260425_05 this was always NULL so the omission was harmless; now silently
+            // resets commission attribution to non-determinism for any split order.
+            child.setSalespersonId(source.getSalespersonId());
             child.setStatus(SalesOrderStatus.DRAFT);
             child.setOrderNumber(datePrefix + tag + "-" + i);
             child.setRemark("拆单源: " + source.getOrderNumber() + " / tag=" + tag);

@@ -45,10 +45,31 @@ public interface SupplierRepository extends JpaRepository<Supplier, String> {
     /**
      * 根据名称搜索供应商
      * 注意：name使用双向模糊匹配（无法使用索引），supplierCode使用右模糊（可使用索引）
+     * keyword 必须先经 SqlLikeEscaper.escape() 处理 _ % \, ESCAPE '\\' 子句生效.
      */
     @Query("SELECT s FROM Supplier s WHERE s.factoryId = :factoryId " +
-           "AND (s.name LIKE CONCAT('%', :keyword, '%') OR s.supplierCode LIKE CONCAT(:keyword, '%'))")
+           "AND (s.name LIKE CONCAT('%', :keyword, '%') ESCAPE '\\' " +
+           "OR s.supplierCode LIKE CONCAT(:keyword, '%') ESCAPE '\\')")
     List<Supplier> searchByName(@Param("factoryId") String factoryId, @Param("keyword") String keyword);
+
+    @Query("SELECT s FROM Supplier s WHERE s.factoryId = :factoryId " +
+           "AND (s.name LIKE CONCAT('%', :keyword, '%') ESCAPE '\\' " +
+           "OR s.supplierCode LIKE CONCAT(:keyword, '%') ESCAPE '\\' " +
+           "OR s.contactPerson LIKE CONCAT('%', :keyword, '%') ESCAPE '\\')")
+    Page<Supplier> searchByNamePaged(@Param("factoryId") String factoryId,
+                                     @Param("keyword") String keyword,
+                                     Pageable pageable);
+
+    /** R10 CRIT-2: push-down isActive filter (see CustomerRepository). */
+    Page<Supplier> findByFactoryIdAndIsActiveTrue(String factoryId, Pageable pageable);
+
+    @Query("SELECT s FROM Supplier s WHERE s.factoryId = :factoryId AND s.isActive = true " +
+           "AND (s.name LIKE CONCAT('%', :keyword, '%') ESCAPE '\\' " +
+           "OR s.supplierCode LIKE CONCAT(:keyword, '%') ESCAPE '\\' " +
+           "OR s.contactPerson LIKE CONCAT('%', :keyword, '%') ESCAPE '\\')")
+    Page<Supplier> searchActiveByNamePaged(@Param("factoryId") String factoryId,
+                                            @Param("keyword") String keyword,
+                                            Pageable pageable);
 
     /**
      * 根据供应材料类型查找供应商
@@ -128,10 +149,19 @@ public interface SupplierRepository extends JpaRepository<Supplier, String> {
     Double calculateAverageRating(@Param("factoryId") String factoryId);
 
     /**
-     * 统计供应商的总欠款
+     * 统计供应商的总欠款 (仅正余额, 即工厂欠供应商的钱).
+     * R42 BUG-13 fix: 之前 SUM(currentBalance) 会把工厂预付供应商的钱(negative)抵消, 导致 AP 偏低/为负.
      */
-    @Query("SELECT SUM(s.currentBalance) FROM Supplier s WHERE s.factoryId = :factoryId")
+    @Query("SELECT COALESCE(SUM(s.currentBalance), 0) FROM Supplier s " +
+            "WHERE s.factoryId = :factoryId AND s.currentBalance > 0")
     BigDecimal calculateTotalOutstandingBalance(@Param("factoryId") String factoryId);
+
+    /**
+     * R42 BUG-13: 工厂预付供应商款 (negative balance 取绝对值).
+     */
+    @Query("SELECT COALESCE(SUM(-s.currentBalance), 0) FROM Supplier s " +
+            "WHERE s.factoryId = :factoryId AND s.currentBalance < 0")
+    BigDecimal calculateTotalSupplierPrepayments(@Param("factoryId") String factoryId);
 
     /**
      * 根据ID列表和工厂ID批量查找供应商

@@ -97,6 +97,40 @@ class DocumentIngester:
     def is_ready(self) -> bool:
         return self._ready and self._pool is not None
 
+    @property
+    def pool(self) -> Optional["asyncpg.Pool"]:
+        """Public accessor for the connection pool.
+
+        Trusted callers (e.g. manual_ingester atomic-swap re-ingest) may use
+        this to compose multi-statement transactions. Non-transactional cases
+        should prefer the higher-level methods (`delete_by_source`,
+        `ingest_document`, etc.) which encapsulate connection handling.
+        """
+        return self._pool
+
+    async def delete_by_source(self, source: str) -> int:
+        """Delete all chunks with the given source. Returns count deleted.
+
+        Used by the atomic-swap re-ingest pattern (manual_ingester) to clean
+        orphan ".NEW" temp chunks from a previously-failed run before
+        re-ingesting fresh content under the canonical source name.
+        """
+        if not self.is_ready():
+            return 0
+        async with self._pool.acquire() as conn:
+            result = await conn.execute(
+                "DELETE FROM food_knowledge_documents WHERE source = $1",
+                source,
+            )
+            try:
+                return (
+                    int(result.split()[1])
+                    if result and result.startswith("DELETE")
+                    else 0
+                )
+            except (IndexError, ValueError, AttributeError, TypeError):
+                return 0
+
     async def ingest_document(
         self,
         title: str,
@@ -108,6 +142,7 @@ class DocumentIngester:
         effective_date: str = None,
         metadata: Optional[Dict] = None,
         operator: str = "system",
+        subcategory: Optional[str] = None,  # NEW: domain routing (e.g. "restaurant", "factory")
     ) -> Dict[str, Any]:
         """
         Ingest a single document into the knowledge base.
@@ -122,6 +157,7 @@ class DocumentIngester:
             effective_date: Effective date (YYYY-MM-DD)
             metadata: Additional metadata
             operator: Who is performing the ingestion
+            subcategory: Domain routing tag (e.g., "restaurant", "factory"). None for universal docs.
 
         Returns:
             Ingestion result with document IDs and chunk count
@@ -159,8 +195,8 @@ class DocumentIngester:
                             INSERT INTO food_knowledge_documents
                                 (title, content, category, source, source_url, version,
                                  effective_date, embedding, chunk_index, parent_doc_id, metadata,
-                                 search_tokens)
-                            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                                 search_tokens, subcategory)
+                            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
                             RETURNING id
                             """,
                             chunk_title,
@@ -175,6 +211,7 @@ class DocumentIngester:
                             parent_id,
                             json.dumps(chunk.metadata, ensure_ascii=False) if chunk.metadata else '{}',
                             search_tokens,
+                            subcategory,  # NEW
                         )
                         doc_ids.append(doc_id)
 

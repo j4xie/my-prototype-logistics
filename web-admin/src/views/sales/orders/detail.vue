@@ -8,6 +8,7 @@ import { get, post } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { ArrowLeft } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
+import { handleCatchError } from '@/utils/errorToast';
 
 const route = useRoute();
 const router = useRouter();
@@ -20,6 +21,7 @@ const orderId = computed(() => route.params.id as string);
 
 const loading = ref(false);
 const submitting = ref(false);
+const notFound = ref(false);
 const order = ref<Record<string, unknown> | null>(null);
 const deliveries = ref<Record<string, unknown>[]>([]);
 const invoices = ref<Record<string, unknown>[]>([]);
@@ -124,10 +126,23 @@ onMounted(() => {
 async function loadOrder() {
   if (!factoryId.value || !orderId.value) return;
   loading.value = true;
+  notFound.value = false;
   try {
     const res = await get(`/${factoryId.value}/sales/orders/${orderId.value}`);
-    if (res.success) order.value = res.data;
-  } catch { ElMessage.error('加载失败'); }
+    if (res.success && res.data) {
+      order.value = res.data;
+    } else {
+      notFound.value = true;
+      order.value = null;
+    }
+  } catch (e: unknown) {
+    // R18-ext #283 fix: any load failure on SO detail means the order is
+    // unreachable for this user — most likely 404/not-found, possibly 403.
+    // Either way, render empty state rather than a blank page. Interceptor
+    // already showed the server's message; don't stack a duplicate toast.
+    notFound.value = true;
+    order.value = null;
+  }
   finally { loading.value = false; }
 }
 
@@ -203,27 +218,78 @@ async function handleAction(action: string) {
     const res = await post(a.url);
     if (res.success) { ElMessage.success(`${a.label}成功`); loadOrder(); }
     else { ElMessage.error(res.message || `${a.label}失败，请重试`); }
-  } catch { ElMessage.error(`${a.label}失败，请检查网络`); }
+  } catch (e) { handleCatchError(e, `${a.label}失败，请检查网络`); }
   finally { submitting.value = false; }
 }
 
-async function handleFinanceAction(action: 'approve' | 'reject') {
-  if (submitting.value) return;
+// Apr 18 2026 bug #51: 用户报告"开始生产"按钮报错"请求资源不存在"其实按钮前端根本没实现。
+// SO 财务审核通过后的下一步是创建生产计划(SO → ProductionPlan 关联), 此按钮
+// 跳到生产计划页并带 salesOrderId 提示, 用户在那边新建 plan。不直接改 SO 状态(那
+// 是 plan 开始生产后的联动), 只承担"导航 + 提示"职责, 避免前端伪装后端未实现的能力。
+async function handleStartProduction() {
+  if (!order.value) return;
+  ElMessage.info(`请为订单 ${order.value.orderNumber || orderId.value} 创建生产计划`);
+  await router.push({
+    path: '/production/plans',
+    query: { salesOrderId: String(orderId.value), action: 'create' },
+  });
+}
+
+// 六扇门 V1 §2.2 (audit fix 2026-04-26 #6): finance review dialog with cost breakdown
+// Pre-fix: only ElMessageBox.prompt with notes — no place to record cost.
+// Post-fix: rich dialog showing 订单总额 / 预估成本 (input) / 预估利润 (auto-calc) / 备注.
+const financeReviewVisible = ref(false);
+const financeReviewForm = ref<{
+  notes: string;
+  estimatedCost: number | null;
+  isApprove: boolean;
+}>({ notes: '', estimatedCost: null, isApprove: true });
+const financeReviewProfit = computed(() => {
+  const total = Number(order.value?.totalAmount || 0);
+  const cost = financeReviewForm.value.estimatedCost;
+  if (cost == null) return null;
+  return total - Number(cost);
+});
+
+function openFinanceReview(action: 'approve' | 'reject') {
   const isApprove = action === 'approve';
+  financeReviewForm.value = {
+    notes: '',
+    // Pre-populate with existing estimatedCost if already set (e.g. previously rejected then resubmitted)
+    estimatedCost: order.value?.estimatedCost ? Number(order.value.estimatedCost) : null,
+    isApprove,
+  };
+  financeReviewVisible.value = true;
+}
+
+async function submitFinanceReview() {
+  if (submitting.value) return;
+  const { isApprove, notes, estimatedCost } = financeReviewForm.value;
   const labelText = isApprove ? '审核通过' : '审核驳回';
+  if (!isApprove && !notes?.trim()) {
+    return ElMessage.warning('请填写驳回原因');
+  }
+  submitting.value = true;
   try {
-    const { value: notes } = await ElMessageBox.prompt(
-      isApprove ? '确认财务审核通过？可选填备注：' : '请填写驳回原因：',
-      labelText,
-      { confirmButtonText: labelText, cancelButtonText: '取消', inputPlaceholder: isApprove ? '（选填）' : '驳回原因' }
-    );
-    submitting.value = true;
     const url = `/${factoryId.value}/sales/orders/${orderId.value}/${isApprove ? 'finance-approve' : 'finance-reject'}`;
-    const res = await post(url, { notes: notes || '' });
-    if (res.success) { ElMessage.success(`${labelText}成功`); loadOrder(); }
-    else { ElMessage.error(res.message || `${labelText}失败`); }
-  } catch { /* cancelled */ }
-  finally { submitting.value = false; }
+    const body: Record<string, unknown> = { notes: notes || '' };
+    if (isApprove && estimatedCost != null) body.estimatedCost = estimatedCost;
+    const res = await post(url, body);
+    if (res.success) {
+      ElMessage.success(`${labelText}成功`);
+      financeReviewVisible.value = false;
+      loadOrder();
+    } else { ElMessage.error(res.message || `${labelText}失败`); }
+  } catch (e) {
+    handleCatchError(e, `${labelText}失败,请检查网络`);
+  } finally {
+    submitting.value = false;
+  }
+}
+
+// Backward-compat for any external caller (no longer used in template)
+async function handleFinanceAction(action: 'approve' | 'reject') {
+  openFinanceReview(action);
 }
 
 function openDeliveryDialog() {
@@ -261,7 +327,7 @@ async function handleCreateDelivery() {
       deliveryDialogVisible.value = false;
       loadOrder(); loadDeliveries();
     } else { ElMessage.error(res.message || '创建失败，请重试'); }
-  } catch { ElMessage.error('创建失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '创建失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 
@@ -275,7 +341,7 @@ async function handleShip(deliveryId: string) {
     const res = await post(`/${factoryId.value}/sales/deliveries/${deliveryId}/ship`);
     if (res.success) { ElMessage.success('发货成功'); loadDeliveries(); loadOrder(); }
     else { ElMessage.error(res.message || '发货失败，请重试'); }
-  } catch { ElMessage.error('发货失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '发货失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 
@@ -289,7 +355,7 @@ async function handleDelivered(deliveryId: string) {
     const res = await post(`/${factoryId.value}/sales/deliveries/${deliveryId}/delivered`);
     if (res.success) { ElMessage.success('签收确认成功'); loadDeliveries(); loadOrder(); }
     else { ElMessage.error(res.message || '签收确认失败，请重试'); }
-  } catch { ElMessage.error('签收确认失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '签收确认失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 
@@ -424,7 +490,17 @@ async function handleCreateInvoice() {
       loadInvoices();
       loadOrder();
     } else { ElMessage.error(res.message || '开票申请创建失败'); }
-  } catch { ElMessage.error('开票申请创建失败，请检查网络'); }
+  } catch (e: unknown) {
+    // Bug #8 fix (R21 2026-04-16): axios response interceptor 对所有 4xx/5xx 已显示 toast,
+    // 这里 catch 不再叠加 "请检查网络" (否则用户看到两个 toast: 业务消息 + 误导网络提示)
+    // 仅在 ApiError.status 未设 (纯网络错, 如无响应/CORS) 时才兜底
+    const err = e as { status?: number };
+    if (!err?.status) {
+      // 真网络错误 — interceptor 来不及显示 (e.g. 断网)
+      ElMessage.error('开票申请创建失败，请检查网络');
+    }
+    // 否则 interceptor 已显示后端 message, 此处不再 toast
+  }
   finally { submitting.value = false; }
 }
 
@@ -595,6 +671,54 @@ const approvalTimeline = computed<Array<{
     });
   }
 
+  // Bug #29 fix (Apr 18 2026): 补齐开票 3 段事件 — 申请 / 审核 / 开具
+  if (invoices.value.length > 0) {
+    const sortedByRequest = [...invoices.value].sort((a, b) =>
+      String(a.requestedAt || a.createdAt || '').localeCompare(String(b.requestedAt || b.createdAt || ''))
+    );
+    const earliestRequested = sortedByRequest[0].requestedAt || sortedByRequest[0].createdAt;
+    if (earliestRequested) {
+      nodes.push({
+        type: 'primary',
+        title: invoices.value.length === 1 ? '开票申请' : `开票申请 (${invoices.value.length} 条)`,
+        user: '业务员',
+        time: String(earliestRequested),
+      });
+    }
+
+    const reviewed = invoices.value.filter(inv => inv.reviewedAt);
+    if (reviewed.length > 0) {
+      const latestReview = reviewed.sort((a, b) =>
+        String(b.reviewedAt).localeCompare(String(a.reviewedAt))
+      )[0];
+      const isApproved = ['APPROVED', 'ISSUED'].includes(String(latestReview.status));
+      nodes.push({
+        type: isApproved ? 'success' : 'danger',
+        title: reviewed.length === invoices.value.length
+          ? (isApproved ? '发票审核通过' : '发票审核驳回')
+          : `发票审核中 (${reviewed.length}/${invoices.value.length})`,
+        user: String(latestReview.reviewedByName || `财务#${latestReview.reviewedBy || '?'}`),
+        time: String(latestReview.reviewedAt),
+        notes: latestReview.reviewNotes ? String(latestReview.reviewNotes) : undefined,
+      });
+    }
+
+    const issued = invoices.value.filter(inv => inv.issuedAt);
+    if (issued.length > 0) {
+      const latestIssued = issued.sort((a, b) =>
+        String(b.issuedAt).localeCompare(String(a.issuedAt))
+      )[0];
+      nodes.push({
+        type: 'success',
+        title: issued.length === invoices.value.length
+          ? '发票已开具'
+          : `发票开具中 (${issued.length}/${invoices.value.length})`,
+        user: '财务',
+        time: String(latestIssued.issuedAt),
+      });
+    }
+  }
+
   // 节点 6: 收款 (有 payments 记录就显示)
   if (payments.value.length > 0) {
     const latestPayment = payments.value[0];
@@ -678,7 +802,7 @@ async function handleCreatePayment() {
       loadPayments();
       loadOrder();
     } else { ElMessage.error(res.message || '创建失败'); }
-  } catch { ElMessage.error('创建失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '创建失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 </script>
@@ -707,15 +831,25 @@ async function handleCreatePayment() {
           <div class="header-right" v-if="order && canWrite">
             <el-button v-if="order.status === 'DRAFT'" type="success" :loading="submitting" @click="handleAction('confirm')">确认订单</el-button>
             <el-button v-if="order.status === 'CONFIRMED'" type="warning" :loading="submitting" @click="handleAction('submit-for-review')">提交财务审核</el-button>
-            <el-button v-if="order.status === 'PENDING_FINANCE_REVIEW'" type="success" :loading="submitting" @click="handleFinanceAction('approve')">审核通过</el-button>
-            <el-button v-if="order.status === 'PENDING_FINANCE_REVIEW'" type="danger" :loading="submitting" @click="handleFinanceAction('reject')">审核驳回</el-button>
+            <el-button v-if="order.status === 'PENDING_FINANCE_REVIEW'" type="success" :loading="submitting" @click="openFinanceReview('approve')">审核通过</el-button>
+            <el-button v-if="order.status === 'PENDING_FINANCE_REVIEW'" type="danger" :loading="submitting" @click="openFinanceReview('reject')">审核驳回</el-button>
+            <el-button v-if="order.status === 'FINANCE_APPROVED'" type="primary" :loading="submitting" @click="handleStartProduction">开始生产</el-button>
             <el-button v-if="['CONFIRMED','FINANCE_APPROVED','PROCESSING','PARTIAL_DELIVERED'].includes(order.status)" type="primary" :loading="submitting" @click="openDeliveryDialog">{{ label('delivery') }}</el-button>
             <el-button v-if="['DRAFT','CONFIRMED'].includes(order.status)" type="danger" :disabled="submitting" @click="handleAction('cancel')">取消</el-button>
           </div>
         </div>
       </template>
 
-      <template v-if="order">
+      <!-- R18-ext #283: explicit empty state for 404 / not-found -->
+      <el-empty
+        v-if="notFound"
+        :description="`订单 ${orderId} 不存在或已被删除`"
+      >
+        <el-button type="primary" @click="router.push('/sales/orders')">返回订单列表</el-button>
+        <el-button @click="router.back()">返回上页</el-button>
+      </el-empty>
+
+      <template v-if="order && !notFound">
         <!-- 订单头部摘要 (4 状态联动) -->
         <el-descriptions :column="4" border>
           <el-descriptions-item label="订单编号">{{ order.orderNumber }}</el-descriptions-item>
@@ -1165,6 +1299,63 @@ async function handleCreatePayment() {
       <template #footer>
         <el-button @click="paymentDialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="handleCreatePayment">登记收款</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 六扇门 V1 §2.2 (audit fix 2026-04-26 #6): finance review dialog with cost breakdown -->
+    <el-dialog
+      v-model="financeReviewVisible"
+      :title="financeReviewForm.isApprove ? '财务审核通过' : '财务审核驳回'"
+      width="560px"
+      :close-on-click-modal="false"
+    >
+      <el-form label-width="110px">
+        <el-form-item label="订单号">
+          <span style="font-family:monospace">{{ order?.orderNumber }}</span>
+        </el-form-item>
+        <el-form-item label="客户">
+          <span>{{ order?.customerName || order?.customerId }}</span>
+        </el-form-item>
+        <el-form-item label="订单总额">
+          <span style="font-weight:600;color:#67C23A">{{ formatAmount(Number(order?.totalAmount || 0)) }}</span>
+        </el-form-item>
+        <el-form-item v-if="financeReviewForm.isApprove" label="预估成本 (元)">
+          <el-input-number
+            v-model="financeReviewForm.estimatedCost"
+            :min="0" :precision="2"
+            placeholder="录入 BOM 材料成本 + 工时/制造费"
+            style="width:100%"
+            controls-position="right"
+          />
+          <div style="color:#909399;font-size:12px;margin-top:4px">
+            提示: V1.5 手动录入,V2 将自动从 BOM 推导
+          </div>
+        </el-form-item>
+        <el-form-item v-if="financeReviewForm.isApprove && financeReviewProfit !== null" label="预估利润">
+          <span :style="{ fontWeight: 600, color: financeReviewProfit >= 0 ? '#67C23A' : '#F56C6C' }">
+            {{ formatAmount(financeReviewProfit) }}
+            <span v-if="Number(order?.totalAmount || 0) > 0" style="color:#909399;font-size:12px;margin-left:8px">
+              (毛利率 {{ ((financeReviewProfit / Number(order?.totalAmount || 1)) * 100).toFixed(1) }}%)
+            </span>
+          </span>
+        </el-form-item>
+        <el-form-item :label="financeReviewForm.isApprove ? '审核备注' : '驳回原因'">
+          <el-input
+            v-model="financeReviewForm.notes"
+            type="textarea" :rows="3"
+            :placeholder="financeReviewForm.isApprove ? '(选填) 财务审核意见' : '请说明驳回原因'"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="financeReviewVisible = false">取消</el-button>
+        <el-button
+          :type="financeReviewForm.isApprove ? 'success' : 'danger'"
+          :loading="submitting"
+          @click="submitFinanceReview"
+        >
+          {{ financeReviewForm.isApprove ? '确认审核通过' : '确认驳回' }}
+        </el-button>
       </template>
     </el-dialog>
   </div>

@@ -1,5 +1,7 @@
 package com.cretas.aims.service.smartbi.impl;
 
+import com.cretas.aims.client.GoldFinanceClient;
+import com.cretas.aims.service.smartbi.GoldDashboardBuilder;
 import com.cretas.aims.dto.smartbi.AIInsight;
 import com.cretas.aims.dto.smartbi.ChartConfig;
 import com.cretas.aims.dto.smartbi.DashboardResponse;
@@ -15,6 +17,7 @@ import com.cretas.aims.service.smartbi.FinanceAnalysisService;
 import com.cretas.aims.service.smartbi.MetricCalculatorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -25,6 +28,7 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.WeekFields;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -51,6 +55,27 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
     private final SmartBiFinanceDataRepository financeDataRepository;
     private final SmartBiSalesDataRepository salesDataRepository;
     private final MetricCalculatorService metricCalculatorService;
+    private final GoldFinanceClient goldFinanceClient;
+    private final GoldDashboardBuilder goldDashboardBuilder;
+
+    /**
+     * v1 Phase B v0 shadow-read flag. When true, every getFinanceOverview call
+     * also fires a background Gold query and logs the result for offline
+     * comparison with the legacy DashboardResponse. Default false.
+     * Config key: smartbi.gold.shadow-read.enabled
+     */
+    @Value("${smartbi.gold.shadow-read.enabled:false}")
+    private boolean goldShadowReadEnabled;
+
+    /**
+     * v1 Phase B v0 primary-read flag. When true, getFinanceOverview tries the
+     * Gold path FIRST and returns its DashboardResponse; on any failure (Gold
+     * down, parse error, etc.) falls back to the legacy path. Default false
+     * so existing legacy-reading tenants see no change until admin flips.
+     * Config key: smartbi.gold.read-primary.enabled
+     */
+    @Value("${smartbi.gold.read-primary.enabled:false}")
+    private boolean goldReadPrimaryEnabled;
 
     // 计算精度配置
     private static final int SCALE = 4;
@@ -87,6 +112,40 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
     public DashboardResponse getFinanceOverview(String factoryId, LocalDate startDate, LocalDate endDate) {
         log.info("获取财务概览: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
 
+        // v1 Phase B v0 primary-read cutover. When enabled, Gold is the source
+        // of truth for KPI cards + top_stores ranking. Charts / AI insights /
+        // suggestions / receivable aging fall out of scope of Gold today so
+        // those fields ship empty — future commits will backfill as cost +
+        // receivable data lands in Silver.
+        if (goldReadPrimaryEnabled && goldDashboardBuilder != null) {
+            try {
+                DashboardResponse goldResponse = goldDashboardBuilder
+                        .buildFromFinanceSummary(factoryId, startDate, endDate);
+                if (goldResponse != null) {
+                    log.info("[gold-primary] finance factory={} range={}..{} served from Gold",
+                            factoryId, startDate, endDate);
+                    return goldResponse;
+                }
+                // Gold returned null = revenue=0 AND bills=0 in Silver. Gold is authoritative
+                // under primary flag, so skip the slow legacy scan (~50s on empty ranges per
+                // Bug #417) and return empty directly. Fallback to legacy only triggers on
+                // actual Gold failures (exception branch below).
+                log.info("[gold-primary] finance factory={} range={}..{} Gold empty — skipping legacy",
+                        factoryId, startDate, endDate);
+                return DashboardResponse.builder()
+                        .kpiCards(java.util.Collections.emptyList())
+                        .charts(new LinkedHashMap<>())
+                        .rankings(new LinkedHashMap<>())
+                        .aiInsights(new ArrayList<>())
+                        .suggestions(new ArrayList<>())
+                        .lastUpdated(java.time.LocalDateTime.now())
+                        .build();
+            } catch (Exception e) {
+                log.warn("[gold-primary] finance factory={} failed, falling back to legacy: {}",
+                        factoryId, e.getMessage());
+            }
+        }
+
         // 获取核心KPI指标
         List<MetricResult> metricResults = new ArrayList<>();
         metricResults.addAll(getProfitMetrics(factoryId, startDate, endDate));
@@ -114,6 +173,12 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
         // 生成建议
         List<String> suggestions = generateFinanceSuggestions(metricResults, overdueRankings);
 
+        // v1 Phase B v0: shadow-read Gold path (fire-and-forget, log only).
+        // When smartbi.gold.shadow-read.enabled=true, every finance overview
+        // request also kicks off a Gold query; the result is logged for
+        // offline divergence review. Never affects the legacy response.
+        fireGoldShadowRead(factoryId, startDate, endDate);
+
         return DashboardResponse.builder()
                 .kpiCards(kpiCards)
                 .charts(charts)
@@ -122,6 +187,31 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
                 .suggestions(suggestions)
                 .lastUpdated(LocalDateTime.now())
                 .build();
+    }
+
+    /**
+     * Asynchronously call the Python Gold finance-summary endpoint and log
+     * the result. Silently skipped when the flag is off. Exceptions are
+     * swallowed + logged — legacy caller never sees Gold failures.
+     *
+     * Kept as a separate method (not inlined) so the hot path reads
+     * cleanly and the shadow-read logic is easy to rip out or extend.
+     */
+    private void fireGoldShadowRead(String factoryId, LocalDate startDate, LocalDate endDate) {
+        if (!goldShadowReadEnabled) return;
+        if (goldFinanceClient == null) return;  // defensive; Spring should always inject
+        CompletableFuture.runAsync(() -> {
+            try {
+                Map<String, Object> gold = goldFinanceClient.fetchFinanceSummary(
+                        factoryId, startDate, endDate, 5);
+                log.info("[gold-shadow] factory={} range={}..{} gold_revenue={} gold_bills={} gold_stores={}",
+                        factoryId, startDate, endDate,
+                        gold.get("total_revenue"), gold.get("bill_count"), gold.get("store_count"));
+            } catch (Exception e) {
+                log.warn("[gold-shadow] factory={} range={}..{} failed: {}",
+                        factoryId, startDate, endDate, e.getMessage());
+            }
+        });
     }
 
     // ==================== 利润分析 ====================
@@ -204,11 +294,14 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
         }
 
         // 按周期聚合 COST
+        // P0-1 Bug B defensive fix: Excel 写入层历史数据可能存负值 cost (Bug A)，
+        // 这里 .abs() 强制取正，避免 revenue.subtract(cost) 把负 cost 变加法。
         Map<String, BigDecimal> costByPeriod = new TreeMap<>();
         for (SmartBiFinanceData c : costData) {
             if (c.getTotalCost() == null && c.getActualAmount() == null) continue;
             String key = getPeriodKey(c.getRecordDate(), period);
-            BigDecimal val = c.getTotalCost() != null ? c.getTotalCost() : c.getActualAmount();
+            BigDecimal raw = c.getTotalCost() != null ? c.getTotalCost() : c.getActualAmount();
+            BigDecimal val = raw.abs();
             costByPeriod.merge(key, val, BigDecimal::add);
         }
 
@@ -233,9 +326,13 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
             BigDecimal revenue = revenueByPeriod.getOrDefault(periodKey, BigDecimal.ZERO);
             BigDecimal cost = costByPeriod.getOrDefault(periodKey, BigDecimal.ZERO);
             BigDecimal grossProfit = revenue.subtract(cost);
-            BigDecimal grossMargin = revenue.compareTo(BigDecimal.ZERO) > 0
+            BigDecimal grossMarginRaw = revenue.compareTo(BigDecimal.ZERO) > 0
                     ? grossProfit.divide(revenue, SCALE, ROUNDING_MODE).multiply(new BigDecimal("100"))
                     : BigDecimal.ZERO;
+            // P0-1 Bug C: trendChart 毛利率与 getProfitMetrics 对齐 — >100% 或 <-100% 视为数据异常，置为 null
+            BigDecimal grossMargin = (grossMarginRaw.compareTo(new BigDecimal("100")) > 0
+                    || grossMarginRaw.compareTo(new BigDecimal("-100")) < 0)
+                    ? null : grossMarginRaw;
             BigDecimal netProfit = netProfitByPeriod.getOrDefault(periodKey, grossProfit);
 
             Map<String, Object> point = new LinkedHashMap<>();
@@ -244,7 +341,7 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
             point.put("cost", cost.setScale(DISPLAY_SCALE, ROUNDING_MODE));
             point.put("grossProfit", grossProfit.setScale(DISPLAY_SCALE, ROUNDING_MODE));
             point.put("netProfit", netProfit.setScale(DISPLAY_SCALE, ROUNDING_MODE));
-            point.put("grossMargin", grossMargin.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+            point.put("grossMargin", grossMargin != null ? grossMargin.setScale(DISPLAY_SCALE, ROUNDING_MODE) : null);
             chartData.add(point);
         }
 
@@ -275,9 +372,11 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
                     .filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+            // P0-1 Bug B: 历史数据可能存负值 cost (Excel 写入层 Bug A)，强制 .abs() 取正
             totalCost = costRecords.stream()
                     .map(r -> r.getTotalCost() != null ? r.getTotalCost() : r.getActualAmount())
                     .filter(Objects::nonNull)
+                    .map(BigDecimal::abs)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             // 从 REVENUE 记录中取"净利"类
@@ -296,9 +395,11 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
                     .map(SmartBiSalesData::getAmount)
                     .filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
+            // P0-1 Bug B: 同样防御性 .abs()，与 finance_data 路径对齐
             totalCost = salesData.stream()
                     .map(SmartBiSalesData::getCost)
                     .filter(Objects::nonNull)
+                    .map(BigDecimal::abs)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             netProfit = null; // will calculate below
         }
@@ -407,10 +508,11 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
         BigDecimal laborCost = BigDecimal.ZERO;
         BigDecimal overheadCost = BigDecimal.ZERO;
 
+        // P0-1 Bug B: Excel 历史数据可能存负值 (Bug A)，所有成本项 .abs() 强制取正
         for (SmartBiFinanceData data : costData) {
-            materialCost = materialCost.add(data.getMaterialCost() != null ? data.getMaterialCost() : BigDecimal.ZERO);
-            laborCost = laborCost.add(data.getLaborCost() != null ? data.getLaborCost() : BigDecimal.ZERO);
-            overheadCost = overheadCost.add(data.getOverheadCost() != null ? data.getOverheadCost() : BigDecimal.ZERO);
+            materialCost = materialCost.add(data.getMaterialCost() != null ? data.getMaterialCost().abs() : BigDecimal.ZERO);
+            laborCost = laborCost.add(data.getLaborCost() != null ? data.getLaborCost().abs() : BigDecimal.ZERO);
+            overheadCost = overheadCost.add(data.getOverheadCost() != null ? data.getOverheadCost().abs() : BigDecimal.ZERO);
         }
 
         BigDecimal totalCost = materialCost.add(laborCost).add(overheadCost);
@@ -1350,14 +1452,15 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
     private Map<String, BigDecimal[]> aggregateCostByPeriod(List<SmartBiFinanceData> costData, String period) {
         Map<String, BigDecimal[]> result = new TreeMap<>();
 
+        // P0-1 Bug B: Excel 历史数据可能存负值 (Bug A)，所有成本项 .abs() 强制取正
         for (SmartBiFinanceData data : costData) {
             String key = getPeriodKey(data.getRecordDate(), period);
             BigDecimal[] values = result.computeIfAbsent(key, k -> new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO});
 
-            values[0] = values[0].add(data.getMaterialCost() != null ? data.getMaterialCost() : BigDecimal.ZERO);
-            values[1] = values[1].add(data.getLaborCost() != null ? data.getLaborCost() : BigDecimal.ZERO);
-            values[2] = values[2].add(data.getOverheadCost() != null ? data.getOverheadCost() : BigDecimal.ZERO);
-            values[3] = values[3].add(data.getTotalCost() != null ? data.getTotalCost() : BigDecimal.ZERO);
+            values[0] = values[0].add(data.getMaterialCost() != null ? data.getMaterialCost().abs() : BigDecimal.ZERO);
+            values[1] = values[1].add(data.getLaborCost() != null ? data.getLaborCost().abs() : BigDecimal.ZERO);
+            values[2] = values[2].add(data.getOverheadCost() != null ? data.getOverheadCost().abs() : BigDecimal.ZERO);
+            values[3] = values[3].add(data.getTotalCost() != null ? data.getTotalCost().abs() : BigDecimal.ZERO);
         }
 
         return result;

@@ -105,6 +105,11 @@ public class SalesOrder extends BaseEntity {
     @Column(name = "created_by", nullable = false)
     private Long createdBy;
 
+    /** Optimistic lock version — prevents silent last-write-wins on concurrent edits */
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
+
     @Column(name = "confirmed_at")
     private LocalDateTime confirmedAt;
 
@@ -116,6 +121,11 @@ public class SalesOrder extends BaseEntity {
     /** 业务员 */
     @Column(name = "salesperson", length = 100)
     private String salesperson;
+
+    /** 业务员 user_id (新数据). 老订单为 NULL, 用 salesperson 字符串字段兜底.
+     *  R6 (V20260425_09): converted from VARCHAR to BIGINT + FK to users(id) ON DELETE SET NULL. */
+    @Column(name = "salesperson_id")
+    private Long salespersonId;
 
     /** 是否含运费 */
     @Column(name = "shipping_included")

@@ -16,6 +16,10 @@ const loading = ref(false);
 const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 
+// Apr 20 Bug BR-10 fix: 员工管理之前无检索, 用户报告"未见检索功能"
+// 加 3 个 filter: keyword (姓名/用户名/手机) / roleCode / isActive
+const searchForm = reactive({ keyword: '', roleCode: '', isActive: null as boolean | null });
+
 onMounted(() => {
   loadData();
 });
@@ -25,18 +29,33 @@ async function loadData() {
 
   loading.value = true;
   try {
-    const response = await get(`/${factoryId.value}/users`, {
-      params: { page: pagination.value.page, size: pagination.value.size }
-    });
+    // 有 keyword 用 /users/search, 否则 /users; roleCode/isActive 前端过滤 (后端无参数)
+    const basePath = searchForm.keyword.trim()
+      ? `/${factoryId.value}/users/search`
+      : `/${factoryId.value}/users`;
+    const params: Record<string, unknown> = { page: pagination.value.page, size: pagination.value.size };
+    if (searchForm.keyword.trim()) params.keyword = searchForm.keyword.trim();
+    const response = await get(basePath, { params });
     if (response.success && response.data) {
-      tableData.value = response.data.content || [];
+      let rows = response.data.content || [];
+      // Apr 20 BR-10: 前端 filter roleCode + isActive (后端无参数)
+      if (searchForm.roleCode) {
+        rows = rows.filter((u: Record<string, unknown>) => (u.roleCode || u.role) === searchForm.roleCode);
+      }
+      if (searchForm.isActive !== null) {
+        rows = rows.filter((u: Record<string, unknown>) => {
+          const active = u.isActive === true || u.status === 'ACTIVE';
+          return active === searchForm.isActive;
+        });
+      }
+      tableData.value = rows;
       pagination.value.total = response.data.totalElements || 0;
     } else if (response.success === false) {
       ElMessage.error(response.message || '加载员工数据失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载失败:', error);
-    ElMessage.error('加载数据失败');
   } finally {
     loading.value = false;
   }
@@ -45,6 +64,18 @@ async function loadData() {
 function handlePageChange(page: number) {
   pagination.value.page = page;
   loadData();
+}
+
+// Apr 20 BR-10: 检索操作
+function handleSearch() {
+  pagination.value.page = 1;
+  loadData();
+}
+function handleReset() {
+  searchForm.keyword = '';
+  searchForm.roleCode = '';
+  searchForm.isActive = null;
+  handleSearch();
 }
 
 // Dialog state
@@ -143,7 +174,10 @@ async function handleSubmit() {
       roleCode: formData.role,
       employeeCode: formData.employeeCode,
       department: formData.department || undefined,
+      // Apr 18 2026 bug #47: 后端字段兼容 — 有的接口读 isActive, 有的读 status
+      // 一起送避免在职/离职 切换后列表显示不一致。
       isActive: formData.isActive,
+      status: formData.isActive ? 'ACTIVE' : 'INACTIVE',
     };
     if (dialogMode.value === 'add') {
       payload.password = '123456';
@@ -163,8 +197,8 @@ async function handleSubmit() {
       ElMessage.error(res.message || '操作失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast; this is debug-only log.
     console.error('提交失败:', error);
-    ElMessage.error('操作失败');
   } finally {
     submitting.value = false;
   }
@@ -204,6 +238,20 @@ function getRoleText(role: string) {
           <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleAdd">添加员工</el-button>
         </div>
       </template>
+
+      <!-- Apr 20 Bug BR-10 fix: 加检索栏 (keyword + 角色 + 状态) -->
+      <div class="search-bar" style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+        <el-input v-model="searchForm.keyword" placeholder="搜索 姓名/用户名/手机号" clearable style="width:240px" @keyup.enter="handleSearch" />
+        <el-select v-model="searchForm.roleCode" placeholder="角色" clearable style="width:160px" @change="handleSearch">
+          <el-option v-for="opt in roleOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+        </el-select>
+        <el-select v-model="searchForm.isActive" placeholder="状态" clearable style="width:110px" @change="handleSearch">
+          <el-option :value="true" label="在职" />
+          <el-option :value="false" label="离职" />
+        </el-select>
+        <el-button type="primary" @click="handleSearch">搜索</el-button>
+        <el-button @click="handleReset">重置</el-button>
+      </div>
 
       <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border>
         <el-table-column prop="username" label="用户名" width="120" />

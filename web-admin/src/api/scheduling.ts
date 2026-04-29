@@ -448,3 +448,21 @@ export function getSchedulingDashboard(factoryId: string, date?: string) {
 export function getRealtimeMonitor(factoryId: string, planId: string) {
   return get<SchedulingDashboard>(`/${factoryId}/scheduling/realtime/${planId}`);
 }
+
+// ==================== 排产自动化设置 (R31) ====================
+
+export interface SchedulingSettings {
+  autoSchedulingMode: 'DISABLED' | 'MANUAL_CONFIRM' | 'FULLY_AUTO';
+  lowRiskThreshold: number;
+  mediumRiskThreshold: number;
+  enableNotifications: boolean;
+  autoTriggerEnabled: boolean;
+}
+
+export function getSchedulingSettings(factoryId: string) {
+  return get<SchedulingSettings>(`/${factoryId}/scheduling/settings`);
+}
+
+export function updateSchedulingSettings(factoryId: string, settings: Partial<SchedulingSettings>) {
+  return put<SchedulingSettings>(`/${factoryId}/scheduling/settings`, settings);
+}

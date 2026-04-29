@@ -54,8 +54,7 @@ public class ActiveLearningSample {
     @Column(name = "normalized_input", columnDefinition = "TEXT")
     private String normalizedInput;
 
-    @Lob
-    @Column(name = "input_embedding")
+    @Column(name = "input_embedding", columnDefinition = "bytea")
     private byte[] inputEmbedding;
 
     // ==================== Match Result ====================

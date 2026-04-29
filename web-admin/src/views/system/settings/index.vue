@@ -113,7 +113,8 @@ async function saveBasicSettings() {
       ElMessage.error(response.message || '保存失败');
     }
   } catch (error) {
-    ElMessage.error('保存失败');
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', error);
   } finally {
     saving.value = false;
   }
@@ -131,7 +132,8 @@ async function saveNotificationSettings() {
       ElMessage.error(response.message || '保存失败');
     }
   } catch (error) {
-    ElMessage.error('保存失败');
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', error);
   } finally {
     saving.value = false;
   }
@@ -149,7 +151,8 @@ async function saveSecuritySettings() {
       ElMessage.error(response.message || '保存失败');
     }
   } catch (error) {
-    ElMessage.error('保存失败');
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', error);
   } finally {
     saving.value = false;
   }

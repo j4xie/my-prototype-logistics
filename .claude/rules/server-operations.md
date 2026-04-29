@@ -94,12 +94,15 @@ bash restart.sh test      # 仅测试
 ## 服务管理 (systemd)
 
 **生产环境所有服务均由 systemd 管理，开机自启 + 崩溃自动重启。**
+**测试环境 Java 后端 (10011) 自 2026-04-29 起也由 systemd 管理 (cretas-backend-test). Python (8084) 仍由 restart-test.sh nohup 管理 (Phase B-N: 加 cretas-python-test).**
 
 | 服务 | 端口 | systemd 服务名 | 状态 |
 |------|------|---------------|------|
 | gRPC Embedding | 9090 | `cretas-embedding` | enabled |
-| Java 后端 | 10010 | `cretas-backend` | enabled |
-| Python 服务 | 8083 | `cretas-python` | enabled |
+| Java 后端 (prod) | 10010 | `cretas-backend` | enabled |
+| Python 服务 (prod) | 8083 | `cretas-python` | enabled |
+| **Java 后端 (test)** | **10011** | **`cretas-backend-test`** | **enabled (自 2026-04-29)** |
+| Python 服务 (test) | 8084 | (nohup, 待 Phase B-N 加 systemd) | — |
 | Redis | 6379 | `redis` | enabled |
 | PostgreSQL | 5432 | `postgresql` | enabled |
 
@@ -121,25 +124,38 @@ Java 后端依赖 Embedding 服务 (`After=cretas-embedding.service`)。
 | `cretas-embedding.service` | `/etc/systemd/system/` |
 | `cretas-backend.service` | `/etc/systemd/system/` — 使用 `EnvironmentFile=/www/wwwroot/cretas/.env.prod` |
 | `cretas-python.service` | `/etc/systemd/system/` — 环境变量内联 |
+| **`cretas-backend-test.service`** | `/etc/systemd/system/` — 使用 `EnvironmentFile=/www/wwwroot/cretas/.env.test` (chmod 600). 源文件 in repo: `scripts/systemd/cretas-backend-test.service` |
+| **`.env.test`** | `/www/wwwroot/cretas/` — chmod 600. Template: `scripts/systemd/.env.test.template` |
 
 ### 常用管理命令
 
 ```bash
-# 查看状态
-systemctl status cretas-backend cretas-python cretas-embedding
+# 查看状态 (prod + test Java)
+systemctl status cretas-backend cretas-backend-test cretas-python cretas-embedding
 
 # 重启单个服务
-systemctl restart cretas-backend
+systemctl restart cretas-backend            # prod Java
+systemctl restart cretas-backend-test       # test Java (auto-restart on crash, RestartSec=15)
 
 # 重启全部生产服务 (按依赖顺序)
 bash /www/wwwroot/cretas/restart.sh prod
 
 # 实时日志
-journalctl -u cretas-backend -f
+journalctl -u cretas-backend -f             # prod
+journalctl -u cretas-backend-test -f        # test
 
-# 测试环境 (仍使用脚本管理)
-bash /www/wwwroot/cretas/restart.sh test
+# 测试环境 (Java systemctl-managed, Python 仍 nohup)
+bash /www/wwwroot/cretas/restart.sh test    # 调用 restart-test.sh
+# 或仅重启 Java:
+systemctl restart cretas-backend-test
 ```
+
+### 测试环境 Java 自动重启验证 (2026-04-29)
+
+`cretas-backend-test.service` 配置 `Restart=on-failure RestartSec=15 StartLimitBurst=3 / 120s`:
+- Kill PID → systemd 15s 后 respawn → Spring Boot 启动 ~80s → 健康
+- Total recovery: ~95s from crash to fully healthy
+- 防御 deep-test 时 Java 静默挂掉阻塞测试 (Apr 28 真踩过)
 
 ### 环境变量管理
 

@@ -6,13 +6,14 @@ import { usePermissionStore } from '@/store/modules/permission';
 import { useBusinessMode } from '@/composables/useBusinessMode';
 import { get, post, put } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Refresh, ChatDotRound } from '@element-plus/icons-vue';
+import { Plus, Refresh, Search, ChatDotRound } from '@element-plus/icons-vue';
 import AiEntryDrawer from '@/components/ai-entry/AiEntryDrawer.vue';
 import { SALES_ORDER_CONFIG } from '@/components/ai-entry/types';
 import { formatAmount } from '@/utils/tableFormatters';
 import TaxGroupInvoiceDialog from './components/TaxGroupInvoiceDialog.vue';
 import CanvasDynamicFields from '@/components/canvas/CanvasDynamicFields.vue';
 import CanvasAwareWrapper from '@/components/canvas/CanvasAwareWrapper.vue';
+import { getFinanceSummary, type FinanceSummary } from '@/api/smartbi/gold';
 
 // G1: 税率分组开票对话框 (客户原话 2645-2660s)
 const taxGroupInvoiceVisible = ref(false);
@@ -44,12 +45,16 @@ const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
 const { label } = useBusinessMode();
 const factoryId = computed(() => authStore.factoryId);
+// Apr 24 2026 P1-10: restaurant tenants 用 POS 账单, 无传统 B2B SO → 显提示代替空表混乱
+const isRestaurantTenant = computed(() => authStore.factoryType === 'RESTAURANT');
 const canWrite = computed(() => permissionStore.canWrite('sales'));
 
 const loading = ref(false);
 const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const statusFilter = ref('');
+// Apr 20 Bug BR-07 fix: 客户报告"未见检索功能", 补 keyword 搜索 (订单号/客户名)
+const searchKeyword = ref('');
 const dialogVisible = ref(false);
 
 // P1-6 智能筛选 tab (v1 金矿截图 49m38s 6 tab)
@@ -117,10 +122,11 @@ const form = ref({
   shippingIncluded: false,
   shippingFee: 0,
   extraFees: [] as Array<{ name: string; amount: number; remark: string }>,
-  items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
+  items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, taxRate: 13 }],
   contractFileUrl: '' as string | null,
   contractFileName: '' as string | null,
   customFields: {} as Record<string, unknown>,
+  version: null as number | null,  // optimistic lock — server returns 409 on stale
 });
 
 // P1-7 合同附件上传 (v1 §2.4.3, 2257s)
@@ -143,9 +149,7 @@ async function handleContractUpload(options: { file: File }) {
     } else {
       ElMessage.error(json.message || '合同上传失败');
     }
-  } catch {
-    ElMessage.error('合同上传失败');
-  }
+  } catch { /* axios interceptor already displayed error toast */ }
 }
 
 function clearContract() {
@@ -174,8 +178,37 @@ watch(dialogVisible, (val) => { isDirty.value = val; });
 function handleBeforeUnload(e: BeforeUnloadEvent) {
   if (isDirty.value) { e.preventDefault(); e.returnValue = ''; }
 }
+// v1.2 Week 9: POS summary card — hides auto when Silver has no data (manufacturing tenants).
+// Tries YTD first, falls back to last calendar year when YTD is empty so restaurant tenants
+// whose POS feed is seeded with historical data still see a non-empty demo.
+const goldSummary = ref<FinanceSummary | null>(null);
+const goldSummaryRangeLabel = ref<string>('');
+async function loadGoldSummary() {
+  if (!factoryId.value) return;
+  const year = new Date().getFullYear();
+  const today = new Date().toISOString().slice(0, 10);
+  const ranges: Array<{ start: string; end: string; label: string }> = [
+    { start: `${year}-01-01`, end: today, label: `${year} YTD` },
+    { start: `${year - 1}-01-01`, end: `${year - 1}-12-31`, label: `${year - 1} 全年` },
+  ];
+  for (const rng of ranges) {
+    try {
+      const r = await getFinanceSummary({
+        factoryId: factoryId.value, startDate: rng.start, endDate: rng.end, topNStores: 3,
+      });
+      if (r && r.billCount > 0) {
+        goldSummary.value = r;
+        goldSummaryRangeLabel.value = rng.label;
+        return;
+      }
+    } catch { /* try next range */ }
+  }
+  goldSummary.value = null;
+}
+
 onMounted(() => {
   loadData(); loadCustomers(); loadProducts(); loadSalesEmployees();
+  loadGoldSummary();
   window.addEventListener('beforeunload', handleBeforeUnload);
 });
 onBeforeUnmount(() => { window.removeEventListener('beforeunload', handleBeforeUnload); });
@@ -193,12 +226,22 @@ async function loadData() {
     if (statusFilter.value) params.status = statusFilter.value;
     const res = await get(url, { params });
     if (res.success && res.data) {
-      tableData.value = res.data.content || [];
+      let rows = res.data.content || [];
+      // Apr 20 Bug BR-07 fix: 补 keyword 搜索 (订单号 / 客户名)
+      const kw = searchKeyword.value.trim();
+      if (kw) {
+        const lower = kw.toLowerCase();
+        rows = rows.filter((r: Record<string, unknown>) =>
+          String(r.orderNumber || '').toLowerCase().includes(lower) ||
+          String(r.customerName || '').toLowerCase().includes(lower)
+        );
+      }
+      tableData.value = rows;
       pagination.value.total = res.data.totalElements || 0;
     } else if (res.success === false) {
       ElMessage.error(res.message || '加载订单失败');
     }
-  } catch { ElMessage.error('加载失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { loading.value = false; }
 }
 
@@ -228,6 +271,10 @@ const salesRoles = ['sales_manager', 'factory_super_admin'];
 
 async function loadSalesEmployees() {
   if (!factoryId.value) return;
+  // Apr 24 2026: 无 hr 读权限的角色 (如 warehouse_manager) 不必调 /users 下拉.
+  // 之前 _silent:true + try/catch 已经吞错了, 但 console 仍有 403 log 噪音.
+  // 前置 canAccess 检查减少无效请求.
+  if (!permissionStore.canAccess('hr')) return;
   try {
     const res = await get(`/${factoryId.value}/users`, { params: { page: 1, size: 200 }, _silent: true } as never);
     if (res.success && res.data) {
@@ -244,7 +291,7 @@ async function loadSalesEmployees() {
   } catch { /* silently fail — user can still type manually */ }
 }
 
-function addItem() { form.value.items.push({ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, specification: '', boxQuantity: null }); }
+function addItem() { form.value.items.push({ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, specification: '', boxQuantity: null, taxRate: 13 }); }
 function removeItem(idx: number) { if (form.value.items.length > 1) form.value.items.splice(idx, 1); }
 
 function onProductSelect(item: Record<string, unknown>, productId: string) {
@@ -267,10 +314,16 @@ function calcBox(item: Record<string, unknown>) {
 
 async function handleCreate() {
   if (!form.value.customerId) return ElMessage.warning('请选择客户');
+  if (!form.value.items || form.value.items.length === 0) return ElMessage.warning('请至少添加一个订单明细');
+  // Apr 18 2026 bug #54: 用户报告"信息填写完整 无法提交 显示不为空" — 实际是前端
+  // 缺 productTypeId 空值校验, 漏到后端才 reject, 用户看文案困惑。
+  if (form.value.items.some((i: Record<string, unknown>) => !i.productTypeId)) return ElMessage.warning('请为所有明细选择产品');
   // 数量校验: 不允许0或负数
   if (form.value.items.some((i: Record<string, unknown>) => !i.quantity || Number(i.quantity) <= 0)) return ElMessage.warning('产品数量必须大于0');
   // 单位校验
   if (form.value.items.some((i: Record<string, unknown>) => !i.unit)) return ElMessage.warning('请填写所有明细的单位');
+  // 销售单价校验
+  if (form.value.items.some((i: Record<string, unknown>) => i.unitPrice == null || Number(i.unitPrice) < 0)) return ElMessage.warning('请填写所有明细的销售单价');
   // SKU 重复校验
   const productIds = form.value.items.map((i: Record<string, unknown>) => i.productTypeId).filter(Boolean);
   if (new Set(productIds).size !== productIds.length) return ElMessage.warning('同一订单不能添加重复的产品');
@@ -278,7 +331,7 @@ async function handleCreate() {
     const res = await post(`/${factoryId.value}/sales/orders`, form.value);
     if (res.success) { ElMessage.success('创建成功'); dialogVisible.value = false; loadData(); }
     else { ElMessage.error(res.message || '创建失败'); }
-  } catch { ElMessage.error('创建失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
 }
 
 async function handleAction(orderId: string, action: string) {
@@ -287,7 +340,7 @@ async function handleAction(orderId: string, action: string) {
     cancel: { label: '取消', url: `/${factoryId.value}/sales/orders/${orderId}/cancel` },
     // R23-Pre3: FINANCE_REJECTED → resubmit for finance review (backend already
     // supports CONFIRMED || FINANCE_REJECTED → PENDING_FINANCE_REVIEW transition).
-    resubmit: { label: '重新提交', url: `/${factoryId.value}/sales/orders/${orderId}/submit-for-finance-review` },
+    resubmit: { label: '重新提交', url: `/${factoryId.value}/sales/orders/${orderId}/submit-for-review` },
   };
   const a = map[action];
   if (!a) return;
@@ -324,9 +377,11 @@ function handleEdit(row: Record<string, unknown>) {
           quantity: Number(item.quantity || 0),
           unit: String(item.unit || 'kg'),
           unitPrice: Number(item.unitPrice || 0),
+          taxRate: item.taxRate != null ? Number(item.taxRate) : 13,
         }))
-      : [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
+      : [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, taxRate: 13 }],
     customFields: {} as Record<string, unknown>,
+    version: typeof row.version === 'number' ? row.version : null,
   };
   dialogVisible.value = true;
 }
@@ -339,7 +394,23 @@ async function handleSave() {
       const res = await put(`/${factoryId.value}/sales/orders/${editingOrderId.value}`, form.value);
       if (res.success) { ElMessage.success('保存成功'); dialogVisible.value = false; editingOrderId.value = null; loadData(); }
       else { ElMessage.error(res.message || '保存失败'); }
-    } catch { ElMessage.error('保存失败'); }
+    } catch (err) {
+      // R24 P2 follow-up: only optimistic-lock dialog when no actionHint (vanilla 409).
+      // Business 409s from R18/R21/R23 invariants carry actionHint — interceptor already
+      // toasts the rich message; firing the wrong "并发编辑冲突" dialog on top would confuse.
+      const e = err as { status?: number; actionHint?: string | null };
+      if (e?.status === 409 && !e.actionHint) {
+        try {
+          await ElMessageBox.confirm(
+            '此订单已被其他用户修改。点击"确定"将刷新列表并放弃当前编辑。',
+            '并发编辑冲突',
+            { type: 'warning', confirmButtonText: '刷新列表', cancelButtonText: '取消' }
+          );
+          dialogVisible.value = false; editingOrderId.value = null; loadData();
+        } catch { /* user cancelled */ }
+      }
+      /* axios interceptor already displayed error toast for non-409 */
+    }
   } else {
     await handleCreate();
   }
@@ -356,7 +427,7 @@ function openCreateDialog() {
     shippingIncluded: false,
     shippingFee: 0,
     extraFees: [],
-    items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }],
+    items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, taxRate: 13 }],
     customFields: {} as Record<string, unknown>,
   };
   dialogVisible.value = true;
@@ -373,7 +444,7 @@ function goDetail(id: string) { router.push(`/sales/orders/${id}`); }
 function handlePageChange(page: number) { pagination.value.page = page; loadData(); }
 function handleSizeChange(size: number) { pagination.value.size = size; pagination.value.page = 1; loadData(); }
 function handleStatusChange() { pagination.value.page = 1; loadData(); }
-function handleRefresh() { statusFilter.value = ''; pagination.value.page = 1; loadData(); }
+function handleRefresh() { statusFilter.value = ''; searchKeyword.value = ''; pagination.value.page = 1; loadData(); }
 
 // ==================== AI Entry ====================
 const aiEntryVisible = ref(false);
@@ -401,6 +472,7 @@ function handleAiFill(params: Record<string, unknown>) {
         quantity: Number(item.quantity || 0),
         unit: String(item.unit || 'kg'),
         unitPrice: Number(item.unitPrice || 0),
+        taxRate: item.taxRate != null ? Number(item.taxRate) : 13,
       };
     });
   }
@@ -449,9 +521,7 @@ async function submitQuickDelivery() {
     } else {
       ElMessage.error(res.message || '出库失败');
     }
-  } catch {
-    ElMessage.error('出库失败');
-  }
+  } catch { /* axios interceptor already displayed error toast */ }
 }
 
 async function handleQuickInvoice(row: Record<string, unknown>) {
@@ -475,9 +545,7 @@ async function submitQuickInvoice() {
     } else {
       ElMessage.error(res.message || '开票失败');
     }
-  } catch {
-    ElMessage.error('开票失败');
-  }
+  } catch { /* axios interceptor already displayed error toast */ }
 }
 
 async function handleQuickPayment(row: Record<string, unknown>) {
@@ -501,13 +569,55 @@ async function submitQuickPayment() {
     } else {
       ElMessage.error(res.message || '收款失败');
     }
-  } catch {
-    ElMessage.error('收款失败');
-  }
+  } catch { /* axios interceptor already displayed error toast */ }
 }
 </script>
 
 <template>
+  <!-- v1.2 Week 9: POS 交易概览 (restaurant tenants). Placed OUTSIDE CanvasAwareWrapper
+       so it renders in both LEGACY and DYNAMIC/CANVAS rendering modes. Auto-hides
+       when Silver empty (manufacturing tenants). -->
+  <el-card
+    v-show="goldSummary"
+    class="gold-pos-summary"
+    style="margin: 12px; border-top: 3px solid #67C23A;"
+    shadow="never"
+  >
+    <template #header>
+      <div style="display: flex; align-items: center; gap: 8px; font-weight: 600;">
+        <span>🧾 POS 交易概览</span>
+        <el-tag size="small" type="success">Gold · finance_summary</el-tag>
+        <span v-if="goldSummaryRangeLabel" style="color: #909399; font-size: 12px; margin-left: auto;">
+          {{ goldSummaryRangeLabel }}
+        </span>
+      </div>
+    </template>
+    <el-row v-if="goldSummary" :gutter="16">
+      <el-col :span="6">
+        <el-statistic :value="goldSummary.totalRevenue" title="总营收" :precision="2" prefix="¥" />
+      </el-col>
+      <el-col :span="6">
+        <el-statistic :value="goldSummary.billCount" title="POS 账单数" />
+      </el-col>
+      <el-col :span="6">
+        <el-statistic :value="goldSummary.avgBillValue ?? 0" title="客单价" :precision="2" prefix="¥" />
+      </el-col>
+      <el-col :span="6">
+        <el-statistic :value="goldSummary.storeCount" title="门店数" />
+      </el-col>
+    </el-row>
+  </el-card>
+
+  <!-- P1-10: restaurant tenants 无 B2B SO,下面空表只是功能残留 -->
+  <el-alert
+    v-if="isRestaurantTenant"
+    type="info"
+    :closable="false"
+    show-icon
+    style="margin: 0 12px 12px 12px;"
+    title="餐饮门店的 POS 账单已在上方「POS 交易概览」汇总。销售订单 (B2B) 本页下方通常为空,如有企业订餐/团购/外送合同才需新建。"
+  />
+
   <CanvasAwareWrapper module-code="sales_order">
   <div class="page-wrapper">
     <el-card class="page-card" shadow="never">
@@ -518,7 +628,7 @@ async function submitQuickPayment() {
             <span class="data-count">共 {{ pagination.total }} 条记录</span>
           </div>
           <div class="header-right">
-            <el-button type="success" :icon="ChatDotRound" @click="aiEntryVisible = true">
+            <el-button v-if="canWrite" type="success" :icon="ChatDotRound" @click="aiEntryVisible = true">
               AI录入
             </el-button>
             <el-button v-if="canWrite" type="primary" :icon="Plus" @click="openCreateDialog">新建{{ label('salesOrder') }}</el-button>
@@ -534,9 +644,12 @@ async function submitQuickPayment() {
       </el-radio-group>
 
       <div class="search-bar">
+        <!-- Apr 20 Bug BR-07 fix: 加 keyword 搜索 (订单号/客户名) -->
+        <el-input v-model="searchKeyword" placeholder="搜索 订单号/客户" clearable style="width: 240px" @keyup.enter="loadData" />
         <el-select v-model="statusFilter" placeholder="按状态筛选" clearable style="width: 160px" @change="handleStatusChange">
           <el-option v-for="(v, k) in statusMap" :key="k" :label="v.text" :value="k" />
         </el-select>
+        <el-button type="primary" :icon="Search" @click="loadData">搜索</el-button>
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
       </div>
 
@@ -726,6 +839,7 @@ async function submitQuickPayment() {
           <span style="width: 80px">单位</span>
           <span style="width: 100px">单价</span>
           <span style="width: 80px">箱数</span>
+          <span style="width: 90px" title="税率 (开票 G1 按此分组): 9=原料, 13=加工, 6=服务">税率(%)</span>
           <span style="width: 40px">操作</span>
         </div>
         <div v-for="(item, idx) in form.items" :key="idx" class="item-row">
@@ -737,6 +851,13 @@ async function submitQuickPayment() {
           <el-input v-model="item.unit" style="width: 80px" />
           <el-input-number v-model="item.unitPrice" :min="0" :precision="2" style="width: 100px" />
           <el-input-number v-model="item.boxQuantity" :min="0" :precision="2" style="width: 80px" placeholder="箱" />
+          <el-select v-model="item.taxRate" placeholder="税率" style="width: 90px" size="default">
+            <el-option :value="0" label="0% 免税" />
+            <el-option :value="3" label="3% 小规模" />
+            <el-option :value="6" label="6% 服务" />
+            <el-option :value="9" label="9% 原料" />
+            <el-option :value="13" label="13% 加工" />
+          </el-select>
           <el-button type="danger" link @click="removeItem(idx)" :disabled="form.items.length <= 1">删除</el-button>
         </div>
         <el-button style="width: 100%; margin-top: 8px" @click="addItem">+ 添加行</el-button>

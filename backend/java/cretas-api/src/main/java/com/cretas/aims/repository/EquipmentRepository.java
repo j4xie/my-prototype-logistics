@@ -49,14 +49,18 @@ public interface EquipmentRepository extends JpaRepository<FactoryEquipment, Lon
      * 注意：equipmentName/model使用双向模糊（无法使用索引），equipmentCode使用右模糊（可使用索引）
      */
     @Query("SELECT e FROM FactoryEquipment e WHERE e.factoryId = :factoryId " +
-           "AND (e.equipmentName LIKE CONCAT('%', :keyword, '%') OR e.equipmentCode LIKE CONCAT(:keyword, '%') OR e.model LIKE CONCAT('%', :keyword, '%'))")
+           "AND (e.equipmentName LIKE CONCAT('%', :keyword, '%') ESCAPE '\\' " +
+           "OR e.equipmentCode LIKE CONCAT(:keyword, '%') ESCAPE '\\' " +
+           "OR e.model LIKE CONCAT('%', :keyword, '%') ESCAPE '\\')")
     List<FactoryEquipment> searchByKeyword(@Param("factoryId") String factoryId, @Param("keyword") String keyword);
 
     /**
      * 根据名称搜索设备（分页）
      */
     @Query("SELECT e FROM FactoryEquipment e WHERE e.factoryId = :factoryId " +
-           "AND (e.equipmentName LIKE CONCAT('%', :keyword, '%') OR e.equipmentCode LIKE CONCAT(:keyword, '%') OR e.model LIKE CONCAT('%', :keyword, '%'))")
+           "AND (e.equipmentName LIKE CONCAT('%', :keyword, '%') ESCAPE '\\' " +
+           "OR e.equipmentCode LIKE CONCAT(:keyword, '%') ESCAPE '\\' " +
+           "OR e.model LIKE CONCAT('%', :keyword, '%') ESCAPE '\\')")
     Page<FactoryEquipment> searchByKeyword(@Param("factoryId") String factoryId, @Param("keyword") String keyword, Pageable pageable);
 
     /**

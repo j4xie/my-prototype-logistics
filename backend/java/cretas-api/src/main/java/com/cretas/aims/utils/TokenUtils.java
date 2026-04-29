@@ -24,16 +24,19 @@ public class TokenUtils {
      */
     public static String extractToken(String authorization) {
         if (authorization == null || authorization.trim().isEmpty()) {
-            throw new BusinessException("Authorization头不能为空");
+            throw new BusinessException(401, "Authorization头不能为空")
+                    .withHint("请重新登录获取有效令牌");
         }
 
         if (!authorization.startsWith(BEARER_PREFIX)) {
-            throw new BusinessException("无效的Authorization头格式，必须以'Bearer '开头");
+            throw new BusinessException(401, "无效的Authorization头格式，必须以'Bearer '开头")
+                    .withHint("请重新登录获取有效令牌");
         }
 
         String token = authorization.substring(BEARER_PREFIX_LENGTH).trim();
         if (token.isEmpty()) {
-            throw new BusinessException("Token不能为空");
+            throw new BusinessException(401, "Token不能为空")
+                    .withHint("请重新登录获取有效令牌");
         }
 
         return token;

@@ -49,7 +49,9 @@ public class PythonServiceCircuitBreaker {
     @Value("${python-smartbi.circuit-breaker.failure-threshold:5}")
     private int failureThreshold;
 
-    @Value("${python-smartbi.circuit-breaker.open-duration-ms:30000}")
+    // 2026-04-29: 30000 → 10000. Python OOM-kill 后 systemd 5s 自动重启 + 启动 ~3-5s,
+    // 实际恢复时间 ~10s。30s cooldown 让客户在 Python 已恢复后仍被秒拒,UX 极差。
+    @Value("${python-smartbi.circuit-breaker.open-duration-ms:10000}")
     private long openDurationMs;
 
     @Value("${python-smartbi.circuit-breaker.half-open-max-calls:2}")

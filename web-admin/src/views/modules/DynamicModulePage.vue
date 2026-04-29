@@ -8,6 +8,7 @@ import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/store/modules/auth'
 import { useConfigStore } from '@/store/modules/config'
+import { usePermissionStore, ModuleName } from '@/store/modules/permission'
 import request from '@/api/request'
 import type { EffectiveModuleConfig, WorkflowTransition } from '@/types/config'
 import { MODULE_API_PATHS } from '@/types/config'
@@ -24,10 +25,26 @@ const props = defineProps<{
 const route = useRoute()
 const authStore = useAuthStore()
 const configStore = useConfigStore()
+const permissionStore = usePermissionStore()
 
 const moduleCode = computed(() => props.moduleCode || String(route.params.moduleCode || ''))
 const factoryId = computed(() => authStore.factoryId || '')
 const apiPath = computed(() => MODULE_API_PATHS[moduleCode.value] || moduleCode.value)
+
+// RBAC UI: 映射 moduleCode (e.g., sales_order) → sidebar permission module (e.g., sales)
+// 使 viewer / read-only 角色不看到启用的 "新建" 按钮 (之前只后端 403, FE 让用户填完才发现)
+const MODULE_CODE_TO_PERMISSION: Record<string, ModuleName> = {
+  sales_order: 'sales', purchase_order: 'procurement', production_plan: 'production',
+  production_batch: 'production', bom_item: 'production',
+  quality_inspection: 'quality', hr_employee: 'hr', equipment: 'equipment',
+  finance_ar: 'finance', finance_ap: 'finance', material_batch: 'warehouse',
+  scheduling: 'scheduling', restaurant: 'restaurant',
+}
+const canWrite = computed(() => {
+  const mod = MODULE_CODE_TO_PERMISSION[moduleCode.value]
+  if (!mod) return true  // 无映射的保守允许, 后端仍 403 兜底
+  return permissionStore.canWrite(mod)
+})
 
 // 状态
 const config = ref<EffectiveModuleConfig | null>(null)
@@ -47,6 +64,24 @@ if (typeof window !== 'undefined') {
 }
 const loading = ref(false)
 const pagination = ref({ page: 1, size: 20, total: 0 })
+
+// Bug G fix (qa-prompt v2.3 Rule 12.1): keyword search input
+const searchKeyword = ref('')
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+function onSearchInput(val: string) {
+  searchKeyword.value = val
+  // debounce 300ms
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    pagination.value.page = 1
+    loadTableData()
+  }, 300)
+}
+function resetSearch() {
+  searchKeyword.value = ''
+  pagination.value.page = 1
+  loadTableData()
+}
 
 // Tab 布局配置（来自 layoutConfig.tabs）
 const layoutTabs = computed(() => {
@@ -69,9 +104,10 @@ async function loadTableData() {
   if (!factoryId.value || !apiPath.value) return
   loading.value = true
   try {
-    const res = await request.get(`/${factoryId.value}/${apiPath.value}`, {
-      params: { page: pagination.value.page, size: pagination.value.size },
-    })
+    // Bug G: include keyword for search-supporting endpoints
+    const params: Record<string, unknown> = { page: pagination.value.page, size: pagination.value.size }
+    if (searchKeyword.value) params.keyword = searchKeyword.value
+    const res = await request.get(`/${factoryId.value}/${apiPath.value}`, { params })
     const data = res.data
     if (Array.isArray(data)) {
       tableData.value = data
@@ -106,12 +142,38 @@ async function handleCreate(formData: Record<string, unknown>) {
 async function handleUpdate(formData: Record<string, unknown>) {
   if (!selectedRow.value) return
   const id = selectedRow.value.id
+  // Optimistic lock: forward the version snapshot from the row FE loaded.
+  // Backend compares req.version vs db.version → 409 if stale (Customer/Supplier/SO/PO/Equipment).
+  const version = (selectedRow.value as Record<string, unknown>).version
+  if (version !== undefined && version !== null && (formData as Record<string, unknown>).version === undefined) {
+    (formData as Record<string, unknown>).version = version
+  }
   try {
     await request.put(`/${factoryId.value}/${apiPath.value}/${id}`, formData)
     ElMessage.success('保存成功')
     currentView.value = 'list'
     loadTableData()
   } catch (e: any) {
+    // R24 P2 follow-up: only treat 409 as optimistic-lock when actionHint is null.
+    // Business 409 (BusinessException withHint) is already rich-toasted by interceptor —
+    // firing "并发编辑冲突" dialog on top of an invariant-violation toast confuses the user.
+    if (e?.status === 409 && !e?.actionHint) {
+      try {
+        await ElMessageBox.confirm(
+          '此记录已被其他用户修改。点击"确定"将刷新列表并放弃当前编辑。',
+          '并发编辑冲突',
+          { type: 'warning', confirmButtonText: '刷新列表', cancelButtonText: '取消' }
+        )
+        currentView.value = 'list'
+        loadTableData()
+      } catch { /* user cancelled */ }
+      return
+    }
+    if (e?.status === 409) {
+      // Business 409 — interceptor already toasted; nothing to add. (Don't fall through
+      // to the generic ElMessage.error below or we'd double-toast.)
+      return
+    }
     ElMessage.error(e?.message || '保存失败')
   }
 }
@@ -128,7 +190,10 @@ async function handleAction(row: Record<string, unknown>, transition: WorkflowTr
     ElMessage.success(`${transition.label}成功`)
     loadTableData()
   } catch (e: any) {
-    if (e !== 'cancel') {
+    // R40 BUG-6 fix (sister to R26): axios interceptor already toasts BusinessException
+    // 409+actionHint. Only fall through to generic toast when there's no actionHint
+    // (raw network/unknown errors). Avoids double toast on 404/409 from invariants.
+    if (e !== 'cancel' && !e?.actionHint) {
       ElMessage.error(e?.message || '操作失败')
     }
   }
@@ -179,13 +244,30 @@ onMounted(() => {
         </el-tag>
       </div>
       <div class="page-actions" v-if="currentView === 'list'">
-        <el-button type="primary" @click="currentView = 'create'">新建</el-button>
+        <!-- RBAC UI fix: canWrite=false 时隐藏 "新建" (viewer 不再误看到) -->
+        <el-button v-if="canWrite" type="primary" @click="currentView = 'create'">新建</el-button>
         <el-button @click="loadTableData">刷新</el-button>
       </div>
     </div>
 
     <!-- 列表视图 -->
     <template v-if="currentView === 'list' && config">
+      <!-- Bug G fix: keyword search bar (qa-prompt v2.3 Rule 12.1) -->
+      <div class="dynamic-search-bar">
+        <el-input
+          :model-value="searchKeyword"
+          placeholder="搜索关键字 (订单号/客户/编号 等)"
+          clearable
+          style="width: 320px"
+          @update:model-value="onSearchInput"
+          @clear="resetSearch"
+        >
+          <template #prefix>
+            <el-icon><svg viewBox="0 0 1024 1024" width="14" height="14"><path fill="currentColor" d="M795.904 750.72l124.992 124.928a32 32 0 01-45.248 45.248L750.656 795.904a416 416 0 1145.248-45.248zM480 832a352 352 0 100-704 352 352 0 000 704z"/></svg></el-icon>
+          </template>
+        </el-input>
+        <el-button v-if="searchKeyword" @click="resetSearch">重置</el-button>
+      </div>
       <SchemaTableRenderer
         :fields="config.fields"
         :workflow-transitions="config.workflowTransitions"
@@ -298,5 +380,11 @@ onMounted(() => {
 }
 .back-btn:hover {
   text-decoration: underline;
+}
+.dynamic-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 </style>

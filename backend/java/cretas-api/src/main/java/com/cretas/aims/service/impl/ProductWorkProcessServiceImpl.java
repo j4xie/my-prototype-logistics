@@ -34,7 +34,8 @@ public class ProductWorkProcessServiceImpl implements ProductWorkProcessService 
 
         if (repository.existsByFactoryIdAndProductTypeIdAndWorkProcessId(
                 factoryId, dto.getProductTypeId(), dto.getWorkProcessId())) {
-            throw new BusinessException("该产品已关联此工序");
+            throw new BusinessException(409, "该产品已关联此工序")
+                    .withHint("请选择其他工序, 或刷新列表查看现有关联");
         }
 
         // Validate work process exists

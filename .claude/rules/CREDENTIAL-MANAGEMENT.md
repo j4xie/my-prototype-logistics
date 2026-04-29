@@ -1,6 +1,6 @@
 # 凭证配置
 
-**最后更新**: 2026-02-19
+**最后更新**: 2026-04-25
 
 ---
 
@@ -24,7 +24,10 @@
 | 变量 | 值 |
 |------|-----|
 | `DB_PASSWORD` | `cretas_pass` |
-| `POSTGRES_SMARTBI_PASSWORD` | `smartbi_pass` |
+| `POSTGRES_SMARTBI_PASSWORD` | `smartbi_secure_password_2025` |
+
+**注意**: `smartbi_secure_password_2025` 是 smartbi_db (test) 和 smartbi_prod_db (prod) 的统一密码。
+来源: 服务器 `/www/wwwroot/cretas/.env.prod`。旧值 `smartbi_pass` 已废弃 (2026-04-25 修正)。
 
 ### Python 服务
 

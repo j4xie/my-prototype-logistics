@@ -28,6 +28,8 @@ interface ItemField {
     apiEndpoint: string
   }
   computed?: string
+  /** Apr 25 2026: schema-driven initial value for new rows (e.g. items.unit defaultValue:'kg'). */
+  defaultValue?: unknown
   /** Round 4 Fix P2-23: per-row visibility expression (SpEL) evaluated against the row */
   visibleWhen?: string
 }
@@ -50,8 +52,16 @@ const rows = computed({
 function addRow() {
   const newRow: Record<string, unknown> = {}
   props.itemSchema.fields.forEach((f) => {
-    if (f.type === 'decimal' || f.type === 'integer') newRow[f.code] = 0
-    else newRow[f.code] = ''
+    // Apr 25 2026: respect schema-defined defaultValue (e.g. items.unit:'kg').
+    // Found by depth-first-e2e: addRow ignored defaultValue → user had to manually
+    // pick required fields like 单位 → silent submit failure with vague 400 toast.
+    if (f.defaultValue !== undefined && f.defaultValue !== null) {
+      newRow[f.code] = f.defaultValue
+    } else if (f.type === 'decimal' || f.type === 'integer') {
+      newRow[f.code] = 0
+    } else {
+      newRow[f.code] = ''
+    }
   })
   emit('update:modelValue', [...rows.value, newRow])
 }
@@ -121,11 +131,14 @@ function isColumnVisible(field: ItemField): boolean {
           <template #default="{ row, $index }">
             <!-- Per-row visibility: render placeholder if cell hidden for this row -->
             <span v-if="!isCellVisible(field, row)" class="cell-hidden">—</span>
-            <!-- reference -->
+            <!-- reference. R17 audit SER-1: drop `&& field.referenceConfig` guard so
+                 ReferenceSelector handles missing config via its own loud-fail (R12 fix).
+                 Previously falling through to el-input was silent text-input for line-item
+                 references with broken schema (purchase_order/transfer items.materialTypeId). -->
             <ReferenceSelector
-              v-else-if="field.type === 'reference' && field.referenceConfig"
+              v-else-if="field.type === 'reference'"
               :model-value="(row[field.code] as string)"
-              :config="field.referenceConfig"
+              :config="(field.referenceConfig as never)"
               :disabled="disabled || !!field.computed"
               @update:model-value="(v) => updateField($index, field.code, v)"
             />

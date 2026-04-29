@@ -22,6 +22,11 @@ from pathlib import Path
 
 
 def load_config():
+    # Bug #18 fix (Apr 17 2026): only fill missing env vars from .env.
+    # Previous unconditional override clobbered POSTGRES_DB=smartbi_db
+    # (test env var) with .env's POSTGRES_DB=smartbi_prod_db, making
+    # test Python 8084 write/read the prod database — AI chat loaded
+    # a different upload's rows from prod DB causing hallucinated answers.
     env_paths = [
         Path(__file__).parent.parent / ".env",
         Path(__file__).parent.parent.parent / "smartbi" / ".env",
@@ -34,7 +39,7 @@ def load_config():
                     line = line.strip()
                     if line and not line.startswith('#') and '=' in line:
                         key, value = line.split('=', 1)
-                        os.environ[key.strip()] = value.strip()
+                        os.environ.setdefault(key.strip(), value.strip())
 
 
 load_config()

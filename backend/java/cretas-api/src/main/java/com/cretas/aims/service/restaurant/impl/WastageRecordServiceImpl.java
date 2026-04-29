@@ -87,7 +87,8 @@ public class WastageRecordServiceImpl implements WastageRecordService {
                 .orElseThrow(() -> new ResourceNotFoundException("WastageRecord", "id", wastageId));
 
         if (record.getStatus() != WastageRecord.Status.DRAFT) {
-            throw new BusinessException("只有草稿状态的损耗记录才能提交");
+            throw new BusinessException(409, "只有草稿状态的损耗记录才能提交")
+                    .withHint("请刷新损耗记录列表查看最新状态");
         }
 
         record.setStatus(WastageRecord.Status.SUBMITTED);
@@ -105,7 +106,8 @@ public class WastageRecordServiceImpl implements WastageRecordService {
                 .orElseThrow(() -> new ResourceNotFoundException("WastageRecord", "id", wastageId));
 
         if (record.getStatus() != WastageRecord.Status.SUBMITTED) {
-            throw new BusinessException("只有已提交状态的损耗记录才能审批");
+            throw new BusinessException(409, "只有已提交状态的损耗记录才能审批")
+                    .withHint("请刷新损耗记录列表查看最新审批状态");
         }
 
         record.setStatus(WastageRecord.Status.APPROVED);

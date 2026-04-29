@@ -1,0 +1,206 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "title": "SmartBI Chat — v9 prod metrics",
+  "uid": "smartbi-chat-v9",
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {"from": "now-24h", "to": "now"},
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {"text": "Prometheus", "value": "Prometheus"}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Chat session lookup hit rate",
+      "type": "gauge",
+      "datasource": {"type": "prometheus", "uid": "$datasource"},
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 6},
+      "targets": [{
+        "expr": "sum(rate(smartbi_chat_session_lookup_total{outcome=\"hit\"}[5m])) / sum(rate(smartbi_chat_session_lookup_total[5m])) * 100",
+        "legendFormat": "hit %",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "yellow", "value": 30},
+              {"color": "green", "value": 50}
+            ]
+          }
+        }
+      },
+      "options": {
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      }
+    },
+    {
+      "id": 2,
+      "title": "LLM-answer cache hit rate",
+      "type": "gauge",
+      "datasource": {"type": "prometheus", "uid": "$datasource"},
+      "gridPos": {"x": 6, "y": 0, "w": 6, "h": 6},
+      "targets": [{
+        "expr": "sum(rate(smartbi_llm_answer_cache_lookup_total{outcome=\"hit\"}[5m])) / sum(rate(smartbi_llm_answer_cache_lookup_total[5m])) * 100",
+        "legendFormat": "hit %",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "yellow", "value": 30},
+              {"color": "green", "value": 60}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "LLM 软超时频率 (silent vs partial)",
+      "type": "stat",
+      "datasource": {"type": "prometheus", "uid": "$datasource"},
+      "gridPos": {"x": 12, "y": 0, "w": 6, "h": 6},
+      "targets": [
+        {"expr": "sum(rate(smartbi_llm_soft_timeout_total{silent=\"true\"}[1h])) * 3600", "legendFormat": "silent timeouts/h", "refId": "A"},
+        {"expr": "sum(rate(smartbi_llm_soft_timeout_total{silent=\"false\"}[1h])) * 3600", "legendFormat": "partial timeouts/h", "refId": "B"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 10}]}
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Cache reject reasons (1h)",
+      "type": "stat",
+      "datasource": {"type": "prometheus", "uid": "$datasource"},
+      "gridPos": {"x": 18, "y": 0, "w": 6, "h": 6},
+      "targets": [
+        {"expr": "sum by (reason) (rate(smartbi_cache_reject_total[1h])) * 3600", "legendFormat": "{{reason}}", "refId": "A"}
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Chat-session turn count distribution",
+      "type": "histogram",
+      "datasource": {"type": "prometheus", "uid": "$datasource"},
+      "gridPos": {"x": 0, "y": 6, "w": 12, "h": 8},
+      "targets": [{
+        "expr": "histogram_quantile(0.5, sum(rate(smartbi_chat_session_turn_count_bucket[1h])) by (le))",
+        "legendFormat": "P50 turns",
+        "refId": "A"
+      }, {
+        "expr": "histogram_quantile(0.95, sum(rate(smartbi_chat_session_turn_count_bucket[1h])) by (le))",
+        "legendFormat": "P95 turns",
+        "refId": "B"
+      }]
+    },
+    {
+      "id": 6,
+      "title": "Cache hit kept by template (top 10)",
+      "type": "bargauge",
+      "datasource": {"type": "prometheus", "uid": "$datasource"},
+      "gridPos": {"x": 12, "y": 6, "w": 12, "h": 8},
+      "targets": [{
+        "expr": "topk(10, sum by (template_code) (smartbi_cache_hit_kept_total))",
+        "legendFormat": "{{template_code}}",
+        "refId": "A"
+      }],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient"
+      }
+    },
+    {
+      "id": 7,
+      "title": "Pruner runs (chat-session vs llm-cache)",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "$datasource"},
+      "gridPos": {"x": 0, "y": 14, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "rate(smartbi_pruner_runs_total{outcome=\"ok\"}[5m]) * 300", "legendFormat": "{{table}} ok/5min", "refId": "A"},
+        {"expr": "rate(smartbi_pruner_runs_total{outcome=\"error\"}[5m]) * 300", "legendFormat": "{{table}} error/5min", "refId": "B"}
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Pruner deleted rows over time",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "$datasource"},
+      "gridPos": {"x": 12, "y": 14, "w": 12, "h": 8},
+      "targets": [{
+        "expr": "rate(smartbi_pruner_deleted_rows_total[5m]) * 300",
+        "legendFormat": "{{table}} deleted/5min",
+        "refId": "A"
+      }]
+    },
+    {
+      "id": 9,
+      "title": "HTTP request latency (chat endpoint)",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "$datasource"},
+      "gridPos": {"x": 0, "y": 22, "w": 24, "h": 8},
+      "targets": [
+        {"expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{handler=~\".*general-analysis-stream.*\"}[5m])) by (le)) * 1000", "legendFormat": "P50 ms", "refId": "A"},
+        {"expr": "histogram_quantile(0.90, sum(rate(http_request_duration_seconds_bucket{handler=~\".*general-analysis-stream.*\"}[5m])) by (le)) * 1000", "legendFormat": "P90 ms", "refId": "B"},
+        {"expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{handler=~\".*general-analysis-stream.*\"}[5m])) by (le)) * 1000", "legendFormat": "P99 ms", "refId": "C"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 8000}, {"color": "red", "value": 15000}]
+          }
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "LLM-answer cache hit_count distribution (how reused)",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "$datasource"},
+      "gridPos": {"x": 0, "y": 30, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "histogram_quantile(0.5, sum(rate(smartbi_llm_answer_cache_hit_count_observed_bucket[1h])) by (le))", "legendFormat": "P50 hit_count", "refId": "A"},
+        {"expr": "histogram_quantile(0.95, sum(rate(smartbi_llm_answer_cache_hit_count_observed_bucket[1h])) by (le))", "legendFormat": "P95 hit_count", "refId": "B"}
+      ]
+    },
+    {
+      "id": 11,
+      "title": "LLM-cache write outcomes",
+      "type": "stat",
+      "datasource": {"type": "prometheus", "uid": "$datasource"},
+      "gridPos": {"x": 12, "y": 30, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "sum by (outcome) (smartbi_llm_answer_cache_write_total)", "legendFormat": "{{outcome}}", "refId": "A"}
+      ]
+    }
+  ]
+}

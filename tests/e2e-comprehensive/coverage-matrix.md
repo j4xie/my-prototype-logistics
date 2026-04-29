@@ -138,6 +138,49 @@ T3 upgraded from smoke-level to **deep** (Rule 1 full criteria: fill + submit + 
 
 **Full results**: [`results/e2e-R21-devtools-sweep.md`](results/e2e-R21-devtools-sweep.md)
 
+## R22 + R23 verdict (deep live testing + 7 bugs, 2026-04-16)
+
+**Full results**: [`results/e2e-R22-p0-gaps-closed.md`](results/e2e-R22-p0-gaps-closed.md) + [`results/e2e-R23-deep-live.md`](results/e2e-R23-deep-live.md)
+
+**Business flows E2E verified for first time**:
+- G1 税率分组开票 (killer demo from Apr 7 meeting) — INV-20260416-0006 ¥1,110 two-rate split
+- PO full 6-stage — create→submit→approve→finance→receive→auto-batch (MT-20260416-3073)
+- Plan → 转为批次 — PB-PLAN-...-38821 created, plan 进行中
+- Shipment full 3-stage — pending→shipped→delivered via UI
+- SO 驳回→重新提交 loop — SO-20260415-0008 循环通过
+- RBAC 4-role spot check — factory_admin / sales_mgr / viewer / warehouse_mgr
+
+**Bugs caught & fixed in-round**:
+- R21-F3/F4/F5 (R22 closed): settings 404 / smartbi HTML-as-JSON / whitelist 405
+- R23-F1: /warehouse/shipments pagination 0-vs-1-indexed mismatch
+- R23-F2: SO resubmit URL typo (/submit-for-review, not /submit-for-finance-review)
+- R23-F3: DB validation rule FINANCE_CONFIRM_ONLY too strict
+- R23-F4: Shipment status case mismatch (DELIVERED vs delivered)
+- R23-F5: F1 over-correction (2 files defaulted page:0 not page:1, -1 broke them)
+
+**Coverage matrix deltas (R22 + R23)**:
+| Module | Before R22 | After R23 |
+|---|---|---|
+| /sales/orders + 税率分组开票 | deep create-only | **deep full loop + G1 killer demo** |
+| /sales/orders 驳回重提 loop | N/A | **deep** (F2+F3 fix verified) |
+| /procurement/orders 6-stage | deep create smoke | **deep 6-stage chain** |
+| /warehouse/materials | deep | **deep + auto-gen from PO receive** |
+| /warehouse/shipments | smoke + broken | **deep + F1/F4 fixed** |
+| /production/plans 转批次 | medium | **deep (plan → batch chain)** |
+| /production/batches | smoke | **deep (list delta from plan)** |
+| /system/settings | smoke-issue | **smoke-OK** (F3 fixed) |
+| /system/smartbi-config | smoke-issue | **smoke-OK** (F4 fixed) |
+| /hr/whitelist | BLOCKED | **medium+ POST** (F5 fixed) |
+| /finance/invoices | medium | medium (F5 revert verified) |
+| RBAC 4 roles | R19 implicit | **explicit spot check** (menu/button/403 guard/price hiding) |
+| Error paths (7 types) | N/A | **comprehensive — 6 PASS + 1 latent** |
+
+**R23 completion status**: all planned deep L4 tests (T4/T5/T6/T7) executed and passed. Zero "next round" deferrals for core business flows. Latent items scheduled to R24 with concrete test design.
+
+---
+
+
+
 **60 routes visited** via MCP playwright-test real Chromium + console/network monitoring under `e2e_factory_admin`:
 
 - **58 PASS** — 0 console errors, 0 4xx/5xx, page content rendered

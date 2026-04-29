@@ -201,6 +201,7 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
                     && !"voice".equals(factoryId) && !"ai".equals(factoryId)
                     && !"scale-protocols".equals(factoryId) && !"dashboard".equals(factoryId)
                     && !"workflow".equals(factoryId)   // /api/mobile/workflow/* are global endpoints (node-schemas, validate)
+                    && !"admin".equals(factoryId)      // /api/mobile/admin/* are cross-factory admin endpoints (cache management etc)
                     && !"smartbi-config".equals(factoryId)) {  // /api/mobile/smartbi-config/* uses ?factoryId= query param (R21-F4 fix)
                 return factoryId;
             }
@@ -252,16 +253,19 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
     }
 
     /**
-     * 发送401 Unauthorized响应
+     * 发送401 Unauthorized响应 (格式与 PermissionInterceptor.sendPermissionDenied 对齐 —
+     * severity + actionHint 让前端 axios interceptor ElNotification sticky 处理一致).
      */
     private void sendUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json;charset=UTF-8");
 
-        Map<String, Object> errorResponse = new HashMap<>();
+        Map<String, Object> errorResponse = new java.util.LinkedHashMap<>();
+        errorResponse.put("success", false);
         errorResponse.put("code", 401);
         errorResponse.put("message", message);
-        errorResponse.put("success", false);
+        errorResponse.put("severity", "error");
+        errorResponse.put("actionHint", "会话已过期或未登录, 请重新登录");
         errorResponse.put("timestamp", java.time.LocalDateTime.now().toString());
 
         ObjectMapper mapper = new ObjectMapper();
@@ -269,16 +273,19 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
     }
 
     /**
-     * 发送403 Forbidden响应
+     * 发送403 Forbidden响应 (格式与 PermissionInterceptor 对齐).
+     * 这条路径主要用于跨工厂访问被拒 / 内部API认证失败, actionHint 相应调整.
      */
     private void sendForbiddenResponse(HttpServletResponse response, String message) throws IOException {
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setContentType("application/json;charset=UTF-8");
 
-        Map<String, Object> errorResponse = new HashMap<>();
+        Map<String, Object> errorResponse = new java.util.LinkedHashMap<>();
+        errorResponse.put("success", false);
         errorResponse.put("code", 403);
         errorResponse.put("message", message);
-        errorResponse.put("success", false);
+        errorResponse.put("severity", "error");
+        errorResponse.put("actionHint", "请检查是否访问了错误的工厂, 或切换到有权限的账号重试");
         errorResponse.put("timestamp", java.time.LocalDateTime.now().toString());
 
         ObjectMapper mapper = new ObjectMapper();

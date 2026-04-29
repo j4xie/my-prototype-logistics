@@ -194,12 +194,14 @@ async function loadData() {
     await loadFromBatches();
   } catch (error) {
     console.error('Failed to load SKU margin data:', error);
-    // Fallback to batch-based loading
+    // Fallback to batch-based loading; if that also fails, show empty
+    // state rather than fake demo dishes which users would mistake for
+    // their own data (Apr 21 2026).
     try {
       await loadFromBatches();
     } catch {
-      // If all API calls fail, use sample data
-      loadSampleData();
+      tableData.value = [];
+      pagination.value.total = 0;
     }
   } finally {
     loading.value = false;
@@ -253,7 +255,9 @@ async function loadFromBatches() {
   if (response.success && response.data) {
     const batches = response.data.content || [];
     if (batches.length === 0) {
-      loadSampleData();
+      // New factory / no batches: show empty state, not fake demo dishes
+      tableData.value = [];
+      pagination.value.total = 0;
       return;
     }
 
@@ -299,7 +303,8 @@ async function loadFromBatches() {
     tableData.value = rows;
     pagination.value.total = rows.length;
   } else {
-    loadSampleData();
+    tableData.value = [];
+    pagination.value.total = 0;
   }
 }
 

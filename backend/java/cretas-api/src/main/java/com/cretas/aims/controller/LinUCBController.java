@@ -1,6 +1,8 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.entity.ml.LinUCBModel;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.service.LinUCBService;
 import com.cretas.aims.service.LinUCBService.*;
 import com.cretas.aims.util.ErrorSanitizer;
@@ -30,6 +32,7 @@ import java.util.*;
 @RequestMapping("/api/mobile/{factoryId}/scheduling/linucb")
 @RequiredArgsConstructor
 @Tag(name = "LinUCB智能推荐", description = "LinUCB 上下文多臂老虎机算法 API，提供工人推荐、UCB分数计算、反馈记录、模型管理、训练与统计")
+@RequireModule("scheduling")
 public class LinUCBController {
 
     private final LinUCBService linUCBService;
@@ -55,6 +58,7 @@ public class LinUCBController {
      * }
      */
     @Operation(summary = "获取AI推荐的工人分配列表", description = "基于LinUCB算法，根据任务特征和候选工人列表计算UCB分数并返回推荐排序。请求体包含taskFeatures(任务特征)和candidateWorkerIds(候选工人ID列表)")
+    @RequirePermission({"scheduling:read_write"})
     @PostMapping("/recommend-workers")
     public ResponseEntity<Map<String, Object>> recommendWorkers(
             @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
@@ -107,6 +111,7 @@ public class LinUCBController {
      * POST /api/mobile/{factoryId}/scheduling/linucb/compute-ucb
      */
     @Operation(summary = "计算单个工人的UCB分数", description = "计算指定工人在给定上下文下的UCB(Upper Confidence Bound)分数，用于评估工人分配的置信度")
+    @RequirePermission({"scheduling:read_write"})
     @PostMapping("/compute-ucb")
     public ResponseEntity<Map<String, Object>> computeUCB(
             @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
@@ -157,6 +162,7 @@ public class LinUCBController {
      * POST /api/mobile/{factoryId}/scheduling/linucb/record-allocation
      */
     @Operation(summary = "记录工人分配", description = "在分配工人时调用，记录分配信息和预测分数，用于后续模型更新。返回feedbackId供完成反馈时使用")
+    @RequirePermission({"scheduling:read_write"})
     @PostMapping("/record-allocation")
     public ResponseEntity<Map<String, Object>> recordAllocation(
             @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
@@ -215,6 +221,7 @@ public class LinUCBController {
      * POST /api/mobile/{factoryId}/scheduling/linucb/complete-feedback
      */
     @Operation(summary = "完成分配反馈", description = "任务完成时调用，提交实际产量、工时和质量分数，系统计算奖励值并用于更新LinUCB模型")
+    @RequirePermission({"scheduling:read_write"})
     @PostMapping("/complete-feedback")
     public ResponseEntity<Map<String, Object>> completeFeedback(
             @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
@@ -335,6 +342,7 @@ public class LinUCBController {
      * DELETE /api/mobile/{factoryId}/scheduling/linucb/models/{workerId}
      */
     @Operation(summary = "重置工人模型", description = "重置指定工人的LinUCB模型，清除所有历史学习数据，模型将从头开始学习")
+    @RequirePermission({"scheduling:read_write"})
     @DeleteMapping("/models/{workerId}")
     public ResponseEntity<Map<String, Object>> resetModel(
             @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
@@ -364,6 +372,7 @@ public class LinUCBController {
      * DELETE /api/mobile/{factoryId}/scheduling/linucb/models
      */
     @Operation(summary = "重置工厂所有模型", description = "重置工厂内所有工人的LinUCB模型，谨慎使用此操作，将导致所有模型从头开始学习")
+    @RequirePermission({"scheduling:read_write"})
     @DeleteMapping("/models")
     public ResponseEntity<Map<String, Object>> resetAllModels(
             @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId) {
@@ -394,6 +403,7 @@ public class LinUCBController {
      * POST /api/mobile/{factoryId}/scheduling/linucb/train
      */
     @Operation(summary = "触发模型批量更新", description = "手动触发模型训练，处理所有未处理的反馈数据，更新对应工人的LinUCB模型参数")
+    @RequirePermission({"scheduling:read_write"})
     @PostMapping("/train")
     public ResponseEntity<Map<String, Object>> trainModels(
             @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId) {
@@ -430,6 +440,7 @@ public class LinUCBController {
     @Operation(summary = "获取带多样性调整的工人推荐",
             description = "在LinUCB打分基础上应用公平性、技能维护、重复惩罚。" +
                     "FinalScore = 0.6 × LinUCB + 0.15 × FairnessBonus + 0.15 × SkillMaintenance - 0.1 × RepetitionPenalty")
+    @RequirePermission({"scheduling:read_write"})
     @PostMapping("/recommend-with-diversity")
     public ResponseEntity<Map<String, Object>> recommendWithDiversity(
             @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,

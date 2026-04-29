@@ -9,11 +9,19 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import {
   uploadAndAnalyze,
+  // Step 2D+2-5 (Apr 20 2026): async path now does full streaming persist
+  // (smart_bi_dynamic_data + field_definitions) — wiring it in for files >50MB
+  // so customers get 200K+ rows without the sync-path 65K cap and without
+  // blocking the browser tab.
+  uploadFileAsync,
+  pollUploadStatus,
   confirmUploadAndPersist,
+  detectTableRegions,
   type AnalysisResult,
   type AIInsightData,
   type KPIData,
-  type ChartConfig
+  type ChartConfig,
+  type TableRegion,
 } from '@/api/smartbi';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import type { UploadFile, UploadUserFile } from 'element-plus';
@@ -59,11 +67,24 @@ const chartInstances = new Map<string, echarts.ECharts>();
 const parsedData = ref<unknown[]>([]);
 const parsedFields = ref<Array<{ original: string; standard: string }>>([]);
 const parsedTableType = ref<string>('');
+// Bug #43: uploadId from /upload-and-analyze so /upload/confirm can skip
+// re-persistence and only update field definitions. Without this, the server
+// would re-persist from trimmed 50-row previewData instead of the original file.
+const currentUploadId = ref<number | null>(null);
 
 // 上传状态
 const uploading = ref(false);
 const uploadProgress = ref(0);
+// P0-6 (Apr 20): 上传阶段显示 — 'idle' | 'uploading' (字节 0-100%) | 'parsing' (后端解析, 无百分比) | 'done'
+const uploadStage = ref<'idle' | 'uploading' | 'parsing' | 'done'>('idle');
 const fileList = ref<UploadUserFile[]>([]);
+
+// Bug #25b (2026-04-18): 多表堆叠 — 区域选择 dialog
+const regionDialogVisible = ref(false);
+const detectedRegions = ref<TableRegion[]>([]);
+const pendingFile = ref<File | null>(null);
+const selectedRegionIndex = ref<number | null>(null);
+const regionDetecting = ref(false);
 
 // 数据类型
 interface DataType {
@@ -289,26 +310,66 @@ async function handleUpload(file: UploadFile) {
   }
 
   fileList.value = [file];
+
+  // Bug #25b: preview regions first; CSV skips the dialog (rarely stacked).
+  if (ext !== 'csv') {
+    regionDetecting.value = true;
+    try {
+      const regionResp = await detectTableRegions(file.raw);
+      if (regionResp.success && regionResp.totalRegions >= 2) {
+        detectedRegions.value = regionResp.regions;
+        pendingFile.value = file.raw;
+        selectedRegionIndex.value = 0;
+        regionDialogVisible.value = true;
+        return false; // wait for user to confirm region; continueUpload fires next
+      }
+    } catch (error) {
+      console.warn('Region detection failed, falling back to full-file parse:', error);
+    } finally {
+      regionDetecting.value = false;
+    }
+  }
+
+  await runUploadAndAnalyze(file.raw);
+  return false;
+}
+
+async function runUploadAndAnalyze(rawFile: File, region?: TableRegion) {
+  // Step 2-5 (Apr 20 2026): branch >50MB files to async streaming persist
+  // path. Sync path is still capped at ~65K rows due to memory; async does
+  // full 200K+ via chunked read + execute_values bulk insert. UX win: tab
+  // can close mid-parse, polling reconnects.
+  const ASYNC_THRESHOLD_MB = 50;
+  if (rawFile.size > ASYNC_THRESHOLD_MB * 1024 * 1024) {
+    return runUploadAsync(rawFile, region);
+  }
   uploading.value = true;
   uploadProgress.value = 0;
+  uploadStage.value = 'uploading';  // P0-6: 'uploading' (0-100 字节进度) → 'parsing' (后端解析, 无百分比)
 
-  let progressInterval: ReturnType<typeof setInterval> | null = null;
   try {
-    // 模拟上传进度
-    progressInterval = setInterval(() => {
-      if (uploadProgress.value < 90) {
-        uploadProgress.value += 10;
+    // P0-6 (Apr 20): 真上传进度 — axios onUploadProgress 报实际字节, 不再假 90%.
+    // 263MB+ 文件能看到准确 0→100% 上传进度, 传完切换到 'parsing' 阶段.
+    const uploadOptions = {
+      ...(region ? { selectedRegionStart: region.startRow, selectedRegionEnd: region.endRow } : {}),
+      onUploadProgress: (percent: number, _loaded: number, _total: number) => {
+        uploadProgress.value = percent;
+        if (percent >= 100) {
+          uploadStage.value = 'parsing';  // 字节传完, 后端开始解析
+        }
       }
-    }, 100);
+    };
+    const result = await uploadAndAnalyze(rawFile, uploadOptions);
 
-    // 调用真实 Python SmartBI API
-    const result = await uploadAndAnalyze(file.raw);
-
-    clearInterval(progressInterval);
     uploadProgress.value = 100;
+    uploadStage.value = 'done';
 
     if (!result.success) {
-      ElMessage.error(result.error || '解析失败');
+      // Apr 28 2026: axios interceptor (request.ts:168 showRichError) already
+      // emits the rich actionHint toast for any success=false response.
+      // uploadAndAnalyze.catch then converts it to {success:false, error: msg}.
+      // Re-firing here = duplicate toast (3ms apart, captured during qa-prompt
+      // v2.4 deep E2E Phase 4). Skip to keep one toast per error event.
       uploading.value = false;
       return false;
     }
@@ -338,14 +399,21 @@ async function handleUpload(file: UploadFile) {
     // 保存图表配置
     chartConfigs.value = result.chartRecommendations || [];
 
+    // Bug #43: remember uploadId so save step reuses pre-persisted rows.
+    currentUploadId.value = result.uploadId ?? null;
+
     // Build field type confirmations from parsed data
     buildFieldTypeConfirmations();
 
     currentStep.value = 1;
     ElMessage.success('文件解析成功');
 
-    // 如果有分析结果，直接跳到分析页面
-    if (result.analysis && result.analysis.success) {
+    // A-fix (Apr 17 2026): 后端 requiresConfirmation=true 时保留在步骤 2,
+    // 让用户 review 字段映射后再进分析. 旧代码硬编码 analysis.success=true
+    // 导致 confidence<阈值的文件也跳过确认,在步骤 3 显示"暂无分析结论".
+    if (result.requiresConfirmation) {
+      ElMessage.warning('字段映射信心较低,请在下方确认后再查看分析结果');
+    } else if (result.analysis && result.analysis.success) {
       currentStep.value = 2;
       await nextTick();
       renderCharts();
@@ -354,11 +422,161 @@ async function handleUpload(file: UploadFile) {
     console.error('文件上传失败:', error);
     ElMessage.error('文件上传失败: ' + (error instanceof Error ? error.message : '未知错误'));
   } finally {
-    if (progressInterval) clearInterval(progressInterval);
+    // P0-6: no more fake progressInterval; axios onUploadProgress drives uploadProgress now.
     uploading.value = false;
+    uploadStage.value = 'idle';
   }
 
   return false;
+}
+
+/**
+ * Step 2-5 (Apr 20 2026): async streaming upload path for files >50MB.
+ *
+ * Calls Python /auto-parse-async directly (bypasses Java sync flow which
+ * is memory-capped at ~65K rows). Returns uploadId immediately, then polls
+ * /auto-parse-status every 3s until COMPLETED/FAILED.
+ *
+ * Memory bounded on server (chunked CSV read + execute_values bulk insert)
+ * so 263MB × 200K × 231 fits. Customer gets full-fidelity analysis on large
+ * POS detail exports.
+ */
+async function runUploadAsync(rawFile: File, region?: TableRegion) {
+  uploading.value = true;
+  uploadProgress.value = 0;
+  uploadStage.value = 'uploading';
+
+  // Try to get factoryId from auth store; fallback to F001 for backward compat.
+  const authStore = useAuthStore();
+  const factoryId =
+    (authStore.user as { factoryId?: string } | null)?.factoryId || 'F001';
+
+  try {
+    // Phase A: transfer bytes to server (progress 0-100%)
+    const uploadResult = await uploadFileAsync(rawFile, factoryId, {
+      maxRows: 500000,
+      ...(region
+        ? {
+            selectedRegionStart: region.startRow,
+            selectedRegionEnd: region.endRow,
+          }
+        : {}),
+      onUploadProgress: (percent: number) => {
+        uploadProgress.value = percent;
+        if (percent >= 100) {
+          uploadStage.value = 'parsing';
+        }
+      },
+    });
+
+    if (!uploadResult.success || !uploadResult.uploadId) {
+      // Apr 28 2026: axios interceptor already emitted toast for success=false.
+      // Same pattern as runUploadAndAnalyze (sync path) — skip duplicate.
+      return false;
+    }
+
+    ElMessage.info(
+      `大文件异步上传: ${Math.round(rawFile.size / 1024 / 1024)}MB 已接收, 后台处理中 (可切换页面,稍后回来).`,
+    );
+
+    // Phase B: poll status until terminal state.
+    const final = await pollUploadStatus(uploadResult.uploadId, {
+      intervalMs: 3000,
+      timeoutMs: 20 * 60 * 1000, // 20 min for very large files
+      onProgress: (s) => {
+        // Keep UI in 'parsing' stage; rows count grows as batches commit.
+        uploadStage.value = 'parsing';
+        if (typeof s.rowCount === 'number' && s.rowCount > 0) {
+          // Re-purpose progress bar as a "rows-so-far" indicator.
+          // We don't know totalRows yet, so keep bar at 100% during parsing.
+        }
+      },
+    });
+
+    uploadProgress.value = 100;
+    uploadStage.value = 'done';
+
+    if (final.status !== 'COMPLETED') {
+      ElMessage.error(`解析失败: ${final.error || '未知错误'}`);
+      return false;
+    }
+
+    // Phase C: build parseResult from status response.
+    type AsyncStatusPayload = typeof final & {
+      headers?: string[];
+      previewData?: Record<string, unknown>[];
+    };
+    const payload = final as AsyncStatusPayload;
+    const headers: string[] = payload.headers || [];
+    const previewData: Record<string, unknown>[] = payload.previewData || [];
+    const fmappings = (payload.fieldMappings as Array<{
+      originalColumn: string;
+      standardField: string;
+    }> | null) || [];
+
+    parseResult.value = {
+      totalRows: final.rowCount || 0,
+      validRows: final.rowCount || 0,
+      errorRows: 0,
+      headers,
+      sampleData: previewData as Record<string, string>[],
+      errors: [],
+    };
+    parsedData.value = previewData;
+    parsedFields.value = fmappings.map((m) => ({
+      original: m.originalColumn,
+      standard: m.standardField,
+    }));
+    parsedTableType.value = final.detectedTableType || '';
+    currentUploadId.value = final.uploadId;
+
+    buildFieldTypeConfirmations();
+    currentStep.value = 1;
+    ElMessage.success(
+      `大文件解析完成: ${final.rowCount} 行 × ${final.columnCount} 列 (流式持久化,已入库)`,
+    );
+  } catch (error) {
+    console.error('异步上传失败:', error);
+    ElMessage.error(
+      '异步上传失败: ' + (error instanceof Error ? error.message : '未知错误'),
+    );
+  } finally {
+    uploading.value = false;
+    uploadStage.value = 'idle';
+  }
+
+  return false;
+}
+
+// Bug #25b: confirm region selection from dialog, then continue uploading.
+// Bug #25b patch: distinguish user-confirm close from user-cancel close.
+// el-dialog @close fires for BOTH paths; without this flag cancel logic would
+// clear fileList after confirm, breaking the downstream save step.
+const regionConfirmed = ref(false);
+
+async function confirmRegionSelection() {
+  if (selectedRegionIndex.value === null || !pendingFile.value) {
+    ElMessage.warning('请选择一个数据区域');
+    return;
+  }
+  const region = detectedRegions.value[selectedRegionIndex.value];
+  regionConfirmed.value = true;
+  regionDialogVisible.value = false;
+  const fileToUpload = pendingFile.value;
+  pendingFile.value = null;
+  await runUploadAndAnalyze(fileToUpload, region);
+}
+
+function cancelRegionSelection() {
+  regionDialogVisible.value = false;
+  if (regionConfirmed.value) {
+    regionConfirmed.value = false;
+    return;  // confirm path already consumed state
+  }
+  pendingFile.value = null;
+  detectedRegions.value = [];
+  selectedRegionIndex.value = null;
+  fileList.value = [];
 }
 
 // 渲染所有图表
@@ -399,6 +617,9 @@ async function handleSaveAnalysis() {
   try {
     // 使用现有的 /upload/confirm 端点持久化
     const saveResponse = await confirmUploadAndPersist({
+      // Bug #43: pass uploadId so backend skips 50-row-trim re-persist and only
+      // updates field definitions. Rows were already persisted during upload.
+      uploadId: currentUploadId.value ?? undefined,
       parseResponse: {
         fileName: fileList.value[0].name || 'unknown.xlsx',
         sheetName: 'Sheet1',
@@ -592,20 +813,31 @@ function getColumnTypeBadge(header: string): { label: string; type: 'info' | 'su
           :limit="1"
           accept=".xlsx,.xls,.csv"
         >
-          <el-icon class="upload-icon" v-if="!uploading"><Upload /></el-icon>
+          <el-icon class="upload-icon" v-if="!uploading && !regionDetecting"><Upload /></el-icon>
           <el-progress
-            v-else
+            v-else-if="uploading"
             type="circle"
             :percentage="uploadProgress"
             :width="80"
           />
+          <el-icon v-else class="upload-icon is-loading"><Refresh /></el-icon>
           <div class="upload-text">
-            <template v-if="!uploading">
+            <template v-if="!uploading && !regionDetecting">
               <p class="main-text">将文件拖到此处，或<em>点击上传</em></p>
               <p class="sub-text">支持 .xlsx、.xls 和 .csv 格式，文件大小不超过 500MB</p>
             </template>
+            <template v-else-if="regionDetecting">
+              <p class="main-text">正在检测数据区域...</p>
+            </template>
             <template v-else>
-              <p class="main-text">正在解析文件...</p>
+              <!-- P0-6 (Apr 20): 真实阶段提示, 不再全程"正在解析" -->
+              <p class="main-text" v-if="uploadStage === 'uploading'">
+                正在上传文件 ({{ uploadProgress }}%)
+              </p>
+              <p class="main-text" v-else>正在解析文件...</p>
+              <p class="sub-text" v-if="uploadStage === 'parsing'">
+                上传完成, 后端正在解析大文件可能需要几分钟
+              </p>
             </template>
           </div>
         </el-upload>
@@ -859,6 +1091,66 @@ function getColumnTypeBadge(header: string): { label: string; type: 'info' | 'su
           </el-button>
         </div>
       </div>
+
+      <!-- Bug #25b: 多表堆叠 - 区域选择 dialog -->
+      <el-dialog
+        v-model="regionDialogVisible"
+        title="请选择表范围"
+        width="680px"
+        :close-on-click-modal="false"
+        :close-on-press-escape="false"
+        @close="cancelRegionSelection"
+      >
+        <div class="region-dialog-hint">
+          检测到 <strong>{{ detectedRegions.length }}</strong> 个独立数据区域，请选择要解析的表：
+        </div>
+        <el-radio-group v-model="selectedRegionIndex" style="width: 100%">
+          <div v-for="region in detectedRegions" :key="region.index" class="region-card">
+            <el-radio :value="region.index" :label="region.index" size="large">
+              <strong>区域 {{ region.index + 1 }}</strong>
+              <span class="region-meta">
+                (第 {{ region.startRow + 1 }}–{{ region.endRow + 1 }} 行,
+                {{ region.previewCols.length }} 列, 约 {{ region.sampleRows }} 行数据)
+              </span>
+            </el-radio>
+            <div class="region-preview">
+              <div class="region-cols">
+                <el-tag v-for="col in region.previewCols.slice(0, 8)" :key="col" size="small" type="info">
+                  {{ col }}
+                </el-tag>
+                <span v-if="region.previewCols.length > 8" class="region-cols-more">
+                  … 共 {{ region.previewCols.length }} 列
+                </span>
+              </div>
+              <el-table
+                v-if="region.previewData.length > 0"
+                :data="region.previewData.slice(0, 3).map((row) => Object.fromEntries(row.map((v, i) => [String(i), v])))"
+                size="small"
+                border
+                class="region-preview-table"
+              >
+                <el-table-column
+                  v-for="(col, idx) in region.previewCols.slice(0, 6)"
+                  :key="idx"
+                  :label="col"
+                  :prop="String(idx)"
+                  min-width="90"
+                />
+              </el-table>
+            </div>
+          </div>
+        </el-radio-group>
+        <template #footer>
+          <el-button @click="cancelRegionSelection">取消</el-button>
+          <el-button
+            type="primary"
+            :disabled="selectedRegionIndex === null"
+            @click="confirmRegionSelection"
+          >
+            确定
+          </el-button>
+        </template>
+      </el-dialog>
 
       <!-- 步骤 4: 保存确认 -->
       <div v-show="currentStep === 3" class="step-content">
@@ -1470,6 +1762,56 @@ function getColumnTypeBadge(header: string): { label: string; type: 'info' | 'su
   margin-top: 32px;
   padding-top: 24px;
   border-top: 1px solid var(--el-border-color-light, #ebeef5);
+}
+
+// Bug #25b: region selection dialog
+.region-dialog-hint {
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: var(--el-text-color-regular, #606266);
+}
+
+.region-card {
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid var(--el-border-color-light, #ebeef5);
+  border-radius: 6px;
+
+  .region-meta {
+    margin-left: 8px;
+    font-size: 12px;
+    color: var(--el-text-color-secondary, #909399);
+    font-weight: normal;
+  }
+
+  .region-preview {
+    margin-top: 12px;
+    margin-left: 24px;
+  }
+
+  .region-cols {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .region-cols-more {
+    font-size: 12px;
+    color: var(--el-text-color-secondary, #909399);
+    align-self: center;
+  }
+
+  .region-preview-table {
+    margin-top: 6px;
+  }
+}
+
+@keyframes cretas-rotate-360 {
+  to { transform: rotate(360deg); }
+}
+.upload-icon.is-loading {
+  animation: cretas-rotate-360 1s linear infinite;
 }
 
 // 响应式

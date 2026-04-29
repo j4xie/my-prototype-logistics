@@ -51,7 +51,8 @@ public class InventoryMatchingService {
     @Transactional(readOnly = true)
     public StockCheckResult checkAvailability(String factoryId, String salesOrderId) {
         SalesOrder so = salesOrderRepository.findById(salesOrderId)
-                .orElseThrow(() -> new BusinessException("销售订单不存在: " + salesOrderId));
+                .orElseThrow(() -> new BusinessException(404, "销售订单不存在: " + salesOrderId)
+                        .withHint("请刷新销售订单列表后重新选择").withHintTarget("salesOrderId"));
 
         List<LineItemMatch> matches = new ArrayList<>();
         boolean allSatisfied = true;

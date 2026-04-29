@@ -82,8 +82,8 @@ async function saveThreshold(row: ThresholdConfig) {
       ElMessage.error(response.message || '保存失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('保存阈值失败:', error);
-    ElMessage.error('保存失败');
   } finally {
     thresholdSavingIds.value.delete(row.id);
   }

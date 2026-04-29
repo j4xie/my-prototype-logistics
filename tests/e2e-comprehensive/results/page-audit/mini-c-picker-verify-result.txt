@@ -1,0 +1,124 @@
+Login OK on http://139.196.165.140:8097
+Logged-in factoryId: null
+WARNING: Expected factoryId=F001 but got null
+Initial screenshot saved
+First non-empty visible dropdown text: .el-select__placeholder -> 评价下载2025.07.01-2025.09.30_1328220_1773721054386.xlsx · 表1 · 12903行
+All select-like elements (top 20):
+  .el-select[0] top=108 text="评价下载2025.07.01-2025.09.30_1328220_1773721054386.xlsx · 表1 · 12903行" value=""
+  .el-input__inner[0] top=945 text="" value=""
+  [role="combobox"][0] top=110 text="" value=""
+  [role="combobox"][1] top=944 text="" value=""
+Chat welcome message snippets:
+  AI 助手19:26您好！我是 SmartBI 智能助手，可以帮您分析销售、财务、库存等数据。您可以选择下方的分析模板快速开始，或直接输入问题。
+当前数据源：评价下载2025.07.01-2025.09.30_1328220_1773721054386.xlsx
+  AI 助手19:26您好！我是 SmartBI 智能助手，可以帮您分析销售、财务、库存等数据。您可以选择下方的分析模板快速开始，或直接输入问题。
+当前数据源：评价下载2025.07.01-2025.09.30_1328220_1773721054386.xlsx
+  您好！我是 SmartBI 智能助手，可以帮您分析销售、财务、库存等数据。您可以选择下方的分析模板快速开始，或直接输入问题。
+当前数据源：评价下载2025.07.01-2025.09.30_1328220_1773721054386.xlsx
+All visible el-select triggers:
+  select[0] (top=108, w=280): 评价下载2025.07.01-2025.09.30_1328220_1773721054386.xlsx · 表1 · 12903行
+API direct check: {
+  "count": 200,
+  "top5": [
+    {
+      "id": 3978,
+      "fileName": "qhj_neg.xlsx",
+      "rowCount": 100
+    },
+    {
+      "id": 3976,
+      "fileName": "qhj_3975_meituan_renamed.xlsx",
+      "rowCount": 12903
+    },
+    {
+      "id": 3975,
+      "fileName": "评价下载2025.07.01-2025.09.30_1328220_1773721054386.xlsx",
+      "rowCount": 12903
+    },
+    {
+      "id": 3973,
+      "fileName": "gamma1c-smoke.xlsx",
+      "rowCount": 3
+    },
+    {
+      "id": 3972,
+      "fileName": "gamma1c-smoke.xlsx",
+      "rowCount": 3
+    }
+  ]
+}
+Browser-side Mini-C simulation: {
+  "totalItems": 200,
+  "nonAutoSync": 194,
+  "reviewCands": 15,
+  "reviewCandsSample": [
+    {
+      "id": 3975,
+      "fileName": "评价下载2025.07.01-2025.09.30_1328220_1773721054386.xlsx",
+      "rowCount": 12903
+    },
+    {
+      "id": 3967,
+      "fileName": "qhj_reviews_q3.xlsx",
+      "rowCount": 12903
+    },
+    {
+      "id": 3966,
+      "fileName": "qhj_reviews_q3.xlsx",
+      "rowCount": 12903
+    },
+    {
+      "id": 3965,
+      "fileName": "qhj_reviews_q4.xlsx",
+      "rowCount": 6942
+    },
+    {
+      "id": 3964,
+      "fileName": "qhj_reviews_q3.xlsx",
+      "rowCount": 12903
+    }
+  ],
+  "winner": {
+    "id": 3975,
+    "fileName": "评价下载2025.07.01-2025.09.30_1328220_1773721054386.xlsx",
+    "rowCount": 12903
+  },
+  "winnerKeywordMatches": [
+    {
+      "kw": "评价",
+      "hit": true
+    },
+    {
+      "kw": "评论",
+      "hit": false
+    },
+    {
+      "kw": "大众点评",
+      "hit": false
+    },
+    {
+      "kw": "美团评价",
+      "hit": false
+    },
+    {
+      "kw": "评分",
+      "hit": false
+    },
+    {
+      "kw": "review",
+      "hit": false
+    },
+    {
+      "kw": "comment",
+      "hit": false
+    }
+  ],
+  "chosenGroup": "REVIEW"
+}
+---
+Console errors (0):
+API calls (4):
+  200 GET /api/mobile/F001/smart-bi/uploads?page=0&size=200&status=COMPLETED
+  200 GET /api/smartbi/analytics/cached/3975
+  200 GET /api/mobile/F001/smart-bi/uploads?status=COMPLETED&page=0&size=200
+  200 GET /api/mobile/F001/smart-bi/uploads?status=COMPLETED&page=0&size=200

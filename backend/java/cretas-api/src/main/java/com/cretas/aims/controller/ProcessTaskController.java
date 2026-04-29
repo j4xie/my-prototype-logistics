@@ -1,6 +1,8 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.dto.ProcessTaskDTO;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.service.ProcessTaskService;
@@ -26,10 +28,12 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/mobile/{factoryId}/process-tasks")
 @Tag(name = "工序任务管理", description = "PROCESS模式的工序任务调度管理")
 @RequiredArgsConstructor
+@RequireModule("production_plan")
 public class ProcessTaskController {
 
     private final ProcessTaskService processTaskService;
 
+    @RequirePermission({"production:read_write"})
     @PostMapping
     @Operation(summary = "创建工序任务")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -70,6 +74,7 @@ public class ProcessTaskController {
         return ApiResponse.success(processTaskService.getById(factoryId, id));
     }
 
+    @RequirePermission({"production:read_write"})
     @PutMapping("/{id}/status")
     @Operation(summary = "更新任务状态")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -80,6 +85,7 @@ public class ProcessTaskController {
         return ApiResponse.success(processTaskService.updateStatus(factoryId, id, request));
     }
 
+    @RequirePermission({"production:read_write"})
     @PutMapping("/{id}/close")
     @Operation(summary = "关闭任务")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -90,6 +96,7 @@ public class ProcessTaskController {
         return ApiResponse.success(processTaskService.closeTask(factoryId, id, notes));
     }
 
+    @RequirePermission({"production:read_write"})
     @PostMapping("/generate-from-product")
     @Operation(summary = "根据产品工序配置批量生成任务")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'factory_super_admin', 'dispatcher', 'workshop_supervisor')")

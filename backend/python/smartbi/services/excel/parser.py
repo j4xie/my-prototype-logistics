@@ -373,7 +373,22 @@ class ExcelParser:
             else:
                 # Fall back to pandas-based detection for non-merged multi-headers
                 buffer.seek(0)
-                df_raw = pd.read_excel(buffer, sheet_name=sheet_name, header=None, nrows=5)
+                # Apr 27 2026 (F2): read more rows to handle leading blank
+                # rows. qhj 4148 收入管理报表 has 2 fully-NaN rows at top
+                # before headers; old nrows=5 missed the type-shift signal.
+                df_raw = pd.read_excel(buffer, sheet_name=sheet_name, header=None, nrows=8)
+
+                # Skip leading rows that are >=80% NaN — those are blank-line
+                # padding, not real headers/data.
+                first_non_blank = 0
+                for i in range(len(df_raw)):
+                    nan_ratio = df_raw.iloc[i].isna().sum() / max(len(df_raw.iloc[i]), 1)
+                    if nan_ratio < 0.8:
+                        first_non_blank = i
+                        break
+                if first_non_blank > 0:
+                    df_raw = df_raw.iloc[first_non_blank:].reset_index(drop=True)
+                    logger.info(f"[F2] Skipped {first_non_blank} leading blank rows for header detection")
 
                 if len(df_raw) >= 2:
                     first_row = df_raw.iloc[0]
@@ -385,6 +400,51 @@ class ExcelParser:
                     if first_row_empty_ratio > 0.3 and (second_row_types == 'str').sum() > len(second_row) * 0.5:
                         has_multi_header = True
                         recommended_header_rows = 2
+                    elif len(df_raw) >= 3:
+                        # Apr 27 2026 (F2): qhj 4148 收入管理报表 case — first row
+                        # FULLY populated (e.g. 可比同比_门店名称 / 可选择时间段_汇总实际收入)
+                        # but row 2 is dummy sub-headers (门店名称 / 汇总实际收入 /
+                        # 本期 / 实际收入 / 环比 etc — all strings). Row 3+ is real
+                        # numeric data. Old heuristic missed because row 1 is full.
+                        # New rule: if BOTH row 1 and row 2 are >= 70% string AND
+                        # row 3 has >= 30% numeric values, treat as 2-row header.
+                        third_row = df_raw.iloc[2]
+                        first_str_ratio = first_row.apply(
+                            lambda x: 1 if isinstance(x, str) else 0
+                        ).sum() / max(len(first_row), 1)
+                        second_str_ratio = second_row.apply(
+                            lambda x: 1 if isinstance(x, str) else 0
+                        ).sum() / max(len(second_row), 1)
+
+                        def _is_numeric_value(v):
+                            if isinstance(v, (int, float)) and not pd.isna(v):
+                                return True
+                            if isinstance(v, str):
+                                # try parse — covers "1234", "1.5", but NOT "实际收入"
+                                try:
+                                    float(v.replace(',', '').strip())
+                                    return True
+                                except (ValueError, AttributeError):
+                                    return False
+                            return False
+
+                        third_num_ratio = (
+                            third_row.apply(_is_numeric_value).sum()
+                            / max(len(third_row), 1)
+                        )
+
+                        if (first_str_ratio >= 0.7 and second_str_ratio >= 0.7
+                                and third_num_ratio >= 0.3):
+                            has_multi_header = True
+                            recommended_header_rows = 2
+                            logger.info(
+                                f"[F2] Detected 2-row header via type-shift: "
+                                f"row1_str={first_str_ratio:.1%}, "
+                                f"row2_str={second_str_ratio:.1%}, "
+                                f"row3_num={third_num_ratio:.1%}"
+                            )
+                        else:
+                            recommended_header_rows = 1
                     else:
                         recommended_header_rows = 1
                 else:
@@ -607,7 +667,24 @@ class ExcelParser:
         return DataDirection.ROW_ORIENTED
 
     def _clean_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Clean dataframe by handling NaN and converting types"""
+        """Clean dataframe by handling NaN and converting types.
+
+        Apr 28 2026 (F2-v3): drop pseudo-rows that pollute downstream
+        AI context — 总计/合计/小计 summary rows + 注:/Note: comment rows.
+        Bug #37 root cause: AI saw row "总计 328 1 1587 73761 0.412"
+        and treated 73,761 as a single store's max value (real max was
+        39,617). Filter at parse layer so all downstream consumers (AI
+        Query, template materializer, capability detector) see clean
+        rows.
+
+        Patterns detected (first non-null cell of the row):
+          - "总计" / "合计" / "小计" / "Total" / "Sum" / "汇总" — summary rows
+          - "注：" / "注:" / "Note:" / "说明：" / "备注：" — comment rows
+
+        Conservative — only matches if the FIRST non-null cell starts
+        with one of these prefixes (case-insensitive). Won't drop a
+        legit row whose middle column happens to contain "总计".
+        """
         # Replace NaN with None for JSON serialization
         df = df.replace({np.nan: None})
 
@@ -616,6 +693,35 @@ class ExcelParser:
             if pd.api.types.is_datetime64_any_dtype(df[col]):
                 df[col] = df[col].apply(
                     lambda x: x.isoformat() if pd.notna(x) else None
+                )
+
+        # F2-v3 pseudo-row filter
+        if len(df) > 0:
+            _PSEUDO_PREFIXES = (
+                '总计', '合计', '小计', '汇总',
+                'total', 'sum', 'subtotal', 'grand total',
+                '注：', '注:', '注 :', '说明：', '说明:', '备注：', '备注:',
+                'note:', 'note ：', 'remark:',
+            )
+
+            def _is_pseudo_row(row) -> bool:
+                # Find first non-null cell
+                for v in row:
+                    if v is None:
+                        continue
+                    if isinstance(v, str) and not v.strip():
+                        continue
+                    s = str(v).strip().lower()
+                    return s.startswith(tuple(p.lower() for p in _PSEUDO_PREFIXES))
+                return False  # all-null row — let other logic handle
+
+            mask = df.apply(_is_pseudo_row, axis=1)
+            n_dropped = int(mask.sum())
+            if n_dropped > 0:
+                df = df[~mask].reset_index(drop=True)
+                logger.info(
+                    f"[F2-v3] dropped {n_dropped} pseudo-rows "
+                    f"(总计/合计/注：/etc) from {n_dropped + len(df)} total"
                 )
 
         return df
@@ -878,14 +984,23 @@ class ExcelParser:
         if not value or not value.strip():
             return False
 
-        # Remove common formatting
-        cleaned = value.strip().replace(',', '').replace(' ', '')
+        # Apr 28 2026 (audit): also strip CJK comma + currency CN symbols
+        # + accounting parens. Real Chinese exports use ， (full-width) and
+        # 元/￥/人民币. Without these, "(1,500)" / "1，234" / "39617 元" all
+        # fail _is_numeric → field_detector falls back to STRING type.
+        cleaned = value.strip().replace(',', '').replace('，', '').replace(' ', '')
 
-        # Check for currency symbols and percentage
-        if cleaned.startswith(('¥', '$', '€', '£')):
+        # Accounting negative: (1500) → -1500
+        if cleaned.startswith('(') and cleaned.endswith(')'):
+            cleaned = '-' + cleaned[1:-1]
+
+        # Check for currency symbols (prefix + suffix) and percentage
+        if cleaned.startswith(('¥', '￥', '$', '€', '£')):
             cleaned = cleaned[1:]
-        if cleaned.endswith('%'):
-            cleaned = cleaned[:-1]
+        for suffix in ('元', '人民币', '%'):
+            if cleaned.endswith(suffix):
+                cleaned = cleaned[:-len(suffix)]
+                break
 
         try:
             float(cleaned)

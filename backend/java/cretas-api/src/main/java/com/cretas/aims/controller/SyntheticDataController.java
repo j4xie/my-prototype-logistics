@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.ai.synthetic.SyntheticDataService;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.ai.synthetic.SyntheticDataService.IntentSampleStat;
 import com.cretas.aims.ai.synthetic.SyntheticDataService.SyntheticDataStats;
 import com.cretas.aims.ai.synthetic.SyntheticDataService.SyntheticGenerationResult;
@@ -34,6 +35,7 @@ public class SyntheticDataController {
     /**
      * 为指定意图生成合成数据
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/generate/{factoryId}/{intentCode}")
     @Operation(summary = "为指定意图生成合成数据")
     public ApiResponse<SyntheticGenerationResult> generateForIntent(
@@ -53,6 +55,7 @@ public class SyntheticDataController {
     /**
      * 为工厂所有意图生成合成数据
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/generate-all/{factoryId}")
     @Operation(summary = "为工厂所有意图生成合成数据")
     public ApiResponse<List<SyntheticGenerationResult>> generateForAllIntents(
@@ -94,6 +97,7 @@ public class SyntheticDataController {
      * 重新计算所有合成样本的 GRAPE 分数
      * P0 修复: 修复 GRAPE 评分机制后需要重新计算已有样本
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/recalculate-grape/{factoryId}")
     @Operation(summary = "重新计算 GRAPE 分数",
                description = "修复 GRAPE 评分机制后，重新计算所有合成样本的分数")
@@ -113,6 +117,7 @@ public class SyntheticDataController {
      * 修复合成样本使其可用于训练
      * 设置 isCorrect=true 和 confidence（如果缺失）
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/fix-for-training/{factoryId}")
     @Operation(summary = "修复合成样本",
                description = "设置 isCorrect=true 和 confidence，使合成样本可用于混合训练")
@@ -132,6 +137,7 @@ public class SyntheticDataController {
      * 为低频意图生成合成数据
      * P1 修复: 扩充真实样本少且无合成样本覆盖的意图
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/generate-low-frequency/{factoryId}")
     @Operation(summary = "为低频意图生成合成数据",
                description = "为真实样本少于阈值且无合成样本的意图生成训练数据")

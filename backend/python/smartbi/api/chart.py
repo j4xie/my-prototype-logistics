@@ -241,6 +241,11 @@ async def recommend_chart(data: List[Dict[str, Any]], fields: Optional[List[dict
     try:
         import pandas as pd
         from smartbi.config import coerce_numeric_columns
+        from smartbi.api.chart_heuristics import (
+            filter_id_like_columns,
+            is_id_like_column_name,
+            pick_categorical_xfield,
+        )
 
         df = coerce_numeric_columns(pd.DataFrame(data))
         recommendations = []
@@ -251,12 +256,32 @@ async def recommend_chart(data: List[Dict[str, Any]], fields: Optional[List[dict
         date_cols = []
 
         # Try to detect date columns
+        # Guard 1: skip numeric columns — pd.to_datetime parses raw numbers as Unix
+        # nanoseconds, which would falsely classify measure columns (营业额/销售额 etc.)
+        # as time columns and cause xField=measure on line charts.
+        # Guard 2: skip ID-named columns (账单号/编号/ID/uuid) — text values like
+        # "20240315001" would otherwise be parsed as ISO date prefixes.
+        import pandas.api.types as ptypes
         for col in df.columns:
+            if ptypes.is_numeric_dtype(df[col]):
+                continue
+            if is_id_like_column_name(col):
+                continue
             try:
-                pd.to_datetime(df[col])
+                pd.to_datetime(df[col], errors='raise')
                 date_cols.append(col)
-            except Exception:
+            except (ValueError, TypeError, OverflowError):
                 pass
+
+        # ID-suffix guard: filter ID-named columns out of measures (账单号 with numeric
+        # values would otherwise be summed/averaged as a yField).
+        numeric_cols = filter_id_like_columns(numeric_cols)
+        # Cardinality + ID guard: when picking categorical xField, prefer low-cardinality
+        # non-ID columns. Falls back to first available if all are high-cardinality.
+        clean_categorical_cols = filter_id_like_columns(categorical_cols)
+        preferred_x = pick_categorical_xfield(df, clean_categorical_cols) or (
+            clean_categorical_cols[0] if clean_categorical_cols else None
+        )
 
         # Recommend based on data structure
         if date_cols and numeric_cols:
@@ -268,20 +293,20 @@ async def recommend_chart(data: List[Dict[str, Any]], fields: Optional[List[dict
                 "priority": 1
             })
 
-        if categorical_cols and numeric_cols:
+        if preferred_x and numeric_cols:
             recommendations.append({
                 "chartType": "bar",
                 "reason": "Categorical data detected - bar chart compares values across categories",
-                "xField": categorical_cols[0],
+                "xField": preferred_x,
                 "yFields": [numeric_cols[0]],
                 "priority": 2
             })
 
-            if len(df[categorical_cols[0]].unique()) <= 8:
+            if len(df[preferred_x].unique()) <= 8:
                 recommendations.append({
                     "chartType": "pie",
                     "reason": "Low cardinality categorical data - pie chart shows proportions",
-                    "xField": categorical_cols[0],
+                    "xField": preferred_x,
                     "yFields": [numeric_cols[0]],
                     "priority": 3
                 })
@@ -409,6 +434,10 @@ async def smart_recommend_chart(request: SmartRecommendRequest):
     try:
         import pandas as pd
         from services.chart_recommender import get_chart_recommender, DataSummary
+        from smartbi.api.chart_heuristics import (
+            filter_id_like_columns,
+            is_id_like_column_name,
+        )
 
         recommender = get_chart_recommender()
 
@@ -417,12 +446,27 @@ async def smart_recommend_chart(request: SmartRecommendRequest):
         numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
         categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
         date_cols = []
+        # Guard 1: skip numeric columns — pd.to_datetime parses raw numbers as Unix
+        # nanoseconds, which would falsely classify measure columns (营业额/销售额 etc.)
+        # as time columns and cause xField=measure on line charts.
+        # Guard 2: skip ID-named columns (账单号/编号/ID/uuid) — text values like
+        # "20240315001" would otherwise be parsed as ISO date prefixes.
+        import pandas.api.types as ptypes
         for col in df.columns:
+            if ptypes.is_numeric_dtype(df[col]):
+                continue
+            if is_id_like_column_name(col):
+                continue
             try:
-                pd.to_datetime(df[col])
+                pd.to_datetime(df[col], errors='raise')
                 date_cols.append(col)
-            except Exception:
+            except (ValueError, TypeError, OverflowError):
                 pass
+
+        # ID-suffix guard: filter ID-named columns out of measures and categorical
+        # dimensions so DataSummary doesn't suggest 账单号/订单ID as xField/yField.
+        numeric_cols = filter_id_like_columns(numeric_cols)
+        clean_categorical_cols = filter_id_like_columns(categorical_cols)
 
         # Build column feature list
         columns_info = []
@@ -446,10 +490,10 @@ async def smart_recommend_chart(request: SmartRecommendRequest):
         data_summary = DataSummary(
             columns=columns_info,
             row_count=len(df),
-            dimensions=categorical_cols + date_cols,
+            dimensions=clean_categorical_cols + date_cols,
             measures=numeric_cols,
             time_columns=date_cols,
-            category_columns=categorical_cols
+            category_columns=clean_categorical_cols
         )
 
         # Detect scenario from sheet name

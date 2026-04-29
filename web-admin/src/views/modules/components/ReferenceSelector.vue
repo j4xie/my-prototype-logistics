@@ -32,6 +32,19 @@ const loading = ref(false)
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 function resolveEndpoint(): string {
+  // R12 audit S2 fix: defensively detect missing apiEndpoint (legacy referenceModule-only
+  // schemas seeded by V20260410_08/09/10). Without this, the next .replace() throws
+  // "Cannot read properties of undefined (reading 'replace')" which the catch block
+  // swallows → silent empty dropdown. Now log loudly so devs can find the schema gap.
+  if (!props.config?.apiEndpoint) {
+    const refModule = (props.config as { referenceModule?: string })?.referenceModule
+    console.error(
+      `[ReferenceSelector] schema misconfigured for entity=${props.config?.entity || '(unknown)'}, ` +
+      `referenceModule=${refModule || '(none)'} — missing apiEndpoint. ` +
+      `Fix module_schemas.field_schema to include referenceConfig.apiEndpoint.`
+    )
+    return ''  // empty → request.get('') returns 404, dropdown empty + error in console
+  }
   // axios baseURL 已是 /api/mobile, 若 config.apiEndpoint 已带该前缀则 strip 掉,
   // 避免 /api/mobile/api/mobile/... 双前缀 (老配置可能写了完整路径).
   return props.config.apiEndpoint
@@ -50,10 +63,29 @@ async function search(query: string) {
       })
       const data = res.data
       const list = Array.isArray(data) ? data : (data?.content || [])
+      // R4 audit fix (updated R8): coerce option.value to String for el-select strict-eq.
+      // Some entity FKs are BIGINT (SalesOrder.salespersonId post-V20260425_09) → JSON
+      // number; others may be VARCHAR/UUID. Reference endpoints return Long User.id as
+      // JSON number. Coercing to String here means SchemaFormRenderer.readInitialForField
+      // (which also String() the formData side) gives consistent String===String matches.
       options.value = list.map((item: Record<string, unknown>) => ({
         label: String(item[props.config.displayField] || ''),
-        value: item[props.config.valueField] as string | number,
+        value: String(item[props.config.valueField]),
       }))
+      // R17 audit MIN-5: catch displayField/response-key mismatches (the V11→V13 class bug
+      // that 8 reviewers missed because labels resolved to '' silently). Warn ONCE per
+      // fetch when >50% labels are blank — clear signal that schema.displayField doesn't
+      // match any key in the API response.
+      if (options.value.length > 0) {
+        const blankCount = options.value.filter((o) => !o.label).length
+        if (blankCount * 2 > options.value.length) {
+          console.warn(
+            `[ReferenceSelector] entity=${props.config.entity} returned ${blankCount}/${options.value.length} ` +
+            `items with blank label. Schema displayField='${props.config.displayField}' likely doesn't match ` +
+            `any key in API response. Fix: align module_schemas.referenceConfig.displayField with controller projection.`
+          )
+        }
+      }
     } catch (e: any) {
       // Permission denied (403) or missing endpoint is expected when user has limited access.
       // Log as warning, not error — the dropdown just shows no options, which is acceptable UX.
@@ -75,14 +107,104 @@ function handleChange(val: string | number | null) {
   emit('update:modelValue', val)
 }
 
+/**
+ * Bug E fix: when modelValue exists (edit/view mode), fetch the SPECIFIC
+ * record by ID so its display name populates instead of showing raw ID.
+ * Try GET /endpoint/{id} first; fall back to keyword search if 404/no match.
+ */
+/**
+ * ID-shape detection — broad allow-list to support legacy prefix-style IDs.
+ *
+ * Apr 25 2026 audit caught: prod has 177 product_type IDs like "PT-F001-003" that the
+ * original UUID/numeric-only regex rejected. fetchById was being skipped, so edit-mode
+ * line items displayed raw "PT-F001-003" as the option label instead of looking up the
+ * product name.
+ *
+ * Accepted: alnum + underscore/hyphen/dot (covers numeric IDs, UUIDs, PT-F001-003,
+ *   R001-PT-001, CUS-1767..., RMT_1774414299841, etc).
+ * Rejected (treated as legacy display-name string, ReferenceSelector falls back to
+ *   render-as-label): anything containing Chinese / spaces / parens / slashes /
+ *   apostrophes / & / non-ASCII letters (Müller, O'Brien, "Apple M2 Pro", "B-2/3", etc).
+ *   For these the raw value IS already the human-readable name, so the fallback display
+ *   is correct UX even though we skipped the fetchById lookup.
+ */
+function looksLikeId(v: string | number): boolean {
+  const s = String(v)
+  if (s.length === 0) return false
+  return /^[A-Za-z0-9_\-.]+$/.test(s)
+}
+
+// :key on the el-select forces re-mount when bumped — needed because element-plus
+// caches its internal currentLabel from the first option-match at render time,
+// and async fetchById updates to options.value don't trigger label re-evaluation.
+// Bumped exactly once per fetch when the real displayField label arrives.
+const selectKey = ref(0)
+
+async function fetchById(id: string | number) {
+  // Synchronous placeholder so el-select has options[0].value === modelValue immediately.
+  // Without this, first paint sees empty options + raw modelValue → renders raw id as label,
+  // and Element Plus caches that "currentLabel" — async option updates don't refresh it.
+  options.value = [{ label: String(id), value: id }]
+
+  // Skip lookup for non-ID-shaped values (legacy display-name strings, e.g., "张三")
+  if (!looksLikeId(id)) return
+
+  loading.value = true
+  try {
+    // Strip /search or /active suffix — those are LIST endpoints, not single-item GET.
+    // Convention: /entities → /entities/{id} for single fetch.
+    // R20 audit Q3 fix: split URL into path + query string before appending /id.
+    // Schemas now include ?usage=invoiceable etc. (V20260425_14). Naively appending
+    // /146 to /sales-orders?usage=invoiceable produces /sales-orders?usage=invoiceable/146
+    // which is an invalid URL — query param ends up inside the path segment.
+    const fullEndpoint = resolveEndpoint().replace(/\/(search|active)$/, '')
+    const queryIdx = fullEndpoint.indexOf('?')
+    const pathPart = queryIdx >= 0 ? fullEndpoint.slice(0, queryIdx) : fullEndpoint
+    const queryPart = queryIdx >= 0 ? fullEndpoint.slice(queryIdx) : ''
+    const idUrl = `${pathPart}/${encodeURIComponent(String(id))}${queryPart}`
+    const res = await request.get(idUrl, {
+      _silent: true  // suppress global error toast for 404 lookups
+    } as never)
+    const item = res.data?.data || res.data
+    if (item && typeof item === 'object' && item[props.config.valueField] != null) {
+      const realLabel = String(item[props.config.displayField] || id)
+      // R4 audit fix (updated R8): coerce to String. Reference endpoints return Long
+      // User.id → JSON number 146; SchemaFormRenderer.readInitialForField also String()s
+      // the formData side. Strict-eq match needs both sides String.
+      const realValue = String(item[props.config.valueField])
+      options.value = [{ label: realLabel, value: realValue }]
+      // Force el-select to re-mount so its cached currentLabel picks up the real label
+      // instead of the raw-id placeholder. Safe because dropdown isn't open during fetch.
+      if (realLabel !== String(id)) selectKey.value++
+    }
+    // else: keep the synchronous placeholder (raw id as label) — backend returned null
+    // for stale/deleted reference. Better than showing "undefined".
+  } catch {
+    // 404 → endpoint pattern not supported; keep raw-id placeholder set above
+  } finally {
+    loading.value = false
+  }
+}
+
 onMounted(() => {
-  // 初始加载，显示已有选项
-  search('')
+  // Spec §4.A.8 — Skip empty-keyword initial fetch (some backends reject @NotBlank).
+  // Bug E fix: if existing value present, fetch by ID for proper display name lookup.
+  if (props.modelValue) {
+    fetchById(props.modelValue)
+  }
+})
+
+watch(() => props.modelValue, (val) => {
+  // Bug E: re-fetch display when value changes externally (form re-init etc.)
+  if (val && !options.value.find(o => o.value === val)) {
+    fetchById(val)
+  }
 })
 </script>
 
 <template>
   <el-select
+    :key="selectKey"
     :model-value="modelValue"
     filterable
     remote

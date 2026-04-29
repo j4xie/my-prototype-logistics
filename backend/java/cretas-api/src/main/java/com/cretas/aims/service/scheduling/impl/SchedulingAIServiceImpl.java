@@ -65,7 +65,9 @@ public class SchedulingAIServiceImpl implements SchedulingAIService {
     @Value("${ml.hybrid-predict.enabled:true}")
     private boolean hybridPredictEnabled;
 
-    @Value("${cretas.scheduling.auto-trigger.enabled:true}")
+    // R33 P1 — default 改 false (新工厂 fallback 安全 OFF). 旧工厂由 V20260427_02 migration
+    // 显式 backfill auto_trigger_enabled=true 保留原行为. 任何新创建工厂从此默认不自动排产.
+    @Value("${cretas.scheduling.auto-trigger.enabled:false}")
     private boolean autoSchedulingEnabled;
 
     @Value("${cretas.scheduling.auto-trigger.low-risk-threshold:0.85}")
@@ -425,22 +427,17 @@ public class SchedulingAIServiceImpl implements SchedulingAIService {
             .findByFactoryIdAndRuleGroupAndRuleName(factoryId, "scheduling", "auto_trigger_enabled");
 
         if (factoryRule.isPresent() && factoryRule.get().getEnabled()) {
-            try {
-                return Boolean.parseBoolean(factoryRule.get().getRuleContent());
-            } catch (Exception e) {
-                log.warn("工厂 {} 的自动排产配置格式错误: {}", factoryId, factoryRule.get().getRuleContent());
-            }
+            // R33 P3 — 用 strict parser, 拒绝静默 false on "yes"/"1" 等
+            return parseStrictBoolean(factoryRule.get().getRuleContent(),
+                factoryId, "auto_trigger_enabled", autoSchedulingEnabled);
         }
 
         Optional<DroolsRule> systemRule = droolsRuleRepository
             .findByFactoryIdAndRuleGroupAndRuleName("SYSTEM", "scheduling", "auto_trigger_enabled");
 
         if (systemRule.isPresent() && systemRule.get().getEnabled()) {
-            try {
-                return Boolean.parseBoolean(systemRule.get().getRuleContent());
-            } catch (Exception e) {
-                log.warn("系统级自动排产配置格式错误: {}", systemRule.get().getRuleContent());
-            }
+            return parseStrictBoolean(systemRule.get().getRuleContent(),
+                "SYSTEM", "auto_trigger_enabled", autoSchedulingEnabled);
         }
 
         return autoSchedulingEnabled;
@@ -457,12 +454,14 @@ public class SchedulingAIServiceImpl implements SchedulingAIService {
         settings.setLowRiskThreshold(getLowRiskThreshold(factoryId));
         settings.setMediumRiskThreshold(getMediumRiskThreshold(factoryId));
         settings.setEnableNotifications(getNotificationsEnabled(factoryId));
+        settings.setAutoTriggerEnabled(isAutoSchedulingEnabled(factoryId));
 
-        log.info("排产自动化设置: mode={}, lowRisk={}, mediumRisk={}, notifications={}",
+        log.info("排产自动化设置: mode={}, lowRisk={}, mediumRisk={}, notifications={}, autoTrigger={}",
             settings.getAutoSchedulingMode(),
             settings.getLowRiskThreshold(),
             settings.getMediumRiskThreshold(),
-            settings.getEnableNotifications());
+            settings.getEnableNotifications(),
+            settings.getAutoTriggerEnabled());
 
         return settings;
     }
@@ -477,21 +476,40 @@ public class SchedulingAIServiceImpl implements SchedulingAIService {
                 "自动排产模式配置", userId);
         }
 
+        // R32 P4 (I7) — 跨字段一致性校验: low 必须 > medium (high < medium <= low <= 1)
+        // 同 update 内若两个字段都给, 用新值; 若只给一个, 用 DB 中已存的另一个值
+        Double effectiveLow = settings.getLowRiskThreshold() != null
+            ? settings.getLowRiskThreshold()
+            : getLowRiskThreshold(factoryId);
+        Double effectiveMedium = settings.getMediumRiskThreshold() != null
+            ? settings.getMediumRiskThreshold()
+            : getMediumRiskThreshold(factoryId);
+        if (settings.getLowRiskThreshold() != null || settings.getMediumRiskThreshold() != null) {
+            if (effectiveLow <= effectiveMedium) {
+                throw new IllegalArgumentException(
+                    String.format("低风险阈值必须严格大于中风险阈值 (low=%s, medium=%s)",
+                        effectiveLow, effectiveMedium));
+            }
+        }
+
         if (settings.getLowRiskThreshold() != null) {
-            if (settings.getLowRiskThreshold() < 0 || settings.getLowRiskThreshold() > 1) {
-                throw new IllegalArgumentException("低风险阈值必须在 0-1 之间");
+            // R32 P2 (C4) — NaN/Infinity guard: NaN < 0 是 false 会绕过 0-1 检查, 显式拒绝
+            Double low = settings.getLowRiskThreshold();
+            if (low.isNaN() || low.isInfinite() || low < 0 || low > 1) {
+                throw new IllegalArgumentException("低风险阈值必须在 0-1 之间且为有限数值");
             }
             saveOrUpdateRule(factoryId, "auto_trigger_low_risk_threshold",
-                String.valueOf(settings.getLowRiskThreshold()),
+                String.valueOf(low),
                 "自动排产低风险阈值配置", userId);
         }
 
         if (settings.getMediumRiskThreshold() != null) {
-            if (settings.getMediumRiskThreshold() < 0 || settings.getMediumRiskThreshold() > 1) {
-                throw new IllegalArgumentException("中风险阈值必须在 0-1 之间");
+            Double medium = settings.getMediumRiskThreshold();
+            if (medium.isNaN() || medium.isInfinite() || medium < 0 || medium > 1) {
+                throw new IllegalArgumentException("中风险阈值必须在 0-1 之间且为有限数值");
             }
             saveOrUpdateRule(factoryId, "auto_trigger_medium_risk_threshold",
-                String.valueOf(settings.getMediumRiskThreshold()),
+                String.valueOf(medium),
                 "自动排产中风险阈值配置", userId);
         }
 
@@ -499,6 +517,12 @@ public class SchedulingAIServiceImpl implements SchedulingAIService {
             saveOrUpdateRule(factoryId, "auto_scheduling_notifications_enabled",
                 String.valueOf(settings.getEnableNotifications()),
                 "自动排产通知开关配置", userId);
+        }
+
+        if (settings.getAutoTriggerEnabled() != null) {
+            saveOrUpdateRule(factoryId, "auto_trigger_enabled",
+                String.valueOf(settings.getAutoTriggerEnabled()),
+                "自动排产总开关 (R31): 控制 SO→PP→排程链是否自动触发", userId);
         }
 
         log.info("排产自动化设置更新完成: factoryId={}", factoryId);
@@ -1038,7 +1062,12 @@ public class SchedulingAIServiceImpl implements SchedulingAIService {
 
         if (factoryRule.isPresent() && factoryRule.get().getEnabled()) {
             try {
-                return Double.parseDouble(factoryRule.get().getRuleContent());
+                double value = Double.parseDouble(factoryRule.get().getRuleContent());
+                // R32 P2 (C4) — 即使 DB 中存了 NaN/Infinity (历史脏数据), 解析后仍 fallback
+                if (Double.isFinite(value)) {
+                    return value;
+                }
+                log.warn("工厂 {} 的低风险阈值是非有限数值: {}, 使用默认值", factoryId, value);
             } catch (NumberFormatException e) {
                 log.warn("工厂 {} 的低风险阈值配置格式错误: {}", factoryId, factoryRule.get().getRuleContent());
             }
@@ -1053,7 +1082,11 @@ public class SchedulingAIServiceImpl implements SchedulingAIService {
 
         if (factoryRule.isPresent() && factoryRule.get().getEnabled()) {
             try {
-                return Double.parseDouble(factoryRule.get().getRuleContent());
+                double value = Double.parseDouble(factoryRule.get().getRuleContent());
+                if (Double.isFinite(value)) {
+                    return value;
+                }
+                log.warn("工厂 {} 的中风险阈值是非有限数值: {}, 使用默认值", factoryId, value);
             } catch (NumberFormatException e) {
                 log.warn("工厂 {} 的中风险阈值配置格式错误: {}", factoryId, factoryRule.get().getRuleContent());
             }
@@ -1271,6 +1304,26 @@ public class SchedulingAIServiceImpl implements SchedulingAIService {
 
     // ==================== 私有方法: 配置规则 ====================
 
+    /**
+     * R33 P3 — 严格解析 boolean 字符串. Boolean.parseBoolean 对 "yes"/"1"/"on" 静默返 false,
+     * 在配置场景下让"看似配置成功实际失效"的 silent 错误难以排查.
+     * 此 helper 接受常见 truthy/falsy 字符串并对未识别值返 fallback (而非默认 false).
+     */
+    private boolean parseStrictBoolean(String value, String factoryId, String ruleName, boolean fallback) {
+        if (value == null) return fallback;
+        String v = value.trim().toLowerCase();
+        // R33 reviewer I3: 不接受单字符 y/n (typo 风险), 只接受全词 + 数字
+        if ("true".equals(v) || "yes".equals(v) || "1".equals(v) || "on".equals(v)) {
+            return true;
+        }
+        if ("false".equals(v) || "no".equals(v) || "0".equals(v) || "off".equals(v)) {
+            return false;
+        }
+        log.warn("工厂 {} 的 {} 配置无法识别为布尔值 (rule_content={}), 使用 fallback={}",
+            factoryId, ruleName, value, fallback);
+        return fallback;
+    }
+
     private void saveOrUpdateRule(String factoryId, String ruleName, String ruleContent,
                                    String description, Long userId) {
         Optional<DroolsRule> existingRule = droolsRuleRepository
@@ -1308,11 +1361,9 @@ public class SchedulingAIServiceImpl implements SchedulingAIService {
             .findByFactoryIdAndRuleGroupAndRuleName(factoryId, "scheduling", "auto_scheduling_notifications_enabled");
 
         if (factoryRule.isPresent() && factoryRule.get().getEnabled()) {
-            try {
-                return Boolean.parseBoolean(factoryRule.get().getRuleContent());
-            } catch (Exception e) {
-                log.warn("工厂 {} 的通知开关配置格式错误: {}", factoryId, factoryRule.get().getRuleContent());
-            }
+            // R33 P3 — 用 strict parser, "yes"/"1" 等 truthy 字符串不再被静默 false
+            return parseStrictBoolean(factoryRule.get().getRuleContent(),
+                factoryId, "auto_scheduling_notifications_enabled", true);
         }
 
         return true;

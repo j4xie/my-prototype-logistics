@@ -23,6 +23,7 @@ import {
   batchBuildCharts,
   buildChart,
 } from '@/api/smartbi/python-service';
+import { getFinanceSummary, type FinanceSummary } from '@/api/smartbi/gold';
 import { ElMessage } from 'element-plus';
 import {
   Refresh,
@@ -45,17 +46,43 @@ import { formatNumber, formatAxisValue } from '@/utils/format-number';
 import DynamicChartRenderer from '@/components/smartbi/DynamicChartRenderer.vue';
 import ChartTypeSelector from '@/components/smartbi/ChartTypeSelector.vue';
 import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
+import TemplateGrid from './components/TemplateGrid.vue';
 import type { ChartConfig } from '@/types/smartbi';
+// Day 9 数据织网 Sub-Project A: capability-driven card visibility
+import { useCapability } from '@/composables/useCapability';
+import CapabilityGate from '@/components/CapabilityGate.vue';
+import UnlockMoreCTA from '@/components/UnlockMoreCTA.vue';
 
 const route = useRoute();
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
+// Apr 24 2026 UX P0-1: restaurant tenants 没有 cost/profit 数据 (Silver 无),
+// 顶部 KPI 改显 Gold 营收/订单/客单价/门店. Manufacturing tenants 保持原样.
+const isRestaurantTenant = computed(() => authStore.factoryType === 'RESTAURANT');
 
 // 分析类型
 type AnalysisType = 'profit' | 'cost' | 'receivable' | 'payable' | 'budget';
 const validTabs: AnalysisType[] = ['profit', 'cost', 'receivable', 'payable', 'budget'];
 const initTab = validTabs.includes(route.query.tab as AnalysisType) ? (route.query.tab as AnalysisType) : 'profit';
 const analysisType = ref<AnalysisType>(initTab);
+// Apr 24 UX: restaurants only see 利润分析 tab (see analysisTypes computed below).
+// If URL had ?tab=cost/receivable/payable/budget, force back to profit.
+// Also guard against post-mount navigation (browser back/forward, history.push).
+if (isRestaurantTenant.value && analysisType.value !== 'profit') {
+  analysisType.value = 'profit';
+}
+watch(() => route.query.tab, (newTab) => {
+  if (isRestaurantTenant.value && newTab && newTab !== 'profit') {
+    analysisType.value = 'profit';
+  }
+});
+// Also guard programmatic type switches (should never happen via UI since
+// switcher is hidden for restaurants, but defensive against any future code path)
+watch(analysisType, (newType) => {
+  if (isRestaurantTenant.value && newType !== 'profit') {
+    analysisType.value = 'profit';
+  }
+});
 
 // 日期范围
 const dateRange = ref<[Date, Date] | null>(null);
@@ -532,15 +559,82 @@ const financePageRef = ref<HTMLElement>();
 let mainChart: echarts.ECharts | null = null;
 
 // 分析类型配置
-const analysisTypes = [
+// Apr 24 UX: for restaurant tenants, only 利润分析 is shown (Gold-backed POS).
+// 成本/应收/应付/预算 tabs all render 0 across the board because Silver has no
+// fact_cost_line (blocked on v2 accounting_import) and restaurants don't have
+// A/R, A/P, or annual budget data sources. Hide instead of showing misleading
+// zeros. Manufacturing tenants continue to see all 5 tabs.
+const allAnalysisTypes = [
   { type: 'profit' as AnalysisType, label: '利润分析', icon: TrendCharts },
   { type: 'cost' as AnalysisType, label: '成本分析', icon: Wallet },
   { type: 'receivable' as AnalysisType, label: '应收分析', icon: Money },
   { type: 'payable' as AnalysisType, label: '应付分析', icon: CreditCard },
   { type: 'budget' as AnalysisType, label: '预算分析', icon: Document }
 ];
+const analysisTypes = computed(() => {
+  return isRestaurantTenant.value
+    ? allAnalysisTypes.filter(t => t.type === 'profit')
+    : allAnalysisTypes;
+});
+
+// Gold-backed 营收/订单/客单价/门店 KPIs for restaurant tenants.
+// Replaces the 毛利润/净利润 legacy row when Silver has no cost data.
+const goldFinSummary = ref<FinanceSummary | null>(null);
+const goldFinFallbackLabel = ref<string>('');
+async function loadGoldFinSummary() {
+  if (!factoryId.value || !isRestaurantTenant.value) {
+    goldFinSummary.value = null;
+    goldFinFallbackLabel.value = '';
+    return;
+  }
+  const iso = (d: Date): string => d.toISOString().slice(0, 10);
+  const [s, e] = dateRange.value
+    ? [iso(dateRange.value[0]), iso(dateRange.value[1])]
+    : (() => {
+        const now = new Date();
+        const start = new Date(); start.setTime(start.getTime() - 3600 * 1000 * 24 * 365);
+        return [iso(start), iso(now)];
+      })();
+  try {
+    const r = await getFinanceSummary({
+      factoryId: factoryId.value, startDate: s, endDate: e, topNStores: 3,
+    });
+    if (r && r.billCount > 0) {
+      goldFinSummary.value = r;
+      goldFinFallbackLabel.value = '';
+      return;
+    }
+    // Fallback chain — same pattern as RestaurantV2 / Trends
+    const y = new Date().getFullYear();
+    const chain: Array<[string, string, string]> = [
+      [`${y - 1}-01-01`, `${y - 1}-12-31`, `${y - 1}全年`],
+      [`${y - 2}-01-01`, `${y - 2}-12-31`, `${y - 2}全年`],
+    ];
+    for (const [cs, ce, label] of chain) {
+      const fb = await getFinanceSummary({ factoryId: factoryId.value, startDate: cs, endDate: ce, topNStores: 3 });
+      if (fb && fb.billCount > 0) {
+        goldFinSummary.value = fb;
+        goldFinFallbackLabel.value = label;
+        return;
+      }
+    }
+    goldFinSummary.value = r;
+    goldFinFallbackLabel.value = '';
+  } catch {
+    goldFinSummary.value = null;
+    goldFinFallbackLabel.value = '';
+  }
+}
+watch(dateRange, () => { if (isRestaurantTenant.value) loadGoldFinSummary(); });
+
+const { fetchCapability } = useCapability();
 
 onMounted(async () => {
+  // Day 9 数据织网 Sub-Project A: prime capability cache (fire-and-forget,
+  // useCapability handles errors and is fail-open). Drives <CapabilityGate>
+  // visibility for KPI cards below.
+  fetchCapability();
+
   // 默认选择最近365天（覆盖更多财务数据）
   const end = new Date();
   const start = new Date();
@@ -557,6 +651,9 @@ onMounted(async () => {
   // Initialize legacy chart container (only needed for system data fallback)
   await nextTick();
   initChart();
+
+  // Fire Gold fetch for restaurant tenants (parallel, doesn't block init)
+  if (isRestaurantTenant.value) loadGoldFinSummary();
 });
 
 // 加载数据源列表
@@ -1279,7 +1376,14 @@ function generateSmartWarnings() {
   const autoWarnings: WarningItem[] = [];
   const kpi = kpiData.value;
 
-  if (analysisType.value === 'profit') {
+  // Apr 24 2026 UX P0-1 guard: 如果营收为 0, 说明没数据而不是"负利润" — 不发预警.
+  // 以前 profit=0 + revenue=0 会触发 "毛利率 0.0% 低于行业基准 25-35%" 假警报,
+  // 误导用户以为生意糟糕,实际是 Silver 没 cost 数据导致 profit 字段全 0.
+  const hasRevenueForProfit = (kpi.grossProfit != null && kpi.grossProfit !== 0)
+    || (kpi.netProfit != null && kpi.netProfit !== 0)
+    || (kpi.grossProfitMargin != null && kpi.grossProfitMargin !== 0);
+
+  if (analysisType.value === 'profit' && hasRevenueForProfit) {
     if (kpi.grossProfit < 0) {
       autoWarnings.push({
         level: 'danger',
@@ -1294,7 +1398,7 @@ function generateSmartWarnings() {
         description: `净利润 ${formatMoney(kpi.netProfit)}，企业处于亏损状态，需关注费用控制`,
       });
     }
-    if (kpi.grossProfitMargin != null && kpi.grossProfitMargin < 25) {
+    if (kpi.grossProfitMargin != null && kpi.grossProfitMargin < 25 && kpi.grossProfitMargin > 0) {
       autoWarnings.push({
         level: 'warning',
         title: '毛利率低于行业基准',
@@ -1303,7 +1407,7 @@ function generateSmartWarnings() {
     }
   }
 
-  if (analysisType.value === 'receivable' && kpi.receivableAge90Plus > 0) {
+  if (analysisType.value === 'receivable' && kpi.receivableAge90Plus != null && kpi.receivableAge90Plus > 0) {
     autoWarnings.push({
       level: 'danger',
       title: '存在高风险逾期应收',
@@ -1729,8 +1833,8 @@ async function loadPreviewData() {
       ElMessage.error(res.message || '获取数据失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载预览数据失败:', error);
-    ElMessage.error('加载数据失败');
   } finally {
     previewLoading.value = false;
   }
@@ -1768,6 +1872,30 @@ onUnmounted(() => {
         <el-button type="primary" :icon="Refresh" @click="handleRefresh" :loading="loading">刷新</el-button>
       </div>
     </div>
+
+    <!-- Phase B v0 Gold preview CTA — links to /smart-bi/gold-preview which
+         reads agg_* (Silver+Gold) directly. Appears to all users; once the
+         Java READ_FROM=GOLD cutover lands this banner can become a toggle
+         on this same page. For now, it's an exploration entry point. -->
+    <el-alert
+      type="info"
+      :closable="false"
+      show-icon
+      class="gold-cta"
+      title="🆕 Gold 数据层预览"
+    >
+      <template #default>
+        <div class="gold-cta-row">
+          <span>试用基于 Silver+Gold (agg_*) 的新数据路径 — 6 个 KPI 查询并发,直连 Python。</span>
+          <el-button
+            size="small"
+            type="primary"
+            plain
+            @click="$router.push('/smart-bi/gold-preview')"
+          >打开 Gold 预览</el-button>
+        </div>
+      </template>
+    </el-alert>
 
     <!-- 筛选栏 -->
     <el-card class="filter-card">
@@ -1825,8 +1953,8 @@ onUnmounted(() => {
       </div>
     </el-card>
 
-    <!-- 分析类型切换 -->
-    <el-card class="type-switch-card">
+    <!-- 分析类型切换 (餐饮租户只有利润1个,直接隐藏切换器) -->
+    <el-card v-if="analysisTypes.length > 1" class="type-switch-card">
       <div class="type-switch">
         <div
           v-for="item in analysisTypes"
@@ -1840,6 +1968,19 @@ onUnmounted(() => {
         </div>
       </div>
     </el-card>
+
+    <!-- Apr 24 UX: 餐饮租户 tabs 隐藏说明 -->
+    <el-alert
+      v-else-if="isRestaurantTenant"
+      type="info"
+      :closable="false"
+      show-icon
+      style="margin-bottom: 16px;"
+    >
+      <template #title>
+        餐饮门店财务分析聚焦 <strong>营收与利润</strong>。成本 / 应收 / 应付 / 预算 分析将在 v2 (accounting_import 功能上线后) 加入。
+      </template>
+    </el-alert>
 
     <!-- 加载错误提示 (友好模式：系统不可用时显示 info；真实错误显示 error) -->
     <el-alert
@@ -1881,23 +2022,70 @@ onUnmounted(() => {
       style="margin-bottom: 16px"
     />
 
-    <!-- 财务 KPI -->
-    <el-row :gutter="16" class="kpi-section" v-loading="loading">
+    <!-- 餐饮租户: Gold-backed 营收/订单/客单价/门店 代替 毛利润/净利润 (P0-1 fix) -->
+    <el-row v-if="isRestaurantTenant && analysisType === 'profit'" :gutter="16" class="kpi-section">
+      <el-col :span="24" style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+        <el-tag size="small" type="success">Gold · finance_summary</el-tag>
+        <el-tag v-if="goldFinFallbackLabel" size="small" type="warning" effect="plain">
+          所选区间无数据,已显示 {{ goldFinFallbackLabel }}
+        </el-tag>
+        <span style="color: #909399; font-size: 12px;">
+          餐饮门店 POS 汇总数据 (Silver 暂未覆盖 cost/profit 字段, 预计 v2 加入)
+        </span>
+      </el-col>
+      <el-col :xs="24" :sm="12" :md="6">
+        <CapabilityGate card-id="finance_revenue_mgmt" :requires="['date', 'gross_amount']">
+        <el-card class="kpi-card kpi-accent-0">
+          <div class="kpi-label">总营收</div>
+          <div class="kpi-value">¥{{ goldFinSummary ? goldFinSummary.totalRevenue.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--' }}</div>
+          <div class="kpi-sub">覆盖 {{ goldFinSummary?.dayCount ?? 0 }} 天</div>
+        </el-card>
+        </CapabilityGate>
+      </el-col>
+      <el-col :xs="24" :sm="12" :md="6">
+        <el-card class="kpi-card kpi-accent-1">
+          <div class="kpi-label">POS 订单数</div>
+          <div class="kpi-value">{{ goldFinSummary ? goldFinSummary.billCount.toLocaleString('zh-CN') : '--' }}</div>
+          <div class="kpi-sub">{{ goldFinSummary?.storeCount ?? 0 }} 家门店</div>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="12" :md="6">
+        <el-card class="kpi-card kpi-accent-2">
+          <div class="kpi-label">客单价</div>
+          <div class="kpi-value">¥{{ goldFinSummary?.avgBillValue != null ? goldFinSummary.avgBillValue.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--' }}</div>
+          <div class="kpi-sub">营收 / 账单数</div>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="12" :md="6">
+        <el-card class="kpi-card kpi-accent-3">
+          <div class="kpi-label">门店数</div>
+          <div class="kpi-value">{{ goldFinSummary?.storeCount ?? '--' }}</div>
+          <div class="kpi-sub">有营收的门店</div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 财务 KPI (manufacturing tenants 原路径) -->
+    <el-row v-else :gutter="16" class="kpi-section" v-loading="loading">
       <!-- 利润分析 KPI -->
       <template v-if="analysisType === 'profit'">
         <el-col :xs="24" :sm="12" :md="6">
+          <CapabilityGate card-id="finance_pnl" :requires="['date', 'gross_amount', 'discount_amount', 'net_amount']">
           <el-card class="kpi-card kpi-accent-0">
             <div class="kpi-label">毛利润</div>
             <div class="kpi-value" :style="{ color: kpiData.grossProfit < 0 ? '#dc2626' : undefined }">{{ formatMoney(kpiData.grossProfit) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">毛利率 {{ formatPercent(kpiData.grossProfitMargin) }}</div>
           </el-card>
+          </CapabilityGate>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
+          <CapabilityGate card-id="finance_pnl" :requires="['date', 'gross_amount', 'discount_amount', 'net_amount']">
           <el-card class="kpi-card kpi-accent-1">
             <div class="kpi-label">净利润</div>
             <div class="kpi-value" :style="{ color: kpiData.netProfit < 0 ? '#dc2626' : undefined }">{{ formatMoney(kpiData.netProfit) }}<small class="kpi-unit">元</small></div>
             <div class="kpi-sub">净利率 {{ formatPercent(kpiData.netProfitMargin) }}</div>
           </el-card>
+          </CapabilityGate>
         </el-col>
       </template>
 
@@ -2237,6 +2425,12 @@ onUnmounted(() => {
         <el-button @click="closeDataPreview">关闭</el-button>
       </template>
     </el-dialog>
+
+    <!-- Week 6 Template Surfacing: show analysis results for this page -->
+    <TemplateGrid page-key="finance" :factory-id="factoryId || 'F001'" />
+
+    <!-- Day 9 数据织网 Sub-Project A: unlock more analyses CTA -->
+    <UnlockMoreCTA />
   </div>
 </template>
 
@@ -2739,5 +2933,16 @@ onUnmounted(() => {
   .exploration-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.gold-cta {
+  margin-bottom: 16px;
+}
+.gold-cta-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: space-between;
+  flex-wrap: wrap;
 }
 </style>

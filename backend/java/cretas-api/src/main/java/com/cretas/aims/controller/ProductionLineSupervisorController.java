@@ -1,6 +1,8 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.ProductionLineSupervisor;
 import com.cretas.aims.service.ProductionLineSupervisorService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,6 +23,7 @@ import java.util.List;
 @RequestMapping("/api/mobile/{factoryId}/production-lines")
 @RequiredArgsConstructor
 @Tag(name = "产线主任配置", description = "配置产线与车间主任的关联关系")
+@RequireModule("production_plan")
 public class ProductionLineSupervisorController {
 
     private final ProductionLineSupervisorService supervisorService;
@@ -41,6 +44,7 @@ public class ProductionLineSupervisorController {
     /**
      * 分配产线负责人
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/{lineId}/supervisors")
     @Operation(summary = "分配产线负责人")
     public ApiResponse<ProductionLineSupervisor> assignSupervisor(
@@ -57,6 +61,7 @@ public class ProductionLineSupervisorController {
     /**
      * 移除产线负责人
      */
+    @RequirePermission({"production:read_write"})
     @DeleteMapping("/{lineId}/supervisors/{userId}")
     @Operation(summary = "移除产线负责人")
     public ApiResponse<Void> removeSupervisor(

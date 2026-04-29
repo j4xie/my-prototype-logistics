@@ -1,6 +1,7 @@
 package com.cretas.aims.controller.warehouse;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.warehouse.ReusableContainer;
 import com.cretas.aims.entity.warehouse.ReusableContainerTransaction;
 import com.cretas.aims.service.warehouse.ReusableContainerService;
@@ -44,6 +45,7 @@ public class ReusableContainerController {
         return ApiResponse.success(service.getContainer(factoryId, id));
     }
 
+    @RequirePermission({"warehouse:read_write"})
     @PostMapping
     public ApiResponse<ReusableContainer> create(
             @PathVariable @NotBlank String factoryId,
@@ -51,6 +53,7 @@ public class ReusableContainerController {
         return ApiResponse.success("创建成功", service.createContainer(factoryId, dto));
     }
 
+    @RequirePermission({"warehouse:read_write"})
     @PostMapping("/{id}/ship-out")
     public ApiResponse<ReusableContainerTransaction> shipOut(
             @PathVariable @NotBlank String factoryId,
@@ -64,6 +67,7 @@ public class ReusableContainerController {
                 (String) body.get("remark")));
     }
 
+    @RequirePermission({"warehouse:read_write"})
     @PostMapping("/{id}/return-in")
     public ApiResponse<ReusableContainerTransaction> returnIn(
             @PathVariable @NotBlank String factoryId,
@@ -76,6 +80,7 @@ public class ReusableContainerController {
                 (String) body.get("remark")));
     }
 
+    @RequirePermission({"warehouse:read_write"})
     @PostMapping("/{id}/loss")
     public ApiResponse<ReusableContainerTransaction> loss(
             @PathVariable @NotBlank String factoryId,

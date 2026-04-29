@@ -276,8 +276,19 @@ public class ToolDispatchService {
                                 .build();
                         ToolCallRecord savedRecord = redundancyService.recordToolCall(record);
                         if (savedRecord != null && resultJson != null) {
-                            String summary = resultJson.length() > 200 ? resultJson.substring(0, 200) + "..." : resultJson;
-                            redundancyService.cacheResult(sessionId, tool.getToolName(), params, summary, savedRecord.getId());
+                            // cacheResult stores into tool_call_cache.cached_result (JSONB).
+                            // Don't substring-truncate — that splits tokens and produces
+                            // invalid JSON like `{..."previous` which PG rejects at INSERT.
+                            // Cap at 16KB via a structured wrapper so the JSON stays valid.
+                            String cacheValue;
+                            if (resultJson.length() > 16384) {
+                                cacheValue = "{\"_truncated\":true,\"_originalSize\":" + resultJson.length()
+                                    + ",\"preview\":" + objectMapper.writeValueAsString(
+                                        resultJson.substring(0, 16000) + "...(truncated)") + "}";
+                            } else {
+                                cacheValue = resultJson;
+                            }
+                            redundancyService.cacheResult(sessionId, tool.getToolName(), params, cacheValue, savedRecord.getId());
                         }
                         if (attempt > 1) {
                             log.info("工具调用在第 {} 次尝试后恢复成功: tool={}", attempt, tool.getToolName());

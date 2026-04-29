@@ -3,6 +3,7 @@ package com.cretas.aims.service.inventory;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.inventory.CreatePurchaseOrderRequest;
 import com.cretas.aims.dto.inventory.CreateReceiveRecordRequest;
+import com.cretas.aims.dto.inventory.UpdatePurchaseOrderRequest;
 import com.cretas.aims.entity.inventory.PurchaseOrder;
 import com.cretas.aims.entity.inventory.PurchaseReceiveRecord;
 import com.cretas.aims.entity.enums.PurchaseOrderStatus;
@@ -24,6 +25,9 @@ public interface PurchaseService {
 
     PageResponse<PurchaseOrder> getPurchaseOrdersByStatus(String factoryId, PurchaseOrderStatus status, int page, int size);
 
+    /** W-12 fix: filter by linked sales order id (for SO detail "关联采购" tab). */
+    PageResponse<PurchaseOrder> getPurchaseOrdersBySalesOrder(String factoryId, String salesOrderId, int page, int size);
+
     PurchaseOrder submitOrder(String factoryId, String orderId);
 
     PurchaseOrder approveOrder(String factoryId, String orderId, Long approvedBy);
@@ -36,7 +40,7 @@ public interface PurchaseService {
 
     PurchaseOrder financeRejectOrder(String factoryId, String orderId, Long reviewedBy, String notes);
 
-    PurchaseOrder updateDraftOrder(String factoryId, String orderId, CreatePurchaseOrderRequest request);
+    PurchaseOrder updateDraftOrder(String factoryId, String orderId, UpdatePurchaseOrderRequest request);
 
     // ==================== 采购入库 ====================
 

@@ -57,6 +57,11 @@ async def init_llm_client(base_url: str, api_key: str) -> None:
     if _client is not None:
         await _client.aclose()
 
+    # Attach metrics hook — captures model/tokens/latency per call into
+    # smart_bi_llm_usage (async, non-blocking). Enabled after pool ready
+    # via enable_llm_metrics() in the lifespan; hook itself is a no-op
+    # until then.
+    from common.llm_metrics import metrics_response_hook
     _client = httpx.AsyncClient(
         limits=httpx.Limits(
             max_connections=20,
@@ -64,8 +69,9 @@ async def init_llm_client(base_url: str, api_key: str) -> None:
             keepalive_expiry=30,
         ),
         timeout=httpx.Timeout(120.0),
+        event_hooks={"response": [metrics_response_hook]},
     )
-    logger.info("Shared LLM HTTP client created (pool: 20 max, 10 keepalive)")
+    logger.info("Shared LLM HTTP client created (pool: 20 max, 10 keepalive, metrics hook)")
 
     # Warmup: send a minimal request to establish connection + TLS
     if api_key:

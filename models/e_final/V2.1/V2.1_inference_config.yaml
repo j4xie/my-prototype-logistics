@@ -1,0 +1,77 @@
+# V2.1 Production Inference Configuration
+# Model: V2.1_primary_fp16.onnx (recommended) or V2.1_primary_fp32.onnx (max precision)
+# Generated: 2026-04-18 from X1 multi-scale + IoU + per-class analysis
+
+model: V2.1_primary_fp16.onnx
+input_size: 1280
+
+# ===== TTA (Test-Time Augmentation) =====
+# Enables horizontal flip + scale augmentation at inference.
+# +0.018 overall mAP50 over standard eval.
+tta: true
+
+# ===== Multi-scale TTA (production) =====
+# Per-class optimal scale (from X1 multi-scale analysis):
+#   - insect / color_anomaly: imgsz=1536 (larger image helps medium objects)
+#   - bone / glass:           imgsz=1280 (default, plateau)
+#   - hair:                   imgsz=960  (surprisingly, small img best)
+#   - mold:                   imgsz=1920 (large img for tiny objects)
+# Recommended: run at multiple scales and fuse per-class winner, OR use single 1280.
+multi_scale_tta:
+  enabled: false   # set true if you implement per-class fusion pipeline
+  scales: [960, 1280, 1536, 1920]
+  # Per-class scale preference (used only if multi_scale_tta.enabled=true):
+  per_class_scale:
+    insect: 1536
+    color_anomaly: 1536
+    bone: 1280
+    glass: 1280
+    hair: 960
+    mold: 1920
+
+# ===== NMS =====
+# IoU threshold tuned: 0.5 gives +0.002 vs 0.6 (default).
+# Lower IoU (0.5) keeps more overlapping boxes; helps dense small-object scenes.
+iou: 0.5
+
+# ===== Per-class confidence thresholds =====
+# Tuned for production F1. Replace with on-site refinement after real-world validation.
+# Rationale:
+#   - glass/mold: weak signals, LOW conf to maximize recall (safety-critical)
+#   - color: medium conf, medium recall tradeoff
+#   - insect/hair/bone: higher conf (more precise detections)
+per_class_conf:
+  insect: 0.25         # strong signal; balance P/R
+  color_anomaly: 0.15  # weak signal; moderate conf
+  bone: 0.20           # medium signal
+  glass: 0.05          # SAFETY: prefer false-positives over misses
+  hair: 0.25           # strong signal
+  mold: 0.03           # HARDEST class, low conf to maximize recall
+
+# Fallback global conf (used if per-class not applied)
+global_conf_fallback: 0.20
+
+# ===== Classes =====
+classes:
+  0: insect
+  1: color_anomaly
+  2: bone
+  3: glass
+  4: hair
+  5: mold
+
+# ===== Example usage (Python Ultralytics) =====
+#
+# from ultralytics import YOLO
+# model = YOLO("V2.1_primary_fp16.onnx")
+# results = model.predict(
+#     source="test.jpg",
+#     imgsz=1280,
+#     conf=0.05,      # use lowest class conf, then per-class filter downstream
+#     iou=0.5,
+#     augment=True,   # TTA
+#     device=0,
+# )
+# # Then post-filter by per-class conf:
+# per_class_conf = {0:0.25, 1:0.15, 2:0.20, 3:0.05, 4:0.25, 5:0.03}
+# boxes = [b for b in results[0].boxes if b.conf >= per_class_conf[int(b.cls)]]

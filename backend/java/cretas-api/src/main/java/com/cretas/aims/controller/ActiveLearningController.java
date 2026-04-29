@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.entity.learning.*;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.scheduler.ActiveLearningScheduler;
 import com.cretas.aims.service.ActiveLearningService;
 import lombok.extern.slf4j.Slf4j;
@@ -65,6 +66,7 @@ public class ActiveLearningController {
     /**
      * Approve a learning suggestion
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/suggestions/{suggestionId}/approve")
     public ResponseEntity<Map<String, Object>> approveSuggestion(
             @PathVariable String factoryId,
@@ -84,6 +86,7 @@ public class ActiveLearningController {
     /**
      * Reject a learning suggestion
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/suggestions/{suggestionId}/reject")
     public ResponseEntity<Map<String, Object>> rejectSuggestion(
             @PathVariable String factoryId,
@@ -103,6 +106,7 @@ public class ActiveLearningController {
     /**
      * Apply an approved suggestion
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/suggestions/{suggestionId}/apply")
     public ResponseEntity<Map<String, Object>> applySuggestion(
             @PathVariable String factoryId,
@@ -167,6 +171,7 @@ public class ActiveLearningController {
     /**
      * Adopt global knowledge
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/knowledge/{knowledgeId}/adopt")
     public ResponseEntity<Map<String, Object>> adoptKnowledge(
             @PathVariable String factoryId,
@@ -186,6 +191,7 @@ public class ActiveLearningController {
     /**
      * Record feedback for knowledge
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/knowledge/{knowledgeId}/feedback")
     public ResponseEntity<Map<String, Object>> recordKnowledgeFeedback(
             @PathVariable String factoryId,
@@ -224,6 +230,7 @@ public class ActiveLearningController {
     /**
      * Assign annotations to an annotator
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/annotations/assign")
     public ResponseEntity<Map<String, Object>> assignAnnotations(
             @PathVariable String factoryId,
@@ -244,6 +251,7 @@ public class ActiveLearningController {
     /**
      * Complete an annotation
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/annotations/{annotationId}/complete")
     public ResponseEntity<Map<String, Object>> completeAnnotation(
             @PathVariable String factoryId,
@@ -298,6 +306,7 @@ public class ActiveLearningController {
     /**
      * Trigger sample analysis manually
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/trigger/analyze-samples")
     public ResponseEntity<Map<String, Object>> triggerSampleAnalysis(
             @PathVariable String factoryId) {
@@ -318,6 +327,7 @@ public class ActiveLearningController {
     /**
      * Trigger transition matrix update manually
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/trigger/update-transitions")
     public ResponseEntity<Map<String, Object>> triggerTransitionUpdate(
             @PathVariable String factoryId) {
@@ -337,6 +347,7 @@ public class ActiveLearningController {
     /**
      * Trigger knowledge promotion check
      */
+    @RequirePermission({"system:read_write"})
     @PostMapping("/trigger/promote-knowledge")
     public ResponseEntity<Map<String, Object>> triggerKnowledgePromotion(
             @PathVariable String factoryId) {

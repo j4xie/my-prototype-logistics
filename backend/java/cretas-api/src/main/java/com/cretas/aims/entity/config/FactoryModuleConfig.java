@@ -59,6 +59,17 @@ public class FactoryModuleConfig {
     @Builder.Default
     private Map<String, Object> permissionConfig = Map.of();
 
+    /**
+     * Layer 2: 工厂级 role × module 权限 override.
+     * 格式: {"role_code": {"module_code": "rw|r|w|-"}}
+     * 缺失的 (role, module) 组合 fallback 到 platform_role_permissions.
+     * See: docs/superpowers/specs/2026-04-18-permission-matrix-ai-driven-design.md §4.1
+     */
+    @Type(JsonBinaryType.class)
+    @Column(name = "role_module_override", columnDefinition = "jsonb", nullable = false)
+    @Builder.Default
+    private Map<String, Map<String, String>> roleModuleOverride = Map.of();
+
     @Type(JsonBinaryType.class)
     @Column(name = "layout_config", columnDefinition = "jsonb", nullable = false)
     @Builder.Default

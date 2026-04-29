@@ -85,8 +85,8 @@ async function loadData() {
       ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载失败:', error);
-    ElMessage.error('加载数据失败');
   } finally {
     loading.value = false;
   }
@@ -102,8 +102,8 @@ async function loadStatistics() {
       ElMessage.error(response.message || '加载统计数据失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载统计失败:', error);
-    ElMessage.error('加载统计数据失败');
   }
 }
 
@@ -148,10 +148,24 @@ async function submitAdjust() {
     return;
   }
 
+  // W-03 fix (Round 7): UI "调整数量" is a delta (正数增加/负数减少). Backend
+  // /material-batches/{id}/adjust takes newQuantity as the final absolute value,
+  // not a delta. Prior FE submitted delta → negative caused backend 500, positive
+  // silently reset batch quantity. Now compute newQuantity = current + delta
+  // client-side and send the final value. Guard negative result to avoid 500 on
+  // out-of-range adjustments.
+  const delta = Number(adjustForm.value.adjustQuantity) || 0;
+  const current = Number(adjustForm.value.currentQuantity) || 0;
+  const newQuantity = current + delta;
+  if (newQuantity < 0) {
+    ElMessage.warning(`调整后数量不能为负 (当前 ${current}, 调整 ${delta}, 结果 ${newQuantity})`);
+    return;
+  }
+
   adjustLoading.value = true;
   try {
     const response = await post(`/${factoryId.value}/material-batches/${adjustForm.value.batchId}/adjust`, {
-      quantity: adjustForm.value.adjustQuantity,
+      quantity: newQuantity,
       reason: adjustForm.value.reason
     });
     if (response.success) {
@@ -208,8 +222,9 @@ async function handleExport() {
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
     ElMessage.success('导出成功');
-  } catch {
-    ElMessage.error('导出失败');
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', e);
   }
 }
 
@@ -380,7 +395,16 @@ function getStatusText(status: string) {
         </el-form-item>
         <el-form-item label="调整数量" required>
           <el-input-number v-model="adjustForm.adjustQuantity" :step="1" style="width: 100%" />
-          <div class="form-tip">正数增加，负数减少</div>
+          <div class="form-tip">
+            正数增加，负数减少 ·
+            调整后数量:
+            <strong :style="{ color: ((Number(adjustForm.currentQuantity) || 0) + (Number(adjustForm.adjustQuantity) || 0)) < 0 ? 'var(--el-color-danger)' : 'inherit' }">
+              {{ (Number(adjustForm.currentQuantity) || 0) + (Number(adjustForm.adjustQuantity) || 0) }}
+            </strong>
+          </div>
+          <div class="form-tip" style="color: #909399; font-size: 12px; margin-top: 4px;">
+            ⚠ "当前数量"在对话框打开时读取，若有其他用户同时调整，实际结果可能偏差。如需保证一致性请先刷新列表。
+          </div>
         </el-form-item>
         <el-form-item label="调整原因" required>
           <el-input v-model="adjustForm.reason" type="textarea" :rows="3" placeholder="请输入调整原因" />
@@ -388,7 +412,12 @@ function getStatusText(status: string) {
       </el-form>
       <template #footer>
         <el-button @click="adjustDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="adjustLoading" @click="submitAdjust">确定</el-button>
+        <el-button
+          type="primary"
+          :loading="adjustLoading"
+          :disabled="((Number(adjustForm.currentQuantity) || 0) + (Number(adjustForm.adjustQuantity) || 0)) < 0"
+          @click="submitAdjust"
+        >确定</el-button>
       </template>
     </el-dialog>
 

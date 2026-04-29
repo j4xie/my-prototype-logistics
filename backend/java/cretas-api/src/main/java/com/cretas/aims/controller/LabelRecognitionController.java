@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.entity.isapi.LabelRecognitionConfig;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.isapi.LabelRecognitionRecord;
 import com.cretas.aims.service.isapi.AutoLabelRecognitionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -104,6 +105,7 @@ public class LabelRecognitionController {
     /**
      * 创建配置
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/configs")
     @Operation(summary = "创建配置", description = "创建新的标签识别配置")
     public ResponseEntity<Map<String, Object>> createConfig(
@@ -129,6 +131,7 @@ public class LabelRecognitionController {
     /**
      * 更新配置
      */
+    @RequirePermission({"production:read_write"})
     @PutMapping("/configs/{configId}")
     @Operation(summary = "更新配置", description = "更新标签识别配置")
     public ResponseEntity<Map<String, Object>> updateConfig(
@@ -155,6 +158,7 @@ public class LabelRecognitionController {
     /**
      * 删除配置
      */
+    @RequirePermission({"production:read_write"})
     @DeleteMapping("/configs/{configId}")
     @Operation(summary = "删除配置", description = "删除标签识别配置（软删除）")
     public ResponseEntity<Map<String, Object>> deleteConfig(
@@ -179,6 +183,7 @@ public class LabelRecognitionController {
     /**
      * 启用/禁用配置
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/configs/{configId}/toggle")
     @Operation(summary = "启用/禁用配置", description = "切换标签识别配置的启用状态")
     public ResponseEntity<Map<String, Object>> toggleConfig(
@@ -212,6 +217,7 @@ public class LabelRecognitionController {
     /**
      * 手动触发识别
      */
+    @RequirePermission({"production:read_write"})
     @PostMapping("/configs/{configId}/trigger")
     @Operation(summary = "手动触发识别", description = "手动触发一次标签识别")
     public ResponseEntity<Map<String, Object>> triggerRecognition(

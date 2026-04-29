@@ -70,13 +70,15 @@ public class FactoryMaterialRequisitionServiceImpl implements FactoryMaterialReq
             "status", "PENDING",
             "planId", productionPlanId != null ? productionPlanId : ""));
         ProductionPlan plan = productionPlanRepository.findByIdAndFactoryId(productionPlanId, factoryId)
-                .orElseThrow(() -> new BusinessException("生产计划不存在: " + productionPlanId));
+                .orElseThrow(() -> new BusinessException(404, "生产计划不存在: " + productionPlanId)
+                        .withHint("请刷新生产计划列表后重新选择").withHintTarget("productionPlanId"));
 
         // 按 BOM 展开
         List<BomItem> bomItems = bomItemRepository
                 .findByFactoryIdAndProductTypeIdAndDeletedAtIsNullOrderBySortOrderAsc(factoryId, plan.getProductTypeId());
         if (bomItems.isEmpty()) {
-            throw new BusinessException("产品 BOM 未配置, 无法生成物料需求单: productTypeId=" + plan.getProductTypeId());
+            throw new BusinessException(404, "产品 BOM 未配置, 无法生成物料需求单: productTypeId=" + plan.getProductTypeId())
+                    .withHint("请前往「生产管理 → BOM成本管理」配置产品 BOM");
         }
 
         FactoryMaterialRequisition mr = new FactoryMaterialRequisition();
@@ -134,7 +136,8 @@ public class FactoryMaterialRequisitionServiceImpl implements FactoryMaterialReq
     @Transactional(readOnly = true)
     public FactoryMaterialRequisition getById(String factoryId, String id) {
         FactoryMaterialRequisition mr = repository.findByIdAndFactoryIdAndDeletedAtIsNull(id, factoryId)
-                .orElseThrow(() -> new BusinessException("物料需求单不存在: " + id));
+                .orElseThrow(() -> new BusinessException(404, "物料需求单不存在: " + id)
+                        .withHint("请刷新物料需求单列表后重新选择").withHintTarget("id"));
         // 触发懒加载
         mr.getItems().size();
         return mr;
@@ -263,7 +266,8 @@ public class FactoryMaterialRequisitionServiceImpl implements FactoryMaterialReq
     public FactoryMaterialRequisition close(String factoryId, String id, Long operatorId) {
         FactoryMaterialRequisition mr = getById(factoryId, id);
         if (mr.getStatus() != Status.ISSUED && mr.getStatus() != Status.IN_USE) {
-            throw new BusinessException("状态 " + mr.getStatus() + " 不允许关单");
+            throw new BusinessException(409, "状态 " + mr.getStatus() + " 不允许关单")
+                    .withHint("请刷新物料需求单列表查看最新状态");
         }
         // 自动计算退料 returned = issued - consumed
         for (FactoryMaterialRequisitionItem it : mr.getItems()) {
@@ -317,7 +321,8 @@ public class FactoryMaterialRequisitionServiceImpl implements FactoryMaterialReq
     public FactoryMaterialRequisition cancel(String factoryId, String id, Long operatorId, String reason) {
         FactoryMaterialRequisition mr = getById(factoryId, id);
         if (mr.getStatus() == Status.CLOSED || mr.getStatus() == Status.CANCELLED) {
-            throw new BusinessException("状态 " + mr.getStatus() + " 不允许取消");
+            throw new BusinessException(409, "状态 " + mr.getStatus() + " 不允许取消")
+                    .withHint("请刷新物料需求单列表查看最新状态");
         }
         mr.setStatus(Status.CANCELLED);
         mr.setRemarks((mr.getRemarks() == null ? "" : mr.getRemarks() + " | ") + "取消原因: " + reason);
@@ -335,7 +340,8 @@ public class FactoryMaterialRequisitionServiceImpl implements FactoryMaterialReq
 
     private void assertStatus(FactoryMaterialRequisition mr, Status expected) {
         if (mr.getStatus() != expected) {
-            throw new BusinessException("状态不匹配: 需要 " + expected + ", 当前 " + mr.getStatus());
+            throw new BusinessException(409, "状态不匹配: 需要 " + expected + ", 当前 " + mr.getStatus())
+                    .withHint("请刷新物料需求单列表查看最新状态");
         }
     }
 }

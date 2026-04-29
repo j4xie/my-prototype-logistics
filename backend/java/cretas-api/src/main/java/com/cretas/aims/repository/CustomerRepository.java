@@ -45,10 +45,30 @@ public interface CustomerRepository extends JpaRepository<Customer, String> {
     /**
      * 根据名称搜索客户
      * 注意：name使用双向模糊匹配（无法使用索引），customerCode使用右模糊（可使用索引）
+     * keyword 必须先经 SqlLikeEscaper.escape() 处理 _ % \, 再传入. ESCAPE '\\' 子句生效.
      */
     @Query("SELECT c FROM Customer c WHERE c.factoryId = :factoryId " +
-           "AND (c.name LIKE CONCAT('%', :keyword, '%') OR c.customerCode LIKE CONCAT(:keyword, '%'))")
+           "AND (c.name LIKE CONCAT('%', :keyword, '%') ESCAPE '\\' " +
+           "OR c.customerCode LIKE CONCAT(:keyword, '%') ESCAPE '\\')")
     List<Customer> searchByName(@Param("factoryId") String factoryId, @Param("keyword") String keyword);
+
+    @Query("SELECT c FROM Customer c WHERE c.factoryId = :factoryId " +
+           "AND (c.name LIKE CONCAT('%', :keyword, '%') ESCAPE '\\' " +
+           "OR c.customerCode LIKE CONCAT(:keyword, '%') ESCAPE '\\' " +
+           "OR c.contactPerson LIKE CONCAT('%', :keyword, '%') ESCAPE '\\')")
+    Page<Customer> searchByNamePaged(@Param("factoryId") String factoryId, @Param("keyword") String keyword, Pageable pageable);
+
+    /** R10 CRIT-2: push-down isActive filter for /reference-data/customers dropdown.
+     *  Replaces post-page filter that starved on factories with concentrated inactive blocks. */
+    Page<Customer> findByFactoryIdAndIsActiveTrue(String factoryId, Pageable pageable);
+
+    @Query("SELECT c FROM Customer c WHERE c.factoryId = :factoryId AND c.isActive = true " +
+           "AND (c.name LIKE CONCAT('%', :keyword, '%') ESCAPE '\\' " +
+           "OR c.customerCode LIKE CONCAT(:keyword, '%') ESCAPE '\\' " +
+           "OR c.contactPerson LIKE CONCAT('%', :keyword, '%') ESCAPE '\\')")
+    Page<Customer> searchActiveByNamePaged(@Param("factoryId") String factoryId,
+                                            @Param("keyword") String keyword,
+                                            Pageable pageable);
 
     /**
      * 根据客户类型查找客户
@@ -133,10 +153,21 @@ public interface CustomerRepository extends JpaRepository<Customer, String> {
     Double calculateAverageRating(@Param("factoryId") String factoryId);
 
     /**
-     * 统计客户的总欠款
+     * 统计客户的总欠款 (仅正余额, 即客户欠工厂的钱).
+     * R42 BUG-13 fix: 之前 SUM(currentBalance) 把客户预付 (negative balance) 也加进去,
+     * 导致 reports/finance.accountsReceivable 显示负值 (e.g., -145K). 应付预付应分开统计.
      */
-    @Query("SELECT SUM(c.currentBalance) FROM Customer c WHERE c.factoryId = :factoryId")
+    @Query("SELECT COALESCE(SUM(c.currentBalance), 0) FROM Customer c " +
+            "WHERE c.factoryId = :factoryId AND c.currentBalance > 0")
     BigDecimal calculateTotalOutstandingBalance(@Param("factoryId") String factoryId);
+
+    /**
+     * R42 BUG-13: 统计客户预付款 (negative balance 取绝对值).
+     * 客户预付了钱但未消费, 在会计上是工厂的负债, 不应混在 AR 里.
+     */
+    @Query("SELECT COALESCE(SUM(-c.currentBalance), 0) FROM Customer c " +
+            "WHERE c.factoryId = :factoryId AND c.currentBalance < 0")
+    BigDecimal calculateTotalPrepayments(@Param("factoryId") String factoryId);
 
     /**
      * 统计客户的总信用额度

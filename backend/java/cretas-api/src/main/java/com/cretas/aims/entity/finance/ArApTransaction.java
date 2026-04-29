@@ -1,6 +1,7 @@
 package com.cretas.aims.entity.finance;
 
 import com.cretas.aims.entity.BaseEntity;
+import com.cretas.aims.entity.enums.ArApApprovalStatus;
 import com.cretas.aims.entity.enums.ArApTransactionType;
 import com.cretas.aims.entity.enums.CounterpartyType;
 import com.cretas.aims.entity.enums.PaymentMethod;
@@ -9,6 +10,7 @@ import lombok.*;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -121,4 +123,19 @@ public class ArApTransaction extends BaseEntity {
 
     @Column(name = "remark", length = 500)
     private String remark;
+
+    /**
+     * R23 audit C2: approval state for AR_ADJUSTMENT / AP_ADJUSTMENT (other types stay APPROVED).
+     * V20260426_01 backfills existing rows to APPROVED. New adjustments → PENDING (no balance mutation),
+     * approveAdjustment() applies delta + flips to APPROVED.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "approval_status", nullable = false, length = 32)
+    private ArApApprovalStatus approvalStatus = ArApApprovalStatus.APPROVED;
+
+    @Column(name = "approved_by")
+    private Long approvedBy;
+
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
 }

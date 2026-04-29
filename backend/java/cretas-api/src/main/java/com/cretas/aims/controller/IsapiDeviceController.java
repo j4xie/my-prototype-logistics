@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.isapi.BatchImportRequest;
 import com.cretas.aims.dto.isapi.DeviceDiscoveryRequest;
@@ -60,6 +61,7 @@ public class IsapiDeviceController {
 
     // ==================== 设备 CRUD ====================
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping
     @Operation(summary = "添加设备")
     public ApiResponse<IsapiDeviceDTO> addDevice(
@@ -73,6 +75,7 @@ public class IsapiDeviceController {
         }
     }
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PutMapping("/{deviceId}")
     @Operation(summary = "更新设备")
     public ApiResponse<IsapiDeviceDTO> updateDevice(
@@ -87,6 +90,7 @@ public class IsapiDeviceController {
         }
     }
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @DeleteMapping("/{deviceId}")
     @Operation(summary = "删除设备")
     public ApiResponse<Void> deleteDevice(
@@ -138,6 +142,7 @@ public class IsapiDeviceController {
 
     // ==================== 连接管理 ====================
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/{deviceId}/test-connection")
     @Operation(summary = "测试设备连接")
     public ApiResponse<Map<String, Object>> testConnection(
@@ -156,6 +161,7 @@ public class IsapiDeviceController {
         }
     }
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/{deviceId}/sync")
     @Operation(summary = "同步设备信息")
     public ApiResponse<IsapiDeviceDTO> syncDevice(
@@ -166,6 +172,7 @@ public class IsapiDeviceController {
         return ApiResponse.success("同步完成", deviceService.toDTO(device));
     }
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/{deviceId}/configure-http-host")
     @Operation(summary = "配置摄像头 HTTP 监听地址", description = "配置摄像头将事件推送到云端服务器")
     public ApiResponse<HttpHostConfigResponse> configureHttpHost(
@@ -210,6 +217,7 @@ public class IsapiDeviceController {
         }
     }
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PutMapping("/{deviceId}/password")
     @Operation(summary = "修改设备密码", description = "通过 ISAPI 修改设备登录密码")
     public ApiResponse<Void> changeDevicePassword(
@@ -228,6 +236,7 @@ public class IsapiDeviceController {
         }
     }
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/{deviceId}/reboot")
     @Operation(summary = "重启设备")
     public ApiResponse<Void> rebootDevice(
@@ -241,6 +250,7 @@ public class IsapiDeviceController {
         }
     }
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/{deviceId}/factory-reset")
     @Operation(summary = "恢复出厂设置", description = "危险操作：将清除设备所有配置")
     public ApiResponse<Void> factoryResetDevice(
@@ -265,6 +275,7 @@ public class IsapiDeviceController {
         return ApiResponse.success(streams);
     }
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/{deviceId}/capture")
     @Operation(summary = "抓拍图片")
     public ApiResponse<IsapiCaptureDTO> capturePicture(
@@ -299,6 +310,7 @@ public class IsapiDeviceController {
 
     // ==================== 告警订阅 ====================
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/{deviceId}/subscribe")
     @Operation(summary = "订阅设备告警")
     public ApiResponse<Void> subscribeDevice(
@@ -308,6 +320,7 @@ public class IsapiDeviceController {
         return ApiResponse.successMessage("订阅成功");
     }
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/{deviceId}/unsubscribe")
     @Operation(summary = "取消订阅设备告警")
     public ApiResponse<Void> unsubscribeDevice(
@@ -317,6 +330,7 @@ public class IsapiDeviceController {
         return ApiResponse.successMessage("取消订阅成功");
     }
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/subscribe-all")
     @Operation(summary = "订阅所有在线设备")
     public ApiResponse<Void> subscribeAll(@PathVariable String factoryId) {
@@ -412,6 +426,7 @@ public class IsapiDeviceController {
         return ApiResponse.success(stats);
     }
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/events/{eventId}/process")
     @Operation(summary = "处理事件")
     public ApiResponse<Void> processEvent(
@@ -489,6 +504,7 @@ public class IsapiDeviceController {
                 .orElse(ApiResponse.error("事件不存在"));
     }
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/events/{eventId}/reanalyze")
     @Operation(summary = "重新 AI 分析", description = "对指定事件重新进行 AI 分析 (需要有图片数据)")
     public ApiResponse<IsapiEventDTO> reanalyzeEvent(
@@ -543,6 +559,7 @@ public class IsapiDeviceController {
         return ApiResponse.success(stats);
     }
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/events/batch-process")
     @Operation(summary = "批量处理事件", description = "批量标记事件为已处理")
     public ApiResponse<Map<String, Object>> batchProcessEvents(
@@ -578,6 +595,7 @@ public class IsapiDeviceController {
 
     // ==================== 设备发现与导入 ====================
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/discover")
     @Operation(summary = "扫描局域网发现设备")
     public ApiResponse<List<DiscoveredDeviceDTO>> discoverDevices(
@@ -594,6 +612,7 @@ public class IsapiDeviceController {
         }
     }
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/batch-import")
     @Operation(summary = "批量导入发现的设备")
     public ApiResponse<Map<String, Object>> batchImportDevices(
@@ -658,6 +677,7 @@ public class IsapiDeviceController {
         }
     }
 
+    @RequirePermission({"system:read_write", "equipment:read_write"})
     @PostMapping("/scan-single")
     @Operation(summary = "扫描单个IP地址")
     public ApiResponse<List<DiscoveredDeviceDTO>> scanSingleHost(

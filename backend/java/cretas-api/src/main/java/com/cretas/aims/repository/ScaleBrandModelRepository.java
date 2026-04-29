@@ -58,10 +58,10 @@ public interface ScaleBrandModelRepository extends JpaRepository<ScaleBrandModel
      * 按关键词搜索 (品牌名、型号名)
      */
     @Query("SELECT b FROM ScaleBrandModel b WHERE " +
-            "LOWER(b.brandName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(b.brandNameEn) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(b.modelCode) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(b.modelName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "LOWER(b.brandName) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+            "LOWER(b.brandNameEn) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+            "LOWER(b.modelCode) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' OR " +
+            "LOWER(b.modelName) LIKE LOWER(CONCAT('%', :keyword, '%')) ESCAPE '\\' " +
             "ORDER BY b.sortOrder, b.brandName")
     List<ScaleBrandModel> searchByKeyword(@Param("keyword") String keyword);
 

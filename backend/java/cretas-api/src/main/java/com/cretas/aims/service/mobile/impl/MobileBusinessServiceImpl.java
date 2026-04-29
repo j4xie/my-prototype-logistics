@@ -792,11 +792,13 @@ public class MobileBusinessServiceImpl implements MobileBusinessService {
         EquipmentAlert alert = getOrCreateAlert(factoryId, alertId);
 
         if (alert.getStatus() == AlertStatus.RESOLVED) {
-            throw new BusinessException("告警已解决，无法确认");
+            throw new BusinessException(409, "告警已解决，无法确认")
+                    .withHint("请刷新告警列表查看最新状态");
         }
 
         if (alert.getStatus() == AlertStatus.ACKNOWLEDGED) {
-            throw new BusinessException("告警已被确认");
+            throw new BusinessException(409, "告警已被确认")
+                    .withHint("请刷新告警列表查看最新状态");
         }
 
         alert.setStatus(AlertStatus.ACKNOWLEDGED);
@@ -819,7 +821,8 @@ public class MobileBusinessServiceImpl implements MobileBusinessService {
         EquipmentAlert alert = getOrCreateAlert(factoryId, alertId);
 
         if (alert.getStatus() == AlertStatus.RESOLVED) {
-            throw new BusinessException("告警已解决");
+            throw new BusinessException(409, "告警已解决")
+                    .withHint("请刷新告警列表查看最新状态");
         }
 
         // 如果告警还未确认，先设置确认信息
@@ -936,17 +939,21 @@ public class MobileBusinessServiceImpl implements MobileBusinessService {
             Long userId) {
 
         if (!request.getType().matches("bug|feature|other")) {
-            throw new BusinessException("无效的反馈类型: " + request.getType());
+            throw new BusinessException(400, "无效的反馈类型: " + request.getType())
+                    .withHint("请选择有效的反馈类型").withHintTarget("type");
         }
 
         if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
-            throw new BusinessException("反馈标题不能为空");
+            throw new BusinessException(400, "反馈标题不能为空")
+                    .withHint("请填写反馈标题").withHintTarget("title");
         }
         if (request.getContent() == null || request.getContent().trim().isEmpty()) {
-            throw new BusinessException("反馈内容不能为空");
+            throw new BusinessException(400, "反馈内容不能为空")
+                    .withHint("请填写反馈内容").withHintTarget("content");
         }
         if (request.getContent().trim().length() < 10) {
-            throw new BusinessException("反馈内容至少10个字符");
+            throw new BusinessException(400, "反馈内容至少10个字符")
+                    .withHint("请详细描述问题, 至少 10 字").withHintTarget("content");
         }
 
         String screenshotsJson = null;
@@ -955,7 +962,8 @@ public class MobileBusinessServiceImpl implements MobileBusinessService {
                 screenshotsJson = objectMapper.writeValueAsString(request.getScreenshots());
             } catch (Exception e) {
                 log.error("序列化截图列表失败", e);
-                throw new BusinessException("截图数据格式错误");
+                throw new BusinessException(400, "截图数据格式错误")
+                        .withHint("请重新选择有效的截图").withHintTarget("screenshot");
             }
         }
 
@@ -995,7 +1003,8 @@ public class MobileBusinessServiceImpl implements MobileBusinessService {
         if (alertId.startsWith("MAINT_") || alertId.startsWith("WARRANTY_")) {
             String[] parts = alertId.split("_");
             if (parts.length != 2) {
-                throw new BusinessException("无效的告警ID格式: " + alertId);
+                throw new BusinessException(400, "无效的告警ID格式: " + alertId)
+                        .withHint("请刷新告警列表后重新选择").withHintTarget("alertId");
             }
 
             String alertType = parts[0];
@@ -1014,7 +1023,8 @@ public class MobileBusinessServiceImpl implements MobileBusinessService {
             return equipmentAlertRepository.save(newAlert);
         }
 
-        throw new BusinessException("不支持的告警ID格式: " + alertId);
+        throw new BusinessException(400, "不支持的告警ID格式: " + alertId)
+                .withHint("请刷新告警列表后重新选择").withHintTarget("alertId");
     }
 
     /**
@@ -1222,7 +1232,8 @@ public class MobileBusinessServiceImpl implements MobileBusinessService {
             return objectMapper.readValue(json, MobileDTO.WorkTimeSettings.class);
         } catch (Exception e) {
             log.error("解析工作时间设置JSON失败: {}", json, e);
-            throw new BusinessException("工作时间设置格式错误");
+            throw new BusinessException(400, "工作时间设置格式错误")
+                    .withHint("请检查工作时间配置 JSON 格式").withHintTarget("workSchedule");
         }
     }
 
@@ -1234,7 +1245,8 @@ public class MobileBusinessServiceImpl implements MobileBusinessService {
             return objectMapper.writeValueAsString(settings);
         } catch (Exception e) {
             log.error("序列化工作时间设置失败", e);
-            throw new BusinessException("工作时间设置序列化失败");
+            throw new BusinessException(500, "工作时间设置序列化失败")
+                    .withHint("请稍后重试, 如果问题持续请联系管理员");
         }
     }
 

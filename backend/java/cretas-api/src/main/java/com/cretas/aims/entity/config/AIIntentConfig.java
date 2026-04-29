@@ -356,7 +356,15 @@ public class AIIntentConfig extends BaseEntity {
 
     /**
      * 获取负向关键词列表
+     *
+     * <p>{@code @JsonIgnore} required: this is a derived getter (no setter), so Jackson's
+     * default typing in Spring's Redis cache fails on deserialize ("setterless property,
+     * no way to handle typed deser"). Without this, J2's commit 9a8d33068 added @Cacheable
+     * on getAllIntents → 2nd call per request (or 2nd request after cache write) crashes
+     * with org.springframework.data.redis.serializer.SerializationException → 500. Confirmed
+     * fix 2026-04-25 (J3 task).
      */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public java.util.List<String> getNegativeKeywordsList() {
         if (negativeKeywords == null || negativeKeywords.isEmpty()) {
             return java.util.Collections.emptyList();

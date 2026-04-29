@@ -50,16 +50,20 @@ public class SmartBiPgFieldDefinition {
     private Long uploadId;
 
     /**
-     * Original field name from Excel
+     * Original field name from Excel.
+     * Apr 20 2026: 用户上传含长表头 Excel (多行合并 + 单位说明 + 多语言) 超过 255 →
+     * "value too long for type character varying(255)" 批量插入失败,整个 upload FAILED.
+     * 扩到 TEXT (无上限). DB migration V20260425_01 同步 ALTER COLUMN.
      */
-    @Column(name = "original_name", length = 255)
+    @Column(name = "original_name", columnDefinition = "TEXT")
     private String originalName;
 
     /**
      * Standardized semantic field name
-     * Mapped by AI to common business terms
+     * Mapped by AI to common business terms.
+     * 扩到 500 防御 AI 生成的长 standard_name (e.g. 多维度组合字段).
      */
-    @Column(name = "standard_name", length = 100)
+    @Column(name = "standard_name", length = 500)
     private String standardName;
 
     /**
@@ -132,4 +136,27 @@ public class SmartBiPgFieldDefinition {
      */
     @Column(name = "format_pattern", length = 50)
     private String formatPattern;
+
+    /**
+     * KPI aggregation strategy.
+     * Values: SUM (default for measures), MEAN (1-5 ratings),
+     *         NONE (IDs and non-measures excluded from KPI cards).
+     *
+     * Populated initially by Java with default SUM; corrected by the Python
+     * /reclassify endpoint (γ-1c afterCommit hook in DynamicDataPersistence).
+     *
+     * Read by both backend (insight.py quick_summary) and frontend
+     * (web-admin getSmartKPIs) — single source of truth, no client-side
+     * heuristic.
+     *
+     * Apr 26 2026: migrated String → AggStrategy enum (Apr 26 deferred backlog
+     * Item 2). DB still stores lowercase string ("sum"/"mean"/"none") via
+     * AggStrategyConverter — fully backwards compatible with V20260425_02.
+     *
+     * See: backend/python/smartbi/services/field_classifier.py infer_agg_strategy()
+     */
+    @Builder.Default
+    @Convert(converter = AggStrategyConverter.class)
+    @Column(name = "agg_strategy", length = 20, nullable = false)
+    private AggStrategy aggStrategy = AggStrategy.SUM;
 }

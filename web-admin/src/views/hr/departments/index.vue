@@ -57,8 +57,8 @@ async function loadData() {
       ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载失败:', error);
-    ElMessage.error('加载数据失败');
   } finally {
     loading.value = false;
   }
@@ -149,7 +149,8 @@ async function submitForm() {
       ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
-    ElMessage.error('操作失败');
+    // Interceptor already shows specific sticky toast; debug-only log.
+    console.error('[提交失败]', error);
   } finally {
     dialogLoading.value = false;
   }
@@ -166,9 +167,8 @@ async function handleDelete(row: Record<string, unknown>) {
       ElMessage.error(response.message || '删除失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败');
-    }
+    // Interceptor shows specific toast; dedupe fallback
+    if (error !== 'cancel') console.error('[失败]', error);
   }
 }
 </script>

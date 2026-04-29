@@ -7,15 +7,108 @@ import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig, AxiosResp
 import { ApiResponse, ApiError } from '@/types/api';
 
 // 动态导入 ElMessage，避免循环依赖
+// Apr 18 2026 UX 优化: error 类 toast 默认 3s 闪过对业务流程错误 (库存不足/并发冲突/
+// 批次未分配) 太短 — 用户需时间看清具体原因 + 去依赖流程处理. 改成 duration: 0 (sticky,
+// 必须用户手动关) + showClose: true. warning/success/info 保持 3s.
+// Apr 28 2026 (Bug C): dedup identical error messages within a short window.
+// qa-prompt v2.4 Phase 6 caught: 3 init APIs failing simultaneously emit
+// 3 identical "服务暂时不可用,请稍后重试 (后端未就绪)" toasts. User sees
+// noise. Dedupe by exact message+type within 2s window.
+const _toastSeen: Map<string, number> = new Map();
+const _TOAST_DEDUP_MS = 2000;
+
 const showMessage = async (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'error') => {
+  // Dedup error/warning toasts only — success/info usually deliberate.
+  if (type === 'error' || type === 'warning') {
+    const key = `${type}::${message}`;
+    const now = Date.now();
+    const last = _toastSeen.get(key);
+    if (last !== undefined && now - last < _TOAST_DEDUP_MS) {
+      _toastSeen.set(key, now);
+      return; // suppress duplicate within window
+    }
+    _toastSeen.set(key, now);
+    // Periodic cleanup to avoid unbounded map growth.
+    if (_toastSeen.size > 50) {
+      for (const [k, t] of _toastSeen) {
+        if (now - t > _TOAST_DEDUP_MS * 2) _toastSeen.delete(k);
+      }
+    }
+  }
+
   const { ElMessage } = await import('element-plus');
-  ElMessage({ message, type });
+  ElMessage({
+    message,
+    type,
+    duration: type === 'error' ? 0 : 3000,
+    showClose: type === 'error',
+  });
+};
+
+// Apr 18 2026 UX 进阶: 3 渠道错误呈现
+//   severity=BLOCKING  → ElMessageBox.alert (必须点确定才能继续, 阻塞)
+//   actionHint != null → ElNotification (带 "去处理" 按钮; 点击 pulse hintTarget)
+//   default            → showMessage (方案 A sticky toast)
+const pulseHintTarget = (label: string) => {
+  if (!label) return;
+  // Find buttons whose visible text or aria-label matches the hint target label.
+  const all = Array.from(document.querySelectorAll<HTMLElement>('button, [role="button"], [role="tab"]'));
+  const target = all.find(el => {
+    const txt = (el.innerText || el.textContent || '').trim();
+    return txt === label || txt.startsWith(label) || el.getAttribute('aria-label') === label;
+  });
+  if (!target) return;
+  target.classList.add('cretas-pulse-hint');
+  target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  setTimeout(() => target.classList.remove('cretas-pulse-hint'), 5000);
+};
+
+const showRichError = async (
+  message: string,
+  opts: { actionHint?: string | null; severity?: string | null; hintTarget?: string | null }
+) => {
+  const el = await import('element-plus');
+  const { ElMessageBox, ElNotification } = el;
+  if (opts.severity === 'BLOCKING') {
+    // Modal alert — must click 确定 to dismiss. Used for critical errors
+    // (RBAC denial, destructive-confirm, critical business-rule violation).
+    try {
+      await ElMessageBox.alert(
+        `${message}${opts.actionHint ? '\n\n提示: ' + opts.actionHint : ''}`,
+        '操作被拒绝',
+        { type: 'error', confirmButtonText: '我知道了' }
+      );
+    } catch { /* user closed */ }
+    if (opts.hintTarget) pulseHintTarget(opts.hintTarget);
+    return;
+  }
+  if (opts.actionHint) {
+    // Rich notification with action button.
+    const n = ElNotification({
+      title: '操作无法完成',
+      message: `${message}\n\n${opts.actionHint}`,
+      type: 'error',
+      duration: 0,
+      showClose: true,
+      onClick: () => { if (opts.hintTarget) pulseHintTarget(opts.hintTarget); },
+    });
+    if (opts.hintTarget) {
+      // Also pulse immediately so user sees where to go.
+      setTimeout(() => pulseHintTarget(opts.hintTarget as string), 300);
+    }
+    void n;
+    return;
+  }
+  // Default: sticky toast (方案 A).
+  return showMessage(message, 'error');
 };
 
 // 创建 axios 实例
 const request: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api/mobile',
-  timeout: 30000,
+  // P0-8 (Apr 20): 30s→120s default. Big-data analysis (12K+ rows enrich / LLM insights)
+  // exceed 30s, cascading abort. Per-call 600s overrides stay for upload/confirm.
+  timeout: 120000,
   withCredentials: true, // Send HttpOnly cookies with every request
   headers: {
     'Content-Type': 'application/json',
@@ -89,7 +182,20 @@ request.interceptors.response.use(
     // 如果响应已经是标准格式
     if (data && typeof data.success === 'boolean') {
       if (!data.success) {
-        showMessage(data.message || '操作失败', 'error');
+        // Respect _silent on success=false too (Apr 21 2026): previously
+        // this branch unconditionally fired a red toast even when the
+        // caller set _silent=true (e.g. workflow-designer optional
+        // state-machine fetch → new factory with no SM got a toast
+        // "状态机配置不存在" on every page mount).
+        const cfg = response.config as { _silent?: boolean };
+        if (!cfg._silent) {
+          const rich = (data as Record<string, string | null>);
+          showRichError(data.message || '操作失败', {
+            actionHint: rich.actionHint,
+            severity: rich.severity,
+            hintTarget: rich.hintTarget,
+          });
+        }
         return Promise.reject(new ApiError(data.message, data.code));
       }
       return data;
@@ -105,6 +211,14 @@ request.interceptors.response.use(
   async (error: AxiosError<ApiResponse>) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean; _silent?: boolean };
     const status = error.response?.status;
+
+    // Apr 20 Bug BR-01 fix: 用户点浏览器回退/路由切换时, 进行中的 axios 请求会被 abort,
+    // 抛 AxiosError code=ERR_CANCELED, message='canceled'. 之前默认路径会走 showMessage
+    // 弹 "canceled" toast, 用户困惑. 正确做法是静默 reject (调用方通常 await with
+    // .catch 或 Promise.allSettled, 不会 surface 给用户).
+    if (axios.isCancel?.(error) || error.code === 'ERR_CANCELED' || error.message === 'canceled') {
+      return Promise.reject(error);
+    }
 
     // 401 未授权 - 尝试刷新 token via cookie
     if (status === 401 && !originalRequest._retry) {
@@ -166,20 +280,84 @@ request.interceptors.response.use(
       }
     }
 
-    // 403 禁止访问
+    // 403 禁止访问 — always blocking (per user 进阶方向 2)
     if (status === 403) {
-      showMessage('您没有权限执行此操作', 'error');
+      const backendMsg = error.response?.data?.message || '您没有权限执行此操作';
+      const rich = (error.response?.data as unknown as Record<string, string | null>) || {};
+      showRichError(backendMsg, {
+        actionHint: rich.actionHint,
+        severity: rich.severity || 'BLOCKING',
+        hintTarget: rich.hintTarget,
+      });
       return Promise.reject(new ApiError('权限不足', 'FORBIDDEN', 403));
     }
 
-    // 其他错误
-    const message = error.response?.data?.message || error.message || '网络请求失败';
-    // Allow callers to suppress error toast via _silent config flag
-    if (!originalRequest._silent) {
-      showMessage(message, 'error');
+    // 404 Spring 默认 NoResourceFoundException 的"请求资源不存在"对用户太神秘,
+    // 常见根因其实是: (a) 后端该接口没上线 / (b) URL 前端拼错 / (c) 权限 interceptor 已 reject
+    // 给出明确提示 + 路径,让用户/开发都能立刻定位 (Apr 18 2026 bug #50)。
+    if (status === 404) {
+      const backendMsg = error.response?.data?.message || '';
+      const method = String(originalRequest?.method || '').toUpperCase();
+      const url = originalRequest?.url || '';
+      const isSpringDefault = /资源不存在|no\s*resource|not\s*found/i.test(backendMsg);
+      const friendly = isSpringDefault || !backendMsg
+        ? `请求的接口不存在 (${method} ${url})。可能是后端未上线该功能,或当前账号无权访问。`
+        : backendMsg;
+      if (!originalRequest._silent) showMessage(friendly, 'error');
+      return Promise.reject(new ApiError(friendly, 'NOT_FOUND', 404));
     }
 
-    return Promise.reject(new ApiError(message, error.response?.data?.code, status));
+    // 其他错误 — Apr 19 2026 Bug #58: 5xx/网络断开时 axios 默认 error.message 是英文
+    // "Request failed with status code 502",用户看不懂。映射为中文 friendly 文案,
+    // 特别对 502/503/504 (nginx 网关 / upstream 未就绪 / 超时) 给出具体指引。
+    const rawMessage = error.response?.data?.message as string | undefined;
+    const isAxiosDefault = !!error.message && /^Request failed with status code/i.test(error.message);
+    let message: string;
+    if (rawMessage) {
+      message = rawMessage;
+    } else if (status === 502 || status === 504) {
+      message = `服务暂时不可用,请稍后重试 (${status === 502 ? '后端未就绪' : '网关超时'})`;
+    } else if (status === 503) {
+      message = '服务繁忙,请稍后重试';
+    } else if (status === 500) {
+      message = '服务器内部错误,请联系管理员';
+    } else if (typeof status === 'number' && status >= 500) {
+      message = `服务异常 (${status}),请稍后重试`;
+    } else if (isAxiosDefault || !error.message) {
+      message = '网络请求失败,请检查网络连接';
+    } else {
+      message = error.message;
+    }
+    // 409 differentiation (R24 P2 real-window finding):
+    //   - Optimistic lock 409: GlobalExceptionHandler emits {code:409, message:"数据已被其他用户修改..."}
+    //     with NO actionHint. Callers (suppliers/customers/sales-orders/DynamicModulePage)
+    //     catch status===409 and ElMessageBox.alert their own "刷新列表" dialog. Interceptor
+    //     toast would be redundant.
+    //   - Business 409: BusinessException(409, ...).withHint(...) emits {code:409, message:..,
+    //     actionHint:.., hintTarget:..}. R18+R21+R23 invariants (DRAFT/CANCELLED/PRE_FINANCE
+    //     SO/PO blocked from /finance/receivable, /finance/payable, /finance/invoices/request,
+    //     /finance/payments/record, etc.) all use this path. Pre-R24 the blanket-suppress
+    //     swallowed actionHint so users got NO feedback — captured by R24 real-window test
+    //     on /finance/invoices/request with CONFIRMED SO (toast log empty, network 409).
+    // Apr 24 LOW-1 fix was too broad; this re-narrows the suppression to vanilla optimistic
+    // lock only (no actionHint).
+    const rich = (error.response?.data as unknown as Record<string, string | null>) || {};
+    const isVanillaOptimisticLock = status === 409 && !rich.actionHint && !rich.hintTarget;
+    // Allow callers to suppress error toast via _silent config flag
+    if (!originalRequest._silent && !isVanillaOptimisticLock) {
+      showRichError(message, {
+        actionHint: rich.actionHint,
+        severity: rich.severity,
+        hintTarget: rich.hintTarget,
+      });
+    }
+
+    return Promise.reject(new ApiError(
+      message,
+      error.response?.data?.code,
+      status,
+      rich.actionHint || null,
+    ));
   }
 );
 

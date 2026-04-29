@@ -52,7 +52,7 @@ public interface AIIntentConfigRepository extends JpaRepository<AIIntentConfig, 
     @Query("SELECT c FROM AIIntentConfig c " +
            "WHERE c.isActive = true " +
            "AND c.deletedAt IS NULL " +
-           "AND c.keywords LIKE %:keyword% " +
+           "AND c.keywords LIKE %:keyword% ESCAPE '\\' " +
            "ORDER BY c.priority DESC")
     List<AIIntentConfig> findByKeywordContaining(@Param("keyword") String keyword);
 

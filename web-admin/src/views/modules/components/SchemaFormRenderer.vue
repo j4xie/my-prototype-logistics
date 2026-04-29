@@ -44,21 +44,76 @@ onMounted(async () => {
   }
 })
 
+/**
+ * PR1.5 Bug A: resolve schema sentinel default values to actual runtime values.
+ * Backend stores defaults like "TODAY" / "NOW" as schema sentinels — frontend
+ * must resolve them so submit payload contains parseable date/datetime strings.
+ */
+function resolveDefault(field: EffectiveField): unknown {
+  const dv = field.defaultValue
+  if (typeof dv !== 'string') return dv ?? null
+  const today = new Date()
+  // Build YYYY-MM-DD using LOCAL date (not UTC) — avoids 8h shift bug for CST users
+  // when local is one day ahead/behind UTC midnight.
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const localDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
+  switch (dv) {
+    case 'TODAY':
+      return localDate
+    case 'NOW':
+      // LOCAL ISO datetime — backend LenientLocalDateDeserializer also accepts the literal
+      // "NOW" sentinel as backup, so frontend resolution is "best effort visual" only.
+      return `${localDate}T${pad(today.getHours())}:${pad(today.getMinutes())}:${pad(today.getSeconds())}`
+    case 'YESTERDAY': {
+      const d = new Date(today.getTime() - 86400000)
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+    }
+    default:
+      return dv
+  }
+}
+
 function initFormData() {
   if (!config.value) return
   const data: Record<string, unknown> = {}
 
   config.value.fields.forEach((field) => {
+    const resolvedDefault = resolveDefault(field)
     if (props.mode === 'edit' && props.initialData) {
-      data[field.code] = props.initialData[field.code] ?? field.defaultValue ?? null
+      data[field.code] = readInitialForField(field, props.initialData) ?? resolvedDefault ?? null
     } else if (props.mode === 'create') {
-      data[field.code] = field.defaultValue ?? null
+      data[field.code] = resolvedDefault ?? null
     } else {
-      data[field.code] = props.initialData?.[field.code] ?? null
+      data[field.code] = props.initialData ? readInitialForField(field, props.initialData) : null
     }
   })
 
   formData.value = data
+}
+
+/**
+ * Apr 25 2026 (Round 4 Critical #4): for reference fields with valueField='id',
+ * prefer initialData[`${code}Id`] when present (backend dual-field convention:
+ * the snapshot string lives in `salesperson` and the FK Long lives in `salespersonId`).
+ * Falls back to initialData[code] for legacy/non-reference cases.
+ *
+ * Why: SO entity returns both `salesperson` (snapshot fullName) and `salespersonId` (FK).
+ * Without this lookup, edit-mode form gets the snapshot string, which (a) doesn't survive
+ * fetchById (looksLikeId rejects non-ASCII names), (b) saves back as legacy path on submit,
+ * dropping the FK link and re-introducing the collision the dual-field migration was meant
+ * to solve.
+ */
+function readInitialForField(field: { code: string; type?: string; extra?: { referenceConfig?: { valueField?: string } } }, initial: Record<string, unknown>): unknown {
+  if (field.type === 'reference' && field.extra?.referenceConfig?.valueField === 'id') {
+    const idKey = `${field.code}Id`
+    if (initial[idKey] !== undefined && initial[idKey] !== null) {
+      // R6 (Apr 25 2026): coerce to String. After V20260425_09, salespersonId is BIGINT
+      // so JSON returns number 146. ReferenceSelector's fetchById coerces options.value
+      // to String, so el-select needs String modelValue too for strict-eq match.
+      return String(initial[idKey])
+    }
+  }
+  return initial[field.code]
 }
 
 // 按 group 分组的可见字段
@@ -90,7 +145,11 @@ function isFieldShown(field: EffectiveField): boolean {
 
 // 是否只读
 function isReadonly(field: EffectiveField): boolean {
-  return props.mode === 'view' || field.readonly || !!field.extra?.computed
+  if (props.mode === 'view') return true
+  if (field.readonly || field.extra?.computed) return true
+  // Spec §4.A.2 + M3: autoGenerate fields disabled in both create + edit (snapshot semantics)
+  if (field.extra?.autoGenerate) return true
+  return false
 }
 
 // computedWhen 动态计算值
@@ -186,7 +245,7 @@ watch(
                 v-if="field.type === 'string' || field.type === 'text'"
                 v-model="formData[field.code]"
                 :disabled="isReadonly(field)"
-                :placeholder="`请输入${getLabel(field)}`"
+                :placeholder="field.extra?.autoGenerate && mode === 'create' ? '保存后自动生成' : `请输入${getLabel(field)}`"
               />
 
               <!-- textarea -->

@@ -232,7 +232,8 @@ public class ShipmentRecordService {
             "pending".equals(status) ||
             "shipped".equals(status) ||
             "delivered".equals(status) ||
-            "returned".equals(status)
+            "returned".equals(status) ||
+            "cancelled".equals(status)
         );
     }
 

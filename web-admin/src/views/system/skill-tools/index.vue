@@ -94,8 +94,9 @@ async function handleToggle(skill: SkillInfo, enabled: boolean) {
     } else {
       ElMessage.error(res.message || '操作失败');
     }
-  } catch {
-    ElMessage.error('操作失败');
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[操作失败]', e);
   }
 }
 
@@ -144,8 +145,9 @@ async function handleCreate() {
     } else {
       ElMessage.error(res.message || '创建失败');
     }
-  } catch {
-    ElMessage.error('创建失败');
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', e);
   }
 }
 
@@ -187,8 +189,9 @@ async function adoptRecommendation(rec: SkillRecommendation) {
     } else {
       ElMessage.error(res.message || '创建失败');
     }
-  } catch {
-    ElMessage.error('创建失败');
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', e);
   }
 }
 

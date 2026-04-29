@@ -54,8 +54,20 @@ async function handleApprove(row: ApprovalItem) {
     await approveReport(factoryId.value, row.id);
     ElMessage.success('已通过');
     loadData();
-  } catch {
-    ElMessage.error('审批失败');
+  } catch (e) {
+    // R26 P1 (qa-prompt v2.4 Rule 7+8 real-window finding): pre-fix this catch
+    // unconditionally fired ElMessage.error('审批失败') on top of axios interceptor's
+    // rich actionHint toast → user saw BOTH "审批失败" + "请刷新报工列表查看最新审批状态".
+    // Per R24 follow-up pattern: skip fallback when interceptor handled (rich error
+    // identifiable by err.actionHint OR err.status === 409 — both routes axios already toasted).
+    const err = e as { status?: number; actionHint?: string | null } | undefined;
+    if (!err || (err.status !== 409 && !err.actionHint)) {
+      ElMessage.error('审批失败');
+    }
+    // R26 follow-up (reviewer #16 concern #4): only reload on 409 (already-processed
+    // race — backend state diverged from UI cache). On 502/network error, loadData()
+    // would just retry-and-fail too, doubling failed-request rate during outage.
+    if (err?.status === 409) loadData();
   }
 }
 
@@ -72,7 +84,8 @@ async function handleReject(row: ApprovalItem) {
     ElMessage.success('已驳回');
     loadData();
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error('操作失败');
+    // Interceptor shows specific toast; dedupe fallback
+    if (e !== 'cancel') console.error('[操作失败]', e);
   }
 }
 
@@ -89,7 +102,14 @@ async function handleBatchApprove() {
     selectedIds.value = [];
     loadData();
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error('批量审批失败');
+    if (e === 'cancel') return;
+    // R26 P1: skip fallback when interceptor handled rich error (same gate as handleApprove).
+    const err = e as { status?: number; actionHint?: string | null } | undefined;
+    if (!err || (err.status !== 409 && !err.actionHint)) {
+      ElMessage.error('批量审批失败');
+    }
+    // R26 follow-up (reviewer #16 concern #4): only reload on 409 race.
+    if (err?.status === 409) loadData();
   }
 }
 

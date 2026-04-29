@@ -54,8 +54,8 @@ async function loadData() {
       pagination.value.total = response.data.totalElements || 0;
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载失败:', error);
-    ElMessage.error('加载数据失败');
   } finally {
     loading.value = false;
   }
@@ -155,7 +155,8 @@ async function submitForm() {
       ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
-    ElMessage.error('操作失败');
+    // Interceptor already shows specific sticky toast; debug-only log.
+    console.error('[提交失败]', error);
   } finally {
     dialogLoading.value = false;
   }
@@ -172,9 +173,8 @@ async function handleDelete(row: Record<string, unknown>) {
       ElMessage.error(response.message || '删除失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败');
-    }
+    // Interceptor shows specific toast; dedupe fallback
+    if (error !== 'cancel') console.error('[失败]', error);
   }
 }
 </script>
@@ -211,7 +211,9 @@ async function handleDelete(row: Record<string, unknown>) {
 
       <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="materialTypeName" label="原料类型" min-width="150" show-overflow-tooltip />
-        <el-table-column prop="productTypeName" label="产品类型" min-width="150" show-overflow-tooltip />
+        <el-table-column label="产品类型" min-width="150" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.productTypeName || row.productName || row.productTypeId || '-' }}</template>
+        </el-table-column>
         <el-table-column prop="conversionRate" label="转换率" width="120" align="center">
           <template #default="{ row }">
             {{ (row.conversionRate * 100).toFixed(1) }}%

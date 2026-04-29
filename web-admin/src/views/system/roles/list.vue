@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { usePermissionStore } from '@/store/modules/permission';
 import { useAuthStore } from '@/store/modules/auth';
 import { get, put } from '@/api/request';
@@ -118,8 +118,8 @@ async function handleEditSubmit() {
     }
     editDialogVisible.value = false;
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('Edit role failed:', error);
-    ElMessage.error('保存失败');
   } finally {
     editSubmitting.value = false;
   }
@@ -132,7 +132,7 @@ const roles = ref([
     name: 'factory_super_admin',
     displayName: '工厂超管',
     description: '工厂最高权限，管理所有模块',
-    userCount: 2,
+    userCount: 0,
     level: 1
   },
   {
@@ -140,7 +140,7 @@ const roles = ref([
     name: 'production_manager',
     displayName: '生产经理',
     description: '管理生产计划和批次，质检统计查看',
-    userCount: 3,
+    userCount: 0,
     level: 2
   },
   {
@@ -148,7 +148,7 @@ const roles = ref([
     name: 'workshop_supervisor',
     displayName: '车间主任',
     description: '执行生产任务，管理车间设备',
-    userCount: 5,
+    userCount: 0,
     level: 3
   },
   {
@@ -156,7 +156,7 @@ const roles = ref([
     name: 'quality_manager',
     displayName: '质检主管',
     description: '管理质检标准和流程',
-    userCount: 2,
+    userCount: 0,
     level: 2
   },
   {
@@ -164,7 +164,7 @@ const roles = ref([
     name: 'quality_inspector',
     displayName: '质检员',
     description: '执行质检任务',
-    userCount: 8,
+    userCount: 0,
     level: 4
   },
   {
@@ -172,7 +172,7 @@ const roles = ref([
     name: 'warehouse_manager',
     displayName: '仓库主管',
     description: '管理仓库和库存',
-    userCount: 2,
+    userCount: 0,
     level: 2
   },
   {
@@ -180,7 +180,7 @@ const roles = ref([
     name: 'warehouse_operator',
     displayName: '仓库操作员',
     description: '执行出入库操作',
-    userCount: 6,
+    userCount: 0,
     level: 4
   },
   {
@@ -188,7 +188,7 @@ const roles = ref([
     name: 'procurement_manager',
     displayName: '采购主管',
     description: '管理供应商和采购订单',
-    userCount: 2,
+    userCount: 0,
     level: 2
   },
   {
@@ -196,7 +196,7 @@ const roles = ref([
     name: 'procurement_staff',
     displayName: '采购员',
     description: '执行采购任务',
-    userCount: 4,
+    userCount: 0,
     level: 4
   },
   {
@@ -204,7 +204,7 @@ const roles = ref([
     name: 'sales_manager',
     displayName: '销售主管',
     description: '管理客户和销售订单',
-    userCount: 2,
+    userCount: 0,
     level: 2
   },
   {
@@ -212,7 +212,7 @@ const roles = ref([
     name: 'sales_staff',
     displayName: '销售员',
     description: '执行销售任务',
-    userCount: 5,
+    userCount: 0,
     level: 4
   },
   {
@@ -220,7 +220,7 @@ const roles = ref([
     name: 'hr_manager',
     displayName: '人事主管',
     description: '管理员工和考勤',
-    userCount: 2,
+    userCount: 0,
     level: 2
   },
   {
@@ -228,7 +228,7 @@ const roles = ref([
     name: 'equipment_manager',
     displayName: '设备主管',
     description: '管理设备和维护',
-    userCount: 2,
+    userCount: 0,
     level: 2
   },
   {
@@ -236,7 +236,7 @@ const roles = ref([
     name: 'finance_manager',
     displayName: '财务主管',
     description: '管理成本和财务报表',
-    userCount: 2,
+    userCount: 0,
     level: 2
   }
 ]);
@@ -256,6 +256,34 @@ function getLevelTag(level: number) {
   };
   return { type: types[level], label: labels[level] };
 }
+
+// Fetch real user count per role (Apr 21 2026): previously hardcoded
+// 2/3/5/8 for every factory which looked like cross-tenant leak to users.
+async function loadRoleUserCounts() {
+  if (!factoryId.value) return;
+  try {
+    // Backend requires page>=1 (1-indexed); using 0 triggers 409 "页码必须大于0"
+    // _silent suppresses red toast when API is unavailable for new factories.
+    const resp = await get<{ content: Array<{ roleCode?: string }>; totalElements: number }>(
+      `/${factoryId.value}/users`,
+      { params: { page: 1, size: 500 }, _silent: true } as never
+    );
+    if (!resp.success || !resp.data) return;
+    const list = resp.data.content || [];
+    const countMap: Record<string, number> = {};
+    for (const u of list) {
+      const code = u.roleCode || '';
+      if (code) countMap[code] = (countMap[code] || 0) + 1;
+    }
+    roles.value.forEach(r => {
+      r.userCount = countMap[r.name] || 0;
+    });
+  } catch (e) {
+    console.warn('loadRoleUserCounts failed', e);
+  }
+}
+
+onMounted(loadRoleUserCounts);
 </script>
 
 <template>

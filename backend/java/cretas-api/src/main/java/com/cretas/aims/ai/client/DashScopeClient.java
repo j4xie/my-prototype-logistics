@@ -56,6 +56,12 @@ public class DashScopeClient {
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
     /**
+     * DashScope 上游 token limit 991808. 按 CJK 最坏 ~1.4 char/token 预留,
+     * 单条消息 char 超过此值截断, 避免 400 InvalidParameter 阻断 SmartBI sheet 分析.
+     */
+    private static final int MAX_MESSAGE_CHARS = 700_000;
+
+    /**
      * 同步调用 Chat Completion
      *
      * @param request 请求体
@@ -66,6 +72,8 @@ public class DashScopeClient {
             log.warn("DashScope API 未配置或未启用");
             return createErrorResponse("DashScope API 未配置");
         }
+
+        truncateOversizedMessages(request);
 
         // 填充默认值
         if (request.getModel() == null) {
@@ -170,6 +178,35 @@ public class DashScopeClient {
      *
      * <p>实测差异: 同一个 "reply pong" 请求, thinking ON 用 4.8s, thinking OFF 用 0.66s.
      */
+    /**
+     * 遍历 request.messages, 文本内容 char 数超过 MAX_MESSAGE_CHARS 的消息保留首尾, 中间替换 "...[truncated N chars]...".
+     * 避免 SmartBI sheet 分析把整张 Excel 塞进 userInput 撞 DashScope 991808 token 上限.
+     */
+    private static void truncateOversizedMessages(ChatCompletionRequest request) {
+        if (request == null || request.getMessages() == null) {
+            return;
+        }
+        for (ChatMessage msg : request.getMessages()) {
+            Object content = msg.getContent();
+            if (!(content instanceof String)) {
+                continue;
+            }
+            String text = (String) content;
+            if (text.length() <= MAX_MESSAGE_CHARS) {
+                continue;
+            }
+            int keepHead = MAX_MESSAGE_CHARS / 2;
+            int keepTail = MAX_MESSAGE_CHARS / 4;
+            int dropped = text.length() - keepHead - keepTail;
+            String truncated = text.substring(0, keepHead)
+                    + "\n...[truncated " + dropped + " chars due to DashScope 991808-token limit]...\n"
+                    + text.substring(text.length() - keepTail);
+            msg.setContent(truncated);
+            log.warn("DashScope input too long ({} chars), truncated to {} chars (dropped {})",
+                    text.length(), truncated.length(), dropped);
+        }
+    }
+
     private static void disableThinking(ChatCompletionRequest request) {
         request.setEnableThinking(false);
     }

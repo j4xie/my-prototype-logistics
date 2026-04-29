@@ -1,5 +1,6 @@
 package com.cretas.aims.controller.finance;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.enums.PaymentMethod;
 import com.cretas.aims.entity.enums.PaymentRecordStatus;
 import com.cretas.aims.service.finance.PaymentRecordService;
@@ -12,15 +13,29 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Map;
+import com.cretas.aims.annotation.RequireModule;
 
+/**
+ * Bug #4 same-cause sweep (P1 RBAC, 2026-04-18): Added class-level
+ * @RequirePermission to prevent dispatcher/operator/quality/hr users from
+ * bypassing finance UI gate via direct POST to /record, /{id}/verify, /{id}/reject.
+ * Read endpoints accept finance:read or sales:read (SO detail page tab).
+ */
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/finance/payments")
 @RequiredArgsConstructor
+@RequirePermission("finance:read_write")
 public class PaymentRecordController {
 
     private final PaymentRecordService paymentRecordService;
 
+    // R23 P3 audit (independent reviewer #13): customer payment records settle SO
+    // receivables — semantically AR, not AP. Pre-R23 had @RequireModule("finance_ap")
+    // which would block AR-only tenants from recording customer payments. Fix matches
+    // the AR/AP module audit pattern from R22 C4 (ArApController.recordReceivable).
+    @RequireModule("finance_ar")
     @PostMapping("/record")
+    @RequirePermission({"finance:read_write", "sales:read_write"})
     public ResponseEntity<?> recordPayment(
             @PathVariable String factoryId,
             @RequestBody Map<String, Object> body,
@@ -51,7 +66,9 @@ public class PaymentRecordController {
         return ResponseEntity.ok(Map.of("success", true, "data", record, "message", "收款记录已创建"));
     }
 
+    @RequireModule("finance_ar")  // R23 P3 audit: AR not AP (verify customer payment)
     @PostMapping("/{paymentId}/verify")
+    @RequirePermission("finance:read_write")
     public ResponseEntity<?> verify(
             @PathVariable String paymentId,
             @RequestAttribute(value = "userId", required = false) Long userId) {
@@ -59,7 +76,9 @@ public class PaymentRecordController {
         return ResponseEntity.ok(Map.of("success", true, "data", record, "message", "收款已确认"));
     }
 
+    @RequireModule("finance_ar")  // R23 P3 audit: AR not AP (reject customer payment)
     @PostMapping("/{paymentId}/reject")
+    @RequirePermission("finance:read_write")
     public ResponseEntity<?> reject(
             @PathVariable String paymentId,
             @RequestBody Map<String, String> body,
@@ -69,6 +88,7 @@ public class PaymentRecordController {
     }
 
     @GetMapping
+    @RequirePermission({"finance:read_write", "finance:read", "sales:read_write", "sales:read"})
     public ResponseEntity<?> list(
             @PathVariable String factoryId,
             @RequestParam(required = false) String status,
@@ -81,12 +101,14 @@ public class PaymentRecordController {
     }
 
     @GetMapping("/{paymentId}")
+    @RequirePermission({"finance:read_write", "finance:read", "sales:read_write", "sales:read"})
     public ResponseEntity<?> detail(@PathVariable String paymentId) {
         return ResponseEntity.ok(Map.of("success", true, "data", paymentRecordService.getPayment(paymentId)));
     }
 
     /** List all payment records for a sales order — used by sales order detail page tab. */
     @GetMapping("/by-sales-order/{salesOrderId}")
+    @RequirePermission({"finance:read_write", "finance:read", "sales:read_write", "sales:read"})
     public ResponseEntity<?> listBySalesOrder(@PathVariable String factoryId, @PathVariable String salesOrderId) {
         return ResponseEntity.ok(Map.of("success", true,
                 "data", paymentRecordService.listPaymentsBySalesOrder(factoryId, salesOrderId)));

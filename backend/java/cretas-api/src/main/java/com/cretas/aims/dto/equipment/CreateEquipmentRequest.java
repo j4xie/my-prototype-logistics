@@ -6,6 +6,7 @@ import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -21,28 +22,36 @@ import java.time.LocalDate;
 public class CreateEquipmentRequest {
 
     @Schema(description = "设备编码(可选，不填则自动生成)")
+    @Size(max = 50, message = "设备编码长度不能超过50个字符")
     private String code;
 
     @Schema(description = "设备名称", required = true)
     @NotBlank(message = "设备名称不能为空")
+    @Size(max = 191, message = "设备名称长度不能超过191个字符")
     private String name;
 
     @Schema(description = "设备类别(CUTTING/PACKAGING/FREEZING等)")
+    @Size(max = 50, message = "设备类别长度不能超过50个字符")
     private String category;
 
     @Schema(description = "设备类型")
+    @Size(max = 50, message = "设备类型长度不能超过50个字符")
     private String type;
 
     @Schema(description = "设备状态(IDLE/RUNNING/MAINTENANCE/MALFUNCTION/SCRAPPED)")
+    @Size(max = 20, message = "设备状态长度不能超过20个字符")
     private String status;
 
     @Schema(description = "设备型号")
+    @Size(max = 100, message = "设备型号长度不能超过100个字符")
     private String model;
 
     @Schema(description = "制造商")
+    @Size(max = 100, message = "制造商长度不能超过100个字符")
     private String manufacturer;
 
     @Schema(description = "序列号")
+    @Size(max = 100, message = "序列号长度不能超过100个字符")
     private String serialNumber;
 
     @Schema(description = "购买日期")
@@ -65,6 +74,7 @@ public class CreateEquipmentRequest {
     private BigDecimal powerConsumptionKw;
 
     @Schema(description = "设备位置")
+    @Size(max = 100, message = "设备位置长度不能超过100个字符")
     private String location;
 
     @Schema(description = "维护间隔(小时)")
@@ -79,5 +89,10 @@ public class CreateEquipmentRequest {
     private LocalDate warrantyExpiryDate;
 
     @Schema(description = "备注")
+    @Size(max = 5000, message = "备注长度不能超过5000个字符")
     private String notes;
+
+    /** 乐观锁版本号 (编辑时必传, 来自 GET 响应); mismatch → 409 Conflict */
+    @Schema(description = "乐观锁版本号")
+    private Long version;
 }

@@ -71,8 +71,12 @@ public class DroolsRule extends BaseEntity {
     /**
      * Excel 决策表内容 (可选)
      */
-    @Lob
-    @Column(name = "decision_table", columnDefinition = "MEDIUMBLOB")
+    // @Lob on byte[] made Hibernate 6 bind the param as OID (large object),
+    // but the PG column is bytea — any UPDATE failed with
+    // "column is of type bytea but expression is of type oid". The DB columnDefinition
+    // was also MySQL-specific (MEDIUMBLOB). Plain byte[] + columnDefinition=bytea
+    // keeps Hibernate on the BYTEA JDBC path. Applies uniformly across 6 entities.
+    @Column(name = "decision_table", columnDefinition = "bytea")
     private byte[] decisionTable;
 
     /**
@@ -91,9 +95,18 @@ public class DroolsRule extends BaseEntity {
     /**
      * 是否启用
      */
-    @Column(name = "enabled")
+    @Column(name = "enabled", nullable = false)
     @Builder.Default
     private Boolean enabled = true;
+
+    // Coalesce NULL → true to match @Builder.Default. Pre-migration rows
+    // inserted without explicit enabled used to NPE on unboxing in
+    // SchedulingAIServiceImpl (2026-04-16). V20260417_02 enforces NOT NULL
+    // at the DB, but keep the getter defensive for older envs / replicas
+    // that haven't replayed the migration yet.
+    public Boolean getEnabled() {
+        return enabled != null ? enabled : Boolean.TRUE;
+    }
 
     /**
      * 执行优先级 (越大越先执行)

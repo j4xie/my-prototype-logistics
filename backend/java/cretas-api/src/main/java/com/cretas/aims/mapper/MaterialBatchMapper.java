@@ -2,6 +2,7 @@ package com.cretas.aims.mapper;
 
 import com.cretas.aims.dto.material.CreateMaterialBatchRequest;
 import com.cretas.aims.dto.material.MaterialBatchDTO;
+import com.cretas.aims.dto.material.UpdateMaterialBatchRequest;
 import com.cretas.aims.entity.MaterialBatch;
 import com.cretas.aims.entity.enums.MaterialBatchStatus;
 import lombok.extern.slf4j.Slf4j;
@@ -112,8 +113,11 @@ public class MaterialBatchMapper {
             batch.setWeightPerUnit(request.getWeightPerUnit());
         } else if (request.getTotalWeight() != null && request.getReceiptQuantity() != null) {
             // 从totalWeight反算weightPerUnit
+            // R25 (reviewer #14 concern #4): align scale to 4, matching updateEntity (line 219).
+            // Pre-R25 create used scale=3, update used scale=4 → create→edit roundtrip with no
+            // weightPerUnit could shift the value by ~0.0009 (support-ticket risk).
             BigDecimal calculatedWeightPerUnit = request.getTotalWeight()
-                .divide(request.getReceiptQuantity(), 3, RoundingMode.HALF_UP);
+                .divide(request.getReceiptQuantity(), 4, RoundingMode.HALF_UP);
             batch.setWeightPerUnit(calculatedWeightPerUnit);
             log.info("自动计算每单位重量: totalWeight={}, receiptQuantity={}, weightPerUnit={}",
                 request.getTotalWeight(), request.getReceiptQuantity(), calculatedWeightPerUnit);
@@ -179,8 +183,21 @@ public class MaterialBatchMapper {
 
     /**
      * 更新实体
+     *
+     * W-04 fix (Round 8): previous version silently dropped receiptQuantity /
+     * totalWeight / expireDate / quantityUnit on edit — PUT /material-batches/{id}
+     * returned 200 OK while the DB row stayed unchanged for those fields.
+     * Users correcting a batch's quantity, unit, weight or expiry date had no
+     * way to persist the change via UI. Now all form-editable fields are
+     * mapped with null-guards so partial updates still work.
+     *
+     * Intentionally immutable on edit (not mapped even if present in the DTO):
+     *   - batchNumber  (tracking identifier, frontend disables input on edit)
+     *   - factoryId    (owner, controlled by the URL path variable)
+     *   - productionDate / sourceDocType / sourceDocId  (historical/audit)
+     *   - customFields (flows through a separate DynamicFieldService path)
      */
-    public void updateEntity(MaterialBatch batch, CreateMaterialBatchRequest request) {
+    public void updateEntity(MaterialBatch batch, UpdateMaterialBatchRequest request) {
         if (request.getMaterialTypeId() != null) {
             batch.setMaterialTypeId(request.getMaterialTypeId());
         }
@@ -190,12 +207,48 @@ public class MaterialBatchMapper {
         if (request.getReceiptDate() != null) {
             batch.setReceiptDate(request.getReceiptDate());
         }
+        // W-04: previously dropped
+        if (request.getReceiptQuantity() != null) {
+            batch.setReceiptQuantity(request.getReceiptQuantity());
+        }
+        if (request.getQuantityUnit() != null) {
+            batch.setQuantityUnit(request.getQuantityUnit());
+        }
+        // R24 P1 (qa-prompt v2.4 Rule 17.2 sweep): pre-R24 weightPerUnit was only set
+        // indirectly via totalWeight.divide(qty). API consumers / mobile / AI tools
+        // sending weightPerUnit directly (without totalWeight) had it silent-dropped.
+        // UI form (warehouse/materials/list.vue) doesn't expose weightPerUnit so the
+        // gap was hidden — but the create path (toEntity line 113) does map it
+        // directly, so symmetry was broken. Fix: map directly first, then derive from
+        // totalWeight only if weightPerUnit wasn't explicitly sent.
+        if (request.getWeightPerUnit() != null) {
+            batch.setWeightPerUnit(request.getWeightPerUnit());
+        }
+        // totalWeight is a transient computed property (weightPerUnit × receiptQuantity).
+        // If the form sends it (and weightPerUnit wasn't already set above), derive
+        // weightPerUnit from receiptQuantity to persist.
+        if (request.getWeightPerUnit() == null
+                && request.getTotalWeight() != null
+                && request.getTotalWeight().compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal qty = batch.getReceiptQuantity();
+            if (qty != null && qty.compareTo(BigDecimal.ZERO) > 0) {
+                batch.setWeightPerUnit(request.getTotalWeight().divide(qty, 4, RoundingMode.HALF_UP));
+            }
+        }
+        if (request.getExpireDate() != null) {
+            batch.setExpireDate(request.getExpireDate());
+        }
         if (request.getTotalValue() != null) {
             // 注意: totalValue 现在是计算属性，不再存储
-            // 根据 totalValue 反算 unitPrice
-            if (batch.getTotalWeight() != null && batch.getTotalWeight().compareTo(BigDecimal.ZERO) > 0) {
+            // C1 fix (reviewer Apr 24): 如 form 同时发了 totalWeight 用 request 值,
+            // 否则回退到 batch.getTotalWeight() (weightPerUnit × receiptQuantity, 用
+            // 刚更新的 qty). 避免 request 只发 {qty,totalValue} 时 unitPrice 算错.
+            BigDecimal effectiveTotalWeight = request.getTotalWeight() != null
+                ? request.getTotalWeight()
+                : batch.getTotalWeight();
+            if (effectiveTotalWeight != null && effectiveTotalWeight.compareTo(BigDecimal.ZERO) > 0) {
                 BigDecimal newUnitPrice = request.getTotalValue()
-                    .divide(batch.getTotalWeight(), 2, RoundingMode.HALF_UP);
+                    .divide(effectiveTotalWeight, 2, RoundingMode.HALF_UP);
                 batch.setUnitPrice(newUnitPrice);
             }
         }

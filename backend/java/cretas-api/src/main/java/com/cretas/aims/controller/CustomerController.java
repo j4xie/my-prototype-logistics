@@ -1,9 +1,11 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.customer.CreateCustomerRequest;
+import com.cretas.aims.dto.customer.UpdateCustomerRequest;
 import com.cretas.aims.dto.customer.CustomerDTO;
 import com.cretas.aims.service.CustomerService;
 import com.cretas.aims.service.MobileService;
@@ -35,6 +37,11 @@ import java.util.Map;
  * @version 1.0.0
  * @since 2025-01-09
  */
+/**
+ * Bug #318 fix (2026-04-18): @RequirePermission added only on write methods
+ * (POST/PUT/DELETE) — reads stay open to any authenticated user (matches
+ * pre-fix behavior, no regression). Prevents dispatcher/operator越权 POST/PUT/DELETE.
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/customers")
@@ -48,6 +55,7 @@ public class CustomerController {
     /**
      * 创建客户
      */
+    @RequirePermission({"sales:read_write", "finance:read_write"})
     @PostMapping
     @Operation(summary = "创建客户", description = "在指定工厂下创建新客户，包括客户基本信息、联系方式、信用额度等")
     public ApiResponse<CustomerDTO> createCustomer(
@@ -70,15 +78,16 @@ public class CustomerController {
     /**
      * 更新客户
      */
+    @RequirePermission({"sales:read_write", "finance:read_write"})
     @PutMapping("/{customerId}")
-    @Operation(summary = "更新客户", description = "更新指定客户的信息，包括名称、联系方式、地址等")
+    @Operation(summary = "更新客户", description = "更新指定客户的信息 (partial update: 所有字段可选)")
     public ApiResponse<CustomerDTO> updateCustomer(
             @Parameter(description = "工厂ID", example = "F001", required = true)
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "客户ID", example = "CUST-001", required = true)
             @PathVariable @NotBlank String customerId,
             @Parameter(description = "客户更新请求体")
-            @Valid @RequestBody CreateCustomerRequest request) {
+            @Valid @RequestBody UpdateCustomerRequest request) {
 
         log.info("更新客户: factoryId={}, customerId={}", factoryId, customerId);
         CustomerDTO customer = customerService.updateCustomer(factoryId, customerId, request);
@@ -88,6 +97,7 @@ public class CustomerController {
     /**
      * 删除客户
      */
+    @RequirePermission({"sales:read_write", "finance:read_write"})
     @DeleteMapping("/{customerId}")
     @Operation(summary = "删除客户", description = "删除指定客户记录（软删除），有关联订单的客户不可删除")
     public ApiResponse<Void> deleteCustomer(
@@ -125,9 +135,16 @@ public class CustomerController {
             @Parameter(description = "工厂ID", example = "F001", required = true)
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "分页参数")
-            @Valid PageRequest pageRequest) {
+            @Valid PageRequest pageRequest,
+            @Parameter(description = "关键词过滤 (name / customerCode / contactPerson 模糊匹配)")
+            @RequestParam(required = false) String keyword,
+            @Parameter(description = "name alias (Bug #6 R10: 兼容前端传 ?name= 而非 ?keyword=, 否则静默忽略)")
+            @RequestParam(required = false) String name) {
 
-        PageResponse<CustomerDTO> response = customerService.getCustomerList(factoryId, pageRequest);
+        // Bug #6 fix (R10 2026-04-16): 接受 ?name= 作为 ?keyword= 的别名
+        // 防止前端/集成方误传 name 时静默返全表 (假阳性结果)
+        String effectiveKeyword = keyword != null && !keyword.isBlank() ? keyword : name;
+        PageResponse<CustomerDTO> response = customerService.getCustomerList(factoryId, pageRequest, effectiveKeyword);
         return ApiResponse.success(response);
     }
 
@@ -195,6 +212,7 @@ public class CustomerController {
      * 1. URL参数: PUT /{customerId}/status?isActive=true
      * 2. Request Body: PUT /{customerId}/status {"isActive": true}
      */
+    @RequirePermission({"sales:read_write", "finance:read_write"})
     @PutMapping("/{customerId}/status")
     @Operation(summary = "切换客户状态", description = "切换客户的激活/停用状态，支持URL参数或RequestBody两种方式传参")
     public ApiResponse<CustomerDTO> toggleCustomerStatus(
@@ -225,6 +243,7 @@ public class CustomerController {
     /**
      * 更新客户评级
      */
+    @RequirePermission({"sales:read_write", "finance:read_write"})
     @PutMapping("/{customerId}/rating")
     @Operation(summary = "更新客户评级", description = "更新客户的评级等级（1-5星），可附加评级说明备注")
     public ApiResponse<CustomerDTO> updateCustomerRating(
@@ -246,6 +265,7 @@ public class CustomerController {
     /**
      * 更新客户信用额度
      */
+    @RequirePermission({"sales:read_write", "finance:read_write"})
     @PutMapping("/{customerId}/credit-limit")
     @Operation(summary = "更新客户信用额度", description = "更新客户的信用额度上限，用于控制客户的赊账额度")
     public ApiResponse<CustomerDTO> updateCreditLimit(
@@ -265,6 +285,7 @@ public class CustomerController {
     /**
      * 更新客户当前余额
      */
+    @RequirePermission({"sales:read_write", "finance:read_write"})
     @PutMapping("/{customerId}/balance")
     @Operation(summary = "更新客户当前余额", description = "更新客户账户的当前余额，用于记录客户的预付款或欠款情况")
     public ApiResponse<CustomerDTO> updateCurrentBalance(
@@ -382,6 +403,7 @@ public class CustomerController {
     /**
      * 从Excel文件批量导入客户
      */
+    @RequirePermission({"sales:read_write", "finance:read_write"})
     @PostMapping("/import")
     @Operation(summary = "从Excel文件批量导入客户", description = "通过上传Excel文件批量导入客户数据，支持.xlsx格式，文件大小限制10MB")
     public ApiResponse<com.cretas.aims.dto.common.ImportResult<CustomerDTO>> importCustomersFromExcel(
@@ -425,6 +447,7 @@ public class CustomerController {
     /**
      * 批量导入客户（旧版本，使用JSON）
      */
+    @RequirePermission({"sales:read_write", "finance:read_write"})
     @PostMapping("/import/json")
     @Operation(summary = "批量导入客户（JSON格式）", description = "通过JSON数组格式批量导入客户数据，适用于API对接场景")
     public ApiResponse<List<CustomerDTO>> importCustomersFromJson(

@@ -246,6 +246,13 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'ProcurementPriceLists',
             component: () => import('@/views/procurement/price-lists/list.vue'),
             meta: { requiresAuth: true, title: '价格表管理', module: 'procurement' }
+          },
+          // 六扇门 V1 #9 — 采购入库管理 (audit fix 2026-04-26)
+          {
+            path: 'receives',
+            name: 'ProcurementReceives',
+            component: () => import('@/views/procurement/receives/list.vue'),
+            meta: { requiresAuth: true, title: '采购入库', module: 'procurement' }
           }
         ]
       },
@@ -279,7 +286,7 @@ const businessRoutes: RouteRecordRaw[] = [
             path: 'finished-goods',
             name: 'SalesFinishedGoods',
             component: () => import('@/views/sales/finished-goods/list.vue'),
-            meta: { requiresAuth: true, title: '成品库存', module: 'sales' }
+            meta: { requiresAuth: true, title: '成品库存', module: 'sales', hideForFactoryTypes: ['RESTAURANT'] }
           },
           {
             path: 'customers',
@@ -291,7 +298,7 @@ const businessRoutes: RouteRecordRaw[] = [
             path: 'shipments',
             name: 'SalesShipments',
             component: () => import('@/views/sales/shipments/list.vue'),
-            meta: { requiresAuth: true, title: '出货记录', module: 'sales' }
+            meta: { requiresAuth: true, title: '出货记录', module: 'sales', hideForFactoryTypes: ['RESTAURANT'] }
           }
         ]
       },
@@ -369,7 +376,7 @@ const businessRoutes: RouteRecordRaw[] = [
             path: 'costs',
             name: 'FinanceCosts',
             component: () => import('@/views/finance/costs/index.vue'),
-            meta: { requiresAuth: true, title: '成本分析', module: 'finance' }
+            meta: { requiresAuth: true, title: '财务概览', module: 'finance' }
           },
           {
             path: 'reports',
@@ -400,6 +407,13 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'FinancePayments',
             component: () => import('@/views/finance/payments/list.vue'),
             meta: { requiresAuth: true, title: '收款管理', module: 'finance' }
+          },
+          // R28 P2 (R23 P5 deferred): PENDING adjustment approval queue
+          {
+            path: 'adjustments',
+            name: 'FinanceAdjustments',
+            component: () => import('@/views/finance/adjustments/list.vue'),
+            meta: { requiresAuth: true, title: '调整审批', module: 'finance' }
           }
         ]
       },
@@ -452,6 +466,12 @@ const businessRoutes: RouteRecordRaw[] = [
             meta: { requiresAuth: true, title: '操作日志', module: 'system' }
           },
           {
+            path: 'role-permissions',
+            name: 'SystemRolePermissions',
+            component: () => import('@/views/system/role-permissions/index.vue'),
+            meta: { requiresAuth: true, title: '全局权限矩阵 (L1)', module: 'system' }
+          },
+          {
             path: 'settings',
             name: 'SystemSettings',
             component: () => import('@/views/system/settings/index.vue'),
@@ -468,6 +488,78 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'SystemSkillTools',
             component: () => import('@/views/system/skill-tools/index.vue'),
             meta: { requiresAuth: true, title: 'Skill/Tool 治理', module: 'system' }
+          },
+          {
+            path: 'llm-usage',
+            name: 'SystemLLMUsage',
+            component: () => import('@/views/system/llm-usage/index.vue'),
+            meta: { requiresAuth: true, title: 'LLM 用量监控', module: 'system' }
+          },
+          {
+            // 数据织网 A spec admin audit page (Phase 3 Day 10 + Phase 4.5 wire-up)
+            path: 'data-fabric/capability-audit',
+            name: 'CapabilityAudit',
+            component: () => import('@/views/system/data-fabric/capability-audit.vue'),
+            meta: { requiresAuth: true, title: '能力驱动渲染审计', module: 'system' }
+          },
+          {
+            // 数据织网 C spec §6.3 — cell-level lineage detail (Day 26).
+            // Reached via TrustIndicator's "查看来源" button which pushes
+            // /audit/cell?type=&id=&field= (see the top-level CellAudit
+            // route below). Hidden from sidebar; admin-only via meta.roles.
+            //
+            // This sidebar entry is intentionally hidden — the canonical
+            // path is the top-level /audit/cell to match the spec NS-7 URL.
+            path: 'data-fabric/cell-audit',
+            name: 'CellAuditSystem',
+            component: () => import('@/views/system/data-fabric/cell-audit.vue'),
+            meta: {
+              requiresAuth: true,
+              title: '字段血统审计',
+              module: 'system',
+              hidden: true,
+              roles: ['factory_super_admin', 'platform_admin', 'permission_admin'],
+            },
+          },
+          {
+            // 数据织网 C spec §6.4 — factory provenance config admin page (Day 27).
+            // Sidebar-discoverable (NOT hidden) — admins need to find this.
+            // GET + PUT live at /api/smartbi/factory-config/provenance.
+            path: 'data-fabric/provenance-config',
+            name: 'ProvenanceConfig',
+            component: () => import('@/views/system/data-fabric/provenance-config.vue'),
+            meta: {
+              requiresAuth: true,
+              title: 'Provenance 配置',
+              module: 'system',
+              roles: ['factory_super_admin', 'platform_admin', 'permission_admin'],
+            },
+          },
+          {
+            // 餐饮 Phase A A-3 Task 3.5: data quality queue admin page
+            path: 'data-quality-queue',
+            name: 'AdminDataQualityQueue',
+            component: () => import('@/views/admin/data-quality-queue.vue'),
+            meta: {
+              requiresAuth: true,
+              title: '数据质量队列',
+              module: 'system',
+              hidden: false,
+              roles: ['factory_super_admin', 'platform_admin', 'permission_admin'],
+            },
+          },
+          {
+            // 餐饮 Phase A A-3 Task 3.6: data quality queue detail page (history)
+            path: 'data-quality-queue/:id',
+            name: 'AdminDataQualityQueueDetail',
+            component: () => import('@/views/admin/data-quality-queue-detail.vue'),
+            meta: {
+              requiresAuth: true,
+              title: '数据质量队列详情',
+              module: 'system',
+              hidden: true,
+              roles: ['factory_super_admin', 'platform_admin', 'permission_admin'],
+            },
           },
           {
             path: 'products',
@@ -654,6 +746,12 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'SchedulingAlerts',
             component: () => import('@/views/scheduling/alerts/index.vue'),
             meta: { requiresAuth: true, title: '告警管理', module: 'scheduling' }
+          },
+          {
+            path: 'settings',
+            name: 'SchedulingSettings',
+            component: () => import('@/views/scheduling/settings/index.vue'),
+            meta: { requiresAuth: true, title: '排产设置', module: 'scheduling' }
           }
         ]
       },
@@ -712,6 +810,33 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'RestaurantDianpingGap',
             component: () => import('@/views/restaurant/analytics/dianping-gap.vue'),
             meta: { requiresAuth: true, title: '经营与平台分析', module: 'restaurant' }
+          },
+          {
+            // Apr 24 2026 Plan C Phase 7+: cross-module POS × food cost gross margin
+            path: 'analytics/gross-margin',
+            name: 'RestaurantGrossMargin',
+            component: () => import('@/views/restaurant/analytics/gross-margin.vue'),
+            meta: { requiresAuth: true, title: '菜品毛利分析', module: 'restaurant' }
+          },
+          {
+            // 餐饮 Phase A-1 Task 1.5: ETL admin status page
+            path: 'admin/etl-status',
+            name: 'RestaurantETLStatus',
+            component: () => import('@/views/restaurant/admin/etl-status.vue'),
+            meta: {
+              requiresAuth: true,
+              title: '餐饮 ETL 状态',
+              module: 'restaurant',
+              roles: ['factory_super_admin', 'platform_admin', 'permission_admin'],
+              hidden: false,
+            },
+          },
+          {
+            // 餐饮 Phase A-2 Task 2.2: data completeness page
+            path: 'data-completeness',
+            name: 'RestaurantDataCompleteness',
+            component: () => import('@/views/restaurant/data-completeness.vue'),
+            meta: { requiresAuth: true, title: '数据完整度', module: 'restaurant' },
           }
         ]
       },
@@ -749,6 +874,22 @@ const businessRoutes: RouteRecordRaw[] = [
         meta: {
           title: '动态模块',
           requiresAuth: true,
+        },
+      },
+
+      // 数据织网 C spec §6.3 — cell-level lineage detail page (Day 26).
+      // Canonical URL per spec NS-7 — /audit/cell?type=&id=&field=
+      // (encodeURIComponent-safe). Reached from any TrustIndicator's
+      // "查看来源" button. Admin-only, hidden from sidebar.
+      {
+        path: 'audit/cell',
+        name: 'CellAudit',
+        component: () => import('@/views/system/data-fabric/cell-audit.vue'),
+        meta: {
+          title: '字段血统审计',
+          requiresAuth: true,
+          hidden: true,
+          roles: ['factory_super_admin', 'platform_admin', 'permission_admin'],
         },
       },
 

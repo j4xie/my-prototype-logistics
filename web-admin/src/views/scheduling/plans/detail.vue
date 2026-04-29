@@ -101,10 +101,10 @@ async function loadData(silent = false) {
     if (probRes.success && probRes.data) {
       probabilities.value = probRes.data;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('加载失败:', error);
     if (!silent) {
-      ElMessage.error('加载数据失败');
+      if (!error?.actionHint) ElMessage.error('加载数据失败');
     }
   } finally {
     loading.value = false;
@@ -334,11 +334,9 @@ async function handleStartSchedule(schedule: LineSchedule) {
       ElMessage.success('已开始生产');
       loadData();
     }
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('操作失败:', error);
-      ElMessage.error('操作失败');
-    }
+  } catch (error: any) {
+    // Interceptor already shows specific sticky toast for ApiError.
+    if (error !== 'cancel') console.error('操作失败:', error);
   } finally {
     loading.value = false;
   }
@@ -365,9 +363,9 @@ async function submitProgress() {
       progressDialogVisible.value = false;
       loadData();
     }
-  } catch (error) {
+  } catch (error: any) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('更新失败:', error);
-    ElMessage.error('更新失败');
   } finally {
     loading.value = false;
   }
@@ -393,11 +391,9 @@ async function handleCompleteSchedule(schedule: LineSchedule) {
       ElMessage.success('已完成生产');
       loadData();
     }
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('操作失败:', error);
-      ElMessage.error('操作失败');
-    }
+  } catch (error: any) {
+    // Interceptor already shows specific sticky toast for ApiError.
+    if (error !== 'cancel') console.error('操作失败:', error);
   } finally {
     loading.value = false;
   }

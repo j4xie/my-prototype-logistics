@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.ShipmentRecord;
 import com.cretas.aims.service.ShipmentRecordService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,10 +15,12 @@ import org.springframework.web.bind.annotation.*;
 
 import com.cretas.aims.util.ErrorSanitizer;
 
+import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * 出货记录控制器
@@ -25,6 +28,9 @@ import java.util.Map;
  * @author Cretas Team
  * @version 1.0.0
  * @since 2025-01-09
+ */
+/**
+ * Bug #318 fix: method-level @RequirePermission on write methods only.
  */
 @Slf4j
 @RestController
@@ -227,12 +233,14 @@ public class ShipmentController {
     /**
      * 创建出货记录
      */
+    @RequirePermission({"sales:read_write", "inventory:read_write", "warehouse:read_write"})
+    @RequireModule("sales_order")
     @PostMapping
     @Operation(summary = "创建出货记录", description = "创建新的出货记录，需要指定客户信息、发货产品、数量等。系统将自动记录创建人和创建时间")
     public ResponseEntity<?> createShipment(
             @PathVariable @Parameter(description = "工厂ID", example = "F001", required = true) String factoryId,
             @RequestAttribute("userId") @Parameter(hidden = true) Long userId,
-            @RequestBody @Parameter(description = "出货记录信息，包含customerId、productBatchId、quantity、shippingAddress等") ShipmentRecord shipment) {
+            @Valid @RequestBody @Parameter(description = "出货记录信息，包含customerId、productBatchId、quantity、shippingAddress等") ShipmentRecord shipment) {
         try {
             shipment.setFactoryId(factoryId);
             shipment.setRecordedBy(userId);
@@ -254,6 +262,8 @@ public class ShipmentController {
     /**
      * 更新出货记录
      */
+    @RequirePermission({"sales:read_write", "inventory:read_write", "warehouse:read_write"})
+    @RequireModule("sales_order")
     @PutMapping("/{id}")
     @Operation(summary = "更新出货记录", description = "更新指定的出货记录信息，可修改发货地址、联系方式、备注等字段")
     public ResponseEntity<?> updateShipment(
@@ -279,6 +289,8 @@ public class ShipmentController {
     /**
      * 更新出货状态
      */
+    @RequirePermission({"sales:read_write", "inventory:read_write", "warehouse:read_write"})
+    @RequireModule("sales_order")
     @PutMapping("/{id}/status")
     @Operation(summary = "更新出货状态", description = "更新出货记录的状态，支持的状态包括：pending（待发货）、shipped（已发货）、delivered（已送达）、returned（已退货）")
     public ResponseEntity<?> updateStatus(
@@ -305,6 +317,8 @@ public class ShipmentController {
     /**
      * 删除出货记录
      */
+    @RequirePermission({"sales:read_write", "inventory:read_write", "warehouse:read_write"})
+    @RequireModule("sales_order")
     @DeleteMapping("/{id}")
     @Operation(summary = "删除出货记录", description = "删除指定的出货记录，已发货或已送达的记录建议保留以便追溯")
     public ResponseEntity<?> deleteShipment(

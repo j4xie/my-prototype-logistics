@@ -1,0 +1,220 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - img "Logo" [ref=e6]
+      - generic [ref=e7]: 白垩纪AI Agent
+    - menubar [ref=e11]:
+      - menuitem "首页" [ref=e12] [cursor=pointer]:
+        - img [ref=e14]
+        - text: 首页
+      - menuitem "生产管理" [ref=e16]:
+        - generic [ref=e17] [cursor=pointer]:
+          - img [ref=e19]
+          - generic [ref=e21]: 生产管理
+          - img [ref=e23]
+      - menuitem "仓储管理" [ref=e25]:
+        - generic [ref=e26] [cursor=pointer]:
+          - img [ref=e28]
+          - generic [ref=e32]: 仓储管理
+          - img [ref=e34]
+      - menuitem "质量管理" [ref=e36]:
+        - generic [ref=e37] [cursor=pointer]:
+          - img [ref=e39]
+          - generic [ref=e41]: 质量管理
+          - img [ref=e43]
+      - menuitem "采购管理" [ref=e45]:
+        - generic [ref=e46] [cursor=pointer]:
+          - img [ref=e48]
+          - generic [ref=e50]: 采购管理
+          - img [ref=e52]
+      - menuitem "销售管理" [ref=e54]:
+        - generic [ref=e55] [cursor=pointer]:
+          - img [ref=e57]
+          - generic [ref=e59]: 销售管理
+          - img [ref=e61]
+      - menuitem "人事管理" [ref=e63]:
+        - generic [ref=e64] [cursor=pointer]:
+          - img [ref=e66]
+          - generic [ref=e68]: 人事管理
+          - img [ref=e70]
+      - menuitem "调拨管理" [expanded] [ref=e72]:
+        - generic [ref=e73] [cursor=pointer]:
+          - img [ref=e75]
+          - generic [ref=e77]: 调拨管理
+          - img [ref=e79]
+        - menu [ref=e81]:
+          - menuitem "调拨单列表" [ref=e82] [cursor=pointer]
+      - menuitem "设备管理" [ref=e83]:
+        - generic [ref=e84] [cursor=pointer]:
+          - img [ref=e86]
+          - generic [ref=e88]: 设备管理
+          - img [ref=e90]
+      - menuitem "财务管理" [ref=e92]:
+        - generic [ref=e93] [cursor=pointer]:
+          - img [ref=e95]
+          - generic [ref=e99]: 财务管理
+          - img [ref=e101]
+      - menuitem "研发管理" [ref=e103]:
+        - generic [ref=e104] [cursor=pointer]:
+          - generic [ref=e106]: 研发管理
+          - img [ref=e108]
+      - menuitem "系统管理" [ref=e110]:
+        - generic [ref=e111] [cursor=pointer]:
+          - img [ref=e113]
+          - generic [ref=e115]: 系统管理
+          - img [ref=e117]
+      - menuitem "数据分析" [ref=e119]:
+        - generic [ref=e120] [cursor=pointer]:
+          - img [ref=e122]
+          - generic [ref=e124]: 数据分析
+          - img [ref=e126]
+      - menuitem "智能调度" [ref=e128]:
+        - generic [ref=e129] [cursor=pointer]:
+          - img [ref=e131]
+          - generic [ref=e133]: 智能调度
+          - img [ref=e135]
+      - menuitem "行为校准" [ref=e137]:
+        - generic [ref=e138] [cursor=pointer]:
+          - img [ref=e140]
+          - generic [ref=e143]: 行为校准
+          - img [ref=e145]
+      - menuitem "生产分析" [ref=e147]:
+        - generic [ref=e148] [cursor=pointer]:
+          - img [ref=e150]
+          - generic [ref=e152]: 生产分析
+          - img [ref=e154]
+      - menuitem "智能BI" [ref=e156]:
+        - generic [ref=e157] [cursor=pointer]:
+          - img [ref=e159]
+          - generic [ref=e161]: 智能BI
+          - img [ref=e163]
+  - generic [ref=e165]:
+    - banner [ref=e166]:
+      - generic [ref=e167]:
+        - img [ref=e169] [cursor=pointer]
+        - navigation "面包屑" [ref=e171]:
+          - generic [ref=e172]:
+            - link "调拨管理" [ref=e173]
+            - text: /
+          - link "调拨单列表" [ref=e175]
+      - generic [ref=e176]:
+        - img [ref=e178] [cursor=pointer]
+        - img [ref=e181] [cursor=pointer]
+        - button "factory_admin1 工厂总监" [ref=e184] [cursor=pointer]:
+          - img [ref=e187]
+          - generic [ref=e189]:
+            - generic [ref=e190]: factory_admin1
+            - generic [ref=e191]: 工厂总监
+    - main [ref=e192]:
+      - generic [ref=e194]:
+        - generic [ref=e196]:
+          - generic [ref=e197]:
+            - generic [ref=e198]: 调拨管理
+            - generic [ref=e199]: 共 3 条
+          - button "刷新" [ref=e201] [cursor=pointer]:
+            - img [ref=e203]
+            - generic [ref=e205]: 刷新
+        - generic [ref=e206]:
+          - generic [ref=e208]:
+            - table [ref=e210]:
+              - rowgroup [ref=e221]:
+                - row "调拨编号 方向 类型 调出方 调入方 调拨日期 金额 状态 操作" [ref=e222]:
+                  - columnheader "调拨编号" [ref=e223]:
+                    - generic [ref=e224]: 调拨编号
+                  - columnheader "方向" [ref=e225]:
+                    - generic [ref=e226]: 方向
+                  - columnheader "类型" [ref=e227]:
+                    - generic [ref=e228]: 类型
+                  - columnheader "调出方" [ref=e229]:
+                    - generic [ref=e230]: 调出方
+                  - columnheader "调入方" [ref=e231]:
+                    - generic [ref=e232]: 调入方
+                  - columnheader "调拨日期" [ref=e233]:
+                    - generic [ref=e234]: 调拨日期
+                  - columnheader "金额" [ref=e235]:
+                    - generic [ref=e236]: 金额
+                  - columnheader "状态" [ref=e237]:
+                    - generic [ref=e238]: 状态
+                  - columnheader "操作" [ref=e239]:
+                    - generic [ref=e240]: 操作
+            - table [ref=e245]:
+              - rowgroup [ref=e256]:
+                - row "TRF-202501-001 调出 总部→分部 F001 F002 2025-01-18 ¥125,000.00 已确认 详情" [ref=e257]:
+                  - cell "TRF-202501-001" [ref=e258]:
+                    - generic [ref=e259]: TRF-202501-001
+                  - cell "调出" [ref=e260]:
+                    - generic [ref=e263]: 调出
+                  - cell "总部→分部" [ref=e264]:
+                    - generic [ref=e265]: 总部→分部
+                  - cell "F001" [ref=e266]:
+                    - generic [ref=e267]: F001
+                  - cell "F002" [ref=e268]:
+                    - generic [ref=e269]: F002
+                  - cell "2025-01-18" [ref=e270]:
+                    - generic [ref=e271]: 2025-01-18
+                  - cell "¥125,000.00" [ref=e272]:
+                    - generic [ref=e273]: ¥125,000.00
+                  - cell "已确认" [ref=e274]:
+                    - generic [ref=e277]: 已确认
+                  - cell "详情" [ref=e278]:
+                    - button "详情" [ref=e280] [cursor=pointer]:
+                      - generic [ref=e281]: 详情
+                - row "TRF-202502-001 调出 总部→分部 F001 F003 2025-02-10 ¥86,000.00 已发运 详情" [ref=e282]:
+                  - cell "TRF-202502-001" [ref=e283]:
+                    - generic [ref=e284]: TRF-202502-001
+                  - cell "调出" [ref=e285]:
+                    - generic [ref=e288]: 调出
+                  - cell "总部→分部" [ref=e289]:
+                    - generic [ref=e290]: 总部→分部
+                  - cell "F001" [ref=e291]:
+                    - generic [ref=e292]: F001
+                  - cell "F003" [ref=e293]:
+                    - generic [ref=e294]: F003
+                  - cell "2025-02-10" [ref=e295]:
+                    - generic [ref=e296]: 2025-02-10
+                  - cell "¥86,000.00" [ref=e297]:
+                    - generic [ref=e298]: ¥86,000.00
+                  - cell "已发运" [ref=e299]:
+                    - generic [ref=e302]: 已发运
+                  - cell "详情" [ref=e303]:
+                    - button "详情" [ref=e305] [cursor=pointer]:
+                      - generic [ref=e306]: 详情
+                - row "TRF-202502-002 调出 总部→分部 F001 F002 2025-02-20 ¥52,000.00 已批准 详情" [ref=e307]:
+                  - cell "TRF-202502-002" [ref=e308]:
+                    - generic [ref=e309]: TRF-202502-002
+                  - cell "调出" [ref=e310]:
+                    - generic [ref=e313]: 调出
+                  - cell "总部→分部" [ref=e314]:
+                    - generic [ref=e315]: 总部→分部
+                  - cell "F001" [ref=e316]:
+                    - generic [ref=e317]: F001
+                  - cell "F002" [ref=e318]:
+                    - generic [ref=e319]: F002
+                  - cell "2025-02-20" [ref=e320]:
+                    - generic [ref=e321]: 2025-02-20
+                  - cell "¥52,000.00" [ref=e322]:
+                    - generic [ref=e323]: ¥52,000.00
+                  - cell "已批准" [ref=e324]:
+                    - generic [ref=e327]: 已批准
+                  - cell "详情" [ref=e328]:
+                    - button "详情" [ref=e330] [cursor=pointer]:
+                      - generic [ref=e331]: 详情
+          - generic [ref=e334]:
+            - generic [ref=e335]: 共 3 条
+            - generic [ref=e338] [cursor=pointer]:
+              - generic:
+                - combobox [ref=e340]
+                - generic [ref=e341]: 10条/页
+              - img [ref=e344]
+            - button "上一页" [disabled] [ref=e346]:
+              - generic:
+                - img
+            - list [ref=e347]:
+              - listitem "第 1 页" [ref=e348]: "1"
+            - button "下一页" [disabled] [ref=e349]:
+              - generic:
+                - img
+            - generic [ref=e350]:
+              - generic [ref=e351]: 前往
+              - spinbutton "页" [ref=e354]: "1"
+              - generic [ref=e355]: 页

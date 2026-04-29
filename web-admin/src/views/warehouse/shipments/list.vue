@@ -32,6 +32,7 @@ const dialogLoading = ref(false);
 const shipmentForm = ref({
   customerId: '',
   productBatchId: '',
+  shipmentDate: new Date().toISOString().slice(0, 10),
   quantity: 0,
   vehicleNumber: '',
   driverName: '',
@@ -59,7 +60,7 @@ async function loadData() {
   try {
     const response = await get(`/${factoryId.value}/shipments`, {
       params: {
-        page: pagination.value.page,
+        page: pagination.value.page - 1,
         size: pagination.value.size,
         keyword: searchForm.value.keyword || undefined,
         status: searchForm.value.status || undefined
@@ -72,8 +73,8 @@ async function loadData() {
       ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载失败:', error);
-    ElMessage.error('加载数据失败');
   } finally {
     loading.value = false;
   }
@@ -137,6 +138,7 @@ function handleCreate() {
   shipmentForm.value = {
     customerId: '',
     productBatchId: '',
+    shipmentDate: new Date().toISOString().slice(0, 10),
     quantity: 0,
     vehicleNumber: '',
     driverName: '',
@@ -147,14 +149,36 @@ function handleCreate() {
 }
 
 async function submitShipment() {
-  if (!shipmentForm.value.customerId || !shipmentForm.value.productBatchId || !shipmentForm.value.quantity) {
+  if (!shipmentForm.value.customerId || !shipmentForm.value.productBatchId || !shipmentForm.value.quantity || !shipmentForm.value.shipmentDate) {
     ElMessage.warning('请填写完整信息');
     return;
   }
 
+  // W-01 fix (Round 7): backend ShipmentRecord requires productName / unit / shipmentDate @NotBlank/@NotNull.
+  // Frontend only collected productBatchId before — POST /shipments returned 400. Derive missing fields
+  // from selected productBatch so create succeeds; vehicleNumber/driverName/driverPhone now persist via
+  // migration V20260424_01.
+  // Reviewer I-4: productBatchId has no column on ShipmentRecord entity, Jackson drops it silently —
+  // strip it from the wire payload to reduce log noise and stay compatible if FAIL_ON_UNKNOWN_PROPERTIES
+  // is ever enabled.
+  const batch = productBatches.value.find((b) => String(b.id) === String(shipmentForm.value.productBatchId)) as Record<string, unknown> | undefined;
+  // Reviewer S-1: ProductionBatch entity exposes productName + unit (not productTypeName / quantityUnit),
+  // but defensive fallback chain keeps the dropdown label shape compatible with any older batch DTO.
+  const productName = String(batch?.productTypeName || batch?.productName || `批次-${batch?.batchNumber || shipmentForm.value.productBatchId}`);
+  const unit = String(batch?.unit || batch?.quantityUnit || 'kg');
+  const batchNumber = batch?.batchNumber ? String(batch.batchNumber) : undefined;
+
+  const { productBatchId: _productBatchId, ...restForm } = shipmentForm.value;
+  const payload = {
+    ...restForm,
+    productName,
+    unit,
+    ...(batchNumber ? { batchNumber } : {}),
+  };
+
   dialogLoading.value = true;
   try {
-    const response = await post(`/${factoryId.value}/shipments`, shipmentForm.value);
+    const response = await post(`/${factoryId.value}/shipments`, payload);
     if (response.success) {
       ElMessage.success('创建成功');
       dialogVisible.value = false;
@@ -163,7 +187,8 @@ async function submitShipment() {
       ElMessage.error(response.message || '创建失败');
     }
   } catch (error) {
-    ElMessage.error('创建失败');
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', error);
   } finally {
     dialogLoading.value = false;
   }
@@ -173,7 +198,7 @@ async function handleShip(row: Record<string, unknown>) {
   try {
     await ElMessageBox.confirm('确定发货?', '操作确认', { type: 'warning' });
     const response = await put(`/${factoryId.value}/shipments/${row.id}/status`, {
-      status: 'SHIPPED'
+      status: 'shipped'
     });
     if (response.success) {
       ElMessage.success('已发货');
@@ -182,9 +207,9 @@ async function handleShip(row: Record<string, unknown>) {
       ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('操作失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError (request.ts).
+    // Retained catch to prevent uncaught; log for debug.
+    if (error !== 'cancel') console.error('[提交失败]', error);
   }
 }
 
@@ -192,7 +217,7 @@ async function handleDelivered(row: Record<string, unknown>) {
   try {
     await ElMessageBox.confirm('确认已送达?', '操作确认', { type: 'warning' });
     const response = await put(`/${factoryId.value}/shipments/${row.id}/status`, {
-      status: 'DELIVERED'
+      status: 'delivered'
     });
     if (response.success) {
       ElMessage.success('已确认送达');
@@ -201,9 +226,9 @@ async function handleDelivered(row: Record<string, unknown>) {
       ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('操作失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError (request.ts).
+    // Retained catch to prevent uncaught; log for debug.
+    if (error !== 'cancel') console.error('[提交失败]', error);
   }
 }
 
@@ -214,7 +239,7 @@ async function handleCancel(row: Record<string, unknown>) {
       inputErrorMessage: '请输入取消原因'
     });
     const response = await put(`/${factoryId.value}/shipments/${row.id}/status`, {
-      status: 'CANCELLED',
+      status: 'cancelled',
       reason: value
     });
     if (response.success) {
@@ -224,9 +249,9 @@ async function handleCancel(row: Record<string, unknown>) {
       ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('操作失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError (request.ts).
+    // Retained catch to prevent uncaught; log for debug.
+    if (error !== 'cancel') console.error('[提交失败]', error);
   }
 }
 
@@ -287,10 +312,11 @@ function getStatusText(status: string) {
           @keyup.enter="handleSearch"
         />
         <el-select v-model="searchForm.status" placeholder="全部状态" clearable style="width: 150px">
-          <el-option label="待发货" value="PENDING" />
-          <el-option label="运输中" value="SHIPPED" />
-          <el-option label="已送达" value="DELIVERED" />
-          <el-option label="已取消" value="CANCELLED" />
+          <el-option label="待发货" value="pending" />
+          <el-option label="运输中" value="shipped" />
+          <el-option label="已送达" value="delivered" />
+          <el-option label="已退货" value="returned" />
+          <el-option label="已取消" value="cancelled" />
         </el-select>
         <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
@@ -391,7 +417,7 @@ function getStatusText(status: string) {
     <el-dialog v-model="dialogVisible" title="新建出货" width="550px" :close-on-click-modal="false">
       <el-form :model="shipmentForm" label-width="100px">
         <el-form-item label="客户" required>
-          <el-select v-model="shipmentForm.customerId" placeholder="选择客户" style="width: 100%">
+          <el-select v-model="shipmentForm.customerId" placeholder="选择客户" filterable style="width: 100%">
             <el-option
               v-for="item in customers"
               :key="item.id"
@@ -401,14 +427,17 @@ function getStatusText(status: string) {
           </el-select>
         </el-form-item>
         <el-form-item label="产品批次" required>
-          <el-select v-model="shipmentForm.productBatchId" placeholder="选择产品批次" style="width: 100%">
+          <el-select v-model="shipmentForm.productBatchId" placeholder="选择产品批次" filterable style="width: 100%">
             <el-option
               v-for="item in productBatches"
               :key="item.id"
-              :label="`${item.batchNumber} - ${item.productTypeName}`"
+              :label="`${item.batchNumber}${item.productTypeName ? ' - ' + item.productTypeName : ''}`"
               :value="item.id"
             />
           </el-select>
+        </el-form-item>
+        <el-form-item label="发货日期" required>
+          <el-date-picker v-model="shipmentForm.shipmentDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
         </el-form-item>
         <el-form-item label="数量" required>
           <el-input-number v-model="shipmentForm.quantity" :min="1" style="width: 100%" />

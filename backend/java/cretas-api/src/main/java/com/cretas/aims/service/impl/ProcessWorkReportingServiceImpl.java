@@ -60,12 +60,18 @@ public class ProcessWorkReportingServiceImpl implements ProcessWorkReportingServ
                 .orElseThrow(() -> new ResourceNotFoundException("ProductionReport", "id", reportId.toString()));
 
         if (!factoryId.equals(report.getFactoryId())) {
-            throw new BusinessException("报工记录不属于当前工厂");
+            throw new BusinessException(403, "报工记录不属于当前工厂")
+                    .withHint("当前报工记录不属于该工厂, 无法操作");
         }
 
         // Idempotency: only approve if currently PENDING
         if (!"PENDING".equals(report.getApprovalStatus())) {
-            throw new BusinessException(409, "报工记录已被处理，当前状态: " + report.getApprovalStatus());
+            // R25 follow-up (reviewer #15 Critical-1, qa-prompt v2.4 Rule 15.b sweep):
+            // emit actionHint so FE interceptor differentiates from vanilla optimistic-lock
+            // 409 (no actionHint → suppressed). Pre-fix: silent failure on double-approve.
+            throw new BusinessException(409, "报工记录已被处理，当前状态: " + report.getApprovalStatus())
+                    .withHint("请刷新报工列表查看最新审批状态")
+                    .withHintTarget("报工记录");
         }
 
         report.setApprovalStatus("APPROVED");
@@ -90,11 +96,15 @@ public class ProcessWorkReportingServiceImpl implements ProcessWorkReportingServ
                 .orElseThrow(() -> new ResourceNotFoundException("ProductionReport", "id", reportId.toString()));
 
         if (!factoryId.equals(report.getFactoryId())) {
-            throw new BusinessException("报工记录不属于当前工厂");
+            throw new BusinessException(403, "报工记录不属于当前工厂")
+                    .withHint("当前报工记录不属于该工厂, 无法操作");
         }
 
         if (!"PENDING".equals(report.getApprovalStatus())) {
-            throw new BusinessException(409, "报工记录已被处理，当前状态: " + report.getApprovalStatus());
+            // R25 follow-up (reviewer #15 Critical-1)
+            throw new BusinessException(409, "报工记录已被处理，当前状态: " + report.getApprovalStatus())
+                    .withHint("请刷新报工列表查看最新审批状态")
+                    .withHintTarget("报工记录");
         }
 
         report.setApprovalStatus("REJECTED");
@@ -194,7 +204,8 @@ public class ProcessWorkReportingServiceImpl implements ProcessWorkReportingServ
         // Normal report only for IN_PROGRESS or PENDING tasks
         if (task.getStatus() != ProcessTaskStatus.IN_PROGRESS
                 && task.getStatus() != ProcessTaskStatus.PENDING) {
-            throw new BusinessException("正常报工仅限进行中或待开始的任务，当前状态: " + task.getStatus());
+            throw new BusinessException(409, "正常报工仅限进行中或待开始的任务，当前状态: " + task.getStatus())
+                    .withHint("请刷新任务状态后重试, 或使用补报功能");
         }
 
         // Auto-transition PENDING → IN_PROGRESS
@@ -250,7 +261,8 @@ public class ProcessWorkReportingServiceImpl implements ProcessWorkReportingServ
         if (task.getStatus() != ProcessTaskStatus.COMPLETED
                 && task.getStatus() != ProcessTaskStatus.CLOSED
                 && task.getStatus() != ProcessTaskStatus.SUPPLEMENTING) {
-            throw new BusinessException("只有已完成或已关闭的任务可以补报");
+            throw new BusinessException(409, "只有已完成或已关闭的任务可以补报")
+                    .withHint("请刷新任务状态, 进行中的任务请使用正常报工");
         }
 
         // Enter SUPPLEMENTING state if not already
@@ -295,11 +307,13 @@ public class ProcessWorkReportingServiceImpl implements ProcessWorkReportingServ
                 .orElseThrow(() -> new ResourceNotFoundException("ProductionReport", "id", originalReportId.toString()));
 
         if (!"APPROVED".equals(original.getApprovalStatus())) {
-            throw new BusinessException("只能冲销已审批通过的报工");
+            throw new BusinessException(409, "只能冲销已审批通过的报工")
+                    .withHint("待审批或已驳回的报工无需冲销, 请刷新报工列表查看最新状态");
         }
 
         if (reportRepository.existsByReversalOfIdAndDeletedAtIsNull(originalReportId)) {
-            throw new BusinessException("该报工已被冲销，不可重复操作");
+            throw new BusinessException(409, "该报工已被冲销，不可重复操作")
+                    .withHint("请刷新报工列表查看最新状态");
         }
 
         // Create negative reversal record

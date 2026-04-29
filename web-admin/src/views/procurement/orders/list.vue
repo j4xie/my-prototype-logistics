@@ -24,6 +24,8 @@ const loading = ref(false);
 const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const statusFilter = ref('');
+const searchKeyword = ref('');
+const dateRange = ref<[string, string] | null>(null);
 const dialogVisible = ref(false);
 
 const form = ref({
@@ -75,13 +77,31 @@ async function loadData() {
     if (statusFilter.value) params.status = statusFilter.value;
     const response = await get(url, { params });
     if (response.success && response.data) {
-      tableData.value = response.data.content || [];
+      let rows = response.data.content || [];
+      // Client-side keyword + date filter (Apr 21 2026): backend lacks
+      // keyword param on purchase/orders; filter locally on current page.
+      const kw = searchKeyword.value.trim().toLowerCase();
+      if (kw) {
+        rows = rows.filter((r: Record<string, unknown>) =>
+          String(r.orderNumber || '').toLowerCase().includes(kw) ||
+          String(r.supplierName || (r.supplier as Record<string, unknown>)?.name || '').toLowerCase().includes(kw)
+        );
+      }
+      if (dateRange.value && dateRange.value[0] && dateRange.value[1]) {
+        const [from, to] = dateRange.value;
+        rows = rows.filter((r: Record<string, unknown>) => {
+          const d = String(r.orderDate || '').slice(0, 10);
+          return d && d >= from && d <= to;
+        });
+      }
+      tableData.value = rows;
       pagination.value.total = response.data.totalElements || 0;
     } else if (response.success === false) {
       ElMessage.error(response.message || '加载数据失败');
     }
   } catch (error) {
-    ElMessage.error('加载数据失败');
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', error);
   } finally {
     loading.value = false;
   }
@@ -92,7 +112,7 @@ async function loadSuppliers() {
   try {
     const res = await get(`/${factoryId.value}/suppliers`, { params: { page: 1, size: 100 } });
     if (res.success && res.data) suppliers.value = res.data.content || [];
-  } catch { ElMessage.error('加载供应商列表失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
 }
 
 async function loadMaterials() {
@@ -101,7 +121,7 @@ async function loadMaterials() {
     // Bug B3 fix: use /active endpoint (unpaginated, same source as BOM and warehouse)
     const res = await get(`/${factoryId.value}/raw-material-types/active`);
     if (res.success && res.data) materials.value = Array.isArray(res.data) ? res.data : res.data.content || [];
-  } catch { ElMessage.error('加载原料列表失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
 }
 
 async function loadSalesOrders() {
@@ -129,8 +149,13 @@ async function handleCreate() {
   if (form.value.items.some(i => !i.unit)) return ElMessage.warning('请填写所有明细的单位');
   submitting.value = true;
   try {
-    // Build remark with sales order reference if selected
+    // W-12 fix (Round 15): previously relatedSalesOrderId was stripped from payload
+    // and only embedded as "[关联销售订单: SO-XXX]" in remark. Now that the backend has
+    // a proper sales_order_id column + filter (V20260424_03 + PurchaseService fix),
+    // pass it through as salesOrderId. Keep the remark text for backward-compat
+    // readability — users who view old POs will still see the ref.
     let remark = form.value.remark || '';
+    const salesOrderId = form.value.relatedSalesOrderId || null;
     if (form.value.relatedSalesOrderId) {
       const so = salesOrders.value.find((o: Record<string, unknown>) => o.id === form.value.relatedSalesOrderId);
       const soRef = so ? `[关联销售订单: ${so.orderNumber}]` : '';
@@ -140,6 +165,7 @@ async function handleCreate() {
     const payload = {
       ...formData,
       remark,
+      salesOrderId,
       orderDate: new Date().toISOString().slice(0, 10), // backend requires @NotNull orderDate
     };
     const res = await post(`/${factoryId.value}/purchase/orders`, payload);
@@ -152,7 +178,8 @@ async function handleCreate() {
       ElMessage.error(res.message || '创建失败');
     }
   } catch (error) {
-    ElMessage.error('创建失败');
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', error);
   } finally {
     submitting.value = false;
   }
@@ -189,7 +216,14 @@ function goDetail(id: string) {
 function handlePageChange(page: number) { pagination.value.page = page; loadData(); }
 function handleSizeChange(size: number) { pagination.value.size = size; pagination.value.page = 1; loadData(); }
 function handleStatusChange() { pagination.value.page = 1; loadData(); }
-function handleRefresh() { statusFilter.value = ''; pagination.value.page = 1; loadData(); }
+function handleSearch() { pagination.value.page = 1; loadData(); }
+function handleRefresh() {
+  statusFilter.value = '';
+  searchKeyword.value = '';
+  dateRange.value = null;
+  pagination.value.page = 1;
+  loadData();
+}
 
 // ==================== AI Entry ====================
 const aiEntryVisible = ref(false);
@@ -237,7 +271,7 @@ function handleAiFill(params: Record<string, unknown>) {
             <span class="data-count">共 {{ pagination.total }} 条记录</span>
           </div>
           <div class="header-right">
-            <el-button type="success" :icon="ChatDotRound" @click="aiEntryVisible = true">
+            <el-button v-if="canWrite" type="success" :icon="ChatDotRound" @click="aiEntryVisible = true">
               AI录入
             </el-button>
             <el-button v-if="canWrite" type="primary" :icon="Plus" @click="dialogVisible = true">
@@ -248,9 +282,28 @@ function handleAiFill(params: Record<string, unknown>) {
       </template>
 
       <div class="search-bar">
+        <el-input
+          v-model="searchKeyword"
+          placeholder="搜索 订单号 / 供应商"
+          clearable
+          style="width: 220px"
+          @keyup.enter="handleSearch"
+          @clear="handleSearch"
+        />
+        <el-date-picker
+          v-model="dateRange"
+          type="daterange"
+          range-separator="至"
+          start-placeholder="下单起始"
+          end-placeholder="下单结束"
+          value-format="YYYY-MM-DD"
+          style="width: 280px"
+          @change="handleSearch"
+        />
         <el-select v-model="statusFilter" placeholder="按状态筛选" clearable style="width: 160px" @change="handleStatusChange">
           <el-option v-for="(v, k) in statusMap" :key="k" :label="v.text" :value="k" />
         </el-select>
+        <el-button type="primary" @click="handleSearch">搜索</el-button>
         <el-button :icon="Refresh" @click="handleRefresh">重置</el-button>
       </div>
 
@@ -295,7 +348,9 @@ function handleAiFill(params: Record<string, unknown>) {
       </div>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="`新建${label('purchaseOrder')}`" width="720px" destroy-on-close>
+    <!-- Apr 20 Bug BR-06 fix: 原材料明细 7 列 (200+120+100+80+100+80+40=720 + 6×8gap=48 + body padding 40 ≈ 808px),
+         在 720px dialog 里被截断. 扩到 880px 留余量 -->
+    <el-dialog v-model="dialogVisible" :title="`新建${label('purchaseOrder')}`" width="880px" destroy-on-close>
       <el-form :model="form" label-width="100px">
         <el-form-item :label="label('supplier')">
           <el-select v-model="form.supplierId" placeholder="请选择" filterable style="width: 100%">

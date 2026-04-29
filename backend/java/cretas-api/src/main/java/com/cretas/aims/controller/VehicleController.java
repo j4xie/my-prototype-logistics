@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.warehouse.VehicleDTO;
 import com.cretas.aims.service.VehicleService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,6 +27,7 @@ public class VehicleController {
 
     private final VehicleService vehicleService;
 
+    @RequirePermission({"warehouse:read"})
     @GetMapping
     @Operation(summary = "获取车辆列表", description = "获取工厂所有车辆，支持按状态筛选")
     public ApiResponse<List<VehicleDTO>> getVehicles(
@@ -43,6 +45,7 @@ public class VehicleController {
         return ApiResponse.success("获取成功", vehicles);
     }
 
+    @RequirePermission({"warehouse:read"})
     @GetMapping("/available")
     @Operation(summary = "获取可用车辆", description = "获取当前可用于装载的车辆列表")
     public ApiResponse<List<VehicleDTO>> getAvailableVehicles(
@@ -53,6 +56,7 @@ public class VehicleController {
         return ApiResponse.success("获取成功", vehicles);
     }
 
+    @RequirePermission({"warehouse:read"})
     @GetMapping("/{vehicleId}")
     @Operation(summary = "获取车辆详情", description = "根据ID获取单个车辆的详细信息")
     public ApiResponse<VehicleDTO> getVehicle(
@@ -65,6 +69,7 @@ public class VehicleController {
         return ApiResponse.success("获取成功", vehicle);
     }
 
+    @RequirePermission({"warehouse:read_write"})
     @PostMapping
     @Operation(summary = "创建车辆", description = "添加新车辆到系统")
     public ApiResponse<VehicleDTO> createVehicle(
@@ -76,6 +81,7 @@ public class VehicleController {
         return ApiResponse.success("创建成功", vehicle);
     }
 
+    @RequirePermission({"warehouse:read_write"})
     @PutMapping("/{vehicleId}")
     @Operation(summary = "更新车辆", description = "更新车辆的基本信息")
     public ApiResponse<VehicleDTO> updateVehicle(
@@ -89,6 +95,7 @@ public class VehicleController {
         return ApiResponse.success("更新成功", vehicle);
     }
 
+    @RequirePermission({"warehouse:read_write"})
     @PatchMapping("/{vehicleId}/status")
     @Operation(summary = "更新车辆状态", description = "更新车辆的运行状态（可用/装载中/已发车/维护中）")
     public ApiResponse<VehicleDTO> updateVehicleStatus(
@@ -103,6 +110,7 @@ public class VehicleController {
         return ApiResponse.success("状态更新成功", vehicle);
     }
 
+    @RequirePermission({"warehouse:read_write"})
     @PatchMapping("/{vehicleId}/load")
     @Operation(summary = "更新装载量", description = "更新车辆当前的装载重量")
     public ApiResponse<VehicleDTO> updateCurrentLoad(
@@ -117,6 +125,7 @@ public class VehicleController {
         return ApiResponse.success("装载量更新成功", vehicle);
     }
 
+    @RequirePermission({"warehouse:read_write"})
     @DeleteMapping("/{vehicleId}")
     @Operation(summary = "删除车辆", description = "软删除车辆")
     public ApiResponse<Void> deleteVehicle(

@@ -295,6 +295,30 @@ class CrossSheetAggregator:
 
         return kpi_comparison
 
+    @staticmethod
+    def _infer_dim_label_from_sheet_names(sheet_names: List[str]) -> Optional[str]:
+        """
+        A5 (Apr 20 2026): Guess whether sheet names represent a business
+        dimension (门店/品牌/渠道/区域), so charts can say "各门店核心指标对比"
+        instead of the generic "各报表核心指标对比".
+
+        Returns the dim label (e.g. '门店') or None to fall back.
+        """
+        if not sheet_names:
+            return None
+        joined = " ".join(sheet_names)
+        # Order matters: check the more specific first
+        if any(kw in joined for kw in ("分店", "门店", "店铺", "店", "馆", "铺")):
+            return "门店"
+        if any(kw in joined for kw in ("品牌",)):
+            return "品牌"
+        if any(kw in joined for kw in ("渠道", "平台")):
+            return "渠道"
+        if any(kw in joined for kw in ("区域", "大区", "城市", "省")):
+            return "区域"
+        # Pure literal sheet labels (like "表E", "Sheet1") → fall back
+        return None
+
     def _build_comparison_charts(
         self,
         kpi_comparison: List[Dict[str, Any]],
@@ -321,6 +345,11 @@ class CrossSheetAggregator:
         # Truncate long names
         display_names = [n[:12] + "..." if len(n) > 15 else n for n in sheet_names]
 
+        # A5 (Apr 20 2026): 动态标题 — 若 sheet 名看起来是业务维度值
+        # (如门店/品牌/渠道), 标题换成 "各{维度} 核心指标对比" 而非僵化的 "各报表".
+        dim_label = self._infer_dim_label_from_sheet_names(sheet_names)
+        chart_title = f"各{dim_label}核心指标对比" if dim_label else "各报表核心指标对比"
+
         # Chart 1: Bar chart comparing top KPIs across sheets
         if common_keys:
             top_keys = common_keys[:4]
@@ -339,7 +368,7 @@ class CrossSheetAggregator:
 
             charts.append({
                 "chartType": "bar",
-                "title": "各报表核心指标对比",
+                "title": chart_title,
                 "config": {
                     "tooltip": {"trigger": "axis", "axisPointer": {"type": "shadow"}},
                     "legend": {"data": top_keys, "top": 30},
@@ -368,9 +397,10 @@ class CrossSheetAggregator:
                     })
 
             if len(pie_data) >= 2:
+                pie_dim = dim_label if dim_label else "报表"
                 charts.append({
                     "chartType": "pie",
-                    "title": f"{revenue_key} 各报表占比",
+                    "title": f"{revenue_key} 各{pie_dim}占比",
                     "config": {
                         "tooltip": {"trigger": "item", "formatter": "{b}: {c} ({d}%)"},
                         "legend": {"orient": "vertical", "left": "left", "top": 30},

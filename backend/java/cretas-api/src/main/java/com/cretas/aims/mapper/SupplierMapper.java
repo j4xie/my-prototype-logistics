@@ -2,6 +2,7 @@ package com.cretas.aims.mapper;
 
 import com.cretas.aims.dto.supplier.CreateSupplierRequest;
 import com.cretas.aims.dto.supplier.SupplierDTO;
+import com.cretas.aims.dto.supplier.UpdateSupplierRequest;
 import com.cretas.aims.entity.Supplier;
 import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
@@ -49,6 +50,7 @@ public class SupplierMapper {
                 .createdAt(supplier.getCreatedAt())
                 .updatedAt(supplier.getUpdatedAt())
                 .createdBy(supplier.getCreatedBy())
+                .version(supplier.getVersion())
                 .build();
         // 设置创建人姓名
         if (supplier.getCreatedByUser() != null) {
@@ -97,7 +99,7 @@ public class SupplierMapper {
     /**
      * 更新实体
      */
-    public void updateEntity(Supplier supplier, CreateSupplierRequest request) {
+    public void updateEntity(Supplier supplier, UpdateSupplierRequest request) {
         if (request.getName() != null) {
             supplier.setName(request.getName());
         }

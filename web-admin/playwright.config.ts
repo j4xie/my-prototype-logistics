@@ -94,5 +94,20 @@ export default defineConfig({
       name: 'restaurant-chat',
       testMatch: 'restaurant-chat.spec.ts',
     },
+    // Step 14: 数据织网 C smoke E2E — real-window guards for Day 23-30
+    // critical user journeys. Catches "vitest passes but production broken"
+    // bugs (Day 26 snake/camel + P0-1 grossMargin 2058% + P0-2 KPI 全 0 +
+    // P1-3+P1-4 chart 空骨架). Run via:
+    //   E2E_BASE_URL=http://139.196.165.140:8097 \
+    //   npx playwright test --project data-fabric-c-smoke
+    {
+      name: 'data-fabric-c-smoke',
+      testMatch: 'data-fabric-c-smoke-e2e.spec.ts',
+      dependencies: ['vue-auth'],
+      // 串行: test env 单服务器并发受限, 减少 networkidle/timeout flake.
+      fullyParallel: false,
+      workers: 1,
+      use: { storageState: 'test-results/.auth/factory-admin.json' },
+    },
   ],
 });

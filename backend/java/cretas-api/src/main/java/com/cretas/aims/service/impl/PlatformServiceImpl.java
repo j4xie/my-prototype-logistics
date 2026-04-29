@@ -73,10 +73,12 @@ public class PlatformServiceImpl implements PlatformService {
 
         // 验证参数
         if (weeklyQuota == null) {
-            throw new BusinessException("配额不能为空");
+            throw new BusinessException(400, "配额不能为空")
+                    .withHint("请填写每周 AI 配额 (0-1000)").withHintTarget("weeklyQuota");
         }
         if (weeklyQuota < 0 || weeklyQuota > 1000) {
-            throw new BusinessException("配额必须在0-1000之间");
+            throw new BusinessException(400, "配额必须在0-1000之间")
+                    .withHint("请输入 0 到 1000 之间的整数").withHintTarget("weeklyQuota");
         }
 
         // 查找工厂

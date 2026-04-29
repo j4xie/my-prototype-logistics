@@ -40,8 +40,11 @@ public class ProductionPlanMapper {
                 .productTypeId(plan.getProductTypeId())
                 .plannedQuantity(plan.getPlannedQuantity())
                 .actualQuantity(plan.getActualQuantity())
-                // plannedDate 从 startTime 推导，保持API兼容性
-                .plannedDate(plan.getStartTime() != null ? plan.getStartTime().toLocalDate() : null)
+                // W-07 fix (Round 9): prefer the real plannedDate column; fall back to
+                // startTime-derived date for legacy rows created before the column was restored.
+                .plannedDate(plan.getPlannedDate() != null
+                        ? plan.getPlannedDate()
+                        : (plan.getStartTime() != null ? plan.getStartTime().toLocalDate() : null))
                 .startTime(plan.getStartTime())
                 .endTime(plan.getEndTime())
                 .expectedCompletionDate(plan.getExpectedCompletionDate())
@@ -66,7 +69,9 @@ public class ProductionPlanMapper {
                 .build();
         // 设置产品信息
         if (plan.getProductType() != null) {
-            dto.setProductName(plan.getProductType().getName());
+            String ptName = plan.getProductType().getName();
+            dto.setProductName(ptName);
+            dto.setProductTypeName(ptName);  // Bug #1b (R2): alias field, previously orphan, frontend may bind to either
             dto.setProductUnit(plan.getProductType().getUnit());
         }
         // 设置创建人姓名
@@ -148,7 +153,8 @@ public class ProductionPlanMapper {
         plan.setPlanNumber(generatePlanNumber());
         plan.setProductTypeId(request.getProductTypeId());
         plan.setPlannedQuantity(request.getPlannedQuantity());
-        // plan.setPlannedDate(request.getPlannedDate());  // 暂时注释 - 数据库表中没有此字段
+        // W-07 fix (Round 9): plannedDate column restored; map it on create
+        plan.setPlannedDate(request.getPlannedDate());
         plan.setStatus(ProductionPlanStatus.PENDING);
         plan.setPlanType(request.getPlanType() != null ? request.getPlanType() : ProductionPlanType.FROM_INVENTORY);
         plan.setCustomerOrderNumber(request.getCustomerOrderNumber());
@@ -216,14 +222,28 @@ public class ProductionPlanMapper {
         if (request.getPlannedQuantity() != null) {
             plan.setPlannedQuantity(request.getPlannedQuantity());
         }
-        // if (request.getPlannedDate() != null) {  // 暂时注释 - 数据库表中没有此字段
-        //     plan.setPlannedDate(request.getPlannedDate());
-        // }
+        // W-07 fix (Round 9): plannedDate column restored; map on update too
+        if (request.getPlannedDate() != null) {
+            plan.setPlannedDate(request.getPlannedDate());
+        }
         if (request.getCustomerOrderNumber() != null) {
             plan.setCustomerOrderNumber(request.getCustomerOrderNumber());
         }
         if (request.getPriority() != null) {
             plan.setPriority(request.getPriority());
+        }
+        // W-06 fix (Round 9, qa-prompt v2.4 Rule 17.2 sweep): planType /
+        // processName / batchDate are @Column fields but were previously
+        // dropped on update. PUT returned 200 "更新成功" but DB row was
+        // untouched for these 3. Null-guard map each like the other fields.
+        if (request.getPlanType() != null) {
+            plan.setPlanType(request.getPlanType());
+        }
+        if (request.getProcessName() != null) {
+            plan.setProcessName(request.getProcessName());
+        }
+        if (request.getBatchDate() != null) {
+            plan.setBatchDate(request.getBatchDate());
         }
         if (request.getEstimatedMaterialCost() != null) {
             plan.setEstimatedMaterialCost(request.getEstimatedMaterialCost());

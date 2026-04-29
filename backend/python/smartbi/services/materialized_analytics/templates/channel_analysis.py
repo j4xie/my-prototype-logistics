@@ -1,0 +1,320 @@
+"""ChannelAnalysis — 订单来源 × 渠道收入分析.
+
+Groups orders by '订单来源' dimension into four buckets:
+  堂食      = 店内桌位单
+  外卖平台  = 饿了么 / 美团外卖 / 京东外卖 / 百度外卖
+  自有渠道  = 微信 / 支付宝
+  其他      = everything else
+
+KPIs: top channel, takeaway share, dine-in share, total channel count.
+Chart: ECharts pie by bucket revenue share.
+"""
+from __future__ import annotations
+
+from typing import Any, ClassVar, Dict, List, Tuple
+
+import polars as pl
+
+from smartbi.capability.contract import RequiresSpec
+
+from ..compute.base import ComputeBackend
+from ..restaurant.action_rec_formatter import format_action_rec
+from ..restaurant.schema_helpers import find_customer_col, measure_annotation, preferred_revenue_col
+from ..schema import DataSchema
+from .base import AnalysisTemplate, TemplateResult
+from .registry import register
+
+# Bucket membership sets (exact match against 订单来源 values)
+_DINE_IN: frozenset = frozenset({"店内桌位单"})
+_TAKEAWAY: frozenset = frozenset({"饿了么", "美团外卖", "京东外卖", "百度外卖"})
+_OWN_CHANNEL: frozenset = frozenset({"微信", "支付宝"})
+
+_BUCKET_LABEL = "堂食"
+_TAKEAWAY_LABEL = "外卖平台"
+_OWN_LABEL = "自有渠道"
+_OTHER_LABEL = "其他"
+
+
+def _source_to_bucket(source: str) -> str:
+    if source in _DINE_IN:
+        return _BUCKET_LABEL
+    if source in _TAKEAWAY:
+        return _TAKEAWAY_LABEL
+    if source in _OWN_CHANNEL:
+        return _OWN_LABEL
+    return _OTHER_LABEL
+
+
+@register
+class ChannelAnalysis(AnalysisTemplate):
+
+    sample_queries = [
+        "渠道分析",
+        "外卖占比多少",
+        "美团饿了么对比",
+        "来源订单分布",
+        "渠道营收结构",
+    ]
+
+    requires: ClassVar[RequiresSpec | None] = RequiresSpec(
+        all=["channel_origin"],
+        any=["net_amount", "gross_amount"],
+        description="渠道销售分析",
+    )
+
+    @property
+    def code(self) -> str:
+        return "channel_analysis"
+
+    @property
+    def title(self) -> str:
+        return "渠道订单 & 营收分析"
+
+    def applies(self, schema: DataSchema) -> bool:
+        field_names = {f.name for f in schema.fields}
+        return "订单来源" in field_names and schema.primary_measure is not None
+
+    def compute(self, backend: ComputeBackend, schema: DataSchema) -> TemplateResult:
+        df = backend._df
+        # W4-Q3: prefer 实收额 (net) for honest channel comparison
+        measure = preferred_revenue_col(df.columns, schema.primary_measure)
+        if measure is None:
+            return TemplateResult(
+                code=self.code, title=self.title, data={},
+                applies=False, skip_reason="no revenue column found",
+            )
+        cust_col = find_customer_col(df.columns)
+
+        # Cast measure to float; drop rows with null source or measure
+        extra_exprs = []
+        if cust_col:
+            extra_exprs.append(
+                pl.col(cust_col).cast(pl.Float64, strict=False).fill_null(0.0).alias("_cust")
+            )
+        df_work = (
+            df
+            .with_columns(
+                pl.col(measure).cast(pl.Float64, strict=False).alias("_m"),
+                pl.col("订单来源").cast(pl.Utf8).alias("_src"),
+                *extra_exprs,
+            )
+            .filter(pl.col("_src").is_not_null() & pl.col("_m").is_not_null())
+        )
+
+        if df_work.is_empty():
+            return TemplateResult(
+                code=self.code, title=self.title, data={},
+                applies=False, skip_reason="no valid rows after null filter",
+            )
+
+        # --- Group by source ---
+        src_agg_exprs = [
+            pl.len().alias("orders"),
+            pl.col("_m").sum().alias("revenue"),
+        ]
+        if cust_col:
+            src_agg_exprs.append(pl.col("_cust").sum().alias("customers"))
+
+        src_agg = (
+            df_work
+            .group_by("_src")
+            .agg(src_agg_exprs)
+            .sort("revenue", descending=True)
+        )
+
+        total_revenue = float(df_work["_m"].sum() or 0.0)
+        total_orders = df_work.height
+        total_customers = float(df_work["_cust"].sum() or 0.0) if cust_col else 0.0
+
+        by_source: List[Dict[str, Any]] = []
+        for row in src_agg.to_dicts():
+            src = row["_src"]
+            rev = float(row["revenue"])
+            cnt = int(row["orders"])
+            cust = float(row.get("customers") or 0.0) if cust_col else 0.0
+            share = round(rev / total_revenue * 100, 2) if total_revenue > 0 else 0.0
+            # C-rec 7 (Apr 25 2026): also expose bills-basis share so AI/FE
+            # never conflate revenue% with bills%.
+            share_bills = round(cnt / total_orders * 100, 2) if total_orders > 0 else 0.0
+            # 客单价 (Q-A #15) — per-customer and per-order variants
+            avg_per_order = round(rev / cnt, 2) if cnt > 0 else 0.0
+            avg_per_customer = round(rev / cust, 2) if cust > 0 else None
+            by_source.append({
+                "source": src,
+                "orders": cnt,
+                "revenue": round(rev, 2),
+                "share_pct": share,                  # legacy = amount-basis
+                "share_amount_pct": share,           # explicit amount basis
+                "share_bills_pct": share_bills,      # explicit bills basis
+                "customers": int(cust) if cust_col else None,
+                "avg_per_order": avg_per_order,
+                "avg_per_customer": avg_per_customer,
+            })
+
+        # --- Aggregate into buckets (也加 customers / avg 指标) ---
+        # 数据结构: bucket -> [orders, revenue, customers]
+        bucket_totals: Dict[str, List[float]] = {
+            _BUCKET_LABEL: [0, 0.0, 0.0],
+            _TAKEAWAY_LABEL: [0, 0.0, 0.0],
+            _OWN_LABEL: [0, 0.0, 0.0],
+            _OTHER_LABEL: [0, 0.0, 0.0],
+        }
+        for item in by_source:
+            bucket = _source_to_bucket(item["source"])
+            bucket_totals[bucket][0] += item["orders"]
+            bucket_totals[bucket][1] += item["revenue"]
+            if cust_col and item.get("customers") is not None:
+                bucket_totals[bucket][2] += item["customers"]
+
+        by_bucket: List[Dict[str, Any]] = []
+        for bucket, (cnt, rev, cust) in bucket_totals.items():
+            cnt = int(cnt)
+            share = round(rev / total_revenue * 100, 2) if total_revenue > 0 else 0.0
+            # C-rec 7: explicit bills-basis share alongside amount-basis
+            share_bills = round(cnt / total_orders * 100, 2) if total_orders > 0 else 0.0
+            avg_per_order = round(rev / cnt, 2) if cnt > 0 else 0.0
+            avg_per_customer = round(rev / cust, 2) if cust_col and cust > 0 else None
+            by_bucket.append({
+                "bucket": bucket,
+                "orders": cnt,
+                "revenue": round(rev, 2),
+                "share_pct": share,                # legacy = amount-basis
+                "share_amount_pct": share,         # explicit amount basis
+                "share_bills_pct": share_bills,    # explicit bills basis
+                "customers": int(cust) if cust_col else None,
+                "avg_per_order": avg_per_order,
+                "avg_per_customer": avg_per_customer,
+            })
+
+        # --- KPIs ---
+        top_source = by_source[0] if by_source else None
+        top_channel = top_source["source"] if top_source else ""
+        top_channel_share = top_source["share_pct"] if top_source else 0.0  # legacy = amount-basis
+        top_channel_share_bills = top_source["share_bills_pct"] if top_source else 0.0
+
+        dine_in_rev = bucket_totals[_BUCKET_LABEL][1]
+        takeaway_rev = bucket_totals[_TAKEAWAY_LABEL][1]
+        dine_in_orders = int(bucket_totals[_BUCKET_LABEL][0])
+        takeaway_orders = int(bucket_totals[_TAKEAWAY_LABEL][0])
+        dine_in_share = round(dine_in_rev / total_revenue * 100, 2) if total_revenue > 0 else 0.0
+        takeaway_share = round(takeaway_rev / total_revenue * 100, 2) if total_revenue > 0 else 0.0
+        # C-rec 7: bills-basis shares for the two main buckets
+        dine_in_share_bills = round(dine_in_orders / total_orders * 100, 2) if total_orders > 0 else 0.0
+        takeaway_share_bills = round(takeaway_orders / total_orders * 100, 2) if total_orders > 0 else 0.0
+        total_channels = len(by_source)
+
+        # --- ECharts pie (by bucket revenue share) ---
+        pie_data = [
+            {"name": item["bucket"], "value": item["revenue"]}
+            for item in by_bucket
+            if item["revenue"] > 0
+        ]
+        chart_config: Dict[str, Any] = {
+            "type": "pie",
+            "title": {"text": "各渠道营收占比", "left": "center"},
+            "tooltip": {"trigger": "item", "formatter": "{b}: {d}%"},
+            "legend": {"orient": "vertical", "left": "left"},
+            "series": [
+                {
+                    "name": "营收",
+                    "type": "pie",
+                    "radius": "55%",
+                    "center": ["50%", "55%"],
+                    "data": pie_data,
+                    "emphasis": {
+                        "itemStyle": {
+                            "shadowBlur": 10,
+                            "shadowOffsetX": 0,
+                            "shadowColor": "rgba(0, 0, 0, 0.5)",
+                        }
+                    },
+                }
+            ],
+        }
+
+        # Q-A #15 — add 客单价细分 to insight when customer column present
+        dine_in_avg = next(
+            (b["avg_per_customer"] for b in by_bucket if b["bucket"] == _BUCKET_LABEL),
+            None,
+        )
+        takeaway_avg = next(
+            (b["avg_per_customer"] for b in by_bucket if b["bucket"] == _TAKEAWAY_LABEL),
+            None,
+        )
+        # C-rec 7 (Apr 25 2026): both bases stated explicitly so customer
+        # never confuses "amount share" with "bills share".
+        parts = [
+            f"堂食占 {dine_in_share:.1f}%[按营业额] / {dine_in_share_bills:.1f}%[按笔数],"
+            f"外卖平台占 {takeaway_share:.1f}%[按营业额] / {takeaway_share_bills:.1f}%[按笔数];"
+            f"最大单一来源 {top_channel} ({top_channel_share:.1f}%[按营业额] / {top_channel_share_bills:.1f}%[按笔数])。"
+        ]
+        if dine_in_avg is not None and takeaway_avg is not None:
+            parts.append(
+                f" 客单价:堂食 {dine_in_avg:.0f} 元/人 vs 外卖 {takeaway_avg:.0f} 元/人。"
+            )
+        elif dine_in_avg is not None:
+            parts.append(f" 堂食客单价 {dine_in_avg:.0f} 元/人。")
+        elif takeaway_avg is not None:
+            parts.append(f" 外卖客单价 {takeaway_avg:.0f} 元/人。")
+
+        # K2 / C-rec 8: append spec §4.3 action rec (a对象 b收益区间 c前置 d时间窗)
+        # Decide action by which channel dominates: takeaway >50% → 优化外卖运营,
+        # dine-in >70% → 增加外卖渠道, mid → 平衡补强 top channel.
+        if takeaway_share >= 50.0:
+            action_rec = format_action_rec(
+                object_target=f"外卖渠道 ({top_channel})",
+                benefit_range="优化首图/价格档位/时段促销可拉高外卖单量 8-12% / 客单价 5%",
+                prerequisite="抖音/美团 评分 ≥4.5 + 配送时效 < 35 分钟",
+                timeline="近 30 天",
+            )
+        elif dine_in_share >= 70.0:
+            action_rec = format_action_rec(
+                object_target="外卖渠道 (美团/饿了么)",
+                benefit_range="新开外卖渠道可增量营收 10-20%, 不影响堂食客流",
+                prerequisite="店内备餐能力评估 + 平台门店上线 + 外卖包装升级",
+                timeline="本季度内",
+            )
+        elif top_channel:
+            action_rec = format_action_rec(
+                object_target=f"主导渠道 {top_channel} ({top_channel_share:.1f}%)",
+                benefit_range="加大该渠道投放 / 优化定价档位可提升营收 5-8%",
+                prerequisite="该渠道毛利率核算 + 平台客户运营资源对接",
+                timeline="本月内",
+            )
+        else:
+            action_rec = ""
+
+        if action_rec:
+            parts.append(f" {action_rec}")
+        insight_text = "".join(parts)
+
+        return TemplateResult(
+            code=self.code,
+            title=self.title,
+            data={
+                "by_source": by_source,
+                "by_bucket": by_bucket,
+                "has_customer_data": cust_col is not None,
+                # C-rec 7: explicit basis info for AI prompt + FE label
+                "share_basis_note": "share_amount_pct=按营业额占比，share_bills_pct=按笔数(订单数)占比",
+                "revenue_basis_label": measure_annotation(measure),
+            },
+            chart_config=chart_config,
+            kpis={
+                "top_channel": top_channel,
+                "top_channel_share": top_channel_share,             # legacy = amount
+                "top_channel_share_amount_pct": top_channel_share,
+                "top_channel_share_bills_pct": top_channel_share_bills,
+                "takeaway_share": takeaway_share,                   # legacy = amount
+                "takeaway_share_amount_pct": takeaway_share,
+                "takeaway_share_bills_pct": takeaway_share_bills,
+                "dine_in_share": dine_in_share,                     # legacy = amount
+                "dine_in_share_amount_pct": dine_in_share,
+                "dine_in_share_bills_pct": dine_in_share_bills,
+                "total_channels": total_channels,
+                "dine_in_avg_per_customer": dine_in_avg,
+                "takeaway_avg_per_customer": takeaway_avg,
+                "share_basis_default": "amount",
+            },
+            insight_text=insight_text,
+        )

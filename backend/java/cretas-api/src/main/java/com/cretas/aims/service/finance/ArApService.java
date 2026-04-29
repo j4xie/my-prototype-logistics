@@ -36,12 +36,30 @@ public interface ArApService {
                                      BigDecimal amount, PaymentMethod method,
                                      String paymentReference, Long operatedBy, String remark);
 
-    // ==================== 手工调整 ====================
+    // ==================== 手工调整（R23 audit C2: PENDING_APPROVAL workflow） ====================
 
-    /** 手工调整（正数增加，负数减少） */
+    /**
+     * R23 audit C2: creates AR_ADJUSTMENT/AP_ADJUSTMENT in PENDING state.
+     * Customer/supplier balance is NOT mutated until approveAdjustment() runs.
+     * Pre-R23 this immediately mutated balance — bypass of dual-control gate.
+     */
     ArApTransaction recordAdjustment(String factoryId, CounterpartyType counterpartyType,
                                       String counterpartyId, BigDecimal amount,
                                       Long operatedBy, String remark);
+
+    /**
+     * R23 audit C2: approve a PENDING adjustment. Applies amount delta to counterparty
+     * balance + flips approval_status to APPROVED. Requires elevated permission
+     * (controller enforces 'finance:approve_adjustment'). Approver must differ from
+     * operatedBy (4-eyes principle).
+     */
+    ArApTransaction approveAdjustment(String factoryId, String transactionId, Long approvedBy);
+
+    /**
+     * R23 audit C2: reject a PENDING adjustment. No balance change; row persists with
+     * approval_status=REJECTED + approver + reject reason in remark (appended).
+     */
+    ArApTransaction rejectAdjustment(String factoryId, String transactionId, Long approvedBy, String reason);
 
     // ==================== 查询 ====================
 
@@ -50,6 +68,40 @@ public interface ArApService {
                                                    CounterpartyType counterpartyType,
                                                    String counterpartyId,
                                                    int page, int size);
+
+    /**
+     * R28 P2 (R23 P5 deferred): list PENDING adjustments awaiting approval.
+     * Filters: factoryId + approval_status='PENDING' + transaction_type IN
+     * (AR_ADJUSTMENT, AP_ADJUSTMENT). Sorted newest first (created_at DESC).
+     */
+    PageResponse<ArApTransaction> getPendingAdjustments(String factoryId, int page, int size);
+
+    /**
+     * R29 P1: list PENDING adjustments with filters. All filter params optional;
+     * null skips the corresponding clause. counterpartyType filters CUSTOMER vs
+     * SUPPLIER, amount range works on absolute amount, date range on createdAt.
+     */
+    PageResponse<ArApTransaction> getPendingAdjustments(
+            String factoryId, CounterpartyType counterpartyType,
+            BigDecimal minAmount, BigDecimal maxAmount,
+            LocalDate fromDate, LocalDate toDate,
+            int page, int size);
+
+    /**
+     * R29 P2 batch approve: process up to 100 PENDING adjustment ids, returning
+     * per-id outcome. Atomic at the row level (each id is its own @Transactional
+     * via approveAdjustment). 4-eyes still enforced — submitter ids are skipped
+     * with reason "审批人不能与提交人相同 (4 眼原则)".
+     */
+    java.util.Map<String, Object> batchApproveAdjustments(
+            String factoryId, java.util.List<String> transactionIds, Long approvedBy);
+
+    /**
+     * R29 P2 batch reject: same shape as batch approve. Reason applies to all.
+     */
+    java.util.Map<String, Object> batchRejectAdjustments(
+            String factoryId, java.util.List<String> transactionIds,
+            Long approvedBy, String reason);
 
     /** 对账单：指定期间的交易明细 + 期初/期末余额 */
     Map<String, Object> getStatement(String factoryId, CounterpartyType counterpartyType,

@@ -88,6 +88,22 @@ router = APIRouter(
 # Singleton handler instances. Each handler caches its own per-(factory_id,
 # sub_sector) analyzer / engine state — instantiating once at module load
 # preserves those caches across HTTP requests.
+# BUG #1 FIX (Apr 15 2026): per-section data_kind hint for autoResolve.
+# When multiple uploads of different dataTypes co-exist (e.g. QHJ uploads pos+finance+reviews+sales),
+# autoResolve must pick the right kind, not just MAX(created_at). Default "pos" matches the
+# pre-existing handler-implicit assumption (most handlers expect POS data).
+SECTION_DATA_KIND = {
+    "cost_rigidity": "finance",
+    "expense_breakdown": "finance",
+    "department_pnl": "finance",
+    "store_pnl_one_pager": "finance",
+    "review_analysis": "reviews",
+    "review_competitive": "reviews",
+    "sales_plan_tracking": "sales_summary",
+    # Everything else defaults to "pos" (set in compute_section)
+}
+
+
 HANDLERS = {
     "cost_rigidity": CostRigidityHandler(),
     "diagnostics": DiagnosticsHandler(),
@@ -180,8 +196,11 @@ def compute_section(
 
     # ── Auto-resolve upload data when called from Tool-Skill pipeline ──
     # If no upload_id and no POS data in params, try loading from latest upload.
+    # FIX BUG #1 (Apr 15 2026): pick upload by section's data_kind, not just MAX(created_at).
+    # Multi-file scenario (5 dataTypes co-exist) was breaking 34/36 sections.
     context: dict[str, Any] = {}
-    auto_resolve_meta: dict[str, Any] = {"triggered": False, "reason": "not_attempted"}
+    data_kind = SECTION_DATA_KIND.get(section_name, "pos")
+    auto_resolve_meta: dict[str, Any] = {"triggered": False, "reason": "not_attempted", "dataKind": data_kind}
     if not body.upload_id and not body.params.get("pos_df"):
         auto_resolve_meta["triggered"] = True
         try:
@@ -191,9 +210,15 @@ def compute_section(
             db = next(get_db())
             try:
                 upload_repo = UploadRepository(db)
-                uploads = upload_repo.get_by_factory(body.factory_id, limit=1)
-                if uploads:
-                    latest = uploads[0]
+                # PRIMARY: dataKind-aware pick
+                latest = upload_repo.get_latest_for_data_kind(body.factory_id, data_kind)
+                pick_strategy = f"data_kind={data_kind}"
+                # FALLBACK: any latest if dataKind has no match (preserves prior demo behaviour)
+                if latest is None:
+                    latest = upload_repo.get_latest_for_data_kind(body.factory_id, "any")
+                    pick_strategy = "any (fallback)"
+
+                if latest:
                     req = SectionRequest(
                         factory_id=body.factory_id,
                         upload_id=str(latest.id),
@@ -208,7 +233,10 @@ def compute_section(
                     row_dicts = data_repo.get_by_upload_id(body.factory_id, latest.id)
                     if row_dicts:
                         df = pd.DataFrame(row_dicts)
+                        # Place in both pos_df (legacy) and the data_kind-specific slot so
+                        # finance/reviews handlers can opt into reading from their own slot.
                         context["pos_df"] = df
+                        context[f"{data_kind}_df"] = df
                         context["upload_id"] = latest.id
                         context["file_name"] = latest.file_name
                         auto_resolve_meta.update({
@@ -216,16 +244,17 @@ def compute_section(
                             "uploadId": latest.id,
                             "fileName": latest.file_name,
                             "rows": len(df),
+                            "pickStrategy": pick_strategy,
                         })
                         logger.info(
-                            "Auto-resolved upload %d (%s) for factory %s: %d rows",
-                            latest.id, latest.file_name, body.factory_id, len(df),
+                            "Auto-resolved upload %d (%s) for factory %s: %d rows [data_kind=%s, %s]",
+                            latest.id, latest.file_name, body.factory_id, len(df), data_kind, pick_strategy,
                         )
                     else:
                         auto_resolve_meta["reason"] = "upload_found_but_no_rows"
                         auto_resolve_meta["uploadId"] = latest.id
                 else:
-                    auto_resolve_meta["reason"] = "no_uploads_for_factory"
+                    auto_resolve_meta["reason"] = "no_uploads_for_factory_or_kind"
             finally:
                 db.close()
         except Exception as e:

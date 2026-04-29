@@ -46,6 +46,7 @@
             <el-empty v-else description="请先选择模块" />
           </template>
           <PermissionMatrix v-else-if="activeTab === 'permissions' && selectedModule" :factory-id="factoryId" :module-code="selectedModule" />
+          <ModulePermissionMatrix v-else-if="activeTab === 'module-permissions'" :factory-id="factoryId" />
           <ToolSkillMatrix v-else-if="activeTab === 'tools'" :factory-id="factoryId" />
           <!-- Round 4 Fix P1-10: Scheduler Panel (新增) -->
           <SchedulerPanel v-else-if="activeTab === 'scheduler'" :factory-id="factoryId" />
@@ -108,6 +109,7 @@ import ValidationRulePanel from './components/ValidationRulePanel.vue'
 import FieldConfigPanel from './components/FieldConfigPanel.vue'
 import PageEditor from './PageEditor.vue'
 import PermissionMatrix from './components/PermissionMatrix.vue'
+import ModulePermissionMatrix from './components/ModulePermissionMatrix.vue'
 import ToolSkillMatrix from './components/ToolSkillMatrix.vue'
 import SchedulerPanel from './components/SchedulerPanel.vue'
 import AIChatPanel from './components/AIChatPanel.vue'
@@ -157,7 +159,7 @@ async function applyChanges() {
     await aiApplyDiffs(factoryId.value, diffs)
     ElMessage.success('变更已应用')
     pendingChanges.value = []
-  } catch { ElMessage.error('应用失败') }
+  } catch { /* axios interceptor already displayed error toast */ }
 }
 
 // Round 7a: all action functions now run under withLock() to prevent double-submit.

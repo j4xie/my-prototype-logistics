@@ -9,7 +9,23 @@
             <el-tag v-if="data" size="small">{{ data.items.length }} 个菜品</el-tag>
           </div>
           <div class="header-right">
-            <el-select v-model="selectedUploadId" placeholder="选择数据源" filterable style="width: 280px" @change="handleSelectUpload">
+            <el-radio-group v-model="mode" size="small" @change="onModeChange">
+              <el-radio-button value="revenue">按品均收入</el-radio-button>
+              <el-radio-button value="margin">按毛利率 (BCG 真实版)</el-radio-button>
+            </el-radio-group>
+            <!-- Margin threshold: classic BCG 50%, thinner restaurants 30-40%, premium 60%+ -->
+            <div v-if="mode === 'margin'" class="margin-threshold-box">
+              <span class="threshold-label">毛利分界:</span>
+              <el-slider
+                v-model="marginThreshold"
+                :min="0.2" :max="0.8" :step="0.05"
+                :format-tooltip="(v: number) => (v * 100).toFixed(0) + '%'"
+                style="width: 120px"
+                @change="onModeChange"
+              />
+              <span class="threshold-value">{{ (marginThreshold * 100).toFixed(0) }}%</span>
+            </div>
+            <el-select v-model="selectedUploadId" placeholder="选择数据源" filterable style="width: 280px; margin-left: 8px" @change="handleSelectUpload">
               <el-option v-for="u in uploads" :key="u.id" :label="`${u.fileName} (${u.rowCount}行)`" :value="u.id" />
             </el-select>
           </div>
@@ -33,18 +49,21 @@
         </el-row>
 
         <!-- Scatter chart -->
+        <CapabilityGate card-id="menu_top_dishes" :requires="['combo_string']">
         <el-card shadow="hover" style="margin-top: 16px">
           <div id="chart-quadrant-full" style="height: 480px" />
         </el-card>
+        </CapabilityGate>
 
         <!-- Filter + table -->
+        <CapabilityGate card-id="menu_dish_revenue" :requires="['combo_string', 'net_amount']">
         <el-card shadow="hover" style="margin-top: 16px">
           <div class="filter-bar">
             <el-radio-group v-model="filterQuadrant">
               <el-radio-button value="">全部</el-radio-button>
               <el-radio-button value="Star">明星</el-radio-button>
-              <el-radio-button value="Plow">耕牛</el-radio-button>
-              <el-radio-button value="Puzzle">谜题</el-radio-button>
+              <el-radio-button value="Plow">金牛</el-radio-button>
+              <el-radio-button value="Puzzle">问题</el-radio-button>
               <el-radio-button value="Dog">瘦狗</el-radio-button>
             </el-radio-group>
             <el-input v-model="searchKeyword" placeholder="搜索菜品名" clearable style="width: 200px" />
@@ -75,7 +94,9 @@
             style="margin-top: 12px; justify-content: flex-end"
           />
         </el-card>
+        </CapabilityGate>
       </template>
+      <UnlockMoreCTA />
     </el-card>
 
     <!-- Item detail drawer -->
@@ -105,6 +126,68 @@ import echarts from '@/utils/echarts'
 import { useChartResize } from '@/composables/useChartResize'
 import { useRestaurantAnalytics } from '@/composables/useRestaurantAnalytics'
 import type { MenuQuadrantData, MenuQuadrantItem } from '@/types/restaurant-analytics'
+import { pythonFetch } from '@/api/smartbi/common'
+// Day 9 数据织网 Sub-Project A: capability-driven card visibility
+import { useCapability } from '@/composables/useCapability'
+import CapabilityGate from '@/components/CapabilityGate.vue'
+import UnlockMoreCTA from '@/components/UnlockMoreCTA.vue'
+
+const { fetchCapability } = useCapability()
+// Prime capability cache (fire-and-forget, useCapability handles errors fail-open).
+fetchCapability()
+
+// Apr 24 Plan C Phase 7+: mode toggle between legacy (品均收入) vs BCG-proper (毛利率)
+const mode = ref<'revenue' | 'margin'>('revenue')
+// Map: dish name → marginRate (0-1), qty, grossProfit. Filled when mode=margin.
+const marginMap = ref<Record<string, { rate: number; qty: number; grossProfit: number; revenue: number }>>({})
+const marginLoading = ref(false)
+// Adjustable threshold: the cutoff between "high margin" and "low margin"
+// for BCG quadrant classification. Default 50% is classic BCG; restaurants
+// with thinner margins may want 30-40%; premium venues 60%+.
+const marginThreshold = ref(0.5)
+
+async function loadMarginData() {
+  marginLoading.value = true
+  try {
+    // days=365 covers legacy POS uploads (e.g. qhj 2025 full year).
+    // When data becomes more recent, FE can expose this as a user-selectable range.
+    const res = await pythonFetch('/api/smartbi/restaurant-ops/gross-margin?days=365') as {
+      success: boolean
+      data?: { dishes: Array<{ name: string; qty: number; revenue: number; marginRate: number; grossProfit: number; hasCost: boolean }> }
+    }
+    if (res.success && res.data) {
+      marginMap.value = {}
+      for (const d of res.data.dishes || []) {
+        if (d.hasCost) marginMap.value[d.name] = { rate: d.marginRate, qty: d.qty, grossProfit: d.grossProfit, revenue: d.revenue }
+      }
+    }
+  } catch (e) {
+    console.warn('[menu-board] margin load failed:', e)
+  } finally {
+    marginLoading.value = false
+  }
+}
+
+function onModeChange() {
+  // Check if gross-margin page just triggered an ETL sync — if so invalidate cache
+  // so BCG margin mode reflects the fresh data without a full page reload.
+  let dirty = false
+  try {
+    const last = sessionStorage.getItem('restaurantOps.marginDirty')
+    const seen = sessionStorage.getItem('restaurantOps.marginSeenAt')
+    if (last && last !== seen) {
+      dirty = true
+      sessionStorage.setItem('restaurantOps.marginSeenAt', last)
+    }
+  } catch { /* ignore */ }
+  const needsLoad = mode.value === 'margin' && (dirty || Object.keys(marginMap.value).length === 0)
+  if (needsLoad) {
+    if (dirty) marginMap.value = {}
+    loadMarginData().then(() => nextTick(() => renderChart()))
+  } else {
+    nextTick(() => renderChart())
+  }
+}
 
 const containerRef = ref<HTMLElement>()
 useChartResize(containerRef)
@@ -130,12 +213,47 @@ function handleSelectUpload(id: number) {
 
 const quadrants = computed(() => {
   if (!data.value) return []
-  const s = data.value.summary
+  const isM = mode.value === 'margin'
+  if (!isM) {
+    const s = data.value.summary
+    return [
+      { key: 'Star', label: '明星菜', count: s.starCount, color: '#67C23A', desc: '高销量 + 高收入' },
+      { key: 'Plow', label: '金牛菜', count: s.plowCount, color: '#E6A23C', desc: '高销量 + 低收入' },
+      { key: 'Puzzle', label: '问题菜', count: s.puzzleCount, color: '#409EFF', desc: '低销量 + 高收入' },
+      { key: 'Dog', label: '瘦狗菜', count: s.dogCount, color: '#F56C6C', desc: '低销量 + 低收入' },
+    ]
+  }
+  // Margin mode: re-count via marginMap using adjustable threshold.
+  // Note: xlsx-parsed item.name is often an order-combo string containing
+  // multiple dish names joined with '+'. We match by substring against the
+  // seeded dish names (longest-first so "招牌青花椒味(2-3人份)" wins over
+  // "招牌青花椒味" prefix).
+  const qm = data.value.qtyMedian
+  const mt = marginThreshold.value
+  const counts = { Star: 0, Plow: 0, Puzzle: 0, Dog: 0 }
+  const dishRates = Object.entries(marginMap.value)
+    .map(([name, info]) => ({ name, rate: info.rate }))
+    .sort((a, b) => b.name.length - a.name.length)
+  const rateOf = (itemName: string): number => {
+    const direct = marginMap.value[itemName]
+    if (direct) return direct.rate
+    for (const { name, rate } of dishRates) if (itemName.includes(name)) return rate
+    return 0
+  }
+  for (const i of data.value.items) {
+    const rate = rateOf(i.name)
+    const highQty = i.quantity >= qm
+    const highMargin = rate >= mt
+    const k = highQty && highMargin ? 'Star'
+            : highQty && !highMargin ? 'Plow'
+            : !highQty && highMargin ? 'Puzzle' : 'Dog'
+    counts[k as 'Star'|'Plow'|'Puzzle'|'Dog']++
+  }
   return [
-    { key: 'Star', label: '明星菜', count: s.starCount, color: '#67C23A', desc: '高销量 + 高收入' },
-    { key: 'Plow', label: '耕牛菜', count: s.plowCount, color: '#E6A23C', desc: '高销量 + 低收入' },
-    { key: 'Puzzle', label: '谜题菜', count: s.puzzleCount, color: '#409EFF', desc: '低销量 + 高收入' },
-    { key: 'Dog', label: '瘦狗菜', count: s.dogCount, color: '#F56C6C', desc: '低销量 + 低收入' },
+    { key: 'Star',   label: '明星菜', count: counts.Star,   color: '#67C23A', desc: '高销量 + 高毛利 (核心赚钱菜)' },
+    { key: 'Plow',   label: '金牛菜', count: counts.Plow,   color: '#E6A23C', desc: '高销量 + 低毛利 (引流菜,可优化成本)' },
+    { key: 'Puzzle', label: '问题菜', count: counts.Puzzle, color: '#409EFF', desc: '低销量 + 高毛利 (待推广的赚钱菜)' },
+    { key: 'Dog',   label: '瘦狗菜', count: counts.Dog,   color: '#F56C6C', desc: '低销量 + 低毛利 (考虑下架)' },
   ]
 })
 
@@ -156,15 +274,15 @@ function tagType(q: string): '' | 'success' | 'warning' | 'info' | 'danger' {
 }
 
 function quadrantLabel(q: string): string {
-  const map: Record<string, string> = { Star: '明星', Plow: '耕牛', Puzzle: '谜题', Dog: '瘦狗' }
+  const map: Record<string, string> = { Star: '明星', Plow: '金牛', Puzzle: '问题', Dog: '瘦狗' }
   return map[q] || q
 }
 
 function getSuggestion(q: string): string {
   const map: Record<string, string> = {
     Star: '明星菜品是核心收入来源，保持品质稳定，适当提价测试弹性，作为招牌菜重点推广。',
-    Plow: '耕牛菜品销量高但品均收入低，考虑优化食材成本、调整份量或组合套餐提升单品收入。',
-    Puzzle: '谜题菜品品均收入高但销量低，加大推广力度（推荐位/服务员推荐），或调整价格刺激需求。',
+    Plow: '金牛菜品销量高但品均收入低，考虑优化食材成本、调整份量或组合套餐提升单品收入。',
+    Puzzle: '问题菜品品均收入高但销量低，加大推广力度（推荐位/服务员推荐），或调整价格刺激需求。',
     Dog: '瘦狗菜品销量和品均收入均低，考虑优化口味/呈现，或逐步淘汰替换为新品。',
   }
   return map[q] || ''
@@ -189,24 +307,76 @@ function renderChart() {
   }
   const qm = data.value.qtyMedian
   const pm = data.value.profitMedian
+  const isMarginMode = mode.value === 'margin'
 
-  // Clip axes to P95 to prevent outlier compression
-  const allProfits = data.value.items.map(i => i.unitProfit).sort((a, b) => a - b)
-  const allQtys = data.value.items.map(i => i.quantity).sort((a, b) => a - b)
+  // Clip axes to P95 to prevent outlier compression.
+  // min=0 on both axes — sales count can't be negative; unitProfit is a revenue
+  // proxy that also shouldn't go below zero in a BCG quadrant.
+  // Ceil maxes so labels don't show JS float trails like "478.4000000000003".
+  const allProfits = data.value.items.map(i => Math.max(0, i.unitProfit)).sort((a, b) => a - b)
+  const allQtys = data.value.items.map(i => Math.max(0, i.quantity)).sort((a, b) => a - b)
   const p95Profit = allProfits[Math.floor(allProfits.length * 0.95)] || 100
   const p95Qty = allQtys[Math.floor(allQtys.length * 0.95)] || 100
-  const yMax = Math.max(p95Profit * 1.3, pm * 3)
-  const xMax = Math.max(p95Qty * 1.3, qm * 3)
-  const outlierCount = data.value.items.filter(i => i.unitProfit > yMax || i.quantity > xMax).length
+  const yMaxLegacy = Math.ceil(Math.max(p95Profit * 1.3, pm * 3))
+  const xMax = Math.ceil(Math.max(p95Qty * 1.3, qm * 3))
+  // Margin mode: Y axis = rate 0-100%, threshold from adjustable marginThreshold
+  const yMax = isMarginMode ? 100 : yMaxLegacy
+  const yMedian = isMarginMode ? marginThreshold.value * 100 : pm
+
+  // Re-classify quadrant for margin mode based on (quantity vs qm, margin% vs threshold)
+  const pointsByQuadrant: Record<string, Array<{ value: number[]; name: string; _raw: number[]; _hasMargin?: boolean }>> = {
+    Star: [], Plow: [], Puzzle: [], Dog: [],
+  }
+  const outliersList: string[] = []
+  // Longest-first list of seeded dish names with margin rate — for substring
+  // match against xlsx order-combo item names (e.g. '招牌青花椒味(单人份)+米饭+打包盒').
+  const dishRatesForChart = Object.entries(marginMap.value)
+    .map(([name, info]) => ({ name, rate: info.rate }))
+    .sort((a, b) => b.name.length - a.name.length)
+
+  for (const i of data.value.items) {
+    let yVal: number
+    let quadrant: string
+    let hasMargin = true
+    if (isMarginMode) {
+      // Same longest-first substring matcher as quadrants computed above —
+      // supports order-combo item names from xlsx containing multiple dishes.
+      const direct = marginMap.value[i.name]
+      let matchedRate = 0
+      if (direct) {
+        matchedRate = direct.rate
+      } else {
+        for (const { name, rate } of dishRatesForChart) if (i.name.includes(name)) { matchedRate = rate; break }
+      }
+      if (matchedRate > 0) {
+        yVal = matchedRate * 100
+      } else {
+        hasMargin = false
+        yVal = 0  // place at bottom so user sees "no data" cluster
+      }
+      const highQty = i.quantity >= qm
+      const highMargin = yVal >= marginThreshold.value * 100
+      quadrant = highQty && highMargin ? 'Star'
+               : highQty && !highMargin ? 'Plow'
+               : !highQty && highMargin ? 'Puzzle' : 'Dog'
+    } else {
+      yVal = i.unitProfit
+      quadrant = i.quadrant
+    }
+    if (i.quantity > xMax || yVal > yMax) outliersList.push(i.name)
+    pointsByQuadrant[quadrant].push({
+      value: [Math.min(i.quantity, xMax), Math.min(yVal, yMax)],
+      name: i.name,
+      _raw: [i.quantity, yVal],
+      _hasMargin: hasMargin,
+    })
+  }
+  const outlierCount = outliersList.length
 
   const series = Object.entries(colorMap).map(([q, color]) => ({
     name: quadrantLabel(q),
     type: 'scatter' as const,
-    data: data.value!.items.filter(i => i.quadrant === q).map(i => ({
-      value: [Math.min(i.quantity, xMax), Math.min(i.unitProfit, yMax)],
-      name: i.name,
-      _raw: [i.quantity, i.unitProfit],
-    })),
+    data: pointsByQuadrant[q],
     itemStyle: { color },
     symbolSize: 10,
   }))
@@ -218,6 +388,11 @@ function renderChart() {
       formatter: (p: Record<string, unknown>) => {
         const d = p.data as Record<string, unknown>
         const raw = (d._raw || p.value) as number[]
+        const hasMargin = d._hasMargin !== false
+        if (isMarginMode) {
+          if (!hasMargin) return `<b>${p.name}</b><br/>销量: ${raw[0]}<br/>毛利率: 无配方数据`
+          return `<b>${p.name}</b><br/>销量: ${raw[0]}<br/>毛利率: ${raw[1].toFixed(1)}%`
+        }
         return `<b>${p.name}</b><br/>销量: ${raw[0]}<br/>品均收入: ¥${raw[1].toFixed(1)}`
       },
     },
@@ -232,18 +407,23 @@ function renderChart() {
     xAxis: {
       name: '销量',
       type: 'value',
+      min: 0,
       max: xMax,
       splitLine: { show: false },
+      axisLabel: { formatter: (v: number) => String(Math.round(v)) },
     },
     yAxis: {
-      name: '品均收入 (元)',
+      name: isMarginMode ? '毛利率 (%)' : '品均收入 (元)',
       type: 'value',
+      min: 0,
       max: yMax,
       splitLine: { lineStyle: { type: 'dashed' } },
+      axisLabel: { formatter: (v: number) =>
+        isMarginMode ? v + '%' : (v >= 1e4 ? (v / 1e4).toFixed(1) + '万' : String(Math.round(v))) },
     },
     series: [
       ...series,
-      // Median lines
+      // Median lines — margin mode uses 50% threshold
       {
         type: 'line',
         markLine: {
@@ -251,7 +431,9 @@ function renderChart() {
           lineStyle: { type: 'dashed', color: '#999' },
           data: [
             { xAxis: qm, label: { formatter: `销量中位数: ${qm.toFixed(0)}` } },
-            { yAxis: pm, label: { formatter: `品均收入中位数: ¥${pm.toFixed(1)}` } },
+            { yAxis: yMedian, label: { formatter: isMarginMode
+                ? `毛利率分界: ${(marginThreshold.value * 100).toFixed(0)}%`
+                : `品均收入中位数: ¥${pm.toFixed(1)}` } },
           ],
         },
         data: [],
@@ -282,7 +464,10 @@ onUnmounted(() => {
 .page-card { border-radius: 8px; }
 .card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
 .header-left { display: flex; align-items: center; gap: 8px; }
-.header-right { display: flex; gap: 8px; }
+.header-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.margin-threshold-box { display: flex; align-items: center; gap: 8px; padding: 0 10px; border-left: 1px solid #e4e7ed; }
+.threshold-label { font-size: 12px; color: #606266; white-space: nowrap; }
+.threshold-value { font-size: 12px; font-weight: 600; color: #409eff; min-width: 32px; }
 .page-title { font-size: 16px; font-weight: 600; }
 
 .summary-row { margin-top: 8px; }

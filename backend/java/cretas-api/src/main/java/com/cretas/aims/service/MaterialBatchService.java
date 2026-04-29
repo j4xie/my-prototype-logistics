@@ -5,6 +5,7 @@ import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.material.ConvertToFrozenRequest;
 import com.cretas.aims.dto.material.UndoFrozenRequest;
 import com.cretas.aims.dto.material.CreateMaterialBatchRequest;
+import com.cretas.aims.dto.material.UpdateMaterialBatchRequest;
 import com.cretas.aims.dto.material.MaterialBatchDTO;
 import com.cretas.aims.entity.enums.MaterialBatchStatus;
 import java.math.BigDecimal;
@@ -26,7 +27,7 @@ public interface MaterialBatchService {
      /**
      * 更新原材料批次
       */
-    MaterialBatchDTO updateMaterialBatch(String factoryId, String batchId, CreateMaterialBatchRequest request);
+    MaterialBatchDTO updateMaterialBatch(String factoryId, String batchId, UpdateMaterialBatchRequest request);
      /**
      * 删除原材料批次
       */

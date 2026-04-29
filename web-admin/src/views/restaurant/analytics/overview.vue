@@ -53,10 +53,12 @@
         <!-- KPI Cards -->
         <el-row :gutter="16" class="kpi-row">
           <el-col :xs="12" :sm="8" :md="4">
+            <CapabilityGate card-id="restaurant_overview_revenue" :requires="['date', 'net_amount']">
             <div class="kpi-card">
               <div class="kpi-label">总营收</div>
               <div class="kpi-value success">{{ formatMoney(totalRevenue) }}</div>
             </div>
+            </CapabilityGate>
           </el-col>
           <el-col :xs="12" :sm="8" :md="4">
             <div class="kpi-card">
@@ -65,10 +67,12 @@
             </div>
           </el-col>
           <el-col :xs="12" :sm="8" :md="4">
+            <CapabilityGate card-id="restaurant_overview_stores" :requires="['store_name']">
             <div class="kpi-card">
               <div class="kpi-label">门店数</div>
               <div class="kpi-value">{{ data.storeComparison.stores.length }}</div>
             </div>
+            </CapabilityGate>
           </el-col>
           <el-col :xs="12" :sm="8" :md="4">
             <div class="kpi-card">
@@ -96,6 +100,7 @@
         <el-row :gutter="16" style="margin-top: 16px">
           <!-- Quadrant mini scatter -->
           <el-col :xs="24" :md="12">
+            <CapabilityGate card-id="restaurant_overview_top_dish" :requires="['combo_string', 'qty_sold']">
             <el-card shadow="hover" class="chart-card" @click="$router.push('/restaurant/analytics/menu')">
               <template #header>
                 <div class="chart-title clickable">
@@ -105,6 +110,7 @@
               </template>
               <div id="chart-quadrant-mini" style="height: 280px" />
             </el-card>
+            </CapabilityGate>
           </el-col>
 
           <!-- Store ranking bar -->
@@ -325,6 +331,7 @@
           </el-col>
         </el-row>
       </template>
+      <UnlockMoreCTA />
     </el-card>
   </div>
 </template>
@@ -336,6 +343,14 @@ import echarts from '@/utils/echarts'
 import { useChartResize } from '@/composables/useChartResize'
 import { useRestaurantAnalytics } from '@/composables/useRestaurantAnalytics'
 import type { RestaurantAnalyticsResult } from '@/types/restaurant-analytics'
+// Day 9 数据织网 Sub-Project A: capability-driven card visibility
+import { useCapability } from '@/composables/useCapability'
+import CapabilityGate from '@/components/CapabilityGate.vue'
+import UnlockMoreCTA from '@/components/UnlockMoreCTA.vue'
+
+const { fetchCapability } = useCapability()
+// Prime capability cache (fire-and-forget, useCapability handles errors fail-open).
+fetchCapability()
 
 const containerRef = ref<HTMLElement>()
 useChartResize(containerRef)
@@ -396,14 +411,16 @@ function renderQuadrantMini() {
   }
   const items = data.value.menuQuadrant.items
 
-  // Clip axes to P95 to prevent outlier compression
-  const profits = items.map(i => i.unitProfit).sort((a, b) => a - b)
-  const qtys = items.map(i => i.quantity).sort((a, b) => a - b)
-  const yMax = (profits[Math.floor(profits.length * 0.95)] || 100) * 1.3
-  const xMax = (qtys[Math.floor(qtys.length * 0.95)] || 100) * 1.3
+  // Clip axes to P95 to prevent outlier compression.
+  // Revenue can't be negative — floor to 0 so BCG scatter doesn't show a -100 gridline.
+  // Round yMax/xMax to avoid floating-point trails like "478.4000000000003".
+  const profits = items.map(i => Math.max(0, i.unitProfit)).sort((a, b) => a - b)
+  const qtys = items.map(i => Math.max(0, i.quantity)).sort((a, b) => a - b)
+  const yMax = Math.ceil((profits[Math.floor(profits.length * 0.95)] || 100) * 1.3)
+  const xMax = Math.ceil((qtys[Math.floor(qtys.length * 0.95)] || 100) * 1.3)
 
   const series = Object.keys(colorMap).map(q => ({
-    name: q === 'Star' ? '明星' : q === 'Plow' ? '耕牛' : q === 'Puzzle' ? '谜题' : '瘦狗',
+    name: q === 'Star' ? '明星' : q === 'Plow' ? '金牛' : q === 'Puzzle' ? '问题' : '瘦狗',
     type: 'scatter' as const,
     data: items.filter(i => i.quadrant === q).map(i => ({ value: [Math.min(i.quantity, xMax), Math.min(i.unitProfit, yMax)], _raw: [i.quantity, i.unitProfit] })),
     itemStyle: { color: colorMap[q] },
@@ -414,8 +431,8 @@ function renderQuadrantMini() {
     tooltip: { trigger: 'item', confine: true, formatter: (p: Record<string, unknown>) => { const d = p.data as Record<string, unknown>; const raw = (d._raw || p.value) as number[]; return `销量: ${raw[0]}, 品均收入: ¥${raw[1].toFixed(1)}` } },
     legend: { bottom: 0, textStyle: { fontSize: 11 } },
     grid: { left: 50, right: 20, top: 20, bottom: 40 },
-    xAxis: { name: '销量', type: 'value', max: xMax, splitLine: { show: false } },
-    yAxis: { name: '品均收入', type: 'value', max: yMax, splitLine: { lineStyle: { type: 'dashed' } } },
+    xAxis: { name: '销量', type: 'value', min: 0, max: xMax, splitLine: { show: false }, axisLabel: { formatter: (v: number) => String(Math.round(v)) } },
+    yAxis: { name: '品均收入 (元)', type: 'value', min: 0, max: yMax, splitLine: { lineStyle: { type: 'dashed' } }, axisLabel: { formatter: (v: number) => v >= 1e4 ? (v / 1e4).toFixed(1) + '万' : String(Math.round(v)) } },
     series,
   })
 }
@@ -477,11 +494,15 @@ function renderOpsRadarMini() {
   chart.setOption({
     tooltip: { confine: true },
     radar: {
+      // Expanded to 6 dimensions (from 4) so the radar forms a hexagon rather than
+      // a triangle/quad — much easier to read at small size.
       indicator: [
         { name: '招牌集中度', max: 100 },
         { name: '退货率(反)', max: 10 },
         { name: '价格定位', max: Math.max(ops.priceVsBenchmark.actual * 1.5, ops.priceVsBenchmark.benchmarkMedian * 2, 200) },
         { name: '稳定性', max: 100 },
+        { name: '菜品丰富度', max: 100 },
+        { name: '客单价水平', max: 300 },
       ],
       radius: '60%',
     },
@@ -493,6 +514,10 @@ function renderOpsRadarMini() {
           Math.max(0, 10 - ops.returnRate),
           ops.priceVsBenchmark.actual,
           ops.consistencyScore,
+          // Menu diversity = min(dishCount / 200, 1) * 100. 200+ items caps at 100.
+          Math.min(100, (data.value.menuQuadrant.items.length / 200) * 100),
+          // Average ticket = clamp(avg_bill, 0, 300)
+          Math.max(0, Math.min(300, ops.priceVsBenchmark.actual || 0)),
         ],
         name: '当前水平',
         areaStyle: { opacity: 0.2 },

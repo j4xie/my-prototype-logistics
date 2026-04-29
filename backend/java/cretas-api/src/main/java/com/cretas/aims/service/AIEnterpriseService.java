@@ -1579,7 +1579,8 @@ public class AIEnterpriseService {
         // 4. 验证用户角色权限 (userRole已在上面提取)
         if (userRole != null && !aiIntentService.hasPermission(intentCode, userRole)) {
             log.warn("User role '{}' does not have permission for intent: {}", userRole, intentCode);
-            throw new BusinessException("您没有权限执行此类AI操作: " + intent.getIntentName());
+            throw new BusinessException(403, "您没有权限执行此类AI操作: " + intent.getIntentName())
+                    .withHint("请联系管理员申请所需权限");
         }
 
         // 5. 检查是否需要审批 (CRITICAL敏感度)

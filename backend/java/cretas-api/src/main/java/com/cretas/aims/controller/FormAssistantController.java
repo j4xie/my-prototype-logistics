@@ -1,6 +1,7 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.AIQuotaUsage;
 import com.cretas.aims.repository.AIQuotaUsageRepository;
 import com.cretas.aims.service.FormAssistantService;
@@ -285,6 +286,7 @@ public class FormAssistantController {
      * @param request 解析请求
      * @return 解析后的字段值
      */
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/parse")
     @Operation(summary = "AI表单解析",
                description = "将用户自然语言输入(文本或语音转文字)解析为表单字段值")
@@ -366,6 +368,7 @@ public class FormAssistantController {
      * 立即建立 SSE 连接，完成后一次性返回完整结果
      * 事件: processing → result → done
      */
+    @RequirePermission({"analytics:read_write"})
     @PostMapping(value = "/parse/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "流式 AI 表单解析 (SSE)",
                description = "SSE 流式输出。事件: processing, result, done, error")
@@ -449,6 +452,7 @@ public class FormAssistantController {
      * @param request OCR解析请求
      * @return 解析后的字段值
      */
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/ocr")
     @Operation(summary = "AI表单OCR解析",
                description = "从图片(如送货单、质检报告)中提取并解析表单字段值")
@@ -546,6 +550,7 @@ public class FormAssistantController {
      * @param request 生成请求
      * @return 生成的字段定义列表
      */
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/generate-schema")
     @Operation(summary = "AI生成Schema字段",
                description = "根据自然语言描述生成Formily JSON Schema字段定义，用于动态表单配置")
@@ -658,6 +663,7 @@ public class FormAssistantController {
      * @param request 校验反馈请求
      * @return AI修正建议
      */
+    @RequirePermission({"analytics:read_write"})
     @PostMapping("/validation-feedback")
     @Operation(summary = "校验失败反馈",
                description = "表单校验失败时，将错误信息反馈给AI，获取修正建议和可能的修正值")

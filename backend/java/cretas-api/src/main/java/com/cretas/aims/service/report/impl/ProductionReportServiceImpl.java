@@ -150,11 +150,13 @@ public class ProductionReportServiceImpl implements ProductionReportService {
                 totalProfit.divide(totalRevenue, 4, RoundingMode.HALF_UP)
                         .multiply(BigDecimal.valueOf(100)).doubleValue() : 0.0;
         report.put("profitMargin", profitMargin);
-        // 应收应付
+        // 应收应付 (R42 BUG-13: 仅正余额; 客户预付分开统计)
         BigDecimal accountsReceivable = customerRepository.calculateTotalOutstandingBalance(factoryId);
         BigDecimal accountsPayable = supplierRepository.calculateTotalOutstandingBalance(factoryId);
+        BigDecimal customerPrepayments = customerRepository.calculateTotalPrepayments(factoryId);
         report.put("accountsReceivable", accountsReceivable != null ? accountsReceivable : BigDecimal.ZERO);
         report.put("accountsPayable", accountsPayable != null ? accountsPayable : BigDecimal.ZERO);
+        report.put("customerPrepayments", customerPrepayments != null ? customerPrepayments : BigDecimal.ZERO);
         return report;
     }
 

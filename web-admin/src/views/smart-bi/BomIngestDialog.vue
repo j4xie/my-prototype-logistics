@@ -245,7 +245,7 @@ async function removeMonthlyPurchase(period: string) {
   }
 }
 
-// ── 邓总 demo 快捷填入 (SKU) ──
+// ── 演示数据快捷填入 (SKU 样例) ──
 function fillDengSkuDemo() {
   newSku.value = {
     skuName: '招牌毛肚',
@@ -261,7 +261,7 @@ function fillDengSkuDemo() {
   };
 }
 
-// ── 邓总 demo 快捷填入 (Monthly) ──
+// ── 演示数据快捷填入 (月度汇总样例) ──
 function fillDengMonthlyDemo() {
   newMonthly.value = {
     period: '2026-02',
@@ -305,7 +305,7 @@ function fillDengMonthlyDemo() {
             <template #header>
               <div class="form-header">
                 <span>新增 / 更新 SKU</span>
-                <el-button size="small" @click="fillDengSkuDemo">邓总 demo</el-button>
+                <el-button size="small" @click="fillDengSkuDemo">填入演示数据</el-button>
               </div>
             </template>
 
@@ -479,7 +479,7 @@ function fillDengMonthlyDemo() {
             <template #header>
               <div class="form-header">
                 <span>新增 / 更新月度采购</span>
-                <el-button size="small" @click="fillDengMonthlyDemo">邓总 demo</el-button>
+                <el-button size="small" @click="fillDengMonthlyDemo">填入演示数据</el-button>
               </div>
             </template>
             <el-form label-width="110px" size="small">

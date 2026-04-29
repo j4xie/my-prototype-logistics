@@ -4,7 +4,7 @@ import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get, post, del } from '@/api/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Refresh } from '@element-plus/icons-vue';
+import { Plus, Refresh, Search } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
 
 const authStore = useAuthStore();
@@ -16,6 +16,7 @@ const loading = ref(false);
 const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
 const dialogVisible = ref(false);
+const searchKeyword = ref('');
 
 const priceTypeMap: Record<string, string> = {
   PURCHASE_PRICE: '采购价',
@@ -37,14 +38,17 @@ async function loadData() {
   if (!factoryId.value) return;
   loading.value = true;
   try {
-    const res = await get(`/${factoryId.value}/price-lists`, { params: { page: pagination.value.page, size: pagination.value.size } });
+    const params: Record<string, unknown> = { page: pagination.value.page, size: pagination.value.size };
+    const kw = searchKeyword.value.trim();
+    if (kw) params.keyword = kw;
+    const res = await get(`/${factoryId.value}/price-lists`, { params });
     if (res.success && res.data) {
       tableData.value = res.data.content || [];
       pagination.value.total = res.data.totalElements || 0;
     } else if (res.success === false) {
       ElMessage.error(res.message || '加载价格表失败');
     }
-  } catch { ElMessage.error('加载失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { loading.value = false; }
 }
 
@@ -62,7 +66,7 @@ async function handleCreate() {
     const res = await post(`/${factoryId.value}/price-lists`, form.value);
     if (res.success) { ElMessage.success('创建成功'); dialogVisible.value = false; loadData(); }
     else { ElMessage.error(res.message || '创建失败'); }
-  } catch { ElMessage.error('创建失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
 }
 
 async function handleDelete(id: string) {
@@ -71,11 +75,13 @@ async function handleDelete(id: string) {
     const res = await del(`/${factoryId.value}/price-lists/${id}`);
     if (res.success) { ElMessage.success('删除成功'); loadData(); }
     else { ElMessage.error(res.message || '删除失败'); }
-  } catch (error) { if (error !== 'cancel') ElMessage.error('删除失败'); }
+  } catch (error) { /* axios interceptor handles API errors; cancel from MessageBox is silent */ }
 }
 
 function handlePageChange(page: number) { pagination.value.page = page; loadData(); }
 function handleSizeChange(size: number) { pagination.value.size = size; pagination.value.page = 1; loadData(); }
+function handleSearch() { pagination.value.page = 1; loadData(); }
+function handleSearchClear() { searchKeyword.value = ''; handleSearch(); }
 </script>
 
 <template>
@@ -88,6 +94,16 @@ function handleSizeChange(size: number) { pagination.value.size = size; paginati
             <span class="data-count">共 {{ pagination.total }} 条</span>
           </div>
           <div class="header-right">
+            <el-input
+              v-model="searchKeyword"
+              placeholder="搜索价格表名称"
+              clearable
+              :prefix-icon="Search"
+              style="width: 240px; margin-right: 12px;"
+              @keyup.enter="handleSearch"
+              @clear="handleSearchClear"
+            />
+            <el-button type="primary" @click="handleSearch">搜索</el-button>
             <el-button v-if="canWrite" type="primary" :icon="Plus" @click="dialogVisible = true">新建价格表</el-button>
           </div>
         </div>
@@ -143,15 +159,15 @@ function handleSizeChange(size: number) { pagination.value.size = size; paginati
 
     <el-dialog v-model="dialogVisible" title="新建价格表" width="720px" destroy-on-close>
       <el-form :model="form" label-width="100px">
-        <el-form-item label="名称"><el-input v-model="form.name" /></el-form-item>
-        <el-form-item label="类型">
+        <el-form-item label="名称" required><el-input v-model="form.name" placeholder="例如:2025 Q2 采购标准价" /></el-form-item>
+        <el-form-item label="类型" required>
           <el-radio-group v-model="form.priceType">
             <el-radio value="PURCHASE_PRICE">采购价</el-radio>
             <el-radio value="SELLING_PRICE">销售价</el-radio>
             <el-radio value="TRANSFER_PRICE">调拨价</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="生效日期"><el-date-picker v-model="form.effectiveFrom" type="date" value-format="YYYY-MM-DD" /></el-form-item>
+        <el-form-item label="生效日期" required><el-date-picker v-model="form.effectiveFrom" type="date" value-format="YYYY-MM-DD" /></el-form-item>
         <el-form-item label="失效日期"><el-date-picker v-model="form.effectiveTo" type="date" value-format="YYYY-MM-DD" /></el-form-item>
         <el-divider>价格明细</el-divider>
         <div v-for="(item, idx) in form.items" :key="idx" class="item-row">

@@ -3,6 +3,8 @@ package com.cretas.aims.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 /**
@@ -34,22 +36,27 @@ public class ShipmentRecord extends BaseEntity {
     private String factoryId;
     @Column(name = "shipment_number", nullable = false, unique = true, length = 50)
     private String shipmentNumber;
+    @NotBlank(message = "客户ID不能为空")
     @Column(name = "customer_id", nullable = false, length = 191)
     private String customerId;
     @Column(name = "order_number", length = 100)
     private String orderNumber;
     @Column(name = "batch_number", length = 100)
     private String batchNumber;
+    @NotBlank(message = "产品名称不能为空")
     @Column(name = "product_name", nullable = false)
     private String productName;
+    @NotNull(message = "数量不能为空")
     @Column(name = "quantity", nullable = false, precision = 10, scale = 2)
     private BigDecimal quantity;
+    @NotBlank(message = "单位不能为空")
     @Column(name = "unit", nullable = false, length = 20)
     private String unit;
     @Column(name = "unit_price", precision = 10, scale = 2)
     private BigDecimal unitPrice;
     @Column(name = "total_amount", precision = 10, scale = 2)
     private BigDecimal totalAmount;
+    @NotNull(message = "发货日期不能为空")
     @Column(name = "shipment_date", nullable = false)
     private LocalDate shipmentDate;
     @Column(name = "delivery_address")
@@ -64,6 +71,12 @@ public class ShipmentRecord extends BaseEntity {
     private Long recordedBy;
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+    @Column(name = "vehicle_number", length = 50)
+    private String vehicleNumber;
+    @Column(name = "driver_name", length = 50)
+    private String driverName;
+    @Column(name = "driver_phone", length = 30)
+    private String driverPhone;
     // 关联关系 - 使用JsonIgnore避免懒加载序列化问题
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)

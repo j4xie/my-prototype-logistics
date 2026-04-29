@@ -89,6 +89,7 @@ class KnowledgeRetriever:
         self,
         query: str,
         categories: Optional[List[str]] = None,
+        subcategories: Optional[List[str]] = None,
         top_k: int = 5,
         similarity_threshold: float = 0.60,
         include_expired: bool = False,
@@ -106,6 +107,8 @@ class KnowledgeRetriever:
         Args:
             query: User query text
             categories: Filter by document categories (e.g., ['standard', 'additive'])
+            subcategories: Filter by document subcategory (e.g., ['restaurant'] limits
+                to restaurant manuals only). None = no subcategory filter (legacy behavior).
             top_k: Number of results to return
             similarity_threshold: Minimum cosine similarity threshold
             include_expired: Whether to include expired documents
@@ -133,12 +136,12 @@ class KnowledgeRetriever:
             query_embedding = await self._encode_query(raw_primary)
             if query_embedding is None:
                 logger.warning("Failed to encode query, falling back to text search")
-                return await self._text_search(query, categories, top_k)
+                return await self._text_search(query, categories, subcategories, top_k)
 
             # Step 2: Coarse retrieval size
             coarse_k = COARSE_TOP_K if (reranker.is_enabled or BM25_ENABLED) else top_k
             sql, params = self._build_vector_query(
-                query_embedding, categories, coarse_k, similarity_threshold, include_expired
+                query_embedding, categories, subcategories, coarse_k, similarity_threshold, include_expired
             )
 
             # Step 3: Execute vector search with original query embedding
@@ -153,7 +156,7 @@ class KnowledgeRetriever:
                     sq_embedding = await self._encode_query(raw_sq)
                     if sq_embedding:
                         sq_sql, sq_params = self._build_vector_query(
-                            sq_embedding, categories, coarse_k // 2,
+                            sq_embedding, categories, subcategories, coarse_k // 2,
                             similarity_threshold, include_expired
                         )
                         async with self._pool.acquire() as conn:
@@ -169,14 +172,14 @@ class KnowledgeRetriever:
             bm25_results = []
             if BM25_ENABLED:
                 bm25_results = await self._bm25_search(
-                    expanded_primary, categories, coarse_k, include_expired
+                    expanded_primary, categories, subcategories, coarse_k, include_expired
                 )
                 # Also BM25 search expanded sub-queries
                 if len(query_pairs) > 1:
                     seen_ids = {d.id for d in bm25_results}
                     for _, expanded_sq in query_pairs[1:]:
                         sq_bm25 = await self._bm25_search(
-                            expanded_sq, categories, coarse_k // 2, include_expired
+                            expanded_sq, categories, subcategories, coarse_k // 2, include_expired
                         )
                         for doc in sq_bm25:
                             if doc.id not in seen_ids:
@@ -195,7 +198,7 @@ class KnowledgeRetriever:
                     f"Vector+BM25 returned 0 results for query='{query[:50]}...', "
                     f"falling back to text search"
                 )
-                results = await self._text_search(query, categories, top_k)
+                results = await self._text_search(query, categories, subcategories, top_k)
                 return results[:top_k]
 
             # Log query rewriting info
@@ -246,6 +249,7 @@ class KnowledgeRetriever:
         self,
         query: str,
         categories: Optional[List[str]],
+        subcategories: Optional[List[str]],
         top_k: int,
         include_expired: bool = False,
     ) -> List[KnowledgeDocument]:
@@ -263,7 +267,11 @@ class KnowledgeRetriever:
 
         try:
             # Tokenize query with jieba
-            query_tokens = " & ".join(
+            # Use OR (|) instead of AND (&) for tolerant matching:
+            # query expansion adds synonyms ("翻台 turn over 桌次") that won't all
+            # exist in any single chunk; AND matching → 0 results forever.
+            # ts_rank_cd ordering still surfaces best matches first. (Round 5 audit fix)
+            query_tokens = " | ".join(
                 t for t in jieba.cut(query) if t.strip() and len(t.strip()) > 1
             )
             if not query_tokens:
@@ -290,6 +298,11 @@ class KnowledgeRetriever:
             if categories:
                 sql += f" AND category = ANY(${param_idx}::text[])"
                 params.append(categories)
+                param_idx += 1
+
+            if subcategories:
+                sql += f" AND subcategory = ANY(${param_idx}::text[])"
+                params.append(subcategories)
                 param_idx += 1
 
             if not include_expired:
@@ -448,6 +461,7 @@ class KnowledgeRetriever:
         self,
         query_embedding: List[float],
         categories: Optional[List[str]],
+        subcategories: Optional[List[str]],
         top_k: int,
         similarity_threshold: float,
         include_expired: bool,
@@ -473,6 +487,12 @@ class KnowledgeRetriever:
             params.append(categories)
             param_idx += 1
 
+        # Subcategory filter (domain routing — restaurant / factory / NULL)
+        if subcategories:
+            sql += f" AND subcategory = ANY(${param_idx}::text[])"
+            params.append(subcategories)
+            param_idx += 1
+
         # Expired filter
         if not include_expired:
             sql += " AND (expiry_date IS NULL OR expiry_date > CURRENT_DATE)"
@@ -492,6 +512,7 @@ class KnowledgeRetriever:
         self,
         query: str,
         categories: Optional[List[str]],
+        subcategories: Optional[List[str]],
         top_k: int,
     ) -> List[KnowledgeDocument]:
         """Fallback text-based search when embeddings unavailable."""
@@ -515,6 +536,11 @@ class KnowledgeRetriever:
             if categories:
                 sql += f" AND category = ANY(${param_idx}::text[])"
                 params.append(categories)
+                param_idx += 1
+
+            if subcategories:
+                sql += f" AND subcategory = ANY(${param_idx}::text[])"
+                params.append(subcategories)
                 param_idx += 1
 
             sql += f" ORDER BY similarity DESC LIMIT ${param_idx}"

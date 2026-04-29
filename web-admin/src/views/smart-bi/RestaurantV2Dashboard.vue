@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * SmartBI 餐饮 V2 Dashboard — 邓总救命组合 (Week 3.5)
+ * SmartBI 餐饮 V2 Dashboard — 餐饮综合分析
  *
  * 渲染 RestaurantAnalyzerV2 的 5 sections:
  *   1. Executive Summary (摘要 + 关键建议)
@@ -30,6 +30,7 @@ import {
 } from '@element-plus/icons-vue';
 import RestaurantChatPanel from './components/chat/RestaurantChatPanel.vue';
 import { getUploadHistory, type UploadHistoryItem } from '@/api/smartbi/upload';
+import { getFinanceSummary, type FinanceSummary } from '@/api/smartbi/gold';
 import {
   computeRestaurantAnalyticsV2,
   getRestaurantAnalyticsV2,
@@ -54,6 +55,7 @@ import {
   type MultiStoreComparison,
 } from '@/api/smartbi/restaurant-v2';
 import BomIngestDialog from './BomIngestDialog.vue';
+import TemplateGrid from './components/TemplateGrid.vue';
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
@@ -64,6 +66,7 @@ const selectedUploadId = ref<number | null>(null);
 const loading = ref(false);
 const report = ref<V2UnifiedReport | null>(null);
 const lastError = ref<string>('');
+const errorActionHint = ref<string>('');
 const performanceInfo = ref<{ totalSeconds: number; posRows: number } | null>(null);
 
 // Financial data (可选, 用户填)
@@ -80,14 +83,34 @@ const financialPrevious = ref({
   labor_cost: 0,
   rent: 0,
 });
-const subSector = ref<string>('火锅');
+// P1-4 fix: subSector default was hardcoded '火锅', placeholder "青花椒大丸百货店" —
+// both assumed 青花椒 火锅店. Make default generic '中餐' so 西餐/日料/快餐 etc.
+// don't see wrong industry. Placeholder now computed from factoryName (if present).
+const subSector = ref<string>('中餐');
 const storeName = ref<string>('');
-const period = ref<string>('2026-02');
+// Computed dynamic placeholder based on merchant identity
+const storePlaceholder = computed(() => {
+  // Try window auth payload (set via login)
+  const factoryName = (authStore as unknown as { factoryName?: string }).factoryName
+    || (window as unknown as { __factoryName?: string }).__factoryName
+    || '';
+  if (factoryName) {
+    const clean = factoryName.replace(/(有限公司|股份|集团|连锁|餐饮|管理)/g, '').trim();
+    return clean ? `例: ${clean}总店` : '例: 总店';
+  }
+  return '例: 总店';
+});
+// Apr 24 2026 P1-13: period 默认当前月 YYYY-MM, 不硬编码 2026-02 (历史写死值)
+const _thisMonth = (() => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+})();
+const period = ref<string>(_thisMonth);
 
 // P5 Task 5.3: chat drawer state
 const chatDrawerVisible = ref(false);
 
-// 邓总 demo 快捷填写
+// 演示数据快捷填写 (火锅店样例 P&L)
 function fillDengHuoguoDemo() {
   financialCurrent.value = {
     revenue: 731047.52,
@@ -102,14 +125,16 @@ function fillDengHuoguoDemo() {
     rent: 57324.0,
   };
   subSector.value = '火锅';
-  storeName.value = '鼎鲜火锅·义乌';
+  storeName.value = '示例店·火锅样例';
   period.value = '2026-02';
-  ElMessage.success('已填入邓总火锅 2026-02 真实 P&L 数据');
+  ElMessage.success('已填入火锅样例 P&L 演示数据');
 }
 
 // ── Lifecycle ──────────────────────────────────────
 onMounted(async () => {
   await loadUploads();
+  loadGoldKpi();
+  loadMarginKpi();
 });
 
 async function loadUploads() {
@@ -178,15 +203,145 @@ async function runAnalysis(force: boolean = false) {
       }
     } else {
       lastError.value = response.message || '分析失败';
-      ElMessage.error(lastError.value);
+      showAnalysisError(lastError.value);
     }
-  } catch (e: any) {
-    lastError.value = String(e?.message || e);
-    ElMessage.error(`分析异常: ${lastError.value}`);
+  } catch (e) {
+    // Apr 24 UX Rule 8: extract useful error message without losing info
+    const msg = e instanceof Error ? e.message : String(e);
+    lastError.value = msg;
+    showAnalysisError(msg);
   } finally {
     loading.value = false;
   }
 }
+
+// Apr 24 UX: sticky error toast with specific actionHint by error type
+// (Rule 8 四位一体: message 具体 / sticky / next action hint)
+function showAnalysisError(rawMsg: string) {
+  let actionHint = '';
+  if (rawMsg.includes('timeout') || rawMsg.includes('超时') || rawMsg.includes('Timeout')) {
+    actionHint = 'Python 服务响应超时。数据量大时可能需 30-60s,请稍后重试,或降低分析范围。';
+  } else if (rawMsg.includes('500') || rawMsg.includes('Internal Server')) {
+    actionHint = 'Python 服务内部错误。请联系管理员检查 python-test.log。';
+  } else if (rawMsg.includes('不存在') || rawMsg.includes('404')) {
+    actionHint = '上传数据可能已被删除,请重新选择其他上传。';
+  } else if (rawMsg.includes('未启用') || rawMsg.includes('模块')) {
+    actionHint = '您的工厂未启用餐饮 V2 分析模块,请联系管理员在 Canvas 配置中开启。';
+  }
+  errorActionHint.value = actionHint;
+  ElMessage({
+    message: actionHint ? `${rawMsg}\n${actionHint}` : rawMsg,
+    type: 'error',
+    duration: 0,      // Sticky — user must manually close
+    showClose: true,
+    dangerouslyUseHTMLString: false,
+    customClass: 'rv2-error-toast',
+  });
+}
+
+// ── Gold KPI strip (v1.1 cutover) ──────────────────
+// 独立于 V2 compute 的实时 KPI, 读 /gold/finance-summary (agg_daily). 页面打开即可见.
+function _todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+function _monthStartIso(offsetMonths = 0): string {
+  const d = new Date();
+  d.setMonth(d.getMonth() + offsetMonths, 1);
+  return d.toISOString().slice(0, 10);
+}
+const goldKpiRange = ref<[string, string]>([_monthStartIso(), _todayIso()]);
+const goldKpiShortcuts = [
+  { text: '本月', value: (): [Date, Date] => [new Date(new Date().setDate(1)), new Date()] },
+  { text: '近30天', value: (): [Date, Date] => {
+    const e = new Date(); const s = new Date(); s.setDate(s.getDate() - 29);
+    return [s, e];
+  }},
+  { text: '近90天', value: (): [Date, Date] => {
+    const e = new Date(); const s = new Date(); s.setDate(s.getDate() - 89);
+    return [s, e];
+  }},
+  { text: '2025全年', value: (): [Date, Date] => [new Date('2025-01-01'), new Date('2025-12-31')] },
+  { text: '2024全年', value: (): [Date, Date] => [new Date('2024-01-01'), new Date('2024-12-31')] },
+];
+const goldKpi = ref<FinanceSummary | null>(null);
+const goldKpiLoading = ref(false);
+const goldKpiError = ref<string>('');
+const goldKpiFallbackLabel = ref<string>('');
+
+// Apr 24 Plan C Phase 7+: margin KPI (restaurant ops gold)
+const marginKpi = ref<{ rate: number; profit: number; dishes: Array<{name: string, grossProfit: number, marginRate: number}> }>({
+  rate: 0, profit: 0, dishes: [],
+});
+async function loadMarginKpi() {
+  if (!factoryId.value) return;
+  try {
+    const { pythonFetch } = await import('@/api/smartbi/common');
+    const res = await pythonFetch('/api/smartbi/restaurant-ops/gross-margin?days=30') as {
+      success: boolean;
+      data?: { avgRate: number; totalProfit: number; dishes: Array<{name: string; grossProfit: number; marginRate: number; hasCost: boolean}> };
+    };
+    if (res.success && res.data) {
+      marginKpi.value.rate = res.data.avgRate || 0;
+      marginKpi.value.profit = res.data.totalProfit || 0;
+      marginKpi.value.dishes = (res.data.dishes || [])
+        .filter(d => d.hasCost)
+        .sort((a, b) => b.grossProfit - a.grossProfit)
+        .slice(0, 3);
+    }
+  } catch (e) {
+    console.warn('[margin-kpi] load failed:', e);
+  }
+}
+
+async function loadGoldKpi() {
+  if (!factoryId.value) return;
+  const [s, e] = goldKpiRange.value;
+  if (!s || !e) return;
+  goldKpiLoading.value = true;
+  goldKpiError.value = '';
+  try {
+    const primary = await getFinanceSummary({
+      factoryId: factoryId.value,
+      startDate: s,
+      endDate: e,
+      topNStores: 5,
+    });
+    if (primary && primary.billCount > 0) {
+      goldKpi.value = primary;
+      goldKpiFallbackLabel.value = '';
+    } else {
+      // Fallback chain: 近 90 天 → 上一年全年 → 再前一年, 避免用户看到空 KPI.
+      const y = new Date().getFullYear();
+      const iso = (d: Date): string => d.toISOString().slice(0, 10);
+      const chain: Array<[string, string, string]> = [
+        (() => { const e2 = new Date(); const s2 = new Date(); s2.setDate(s2.getDate() - 89); return [iso(s2), iso(e2), '近90天'] as [string, string, string]; })(),
+        [`${y - 1}-01-01`, `${y - 1}-12-31`, `${y - 1}全年`],
+        [`${y - 2}-01-01`, `${y - 2}-12-31`, `${y - 2}全年`],
+      ];
+      for (const [cs, ce, label] of chain) {
+        const fb = await getFinanceSummary({ factoryId: factoryId.value, startDate: cs, endDate: ce, topNStores: 5 });
+        if (fb && fb.billCount > 0) {
+          goldKpi.value = fb;
+          goldKpiFallbackLabel.value = label;
+          break;
+        }
+      }
+      if (!goldKpi.value || goldKpi.value.billCount === 0) {
+        goldKpi.value = primary;  // keep zero-state for display
+        goldKpiFallbackLabel.value = '';
+      }
+    }
+  } catch (err: unknown) {
+    goldKpiError.value = err instanceof Error ? err.message : String(err);
+    goldKpi.value = null;
+    goldKpiFallbackLabel.value = '';
+  } finally {
+    goldKpiLoading.value = false;
+  }
+}
+
+watch(goldKpiRange, loadGoldKpi);
+watch(factoryId, (v) => { if (v) loadGoldKpi(); });
 
 // ── Computed helpers ───────────────────────────────
 
@@ -550,8 +705,7 @@ function formatCurrency(v?: number): string {
       <template #header>
         <div class="header-title">
           <el-icon><DataAnalysis /></el-icon>
-          <span>餐饮 SmartBI V2 — 邓总救命组合</span>
-          <el-tag type="success" size="small">Week 2+3</el-tag>
+          <span>餐饮综合分析</span>
         </div>
       </template>
 
@@ -591,7 +745,7 @@ function formatCurrency(v?: number): string {
           <el-form-item label="门店">
             <el-input
               v-model="storeName"
-              placeholder="例: 鼎鲜火锅·义乌"
+              :placeholder="storePlaceholder"
               style="width: 200px"
             />
           </el-form-item>
@@ -635,7 +789,7 @@ function formatCurrency(v?: number): string {
               <template #default>
                 填财务数据后, 系统能跑成本弹性指数 + 对标预警 + 诊断. 不填则只做渠道毛利率 + 命名归一.
                 <el-button link type="primary" @click="fillDengHuoguoDemo">
-                  一键填入邓总火锅 demo 数据
+                  一键填入火锅样例演示数据
                 </el-button>
               </template>
             </el-alert>
@@ -721,14 +875,124 @@ function formatCurrency(v?: number): string {
       </div>
     </el-card>
 
-    <!-- Error -->
+    <!-- Gold KPI Strip (v1.1 cutover, 独立于 V2 compute 的实时数据) -->
+    <el-card class="gold-kpi-card" shadow="hover" v-loading="goldKpiLoading">
+      <template #header>
+        <div class="gold-kpi-header">
+          <div class="gold-kpi-title">
+            <el-icon color="#67C23A"><TrendCharts /></el-icon>
+            <span>实时 KPI 看板</span>
+            <el-tag size="small" type="success">Gold · agg_daily</el-tag>
+            <el-tag v-if="goldKpiFallbackLabel" size="small" type="warning" effect="plain">
+              所选区间无数据,已显示 {{ goldKpiFallbackLabel }}
+            </el-tag>
+          </div>
+          <el-date-picker
+            v-model="goldKpiRange"
+            type="daterange"
+            range-separator="→"
+            start-placeholder="开始"
+            end-placeholder="结束"
+            value-format="YYYY-MM-DD"
+            :shortcuts="goldKpiShortcuts"
+            size="small"
+            style="width: 300px"
+          />
+        </div>
+      </template>
+
+      <div v-if="goldKpiError" class="gold-kpi-error">
+        Gold 查询失败: {{ goldKpiError }}
+      </div>
+      <div v-else-if="goldKpi && goldKpi.billCount === 0" class="gold-kpi-empty">
+        所选区间无 POS 数据 (请上传 Excel 或调整区间)
+      </div>
+      <el-row v-else-if="goldKpi" :gutter="16" class="gold-kpi-metrics">
+        <el-col :span="marginKpi.rate > 0 ? 4 : 6">
+          <el-statistic :value="goldKpi.totalRevenue" title="总营收" :precision="2" prefix="¥" />
+          <div class="gold-kpi-sub">{{ goldKpi.dayCount }} 天</div>
+        </el-col>
+        <el-col :span="marginKpi.rate > 0 ? 4 : 6">
+          <el-statistic :value="goldKpi.billCount" title="订单数" :precision="0" />
+        </el-col>
+        <el-col :span="marginKpi.rate > 0 ? 4 : 6">
+          <el-statistic :value="goldKpi.avgBillValue ?? 0" title="客单价" :precision="2" prefix="¥" />
+        </el-col>
+        <el-col :span="marginKpi.rate > 0 ? 4 : 6">
+          <el-statistic :value="goldKpi.storeCount" title="门店数" :precision="0" />
+        </el-col>
+        <!-- Phase 7+: margin KPIs if POS × recipe data exists -->
+        <el-col v-if="marginKpi.rate > 0" :span="4">
+          <el-statistic :value="marginKpi.rate * 100" title="平均毛利率" :precision="1" suffix="%" />
+          <div class="gold-kpi-sub" style="color: #67c23a">基于 Gold</div>
+        </el-col>
+        <el-col v-if="marginKpi.rate > 0" :span="4">
+          <el-statistic :value="marginKpi.profit" title="总毛利" :precision="2" prefix="¥" />
+          <div class="gold-kpi-sub">
+            <el-button size="small" type="text" @click="$router.push('/restaurant/analytics/gross-margin')">
+              详细 →
+            </el-button>
+          </div>
+        </el-col>
+      </el-row>
+      <div v-else class="gold-kpi-empty">正在加载...</div>
+
+      <div v-if="goldKpi && goldKpi.topStores.length > 0" class="gold-kpi-stores">
+        <div class="gold-kpi-stores-title">门店 Top 5 (按营收)</div>
+        <el-table :data="goldKpi.topStores" size="small" stripe>
+          <el-table-column prop="storeName" label="门店" />
+          <el-table-column prop="revenue" label="营收" width="160" align="right">
+            <template #default="{ row }">{{ formatCurrency(row.revenue) }}</template>
+          </el-table-column>
+          <el-table-column prop="billCount" label="订单数" width="120" align="right">
+            <template #default="{ row }">{{ row.billCount.toLocaleString() }}</template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <!-- Phase 7+: Top 3 毛利菜品 — encouraging "promote these" insight -->
+      <div v-if="marginKpi.dishes.length > 0" class="gold-kpi-stores" style="margin-top: 14px">
+        <div class="gold-kpi-stores-title" style="display:flex;align-items:center;gap:8px">
+          <span>菜品 Top 3 (按毛利)</span>
+          <el-tag size="small" type="success">跨模块: POS × 配方</el-tag>
+        </div>
+        <el-table :data="marginKpi.dishes" size="small" stripe>
+          <el-table-column prop="name" label="菜品" />
+          <el-table-column prop="grossProfit" label="毛利" width="140" align="right">
+            <template #default="{ row }">¥{{ row.grossProfit.toFixed(2) }}</template>
+          </el-table-column>
+          <el-table-column prop="marginRate" label="毛利率" width="120" align="center">
+            <template #default="{ row }">
+              <el-tag :type="row.marginRate >= 0.6 ? 'success' : row.marginRate >= 0.4 ? '' : 'warning'" size="small">
+                {{ (row.marginRate * 100).toFixed(1) }}%
+              </el-tag>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </el-card>
+
+    <!-- Error — Apr 24 UX: adds retry button + specific action hint -->
     <el-alert
       v-if="lastError"
       type="error"
-      :closable="false"
+      :closable="true"
       :title="lastError"
+      show-icon
       style="margin-top: 16px"
-    />
+      @close="lastError = ''"
+    >
+      <template #default>
+        <div style="margin-top: 8px; display: flex; gap: 8px; align-items: center;">
+          <el-button size="small" type="primary" :loading="loading" @click="runAnalysis(true)">
+            重新分析
+          </el-button>
+          <span v-if="errorActionHint" style="color: #909399; font-size: 13px;">
+            💡 {{ errorActionHint }}
+          </span>
+        </div>
+      </template>
+    </el-alert>
 
     <!-- Report sections -->
     <template v-if="report">
@@ -1673,11 +1937,12 @@ function formatCurrency(v?: number): string {
       </el-card>
     </template>
 
-    <!-- Empty state -->
+    <!-- Empty state (P2-16: shrink 图 from default ~200px to 80px, 压缩占屏) -->
     <el-empty
       v-else-if="!loading"
-      description="选择 upload → 点'跑 V2 分析' → 查看邓总救命组合"
-      style="margin-top: 40px"
+      :image-size="80"
+      description="选择上传数据 → 点「跑 V2 分析」 → 查看餐饮综合分析 (诊断 / 预警 / 渠道毛利 / 对标 / BOM / 评论等 15+ section)"
+      style="margin-top: 16px; padding: 16px;"
     />
 
     <!-- W5.2 — BOM Ingest Dialog -->
@@ -1702,6 +1967,9 @@ function formatCurrency(v?: number): string {
         :upload-id="selectedUploadId != null ? String(selectedUploadId) : undefined"
       />
     </el-drawer>
+
+    <!-- Week 6 Template Surfacing: show analysis results for this page -->
+    <TemplateGrid page-key="restaurantv2" :factory-id="factoryId || 'F001'" />
   </div>
 </template>
 
@@ -1712,6 +1980,47 @@ function formatCurrency(v?: number): string {
 
 .header-card {
   margin-bottom: 16px;
+}
+
+.gold-kpi-card {
+  margin-bottom: 16px;
+  border-top: 3px solid #67C23A;
+}
+.gold-kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.gold-kpi-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 15px;
+}
+.gold-kpi-metrics {
+  padding: 4px 0;
+}
+.gold-kpi-sub {
+  color: #909399;
+  font-size: 12px;
+  margin-top: 4px;
+}
+.gold-kpi-empty, .gold-kpi-error {
+  color: #909399;
+  text-align: center;
+  padding: 24px 0;
+}
+.gold-kpi-error { color: #F56C6C; }
+.gold-kpi-stores {
+  margin-top: 16px;
+}
+.gold-kpi-stores-title {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: #606266;
 }
 
 .header-title {

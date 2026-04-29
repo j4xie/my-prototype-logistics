@@ -79,7 +79,7 @@ async function loadProductTypes() {
       const data = response.data;
       productTypes.value = Array.isArray(data) ? data : (data.content || []);
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('加载产品类型失败:', error);
   }
 }
@@ -111,9 +111,9 @@ async function loadData() {
     } else {
       tableData.value = [];
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('加载工序数据失败:', error);
-    ElMessage.error('加载数据失败');
+    if (!error?.actionHint) ElMessage.error('加载数据失败');
     // TODO: If process-tasks API doesn't return enough data, consider using sample data
     tableData.value = [];
   } finally {

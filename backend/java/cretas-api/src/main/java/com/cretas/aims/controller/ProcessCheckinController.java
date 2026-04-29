@@ -1,6 +1,8 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.ProcessCheckinRecord;
 import com.cretas.aims.entity.ProductionBatch;
 import com.cretas.aims.entity.ProductionReport;
@@ -29,6 +31,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/process-checkin")
 @RequiredArgsConstructor
+@RequireModule("production_report")
 public class ProcessCheckinController {
 
     private final ProcessCheckinRecordRepository checkinRepository;
@@ -37,6 +40,7 @@ public class ProcessCheckinController {
     private final ProductionReportRepository reportRepository;
     private final UserRepository userRepository;
 
+    @RequirePermission({"production:read_write"})
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ApiResponse<Map<String, Object>> checkIn(
@@ -85,6 +89,7 @@ public class ProcessCheckinController {
         return ApiResponse.success(result);
     }
 
+    @RequirePermission({"production:read_write"})
     @PostMapping("/checkout/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Transactional

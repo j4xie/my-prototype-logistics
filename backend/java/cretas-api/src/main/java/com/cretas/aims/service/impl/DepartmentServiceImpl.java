@@ -50,7 +50,8 @@ public class DepartmentServiceImpl implements DepartmentService {
         // 检查部门编码唯一性
         if (dto.getCode() != null && !dto.getCode().isEmpty()) {
             if (departmentRepository.existsByFactoryIdAndCode(factoryId, dto.getCode())) {
-                throw new BusinessException("部门编码已存在: " + dto.getCode());
+                throw new BusinessException(409, "部门编码已存在: " + dto.getCode())
+                        .withHint("请使用其他部门编码").withHintTarget("code");
             }
         }
 
@@ -83,13 +84,15 @@ public class DepartmentServiceImpl implements DepartmentService {
                 .orElseThrow(() -> new EntityNotFoundException("Department", String.valueOf(id)));
 
         if (!department.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权限操作此部门");
+            throw new BusinessException(403, "无权限操作此部门")
+                    .withHint("当前部门不属于该工厂, 无法操作");
         }
 
         // 检查部门编码唯一性
         if (dto.getCode() != null && !dto.getCode().equals(department.getCode())) {
             if (departmentRepository.existsByFactoryIdAndCode(factoryId, dto.getCode())) {
-                throw new BusinessException("部门编码已存在: " + dto.getCode());
+                throw new BusinessException(409, "部门编码已存在: " + dto.getCode())
+                        .withHint("请使用其他部门编码").withHintTarget("code");
             }
             department.setCode(dto.getCode());
         }
@@ -120,19 +123,22 @@ public class DepartmentServiceImpl implements DepartmentService {
                 .orElseThrow(() -> new EntityNotFoundException("Department", String.valueOf(id)));
 
         if (!department.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权限操作此部门");
+            throw new BusinessException(403, "无权限操作此部门")
+                    .withHint("当前部门不属于该工厂, 无法操作");
         }
 
         // 检查是否有子部门
         List<Department> childDepartments = departmentRepository.findByFactoryIdAndParentDepartmentId(factoryId, id);
         if (!childDepartments.isEmpty()) {
-            throw new BusinessException("该部门下有子部门，无法删除");
+            throw new BusinessException(409, "该部门下有子部门，无法删除")
+                    .withHint("请先删除或迁移子部门后再删除该部门");
         }
 
         // 检查是否有员工
         long employeeCount = userRepository.countByFactoryIdAndDepartment(factoryId, department.getName());
         if (employeeCount > 0) {
-            throw new BusinessException("该部门下有员工，无法删除");
+            throw new BusinessException(409, "该部门下有员工，无法删除")
+                    .withHint("请先将该部门员工调离后再删除");
         }
 
         departmentRepository.delete(department);
@@ -147,7 +153,8 @@ public class DepartmentServiceImpl implements DepartmentService {
                 .orElseThrow(() -> new EntityNotFoundException("Department", String.valueOf(id)));
 
         if (!department.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权限查看此部门");
+            throw new BusinessException(403, "无权限查看此部门")
+                    .withHint("当前部门不属于该工厂, 无法查看");
         }
 
         return convertToDTO(department);
@@ -185,7 +192,8 @@ public class DepartmentServiceImpl implements DepartmentService {
     public PageResponse<DepartmentDTO> searchDepartments(String factoryId, String keyword, Pageable pageable) {
         log.debug("搜索部门: factoryId={}, keyword={}", factoryId, keyword);
 
-        Page<Department> page = departmentRepository.searchDepartments(factoryId, keyword, pageable);
+        Page<Department> page = departmentRepository.searchDepartments(factoryId,
+            com.cretas.aims.util.SqlLikeEscaper.escape(keyword), pageable);
         List<DepartmentDTO> dtos = page.getContent().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
@@ -258,7 +266,8 @@ public class DepartmentServiceImpl implements DepartmentService {
                     .orElseThrow(() -> new EntityNotFoundException("Department", String.valueOf(id)));
 
             if (!department.getFactoryId().equals(factoryId)) {
-                throw new BusinessException("无权限操作部门: " + id);
+                throw new BusinessException(403, "无权限操作部门: " + id)
+                        .withHint("批量操作中包含其他工厂的部门, 请重新选择");
             }
 
             department.setIsActive(isActive);

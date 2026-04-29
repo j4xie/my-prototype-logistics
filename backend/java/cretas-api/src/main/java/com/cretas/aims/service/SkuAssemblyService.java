@@ -58,7 +58,8 @@ public class SkuAssemblyService {
                 .orElseThrow(() -> new ResourceNotFoundException("产品模板不存在: " + templateId));
 
         if (template.getTemplateId() != null) {
-            throw new BusinessException("不能从 SKU 创建 SKU，请选择产品模板");
+            throw new BusinessException(400, "不能从 SKU 创建 SKU，请选择产品模板")
+                    .withHint("请选择 templateId 为空的产品作为模板").withHintTarget("templateId");
         }
 
         // 2. 加载客户 (可选)
@@ -73,7 +74,8 @@ public class SkuAssemblyService {
 
         // 检查编码唯一性
         if (productTypeRepository.existsByFactoryIdAndCode(factoryId, skuCode)) {
-            throw new BusinessException("SKU编码已存在: " + skuCode + "，该客户+产品+配方的SKU可能已创建");
+            throw new BusinessException(409, "SKU编码已存在: " + skuCode)
+                    .withHint("该客户+产品+配方的SKU可能已创建, 请刷新列表查看").withHintTarget("skuCode");
         }
 
         // 4. 克隆模板为 SKU

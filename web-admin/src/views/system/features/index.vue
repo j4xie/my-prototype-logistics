@@ -184,7 +184,7 @@ async function handleToggle(config: FeatureConfig) {
   } catch (error) {
     // Revert on failure
     config.enabled = !config.enabled;
-    ElMessage.error('操作失败');
+    // Interceptor already shows specific toast for ApiError
   }
 }
 
@@ -220,7 +220,8 @@ async function saveConfig() {
       ElMessage.error(response.message || '保存失败');
     }
   } catch (error) {
-    ElMessage.error('保存失败');
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', error);
   } finally {
     saving.value = false;
   }

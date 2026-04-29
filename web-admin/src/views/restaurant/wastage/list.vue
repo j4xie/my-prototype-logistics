@@ -8,6 +8,7 @@
             <span class="data-count">共 {{ pagination.total }} 条</span>
           </div>
           <div class="header-right">
+            <el-button type="info" plain @click="handleAiAnalyze">🤖 AI 分析</el-button>
             <el-button :icon="Download" @click="handleExport">导出</el-button>
             <el-button v-if="canWrite" type="primary" :icon="Plus" @click="handleCreate">新建损耗记录</el-button>
           </div>
@@ -41,6 +42,20 @@
           </div>
         </el-col>
       </el-row>
+
+      <!-- Apr 24 P1 analytics strip: trend + ranking from current table rows -->
+      <AnalyticsStrip
+        :rows="tableData"
+        date-field="wastageDate"
+        value-field="estimatedCost"
+        category-field="type"
+        :category-name-map="wastageTypeMap"
+        trend-title="损耗金额趋势"
+        ranking-title="按损耗类型排行"
+        value-unit="元"
+        :is-currency="true"
+        :top-n="5"
+      />
 
       <div class="search-bar" role="search" aria-label="损耗记录筛选">
         <el-date-picker v-model="filterDateRange" type="daterange" range-separator="至" start-placeholder="开始日期"
@@ -165,6 +180,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { Plus, Search, Refresh, Download } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus';
 import { useFactoryId } from '@/composables/useFactoryId';
@@ -173,6 +189,12 @@ import { getWastageRecords, getWastageRecord, getWastageStatistics, createWastag
 import { emptyCell, formatDateCell, formatAmount, exportTableToExcel } from '@/utils/tableFormatters';
 import { formatDate } from '@/utils/dateFormat';
 import type { WastageRecord } from '@/types/restaurant';
+import { handleCatchError } from '@/utils/errorToast';
+import AnalyticsStrip from '../components/AnalyticsStrip.vue';
+
+const wastageTypeMap: Record<string, string> = {
+  EXPIRED: '过期', DAMAGED: '破损', SPOILED: '变质', PROCESSING: '加工损耗', OTHER: '其他',
+};
 
 const factoryId = useFactoryId();
 const permissionStore = usePermissionStore();
@@ -279,6 +301,11 @@ async function loadData() {
   } finally { loading.value = false; }
 }
 
+const router = useRouter();
+function handleAiAnalyze() {
+  router.push({ path: '/smart-bi/query', query: { q: '最近30天损耗最多的食材和类型占比' } });
+}
+
 function handleSearch() { pagination.value.page = 1; loadData(); }
 function handleRefresh() { filterStatus.value = ''; filterType.value = ''; filterDateRange.value = null; handleSearch(); }
 function handleCreate() { dialogForm.value = emptyForm(); dialogVisible.value = true; }
@@ -324,7 +351,7 @@ async function handleSubmit(row: WastageRecord) {
     } else {
       ElMessage.error(res.message || '提交失败');
     }
-  } catch { ElMessage.error('提交失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '提交失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 
@@ -342,7 +369,7 @@ async function handleApprove(row: WastageRecord) {
     } else {
       ElMessage.error(res.message || '审批失败');
     }
-  } catch { ElMessage.error('审批失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '审批失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 
@@ -362,7 +389,7 @@ async function handleReject(row: WastageRecord) {
     } else {
       ElMessage.error(res.message || '驳回失败');
     }
-  } catch { ElMessage.error('驳回失败，请检查网络'); }
+  } catch (e) { handleCatchError(e, '驳回失败，请检查网络'); }
   finally { submitting.value = false; }
 }
 

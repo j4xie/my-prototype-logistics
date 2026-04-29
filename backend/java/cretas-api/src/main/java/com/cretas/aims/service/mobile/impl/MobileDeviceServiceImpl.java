@@ -39,11 +39,13 @@ public class MobileDeviceServiceImpl implements MobileDeviceService {
         // 查找激活码
         DeviceActivation activation = deviceActivationRepository
                 .findByActivationCode(request.getActivationCode())
-                .orElseThrow(() -> new BusinessException("无效的激活码"));
+                .orElseThrow(() -> new BusinessException(404, "无效的激活码")
+                        .withHint("请联系管理员获取有效激活码").withHintTarget("activationCode"));
 
         // 验证激活码状态
         if (!"PENDING".equals(activation.getStatus())) {
-            throw new BusinessException("激活码已被使用或已过期");
+            throw new BusinessException(409, "激活码已被使用或已过期")
+                    .withHint("请联系管理员获取新的激活码").withHintTarget("activationCode");
         }
 
         // 检查是否过期
@@ -51,7 +53,8 @@ public class MobileDeviceServiceImpl implements MobileDeviceService {
             LocalDateTime.now().isAfter(activation.getExpiresAt())) {
             activation.setStatus("EXPIRED");
             deviceActivationRepository.save(activation);
-            throw new BusinessException("激活码已过期");
+            throw new BusinessException(409, "激活码已过期")
+                    .withHint("请联系管理员获取新的激活码").withHintTarget("activationCode");
         }
 
         // 更新激活信息

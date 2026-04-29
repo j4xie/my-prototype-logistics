@@ -121,10 +121,14 @@ async function loadStatistics() {
     if (response.success && response.data) {
       statistics.value = response.data;
     }
-  } catch {
-    ElMessage.error('加载统计数据失败');
+  } catch (e) {
+    // Interceptor shows specific toast; dedupe fallback
+    console.error('[失败]', e);
   }
 }
+
+// Apr 24 2026: 后端 /sessions 端点未实现, 避免误报 toast
+const featureNotImplemented = ref(false);
 
 async function loadData() {
   loading.value = true;
@@ -143,8 +147,16 @@ async function loadData() {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
     }
-  } catch {
-    ElMessage.error('加载校准数据失败');
+  } catch (e) {
+    // Apr 24: 404 (endpoint 未实现) 时走友好 empty state, 不弹 toast
+    const err = e as { status?: number; code?: string; message?: string };
+    if (err?.status === 404 || err?.code === 'NOT_FOUND' || /资源不存在|not.*found/i.test(err?.message || '')) {
+      featureNotImplemented.value = true;
+      tableData.value = [];
+      pagination.value.total = 0;
+    } else {
+      console.error('[加载校准数据失败]', e);
+    }
   } finally {
     loading.value = false;
   }
@@ -219,10 +231,8 @@ async function submitCreate() {
       ElMessage.error(response.message || '创建失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('创建失败:', error);
-      ElMessage.error('创建失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError.
+    if (error !== 'cancel') console.error('创建失败:', error);
   } finally {
     createLoading.value = false;
   }
@@ -245,10 +255,8 @@ async function handleStart(row: CalibrationSession) {
       ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('操作失败:', error);
-      ElMessage.error('操作失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError.
+    if (error !== 'cancel') console.error('操作失败:', error);
   } finally {
     loading.value = false;
   }
@@ -272,10 +280,8 @@ async function handleComplete(row: CalibrationSession) {
       ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('操作失败:', error);
-      ElMessage.error('操作失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError.
+    if (error !== 'cancel') console.error('操作失败:', error);
   } finally {
     loading.value = false;
   }
@@ -298,10 +304,8 @@ async function handleCancel(row: CalibrationSession) {
       ElMessage.error(response.message || '操作失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('操作失败:', error);
-      ElMessage.error('操作失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError.
+    if (error !== 'cancel') console.error('操作失败:', error);
   } finally {
     loading.value = false;
   }
@@ -325,10 +329,8 @@ async function handleDelete(row: CalibrationSession) {
       ElMessage.error(response.message || '删除失败');
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('删除失败:', error);
-      ElMessage.error('删除失败');
-    }
+    // Interceptor already shows specific sticky toast for ApiError.
+    if (error !== 'cancel') console.error('删除失败:', error);
   } finally {
     loading.value = false;
   }
@@ -523,8 +525,19 @@ function getScoreColor(score?: number) {
         <el-button :icon="Refresh" @click="handleReset">重置</el-button>
       </div>
 
+      <!-- Apr 24 2026: 后端 /sessions 未实现的 friendly empty state -->
+      <el-alert v-if="featureNotImplemented" type="info" :closable="false" show-icon style="margin-bottom: 16px">
+        <template #title>
+          <strong>行为校准功能尚未上线</strong>
+        </template>
+        <template #default>
+          后端 API 正在开发中。本页是前端占位, 数据接口上线后自动生效。
+          如有紧急需求, 请联系平台管理员。
+        </template>
+      </el-alert>
+
       <!-- 数据表格 -->
-      <el-table :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
+      <el-table v-if="!featureNotImplemented" :data="tableData" v-loading="loading" empty-text="暂无数据" stripe border style="width: 100%">
         <el-table-column prop="sessionName" label="会话名称" min-width="180">
           <template #default="{ row }">
             <div class="session-name-cell">

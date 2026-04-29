@@ -9,7 +9,8 @@
             <el-tag v-if="stores.length" size="small">{{ stores.length }} 家门店</el-tag>
           </div>
           <div class="header-right">
-            <el-select v-model="selectedUploadId" placeholder="选择数据源" filterable style="width: 280px" @change="handleSelectUpload">
+            <el-button type="info" plain @click="$router.push('/restaurant/analytics/gross-margin')">📊 菜品毛利分析 →</el-button>
+            <el-select v-model="selectedUploadId" placeholder="选择数据源" filterable style="width: 280px; margin-left: 8px" @change="handleSelectUpload">
               <el-option v-for="u in uploads" :key="u.id" :label="`${u.fileName} (${u.rowCount}行)`" :value="u.id" />
             </el-select>
           </div>
@@ -34,16 +35,34 @@
             <el-table-column prop="name" label="门店" min-width="160" show-overflow-tooltip />
             <el-table-column prop="revenue" label="营收(元)" width="130" align="right" sortable>
               <template #default="{ row }">
-                <span :class="{ 'weak-store': isWeakStore(row.name) }">{{ row.revenue.toLocaleString() }}</span>
+                <span :class="{ 'weak-store': isWeakStore(row.name) }">{{ formatAmount(row.revenue) }}</span>
               </template>
             </el-table-column>
             <el-table-column prop="orderCount" label="品项数" width="100" align="right" sortable />
             <el-table-column prop="avgTicket" label="品均收入" width="110" align="right" sortable>
-              <template #default="{ row }">¥{{ row.avgTicket.toFixed(0) }}</template>
+              <template #default="{ row }">{{ formatAmount(row.avgTicket) }}</template>
             </el-table-column>
             <el-table-column prop="discountPct" label="折扣率" width="100" align="right" sortable>
               <template #default="{ row }">
                 <span :class="{ 'high-discount': row.discountPct > 20 }">{{ row.discountPct.toFixed(1) }}%</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="毛利率" width="110" align="center" sortable
+                             :sort-method="(a: Record<string, unknown>, b: Record<string, unknown>) => marginSortValue((a as {name:string}).name) - marginSortValue((b as {name:string}).name)">
+              <template #default="{ row }">
+                <el-tooltip v-if="storeMarginMap[row.name] && storeMarginMap[row.name].dishesWithCost === 0"
+                            content="此门店菜品暂无配方成本数据,无法计算真实毛利率。请先在 数据→餐饮运营→配方管理 录入配方。"
+                            placement="top">
+                  <span style="color:#c0c4cc;cursor:help">— <span style="font-size:11px">无成本</span></span>
+                </el-tooltip>
+                <el-tag v-else-if="storeMarginMap[row.name]"
+                        :type="storeMarginMap[row.name].marginRate >= 0.6 ? 'success'
+                             : storeMarginMap[row.name].marginRate >= 0.4 ? ''
+                             : 'warning'"
+                        size="small">
+                  {{ (storeMarginMap[row.name].marginRate * 100).toFixed(1) }}%
+                </el-tag>
+                <span v-else style="color:#c0c4cc">—</span>
               </template>
             </el-table-column>
             <el-table-column label="状态" width="90" align="center">
@@ -80,6 +99,7 @@ import { ArrowLeft } from '@element-plus/icons-vue'
 import echarts from '@/utils/echarts'
 import { useChartResize } from '@/composables/useChartResize'
 import { useRestaurantAnalytics } from '@/composables/useRestaurantAnalytics'
+import { formatAmount } from '@/utils/tableFormatters'
 import type { StoreComparisonData } from '@/types/restaurant-analytics'
 
 const containerRef = ref<HTMLElement>()
@@ -93,13 +113,50 @@ const {
 const stores = computed(() => storeData.value?.stores ?? [])
 const weakStores = computed(() => storeData.value?.weakStores ?? [])
 
+// Apr 24 Plan C Phase 7++: per-store margin from Gold
+interface StoreMarginRow { storeId: number; name: string; revenue: number; grossProfit: number; marginRate: number; bills: number; dishesWithCost: number; totalDishes: number }
+const storeMarginMap = ref<Record<string, StoreMarginRow>>({})
+
+async function loadStoreMargin() {
+  // P1-6: days=365 to align with other Gold pages (gross-margin.vue, menu-board.vue)
+  // so historic POS data (e.g. qhj 2025) matches on first load. Using 30 days would
+  // return empty for any merchant whose POS is not recent, causing the 毛利率 column
+  // to silently show "—" for all rows.
+  try {
+    const { pythonFetch } = await import('@/api/smartbi/common')
+    const res = await pythonFetch('/api/smartbi/restaurant-ops/store-margin?days=365') as {
+      success: boolean
+      data?: { stores: StoreMarginRow[] }
+    }
+    if (res.success && res.data) {
+      const map: Record<string, StoreMarginRow> = {}
+      for (const s of res.data.stores || []) map[s.name] = s
+      storeMarginMap.value = map
+    }
+  } catch (e) {
+    console.warn('[store-compare] margin load failed:', e)
+  }
+}
+
 // Re-render chart when data changes
 watch(storeData, (val) => {
-  if (val) nextTick(() => setTimeout(renderChart, 300))
+  if (val) {
+    nextTick(() => setTimeout(renderChart, 300))
+    loadStoreMargin()  // Load margin in parallel (separate API)
+  }
 })
 
 function isWeakStore(name: string): boolean {
   return weakStores.value.includes(name)
+}
+
+// Treat "no cost data" stores as -1 so sort-desc parks them at the bottom
+// (not at the top with the fake 100% margin).
+function marginSortValue(name: string): number {
+  const m = storeMarginMap.value[name]
+  if (!m) return -1
+  if (m.dishesWithCost === 0) return -1
+  return m.marginRate
 }
 
 function renderChart() {
@@ -119,7 +176,7 @@ function renderChart() {
         const p = params[0] as Record<string, unknown>
         const store = stores.value.find(s => s.name === p.name)
         if (!store) return p.name
-        return `<b>${store.name}</b><br/>营收: ¥${store.revenue.toLocaleString()}<br/>品均收入: ¥${store.avgTicket.toFixed(0)}<br/>折扣率: ${store.discountPct.toFixed(1)}%`
+        return `<b>${store.name}</b><br/>营收: ${formatAmount(store.revenue)}<br/>品均收入: ${formatAmount(store.avgTicket)}<br/>折扣率: ${store.discountPct.toFixed(1)}%`
       },
     },
     grid: { left: 140, right: 30, top: 10, bottom: 20 },

@@ -1,11 +1,19 @@
 package com.cretas.aims.service.impl;
 
 import com.cretas.aims.entity.User;
+import com.cretas.aims.entity.config.FactoryModuleConfig;
 import com.cretas.aims.entity.enums.FactoryUserRole;
+import com.cretas.aims.entity.permission.PlatformRolePermission;
+import com.cretas.aims.repository.config.FactoryModuleConfigRepository;
+import com.cretas.aims.repository.permission.PlatformRolePermissionRepository;
 import com.cretas.aims.service.PermissionService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -18,13 +26,37 @@ import java.util.stream.Collectors;
 @Service
 public class PermissionServiceImpl implements PermissionService {
 
+    private static final Logger log = LoggerFactory.getLogger(PermissionServiceImpl.class);
+
+    @Autowired(required = false)
+    private PlatformRolePermissionRepository platformRepo;
+
+    @Autowired(required = false)
+    private FactoryModuleConfigRepository factoryConfigRepo;
+
+    // 简易 TTL cache: permissionKey -> [expiresAtMs, Boolean]
+    // Key: userId:permissionCode:factoryId
+    // TTL: 5 minutes. Cleared on any matrix update via invalidateCache().
+    private final Map<String, long[]> resolveCache = new ConcurrentHashMap<>();
+    private final Map<String, Boolean> resolveResult = new ConcurrentHashMap<>();
+    private static final long CACHE_TTL_MS = 5 * 60 * 1000;
+
+    /**
+     * 清除权限解析缓存. L1/L2 PUT API 调用时触发.
+     */
+    public void invalidateCache() {
+        resolveCache.clear();
+        resolveResult.clear();
+    }
+
     /**
      * 模块列表
      */
     private static final List<String> ALL_MODULES = Arrays.asList(
             "dashboard", "production", "warehouse", "quality",
             "procurement", "sales", "hr", "equipment", "finance", "system", "analytics",
-            "scheduling", "work_report", "inventory", "report"
+            "scheduling", "work_report", "inventory", "report",
+            "rd", "restaurant"
     );
 
     /**
@@ -44,6 +76,11 @@ public class PermissionServiceImpl implements PermissionService {
         ALL_MODULES.forEach(m -> superAdminPerms.put(m, "read_write"));
         PERMISSION_MATRIX.put(FactoryUserRole.factory_super_admin, superAdminPerms);
 
+        // platform_admin: 平台级, 同 super_admin (所有模块读写)
+        Map<String, String> platformAdminPerms = new HashMap<>();
+        ALL_MODULES.forEach(m -> platformAdminPerms.put(m, "read_write"));
+        PERMISSION_MATRIX.put(FactoryUserRole.platform_admin, platformAdminPerms);
+
         // dispatcher (调度): 生产读写 + 全模块只读 + 数据分析读写
         Map<String, String> dispatcherPerms = new HashMap<>();
         dispatcherPerms.put("dashboard", "read_write");
@@ -51,7 +88,7 @@ public class PermissionServiceImpl implements PermissionService {
         dispatcherPerms.put("warehouse", "read");
         dispatcherPerms.put("quality", "read");
         dispatcherPerms.put("procurement", "read");
-        dispatcherPerms.put("sales", "read");       // 新增: 可查看销售数据
+        dispatcherPerms.put("sales", "read_write"); // Apr 18 2026 bug #45: 调度员需能提交/审核/驳回 SO (协调生产发货)
         dispatcherPerms.put("hr", "read");
         dispatcherPerms.put("equipment", "read");
         dispatcherPerms.put("finance", "read");     // 新增: 可查看财务分析
@@ -61,6 +98,7 @@ public class PermissionServiceImpl implements PermissionService {
         dispatcherPerms.put("work_report", "read_write");
         dispatcherPerms.put("inventory", "read");
         dispatcherPerms.put("report", "read");
+        dispatcherPerms.put("rd", "read_write");  // 调度协调 RD 样品到生产
         PERMISSION_MATRIX.put(FactoryUserRole.dispatcher, dispatcherPerms);
         PERMISSION_MATRIX.put(FactoryUserRole.production_manager, dispatcherPerms); // 向后兼容
 
@@ -69,6 +107,7 @@ public class PermissionServiceImpl implements PermissionService {
         qualityManagerPerms.put("dashboard", "read");
         qualityManagerPerms.put("production", "read");
         qualityManagerPerms.put("quality", "read_write");
+        qualityManagerPerms.put("rd", "read");  // QA 审核样品但不创建
         PERMISSION_MATRIX.put(FactoryUserRole.quality_manager, qualityManagerPerms);
 
         // workshop_supervisor
@@ -82,6 +121,7 @@ public class PermissionServiceImpl implements PermissionService {
         workshopPerms.put("scheduling", "read");
         workshopPerms.put("work_report", "read_write");
         workshopPerms.put("report", "read");
+        workshopPerms.put("rd", "read");
         PERMISSION_MATRIX.put(FactoryUserRole.workshop_supervisor, workshopPerms);
 
         // team_leader (大组长) — 车间主任下一级,去掉 hr/report 审批类
@@ -93,6 +133,7 @@ public class PermissionServiceImpl implements PermissionService {
         teamLeaderPerms.put("equipment", "read");
         teamLeaderPerms.put("scheduling", "read");
         teamLeaderPerms.put("work_report", "read_write");
+        teamLeaderPerms.put("rd", "read");
         PERMISSION_MATRIX.put(FactoryUserRole.team_leader, teamLeaderPerms);
 
         // group_leader (小组长) — 只管本组,去掉 scheduling 全局查看
@@ -170,6 +211,7 @@ public class PermissionServiceImpl implements PermissionService {
         salesPerms.put("finance", "read");
         salesPerms.put("analytics", "read");
         salesPerms.put("report", "read");
+        salesPerms.put("rd", "read_write");  // 销售驱动 RD 需求/样品
         PERMISSION_MATRIX.put(FactoryUserRole.sales_manager, salesPerms);
 
         // finance_manager: 财务主管 - SmartBI完整权限（含上传Excel）
@@ -181,7 +223,17 @@ public class PermissionServiceImpl implements PermissionService {
         financePerms.put("sales", "read");
         financePerms.put("analytics", "read_write");  // SmartBI 完整权限
         financePerms.put("report", "read");
+        financePerms.put("rd", "read");  // 定价参考
         PERMISSION_MATRIX.put(FactoryUserRole.finance_manager, financePerms);
+
+        // restaurant_manager: 餐饮管理 (跨工厂类型餐饮 domain 角色)
+        Map<String, String> restaurantManagerPerms = new HashMap<>();
+        restaurantManagerPerms.put("dashboard", "read");
+        restaurantManagerPerms.put("restaurant", "read_write");
+        restaurantManagerPerms.put("procurement", "read");
+        restaurantManagerPerms.put("finance", "read");
+        restaurantManagerPerms.put("analytics", "read");
+        PERMISSION_MATRIX.put(FactoryUserRole.restaurant_manager, restaurantManagerPerms);
 
         // viewer: 所有模块只读
         Map<String, String> viewerPerms = new HashMap<>();
@@ -210,7 +262,7 @@ public class PermissionServiceImpl implements PermissionService {
         }
 
         // 超级管理员拥有所有权限
-        if (role == FactoryUserRole.factory_super_admin) {
+        if (role == FactoryUserRole.factory_super_admin || role == FactoryUserRole.platform_admin) {
             return true;
         }
 
@@ -222,14 +274,117 @@ public class PermissionServiceImpl implements PermissionService {
         String module = parts[0];
         String action = parts[1];
 
-        // 检查角色权限矩阵
-        Map<String, String> rolePerms = PERMISSION_MATRIX.get(role);
-        if (rolePerms == null) {
-            return false;
+        // 缓存查询 (5min TTL)
+        String cacheKey = (user.getId() == null ? "0" : user.getId())
+            + ":" + permissionCode
+            + ":" + (user.getFactoryId() == null ? "" : user.getFactoryId());
+        long now = System.currentTimeMillis();
+        long[] exp = resolveCache.get(cacheKey);
+        if (exp != null && exp[0] > now) {
+            Boolean cached = resolveResult.get(cacheKey);
+            if (cached != null) return cached;
         }
 
-        String permType = rolePerms.get(module);
-        if (permType == null || permType.equals("none")) {
+        // 按 L2 → L1 → hardcoded fallback 顺序解析 permission level
+        String permType = null;
+
+        // L2: factory-level override
+        if (user.getFactoryId() != null && factoryConfigRepo != null) {
+            permType = resolveLayer2(user.getFactoryId(), role.name(), module);
+        }
+
+        // L1: platform global default (from DB, seeded by Flyway V20260419_01)
+        if (permType == null && platformRepo != null) {
+            permType = resolveLayer1(role.name(), module);
+        }
+
+        // Fallback: hardcoded PERMISSION_MATRIX (safety net)
+        if (permType == null) {
+            Map<String, String> rolePerms = PERMISSION_MATRIX.get(role);
+            if (rolePerms != null) {
+                permType = rolePerms.get(module);
+            }
+        }
+
+        boolean result = checkAction(permType, action);
+        resolveCache.put(cacheKey, new long[]{now + CACHE_TTL_MS});
+        resolveResult.put(cacheKey, result);
+        return result;
+    }
+
+    /**
+     * L2 查询: factory_module_configs.role_module_override JSONB.
+     * 返回 normalized level (rw/r/w/-) 或 null (未配置).
+     */
+    private String resolveLayer2(String factoryId, String roleCode, String moduleCode) {
+        try {
+            List<FactoryModuleConfig> configs = factoryConfigRepo.findByFactoryIdAndConfigVersion(factoryId, 1);
+            for (FactoryModuleConfig cfg : configs) {
+                Map<String, Map<String, String>> override = cfg.getRoleModuleOverride();
+                if (override == null || override.isEmpty()) continue;
+                Map<String, String> roleOverrides = override.get(roleCode);
+                if (roleOverrides == null) continue;
+                String level = roleOverrides.get(moduleCode);
+                if (level != null) return normalizeLevel(level);
+            }
+        } catch (Exception e) {
+            log.warn("L2 override resolve failed for factory={}, role={}, module={}: {}",
+                factoryId, roleCode, moduleCode, e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * L1 查询: platform_role_permissions 表.
+     * 返回 legacy-format level (read_write/read/write/none) 或 null.
+     */
+    private String resolveLayer1(String roleCode, String moduleCode) {
+        try {
+            return platformRepo.findByRoleCodeAndModuleCodeAndDeletedAtIsNull(roleCode, moduleCode)
+                .map(PlatformRolePermission::getPermissionLevel)
+                .map(this::denormalizeLevel)  // DB 存 rw/r/w/-, checkAction 用 legacy format
+                .orElse(null);
+        } catch (Exception e) {
+            log.warn("L1 resolve failed for role={}, module={}: {}", roleCode, moduleCode, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Normalize legacy level (read_write/read/write/none) → new (rw/r/w/-).
+     */
+    private String normalizeLevel(String level) {
+        if (level == null) return null;
+        switch (level) {
+            case "read_write": return "rw";
+            case "read": return "r";
+            case "write": return "w";
+            case "none": return "-";
+            default: return level;  // already normalized (rw/r/w/-)
+        }
+    }
+
+    /**
+     * Denormalize new level (rw/r/w/-) → legacy (read_write/read/write/none)
+     * 用于与现有 checkAction 签名兼容.
+     */
+    private String denormalizeLevel(String level) {
+        if (level == null) return null;
+        switch (level) {
+            case "rw": return "read_write";
+            case "r": return "read";
+            case "w": return "write";
+            case "-": return "none";
+            default: return level;  // already legacy
+        }
+    }
+
+    /**
+     * 基于 permType 和 action 判断是否允许.
+     * permType 格式: read_write/read/write/none (legacy).
+     */
+    private boolean checkAction(String permType, String action) {
+        if (permType == null || permType.equals("none") || permType.equals("-")) {
             return false;
         }
 

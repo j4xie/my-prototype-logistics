@@ -12,6 +12,8 @@ interface SubTableColumn {
   code: string
   label: string
   type: string
+  /** Apr 25 2026 audit: schema-driven default for new rows. */
+  defaultValue?: unknown
 }
 
 interface SubTableRow extends Record<string, unknown> {
@@ -48,8 +50,15 @@ onMounted(async () => {
 function addRow() {
   const newRow: SubTableRow = { _dirty: true }
   props.columns.forEach((col) => {
-    if (col.type === 'decimal' || col.type === 'integer') newRow[col.code] = 0
-    else newRow[col.code] = ''
+    // Apr 25 2026 audit (Rule 8 same-cause sweep): respect schema defaultValue
+    // — same fix as LineItemsEditor.addRow (b13edd00b).
+    if (col.defaultValue !== undefined && col.defaultValue !== null) {
+      newRow[col.code] = col.defaultValue
+    } else if (col.type === 'decimal' || col.type === 'integer') {
+      newRow[col.code] = 0
+    } else {
+      newRow[col.code] = ''
+    }
   })
   rows.value = [...rows.value, newRow]
 }
@@ -67,7 +76,8 @@ async function deleteRow(rowIndex: number) {
     try {
       await deleteSubTableRow(props.factoryId, props.moduleCode, props.recordId, props.fieldCode, row.id as string)
     } catch (e) {
-      ElMessage.error('删除失败')
+      // Interceptor shows specific toast; dedupe fallback
+      console.error('[删除失败]', e)
       return
     }
   }
@@ -107,7 +117,8 @@ async function saveAll() {
         }
       }
     } catch (e) {
-      ElMessage.error('保存失败')
+      // Interceptor shows specific toast; dedupe fallback — rethrow so caller knows
+      console.error('[保存失败]', e)
       throw e
     }
   }

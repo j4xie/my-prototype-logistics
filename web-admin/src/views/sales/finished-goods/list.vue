@@ -4,7 +4,7 @@ import { useAuthStore } from '@/store/modules/auth';
 import { useBusinessMode } from '@/composables/useBusinessMode';
 import { get } from '@/api/request';
 import { ElMessage } from 'element-plus';
-import { Refresh } from '@element-plus/icons-vue';
+import { Refresh, Search } from '@element-plus/icons-vue';
 import { formatAmount } from '@/utils/tableFormatters';
 
 const authStore = useAuthStore();
@@ -14,6 +14,7 @@ const factoryId = computed(() => authStore.factoryId);
 const loading = ref(false);
 const tableData = ref<Record<string, unknown>[]>([]);
 const pagination = ref({ page: 1, size: 10, total: 0 });
+const searchKeyword = ref('');
 
 onMounted(() => loadData());
 
@@ -21,21 +22,27 @@ async function loadData() {
   if (!factoryId.value) return;
   loading.value = true;
   try {
-    const res = await get(`/${factoryId.value}/sales/finished-goods`, {
-      params: { page: pagination.value.page, size: pagination.value.size },
-    });
+    const params: Record<string, unknown> = {
+      page: pagination.value.page,
+      size: pagination.value.size,
+    };
+    const kw = searchKeyword.value.trim();
+    if (kw) params.keyword = kw;
+    const res = await get(`/${factoryId.value}/sales/finished-goods`, { params });
     if (res.success && res.data) {
       tableData.value = res.data.content || [];
       pagination.value.total = res.data.totalElements || 0;
     } else if (res.success === false) {
       ElMessage.error(res.message || '加载成品数据失败');
     }
-  } catch { ElMessage.error('加载失败'); }
+  } catch { /* axios interceptor already displayed error toast */ }
   finally { loading.value = false; }
 }
 
 function handlePageChange(page: number) { pagination.value.page = page; loadData(); }
 function handleSizeChange(size: number) { pagination.value.size = size; pagination.value.page = 1; loadData(); }
+function handleSearch() { pagination.value.page = 1; loadData(); }
+function handleSearchClear() { searchKeyword.value = ''; handleSearch(); }
 
 function availableQty(row: Record<string, unknown>) {
   return (row.producedQuantity || 0) - (row.shippedQuantity || 0) - (row.reservedQuantity || 0);
@@ -59,6 +66,16 @@ function statusType(row: Record<string, unknown>) {
             <span class="data-count">共 {{ pagination.total }} 批</span>
           </div>
           <div class="header-right">
+            <el-input
+              v-model="searchKeyword"
+              placeholder="搜索批次号 / 产品名"
+              clearable
+              :prefix-icon="Search"
+              style="width: 240px; margin-right: 12px;"
+              @keyup.enter="handleSearch"
+              @clear="handleSearchClear"
+            />
+            <el-button type="primary" @click="handleSearch">搜索</el-button>
             <el-button :icon="Refresh" @click="loadData">刷新</el-button>
           </div>
         </div>

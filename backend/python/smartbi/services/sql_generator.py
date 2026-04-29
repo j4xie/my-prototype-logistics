@@ -622,6 +622,11 @@ class SQLGenerator:
             "7. For GROUP BY, always use the full expression (not alias)\n"
             "8. NEVER use bare column names for business fields — always use row_data->>'fieldName'\n"
             "9. The skeleton SQL provided is already correct syntax — only refine logic, do not change accessor patterns\n"
+            "10. Bug #26 fix (Apr 17 2026): ranking/aggregation questions (Top N / 最高 / 最多 / 排名 / 哪个...最) "
+            "MUST use GROUP BY on the dimension + SUM/AVG/COUNT on the measure. Never return raw rows for such questions.\n"
+            "11. ALWAYS filter out meta-rows in WHERE clause: add "
+            "`AND row_data->>'<primary_dim>' NOT IN ('合计','总计','小计','汇总','Total','TOTAL')` "
+            "when primary dim is text (门店名称/商品/部门/地区 etc). Without this, 合计 row pollutes Top N.\n"
         )
 
         user_prompt = (

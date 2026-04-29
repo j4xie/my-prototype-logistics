@@ -1,0 +1,105 @@
+{
+  "startedAt": "2026-04-24T07:18:04.344Z",
+  "finishedAt": "2026-04-24T07:19:04.346Z",
+  "target": "https://admin.cretaceousfuture.com",
+  "user": "qhj_prod",
+  "summary": {
+    "total": 11,
+    "passed": 9,
+    "failed": 2,
+    "consoleErrors": 1,
+    "networkFails": 0
+  },
+  "tests": [
+    {
+      "id": "L0",
+      "pass": true,
+      "summary": "logged in as qhj_prod (URL: https://admin.cretaceousfuture.com/dashboard)",
+      "detail": {}
+    },
+    {
+      "id": "review-4172-min-cards",
+      "pass": true,
+      "summary": "≥3 cards (got 4)",
+      "detail": {}
+    },
+    {
+      "id": "review-4172-pattern-平均",
+      "pass": true,
+      "summary": "≥3 cards contain \"平均\" (matched: 平均服务分, 平均星级分, 平均环境分)",
+      "detail": {}
+    },
+    {
+      "id": "review-4172-forbidden-评价ID",
+      "pass": true,
+      "summary": "correctly excludes \"评价ID\"",
+      "detail": {}
+    },
+    {
+      "id": "review-4172-forbidden-团购ID",
+      "pass": true,
+      "summary": "correctly excludes \"团购ID\"",
+      "detail": {}
+    },
+    {
+      "id": "review-4172-forbidden-门店美团ID",
+      "pass": true,
+      "summary": "correctly excludes \"门店美团ID\"",
+      "detail": {}
+    },
+    {
+      "id": "review-4172-value-range",
+      "pass": true,
+      "summary": "≥3 values in [4.5, 5] for \"平均/分\" cards (matched: 平均服务分=4.83, 平均星级分=4.83, 平均环境分=4.82)",
+      "detail": {}
+    },
+    {
+      "id": "review-4172-unit-分",
+      "pass": true,
+      "summary": "unit \"分\" present",
+      "detail": {}
+    },
+    {
+      "id": "pos-4169-render",
+      "pass": false,
+      "summary": "enrichSheetAnalysis timed out at 120s — KNOWN PROD BUG: large datasets (200K rows) cannot render KPIs. Toast count=1, empty-state=1. Screenshot: pos-4169-no-kpis.png",
+      "detail": {}
+    },
+    {
+      "id": "Z1",
+      "pass": false,
+      "summary": "1 console errors",
+      "detail": {
+        "errors": [
+          "enrichSheetAnalysis 失败: ApiError: timeout of 120000ms exceeded\n    at https://admin.cretaceousfuture.com/assets/request-BDqxhjYk.js:6:2981\n    at async j.request (https://admin.cretaceousfuture.com/assets/index-B9ygI19o.js:5:1982)\n    at async Promise.all (index 0)\n    at async Wt (https://admin.cretaceousfuture.com/assets/analysis-u3vKcKpm.js:7:6737)"
+        ]
+      }
+    },
+    {
+      "id": "Z2",
+      "pass": true,
+      "summary": "no 4xx/5xx responses on /api endpoints",
+      "detail": {}
+    }
+  ],
+  "reviewKPIs": {
+    "titles": [
+      "评价门店",
+      "平均服务分",
+      "平均星级分",
+      "平均环境分"
+    ],
+    "values": [
+      "4,955 亿",
+      "4.83 分",
+      "4.83 分",
+      "4.82 分"
+    ],
+    "units": [
+      "亿",
+      "分",
+      "分",
+      "分"
+    ]
+  }
+}

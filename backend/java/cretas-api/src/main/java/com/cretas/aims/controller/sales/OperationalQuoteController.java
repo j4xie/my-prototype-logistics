@@ -1,6 +1,7 @@
 package com.cretas.aims.controller.sales;
 
 import com.cretas.aims.entity.sales.OperationalQuote;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.service.sales.OperationalQuoteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Map;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * 销售运营报价 Controller — V3 P0-4 (Round 2 Agent B 设计).
@@ -36,6 +38,8 @@ public class OperationalQuoteController {
     private final OperationalQuoteService quoteService;
 
     /** 研发提交报价单 — 由样品驱动 */
+    @RequirePermission({"sales:read_write"})
+    @RequireModule("sales_order")
     @PostMapping
     public ResponseEntity<?> createQuote(
             @PathVariable String factoryId,
@@ -63,6 +67,8 @@ public class OperationalQuoteController {
     }
 
     /** 销售运营录价 → PENDING_APPROVAL */
+    @RequirePermission({"sales:read_write"})
+    @RequireModule("sales_order")
     @PutMapping("/{quoteId}/submit-price")
     public ResponseEntity<?> submitPrice(
             @PathVariable String factoryId,
@@ -81,6 +87,8 @@ public class OperationalQuoteController {
     }
 
     /** 主管审批通过 → APPROVED */
+    @RequirePermission({"sales:read_write"})
+    @RequireModule("sales_order")
     @PutMapping("/{quoteId}/approve")
     public ResponseEntity<?> approve(
             @PathVariable String factoryId,
@@ -94,6 +102,8 @@ public class OperationalQuoteController {
     }
 
     /** 主管驳回 → REJECTED */
+    @RequirePermission({"sales:read_write"})
+    @RequireModule("sales_order")
     @PutMapping("/{quoteId}/reject")
     public ResponseEntity<?> reject(
             @PathVariable String factoryId,
@@ -108,6 +118,8 @@ public class OperationalQuoteController {
     }
 
     /** 客户砍价后重新报价 → PENDING_QUOTE */
+    @RequirePermission({"sales:read_write"})
+    @RequireModule("sales_order")
     @PutMapping("/{quoteId}/revise")
     public ResponseEntity<?> revise(
             @PathVariable String factoryId,

@@ -7,11 +7,13 @@ import com.cretas.aims.dto.inventory.UpdateSalesOrderRequest;
 import com.cretas.aims.entity.enums.SalesDeliveryStatus;
 import com.cretas.aims.entity.enums.SalesOrderStatus;
 import com.cretas.aims.entity.inventory.*;
+import com.cretas.aims.entity.User;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.entity.ProductType;
 import com.cretas.aims.repository.CustomerRepository;
 import com.cretas.aims.repository.ProductTypeRepository;
+import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.repository.inventory.*;
 import com.cretas.aims.event.SalesOrderConfirmedEvent;
 import com.cretas.aims.event.SalesOrderFinanceApprovedEvent;
@@ -70,6 +72,10 @@ public class SalesServiceImpl implements SalesService {
     /** Canvas V3: Dynamic field persistence (cf_xxx columns) */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.cretas.aims.engine.DynamicFieldService dynamicFieldService;
+
+    /** T3: 业务员双字段过渡 — 用于 resolveSalespersonField */
+    @org.springframework.beans.factory.annotation.Autowired
+    private UserRepository userRepository;
 
     @jakarta.persistence.PersistenceContext
     private jakarta.persistence.EntityManager entityManager;
@@ -134,7 +140,7 @@ public class SalesServiceImpl implements SalesService {
         order.setDeliveryAddress(request.getDeliveryAddress());
         order.setDiscountAmount(request.getDiscountAmount() != null ? request.getDiscountAmount() : BigDecimal.ZERO);
         order.setRemark(request.getRemark());
-        order.setSalesperson(request.getSalesperson());
+        resolveSalespersonField(order, request.getSalesperson(), factoryId);
         order.setShippingIncluded(request.getShippingIncluded());
         order.setShippingFee(request.getShippingFee());
         order.setExtraFees(request.getExtraFees());
@@ -148,7 +154,8 @@ public class SalesServiceImpl implements SalesService {
         Set<String> seenProductIds = new HashSet<>();
         for (CreateSalesOrderRequest.SalesOrderItemDTO itemDTO : request.getItems()) {
             if (!seenProductIds.add(itemDTO.getProductTypeId())) {
-                throw new BusinessException("同一订单不能添加重复的产品: " + (itemDTO.getProductName() != null ? itemDTO.getProductName() : itemDTO.getProductTypeId()));
+                throw new BusinessException(409, "同一订单不能添加重复的产品: " + (itemDTO.getProductName() != null ? itemDTO.getProductName() : itemDTO.getProductTypeId()))
+                        .withHint("请合并相同产品行, 或选择其他产品").withHintTarget("productTypeId");
             }
         }
 
@@ -219,15 +226,32 @@ public class SalesServiceImpl implements SalesService {
         SalesOrder order = salesOrderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("销售订单不存在"));
         if (!order.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权访问该销售订单");
+            throw new BusinessException(403, "无权访问该销售订单")
+                    .withHint("当前销售订单不属于该工厂, 无法访问");
         }
         return order;
     }
 
     @Override
     public PageResponse<SalesOrder> getSalesOrders(String factoryId, int page, int size) {
+        return getSalesOrders(factoryId, null, page, size);
+    }
+
+    @Override
+    public PageResponse<SalesOrder> getSalesOrders(String factoryId, String keyword, int page, int size) {
         PageRequest pageRequest = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<SalesOrder> result = salesOrderRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageRequest);
+        Page<SalesOrder> result;
+        if (keyword != null && !keyword.isBlank()) {
+            // Bug G + audit H1: escape SQL LIKE wildcards (% _ \) so user-typed wildcards
+            // become literal characters. Repository uses ESCAPE '\' clause.
+            String escaped = keyword.trim()
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
+            result = salesOrderRepository.searchByFactoryAndKeyword(factoryId, escaped, pageRequest);
+        } else {
+            result = salesOrderRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageRequest);
+        }
         return PageResponse.of(result.getContent(), page, size, result.getTotalElements());
     }
 
@@ -245,7 +269,8 @@ public class SalesServiceImpl implements SalesService {
         runConfiguredValidation(factoryId, "STATUS_CHANGE", Map.of(
                 "status", order.getStatus().name(), "targetStatus", "CONFIRMED"));
         if (order.getStatus() != SalesOrderStatus.DRAFT) {
-            throw new BusinessException("只有草稿状态的订单可以确认");
+            throw new BusinessException(409, "只有草稿状态的订单可以确认")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         checkTransitionAllowed(factoryId, order.getStatus().name(), "CONFIRMED");
         order.setStatus(SalesOrderStatus.CONFIRMED);
@@ -274,7 +299,8 @@ public class SalesServiceImpl implements SalesService {
                 "status", order.getStatus().name(), "targetStatus", "PENDING_FINANCE_REVIEW"));
         if (order.getStatus() != SalesOrderStatus.CONFIRMED
                 && order.getStatus() != SalesOrderStatus.FINANCE_REJECTED) {
-            throw new BusinessException("只有已确认或财务驳回状态的订单可以提交财务审核");
+            throw new BusinessException(409, "只有已确认或财务驳回状态的订单可以提交财务审核")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         checkTransitionAllowed(factoryId, order.getStatus().name(), "PENDING_FINANCE_REVIEW");
         order.setStatus(SalesOrderStatus.PENDING_FINANCE_REVIEW);
@@ -290,11 +316,24 @@ public class SalesServiceImpl implements SalesService {
     @Override
     @Transactional
     public SalesOrder financeApproveOrder(String factoryId, String orderId, String notes, Long reviewerId) {
+        return financeApproveOrder(factoryId, orderId, notes, null, reviewerId);
+    }
+
+    /**
+     * 六扇门 V1 §2.2 audit fix #6: accept estimatedCost from finance reviewer dialog.
+     * Pre-fix: dialog only had notes prompt — finance had no place to record cost.
+     * Now: dialog shows totalAmount + cost input + auto-computed profit.
+     */
+    @Override
+    @Transactional
+    public SalesOrder financeApproveOrder(String factoryId, String orderId, String notes,
+                                           java.math.BigDecimal estimatedCost, Long reviewerId) {
         SalesOrder order = getSalesOrderById(factoryId, orderId);
         // 强制加载 items，防止事件处理器中 LazyInitializationException
         org.hibernate.Hibernate.initialize(order.getItems());
         if (order.getStatus() != SalesOrderStatus.PENDING_FINANCE_REVIEW) {
-            throw new BusinessException("只有待财务审核状态的订单可以审批");
+            throw new BusinessException(409, "只有待财务审核状态的订单可以审批")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         checkTransitionAllowed(factoryId, order.getStatus().name(), "FINANCE_APPROVED");
         order.setStatus(SalesOrderStatus.FINANCE_APPROVED);
@@ -302,7 +341,12 @@ public class SalesServiceImpl implements SalesService {
         order.setFinanceReviewedAt(LocalDateTime.now());
         order.setFinanceReviewNotes(notes);
 
-        // 计算预估成本与利润（如果前端/财务未手动填写，此处可后续扩展从BOM自动计算）
+        // 六扇门 V1 §2.2 audit fix #6: persist finance-reviewer-input estimatedCost
+        if (estimatedCost != null) {
+            order.setEstimatedCost(estimatedCost);
+        }
+
+        // 计算预估利润（如果有 estimatedCost — 当前调用或历史值）
         if (order.getEstimatedCost() != null && order.getTotalAmount() != null) {
             order.setEstimatedProfit(order.getTotalAmount().subtract(order.getEstimatedCost()));
         }
@@ -328,7 +372,8 @@ public class SalesServiceImpl implements SalesService {
     public SalesOrder financeRejectOrder(String factoryId, String orderId, String reason, Long reviewerId) {
         SalesOrder order = getSalesOrderById(factoryId, orderId);
         if (order.getStatus() != SalesOrderStatus.PENDING_FINANCE_REVIEW) {
-            throw new BusinessException("只有待财务审核状态的订单可以驳回");
+            throw new BusinessException(409, "只有待财务审核状态的订单可以驳回")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         checkTransitionAllowed(factoryId, order.getStatus().name(), "FINANCE_REJECTED");
         order.setStatus(SalesOrderStatus.FINANCE_REJECTED);
@@ -346,7 +391,13 @@ public class SalesServiceImpl implements SalesService {
     public SalesOrder updateSalesOrder(String factoryId, String orderId, UpdateSalesOrderRequest request) {
         SalesOrder order = getSalesOrderById(factoryId, orderId);
         if (order.getStatus() != SalesOrderStatus.DRAFT) {
-            throw new BusinessException("只有草稿状态的订单可以编辑");
+            throw new BusinessException(409, "只有草稿状态的订单可以编辑")
+                    .withHint("请刷新订单列表查看最新状态");
+        }
+        // Optimistic lock: explicit compare (see CustomerServiceImpl for rationale)
+        if (request.getVersion() != null && !request.getVersion().equals(order.getVersion())) {
+            throw new org.springframework.orm.ObjectOptimisticLockingFailureException(
+                SalesOrder.class, orderId);
         }
 
         // Canvas V2: DB-driven validation for UPDATE — pre-compute totalAmount if items changed
@@ -371,10 +422,14 @@ public class SalesServiceImpl implements SalesService {
                 "itemCount", request.getItems() != null ? request.getItems().size() : 0,
                 "totalAmount", updateTotal,
                 "hasDuplicateProduct", hasDupOnUpdate,
-                "currentStatus", order.getStatus().name()));
+                "currentStatus", order.getStatus().name(),
+                // Bug fix 2026-04-24: 全局规则 ID=1 (factory_validation_rules) 用 #status,
+                // 历史代码只传 currentStatus → #status null → null!='DRAFT' = true →
+                // 任何 SO PUT 即使 status=DRAFT 也错误抛 "只有草稿状态". 双键兼容.
+                "status", order.getStatus().name()));
 
         if (request.getSalesperson() != null) {
-            order.setSalesperson(request.getSalesperson());
+            resolveSalespersonField(order, request.getSalesperson(), factoryId);
         }
         if (request.getDeliveryAddress() != null) {
             order.setDeliveryAddress(request.getDeliveryAddress());
@@ -447,8 +502,13 @@ public class SalesServiceImpl implements SalesService {
     @Transactional
     public SalesOrder cancelOrder(String factoryId, String orderId) {
         SalesOrder order = getSalesOrderById(factoryId, orderId);
-        if (order.getStatus() == SalesOrderStatus.COMPLETED) {
-            throw new BusinessException("已完成的订单不能取消");
+        // R39 BUG-8 fix: was only blocking COMPLETED → FINANCE_APPROVED+/PROCESSING/SHIPPED/CANCELLED
+        // could be cancelled, breaking AR + production_plan invariants. Use whitelist.
+        if (!com.cretas.aims.domain.OrderUsageWhitelists.SO_CANCELLABLE.contains(order.getStatus())) {
+            throw new BusinessException(409,
+                    "当前订单状态(" + order.getStatus().getDisplayName() + ")不允许取消。"
+                  + "财务批准后请通过驳回/退款流程处理")
+                    .withHint("请刷新订单列表查看最新状态");
         }
         order.setStatus(SalesOrderStatus.CANCELLED);
         log.info("取消销售订单: orderId={}, orderNumber={}", orderId, order.getOrderNumber());
@@ -519,14 +579,15 @@ public class SalesServiceImpl implements SalesService {
         customerRepository.findByIdAndFactoryId(request.getCustomerId(), factoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("客户不存在或不属于当前组织"));
 
-        // 如果关联销售订单，验证状态
+        // R23 audit C3: was inline {FINANCE_APPROVED, CONFIRMED, PROCESSING, PARTIAL_DELIVERED}
+        // — distinct from SO_SHIPPABLE because delivery here allows CONFIRMED (e.g.,
+        // consignment / advance shipment). Centralized as SO_DELIVERABLE.
         if (request.getSalesOrderId() != null && !request.getSalesOrderId().isEmpty()) {
             SalesOrder order = getSalesOrderById(factoryId, request.getSalesOrderId());
-            if (order.getStatus() != SalesOrderStatus.FINANCE_APPROVED &&
-                    order.getStatus() != SalesOrderStatus.CONFIRMED &&
-                    order.getStatus() != SalesOrderStatus.PROCESSING &&
-                    order.getStatus() != SalesOrderStatus.PARTIAL_DELIVERED) {
-                throw new BusinessException("只有财务已批准/已确认/处理中/部分发货状态的订单可以创建发货单");
+            if (order.getStatus() == null
+                    || !com.cretas.aims.domain.OrderUsageWhitelists.SO_DELIVERABLE.contains(order.getStatus())) {
+                throw new BusinessException(409, "只有财务已批准/已确认/处理中/部分发货状态的订单可以创建发货单")
+                        .withHint("请刷新订单列表查看最新状态");
             }
         }
 
@@ -607,7 +668,8 @@ public class SalesServiceImpl implements SalesService {
     public SalesDeliveryRecord shipDelivery(String factoryId, String deliveryId, Long userId) {
         SalesDeliveryRecord record = getDeliveryRecordById(factoryId, deliveryId);
         if (record.getStatus() != SalesDeliveryStatus.DRAFT && record.getStatus() != SalesDeliveryStatus.PICKED) {
-            throw new BusinessException("只有草稿或已拣货状态的发货单可以发货");
+            throw new BusinessException(409, "只有草稿或已拣货状态的发货单可以发货")
+                    .withHint("请刷新发货单列表查看最新状态");
         }
 
         // P0-13 强制批次分配校验：发货行必须已完成批次分配才能发货
@@ -615,8 +677,15 @@ public class SalesServiceImpl implements SalesService {
             for (SalesDeliveryItem item : record.getItems()) {
                 String itemIdStr = String.valueOf(item.getId());
                 if (!batchAllocationService.isFullyAllocated(factoryId, itemIdStr)) {
-                    throw new BusinessException("发货行 " + itemIdStr
-                            + "（产品：" + item.getProductName() + "）未完成批次分配，无法确认发货");
+                    // R49 BUG-22 fix: 之前 productName null 时 message 显示 "产品：null".
+                    // 现 fallback 到 productTypeId, 再 fallback 到 itemIdStr.
+                    String productLabel = item.getProductName() != null
+                            ? item.getProductName()
+                            : (item.getProductTypeId() != null ? item.getProductTypeId() : "未知产品");
+                    throw new BusinessException(409, "发货行 " + itemIdStr
+                            + "（产品：" + productLabel + "）未完成批次分配，无法确认发货")
+                            .withHint("请在「发货记录」Tab 点击「分配批次」按钮,完成所有行的批次分配后再确认发货")
+                            .withHintTarget("发货记录 Tab");
                 }
             }
         }
@@ -661,7 +730,8 @@ public class SalesServiceImpl implements SalesService {
     public SalesDeliveryRecord confirmDelivered(String factoryId, String deliveryId) {
         SalesDeliveryRecord record = getDeliveryRecordById(factoryId, deliveryId);
         if (record.getStatus() != SalesDeliveryStatus.SHIPPED) {
-            throw new BusinessException("只有已发货状态的发货单可以确认签收");
+            throw new BusinessException(409, "只有已发货状态的发货单可以确认签收")
+                    .withHint("请刷新发货单列表查看最新状态");
         }
         record.setStatus(SalesDeliveryStatus.DELIVERED);
         log.info("签收确认: deliveryId={}, deliveryNumber={}", deliveryId, record.getDeliveryNumber());
@@ -673,7 +743,8 @@ public class SalesServiceImpl implements SalesService {
         SalesDeliveryRecord record = deliveryRecordRepository.findById(deliveryId)
                 .orElseThrow(() -> new ResourceNotFoundException("发货单不存在"));
         if (!record.getFactoryId().equals(factoryId)) {
-            throw new BusinessException("无权访问该发货单");
+            throw new BusinessException(403, "无权访问该发货单")
+                    .withHint("当前发货单不属于该工厂, 无法访问");
         }
         return record;
     }
@@ -783,11 +854,11 @@ public class SalesServiceImpl implements SalesService {
         List<SalesOrder> monthlyOrders = salesOrderRepository.findByFactoryIdAndDateRange(factoryId, monthStart, now);
 
         long totalOrders = monthlyOrders.size();
+        // R23 audit C3: was inline {CONFIRMED, PENDING_FINANCE_REVIEW, FINANCE_APPROVED, PROCESSING}
+        // — semantically "still in flight, not yet delivered/cancelled". Centralized as SO_IN_FLIGHT.
         long pendingOrders = monthlyOrders.stream()
-                .filter(o -> o.getStatus() == SalesOrderStatus.CONFIRMED
-                        || o.getStatus() == SalesOrderStatus.PENDING_FINANCE_REVIEW
-                        || o.getStatus() == SalesOrderStatus.FINANCE_APPROVED
-                        || o.getStatus() == SalesOrderStatus.PROCESSING)
+                .filter(o -> o.getStatus() != null
+                        && com.cretas.aims.domain.OrderUsageWhitelists.SO_IN_FLIGHT.contains(o.getStatus()))
                 .count();
         BigDecimal monthlyRevenue = monthlyOrders.stream()
                 .filter(o -> o.getStatus() != SalesOrderStatus.CANCELLED)
@@ -884,7 +955,8 @@ public class SalesServiceImpl implements SalesService {
         if (factoryConfigService != null) {
             try {
                 if (!factoryConfigService.isTransitionAllowed(factoryId, "sales_order", fromStatus, toStatus)) {
-                    throw new BusinessException("当前配置不允许从 " + fromStatus + " 转换到 " + toStatus);
+                    throw new BusinessException(409, "当前配置不允许从 " + fromStatus + " 转换到 " + toStatus)
+                            .withHint("请刷新订单列表查看最新状态");
                 }
             } catch (BusinessException e) {
                 throw e;
@@ -926,7 +998,9 @@ public class SalesServiceImpl implements SalesService {
 
         if (remaining.compareTo(BigDecimal.ZERO) > 0) {
             throw new BusinessException(String.format("成品库存不足: 产品=%s, 缺少数量=%s",
-                item.getProductTypeId(), remaining.toPlainString()));
+                item.getProductTypeId(), remaining.toPlainString()))
+                .withHint("请先下达生产计划(/production/plans)完成生产入库, 或减少本次发货数量")
+                .withHintTarget("生产计划");
         }
     }
 
@@ -965,5 +1039,47 @@ public class SalesServiceImpl implements SalesService {
             order.setTransportPlanStatus("IN_TRANSIT");
         }
         salesOrderRepository.save(order);
+    }
+
+    // ==================== T3: 业务员双字段过渡 ====================
+
+    /** Numeric user-id string pattern (User.id is Long, frontend sends as decimal string). */
+    private static final java.util.regex.Pattern USER_ID_PATTERN =
+        java.util.regex.Pattern.compile("^\\d{1,19}$");
+
+    /**
+     * 解析业务员字段 — 双字段过渡 (option 3 per spec §4.A.4).
+     * 数字字符串 (User.id) → lookup user → 写入 salesperson_id + salesperson(name 快照)
+     * 含非数字字符的字符串 → 老路径，只写 salesperson
+     * null/空 → 不动
+     */
+    public void resolveSalespersonField(SalesOrder order, String input, String factoryId) {
+        if (input == null || input.isBlank()) return;
+        if (USER_ID_PATTERN.matcher(input).matches()) {
+            Long userId = Long.parseLong(input);
+            // R4 audit S2: if numeric input matches existing FK, no-op (don't re-lookup)
+            // — covers the "user clicks save without touching salesperson, HR deleted user
+            // mid-edit" case where re-lookup would throw 404.
+            Long currentFkId = order.getSalespersonId();
+            if (currentFkId != null && currentFkId.equals(userId)) {
+                return;
+            }
+            User user = userRepository.findById(userId)
+                .filter(u -> factoryId.equals(u.getFactoryId()))
+                .orElseThrow(() -> new ResourceNotFoundException("业务员不存在或不属于本工厂: " + input));
+            order.setSalespersonId(userId);
+            order.setSalesperson(user.getFullName());  // M1: snapshot name at save time
+        } else {
+            // R4 audit C2: defensive — if input string equals existing snapshot AND existing
+            // FK is non-null, this is the legacy edit form re-PUTting the snapshot string
+            // unchanged (LEGACY-mode list.vue dialog only sends `salesperson` not the FK).
+            // Preserve the FK rather than wipe it, otherwise commission attribution silently
+            // breaks for ANY legacy edit of a DYNAMIC-created SO.
+            if (input.equals(order.getSalesperson()) && order.getSalespersonId() != null) {
+                return;  // no-op, snapshot unchanged + FK already linked
+            }
+            order.setSalesperson(input);
+            order.setSalespersonId(null);
+        }
     }
 }

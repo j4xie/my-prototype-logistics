@@ -73,6 +73,7 @@ public class UserMapper {
         User user = new User();
         user.setFactoryId(factoryId);
         user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
         user.setFullName(request.getFullName());
         // department现在是String类型，如果request.getDepartment()返回枚举，需要转换
@@ -90,6 +91,9 @@ public class UserMapper {
         user.setMonthlySalary(request.getMonthlySalary());
         user.setExpectedWorkMinutes(request.getExpectedWorkMinutes());
         user.setCcrRate(request.getCcrRate());
+        if (request.getEmployeeCode() != null && !request.getEmployeeCode().isBlank()) {
+            user.setEmployeeCode(request.getEmployeeCode());
+        }
         user.setIsActive(false); // 默认未激活
         return user;
     }
@@ -98,14 +102,23 @@ public class UserMapper {
      * 更新实体
      */
     public void updateEntity(User user, CreateUserRequest request) {
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            user.setEmail(request.getEmail());
+        }
         if (request.getPhone() != null) {
             user.setPhone(request.getPhone());
         }
         if (request.getFullName() != null) {
             user.setFullName(request.getFullName());
         }
-        // 更新position字段（roleCode已删除）
-        // department现在是String类型
+        if (request.getEmployeeCode() != null && !request.getEmployeeCode().isBlank()) {
+            user.setEmployeeCode(request.getEmployeeCode());
+        }
+        // Apr 20 Bug BR-13 fix: roleCode 之前在此 mapper 被 ignore, 导致 /users/{id} PUT
+        // 送 roleCode 无效 (用户 "角色变更保存, 更新失败"). 现补 update.
+        if (request.getRoleCode() != null) {
+            user.setRoleCode(request.getRoleCode().name());
+        }
         if (request.getMonthlySalary() != null) {
             user.setMonthlySalary(request.getMonthlySalary());
         }
@@ -114,6 +127,17 @@ public class UserMapper {
         }
         if (request.getCcrRate() != null) {
             user.setCcrRate(request.getCcrRate());
+        }
+        // W-09 fix (Round 12, qa-prompt v2.4 Rule 17.2 sweep): `position` was
+        // silently dropped on PUT /users/{id}. UI edit dialog doesn't expose
+        // position today, so user-facing impact is low — but API consumers,
+        // AI tools, and other code paths (e.g. UserServiceImpl.updateUserRole
+        // line 250 uses setPosition) make this a real silent-drop gap.
+        // isActive is intentionally handled in UserServiceImpl.updateUser
+        // (Apr 18 Bug #57) and stays there; department is Entity-relation and
+        // needs separate update path (not a simple string set).
+        if (request.getPosition() != null) {
+            user.setPosition(request.getPosition());
         }
     }
 }

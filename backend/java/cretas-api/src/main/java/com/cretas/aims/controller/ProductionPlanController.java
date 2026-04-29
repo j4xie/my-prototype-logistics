@@ -1,5 +1,6 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.ImportResult;
 import com.cretas.aims.dto.common.PageRequest;
@@ -8,7 +9,6 @@ import com.cretas.aims.dto.production.CreateProductionPlanRequest;
 import com.cretas.aims.dto.production.ProductionPlanDTO;
 import com.cretas.aims.entity.ProductionPlan;
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
-import com.cretas.aims.entity.enums.SalesOrderStatus;
 import com.cretas.aims.entity.inventory.SalesOrder;
 import com.cretas.aims.repository.ProductionPlanRepository;
 import com.cretas.aims.repository.inventory.SalesOrderRepository;
@@ -38,6 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import com.cretas.aims.annotation.RequireModule;
 
 /**
  * 生产计划管理控制器
@@ -51,6 +52,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/mobile/{factoryId}/production-plans")
 @RequiredArgsConstructor
 @Tag(name = "生产计划管理", description = "生产计划管理相关接口")
+@RequireModule("production_plan")
 public class ProductionPlanController {
 
     private final ProductionPlanService productionPlanService;
@@ -62,6 +64,8 @@ public class ProductionPlanController {
     /**
      * 创建生产计划
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
+    @RequireModule("production_plan")
     @PostMapping
     @Operation(summary = "创建生产计划")
     public ApiResponse<ProductionPlanDTO> createProductionPlan(
@@ -83,6 +87,8 @@ public class ProductionPlanController {
     /**
      * 更新生产计划
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
+    @RequireModule("production_plan")
     @PutMapping("/{planId}")
     @Operation(summary = "更新生产计划")
     public ApiResponse<ProductionPlanDTO> updateProductionPlan(
@@ -100,6 +106,8 @@ public class ProductionPlanController {
     /**
      * 删除生产计划
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
+    @RequireModule("production_plan")
     @DeleteMapping("/{planId}")
     @Operation(summary = "删除生产计划")
     public ApiResponse<Void> deleteProductionPlan(
@@ -190,6 +198,8 @@ public class ProductionPlanController {
     /**
      * 开始生产
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/{planId}/start")
     @Operation(summary = "开始生产")
     public ApiResponse<ProductionPlanDTO> startProduction(
@@ -206,6 +216,8 @@ public class ProductionPlanController {
     /**
      * 完成生产
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/{planId}/complete")
     @Operation(summary = "完成生产")
     public ApiResponse<ProductionPlanDTO> completeProduction(
@@ -229,6 +241,8 @@ public class ProductionPlanController {
     /**
      * 取消生产计划
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/{planId}/cancel")
     @Operation(summary = "取消生产计划")
     public ApiResponse<Void> cancelProductionPlan(
@@ -247,6 +261,8 @@ public class ProductionPlanController {
     /**
      * 暂停生产
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/{planId}/pause")
     @Operation(summary = "暂停生产")
     public ApiResponse<ProductionPlanDTO> pauseProduction(
@@ -263,6 +279,8 @@ public class ProductionPlanController {
     /**
      * 恢复生产
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/{planId}/resume")
     @Operation(summary = "恢复生产")
     public ApiResponse<ProductionPlanDTO> resumeProduction(
@@ -279,6 +297,8 @@ public class ProductionPlanController {
     /**
      * 更新实际成本
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
+    @RequireModule("production_plan")
     @PutMapping("/{planId}/costs")
     @Operation(summary = "更新实际成本")
     public ApiResponse<ProductionPlanDTO> updateActualCosts(
@@ -304,6 +324,8 @@ public class ProductionPlanController {
     /**
      * 排产 → 自动生成调拨单 (BOM展开 → 创建 InternalTransfer → 自动提交)
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/{planId}/generate-transfer")
     @Operation(summary = "根据BOM生成调拨单")
     public ApiResponse<InternalTransfer> generateTransfer(
@@ -323,6 +345,8 @@ public class ProductionPlanController {
     /**
      * 分配原材料批次
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/{planId}/batches")
     @Operation(summary = "分配原材料批次")
     public ApiResponse<Void> assignMaterialBatches(
@@ -341,6 +365,8 @@ public class ProductionPlanController {
     /**
      * 记录材料消耗
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/{planId}/consumption")
     @Operation(summary = "记录材料消耗")
     public ApiResponse<Void> recordMaterialConsumption(
@@ -392,6 +418,8 @@ public class ProductionPlanController {
     /**
      * 批量创建生产计划
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/batch")
     @Operation(summary = "批量创建生产计划")
     public ApiResponse<List<ProductionPlanDTO>> batchCreateProductionPlans(
@@ -413,6 +441,8 @@ public class ProductionPlanController {
     /**
      * 从生产计划创建生产批次（计划→执行转换）
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/{planId}/create-batch")
     @Operation(summary = "从计划创建批次")
     public ApiResponse<ProductionBatch> createBatchFromPlan(
@@ -462,6 +492,8 @@ public class ProductionPlanController {
     /**
      * Excel批量导入生产计划
      */
+    @RequirePermission({"production:read_write", "scheduling:read_write"})
+    @RequireModule("production_plan")
     @PostMapping("/import")
     @Operation(summary = "Excel批量导入生产计划")
     public ApiResponse<ImportResult<ProductionPlanDTO>> importProductionPlans(
@@ -534,24 +566,13 @@ public class ProductionPlanController {
             @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId) {
 
-        List<SalesOrderStatus> selectableStatuses = List.of(
-                SalesOrderStatus.CONFIRMED,
-                SalesOrderStatus.PENDING_FINANCE_REVIEW,
-                SalesOrderStatus.FINANCE_APPROVED,
-                SalesOrderStatus.PROCESSING,
-                SalesOrderStatus.PARTIAL_DELIVERED
-        );
-
-        List<SalesOrder> orders = salesOrderRepository.findAll().stream()
-                .filter(so -> factoryId.equals(so.getFactoryId()))
-                .filter(so -> so.getStatus() != null && selectableStatuses.contains(so.getStatus()))
-                .sorted((a, b) -> {
-                    if (a.getCreatedAt() == null) return 1;
-                    if (b.getCreatedAt() == null) return -1;
-                    return b.getCreatedAt().compareTo(a.getCreatedAt());
-                })
-                .limit(200)
-                .collect(Collectors.toList());
+        // R23 audit C3+I6: was inline whitelist + findAll().stream().filter() — full table scan
+        // loading ALL factories' SOs into JVM heap before filtering (multi-tenant data leak risk).
+        // Now JPQL push-down + centralized SO_PLANNABLE.
+        List<SalesOrder> orders = salesOrderRepository.findByFactoryIdAndStatusInOrderByCreatedAtDesc(
+                factoryId,
+                com.cretas.aims.domain.OrderUsageWhitelists.SO_PLANNABLE,
+                org.springframework.data.domain.PageRequest.of(0, 200));
 
         List<Map<String, Object>> result = orders.stream().map(so -> {
             Map<String, Object> m = new HashMap<>();

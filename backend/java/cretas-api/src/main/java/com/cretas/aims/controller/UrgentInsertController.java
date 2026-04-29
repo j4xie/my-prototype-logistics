@@ -1,5 +1,7 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.annotation.RequireModule;
+import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.production.ProductionPlanDTO;
 import com.cretas.aims.dto.scheduling.ConfirmUrgentInsertRequest;
 import com.cretas.aims.dto.scheduling.GetInsertSlotsRequest;
@@ -31,6 +33,7 @@ import java.util.Map;
 @RequestMapping("/api/mobile/{factoryId}/urgent-insert")
 @RequiredArgsConstructor
 @Tag(name = "紧急插单管理", description = "紧急插单时段查询、影响分析、确认插单")
+@RequireModule("scheduling")
 public class UrgentInsertController {
 
     private final UrgentInsertService urgentInsertService;
@@ -38,6 +41,7 @@ public class UrgentInsertController {
     /**
      * 获取可用的插单时段列表
      */
+    @RequirePermission({"scheduling:read_write", "production:read_write"})
     @PostMapping("/slots")
     @Operation(summary = "获取可插单时段", description = "根据产品类型、数量、交期查询可用的插单时段")
     public ResponseEntity<Map<String, Object>> getAvailableSlots(
@@ -61,6 +65,7 @@ public class UrgentInsertController {
     /**
      * 分析插单影响
      */
+    @RequirePermission({"scheduling:read_write", "production:read_write"})
     @PostMapping("/slots/{slotId}/analyze")
     @Operation(summary = "分析插单影响", description = "分析选择特定时段进行插单对现有计划的影响")
     public ResponseEntity<Map<String, Object>> analyzeImpact(
@@ -83,6 +88,7 @@ public class UrgentInsertController {
     /**
      * 确认紧急插单
      */
+    @RequirePermission({"scheduling:read_write", "production:read_write"})
     @PostMapping("/confirm")
     @Operation(summary = "确认紧急插单", description = "确认选定的时段并创建生产计划")
     public ResponseEntity<Map<String, Object>> confirmInsert(
@@ -106,6 +112,7 @@ public class UrgentInsertController {
     /**
      * 强制插入（需要审批）
      */
+    @RequirePermission({"scheduling:read_write", "production:read_write"})
     @PostMapping("/force")
     @Operation(summary = "强制插入", description = "强制插入（跳过影响检查），生成待审批的生产计划")
     public ResponseEntity<Map<String, Object>> forceInsert(
@@ -150,6 +157,7 @@ public class UrgentInsertController {
     /**
      * 选中时段（锁定）
      */
+    @RequirePermission({"scheduling:read_write", "production:read_write"})
     @PostMapping("/slots/{slotId}/select")
     @Operation(summary = "选中时段", description = "标记时段为已选中，防止其他用户同时选择")
     public ResponseEntity<Map<String, Object>> selectSlot(
@@ -170,6 +178,7 @@ public class UrgentInsertController {
     /**
      * 释放时段
      */
+    @RequirePermission({"scheduling:read_write", "production:read_write"})
     @PostMapping("/slots/{slotId}/release")
     @Operation(summary = "释放时段", description = "释放已选中的时段，使其可以被其他用户选择")
     public ResponseEntity<Map<String, Object>> releaseSlot(
@@ -190,6 +199,7 @@ public class UrgentInsertController {
     /**
      * 生成/刷新插单时段
      */
+    @RequirePermission({"scheduling:read_write", "production:read_write"})
     @PostMapping("/slots/generate")
     @Operation(summary = "生成插单时段", description = "根据当前排产情况生成可用的插单时段")
     public ResponseEntity<Map<String, Object>> generateSlots(
@@ -211,6 +221,7 @@ public class UrgentInsertController {
     /**
      * 清理过期时段
      */
+    @RequirePermission({"scheduling:read_write", "production:read_write"})
     @DeleteMapping("/slots/expired")
     @Operation(summary = "清理过期时段", description = "清理已过期的插单时段")
     public ResponseEntity<Map<String, Object>> cleanupExpiredSlots(

@@ -724,6 +724,91 @@ public class IntentRecognitionPipelineServiceImpl implements IntentRecognitionPi
                                                               String businessDomain) {
         String userInput = processedInput; // 使用处理后的输入进行匹配
 
+        // ========== A-quick-6: Short-query keyword shortcut (J3, 2026-04-24) ==========
+        // For very short queries (< 10 chars), the semantic embedding stage (Layer 0.4)
+        // and TwoStageClassifier (Layer 0.6) add ~200-500ms with no accuracy benefit
+        // when embedding cache is cold — single-word/very-short queries are essentially
+        // keywords themselves.
+        //
+        // Strategy: scan only the pre-loaded BASE keywords JSON on each intent (in-memory,
+        // no per-intent DB lookups). If a short query matches base keywords with strong
+        // signal (score >= 2, OR <=5 chars with unique 1-keyword hit), short-circuit.
+        // Otherwise fall through to the full pipeline unchanged.
+        //
+        // We deliberately skip the factory-level/global learned keywords (which require
+        // 2 DB calls per intent × 310 intents = 620 calls) — those are still applied
+        // by Layer 4 parallelScoreMatch downstream if we fall through.
+        //
+        // Skipped when multi-intent triggers detected — those need the full classifier.
+        int charCount = userInput == null ? 0 : userInput.trim().length();
+        boolean isShortQuery = charCount > 0 && charCount < 10 && !skipPhraseShortcut;
+        if (isShortQuery) {
+            try {
+                List<AIIntentConfig> shortAllIntents = configService.getAllIntents(factoryId);
+                String shortNormalized = userInput.toLowerCase().trim();
+                int bestShortScore = 0;
+                int secondShortScore = 0;
+                AIIntentConfig bestShortIntent = null;
+                for (AIIntentConfig intent : shortAllIntents) {
+                    String keywordsJson = intent.getKeywords();
+                    if (keywordsJson == null || keywordsJson.isEmpty()) continue;
+                    int s = 0;
+                    try {
+                        List<String> baseKeywords = objectMapper.readValue(keywordsJson,
+                                new TypeReference<List<String>>() {});
+                        for (String kw : baseKeywords) {
+                            if (kw != null && !kw.isEmpty()
+                                    && shortNormalized.contains(kw.toLowerCase())) {
+                                s++;
+                            }
+                        }
+                    } catch (Exception parseEx) {
+                        // Skip intents with malformed JSON keywords
+                        continue;
+                    }
+                    if (s > bestShortScore) {
+                        secondShortScore = bestShortScore;
+                        bestShortScore = s;
+                        bestShortIntent = intent;
+                    } else if (s > secondShortScore) {
+                        secondShortScore = s;
+                    }
+                }
+                if (bestShortIntent != null) {
+                    // Confidence model: 2+ keywords OR (<=5 chars + 1 unique keyword + no tie)
+                    boolean strong = bestShortScore >= 2;
+                    boolean veryShortUnique = charCount <= 5 && bestShortScore >= 1 && secondShortScore == 0;
+                    if (strong || veryShortUnique) {
+                        double conf = strong ? 0.85 : 0.75;
+                        log.info("[intent] short query ({} chars), keyword-only classify: intent={}, score={}, conf={}",
+                                charCount, bestShortIntent.getIntentCode(), bestShortScore, conf);
+                        ActionType detectedActionType = knowledgeBase.detectActionType(shortNormalized);
+                        IntentMatchResult result = IntentMatchResult.builder()
+                                .bestMatch(bestShortIntent)
+                                .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
+                                        bestShortIntent, conf, (int)(conf * 100),
+                                        Collections.emptyList(), MatchMethod.KEYWORD)))
+                                .confidence(conf)
+                                .matchMethod(MatchMethod.KEYWORD)
+                                .matchedKeywords(Collections.emptyList())
+                                .isStrongSignal(strong)
+                                .requiresConfirmation(!strong)
+                                .userInput(originalInput)
+                                .actionType(detectedActionType)
+                                .build();
+                        saveIntentMatchRecord(result, factoryId, userId, null, false);
+                        return result;
+                    }
+                    // Fall through: low keyword confidence on short query → run full pipeline
+                    log.debug("[intent] short query ({} chars) keyword score={} insufficient, full pipeline",
+                            charCount, bestShortScore);
+                }
+            } catch (Exception e) {
+                log.warn("[intent] short query keyword shortcut failed: {}", e.getMessage());
+                // Fall through to full pipeline
+            }
+        }
+
         // ========== v11.2修复: Layer 0 - 短语匹配优先短路 ==========
         // v4.5原逻辑：只有当原始/处理后短语匹配结果不同时才短路
         // v11.2修复：短语匹配成功即短路，确保高质量短语映射优先生效

@@ -55,11 +55,21 @@ export const ROLE_DASHBOARD_MAP: Record<string, string> = {
 
 /**
  * 工厂类型 Dashboard 覆盖 (按 factoryType 而非 factoryId)
- * 餐饮类型工厂的 factory_super_admin 应看餐饮 Dashboard 而非工厂 Dashboard
+ * 餐饮类型工厂的 factory_super_admin / restaurant_manager 应看餐饮 Dashboard。
+ * 注意: 仅限管理类角色; hr_admin / warehouse_manager / finance_manager 等
+ * 非餐饮业务角色即便在 RESTAURANT 工厂也走自己专属 Dashboard, 不然会看到
+ * 领料单/损耗/盘点 等 Restaurant 专属卡片 -> 点击全 403 (Apr 18 2026 bug #44)。
  */
 const FACTORY_TYPE_DASHBOARD_OVERRIDE: Record<string, string> = {
   'RESTAURANT': 'DashboardRestaurant',
 };
+
+/** 餐饮 Dashboard 仅对这些角色开启 override, 其余角色保留 ROLE_DASHBOARD_MAP 分派 */
+const RESTAURANT_DASHBOARD_ELIGIBLE_ROLES = new Set([
+  'super_admin',
+  'factory_super_admin',
+  'restaurant_manager',
+]);
 
 /**
  * 根据角色获取对应的 Dashboard 组件名称
@@ -67,7 +77,8 @@ const FACTORY_TYPE_DASHBOARD_OVERRIDE: Record<string, string> = {
  * @param factoryType - 工厂类型，用于业务类型覆盖
  */
 export function getDashboardComponent(role: string, factoryType?: string): string {
-  if (factoryType && FACTORY_TYPE_DASHBOARD_OVERRIDE[factoryType]) {
+  if (factoryType && FACTORY_TYPE_DASHBOARD_OVERRIDE[factoryType]
+      && RESTAURANT_DASHBOARD_ELIGIBLE_ROLES.has(role)) {
     return FACTORY_TYPE_DASHBOARD_OVERRIDE[factoryType];
   }
   return ROLE_DASHBOARD_MAP[role] || ROLE_DASHBOARD_MAP['default'];

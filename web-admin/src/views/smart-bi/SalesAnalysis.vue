@@ -361,7 +361,7 @@ async function loadDynamicSalesData(uploadId: number) {
       if (data.kpiCards && data.kpiCards.length > 0) {
         kpiCards.value = data.kpiCards.map((kpi, idx) => ({
           key: `dynamic-${idx}`,
-          title: kpi.title || '',
+          title: humanizeKpiTitle(kpi.title || '', idx),
           value: kpi.value || '0',
           rawValue: kpi.rawValue || 0,
           unit: '',
@@ -575,8 +575,8 @@ async function loadPreviewData() {
       ElMessage.error(res.message || '获取数据失败');
     }
   } catch (error) {
+    // Interceptor already shows specific sticky toast for ApiError.
     console.error('加载预览数据失败:', error);
-    ElMessage.error('加载数据失败');
   } finally {
     previewLoading.value = false;
   }
@@ -1218,6 +1218,26 @@ function handleResize() {
  * Shows "--" for null/undefined values (truly missing data).
  * Shows the backend-formatted value if available.
  */
+
+/**
+ * Apr 24 P0-1 fix: backend dedupe_column_names adds _2/_3 suffixes to duplicate
+ * columns; these leak into KPI titles as "数量金额_3". Rewrite to a more
+ * human-friendly form. Pattern: keeps base name + appends (指标 N) for N>=2.
+ * Also maps common anonymous/ambiguous labels ("数量金额" alone) by position.
+ */
+function humanizeKpiTitle(rawTitle: string, idx: number): string {
+  if (!rawTitle) return `指标 ${idx + 1}`;
+  const t = rawTitle.trim();
+  // Match trailing _N digit suffix from dedupe
+  const m = t.match(/^(.+?)_(\d+)$/);
+  if (m) {
+    const base = m[1];
+    const n = m[2];
+    return `${base} (指标 ${n})`;
+  }
+  return t;
+}
+
 function formatKpiValue(card: KPICard): string {
   // Prefer rawValue for consistent formatting
   if (card.rawValue != null) {

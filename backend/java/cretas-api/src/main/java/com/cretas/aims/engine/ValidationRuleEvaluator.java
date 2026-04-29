@@ -78,7 +78,8 @@ public class ValidationRuleEvaluator {
             boolean conditionMet = spelEvaluator.evaluateCondition(rule.getCondition(), enrichedContext);
             if (conditionMet) {
                 switch (rule.getSeverity()) {
-                    case "BLOCK" -> throw new BusinessException(rule.getErrorMessage());
+                    case "BLOCK" -> throw new BusinessException(409, rule.getErrorMessage())
+                            .withHint("请刷新列表查看最新状态");
                     case "WARN" -> {
                         log.warn("Validation warning [{}]: {}", rule.getRuleCode(), rule.getErrorMessage());
                         warnings.add(rule.getErrorMessage());
