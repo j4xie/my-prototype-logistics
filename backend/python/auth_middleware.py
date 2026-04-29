@@ -63,6 +63,7 @@ PUBLIC_PREFIXES = (
     "/api/efficiency/",  # Efficiency recognition — called by Java backend internally
     "/api/food-kb/manual-chat",  # Operation manual chat — public (HTML page)
     # "/api/smartbi/financial-dashboard/" — removed: requires JWT auth (IDOR fix)
+    "/api/llm/",              # LLM router — called by Java backend internally (no JWT forwarded)
 )
 
 
