@@ -519,6 +519,98 @@
     line-height: 1.7;
   }
   .empty-tip strong { color: #4b5563; font-weight: 600; }
+
+  /* ---------- Role paths (Quick Start by role) ---------- */
+  .role-paths {
+    margin: 16px 0 12px;
+  }
+  .section-title {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .role-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .role-btn {
+    padding: 10px 12px;
+    font-size: 13px;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    border-radius: 8px;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .role-btn:hover {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    color: #1e40af;
+  }
+  @media (max-width: 600px) {
+    .role-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* ---------- Copy button on assistant bubbles ---------- */
+  .msg.assistant .bubble {
+    position: relative;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .msg.assistant .bubble:hover .copy-btn {
+    opacity: 1;
+  }
+  .copy-btn:hover {
+    background: #f3f4f6;
+    color: #1f2937;
+    border-color: #d1d5db;
+  }
+  .copy-btn.copied {
+    background: #d1fae5;
+    color: #065f46;
+    border-color: #10b981;
+  }
+  @media (max-width: 600px) {
+    .copy-btn { opacity: 1; }
+  }
+
+  /* ---------- Header link buttons ---------- */
+  .header-link {
+    background: transparent;
+    border: 1px solid #d1d5db;
+    color: #4b5563;
+    padding: 6px 12px;
+    font-size: 13px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .header-link:hover {
+    border-color: #3b82f6;
+    color: #1e40af;
+    background: #eff6ff;
+  }
 </style>
 </head>
 <body>
@@ -571,6 +663,8 @@
   <div class="chat-header">
     <div class="chat-title">白垩纪 AI 助手 <span class="badge" id="chat-badge"></span></div>
     <div class="chat-actions">
+      <button class="header-link" id="open-manual" title="打开完整手册">打开手册</button>
+      <button class="header-link" id="clear-chat" title="清空对话历史">清空对话</button>
       <button class="btn-text" id="switch-type">切换类型</button>
       <button class="btn-text" id="logout-from-chat">退出</button>
     </div>
@@ -768,6 +862,27 @@
     });
     $('logout-from-chat').addEventListener('click', logout);
 
+    var openManualBtn = $('open-manual');
+    if (openManualBtn) {
+      openManualBtn.addEventListener('click', function() {
+        var manualUrl = state.category === 'restaurant'
+          ? '/restaurant-product-manual.html'
+          : '/factory-operation-manual.html';
+        window.open(manualUrl, '_blank');
+      });
+    }
+
+    var clearChatBtn = $('clear-chat');
+    if (clearChatBtn) {
+      clearChatBtn.addEventListener('click', function() {
+        if (state.history.length === 0) return;
+        if (!confirm('确定清空当前对话历史吗？')) return;
+        state.history = [];
+        clearImage();
+        resetMessageList();
+      });
+    }
+
     var input = $('input-text');
     input.addEventListener('input', function() { autoGrow(input); });
     input.addEventListener('keydown', function(e) {
@@ -781,6 +896,47 @@
 
     $('upload-input').addEventListener('change', handleFileSelect);
     $('remove-image').addEventListener('click', clearImage);
+
+    // Event delegation for copy buttons on assistant bubbles.
+    document.addEventListener('click', function(e) {
+      var btn = e.target && e.target.closest && e.target.closest('.copy-btn');
+      if (!btn) return;
+      var bubble = btn.closest('.bubble');
+      if (!bubble) return;
+      // Get text content excluding the copy button itself.
+      var clone = bubble.cloneNode(true);
+      var btnInClone = clone.querySelector('.copy-btn');
+      if (btnInClone && btnInClone.parentNode) btnInClone.parentNode.removeChild(btnInClone);
+      var text = (clone.textContent || '').trim();
+
+      function flashCopied() {
+        btn.classList.add('copied');
+        setTimeout(function() { btn.classList.remove('copied'); }, 1500);
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(flashCopied).catch(function() {
+          // Fallback below
+          fallbackCopy(text, flashCopied);
+        });
+      } else {
+        fallbackCopy(text, flashCopied);
+      }
+    });
+  }
+
+  function fallbackCopy(text, onSuccess) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      if (onSuccess) onSuccess();
+    } catch (err) { /* ignore */ }
+    document.body.removeChild(ta);
   }
 
   function logout() {
@@ -911,6 +1067,22 @@
     ]
   };
 
+  var ROLE_PATHS = {
+    factory: [
+      { role: '车间操作工', q: '我是新员工车间操作工，首周该学什么' },
+      { role: '仓库管理员', q: '我是仓库管理员，入库 / 调拨 / 盘点都要会哪些' },
+      { role: '质检员', q: '我是质检员，质检任务怎么做' },
+      { role: '班组长 / 调度员', q: '我是班组长，每天要看哪些 KPI' },
+      { role: '厂长', q: '我是厂长，月度回顾要看哪些数据' }
+    ],
+    restaurant: [
+      { role: '前台 / 收银', q: '我是前台收银，首周该学什么' },
+      { role: '财务文员', q: '我是中台财务，每天要做什么' },
+      { role: '店长', q: '我是店长，每周回顾要看哪些指标' },
+      { role: '老板', q: '我是老板，月度回顾要看哪些数据' }
+    ]
+  };
+
   function quickAsk(text) {
     var input = $('input-text');
     input.value = text;
@@ -930,6 +1102,29 @@
       + '基于操作手册的智能问答，您可以提问任何关于系统使用的问题，<br>'
       + '也可以上传截图让 AI 识别界面后回答。';
     tip.appendChild(welcome);
+
+    // Role-based Quick Start: rendered between the welcome tip and the generic quick-ask grid.
+    var rolePaths = (state.category && ROLE_PATHS[state.category]) || [];
+    if (rolePaths.length) {
+      var roleWrap = document.createElement('div');
+      roleWrap.className = 'role-paths';
+      var roleTitle = document.createElement('div');
+      roleTitle.className = 'section-title';
+      roleTitle.textContent = '按岗位快速开始';
+      roleWrap.appendChild(roleTitle);
+      var roleGrid = document.createElement('div');
+      roleGrid.className = 'role-grid';
+      rolePaths.forEach(function(p) {
+        var rb = document.createElement('button');
+        rb.type = 'button';
+        rb.className = 'role-btn';
+        rb.textContent = p.role;
+        rb.addEventListener('click', function() { quickAsk(p.q); });
+        roleGrid.appendChild(rb);
+      });
+      roleWrap.appendChild(roleGrid);
+      tip.appendChild(roleWrap);
+    }
 
     var asks = (state.category && QUICK_ASKS[state.category]) || [];
     if (asks.length) {
@@ -991,6 +1186,15 @@
   function fillAssistantMessage(node, answer, sources) {
     var bubble = node.querySelector('.bubble');
     bubble.innerHTML = renderAnswer(answer);  // renderAnswer escapes first
+
+    // Inject a copy button in the top-right of the assistant bubble.
+    var copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'copy-btn';
+    copyBtn.title = '复制答案';
+    copyBtn.setAttribute('aria-label', '复制答案');
+    copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+    bubble.appendChild(copyBtn);
 
     if (sources && sources.length) {
       var details = document.createElement('details');
