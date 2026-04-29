@@ -359,9 +359,12 @@ def test_query_templates_F001_matches_golden(
 
     Note: this means the schema match is strong against the envelope and
     list framing, but weak against per-row serialisation correctness
-    (the helper isn't actually exercised in this test). The PoC accepts
-    that — the seam itself is unit-testable separately, and a live-
-    backend integration test is out of scope for the PoC contract phase.
+    (the helper isn't actually exercised in this test). Per-row
+    conversion is covered by the ``test_row_to_dict_*`` unit tests
+    below, which exercise ``_row_to_dict`` directly with mock SA-row
+    objects (Jackson key order, datetime.isoformat() rendering,
+    soft-delete derivation, null-timestamp passthrough). A live-backend
+    integration test is out of scope for the PoC contract phase.
     """
     g = goldens["query-templates-F001"]
     expected = g["response"]
@@ -384,3 +387,132 @@ def test_query_templates_F001_matches_golden(
     assert_envelope(body, expected_code=200, expected_success=True)
     assert body["message"] == expected.get("message")
     assert_schema_match(body["data"], expected_data)
+
+
+# ---------------------------------------------------------------------------
+# T5b: _row_to_dict unit tests (spec-review fix)
+# ---------------------------------------------------------------------------
+#
+# The contract test above monkey-patches ``_query_templates`` (the
+# post-conversion seam), so the row-to-Jackson-dict mapping in
+# ``_row_to_dict`` is never actually invoked there. These unit tests
+# exercise that mapping directly with lightweight stand-in row objects
+# (SimpleNamespace mimics SQLAlchemy ``Row`` attribute access without
+# requiring SQLAlchemy or a live DB), covering:
+#   - Jackson key order (BaseEntity-then-subclass + @Where ``deleted``)
+#   - datetime.isoformat() rendering (microsecond precision)
+#   - Null-timestamp passthrough (None stays None, not "None"/"null")
+#   - Soft-delete derivation (deleted_at is None -> deleted == False;
+#     deleted_at set -> deleted == True, even though the @Where SQL
+#     filter normally hides such rows)
+#   - Pass-through for the seven SmartBiQueryTemplate data fields
+
+
+def test_row_to_dict_jackson_key_order_and_active_row():
+    """Verify ``_row_to_dict`` produces Jackson-order keys and derives
+    ``deleted`` correctly for a non-soft-deleted row.
+
+    This is the only test that actually exercises the SQL-row-to-dict
+    mapping; the contract test patches the post-conversion seam.
+    """
+    from types import SimpleNamespace
+
+    from smartbi_compat.api import analysis
+
+    row = SimpleNamespace(
+        id=42,
+        factory_id="F001",
+        name="R18 258 fix verify",
+        category="自定义",
+        description="Verify #258 fix",
+        query_template="市场调研 TOP 客户",
+        parameters="[]",
+        created_at=datetime(2026, 4, 17, 11, 0, 3, 731450),
+        updated_at=datetime(2026, 4, 17, 11, 0, 3, 731450),
+        deleted_at=None,
+    )
+
+    result = analysis._row_to_dict(row)
+
+    # Jackson order is fixed by Lombok @Data declaration order:
+    # BaseEntity first (createdAt, updatedAt, deletedAt), then
+    # SmartBiQueryTemplate (id, factoryId, name, category, description,
+    # queryTemplate, parameters), then the @Where-derived ``deleted``.
+    # list(result.keys()) preserves insertion order — set equality would
+    # silently accept a reshuffled dict that wire-breaks Jackson clients.
+    assert list(result.keys()) == [
+        "createdAt",
+        "updatedAt",
+        "deletedAt",
+        "id",
+        "factoryId",
+        "name",
+        "category",
+        "description",
+        "queryTemplate",
+        "parameters",
+        "deleted",
+    ]
+    # Pass-through values for the seven entity data fields.
+    assert result["id"] == 42
+    assert result["factoryId"] == "F001"
+    assert result["name"] == "R18 258 fix verify"
+    assert result["category"] == "自定义"
+    assert result["description"] == "Verify #258 fix"
+    assert result["queryTemplate"] == "市场调研 TOP 客户"
+    assert result["parameters"] == "[]"
+    # Timestamp formatting: datetime.isoformat() with microseconds.
+    assert result["createdAt"] == "2026-04-17T11:00:03.731450"
+    assert result["updatedAt"] == "2026-04-17T11:00:03.731450"
+    # Null-timestamp passthrough (None stays None, not stringified).
+    assert result["deletedAt"] is None
+    # Soft-delete derivation: deleted_at IS NULL -> deleted == False.
+    assert result["deleted"] is False
+
+
+def test_row_to_dict_soft_deleted_row():
+    """Even with the @Where SQL filter usually hiding these, the dict
+    converter must still derive ``deleted == True`` when ``deleted_at``
+    is set, and render the timestamp via ``.isoformat()``."""
+    from types import SimpleNamespace
+
+    from smartbi_compat.api import analysis
+
+    row = SimpleNamespace(
+        id=99,
+        factory_id="F001",
+        name="archived template",
+        category="自定义",
+        description=None,  # also covers null-description passthrough
+        query_template="...",
+        parameters="[]",
+        created_at=datetime(2026, 1, 1, 0, 0, 0),
+        updated_at=datetime(2026, 1, 2, 0, 0, 0),
+        deleted_at=datetime(2026, 1, 3, 12, 0, 0),
+    )
+
+    result = analysis._row_to_dict(row)
+
+    # Soft-delete branch: derived flag must flip true.
+    assert result["deleted"] is True
+    # Timestamp rendering for a deleted_at value (no microseconds).
+    assert result["deletedAt"] == "2026-01-03T12:00:00"
+    # And the other timestamps still format correctly.
+    assert result["createdAt"] == "2026-01-01T00:00:00"
+    assert result["updatedAt"] == "2026-01-02T00:00:00"
+    # Null-description passthrough — None must stay None, not become "".
+    assert result["description"] is None
+    # Key order is still Jackson — regression guard.
+    assert list(result.keys()) == [
+        "createdAt",
+        "updatedAt",
+        "deletedAt",
+        "id",
+        "factoryId",
+        "name",
+        "category",
+        "description",
+        "queryTemplate",
+        "parameters",
+        "deleted",
+    ]
