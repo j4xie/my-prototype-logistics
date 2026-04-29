@@ -895,6 +895,20 @@ if _llm_available:
 else:
     logger.error("LLM Router routes not registered")
 
+# Phase 2A: SmartBI alias routes (web-admin + RN direct-to-Python)
+try:
+    from smartbi_compat.api import analysis as smartbi_compat_analysis
+    from smartbi_compat.api import upload as smartbi_compat_upload
+    from smartbi_compat.api import dashboard as smartbi_compat_dashboard
+    app.include_router(smartbi_compat_analysis.router, tags=["SmartBI Compat: Analysis"])
+    app.include_router(smartbi_compat_upload.router, tags=["SmartBI Compat: Upload"])
+    app.include_router(smartbi_compat_dashboard.router, tags=["SmartBI Compat: Dashboard"])
+    _smartbi_compat_available = True
+    logger.info("SmartBI compat routes registered (Phase 2A)")
+except ImportError as e:
+    _smartbi_compat_available = False
+    logger.error(f"SmartBI compat routes NOT available: {e}")
+
 
 @app.get("/health")
 async def health_check():

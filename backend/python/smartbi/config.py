@@ -99,7 +99,7 @@ class Settings(BaseSettings):
     postgres_db: str = "smartbi_db"
     postgres_user: str = "smartbi_user"
     postgres_password: str = ""
-    postgres_pool_size: int = 5
+    postgres_pool_size: int = 40
     postgres_max_overflow: int = 10
 
     # ==========================================
