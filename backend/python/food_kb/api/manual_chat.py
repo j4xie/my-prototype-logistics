@@ -372,9 +372,19 @@ async def _ocr_extract_text(image_b64: str) -> str:
         client = get_llm_http_client()
 
         # Strip optional data URI prefix → keep raw base64 only
+        # Also parse mime type from prefix (e.g. data:image/jpeg;base64,...) so we
+        # don't lie to the VL model about the format. Default to png if absent.
+        mime_type = "image/png"
         stripped_b64 = image_b64
         if "," in stripped_b64 and stripped_b64.lstrip().lower().startswith("data:"):
-            stripped_b64 = stripped_b64.split(",", 1)[1]
+            header, stripped_b64 = stripped_b64.split(",", 1)
+            # header looks like "data:image/jpeg;base64"
+            try:
+                parsed_mime = header.split(":", 1)[1].split(";", 1)[0].strip()
+                if parsed_mime:
+                    mime_type = parsed_mime
+            except (IndexError, AttributeError):
+                pass  # keep default
         stripped_b64 = stripped_b64.strip()
 
         if not stripped_b64:
@@ -401,7 +411,7 @@ async def _ocr_extract_text(image_b64: str) -> str:
                     "content": [
                         {
                             "type": "image_url",
-                            "image_url": {"url": f"data:image/png;base64,{stripped_b64}"},
+                            "image_url": {"url": f"data:{mime_type};base64,{stripped_b64}"},
                         },
                         {
                             "type": "text",
@@ -522,7 +532,10 @@ async def manual_chat(request: ManualChatRequest) -> dict:
         + (request.category or "")
         + ("HAS_IMG" if request.image_base64 else "")
     )
-    if not has_history:
+    # Image-bearing requests skip cache entirely: cache key cannot disambiguate
+    # different images sharing the same question text + category, so caching would
+    # cross-contaminate answers across distinct uploads.
+    if not has_history and not request.image_base64:
         cached = _cache_get(c_key)
         if cached is not None:
             logger.info(f"Cache hit for question: {request.question[:40]}...")
@@ -678,8 +691,10 @@ async def manual_chat(request: ManualChatRequest) -> dict:
         "related_questions": related_questions,
     }
 
-    # ------ Improvement #2: populate cache (skip contextual) ------
-    if not has_history:
+    # ------ Improvement #2: populate cache (skip contextual + image requests) ------
+    # See cache lookup gate above: image requests must not write cache to avoid
+    # poisoning future text-only or different-image queries with the same question.
+    if not has_history and not request.image_base64:
         _cache_put(c_key, response)
 
     return response
