@@ -4,9 +4,13 @@ on:
   push:
     paths:
       - 'docs/plans/restaurant-product-manual.html'
+      - 'scripts/ci/check-kb-meta-freshness.py'
+      - 'scripts/ci/check-kb-anchor-consistency.py'
   pull_request:
     paths:
       - 'docs/plans/restaurant-product-manual.html'
+      - 'scripts/ci/check-kb-meta-freshness.py'
+      - 'scripts/ci/check-kb-anchor-consistency.py'
   schedule:
     - cron: '0 9 * * 1'  # Weekly Monday 09:00 UTC
 
