@@ -134,7 +134,7 @@ function handleSizeChange(size: number) {
   loadData();
 }
 
-function handleCreate() {
+async function handleCreate() {
   shipmentForm.value = {
     customerId: '',
     productBatchId: '',
@@ -145,6 +145,9 @@ function handleCreate() {
     driverPhone: '',
     notes: ''
   };
+  // 张权 Apr 28 反馈: dropdown 显示 onMounted 时的旧 cache.
+  // 强制刷新让用户刚建的客户/批次立即可选.
+  await Promise.all([loadCustomers(), loadProductBatches()]);
   dialogVisible.value = true;
 }
 

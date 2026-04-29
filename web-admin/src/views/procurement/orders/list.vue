@@ -189,6 +189,16 @@ function resetForm() {
   form.value = { supplierId: '', purchaseType: 'DIRECT', expectedDeliveryDate: '', remark: '', relatedSalesOrderId: '', items: [{ materialTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0 }], customFields: {} as Record<string, unknown> };
 }
 
+// 张权 Apr 28 反馈: "基础数据已经新建了 但是采购订单 下拉没有选项"
+// — 用户先打开本页, dropdown 已加载; 然后跳到基础数据页新建供应商/原料;
+// 切回本页打开新建对话框时, dropdown 仍是旧 cache. 修复: 每次打开对话框
+// 强制刷新 3 个 dropdown 数据源.
+async function openCreateDialog() {
+  resetForm();
+  await Promise.all([loadSuppliers(), loadMaterials(), loadSalesOrders()]);
+  dialogVisible.value = true;
+}
+
 async function handleAction(orderId: string, action: string) {
   const actionMap: Record<string, { label: string; url: string }> = {
     submit: { label: '提交', url: `/${factoryId.value}/purchase/orders/${orderId}/submit` },
@@ -274,7 +284,7 @@ function handleAiFill(params: Record<string, unknown>) {
             <el-button v-if="canWrite" type="success" :icon="ChatDotRound" @click="aiEntryVisible = true">
               AI录入
             </el-button>
-            <el-button v-if="canWrite" type="primary" :icon="Plus" @click="dialogVisible = true">
+            <el-button v-if="canWrite" type="primary" :icon="Plus" @click="openCreateDialog">
               新建{{ label('purchaseOrder') }}
             </el-button>
           </div>

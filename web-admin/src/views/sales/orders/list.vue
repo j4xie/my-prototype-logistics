@@ -416,7 +416,7 @@ async function handleSave() {
   }
 }
 
-function openCreateDialog() {
+async function openCreateDialog() {
   editingOrderId.value = null;
   form.value = {
     customerId: '',
@@ -430,6 +430,9 @@ function openCreateDialog() {
     items: [{ productTypeId: '', quantity: 0, unit: 'kg', unitPrice: 0, taxRate: 13 }],
     customFields: {} as Record<string, unknown>,
   };
+  // 张权 Apr 28 反馈: 新建对话框 dropdown 显示 onMounted 时的旧 cache.
+  // 强制刷新让用户刚建的客户/产品立即可选.
+  await Promise.all([loadCustomers(), loadProducts(), loadSalesEmployees()]);
   dialogVisible.value = true;
 }
 
