@@ -1,0 +1,43 @@
+{
+  "_meta": {
+    "name": "analysis-region",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/region",
+    "query": {
+      "startDate": "2025-01-01",
+      "endDate": "2025-12-31"
+    },
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:10.420Z",
+    "javaPort": 10011
+  },
+  "response": {
+    "httpStatus": 200,
+    "success": true,
+    "message": "操作成功",
+    "data": {
+      "heatmap": {
+        "chartType": "MAP",
+        "title": "销售地理分布",
+        "seriesField": null,
+        "data": [],
+        "options": null,
+        "xaxisField": null,
+        "yaxisField": null
+      },
+      "targetCompletion": [],
+      "dateRange": {
+        "startDate": "2025-01-01",
+        "endDate": "2025-12-31",
+        "granularity": "YEAR",
+        "originalExpression": "2025-01-01 至 2025-12-31",
+        "relative": false,
+        "days": 365,
+        "valid": true
+      },
+      "opportunityScores": [],
+      "generatedAt": "2026-04-29T12:43:10.01569163",
+      "ranking": []
+    }
+  }
+}

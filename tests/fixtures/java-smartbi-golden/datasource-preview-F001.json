@@ -1,0 +1,36 @@
+{
+  "_meta": {
+    "name": "datasource-preview",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/datasource/1/preview",
+    "query": null,
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:29.129Z",
+    "javaPort": 10011
+  },
+  "response": {
+    "httpStatus": 200,
+    "success": true,
+    "message": "操作成功",
+    "data": {
+      "changes": {
+        "datasourceName": "IL TEATRO（西餐厅）2月_商品销量报表.xlsx",
+        "currentVersion": 1,
+        "newVersion": 1,
+        "addedFields": [],
+        "removedFields": [],
+        "modifiedFields": [],
+        "hasChanges": false,
+        "detectedAt": "2026-04-29T12:43:28.717845252",
+        "totalChanges": 0
+      },
+      "suggestedMappings": [],
+      "warningMessage": null,
+      "requiresApproval": false,
+      "affectedReportsCount": 0,
+      "affectedReportNames": null,
+      "estimatedMigrationTime": null,
+      "confirmationRequiredCount": 0
+    }
+  }
+}

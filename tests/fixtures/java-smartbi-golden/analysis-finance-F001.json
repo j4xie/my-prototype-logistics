@@ -1,0 +1,302 @@
+{
+  "_meta": {
+    "name": "analysis-finance",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/finance",
+    "query": {
+      "startDate": "2025-01-01",
+      "endDate": "2025-12-31"
+    },
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:11.272Z",
+    "javaPort": 10011
+  },
+  "response": {
+    "httpStatus": 200,
+    "success": true,
+    "message": "操作成功",
+    "data": {
+      "overview": {
+        "period": null,
+        "startDate": null,
+        "endDate": null,
+        "kpiCards": [
+          {
+            "key": "total_revenue",
+            "title": "总营收",
+            "value": "20639884.52",
+            "rawValue": 20639884.52,
+            "unit": "元",
+            "change": null,
+            "changeRate": null,
+            "trend": null,
+            "status": "green",
+            "compareText": null,
+            "description": null,
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "bill_count",
+            "title": "账单数",
+            "value": "140541",
+            "rawValue": 140541,
+            "unit": "单",
+            "change": null,
+            "changeRate": null,
+            "trend": null,
+            "status": "green",
+            "compareText": null,
+            "description": null,
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "avg_bill_value",
+            "title": "客单价",
+            "value": "146.86",
+            "rawValue": 146.86,
+            "unit": "元",
+            "change": null,
+            "changeRate": null,
+            "trend": null,
+            "status": "green",
+            "compareText": null,
+            "description": null,
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "store_count",
+            "title": "门店数",
+            "value": "8",
+            "rawValue": 8,
+            "unit": "家",
+            "change": null,
+            "changeRate": null,
+            "trend": null,
+            "status": "green",
+            "compareText": null,
+            "description": null,
+            "targetValue": null,
+            "completionRate": null
+          }
+        ],
+        "metricCards": null,
+        "rankings": {
+          "top_stores": [
+            {
+              "rank": 1,
+              "name": "青花椒大丸百货店",
+              "value": 7431228.74,
+              "target": null,
+              "completionRate": null,
+              "alertLevel": null
+            },
+            {
+              "rank": 2,
+              "name": "青花椒徐汇日月光店",
+              "value": 5132845.53,
+              "target": null,
+              "completionRate": null,
+              "alertLevel": null
+            },
+            {
+              "rank": 3,
+              "name": "青花椒徐汇光启城店",
+              "value": 2720994.05,
+              "target": null,
+              "completionRate": null,
+              "alertLevel": null
+            },
+            {
+              "rank": 4,
+              "name": "青花椒南方百联店",
+              "value": 2361005.54,
+              "target": null,
+              "completionRate": null,
+              "alertLevel": null
+            },
+            {
+              "rank": 5,
+              "name": "青花椒南桥百联店",
+              "value": 1651960.76,
+              "target": null,
+              "completionRate": null,
+              "alertLevel": null
+            },
+            {
+              "rank": 6,
+              "name": "青花椒川食山语颛桥龙湖店",
+              "value": 1246993.02,
+              "target": null,
+              "completionRate": null,
+              "alertLevel": null
+            },
+            {
+              "rank": 7,
+              "name": "青花椒成山巴春店",
+              "value": 85304.28,
+              "target": null,
+              "completionRate": null,
+              "alertLevel": null
+            },
+            {
+              "rank": 8,
+              "name": "青花椒川食山语颛桥龙湖天街店",
+              "value": 9552.6,
+              "target": null,
+              "completionRate": null,
+              "alertLevel": null
+            }
+          ]
+        },
+        "charts": {},
+        "chartList": null,
+        "aiInsights": [],
+        "alerts": null,
+        "recommendations": null,
+        "suggestions": [],
+        "generatedAt": null,
+        "lastUpdated": "2026-04-29T12:43:10.907737209",
+        "fromCache": false,
+        "cacheExpireAt": null
+      },
+      "costStructure": {
+        "chartType": "PIE",
+        "title": "成本结构分析",
+        "seriesField": null,
+        "data": [],
+        "options": {
+          "showPercentage": true,
+          "colors": [
+            "#5470c6",
+            "#91cc75",
+            "#fac858"
+          ]
+        },
+        "xaxisField": "category",
+        "yaxisField": "value"
+      },
+      "dateRange": {
+        "startDate": "2025-01-01",
+        "endDate": "2025-12-31",
+        "granularity": "YEAR",
+        "originalExpression": "2025-01-01 至 2025-12-31",
+        "relative": false,
+        "days": 365,
+        "valid": true
+      },
+      "generatedAt": "2026-04-29T12:43:10.924634538",
+      "profitMetrics": [
+        {
+          "metricCode": "GROSS_PROFIT",
+          "metricName": "毛利额",
+          "value": 0,
+          "formattedValue": "0.00",
+          "unit": "元",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": "销售收入减去销售成本"
+        },
+        {
+          "metricCode": "GROSS_MARGIN",
+          "metricName": "毛利率",
+          "value": 0,
+          "formattedValue": "0.00%",
+          "unit": "%",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "RED",
+          "dimensionValue": null,
+          "description": "毛利额占销售收入的比例"
+        },
+        {
+          "metricCode": "NET_PROFIT",
+          "metricName": "净利润",
+          "value": null,
+          "formattedValue": "N/A",
+          "unit": "元",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": "毛利减去各项费用后的利润"
+        },
+        {
+          "metricCode": "NET_MARGIN",
+          "metricName": "净利率",
+          "value": null,
+          "formattedValue": "N/A",
+          "unit": "%",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": "净利润占销售收入的比例"
+        },
+        {
+          "metricCode": "ROI",
+          "metricName": "投入产出比",
+          "value": 0,
+          "formattedValue": "0.00%",
+          "unit": "%",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "YELLOW",
+          "dimensionValue": null,
+          "description": "毛利额与成本的比率"
+        }
+      ],
+      "receivableAging": {
+        "chartType": "BAR",
+        "title": "应收账款账龄分布",
+        "seriesField": null,
+        "data": [
+          {
+            "agingBucket": "0-30天",
+            "amount": 0,
+            "percentage": 0,
+            "alertLevel": "GREEN"
+          },
+          {
+            "agingBucket": "31-60天",
+            "amount": 0,
+            "percentage": 0,
+            "alertLevel": "YELLOW"
+          },
+          {
+            "agingBucket": "61-90天",
+            "amount": 0,
+            "percentage": 0,
+            "alertLevel": "YELLOW"
+          },
+          {
+            "agingBucket": "90天以上",
+            "amount": 0,
+            "percentage": 0,
+            "alertLevel": "RED"
+          }
+        ],
+        "options": {
+          "colors": [
+            "#91cc75",
+            "#fac858",
+            "#ee6666",
+            "#c23531"
+          ],
+          "showAlert": true
+        },
+        "xaxisField": "agingBucket",
+        "yaxisField": "amount"
+      }
+    }
+  }
+}

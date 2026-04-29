@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "name": "uploads-missing-fields",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/uploads-missing-fields",
+    "query": null,
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:41.284Z",
+    "javaPort": 10011
+  },
+  "response": {
+    "httpStatus": 200,
+    "success": false,
+    "message": "Diagnose failed: No enum constant [内部错误]",
+    "data": {
+      "code": 400,
+      "message": "Diagnose failed: No enum constant [内部错误]",
+      "data": null,
+      "timestamp": "2026-04-29T12:43:40.882337098",
+      "success": false,
+      "actionHint": null,
+      "severity": null,
+      "hintTarget": null
+    }
+  }
+}

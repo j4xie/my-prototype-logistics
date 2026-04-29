@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "name": "upload-confirm",
+    "verb": "POST",
+    "path": "/api/mobile/F001/smart-bi/upload/confirm",
+    "query": null,
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:34.617Z",
+    "javaPort": 10011
+  },
+  "response": {
+    "httpStatus": 200,
+    "success": false,
+    "message": "解析结果不能为空",
+    "data": {
+      "code": 400,
+      "message": "解析结果不能为空",
+      "data": null,
+      "timestamp": "2026-04-29T12:43:33.546511737",
+      "success": false,
+      "actionHint": null,
+      "severity": null,
+      "hintTarget": null
+    }
+  }
+}

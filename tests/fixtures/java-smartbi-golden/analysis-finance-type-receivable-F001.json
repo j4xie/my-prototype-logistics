@@ -1,0 +1,158 @@
+{
+  "_meta": {
+    "name": "analysis-finance-type-receivable",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/finance",
+    "query": {
+      "startDate": "2025-01-01",
+      "endDate": "2025-12-31",
+      "analysisType": "receivable"
+    },
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:14.236Z",
+    "javaPort": 10011
+  },
+  "response": {
+    "httpStatus": 200,
+    "success": true,
+    "message": "操作成功",
+    "data": {
+      "endDate": "2025-12-31",
+      "overdueRanking": [],
+      "metrics": [
+        {
+          "metricCode": "AR_BALANCE",
+          "metricName": "应收余额",
+          "value": 0,
+          "formattedValue": "0.00",
+          "unit": "元",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": "尚未收回的应收账款总额"
+        },
+        {
+          "metricCode": "COLLECTION_RATE",
+          "metricName": "回款率",
+          "value": 0,
+          "formattedValue": "0.00%",
+          "unit": "%",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "RED",
+          "dimensionValue": null,
+          "description": "已回款金额占应收总额的比例"
+        },
+        {
+          "metricCode": "AGING_30_RATIO",
+          "metricName": "30天以上账龄占比",
+          "value": 0,
+          "formattedValue": "0.00%",
+          "unit": "%",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": "账龄超过30天的应收款占比"
+        },
+        {
+          "metricCode": "AGING_60_RATIO",
+          "metricName": "60天以上账龄占比",
+          "value": 0,
+          "formattedValue": "0.00%",
+          "unit": "%",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": "账龄超过60天的应收款占比"
+        },
+        {
+          "metricCode": "AGING_90_RATIO",
+          "metricName": "90天以上账龄占比",
+          "value": 0,
+          "formattedValue": "0.00%",
+          "unit": "%",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": "账龄超过90天的高风险应收款占比"
+        }
+      ],
+      "agingChart": {
+        "chartType": "BAR",
+        "title": "应收账款账龄分布",
+        "seriesField": null,
+        "data": [
+          {
+            "agingBucket": "0-30天",
+            "amount": 0,
+            "percentage": 0,
+            "alertLevel": "GREEN"
+          },
+          {
+            "agingBucket": "31-60天",
+            "amount": 0,
+            "percentage": 0,
+            "alertLevel": "YELLOW"
+          },
+          {
+            "agingBucket": "61-90天",
+            "amount": 0,
+            "percentage": 0,
+            "alertLevel": "YELLOW"
+          },
+          {
+            "agingBucket": "90天以上",
+            "amount": 0,
+            "percentage": 0,
+            "alertLevel": "RED"
+          }
+        ],
+        "options": {
+          "colors": [
+            "#91cc75",
+            "#fac858",
+            "#ee6666",
+            "#c23531"
+          ],
+          "showAlert": true
+        },
+        "xaxisField": "agingBucket",
+        "yaxisField": "amount"
+      },
+      "trendChart": {
+        "chartType": "LINE_BAR",
+        "title": "应收账款趋势",
+        "seriesField": null,
+        "data": [],
+        "options": {
+          "series": [
+            {
+              "type": "bar",
+              "name": "应收金额"
+            },
+            {
+              "type": "bar",
+              "name": "回款金额"
+            },
+            {
+              "type": "line",
+              "name": "应收余额"
+            }
+          ]
+        },
+        "xaxisField": "period",
+        "yaxisField": "balance"
+      },
+      "startDate": "2025-01-01"
+    }
+  }
+}

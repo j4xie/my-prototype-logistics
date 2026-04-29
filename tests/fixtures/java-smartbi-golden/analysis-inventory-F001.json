@@ -1,0 +1,291 @@
+{
+  "_meta": {
+    "name": "analysis-inventory",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/inventory",
+    "query": {
+      "startDate": "2025-01-01",
+      "endDate": "2025-12-31"
+    },
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:18.952Z",
+    "javaPort": 10011
+  },
+  "response": {
+    "httpStatus": 200,
+    "success": true,
+    "message": "操作成功",
+    "data": {
+      "overview": {
+        "period": null,
+        "startDate": null,
+        "endDate": null,
+        "kpiCards": [
+          {
+            "key": "INVENTORY_VALUE",
+            "title": "库存总值",
+            "value": "596,476.68",
+            "rawValue": 596476.68,
+            "unit": "元",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "green",
+            "compareText": null,
+            "description": null,
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "BATCH_COUNT",
+            "title": "库存批次",
+            "value": "20",
+            "rawValue": 20,
+            "unit": "批",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "green",
+            "compareText": null,
+            "description": null,
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "TURNOVER_RATE",
+            "title": "库存周转率",
+            "value": "0.1 次/年",
+            "rawValue": 0.05,
+            "unit": "次/年",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "red",
+            "compareText": null,
+            "description": null,
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "EXPIRY_RISK_RATE",
+            "title": "临期风险率",
+            "value": "0.0%",
+            "rawValue": 0,
+            "unit": "%",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "green",
+            "compareText": null,
+            "description": "30天内临期库存占比",
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "HEALTH_SCORE",
+            "title": "库存健康评分",
+            "value": "80 分",
+            "rawValue": 80,
+            "unit": "分",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "green",
+            "compareText": null,
+            "description": "满分100分",
+            "targetValue": null,
+            "completionRate": null
+          }
+        ],
+        "metricCards": null,
+        "rankings": {
+          "expiring": [],
+          "aging": [
+            {
+              "rank": 1,
+              "name": "MB-2025-001",
+              "value": 0,
+              "target": 124,
+              "completionRate": 350,
+              "alertLevel": "RED"
+            },
+            {
+              "rank": 2,
+              "name": "MB-2025-002",
+              "value": 0,
+              "target": 124,
+              "completionRate": 244,
+              "alertLevel": "RED"
+            },
+            {
+              "rank": 3,
+              "name": "MB-2025-003",
+              "value": 0,
+              "target": 124,
+              "completionRate": 150,
+              "alertLevel": "RED"
+            },
+            {
+              "rank": 4,
+              "name": "MB-TEST-002",
+              "value": 2550,
+              "target": 123,
+              "completionRate": 100,
+              "alertLevel": "RED"
+            },
+            {
+              "rank": 5,
+              "name": "INT-TEST-BATCH-002",
+              "value": 1000,
+              "target": 119,
+              "completionRate": 40,
+              "alertLevel": "YELLOW"
+            },
+            {
+              "rank": 6,
+              "name": "MB-TEST-20260102-001",
+              "value": 5000,
+              "target": 117,
+              "completionRate": 100,
+              "alertLevel": "YELLOW"
+            }
+          ]
+        },
+        "charts": {
+          "库龄分布": {
+            "chartType": "BAR",
+            "title": "库龄分布",
+            "seriesField": null,
+            "data": [
+              {
+                "aging": "0-30天",
+                "value": 587926.68
+              },
+              {
+                "aging": "31-60天",
+                "value": 0
+              },
+              {
+                "aging": "61-90天",
+                "value": 0
+              },
+              {
+                "aging": "90天以上",
+                "value": 8550
+              }
+            ],
+            "options": {
+              "showDataLabels": true,
+              "colors": [
+                "#52c41a",
+                "#1890ff",
+                "#faad14",
+                "#ff4d4f"
+              ]
+            },
+            "xaxisField": "aging",
+            "yaxisField": "value"
+          },
+          "临期风险分布": {
+            "chartType": "PIE",
+            "title": "临期风险分布",
+            "seriesField": null,
+            "data": [
+              {
+                "status": "正常（>30天）",
+                "value": 594970.2
+              },
+              {
+                "status": "关注（15-30天）",
+                "value": 0
+              },
+              {
+                "status": "预警（7-15天）",
+                "value": 0
+              },
+              {
+                "status": "紧急（<7天）",
+                "value": 0
+              },
+              {
+                "status": "无保质期",
+                "value": 1506.48
+              }
+            ],
+            "options": {
+              "showPercentage": true,
+              "showLegend": true,
+              "colors": [
+                "#52c41a",
+                "#faad14",
+                "#ff7a45",
+                "#ff4d4f",
+                "#8c8c8c"
+              ]
+            },
+            "xaxisField": "status",
+            "yaxisField": "value"
+          },
+          "材料类别库存占比": {
+            "chartType": "PIE",
+            "title": "材料类别库存占比",
+            "seriesField": null,
+            "data": [
+              {
+                "category": "RMT-F001-001",
+                "value": 293550
+              },
+              {
+                "category": "RMT-F001-002",
+                "value": 230000
+              },
+              {
+                "category": "RMT-F001-005",
+                "value": 72926.68
+              },
+              {
+                "category": "RMT-F001-003",
+                "value": 0
+              }
+            ],
+            "options": {
+              "showPercentage": true,
+              "showLegend": true
+            },
+            "xaxisField": "category",
+            "yaxisField": "value"
+          }
+        },
+        "chartList": null,
+        "aiInsights": [
+          {
+            "level": "RED",
+            "category": "周转效率",
+            "message": "库存周转率仅 0.1 次/年，库存积压严重",
+            "relatedEntity": null,
+            "actionSuggestion": "建议减少采购量，加快库存消化，优化安全库存设置"
+          },
+          {
+            "level": "GREEN",
+            "category": "整体健康",
+            "message": "库存健康评分 80 分，状况良好",
+            "relatedEntity": null,
+            "actionSuggestion": "继续保持当前库存管理策略"
+          }
+        ],
+        "alerts": null,
+        "recommendations": null,
+        "suggestions": [
+          "有 6 批库存库龄超过90天，建议检查使用计划或考虑处理",
+          "库存周转率偏低，建议优化安全库存设置，减少不必要的采购"
+        ],
+        "generatedAt": null,
+        "lastUpdated": "2026-04-29T12:43:18.582632227",
+        "fromCache": false,
+        "cacheExpireAt": null
+      },
+      "endDate": "2025-12-31",
+      "startDate": "2025-01-01"
+    }
+  }
+}

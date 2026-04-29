@@ -1,0 +1,51 @@
+{
+  "_meta": {
+    "name": "analysis-department",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/department",
+    "query": {
+      "startDate": "2025-01-01",
+      "endDate": "2025-12-31"
+    },
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:09.527Z",
+    "javaPort": 10011
+  },
+  "response": {
+    "httpStatus": 200,
+    "success": true,
+    "message": "操作成功",
+    "data": {
+      "completionRates": [],
+      "efficiencyMatrix": {
+        "chartType": "SCATTER",
+        "title": "部门效率矩阵",
+        "seriesField": null,
+        "data": [],
+        "options": null,
+        "xaxisField": null,
+        "yaxisField": null
+      },
+      "dateRange": {
+        "startDate": "2025-01-01",
+        "endDate": "2025-12-31",
+        "granularity": "YEAR",
+        "originalExpression": "2025-01-01 至 2025-12-31",
+        "relative": false,
+        "days": 365,
+        "valid": true
+      },
+      "generatedAt": "2026-04-29T12:43:08.971343681",
+      "ranking": [],
+      "trendComparison": {
+        "chartType": "LINE",
+        "title": "部门销售趋势对比",
+        "seriesField": null,
+        "data": [],
+        "options": null,
+        "xaxisField": null,
+        "yaxisField": null
+      }
+    }
+  }
+}

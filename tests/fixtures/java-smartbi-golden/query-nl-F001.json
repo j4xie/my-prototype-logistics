@@ -1,0 +1,55 @@
+{
+  "_meta": {
+    "name": "query-nl",
+    "verb": "POST",
+    "path": "/api/mobile/F001/smart-bi/query",
+    "query": null,
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:22.822Z",
+    "javaPort": 10011
+  },
+  "response": {
+    "httpStatus": 200,
+    "success": true,
+    "message": "操作成功",
+    "data": {
+      "intent": "sales_overview",
+      "confidence": 0,
+      "responseText": "老板，目前系统里还没看到本月的销售数据。建议你先把上个月的销售报表或者收银系统导出的数据上传一下，我才能帮你算总额。",
+      "data": null,
+      "parameters": {
+        "timeRange": {
+          "startDate": "2026-04-01",
+          "endDate": "2026-04-30",
+          "granularity": "MONTH",
+          "originalExpression": "本月",
+          "relative": true,
+          "days": 30,
+          "valid": true
+        }
+      },
+      "chartConfig": null,
+      "charts": [],
+      "suggestions": null,
+      "followUpQuestions": [
+        "各部门的销售情况如何？",
+        "哪个销售员表现最好？",
+        "和上月相比增长了多少？"
+      ],
+      "needsClarification": false,
+      "clarificationQuestion": null,
+      "forecast": null,
+      "intentCode": null,
+      "toolName": null,
+      "skillName": null,
+      "sections": null,
+      "followUpChips": null,
+      "message": null,
+      "effectiveSuggestions": [
+        "各部门的销售情况如何？",
+        "哪个销售员表现最好？",
+        "和上月相比增长了多少？"
+      ]
+    }
+  }
+}

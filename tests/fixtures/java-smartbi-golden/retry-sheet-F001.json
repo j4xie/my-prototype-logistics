@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "name": "retry-sheet",
+    "verb": "POST",
+    "path": "/api/mobile/F001/smart-bi/retry-sheet/1",
+    "query": null,
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:36.032Z",
+    "javaPort": 10011
+  },
+  "response": {
+    "httpStatus": 200,
+    "success": false,
+    "message": "未找到上传记录: 1",
+    "data": {
+      "code": 400,
+      "message": "未找到上传记录: 1",
+      "data": null,
+      "timestamp": "2026-04-29T12:43:34.767437611",
+      "success": false,
+      "actionHint": null,
+      "severity": null,
+      "hintTarget": null
+    }
+  }
+}

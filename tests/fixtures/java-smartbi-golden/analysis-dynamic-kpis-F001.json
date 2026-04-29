@@ -1,0 +1,19 @@
+{
+  "_meta": {
+    "name": "analysis-dynamic-kpis",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/dynamic/kpis",
+    "query": {
+      "uploadId": "1"
+    },
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:44:06.702Z",
+    "javaPort": 10011
+  },
+  "response": {
+    "httpStatus": 200,
+    "success": true,
+    "message": "操作成功",
+    "data": []
+  }
+}
