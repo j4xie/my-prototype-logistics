@@ -391,12 +391,11 @@ async def _ocr_extract_text(image_b64: str) -> str:
             logger.warning("OCR called with empty base64 after stripping prefix")
             return ""
 
-        # qwen-vl-plus on DashScope OpenAI-compatible endpoint
-        # Prefer aliyun_a credentials (LLM_ALIYUN_A_*) — these are the DashScope keys
-        # that host vision models. Fall back to the generic llm_* settings.
-        # OCR 用通用 qwen-vl-plus（避免特定日期版本的 free tier 限制）
-        # 优先读 LLM_OCR_MODEL（专用 env），fallback 到 qwen-vl-plus
-        vl_model = os.getenv("LLM_OCR_MODEL", "qwen-vl-plus")
+        # OCR via DashScope OpenAI-compatible endpoint.
+        # Prefer aliyun_a credentials (LLM_ALIYUN_A_*) — DashScope keys hosting vision models.
+        # 默认 qwen-vl-ocr (专用 OCR 模型, 中文小字精度 ≥ qwen-vl-plus, 同价位).
+        # 可通过 LLM_OCR_MODEL env 切换到 qwen-vl-plus / qwen-vl-max 等通用 VL.
+        vl_model = os.getenv("LLM_OCR_MODEL", "qwen-vl-ocr")
         vl_base_url = os.getenv("LLM_ALIYUN_A_BASE_URL", "") or settings.llm_base_url
         vl_api_key = os.getenv("LLM_ALIYUN_A_API_KEY", "") or settings.llm_api_key
 
@@ -418,13 +417,9 @@ async def _ocr_extract_text(image_b64: str) -> str:
                         {
                             "type": "text",
                             "text": (
-                                "请精确转录这张截图里的所有可见文字（按钮、菜单、数据、报错、标签、对话框内容等）。"
-                                "要求：1）保持原文一字不差，不要纠错、美化、改写；"
-                                "2）遇到不确定的字按图中样子给出，宁可保留疑似错字；"
-                                "3）按从上到下、从左到右的视觉顺序组织；"
-                                "4）多个区域之间用空行分隔；"
-                                "5）只输出转录文字本身，不要任何解释、推断或补充说明；"
-                                "6）如果完全识别不出文字返回空字符串。"
+                                "Read all the text in the image. "
+                                "按从上到下、从左到右顺序输出原文，不解释、不补充。"
+                                "如果完全识别不出文字返回空字符串。"
                             ),
                         },
                     ],
