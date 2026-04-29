@@ -420,6 +420,48 @@
   @media print { body { background: #fff; } .container { max-width: 100%; } }
   @media (max-width: 600px) { .accounts-grid { grid-template-columns: 1fr; } }
 
+/* ===== §0A/§0B Tier-1 章节专用样式（产品手册风格 callouts） ===== */
+.tip {
+  background: #dbeafe;
+  border-left: 4px solid #3b82f6;
+  padding: 10px 14px;
+  margin: 10px 0;
+  font-size: 14px;
+  border-radius: 6px;
+  color: #1e40af;
+}
+.warn {
+  background: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  padding: 10px 14px;
+  margin: 10px 0;
+  font-size: 14px;
+  border-radius: 6px;
+  color: #92400e;
+}
+.formula {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  padding: 8px 12px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 14px;
+  margin: 8px 0;
+  border-radius: 4px;
+  color: #1e293b;
+}
+.field-label {
+  font-weight: 600;
+  color: #0369a1;
+}
+.overview {
+  background: #f0f4ff;
+  border-left: 4px solid #667eea;
+  padding: 14px 18px;
+  margin: 12px 0;
+  border-radius: 6px;
+  font-size: 15px;
+  line-height: 1.8;
+}
 </style>
 </head>
 <body>
@@ -583,7 +625,7 @@
       <tr><td>§0B 财务 PBI 看板</td><td>需要标准化财务月报（损益、应收应付）</td><td>PBI 看板拉实时财务数据，AI Query 依赖上传数据集，两者互补验证</td></tr>
       <tr><td><a href="#section6f">§6F 质检记录</a></td><td>AI Query 显示良品率低或工序合格率超标</td><td>下钻到批次维度，查具体不合格记录和原因</td></tr>
       <tr><td><a href="#section-equipment">§15 设备管理</a></td><td>AI Query 显示 OEE 低或停机时间长</td><td>查具体设备的故障/保养记录</td></tr>
-      <tr><td><a href="#section10">§10 员工签到 + 报工</a></td><td>AI Query 显示人均产值低或损耗集中</td><td>下钻到工人/班次维度，定位个人或班次问题</td></tr>
+      <tr><td>§10 员工签到 + 报工</td><td>AI Query 显示人均产值低或损耗集中</td><td>下钻到工人/班次维度，定位个人或班次问题</td></tr>
     </tbody>
   </table>
 
@@ -628,7 +670,7 @@
     <li>§0B 财务 PBI 看板：财务数据标准视图，与 AI Query 互补验证</li>
     <li><a href="#section6f">§6F 质检记录管理</a>：良品率异常时深入排查</li>
     <li><a href="#section-equipment">§15 设备管理</a>：OEE 异常时查设备状态</li>
-    <li><a href="#section10">§10 员工签到 + 报工</a>：人均产值/损耗异常时查工人维度</li>
+    <li>§10 员工签到 + 报工：人均产值/损耗异常时查工人维度</li>
   </ul>
 </section>
 
@@ -7009,7 +7051,7 @@
 </div>
 
 <p style="text-align:center; color:#999; margin:30px 0; font-size:12px;">
-  白垩纪食品溯源系统 v3.3 | 完整操作手册 | 更新: 2026-04-08
+  白垩纪食品溯源系统 v3.3 | 完整操作手册 | 更新: 2026-04-29
 </p>
 
 </div>
