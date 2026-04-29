@@ -36,7 +36,7 @@ async function loadData() {
 const dialogVisible = ref(false);
 const editingId = ref<string | null>(null);
 const form = ref({
-  decisionType: 'FINANCE_APPROVAL',
+  decisionType: 'FORCE_INSERT',
   name: '',
   description: '',
   approvalLevel: 1,
@@ -52,7 +52,7 @@ const submitting = ref(false);
 function openCreate() {
   editingId.value = null;
   form.value = {
-    decisionType: 'FINANCE_APPROVAL',
+    decisionType: 'FORCE_INSERT',
     name: '',
     description: '',
     approvalLevel: 1,
@@ -106,15 +106,18 @@ async function handleDelete(row: Record<string, unknown>) {
   } catch { /* cancel */ }
 }
 
+// 来自后端 ApprovalChainConfig.DecisionType enum
 const decisionTypeMap: Record<string, string> = {
-  FINANCE_APPROVAL: '财务审批',
-  WORK_REPORT_APPROVAL: '报工审批',
-  PROCUREMENT_APPROVAL: '采购审批',
-  SALES_APPROVAL: '销售审批',
-  PRODUCTION_APPROVAL: '生产审批',
-  TRANSFER_APPROVAL: '调拨审批',
-  QUALITY_APPROVAL: '质检审批',
-  HR_APPROVAL: '人事审批',
+  FORCE_INSERT: '强制插单',
+  QUALITY_RELEASE: '质检放行',
+  QUALITY_EXCEPTION: '质检特批',
+  BATCH_STATUS_CHANGE: '批次状态变更',
+  SUPPLIER_APPROVAL: '供应商准入',
+  SUPPLIER_STATUS_CHANGE: '供应商状态变更',
+  MATERIAL_DISPOSAL: '原料处置',
+  PRODUCTION_PLAN_CHANGE: '生产计划变更',
+  EQUIPMENT_STATUS_CHANGE: '设备状态变更',
+  CUSTOM: '自定义',
 };
 </script>
 
