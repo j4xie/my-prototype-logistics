@@ -823,3 +823,41 @@ class TestCostHelpers:
         # divide(SCALE=4 HALF_UP) = 0.3333, multiply(100) = 33.3300, setScale(2 HALF_UP) = 33.33
         item = _create_pie_data_item("X", Decimal("1"), Decimal("3"))
         assert item["percentage"] == 33.33
+
+    def test_aggregate_cost_by_period_single_month(self):
+        from smartbi_compat.api.analysis_finance import _aggregate_cost_by_period
+        from decimal import Decimal
+        from datetime import date
+        rows = [{
+            "material_cost": Decimal("60000"),
+            "labor_cost": Decimal("30000"),
+            "overhead_cost": Decimal("10000"),
+            "total_cost": Decimal("100000"),
+            "record_date": date(2025, 6, 15),
+        }]
+        result = _aggregate_cost_by_period(rows, "MONTH")
+        assert "2025-06" in result
+        slot = result["2025-06"]
+        assert slot[0] == Decimal("60000")  # material
+        assert slot[1] == Decimal("30000")  # labor
+        assert slot[2] == Decimal("10000")  # overhead
+        assert slot[3] == Decimal("100000")  # total
+
+    def test_aggregate_cost_by_period_negative_abs_defensive(self):
+        from smartbi_compat.api.analysis_finance import _aggregate_cost_by_period
+        from decimal import Decimal
+        from datetime import date
+        # Java P0-1 Bug B: Excel 历史数据可能存负值 cost，所有成本项 .abs() 强制取正
+        rows = [{
+            "material_cost": Decimal("-50000"),  # negative
+            "labor_cost": None,  # None → skip per Rule 1
+            "overhead_cost": Decimal("0"),  # zero is valid (not None)
+            "total_cost": Decimal("-50000"),
+            "record_date": date(2025, 6, 1),
+        }]
+        result = _aggregate_cost_by_period(rows, "MONTH")
+        slot = result["2025-06"]
+        assert slot[0] == Decimal("50000")  # abs(-50000)
+        assert slot[1] == Decimal("0")  # None skipped, slot remains 0
+        assert slot[2] == Decimal("0")  # 0 valid contribution
+        assert slot[3] == Decimal("50000")  # abs(-50000)

@@ -235,6 +235,31 @@ def _create_pie_data_item(category: str, value: Decimal, total: Decimal) -> dict
 
 
 
+def _aggregate_cost_by_period(
+    cost_records: list[dict], period: str
+) -> dict[str, list[Decimal]]:
+    """Java FinanceAnalysisServiceImpl.aggregateCostByPeriod line 1452-1467 1:1 mirror.
+
+    TreeMap → Python dict (caller does sorted() for ordering). 每 period 4 个 BigDecimal:
+    [material, labor, overhead, total]，全部 .abs() defensive (Java P0-1 Bug B).
+    Rule 1: is not None 三元，禁 truthy fallback (skip None entirely; preserve Decimal("0")).
+    """
+    result: dict[str, list[Decimal]] = {}
+    for c in cost_records:
+        key = _get_period_key(c["record_date"], period)
+        slot = result.setdefault(key, [Decimal("0")] * 4)
+        if c.get("material_cost") is not None:
+            slot[0] += abs(_to_decimal(c["material_cost"]))
+        if c.get("labor_cost") is not None:
+            slot[1] += abs(_to_decimal(c["labor_cost"]))
+        if c.get("overhead_cost") is not None:
+            slot[2] += abs(_to_decimal(c["overhead_cost"]))
+        if c.get("total_cost") is not None:
+            slot[3] += abs(_to_decimal(c["total_cost"]))
+    return result
+
+
+
 def _new_ai_insight_dict(
     level: str,
     category: str,
