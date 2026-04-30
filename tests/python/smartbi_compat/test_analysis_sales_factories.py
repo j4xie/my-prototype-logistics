@@ -644,6 +644,83 @@ class TestFetchGoldCategoryChart:
         assert any("category fetch failed" in r.message for r in caplog.records)
 
 
+from smartbi_compat.api.analysis_sales import _build_from_gold_with_charts
+
+
+class TestBuildFromGoldWithCharts:
+    def _patch_all_seams(self, monkeypatch, finance, trend, products):
+        from smartbi_compat.api import analysis_sales as mod
+        async def fake_fin(pool, fid, dr, *, top_n_stores=10):
+            return finance
+        async def fake_trend(pool, fid, dr):
+            return trend
+        async def fake_prod(pool, fid, dr, *, top_n=8):
+            return products
+        monkeypatch.setattr(mod, "_call_finance_summary", fake_fin)
+        monkeypatch.setattr(mod, "_call_daily_trend", fake_trend)
+        monkeypatch.setattr(mod, "_call_top_products", fake_prod)
+
+    def test_returns_dashboard_with_both_charts(self, monkeypatch, range_2025):
+        self._patch_all_seams(
+            monkeypatch,
+            finance=TestBuildFromGoldFinanceSummary.F001_GOLD,
+            trend=TestFetchGoldTrendChart.F001_TREND,
+            products=TestFetchGoldCategoryChart.F001_PRODUCTS,
+        )
+        result = asyncio.run(_build_from_gold_with_charts("F001", range_2025, pool=None))
+        assert result is not None
+        assert "sales_trend" in result["charts"]
+        assert "category_distribution" in result["charts"]
+        assert result["charts"]["sales_trend"]["chartType"] == "LINE"
+        assert result["charts"]["category_distribution"]["chartType"] == "PIE"
+
+    def test_returns_none_when_finance_summary_empty(self, monkeypatch, range_2025):
+        self._patch_all_seams(
+            monkeypatch,
+            finance=TestBuildFromGoldFinanceSummary.EMPTY_GOLD,
+            trend=TestFetchGoldTrendChart.F001_TREND,
+            products=TestFetchGoldCategoryChart.F001_PRODUCTS,
+        )
+        result = asyncio.run(_build_from_gold_with_charts("F001", range_2025, pool=None))
+        assert result is None
+
+    def test_tolerates_trend_chart_failure(self, monkeypatch, range_2025):
+        """Java lines 186-190: chart fetch failure logged but does not break the wrapper."""
+        from smartbi_compat.api import analysis_sales as mod
+        async def fake_fin(pool, fid, dr, *, top_n_stores=10):
+            return TestBuildFromGoldFinanceSummary.F001_GOLD
+        async def failing_trend(pool, fid, dr):
+            raise RuntimeError("simulated trend failure")
+        async def fake_prod(pool, fid, dr, *, top_n=8):
+            return TestFetchGoldCategoryChart.F001_PRODUCTS
+        monkeypatch.setattr(mod, "_call_finance_summary", fake_fin)
+        monkeypatch.setattr(mod, "_call_daily_trend", failing_trend)
+        monkeypatch.setattr(mod, "_call_top_products", fake_prod)
+        result = asyncio.run(_build_from_gold_with_charts("F001", range_2025, pool=None))
+        assert result is not None
+        assert "sales_trend" not in result["charts"]
+        assert "category_distribution" in result["charts"]
+        assert len(result["kpiCards"]) == 4
+
+    def test_charts_dict_empty_when_both_charts_fail(self, monkeypatch, range_2025):
+        from smartbi_compat.api import analysis_sales as mod
+        async def fake_fin(pool, fid, dr, *, top_n_stores=10):
+            return TestBuildFromGoldFinanceSummary.F001_GOLD
+        async def fail_t(pool, fid, dr):
+            raise RuntimeError("t fail")
+        async def fail_p(pool, fid, dr, *, top_n=8):
+            raise RuntimeError("p fail")
+        monkeypatch.setattr(mod, "_call_finance_summary", fake_fin)
+        monkeypatch.setattr(mod, "_call_daily_trend", fail_t)
+        monkeypatch.setattr(mod, "_call_top_products", fail_p)
+        result = asyncio.run(_build_from_gold_with_charts("F001", range_2025, pool=None))
+        assert result is not None
+        assert result["charts"] == {}
+
+    def test_is_async(self):
+        assert asyncio.iscoroutinefunction(_build_from_gold_with_charts)
+
+
 from smartbi_compat.api.analysis_sales import _to_decimal
 
 

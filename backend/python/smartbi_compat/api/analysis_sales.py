@@ -541,6 +541,32 @@ async def _fetch_gold_category_chart(
     )
 
 
+async def _build_from_gold_with_charts(
+    factory_id: str, range_: DateRange, pool=None,
+) -> Optional[dict]:
+    """Mirror Java GoldDashboardBuilder.buildFromGoldWithCharts (lines 135-158).
+
+    Wraps _build_from_gold_finance_summary with chart enrichment.
+    Returns None when base is None (empty Gold -> legacy fallback).
+    Tolerates individual chart fetch failures (each chart is independent).
+    """
+    base = await _build_from_gold_finance_summary(factory_id, range_, pool=pool)
+    if base is None:
+        return None
+
+    trend_chart = await _fetch_gold_trend_chart(factory_id, range_, pool=pool)
+    category_chart = await _fetch_gold_category_chart(factory_id, range_, pool=pool)
+
+    charts = {}
+    if trend_chart is not None:
+        charts["sales_trend"] = trend_chart
+    if category_chart is not None:
+        charts["category_distribution"] = category_chart
+
+    base["charts"] = charts
+    return base
+
+
 async def _get_sales_overview(factory_id: str, range_: DateRange) -> dict:
     """STUB — overview/gold specs replace.
 
