@@ -681,7 +681,7 @@ These are intentionally deferred to plan tasks:
 5. **AIInsight optional fields**: F999 shows 5 keys; AIInsight.java 46 LOC may have more.
 6. **Composite generatedAt format**: Java `LocalDateTime.now()` → Jackson serializes as ISO with nanos (`2026-04-30T06:34:34.172252663`). Python must match format (use `datetime.now().isoformat()` or fixed precision).
 7. ~~**Gold path port strategy** (R11)~~ **RESOLVED** — chose option (a) port Gold adapter. Python Gold infrastructure (`smartbi.gold.queries.finance_summary` etc) discovered to already exist; gold spec ports only the ~150 LOC `GoldDashboardBuilder` adapter via direct imports. No HTTP self-call. Adds 2-3h to total endpoint scope. See `2026-04-30-phase2a-analysis-sales-gold-design.md`.
-8. **F001 calibration goldens** (R5 + R12): rankings + trend specs each recommend seeding synthetic `smart_bi_sales_data` rows in F001 test env so legacy non-empty path is exercised. Foundation does NOT seed; sibling specs propose with explicit user approval gate. Precedent: commit `f84101d53` "bonus F999 calibration goldens".
+8. ~~**F001 calibration goldens** (R5 + R12)~~ **APPROVED 2026-04-30** — user authorized rankings + trend specs to seed synthetic `smart_bi_sales_data` rows in F001 test env so legacy non-empty path is exercised. Precedent: commit `f84101d53` "bonus F999 calibration goldens". Foundation does NOT seed (sibling-spec scope); rankings + trend specs each include "seed synthetic rows + re-record golden" as plan tasks.
 
 ## §10. Plan structure preview (foundation plan)
 
