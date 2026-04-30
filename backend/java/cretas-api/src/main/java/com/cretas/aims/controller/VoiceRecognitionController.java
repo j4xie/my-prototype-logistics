@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.exception.BusinessException;
 
 /**
  * 语音识别控制器
@@ -79,12 +80,12 @@ public class VoiceRecognitionController {
             } else {
                 log.warn("语音识别失败: code={}, message={}",
                     response.getCode(), response.getMessage());
-                return ResponseEntity.ok(ApiResponse.error(response.getMessage()));
+                throw new BusinessException(500, response.getMessage() != null ? response.getMessage() : "操作失败");
             }
 
         } catch (Exception e) {
             log.error("语音识别异常", e);
-            return ResponseEntity.ok(ApiResponse.error("语音识别服务异常: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "语音识别服务异常: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -116,12 +117,12 @@ public class VoiceRecognitionController {
             if (response.getCode() == 0) {
                 return ResponseEntity.ok(ApiResponse.success(response));
             } else {
-                return ResponseEntity.ok(ApiResponse.error(response.getMessage()));
+                throw new BusinessException(500, response.getMessage() != null ? response.getMessage() : "操作失败");
             }
 
         } catch (Exception e) {
             log.error("语音识别异常", e);
-            return ResponseEntity.ok(ApiResponse.error("语音识别服务异常: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "语音识别服务异常: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -282,12 +283,12 @@ public class VoiceRecognitionController {
             return ResponseEntity.ok(ApiResponse.success(task));
 
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.ok(ApiResponse.error(ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(400, ErrorSanitizer.sanitize(e), e);
         } catch (IllegalStateException e) {
-            return ResponseEntity.ok(ApiResponse.error(ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(400, ErrorSanitizer.sanitize(e), e);
         } catch (Exception e) {
             log.error("创建批量任务失败", e);
-            return ResponseEntity.ok(ApiResponse.error("创建批量任务失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "创建批量任务失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -331,7 +332,7 @@ public class VoiceRecognitionController {
             Map<String, Object> result = voiceRecognitionService.getBatchTaskResult(taskNumber);
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.ok(ApiResponse.error(ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(400, ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -351,7 +352,7 @@ public class VoiceRecognitionController {
             BatchVoiceTask task = voiceRecognitionService.cancelBatchTask(taskNumber, userId);
             return ResponseEntity.ok(ApiResponse.success(task));
         } catch (IllegalArgumentException | IllegalStateException e) {
-            return ResponseEntity.ok(ApiResponse.error(ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(400, ErrorSanitizer.sanitize(e), e);
         }
     }
 

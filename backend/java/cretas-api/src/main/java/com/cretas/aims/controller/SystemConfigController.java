@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.cretas.aims.annotation.RequirePermission;
+import com.cretas.aims.exception.BusinessException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -69,7 +70,7 @@ public class SystemConfigController {
 
         return systemEnumService.getEnum(factoryId, enumGroup, enumCode)
                 .map(e -> ResponseEntity.ok(ApiResponse.success(e)))
-                .orElse(ResponseEntity.ok(ApiResponse.error("枚举值不存在")));
+                .orElseThrow(() -> new BusinessException(404, "枚举值不存在"));
     }
 
     @GetMapping("/enums/{enumGroup}/labels")
@@ -173,7 +174,7 @@ public class SystemConfigController {
 
         return systemEnumService.getUnit(factoryId, unitCode)
                 .map(u -> ResponseEntity.ok(ApiResponse.success(u)))
-                .orElse(ResponseEntity.ok(ApiResponse.error("计量单位不存在")));
+                .orElseThrow(() -> new BusinessException(404, "计量单位不存在"));
     }
 
     @GetMapping("/units/base/{category}")
@@ -184,7 +185,7 @@ public class SystemConfigController {
 
         return systemEnumService.getBaseUnit(factoryId, category)
                 .map(u -> ResponseEntity.ok(ApiResponse.success(u)))
-                .orElse(ResponseEntity.ok(ApiResponse.error("未找到该分类的基础单位")));
+                .orElseThrow(() -> new BusinessException(404, "未找到该分类的基础单位"));
     }
 
     // ==================== 单位换算 ====================

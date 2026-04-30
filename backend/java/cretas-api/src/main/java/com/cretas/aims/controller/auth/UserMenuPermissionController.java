@@ -5,6 +5,7 @@ import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.auth.UserMenuPermission;
 import com.cretas.aims.entity.enums.FactoryUserRole;
 import com.cretas.aims.service.auth.UserMenuPermissionService;
+import com.cretas.aims.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -65,7 +66,7 @@ public class UserMenuPermissionController {
         String menuCode = body.get("menuCode");
         String remark = body.get("remark");
         if (menuCode == null || menuCode.isBlank()) {
-            return ResponseEntity.ok(ApiResponse.error("menuCode 不能为空"));
+            throw new BusinessException(400, "menuCode 不能为空");
         }
         UserMenuPermission saved = service.grantMenu(
                 factoryId, userId, menuCode, currentOperator(), remark);
@@ -83,7 +84,7 @@ public class UserMenuPermissionController {
         String menuCode = body.get("menuCode");
         String remark = body.get("remark");
         if (menuCode == null || menuCode.isBlank()) {
-            return ResponseEntity.ok(ApiResponse.error("menuCode 不能为空"));
+            throw new BusinessException(400, "menuCode 不能为空");
         }
         UserMenuPermission saved = service.revokeMenu(
                 factoryId, userId, menuCode, currentOperator(), remark);

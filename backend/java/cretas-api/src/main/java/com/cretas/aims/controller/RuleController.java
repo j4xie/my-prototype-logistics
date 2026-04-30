@@ -742,11 +742,11 @@ public class RuleController {
             if (result.getSuccess()) {
                 return ResponseEntity.ok(ApiResponse.success("状态转换成功", result));
             } else {
-                return ResponseEntity.ok(ApiResponse.error(result.getMessage()));
+                throw new BusinessException(500, result.getMessage() != null ? result.getMessage() : "操作失败");
             }
         } catch (Exception e) {
             log.error("Transition execution failed: {}", e.getMessage());
-            return ResponseEntity.ok(ApiResponse.error("状态转换失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "状态转换失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 }

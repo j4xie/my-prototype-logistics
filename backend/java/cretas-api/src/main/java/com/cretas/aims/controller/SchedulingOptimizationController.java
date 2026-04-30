@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import com.cretas.aims.util.ErrorSanitizer;
 import com.cretas.aims.annotation.RequireModule;
+import com.cretas.aims.exception.BusinessException;
 
 /**
  * 调度优化 API Controller
@@ -48,7 +49,7 @@ public class SchedulingOptimizationController {
             return ResponseEntity.ok(ApiResponse.success(config));
         } catch (Exception e) {
             log.error("Error getting config for factory: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取配置失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取配置失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -66,7 +67,7 @@ public class SchedulingOptimizationController {
             return ResponseEntity.ok(ApiResponse.success("配置更新成功", updated));
         } catch (Exception e) {
             log.error("Error updating config for factory: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("更新配置失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "更新配置失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -83,7 +84,7 @@ public class SchedulingOptimizationController {
             return ResponseEntity.ok(ApiResponse.success(effective));
         } catch (Exception e) {
             log.error("Error getting effective config for worker: {}", workerId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取有效配置失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取有效配置失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -100,7 +101,7 @@ public class SchedulingOptimizationController {
             return ResponseEntity.ok(ApiResponse.success("自适应学习执行成功", "OK"));
         } catch (Exception e) {
             log.error("Error triggering adaptation for factory: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("自适应学习失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "自适应学习失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -118,7 +119,7 @@ public class SchedulingOptimizationController {
             return ResponseEntity.ok(ApiResponse.success(stats));
         } catch (Exception e) {
             log.error("Error getting temp worker stats for factory: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取统计失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取统计失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -138,7 +139,7 @@ public class SchedulingOptimizationController {
             return ResponseEntity.ok(ApiResponse.success("临时工注册成功", worker));
         } catch (Exception e) {
             log.error("Error registering temp worker: {}", workerId, e);
-            return ResponseEntity.ok(ApiResponse.error("注册失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "注册失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -156,7 +157,7 @@ public class SchedulingOptimizationController {
             return ResponseEntity.ok(ApiResponse.success("转正成功", worker));
         } catch (Exception e) {
             log.error("Error converting temp worker: {}", workerId, e);
-            return ResponseEntity.ok(ApiResponse.error("转正失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "转正失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -172,7 +173,7 @@ public class SchedulingOptimizationController {
             return ResponseEntity.ok(ApiResponse.success(candidates));
         } catch (Exception e) {
             log.error("Error getting conversion candidates for factory: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取候选人失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取候选人失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -188,7 +189,7 @@ public class SchedulingOptimizationController {
             return ResponseEntity.ok(ApiResponse.success(workers));
         } catch (Exception e) {
             log.error("Error getting temp workers needing assignment: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -205,10 +206,10 @@ public class SchedulingOptimizationController {
         try {
             var profile = skuComplexityService.getSkuProfile(factoryId, skuCode);
             return profile.map(p -> ResponseEntity.ok(ApiResponse.success(p)))
-                    .orElse(ResponseEntity.ok(ApiResponse.error("SKU不存在: " + skuCode)));
+                    .orElseThrow(() -> new BusinessException(404, "SKU不存在: " + skuCode).withHint("请检查 ID 是否正确"));
         } catch (Exception e) {
             log.error("Error getting SKU complexity: {}", skuCode, e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -227,7 +228,7 @@ public class SchedulingOptimizationController {
             return ResponseEntity.ok(ApiResponse.success("SKU复杂度设置成功", "OK"));
         } catch (Exception e) {
             log.error("Error setting SKU complexity: {}", skuCode, e);
-            return ResponseEntity.ok(ApiResponse.error("设置失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "设置失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -243,7 +244,7 @@ public class SchedulingOptimizationController {
             return ResponseEntity.ok(ApiResponse.success(skus));
         } catch (Exception e) {
             log.error("Error getting training SKUs: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -259,7 +260,7 @@ public class SchedulingOptimizationController {
             return ResponseEntity.ok(ApiResponse.success(skus));
         } catch (Exception e) {
             log.error("Error getting expert SKUs: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -275,7 +276,7 @@ public class SchedulingOptimizationController {
             return ResponseEntity.ok(ApiResponse.success(drifts));
         } catch (Exception e) {
             log.error("Error detecting SKU drift: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("检测失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "检测失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -293,7 +294,7 @@ public class SchedulingOptimizationController {
             return ResponseEntity.ok(ApiResponse.success(stats));
         } catch (Exception e) {
             log.error("Error getting fairness stats: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -310,7 +311,7 @@ public class SchedulingOptimizationController {
             return ResponseEntity.ok(ApiResponse.success(violations));
         } catch (Exception e) {
             log.error("Error detecting fairness violations: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("检测失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "检测失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -327,7 +328,7 @@ public class SchedulingOptimizationController {
             return ResponseEntity.ok(ApiResponse.success("公平性周期已重置", "OK"));
         } catch (Exception e) {
             log.error("Error resetting fairness period: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("重置失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "重置失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -347,7 +348,7 @@ public class SchedulingOptimizationController {
             return ResponseEntity.ok(ApiResponse.success(complexity));
         } catch (Exception e) {
             log.error("Error evaluating complexity: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("评估失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "评估失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -390,7 +391,7 @@ public class SchedulingOptimizationController {
             return ResponseEntity.ok(ApiResponse.success(overview));
         } catch (Exception e) {
             log.error("Error getting overview: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取总览失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取总览失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 

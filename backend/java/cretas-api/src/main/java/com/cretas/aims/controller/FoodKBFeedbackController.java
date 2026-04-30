@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.exception.BusinessException;
 
 /**
  * 食品知识库反馈控制器
@@ -85,7 +86,7 @@ public class FoodKBFeedbackController {
 
         } catch (Exception e) {
             log.error("提交食品知识库反馈失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("提交反馈失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "提交反馈失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -137,7 +138,7 @@ public class FoodKBFeedbackController {
 
         } catch (Exception e) {
             log.error("获取食品知识库反馈统计失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("获取统计失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取统计失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
