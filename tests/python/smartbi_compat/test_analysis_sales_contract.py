@@ -171,3 +171,158 @@ class TestEnvelope:
             f"Expected data keys: "
             f"{sorted(expected_response.get('data', {}).keys()) if isinstance(expected_response.get('data'), dict) else 'N/A'}"
         )
+
+
+# Re-export adapter helpers used by TestGold mock setup
+from smartbi_compat.api.analysis_sales import (  # noqa: E402
+    _build_from_gold_with_charts,
+    _build_from_gold_finance_summary,
+)
+
+
+F001_GOLD_FINANCE = {
+    "factory_id": "F001",
+    "start_date": "2025-01-01",
+    "end_date": "2025-12-31",
+    "total_revenue": 20639884.52,
+    "bill_count": 140541,
+    "avg_bill_value": 146.86,
+    "store_count": 8,
+    "top_stores": [
+        {"store_id": f"S{i}", "store_name": f"Store {i}", "revenue": 100000.0 * (10 - i), "bill_count": 1000 * (10 - i)}
+        for i in range(1, 9)
+    ],
+}
+
+F001_GOLD_TREND = {
+    "factory_id": "F001",
+    "start_date": "2025-01-01",
+    "end_date": "2025-12-31",
+    "points": [{"date": "2025-01-01", "revenue": 91972.04, "bill_count": 600, "avg_bill_value": 153.29}],
+}
+
+F001_GOLD_PRODUCTS = {
+    "factory_id": "F001",
+    "start_date": "2025-01-01",
+    "end_date": "2025-12-31",
+    "top_products": [
+        {"product_id": f"P{i}", "name": f"Product {i}", "qty": 1000, "revenue": 100000.0 * (9 - i), "bill_count": 500}
+        for i in range(1, 9)
+    ],
+}
+
+
+class TestGold:
+    """Gold-path adapter contract tests."""
+
+    def _patch_gold_path(self, monkeypatch, finance, trend, products):
+        """Patch the 3 query seams + bypass pool acquisition.
+
+        Strategy: patch smartbi.config.get_pg_pool to return a sentinel pool
+        object (None is fine since adapters don't actually use pool when seams
+        are also patched). Then patch the 3 seams to return fixture data.
+        """
+        from smartbi_compat.api import analysis_sales as mod
+        async def fake_pool():
+            return None
+        async def fake_fin(pool, fid, dr, *, top_n_stores=10):
+            return finance
+        async def fake_trend(pool, fid, dr):
+            return trend
+        async def fake_prod(pool, fid, dr, *, top_n=8):
+            return products
+        # Patch pool acquisition in smartbi.config namespace where _get_sales_overview imports it
+        try:
+            import smartbi.config as smartbi_config
+            monkeypatch.setattr(smartbi_config, "get_pg_pool", fake_pool, raising=False)
+        except ImportError:
+            pass
+        # Patch the 3 seams in analysis_sales namespace
+        monkeypatch.setattr(mod, "_call_finance_summary", fake_fin)
+        monkeypatch.setattr(mod, "_call_daily_trend", fake_trend)
+        monkeypatch.setattr(mod, "_call_top_products", fake_prod)
+
+    def test_F001_overview_kpi_card_count(self, monkeypatch, client, f001_token):
+        self._patch_gold_path(monkeypatch, F001_GOLD_FINANCE, F001_GOLD_TREND, F001_GOLD_PRODUCTS)
+        response = client.get(
+            "/api/mobile/F001/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+            headers={"Authorization": f"Bearer {f001_token}"},
+        )
+        assert response.status_code == 200
+        ov = response.json()["data"]["overview"]
+        assert len(ov["kpiCards"]) == 4
+        keys = [c["key"] for c in ov["kpiCards"]]
+        assert keys == ["total_revenue", "bill_count", "avg_bill_value", "store_count"]
+
+    def test_F001_overview_charts_populated(self, monkeypatch, client, f001_token):
+        self._patch_gold_path(monkeypatch, F001_GOLD_FINANCE, F001_GOLD_TREND, F001_GOLD_PRODUCTS)
+        response = client.get(
+            "/api/mobile/F001/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+            headers={"Authorization": f"Bearer {f001_token}"},
+        )
+        ov = response.json()["data"]["overview"]
+        assert "sales_trend" in ov["charts"]
+        assert "category_distribution" in ov["charts"]
+        assert ov["charts"]["sales_trend"]["chartType"] == "LINE"
+        assert ov["charts"]["category_distribution"]["chartType"] == "PIE"
+
+    def test_F001_overview_top_stores_ranking(self, monkeypatch, client, f001_token):
+        self._patch_gold_path(monkeypatch, F001_GOLD_FINANCE, F001_GOLD_TREND, F001_GOLD_PRODUCTS)
+        response = client.get(
+            "/api/mobile/F001/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+            headers={"Authorization": f"Bearer {f001_token}"},
+        )
+        ov = response.json()["data"]["overview"]
+        assert "top_stores" in ov["rankings"]
+        assert len(ov["rankings"]["top_stores"]) == 8
+        first = ov["rankings"]["top_stores"][0]
+        assert first["rank"] == 1
+        assert first["target"] is None
+        assert first["completionRate"] is None
+        assert first["alertLevel"] is None
+
+    def test_empty_gold_falls_back_to_legacy(self, monkeypatch, client, f001_token):
+        empty_finance = {**F001_GOLD_FINANCE, "total_revenue": 0, "bill_count": 0, "top_stores": []}
+        self._patch_gold_path(monkeypatch, empty_finance, F001_GOLD_TREND, F001_GOLD_PRODUCTS)
+        response = client.get(
+            "/api/mobile/F001/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+            headers={"Authorization": f"Bearer {f001_token}"},
+        )
+        ov = response.json()["data"]["overview"]
+        # Legacy placeholder shape: 1 YELLOW insight + 1 suggestion + empty kpiCards
+        assert ov["kpiCards"] == []
+        assert len(ov["aiInsights"]) == 1
+        assert ov["aiInsights"][0]["level"] == "YELLOW"
+        assert ov["suggestions"] == ["请先上传销售数据以开始分析"]
+
+    def test_gold_chart_failure_tolerated(self, monkeypatch, client, f001_token):
+        from smartbi_compat.api import analysis_sales as mod
+        async def fake_fin(pool, fid, dr, *, top_n_stores=10):
+            return F001_GOLD_FINANCE
+        async def failing_trend(pool, fid, dr):
+            raise RuntimeError("simulated trend failure")
+        async def fake_prod(pool, fid, dr, *, top_n=8):
+            return F001_GOLD_PRODUCTS
+        async def fake_pool():
+            return None
+        try:
+            import smartbi.config as smartbi_config
+            monkeypatch.setattr(smartbi_config, "get_pg_pool", fake_pool, raising=False)
+        except ImportError:
+            pass
+        monkeypatch.setattr(mod, "_call_finance_summary", fake_fin)
+        monkeypatch.setattr(mod, "_call_daily_trend", failing_trend)
+        monkeypatch.setattr(mod, "_call_top_products", fake_prod)
+        response = client.get(
+            "/api/mobile/F001/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+            headers={"Authorization": f"Bearer {f001_token}"},
+        )
+        ov = response.json()["data"]["overview"]
+        assert "sales_trend" not in ov["charts"]
+        assert "category_distribution" in ov["charts"]
+        assert len(ov["kpiCards"]) == 4
