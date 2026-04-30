@@ -148,6 +148,17 @@ except ImportError as e:
     import logging as _log
     _log.getLogger(__name__).warning(f"Foreign Object Detection not available: {e}")
 
+# Phase 2B-α (Apr 29 2026): AI intent matching layer.
+# Java AIIntentService.matchIntent() proxies stages 5-8 here after stages 1-4
+# + L1/L2 cache miss. See spec §5.2 + .claude/rules/ai-intent-tool-skill-architecture.md.
+try:
+    from ai.api import router as ai_router
+    _ai_module_available = True
+except ImportError as e:
+    _ai_module_available = False
+    import logging as _log
+    _log.getLogger(__name__).warning(f"AI intent module not available: {e}")
+
 # Configure logging with rotation
 _log_level = logging.DEBUG if get_settings().debug else logging.INFO
 _log_format = "%(asctime)s - %(name)s - %(levelname)s - [%(correlation_id)s] - %(message)s"
@@ -543,6 +554,67 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"[startup] llm-cache pruner init failed: {e}")
 
+    # Phase 2B-α (Apr 29 2026): AI intent matching orchestrator + snapshot.
+    # Wires app.state.ai_orchestrator (3 matchers) so /api/ai/intent/match resolves
+    # at runtime. Snapshot loaded if pg_pool available; absent pool degrades to
+    # empty visible_intents (orchestrator still runs with empty rows). See spec §6.5.
+    _ai_snapshot_refresh_task = None
+    if _ai_module_available:
+        try:
+            from ai.matcher.classifier import ClassifierMatcher
+            from ai.matcher.llm import LlmMatcher
+            from ai.matcher.semantic import SemanticMatcher
+            from ai.orchestrator import Orchestrator
+
+            # Reuse SmartBI pg_pool if available (asyncpg). SemanticMatcher tolerates
+            # None pool — falls through to next stage. Stash on app.state for
+            # /intent/cache/invalidate handler.
+            ai_pg_pool = None
+            try:
+                from smartbi.config import get_pg_pool as _get_ai_pg_pool
+                ai_pg_pool = await _get_ai_pg_pool()
+                app.state.pg_pool = ai_pg_pool
+            except Exception as ex:
+                logger.warning(f"[startup] AI snapshot pool not available: {ex}")
+
+            app.state.ai_orchestrator = Orchestrator(
+                semantic_matcher=SemanticMatcher(ai_pg_pool),
+                classifier_matcher=ClassifierMatcher(),
+                llm_matcher=LlmMatcher(),
+            )
+            logger.info("[startup] AI orchestrator wired (orchestrator + 3 matchers)")
+
+            # Initial snapshot load + periodic refresh (~5min) per spec §5.4.
+            if ai_pg_pool is not None:
+                try:
+                    from ai.config import default_config as _ai_cfg
+                    from ai.db import load_snapshot as _ai_load_snapshot
+
+                    snap = await _ai_load_snapshot(ai_pg_pool)
+                    logger.info(f"[startup] ai_intent_configs snapshot loaded: {len(snap.rows)} rows")
+
+                    refresh_seconds = getattr(_ai_cfg, "config_refresh_s", 300)
+
+                    async def _refresh_ai_snapshot_forever():
+                        import asyncio as _asyncio
+                        while True:
+                            await _asyncio.sleep(refresh_seconds)
+                            try:
+                                _snap = await _ai_load_snapshot(ai_pg_pool)
+                                logger.debug(f"[ai-snapshot] refreshed: {len(_snap.rows)} rows")
+                            except Exception as _ex:
+                                logger.warning(f"[ai-snapshot] refresh failed: {_ex}")
+
+                    import asyncio as _asyncio_ai
+                    _ai_snapshot_refresh_task = _asyncio_ai.create_task(_refresh_ai_snapshot_forever())
+                    logger.info(f"[startup] ai_intent_configs refresh task armed (every {refresh_seconds}s)")
+                except Exception as ex:
+                    logger.warning(f"[startup] AI snapshot initial load failed: {ex}")
+            else:
+                logger.info("[startup] AI snapshot skipped (no pg_pool); orchestrator runs with empty visible_intents")
+        except Exception as e:
+            logger.warning(f"[startup] AI orchestrator init failed: {e}")
+
     yield
 
     # Shutdown: cancel narrative_cache pruner task
@@ -576,6 +648,20 @@ async def lifespan(app: FastAPI):
             await _llm_cache_pruner_task
         except Exception:
             pass
+
+    # Shutdown: cancel ai_intent_configs snapshot refresh task + close embedding channel
+    if _ai_snapshot_refresh_task is not None:
+        _ai_snapshot_refresh_task.cancel()
+        try:
+            await _ai_snapshot_refresh_task
+        except Exception:
+            pass
+    if _ai_module_available:
+        try:
+            from ai.embedding import close_channel as _ai_close_channel
+            await _ai_close_channel()
+        except Exception as e:
+            logger.warning(f"AI embedding channel close error: {e}")
 
     # Shutdown: close shared LLM HTTP client
     try:
@@ -874,6 +960,18 @@ if _completeness_available:
 else:
     logger.warning("Completeness Calculator routes not registered (asyncpg not available)")
 
+# =====================================================
+# Phase 2B-α AI Intent Routes (Apr 29 2026)
+# =====================================================
+# /api/ai/intent/match — Java AIIntentService stages 5-8 proxy.
+# /api/ai/intent/cache/invalidate — admin reload trigger.
+# Router carries its own prefix `/api/ai`; auth is X-Internal-Secret based,
+# enforced by JWT middleware (PUBLIC_PREFIXES) + per-handler check.
+if _ai_module_available:
+    app.include_router(ai_router)
+else:
+    logger.warning("AI intent routes not registered (ai/ module import failed)")
+
 
 @app.get("/health")
 async def health_check():
@@ -905,6 +1003,7 @@ async def health_check():
                 *( ["food_knowledge_base"] if _food_kb_available else []),
                 *( ["food_kb_feedback"] if _food_kb_feedback_available else []),
                 *( ["foreign_object_detection"] if _fod_available else []),
+                *( ["ai_intent"] if _ai_module_available else []),
             ],
             "postgres": postgres_status
         }
@@ -942,6 +1041,7 @@ async def root():
             **({"food_knowledge_base": "/api/food-kb"} if _food_kb_available else {}),
             **({"food_kb_feedback": "/api/food-kb/feedback"} if _food_kb_feedback_available else {}),
             **({"foreign_object_detection": "/api/fod"} if _fod_available else {}),
+            **({"ai_intent": "/api/ai"} if _ai_module_available else {}),
         },
         "endpoints": {
             "health": "/health",
