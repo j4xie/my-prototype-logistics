@@ -7,6 +7,7 @@ import org.hibernate.annotations.GenericGenerator;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * 混批分组实体
@@ -26,6 +27,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
+@Where(clause = "deleted_at IS NULL")
 public class MixedBatchGroup extends BaseEntity {
 
     @Id

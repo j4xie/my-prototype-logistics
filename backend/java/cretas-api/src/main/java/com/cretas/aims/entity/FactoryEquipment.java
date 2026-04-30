@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.hibernate.annotations.Where;
 /**
  * 工厂设备实体类
  *
@@ -35,6 +36,7 @@ import java.util.List;
            @Index(name = "idx_equipment_status", columnList = "status")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class FactoryEquipment extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

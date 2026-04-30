@@ -4,6 +4,7 @@ import com.cretas.aims.entity.BaseEntity;
 import lombok.*;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 
 /**
  * 秤品牌型号实体
@@ -19,6 +20,7 @@ import jakarta.persistence.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
+@Where(clause = "deleted_at IS NULL")
 public class ScaleBrandModel extends BaseEntity {
 
     @Id

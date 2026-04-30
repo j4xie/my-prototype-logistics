@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * 工厂物料需求单 (P0-5) — 生产计划与库存调拨之间的"任务单"。
@@ -34,6 +35,7 @@ import java.util.UUID;
                 @Index(name = "idx_fmr_required_date", columnList = "required_date")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class FactoryMaterialRequisition extends BaseEntity {
 
     @Id

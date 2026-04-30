@@ -7,6 +7,7 @@ import lombok.experimental.SuperBuilder;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import org.hibernate.annotations.Where;
 
 /**
  * 工具可靠性统计实体
@@ -29,6 +30,7 @@ import java.time.LocalDate;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class ToolReliabilityStats extends BaseEntity {
 
     @Id

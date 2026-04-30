@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Where;
 
 /**
  * 用户级菜单权限覆盖 (P0-6 昆山六扇门)
@@ -28,6 +29,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class UserMenuPermission extends BaseEntity {
 
     @Id

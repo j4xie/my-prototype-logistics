@@ -6,6 +6,7 @@ import lombok.EqualsAndHashCode;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * 蓝图应用记录实体
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 @Table(name = "blueprint_applications")
 @Data
 @EqualsAndHashCode(callSuper = true)
+@Where(clause = "deleted_at IS NULL")
 public class BlueprintApplication extends BaseEntity {
 
     @Id

@@ -6,6 +6,7 @@ import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.Type;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 
 /**
  * 状态机配置实体
@@ -31,6 +32,7 @@ import jakarta.persistence.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
+@Where(clause = "deleted_at IS NULL")
 public class StateMachine extends BaseEntity {
 
     @Id

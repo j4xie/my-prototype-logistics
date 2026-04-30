@@ -12,6 +12,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import org.hibernate.annotations.Where;
 
 /**
  * 对话记忆实体
@@ -37,6 +38,7 @@ import java.util.Map;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class ConversationMemory extends BaseEntity {
 
     @Id

@@ -2,6 +2,7 @@ package com.cretas.aims.entity;
 
 import lombok.*;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 /**
  * 部门实体类
  *
@@ -22,6 +23,7 @@ import jakarta.persistence.*;
            @Index(name = "idx_department_code", columnList = "factory_id,code"),
            @Index(name = "idx_department_active", columnList = "factory_id,is_active")
        })
+@Where(clause = "deleted_at IS NULL")
 public class Department extends BaseEntity {
 
     @Id

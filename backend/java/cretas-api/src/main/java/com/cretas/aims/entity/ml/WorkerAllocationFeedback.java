@@ -8,6 +8,7 @@ import org.hibernate.annotations.GenericGenerator;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * 工人分配反馈记录实体
@@ -29,6 +30,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
+@Where(clause = "deleted_at IS NULL")
 public class WorkerAllocationFeedback extends BaseEntity {
 
     @Id

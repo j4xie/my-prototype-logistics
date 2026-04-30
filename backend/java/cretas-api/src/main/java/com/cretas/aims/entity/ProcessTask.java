@@ -5,6 +5,7 @@ import lombok.*;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import org.hibernate.annotations.Where;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -17,6 +18,7 @@ import java.time.LocalDate;
     @Index(name = "idx_pt_factory_product", columnList = "factory_id, product_type_id"),
     @Index(name = "idx_pt_run", columnList = "production_run_id")
 })
+@Where(clause = "deleted_at IS NULL")
 public class ProcessTask extends BaseEntity {
 
     @Id

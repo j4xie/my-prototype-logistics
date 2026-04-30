@@ -6,6 +6,7 @@ import lombok.*;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import org.hibernate.annotations.Where;
 
 /**
  * 价格表行项目
@@ -27,6 +28,7 @@ import java.math.BigDecimal;
                 @Index(name = "idx_pli_product", columnList = "product_type_id")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class PriceListItem extends BaseEntity {
 
     @Id

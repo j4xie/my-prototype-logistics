@@ -6,6 +6,7 @@ import lombok.EqualsAndHashCode;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * 工单实体类
@@ -19,6 +20,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "work_orders")
 @EqualsAndHashCode(callSuper = true)
+@Where(clause = "deleted_at IS NULL")
 public class WorkOrder extends BaseEntity {
 
     @Id

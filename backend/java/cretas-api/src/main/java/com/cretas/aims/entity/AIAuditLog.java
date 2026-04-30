@@ -3,6 +3,7 @@ package com.cretas.aims.entity;
 import lombok.*;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 
 /**
  * AI审计日志实体 - 记录所有AI分析请求用于合规和分析
@@ -37,6 +38,7 @@ import jakarta.persistence.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class AIAuditLog extends BaseEntity {
 
     @Id

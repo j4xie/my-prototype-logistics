@@ -4,13 +4,19 @@ on:
   push:
     paths:
       - 'docs/plans/restaurant-product-manual.html'
+      - 'docs/plans/factory-operation-manual.html'
       - 'scripts/ci/check-kb-meta-freshness.py'
       - 'scripts/ci/check-kb-anchor-consistency.py'
+      - 'scripts/ci/check-manual-chat-contract.py'
+      - 'backend/python/food_kb/api/manual_chat.py'
   pull_request:
     paths:
       - 'docs/plans/restaurant-product-manual.html'
+      - 'docs/plans/factory-operation-manual.html'
       - 'scripts/ci/check-kb-meta-freshness.py'
       - 'scripts/ci/check-kb-anchor-consistency.py'
+      - 'scripts/ci/check-manual-chat-contract.py'
+      - 'backend/python/food_kb/api/manual_chat.py'
   schedule:
     - cron: '0 9 * * 1'  # Weekly Monday 09:00 UTC
 
@@ -23,7 +29,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Check meta freshness (§1/§2/§11)
+      - name: Check meta freshness (restaurant §1/§2/§11 + factory §0A/§0B/§6/§7/§10)
         run: python scripts/ci/check-kb-meta-freshness.py
-      - name: Check synthesis anchor consistency
+      - name: Check synthesis anchor consistency (both manuals)
         run: python scripts/ci/check-kb-anchor-consistency.py
+      - name: Check manual_chat.py contract integrity
+        run: python scripts/ci/check-manual-chat-contract.py

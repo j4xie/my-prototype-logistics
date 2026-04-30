@@ -3,6 +3,7 @@ package com.cretas.aims.entity;
 import lombok.*;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import org.hibernate.annotations.Where;
 
 /**
  * 原材料产品转换率实体类
@@ -29,6 +30,7 @@ import java.math.BigDecimal;
            @Index(name = "idx_conversion_product", columnList = "product_type_id")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class MaterialProductConversion extends BaseEntity {
     @Id
     @Column(name = "id", nullable = false, length = 191)

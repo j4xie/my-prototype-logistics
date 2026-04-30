@@ -2,6 +2,7 @@ package com.cretas.aims.service.impl;
 
 import com.cretas.aims.entity.config.ApprovalChainConfig;
 import com.cretas.aims.entity.config.ApprovalChainConfig.DecisionType;
+import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.repository.config.ApprovalChainConfigRepository;
 import com.cretas.aims.service.ApprovalChainService;
@@ -45,13 +46,17 @@ public class ApprovalChainServiceImpl implements ApprovalChainService {
         // 检查名称是否重复
         if (approvalChainConfigRepository.existsByFactoryIdAndDecisionTypeAndName(
                 factoryId, config.getDecisionType(), config.getName())) {
-            throw new IllegalArgumentException("同类型下配置名称已存在: " + config.getName());
+            throw new BusinessException(409, "同类型下配置名称已存在: " + config.getName())
+                    .withHint("请使用其他名称, 或编辑现有配置")
+                    .withHintTarget("name");
         }
 
         // 验证配置
         Map<String, Object> validation = validateConfig(config);
         if (!(Boolean) validation.get("isValid")) {
-            throw new IllegalArgumentException("配置验证失败: " + validation.get("errors"));
+            throw new BusinessException(400, "配置验证失败: " + validation.get("errors"))
+                    .withHint("请检查 approverRoles 是否为 JSON 数组, 以及必填字段")
+                    .withHintTarget("approverRoles");
         }
 
         // 设置默认值
@@ -84,13 +89,16 @@ public class ApprovalChainServiceImpl implements ApprovalChainService {
 
         // 验证工厂ID
         if (!existing.getFactoryId().equals(factoryId)) {
-            throw new IllegalArgumentException("无权修改其他工厂的配置");
+            throw new BusinessException(403, "无权修改其他工厂的配置")
+                    .withHint("请切换到该配置所属的工厂后再操作");
         }
 
         // 验证配置
         Map<String, Object> validation = validateConfig(config);
         if (!(Boolean) validation.get("isValid")) {
-            throw new IllegalArgumentException("配置验证失败: " + validation.get("errors"));
+            throw new BusinessException(400, "配置验证失败: " + validation.get("errors"))
+                    .withHint("请检查 approverRoles 是否为 JSON 数组, 以及必填字段")
+                    .withHintTarget("approverRoles");
         }
 
         // 更新字段
@@ -99,7 +107,9 @@ public class ApprovalChainServiceImpl implements ApprovalChainService {
             if (!existing.getName().equals(config.getName()) &&
                     approvalChainConfigRepository.existsByFactoryIdAndDecisionTypeAndName(
                             factoryId, existing.getDecisionType(), config.getName())) {
-                throw new IllegalArgumentException("同类型下配置名称已存在: " + config.getName());
+                throw new BusinessException(409, "同类型下配置名称已存在: " + config.getName())
+                        .withHint("请使用其他名称")
+                        .withHintTarget("name");
             }
             existing.setName(config.getName());
         }
@@ -155,7 +165,8 @@ public class ApprovalChainServiceImpl implements ApprovalChainService {
                 .orElseThrow(() -> new EntityNotFoundException("Approval chain config", configId));
 
         if (!existing.getFactoryId().equals(factoryId)) {
-            throw new IllegalArgumentException("无权删除其他工厂的配置");
+            throw new BusinessException(403, "无权删除其他工厂的配置")
+                    .withHint("请切换到该配置所属的工厂后再操作");
         }
 
         // 软删除 - 禁用配置
@@ -174,7 +185,8 @@ public class ApprovalChainServiceImpl implements ApprovalChainService {
                 .orElseThrow(() -> new EntityNotFoundException("Approval chain config", configId));
 
         if (!existing.getFactoryId().equals(factoryId)) {
-            throw new IllegalArgumentException("无权修改其他工厂的配置");
+            throw new BusinessException(403, "无权修改其他工厂的配置")
+                    .withHint("请切换到该配置所属的工厂后再操作");
         }
 
         existing.setEnabled(enabled);

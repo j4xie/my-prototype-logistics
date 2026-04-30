@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * 工厂仓库查询表 (P1-4, v1 §2.9 "双仓体系 - 物流仓 + 鲜棉仓").
@@ -35,6 +36,7 @@ import java.util.UUID;
                 @UniqueConstraint(name = "uk_fw_factory_code", columnNames = {"factory_id", "code"})
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class FactoryWarehouse extends BaseEntity {
 
     @Id

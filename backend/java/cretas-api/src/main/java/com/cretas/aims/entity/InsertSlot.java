@@ -4,6 +4,7 @@ import lombok.*;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * 紧急插单时段实体
@@ -27,6 +28,7 @@ import java.time.LocalDateTime;
            @Index(name = "idx_insert_slots_status", columnList = "status")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class InsertSlot extends BaseEntity {
 
     @Id

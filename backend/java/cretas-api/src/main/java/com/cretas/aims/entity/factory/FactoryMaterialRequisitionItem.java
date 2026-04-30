@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * 工厂物料需求单明细行 — 从 BOM 展开而来, 每行对应一种原/辅/包装材料.
@@ -30,6 +31,7 @@ import java.util.UUID;
                 @Index(name = "idx_fmri_material", columnList = "material_type_id")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class FactoryMaterialRequisitionItem extends BaseEntity {
 
     @Id

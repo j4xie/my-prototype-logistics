@@ -8,6 +8,7 @@ import org.hibernate.annotations.BatchSize;
 import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
+import org.hibernate.annotations.Where;
 /**
  * 工厂实体类
  *
@@ -35,6 +36,7 @@ import java.util.List;
            @Index(name = "idx_name", columnList = "name")  // 加速工厂名称查询
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class Factory extends BaseEntity {
     @Id
     @Column(name = "id", nullable = false)

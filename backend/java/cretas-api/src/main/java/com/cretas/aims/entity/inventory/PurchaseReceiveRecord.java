@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * 采购入库单
@@ -40,6 +41,7 @@ import java.util.UUID;
                 @Index(name = "idx_prr_status", columnList = "status")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class PurchaseReceiveRecord extends BaseEntity {
 
     @Id

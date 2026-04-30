@@ -312,7 +312,9 @@ class KnowledgeRetriever:
                 param_idx += 1
 
             if subcategories:
-                sql += f" AND subcategory = ANY(${param_idx}::text[])"
+                # NULL chunks (通用食品知识 / GB 标准 / 法规) 对所有 category 都该召回
+                # 用 OR IS NULL 让 factory/restaurant 查询都能查到合规章节
+                sql += f" AND (subcategory = ANY(${param_idx}::text[]) OR subcategory IS NULL)"
                 params.append(subcategories)
                 param_idx += 1
 
@@ -499,8 +501,10 @@ class KnowledgeRetriever:
             param_idx += 1
 
         # Subcategory filter (domain routing — restaurant / factory / NULL)
+        # NULL chunks (通用食品知识 / GB 标准 / 法规) 对所有 category 都该召回
+        # 用 OR IS NULL 让 factory/restaurant 查询都能查到合规章节
         if subcategories:
-            sql += f" AND subcategory = ANY(${param_idx}::text[])"
+            sql += f" AND (subcategory = ANY(${param_idx}::text[]) OR subcategory IS NULL)"
             params.append(subcategories)
             param_idx += 1
 
@@ -550,7 +554,9 @@ class KnowledgeRetriever:
                 param_idx += 1
 
             if subcategories:
-                sql += f" AND subcategory = ANY(${param_idx}::text[])"
+                # NULL chunks (通用食品知识 / GB 标准 / 法规) 对所有 category 都该召回
+                # 用 OR IS NULL 让 factory/restaurant 查询都能查到合规章节
+                sql += f" AND (subcategory = ANY(${param_idx}::text[]) OR subcategory IS NULL)"
                 params.append(subcategories)
                 param_idx += 1
 

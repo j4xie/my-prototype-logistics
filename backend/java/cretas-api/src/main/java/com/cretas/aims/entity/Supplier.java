@@ -2,6 +2,7 @@ package com.cretas.aims.entity;
 
 import lombok.*;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.Where;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -29,6 +30,7 @@ import java.util.UUID;
            @Index(name = "idx_supplier_is_active", columnList = "is_active")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class Supplier extends BaseEntity {
     @Id
     @Column(name = "id", nullable = false, length = 191)

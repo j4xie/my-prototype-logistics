@@ -55,13 +55,6 @@ MANUAL_SOURCES = [
         "type": "markdown",
         "subcategory": "factory",
     },
-    {
-        "path": ".claude/projects/C--Users-Steve-my-prototype-logistics/memory/project_feature_inventory.md",
-        "title_prefix": "系统功能清单",
-        "source": "project_feature_inventory.md",
-        "type": "markdown",
-        "subcategory": None,
-    },
 ]
 
 

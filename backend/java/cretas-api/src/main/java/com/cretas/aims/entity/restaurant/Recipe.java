@@ -11,6 +11,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * BOM 配方实体（餐饮版）
@@ -42,6 +43,7 @@ import java.util.UUID;
                 @Index(name = "idx_recipe_factory_product", columnList = "factory_id,product_type_id")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class Recipe extends BaseEntity {
 
     // ========== 主键 ==========

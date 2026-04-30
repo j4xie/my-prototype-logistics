@@ -1,6 +1,8 @@
 package com.cretas.aims.service.impl;
 
 import com.cretas.aims.entity.config.EncodingRule;
+import com.cretas.aims.exception.BusinessException;
+import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.EncodingRuleRepository;
 import com.cretas.aims.service.EncodingRuleService;
 import lombok.RequiredArgsConstructor;
@@ -127,13 +129,17 @@ public class EncodingRuleServiceImpl implements EncodingRuleService {
 
         // 检查是否已存在
         if (encodingRuleRepository.existsByFactoryIdAndEntityType(rule.getFactoryId(), rule.getEntityType())) {
-            throw new IllegalArgumentException("该实体类型的编码规则已存在");
+            throw new BusinessException(409, "该实体类型的编码规则已存在")
+                    .withHint("请编辑现有规则, 或先删除后重新创建")
+                    .withHintTarget("entityType");
         }
 
         // 验证模板格式
         Map<String, Object> validation = validatePattern(rule.getEncodingPattern());
         if (!(Boolean) validation.get("isValid")) {
-            throw new IllegalArgumentException("编码模板格式错误: " + validation.get("errors"));
+            throw new BusinessException(400, "编码模板格式错误: " + validation.get("errors"))
+                    .withHint("请检查占位符语法 (如 {PREFIX} / {YYYY} / {SEQ:4})")
+                    .withHintTarget("encodingPattern");
         }
 
         rule.setId(UUID.randomUUID().toString());
@@ -151,13 +157,15 @@ public class EncodingRuleServiceImpl implements EncodingRuleService {
         log.info("更新编码规则 - ruleId={}", ruleId);
 
         EncodingRule rule = encodingRuleRepository.findById(ruleId)
-                .orElseThrow(() -> new IllegalArgumentException("编码规则不存在"));
+                .orElseThrow(() -> new ResourceNotFoundException("编码规则", "id", ruleId));
 
         // 验证模板格式
         if (updatedRule.getEncodingPattern() != null) {
             Map<String, Object> validation = validatePattern(updatedRule.getEncodingPattern());
             if (!(Boolean) validation.get("isValid")) {
-                throw new IllegalArgumentException("编码模板格式错误: " + validation.get("errors"));
+                throw new BusinessException(400, "编码模板格式错误: " + validation.get("errors"))
+                        .withHint("请检查占位符语法 (如 {PREFIX} / {YYYY} / {SEQ:4})")
+                        .withHintTarget("encodingPattern");
             }
             rule.setEncodingPattern(updatedRule.getEncodingPattern());
         }
@@ -197,7 +205,7 @@ public class EncodingRuleServiceImpl implements EncodingRuleService {
         log.info("切换编码规则状态 - ruleId={}, enabled={}", ruleId, enabled);
 
         EncodingRule rule = encodingRuleRepository.findById(ruleId)
-                .orElseThrow(() -> new IllegalArgumentException("编码规则不存在"));
+                .orElseThrow(() -> new ResourceNotFoundException("编码规则", "id", ruleId));
 
         rule.setEnabled(enabled);
         return encodingRuleRepository.save(rule);
@@ -209,7 +217,7 @@ public class EncodingRuleServiceImpl implements EncodingRuleService {
         log.info("删除编码规则 - ruleId={}", ruleId);
 
         EncodingRule rule = encodingRuleRepository.findById(ruleId)
-                .orElseThrow(() -> new IllegalArgumentException("编码规则不存在"));
+                .orElseThrow(() -> new ResourceNotFoundException("编码规则", "id", ruleId));
 
         rule.softDelete();
         encodingRuleRepository.save(rule);

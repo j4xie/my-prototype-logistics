@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 
 /**
  * 工厂类型蓝图实体
@@ -14,6 +15,7 @@ import jakarta.persistence.*;
 @Table(name = "factory_type_blueprints")
 @Data
 @EqualsAndHashCode(callSuper = true)
+@Where(clause = "deleted_at IS NULL")
 public class FactoryTypeBlueprint extends BaseEntity {
 
     @Id

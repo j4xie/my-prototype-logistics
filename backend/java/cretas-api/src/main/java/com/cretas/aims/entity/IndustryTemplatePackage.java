@@ -4,6 +4,7 @@ import lombok.*;
 
 import jakarta.persistence.*;
 import java.util.Map;
+import org.hibernate.annotations.Where;
 
 /**
  * 行业模板包实体
@@ -26,6 +27,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class IndustryTemplatePackage extends BaseEntity {
 
     @Id
