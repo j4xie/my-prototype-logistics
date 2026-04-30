@@ -798,18 +798,17 @@ async def _get_payable_analysis(factory_id: str, start_date: date, end_date: dat
     Java put order in HashMap (line 240-241 + 255-258):
       startDate / endDate / metrics / agingChart
 
-    Note: Java uses `new HashMap<>()` so put-order ≠ Jackson serialization order.
-    Phase F.1 will record F999 golden and verify the actual Jackson key order.
-    If golden differs from this dict order, F.1 step 3 will reorder.
+    F.1 recorded F999 Jackson key order (NOT Java put-order, since HashMap is unordered):
+      [endDate, metrics, agingChart, startDate]
     """
     metrics = await _get_payable_metrics(factory_id, end_date)
     aging_chart = await _get_payable_aging_chart(factory_id, end_date)
 
     return {
-        "startDate":  start_date.isoformat(),
         "endDate":    end_date.isoformat(),
         "metrics":    metrics,
         "agingChart": aging_chart,
+        "startDate":  start_date.isoformat(),
     }
 
 
