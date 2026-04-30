@@ -518,8 +518,12 @@ async def _query_finance_payable_data(factory_id: str, end_date: date) -> list[d
     """
     pool = None
     try:
-        from smartbi.config import get_pg_pool  # type: ignore
-        pool = await get_pg_pool()
+        # smart_bi_finance_data lives in cretas_db (per V20260502_04 RLS sweep);
+        # smartbi_user lacks SELECT GRANT on smartbi_db replica. Use cretas_pool
+        # (cretas_user has GRANT). RLS policy has IS NULL escape — no GUC needed
+        # since SQL WHERE factory_id=$1 already scopes the query.
+        from smartbi.config import get_cretas_pool  # type: ignore
+        pool = await get_cretas_pool()
     except Exception as e:
         logger.warning("[payable] pool acquisition failed factory=%s: %s", factory_id, e)
         return []
@@ -581,8 +585,12 @@ async def _query_finance_data(
     """
     pool = None
     try:
-        from smartbi.config import get_pg_pool  # type: ignore
-        pool = await get_pg_pool()
+        # smart_bi_finance_data lives in cretas_db (per V20260502_04 RLS sweep);
+        # smartbi_user lacks SELECT GRANT on smartbi_db replica. Use cretas_pool
+        # (cretas_user has GRANT). RLS policy has IS NULL escape — no GUC needed
+        # since SQL WHERE factory_id=$1 already scopes the query.
+        from smartbi.config import get_cretas_pool  # type: ignore
+        pool = await get_cretas_pool()
     except Exception as e:
         logger.warning(
             "[finance_data] pool acquisition failed factory=%s record_type=%s: %s",
@@ -636,8 +644,11 @@ async def _query_finance_sales_fallback(
     """
     pool = None
     try:
-        from smartbi.config import get_pg_pool  # type: ignore
-        pool = await get_pg_pool()
+        # smart_bi_sales_data lives in cretas_db (sister table to smart_bi_finance_data);
+        # smartbi_user lacks SELECT GRANT on smartbi_db. Use cretas_pool (cretas_user
+        # has GRANT). Same RLS NULL-escape applies — no GUC manipulation needed.
+        from smartbi.config import get_cretas_pool  # type: ignore
+        pool = await get_cretas_pool()
     except Exception as e:
         logger.warning(
             "[sales_fallback] pool acquisition failed factory=%s: %s",
