@@ -52,7 +52,7 @@ public class IsapiRecordingController {
         if (response.isSuccess()) {
             return ApiResponse.success(response);
         } else {
-            throw new BusinessException(400, response.getMessage(), response);
+            throw new BusinessException(400, response.getMessage());
         }
     }
 
@@ -131,7 +131,7 @@ public class IsapiRecordingController {
         if (response.isSuccess()) {
             return ApiResponse.success(response);
         } else {
-            throw new BusinessException(400, response.getMessage(), response);
+            throw new BusinessException(400, response.getMessage());
         }
     }
 
@@ -166,7 +166,7 @@ public class IsapiRecordingController {
         if (response.isSuccess()) {
             return ApiResponse.success(response);
         } else {
-            throw new BusinessException(400, response.getMessage(), response);
+            throw new BusinessException(400, response.getMessage());
         }
     }
 }
