@@ -417,29 +417,145 @@ def _new_metric_result_dict(
 
 
 async def _get_finance_overview(factory_id: str, range_: DateRange) -> dict:
-    """STUB — Phase C.1 fills based on Java FinanceAnalysisServiceImpl.getFinanceOverview empty path."""
-    raise NotImplementedError("filled in Phase C.1")
+    """F999 empty-state — Java FinanceAnalysisServiceImpl.getFinanceOverview Gold-primary
+    path returns CLEAN empty DashboardResponse when buildFromFinanceSummary returns null
+    (no revenue + no bills). A.5 golden verified shape.
+
+    Differs from sister sales which emitted YELLOW insight + 1 suggestion. Finance does NOT.
+    Golden shows: kpiCards=[], metricCards=null, rankings={}, charts={}, chartList=null,
+    aiInsights=[], alerts=null, recommendations=null, suggestions=[], generatedAt=null,
+    lastUpdated=volatile, fromCache=false, cacheExpireAt=null.
+    """
+    return _new_dashboard_response_dict(
+        last_updated=_utc_now_iso(),
+        suggestions=[],
+    )
 
 
 async def _get_profit_metrics(factory_id: str, range_: DateRange) -> list:
-    """STUB — Phase C.1 fills based on Java getProfitMetrics. NOTE: A.2 found Java
-    ALWAYS returns 5 metrics (GROSS_PROFIT/GROSS_MARGIN/NET_PROFIT/NET_MARGIN/ROI),
-    NOT empty list. Phase C.1 must construct 5-metric default list."""
-    raise NotImplementedError("filled in Phase C.1")
+    """F999 empty-state — Java getProfitMetrics ALWAYS returns 5 metrics regardless
+    of data presence (per A.2). Values match A.5 golden when revenue/cost = 0.
+
+    GROSS_PROFIT: value=0.0, formattedValue="0.00", unit="元", alertLevel="GREEN"
+    GROSS_MARGIN: value=0.0, formattedValue="0.00%", unit="%", alertLevel="RED"
+    NET_PROFIT:   value=null, formattedValue="N/A",  unit="元", alertLevel="GREEN"
+    NET_MARGIN:   value=null, formattedValue="N/A",  unit="%",  alertLevel="GREEN"
+    ROI:          value=0.0,  formattedValue="0.00%",unit="%",  alertLevel="YELLOW"
+    """
+    return [
+        _new_metric_result_dict(
+            metric_code="GROSS_PROFIT",
+            metric_name="毛利额",
+            value=0.0,
+            formatted_value="0.00",
+            unit="元",
+            change_percent=None,
+            change_direction=None,
+            change_value=None,
+            alert_level="GREEN",
+            dimension_value=None,
+            description="销售收入减去销售成本",
+        ),
+        _new_metric_result_dict(
+            metric_code="GROSS_MARGIN",
+            metric_name="毛利率",
+            value=0.0,
+            formatted_value="0.00%",
+            unit="%",
+            change_percent=None,
+            change_direction=None,
+            change_value=None,
+            alert_level="RED",
+            dimension_value=None,
+            description="毛利额占销售收入的比例",
+        ),
+        _new_metric_result_dict(
+            metric_code="NET_PROFIT",
+            metric_name="净利润",
+            value=None,
+            formatted_value="N/A",
+            unit="元",
+            change_percent=None,
+            change_direction=None,
+            change_value=None,
+            alert_level="GREEN",
+            dimension_value=None,
+            description="毛利减去各项费用后的利润",
+        ),
+        _new_metric_result_dict(
+            metric_code="NET_MARGIN",
+            metric_name="净利率",
+            value=None,
+            formatted_value="N/A",
+            unit="%",
+            change_percent=None,
+            change_direction=None,
+            change_value=None,
+            alert_level="GREEN",
+            dimension_value=None,
+            description="净利润占销售收入的比例",
+        ),
+        _new_metric_result_dict(
+            metric_code="ROI",
+            metric_name="投入产出比",
+            value=0.0,
+            formatted_value="0.00%",
+            unit="%",
+            change_percent=None,
+            change_direction=None,
+            change_value=None,
+            alert_level="YELLOW",
+            dimension_value=None,
+            description="毛利额与成本的比率",
+        ),
+    ]
 
 
 async def _get_cost_structure_chart(factory_id: str, range_: DateRange) -> dict:
-    """STUB — Phase C.1 fills based on Java getCostStructureChart empty return.
-    A.2/A.5 found: chartType=PIE, title='成本结构分析', xAxisField='category',
-    yAxisField='value', options={showPercentage:true, colors:[...]}, data=[]."""
-    raise NotImplementedError("filled in Phase C.1")
+    """F999 empty-state — Java getCostStructureChart returns ChartConfig with empty data.
+    A.5 golden verified shape: chartType=PIE, title='成本结构分析',
+    xaxisField='category', yaxisField='value', seriesField=null, data=[],
+    options={showPercentage: true, colors: ["#5470c6", "#91cc75", "#fac858"]}.
+    """
+    return _new_chart_config_dict(
+        chart_type="PIE",
+        title="成本结构分析",
+        series_field=None,
+        data=[],
+        options={
+            "showPercentage": True,
+            "colors": ["#5470c6", "#91cc75", "#fac858"],
+        },
+        xaxis_field="category",
+        yaxis_field="value",
+    )
 
 
 async def _get_receivable_aging_chart(factory_id: str, end_date: date) -> dict:
-    """STUB — Phase C.1 fills. NOTE: A.5 found chartType=BAR (not PIE),
-    ALWAYS 4 buckets with {agingBucket, amount, percentage, alertLevel} keys.
-    Signature uses end_date only (mirrors Java line 226 / 252)."""
-    raise NotImplementedError("filled in Phase C.1")
+    """F999 empty-state — Java getReceivableAgingChart ALWAYS emits 4 aging buckets
+    even when AR=0 (per A.2). chartType=BAR (NOT PIE). A.5 golden verified shape.
+
+    4 buckets (in order): 0-30天 (GREEN), 31-60天 (YELLOW), 61-90天 (YELLOW), 90天以上 (RED).
+    Each bucket: {agingBucket, amount=0, percentage=0, alertLevel}.
+    options={colors: ["#91cc75", "#fac858", "#ee6666", "#c23531"], showAlert: true}.
+    """
+    return _new_chart_config_dict(
+        chart_type="BAR",
+        title="应收账款账龄分布",
+        series_field=None,
+        data=[
+            {"agingBucket": "0-30天",  "amount": 0, "percentage": 0, "alertLevel": "GREEN"},
+            {"agingBucket": "31-60天", "amount": 0, "percentage": 0, "alertLevel": "YELLOW"},
+            {"agingBucket": "61-90天", "amount": 0, "percentage": 0, "alertLevel": "YELLOW"},
+            {"agingBucket": "90天以上","amount": 0, "percentage": 0, "alertLevel": "RED"},
+        ],
+        options={
+            "colors": ["#91cc75", "#fac858", "#ee6666", "#c23531"],
+            "showAlert": True,
+        },
+        xaxis_field="agingBucket",
+        yaxis_field="amount",
+    )
 
 
 # ============================================================
@@ -448,10 +564,24 @@ async def _get_receivable_aging_chart(factory_id: str, end_date: date) -> dict:
 
 
 async def _get_comprehensive_finance_analysis(factory_id: str, range_: DateRange) -> dict:
-    """STUB — Phase C.2 fills. A.5 recorded F999 Jackson key order:
+    """Java reference: SmartBIServiceImpl.getComprehensiveAnalysis line 600-605 + 612-613.
+
+    A.5 recorded F999 Jackson key order (NOT Java put-order):
       [overview, costStructure, dateRange, generatedAt, profitMetrics, receivableAging]
-    NOTE: order differs from Java put-order; use A.5-recorded order."""
-    raise NotImplementedError("filled in Phase C.2")
+    """
+    overview         = await _get_finance_overview(factory_id, range_)
+    profit_metrics   = await _get_profit_metrics(factory_id, range_)
+    cost_structure   = await _get_cost_structure_chart(factory_id, range_)
+    receivable_aging = await _get_receivable_aging_chart(factory_id, range_.end_date)
+
+    return {
+        "overview":         overview,
+        "costStructure":    cost_structure,
+        "dateRange":        _new_date_range_dict(range_),
+        "generatedAt":      _utc_now_iso(),
+        "profitMetrics":    profit_metrics,
+        "receivableAging":  receivable_aging,
+    }
 
 
 async def _get_payable_analysis(factory_id: str, start_date: date, end_date: date) -> dict:
