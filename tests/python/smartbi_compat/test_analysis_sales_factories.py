@@ -521,6 +521,70 @@ class TestBuildFromGoldFinanceSummary:
         assert _asyncio_c1.iscoroutinefunction(_build_from_gold_finance_summary)
 
 
+from smartbi_compat.api.analysis_sales import _fetch_gold_trend_chart
+
+
+class TestFetchGoldTrendChart:
+    F001_TREND = {
+        "factory_id": "F001",
+        "start_date": "2025-01-01",
+        "end_date": "2025-12-31",
+        "points": [
+            {"date": "2025-01-01", "revenue": 91972.04, "bill_count": 600, "avg_bill_value": 153.29},
+            {"date": "2025-01-02", "revenue": 43165.0,  "bill_count": 280, "avg_bill_value": 154.16},
+        ],
+    }
+
+    EMPTY_TREND = {
+        "factory_id": "F001",
+        "start_date": "2025-01-01",
+        "end_date": "2025-12-31",
+        "points": [],
+    }
+
+    def _patch_seam(self, monkeypatch, response):
+        from smartbi_compat.api import analysis_sales as mod
+        async def fake(pool, fid, dr):
+            return response
+        monkeypatch.setattr(mod, "_call_daily_trend", fake)
+
+    def test_returns_chart_config_shape(self, monkeypatch, range_2025):
+        self._patch_seam(monkeypatch, self.F001_TREND)
+        result = asyncio.run(_fetch_gold_trend_chart("F001", range_2025, pool=None))
+        assert result is not None
+        assert result["chartType"] == "LINE"
+        assert result["title"] == "销售趋势"
+        assert result["xaxisField"] == "date"
+        assert result["yaxisField"] == "amount"
+        assert result["seriesField"] is None
+        assert result["options"] is None
+
+    def test_data_maps_revenue_to_amount(self, monkeypatch, range_2025):
+        self._patch_seam(monkeypatch, self.F001_TREND)
+        result = asyncio.run(_fetch_gold_trend_chart("F001", range_2025, pool=None))
+        assert len(result["data"]) == 2
+        assert result["data"][0] == {"date": "2025-01-01", "amount": Decimal("91972.04")}
+        assert result["data"][1] == {"date": "2025-01-02", "amount": Decimal("43165.0")}
+
+    def test_empty_points_returns_none(self, monkeypatch, range_2025):
+        self._patch_seam(monkeypatch, self.EMPTY_TREND)
+        result = asyncio.run(_fetch_gold_trend_chart("F001", range_2025, pool=None))
+        assert result is None
+
+    def test_query_failure_returns_none_logs_warning(self, monkeypatch, range_2025, caplog):
+        from smartbi_compat.api import analysis_sales as mod
+        async def fail(pool, fid, dr):
+            raise RuntimeError("simulated daily_trend failure")
+        monkeypatch.setattr(mod, "_call_daily_trend", fail)
+        with caplog.at_level("WARNING"):
+            result = asyncio.run(_fetch_gold_trend_chart("F001", range_2025, pool=None))
+        assert result is None
+        assert any("trend fetch failed" in r.message for r in caplog.records)
+
+    def test_is_async(self):
+        assert asyncio.iscoroutinefunction(_fetch_gold_trend_chart)
+
+
 from smartbi_compat.api.analysis_sales import _to_decimal
 
 

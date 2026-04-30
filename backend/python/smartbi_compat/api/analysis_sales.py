@@ -465,6 +465,43 @@ async def _build_from_gold_finance_summary(
     )
 
 
+async def _fetch_gold_trend_chart(
+    factory_id: str, range_: DateRange, pool=None,
+) -> Optional[dict]:
+    """Mirror Java GoldDashboardBuilder.fetchTrendChart (lines 160-191).
+
+    Builds LINE ChartConfig from daily_trend response.
+    Returns None on empty points OR query failure (logs warning).
+    options=None on Gold path (Java doesn't set it; foundation stub default differs).
+    """
+    try:
+        gold = await _call_daily_trend(pool, factory_id, (range_.start_date, range_.end_date))
+    except Exception as e:
+        logger.warning(
+            "[gold-builder] trend fetch failed factory=%s range=%s..%s: %s",
+            factory_id, range_.start_date, range_.end_date, e,
+        )
+        return None
+
+    points = gold.get("points") or []
+    if not points:
+        return None
+
+    data = [
+        {"date": p["date"], "amount": _to_decimal(p.get("revenue"))}
+        for p in points
+    ]
+
+    return _new_chart_config_dict(
+        chart_type="LINE",
+        title="销售趋势",
+        xaxis_field="date",
+        yaxis_field="amount",
+        data=data,
+        options=None,
+    )
+
+
 async def _get_sales_overview(factory_id: str, range_: DateRange) -> dict:
     """STUB — overview/gold specs replace.
 
