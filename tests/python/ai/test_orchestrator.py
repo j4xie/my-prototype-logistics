@@ -195,3 +195,131 @@ async def test_classifier_out_of_scope_intent_filtered_from_top_candidates():
     assert result.bestMatch is None, "out-of-scope intent must not become bestMatch"
     leaked = any(c.intentCode == "RESTAURANT_MENU" for c in result.topCandidates)
     assert not leaked, "out-of-scope intent must be filtered from topCandidates"
+
+
+# ======================================================================
+# β extension: SemanticRouter pre-stage integration (T3)
+# ======================================================================
+
+
+@pytest.mark.asyncio
+async def test_direct_execute_skips_stages_5_to_8():
+    """SemanticRouter DIRECT_EXECUTE -> no stage matchers called, candidate returned directly."""
+    from ai.dto import CandidateIntentDto, MatchMethod
+    from ai.orchestrator import Orchestrator
+    from ai.router.semantic_router import RouteDecision
+
+    direct_candidate = CandidateIntentDto(
+        intentCode="INVENTORY_QUERY", intentName="库存查询",
+        confidence=0.95, matchMethod=MatchMethod.SEMANTIC,
+    )
+    fake_decision = RouteDecision(
+        method="DIRECT_EXECUTE",
+        ood_detected=False,
+        candidates=[direct_candidate],
+        query_embedding=[0.1] * 768,
+    )
+
+    sem_matcher = MagicMock(); sem_matcher.match = AsyncMock(return_value=[])
+    cls_matcher = MagicMock(); cls_matcher.match = AsyncMock(return_value=[])
+    llm_matcher = MagicMock(); llm_matcher.match = AsyncMock(return_value=[])
+
+    fake_router = MagicMock()
+    fake_router.route = AsyncMock(return_value=fake_decision)
+
+    orch = Orchestrator(sem_matcher, cls_matcher, llm_matcher, semantic_router=fake_router)
+    result = await orch.match(
+        query="查库存",
+        factoryId="F001", businessType="FACTORY", userId="22",
+        role="factory_super_admin",
+        visible_intents=[make_intent_row("INVENTORY_QUERY", "库存查询",
+                                          tool_name="material_inventory_query")],
+        history=[],
+        min_confidence=0.7,
+    )
+    assert result.matchMethod == MatchMethod.SEMANTIC
+    assert result.bestMatch is not None
+    assert result.bestMatch.intentCode == "INVENTORY_QUERY"
+    sem_matcher.match.assert_not_called()
+    cls_matcher.match.assert_not_called()
+    llm_matcher.match.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_need_reranking_runs_stages_5_6_7_skips_8():
+    """NEED_RERANKING -> run sem+cls+fusion, skip llm."""
+    from ai.dto import CandidateIntentDto, MatchMethod
+    from ai.orchestrator import Orchestrator
+    from ai.router.semantic_router import RouteDecision
+
+    cand = CandidateIntentDto(intentCode="X", intentName="X", confidence=0.5,
+                                matchMethod=MatchMethod.SEMANTIC)
+    fake_decision = RouteDecision(
+        method="NEED_RERANKING",
+        ood_detected=False,
+        candidates=[cand],
+        query_embedding=[0.1] * 768,
+    )
+
+    sem_matcher = MagicMock(); sem_matcher.match = AsyncMock(return_value=[cand])
+    cls_matcher = MagicMock(); cls_matcher.match = AsyncMock(return_value=[])
+    llm_matcher = MagicMock(); llm_matcher.match = AsyncMock(return_value=[])
+
+    fake_router = MagicMock(); fake_router.route = AsyncMock(return_value=fake_decision)
+
+    orch = Orchestrator(sem_matcher, cls_matcher, llm_matcher, semantic_router=fake_router)
+    await orch.match(
+        query="q", factoryId="F", businessType="COMMON", userId="u", role="r",
+        visible_intents=[make_intent_row("X")], history=[], min_confidence=0.7,
+    )
+    sem_matcher.match.assert_called_once()
+    cls_matcher.match.assert_called_once()
+    llm_matcher.match.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_need_full_llm_runs_all_stages():
+    """NEED_FULL_LLM -> run sem+cls+fusion+llm (alpha path)."""
+    from ai.dto import CandidateIntentDto, MatchMethod
+    from ai.orchestrator import Orchestrator
+    from ai.router.semantic_router import RouteDecision
+
+    fake_decision = RouteDecision(
+        method="NEED_FULL_LLM",
+        ood_detected=False,
+        candidates=[],
+        query_embedding=[0.1] * 768,
+    )
+
+    sem_matcher = MagicMock(); sem_matcher.match = AsyncMock(return_value=[])
+    cls_matcher = MagicMock(); cls_matcher.match = AsyncMock(return_value=[])
+    llm_matcher = MagicMock(); llm_matcher.match = AsyncMock(return_value=[])
+
+    fake_router = MagicMock(); fake_router.route = AsyncMock(return_value=fake_decision)
+
+    orch = Orchestrator(sem_matcher, cls_matcher, llm_matcher, semantic_router=fake_router)
+    await orch.match(
+        query="q", factoryId="F", businessType="COMMON", userId="u", role="r",
+        visible_intents=[], history=[], min_confidence=0.7, enable_llm=True,
+    )
+    sem_matcher.match.assert_called_once()
+    cls_matcher.match.assert_called_once()
+    llm_matcher.match.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_no_router_falls_back_to_alpha_behavior():
+    """If semantic_router=None (alpha-style construction), behave like alpha (run all stages)."""
+    from ai.dto import CandidateIntentDto, MatchMethod
+    from ai.orchestrator import Orchestrator
+
+    sem_matcher = MagicMock(); sem_matcher.match = AsyncMock(return_value=[])
+    cls_matcher = MagicMock(); cls_matcher.match = AsyncMock(return_value=[])
+    llm_matcher = MagicMock(); llm_matcher.match = AsyncMock(return_value=[])
+
+    orch = Orchestrator(sem_matcher, cls_matcher, llm_matcher)
+    await orch.match(
+        query="q", factoryId="F", businessType="COMMON", userId="u", role="r",
+        visible_intents=[], history=[], min_confidence=0.7,
+    )
+    sem_matcher.match.assert_called_once()

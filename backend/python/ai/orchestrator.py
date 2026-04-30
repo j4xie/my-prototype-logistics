@@ -40,12 +40,17 @@ logger = logging.getLogger(__name__)
 
 
 class Orchestrator:
-    """Composes the 4 stage matchers into a short-circuit pipeline."""
+    """Composes the 4 stage matchers into a short-circuit pipeline.
 
-    def __init__(self, semantic_matcher, classifier_matcher, llm_matcher):
+    β extension: optionally accepts a SemanticRouter for pre-stage 3-tier routing.
+    If router=None, behaves as α (runs all stages 5-8 short-circuit).
+    """
+
+    def __init__(self, semantic_matcher, classifier_matcher, llm_matcher, semantic_router=None):
         self.semantic_matcher = semantic_matcher
         self.classifier_matcher = classifier_matcher
         self.llm_matcher = llm_matcher
+        self.semantic_router = semantic_router  # β: optional pre-stage router
 
     async def match(
         self,
@@ -59,9 +64,47 @@ class Orchestrator:
         min_confidence: float,
         enable_llm: bool = True,
     ) -> IntentMatchResultDto:
-        """Run stages 5-8 short-circuit, return Java-shaped result."""
+        """Run stages 5-8 short-circuit, return Java-shaped result.
+
+        β: if a semantic_router was provided, runs pre-stage routing first and
+        honors its decision (DIRECT_EXECUTE / NEED_RERANKING / NEED_FULL_LLM).
+        Without a router, behaves identically to α.
+        """
         t0 = time.time()
         timing: Dict[str, int] = {}
+
+        # ===== β Stage 0: SemanticRouter (optional) =====
+        skip_stage_8_due_to_reranking = False
+        if self.semantic_router is not None:
+            t_router = time.time()
+            try:
+                decision = await self.semantic_router.route(
+                    query=query, visible_intents=visible_intents,
+                    factoryId=factoryId, businessType=businessType,
+                )
+            except Exception:
+                logger.exception("SemanticRouter failed, falling through to all stages")
+                decision = None
+            timing["routerMs"] = int((time.time() - t_router) * 1000)
+
+            if decision is not None:
+                if decision.method == "DIRECT_EXECUTE":
+                    logger.info(
+                        "SemanticRouter DIRECT_EXECUTE (top conf=%.3f)",
+                        decision.candidates[0].confidence if decision.candidates else 0.0,
+                    )
+                    timing["totalMs"] = int((time.time() - t0) * 1000)
+                    return self._build_result(
+                        query=query,
+                        top_candidates=decision.candidates,
+                        method=MatchMethod.SEMANTIC,
+                        visible_intents=visible_intents,
+                        min_confidence=min_confidence,
+                        timing=timing,
+                    )
+                elif decision.method == "NEED_RERANKING":
+                    skip_stage_8_due_to_reranking = True
+                # NEED_FULL_LLM falls through, all stages run
 
         # ===== Stage 5 SEMANTIC =====
         t_stage_start = time.time()
@@ -119,7 +162,8 @@ class Orchestrator:
                 )
 
         # ===== Stage 8 LLM =====
-        if enable_llm:
+        # β: also skip if NEED_RERANKING decided
+        if enable_llm and not skip_stage_8_due_to_reranking:
             t_stage_start = time.time()
             try:
                 llm_candidates = await self.llm_matcher.match(
