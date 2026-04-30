@@ -255,6 +255,22 @@ def _to_decimal(v: Any) -> Decimal:
     return Decimal("0")
 
 
+def _decimal_to_number(v: Decimal) -> Any:
+    """Convert Decimal to Python int or float for JSON-safe serialization.
+
+    FastAPI's default JSON encoder serializes Decimal as string (not number),
+    breaking byte parity with Java's Jackson which emits numeric JSON values.
+    This helper converts to int when the value has no fractional part,
+    or float otherwise — mirroring what Jackson/BigDecimal serialize as JSON.
+
+    Used wherever Decimal appears in response dicts that must match golden
+    numeric JSON (rawValue, ranking value, chart amount).
+    """
+    if v == v.to_integral_value():
+        return int(v)
+    return float(v)
+
+
 def _format_kpi_value(v: Decimal, unit: str) -> str:
     """Format Decimal for KPICard.value. Mirrors Java GoldDashboardBuilder.formatKpiValue.
 
@@ -424,22 +440,22 @@ async def _build_from_gold_finance_summary(
     kpi_cards = [
         _new_kpi_card_dict(
             key="total_revenue", title="总营收",
-            value=_format_kpi_value(revenue, "元"), raw_value=revenue,
+            value=_format_kpi_value(revenue, "元"), raw_value=_decimal_to_number(revenue),
             unit="元", status="green",
         ),
         _new_kpi_card_dict(
             key="bill_count", title="账单数",
-            value=_format_kpi_value(bills, "单"), raw_value=bills,
+            value=_format_kpi_value(bills, "单"), raw_value=_decimal_to_number(bills),
             unit="单", status="green",
         ),
         _new_kpi_card_dict(
             key="avg_bill_value", title="客单价",
-            value=_format_kpi_value(avg_bill, "元"), raw_value=avg_bill,
+            value=_format_kpi_value(avg_bill, "元"), raw_value=_decimal_to_number(avg_bill),
             unit="元", status="green",
         ),
         _new_kpi_card_dict(
             key="store_count", title="门店数",
-            value=_format_kpi_value(stores, "家"), raw_value=stores,
+            value=_format_kpi_value(stores, "家"), raw_value=_decimal_to_number(stores),
             unit="家", status="green",
         ),
     ]
@@ -449,7 +465,7 @@ async def _build_from_gold_finance_summary(
         top_stores.append(_new_ranking_item_dict(
             rank=i,
             name=str(store.get("store_name", "")),
-            value=_to_decimal(store.get("revenue")),
+            value=_decimal_to_number(_to_decimal(store.get("revenue"))),
             target=None,
             completion_rate=None,
             alert_level=None,
@@ -488,7 +504,7 @@ async def _fetch_gold_trend_chart(
         return None
 
     data = [
-        {"date": p["date"], "amount": _to_decimal(p.get("revenue"))}
+        {"date": p["date"], "amount": _decimal_to_number(_to_decimal(p.get("revenue")))}
         for p in points
     ]
 
@@ -527,7 +543,7 @@ async def _fetch_gold_category_chart(
         return None
 
     data = [
-        {"category": str(p.get("name", "")), "amount": _to_decimal(p.get("revenue"))}
+        {"category": str(p.get("name", "")), "amount": _decimal_to_number(_to_decimal(p.get("revenue")))}
         for p in products
     ]
 

@@ -326,3 +326,91 @@ class TestGold:
         assert "sales_trend" not in ov["charts"]
         assert "category_distribution" in ov["charts"]
         assert len(ov["kpiCards"]) == 4
+
+    def test_F001_overview_byte_shape_via_gold(self, monkeypatch, client, f001_token):
+        """Gold spec merge gate. F001 overview field byte-matches golden after strip-volatile.
+
+        Mock returns the EXACT shape Java's Gold queries return for F001's 2025
+        window (~20.6M total revenue / 140541 bills / 8 stores / 365 trend days /
+        8 categories). Mocked because tests must be hermetic.
+        """
+        # Build mock from golden's actual values to ensure byte parity
+        with open(GOLDEN_DIR / "analysis-sales-F001.json", encoding="utf-8") as f:
+            golden = json.load(f)
+        golden_ov = golden["response"]["data"]["overview"]
+
+        kpi_total_rev = golden_ov["kpiCards"][0]["rawValue"]
+        kpi_bill_count = golden_ov["kpiCards"][1]["rawValue"]
+        kpi_avg_bill = golden_ov["kpiCards"][2]["rawValue"]
+        kpi_stores = golden_ov["kpiCards"][3]["rawValue"]
+
+        finance_mock = {
+            "factory_id": "F001",
+            "start_date": "2025-01-01",
+            "end_date": "2025-12-31",
+            "total_revenue": float(kpi_total_rev),
+            "bill_count": int(kpi_bill_count),
+            "avg_bill_value": float(kpi_avg_bill),
+            "store_count": int(kpi_stores),
+            "top_stores": [
+                {
+                    "store_id": f"S{i+1}",
+                    "store_name": s["name"],
+                    "revenue": float(s["value"]),
+                    "bill_count": 1000,
+                }
+                for i, s in enumerate(golden_ov["rankings"]["top_stores"])
+            ],
+        }
+        trend_mock = {
+            "factory_id": "F001",
+            "start_date": "2025-01-01",
+            "end_date": "2025-12-31",
+            "points": [
+                {"date": p["date"], "revenue": float(p["amount"]), "bill_count": 100, "avg_bill_value": 100.0}
+                for p in golden_ov["charts"]["sales_trend"]["data"]
+            ],
+        }
+        products_mock = {
+            "factory_id": "F001",
+            "start_date": "2025-01-01",
+            "end_date": "2025-12-31",
+            "top_products": [
+                {"product_id": f"P{i+1}", "name": d["category"], "qty": 100, "revenue": float(d["amount"]), "bill_count": 50}
+                for i, d in enumerate(golden_ov["charts"]["category_distribution"]["data"])
+            ],
+        }
+
+        from smartbi_compat.api import analysis_sales as mod
+        async def fake_fin(pool, fid, dr, *, top_n_stores=10):
+            return finance_mock
+        async def fake_trend(pool, fid, dr):
+            return trend_mock
+        async def fake_prod(pool, fid, dr, *, top_n=8):
+            return products_mock
+        async def fake_pool():
+            return None
+        try:
+            import smartbi.config as smartbi_config
+            monkeypatch.setattr(smartbi_config, "get_pg_pool", fake_pool, raising=False)
+        except ImportError:
+            pass
+        monkeypatch.setattr(mod, "_call_finance_summary", fake_fin)
+        monkeypatch.setattr(mod, "_call_daily_trend", fake_trend)
+        monkeypatch.setattr(mod, "_call_top_products", fake_prod)
+
+        response = client.get(
+            "/api/mobile/F001/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+            headers={"Authorization": f"Bearer {f001_token}"},
+        )
+        assert response.status_code == 200
+
+        actual_overview = _strip_volatile(response.json()["data"]["overview"])
+        expected_overview = _strip_volatile(golden_ov)
+
+        assert actual_overview == expected_overview, (
+            f"F001 overview byte-shape mismatch.\n"
+            f"Actual keys: {sorted(actual_overview.keys())}\n"
+            f"Expected keys: {sorted(expected_overview.keys())}"
+        )
