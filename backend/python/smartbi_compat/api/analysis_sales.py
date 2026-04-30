@@ -820,6 +820,64 @@ def _convert_metric_results_to_kpi_cards(metrics: list[dict]) -> list[dict]:
     return cards
 
 
+def _generate_ai_insights_from_metrics(
+    metrics: list[dict],
+    total_sales: Decimal,
+    total_profit: Decimal,
+    order_count: int,
+) -> list[dict]:
+    """Mirror Java SalesAnalysisServiceImpl.generateAiInsightsFromMetrics line 329-351.
+
+    Emits 1-2 INFO insights from aggregates path:
+      1. ALWAYS: 销售概况 ("期间总销售额 X，共 Y 笔订单，总利润 Z")
+      2. IF totalSales > 0: 利润率分析 ("综合利润率 N.N%")
+
+    NOTE: `metrics` param unused in from-aggregates path (Java keeps it for symmetry).
+    Q-2 grep RESOLVED 2026-04-30: SalesAnalysisServiceImpl.generateAiInsights
+    line 998-1083 (4-branch full version) is dead code; not ported.
+    """
+    insights: list[dict] = []
+    insights.append(_new_ai_insight_dict(
+        level="INFO",
+        category="销售概况",
+        message=(
+            f"期间总销售额 {_format_currency(total_sales)}，"
+            f"共 {order_count:,d} 笔订单，"
+            f"总利润 {_format_currency(total_profit)}"
+        ),
+    ))
+    if total_sales > Decimal("0"):
+        # Java line 342-343: SCALE=4 division then format with %.1f
+        profit_rate = (total_profit * Decimal("100") / total_sales).quantize(
+            Decimal("0.0001"), rounding=ROUND_HALF_UP,
+        )
+        insights.append(_new_ai_insight_dict(
+            level="INFO",
+            category="利润率分析",
+            message=f"综合利润率 {_format_completion_pct(profit_rate)}",
+        ))
+    return insights
+
+
+def _generate_suggestions_from_metrics(
+    metrics: list[dict],
+    total_sales: Decimal,
+    total_target: Decimal,
+) -> list[str]:
+    """Mirror Java SalesAnalysisServiceImpl.generateSuggestionsFromMetrics line 356-365.
+
+    Emits 1 suggestion when completionRate < 80 AND target > 0.
+    Threshold "80" is hardcoded literal in Java line 361 (NOT TARGET_YELLOW=85).
+    """
+    suggestions: list[str] = []
+    if total_target <= Decimal("0"):
+        return suggestions
+    completion_rate = _calculate_completion_rate(total_sales, total_target)
+    if completion_rate < Decimal("80"):
+        suggestions.append("目标完成率不足80%，建议加强销售推进")
+    return suggestions
+
+
 # ============================================================
 # Section 2: Strip-volatile shared helper
 # ============================================================

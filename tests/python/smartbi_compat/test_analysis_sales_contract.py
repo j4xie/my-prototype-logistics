@@ -830,3 +830,79 @@ class TestOverview:
         # Case 3: both null → "-"
         metrics = [_new_metric_result_dict(metric_code="X")]
         assert _convert_metric_results_to_kpi_cards(metrics)[0]["value"] == "-"
+
+    def test_generate_ai_insights_always_emits_first_info(self):
+        """Java line 333-339: always emits INFO 销售概况."""
+        from smartbi_compat.api.analysis_sales import _generate_ai_insights_from_metrics
+        from decimal import Decimal
+
+        insights = _generate_ai_insights_from_metrics(
+            metrics=[],
+            total_sales=Decimal("100000"),
+            total_profit=Decimal("30000"),
+            order_count=42,
+        )
+        assert len(insights) >= 1
+        assert insights[0]["level"] == "INFO"
+        assert insights[0]["category"] == "销售概况"
+        assert insights[0]["message"] == "期间总销售额 100,000.00，共 42 笔订单，总利润 30,000.00"
+        assert insights[0]["relatedEntity"] is None
+        assert insights[0]["actionSuggestion"] is None
+
+    def test_generate_ai_insights_emits_profit_rate_when_sales_positive(self):
+        """Java line 341-349: 利润率分析 only when totalSales > 0."""
+        from smartbi_compat.api.analysis_sales import _generate_ai_insights_from_metrics
+        from decimal import Decimal
+
+        insights = _generate_ai_insights_from_metrics(
+            metrics=[], total_sales=Decimal("100000"),
+            total_profit=Decimal("30000"), order_count=42,
+        )
+        assert len(insights) == 2
+        assert insights[1]["level"] == "INFO"
+        assert insights[1]["category"] == "利润率分析"
+        assert insights[1]["message"] == "综合利润率 30.0%"
+
+    def test_generate_ai_insights_skips_profit_rate_when_sales_zero(self):
+        """totalSales == 0: only the always-INFO insight emitted."""
+        from smartbi_compat.api.analysis_sales import _generate_ai_insights_from_metrics
+        from decimal import Decimal
+
+        insights = _generate_ai_insights_from_metrics(
+            metrics=[], total_sales=Decimal("0"),
+            total_profit=Decimal("0"), order_count=0,
+        )
+        assert len(insights) == 1
+        assert insights[0]["category"] == "销售概况"
+
+    def test_generate_suggestions_emits_when_completion_low(self):
+        """Java line 360-363: completionRate < 80 AND target > 0."""
+        from smartbi_compat.api.analysis_sales import _generate_suggestions_from_metrics
+        from decimal import Decimal
+
+        suggestions = _generate_suggestions_from_metrics(
+            metrics=[], total_sales=Decimal("50000"),
+            total_target=Decimal("100000"),
+        )
+        assert suggestions == ["目标完成率不足80%，建议加强销售推进"]
+
+    def test_generate_suggestions_skipped_when_completion_high(self):
+        from smartbi_compat.api.analysis_sales import _generate_suggestions_from_metrics
+        from decimal import Decimal
+
+        suggestions = _generate_suggestions_from_metrics(
+            metrics=[], total_sales=Decimal("90000"),
+            total_target=Decimal("100000"),
+        )
+        assert suggestions == []
+
+    def test_generate_suggestions_skipped_when_target_zero(self):
+        """target=0 suppressed by `totalTarget > 0` guard."""
+        from smartbi_compat.api.analysis_sales import _generate_suggestions_from_metrics
+        from decimal import Decimal
+
+        suggestions = _generate_suggestions_from_metrics(
+            metrics=[], total_sales=Decimal("50000"),
+            total_target=Decimal("0"),
+        )
+        assert suggestions == []
