@@ -16,7 +16,12 @@ import java.util.Optional;
  * @author Cretas Team
  * @version 1.0.0
  * @since 2026-01-05
+ *
+ * @deprecated Phase 2B-β: replaced by Python {@code backend/python/ai/learning/expression_learner.py}.
+ * This interface still ships in Bucket B for now (no functional change),
+ * but no new callers should be added. Phase 3 will remove this entirely.
  */
+@Deprecated
 public interface ExpressionLearningService {
 
     // ========== 表达学习 ==========
