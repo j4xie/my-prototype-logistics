@@ -878,6 +878,94 @@ def _generate_suggestions_from_metrics(
     return suggestions
 
 
+async def _build_legacy_rankings_dict(
+    factory_id: str, start_date: date, end_date: date,
+) -> dict:
+    """Y-a (Q-1 RESOLVED 2026-04-30): legacy fills overview.rankings.salesperson.
+
+    Mirror Java getSalesOverview line 158-161 + buildRankingsFromAggregates line 310-324:
+      - English key "salesperson" (Java line 161)
+      - top-10 truncation (Java line 321)
+      - rank/name/value populated; target/completionRate/alertLevel left null
+
+    Returns {"salesperson": [...]} even when list empty — matches Java map emit.
+    """
+    rows = await _query_top_salespersons_aggregate(factory_id, start_date, end_date)
+    items: list[dict] = []
+    for i, (name, amount, _quantity) in enumerate(rows[:10], start=1):
+        if name is None:
+            continue
+        items.append(_new_ranking_item_dict(
+            rank=i,
+            name=str(name),
+            value=_to_decimal(amount).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+        ))
+    return {"salesperson": items}
+
+
+async def _build_legacy_trend_chart(
+    factory_id: str, start_date: date, end_date: date,
+) -> Optional[dict]:
+    """Y-a: legacy fills overview.charts['销售趋势'].
+
+    Mirror Java buildTrendChartFromAggregates line 269-285:
+      - chartType="LINE", title="销售趋势" (Chinese)
+      - xaxisField="date", yaxisField="amount"
+      - data points: {date, amount, quantity} (3 keys; Gold has only 2)
+      - options/seriesField = None
+      - Returns None when query empty
+    """
+    rows = await _query_daily_sales_trend_aggregate(factory_id, start_date, end_date)
+    if not rows:
+        return None
+    data = [
+        {
+            "date": d.isoformat() if hasattr(d, "isoformat") else str(d),
+            "amount": _to_decimal(amount).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+            "quantity": _to_decimal(quantity).quantize(Decimal("1"), rounding=ROUND_HALF_UP),
+        }
+        for d, amount, quantity in rows
+    ]
+    return _new_chart_config_dict(
+        chart_type="LINE",
+        title="销售趋势",
+        xaxis_field="date",
+        yaxis_field="amount",
+        data=data,
+        options=None,
+    )
+
+
+async def _build_legacy_category_chart(
+    factory_id: str, start_date: date, end_date: date,
+) -> Optional[dict]:
+    """Y-a: legacy fills overview.charts['产品分布'].
+
+    Mirror Java buildPieChartFromAggregates line 290-305:
+      - chartType="PIE", title="产品分布"
+      - null category → "未分类" (Java line 294)
+      - Returns None when query empty
+    """
+    rows = await _query_category_distribution_aggregate(factory_id, start_date, end_date)
+    if not rows:
+        return None
+    data = [
+        {
+            "category": str(category) if category is not None else "未分类",
+            "amount": _to_decimal(amount).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+        }
+        for category, amount in rows
+    ]
+    return _new_chart_config_dict(
+        chart_type="PIE",
+        title="产品分布",
+        xaxis_field="category",
+        yaxis_field="amount",
+        data=data,
+        options=None,
+    )
+
+
 # ============================================================
 # Section 2: Strip-volatile shared helper
 # ============================================================

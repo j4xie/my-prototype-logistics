@@ -906,3 +906,103 @@ class TestOverview:
             total_target=Decimal("0"),
         )
         assert suggestions == []
+
+    @pytest.mark.asyncio
+    async def test_build_legacy_rankings_dict_fills_salesperson(self, monkeypatch):
+        """Y-a: legacy fills overview.rankings.salesperson (English key) with top 10."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+
+        async def fake_query(*a, **k):
+            return [(f"销售员{i}", Decimal(str(100000 - i * 1000)), Decimal("10")) for i in range(15)]
+
+        monkeypatch.setattr(m, "_query_top_salespersons_aggregate", fake_query)
+
+        result = await m._build_legacy_rankings_dict("F999", date(2025, 1, 1), date(2025, 12, 31))
+        assert "salesperson" in result
+        ranks = result["salesperson"]
+        assert len(ranks) == 10
+        assert ranks[0]["rank"] == 1
+        assert ranks[0]["name"] == "销售员0"
+        assert ranks[0]["value"] == Decimal("100000.00")
+        assert ranks[0]["target"] is None
+        assert ranks[0]["completionRate"] is None
+        assert ranks[0]["alertLevel"] is None
+        assert ranks[9]["rank"] == 10
+
+    @pytest.mark.asyncio
+    async def test_build_legacy_rankings_dict_empty_when_no_data(self, monkeypatch):
+        """Empty list from SQL → returns {salesperson: []} (consistent with Java map emit)."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+
+        async def fake_query(*a, **k):
+            return []
+
+        monkeypatch.setattr(m, "_query_top_salespersons_aggregate", fake_query)
+
+        result = await m._build_legacy_rankings_dict("F999", date(2025, 1, 1), date(2025, 12, 31))
+        assert result == {"salesperson": []}
+
+    @pytest.mark.asyncio
+    async def test_build_legacy_trend_chart_chinese_title(self, monkeypatch):
+        """Y-a: legacy charts use Chinese title (Java line 280) NOT Gold's English."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+
+        async def fake_query(*a, **k):
+            return [
+                (date(2025, 1, 1), Decimal("1000.55"), Decimal("10")),
+                (date(2025, 1, 2), Decimal("2000.99"), Decimal("20")),
+            ]
+
+        monkeypatch.setattr(m, "_query_daily_sales_trend_aggregate", fake_query)
+
+        chart = await m._build_legacy_trend_chart("F999", date(2025, 1, 1), date(2025, 12, 31))
+        assert chart is not None
+        assert chart["chartType"] == "LINE"
+        assert chart["title"] == "销售趋势"
+        assert chart["xaxisField"] == "date"
+        assert chart["yaxisField"] == "amount"
+        assert len(chart["data"]) == 2
+        assert chart["data"][0]["date"] == "2025-01-01"
+        assert chart["data"][0]["amount"] == Decimal("1000.55")
+        assert chart["data"][0]["quantity"] == Decimal("10")
+        assert chart["options"] is None
+        assert chart["seriesField"] is None
+
+    @pytest.mark.asyncio
+    async def test_build_legacy_trend_chart_returns_none_when_empty(self, monkeypatch):
+        """Java line 147 isEmpty check skips chart emission."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+
+        async def fake_query(*a, **k):
+            return []
+
+        monkeypatch.setattr(m, "_query_daily_sales_trend_aggregate", fake_query)
+        chart = await m._build_legacy_trend_chart("F999", date(2025, 1, 1), date(2025, 12, 31))
+        assert chart is None
+
+    @pytest.mark.asyncio
+    async def test_build_legacy_category_chart_null_category_fallback(self, monkeypatch):
+        """Java line 294: null category → '未分类' in chart data."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+
+        async def fake_query(*a, **k):
+            return [
+                ("猪肉类", Decimal("50000")),
+                (None, Decimal("5000")),
+            ]
+
+        monkeypatch.setattr(m, "_query_category_distribution_aggregate", fake_query)
+
+        chart = await m._build_legacy_category_chart("F999", date(2025, 1, 1), date(2025, 12, 31))
+        assert chart["chartType"] == "PIE"
+        assert chart["title"] == "产品分布"
+        assert chart["data"][0]["category"] == "猪肉类"
+        assert chart["data"][1]["category"] == "未分类"
