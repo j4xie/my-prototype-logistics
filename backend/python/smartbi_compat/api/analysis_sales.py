@@ -43,6 +43,31 @@ from smartbi_compat.date_range import DateRange
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+
+# ============================================================
+# Python 3.8 compat shim for asyncio.to_thread (added 3.9+)
+# ============================================================
+async def _to_thread(fn, *args, **kwargs):
+    """Run a sync function in a thread executor.
+
+    Python 3.8-compatible replacement for asyncio.to_thread (3.9+).
+    Server venv38 runs Python 3.8.17; using asyncio.to_thread fails at
+    runtime with AttributeError. This shim works on Python 3.6+ via
+    asyncio.get_event_loop().run_in_executor.
+
+    For kwargs support, wraps the call in functools.partial — same effective
+    behavior as asyncio.to_thread which uses functools.partial under the hood.
+    """
+    import functools
+    try:
+        # Python 3.10+
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        # Python 3.7-3.9 fallback
+        loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, functools.partial(fn, *args, **kwargs))
+
+
 # ============================================================
 # Section 0: Legacy-path constants (mirror Java SalesAnalysisServiceImpl.java line 64-74)
 # ============================================================
@@ -238,7 +263,7 @@ async def _query_sales_aggregates(
                 return None
             return (row[0], row[1], row[2], row[3], row[4], row[5])
     try:
-        return await asyncio.to_thread(_exec)
+        return await _to_thread(_exec)
     except Exception as e:
         logger.warning(
             "[legacy] _query_sales_aggregates failed factory=%s: %s",
@@ -297,7 +322,7 @@ async def _query_top_salespersons_aggregate(
                 })
             ]
     try:
-        return await asyncio.to_thread(_exec)
+        return await _to_thread(_exec)
     except Exception as e:
         logger.warning(
             "[legacy] _query_top_salespersons_aggregate failed factory=%s: %s",
@@ -337,7 +362,7 @@ async def _query_daily_sales_trend_aggregate(
                 })
             ]
     try:
-        return await asyncio.to_thread(_exec)
+        return await _to_thread(_exec)
     except Exception as e:
         logger.warning(
             "[legacy] _query_daily_sales_trend_aggregate failed factory=%s: %s",
@@ -378,7 +403,7 @@ async def _query_category_distribution_aggregate(
                 })
             ]
     try:
-        return await asyncio.to_thread(_exec)
+        return await _to_thread(_exec)
     except Exception as e:
         logger.warning(
             "[legacy] _query_category_distribution_aggregate failed factory=%s: %s",
@@ -1469,7 +1494,7 @@ async def _get_salesperson_ranking(factory_id: str, range_: DateRange) -> list:
     async per foundation §5: sync SQLAlchemy `_query_sales_data` wrapped via
     `await asyncio.to_thread(...)` per foundation Phase B.6 strategy.
     """
-    rows = await asyncio.to_thread(_query_sales_data, factory_id, range_)
+    rows = await _to_thread(_query_sales_data, factory_id, range_)
     sales: dict = {}
     targets: dict = {}
     for row in rows:
@@ -1491,7 +1516,7 @@ async def _get_product_ranking(factory_id: str, range_: DateRange) -> list:
     Filters null product_category (Java line 499: `getProductCategory() != null`).
     No top_n cap.
     """
-    rows = await asyncio.to_thread(_query_sales_data, factory_id, range_)
+    rows = await _to_thread(_query_sales_data, factory_id, range_)
     sales: dict = {}
     for row in rows:
         category = row.product_category
@@ -1509,7 +1534,7 @@ async def _get_customer_ranking(factory_id: str, range_: DateRange) -> list:
     alertLevel hard-coded GREEN (Java line 588).
     Filters null customer_name. Top 10 cap (Java line 574 `.limit(10)`).
     """
-    rows = await asyncio.to_thread(_query_sales_data, factory_id, range_)
+    rows = await _to_thread(_query_sales_data, factory_id, range_)
     sales: dict = {}
     for row in rows:
         name = row.customer_name
@@ -1601,7 +1626,7 @@ async def _get_sales_trend_chart(
             f"used by /analysis/sales composite. See spec §5."
         )
 
-    rows = await asyncio.to_thread(_query_sales_data, factory_id, range_)
+    rows = await _to_thread(_query_sales_data, factory_id, range_)
     period_sales = _bucket_sales_by_period(rows, period)
 
     data_points = [
