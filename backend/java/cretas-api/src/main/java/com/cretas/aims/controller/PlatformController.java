@@ -39,6 +39,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.exception.BusinessException;
 
 /**
  * 平台管理控制器
@@ -455,6 +456,8 @@ public class PlatformController {
 
             return ApiResponse.success("AI配置生成成功", response);
 
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("AI初始化工厂配置失败 - factoryId={}, error={}", factoryId, e.getMessage(), e);
 
@@ -463,7 +466,7 @@ public class PlatformController {
                     .message("AI配置生成失败: " + ErrorSanitizer.sanitize(e))
                     .build();
 
-            return ApiResponse.error("AI配置生成失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "AI配置生成失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 

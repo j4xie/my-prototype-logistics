@@ -29,6 +29,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.cretas.aims.annotation.RequireModule;
+import com.cretas.aims.exception.BusinessException;
 
 /**
  * 质检处置规则控制器
@@ -177,8 +178,10 @@ public class QualityDispositionController {
         DispositionAction action;
         try {
             action = DispositionAction.valueOf(request.getActionCode());
+        } catch (BusinessException be) {
+            throw be;
         } catch (IllegalArgumentException e) {
-            return ApiResponse.error("无效的处置动作: " + request.getActionCode());
+            throw new BusinessException(400, "无效的处置动作: " + request.getActionCode());
         }
 
         // 构建处置原因
@@ -220,6 +223,8 @@ public class QualityDispositionController {
                                 "newStatus", executionResult.getNewBatchStatus())
                 );
             }
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.warn("发送处置通知失败", e);
         }
@@ -526,6 +531,8 @@ public class QualityDispositionController {
                             "batchId", request.getBatchId(),
                             "action", request.getActionCode())
             );
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.warn("发送处置申请通知失败", e);
         }
@@ -543,6 +550,8 @@ public class QualityDispositionController {
             Long inspectionIdLong = null;
             try {
                 inspectionIdLong = Long.parseLong(request.getInspectionId());
+            } catch (BusinessException be) {
+                throw be;
             } catch (NumberFormatException e) {
                 log.warn("无法解析 inspectionId: {}", request.getInspectionId());
             }
@@ -553,6 +562,8 @@ public class QualityDispositionController {
                     String.format("批次 %d 的质检处置申请需要审批", request.getBatchId())
             );
             log.info("质检处置申请推送通知已发送: applicationId={}", auditLog.getId());
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.warn("发送质检处置申请推送通知失败", e);
         }
@@ -595,7 +606,7 @@ public class QualityDispositionController {
 
         // 验证工厂ID
         if (!auditLog.getFactoryId().equals(factoryId)) {
-            return ApiResponse.error("无权审批此处置申请");
+            throw new BusinessException(400, "无权审批此处置申请");
         }
 
         // 更新审批状态
@@ -636,6 +647,8 @@ public class QualityDispositionController {
                     executionStatus = "EXECUTED";
                     newBatchStatus = executionResult.getNewBatchStatus();
                 }
+            } catch (BusinessException be) {
+                throw be;
             } catch (Exception e) {
                 log.warn("执行处置动作失败", e);
                 executionStatus = "EXECUTION_FAILED";
@@ -662,6 +675,8 @@ public class QualityDispositionController {
                     notificationMessage,
                     notificationData
             );
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.warn("发送审批通知失败", e);
         }
@@ -673,6 +688,8 @@ public class QualityDispositionController {
                 Long entityIdLong = null;
                 try {
                     entityIdLong = Long.parseLong(auditLog.getEntityId());
+                } catch (BusinessException be) {
+                    throw be;
                 } catch (NumberFormatException e) {
                     log.warn("无法解析 entityId: {}", auditLog.getEntityId());
                 }
@@ -686,6 +703,8 @@ public class QualityDispositionController {
                 );
                 log.info("质检处置审批结果推送通知已发送: applicationId={}, applicantId={}", id, applicantId);
             }
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.warn("发送审批结果推送通知失败", e);
         }
@@ -715,6 +734,8 @@ public class QualityDispositionController {
         try {
             DispositionAction action = DispositionAction.valueOf(actionCode);
             return getActionApprovalLevel(action);
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             return "SUPERVISOR";
         }

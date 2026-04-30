@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.exception.BusinessException;
 
 /**
  * NVR 录像管理 API 控制器 (Phase 3)
@@ -51,7 +52,7 @@ public class IsapiRecordingController {
         if (response.isSuccess()) {
             return ApiResponse.success(response);
         } else {
-            return ApiResponse.error(response.getMessage());
+            throw new BusinessException(400, response.getMessage(), response);
         }
     }
 
@@ -89,9 +90,13 @@ public class IsapiRecordingController {
 
             return ApiResponse.success(result);
 
+        } catch (BusinessException be) {
+            throw be;
+
+
         } catch (Exception e) {
             log.error("获取回放地址失败: {}", e.getMessage(), e);
-            return ApiResponse.error("获取回放地址失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "获取回放地址失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -126,7 +131,7 @@ public class IsapiRecordingController {
         if (response.isSuccess()) {
             return ApiResponse.success(response);
         } else {
-            return ApiResponse.error(response.getMessage());
+            throw new BusinessException(400, response.getMessage(), response);
         }
     }
 
@@ -161,7 +166,7 @@ public class IsapiRecordingController {
         if (response.isSuccess()) {
             return ApiResponse.success(response);
         } else {
-            return ApiResponse.error(response.getMessage());
+            throw new BusinessException(400, response.getMessage(), response);
         }
     }
 }

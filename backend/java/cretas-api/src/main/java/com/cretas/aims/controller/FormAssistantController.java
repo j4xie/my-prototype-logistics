@@ -9,6 +9,7 @@ import com.cretas.aims.service.MobileService;
 import com.cretas.aims.util.ErrorSanitizer;
 import com.cretas.aims.utils.JwtUtil;
 import com.cretas.aims.utils.TokenUtils;
+import com.cretas.aims.exception.BusinessException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -351,6 +352,8 @@ public class FormAssistantController {
 
             return ApiResponse.success(result);
 
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("AI表单解析失败: {}", e.getMessage(), e);
             FormParseResponse fallback = new FormParseResponse();
@@ -429,12 +432,16 @@ public class FormAssistantController {
                                 "\"}"));
                 emitter.complete();
 
+            } catch (BusinessException be) {
+                throw be;
             } catch (Exception e) {
                 log.error("Form parse stream failed: {}", e.getMessage(), e);
                 try {
                     emitter.send(SseEmitter.event().name("error")
                             .data("{\"message\":\"" + ErrorSanitizer.sanitize(e).replace("\"", "'") + "\"}"));
                     emitter.complete();
+                } catch (BusinessException be) {
+                    throw be;
                 } catch (Exception ex) {
                     emitter.completeWithError(e);
                 }
@@ -511,6 +518,8 @@ public class FormAssistantController {
 
             return ApiResponse.success(result);
 
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("AI表单OCR解析失败: {}", e.getMessage(), e);
             OCRParseResponse fallback = new OCRParseResponse();
@@ -569,7 +578,7 @@ public class FormAssistantController {
             (!userRole.equals("factory_super_admin") &&
              !userRole.equals("super_admin"))) {
             log.warn("AI生成Schema权限不足: factoryId={}, role={}", factoryId, userRole);
-            return ApiResponse.error("权限不足：仅工厂超级管理员可使用此功能");
+            throw new BusinessException(403, "权限不足：仅工厂超级管理员可使用此功能").withSeverity("error");
         }
 
         log.info("AI生成Schema: factoryId={}, entityType={}, userInput={}",
@@ -591,7 +600,7 @@ public class FormAssistantController {
         String quotaError = checkQuota(factoryId, SCHEMA_GENERATE_QUOTA_COST);
         if (quotaError != null) {
             log.warn("AI生成Schema配额不足: factoryId={}, error={}", factoryId, quotaError);
-            return ApiResponse.error("配额不足: " + quotaError);
+            throw new BusinessException(400, "配额不足: " + quotaError);
         }
 
         try {
@@ -642,6 +651,8 @@ public class FormAssistantController {
 
             return ApiResponse.success(result);
 
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("AI生成Schema失败: {}", e.getMessage(), e);
             SchemaGenerateResponse fallback = new SchemaGenerateResponse();
@@ -747,6 +758,8 @@ public class FormAssistantController {
 
             return ApiResponse.success(result);
 
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("校验反馈处理失败: {}", e.getMessage(), e);
             ValidationFeedbackResponse fallback = new ValidationFeedbackResponse();

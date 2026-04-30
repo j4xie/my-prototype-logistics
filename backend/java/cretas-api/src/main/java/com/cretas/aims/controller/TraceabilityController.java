@@ -7,6 +7,7 @@ import com.cretas.aims.entity.ProductionBatch;
 import com.cretas.aims.repository.ProductionBatchRepository;
 import com.cretas.aims.service.TraceabilityService;
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.exception.BusinessException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -84,9 +85,12 @@ public class TraceabilityController {
             );
 
             return ApiResponse.success(response);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("获取溯源记录列表失败", e);
-            return ApiResponse.error("获取溯源记录列表失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "获取溯源记录列表失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -122,6 +126,8 @@ public class TraceabilityController {
                     "data", response,
                     "message", "获取批次溯源成功"
             ));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取批次溯源失败", e);
             return ResponseEntity.badRequest().body(Map.of(
@@ -164,6 +170,8 @@ public class TraceabilityController {
                     "data", response,
                     "message", "获取完整溯源链路成功"
             ));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取完整溯源链路失败", e);
             return ResponseEntity.badRequest().body(Map.of(
@@ -196,6 +204,8 @@ public class TraceabilityController {
                     "data", response,
                     "message", response.getIsValid() ? "溯源信息查询成功" : response.getMessage()
             ));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("公开溯源查询失败", e);
             return ResponseEntity.badRequest().body(Map.of(
@@ -240,6 +250,8 @@ public class TraceabilityController {
                     "data", response,
                     "message", response.getIsValid() ? "溯源信息查询成功" : response.getMessage()
             ));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("溯源码查询失败", e);
             return ResponseEntity.badRequest().body(Map.of(

@@ -47,7 +47,7 @@ public class FeatureConfigController {
         var existing = featureConfigRepository
                 .findByFactoryIdAndModuleIdAndDeletedAtIsNull(factoryId, moduleId);
         if (existing.isEmpty()) {
-            return ApiResponse.error("Module config not found");
+            throw new BusinessException(400, "Module config not found");
         }
         FactoryFeatureConfig cfg = existing.get();
         cfg.setConfig(config);

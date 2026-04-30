@@ -3,6 +3,7 @@ package com.cretas.aims.controller;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.service.MaterialSpecConfigService;
+import com.cretas.aims.exception.BusinessException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -183,7 +184,7 @@ public class MaterialSpecConfigController {
         log.info("更新类别规格: factoryId={}, category={}, specs={}", factoryId, category, request.getSpecifications());
 
         if (request.getSpecifications() == null || request.getSpecifications().isEmpty()) {
-            return ApiResponse.error(400, "规格列表不能为空");
+            throw new BusinessException(400, "规格列表不能为空");
         }
 
         specConfigService.updateCategorySpecs(factoryId, category, request.getSpecifications());
