@@ -48,6 +48,29 @@ router = APIRouter()
 # ============================================================
 # Populated by Tasks C.3 - C.7
 
+
+def _new_date_range_dict(range_: DateRange) -> dict:
+    """Mirror DateRange.java @Data getters incl. derived `days` and `valid`.
+
+    F999 observed 7-field shape:
+      startDate / endDate (LocalDate, ISO string)
+      granularity (String — YEAR/MONTH/WEEK/DAY/CUSTOM)
+      originalExpression (String — e.g. "2025-01-01 至 2025-12-31")
+      relative (boolean)
+      days (derived = (endDate - startDate).days + 1)
+      valid (derived = startDate <= endDate)
+    """
+    days_count = (range_.end_date - range_.start_date).days + 1
+    return {
+        "startDate": range_.start_date.isoformat(),
+        "endDate": range_.end_date.isoformat(),
+        "granularity": getattr(range_, "granularity", "CUSTOM"),
+        "originalExpression": getattr(range_, "original_expression", None),
+        "relative": getattr(range_, "relative", False),
+        "days": days_count,
+        "valid": range_.start_date <= range_.end_date,
+    }
+
 # ============================================================
 # Section 2: Strip-volatile shared helper
 # ============================================================

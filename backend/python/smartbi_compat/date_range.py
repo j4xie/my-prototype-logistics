@@ -17,6 +17,11 @@ class DateRange:
     end_date: date
 
     @classmethod
+    def custom(cls, start: date, end: date) -> "DateRange":
+        """Create a DateRange with explicit start and end dates."""
+        return cls(start, end)
+
+    @classmethod
     def by_period(cls, period: str) -> "DateRange":
         """Mirror DateRangeUtils.rangeByPeriod (Java).
 

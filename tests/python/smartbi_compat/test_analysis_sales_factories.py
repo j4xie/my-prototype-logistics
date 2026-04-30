@@ -44,3 +44,45 @@ class TestStripVolatile:
         assert _strip_volatile(42) == 42
         assert _strip_volatile("hello") == "hello"
         assert _strip_volatile(None) is None
+
+
+from datetime import date
+from smartbi_compat.api.analysis_sales import _new_date_range_dict
+from smartbi_compat.date_range import DateRange
+
+
+class TestDateRangeDict:
+    def test_F999_observed_shape(self):
+        """Match F999 golden 7-field shape: 5 declared + 2 derived."""
+        r = DateRange.custom(date(2025, 1, 1), date(2025, 12, 31))
+        result = _new_date_range_dict(r)
+        assert set(result.keys()) == {
+            "startDate", "endDate", "granularity",
+            "originalExpression", "relative", "days", "valid",
+        }
+        assert result["startDate"] == "2025-01-01"
+        assert result["endDate"] == "2025-12-31"
+        assert result["days"] == 365
+        assert result["valid"] is True
+
+    def test_key_order_matches_F999(self):
+        """Foundation §3 R9: dict key order must match Java HashMap iteration order."""
+        r = DateRange.custom(date(2025, 1, 1), date(2025, 12, 31))
+        keys = list(_new_date_range_dict(r).keys())
+        # Order observed in F999 golden
+        assert keys == [
+            "startDate", "endDate", "granularity",
+            "originalExpression", "relative", "days", "valid",
+        ]
+
+    def test_one_day_range(self):
+        r = DateRange.custom(date(2025, 6, 15), date(2025, 6, 15))
+        result = _new_date_range_dict(r)
+        assert result["days"] == 1
+        assert result["valid"] is True
+
+    def test_invalid_range(self):
+        """end before start → valid=False."""
+        r = DateRange.custom(date(2025, 12, 31), date(2025, 1, 1))
+        result = _new_date_range_dict(r)
+        assert result["valid"] is False
