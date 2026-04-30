@@ -94,5 +94,52 @@ from smartbi_compat.api.analysis_sales import _strip_volatile  # noqa: E402
 class TestEnvelope:
     """Foundation merge gate. Sibling specs add Test{Overview,Rankings,Trend,Gold}."""
 
-    # Tests added in Tasks E.2 + E.3
-    pass
+    def test_route_registered(self, client, f999_token):
+        response = client.get(
+            "/api/mobile/F999/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+            headers={"Authorization": f"Bearer {f999_token}"},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body.get("success") is True
+        assert "data" in body
+
+    def test_jwt_required(self, client):
+        response = client.get(
+            "/api/mobile/F999/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+        )
+        assert response.status_code in (401, 403)
+
+    def test_factory_id_isolation(self, client, f999_token):
+        """F999 token must be rejected for F001 path."""
+        response = client.get(
+            "/api/mobile/F001/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+            headers={"Authorization": f"Bearer {f999_token}"},
+        )
+        assert response.status_code == 403
+
+    def test_dimension_param_ignored(self, client, f999_token):
+        """Java line 110 short-circuit: when smartBIService≠null, dimension
+        query param is read but NOT branched on. F999 goldens (with/without
+        dimension=salesperson) are byte-identical except _meta."""
+        r_no_dim = client.get(
+            "/api/mobile/F999/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+            headers={"Authorization": f"Bearer {f999_token}"},
+        )
+        r_with_dim = client.get(
+            "/api/mobile/F999/smart-bi/analysis/sales",
+            params={
+                "startDate": "2025-01-01",
+                "endDate": "2025-12-31",
+                "dimension": "salesperson",
+            },
+            headers={"Authorization": f"Bearer {f999_token}"},
+        )
+        assert r_no_dim.status_code == 200
+        assert r_with_dim.status_code == 200
+        # After stripping volatile timestamps, the responses must be equal
+        assert _strip_volatile(r_no_dim.json()) == _strip_volatile(r_with_dim.json())
