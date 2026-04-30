@@ -142,8 +142,13 @@ class TestAnalysisFinanceComposite:
             )
 
     def test_f999_unimplemented_analysisType_returns_501(self, client):
-        """Verify 501 path for un-ported analysisTypes (payable + profit now real impl, excluded)."""
-        for at in ["cost", "receivable", "budget"]:
+        """Verify 501 path for un-ported analysisTypes.
+
+        C3 robust pattern: list reflects current main state at time of this PR.
+        profit/payable/cost are real impl; receivable + budget remain 501 until their PR-As merge.
+        Sister chats merging concurrently must rebase + regenerate this list (drop their endpoint).
+        """
+        for at in ["receivable", "budget"]:
             resp = client.get(
                 f"/api/mobile/F999/smart-bi/analysis/finance"
                 f"?startDate=2025-01-01&endDate=2025-12-31&analysisType={at}",

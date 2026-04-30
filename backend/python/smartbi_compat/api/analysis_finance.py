@@ -1522,6 +1522,10 @@ async def get_finance_analysis(
         result = await _get_profit_analysis(auth.factory_id, startDate, endDate)
         return wrap_response(result)
 
+    if analysisType == "cost":
+        result = await _get_cost_analysis(auth.factory_id, startDate, endDate)
+        return wrap_response(result)
+
     return wrap_response(
         data=None,
         success=False,
