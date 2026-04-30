@@ -1740,3 +1740,47 @@ class TestTrend:
                 await m._get_sales_trend_chart("F999", range_, period)
 
         assert called["count"] == 0  # Raise BEFORE query — fail fast
+
+    # ============================================================
+    # F001/F999 trendChart byte-shape regression (Phase C.1)
+    # ============================================================
+    # Route-level guard: ensure trendChart matches the canonical empty-state
+    # ChartConfig 7-key shape. F001 has no order_date data (spec §11 Q2),
+    # F999 has cleared data — both should produce data=[]. These tests pin
+    # the byte contract so a future helper change that breaks empty-state
+    # path (e.g. forgetting to seed data:[] or options dict) trips here
+    # rather than slipping through TestEnvelope's generic golden diff.
+
+    def test_F001_trend_byte_shape(self, client, f001_token):
+        """F001 trendChart should match the empty-state ChartConfig.
+
+        F001 currently has no order_date data in test env (per spec §11 Q2),
+        so trendChart.data == [] and the rest is the canonical 7-key shape.
+        """
+        response = client.get(
+            "/api/mobile/F001/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+            headers={"Authorization": f"Bearer {f001_token}"},
+        )
+        assert response.status_code == 200
+        trend = response.json()["data"]["trendChart"]
+        assert trend["data"] == []
+        assert trend["chartType"] == "LINE"
+        assert trend["title"] == "销售趋势"
+        assert trend["xaxisField"] == "date"
+        assert trend["yaxisField"] == "amount"
+        assert trend["seriesField"] is None
+        assert trend["options"] == {"showDataLabels": False, "smooth": True}
+
+    def test_F999_trend_empty_byte_shape(self, client, f999_token):
+        """F999 has cleared data → trendChart.data is []."""
+        response = client.get(
+            "/api/mobile/F999/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+            headers={"Authorization": f"Bearer {f999_token}"},
+        )
+        assert response.status_code == 200
+        trend = response.json()["data"]["trendChart"]
+        assert trend["data"] == []
+        assert trend["title"] == "销售趋势"
+        assert trend["options"] == {"showDataLabels": False, "smooth": True}
