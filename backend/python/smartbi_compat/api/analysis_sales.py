@@ -98,6 +98,72 @@ def _format_growth_pct(value: Decimal) -> str:
     return f"{sign}{float(quantized):.1f}%"
 
 
+def _calculate_completion_rate(actual: Decimal, target: Optional[Decimal]) -> Decimal:
+    """Mirror Java SalesAnalysisServiceImpl.calculateCompletionRate line 1166-1171.
+
+    target null OR 0 → returns Decimal("0") (NOT scaled — matches Java BigDecimal.ZERO).
+    Otherwise: (actual / target * 100).quantize(SCALE=4, HALF_UP).
+    """
+    if target is None or target == Decimal("0"):
+        return Decimal("0")
+    return (actual / target * Decimal("100")).quantize(
+        Decimal("0.0001"), rounding=ROUND_HALF_UP,
+    )
+
+
+def _calculate_mom_growth(current: Optional[Decimal], previous: Optional[Decimal]) -> Decimal:
+    """Mirror Java MetricCalculatorServiceImpl.calculateMomGrowth line 425-438.
+
+    Edge cases:
+      - previous null OR 0: return Decimal(100) if current > 0 else Decimal(0)
+      - current null:       return Decimal(-100)
+      - normal:             (current - previous) / abs(previous) * 100,
+                            quantized to DISPLAY_SCALE=2, HALF_UP
+    """
+    if previous is None or previous == Decimal("0"):
+        if current is not None and current > Decimal("0"):
+            return Decimal("100")
+        return Decimal("0")
+    if current is None:
+        return Decimal("-100")
+    return ((current - previous) / abs(previous) * Decimal("100")).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP,
+    )
+
+
+def _new_metric_result_dict(
+    metric_code: Optional[str] = None,
+    metric_name: Optional[str] = None,
+    value: Optional[Decimal] = None,
+    formatted_value: Optional[str] = None,
+    unit: Optional[str] = None,
+    change_percent: Optional[Decimal] = None,
+    change_direction: Optional[str] = None,
+    change_value: Optional[Decimal] = None,
+    alert_level: str = "GREEN",
+    dimension_value: Optional[str] = None,
+    description: Optional[str] = None,
+) -> dict:
+    """Mirror MetricResult.java @Data getters (11 fields per spec §4).
+
+    Used as intermediate representation; converted to KPICard via
+    _convert_metric_results_to_kpi_cards before insertion into DashboardResponse.kpiCards.
+    """
+    return {
+        "metricCode": metric_code,
+        "metricName": metric_name,
+        "value": value,
+        "formattedValue": formatted_value,
+        "unit": unit,
+        "changePercent": change_percent,
+        "changeDirection": change_direction,
+        "changeValue": change_value,
+        "alertLevel": alert_level,
+        "dimensionValue": dimension_value,
+        "description": description,
+    }
+
+
 # ============================================================
 # Section 1: DTO dict factories (FROZEN by foundation spec §4)
 # ============================================================

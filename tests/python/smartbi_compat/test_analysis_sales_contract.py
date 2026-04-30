@@ -485,3 +485,48 @@ class TestOverview:
         assert _format_growth_pct(Decimal("12.5")) == "+12.5%"
         assert _format_growth_pct(Decimal("-12.5")) == "-12.5%"
         assert _format_growth_pct(Decimal("0")) == "+0.0%"
+
+    def test_calculate_completion_rate(self):
+        """Java SalesAnalysisServiceImpl.calculateCompletionRate line 1166-1171."""
+        from smartbi_compat.api.analysis_sales import _calculate_completion_rate
+        from decimal import Decimal
+        result = _calculate_completion_rate(Decimal("50000"), Decimal("100000"))
+        assert result == Decimal("50.0000")
+        assert _calculate_completion_rate(Decimal("100"), Decimal("0")) == Decimal("0")
+        assert _calculate_completion_rate(Decimal("100"), None) == Decimal("0")
+        result = _calculate_completion_rate(Decimal("1"), Decimal("3"))
+        assert result == Decimal("33.3333")
+
+    def test_calculate_mom_growth(self):
+        """Java MetricCalculatorServiceImpl.calculateMomGrowth line 425-438."""
+        from smartbi_compat.api.analysis_sales import _calculate_mom_growth
+        from decimal import Decimal
+        assert _calculate_mom_growth(Decimal("200"), Decimal("100")) == Decimal("100.00")
+        assert _calculate_mom_growth(Decimal("50"), Decimal("100")) == Decimal("-50.00")
+        assert _calculate_mom_growth(Decimal("100"), Decimal("0")) == Decimal("100")
+        assert _calculate_mom_growth(Decimal("0"), Decimal("0")) == Decimal("0")
+        assert _calculate_mom_growth(Decimal("100"), None) == Decimal("100")
+        assert _calculate_mom_growth(None, Decimal("100")) == Decimal("-100")
+        assert _calculate_mom_growth(Decimal("100"), Decimal("-50")) == Decimal("300.00")
+
+    def test_new_metric_result_dict_field_order(self):
+        """MetricResult.java 11-field declaration order."""
+        from smartbi_compat.api.analysis_sales import _new_metric_result_dict
+        from decimal import Decimal
+        d = _new_metric_result_dict(
+            metric_code="X", metric_name="Y", value=Decimal("1"),
+            formatted_value="1.00", unit="元", change_percent=Decimal("0"),
+            change_direction="UP", change_value=Decimal("0.5"),
+            alert_level="GREEN", dimension_value="dim", description="desc",
+        )
+        assert list(d.keys()) == [
+            "metricCode", "metricName", "value", "formattedValue", "unit",
+            "changePercent", "changeDirection", "changeValue", "alertLevel",
+            "dimensionValue", "description",
+        ]
+
+    def test_new_metric_result_dict_alert_level_default(self):
+        """MetricResult.AlertLevel.GREEN.name() default per spec §4."""
+        from smartbi_compat.api.analysis_sales import _new_metric_result_dict
+        d = _new_metric_result_dict(metric_code="X", metric_name="Y")
+        assert d["alertLevel"] == "GREEN"
