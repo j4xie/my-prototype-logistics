@@ -267,6 +267,25 @@ def _new_kpi_card_dict(
     }
 
 
+def _new_yaxis_entry(name: str, position: str) -> dict:
+    """Mirror Java `Map.of("name", X, "position", Y)`.
+
+    Map.of(2) Jackson-serializes in put-order: ["name", "position"].
+    Used in profit trendChart options.yAxis (left/right axes).
+    """
+    return {"name": name, "position": position}
+
+
+def _new_series_entry(type_: str, yaxis_index: int, name: str) -> dict:
+    """Mirror Java `Map.of("name", X, "type", Y, "yAxisIndex", Z)`.
+
+    Map.of(3) Jackson hash-orders to ["type", "yAxisIndex", "name"] — NOT put-order.
+    Verified empirically against live Java responses (see spec §3.3).
+    Used in profit trendChart options.series (5 series: 3 bar + 2 line).
+    """
+    return {"type": type_, "yAxisIndex": yaxis_index, "name": name}
+
+
 # ============================================================
 # Section 2: Helpers (copy from sister analysis_sales.py)
 # ============================================================
@@ -344,6 +363,59 @@ def _format_currency(v: Optional[Decimal]) -> str:
     quantized = v.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     # Python format with thousands separator: f"{x:,.2f}"
     return f"{quantized:,.2f}"
+
+
+def _determine_gross_margin_alert(gross_margin: Decimal) -> str:
+    """Java `FinanceAnalysisServiceImpl.determineGrossMarginAlertLevel` line 1619-1624.
+
+    v < 15  → RED
+    v < 25  → YELLOW
+    v >= 25 → GREEN
+    """
+    v = float(gross_margin)
+    if v < 15:
+        return "RED"
+    if v < 25:
+        return "YELLOW"
+    return "GREEN"
+
+
+def _determine_roi_alert(roi: Decimal) -> str:
+    """Java `FinanceAnalysisServiceImpl.determineRoiAlertLevel` line 1629-1634.
+
+    v < 0   → RED
+    v < 20  → YELLOW
+    v >= 20 → GREEN
+    """
+    v = float(roi)
+    if v < 0:
+        return "RED"
+    if v < 20:
+        return "YELLOW"
+    return "GREEN"
+
+
+def _get_period_key(d: date, period: str) -> str:
+    """Mirror Java `FinanceAnalysisServiceImpl.getPeriodKey` line 1472-1487.
+
+    Period key formats:
+      DAY     → yyyy-MM-dd
+      WEEK    → yyyy-Www  (ISO week, 2-digit zero-padded)
+      MONTH   → yyyy-MM   (default for unknown period)
+      QUARTER → yyyy-Qn
+
+    Java ISO week semantics: weeks start Monday, week-1 contains the year's
+    first Thursday. Python `isocalendar()` matches.
+    """
+    if period == "DAY":
+        return d.strftime("%Y-%m-%d")
+    if period == "WEEK":
+        iso_year, iso_week, _ = d.isocalendar()
+        return f"{iso_year}-W{iso_week:02d}"
+    if period == "QUARTER":
+        return f"{d.year}-Q{(d.month - 1) // 3 + 1}"
+    # MONTH or default
+    return d.strftime("%Y-%m")
 
 
 VOLATILE_KEYS = frozenset({
@@ -494,6 +566,111 @@ def _filter_to_latest_upload(rows: list[dict]) -> list[dict]:
     return [r for r in rows if r.get("upload_id") == target_id]
 
 
+async def _query_finance_data(
+    factory_id: str, record_type: str, start_date: date, end_date: date
+) -> list[dict]:
+    """Single parametrized query against smart_bi_finance_data — reusable across
+    all RecordType branches (REVENUE / COST / AR / AP / BUDGET).
+
+    Java reference: financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
+        factoryId, RecordType.<X>, start, end). Then wraps via filterToLatestUpload
+    (Java line 89-101).
+
+    SELECT * over all known columns; callers extract by key. Sister chats use
+    same function with different record_type.
+    """
+    pool = None
+    try:
+        from smartbi.config import get_pg_pool  # type: ignore
+        pool = await get_pg_pool()
+    except Exception as e:
+        logger.warning(
+            "[finance_data] pool acquisition failed factory=%s record_type=%s: %s",
+            factory_id, record_type, e,
+        )
+        return []
+
+    if pool is None:
+        logger.warning(
+            "[finance_data] pool is None factory=%s record_type=%s; returning empty rows",
+            factory_id, record_type,
+        )
+        return []
+
+    sql = """
+        SELECT id, factory_id, upload_id, record_date, record_type,
+               department, category, customer_name, supplier_name,
+               material_cost, labor_cost, overhead_cost, total_cost,
+               receivable_amount, collection_amount, aging_days,
+               payable_amount, payment_amount,
+               budget_amount, actual_amount, variance_amount,
+               due_date, created_at, updated_at
+        FROM smart_bi_finance_data
+        WHERE factory_id = $1
+          AND record_type = $2
+          AND record_date BETWEEN $3 AND $4
+    """
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(sql, factory_id, record_type, start_date, end_date)
+
+    raw_rows = [dict(r) for r in rows]
+    return _filter_to_latest_upload(raw_rows)
+
+
+async def _query_finance_sales_fallback(
+    factory_id: str, start_date: date, end_date: date
+) -> list[dict]:
+    """Query smart_bi_sales_data for sales-fallback path (Java line 392-393).
+
+    Used by profit metrics + trendChart when finance_data is empty (餐饮 tenants
+    that uploaded sales Excel but not finance Excel).
+
+    Returns list of dicts with keys: amount, cost, order_date (and other columns
+    present in smart_bi_sales_data — callers extract by key with .get()).
+
+    NOTE: Unlike _query_finance_data, this does NOT call _filter_to_latest_upload.
+    Java's salesDataRepository.findByFactoryIdAndOrderDateBetween returns raw
+    rows without latest-upload filtering — this matches Java behavior for the
+    fallback path.
+    """
+    pool = None
+    try:
+        from smartbi.config import get_pg_pool  # type: ignore
+        pool = await get_pg_pool()
+    except Exception as e:
+        logger.warning(
+            "[sales_fallback] pool acquisition failed factory=%s: %s",
+            factory_id, e,
+        )
+        return []
+
+    if pool is None:
+        logger.warning(
+            "[sales_fallback] pool is None factory=%s; returning empty rows",
+            factory_id,
+        )
+        return []
+
+    if start_date is None or end_date is None:
+        raise ValueError(
+            f"_query_finance_sales_fallback: start_date/end_date required "
+            f"(got {start_date}, {end_date})"
+        )
+
+    sql = """
+        SELECT *
+        FROM smart_bi_sales_data
+        WHERE factory_id = $1
+          AND order_date BETWEEN $2 AND $3
+    """
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(sql, factory_id, start_date, end_date)
+
+    return [dict(r) for r in rows]
+
+
 # ============================================================
 # Section 3: Sub-service stubs (composite path)
 # Phase C.1 fills these with A.2-verified empty-state shapes.
@@ -517,82 +694,392 @@ async def _get_finance_overview(factory_id: str, range_: DateRange) -> dict:
 
 
 async def _get_profit_metrics(factory_id: str, range_: DateRange) -> list:
-    """F999 empty-state — Java getProfitMetrics ALWAYS returns 5 metrics regardless
-    of data presence (per A.2). Values match A.5 golden when revenue/cost = 0.
+    """Real impl mirroring Java `FinanceAnalysisServiceImpl.getProfitMetrics`
+    (line 352-495). PR-A: Path A only (finance_data REVENUE/COST records).
+    PR-B will add salesData fallback; for now no-finance-data → 5 zero-metrics
+    (matches stub behavior for F999 empty state).
 
-    GROSS_PROFIT: value=0.0, formattedValue="0.00", unit="元", alertLevel="GREEN"
-    GROSS_MARGIN: value=0.0, formattedValue="0.00%", unit="%", alertLevel="RED"
-    NET_PROFIT:   value=null, formattedValue="N/A",  unit="元", alertLevel="GREEN"
-    NET_MARGIN:   value=null, formattedValue="N/A",  unit="%",  alertLevel="GREEN"
-    ROI:          value=0.0,  formattedValue="0.00%",unit="%",  alertLevel="YELLOW"
+    Always returns 5 MetricResults regardless of data presence:
+      GROSS_PROFIT / GROSS_MARGIN / NET_PROFIT / NET_MARGIN / ROI
+
+    Anomaly clamps:
+      gross_margin > 100% or < -100% → null (per Java line 414-416)
+      net_margin   > 100% or < -100% → null (per Java line 449-453)
     """
+    revenue_records = await _query_finance_data(
+        factory_id, "REVENUE", range_.start_date, range_.end_date
+    )
+    cost_records = await _query_finance_data(
+        factory_id, "COST", range_.start_date, range_.end_date
+    )
+    has_finance_data = bool(revenue_records or cost_records)
+
+    if has_finance_data:
+        # Java line 367-388
+        total_revenue = sum(
+            (
+                _to_decimal(r["actual_amount"])
+                for r in revenue_records
+                if r.get("category") and "收入" in r["category"]
+                and r.get("actual_amount") is not None
+            ),
+            Decimal("0"),
+        )
+        total_cost = sum(
+            (
+                abs(_to_decimal(
+                    r.get("total_cost") if r.get("total_cost") is not None
+                    else r.get("actual_amount")
+                ))
+                for r in cost_records
+                if (r.get("total_cost") is not None) or (r.get("actual_amount") is not None)
+            ),
+            Decimal("0"),
+        )
+        net_profit = sum(
+            (
+                _to_decimal(r["actual_amount"])
+                for r in revenue_records
+                if r.get("category") and "净利" in r["category"]
+                and r.get("actual_amount") is not None
+            ),
+            Decimal("0"),
+        )
+    else:
+        # PR-B sales fallback: when finance_data is empty, fall back to
+        # smart_bi_sales_data (Java line 391-405). 餐饮 tenants typically only
+        # upload sales Excel, not finance Excel.
+        sales_rows = await _query_finance_sales_fallback(
+            factory_id, range_.start_date, range_.end_date
+        )
+        # Java line 394-403: revenue + cost from sales rows
+        total_revenue = sum(
+            (
+                _to_decimal(r["amount"])
+                for r in sales_rows
+                if r.get("amount") is not None
+            ),
+            Decimal("0"),
+        )
+        # Java line 399-403 — defensive .abs() per Bug B fix (cost may be negative
+        # in historical sales data).
+        total_cost = sum(
+            (
+                abs(_to_decimal(r["cost"]))
+                for r in sales_rows
+                if r.get("cost") is not None
+            ),
+            Decimal("0"),
+        )
+        # Java line 404: netProfit explicitly null in fallback metrics path.
+        # (trendChart fallback uses gross*0.70, but metrics path does not.)
+        net_profit = None
+
+    # Java line 409-416 — gross profit + margin clamp
+    gross_profit = total_revenue - total_cost
+    if total_revenue > Decimal("0"):
+        gross_margin_raw = (
+            gross_profit / total_revenue * Decimal("100")
+        ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    else:
+        gross_margin_raw = Decimal("0")
+    gross_margin = (
+        None
+        if (gross_margin_raw > Decimal("100") or gross_margin_raw < Decimal("-100"))
+        else gross_margin_raw
+    )
+
+    # Java line 446-453 — net margin (only when net_profit available + revenue > 0)
+    if net_profit is not None and total_revenue > Decimal("0"):
+        net_margin_raw = (
+            net_profit / total_revenue * Decimal("100")
+        ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    else:
+        net_margin_raw = None
+    net_margin = (
+        None
+        if (
+            net_margin_raw is not None
+            and (net_margin_raw > Decimal("100") or net_margin_raw < Decimal("-100"))
+        )
+        else net_margin_raw
+    )
+
+    # Java line 481-483 — ROI = grossProfit / totalCost * 100
+    if total_cost > Decimal("0"):
+        roi = (
+            gross_profit / total_cost * Decimal("100")
+        ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    else:
+        roi = Decimal("0")
+
+    # Alert levels
+    gross_margin_alert = (
+        _determine_gross_margin_alert(gross_margin) if gross_margin is not None else "RED"
+    )
+    # Java line 461-466: GREEN if net_profit is null OR >= 0, RED if < 0
+    if net_profit is None:
+        net_profit_alert = "GREEN"
+    else:
+        net_profit_alert = "GREEN" if net_profit >= Decimal("0") else "RED"
+    roi_alert = _determine_roi_alert(roi)
+
     return [
         _new_metric_result_dict(
             metric_code="GROSS_PROFIT",
             metric_name="毛利额",
-            value=0.0,
-            formatted_value="0.00",
+            value=_decimal_to_number(gross_profit.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            formatted_value=_format_currency(gross_profit),
             unit="元",
-            change_percent=None,
-            change_direction=None,
-            change_value=None,
             alert_level="GREEN",
-            dimension_value=None,
             description="销售收入减去销售成本",
         ),
         _new_metric_result_dict(
             metric_code="GROSS_MARGIN",
             metric_name="毛利率",
-            value=0.0,
-            formatted_value="0.00%",
+            value=(
+                _decimal_to_number(gross_margin.quantize(Decimal("0.01"), ROUND_HALF_UP))
+                if gross_margin is not None else None
+            ),
+            formatted_value=(
+                f"{gross_margin.quantize(Decimal('0.01'), ROUND_HALF_UP)}%"
+                if gross_margin is not None else "N/A"
+            ),
             unit="%",
-            change_percent=None,
-            change_direction=None,
-            change_value=None,
-            alert_level="RED",
-            dimension_value=None,
+            alert_level=gross_margin_alert,
             description="毛利额占销售收入的比例",
         ),
         _new_metric_result_dict(
             metric_code="NET_PROFIT",
             metric_name="净利润",
-            value=None,
-            formatted_value="N/A",
+            value=(
+                _decimal_to_number(net_profit.quantize(Decimal("0.01"), ROUND_HALF_UP))
+                if net_profit is not None else None
+            ),
+            formatted_value=(
+                _format_currency(net_profit) if net_profit is not None else "N/A"
+            ),
             unit="元",
-            change_percent=None,
-            change_direction=None,
-            change_value=None,
-            alert_level="GREEN",
-            dimension_value=None,
+            alert_level=net_profit_alert,
             description="毛利减去各项费用后的利润",
         ),
         _new_metric_result_dict(
             metric_code="NET_MARGIN",
             metric_name="净利率",
-            value=None,
-            formatted_value="N/A",
+            value=(
+                _decimal_to_number(net_margin.quantize(Decimal("0.01"), ROUND_HALF_UP))
+                if net_margin is not None else None
+            ),
+            formatted_value=(
+                f"{net_margin.quantize(Decimal('0.01'), ROUND_HALF_UP)}%"
+                if net_margin is not None else "N/A"
+            ),
             unit="%",
-            change_percent=None,
-            change_direction=None,
-            change_value=None,
             alert_level="GREEN",
-            dimension_value=None,
             description="净利润占销售收入的比例",
         ),
         _new_metric_result_dict(
             metric_code="ROI",
             metric_name="投入产出比",
-            value=0.0,
-            formatted_value="0.00%",
+            value=_decimal_to_number(roi.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            formatted_value=f"{roi.quantize(Decimal('0.01'), ROUND_HALF_UP)}%",
             unit="%",
-            change_percent=None,
-            change_direction=None,
-            change_value=None,
-            alert_level="YELLOW",
-            dimension_value=None,
+            alert_level=roi_alert,
             description="毛利额与成本的比率",
         ),
     ]
+
+
+def _build_profit_chart_from_finance_data(
+    revenue_rows: list[dict], cost_rows: list[dict], period: str
+) -> list[dict]:
+    """Mirror Java `FinanceAnalysisServiceImpl.buildProfitChartFromFinanceData`
+    line 279-349.
+
+    Aggregates revenue/cost/net-profit per period, emits 6-key chart points.
+    Java uses TreeMap (sorted keys) → Python `sorted(set(...))`.
+
+    Each point (insertion order = serialization order):
+      [period, revenue, cost, grossProfit, netProfit, grossMargin]
+
+    Notes:
+      - `revenue_rows` filter: category contains "收入" (营业收入).
+      - `net_profit_by_period` filter: category contains "净利" (净利润 etc).
+      - `cost_rows` defensive `.abs()` (Java Bug B fix line 304).
+      - `gross_margin > 100% or < -100%` → null (Java line 332-335).
+      - When no "净利" record for a period, `netProfit` defaults to `gross_profit`
+        (Java line 336).
+    """
+    revenue_by_period: dict[str, Decimal] = {}
+    net_profit_by_period: dict[str, Decimal] = {}
+    cost_by_period: dict[str, Decimal] = {}
+
+    for r in revenue_rows:
+        if r.get("actual_amount") is None:
+            continue
+        key = _get_period_key(r["record_date"], period)
+        cat = r.get("category") or ""
+        if "收入" in cat:
+            revenue_by_period[key] = (
+                revenue_by_period.get(key, Decimal("0")) + _to_decimal(r["actual_amount"])
+            )
+        if "净利" in cat:
+            net_profit_by_period[key] = (
+                net_profit_by_period.get(key, Decimal("0")) + _to_decimal(r["actual_amount"])
+            )
+
+    for c in cost_rows:
+        if c.get("total_cost") is None and c.get("actual_amount") is None:
+            continue
+        key = _get_period_key(c["record_date"], period)
+        raw = c.get("total_cost") if c.get("total_cost") is not None else c.get("actual_amount")
+        cost_by_period[key] = (
+            cost_by_period.get(key, Decimal("0")) + abs(_to_decimal(raw))
+        )
+
+    all_periods = sorted(set(revenue_by_period.keys()) | set(cost_by_period.keys()))
+    chart_data: list[dict] = []
+    for pk in all_periods:
+        revenue = revenue_by_period.get(pk, Decimal("0"))
+        cost = cost_by_period.get(pk, Decimal("0"))
+        gross_profit = revenue - cost
+        if revenue > Decimal("0"):
+            gross_margin_raw = (
+                gross_profit / revenue * Decimal("100")
+            ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        else:
+            gross_margin_raw = Decimal("0")
+        gross_margin = (
+            None
+            if (gross_margin_raw > Decimal("100") or gross_margin_raw < Decimal("-100"))
+            else gross_margin_raw
+        )
+        net_profit = net_profit_by_period.get(pk, gross_profit)
+
+        chart_data.append({
+            "period": pk,
+            "revenue": _decimal_to_number(revenue.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "cost": _decimal_to_number(cost.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "grossProfit": _decimal_to_number(gross_profit.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "netProfit": _decimal_to_number(net_profit.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "grossMargin": (
+                _decimal_to_number(gross_margin.quantize(Decimal("0.01"), ROUND_HALF_UP))
+                if gross_margin is not None else None
+            ),
+        })
+    return chart_data
+
+
+def _aggregate_profit_by_period_sales(
+    sales_rows: list[dict], period: str
+) -> list[dict]:
+    """Mirror Java `FinanceAnalysisServiceImpl.aggregateProfitByPeriod` line 1423-1447.
+
+    Sales-fallback chart aggregator. Used when finance_data is empty but
+    smart_bi_sales_data has rows (餐饮 tenants).
+
+    Differs from `_build_profit_chart_from_finance_data`:
+      - emits **4 keys per point**: [period, grossProfit, netProfit, grossMargin]
+        (NOT 6 keys — no `revenue` / `cost`)
+      - `netProfit = grossProfit * 0.70` (Java line 1440 hardcoded — known quirk;
+        assumes 30% expense ratio. PR-B preserves this for byte parity.)
+      - `grossMargin` does NOT clamp >100/<-100 → null (Java line 1441-1443
+        emits raw value or 0). For sales rows revenue is never huge negative,
+        so this rarely matters in practice; we mirror Java behavior literally.
+
+    Period aggregation via TreeMap → Python `sorted(by_period.keys())`.
+    """
+    by_period: dict[str, dict[str, Decimal]] = {}
+    for r in sales_rows:
+        if r.get("order_date") is None:
+            continue
+        key = _get_period_key(r["order_date"], period)
+        slot = by_period.setdefault(
+            key, {"profit": Decimal("0"), "revenue": Decimal("0")}
+        )
+        revenue = _to_decimal(r.get("amount") or 0)
+        cost = _to_decimal(r.get("cost") or 0)
+        slot["profit"] += revenue - cost
+        slot["revenue"] += revenue
+
+    out: list[dict] = []
+    for key in sorted(by_period.keys()):
+        slot = by_period[key]
+        gross = slot["profit"]
+        net = (gross * Decimal("0.70")).quantize(Decimal("0.01"), ROUND_HALF_UP)
+        if slot["revenue"] > Decimal("0"):
+            gm = (
+                gross / slot["revenue"] * Decimal("100")
+            ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        else:
+            gm = Decimal("0")
+        out.append({
+            "period": key,
+            "grossProfit": _decimal_to_number(gross.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "netProfit": _decimal_to_number(net),
+            "grossMargin": _decimal_to_number(gm.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        })
+    return out
+
+
+async def _get_profit_trend_chart(
+    factory_id: str,
+    start_date: date,
+    end_date: date,
+    period: str = "MONTH",
+) -> dict:
+    """Mirror Java `FinanceAnalysisServiceImpl.getProfitTrendChart` line 220-274.
+
+    Builds LINE_BAR chart with 5 series (3 bar: 营业收入/营业成本/毛利额,
+    2 line: 净利润/毛利率) on dual yAxis (left=金额, right=毛利率%).
+
+    PR-A: when both revenue + cost queries empty → data=[] (chart options
+    still emitted in full). PR-B will add sales fallback in this same branch.
+
+    Period defaults to MONTH (matches controller line 246 hardcoded "MONTH").
+    """
+    revenue_data = await _query_finance_data(
+        factory_id, "REVENUE", start_date, end_date
+    )
+    cost_data = await _query_finance_data(
+        factory_id, "COST", start_date, end_date
+    )
+
+    if revenue_data or cost_data:
+        chart_data = _build_profit_chart_from_finance_data(revenue_data, cost_data, period)
+    else:
+        # PR-B sales fallback: when finance_data empty, aggregate by period from
+        # smart_bi_sales_data (Java line 237-249). Returns 4-key points (period,
+        # grossProfit, netProfit=gross*0.70, grossMargin) — differs from main
+        # path's 6-key points.
+        sales_rows = await _query_finance_sales_fallback(
+            factory_id, start_date, end_date
+        )
+        chart_data = _aggregate_profit_by_period_sales(sales_rows, period)
+
+    options = {
+        "yAxis": [
+            _new_yaxis_entry(name="金额", position="left"),
+            _new_yaxis_entry(name="毛利率(%)", position="right"),
+        ],
+        "series": [
+            _new_series_entry(type_="bar", yaxis_index=0, name="营业收入"),
+            _new_series_entry(type_="bar", yaxis_index=0, name="营业成本"),
+            _new_series_entry(type_="bar", yaxis_index=0, name="毛利额"),
+            _new_series_entry(type_="line", yaxis_index=0, name="净利润"),
+            _new_series_entry(type_="line", yaxis_index=1, name="毛利率"),
+        ],
+    }
+
+    return _new_chart_config_dict(
+        chart_type="LINE_BAR",
+        title="利润趋势分析",
+        series_field="metric",
+        data=chart_data,
+        options=options,
+        xaxis_field="period",
+        yaxis_field="grossProfit",
+    )
 
 
 async def _get_cost_structure_chart(factory_id: str, range_: DateRange) -> dict:
@@ -792,6 +1279,31 @@ async def _get_comprehensive_finance_analysis(factory_id: str, range_: DateRange
     }
 
 
+async def _get_profit_analysis(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Java reference: SmartBIAnalysisController.getFinanceAnalysis line 240-246.
+
+    Java HashMap put-order: startDate / endDate / metrics / trendChart.
+    Recorded F999 Jackson order in golden (A.3 verified):
+      [endDate, metrics, trendChart, startDate]
+
+    Period hardcoded to "MONTH" (Java controller line 246).
+    """
+    range_ = DateRange.custom(start_date, end_date)
+    metrics = await _get_profit_metrics(factory_id, range_)
+    trend_chart = await _get_profit_trend_chart(
+        factory_id, start_date, end_date, "MONTH"
+    )
+
+    return {
+        "endDate": end_date.isoformat(),
+        "metrics": metrics,
+        "trendChart": trend_chart,
+        "startDate": start_date.isoformat(),
+    }
+
+
 async def _get_payable_analysis(factory_id: str, start_date: date, end_date: date) -> dict:
     """Java reference: SmartBIAnalysisController.getFinanceAnalysis line 240-258.
 
@@ -840,6 +1352,10 @@ async def get_finance_analysis(
 
     if analysisType == "payable":
         result = await _get_payable_analysis(auth.factory_id, startDate, endDate)
+        return wrap_response(result)
+
+    if analysisType == "profit":
+        result = await _get_profit_analysis(auth.factory_id, startDate, endDate)
         return wrap_response(result)
 
     return wrap_response(
