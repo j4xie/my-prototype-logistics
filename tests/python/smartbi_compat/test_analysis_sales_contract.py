@@ -1561,3 +1561,44 @@ class TestRankings:
         assert body["data"]["salespersonRanking"] == []
         assert body["data"]["productRanking"] == []
         assert body["data"]["customerRanking"] == []
+
+
+# ============================================================
+# TestTrend — trend sub-spec contract tests (DAY-only port)
+# ============================================================
+
+
+class TestTrend:
+    """Sibling sub-spec: trend. DAY bucketing only per spec §5.
+
+    Foundation gates TestEnvelope; gold gates TestGold; overview gates TestOverview;
+    rankings gates TestRankings; trend (this class) gates _get_sales_trend_chart real impl.
+    """
+
+    def test_format_bucket_key_DAY_from_date_object(self):
+        """date object → ISO YYYY-MM-DD string."""
+        from smartbi_compat.api.analysis_sales import _format_bucket_key
+        from datetime import date
+        assert _format_bucket_key(date(2025, 3, 15), "DAY") == "2025-03-15"
+        assert _format_bucket_key(date(2025, 12, 1), "DAY") == "2025-12-01"
+
+    def test_format_bucket_key_DAY_from_string_fallback(self):
+        """If row.order_date is already a string, return as-is (defensive)."""
+        from smartbi_compat.api.analysis_sales import _format_bucket_key
+        # Defensive: SQLAlchemy may return string in some configurations
+        assert _format_bucket_key("2025-03-15", "DAY") == "2025-03-15"
+
+    def test_format_bucket_key_unsupported_period_raises(self):
+        """WEEK/MONTH/YEAR not implemented per spec §5."""
+        from smartbi_compat.api.analysis_sales import _format_bucket_key
+        from datetime import date
+        for period in ("WEEK", "MONTH", "YEAR"):
+            with pytest.raises(NotImplementedError, match="not supported"):
+                _format_bucket_key(date(2025, 3, 15), period)
+
+    def test_format_bucket_key_case_insensitive(self):
+        """period accepts 'day' or 'DAY' (case-insensitive — Java uses .toUpperCase())."""
+        from smartbi_compat.api.analysis_sales import _format_bucket_key
+        from datetime import date
+        assert _format_bucket_key(date(2025, 3, 15), "day") == "2025-03-15"
+        assert _format_bucket_key(date(2025, 3, 15), "Day") == "2025-03-15"

@@ -1520,6 +1520,41 @@ async def _get_customer_ranking(factory_id: str, range_: DateRange) -> list:
     return _build_ranking(sales, with_percentage=True, top_n=10)
 
 
+# ============================================================
+# Section 3c: Trend bucketing helpers (trend sub-spec)
+# ============================================================
+# Mirror Java SalesAnalysisServiceImpl.aggregateByDay line 911-921.
+# DAY-only port per trend spec §5; WEEK/MONTH/YEAR raise NotImplementedError.
+
+
+def _format_bucket_key(d, period: str) -> str:
+    """Format a date into a bucket key string.
+
+    Mirror Java aggregateByDay line 915: `d.getOrderDate().toString()` produces
+    ISO YYYY-MM-DD. Java aggregateByWeek line 932-933 / aggregateByMonth line
+    949-950 not ported per spec §5.
+
+    Args:
+        d: datetime.date OR date-like string (SQLAlchemy may return either)
+        period: "DAY" only; case-insensitive
+
+    Returns:
+        ISO date string (e.g. "2025-03-15")
+
+    Raises:
+        NotImplementedError: for any period other than DAY
+    """
+    if period.upper() != "DAY":
+        raise NotImplementedError(
+            f"trend chart period='{period}' not supported; only DAY is "
+            f"used by /analysis/sales composite. See spec §5."
+        )
+    # Defensive: SQLAlchemy Row.order_date may be datetime.date or string
+    if hasattr(d, "isoformat"):
+        return d.isoformat()
+    return str(d)
+
+
 async def _get_sales_trend_chart(
     factory_id: str, range_: DateRange, period: str = "DAY",
 ) -> dict:
