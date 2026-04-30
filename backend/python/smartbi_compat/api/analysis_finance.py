@@ -411,6 +411,73 @@ def _new_metric_result_dict(
 
 
 # ============================================================
+# Section 2c: SQL helpers (payable real impl, Phase E)
+# ============================================================
+
+
+async def _query_finance_payable_data(factory_id: str, end_date: date) -> list[dict]:
+    """Query AP rows from smart_bi_finance_data for factory + 1y lookback ending at end_date.
+
+    Java reference: FinanceAnalysisServiceImpl.getPayableMetrics (line 870-918) +
+    getPayableAgingChart (line 832-867). Both call:
+        financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
+            factoryId, RecordType.AP, date.minusYears(1), date)
+    then wrap with filterToLatestUpload().
+
+    Returns list of dicts with keys: payable_amount, payment_amount, aging_days,
+    record_date, upload_id, supplier_name. Empty when no data — caller handles.
+    """
+    pool = None
+    try:
+        from smartbi.config import get_pg_pool  # type: ignore
+        pool = await get_pg_pool()
+    except Exception as e:
+        logger.warning("[payable] pool acquisition failed factory=%s: %s", factory_id, e)
+        return []
+
+    if pool is None:
+        logger.warning("[payable] pool is None factory=%s; returning empty rows", factory_id)
+        return []
+
+    # Java's date.minusYears(1) handles leap-year Feb 29 by clamping to Feb 28 of prior year.
+    try:
+        start_date = end_date.replace(year=end_date.year - 1)
+    except ValueError:
+        # Feb 29 → use Feb 28 of prior year (matches Java LocalDate.minusYears clamp)
+        start_date = end_date.replace(year=end_date.year - 1, day=28)
+
+    sql = """
+        SELECT payable_amount, payment_amount, aging_days, record_date, upload_id, supplier_name
+        FROM smart_bi_finance_data
+        WHERE factory_id = $1
+          AND record_type = 'AP'
+          AND record_date BETWEEN $2 AND $3
+    """
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(sql, factory_id, start_date, end_date)
+
+    raw_rows = [dict(r) for r in rows]
+    return _filter_to_latest_upload(raw_rows)
+
+
+def _filter_to_latest_upload(rows: list[dict]) -> list[dict]:
+    """Mirror Java FinanceAnalysisServiceImpl.filterToLatestUpload (line 89-101).
+
+    If any row has non-null upload_id, keep only rows with upload_id == max(upload_id).
+    If all upload_ids are null, return rows unchanged.
+    Empty input → empty output.
+    """
+    if not rows:
+        return rows
+    upload_ids = [r["upload_id"] for r in rows if r.get("upload_id") is not None]
+    if not upload_ids:
+        return rows
+    target_id = max(upload_ids)
+    return [r for r in rows if r.get("upload_id") == target_id]
+
+
+# ============================================================
 # Section 3: Sub-service stubs (composite path)
 # Phase C.1 fills these with A.2-verified empty-state shapes.
 # ============================================================
