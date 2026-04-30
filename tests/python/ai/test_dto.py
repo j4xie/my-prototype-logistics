@@ -2,6 +2,9 @@
 
 import json
 
+import pydantic
+import pytest
+
 
 def test_match_method_enum_has_all_12_values():
     from ai.dto import MatchMethod
@@ -87,13 +90,65 @@ def test_candidate_intent_round_trip():
 
 def test_request_dto_required_fields():
     from ai.dto import IntentMatchRequest
-    import pydantic
-    try:
+
+    with pytest.raises(pydantic.ValidationError) as exc_info:
         IntentMatchRequest(query="test")
-        raise AssertionError("Should have raised")
-    except pydantic.ValidationError as e:
-        msg = str(e)
-        assert "factoryId" in msg
-        assert "userId" in msg
-        assert "role" in msg
-        assert "businessType" in msg
+    msg = str(exc_info.value)
+    assert "factoryId" in msg
+    assert "userId" in msg
+    assert "role" in msg
+    assert "businessType" in msg
+
+
+def test_ai_intent_config_dto_confidence_boost_is_json_number():
+    """Java BigDecimal -> JSON number; Python must match (not JSON string).
+
+    Pydantic v2 default emits Decimal as JSON string '"0.50"', which would
+    break byte-shape parity with Jackson on the Java side. The DTO uses
+    `float` so the JSON value is unquoted (a number). This test guards
+    against future regression to Decimal.
+    """
+    from ai.dto import AIIntentConfigDto
+    cfg = AIIntentConfigDto(intentCode="X", intentName="Y", confidenceBoost=0.50)
+    parsed = json.loads(cfg.model_dump_json())
+    assert isinstance(parsed['confidenceBoost'], (int, float)), \
+        f"Expected JSON number, got {type(parsed['confidenceBoost']).__name__}"
+    assert parsed['confidenceBoost'] == 0.50
+
+
+def test_intent_match_result_populated_serializes_to_19_top_keys():
+    """Same 19 keys whether empty or populated — byte-shape contract.
+
+    Companion to test_intent_match_result_serializes_to_19_top_keys which
+    only checks the empty() factory output. This populates every nullable
+    field to confirm Pydantic doesn't drop keys when values become non-None
+    (model_dump_json with default settings serializes None as JSON null).
+    """
+    from ai.dto import (
+        IntentMatchResultDto, MatchMethod, ActionType, QuestionType,
+        AIIntentConfigDto,
+    )
+    cfg = AIIntentConfigDto(intentCode="X", intentName="Y")
+    r = IntentMatchResultDto(
+        bestMatch=cfg,
+        confidence=0.85,
+        matchMethod=MatchMethod.KEYWORD,
+        matchedKeywords=["成本"],
+        isStrongSignal=True,
+        requiresConfirmation=False,
+        userInput="q",
+        actionType=ActionType.QUERY,
+        questionType=QuestionType.OPERATIONAL_COMMAND,
+        timingMs={"preprocessMs": 5, "matchMs": 10, "totalMs": 15},
+    )
+    obj = json.loads(r.model_dump_json())
+    expected_keys = {
+        "bestMatch", "topCandidates", "confidence", "matchMethod",
+        "matchedKeywords", "isStrongSignal", "requiresConfirmation",
+        "clarificationQuestion", "userInput", "actionType", "questionType",
+        "targetEntity", "sessionId", "conversationMessage",
+        "isMultiIntent", "additionalIntents", "executionStrategy",
+        "timingMs", "preprocessedQuery",
+    }
+    assert set(obj.keys()) == expected_keys, f"Diff: {set(obj.keys()) ^ expected_keys}"
+    assert len(obj) == 19

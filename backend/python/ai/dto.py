@@ -22,7 +22,6 @@ JSON layer uses camelCase regardless of Python convention).
 """
 from __future__ import annotations
 
-from decimal import Decimal
 from enum import Enum
 from typing import Any, Dict, Generic, List, Optional, TypeVar
 
@@ -180,7 +179,11 @@ class AIIntentConfigDto(_CamelBase):
     # SmartBI specific
     chartType: Optional[str] = None
     requiredEntities: Optional[str] = None  # JSON array string
-    confidenceBoost: Decimal = Field(default_factory=lambda: Decimal("0.00"))
+    # Java BigDecimal serializes as JSON number (not string); float matches.
+    # Pydantic v2 emits Decimal as a JSON string by default which would break
+    # byte-shape parity with Jackson on Java side. Float ensures the wire
+    # value is a JSON number and round-trips identically with BigDecimal.
+    confidenceBoost: float = 0.0
 
     # Versioning
     configVersion: int = 1
