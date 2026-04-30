@@ -1503,8 +1503,21 @@ async def _get_product_ranking(factory_id: str, range_: DateRange) -> list:
 
 
 async def _get_customer_ranking(factory_id: str, range_: DateRange) -> list:
-    """STUB — rankings spec replaces."""
-    return []
+    """Real impl. Mirror Java SalesAnalysisServiceImpl.getCustomerRanking line 550-593.
+
+    Aggregates SUM(amount) per customer_name. completionRate = % of total.
+    alertLevel hard-coded GREEN (Java line 588).
+    Filters null customer_name. Top 10 cap (Java line 574 `.limit(10)`).
+    """
+    rows = await asyncio.to_thread(_query_sales_data, factory_id, range_)
+    sales: dict = {}
+    for row in rows:
+        name = row.customer_name
+        if name is None:
+            continue
+        amount = _to_decimal(row.amount) if row.amount is not None else Decimal("0")
+        sales[name] = sales.get(name, Decimal("0")) + amount
+    return _build_ranking(sales, with_percentage=True, top_n=10)
 
 
 async def _get_sales_trend_chart(

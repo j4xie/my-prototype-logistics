@@ -1442,3 +1442,57 @@ class TestRankings:
         range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 1, 31))
         result = await m._get_product_ranking("F999", range_)
         assert result == []
+
+    @pytest.mark.asyncio
+    async def test_get_customer_ranking_top_10_cap(self, monkeypatch):
+        """15 customers → only top 10 by value DESC returned."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+        from collections import namedtuple
+
+        Row = namedtuple("Row", "salesperson_name amount monthly_target product_category customer_name order_date")
+
+        def fake_query(factory_id, range_):
+            return [
+                Row("X", Decimal(str(1000 - i * 10)), None, "P", f"客户{i:02d}", date(2025, 1, 1))
+                for i in range(15)
+            ]
+
+        monkeypatch.setattr(m, "_query_sales_data", fake_query)
+
+        range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 1, 31))
+        result = await m._get_customer_ranking("F999", range_)
+
+        assert len(result) == 10  # top_n=10 cap
+        # Top: 客户00 (value=1000)
+        assert result[0]["name"] == "客户00"
+        assert result[0]["value"] == Decimal("1000.00")
+        # 10th: 客户09 (value=910)
+        assert result[9]["name"] == "客户09"
+        assert result[9]["value"] == Decimal("910.00")
+        # All have alertLevel=GREEN
+        assert all(r["alertLevel"] == "GREEN" for r in result)
+        # All have target=None
+        assert all(r["target"] is None for r in result)
+
+    @pytest.mark.asyncio
+    async def test_get_customer_ranking_filters_null_name(self, monkeypatch):
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+        from collections import namedtuple
+
+        Row = namedtuple("Row", "salesperson_name amount monthly_target product_category customer_name order_date")
+
+        def fake_query(factory_id, range_):
+            return [
+                Row("X", Decimal("100"), None, "P", "客户A", date(2025, 1, 1)),
+                Row("X", Decimal("99999"), None, "P", None, date(2025, 1, 2)),  # null → skip
+            ]
+
+        monkeypatch.setattr(m, "_query_sales_data", fake_query)
+        range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 1, 31))
+        result = await m._get_customer_ranking("F999", range_)
+        assert len(result) == 1
+        assert result[0]["name"] == "客户A"
