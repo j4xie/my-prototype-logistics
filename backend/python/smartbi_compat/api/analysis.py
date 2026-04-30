@@ -297,7 +297,7 @@ def _query_sales_data(factory_id: str, range_) -> list:
 
     sql = text(
         "SELECT salesperson_name, amount, monthly_target, "
-        "       product_category, customer_name "
+        "       product_category, customer_name, order_date "
         "FROM smart_bi_sales_data "
         "WHERE factory_id = :fid AND order_date BETWEEN :start AND :end"
     )
