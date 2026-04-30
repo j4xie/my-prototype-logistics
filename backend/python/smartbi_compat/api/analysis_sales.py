@@ -673,6 +673,154 @@ def _new_kpi_card_dict(
 
 
 # ============================================================
+# Section 1.5: Legacy KPI cards builder + converter (Java mirror)
+# ============================================================
+
+# Java MetricCalculatorService constants (line 30-36)
+_METRIC_SALES_AMOUNT = "SALES_AMOUNT"
+_METRIC_ORDER_COUNT = "ORDER_COUNT"
+_METRIC_AVG_ORDER_VALUE = "AVG_ORDER_VALUE"
+_METRIC_TARGET_COMPLETION = "TARGET_COMPLETION"
+_METRIC_MOM_GROWTH = "MOM_GROWTH"
+
+
+def _determine_completion_alert_level(completion_rate: Decimal) -> str:
+    """Java line 1176-1184."""
+    if completion_rate < TARGET_RED_THRESHOLD:
+        return "RED"
+    if completion_rate < TARGET_YELLOW_THRESHOLD:
+        return "YELLOW"
+    return "GREEN"
+
+
+def _determine_growth_alert_level(growth: Decimal) -> str:
+    """Java line 1215-1223."""
+    if growth < GROWTH_RED_THRESHOLD:
+        return "RED"
+    if growth < GROWTH_YELLOW_THRESHOLD:
+        return "YELLOW"
+    return "GREEN"
+
+
+def _determine_change_direction(change_percent: Optional[Decimal]) -> str:
+    """Java line 1228-1239: null/0 → STABLE, >0 → UP, <0 → DOWN."""
+    if change_percent is None or change_percent == Decimal("0"):
+        return "STABLE"
+    return "UP" if change_percent > Decimal("0") else "DOWN"
+
+
+async def _build_kpi_cards_from_aggregates(
+    factory_id: str,
+    start_date: date,
+    end_date: date,
+    total_sales: Decimal,
+    total_quantity: Decimal,
+    total_profit: Decimal,
+    total_cost: Decimal,
+    total_target: Decimal,
+    order_count: int,
+) -> list[dict]:
+    """Mirror Java SalesAnalysisServiceImpl.buildKpiFromAggregates line 193-264.
+
+    Returns 4 or 5 MetricResult dicts (MoM 5th only when previous_period_sales > 0).
+    """
+    cards: list[dict] = []
+
+    # KPI 1: SALES_AMOUNT
+    cards.append(_new_metric_result_dict(
+        metric_code=_METRIC_SALES_AMOUNT,
+        metric_name="总销售额",
+        value=total_sales.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+        formatted_value=_format_currency(total_sales),
+        unit="元",
+        alert_level="GREEN",
+    ))
+
+    # KPI 2: ORDER_COUNT
+    cards.append(_new_metric_result_dict(
+        metric_code=_METRIC_ORDER_COUNT,
+        metric_name="订单数",
+        value=Decimal(order_count),
+        formatted_value=f"{order_count:,d}",
+        unit="单",
+        alert_level="GREEN",
+    ))
+
+    # KPI 3: AVG_ORDER_VALUE
+    if order_count > 0:
+        avg_order = (total_sales / Decimal(order_count)).quantize(
+            Decimal("0.0001"), rounding=ROUND_HALF_UP,
+        )
+    else:
+        avg_order = Decimal("0")
+    cards.append(_new_metric_result_dict(
+        metric_code=_METRIC_AVG_ORDER_VALUE,
+        metric_name="客单价",
+        value=avg_order.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+        formatted_value=_format_currency(avg_order),
+        unit="元",
+        alert_level="GREEN",
+    ))
+
+    # KPI 4: TARGET_COMPLETION
+    completion_rate = _calculate_completion_rate(total_sales, total_target)
+    cards.append(_new_metric_result_dict(
+        metric_code=_METRIC_TARGET_COMPLETION,
+        metric_name="目标完成率",
+        value=completion_rate.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+        formatted_value=_format_completion_pct(completion_rate),
+        unit="%",
+        alert_level=_determine_completion_alert_level(completion_rate),
+    ))
+
+    # KPI 5: MOM_GROWTH (conditional — Java line 249)
+    prev = await _query_sales_aggregates_previous_period(factory_id, start_date, end_date)
+    previous_sales = prev[0] if prev is not None else Decimal("0")
+    if previous_sales > Decimal("0"):
+        mom_growth = _calculate_mom_growth(total_sales, previous_sales)
+        cards.append(_new_metric_result_dict(
+            metric_code=_METRIC_MOM_GROWTH,
+            metric_name="环比增长",
+            value=mom_growth.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+            formatted_value=_format_growth_pct(mom_growth),
+            unit="%",
+            change_percent=mom_growth,
+            change_direction=_determine_change_direction(mom_growth),
+            alert_level=_determine_growth_alert_level(mom_growth),
+        ))
+
+    return cards
+
+
+def _convert_metric_results_to_kpi_cards(metrics: list[dict]) -> list[dict]:
+    """Mirror Java SalesAnalysisServiceImpl.convertToKPICards line 674-720."""
+    cards = []
+    for m in metrics:
+        formatted = m.get("formattedValue")
+        raw_decimal = m.get("value")
+        if formatted is not None:
+            display_value = formatted
+        elif raw_decimal is not None:
+            display_value = str(raw_decimal)
+        else:
+            display_value = "-"
+
+        cards.append(_new_kpi_card_dict(
+            key=m.get("metricCode"),
+            title=m.get("metricName"),
+            value=display_value,
+            raw_value=raw_decimal,
+            unit=m.get("unit"),
+            change=m.get("changeValue"),
+            change_rate=m.get("changePercent"),
+            trend=_change_direction_to_trend(m.get("changeDirection")),
+            status=_alert_level_to_status(m.get("alertLevel")),
+            description=m.get("description"),
+        ))
+    return cards
+
+
+# ============================================================
 # Section 2: Strip-volatile shared helper
 # ============================================================
 

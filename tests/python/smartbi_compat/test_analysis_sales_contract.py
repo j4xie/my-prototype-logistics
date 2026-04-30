@@ -719,3 +719,114 @@ class TestOverview:
         assert len(result) == 3
         assert result[0][0] == "猪肉类"
         assert result[2][0] is None
+
+    @pytest.mark.asyncio
+    async def test_build_kpi_cards_4_kpis_no_mom(self, monkeypatch):
+        """When previous_period_sales <= 0, MoM KPI is omitted (Java line 249)."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+
+        async def fake_prev(*a, **k):
+            return (Decimal("0"), Decimal("0"), Decimal("0"),
+                    Decimal("0"), Decimal("0"), 0)
+
+        monkeypatch.setattr(m, "_query_sales_aggregates_previous_period", fake_prev)
+
+        cards = await m._build_kpi_cards_from_aggregates(
+            factory_id="F999",
+            start_date=date(2025, 1, 1), end_date=date(2025, 12, 31),
+            total_sales=Decimal("100000"), total_quantity=Decimal("100"),
+            total_profit=Decimal("30000"), total_cost=Decimal("70000"),
+            total_target=Decimal("200000"), order_count=42,
+        )
+        assert len(cards) == 4
+        assert cards[0]["metricCode"] == "SALES_AMOUNT"
+        assert cards[1]["metricCode"] == "ORDER_COUNT"
+        assert cards[2]["metricCode"] == "AVG_ORDER_VALUE"
+        assert cards[3]["metricCode"] == "TARGET_COMPLETION"
+        # 100k/200k = 50% < TARGET_RED=60 → RED
+        assert cards[3]["alertLevel"] == "RED"
+
+    @pytest.mark.asyncio
+    async def test_build_kpi_cards_5_kpis_with_mom(self, monkeypatch):
+        """When previous_period_sales > 0, MoM KPI is appended."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+
+        async def fake_prev(*a, **k):
+            return (Decimal("80000"), Decimal("80"), Decimal("20000"),
+                    Decimal("60000"), Decimal("100000"), 30)
+
+        monkeypatch.setattr(m, "_query_sales_aggregates_previous_period", fake_prev)
+
+        cards = await m._build_kpi_cards_from_aggregates(
+            factory_id="F999",
+            start_date=date(2025, 2, 1), end_date=date(2025, 2, 28),
+            total_sales=Decimal("100000"), total_quantity=Decimal("100"),
+            total_profit=Decimal("30000"), total_cost=Decimal("70000"),
+            total_target=Decimal("200000"), order_count=42,
+        )
+        assert len(cards) == 5
+        assert cards[4]["metricCode"] == "MOM_GROWTH"
+        # (100k - 80k) / abs(80k) * 100 = 25%
+        assert cards[4]["value"] == Decimal("25.00")
+        assert cards[4]["formattedValue"] == "+25.0%"
+        assert cards[4]["changeDirection"] == "UP"
+        # 25% > GROWTH_YELLOW=-5 → GREEN
+        assert cards[4]["alertLevel"] == "GREEN"
+
+    def test_convert_metric_results_to_kpi_cards(self):
+        """Java convertToKPICards line 674-720."""
+        from smartbi_compat.api.analysis_sales import (
+            _convert_metric_results_to_kpi_cards,
+            _new_metric_result_dict,
+        )
+        from decimal import Decimal
+
+        metrics = [
+            _new_metric_result_dict(
+                metric_code="X", metric_name="X名",
+                value=Decimal("100"), formatted_value="100.00",
+                unit="元", change_percent=Decimal("5"),
+                change_direction="UP", change_value=Decimal("5.0"),
+                alert_level="YELLOW", description="desc",
+            ),
+        ]
+        cards = _convert_metric_results_to_kpi_cards(metrics)
+        assert len(cards) == 1
+        c = cards[0]
+        assert c["key"] == "X"
+        assert c["title"] == "X名"
+        assert c["rawValue"] == Decimal("100")
+        assert c["value"] == "100.00"
+        assert c["unit"] == "元"
+        assert c["changeRate"] == Decimal("5")
+        assert c["change"] == Decimal("5.0")
+        assert c["trend"] == "up"
+        assert c["status"] == "yellow"
+        assert c["description"] == "desc"
+        assert c["compareText"] is None
+        assert c["targetValue"] is None
+        assert c["completionRate"] is None
+
+    def test_convert_metric_value_fallback(self):
+        """Java line 709-710: value = formattedValue ?: value.toString() ?: "-"."""
+        from smartbi_compat.api.analysis_sales import (
+            _convert_metric_results_to_kpi_cards,
+            _new_metric_result_dict,
+        )
+        from decimal import Decimal
+
+        # Case 1: formattedValue present → wins
+        metrics = [_new_metric_result_dict(metric_code="X", value=Decimal("100"), formatted_value="X-fmt")]
+        assert _convert_metric_results_to_kpi_cards(metrics)[0]["value"] == "X-fmt"
+
+        # Case 2: formattedValue null, value present → use value.toString()
+        metrics = [_new_metric_result_dict(metric_code="X", value=Decimal("100"))]
+        assert _convert_metric_results_to_kpi_cards(metrics)[0]["value"] == "100"
+
+        # Case 3: both null → "-"
+        metrics = [_new_metric_result_dict(metric_code="X")]
+        assert _convert_metric_results_to_kpi_cards(metrics)[0]["value"] == "-"
