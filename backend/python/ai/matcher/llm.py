@@ -151,16 +151,29 @@ class LlmMatcher:
         visible_intents: List[Dict[str, Any]],
         history: Optional[List[Dict[str, Any]]] = None,
         tier=None,  # β C2: LlmTier hint (None = default SLOT.MAPPER)
+        rag_cases=None,  # β C5: list of RAGCase from retrieval (None/[] = no enrichment)
     ) -> List[CandidateIntentDto]:
         """Pick best intent via LLM. Returns [] on any failure or no-match.
 
         β C2: `tier` hint chooses cheap (CHEAP → SLOT.MAPPER) vs expensive
         (EXPENSIVE → SLOT.CHAT). None preserves α default (SLOT.MAPPER).
+        β C5: `rag_cases` (when present and non-empty) prepended to prompt as
+        "参考历史" block — top-3 historical cases by similarity. None/[]
+        preserves α default (no RAG enrichment).
         """
         if not visible_intents:
             return []
 
-        prompt = build_prompt(query, visible_intents, history or [])
+        # β C5: prepend RAG context if cases were retrieved + judged HIGH/MEDIUM
+        rag_block = ""
+        if rag_cases:
+            rag_lines = [
+                f"- 历史案例: {c.query} → {c.intent_code} (相似度 {c.similarity:.2f})"
+                for c in rag_cases[:3]
+            ]
+            rag_block = "参考历史:\n" + "\n".join(rag_lines) + "\n\n"
+
+        prompt = rag_block + build_prompt(query, visible_intents, history or [])
 
         if tier is not None:
             logger.debug("Stage 8 LLM with tier hint: %s", tier)

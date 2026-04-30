@@ -48,7 +48,8 @@ class Orchestrator:
 
     def __init__(self, semantic_matcher, classifier_matcher, llm_matcher,
                  semantic_router=None, llm_tier_selector=None,
-                 calibrator=None, scorer=None):
+                 calibrator=None, scorer=None,
+                 rag_retriever=None, rag_evaluator=None):
         self.semantic_matcher = semantic_matcher
         self.classifier_matcher = classifier_matcher
         self.llm_matcher = llm_matcher
@@ -56,6 +57,8 @@ class Orchestrator:
         self.llm_tier_selector = llm_tier_selector  # β C2: optional cheap/expensive picker
         self.calibrator = calibrator  # β C4: optional per-stage confidence calibrator
         self.scorer = scorer  # β C4: optional combined-score reranker
+        self.rag_retriever = rag_retriever  # β C5: optional RAG retriever
+        self.rag_evaluator = rag_evaluator  # β C5: optional CRAG-style quality evaluator
 
     async def match(
         self,
@@ -181,10 +184,28 @@ class Orchestrator:
                     logger.exception("LlmTierSelector failed, llm_matcher uses default tier")
                     tier = None
 
+            # β C5: RAG retrieval + evaluation, inject HIGH/MEDIUM cases into LLM prompt
+            rag_cases = []
+            if self.rag_retriever is not None and self.rag_evaluator is not None:
+                try:
+                    cases = await self.rag_retriever.retrieve(
+                        query=query, factory_id=factoryId, top_k=5,
+                    )
+                    quality = self.rag_evaluator.evaluate(cases)
+                    from ai.rag.evaluator import RAGQuality
+                    if quality in (RAGQuality.HIGH, RAGQuality.MEDIUM):
+                        rag_cases = cases
+                        logger.info("RAG quality=%s, injecting %d cases", quality, len(cases))
+                    else:
+                        logger.debug("RAG quality=%s (UNRELIABLE), skipping", quality)
+                except Exception:
+                    logger.exception("RAG failed, continuing without enrichment")
+
             t_stage_start = time.time()
             try:
                 llm_candidates = await self.llm_matcher.match(
-                    query, visible_intents=visible_intents, history=history, tier=tier,
+                    query, visible_intents=visible_intents, history=history,
+                    tier=tier, rag_cases=rag_cases,
                 )
             except Exception:
                 logger.exception("Stage 8 LLM failed, treating as empty")

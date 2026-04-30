@@ -427,3 +427,107 @@ async def test_orchestrator_calibration_with_real_coefs():
     )
     expected = 1 / (1 + math.exp(-(2.0 * 0.85 + (-1.0))))
     assert abs(result.confidence - expected) < 0.001
+
+
+# ======================================================================
+# β extension: RAG retrieval + evaluation in stage 8 (T11, C5)
+# ======================================================================
+
+
+@pytest.mark.asyncio
+async def test_stage_8_uses_rag_when_high_quality():
+    """RAG retrieval HIGH quality → cases passed to llm_matcher."""
+    from ai.dto import CandidateIntentDto, MatchMethod
+    from ai.orchestrator import Orchestrator
+    from ai.router.semantic_router import RouteDecision
+    from ai.rag.retrieval import RAGCase
+    from ai.rag.evaluator import RAGQuality
+
+    fake_decision = RouteDecision(method="NEED_FULL_LLM", ood_detected=False,
+                                    candidates=[], query_embedding=None)
+    sem_matcher = MagicMock(); sem_matcher.match = AsyncMock(return_value=[])
+    cls_matcher = MagicMock(); cls_matcher.match = AsyncMock(return_value=[])
+    llm_matcher = MagicMock(); llm_matcher.match = AsyncMock(return_value=[])
+    fake_router = MagicMock(); fake_router.route = AsyncMock(return_value=fake_decision)
+
+    high_quality_cases = [RAGCase(query="hist", intent_code="X", confidence=0.95,
+                                    similarity=0.90, source="match_record")]
+    fake_retriever = MagicMock()
+    fake_retriever.retrieve = AsyncMock(return_value=high_quality_cases)
+    fake_evaluator = MagicMock()
+    fake_evaluator.evaluate = MagicMock(return_value=RAGQuality.HIGH)
+
+    orch = Orchestrator(
+        sem_matcher, cls_matcher, llm_matcher,
+        semantic_router=fake_router,
+        rag_retriever=fake_retriever, rag_evaluator=fake_evaluator,
+    )
+    await orch.match(
+        query="q", factoryId="F", businessType="COMMON", userId="u", role="r",
+        visible_intents=[], history=[], min_confidence=0.7, enable_llm=True,
+    )
+    fake_retriever.retrieve.assert_called_once()
+    call_kwargs = llm_matcher.match.call_args.kwargs
+    assert call_kwargs.get("rag_cases") == high_quality_cases
+
+
+@pytest.mark.asyncio
+async def test_stage_8_skips_rag_when_unreliable():
+    """RAG UNRELIABLE → empty rag_cases."""
+    from ai.dto import CandidateIntentDto, MatchMethod
+    from ai.orchestrator import Orchestrator
+    from ai.router.semantic_router import RouteDecision
+    from ai.rag.retrieval import RAGCase
+    from ai.rag.evaluator import RAGQuality
+
+    fake_decision = RouteDecision(method="NEED_FULL_LLM", ood_detected=False,
+                                    candidates=[], query_embedding=None)
+    sem_matcher = MagicMock(); sem_matcher.match = AsyncMock(return_value=[])
+    cls_matcher = MagicMock(); cls_matcher.match = AsyncMock(return_value=[])
+    llm_matcher = MagicMock(); llm_matcher.match = AsyncMock(return_value=[])
+    fake_router = MagicMock(); fake_router.route = AsyncMock(return_value=fake_decision)
+
+    fake_retriever = MagicMock()
+    fake_retriever.retrieve = AsyncMock(return_value=[])
+    fake_evaluator = MagicMock()
+    fake_evaluator.evaluate = MagicMock(return_value=RAGQuality.UNRELIABLE)
+
+    orch = Orchestrator(
+        sem_matcher, cls_matcher, llm_matcher,
+        semantic_router=fake_router,
+        rag_retriever=fake_retriever, rag_evaluator=fake_evaluator,
+    )
+    await orch.match(
+        query="q", factoryId="F", businessType="COMMON", userId="u", role="r",
+        visible_intents=[], history=[], min_confidence=0.7, enable_llm=True,
+    )
+    call_kwargs = llm_matcher.match.call_args.kwargs
+    assert call_kwargs.get("rag_cases") == []
+
+
+@pytest.mark.asyncio
+async def test_stage_8_no_rag_when_components_absent():
+    """No retriever/evaluator → llm_matcher called with rag_cases=[]."""
+    from ai.dto import CandidateIntentDto, MatchMethod
+    from ai.orchestrator import Orchestrator
+    from ai.router.semantic_router import RouteDecision
+
+    fake_decision = RouteDecision(method="NEED_FULL_LLM", ood_detected=False,
+                                    candidates=[], query_embedding=None)
+    sem_matcher = MagicMock(); sem_matcher.match = AsyncMock(return_value=[])
+    cls_matcher = MagicMock(); cls_matcher.match = AsyncMock(return_value=[])
+    llm_matcher = MagicMock(); llm_matcher.match = AsyncMock(return_value=[])
+    fake_router = MagicMock(); fake_router.route = AsyncMock(return_value=fake_decision)
+
+    orch = Orchestrator(
+        sem_matcher, cls_matcher, llm_matcher,
+        semantic_router=fake_router,
+    )
+    await orch.match(
+        query="q", factoryId="F", businessType="COMMON", userId="u", role="r",
+        visible_intents=[], history=[], min_confidence=0.7, enable_llm=True,
+    )
+    call_kwargs = llm_matcher.match.call_args.kwargs
+    # When no retriever, rag_cases either not passed OR passed as []
+    rag_cases = call_kwargs.get("rag_cases")
+    assert rag_cases is None or rag_cases == []
