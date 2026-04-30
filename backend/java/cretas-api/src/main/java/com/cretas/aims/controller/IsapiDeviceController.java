@@ -518,7 +518,8 @@ public class IsapiDeviceController {
 
         return eventLogRepository.findById(eventId)
                 .map(event -> ApiResponse.success(toEventDTO(event)))
-                .orElse(ApiResponse.error("事件不存在"));
+                .orElseThrow(() -> new BusinessException(404, "事件不存在: " + eventId)
+                        .withHint("请检查 eventId 是否正确"));
     }
 
     @RequirePermission({"system:read_write", "equipment:read_write"})
