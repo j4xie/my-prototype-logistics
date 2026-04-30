@@ -84,11 +84,12 @@ function resetSearch() {
 }
 
 // Tab 布局配置（来自 layoutConfig.tabs）
-const layoutTabs = computed(() => {
+interface LayoutConfig { tabs?: unknown[] }
+const layoutTabs = computed<unknown[]>(() => {
   if (!config.value) return []
-  const layout = (config.value as any).layoutConfig
-  if (layout && typeof layout === 'object' && 'tabs' in layout) {
-    return (layout as { tabs: unknown[] }).tabs as any[]
+  const layout = (config.value as { layoutConfig?: LayoutConfig }).layoutConfig
+  if (layout && typeof layout === 'object' && Array.isArray(layout.tabs)) {
+    return layout.tabs
   }
   return []
 })

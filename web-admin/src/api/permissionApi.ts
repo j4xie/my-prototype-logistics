@@ -32,7 +32,7 @@ export async function getPlatformPermissions(): Promise<PlatformPermission[]> {
   // Uses absolute path (bypasses baseURL /api/mobile) per request.ts adminGet pattern.
   const res = await request.get<ApiResponse<PlatformPermission[]>>(
     '/api/admin/role-permissions',
-    { baseURL: '' } as any,
+    { baseURL: '' },
   );
   // Interceptor unwraps { success, data, message }
   return ((res as unknown as ApiResponse<PlatformPermission[]>).data) || [];
@@ -47,7 +47,7 @@ export async function updatePlatformPermission(
   const res = await request.put<ApiResponse<PlatformPermission>>(
     `/api/platform/role-permissions/${encodeURIComponent(role)}/${encodeURIComponent(module)}?level=${encodeURIComponent(level)}`,
     {},
-    { baseURL: '' } as any,
+    { baseURL: '' },
   );
   return (res as unknown as ApiResponse<PlatformPermission>).data as PlatformPermission;
 }

@@ -1,5 +1,6 @@
 // web-admin/src/api/canvasApi.ts
 import request from './request'
+import type { ApiResponse } from '@/types/api'
 import type {
   ToolConfig, SkillConfig, TriggerChain, ValidationRule,
   DefaultValue, Formula, SchedulerConfig,
@@ -123,7 +124,12 @@ export const getPublishWindow = async (factoryId: string) => {
   try {
     return await request.get<PublishWindow>(`/${factoryId}/config/publish-window`)
   } catch {
-    return { data: { startHour: 22, startMinute: 0, endHour: 6, endMinute: 0 } as PublishWindow } as any
+    const fallback: ApiResponse<PublishWindow> = {
+      success: true,
+      message: 'fallback (endpoint not implemented)',
+      data: { startHour: 22, startMinute: 0, endHour: 6, endMinute: 0 } as PublishWindow,
+    }
+    return fallback
   }
 }
 
@@ -141,7 +147,12 @@ export const checkCompleteness = async (factoryId: string) => {
   try {
     return await request.get<CompletenessCheck>(`/${factoryId}/config/completeness-check`)
   } catch {
-    return { data: { complete: true, missingModules: [], missingFields: [] } as CompletenessCheck } as any
+    const fallback: ApiResponse<CompletenessCheck> = {
+      success: true,
+      message: 'fallback (endpoint not implemented)',
+      data: { complete: true, missingModules: [], missingFields: [] } as CompletenessCheck,
+    }
+    return fallback
   }
 }
 
