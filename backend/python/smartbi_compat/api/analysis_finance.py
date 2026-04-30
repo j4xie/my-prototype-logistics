@@ -894,6 +894,60 @@ def _build_profit_chart_from_finance_data(
     return chart_data
 
 
+async def _get_profit_trend_chart(
+    factory_id: str,
+    start_date: date,
+    end_date: date,
+    period: str = "MONTH",
+) -> dict:
+    """Mirror Java `FinanceAnalysisServiceImpl.getProfitTrendChart` line 220-274.
+
+    Builds LINE_BAR chart with 5 series (3 bar: 营业收入/营业成本/毛利额,
+    2 line: 净利润/毛利率) on dual yAxis (left=金额, right=毛利率%).
+
+    PR-A: when both revenue + cost queries empty → data=[] (chart options
+    still emitted in full). PR-B will add sales fallback in this same branch.
+
+    Period defaults to MONTH (matches controller line 246 hardcoded "MONTH").
+    """
+    revenue_data = await _query_finance_data(
+        factory_id, "REVENUE", start_date, end_date
+    )
+    cost_data = await _query_finance_data(
+        factory_id, "COST", start_date, end_date
+    )
+
+    if revenue_data or cost_data:
+        chart_data = _build_profit_chart_from_finance_data(revenue_data, cost_data, period)
+    else:
+        # PR-A: empty (no fallback). PR-B will add sales fallback here.
+        chart_data = []
+
+    options = {
+        "yAxis": [
+            _new_yaxis_entry(name="金额", position="left"),
+            _new_yaxis_entry(name="毛利率(%)", position="right"),
+        ],
+        "series": [
+            _new_series_entry(type_="bar", yaxis_index=0, name="营业收入"),
+            _new_series_entry(type_="bar", yaxis_index=0, name="营业成本"),
+            _new_series_entry(type_="bar", yaxis_index=0, name="毛利额"),
+            _new_series_entry(type_="line", yaxis_index=0, name="净利润"),
+            _new_series_entry(type_="line", yaxis_index=1, name="毛利率"),
+        ],
+    }
+
+    return _new_chart_config_dict(
+        chart_type="LINE_BAR",
+        title="利润趋势分析",
+        series_field="metric",
+        data=chart_data,
+        options=options,
+        xaxis_field="period",
+        yaxis_field="grossProfit",
+    )
+
+
 async def _get_cost_structure_chart(factory_id: str, range_: DateRange) -> dict:
     """F999 empty-state — Java getCostStructureChart returns ChartConfig with empty data.
     A.5 golden verified shape: chartType=PIE, title='成本结构分析',
