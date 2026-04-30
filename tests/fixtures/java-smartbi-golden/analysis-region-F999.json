@@ -1,0 +1,48 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/analysis/region",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T06:34:35.55097934",
+    "data": {
+      "heatmap": {
+        "chartType": "MAP",
+        "title": "销售地理分布",
+        "seriesField": null,
+        "data": [],
+        "options": null,
+        "xaxisField": null,
+        "yaxisField": null
+      },
+      "targetCompletion": [],
+      "dateRange": {
+        "startDate": "2025-01-01",
+        "endDate": "2025-12-31",
+        "granularity": "YEAR",
+        "originalExpression": "2025-01-01 至 2025-12-31",
+        "relative": false,
+        "days": 365,
+        "valid": true
+      },
+      "opportunityScores": [],
+      "generatedAt": "2026-04-30T06:34:35.550856386",
+      "ranking": []
+    }
+  },
+  "_meta": {
+    "name": "analysis-region",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/analysis/region",
+    "query": {
+      "startDate": "2025-01-01",
+      "endDate": "2025-12-31"
+    },
+    "factory": "F999",
+    "recordedAt": "2026-04-29T22:34:35.927Z",
+    "javaPort": 10011
+  }
+}

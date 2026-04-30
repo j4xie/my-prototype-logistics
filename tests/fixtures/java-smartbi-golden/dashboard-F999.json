@@ -1,0 +1,1408 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/dashboard",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T06:34:58.230670086",
+    "data": {
+      "period": "month",
+      "startDate": "2026-04-01",
+      "endDate": "2026-04-30",
+      "sales": {
+        "period": null,
+        "startDate": null,
+        "endDate": null,
+        "kpiCards": [],
+        "metricCards": null,
+        "rankings": {
+          "region": [
+            {
+              "rank": 1,
+              "name": "浙江分部",
+              "value": 3318734.3,
+              "target": 3650607.73,
+              "completionRate": 90.91,
+              "alertLevel": "GREEN"
+            },
+            {
+              "rank": 2,
+              "name": "江苏分部",
+              "value": 1578844.3,
+              "target": 1736728.73,
+              "completionRate": 90.91,
+              "alertLevel": "GREEN"
+            },
+            {
+              "rank": 3,
+              "name": "赣皖区域",
+              "value": 830253.4,
+              "target": 913278.74,
+              "completionRate": 90.91,
+              "alertLevel": "GREEN"
+            },
+            {
+              "rank": 4,
+              "name": "上海分部",
+              "value": 367884,
+              "target": 404672.4,
+              "completionRate": 90.91,
+              "alertLevel": "GREEN"
+            }
+          ],
+          "department": [
+            {
+              "rank": 1,
+              "name": "销售部",
+              "value": 150000,
+              "target": 0,
+              "completionRate": 0,
+              "alertLevel": "RED"
+            },
+            {
+              "rank": 2,
+              "name": "研发部",
+              "value": 100000,
+              "target": 0,
+              "completionRate": 0,
+              "alertLevel": "RED"
+            },
+            {
+              "rank": 3,
+              "name": "行政部",
+              "value": 50000,
+              "target": 0,
+              "completionRate": 0,
+              "alertLevel": "RED"
+            }
+          ]
+        },
+        "charts": {
+          "department_trend": {
+            "chartType": "LINE",
+            "title": "部门销售趋势对比",
+            "seriesField": "department",
+            "data": [
+              {
+                "period": "2026-W14",
+                "未知部门": 114706.9
+              },
+              {
+                "period": "2026-W15",
+                "未知部门": 2222609.1
+              },
+              {
+                "period": "2026-W16",
+                "未知部门": 1470560.8
+              },
+              {
+                "period": "2026-W17",
+                "未知部门": 1926722.7
+              },
+              {
+                "period": "2026-W18",
+                "未知部门": 361116.5
+              }
+            ],
+            "options": {
+              "period": "WEEK",
+              "series": [
+                "未知部门"
+              ]
+            },
+            "xaxisField": "period",
+            "yaxisField": "amount"
+          }
+        },
+        "chartList": null,
+        "aiInsights": [
+          {
+            "level": "YELLOW",
+            "category": "数据状态",
+            "message": "当前时间范围内暂无销售数据",
+            "relatedEntity": null,
+            "actionSuggestion": "请上传销售数据或调整时间范围"
+          },
+          {
+            "level": "YELLOW",
+            "category": "数据状态",
+            "message": "当前时间范围内暂无销售数据",
+            "relatedEntity": null,
+            "actionSuggestion": "请上传销售数据或调整时间范围"
+          }
+        ],
+        "alerts": null,
+        "recommendations": null,
+        "suggestions": [
+          "请先上传销售数据以开始分析"
+        ],
+        "generatedAt": null,
+        "lastUpdated": "2026-04-30T06:34:52.132445514",
+        "fromCache": false,
+        "cacheExpireAt": null
+      },
+      "finance": {
+        "period": null,
+        "startDate": null,
+        "endDate": null,
+        "kpiCards": [],
+        "metricCards": null,
+        "rankings": {},
+        "charts": {},
+        "chartList": null,
+        "aiInsights": [],
+        "alerts": null,
+        "recommendations": null,
+        "suggestions": [],
+        "generatedAt": null,
+        "lastUpdated": "2026-04-30T06:34:58.225654323",
+        "fromCache": false,
+        "cacheExpireAt": null
+      },
+      "inventory": {
+        "period": null,
+        "startDate": null,
+        "endDate": null,
+        "kpiCards": [],
+        "metricCards": null,
+        "rankings": {},
+        "charts": {},
+        "chartList": null,
+        "aiInsights": [
+          {
+            "level": "YELLOW",
+            "category": "数据状态",
+            "message": "当前暂无库存数据",
+            "relatedEntity": null,
+            "actionSuggestion": "请先录入原材料批次数据"
+          }
+        ],
+        "alerts": null,
+        "recommendations": null,
+        "suggestions": [
+          "请先录入库存数据以开始分析"
+        ],
+        "generatedAt": null,
+        "lastUpdated": "2026-04-30T06:34:58.222064433",
+        "fromCache": false,
+        "cacheExpireAt": null
+      },
+      "production": {
+        "period": "CUSTOM",
+        "startDate": "2026-04-01",
+        "endDate": "2026-04-30",
+        "kpiCards": [
+          {
+            "key": "OEE",
+            "title": "综合设备效率 (OEE)",
+            "value": "79.6%",
+            "rawValue": 79.56,
+            "unit": "%",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "yellow",
+            "compareText": null,
+            "description": "OEE = 可用性 x 性能 x 质量",
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "AVAILABILITY",
+            "title": "可用性",
+            "value": "91.3%",
+            "rawValue": 91.32,
+            "unit": "%",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "green",
+            "compareText": null,
+            "description": "实际运行时间 / 计划运行时间",
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "PERFORMANCE",
+            "title": "性能",
+            "value": "89.7%",
+            "rawValue": 89.71,
+            "unit": "%",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "yellow",
+            "compareText": null,
+            "description": "实际产量 / 理论产量",
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "QUALITY_RATE",
+            "title": "质量率",
+            "value": "97.1%",
+            "rawValue": 97.12,
+            "unit": "%",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "yellow",
+            "compareText": null,
+            "description": "良品数 / 总产量",
+            "targetValue": null,
+            "completionRate": null
+          }
+        ],
+        "metricCards": null,
+        "rankings": {
+          "equipment": [
+            {
+              "rank": 1,
+              "name": "设备5",
+              "value": 80.5,
+              "target": 85,
+              "completionRate": 94.71,
+              "alertLevel": "YELLOW"
+            },
+            {
+              "rank": 2,
+              "name": "设备1",
+              "value": 80.22,
+              "target": 85,
+              "completionRate": 94.38,
+              "alertLevel": "YELLOW"
+            },
+            {
+              "rank": 3,
+              "name": "设备3",
+              "value": 79.63,
+              "target": 85,
+              "completionRate": 93.69,
+              "alertLevel": "YELLOW"
+            },
+            {
+              "rank": 4,
+              "name": "设备2",
+              "value": 78.97,
+              "target": 85,
+              "completionRate": 92.9,
+              "alertLevel": "YELLOW"
+            },
+            {
+              "rank": 5,
+              "name": "设备4",
+              "value": 78.42,
+              "target": 85,
+              "completionRate": 92.26,
+              "alertLevel": "YELLOW"
+            }
+          ],
+          "production_line": [
+            {
+              "rank": 1,
+              "name": "产线A",
+              "value": 95.32,
+              "target": 100,
+              "completionRate": 95.32,
+              "alertLevel": "GREEN"
+            },
+            {
+              "rank": 2,
+              "name": "产线D",
+              "value": 95.01,
+              "target": 100,
+              "completionRate": 95.01,
+              "alertLevel": "GREEN"
+            },
+            {
+              "rank": 3,
+              "name": "产线C",
+              "value": 94.75,
+              "target": 100,
+              "completionRate": 94.75,
+              "alertLevel": "GREEN"
+            },
+            {
+              "rank": 4,
+              "name": "产线B",
+              "value": 93.94,
+              "target": 100,
+              "completionRate": 93.94,
+              "alertLevel": "GREEN"
+            }
+          ]
+        },
+        "charts": {
+          "oee_trend": {
+            "chartType": "LINE",
+            "title": "OEE 趋势",
+            "seriesField": "metric",
+            "data": [
+              {
+                "date": "2026-04-01",
+                "oee": 79.41,
+                "availability": 91.34,
+                "performance": 89.54,
+                "quality": 97.09
+              },
+              {
+                "date": "2026-04-02",
+                "oee": 78.83,
+                "availability": 91.51,
+                "performance": 89.48,
+                "quality": 96.27
+              },
+              {
+                "date": "2026-04-03",
+                "oee": 78.42,
+                "availability": 88.9,
+                "performance": 91.15,
+                "quality": 96.78
+              },
+              {
+                "date": "2026-04-04",
+                "oee": 79.67,
+                "availability": 90.56,
+                "performance": 90.17,
+                "quality": 97.57
+              },
+              {
+                "date": "2026-04-05",
+                "oee": 78.69,
+                "availability": 92.84,
+                "performance": 87.51,
+                "quality": 96.85
+              },
+              {
+                "date": "2026-04-06",
+                "oee": 80.73,
+                "availability": 92.05,
+                "performance": 89.88,
+                "quality": 97.58
+              },
+              {
+                "date": "2026-04-07",
+                "oee": 79.04,
+                "availability": 89.92,
+                "performance": 90.75,
+                "quality": 96.86
+              },
+              {
+                "date": "2026-04-08",
+                "oee": 78.76,
+                "availability": 90.02,
+                "performance": 90.1,
+                "quality": 97.1
+              },
+              {
+                "date": "2026-04-09",
+                "oee": 77.52,
+                "availability": 90.02,
+                "performance": 88.75,
+                "quality": 97.03
+              },
+              {
+                "date": "2026-04-10",
+                "oee": 79.01,
+                "availability": 91.31,
+                "performance": 89.68,
+                "quality": 96.49
+              },
+              {
+                "date": "2026-04-11",
+                "oee": 77.7,
+                "availability": 91.26,
+                "performance": 87.68,
+                "quality": 97.11
+              },
+              {
+                "date": "2026-04-12",
+                "oee": 82.08,
+                "availability": 91.78,
+                "performance": 91.12,
+                "quality": 98.15
+              },
+              {
+                "date": "2026-04-13",
+                "oee": 79.75,
+                "availability": 91.17,
+                "performance": 90.38,
+                "quality": 96.78
+              },
+              {
+                "date": "2026-04-14",
+                "oee": 78.06,
+                "availability": 90.91,
+                "performance": 88.19,
+                "quality": 97.36
+              },
+              {
+                "date": "2026-04-15",
+                "oee": 79.47,
+                "availability": 91.7,
+                "performance": 89.03,
+                "quality": 97.34
+              },
+              {
+                "date": "2026-04-16",
+                "oee": 78.07,
+                "availability": 91.25,
+                "performance": 88.38,
+                "quality": 96.81
+              },
+              {
+                "date": "2026-04-17",
+                "oee": 80.49,
+                "availability": 92.8,
+                "performance": 89.62,
+                "quality": 96.78
+              },
+              {
+                "date": "2026-04-18",
+                "oee": 81.38,
+                "availability": 93.23,
+                "performance": 89.87,
+                "quality": 97.13
+              },
+              {
+                "date": "2026-04-19",
+                "oee": 81.64,
+                "availability": 91.78,
+                "performance": 92.16,
+                "quality": 96.52
+              },
+              {
+                "date": "2026-04-20",
+                "oee": 79.13,
+                "availability": 90.35,
+                "performance": 89.97,
+                "quality": 97.34
+              },
+              {
+                "date": "2026-04-21",
+                "oee": 79.22,
+                "availability": 90.59,
+                "performance": 90.02,
+                "quality": 97.14
+              },
+              {
+                "date": "2026-04-22",
+                "oee": 81.73,
+                "availability": 91.09,
+                "performance": 91.74,
+                "quality": 97.8
+              },
+              {
+                "date": "2026-04-23",
+                "oee": 81.25,
+                "availability": 92.75,
+                "performance": 89.99,
+                "quality": 97.35
+              },
+              {
+                "date": "2026-04-24",
+                "oee": 81.14,
+                "availability": 92.51,
+                "performance": 90.19,
+                "quality": 97.25
+              },
+              {
+                "date": "2026-04-25",
+                "oee": 79.02,
+                "availability": 91.7,
+                "performance": 88.35,
+                "quality": 97.53
+              },
+              {
+                "date": "2026-04-26",
+                "oee": 82.46,
+                "availability": 92.52,
+                "performance": 91.38,
+                "quality": 97.53
+              },
+              {
+                "date": "2026-04-27",
+                "oee": 79.66,
+                "availability": 90.97,
+                "performance": 90.06,
+                "quality": 97.23
+              },
+              {
+                "date": "2026-04-28",
+                "oee": 80.72,
+                "availability": 92.4,
+                "performance": 89.5,
+                "quality": 97.61
+              },
+              {
+                "date": "2026-04-29",
+                "oee": 78.34,
+                "availability": 90.5,
+                "performance": 89.71,
+                "quality": 96.49
+              },
+              {
+                "date": "2026-04-30",
+                "oee": 75.25,
+                "availability": 89.29,
+                "performance": 87.32,
+                "quality": 96.52
+              }
+            ],
+            "options": {
+              "showLegend": true,
+              "multiLine": true,
+              "yAxisMax": 100
+            },
+            "xaxisField": "date",
+            "yaxisField": "oee"
+          },
+          "production_line_comparison": {
+            "chartType": "BAR",
+            "title": "产线 OEE 对比",
+            "seriesField": "metric",
+            "data": [
+              {
+                "productionLine": "产线D",
+                "oee": 78.81,
+                "availability": 90.35,
+                "performance": 89.94,
+                "quality": 96.98
+              },
+              {
+                "productionLine": "产线B",
+                "oee": 79.02,
+                "availability": 91.27,
+                "performance": 88.96,
+                "quality": 97.32
+              },
+              {
+                "productionLine": "产线C",
+                "oee": 79.75,
+                "availability": 91.54,
+                "performance": 89.71,
+                "quality": 97.11
+              },
+              {
+                "productionLine": "产线A",
+                "oee": 80.65,
+                "availability": 92.08,
+                "performance": 90.23,
+                "quality": 97.07
+              }
+            ],
+            "options": {
+              "showLegend": true,
+              "grouped": true
+            },
+            "xaxisField": "productionLine",
+            "yaxisField": "oee"
+          },
+          "downtime_distribution": {
+            "chartType": "PIE",
+            "title": "停机原因分布",
+            "seriesField": null,
+            "data": [
+              {
+                "reason": "计划维护",
+                "downtime": 141.56
+              },
+              {
+                "reason": "质量问题",
+                "downtime": 125.58
+              },
+              {
+                "reason": "换型调整",
+                "downtime": 118.28
+              },
+              {
+                "reason": "物料短缺",
+                "downtime": 103.19
+              },
+              {
+                "reason": "设备故障",
+                "downtime": 100.12
+              }
+            ],
+            "options": {
+              "showPercentage": true,
+              "showLegend": true
+            },
+            "xaxisField": "reason",
+            "yaxisField": "downtime"
+          }
+        },
+        "chartList": null,
+        "aiInsights": [
+          {
+            "level": "YELLOW",
+            "category": "OEE",
+            "message": "综合设备效率为 79.6%，有提升空间",
+            "relatedEntity": null,
+            "actionSuggestion": "建议关注效率最低的设备和产线，制定改进计划"
+          }
+        ],
+        "alerts": null,
+        "recommendations": null,
+        "suggestions": [
+          "主要停机原因是「计划维护」，建议重点改善",
+          "故障次数较多，建议加强预防性维护，制定设备保养计划",
+          "性能指标偏低，建议检查设备速度设定、消除微停机"
+        ],
+        "generatedAt": "2026-04-30T06:34:58.223066444",
+        "lastUpdated": "2026-04-30T06:34:58.223068614",
+        "fromCache": false,
+        "cacheExpireAt": null
+      },
+      "quality": {
+        "period": "CUSTOM",
+        "startDate": "2026-04-01",
+        "endDate": "2026-04-30",
+        "kpiCards": [
+          {
+            "key": "FPY",
+            "title": "首次通过率 (FPY)",
+            "value": "95.27%",
+            "rawValue": 95.27,
+            "unit": "%",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "yellow",
+            "compareText": null,
+            "description": "首次检验通过数 / 总检验数",
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "DEFECT_RATE",
+            "title": "不良率",
+            "value": "4.73%",
+            "rawValue": 4.73,
+            "unit": "%",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "yellow",
+            "compareText": null,
+            "description": "不良品数 / 总检验数",
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "REWORK_COST",
+            "title": "返工成本",
+            "value": "40,374.00",
+            "rawValue": 40374,
+            "unit": "元",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "green",
+            "compareText": null,
+            "description": null,
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "SCRAP_COST",
+            "title": "报废成本",
+            "value": "118,523.00",
+            "rawValue": 118523,
+            "unit": "元",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "green",
+            "compareText": null,
+            "description": null,
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "TOTAL_QUALITY_COST",
+            "title": "质量成本总计",
+            "value": "158,897.00",
+            "rawValue": 158897,
+            "unit": "元",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "green",
+            "compareText": null,
+            "description": null,
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "CUSTOMER_COMPLAINT_COUNT",
+            "title": "客户投诉数",
+            "value": "355 件",
+            "rawValue": 355,
+            "unit": "件",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "red",
+            "compareText": null,
+            "description": null,
+            "targetValue": null,
+            "completionRate": null
+          }
+        ],
+        "metricCards": null,
+        "rankings": {
+          "defect_type": [
+            {
+              "rank": 1,
+              "name": "装配不良",
+              "value": 745,
+              "target": null,
+              "completionRate": 22.09,
+              "alertLevel": "RED"
+            },
+            {
+              "rank": 2,
+              "name": "尺寸偏差",
+              "value": 689,
+              "target": null,
+              "completionRate": 20.43,
+              "alertLevel": "RED"
+            },
+            {
+              "rank": 3,
+              "name": "外观缺陷",
+              "value": 681,
+              "target": null,
+              "completionRate": 20.19,
+              "alertLevel": "RED"
+            },
+            {
+              "rank": 4,
+              "name": "功能故障",
+              "value": 643,
+              "target": null,
+              "completionRate": 19.06,
+              "alertLevel": "GREEN"
+            },
+            {
+              "rank": 5,
+              "name": "材料缺陷",
+              "value": 615,
+              "target": null,
+              "completionRate": 18.23,
+              "alertLevel": "GREEN"
+            }
+          ],
+          "product_line": [
+            {
+              "rank": 1,
+              "name": "产线A",
+              "value": 95.38,
+              "target": 98,
+              "completionRate": 97.33,
+              "alertLevel": "YELLOW"
+            },
+            {
+              "rank": 2,
+              "name": "产线D",
+              "value": 95.36,
+              "target": 98,
+              "completionRate": 97.31,
+              "alertLevel": "YELLOW"
+            },
+            {
+              "rank": 3,
+              "name": "产线B",
+              "value": 95.27,
+              "target": 98,
+              "completionRate": 97.21,
+              "alertLevel": "YELLOW"
+            },
+            {
+              "rank": 4,
+              "name": "产线C",
+              "value": 95.08,
+              "target": 98,
+              "completionRate": 97.02,
+              "alertLevel": "YELLOW"
+            }
+          ]
+        },
+        "charts": {
+          "quality_trend": {
+            "chartType": "LINE",
+            "title": "质量趋势",
+            "seriesField": "metric",
+            "data": [
+              {
+                "date": "2026-04-01",
+                "fpy": 95.29,
+                "defectRate": 4.71,
+                "totalInspections": 2486
+              },
+              {
+                "date": "2026-04-02",
+                "fpy": 95.35,
+                "defectRate": 4.65,
+                "totalInspections": 2407
+              },
+              {
+                "date": "2026-04-03",
+                "fpy": 95.21,
+                "defectRate": 4.79,
+                "totalInspections": 2378
+              },
+              {
+                "date": "2026-04-04",
+                "fpy": 95.17,
+                "defectRate": 4.83,
+                "totalInspections": 2007
+              },
+              {
+                "date": "2026-04-05",
+                "fpy": 94.3,
+                "defectRate": 5.7,
+                "totalInspections": 2717
+              },
+              {
+                "date": "2026-04-06",
+                "fpy": 95.31,
+                "defectRate": 4.69,
+                "totalInspections": 2196
+              },
+              {
+                "date": "2026-04-07",
+                "fpy": 95.28,
+                "defectRate": 4.72,
+                "totalInspections": 2246
+              },
+              {
+                "date": "2026-04-08",
+                "fpy": 95.95,
+                "defectRate": 4.05,
+                "totalInspections": 2196
+              },
+              {
+                "date": "2026-04-09",
+                "fpy": 95.35,
+                "defectRate": 4.65,
+                "totalInspections": 2560
+              },
+              {
+                "date": "2026-04-10",
+                "fpy": 95.74,
+                "defectRate": 4.26,
+                "totalInspections": 2204
+              },
+              {
+                "date": "2026-04-11",
+                "fpy": 95.36,
+                "defectRate": 4.64,
+                "totalInspections": 2261
+              },
+              {
+                "date": "2026-04-12",
+                "fpy": 95.08,
+                "defectRate": 4.92,
+                "totalInspections": 2360
+              },
+              {
+                "date": "2026-04-13",
+                "fpy": 94.94,
+                "defectRate": 5.06,
+                "totalInspections": 2726
+              },
+              {
+                "date": "2026-04-14",
+                "fpy": 94.68,
+                "defectRate": 5.32,
+                "totalInspections": 2333
+              },
+              {
+                "date": "2026-04-15",
+                "fpy": 95.14,
+                "defectRate": 4.86,
+                "totalInspections": 2737
+              },
+              {
+                "date": "2026-04-16",
+                "fpy": 95.36,
+                "defectRate": 4.64,
+                "totalInspections": 2239
+              },
+              {
+                "date": "2026-04-17",
+                "fpy": 95.53,
+                "defectRate": 4.47,
+                "totalInspections": 2258
+              },
+              {
+                "date": "2026-04-18",
+                "fpy": 95.4,
+                "defectRate": 4.6,
+                "totalInspections": 1980
+              },
+              {
+                "date": "2026-04-19",
+                "fpy": 95.78,
+                "defectRate": 4.22,
+                "totalInspections": 1896
+              },
+              {
+                "date": "2026-04-20",
+                "fpy": 94.54,
+                "defectRate": 5.46,
+                "totalInspections": 2547
+              },
+              {
+                "date": "2026-04-21",
+                "fpy": 95.43,
+                "defectRate": 4.57,
+                "totalInspections": 2428
+              },
+              {
+                "date": "2026-04-22",
+                "fpy": 94.47,
+                "defectRate": 5.53,
+                "totalInspections": 2731
+              },
+              {
+                "date": "2026-04-23",
+                "fpy": 95.32,
+                "defectRate": 4.68,
+                "totalInspections": 2223
+              },
+              {
+                "date": "2026-04-24",
+                "fpy": 94.24,
+                "defectRate": 5.76,
+                "totalInspections": 2203
+              },
+              {
+                "date": "2026-04-25",
+                "fpy": 96.17,
+                "defectRate": 3.83,
+                "totalInspections": 2690
+              },
+              {
+                "date": "2026-04-26",
+                "fpy": 94.87,
+                "defectRate": 5.13,
+                "totalInspections": 2302
+              },
+              {
+                "date": "2026-04-27",
+                "fpy": 95.32,
+                "defectRate": 4.68,
+                "totalInspections": 2672
+              },
+              {
+                "date": "2026-04-28",
+                "fpy": 96.2,
+                "defectRate": 3.8,
+                "totalInspections": 2577
+              },
+              {
+                "date": "2026-04-29",
+                "fpy": 95.91,
+                "defectRate": 4.09,
+                "totalInspections": 2395
+              },
+              {
+                "date": "2026-04-30",
+                "fpy": 95.61,
+                "defectRate": 4.39,
+                "totalInspections": 2302
+              }
+            ],
+            "options": {
+              "showLegend": true,
+              "multiLine": true,
+              "yAxisMax": 100
+            },
+            "xaxisField": "date",
+            "yaxisField": "fpy"
+          },
+          "defect_pareto": {
+            "chartType": "BAR",
+            "title": "不良类型帕累托分析",
+            "seriesField": "metric",
+            "data": [
+              {
+                "defectType": "装配不良",
+                "count": 745,
+                "percentage": 22.09,
+                "cumulative": 22.09
+              },
+              {
+                "defectType": "尺寸偏差",
+                "count": 689,
+                "percentage": 20.43,
+                "cumulative": 42.52
+              },
+              {
+                "defectType": "外观缺陷",
+                "count": 681,
+                "percentage": 20.19,
+                "cumulative": 62.71
+              },
+              {
+                "defectType": "功能故障",
+                "count": 643,
+                "percentage": 19.06,
+                "cumulative": 81.77
+              },
+              {
+                "defectType": "材料缺陷",
+                "count": 615,
+                "percentage": 18.23,
+                "cumulative": 100
+              }
+            ],
+            "options": {
+              "showCumulativeLine": true,
+              "showPercentage": true
+            },
+            "xaxisField": "defectType",
+            "yaxisField": "count"
+          },
+          "quality_cost_distribution": {
+            "chartType": "PIE",
+            "title": "质量成本分布",
+            "seriesField": null,
+            "data": [
+              {
+                "category": "返工成本",
+                "cost": 40374
+              },
+              {
+                "category": "报废成本",
+                "cost": 118523
+              }
+            ],
+            "options": {
+              "showPercentage": true,
+              "showLegend": true
+            },
+            "xaxisField": "category",
+            "yaxisField": "cost"
+          },
+          "product_line_quality": {
+            "chartType": "BAR",
+            "title": "产线质量对比",
+            "seriesField": "metric",
+            "data": [
+              {
+                "productionLine": "产线D",
+                "fpy": 95.36,
+                "defectRate": 4.64
+              },
+              {
+                "productionLine": "产线B",
+                "fpy": 95.27,
+                "defectRate": 4.73
+              },
+              {
+                "productionLine": "产线C",
+                "fpy": 95.08,
+                "defectRate": 4.92
+              },
+              {
+                "productionLine": "产线A",
+                "fpy": 95.38,
+                "defectRate": 4.62
+              }
+            ],
+            "options": {
+              "showLegend": true,
+              "grouped": true
+            },
+            "xaxisField": "productionLine",
+            "yaxisField": "fpy"
+          }
+        },
+        "chartList": null,
+        "aiInsights": [
+          {
+            "level": "YELLOW",
+            "category": "FPY",
+            "message": "首次通过率为 95.27%，有提升空间",
+            "relatedEntity": null,
+            "actionSuggestion": "建议关注主要不良类型，制定质量改进计划"
+          },
+          {
+            "level": "RED",
+            "category": "客户投诉",
+            "message": "客户投诉数达到 355 件，需要重点关注",
+            "relatedEntity": null,
+            "actionSuggestion": "建议分析投诉原因，制定客户投诉处理和预防措施"
+          }
+        ],
+        "alerts": null,
+        "recommendations": null,
+        "suggestions": [
+          "主要不良类型为：装配不良、尺寸偏差、外观缺陷，建议优先改善",
+          "返工率较高，建议评估返工工艺，考虑是否可通过工艺改进降低返工率",
+          "报废成本高于返工成本，建议评估是否可以通过返工挽救更多不良品"
+        ],
+        "generatedAt": "2026-04-30T06:34:58.221810975",
+        "lastUpdated": "2026-04-30T06:34:58.221813315",
+        "fromCache": false,
+        "cacheExpireAt": null
+      },
+      "procurement": {
+        "period": null,
+        "startDate": null,
+        "endDate": null,
+        "kpiCards": [],
+        "metricCards": null,
+        "rankings": {},
+        "charts": {},
+        "chartList": null,
+        "aiInsights": [
+          {
+            "level": "YELLOW",
+            "category": "数据状态",
+            "message": "当前时间范围内暂无采购数据",
+            "relatedEntity": null,
+            "actionSuggestion": "请调整时间范围或录入采购数据"
+          }
+        ],
+        "alerts": null,
+        "recommendations": null,
+        "suggestions": [
+          "请先录入采购数据以开始分析"
+        ],
+        "generatedAt": null,
+        "lastUpdated": "2026-04-30T06:34:58.222777235",
+        "fromCache": false,
+        "cacheExpireAt": null
+      },
+      "departmentRanking": [
+        {
+          "rank": 1,
+          "name": "销售部",
+          "value": 150000,
+          "target": 0,
+          "completionRate": 0,
+          "alertLevel": "RED"
+        },
+        {
+          "rank": 2,
+          "name": "研发部",
+          "value": 100000,
+          "target": 0,
+          "completionRate": 0,
+          "alertLevel": "RED"
+        },
+        {
+          "rank": 3,
+          "name": "行政部",
+          "value": 50000,
+          "target": 0,
+          "completionRate": 0,
+          "alertLevel": "RED"
+        }
+      ],
+      "regionRanking": [
+        {
+          "rank": 1,
+          "name": "浙江分部",
+          "value": 3318734.3,
+          "target": 3650607.73,
+          "completionRate": 90.91,
+          "alertLevel": "GREEN"
+        },
+        {
+          "rank": 2,
+          "name": "江苏分部",
+          "value": 1578844.3,
+          "target": 1736728.73,
+          "completionRate": 90.91,
+          "alertLevel": "GREEN"
+        },
+        {
+          "rank": 3,
+          "name": "赣皖区域",
+          "value": 830253.4,
+          "target": 913278.74,
+          "completionRate": 90.91,
+          "alertLevel": "GREEN"
+        },
+        {
+          "rank": 4,
+          "name": "上海分部",
+          "value": 367884,
+          "target": 404672.4,
+          "completionRate": 90.91,
+          "alertLevel": "GREEN"
+        }
+      ],
+      "alerts": [
+        {
+          "id": "2287911d-f484-48e7-8c0c-d22a8fa1dc83",
+          "level": "RED",
+          "category": "finance",
+          "title": "应收账款严重逾期",
+          "message": "客户 逾期客户A 应收款 200000.00 元已逾期 95 天",
+          "metric": "账龄天数",
+          "value": 95,
+          "threshold": 90,
+          "gapPercent": null,
+          "suggestion": "建议立即联系客户催收，必要时采取法律手段",
+          "relatedEntityId": null,
+          "relatedEntityName": null,
+          "createdAt": "2026-04-30T06:34:58.228986534",
+          "levelName": "RED",
+          "urgent": true
+        },
+        {
+          "id": "e9bb2142-bf10-4fe4-8f3c-7a2d1d717989",
+          "level": "RED",
+          "category": "finance",
+          "title": "应收账款严重逾期",
+          "message": "客户 逾期客户B 应收款 800000.00 元已逾期 100 天",
+          "metric": "账龄天数",
+          "value": 100,
+          "threshold": 90,
+          "gapPercent": null,
+          "suggestion": "建议立即联系客户催收，必要时采取法律手段",
+          "relatedEntityId": null,
+          "relatedEntityName": null,
+          "createdAt": "2026-04-30T06:34:58.229025826",
+          "levelName": "RED",
+          "urgent": true
+        },
+        {
+          "id": "9f128b70-c5f3-4950-b95c-8103e9b907f5",
+          "level": "RED",
+          "category": "finance",
+          "title": "应收账款总额过高",
+          "message": "应收账款总额达 2500000.00 元，资金压力大",
+          "metric": "应收总额",
+          "value": 2500000,
+          "threshold": 1000000,
+          "gapPercent": null,
+          "suggestion": "建议制定催收计划，加速资金回笼",
+          "relatedEntityId": null,
+          "relatedEntityName": null,
+          "createdAt": "2026-04-30T06:34:58.229105048",
+          "levelName": "RED",
+          "urgent": true
+        },
+        {
+          "id": "3efc2258-6291-4c6d-a1ff-16ac82a19421",
+          "level": "RED",
+          "category": "department",
+          "title": "研发部 人均产出过低",
+          "message": "研发部 人均销售额仅为 20000.00 元，严重低于标准",
+          "metric": "人均产出",
+          "value": 20000,
+          "threshold": 50000,
+          "gapPercent": null,
+          "suggestion": "建议分析人员效能，考虑调整人员配置或加强培训",
+          "relatedEntityId": null,
+          "relatedEntityName": null,
+          "createdAt": "2026-04-30T06:34:58.230326975",
+          "levelName": "RED",
+          "urgent": true
+        },
+        {
+          "id": "7341c78b-1136-44c5-99ea-d75849bdca50",
+          "level": "RED",
+          "category": "department",
+          "title": "行政部 人均产出过低",
+          "message": "行政部 人均销售额仅为 10000.00 元，严重低于标准",
+          "metric": "人均产出",
+          "value": 10000,
+          "threshold": 50000,
+          "gapPercent": null,
+          "suggestion": "建议分析人员效能，考虑调整人员配置或加强培训",
+          "relatedEntityId": null,
+          "relatedEntityName": null,
+          "createdAt": "2026-04-30T06:34:58.230368167",
+          "levelName": "RED",
+          "urgent": true
+        },
+        {
+          "id": "26693c19-fbb3-4a2e-b5c2-555a8b184761",
+          "level": "RED",
+          "category": "department",
+          "title": "销售部 人均产出过低",
+          "message": "销售部 人均销售额仅为 30000.00 元，严重低于标准",
+          "metric": "人均产出",
+          "value": 30000,
+          "threshold": 50000,
+          "gapPercent": null,
+          "suggestion": "建议分析人员效能，考虑调整人员配置或加强培训",
+          "relatedEntityId": null,
+          "relatedEntityName": null,
+          "createdAt": "2026-04-30T06:34:58.230408078",
+          "levelName": "RED",
+          "urgent": true
+        },
+        {
+          "id": "d2e4bdd0-d15c-4573-abb0-362e588960dd",
+          "level": "YELLOW",
+          "category": "finance",
+          "title": "应收账款即将逾期",
+          "message": "客户 大额客户C 应收款 1500000.00 元账龄已达 75 天",
+          "metric": "账龄天数",
+          "value": 75,
+          "threshold": 60,
+          "gapPercent": null,
+          "suggestion": "建议跟进客户付款计划，发送催款提醒",
+          "relatedEntityId": null,
+          "relatedEntityName": null,
+          "createdAt": "2026-04-30T06:34:58.229046576",
+          "levelName": "YELLOW",
+          "urgent": false
+        }
+      ],
+      "recommendations": [
+        {
+          "id": "02bf075c-fcb6-4520-a32d-75e1741b6c60",
+          "type": "SALES_IMPROVEMENT",
+          "title": "缩小销售团队业绩差距",
+          "description": "销售员业绩差异较大，建议加强团队协作",
+          "priority": 1,
+          "impact": "提升团队整体销售能力，增加总销售额",
+          "actionItems": [
+            "安排销冠 陈涛秀 分享成功经验",
+            "对业绩落后人员进行一对一辅导",
+            "建立销售技能提升计划"
+          ],
+          "relatedData": {},
+          "targetId": null,
+          "targetName": null,
+          "createdAt": "2026-04-30T06:34:58.224661173",
+          "typeName": "销售提升",
+          "highPriority": true
+        }
+      ],
+      "aiInsights": null,
+      "generatedAt": "2026-04-30T06:34:58.218936078",
+      "fromCache": false,
+      "cacheExpireAt": null,
+      "dataVersion": "1777502098218",
+      "highPriorityRecommendationCount": 1,
+      "alertCount": 7,
+      "urgentAlertCount": 6
+    }
+  },
+  "_meta": {
+    "name": "dashboard",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/dashboard",
+    "query": {
+      "period": "month"
+    },
+    "factory": "F999",
+    "recordedAt": "2026-04-29T22:34:58.391Z",
+    "javaPort": 10011
+  }
+}

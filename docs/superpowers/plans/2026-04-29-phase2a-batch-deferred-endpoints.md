@@ -130,6 +130,55 @@ with synthetic data" so empty/loaded branches are both covered.
 endpoints ~1 day each (~3 days total) once the bridge pattern is
 documented.
 
+### Calibration data (2026-04-29/30 — `/alerts` marathon close-out)
+
+Actual time spent on the `/alerts` full port marathon, breakdown by phase:
+
+| Phase | Scope | Wall-clock | Commits |
+|---|---|---|---|
+| Kickoff (prior chat) | brainstorm + spec + plan + handoff | ~1.5 h | 3 (`38f4c1ccf`/`41f41fe2e`/`8451d6407`) |
+| Phase A foundation | F999 migration + Java sort fix + threshold bundle + Python loader + date_range + CI parity guard + test env deploy | ~1.5 h | 5 (`90208d24c`/`6ca93ff51`/`fb1fcafb2`/`40e079d65`/`517f4692a`) |
+| Phase B sales | sales generator + route + contract test + 56 calibration goldens + ADR | ~1 h | 4 (`4a86d05f6`/`58af128e0`/`f84101d53`/`9c733c05e`) |
+| Phase C+D+E (chat 3) | trip-rows migration + 15-key Alert dict fix + finance + dept + aggregator generators + 4-way route + 3 contract tests + golden re-record | ~1.5 h | 6 (`b169fb0f0`/`e6fcc1839`/`8aa9e953b`/`788d83e08`/`e01c2f4c7` + this writeback) |
+| **Total** | full port | **~5.5 hours** | **18 commits** |
+
+**T0 estimate**: 1 week (~40 hours). **Actual**: ~5.5 hours.
+**Calibration factor**: 40 / 5.5 ≈ **7.3× faster than estimate**.
+
+#### Why was T0 off
+
+T0 estimated `/alerts` based on the worst-case "1 generator at a time, 2-4 hours each + threshold externalisation". Reality:
+- **F999 fixture pattern unlocked 56 endpoints in one recorder run** — 1 hour of recorder time produces calibration data for the entire analysis subdomain
+- **Plan provided full code snippets** (per `superpowers:writing-plans`) — implementation became mechanical, no design decisions per generator
+- **Subagent-driven for B1 + inline for C1/D1/E1** — both modes effective; inline faster for spec'd-out tasks
+
+#### Refined estimates for analysis subdomain (post-calibration)
+
+Apply the **7.3× calibration factor** with subdomain-specific adjustments:
+
+| Endpoint | T0 (1-week scaling) | Refined estimate | Notes |
+|---|---|---|---|
+| `/recommendations` | 1 week | **~6 hours** | Same `RecommendationServiceImpl` as alerts; reuses F999 + threshold bundle + Decimal helpers |
+| `/analysis/procurement` (1144 LOC) | 1 week | **~8 hours** | Larger service, but DashboardResponse pattern reusable from §4 sister endpoints |
+| `/analysis/region` (1209 LOC) | 1 week | **~8 hours** | Same DashboardResponse pattern |
+| `/analysis/{department,sales,finance,production,quality,inventory}` | 6 weeks | **~30-40 hours** | 6 endpoints × ~5-7 h each (DashboardResponse port + heatmap/ranking shape) |
+| `/analysis/finance/{budget-achievement,yoy-mom,category-comparison}` | 3 days | **~12 hours** | 3 endpoints × ~4 h each (GET→POST bridge pattern; needs ADR) |
+
+**Total refined Phase 2A analysis subdomain**: ~60-70 hours (vs T0 ~10 weeks = 400 hours). **6× faster than T0 estimate.**
+
+#### F999 fixture as calibration multiplier
+
+The F999 synthetic test factory is the highest-leverage artifact of this marathon:
+- 1 migration + 56 recorded goldens = **calibration data for ~56 endpoints** with no per-endpoint recording cost
+- Each future endpoint just monkey-patches its seam(s) + strips volatile fields + deep-equal compares to existing golden
+- Re-record only when underlying Java logic changes (not when adding new endpoints)
+
+Without F999, each endpoint would need its own recording session + golden curation. Estimated savings: **~30 hours across remaining 9 analysis subdomain endpoints**.
+
+#### Spring placeholder substitution gotcha (logged for future)
+
+A real Spring property issue surfaced: `${VAR:DEFAULT}` substitution stored the literal `DISABLED` fallback instead of the `$2b$12$...` bcrypt env var value. Workaround: post-deploy manual UPDATE password_hash. See `docs/adr/2026-04-29-phase2a-synthetic-test-factory-f999.md` Negative consequences. Future endpoints using same env-var-injection pattern should expect this workaround.
+
 ---
 
 ## §5 Suggested execution order (later chats)

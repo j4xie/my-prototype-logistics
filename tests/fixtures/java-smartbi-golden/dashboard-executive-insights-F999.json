@@ -1,0 +1,60 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/dashboard/executive/insights",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T06:34:56.311849404",
+    "data": [
+      {
+        "level": "YELLOW",
+        "category": "数据状态",
+        "message": "当前时间范围内暂无销售数据",
+        "relatedEntity": null,
+        "actionSuggestion": "请上传销售数据或调整时间范围"
+      },
+      {
+        "level": "YELLOW",
+        "category": "销售分析",
+        "message": "赣皖区域销售额最低，仅为830,253.40元，与浙江分部差距显著。",
+        "relatedEntity": "赣皖区域",
+        "actionSuggestion": "建议对赣皖区域进行市场调研，找出销售瓶颈并制定针对性提升计划。"
+      },
+      {
+        "level": "YELLOW",
+        "category": "部门分析",
+        "message": "行政部费用最低，仅为50,000.00元，可能影响日常运营支持。",
+        "relatedEntity": "行政部",
+        "actionSuggestion": "建议检查行政部费用是否充足，避免因预算不足影响基础服务。"
+      },
+      {
+        "level": "INFO",
+        "category": "销售分析",
+        "message": "浙江分部销售额最高，达到3,318,734.30元，远超其他区域。",
+        "relatedEntity": "浙江分部",
+        "actionSuggestion": "建议分析浙江分部的成功经验，并推广至其他区域。"
+      },
+      {
+        "level": "INFO",
+        "category": "部门分析",
+        "message": "销售部部门费用最高，为150,000.00元，研发部和行政部分别为100,000.00元和50,000.00元。",
+        "relatedEntity": "销售部",
+        "actionSuggestion": "建议评估销售部费用投入产出比，确保费用使用效率。"
+      }
+    ]
+  },
+  "_meta": {
+    "name": "dashboard-executive-insights",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/dashboard/executive/insights",
+    "query": {
+      "period": "month"
+    },
+    "factory": "F999",
+    "recordedAt": "2026-04-29T22:34:56.635Z",
+    "javaPort": 10011
+  }
+}

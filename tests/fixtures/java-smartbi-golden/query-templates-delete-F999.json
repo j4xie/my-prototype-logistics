@@ -1,0 +1,18 @@
+{
+  "verb": "DELETE",
+  "path": "/api/mobile/{factory_id}/smart-bi/query-templates/{templateId}",
+  "factory": "F999",
+  "response": {
+    "_skipped": true,
+    "reason": "Destructive op — skip in golden recording pass"
+  },
+  "_meta": {
+    "name": "query-templates-delete",
+    "verb": "DELETE",
+    "path": "/api/mobile/{factory_id}/smart-bi/query-templates/{templateId}",
+    "query": null,
+    "factory": "F999",
+    "recordedAt": "2026-04-29T22:34:48.078Z",
+    "javaPort": 10011
+  }
+}

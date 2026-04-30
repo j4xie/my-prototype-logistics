@@ -267,6 +267,18 @@ const ENDPOINTS = [
     query: { category: 'sales' },
   },
   {
+    name: 'alerts-category-finance',
+    verb: 'GET',
+    path: '/api/mobile/{factory_id}/smart-bi/alerts',
+    query: { category: 'finance' },
+  },
+  {
+    name: 'alerts-category-department',
+    verb: 'GET',
+    path: '/api/mobile/{factory_id}/smart-bi/alerts',
+    query: { category: 'department' },
+  },
+  {
     name: 'recommendations',
     verb: 'GET',
     path: '/api/mobile/{factory_id}/smart-bi/recommendations',
