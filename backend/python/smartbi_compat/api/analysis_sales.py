@@ -59,6 +59,24 @@ GROWTH_RED_THRESHOLD = Decimal("-20")
 GROWTH_YELLOW_THRESHOLD = Decimal("-5")
 
 
+def _alert_level_to_status(alert_level: Optional[str]) -> str:
+    """Mirror Java SalesAnalysisServiceImpl.convertToKPICards line 678-689."""
+    if alert_level == "RED":
+        return "red"
+    if alert_level == "YELLOW":
+        return "yellow"
+    return "green"
+
+
+def _change_direction_to_trend(change_direction: Optional[str]) -> str:
+    """Mirror Java SalesAnalysisServiceImpl.convertToKPICards line 691-703."""
+    if change_direction == "UP":
+        return "up"
+    if change_direction == "DOWN":
+        return "down"
+    return "flat"
+
+
 # ============================================================
 # Section 1: DTO dict factories (FROZEN by foundation spec §4)
 # ============================================================

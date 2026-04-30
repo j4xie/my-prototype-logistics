@@ -441,3 +441,20 @@ class TestOverview:
         assert m.GROWTH_YELLOW_THRESHOLD == Decimal("-5")
         assert m.SCALE == 4
         assert m.DISPLAY_SCALE == 2
+
+    def test_alert_level_to_status_mapping(self):
+        """Java convertToKPICards line 678-689."""
+        from smartbi_compat.api.analysis_sales import _alert_level_to_status
+        assert _alert_level_to_status("RED") == "red"
+        assert _alert_level_to_status("YELLOW") == "yellow"
+        assert _alert_level_to_status("GREEN") == "green"
+        assert _alert_level_to_status(None) == "green"
+        assert _alert_level_to_status("UNKNOWN") == "green"
+
+    def test_change_direction_to_trend_mapping(self):
+        """Java convertToKPICards line 691-703."""
+        from smartbi_compat.api.analysis_sales import _change_direction_to_trend
+        assert _change_direction_to_trend("UP") == "up"
+        assert _change_direction_to_trend("DOWN") == "down"
+        assert _change_direction_to_trend("STABLE") == "flat"
+        assert _change_direction_to_trend(None) == "flat"
