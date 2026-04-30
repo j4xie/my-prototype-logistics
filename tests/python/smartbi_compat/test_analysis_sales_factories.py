@@ -193,3 +193,53 @@ class TestRankingItemDict:
         assert list(result.keys()) == [
             "rank", "name", "value", "target", "completionRate", "alertLevel",
         ]
+
+
+from smartbi_compat.api.analysis_sales import _new_chart_config_dict
+
+
+class TestChartConfigDict:
+    def test_F999_trend_shape(self):
+        """F999 trendChart shape: 7 keys, LINE chart with empty data."""
+        result = _new_chart_config_dict(
+            chart_type="LINE",
+            title="销售趋势",
+            xaxis_field="date",
+            yaxis_field="amount",
+            data=[],
+            options={"showDataLabels": False, "smooth": True},
+        )
+        assert set(result.keys()) == {
+            "chartType", "title", "seriesField", "data", "options",
+            "xaxisField", "yaxisField",
+        }
+        assert result["chartType"] == "LINE"
+        assert result["title"] == "销售趋势"
+        assert result["seriesField"] is None
+        assert result["data"] == []
+        assert result["options"] == {"showDataLabels": False, "smooth": True}
+        assert result["xaxisField"] == "date"
+        assert result["yaxisField"] == "amount"
+
+    def test_lowercase_xaxis(self):
+        """Jackson serializes xAxisField → xaxisField (lowercase a)."""
+        result = _new_chart_config_dict(chart_type="LINE", title="t")
+        assert "xaxisField" in result
+        assert "xAxisField" not in result
+
+    def test_options_can_be_null(self):
+        """Gold-path ChartConfig has options=null (Java doesn't set it)."""
+        result = _new_chart_config_dict(
+            chart_type="PIE", title="占比",
+            xaxis_field="category", yaxis_field="amount",
+            data=[{"category": "x", "amount": Decimal("10")}],
+        )
+        assert result["options"] is None
+
+    def test_key_order(self):
+        result = _new_chart_config_dict(chart_type="LINE", title="t")
+        # Order matches F999 golden observation
+        assert list(result.keys()) == [
+            "chartType", "title", "seriesField", "data", "options",
+            "xaxisField", "yaxisField",
+        ]

@@ -145,6 +145,34 @@ def _new_ranking_item_dict(
     }
 
 
+def _new_chart_config_dict(
+    chart_type: str,
+    title: str,
+    series_field: Optional[str] = None,
+    data: Optional[list] = None,
+    options: Optional[dict] = None,
+    xaxis_field: Optional[str] = None,
+    yaxis_field: Optional[str] = None,
+) -> dict:
+    """Mirror ChartConfig.java @Data getters (7 fields observed in F999).
+
+    Note: `xaxisField` / `yaxisField` are LOWERCASE (Jackson demangles
+    Lombok-generated getXAxisField → "xaxisField"). Verified in F999 golden.
+
+    `options` defaults to None (matches Gold path); legacy stub may pass
+    {"showDataLabels": False, "smooth": True} per F999 observed.
+    """
+    return {
+        "chartType": chart_type,
+        "title": title,
+        "seriesField": series_field,
+        "data": data if data is not None else [],
+        "options": options,
+        "xaxisField": xaxis_field,
+        "yaxisField": yaxis_field,
+    }
+
+
 # ============================================================
 # Section 2: Strip-volatile shared helper
 # ============================================================
