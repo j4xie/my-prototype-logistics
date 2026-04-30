@@ -1144,21 +1144,57 @@ async def _get_profit_trend_chart(
     )
 
 
-async def _get_cost_structure_chart(factory_id: str, range_: DateRange) -> dict:
-    """F999 empty-state — Java getCostStructureChart returns ChartConfig with empty data.
-    A.5 golden verified shape: chartType=PIE, title='成本结构分析',
-    xaxisField='category', yaxisField='value', seriesField=null, data=[],
-    options={showPercentage: true, colors: ["#5470c6", "#91cc75", "#fac858"]}.
+async def _get_cost_structure_chart(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Java FinanceAnalysisServiceImpl.getCostStructureChart line 499-540 1:1 mirror.
+
+    Composite + per-type 共享。Signature changed from (factory_id, range_: DateRange)
+    to (factory_id, start_date, end_date) per Rule 3 (Java getCostStructureChart 签名)。
+    Composite caller (_get_comprehensive_finance_analysis) updated in Phase E.
+
+    F999 empty case: cost_records=[] → totalCost=0 → empty data list with full options。
     """
+    cost_records = await _query_finance_data(factory_id, "COST", start_date, end_date)
+
+    # Java line 507-516: aggregate three cost categories with .abs() defensive (Rule 1)
+    material_cost = sum(
+        (abs(_to_decimal(r["material_cost"])) for r in cost_records
+         if r.get("material_cost") is not None),
+        Decimal("0"),
+    )
+    labor_cost = sum(
+        (abs(_to_decimal(r["labor_cost"])) for r in cost_records
+         if r.get("labor_cost") is not None),
+        Decimal("0"),
+    )
+    overhead_cost = sum(
+        (abs(_to_decimal(r["overhead_cost"])) for r in cost_records
+         if r.get("overhead_cost") is not None),
+        Decimal("0"),
+    )
+
+    total_cost = material_cost + labor_cost + overhead_cost
+
+    # Java line 521-526: data items only if total > 0; empty list otherwise
+    chart_data: list[dict] = []
+    if total_cost > Decimal("0"):
+        chart_data.append(_create_pie_data_item(COST_CATEGORY_MATERIAL, material_cost, total_cost))
+        chart_data.append(_create_pie_data_item(COST_CATEGORY_LABOR,    labor_cost,    total_cost))
+        chart_data.append(_create_pie_data_item(COST_CATEGORY_OVERHEAD, overhead_cost, total_cost))
+
+    # Java line 528-530 LinkedHashMap → Python insertion order
+    options = {
+        "showPercentage": True,
+        "colors": ["#5470c6", "#91cc75", "#fac858"],
+    }
+
     return _new_chart_config_dict(
         chart_type="PIE",
         title="成本结构分析",
         series_field=None,
-        data=[],
-        options={
-            "showPercentage": True,
-            "colors": ["#5470c6", "#91cc75", "#fac858"],
-        },
+        data=chart_data,
+        options=options,
         xaxis_field="category",
         yaxis_field="value",
     )
