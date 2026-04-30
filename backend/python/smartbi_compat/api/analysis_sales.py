@@ -77,6 +77,27 @@ def _change_direction_to_trend(change_direction: Optional[str]) -> str:
     return "flat"
 
 
+def _format_currency(value: Optional[Decimal]) -> str:
+    """Mirror Java SalesAnalysisServiceImpl.formatCurrency line 1255-1260."""
+    if value is None:
+        return "-"
+    quantized = value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    return f"{quantized:,.2f}"
+
+
+def _format_completion_pct(value: Decimal) -> str:
+    """Mirror Java `String.format("%.1f%%", value.doubleValue())` line 236."""
+    quantized = value.quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+    return f"{float(quantized):.1f}%"
+
+
+def _format_growth_pct(value: Decimal) -> str:
+    """Mirror Java `String.format("%+.1f%%", value.doubleValue())` line 255."""
+    quantized = value.quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+    sign = "+" if quantized >= 0 else ""
+    return f"{sign}{float(quantized):.1f}%"
+
+
 # ============================================================
 # Section 1: DTO dict factories (FROZEN by foundation spec §4)
 # ============================================================

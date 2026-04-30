@@ -458,3 +458,30 @@ class TestOverview:
         assert _change_direction_to_trend("DOWN") == "down"
         assert _change_direction_to_trend("STABLE") == "flat"
         assert _change_direction_to_trend(None) == "flat"
+
+    def test_format_currency(self):
+        """Java SalesAnalysisServiceImpl.formatCurrency line 1255-1260."""
+        from smartbi_compat.api.analysis_sales import _format_currency
+        from decimal import Decimal
+        assert _format_currency(Decimal("1234567.89")) == "1,234,567.89"
+        assert _format_currency(Decimal("0.005")) == "0.01"
+        assert _format_currency(Decimal("100")) == "100.00"
+        assert _format_currency(Decimal("-1234.56")) == "-1,234.56"
+        assert _format_currency(None) == "-"
+
+    def test_format_completion_pct(self):
+        """Java line 236 — '%.1f%%' pattern."""
+        from smartbi_compat.api.analysis_sales import _format_completion_pct
+        from decimal import Decimal
+        assert _format_completion_pct(Decimal("85.34")) == "85.3%"
+        assert _format_completion_pct(Decimal("100")) == "100.0%"
+        assert _format_completion_pct(Decimal("0")) == "0.0%"
+        assert _format_completion_pct(Decimal("85.35")) == "85.4%"
+
+    def test_format_growth_pct(self):
+        """Java line 255 — '%+.1f%%' pattern."""
+        from smartbi_compat.api.analysis_sales import _format_growth_pct
+        from decimal import Decimal
+        assert _format_growth_pct(Decimal("12.5")) == "+12.5%"
+        assert _format_growth_pct(Decimal("-12.5")) == "-12.5%"
+        assert _format_growth_pct(Decimal("0")) == "+0.0%"
