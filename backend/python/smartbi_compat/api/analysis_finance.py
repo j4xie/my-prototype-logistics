@@ -618,6 +618,59 @@ async def _query_finance_data(
     return _filter_to_latest_upload(raw_rows)
 
 
+async def _query_finance_sales_fallback(
+    factory_id: str, start_date: date, end_date: date
+) -> list[dict]:
+    """Query smart_bi_sales_data for sales-fallback path (Java line 392-393).
+
+    Used by profit metrics + trendChart when finance_data is empty (餐饮 tenants
+    that uploaded sales Excel but not finance Excel).
+
+    Returns list of dicts with keys: amount, cost, order_date (and other columns
+    present in smart_bi_sales_data — callers extract by key with .get()).
+
+    NOTE: Unlike _query_finance_data, this does NOT call _filter_to_latest_upload.
+    Java's salesDataRepository.findByFactoryIdAndOrderDateBetween returns raw
+    rows without latest-upload filtering — this matches Java behavior for the
+    fallback path.
+    """
+    pool = None
+    try:
+        from smartbi.config import get_pg_pool  # type: ignore
+        pool = await get_pg_pool()
+    except Exception as e:
+        logger.warning(
+            "[sales_fallback] pool acquisition failed factory=%s: %s",
+            factory_id, e,
+        )
+        return []
+
+    if pool is None:
+        logger.warning(
+            "[sales_fallback] pool is None factory=%s; returning empty rows",
+            factory_id,
+        )
+        return []
+
+    if start_date is None or end_date is None:
+        raise ValueError(
+            f"_query_finance_sales_fallback: start_date/end_date required "
+            f"(got {start_date}, {end_date})"
+        )
+
+    sql = """
+        SELECT *
+        FROM smart_bi_sales_data
+        WHERE factory_id = $1
+          AND order_date BETWEEN $2 AND $3
+    """
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(sql, factory_id, start_date, end_date)
+
+    return [dict(r) for r in rows]
+
+
 # ============================================================
 # Section 3: Sub-service stubs (composite path)
 # Phase C.1 fills these with A.2-verified empty-state shapes.
