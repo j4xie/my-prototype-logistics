@@ -57,10 +57,14 @@
 PR-A:
   scripts/record-java-golden.sh                                            [NEW, 通用]
   tests/fixtures/java-smartbi-golden/
-    ├─ analysis-finance-F999-composite.json                              [REWRITE 真 Java]
-    ├─ analysis-finance-F999-profit.json                                 [RENAME from analysis-finance-type-profit-F999 + REWRITE 真 Java]
-    ├─ analysis-finance-F001-profit.json                                 [RENAME from analysis-finance-type-profit-F001 + REWRITE 真 Java]
+    ├─ analysis-finance-F999-composite.json                              [VERIFY-ONLY (I-4 fix)]
+    ├─ analysis-finance-F999-profit.json                                 [RENAME from analysis-finance-type-profit-F999 (verify bytes match live Java)]
+    ├─ analysis-finance-F001-profit.json                                 [RENAME from analysis-finance-type-profit-F001 (verify bytes match live Java)]
     └─ analysis-finance-F{999,001}-{cost,receivable}.json                [RENAME from analysis-finance-type-* (纯 git mv，sister 起点)]
+    # I-4: 重录是 conditional 而非默认。先 verify 既有 golden 与当前 Java live 是否
+    # dict-eq 等价（用 record-java-golden.sh --compare 模式）；如全等则跳过重录。
+    # 现有 composite golden raw `value: 0.0` 与 Apr 30 live record raw `value: 0.00`
+    # 的差异极可能是 json reformat 副作用而非 Java 行为变化。
   backend/python/smartbi_compat/api/analysis_finance.py                   [EDIT]
     + _query_finance_data(factory, record_type: str, start, end)
     + _get_profit_metrics()                          stub → real impl
@@ -72,6 +76,8 @@ PR-A:
     + route handler analysisType=profit 分支          NEW
   tests/python/smartbi_compat/test_analysis_finance_contract.py           [EDIT]
     + class TestAnalysisFinanceProfit (2 tests)
+    ~ test_f999_unimplemented_analysisType_returns_501: drop "profit" from iter list
+       (PR-A makes profit return 200 with real impl; remaining 501s = cost/receivable/budget)
 
 PR-B:
   backend/python/smartbi_compat/api/analysis_finance.py                   [EDIT]
@@ -117,9 +123,17 @@ PR-B:
 ### 3.2 `_get_profit_metrics` 算法（1:1 mirror）
 
 ```python
-async def _get_profit_metrics(factory_id: str, range_: DateRange) -> list[dict]:
-    revenue_records = await _query_finance_data(factory_id, "REVENUE", range_.start_date, range_.end_date)
-    cost_records    = await _query_finance_data(factory_id, "COST",    range_.start_date, range_.end_date)
+async def _get_profit_metrics(
+    factory_id: str, start_date: date, end_date: date
+) -> list[dict]:
+    """
+    I-3 fix: 函数签名改为 `(factory_id, start_date, end_date)` 与 sister
+    `_get_payable_metrics(factory_id, end_date)` 风格一致；不再用 `DateRange` 包装。
+    Java 也是 `getProfitMetrics(String factoryId, LocalDate startDate, LocalDate endDate)`。
+    Composite caller 在 `_get_comprehensive_finance_analysis` 传 `range_.start_date, range_.end_date`。
+    """
+    revenue_records = await _query_finance_data(factory_id, "REVENUE", start_date, end_date)
+    cost_records    = await _query_finance_data(factory_id, "COST",    start_date, end_date)
     has_finance_data = bool(revenue_records or cost_records)
 
     if has_finance_data:
@@ -129,10 +143,16 @@ async def _get_profit_metrics(factory_id: str, range_: DateRange) -> list[dict]:
              if r.get("category") and "收入" in r["category"] and r.get("actual_amount") is not None),
             Decimal("0"),
         )
+        # ⚠️ C-1 fix (reviewer caught): MUST use `is not None`-guarded ternary,
+        # NOT Python `or` truthiness. `Decimal("0") or X` returns X in Python
+        # (Decimal("0") is falsy), but Java's `r.getTotalCost() != null` keeps
+        # Decimal("0"). Same family as `or None` bug self-caught earlier.
         total_cost = sum(
-            (abs(_to_decimal(r.get("total_cost") or r.get("actual_amount")))
+            (abs(_to_decimal(
+                 r["total_cost"] if r.get("total_cost") is not None else r.get("actual_amount")
+             ))
              for r in cost_records
-             if (r.get("total_cost") is not None) or (r.get("actual_amount") is not None)),
+             if r.get("total_cost") is not None or r.get("actual_amount") is not None),
             Decimal("0"),
         )
         net_profit = sum(
@@ -244,7 +264,13 @@ async def _get_profit_metrics(factory_id: str, range_: DateRange) -> list[dict]:
 
 
 def _determine_gross_margin_alert(gross_margin: Decimal) -> str:
-    """Java line 1619-1624. v < 15 RED / v < 25 YELLOW / else GREEN"""
+    """Java line 1619-1624. v < 15 RED / v < 25 YELLOW / else GREEN.
+
+    I-6 note: float(Decimal) 在整数阈值 15/25 上跟 Java doubleValue() 一致。
+    Sister chats 若用 non-exact 阈值（如 75.5），改用 Decimal 比较：
+        if gross_margin < Decimal("75.5"): ...
+    避免浮点边界 corner case。
+    """
     v = float(gross_margin)
     if v < 15: return "RED"
     if v < 25: return "YELLOW"
@@ -252,7 +278,7 @@ def _determine_gross_margin_alert(gross_margin: Decimal) -> str:
 
 
 def _determine_roi_alert(roi: Decimal) -> str:
-    """Java line 1629-1634. v < 0 RED / v < 20 YELLOW / else GREEN"""
+    """Java line 1629-1634. v < 0 RED / v < 20 YELLOW / else GREEN. 同上 I-6 note。"""
     v = float(roi)
     if v < 0: return "RED"
     if v < 20: return "YELLOW"
@@ -383,9 +409,11 @@ def _get_period_key(d: date, period: str) -> str:
     if period == "DAY":
         return d.strftime("%Y-%m-%d")
     if period == "WEEK":
-        # ISO week-of-year, 2-digit zero-pad
-        iso_year, iso_week, _ = d.isocalendar()
-        return f"{iso_year}-W{iso_week:02d}"
+        # M-2 fix: Java line 1478 用 `date.getYear()` (calendar year)，**不是** ISO year。
+        # ISO year 在跨年 boundary 与 calendar year 不一致（如 2024-12-30 calendar=2024
+        # 但 ISO=2025-W01）。为对齐 Java，用 calendar year：
+        _iso_year, iso_week, _iso_day = d.isocalendar()
+        return f"{d.year}-W{iso_week:02d}"
     if period == "MONTH":
         return d.strftime("%Y-%m")
     if period == "QUARTER":
@@ -421,14 +449,17 @@ async def _query_finance_data(
     if pool is None:
         return []
 
+    # I-5 fix: explicit precondition. Java surfaces NPE via controller catch-all;
+    # asyncpg with None coerces to NULL → BETWEEN NULL AND NULL → silent zero rows.
+    if start_date is None or end_date is None:
+        raise ValueError(
+            f"_query_finance_data: start_date/end_date required (got {start_date}, {end_date})"
+        )
+
+    # I-2 fix: SELECT * 真的取所有字段，sister chats 按需用各自的列。
+    # Entity 见 SmartBiFinanceData.java（25+ 列）。dict.get 容忍未来加列。
     sql = """
-        SELECT id, factory_id, upload_id, record_date, record_type,
-               department, category, customer_name, supplier_name,
-               material_cost, labor_cost, overhead_cost, total_cost,
-               receivable_amount, collection_amount, aging_days,
-               payable_amount, payment_amount,
-               budget_amount, actual_amount, variance_amount,
-               due_date, created_at, updated_at
+        SELECT *
         FROM smart_bi_finance_data
         WHERE factory_id = $1
           AND record_type = $2
@@ -520,8 +551,8 @@ async def _get_profit_analysis(
     Recorded F999 Jackson order (HashMap hash, NOT put-order):
       [endDate, metrics, trendChart, startDate]
     """
-    range_ = DateRange.custom(start_date, end_date)
-    metrics    = await _get_profit_metrics(factory_id, range_)
+    # I-3 fix: 两个 sub-service 都用 (factory, start, end) 一致签名
+    metrics     = await _get_profit_metrics(factory_id, start_date, end_date)
     trend_chart = await _get_profit_trend_chart(factory_id, start_date, end_date, "MONTH")
     return {
         "endDate":    end_date.isoformat(),
@@ -605,7 +636,7 @@ if analysisType == "profit":
 [overview, costStructure, dateRange, generatedAt, profitMetrics, receivableAging]
 ```
 
-需要重录：现有 golden raw 显示 `value: 0.0`（单位精度），但 live Java 端 emit `0.00` raw（双位精度）— 两者 dict-eq 下都通过，但 ground truth 对齐有价值（strict-byte 升级时再回头免重录）。
+**I-4 fix**: composite golden 改 verify-only。先用 `record-java-golden.sh --compare` 模式对比既有 golden 与 live Java；dict-eq 通过则保留既有 golden（不动）。raw 字节差 `0.0` vs `0.00` 大概率是历史 json.dump reformat 副作用而非 Java 行为变化，不是 ground-truth drift。strict-byte gate 升级时另行硬化。
 
 ---
 
@@ -689,6 +720,48 @@ monkeypatch.setattr(
 
 PR-A 部署后手动跑一次 F001 verify。Sister chats 部署后同款 smoke。
 
+### 5.5 `scripts/record-java-golden.sh` CLI 签名（I-7 fix）
+
+```
+Usage:
+  record-java-golden.sh --factory FACTORY --path PATH --query QUERY --out OUT [--compare]
+
+Required:
+  --factory F999             Factory ID (drives JWT factoryId payload)
+  --path /api/mobile/.../X   API path (factory id 已含在 path 里也 OK)
+  --query "k1=v1&k2=v2"      URL query string，不带 leading "?"
+  --out tests/fixtures/...   输出 JSON 路径（相对仓库根）
+
+Optional:
+  --compare                  对比模式：录 Java 真值 + 同时 hit Python 8084 部署后端点
+                            做 dict-eq diff；不写 --out 文件，只 stdout 报差异
+                            退出码：0 = dict-eq 等价；1 = 差异；2 = 调用失败
+  --java-port 10011          覆盖默认 10011 (Java test env)
+  --python-port 8084         覆盖默认 8084 (Python test env)
+  --jwt-secret-file          覆盖默认 /www/wwwroot/cretas/.env.test 读 JWT_SECRET
+
+行为:
+  1. SSH 到 47.100.235.168 读 JWT_SECRET (server-side 读 .env.test)
+  2. local 用 Python+PyJWT 生 1h 期 token
+  3. SSH ahead curl 127.0.0.1:$JAVA_PORT (10011 防火墙仅对 nginx 开放)
+  4. raw response 写 --out（无 _meta envelope；纯 Java response）
+  5. --compare 时 also curl :$PYTHON_PORT 同 endpoint，json.load + dict-eq diff
+
+Examples:
+  # PR-A 录 profit golden
+  ./scripts/record-java-golden.sh \
+    --factory F999 --path /api/mobile/F999/smart-bi/analysis/finance \
+    --query "startDate=2025-01-01&endDate=2025-12-31&analysisType=profit" \
+    --out tests/fixtures/java-smartbi-golden/analysis-finance-F999-profit.json
+
+  # 部署后 F001 smoke
+  ./scripts/record-java-golden.sh --compare \
+    --factory F001 --path /api/mobile/F001/smart-bi/analysis/finance \
+    --query "startDate=2025-01-01&endDate=2025-12-31&analysisType=profit"
+```
+
+Sister chats 直接 reuse，零修改。
+
 ---
 
 ## 6. Byte gate 语义说明
@@ -770,7 +843,7 @@ PR-A 与 PR-B 同 chat、同 worktree、同 branch family（sequential rebase）
 | Real impl swap 后 composite gate 失败（Decimal 精度差异） | dict-eq 容忍 `0/0.0/0.00`；先跑 baseline 确认；失败则 debug 而非回滚 |
 | `Map.of(3)` Jackson 顺序在 Java 版本升级时变化 | Golden 已录死；Java 升级 → 失败 → 重录（明确流程） |
 | `_query_finance_data` SELECT * 字段变化（新加列） | 上层 only 取已知 key；新列出现不破坏（dict.get 容忍） |
-| Sister chats 复制 sales fallback pattern 时漏 `.abs()` | 文档 + sister chat handoff prompt 明示 |
+| Sister chats 误以为 trendChart sales-fallback 也需 `.abs()` 而误加 | I-1: Java metrics-fallback 用 `.abs()`，但 trendChart sales-fallback 不用（`aggregateProfitByPeriod` line 1431-1434 直接 `revenue.subtract(cost)` 不取 abs）。**这是 Java 真不一致**，sister chats 不要"修正"。文档 + sister handoff prompt 明示这个不对称 |
 | record-java-golden.sh `--compare` 模式后置（非 CI） | 部署后手动跑；脚本入仓但不进 pipeline |
 | F002 / qhj_prod 餐饮租户 finance Excel 没填 → Python 永远 0 | PR-B sales fallback 即为修；T6 cutover 前必须 PR-B 完成 |
 
