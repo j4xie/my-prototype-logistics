@@ -44,6 +44,350 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # ============================================================
+# Section 0: Legacy-path constants (mirror Java SalesAnalysisServiceImpl.java line 64-74)
+# ============================================================
+# Precision (Java line 64-66)
+SCALE = 4              # intermediate division precision
+DISPLAY_SCALE = 2      # final value precision
+
+# Alert thresholds (Java line 69-74)
+TARGET_RED_THRESHOLD = Decimal("60")
+TARGET_YELLOW_THRESHOLD = Decimal("85")
+MARGIN_RED_THRESHOLD = Decimal("15")
+MARGIN_YELLOW_THRESHOLD = Decimal("25")
+GROWTH_RED_THRESHOLD = Decimal("-20")
+GROWTH_YELLOW_THRESHOLD = Decimal("-5")
+
+
+def _alert_level_to_status(alert_level: Optional[str]) -> str:
+    """Mirror Java SalesAnalysisServiceImpl.convertToKPICards line 678-689."""
+    if alert_level == "RED":
+        return "red"
+    if alert_level == "YELLOW":
+        return "yellow"
+    return "green"
+
+
+def _change_direction_to_trend(change_direction: Optional[str]) -> str:
+    """Mirror Java SalesAnalysisServiceImpl.convertToKPICards line 691-703."""
+    if change_direction == "UP":
+        return "up"
+    if change_direction == "DOWN":
+        return "down"
+    return "flat"
+
+
+def _format_currency(value: Optional[Decimal]) -> str:
+    """Mirror Java SalesAnalysisServiceImpl.formatCurrency line 1255-1260."""
+    if value is None:
+        return "-"
+    quantized = value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    return f"{quantized:,.2f}"
+
+
+def _format_completion_pct(value: Decimal) -> str:
+    """Mirror Java `String.format("%.1f%%", value.doubleValue())` line 236."""
+    quantized = value.quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+    return f"{float(quantized):.1f}%"
+
+
+def _format_growth_pct(value: Decimal) -> str:
+    """Mirror Java `String.format("%+.1f%%", value.doubleValue())` line 255.
+
+    Java's `%+` flag prepends '+' only when the formatted number begins with a digit
+    (not when it begins with '-' from negative zero). We replicate by inspecting
+    the post-format string for a leading minus sign.
+    """
+    quantized = value.quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+    formatted = f"{float(quantized):.1f}"
+    if formatted.startswith("-"):
+        return f"{formatted}%"
+    return f"+{formatted}%"
+
+
+def _calculate_completion_rate(actual: Decimal, target: Optional[Decimal]) -> Decimal:
+    """Mirror Java SalesAnalysisServiceImpl.calculateCompletionRate line 1166-1171.
+
+    target null OR 0 → returns Decimal("0") (NOT scaled — matches Java BigDecimal.ZERO).
+    Otherwise: (actual / target * 100).quantize(SCALE=4, HALF_UP).
+    """
+    if target is None or target == Decimal("0"):
+        return Decimal("0")
+    return (actual / target * Decimal("100")).quantize(
+        Decimal("0.0001"), rounding=ROUND_HALF_UP,
+    )
+
+
+def _calculate_mom_growth(current: Optional[Decimal], previous: Optional[Decimal]) -> Decimal:
+    """Mirror Java MetricCalculatorServiceImpl.calculateMomGrowth line 425-438.
+
+    Edge cases:
+      - previous null OR 0: return Decimal(100) if current > 0 else Decimal(0)
+      - current null:       return Decimal(-100)
+      - normal:             (current - previous) / abs(previous) * 100,
+                            quantized to DISPLAY_SCALE=2, HALF_UP
+    """
+    if previous is None or previous == Decimal("0"):
+        if current is not None and current > Decimal("0"):
+            return Decimal("100")
+        return Decimal("0")
+    if current is None:
+        return Decimal("-100")
+    return ((current - previous) / abs(previous) * Decimal("100")).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP,
+    )
+
+
+def _new_metric_result_dict(
+    metric_code: Optional[str] = None,
+    metric_name: Optional[str] = None,
+    value: Optional[Decimal] = None,
+    formatted_value: Optional[str] = None,
+    unit: Optional[str] = None,
+    change_percent: Optional[Decimal] = None,
+    change_direction: Optional[str] = None,
+    change_value: Optional[Decimal] = None,
+    alert_level: str = "GREEN",
+    dimension_value: Optional[str] = None,
+    description: Optional[str] = None,
+) -> dict:
+    """Mirror MetricResult.java @Data getters (11 fields per spec §4).
+
+    Used as intermediate representation; converted to KPICard via
+    _convert_metric_results_to_kpi_cards before insertion into DashboardResponse.kpiCards.
+    """
+    return {
+        "metricCode": metric_code,
+        "metricName": metric_name,
+        "value": value,
+        "formattedValue": formatted_value,
+        "unit": unit,
+        "changePercent": change_percent,
+        "changeDirection": change_direction,
+        "changeValue": change_value,
+        "alertLevel": alert_level,
+        "dimensionValue": dimension_value,
+        "description": description,
+    }
+
+
+# ============================================================
+# Section 0.5: Legacy SQL aggregate helpers (Java repo mirror)
+# ============================================================
+# Mirror SmartBiSalesDataRepository methods for the legacy fallback path
+# (when Gold path is unavailable / disabled). Each helper is monkey-patchable
+# at module level via _get_sync_engine for unit testing without standing up
+# a Postgres instance.
+
+
+def _get_sync_engine():
+    """Module-level seam wrapping the SQLAlchemy engine acquisition.
+
+    Indirection lets tests monkey-patch at this module's namespace.
+    Production: returns the module-level `engine` from
+    smartbi.database.connection — the same SQLAlchemy engine the existing
+    _query_sales_data helper in smartbi_compat.api.analysis transitively
+    uses (via get_db_context). Per Phase A.3 verification (2026-04-30),
+    smart_bi_sales_data lives in `cretas_db`; the `engine`'s target DB is
+    determined by the `postgres_db` setting (env-driven, defaults to
+    `smartbi_db` in dev but is set to `cretas_db` in deployments where
+    smart_bi_sales_data resides).
+    """
+    from smartbi.database.connection import engine
+    if engine is None:
+        raise RuntimeError(
+            "PostgreSQL engine not available — postgres_enabled is False "
+            "or connection setup failed at module import time."
+        )
+    return engine
+
+
+_KPI_SUMMARY_SQL = text("""
+    SELECT
+      COALESCE(SUM(amount), 0)         AS total_sales,
+      COALESCE(SUM(quantity), 0)       AS total_quantity,
+      COALESCE(SUM(profit), 0)         AS total_profit,
+      COALESCE(SUM(cost), 0)           AS total_cost,
+      COALESCE(SUM(monthly_target), 0) AS total_target,
+      COUNT(DISTINCT product_id)       AS order_count
+    FROM smart_bi_sales_data
+    WHERE factory_id = :factory_id
+      AND order_date BETWEEN :start_date AND :end_date
+""")
+
+
+async def _query_sales_aggregates(
+    factory_id: str, start_date: date, end_date: date,
+) -> Optional[tuple]:
+    """Mirror SmartBiSalesDataRepository.findKpiSummary line 85-92.
+
+    Returns 6-tuple (total_sales, total_quantity, total_profit, total_cost,
+    total_target, order_count) — Decimal for first 5, int for last.
+    Returns None if engine acquisition fails or no row.
+    Wrapped in asyncio.to_thread for sync SQLAlchemy compat.
+    """
+    def _exec():
+        engine = _get_sync_engine()
+        with engine.connect() as conn:
+            row = conn.execute(_KPI_SUMMARY_SQL, {
+                "factory_id": factory_id,
+                "start_date": start_date,
+                "end_date": end_date,
+            }).fetchone()
+            if row is None:
+                return None
+            return (row[0], row[1], row[2], row[3], row[4], row[5])
+    try:
+        return await asyncio.to_thread(_exec)
+    except Exception as e:
+        logger.warning(
+            "[legacy] _query_sales_aggregates failed factory=%s: %s",
+            factory_id, e,
+        )
+        return None
+
+
+async def _query_sales_aggregates_previous_period(
+    factory_id: str, start_date: date, end_date: date,
+) -> Optional[tuple]:
+    """Same query as _query_sales_aggregates with date range shifted -1 month.
+
+    Mirrors Java line 242-243: findKpiSummary(factoryId, startDate.minusMonths(1),
+    endDate.minusMonths(1)). Used only for MoM growth KPI.
+
+    Uses dateutil.relativedelta(months=-1) to match LocalDate.minusMonths semantic.
+    """
+    from dateutil.relativedelta import relativedelta
+    prev_start = start_date - relativedelta(months=1)
+    prev_end = end_date - relativedelta(months=1)
+    return await _query_sales_aggregates(factory_id, prev_start, prev_end)
+
+
+_TOP_SALESPERSONS_SQL = text("""
+    SELECT salesperson_name,
+           COALESCE(SUM(amount), 0)   AS total_amount,
+           COALESCE(SUM(quantity), 0) AS total_quantity
+    FROM smart_bi_sales_data
+    WHERE factory_id = :factory_id
+      AND order_date BETWEEN :start_date AND :end_date
+      AND salesperson_name IS NOT NULL
+    GROUP BY salesperson_name
+    ORDER BY SUM(amount) DESC
+""")
+
+
+async def _query_top_salespersons_aggregate(
+    factory_id: str, start_date: date, end_date: date,
+) -> list[tuple]:
+    """Mirror SmartBiSalesDataRepository.findSalesBySalesperson line 45-50.
+
+    Returns list of (salesperson_name, total_amount, total_quantity) ordered
+    DESC. Filters null name at SQL level. Caller is responsible for top-10
+    truncation (Java buildRankingsFromAggregates line 321).
+    """
+    def _exec():
+        engine = _get_sync_engine()
+        with engine.connect() as conn:
+            return [
+                (r[0], r[1], r[2])
+                for r in conn.execute(_TOP_SALESPERSONS_SQL, {
+                    "factory_id": factory_id,
+                    "start_date": start_date,
+                    "end_date": end_date,
+                })
+            ]
+    try:
+        return await asyncio.to_thread(_exec)
+    except Exception as e:
+        logger.warning(
+            "[legacy] _query_top_salespersons_aggregate failed factory=%s: %s",
+            factory_id, e,
+        )
+        return []
+
+
+_DAILY_SALES_TREND_SQL = text("""
+    SELECT order_date,
+           COALESCE(SUM(amount), 0)   AS total_amount,
+           COALESCE(SUM(quantity), 0) AS total_quantity
+    FROM smart_bi_sales_data
+    WHERE factory_id = :factory_id
+      AND order_date BETWEEN :start_date AND :end_date
+    GROUP BY order_date
+    ORDER BY order_date
+""")
+
+
+async def _query_daily_sales_trend_aggregate(
+    factory_id: str, start_date: date, end_date: date,
+) -> list[tuple]:
+    """Mirror SmartBiSalesDataRepository.findDailySalesTrend line 97-102.
+
+    Returns list of (order_date, total_amount, total_quantity) ordered ASC.
+    """
+    def _exec():
+        engine = _get_sync_engine()
+        with engine.connect() as conn:
+            return [
+                (r[0], r[1], r[2])
+                for r in conn.execute(_DAILY_SALES_TREND_SQL, {
+                    "factory_id": factory_id,
+                    "start_date": start_date,
+                    "end_date": end_date,
+                })
+            ]
+    try:
+        return await asyncio.to_thread(_exec)
+    except Exception as e:
+        logger.warning(
+            "[legacy] _query_daily_sales_trend_aggregate failed factory=%s: %s",
+            factory_id, e,
+        )
+        return []
+
+
+_CATEGORY_DISTRIBUTION_SQL = text("""
+    SELECT product_category,
+           COALESCE(SUM(amount), 0) AS total_amount
+    FROM smart_bi_sales_data
+    WHERE factory_id = :factory_id
+      AND order_date BETWEEN :start_date AND :end_date
+    GROUP BY product_category
+    ORDER BY SUM(amount) DESC
+""")
+
+
+async def _query_category_distribution_aggregate(
+    factory_id: str, start_date: date, end_date: date,
+) -> list[tuple]:
+    """Mirror SmartBiSalesDataRepository.findSalesByProductCategory line 117-122.
+
+    Returns list of (product_category, total_amount) ordered DESC.
+    NULL category preserved — Java buildPieChartFromAggregates line 294
+    substitutes "未分类" at chart-build time (handled by Phase D.3 _build_legacy_category_chart).
+    """
+    def _exec():
+        engine = _get_sync_engine()
+        with engine.connect() as conn:
+            return [
+                (r[0], r[1])
+                for r in conn.execute(_CATEGORY_DISTRIBUTION_SQL, {
+                    "factory_id": factory_id,
+                    "start_date": start_date,
+                    "end_date": end_date,
+                })
+            ]
+    try:
+        return await asyncio.to_thread(_exec)
+    except Exception as e:
+        logger.warning(
+            "[legacy] _query_category_distribution_aggregate failed factory=%s: %s",
+            factory_id, e,
+        )
+        return []
+
+
+# ============================================================
 # Section 1: DTO dict factories (FROZEN by foundation spec §4)
 # ============================================================
 # Populated by Tasks C.3 - C.7
@@ -329,6 +673,300 @@ def _new_kpi_card_dict(
 
 
 # ============================================================
+# Section 1.5: Legacy KPI cards builder + converter (Java mirror)
+# ============================================================
+
+# Java MetricCalculatorService constants (line 30-36)
+_METRIC_SALES_AMOUNT = "SALES_AMOUNT"
+_METRIC_ORDER_COUNT = "ORDER_COUNT"
+_METRIC_AVG_ORDER_VALUE = "AVG_ORDER_VALUE"
+_METRIC_TARGET_COMPLETION = "TARGET_COMPLETION"
+_METRIC_MOM_GROWTH = "MOM_GROWTH"
+
+
+def _determine_completion_alert_level(completion_rate: Decimal) -> str:
+    """Java line 1176-1184."""
+    if completion_rate < TARGET_RED_THRESHOLD:
+        return "RED"
+    if completion_rate < TARGET_YELLOW_THRESHOLD:
+        return "YELLOW"
+    return "GREEN"
+
+
+def _determine_growth_alert_level(growth: Decimal) -> str:
+    """Java line 1215-1223."""
+    if growth < GROWTH_RED_THRESHOLD:
+        return "RED"
+    if growth < GROWTH_YELLOW_THRESHOLD:
+        return "YELLOW"
+    return "GREEN"
+
+
+def _determine_change_direction(change_percent: Optional[Decimal]) -> str:
+    """Java line 1228-1239: null/0 → STABLE, >0 → UP, <0 → DOWN."""
+    if change_percent is None or change_percent == Decimal("0"):
+        return "STABLE"
+    return "UP" if change_percent > Decimal("0") else "DOWN"
+
+
+async def _build_kpi_cards_from_aggregates(
+    factory_id: str,
+    start_date: date,
+    end_date: date,
+    total_sales: Decimal,
+    total_quantity: Decimal,
+    total_profit: Decimal,
+    total_cost: Decimal,
+    total_target: Decimal,
+    order_count: int,
+) -> list[dict]:
+    """Mirror Java SalesAnalysisServiceImpl.buildKpiFromAggregates line 193-264.
+
+    Returns 4 or 5 MetricResult dicts (MoM 5th only when previous_period_sales > 0).
+    """
+    cards: list[dict] = []
+
+    # KPI 1: SALES_AMOUNT
+    cards.append(_new_metric_result_dict(
+        metric_code=_METRIC_SALES_AMOUNT,
+        metric_name="总销售额",
+        value=total_sales.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+        formatted_value=_format_currency(total_sales),
+        unit="元",
+        alert_level="GREEN",
+    ))
+
+    # KPI 2: ORDER_COUNT
+    cards.append(_new_metric_result_dict(
+        metric_code=_METRIC_ORDER_COUNT,
+        metric_name="订单数",
+        value=Decimal(order_count),
+        formatted_value=f"{order_count:,d}",
+        unit="单",
+        alert_level="GREEN",
+    ))
+
+    # KPI 3: AVG_ORDER_VALUE
+    if order_count > 0:
+        avg_order = (total_sales / Decimal(order_count)).quantize(
+            Decimal("0.0001"), rounding=ROUND_HALF_UP,
+        )
+    else:
+        avg_order = Decimal("0")
+    cards.append(_new_metric_result_dict(
+        metric_code=_METRIC_AVG_ORDER_VALUE,
+        metric_name="客单价",
+        value=avg_order.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+        formatted_value=_format_currency(avg_order),
+        unit="元",
+        alert_level="GREEN",
+    ))
+
+    # KPI 4: TARGET_COMPLETION
+    completion_rate = _calculate_completion_rate(total_sales, total_target)
+    cards.append(_new_metric_result_dict(
+        metric_code=_METRIC_TARGET_COMPLETION,
+        metric_name="目标完成率",
+        value=completion_rate.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+        formatted_value=_format_completion_pct(completion_rate),
+        unit="%",
+        alert_level=_determine_completion_alert_level(completion_rate),
+    ))
+
+    # KPI 5: MOM_GROWTH (conditional — Java line 249)
+    prev = await _query_sales_aggregates_previous_period(factory_id, start_date, end_date)
+    previous_sales = prev[0] if prev is not None else Decimal("0")
+    if previous_sales > Decimal("0"):
+        mom_growth = _calculate_mom_growth(total_sales, previous_sales)
+        cards.append(_new_metric_result_dict(
+            metric_code=_METRIC_MOM_GROWTH,
+            metric_name="环比增长",
+            value=mom_growth.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+            formatted_value=_format_growth_pct(mom_growth),
+            unit="%",
+            change_percent=mom_growth,
+            change_direction=_determine_change_direction(mom_growth),
+            alert_level=_determine_growth_alert_level(mom_growth),
+        ))
+
+    return cards
+
+
+def _convert_metric_results_to_kpi_cards(metrics: list[dict]) -> list[dict]:
+    """Mirror Java SalesAnalysisServiceImpl.convertToKPICards line 674-720."""
+    cards = []
+    for m in metrics:
+        formatted = m.get("formattedValue")
+        raw_decimal = m.get("value")
+        if formatted is not None:
+            display_value = formatted
+        elif raw_decimal is not None:
+            display_value = str(raw_decimal)
+        else:
+            display_value = "-"
+
+        cards.append(_new_kpi_card_dict(
+            key=m.get("metricCode"),
+            title=m.get("metricName"),
+            value=display_value,
+            raw_value=raw_decimal,
+            unit=m.get("unit"),
+            change=m.get("changeValue"),
+            change_rate=m.get("changePercent"),
+            trend=_change_direction_to_trend(m.get("changeDirection")),
+            status=_alert_level_to_status(m.get("alertLevel")),
+            description=m.get("description"),
+        ))
+    return cards
+
+
+def _generate_ai_insights_from_metrics(
+    metrics: list[dict],
+    total_sales: Decimal,
+    total_profit: Decimal,
+    order_count: int,
+) -> list[dict]:
+    """Mirror Java SalesAnalysisServiceImpl.generateAiInsightsFromMetrics line 329-351.
+
+    Emits 1-2 INFO insights from aggregates path:
+      1. ALWAYS: 销售概况 ("期间总销售额 X，共 Y 笔订单，总利润 Z")
+      2. IF totalSales > 0: 利润率分析 ("综合利润率 N.N%")
+
+    NOTE: `metrics` param unused in from-aggregates path (Java keeps it for symmetry).
+    Q-2 grep RESOLVED 2026-04-30: SalesAnalysisServiceImpl.generateAiInsights
+    line 998-1083 (4-branch full version) is dead code; not ported.
+    """
+    insights: list[dict] = []
+    insights.append(_new_ai_insight_dict(
+        level="INFO",
+        category="销售概况",
+        message=(
+            f"期间总销售额 {_format_currency(total_sales)}，"
+            f"共 {order_count:,d} 笔订单，"
+            f"总利润 {_format_currency(total_profit)}"
+        ),
+    ))
+    if total_sales > Decimal("0"):
+        # Java line 342-343: SCALE=4 division then format with %.1f
+        profit_rate = (total_profit * Decimal("100") / total_sales).quantize(
+            Decimal("0.0001"), rounding=ROUND_HALF_UP,
+        )
+        insights.append(_new_ai_insight_dict(
+            level="INFO",
+            category="利润率分析",
+            message=f"综合利润率 {_format_completion_pct(profit_rate)}",
+        ))
+    return insights
+
+
+def _generate_suggestions_from_metrics(
+    metrics: list[dict],
+    total_sales: Decimal,
+    total_target: Decimal,
+) -> list[str]:
+    """Mirror Java SalesAnalysisServiceImpl.generateSuggestionsFromMetrics line 356-365.
+
+    Emits 1 suggestion when completionRate < 80 AND target > 0.
+    Threshold "80" is hardcoded literal in Java line 361 (NOT TARGET_YELLOW=85).
+    """
+    suggestions: list[str] = []
+    if total_target <= Decimal("0"):
+        return suggestions
+    completion_rate = _calculate_completion_rate(total_sales, total_target)
+    if completion_rate < Decimal("80"):
+        suggestions.append("目标完成率不足80%，建议加强销售推进")
+    return suggestions
+
+
+async def _build_legacy_rankings_dict(
+    factory_id: str, start_date: date, end_date: date,
+) -> dict:
+    """Y-a (Q-1 RESOLVED 2026-04-30): legacy fills overview.rankings.salesperson.
+
+    Mirror Java getSalesOverview line 158-161 + buildRankingsFromAggregates line 310-324:
+      - English key "salesperson" (Java line 161)
+      - top-10 truncation (Java line 321)
+      - rank/name/value populated; target/completionRate/alertLevel left null
+
+    Returns {"salesperson": [...]} even when list empty — matches Java map emit.
+    """
+    rows = await _query_top_salespersons_aggregate(factory_id, start_date, end_date)
+    items: list[dict] = []
+    for i, (name, amount, _quantity) in enumerate(rows[:10], start=1):
+        if name is None:
+            continue
+        items.append(_new_ranking_item_dict(
+            rank=i,
+            name=str(name),
+            value=_to_decimal(amount).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+        ))
+    return {"salesperson": items}
+
+
+async def _build_legacy_trend_chart(
+    factory_id: str, start_date: date, end_date: date,
+) -> Optional[dict]:
+    """Y-a: legacy fills overview.charts['销售趋势'].
+
+    Mirror Java buildTrendChartFromAggregates line 269-285:
+      - chartType="LINE", title="销售趋势" (Chinese)
+      - xaxisField="date", yaxisField="amount"
+      - data points: {date, amount, quantity} (3 keys; Gold has only 2)
+      - options/seriesField = None
+      - Returns None when query empty
+    """
+    rows = await _query_daily_sales_trend_aggregate(factory_id, start_date, end_date)
+    if not rows:
+        return None
+    data = [
+        {
+            "date": d.isoformat() if hasattr(d, "isoformat") else str(d),
+            "amount": _to_decimal(amount).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+            "quantity": _to_decimal(quantity).quantize(Decimal("1"), rounding=ROUND_HALF_UP),
+        }
+        for d, amount, quantity in rows
+    ]
+    return _new_chart_config_dict(
+        chart_type="LINE",
+        title="销售趋势",
+        xaxis_field="date",
+        yaxis_field="amount",
+        data=data,
+        options=None,
+    )
+
+
+async def _build_legacy_category_chart(
+    factory_id: str, start_date: date, end_date: date,
+) -> Optional[dict]:
+    """Y-a: legacy fills overview.charts['产品分布'].
+
+    Mirror Java buildPieChartFromAggregates line 290-305:
+      - chartType="PIE", title="产品分布"
+      - null category → "未分类" (Java line 294)
+      - Returns None when query empty
+    """
+    rows = await _query_category_distribution_aggregate(factory_id, start_date, end_date)
+    if not rows:
+        return None
+    data = [
+        {
+            "category": str(category) if category is not None else "未分类",
+            "amount": _to_decimal(amount).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+        }
+        for category, amount in rows
+    ]
+    return _new_chart_config_dict(
+        chart_type="PIE",
+        title="产品分布",
+        xaxis_field="category",
+        yaxis_field="amount",
+        data=data,
+        options=None,
+    )
+
+
+# ============================================================
 # Section 2: Strip-volatile shared helper
 # ============================================================
 
@@ -583,14 +1221,13 @@ async def _build_from_gold_with_charts(
     return base
 
 
-async def _build_legacy_sales_overview(factory_id: str, range_: DateRange) -> dict:
-    """Legacy fallback placeholder — overview spec replaces with real impl.
+def _build_empty_dashboard() -> dict:
+    """Mirror Java SalesAnalysisServiceImpl.buildEmptyDashboard line 1145-1159.
 
-    Returns F999 empty-state DashboardResponse matching `buildEmptyDashboard`
-    Java line 1145-1159: 1 YELLOW insight + 1 suggestion + 16-field shape.
-
-    This is the legacy SalesAnalysisServiceImpl.getSalesOverview path; will be
-    populated by overview spec with real KPI computation from sales data.
+    Used by:
+      - F999 path (legacy SQL returns 0 rows or all-zero aggregate)
+      - Gold-empty fallback (gold spec already returns this shape via _get_sales_overview)
+      - any branch where total_sales=0 AND order_count=0 (Java line 131)
     """
     return _new_dashboard_response_dict(
         ai_insights=[
@@ -602,6 +1239,96 @@ async def _build_legacy_sales_overview(factory_id: str, range_: DateRange) -> di
             ),
         ],
         suggestions=["请先上传销售数据以开始分析"],
+        last_updated=_utc_now_iso(),
+    )
+
+
+async def _build_legacy_sales_overview(factory_id: str, range_: DateRange) -> dict:
+    """Real legacy impl — mirrors Java SalesAnalysisServiceImpl.getSalesOverview
+    line 114-175.
+
+    Triggered by _get_sales_overview when Gold path returns None or fails.
+    Order of operations:
+      1. Aggregate query (_query_sales_aggregates) — 6-tuple
+      2. Empty checks → _build_empty_dashboard (Java line 120-122 + 131-134)
+      3. _build_kpi_cards_from_aggregates (4-5 KPIs + previous-period query for MoM)
+      4. _convert_metric_results_to_kpi_cards (alertLevel→status mapping)
+      5. Y-a (Q-1 RESOLVED 2026-04-30): nested rankings + charts via SQL aggregates
+         (mirror Java line 142-156 — front-end web-admin SalesAnalysis.vue:720
+         reads `overview?.rankings || data.rankings` so nested fill is required
+         for legacy non-empty UI to display)
+      6. _generate_ai_insights_from_metrics (B: 2-INFO only; full 4-branch is
+         dead code per Q-2 grep RESOLVED 2026-04-30)
+      7. _generate_suggestions_from_metrics (1 conditional suggestion)
+    """
+    # Q-2 grep 2026-04-30: SalesAnalysisServiceImpl.generateAiInsights line 998-1083
+    # is dead code (0 callers + parameter signature mismatch with aggregates path);
+    # not ported. If Java wires it up later, port then.
+
+    aggregates = await _query_sales_aggregates(factory_id, range_.start_date, range_.end_date)
+    if aggregates is None or len(aggregates) < 6:
+        logger.warning(
+            "[legacy] aggregates empty factory=%s range=%s..%s",
+            factory_id, range_.start_date, range_.end_date,
+        )
+        return _build_empty_dashboard()
+
+    total_sales, total_quantity, total_profit, total_cost, total_target, order_count = aggregates
+    total_sales = _to_decimal(total_sales)
+    total_quantity = _to_decimal(total_quantity)
+    total_profit = _to_decimal(total_profit)
+    total_cost = _to_decimal(total_cost)
+    total_target = _to_decimal(total_target)
+    order_count = int(order_count) if order_count is not None else 0
+
+    if total_sales == Decimal("0") and order_count == 0:
+        logger.warning(
+            "[legacy] zero sales+orders factory=%s range=%s..%s",
+            factory_id, range_.start_date, range_.end_date,
+        )
+        return _build_empty_dashboard()
+
+    metric_results = await _build_kpi_cards_from_aggregates(
+        factory_id=factory_id,
+        start_date=range_.start_date, end_date=range_.end_date,
+        total_sales=total_sales, total_quantity=total_quantity,
+        total_profit=total_profit, total_cost=total_cost,
+        total_target=total_target, order_count=order_count,
+    )
+    kpi_cards = _convert_metric_results_to_kpi_cards(metric_results)
+
+    # Y-a (Q-1 RESOLVED 2026-04-30): fill nested rankings + charts
+    rankings_dict = await _build_legacy_rankings_dict(
+        factory_id, range_.start_date, range_.end_date,
+    )
+    charts_dict: dict = {}
+    trend_chart = await _build_legacy_trend_chart(
+        factory_id, range_.start_date, range_.end_date,
+    )
+    if trend_chart is not None:
+        charts_dict["销售趋势"] = trend_chart
+    category_chart = await _build_legacy_category_chart(
+        factory_id, range_.start_date, range_.end_date,
+    )
+    if category_chart is not None:
+        charts_dict["产品分布"] = category_chart
+
+    ai_insights = _generate_ai_insights_from_metrics(
+        metrics=metric_results,
+        total_sales=total_sales, total_profit=total_profit,
+        order_count=order_count,
+    )
+    suggestions = _generate_suggestions_from_metrics(
+        metrics=metric_results,
+        total_sales=total_sales, total_target=total_target,
+    )
+
+    return _new_dashboard_response_dict(
+        kpi_cards=kpi_cards,
+        charts=charts_dict,
+        rankings=rankings_dict,
+        ai_insights=ai_insights,
+        suggestions=suggestions,
         last_updated=_utc_now_iso(),
     )
 

@@ -50,7 +50,7 @@ This sub-spec replaces the foundation stub of `_get_sales_overview()` with real 
 7. **Helper: `_convert_metric_results_to_kpi_cards`** — mirrors Java `convertToKPICards` (672-720) — alertLevel→status mapping, changeDirection→trend mapping, formattedValue|value fallback for `value` field
 8. **Helper: `_generate_ai_insights_from_metrics`** — 2 always-INFO insights (matching from-aggregates path 329-351)
 9. **Helper: `_generate_suggestions_from_metrics`** — 1 conditional suggestion (matching 356-365)
-10. **Optional helper: `_generate_ai_insights_full`** — 4-branch logic from Java line 998-1083 (completion<60/85, growth<-20/>0, top-salesperson). ⚠ TBD: Java's `getSalesOverview` from-aggregates path does NOT call this — it calls `generateAiInsightsFromMetrics` (the 2-INFO version). Including the full version may be dead code. Plan task to verify which is reachable from `/analysis/sales` route.
+10. ~~**Optional helper: `_generate_ai_insights_full`**~~ — **NOT PORTED (Q-2 RESOLVED 2026-04-30 dead code)**. Java `SalesAnalysisServiceImpl.generateAiInsights` line 998-1083 has 0 callers + parameter signature mismatch with aggregates path. See §11.Q-2.
 11. **Threshold constants** mirroring Java (TARGET_RED=60 / TARGET_YELLOW=85 / MARGIN_RED=15 / MARGIN_YELLOW=25 / GROWTH_RED=-20 / GROWTH_YELLOW=-5)
 12. **Decimal-precision helpers** — `_set_scale(value, scale)` wrapping `Decimal.quantize(rounding=ROUND_HALF_UP)`, `_format_currency(value)` mirroring Java `String.format("%,.2f", ...)`, `_format_completion_pct(value)` mirroring `"%.1f%%"`, `_format_growth_pct(value)` mirroring `"%+.1f%%"`
 13. ~~**Gold-vs-legacy branch decision**~~ — **DEFERRED to gold spec** (`2026-04-30-phase2a-analysis-sales-gold-design.md`). gold spec owns: Gold path adapter (`_build_from_gold_with_charts`) + try-Gold-first wiring inside `_get_sales_overview`. Overview spec only covers the legacy fallback path (when Gold returns null/error).
@@ -90,36 +90,27 @@ This sub-spec replaces the foundation stub of `_get_sales_overview()` with real 
 
 ```
 _get_sales_overview(factory_id, range_)
-  ├─ if SMARTBI_GOLD_READ_PRIMARY_ENABLED and gold_client_available:
-  │     try:
-  │       gold_response = _build_from_gold_with_charts(factory_id, range_)
-  │       if gold_response is not None:
-  │         return gold_response       # F001 path today
-  │       return _build_empty_dashboard()  # Gold empty → skip legacy (Java line 105-107)
-  │     except Exception as e:
-  │       log.warning(f"[gold-primary] failed, falling back to legacy: {e}")
-  │       # fall through to legacy
+  ├─ # Gold-first dispatch (gold spec, already shipped)
+  ├─ # Legacy fallback when Gold returns None or fails:
   ├─ kpi_summary = _query_sales_aggregates(factory_id, range_)
-  ├─ if kpi_summary is None or kpi_summary.row_count == 0:
-  │     return _build_empty_dashboard()                # F999 path
+  ├─ if kpi_summary is None or row_count<6:
+  │     return _build_empty_dashboard()                # F999 path / no rows
   ├─ if total_sales == 0 and order_count == 0:
   │     return _build_empty_dashboard()
-  ├─ metric_results = _build_kpi_cards_from_aggregates(...)
+  ├─ metric_results = _build_kpi_cards_from_aggregates(...)  # 4-5 KPIs (MoM conditional)
   ├─ kpi_cards = _convert_metric_results_to_kpi_cards(metric_results)
-  ├─ # NOTE: Java line 142-156 builds charts AND rankings here too via repo.findDailySalesTrend etc.
-  ├─ # In overview spec scope, charts/rankings dict is populated only with what overview owns
-  ├─ # (Java's flat result.put pattern intentionally fills overview's nested rankings/charts dicts).
-  ├─ # ⚠ TBD: confirm whether overview spec or rankings spec owns this nested fill — see §11.Q1
+  ├─ # Y-a (Q-1 RESOLVED 2026-04-30): nested rankings + charts mirror Java line 142-156
+  ├─ rankings_dict = _build_legacy_rankings_dict(factory_id, range_)
+  ├─ charts_dict = _build_legacy_charts_dict(factory_id, range_)
   ├─ ai_insights = _generate_ai_insights_from_metrics(metric_results, totals)
   ├─ suggestions = _generate_suggestions_from_metrics(metric_results, totals)
   └─ return _new_dashboard_response_dict(
         kpi_cards=kpi_cards,
-        charts={},               # ⚠ TBD per Q1
-        rankings={},             # ⚠ TBD per Q1
+        charts=charts_dict,        # Y-a: {"销售趋势":..., "产品分布":...} or {} when empty
+        rankings=rankings_dict,    # Y-a: {"salesperson":[...]} or {} when empty
         ai_insights=ai_insights,
         suggestions=suggestions,
         last_updated=_utc_now_iso(),
-        # all other fields = None or defaults per foundation factory
      )
 ```
 
@@ -160,8 +151,8 @@ Foundation freezes 16-field shape. Overview fills:
 | `endDate` | null | null | null |
 | `kpiCards` | 4 Gold KPIs (total_revenue/bill_count/avg_bill_value/store_count) | 4-5 Legacy KPIs (SALES_AMOUNT/ORDER_COUNT/AVG_ORDER_VALUE/TARGET_COMPLETION/MOM_GROWTH*) | `[]` |
 | `metricCards` | null | null | null |
-| `rankings` | `{top_stores: [...]}` | ⚠ Q1 | `{}` |
-| `charts` | `{sales_trend, category_distribution}` | ⚠ Q1 | `{}` |
+| `rankings` | `{top_stores: [...]}` | `{salesperson: [...]}` (Y-a, Q-1 RESOLVED) | `{}` |
+| `charts` | `{sales_trend, category_distribution}` | `{销售趋势, 产品分布}` (Y-a, Chinese keys mirror Java line 148/154) | `{}` |
 | `chartList` | null | null | null |
 | `aiInsights` | `[]` | 1-2 INFO insights | 1 YELLOW insight |
 | `alerts` | null | null | null |
@@ -550,9 +541,9 @@ def synthetic_factory(smartbi_db_session):
 
 | # | Question | Plan task to resolve |
 |---|---|---|
-| **Q-1** | Java line 142-156 (Step 3-4 of `getSalesOverview`) builds `charts` map (with sales_trend + product distribution from repo aggregations) AND `rankings` map (with salesperson ranking). These nested fills happen inside the `overview` field of the response — NOT outside. F001 golden's Gold path puts `sales_trend + category_distribution` in `overview.charts` and `top_stores` in `overview.rankings`. **Does overview spec own this fill, or does it call the rankings/trend sibling sub-services?** Recommendation: overview owns the legacy-path nested fill (since `getSalesOverview` itself fills them in Java); rankings/trend specs own the TOP-LEVEL composite fields `salespersonRanking/productRanking/customerRanking/trendChart`. F001 golden has `customerRanking=[]/productRanking=[]/salespersonRanking=[]/trendChart.data=[]` because Gold path doesn't propagate to top-level (Java line 578-584 of `SmartBIServiceImpl.getComprehensiveAnalysis` calls them separately, and they hit the legacy ranking impls which return empty for restaurant tenants since there's no salesperson_name in POS data). **Resolution**: overview impl owns nested charts/rankings IFF legacy path executes; Gold path uses `GoldDashboardBuilder` output as-is. | Plan A.1 (read SmartBIServiceImpl.getComprehensiveAnalysis lines 568-616) |
-| **Q-2** | Is `generateAiInsights` (line 998-1083, full-branch RED/YELLOW logic) reachable from `/analysis/sales` route? Code flow: `getSalesOverview` line 164 calls `generateAiInsightsFromMetrics` (the 2-INFO version), NOT `generateAiInsights`. Could `generateAiInsights` be called from another caller (e.g. SkillExecutor)? | grep usages; if only dead-code from `getSalesOverview` flow, mark ⚠ and skip port. |
-| **Q-3** | `findKpiSummary` repo method exact SQL — confirm `order_count` is `COUNT(*)` or `COUNT(DISTINCT product_id)`. Java line 743-747 row-path uses `COUNT(DISTINCT product_id)`; aggregates path (line 129) reads `kpiSummary[5]` whose semantic depends on JPQL. | Read `SmartBiSalesDataRepository.findKpiSummary` annotations. |
+| **Q-1** | **RESOLVED 2026-04-30 (Y-a)**: Legacy fills `overview.rankings + overview.charts` matching Java line 142-156. Sibling rankings/trend specs still fill top-level fields for byte-parity (even though web-admin grep confirmed 0 consumers of `data.salespersonRanking/customerRanking/productRanking/trendChart` — they're API contract only). Reasoning: web-admin `SalesAnalysis.vue:720` reads `overview?.rankings || data.rankings` with JS short-circuit on truthy `{}` → if overview leaves nested `{}`, frontend never sees rankings even when top-level filled. Y-a fixes this by filling nested directly. | DONE — see brainstorm chat 2026-04-30 |
+| **Q-2** | **RESOLVED 2026-04-30 (dead code)**: `SalesAnalysisServiceImpl.generateAiInsights` (line 998-1083) is `private` with **0 callers** in entire `backend/java/` (grep `generateAiInsights\b` returned only the definition itself). Same-name methods in `ProcurementAnalysisServiceImpl:914` and `InventoryHealthAnalysisServiceImpl:1107` are different classes / different domains. **Architectural confirmation**: line 998 signature `(List<SmartBiSalesData> salesData, ...)` requires full row data; `getSalesOverview` line 115-129 uses aggregates-only path → 4-branch is unreachable even in principle. NOT PORTED. Comment `# Q-2 grep 2026-04-30: SalesAnalysisServiceImpl.generateAiInsights is dead code; not ported. If Java wires it up later, port then.` placed in code at orchestration site. | DONE — grep evidence in brainstorm |
+| **Q-3** | **RESOLVED 2026-04-30**: `SmartBiSalesDataRepository.findKpiSummary` JPQL line 85-89 confirmed: `COUNT(DISTINCT s.productId)` (NOT `COUNT(*)`). Python `_query_sales_aggregates` mirrors as `COUNT(DISTINCT product_id)`. | DONE — verified line 87 |
 | **Q-4** | Gold finance-summary endpoint URL + response shape — does Python already have a client (e.g. for `/analysis/finance` port), or must overview port the Java `GoldFinanceClient`? | grep `gold_finance_client / finance_summary` in `backend/python/`. |
 | **Q-5** | Does FastAPI serializer emit `Decimal("8")` as `8` (JSON Number) or `"8"` (JSON String)? F001 golden has `"rawValue": 8` not `"8"`. | Check existing alerts/recommendations test pass behavior; replicate. |
 | **Q-6** | F001 golden `lastUpdated: "2026-04-29T12:43:07.375181718"` has 9-digit nanos suffix (Java LocalDateTime). Python `datetime.now().isoformat()` emits 6-digit microseconds. Stripped via `_strip_volatile` — but verify regex covers both. | Verify in plan C.1 by running F001 test before stripping. |
