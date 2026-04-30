@@ -30,11 +30,11 @@
 
 | # | 问题 | 来源 | curl 命令 | 结论更新 |
 |---|------|------|---------|---------|
-| 1 | Whitelist 单对象 POST 是否实装 | R6 §48.2 | `curl -X POST .../api/mobile/whitelist -d '{"phone":"13800000001","name":"test","factoryId":"F001"}'` | ☐ 待测 → 结果: __________ |
-| 2 | smartbi-config 全局路径 vs 工厂路径 | R6 §50.13 | 两种路径都试, 看哪个 200 | ☐ 待测 → 结果: __________ |
-| 3 | `/system/cron-logs` endpoint 是否存在 | R5 §47.2 | `curl .../api/mobile/system/cron-logs` | ☐ 待测 → 结果: __________ |
-| 4 | `/system/trigger-chain-logs` 是否存在 | R6 §45.2 | `curl .../api/mobile/system/trigger-chain-logs` | ☐ 待测 → 结果: __________ |
-| 5 | FactorySettings lazy-init 默认值字段 | R4 §48.3 | `curl .../api/mobile/F001/settings/full` | ☐ 待测 → 结果: __________ |
+| 1 | Whitelist 单对象 POST 是否实装 | R6 §48.2 | `curl -X POST .../api/mobile/whitelist -d '{"phone":"13800000001","name":"test","factoryId":"F001"}'` | ✅ R75 (2026-04-30 prod): **未实装 (404)** — V2 补 |
+| 2 | smartbi-config 全局路径 vs 工厂路径 | R6 §50.13 | 两种路径都试, 看哪个 200 | ✅ R75 (2026-04-30 prod): **都 404** — controller 只有 `/intents` + `/thresholds` 子路径, 无根路径 endpoint. 不是 bug, 是设计选择 |
+| 3 | `/system/cron-logs` endpoint 是否存在 | R5 §47.2 | `curl .../api/mobile/system/cron-logs` | ✅ R75 (2026-04-30 prod): **存在于 `/api/platform/cron-logs`** (platform_admin only). UI 未实装 |
+| 4 | `/system/trigger-chain-logs` 是否存在 | R6 §45.2 | `curl .../api/mobile/system/trigger-chain-logs` | ✅ R75 (2026-04-30 prod): **存在于 `/api/platform/trigger-chain-logs`** (platform_admin only). UI 未实装 |
+| 5 | FactorySettings lazy-init 默认值字段 | R4 §48.3 | `curl .../api/mobile/F001/settings/full` | ✅ R75 (2026-04-30 prod): **200 全字段** (aiSettings/aiWeeklyQuota/notificationSettings/workTimeSettings/productionSettings 等都返). lazy-init 工作正常 |
 
 ### 类 B — 后端未实装 / V2 roadmap (6 项)
 
