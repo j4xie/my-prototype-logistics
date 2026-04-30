@@ -14,6 +14,7 @@
 #       analysis-finance-F999-profit.json
 #
 # Defaults to test env (47.100.235.168:10011); pass --prod for prod env (10010).
+# Override with BASE_URL_OVERRIDE env var (e.g., http://127.0.0.1:10011 for SSH tunnel).
 
 set -euo pipefail
 
@@ -26,7 +27,9 @@ ENV_FLAG="${4:-test}"
 
 : "${JWT_SECRET:?JWT_SECRET env var required (from /www/wwwroot/cretas/.env.test on server)}"
 
-if [[ "$ENV_FLAG" == "--prod" ]]; then
+if [[ -n "${BASE_URL_OVERRIDE:-}" ]]; then
+    BASE_URL="$BASE_URL_OVERRIDE"
+elif [[ "$ENV_FLAG" == "--prod" ]]; then
     BASE_URL="http://47.100.235.168:10010"
 else
     BASE_URL="http://47.100.235.168:10011"
