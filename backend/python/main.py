@@ -568,12 +568,20 @@ async def lifespan(app: FastAPI):
     # at runtime. Snapshot loaded if pg_pool available; absent pool degrades to
     # empty visible_intents (orchestrator still runs with empty rows). See spec §6.5.
     _ai_snapshot_refresh_task = None
+    _ai_learning_cron_task = None
     if _ai_module_available:
         try:
             from ai.matcher.classifier import ClassifierMatcher
             from ai.matcher.llm import LlmMatcher
             from ai.matcher.semantic import SemanticMatcher
             from ai.orchestrator import Orchestrator
+            # Phase 2B-β (Apr 30 2026): wire all sub-modules built in T1-T16 (W6).
+            from ai.router.semantic_router import SemanticRouter
+            from ai.router.llm_tier_selector import LlmTierSelector
+            from ai.scoring.calibration import Calibrator
+            from ai.scoring.intent_scoring import IntentScorer
+            from ai.rag.retrieval import RAGRetriever
+            from ai.rag.evaluator import RAGEvaluator
 
             # Reuse SmartBI pg_pool if available (asyncpg). SemanticMatcher tolerates
             # None pool — falls through to next stage. Stash on app.state for
@@ -586,12 +594,27 @@ async def lifespan(app: FastAPI):
             except Exception as ex:
                 logger.warning(f"[startup] AI snapshot pool not available: {ex}")
 
+            # β: construct sub-modules. Cold-start safe: empty Calibrator coefs,
+            # default IntentScorer weights, default RAGEvaluator thresholds.
+            _ai_sem_router = SemanticRouter()
+            _ai_tier_selector = LlmTierSelector()
+            _ai_calibrator = Calibrator(coefs={})
+            _ai_scorer = IntentScorer()
+            _ai_rag_retriever = RAGRetriever(ai_pg_pool)
+            _ai_rag_evaluator = RAGEvaluator()
+
             app.state.ai_orchestrator = Orchestrator(
                 semantic_matcher=SemanticMatcher(ai_pg_pool),
                 classifier_matcher=ClassifierMatcher(),
                 llm_matcher=LlmMatcher(),
+                semantic_router=_ai_sem_router,
+                llm_tier_selector=_ai_tier_selector,
+                calibrator=_ai_calibrator,
+                scorer=_ai_scorer,
+                rag_retriever=_ai_rag_retriever,
+                rag_evaluator=_ai_rag_evaluator,
             )
-            logger.info("[startup] AI orchestrator wired (orchestrator + 3 matchers)")
+            logger.info("[startup] AI orchestrator wired (orchestrator + 3 matchers + β: router/tier/calibrator/scorer/rag)")
 
             # Initial snapshot load + periodic refresh (~5min) per spec §5.4.
             if ai_pg_pool is not None:
@@ -621,6 +644,64 @@ async def lifespan(app: FastAPI):
                     logger.warning(f"[startup] AI snapshot initial load failed: {ex}")
             else:
                 logger.info("[startup] AI snapshot skipped (no pg_pool); orchestrator runs with empty visible_intents")
+
+            # Phase 2B-β C6 (Apr 30 2026): learning services as 5min cron.
+            # Cron requires pg_pool — without DB, learners cannot read training_samples.
+            if ai_pg_pool is not None:
+                try:
+                    import asyncio as _asyncio_learn
+                    import json as _json_learn
+                    from ai import db as _ai_db_for_kw
+                    from ai.learning.keyword_learner import KeywordLearner
+                    from ai.learning.expression_learner import ExpressionLearner
+                    from ai.learning.parameter_learner import ParameterLearner
+
+                    # Build existing_keywords map from current snapshot for KeywordLearner.
+                    _kw_snapshot = _ai_db_for_kw.get_current_snapshot()
+                    _existing_keywords: dict = {}
+                    for _r in _kw_snapshot.rows:
+                        _code = _r.get("intent_code")
+                        if not _code:
+                            continue
+                        _raw_kw = _r.get("keywords") or "[]"
+                        try:
+                            _kw_list = _json_learn.loads(_raw_kw) if isinstance(_raw_kw, str) else _raw_kw
+                            if isinstance(_kw_list, list):
+                                _existing_keywords[_code] = _kw_list
+                        except (_json_learn.JSONDecodeError, TypeError):
+                            _existing_keywords[_code] = []
+
+                    _kw_learner = KeywordLearner(ai_pg_pool, existing_keywords=_existing_keywords)
+                    _expr_learner = ExpressionLearner(ai_pg_pool)
+                    _param_learner = ParameterLearner(ai_pg_pool)
+
+                    app.state.ai_learning_stop_event = _asyncio_learn.Event()
+
+                    async def _ai_learning_cron():
+                        # 5min cadence per spec §C6 — runs all 3 learners each iteration.
+                        # Stop event cancellation path: wait_for raises TimeoutError on
+                        # idle 300s window; loop exits on event set during shutdown.
+                        while not app.state.ai_learning_stop_event.is_set():
+                            try:
+                                await _kw_learner.run_once(min_confidence=0.9)
+                                await _expr_learner.run_once(min_confidence=0.95)
+                                await _param_learner.run_once(min_confidence=0.9)
+                            except Exception:
+                                logger.exception("[ai-learning] cron iteration failed")
+                            try:
+                                await _asyncio_learn.wait_for(
+                                    app.state.ai_learning_stop_event.wait(),
+                                    timeout=300,
+                                )
+                            except _asyncio_learn.TimeoutError:
+                                pass
+
+                    _ai_learning_cron_task = _asyncio_learn.create_task(_ai_learning_cron())
+                    logger.info("[startup] AI learning cron armed (KeywordLearner+ExpressionLearner+ParameterLearner, every 300s)")
+                except Exception as ex:
+                    logger.warning(f"[startup] AI learning cron init failed: {ex}")
+            else:
+                logger.info("[startup] AI learning cron skipped (no pg_pool)")
         except Exception as e:
             logger.warning(f"[startup] AI orchestrator init failed: {e}")
 
@@ -655,6 +736,19 @@ async def lifespan(app: FastAPI):
         _llm_cache_pruner_task.cancel()
         try:
             await _llm_cache_pruner_task
+        except Exception:
+            pass
+
+    # Shutdown: cancel AI learning cron (β C6) — signal stop event then cancel.
+    if hasattr(app.state, "ai_learning_stop_event"):
+        try:
+            app.state.ai_learning_stop_event.set()
+        except Exception:
+            pass
+    if _ai_learning_cron_task is not None:
+        _ai_learning_cron_task.cancel()
+        try:
+            await _ai_learning_cron_task
         except Exception:
             pass
 
