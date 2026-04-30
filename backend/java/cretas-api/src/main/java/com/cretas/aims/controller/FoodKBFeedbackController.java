@@ -84,6 +84,8 @@ public class FoodKBFeedbackController {
             Map<String, Object> result = pythonClient.submitFoodKBFeedback(pythonRequest);
             return ResponseEntity.ok(ApiResponse.success("反馈已提交", result));
 
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("提交食品知识库反馈失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
             throw new BusinessException(500, "提交反馈失败: " + ErrorSanitizer.sanitize(e), e);
@@ -119,6 +121,8 @@ public class FoodKBFeedbackController {
             Map<String, Object> result = pythonClient.logFoodKBQuery(pythonRequest);
             return ResponseEntity.ok(ApiResponse.success("查询日志已记录", result));
 
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("记录食品知识库查询日志失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
             return ResponseEntity.ok(ApiResponse.success("查询日志记录失败（非致命）", null));
@@ -136,6 +140,8 @@ public class FoodKBFeedbackController {
             Map<String, Object> stats = pythonClient.getFoodKBFeedbackStats();
             return ResponseEntity.ok(ApiResponse.success(stats));
 
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取食品知识库反馈统计失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
             throw new BusinessException(500, "获取统计失败: " + ErrorSanitizer.sanitize(e), e);

@@ -83,6 +83,8 @@ public class VoiceRecognitionController {
                 throw new BusinessException(500, response.getMessage() != null ? response.getMessage() : "操作失败");
             }
 
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("语音识别异常", e);
             throw new BusinessException(500, "语音识别服务异常: " + ErrorSanitizer.sanitize(e), e);
@@ -120,6 +122,8 @@ public class VoiceRecognitionController {
                 throw new BusinessException(500, response.getMessage() != null ? response.getMessage() : "操作失败");
             }
 
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("语音识别异常", e);
             throw new BusinessException(500, "语音识别服务异常: " + ErrorSanitizer.sanitize(e), e);
@@ -282,10 +286,13 @@ public class VoiceRecognitionController {
 
             return ResponseEntity.ok(ApiResponse.success(task));
 
+        } catch (BusinessException be) {
+            throw be;
         } catch (IllegalArgumentException e) {
             throw new BusinessException(400, ErrorSanitizer.sanitize(e), e);
         } catch (IllegalStateException e) {
-            throw new BusinessException(400, ErrorSanitizer.sanitize(e), e);
+            throw new BusinessException(409, ErrorSanitizer.sanitize(e), e)
+                    .withHint("请刷新后重试,任务状态可能已变化");
         } catch (Exception e) {
             log.error("创建批量任务失败", e);
             throw new BusinessException(500, "创建批量任务失败: " + ErrorSanitizer.sanitize(e), e);
@@ -331,6 +338,8 @@ public class VoiceRecognitionController {
         try {
             Map<String, Object> result = voiceRecognitionService.getBatchTaskResult(taskNumber);
             return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (BusinessException be) {
+            throw be;
         } catch (IllegalArgumentException e) {
             throw new BusinessException(400, ErrorSanitizer.sanitize(e), e);
         }
@@ -351,8 +360,13 @@ public class VoiceRecognitionController {
         try {
             BatchVoiceTask task = voiceRecognitionService.cancelBatchTask(taskNumber, userId);
             return ResponseEntity.ok(ApiResponse.success(task));
-        } catch (IllegalArgumentException | IllegalStateException e) {
+        } catch (BusinessException be) {
+            throw be;
+        } catch (IllegalArgumentException e) {
             throw new BusinessException(400, ErrorSanitizer.sanitize(e), e);
+        } catch (IllegalStateException e) {
+            throw new BusinessException(409, ErrorSanitizer.sanitize(e), e)
+                    .withHint("请刷新后重试,任务状态可能已变化");
         }
     }
 

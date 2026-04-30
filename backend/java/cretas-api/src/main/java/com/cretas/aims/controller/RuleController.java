@@ -291,6 +291,8 @@ public class RuleController {
                 return ApiResponse.success("Dry-Run 执行失败", result);
             }
 
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Dry-Run 执行异常 - factoryId={}", factoryId, e);
             Map<String, Object> errorResult = new HashMap<>();
@@ -395,6 +397,8 @@ public class RuleController {
 
             return ApiResponse.success(result);
 
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("规则测试执行失败 - ruleId={}", ruleId, e);
             Map<String, Object> errorResult = new HashMap<>();
@@ -710,6 +714,8 @@ public class RuleController {
                 (validation.getIsValid() ? "状态转换验证通过" : "守卫条件不满足"));
 
             return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Transition validation failed: {}", e.getMessage());
             result.setValid(false);
@@ -744,6 +750,8 @@ public class RuleController {
             } else {
                 throw new BusinessException(500, result.getMessage() != null ? result.getMessage() : "操作失败");
             }
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Transition execution failed: {}", e.getMessage());
             throw new BusinessException(500, "状态转换失败: " + ErrorSanitizer.sanitize(e), e);
