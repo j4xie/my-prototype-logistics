@@ -1,8 +1,11 @@
 package com.cretas.aims.service.impl;
 
+import com.cretas.aims.cache.IntentResultCache;
+import com.cretas.aims.client.PythonAiMatcherClient;
 import com.cretas.aims.dto.intent.IntentFeedbackRequest;
 import com.cretas.aims.dto.intent.IntentMatchResult;
 import com.cretas.aims.dto.intent.MultiIntentResult;
+import com.cretas.aims.dto.intent.PythonIntentMatchRequest;
 import com.cretas.aims.entity.config.AIIntentConfig;
 import com.cretas.aims.entity.conversation.ConversationTurn;
 import com.cretas.aims.service.AIIntentService;
@@ -13,8 +16,10 @@ import com.cretas.aims.service.intent.IntentRecognitionPipelineService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -54,6 +59,33 @@ public class AIIntentServiceImpl implements AIIntentService {
      */
     @Autowired(required = false)
     private ConversationStateService conversationStateService;
+
+    /**
+     * Phase 2B-α (T20): optional Python AI matcher client.
+     * required=false so existing tests + production-without-Python-deployed still work.
+     * Activates only when {@link #usePythonMatcher} is true.
+     */
+    @Autowired(required = false)
+    private PythonAiMatcherClient pythonClient;
+
+    /**
+     * Phase 2B-α (T20): optional in-process LRU cache for Python results.
+     * Cache hit short-circuits both the Python HTTP call AND the legacy pipeline.
+     * required=false so unit tests that don't load the cache bean still work.
+     */
+    @Autowired(required = false)
+    private IntentResultCache intentResultCache;
+
+    /**
+     * Phase 2B-α (T20): feature flag controlling Python matcher dispatch.
+     * Default false — legacy in-process matching only. Toggling true causes
+     * {@link #recognizeIntentWithConfidence(String, String, int, Long, String, String)}
+     * to consult the cache + Python service before falling back to the legacy
+     * pipeline. Configured via {@code ai.use-python-matcher} application
+     * property (env: {@code AI_USE_PYTHON_MATCHER}).
+     */
+    @Value("${ai.use-python-matcher:false}")
+    private boolean usePythonMatcher;
 
     // ==================== Intent Recognition ====================
 
@@ -136,18 +168,109 @@ public class AIIntentServiceImpl implements AIIntentService {
 
     @Override
     public IntentMatchResult recognizeIntentWithConfidence(String userInput, int topN) {
-        return pipelineService.recognizeIntentWithConfidence(userInput, null, topN, null, null, null);
+        // Delegate to the canonical 6-arg overload so Python branch coverage is uniform.
+        return recognizeIntentWithConfidence(userInput, null, topN, null, null, null);
     }
 
     @Override
     public IntentMatchResult recognizeIntentWithConfidence(String userInput, String factoryId,
                                                             int topN, Long userId, String userRole) {
-        return pipelineService.recognizeIntentWithConfidence(userInput, factoryId, topN, userId, userRole, null);
+        // Delegate to the canonical 6-arg overload so Python branch coverage is uniform.
+        return recognizeIntentWithConfidence(userInput, factoryId, topN, userId, userRole, null);
     }
 
+    /**
+     * Canonical recognition entry point.
+     *
+     * <p><b>Phase 2B-α (T20) integration:</b> when
+     * {@link #usePythonMatcher} is true AND both
+     * {@link #pythonClient} and {@link #intentResultCache} beans are available,
+     * the flow is:
+     * <ol>
+     *   <li>Resolve {@code businessType} via {@link IntentConfigManagementService#resolveBusinessDomain(String)}</li>
+     *   <li>Look up {@link IntentResultCache} by (query, factoryId, role, businessType) —
+     *       on hit, return cached result and skip both Python and the legacy pipeline.</li>
+     *   <li>Call {@link PythonAiMatcherClient#match(PythonIntentMatchRequest)} —
+     *       on a real match ({@link IntentMatchResult#hasMatch()}), cache it and return.</li>
+     *   <li>On Python returning empty / null / throwing → fall through to the legacy
+     *       in-process pipeline ({@link IntentRecognitionPipelineService}).</li>
+     * </ol>
+     *
+     * <p>The legacy {@link IntentRecognitionPipelineService} call below is the
+     * preserved authoritative path; it is never deleted, only optionally
+     * preceded by a Python branch. This guarantees zero regression risk when
+     * the feature flag is off (default).
+     */
     @Override
     public IntentMatchResult recognizeIntentWithConfidence(String userInput, String factoryId, int topN,
                                                             Long userId, String userRole, String sessionId) {
+        // ===== Phase 2B-α: optional Python matcher branch =====
+        if (usePythonMatcher && pythonClient != null && intentResultCache != null
+                && userInput != null && factoryId != null) {
+            String role = userRole != null ? userRole : "";
+            String businessType;
+            try {
+                businessType = configService.resolveBusinessDomain(factoryId);
+                if (businessType == null) {
+                    businessType = "";
+                }
+            } catch (Exception e) {
+                log.warn("resolveBusinessDomain failed for factoryId={}: {} (using empty)",
+                        factoryId, e.getMessage());
+                businessType = "";
+            }
+
+            // 1) Cache check — short-circuits both Python and legacy
+            try {
+                IntentMatchResult cached =
+                        intentResultCache.get(userInput, factoryId, role, businessType);
+                if (cached != null) {
+                    log.debug("IntentResultCache hit for query='{}' factoryId={}", userInput, factoryId);
+                    return cached;
+                }
+            } catch (Exception e) {
+                log.warn("IntentResultCache.get failed (ignoring, will hit Python): {}", e.getMessage());
+            }
+
+            // 2) Python call — circuit-breaker fallback returns empty rather than null,
+            //    but defensive null-check + try/catch covers both the configured-fallback
+            //    and any unexpected synchronous throw.
+            try {
+                PythonIntentMatchRequest req = PythonIntentMatchRequest.builder()
+                        .query(userInput)
+                        .factoryId(factoryId)
+                        .userId(userId != null ? String.valueOf(userId) : null)
+                        .username(null)
+                        .role(role)
+                        .businessType(businessType)
+                        .history(Collections.emptyList())
+                        .options(PythonIntentMatchRequest.Options.builder()
+                                .enableLlmFallback(Boolean.TRUE)
+                                .timeoutMs(30000)
+                                .minConfidence(0.7)
+                                .build())
+                        .build();
+
+                IntentMatchResult pyResult = pythonClient.match(req);
+                if (pyResult != null && pyResult.hasMatch()) {
+                    try {
+                        intentResultCache.put(userInput, factoryId, role, businessType, pyResult);
+                    } catch (Exception cachePutEx) {
+                        log.warn("IntentResultCache.put failed (returning result anyway): {}",
+                                cachePutEx.getMessage());
+                    }
+                    return pyResult;
+                }
+                log.info("Python matcher returned empty for query='{}' — falling back to legacy pipeline",
+                        userInput);
+            } catch (Exception e) {
+                log.warn("Python matcher exception for query='{}' — falling back to legacy pipeline: {}",
+                        userInput, e.getMessage());
+            }
+        }
+        // ===== END Python branch =====
+
+        // Legacy in-process pipeline (unchanged behavior — authoritative fallback path)
         return pipelineService.recognizeIntentWithConfidence(userInput, factoryId, topN, userId, userRole, sessionId);
     }
 
