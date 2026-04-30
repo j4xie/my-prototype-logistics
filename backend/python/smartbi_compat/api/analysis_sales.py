@@ -967,6 +967,97 @@ async def _build_legacy_category_chart(
 
 
 # ============================================================
+# Section 1.7: Generic ranking builder + 3 caller wrappers (rankings spec)
+# ============================================================
+# Mirrors Java SalesAnalysisServiceImpl: getSalespersonRanking (371-400) /
+# getProductRanking (491-533) / getCustomerRanking (550-593).
+#
+# Reuses existing helpers from Section 0 (overview impl):
+#   - _calculate_completion_rate (Java calculateCompletionRate line 1166-1171)
+#   - _determine_completion_alert_level (Java line 1176-1184)
+#   - TARGET_RED_THRESHOLD / TARGET_YELLOW_THRESHOLD / SCALE / DISPLAY_SCALE
+#   - _new_ranking_item_dict (foundation factory, 6 fields)
+
+
+def _build_ranking(
+    name_to_value: dict,
+    *,
+    top_n: Optional[int] = None,
+    with_percentage: bool = False,
+    target_map: Optional[dict] = None,
+) -> list[dict]:
+    """Generic ranking builder — covers salesperson / product / customer.
+
+    Mirrors Java's three rankings methods (sort + scale + dict construction).
+
+    Args:
+        name_to_value: aggregated {name: total_amount} dict
+        top_n: if set, slice to top N after sort (customer ranking uses 10)
+        with_percentage: if True, completionRate = (value / total) * 100
+                         (product + customer rankings)
+        target_map: if provided, completionRate = (value / target) * 100
+                    AND alertLevel computed from rate (salesperson ranking)
+
+    Returns:
+        list of RankingItem-shaped dicts per foundation _new_ranking_item_dict factory.
+
+    Sort stability:
+        Composite sort key (-value, name) — value DESC, name ASC for ties.
+        Spec §7: Python-side fix only. Java's HashMap grouping has nondeterministic
+        tie order; we stabilize on Python side.
+    """
+    # 1. Sort by value DESC, name ASC (tie stability)
+    sorted_items = sorted(
+        name_to_value.items(),
+        key=lambda kv: (-kv[1], kv[0]),
+    )
+
+    # 2. Apply top_n cap if set
+    if top_n is not None:
+        sorted_items = sorted_items[:top_n]
+
+    # 3. Compute total (only if needed for percentage)
+    total = sum(name_to_value.values(), Decimal("0")) if with_percentage else None
+
+    # 4. Build dicts
+    rankings: list[dict] = []
+    for rank, (name, value) in enumerate(sorted_items, start=1):
+        target: Optional[Decimal] = None
+        completion_rate: Decimal
+        alert_level: str
+
+        if target_map is not None:
+            # salesperson: per-person target → completion rate + alert level
+            target = target_map.get(name, Decimal("0"))
+            completion_rate = _calculate_completion_rate(value, target)
+            alert_level = _determine_completion_alert_level(completion_rate)
+        elif with_percentage:
+            # product/customer: percentage of total, alertLevel hard-coded GREEN
+            if total is None or total == Decimal("0"):
+                completion_rate = Decimal("0")
+            else:
+                completion_rate = (value / total * Decimal("100")).quantize(
+                    Decimal("0.0001"), rounding=ROUND_HALF_UP,
+                )
+            alert_level = "GREEN"  # Java line 528 / 588 hard-codes GREEN
+        else:
+            completion_rate = Decimal("0")
+            alert_level = "GREEN"
+
+        rankings.append(_new_ranking_item_dict(
+            rank=rank,
+            name=name,
+            value=value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+            target=(target.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                    if target is not None else None),
+            completion_rate=completion_rate.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+            alert_level=alert_level,
+        ))
+
+    return rankings
+
+
+# ============================================================
 # Section 2: Strip-volatile shared helper
 # ============================================================
 

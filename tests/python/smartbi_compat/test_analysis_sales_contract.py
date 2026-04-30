@@ -1234,3 +1234,115 @@ class TestOverview:
         assert len(overview["kpiCards"]) == 4
         # 2-INFO insights (B: no 4-branch)
         assert all(i["level"] == "INFO" for i in overview["aiInsights"])
+
+
+# ============================================================
+# TestRankings — rankings sub-spec contract tests
+# ============================================================
+
+
+class TestRankings:
+    """Sibling sub-spec: rankings. Generic _build_ranking + 3 caller wrappers.
+
+    Foundation gates TestEnvelope; gold gates TestGold; overview gates TestOverview;
+    rankings (this class) gates the 3 ranking sub-services + tie stability.
+    """
+
+    def test_build_ranking_basic_sort_desc(self):
+        """Generic builder sorts by value DESC. No target, no percentage."""
+        from smartbi_compat.api.analysis_sales import _build_ranking
+        from decimal import Decimal
+
+        result = _build_ranking({
+            "A": Decimal("100"),
+            "B": Decimal("300"),
+            "C": Decimal("200"),
+        })
+        assert len(result) == 3
+        assert [r["name"] for r in result] == ["B", "C", "A"]
+        assert [r["rank"] for r in result] == [1, 2, 3]
+        # value scaled to 0.01
+        assert result[0]["value"] == Decimal("300.00")
+        # No target/completion → completionRate=0.00, alertLevel="GREEN"
+        assert result[0]["target"] is None
+        assert result[0]["completionRate"] == Decimal("0.00")
+        assert result[0]["alertLevel"] == "GREEN"
+
+    def test_build_ranking_tie_stability_name_asc(self):
+        """When values are tied, name ASC breaks tie (composite sort key)."""
+        from smartbi_compat.api.analysis_sales import _build_ranking
+        from decimal import Decimal
+
+        result = _build_ranking({
+            "蛋类": Decimal("100"),
+            "蔬菜": Decimal("100"),
+            "肉类": Decimal("200"),
+        })
+        # Rank 1: 肉类 (value=200, top)
+        # Rank 2-3: 蛋类 vs 蔬菜 (both value=100); name ASC → 蔬(U+852C) < 蛋(U+86CB) → 蔬菜 first
+        assert result[0]["name"] == "肉类"
+        assert result[1]["name"] == "蔬菜"
+        assert result[2]["name"] == "蛋类"
+
+    def test_build_ranking_top_n_cap(self):
+        """top_n caps result length AFTER sort."""
+        from smartbi_compat.api.analysis_sales import _build_ranking
+        from decimal import Decimal
+
+        result = _build_ranking(
+            {f"P{i}": Decimal(str(100 - i)) for i in range(15)},
+            top_n=10,
+        )
+        assert len(result) == 10
+        assert result[0]["name"] == "P0"  # value=100, top
+        assert result[9]["name"] == "P9"  # value=91, 10th
+
+    def test_build_ranking_with_percentage(self):
+        """with_percentage=True → completionRate = (value/total)*100, alertLevel=GREEN."""
+        from smartbi_compat.api.analysis_sales import _build_ranking
+        from decimal import Decimal
+
+        result = _build_ranking(
+            {"A": Decimal("400"), "B": Decimal("300"), "C": Decimal("300")},
+            with_percentage=True,
+        )
+        # Total = 1000; A=40%, B=30%, C=30%
+        assert result[0]["name"] == "A"
+        assert result[0]["completionRate"] == Decimal("40.00")
+        assert result[0]["alertLevel"] == "GREEN"  # hard-coded GREEN per Java line 528/588
+        # Tie-broken: B/C both value=300; name ASC → B first
+        assert result[1]["name"] == "B"
+        assert result[2]["name"] == "C"
+
+    def test_build_ranking_with_target_map(self):
+        """target_map → completionRate = (value/target)*100, alertLevel computed."""
+        from smartbi_compat.api.analysis_sales import _build_ranking
+        from decimal import Decimal
+
+        result = _build_ranking(
+            {"张三": Decimal("100000"), "李四": Decimal("50000")},
+            target_map={"张三": Decimal("200000"), "李四": Decimal("100000")},
+        )
+        # 张三: 100k/200k = 50% < TARGET_RED=60 → RED
+        # 李四: 50k/100k = 50% < TARGET_RED=60 → RED
+        assert result[0]["name"] == "张三"  # value=100k, top
+        assert result[0]["target"] == Decimal("200000.00")
+        # Final dict construction quantizes to DISPLAY_SCALE=2 (Decimal("0.01"))
+        # Note: _calculate_completion_rate returns SCALE=4 ("50.0000") but the
+        # final ranking dict reduces to "50.00" (DISPLAY_SCALE) per impl spec.
+        assert result[0]["completionRate"] == Decimal("50.00")
+        assert result[0]["alertLevel"] == "RED"
+
+    def test_build_ranking_with_target_zero_returns_zero_rate(self):
+        """When target=0, completionRate=0 (Java BigDecimal.ZERO line 1167-1169)."""
+        from smartbi_compat.api.analysis_sales import _build_ranking
+        from decimal import Decimal
+
+        result = _build_ranking(
+            {"X": Decimal("100")},
+            target_map={"X": Decimal("0")},
+        )
+        # _calculate_completion_rate returns Decimal("0") (not scaled);
+        # final .quantize(0.01) yields Decimal("0.00").
+        assert result[0]["completionRate"] == Decimal("0.00")
+        assert result[0]["alertLevel"] == "RED"  # 0 < TARGET_RED=60
