@@ -671,3 +671,111 @@ class TestProfitMetricsSalesFallback:
         # gross = 40000, net = 40000 * 0.70 = 28000.0 → numeric 28000
         assert point["grossProfit"] == 40000
         assert point["netProfit"] == 28000
+
+
+class TestProfitTrendChartArithmetic:
+    """Unit tests for _get_profit_trend_chart + _build_profit_chart_from_finance_data.
+
+    Verifies period aggregation, anomaly clamps, and full options-emission even
+    when data is empty.
+    """
+
+    def _run_chart(self, fake_finance, fake_sales=None, period="MONTH"):
+        """Run _get_profit_trend_chart with seams mocked. Returns chart dict."""
+        import asyncio
+        from datetime import date
+        from smartbi_compat.api import analysis_finance as af
+
+        original_finance = af._query_finance_data
+        original_sales = af._query_finance_sales_fallback
+        try:
+            af._query_finance_data = fake_finance
+            if fake_sales is not None:
+                af._query_finance_sales_fallback = fake_sales
+            return asyncio.run(af._get_profit_trend_chart(
+                "F", date(2025, 1, 1), date(2025, 12, 31), period
+            ))
+        finally:
+            af._query_finance_data = original_finance
+            af._query_finance_sales_fallback = original_sales
+
+    def test_empty_data_returns_empty_chartdata(self):
+        """All seams empty → data=[] but options.yAxis (2) + options.series (5) full."""
+        async def fake_empty(*_a, **_k): return []
+        chart = self._run_chart(fake_empty, fake_empty)
+        assert chart["data"] == []
+        assert chart["chartType"] == "LINE_BAR"
+        assert chart["title"] == "利润趋势分析"
+        assert len(chart["options"]["yAxis"]) == 2
+        assert len(chart["options"]["series"]) == 5
+
+    def test_multi_month_aggregates_by_period_key(self):
+        """Two REVENUE rows in different months → 2 chart points sorted by period key."""
+        from datetime import date
+        from decimal import Decimal
+        async def fake_finance(_fid, rt, _s, _e):
+            if rt == "REVENUE":
+                return [
+                    {"actual_amount": Decimal("50000"), "category": "营业收入",
+                     "record_date": date(2025, 1, 15), "upload_id": 1},
+                    {"actual_amount": Decimal("70000"), "category": "营业收入",
+                     "record_date": date(2025, 3, 20), "upload_id": 1},
+                ]
+            if rt == "COST":
+                return [
+                    {"total_cost": Decimal("30000"), "actual_amount": None,
+                     "record_date": date(2025, 1, 15), "upload_id": 1},
+                ]
+            return []
+        chart = self._run_chart(fake_finance)
+        assert len(chart["data"]) == 2
+        # Sorted by period key
+        assert chart["data"][0]["period"] == "2025-01"
+        assert chart["data"][1]["period"] == "2025-03"
+        # Jan: revenue 50k, cost 30k → gross 20k
+        assert chart["data"][0]["revenue"] == 50000
+        assert chart["data"][0]["cost"] == 30000
+        assert chart["data"][0]["grossProfit"] == 20000
+        # Mar: revenue 70k, no cost → cost 0, gross 70k
+        assert chart["data"][1]["revenue"] == 70000
+        assert chart["data"][1]["cost"] == 0
+        assert chart["data"][1]["grossProfit"] == 70000
+
+    def test_negative_revenue_minus_cost_emits_negative_gross(self):
+        """cost > revenue in a period → grossProfit < 0 emitted (no clamp; only margin clamps)."""
+        from datetime import date
+        from decimal import Decimal
+        async def fake_finance(_fid, rt, _s, _e):
+            if rt == "REVENUE":
+                return [
+                    {"actual_amount": Decimal("50000"), "category": "营业收入",
+                     "record_date": date(2025, 6, 15), "upload_id": 1},
+                ]
+            if rt == "COST":
+                return [
+                    {"total_cost": Decimal("80000"), "actual_amount": None,
+                     "record_date": date(2025, 6, 15), "upload_id": 1},
+                ]
+            return []
+        chart = self._run_chart(fake_finance)
+        assert len(chart["data"]) == 1
+        point = chart["data"][0]
+        assert point["grossProfit"] == -30000
+        # margin = -30000/50000 * 100 = -60% → in [-100, 100] range, NOT clamped
+        # numeric output may be -60 (int) or -60.0 (float) depending on _decimal_to_number
+        assert point["grossMargin"] == -60
+
+    def test_period_key_format_yyyy_mm(self):
+        """MONTH period key format = 'yyyy-MM' (zero-padded month)."""
+        from datetime import date
+        from decimal import Decimal
+        # Single record on Jan 5, 2025 → key '2025-01' (not '2025-1')
+        async def fake_finance(_fid, rt, _s, _e):
+            if rt == "REVENUE":
+                return [
+                    {"actual_amount": Decimal("1000"), "category": "营业收入",
+                     "record_date": date(2025, 1, 5), "upload_id": 1},
+                ]
+            return []
+        chart = self._run_chart(fake_finance)
+        assert chart["data"][0]["period"] == "2025-01"
