@@ -414,3 +414,30 @@ class TestGold:
             f"Actual keys: {sorted(actual_overview.keys())}\n"
             f"Expected keys: {sorted(expected_overview.keys())}"
         )
+
+
+# ============================================================
+# TestOverview — overview spec contract tests (Y-a, B, Option 1)
+# ============================================================
+
+
+class TestOverview:
+    """Contract tests for legacy fallback overview path.
+
+    Foundation merge gates TestEnvelope; gold spec adds TestGold;
+    overview spec (this class) covers _build_legacy_sales_overview real impl.
+    """
+
+    def test_threshold_constants_match_java(self):
+        """Java SalesAnalysisServiceImpl line 69-74 + SCALE/DISPLAY_SCALE constants."""
+        from smartbi_compat.api import analysis_sales as m
+        from decimal import Decimal
+
+        assert m.TARGET_RED_THRESHOLD == Decimal("60")
+        assert m.TARGET_YELLOW_THRESHOLD == Decimal("85")
+        assert m.MARGIN_RED_THRESHOLD == Decimal("15")
+        assert m.MARGIN_YELLOW_THRESHOLD == Decimal("25")
+        assert m.GROWTH_RED_THRESHOLD == Decimal("-20")
+        assert m.GROWTH_YELLOW_THRESHOLD == Decimal("-5")
+        assert m.SCALE == 4
+        assert m.DISPLAY_SCALE == 2

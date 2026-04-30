@@ -44,6 +44,22 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # ============================================================
+# Section 0: Legacy-path constants (mirror Java SalesAnalysisServiceImpl.java line 64-74)
+# ============================================================
+# Precision (Java line 64-66)
+SCALE = 4              # intermediate division precision
+DISPLAY_SCALE = 2      # final value precision
+
+# Alert thresholds (Java line 69-74)
+TARGET_RED_THRESHOLD = Decimal("60")
+TARGET_YELLOW_THRESHOLD = Decimal("85")
+MARGIN_RED_THRESHOLD = Decimal("15")
+MARGIN_YELLOW_THRESHOLD = Decimal("25")
+GROWTH_RED_THRESHOLD = Decimal("-20")
+GROWTH_YELLOW_THRESHOLD = Decimal("-5")
+
+
+# ============================================================
 # Section 1: DTO dict factories (FROZEN by foundation spec §4)
 # ============================================================
 # Populated by Tasks C.3 - C.7
