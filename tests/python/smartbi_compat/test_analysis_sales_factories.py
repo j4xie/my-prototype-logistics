@@ -401,3 +401,31 @@ class TestComposite:
 
     def test_is_async(self):
         assert asyncio.iscoroutinefunction(_get_comprehensive_sales_analysis)
+
+
+from smartbi_compat.api.analysis_sales import _to_decimal
+
+
+class TestToDecimal:
+    def test_int_input(self):
+        assert _to_decimal(42) == Decimal("42")
+
+    def test_float_input(self):
+        # float 12.5 -> str round-trip -> Decimal("12.5")
+        assert _to_decimal(12.5) == Decimal("12.5")
+
+    def test_decimal_input_passthrough(self):
+        d = Decimal("100.00")
+        assert _to_decimal(d) is d
+
+    def test_string_input(self):
+        assert _to_decimal("99.99") == Decimal("99.99")
+
+    def test_none_returns_zero(self):
+        """Mirror Java toBigDecimal returning ZERO on null."""
+        assert _to_decimal(None) == Decimal("0")
+
+    def test_invalid_input_returns_zero(self):
+        """Mirror Java catching parse errors and returning ZERO."""
+        assert _to_decimal("not_a_number") == Decimal("0")
+        assert _to_decimal(object()) == Decimal("0")

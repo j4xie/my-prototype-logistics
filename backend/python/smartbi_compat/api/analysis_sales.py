@@ -228,6 +228,33 @@ def _new_ai_insight_dict(
     }
 
 
+def _to_decimal(v: Any) -> Decimal:
+    """Tolerant Number -> Decimal conversion. Mirrors Java GoldDashboardBuilder.toBigDecimal.
+
+    Returns Decimal("0") on None, parse errors, or unsupported types
+    (matches Java's BigDecimal.ZERO fallback).
+
+    Decimal passthrough preserves identity (no re-wrap).
+    Float input goes via str() to preserve representation (12.5 -> "12.5" -> Decimal("12.5")).
+    """
+    if v is None:
+        return Decimal("0")
+    if isinstance(v, Decimal):
+        return v
+    if isinstance(v, bool):  # bool is int subclass - guard before int branch
+        return Decimal("0")
+    if isinstance(v, int):
+        return Decimal(v)
+    if isinstance(v, float):
+        return Decimal(str(v))
+    if isinstance(v, str):
+        try:
+            return Decimal(v)
+        except Exception:
+            return Decimal("0")
+    return Decimal("0")
+
+
 def _new_kpi_card_dict(
     key: str,
     title: str,
