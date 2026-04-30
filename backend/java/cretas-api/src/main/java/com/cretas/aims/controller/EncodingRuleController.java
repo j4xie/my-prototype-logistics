@@ -3,6 +3,8 @@ package com.cretas.aims.controller;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.config.EncodingRule;
+import com.cretas.aims.exception.BusinessException;
+import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.service.EncodingRuleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -120,14 +122,12 @@ public class EncodingRuleController {
     ) {
         log.info("获取编码规则 - factoryId={}, ruleId={}", factoryId, ruleId);
 
-        Optional<EncodingRule> ruleOpt = encodingRuleService.getRule(ruleId);
-        if (ruleOpt.isEmpty()) {
-            return ApiResponse.error("编码规则不存在");
-        }
+        EncodingRule rule = encodingRuleService.getRule(ruleId)
+                .orElseThrow(() -> new ResourceNotFoundException("编码规则", "id", ruleId));
 
-        EncodingRule rule = ruleOpt.get();
         if (rule.getFactoryId() != null && !rule.getFactoryId().equals(factoryId)) {
-            return ApiResponse.error("无权限查看此编码规则");
+            throw new BusinessException(403, "无权限查看此编码规则")
+                    .withHint("请切换到该规则所属的工厂后再查看");
         }
 
         return ApiResponse.success(rule);
@@ -145,12 +145,9 @@ public class EncodingRuleController {
     ) {
         log.info("获取实体类型编码规则 - factoryId={}, entityType={}", factoryId, entityType);
 
-        Optional<EncodingRule> ruleOpt = encodingRuleService.getRule(factoryId, entityType);
-        if (ruleOpt.isEmpty()) {
-            return ApiResponse.error("该实体类型暂无编码规则配置");
-        }
-
-        return ApiResponse.success(ruleOpt.get());
+        EncodingRule rule = encodingRuleService.getRule(factoryId, entityType)
+                .orElseThrow(() -> new ResourceNotFoundException("编码规则", "entityType", entityType));
+        return ApiResponse.success(rule);
     }
 
     /**
@@ -202,12 +199,11 @@ public class EncodingRuleController {
         log.info("更新编码规则 - factoryId={}, ruleId={}", factoryId, ruleId);
 
         // 验证权限
-        Optional<EncodingRule> existingRule = encodingRuleService.getRule(ruleId);
-        if (existingRule.isEmpty()) {
-            return ApiResponse.error("编码规则不存在");
-        }
-        if (!factoryId.equals(existingRule.get().getFactoryId())) {
-            return ApiResponse.error("无权限修改此编码规则");
+        EncodingRule existing = encodingRuleService.getRule(ruleId)
+                .orElseThrow(() -> new ResourceNotFoundException("编码规则", "id", ruleId));
+        if (!factoryId.equals(existing.getFactoryId())) {
+            throw new BusinessException(403, "无权限修改此编码规则")
+                    .withHint("请切换到该规则所属的工厂后再操作");
         }
 
         EncodingRule updateData = EncodingRule.builder()
@@ -293,7 +289,9 @@ public class EncodingRuleController {
     ) {
         String pattern = request.get("pattern");
         if (pattern == null || pattern.isEmpty()) {
-            return ApiResponse.error("编码模板不能为空");
+            throw new BusinessException(400, "编码模板不能为空")
+                    .withHint("请提供有效的编码模板, 例如 {PREFIX}-{YYYY}{MM}{DD}-{SEQ:4}")
+                    .withHintTarget("pattern");
         }
 
         Map<String, Object> validation = encodingRuleService.validatePattern(pattern);

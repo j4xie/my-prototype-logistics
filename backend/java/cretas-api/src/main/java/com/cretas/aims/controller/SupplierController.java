@@ -7,6 +7,7 @@ import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.supplier.CreateSupplierRequest;
 import com.cretas.aims.dto.supplier.UpdateSupplierRequest;
 import com.cretas.aims.dto.supplier.SupplierDTO;
+import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.service.SupplierService;
 import com.cretas.aims.util.ErrorSanitizer;
@@ -204,7 +205,7 @@ public class SupplierController {
             activeStatus = body.get("isActive");
         }
         if (activeStatus == null) {
-            return ApiResponse.error("参数错误: isActive 是必需的");
+            throw new BusinessException(400, "参数错误: isActive 是必需的").withHint("请在请求体中提供 isActive 字段").withHintTarget("isActive");
         }
 
         log.info("切换供应商状态: factoryId={}, supplierId={}, isActive={}",
@@ -369,12 +370,12 @@ public class SupplierController {
 
         // 验证文件类型
         if (file.getOriginalFilename() == null || !file.getOriginalFilename().endsWith(".xlsx")) {
-            return ApiResponse.error("只支持.xlsx格式的Excel文件");
+            throw new BusinessException(400, "只支持.xlsx格式的Excel文件").withHint("请上传 .xlsx 文件 (Excel 2007+)").withHintTarget("file");
         }
 
         // 验证文件大小（10MB限制）
         if (file.getSize() > 10 * 1024 * 1024) {
-            return ApiResponse.error("文件大小不能超过10MB");
+            throw new BusinessException(400, "文件大小不能超过10MB").withHint("请压缩或分批上传").withHintTarget("file");
         }
 
         try {
