@@ -456,12 +456,45 @@ public class ProcessWorkReportingServiceImpl implements ProcessWorkReportingServ
 
     // ==================== Private helpers ====================
 
+    /**
+     * R70-FIX-D (R69-BUG-2): syncQuantitiesToTask 之前不 cap completedQuantity 也不 guard
+     * CLOSED 状态. pt-001 实测 plannedQuantity=100 但 completedQuantity=1178 (10×over-completion).
+     * 现在: (1) 不允许同步到 CLOSED 任务 → 409. (2) 超出 plannedQuantity * (1 + OVERSHOOT_PCT)
+     * 拒绝同步 → 409 (10% 容忍工业实际超产). approve/batchApprove 调用方 @Transactional 会
+     * rollback report 状态保持一致.
+     */
+    private static final BigDecimal QUANTITY_OVERSHOOT_TOLERANCE = new BigDecimal("1.10");
+
     private void syncQuantitiesToTask(String taskId, BigDecimal quantity, boolean approved) {
         ProcessTask task = taskRepository.findById(taskId).orElse(null);
         if (task == null) return;
 
+        // R70-FIX-D guard 1: CLOSED 状态拒绝同步
+        if (task.getStatus() == ProcessTaskStatus.CLOSED) {
+            throw new BusinessException(409, "工序任务已关闭, 不可继续报工同步 (taskId=" + taskId + ")")
+                    .withHint("请刷新报工列表, 该任务已关闭, 不允许新报工")
+                    .withHintTarget("processTaskId");
+        }
+
         if (approved) {
-            task.setCompletedQuantity(task.getCompletedQuantity().add(quantity));
+            BigDecimal currentCompleted = task.getCompletedQuantity() != null ? task.getCompletedQuantity() : BigDecimal.ZERO;
+            BigDecimal planned = task.getPlannedQuantity();
+            BigDecimal newCompleted = currentCompleted.add(quantity);
+
+            // R70-FIX-D guard 2: 超出 plannedQuantity * 110% 拒绝
+            if (planned != null && planned.compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal cap = planned.multiply(QUANTITY_OVERSHOOT_TOLERANCE);
+                if (newCompleted.compareTo(cap) > 0) {
+                    throw new BusinessException(409,
+                            String.format("本次报工 %s 会让累计完工 %s 超出计划 %s 的 110%% 上限 (cap=%s)",
+                                    quantity.toPlainString(), newCompleted.toPlainString(),
+                                    planned.toPlainString(), cap.toPlainString()))
+                            .withHint("请检查计划数量, 或拆分为多次报工 (每次不超出 cap)")
+                            .withHintTarget("outputQuantity");
+                }
+            }
+
+            task.setCompletedQuantity(newCompleted);
             task.setPendingQuantity(task.getPendingQuantity().subtract(quantity).max(BigDecimal.ZERO));
         }
 
