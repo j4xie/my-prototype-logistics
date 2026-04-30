@@ -814,6 +814,86 @@ async def _get_profit_metrics(factory_id: str, range_: DateRange) -> list:
     ]
 
 
+def _build_profit_chart_from_finance_data(
+    revenue_rows: list[dict], cost_rows: list[dict], period: str
+) -> list[dict]:
+    """Mirror Java `FinanceAnalysisServiceImpl.buildProfitChartFromFinanceData`
+    line 279-349.
+
+    Aggregates revenue/cost/net-profit per period, emits 6-key chart points.
+    Java uses TreeMap (sorted keys) → Python `sorted(set(...))`.
+
+    Each point (insertion order = serialization order):
+      [period, revenue, cost, grossProfit, netProfit, grossMargin]
+
+    Notes:
+      - `revenue_rows` filter: category contains "收入" (营业收入).
+      - `net_profit_by_period` filter: category contains "净利" (净利润 etc).
+      - `cost_rows` defensive `.abs()` (Java Bug B fix line 304).
+      - `gross_margin > 100% or < -100%` → null (Java line 332-335).
+      - When no "净利" record for a period, `netProfit` defaults to `gross_profit`
+        (Java line 336).
+    """
+    revenue_by_period: dict[str, Decimal] = {}
+    net_profit_by_period: dict[str, Decimal] = {}
+    cost_by_period: dict[str, Decimal] = {}
+
+    for r in revenue_rows:
+        if r.get("actual_amount") is None:
+            continue
+        key = _get_period_key(r["record_date"], period)
+        cat = r.get("category") or ""
+        if "收入" in cat:
+            revenue_by_period[key] = (
+                revenue_by_period.get(key, Decimal("0")) + _to_decimal(r["actual_amount"])
+            )
+        if "净利" in cat:
+            net_profit_by_period[key] = (
+                net_profit_by_period.get(key, Decimal("0")) + _to_decimal(r["actual_amount"])
+            )
+
+    for c in cost_rows:
+        if c.get("total_cost") is None and c.get("actual_amount") is None:
+            continue
+        key = _get_period_key(c["record_date"], period)
+        raw = c.get("total_cost") if c.get("total_cost") is not None else c.get("actual_amount")
+        cost_by_period[key] = (
+            cost_by_period.get(key, Decimal("0")) + abs(_to_decimal(raw))
+        )
+
+    all_periods = sorted(set(revenue_by_period.keys()) | set(cost_by_period.keys()))
+    chart_data: list[dict] = []
+    for pk in all_periods:
+        revenue = revenue_by_period.get(pk, Decimal("0"))
+        cost = cost_by_period.get(pk, Decimal("0"))
+        gross_profit = revenue - cost
+        if revenue > Decimal("0"):
+            gross_margin_raw = (
+                gross_profit / revenue * Decimal("100")
+            ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        else:
+            gross_margin_raw = Decimal("0")
+        gross_margin = (
+            None
+            if (gross_margin_raw > Decimal("100") or gross_margin_raw < Decimal("-100"))
+            else gross_margin_raw
+        )
+        net_profit = net_profit_by_period.get(pk, gross_profit)
+
+        chart_data.append({
+            "period": pk,
+            "revenue": _decimal_to_number(revenue.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "cost": _decimal_to_number(cost.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "grossProfit": _decimal_to_number(gross_profit.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "netProfit": _decimal_to_number(net_profit.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "grossMargin": (
+                _decimal_to_number(gross_margin.quantize(Decimal("0.01"), ROUND_HALF_UP))
+                if gross_margin is not None else None
+            ),
+        })
+    return chart_data
+
+
 async def _get_cost_structure_chart(factory_id: str, range_: DateRange) -> dict:
     """F999 empty-state — Java getCostStructureChart returns ChartConfig with empty data.
     A.5 golden verified shape: chartType=PIE, title='成本结构分析',
