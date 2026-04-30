@@ -270,7 +270,72 @@ def _strip_volatile(obj: Any) -> Any:
 # ============================================================
 # Section 3: Sub-service stubs (5 of them)
 # ============================================================
-# Populated by Task D.1; sibling specs replace bodies
+# Sibling specs replace bodies; foundation provides F999 empty-state shape
+# so F999 contract test passes after foundation merge.
+
+
+def _utc_now_iso() -> str:
+    """Generate ISO timestamp for generatedAt / lastUpdated fields.
+
+    Stripped by `_strip_volatile` before byte compare.
+    """
+    return datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
+
+
+async def _get_sales_overview(factory_id: str, range_: DateRange) -> dict:
+    """STUB — overview/gold specs replace.
+
+    Returns F999 empty-state DashboardResponse matching `buildEmptyDashboard`
+    Java line 1145-1159: 1 YELLOW insight + 1 suggestion + 16-field shape.
+    """
+    return _new_dashboard_response_dict(
+        ai_insights=[
+            _new_ai_insight_dict(
+                level="YELLOW",
+                category="数据状态",
+                message="当前时间范围内暂无销售数据",
+                action_suggestion="请上传销售数据或调整时间范围",
+            ),
+        ],
+        suggestions=["请先上传销售数据以开始分析"],
+        last_updated=_utc_now_iso(),
+    )
+
+
+async def _get_salesperson_ranking(factory_id: str, range_: DateRange) -> list:
+    """STUB — rankings spec replaces.
+
+    F999 empty: legacy SQL returns [] (no rows in 2025 window).
+    """
+    return []
+
+
+async def _get_product_ranking(factory_id: str, range_: DateRange) -> list:
+    """STUB — rankings spec replaces."""
+    return []
+
+
+async def _get_customer_ranking(factory_id: str, range_: DateRange) -> list:
+    """STUB — rankings spec replaces."""
+    return []
+
+
+async def _get_sales_trend_chart(
+    factory_id: str, range_: DateRange, period: str = "DAY",
+) -> dict:
+    """STUB — trend spec replaces.
+
+    F999 empty-state ChartConfig: empty data + hardcoded title/axes/options.
+    """
+    return _new_chart_config_dict(
+        chart_type="LINE",
+        title="销售趋势",
+        xaxis_field="date",
+        yaxis_field="amount",
+        data=[],
+        options={"showDataLabels": False, "smooth": True},
+    )
+
 
 # ============================================================
 # Section 4: Composite assembly + route

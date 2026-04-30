@@ -313,3 +313,62 @@ class TestKpiCardDict:
             "changeRate", "trend", "status", "compareText",
             "description", "targetValue", "completionRate",
         ]
+
+
+import pytest
+import asyncio
+from datetime import date as _date
+from smartbi_compat.api.analysis_sales import (
+    _get_sales_overview,
+    _get_salesperson_ranking,
+    _get_product_ranking,
+    _get_customer_ranking,
+    _get_sales_trend_chart,
+)
+from smartbi_compat.date_range import DateRange
+
+
+@pytest.fixture
+def range_2025():
+    return DateRange.custom(_date(2025, 1, 1), _date(2025, 12, 31))
+
+
+class TestSubServiceStubs:
+    def test_overview_stub_returns_F999_shape(self, range_2025):
+        result = asyncio.run(_get_sales_overview("F999", range_2025))
+        assert isinstance(result, dict)
+        assert len(result["aiInsights"]) == 1
+        assert result["aiInsights"][0]["level"] == "YELLOW"
+        assert result["aiInsights"][0]["message"] == "当前时间范围内暂无销售数据"
+        assert result["suggestions"] == ["请先上传销售数据以开始分析"]
+        assert result["kpiCards"] == []
+        assert result["fromCache"] is False
+
+    def test_salesperson_ranking_stub_returns_empty_list(self, range_2025):
+        result = asyncio.run(_get_salesperson_ranking("F999", range_2025))
+        assert result == []
+
+    def test_product_ranking_stub_returns_empty_list(self, range_2025):
+        result = asyncio.run(_get_product_ranking("F999", range_2025))
+        assert result == []
+
+    def test_customer_ranking_stub_returns_empty_list(self, range_2025):
+        result = asyncio.run(_get_customer_ranking("F999", range_2025))
+        assert result == []
+
+    def test_trend_chart_stub_returns_F999_shape(self, range_2025):
+        result = asyncio.run(_get_sales_trend_chart("F999", range_2025))
+        assert result["chartType"] == "LINE"
+        assert result["title"] == "销售趋势"
+        assert result["xaxisField"] == "date"
+        assert result["yaxisField"] == "amount"
+        assert result["data"] == []
+        assert result["options"] == {"showDataLabels": False, "smooth": True}
+
+    def test_all_stubs_are_async(self):
+        """All 5 sub-services must be coroutine functions per foundation §5."""
+        assert asyncio.iscoroutinefunction(_get_sales_overview)
+        assert asyncio.iscoroutinefunction(_get_salesperson_ranking)
+        assert asyncio.iscoroutinefunction(_get_product_ranking)
+        assert asyncio.iscoroutinefunction(_get_customer_ranking)
+        assert asyncio.iscoroutinefunction(_get_sales_trend_chart)
