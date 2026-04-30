@@ -329,6 +329,23 @@ def _format_kpi_value(v: Decimal, unit: str) -> str:
     return str(v.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
 
+def _format_currency(v: Optional[Decimal]) -> str:
+    """Mirror Java FinanceAnalysisServiceImpl.formatCurrency (line 1608-1614).
+
+    Uses DecimalFormat("#,##0.00") — thousands separator + 2 decimals, HALF_UP.
+    None → "-" (matches Java behavior on null input).
+
+    Differs from `_format_kpi_value`: this is for finance MetricResult.formattedValue
+    (always 元 with thousands separator); `_format_kpi_value` is for KPICard.value
+    (no thousands separator, unit-conditional decimals).
+    """
+    if v is None:
+        return "-"
+    quantized = v.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    # Python format with thousands separator: f"{x:,.2f}"
+    return f"{quantized:,.2f}"
+
+
 VOLATILE_KEYS = frozenset({
     "generatedAt", "lastUpdated", "cacheExpireAt", "timestamp",
 })
@@ -623,6 +640,68 @@ async def _get_receivable_aging_chart(factory_id: str, end_date: date) -> dict:
         xaxis_field="agingBucket",
         yaxis_field="amount",
     )
+
+
+# ============================================================
+# Section 3b: Payable sub-services real impls (Phase E)
+# Mirror Java FinanceAnalysisServiceImpl getPayableMetrics + getPayableAgingChart.
+# Differs from receivable: NO alertLevel per bucket, NO showAlert option.
+# ============================================================
+
+
+async def _get_payable_metrics(factory_id: str, end_date: date) -> list:
+    """Real impl mirroring Java FinanceAnalysisServiceImpl.getPayableMetrics (line 870-918).
+
+    Returns 2 MetricResults ALWAYS (even when 0 rows):
+      - AP_BALANCE: 应付余额 = sum(payableAmount) - sum(paymentAmount)
+      - AP_TURNOVER_DAYS: (apBalance/2) / (totalPayment/365)
+
+    Empty case: both metrics emit value=0.0 / formattedValue per Java behavior.
+    """
+    rows = await _query_finance_payable_data(factory_id, end_date)
+
+    total_payable = sum(
+        (_to_decimal(r.get("payable_amount")) for r in rows),
+        Decimal("0"),
+    )
+    total_payment = sum(
+        (_to_decimal(r.get("payment_amount")) for r in rows),
+        Decimal("0"),
+    )
+
+    ap_balance = total_payable - total_payment
+
+    # AP_TURNOVER_DAYS calc per Java line 902-906:
+    #   avgPayable = apBalance / 2 (scale=4, HALF_UP)
+    #   dailyPayment = totalPayment / 365 (scale=4, HALF_UP)
+    #   turnoverDays = dailyPayment > 0 ? avgPayable / dailyPayment (scale=4, HALF_UP) : 0
+    avg_payable = (ap_balance / Decimal("2")).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    daily_payment = (total_payment / Decimal("365")).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    if daily_payment > Decimal("0"):
+        turnover_days = (avg_payable / daily_payment).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    else:
+        turnover_days = Decimal("0")
+
+    return [
+        _new_metric_result_dict(
+            metric_code="AP_BALANCE",
+            metric_name="应付余额",
+            value=_decimal_to_number(ap_balance.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+            formatted_value=_format_currency(ap_balance),
+            unit="元",
+            alert_level="GREEN",
+            description="尚未支付的应付账款总额",
+        ),
+        _new_metric_result_dict(
+            metric_code="AP_TURNOVER_DAYS",
+            metric_name="应付周转天数",
+            value=_decimal_to_number(turnover_days.quantize(Decimal("1"), rounding=ROUND_HALF_UP)),
+            formatted_value=str(turnover_days.quantize(Decimal("1"), rounding=ROUND_HALF_UP)) + "天",
+            unit="天",
+            alert_level="GREEN",
+            description="平均付款周期",
+        ),
+    ]
 
 
 # ============================================================
