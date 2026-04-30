@@ -654,7 +654,6 @@ async def lifespan(app: FastAPI):
                     from ai import db as _ai_db_for_kw
                     from ai.learning.keyword_learner import KeywordLearner
                     from ai.learning.expression_learner import ExpressionLearner
-                    from ai.learning.parameter_learner import ParameterLearner
 
                     # Build existing_keywords map from current snapshot for KeywordLearner.
                     _kw_snapshot = _ai_db_for_kw.get_current_snapshot()
@@ -673,19 +672,20 @@ async def lifespan(app: FastAPI):
 
                     _kw_learner = KeywordLearner(ai_pg_pool, existing_keywords=_existing_keywords)
                     _expr_learner = ExpressionLearner(ai_pg_pool)
-                    _param_learner = ParameterLearner(ai_pg_pool)
 
                     app.state.ai_learning_stop_event = _asyncio_learn.Event()
 
                     async def _ai_learning_cron():
-                        # 5min cadence per spec §C6 — runs all 3 learners each iteration.
+                        # 5min cadence per spec §C6 — runs both learners each iteration.
+                        # ParameterLearner removed (F1 fix-pass): no feedback data source —
+                        # `ai_parameter_extraction_rules` is a config table Java reads, not
+                        # a learning sink. β plan was speculative.
                         # Stop event cancellation path: wait_for raises TimeoutError on
                         # idle 300s window; loop exits on event set during shutdown.
                         while not app.state.ai_learning_stop_event.is_set():
                             try:
                                 await _kw_learner.run_once(min_confidence=0.9)
                                 await _expr_learner.run_once(min_confidence=0.95)
-                                await _param_learner.run_once(min_confidence=0.9)
                             except Exception:
                                 logger.exception("[ai-learning] cron iteration failed")
                             try:
@@ -697,7 +697,7 @@ async def lifespan(app: FastAPI):
                                 pass
 
                     _ai_learning_cron_task = _asyncio_learn.create_task(_ai_learning_cron())
-                    logger.info("[startup] AI learning cron armed (KeywordLearner+ExpressionLearner+ParameterLearner, every 300s)")
+                    logger.info("[startup] AI learning cron armed (KeywordLearner+ExpressionLearner, every 300s)")
                 except Exception as ex:
                     logger.warning(f"[startup] AI learning cron init failed: {ex}")
             else:
