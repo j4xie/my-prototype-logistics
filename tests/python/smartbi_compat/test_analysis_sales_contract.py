@@ -1179,3 +1179,58 @@ class TestOverview:
                 f"Gold pool may be broken in test fixtures. "
                 f"Verify test env Gold path before deploying."
             )
+
+    def test_Y_a_legacy_nested_fill_via_route(self, monkeypatch, client, f999_token):
+        """Y-a end-to-end: legacy path fills overview.rankings + overview.charts
+        with English ranking key + Chinese chart keys (matches Java prod)."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+
+        async def fake_gold(*a, **k):
+            raise RuntimeError("forced legacy")
+        async def fake_agg(*a, **k):
+            return (Decimal("100000"), Decimal("100"), Decimal("30000"),
+                    Decimal("70000"), Decimal("0"), 42)
+        async def fake_prev(*a, **k):
+            return (Decimal("0"), Decimal("0"), Decimal("0"),
+                    Decimal("0"), Decimal("0"), 0)
+        async def fake_top(*a, **k):
+            return [("张三", Decimal("100000"), Decimal("100"))]
+        async def fake_trend(*a, **k):
+            return [(date(2025, 6, 15), Decimal("100000"), Decimal("100"))]
+        async def fake_cat(*a, **k):
+            return [("猪肉类", Decimal("100000"))]
+
+        monkeypatch.setattr(m, "_build_from_gold_with_charts", fake_gold)
+        monkeypatch.setattr(m, "_query_sales_aggregates", fake_agg)
+        monkeypatch.setattr(m, "_query_sales_aggregates_previous_period", fake_prev)
+        monkeypatch.setattr(m, "_query_top_salespersons_aggregate", fake_top)
+        monkeypatch.setattr(m, "_query_daily_sales_trend_aggregate", fake_trend)
+        monkeypatch.setattr(m, "_query_category_distribution_aggregate", fake_cat)
+
+        response = client.get(
+            "/api/mobile/F999/smart-bi/analysis/sales",
+            params={"startDate": "2025-06-01", "endDate": "2025-06-30"},
+            headers={"Authorization": f"Bearer {f999_token}"},
+        )
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["success"] is True
+        overview = body["data"]["overview"]
+
+        # Y-a: nested rankings filled with English key
+        assert "salesperson" in overview["rankings"]
+        assert overview["rankings"]["salesperson"][0]["name"] == "张三"
+
+        # Y-a: nested charts filled with Chinese keys
+        assert "销售趋势" in overview["charts"]
+        assert "产品分布" in overview["charts"]
+        assert overview["charts"]["销售趋势"]["chartType"] == "LINE"
+        assert overview["charts"]["产品分布"]["chartType"] == "PIE"
+
+        # 4 KPIs (no MoM since prev_sales=0; total_target=0 so completion=0%)
+        assert len(overview["kpiCards"]) == 4
+        # 2-INFO insights (B: no 4-branch)
+        assert all(i["level"] == "INFO" for i in overview["aiInsights"])
