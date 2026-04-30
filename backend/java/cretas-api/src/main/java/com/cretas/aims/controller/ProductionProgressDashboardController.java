@@ -2,6 +2,7 @@ package com.cretas.aims.controller;
 
 import com.cretas.aims.annotation.RequireModule;
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.exception.BusinessException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
@@ -182,9 +183,11 @@ public class ProductionProgressDashboardController {
             data.put("plans", plans);
 
             return ResponseEntity.ok(ApiResponse.success("查询成功", data));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("[B8 打屏] 查询失败 factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.<Map<String, Object>>error("查询生产进度失败: " + e.getMessage()));
+            throw new BusinessException(500, "查询生产进度失败: " + e.getMessage(), e);
         }
     }
 

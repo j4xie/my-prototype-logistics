@@ -8,6 +8,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
+import { ElMessage } from 'element-plus';
 import { Box, Warning, Van, Document } from '@element-plus/icons-vue';
 
 const router = useRouter();
@@ -17,15 +18,30 @@ const loading = ref(false);
 const factoryId = computed(() => authStore.factoryId);
 
 // 仓储统计数据
-const warehouseStats = ref({
+// R76: todayInbound/todayOutbound 用 null 表示"数据待接入" — 之前是 Math.random() 假数据,
+// 已移除。lowStockItems 现在调真实 /material-batches/inventory/alerts 接口。
+const warehouseStats = ref<{
+  totalMaterials: number;
+  lowStockItems: number;
+  todayInbound: number | null;
+  todayOutbound: number | null;
+}>({
   totalMaterials: 0,
   lowStockItems: 0,
-  todayInbound: 0,
-  todayOutbound: 0
+  todayInbound: null,
+  todayOutbound: null
 });
 
 // 统计卡片
-const statCards = computed(() => [
+const statCards = computed<Array<{
+  title: string;
+  value: number | string;
+  unit: string;
+  icon: unknown;
+  color: string;
+  route: string;
+  pending?: boolean;
+}>>(() => [
   {
     title: '原材料批次',
     value: warehouseStats.value.totalMaterials,
@@ -44,19 +60,21 @@ const statCards = computed(() => [
   },
   {
     title: '今日入库',
-    value: warehouseStats.value.todayInbound,
-    unit: '批',
+    value: warehouseStats.value.todayInbound ?? '-',
+    unit: warehouseStats.value.todayInbound !== null ? '批' : '',
     icon: Van,
     color: '#67c23a',
-    route: '/warehouse/materials'
+    route: '/warehouse/materials',
+    pending: warehouseStats.value.todayInbound === null
   },
   {
     title: '今日出库',
-    value: warehouseStats.value.todayOutbound,
-    unit: '批',
+    value: warehouseStats.value.todayOutbound ?? '-',
+    unit: warehouseStats.value.todayOutbound !== null ? '批' : '',
     icon: Van,
     color: '#e6a23c',
-    route: '/warehouse/shipments'
+    route: '/warehouse/shipments',
+    pending: warehouseStats.value.todayOutbound === null
   }
 ]);
 
@@ -76,21 +94,39 @@ async function loadWarehouseData() {
 
   loading.value = true;
   try {
-    const [materialsRes, shipmentsRes] = await Promise.allSettled([
+    const [materialsRes, alertsRes] = await Promise.allSettled([
       get<{ content: Record<string, unknown>[]; totalElements: number }>(`/${factoryId.value}/material-batches?page=1&size=1`),
-      get<{ content: Record<string, unknown>[]; totalElements: number }>(`/${factoryId.value}/shipments?page=1&size=1`)
+      get<Array<Record<string, unknown>>>(`/${factoryId.value}/material-batches/inventory/alerts`, { params: { days: 7 } })
     ]);
+
+    const failed: string[] = [];
 
     if (materialsRes.status === 'fulfilled' && materialsRes.value.success) {
       warehouseStats.value.totalMaterials = materialsRes.value.data?.totalElements ?? 0;
+    } else {
+      failed.push('原材料批次');
+      console.error('[DashboardWarehouse] materials API failed',
+        materialsRes.status === 'rejected' ? materialsRes.reason : materialsRes.value);
     }
 
-    // 模拟其他数据
-    warehouseStats.value.lowStockItems = Math.floor(Math.random() * 5);
-    warehouseStats.value.todayInbound = Math.floor(Math.random() * 10);
-    warehouseStats.value.todayOutbound = Math.floor(Math.random() * 8);
+    if (alertsRes.status === 'fulfilled' && alertsRes.value.success) {
+      // alerts 接口返回综合预警 (LOW_STOCK + EXPIRING + EXPIRED), 取总数作为预警项数
+      warehouseStats.value.lowStockItems = alertsRes.value.data?.length ?? 0;
+    } else {
+      failed.push('库存预警');
+      console.error('[DashboardWarehouse] alerts API failed',
+        alertsRes.status === 'rejected' ? alertsRes.reason : alertsRes.value);
+    }
+
+    if (failed.length > 0) {
+      ElMessage.warning(`部分数据加载失败: ${failed.join('、')}`);
+    }
+
+    // todayInbound / todayOutbound 保持 null — 后端无对应每日聚合接口,
+    // UI 显示 "-" + "数据待接入" 标签, 不再用 Math.random() 编造假数据
   } catch (error) {
-    console.error('Failed to load warehouse data:', error);
+    console.error('[DashboardWarehouse] Failed to load warehouse data:', error);
+    ElMessage.error('加载仓储 Dashboard 失败');
   } finally {
     loading.value = false;
   }
@@ -120,10 +156,13 @@ function navigateTo(route: string) {
         <el-card class="stat-card" shadow="hover" @click="navigateTo(card.route)">
           <div class="stat-content">
             <div class="stat-info">
-              <span class="stat-title">{{ card.title }}</span>
+              <span class="stat-title">
+                {{ card.title }}
+                <el-tag v-if="card.pending" size="small" type="info" effect="plain" style="margin-left: 6px;">数据待接入</el-tag>
+              </span>
               <span class="stat-value" :style="{ color: card.color }">
                 {{ card.value }}
-                <small>{{ card.unit }}</small>
+                <small v-if="card.unit">{{ card.unit }}</small>
               </span>
             </div>
             <el-icon class="stat-icon" :style="{ backgroundColor: card.color + '20', color: card.color }">
@@ -189,16 +228,26 @@ function navigateTo(route: string) {
             </div>
           </template>
           <div class="io-stats">
-            <div class="io-item inbound">
-              <span class="label">入库</span>
-              <span class="value">{{ warehouseStats.todayInbound }}</span>
-              <span class="unit">批</span>
-            </div>
-            <div class="io-item outbound">
-              <span class="label">出库</span>
-              <span class="value">{{ warehouseStats.todayOutbound }}</span>
-              <span class="unit">批</span>
-            </div>
+            <el-empty
+              v-if="warehouseStats.todayInbound === null && warehouseStats.todayOutbound === null"
+              :image-size="60"
+            >
+              <template #description>
+                <div style="color: #909399; font-size: 13px;">出入库数据待接入</div>
+              </template>
+            </el-empty>
+            <template v-else>
+              <div class="io-item inbound">
+                <span class="label">入库</span>
+                <span class="value">{{ warehouseStats.todayInbound ?? '-' }}</span>
+                <span class="unit">批</span>
+              </div>
+              <div class="io-item outbound">
+                <span class="label">出库</span>
+                <span class="value">{{ warehouseStats.todayOutbound ?? '-' }}</span>
+                <span class="unit">批</span>
+              </div>
+            </template>
           </div>
         </el-card>
       </el-col>

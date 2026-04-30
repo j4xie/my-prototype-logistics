@@ -8,6 +8,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
+import { ElMessage } from 'element-plus';
 import type { DashboardOverview, ProductionStats } from '@/types/api';
 import { TrendCharts, DataLine, Timer, Calendar, Document } from '@element-plus/icons-vue';
 
@@ -77,14 +78,31 @@ async function loadProductionData() {
       get<ProductionStats>(`/${factoryId.value}/reports/dashboard/production?period=today`)
     ]);
 
+    const failed: string[] = [];
+
     if (overviewRes.status === 'fulfilled' && overviewRes.value.success) {
       overview.value = overviewRes.value.data;
+    } else {
+      failed.push('概览');
+      console.error('[DashboardProduction] overview API failed',
+        overviewRes.status === 'rejected' ? overviewRes.reason : overviewRes.value);
     }
     if (productionRes.status === 'fulfilled' && productionRes.value.success) {
       productionStats.value = productionRes.value.data;
+    } else {
+      failed.push('生产统计');
+      console.error('[DashboardProduction] production API failed',
+        productionRes.status === 'rejected' ? productionRes.reason : productionRes.value);
+    }
+
+    if (failed.length === 2) {
+      ElMessage.error('Dashboard 数据全部加载失败');
+    } else if (failed.length > 0) {
+      ElMessage.warning(`部分数据加载失败: ${failed.join('、')}`);
     }
   } catch (error) {
-    console.error('Failed to load production data:', error);
+    console.error('[DashboardProduction] Failed to load production data:', error);
+    ElMessage.error('加载生产 Dashboard 失败');
   } finally {
     loading.value = false;
   }

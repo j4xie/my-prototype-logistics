@@ -8,6 +8,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
+import { ElMessage } from 'element-plus';
 import type { DashboardOverview, ProductionStats, QualityStats, EquipmentStats } from '@/types/api';
 import {
   TrendCharts, DataLine, Timer, Warning, Box, User, Money, Setting
@@ -71,10 +72,11 @@ const statCards = computed(() => [
   },
   {
     title: '设备告警',
-    // R42 BUG-14 fix: dashboard/equipment doesn't have activeAlerts field;
+    // R42 BUG-14 + R76: dashboard/equipment doesn't have activeAlerts field;
     // dashboard/overview returns it nested at summary.activeAlerts.
-    value: (overview.value as any)?.summary?.activeAlerts
-      ?? (overview.value as any)?.alerts?.active
+    // 类型已升级到 DashboardOverview.summary?.activeAlerts (R76), 不再需要 `as any`.
+    value: overview.value?.summary?.activeAlerts
+      ?? overview.value?.alerts?.active
       ?? equipmentStats.value?.activeAlerts
       ?? 0,
     unit: '条',
@@ -111,20 +113,45 @@ async function loadDashboardData() {
       get<EquipmentStats>(`/${factoryId.value}/reports/dashboard/equipment`)
     ]);
 
+    const failed: string[] = [];
+
     if (overviewRes.status === 'fulfilled' && overviewRes.value.success) {
       overview.value = overviewRes.value.data;
+    } else {
+      failed.push('概览');
+      console.error('[DashboardAdmin] overview API failed',
+        overviewRes.status === 'rejected' ? overviewRes.reason : overviewRes.value);
     }
     if (productionRes.status === 'fulfilled' && productionRes.value.success) {
       productionStats.value = productionRes.value.data;
+    } else {
+      failed.push('生产');
+      console.error('[DashboardAdmin] production API failed',
+        productionRes.status === 'rejected' ? productionRes.reason : productionRes.value);
     }
     if (qualityRes.status === 'fulfilled' && qualityRes.value.success) {
       qualityStats.value = qualityRes.value.data;
+    } else {
+      failed.push('质量');
+      console.error('[DashboardAdmin] quality API failed',
+        qualityRes.status === 'rejected' ? qualityRes.reason : qualityRes.value);
     }
     if (equipmentRes.status === 'fulfilled' && equipmentRes.value.success) {
       equipmentStats.value = equipmentRes.value.data;
+    } else {
+      failed.push('设备');
+      console.error('[DashboardAdmin] equipment API failed',
+        equipmentRes.status === 'rejected' ? equipmentRes.reason : equipmentRes.value);
+    }
+
+    if (failed.length === 4) {
+      ElMessage.error('Dashboard 数据全部加载失败,请检查网络或联系管理员');
+    } else if (failed.length > 0) {
+      ElMessage.warning(`部分数据加载失败: ${failed.join('、')}`);
     }
   } catch (error) {
-    console.error('Failed to load dashboard data:', error);
+    console.error('[DashboardAdmin] Failed to load dashboard data:', error);
+    ElMessage.error('加载 Dashboard 失败');
   } finally {
     loading.value = false;
   }
