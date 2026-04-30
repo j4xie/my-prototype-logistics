@@ -1028,3 +1028,92 @@ class TestOverview:
         assert d["metricCards"] is None
         assert d["fromCache"] is False
         assert d["lastUpdated"] is not None
+
+    @pytest.mark.asyncio
+    async def test_build_legacy_sales_overview_returns_empty_when_no_rows(self, monkeypatch):
+        """Java line 120-122: SQL returns null/short → buildEmptyDashboard."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+
+        async def fake_aggregates(*a, **k):
+            return None
+
+        monkeypatch.setattr(m, "_query_sales_aggregates", fake_aggregates)
+
+        range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 12, 31))
+        result = await m._build_legacy_sales_overview("F999", range_)
+
+        # Same shape as _build_empty_dashboard
+        assert result["kpiCards"] == []
+        assert result["aiInsights"][0]["level"] == "YELLOW"
+        assert result["aiInsights"][0]["category"] == "数据状态"
+        assert result["rankings"] == {}
+        assert result["charts"] == {}
+
+    @pytest.mark.asyncio
+    async def test_build_legacy_sales_overview_returns_empty_when_zero_sales_and_orders(self, monkeypatch):
+        """Java line 131-134: totalSales=0 AND orderCount=0 → buildEmptyDashboard."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+
+        async def fake_aggregates(*a, **k):
+            return (Decimal("0"), Decimal("0"), Decimal("0"),
+                    Decimal("0"), Decimal("0"), 0)
+
+        monkeypatch.setattr(m, "_query_sales_aggregates", fake_aggregates)
+
+        range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 12, 31))
+        result = await m._build_legacy_sales_overview("F_EMPTY", range_)
+        assert result["kpiCards"] == []
+        assert result["aiInsights"][0]["level"] == "YELLOW"
+
+    @pytest.mark.asyncio
+    async def test_build_legacy_sales_overview_full_path_with_y_a_nested_fill(self, monkeypatch):
+        """Y-a verification: non-empty legacy path fills overview.rankings + overview.charts."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+
+        async def fake_aggregates(*a, **k):
+            return (Decimal("100000"), Decimal("100"), Decimal("30000"),
+                    Decimal("70000"), Decimal("200000"), 42)
+
+        async def fake_prev(*a, **k):
+            return (Decimal("80000"), Decimal("80"), Decimal("20000"),
+                    Decimal("60000"), Decimal("100000"), 30)
+
+        async def fake_top_sp(*a, **k):
+            return [("张三", Decimal("60000"), Decimal("60"))]
+
+        async def fake_trend(*a, **k):
+            return [(date(2025, 1, 1), Decimal("1000"), Decimal("10"))]
+
+        async def fake_cat(*a, **k):
+            return [("猪肉类", Decimal("50000"))]
+
+        monkeypatch.setattr(m, "_query_sales_aggregates", fake_aggregates)
+        monkeypatch.setattr(m, "_query_sales_aggregates_previous_period", fake_prev)
+        monkeypatch.setattr(m, "_query_top_salespersons_aggregate", fake_top_sp)
+        monkeypatch.setattr(m, "_query_daily_sales_trend_aggregate", fake_trend)
+        monkeypatch.setattr(m, "_query_category_distribution_aggregate", fake_cat)
+
+        range_ = m.DateRange.custom(date(2025, 2, 1), date(2025, 2, 28))
+        result = await m._build_legacy_sales_overview("F_MFR", range_)
+
+        # 5 KPIs (incl MoM since prev_sales > 0)
+        assert len(result["kpiCards"]) == 5
+        # Y-a: nested rankings filled
+        assert "salesperson" in result["rankings"]
+        assert len(result["rankings"]["salesperson"]) == 1
+        assert result["rankings"]["salesperson"][0]["name"] == "张三"
+        # Y-a: nested charts filled with Chinese keys
+        assert "销售趋势" in result["charts"]
+        assert "产品分布" in result["charts"]
+        assert result["charts"]["销售趋势"]["title"] == "销售趋势"
+        assert result["charts"]["产品分布"]["title"] == "产品分布"
+        # AI insights = 2-INFO (B: full 4-branch dropped)
+        assert len(result["aiInsights"]) == 2
+        assert all(i["level"] == "INFO" for i in result["aiInsights"])
+        # 100k/200k = 50% < 80 + target>0 → emits suggestion
+        assert result["suggestions"] == ["目标完成率不足80%，建议加强销售推进"]

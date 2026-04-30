@@ -1244,24 +1244,91 @@ def _build_empty_dashboard() -> dict:
 
 
 async def _build_legacy_sales_overview(factory_id: str, range_: DateRange) -> dict:
-    """Legacy fallback placeholder — overview spec replaces with real impl.
+    """Real legacy impl — mirrors Java SalesAnalysisServiceImpl.getSalesOverview
+    line 114-175.
 
-    Returns F999 empty-state DashboardResponse matching `buildEmptyDashboard`
-    Java line 1145-1159: 1 YELLOW insight + 1 suggestion + 16-field shape.
-
-    This is the legacy SalesAnalysisServiceImpl.getSalesOverview path; will be
-    populated by overview spec with real KPI computation from sales data.
+    Triggered by _get_sales_overview when Gold path returns None or fails.
+    Order of operations:
+      1. Aggregate query (_query_sales_aggregates) — 6-tuple
+      2. Empty checks → _build_empty_dashboard (Java line 120-122 + 131-134)
+      3. _build_kpi_cards_from_aggregates (4-5 KPIs + previous-period query for MoM)
+      4. _convert_metric_results_to_kpi_cards (alertLevel→status mapping)
+      5. Y-a (Q-1 RESOLVED 2026-04-30): nested rankings + charts via SQL aggregates
+         (mirror Java line 142-156 — front-end web-admin SalesAnalysis.vue:720
+         reads `overview?.rankings || data.rankings` so nested fill is required
+         for legacy non-empty UI to display)
+      6. _generate_ai_insights_from_metrics (B: 2-INFO only; full 4-branch is
+         dead code per Q-2 grep RESOLVED 2026-04-30)
+      7. _generate_suggestions_from_metrics (1 conditional suggestion)
     """
+    # Q-2 grep 2026-04-30: SalesAnalysisServiceImpl.generateAiInsights line 998-1083
+    # is dead code (0 callers + parameter signature mismatch with aggregates path);
+    # not ported. If Java wires it up later, port then.
+
+    aggregates = await _query_sales_aggregates(factory_id, range_.start_date, range_.end_date)
+    if aggregates is None or len(aggregates) < 6:
+        logger.warning(
+            "[legacy] aggregates empty factory=%s range=%s..%s",
+            factory_id, range_.start_date, range_.end_date,
+        )
+        return _build_empty_dashboard()
+
+    total_sales, total_quantity, total_profit, total_cost, total_target, order_count = aggregates
+    total_sales = _to_decimal(total_sales)
+    total_quantity = _to_decimal(total_quantity)
+    total_profit = _to_decimal(total_profit)
+    total_cost = _to_decimal(total_cost)
+    total_target = _to_decimal(total_target)
+    order_count = int(order_count) if order_count is not None else 0
+
+    if total_sales == Decimal("0") and order_count == 0:
+        logger.warning(
+            "[legacy] zero sales+orders factory=%s range=%s..%s",
+            factory_id, range_.start_date, range_.end_date,
+        )
+        return _build_empty_dashboard()
+
+    metric_results = await _build_kpi_cards_from_aggregates(
+        factory_id=factory_id,
+        start_date=range_.start_date, end_date=range_.end_date,
+        total_sales=total_sales, total_quantity=total_quantity,
+        total_profit=total_profit, total_cost=total_cost,
+        total_target=total_target, order_count=order_count,
+    )
+    kpi_cards = _convert_metric_results_to_kpi_cards(metric_results)
+
+    # Y-a (Q-1 RESOLVED 2026-04-30): fill nested rankings + charts
+    rankings_dict = await _build_legacy_rankings_dict(
+        factory_id, range_.start_date, range_.end_date,
+    )
+    charts_dict: dict = {}
+    trend_chart = await _build_legacy_trend_chart(
+        factory_id, range_.start_date, range_.end_date,
+    )
+    if trend_chart is not None:
+        charts_dict["销售趋势"] = trend_chart
+    category_chart = await _build_legacy_category_chart(
+        factory_id, range_.start_date, range_.end_date,
+    )
+    if category_chart is not None:
+        charts_dict["产品分布"] = category_chart
+
+    ai_insights = _generate_ai_insights_from_metrics(
+        metrics=metric_results,
+        total_sales=total_sales, total_profit=total_profit,
+        order_count=order_count,
+    )
+    suggestions = _generate_suggestions_from_metrics(
+        metrics=metric_results,
+        total_sales=total_sales, total_target=total_target,
+    )
+
     return _new_dashboard_response_dict(
-        ai_insights=[
-            _new_ai_insight_dict(
-                level="YELLOW",
-                category="数据状态",
-                message="当前时间范围内暂无销售数据",
-                action_suggestion="请上传销售数据或调整时间范围",
-            ),
-        ],
-        suggestions=["请先上传销售数据以开始分析"],
+        kpi_cards=kpi_cards,
+        charts=charts_dict,
+        rankings=rankings_dict,
+        ai_insights=ai_insights,
+        suggestions=suggestions,
         last_updated=_utc_now_iso(),
     )
 
