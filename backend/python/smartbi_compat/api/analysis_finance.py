@@ -947,6 +947,58 @@ def _build_profit_chart_from_finance_data(
     return chart_data
 
 
+def _aggregate_profit_by_period_sales(
+    sales_rows: list[dict], period: str
+) -> list[dict]:
+    """Mirror Java `FinanceAnalysisServiceImpl.aggregateProfitByPeriod` line 1423-1447.
+
+    Sales-fallback chart aggregator. Used when finance_data is empty but
+    smart_bi_sales_data has rows (餐饮 tenants).
+
+    Differs from `_build_profit_chart_from_finance_data`:
+      - emits **4 keys per point**: [period, grossProfit, netProfit, grossMargin]
+        (NOT 6 keys — no `revenue` / `cost`)
+      - `netProfit = grossProfit * 0.70` (Java line 1440 hardcoded — known quirk;
+        assumes 30% expense ratio. PR-B preserves this for byte parity.)
+      - `grossMargin` does NOT clamp >100/<-100 → null (Java line 1441-1443
+        emits raw value or 0). For sales rows revenue is never huge negative,
+        so this rarely matters in practice; we mirror Java behavior literally.
+
+    Period aggregation via TreeMap → Python `sorted(by_period.keys())`.
+    """
+    by_period: dict[str, dict[str, Decimal]] = {}
+    for r in sales_rows:
+        if r.get("order_date") is None:
+            continue
+        key = _get_period_key(r["order_date"], period)
+        slot = by_period.setdefault(
+            key, {"profit": Decimal("0"), "revenue": Decimal("0")}
+        )
+        revenue = _to_decimal(r.get("amount") or 0)
+        cost = _to_decimal(r.get("cost") or 0)
+        slot["profit"] += revenue - cost
+        slot["revenue"] += revenue
+
+    out: list[dict] = []
+    for key in sorted(by_period.keys()):
+        slot = by_period[key]
+        gross = slot["profit"]
+        net = (gross * Decimal("0.70")).quantize(Decimal("0.01"), ROUND_HALF_UP)
+        if slot["revenue"] > Decimal("0"):
+            gm = (
+                gross / slot["revenue"] * Decimal("100")
+            ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        else:
+            gm = Decimal("0")
+        out.append({
+            "period": key,
+            "grossProfit": _decimal_to_number(gross.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "netProfit": _decimal_to_number(net),
+            "grossMargin": _decimal_to_number(gm.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        })
+    return out
+
+
 async def _get_profit_trend_chart(
     factory_id: str,
     start_date: date,
