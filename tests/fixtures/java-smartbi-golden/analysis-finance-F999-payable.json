@@ -1,0 +1,78 @@
+{
+    "code": 200,
+    "message": "\u64cd\u4f5c\u6210\u529f",
+    "data": {
+        "endDate": "2025-12-31",
+        "metrics": [
+            {
+                "metricCode": "AP_BALANCE",
+                "metricName": "\u5e94\u4ed8\u4f59\u989d",
+                "value": 0.0,
+                "formattedValue": "0.00",
+                "unit": "\u5143",
+                "changePercent": null,
+                "changeDirection": null,
+                "changeValue": null,
+                "alertLevel": "GREEN",
+                "dimensionValue": null,
+                "description": "\u5c1a\u672a\u652f\u4ed8\u7684\u5e94\u4ed8\u8d26\u6b3e\u603b\u989d"
+            },
+            {
+                "metricCode": "AP_TURNOVER_DAYS",
+                "metricName": "\u5e94\u4ed8\u5468\u8f6c\u5929\u6570",
+                "value": 0,
+                "formattedValue": "0\u5929",
+                "unit": "\u5929",
+                "changePercent": null,
+                "changeDirection": null,
+                "changeValue": null,
+                "alertLevel": "GREEN",
+                "dimensionValue": null,
+                "description": "\u5e73\u5747\u4ed8\u6b3e\u5468\u671f"
+            }
+        ],
+        "agingChart": {
+            "chartType": "BAR",
+            "title": "\u5e94\u4ed8\u8d26\u6b3e\u8d26\u9f84\u5206\u5e03",
+            "seriesField": null,
+            "data": [
+                {
+                    "agingBucket": "0-30\u5929",
+                    "amount": 0,
+                    "percentage": 0
+                },
+                {
+                    "agingBucket": "31-60\u5929",
+                    "amount": 0,
+                    "percentage": 0
+                },
+                {
+                    "agingBucket": "61-90\u5929",
+                    "amount": 0,
+                    "percentage": 0
+                },
+                {
+                    "agingBucket": "90\u5929\u4ee5\u4e0a",
+                    "amount": 0,
+                    "percentage": 0
+                }
+            ],
+            "options": {
+                "colors": [
+                    "#73c0de",
+                    "#5470c6",
+                    "#9a60b4",
+                    "#ea7ccc"
+                ]
+            },
+            "xaxisField": "agingBucket",
+            "yaxisField": "amount"
+        },
+        "startDate": "2025-01-01"
+    },
+    "timestamp": "2026-05-01T00:04:35.694409515",
+    "success": true,
+    "actionHint": null,
+    "severity": null,
+    "hintTarget": null
+}

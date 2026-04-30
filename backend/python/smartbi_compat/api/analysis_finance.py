@@ -329,6 +329,23 @@ def _format_kpi_value(v: Decimal, unit: str) -> str:
     return str(v.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
 
+def _format_currency(v: Optional[Decimal]) -> str:
+    """Mirror Java FinanceAnalysisServiceImpl.formatCurrency (line 1608-1614).
+
+    Uses DecimalFormat("#,##0.00") — thousands separator + 2 decimals, HALF_UP.
+    None → "-" (matches Java behavior on null input).
+
+    Differs from `_format_kpi_value`: this is for finance MetricResult.formattedValue
+    (always 元 with thousands separator); `_format_kpi_value` is for KPICard.value
+    (no thousands separator, unit-conditional decimals).
+    """
+    if v is None:
+        return "-"
+    quantized = v.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    # Python format with thousands separator: f"{x:,.2f}"
+    return f"{quantized:,.2f}"
+
+
 VOLATILE_KEYS = frozenset({
     "generatedAt", "lastUpdated", "cacheExpireAt", "timestamp",
 })
@@ -408,6 +425,73 @@ def _new_metric_result_dict(
         "dimensionValue": dimension_value,
         "description": description,
     }
+
+
+# ============================================================
+# Section 2c: SQL helpers (payable real impl, Phase E)
+# ============================================================
+
+
+async def _query_finance_payable_data(factory_id: str, end_date: date) -> list[dict]:
+    """Query AP rows from smart_bi_finance_data for factory + 1y lookback ending at end_date.
+
+    Java reference: FinanceAnalysisServiceImpl.getPayableMetrics (line 870-918) +
+    getPayableAgingChart (line 832-867). Both call:
+        financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
+            factoryId, RecordType.AP, date.minusYears(1), date)
+    then wrap with filterToLatestUpload().
+
+    Returns list of dicts with keys: payable_amount, payment_amount, aging_days,
+    record_date, upload_id, supplier_name. Empty when no data — caller handles.
+    """
+    pool = None
+    try:
+        from smartbi.config import get_pg_pool  # type: ignore
+        pool = await get_pg_pool()
+    except Exception as e:
+        logger.warning("[payable] pool acquisition failed factory=%s: %s", factory_id, e)
+        return []
+
+    if pool is None:
+        logger.warning("[payable] pool is None factory=%s; returning empty rows", factory_id)
+        return []
+
+    # Java's date.minusYears(1) handles leap-year Feb 29 by clamping to Feb 28 of prior year.
+    try:
+        start_date = end_date.replace(year=end_date.year - 1)
+    except ValueError:
+        # Feb 29 → use Feb 28 of prior year (matches Java LocalDate.minusYears clamp)
+        start_date = end_date.replace(year=end_date.year - 1, day=28)
+
+    sql = """
+        SELECT payable_amount, payment_amount, aging_days, record_date, upload_id, supplier_name
+        FROM smart_bi_finance_data
+        WHERE factory_id = $1
+          AND record_type = 'AP'
+          AND record_date BETWEEN $2 AND $3
+    """
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(sql, factory_id, start_date, end_date)
+
+    raw_rows = [dict(r) for r in rows]
+    return _filter_to_latest_upload(raw_rows)
+
+
+def _filter_to_latest_upload(rows: list[dict]) -> list[dict]:
+    """Mirror Java FinanceAnalysisServiceImpl.filterToLatestUpload (line 89-101).
+
+    If any row has non-null upload_id, keep only rows with upload_id == max(upload_id).
+    If all upload_ids are null, return rows unchanged.
+    Empty input → empty output.
+    """
+    if not rows:
+        return rows
+    upload_ids = [r["upload_id"] for r in rows if r.get("upload_id") is not None]
+    if not upload_ids:
+        return rows
+    target_id = max(upload_ids)
+    return [r for r in rows if r.get("upload_id") == target_id]
 
 
 # ============================================================
@@ -559,6 +643,130 @@ async def _get_receivable_aging_chart(factory_id: str, end_date: date) -> dict:
 
 
 # ============================================================
+# Section 3b: Payable sub-services real impls (Phase E)
+# Mirror Java FinanceAnalysisServiceImpl getPayableMetrics + getPayableAgingChart.
+# Differs from receivable: NO alertLevel per bucket, NO showAlert option.
+# ============================================================
+
+
+async def _get_payable_metrics(factory_id: str, end_date: date) -> list:
+    """Real impl mirroring Java FinanceAnalysisServiceImpl.getPayableMetrics (line 870-918).
+
+    Returns 2 MetricResults ALWAYS (even when 0 rows):
+      - AP_BALANCE: 应付余额 = sum(payableAmount) - sum(paymentAmount)
+      - AP_TURNOVER_DAYS: (apBalance/2) / (totalPayment/365)
+
+    Empty case: both metrics emit value=0.0 / formattedValue per Java behavior.
+    """
+    rows = await _query_finance_payable_data(factory_id, end_date)
+
+    total_payable = sum(
+        (_to_decimal(r.get("payable_amount")) for r in rows),
+        Decimal("0"),
+    )
+    total_payment = sum(
+        (_to_decimal(r.get("payment_amount")) for r in rows),
+        Decimal("0"),
+    )
+
+    ap_balance = total_payable - total_payment
+
+    # AP_TURNOVER_DAYS calc per Java line 902-906:
+    #   avgPayable = apBalance / 2 (scale=4, HALF_UP)
+    #   dailyPayment = totalPayment / 365 (scale=4, HALF_UP)
+    #   turnoverDays = dailyPayment > 0 ? avgPayable / dailyPayment (scale=4, HALF_UP) : 0
+    avg_payable = (ap_balance / Decimal("2")).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    daily_payment = (total_payment / Decimal("365")).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    if daily_payment > Decimal("0"):
+        turnover_days = (avg_payable / daily_payment).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    else:
+        turnover_days = Decimal("0")
+
+    return [
+        _new_metric_result_dict(
+            metric_code="AP_BALANCE",
+            metric_name="应付余额",
+            value=_decimal_to_number(ap_balance.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+            formatted_value=_format_currency(ap_balance),
+            unit="元",
+            alert_level="GREEN",
+            description="尚未支付的应付账款总额",
+        ),
+        _new_metric_result_dict(
+            metric_code="AP_TURNOVER_DAYS",
+            metric_name="应付周转天数",
+            value=_decimal_to_number(turnover_days.quantize(Decimal("1"), rounding=ROUND_HALF_UP)),
+            formatted_value=str(turnover_days.quantize(Decimal("1"), rounding=ROUND_HALF_UP)) + "天",
+            unit="天",
+            alert_level="GREEN",
+            description="平均付款周期",
+        ),
+    ]
+
+
+async def _get_payable_aging_chart(factory_id: str, end_date: date) -> dict:
+    """Real impl mirroring Java FinanceAnalysisServiceImpl.getPayableAgingChart (line 832-867).
+
+    Always emits 4 buckets in fixed order. data items have 3 keys:
+    {agingBucket, amount, percentage} — NO alertLevel (differs from receivable).
+    options has 1 key: {colors: [...]} — NO showAlert (differs from receivable).
+
+    Bucket assignment (per calculatePayableAgingBuckets line 1529-1561):
+      outstanding = payableAmount - paymentAmount; skip if outstanding <= 0
+      bucket by aging_days: <=30 / <=60 / <=90 / else
+    """
+    rows = await _query_finance_payable_data(factory_id, end_date)
+
+    buckets: dict[str, Decimal] = {
+        "0-30天":   Decimal("0"),
+        "31-60天":  Decimal("0"),
+        "61-90天":  Decimal("0"),
+        "90天以上": Decimal("0"),
+    }
+
+    for r in rows:
+        payable = _to_decimal(r.get("payable_amount"))
+        payment = _to_decimal(r.get("payment_amount"))
+        outstanding = payable - payment
+        if outstanding <= Decimal("0"):
+            continue
+        aging = r.get("aging_days") or 0
+        if aging <= 30:
+            buckets["0-30天"] += outstanding
+        elif aging <= 60:
+            buckets["31-60天"] += outstanding
+        elif aging <= 90:
+            buckets["61-90天"] += outstanding
+        else:
+            buckets["90天以上"] += outstanding
+
+    total_ap = sum(buckets.values(), Decimal("0"))
+
+    chart_data = []
+    for bucket_name in ("0-30天", "31-60天", "61-90天", "90天以上"):
+        amount = buckets[bucket_name]
+        if total_ap > Decimal("0"):
+            pct = (amount / total_ap).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP) * Decimal("100")
+        else:
+            pct = Decimal("0")
+        chart_data.append({
+            "agingBucket": bucket_name,
+            "amount": _decimal_to_number(amount),
+            "percentage": _decimal_to_number(pct),
+        })
+
+    return _new_chart_config_dict(
+        chart_type="BAR",
+        title="应付账款账龄分布",
+        series_field=None,
+        data=chart_data,
+        options={"colors": ["#73c0de", "#5470c6", "#9a60b4", "#ea7ccc"]},
+        xaxis_field="agingBucket",
+        yaxis_field="amount",
+    )
+
+
+# ============================================================
 # Section 4: Composite + per-type assembly (Phase C.2 + Phase E.4)
 # ============================================================
 
@@ -585,8 +793,23 @@ async def _get_comprehensive_finance_analysis(factory_id: str, range_: DateRange
 
 
 async def _get_payable_analysis(factory_id: str, start_date: date, end_date: date) -> dict:
-    """STUB — Phase E.4 fills with payable per-type 4-key shape."""
-    raise NotImplementedError("filled in Phase E.4")
+    """Java reference: SmartBIAnalysisController.getFinanceAnalysis line 240-258.
+
+    Java put order in HashMap (line 240-241 + 255-258):
+      startDate / endDate / metrics / agingChart
+
+    F.1 recorded F999 Jackson key order (NOT Java put-order, since HashMap is unordered):
+      [endDate, metrics, agingChart, startDate]
+    """
+    metrics = await _get_payable_metrics(factory_id, end_date)
+    aging_chart = await _get_payable_aging_chart(factory_id, end_date)
+
+    return {
+        "endDate":    end_date.isoformat(),
+        "metrics":    metrics,
+        "agingChart": aging_chart,
+        "startDate":  start_date.isoformat(),
+    }
 
 
 # ============================================================
