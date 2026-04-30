@@ -1,36 +1,73 @@
 """Async expression template learner (β C6).
 
-Reads: intent_match_records (high-confidence rows)
-Writes: learned_expressions (full template with embedding)
+Reads: intent_match_records (high-confidence rows from Java's match pipeline)
+Writes: ai_learned_expressions (full template with embedding_vec)
 
 Different from KeywordLearner: keeps full query as expression template,
 preserves linguistic context. Future intent matching can reuse these as
 exemplars in stage 5 SEMANTIC or stage 8 LLM RAG context.
 
-Cron schedule: 5min interval (background task in main.py / T19).
+Cron schedule: 5min interval (background task in main.py / W6).
 DB error → returns 0 gracefully.
+
+Post-W0 fix-pass F1: rewritten with REAL Java schema:
+- intent_match_records.user_input → query (SQL alias)
+- intent_match_records.matched_intent_code → intent_code (SQL alias)
+- intent_match_records.confidence_score (was: confidence)
+- ai_learned_expressions.embedding_vec (new pgvector col, V20260501_15)
+- expression_hash (SHA256, NOT NULL, ON CONFLICT key) — added per real schema
+- source_type = 'auto_learned' (NOT NULL) — added per real schema
+- id auto-generated via gen_random_uuid()
 """
 from __future__ import annotations
 
+import hashlib
 import logging
+from typing import Sequence
 
 from ai.embedding import get_embedding
 
 logger = logging.getLogger(__name__)
 
 
+# Reads recent high-confidence matches. SQL aliases preserve original loop body.
 READ_SQL = """
-SELECT query, intent_code, factory_id
+SELECT user_input AS query, matched_intent_code AS intent_code, factory_id
 FROM intent_match_records
-WHERE confidence >= $1
+WHERE confidence_score >= $1
   AND created_at > NOW() - INTERVAL '1 hour'
+  AND matched_intent_code IS NOT NULL
 """
 
+# REAL ai_learned_expressions has required NOT NULL columns:
+# id (uuid → gen_random_uuid()::text), expression_hash (SHA256 hex), source_type.
+# embedding_vec is the new pgvector column added by V20260501_15. Java's BLOB
+# column embedding_vector is left untouched by Python writes.
 INSERT_SQL = """
-INSERT INTO learned_expressions(intent_code, expression, expression_embedding, factory_id, learned_at)
-VALUES($1, $2, $3, $4, NOW())
-ON CONFLICT DO NOTHING
+INSERT INTO ai_learned_expressions(
+    id, intent_code, expression, expression_hash, source_type,
+    embedding_vec, factory_id, is_active, created_at, updated_at
+)
+VALUES(gen_random_uuid()::text, $1, $2, $3, 'auto_learned',
+       $4::vector, $5, true, NOW(), NOW())
+ON CONFLICT (expression_hash) DO NOTHING
 """
+
+
+def _compute_expression_hash(expression: str) -> str:
+    """SHA256 hex digest. Real schema enforces NOT NULL + UNIQUE on expression_hash
+    so Python must compute the same hash Java would (UTF-8, hex)."""
+    return hashlib.sha256(expression.encode("utf-8")).hexdigest()
+
+
+def _vec_to_pgvector_text(vec: Sequence[float]) -> str:
+    """Convert List[float] to pgvector text literal `[v1,v2,...]`.
+
+    asyncpg has no pgvector adapter on the shared pool — pass as text and let
+    the SQL `\\$4::vector` cast handle parsing. Same pattern as semantic.py and
+    rag/retrieval.py.
+    """
+    return "[" + ",".join(repr(float(x)) for x in vec) + "]"
 
 
 class ExpressionLearner:
@@ -38,7 +75,9 @@ class ExpressionLearner:
         self.pool = pool
 
     async def run_once(self, min_confidence: float = 0.95) -> int:
-        """Returns number of new expressions learned (INSERT count). 0 on error."""
+        """Returns number of new expressions inserted (best-effort, ON CONFLICT skips dup).
+        0 on error or empty.
+        """
         count = 0
         try:
             async with self.pool.acquire() as conn:
@@ -49,9 +88,12 @@ class ExpressionLearner:
                         logger.warning("ExpressionLearner: embedding failed for %r, skipping",
                                        row["query"][:50])
                         continue
+                    expr_hash = _compute_expression_hash(row["query"])
+                    vec_text = _vec_to_pgvector_text(vec)
                     await conn.execute(
                         INSERT_SQL,
-                        row["intent_code"], row["query"], vec, row["factory_id"],
+                        row["intent_code"], row["query"], expr_hash,
+                        vec_text, row["factory_id"],
                     )
                     count += 1
         except Exception:
