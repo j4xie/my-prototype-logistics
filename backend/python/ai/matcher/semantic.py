@@ -23,7 +23,7 @@ from typing import List, Sequence
 
 from ai.config import default_config
 from ai.dto import CandidateIntentDto, MatchMethod
-from ai.embedding import get_embedding
+from ai.embedding import get_embedding, get_embedding_cached
 
 logger = logging.getLogger(__name__)
 
@@ -74,8 +74,14 @@ class SemanticMatcher:
         factoryId: str,
         businessType: str,
     ) -> List[CandidateIntentDto]:
-        """Compute query embedding, run pgvector kNN, return top-K candidates."""
-        vec = await get_embedding(query)
+        """Compute query embedding, run pgvector kNN, return top-K candidates.
+
+        β F2 fix (C2): use request-scoped cache. SemanticRouter (β stage 0)
+        and stage 5 SEMANTIC compute the same query embedding within a single
+        request — without the cache, gRPC Encode would be called twice.
+        Cache is initialized per-request via FastAPI middleware (see ai/api.py).
+        """
+        vec = await get_embedding_cached(query)
         if vec is None:
             logger.warning("Stage 5 SEMANTIC: embedding unavailable, skipping")
             return []
