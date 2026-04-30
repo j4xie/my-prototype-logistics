@@ -150,3 +150,20 @@ def test_tokenize_filters_stopwords():
     tokens = tokenize("我和你的库存")  # 我, 和, 你, 的 are stopwords (single-char though)
     # 2-4 char filter naturally excludes single chars; just verify "库存" survives
     assert "库存" in tokens
+
+
+def test_update_keywords_targets_only_matching_factory():
+    """F6 (I-NEW-3) regression: UPDATE WHERE clause must use IS NOT DISTINCT FROM
+    so per-tenant calls (factory_id=$3 non-NULL) hit only that tenant's row, and
+    global calls ($3=NULL) hit only the global row.
+
+    The previous `(factory_id = $3 OR factory_id IS NULL)` predicate matched both
+    the tenant-specific row AND the global row when $3 was a real factory_id,
+    polluting the global config across all tenants. Lock the SQL semantic with a
+    string-contains check so a future "fix" can't reintroduce the bug.
+    """
+    from ai.learning.keyword_learner import UPDATE_KEYWORDS_SQL
+
+    assert "IS NOT DISTINCT FROM" in UPDATE_KEYWORDS_SQL
+    # Confirm the buggy pattern is gone (cross-tenant leak).
+    assert "factory_id IS NULL" not in UPDATE_KEYWORDS_SQL

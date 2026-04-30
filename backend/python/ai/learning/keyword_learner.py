@@ -43,11 +43,17 @@ WHERE created_at > NOW() - INTERVAL '1 hour'
 # set as a JSON array; idempotency is not required here (cron is bounded by
 # 1-hour SQL window so duplicate emits over multiple ticks are negligible —
 # revisit with a server-side dedup if it grows).
+#
+# F6 fix-pass (I-NEW-3): WHERE uses `IS NOT DISTINCT FROM` so per-tenant calls
+# (factory_id=$3 non-NULL) match ONLY the matching tenant row, and global calls
+# ($3=NULL) match ONLY the global (factory_id IS NULL) row. PostgreSQL's
+# `IS NOT DISTINCT FROM` treats NULL=NULL as true and NULL=non-NULL as false,
+# preventing tenant-specific keywords from leaking into the global config.
 UPDATE_KEYWORDS_SQL = """
 UPDATE ai_intent_configs
 SET keywords = COALESCE(keywords, '[]'::jsonb) || $1::jsonb,
     updated_at = NOW()
-WHERE intent_code = $2 AND (factory_id = $3 OR factory_id IS NULL)
+WHERE intent_code = $2 AND factory_id IS NOT DISTINCT FROM $3
 """
 
 # Single-char stopwords (filtered separately even though regex below requires 2-4 chars)

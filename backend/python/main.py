@@ -596,8 +596,14 @@ async def lifespan(app: FastAPI):
 
             # β: construct sub-modules. Cold-start safe: empty Calibrator coefs,
             # default IntentScorer weights, default RAGEvaluator thresholds.
+            #
+            # F6 fix-pass (I-NEW-4): LlmTierSelector dark-shipped behind env flag.
+            # Disabled by default — its pre-stage-8 LLM call adds 1-3s user-visible
+            # latency. Operators opt in via AI_TIER_SELECTOR_ENABLED=true once a
+            # latency budget review approves it. Orchestrator already accepts None.
+            _tier_selector_enabled = os.environ.get("AI_TIER_SELECTOR_ENABLED", "false").lower() == "true"
             _ai_sem_router = SemanticRouter()
-            _ai_tier_selector = LlmTierSelector()
+            _ai_tier_selector = LlmTierSelector() if _tier_selector_enabled else None
             _ai_calibrator = Calibrator(coefs={})
             _ai_scorer = IntentScorer()
             _ai_rag_retriever = RAGRetriever(ai_pg_pool)
@@ -614,7 +620,11 @@ async def lifespan(app: FastAPI):
                 rag_retriever=_ai_rag_retriever,
                 rag_evaluator=_ai_rag_evaluator,
             )
-            logger.info("[startup] AI orchestrator wired (orchestrator + 3 matchers + β: router/tier/calibrator/scorer/rag)")
+            logger.info(
+                "[startup] AI orchestrator wired (orchestrator + 3 matchers + β: router/calibrator/scorer/rag, "
+                "tier_selector=%s)",
+                "ENABLED" if _tier_selector_enabled else "disabled (set AI_TIER_SELECTOR_ENABLED=true to opt in)",
+            )
 
             # Initial snapshot load + periodic refresh (~5min) per spec §5.4.
             if ai_pg_pool is not None:
