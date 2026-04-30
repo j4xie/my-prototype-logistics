@@ -49,6 +49,29 @@ router = APIRouter()
 # Populated by Tasks C.3 - C.7
 
 
+def _infer_granularity(start: date, end: date) -> str:
+    """Infer Java DateRangeUtils granularity from start/end dates.
+
+    Mirrors Java DateRange.granularity field semantics observed in F999 golden:
+      YEAR   — full calendar year (Jan 1 → Dec 31, same year)
+      MONTH  — first day of month → last day of same month
+      CUSTOM — anything else
+    """
+    if (start.month == 1 and start.day == 1
+            and end.month == 12 and end.day == 31
+            and start.year == end.year):
+        return "YEAR"
+    # First day of a month to last day of the same month
+    import calendar
+    last_day = calendar.monthrange(start.year, start.month)[1]
+    if (start.day == 1
+            and end.year == start.year
+            and end.month == start.month
+            and end.day == last_day):
+        return "MONTH"
+    return "CUSTOM"
+
+
 def _new_date_range_dict(range_: DateRange) -> dict:
     """Mirror DateRange.java @Data getters incl. derived `days` and `valid`.
 
@@ -59,13 +82,24 @@ def _new_date_range_dict(range_: DateRange) -> dict:
       relative (boolean)
       days (derived = (endDate - startDate).days + 1)
       valid (derived = startDate <= endDate)
+
+    granularity and originalExpression are inferred from start/end dates
+    since DateRange.custom() does not carry these fields.
     """
     days_count = (range_.end_date - range_.start_date).days + 1
+    # Prefer explicit attrs if present (e.g. future DateRange subclasses),
+    # otherwise infer from dates
+    granularity = getattr(range_, "granularity", None) or _infer_granularity(
+        range_.start_date, range_.end_date
+    )
+    original_expression = getattr(range_, "original_expression", None) or (
+        f"{range_.start_date.isoformat()} 至 {range_.end_date.isoformat()}"
+    )
     return {
         "startDate": range_.start_date.isoformat(),
         "endDate": range_.end_date.isoformat(),
-        "granularity": getattr(range_, "granularity", "CUSTOM"),
-        "originalExpression": getattr(range_, "original_expression", None),
+        "granularity": granularity,
+        "originalExpression": original_expression,
         "relative": getattr(range_, "relative", False),
         "days": days_count,
         "valid": range_.start_date <= range_.end_date,

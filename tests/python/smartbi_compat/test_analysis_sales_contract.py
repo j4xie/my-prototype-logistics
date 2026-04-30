@@ -143,3 +143,31 @@ class TestEnvelope:
         assert r_with_dim.status_code == 200
         # After stripping volatile timestamps, the responses must be equal
         assert _strip_volatile(r_no_dim.json()) == _strip_volatile(r_with_dim.json())
+
+    def test_F999_empty_state_byte_shape(self, client, f999_token):
+        """Foundation merge gate. F999 has no sales data → composite Map
+        matches golden after strip-volatile."""
+        response = client.get(
+            "/api/mobile/F999/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+            headers={"Authorization": f"Bearer {f999_token}"},
+        )
+        assert response.status_code == 200
+
+        actual = _strip_volatile(response.json())
+
+        with open(GOLDEN_DIR / "analysis-sales-F999.json", encoding="utf-8") as f:
+            golden = json.load(f)
+        # Golden file format wraps response: {"verb":..., "response": {...}, "_meta": ...}
+        expected_response = _strip_volatile(golden["response"])
+
+        # The Python actual envelope shape may differ slightly from Java
+        # (e.g. envelope `code`/`httpStatus` keys). Compare just the `data`
+        # field which is what foundation owns.
+        assert actual.get("data") == expected_response.get("data"), (
+            f"F999 data byte-shape mismatch.\n"
+            f"Actual data keys: "
+            f"{sorted(actual.get('data', {}).keys()) if isinstance(actual.get('data'), dict) else 'N/A'}\n"
+            f"Expected data keys: "
+            f"{sorted(expected_response.get('data', {}).keys()) if isinstance(expected_response.get('data'), dict) else 'N/A'}"
+        )
