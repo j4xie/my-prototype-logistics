@@ -94,6 +94,7 @@ async function handleDelete(row: Record<string, unknown>) {
 
 const statusMap: Record<string, { text: string; type: string }> = {
   available: { text: '可用', type: 'success' },
+  loading: { text: '装货中', type: 'warning' },  // 出货时被锁定
   in_use: { text: '使用中', type: 'warning' },
   maintenance: { text: '维护中', type: 'info' },
   retired: { text: '已退役', type: 'info' },
@@ -159,6 +160,7 @@ const statusMap: Record<string, { text: string; type: string }> = {
         <el-form-item label="状态">
           <el-select v-model="form.status" style="width: 100%">
             <el-option label="可用" value="available" />
+            <el-option label="装货中" value="loading" />
             <el-option label="使用中" value="in_use" />
             <el-option label="维护中" value="maintenance" />
             <el-option label="已退役" value="retired" />
