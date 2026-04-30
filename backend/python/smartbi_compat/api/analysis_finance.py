@@ -362,3 +362,136 @@ def _utc_now_iso() -> str:
     Stripped by `_strip_volatile` before byte compare.
     """
     return datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
+
+
+# ============================================================
+# Section 2b: MetricResult factory (finance-specific; NOT in sister)
+# Per A.1: 11 declared @Data fields, all emit per Lombok.
+# AlertLevel enum (inline in MetricResult.java line 97-122): GREEN / YELLOW / RED
+# ============================================================
+
+
+def _new_metric_result_dict(
+    metric_code: str,
+    metric_name: str,
+    value: Optional[Any] = None,           # Decimal or pre-converted number
+    formatted_value: Optional[str] = None,
+    unit: Optional[str] = None,
+    change_percent: Optional[Any] = None,  # Decimal or number
+    change_direction: Optional[str] = None,
+    change_value: Optional[Any] = None,
+    alert_level: Optional[str] = None,     # GREEN / YELLOW / RED
+    dimension_value: Optional[str] = None,
+    description: Optional[str] = None,
+) -> dict:
+    """Mirror MetricResult.java @Data getters (11 fields, all emit per Lombok).
+
+    Field order matches Java declaration order verified A.1.
+
+    `value`, `changePercent`, `changeValue` callers should pass `_decimal_to_number(d)`
+    or a pre-converted number (NOT a bare Decimal — FastAPI serializes Decimal as
+    string and breaks byte parity with Java Jackson).
+
+    `alertLevel` is enum.name() string ("GREEN" / "YELLOW" / "RED") matching Java
+    Jackson serialization of inline AlertLevel enum.
+    """
+    return {
+        "metricCode": metric_code,
+        "metricName": metric_name,
+        "value": value,
+        "formattedValue": formatted_value,
+        "unit": unit,
+        "changePercent": change_percent,
+        "changeDirection": change_direction,
+        "changeValue": change_value,
+        "alertLevel": alert_level,
+        "dimensionValue": dimension_value,
+        "description": description,
+    }
+
+
+# ============================================================
+# Section 3: Sub-service stubs (composite path)
+# Phase C.1 fills these with A.2-verified empty-state shapes.
+# ============================================================
+
+
+async def _get_finance_overview(factory_id: str, range_: DateRange) -> dict:
+    """STUB — Phase C.1 fills based on Java FinanceAnalysisServiceImpl.getFinanceOverview empty path."""
+    raise NotImplementedError("filled in Phase C.1")
+
+
+async def _get_profit_metrics(factory_id: str, range_: DateRange) -> list:
+    """STUB — Phase C.1 fills based on Java getProfitMetrics. NOTE: A.2 found Java
+    ALWAYS returns 5 metrics (GROSS_PROFIT/GROSS_MARGIN/NET_PROFIT/NET_MARGIN/ROI),
+    NOT empty list. Phase C.1 must construct 5-metric default list."""
+    raise NotImplementedError("filled in Phase C.1")
+
+
+async def _get_cost_structure_chart(factory_id: str, range_: DateRange) -> dict:
+    """STUB — Phase C.1 fills based on Java getCostStructureChart empty return.
+    A.2/A.5 found: chartType=PIE, title='成本结构分析', xAxisField='category',
+    yAxisField='value', options={showPercentage:true, colors:[...]}, data=[]."""
+    raise NotImplementedError("filled in Phase C.1")
+
+
+async def _get_receivable_aging_chart(factory_id: str, end_date: date) -> dict:
+    """STUB — Phase C.1 fills. NOTE: A.5 found chartType=BAR (not PIE),
+    ALWAYS 4 buckets with {agingBucket, amount, percentage, alertLevel} keys.
+    Signature uses end_date only (mirrors Java line 226 / 252)."""
+    raise NotImplementedError("filled in Phase C.1")
+
+
+# ============================================================
+# Section 4: Composite + per-type assembly (Phase C.2 + Phase E.4)
+# ============================================================
+
+
+async def _get_comprehensive_finance_analysis(factory_id: str, range_: DateRange) -> dict:
+    """STUB — Phase C.2 fills. A.5 recorded F999 Jackson key order:
+      [overview, costStructure, dateRange, generatedAt, profitMetrics, receivableAging]
+    NOTE: order differs from Java put-order; use A.5-recorded order."""
+    raise NotImplementedError("filled in Phase C.2")
+
+
+async def _get_payable_analysis(factory_id: str, start_date: date, end_date: date) -> dict:
+    """STUB — Phase E.4 fills with payable per-type 4-key shape."""
+    raise NotImplementedError("filled in Phase E.4")
+
+
+# ============================================================
+# Section 5: Route handler
+# ============================================================
+
+
+@router.get("/api/mobile/{factory_id}/smart-bi/analysis/finance")
+async def get_finance_analysis(
+    factory_id: str,
+    startDate: date = Query(..., alias="startDate"),
+    endDate: date = Query(..., alias="endDate"),
+    analysisType: Optional[str] = Query(None, alias="analysisType"),
+    auth: AuthContext = Depends(verify_jwt_and_factory),
+) -> dict:
+    """Java reference: SmartBIAnalysisController.getFinanceAnalysis line 222-274.
+
+    Branches:
+      analysisType empty       → composite (6-key Map via getComprehensiveAnalysis)
+      analysisType=payable     → payable per-type (4-key shape, real impl Phase E)
+      analysisType=other       → 501 envelope (un-ported, see spec §6 / §12)
+    """
+    range_ = DateRange.custom(startDate, endDate)
+
+    if not analysisType:
+        result = await _get_comprehensive_finance_analysis(auth.factory_id, range_)
+        return wrap_response(result)
+
+    if analysisType == "payable":
+        result = await _get_payable_analysis(auth.factory_id, startDate, endDate)
+        return wrap_response(result)
+
+    return wrap_response(
+        data=None,
+        success=False,
+        code=501,
+        message=f"analysisType={analysisType} 尚未 port 至 Python，请暂用 Java endpoint 或等待 phase2a/t-finance-perX 副轨完成",
+    )
