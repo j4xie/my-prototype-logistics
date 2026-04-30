@@ -370,3 +370,30 @@ async def _get_comprehensive_sales_analysis(
         "generatedAt":        _utc_now_iso(),
         "trendChart":         await _get_sales_trend_chart(factory_id, range_, "DAY"),
     }
+
+
+# ============================================================
+# Section 4: Route handler (Task D.3)
+# ============================================================
+
+@router.get("/api/mobile/{factory_id}/smart-bi/analysis/sales")
+async def get_sales_analysis(
+    factory_id: str,
+    startDate: date = Query(..., alias="startDate"),
+    endDate: date = Query(..., alias="endDate"),
+    department: Optional[str] = None,
+    dimension: Optional[str] = None,
+    auth: AuthContext = Depends(verify_jwt_and_factory),
+) -> dict:
+    """Java reference: SmartBIAnalysisController.getSalesAnalysis line 98-138.
+
+    department/dimension query params accepted but IGNORED — Java line 110
+    short-circuits to getComprehensiveAnalysis when smartBIService is non-null.
+    F999 goldens confirm: dimension=salesperson golden is byte-identical to
+    no-dimension golden except _meta.
+
+    Returns 7-key composite Map wrapped in standard envelope.
+    """
+    range_ = DateRange.custom(startDate, endDate)
+    result = await _get_comprehensive_sales_analysis(auth.factory_id, range_)
+    return wrap_response(result)
