@@ -1048,8 +1048,14 @@ async def _get_profit_trend_chart(
     if revenue_data or cost_data:
         chart_data = _build_profit_chart_from_finance_data(revenue_data, cost_data, period)
     else:
-        # PR-A: empty (no fallback). PR-B will add sales fallback here.
-        chart_data = []
+        # PR-B sales fallback: when finance_data empty, aggregate by period from
+        # smart_bi_sales_data (Java line 237-249). Returns 4-key points (period,
+        # grossProfit, netProfit=gross*0.70, grossMargin) — differs from main
+        # path's 6-key points.
+        sales_rows = await _query_finance_sales_fallback(
+            factory_id, start_date, end_date
+        )
+        chart_data = _aggregate_profit_by_period_sales(sales_rows, period)
 
     options = {
         "yAxis": [
