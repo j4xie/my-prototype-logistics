@@ -531,3 +531,90 @@ async def test_stage_8_no_rag_when_components_absent():
     # When no retriever, rag_cases either not passed OR passed as []
     rag_cases = call_kwargs.get("rag_cases")
     assert rag_cases is None or rag_cases == []
+
+
+# ======================================================================
+# β F2 fix (I1): OOD flag propagation via timingMs side-channel
+# ======================================================================
+
+
+@pytest.mark.asyncio
+async def test_ood_propagates_to_timing_ms():
+    """β F2 I1: when SemanticRouter detects OOD, surface signal as
+    timingMs.oodDetected = 1 so Java caller / observability can react.
+
+    Cannot add a 20th top-level field (would break α F999/F001 byte-shape
+    parity gates). timingMs Map<String,Long> tolerates extra keys and is
+    stripped by contract test's VOLATILE_KEYS, so adding a key here is
+    golden-safe.
+    """
+    from ai.dto import MatchMethod
+    from ai.orchestrator import Orchestrator
+    from ai.router.semantic_router import RouteDecision
+
+    fake_decision = RouteDecision(
+        method="NEED_FULL_LLM",
+        ood_detected=True,  # router decided this query is out-of-distribution
+        candidates=[],
+        query_embedding=None,
+    )
+
+    sem_matcher = MagicMock(); sem_matcher.match = AsyncMock(return_value=[])
+    cls_matcher = MagicMock(); cls_matcher.match = AsyncMock(return_value=[])
+    llm_matcher = MagicMock(); llm_matcher.match = AsyncMock(return_value=[])
+    fake_router = MagicMock(); fake_router.route = AsyncMock(return_value=fake_decision)
+
+    orch = Orchestrator(
+        sem_matcher, cls_matcher, llm_matcher,
+        semantic_router=fake_router,
+    )
+    result = await orch.match(
+        query="totally unrelated nonsense", factoryId="F", businessType="COMMON",
+        userId="u", role="r", visible_intents=[], history=[], min_confidence=0.7,
+    )
+    # No matches → no-match-fallback path; result.timingMs must contain oodDetected=1
+    assert result.timingMs is not None
+    assert result.timingMs.get("oodDetected") == 1, (
+        f"Expected timingMs.oodDetected=1, got timingMs={result.timingMs}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_no_ood_when_signal_strong():
+    """β F2 I1 counter-test: when ood_detected=False, oodDetected key is
+    absent from timingMs (default-path goldens stay clean)."""
+    from ai.dto import CandidateIntentDto, MatchMethod
+    from ai.orchestrator import Orchestrator
+    from ai.router.semantic_router import RouteDecision
+
+    cand = CandidateIntentDto(
+        intentCode="INVENTORY_QUERY", intentName="库存查询",
+        confidence=0.95, matchMethod=MatchMethod.SEMANTIC,
+    )
+    fake_decision = RouteDecision(
+        method="DIRECT_EXECUTE",
+        ood_detected=False,  # strong signal, NOT out-of-distribution
+        candidates=[cand],
+        query_embedding=[0.1] * 768,
+    )
+
+    sem_matcher = MagicMock(); sem_matcher.match = AsyncMock(return_value=[])
+    cls_matcher = MagicMock(); cls_matcher.match = AsyncMock(return_value=[])
+    llm_matcher = MagicMock(); llm_matcher.match = AsyncMock(return_value=[])
+    fake_router = MagicMock(); fake_router.route = AsyncMock(return_value=fake_decision)
+
+    orch = Orchestrator(
+        sem_matcher, cls_matcher, llm_matcher,
+        semantic_router=fake_router,
+    )
+    result = await orch.match(
+        query="查库存", factoryId="F001", businessType="FACTORY",
+        userId="22", role="factory_super_admin",
+        visible_intents=[make_intent_row("INVENTORY_QUERY", "库存查询",
+                                          tool_name="material_inventory_query")],
+        history=[], min_confidence=0.7,
+    )
+    assert result.timingMs is not None
+    assert "oodDetected" not in result.timingMs, (
+        f"oodDetected should be absent when signal is strong; got timingMs={result.timingMs}"
+    )

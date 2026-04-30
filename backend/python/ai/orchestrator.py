@@ -95,6 +95,15 @@ class Orchestrator:
                 decision = None
             timing["routerMs"] = int((time.time() - t_router) * 1000)
 
+            # β F2 fix (I1): surface OOD signal via timingMs side-channel.
+            # Cannot add a 20th top-level field (would break F999/F001 byte-shape).
+            # timingMs is Map<String,Long> in Java (Jackson tolerates extras) and
+            # the contract test strips timingMs via VOLATILE_KEYS, so adding a
+            # key here is golden-safe. Only emit when ood_detected=True so the
+            # default-path response stays clean.
+            if decision is not None and decision.ood_detected:
+                timing["oodDetected"] = 1
+
             if decision is not None:
                 if decision.method == "DIRECT_EXECUTE":
                     logger.info(
