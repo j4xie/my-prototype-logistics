@@ -23,7 +23,6 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
-from ai.config import default_config
 from ai.db import filter_intents_for_request, get_current_snapshot
 from ai.dto import (
     ApiResponse,
@@ -95,26 +94,21 @@ async def _do_match(
         businessType=body.businessType,
     )
 
+    # options has defaults via Field(default_factory) — always non-None.
+    # minConfidence default comes from the request envelope (0.70) which
+    # mirrors AIConfig.min_confidence_default; honour caller's value as-is.
     options = body.options
-    min_confidence = (
-        options.minConfidence
-        if options is not None and options.minConfidence is not None
-        else default_config.min_confidence_default
-    )
-    enable_llm = (
-        options.enableLlm
-        if options is not None and options.enableLlm is not None
-        else True
-    )
+    min_confidence = options.minConfidence
+    enable_llm = options.enableLlmFallback
 
     return await orchestrator.match(
         query=body.query,
         factoryId=body.factoryId,
         businessType=body.businessType,
-        userId=str(body.userId),
+        userId=body.userId,
         role=body.role,
         visible_intents=visible_rows,
-        history=[],  # no history in initial wiring; spec extension point
+        history=body.history,
         min_confidence=min_confidence,
         enable_llm=enable_llm,
     )

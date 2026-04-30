@@ -93,7 +93,7 @@ async def test_F999_empty_state_byte_shape(app, monkeypatch):
             json={
                 "query": "测试 F999 空",
                 "factoryId": "F999",
-                "userId": 999,
+                "userId": "999",
                 "username": "test",
                 "role": "factory_super_admin",
                 "businessType": "FACTORY",

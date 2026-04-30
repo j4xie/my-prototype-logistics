@@ -385,35 +385,41 @@ class IntentMatchResultDto(_CamelBase):
 
 
 class IntentMatchOptions(_CamelBase):
-    """Optional flags carried by IntentMatchRequest.
+    """Per-request options aligned with Java client / plan §5.3.
 
-    Mirrors the spec §5.1 request payload — fields are all optional so callers
-    can omit them and rely on AIConfig defaults.
+    The fields here are functional knobs the Java caller controls (timeout,
+    LLM gating, config-version pinning). Matcher-internal tuning
+    (enableSemantic / topK / etc) is Python's own concern and not exposed
+    on the wire.
     """
 
-    minConfidence: Optional[float] = None
-    enableSemantic: Optional[bool] = None
-    enableClassifier: Optional[bool] = None
-    enableLlm: Optional[bool] = None
-    topK: Optional[int] = None
+    enableLlmFallback: bool = True
+    timeoutMs: int = 30000
+    minConfidence: float = 0.70
+    intentConfigVersion: Optional[int] = None
 
 
 class IntentMatchRequest(_CamelBase):
     """POST /api/ai/intent/match request DTO.
 
-    Per spec §5.1: factoryId / userId / role / businessType are REQUIRED context
-    so the matcher can scope to the correct factory + business type. `query`
-    holds the user input; `options` holds optional knobs.
+    Per plan §5.3: factoryId / userId / role / businessType / username / query
+    are REQUIRED context so the matcher can scope to the correct factory +
+    business type. `history` carries recent conversation turns for stage 8
+    LLM context. `options` holds optional knobs (defaults applied if absent).
+
+    Type alignment with Java:
+    - userId: str (Java JWT claim is stringified per project standard,
+      Java DTO declares String)
     """
 
     query: str
     factoryId: str
-    userId: int
+    userId: str
+    username: str
     role: str
     businessType: str
-    sessionId: Optional[str] = None
-    locale: Optional[str] = None
-    options: Optional[IntentMatchOptions] = None
+    history: List[Dict[str, str]] = Field(default_factory=list)
+    options: IntentMatchOptions = Field(default_factory=IntentMatchOptions)
 
 
 T = TypeVar("T")

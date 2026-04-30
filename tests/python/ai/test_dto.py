@@ -96,8 +96,51 @@ def test_request_dto_required_fields():
     msg = str(exc_info.value)
     assert "factoryId" in msg
     assert "userId" in msg
+    assert "username" in msg
     assert "role" in msg
     assert "businessType" in msg
+
+
+def test_request_dto_userId_is_string_not_int():
+    """Plan §5.3: userId is String to match Java JWT claim type.
+
+    Pydantic int would reject the string "22" with 422 — guard against
+    regression by asserting the field stays a str on construction.
+    """
+    from ai.dto import IntentMatchRequest
+
+    req = IntentMatchRequest(
+        query="test",
+        factoryId="F001",
+        userId="22",
+        username="admin",
+        role="factory_super_admin",
+        businessType="FACTORY",
+    )
+    assert isinstance(req.userId, str)
+    assert req.userId == "22"
+
+
+def test_request_dto_options_default_matches_plan_5_3():
+    """Plan §5.3 options shape: enableLlmFallback / timeoutMs / minConfidence /
+    intentConfigVersion. Defaults applied when caller omits options."""
+    from ai.dto import IntentMatchRequest, IntentMatchOptions
+
+    req = IntentMatchRequest(
+        query="x",
+        factoryId="F001",
+        userId="22",
+        username="admin",
+        role="factory_super_admin",
+        businessType="FACTORY",
+    )
+    assert isinstance(req.options, IntentMatchOptions)
+    assert req.options.enableLlmFallback is True
+    assert req.options.timeoutMs == 30000
+    assert req.options.minConfidence == 0.70
+    assert req.options.intentConfigVersion is None
+    # history field present + defaults to empty list (forward-compat for stage 8 LLM)
+    assert req.history == []
 
 
 def test_ai_intent_config_dto_confidence_boost_is_json_number():
