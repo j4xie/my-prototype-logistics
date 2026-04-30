@@ -799,3 +799,27 @@ class TestCostHelpers:
         assert COST_CATEGORY_MATERIAL == "原材料"
         assert COST_CATEGORY_LABOR == "人工"
         assert COST_CATEGORY_OVERHEAD == "制造费用"
+
+    def test_create_pie_data_item_total_positive(self):
+        from smartbi_compat.api.analysis_finance import _create_pie_data_item
+        from decimal import Decimal
+        item = _create_pie_data_item("原材料", Decimal("60000"), Decimal("100000"))
+        assert list(item.keys()) == ["category", "value", "percentage"]
+        assert item["category"] == "原材料"
+        assert item["value"] == 60000  # int via _decimal_to_number
+        # Java setScale(2, HALF_UP): 60.00 → Jackson trims → 60.0; dict-eq tolerates 60 == 60.0
+        assert item["percentage"] in (60, 60.0)
+
+    def test_create_pie_data_item_total_zero_returns_zero_percentage(self):
+        from smartbi_compat.api.analysis_finance import _create_pie_data_item
+        from decimal import Decimal
+        item = _create_pie_data_item("原材料", Decimal("0"), Decimal("0"))
+        assert item["percentage"] == 0  # Java line 1572 returns BigDecimal.ZERO
+
+    def test_create_pie_data_item_percentage_rounding(self):
+        from smartbi_compat.api.analysis_finance import _create_pie_data_item
+        from decimal import Decimal
+        # 1/3 * 100 = 33.3333... → Java 2-stage:
+        # divide(SCALE=4 HALF_UP) = 0.3333, multiply(100) = 33.3300, setScale(2 HALF_UP) = 33.33
+        item = _create_pie_data_item("X", Decimal("1"), Decimal("3"))
+        assert item["percentage"] == 33.33

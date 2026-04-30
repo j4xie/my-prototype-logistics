@@ -211,6 +211,30 @@ def _new_cost_series_entry(name: str, stack: str) -> dict:
 
 
 
+def _create_pie_data_item(category: str, value: Decimal, total: Decimal) -> dict:
+    """Java FinanceAnalysisServiceImpl.createPieDataItem line 1566-1573 1:1 mirror.
+
+    LinkedHashMap key 顺序: [category, value, percentage]
+    percentage = (value/total * 100).setScale(DISPLAY_SCALE=2, HALF_UP) if total > 0 else BigDecimal.ZERO
+    Java 2-stage divide: divide(total, SCALE=4, HALF_UP).multiply(100).setScale(2, HALF_UP)
+    """
+    if total > Decimal("0"):
+        # Java line 1571: divide(total, SCALE=4, HALF_UP) → multiply(100) → setScale(2, HALF_UP)
+        percentage = (
+            (value / total).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+            * Decimal("100")
+        ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    else:
+        percentage = Decimal("0")
+
+    return {
+        "category":   category,
+        "value":      _decimal_to_number(value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+        "percentage": _decimal_to_number(percentage),
+    }
+
+
+
 def _new_ai_insight_dict(
     level: str,
     category: str,
