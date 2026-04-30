@@ -65,11 +65,15 @@ Phase 2A 在做 SmartBI ~50 个 endpoint 的 Java→Python byte-shape port，ngi
 ### 3.1 文件位置
 
 ```
-backend/python/smartbi_compat/api/analysis_finance.py    [新增]
-tests/python/smartbi_compat/test_analysis_finance_contract.py    [新增]
-tests/python/smartbi_compat/test_analysis_finance_factories.py    [新增]
-main.py                                                  [修改 — 加 include_router]
+backend/python/smartbi_compat/api/analysis_finance.py                        [新增]
+tests/python/smartbi_compat/test_analysis_finance_contract.py                [新增]
+tests/python/smartbi_compat/test_analysis_finance_factories.py               [新增]
+tests/fixtures/java-smartbi-golden/analysis-finance-F999-composite.json      [新增 — record from test env]
+tests/fixtures/java-smartbi-golden/analysis-finance-F999-payable.json        [新增 — record from test env]
+backend/python/main.py                                                        [修改 — 加 include_router]
 ```
+
+**Golden 来源（F999）**：手动 curl test env (10011 Java 后端) 录制，命令模板见 Phase A.5。一次 curl 救一个 golden 写一个 JSON 文件。无脚本（脚本留给 F001 副轨）。
 
 ### 3.2 Imports
 
@@ -96,11 +100,16 @@ analysisType 分支：
                              或等待 phase2a/t-finance-perX chat 完成"
 ```
 
-注意 Java 控制器有第二个分支条件 `smartBIService != null`：
-- 当 `smartBIService` bean 注入成功且 `analysisType` 为空 → 走 `getComprehensiveAnalysis` 短路 (return composite)
-- 当 `smartBIService` 为 null 且 `analysisType` 为空 → 走 `financeAnalysisService.getFinanceOverview` 直返单 key (`overview`)
+注意 Java 控制器有第二个分支条件 `smartBIService != null` (controller line 79: `@Autowired(required = false)`)：
+- 当 `smartBIService` bean 注入成功且 `analysisType` 为空 → 走 `getComprehensiveAnalysis` 短路 (return 6-key composite)
+- 当 `smartBIService` 为 null 且 `analysisType` 为空 → fall through 到 controller per-type if/else，走 `default` 分支 (line 264-267)：返回 **3-key shape `{startDate, endDate, overview}`** （单 key composite 错说了，实际是 3-key）
 
-**对 Python port 的处理**：在 prod 环境 `smartBIService` bean **总是存在**（@Autowired(required = false) 但 Spring 实际注入）。我们只镜像短路路径（composite）。若未来发现 prod 环境 bean 缺失再加 fallback。
+**对 Python port 的处理（明确分歧 / accepted divergence）**：
+- 经验观察：sister chat 在做 sales / department / region 的 port 时实测 prod 环境 `smartBIService` bean 总在（同样的短路条件均触发）
+- Python 选择**只镜像短路路径**（6-key composite），**不镜像 3-key fallback**
+- 这是 **accepted divergence** — 文档化在此：如果 nginx cutover 之后某天 prod 环境意外 bean 缺失（feature toggle 关掉之类），Python 仍返回 6-key composite，跟 Java 不一致
+- 缓解：(i) prod 永远 bean 在；(ii) Python 只 port 已观察到的实际行为；(iii) Python 服务自己没有 SmartBIService 切换开关；(iv) 真撞到的话视为 prod 配置 incident，Java 那边先修
+- Phase A.5 record golden 时如果意外抓到 3-key shape (`{startDate, endDate, overview}`)，那就是 bean=null fallback；Python 不 port 它，spec 修订记录此事
 
 ## 4. 组件清单
 
@@ -121,9 +130,11 @@ analysisType 分支：
 
 | Factory | 镜像 Java DTO | 字段 |
 |---|---|---|
-| `_new_metric_result_dict(...)` | `MetricResult` | TBD — Phase A.1 读 Java 类确认字段顺序 |
+| `_new_metric_result_dict(...)` | `MetricResult` | **~11 declared @Data fields** — Lombok 全部 emit (sister 已踩 16-field DashboardResponse 同模式)。Phase A.1 javap 确认确切字段名 + 顺序。已知字段：metricCode / metricName / value / formattedValue / unit / changePercent / changeDirection / changeValue / alertLevel / dimensionValue / description（可能 ±1）。AlertLevel enum: GREEN / YELLOW / RED |
 
 注：finance 主路由的 `profitMetrics` / `payableMetrics` / `receivableMetrics` 等返回类型是 `List<MetricResult>`，需要这个 factory。
+
+**所有 DTO factory 字段计数都是启发式，非权威**。Phase A.1 必须 `javap dto.smartbi.{DashboardResponse,KPICard,MetricResult,RankingItem,ChartConfig,AIInsight,DateRange}` 冻结实际字段列表。Sister chat 的 `analysis_sales.py:109-154` 是 5 个共享 DTO factory 的 canonical 实现，**直接照抄不要重新推导**（避免 sister 已经走过的 "5 vs 4 deprecated" 字段冲突）。
 
 ### 4.2 Helpers (复制 sales)
 
@@ -179,7 +190,14 @@ async def _get_receivable_aging_chart(factory_id: str, end_date: date) -> dict:
     )
 ```
 
-⚠️ **Stub 的 chart_type / title 必须跟 Java 实现对齐** — Phase A.2 读 Java impl 确认（Java 实现可能在数据为空时返回的 chart_type/title 跟非空时一致；如果 Java 在空时直接返回 null，那 stub 也应返回 None）。
+⚠️ **Stub 的具体形状未冻结** — Phase A.2 读 Java FinanceAnalysisServiceImpl 4 stub 方法实现 + Phase A.5 录 F999 composite golden 后才知道：
+
+1. **chart_type / title** 在数据为空时是否跟非空一致？或 Java 是否返回 null/empty ChartConfig？
+2. **`_get_finance_overview` empty-state 是否含 YELLOW insight + 1 suggestion**？sister 的 sales empty-state 来源是 `SalesAnalysisServiceImpl.buildEmptyDashboard` line 1145-1159（emit YELLOW + suggestion）。**finance Java 实现可能不同** — 如果 Java 直接返回 `kpiCards:[], rankings:{}, charts:{}, aiInsights:[], suggestions:[], lastUpdated:now`，那 Python stub 就照这个写，不要复制 sales 的 YELLOW pattern。
+3. **`_get_profit_metrics` 空返回** 是 `[]` 还是 null？Java getProfitMetrics 应返回 List 不会 null 但要 verify。
+4. **`_get_cost_structure_chart` / `_get_receivable_aging_chart`** 同上。
+
+上面伪代码是 sales-pattern 默认值，只是 placeholder。**Phase C.1 必须先 verify 后再写。**
 
 ### 4.4 Payable 路径 real impl
 
@@ -211,12 +229,21 @@ async def _get_payable_aging_chart(factory_id: str, end_date: date) -> dict:
 async def _get_comprehensive_finance_analysis(factory_id: str, range_: DateRange) -> dict:
     """Java reference: SmartBIServiceImpl.getComprehensiveAnalysis line 600-605 + 612-613.
 
-    Java put 顺序:
-      overview / profitMetrics / costStructure / receivableAging
-      → result.put("dateRange", ...) / result.put("generatedAt", ...)
+    ⚠️ KEY ORDER WARNING — sister chat 已踩过此坑 (analysis_sales.py:700-709 docstring)：
+    Java 用 `new HashMap<>()` (line 575), 所以 Java result.put() 顺序 ≠ Jackson 输出顺序。
+    Sister 实测 sales 6-key composite 的 put 顺序与 Jackson 输出顺序完全不同。
 
-    Jackson 实测 key 顺序: TBD (Phase D.1 record golden 时确认)
+    Java put 顺序 (line 600-605 + 612-613):
+      overview / profitMetrics / costStructure / receivableAging / dateRange / generatedAt
+
+    Jackson 实测顺序: ❗ MUST be re-recorded against test env BEFORE writing
+    this dict body. 见 Phase A.5 task: record F999 finance composite golden first,
+    THEN write Python dict to match Jackson order. 不要直接复制 Java put 顺序。
+
+    下面的 dict 字面量是 placeholder, Phase A.5 必须根据 golden re-order 后再写。
+    Phase D.2 byte gate 期望使用最终 Jackson 顺序. 留 30min 缓冲修正 dict order.
     """
+    # PLACEHOLDER ORDER — will be re-ordered in Phase A.5 against recorded golden
     return {
         "overview":         await _get_finance_overview(factory_id, range_),
         "profitMetrics":    await _get_profit_metrics(factory_id, range_),
@@ -341,28 +368,56 @@ tests/python/smartbi_compat/test_analysis_finance_factories.py   [新增]
 
 ### 7.2 Contract test (byte-shape gate)
 
-**镜像 sales 的 contract test 模式**：
+**镜像 sister 的 contract test 模式**（重要：必须用 importlib 加载 production main，不能直接 import router）：
 
 ```python
+# Sister 范式: tests/python/smartbi_compat/test_analysis_sales_contract.py:41-66
+# 用 _load_production_main() 加载 main.py 模块, 拿到挂载了所有 middleware
+# (JWT / CORS / exception handlers) 的 FastAPI app, 再传给 TestClient.
+#
+# ⛔ 禁止: from smartbi_compat.api.analysis_finance import router
+#         然后 app = FastAPI(); app.include_router(router) ← 这样 middleware 没挂上,
+#         JWT auth / cross-tenant 测试会假 pass / fail.
+
+def _load_production_main():
+    """复用 sister test_analysis_sales_contract.py 的 importlib 模式."""
+    import importlib.util
+    from pathlib import Path
+    main_path = Path(__file__).parent.parent.parent.parent / "backend" / "python" / "main.py"
+    spec = importlib.util.spec_from_file_location("_production_main", main_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 class TestFinanceContract:
+    def setup_method(self):
+        from fastapi.testclient import TestClient
+        self.app = _load_production_main().app
+        self.client = TestClient(self.app)
+
     def test_f999_composite_byte_shape(self, monkeypatch, f999_factory):
         """F999 (synthetic empty tenant) composite 路径 byte gate.
 
         Mock SQL pool 返回 0 行；Python 应组装 6-key composite 全空形状。
-        Strip volatile (generatedAt/lastUpdated/timestamp) 后跟 Java
-        recorded golden byte 对齐。"""
-        # ... monkeypatch _get_pg_pool to fake empty pool
-        # ... call /api/mobile/F999/smart-bi/analysis/finance?startDate=...&endDate=...
+        Strip volatile (generatedAt/lastUpdated/timestamp) 后跟 Java recorded
+        golden (tests/fixtures/java-smartbi-golden/analysis-finance-F999-composite.json)
+        byte 对齐。"""
+        # ... monkeypatch get_pg_pool to fake empty pool
+        # ... self.client.get("/api/mobile/F999/smart-bi/analysis/finance?startDate=...&endDate=...")
         # ... assert _strip_volatile(response.json()) == _strip_volatile(golden_json)
 
     def test_f999_payable_byte_shape(self, monkeypatch, f999_factory):
-        """同上 + ?analysisType=payable，验 4-key shape"""
+        """同上 + ?analysisType=payable，验 4-key shape，对齐
+        analysis-finance-F999-payable.json"""
         # ...
 
     def test_payable_seam_isolation(self, monkeypatch):
         """验证 _get_payable_metrics 和 _get_payable_aging_chart 是 seam-test 友好（可单测）"""
         # ...
 ```
+
+**MetricResult byte-shape 含 AlertLevel enum string** — Phase A.1 javap 后, factory test 必须 verify `alertLevel` 字段输出 "GREEN" / "YELLOW" / "RED" 字符串而非 enum object repr。
 
 ### 7.3 Factory test (DTO unit)
 
@@ -397,16 +452,18 @@ F001 (餐饮 prod tenant) 真实数据 byte gate **不在这个 chat 范围**，
 
 ## 8. 阶段切分 (给 writing-plans 用)
 
-| Phase | 内容 | 估 tasks |
-|---|---|---|
-| **A 准备 / 探索** | A.0 确定 DateRange 来源（见 §10）<br>A.1 读 Java MetricResult.java 确认字段<br>A.2 读 Java FinanceAnalysisServiceImpl 4 stub 方法实现，确认空数据返回形状<br>A.3 读 Java getPayableMetrics / getPayableAgingChart 实现 + SQL，确认数据源<br>A.4 verify F999 fixture pattern (复用 sales 的 conftest) | 4-5 |
-| **B 文件骨架** | B.1 创建 `analysis_finance.py` 文件 + module docstring<br>B.2 imports + 7 个 DTO factory（复制 sales 写法）<br>B.3 helpers (`_to_decimal` / `_decimal_to_number` / `_format_kpi_value` / `_strip_volatile` / `_utc_now_iso`)<br>B.4 `_new_metric_result_dict` 新增 factory<br>B.5 路由 handler 骨架（含 501 path） | 4-5 |
-| **C Composite 路径** | C.1 4 个 sub-service stub 实现（F999 空形）<br>C.2 `_get_comprehensive_finance_analysis` composite 装配<br>C.3 wire route handler composite 分支 | 3 |
-| **D Composite F999 byte gate** | D.1 `test_analysis_finance_contract.py` composite 测试 case<br>D.2 record F999 composite golden<br>D.3 `test_analysis_finance_factories.py` factory unit tests<br>D.4 verify gate pass + 0 regress | 3-4 |
-| **E Payable real impl** | E.1 `_query_finance_payable_data` SQL helper<br>E.2 `_get_payable_metrics` real impl<br>E.3 `_get_payable_aging_chart` real impl<br>E.4 `_get_payable_analysis` 装配<br>E.5 wire route handler payable 分支 | 4-5 |
-| **F Payable F999 byte gate** | F.1 扩展 contract test 加 payable case<br>F.2 record F999 payable golden<br>F.3 verify gate pass | 2 |
-| **G 收尾** | G.1 `main.py` 加 `include_router(analysis_finance.router)`<br>G.2 全 pytest run + 0-regress 验证<br>G.3 Spec self-review 后 commit 全部 | 2-3 |
-| **合计** | | **22-27 tasks** |
+| Phase | 内容 | 估 tasks | 必做/stretch |
+|---|---|---|---|
+| **A 准备 / 探索** | A.1 javap MetricResult.java + 其他 6 个 DTO 确认字段顺序<br>A.2 读 Java FinanceAnalysisServiceImpl 4 stub 方法 (overview / profitMetrics / costStructure / receivableAging) 确认空数据 Java 返回形状（特别是 aiInsights 是否有 YELLOW insight 或 `[]`）<br>A.3 读 Java getPayableMetrics / getPayableAgingChart 实现 + SQL，确认数据源（finance_data with PAYABLE? 独立 ap_aging 表? SmartBiFinanceData?）<br>A.4 verify F999 fixture pattern (复用 sister conftest)<br>A.5 **Record F999 composite golden** (`curl -H 'auth' http://10.0.0.1:10011/api/mobile/F999/smart-bi/analysis/finance?startDate=...&endDate=...` → save to `tests/fixtures/java-smartbi-golden/analysis-finance-F999-composite.json`) — **必须先于 Phase C 的 dict 写**, 防 §4.5 key order 踩坑<br>A.6 确定 DateRange 来源（见 §10），cherry-pick or β/γ 降级 | 5-6 | 必做 |
+| **B 文件骨架** | B.1 创建 `analysis_finance.py` 文件 + module docstring<br>B.2 imports + 7 个 DTO factory（**复制 sister `analysis_sales.py:109-228` 的 5 个共享 factory 代码 verbatim**, 不重新推导）<br>B.3 helpers (`_to_decimal` / `_decimal_to_number` / `_format_kpi_value` / `_strip_volatile` / `_utc_now_iso`) — 同样照抄 sister<br>B.4 `_new_metric_result_dict` 新增 factory，按 A.1 javap 结果写<br>B.5 路由 handler 骨架（含 501 path） | 4-5 | 必做 |
+| **C Composite 路径** | C.1 4 个 sub-service stub 实现（按 A.2 实测形状写, **不直接抄 sales YELLOW+suggestion 模式**）<br>C.2 `_get_comprehensive_finance_analysis` composite 装配，**dict key 顺序按 A.5 实测 Jackson 顺序排**, 不抄 Java put 顺序<br>C.3 wire route handler composite 分支 | 3 | 必做 |
+| **D Composite F999 byte gate** | D.1 `test_analysis_finance_contract.py` composite 测试 case (用 §7.2 的 `_load_production_main()` importlib 模式, 不直接 import router)<br>D.2 verify Python 输出对齐 A.5 录的 golden（_strip_volatile 后字节相等）<br>D.3 `test_analysis_finance_factories.py` factory unit tests（每 factory ≥ 1 test, MetricResult 含 alertLevel string verify）<br>D.4 verify 0 regress on existing pytest | 3-4 | 必做 |
+| **D-gate** | **如果到这里已用 ≥ 18 tasks**：当场 ship D 通的版本作为 (a) 方案 退化版（仅 foundation+composite, 无 payable real impl）。Phase E/F 留 phase2a/t-finance-payable 副轨。**chat 不超 18 task 则继续 Phase E** | gate | 决策点 |
+| **E Payable real impl (stretch)** | E.1 `_query_finance_payable_data` SQL helper (按 A.3 数据源写)<br>E.2 `_get_payable_metrics` real impl<br>E.3 `_get_payable_aging_chart` real impl<br>E.4 `_get_payable_analysis` 装配<br>E.5 wire route handler payable 分支 | 4-5 | **stretch** |
+| **F Payable F999 byte gate (stretch)** | F.1 record F999 payable golden (curl test env)<br>F.2 扩展 contract test 加 payable case<br>F.3 verify gate pass | 2-3 | **stretch** |
+| **G 收尾** | G.1 `main.py` 加 `include_router(analysis_finance.router)`（用 `./scripts/safe-commit.sh "..." backend/python/main.py ...`）<br>G.2 全 pytest run + 0-regress 验证<br>G.3 commit 全部, 推 origin?（默认不推, 跟 sister 同 NOT-pushed 模式） | 2-3 | 必做 |
+| **合计 (必做)** | A + B + C + D + G | **17-21 tasks** |  |
+| **合计 (含 stretch)** | + E + F | **23-29 tasks** |  |
 
 ## 9. 风险
 
@@ -443,7 +500,32 @@ F001 (餐饮 prod tenant) 真实数据 byte gate **不在这个 chat 范围**，
 | **(β) 在自己 worktree 写一份 minimal DateRange** | 在 `smartbi_compat/date_range.py` 写一个最小可用的 `DateRange` 类（仅 `.custom(start, end)` + `start_date` / `end_date` 属性 + `.days` / `.valid` derived） | 自包含，不依赖 sister；但 merge 到 main 时跟 sister 的同名文件冲突 |
 | **(γ) 直接在 `analysis_finance.py` 内 inline 一个 `_DateRange` 私有类** | 文件内私有 dataclass，不放 `smartbi_compat/date_range.py` | 最隔离；但跟 sales 那边代码不共享，未来 dedupe 工作量翻倍 |
 
-**默认推 (α)**，作为 Phase A.0 第一个 task。如果 cherry-pick 因 sister 已 force-push 等原因失败，降级 (β)。
+**默认推 (α)**，作为 Phase A.6 task。
+
+**Cherry-pick 实操（重要 — sister 还没推 origin，commits 只在另一个 worktree 里）**：
+
+```bash
+# 在 .worktrees/phase2a-finance 工作目录中
+# 把 sister worktree 的 phase2a/t5-poc 分支 fetch 进当前仓库的 ref
+git fetch ../phase2a-t5-poc phase2a/t5-poc:refs/remotes/sister/t5-poc
+
+# 然后 cherry-pick 指定 SHA
+git cherry-pick 517f4692a b648e7775 d301ff2d8
+
+# 如果 cherry-pick 失败 (sister 改过 history / SHA 不存在) → 降级 (β)
+```
+
+**降级 (β) 为更稳的默认**：cherry-pick 因 sister 仍在主动 commit 而 SHA 频繁变（sister 可能在你工作时新增 commit），实操可能反复失败。**因此实际推荐：直接 (β) — 手动 copy `smartbi_compat/date_range.py` from sister worktree**：
+
+```bash
+# 简单粗暴, 100% 成功:
+cp ../phase2a-t5-poc/backend/python/smartbi_compat/date_range.py \
+   backend/python/smartbi_compat/date_range.py
+```
+
+然后 `git add backend/python/smartbi_compat/date_range.py`. Merge 到 main 时跟 sister 同名文件冲突，用 `git checkout --theirs` 选 sister 版本即可（两份内容应该 identical）。
+
+**如果两份内容不 identical** → sister 在 finance chat 工作期间改了 date_range.py，那是真冲突，需要 manual diff 解。Phase A.6 决定时如果 sister 已经 ship 推 origin，跳过这一步直接 import from origin。
 
 **DTO factory 复制** — sister `analysis_sales.py` 文件内的 7 个 dict factory 全是 finance 也要的：
 
@@ -490,16 +572,29 @@ git worktree add .worktrees/phase2a-finance -b phase2a/t-finance origin/main
 
 ## 13. 完成定义 (Definition of Done)
 
-- [ ] `analysis_finance.py` 文件创建，含路由 + 7 DTO factory + 5 helper + 4 stub + 2 real impl + 2 装配函数
-- [ ] `test_analysis_finance_contract.py` ≥ 2 byte-shape gate pass (composite + payable)
+### 必做 (foundation + composite, ship 退化版门槛)
+
+- [ ] `analysis_finance.py` 文件创建，含路由 + 7 DTO factory + 5 helper + 4 composite stub + 2 装配函数（payable 装配可暂作 501 stub）
+- [ ] `test_analysis_finance_contract.py` ≥ 1 byte-shape gate pass (composite F999), 用 `_load_production_main()` importlib 模式
 - [ ] `test_analysis_finance_factories.py` 每个 factory ≥ 1 unit test pass
-- [ ] `main.py` 加 include_router 行
+- [ ] `tests/fixtures/java-smartbi-golden/analysis-finance-F999-composite.json` 录制完成 (Phase A.5)
+- [ ] `main.py` 加 include_router 行（用 `./scripts/safe-commit.sh` 防 scope creep）
 - [ ] `pytest tests/python/smartbi_compat/` 0 regression
 - [ ] `python -c "from smartbi_compat.api.analysis_finance import router"` 无 import 错
-- [ ] Spec self-review pass，无 placeholder / 矛盾 / 模糊
 - [ ] Plan 文档已写（writing-plans 阶段输出）
-- [ ] Spec + plan + 实现 + 测试均 commit 在 `phase2a/t-finance` 分支
-- [ ] Chat 末尾 verify report 含手动验收 checklist（不强求 deploy 到 server）
+- [ ] 全部 commit 在 `phase2a/t-finance` 分支（默认不推 origin，同 sister 模式）
+- [ ] Chat 末尾 verify report 含手动验收 checklist
+
+### Stretch (payable 样板, 如果 chat 容量够才做)
+
+- [ ] `_get_payable_analysis` real impl (E.1-E.5)
+- [ ] `tests/fixtures/java-smartbi-golden/analysis-finance-F999-payable.json` 录制
+- [ ] `test_analysis_finance_contract.py` 扩展 payable byte gate pass
+- [ ] 如果到 Phase D 完成时已用 ≥ 18 tasks，**主动放弃 stretch**，payable 留 phase2a/t-finance-payable 副轨
+
+### 退化策略 (a-fallback)
+
+如果中途撞墙（DateRange cherry-pick 失败 / SQL discovery 卡住 / 字段量超预期），ship 仅 composite 路径的版本。最低门槛：A.5 录 golden + B+C+D 必做 + G 收尾。Payable 完全推后。这就是 (a) 方案的实际形状。
 
 ---
 
