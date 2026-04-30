@@ -30,7 +30,6 @@ from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import text
 
 from smartbi_compat.auth import AuthContext, verify_jwt_and_factory
 from smartbi_compat.date_range import DateRange
@@ -1216,12 +1215,16 @@ async def _get_cost_trend_chart(
     chart_data = []
     for period_key in sorted(aggregated.keys()):  # TreeMap → sorted Python
         values = aggregated[period_key]  # [material, labor, overhead, total]
+        # I-1 fix (final review): Java line 553-562 emits raw BigDecimal without setScale —
+        # cost trendChart differs from profit's getProfitTrendChart (which DOES setScale).
+        # DB columns are precision=15 scale=2, so accumulated sums preserve scale 2 naturally.
+        # No quantize() here = exact 1:1 mirror of Java behavior. Sister chats note this.
         chart_data.append({
             "period":       period_key,
-            "materialCost": _decimal_to_number(values[0].quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
-            "laborCost":    _decimal_to_number(values[1].quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
-            "overheadCost": _decimal_to_number(values[2].quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
-            "totalCost":    _decimal_to_number(values[3].quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+            "materialCost": _decimal_to_number(values[0]),
+            "laborCost":    _decimal_to_number(values[1]),
+            "overheadCost": _decimal_to_number(values[2]),
+            "totalCost":    _decimal_to_number(values[3]),
         })
 
     # Java line 564-570: LinkedHashMap[stack, series] outer; series items Map.of(2) {name, stack}
