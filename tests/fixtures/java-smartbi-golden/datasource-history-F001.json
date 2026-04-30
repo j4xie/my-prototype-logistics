@@ -1,0 +1,47 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/datasource/1/history",
+  "factory": "F001",
+  "response": {
+    "httpStatus": 200,
+    "success": true,
+    "message": "操作成功",
+    "data": {
+      "content": [],
+      "pageable": {
+        "pageNumber": 0,
+        "pageSize": 20,
+        "sort": {
+          "empty": true,
+          "sorted": false,
+          "unsorted": true
+        },
+        "offset": 0,
+        "paged": true,
+        "unpaged": false
+      },
+      "last": true,
+      "totalElements": 0,
+      "totalPages": 0,
+      "first": true,
+      "size": 20,
+      "number": 0,
+      "sort": {
+        "empty": true,
+        "sorted": false,
+        "unsorted": true
+      },
+      "numberOfElements": 0,
+      "empty": true
+    }
+  },
+  "_meta": {
+    "name": "datasource-history",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/datasource/1/history",
+    "query": null,
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:32.896Z",
+    "javaPort": 10011
+  }
+}

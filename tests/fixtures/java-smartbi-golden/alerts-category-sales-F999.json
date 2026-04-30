@@ -1,0 +1,24 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/alerts",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T06:34:43.428977107",
+    "data": []
+  },
+  "_meta": {
+    "name": "alerts-category-sales",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/alerts",
+    "query": {
+      "category": "sales"
+    },
+    "factory": "F999",
+    "recordedAt": "2026-04-29T22:34:43.803Z",
+    "javaPort": 10011
+  }
+}

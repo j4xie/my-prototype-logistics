@@ -1,0 +1,212 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/analysis/procurement",
+  "factory": "F001",
+  "response": {
+    "httpStatus": 200,
+    "success": true,
+    "message": "操作成功",
+    "data": {
+      "overview": {
+        "period": null,
+        "startDate": null,
+        "endDate": null,
+        "kpiCards": [
+          {
+            "key": "PROCUREMENT_AMOUNT",
+            "title": "采购总额",
+            "value": "5,050.00",
+            "rawValue": 5050,
+            "unit": "元",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "green",
+            "compareText": null,
+            "description": null,
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "BATCH_COUNT",
+            "title": "采购批次",
+            "value": "5",
+            "rawValue": 5,
+            "unit": "批",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "green",
+            "compareText": null,
+            "description": null,
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "AVG_BATCH_AMOUNT",
+            "title": "平均批次金额",
+            "value": "1,010.00",
+            "rawValue": 1010,
+            "unit": "元",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "green",
+            "compareText": null,
+            "description": null,
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "SUPPLIER_CONCENTRATION",
+            "title": "供应商集中度",
+            "value": "100.0%",
+            "rawValue": 100,
+            "unit": "%",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "red",
+            "compareText": null,
+            "description": "最大供应商占比",
+            "targetValue": null,
+            "completionRate": null
+          }
+        ],
+        "metricCards": null,
+        "rankings": {
+          "supplier": [
+            {
+              "rank": 1,
+              "name": "东海水产批发",
+              "value": 5050,
+              "target": 4,
+              "completionRate": 100,
+              "alertLevel": "GREEN"
+            },
+            {
+              "rank": 2,
+              "name": "南海渔业公司",
+              "value": 0,
+              "target": 1,
+              "completionRate": 0,
+              "alertLevel": "GREEN"
+            }
+          ]
+        },
+        "charts": {
+          "采购趋势": {
+            "chartType": "LINE",
+            "title": "采购趋势",
+            "seriesField": null,
+            "data": [
+              {
+                "date": "2025-12-26",
+                "amount": 0
+              },
+              {
+                "date": "2025-12-27",
+                "amount": 2550
+              },
+              {
+                "date": "2025-12-31",
+                "amount": 2500
+              }
+            ],
+            "options": {
+              "showDataLabels": false,
+              "smooth": true
+            },
+            "xaxisField": "date",
+            "yaxisField": "amount"
+          },
+          "供应商采购占比": {
+            "chartType": "PIE",
+            "title": "供应商采购占比",
+            "seriesField": null,
+            "data": [
+              {
+                "supplier": "东海水产批发",
+                "amount": 5050
+              },
+              {
+                "supplier": "南海渔业公司",
+                "amount": 0
+              }
+            ],
+            "options": {
+              "showPercentage": true,
+              "showLegend": true
+            },
+            "xaxisField": "supplier",
+            "yaxisField": "amount"
+          },
+          "材料类别采购金额": {
+            "chartType": "BAR",
+            "title": "材料类别采购金额",
+            "seriesField": null,
+            "data": [
+              {
+                "category": "RMT-F001-001",
+                "amount": 5050
+              },
+              {
+                "category": "RMT-F001-003",
+                "amount": 0
+              },
+              {
+                "category": "RMT-F001-002",
+                "amount": 0
+              }
+            ],
+            "options": {
+              "showDataLabels": true
+            },
+            "xaxisField": "category",
+            "yaxisField": "amount"
+          }
+        },
+        "chartList": null,
+        "aiInsights": [
+          {
+            "level": "RED",
+            "category": "供应商风险",
+            "message": "供应商集中度高达 100.0%，存在供应链风险",
+            "relatedEntity": null,
+            "actionSuggestion": "建议开发备选供应商，分散采购风险"
+          },
+          {
+            "level": "INFO",
+            "category": "采购分布",
+            "message": "最大供应商 东海水产批发 采购金额 5,050.00 元",
+            "relatedEntity": "东海水产批发",
+            "actionSuggestion": "建议与该供应商协商更优惠的采购条款"
+          }
+        ],
+        "alerts": null,
+        "recommendations": null,
+        "suggestions": [
+          "当前活跃供应商数量较少，建议开发更多供应商以降低供应链风险"
+        ],
+        "generatedAt": null,
+        "lastUpdated": "2026-04-29T12:43:20.459092103",
+        "fromCache": false,
+        "cacheExpireAt": null
+      },
+      "endDate": "2025-12-31",
+      "startDate": "2025-01-01"
+    }
+  },
+  "_meta": {
+    "name": "analysis-procurement",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/procurement",
+    "query": {
+      "startDate": "2025-01-01",
+      "endDate": "2025-12-31"
+    },
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:20.809Z",
+    "javaPort": 10011
+  }
+}

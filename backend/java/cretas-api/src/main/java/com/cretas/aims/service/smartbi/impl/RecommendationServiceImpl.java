@@ -237,6 +237,7 @@ public class RecommendationServiceImpl implements RecommendationService {
                 .filter(d -> d.getSalespersonName() != null)
                 .collect(Collectors.groupingBy(
                         SmartBiSalesData::getSalespersonName,
+                        TreeMap::new,
                         Collectors.reducing(BigDecimal.ZERO, SmartBiSalesData::getAmount, BigDecimal::add)
                 ));
 
@@ -244,6 +245,7 @@ public class RecommendationServiceImpl implements RecommendationService {
                 .filter(d -> d.getSalespersonName() != null)
                 .collect(Collectors.groupingBy(
                         SmartBiSalesData::getSalespersonName,
+                        TreeMap::new,
                         Collectors.reducing(BigDecimal.ZERO,
                                 d -> d.getMonthlyTarget() != null ? d.getMonthlyTarget() : BigDecimal.ZERO,
                                 BigDecimal::add)
@@ -391,7 +393,8 @@ public class RecommendationServiceImpl implements RecommendationService {
         // 按部门分组
         Map<String, List<SmartBiDepartmentData>> byDepartment = departmentData.stream()
                 .filter(d -> d.getDepartment() != null)
-                .collect(Collectors.groupingBy(SmartBiDepartmentData::getDepartment));
+                .collect(Collectors.groupingBy(SmartBiDepartmentData::getDepartment,
+                        TreeMap::new, Collectors.toList()));
 
         for (Map.Entry<String, List<SmartBiDepartmentData>> entry : byDepartment.entrySet()) {
             String deptName = entry.getKey();

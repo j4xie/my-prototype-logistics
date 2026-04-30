@@ -1,0 +1,18 @@
+{
+  "verb": "POST",
+  "path": "/api/mobile/{factory_id}/smart-bi/datasource/upload",
+  "factory": "F001",
+  "response": {
+    "_skipped": true,
+    "reason": "Multipart schema-detection upload requires live file; skip to avoid creating test datasources"
+  },
+  "_meta": {
+    "name": "datasource-upload-schema",
+    "verb": "POST",
+    "path": "/api/mobile/{factory_id}/smart-bi/datasource/upload",
+    "query": null,
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:28.569Z",
+    "javaPort": 10011
+  }
+}

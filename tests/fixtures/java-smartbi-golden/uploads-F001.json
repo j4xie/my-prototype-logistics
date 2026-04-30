@@ -1,0 +1,33 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/uploads",
+  "factory": "F001",
+  "response": {
+    "httpStatus": 200,
+    "success": false,
+    "message": "Get upload history failed: No enum constant [内部错误]",
+    "data": {
+      "code": 400,
+      "message": "Get upload history failed: No enum constant [内部错误]",
+      "data": null,
+      "timestamp": "2026-04-29T12:43:36.524490698",
+      "success": false,
+      "actionHint": null,
+      "severity": null,
+      "hintTarget": null
+    },
+    "_serverSuccessFalse": true
+  },
+  "_meta": {
+    "name": "uploads",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/uploads",
+    "query": {
+      "page": "0",
+      "size": "20"
+    },
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:36.934Z",
+    "javaPort": 10011
+  }
+}

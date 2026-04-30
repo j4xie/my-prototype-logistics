@@ -159,6 +159,15 @@ except ImportError as e:
     import logging as _log
     _log.getLogger(__name__).warning(f"AI intent module not available: {e}")
 
+# Import LLM API router (multi-provider with fallback chain)
+try:
+    from llm.api import endpoints as llm_api
+    _llm_available = True
+except ImportError as e:
+    _llm_available = False
+    import logging as _log
+    _log.getLogger(__name__).error(f"LLM Router not available: {e}")
+
 # Configure logging with rotation
 _log_level = logging.DEBUG if get_settings().debug else logging.INFO
 _log_format = "%(asctime)s - %(name)s - %(levelname)s - [%(correlation_id)s] - %(message)s"
@@ -829,12 +838,18 @@ app.include_router(
 )
 
 # J1 (Apr 24 2026): LLM router circuit breaker stats
-from smartbi.api import llm_router_admin
-app.include_router(
-    llm_router_admin.router,
-    prefix="/api/smartbi/admin/llm-router",
-    tags=["LLM Router Admin"],
-)
+# Optional: lives on a parallel branch (e2e/v1-framework). On branches where
+# it's absent the rest of the service still starts; the admin route is just
+# unavailable. Same pattern as the SmartBI compat block below.
+try:
+    from smartbi.api import llm_router_admin
+    app.include_router(
+        llm_router_admin.router,
+        prefix="/api/smartbi/admin/llm-router",
+        tags=["LLM Router Admin"],
+    )
+except ImportError as e:
+    logger.warning(f"LLM Router admin routes not registered: {e}")
 
 # Phase A A-1 Restaurant ETL admin (Apr 28 2026): trigger + status endpoints
 from smartbi.api import restaurant_etl_admin
@@ -972,6 +987,36 @@ if _ai_module_available:
 else:
     logger.warning("AI intent routes not registered (ai/ module import failed)")
 
+# =====================================================
+# LLM Router API Routes (multi-provider with fallback)
+# =====================================================
+if _llm_available:
+    app.include_router(
+        llm_api.router,
+        prefix="/api/llm",
+        tags=["LLM Router"]
+    )
+else:
+    logger.error("LLM Router routes not registered")
+
+# Phase 2A: SmartBI alias routes (web-admin + RN direct-to-Python)
+try:
+    from smartbi_compat.api import analysis as smartbi_compat_analysis
+    from smartbi_compat.api import upload as smartbi_compat_upload
+    from smartbi_compat.api import dashboard as smartbi_compat_dashboard
+    from smartbi_compat.api import analysis_sales
+    from smartbi_compat.api import analysis_finance
+    app.include_router(smartbi_compat_analysis.router, tags=["SmartBI Compat: Analysis"])
+    app.include_router(smartbi_compat_upload.router, tags=["SmartBI Compat: Upload"])
+    app.include_router(smartbi_compat_dashboard.router, tags=["SmartBI Compat: Dashboard"])
+    app.include_router(analysis_sales.router, tags=["smartbi-compat-sales"])
+    app.include_router(analysis_finance.router, tags=["SmartBI Compat: Analysis Finance"])
+    _smartbi_compat_available = True
+    logger.info("SmartBI compat routes registered (Phase 2A)")
+except ImportError as e:
+    _smartbi_compat_available = False
+    logger.error(f"SmartBI compat routes NOT available: {e}")
+
 
 @app.get("/health")
 async def health_check():
@@ -1004,6 +1049,7 @@ async def health_check():
                 *( ["food_kb_feedback"] if _food_kb_feedback_available else []),
                 *( ["foreign_object_detection"] if _fod_available else []),
                 *( ["ai_intent"] if _ai_module_available else []),
+                *( ["llm_router"] if _llm_available else []),
             ],
             "postgres": postgres_status
         }
@@ -1042,6 +1088,7 @@ async def root():
             **({"food_kb_feedback": "/api/food-kb/feedback"} if _food_kb_feedback_available else {}),
             **({"foreign_object_detection": "/api/fod"} if _fod_available else {}),
             **({"ai_intent": "/api/ai"} if _ai_module_available else {}),
+            **({"llm_router": "/api/llm"} if _llm_available else {}),
         },
         "endpoints": {
             "health": "/health",

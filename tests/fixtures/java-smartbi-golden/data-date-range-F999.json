@@ -1,0 +1,28 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/data-date-range",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "Data date range detected",
+    "timestamp": "2026-04-30T06:34:57.727675944",
+    "data": {
+      "endDate": "2026-12-28",
+      "granularity": "YEAR",
+      "hasData": true,
+      "description": "数据范围 2026-01-01 至 2026-12-28",
+      "startDate": "2026-01-01"
+    }
+  },
+  "_meta": {
+    "name": "data-date-range",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/data-date-range",
+    "query": null,
+    "factory": "F999",
+    "recordedAt": "2026-04-29T22:34:58.104Z",
+    "javaPort": 10011
+  }
+}

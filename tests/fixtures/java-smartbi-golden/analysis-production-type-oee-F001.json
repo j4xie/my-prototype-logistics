@@ -1,0 +1,2728 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/analysis/production",
+  "factory": "F001",
+  "response": {
+    "httpStatus": 200,
+    "success": true,
+    "message": "操作成功",
+    "data": {
+      "endDate": "2025-12-31",
+      "metrics": [
+        {
+          "metricCode": "PLANNED_RUNTIME",
+          "metricName": "计划运行时间",
+          "value": 84052,
+          "formattedValue": null,
+          "unit": "小时",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": null
+        },
+        {
+          "metricCode": "ACTUAL_RUNTIME",
+          "metricName": "实际运行时间",
+          "value": 76717.7521,
+          "formattedValue": null,
+          "unit": "小时",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": null
+        },
+        {
+          "metricCode": "DOWNTIME",
+          "metricName": "停机时间",
+          "value": 7334.2479,
+          "formattedValue": null,
+          "unit": "小时",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": null
+        },
+        {
+          "metricCode": "AVAILABILITY",
+          "metricName": "可用性",
+          "value": 91.27,
+          "formattedValue": null,
+          "unit": "%",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": null
+        },
+        {
+          "metricCode": "THEORETICAL_OUTPUT",
+          "metricName": "理论产量",
+          "value": 1093896,
+          "formattedValue": null,
+          "unit": "件",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": null
+        },
+        {
+          "metricCode": "ACTUAL_OUTPUT",
+          "metricName": "实际产量",
+          "value": 979305,
+          "formattedValue": null,
+          "unit": "件",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": null
+        },
+        {
+          "metricCode": "PERFORMANCE",
+          "metricName": "性能",
+          "value": 89.52,
+          "formattedValue": null,
+          "unit": "%",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "YELLOW",
+          "dimensionValue": null,
+          "description": null
+        },
+        {
+          "metricCode": "GOOD_UNITS",
+          "metricName": "良品数",
+          "value": 951135,
+          "formattedValue": null,
+          "unit": "件",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "GREEN",
+          "dimensionValue": null,
+          "description": null
+        },
+        {
+          "metricCode": "QUALITY_RATE",
+          "metricName": "质量率",
+          "value": 97.12,
+          "formattedValue": null,
+          "unit": "%",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "YELLOW",
+          "dimensionValue": null,
+          "description": null
+        },
+        {
+          "metricCode": "OEE",
+          "metricName": "综合设备效率 (OEE)",
+          "value": 79.3518,
+          "formattedValue": null,
+          "unit": "%",
+          "changePercent": null,
+          "changeDirection": null,
+          "changeValue": null,
+          "alertLevel": "YELLOW",
+          "dimensionValue": null,
+          "description": null
+        }
+      ],
+      "trendChart": {
+        "chartType": "LINE",
+        "title": "OEE 趋势",
+        "seriesField": "metric",
+        "data": [
+          {
+            "date": "2025-01-01",
+            "oee": 77.85,
+            "availability": 88.7,
+            "performance": 90.22,
+            "quality": 97.28
+          },
+          {
+            "date": "2025-01-02",
+            "oee": 81.83,
+            "availability": 89.64,
+            "performance": 93.98,
+            "quality": 97.14
+          },
+          {
+            "date": "2025-01-03",
+            "oee": 79.65,
+            "availability": 91.73,
+            "performance": 89.48,
+            "quality": 97.04
+          },
+          {
+            "date": "2025-01-04",
+            "oee": 76.88,
+            "availability": 90.68,
+            "performance": 87.22,
+            "quality": 97.2
+          },
+          {
+            "date": "2025-01-05",
+            "oee": 81.07,
+            "availability": 93.96,
+            "performance": 89.13,
+            "quality": 96.8
+          },
+          {
+            "date": "2025-01-06",
+            "oee": 81.62,
+            "availability": 91.81,
+            "performance": 91.33,
+            "quality": 97.34
+          },
+          {
+            "date": "2025-01-07",
+            "oee": 80.83,
+            "availability": 90.87,
+            "performance": 91.91,
+            "quality": 96.78
+          },
+          {
+            "date": "2025-01-08",
+            "oee": 79.61,
+            "availability": 90.82,
+            "performance": 90.27,
+            "quality": 97.1
+          },
+          {
+            "date": "2025-01-09",
+            "oee": 79.35,
+            "availability": 91.73,
+            "performance": 89.34,
+            "quality": 96.82
+          },
+          {
+            "date": "2025-01-10",
+            "oee": 80.55,
+            "availability": 90.97,
+            "performance": 90.4,
+            "quality": 97.95
+          },
+          {
+            "date": "2025-01-11",
+            "oee": 77.01,
+            "availability": 90.46,
+            "performance": 87.49,
+            "quality": 97.31
+          },
+          {
+            "date": "2025-01-12",
+            "oee": 74.89,
+            "availability": 90.67,
+            "performance": 85.86,
+            "quality": 96.2
+          },
+          {
+            "date": "2025-01-13",
+            "oee": 82.11,
+            "availability": 91.12,
+            "performance": 92.55,
+            "quality": 97.36
+          },
+          {
+            "date": "2025-01-14",
+            "oee": 80.14,
+            "availability": 92.17,
+            "performance": 89.43,
+            "quality": 97.22
+          },
+          {
+            "date": "2025-01-15",
+            "oee": 78.73,
+            "availability": 91.68,
+            "performance": 88.07,
+            "quality": 97.51
+          },
+          {
+            "date": "2025-01-16",
+            "oee": 79.73,
+            "availability": 89.59,
+            "performance": 91.26,
+            "quality": 97.52
+          },
+          {
+            "date": "2025-01-17",
+            "oee": 79.52,
+            "availability": 91.92,
+            "performance": 89.15,
+            "quality": 97.04
+          },
+          {
+            "date": "2025-01-18",
+            "oee": 78.63,
+            "availability": 91.38,
+            "performance": 88.78,
+            "quality": 96.92
+          },
+          {
+            "date": "2025-01-19",
+            "oee": 80.47,
+            "availability": 91.44,
+            "performance": 90.08,
+            "quality": 97.7
+          },
+          {
+            "date": "2025-01-20",
+            "oee": 80.08,
+            "availability": 90.81,
+            "performance": 90.55,
+            "quality": 97.39
+          },
+          {
+            "date": "2025-01-21",
+            "oee": 79.84,
+            "availability": 90.6,
+            "performance": 90.12,
+            "quality": 97.79
+          },
+          {
+            "date": "2025-01-22",
+            "oee": 79.24,
+            "availability": 91.34,
+            "performance": 89.34,
+            "quality": 97.1
+          },
+          {
+            "date": "2025-01-23",
+            "oee": 79.86,
+            "availability": 92.45,
+            "performance": 88.19,
+            "quality": 97.95
+          },
+          {
+            "date": "2025-01-24",
+            "oee": 79.87,
+            "availability": 89.04,
+            "performance": 91.93,
+            "quality": 97.58
+          },
+          {
+            "date": "2025-01-25",
+            "oee": 80.97,
+            "availability": 91.28,
+            "performance": 91.63,
+            "quality": 96.81
+          },
+          {
+            "date": "2025-01-26",
+            "oee": 78.92,
+            "availability": 90.42,
+            "performance": 89.93,
+            "quality": 97.05
+          },
+          {
+            "date": "2025-01-27",
+            "oee": 78.57,
+            "availability": 90.38,
+            "performance": 89.55,
+            "quality": 97.08
+          },
+          {
+            "date": "2025-01-28",
+            "oee": 77.26,
+            "availability": 89.38,
+            "performance": 88.48,
+            "quality": 97.69
+          },
+          {
+            "date": "2025-01-29",
+            "oee": 78.72,
+            "availability": 91.54,
+            "performance": 88.22,
+            "quality": 97.48
+          },
+          {
+            "date": "2025-01-30",
+            "oee": 80.13,
+            "availability": 91.44,
+            "performance": 90.34,
+            "quality": 97
+          },
+          {
+            "date": "2025-01-31",
+            "oee": 80.12,
+            "availability": 93.23,
+            "performance": 88.64,
+            "quality": 96.95
+          },
+          {
+            "date": "2025-02-01",
+            "oee": 81.35,
+            "availability": 93.1,
+            "performance": 89.7,
+            "quality": 97.41
+          },
+          {
+            "date": "2025-02-02",
+            "oee": 80.72,
+            "availability": 91.57,
+            "performance": 90.63,
+            "quality": 97.27
+          },
+          {
+            "date": "2025-02-03",
+            "oee": 76.73,
+            "availability": 91.04,
+            "performance": 86.91,
+            "quality": 96.98
+          },
+          {
+            "date": "2025-02-04",
+            "oee": 78.96,
+            "availability": 91.29,
+            "performance": 88.83,
+            "quality": 97.37
+          },
+          {
+            "date": "2025-02-05",
+            "oee": 81.03,
+            "availability": 91.88,
+            "performance": 90.73,
+            "quality": 97.2
+          },
+          {
+            "date": "2025-02-06",
+            "oee": 77.92,
+            "availability": 91.08,
+            "performance": 88.32,
+            "quality": 96.86
+          },
+          {
+            "date": "2025-02-07",
+            "oee": 76.97,
+            "availability": 90.76,
+            "performance": 87.08,
+            "quality": 97.39
+          },
+          {
+            "date": "2025-02-08",
+            "oee": 80.71,
+            "availability": 91.7,
+            "performance": 90.11,
+            "quality": 97.67
+          },
+          {
+            "date": "2025-02-09",
+            "oee": 78.84,
+            "availability": 90.88,
+            "performance": 88.91,
+            "quality": 97.57
+          },
+          {
+            "date": "2025-02-10",
+            "oee": 79.99,
+            "availability": 92.51,
+            "performance": 88.68,
+            "quality": 97.5
+          },
+          {
+            "date": "2025-02-11",
+            "oee": 78.3,
+            "availability": 92.42,
+            "performance": 87.45,
+            "quality": 96.88
+          },
+          {
+            "date": "2025-02-12",
+            "oee": 78.2,
+            "availability": 91.05,
+            "performance": 89.12,
+            "quality": 96.37
+          },
+          {
+            "date": "2025-02-13",
+            "oee": 77.99,
+            "availability": 89.95,
+            "performance": 89.39,
+            "quality": 96.99
+          },
+          {
+            "date": "2025-02-14",
+            "oee": 83.77,
+            "availability": 92.58,
+            "performance": 93.18,
+            "quality": 97.11
+          },
+          {
+            "date": "2025-02-15",
+            "oee": 80.59,
+            "availability": 91.44,
+            "performance": 90.51,
+            "quality": 97.37
+          },
+          {
+            "date": "2025-02-16",
+            "oee": 77.83,
+            "availability": 88.94,
+            "performance": 89.97,
+            "quality": 97.27
+          },
+          {
+            "date": "2025-02-17",
+            "oee": 81.04,
+            "availability": 91.84,
+            "performance": 90.99,
+            "quality": 96.98
+          },
+          {
+            "date": "2025-02-18",
+            "oee": 78.17,
+            "availability": 91.61,
+            "performance": 88.17,
+            "quality": 96.78
+          },
+          {
+            "date": "2025-02-19",
+            "oee": 80.97,
+            "availability": 91.02,
+            "performance": 91.68,
+            "quality": 97.03
+          },
+          {
+            "date": "2025-02-20",
+            "oee": 79.29,
+            "availability": 90.83,
+            "performance": 89.54,
+            "quality": 97.49
+          },
+          {
+            "date": "2025-02-21",
+            "oee": 80.6,
+            "availability": 93.62,
+            "performance": 88.36,
+            "quality": 97.43
+          },
+          {
+            "date": "2025-02-22",
+            "oee": 77.99,
+            "availability": 90.74,
+            "performance": 88.46,
+            "quality": 97.16
+          },
+          {
+            "date": "2025-02-23",
+            "oee": 81.63,
+            "availability": 93.87,
+            "performance": 89.47,
+            "quality": 97.2
+          },
+          {
+            "date": "2025-02-24",
+            "oee": 79.74,
+            "availability": 90.66,
+            "performance": 90.38,
+            "quality": 97.32
+          },
+          {
+            "date": "2025-02-25",
+            "oee": 78.78,
+            "availability": 91.64,
+            "performance": 88.72,
+            "quality": 96.9
+          },
+          {
+            "date": "2025-02-26",
+            "oee": 80.5,
+            "availability": 93.04,
+            "performance": 89.22,
+            "quality": 96.98
+          },
+          {
+            "date": "2025-02-27",
+            "oee": 79.29,
+            "availability": 89.86,
+            "performance": 90.86,
+            "quality": 97.11
+          },
+          {
+            "date": "2025-02-28",
+            "oee": 79.81,
+            "availability": 92.27,
+            "performance": 89.05,
+            "quality": 97.13
+          },
+          {
+            "date": "2025-03-01",
+            "oee": 78.86,
+            "availability": 90.6,
+            "performance": 89.52,
+            "quality": 97.23
+          },
+          {
+            "date": "2025-03-02",
+            "oee": 78.39,
+            "availability": 90.04,
+            "performance": 89.22,
+            "quality": 97.58
+          },
+          {
+            "date": "2025-03-03",
+            "oee": 79.52,
+            "availability": 89.18,
+            "performance": 91.92,
+            "quality": 97.01
+          },
+          {
+            "date": "2025-03-04",
+            "oee": 79.6,
+            "availability": 92.36,
+            "performance": 89.1,
+            "quality": 96.73
+          },
+          {
+            "date": "2025-03-05",
+            "oee": 78.1,
+            "availability": 89.11,
+            "performance": 90.5,
+            "quality": 96.85
+          },
+          {
+            "date": "2025-03-06",
+            "oee": 78.45,
+            "availability": 90.49,
+            "performance": 89.71,
+            "quality": 96.64
+          },
+          {
+            "date": "2025-03-07",
+            "oee": 80.07,
+            "availability": 90.11,
+            "performance": 91.28,
+            "quality": 97.35
+          },
+          {
+            "date": "2025-03-08",
+            "oee": 82.05,
+            "availability": 92.63,
+            "performance": 91.26,
+            "quality": 97.06
+          },
+          {
+            "date": "2025-03-09",
+            "oee": 77.37,
+            "availability": 90.26,
+            "performance": 88.55,
+            "quality": 96.8
+          },
+          {
+            "date": "2025-03-10",
+            "oee": 79.33,
+            "availability": 92.77,
+            "performance": 87.65,
+            "quality": 97.56
+          },
+          {
+            "date": "2025-03-11",
+            "oee": 79.21,
+            "availability": 91.44,
+            "performance": 89.6,
+            "quality": 96.68
+          },
+          {
+            "date": "2025-03-12",
+            "oee": 80.21,
+            "availability": 91.36,
+            "performance": 90.02,
+            "quality": 97.53
+          },
+          {
+            "date": "2025-03-13",
+            "oee": 77.79,
+            "availability": 90.91,
+            "performance": 87.58,
+            "quality": 97.7
+          },
+          {
+            "date": "2025-03-14",
+            "oee": 77.79,
+            "availability": 90.87,
+            "performance": 88.34,
+            "quality": 96.91
+          },
+          {
+            "date": "2025-03-15",
+            "oee": 78.4,
+            "availability": 92.13,
+            "performance": 88.25,
+            "quality": 96.43
+          },
+          {
+            "date": "2025-03-16",
+            "oee": 82.26,
+            "availability": 92.24,
+            "performance": 92.22,
+            "quality": 96.7
+          },
+          {
+            "date": "2025-03-17",
+            "oee": 81.41,
+            "availability": 92.22,
+            "performance": 90.5,
+            "quality": 97.54
+          },
+          {
+            "date": "2025-03-18",
+            "oee": 77.03,
+            "availability": 90.86,
+            "performance": 86.66,
+            "quality": 97.83
+          },
+          {
+            "date": "2025-03-19",
+            "oee": 78.15,
+            "availability": 92.19,
+            "performance": 87.18,
+            "quality": 97.24
+          },
+          {
+            "date": "2025-03-20",
+            "oee": 78.97,
+            "availability": 91.73,
+            "performance": 88.51,
+            "quality": 97.27
+          },
+          {
+            "date": "2025-03-21",
+            "oee": 78.62,
+            "availability": 89.79,
+            "performance": 90.31,
+            "quality": 96.96
+          },
+          {
+            "date": "2025-03-22",
+            "oee": 78.58,
+            "availability": 91.8,
+            "performance": 88.09,
+            "quality": 97.17
+          },
+          {
+            "date": "2025-03-23",
+            "oee": 77.6,
+            "availability": 91.47,
+            "performance": 88.02,
+            "quality": 96.38
+          },
+          {
+            "date": "2025-03-24",
+            "oee": 74.09,
+            "availability": 90.4,
+            "performance": 84.15,
+            "quality": 97.39
+          },
+          {
+            "date": "2025-03-25",
+            "oee": 80.57,
+            "availability": 90.95,
+            "performance": 91,
+            "quality": 97.35
+          },
+          {
+            "date": "2025-03-26",
+            "oee": 79.52,
+            "availability": 90.31,
+            "performance": 90.79,
+            "quality": 96.98
+          },
+          {
+            "date": "2025-03-27",
+            "oee": 80.49,
+            "availability": 91.27,
+            "performance": 90.77,
+            "quality": 97.16
+          },
+          {
+            "date": "2025-03-28",
+            "oee": 77.65,
+            "availability": 90.04,
+            "performance": 88.77,
+            "quality": 97.15
+          },
+          {
+            "date": "2025-03-29",
+            "oee": 78.95,
+            "availability": 91.57,
+            "performance": 89.13,
+            "quality": 96.73
+          },
+          {
+            "date": "2025-03-30",
+            "oee": 80.48,
+            "availability": 92.21,
+            "performance": 90.26,
+            "quality": 96.7
+          },
+          {
+            "date": "2025-03-31",
+            "oee": 79.24,
+            "availability": 91.17,
+            "performance": 89.28,
+            "quality": 97.35
+          },
+          {
+            "date": "2025-04-01",
+            "oee": 77.14,
+            "availability": 89.03,
+            "performance": 89.55,
+            "quality": 96.76
+          },
+          {
+            "date": "2025-04-02",
+            "oee": 78.61,
+            "availability": 90.67,
+            "performance": 89.17,
+            "quality": 97.23
+          },
+          {
+            "date": "2025-04-03",
+            "oee": 79.57,
+            "availability": 91.39,
+            "performance": 89.74,
+            "quality": 97.02
+          },
+          {
+            "date": "2025-04-04",
+            "oee": 78.64,
+            "availability": 92.64,
+            "performance": 87.31,
+            "quality": 97.22
+          },
+          {
+            "date": "2025-04-05",
+            "oee": 79.32,
+            "availability": 91.69,
+            "performance": 89.81,
+            "quality": 96.33
+          },
+          {
+            "date": "2025-04-06",
+            "oee": 78.43,
+            "availability": 90.44,
+            "performance": 89.71,
+            "quality": 96.67
+          },
+          {
+            "date": "2025-04-07",
+            "oee": 80.33,
+            "availability": 92.49,
+            "performance": 89.19,
+            "quality": 97.38
+          },
+          {
+            "date": "2025-04-08",
+            "oee": 80.78,
+            "availability": 92.68,
+            "performance": 89.87,
+            "quality": 96.98
+          },
+          {
+            "date": "2025-04-09",
+            "oee": 77.94,
+            "availability": 89.83,
+            "performance": 89.69,
+            "quality": 96.74
+          },
+          {
+            "date": "2025-04-10",
+            "oee": 79.66,
+            "availability": 91.68,
+            "performance": 89.54,
+            "quality": 97.04
+          },
+          {
+            "date": "2025-04-11",
+            "oee": 77.88,
+            "availability": 91.86,
+            "performance": 87.05,
+            "quality": 97.39
+          },
+          {
+            "date": "2025-04-12",
+            "oee": 79.76,
+            "availability": 91.03,
+            "performance": 90.38,
+            "quality": 96.94
+          },
+          {
+            "date": "2025-04-13",
+            "oee": 80.42,
+            "availability": 90.23,
+            "performance": 91.87,
+            "quality": 97.02
+          },
+          {
+            "date": "2025-04-14",
+            "oee": 79.92,
+            "availability": 91.34,
+            "performance": 90.09,
+            "quality": 97.12
+          },
+          {
+            "date": "2025-04-15",
+            "oee": 79.87,
+            "availability": 90.9,
+            "performance": 90.51,
+            "quality": 97.08
+          },
+          {
+            "date": "2025-04-16",
+            "oee": 78.22,
+            "availability": 90.43,
+            "performance": 88.97,
+            "quality": 97.22
+          },
+          {
+            "date": "2025-04-17",
+            "oee": 78.9,
+            "availability": 89.46,
+            "performance": 90.76,
+            "quality": 97.17
+          },
+          {
+            "date": "2025-04-18",
+            "oee": 79.14,
+            "availability": 92.07,
+            "performance": 88.59,
+            "quality": 97.03
+          },
+          {
+            "date": "2025-04-19",
+            "oee": 81.63,
+            "availability": 92.58,
+            "performance": 90.51,
+            "quality": 97.42
+          },
+          {
+            "date": "2025-04-20",
+            "oee": 79.17,
+            "availability": 91.2,
+            "performance": 89.15,
+            "quality": 97.37
+          },
+          {
+            "date": "2025-04-21",
+            "oee": 81.09,
+            "availability": 91.95,
+            "performance": 90.76,
+            "quality": 97.17
+          },
+          {
+            "date": "2025-04-22",
+            "oee": 77.7,
+            "availability": 88.86,
+            "performance": 89.94,
+            "quality": 97.22
+          },
+          {
+            "date": "2025-04-23",
+            "oee": 78.13,
+            "availability": 88.98,
+            "performance": 90.56,
+            "quality": 96.96
+          },
+          {
+            "date": "2025-04-24",
+            "oee": 75.26,
+            "availability": 90.46,
+            "performance": 85.64,
+            "quality": 97.15
+          },
+          {
+            "date": "2025-04-25",
+            "oee": 76.8,
+            "availability": 90.24,
+            "performance": 87.49,
+            "quality": 97.27
+          },
+          {
+            "date": "2025-04-26",
+            "oee": 78.8,
+            "availability": 91.48,
+            "performance": 89,
+            "quality": 96.79
+          },
+          {
+            "date": "2025-04-27",
+            "oee": 79.07,
+            "availability": 90.12,
+            "performance": 90.23,
+            "quality": 97.24
+          },
+          {
+            "date": "2025-04-28",
+            "oee": 78.08,
+            "availability": 92.26,
+            "performance": 87.75,
+            "quality": 96.45
+          },
+          {
+            "date": "2025-04-29",
+            "oee": 81.07,
+            "availability": 91.86,
+            "performance": 90.65,
+            "quality": 97.36
+          },
+          {
+            "date": "2025-04-30",
+            "oee": 80.95,
+            "availability": 92.48,
+            "performance": 90.18,
+            "quality": 97.06
+          },
+          {
+            "date": "2025-05-01",
+            "oee": 78.99,
+            "availability": 92.3,
+            "performance": 87.92,
+            "quality": 97.34
+          },
+          {
+            "date": "2025-05-02",
+            "oee": 81.47,
+            "availability": 93.16,
+            "performance": 90.08,
+            "quality": 97.08
+          },
+          {
+            "date": "2025-05-03",
+            "oee": 78.42,
+            "availability": 88.44,
+            "performance": 91.08,
+            "quality": 97.35
+          },
+          {
+            "date": "2025-05-04",
+            "oee": 78.41,
+            "availability": 90.38,
+            "performance": 89.31,
+            "quality": 97.14
+          },
+          {
+            "date": "2025-05-05",
+            "oee": 79,
+            "availability": 91.93,
+            "performance": 88.49,
+            "quality": 97.11
+          },
+          {
+            "date": "2025-05-06",
+            "oee": 79.05,
+            "availability": 91.1,
+            "performance": 89.26,
+            "quality": 97.21
+          },
+          {
+            "date": "2025-05-07",
+            "oee": 80.14,
+            "availability": 92.42,
+            "performance": 89.47,
+            "quality": 96.92
+          },
+          {
+            "date": "2025-05-08",
+            "oee": 80.89,
+            "availability": 92.35,
+            "performance": 89.91,
+            "quality": 97.42
+          },
+          {
+            "date": "2025-05-09",
+            "oee": 81.95,
+            "availability": 91.84,
+            "performance": 91.55,
+            "quality": 97.47
+          },
+          {
+            "date": "2025-05-10",
+            "oee": 78.92,
+            "availability": 91.6,
+            "performance": 88.22,
+            "quality": 97.66
+          },
+          {
+            "date": "2025-05-11",
+            "oee": 77.77,
+            "availability": 89.46,
+            "performance": 89.68,
+            "quality": 96.94
+          },
+          {
+            "date": "2025-05-12",
+            "oee": 79.37,
+            "availability": 91.41,
+            "performance": 89.74,
+            "quality": 96.75
+          },
+          {
+            "date": "2025-05-13",
+            "oee": 78.65,
+            "availability": 91.39,
+            "performance": 88.77,
+            "quality": 96.95
+          },
+          {
+            "date": "2025-05-14",
+            "oee": 78.97,
+            "availability": 92.24,
+            "performance": 88.05,
+            "quality": 97.23
+          },
+          {
+            "date": "2025-05-15",
+            "oee": 81.42,
+            "availability": 92.13,
+            "performance": 90.7,
+            "quality": 97.44
+          },
+          {
+            "date": "2025-05-16",
+            "oee": 77.76,
+            "availability": 91.57,
+            "performance": 87.56,
+            "quality": 96.98
+          },
+          {
+            "date": "2025-05-17",
+            "oee": 77.13,
+            "availability": 90.04,
+            "performance": 88.23,
+            "quality": 97.09
+          },
+          {
+            "date": "2025-05-18",
+            "oee": 79.69,
+            "availability": 90.97,
+            "performance": 90.15,
+            "quality": 97.17
+          },
+          {
+            "date": "2025-05-19",
+            "oee": 78.25,
+            "availability": 90.39,
+            "performance": 89.71,
+            "quality": 96.5
+          },
+          {
+            "date": "2025-05-20",
+            "oee": 80.31,
+            "availability": 91.03,
+            "performance": 90.46,
+            "quality": 97.53
+          },
+          {
+            "date": "2025-05-21",
+            "oee": 77.5,
+            "availability": 91.41,
+            "performance": 87.15,
+            "quality": 97.29
+          },
+          {
+            "date": "2025-05-22",
+            "oee": 81.88,
+            "availability": 91.67,
+            "performance": 92.02,
+            "quality": 97.07
+          },
+          {
+            "date": "2025-05-23",
+            "oee": 79.5,
+            "availability": 92.11,
+            "performance": 89.24,
+            "quality": 96.72
+          },
+          {
+            "date": "2025-05-24",
+            "oee": 79.05,
+            "availability": 92.84,
+            "performance": 87.73,
+            "quality": 97.06
+          },
+          {
+            "date": "2025-05-25",
+            "oee": 78.92,
+            "availability": 89.59,
+            "performance": 90.95,
+            "quality": 96.85
+          },
+          {
+            "date": "2025-05-26",
+            "oee": 76.97,
+            "availability": 90.23,
+            "performance": 87.94,
+            "quality": 97
+          },
+          {
+            "date": "2025-05-27",
+            "oee": 77.93,
+            "availability": 91.61,
+            "performance": 87.64,
+            "quality": 97.06
+          },
+          {
+            "date": "2025-05-28",
+            "oee": 81.5,
+            "availability": 92.97,
+            "performance": 90.33,
+            "quality": 97.05
+          },
+          {
+            "date": "2025-05-29",
+            "oee": 82.47,
+            "availability": 91.78,
+            "performance": 92.27,
+            "quality": 97.38
+          },
+          {
+            "date": "2025-05-30",
+            "oee": 79.85,
+            "availability": 91.68,
+            "performance": 89.26,
+            "quality": 97.57
+          },
+          {
+            "date": "2025-05-31",
+            "oee": 79.5,
+            "availability": 89.15,
+            "performance": 91.47,
+            "quality": 97.49
+          },
+          {
+            "date": "2025-06-01",
+            "oee": 79.45,
+            "availability": 91.43,
+            "performance": 89.48,
+            "quality": 97.11
+          },
+          {
+            "date": "2025-06-02",
+            "oee": 81.27,
+            "availability": 92.66,
+            "performance": 90.19,
+            "quality": 97.25
+          },
+          {
+            "date": "2025-06-03",
+            "oee": 78.9,
+            "availability": 92.51,
+            "performance": 87.97,
+            "quality": 96.95
+          },
+          {
+            "date": "2025-06-04",
+            "oee": 80.55,
+            "availability": 91.86,
+            "performance": 90.01,
+            "quality": 97.42
+          },
+          {
+            "date": "2025-06-05",
+            "oee": 79.28,
+            "availability": 89.62,
+            "performance": 91.34,
+            "quality": 96.85
+          },
+          {
+            "date": "2025-06-06",
+            "oee": 77.27,
+            "availability": 90.87,
+            "performance": 87.65,
+            "quality": 97.02
+          },
+          {
+            "date": "2025-06-07",
+            "oee": 79.25,
+            "availability": 91.19,
+            "performance": 89.58,
+            "quality": 97.01
+          },
+          {
+            "date": "2025-06-08",
+            "oee": 81.3,
+            "availability": 91.85,
+            "performance": 91,
+            "quality": 97.27
+          },
+          {
+            "date": "2025-06-09",
+            "oee": 80.12,
+            "availability": 90.24,
+            "performance": 90.88,
+            "quality": 97.7
+          },
+          {
+            "date": "2025-06-10",
+            "oee": 80.75,
+            "availability": 92.16,
+            "performance": 90,
+            "quality": 97.35
+          },
+          {
+            "date": "2025-06-11",
+            "oee": 80.38,
+            "availability": 90.88,
+            "performance": 91.69,
+            "quality": 96.46
+          },
+          {
+            "date": "2025-06-12",
+            "oee": 79.71,
+            "availability": 90.85,
+            "performance": 90.25,
+            "quality": 97.22
+          },
+          {
+            "date": "2025-06-13",
+            "oee": 78.89,
+            "availability": 91.17,
+            "performance": 89.35,
+            "quality": 96.85
+          },
+          {
+            "date": "2025-06-14",
+            "oee": 77.8,
+            "availability": 91.2,
+            "performance": 87.72,
+            "quality": 97.25
+          },
+          {
+            "date": "2025-06-15",
+            "oee": 76.97,
+            "availability": 89.76,
+            "performance": 88.11,
+            "quality": 97.32
+          },
+          {
+            "date": "2025-06-16",
+            "oee": 80.37,
+            "availability": 91.3,
+            "performance": 91.12,
+            "quality": 96.61
+          },
+          {
+            "date": "2025-06-17",
+            "oee": 78.57,
+            "availability": 89.85,
+            "performance": 89.84,
+            "quality": 97.34
+          },
+          {
+            "date": "2025-06-18",
+            "oee": 77.35,
+            "availability": 90.12,
+            "performance": 88.08,
+            "quality": 97.44
+          },
+          {
+            "date": "2025-06-19",
+            "oee": 79.25,
+            "availability": 90.66,
+            "performance": 90.06,
+            "quality": 97.06
+          },
+          {
+            "date": "2025-06-20",
+            "oee": 82.32,
+            "availability": 93.11,
+            "performance": 90.63,
+            "quality": 97.55
+          },
+          {
+            "date": "2025-06-21",
+            "oee": 78.44,
+            "availability": 90.8,
+            "performance": 88.59,
+            "quality": 97.51
+          },
+          {
+            "date": "2025-06-22",
+            "oee": 80.53,
+            "availability": 93.87,
+            "performance": 88.63,
+            "quality": 96.79
+          },
+          {
+            "date": "2025-06-23",
+            "oee": 82.25,
+            "availability": 91.37,
+            "performance": 92.23,
+            "quality": 97.6
+          },
+          {
+            "date": "2025-06-24",
+            "oee": 77.61,
+            "availability": 90.41,
+            "performance": 88.11,
+            "quality": 97.42
+          },
+          {
+            "date": "2025-06-25",
+            "oee": 82.43,
+            "availability": 92.14,
+            "performance": 92.22,
+            "quality": 97.01
+          },
+          {
+            "date": "2025-06-26",
+            "oee": 81.89,
+            "availability": 92.99,
+            "performance": 90.04,
+            "quality": 97.81
+          },
+          {
+            "date": "2025-06-27",
+            "oee": 78.72,
+            "availability": 90.3,
+            "performance": 89.55,
+            "quality": 97.35
+          },
+          {
+            "date": "2025-06-28",
+            "oee": 81.55,
+            "availability": 93.09,
+            "performance": 90.3,
+            "quality": 97.01
+          },
+          {
+            "date": "2025-06-29",
+            "oee": 80.87,
+            "availability": 90.66,
+            "performance": 91.43,
+            "quality": 97.56
+          },
+          {
+            "date": "2025-06-30",
+            "oee": 78.54,
+            "availability": 89.41,
+            "performance": 90.75,
+            "quality": 96.79
+          },
+          {
+            "date": "2025-07-01",
+            "oee": 78.26,
+            "availability": 90.3,
+            "performance": 89.73,
+            "quality": 96.59
+          },
+          {
+            "date": "2025-07-02",
+            "oee": 78.3,
+            "availability": 91.7,
+            "performance": 88.16,
+            "quality": 96.85
+          },
+          {
+            "date": "2025-07-03",
+            "oee": 79.25,
+            "availability": 90.28,
+            "performance": 90.53,
+            "quality": 96.96
+          },
+          {
+            "date": "2025-07-04",
+            "oee": 78.05,
+            "availability": 91.52,
+            "performance": 88.27,
+            "quality": 96.62
+          },
+          {
+            "date": "2025-07-05",
+            "oee": 79.17,
+            "availability": 90.29,
+            "performance": 90.42,
+            "quality": 96.98
+          },
+          {
+            "date": "2025-07-06",
+            "oee": 81.01,
+            "availability": 90.83,
+            "performance": 92.51,
+            "quality": 96.41
+          },
+          {
+            "date": "2025-07-07",
+            "oee": 78.15,
+            "availability": 90.56,
+            "performance": 88.45,
+            "quality": 97.57
+          },
+          {
+            "date": "2025-07-08",
+            "oee": 78.94,
+            "availability": 90.92,
+            "performance": 89.8,
+            "quality": 96.68
+          },
+          {
+            "date": "2025-07-09",
+            "oee": 78.59,
+            "availability": 90.63,
+            "performance": 89.52,
+            "quality": 96.87
+          },
+          {
+            "date": "2025-07-10",
+            "oee": 81.91,
+            "availability": 91.29,
+            "performance": 92.55,
+            "quality": 96.95
+          },
+          {
+            "date": "2025-07-11",
+            "oee": 77.3,
+            "availability": 90.63,
+            "performance": 87.89,
+            "quality": 97.05
+          },
+          {
+            "date": "2025-07-12",
+            "oee": 79.25,
+            "availability": 91.23,
+            "performance": 89.29,
+            "quality": 97.29
+          },
+          {
+            "date": "2025-07-13",
+            "oee": 79.77,
+            "availability": 92.58,
+            "performance": 88.5,
+            "quality": 97.36
+          },
+          {
+            "date": "2025-07-14",
+            "oee": 78.1,
+            "availability": 89.65,
+            "performance": 89.72,
+            "quality": 97.1
+          },
+          {
+            "date": "2025-07-15",
+            "oee": 77.12,
+            "availability": 90.3,
+            "performance": 88.26,
+            "quality": 96.77
+          },
+          {
+            "date": "2025-07-16",
+            "oee": 78.49,
+            "availability": 91.39,
+            "performance": 88.42,
+            "quality": 97.13
+          },
+          {
+            "date": "2025-07-17",
+            "oee": 82.17,
+            "availability": 92.17,
+            "performance": 91.78,
+            "quality": 97.14
+          },
+          {
+            "date": "2025-07-18",
+            "oee": 80.43,
+            "availability": 91.12,
+            "performance": 91.44,
+            "quality": 96.53
+          },
+          {
+            "date": "2025-07-19",
+            "oee": 79.54,
+            "availability": 89.35,
+            "performance": 91.21,
+            "quality": 97.6
+          },
+          {
+            "date": "2025-07-20",
+            "oee": 79.68,
+            "availability": 92.77,
+            "performance": 87.93,
+            "quality": 97.68
+          },
+          {
+            "date": "2025-07-21",
+            "oee": 78.93,
+            "availability": 90.83,
+            "performance": 89.39,
+            "quality": 97.21
+          },
+          {
+            "date": "2025-07-22",
+            "oee": 76.53,
+            "availability": 90.91,
+            "performance": 87.13,
+            "quality": 96.62
+          },
+          {
+            "date": "2025-07-23",
+            "oee": 79.46,
+            "availability": 92.05,
+            "performance": 88.85,
+            "quality": 97.16
+          },
+          {
+            "date": "2025-07-24",
+            "oee": 79.32,
+            "availability": 90.93,
+            "performance": 89.56,
+            "quality": 97.4
+          },
+          {
+            "date": "2025-07-25",
+            "oee": 79.26,
+            "availability": 91.87,
+            "performance": 89.53,
+            "quality": 96.36
+          },
+          {
+            "date": "2025-07-26",
+            "oee": 77.63,
+            "availability": 92.44,
+            "performance": 86.6,
+            "quality": 96.97
+          },
+          {
+            "date": "2025-07-27",
+            "oee": 79.13,
+            "availability": 90.76,
+            "performance": 89.38,
+            "quality": 97.54
+          },
+          {
+            "date": "2025-07-28",
+            "oee": 76.91,
+            "availability": 90.23,
+            "performance": 87.62,
+            "quality": 97.28
+          },
+          {
+            "date": "2025-07-29",
+            "oee": 80.08,
+            "availability": 91.7,
+            "performance": 89.76,
+            "quality": 97.29
+          },
+          {
+            "date": "2025-07-30",
+            "oee": 79.71,
+            "availability": 90.92,
+            "performance": 90.07,
+            "quality": 97.34
+          },
+          {
+            "date": "2025-07-31",
+            "oee": 80.08,
+            "availability": 92.04,
+            "performance": 89.45,
+            "quality": 97.27
+          },
+          {
+            "date": "2025-08-01",
+            "oee": 80.73,
+            "availability": 90.44,
+            "performance": 91.81,
+            "quality": 97.23
+          },
+          {
+            "date": "2025-08-02",
+            "oee": 82.26,
+            "availability": 95.47,
+            "performance": 88.49,
+            "quality": 97.37
+          },
+          {
+            "date": "2025-08-03",
+            "oee": 79.98,
+            "availability": 91.3,
+            "performance": 89.87,
+            "quality": 97.47
+          },
+          {
+            "date": "2025-08-04",
+            "oee": 78.8,
+            "availability": 91.66,
+            "performance": 88.46,
+            "quality": 97.19
+          },
+          {
+            "date": "2025-08-05",
+            "oee": 79.9,
+            "availability": 91.82,
+            "performance": 89.25,
+            "quality": 97.5
+          },
+          {
+            "date": "2025-08-06",
+            "oee": 78.59,
+            "availability": 90.18,
+            "performance": 89.68,
+            "quality": 97.18
+          },
+          {
+            "date": "2025-08-07",
+            "oee": 78.68,
+            "availability": 90.91,
+            "performance": 89.49,
+            "quality": 96.71
+          },
+          {
+            "date": "2025-08-08",
+            "oee": 79.17,
+            "availability": 90.14,
+            "performance": 90.18,
+            "quality": 97.4
+          },
+          {
+            "date": "2025-08-09",
+            "oee": 78.31,
+            "availability": 89.28,
+            "performance": 90.23,
+            "quality": 97.21
+          },
+          {
+            "date": "2025-08-10",
+            "oee": 79.86,
+            "availability": 93.3,
+            "performance": 88.13,
+            "quality": 97.12
+          },
+          {
+            "date": "2025-08-11",
+            "oee": 80.06,
+            "availability": 91.16,
+            "performance": 90.29,
+            "quality": 97.27
+          },
+          {
+            "date": "2025-08-12",
+            "oee": 79.75,
+            "availability": 91.74,
+            "performance": 89.71,
+            "quality": 96.9
+          },
+          {
+            "date": "2025-08-13",
+            "oee": 78.61,
+            "availability": 92.04,
+            "performance": 88.1,
+            "quality": 96.95
+          },
+          {
+            "date": "2025-08-14",
+            "oee": 79.35,
+            "availability": 91.58,
+            "performance": 88.79,
+            "quality": 97.58
+          },
+          {
+            "date": "2025-08-15",
+            "oee": 80.1,
+            "availability": 92.87,
+            "performance": 88.72,
+            "quality": 97.22
+          },
+          {
+            "date": "2025-08-16",
+            "oee": 78.92,
+            "availability": 91.53,
+            "performance": 88.68,
+            "quality": 97.23
+          },
+          {
+            "date": "2025-08-17",
+            "oee": 77.55,
+            "availability": 90.42,
+            "performance": 88.23,
+            "quality": 97.21
+          },
+          {
+            "date": "2025-08-18",
+            "oee": 77.56,
+            "availability": 90.26,
+            "performance": 88.46,
+            "quality": 97.14
+          },
+          {
+            "date": "2025-08-19",
+            "oee": 80.47,
+            "availability": 94.72,
+            "performance": 87.73,
+            "quality": 96.84
+          },
+          {
+            "date": "2025-08-20",
+            "oee": 79.44,
+            "availability": 92.96,
+            "performance": 88.21,
+            "quality": 96.88
+          },
+          {
+            "date": "2025-08-21",
+            "oee": 82.7,
+            "availability": 93.24,
+            "performance": 90.89,
+            "quality": 97.59
+          },
+          {
+            "date": "2025-08-22",
+            "oee": 77.07,
+            "availability": 90.64,
+            "performance": 87.08,
+            "quality": 97.64
+          },
+          {
+            "date": "2025-08-23",
+            "oee": 78.99,
+            "availability": 90.41,
+            "performance": 90.59,
+            "quality": 96.45
+          },
+          {
+            "date": "2025-08-24",
+            "oee": 79.6,
+            "availability": 92.62,
+            "performance": 88.38,
+            "quality": 97.24
+          },
+          {
+            "date": "2025-08-25",
+            "oee": 80.86,
+            "availability": 91.84,
+            "performance": 90.21,
+            "quality": 97.6
+          },
+          {
+            "date": "2025-08-26",
+            "oee": 76.93,
+            "availability": 90.46,
+            "performance": 87.49,
+            "quality": 97.2
+          },
+          {
+            "date": "2025-08-27",
+            "oee": 80.25,
+            "availability": 91.6,
+            "performance": 90.7,
+            "quality": 96.59
+          },
+          {
+            "date": "2025-08-28",
+            "oee": 81.65,
+            "availability": 91.73,
+            "performance": 91.57,
+            "quality": 97.21
+          },
+          {
+            "date": "2025-08-29",
+            "oee": 79.12,
+            "availability": 91.63,
+            "performance": 89.39,
+            "quality": 96.59
+          },
+          {
+            "date": "2025-08-30",
+            "oee": 80.23,
+            "availability": 90.47,
+            "performance": 91.09,
+            "quality": 97.36
+          },
+          {
+            "date": "2025-08-31",
+            "oee": 80.3,
+            "availability": 91.83,
+            "performance": 89.59,
+            "quality": 97.61
+          },
+          {
+            "date": "2025-09-01",
+            "oee": 78.75,
+            "availability": 90.39,
+            "performance": 90.07,
+            "quality": 96.73
+          },
+          {
+            "date": "2025-09-02",
+            "oee": 79.27,
+            "availability": 90.91,
+            "performance": 89.82,
+            "quality": 97.08
+          },
+          {
+            "date": "2025-09-03",
+            "oee": 80.73,
+            "availability": 90.67,
+            "performance": 91.45,
+            "quality": 97.36
+          },
+          {
+            "date": "2025-09-04",
+            "oee": 77.24,
+            "availability": 90.41,
+            "performance": 87.69,
+            "quality": 97.43
+          },
+          {
+            "date": "2025-09-05",
+            "oee": 79.28,
+            "availability": 91.93,
+            "performance": 89.06,
+            "quality": 96.83
+          },
+          {
+            "date": "2025-09-06",
+            "oee": 77.28,
+            "availability": 89.71,
+            "performance": 88.75,
+            "quality": 97.06
+          },
+          {
+            "date": "2025-09-07",
+            "oee": 80.42,
+            "availability": 92.38,
+            "performance": 89.66,
+            "quality": 97.09
+          },
+          {
+            "date": "2025-09-08",
+            "oee": 80.02,
+            "availability": 92.6,
+            "performance": 88.71,
+            "quality": 97.41
+          },
+          {
+            "date": "2025-09-09",
+            "oee": 78.14,
+            "availability": 91.73,
+            "performance": 88.57,
+            "quality": 96.18
+          },
+          {
+            "date": "2025-09-10",
+            "oee": 78.29,
+            "availability": 89.95,
+            "performance": 89.5,
+            "quality": 97.25
+          },
+          {
+            "date": "2025-09-11",
+            "oee": 80.7,
+            "availability": 91.68,
+            "performance": 90.78,
+            "quality": 96.96
+          },
+          {
+            "date": "2025-09-12",
+            "oee": 77.56,
+            "availability": 89.93,
+            "performance": 89.04,
+            "quality": 96.86
+          },
+          {
+            "date": "2025-09-13",
+            "oee": 78.81,
+            "availability": 91.15,
+            "performance": 89.14,
+            "quality": 97
+          },
+          {
+            "date": "2025-09-14",
+            "oee": 80.16,
+            "availability": 91.08,
+            "performance": 90.66,
+            "quality": 97.08
+          },
+          {
+            "date": "2025-09-15",
+            "oee": 76.68,
+            "availability": 89.36,
+            "performance": 88.67,
+            "quality": 96.78
+          },
+          {
+            "date": "2025-09-16",
+            "oee": 78.62,
+            "availability": 91.39,
+            "performance": 88.82,
+            "quality": 96.85
+          },
+          {
+            "date": "2025-09-17",
+            "oee": 78.41,
+            "availability": 91.11,
+            "performance": 88.39,
+            "quality": 97.37
+          },
+          {
+            "date": "2025-09-18",
+            "oee": 77.96,
+            "availability": 88.88,
+            "performance": 90.83,
+            "quality": 96.57
+          },
+          {
+            "date": "2025-09-19",
+            "oee": 81.16,
+            "availability": 92.36,
+            "performance": 90.4,
+            "quality": 97.21
+          },
+          {
+            "date": "2025-09-20",
+            "oee": 78.46,
+            "availability": 91.29,
+            "performance": 88.38,
+            "quality": 97.24
+          },
+          {
+            "date": "2025-09-21",
+            "oee": 78.03,
+            "availability": 90.23,
+            "performance": 88.68,
+            "quality": 97.52
+          },
+          {
+            "date": "2025-09-22",
+            "oee": 78.23,
+            "availability": 90.16,
+            "performance": 89.93,
+            "quality": 96.48
+          },
+          {
+            "date": "2025-09-23",
+            "oee": 79.92,
+            "availability": 91.01,
+            "performance": 90.21,
+            "quality": 97.35
+          },
+          {
+            "date": "2025-09-24",
+            "oee": 79.91,
+            "availability": 93.56,
+            "performance": 88.13,
+            "quality": 96.92
+          },
+          {
+            "date": "2025-09-25",
+            "oee": 80.17,
+            "availability": 91.47,
+            "performance": 89.78,
+            "quality": 97.62
+          },
+          {
+            "date": "2025-09-26",
+            "oee": 80.57,
+            "availability": 91.38,
+            "performance": 90.81,
+            "quality": 97.09
+          },
+          {
+            "date": "2025-09-27",
+            "oee": 78.09,
+            "availability": 89.53,
+            "performance": 89.97,
+            "quality": 96.94
+          },
+          {
+            "date": "2025-09-28",
+            "oee": 78.62,
+            "availability": 90.08,
+            "performance": 89.91,
+            "quality": 97.07
+          },
+          {
+            "date": "2025-09-29",
+            "oee": 77.98,
+            "availability": 89.14,
+            "performance": 90.06,
+            "quality": 97.13
+          },
+          {
+            "date": "2025-09-30",
+            "oee": 77.11,
+            "availability": 89.63,
+            "performance": 89.01,
+            "quality": 96.65
+          },
+          {
+            "date": "2025-10-01",
+            "oee": 76.97,
+            "availability": 90.38,
+            "performance": 87.73,
+            "quality": 97.07
+          },
+          {
+            "date": "2025-10-02",
+            "oee": 79.92,
+            "availability": 90.5,
+            "performance": 90.49,
+            "quality": 97.59
+          },
+          {
+            "date": "2025-10-03",
+            "oee": 81.96,
+            "availability": 92.2,
+            "performance": 91.6,
+            "quality": 97.05
+          },
+          {
+            "date": "2025-10-04",
+            "oee": 76.53,
+            "availability": 90.15,
+            "performance": 87.63,
+            "quality": 96.88
+          },
+          {
+            "date": "2025-10-05",
+            "oee": 81.32,
+            "availability": 92.85,
+            "performance": 90.38,
+            "quality": 96.91
+          },
+          {
+            "date": "2025-10-06",
+            "oee": 79.43,
+            "availability": 92.85,
+            "performance": 88.19,
+            "quality": 97
+          },
+          {
+            "date": "2025-10-07",
+            "oee": 79.85,
+            "availability": 92.35,
+            "performance": 89.31,
+            "quality": 96.81
+          },
+          {
+            "date": "2025-10-08",
+            "oee": 80.47,
+            "availability": 92.38,
+            "performance": 90.14,
+            "quality": 96.63
+          },
+          {
+            "date": "2025-10-09",
+            "oee": 80.41,
+            "availability": 91.99,
+            "performance": 90.11,
+            "quality": 97.01
+          },
+          {
+            "date": "2025-10-10",
+            "oee": 80.16,
+            "availability": 92.49,
+            "performance": 88.95,
+            "quality": 97.44
+          },
+          {
+            "date": "2025-10-11",
+            "oee": 78.94,
+            "availability": 90.39,
+            "performance": 90.27,
+            "quality": 96.75
+          },
+          {
+            "date": "2025-10-12",
+            "oee": 80.12,
+            "availability": 92.56,
+            "performance": 89.06,
+            "quality": 97.19
+          },
+          {
+            "date": "2025-10-13",
+            "oee": 79.07,
+            "availability": 92.48,
+            "performance": 87.87,
+            "quality": 97.3
+          },
+          {
+            "date": "2025-10-14",
+            "oee": 78.52,
+            "availability": 91.65,
+            "performance": 87.96,
+            "quality": 97.4
+          },
+          {
+            "date": "2025-10-15",
+            "oee": 79.82,
+            "availability": 91.03,
+            "performance": 90.66,
+            "quality": 96.72
+          },
+          {
+            "date": "2025-10-16",
+            "oee": 79.83,
+            "availability": 92.68,
+            "performance": 88.61,
+            "quality": 97.21
+          },
+          {
+            "date": "2025-10-17",
+            "oee": 80.39,
+            "availability": 91.56,
+            "performance": 90.43,
+            "quality": 97.09
+          },
+          {
+            "date": "2025-10-18",
+            "oee": 80.65,
+            "availability": 91.05,
+            "performance": 90.78,
+            "quality": 97.57
+          },
+          {
+            "date": "2025-10-19",
+            "oee": 80.45,
+            "availability": 90.4,
+            "performance": 91.61,
+            "quality": 97.14
+          },
+          {
+            "date": "2025-10-20",
+            "oee": 78.62,
+            "availability": 93.37,
+            "performance": 86.62,
+            "quality": 97.21
+          },
+          {
+            "date": "2025-10-21",
+            "oee": 78.06,
+            "availability": 90.28,
+            "performance": 89.61,
+            "quality": 96.49
+          },
+          {
+            "date": "2025-10-22",
+            "oee": 79.85,
+            "availability": 92.43,
+            "performance": 88.8,
+            "quality": 97.28
+          },
+          {
+            "date": "2025-10-23",
+            "oee": 79.46,
+            "availability": 92.62,
+            "performance": 88.28,
+            "quality": 97.18
+          },
+          {
+            "date": "2025-10-24",
+            "oee": 81.85,
+            "availability": 91.65,
+            "performance": 91.87,
+            "quality": 97.21
+          },
+          {
+            "date": "2025-10-25",
+            "oee": 79.47,
+            "availability": 91.16,
+            "performance": 89.68,
+            "quality": 97.21
+          },
+          {
+            "date": "2025-10-26",
+            "oee": 75.89,
+            "availability": 90.63,
+            "performance": 86.47,
+            "quality": 96.84
+          },
+          {
+            "date": "2025-10-27",
+            "oee": 78.1,
+            "availability": 90.81,
+            "performance": 88.8,
+            "quality": 96.85
+          },
+          {
+            "date": "2025-10-28",
+            "oee": 79.29,
+            "availability": 91.12,
+            "performance": 89.75,
+            "quality": 96.96
+          },
+          {
+            "date": "2025-10-29",
+            "oee": 80.37,
+            "availability": 94.01,
+            "performance": 87.67,
+            "quality": 97.51
+          },
+          {
+            "date": "2025-10-30",
+            "oee": 77.25,
+            "availability": 90.34,
+            "performance": 88.05,
+            "quality": 97.12
+          },
+          {
+            "date": "2025-10-31",
+            "oee": 80.15,
+            "availability": 91.7,
+            "performance": 89.65,
+            "quality": 97.5
+          },
+          {
+            "date": "2025-11-01",
+            "oee": 80.18,
+            "availability": 91.44,
+            "performance": 90.04,
+            "quality": 97.38
+          },
+          {
+            "date": "2025-11-02",
+            "oee": 76.69,
+            "availability": 89.17,
+            "performance": 88.66,
+            "quality": 97
+          },
+          {
+            "date": "2025-11-03",
+            "oee": 78.8,
+            "availability": 91.95,
+            "performance": 88.39,
+            "quality": 96.96
+          },
+          {
+            "date": "2025-11-04",
+            "oee": 80.34,
+            "availability": 89.62,
+            "performance": 92.68,
+            "quality": 96.72
+          },
+          {
+            "date": "2025-11-05",
+            "oee": 78.3,
+            "availability": 91.2,
+            "performance": 88.38,
+            "quality": 97.14
+          },
+          {
+            "date": "2025-11-06",
+            "oee": 82.06,
+            "availability": 93.36,
+            "performance": 90.72,
+            "quality": 96.89
+          },
+          {
+            "date": "2025-11-07",
+            "oee": 81.16,
+            "availability": 93.02,
+            "performance": 90.27,
+            "quality": 96.66
+          },
+          {
+            "date": "2025-11-08",
+            "oee": 80.95,
+            "availability": 92.83,
+            "performance": 89.46,
+            "quality": 97.48
+          },
+          {
+            "date": "2025-11-09",
+            "oee": 78.69,
+            "availability": 90.98,
+            "performance": 89.19,
+            "quality": 96.98
+          },
+          {
+            "date": "2025-11-10",
+            "oee": 78.96,
+            "availability": 91.69,
+            "performance": 88.54,
+            "quality": 97.26
+          },
+          {
+            "date": "2025-11-11",
+            "oee": 78.14,
+            "availability": 90.43,
+            "performance": 88.49,
+            "quality": 97.65
+          },
+          {
+            "date": "2025-11-12",
+            "oee": 78.54,
+            "availability": 90.45,
+            "performance": 89.11,
+            "quality": 97.44
+          },
+          {
+            "date": "2025-11-13",
+            "oee": 80.68,
+            "availability": 91.99,
+            "performance": 89.97,
+            "quality": 97.48
+          },
+          {
+            "date": "2025-11-14",
+            "oee": 83.26,
+            "availability": 92.83,
+            "performance": 92.09,
+            "quality": 97.4
+          },
+          {
+            "date": "2025-11-15",
+            "oee": 79.14,
+            "availability": 91.61,
+            "performance": 88.45,
+            "quality": 97.67
+          },
+          {
+            "date": "2025-11-16",
+            "oee": 79.62,
+            "availability": 91.63,
+            "performance": 89.84,
+            "quality": 96.72
+          },
+          {
+            "date": "2025-11-17",
+            "oee": 78.54,
+            "availability": 92.58,
+            "performance": 87.83,
+            "quality": 96.59
+          },
+          {
+            "date": "2025-11-18",
+            "oee": 80.3,
+            "availability": 89.94,
+            "performance": 91.84,
+            "quality": 97.21
+          },
+          {
+            "date": "2025-11-19",
+            "oee": 78.79,
+            "availability": 91.82,
+            "performance": 88.24,
+            "quality": 97.24
+          },
+          {
+            "date": "2025-11-20",
+            "oee": 80.45,
+            "availability": 92.31,
+            "performance": 89.6,
+            "quality": 97.27
+          },
+          {
+            "date": "2025-11-21",
+            "oee": 80.51,
+            "availability": 91.62,
+            "performance": 90.47,
+            "quality": 97.13
+          },
+          {
+            "date": "2025-11-22",
+            "oee": 82.21,
+            "availability": 93.79,
+            "performance": 90.35,
+            "quality": 97.02
+          },
+          {
+            "date": "2025-11-23",
+            "oee": 78.74,
+            "availability": 91.39,
+            "performance": 88.62,
+            "quality": 97.22
+          },
+          {
+            "date": "2025-11-24",
+            "oee": 79.64,
+            "availability": 92.09,
+            "performance": 89.32,
+            "quality": 96.82
+          },
+          {
+            "date": "2025-11-25",
+            "oee": 81.29,
+            "availability": 91.94,
+            "performance": 90.79,
+            "quality": 97.38
+          },
+          {
+            "date": "2025-11-26",
+            "oee": 80.64,
+            "availability": 92.19,
+            "performance": 90.3,
+            "quality": 96.87
+          },
+          {
+            "date": "2025-11-27",
+            "oee": 79.81,
+            "availability": 90.93,
+            "performance": 90.64,
+            "quality": 96.83
+          },
+          {
+            "date": "2025-11-28",
+            "oee": 79.37,
+            "availability": 90.05,
+            "performance": 90.67,
+            "quality": 97.21
+          },
+          {
+            "date": "2025-11-29",
+            "oee": 77.71,
+            "availability": 91.09,
+            "performance": 87.89,
+            "quality": 97.06
+          },
+          {
+            "date": "2025-11-30",
+            "oee": 79.63,
+            "availability": 91.38,
+            "performance": 89.8,
+            "quality": 97.04
+          },
+          {
+            "date": "2025-12-01",
+            "oee": 80.55,
+            "availability": 91.65,
+            "performance": 90.77,
+            "quality": 96.83
+          },
+          {
+            "date": "2025-12-02",
+            "oee": 80.05,
+            "availability": 91.08,
+            "performance": 90.05,
+            "quality": 97.6
+          },
+          {
+            "date": "2025-12-03",
+            "oee": 75.86,
+            "availability": 90.11,
+            "performance": 87.28,
+            "quality": 96.46
+          },
+          {
+            "date": "2025-12-04",
+            "oee": 78.05,
+            "availability": 90.15,
+            "performance": 88.87,
+            "quality": 97.42
+          },
+          {
+            "date": "2025-12-05",
+            "oee": 77.66,
+            "availability": 90.62,
+            "performance": 87.84,
+            "quality": 97.56
+          },
+          {
+            "date": "2025-12-06",
+            "oee": 80.35,
+            "availability": 92.54,
+            "performance": 89.58,
+            "quality": 96.93
+          },
+          {
+            "date": "2025-12-07",
+            "oee": 77.66,
+            "availability": 88.83,
+            "performance": 89.92,
+            "quality": 97.23
+          },
+          {
+            "date": "2025-12-08",
+            "oee": 78.92,
+            "availability": 91.91,
+            "performance": 88.35,
+            "quality": 97.19
+          },
+          {
+            "date": "2025-12-09",
+            "oee": 79.81,
+            "availability": 91.43,
+            "performance": 90.06,
+            "quality": 96.92
+          },
+          {
+            "date": "2025-12-10",
+            "oee": 80.06,
+            "availability": 91.73,
+            "performance": 89.75,
+            "quality": 97.25
+          },
+          {
+            "date": "2025-12-11",
+            "oee": 78.26,
+            "availability": 89.99,
+            "performance": 89.5,
+            "quality": 97.17
+          },
+          {
+            "date": "2025-12-12",
+            "oee": 79.98,
+            "availability": 90.69,
+            "performance": 91.13,
+            "quality": 96.77
+          },
+          {
+            "date": "2025-12-13",
+            "oee": 77.18,
+            "availability": 91.25,
+            "performance": 86.87,
+            "quality": 97.37
+          },
+          {
+            "date": "2025-12-14",
+            "oee": 78.87,
+            "availability": 89.22,
+            "performance": 90.96,
+            "quality": 97.18
+          },
+          {
+            "date": "2025-12-15",
+            "oee": 80.24,
+            "availability": 91.56,
+            "performance": 89.87,
+            "quality": 97.51
+          },
+          {
+            "date": "2025-12-16",
+            "oee": 81.2,
+            "availability": 90.87,
+            "performance": 91.9,
+            "quality": 97.23
+          },
+          {
+            "date": "2025-12-17",
+            "oee": 81.52,
+            "availability": 92.17,
+            "performance": 90.97,
+            "quality": 97.22
+          },
+          {
+            "date": "2025-12-18",
+            "oee": 77.68,
+            "availability": 90.67,
+            "performance": 88.44,
+            "quality": 96.87
+          },
+          {
+            "date": "2025-12-19",
+            "oee": 80.74,
+            "availability": 92.34,
+            "performance": 90.53,
+            "quality": 96.58
+          },
+          {
+            "date": "2025-12-20",
+            "oee": 77.7,
+            "availability": 89.17,
+            "performance": 89.8,
+            "quality": 97.04
+          },
+          {
+            "date": "2025-12-21",
+            "oee": 79.08,
+            "availability": 89.08,
+            "performance": 91.46,
+            "quality": 97.06
+          },
+          {
+            "date": "2025-12-22",
+            "oee": 78.32,
+            "availability": 90.52,
+            "performance": 89.47,
+            "quality": 96.7
+          },
+          {
+            "date": "2025-12-23",
+            "oee": 79.56,
+            "availability": 93.46,
+            "performance": 88.06,
+            "quality": 96.67
+          },
+          {
+            "date": "2025-12-24",
+            "oee": 79.49,
+            "availability": 91.34,
+            "performance": 89.3,
+            "quality": 97.45
+          },
+          {
+            "date": "2025-12-25",
+            "oee": 80.14,
+            "availability": 91.2,
+            "performance": 90.35,
+            "quality": 97.26
+          },
+          {
+            "date": "2025-12-26",
+            "oee": 80.27,
+            "availability": 92.94,
+            "performance": 89.16,
+            "quality": 96.87
+          },
+          {
+            "date": "2025-12-27",
+            "oee": 78.5,
+            "availability": 89.49,
+            "performance": 90.12,
+            "quality": 97.33
+          },
+          {
+            "date": "2025-12-28",
+            "oee": 79.16,
+            "availability": 90.11,
+            "performance": 91.01,
+            "quality": 96.53
+          },
+          {
+            "date": "2025-12-29",
+            "oee": 79.07,
+            "availability": 90.69,
+            "performance": 89.43,
+            "quality": 97.49
+          },
+          {
+            "date": "2025-12-30",
+            "oee": 78.89,
+            "availability": 90.07,
+            "performance": 90.04,
+            "quality": 97.28
+          },
+          {
+            "date": "2025-12-31",
+            "oee": 80.12,
+            "availability": 90.99,
+            "performance": 90.84,
+            "quality": 96.93
+          }
+        ],
+        "options": {
+          "showLegend": true,
+          "multiLine": true,
+          "yAxisMax": 100
+        },
+        "xaxisField": "date",
+        "yaxisField": "oee"
+      },
+      "startDate": "2025-01-01"
+    }
+  },
+  "_meta": {
+    "name": "analysis-production-type-oee",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/production",
+    "query": {
+      "startDate": "2025-01-01",
+      "endDate": "2025-12-31",
+      "analysisType": "oee"
+    },
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:17.863Z",
+    "javaPort": 10011
+  }
+}

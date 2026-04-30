@@ -1,10 +1,6 @@
 package com.cretas.aims.service.arena.impl;
 
-import com.alibaba.dashscope.aigc.generation.Generation;
-import com.alibaba.dashscope.aigc.generation.GenerationParam;
-import com.alibaba.dashscope.aigc.generation.GenerationResult;
-import com.alibaba.dashscope.common.Message;
-import com.alibaba.dashscope.common.Role;
+import com.cretas.aims.ai.client.PythonLLMClient;
 import com.cretas.aims.config.ArenaRLConfig;
 import com.cretas.aims.dto.arena.ComparisonRubric;
 import com.cretas.aims.dto.arena.MatchResult;
@@ -43,7 +39,7 @@ import java.util.stream.Collectors;
 public class ArenaRLTournamentServiceImpl implements ArenaRLTournamentService {
 
     private final ArenaRLConfig config;
-    private final Generation generation;
+    private final PythonLLMClient pythonLLMClient;
     private final ObjectMapper objectMapper;
 
     // 用于缓存比较结果的简单内存缓存
@@ -406,34 +402,10 @@ public class ArenaRLTournamentServiceImpl implements ArenaRLTournamentService {
         int timeoutMs = config.getLlmConfig().getComparisonTimeoutMs();
 
         try {
-            // 使用 CompletableFuture 实现超时控制
-            CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
-                try {
-                    Message systemMsg = Message.builder()
-                            .role(Role.SYSTEM.getValue())
-                            .content("你是一个专业的比较评估专家。请严格按 JSON 格式输出: {\"winner\":\"A/B\",\"win_confidence\":0.5-1.0,\"reasoning\":\"理由\"}")
-                            .build();
-
-                    Message userMsg = Message.builder()
-                            .role(Role.USER.getValue())
-                            .content(prompt)
-                            .build();
-
-                    // 使用配置的模型 (默认 qwen-turbo 更快)
-                    GenerationParam param = GenerationParam.builder()
-                            .model(config.getLlmConfig().getModel())
-                            .messages(Arrays.asList(systemMsg, userMsg))
-                            .resultFormat(GenerationParam.ResultFormat.MESSAGE)
-                            .temperature((float) config.getLlmConfig().getTemperature())
-                            .maxTokens(config.getLlmConfig().getMaxResponseTokens())
-                            .build();
-
-                    GenerationResult result = generation.call(param);
-                    return result.getOutput().getChoices().get(0).getMessage().getContent();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            });
+            // 使用 CompletableFuture 实现超时控制，委托给 PythonLLMClient（4-provider fallback）
+            String systemPrompt = "你是一个专业的比较评估专家。请严格按 JSON 格式输出: {\"winner\":\"A/B\",\"win_confidence\":0.5-1.0,\"reasoning\":\"理由\"}";
+            CompletableFuture<String> future = CompletableFuture.supplyAsync(() ->
+                    pythonLLMClient.chatLowTemp(systemPrompt, prompt));
 
             // 等待结果，带超时
             String responseText = future.get(timeoutMs, TimeUnit.MILLISECONDS);

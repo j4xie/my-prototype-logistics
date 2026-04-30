@@ -1,0 +1,28 @@
+{
+  "verb": "POST",
+  "path": "/api/mobile/F999/smart-bi/drill-down",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T06:34:42.497599182",
+    "data": {
+      "drillPath": "华东",
+      "data": [],
+      "level": 1,
+      "nextLevel": "city",
+      "dimension": "region"
+    }
+  },
+  "_meta": {
+    "name": "drill-down",
+    "verb": "POST",
+    "path": "/api/mobile/F999/smart-bi/drill-down",
+    "query": null,
+    "factory": "F999",
+    "recordedAt": "2026-04-29T22:34:42.868Z",
+    "javaPort": 10011
+  }
+}

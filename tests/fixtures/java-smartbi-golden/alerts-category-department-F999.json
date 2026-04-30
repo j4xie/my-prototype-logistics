@@ -1,0 +1,76 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/alerts",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T06:34:44.356549385",
+    "data": [
+      {
+        "id": "1c15e24d-71e5-4ca5-b0db-baf15d430abc",
+        "level": "RED",
+        "category": "department",
+        "title": "研发部 人均产出过低",
+        "message": "研发部 人均销售额仅为 20000.00 元，严重低于标准",
+        "metric": "人均产出",
+        "value": 20000,
+        "threshold": 50000,
+        "gapPercent": null,
+        "suggestion": "建议分析人员效能，考虑调整人员配置或加强培训",
+        "relatedEntityId": null,
+        "relatedEntityName": null,
+        "createdAt": "2026-04-30T06:34:44.356315748",
+        "levelName": "RED",
+        "urgent": true
+      },
+      {
+        "id": "26f05740-ba9c-466f-959e-63fefcb3f98b",
+        "level": "RED",
+        "category": "department",
+        "title": "行政部 人均产出过低",
+        "message": "行政部 人均销售额仅为 10000.00 元，严重低于标准",
+        "metric": "人均产出",
+        "value": 10000,
+        "threshold": 50000,
+        "gapPercent": null,
+        "suggestion": "建议分析人员效能，考虑调整人员配置或加强培训",
+        "relatedEntityId": null,
+        "relatedEntityName": null,
+        "createdAt": "2026-04-30T06:34:44.35636532",
+        "levelName": "RED",
+        "urgent": true
+      },
+      {
+        "id": "48b23795-c8a8-47f5-a552-04d06a583646",
+        "level": "RED",
+        "category": "department",
+        "title": "销售部 人均产出过低",
+        "message": "销售部 人均销售额仅为 30000.00 元，严重低于标准",
+        "metric": "人均产出",
+        "value": 30000,
+        "threshold": 50000,
+        "gapPercent": null,
+        "suggestion": "建议分析人员效能，考虑调整人员配置或加强培训",
+        "relatedEntityId": null,
+        "relatedEntityName": null,
+        "createdAt": "2026-04-30T06:34:44.356400041",
+        "levelName": "RED",
+        "urgent": true
+      }
+    ]
+  },
+  "_meta": {
+    "name": "alerts-category-department",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/alerts",
+    "query": {
+      "category": "department"
+    },
+    "factory": "F999",
+    "recordedAt": "2026-04-29T22:34:44.681Z",
+    "javaPort": 10011
+  }
+}

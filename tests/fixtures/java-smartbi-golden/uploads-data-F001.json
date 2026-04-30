@@ -1,0 +1,27 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/uploads/1/data",
+  "factory": "F001",
+  "response": {
+    "httpStatus": 200,
+    "success": true,
+    "message": "操作成功",
+    "data": {
+      "headers": [],
+      "data": [],
+      "total": 0,
+      "page": 0,
+      "size": 50,
+      "totalPages": 0
+    }
+  },
+  "_meta": {
+    "name": "uploads-data",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/uploads/1/data",
+    "query": null,
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:40.399Z",
+    "javaPort": 10011
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/uploads-missing-fields",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T06:34:50.655983932",
+    "data": {
+      "missingFieldsCount": 0,
+      "totalUploads": 0,
+      "hasIssues": false
+    }
+  },
+  "_meta": {
+    "name": "uploads-missing-fields",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/uploads-missing-fields",
+    "query": null,
+    "factory": "F999",
+    "recordedAt": "2026-04-29T22:34:51.032Z",
+    "javaPort": 10011
+  }
+}

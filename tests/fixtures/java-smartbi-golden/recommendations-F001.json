@@ -1,0 +1,40 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/recommendations",
+  "factory": "F001",
+  "response": {
+    "httpStatus": 200,
+    "success": true,
+    "message": "操作成功",
+    "data": [
+      {
+        "id": "5659c22c-a46d-44ec-bad3-713f915219d4",
+        "type": "SALES_IMPROVEMENT",
+        "title": "缩小销售团队业绩差距",
+        "description": "销售员业绩差异较大，建议加强团队协作",
+        "priority": 1,
+        "impact": "提升团队整体销售能力，增加总销售额",
+        "actionItems": [
+          "安排销冠 陈涛秀 分享成功经验",
+          "对业绩落后人员进行一对一辅导",
+          "建立销售技能提升计划"
+        ],
+        "relatedData": {},
+        "targetId": null,
+        "targetName": null,
+        "createdAt": "2026-04-29T12:43:25.685858231",
+        "typeName": "销售提升",
+        "highPriority": true
+      }
+    ]
+  },
+  "_meta": {
+    "name": "recommendations",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/recommendations",
+    "query": null,
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:26.811Z",
+    "javaPort": 10011
+  }
+}

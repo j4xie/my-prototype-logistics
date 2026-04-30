@@ -1,0 +1,51 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/dashboard/executive/insights",
+  "factory": "F001",
+  "response": {
+    "httpStatus": 200,
+    "success": true,
+    "message": "操作成功",
+    "data": [
+      {
+        "level": "RED",
+        "category": "销售分析",
+        "message": "赣皖区域销售额仅为830253.40，远低于浙江分部，业绩严重落后。",
+        "relatedEntity": "赣皖区域",
+        "actionSuggestion": "建议立即对赣皖区域进行业务诊断，评估市场潜力，并考虑加大资源投入或调整团队结构。"
+      },
+      {
+        "level": "YELLOW",
+        "category": "数据状态",
+        "message": "当前时间范围内暂无销售数据",
+        "relatedEntity": null,
+        "actionSuggestion": "请上传销售数据或调整时间范围"
+      },
+      {
+        "level": "YELLOW",
+        "category": "销售分析",
+        "message": "江苏分部销售额为1578844.30，仅为浙江分部的47.6%，存在显著差距。",
+        "relatedEntity": "江苏分部",
+        "actionSuggestion": "建议深入分析江苏分部的销售瓶颈，制定针对性提升计划，如加强市场推广或优化销售策略。"
+      },
+      {
+        "level": "INFO",
+        "category": "销售分析",
+        "message": "浙江分部销售额领先，达到3318734.30，远超其他区域，表现突出。",
+        "relatedEntity": "浙江分部",
+        "actionSuggestion": "建议总结浙江分部的成功经验，并在其他区域推广，以提升整体业绩。"
+      }
+    ]
+  },
+  "_meta": {
+    "name": "dashboard-executive-insights",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/dashboard/executive/insights",
+    "query": {
+      "period": "month"
+    },
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:46.870Z",
+    "javaPort": 10011
+  }
+}

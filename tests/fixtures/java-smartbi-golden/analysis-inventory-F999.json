@@ -1,0 +1,56 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/analysis/inventory",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T06:34:40.099422331",
+    "data": {
+      "overview": {
+        "period": null,
+        "startDate": null,
+        "endDate": null,
+        "kpiCards": [],
+        "metricCards": null,
+        "rankings": {},
+        "charts": {},
+        "chartList": null,
+        "aiInsights": [
+          {
+            "level": "YELLOW",
+            "category": "数据状态",
+            "message": "当前暂无库存数据",
+            "relatedEntity": null,
+            "actionSuggestion": "请先录入原材料批次数据"
+          }
+        ],
+        "alerts": null,
+        "recommendations": null,
+        "suggestions": [
+          "请先录入库存数据以开始分析"
+        ],
+        "generatedAt": null,
+        "lastUpdated": "2026-04-30T06:34:40.099285307",
+        "fromCache": false,
+        "cacheExpireAt": null
+      },
+      "endDate": "2025-12-31",
+      "startDate": "2025-01-01"
+    }
+  },
+  "_meta": {
+    "name": "analysis-inventory",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/analysis/inventory",
+    "query": {
+      "startDate": "2025-01-01",
+      "endDate": "2025-12-31"
+    },
+    "factory": "F999",
+    "recordedAt": "2026-04-29T22:34:40.475Z",
+    "javaPort": 10011
+  }
+}
