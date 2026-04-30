@@ -4,6 +4,7 @@ import com.cretas.aims.entity.BaseEntity;
 import lombok.*;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 
 /**
  * AI报告提示词配置实体
@@ -33,6 +34,7 @@ import jakarta.persistence.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class AIReportPromptConfig extends BaseEntity {
 
     @Id

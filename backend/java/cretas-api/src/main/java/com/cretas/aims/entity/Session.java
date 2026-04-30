@@ -4,6 +4,7 @@ import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 /**
  * 会话实体类
  *
@@ -23,6 +24,7 @@ import java.time.LocalDateTime;
            @Index(name = "idx_sessions_user_id", columnList = "user_id")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class Session extends BaseEntity {
     @Id
     @GeneratedValue(generator = "uuid")

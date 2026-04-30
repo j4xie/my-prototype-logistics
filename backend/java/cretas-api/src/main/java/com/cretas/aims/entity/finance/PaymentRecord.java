@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * 收款记录 — 独立于 ArApTransaction 的收款确认工作流
@@ -29,6 +30,7 @@ import java.util.UUID;
                 @Index(name = "idx_pay_customer", columnList = "customer_id"),
                 @Index(name = "idx_pay_status", columnList = "status")
         })
+@Where(clause = "deleted_at IS NULL")
 public class PaymentRecord extends BaseEntity {
 
     @Id

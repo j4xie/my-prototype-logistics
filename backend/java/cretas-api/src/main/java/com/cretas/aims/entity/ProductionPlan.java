@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.hibernate.annotations.Where;
 /**
  * 生产计划实体类
  *
@@ -34,6 +35,7 @@ import java.util.List;
            @Index(name = "idx_plan_date", columnList = "planned_date")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class ProductionPlan extends BaseEntity {
     @Id
     @Column(name = "id", nullable = false, length = 191)

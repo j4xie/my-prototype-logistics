@@ -7,6 +7,7 @@ import lombok.experimental.SuperBuilder;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * SmartBI 告警阈值配置实体
@@ -47,6 +48,7 @@ import java.util.UUID;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class SmartBiAlertThreshold extends BaseEntity {
 
     @Id

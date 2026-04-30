@@ -4,6 +4,7 @@ import com.cretas.aims.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
+import org.hibernate.annotations.Where;
 
 /**
  * Piecework commission config: defines per-unit rates for specific roles.
@@ -15,6 +16,7 @@ import java.math.BigDecimal;
        uniqueConstraints = @UniqueConstraint(columnNames = {"factory_id", "store_id", "role", "effective_month"}))
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
+@Where(clause = "deleted_at IS NULL")
 public class PieceworkConfig extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.UUID) @Column(length = 36)
     private String id;

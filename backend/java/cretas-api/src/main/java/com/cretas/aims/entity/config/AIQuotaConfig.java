@@ -2,6 +2,7 @@ package com.cretas.aims.entity.config;
 
 import com.cretas.aims.entity.BaseEntity;
 import lombok.*;
+import org.hibernate.annotations.Where;
 
 import jakarta.persistence.*;
 
@@ -20,6 +21,7 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "ai_quota_configs",
        uniqueConstraints = @UniqueConstraint(columnNames = {"factory_id", "question_type"}))
+@Where(clause = "deleted_at IS NULL")
 @Getter
 @Setter
 @Builder

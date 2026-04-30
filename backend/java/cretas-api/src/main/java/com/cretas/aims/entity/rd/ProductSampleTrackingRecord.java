@@ -6,6 +6,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * 研发样品追踪记录 (P1-8, v1 §2.1.3 "追踪记录表").
@@ -29,6 +30,7 @@ import java.util.UUID;
                 @Index(name = "idx_pstr_sample_date", columnList = "sample_id,recorded_at")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class ProductSampleTrackingRecord extends BaseEntity {
 
     @Id

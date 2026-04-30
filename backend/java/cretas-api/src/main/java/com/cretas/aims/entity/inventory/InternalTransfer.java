@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * 内部调拨单
@@ -45,6 +46,7 @@ import java.util.UUID;
                 @Index(name = "idx_it_plan", columnList = "production_plan_id")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class InternalTransfer extends BaseEntity {
 
     @Id

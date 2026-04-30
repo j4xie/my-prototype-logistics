@@ -3,6 +3,7 @@ package com.cretas.aims.entity.config;
 import com.cretas.aims.entity.BaseEntity;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.Where;
 
 import jakarta.persistence.*;
 
@@ -31,6 +32,7 @@ import jakarta.persistence.*;
            @UniqueConstraint(name = "uk_encoding_rules",
                             columnNames = {"factory_id", "entity_type"})
        })
+@Where(clause = "deleted_at IS NULL")
 @Data
 @SuperBuilder
 @NoArgsConstructor

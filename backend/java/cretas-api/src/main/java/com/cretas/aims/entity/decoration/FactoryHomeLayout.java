@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.hibernate.annotations.Where;
 
 /**
  * 工厂首页布局配置实体
@@ -35,6 +36,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class FactoryHomeLayout extends BaseEntity {
 
     @Id

@@ -4,6 +4,7 @@ import com.cretas.aims.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.Where;
 
 /**
  * Layer 1: Platform global default permission matrix.
@@ -19,6 +20,7 @@ import lombok.experimental.SuperBuilder;
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor
 @SuperBuilder
+@Where(clause = "deleted_at IS NULL")
 public class PlatformRolePermission extends BaseEntity {
 
     @Id

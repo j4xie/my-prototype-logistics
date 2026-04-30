@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import org.hibernate.annotations.Where;
 /**
  * 生产计划批次使用关联实体类
  *
@@ -25,6 +26,7 @@ import java.math.BigDecimal;
            @Index(name = "idx_planbatch_batch", columnList = "material_batch_id")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class ProductionPlanBatchUsage extends BaseEntity {
     @Id
     @Column(name = "id", nullable = false, length = 191)

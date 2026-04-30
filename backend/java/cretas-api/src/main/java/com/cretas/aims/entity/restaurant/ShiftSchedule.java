@@ -6,6 +6,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import org.hibernate.annotations.Where;
 
 /**
  * Daily shift assignment: who works which shift on which day.
@@ -16,6 +17,7 @@ import java.time.LocalDate;
        uniqueConstraints = @UniqueConstraint(columnNames = {"factory_id", "store_id", "employee_id", "shift_date"}))
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
+@Where(clause = "deleted_at IS NULL")
 public class ShiftSchedule extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.UUID) @Column(length = 36)
     private String id;

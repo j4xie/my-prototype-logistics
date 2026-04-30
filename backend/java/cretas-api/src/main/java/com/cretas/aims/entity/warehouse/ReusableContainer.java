@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import org.hibernate.annotations.Where;
 
 /**
  * 周转耗材 (周转框/塑料筐) 主数据
@@ -17,6 +18,7 @@ import java.math.BigDecimal;
                 columnNames = {"factory_id", "container_code"}))
 @Getter
 @Setter
+@Where(clause = "deleted_at IS NULL")
 public class ReusableContainer extends BaseEntity {
 
     @Id

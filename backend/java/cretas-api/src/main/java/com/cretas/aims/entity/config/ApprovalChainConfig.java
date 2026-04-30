@@ -2,6 +2,7 @@ package com.cretas.aims.entity.config;
 
 import com.cretas.aims.entity.BaseEntity;
 import lombok.*;
+import org.hibernate.annotations.Where;
 
 import jakarta.persistence.*;
 import java.util.List;
@@ -22,6 +23,7 @@ import java.util.List;
 @Entity
 @Table(name = "approval_chain_configs",
        uniqueConstraints = @UniqueConstraint(columnNames = {"factory_id", "decision_type", "name"}))
+@Where(clause = "deleted_at IS NULL")
 @Getter
 @Setter
 @Builder

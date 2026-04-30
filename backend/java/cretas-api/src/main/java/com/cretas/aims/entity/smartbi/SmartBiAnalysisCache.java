@@ -7,6 +7,7 @@ import lombok.experimental.SuperBuilder;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * SmartBI Analysis Cache Entity - Caches analysis results
@@ -35,6 +36,7 @@ import java.time.LocalDateTime;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted_at IS NULL")
 public class SmartBiAnalysisCache extends BaseEntity {
 
     @Id

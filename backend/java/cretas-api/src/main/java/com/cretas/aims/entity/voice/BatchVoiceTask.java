@@ -10,6 +10,7 @@ import lombok.Builder;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.Where;
 
 /**
  * 批量语音识别任务实体
@@ -30,6 +31,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
+@Where(clause = "deleted_at IS NULL")
 public class BatchVoiceTask extends BaseEntity {
 
     @Id

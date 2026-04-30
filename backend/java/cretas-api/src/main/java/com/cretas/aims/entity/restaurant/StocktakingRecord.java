@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * 库存盘点记录实体（餐饮版）
@@ -42,6 +43,7 @@ import java.util.UUID;
                 @Index(name = "idx_stk_factory_date", columnList = "factory_id,stocktaking_date,status")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class StocktakingRecord extends BaseEntity {
 
     // ========== 主键 ==========

@@ -7,6 +7,7 @@ import lombok.*;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import org.hibernate.annotations.Where;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -21,6 +22,7 @@ import java.math.BigDecimal;
                 @Index(name = "idx_roi_product", columnList = "product_type_id")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class ReturnOrderItem extends BaseEntity {
 
     @Id

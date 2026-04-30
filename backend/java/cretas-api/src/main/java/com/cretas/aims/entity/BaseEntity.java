@@ -30,6 +30,12 @@ import java.time.LocalDateTime;
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 @SQLDelete(sql = "UPDATE {h-domain} SET deleted_at = NOW() WHERE id = ?")
+// R68 (2026-04-29): both @Where AND @SQLRestriction on @MappedSuperclass are silently
+// ignored by Hibernate (verified empirically against Department: pre-soft-deleted record
+// still appears in list). Annotation here is documentation-only — actual filtering is
+// done by per-entity @Where annotations (see R68-FIX-A bulk addition to all subclasses
+// in commit fd9b008f9 + R68 commit). Migration to Hibernate 6.6+ @SoftDelete with
+// SoftDeleteType.TIMESTAMP would let this annotation propagate; defer until SB upgrade.
 @Where(clause = "deleted_at IS NULL")
 @Data
 @SuperBuilder

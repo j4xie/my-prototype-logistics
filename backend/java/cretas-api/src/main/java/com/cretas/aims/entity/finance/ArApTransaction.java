@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * 应收应付交易记录（银行流水模式）
@@ -42,6 +43,7 @@ import java.util.UUID;
                 @Index(name = "idx_aat_transaction_date", columnList = "transaction_date")
         }
 )
+@Where(clause = "deleted_at IS NULL")
 public class ArApTransaction extends BaseEntity {
 
     @Id

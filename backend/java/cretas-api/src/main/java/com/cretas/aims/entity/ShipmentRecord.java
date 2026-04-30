@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import org.hibernate.annotations.Where;
 /**
  * 出货记录实体类
  *
@@ -28,6 +29,7 @@ import java.time.LocalDate;
            @Index(name = "idx_shipment_batch", columnList = "batch_number")
        }
 )
+@Where(clause = "deleted_at IS NULL")
 public class ShipmentRecord extends BaseEntity {
     @Id
     @Column(name = "id", nullable = false, length = 191)

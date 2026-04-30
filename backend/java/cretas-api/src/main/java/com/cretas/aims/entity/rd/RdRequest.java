@@ -5,6 +5,7 @@ import lombok.*;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.hibernate.annotations.Where;
 
 /**
  * 研发需求 — 业务员提交客户样品需求
@@ -20,6 +21,7 @@ import java.util.UUID;
                 @Index(name = "idx_rdr_factory", columnList = "factory_id"),
                 @Index(name = "idx_rdr_status", columnList = "status")
         })
+@Where(clause = "deleted_at IS NULL")
 public class RdRequest extends BaseEntity {
 
     @Id

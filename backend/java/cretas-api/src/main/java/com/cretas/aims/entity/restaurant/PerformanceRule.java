@@ -7,6 +7,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import java.time.LocalDate;
 import java.util.Map;
+import org.hibernate.annotations.Where;
 
 /**
  * Performance rule: defines KPI weights and thresholds for store manager evaluation.
@@ -17,6 +18,7 @@ import java.util.Map;
        uniqueConstraints = @UniqueConstraint(columnNames = {"factory_id", "store_id", "effective_month"}))
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
+@Where(clause = "deleted_at IS NULL")
 public class PerformanceRule extends BaseEntity {
     @Id @GeneratedValue(strategy = GenerationType.UUID) @Column(length = 36)
     private String id;
