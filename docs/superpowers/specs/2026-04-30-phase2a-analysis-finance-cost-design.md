@@ -7,7 +7,9 @@
 **Predecessors**:
 - PR #13 — finance foundation + composite (`4dc4f2e3d`)
 - PR #18 — payable per-type real impl (`b058a0bc3`)
-- PR-A profit per-type（pending merge，提供 `_query_finance_data` + `record-java-golden.sh` + `_decimal_to_number`）
+- **PR #21 — profit PR-A merged 2026-04-30 (`bfe77566c`)** — 提供 `_query_finance_data` + `record-java-golden.sh` + `_decimal_to_number` + `_get_period_key`
+  - ⚠️ **C1 known bug on main**: `_get_period_key` WEEK 分支用了 ISO year (`isocalendar()[0]`)，应为 calendar year (`d.year`) per Rule 2。Cost trendChart 用 `_get_period_key` 时若 period="WEEK" 跨年 boundary 会跟 Java divergence。**这一 chat 不修**（属 profit branch 责任），但 plan 实施时若 trendChart 默认 "MONTH" 不踩这 bug；如要支持 WEEK，PR-A 必须先 hotfix profit
+  - ⚠️ **C2 known bug on main**: `record-java-golden.sh` 实际 CLI 是位置参数 `<factory> <path> <output> [--prod]`，**没** `--compare` flag 和 `--factory/--path/--query/--out` flag。本 spec §5.4 假设的 flag-based CLI 是 profit spec §5.5 的虚构。Plan 实施时要么 (a) 接受位置参数 CLI、放弃 `--compare` smoke、改成手动 dict-eq diff，要么 (b) 先在 profit branch 做 follow-up commit rewrite script。Cost spec 决策：**(a) 接受 limitation**，F001 smoke 改手动两步（录 Java + curl Python + Python 跑 dict-eq），不依赖 `--compare` 模式。
 
 **Sister chats unblocked by this spec**:
 - `phase2a/t-finance-receivable` — receivable per-type real impl
@@ -80,7 +82,12 @@ PR-A:
   tests/python/smartbi_compat/test_analysis_finance_contract.py           [EDIT]
     + class TestAnalysisFinanceCost (2 tests F999 byte gate)
     ~ test_f999_unimplemented_analysisType_returns_501: drop "cost" from iter list
-       (PR-A makes cost return 200; remaining 501s = receivable/budget)
+       ⚠️ C3 fix: profit PR-A 已 drop "profit"（main `bfe77566c` 上 list 现是
+       ["cost", "receivable", "budget"]）。Cost PR-A drop "cost" → ["receivable", "budget"]。
+       **3-way merge 风险**: receivable PR-A 也会改这一行，merge order 不定。Plan 必须用
+       robust 写法：(1) 不假设 main baseline；rebase 后 grep 当前 list；(2) drop 自己 endpoint
+       后再生成；(3) PR description 说明 "merge conflict on this line is expected; resolution
+       = drop my endpoint from current main's list"
 
 PR-B:
   tests/python/smartbi_compat/test_analysis_finance_contract.py           [EDIT]
