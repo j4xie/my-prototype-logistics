@@ -1,4 +1,10 @@
-"""KeywordLearner — async cron extract new keywords from feedback (β C6)."""
+"""KeywordLearner — async cron extract new keywords from feedback (β C6).
+
+Post-W0 fix-pass F1: rewritten with REAL Java schema:
+- ai_training_samples (was: training_samples)
+- user_input → query, matched_intent_code → intent_code (SQL aliases)
+- run_once now persists via UPDATE ai_intent_configs.keywords (was: stub)
+"""
 from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock
 import pytest
@@ -9,6 +15,7 @@ async def test_keyword_learner_extracts_new_keywords_from_query():
     """Unseen keywords from query → returned in learned dict."""
     from ai.learning.keyword_learner import KeywordLearner
 
+    # Sample row uses SQL alias names (user_input AS query, matched_intent_code AS intent_code)
     sample_row = {
         "query": "查询 F001 工厂的库存数量",
         "intent_code": "INVENTORY_QUERY",
@@ -17,6 +24,7 @@ async def test_keyword_learner_extracts_new_keywords_from_query():
     }
     fake_conn = MagicMock()
     fake_conn.fetch = AsyncMock(return_value=[sample_row])
+    fake_conn.execute = AsyncMock()  # persistence UPDATE
     fake_pool_ctx = MagicMock()
     fake_pool_ctx.__aenter__ = AsyncMock(return_value=fake_conn)
     fake_pool_ctx.__aexit__ = AsyncMock(return_value=False)
@@ -33,12 +41,47 @@ async def test_keyword_learner_extracts_new_keywords_from_query():
 
 
 @pytest.mark.asyncio
+async def test_keyword_learner_persists_via_update():
+    """Learned keywords → UPDATE ai_intent_configs.keywords issued (F1 fix-pass)."""
+    from ai.learning.keyword_learner import KeywordLearner
+
+    sample_row = {
+        "query": "查询 F001 工厂的库存数量",
+        "intent_code": "INVENTORY_QUERY",
+        "factory_id": "F001",
+        "confidence": 0.95,
+    }
+    fake_conn = MagicMock()
+    fake_conn.fetch = AsyncMock(return_value=[sample_row])
+    fake_conn.execute = AsyncMock()
+    fake_pool_ctx = MagicMock()
+    fake_pool_ctx.__aenter__ = AsyncMock(return_value=fake_conn)
+    fake_pool_ctx.__aexit__ = AsyncMock(return_value=False)
+    fake_pool = MagicMock()
+    fake_pool.acquire = MagicMock(return_value=fake_pool_ctx)
+
+    existing_keywords = {"INVENTORY_QUERY": ["库存", "查询"]}
+    learner = KeywordLearner(fake_pool, existing_keywords)
+    learned = await learner.run_once(min_confidence=0.9)
+
+    assert learned  # non-empty learned dict
+    fake_conn.execute.assert_called()  # UPDATE issued
+    # Verify UPDATE positional args: (json_string, intent_code, factory_id)
+    call_args = fake_conn.execute.call_args
+    intent_arg = call_args.args[2]  # 3rd positional arg of UPDATE_KEYWORDS_SQL
+    factory_arg = call_args.args[3]
+    assert intent_arg == "INVENTORY_QUERY"
+    assert factory_arg == "F001"
+
+
+@pytest.mark.asyncio
 async def test_keyword_learner_skips_low_confidence():
     """Confidence < min_confidence → row skipped."""
     from ai.learning.keyword_learner import KeywordLearner
 
     fake_conn = MagicMock()
     fake_conn.fetch = AsyncMock(return_value=[])  # SQL filters by min_confidence
+    fake_conn.execute = AsyncMock()
     fake_pool_ctx = MagicMock()
     fake_pool_ctx.__aenter__ = AsyncMock(return_value=fake_conn)
     fake_pool_ctx.__aexit__ = AsyncMock(return_value=False)
@@ -48,6 +91,8 @@ async def test_keyword_learner_skips_low_confidence():
     learner = KeywordLearner(fake_pool, existing_keywords={})
     learned = await learner.run_once(min_confidence=0.9)
     assert learned == {}
+    # Empty learned → no UPDATE issued (skipped)
+    fake_conn.execute.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -60,6 +105,7 @@ async def test_keyword_learner_skips_already_known_keywords():
     }
     fake_conn = MagicMock()
     fake_conn.fetch = AsyncMock(return_value=[sample_row])
+    fake_conn.execute = AsyncMock()
     fake_pool_ctx = MagicMock()
     fake_pool_ctx.__aenter__ = AsyncMock(return_value=fake_conn)
     fake_pool_ctx.__aexit__ = AsyncMock(return_value=False)

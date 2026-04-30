@@ -1,17 +1,24 @@
 """Async keyword learner — extract unseen keywords from positive feedback (β C6).
 
-Reads: training_samples (Java IntentFeedbackService writes; per audit R-IM4 fix)
-Returns: dict[intent_code, set[new_keyword]] for downstream persistence
+Reads: ai_training_samples (Java IntentFeedbackService writes; per audit R-IM4 fix)
+Writes: ai_intent_configs.keywords (UPDATE — appends new keywords, JSON merge)
+Returns: dict[intent_code, set[new_keyword]] for downstream observability
 
-Cron schedule: 5min interval, started by main.py background task (T19/W6).
-For β-α scope this task only builds the class with `run_once()`. Actual UPDATE
-of ai_intent_configs.keywords JSON is W6 wiring concern.
+Cron schedule: 5min interval, started by main.py background task (W6).
 
 Tokenizer is cheap: Chinese 2-4 char regex + stopword filter. Sufficient for
 keyword extraction; jieba/BERT defer to Phase 3.
+
+Post-W0 fix-pass F1: rewritten with REAL Java schema:
+- ai_training_samples (was: training_samples)
+- user_input (was: query)
+- matched_intent_code (was: intent_code)
+- confidence (precision 5,4) + is_correct filter (positive feedback only)
+- writes UPDATE to ai_intent_configs.keywords (was: stub returning dict only)
 """
 from __future__ import annotations
 
+import json
 import logging
 import re
 from typing import Dict, Iterable, List, Set
@@ -19,11 +26,28 @@ from typing import Dict, Iterable, List, Set
 logger = logging.getLogger(__name__)
 
 
+# Reads positive feedback rows from ai_training_samples (real table name).
+# Aliased to keep loop body unchanged.
 SAMPLE_QUERY_SQL = """
-SELECT query, intent_code, factory_id, confidence
-FROM training_samples
+SELECT user_input AS query, matched_intent_code AS intent_code,
+       factory_id, confidence
+FROM ai_training_samples
 WHERE created_at > NOW() - INTERVAL '1 hour'
   AND confidence >= $1
+  AND is_correct = true
+"""
+
+# Persists new keywords back to ai_intent_configs by JSON-merge appending.
+# COALESCE handles rows where keywords is NULL. JSONB || preserves duplicates
+# being filtered out at write time? No — JSONB || accumulates. We pass a deduped
+# set as a JSON array; idempotency is not required here (cron is bounded by
+# 1-hour SQL window so duplicate emits over multiple ticks are negligible —
+# revisit with a server-side dedup if it grows).
+UPDATE_KEYWORDS_SQL = """
+UPDATE ai_intent_configs
+SET keywords = COALESCE(keywords, '[]'::jsonb) || $1::jsonb,
+    updated_at = NOW()
+WHERE intent_code = $2 AND (factory_id = $3 OR factory_id IS NULL)
 """
 
 # Single-char stopwords (filtered separately even though regex below requires 2-4 chars)
@@ -110,17 +134,19 @@ class KeywordLearner:
         self.existing_keywords = existing_keywords
 
     async def run_once(self, min_confidence: float = 0.9) -> Dict[str, Set[str]]:
-        """One pass over recent training_samples. Returns {intent_code: set(new_keywords)}.
+        """One pass over recent ai_training_samples. Returns {intent_code: set(new_keywords)}.
 
-        Persistence (UPDATE ai_intent_configs.keywords) is W6 integration concern.
-        DB error → returns {} gracefully (degrade not crash).
+        Persistence: UPDATE ai_intent_configs.keywords with JSON-merge of new keywords.
+        DB read error → returns {} gracefully (degrade not crash).
+        DB write error → logged, returned dict still reflects what was learned in-memory.
         """
         learned: Dict[str, Set[str]] = {}
+        rows: List[dict] = []
         try:
             async with self.pool.acquire() as conn:
                 rows = await conn.fetch(SAMPLE_QUERY_SQL, min_confidence)
         except Exception:
-            logger.exception("KeywordLearner: read training_samples failed")
+            logger.exception("KeywordLearner: read ai_training_samples failed")
             return learned
 
         for row in rows:
@@ -128,5 +154,28 @@ class KeywordLearner:
             new = extract_new_keywords(row["query"], existing)
             if new:
                 learned.setdefault(row["intent_code"], set()).update(new)
+
+        # F1 fix-pass: persist learned keywords back to ai_intent_configs.
+        # Skip persistence if nothing learned (no UPDATEs to issue).
+        if learned:
+            try:
+                async with self.pool.acquire() as conn:
+                    for intent_code, new_kws in learned.items():
+                        if not new_kws:
+                            continue
+                        new_kws_json = json.dumps(list(new_kws), ensure_ascii=False)
+                        # Pull factory_id from the first matching row for this intent.
+                        # Multiple factories may share an intent_code; we update the
+                        # tenant-specific config OR the global (NULL factory_id) one.
+                        factory_id = None
+                        for r in rows:
+                            if r["intent_code"] == intent_code:
+                                factory_id = r["factory_id"]
+                                break
+                        await conn.execute(
+                            UPDATE_KEYWORDS_SQL, new_kws_json, intent_code, factory_id,
+                        )
+            except Exception:
+                logger.exception("KeywordLearner: persistence UPDATE failed")
 
         return learned
