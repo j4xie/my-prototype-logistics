@@ -92,10 +92,17 @@ def _format_completion_pct(value: Decimal) -> str:
 
 
 def _format_growth_pct(value: Decimal) -> str:
-    """Mirror Java `String.format("%+.1f%%", value.doubleValue())` line 255."""
+    """Mirror Java `String.format("%+.1f%%", value.doubleValue())` line 255.
+
+    Java's `%+` flag prepends '+' only when the formatted number begins with a digit
+    (not when it begins with '-' from negative zero). We replicate by inspecting
+    the post-format string for a leading minus sign.
+    """
     quantized = value.quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
-    sign = "+" if quantized >= 0 else ""
-    return f"{sign}{float(quantized):.1f}%"
+    formatted = f"{float(quantized):.1f}"
+    if formatted.startswith("-"):
+        return f"{formatted}%"
+    return f"+{formatted}%"
 
 
 def _calculate_completion_rate(actual: Decimal, target: Optional[Decimal]) -> Decimal:

@@ -486,6 +486,21 @@ class TestOverview:
         assert _format_growth_pct(Decimal("-12.5")) == "-12.5%"
         assert _format_growth_pct(Decimal("0")) == "+0.0%"
 
+    def test_format_growth_pct_negative_zero_edge(self):
+        """Java %+.1f%% on -0.04 → '-0.0%' (Java's + flag respects negative zero
+        from doubleValue, doesn't prepend + when result starts with '-').
+        Bug fix: Phase B code review C1.
+        """
+        from smartbi_compat.api.analysis_sales import _format_growth_pct
+        from decimal import Decimal
+
+        # Negative value that rounds to negative-zero — Java emits "-0.0%"
+        assert _format_growth_pct(Decimal("-0.04")) == "-0.0%"
+        # Positive value that rounds to positive-zero — Java emits "+0.0%"
+        assert _format_growth_pct(Decimal("0.04")) == "+0.0%"
+        # Decimal("-0.0") direct — should match Java behavior of -0.0% (since float(-0.0) starts with "-")
+        assert _format_growth_pct(Decimal("-0.0")) == "-0.0%"
+
     def test_calculate_completion_rate(self):
         """Java SalesAnalysisServiceImpl.calculateCompletionRate line 1166-1171."""
         from smartbi_compat.api.analysis_sales import _calculate_completion_rate
