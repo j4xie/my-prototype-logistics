@@ -746,11 +746,34 @@ async def _get_profit_metrics(factory_id: str, range_: DateRange) -> list:
             Decimal("0"),
         )
     else:
-        # PR-A no fallback: empty path mirrors Java line 404 (`netProfit = null`).
-        # PR-B will replace this branch with sales fallback.
-        total_revenue = Decimal("0")
-        total_cost = Decimal("0")
-        net_profit = None  # null in metrics, distinct from ZERO
+        # PR-B sales fallback: when finance_data is empty, fall back to
+        # smart_bi_sales_data (Java line 391-405). 餐饮 tenants typically only
+        # upload sales Excel, not finance Excel.
+        sales_rows = await _query_finance_sales_fallback(
+            factory_id, range_.start_date, range_.end_date
+        )
+        # Java line 394-403: revenue + cost from sales rows
+        total_revenue = sum(
+            (
+                _to_decimal(r["amount"])
+                for r in sales_rows
+                if r.get("amount") is not None
+            ),
+            Decimal("0"),
+        )
+        # Java line 399-403 — defensive .abs() per Bug B fix (cost may be negative
+        # in historical sales data).
+        total_cost = sum(
+            (
+                abs(_to_decimal(r["cost"]))
+                for r in sales_rows
+                if r.get("cost") is not None
+            ),
+            Decimal("0"),
+        )
+        # Java line 404: netProfit explicitly null in fallback metrics path.
+        # (trendChart fallback uses gross*0.70, but metrics path does not.)
+        net_profit = None
 
     # Java line 409-416 — gross profit + margin clamp
     gross_profit = total_revenue - total_cost

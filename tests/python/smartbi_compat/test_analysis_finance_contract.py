@@ -244,6 +244,12 @@ class TestAnalysisFinanceProfit:
             "smartbi_compat.api.analysis_finance._query_finance_data",
             fake_empty,
         )
+        async def fake_sales_empty(_factory_id, _start, _end):
+            return []
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_finance._query_finance_sales_fallback",
+            fake_sales_empty,
+        )
 
         resp = client.get(
             "/api/mobile/F999/smart-bi/analysis/finance"
@@ -271,6 +277,12 @@ class TestAnalysisFinanceProfit:
         monkeypatch.setattr(
             "smartbi_compat.api.analysis_finance._query_finance_data",
             fake_empty,
+        )
+        async def fake_sales_empty(_factory_id, _start, _end):
+            return []
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_finance._query_finance_sales_fallback",
+            fake_sales_empty,
         )
 
         resp = client.get(
