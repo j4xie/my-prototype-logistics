@@ -1496,3 +1496,45 @@ class TestRankings:
         result = await m._get_customer_ranking("F999", range_)
         assert len(result) == 1
         assert result[0]["name"] == "客户A"
+
+    # ============================================================
+    # F001 byte-shape regression tests (Phase C.1)
+    # ============================================================
+    # F001 has no rows in legacy `smart_bi_sales_data` table — the F001
+    # golden confirms all 3 rankings are []. In test env, `_query_sales_data`
+    # returns [] (postgres_enabled=False), so all 3 ranking sub-services
+    # naturally return []. These tests gate the byte-shape contract by
+    # invoking the route end-to-end with an F001 token.
+
+    def test_F001_salesperson_ranking_byte_shape(self, client, f001_token):
+        """F001 has no sales data → salespersonRanking should be []."""
+        response = client.get(
+            "/api/mobile/F001/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+            headers={"Authorization": f"Bearer {f001_token}"},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["data"]["salespersonRanking"] == []
+
+    def test_F001_product_ranking_byte_shape(self, client, f001_token):
+        """F001 has no sales data → productRanking should be []."""
+        response = client.get(
+            "/api/mobile/F001/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+            headers={"Authorization": f"Bearer {f001_token}"},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["data"]["productRanking"] == []
+
+    def test_F001_customer_ranking_byte_shape(self, client, f001_token):
+        """F001 has no sales data → customerRanking should be []."""
+        response = client.get(
+            "/api/mobile/F001/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+            headers={"Authorization": f"Bearer {f001_token}"},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["data"]["customerRanking"] == []
