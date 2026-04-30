@@ -58,7 +58,12 @@
 ```
 PR-A:
   tests/fixtures/java-smartbi-golden/
-    └─ analysis-finance-F999-cost.json                                   [RENAME from analysis-finance-type-cost-F999 (verify-only)]
+    └─ analysis-finance-F999-cost.json                                   [RE-RECORD via record-java-golden.sh + RENAME (C-1 fix)]
+       ⚠️ 现有 analysis-finance-type-cost-F999.json 是 envelope shape (data 嵌套在
+       `response.data` 下) 跟 payable test loader 的 flat shape ({code,message,data,...} 在 root)
+       不兼容。Plan 必须重录 (用 profit PR-A 提供的 record-java-golden.sh) 输出 flat
+       shape，或者改 test loader 用 golden["response"]["data"]。**推荐重录** (与 payable
+       precedent 一致)。
   backend/python/smartbi_compat/api/analysis_finance.py                   [EDIT]
     + _get_cost_structure_chart()                    stub → real impl (composite + per-type 共享)
     + _get_cost_trend_chart()                        NEW
@@ -67,6 +72,10 @@ PR-A:
     + _new_cost_series_entry()                       NEW (Map.of(2) {name, stack} factory)
     + _get_cost_analysis()                           NEW per-type assembler
     + route handler analysisType=cost 分支            NEW
+    ~ _get_comprehensive_finance_analysis: cost_structure call site update from
+      `(factory_id, range_)` to `(factory_id, range_.start_date, range_.end_date)`  (C-2 fix)
+       Rule 3 的副产品: composite caller 必须跟 sub-service 签名同步改否则 PR-A pytest
+       直接 TypeError。
     ~ COST_CATEGORY_MATERIAL/LABOR/OVERHEAD 常量      NEW (从 Java 取值: "原材料"/"人工"/"制造费用")
   tests/python/smartbi_compat/test_analysis_finance_contract.py           [EDIT]
     + class TestAnalysisFinanceCost (2 tests F999 byte gate)
@@ -90,14 +99,15 @@ PR-B:
 
 ### 2.3 与 profit 的差异点
 
-| 维度 | Profit | Cost |
-|---|---|---|
-| Sub-services 数 | 2 (metrics + trendChart) | 2 (structureChart + trendChart) |
-| Per-type response keys | `[endDate, metrics, trendChart, startDate]` | `[endDate, trendChart, startDate, structureChart]` |
-| Sales fallback | 有（PR-B 加） | **无** |
-| 算术分支测试数 | 17 (PR-B) | 9 (PR-B) |
-| Map.of factory 类型 | yAxis(2) + series(3) 两个 | series(2) 一个（cost 没 yAxis 嵌套） |
-| LOC 估 | ~700 (PR-A 400 + PR-B 280) | ~370 (PR-A 250 + PR-B 120) |
+| 维度 | Profit | Cost | Receivable preview (sister) |
+|---|---|---|---|
+| Sub-services 数 | 2 (metrics + trendChart) | 2 (structureChart + trendChart) | **4** (metrics + agingChart + overdueRanking + trendChart) |
+| Per-type response keys | `[endDate, metrics, trendChart, startDate]` | `[endDate, trendChart, startDate, structureChart]` | TBD（4 keys via HashMap hash） |
+| Sales fallback | 有（PR-B 加） | **无** | 无（受 fallback 不一样） |
+| 算术分支测试数 | 17 (PR-B) | 9 (PR-B) | 待 spec 写时定 |
+| Map.of factory 类型 | yAxis(2) + series(3) 两个 | series(2) 一个 | aging colors array + alertLevel per item |
+| 新 helper（cost 里没的） | — | — | `_get_overdue_customer_ranking`（**新前缀模式**，不是 `_aggregate_X` 也不是 `_get_X_chart`）|
+| LOC 估 | ~700 (PR-A 400 + PR-B 280) | ~370 (PR-A 250 + PR-B 120) | ~600（更复杂） |
 
 ---
 
@@ -287,6 +297,20 @@ def _aggregate_cost_by_period(
 
 复用 profit PR-A 中的同名函数（已落地在 `analysis_finance.py`）。Cost chat 不重新定义。
 
+签名（profit 落地后必须 import 至 cost 路径）：
+```python
+def _get_period_key(d: date, period: str) -> str:
+    """Java FinanceAnalysisServiceImpl.getPeriodKey line 1472-1487 1:1 mirror.
+
+    Period:
+      DAY     -> yyyy-MM-dd      (d.strftime("%Y-%m-%d"))
+      WEEK    -> yyyy-Www        (calendar year + ISO week, see Rule 2)
+      MONTH   -> yyyy-MM         (d.strftime("%Y-%m"))
+      QUARTER -> yyyy-Qn         (f"{d.year}-Q{(d.month-1)//3+1}")
+      default -> yyyy-MM
+    """
+```
+
 参见 [Rule 2](../../../.claude/rules/python-java-port.md#rule-2)（calendar year vs ISO year）。
 
 ### 3.5 `_get_cost_analysis` per-type assembler
@@ -401,24 +425,26 @@ loop 从 `["profit", "cost", "receivable", "budget"]` 缩到 `["receivable", "bu
 
 ### 5.2 Unit test 类（PR-B）
 
-**`TestCostStructureArithmetic`** — 结构图算术（5 tests）
+**`TestCostStructureArithmetic`** — 结构图算术（6 tests，I-4 fix split）
 
 | Test | Branch covered |
 |---|---|
 | `test_total_zero_emits_empty_data` | totalCost=0 → `data=[]` 但 options 完整 |
 | `test_three_categories_emit_three_pie_items` | totalCost>0 → 3 items（material/labor/overhead） |
 | `test_percentage_rounding_half_up` | percentage 四舍五入 setScale(2) HALF_UP |
-| `test_negative_cost_abs_defensive` | Java P0-1 Bug B：负值 .abs() 取正 |
+| `test_negative_cost_abs_defensive_in_structure` | structure 3 slots（material/labor/overhead）每个负值 .abs() |
 | `test_create_pie_data_item_total_zero_percentage_zero` | createPieDataItem 边界：total=0 → percentage=0 |
+| `test_create_pie_data_item_percentage_calc_two_stage_scale` | percentage 二阶段 SCALE=4 → multiply 100 → DISPLAY_SCALE=2 |
 
-**`TestCostTrendArithmetic`** — 趋势图 + period（4 tests）
+**`TestCostTrendArithmetic`** — 趋势图 + period（5 tests，I-4 + I-5 fix）
 
 | Test | Branch |
 |---|---|
 | `test_empty_data_returns_empty_chartdata` | 空 → `data=[]`，options 仍完整 |
 | `test_multi_month_aggregates_by_period_key` | 多月聚合，sorted period 顺序 |
-| `test_stacked_series_three_categories_per_period` | 每 period 5 key（period + 4 cost values） |
-| `test_period_key_format_yyyy_mm` | MONTH/WEEK/QUARTER 格式 |
+| `test_stacked_series_three_categories_per_period` | 每 period 5 key（period + 4 cost values）|
+| `test_negative_cost_abs_defensive_in_trend_aggregation` | aggregateCostByPeriod 4 slots（material/labor/overhead/total）每个负值 .abs() |
+| `test_get_period_key_format_yyyy_mm_yyyy_qN_yyyy_Wnn` | 直接调用 `_get_period_key`（私有 helper unit test，profit PR-A 必须 export 这个 symbol 供 import）；覆盖 MONTH/WEEK/QUARTER format |
 
 ### 5.3 Mock pattern
 
@@ -446,6 +472,16 @@ monkeypatch.setattr(
 ./scripts/record-java-golden.sh --compare \
   --factory F001 --path /api/mobile/F001/smart-bi/analysis/finance \
   --query "startDate=2025-01-01&endDate=2025-12-31&analysisType=cost"
+```
+
+**I-7 fix — pre-impl CLI 验证**: 在 cost PR-A 实施前，必须确认 profit PR-A 落地的脚本 CLI 跟假设一致：
+
+```bash
+# 用脚本 --help / --usage 验证支持的 flag
+./scripts/record-java-golden.sh --help
+# 期望: --factory / --path / --query / --out / --compare 都识别
+# 如果 profit PR-A 改了 CLI shape (e.g., --endpoint 替代 --path)，
+# cost spec §5.4 + §5.4 命令必须同步调整
 ```
 
 ---
@@ -493,12 +529,21 @@ monkeypatch.setattr(
 1. spec doc commit + reviewer audit + push（本 step）
 2. user 审 spec → OK
 3. wait for profit PR-A merge to main
-4. rebase phase2a/t-finance-cost onto post-profit-merge main
-5. writing-plans 出 PR-A plan
-6. subagent-driven-development 执行 PR-A → push → PR → squash merge
-7. pull main → writing-plans 出 PR-B plan
-8. subagent-driven-development 执行 PR-B → push → PR → squash merge
-9. cleanup worktree
+4. ⚠️ C-3 fix — pre-rebase signature freeze 验证：
+   git fetch origin
+   grep -A 5 "async def _query_finance_data" backend/python/smartbi_compat/api/analysis_finance.py
+   # 期望签名: async def _query_finance_data(
+   #              factory_id: str, record_type: str,
+   #              start_date: date, end_date: date) -> list[dict]
+   # 如果 profit 在 audit 中改了名字 / 顺序 / 加了 kwargs 等，cost 必须先调整 plan
+   #   §3.2 / §3.3 / §3.5 调用点
+5. rebase phase2a/t-finance-cost onto post-profit-merge main
+6. ⚠️ I-7 fix — verify record-java-golden.sh CLI（见 §5.4）
+7. writing-plans 出 PR-A plan
+8. subagent-driven-development 执行 PR-A → push → PR → squash merge
+9. pull main → writing-plans 出 PR-B plan
+10. subagent-driven-development 执行 PR-B → push → PR → squash merge
+11. cleanup worktree
 ```
 
 ---

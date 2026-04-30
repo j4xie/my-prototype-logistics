@@ -61,10 +61,29 @@ net_profit = sum(
 - 任何 Java port 涉及 `Decimal`、`int(0)`、`""`、`[]`、`False` 等 Python falsy 但 Java 非 null 的值
 - 源头：审 Java 的 `!= null` 检查，**逐字翻译为 Python `is not None`**
 - 不要简化为 `or`
+- **不仅仅是 fallback 场景** —— 任何 Java `if (x != null)` 都翻成 Python `if x is not None:`
+
+### 另一种常见错误模式（cost-style，I-2 fix）
+
+即便没有 `or` fallback，也容易踩 `if r.get("col"):` 而不是 `if r.get("col") is not None:`：
+
+```python
+# ❌ BAD: Decimal("0") row 会被 dict.get truthy-check 跳过
+for r in cost_records:
+    if r.get("material_cost"):  # Decimal("0") 是 falsy → 整行 skip
+        total += abs(_to_decimal(r["material_cost"]))
+
+# ✅ GOOD: 显式 None-check，Decimal("0") 行参与累加
+for r in cost_records:
+    if r.get("material_cost") is not None:
+        total += abs(_to_decimal(r["material_cost"]))
+```
+
+Java `r.getMaterialCost() != null` 在 `BigDecimal.ZERO` 时仍然 True；Python `if r.get("material_cost"):` 把 `Decimal("0")` 误判为 None。
 
 ### Why（背景 + 修复历史）
 
-profit chat self-review 抓到 `or None`；reviewer audit 又抓到 `or` falsy on `total_cost`。**两次都同根源**。
+profit chat self-review 抓到 `or None`；reviewer audit 又抓到 `or` falsy on `total_cost`；cost chat reviewer audit 提示这同一根源还有 `if x:` truthy-check 形式。**三次同根源不同表象**。
 
 ---
 
@@ -212,7 +231,16 @@ sql = """
 
 ### 何时这个 rule 适用
 
-跨 sister chats 共享的 SQL helper（如 `_query_finance_data` 给 cost / receivable / budget 复用）。
+**新建跨 sister chats 共享的 SQL helper**（如 `_query_finance_data` 给 cost / receivable / budget 复用）。
+
+### Legacy 例外（I-1 fix）
+
+`_query_finance_payable_data`（PR #18 已 merge，single-record-type specialized）保留 explicit columns，**不动**。理由：
+- 已 merge 的代码改 SELECT * 是无谓 churn（功能相同）
+- 它本来就只服务 payable，不需要扩展性
+- 名字含"payable"明示其特化用途，跟通用 `_query_finance_data` 区分清楚
+
+新 helper 用 SELECT *；老 helper 保留各自 explicit。
 
 ### Why
 
@@ -246,9 +274,13 @@ async def _query_finance_data(factory_id, record_type, start_date, end_date):
     ...
 ```
 
-### 何时这个 rule 适用
+### 何时这个 rule 适用 (I-3 fix — narrowed scope)
 
-任何 SQL helper / query function 的日期 / id 输入。
+**新建** SQL helper / query function 必须显式 None-check。**已有** helper（如 `_query_finance_payable_data`）由 caller 保证非 None 即可，不需要回填 retroactive precondition assertion。
+
+判断标准：
+- 是 sister chat 共享的新 helper → 加 precondition
+- 是某 endpoint 路径专用的 helper，且 caller 已经从 controller path-param parsing 拿到 validated 输入 → 不强制
 
 ### Why
 
@@ -346,5 +378,6 @@ monkeypatch.setattr(
 | profit chat self-review (2026-04-30) | Rule 1（`or None` net_profit） |
 | profit chat reviewer audit (2026-04-30) | Rule 1（`or` falsy total_cost）/ Rule 2 / Rule 3 / Rule 5 / Rule 6 / Rule 7 |
 | payable PR #18 retrospect | Rule 4（Decimal serialization 一致性） |
+| cost chat reviewer audit (2026-04-30) | Rule 1（`if x:` truthy-check 形式）/ Rule 5（legacy 例外）/ Rule 6（narrowed scope） |
 
-后续 sister chats（cost / receivable / budget / 9 个分析子域）应跑过 reviewer audit；新发现 graduate 到这里。
+后续 sister chats（receivable / budget / 9 个分析子域）应跑过 reviewer audit；新发现 graduate 到这里。
