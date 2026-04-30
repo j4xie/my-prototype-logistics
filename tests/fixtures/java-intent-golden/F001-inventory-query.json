@@ -1,0 +1,82 @@
+{
+  "request": {
+    "query": "查 F001 工厂的库存",
+    "factoryId": "F001",
+    "userId": "22",
+    "username": "factory_admin",
+    "role": "factory_super_admin",
+    "businessType": "FACTORY"
+  },
+  "response": {
+    "success": true,
+    "data": {
+      "bestMatch": {
+        "id": "uuid-inv-001",
+        "factoryId": null,
+        "businessType": "COMMON",
+        "intentCode": "INVENTORY_QUERY",
+        "intentName": "库存查询",
+        "intentCategory": "ANALYSIS",
+        "sensitivityLevel": "LOW",
+        "requiredRoles": "[\"factory_super_admin\",\"manager\"]",
+        "quotaCost": 1,
+        "cacheTtlMinutes": 30,
+        "requiresApproval": false,
+        "approvalChainId": null,
+        "keywords": "[\"库存\",\"查询\"]",
+        "negativeKeywords": null,
+        "negativeKeywordPenalty": 15,
+        "regexPattern": null,
+        "description": "查询物料/产品库存",
+        "exampleQueries": "[\"查库存\",\"看一下库存\"]",
+        "negativeExamples": null,
+        "handlerClass": null,
+        "toolName": "material_inventory_query",
+        "maxTokens": 2000,
+        "responseTemplate": null,
+        "isActive": true,
+        "priority": 80,
+        "metadata": null,
+        "chartType": "table",
+        "requiredEntities": "[\"factory\",\"item_type\"]",
+        "confidenceBoost": 0.1,
+        "configVersion": 1,
+        "previousSnapshot": null,
+        "semanticDomain": "DATA",
+        "semanticAction": "QUERY",
+        "semanticObject": "MATERIAL",
+        "semanticPath": "DATA.QUERY.MATERIAL"
+      },
+      "topCandidates": [
+        {
+          "intentCode": "INVENTORY_QUERY",
+          "intentName": "库存查询",
+          "intentCategory": "ANALYSIS",
+          "confidence": 0.85,
+          "matchScore": 95,
+          "matchedKeywords": ["库存"],
+          "matchMethod": "SEMANTIC",
+          "description": "查询物料/产品库存"
+        }
+      ],
+      "confidence": 0.85,
+      "matchMethod": "SEMANTIC",
+      "matchedKeywords": ["库存"],
+      "isStrongSignal": true,
+      "requiresConfirmation": false,
+      "clarificationQuestion": null,
+      "userInput": "查 F001 工厂的库存",
+      "actionType": "QUERY",
+      "questionType": "OPERATIONAL_COMMAND",
+      "targetEntity": null,
+      "sessionId": null,
+      "conversationMessage": null,
+      "isMultiIntent": false,
+      "additionalIntents": null,
+      "executionStrategy": null,
+      "timingMs": null,
+      "preprocessedQuery": null
+    },
+    "message": "OK"
+  }
+}
