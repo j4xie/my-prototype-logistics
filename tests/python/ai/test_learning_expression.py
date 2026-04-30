@@ -124,3 +124,37 @@ def test_compute_expression_hash_sha256_hex():
     assert all(c in "0123456789abcdef" for c in h)
     # Same input → same hash (deterministic, SHA256 NOT NULL UNIQUE constraint compatible)
     assert _compute_expression_hash("查询库存") == h
+
+
+def test_insert_sql_uses_valid_enum_and_constraint():
+    """F5 regression guard — make SQL schema assumptions explicit.
+
+    Mocked tests with `conn.execute = AsyncMock()` never exercise real PG
+    constraints, so two prod bugs slipped past F1's rewrite:
+      I-NEW-1: source_type literal 'auto_learned' violates Java's
+               LearnedExpression.SourceType enum (allowed: LLM_FALLBACK,
+               USER_FEEDBACK, MANUAL, SEMANTIC_HIGH, KEYWORD_MATCH,
+               LLM_RERANKING). Promotion threshold (>=0.95) matches
+               SEMANTIC_HIGH semantics.
+      I-NEW-2: ON CONFLICT (expression_hash) doesn't match the table's
+               composite UNIQUE constraint uk_ale_hash_factory
+               (expression_hash, factory_id). PG requires exact column
+               match → every INSERT raised, swallowed by try/except,
+               cron silently no-op forever.
+    Both literals MUST stay in INSERT_SQL or this test fails — future
+    SQL rewrites can't reintroduce the bugs.
+    """
+    from ai.learning.expression_learner import INSERT_SQL
+    assert "'SEMANTIC_HIGH'" in INSERT_SQL, (
+        "source_type literal must be 'SEMANTIC_HIGH' (Java enum value), "
+        "not 'auto_learned' or any other unknown enum constant"
+    )
+    assert "ON CONFLICT (expression_hash, factory_id)" in INSERT_SQL, (
+        "ON CONFLICT must match composite UNIQUE constraint "
+        "uk_ale_hash_factory (expression_hash, factory_id)"
+    )
+    # Belt-and-braces: ensure the broken literals are gone
+    assert "'auto_learned'" not in INSERT_SQL
+    assert "ON CONFLICT (expression_hash)" not in INSERT_SQL.replace(
+        "ON CONFLICT (expression_hash, factory_id)", ""
+    )

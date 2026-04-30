@@ -16,7 +16,7 @@ Post-W0 fix-pass F1: rewritten with REAL Java schema:
 - intent_match_records.confidence_score (was: confidence)
 - ai_learned_expressions.embedding_vec (new pgvector col, V20260501_15)
 - expression_hash (SHA256, NOT NULL, ON CONFLICT key) — added per real schema
-- source_type = 'auto_learned' (NOT NULL) — added per real schema
+- source_type = 'SEMANTIC_HIGH' (NOT NULL, matches Java enum LearnedExpression.SourceType)
 - id auto-generated via gen_random_uuid()
 """
 from __future__ import annotations
@@ -47,9 +47,9 @@ INSERT INTO ai_learned_expressions(
     id, intent_code, expression, expression_hash, source_type,
     embedding_vec, factory_id, is_active, created_at, updated_at
 )
-VALUES(gen_random_uuid()::text, $1, $2, $3, 'auto_learned',
+VALUES(gen_random_uuid()::text, $1, $2, $3, 'SEMANTIC_HIGH',
        $4::vector, $5, true, NOW(), NOW())
-ON CONFLICT (expression_hash) DO NOTHING
+ON CONFLICT (expression_hash, factory_id) DO NOTHING
 """
 
 

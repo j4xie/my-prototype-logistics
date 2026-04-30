@@ -23,7 +23,7 @@ from typing import List
 
 from ai.config import default_config
 from ai.dto import CandidateIntentDto, MatchMethod
-from ai.embedding import get_embedding, get_embedding_cached, vec_to_pgvector_text
+from ai.embedding import get_embedding_cached, vec_to_pgvector_text
 
 logger = logging.getLogger(__name__)
 
