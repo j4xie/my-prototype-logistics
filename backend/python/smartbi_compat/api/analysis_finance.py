@@ -494,6 +494,58 @@ def _filter_to_latest_upload(rows: list[dict]) -> list[dict]:
     return [r for r in rows if r.get("upload_id") == target_id]
 
 
+async def _query_finance_data(
+    factory_id: str, record_type: str, start_date: date, end_date: date
+) -> list[dict]:
+    """Single parametrized query against smart_bi_finance_data — reusable across
+    all RecordType branches (REVENUE / COST / AR / AP / BUDGET).
+
+    Java reference: financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
+        factoryId, RecordType.<X>, start, end). Then wraps via filterToLatestUpload
+    (Java line 89-101).
+
+    SELECT * over all known columns; callers extract by key. Sister chats use
+    same function with different record_type.
+    """
+    pool = None
+    try:
+        from smartbi.config import get_pg_pool  # type: ignore
+        pool = await get_pg_pool()
+    except Exception as e:
+        logger.warning(
+            "[finance_data] pool acquisition failed factory=%s record_type=%s: %s",
+            factory_id, record_type, e,
+        )
+        return []
+
+    if pool is None:
+        logger.warning(
+            "[finance_data] pool is None factory=%s record_type=%s; returning empty rows",
+            factory_id, record_type,
+        )
+        return []
+
+    sql = """
+        SELECT id, factory_id, upload_id, record_date, record_type,
+               department, category, customer_name, supplier_name,
+               material_cost, labor_cost, overhead_cost, total_cost,
+               receivable_amount, collection_amount, aging_days,
+               payable_amount, payment_amount,
+               budget_amount, actual_amount, variance_amount,
+               due_date, created_at, updated_at
+        FROM smart_bi_finance_data
+        WHERE factory_id = $1
+          AND record_type = $2
+          AND record_date BETWEEN $3 AND $4
+    """
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(sql, factory_id, record_type, start_date, end_date)
+
+    raw_rows = [dict(r) for r in rows]
+    return _filter_to_latest_upload(raw_rows)
+
+
 # ============================================================
 # Section 3: Sub-service stubs (composite path)
 # Phase C.1 fills these with A.2-verified empty-state shapes.
