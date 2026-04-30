@@ -1602,3 +1602,69 @@ class TestTrend:
         from datetime import date
         assert _format_bucket_key(date(2025, 3, 15), "day") == "2025-03-15"
         assert _format_bucket_key(date(2025, 3, 15), "Day") == "2025-03-15"
+
+    def test_bucket_sales_DAY_aggregates_per_date(self):
+        """5 rows on 3 distinct dates → 3 buckets, summed, sorted ASC."""
+        from smartbi_compat.api.analysis_sales import _bucket_sales_by_period
+        from datetime import date
+        from decimal import Decimal
+
+        class _Row:
+            def __init__(self, order_date, amount):
+                self.order_date = order_date
+                self.amount = amount
+
+        rows = [
+            _Row(date(2025, 3, 15), Decimal("100.00")),
+            _Row(date(2025, 3, 15), Decimal("50.00")),
+            _Row(date(2025, 3, 14), Decimal("200.00")),
+            _Row(date(2025, 3, 16), Decimal("75.50")),
+            _Row(None, Decimal("999.99")),  # NULL order_date → skip per Java line 913
+        ]
+
+        result = _bucket_sales_by_period(rows, "DAY")
+
+        # Sorted ASC by ISO key (chronological)
+        assert list(result.keys()) == ["2025-03-14", "2025-03-15", "2025-03-16"]
+        assert result["2025-03-14"] == Decimal("200.00")
+        assert result["2025-03-15"] == Decimal("150.00")  # 100+50
+        assert result["2025-03-16"] == Decimal("75.50")
+
+    def test_bucket_sales_empty_rows(self):
+        """Empty input → empty dict."""
+        from smartbi_compat.api.analysis_sales import _bucket_sales_by_period
+        result = _bucket_sales_by_period([], "DAY")
+        assert result == {}
+
+    def test_bucket_sales_all_null_order_date(self):
+        """All rows have NULL order_date → empty dict (all filtered)."""
+        from smartbi_compat.api.analysis_sales import _bucket_sales_by_period
+        from decimal import Decimal
+
+        class _Row:
+            def __init__(self, order_date, amount):
+                self.order_date = order_date
+                self.amount = amount
+
+        rows = [_Row(None, Decimal("100")), _Row(None, Decimal("200"))]
+        result = _bucket_sales_by_period(rows, "DAY")
+        assert result == {}
+
+    def test_bucket_sales_null_amount_treated_as_zero(self):
+        """Defensive: row with NULL amount contributes 0 to sum (Java's reducer
+        tolerates null via getOrDefault; Python uses _to_decimal coercion)."""
+        from smartbi_compat.api.analysis_sales import _bucket_sales_by_period
+        from datetime import date
+        from decimal import Decimal
+
+        class _Row:
+            def __init__(self, order_date, amount):
+                self.order_date = order_date
+                self.amount = amount
+
+        rows = [
+            _Row(date(2025, 3, 15), Decimal("100")),
+            _Row(date(2025, 3, 15), None),  # NULL amount → 0 contribution
+        ]
+        result = _bucket_sales_by_period(rows, "DAY")
+        assert result == {"2025-03-15": Decimal("100")}

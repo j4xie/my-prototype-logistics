@@ -1555,6 +1555,34 @@ def _format_bucket_key(d, period: str) -> str:
     return str(d)
 
 
+def _bucket_sales_by_period(rows, period: str) -> dict:
+    """Aggregate sales rows into buckets by period.
+
+    Mirror Java SalesAnalysisServiceImpl.aggregateByDay line 911-921:
+    - Filter rows where `order_date IS NULL` (Java line 913)
+    - Group by formatted bucket key (e.g. ISO date string for DAY)
+    - Sum amounts per bucket
+    - Return TreeMap-equivalent: dict sorted ASC by key
+
+    Args:
+        rows: iterable of Row-like objects with `order_date` and `amount` attrs
+        period: "DAY" only (delegates raise to _format_bucket_key)
+
+    Returns:
+        dict[bucket_key, Decimal] sorted ASC by key. Empty dict for empty input
+        or all-null input.
+    """
+    unsorted: dict = {}
+    for row in rows:
+        if row.order_date is None:
+            continue  # Java line 913 filter
+        key = _format_bucket_key(row.order_date, period)
+        amount = _to_decimal(row.amount) if row.amount is not None else Decimal("0")
+        unsorted[key] = unsorted.get(key, Decimal("0")) + amount
+    # Sort ASC by key (Python ≥3.7 preserves dict insertion order)
+    return dict(sorted(unsorted.items()))
+
+
 async def _get_sales_trend_chart(
     factory_id: str, range_: DateRange, period: str = "DAY",
 ) -> dict:
