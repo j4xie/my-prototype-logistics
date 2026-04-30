@@ -36,3 +36,13 @@ class DateRange:
             f"DateRange.by_period({period!r}) not yet ported. "
             "Add the branch when a Phase 2A endpoint requires it."
         )
+
+    @property
+    def days(self) -> int:
+        """Inclusive day count between start_date and end_date."""
+        return (self.end_date - self.start_date).days + 1
+
+    @property
+    def valid(self) -> bool:
+        """True iff start_date <= end_date."""
+        return self.start_date <= self.end_date
