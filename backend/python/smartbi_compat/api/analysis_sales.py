@@ -1221,6 +1221,28 @@ async def _build_from_gold_with_charts(
     return base
 
 
+def _build_empty_dashboard() -> dict:
+    """Mirror Java SalesAnalysisServiceImpl.buildEmptyDashboard line 1145-1159.
+
+    Used by:
+      - F999 path (legacy SQL returns 0 rows or all-zero aggregate)
+      - Gold-empty fallback (gold spec already returns this shape via _get_sales_overview)
+      - any branch where total_sales=0 AND order_count=0 (Java line 131)
+    """
+    return _new_dashboard_response_dict(
+        ai_insights=[
+            _new_ai_insight_dict(
+                level="YELLOW",
+                category="数据状态",
+                message="当前时间范围内暂无销售数据",
+                action_suggestion="请上传销售数据或调整时间范围",
+            ),
+        ],
+        suggestions=["请先上传销售数据以开始分析"],
+        last_updated=_utc_now_iso(),
+    )
+
+
 async def _build_legacy_sales_overview(factory_id: str, range_: DateRange) -> dict:
     """Legacy fallback placeholder — overview spec replaces with real impl.
 

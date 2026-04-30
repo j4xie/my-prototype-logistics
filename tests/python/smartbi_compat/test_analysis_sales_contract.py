@@ -1006,3 +1006,25 @@ class TestOverview:
         assert chart["title"] == "产品分布"
         assert chart["data"][0]["category"] == "猪肉类"
         assert chart["data"][1]["category"] == "未分类"
+
+    def test_build_empty_dashboard_byte_shape(self):
+        """Java SalesAnalysisServiceImpl.buildEmptyDashboard line 1145-1159."""
+        from smartbi_compat.api.analysis_sales import _build_empty_dashboard
+
+        d = _build_empty_dashboard()
+        assert len(d) == 16
+        assert d["kpiCards"] == []
+        assert d["charts"] == {}
+        assert d["rankings"] == {}
+        assert len(d["aiInsights"]) == 1
+        ai = d["aiInsights"][0]
+        assert ai["level"] == "YELLOW"
+        assert ai["category"] == "数据状态"
+        assert ai["message"] == "当前时间范围内暂无销售数据"
+        assert ai["actionSuggestion"] == "请上传销售数据或调整时间范围"
+        assert ai["relatedEntity"] is None
+        assert d["suggestions"] == ["请先上传销售数据以开始分析"]
+        assert d["period"] is None
+        assert d["metricCards"] is None
+        assert d["fromCache"] is False
+        assert d["lastUpdated"] is not None
