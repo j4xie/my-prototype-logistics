@@ -545,3 +545,69 @@ class TestOverview:
         from smartbi_compat.api.analysis_sales import _new_metric_result_dict
         d = _new_metric_result_dict(metric_code="X", metric_name="Y")
         assert d["alertLevel"] == "GREEN"
+
+    @pytest.mark.asyncio
+    async def test_query_sales_aggregates_shape(self, monkeypatch):
+        """_query_sales_aggregates returns 6-tuple matching Java findKpiSummary."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+
+        class FakeRow:
+            def __init__(self, vals):
+                self._vals = vals
+            def __getitem__(self, i): return self._vals[i]
+
+        class FakeResult:
+            def fetchone(self):
+                return FakeRow([
+                    Decimal("123456.78"), Decimal("100"), Decimal("50000"),
+                    Decimal("70000"), Decimal("200000"), 42,
+                ])
+
+        class FakeConn:
+            def __enter__(self): return self
+            def __exit__(self, *a): pass
+            def execute(self, sql, params): return FakeResult()
+
+        class FakeEngine:
+            def connect(self): return FakeConn()
+
+        monkeypatch.setattr(m, "_get_sync_engine", lambda: FakeEngine())
+
+        result = await m._query_sales_aggregates(
+            "F999", date(2025, 1, 1), date(2025, 12, 31),
+        )
+        assert result is not None
+        assert result[0] == Decimal("123456.78")
+        assert result[5] == 42
+        assert len(result) == 6
+
+    @pytest.mark.asyncio
+    async def test_query_sales_aggregates_empty(self, monkeypatch):
+        """When no rows match, returns 6-tuple of zeros (Java COALESCE semantics)."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+
+        class FakeRow:
+            def __init__(self, vals): self._vals = vals
+            def __getitem__(self, i): return self._vals[i]
+
+        class FakeResult:
+            def fetchone(self):
+                return FakeRow([Decimal("0"), Decimal("0"), Decimal("0"),
+                                Decimal("0"), Decimal("0"), 0])
+
+        class FakeConn:
+            def __enter__(self): return self
+            def __exit__(self, *a): pass
+            def execute(self, sql, params): return FakeResult()
+
+        class FakeEngine:
+            def connect(self): return FakeConn()
+
+        monkeypatch.setattr(m, "_get_sync_engine", lambda: FakeEngine())
+
+        result = await m._query_sales_aggregates("F_EMPTY", date(2025, 1, 1), date(2025, 12, 31))
+        assert all(v == 0 or v == Decimal("0") for v in result)

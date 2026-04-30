@@ -172,6 +172,98 @@ def _new_metric_result_dict(
 
 
 # ============================================================
+# Section 0.5: Legacy SQL aggregate helpers (Java repo mirror)
+# ============================================================
+# Mirror SmartBiSalesDataRepository methods for the legacy fallback path
+# (when Gold path is unavailable / disabled). Each helper is monkey-patchable
+# at module level via _get_sync_engine for unit testing without standing up
+# a Postgres instance.
+
+
+def _get_sync_engine():
+    """Module-level seam wrapping the SQLAlchemy engine acquisition.
+
+    Indirection lets tests monkey-patch at this module's namespace.
+    Production: returns the module-level `engine` from
+    smartbi.database.connection — the same SQLAlchemy engine the existing
+    _query_sales_data helper in smartbi_compat.api.analysis transitively
+    uses (via get_db_context). Per Phase A.3 verification (2026-04-30),
+    smart_bi_sales_data lives in `cretas_db`; the `engine`'s target DB is
+    determined by the `postgres_db` setting (env-driven, defaults to
+    `smartbi_db` in dev but is set to `cretas_db` in deployments where
+    smart_bi_sales_data resides).
+    """
+    from smartbi.database.connection import engine
+    if engine is None:
+        raise RuntimeError(
+            "PostgreSQL engine not available — postgres_enabled is False "
+            "or connection setup failed at module import time."
+        )
+    return engine
+
+
+_KPI_SUMMARY_SQL = text("""
+    SELECT
+      COALESCE(SUM(amount), 0)         AS total_sales,
+      COALESCE(SUM(quantity), 0)       AS total_quantity,
+      COALESCE(SUM(profit), 0)         AS total_profit,
+      COALESCE(SUM(cost), 0)           AS total_cost,
+      COALESCE(SUM(monthly_target), 0) AS total_target,
+      COUNT(DISTINCT product_id)       AS order_count
+    FROM smart_bi_sales_data
+    WHERE factory_id = :factory_id
+      AND order_date BETWEEN :start_date AND :end_date
+""")
+
+
+async def _query_sales_aggregates(
+    factory_id: str, start_date: date, end_date: date,
+) -> Optional[tuple]:
+    """Mirror SmartBiSalesDataRepository.findKpiSummary line 85-92.
+
+    Returns 6-tuple (total_sales, total_quantity, total_profit, total_cost,
+    total_target, order_count) — Decimal for first 5, int for last.
+    Returns None if engine acquisition fails or no row.
+    Wrapped in asyncio.to_thread for sync SQLAlchemy compat.
+    """
+    def _exec():
+        engine = _get_sync_engine()
+        with engine.connect() as conn:
+            row = conn.execute(_KPI_SUMMARY_SQL, {
+                "factory_id": factory_id,
+                "start_date": start_date,
+                "end_date": end_date,
+            }).fetchone()
+            if row is None:
+                return None
+            return (row[0], row[1], row[2], row[3], row[4], row[5])
+    try:
+        return await asyncio.to_thread(_exec)
+    except Exception as e:
+        logger.warning(
+            "[legacy] _query_sales_aggregates failed factory=%s: %s",
+            factory_id, e,
+        )
+        return None
+
+
+async def _query_sales_aggregates_previous_period(
+    factory_id: str, start_date: date, end_date: date,
+) -> Optional[tuple]:
+    """Same query as _query_sales_aggregates with date range shifted -1 month.
+
+    Mirrors Java line 242-243: findKpiSummary(factoryId, startDate.minusMonths(1),
+    endDate.minusMonths(1)). Used only for MoM growth KPI.
+
+    Uses dateutil.relativedelta(months=-1) to match LocalDate.minusMonths semantic.
+    """
+    from dateutil.relativedelta import relativedelta
+    prev_start = start_date - relativedelta(months=1)
+    prev_end = end_date - relativedelta(months=1)
+    return await _query_sales_aggregates(factory_id, prev_start, prev_end)
+
+
+# ============================================================
 # Section 1: DTO dict factories (FROZEN by foundation spec §4)
 # ============================================================
 # Populated by Tasks C.3 - C.7
