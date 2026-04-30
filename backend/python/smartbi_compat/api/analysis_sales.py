@@ -1586,16 +1586,38 @@ def _bucket_sales_by_period(rows, period: str) -> dict:
 async def _get_sales_trend_chart(
     factory_id: str, range_: DateRange, period: str = "DAY",
 ) -> dict:
-    """STUB — trend spec replaces.
+    """Real impl. Mirror Java SalesAnalysisServiceImpl.getSalesTrendChart line 597-607
+    + buildSalesTrendChartFromData line 868-906.
 
-    F999 empty-state ChartConfig: empty data + hardcoded title/axes/options.
+    DAY-only port per trend spec §5; raise BEFORE query for unsupported periods
+    (fail fast — no wasted DB call).
+
+    async per foundation §5: sync `_query_sales_data` wrapped via `await asyncio.to_thread(...)`.
     """
+    # Fail fast: raise before query for unsupported periods
+    if period.upper() != "DAY":
+        raise NotImplementedError(
+            f"trend chart period='{period}' not supported; only DAY is "
+            f"used by /analysis/sales composite. See spec §5."
+        )
+
+    rows = await asyncio.to_thread(_query_sales_data, factory_id, range_)
+    period_sales = _bucket_sales_by_period(rows, period)
+
+    data_points = [
+        {
+            "date": key,
+            "amount": amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+        }
+        for key, amount in period_sales.items()
+    ]
+
     return _new_chart_config_dict(
         chart_type="LINE",
         title="销售趋势",
         xaxis_field="date",
         yaxis_field="amount",
-        data=[],
+        data=data_points,
         options={"showDataLabels": False, "smooth": True},
     )
 

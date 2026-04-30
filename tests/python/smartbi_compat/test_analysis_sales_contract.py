@@ -1668,3 +1668,75 @@ class TestTrend:
         ]
         result = _bucket_sales_by_period(rows, "DAY")
         assert result == {"2025-03-15": Decimal("100")}
+
+    @pytest.mark.asyncio
+    async def test_get_sales_trend_chart_DAY_full_path(self, monkeypatch):
+        """Full path: query rows → bucket → ChartConfig with non-empty data."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+        from collections import namedtuple
+
+        Row = namedtuple("Row", "salesperson_name amount monthly_target product_category customer_name order_date")
+
+        def fake_query(factory_id, range_):
+            return [
+                Row("X", Decimal("100"), None, "P", "C", date(2025, 3, 15)),
+                Row("X", Decimal("50"), None, "P", "C", date(2025, 3, 15)),
+                Row("X", Decimal("200"), None, "P", "C", date(2025, 3, 14)),
+            ]
+
+        monkeypatch.setattr(m, "_query_sales_data", fake_query)
+
+        range_ = m.DateRange.custom(date(2025, 3, 1), date(2025, 3, 31))
+        result = await m._get_sales_trend_chart("F999", range_, "DAY")
+
+        # 7-key ChartConfig
+        assert result["chartType"] == "LINE"
+        assert result["title"] == "销售趋势"
+        assert result["xaxisField"] == "date"
+        assert result["yaxisField"] == "amount"
+        assert result["seriesField"] is None
+        assert result["options"] == {"showDataLabels": False, "smooth": True}
+        # data sorted ASC, 2 buckets
+        data = result["data"]
+        assert len(data) == 2
+        assert data[0]["date"] == "2025-03-14"
+        assert data[0]["amount"] == Decimal("200.00")
+        assert data[1]["date"] == "2025-03-15"
+        assert data[1]["amount"] == Decimal("150.00")  # 100+50
+
+    @pytest.mark.asyncio
+    async def test_get_sales_trend_chart_empty_returns_empty_data(self, monkeypatch):
+        """Empty rows → ChartConfig with data=[]."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+
+        monkeypatch.setattr(m, "_query_sales_data", lambda f, r: [])
+
+        range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 12, 31))
+        result = await m._get_sales_trend_chart("F999", range_, "DAY")
+
+        assert result["chartType"] == "LINE"
+        assert result["data"] == []
+        assert result["options"] == {"showDataLabels": False, "smooth": True}
+
+    @pytest.mark.asyncio
+    async def test_get_sales_trend_chart_unsupported_period_raises(self, monkeypatch):
+        """WEEK/MONTH/YEAR raise NotImplementedError before any DB call."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+
+        # Spy: query should NOT be called
+        called = {"count": 0}
+        def fake_query(f, r):
+            called["count"] += 1
+            return []
+        monkeypatch.setattr(m, "_query_sales_data", fake_query)
+
+        range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 12, 31))
+        for period in ("WEEK", "MONTH", "YEAR"):
+            with pytest.raises(NotImplementedError, match="not supported"):
+                await m._get_sales_trend_chart("F999", range_, period)
+
+        assert called["count"] == 0  # Raise BEFORE query — fail fast
