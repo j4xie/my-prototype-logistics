@@ -567,11 +567,14 @@ async def _build_from_gold_with_charts(
     return base
 
 
-async def _get_sales_overview(factory_id: str, range_: DateRange) -> dict:
-    """STUB — overview/gold specs replace.
+async def _build_legacy_sales_overview(factory_id: str, range_: DateRange) -> dict:
+    """Legacy fallback placeholder — overview spec replaces with real impl.
 
     Returns F999 empty-state DashboardResponse matching `buildEmptyDashboard`
     Java line 1145-1159: 1 YELLOW insight + 1 suggestion + 16-field shape.
+
+    This is the legacy SalesAnalysisServiceImpl.getSalesOverview path; will be
+    populated by overview spec with real KPI computation from sales data.
     """
     return _new_dashboard_response_dict(
         ai_insights=[
@@ -585,6 +588,39 @@ async def _get_sales_overview(factory_id: str, range_: DateRange) -> dict:
         suggestions=["请先上传销售数据以开始分析"],
         last_updated=_utc_now_iso(),
     )
+
+
+async def _get_sales_overview(factory_id: str, range_: DateRange) -> dict:
+    """Gold-first dispatch (gold spec). Falls back to legacy if Gold returns None.
+
+    Java reference: SmartBIServiceImpl.getComprehensiveAnalysis line 568-616
+    delegates overview to SalesAnalysisServiceImpl.getSalesOverview which itself
+    calls GoldDashboardBuilder.buildFromGoldWithCharts FIRST, then legacy SQL.
+
+    Pool acquisition: lazy import of get_pg_pool to avoid circular import at
+    module-load time. Pool failure -> warning + legacy fallback.
+    """
+    pool = None
+    try:
+        from smartbi.config import get_pg_pool  # type: ignore
+        pool = await get_pg_pool()
+    except Exception as e:
+        logger.warning(
+            "[gold-builder] pool acquisition failed factory=%s: %s; using legacy",
+            factory_id, e,
+        )
+        return await _build_legacy_sales_overview(factory_id, range_)
+
+    try:
+        gold_dashboard = await _build_from_gold_with_charts(factory_id, range_, pool=pool)
+        if gold_dashboard is not None:
+            return gold_dashboard
+    except Exception as e:
+        logger.warning(
+            "[gold-builder] Gold fetch failed factory=%s: %s; falling back to legacy",
+            factory_id, e,
+        )
+    return await _build_legacy_sales_overview(factory_id, range_)
 
 
 async def _get_salesperson_ranking(factory_id: str, range_: DateRange) -> list:
