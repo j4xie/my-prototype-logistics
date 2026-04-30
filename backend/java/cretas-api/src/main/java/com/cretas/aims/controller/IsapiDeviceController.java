@@ -13,6 +13,7 @@ import com.cretas.aims.dto.isapi.IsapiEventDTO;
 import com.cretas.aims.dto.isapi.IsapiStreamDTO;
 import com.cretas.aims.entity.isapi.IsapiDevice;
 import com.cretas.aims.entity.isapi.IsapiEventLog;
+import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.repository.isapi.IsapiEventLogRepository;
 import com.cretas.aims.service.isapi.IsapiAlertAnalysisService;
 import com.cretas.aims.service.isapi.IsapiDeviceDiscoveryService;
@@ -71,7 +72,7 @@ public class IsapiDeviceController {
             IsapiDevice device = deviceService.addDevice(factoryId, dto);
             return ApiResponse.success("设备添加成功", deviceService.toDTO(device));
         } catch (IllegalArgumentException e) {
-            return ApiResponse.error(ErrorSanitizer.sanitize(e));
+            throw new BusinessException(400, ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -86,7 +87,7 @@ public class IsapiDeviceController {
             IsapiDevice device = deviceService.updateDevice(deviceId, dto);
             return ApiResponse.success("设备更新成功", deviceService.toDTO(device));
         } catch (IllegalArgumentException e) {
-            return ApiResponse.error(ErrorSanitizer.sanitize(e));
+            throw new BusinessException(400, ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -102,7 +103,7 @@ public class IsapiDeviceController {
             deviceService.deleteDevice(deviceId);
             return ApiResponse.successMessage("设备删除成功");
         } catch (IllegalArgumentException e) {
-            return ApiResponse.error(ErrorSanitizer.sanitize(e));
+            throw new BusinessException(400, ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -115,7 +116,7 @@ public class IsapiDeviceController {
             IsapiDevice device = deviceService.getDevice(deviceId);
             return ApiResponse.success(deviceService.toDTO(device));
         } catch (IllegalArgumentException e) {
-            return ApiResponse.error(ErrorSanitizer.sanitize(e));
+            throw new BusinessException(400, ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -192,10 +193,13 @@ public class IsapiDeviceController {
             }
         } catch (IllegalArgumentException e) {
             log.error("配置 HTTP Host 失败: deviceId={}, error={}", deviceId, e.getMessage());
-            return ApiResponse.error(ErrorSanitizer.sanitize(e));
+            throw new BusinessException(400, ErrorSanitizer.sanitize(e), e);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("配置 HTTP Host 异常: deviceId={}, error={}", deviceId, e.getMessage(), e);
-            return ApiResponse.error("配置失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "配置失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -212,8 +216,11 @@ public class IsapiDeviceController {
             result.put("password", password);
             result.put("deviceId", deviceId);
             return ApiResponse.success(result);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
-            return ApiResponse.error("获取密码失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "获取密码失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -227,12 +234,16 @@ public class IsapiDeviceController {
         try {
             String newPassword = request.get("newPassword");
             if (newPassword == null || newPassword.length() < 6) {
-                return ApiResponse.error("密码长度至少 6 位");
+                throw new BusinessException(400, "密码长度至少 6 位")
+                        .withHint("请使用至少 6 位字符的密码");
             }
             deviceService.changeDevicePassword(deviceId, newPassword);
             return ApiResponse.successMessage("密码修改成功");
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
-            return ApiResponse.error("修改密码失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "修改密码失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -245,8 +256,11 @@ public class IsapiDeviceController {
         try {
             deviceService.rebootDevice(deviceId);
             return ApiResponse.successMessage("重启命令已发送，设备将在数秒后重启");
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
-            return ApiResponse.error("重启失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "重启失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -259,8 +273,11 @@ public class IsapiDeviceController {
         try {
             deviceService.factoryResetDevice(deviceId);
             return ApiResponse.successMessage("恢复出厂设置命令已发送");
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
-            return ApiResponse.error("恢复出厂设置失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "恢复出厂设置失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -286,7 +303,7 @@ public class IsapiDeviceController {
         if (capture.getSuccess()) {
             return ApiResponse.success("抓拍成功", capture);
         } else {
-            return ApiResponse.error(capture.getError());
+            throw new BusinessException(502, capture.getError() != null ? capture.getError() : "设备抓拍失败");
         }
     }
 
@@ -519,10 +536,13 @@ public class IsapiDeviceController {
                     return ApiResponse.success("AI 分析完成", toEventDTO(event));
                 }
             }
-            return ApiResponse.error(result.getMessage());
+            throw new BusinessException(500, result.getMessage() != null ? result.getMessage() : "重新分析失败");
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("重新分析事件失败: eventId={}, error={}", eventId, e.getMessage());
-            return ApiResponse.error("分析失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "分析失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -606,9 +626,12 @@ public class IsapiDeviceController {
             List<DiscoveredDeviceDTO> devices = discoveryService.discoverDevices(request);
             log.info("设备发现完成: factoryId={}, 发现 {} 个设备", factoryId, devices.size());
             return ApiResponse.success("发现 " + devices.size() + " 个设备", devices);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("设备发现失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
-            return ApiResponse.error("设备发现失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "设备发现失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -667,13 +690,17 @@ public class IsapiDeviceController {
             if (failCount == 0) {
                 return ApiResponse.success("批量导入成功", result);
             } else if (successCount == 0) {
-                return ApiResponse.error("批量导入失败: 所有设备导入失败");
+                throw new BusinessException(500, "批量导入失败: 所有设备导入失败")
+                        .withHint("请检查设备 IP/端口/凭据是否正确");
             } else {
                 return ApiResponse.success("批量导入部分成功", result);
             }
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("批量导入设备失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
-            return ApiResponse.error("批量导入失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "批量导入失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -692,9 +719,12 @@ public class IsapiDeviceController {
                 return ApiResponse.success("未发现设备", devices);
             }
             return ApiResponse.success("发现 " + devices.size() + " 个设备", devices);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("单IP扫描失败: factoryId={}, ip={}, error={}", factoryId, ip, e.getMessage(), e);
-            return ApiResponse.error("扫描失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "扫描失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 

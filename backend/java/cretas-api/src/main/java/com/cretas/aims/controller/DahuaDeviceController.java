@@ -13,6 +13,7 @@ import com.cretas.aims.entity.dahua.DahuaDevice;
 import com.cretas.aims.entity.dahua.DahuaDevice.DeviceStatus;
 import com.cretas.aims.entity.dahua.DahuaDevice.DeviceType;
 import com.cretas.aims.entity.dahua.DahuaDevice.Protocol;
+import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.repository.dahua.DahuaDeviceRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -71,9 +72,12 @@ public class DahuaDeviceController {
             List<DiscoveredDahuaDevice> devices = discoveryClient.discoverDevices(timeout);
             log.info("大华设备发现完成: factoryId={}, 发现 {} 台设备", factoryId, devices.size());
             return ApiResponse.success("发现 " + devices.size() + " 台设备", devices);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("大华设备发现失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
-            return ApiResponse.error("设备发现失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "设备发现失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -88,9 +92,12 @@ public class DahuaDeviceController {
             List<DiscoveredDahuaDevice> devices = discoveryClient.discoverOnAllInterfaces(timeout);
             log.info("多接口大华设备发现完成: factoryId={}, 发现 {} 台设备", factoryId, devices.size());
             return ApiResponse.success("发现 " + devices.size() + " 台设备", devices);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("多接口大华设备发现失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
-            return ApiResponse.error("设备发现失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "设备发现失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -104,10 +111,10 @@ public class DahuaDeviceController {
         try {
             // SSRF 防护：拒绝探测内网保留地址、本地回环、云元数据服务
             if (!isAllowedProbeTarget(ipAddress)) {
-                return ApiResponse.error("不允许探测该 IP 地址（保留地址/回环地址/元数据服务）");
+                throw new BusinessException(403, "不允许探测该 IP 地址（保留地址/回环地址/元数据服务）").withHint("请使用公网或工厂局域网内的合法 IP");
             }
             if (port < 1 || port > 65535) {
-                return ApiResponse.error("端口号必须在 1-65535 之间");
+                throw new BusinessException(400, "端口号必须在 1-65535 之间").withHint("请填写有效端口号");
             }
 
             log.info("探测大华设备: factoryId={}, ip={}:{}", factoryId, ipAddress, port);
@@ -124,7 +131,7 @@ public class DahuaDeviceController {
             Map<String, Object> deviceInfo = dahuaClient.getDeviceInfo(tempDevice);
 
             if (deviceInfo == null || deviceInfo.isEmpty()) {
-                return ApiResponse.error("无法获取设备信息，设备可能不在线或不是大华设备");
+                throw new BusinessException(502, "无法获取设备信息，设备可能不在线或不是大华设备").withHint("请检查设备网络/凭据/型号");
             }
 
             DiscoveredDahuaDevice discovered = DiscoveredDahuaDevice.builder()
@@ -139,9 +146,12 @@ public class DahuaDeviceController {
                     .build();
 
             return ApiResponse.success("设备探测成功", discovered);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("探测大华设备失败: ip={}:{}, error={}", ipAddress, port, e.getMessage());
-            return ApiResponse.error("设备探测失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "设备探测失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -158,7 +168,7 @@ public class DahuaDeviceController {
             Optional<DahuaDevice> existing = deviceRepository.findByFactoryIdAndIpAddressAndPort(
                     factoryId, dto.getIpAddress(), dto.getPort());
             if (existing.isPresent()) {
-                return ApiResponse.error("设备已存在: " + dto.getIpAddress() + ":" + dto.getPort());
+                throw new BusinessException(409, "设备已存在: " + dto.getIpAddress() + ":" + dto.getPort()).withHint("请使用不同的 IP/端口或更新已有设备");
             }
 
             // 加密密码
@@ -195,9 +205,12 @@ public class DahuaDeviceController {
             DahuaDevice saved = deviceRepository.save(device);
             log.info("添加大华设备成功: id={}, ip={}", saved.getId(), saved.getIpAddress());
             return ApiResponse.success("设备添加成功", saved);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("添加大华设备失败: error={}", e.getMessage(), e);
-            return ApiResponse.error("设备添加失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "设备添加失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -211,7 +224,7 @@ public class DahuaDeviceController {
         try {
             Optional<DahuaDevice> optDevice = deviceRepository.findById(deviceId);
             if (optDevice.isEmpty()) {
-                return ApiResponse.error("设备不存在: " + deviceId);
+                throw new BusinessException(404, "设备不存在: " + deviceId).withHint("请检查 deviceId 是否正确");
             }
 
             DahuaDevice device = optDevice.get();
@@ -248,9 +261,12 @@ public class DahuaDeviceController {
             DahuaDevice saved = deviceRepository.save(device);
             log.info("更新大华设备成功: id={}, ip={}", saved.getId(), saved.getIpAddress());
             return ApiResponse.success("设备更新成功", saved);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("更新大华设备失败: deviceId={}, error={}", deviceId, e.getMessage(), e);
-            return ApiResponse.error("设备更新失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "设备更新失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -263,7 +279,7 @@ public class DahuaDeviceController {
         try {
             Optional<DahuaDevice> optDevice = deviceRepository.findById(deviceId);
             if (optDevice.isEmpty()) {
-                return ApiResponse.error("设备不存在: " + deviceId);
+                throw new BusinessException(404, "设备不存在: " + deviceId).withHint("请检查 deviceId 是否正确");
             }
 
             // 清除缓存的 HTTP 客户端
@@ -272,9 +288,12 @@ public class DahuaDeviceController {
             deviceRepository.deleteById(deviceId);
             log.info("删除大华设备成功: deviceId={}", deviceId);
             return ApiResponse.successMessage("设备删除成功");
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("删除大华设备失败: deviceId={}, error={}", deviceId, e.getMessage(), e);
-            return ApiResponse.error("设备删除失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "设备删除失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -286,12 +305,15 @@ public class DahuaDeviceController {
         try {
             Optional<DahuaDevice> optDevice = deviceRepository.findById(deviceId);
             if (optDevice.isEmpty()) {
-                return ApiResponse.error("设备不存在: " + deviceId);
+                throw new BusinessException(404, "设备不存在: " + deviceId).withHint("请检查 deviceId 是否正确");
             }
             return ApiResponse.success(optDevice.get());
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("获取大华设备失败: deviceId={}, error={}", deviceId, e.getMessage());
-            return ApiResponse.error("获取设备失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "获取设备失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -330,7 +352,7 @@ public class DahuaDeviceController {
             if (discovered.getMac() != null) {
                 Optional<DahuaDevice> existing = deviceRepository.findByMacAddressIgnoreCase(discovered.getMac());
                 if (existing.isPresent()) {
-                    return ApiResponse.error("设备已存在 (MAC: " + discovered.getMac() + ")");
+                    throw new BusinessException(409, "设备已存在 (MAC: " + discovered.getMac() + ")").withHint("MAC 地址重复，请检查设备是否已导入");
                 }
             }
 
@@ -339,7 +361,7 @@ public class DahuaDeviceController {
             Optional<DahuaDevice> existingByIp = deviceRepository.findByFactoryIdAndIpAddressAndPort(
                     factoryId, discovered.getIpAddress(), port);
             if (existingByIp.isPresent()) {
-                return ApiResponse.error("设备IP已存在: " + discovered.getIpAddress());
+                throw new BusinessException(409, "设备IP已存在: " + discovered.getIpAddress()).withHint("请使用不同的 IP 或更新已有设备");
             }
 
             // 生成设备名称
@@ -382,9 +404,12 @@ public class DahuaDeviceController {
             log.info("导入大华设备成功: id={}, mac={}, ip={}", saved.getId(), saved.getMacAddress(), saved.getIpAddress());
 
             return ApiResponse.success("设备导入成功", saved);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("导入大华设备失败: error={}", e.getMessage(), e);
-            return ApiResponse.error("设备导入失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "设备导入失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -399,7 +424,7 @@ public class DahuaDeviceController {
         try {
             Optional<DahuaDevice> optDevice = deviceRepository.findById(deviceId);
             if (optDevice.isEmpty()) {
-                return ApiResponse.error("设备不存在: " + deviceId);
+                throw new BusinessException(404, "设备不存在: " + deviceId).withHint("请检查 deviceId 是否正确");
             }
 
             DahuaDevice device = optDevice.get();
@@ -418,9 +443,12 @@ public class DahuaDeviceController {
             } else {
                 return ApiResponse.success("连接失败", false);
             }
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("测试大华设备连接失败: deviceId={}, error={}", deviceId, e.getMessage());
-            return ApiResponse.error("连接测试失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "连接测试失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -433,7 +461,7 @@ public class DahuaDeviceController {
         try {
             Optional<DahuaDevice> optDevice = deviceRepository.findById(deviceId);
             if (optDevice.isEmpty()) {
-                return ApiResponse.error("设备不存在: " + deviceId);
+                throw new BusinessException(404, "设备不存在: " + deviceId).withHint("请检查 deviceId 是否正确");
             }
 
             DahuaDevice device = optDevice.get();
@@ -442,7 +470,7 @@ public class DahuaDeviceController {
             if (deviceInfo == null || deviceInfo.isEmpty()) {
                 device.markOffline("无法获取设备信息");
                 deviceRepository.save(device);
-                return ApiResponse.error("无法获取设备信息");
+                throw new BusinessException(502, "无法获取设备信息").withHint("请检查设备状态");
             }
 
             // 更新设备信息
@@ -464,9 +492,12 @@ public class DahuaDeviceController {
 
             log.info("同步大华设备信息成功: deviceId={}", deviceId);
             return ApiResponse.successMessage("同步成功");
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("同步大华设备信息失败: deviceId={}, error={}", deviceId, e.getMessage());
-            return ApiResponse.error("同步失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "同步失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -481,7 +512,7 @@ public class DahuaDeviceController {
         try {
             Optional<DahuaDevice> optDevice = deviceRepository.findById(deviceId);
             if (optDevice.isEmpty()) {
-                return ApiResponse.error("设备不存在: " + deviceId);
+                throw new BusinessException(404, "设备不存在: " + deviceId).withHint("请检查 deviceId 是否正确");
             }
 
             DahuaDevice device = optDevice.get();
@@ -503,9 +534,12 @@ public class DahuaDeviceController {
             streams.put("deviceId", deviceId);
 
             return ApiResponse.success(streams);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("获取大华流媒体地址失败: deviceId={}, error={}", deviceId, e.getMessage());
-            return ApiResponse.error("获取流媒体地址失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "获取流媒体地址失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -519,21 +553,24 @@ public class DahuaDeviceController {
         try {
             Optional<DahuaDevice> optDevice = deviceRepository.findById(deviceId);
             if (optDevice.isEmpty()) {
-                return ApiResponse.error("设备不存在: " + deviceId);
+                throw new BusinessException(404, "设备不存在: " + deviceId).withHint("请检查 deviceId 是否正确");
             }
 
             DahuaDevice device = optDevice.get();
             byte[] imageData = dahuaClient.capturePicture(device, channelId - 1); // 大华通道从0开始
 
             if (imageData == null || imageData.length == 0) {
-                return ApiResponse.error("抓拍失败: 未获取到图片数据");
+                throw new BusinessException(502, "抓拍失败: 未获取到图片数据").withHint("请检查通道是否有视频源");
             }
 
             String base64Image = Base64.getEncoder().encodeToString(imageData);
             return ApiResponse.success("抓拍成功", base64Image);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("大华设备抓拍失败: deviceId={}, channelId={}, error={}", deviceId, channelId, e.getMessage());
-            return ApiResponse.error("抓拍失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "抓拍失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -591,9 +628,12 @@ public class DahuaDeviceController {
                     .build();
 
             return ApiResponse.success("请使用大华官方工具进行配网", result);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("配网大华设备失败: mac={}, error={}", config.getDeviceMac(), e.getMessage());
-            return ApiResponse.error("配网失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "配网失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -618,9 +658,12 @@ public class DahuaDeviceController {
                     .build();
 
             return ApiResponse.success("请使用大华官方工具进行激活", result);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("激活大华设备失败: mac={}, error={}", deviceMac, e.getMessage());
-            return ApiResponse.error("激活失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "激活失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -661,9 +704,12 @@ public class DahuaDeviceController {
             stats.put("byStatus", byStatus);
 
             return ApiResponse.success(stats);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("获取大华设备统计失败: factoryId={}, error={}", factoryId, e.getMessage());
-            return ApiResponse.error("获取统计失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "获取统计失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 

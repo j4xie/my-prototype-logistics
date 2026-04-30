@@ -3,6 +3,7 @@ package com.cretas.aims.controller;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.DeviceRegistration;
+import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.repository.DeviceRegistrationRepository;
 import com.cretas.aims.service.PushNotificationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -60,13 +61,15 @@ public class DeviceController {
         try {
             // 验证 Push Token 格式
             if (!pushNotificationService.validatePushToken(request.getPushToken())) {
-                return ApiResponse.error("无效的 Push Token 格式");
+                throw new BusinessException(400, "无效的 Push Token 格式")
+                        .withHint("请确认 Push Token 来自 FCM/APNs/Expo 等合法源");
             }
 
             // 获取当前用户 ID
             Long userId = getUserIdFromRequest(httpRequest);
             if (userId == null) {
-                return ApiResponse.error("未找到用户信息");
+                throw new BusinessException(401, "未找到用户信息")
+                        .withHint("请重新登录");
             }
 
             // 检查设备是否已注册
@@ -114,9 +117,13 @@ public class DeviceController {
 
             return ApiResponse.success("设备注册成功", response);
 
+        } catch (BusinessException be) {
+            throw be;
+
+
         } catch (Exception e) {
             log.error("设备注册失败", e);
-            return ApiResponse.error("设备注册失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "设备注册失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -136,9 +143,12 @@ public class DeviceController {
         try {
             deviceRepository.deleteByDeviceIdAndFactoryId(deviceId, factoryId);
             return ApiResponse.successMessage("设备注销成功");
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("设备注销失败", e);
-            return ApiResponse.error("设备注销失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "设备注销失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -159,7 +169,8 @@ public class DeviceController {
                     .findByDeviceIdAndFactoryId(request.getDeviceId(), factoryId);
 
             if (!deviceOpt.isPresent()) {
-                return ApiResponse.error("设备未注册");
+                throw new BusinessException(404, "设备未注册")
+                        .withHint("请先调用 /devices/register 注册设备");
             }
 
             DeviceRegistration device = deviceOpt.get();
@@ -167,9 +178,12 @@ public class DeviceController {
             deviceRepository.save(device);
 
             return ApiResponse.successMessage("Token 更新成功");
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("Token 更新失败", e);
-            return ApiResponse.error("Token 更新失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "Token 更新失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -185,16 +199,19 @@ public class DeviceController {
         try {
             Long userId = getUserIdFromRequest(httpRequest);
             if (userId == null) {
-                return ApiResponse.error("未找到用户信息");
+                throw new BusinessException(401, "未找到用户信息").withHint("请重新登录");
             }
 
             List<DeviceRegistration> devices = deviceRepository
                     .findByUserIdAndFactoryId(userId, factoryId);
 
             return ApiResponse.success(devices);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("获取设备列表失败", e);
-            return ApiResponse.error("获取设备列表失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "获取设备列表失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -211,7 +228,7 @@ public class DeviceController {
         try {
             Long userId = getUserIdFromRequest(httpRequest);
             if (userId == null) {
-                return ApiResponse.error("未找到用户信息");
+                throw new BusinessException(401, "未找到用户信息").withHint("请重新登录");
             }
 
             Map<String, Object> data = new HashMap<>();
@@ -226,9 +243,12 @@ public class DeviceController {
             );
 
             return ApiResponse.successMessage("测试推送已发送");
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("发送测试推送失败", e);
-            return ApiResponse.error("发送测试推送失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "发送测试推送失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -248,7 +268,7 @@ public class DeviceController {
                     .findByDeviceIdAndFactoryId(deviceId, factoryId);
 
             if (!deviceOpt.isPresent()) {
-                return ApiResponse.error("设备未找到");
+                throw new BusinessException(404, "设备未找到").withHint("请检查设备ID或重新注册");
             }
 
             DeviceRegistration device = deviceOpt.get();
@@ -260,9 +280,12 @@ public class DeviceController {
             deviceRepository.save(device);
 
             return ApiResponse.successMessage(enabled ? "设备已启用" : "设备已禁用");
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("切换设备状态失败", e);
-            return ApiResponse.error("操作失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "操作失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
