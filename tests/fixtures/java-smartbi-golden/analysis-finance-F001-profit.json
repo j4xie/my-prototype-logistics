@@ -2,51 +2,8 @@
   "code": 200,
   "message": "操作成功",
   "data": {
-    "overview": {
-      "period": null,
-      "startDate": null,
-      "endDate": null,
-      "kpiCards": [],
-      "metricCards": null,
-      "rankings": {},
-      "charts": {},
-      "chartList": null,
-      "aiInsights": [],
-      "alerts": null,
-      "recommendations": null,
-      "suggestions": [],
-      "generatedAt": null,
-      "lastUpdated": "2026-05-01T01:56:14.448340934",
-      "fromCache": false,
-      "cacheExpireAt": null
-    },
-    "costStructure": {
-      "chartType": "PIE",
-      "title": "成本结构分析",
-      "seriesField": null,
-      "data": [],
-      "options": {
-        "showPercentage": true,
-        "colors": [
-          "#5470c6",
-          "#91cc75",
-          "#fac858"
-        ]
-      },
-      "xaxisField": "category",
-      "yaxisField": "value"
-    },
-    "dateRange": {
-      "startDate": "2025-01-01",
-      "endDate": "2025-12-31",
-      "granularity": "YEAR",
-      "originalExpression": "2025-01-01 至 2025-12-31",
-      "relative": false,
-      "days": 365,
-      "valid": true
-    },
-    "generatedAt": "2026-05-01T01:56:14.467939107",
-    "profitMetrics": [
+    "endDate": "2025-12-31",
+    "metrics": [
       {
         "metricCode": "GROSS_PROFIT",
         "metricName": "毛利额",
@@ -113,50 +70,56 @@
         "description": "毛利额与成本的比率"
       }
     ],
-    "receivableAging": {
-      "chartType": "BAR",
-      "title": "应收账款账龄分布",
-      "seriesField": null,
-      "data": [
-        {
-          "agingBucket": "0-30天",
-          "amount": 0,
-          "percentage": 0,
-          "alertLevel": "GREEN"
-        },
-        {
-          "agingBucket": "31-60天",
-          "amount": 0,
-          "percentage": 0,
-          "alertLevel": "YELLOW"
-        },
-        {
-          "agingBucket": "61-90天",
-          "amount": 0,
-          "percentage": 0,
-          "alertLevel": "YELLOW"
-        },
-        {
-          "agingBucket": "90天以上",
-          "amount": 0,
-          "percentage": 0,
-          "alertLevel": "RED"
-        }
-      ],
+    "trendChart": {
+      "chartType": "LINE_BAR",
+      "title": "利润趋势分析",
+      "seriesField": "metric",
+      "data": [],
       "options": {
-        "colors": [
-          "#91cc75",
-          "#fac858",
-          "#ee6666",
-          "#c23531"
+        "yAxis": [
+          {
+            "name": "金额",
+            "position": "left"
+          },
+          {
+            "name": "毛利率(%)",
+            "position": "right"
+          }
         ],
-        "showAlert": true
+        "series": [
+          {
+            "type": "bar",
+            "yAxisIndex": 0,
+            "name": "营业收入"
+          },
+          {
+            "type": "bar",
+            "yAxisIndex": 0,
+            "name": "营业成本"
+          },
+          {
+            "type": "bar",
+            "yAxisIndex": 0,
+            "name": "毛利额"
+          },
+          {
+            "type": "line",
+            "yAxisIndex": 0,
+            "name": "净利润"
+          },
+          {
+            "type": "line",
+            "yAxisIndex": 1,
+            "name": "毛利率"
+          }
+        ]
       },
-      "xaxisField": "agingBucket",
-      "yaxisField": "amount"
-    }
+      "xaxisField": "period",
+      "yaxisField": "grossProfit"
+    },
+    "startDate": "2025-01-01"
   },
-  "timestamp": "2026-05-01T01:56:14.468115812",
+  "timestamp": "2026-05-01T02:28:37.266768706",
   "success": true,
   "actionHint": null,
   "severity": null,
