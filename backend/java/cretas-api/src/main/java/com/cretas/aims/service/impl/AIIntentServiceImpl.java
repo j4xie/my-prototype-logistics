@@ -13,6 +13,7 @@ import com.cretas.aims.service.conversation.ConversationStateService;
 import com.cretas.aims.service.intent.IntentConfigManagementService;
 import com.cretas.aims.service.intent.IntentFeedbackLearningService;
 import com.cretas.aims.service.intent.IntentRecognitionPipelineService;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,6 +87,42 @@ public class AIIntentServiceImpl implements AIIntentService {
      */
     @Value("${ai.use-python-matcher:false}")
     private boolean usePythonMatcher;
+
+    /**
+     * Phase 2B-α (T24): Micrometer counter for stage-hit observability.
+     *
+     * <p>Records which stage produced the final result so prod can validate
+     * the spec §6.5 assumption "stages 1-4 hit rate 70-80%". Tag values:
+     * <ul>
+     *   <li>{@code PYTHON_CACHE_HIT} — Java in-process LRU cache short-circuit
+     *   <li>{@code PYTHON_MATCH} — Python /api/ai/intent/match returned a hit
+     *   <li>{@code EXACT / PHRASE_MATCH / REGEX / KEYWORD / SEMANTIC / CLASSIFIER /
+     *       FUSION / SIMILAR / LLM / DOMAIN_DEFAULT / NONE} — legacy pipeline,
+     *       tag mirrors {@link IntentMatchResult.MatchMethod#name()}
+     * </ul>
+     * required=false so unit tests without an autowired MeterRegistry still pass;
+     * {@link #recordStageHit(String)} treats a null registry as a no-op.
+     */
+    @Autowired(required = false)
+    private MeterRegistry meterRegistry;
+
+    /**
+     * Phase 2B-α (T24): record one stage-hit increment.
+     *
+     * <p>No-op if MeterRegistry isn't autowired (test environments). Defensive
+     * try/catch swallows any registry exception so metrics never block the
+     * primary intent-matching path.
+     */
+    private void recordStageHit(String stage) {
+        if (meterRegistry == null || stage == null) {
+            return;
+        }
+        try {
+            meterRegistry.counter("intent.match.stage.hit", "stage", stage).increment();
+        } catch (Exception e) {
+            log.debug("recordStageHit({}) failed — continuing without metric: {}", stage, e.getMessage());
+        }
+    }
 
     // ==================== Intent Recognition ====================
 
@@ -226,6 +263,7 @@ public class AIIntentServiceImpl implements AIIntentService {
                         intentResultCache.get(userInput, factoryId, role, businessType);
                 if (cached != null) {
                     log.debug("IntentResultCache hit for query='{}' factoryId={}", userInput, factoryId);
+                    recordStageHit("PYTHON_CACHE_HIT");
                     return cached;
                 }
             } catch (Exception e) {
@@ -259,6 +297,7 @@ public class AIIntentServiceImpl implements AIIntentService {
                         log.warn("IntentResultCache.put failed (returning result anyway): {}",
                                 cachePutEx.getMessage());
                     }
+                    recordStageHit("PYTHON_MATCH");
                     return pyResult;
                 }
                 log.info("Python matcher returned empty for query='{}' — falling back to legacy pipeline",
@@ -271,7 +310,18 @@ public class AIIntentServiceImpl implements AIIntentService {
         // ===== END Python branch =====
 
         // Legacy in-process pipeline (unchanged behavior — authoritative fallback path)
-        return pipelineService.recognizeIntentWithConfidence(userInput, factoryId, topN, userId, userRole, sessionId);
+        IntentMatchResult legacyResult = pipelineService.recognizeIntentWithConfidence(
+                userInput, factoryId, topN, userId, userRole, sessionId);
+
+        // T24: record which legacy stage emitted the result. matchMethod mirrors the
+        // 12-value MatchMethod enum (EXACT / PHRASE_MATCH / REGEX / KEYWORD / SEMANTIC /
+        // CLASSIFIER / FUSION / SIMILAR / LLM / DOMAIN_DEFAULT / REJECTED / NONE).
+        if (legacyResult != null && legacyResult.getMatchMethod() != null) {
+            recordStageHit(legacyResult.getMatchMethod().name());
+        } else {
+            recordStageHit("NONE");
+        }
+        return legacyResult;
     }
 
     // ==================== Multi-Intent Recognition ====================
