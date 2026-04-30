@@ -113,7 +113,7 @@ public class ImageAnalysisTestController {
             return ApiResponse.success("检测完成", response);
         } else {
             log.warn("手势检测失败: {}", result.getMessage());
-            throw new BusinessException(400, result.getMessage(), result);
+            throw new BusinessException(400, result.getMessage());
         }
     }
 

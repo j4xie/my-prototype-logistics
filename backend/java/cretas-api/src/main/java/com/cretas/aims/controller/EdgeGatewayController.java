@@ -56,7 +56,7 @@ public class EdgeGatewayController {
             if (response.isSuccess()) {
                 return ApiResponse.success(response.getMessage(), response);
             } else {
-                throw new BusinessException(400, response.getMessage(), response);
+                throw new BusinessException(400, response.getMessage());
             }
         } catch (BusinessException be) {
             throw be;
@@ -93,7 +93,7 @@ public class EdgeGatewayController {
             if (response.isSuccess()) {
                 return ApiResponse.success(response.getMessage(), response);
             } else {
-                throw new BusinessException(400, response.getMessage(), response);
+                throw new BusinessException(400, response.getMessage());
             }
         } catch (BusinessException be) {
             throw be;
