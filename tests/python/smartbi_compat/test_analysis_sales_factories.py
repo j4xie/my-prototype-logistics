@@ -464,7 +464,7 @@ class TestBuildFromGoldFinanceSummary:
         assert card["key"] == "total_revenue"
         assert card["title"] == "总营收"
         assert card["value"] == "20639884.52"
-        assert card["rawValue"] == Decimal("20639884.52")
+        assert card["rawValue"] == 20639884.52
         assert card["unit"] == "元"
         assert card["status"] == "green"
         assert card["change"] is None
@@ -492,7 +492,7 @@ class TestBuildFromGoldFinanceSummary:
         assert len(ts) == 2
         assert ts[0]["rank"] == 1
         assert ts[0]["name"] == "葱花传奇日月光店"
-        assert ts[0]["value"] == Decimal("7431228.74")
+        assert ts[0]["value"] == 7431228.74
         assert ts[0]["target"] is None
         assert ts[0]["completionRate"] is None
         assert ts[0]["alertLevel"] is None
@@ -563,8 +563,8 @@ class TestFetchGoldTrendChart:
         self._patch_seam(monkeypatch, self.F001_TREND)
         result = asyncio.run(_fetch_gold_trend_chart("F001", range_2025, pool=None))
         assert len(result["data"]) == 2
-        assert result["data"][0] == {"date": "2025-01-01", "amount": Decimal("91972.04")}
-        assert result["data"][1] == {"date": "2025-01-02", "amount": Decimal("43165.0")}
+        assert result["data"][0] == {"date": "2025-01-01", "amount": 91972.04}
+        assert result["data"][1] == {"date": "2025-01-02", "amount": 43165}
 
     def test_empty_points_returns_none(self, monkeypatch, range_2025):
         self._patch_seam(monkeypatch, self.EMPTY_TREND)
@@ -625,8 +625,8 @@ class TestFetchGoldCategoryChart:
         self._patch_seam(monkeypatch, self.F001_PRODUCTS)
         result = asyncio.run(_fetch_gold_category_chart("F001", range_2025, pool=None))
         assert len(result["data"]) == 2
-        assert result["data"][0] == {"category": "猪肉葱花调味(无人份)", "amount": Decimal("1354832.6")}
-        assert result["data"][1] == {"category": "猪肉葱花调味单价大型套餐", "amount": Decimal("989416.8")}
+        assert result["data"][0] == {"category": "猪肉葱花调味(无人份)", "amount": 1354832.6}
+        assert result["data"][1] == {"category": "猪肉葱花调味单价大型套餐", "amount": 989416.8}
 
     def test_empty_returns_none(self, monkeypatch, range_2025):
         self._patch_seam(monkeypatch, self.EMPTY_PRODUCTS)
