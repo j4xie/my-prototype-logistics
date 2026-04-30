@@ -423,7 +423,7 @@ public class MobileController {
         String role = (String) request.getAttribute("role");
         if (role == null || (!role.equals("factory_super_admin") && !role.equals("platform_admin")
                 && !role.equals("super_admin") && !role.equals("hr_admin"))) {
-            throw new BusinessException(400, "无权重置密码，需要管理员权限");
+            throw new BusinessException(403, "无权重置密码，需要管理员权限").withSeverity("error");
         }
         log.info("重置密码: factoryId={}, username={}, operator={}", factoryId, username, request.getAttribute("username"));
         mobileService.resetPassword(factoryId, username, newPassword);

@@ -158,7 +158,7 @@ public class RuleController {
 
         DroolsRule rule = ruleOpt.get();
         if (!rule.getFactoryId().equals(factoryId)) {
-            throw new BusinessException(400, "无权限修改此规则");
+            throw new BusinessException(403, "无权限修改此规则").withSeverity("error");
         }
 
         // 验证新规则内容
@@ -211,7 +211,7 @@ public class RuleController {
 
         DroolsRule rule = ruleOpt.get();
         if (!rule.getFactoryId().equals(factoryId)) {
-            throw new BusinessException(400, "无权限删除此规则");
+            throw new BusinessException(403, "无权限删除此规则").withSeverity("error");
         }
 
         String ruleGroup = rule.getRuleGroup();
@@ -329,7 +329,7 @@ public class RuleController {
 
             DroolsRule rule = ruleOpt.get();
             if (!rule.getFactoryId().equals(factoryId)) {
-                throw new BusinessException(400, "无权限测试此规则");
+                throw new BusinessException(403, "无权限测试此规则").withSeverity("error");
             }
 
             if (!Boolean.TRUE.equals(rule.getEnabled())) {

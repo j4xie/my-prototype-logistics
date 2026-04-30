@@ -4,6 +4,7 @@ import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.service.OssService;
 import com.cretas.aims.exception.BusinessException;
+import com.cretas.aims.util.ErrorSanitizer;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -82,10 +83,10 @@ public class FileUploadController {
             return ApiResponse.success("上传成功", Map.of("url", url));
         } catch (IllegalArgumentException e) {
             log.warn("签收照片上传失败(参数错误): {}", e.getMessage());
-            throw new BusinessException(400, e.getMessage(), e);
+            throw new BusinessException(400, ErrorSanitizer.sanitize(e), e);
         } catch (Exception e) {
             log.error("签收照片上传失败: factoryId={}", factoryId, e);
-            throw new BusinessException(500, "上传失败: " + e.getMessage(), e);
+            throw new BusinessException(500, "上传失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -127,10 +128,10 @@ public class FileUploadController {
             ));
         } catch (IllegalArgumentException e) {
             log.warn("收款凭证上传失败(参数错误): {}", e.getMessage());
-            throw new BusinessException(400, e.getMessage(), e);
+            throw new BusinessException(400, ErrorSanitizer.sanitize(e), e);
         } catch (Exception e) {
             log.error("收款凭证上传失败: factoryId={}", factoryId, e);
-            throw new BusinessException(500, "上传失败: " + e.getMessage(), e);
+            throw new BusinessException(500, "上传失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -172,10 +173,10 @@ public class FileUploadController {
             ));
         } catch (IllegalArgumentException e) {
             log.warn("销售合同上传失败(参数错误): {}", e.getMessage());
-            throw new BusinessException(400, e.getMessage(), e);
+            throw new BusinessException(400, ErrorSanitizer.sanitize(e), e);
         } catch (Exception e) {
             log.error("销售合同上传失败: factoryId={}", factoryId, e);
-            throw new BusinessException(500, "上传失败: " + e.getMessage(), e);
+            throw new BusinessException(500, "上传失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 }
