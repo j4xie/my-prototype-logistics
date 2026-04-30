@@ -16,7 +16,7 @@
       "recommendations": null,
       "suggestions": [],
       "generatedAt": null,
-      "lastUpdated": "2026-04-30T13:09:42.717349613",
+      "lastUpdated": "2026-05-01T01:56:14.448340934",
       "fromCache": false,
       "cacheExpireAt": null
     },
@@ -45,7 +45,7 @@
       "days": 365,
       "valid": true
     },
-    "generatedAt": "2026-04-30T13:09:42.728521128",
+    "generatedAt": "2026-05-01T01:56:14.467939107",
     "profitMetrics": [
       {
         "metricCode": "GROSS_PROFIT",
@@ -156,7 +156,7 @@
       "yaxisField": "amount"
     }
   },
-  "timestamp": "2026-04-30T13:09:42.728769465",
+  "timestamp": "2026-05-01T01:56:14.468115812",
   "success": true,
   "actionHint": null,
   "severity": null,
