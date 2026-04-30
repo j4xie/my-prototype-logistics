@@ -44,6 +44,14 @@ asyncpg>=0.27.0,<1.0.0
 
 # gRPC client (Phase 2B-α: ai/embedding.py → embedding-service:9090)
 grpcio>=1.59.0,<2.0.0
+# grpcio-tools is BUILD-time only (regenerate stubs from .proto via
+# scripts/phase2b/regen-embedding-stub.sh); not loaded at runtime.
+grpcio-tools>=1.59.0,<2.0.0
+
+# pgvector asyncpg type adapter (Phase 2B-α B1: stage 5 SEMANTIC SQL uses
+# `embedding <=> $1::vector`). Currently passing vec as text fallback so this
+# is reserved for future native binding.
+pgvector>=0.2.4
 
 # PPT generation
 python-pptx>=0.6.23
