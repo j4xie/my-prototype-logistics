@@ -267,6 +267,25 @@ def _new_kpi_card_dict(
     }
 
 
+def _new_yaxis_entry(name: str, position: str) -> dict:
+    """Mirror Java `Map.of("name", X, "position", Y)`.
+
+    Map.of(2) Jackson-serializes in put-order: ["name", "position"].
+    Used in profit trendChart options.yAxis (left/right axes).
+    """
+    return {"name": name, "position": position}
+
+
+def _new_series_entry(type_: str, yaxis_index: int, name: str) -> dict:
+    """Mirror Java `Map.of("name", X, "type", Y, "yAxisIndex", Z)`.
+
+    Map.of(3) Jackson hash-orders to ["type", "yAxisIndex", "name"] — NOT put-order.
+    Verified empirically against live Java responses (see spec §3.3).
+    Used in profit trendChart options.series (5 series: 3 bar + 2 line).
+    """
+    return {"type": type_, "yAxisIndex": yaxis_index, "name": name}
+
+
 # ============================================================
 # Section 2: Helpers (copy from sister analysis_sales.py)
 # ============================================================
