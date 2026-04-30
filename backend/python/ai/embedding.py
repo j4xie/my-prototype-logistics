@@ -1,18 +1,20 @@
 """gRPC client for Java embedding-service (port 9090).
 
+Service: EmbeddingService.Encode(EncodeRequest) → EncodeResponse
+- EncodeRequest: { text: str }
+- EncodeResponse: { embedding: List[float], success: bool, error_message: str }
+
 Service is always-up via systemd `cretas-embedding.service` per
 .claude/rules/server-operations.md. Cold restart window is ~15s
 (RestartSec=15). Our retry policy tolerates 3s of unavailability.
 
-If all retries fail, return None — caller (ai/matcher/semantic.py) handles
-None by skipping stage 5 and falling through to stage 6 (CLASSIFIER).
+If service down (RpcError) or returns success=false, retry up to
+AI_EMBEDDING_RETRY_ATTEMPTS (default 3). All retries fail → return None,
+caller (ai/matcher/semantic.py) handles None by skipping stage 5 and falling
+through to stage 6 (CLASSIFIER).
 
-NOTE: Real EmbeddingServiceStub wiring requires protobuf-generated Python
-module. Run:
-  python -m grpc_tools.protoc -I=proto --python_out=. --grpc_python_out=. embedding.proto
-from the embedding-service .proto. This is a Phase 2B-α integration sub-task
-captured as R-WIRING in spec §11. The retry/error semantics here do not
-depend on stub class — tests mock _get_stub so the placeholder works.
+Stub regen: see scripts/phase2b/regen-embedding-stub.sh — run when
+backend/java/embedding-service/.../embedding.proto changes.
 """
 from __future__ import annotations
 
@@ -27,7 +29,9 @@ from ai.config import default_config
 logger = logging.getLogger(__name__)
 
 
-# Lazy-init globals
+# Lazy-init globals: channel + stub created on first call. Channel is reused
+# for the process lifetime (gRPC client multiplexes requests over single
+# HTTP/2 connection). close_channel() resets globals on shutdown.
 _channel: Optional[grpc.aio.Channel] = None
 _stub: Optional[object] = None
 
@@ -35,24 +39,16 @@ _stub: Optional[object] = None
 async def _get_stub():
     """Return the gRPC stub, lazy-init the channel.
 
-    Real implementation must reference the protobuf-generated stub class.
-    Phase 2A reference: see backend/python/embedding_pb2_grpc.py if exists,
-    else regenerate from the .proto in
-    backend/java/embedding-service/src/main/proto/.
-
-    For now this raises NotImplementedError so the caller-flow contract
-    is testable (via mocking) but bare invocation forces the integrator
-    to wire the stub. See R-WIRING note in spec §11.
+    Imports the protobuf-generated stub at first call (not at module top)
+    so a missing stub file does not crash module import — only the eventual
+    stage 5 SEMANTIC matcher call. Caller (semantic matcher) catches the
+    resulting failure and falls through to stage 6 (CLASSIFIER).
     """
     global _channel, _stub
     if _stub is None:
         _channel = grpc.aio.insecure_channel(default_config.embedding_grpc_endpoint)
-        # TODO[wiring]: import and instantiate the real stub here, e.g.:
-        #   from embedding_pb2_grpc import EmbeddingServiceStub
-        #   _stub = EmbeddingServiceStub(_channel)
-        raise NotImplementedError(
-            "Wire EmbeddingServiceStub here. See backend/java/embedding-service/.proto"
-        )
+        from grpc_stubs.embedding import embedding_pb2_grpc
+        _stub = embedding_pb2_grpc.EmbeddingServiceStub(_channel)
     return _stub
 
 
@@ -60,16 +56,33 @@ async def get_embedding(text: str) -> Optional[List[float]]:
     """Compute embedding for query text.
 
     Returns the vector on success, None if all retries fail.
+
+    Two failure modes are treated as retryable:
+        1. grpc.RpcError — service unreachable / timed out / etc.
+        2. EncodeResponse.success == false — server-side failure
+           (e.g. model not loaded). Retried because cold-start can recover.
     """
     cfg = default_config
     last_error: Optional[Exception] = None
     for attempt in range(1, cfg.embedding_retry_attempts + 1):
         try:
             stub = await _get_stub()
-            # Real call signature depends on .proto. Placeholder uses
-            # GetEmbedding(text) returning {vector: [float]}.
-            response = await stub.GetEmbedding(text)
-            return list(response.vector)
+            from grpc_stubs.embedding import embedding_pb2
+            request = embedding_pb2.EncodeRequest(text=text)
+            response = await stub.Encode(request)
+            if not response.success:
+                err = response.error_message or "unknown"
+                last_error = RuntimeError(
+                    f"EmbeddingService returned success=false: {err}"
+                )
+                logger.warning(
+                    "Embedding gRPC attempt %d/%d returned success=false: %s",
+                    attempt, cfg.embedding_retry_attempts, err,
+                )
+                if attempt < cfg.embedding_retry_attempts:
+                    await asyncio.sleep(cfg.embedding_retry_delay_s)
+                continue
+            return list(response.embedding)
         except grpc.RpcError as e:
             last_error = e
             logger.warning(
@@ -78,9 +91,6 @@ async def get_embedding(text: str) -> Optional[List[float]]:
             )
             if attempt < cfg.embedding_retry_attempts:
                 await asyncio.sleep(cfg.embedding_retry_delay_s)
-        except NotImplementedError:
-            # Stub not wired yet — propagate for clear error in test/dev
-            raise
     logger.error(
         "Embedding gRPC failed after %d attempts: %s",
         cfg.embedding_retry_attempts, last_error,
