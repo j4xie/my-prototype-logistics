@@ -502,6 +502,45 @@ async def _fetch_gold_trend_chart(
     )
 
 
+async def _fetch_gold_category_chart(
+    factory_id: str, range_: DateRange, pool=None,
+) -> Optional[dict]:
+    """Mirror Java GoldDashboardBuilder.fetchCategoryChart (lines 193-227).
+
+    Builds PIE ChartConfig from top_products response (top_n=8 by default).
+    Maps {name -> category, revenue -> amount}.
+    Returns None on empty top_products OR query failure (logs warning).
+    """
+    try:
+        gold = await _call_top_products(
+            pool, factory_id, (range_.start_date, range_.end_date), top_n=8,
+        )
+    except Exception as e:
+        logger.warning(
+            "[gold-builder] category fetch failed factory=%s range=%s..%s: %s",
+            factory_id, range_.start_date, range_.end_date, e,
+        )
+        return None
+
+    products = gold.get("top_products") or []
+    if not products:
+        return None
+
+    data = [
+        {"category": str(p.get("name", "")), "amount": _to_decimal(p.get("revenue"))}
+        for p in products
+    ]
+
+    return _new_chart_config_dict(
+        chart_type="PIE",
+        title="产品类别占比",
+        xaxis_field="category",
+        yaxis_field="amount",
+        data=data,
+        options=None,
+    )
+
+
 async def _get_sales_overview(factory_id: str, range_: DateRange) -> dict:
     """STUB — overview/gold specs replace.
 

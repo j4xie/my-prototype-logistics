@@ -585,6 +585,65 @@ class TestFetchGoldTrendChart:
         assert asyncio.iscoroutinefunction(_fetch_gold_trend_chart)
 
 
+from smartbi_compat.api.analysis_sales import _fetch_gold_category_chart
+
+
+class TestFetchGoldCategoryChart:
+    F001_PRODUCTS = {
+        "factory_id": "F001",
+        "start_date": "2025-01-01",
+        "end_date": "2025-12-31",
+        "top_products": [
+            {"product_id": "P1", "name": "猪肉葱花调味(无人份)", "qty": 1000, "revenue": 1354832.6, "bill_count": 5000},
+            {"product_id": "P2", "name": "猪肉葱花调味单价大型套餐", "qty": 800, "revenue": 989416.8, "bill_count": 3500},
+        ],
+    }
+
+    EMPTY_PRODUCTS = {
+        "factory_id": "F001", "start_date": "2025-01-01", "end_date": "2025-12-31",
+        "top_products": [],
+    }
+
+    def _patch_seam(self, monkeypatch, response):
+        from smartbi_compat.api import analysis_sales as mod
+        async def fake(pool, fid, dr, *, top_n=8):
+            return response
+        monkeypatch.setattr(mod, "_call_top_products", fake)
+
+    def test_returns_pie_chart_config(self, monkeypatch, range_2025):
+        self._patch_seam(monkeypatch, self.F001_PRODUCTS)
+        result = asyncio.run(_fetch_gold_category_chart("F001", range_2025, pool=None))
+        assert result is not None
+        assert result["chartType"] == "PIE"
+        assert result["title"] == "产品类别占比"
+        assert result["xaxisField"] == "category"
+        assert result["yaxisField"] == "amount"
+        assert result["seriesField"] is None
+        assert result["options"] is None
+
+    def test_data_maps_name_to_category_revenue_to_amount(self, monkeypatch, range_2025):
+        self._patch_seam(monkeypatch, self.F001_PRODUCTS)
+        result = asyncio.run(_fetch_gold_category_chart("F001", range_2025, pool=None))
+        assert len(result["data"]) == 2
+        assert result["data"][0] == {"category": "猪肉葱花调味(无人份)", "amount": Decimal("1354832.6")}
+        assert result["data"][1] == {"category": "猪肉葱花调味单价大型套餐", "amount": Decimal("989416.8")}
+
+    def test_empty_returns_none(self, monkeypatch, range_2025):
+        self._patch_seam(monkeypatch, self.EMPTY_PRODUCTS)
+        result = asyncio.run(_fetch_gold_category_chart("F001", range_2025, pool=None))
+        assert result is None
+
+    def test_query_failure_returns_none_logs_warning(self, monkeypatch, range_2025, caplog):
+        from smartbi_compat.api import analysis_sales as mod
+        async def fail(pool, fid, dr, *, top_n=8):
+            raise RuntimeError("simulated top_products failure")
+        monkeypatch.setattr(mod, "_call_top_products", fail)
+        with caplog.at_level("WARNING"):
+            result = asyncio.run(_fetch_gold_category_chart("F001", range_2025, pool=None))
+        assert result is None
+        assert any("category fetch failed" in r.message for r in caplog.records)
+
+
 from smartbi_compat.api.analysis_sales import _to_decimal
 
 
