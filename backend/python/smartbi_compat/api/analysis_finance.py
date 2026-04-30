@@ -641,79 +641,174 @@ async def _get_finance_overview(factory_id: str, range_: DateRange) -> dict:
 
 
 async def _get_profit_metrics(factory_id: str, range_: DateRange) -> list:
-    """F999 empty-state — Java getProfitMetrics ALWAYS returns 5 metrics regardless
-    of data presence (per A.2). Values match A.5 golden when revenue/cost = 0.
+    """Real impl mirroring Java `FinanceAnalysisServiceImpl.getProfitMetrics`
+    (line 352-495). PR-A: Path A only (finance_data REVENUE/COST records).
+    PR-B will add salesData fallback; for now no-finance-data → 5 zero-metrics
+    (matches stub behavior for F999 empty state).
 
-    GROSS_PROFIT: value=0.0, formattedValue="0.00", unit="元", alertLevel="GREEN"
-    GROSS_MARGIN: value=0.0, formattedValue="0.00%", unit="%", alertLevel="RED"
-    NET_PROFIT:   value=null, formattedValue="N/A",  unit="元", alertLevel="GREEN"
-    NET_MARGIN:   value=null, formattedValue="N/A",  unit="%",  alertLevel="GREEN"
-    ROI:          value=0.0,  formattedValue="0.00%",unit="%",  alertLevel="YELLOW"
+    Always returns 5 MetricResults regardless of data presence:
+      GROSS_PROFIT / GROSS_MARGIN / NET_PROFIT / NET_MARGIN / ROI
+
+    Anomaly clamps:
+      gross_margin > 100% or < -100% → null (per Java line 414-416)
+      net_margin   > 100% or < -100% → null (per Java line 449-453)
     """
+    revenue_records = await _query_finance_data(
+        factory_id, "REVENUE", range_.start_date, range_.end_date
+    )
+    cost_records = await _query_finance_data(
+        factory_id, "COST", range_.start_date, range_.end_date
+    )
+    has_finance_data = bool(revenue_records or cost_records)
+
+    if has_finance_data:
+        # Java line 367-388
+        total_revenue = sum(
+            (
+                _to_decimal(r["actual_amount"])
+                for r in revenue_records
+                if r.get("category") and "收入" in r["category"]
+                and r.get("actual_amount") is not None
+            ),
+            Decimal("0"),
+        )
+        total_cost = sum(
+            (
+                abs(_to_decimal(
+                    r.get("total_cost") if r.get("total_cost") is not None
+                    else r.get("actual_amount")
+                ))
+                for r in cost_records
+                if (r.get("total_cost") is not None) or (r.get("actual_amount") is not None)
+            ),
+            Decimal("0"),
+        )
+        net_profit = sum(
+            (
+                _to_decimal(r["actual_amount"])
+                for r in revenue_records
+                if r.get("category") and "净利" in r["category"]
+                and r.get("actual_amount") is not None
+            ),
+            Decimal("0"),
+        )
+    else:
+        # PR-A no fallback: empty path mirrors Java line 404 (`netProfit = null`).
+        # PR-B will replace this branch with sales fallback.
+        total_revenue = Decimal("0")
+        total_cost = Decimal("0")
+        net_profit = None  # null in metrics, distinct from ZERO
+
+    # Java line 409-416 — gross profit + margin clamp
+    gross_profit = total_revenue - total_cost
+    if total_revenue > Decimal("0"):
+        gross_margin_raw = (
+            gross_profit / total_revenue * Decimal("100")
+        ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    else:
+        gross_margin_raw = Decimal("0")
+    gross_margin = (
+        None
+        if (gross_margin_raw > Decimal("100") or gross_margin_raw < Decimal("-100"))
+        else gross_margin_raw
+    )
+
+    # Java line 446-453 — net margin (only when net_profit available + revenue > 0)
+    if net_profit is not None and total_revenue > Decimal("0"):
+        net_margin_raw = (
+            net_profit / total_revenue * Decimal("100")
+        ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    else:
+        net_margin_raw = None
+    net_margin = (
+        None
+        if (
+            net_margin_raw is not None
+            and (net_margin_raw > Decimal("100") or net_margin_raw < Decimal("-100"))
+        )
+        else net_margin_raw
+    )
+
+    # Java line 481-483 — ROI = grossProfit / totalCost * 100
+    if total_cost > Decimal("0"):
+        roi = (
+            gross_profit / total_cost * Decimal("100")
+        ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    else:
+        roi = Decimal("0")
+
+    # Alert levels
+    gross_margin_alert = (
+        _determine_gross_margin_alert(gross_margin) if gross_margin is not None else "RED"
+    )
+    # Java line 461-466: GREEN if net_profit is null OR >= 0, RED if < 0
+    if net_profit is None:
+        net_profit_alert = "GREEN"
+    else:
+        net_profit_alert = "GREEN" if net_profit >= Decimal("0") else "RED"
+    roi_alert = _determine_roi_alert(roi)
+
     return [
         _new_metric_result_dict(
             metric_code="GROSS_PROFIT",
             metric_name="毛利额",
-            value=0.0,
-            formatted_value="0.00",
+            value=_decimal_to_number(gross_profit.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            formatted_value=_format_currency(gross_profit),
             unit="元",
-            change_percent=None,
-            change_direction=None,
-            change_value=None,
             alert_level="GREEN",
-            dimension_value=None,
             description="销售收入减去销售成本",
         ),
         _new_metric_result_dict(
             metric_code="GROSS_MARGIN",
             metric_name="毛利率",
-            value=0.0,
-            formatted_value="0.00%",
+            value=(
+                _decimal_to_number(gross_margin.quantize(Decimal("0.01"), ROUND_HALF_UP))
+                if gross_margin is not None else None
+            ),
+            formatted_value=(
+                f"{gross_margin.quantize(Decimal('0.01'), ROUND_HALF_UP)}%"
+                if gross_margin is not None else "N/A"
+            ),
             unit="%",
-            change_percent=None,
-            change_direction=None,
-            change_value=None,
-            alert_level="RED",
-            dimension_value=None,
+            alert_level=gross_margin_alert,
             description="毛利额占销售收入的比例",
         ),
         _new_metric_result_dict(
             metric_code="NET_PROFIT",
             metric_name="净利润",
-            value=None,
-            formatted_value="N/A",
+            value=(
+                _decimal_to_number(net_profit.quantize(Decimal("0.01"), ROUND_HALF_UP))
+                if net_profit is not None else None
+            ),
+            formatted_value=(
+                _format_currency(net_profit) if net_profit is not None else "N/A"
+            ),
             unit="元",
-            change_percent=None,
-            change_direction=None,
-            change_value=None,
-            alert_level="GREEN",
-            dimension_value=None,
+            alert_level=net_profit_alert,
             description="毛利减去各项费用后的利润",
         ),
         _new_metric_result_dict(
             metric_code="NET_MARGIN",
             metric_name="净利率",
-            value=None,
-            formatted_value="N/A",
+            value=(
+                _decimal_to_number(net_margin.quantize(Decimal("0.01"), ROUND_HALF_UP))
+                if net_margin is not None else None
+            ),
+            formatted_value=(
+                f"{net_margin.quantize(Decimal('0.01'), ROUND_HALF_UP)}%"
+                if net_margin is not None else "N/A"
+            ),
             unit="%",
-            change_percent=None,
-            change_direction=None,
-            change_value=None,
             alert_level="GREEN",
-            dimension_value=None,
             description="净利润占销售收入的比例",
         ),
         _new_metric_result_dict(
             metric_code="ROI",
             metric_name="投入产出比",
-            value=0.0,
-            formatted_value="0.00%",
+            value=_decimal_to_number(roi.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            formatted_value=f"{roi.quantize(Decimal('0.01'), ROUND_HALF_UP)}%",
             unit="%",
-            change_percent=None,
-            change_direction=None,
-            change_value=None,
-            alert_level="YELLOW",
-            dimension_value=None,
+            alert_level=roi_alert,
             description="毛利额与成本的比率",
         ),
     ]
