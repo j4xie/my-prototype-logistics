@@ -618,6 +618,59 @@ async def _query_finance_data(
     return _filter_to_latest_upload(raw_rows)
 
 
+async def _query_finance_sales_fallback(
+    factory_id: str, start_date: date, end_date: date
+) -> list[dict]:
+    """Query smart_bi_sales_data for sales-fallback path (Java line 392-393).
+
+    Used by profit metrics + trendChart when finance_data is empty (餐饮 tenants
+    that uploaded sales Excel but not finance Excel).
+
+    Returns list of dicts with keys: amount, cost, order_date (and other columns
+    present in smart_bi_sales_data — callers extract by key with .get()).
+
+    NOTE: Unlike _query_finance_data, this does NOT call _filter_to_latest_upload.
+    Java's salesDataRepository.findByFactoryIdAndOrderDateBetween returns raw
+    rows without latest-upload filtering — this matches Java behavior for the
+    fallback path.
+    """
+    pool = None
+    try:
+        from smartbi.config import get_pg_pool  # type: ignore
+        pool = await get_pg_pool()
+    except Exception as e:
+        logger.warning(
+            "[sales_fallback] pool acquisition failed factory=%s: %s",
+            factory_id, e,
+        )
+        return []
+
+    if pool is None:
+        logger.warning(
+            "[sales_fallback] pool is None factory=%s; returning empty rows",
+            factory_id,
+        )
+        return []
+
+    if start_date is None or end_date is None:
+        raise ValueError(
+            f"_query_finance_sales_fallback: start_date/end_date required "
+            f"(got {start_date}, {end_date})"
+        )
+
+    sql = """
+        SELECT *
+        FROM smart_bi_sales_data
+        WHERE factory_id = $1
+          AND order_date BETWEEN $2 AND $3
+    """
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(sql, factory_id, start_date, end_date)
+
+    return [dict(r) for r in rows]
+
+
 # ============================================================
 # Section 3: Sub-service stubs (composite path)
 # Phase C.1 fills these with A.2-verified empty-state shapes.
@@ -693,11 +746,34 @@ async def _get_profit_metrics(factory_id: str, range_: DateRange) -> list:
             Decimal("0"),
         )
     else:
-        # PR-A no fallback: empty path mirrors Java line 404 (`netProfit = null`).
-        # PR-B will replace this branch with sales fallback.
-        total_revenue = Decimal("0")
-        total_cost = Decimal("0")
-        net_profit = None  # null in metrics, distinct from ZERO
+        # PR-B sales fallback: when finance_data is empty, fall back to
+        # smart_bi_sales_data (Java line 391-405). 餐饮 tenants typically only
+        # upload sales Excel, not finance Excel.
+        sales_rows = await _query_finance_sales_fallback(
+            factory_id, range_.start_date, range_.end_date
+        )
+        # Java line 394-403: revenue + cost from sales rows
+        total_revenue = sum(
+            (
+                _to_decimal(r["amount"])
+                for r in sales_rows
+                if r.get("amount") is not None
+            ),
+            Decimal("0"),
+        )
+        # Java line 399-403 — defensive .abs() per Bug B fix (cost may be negative
+        # in historical sales data).
+        total_cost = sum(
+            (
+                abs(_to_decimal(r["cost"]))
+                for r in sales_rows
+                if r.get("cost") is not None
+            ),
+            Decimal("0"),
+        )
+        # Java line 404: netProfit explicitly null in fallback metrics path.
+        # (trendChart fallback uses gross*0.70, but metrics path does not.)
+        net_profit = None
 
     # Java line 409-416 — gross profit + margin clamp
     gross_profit = total_revenue - total_cost
@@ -894,6 +970,58 @@ def _build_profit_chart_from_finance_data(
     return chart_data
 
 
+def _aggregate_profit_by_period_sales(
+    sales_rows: list[dict], period: str
+) -> list[dict]:
+    """Mirror Java `FinanceAnalysisServiceImpl.aggregateProfitByPeriod` line 1423-1447.
+
+    Sales-fallback chart aggregator. Used when finance_data is empty but
+    smart_bi_sales_data has rows (餐饮 tenants).
+
+    Differs from `_build_profit_chart_from_finance_data`:
+      - emits **4 keys per point**: [period, grossProfit, netProfit, grossMargin]
+        (NOT 6 keys — no `revenue` / `cost`)
+      - `netProfit = grossProfit * 0.70` (Java line 1440 hardcoded — known quirk;
+        assumes 30% expense ratio. PR-B preserves this for byte parity.)
+      - `grossMargin` does NOT clamp >100/<-100 → null (Java line 1441-1443
+        emits raw value or 0). For sales rows revenue is never huge negative,
+        so this rarely matters in practice; we mirror Java behavior literally.
+
+    Period aggregation via TreeMap → Python `sorted(by_period.keys())`.
+    """
+    by_period: dict[str, dict[str, Decimal]] = {}
+    for r in sales_rows:
+        if r.get("order_date") is None:
+            continue
+        key = _get_period_key(r["order_date"], period)
+        slot = by_period.setdefault(
+            key, {"profit": Decimal("0"), "revenue": Decimal("0")}
+        )
+        revenue = _to_decimal(r.get("amount") or 0)
+        cost = _to_decimal(r.get("cost") or 0)
+        slot["profit"] += revenue - cost
+        slot["revenue"] += revenue
+
+    out: list[dict] = []
+    for key in sorted(by_period.keys()):
+        slot = by_period[key]
+        gross = slot["profit"]
+        net = (gross * Decimal("0.70")).quantize(Decimal("0.01"), ROUND_HALF_UP)
+        if slot["revenue"] > Decimal("0"):
+            gm = (
+                gross / slot["revenue"] * Decimal("100")
+            ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        else:
+            gm = Decimal("0")
+        out.append({
+            "period": key,
+            "grossProfit": _decimal_to_number(gross.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "netProfit": _decimal_to_number(net),
+            "grossMargin": _decimal_to_number(gm.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+        })
+    return out
+
+
 async def _get_profit_trend_chart(
     factory_id: str,
     start_date: date,
@@ -920,8 +1048,14 @@ async def _get_profit_trend_chart(
     if revenue_data or cost_data:
         chart_data = _build_profit_chart_from_finance_data(revenue_data, cost_data, period)
     else:
-        # PR-A: empty (no fallback). PR-B will add sales fallback here.
-        chart_data = []
+        # PR-B sales fallback: when finance_data empty, aggregate by period from
+        # smart_bi_sales_data (Java line 237-249). Returns 4-key points (period,
+        # grossProfit, netProfit=gross*0.70, grossMargin) — differs from main
+        # path's 6-key points.
+        sales_rows = await _query_finance_sales_fallback(
+            factory_id, start_date, end_date
+        )
+        chart_data = _aggregate_profit_by_period_sales(sales_rows, period)
 
     options = {
         "yAxis": [
