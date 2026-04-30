@@ -786,6 +786,81 @@ class TestProfitTrendChartArithmetic:
         assert chart["data"][0]["period"] == "2025-01"
 
 
+class TestAnalysisFinanceCost:
+    """F999 byte-shape gate for cost per-type path (analysisType=cost, real impl).
+
+    Mocks _query_finance_data to return [] (matches F999 empty state).
+    Compares response['data'] against recorded golden (flat shape via golden conversion in A.2).
+    """
+
+    def test_f999_cost_data_keys_match_golden(self, client, monkeypatch):
+        """Sanity: top-level data keys order matches Jackson HashMap order in golden.
+
+        Golden order (Apr 29 recorded): [endDate, trendChart, startDate, structureChart]
+        """
+        async def fake_query(_factory_id, _record_type, _start, _end):
+            return []
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_finance._query_finance_data",
+            fake_query,
+        )
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance"
+            "?startDate=2025-01-01&endDate=2025-12-31&analysisType=cost",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200, f"got {resp.status_code}: {resp.text[:300]}"
+        py_data_keys = list(resp.json()["data"].keys())
+
+        with io.open(GOLDEN_DIR / "analysis-finance-F999-cost.json", encoding="utf-8") as f:
+            golden_data_keys = list(json.load(f)["data"].keys())
+
+        assert py_data_keys == golden_data_keys, (
+            f"data key order mismatch:\n"
+            f"  python: {py_data_keys}\n"
+            f"  golden: {golden_data_keys}"
+        )
+
+    def test_f999_cost_byte_shape(self, client, monkeypatch):
+        """Full byte-shape compare on data block (envelope skipped via _strip_volatile).
+
+        Mocks _query_finance_data to return [] (F999 empty state).
+        Compares response['data'] against recorded golden after stripping volatile keys.
+        """
+        async def fake_query(_factory_id, _record_type, _start, _end):
+            return []
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_finance._query_finance_data",
+            fake_query,
+        )
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance"
+            "?startDate=2025-01-01&endDate=2025-12-31&analysisType=cost",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200
+
+        py_data = _strip_volatile(resp.json()["data"])
+
+        with io.open(GOLDEN_DIR / "analysis-finance-F999-cost.json", encoding="utf-8") as f:
+            golden_data = _strip_volatile(json.load(f)["data"])
+
+        if py_data != golden_data:
+            diffs = {}
+            for k in set(py_data.keys()) | set(golden_data.keys()):
+                if py_data.get(k) != golden_data.get(k):
+                    diffs[k] = {
+                        "python": py_data.get(k),
+                        "golden": golden_data.get(k),
+                    }
+            pytest.fail(
+                f"BYTE SHAPE MISMATCH (cost) on {list(diffs.keys())}\n"
+                f"{json.dumps(diffs, indent=2, ensure_ascii=False)[:2000]}"
+            )
+
+
 class TestCostHelpers:
     """Cost helper unit tests (PR-A; will be supplanted by PR-B arithmetic class)."""
 
