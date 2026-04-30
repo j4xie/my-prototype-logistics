@@ -263,6 +263,49 @@ async def _query_sales_aggregates_previous_period(
     return await _query_sales_aggregates(factory_id, prev_start, prev_end)
 
 
+_TOP_SALESPERSONS_SQL = text("""
+    SELECT salesperson_name,
+           COALESCE(SUM(amount), 0)   AS total_amount,
+           COALESCE(SUM(quantity), 0) AS total_quantity
+    FROM smart_bi_sales_data
+    WHERE factory_id = :factory_id
+      AND order_date BETWEEN :start_date AND :end_date
+      AND salesperson_name IS NOT NULL
+    GROUP BY salesperson_name
+    ORDER BY SUM(amount) DESC
+""")
+
+
+async def _query_top_salespersons_aggregate(
+    factory_id: str, start_date: date, end_date: date,
+) -> list[tuple]:
+    """Mirror SmartBiSalesDataRepository.findSalesBySalesperson line 45-50.
+
+    Returns list of (salesperson_name, total_amount, total_quantity) ordered
+    DESC. Filters null name at SQL level. Caller is responsible for top-10
+    truncation (Java buildRankingsFromAggregates line 321).
+    """
+    def _exec():
+        engine = _get_sync_engine()
+        with engine.connect() as conn:
+            return [
+                (r[0], r[1], r[2])
+                for r in conn.execute(_TOP_SALESPERSONS_SQL, {
+                    "factory_id": factory_id,
+                    "start_date": start_date,
+                    "end_date": end_date,
+                })
+            ]
+    try:
+        return await asyncio.to_thread(_exec)
+    except Exception as e:
+        logger.warning(
+            "[legacy] _query_top_salespersons_aggregate failed factory=%s: %s",
+            factory_id, e,
+        )
+        return []
+
+
 # ============================================================
 # Section 1: DTO dict factories (FROZEN by foundation spec §4)
 # ============================================================

@@ -611,3 +611,39 @@ class TestOverview:
 
         result = await m._query_sales_aggregates("F_EMPTY", date(2025, 1, 1), date(2025, 12, 31))
         assert all(v == 0 or v == Decimal("0") for v in result)
+
+    @pytest.mark.asyncio
+    async def test_query_top_salespersons_aggregate(self, monkeypatch):
+        """Mirror findSalesBySalesperson — N rows ordered by SUM(amount) DESC."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+
+        class FakeRow:
+            def __init__(self, vals): self._vals = vals
+            def __getitem__(self, i): return self._vals[i]
+
+        class FakeResult:
+            def __iter__(self):
+                return iter([
+                    FakeRow(["张三", Decimal("100000"), Decimal("50")]),
+                    FakeRow(["李四", Decimal("80000"), Decimal("40")]),
+                ])
+
+        class FakeConn:
+            def __enter__(self): return self
+            def __exit__(self, *a): pass
+            def execute(self, sql, params): return FakeResult()
+
+        class FakeEngine:
+            def connect(self): return FakeConn()
+
+        monkeypatch.setattr(m, "_get_sync_engine", lambda: FakeEngine())
+
+        result = await m._query_top_salespersons_aggregate(
+            "F999", date(2025, 1, 1), date(2025, 12, 31),
+        )
+        assert len(result) == 2
+        assert result[0][0] == "张三"
+        assert result[0][1] == Decimal("100000")
+        assert result[1][0] == "李四"
