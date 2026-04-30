@@ -1200,6 +1200,51 @@ async def _get_cost_structure_chart(
     )
 
 
+async def _get_cost_trend_chart(
+    factory_id: str, start_date: date, end_date: date, period: str = "MONTH"
+) -> dict:
+    """Java FinanceAnalysisServiceImpl.getCostTrendChart line 542-581 1:1 mirror.
+
+    Per-type 唯一调用方（composite 路径不调）。空数据 → empty chart_data，
+    options 完整保留。Period default "MONTH" matches Java line 246 controller call。
+    """
+    cost_records = await _query_finance_data(factory_id, "COST", start_date, end_date)
+
+    aggregated = _aggregate_cost_by_period(cost_records, period)
+
+    # Java line 553-562 LinkedHashMap chart point: [period, materialCost, laborCost, overheadCost, totalCost]
+    chart_data = []
+    for period_key in sorted(aggregated.keys()):  # TreeMap → sorted Python
+        values = aggregated[period_key]  # [material, labor, overhead, total]
+        chart_data.append({
+            "period":       period_key,
+            "materialCost": _decimal_to_number(values[0].quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+            "laborCost":    _decimal_to_number(values[1].quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+            "overheadCost": _decimal_to_number(values[2].quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+            "totalCost":    _decimal_to_number(values[3].quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+        })
+
+    # Java line 564-570: LinkedHashMap[stack, series] outer; series items Map.of(2) {name, stack}
+    options = {
+        "stack": True,
+        "series": [
+            _new_cost_series_entry(name=COST_CATEGORY_MATERIAL, stack="cost"),
+            _new_cost_series_entry(name=COST_CATEGORY_LABOR,    stack="cost"),
+            _new_cost_series_entry(name=COST_CATEGORY_OVERHEAD, stack="cost"),
+        ],
+    }
+
+    return _new_chart_config_dict(
+        chart_type="BAR",
+        title="成本趋势分析",
+        series_field="costType",
+        data=chart_data,
+        options=options,
+        xaxis_field="period",
+        yaxis_field="totalCost",
+    )
+
+
 async def _get_receivable_aging_chart(factory_id: str, end_date: date) -> dict:
     """F999 empty-state — Java getReceivableAgingChart ALWAYS emits 4 aging buckets
     even when AR=0 (per A.2). chartType=BAR (NOT PIE). A.5 golden verified shape.

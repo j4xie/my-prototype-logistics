@@ -861,3 +861,25 @@ class TestCostHelpers:
         assert slot[1] == Decimal("0")  # None skipped, slot remains 0
         assert slot[2] == Decimal("0")  # 0 valid contribution
         assert slot[3] == Decimal("50000")  # abs(-50000)
+
+    @pytest.mark.asyncio
+    async def test_get_cost_trend_chart_empty_returns_full_options(self, monkeypatch):
+        from smartbi_compat.api.analysis_finance import _get_cost_trend_chart
+        from datetime import date
+
+        async def fake_query(factory_id, record_type, start, end):
+            return []
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_finance._query_finance_data",
+            fake_query,
+        )
+
+        result = await _get_cost_trend_chart("F999", date(2025, 1, 1), date(2025, 12, 31))
+        assert result["chartType"] == "BAR"
+        assert result["title"] == "成本趋势分析"
+        assert result["data"] == []
+        assert result["options"]["stack"] is True
+        assert len(result["options"]["series"]) == 3
+        assert result["options"]["series"][0] == {"name": "原材料", "stack": "cost"}
+        assert result["options"]["series"][1] == {"name": "人工", "stack": "cost"}
+        assert result["options"]["series"][2] == {"name": "制造费用", "stack": "cost"}
