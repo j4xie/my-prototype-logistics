@@ -96,9 +96,29 @@ def test_request_dto_required_fields():
     msg = str(exc_info.value)
     assert "factoryId" in msg
     assert "userId" in msg
-    assert "username" in msg
     assert "role" in msg
     assert "businessType" in msg
+    # Note: username NOT in assertion list — it's now Optional. Java's
+    # AIIntentServiceImpl facade has no username available and sends null,
+    # so the wire contract treats username as optional metadata.
+
+
+def test_request_dto_username_optional():
+    """username is Optional — Java facade may not have it.
+
+    AIIntentServiceImpl.recognizeIntentWithConfidence(...) doesn't take
+    username; it builds PythonIntentMatchRequest with username=null. Pydantic
+    must accept that without raising a 422 ValidationError.
+    """
+    from ai.dto import IntentMatchRequest
+    req = IntentMatchRequest(
+        query="q",
+        factoryId="F001",
+        userId="22",
+        role="factory_super_admin",
+        businessType="FACTORY",
+    )
+    assert req.username is None
 
 
 def test_request_dto_userId_is_string_not_int():

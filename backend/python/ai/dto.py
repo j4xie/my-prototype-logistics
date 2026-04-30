@@ -402,10 +402,16 @@ class IntentMatchOptions(_CamelBase):
 class IntentMatchRequest(_CamelBase):
     """POST /api/ai/intent/match request DTO.
 
-    Per plan §5.3: factoryId / userId / role / businessType / username / query
-    are REQUIRED context so the matcher can scope to the correct factory +
-    business type. `history` carries recent conversation turns for stage 8
-    LLM context. `options` holds optional knobs (defaults applied if absent).
+    Per plan §5.3: factoryId / userId / role / businessType / query are REQUIRED
+    context so the matcher can scope to the correct factory + business type.
+    `history` carries recent conversation turns for stage 8 LLM context.
+    `options` holds optional knobs (defaults applied if absent).
+
+    `username` is OPTIONAL — it is metadata used in stage 8 LLM prompt for
+    logging/personalization only, not load-bearing. Java's
+    `AIIntentServiceImpl.recognizeIntentWithConfidence` does not have access to
+    a username argument and builds the request with `username=null`; making
+    this Optional avoids a Pydantic 422 on every real wire call.
 
     Type alignment with Java:
     - userId: str (Java JWT claim is stringified per project standard,
@@ -415,7 +421,7 @@ class IntentMatchRequest(_CamelBase):
     query: str
     factoryId: str
     userId: str
-    username: str
+    username: Optional[str] = None
     role: str
     businessType: str
     history: List[Dict[str, str]] = Field(default_factory=list)
