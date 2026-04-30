@@ -24,9 +24,9 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import List, Sequence
+from typing import List
 
-from ai.embedding import get_embedding_cached
+from ai.embedding import get_embedding_cached, vec_to_pgvector_text
 
 logger = logging.getLogger(__name__)
 
@@ -59,18 +59,6 @@ LIMIT $3
 """
 
 
-def _vec_to_pgvector_text(vec: Sequence[float]) -> str:
-    """Convert List[float] to pgvector text literal `[v1,v2,...]`.
-
-    asyncpg passes the string as text and the SQL `$1::vector` cast turns
-    it into the vector type at the PG layer. Avoids needing pgvector's
-    asyncpg type adapter registered on the shared pool. Same helper pattern
-    as ai/matcher/semantic.py._vec_to_pgvector_text — kept inline here to
-    avoid cross-module coupling, but functionally identical.
-    """
-    return "[" + ",".join(repr(float(x)) for x in vec) + "]"
-
-
 @dataclass
 class RAGCase:
     """One retrieved historical case for context enrichment."""
@@ -93,7 +81,7 @@ class RAGRetriever:
         if vec is None:
             logger.warning("RAG: embedding unavailable, returning empty")
             return []
-        vec_text = _vec_to_pgvector_text(vec)
+        vec_text = vec_to_pgvector_text(vec)
         try:
             async with self.pool.acquire() as conn:
                 rows = await conn.fetch(RAG_SQL, vec_text, factory_id, top_k)

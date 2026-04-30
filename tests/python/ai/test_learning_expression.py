@@ -124,11 +124,3 @@ def test_compute_expression_hash_sha256_hex():
     assert all(c in "0123456789abcdef" for c in h)
     # Same input → same hash (deterministic, SHA256 NOT NULL UNIQUE constraint compatible)
     assert _compute_expression_hash("查询库存") == h
-
-
-def test_vec_to_pgvector_text_format():
-    """Vector text literal: '[v1,v2,...]' format consumable by SQL ::vector cast."""
-    from ai.learning.expression_learner import _vec_to_pgvector_text
-    text = _vec_to_pgvector_text([0.1, 0.2, 0.3])
-    assert text.startswith("[") and text.endswith("]")
-    assert "0.1" in text and "0.2" in text and "0.3" in text

@@ -23,9 +23,8 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from typing import Sequence
 
-from ai.embedding import get_embedding
+from ai.embedding import get_embedding, vec_to_pgvector_text
 
 logger = logging.getLogger(__name__)
 
@@ -60,16 +59,6 @@ def _compute_expression_hash(expression: str) -> str:
     return hashlib.sha256(expression.encode("utf-8")).hexdigest()
 
 
-def _vec_to_pgvector_text(vec: Sequence[float]) -> str:
-    """Convert List[float] to pgvector text literal `[v1,v2,...]`.
-
-    asyncpg has no pgvector adapter on the shared pool — pass as text and let
-    the SQL `\\$4::vector` cast handle parsing. Same pattern as semantic.py and
-    rag/retrieval.py.
-    """
-    return "[" + ",".join(repr(float(x)) for x in vec) + "]"
-
-
 class ExpressionLearner:
     def __init__(self, pool):
         self.pool = pool
@@ -89,7 +78,7 @@ class ExpressionLearner:
                                        row["query"][:50])
                         continue
                     expr_hash = _compute_expression_hash(row["query"])
-                    vec_text = _vec_to_pgvector_text(vec)
+                    vec_text = vec_to_pgvector_text(vec)
                     await conn.execute(
                         INSERT_SQL,
                         row["intent_code"], row["query"], expr_hash,

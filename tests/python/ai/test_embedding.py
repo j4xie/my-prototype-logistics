@@ -107,3 +107,18 @@ async def test_get_embedding_returns_none_when_all_attempts_return_success_false
             assert vec is None
             # Should have tried embedding_retry_attempts times (default 3)
             assert mock_stub.Encode.call_count == 3
+
+
+def test_vec_to_pgvector_text_format():
+    """Centralized vector→pgvector text literal helper (F3 — was triplicated).
+
+    Format: '[v1,v2,...]' consumable by SQL `$N::vector` cast. Used by
+    semantic.py / rag/retrieval.py / expression_learner.py — single shared
+    definition lives in ai.embedding.
+    """
+    from ai.embedding import vec_to_pgvector_text
+    text = vec_to_pgvector_text([0.1, 0.2, 0.3])
+    assert text.startswith("[") and text.endswith("]")
+    assert "0.1" in text and "0.2" in text and "0.3" in text
+    # Float coercion: int input → float repr
+    assert vec_to_pgvector_text([1, 2, 3]) == "[1.0,2.0,3.0]"
