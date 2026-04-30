@@ -142,7 +142,7 @@ class TestAnalysisFinanceComposite:
             )
 
     def test_f999_unimplemented_analysisType_returns_501(self, client):
-        """Verify 501 path for un-ported analysisTypes."""
+        """Verify 501 path for un-ported analysisTypes (payable now real impl, excluded)."""
         for at in ["profit", "cost", "receivable", "budget"]:
             resp = client.get(
                 f"/api/mobile/F999/smart-bi/analysis/finance"
@@ -154,3 +154,76 @@ class TestAnalysisFinanceComposite:
             assert body["success"] is False, f"expected success=false for analysisType={at}"
             assert body["code"] == 501, f"expected code=501 for analysisType={at}, got {body['code']}"
             assert at in body["message"], f"expected '{at}' in message, got: {body['message'][:100]}"
+
+
+class TestAnalysisFinancePayable:
+    """F999 byte-shape gate for payable per-type path (analysisType=payable, Phase E real impl)."""
+
+    def test_f999_payable_data_keys_match_golden(self, client, monkeypatch):
+        """Sanity: data keys order matches Jackson HashMap order in golden.
+
+        Golden order (F.1 recorded): [endDate, metrics, agingChart, startDate]
+        Differs from Java controller put-order [startDate, endDate, metrics, agingChart]
+        because Jackson serializes HashMap by hash order, not insertion order.
+        """
+        async def fake_empty(_factory_id, _end_date):
+            return []
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_finance._query_finance_payable_data",
+            fake_empty,
+        )
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance"
+            "?startDate=2025-01-01&endDate=2025-12-31&analysisType=payable",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200, f"got {resp.status_code}: {resp.text[:300]}"
+        py_data_keys = list(resp.json()["data"].keys())
+
+        with io.open(GOLDEN_DIR / "analysis-finance-F999-payable.json", encoding="utf-8") as f:
+            golden_data_keys = list(json.load(f)["data"].keys())
+
+        assert py_data_keys == golden_data_keys, (
+            f"data key order mismatch:\n"
+            f"  python: {py_data_keys}\n"
+            f"  golden: {golden_data_keys}"
+        )
+
+    def test_f999_payable_byte_shape(self, client, monkeypatch):
+        """Full byte-shape compare on data block.
+
+        Mocks _query_finance_payable_data to return [] (matches F999 empty state).
+        Compares response['data'] against recorded golden after stripping volatile keys.
+        """
+        async def fake_empty(_factory_id, _end_date):
+            return []
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_finance._query_finance_payable_data",
+            fake_empty,
+        )
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance"
+            "?startDate=2025-01-01&endDate=2025-12-31&analysisType=payable",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200
+
+        py_data = _strip_volatile(resp.json()["data"])
+
+        with io.open(GOLDEN_DIR / "analysis-finance-F999-payable.json", encoding="utf-8") as f:
+            golden_data = _strip_volatile(json.load(f)["data"])
+
+        if py_data != golden_data:
+            diffs = {}
+            for k in set(py_data.keys()) | set(golden_data.keys()):
+                if py_data.get(k) != golden_data.get(k):
+                    diffs[k] = {
+                        "python": py_data.get(k),
+                        "golden": golden_data.get(k),
+                    }
+            pytest.fail(
+                f"BYTE SHAPE MISMATCH (payable) on {list(diffs.keys())}\n"
+                f"{json.dumps(diffs, indent=2, ensure_ascii=False)[:2000]}"
+            )
