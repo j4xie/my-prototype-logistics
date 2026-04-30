@@ -779,3 +779,13 @@ class TestProfitTrendChartArithmetic:
             return []
         chart = self._run_chart(fake_finance)
         assert chart["data"][0]["period"] == "2025-01"
+
+
+class TestCostHelpers:
+    """Cost helper unit tests (PR-A; will be supplanted by PR-B arithmetic class)."""
+
+    def test_new_cost_series_entry_key_order(self):
+        from smartbi_compat.api.analysis_finance import _new_cost_series_entry
+        entry = _new_cost_series_entry(name="原材料", stack="cost")
+        assert list(entry.keys()) == ["name", "stack"]
+        assert entry == {"name": "原材料", "stack": "cost"}

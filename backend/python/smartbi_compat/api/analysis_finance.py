@@ -204,6 +204,13 @@ def _new_chart_config_dict(
 
 
 
+def _new_cost_series_entry(name: str, stack: str) -> dict:
+    """Mirror Java Map.of("name", X, "stack", Y) — Map.of(2) iteration order observed
+    in F999 golden = [name, stack] (matches put-order for n=2)."""
+    return {"name": name, "stack": stack}
+
+
+
 def _new_ai_insight_dict(
     level: str,
     category: str,
