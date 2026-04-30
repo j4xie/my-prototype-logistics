@@ -51,7 +51,32 @@ router = APIRouter()
 # ============================================================
 # Section 2: Strip-volatile shared helper
 # ============================================================
-# Populated by Task C.2
+
+VOLATILE_KEYS = frozenset({
+    "generatedAt", "lastUpdated", "cacheExpireAt", "timestamp",
+})
+
+
+def _strip_volatile(obj: Any) -> Any:
+    """Recursively strip timing/cache-dependent keys for byte-shape compare.
+
+    Removes from any dict in the tree:
+      - generatedAt          (LocalDateTime.now() per request)
+      - lastUpdated          (DashboardResponse @Deprecated, also volatile)
+      - cacheExpireAt        (cache TTL)
+      - timestamp            (envelope-level)
+
+    Preserves all other keys + list/primitive values.
+    """
+    if isinstance(obj, dict):
+        return {
+            k: _strip_volatile(v)
+            for k, v in obj.items()
+            if k not in VOLATILE_KEYS
+        }
+    if isinstance(obj, list):
+        return [_strip_volatile(item) for item in obj]
+    return obj
 
 # ============================================================
 # Section 3: Sub-service stubs (5 of them)
