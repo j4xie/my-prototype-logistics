@@ -239,7 +239,7 @@ function navigateTo(route: string) {
                 <el-icon :size="40" color="#f56c6c"><Avatar /></el-icon>
                 <div class="stat-detail">
                   <span class="label">未打卡</span>
-                  <span class="value">{{ hrStats.activeEmployees - hrStats.todayAttendance }}</span>
+                  <span class="value">{{ hrStats.activeEmployees - (hrStats.todayAttendance ?? 0) }}</span>
                 </div>
               </div>
               <div class="attendance-stat">

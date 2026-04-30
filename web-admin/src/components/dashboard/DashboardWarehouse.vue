@@ -19,15 +19,15 @@ const factoryId = computed(() => authStore.factoryId);
 
 // 仓储统计数据
 // R76: todayInbound/todayOutbound 用 null 表示"数据待接入" — 之前是 Math.random() 假数据,
-// 已移除。lowStockItems 现在调真实 /material-batches/inventory/alerts 接口。
+// 已移除。inventoryAlerts 现在调真实 /material-batches/inventory/alerts 接口。
 const warehouseStats = ref<{
   totalMaterials: number;
-  lowStockItems: number;
+  inventoryAlerts: number;
   todayInbound: number | null;
   todayOutbound: number | null;
 }>({
   totalMaterials: 0,
-  lowStockItems: 0,
+  inventoryAlerts: 0,
   todayInbound: null,
   todayOutbound: null
 });
@@ -52,7 +52,7 @@ const statCards = computed<Array<{
   },
   {
     title: '库存预警',
-    value: warehouseStats.value.lowStockItems,
+    value: warehouseStats.value.inventoryAlerts,
     unit: '项',
     icon: Warning,
     color: '#f56c6c',
@@ -111,7 +111,7 @@ async function loadWarehouseData() {
 
     if (alertsRes.status === 'fulfilled' && alertsRes.value.success) {
       // alerts 接口返回综合预警 (LOW_STOCK + EXPIRING + EXPIRED), 取总数作为预警项数
-      warehouseStats.value.lowStockItems = alertsRes.value.data?.length ?? 0;
+      warehouseStats.value.inventoryAlerts = alertsRes.value.data?.length ?? 0;
     } else {
       failed.push('库存预警');
       console.error('[DashboardWarehouse] alerts API failed',
@@ -206,10 +206,10 @@ function navigateTo(route: string) {
             </div>
           </template>
           <div class="warning-content">
-            <el-empty v-if="warehouseStats.lowStockItems === 0" description="暂无库存预警" />
+            <el-empty v-if="warehouseStats.inventoryAlerts === 0" description="暂无库存预警" />
             <div v-else class="warning-info">
               <el-icon :size="48" color="#f56c6c"><Warning /></el-icon>
-              <p>有 <strong>{{ warehouseStats.lowStockItems }}</strong> 项原材料库存不足</p>
+              <p>有 <strong>{{ warehouseStats.inventoryAlerts }}</strong> 项原材料库存不足</p>
               <el-button type="danger" @click="navigateTo('/warehouse/materials')">
                 立即处理
               </el-button>

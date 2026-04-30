@@ -441,8 +441,8 @@ function handleRefresh() {
         </template>
       </el-alert>
 
-      <!-- KPI Row -->
-      <div class="kpi-row">
+      <!-- KPI Row (隐藏 when 成本/售价数据未接入,避免 0% 红色误导) -->
+      <div v-if="!noCostDataNotice.show" class="kpi-row">
         <el-card shadow="hover" class="kpi-card">
           <div class="kpi-value" :style="{ color: getMarginColor(kpi.avgMargin) }">
             {{ kpi.avgMargin }}%
@@ -471,14 +471,14 @@ function handleRefresh() {
         </el-card>
       </div>
 
-      <!-- Bar Chart: Top 10 SKUs by Margin -->
-      <div class="chart-section">
+      <!-- Bar Chart: Top 10 SKUs by Margin (隐藏 when 数据未接入) -->
+      <div v-if="!noCostDataNotice.show" class="chart-section">
         <h3 class="section-title">Top 10 SKU 毛利率排名</h3>
         <div ref="chartRef" class="chart-container"></div>
       </div>
 
-      <!-- Main Table -->
-      <div class="table-section">
+      <!-- Main Table (隐藏 when 数据未接入) -->
+      <div v-if="!noCostDataNotice.show" class="table-section">
         <h3 class="section-title">SKU 毛利率明细</h3>
         <el-table
           :data="paginatedData"
