@@ -403,6 +403,124 @@ class TestComposite:
         assert asyncio.iscoroutinefunction(_get_comprehensive_sales_analysis)
 
 
+import asyncio as _asyncio_c1
+from smartbi_compat.api.analysis_sales import _build_from_gold_finance_summary
+
+
+class TestBuildFromGoldFinanceSummary:
+    F001_GOLD = {
+        "factory_id": "F001",
+        "start_date": "2025-01-01",
+        "end_date": "2025-12-31",
+        "total_revenue": 20639884.52,
+        "bill_count": 140541,
+        "avg_bill_value": 146.86,
+        "store_count": 8,
+        "top_stores": [
+            {"store_id": "S1", "store_name": "葱花传奇日月光店", "revenue": 7431228.74, "bill_count": 50000},
+            {"store_id": "S2", "store_name": "葱花传奇浦东店", "revenue": 5200000.00, "bill_count": 35000},
+        ],
+    }
+
+    EMPTY_GOLD = {
+        "factory_id": "F001",
+        "start_date": "2025-01-01",
+        "end_date": "2025-12-31",
+        "total_revenue": 0,
+        "bill_count": 0,
+        "avg_bill_value": None,
+        "store_count": 0,
+        "top_stores": [],
+    }
+
+    def _patch_seam(self, monkeypatch, gold_response):
+        from smartbi_compat.api import analysis_sales as mod
+        async def fake(pool, fid, dr, *, top_n_stores=10):
+            return gold_response
+        monkeypatch.setattr(mod, "_call_finance_summary", fake)
+
+    def test_returns_dashboard_response_dict_shape(self, monkeypatch, range_2025):
+        self._patch_seam(monkeypatch, self.F001_GOLD)
+        result = _asyncio_c1.run(_build_from_gold_finance_summary("F001", range_2025, pool=None))
+        assert result is not None
+        assert set(result.keys()) == {
+            "period", "startDate", "endDate", "kpiCards", "metricCards",
+            "rankings", "charts", "chartList", "aiInsights", "alerts",
+            "recommendations", "suggestions", "generatedAt", "lastUpdated",
+            "fromCache", "cacheExpireAt",
+        }
+
+    def test_returns_4_kpi_cards_with_correct_keys(self, monkeypatch, range_2025):
+        self._patch_seam(monkeypatch, self.F001_GOLD)
+        result = _asyncio_c1.run(_build_from_gold_finance_summary("F001", range_2025, pool=None))
+        assert len(result["kpiCards"]) == 4
+        keys = [c["key"] for c in result["kpiCards"]]
+        assert keys == ["total_revenue", "bill_count", "avg_bill_value", "store_count"]
+
+    def test_kpi_card_total_revenue_full_shape(self, monkeypatch, range_2025):
+        self._patch_seam(monkeypatch, self.F001_GOLD)
+        result = _asyncio_c1.run(_build_from_gold_finance_summary("F001", range_2025, pool=None))
+        card = result["kpiCards"][0]
+        assert card["key"] == "total_revenue"
+        assert card["title"] == "总营收"
+        assert card["value"] == "20639884.52"
+        assert card["rawValue"] == Decimal("20639884.52")
+        assert card["unit"] == "元"
+        assert card["status"] == "green"
+        assert card["change"] is None
+        assert card["changeRate"] is None
+        assert card["trend"] is None
+        assert card["compareText"] is None
+        assert card["description"] is None
+        assert card["targetValue"] is None
+        assert card["completionRate"] is None
+
+    def test_kpi_card_bill_count_integer_format(self, monkeypatch, range_2025):
+        self._patch_seam(monkeypatch, self.F001_GOLD)
+        result = _asyncio_c1.run(_build_from_gold_finance_summary("F001", range_2025, pool=None))
+        card = result["kpiCards"][1]
+        assert card["key"] == "bill_count"
+        assert card["title"] == "账单数"
+        assert card["value"] == "140541"
+        assert card["unit"] == "单"
+
+    def test_top_stores_ranking_shape(self, monkeypatch, range_2025):
+        self._patch_seam(monkeypatch, self.F001_GOLD)
+        result = _asyncio_c1.run(_build_from_gold_finance_summary("F001", range_2025, pool=None))
+        assert "top_stores" in result["rankings"]
+        ts = result["rankings"]["top_stores"]
+        assert len(ts) == 2
+        assert ts[0]["rank"] == 1
+        assert ts[0]["name"] == "葱花传奇日月光店"
+        assert ts[0]["value"] == Decimal("7431228.74")
+        assert ts[0]["target"] is None
+        assert ts[0]["completionRate"] is None
+        assert ts[0]["alertLevel"] is None
+        assert ts[1]["rank"] == 2
+
+    def test_ai_insights_and_suggestions_empty(self, monkeypatch, range_2025):
+        """Java line 113-114: empty list, NOT None."""
+        self._patch_seam(monkeypatch, self.F001_GOLD)
+        result = _asyncio_c1.run(_build_from_gold_finance_summary("F001", range_2025, pool=None))
+        assert result["aiInsights"] == []
+        assert result["suggestions"] == []
+
+    def test_charts_empty_dict_initially(self, monkeypatch, range_2025):
+        """Charts populated by _build_from_gold_with_charts wrapper, not here."""
+        self._patch_seam(monkeypatch, self.F001_GOLD)
+        result = _asyncio_c1.run(_build_from_gold_finance_summary("F001", range_2025, pool=None))
+        assert result["charts"] == {}
+
+    def test_empty_short_circuit_returns_none(self, monkeypatch, range_2025):
+        """revenue=0 AND bill_count=0 -> return None (legacy fallback)."""
+        self._patch_seam(monkeypatch, self.EMPTY_GOLD)
+        result = _asyncio_c1.run(_build_from_gold_finance_summary("F001", range_2025, pool=None))
+        assert result is None
+
+    def test_is_async(self):
+        assert _asyncio_c1.iscoroutinefunction(_build_from_gold_finance_summary)
+
+
 from smartbi_compat.api.analysis_sales import _to_decimal
 
 

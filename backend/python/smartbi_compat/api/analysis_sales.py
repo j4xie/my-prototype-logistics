@@ -388,6 +388,83 @@ async def _call_top_products(pool, factory_id: str, date_range, *, top_n: int = 
     return await top_products(pool, factory_id, date_range, top_n=top_n)
 
 
+# ============================================================
+# Section 3b: Gold-path adapter functions (mirror Java GoldDashboardBuilder)
+# ============================================================
+
+
+async def _build_from_gold_finance_summary(
+    factory_id: str, range_: DateRange, pool=None,
+) -> Optional[dict]:
+    """Mirror Java GoldDashboardBuilder.buildFromFinanceSummary (lines 58-117).
+
+    Builds the base DashboardResponse shape from Gold's finance_summary:
+      - 4 KPI cards (total_revenue / bill_count / avg_bill_value / store_count)
+      - top_stores ranking (rank+name+value only)
+      - charts={} (populated by _build_from_gold_with_charts wrapper)
+      - aiInsights=[] / suggestions=[] (Java line 113-114)
+
+    Returns None when both revenue and bill_count are 0 (legacy fallback signal).
+    """
+    gold = await _call_finance_summary(
+        pool, factory_id, (range_.start_date, range_.end_date), top_n_stores=10,
+    )
+    revenue = _to_decimal(gold.get("total_revenue"))
+    bills = _to_decimal(gold.get("bill_count"))
+    avg_bill = _to_decimal(gold.get("avg_bill_value"))
+    stores = _to_decimal(gold.get("store_count"))
+
+    if revenue == Decimal("0") and bills == Decimal("0"):
+        logger.info(
+            "[gold-builder] factory=%s range=%s..%s empty Gold -> None (legacy fallback)",
+            factory_id, range_.start_date, range_.end_date,
+        )
+        return None
+
+    kpi_cards = [
+        _new_kpi_card_dict(
+            key="total_revenue", title="总营收",
+            value=_format_kpi_value(revenue, "元"), raw_value=revenue,
+            unit="元", status="green",
+        ),
+        _new_kpi_card_dict(
+            key="bill_count", title="账单数",
+            value=_format_kpi_value(bills, "单"), raw_value=bills,
+            unit="单", status="green",
+        ),
+        _new_kpi_card_dict(
+            key="avg_bill_value", title="客单价",
+            value=_format_kpi_value(avg_bill, "元"), raw_value=avg_bill,
+            unit="元", status="green",
+        ),
+        _new_kpi_card_dict(
+            key="store_count", title="门店数",
+            value=_format_kpi_value(stores, "家"), raw_value=stores,
+            unit="家", status="green",
+        ),
+    ]
+
+    top_stores = []
+    for i, store in enumerate(gold.get("top_stores", []), start=1):
+        top_stores.append(_new_ranking_item_dict(
+            rank=i,
+            name=str(store.get("store_name", "")),
+            value=_to_decimal(store.get("revenue")),
+            target=None,
+            completion_rate=None,
+            alert_level=None,
+        ))
+
+    return _new_dashboard_response_dict(
+        kpi_cards=kpi_cards,
+        rankings={"top_stores": top_stores},
+        charts={},
+        ai_insights=[],
+        suggestions=[],
+        last_updated=_utc_now_iso(),
+    )
+
+
 async def _get_sales_overview(factory_id: str, range_: DateRange) -> dict:
     """STUB — overview/gold specs replace.
 
