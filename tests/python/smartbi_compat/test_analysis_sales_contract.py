@@ -683,3 +683,39 @@ class TestOverview:
         assert result[0][0] == date(2025, 1, 1)
         assert result[0][1] == Decimal("1000")
         assert result[0][2] == Decimal("10")
+
+    @pytest.mark.asyncio
+    async def test_query_category_distribution_aggregate(self, monkeypatch):
+        """Mirror findSalesByProductCategory — rows ordered by SUM(amount) DESC."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+
+        class FakeRow:
+            def __init__(self, vals): self._vals = vals
+            def __getitem__(self, i): return self._vals[i]
+
+        class FakeResult:
+            def __iter__(self):
+                return iter([
+                    FakeRow(["猪肉类", Decimal("50000")]),
+                    FakeRow(["蔬菜类", Decimal("30000")]),
+                    FakeRow([None, Decimal("5000")]),
+                ])
+
+        class FakeConn:
+            def __enter__(self): return self
+            def __exit__(self, *a): pass
+            def execute(self, sql, params): return FakeResult()
+
+        class FakeEngine:
+            def connect(self): return FakeConn()
+
+        monkeypatch.setattr(m, "_get_sync_engine", lambda: FakeEngine())
+
+        result = await m._query_category_distribution_aggregate(
+            "F999", date(2025, 1, 1), date(2025, 12, 31),
+        )
+        assert len(result) == 3
+        assert result[0][0] == "猪肉类"
+        assert result[2][0] is None

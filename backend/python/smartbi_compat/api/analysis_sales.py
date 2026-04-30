@@ -346,6 +346,47 @@ async def _query_daily_sales_trend_aggregate(
         return []
 
 
+_CATEGORY_DISTRIBUTION_SQL = text("""
+    SELECT product_category,
+           COALESCE(SUM(amount), 0) AS total_amount
+    FROM smart_bi_sales_data
+    WHERE factory_id = :factory_id
+      AND order_date BETWEEN :start_date AND :end_date
+    GROUP BY product_category
+    ORDER BY SUM(amount) DESC
+""")
+
+
+async def _query_category_distribution_aggregate(
+    factory_id: str, start_date: date, end_date: date,
+) -> list[tuple]:
+    """Mirror SmartBiSalesDataRepository.findSalesByProductCategory line 117-122.
+
+    Returns list of (product_category, total_amount) ordered DESC.
+    NULL category preserved — Java buildPieChartFromAggregates line 294
+    substitutes "未分类" at chart-build time (handled by Phase D.3 _build_legacy_category_chart).
+    """
+    def _exec():
+        engine = _get_sync_engine()
+        with engine.connect() as conn:
+            return [
+                (r[0], r[1])
+                for r in conn.execute(_CATEGORY_DISTRIBUTION_SQL, {
+                    "factory_id": factory_id,
+                    "start_date": start_date,
+                    "end_date": end_date,
+                })
+            ]
+    try:
+        return await asyncio.to_thread(_exec)
+    except Exception as e:
+        logger.warning(
+            "[legacy] _query_category_distribution_aggregate failed factory=%s: %s",
+            factory_id, e,
+        )
+        return []
+
+
 # ============================================================
 # Section 1: DTO dict factories (FROZEN by foundation spec §4)
 # ============================================================
