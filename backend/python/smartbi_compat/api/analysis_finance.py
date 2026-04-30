@@ -704,6 +704,68 @@ async def _get_payable_metrics(factory_id: str, end_date: date) -> list:
     ]
 
 
+async def _get_payable_aging_chart(factory_id: str, end_date: date) -> dict:
+    """Real impl mirroring Java FinanceAnalysisServiceImpl.getPayableAgingChart (line 832-867).
+
+    Always emits 4 buckets in fixed order. data items have 3 keys:
+    {agingBucket, amount, percentage} — NO alertLevel (differs from receivable).
+    options has 1 key: {colors: [...]} — NO showAlert (differs from receivable).
+
+    Bucket assignment (per calculatePayableAgingBuckets line 1529-1561):
+      outstanding = payableAmount - paymentAmount; skip if outstanding <= 0
+      bucket by aging_days: <=30 / <=60 / <=90 / else
+    """
+    rows = await _query_finance_payable_data(factory_id, end_date)
+
+    buckets: dict[str, Decimal] = {
+        "0-30天":   Decimal("0"),
+        "31-60天":  Decimal("0"),
+        "61-90天":  Decimal("0"),
+        "90天以上": Decimal("0"),
+    }
+
+    for r in rows:
+        payable = _to_decimal(r.get("payable_amount"))
+        payment = _to_decimal(r.get("payment_amount"))
+        outstanding = payable - payment
+        if outstanding <= Decimal("0"):
+            continue
+        aging = r.get("aging_days") or 0
+        if aging <= 30:
+            buckets["0-30天"] += outstanding
+        elif aging <= 60:
+            buckets["31-60天"] += outstanding
+        elif aging <= 90:
+            buckets["61-90天"] += outstanding
+        else:
+            buckets["90天以上"] += outstanding
+
+    total_ap = sum(buckets.values(), Decimal("0"))
+
+    chart_data = []
+    for bucket_name in ("0-30天", "31-60天", "61-90天", "90天以上"):
+        amount = buckets[bucket_name]
+        if total_ap > Decimal("0"):
+            pct = (amount / total_ap).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP) * Decimal("100")
+        else:
+            pct = Decimal("0")
+        chart_data.append({
+            "agingBucket": bucket_name,
+            "amount": _decimal_to_number(amount),
+            "percentage": _decimal_to_number(pct),
+        })
+
+    return _new_chart_config_dict(
+        chart_type="BAR",
+        title="应付账款账龄分布",
+        series_field=None,
+        data=chart_data,
+        options={"colors": ["#73c0de", "#5470c6", "#9a60b4", "#ea7ccc"]},
+        xaxis_field="agingBucket",
+        yaxis_field="amount",
+    )
+
+
 # ============================================================
 # Section 4: Composite + per-type assembly (Phase C.2 + Phase E.4)
 # ============================================================
