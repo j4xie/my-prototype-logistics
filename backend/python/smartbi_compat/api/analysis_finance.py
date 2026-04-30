@@ -793,8 +793,24 @@ async def _get_comprehensive_finance_analysis(factory_id: str, range_: DateRange
 
 
 async def _get_payable_analysis(factory_id: str, start_date: date, end_date: date) -> dict:
-    """STUB — Phase E.4 fills with payable per-type 4-key shape."""
-    raise NotImplementedError("filled in Phase E.4")
+    """Java reference: SmartBIAnalysisController.getFinanceAnalysis line 240-258.
+
+    Java put order in HashMap (line 240-241 + 255-258):
+      startDate / endDate / metrics / agingChart
+
+    Note: Java uses `new HashMap<>()` so put-order ≠ Jackson serialization order.
+    Phase F.1 will record F999 golden and verify the actual Jackson key order.
+    If golden differs from this dict order, F.1 step 3 will reorder.
+    """
+    metrics = await _get_payable_metrics(factory_id, end_date)
+    aging_chart = await _get_payable_aging_chart(factory_id, end_date)
+
+    return {
+        "startDate":  start_date.isoformat(),
+        "endDate":    end_date.isoformat(),
+        "metrics":    metrics,
+        "agingChart": aging_chart,
+    }
 
 
 # ============================================================
