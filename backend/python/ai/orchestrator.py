@@ -47,12 +47,15 @@ class Orchestrator:
     """
 
     def __init__(self, semantic_matcher, classifier_matcher, llm_matcher,
-                 semantic_router=None, llm_tier_selector=None):
+                 semantic_router=None, llm_tier_selector=None,
+                 calibrator=None, scorer=None):
         self.semantic_matcher = semantic_matcher
         self.classifier_matcher = classifier_matcher
         self.llm_matcher = llm_matcher
         self.semantic_router = semantic_router  # β: optional pre-stage router
         self.llm_tier_selector = llm_tier_selector  # β C2: optional cheap/expensive picker
+        self.calibrator = calibrator  # β C4: optional per-stage confidence calibrator
+        self.scorer = scorer  # β C4: optional combined-score reranker
 
     async def match(
         self,
@@ -96,9 +99,10 @@ class Orchestrator:
                         decision.candidates[0].confidence if decision.candidates else 0.0,
                     )
                     timing["totalMs"] = int((time.time() - t0) * 1000)
+                    candidates = self._apply_calibration(decision.candidates, factoryId)
                     return self._build_result(
                         query=query,
-                        top_candidates=decision.candidates,
+                        top_candidates=candidates,
                         method=MatchMethod.SEMANTIC,
                         visible_intents=visible_intents,
                         min_confidence=min_confidence,
@@ -125,6 +129,7 @@ class Orchestrator:
                 sem_candidates[0].confidence,
             )
             timing["totalMs"] = int((time.time() - t0) * 1000)
+            sem_candidates = self._apply_calibration(sem_candidates, factoryId)
             return self._build_result(
                 query=query,
                 top_candidates=sem_candidates,
@@ -154,6 +159,7 @@ class Orchestrator:
                     fused[0].confidence,
                 )
                 timing["totalMs"] = int((time.time() - t0) * 1000)
+                fused = self._apply_calibration(fused, factoryId)
                 return self._build_result(
                     query=query,
                     top_candidates=fused,
@@ -192,6 +198,7 @@ class Orchestrator:
                     llm_candidates[0].confidence,
                 )
                 timing["totalMs"] = int((time.time() - t0) * 1000)
+                llm_candidates = self._apply_calibration(llm_candidates, factoryId)
                 return self._build_result(
                     query=query,
                     top_candidates=llm_candidates,
@@ -207,6 +214,27 @@ class Orchestrator:
         result = IntentMatchResultDto.empty(userInput=query)
         result.timingMs = timing
         return result
+
+    def _apply_calibration(self, candidates, factory_id):
+        """β: calibrate each candidate's confidence per (matcher, factory_id) coef.
+        If calibrator is None, return unchanged. If scorer is set, re-rank by combined score."""
+        if self.calibrator is None:
+            return candidates
+        for c in candidates:
+            method_name = c.matchMethod.value if c.matchMethod else "NONE"
+            c.confidence = self.calibrator.calibrate(
+                raw=c.confidence, matcher=method_name, factory_id=factory_id,
+            )
+        if self.scorer is not None:
+            candidates.sort(
+                key=lambda c: -self.scorer.score(
+                    calibrated_confidence=c.confidence,
+                    matched_keyword_count=len(c.matchedKeywords or []),
+                    priority=80,
+                    confidence_boost=0.0,
+                ),
+            )
+        return candidates
 
     def _build_result(
         self,

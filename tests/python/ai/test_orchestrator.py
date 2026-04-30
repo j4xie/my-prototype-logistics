@@ -356,3 +356,74 @@ async def test_stage_8_uses_tier_selector_when_provided():
     fake_tier.select.assert_called_once_with(query="q")
     call_kwargs = llm_matcher.match.call_args.kwargs
     assert call_kwargs.get("tier") == LlmTier.CHEAP
+
+
+# ======================================================================
+# β extension: Calibrator + IntentScorer integration (T8)
+# ======================================================================
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_calibrates_before_build_result():
+    """Calibrator with empty coefs (cold-start) → confidence unchanged → α behavior preserved."""
+    from ai.dto import CandidateIntentDto, MatchMethod
+    from ai.orchestrator import Orchestrator
+    from ai.router.semantic_router import RouteDecision
+    from ai.scoring.calibration import Calibrator
+    from ai.scoring.intent_scoring import IntentScorer
+
+    cand = CandidateIntentDto(intentCode="X", intentName="X名", confidence=0.85,
+                                matchMethod=MatchMethod.SEMANTIC)
+    fake_decision = RouteDecision(method="DIRECT_EXECUTE", ood_detected=False,
+                                    candidates=[cand], query_embedding=None)
+    fake_router = MagicMock(); fake_router.route = AsyncMock(return_value=fake_decision)
+    sem_matcher = MagicMock(); sem_matcher.match = AsyncMock(return_value=[])
+    cls_matcher = MagicMock(); cls_matcher.match = AsyncMock(return_value=[])
+    llm_matcher = MagicMock(); llm_matcher.match = AsyncMock(return_value=[])
+
+    cal = Calibrator(coefs={})  # cold-start passthrough
+    scorer = IntentScorer()
+
+    orch = Orchestrator(
+        sem_matcher, cls_matcher, llm_matcher,
+        semantic_router=fake_router, calibrator=cal, scorer=scorer,
+    )
+    result = await orch.match(
+        query="q", factoryId="F", businessType="COMMON", userId="u", role="r",
+        visible_intents=[make_intent_row("X", "X名")], history=[], min_confidence=0.7,
+    )
+    # Cold-start calibrator → confidence unchanged
+    assert result.confidence == 0.85
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_calibration_with_real_coefs():
+    """Calibrator with non-empty coefs → confidence transformed."""
+    import math
+    from ai.dto import CandidateIntentDto, MatchMethod
+    from ai.orchestrator import Orchestrator
+    from ai.router.semantic_router import RouteDecision
+    from ai.scoring.calibration import Calibrator
+
+    cand = CandidateIntentDto(intentCode="X", intentName="X名", confidence=0.85,
+                                matchMethod=MatchMethod.SEMANTIC)
+    fake_decision = RouteDecision(method="DIRECT_EXECUTE", ood_detected=False,
+                                    candidates=[cand], query_embedding=None)
+    fake_router = MagicMock(); fake_router.route = AsyncMock(return_value=fake_decision)
+    sem_matcher = MagicMock(); sem_matcher.match = AsyncMock(return_value=[])
+    cls_matcher = MagicMock(); cls_matcher.match = AsyncMock(return_value=[])
+    llm_matcher = MagicMock(); llm_matcher.match = AsyncMock(return_value=[])
+
+    # Coefs for SEMANTIC matcher in factory F: alpha=2, beta=-1
+    cal = Calibrator(coefs={("SEMANTIC", "F"): (2.0, -1.0)})
+
+    orch = Orchestrator(
+        sem_matcher, cls_matcher, llm_matcher,
+        semantic_router=fake_router, calibrator=cal,
+    )
+    result = await orch.match(
+        query="q", factoryId="F", businessType="COMMON", userId="u", role="r",
+        visible_intents=[make_intent_row("X", "X名")], history=[], min_confidence=0.7,
+    )
+    expected = 1 / (1 + math.exp(-(2.0 * 0.85 + (-1.0))))
+    assert abs(result.confidence - expected) < 0.001
