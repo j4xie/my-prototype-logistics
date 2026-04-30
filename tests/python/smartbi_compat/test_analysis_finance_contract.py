@@ -309,3 +309,266 @@ class TestAnalysisFinanceProfit:
                 f"BYTE SHAPE MISMATCH (profit) on {list(diffs.keys())}\n"
                 f"{json.dumps(diffs, indent=2, ensure_ascii=False)[:2000]}"
             )
+
+
+class TestProfitMetricsArithmetic:
+    """Unit tests for _get_profit_metrics arithmetic branches.
+
+    Direct calls (no HTTP/JWT) — focused on metric calculation correctness
+    after PR-A real impl. Mocks _query_finance_data to inject synthetic rows.
+    """
+
+    def _run(self, factory_id, range_, fake_data_fn, fake_sales_fn=None):
+        """Run _get_profit_metrics with mocked seams. Returns list of metric dicts."""
+        import asyncio
+        from smartbi_compat.api import analysis_finance as af
+
+        original_finance = af._query_finance_data
+        original_sales = af._query_finance_sales_fallback
+        try:
+            af._query_finance_data = fake_data_fn
+            if fake_sales_fn is not None:
+                af._query_finance_sales_fallback = fake_sales_fn
+            return asyncio.run(af._get_profit_metrics(factory_id, range_))
+        finally:
+            af._query_finance_data = original_finance
+            af._query_finance_sales_fallback = original_sales
+
+    def _build_range(self):
+        from datetime import date
+        from smartbi_compat.date_range import DateRange
+        return DateRange.custom(date(2025, 1, 1), date(2025, 12, 31))
+
+    def _by_code(self, metrics):
+        return {m["metricCode"]: m for m in metrics}
+
+    def test_revenue_gt_cost_positive_gross_profit(self):
+        """revenue=100k, cost=60k → grossProfit=40k, alertLevel=GREEN, formattedValue='40000.00'."""
+        from datetime import date
+        from decimal import Decimal
+        async def fake(_fid, rt, _s, _e):
+            if rt == "REVENUE":
+                return [{"actual_amount": Decimal("100000"), "category": "营业收入",
+                         "record_date": date(2025, 6, 1), "upload_id": 1}]
+            if rt == "COST":
+                return [{"total_cost": Decimal("60000"), "actual_amount": None,
+                         "record_date": date(2025, 6, 1), "upload_id": 1}]
+            return []
+        result = self._run("F", self._build_range(), fake)
+        m = self._by_code(result)
+        assert m["GROSS_PROFIT"]["value"] == 40000
+        assert m["GROSS_PROFIT"]["alertLevel"] == "GREEN"
+        # 40000 / 100000 * 100 = 40.0 → GREEN (>=25)
+        assert m["GROSS_MARGIN"]["value"] == 40
+        assert m["GROSS_MARGIN"]["alertLevel"] == "GREEN"
+
+    def test_revenue_lt_cost_negative_gross_profit(self):
+        """revenue=50k, cost=80k → grossProfit=-30k, GROSS_PROFIT.alertLevel still GREEN
+        (Java hardcodes GREEN for GROSS_PROFIT regardless of sign — see analysis_finance.py)."""
+        from datetime import date
+        from decimal import Decimal
+        async def fake(_fid, rt, _s, _e):
+            if rt == "REVENUE":
+                return [{"actual_amount": Decimal("50000"), "category": "营业收入",
+                         "record_date": date(2025, 6, 1), "upload_id": 1}]
+            if rt == "COST":
+                return [{"total_cost": Decimal("80000"), "actual_amount": None,
+                         "record_date": date(2025, 6, 1), "upload_id": 1}]
+            return []
+        result = self._run("F", self._build_range(), fake)
+        m = self._by_code(result)
+        assert m["GROSS_PROFIT"]["value"] == -30000
+        assert m["GROSS_PROFIT"]["alertLevel"] == "GREEN"  # Java line 425 hardcoded
+        # -30000 / 50000 * 100 = -60 → RED (<15)
+        assert m["GROSS_MARGIN"]["value"] == -60
+        assert m["GROSS_MARGIN"]["alertLevel"] == "RED"
+
+    def test_gross_margin_above_100_clamps_to_null(self):
+        """Use net_margin > 100 to test clamp (gross_margin > 100 hard to construct
+        without negative cost; abs() prevents that scenario)."""
+        from datetime import date
+        from decimal import Decimal
+        async def fake_high_net(_fid, rt, _s, _e):
+            if rt == "REVENUE":
+                return [
+                    {"actual_amount": Decimal("100"), "category": "营业收入",
+                     "record_date": date(2025, 6, 1), "upload_id": 1},
+                    {"actual_amount": Decimal("200"), "category": "净利润",
+                     "record_date": date(2025, 6, 1), "upload_id": 1},
+                ]
+            if rt == "COST":
+                return []
+            return []
+        result = self._run("F", self._build_range(), fake_high_net)
+        m = self._by_code(result)
+        # net_margin = 200/100 * 100 = 200% → clamped to null
+        assert m["NET_MARGIN"]["value"] is None
+        assert m["NET_MARGIN"]["formattedValue"] == "N/A"
+
+    def test_gross_margin_below_neg100_clamps_to_null(self):
+        """cost >> revenue → margin < -100% → clamp to null."""
+        from datetime import date
+        from decimal import Decimal
+        async def fake(_fid, rt, _s, _e):
+            if rt == "REVENUE":
+                return [{"actual_amount": Decimal("100"), "category": "营业收入",
+                         "record_date": date(2025, 6, 1), "upload_id": 1}]
+            if rt == "COST":
+                # cost 500, revenue 100 → grossProfit = -400 → margin = -400% → clamp null
+                return [{"total_cost": Decimal("500"), "actual_amount": None,
+                         "record_date": date(2025, 6, 1), "upload_id": 1}]
+            return []
+        result = self._run("F", self._build_range(), fake)
+        m = self._by_code(result)
+        assert m["GROSS_MARGIN"]["value"] is None
+        assert m["GROSS_MARGIN"]["formattedValue"] == "N/A"
+        # Per Java line 432: gross_margin null → alertLevel='RED'
+        assert m["GROSS_MARGIN"]["alertLevel"] == "RED"
+
+    def test_net_profit_present_computes_net_margin(self):
+        """When 净利 category present → net_margin computed."""
+        from datetime import date
+        from decimal import Decimal
+        async def fake(_fid, rt, _s, _e):
+            if rt == "REVENUE":
+                return [
+                    {"actual_amount": Decimal("100000"), "category": "营业收入",
+                     "record_date": date(2025, 6, 1), "upload_id": 1},
+                    {"actual_amount": Decimal("15000"), "category": "净利润",
+                     "record_date": date(2025, 6, 1), "upload_id": 1},
+                ]
+            if rt == "COST":
+                return [{"total_cost": Decimal("50000"), "actual_amount": None,
+                         "record_date": date(2025, 6, 1), "upload_id": 1}]
+            return []
+        result = self._run("F", self._build_range(), fake)
+        m = self._by_code(result)
+        assert m["NET_PROFIT"]["value"] == 15000
+        # net_margin = 15000 / 100000 * 100 = 15
+        assert m["NET_MARGIN"]["value"] == 15
+
+    def test_net_profit_absent_net_margin_zero(self):
+        """No 净利 category → net_profit = sum() over empty = Decimal(0).
+        Java reduce(ZERO, +) on empty stream returns ZERO, not null. Only the fallback
+        path explicitly sets null.
+        net_margin = 0 / revenue * 100 = 0, NOT null."""
+        from datetime import date
+        from decimal import Decimal
+        async def fake(_fid, rt, _s, _e):
+            if rt == "REVENUE":
+                return [{"actual_amount": Decimal("100000"), "category": "营业收入",
+                         "record_date": date(2025, 6, 1), "upload_id": 1}]
+            if rt == "COST":
+                return [{"total_cost": Decimal("50000"), "actual_amount": None,
+                         "record_date": date(2025, 6, 1), "upload_id": 1}]
+            return []
+        result = self._run("F", self._build_range(), fake)
+        m = self._by_code(result)
+        # Path-A with revenue + cost but no 净利 records: net_profit = Decimal(0)
+        assert m["NET_PROFIT"]["value"] == 0
+        assert m["NET_MARGIN"]["value"] == 0
+
+    def test_total_cost_zero_roi_zero(self):
+        """No COST records → total_cost = 0 → ROI = 0 (div-zero defense, Java line 481)."""
+        from datetime import date
+        from decimal import Decimal
+        async def fake(_fid, rt, _s, _e):
+            if rt == "REVENUE":
+                return [{"actual_amount": Decimal("100000"), "category": "营业收入",
+                         "record_date": date(2025, 6, 1), "upload_id": 1}]
+            return []
+        result = self._run("F", self._build_range(), fake)
+        m = self._by_code(result)
+        assert m["ROI"]["value"] == 0
+        # ROI = 0 → YELLOW (per _determine_roi_alert: 0 < 20 but >= 0)
+        assert m["ROI"]["alertLevel"] == "YELLOW"
+
+    def test_total_cost_positive_roi_computes(self):
+        """revenue=100k, cost=50k → ROI = 50000/50000*100 = 100 → GREEN (>=20)."""
+        from datetime import date
+        from decimal import Decimal
+        async def fake(_fid, rt, _s, _e):
+            if rt == "REVENUE":
+                return [{"actual_amount": Decimal("100000"), "category": "营业收入",
+                         "record_date": date(2025, 6, 1), "upload_id": 1}]
+            if rt == "COST":
+                return [{"total_cost": Decimal("50000"), "actual_amount": None,
+                         "record_date": date(2025, 6, 1), "upload_id": 1}]
+            return []
+        result = self._run("F", self._build_range(), fake)
+        m = self._by_code(result)
+        # grossProfit = 50k, ROI = 50k/50k*100 = 100
+        assert m["ROI"]["value"] == 100
+        assert m["ROI"]["alertLevel"] == "GREEN"
+
+    def test_alert_level_gross_margin_thresholds(self):
+        """Verify GROSS_MARGIN alert thresholds: <15 RED, <25 YELLOW, else GREEN."""
+        from datetime import date
+        from decimal import Decimal
+
+        # Margin = 10 → RED (<15)
+        async def fake_red(_fid, rt, _s, _e):
+            if rt == "REVENUE":
+                return [{"actual_amount": Decimal("100000"), "category": "营业收入",
+                         "record_date": date(2025, 6, 1), "upload_id": 1}]
+            if rt == "COST":
+                return [{"total_cost": Decimal("90000"), "actual_amount": None,
+                         "record_date": date(2025, 6, 1), "upload_id": 1}]
+            return []
+        m = self._by_code(self._run("F", self._build_range(), fake_red))
+        assert m["GROSS_MARGIN"]["alertLevel"] == "RED"
+
+        # Margin = 20 → YELLOW (<25)
+        async def fake_yellow(_fid, rt, _s, _e):
+            if rt == "REVENUE":
+                return [{"actual_amount": Decimal("100000"), "category": "营业收入",
+                         "record_date": date(2025, 6, 1), "upload_id": 1}]
+            if rt == "COST":
+                return [{"total_cost": Decimal("80000"), "actual_amount": None,
+                         "record_date": date(2025, 6, 1), "upload_id": 1}]
+            return []
+        m = self._by_code(self._run("F", self._build_range(), fake_yellow))
+        assert m["GROSS_MARGIN"]["alertLevel"] == "YELLOW"
+
+        # Margin = 30 → GREEN (>=25)
+        async def fake_green(_fid, rt, _s, _e):
+            if rt == "REVENUE":
+                return [{"actual_amount": Decimal("100000"), "category": "营业收入",
+                         "record_date": date(2025, 6, 1), "upload_id": 1}]
+            if rt == "COST":
+                return [{"total_cost": Decimal("70000"), "actual_amount": None,
+                         "record_date": date(2025, 6, 1), "upload_id": 1}]
+            return []
+        m = self._by_code(self._run("F", self._build_range(), fake_green))
+        assert m["GROSS_MARGIN"]["alertLevel"] == "GREEN"
+
+    def test_alert_level_roi_thresholds(self):
+        """Verify ROI alert thresholds: <0 RED, <20 YELLOW, else GREEN."""
+        from datetime import date
+        from decimal import Decimal
+
+        # ROI < 0 → RED (revenue=50k, cost=80k → grossProfit=-30k → ROI=-30k/80k*100=-37.5)
+        async def fake_red(_fid, rt, _s, _e):
+            if rt == "REVENUE":
+                return [{"actual_amount": Decimal("50000"), "category": "营业收入",
+                         "record_date": date(2025, 6, 1), "upload_id": 1}]
+            if rt == "COST":
+                return [{"total_cost": Decimal("80000"), "actual_amount": None,
+                         "record_date": date(2025, 6, 1), "upload_id": 1}]
+            return []
+        m = self._by_code(self._run("F", self._build_range(), fake_red))
+        assert m["ROI"]["alertLevel"] == "RED"
+
+        # ROI between 0 and 20 → YELLOW (revenue=100k, cost=90k → grossProfit=10k → ROI=11.11)
+        async def fake_yellow(_fid, rt, _s, _e):
+            if rt == "REVENUE":
+                return [{"actual_amount": Decimal("100000"), "category": "营业收入",
+                         "record_date": date(2025, 6, 1), "upload_id": 1}]
+            if rt == "COST":
+                return [{"total_cost": Decimal("90000"), "actual_amount": None,
+                         "record_date": date(2025, 6, 1), "upload_id": 1}]
+            return []
+        m = self._by_code(self._run("F", self._build_range(), fake_yellow))
+        assert m["ROI"]["alertLevel"] == "YELLOW"
+
+        # ROI > 20 → GREEN (already covered by test_total_cost_positive_roi_computes)
