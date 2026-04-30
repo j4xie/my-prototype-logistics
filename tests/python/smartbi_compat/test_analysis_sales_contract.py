@@ -1117,3 +1117,28 @@ class TestOverview:
         assert all(i["level"] == "INFO" for i in result["aiInsights"])
         # 100k/200k = 50% < 80 + target>0 → emits suggestion
         assert result["suggestions"] == ["目标完成率不足80%，建议加强销售推进"]
+
+    @pytest.mark.asyncio
+    async def test_F999_legacy_path_byte_shape_matches_empty_dashboard(self, monkeypatch):
+        """Force legacy by stubbing Gold to raise; verify legacy returns same
+        byte shape as Gold-empty path (which already passes F999 byte gate)."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+
+        async def fake_gold_with_charts(*a, **k):
+            raise RuntimeError("forced legacy fallback for test")
+
+        async def fake_aggregates(*a, **k):
+            return (Decimal("0"), Decimal("0"), Decimal("0"),
+                    Decimal("0"), Decimal("0"), 0)
+
+        monkeypatch.setattr(m, "_build_from_gold_with_charts", fake_gold_with_charts)
+        monkeypatch.setattr(m, "_query_sales_aggregates", fake_aggregates)
+
+        range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 12, 31))
+        result = await m._get_sales_overview("F999", range_)
+
+        # Should match _build_empty_dashboard byte shape (modulo lastUpdated which is volatile)
+        expected = m._build_empty_dashboard()
+        assert m._strip_volatile(result) == m._strip_volatile(expected)
