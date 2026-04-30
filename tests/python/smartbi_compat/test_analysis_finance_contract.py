@@ -572,3 +572,102 @@ class TestProfitMetricsArithmetic:
         assert m["ROI"]["alertLevel"] == "YELLOW"
 
         # ROI > 20 → GREEN (already covered by test_total_cost_positive_roi_computes)
+
+
+class TestProfitMetricsSalesFallback:
+    """Unit tests for sales fallback path in _get_profit_metrics + _get_profit_trend_chart.
+
+    Mocks _query_finance_data → [] AND _query_finance_sales_fallback → synthetic rows.
+    """
+
+    def _run_metrics(self, fake_finance, fake_sales):
+        """Run _get_profit_metrics with both seams mocked. Returns metric dicts."""
+        import asyncio
+        from datetime import date
+        from smartbi_compat.api import analysis_finance as af
+        from smartbi_compat.date_range import DateRange
+
+        original_finance = af._query_finance_data
+        original_sales = af._query_finance_sales_fallback
+        try:
+            af._query_finance_data = fake_finance
+            af._query_finance_sales_fallback = fake_sales
+            range_ = DateRange.custom(date(2025, 1, 1), date(2025, 12, 31))
+            return asyncio.run(af._get_profit_metrics("F", range_))
+        finally:
+            af._query_finance_data = original_finance
+            af._query_finance_sales_fallback = original_sales
+
+    def _run_trend(self, fake_finance, fake_sales):
+        """Run _get_profit_trend_chart with both seams mocked. Returns chart dict."""
+        import asyncio
+        from datetime import date
+        from smartbi_compat.api import analysis_finance as af
+
+        original_finance = af._query_finance_data
+        original_sales = af._query_finance_sales_fallback
+        try:
+            af._query_finance_data = fake_finance
+            af._query_finance_sales_fallback = fake_sales
+            return asyncio.run(af._get_profit_trend_chart(
+                "F", date(2025, 1, 1), date(2025, 12, 31), "MONTH"
+            ))
+        finally:
+            af._query_finance_data = original_finance
+            af._query_finance_sales_fallback = original_sales
+
+    def test_no_finance_with_sales_uses_fallback(self):
+        """finance empty + sales 100k revenue / 60k cost → metrics computed from sales."""
+        from datetime import date
+        from decimal import Decimal
+        async def fake_finance_empty(_fid, _rt, _s, _e): return []
+        async def fake_sales(_fid, _s, _e):
+            return [
+                {"amount": Decimal("100000"), "cost": Decimal("60000"),
+                 "order_date": date(2025, 6, 1)},
+            ]
+        result = self._run_metrics(fake_finance_empty, fake_sales)
+        m = {x["metricCode"]: x for x in result}
+        assert m["GROSS_PROFIT"]["value"] == 40000
+        # 40000/100000*100 = 40 → GREEN
+        assert m["GROSS_MARGIN"]["value"] == 40
+        assert m["GROSS_MARGIN"]["alertLevel"] == "GREEN"
+
+    def test_fallback_net_profit_stays_null_in_metrics(self):
+        """Java line 404 — fallback path explicitly sets net_profit=null. So metrics
+        NET_PROFIT.value=null, formattedValue='N/A', alertLevel=GREEN per Java line 461."""
+        from datetime import date
+        from decimal import Decimal
+        async def fake_finance_empty(_fid, _rt, _s, _e): return []
+        async def fake_sales(_fid, _s, _e):
+            return [
+                {"amount": Decimal("100000"), "cost": Decimal("60000"),
+                 "order_date": date(2025, 6, 1)},
+            ]
+        result = self._run_metrics(fake_finance_empty, fake_sales)
+        m = {x["metricCode"]: x for x in result}
+        assert m["NET_PROFIT"]["value"] is None
+        assert m["NET_PROFIT"]["formattedValue"] == "N/A"
+        assert m["NET_PROFIT"]["alertLevel"] == "GREEN"
+        # Net margin also null (depends on net_profit)
+        assert m["NET_MARGIN"]["value"] is None
+
+    def test_fallback_net_profit_computed_in_trendchart(self):
+        """trendChart fallback uses gross*0.70 for netProfit (Java line 1440 quirk).
+        Distinct from metrics fallback which sets netProfit=null."""
+        from datetime import date
+        from decimal import Decimal
+        async def fake_finance_empty(_fid, _rt, _s, _e): return []
+        async def fake_sales(_fid, _s, _e):
+            return [
+                {"amount": Decimal("100000"), "cost": Decimal("60000"),
+                 "order_date": date(2025, 6, 1)},
+            ]
+        chart = self._run_trend(fake_finance_empty, fake_sales)
+        # 4-key points (sales fallback shape, not 6-key)
+        assert len(chart["data"]) == 1
+        point = chart["data"][0]
+        assert set(point.keys()) == {"period", "grossProfit", "netProfit", "grossMargin"}
+        # gross = 40000, net = 40000 * 0.70 = 28000.0 → numeric 28000
+        assert point["grossProfit"] == 40000
+        assert point["netProfit"] == 28000
