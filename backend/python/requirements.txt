@@ -24,7 +24,7 @@ aiohttp>=3.8.0,<4.0.0
 openai>=1.0.0  # For OpenAI-compatible API (DashScope)
 
 # Pydantic for data validation
-pydantic>=1.9.0,<2.0.0
+pydantic>=2.5,<3
 
 # JWT Authentication
 PyJWT>=2.6.0,<3.0.0
