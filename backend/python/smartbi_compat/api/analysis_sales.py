@@ -357,6 +357,37 @@ def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
 
 
+# ============================================================
+# Section 3a: Gold-path module-level seams (monkeypatch boundary)
+# ============================================================
+
+
+async def _call_finance_summary(pool, factory_id: str, date_range, *, top_n_stores: int = 10):
+    """Module-level seam wrapping smartbi.gold.queries.finance_summary.
+
+    Indirection exists so contract tests can monkey-patch at this module's
+    namespace without monkey-patching the queries module globally.
+    """
+    from smartbi.gold.queries import finance_summary
+    return await finance_summary(pool, factory_id, date_range, top_n_stores=top_n_stores)
+
+
+async def _call_daily_trend(pool, factory_id: str, date_range):
+    """Module-level seam wrapping smartbi.gold.queries.daily_trend."""
+    from smartbi.gold.queries import daily_trend
+    return await daily_trend(pool, factory_id, date_range)
+
+
+async def _call_top_products(pool, factory_id: str, date_range, *, top_n: int = 8):
+    """Module-level seam wrapping smartbi.gold.queries.top_products.
+
+    Note: spec said limit=8 but Python kwarg is `top_n` (verified A.1 step 2).
+    Default top_n=8 here matches Java GoldDashboardBuilder.fetchCategoryChart.
+    """
+    from smartbi.gold.queries import top_products
+    return await top_products(pool, factory_id, date_range, top_n=top_n)
+
+
 async def _get_sales_overview(factory_id: str, range_: DateRange) -> dict:
     """STUB — overview/gold specs replace.
 
