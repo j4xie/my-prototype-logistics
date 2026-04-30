@@ -789,3 +789,13 @@ class TestCostHelpers:
         entry = _new_cost_series_entry(name="原材料", stack="cost")
         assert list(entry.keys()) == ["name", "stack"]
         assert entry == {"name": "原材料", "stack": "cost"}
+
+    def test_cost_category_constants(self):
+        from smartbi_compat.api.analysis_finance import (
+            COST_CATEGORY_MATERIAL,
+            COST_CATEGORY_LABOR,
+            COST_CATEGORY_OVERHEAD,
+        )
+        assert COST_CATEGORY_MATERIAL == "原材料"
+        assert COST_CATEGORY_LABOR == "人工"
+        assert COST_CATEGORY_OVERHEAD == "制造费用"

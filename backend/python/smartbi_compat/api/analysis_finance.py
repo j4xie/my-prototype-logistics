@@ -425,6 +425,12 @@ def _get_period_key(d: date, period: str) -> str:
     return d.strftime("%Y-%m")
 
 
+# Cost category constants (Java FinanceAnalysisServiceImpl COST_CATEGORY_* literal values)
+COST_CATEGORY_MATERIAL = "原材料"
+COST_CATEGORY_LABOR    = "人工"
+COST_CATEGORY_OVERHEAD = "制造费用"
+
+
 VOLATILE_KEYS = frozenset({
     "generatedAt", "lastUpdated", "cacheExpireAt", "timestamp",
 })
