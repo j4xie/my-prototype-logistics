@@ -395,6 +395,29 @@ def _determine_roi_alert(roi: Decimal) -> str:
     return "GREEN"
 
 
+def _get_period_key(d: date, period: str) -> str:
+    """Mirror Java `FinanceAnalysisServiceImpl.getPeriodKey` line 1472-1487.
+
+    Period key formats:
+      DAY     → yyyy-MM-dd
+      WEEK    → yyyy-Www  (ISO week, 2-digit zero-padded)
+      MONTH   → yyyy-MM   (default for unknown period)
+      QUARTER → yyyy-Qn
+
+    Java ISO week semantics: weeks start Monday, week-1 contains the year's
+    first Thursday. Python `isocalendar()` matches.
+    """
+    if period == "DAY":
+        return d.strftime("%Y-%m-%d")
+    if period == "WEEK":
+        iso_year, iso_week, _ = d.isocalendar()
+        return f"{iso_year}-W{iso_week:02d}"
+    if period == "QUARTER":
+        return f"{d.year}-Q{(d.month - 1) // 3 + 1}"
+    # MONTH or default
+    return d.strftime("%Y-%m")
+
+
 VOLATILE_KEYS = frozenset({
     "generatedAt", "lastUpdated", "cacheExpireAt", "timestamp",
 })
