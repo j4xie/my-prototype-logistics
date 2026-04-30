@@ -1422,6 +1422,27 @@ async def _get_comprehensive_finance_analysis(factory_id: str, range_: DateRange
     }
 
 
+async def _get_cost_analysis(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Java SmartBIAnalysisController.getFinanceAnalysis cost branch line 247-249.
+
+    Java HashMap put order: startDate / endDate / structureChart / trendChart
+    Recorded F999 Jackson order (HashMap hash, NOT put-order):
+      [endDate, trendChart, startDate, structureChart]
+    Source: tests/fixtures/java-smartbi-golden/analysis-finance-F999-cost.json
+    """
+    structure_chart = await _get_cost_structure_chart(factory_id, start_date, end_date)
+    trend_chart     = await _get_cost_trend_chart(factory_id, start_date, end_date, "MONTH")
+
+    return {
+        "endDate":        end_date.isoformat(),
+        "trendChart":     trend_chart,
+        "startDate":      start_date.isoformat(),
+        "structureChart": structure_chart,
+    }
+
+
 async def _get_profit_analysis(
     factory_id: str, start_date: date, end_date: date
 ) -> dict:
