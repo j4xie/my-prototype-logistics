@@ -265,3 +265,100 @@ def _new_kpi_card_dict(
         "targetValue": target_value,
         "completionRate": completion_rate,
     }
+
+
+# ============================================================
+# Section 2: Helpers (copy from sister analysis_sales.py)
+# ============================================================
+
+
+def _to_decimal(v: Any) -> Decimal:
+    """Tolerant Number -> Decimal conversion. Mirrors Java GoldDashboardBuilder.toBigDecimal.
+
+    Returns Decimal("0") on None, parse errors, or unsupported types
+    (matches Java's BigDecimal.ZERO fallback).
+
+    Decimal passthrough preserves identity (no re-wrap).
+    Float input goes via str() to preserve representation (12.5 -> "12.5" -> Decimal("12.5")).
+    """
+    if v is None:
+        return Decimal("0")
+    if isinstance(v, Decimal):
+        return v
+    if isinstance(v, bool):  # bool is int subclass - guard before int branch
+        return Decimal("0")
+    if isinstance(v, int):
+        return Decimal(v)
+    if isinstance(v, float):
+        return Decimal(str(v))
+    if isinstance(v, str):
+        try:
+            return Decimal(v)
+        except Exception:
+            return Decimal("0")
+    return Decimal("0")
+
+
+def _decimal_to_number(v: Decimal) -> Any:
+    """Convert Decimal to Python int or float for JSON-safe serialization.
+
+    FastAPI's default JSON encoder serializes Decimal as string (not number),
+    breaking byte parity with Java's Jackson which emits numeric JSON values.
+    This helper converts to int when the value has no fractional part,
+    or float otherwise — mirroring what Jackson/BigDecimal serialize as JSON.
+
+    Used wherever Decimal appears in response dicts that must match golden
+    numeric JSON (rawValue, ranking value, chart amount).
+    """
+    if v == v.to_integral_value():
+        return int(v)
+    return float(v)
+
+
+def _format_kpi_value(v: Decimal, unit: str) -> str:
+    """Format Decimal for KPICard.value. Mirrors Java GoldDashboardBuilder.formatKpiValue.
+
+    Yuan unit ("元") -> 2-decimal string preserving trailing zeros (Java setScale(2, HALF_UP).toPlainString).
+    Other units -> integer string (rounded HALF_UP).
+
+    Critical (G3): use str() of quantize result, NOT normalize() - normalize() strips
+    trailing zeros (12.50 -> 12.5) and breaks Java byte parity.
+    """
+    if unit == "元":
+        return str(v.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+    return str(v.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
+
+VOLATILE_KEYS = frozenset({
+    "generatedAt", "lastUpdated", "cacheExpireAt", "timestamp",
+})
+
+
+def _strip_volatile(obj: Any) -> Any:
+    """Recursively strip timing/cache-dependent keys for byte-shape compare.
+
+    Removes from any dict in the tree:
+      - generatedAt          (LocalDateTime.now() per request)
+      - lastUpdated          (DashboardResponse @Deprecated, also volatile)
+      - cacheExpireAt        (cache TTL)
+      - timestamp            (envelope-level)
+
+    Preserves all other keys + list/primitive values.
+    """
+    if isinstance(obj, dict):
+        return {
+            k: _strip_volatile(v)
+            for k, v in obj.items()
+            if k not in VOLATILE_KEYS
+        }
+    if isinstance(obj, list):
+        return [_strip_volatile(item) for item in obj]
+    return obj
+
+
+def _utc_now_iso() -> str:
+    """Generate ISO timestamp for generatedAt / lastUpdated fields.
+
+    Stripped by `_strip_volatile` before byte compare.
+    """
+    return datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
