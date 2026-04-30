@@ -1,0 +1,167 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/analysis/finance/budget-achievement",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T06:34:37.871353855",
+    "data": {
+      "chartType": "LINE_BAR",
+      "title": "2025年收入预算达成分析",
+      "seriesField": "metric",
+      "data": [
+        {
+          "month": "1月",
+          "budget": 0,
+          "actual": 0,
+          "achievementRate": 0,
+          "variance": 0,
+          "alertLevel": "GREEN"
+        },
+        {
+          "month": "2月",
+          "budget": 0,
+          "actual": 0,
+          "achievementRate": 0,
+          "variance": 0,
+          "alertLevel": "GREEN"
+        },
+        {
+          "month": "3月",
+          "budget": 0,
+          "actual": 0,
+          "achievementRate": 0,
+          "variance": 0,
+          "alertLevel": "GREEN"
+        },
+        {
+          "month": "4月",
+          "budget": 0,
+          "actual": 0,
+          "achievementRate": 0,
+          "variance": 0,
+          "alertLevel": "GREEN"
+        },
+        {
+          "month": "5月",
+          "budget": 0,
+          "actual": 0,
+          "achievementRate": 0,
+          "variance": 0,
+          "alertLevel": "GREEN"
+        },
+        {
+          "month": "6月",
+          "budget": 0,
+          "actual": 0,
+          "achievementRate": 0,
+          "variance": 0,
+          "alertLevel": "GREEN"
+        },
+        {
+          "month": "7月",
+          "budget": 0,
+          "actual": 0,
+          "achievementRate": 0,
+          "variance": 0,
+          "alertLevel": "GREEN"
+        },
+        {
+          "month": "8月",
+          "budget": 0,
+          "actual": 0,
+          "achievementRate": 0,
+          "variance": 0,
+          "alertLevel": "GREEN"
+        },
+        {
+          "month": "9月",
+          "budget": 0,
+          "actual": 0,
+          "achievementRate": 0,
+          "variance": 0,
+          "alertLevel": "GREEN"
+        },
+        {
+          "month": "10月",
+          "budget": 0,
+          "actual": 0,
+          "achievementRate": 0,
+          "variance": 0,
+          "alertLevel": "GREEN"
+        },
+        {
+          "month": "11月",
+          "budget": 0,
+          "actual": 0,
+          "achievementRate": 0,
+          "variance": 0,
+          "alertLevel": "GREEN"
+        },
+        {
+          "month": "12月",
+          "budget": 0,
+          "actual": 0,
+          "achievementRate": 0,
+          "variance": 0,
+          "alertLevel": "GREEN"
+        }
+      ],
+      "options": {
+        "yAxis": [
+          {
+            "name": "金额",
+            "position": "left"
+          },
+          {
+            "position": "right",
+            "min": 0,
+            "name": "达成率(%)",
+            "max": 150
+          }
+        ],
+        "series": [
+          {
+            "yAxisIndex": 0,
+            "type": "bar",
+            "name": "预算",
+            "color": "#5470c6"
+          },
+          {
+            "yAxisIndex": 0,
+            "type": "bar",
+            "name": "实际",
+            "color": "#91cc75"
+          },
+          {
+            "yAxisIndex": 1,
+            "type": "line",
+            "name": "达成率",
+            "color": "#ee6666"
+          }
+        ],
+        "referenceLine": {
+          "label": "目标线",
+          "value": 100
+        }
+      },
+      "xaxisField": "month",
+      "yaxisField": "budget"
+    }
+  },
+  "_meta": {
+    "name": "analysis-finance-budget-achievement",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/analysis/finance/budget-achievement",
+    "query": {
+      "year": "2025",
+      "metric": "revenue"
+    },
+    "factory": "F999",
+    "recordedAt": "2026-04-29T22:34:38.194Z",
+    "javaPort": 10011
+  }
+}

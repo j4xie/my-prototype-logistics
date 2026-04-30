@@ -1,0 +1,18 @@
+{
+  "verb": "POST",
+  "path": "/api/mobile/{factory_id}/smart-bi/sheets",
+  "factory": "F999",
+  "response": {
+    "_skipped": true,
+    "reason": "Multipart sheet listing — skip; Apache POI only, no Python"
+  },
+  "_meta": {
+    "name": "upload-sheets",
+    "verb": "POST",
+    "path": "/api/mobile/{factory_id}/smart-bi/sheets",
+    "query": null,
+    "factory": "F999",
+    "recordedAt": "2026-04-29T22:34:48.581Z",
+    "javaPort": 10011
+  }
+}

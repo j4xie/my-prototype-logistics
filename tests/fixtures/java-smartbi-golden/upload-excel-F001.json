@@ -1,0 +1,18 @@
+{
+  "verb": "POST",
+  "path": "/api/mobile/{factory_id}/smart-bi/upload",
+  "factory": "F001",
+  "response": {
+    "_skipped": true,
+    "reason": "Multipart file upload to Python parser — skip to avoid creating upload records"
+  },
+  "_meta": {
+    "name": "upload-excel",
+    "verb": "POST",
+    "path": "/api/mobile/{factory_id}/smart-bi/upload",
+    "query": null,
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:33.395Z",
+    "javaPort": 10011
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/analysis/dynamic/kpis",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T06:34:58.504176799",
+    "data": []
+  },
+  "_meta": {
+    "name": "analysis-dynamic-kpis",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/analysis/dynamic/kpis",
+    "query": {
+      "uploadId": "1"
+    },
+    "factory": "F999",
+    "recordedAt": "2026-04-29T22:34:58.873Z",
+    "javaPort": 10011
+  }
+}

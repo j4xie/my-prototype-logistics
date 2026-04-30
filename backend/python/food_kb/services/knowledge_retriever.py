@@ -232,6 +232,17 @@ class KnowledgeRetriever:
             else:
                 results = results[:top_k]
 
+            # Normalize similarity to [0, 1] for consistent UI display.
+            # Priority: rerank_score (cross-encoder, [0,1]) > clamped raw similarity.
+            # BM25 ts_rank_cd has no upper bound and can return values > 1, which is
+            # confusing for callers / users who expect cosine-like [0,1] scores.
+            for doc in results:
+                meta = doc.metadata if isinstance(doc.metadata, dict) else None
+                if meta and "rerank_score" in meta:
+                    doc.similarity = float(meta["rerank_score"])
+                else:
+                    doc.similarity = max(0.0, min(1.0, float(doc.similarity)))
+
             elapsed = (time.time() - start_time) * 1000
             logger.info(
                 f"Knowledge retrieval ({retrieval_method}): query='{query[:40]}', "
@@ -301,7 +312,9 @@ class KnowledgeRetriever:
                 param_idx += 1
 
             if subcategories:
-                sql += f" AND subcategory = ANY(${param_idx}::text[])"
+                # NULL chunks (通用食品知识 / GB 标准 / 法规) 对所有 category 都该召回
+                # 用 OR IS NULL 让 factory/restaurant 查询都能查到合规章节
+                sql += f" AND (subcategory = ANY(${param_idx}::text[]) OR subcategory IS NULL)"
                 params.append(subcategories)
                 param_idx += 1
 
@@ -488,8 +501,10 @@ class KnowledgeRetriever:
             param_idx += 1
 
         # Subcategory filter (domain routing — restaurant / factory / NULL)
+        # NULL chunks (通用食品知识 / GB 标准 / 法规) 对所有 category 都该召回
+        # 用 OR IS NULL 让 factory/restaurant 查询都能查到合规章节
         if subcategories:
-            sql += f" AND subcategory = ANY(${param_idx}::text[])"
+            sql += f" AND (subcategory = ANY(${param_idx}::text[]) OR subcategory IS NULL)"
             params.append(subcategories)
             param_idx += 1
 
@@ -539,7 +554,9 @@ class KnowledgeRetriever:
                 param_idx += 1
 
             if subcategories:
-                sql += f" AND subcategory = ANY(${param_idx}::text[])"
+                # NULL chunks (通用食品知识 / GB 标准 / 法规) 对所有 category 都该召回
+                # 用 OR IS NULL 让 factory/restaurant 查询都能查到合规章节
+                sql += f" AND (subcategory = ANY(${param_idx}::text[]) OR subcategory IS NULL)"
                 params.append(subcategories)
                 param_idx += 1
 

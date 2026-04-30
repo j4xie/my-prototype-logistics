@@ -1,0 +1,2533 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F001/smart-bi/analysis/quality",
+  "factory": "F001",
+  "response": {
+    "httpStatus": 200,
+    "success": true,
+    "message": "操作成功",
+    "data": {
+      "overview": {
+        "period": "CUSTOM",
+        "startDate": "2025-01-01",
+        "endDate": "2025-12-31",
+        "kpiCards": [
+          {
+            "key": "FPY",
+            "title": "首次通过率 (FPY)",
+            "value": "95.22%",
+            "rawValue": 95.22,
+            "unit": "%",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "yellow",
+            "compareText": null,
+            "description": "首次检验通过数 / 总检验数",
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "DEFECT_RATE",
+            "title": "不良率",
+            "value": "4.78%",
+            "rawValue": 4.78,
+            "unit": "%",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "yellow",
+            "compareText": null,
+            "description": "不良品数 / 总检验数",
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "REWORK_COST",
+            "title": "返工成本",
+            "value": "527,498.00",
+            "rawValue": 527498,
+            "unit": "元",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "green",
+            "compareText": null,
+            "description": null,
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "SCRAP_COST",
+            "title": "报废成本",
+            "value": "1,465,214.00",
+            "rawValue": 1465214,
+            "unit": "元",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "green",
+            "compareText": null,
+            "description": null,
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "TOTAL_QUALITY_COST",
+            "title": "质量成本总计",
+            "value": "1,992,712.00",
+            "rawValue": 1992712,
+            "unit": "元",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "green",
+            "compareText": null,
+            "description": null,
+            "targetValue": null,
+            "completionRate": null
+          },
+          {
+            "key": "CUSTOMER_COMPLAINT_COUNT",
+            "title": "客户投诉数",
+            "value": "4414 件",
+            "rawValue": 4414,
+            "unit": "件",
+            "change": null,
+            "changeRate": null,
+            "trend": "flat",
+            "status": "red",
+            "compareText": null,
+            "description": null,
+            "targetValue": null,
+            "completionRate": null
+          }
+        ],
+        "metricCards": null,
+        "rankings": {
+          "defect_type": [
+            {
+              "rank": 1,
+              "name": "装配不良",
+              "value": 8797,
+              "target": null,
+              "completionRate": 21.05,
+              "alertLevel": "RED"
+            },
+            {
+              "rank": 2,
+              "name": "材料缺陷",
+              "value": 8586,
+              "target": null,
+              "completionRate": 20.54,
+              "alertLevel": "RED"
+            },
+            {
+              "rank": 3,
+              "name": "外观缺陷",
+              "value": 8521,
+              "target": null,
+              "completionRate": 20.39,
+              "alertLevel": "RED"
+            },
+            {
+              "rank": 4,
+              "name": "功能故障",
+              "value": 8169,
+              "target": null,
+              "completionRate": 19.54,
+              "alertLevel": "GREEN"
+            },
+            {
+              "rank": 5,
+              "name": "尺寸偏差",
+              "value": 7724,
+              "target": null,
+              "completionRate": 18.48,
+              "alertLevel": "GREEN"
+            }
+          ],
+          "product_line": [
+            {
+              "rank": 1,
+              "name": "产线D",
+              "value": 95.32,
+              "target": 98,
+              "completionRate": 97.27,
+              "alertLevel": "YELLOW"
+            },
+            {
+              "rank": 2,
+              "name": "产线B",
+              "value": 95.24,
+              "target": 98,
+              "completionRate": 97.18,
+              "alertLevel": "YELLOW"
+            },
+            {
+              "rank": 3,
+              "name": "产线C",
+              "value": 95.2,
+              "target": 98,
+              "completionRate": 97.14,
+              "alertLevel": "YELLOW"
+            },
+            {
+              "rank": 4,
+              "name": "产线A",
+              "value": 95.14,
+              "target": 98,
+              "completionRate": 97.08,
+              "alertLevel": "YELLOW"
+            }
+          ]
+        },
+        "charts": {
+          "quality_trend": {
+            "chartType": "LINE",
+            "title": "质量趋势",
+            "seriesField": "metric",
+            "data": [
+              {
+                "date": "2025-01-01",
+                "fpy": 93.69,
+                "defectRate": 6.31,
+                "totalInspections": 2756
+              },
+              {
+                "date": "2025-01-02",
+                "fpy": 95.4,
+                "defectRate": 4.6,
+                "totalInspections": 2173
+              },
+              {
+                "date": "2025-01-03",
+                "fpy": 95.01,
+                "defectRate": 4.99,
+                "totalInspections": 2266
+              },
+              {
+                "date": "2025-01-04",
+                "fpy": 95.75,
+                "defectRate": 4.25,
+                "totalInspections": 2401
+              },
+              {
+                "date": "2025-01-05",
+                "fpy": 94.87,
+                "defectRate": 5.13,
+                "totalInspections": 2457
+              },
+              {
+                "date": "2025-01-06",
+                "fpy": 95.43,
+                "defectRate": 4.57,
+                "totalInspections": 2318
+              },
+              {
+                "date": "2025-01-07",
+                "fpy": 95.26,
+                "defectRate": 4.74,
+                "totalInspections": 2533
+              },
+              {
+                "date": "2025-01-08",
+                "fpy": 96.01,
+                "defectRate": 3.99,
+                "totalInspections": 2383
+              },
+              {
+                "date": "2025-01-09",
+                "fpy": 94.82,
+                "defectRate": 5.18,
+                "totalInspections": 2589
+              },
+              {
+                "date": "2025-01-10",
+                "fpy": 96.11,
+                "defectRate": 3.89,
+                "totalInspections": 2264
+              },
+              {
+                "date": "2025-01-11",
+                "fpy": 95.21,
+                "defectRate": 4.79,
+                "totalInspections": 2360
+              },
+              {
+                "date": "2025-01-12",
+                "fpy": 95.32,
+                "defectRate": 4.68,
+                "totalInspections": 2138
+              },
+              {
+                "date": "2025-01-13",
+                "fpy": 95.27,
+                "defectRate": 4.73,
+                "totalInspections": 2303
+              },
+              {
+                "date": "2025-01-14",
+                "fpy": 95.49,
+                "defectRate": 4.51,
+                "totalInspections": 2437
+              },
+              {
+                "date": "2025-01-15",
+                "fpy": 95.42,
+                "defectRate": 4.58,
+                "totalInspections": 2446
+              },
+              {
+                "date": "2025-01-16",
+                "fpy": 95.53,
+                "defectRate": 4.47,
+                "totalInspections": 2529
+              },
+              {
+                "date": "2025-01-17",
+                "fpy": 94.89,
+                "defectRate": 5.11,
+                "totalInspections": 2327
+              },
+              {
+                "date": "2025-01-18",
+                "fpy": 94.75,
+                "defectRate": 5.25,
+                "totalInspections": 2821
+              },
+              {
+                "date": "2025-01-19",
+                "fpy": 95.64,
+                "defectRate": 4.36,
+                "totalInspections": 2433
+              },
+              {
+                "date": "2025-01-20",
+                "fpy": 94.76,
+                "defectRate": 5.24,
+                "totalInspections": 2464
+              },
+              {
+                "date": "2025-01-21",
+                "fpy": 95.32,
+                "defectRate": 4.68,
+                "totalInspections": 2371
+              },
+              {
+                "date": "2025-01-22",
+                "fpy": 94.57,
+                "defectRate": 5.43,
+                "totalInspections": 1953
+              },
+              {
+                "date": "2025-01-23",
+                "fpy": 95.81,
+                "defectRate": 4.19,
+                "totalInspections": 2269
+              },
+              {
+                "date": "2025-01-24",
+                "fpy": 96.24,
+                "defectRate": 3.76,
+                "totalInspections": 2473
+              },
+              {
+                "date": "2025-01-25",
+                "fpy": 94.52,
+                "defectRate": 5.48,
+                "totalInspections": 2228
+              },
+              {
+                "date": "2025-01-26",
+                "fpy": 95.1,
+                "defectRate": 4.9,
+                "totalInspections": 2451
+              },
+              {
+                "date": "2025-01-27",
+                "fpy": 95.32,
+                "defectRate": 4.68,
+                "totalInspections": 2306
+              },
+              {
+                "date": "2025-01-28",
+                "fpy": 94.73,
+                "defectRate": 5.27,
+                "totalInspections": 2279
+              },
+              {
+                "date": "2025-01-29",
+                "fpy": 95.43,
+                "defectRate": 4.57,
+                "totalInspections": 2232
+              },
+              {
+                "date": "2025-01-30",
+                "fpy": 95.41,
+                "defectRate": 4.59,
+                "totalInspections": 2440
+              },
+              {
+                "date": "2025-01-31",
+                "fpy": 95.04,
+                "defectRate": 4.96,
+                "totalInspections": 2519
+              },
+              {
+                "date": "2025-02-01",
+                "fpy": 95.47,
+                "defectRate": 4.53,
+                "totalInspections": 2097
+              },
+              {
+                "date": "2025-02-02",
+                "fpy": 94.97,
+                "defectRate": 5.03,
+                "totalInspections": 2466
+              },
+              {
+                "date": "2025-02-03",
+                "fpy": 94.9,
+                "defectRate": 5.1,
+                "totalInspections": 2627
+              },
+              {
+                "date": "2025-02-04",
+                "fpy": 95.45,
+                "defectRate": 4.55,
+                "totalInspections": 2638
+              },
+              {
+                "date": "2025-02-05",
+                "fpy": 95.28,
+                "defectRate": 4.72,
+                "totalInspections": 2775
+              },
+              {
+                "date": "2025-02-06",
+                "fpy": 95.28,
+                "defectRate": 4.72,
+                "totalInspections": 2142
+              },
+              {
+                "date": "2025-02-07",
+                "fpy": 95.39,
+                "defectRate": 4.61,
+                "totalInspections": 2584
+              },
+              {
+                "date": "2025-02-08",
+                "fpy": 94.82,
+                "defectRate": 5.18,
+                "totalInspections": 2124
+              },
+              {
+                "date": "2025-02-09",
+                "fpy": 94.83,
+                "defectRate": 5.17,
+                "totalInspections": 2377
+              },
+              {
+                "date": "2025-02-10",
+                "fpy": 95.16,
+                "defectRate": 4.84,
+                "totalInspections": 2107
+              },
+              {
+                "date": "2025-02-11",
+                "fpy": 95.62,
+                "defectRate": 4.38,
+                "totalInspections": 2603
+              },
+              {
+                "date": "2025-02-12",
+                "fpy": 94.74,
+                "defectRate": 5.26,
+                "totalInspections": 2282
+              },
+              {
+                "date": "2025-02-13",
+                "fpy": 95.27,
+                "defectRate": 4.73,
+                "totalInspections": 2432
+              },
+              {
+                "date": "2025-02-14",
+                "fpy": 94.8,
+                "defectRate": 5.2,
+                "totalInspections": 2328
+              },
+              {
+                "date": "2025-02-15",
+                "fpy": 94.77,
+                "defectRate": 5.23,
+                "totalInspections": 2466
+              },
+              {
+                "date": "2025-02-16",
+                "fpy": 95.22,
+                "defectRate": 4.78,
+                "totalInspections": 2408
+              },
+              {
+                "date": "2025-02-17",
+                "fpy": 95.41,
+                "defectRate": 4.59,
+                "totalInspections": 2506
+              },
+              {
+                "date": "2025-02-18",
+                "fpy": 95.69,
+                "defectRate": 4.31,
+                "totalInspections": 2229
+              },
+              {
+                "date": "2025-02-19",
+                "fpy": 94.7,
+                "defectRate": 5.3,
+                "totalInspections": 2397
+              },
+              {
+                "date": "2025-02-20",
+                "fpy": 95.95,
+                "defectRate": 4.05,
+                "totalInspections": 2470
+              },
+              {
+                "date": "2025-02-21",
+                "fpy": 95.34,
+                "defectRate": 4.66,
+                "totalInspections": 2339
+              },
+              {
+                "date": "2025-02-22",
+                "fpy": 96.26,
+                "defectRate": 3.74,
+                "totalInspections": 2755
+              },
+              {
+                "date": "2025-02-23",
+                "fpy": 95.66,
+                "defectRate": 4.34,
+                "totalInspections": 2096
+              },
+              {
+                "date": "2025-02-24",
+                "fpy": 95.76,
+                "defectRate": 4.24,
+                "totalInspections": 2310
+              },
+              {
+                "date": "2025-02-25",
+                "fpy": 94.84,
+                "defectRate": 5.16,
+                "totalInspections": 2576
+              },
+              {
+                "date": "2025-02-26",
+                "fpy": 95.06,
+                "defectRate": 4.94,
+                "totalInspections": 2430
+              },
+              {
+                "date": "2025-02-27",
+                "fpy": 95.82,
+                "defectRate": 4.18,
+                "totalInspections": 2129
+              },
+              {
+                "date": "2025-02-28",
+                "fpy": 95.58,
+                "defectRate": 4.42,
+                "totalInspections": 2853
+              },
+              {
+                "date": "2025-03-01",
+                "fpy": 95.47,
+                "defectRate": 4.53,
+                "totalInspections": 2448
+              },
+              {
+                "date": "2025-03-02",
+                "fpy": 95.15,
+                "defectRate": 4.85,
+                "totalInspections": 2413
+              },
+              {
+                "date": "2025-03-03",
+                "fpy": 95.28,
+                "defectRate": 4.72,
+                "totalInspections": 2563
+              },
+              {
+                "date": "2025-03-04",
+                "fpy": 95.71,
+                "defectRate": 4.29,
+                "totalInspections": 2422
+              },
+              {
+                "date": "2025-03-05",
+                "fpy": 95.22,
+                "defectRate": 4.78,
+                "totalInspections": 2405
+              },
+              {
+                "date": "2025-03-06",
+                "fpy": 95.12,
+                "defectRate": 4.88,
+                "totalInspections": 2254
+              },
+              {
+                "date": "2025-03-07",
+                "fpy": 94.63,
+                "defectRate": 5.37,
+                "totalInspections": 2478
+              },
+              {
+                "date": "2025-03-08",
+                "fpy": 96.14,
+                "defectRate": 3.86,
+                "totalInspections": 2616
+              },
+              {
+                "date": "2025-03-09",
+                "fpy": 95.64,
+                "defectRate": 4.36,
+                "totalInspections": 2270
+              },
+              {
+                "date": "2025-03-10",
+                "fpy": 94.74,
+                "defectRate": 5.26,
+                "totalInspections": 2282
+              },
+              {
+                "date": "2025-03-11",
+                "fpy": 96.21,
+                "defectRate": 3.79,
+                "totalInspections": 2665
+              },
+              {
+                "date": "2025-03-12",
+                "fpy": 94.62,
+                "defectRate": 5.38,
+                "totalInspections": 2529
+              },
+              {
+                "date": "2025-03-13",
+                "fpy": 95.44,
+                "defectRate": 4.56,
+                "totalInspections": 2084
+              },
+              {
+                "date": "2025-03-14",
+                "fpy": 95.17,
+                "defectRate": 4.83,
+                "totalInspections": 2258
+              },
+              {
+                "date": "2025-03-15",
+                "fpy": 94.92,
+                "defectRate": 5.08,
+                "totalInspections": 2423
+              },
+              {
+                "date": "2025-03-16",
+                "fpy": 96.12,
+                "defectRate": 3.88,
+                "totalInspections": 2553
+              },
+              {
+                "date": "2025-03-17",
+                "fpy": 95.07,
+                "defectRate": 4.93,
+                "totalInspections": 2837
+              },
+              {
+                "date": "2025-03-18",
+                "fpy": 95.11,
+                "defectRate": 4.89,
+                "totalInspections": 2066
+              },
+              {
+                "date": "2025-03-19",
+                "fpy": 94.43,
+                "defectRate": 5.57,
+                "totalInspections": 2530
+              },
+              {
+                "date": "2025-03-20",
+                "fpy": 94.76,
+                "defectRate": 5.24,
+                "totalInspections": 2708
+              },
+              {
+                "date": "2025-03-21",
+                "fpy": 95.66,
+                "defectRate": 4.34,
+                "totalInspections": 2396
+              },
+              {
+                "date": "2025-03-22",
+                "fpy": 94.77,
+                "defectRate": 5.23,
+                "totalInspections": 2466
+              },
+              {
+                "date": "2025-03-23",
+                "fpy": 95.55,
+                "defectRate": 4.45,
+                "totalInspections": 2673
+              },
+              {
+                "date": "2025-03-24",
+                "fpy": 94.93,
+                "defectRate": 5.07,
+                "totalInspections": 2406
+              },
+              {
+                "date": "2025-03-25",
+                "fpy": 95.43,
+                "defectRate": 4.57,
+                "totalInspections": 2079
+              },
+              {
+                "date": "2025-03-26",
+                "fpy": 94.97,
+                "defectRate": 5.03,
+                "totalInspections": 1970
+              },
+              {
+                "date": "2025-03-27",
+                "fpy": 96.04,
+                "defectRate": 3.96,
+                "totalInspections": 2122
+              },
+              {
+                "date": "2025-03-28",
+                "fpy": 95.84,
+                "defectRate": 4.16,
+                "totalInspections": 2281
+              },
+              {
+                "date": "2025-03-29",
+                "fpy": 94.68,
+                "defectRate": 5.32,
+                "totalInspections": 2350
+              },
+              {
+                "date": "2025-03-30",
+                "fpy": 96.09,
+                "defectRate": 3.91,
+                "totalInspections": 2299
+              },
+              {
+                "date": "2025-03-31",
+                "fpy": 95.66,
+                "defectRate": 4.34,
+                "totalInspections": 2625
+              },
+              {
+                "date": "2025-04-01",
+                "fpy": 95.11,
+                "defectRate": 4.89,
+                "totalInspections": 2371
+              },
+              {
+                "date": "2025-04-02",
+                "fpy": 94.97,
+                "defectRate": 5.03,
+                "totalInspections": 2585
+              },
+              {
+                "date": "2025-04-03",
+                "fpy": 95.8,
+                "defectRate": 4.2,
+                "totalInspections": 2403
+              },
+              {
+                "date": "2025-04-04",
+                "fpy": 95.6,
+                "defectRate": 4.4,
+                "totalInspections": 2228
+              },
+              {
+                "date": "2025-04-05",
+                "fpy": 95.59,
+                "defectRate": 4.41,
+                "totalInspections": 2495
+              },
+              {
+                "date": "2025-04-06",
+                "fpy": 94.4,
+                "defectRate": 5.6,
+                "totalInspections": 2767
+              },
+              {
+                "date": "2025-04-07",
+                "fpy": 95.34,
+                "defectRate": 4.66,
+                "totalInspections": 2597
+              },
+              {
+                "date": "2025-04-08",
+                "fpy": 95.64,
+                "defectRate": 4.36,
+                "totalInspections": 2523
+              },
+              {
+                "date": "2025-04-09",
+                "fpy": 94.34,
+                "defectRate": 5.66,
+                "totalInspections": 2419
+              },
+              {
+                "date": "2025-04-10",
+                "fpy": 95.08,
+                "defectRate": 4.92,
+                "totalInspections": 2461
+              },
+              {
+                "date": "2025-04-11",
+                "fpy": 94.92,
+                "defectRate": 5.08,
+                "totalInspections": 1832
+              },
+              {
+                "date": "2025-04-12",
+                "fpy": 94.39,
+                "defectRate": 5.61,
+                "totalInspections": 2209
+              },
+              {
+                "date": "2025-04-13",
+                "fpy": 94.53,
+                "defectRate": 5.47,
+                "totalInspections": 2159
+              },
+              {
+                "date": "2025-04-14",
+                "fpy": 96.06,
+                "defectRate": 3.94,
+                "totalInspections": 2309
+              },
+              {
+                "date": "2025-04-15",
+                "fpy": 95.94,
+                "defectRate": 4.06,
+                "totalInspections": 1971
+              },
+              {
+                "date": "2025-04-16",
+                "fpy": 95.04,
+                "defectRate": 4.96,
+                "totalInspections": 2419
+              },
+              {
+                "date": "2025-04-17",
+                "fpy": 95,
+                "defectRate": 5,
+                "totalInspections": 2218
+              },
+              {
+                "date": "2025-04-18",
+                "fpy": 95.09,
+                "defectRate": 4.91,
+                "totalInspections": 2261
+              },
+              {
+                "date": "2025-04-19",
+                "fpy": 94.27,
+                "defectRate": 5.73,
+                "totalInspections": 2251
+              },
+              {
+                "date": "2025-04-20",
+                "fpy": 95.03,
+                "defectRate": 4.97,
+                "totalInspections": 2335
+              },
+              {
+                "date": "2025-04-21",
+                "fpy": 95.29,
+                "defectRate": 4.71,
+                "totalInspections": 2016
+              },
+              {
+                "date": "2025-04-22",
+                "fpy": 95.81,
+                "defectRate": 4.19,
+                "totalInspections": 2051
+              },
+              {
+                "date": "2025-04-23",
+                "fpy": 94.74,
+                "defectRate": 5.26,
+                "totalInspections": 2112
+              },
+              {
+                "date": "2025-04-24",
+                "fpy": 95.66,
+                "defectRate": 4.34,
+                "totalInspections": 2418
+              },
+              {
+                "date": "2025-04-25",
+                "fpy": 95.27,
+                "defectRate": 4.73,
+                "totalInspections": 2260
+              },
+              {
+                "date": "2025-04-26",
+                "fpy": 95.75,
+                "defectRate": 4.25,
+                "totalInspections": 2473
+              },
+              {
+                "date": "2025-04-27",
+                "fpy": 94.91,
+                "defectRate": 5.09,
+                "totalInspections": 2338
+              },
+              {
+                "date": "2025-04-28",
+                "fpy": 95.94,
+                "defectRate": 4.06,
+                "totalInspections": 2240
+              },
+              {
+                "date": "2025-04-29",
+                "fpy": 95.36,
+                "defectRate": 4.64,
+                "totalInspections": 2218
+              },
+              {
+                "date": "2025-04-30",
+                "fpy": 94.72,
+                "defectRate": 5.28,
+                "totalInspections": 2330
+              },
+              {
+                "date": "2025-05-01",
+                "fpy": 94.85,
+                "defectRate": 5.15,
+                "totalInspections": 2270
+              },
+              {
+                "date": "2025-05-02",
+                "fpy": 95.85,
+                "defectRate": 4.15,
+                "totalInspections": 2531
+              },
+              {
+                "date": "2025-05-03",
+                "fpy": 96.11,
+                "defectRate": 3.89,
+                "totalInspections": 2339
+              },
+              {
+                "date": "2025-05-04",
+                "fpy": 95.48,
+                "defectRate": 4.52,
+                "totalInspections": 2676
+              },
+              {
+                "date": "2025-05-05",
+                "fpy": 95.45,
+                "defectRate": 4.55,
+                "totalInspections": 2353
+              },
+              {
+                "date": "2025-05-06",
+                "fpy": 95.2,
+                "defectRate": 4.8,
+                "totalInspections": 2456
+              },
+              {
+                "date": "2025-05-07",
+                "fpy": 95.46,
+                "defectRate": 4.54,
+                "totalInspections": 2271
+              },
+              {
+                "date": "2025-05-08",
+                "fpy": 94.57,
+                "defectRate": 5.43,
+                "totalInspections": 2468
+              },
+              {
+                "date": "2025-05-09",
+                "fpy": 95.06,
+                "defectRate": 4.94,
+                "totalInspections": 2512
+              },
+              {
+                "date": "2025-05-10",
+                "fpy": 95.76,
+                "defectRate": 4.24,
+                "totalInspections": 2524
+              },
+              {
+                "date": "2025-05-11",
+                "fpy": 95.45,
+                "defectRate": 4.55,
+                "totalInspections": 2638
+              },
+              {
+                "date": "2025-05-12",
+                "fpy": 95.28,
+                "defectRate": 4.72,
+                "totalInspections": 2564
+              },
+              {
+                "date": "2025-05-13",
+                "fpy": 95.18,
+                "defectRate": 4.82,
+                "totalInspections": 2156
+              },
+              {
+                "date": "2025-05-14",
+                "fpy": 95.39,
+                "defectRate": 4.61,
+                "totalInspections": 2234
+              },
+              {
+                "date": "2025-05-15",
+                "fpy": 95.94,
+                "defectRate": 4.06,
+                "totalInspections": 1972
+              },
+              {
+                "date": "2025-05-16",
+                "fpy": 94.95,
+                "defectRate": 5.05,
+                "totalInspections": 2552
+              },
+              {
+                "date": "2025-05-17",
+                "fpy": 95.63,
+                "defectRate": 4.37,
+                "totalInspections": 2241
+              },
+              {
+                "date": "2025-05-18",
+                "fpy": 94.79,
+                "defectRate": 5.21,
+                "totalInspections": 2455
+              },
+              {
+                "date": "2025-05-19",
+                "fpy": 94.84,
+                "defectRate": 5.16,
+                "totalInspections": 2093
+              },
+              {
+                "date": "2025-05-20",
+                "fpy": 95.32,
+                "defectRate": 4.68,
+                "totalInspections": 2391
+              },
+              {
+                "date": "2025-05-21",
+                "fpy": 94.84,
+                "defectRate": 5.16,
+                "totalInspections": 2518
+              },
+              {
+                "date": "2025-05-22",
+                "fpy": 95.38,
+                "defectRate": 4.62,
+                "totalInspections": 2422
+              },
+              {
+                "date": "2025-05-23",
+                "fpy": 95.21,
+                "defectRate": 4.79,
+                "totalInspections": 2443
+              },
+              {
+                "date": "2025-05-24",
+                "fpy": 95.37,
+                "defectRate": 4.63,
+                "totalInspections": 2572
+              },
+              {
+                "date": "2025-05-25",
+                "fpy": 94.36,
+                "defectRate": 5.64,
+                "totalInspections": 2427
+              },
+              {
+                "date": "2025-05-26",
+                "fpy": 95.27,
+                "defectRate": 4.73,
+                "totalInspections": 2514
+              },
+              {
+                "date": "2025-05-27",
+                "fpy": 95.12,
+                "defectRate": 4.88,
+                "totalInspections": 2396
+              },
+              {
+                "date": "2025-05-28",
+                "fpy": 95.48,
+                "defectRate": 4.52,
+                "totalInspections": 2299
+              },
+              {
+                "date": "2025-05-29",
+                "fpy": 95.29,
+                "defectRate": 4.71,
+                "totalInspections": 2569
+              },
+              {
+                "date": "2025-05-30",
+                "fpy": 95.36,
+                "defectRate": 4.64,
+                "totalInspections": 2196
+              },
+              {
+                "date": "2025-05-31",
+                "fpy": 94.88,
+                "defectRate": 5.12,
+                "totalInspections": 2306
+              },
+              {
+                "date": "2025-06-01",
+                "fpy": 94.51,
+                "defectRate": 5.49,
+                "totalInspections": 2443
+              },
+              {
+                "date": "2025-06-02",
+                "fpy": 95.25,
+                "defectRate": 4.75,
+                "totalInspections": 2401
+              },
+              {
+                "date": "2025-06-03",
+                "fpy": 94.53,
+                "defectRate": 5.47,
+                "totalInspections": 2667
+              },
+              {
+                "date": "2025-06-04",
+                "fpy": 95.58,
+                "defectRate": 4.42,
+                "totalInspections": 2261
+              },
+              {
+                "date": "2025-06-05",
+                "fpy": 95.71,
+                "defectRate": 4.29,
+                "totalInspections": 2052
+              },
+              {
+                "date": "2025-06-06",
+                "fpy": 95.6,
+                "defectRate": 4.4,
+                "totalInspections": 2521
+              },
+              {
+                "date": "2025-06-07",
+                "fpy": 95.93,
+                "defectRate": 4.07,
+                "totalInspections": 2554
+              },
+              {
+                "date": "2025-06-08",
+                "fpy": 94.58,
+                "defectRate": 5.42,
+                "totalInspections": 2566
+              },
+              {
+                "date": "2025-06-09",
+                "fpy": 94.78,
+                "defectRate": 5.22,
+                "totalInspections": 2394
+              },
+              {
+                "date": "2025-06-10",
+                "fpy": 95.25,
+                "defectRate": 4.75,
+                "totalInspections": 2335
+              },
+              {
+                "date": "2025-06-11",
+                "fpy": 96.08,
+                "defectRate": 3.92,
+                "totalInspections": 2426
+              },
+              {
+                "date": "2025-06-12",
+                "fpy": 95.62,
+                "defectRate": 4.38,
+                "totalInspections": 2304
+              },
+              {
+                "date": "2025-06-13",
+                "fpy": 95.65,
+                "defectRate": 4.35,
+                "totalInspections": 2461
+              },
+              {
+                "date": "2025-06-14",
+                "fpy": 94.57,
+                "defectRate": 5.43,
+                "totalInspections": 2119
+              },
+              {
+                "date": "2025-06-15",
+                "fpy": 95.95,
+                "defectRate": 4.05,
+                "totalInspections": 2195
+              },
+              {
+                "date": "2025-06-16",
+                "fpy": 94.95,
+                "defectRate": 5.05,
+                "totalInspections": 2536
+              },
+              {
+                "date": "2025-06-17",
+                "fpy": 95,
+                "defectRate": 5,
+                "totalInspections": 2658
+              },
+              {
+                "date": "2025-06-18",
+                "fpy": 95.37,
+                "defectRate": 4.63,
+                "totalInspections": 2505
+              },
+              {
+                "date": "2025-06-19",
+                "fpy": 94.9,
+                "defectRate": 5.1,
+                "totalInspections": 2194
+              },
+              {
+                "date": "2025-06-20",
+                "fpy": 94.66,
+                "defectRate": 5.34,
+                "totalInspections": 2398
+              },
+              {
+                "date": "2025-06-21",
+                "fpy": 95.63,
+                "defectRate": 4.37,
+                "totalInspections": 2268
+              },
+              {
+                "date": "2025-06-22",
+                "fpy": 95.52,
+                "defectRate": 4.48,
+                "totalInspections": 2544
+              },
+              {
+                "date": "2025-06-23",
+                "fpy": 94.9,
+                "defectRate": 5.1,
+                "totalInspections": 2509
+              },
+              {
+                "date": "2025-06-24",
+                "fpy": 94.12,
+                "defectRate": 5.88,
+                "totalInspections": 2381
+              },
+              {
+                "date": "2025-06-25",
+                "fpy": 95.04,
+                "defectRate": 4.96,
+                "totalInspections": 2478
+              },
+              {
+                "date": "2025-06-26",
+                "fpy": 95.49,
+                "defectRate": 4.51,
+                "totalInspections": 2680
+              },
+              {
+                "date": "2025-06-27",
+                "fpy": 94.66,
+                "defectRate": 5.34,
+                "totalInspections": 2451
+              },
+              {
+                "date": "2025-06-28",
+                "fpy": 95.26,
+                "defectRate": 4.74,
+                "totalInspections": 2424
+              },
+              {
+                "date": "2025-06-29",
+                "fpy": 95.23,
+                "defectRate": 4.77,
+                "totalInspections": 2495
+              },
+              {
+                "date": "2025-06-30",
+                "fpy": 94.96,
+                "defectRate": 5.04,
+                "totalInspections": 2123
+              },
+              {
+                "date": "2025-07-01",
+                "fpy": 95.68,
+                "defectRate": 4.32,
+                "totalInspections": 2154
+              },
+              {
+                "date": "2025-07-02",
+                "fpy": 95.15,
+                "defectRate": 4.85,
+                "totalInspections": 2166
+              },
+              {
+                "date": "2025-07-03",
+                "fpy": 95.17,
+                "defectRate": 4.83,
+                "totalInspections": 2648
+              },
+              {
+                "date": "2025-07-04",
+                "fpy": 95.51,
+                "defectRate": 4.49,
+                "totalInspections": 2340
+              },
+              {
+                "date": "2025-07-05",
+                "fpy": 94.8,
+                "defectRate": 5.2,
+                "totalInspections": 2346
+              },
+              {
+                "date": "2025-07-06",
+                "fpy": 94.15,
+                "defectRate": 5.85,
+                "totalInspections": 2617
+              },
+              {
+                "date": "2025-07-07",
+                "fpy": 94.4,
+                "defectRate": 5.6,
+                "totalInspections": 2733
+              },
+              {
+                "date": "2025-07-08",
+                "fpy": 94.98,
+                "defectRate": 5.02,
+                "totalInspections": 2670
+              },
+              {
+                "date": "2025-07-09",
+                "fpy": 94.4,
+                "defectRate": 5.6,
+                "totalInspections": 2606
+              },
+              {
+                "date": "2025-07-10",
+                "fpy": 95.38,
+                "defectRate": 4.62,
+                "totalInspections": 2533
+              },
+              {
+                "date": "2025-07-11",
+                "fpy": 94.71,
+                "defectRate": 5.29,
+                "totalInspections": 2550
+              },
+              {
+                "date": "2025-07-12",
+                "fpy": 94.94,
+                "defectRate": 5.06,
+                "totalInspections": 2591
+              },
+              {
+                "date": "2025-07-13",
+                "fpy": 95.18,
+                "defectRate": 4.82,
+                "totalInspections": 2509
+              },
+              {
+                "date": "2025-07-14",
+                "fpy": 95.01,
+                "defectRate": 4.99,
+                "totalInspections": 2145
+              },
+              {
+                "date": "2025-07-15",
+                "fpy": 95.63,
+                "defectRate": 4.37,
+                "totalInspections": 2290
+              },
+              {
+                "date": "2025-07-16",
+                "fpy": 95.93,
+                "defectRate": 4.07,
+                "totalInspections": 2283
+              },
+              {
+                "date": "2025-07-17",
+                "fpy": 95.11,
+                "defectRate": 4.89,
+                "totalInspections": 2597
+              },
+              {
+                "date": "2025-07-18",
+                "fpy": 95.62,
+                "defectRate": 4.38,
+                "totalInspections": 2168
+              },
+              {
+                "date": "2025-07-19",
+                "fpy": 95.61,
+                "defectRate": 4.39,
+                "totalInspections": 2621
+              },
+              {
+                "date": "2025-07-20",
+                "fpy": 95.53,
+                "defectRate": 4.47,
+                "totalInspections": 1967
+              },
+              {
+                "date": "2025-07-21",
+                "fpy": 95.58,
+                "defectRate": 4.42,
+                "totalInspections": 2373
+              },
+              {
+                "date": "2025-07-22",
+                "fpy": 95.57,
+                "defectRate": 4.43,
+                "totalInspections": 2485
+              },
+              {
+                "date": "2025-07-23",
+                "fpy": 95.34,
+                "defectRate": 4.66,
+                "totalInspections": 2340
+              },
+              {
+                "date": "2025-07-24",
+                "fpy": 94.43,
+                "defectRate": 5.57,
+                "totalInspections": 2513
+              },
+              {
+                "date": "2025-07-25",
+                "fpy": 94.09,
+                "defectRate": 5.91,
+                "totalInspections": 2709
+              },
+              {
+                "date": "2025-07-26",
+                "fpy": 95.88,
+                "defectRate": 4.12,
+                "totalInspections": 2594
+              },
+              {
+                "date": "2025-07-27",
+                "fpy": 95.05,
+                "defectRate": 4.95,
+                "totalInspections": 2444
+              },
+              {
+                "date": "2025-07-28",
+                "fpy": 95.65,
+                "defectRate": 4.35,
+                "totalInspections": 2484
+              },
+              {
+                "date": "2025-07-29",
+                "fpy": 95.2,
+                "defectRate": 4.8,
+                "totalInspections": 2335
+              },
+              {
+                "date": "2025-07-30",
+                "fpy": 95.33,
+                "defectRate": 4.67,
+                "totalInspections": 2632
+              },
+              {
+                "date": "2025-07-31",
+                "fpy": 95.57,
+                "defectRate": 4.43,
+                "totalInspections": 2621
+              },
+              {
+                "date": "2025-08-01",
+                "fpy": 96.14,
+                "defectRate": 3.86,
+                "totalInspections": 2228
+              },
+              {
+                "date": "2025-08-02",
+                "fpy": 94.34,
+                "defectRate": 5.66,
+                "totalInspections": 2085
+              },
+              {
+                "date": "2025-08-03",
+                "fpy": 95.54,
+                "defectRate": 4.46,
+                "totalInspections": 2623
+              },
+              {
+                "date": "2025-08-04",
+                "fpy": 95,
+                "defectRate": 5,
+                "totalInspections": 2222
+              },
+              {
+                "date": "2025-08-05",
+                "fpy": 95.2,
+                "defectRate": 4.8,
+                "totalInspections": 2768
+              },
+              {
+                "date": "2025-08-06",
+                "fpy": 94.85,
+                "defectRate": 5.15,
+                "totalInspections": 2777
+              },
+              {
+                "date": "2025-08-07",
+                "fpy": 95.56,
+                "defectRate": 4.44,
+                "totalInspections": 2636
+              },
+              {
+                "date": "2025-08-08",
+                "fpy": 95.34,
+                "defectRate": 4.66,
+                "totalInspections": 2254
+              },
+              {
+                "date": "2025-08-09",
+                "fpy": 95.46,
+                "defectRate": 4.54,
+                "totalInspections": 2357
+              },
+              {
+                "date": "2025-08-10",
+                "fpy": 95.66,
+                "defectRate": 4.34,
+                "totalInspections": 2648
+              },
+              {
+                "date": "2025-08-11",
+                "fpy": 95.23,
+                "defectRate": 4.77,
+                "totalInspections": 2325
+              },
+              {
+                "date": "2025-08-12",
+                "fpy": 94.64,
+                "defectRate": 5.36,
+                "totalInspections": 2425
+              },
+              {
+                "date": "2025-08-13",
+                "fpy": 95.71,
+                "defectRate": 4.29,
+                "totalInspections": 2473
+              },
+              {
+                "date": "2025-08-14",
+                "fpy": 95.53,
+                "defectRate": 4.47,
+                "totalInspections": 2350
+              },
+              {
+                "date": "2025-08-15",
+                "fpy": 95.16,
+                "defectRate": 4.84,
+                "totalInspections": 2479
+              },
+              {
+                "date": "2025-08-16",
+                "fpy": 95.08,
+                "defectRate": 4.92,
+                "totalInspections": 2640
+              },
+              {
+                "date": "2025-08-17",
+                "fpy": 95.02,
+                "defectRate": 4.98,
+                "totalInspections": 2327
+              },
+              {
+                "date": "2025-08-18",
+                "fpy": 95.52,
+                "defectRate": 4.48,
+                "totalInspections": 2300
+              },
+              {
+                "date": "2025-08-19",
+                "fpy": 94.98,
+                "defectRate": 5.02,
+                "totalInspections": 2213
+              },
+              {
+                "date": "2025-08-20",
+                "fpy": 95.57,
+                "defectRate": 4.43,
+                "totalInspections": 2278
+              },
+              {
+                "date": "2025-08-21",
+                "fpy": 94.55,
+                "defectRate": 5.45,
+                "totalInspections": 2405
+              },
+              {
+                "date": "2025-08-22",
+                "fpy": 95.82,
+                "defectRate": 4.18,
+                "totalInspections": 2322
+              },
+              {
+                "date": "2025-08-23",
+                "fpy": 95.14,
+                "defectRate": 4.86,
+                "totalInspections": 2389
+              },
+              {
+                "date": "2025-08-24",
+                "fpy": 95.71,
+                "defectRate": 4.29,
+                "totalInspections": 2375
+              },
+              {
+                "date": "2025-08-25",
+                "fpy": 95.28,
+                "defectRate": 4.72,
+                "totalInspections": 2669
+              },
+              {
+                "date": "2025-08-26",
+                "fpy": 95.1,
+                "defectRate": 4.9,
+                "totalInspections": 2553
+              },
+              {
+                "date": "2025-08-27",
+                "fpy": 95.64,
+                "defectRate": 4.36,
+                "totalInspections": 2639
+              },
+              {
+                "date": "2025-08-28",
+                "fpy": 95.84,
+                "defectRate": 4.16,
+                "totalInspections": 2429
+              },
+              {
+                "date": "2025-08-29",
+                "fpy": 93.92,
+                "defectRate": 6.08,
+                "totalInspections": 2418
+              },
+              {
+                "date": "2025-08-30",
+                "fpy": 94.69,
+                "defectRate": 5.31,
+                "totalInspections": 2465
+              },
+              {
+                "date": "2025-08-31",
+                "fpy": 94.79,
+                "defectRate": 5.21,
+                "totalInspections": 2207
+              },
+              {
+                "date": "2025-09-01",
+                "fpy": 95.28,
+                "defectRate": 4.72,
+                "totalInspections": 2159
+              },
+              {
+                "date": "2025-09-02",
+                "fpy": 95.59,
+                "defectRate": 4.41,
+                "totalInspections": 2745
+              },
+              {
+                "date": "2025-09-03",
+                "fpy": 96.15,
+                "defectRate": 3.85,
+                "totalInspections": 2259
+              },
+              {
+                "date": "2025-09-04",
+                "fpy": 95.33,
+                "defectRate": 4.67,
+                "totalInspections": 2015
+              },
+              {
+                "date": "2025-09-05",
+                "fpy": 95.42,
+                "defectRate": 4.58,
+                "totalInspections": 2422
+              },
+              {
+                "date": "2025-09-06",
+                "fpy": 95.13,
+                "defectRate": 4.87,
+                "totalInspections": 2260
+              },
+              {
+                "date": "2025-09-07",
+                "fpy": 95.03,
+                "defectRate": 4.97,
+                "totalInspections": 2312
+              },
+              {
+                "date": "2025-09-08",
+                "fpy": 94.83,
+                "defectRate": 5.17,
+                "totalInspections": 2474
+              },
+              {
+                "date": "2025-09-09",
+                "fpy": 94.28,
+                "defectRate": 5.72,
+                "totalInspections": 2377
+              },
+              {
+                "date": "2025-09-10",
+                "fpy": 95.33,
+                "defectRate": 4.67,
+                "totalInspections": 2097
+              },
+              {
+                "date": "2025-09-11",
+                "fpy": 96.14,
+                "defectRate": 3.86,
+                "totalInspections": 2019
+              },
+              {
+                "date": "2025-09-12",
+                "fpy": 95.78,
+                "defectRate": 4.22,
+                "totalInspections": 2580
+              },
+              {
+                "date": "2025-09-13",
+                "fpy": 95.57,
+                "defectRate": 4.43,
+                "totalInspections": 2326
+              },
+              {
+                "date": "2025-09-14",
+                "fpy": 95.79,
+                "defectRate": 4.21,
+                "totalInspections": 2802
+              },
+              {
+                "date": "2025-09-15",
+                "fpy": 95.53,
+                "defectRate": 4.47,
+                "totalInspections": 2236
+              },
+              {
+                "date": "2025-09-16",
+                "fpy": 94.62,
+                "defectRate": 5.38,
+                "totalInspections": 2399
+              },
+              {
+                "date": "2025-09-17",
+                "fpy": 94.58,
+                "defectRate": 5.42,
+                "totalInspections": 2490
+              },
+              {
+                "date": "2025-09-18",
+                "fpy": 95.06,
+                "defectRate": 4.94,
+                "totalInspections": 2307
+              },
+              {
+                "date": "2025-09-19",
+                "fpy": 94.91,
+                "defectRate": 5.09,
+                "totalInspections": 2573
+              },
+              {
+                "date": "2025-09-20",
+                "fpy": 96.28,
+                "defectRate": 3.72,
+                "totalInspections": 2336
+              },
+              {
+                "date": "2025-09-21",
+                "fpy": 95.04,
+                "defectRate": 4.96,
+                "totalInspections": 2361
+              },
+              {
+                "date": "2025-09-22",
+                "fpy": 95.61,
+                "defectRate": 4.39,
+                "totalInspections": 2189
+              },
+              {
+                "date": "2025-09-23",
+                "fpy": 95.27,
+                "defectRate": 4.73,
+                "totalInspections": 2198
+              },
+              {
+                "date": "2025-09-24",
+                "fpy": 95.22,
+                "defectRate": 4.78,
+                "totalInspections": 2406
+              },
+              {
+                "date": "2025-09-25",
+                "fpy": 95.32,
+                "defectRate": 4.68,
+                "totalInspections": 2415
+              },
+              {
+                "date": "2025-09-26",
+                "fpy": 95.06,
+                "defectRate": 4.94,
+                "totalInspections": 2550
+              },
+              {
+                "date": "2025-09-27",
+                "fpy": 94.79,
+                "defectRate": 5.21,
+                "totalInspections": 2571
+              },
+              {
+                "date": "2025-09-28",
+                "fpy": 94.37,
+                "defectRate": 5.63,
+                "totalInspections": 2505
+              },
+              {
+                "date": "2025-09-29",
+                "fpy": 94.96,
+                "defectRate": 5.04,
+                "totalInspections": 2261
+              },
+              {
+                "date": "2025-09-30",
+                "fpy": 94.92,
+                "defectRate": 5.08,
+                "totalInspections": 2401
+              },
+              {
+                "date": "2025-10-01",
+                "fpy": 95.29,
+                "defectRate": 4.71,
+                "totalInspections": 2609
+              },
+              {
+                "date": "2025-10-02",
+                "fpy": 95.36,
+                "defectRate": 4.64,
+                "totalInspections": 2477
+              },
+              {
+                "date": "2025-10-03",
+                "fpy": 95.21,
+                "defectRate": 4.79,
+                "totalInspections": 2212
+              },
+              {
+                "date": "2025-10-04",
+                "fpy": 94.56,
+                "defectRate": 5.44,
+                "totalInspections": 2353
+              },
+              {
+                "date": "2025-10-05",
+                "fpy": 95.06,
+                "defectRate": 4.94,
+                "totalInspections": 2185
+              },
+              {
+                "date": "2025-10-06",
+                "fpy": 94.79,
+                "defectRate": 5.21,
+                "totalInspections": 2553
+              },
+              {
+                "date": "2025-10-07",
+                "fpy": 95.27,
+                "defectRate": 4.73,
+                "totalInspections": 2450
+              },
+              {
+                "date": "2025-10-08",
+                "fpy": 95,
+                "defectRate": 5,
+                "totalInspections": 2302
+              },
+              {
+                "date": "2025-10-09",
+                "fpy": 94.73,
+                "defectRate": 5.27,
+                "totalInspections": 2545
+              },
+              {
+                "date": "2025-10-10",
+                "fpy": 94.73,
+                "defectRate": 5.27,
+                "totalInspections": 2692
+              },
+              {
+                "date": "2025-10-11",
+                "fpy": 95.69,
+                "defectRate": 4.31,
+                "totalInspections": 2458
+              },
+              {
+                "date": "2025-10-12",
+                "fpy": 95.64,
+                "defectRate": 4.36,
+                "totalInspections": 2065
+              },
+              {
+                "date": "2025-10-13",
+                "fpy": 95.03,
+                "defectRate": 4.97,
+                "totalInspections": 2415
+              },
+              {
+                "date": "2025-10-14",
+                "fpy": 94.81,
+                "defectRate": 5.19,
+                "totalInspections": 2523
+              },
+              {
+                "date": "2025-10-15",
+                "fpy": 96.09,
+                "defectRate": 3.91,
+                "totalInspections": 2124
+              },
+              {
+                "date": "2025-10-16",
+                "fpy": 95.29,
+                "defectRate": 4.71,
+                "totalInspections": 2229
+              },
+              {
+                "date": "2025-10-17",
+                "fpy": 95.8,
+                "defectRate": 4.2,
+                "totalInspections": 2357
+              },
+              {
+                "date": "2025-10-18",
+                "fpy": 94.48,
+                "defectRate": 5.52,
+                "totalInspections": 2410
+              },
+              {
+                "date": "2025-10-19",
+                "fpy": 95.66,
+                "defectRate": 4.34,
+                "totalInspections": 2256
+              },
+              {
+                "date": "2025-10-20",
+                "fpy": 95.7,
+                "defectRate": 4.3,
+                "totalInspections": 2465
+              },
+              {
+                "date": "2025-10-21",
+                "fpy": 95.41,
+                "defectRate": 4.59,
+                "totalInspections": 2397
+              },
+              {
+                "date": "2025-10-22",
+                "fpy": 96.31,
+                "defectRate": 3.69,
+                "totalInspections": 2544
+              },
+              {
+                "date": "2025-10-23",
+                "fpy": 95.28,
+                "defectRate": 4.72,
+                "totalInspections": 2458
+              },
+              {
+                "date": "2025-10-24",
+                "fpy": 95.14,
+                "defectRate": 4.86,
+                "totalInspections": 2245
+              },
+              {
+                "date": "2025-10-25",
+                "fpy": 95.16,
+                "defectRate": 4.84,
+                "totalInspections": 2481
+              },
+              {
+                "date": "2025-10-26",
+                "fpy": 95.53,
+                "defectRate": 4.47,
+                "totalInspections": 2148
+              },
+              {
+                "date": "2025-10-27",
+                "fpy": 95.15,
+                "defectRate": 4.85,
+                "totalInspections": 2579
+              },
+              {
+                "date": "2025-10-28",
+                "fpy": 94.07,
+                "defectRate": 5.93,
+                "totalInspections": 2295
+              },
+              {
+                "date": "2025-10-29",
+                "fpy": 95.31,
+                "defectRate": 4.69,
+                "totalInspections": 2369
+              },
+              {
+                "date": "2025-10-30",
+                "fpy": 94.19,
+                "defectRate": 5.81,
+                "totalInspections": 2532
+              },
+              {
+                "date": "2025-10-31",
+                "fpy": 94.82,
+                "defectRate": 5.18,
+                "totalInspections": 2740
+              },
+              {
+                "date": "2025-11-01",
+                "fpy": 95.53,
+                "defectRate": 4.47,
+                "totalInspections": 2259
+              },
+              {
+                "date": "2025-11-02",
+                "fpy": 94.97,
+                "defectRate": 5.03,
+                "totalInspections": 2245
+              },
+              {
+                "date": "2025-11-03",
+                "fpy": 95.17,
+                "defectRate": 4.83,
+                "totalInspections": 2300
+              },
+              {
+                "date": "2025-11-04",
+                "fpy": 95.11,
+                "defectRate": 4.89,
+                "totalInspections": 2599
+              },
+              {
+                "date": "2025-11-05",
+                "fpy": 95.29,
+                "defectRate": 4.71,
+                "totalInspections": 2715
+              },
+              {
+                "date": "2025-11-06",
+                "fpy": 94.71,
+                "defectRate": 5.29,
+                "totalInspections": 2683
+              },
+              {
+                "date": "2025-11-07",
+                "fpy": 94.85,
+                "defectRate": 5.15,
+                "totalInspections": 2252
+              },
+              {
+                "date": "2025-11-08",
+                "fpy": 95.74,
+                "defectRate": 4.26,
+                "totalInspections": 2465
+              },
+              {
+                "date": "2025-11-09",
+                "fpy": 94.7,
+                "defectRate": 5.3,
+                "totalInspections": 2545
+              },
+              {
+                "date": "2025-11-10",
+                "fpy": 95.03,
+                "defectRate": 4.97,
+                "totalInspections": 2394
+              },
+              {
+                "date": "2025-11-11",
+                "fpy": 95.09,
+                "defectRate": 4.91,
+                "totalInspections": 2323
+              },
+              {
+                "date": "2025-11-12",
+                "fpy": 95.1,
+                "defectRate": 4.9,
+                "totalInspections": 2266
+              },
+              {
+                "date": "2025-11-13",
+                "fpy": 95.31,
+                "defectRate": 4.69,
+                "totalInspections": 2918
+              },
+              {
+                "date": "2025-11-14",
+                "fpy": 94.9,
+                "defectRate": 5.1,
+                "totalInspections": 2312
+              },
+              {
+                "date": "2025-11-15",
+                "fpy": 95.1,
+                "defectRate": 4.9,
+                "totalInspections": 2428
+              },
+              {
+                "date": "2025-11-16",
+                "fpy": 94.63,
+                "defectRate": 5.37,
+                "totalInspections": 2159
+              },
+              {
+                "date": "2025-11-17",
+                "fpy": 95.41,
+                "defectRate": 4.59,
+                "totalInspections": 2420
+              },
+              {
+                "date": "2025-11-18",
+                "fpy": 94.87,
+                "defectRate": 5.13,
+                "totalInspections": 2574
+              },
+              {
+                "date": "2025-11-19",
+                "fpy": 95.22,
+                "defectRate": 4.78,
+                "totalInspections": 2387
+              },
+              {
+                "date": "2025-11-20",
+                "fpy": 94.81,
+                "defectRate": 5.19,
+                "totalInspections": 1927
+              },
+              {
+                "date": "2025-11-21",
+                "fpy": 95.27,
+                "defectRate": 4.73,
+                "totalInspections": 2603
+              },
+              {
+                "date": "2025-11-22",
+                "fpy": 95.59,
+                "defectRate": 4.41,
+                "totalInspections": 2607
+              },
+              {
+                "date": "2025-11-23",
+                "fpy": 94.57,
+                "defectRate": 5.43,
+                "totalInspections": 2172
+              },
+              {
+                "date": "2025-11-24",
+                "fpy": 95.48,
+                "defectRate": 4.52,
+                "totalInspections": 2389
+              },
+              {
+                "date": "2025-11-25",
+                "fpy": 94.74,
+                "defectRate": 5.26,
+                "totalInspections": 2339
+              },
+              {
+                "date": "2025-11-26",
+                "fpy": 95.89,
+                "defectRate": 4.11,
+                "totalInspections": 2118
+              },
+              {
+                "date": "2025-11-27",
+                "fpy": 95.29,
+                "defectRate": 4.71,
+                "totalInspections": 2631
+              },
+              {
+                "date": "2025-11-28",
+                "fpy": 95.01,
+                "defectRate": 4.99,
+                "totalInspections": 2688
+              },
+              {
+                "date": "2025-11-29",
+                "fpy": 95,
+                "defectRate": 5,
+                "totalInspections": 2460
+              },
+              {
+                "date": "2025-11-30",
+                "fpy": 94.4,
+                "defectRate": 5.6,
+                "totalInspections": 2480
+              },
+              {
+                "date": "2025-12-01",
+                "fpy": 95.82,
+                "defectRate": 4.18,
+                "totalInspections": 2344
+              },
+              {
+                "date": "2025-12-02",
+                "fpy": 95.14,
+                "defectRate": 4.86,
+                "totalInspections": 2389
+              },
+              {
+                "date": "2025-12-03",
+                "fpy": 94.75,
+                "defectRate": 5.25,
+                "totalInspections": 2418
+              },
+              {
+                "date": "2025-12-04",
+                "fpy": 95.7,
+                "defectRate": 4.3,
+                "totalInspections": 2302
+              },
+              {
+                "date": "2025-12-05",
+                "fpy": 95,
+                "defectRate": 5,
+                "totalInspections": 2322
+              },
+              {
+                "date": "2025-12-06",
+                "fpy": 95.82,
+                "defectRate": 4.18,
+                "totalInspections": 2226
+              },
+              {
+                "date": "2025-12-07",
+                "fpy": 94.86,
+                "defectRate": 5.14,
+                "totalInspections": 2218
+              },
+              {
+                "date": "2025-12-08",
+                "fpy": 94.8,
+                "defectRate": 5.2,
+                "totalInspections": 2425
+              },
+              {
+                "date": "2025-12-09",
+                "fpy": 96.15,
+                "defectRate": 3.85,
+                "totalInspections": 2389
+              },
+              {
+                "date": "2025-12-10",
+                "fpy": 96.18,
+                "defectRate": 3.82,
+                "totalInspections": 2510
+              },
+              {
+                "date": "2025-12-11",
+                "fpy": 94.99,
+                "defectRate": 5.01,
+                "totalInspections": 2316
+              },
+              {
+                "date": "2025-12-12",
+                "fpy": 95.35,
+                "defectRate": 4.65,
+                "totalInspections": 2257
+              },
+              {
+                "date": "2025-12-13",
+                "fpy": 94.98,
+                "defectRate": 5.02,
+                "totalInspections": 2310
+              },
+              {
+                "date": "2025-12-14",
+                "fpy": 94.5,
+                "defectRate": 5.5,
+                "totalInspections": 2307
+              },
+              {
+                "date": "2025-12-15",
+                "fpy": 95.54,
+                "defectRate": 4.46,
+                "totalInspections": 2085
+              },
+              {
+                "date": "2025-12-16",
+                "fpy": 95.77,
+                "defectRate": 4.23,
+                "totalInspections": 2363
+              },
+              {
+                "date": "2025-12-17",
+                "fpy": 94.93,
+                "defectRate": 5.07,
+                "totalInspections": 2148
+              },
+              {
+                "date": "2025-12-18",
+                "fpy": 95.7,
+                "defectRate": 4.3,
+                "totalInspections": 2557
+              },
+              {
+                "date": "2025-12-19",
+                "fpy": 95,
+                "defectRate": 5,
+                "totalInspections": 2398
+              },
+              {
+                "date": "2025-12-20",
+                "fpy": 95.29,
+                "defectRate": 4.71,
+                "totalInspections": 2444
+              },
+              {
+                "date": "2025-12-21",
+                "fpy": 94.67,
+                "defectRate": 5.33,
+                "totalInspections": 2158
+              },
+              {
+                "date": "2025-12-22",
+                "fpy": 96.71,
+                "defectRate": 3.29,
+                "totalInspections": 2551
+              },
+              {
+                "date": "2025-12-23",
+                "fpy": 96.03,
+                "defectRate": 3.97,
+                "totalInspections": 2367
+              },
+              {
+                "date": "2025-12-24",
+                "fpy": 95.39,
+                "defectRate": 4.61,
+                "totalInspections": 2798
+              },
+              {
+                "date": "2025-12-25",
+                "fpy": 95.06,
+                "defectRate": 4.94,
+                "totalInspections": 2450
+              },
+              {
+                "date": "2025-12-26",
+                "fpy": 95.59,
+                "defectRate": 4.41,
+                "totalInspections": 2425
+              },
+              {
+                "date": "2025-12-27",
+                "fpy": 95.99,
+                "defectRate": 4.01,
+                "totalInspections": 2322
+              },
+              {
+                "date": "2025-12-28",
+                "fpy": 94.22,
+                "defectRate": 5.78,
+                "totalInspections": 2543
+              },
+              {
+                "date": "2025-12-29",
+                "fpy": 95.64,
+                "defectRate": 4.36,
+                "totalInspections": 2360
+              },
+              {
+                "date": "2025-12-30",
+                "fpy": 95.45,
+                "defectRate": 4.55,
+                "totalInspections": 2460
+              },
+              {
+                "date": "2025-12-31",
+                "fpy": 95.05,
+                "defectRate": 4.95,
+                "totalInspections": 2524
+              }
+            ],
+            "options": {
+              "showLegend": true,
+              "multiLine": true,
+              "yAxisMax": 100
+            },
+            "xaxisField": "date",
+            "yaxisField": "fpy"
+          },
+          "defect_pareto": {
+            "chartType": "BAR",
+            "title": "不良类型帕累托分析",
+            "seriesField": "metric",
+            "data": [
+              {
+                "defectType": "装配不良",
+                "count": 8797,
+                "percentage": 21.05,
+                "cumulative": 21.05
+              },
+              {
+                "defectType": "材料缺陷",
+                "count": 8586,
+                "percentage": 20.54,
+                "cumulative": 41.59
+              },
+              {
+                "defectType": "外观缺陷",
+                "count": 8521,
+                "percentage": 20.39,
+                "cumulative": 61.98
+              },
+              {
+                "defectType": "功能故障",
+                "count": 8169,
+                "percentage": 19.54,
+                "cumulative": 81.52
+              },
+              {
+                "defectType": "尺寸偏差",
+                "count": 7724,
+                "percentage": 18.48,
+                "cumulative": 100
+              }
+            ],
+            "options": {
+              "showCumulativeLine": true,
+              "showPercentage": true
+            },
+            "xaxisField": "defectType",
+            "yaxisField": "count"
+          },
+          "quality_cost_distribution": {
+            "chartType": "PIE",
+            "title": "质量成本分布",
+            "seriesField": null,
+            "data": [
+              {
+                "category": "返工成本",
+                "cost": 527498
+              },
+              {
+                "category": "报废成本",
+                "cost": 1465214
+              }
+            ],
+            "options": {
+              "showPercentage": true,
+              "showLegend": true
+            },
+            "xaxisField": "category",
+            "yaxisField": "cost"
+          },
+          "product_line_quality": {
+            "chartType": "BAR",
+            "title": "产线质量对比",
+            "seriesField": "metric",
+            "data": [
+              {
+                "productionLine": "产线D",
+                "fpy": 95.32,
+                "defectRate": 4.68
+              },
+              {
+                "productionLine": "产线B",
+                "fpy": 95.24,
+                "defectRate": 4.76
+              },
+              {
+                "productionLine": "产线C",
+                "fpy": 95.2,
+                "defectRate": 4.8
+              },
+              {
+                "productionLine": "产线A",
+                "fpy": 95.14,
+                "defectRate": 4.86
+              }
+            ],
+            "options": {
+              "showLegend": true,
+              "grouped": true
+            },
+            "xaxisField": "productionLine",
+            "yaxisField": "fpy"
+          }
+        },
+        "chartList": null,
+        "aiInsights": [
+          {
+            "level": "YELLOW",
+            "category": "FPY",
+            "message": "首次通过率为 95.22%，有提升空间",
+            "relatedEntity": null,
+            "actionSuggestion": "建议关注主要不良类型，制定质量改进计划"
+          },
+          {
+            "level": "RED",
+            "category": "客户投诉",
+            "message": "客户投诉数达到 4414 件，需要重点关注",
+            "relatedEntity": null,
+            "actionSuggestion": "建议分析投诉原因，制定客户投诉处理和预防措施"
+          }
+        ],
+        "alerts": null,
+        "recommendations": null,
+        "suggestions": [
+          "主要不良类型为：装配不良、材料缺陷、外观缺陷，建议优先改善",
+          "返工率较高，建议评估返工工艺，考虑是否可通过工艺改进降低返工率",
+          "报废成本高于返工成本，建议评估是否可以通过返工挽救更多不良品"
+        ],
+        "generatedAt": "2026-04-29T12:43:18.038627772",
+        "lastUpdated": "2026-04-29T12:43:18.038634683",
+        "fromCache": false,
+        "cacheExpireAt": null
+      },
+      "endDate": "2025-12-31",
+      "startDate": "2025-01-01"
+    }
+  },
+  "_meta": {
+    "name": "analysis-quality",
+    "verb": "GET",
+    "path": "/api/mobile/F001/smart-bi/analysis/quality",
+    "query": {
+      "startDate": "2025-01-01",
+      "endDate": "2025-12-31"
+    },
+    "factory": "F001",
+    "recordedAt": "2026-04-29T04:43:18.393Z",
+    "javaPort": 10011
+  }
+}

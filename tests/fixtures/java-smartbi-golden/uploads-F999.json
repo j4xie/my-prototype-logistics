@@ -1,0 +1,52 @@
+{
+  "verb": "GET",
+  "path": "/api/mobile/F999/smart-bi/uploads",
+  "factory": "F999",
+  "response": {
+    "httpStatus": 200,
+    "code": 200,
+    "success": true,
+    "message": "操作成功",
+    "timestamp": "2026-04-30T06:34:49.188187195",
+    "data": {
+      "content": [],
+      "pageable": {
+        "pageNumber": 0,
+        "pageSize": 20,
+        "sort": {
+          "empty": true,
+          "sorted": false,
+          "unsorted": true
+        },
+        "offset": 0,
+        "paged": true,
+        "unpaged": false
+      },
+      "last": true,
+      "totalElements": 0,
+      "totalPages": 0,
+      "first": true,
+      "size": 20,
+      "number": 0,
+      "sort": {
+        "empty": true,
+        "sorted": false,
+        "unsorted": true
+      },
+      "numberOfElements": 0,
+      "empty": true
+    }
+  },
+  "_meta": {
+    "name": "uploads",
+    "verb": "GET",
+    "path": "/api/mobile/F999/smart-bi/uploads",
+    "query": {
+      "page": "0",
+      "size": "20"
+    },
+    "factory": "F999",
+    "recordedAt": "2026-04-29T22:34:49.562Z",
+    "javaPort": 10011
+  }
+}
