@@ -270,3 +270,46 @@ class TestAiInsightDict:
         assert list(result.keys()) == [
             "level", "category", "message", "relatedEntity", "actionSuggestion",
         ]
+
+
+from smartbi_compat.api.analysis_sales import _new_kpi_card_dict
+
+
+class TestKpiCardDict:
+    def test_13_fields_present(self):
+        """KPICard 13 fields per overview spec finding (javap-confirmed by Task A.3)."""
+        result = _new_kpi_card_dict(key="total_revenue", title="总营收")
+        assert set(result.keys()) == {
+            "key", "title", "value", "rawValue", "unit", "change",
+            "changeRate", "trend", "status", "compareText",
+            "description", "targetValue", "completionRate",
+        }
+
+    def test_status_default_green(self):
+        """Lombok @Builder.Default sets status=green when not provided."""
+        result = _new_kpi_card_dict(key="x", title="x")
+        assert result["status"] == "green"
+
+    def test_F001_gold_kpi_shape(self):
+        """F001 Gold-path KPI card example (4 cards × this shape)."""
+        result = _new_kpi_card_dict(
+            key="total_revenue", title="总营收",
+            value="20639884.52", raw_value=Decimal("20639884.52"),
+            unit="元", status="green",
+        )
+        assert result["key"] == "total_revenue"
+        assert result["value"] == "20639884.52"
+        assert result["rawValue"] == Decimal("20639884.52")
+        assert result["unit"] == "元"
+        assert result["change"] is None
+        assert result["changeRate"] is None
+        assert result["trend"] is None
+        assert result["status"] == "green"
+
+    def test_key_order(self):
+        result = _new_kpi_card_dict(key="x", title="x")
+        assert list(result.keys()) == [
+            "key", "title", "value", "rawValue", "unit", "change",
+            "changeRate", "trend", "status", "compareText",
+            "description", "targetValue", "completionRate",
+        ]

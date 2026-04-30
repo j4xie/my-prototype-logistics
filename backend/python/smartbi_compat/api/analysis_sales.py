@@ -194,6 +194,49 @@ def _new_ai_insight_dict(
     }
 
 
+def _new_kpi_card_dict(
+    key: str,
+    title: str,
+    value: Optional[Any] = None,           # str (formatted) or Decimal
+    raw_value: Optional[Decimal] = None,
+    unit: Optional[str] = None,
+    change: Optional[Decimal] = None,
+    change_rate: Optional[Decimal] = None,
+    trend: Optional[str] = None,            # up / down / flat
+    status: str = "green",                   # @Builder.Default per Java line 81-82
+    compare_text: Optional[str] = None,
+    description: Optional[str] = None,
+    target_value: Optional[Decimal] = None,
+    completion_rate: Optional[Decimal] = None,
+) -> dict:
+    """Mirror KPICard.java @Data getters (13 fields per overview agent finding).
+
+    Lombok @Builder.Default sets status="green" — Python factory mirrors this.
+
+    Used by:
+      - gold spec: 4 KPIs (total_revenue / bill_count / avg_bill_value / store_count)
+      - overview spec: 5 KPIs from legacy from-aggregates path
+
+    For "元" unit values, `value` is formatted string (2 decimals); for
+    integer units, `value` is integer-string. `rawValue` always BigDecimal.
+    """
+    return {
+        "key": key,
+        "title": title,
+        "value": value,
+        "rawValue": raw_value,
+        "unit": unit,
+        "change": change,
+        "changeRate": change_rate,
+        "trend": trend,
+        "status": status,
+        "compareText": compare_text,
+        "description": description,
+        "targetValue": target_value,
+        "completionRate": completion_rate,
+    }
+
+
 # ============================================================
 # Section 2: Strip-volatile shared helper
 # ============================================================
