@@ -173,6 +173,27 @@ def _new_chart_config_dict(
     }
 
 
+
+def _new_ai_insight_dict(
+    level: str,
+    category: str,
+    message: str,
+    related_entity: Optional[str] = None,
+    action_suggestion: Optional[str] = None,
+) -> dict:
+    """Mirror AIInsight.java @Data getters (5 fields observed in F999).
+
+    level: RED / YELLOW / GREEN / INFO
+    """
+    return {
+        "level": level,
+        "category": category,
+        "message": message,
+        "relatedEntity": related_entity,
+        "actionSuggestion": action_suggestion,
+    }
+
+
 # ============================================================
 # Section 2: Strip-volatile shared helper
 # ============================================================

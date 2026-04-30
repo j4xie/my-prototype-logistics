@@ -243,3 +243,30 @@ class TestChartConfigDict:
             "chartType", "title", "seriesField", "data", "options",
             "xaxisField", "yaxisField",
         ]
+
+
+from smartbi_compat.api.analysis_sales import _new_ai_insight_dict
+
+
+class TestAiInsightDict:
+    def test_F999_yellow_shape(self):
+        result = _new_ai_insight_dict(
+            level="YELLOW",
+            category="数据状态",
+            message="当前时间范围内暂无销售数据",
+            action_suggestion="请上传销售数据或调整时间范围",
+        )
+        assert set(result.keys()) == {
+            "level", "category", "message", "relatedEntity", "actionSuggestion",
+        }
+        assert result["level"] == "YELLOW"
+        assert result["category"] == "数据状态"
+        assert result["message"] == "当前时间范围内暂无销售数据"
+        assert result["relatedEntity"] is None
+        assert result["actionSuggestion"] == "请上传销售数据或调整时间范围"
+
+    def test_key_order(self):
+        result = _new_ai_insight_dict(level="INFO", category="x", message="y")
+        assert list(result.keys()) == [
+            "level", "category", "message", "relatedEntity", "actionSuggestion",
+        ]
