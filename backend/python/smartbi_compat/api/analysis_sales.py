@@ -119,6 +119,32 @@ def _new_dashboard_response_dict(
         "cacheExpireAt": cache_expire_at,
     }
 
+def _new_ranking_item_dict(
+    rank: int,
+    name: str,
+    value: Decimal,
+    target: Optional[Decimal] = None,
+    completion_rate: Optional[Decimal] = None,
+    alert_level: Optional[str] = None,
+) -> dict:
+    """Mirror RankingItem.java @Data getters (6 fields exactly).
+
+    Per rankings spec direct file read (53 LOC source): no derived getters.
+
+    Note: `completionRate` is OVERLOADED by Java callers:
+      - salesperson rankings: target completion percent (vs `target`)
+      - product/customer rankings: share-of-total percentage (target stays null)
+    """
+    return {
+        "rank": rank,
+        "name": name,
+        "value": value,
+        "target": target,
+        "completionRate": completion_rate,
+        "alertLevel": alert_level,
+    }
+
+
 # ============================================================
 # Section 2: Strip-volatile shared helper
 # ============================================================

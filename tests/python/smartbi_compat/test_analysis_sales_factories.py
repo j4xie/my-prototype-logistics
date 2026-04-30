@@ -151,3 +151,45 @@ class TestDashboardResponseDict:
         assert "chartList" in result and result["chartList"] is None
         assert "suggestions" in result and result["suggestions"] is None
         assert "lastUpdated" in result and result["lastUpdated"] is None
+
+
+from decimal import Decimal
+from smartbi_compat.api.analysis_sales import _new_ranking_item_dict
+
+
+class TestRankingItemDict:
+    def test_6_fields_only(self):
+        """RankingItem.java is exactly 6 fields, no derived getters."""
+        result = _new_ranking_item_dict(rank=1, name="测试", value=Decimal("100"))
+        assert set(result.keys()) == {
+            "rank", "name", "value", "target", "completionRate", "alertLevel",
+        }
+
+    def test_full_shape_salesperson(self):
+        result = _new_ranking_item_dict(
+            rank=1, name="张三", value=Decimal("100000"),
+            target=Decimal("80000"),
+            completion_rate=Decimal("125.00"),
+            alert_level="GREEN",
+        )
+        assert result == {
+            "rank": 1, "name": "张三", "value": Decimal("100000"),
+            "target": Decimal("80000"), "completionRate": Decimal("125.00"),
+            "alertLevel": "GREEN",
+        }
+
+    def test_product_ranking_no_target(self):
+        """product/customer rankings leave target null; completionRate = pct."""
+        result = _new_ranking_item_dict(
+            rank=2, name="蔬菜", value=Decimal("50000"),
+            completion_rate=Decimal("25.00"),
+            alert_level="GREEN",
+        )
+        assert result["target"] is None
+        assert result["completionRate"] == Decimal("25.00")
+
+    def test_key_order(self):
+        result = _new_ranking_item_dict(rank=1, name="x", value=Decimal("1"))
+        assert list(result.keys()) == [
+            "rank", "name", "value", "target", "completionRate", "alertLevel",
+        ]
