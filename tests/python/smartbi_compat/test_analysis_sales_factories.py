@@ -86,3 +86,68 @@ class TestDateRangeDict:
         r = DateRange.custom(date(2025, 12, 31), date(2025, 1, 1))
         result = _new_date_range_dict(r)
         assert result["valid"] is False
+
+
+from smartbi_compat.api.analysis_sales import _new_dashboard_response_dict
+
+
+class TestDashboardResponseDict:
+    DECLARED_KEYS = {
+        "period", "startDate", "endDate", "kpiCards", "metricCards",
+        "rankings", "charts", "chartList", "aiInsights", "alerts",
+        "recommendations", "suggestions", "generatedAt", "lastUpdated",
+        "fromCache", "cacheExpireAt",
+    }
+
+    def test_all_16_keys_present(self):
+        result = _new_dashboard_response_dict()
+        assert set(result.keys()) == self.DECLARED_KEYS
+
+    def test_F999_empty_state_defaults(self):
+        """When no kwargs, factory matches F999 empty-state defaults."""
+        result = _new_dashboard_response_dict(
+            ai_insights=[
+                {"level": "YELLOW", "category": "数据状态",
+                 "message": "test", "relatedEntity": None,
+                 "actionSuggestion": "test"}
+            ],
+            suggestions=["test suggestion"],
+            last_updated="2026-04-30T00:00:00",
+        )
+        assert result["period"] is None
+        assert result["startDate"] is None
+        assert result["endDate"] is None
+        assert result["kpiCards"] == []
+        assert result["metricCards"] is None
+        assert result["rankings"] == {}
+        assert result["charts"] == {}
+        assert result["chartList"] is None
+        assert len(result["aiInsights"]) == 1
+        assert result["alerts"] is None
+        assert result["recommendations"] is None
+        assert result["suggestions"] == ["test suggestion"]
+        assert result["generatedAt"] is None
+        assert result["lastUpdated"] == "2026-04-30T00:00:00"
+        assert result["fromCache"] is False
+        assert result["cacheExpireAt"] is None
+
+    def test_key_insertion_order_matches_java(self):
+        """Foundation §4: key order = Java DashboardResponse declaration order."""
+        keys = list(_new_dashboard_response_dict().keys())
+        expected_order = [
+            "period", "startDate", "endDate", "kpiCards", "metricCards",
+            "rankings", "charts", "chartList", "aiInsights", "alerts",
+            "recommendations", "suggestions", "generatedAt", "lastUpdated",
+            "fromCache", "cacheExpireAt",
+        ]
+        assert keys == expected_order
+
+    def test_deprecated_fields_emit_null(self):
+        """Lombok @Data emits all 16 fields incl. 5 @Deprecated ones."""
+        result = _new_dashboard_response_dict()
+        # @Deprecated: metricCards / chartList / suggestions / lastUpdated
+        # (fromCache is not deprecated; cacheExpireAt is not deprecated)
+        assert "metricCards" in result and result["metricCards"] is None
+        assert "chartList" in result and result["chartList"] is None
+        assert "suggestions" in result and result["suggestions"] is None
+        assert "lastUpdated" in result and result["lastUpdated"] is None

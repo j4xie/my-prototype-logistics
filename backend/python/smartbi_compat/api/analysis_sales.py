@@ -71,6 +71,54 @@ def _new_date_range_dict(range_: DateRange) -> dict:
         "valid": range_.start_date <= range_.end_date,
     }
 
+
+def _new_dashboard_response_dict(
+    period: Optional[str] = None,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    kpi_cards: Optional[list] = None,
+    metric_cards: Optional[list] = None,
+    rankings: Optional[dict] = None,
+    charts: Optional[dict] = None,
+    chart_list: Optional[list] = None,
+    ai_insights: Optional[list] = None,
+    alerts: Optional[list] = None,
+    recommendations: Optional[list] = None,
+    suggestions: Optional[list] = None,
+    generated_at: Optional[str] = None,
+    last_updated: Optional[str] = None,
+    from_cache: bool = False,
+    cache_expire_at: Optional[str] = None,
+) -> dict:
+    """Mirror DashboardResponse.java @Data getters (16 fields).
+
+    All 16 fields emit including 4 @Deprecated ones (metricCards / chartList
+    / suggestions / lastUpdated) — Lombok @Data sees them via getters even
+    when @Deprecated. Key order matches Java field declaration order.
+
+    F999 empty-state defaults:
+      kpi_cards=[], rankings={}, charts={} when not provided
+      all other Optional fields default to None
+    """
+    return {
+        "period": period,
+        "startDate": start_date.isoformat() if start_date else None,
+        "endDate": end_date.isoformat() if end_date else None,
+        "kpiCards": kpi_cards if kpi_cards is not None else [],
+        "metricCards": metric_cards,
+        "rankings": rankings if rankings is not None else {},
+        "charts": charts if charts is not None else {},
+        "chartList": chart_list,
+        "aiInsights": ai_insights if ai_insights is not None else [],
+        "alerts": alerts,
+        "recommendations": recommendations,
+        "suggestions": suggestions,
+        "generatedAt": generated_at,
+        "lastUpdated": last_updated,
+        "fromCache": from_cache,
+        "cacheExpireAt": cache_expire_at,
+    }
+
 # ============================================================
 # Section 2: Strip-volatile shared helper
 # ============================================================
