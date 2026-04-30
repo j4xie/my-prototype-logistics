@@ -19,6 +19,7 @@ backend/java/embedding-service/.../embedding.proto changes.
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import logging
 from typing import List, Optional
 
@@ -27,6 +28,14 @@ import grpc
 from ai.config import default_config
 
 logger = logging.getLogger(__name__)
+
+
+# Request-scoped embedding cache (β CR-2 fix from audit)
+# FastAPI middleware initializes a fresh dict per request to prevent cross-request leak.
+# Stage 5 SEMANTIC (α) and SemanticRouter (β C1) share results via this cache.
+_request_embedding_cache: contextvars.ContextVar[dict] = contextvars.ContextVar(
+    "_request_embedding_cache", default={}
+)
 
 
 # Lazy-init globals: channel + stub created on first call. Channel is reused
@@ -96,6 +105,22 @@ async def get_embedding(text: str) -> Optional[List[float]]:
         cfg.embedding_retry_attempts, last_error,
     )
     return None
+
+
+async def get_embedding_cached(text: str) -> Optional[List[float]]:
+    """Request-scoped cached version of get_embedding.
+
+    Useful when multiple stages need embedding for same text within one request.
+    Cache scope is per asyncio context (set via FastAPI middleware in api.py).
+    Failures (None return) are NOT cached so retry can succeed.
+    """
+    cache = _request_embedding_cache.get()
+    if text in cache:
+        return cache[text]
+    vec = await get_embedding(text)
+    if vec is not None:
+        cache[text] = vec
+    return vec
 
 
 async def close_channel():
