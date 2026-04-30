@@ -340,4 +340,33 @@ async def _get_sales_trend_chart(
 # ============================================================
 # Section 4: Composite assembly + route
 # ============================================================
-# Populated by Tasks D.2 / D.3
+
+
+async def _get_comprehensive_sales_analysis(
+    factory_id: str, range_: DateRange,
+) -> dict:
+    """Java reference: SmartBIServiceImpl.getComprehensiveAnalysis sales
+    branch (line 568-616).
+
+    Returns 7-key composite Map. Key order matches F999/F001 golden
+    (Jackson serialization of Java HashMap), NOT Java result.put() order.
+
+    Java puts in this order (lines 578-584 + 612-613):
+      overview / salespersonRanking / productRanking / customerRanking /
+      trendChart / dateRange / generatedAt
+
+    Jackson observed (F999 golden):
+      overview / customerRanking / productRanking / dateRange /
+      salespersonRanking / generatedAt / trendChart
+
+    The Jackson order is what we mirror.
+    """
+    return {
+        "overview":           await _get_sales_overview(factory_id, range_),
+        "customerRanking":    await _get_customer_ranking(factory_id, range_),
+        "productRanking":     await _get_product_ranking(factory_id, range_),
+        "dateRange":          _new_date_range_dict(range_),
+        "salespersonRanking": await _get_salesperson_ranking(factory_id, range_),
+        "generatedAt":        _utc_now_iso(),
+        "trendChart":         await _get_sales_trend_chart(factory_id, range_, "DAY"),
+    }

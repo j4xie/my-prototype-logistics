@@ -372,3 +372,32 @@ class TestSubServiceStubs:
         assert asyncio.iscoroutinefunction(_get_product_ranking)
         assert asyncio.iscoroutinefunction(_get_customer_ranking)
         assert asyncio.iscoroutinefunction(_get_sales_trend_chart)
+
+
+from smartbi_compat.api.analysis_sales import _get_comprehensive_sales_analysis
+
+
+class TestComposite:
+    def test_returns_7_keys_in_F999_order(self, range_2025):
+        result = asyncio.run(_get_comprehensive_sales_analysis("F999", range_2025))
+        # Order observed in F999 golden (Jackson HashMap iteration order)
+        assert list(result.keys()) == [
+            "overview", "customerRanking", "productRanking", "dateRange",
+            "salespersonRanking", "generatedAt", "trendChart",
+        ]
+
+    def test_F999_empty_state(self, range_2025):
+        result = asyncio.run(_get_comprehensive_sales_analysis("F999", range_2025))
+        assert result["overview"]["kpiCards"] == []
+        assert result["customerRanking"] == []
+        assert result["productRanking"] == []
+        assert result["salespersonRanking"] == []
+        assert result["trendChart"]["data"] == []
+        assert result["dateRange"]["startDate"] == "2025-01-01"
+        assert result["dateRange"]["endDate"] == "2025-12-31"
+        assert result["dateRange"]["days"] == 365
+        # generatedAt is ISO string (volatile, stripped before compare)
+        assert isinstance(result["generatedAt"], str)
+
+    def test_is_async(self):
+        assert asyncio.iscoroutinefunction(_get_comprehensive_sales_analysis)
