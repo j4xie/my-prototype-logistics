@@ -227,3 +227,73 @@ class TestAnalysisFinancePayable:
                 f"BYTE SHAPE MISMATCH (payable) on {list(diffs.keys())}\n"
                 f"{json.dumps(diffs, indent=2, ensure_ascii=False)[:2000]}"
             )
+
+
+class TestAnalysisFinanceProfit:
+    """F999 byte-shape gate for profit per-type path (analysisType=profit, PR-A real impl)."""
+
+    def test_f999_profit_data_keys_match_golden(self, client, monkeypatch):
+        """Sanity: data keys order matches Jackson HashMap order in recorded golden.
+
+        Mock _query_finance_data → [] for both REVENUE + COST so impl runs the
+        empty-Path-A branch (matches F999 reality on test env).
+        """
+        async def fake_empty(_factory_id, _record_type, _start, _end):
+            return []
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_finance._query_finance_data",
+            fake_empty,
+        )
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance"
+            "?startDate=2025-01-01&endDate=2025-12-31&analysisType=profit",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200, f"got {resp.status_code}: {resp.text[:300]}"
+        py_data_keys = list(resp.json()["data"].keys())
+
+        with io.open(GOLDEN_DIR / "analysis-finance-F999-profit.json", encoding="utf-8") as f:
+            golden_data_keys = list(json.load(f)["data"].keys())
+
+        assert py_data_keys == golden_data_keys, (
+            f"data key order mismatch:\n"
+            f"  python: {py_data_keys}\n"
+            f"  golden: {golden_data_keys}"
+        )
+
+    def test_f999_profit_byte_shape(self, client, monkeypatch):
+        """Full byte-shape compare on data block for empty F999 (5-zero-metric +
+        empty trendChart data + full options).
+        """
+        async def fake_empty(_factory_id, _record_type, _start, _end):
+            return []
+        monkeypatch.setattr(
+            "smartbi_compat.api.analysis_finance._query_finance_data",
+            fake_empty,
+        )
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance"
+            "?startDate=2025-01-01&endDate=2025-12-31&analysisType=profit",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200
+
+        py_data = _strip_volatile(resp.json()["data"])
+
+        with io.open(GOLDEN_DIR / "analysis-finance-F999-profit.json", encoding="utf-8") as f:
+            golden_data = _strip_volatile(json.load(f)["data"])
+
+        if py_data != golden_data:
+            diffs = {}
+            for k in set(py_data.keys()) | set(golden_data.keys()):
+                if py_data.get(k) != golden_data.get(k):
+                    diffs[k] = {
+                        "python": py_data.get(k),
+                        "golden": golden_data.get(k),
+                    }
+            pytest.fail(
+                f"BYTE SHAPE MISMATCH (profit) on {list(diffs.keys())}\n"
+                f"{json.dumps(diffs, indent=2, ensure_ascii=False)[:2000]}"
+            )
