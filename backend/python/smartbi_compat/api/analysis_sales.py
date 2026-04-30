@@ -306,6 +306,46 @@ async def _query_top_salespersons_aggregate(
         return []
 
 
+_DAILY_SALES_TREND_SQL = text("""
+    SELECT order_date,
+           COALESCE(SUM(amount), 0)   AS total_amount,
+           COALESCE(SUM(quantity), 0) AS total_quantity
+    FROM smart_bi_sales_data
+    WHERE factory_id = :factory_id
+      AND order_date BETWEEN :start_date AND :end_date
+    GROUP BY order_date
+    ORDER BY order_date
+""")
+
+
+async def _query_daily_sales_trend_aggregate(
+    factory_id: str, start_date: date, end_date: date,
+) -> list[tuple]:
+    """Mirror SmartBiSalesDataRepository.findDailySalesTrend line 97-102.
+
+    Returns list of (order_date, total_amount, total_quantity) ordered ASC.
+    """
+    def _exec():
+        engine = _get_sync_engine()
+        with engine.connect() as conn:
+            return [
+                (r[0], r[1], r[2])
+                for r in conn.execute(_DAILY_SALES_TREND_SQL, {
+                    "factory_id": factory_id,
+                    "start_date": start_date,
+                    "end_date": end_date,
+                })
+            ]
+    try:
+        return await asyncio.to_thread(_exec)
+    except Exception as e:
+        logger.warning(
+            "[legacy] _query_daily_sales_trend_aggregate failed factory=%s: %s",
+            factory_id, e,
+        )
+        return []
+
+
 # ============================================================
 # Section 1: DTO dict factories (FROZEN by foundation spec §4)
 # ============================================================

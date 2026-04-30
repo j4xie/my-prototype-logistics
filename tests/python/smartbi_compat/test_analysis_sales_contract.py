@@ -647,3 +647,39 @@ class TestOverview:
         assert result[0][0] == "张三"
         assert result[0][1] == Decimal("100000")
         assert result[1][0] == "李四"
+
+    @pytest.mark.asyncio
+    async def test_query_daily_sales_trend_aggregate(self, monkeypatch):
+        """Mirror findDailySalesTrend — rows ordered by orderDate ASC."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+
+        class FakeRow:
+            def __init__(self, vals): self._vals = vals
+            def __getitem__(self, i): return self._vals[i]
+
+        class FakeResult:
+            def __iter__(self):
+                return iter([
+                    FakeRow([date(2025, 1, 1), Decimal("1000"), Decimal("10")]),
+                    FakeRow([date(2025, 1, 2), Decimal("1500"), Decimal("15")]),
+                ])
+
+        class FakeConn:
+            def __enter__(self): return self
+            def __exit__(self, *a): pass
+            def execute(self, sql, params): return FakeResult()
+
+        class FakeEngine:
+            def connect(self): return FakeConn()
+
+        monkeypatch.setattr(m, "_get_sync_engine", lambda: FakeEngine())
+
+        result = await m._query_daily_sales_trend_aggregate(
+            "F999", date(2025, 1, 1), date(2025, 12, 31),
+        )
+        assert len(result) == 2
+        assert result[0][0] == date(2025, 1, 1)
+        assert result[0][1] == Decimal("1000")
+        assert result[0][2] == Decimal("10")
