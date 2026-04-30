@@ -5,6 +5,7 @@ import com.cretas.aims.dto.ProcessTaskDTO;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageResponse;
+import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.service.ProcessWorkReportingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -85,10 +86,10 @@ public class ProcessWorkReportingController {
             @RequestBody Map<String, Object> body,
             @RequestAttribute("userId") Long workerId) {
         if (body.get("processTaskId") == null) {
-            return ApiResponse.error("缺少必填字段: processTaskId");
+            throw new BusinessException(400, "缺少必填字段: processTaskId").withHint("请提供工序任务ID").withHintTarget("processTaskId");
         }
         if (body.get("outputQuantity") == null) {
-            return ApiResponse.error("缺少必填字段: outputQuantity");
+            throw new BusinessException(400, "缺少必填字段: outputQuantity").withHint("请提供产出数量").withHintTarget("outputQuantity");
         }
         String processTaskId = (String) body.get("processTaskId");
         String reporterName = (String) body.getOrDefault("reporterName", "");
@@ -111,10 +112,10 @@ public class ProcessWorkReportingController {
             @RequestBody Map<String, Object> body,
             @RequestAttribute("userId") Long workerId) {
         if (body.get("processTaskId") == null) {
-            return ApiResponse.error("缺少必填字段: processTaskId");
+            throw new BusinessException(400, "缺少必填字段: processTaskId").withHint("请提供工序任务ID").withHintTarget("processTaskId");
         }
         if (body.get("outputQuantity") == null) {
-            return ApiResponse.error("缺少必填字段: outputQuantity");
+            throw new BusinessException(400, "缺少必填字段: outputQuantity").withHint("请提供产出数量").withHintTarget("outputQuantity");
         }
         String processTaskId = (String) body.get("processTaskId");
         String reporterName = (String) body.getOrDefault("reporterName", "");

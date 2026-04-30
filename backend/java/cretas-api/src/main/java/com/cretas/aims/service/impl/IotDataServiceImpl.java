@@ -6,6 +6,7 @@ import com.cretas.aims.entity.enums.DeviceAlertLevel;
 import com.cretas.aims.entity.iot.DeviceStatus;
 import com.cretas.aims.entity.iot.IotDevice;
 import com.cretas.aims.entity.iot.IotDeviceData;
+import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.repository.EquipmentRepository;
 import com.cretas.aims.repository.IotDeviceDataRepository;
 import com.cretas.aims.repository.IotDeviceRepository;
@@ -128,7 +129,9 @@ public class IotDataServiceImpl implements IotDataService {
 
         } catch (IllegalArgumentException e) {
             log.error("无效的设备状态: status={}", status);
-            throw new IllegalArgumentException("无效的设备状态: " + status);
+            throw new BusinessException(400, "无效的设备状态: " + status)
+                    .withHint("请使用合法的设备状态: ONLINE / OFFLINE / FAULT / MAINTENANCE")
+                    .withHintTarget("status");
         }
     }
 

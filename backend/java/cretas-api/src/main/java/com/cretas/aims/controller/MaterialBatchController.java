@@ -6,6 +6,7 @@ import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.material.*;
 import com.cretas.aims.entity.enums.MaterialBatchStatus;
+import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.service.MaterialBatchService;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.utils.TokenUtils;
@@ -377,7 +378,7 @@ public class MaterialBatchController {
         // 兼容前端发送的 quantity 参数和后端的 requiredQuantity 参数
         BigDecimal actualQuantity = requiredQuantity != null ? requiredQuantity : quantity;
         if (actualQuantity == null) {
-            return ApiResponse.error(400, "需求数量参数不能为空 (quantity 或 requiredQuantity)");
+            throw new BusinessException(400, "需求数量参数不能为空 (quantity 或 requiredQuantity)").withHint("请填写需求数量").withHintTarget("quantity");
         }
 
         List<MaterialBatchDTO> batches = materialBatchService.getFIFOBatches(factoryId, materialTypeId, actualQuantity);
@@ -402,7 +403,7 @@ public class MaterialBatchController {
 
         BigDecimal actualQuantity = requiredQuantity != null ? requiredQuantity : quantity;
         if (actualQuantity == null) {
-            return ApiResponse.error(400, "需求数量参数不能为空 (quantity 或 requiredQuantity)");
+            throw new BusinessException(400, "需求数量参数不能为空 (quantity 或 requiredQuantity)").withHint("请填写需求数量").withHintTarget("quantity");
         }
 
         List<MaterialBatchDTO> batches = materialBatchService.getFEFOBatches(factoryId, materialTypeId, actualQuantity);
@@ -472,7 +473,7 @@ public class MaterialBatchController {
         }
 
         if (actualQuantity == null) {
-            return ApiResponse.error(400, "使用数量不能为空");
+            throw new BusinessException(400, "使用数量不能为空").withHint("请填写使用数量").withHintTarget("usedQuantity");
         }
 
         log.info("使用批次材料: factoryId={}, batchId={}, quantity={}", factoryId, batchId, actualQuantity);
@@ -519,7 +520,7 @@ public class MaterialBatchController {
         }
 
         if (actualQuantity == null) {
-            return ApiResponse.error("调整数量不能为空");
+            throw new BusinessException(400, "调整数量不能为空").withHint("请填写调整数量").withHintTarget("adjustQuantity");
         }
 
         log.info("调整批次数量: factoryId={}, batchId={}, quantity={}, reason={}",
@@ -585,7 +586,7 @@ public class MaterialBatchController {
         }
 
         if (actualQuantity == null) {
-            return ApiResponse.error(400, "预留数量不能为空");
+            throw new BusinessException(400, "预留数量不能为空").withHint("请填写预留数量").withHintTarget("reservedQuantity");
         }
 
         log.info("预留批次材料: factoryId={}, batchId={}, quantity={}, productionPlanId={}",
@@ -629,7 +630,7 @@ public class MaterialBatchController {
         }
 
         if (actualQuantity == null) {
-            return ApiResponse.error(400, "释放数量不能为空");
+            throw new BusinessException(400, "释放数量不能为空").withHint("请填写释放数量").withHintTarget("releaseQuantity");
         }
 
         log.info("释放预留材料: factoryId={}, batchId={}, quantity={}, productionPlanId={}",
@@ -673,7 +674,7 @@ public class MaterialBatchController {
         }
 
         if (actualQuantity == null) {
-            return ApiResponse.error(400, "消耗数量不能为空");
+            throw new BusinessException(400, "消耗数量不能为空").withHint("请填写消耗数量").withHintTarget("consumedQuantity");
         }
 
         log.info("消耗批次材料: factoryId={}, batchId={}, quantity={}, processId={}",

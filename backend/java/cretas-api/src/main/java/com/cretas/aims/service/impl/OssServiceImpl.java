@@ -6,6 +6,7 @@ import com.aliyun.oss.model.DeleteObjectsResult;
 import com.aliyun.oss.model.ObjectMetadata;
 import com.aliyun.oss.model.PutObjectResult;
 import com.cretas.aims.config.OssConfig;
+import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.service.OssService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -309,14 +310,18 @@ public class OssServiceImpl implements OssService {
     private void validateImageType(MultipartFile file) {
         String contentType = file.getContentType();
         if (contentType == null || !IMAGE_TYPES.contains(contentType)) {
-            throw new IllegalArgumentException("不支持的图片格式: " + contentType);
+            throw new BusinessException(400, "不支持的图片格式: " + contentType)
+                    .withHint("支持的格式: " + String.join(", ", IMAGE_TYPES))
+                    .withHintTarget("file");
         }
     }
 
     private void validateVideoType(MultipartFile file) {
         String contentType = file.getContentType();
         if (contentType == null || !VIDEO_TYPES.contains(contentType)) {
-            throw new IllegalArgumentException("不支持的视频格式: " + contentType);
+            throw new BusinessException(400, "不支持的视频格式: " + contentType)
+                    .withHint("支持的格式: " + String.join(", ", VIDEO_TYPES))
+                    .withHintTarget("file");
         }
     }
 

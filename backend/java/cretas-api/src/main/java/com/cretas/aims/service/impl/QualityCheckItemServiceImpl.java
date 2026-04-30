@@ -6,6 +6,7 @@ import com.cretas.aims.entity.config.QualityCheckItemBinding;
 import com.cretas.aims.entity.enums.QualityCheckCategory;
 import com.cretas.aims.entity.enums.QualitySeverity;
 import com.cretas.aims.entity.enums.SamplingStrategy;
+import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.exception.ValidationException;
 import com.cretas.aims.repository.ProductTypeRepository;
@@ -54,7 +55,9 @@ public class QualityCheckItemServiceImpl implements QualityCheckItemService {
             String rand = UUID.randomUUID().toString().substring(0, 4).toUpperCase();
             itemCode = String.format("QCI-%s-%s-%s", prefix, ts, rand);
         } else if (qualityCheckItemRepository.existsByFactoryIdAndItemCodeAndDeletedAtIsNull(factoryId, itemCode)) {
-            throw new IllegalArgumentException("项目编号已存在: " + itemCode);
+            throw new BusinessException(409, "项目编号已存在: " + itemCode)
+                    .withHint("请使用其他项目编号, 或留空让系统自动生成")
+                    .withHintTarget("itemCode");
         }
 
         QualityCheckItem item = QualityCheckItem.builder()
@@ -308,7 +311,8 @@ public class QualityCheckItemServiceImpl implements QualityCheckItemService {
         // 检查是否已绑定
         if (bindingRepository.existsByProductTypeIdAndQualityCheckItemIdAndDeletedAtIsNull(
                 request.getProductTypeId(), request.getQualityCheckItemId())) {
-            throw new IllegalArgumentException("该质检项已绑定到此产品");
+            throw new BusinessException(409, "该质检项已绑定到此产品")
+                    .withHint("请先解绑后再绑定, 或选择其他质检项");
         }
 
         QualityCheckItemBinding binding = QualityCheckItemBinding.builder()

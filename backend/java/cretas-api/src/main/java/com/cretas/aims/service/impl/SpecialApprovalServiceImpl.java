@@ -8,6 +8,7 @@ import com.cretas.aims.entity.DecisionAuditLog.ExecutionMode;
 import com.cretas.aims.entity.ProductionBatch;
 import com.cretas.aims.entity.QualityInspection;
 import com.cretas.aims.entity.User;
+import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.repository.DecisionAuditLogRepository;
 import com.cretas.aims.repository.ProductionBatchRepository;
 import com.cretas.aims.repository.QualityInspectionRepository;
@@ -58,16 +59,17 @@ public class SpecialApprovalServiceImpl implements SpecialApprovalService {
 
         // 1. 获取质检记录
         QualityInspection inspection = qualityInspectionRepository.findById(inspectionId)
-                .orElseThrow(() -> new IllegalArgumentException("质检记录不存在: " + inspectionId));
+                .orElseThrow(() -> new com.cretas.aims.exception.ResourceNotFoundException("质检记录", "id", inspectionId));
 
         // 验证工厂ID
         if (!inspection.getFactoryId().equals(factoryId)) {
-            throw new IllegalArgumentException("质检记录不属于该工厂");
+            throw new BusinessException(403, "质检记录不属于该工厂")
+                    .withHint("请切换到该质检记录所属的工厂后再操作");
         }
 
         // 2. 获取生产批次
         ProductionBatch batch = productionBatchRepository.findById(inspection.getProductionBatchId())
-                .orElseThrow(() -> new IllegalArgumentException("生产批次不存在"));
+                .orElseThrow(() -> new com.cretas.aims.exception.ResourceNotFoundException("生产批次", "id", String.valueOf(inspection.getProductionBatchId())));
 
         // 3. 获取申请人信息
         User requester = userRepository.findById(requesterId)
@@ -139,11 +141,12 @@ public class SpecialApprovalServiceImpl implements SpecialApprovalService {
         log.info("获取审批详情: factoryId={}, approvalId={}", factoryId, approvalId);
 
         DecisionAuditLog auditLog = decisionAuditLogRepository.findById(approvalId)
-                .orElseThrow(() -> new IllegalArgumentException("审批记录不存在: " + approvalId));
+                .orElseThrow(() -> new com.cretas.aims.exception.ResourceNotFoundException("审批记录", "id", approvalId));
 
         // 验证工厂ID
         if (!auditLog.getFactoryId().equals(factoryId)) {
-            throw new IllegalArgumentException("审批记录不属于该工厂");
+            throw new BusinessException(403, "审批记录不属于该工厂")
+                    .withHint("请切换到该审批记录所属的工厂后再操作");
         }
 
         return enrichAndConvertToDTO(auditLog);
@@ -162,11 +165,12 @@ public class SpecialApprovalServiceImpl implements SpecialApprovalService {
 
         // 1. 获取审批记录
         DecisionAuditLog auditLog = decisionAuditLogRepository.findById(approvalId)
-                .orElseThrow(() -> new IllegalArgumentException("审批记录不存在: " + approvalId));
+                .orElseThrow(() -> new com.cretas.aims.exception.ResourceNotFoundException("审批记录", "id", approvalId));
 
         // 验证工厂ID
         if (!auditLog.getFactoryId().equals(factoryId)) {
-            throw new IllegalArgumentException("审批记录不属于该工厂");
+            throw new BusinessException(403, "审批记录不属于该工厂")
+                    .withHint("请切换到该审批记录所属的工厂后再操作");
         }
 
         // 验证状态

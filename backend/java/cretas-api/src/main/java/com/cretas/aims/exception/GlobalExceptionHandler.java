@@ -309,6 +309,10 @@ public class GlobalExceptionHandler {
 
     /**
      * 处理非法参数异常 - 需脱敏
+     *
+     * R68 (qa-prompt v2.4 reviewer): 加 generic actionHint 让 FE 错误 UX 四件套至少有 hint 字段
+     * (虽然 services 层应该用 typed BusinessException + withHint() + withHintTarget(), 但残留的
+     * IllegalArgumentException 在被 R69 sweep 完前先用 handler-level fallback 保底).
      */
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -316,7 +320,10 @@ public class GlobalExceptionHandler {
         log.warn("非法参数: {}", e.getMessage());
         // 检查消息是否安全
         String message = isSafeMessage(e.getMessage()) ? e.getMessage() : ErrorCode.PARAM_INVALID.getUserMessage();
-        return ApiResponse.error(400, message);
+        ApiResponse<?> resp = ApiResponse.error(400, message);
+        resp.setActionHint("请检查输入字段后重试");
+        resp.setSeverity("warning");
+        return resp;
     }
 
     /**

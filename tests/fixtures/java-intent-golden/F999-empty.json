@@ -1,0 +1,35 @@
+{
+  "request": {
+    "query": "测试 F999 空",
+    "factoryId": "F999",
+    "userId": "999",
+    "username": "test",
+    "role": "factory_super_admin",
+    "businessType": "FACTORY"
+  },
+  "response": {
+    "success": true,
+    "data": {
+      "bestMatch": null,
+      "topCandidates": [],
+      "confidence": 0.0,
+      "matchMethod": "NONE",
+      "matchedKeywords": [],
+      "isStrongSignal": false,
+      "requiresConfirmation": false,
+      "clarificationQuestion": null,
+      "userInput": "测试 F999 空",
+      "actionType": "UNKNOWN",
+      "questionType": null,
+      "targetEntity": null,
+      "sessionId": null,
+      "conversationMessage": null,
+      "isMultiIntent": null,
+      "additionalIntents": null,
+      "executionStrategy": null,
+      "timingMs": null,
+      "preprocessedQuery": null
+    },
+    "message": "OK"
+  }
+}

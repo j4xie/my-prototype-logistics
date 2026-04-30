@@ -1,8 +1,9 @@
-"""
-Shared pytest configuration for tests/python/.
+"""Shared pytest configuration for tests/python/.
 
 Adds backend/python to sys.path so test modules can import from
-llm.*, common.*, smartbi.*, etc. without installing packages.
+ai.*, llm.*, common.*, smartbi.*, etc. without installing packages.
+
+Mirrors the pattern from sibling worktree phase2a-t5-poc.
 """
 from __future__ import annotations
 
@@ -15,7 +16,7 @@ _PYTHON_ROOT = _PROJECT_ROOT / "backend" / "python"
 
 if str(_PYTHON_ROOT) not in sys.path:
     sys.path.insert(0, str(_PYTHON_ROOT))
-# Also add smartbi sub-dir (required by main.py / other modules)
+# Also add smartbi sub-dir (some legacy modules import top-level from there)
 _SMARTBI_DIR = _PYTHON_ROOT / "smartbi"
 if str(_SMARTBI_DIR) not in sys.path:
     sys.path.insert(1, str(_SMARTBI_DIR))
