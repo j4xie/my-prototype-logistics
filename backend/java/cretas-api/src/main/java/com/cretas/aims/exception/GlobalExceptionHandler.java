@@ -135,15 +135,29 @@ public class GlobalExceptionHandler {
         // UX 2026-04-18 进阶: propagate actionHint/severity/hintTarget so frontend
         // interceptor can render ElNotification with button, ElMessageBox modal,
         // or pulse-hint animation instead of plain ElMessage toast.
+        //
+        // R73-FIX-A (2026-04-30): default severity from code when not set explicitly.
+        // R67/R68 转过来的 77+ BusinessException(403) 没设 severity. R72-FIX-B 真窗暴露
+        // 此 gap. 默认: 403/401/500/502/503/504 → "error"; 409/429 → "warning"; 其他 → null.
+        // 这让所有未显式 .withSeverity() 的 throw 自动有合理 severity, 不需要 audit 77 处.
+        Integer code = e.getCode() != null ? e.getCode() : 400;
+        String effectiveSeverity = e.getSeverity();
+        if (effectiveSeverity == null) {
+            effectiveSeverity = switch (code) {
+                case 401, 403, 500, 502, 503, 504 -> "error";
+                case 409, 429 -> "warning";
+                default -> null;
+            };
+        }
         ApiResponse<?> body;
-        if (e.getActionHint() != null || e.getSeverity() != null || e.getHintTarget() != null) {
+        if (e.getActionHint() != null || effectiveSeverity != null || e.getHintTarget() != null) {
             body = ApiResponse.errorWithHint(e.getCode(), message,
-                    e.getActionHint(), e.getSeverity(), e.getHintTarget());
+                    e.getActionHint(), effectiveSeverity, e.getHintTarget());
         } else {
             body = ApiResponse.error(e.getCode(), message);
         }
         // Map business code to HTTP status. Default 400 for unknown / 4xx-validation paths.
-        HttpStatus status = switch (e.getCode() != null ? e.getCode() : 400) {
+        HttpStatus status = switch (code) {
             case 401 -> HttpStatus.UNAUTHORIZED;
             case 403 -> HttpStatus.FORBIDDEN;
             case 404 -> HttpStatus.NOT_FOUND;

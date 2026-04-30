@@ -8,6 +8,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
+import { ElMessage } from 'element-plus';
 import { User, Clock, Files, UserFilled, Avatar } from '@element-plus/icons-vue';
 
 const router = useRouter();
@@ -17,17 +18,36 @@ const loading = ref(false);
 const factoryId = computed(() => authStore.factoryId);
 
 // 人事统计数据
-const hrStats = ref({
+// R76: todayAttendance/attendanceRate 用 null 表示"考勤数据未接入"。
+// 后端 `/timeclock/admin/statistics?startDate=&endDate=` 已存在 (TimeClockController:288),
+// 后续可在此 wire — 当前先显示 "-" 而不是假数据 (CLAUDE.md "禁止降级处理 - 不返回假数据,明确显示错误")。
+const hrStats = ref<{
+  totalEmployees: number;
+  activeEmployees: number;
+  todayAttendance: number | null;
+  attendanceRate: number | null;
+  departments: number;
+  pendingLeaves: number;
+}>({
   totalEmployees: 0,
   activeEmployees: 0,
-  todayAttendance: 0,
-  attendanceRate: 0,
+  todayAttendance: null,
+  attendanceRate: null,
   departments: 0,
   pendingLeaves: 0
 });
 
 // 统计卡片
-const statCards = computed(() => [
+// 出勤数据接入前显示 "-" + "数据待接入" 标签 (避免假数据误导客户)
+const statCards = computed<Array<{
+  title: string;
+  value: number | string;
+  unit: string;
+  icon: unknown;
+  color: string;
+  route: string;
+  pending?: boolean;
+}>>(() => [
   {
     title: '在职员工',
     value: hrStats.value.activeEmployees,
@@ -38,19 +58,21 @@ const statCards = computed(() => [
   },
   {
     title: '今日出勤',
-    value: hrStats.value.todayAttendance,
-    unit: '人',
+    value: hrStats.value.todayAttendance ?? '-',
+    unit: hrStats.value.todayAttendance !== null ? '人' : '',
     icon: Clock,
     color: '#67c23a',
-    route: '/hr/attendance'
+    route: '/hr/attendance',
+    pending: hrStats.value.todayAttendance === null
   },
   {
     title: '出勤率',
-    value: hrStats.value.attendanceRate,
-    unit: '%',
+    value: hrStats.value.attendanceRate ?? '-',
+    unit: hrStats.value.attendanceRate !== null ? '%' : '',
     icon: Files,
     color: '#e6a23c',
-    route: '/hr/attendance'
+    route: '/hr/attendance',
+    pending: hrStats.value.attendanceRate === null
   },
   {
     title: '部门数量',
@@ -79,28 +101,39 @@ async function loadHRData() {
 
   loading.value = true;
   try {
-    // 获取员工列表来计算统计
     const [employeesRes, departmentsRes] = await Promise.allSettled([
       get<{ content: Record<string, unknown>[]; totalElements: number }>(`/${factoryId.value}/users?page=1&size=1`),
       get<{ content: Record<string, unknown>[]; totalElements: number }>(`/${factoryId.value}/departments?page=1&size=1`)
     ]);
 
+    const failed: string[] = [];
+
     if (employeesRes.status === 'fulfilled' && employeesRes.value.success) {
       hrStats.value.totalEmployees = employeesRes.value.data?.totalElements ?? 0;
       hrStats.value.activeEmployees = employeesRes.value.data?.totalElements ?? 0;
+    } else {
+      failed.push('员工列表');
+      console.error('[DashboardHR] employees API failed',
+        employeesRes.status === 'rejected' ? employeesRes.reason : employeesRes.value);
     }
 
     if (departmentsRes.status === 'fulfilled' && departmentsRes.value.success) {
       hrStats.value.departments = departmentsRes.value.data?.totalElements ?? 0;
+    } else {
+      failed.push('部门列表');
+      console.error('[DashboardHR] departments API failed',
+        departmentsRes.status === 'rejected' ? departmentsRes.reason : departmentsRes.value);
     }
 
-    // 模拟考勤数据 (后续接入真实 API)
-    hrStats.value.todayAttendance = Math.floor(hrStats.value.activeEmployees * 0.92);
-    hrStats.value.attendanceRate = hrStats.value.activeEmployees > 0
-      ? Math.round((hrStats.value.todayAttendance / hrStats.value.activeEmployees) * 100)
-      : 0;
+    if (failed.length > 0) {
+      ElMessage.warning(`部分数据加载失败: ${failed.join('、')}`);
+    }
+
+    // 考勤数据保持 null 状态 — 后端 /timeclock/admin/statistics 已存在但本页未 wire,
+    // UI 显示 "-" + "数据待接入" 标签, 不再用 activeEmployees * 0.92 编造假数据
   } catch (error) {
-    console.error('Failed to load HR data:', error);
+    console.error('[DashboardHR] Failed to load HR data:', error);
+    ElMessage.error('加载人事 Dashboard 失败');
   } finally {
     loading.value = false;
   }
@@ -130,10 +163,13 @@ function navigateTo(route: string) {
         <el-card class="stat-card" shadow="hover" @click="navigateTo(card.route)">
           <div class="stat-content">
             <div class="stat-info">
-              <span class="stat-title">{{ card.title }}</span>
+              <span class="stat-title">
+                {{ card.title }}
+                <el-tag v-if="card.pending" size="small" type="info" effect="plain" style="margin-left: 6px;">数据待接入</el-tag>
+              </span>
               <span class="stat-value" :style="{ color: card.color }">
                 {{ card.value }}
-                <small>{{ card.unit }}</small>
+                <small v-if="card.unit">{{ card.unit }}</small>
               </span>
             </div>
             <el-icon class="stat-icon" :style="{ backgroundColor: card.color + '20', color: card.color }">
@@ -177,27 +213,43 @@ function navigateTo(route: string) {
             </div>
           </template>
           <div class="attendance-overview">
-            <div class="attendance-stat">
-              <el-icon :size="40" color="#67c23a"><Avatar /></el-icon>
-              <div class="stat-detail">
-                <span class="label">已打卡</span>
-                <span class="value">{{ hrStats.todayAttendance }}</span>
+            <el-empty
+              v-if="hrStats.todayAttendance === null"
+              description="考勤数据待接入"
+              :image-size="60"
+            >
+              <template #description>
+                <div style="color: #909399; font-size: 13px;">
+                  考勤数据待接入
+                  <div style="font-size: 12px; color: #c0c4cc; margin-top: 4px;">
+                    后端 /timeclock/admin/statistics 接口已就绪
+                  </div>
+                </div>
+              </template>
+            </el-empty>
+            <template v-else>
+              <div class="attendance-stat">
+                <el-icon :size="40" color="#67c23a"><Avatar /></el-icon>
+                <div class="stat-detail">
+                  <span class="label">已打卡</span>
+                  <span class="value">{{ hrStats.todayAttendance }}</span>
+                </div>
               </div>
-            </div>
-            <div class="attendance-stat">
-              <el-icon :size="40" color="#f56c6c"><Avatar /></el-icon>
-              <div class="stat-detail">
-                <span class="label">未打卡</span>
-                <span class="value">{{ hrStats.activeEmployees - hrStats.todayAttendance }}</span>
+              <div class="attendance-stat">
+                <el-icon :size="40" color="#f56c6c"><Avatar /></el-icon>
+                <div class="stat-detail">
+                  <span class="label">未打卡</span>
+                  <span class="value">{{ hrStats.activeEmployees - (hrStats.todayAttendance ?? 0) }}</span>
+                </div>
               </div>
-            </div>
-            <div class="attendance-stat">
-              <el-icon :size="40" color="#409eff"><Clock /></el-icon>
-              <div class="stat-detail">
-                <span class="label">出勤率</span>
-                <span class="value">{{ hrStats.attendanceRate }}%</span>
+              <div class="attendance-stat">
+                <el-icon :size="40" color="#409eff"><Clock /></el-icon>
+                <div class="stat-detail">
+                  <span class="label">出勤率</span>
+                  <span class="value">{{ hrStats.attendanceRate }}%</span>
+                </div>
               </div>
-            </div>
+            </template>
           </div>
         </el-card>
       </el-col>

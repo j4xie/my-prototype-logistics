@@ -232,6 +232,18 @@ export interface DashboardOverview {
   pendingTasks: number;
   qualityRate: number;
   equipmentUtilization: number;
+  // 后端 /reports/dashboard/overview 实际返回的额外字段 (见 ReportService.getDashboardOverview)。
+  // R42 BUG-14 修过此处 fallback 链, R76 升级类型避免 `as any`.
+  plannedOutput?: number;
+  completionRate?: number;
+  summary?: {
+    activeAlerts?: number;
+    [key: string]: unknown;
+  };
+  alerts?: {
+    active?: number;
+    [key: string]: unknown;
+  };
 }
 
 export interface ProductionStats {

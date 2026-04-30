@@ -6,6 +6,7 @@ import com.cretas.aims.entity.calibration.BehaviorCalibrationMetrics;
 import com.cretas.aims.entity.calibration.BehaviorCalibrationMetrics.PeriodType;
 import com.cretas.aims.entity.calibration.ToolCallRecord;
 import com.cretas.aims.entity.calibration.ToolReliabilityStats;
+import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.repository.calibration.ToolCallRecordRepository;
 import com.cretas.aims.service.calibration.BehaviorCalibrationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -84,9 +85,14 @@ public class BehaviorCalibrationController {
         try {
             CalibrationDashboardDTO dashboard = behaviorCalibrationService.getDashboardData(factoryId);
             return ApiResponse.success(dashboard);
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取仪表盘数据失败: {}", e.getMessage(), e);
-            return ApiResponse.error("获取仪表盘数据失败: " + ErrorSanitizer.sanitize(e));
+            // R76: catch return ApiResponse.error → throw BusinessException (HTTP 500 + actionable)
+            // 之前返回 HTTP 200 + success:false, 前端 Promise.allSettled 看到 success:false 但
+            // 拿不到 stack/code, GlobalExceptionHandler 才能映射成正确 HTTP 5xx + severity:"error"
+            throw new BusinessException(500, "获取仪表盘数据失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 

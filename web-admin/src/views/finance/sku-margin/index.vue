@@ -18,6 +18,8 @@ const pagination = ref({ page: 1, size: 20, total: 0 });
 const dateRange = ref<[string, string] | null>(null);
 const sortField = ref('marginRate');
 const sortOrder = ref<'ascending' | 'descending'>('descending');
+// R76: 当 batch 数据存在但成本/售价 API 未接入时, 显示通知 banner 而不是用 Math.random() 编造假数据
+const noCostDataNotice = ref({ show: false, batchProductCount: 0 });
 
 // Chart
 const chartRef = ref<HTMLDivElement | null>(null);
@@ -168,6 +170,7 @@ async function loadData() {
   if (!factoryId.value) return;
 
   loading.value = true;
+  noCostDataNotice.value = { show: false, batchProductCount: 0 };
   try {
     // Try the AI intent API for aggregated SKU margin data
     const intentRes = await post<{
@@ -261,7 +264,7 @@ async function loadFromBatches() {
       return;
     }
 
-    // Aggregate by product name
+    // Aggregate by product name (real production data)
     const productMap = new Map<string, { quantity: number; batchCount: number }>();
     for (const batch of batches) {
       const name = batch.productTypeName || batch.productName || '未知产品';
@@ -271,37 +274,14 @@ async function loadFromBatches() {
       productMap.set(name, existing);
     }
 
-    // TODO: Replace with real cost/price API when available.
-    // Currently generating estimated cost data since there is no direct SKU margin API.
-    const rows: SkuMarginRow[] = [];
-    for (const [name, info] of productMap) {
-      const qty = info.quantity || 1;
-      // Estimate costs based on production data patterns
-      const materialCostPerUnit = 5 + Math.random() * 15;
-      const laborCostPerUnit = 2 + Math.random() * 5;
-      const materialCost = Math.round(materialCostPerUnit * qty * 100) / 100;
-      const laborCost = Math.round(laborCostPerUnit * qty * 100) / 100;
-      const totalCost = Math.round((materialCost + laborCost) * 100) / 100;
-      const unitCost = Math.round((totalCost / qty) * 100) / 100;
-      const sellingPrice = Math.round(unitCost * (1.15 + Math.random() * 0.5) * 100) / 100;
-      const marginRate = sellingPrice > 0
-        ? Math.round(((sellingPrice - unitCost) / sellingPrice) * 1000) / 10
-        : 0;
-
-      rows.push({
-        productName: name,
-        quantity: Math.round(qty),
-        materialCost,
-        laborCost,
-        totalCost,
-        unitCost,
-        sellingPrice,
-        marginRate,
-      });
-    }
-
-    tableData.value = rows;
-    pagination.value.total = rows.length;
+    // R76: 之前此处用 Math.random() 编造材料成本 / 人工成本 / 售价 / 毛利率 — 已移除。
+    // 真实 SKU 毛利率 API (AI intent 'sku-margin-ranking' 或专属端点) 接入前,
+    // 不展示编造的成本数据, 改为显示通知 banner 告知用户数据限制。
+    // 主路径 (AI intent at line 173-191) 若返回真实数据会优先用,
+    // 走到 fallback 只能说"找到 N 个产品但成本数据待接入"。
+    tableData.value = [];
+    pagination.value.total = 0;
+    noCostDataNotice.value = { show: true, batchProductCount: productMap.size };
   } else {
     tableData.value = [];
     pagination.value.total = 0;
@@ -438,8 +418,31 @@ function handleRefresh() {
         </div>
       </template>
 
-      <!-- KPI Row -->
-      <div class="kpi-row">
+      <!-- R76: 提示成本/售价数据未接入 — 之前用 Math.random 编造, 已移除 -->
+      <el-alert
+        v-if="noCostDataNotice.show"
+        type="warning"
+        :closable="false"
+        show-icon
+        style="margin-bottom: 16px;"
+      >
+        <template #title>
+          数据待接入: 检测到 {{ noCostDataNotice.batchProductCount }} 个生产产品,
+          但 SKU 成本/售价 API 尚未接入
+        </template>
+        <template #default>
+          <div style="color: #606266; font-size: 13px; line-height: 1.6;">
+            为避免误导,毛利率明细暂不展示估算数据。后端 SKU 毛利率聚合接口接入后将自动展示真实数据。
+            如需手工查看, 请前往
+            <el-link type="primary" @click="$router.push('/finance/costs')">财务成本</el-link>
+            或
+            <el-link type="primary" @click="$router.push('/smart-bi/finance')">SmartBI 财务分析</el-link>。
+          </div>
+        </template>
+      </el-alert>
+
+      <!-- KPI Row (隐藏 when 成本/售价数据未接入,避免 0% 红色误导) -->
+      <div v-if="!noCostDataNotice.show" class="kpi-row">
         <el-card shadow="hover" class="kpi-card">
           <div class="kpi-value" :style="{ color: getMarginColor(kpi.avgMargin) }">
             {{ kpi.avgMargin }}%
@@ -468,14 +471,14 @@ function handleRefresh() {
         </el-card>
       </div>
 
-      <!-- Bar Chart: Top 10 SKUs by Margin -->
-      <div class="chart-section">
+      <!-- Bar Chart: Top 10 SKUs by Margin (隐藏 when 数据未接入) -->
+      <div v-if="!noCostDataNotice.show" class="chart-section">
         <h3 class="section-title">Top 10 SKU 毛利率排名</h3>
         <div ref="chartRef" class="chart-container"></div>
       </div>
 
-      <!-- Main Table -->
-      <div class="table-section">
+      <!-- Main Table (隐藏 when 数据未接入) -->
+      <div v-if="!noCostDataNotice.show" class="table-section">
         <h3 class="section-title">SKU 毛利率明细</h3>
         <el-table
           :data="paginatedData"

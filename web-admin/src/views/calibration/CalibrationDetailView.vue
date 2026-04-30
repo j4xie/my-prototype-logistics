@@ -319,77 +319,19 @@ function updateRadarChart() {
 function updateTrendChart() {
   if (!trendChart.value) return;
 
-  // 生成过去7天的模拟趋势数据
-  const dates: string[] = [];
-  const scores: number[] = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    dates.push(d.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }));
-    scores.push(75 + Math.random() * 20);
-  }
-
-  const option: echarts.EChartsOption = {
-    tooltip: {
-      trigger: 'axis',
-      confine: true,
-      axisPointer: {
-        type: 'cross'
-      }
-    },
-    grid: {
-      left: 50,
-      right: 20,
-      top: 20,
-      bottom: 30
-    },
-    xAxis: {
-      type: 'category',
-      data: dates,
-      axisLine: {
-        lineStyle: { color: '#E4E7ED' }
-      },
-      axisLabel: {
-        color: '#606266'
-      }
-    },
-    yAxis: {
-      type: 'value',
-      min: 60,
-      max: 100,
-      axisLine: {
-        show: false
-      },
-      axisLabel: {
-        color: '#606266'
-      },
-      splitLine: {
-        lineStyle: { color: '#E4E7ED', type: 'dashed' }
-      }
-    },
-    series: [{
-      type: 'line',
-      data: scores,
-      smooth: true,
-      symbol: 'circle',
-      symbolSize: 8,
-      lineStyle: {
-        color: '#409EFF',
-        width: 3
-      },
-      itemStyle: {
-        color: '#409EFF'
-      },
-      areaStyle: {
-        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-          { offset: 0, color: 'rgba(64, 158, 255, 0.3)' },
-          { offset: 1, color: 'rgba(64, 158, 255, 0.05)' }
-        ])
-      }
-    }]
-  };
-
-  trendChart.value.setOption(option);
+  // R76: 之前用 75 + Math.random() * 20 编造 7 天趋势 — 已移除。
+  // CalibrationHistoryItem 是 audit log 不含 score 字段, 后端无每日评分趋势 API。
+  // 在专属 trend 接口接入前, 显示空状态而不是假折线。
+  trendChart.value.setOption({
+    title: {
+      text: '7天趋势数据待接入',
+      subtext: '后端尚未提供每日评分趋势接口',
+      left: 'center',
+      top: 'center',
+      textStyle: { color: '#909399', fontSize: 14, fontWeight: 'normal' },
+      subtextStyle: { color: '#C0C4CC', fontSize: 12 }
+    }
+  }, true);
 }
 
 // ==================== 事件处理 ====================

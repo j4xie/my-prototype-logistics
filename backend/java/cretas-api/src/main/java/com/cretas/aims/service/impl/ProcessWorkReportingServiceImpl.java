@@ -133,23 +133,29 @@ public class ProcessWorkReportingServiceImpl implements ProcessWorkReportingServ
         log.info("Batch approving {} reports for factory {}", reportIds.size(), factoryId);
         List<Map<String, Object>> results = new ArrayList<>();
 
-        List<Long> skippedIds = new ArrayList<>();
+        // R69-BUG-1 fix: track skipped IDs WITH reasons so UI can surface them.
+        // 之前仅返回 skippedCount, UI 无法告知用户具体哪些 ID 被跳过 + 原因 →
+        // 同 R45 BUG-17 anti-pattern (HTTP 200 + 静默跳过). 现在: skippedIds 显式返回 +
+        // 全跳过场景升级为 409, 部分跳过保留 200 但带 actionHint.
+        List<Map<String, Object>> skippedDetails = new ArrayList<>();
         Set<String> affectedTaskIds = new java.util.HashSet<>();
 
         for (Long reportId : reportIds) {
             ProductionReport report = reportRepository.findById(reportId).orElse(null);
             if (report == null) {
-                skippedIds.add(reportId);
+                skippedDetails.add(Map.of("reportId", reportId, "reason", "NOT_FOUND"));
                 continue;
             }
 
             if (!factoryId.equals(report.getFactoryId())) {
-                skippedIds.add(reportId);
+                skippedDetails.add(Map.of("reportId", reportId, "reason", "WRONG_FACTORY"));
                 continue;
             }
             if (!"PENDING".equals(report.getApprovalStatus())) {
-                // 跳过已处理的，不抛异常不回滚
-                skippedIds.add(reportId);
+                skippedDetails.add(Map.of(
+                        "reportId", reportId,
+                        "reason", "ALREADY_PROCESSED",
+                        "currentStatus", report.getApprovalStatus()));
                 continue;
             }
 
@@ -169,7 +175,25 @@ public class ProcessWorkReportingServiceImpl implements ProcessWorkReportingServ
         // Check SUPPLEMENTING state for all affected tasks
         affectedTaskIds.forEach(this::checkAndRestoreFromSupplementing);
 
-        return Map.of("approved", results.size(), "skipped", skippedIds.size(), "results", results);
+        Map<String, Object> response = new java.util.LinkedHashMap<>();
+        response.put("approved", results.size());
+        response.put("skipped", skippedDetails.size());
+        response.put("results", results);
+        response.put("skippedIds", skippedDetails);
+
+        // R69-BUG-1: if NOTHING got approved (all skipped) → 409 (state-conflict)
+        // partial-success (some approved, some skipped) → 200 with response payload;
+        // controller layer can read response.skipped > 0 + emit actionHint via FE interceptor.
+        if (results.isEmpty() && !skippedDetails.isEmpty()) {
+            String reasons = skippedDetails.stream()
+                    .map(d -> d.get("reportId") + ":" + d.get("reason"))
+                    .collect(Collectors.joining(", "));
+            throw new BusinessException(409, "全部 " + skippedDetails.size() + " 条报工记录均无法批量审批 (" + reasons + ")")
+                    .withHint("请刷新报工列表, 仅勾选状态为 PENDING 的待审批记录")
+                    .withHintTarget("reportIds");
+        }
+
+        return response;
     }
 
     @Override
@@ -432,12 +456,45 @@ public class ProcessWorkReportingServiceImpl implements ProcessWorkReportingServ
 
     // ==================== Private helpers ====================
 
+    /**
+     * R70-FIX-D (R69-BUG-2): syncQuantitiesToTask 之前不 cap completedQuantity 也不 guard
+     * CLOSED 状态. pt-001 实测 plannedQuantity=100 但 completedQuantity=1178 (10×over-completion).
+     * 现在: (1) 不允许同步到 CLOSED 任务 → 409. (2) 超出 plannedQuantity * (1 + OVERSHOOT_PCT)
+     * 拒绝同步 → 409 (10% 容忍工业实际超产). approve/batchApprove 调用方 @Transactional 会
+     * rollback report 状态保持一致.
+     */
+    private static final BigDecimal QUANTITY_OVERSHOOT_TOLERANCE = new BigDecimal("1.10");
+
     private void syncQuantitiesToTask(String taskId, BigDecimal quantity, boolean approved) {
         ProcessTask task = taskRepository.findById(taskId).orElse(null);
         if (task == null) return;
 
+        // R70-FIX-D guard 1: CLOSED 状态拒绝同步
+        if (task.getStatus() == ProcessTaskStatus.CLOSED) {
+            throw new BusinessException(409, "工序任务已关闭, 不可继续报工同步 (taskId=" + taskId + ")")
+                    .withHint("请刷新报工列表, 该任务已关闭, 不允许新报工")
+                    .withHintTarget("processTaskId");
+        }
+
         if (approved) {
-            task.setCompletedQuantity(task.getCompletedQuantity().add(quantity));
+            BigDecimal currentCompleted = task.getCompletedQuantity() != null ? task.getCompletedQuantity() : BigDecimal.ZERO;
+            BigDecimal planned = task.getPlannedQuantity();
+            BigDecimal newCompleted = currentCompleted.add(quantity);
+
+            // R70-FIX-D guard 2: 超出 plannedQuantity * 110% 拒绝
+            if (planned != null && planned.compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal cap = planned.multiply(QUANTITY_OVERSHOOT_TOLERANCE);
+                if (newCompleted.compareTo(cap) > 0) {
+                    throw new BusinessException(409,
+                            String.format("本次报工 %s 会让累计完工 %s 超出计划 %s 的 110%% 上限 (cap=%s)",
+                                    quantity.toPlainString(), newCompleted.toPlainString(),
+                                    planned.toPlainString(), cap.toPlainString()))
+                            .withHint("请检查计划数量, 或拆分为多次报工 (每次不超出 cap)")
+                            .withHintTarget("outputQuantity");
+                }
+            }
+
+            task.setCompletedQuantity(newCompleted);
             task.setPendingQuantity(task.getPendingQuantity().subtract(quantity).max(BigDecimal.ZERO));
         }
 
