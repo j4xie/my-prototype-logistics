@@ -1398,3 +1398,47 @@ class TestRankings:
         range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 1, 31))
         result = await m._get_salesperson_ranking("F999", range_)
         assert result == []
+
+    @pytest.mark.asyncio
+    async def test_get_product_ranking_with_percentage(self, monkeypatch):
+        """Aggregates per product_category, completionRate = % of total, alertLevel=GREEN."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+        from collections import namedtuple
+
+        Row = namedtuple("Row", "salesperson_name amount monthly_target product_category customer_name order_date")
+
+        def fake_query(factory_id, range_):
+            return [
+                Row("X", Decimal("400"), None, "肉类", "C1", date(2025, 1, 1)),
+                Row("X", Decimal("300"), None, "蔬菜", "C2", date(2025, 1, 2)),
+                Row("X", Decimal("300"), None, "蛋类", "C3", date(2025, 1, 3)),
+                Row("X", Decimal("99"), None, None, "C4", date(2025, 1, 4)),  # null category → skip
+            ]
+
+        monkeypatch.setattr(m, "_query_sales_data", fake_query)
+
+        range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 1, 31))
+        result = await m._get_product_ranking("F999", range_)
+
+        assert len(result) == 3  # null skipped
+        # Total = 1000; rank by value DESC, ties name ASC
+        # 肉类(400) → 40%; 蔬菜(300) tied 蛋类(300) → name ASC: 蔬<蛋 → 蔬菜 first
+        assert result[0]["name"] == "肉类"
+        assert result[0]["value"] == Decimal("400.00")
+        assert result[0]["completionRate"] == Decimal("40.00")
+        assert result[0]["alertLevel"] == "GREEN"
+        assert result[0]["target"] is None
+        # Tie: 蔬菜 (U+852C) < 蛋类 (U+86CB)
+        assert result[1]["name"] == "蔬菜"
+        assert result[2]["name"] == "蛋类"
+
+    @pytest.mark.asyncio
+    async def test_get_product_ranking_empty(self, monkeypatch):
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        monkeypatch.setattr(m, "_query_sales_data", lambda f, r: [])
+        range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 1, 31))
+        result = await m._get_product_ranking("F999", range_)
+        assert result == []
