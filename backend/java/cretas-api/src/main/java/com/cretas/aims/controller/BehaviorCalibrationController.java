@@ -120,9 +120,11 @@ public class BehaviorCalibrationController {
         try {
             CalibrationDashboardDTO.CurrentMetrics realtimeMetrics = behaviorCalibrationService.getRealtimeMetrics(factoryId);
             return ApiResponse.success(realtimeMetrics);
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取实时指标失败: {}", e.getMessage(), e);
-            return ApiResponse.error("获取实时指标失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "获取实时指标失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -157,10 +159,13 @@ public class BehaviorCalibrationController {
             return ApiResponse.success(metrics);
         } catch (IllegalArgumentException e) {
             log.warn("无效的周期类型: {}", periodType);
-            return ApiResponse.error("无效的周期类型: " + periodType + "，支持: DAILY, WEEKLY, MONTHLY");
+            throw new BusinessException(400, "无效的周期类型: " + periodType + "，支持: DAILY, WEEKLY, MONTHLY")
+                    .withHint("请从 DAILY / WEEKLY / MONTHLY 中选择");
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取指标趋势失败: {}", e.getMessage(), e);
-            return ApiResponse.error("获取指标趋势失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "获取指标趋势失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -188,9 +193,11 @@ public class BehaviorCalibrationController {
             List<ToolReliabilityStats> ranking = behaviorCalibrationService.getToolReliabilityRanking(
                     factoryId, targetDate);
             return ApiResponse.success(ranking);
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取工具可靠性排名失败: {}", e.getMessage(), e);
-            return ApiResponse.error("获取工具可靠性排名失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "获取工具可靠性排名失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -242,9 +249,11 @@ public class BehaviorCalibrationController {
             }
 
             return ApiResponse.success(records);
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取工具调用记录失败: {}", e.getMessage(), e);
-            return ApiResponse.error("获取工具调用记录失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "获取工具调用记录失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -297,9 +306,11 @@ public class BehaviorCalibrationController {
             }
 
             return ApiResponse.success(ranking);
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取工厂排名失败: {}", e.getMessage(), e);
-            return ApiResponse.error("获取工厂排名失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "获取工厂排名失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -333,9 +344,11 @@ public class BehaviorCalibrationController {
                     factoryId, date, metrics.getCompositeScore());
 
             return ApiResponse.success("指标计算完成", metrics);
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("指标计算失败: {}", e.getMessage(), e);
-            return ApiResponse.error("指标计算失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "指标计算失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -366,9 +379,11 @@ public class BehaviorCalibrationController {
             List<ToolReliabilityStats> lowReliabilityTools = behaviorCalibrationService.getLowReliabilityTools(
                     factoryId, targetDate, threshold);
             return ApiResponse.success(lowReliabilityTools);
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取低可靠性工具失败: {}", e.getMessage(), e);
-            return ApiResponse.error("获取低可靠性工具失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "获取低可靠性工具失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -403,9 +418,11 @@ public class BehaviorCalibrationController {
             result.put("averageCompositeScore", averageScore);
 
             return ApiResponse.success(result);
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取平均综合得分失败: {}", e.getMessage(), e);
-            return ApiResponse.error("获取平均综合得分失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "获取平均综合得分失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 

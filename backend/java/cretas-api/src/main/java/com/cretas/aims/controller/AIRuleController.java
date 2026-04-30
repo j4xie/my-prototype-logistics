@@ -7,6 +7,7 @@ import com.cretas.aims.dto.ai.AIStateMachineParseRequest;
 import com.cretas.aims.dto.ai.AIStateMachineParseResponse;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.rules.DroolsRule;
+import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.repository.DroolsRuleRepository;
 import com.cretas.aims.service.RuleEngineService;
 import com.cretas.aims.service.StateMachineService;
@@ -112,15 +113,19 @@ public class AIRuleController {
 
                 return ApiResponse.success("规则解析成功", result);
             } else {
-                return ApiResponse.error("AI服务返回异常");
+                throw new BusinessException(502, "AI服务返回异常")
+                        .withHint("请稍后重试,若持续失败请联系平台管理员");
             }
 
+        } catch (BusinessException be) {
+            throw be;
         } catch (RestClientException e) {
             log.error("调用AI服务失败", e);
-            return ApiResponse.error("AI服务不可用: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(503, "AI服务不可用: " + ErrorSanitizer.sanitize(e), e)
+                    .withHint("AI 服务暂时不可达,请稍后重试");
         } catch (Exception e) {
             log.error("规则解析失败", e);
-            return ApiResponse.error("规则解析失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "规则解析失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -274,15 +279,19 @@ public class AIRuleController {
 
                 return ApiResponse.success("状态机解析成功", result);
             } else {
-                return ApiResponse.error("AI服务返回异常");
+                throw new BusinessException(502, "AI服务返回异常")
+                        .withHint("请稍后重试,若持续失败请联系平台管理员");
             }
 
+        } catch (BusinessException be) {
+            throw be;
         } catch (RestClientException e) {
             log.error("调用AI服务失败", e);
-            return ApiResponse.error("AI服务不可用: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(503, "AI服务不可用: " + ErrorSanitizer.sanitize(e), e)
+                    .withHint("AI 服务暂时不可达,请稍后重试");
         } catch (Exception e) {
             log.error("状态机解析失败", e);
-            return ApiResponse.error("状态机解析失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "状态机解析失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
