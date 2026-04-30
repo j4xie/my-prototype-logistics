@@ -75,7 +75,7 @@ public class MaterialRequisitionController {
             @PathVariable String requisitionId) {
         return requisitionRepository.findByIdAndFactoryId(requisitionId, factoryId)
                 .map(ApiResponse::success)
-                .orElse(ApiResponse.error("领料单不存在: " + requisitionId));
+                .orElseThrow(() -> new BusinessException(404, "领料单不存在: " + requisitionId).withHint("请检查 ID 是否正确"));
     }
 
     // ==================== 创建 ====================

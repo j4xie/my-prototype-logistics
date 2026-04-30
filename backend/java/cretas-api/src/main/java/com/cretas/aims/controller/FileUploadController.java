@@ -3,6 +3,7 @@ package com.cretas.aims.controller;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.service.OssService;
+import com.cretas.aims.exception.BusinessException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -64,14 +65,14 @@ public class FileUploadController {
                 factoryId, file.getOriginalFilename(), file.getSize(), file.getContentType());
 
         if (file.isEmpty()) {
-            return ApiResponse.error("文件不能为空");
+            throw new BusinessException(400, "文件不能为空");
         }
         if (file.getSize() > MAX_SIGNATURE_PHOTO_SIZE) {
-            return ApiResponse.error("签收照片不能超过 5MB");
+            throw new BusinessException(400, "签收照片不能超过 5MB");
         }
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_PHOTO_TYPES.contains(contentType.toLowerCase())) {
-            return ApiResponse.error("仅支持 JPEG/PNG 格式,当前: " + contentType);
+            throw new BusinessException(400, "仅支持 JPEG/PNG 格式,当前: " + contentType).withHint("请上传支持的文件格式");
         }
 
         try {
@@ -81,10 +82,10 @@ public class FileUploadController {
             return ApiResponse.success("上传成功", Map.of("url", url));
         } catch (IllegalArgumentException e) {
             log.warn("签收照片上传失败(参数错误): {}", e.getMessage());
-            return ApiResponse.error(e.getMessage());
+            throw new BusinessException(400, e.getMessage(), e);
         } catch (Exception e) {
             log.error("签收照片上传失败: factoryId={}", factoryId, e);
-            return ApiResponse.error("上传失败: " + e.getMessage());
+            throw new BusinessException(500, "上传失败: " + e.getMessage(), e);
         }
     }
 
@@ -106,14 +107,14 @@ public class FileUploadController {
                 factoryId, file.getOriginalFilename(), file.getSize(), file.getContentType());
 
         if (file.isEmpty()) {
-            return ApiResponse.error("文件不能为空");
+            throw new BusinessException(400, "文件不能为空");
         }
         if (file.getSize() > MAX_RECEIPT_SIZE) {
-            return ApiResponse.error("收款凭证不能超过 10MB");
+            throw new BusinessException(400, "收款凭证不能超过 10MB");
         }
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_RECEIPT_TYPES.contains(contentType.toLowerCase())) {
-            return ApiResponse.error("仅支持 PDF/JPG/PNG 格式,当前: " + contentType);
+            throw new BusinessException(400, "仅支持 PDF/JPG/PNG 格式,当前: " + contentType).withHint("请上传支持的文件格式");
         }
 
         try {
@@ -126,10 +127,10 @@ public class FileUploadController {
             ));
         } catch (IllegalArgumentException e) {
             log.warn("收款凭证上传失败(参数错误): {}", e.getMessage());
-            return ApiResponse.error(e.getMessage());
+            throw new BusinessException(400, e.getMessage(), e);
         } catch (Exception e) {
             log.error("收款凭证上传失败: factoryId={}", factoryId, e);
-            return ApiResponse.error("上传失败: " + e.getMessage());
+            throw new BusinessException(500, "上传失败: " + e.getMessage(), e);
         }
     }
 
@@ -151,14 +152,14 @@ public class FileUploadController {
                 factoryId, file.getOriginalFilename(), file.getSize(), file.getContentType());
 
         if (file.isEmpty()) {
-            return ApiResponse.error("文件不能为空");
+            throw new BusinessException(400, "文件不能为空");
         }
         if (file.getSize() > MAX_CONTRACT_SIZE) {
-            return ApiResponse.error("合同文件不能超过 20MB");
+            throw new BusinessException(400, "合同文件不能超过 20MB");
         }
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_CONTRACT_TYPES.contains(contentType.toLowerCase())) {
-            return ApiResponse.error("仅支持 PDF/JPG/PNG/DOC/DOCX,当前: " + contentType);
+            throw new BusinessException(400, "仅支持 PDF/JPG/PNG/DOC/DOCX,当前: " + contentType).withHint("请上传支持的文件格式");
         }
 
         try {
@@ -171,10 +172,10 @@ public class FileUploadController {
             ));
         } catch (IllegalArgumentException e) {
             log.warn("销售合同上传失败(参数错误): {}", e.getMessage());
-            return ApiResponse.error(e.getMessage());
+            throw new BusinessException(400, e.getMessage(), e);
         } catch (Exception e) {
             log.error("销售合同上传失败: factoryId={}", factoryId, e);
-            return ApiResponse.error("上传失败: " + e.getMessage());
+            throw new BusinessException(500, "上传失败: " + e.getMessage(), e);
         }
     }
 }

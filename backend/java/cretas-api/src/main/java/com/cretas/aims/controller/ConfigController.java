@@ -8,6 +8,7 @@ import com.cretas.aims.repository.config.FactoryConfigurationRepository;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.service.config.FactoryConfigService;
 import com.cretas.aims.utils.TokenUtils;
+import com.cretas.aims.exception.BusinessException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -132,10 +133,10 @@ public class ConfigController {
         String description = (String) body.get("description");
 
         if (moduleCode == null || !moduleCode.matches("^[a-z][a-z0-9_]{2,40}$")) {
-            return ApiResponse.error("moduleCode 必须是 3-40 位小写字母/数字/下划线, 以字母开头");
+            throw new BusinessException(400, "moduleCode 必须是 3-40 位小写字母/数字/下划线, 以字母开头");
         }
         if (moduleName == null || moduleName.isBlank()) {
-            return ApiResponse.error("moduleName 不能为空");
+            throw new BusinessException(400, "moduleName 不能为空");
         }
 
         // Round 5 Fix OBS-2: pass JWT-derived operatorId so MODULE_CREATED audit entries
@@ -304,7 +305,7 @@ public class ConfigController {
         Long operatorId = extractUserId(authorization);
         String reason = body.get("reason");
         if (reason == null || reason.isBlank()) {
-            return ApiResponse.error("驳回必须提供 reason");
+            throw new BusinessException(400, "驳回必须提供 reason");
         }
         transitionStatus(factoryId, "PENDING_REVIEW", "DRAFT", operatorId,
                 fc -> {

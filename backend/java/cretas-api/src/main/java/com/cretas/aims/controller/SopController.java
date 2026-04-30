@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.exception.BusinessException;
 
 /**
  * SOP 文档上传控制器
@@ -98,7 +99,7 @@ public class SopController {
         String contentType = file.getContentType();
         if (contentType == null || !SUPPORTED_CONTENT_TYPES.contains(contentType)) {
             log.warn("不支持的文件类型: {}", contentType);
-            return ApiResponse.error(400, "不支持的文件类型，仅支持 PDF、Excel 和图片格式");
+            throw new BusinessException(400, "不支持的文件类型，仅支持 PDF、Excel 和图片格式");
         }
 
         // 2. 生成唯一 sopId
@@ -117,7 +118,7 @@ public class SopController {
             }
         } catch (Exception e) {
             log.error("文件上传失败: {}", e.getMessage(), e);
-            return ApiResponse.error(500, "文件上传失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "文件上传失败: " + ErrorSanitizer.sanitize(e), e);
         }
 
         // 4. 获取用户ID
@@ -206,10 +207,10 @@ public class SopController {
 
         // 参数校验
         if (!StringUtils.hasText(fileUrl)) {
-            return ApiResponse.error(400, "fileUrl 不能为空");
+            throw new BusinessException(400, "fileUrl 不能为空");
         }
         if (!StringUtils.hasText(skuCode)) {
-            return ApiResponse.error(400, "skuCode 不能为空");
+            throw new BusinessException(400, "skuCode 不能为空");
         }
 
         try {
@@ -230,7 +231,7 @@ public class SopController {
                     .errorMessage(ErrorSanitizer.sanitize(e))
                     .analyzedAt(LocalDateTime.now())
                     .build();
-            return ApiResponse.error(500, "SOP分析失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "SOP分析失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 

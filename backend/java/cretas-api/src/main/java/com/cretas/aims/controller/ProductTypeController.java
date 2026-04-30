@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import com.cretas.aims.entity.enums.ProcessingStageType;
+import com.cretas.aims.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
@@ -262,7 +263,7 @@ public class ProductTypeController {
         // 兼容前端发送的 productCode 参数和后端的 code 参数
         String actualCode = code != null ? code : productCode;
         if (actualCode == null || actualCode.isBlank()) {
-            return ApiResponse.error(400, "产品编码参数不能为空 (code 或 productCode)");
+            throw new BusinessException(400, "产品编码参数不能为空 (code 或 productCode)");
         }
 
         log.info("检查产品编码: factoryId={}, code={}, excludeId={}", factoryId, actualCode, excludeId);
@@ -324,7 +325,7 @@ public class ProductTypeController {
         // 获取现有产品类型
         ProductTypeDTO existing = productTypeService.getProductTypeById(factoryId, id);
         if (existing == null) {
-            return ApiResponse.error(404, "产品类型不存在");
+            throw new BusinessException(404, "产品类型不存在");
         }
 
         // 仅更新 SKU 配置字段，保留其他字段不变
@@ -352,7 +353,7 @@ public class ProductTypeController {
 
         ProductTypeDTO productType = productTypeService.getProductTypeById(factoryId, id);
         if (productType == null) {
-            return ApiResponse.error(404, "产品类型不存在");
+            throw new BusinessException(404, "产品类型不存在");
         }
 
         // 构建调度系统所需的信息

@@ -76,7 +76,7 @@ public class WastageRecordController {
             @PathVariable String wastageId) {
         return wastageRepository.findByIdAndFactoryId(wastageId, factoryId)
                 .map(ApiResponse::success)
-                .orElse(ApiResponse.error("损耗记录不存在: " + wastageId));
+                .orElseThrow(() -> new BusinessException(404, "损耗记录不存在: " + wastageId).withHint("请检查 ID 是否正确"));
     }
 
     // ==================== 创建 ====================

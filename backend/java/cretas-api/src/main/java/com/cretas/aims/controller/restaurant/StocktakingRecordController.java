@@ -67,7 +67,7 @@ public class StocktakingRecordController {
             @PathVariable String recordId) {
         return stocktakingRepository.findByIdAndFactoryId(recordId, factoryId)
                 .map(ApiResponse::success)
-                .orElse(ApiResponse.error("盘点记录不存在: " + recordId));
+                .orElseThrow(() -> new BusinessException(404, "盘点记录不存在: " + recordId).withHint("请检查 ID 是否正确"));
     }
 
     // ==================== 创建 ====================

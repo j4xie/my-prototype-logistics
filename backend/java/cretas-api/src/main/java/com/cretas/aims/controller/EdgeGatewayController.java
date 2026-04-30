@@ -20,6 +20,7 @@ import java.util.regex.Pattern;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.exception.BusinessException;
 
 /**
  * 边缘网关 Controller
@@ -55,11 +56,14 @@ public class EdgeGatewayController {
             if (response.isSuccess()) {
                 return ApiResponse.success(response.getMessage(), response);
             } else {
-                return ApiResponse.error(response.getMessage());
+                throw new BusinessException(400, response.getMessage(), response);
             }
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("边缘上传处理失败: {}", e.getMessage(), e);
-            return ApiResponse.error("上传处理失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "上传处理失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -89,11 +93,14 @@ public class EdgeGatewayController {
             if (response.isSuccess()) {
                 return ApiResponse.success(response.getMessage(), response);
             } else {
-                return ApiResponse.error(response.getMessage());
+                throw new BusinessException(400, response.getMessage(), response);
             }
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("图片上传处理失败: {}", e.getMessage(), e);
-            return ApiResponse.error("图片上传失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "图片上传失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 

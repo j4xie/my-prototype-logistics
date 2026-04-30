@@ -21,6 +21,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.exception.BusinessException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -154,9 +155,13 @@ public class TemplatePackageController {
             log.info("获取行业模板包成功: count={}", result.size());
             return ApiResponse.success(result);
 
+        } catch (BusinessException be) {
+            throw be;
+
+
         } catch (Exception e) {
             log.error("获取行业模板包失败: error={}", e.getMessage(), e);
-            return ApiResponse.error("获取模板包失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "获取模板包失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -175,15 +180,19 @@ public class TemplatePackageController {
             Optional<IndustryTemplatePackage> optPackage = templatePackageRepository.findById(id);
 
             if (optPackage.isEmpty()) {
-                return ApiResponse.error("模板包不存在: " + id);
+                throw new BusinessException(404, "模板包不存在: " + id).withHint("请检查 ID 是否正确");
             }
 
             IndustryTemplatePackageDTO dto = convertToDTO(optPackage.get());
             return ApiResponse.success(dto);
 
+        } catch (BusinessException be) {
+            throw be;
+
+
         } catch (Exception e) {
             log.error("获取模板包详情失败: id={}, error={}", id, e.getMessage(), e);
-            return ApiResponse.error("获取模板包失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "获取模板包失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -209,7 +218,7 @@ public class TemplatePackageController {
             (!userRole.equals("super_admin") &&
              !userRole.equals("factory_super_admin"))) {
             log.warn("初始化模板权限不足: factoryId={}, role={}", factoryId, userRole);
-            return ApiResponse.error("权限不足：仅平台管理员或工厂超级管理员可初始化模板");
+            throw new BusinessException(403, "权限不足：仅平台管理员或工厂超级管理员可初始化模板").withSeverity("error");
         }
 
         log.info("初始化工厂模板: factoryId={}, templatePackageId={}, overwrite={}",
@@ -221,7 +230,7 @@ public class TemplatePackageController {
                     templatePackageRepository.findById(request.getTemplatePackageId());
 
             if (optPackage.isEmpty()) {
-                return ApiResponse.error("模板包不存在: " + request.getTemplatePackageId());
+                throw new BusinessException(404, "模板包不存在: " + request.getTemplatePackageId()).withHint("请检查 ID 是否正确");
             }
 
             IndustryTemplatePackage templatePackage = optPackage.get();
@@ -296,7 +305,7 @@ public class TemplatePackageController {
             errorResult.setEntityTypes(List.of());
             errorResult.setMessage("初始化失败: " + ErrorSanitizer.sanitize(e));
 
-            return ApiResponse.error("初始化模板失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "初始化模板失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -316,7 +325,7 @@ public class TemplatePackageController {
 
         if (!"super_admin".equals(userRole)) {
             log.warn("创建模板包权限不足: role={}", userRole);
-            return ApiResponse.error("权限不足：仅平台管理员可创建模板包");
+            throw new BusinessException(403, "权限不足：仅平台管理员可创建模板包").withSeverity("error");
         }
 
         log.info("创建行业模板包: industryCode={}, industryName={}",
@@ -325,14 +334,17 @@ public class TemplatePackageController {
         try {
             // 检查行业代码是否已存在
             if (templatePackageRepository.existsByIndustryCodeAndDeletedAtIsNull(request.getIndustryCode())) {
-                return ApiResponse.error("行业代码已存在: " + request.getIndustryCode());
+                throw new BusinessException(409, "行业代码已存在: " + request.getIndustryCode()).withHint("请检查是否重复或更新已有记录");
             }
 
             // 验证JSON格式
             try {
                 parseTemplatesJson(request.getTemplatesJson());
+            } catch (BusinessException be) {
+                throw be;
+
             } catch (Exception e) {
-                return ApiResponse.error("模板JSON格式无效: " + ErrorSanitizer.sanitize(e));
+                throw new BusinessException(500, "模板JSON格式无效: " + ErrorSanitizer.sanitize(e), e);
             }
 
             // 创建新模板包
@@ -357,9 +369,13 @@ public class TemplatePackageController {
             log.info("创建行业模板包成功: id={}", templatePackage.getId());
             return ApiResponse.success(convertToDTO(templatePackage));
 
+        } catch (BusinessException be) {
+            throw be;
+
+
         } catch (Exception e) {
             log.error("创建行业模板包失败: error={}", e.getMessage(), e);
-            return ApiResponse.error("创建模板包失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "创建模板包失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -380,7 +396,7 @@ public class TemplatePackageController {
 
         if (!"super_admin".equals(userRole)) {
             log.warn("更新模板包权限不足: role={}", userRole);
-            return ApiResponse.error("权限不足：仅平台管理员可更新模板包");
+            throw new BusinessException(403, "权限不足：仅平台管理员可更新模板包").withSeverity("error");
         }
 
         log.info("更新行业模板包: id={}", id);
@@ -389,7 +405,7 @@ public class TemplatePackageController {
             Optional<IndustryTemplatePackage> optPackage = templatePackageRepository.findById(id);
 
             if (optPackage.isEmpty()) {
-                return ApiResponse.error("模板包不存在: " + id);
+                throw new BusinessException(404, "模板包不存在: " + id).withHint("请检查 ID 是否正确");
             }
 
             IndustryTemplatePackage templatePackage = optPackage.get();
@@ -405,8 +421,11 @@ public class TemplatePackageController {
                 // 验证JSON格式
                 try {
                     parseTemplatesJson(request.getTemplatesJson());
+                } catch (BusinessException be) {
+                    throw be;
+
                 } catch (Exception e) {
-                    return ApiResponse.error("模板JSON格式无效: " + ErrorSanitizer.sanitize(e));
+                    throw new BusinessException(500, "模板JSON格式无效: " + ErrorSanitizer.sanitize(e), e);
                 }
                 templatePackage.setTemplatesJson(request.getTemplatesJson());
             }
@@ -428,9 +447,13 @@ public class TemplatePackageController {
             log.info("更新行业模板包成功: id={}, newVersion={}", id, templatePackage.getVersion());
             return ApiResponse.success(convertToDTO(templatePackage));
 
+        } catch (BusinessException be) {
+            throw be;
+
+
         } catch (Exception e) {
             log.error("更新行业模板包失败: id={}, error={}", id, e.getMessage(), e);
-            return ApiResponse.error("更新模板包失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "更新模板包失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -450,7 +473,7 @@ public class TemplatePackageController {
 
         if (!"super_admin".equals(userRole)) {
             log.warn("删除模板包权限不足: role={}", userRole);
-            return ApiResponse.error("权限不足：仅平台管理员可删除模板包");
+            throw new BusinessException(403, "权限不足：仅平台管理员可删除模板包").withSeverity("error");
         }
 
         log.info("删除行业模板包: id={}", id);
@@ -459,7 +482,7 @@ public class TemplatePackageController {
             Optional<IndustryTemplatePackage> optPackage = templatePackageRepository.findById(id);
 
             if (optPackage.isEmpty()) {
-                return ApiResponse.error("模板包不存在: " + id);
+                throw new BusinessException(404, "模板包不存在: " + id).withHint("请检查 ID 是否正确");
             }
 
             IndustryTemplatePackage templatePackage = optPackage.get();
@@ -467,7 +490,8 @@ public class TemplatePackageController {
             // 检查是否有工厂正在使用
             long usageCount = formTemplateRepository.countBySourceContaining(id);
             if (usageCount > 0) {
-                return ApiResponse.error("无法删除：该模板包已被 " + usageCount + " 个工厂使用");
+                throw new BusinessException(409, "无法删除：该模板包已被 " + usageCount + " 个工厂使用")
+                        .withHint("请先取消所有引用工厂或下线模板包");
             }
 
             // 软删除
@@ -477,9 +501,13 @@ public class TemplatePackageController {
             log.info("删除行业模板包成功: id={}", id);
             return ApiResponse.success(null);
 
+        } catch (BusinessException be) {
+            throw be;
+
+
         } catch (Exception e) {
             log.error("删除行业模板包失败: id={}, error={}", id, e.getMessage(), e);
-            return ApiResponse.error("删除模板包失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "删除模板包失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -499,7 +527,7 @@ public class TemplatePackageController {
 
         if (!"super_admin".equals(userRole)) {
             log.warn("设置默认模板权限不足: role={}", userRole);
-            return ApiResponse.error("权限不足：仅平台管理员可设置默认模板");
+            throw new BusinessException(403, "权限不足：仅平台管理员可设置默认模板").withSeverity("error");
         }
 
         log.info("设置默认模板包: id={}", id);
@@ -508,7 +536,7 @@ public class TemplatePackageController {
             Optional<IndustryTemplatePackage> optPackage = templatePackageRepository.findById(id);
 
             if (optPackage.isEmpty()) {
-                return ApiResponse.error("模板包不存在: " + id);
+                throw new BusinessException(404, "模板包不存在: " + id).withHint("请检查 ID 是否正确");
             }
 
             // 清除所有默认标记
@@ -523,9 +551,13 @@ public class TemplatePackageController {
             log.info("设置默认模板包成功: id={}", id);
             return ApiResponse.success(convertToDTO(templatePackage));
 
+        } catch (BusinessException be) {
+            throw be;
+
+
         } catch (Exception e) {
             log.error("设置默认模板包失败: id={}, error={}", id, e.getMessage(), e);
-            return ApiResponse.error("设置默认模板失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "设置默认模板失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -545,7 +577,7 @@ public class TemplatePackageController {
             Optional<IndustryTemplatePackage> optPackage = templatePackageRepository.findById(id);
 
             if (optPackage.isEmpty()) {
-                return ApiResponse.error("模板包不存在: " + id);
+                throw new BusinessException(404, "模板包不存在: " + id).withHint("请检查 ID 是否正确");
             }
 
             // 查找使用该模板的工厂
@@ -584,9 +616,13 @@ public class TemplatePackageController {
             log.info("获取模板使用情况成功: id={}, usageCount={}", id, usageInfo.getUsageCount());
             return ApiResponse.success(usageInfo);
 
+        } catch (BusinessException be) {
+            throw be;
+
+
         } catch (Exception e) {
             log.error("获取模板使用情况失败: id={}, error={}", id, e.getMessage(), e);
-            return ApiResponse.error("获取使用情况失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "获取使用情况失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 

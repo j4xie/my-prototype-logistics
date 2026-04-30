@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.exception.BusinessException;
 
 @Slf4j
 @RestController
@@ -256,7 +257,8 @@ public class WorkReportingController {
                     return systemTemplates.isEmpty() ? java.util.Optional.empty() : java.util.Optional.of(systemTemplates.get(0));
                 })
                 .map(ApiResponse::success)
-                .orElse(ApiResponse.error("未找到表单模板: " + entityType));
+                .orElseThrow(() -> new BusinessException(404, "未找到表单模板: " + entityType)
+                        .withHint("请检查 entityType 是否正确或先创建模板"));
     }
 
     // ==================== 汇总 + SmartBI ====================
@@ -280,15 +282,18 @@ public class WorkReportingController {
 
         if (syncService == null) {
             log.warn("SmartBI同步服务未启用 (smartbi.postgres.enabled != true)");
-            return ApiResponse.error("SmartBI同步服务未启用，请检查smartbi.postgres.enabled配置");
+            throw new BusinessException(400, "SmartBI同步服务未启用，请检查smartbi.postgres.enabled配置");
         }
 
         try {
             Map<String, Object> result = syncService.syncToSmartBI(factoryId);
             return ApiResponse.success(result);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("SmartBI同步失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
-            return ApiResponse.error("同步失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "同步失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 }
