@@ -142,8 +142,8 @@ class TestAnalysisFinanceComposite:
             )
 
     def test_f999_unimplemented_analysisType_returns_501(self, client):
-        """Verify 501 path for un-ported analysisTypes (payable now real impl, excluded)."""
-        for at in ["profit", "cost", "receivable", "budget"]:
+        """Verify 501 path for un-ported analysisTypes (payable + profit now real impl, excluded)."""
+        for at in ["cost", "receivable", "budget"]:
             resp = client.get(
                 f"/api/mobile/F999/smart-bi/analysis/finance"
                 f"?startDate=2025-01-01&endDate=2025-12-31&analysisType={at}",
