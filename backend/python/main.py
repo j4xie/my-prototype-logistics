@@ -906,9 +906,11 @@ try:
     from smartbi_compat.api import analysis as smartbi_compat_analysis
     from smartbi_compat.api import upload as smartbi_compat_upload
     from smartbi_compat.api import dashboard as smartbi_compat_dashboard
+    from smartbi_compat.api import analysis_sales
     app.include_router(smartbi_compat_analysis.router, tags=["SmartBI Compat: Analysis"])
     app.include_router(smartbi_compat_upload.router, tags=["SmartBI Compat: Upload"])
     app.include_router(smartbi_compat_dashboard.router, tags=["SmartBI Compat: Dashboard"])
+    app.include_router(analysis_sales.router, tags=["smartbi-compat-sales"])
     _smartbi_compat_available = True
     logger.info("SmartBI compat routes registered (Phase 2A)")
 except ImportError as e:
