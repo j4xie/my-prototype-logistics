@@ -365,6 +365,36 @@ def _format_currency(v: Optional[Decimal]) -> str:
     return f"{quantized:,.2f}"
 
 
+def _determine_gross_margin_alert(gross_margin: Decimal) -> str:
+    """Java `FinanceAnalysisServiceImpl.determineGrossMarginAlertLevel` line 1619-1624.
+
+    v < 15  → RED
+    v < 25  → YELLOW
+    v >= 25 → GREEN
+    """
+    v = float(gross_margin)
+    if v < 15:
+        return "RED"
+    if v < 25:
+        return "YELLOW"
+    return "GREEN"
+
+
+def _determine_roi_alert(roi: Decimal) -> str:
+    """Java `FinanceAnalysisServiceImpl.determineRoiAlertLevel` line 1629-1634.
+
+    v < 0   → RED
+    v < 20  → YELLOW
+    v >= 20 → GREEN
+    """
+    v = float(roi)
+    if v < 0:
+        return "RED"
+    if v < 20:
+        return "YELLOW"
+    return "GREEN"
+
+
 VOLATILE_KEYS = frozenset({
     "generatedAt", "lastUpdated", "cacheExpireAt", "timestamp",
 })
