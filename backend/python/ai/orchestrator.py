@@ -168,6 +168,15 @@ class Orchestrator:
         Falls back to IntentMatchResultDto.empty() if top_candidates is empty
         (defensive — should not happen on the matched path).
         """
+        # I2 fix: filter candidates to visible scope (info-leak prevention).
+        # Classifier (stage 6) returns predictions for any trained intent_code,
+        # including codes outside this user's factory/business scope. Strip them
+        # before they reach topCandidates / bestMatch, otherwise an out-of-scope
+        # code can leak via topCandidates[0].intentCode even when bestMatch is
+        # None (the downstream meta lookup already filters bestMatch).
+        visible_codes = {i.get("intent_code") for i in visible_intents}
+        top_candidates = [c for c in top_candidates if c.intentCode in visible_codes]
+
         if not top_candidates:
             result = IntentMatchResultDto.empty(userInput=query)
             result.timingMs = timing

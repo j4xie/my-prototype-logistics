@@ -163,3 +163,35 @@ async def test_below_min_confidence_marked_low():
         history=[], min_confidence=0.7,
     )
     assert result.requiresConfirmation is True
+
+
+@pytest.mark.asyncio
+async def test_classifier_out_of_scope_intent_filtered_from_top_candidates():
+    """I2: classifier returns intent_code not in visible_intents → filtered before
+    reaching topCandidates (info-leak prevention)."""
+    from ai.dto import CandidateIntentDto, MatchMethod
+    from ai.orchestrator import Orchestrator
+
+    # Classifier returns OUT-OF-SCOPE intent (RESTAURANT_MENU) for FACTORY user
+    cls = [
+        CandidateIntentDto(intentCode="RESTAURANT_MENU", intentName="菜单",
+                            confidence=0.9, matchMethod=MatchMethod.CLASSIFIER),
+    ]
+
+    sem_matcher = MagicMock(); sem_matcher.match = AsyncMock(return_value=[])
+    cls_matcher = MagicMock(); cls_matcher.match = AsyncMock(return_value=cls)
+    llm_matcher = MagicMock(); llm_matcher.match = AsyncMock(return_value=[])
+
+    orch = Orchestrator(sem_matcher, cls_matcher, llm_matcher)
+    # visible_intents has ONLY INVENTORY_QUERY (no RESTAURANT_MENU)
+    result = await orch.match(
+        query="q", factoryId="F001", businessType="FACTORY",
+        userId="22", role="r",
+        visible_intents=[make_intent_row("INVENTORY_QUERY", "库存查询")],
+        history=[], min_confidence=0.7,
+    )
+
+    # RESTAURANT_MENU must NOT appear anywhere in the response
+    assert result.bestMatch is None, "out-of-scope intent must not become bestMatch"
+    leaked = any(c.intentCode == "RESTAURANT_MENU" for c in result.topCandidates)
+    assert not leaked, "out-of-scope intent must be filtered from topCandidates"
