@@ -8,6 +8,7 @@ import com.cretas.aims.entity.EquipmentAlert;
 import com.cretas.aims.entity.FactoryEquipment;
 import com.cretas.aims.entity.enums.DeviceAlertLevel;
 import com.cretas.aims.entity.enums.AlertStatus;
+import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.EquipmentAlertRepository;
 import com.cretas.aims.repository.EquipmentRepository;
@@ -254,7 +255,8 @@ public class EquipmentAlertsServiceImpl implements EquipmentAlertsService {
 
         // 验证设备属于该工厂
         if (!factoryId.equals(equipment.getFactoryId())) {
-            throw new IllegalArgumentException("设备不属于该工厂");
+            throw new BusinessException(403, "设备不属于该工厂")
+                    .withHint("请切换到该设备所属的工厂后再操作");
         }
 
         // 构建告警实体

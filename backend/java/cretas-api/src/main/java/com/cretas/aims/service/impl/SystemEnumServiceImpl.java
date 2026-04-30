@@ -2,6 +2,7 @@ package com.cretas.aims.service.impl;
 
 import com.cretas.aims.entity.config.SystemEnum;
 import com.cretas.aims.entity.config.UnitOfMeasurement;
+import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.repository.config.SystemEnumRepository;
 import com.cretas.aims.repository.config.UnitOfMeasurementRepository;
 import com.cretas.aims.service.SystemEnumService;
@@ -101,7 +102,9 @@ public class SystemEnumServiceImpl implements SystemEnumService {
     public SystemEnum createEnum(SystemEnum systemEnum) {
         if (systemEnumRepository.existsByFactoryIdAndEnumGroupAndEnumCode(
                 systemEnum.getFactoryId(), systemEnum.getEnumGroup(), systemEnum.getEnumCode())) {
-            throw new IllegalArgumentException("枚举配置已存在: " + systemEnum.getEnumCode());
+            throw new BusinessException(409, "枚举配置已存在: " + systemEnum.getEnumCode())
+                    .withHint("请使用其他枚举编码, 或编辑现有配置")
+                    .withHintTarget("enumCode");
         }
 
         if (systemEnum.getSortOrder() == null) {
@@ -140,10 +143,11 @@ public class SystemEnumServiceImpl implements SystemEnumService {
     public void deleteEnum(String factoryId, String enumGroup, String enumCode) {
         SystemEnum existing = systemEnumRepository
                 .findByFactoryIdAndEnumGroupAndEnumCodeAndDeletedAtIsNull(factoryId, enumGroup, enumCode)
-                .orElseThrow(() -> new IllegalArgumentException("枚举配置不存在"));
+                .orElseThrow(() -> new com.cretas.aims.exception.ResourceNotFoundException("枚举配置", "enumCode", enumCode));
 
         if (Boolean.TRUE.equals(existing.getIsSystem())) {
-            throw new IllegalArgumentException("系统内置枚举不可删除");
+            throw new BusinessException(409, "系统内置枚举不可删除")
+                    .withHint("系统内置枚举受保护, 仅可禁用 (toggle isActive=false)");
         }
 
         existing.setDeletedAt(LocalDateTime.now());
@@ -212,12 +216,14 @@ public class SystemEnumServiceImpl implements SystemEnumService {
         }
 
         UnitOfMeasurement from = getUnit(factoryId, fromUnit)
-                .orElseThrow(() -> new IllegalArgumentException("未知单位: " + fromUnit));
+                .orElseThrow(() -> new com.cretas.aims.exception.ResourceNotFoundException("计量单位", "unitCode", fromUnit));
         UnitOfMeasurement to = getUnit(factoryId, toUnit)
-                .orElseThrow(() -> new IllegalArgumentException("未知单位: " + toUnit));
+                .orElseThrow(() -> new com.cretas.aims.exception.ResourceNotFoundException("计量单位", "unitCode", toUnit));
 
         if (!from.getBaseUnit().equals(to.getBaseUnit())) {
-            throw new IllegalArgumentException("不同分类的单位不能互相转换: " + fromUnit + " -> " + toUnit);
+            throw new BusinessException(400, "不同分类的单位不能互相转换: " + fromUnit + " -> " + toUnit)
+                    .withHint("源单位与目标单位必须属于同一基础单位 (如重量类: g/kg/t)")
+                    .withHintTarget("toUnit");
         }
 
         // 先转为基础单位，再转为目标单位
@@ -256,7 +262,9 @@ public class SystemEnumServiceImpl implements SystemEnumService {
     @CacheEvict(value = {"unitsByCategory", "allUnits"}, allEntries = true)
     public UnitOfMeasurement createUnit(UnitOfMeasurement unit) {
         if (unitOfMeasurementRepository.existsByFactoryIdAndUnitCode(unit.getFactoryId(), unit.getUnitCode())) {
-            throw new IllegalArgumentException("单位配置已存在: " + unit.getUnitCode());
+            throw new BusinessException(409, "单位配置已存在: " + unit.getUnitCode())
+                    .withHint("请使用其他单位编码, 或编辑现有配置")
+                    .withHintTarget("unitCode");
         }
 
         return unitOfMeasurementRepository.save(unit);
@@ -268,7 +276,7 @@ public class SystemEnumServiceImpl implements SystemEnumService {
     public UnitOfMeasurement updateUnit(UnitOfMeasurement unit) {
         UnitOfMeasurement existing = unitOfMeasurementRepository
                 .findByFactoryIdAndUnitCodeAndDeletedAtIsNull(unit.getFactoryId(), unit.getUnitCode())
-                .orElseThrow(() -> new IllegalArgumentException("单位配置不存在"));
+                .orElseThrow(() -> new com.cretas.aims.exception.ResourceNotFoundException("计量单位", "unitCode", unit.getUnitCode()));
 
         existing.setUnitName(unit.getUnitName());
         existing.setUnitSymbol(unit.getUnitSymbol());
@@ -286,10 +294,11 @@ public class SystemEnumServiceImpl implements SystemEnumService {
     public void deleteUnit(String factoryId, String unitCode) {
         UnitOfMeasurement existing = unitOfMeasurementRepository
                 .findByFactoryIdAndUnitCodeAndDeletedAtIsNull(factoryId, unitCode)
-                .orElseThrow(() -> new IllegalArgumentException("单位配置不存在"));
+                .orElseThrow(() -> new com.cretas.aims.exception.ResourceNotFoundException("计量单位", "unitCode", unitCode));
 
         if (Boolean.TRUE.equals(existing.getIsSystem())) {
-            throw new IllegalArgumentException("系统内置单位不可删除");
+            throw new BusinessException(409, "系统内置单位不可删除")
+                    .withHint("系统内置单位受保护, 仅可禁用 (toggle isActive=false)");
         }
 
         existing.setDeletedAt(LocalDateTime.now());

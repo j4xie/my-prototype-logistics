@@ -7,6 +7,8 @@ import com.cretas.aims.entity.MaterialBatch;
 import com.cretas.aims.entity.MaterialConsumption;
 import com.cretas.aims.entity.ProductionBatch;
 import com.cretas.aims.entity.RawMaterialType;
+import com.cretas.aims.exception.BusinessException;
+import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.MaterialConsumptionRepository;
 import com.cretas.aims.repository.ProductionBatchRepository;
@@ -196,9 +198,10 @@ public class BatchConsumptionServiceImpl implements BatchConsumptionService {
                 : existing.get(0).getUnitPrice();
 
         ProductionBatch batch = productionBatchRepository.findById(batchId)
-                .orElseThrow(() -> new IllegalArgumentException("生产批次不存在: " + batchId));
+                .orElseThrow(() -> new ResourceNotFoundException("生产批次", "id", batchId));
         if (!factoryId.equals(batch.getFactoryId())) {
-            throw new IllegalArgumentException("无权操作该批次");
+            throw new BusinessException(403, "无权操作该批次")
+                    .withHint("请切换到该批次所属的工厂后再操作");
         }
 
         if (delta.compareTo(BigDecimal.ZERO) > 0) {
