@@ -1538,3 +1538,26 @@ class TestRankings:
         assert response.status_code == 200
         body = response.json()
         assert body["data"]["customerRanking"] == []
+
+    # ============================================================
+    # F999 explicit rankings regression (Phase C.2)
+    # ============================================================
+    # Defensive — TestEnvelope.test_F999_empty_state_byte_shape compares the
+    # full envelope `data` against the F999 golden, but failures bubble up as
+    # generic byte-shape diffs. This test pinpoints the 3 ranking fields so a
+    # ranking-only regression (e.g. accidental sub-service producing a single
+    # entry for cleared data) surfaces with a clear "all 3 rankings empty"
+    # signal independent of the rest of the composite.
+
+    def test_F999_all_rankings_empty(self, client, f999_token):
+        """F999 has cleared data → all 3 rankings should be []."""
+        response = client.get(
+            "/api/mobile/F999/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+            headers={"Authorization": f"Bearer {f999_token}"},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["data"]["salespersonRanking"] == []
+        assert body["data"]["productRanking"] == []
+        assert body["data"]["customerRanking"] == []
