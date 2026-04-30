@@ -1145,6 +1145,31 @@ async def _get_comprehensive_finance_analysis(factory_id: str, range_: DateRange
     }
 
 
+async def _get_profit_analysis(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Java reference: SmartBIAnalysisController.getFinanceAnalysis line 240-246.
+
+    Java HashMap put-order: startDate / endDate / metrics / trendChart.
+    Recorded F999 Jackson order in golden (A.3 verified):
+      [endDate, metrics, trendChart, startDate]
+
+    Period hardcoded to "MONTH" (Java controller line 246).
+    """
+    range_ = DateRange.custom(start_date, end_date)
+    metrics = await _get_profit_metrics(factory_id, range_)
+    trend_chart = await _get_profit_trend_chart(
+        factory_id, start_date, end_date, "MONTH"
+    )
+
+    return {
+        "endDate": end_date.isoformat(),
+        "metrics": metrics,
+        "trendChart": trend_chart,
+        "startDate": start_date.isoformat(),
+    }
+
+
 async def _get_payable_analysis(factory_id: str, start_date: date, end_date: date) -> dict:
     """Java reference: SmartBIAnalysisController.getFinanceAnalysis line 240-258.
 
