@@ -151,8 +151,8 @@ Foundation freezes 16-field shape. Overview fills:
 | `endDate` | null | null | null |
 | `kpiCards` | 4 Gold KPIs (total_revenue/bill_count/avg_bill_value/store_count) | 4-5 Legacy KPIs (SALES_AMOUNT/ORDER_COUNT/AVG_ORDER_VALUE/TARGET_COMPLETION/MOM_GROWTH*) | `[]` |
 | `metricCards` | null | null | null |
-| `rankings` | `{top_stores: [...]}` | ⚠ Q1 | `{}` |
-| `charts` | `{sales_trend, category_distribution}` | ⚠ Q1 | `{}` |
+| `rankings` | `{top_stores: [...]}` | `{salesperson: [...]}` (Y-a, Q-1 RESOLVED) | `{}` |
+| `charts` | `{sales_trend, category_distribution}` | `{销售趋势, 产品分布}` (Y-a, Chinese keys mirror Java line 148/154) | `{}` |
 | `chartList` | null | null | null |
 | `aiInsights` | `[]` | 1-2 INFO insights | 1 YELLOW insight |
 | `alerts` | null | null | null |
