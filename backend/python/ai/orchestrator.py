@@ -46,11 +46,13 @@ class Orchestrator:
     If router=None, behaves as α (runs all stages 5-8 short-circuit).
     """
 
-    def __init__(self, semantic_matcher, classifier_matcher, llm_matcher, semantic_router=None):
+    def __init__(self, semantic_matcher, classifier_matcher, llm_matcher,
+                 semantic_router=None, llm_tier_selector=None):
         self.semantic_matcher = semantic_matcher
         self.classifier_matcher = classifier_matcher
         self.llm_matcher = llm_matcher
         self.semantic_router = semantic_router  # β: optional pre-stage router
+        self.llm_tier_selector = llm_tier_selector  # β C2: optional cheap/expensive picker
 
     async def match(
         self,
@@ -164,10 +166,19 @@ class Orchestrator:
         # ===== Stage 8 LLM =====
         # β: also skip if NEED_RERANKING decided
         if enable_llm and not skip_stage_8_due_to_reranking:
+            # β C2: pick LLM tier (cheap/expensive) before stage 8
+            tier = None
+            if self.llm_tier_selector is not None:
+                try:
+                    tier = await self.llm_tier_selector.select(query=query)
+                except Exception:
+                    logger.exception("LlmTierSelector failed, llm_matcher uses default tier")
+                    tier = None
+
             t_stage_start = time.time()
             try:
                 llm_candidates = await self.llm_matcher.match(
-                    query, visible_intents=visible_intents, history=history
+                    query, visible_intents=visible_intents, history=history, tier=tier,
                 )
             except Exception:
                 logger.exception("Stage 8 LLM failed, treating as empty")

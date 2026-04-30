@@ -323,3 +323,36 @@ async def test_no_router_falls_back_to_alpha_behavior():
         visible_intents=[], history=[], min_confidence=0.7,
     )
     sem_matcher.match.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_stage_8_uses_tier_selector_when_provided():
+    """Orchestrator passes tier hint from LlmTierSelector to llm_matcher."""
+    from ai.dto import CandidateIntentDto, MatchMethod
+    from ai.orchestrator import Orchestrator
+    from ai.router.llm_tier_selector import LlmTier
+    from ai.router.semantic_router import RouteDecision
+
+    fake_decision = RouteDecision(
+        method="NEED_FULL_LLM", ood_detected=False, candidates=[],
+        query_embedding=None,
+    )
+
+    sem_matcher = MagicMock(); sem_matcher.match = AsyncMock(return_value=[])
+    cls_matcher = MagicMock(); cls_matcher.match = AsyncMock(return_value=[])
+    llm_matcher = MagicMock(); llm_matcher.match = AsyncMock(return_value=[])
+
+    fake_router = MagicMock(); fake_router.route = AsyncMock(return_value=fake_decision)
+    fake_tier = MagicMock(); fake_tier.select = AsyncMock(return_value=LlmTier.CHEAP)
+
+    orch = Orchestrator(
+        sem_matcher, cls_matcher, llm_matcher,
+        semantic_router=fake_router, llm_tier_selector=fake_tier,
+    )
+    await orch.match(
+        query="q", factoryId="F", businessType="COMMON", userId="u", role="r",
+        visible_intents=[], history=[], min_confidence=0.7, enable_llm=True,
+    )
+    fake_tier.select.assert_called_once_with(query="q")
+    call_kwargs = llm_matcher.match.call_args.kwargs
+    assert call_kwargs.get("tier") == LlmTier.CHEAP
