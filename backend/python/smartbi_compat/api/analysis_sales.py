@@ -1458,11 +1458,29 @@ async def _get_sales_overview(factory_id: str, range_: DateRange) -> dict:
 
 
 async def _get_salesperson_ranking(factory_id: str, range_: DateRange) -> list:
-    """STUB — rankings spec replaces.
+    """Real impl. Mirror Java SalesAnalysisServiceImpl.getSalespersonRanking line 371-400.
 
-    F999 empty: legacy SQL returns [] (no rows in 2025 window).
+    Aggregates SUM(amount) + SUM(monthly_target) per salesperson_name from raw rows,
+    then dispatches to _build_ranking with target_map for completion/alert.
+    Filters null salesperson_name (Java line 379: `if (name == null) continue;`).
+
+    No top_n cap (Java doesn't limit).
+
+    async per foundation §5: sync SQLAlchemy `_query_sales_data` wrapped via
+    `await asyncio.to_thread(...)` per foundation Phase B.6 strategy.
     """
-    return []
+    rows = await asyncio.to_thread(_query_sales_data, factory_id, range_)
+    sales: dict = {}
+    targets: dict = {}
+    for row in rows:
+        name = row.salesperson_name
+        if name is None:
+            continue
+        amount = _to_decimal(row.amount) if row.amount is not None else Decimal("0")
+        target = _to_decimal(row.monthly_target) if row.monthly_target is not None else Decimal("0")
+        sales[name] = sales.get(name, Decimal("0")) + amount
+        targets[name] = targets.get(name, Decimal("0")) + target
+    return _build_ranking(sales, target_map=targets)
 
 
 async def _get_product_ranking(factory_id: str, range_: DateRange) -> list:

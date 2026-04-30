@@ -1346,3 +1346,55 @@ class TestRankings:
         # final .quantize(0.01) yields Decimal("0.00").
         assert result[0]["completionRate"] == Decimal("0.00")
         assert result[0]["alertLevel"] == "RED"  # 0 < TARGET_RED=60
+
+    @pytest.mark.asyncio
+    async def test_get_salesperson_ranking_full_path(self, monkeypatch):
+        """Aggregates per salesperson_name with target_map, computes completion + alert."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+        from collections import namedtuple
+
+        Row = namedtuple("Row", "salesperson_name amount monthly_target product_category customer_name order_date")
+
+        def fake_query(factory_id, range_):
+            return [
+                Row("张三", Decimal("60000"), Decimal("100000"), "P1", "C1", date(2025, 1, 1)),
+                Row("张三", Decimal("40000"), Decimal("100000"), "P2", "C2", date(2025, 1, 2)),
+                Row("李四", Decimal("80000"), Decimal("100000"), "P3", "C3", date(2025, 1, 3)),
+                Row(None, Decimal("99999"), Decimal("0"), "P4", "C4", date(2025, 1, 4)),  # null name → skip
+            ]
+
+        monkeypatch.setattr(m, "_query_sales_data", fake_query)
+
+        range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 1, 31))
+        result = await m._get_salesperson_ranking("F999", range_)
+
+        assert len(result) == 2  # null name skipped
+        # 张三: 60k+40k = 100k sales, 100k+100k = 200k target → 50% completion → RED
+        # 李四: 80k sales, 100k target → 80% completion → YELLOW (60 ≤ 80 < 85)
+        assert result[0]["name"] == "张三"  # value=100k, top
+        assert result[0]["value"] == Decimal("100000.00")
+        assert result[0]["target"] == Decimal("200000.00")
+        assert result[0]["completionRate"] == Decimal("50.00")
+        assert result[0]["alertLevel"] == "RED"
+        assert result[1]["name"] == "李四"
+        assert result[1]["value"] == Decimal("80000.00")
+        assert result[1]["target"] == Decimal("100000.00")
+        assert result[1]["completionRate"] == Decimal("80.00")
+        assert result[1]["alertLevel"] == "YELLOW"
+
+    @pytest.mark.asyncio
+    async def test_get_salesperson_ranking_empty_when_no_rows(self, monkeypatch):
+        """No rows → empty list (foundation stub byte shape preserved)."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+
+        def fake_query(factory_id, range_):
+            return []
+
+        monkeypatch.setattr(m, "_query_sales_data", fake_query)
+
+        range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 1, 31))
+        result = await m._get_salesperson_ranking("F999", range_)
+        assert result == []
