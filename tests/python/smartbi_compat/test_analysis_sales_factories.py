@@ -429,3 +429,38 @@ class TestToDecimal:
         """Mirror Java catching parse errors and returning ZERO."""
         assert _to_decimal("not_a_number") == Decimal("0")
         assert _to_decimal(object()) == Decimal("0")
+
+
+from smartbi_compat.api.analysis_sales import _format_kpi_value
+
+
+class TestFormatKpiValue:
+    def test_yuan_unit_2_decimals(self):
+        """Yuan unit -> 2-decimal string (matches Java setScale(2, HALF_UP).toPlainString)."""
+        assert _format_kpi_value(Decimal("20639884.52"), "元") == "20639884.52"
+
+    def test_yuan_preserves_trailing_zero(self):
+        """G3 risk: 100.50 must stay '100.50', NOT normalize to '100.5'."""
+        assert _format_kpi_value(Decimal("100.50"), "元") == "100.50"
+
+    def test_yuan_round_half_up(self):
+        """Java HALF_UP: 1.005 rounds to 1.01."""
+        assert _format_kpi_value(Decimal("1.005"), "元") == "1.01"
+
+    def test_yuan_one_decimal_inputs_pad_to_two(self):
+        assert _format_kpi_value(Decimal("12.5"), "元") == "12.50"
+
+    def test_integer_unit_no_decimals(self):
+        """Integer-style unit -> integer string."""
+        assert _format_kpi_value(Decimal("140541"), "单") == "140541"
+        assert _format_kpi_value(Decimal("8"), "家") == "8"
+
+    def test_integer_unit_rounds_decimals(self):
+        """Decimal input with fraction + integer unit -> round to int."""
+        assert _format_kpi_value(Decimal("8.6"), "家") == "9"
+
+    def test_zero_value_yuan(self):
+        assert _format_kpi_value(Decimal("0"), "元") == "0.00"
+
+    def test_zero_value_integer_unit(self):
+        assert _format_kpi_value(Decimal("0"), "单") == "0"

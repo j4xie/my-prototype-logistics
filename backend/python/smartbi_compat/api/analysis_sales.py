@@ -30,7 +30,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import date, datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, Query
@@ -253,6 +253,20 @@ def _to_decimal(v: Any) -> Decimal:
         except Exception:
             return Decimal("0")
     return Decimal("0")
+
+
+def _format_kpi_value(v: Decimal, unit: str) -> str:
+    """Format Decimal for KPICard.value. Mirrors Java GoldDashboardBuilder.formatKpiValue.
+
+    Yuan unit ("元") -> 2-decimal string preserving trailing zeros (Java setScale(2, HALF_UP).toPlainString).
+    Other units -> integer string (rounded HALF_UP).
+
+    Critical (G3): use str() of quantize result, NOT normalize() - normalize() strips
+    trailing zeros (12.50 -> 12.5) and breaks Java byte parity.
+    """
+    if unit == "元":
+        return str(v.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+    return str(v.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
 
 def _new_kpi_card_dict(
