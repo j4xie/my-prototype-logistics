@@ -118,7 +118,8 @@ Notable: WEEK key is **NOT** ISO week format `YYYY-Www`. It's the Monday-of-week
 **Implement DAY only. WEEK/MONTH/YEAR raise `NotImplementedError`.**
 
 ```python
-def _get_sales_trend_chart(factory_id: str, range_: DateRange, period: str = "DAY") -> dict:
+async def _get_sales_trend_chart(factory_id: str, range_: DateRange, period: str = "DAY") -> dict:
+    """async per foundation §5 cross-cutting (gold spec §15)."""
     if period.upper() != "DAY":
         # TODO: WEEK/MONTH/YEAR when needed by another endpoint.
         # Java reference: SalesAnalysisServiceImpl.aggregateByWeek line 926,
@@ -127,6 +128,7 @@ def _get_sales_trend_chart(factory_id: str, range_: DateRange, period: str = "DA
             f"trend chart period='{period}' not supported; only DAY is "
             f"used by /analysis/sales composite. See spec §5."
         )
+    rows = await asyncio.to_thread(_query_sales_data, factory_id, range_)
     ...
 ```
 

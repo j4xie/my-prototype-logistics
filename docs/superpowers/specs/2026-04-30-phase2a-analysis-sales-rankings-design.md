@@ -270,15 +270,19 @@ def _build_ranking(
 ## §6. Three caller real impls — each ~10 LOC
 
 ```python
-def _get_salesperson_ranking(factory_id: str, range_: DateRange) -> list[dict]:
+async def _get_salesperson_ranking(factory_id: str, range_: DateRange) -> list[dict]:
     """Replace foundation stub. Mirror Java SalesAnalysisServiceImpl
     .getSalespersonRanking (line 371-400).
 
     Aggregates SUM(amount) and SUM(monthly_target) per salesperson_name.
     Returns RankingItem dicts with target + completionRate + computed alertLevel.
     No top-N cap (Java doesn't limit).
+
+    async per foundation §5 cross-cutting (gold spec §15). Sync SQLAlchemy
+    `_query_sales_data` wrapped via `await asyncio.to_thread(...)` per
+    foundation Phase B.6 bridging strategy.
     """
-    rows = _query_sales_data(factory_id, range_)
+    rows = await asyncio.to_thread(_query_sales_data, factory_id, range_)
     sales: dict[str, Decimal] = {}
     targets: dict[str, Decimal] = {}
     for row in rows:
@@ -293,15 +297,15 @@ def _get_salesperson_ranking(factory_id: str, range_: DateRange) -> list[dict]:
     return _build_ranking(sales, target_map=targets)
 
 
-def _get_product_ranking(factory_id: str, range_: DateRange) -> list[dict]:
+async def _get_product_ranking(factory_id: str, range_: DateRange) -> list[dict]:
     """Replace foundation stub. Mirror Java SalesAnalysisServiceImpl
     .getProductRanking (line 491-533).
 
     Aggregates SUM(amount) per product_category. Returns RankingItem dicts
     with completionRate=percentage_of_total + alertLevel hard-coded GREEN.
-    No top-N cap.
+    No top-N cap. async per foundation §5.
     """
-    rows = _query_sales_data(factory_id, range_)
+    rows = await asyncio.to_thread(_query_sales_data, factory_id, range_)
     sales: dict[str, Decimal] = {}
     for row in rows:
         category = row.product_category
@@ -312,15 +316,15 @@ def _get_product_ranking(factory_id: str, range_: DateRange) -> list[dict]:
     return _build_ranking(sales, with_percentage=True)
 
 
-def _get_customer_ranking(factory_id: str, range_: DateRange) -> list[dict]:
+async def _get_customer_ranking(factory_id: str, range_: DateRange) -> list[dict]:
     """Replace foundation stub. Mirror Java SalesAnalysisServiceImpl
     .getCustomerRanking (line 550-593).
 
     Aggregates SUM(amount) per customer_name. Returns RankingItem dicts
     with completionRate=percentage_of_total + alertLevel hard-coded GREEN.
-    Top 10 cap (Java line 574).
+    Top 10 cap (Java line 574). async per foundation §5.
     """
-    rows = _query_sales_data(factory_id, range_)
+    rows = await asyncio.to_thread(_query_sales_data, factory_id, range_)
     sales: dict[str, Decimal] = {}
     for row in rows:
         name = row.customer_name

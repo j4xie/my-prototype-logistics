@@ -2,15 +2,15 @@
 
 | Field | Value |
 |---|---|
-| **Type** | Foundation (1 of 4 sub-specs) |
+| **Type** | Foundation (1 of 5 sub-specs) |
 | **Status** | Drafted, awaiting user review |
 | **Endpoint** | `GET /api/mobile/{factoryId}/smart-bi/analysis/sales` |
 | **Java reference** | `SmartBIAnalysisController.getSalesAnalysis` line 98-138 → `SmartBIServiceImpl.getComprehensiveAnalysis(..., "sales")` line 568-616 → `SalesAnalysisServiceImpl` (1261 LOC) |
 | **Phase 2A counter** | This is endpoint #6 (after alerts + recommendations + 3 prior batch 2 thin Z) |
 | **Branch** | `phase2a/t5-poc` (worktree at `.worktrees/phase2a-t5-poc`) |
-| **Sibling specs** | overview / rankings / trend (each adds 1+ sub-service real impl) |
+| **Sibling specs** | overview / rankings / trend / **gold** (Gold-path adapter, added after Java reference exploration) |
 
-## §1. Why split into 4 specs
+## §1. Why split into 5 specs
 
 `/analysis/sales` is materially bigger than `/alerts` or `/recommendations`:
 
@@ -20,7 +20,7 @@
 - F001 golden is **1708 lines** (vs 78 for F999 empty state)
 - T0 estimate: 15-20h, post-calibration unknown until first sub-spec ships
 
-Decomposed into 4 specs to:
+Decomposed into 5 specs to:
 
 1. Lock interface contracts before implementation diverges (DTO dict factory shapes, sub-service signatures, composite key order)
 2. Allow sequential execution across 3-4 chats with each chat owning ~300 LOC
@@ -29,9 +29,10 @@ Decomposed into 4 specs to:
 
 See sibling specs for what each owns:
 
-- **`overview`** — `_get_sales_overview` real impl + KPICard / MetricResult dict factories + AI insight dynamic generator (1261 LOC Java reference's biggest chunk)
+- **`overview`** — `_get_sales_overview` legacy 5-KPI path + AI insight from-aggregates path + MetricResult dict factory. (Note: F001's `overview` field actually comes from Gold path, not legacy. See `gold` spec for that path.)
 - **`rankings`** — `_get_salesperson_ranking` / `_get_product_ranking` / `_get_customer_ranking` real impls (3 same-pattern functions) + sort stability via secondary key
-- **`trend`** — `_get_sales_trend_chart` real impl + DAY/WEEK/MONTH bucketing
+- **`trend`** — `_get_sales_trend_chart` real impl + DAY-only port + Monday-of-week bucket key (NOT ISO `YYYY-Www`)
+- **`gold`** — Gold-path adapter mirroring Java `GoldDashboardBuilder.buildFromGoldWithCharts`. Reuses existing Python `smartbi.gold.queries` infrastructure (no new SQL). ~150 LOC adapter to convert Gold response → DashboardResponse-shape dict. Required because F001 golden's overview comes from this path. Only adds ~2-3h to total endpoint scope.
 
 ## §2. Scope (what foundation OWNS vs PUNTS)
 
@@ -41,11 +42,12 @@ See sibling specs for what each owns:
 2. **Route registration**: `@router.get("/api/mobile/{factory_id}/smart-bi/analysis/sales")`
 3. **Composite assembly**: `_get_comprehensive_sales_analysis(factory_id, range_)` → 7-key dict
 4. **5 sub-service stubs** returning F999-shape (empty state, never raise)
-5. **DTO dict factories** (4 of them):
+5. **DTO dict factories** (5 of them — KPICard moved here per gold spec §15 cross-cutting change for clean dependency graph):
    - `_new_dashboard_response_dict(...)` — 16 fields incl. 5 deprecated (DashboardResponse.java)
-   - `_new_ranking_item_dict(...)` — RankingItem.java declared + derived getters
+   - `_new_ranking_item_dict(...)` — 6 fields (rank/name/value/target/completionRate/alertLevel), no derived getters (rankings spec verified via direct file read)
    - `_new_chart_config_dict(...)` — ChartConfig.java declared + derived getters
    - `_new_ai_insight_dict(...)` — AIInsight.java declared + derived getters
+   - `_new_kpi_card_dict(...)` — 13 fields (overview spec discovered; gold + overview both consume; foundation owns to break dependency cycle)
 6. **DateRange Python port enhancement** in `smartbi_compat/date_range.py`:
    - Verify `days` / `valid` derived getters exist; add if missing
    - `_new_date_range_dict(range_)` factory matching F999 golden 7-field shape
@@ -58,9 +60,10 @@ See sibling specs for what each owns:
 
 | Item | Owned by |
 |---|---|
-| Real KPI calculations / `_get_sales_overview` impl | overview spec |
-| KPICard / MetricResult dict factories | overview spec |
-| AI insight dynamic generator (multi-branch logic) | overview spec |
+| Legacy `_get_sales_overview` body (5-KPI from-aggregates path) | overview spec |
+| `_new_metric_result_dict` (only used by overview legacy path) | overview spec |
+| AI insight from-aggregates generator (2 INFO emissions) | overview spec |
+| Gold-path adapter (`_build_from_gold_with_charts` + 5 helpers + 3 seam wrappers) | gold spec |
 | 3 ranking real impls (`_get_salesperson_ranking` / `_get_product_ranking` / `_get_customer_ranking`) | rankings spec |
 | Sort stability fix (secondary key) | rankings spec |
 | Generic `_build_ranking()` helper | rankings spec |
@@ -126,20 +129,20 @@ overview / customerRanking / productRanking / dateRange / salespersonRanking / g
 **Python composite must construct dict in this exact order** (Python dict is insertion-ordered ≥3.7) for byte-shape match. Code:
 
 ```python
-def _get_comprehensive_sales_analysis(factory_id: str, range_: DateRange) -> dict:
+async def _get_comprehensive_sales_analysis(factory_id: str, range_: DateRange) -> dict:
     """Java reference: SmartBIServiceImpl.getComprehensiveAnalysis sales branch.
 
     Key order matches F999/F001 golden (Jackson serialization of Java HashMap),
     NOT Java result.put() order.
     """
     return {
-        "overview":           _get_sales_overview(factory_id, range_),
-        "customerRanking":    _get_customer_ranking(factory_id, range_),
-        "productRanking":     _get_product_ranking(factory_id, range_),
+        "overview":           await _get_sales_overview(factory_id, range_),
+        "customerRanking":    await _get_customer_ranking(factory_id, range_),
+        "productRanking":     await _get_product_ranking(factory_id, range_),
         "dateRange":          _new_date_range_dict(range_),
-        "salespersonRanking": _get_salesperson_ranking(factory_id, range_),
+        "salespersonRanking": await _get_salesperson_ranking(factory_id, range_),
         "generatedAt":        _utc_now_iso(),
-        "trendChart":         _get_sales_trend_chart(factory_id, range_, "DAY"),
+        "trendChart":         await _get_sales_trend_chart(factory_id, range_, "DAY"),
     }
 ```
 
@@ -148,8 +151,8 @@ def _get_comprehensive_sales_analysis(factory_id: str, range_: DateRange) -> dic
 Foundation merge must allow F999 contract test to PASS without sibling spec impls. Stubs return F999-shape (NOT raise NotImplementedError):
 
 ```python
-def _get_sales_overview(factory_id: str, range_: DateRange) -> dict:
-    """STUB — overview spec replaces. Returns F999 empty-state DashboardResponse."""
+async def _get_sales_overview(factory_id: str, range_: DateRange) -> dict:
+    """STUB — overview/gold specs replace. Returns F999 empty-state DashboardResponse."""
     return _new_dashboard_response_dict(
         ai_insights=[
             _new_ai_insight_dict(
@@ -163,19 +166,19 @@ def _get_sales_overview(factory_id: str, range_: DateRange) -> dict:
         last_updated=_utc_now_iso(),
     )
 
-def _get_salesperson_ranking(factory_id: str, range_: DateRange) -> list:
+async def _get_salesperson_ranking(factory_id: str, range_: DateRange) -> list:
     """STUB — rankings spec replaces."""
     return []
 
-def _get_product_ranking(factory_id: str, range_: DateRange) -> list:
+async def _get_product_ranking(factory_id: str, range_: DateRange) -> list:
     """STUB — rankings spec replaces."""
     return []
 
-def _get_customer_ranking(factory_id: str, range_: DateRange) -> list:
+async def _get_customer_ranking(factory_id: str, range_: DateRange) -> list:
     """STUB — rankings spec replaces."""
     return []
 
-def _get_sales_trend_chart(factory_id: str, range_: DateRange, period: str = "DAY") -> dict:
+async def _get_sales_trend_chart(factory_id: str, range_: DateRange, period: str = "DAY") -> dict:
     """STUB — trend spec replaces. Returns F999 empty-state ChartConfig."""
     return _new_chart_config_dict(
         chart_type="LINE",
@@ -212,7 +215,7 @@ async def get_sales_analysis(
     no-dimension golden except `_meta`.
     """
     range_ = DateRange.custom(startDate, endDate)
-    result = _get_comprehensive_sales_analysis(auth.factory_id, range_)
+    result = await _get_comprehensive_sales_analysis(auth.factory_id, range_)
     return wrap_response(result)
 ```
 
@@ -402,31 +405,39 @@ def _new_date_range_dict(range_: DateRange) -> dict:
 After foundation merge, sibling specs MUST implement these exact signatures by replacing stub bodies. Foundation does NOT change these signatures across sub-spec execution.
 
 ```python
-def _get_sales_overview(factory_id: str, range_: DateRange) -> dict:
+async def _get_sales_overview(factory_id: str, range_: DateRange) -> dict:
     """Returns DashboardResponse-shaped dict per _new_dashboard_response_dict.
-    Owned by overview spec.
+    Tries Gold path first (via gold spec adapter); falls back to legacy
+    (overview spec) on null/error. async because Gold queries are async.
+    Owned by overview spec body; Gold-path branch owned by gold spec.
     """
 
-def _get_salesperson_ranking(factory_id: str, range_: DateRange) -> list[dict]:
+async def _get_salesperson_ranking(factory_id: str, range_: DateRange) -> list[dict]:
     """Returns list of RankingItem-shaped dicts. Sorted by value DESC, then
     name ASC for tie stability. No limit. Owned by rankings spec.
+    Note: completionRate field carries target-completion percent.
     """
 
-def _get_product_ranking(factory_id: str, range_: DateRange) -> list[dict]:
-    """Returns list of RankingItem-shaped dicts with percentage field set.
-    Sorted by value DESC, then name ASC. No limit. Owned by rankings spec.
+async def _get_product_ranking(factory_id: str, range_: DateRange) -> list[dict]:
+    """Returns list of RankingItem-shaped dicts with completionRate field
+    set as percentage of total. Sorted by value DESC, then name ASC.
+    No limit. Owned by rankings spec.
     """
 
-def _get_customer_ranking(factory_id: str, range_: DateRange) -> list[dict]:
-    """Returns list of RankingItem-shaped dicts with percentage field set.
-    Sorted by value DESC, then name ASC. Top 10 cap. Owned by rankings spec.
+async def _get_customer_ranking(factory_id: str, range_: DateRange) -> list[dict]:
+    """Returns list of RankingItem-shaped dicts with completionRate field
+    set as percentage of total. Sorted by value DESC, then name ASC.
+    Top 10 cap. Owned by rankings spec.
     """
 
-def _get_sales_trend_chart(factory_id: str, range_: DateRange, period: str = "DAY") -> dict:
-    """Returns ChartConfig-shaped dict. period: DAY / WEEK / MONTH / YEAR.
-    Composite always passes 'DAY'. Owned by trend spec.
+async def _get_sales_trend_chart(factory_id: str, range_: DateRange, period: str = "DAY") -> dict:
+    """Returns ChartConfig-shaped dict. DAY-only port (composite always
+    passes 'DAY'); WEEK/MONTH/YEAR raise NotImplementedError. Owned by
+    trend spec.
     """
 ```
+
+⚠ All 5 sub-services + composite + route are `async def`. Required because gold spec needs `await` for `smartbi.gold.queries.finance_summary` etc. Legacy SQL helpers (e.g., `_query_sales_data` using SQLAlchemy text()) can stay sync if wrapped via `await asyncio.to_thread(...)` or migrated to async session. Plan task: confirm sync/async bridging strategy.
 
 **Sibling specs MUST NOT**:
 
@@ -655,8 +666,9 @@ class TestEnvelope:
 | **R8** | `_query_sales_data` extension adds order_date column → may inadvertently break alerts/recommendations | Low-Medium | Re-run `test_alerts_logic.py`, `test_alerts_contract.py`, `test_recommendations_contract.py` after change. | foundation plan |
 | **R9** | F999/F001 goldens have key order from Java HashMap iteration (Jackson serialization), not Java `result.put()` order. Python must construct dict in observed order | Medium | Foundation locks composite key order to F999 observed: `overview/customerRanking/productRanking/dateRange/salespersonRanking/generatedAt/trendChart`. | foundation impl |
 | **R10** | period / generatedAt / lastUpdated in DashboardResponse have subtle nulls in F999 (`generatedAt: null`, `lastUpdated: <ts>`) — possibly Java behavior bug | Low | overview plan task: read Java to confirm intentional vs bug. Python mirrors observed (do not fix Java). | overview spec |
-| **R11** | **Gold path discovery** — overview agent confirmed F001 golden's `overview` field comes from `GoldDashboardBuilder.buildFromGoldWithCharts`, a SEPARATE Java code path from legacy `getSalesOverview`. F001 KPI cards are restaurant-flavored (`total_revenue / bill_count / avg_bill_value / store_count`), implying F001 is a restaurant tenant whose Gold projection is fed by POS data, not factory `smart_bi_sales_data`. The 1261 LOC `SalesAnalysisServiceImpl` is essentially **dead code path on F001**. | High | overview spec §2 already encodes Gold-vs-legacy branch decision via env var `SMARTBI_GOLD_READ_PRIMARY_ENABLED`. Foundation does NOT need to port Gold client (overview punts to `_build_from_gold_with_charts` helper, defers Java port to plan task if needed). F999 (cleared smart_bi data, also cleared Gold projection) routes to `buildEmptyDashboard` short-circuit. **Strategy: fall through to legacy stub if Gold not available — F999 contract test still PASS via stub.** | overview spec (architectural decision); foundation acknowledges dependency |
-| **R12** | **F001 byte-shape match completeness** — given R5 + R11, F001 byte test as currently shaped only validates: (a) Gold-path overview output (overview spec must port Gold client OR F001 golden re-recorded with Gold disabled to force legacy), (b) all top-level rankings/trend keys = `[]` (foundation stub already matches). Without synthetic data seeding, no test validates non-empty rankings/trend path. | Medium | Plan tasks per spec: (a) overview decides Gold port scope (full / mocked / disabled); (b) rankings + trend specs propose Option C calibration goldens with synthetic rows. **Hard limit**: foundation does NOT alter test env data — F001 schema/data changes are sibling-spec scope, with explicit approval gate before seeding. | overview + rankings + trend |
+| **R11** | ~~Gold path discovery~~ **RESOLVED** — overview agent confirmed F001 golden's `overview` field comes from `GoldDashboardBuilder.buildFromGoldWithCharts`. Subsequent investigation found Python Gold infrastructure already exists (`backend/python/smartbi/gold/queries.py` + `smartbi.api.gold_reads`). | (resolved) | New `gold` sub-spec ports the Java adapter (~150 LOC) using direct imports of existing Python Gold helpers. No HTTP self-call, no new SQL infrastructure. F001 byte test runs through Gold path. | gold spec |
+| **R12** | **F001 byte-shape match completeness** — given R5, F001 top-level composite `salespersonRanking / productRanking / customerRanking / trendChart.data` are empty arrays in golden because `smart_bi_sales_data` has no rows in 2025 query window for F001. Gold path resolves only the `overview` field. | Medium | rankings + trend specs propose Option C calibration goldens with synthetic rows. **Hard limit**: foundation does NOT alter test env data — F001 schema/data changes are sibling-spec scope, with explicit approval gate before seeding. | rankings + trend |
+| **R13** | **Async sub-service signatures** — gold spec needs `await` for Gold queries. All 5 sub-services + composite + route MUST be `async def`. Foundation §5 sub-service contract updated to async. Sibling specs use `async def` for stubs and impls. | Low | Mechanical change. Route handler is already `async def` per foundation §3. SQLAlchemy text() executions in legacy paths can stay sync if wrapped (e.g. `await asyncio.to_thread(...)` ) or migrated to async session. Plan task: confirm sync/async bridging strategy. | foundation contract update |
 
 ## §9. Open questions (TBD until impl)
 
@@ -668,24 +680,26 @@ These are intentionally deferred to plan tasks:
 4. **ChartConfig optional fields**: F999 only shows 7 keys; ChartConfig.java 68 LOC + `@Deprecated` (per trend spec) may have more fields. Confirm via javap.
 5. **AIInsight optional fields**: F999 shows 5 keys; AIInsight.java 46 LOC may have more.
 6. **Composite generatedAt format**: Java `LocalDateTime.now()` → Jackson serializes as ISO with nanos (`2026-04-30T06:34:34.172252663`). Python must match format (use `datetime.now().isoformat()` or fixed precision).
-7. **Gold path port strategy** (R11): overview spec proposes env-var gated branch. Decision needed before overview chat: (a) port Java `GoldDashboardBuilder` + `GoldFinanceClient` to Python; (b) re-record F001 golden with Gold disabled (forces legacy); (c) write `_build_from_gold_with_charts` Python stub that returns hardcoded golden-shape for tests, real impl deferred. Default: (b) for simplicity unless overview chat finds Gold projection is actually used in prod.
+7. ~~**Gold path port strategy** (R11)~~ **RESOLVED** — chose option (a) port Gold adapter. Python Gold infrastructure (`smartbi.gold.queries.finance_summary` etc) discovered to already exist; gold spec ports only the ~150 LOC `GoldDashboardBuilder` adapter via direct imports. No HTTP self-call. Adds 2-3h to total endpoint scope. See `2026-04-30-phase2a-analysis-sales-gold-design.md`.
 8. **F001 calibration goldens** (R5 + R12): rankings + trend specs each recommend seeding synthetic `smart_bi_sales_data` rows in F001 test env so legacy non-empty path is exercised. Foundation does NOT seed; sibling specs propose with explicit user approval gate. Precedent: commit `f84101d53` "bonus F999 calibration goldens".
 
 ## §10. Plan structure preview (foundation plan)
 
 The foundation plan (separate file `docs/superpowers/plans/2026-04-30-phase2a-analysis-sales-foundation.md`) will have phases:
 
-- **Phase A** (~2-3 tasks): Pre-impl exploration
-  - Task A.1: javap 4 DTOs, freeze dict factory field lists
-  - Task A.2: Confirm F001 data in test env (psql query)
-  - Task A.3: Verify DateRange Python class has days/valid getters
+- **Phase A** (~3-4 tasks): Pre-impl exploration
+  - Task A.1: javap 5 DTOs (DashboardResponse / RankingItem / ChartConfig / AIInsight / KPICard), freeze dict factory field lists. RankingItem already verified 6 fields by direct file read; others need javap.
+  - Task A.2: Confirm F001 has Gold-path data: `psql smartbi_db -c "SELECT COUNT(*) FROM agg_daily WHERE factory_id='F001'"` (gold spec G2)
+  - Task A.3: Confirm legacy SQL window: `psql smartbi_db -c "SELECT COUNT(*) FROM smart_bi_sales_data WHERE factory_id='F001' AND order_date BETWEEN '2025-01-01' AND '2025-12-31'"` (likely 0 per F001 golden inspection)
+  - Task A.4: Verify DateRange Python class has days/valid getters
 
-- **Phase B** (~4-6 tasks): Code creation
+- **Phase B** (~6 tasks): Code creation
   - Task B.1: Extend `_query_sales_data` SQL with `order_date` column
   - Task B.2: Re-run alerts/recommendations tests, confirm 0 regression
-  - Task B.3: Create `analysis_sales.py` with route + composite + 5 stubs + 4 dict factories
+  - Task B.3: Create `analysis_sales.py` with `async def` route + composite + 5 async stubs + 5 dict factories (incl. KPICard moved here)
   - Task B.4: Add `_strip_volatile` helper (shared utility)
   - Task B.5: Register router in `main.py` (or smartbi_compat/__init__.py)
+  - Task B.6: Confirm sync/async bridging strategy for downstream legacy SQL (test if `await asyncio.to_thread(SQLAlchemy_text_call)` works, or migrate to async session)
 
 - **Phase C** (~3-4 tasks): Test creation
   - Task C.1: Create `test_analysis_sales_contract.py` with TestEnvelope class

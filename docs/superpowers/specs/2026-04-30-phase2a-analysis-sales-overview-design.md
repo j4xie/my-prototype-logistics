@@ -39,10 +39,10 @@ This sub-spec replaces the foundation stub of `_get_sales_overview()` with real 
 
 ### In-scope (this spec)
 
-1. **Replace `_get_sales_overview` stub body** with real impl (foundation kept signature `(factory_id: str, range_: DateRange) -> dict`)
-2. **2 new dict factories** in `analysis_sales.py`:
-   - `_new_kpi_card_dict(...)` — 13 fields per KPICard.java, `status="green"` default, `change` and `changeRate` nullable, no boolean defaults
-   - `_new_metric_result_dict(...)` — 11 fields per MetricResult.java
+1. **Replace `_get_sales_overview` stub body legacy fallback** with real impl. Foundation signature is now `async def _get_sales_overview(factory_id: str, range_: DateRange) -> dict` (changed to async per gold spec §15 cross-cutting). Gold-path try-first dispatch is owned by gold spec; overview spec implements the legacy fallback that runs when Gold returns null/error.
+2. **1 new dict factory** in `analysis_sales.py`:
+   - ~~`_new_kpi_card_dict`~~ — **MOVED to foundation** per gold spec §15 (gold + overview both consume; foundation owns to break cycle). Foundation plan task #1 javap KPICard.
+   - `_new_metric_result_dict(...)` — 11 fields per MetricResult.java (only used by overview legacy path)
 3. **Helper: `_query_sales_aggregates`** — single-row aggregate query mirroring `salesDataRepository.findKpiSummary` (returns total_sales / total_quantity / total_profit / total_cost / total_target / order_count). Replaces full `_query_sales_data` row-load for KPI computation.
 4. **Helper: `_query_sales_aggregates_previous_period`** — same SQL minus 1 month for MoM growth calculation
 5. **Helper: `_build_empty_dashboard()`** — returns DashboardResponse-shape dict matching F999 byte (single AIInsight YELLOW + single suggestion + lastUpdated=now)
@@ -53,17 +53,18 @@ This sub-spec replaces the foundation stub of `_get_sales_overview()` with real 
 10. **Optional helper: `_generate_ai_insights_full`** — 4-branch logic from Java line 998-1083 (completion<60/85, growth<-20/>0, top-salesperson). ⚠ TBD: Java's `getSalesOverview` from-aggregates path does NOT call this — it calls `generateAiInsightsFromMetrics` (the 2-INFO version). Including the full version may be dead code. Plan task to verify which is reachable from `/analysis/sales` route.
 11. **Threshold constants** mirroring Java (TARGET_RED=60 / TARGET_YELLOW=85 / MARGIN_RED=15 / MARGIN_YELLOW=25 / GROWTH_RED=-20 / GROWTH_YELLOW=-5)
 12. **Decimal-precision helpers** — `_set_scale(value, scale)` wrapping `Decimal.quantize(rounding=ROUND_HALF_UP)`, `_format_currency(value)` mirroring Java `String.format("%,.2f", ...)`, `_format_completion_pct(value)` mirroring `"%.1f%%"`, `_format_growth_pct(value)` mirroring `"%+.1f%%"`
-13. **Gold-vs-legacy branch decision** — Python checks env var `SMARTBI_GOLD_READ_PRIMARY_ENABLED` (mirrors Java `@Value`). When true AND Gold client returns non-empty → return Gold-shape dict (kpiCards = 4-item Gold list, rankings.top_stores, aiInsights=[], suggestions=[]). When false OR Gold empty → return legacy-shape dict.
-14. **`TestOverview` test class** in `tests/python/smartbi_compat/test_analysis_sales_contract.py`:
-    - `test_F001_overview_byte_shape` (Gold-primary on)
-    - `test_F999_overview_byte_shape_legacy_path` (Gold-primary off, no data → empty)
-    - `test_completion_red_branch` — synthetic data with completion<60 → assert RED insight emitted
+13. ~~**Gold-vs-legacy branch decision**~~ — **DEFERRED to gold spec** (`2026-04-30-phase2a-analysis-sales-gold-design.md`). gold spec owns: Gold path adapter (`_build_from_gold_with_charts`) + try-Gold-first wiring inside `_get_sales_overview`. Overview spec only covers the legacy fallback path (when Gold returns null/error).
+14. **`TestOverview` test class** in `tests/python/smartbi_compat/test_analysis_sales_contract.py` — **legacy path only** (Gold path tests owned by gold spec's `TestGold` class):
+    - `test_F999_overview_byte_shape_legacy_path` — F999 cleared data, Gold returns null → legacy `_build_empty_dashboard()` path → matches F999 golden
+    - `test_completion_red_branch` — synthetic monkey-patched aggregates with completion<60 → assert RED insight emitted (note: this exercises `generateAiInsights` if reachable; otherwise covers from-aggregates `INFO`-only path)
     - `test_completion_yellow_branch` — completion 60-85 → YELLOW
     - `test_growth_red_branch` — growth<-20 → RED
     - `test_growth_green_branch` — growth>0 → GREEN
-    - `test_kpi_status_green_default` — KPICard `status` field always "green" (Java default 81-82)
-    - `test_kpi_alert_level_to_status_mapping` — verify RED→red, YELLOW→yellow, default→green
+    - `test_kpi_status_green_default` — legacy KPI cards: status field always "green" (Java default 81-82); gold spec's TestGold owns Gold path version
+    - `test_kpi_alert_level_to_status_mapping` — verify legacy `convertToKPICards` (line 672-720): RED→red, YELLOW→yellow, default→green
     - `test_change_direction_to_trend_mapping` — UP→up, DOWN→down, default→flat
+    - `test_F001_overview_byte_shape_gold_returns_null_then_legacy` — when both Gold and legacy SQL produce empty (degenerate F001 in 2025 window), result matches `_build_empty_dashboard` shape (overlap with F999 path)
+    - **Note**: `test_F001_overview_byte_shape` (full Gold path, the 4-KPI restaurant-flavored response) is owned by gold spec's `TestGold.test_F001_overview_byte_shape_via_gold`.
 
 ### Out-of-scope (defer to siblings or foundation)
 
@@ -76,7 +77,9 @@ This sub-spec replaces the foundation stub of `_get_sales_overview()` with real 
 | `_query_sales_data` SQL extension with `order_date` | foundation spec |
 | `_strip_volatile` / 4 dict factories (DashboardResponse / RankingItem / ChartConfig / AIInsight) / `_new_date_range_dict` | foundation spec |
 | Java code modifications | NONE — this spec is Python-only, no Java touch |
-| Gold-finance-summary client code in Python | ⚠ TBD: may already exist for `/analysis/finance` — plan task to verify; otherwise port `GoldFinanceClient` Java client to Python helper |
+| Gold-finance-summary client code in Python | EXISTS — `backend/python/smartbi/gold/queries.py` (`finance_summary`, `daily_trend`, `top_products`, `kpi_summary`). gold spec consumes via direct import; overview spec doesn't touch. |
+| Gold-path adapter logic | gold spec |
+| Try-Gold-first dispatch inside `_get_sales_overview` | gold spec |
 | Cache invalidation / `fromCache` semantics | NONE — Java always emits `fromCache: false` |
 
 ---
