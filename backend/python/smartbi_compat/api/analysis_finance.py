@@ -1409,7 +1409,7 @@ async def _get_comprehensive_finance_analysis(factory_id: str, range_: DateRange
     """
     overview         = await _get_finance_overview(factory_id, range_)
     profit_metrics   = await _get_profit_metrics(factory_id, range_)
-    cost_structure   = await _get_cost_structure_chart(factory_id, range_)
+    cost_structure   = await _get_cost_structure_chart(factory_id, range_.start_date, range_.end_date)
     receivable_aging = await _get_receivable_aging_chart(factory_id, range_.end_date)
 
     return {
