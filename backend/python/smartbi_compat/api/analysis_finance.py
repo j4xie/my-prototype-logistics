@@ -2247,6 +2247,74 @@ async def _get_overdue_customer_ranking(
     return rankings
 
 
+async def _get_receivable_trend_chart(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Monthly LINE_BAR chart of receivable / collection / balance.
+
+    Mirror Java FinanceAnalysisServiceImpl.getReceivableTrendChart (line 786-827).
+    Uses [start_date, end_date] window (NOT 1-year).
+
+    options.series key order locked from F999 golden (Java Map.of(2) hash order
+    emits {name, type} per Rule 8). data items: {period, receivable, collection, balance}.
+    """
+    ar_data = await _query_finance_data(factory_id, "AR", start_date, end_date)
+
+    # Java line 793 — TreeMap = sorted by key (yyyy-MM string sort = chronological)
+    monthly_data: dict[str, list] = {}  # period → [Decimal receivable, Decimal collection]
+    for row in ar_data:
+        # Defensive null-check (Rule 1) — record_date should always be present
+        record_date = row.get("record_date")
+        if record_date is None:
+            continue
+        month_key = record_date.strftime("%Y-%m")  # Java line 795 yyyy-MM
+        if month_key not in monthly_data:
+            monthly_data[month_key] = [Decimal("0"), Decimal("0")]
+        receivable = (
+            _to_decimal(row["receivable_amount"])
+            if row.get("receivable_amount") is not None
+            else Decimal("0")
+        )
+        collection = (
+            _to_decimal(row["collection_amount"])
+            if row.get("collection_amount") is not None
+            else Decimal("0")
+        )
+        monthly_data[month_key][0] += receivable
+        monthly_data[month_key][1] += collection
+
+    # Java line 793 — TreeMap natural ordering
+    chart_data: list[dict] = []
+    for month_key in sorted(monthly_data.keys()):
+        receivable, collection = monthly_data[month_key]
+        chart_data.append({
+            "period": month_key,
+            "receivable": _decimal_to_number(receivable.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+            "collection": _decimal_to_number(collection.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+            "balance": _decimal_to_number((receivable - collection).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+        })
+
+    # Java line 812-817 — options.series. Each item is Map.of("name", ..., "type", ...).
+    # Rule 8 — F999 golden shows {name, type} order; Python literal mirrors it.
+    options = {
+        "series": [
+            {"name": "应收金额", "type": "bar"},
+            {"name": "回款金额", "type": "bar"},
+            {"name": "应收余额", "type": "line"},
+        ],
+    }
+
+    return _new_chart_config_dict(
+        chart_type="LINE_BAR",  # Java line 820
+        title="应收账款趋势",
+        series_field=None,
+        data=chart_data,
+        options=options,
+        xaxis_field="period",
+        yaxis_field="balance",
+    )
+
+
 # ============================================================
 # Section 3b: Payable sub-services real impls (Phase E)
 # Mirror Java FinanceAnalysisServiceImpl getPayableMetrics + getPayableAgingChart.

@@ -657,3 +657,128 @@ class TestOverdueCustomerRankingImpl:
         monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
         result = await analysis_finance._get_overdue_customer_ranking("F001", date(2025, 12, 31))
         assert set(result[0].keys()) == {"rank", "name", "value", "target", "completionRate", "alertLevel"}
+
+
+class TestReceivableTrendChartImpl:
+    """Mirror Java FinanceAnalysisServiceImpl.getReceivableTrendChart (line 786-827).
+    Monthly LINE_BAR; uses [start_date, end_date] (NOT 1y window)."""
+
+    @pytest.mark.asyncio
+    async def test_empty_data_emits_chart_with_3_series(self, monkeypatch):
+        """F999 golden lock: data=[] but options.series unchanged."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return []
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        result = await analysis_finance._get_receivable_trend_chart(
+            "F999", date(2025, 1, 1), date(2025, 12, 31)
+        )
+        assert result["chartType"] == "LINE_BAR"
+        assert result["title"] == "应收账款趋势"
+        assert result["seriesField"] is None
+        assert result["xaxisField"] == "period"
+        assert result["yaxisField"] == "balance"
+        assert result["data"] == []
+        # Series exact key order locked from F999 golden (Map.of(2) Jackson hash order)
+        series = result["options"]["series"]
+        assert len(series) == 3
+        assert list(series[0].keys()) == ["name", "type"]
+        assert series == [
+            {"name": "应收金额", "type": "bar"},
+            {"name": "回款金额", "type": "bar"},
+            {"name": "应收余额", "type": "line"},
+        ]
+
+    @pytest.mark.asyncio
+    async def test_uses_query_window_not_1y(self, monkeypatch):
+        """trendChart uses [start_date, end_date], NOT minusYears(1)."""
+        from smartbi_compat.api import analysis_finance
+
+        captured = {}
+        async def fake_query(factory_id, record_type, start, end):
+            captured["start"] = start
+            captured["end"] = end
+            return []
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        await analysis_finance._get_receivable_trend_chart(
+            "F999", date(2025, 6, 1), date(2025, 8, 31)
+        )
+        assert captured["start"] == date(2025, 6, 1)
+        assert captured["end"] == date(2025, 8, 31)
+
+    @pytest.mark.asyncio
+    async def test_groups_by_month_yyyy_mm(self, monkeypatch):
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [
+                {"record_date": date(2025, 1, 15), "receivable_amount": "1000", "collection_amount": "200"},
+                {"record_date": date(2025, 1, 20), "receivable_amount": "500",  "collection_amount": "100"},
+                {"record_date": date(2025, 2, 10), "receivable_amount": "300",  "collection_amount": "0"},
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_receivable_trend_chart(
+            "F001", date(2025, 1, 1), date(2025, 12, 31)
+        )
+        data = result["data"]
+        assert len(data) == 2
+        assert data[0]["period"] == "2025-01"
+        assert data[0]["receivable"] == 1500  # 1000 + 500
+        assert data[0]["collection"] == 300   # 200 + 100
+        assert data[0]["balance"] == 1200     # 1500 - 300
+        assert data[1]["period"] == "2025-02"
+        assert data[1]["receivable"] == 300
+        assert data[1]["collection"] == 0
+        assert data[1]["balance"] == 300
+
+    @pytest.mark.asyncio
+    async def test_sorts_by_period_chronologically(self, monkeypatch):
+        """Java line 793 TreeMap = sorted by yyyy-MM string key (chronological)."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [
+                {"record_date": date(2025, 12, 1), "receivable_amount": "100", "collection_amount": "0"},
+                {"record_date": date(2025, 1, 1),  "receivable_amount": "200", "collection_amount": "0"},
+                {"record_date": date(2025, 6, 1),  "receivable_amount": "300", "collection_amount": "0"},
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_receivable_trend_chart(
+            "F001", date(2025, 1, 1), date(2025, 12, 31)
+        )
+        periods = [d["period"] for d in result["data"]]
+        assert periods == ["2025-01", "2025-06", "2025-12"]
+
+    @pytest.mark.asyncio
+    async def test_data_item_has_4_keys_correct_order(self, monkeypatch):
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [
+                {"record_date": date(2025, 1, 15), "receivable_amount": "1000", "collection_amount": "200"},
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_receivable_trend_chart(
+            "F001", date(2025, 1, 1), date(2025, 12, 31)
+        )
+        assert list(result["data"][0].keys()) == ["period", "receivable", "collection", "balance"]
+
+    @pytest.mark.asyncio
+    async def test_skips_rows_with_null_record_date(self, monkeypatch):
+        """Defensive — record_date should always be present, but guard anyway."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [
+                {"record_date": None, "receivable_amount": "1000", "collection_amount": "0"},
+                {"record_date": date(2025, 6, 1), "receivable_amount": "500", "collection_amount": "0"},
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_receivable_trend_chart(
+            "F001", date(2025, 1, 1), date(2025, 12, 31)
+        )
+        assert len(result["data"]) == 1
+        assert result["data"][0]["period"] == "2025-06"
