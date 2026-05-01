@@ -49,8 +49,10 @@ backend/python/smartbi_compat/api/analysis_finance.py            [EDIT]
   + _determine_budget_achievement_alert(rate)            NEW (helper)
   + _get_metric_display_name(metric)                     NEW (helper)
   + _get_budget_achievement_chart()                      NEW (impl)
+  + _calculate_metric_from_sales(sales_rows, metric)     NEW (helper, audit C-1 fix)
   + _get_metric_value_for_period(factory, year_month, metric)  NEW (helper)
   + _get_metric_value_for_quarter(factory, year, quarter, metric)  NEW (helper)
+  + _safe_growth_rate(current, base)                     NEW (helper, audit I-1 fix)
   + _calculate_month_yoy_mom(factory, period, metric)    NEW (sub-impl)
   + _calculate_quarter_yoy_mom(factory, period, metric)  NEW (sub-impl)
   + _calculate_month_range_yoy_mom(factory, start, end, metric)  NEW (sub-impl)
@@ -85,6 +87,7 @@ tests/fixtures/java-smartbi-golden/ [NEW]
 4. **共享 helper `_get_metric_display_name`**: budget-achievement 与 yoy-mom 都用. 抽到 module level (Section 2 helpers).
 5. **不在 composite 路径调用**: 3 个 sub-endpoint 独立路由, 不影响 composite 字节形状.
 6. **`_calculate_*_yoy_mom` 4 个独立函数** (而非 single dispatcher): Java 用 switch 4-case, Python mirror — 简单 dispatcher (单 if-elif), 4 子函数各自隔离.
+7. **Imports** (audit I-2 fix): `date` from datetime + `Optional` from typing 已在 module level; `import calendar` 需要在 module top 加 (现 inline in `_infer_granularity` line 61). Plan 一并清理.
 
 ---
 
@@ -108,8 +111,9 @@ tests/fixtures/java-smartbi-golden/ [NEW]
 | Helper `calculateQuarterYoYMoM` | `FinanceAnalysisServiceImpl.java:1869-1923` |
 | Helper `calculateMonthRangeYoYMoM` | `FinanceAnalysisServiceImpl.java:1925-1947` |
 | Helper `calculateQuarterRangeYoYMoM` | `FinanceAnalysisServiceImpl.java:1949-1968` |
-| Helper `getMetricValueForPeriod` | `FinanceAnalysisServiceImpl.java:1970-2003` |
-| Helper `getMetricValueForQuarter` | `FinanceAnalysisServiceImpl.java:2005-2068` |
+| Helper `getMetricValueForPeriod` | `FinanceAnalysisServiceImpl.java:1970-2000` |
+| Helper `getMetricValueForQuarter` | `FinanceAnalysisServiceImpl.java:2005-2035` |
+| Helper `calculateMetricFromSales` | `FinanceAnalysisServiceImpl.java:2040-2065` |
 | Helper `aggregateSalesByCategory` | `FinanceAnalysisServiceImpl.java:2070-2087` |
 | Constants `SCALE / DISPLAY_SCALE / ROUNDING_MODE` | `FinanceAnalysisServiceImpl.java:81-83` |
 
@@ -207,30 +211,29 @@ async def _get_budget_achievement_chart(
 
 
 def _get_budget_amount_by_metric(record: dict, metric: str) -> Decimal:
-    """Mirror Java line 1716-1749. Returns budget_amount filtered by category match.
-    Per Java: when category contains metric-specific keyword, return budget_amount.
-    Otherwise return budget_amount as-is (no filter)."""
+    """Mirror Java FinanceAnalysisServiceImpl.getBudgetAmountByMetric (line 1716-1749).
+
+    **Java fall-through behavior** (audit I-4 fix): the switch's `case "revenue":` etc
+    have an inner `if (category contains keyword) return budget_amount; break;`.
+    When the inner `if` is false, the `break` exits the switch, then control flows
+    to line 1748 which returns `data.getBudgetAmount()`. So the function ALWAYS
+    returns budget_amount regardless of category match — the keyword filter is
+    effectively dead code in Java.
+
+    The `metric` parameter is accepted but unused (kept in signature for Java
+    parity and future use). This matches Java behavior literally.
+    """
     if record.get("budget_amount") is None:
         return Decimal("0")
-    category = record.get("category") or ""
-    metric_lower = (metric or "").lower()
-    keyword_map = {
-        "revenue": ("收入", "销售"),
-        "cost": ("成本",),
-        "expense": ("费用",),
-        "profit": ("利润",),
-    }
-    keywords = keyword_map.get(metric_lower)
-    if keywords and not any(kw in category for kw in keywords):
-        # Per Java: when category mismatch, the inner `case` returns... wait, Java
-        # falls through to default at line 1745. Behavior: return budget_amount
-        # regardless (no actual filtering). Replicate Java behavior literally.
-        return _to_decimal(record["budget_amount"])
     return _to_decimal(record["budget_amount"])
 
 
 def _get_actual_amount_by_metric(record: dict, metric: str) -> Decimal:
-    """Mirror Java line 1754-1786. Same shape as _get_budget_amount_by_metric."""
+    """Mirror Java FinanceAnalysisServiceImpl.getActualAmountByMetric (line 1754-1786).
+
+    Same fall-through behavior as _get_budget_amount_by_metric — always returns
+    actual_amount regardless of category match. The Java keyword filter is dead code.
+    """
     if record.get("actual_amount") is None:
         return Decimal("0")
     return _to_decimal(record["actual_amount"])
@@ -369,38 +372,97 @@ def _safe_growth_rate(current: Decimal, base: Decimal) -> Decimal:
 async def _get_metric_value_for_period(
     factory_id: str, year_month: tuple[int, int], metric: str
 ) -> Decimal:
-    """Mirror Java line 1970-2003. Aggregates revenue/cost/expense/profit/gross_margin
-    for a given YYYY-MM."""
-    from datetime import date as date_
+    """Mirror Java FinanceAnalysisServiceImpl.getMetricValueForPeriod (line 1970-2000).
+
+    **CRITICAL** (audit C-1 fix): Java has 3 distinct branches by data source:
+      - revenue / profit / gross_margin → smart_bi_sales_data via _query_finance_sales_fallback
+      - cost / expense                  → smart_bi_finance_data RecordType.COST, sum total_cost
+      - default                         → smart_bi_sales_data, sum amount
+
+    Initial spec wrongly conflated all metrics into _query_finance_data with REVENUE/COST.
+    """
     import calendar
     year, month = year_month
     last_day = calendar.monthrange(year, month)[1]
-    start_date = date_(year, month, 1)
-    end_date = date_(year, month, last_day)
+    start_date = date(year, month, 1)
+    end_date = date(year, month, last_day)
 
-    metric_lower = (metric or "revenue").lower()
-    record_type = "REVENUE" if metric_lower != "cost" else "COST"
-    records = await _query_finance_data(factory_id, record_type, start_date, end_date)
+    metric_lower = (metric or "").lower()
 
-    total = Decimal("0")
-    keyword_map = {
-        "revenue": ("收入",),
-        "cost": ("成本",),
-        "expense": ("费用",),
-        "profit": ("净利", "利润"),
-        "gross_margin": ("毛利",),
-    }
-    keywords = keyword_map.get(metric_lower, ("收入",))
+    if metric_lower in ("revenue", "profit", "gross_margin"):
+        sales_rows = await _query_finance_sales_fallback(factory_id, start_date, end_date)
+        return _calculate_metric_from_sales(sales_rows, metric_lower)
 
-    for r in records:
-        cat = r.get("category") or ""
-        if any(kw in cat for kw in keywords):
-            total += _to_decimal(r.get("actual_amount") or 0)
+    if metric_lower in ("cost", "expense"):
+        cost_records = await _query_finance_data(factory_id, "COST", start_date, end_date)
+        # Java line 1987-1990: sum total_cost (NOT actual_amount), filter null
+        return sum(
+            (
+                _to_decimal(r["total_cost"])
+                for r in cost_records
+                if r.get("total_cost") is not None
+            ),
+            Decimal("0"),
+        )
 
-    return total
+    # Default: sum amount from sales (Java line 1991-1998)
+    sales_rows = await _query_finance_sales_fallback(factory_id, start_date, end_date)
+    return sum(
+        (
+            _to_decimal(r["amount"])
+            for r in sales_rows
+            if r.get("amount") is not None
+        ),
+        Decimal("0"),
+    )
+
+
+def _calculate_metric_from_sales(sales_rows: list[dict], metric: str) -> Decimal:
+    """Mirror Java FinanceAnalysisServiceImpl.calculateMetricFromSales (line 2040-2065).
+
+    Pre-aggregates total_revenue + total_cost from sales_rows, then dispatches by metric:
+      revenue       → total_revenue
+      profit        → total_revenue - total_cost
+      gross_margin  → (revenue - cost) / revenue * 100, scale=4 (or 0 if revenue=0)
+      default       → total_revenue
+    """
+    metric_lower = (metric or "").lower()
+
+    total_revenue = sum(
+        (
+            _to_decimal(r["amount"])
+            for r in sales_rows
+            if r.get("amount") is not None
+        ),
+        Decimal("0"),
+    )
+    # Java line 2046-2049: NO .abs() here (unlike profit metrics which apply abs)
+    total_cost = sum(
+        (
+            _to_decimal(r["cost"])
+            for r in sales_rows
+            if r.get("cost") is not None
+        ),
+        Decimal("0"),
+    )
+
+    if metric_lower == "revenue":
+        return total_revenue
+    if metric_lower == "profit":
+        return total_revenue - total_cost
+    if metric_lower == "gross_margin":
+        if total_revenue > Decimal("0"):
+            return (
+                (total_revenue - total_cost) / total_revenue * Decimal("100")
+            ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        return Decimal("0")
+    # default
+    return total_revenue
 ```
 
-(Quarter / range variants follow identical pattern — see plan for full detail.)
+`_get_metric_value_for_quarter` follows identical 3-branch structure with quarter date math (Java line 2005-2035) — see plan for full detail.
+
+Quarter / range yoy-mom variants (`_calculate_quarter_yoy_mom`, `_calculate_month_range_yoy_mom`, `_calculate_quarter_range_yoy_mom`) follow identical pattern to `_calculate_month_yoy_mom` with quarter / multi-period iteration (Java line 1869-1968) — see plan for full detail.
 
 ### 3.4 `_get_category_comparison_chart` 算法
 
@@ -685,8 +747,8 @@ monkeypatch.setattr("smartbi_compat.api.analysis_finance._query_finance_sales_fa
 **`TestBudgetAchievementChart`** — 4 tests:
 | Test | Branch |
 |---|---|
-| `test_revenue_metric_aggregates_revenue_categories` | metric=revenue 仅取 "收入"/"销售" category |
-| `test_alert_level_thresholds` | <100 GREEN, 100-120 YELLOW, >120 RED |
+| `test_budget_amount_always_returned_regardless_of_category` | audit I-5 fix: Java fall-through returns budget_amount always (keyword filter is dead code) |
+| `test_alert_level_thresholds` | <=100 GREEN, 100-120 YELLOW, >120 RED |
 | `test_zero_budget_zero_achievement_rate` | budget=0 → rate=0 (避免 div0) |
 | `test_always_emits_12_months` | 即使 0 records 也 emit 12 entries |
 
@@ -761,8 +823,9 @@ CI gate: pytest 244 (PR-B baseline) + 17 new = 261 全过.
 | 风险 | Mitigation |
 |---|---|
 | `Map.of(4)` Jackson 顺序未知 | 录 golden 后回写 spec 里的 dict literal; 关键 helper 加注释标 hash order |
-| `_query_finance_data` w/ "REVENUE" / "COST" record_type 在 cretas_db 是否存在 | hotfix 已确认 cretas_user 有 GRANT, prod 6235 行 live data; F999 empty path validated |
-| `_aggregate_sales_by_category` w/ null category Java 行为 | Java 没显式 default 但前端可能依赖 — 默认 "其他" bucket; sister-chat 可调整 |
+| `_query_finance_data` w/ "COST" record_type 在 cretas_db 是否存在 | hotfix 已确认 cretas_user 有 GRANT, prod 6235 行 live data; F999 empty path validated. (audit C-1 fix: revenue/profit/gross_margin 不再用 finance_data, 改用 sales) |
+| `_aggregate_sales_by_category` w/ null category Java 行为 | Java line 2074: `data.getProductCategory() != null ? data.getProductCategory() : "其他"` — 已 1:1 mirror with `or "其他"` in Python |
+| sales_data 行序非确定 (无 ORDER BY in Java repo) | audit C-3 fix: golden 录的是 Java 实际 emit 顺序; Python 用 `_query_finance_sales_fallback` (asyncpg) 行序可能不同. 加 `ORDER BY id` 到 Python SQL 强制 PK 序 (与 Java JPA default 一致) |
 | sales 跨年 (2024 + 2025) 1+ 年 date range | `_query_finance_sales_fallback` 不限制 date range 长度; Java 也不限 |
 | F001 sub-endpoint 数据可能没 — 跟 profit F001 一样空 | 与 profit F001 同 (录但不 enforce); F001 golden 仅 sister 参考 |
 | budget-achievement metric 默认 "revenue" 但 Java 默认 也是 "revenue" | 已 1:1 mirror; 只改 default 时同步改 Java |
