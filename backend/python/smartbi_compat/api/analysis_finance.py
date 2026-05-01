@@ -465,8 +465,8 @@ def _get_period_key(d: date, period: str) -> str:
     if period == "DAY":
         return d.strftime("%Y-%m-%d")
     if period == "WEEK":
-        iso_year, iso_week, _ = d.isocalendar()
-        return f"{iso_year}-W{iso_week:02d}"
+        _iso_year, iso_week, _iso_day = d.isocalendar()
+        return f"{d.year}-W{iso_week:02d}"
     if period == "QUARTER":
         return f"{d.year}-Q{(d.month - 1) // 3 + 1}"
     # MONTH or default
