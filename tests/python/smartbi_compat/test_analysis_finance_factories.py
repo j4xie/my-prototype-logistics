@@ -782,3 +782,103 @@ class TestReceivableTrendChartImpl:
         )
         assert len(result["data"]) == 1
         assert result["data"][0]["period"] == "2025-06"
+
+
+class TestReceivableBucketBoundaryDepth:
+    """PR-B depth coverage — aging-day boundaries for _calculate_aging_buckets.
+
+    Java <= chain (line 1510-1518):
+      aging_days <= 30 → 0-30天
+      aging_days <= 60 → 31-60天
+      aging_days <= 90 → 61-90天
+      else            → 90天以上
+
+    Boundary value falls into LOWER bucket (e.g., 30 → 0-30, NOT 31-60).
+    Spec §1.4 enumerates: -1 / 0 / 30 / 31 / 60 / 61 / 90 / 91 (8 cases).
+    """
+
+    @pytest.mark.parametrize("aging_days,expected_bucket", [
+        (-1,  "0-30天"),     # negative aging treated as 0 → first bucket per Java <= 30
+        (0,   "0-30天"),     # boundary low — null fallback also produces 0
+        (30,  "0-30天"),     # boundary high of first bucket (<=)
+        (31,  "31-60天"),    # boundary low of second bucket
+        (60,  "31-60天"),    # boundary high of second bucket
+        (61,  "61-90天"),    # boundary low of third bucket
+        (90,  "61-90天"),    # boundary high of third bucket
+        (91,  "90天以上"),   # boundary low of fourth bucket
+    ])
+    def test_aging_day_boundary_assignment(self, aging_days, expected_bucket):
+        from smartbi_compat.api.analysis_finance import _calculate_aging_buckets
+        rows = [{"receivable_amount": "1000", "collection_amount": "0", "aging_days": aging_days}]
+        result = _calculate_aging_buckets(rows)
+        assert result[expected_bucket] == Decimal("1000")
+        # All other buckets stay 0
+        for other_bucket in ["0-30天", "31-60天", "61-90天", "90天以上"]:
+            if other_bucket != expected_bucket:
+                assert result[other_bucket] == Decimal("0"), (
+                    f"aging_days={aging_days} expected only {expected_bucket} populated, "
+                    f"but {other_bucket} = {result[other_bucket]}"
+                )
+
+    @pytest.mark.parametrize("receivable,collection,description", [
+        ("100", "100",  "outstanding=0 (equal) → skipped"),
+        ("50",  "100",  "outstanding<0 (negative) → skipped"),
+        ("0.01","0",    "outstanding=0.01 (just-positive) → kept"),
+    ])
+    def test_outstanding_threshold_strict_gt_zero(self, receivable, collection, description):
+        """Java line 1505: `if outstanding <= 0 continue` — boundary outstanding=0 skipped.
+
+        outstanding=0.01 (smallest possible positive) MUST be kept (Decimal precision).
+        """
+        from smartbi_compat.api.analysis_finance import _calculate_aging_buckets
+        rows = [{"receivable_amount": receivable, "collection_amount": collection, "aging_days": 15}]
+        result = _calculate_aging_buckets(rows)
+        outstanding = Decimal(receivable) - Decimal(collection)
+        if outstanding > Decimal("0"):
+            assert result["0-30天"] == outstanding, description
+        else:
+            assert all(v == Decimal("0") for v in result.values()), description
+
+    @pytest.mark.parametrize("receivable,collection,aging,desc", [
+        (None, None, None, "all three null → null aging→0, null receivable→0, null collection→0, outstanding=0, skip"),
+        ("0",  None, 60,   "receivable=Decimal('0') (Rule 1 falsy trap), collection null, outstanding=0, skip"),
+        (None, "0",  60,   "receivable null→0, collection=Decimal('0'), outstanding=0, skip"),
+        ("0",  "0",  60,   "both Decimal('0'), outstanding=0, skip"),
+    ])
+    def test_null_combinations_with_zero_decimal_rule1(self, receivable, collection, aging, desc):
+        """Rule 1 trap: Decimal('0') is Python-falsy. Java treats != null as truthy.
+
+        Combined with the outstanding<=0 skip, all 4 combinations result in skipped rows.
+        Pins behavior so future refactor doesn't accidentally use `or` fallback.
+        """
+        from smartbi_compat.api.analysis_finance import _calculate_aging_buckets
+        rows = [{"receivable_amount": receivable, "collection_amount": collection, "aging_days": aging}]
+        result = _calculate_aging_buckets(rows)
+        assert all(v == Decimal("0") for v in result.values()), desc
+
+    def test_aggregates_across_multiple_rows_same_bucket(self):
+        """Multiple rows in same bucket → outstanding sums."""
+        from smartbi_compat.api.analysis_finance import _calculate_aging_buckets
+        rows = [
+            {"receivable_amount": "100", "collection_amount": "0", "aging_days": 10},
+            {"receivable_amount": "200", "collection_amount": "0", "aging_days": 20},
+            {"receivable_amount": "300", "collection_amount": "0", "aging_days": 30},
+        ]
+        result = _calculate_aging_buckets(rows)
+        assert result["0-30天"] == Decimal("600")
+        assert result["31-60天"] == Decimal("0")
+
+    def test_distributes_across_all_4_buckets(self):
+        """One row per bucket → 4 distinct totals."""
+        from smartbi_compat.api.analysis_finance import _calculate_aging_buckets
+        rows = [
+            {"receivable_amount": "100", "collection_amount": "0", "aging_days": 15},  # 0-30
+            {"receivable_amount": "200", "collection_amount": "0", "aging_days": 45},  # 31-60
+            {"receivable_amount": "300", "collection_amount": "0", "aging_days": 75},  # 61-90
+            {"receivable_amount": "400", "collection_amount": "0", "aging_days": 120}, # 90+
+        ]
+        result = _calculate_aging_buckets(rows)
+        assert result["0-30天"]   == Decimal("100")
+        assert result["31-60天"]  == Decimal("200")
+        assert result["61-90天"]  == Decimal("300")
+        assert result["90天以上"] == Decimal("400")
