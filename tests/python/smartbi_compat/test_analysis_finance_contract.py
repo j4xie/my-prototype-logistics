@@ -1855,3 +1855,69 @@ class TestAnalysisFinanceReceivableSmoke:
         assert data["overdueRanking"] == []
         assert data["agingChart"]["chartType"] == "BAR"
         assert data["trendChart"]["chartType"] == "LINE_BAR"
+
+
+class TestAnalysisFinanceReceivable:
+    """F999 byte-shape gate for receivable per-type path (analysisType=receivable).
+
+    Compare mode: dict-eq (Phase 2A foundation default; key order ignored).
+    Golden source: tests/fixtures/java-smartbi-golden/analysis-finance-F999-receivable.json
+    Recorded Apr 30 2026 against test env Java backend (port 10011).
+    """
+
+    def test_f999_receivable_data_keys_match_golden(self, client, monkeypatch):
+        """Verify all 6 envelope keys present (key order may differ — dict-eq below)."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return []
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance"
+            "?startDate=2025-01-01&endDate=2025-12-31&analysisType=receivable",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200, f"got {resp.status_code}: {resp.text[:300]}"
+        py_data_keys = set(resp.json()["data"].keys())
+
+        with io.open(GOLDEN_DIR / "analysis-finance-F999-receivable.json", encoding="utf-8") as f:
+            golden_response = json.load(f)["response"]
+            golden_data_keys = set(golden_response["data"].keys())
+        assert py_data_keys == golden_data_keys, (
+            f"data key set mismatch:\n"
+            f"  python: {sorted(py_data_keys)}\n"
+            f"  golden: {sorted(golden_data_keys)}"
+        )
+
+    def test_f999_receivable_byte_shape(self, client, monkeypatch):
+        """Full byte-shape compare on data block (envelope skipped per A.5 finding).
+        Mocks _query_finance_data to return [] (F999 has no AR data)."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return []
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/analysis/finance"
+            "?startDate=2025-01-01&endDate=2025-12-31&analysisType=receivable",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200
+
+        py_data = _strip_volatile(resp.json()["data"])
+        with io.open(GOLDEN_DIR / "analysis-finance-F999-receivable.json", encoding="utf-8") as f:
+            golden_response = json.load(f)["response"]
+            golden_data = _strip_volatile(golden_response["data"])
+
+        if py_data != golden_data:
+            # Pretty-print divergence to make Phase 2A debug fast
+            import difflib
+            py_str = json.dumps(py_data, ensure_ascii=False, indent=2, sort_keys=True)
+            golden_str = json.dumps(golden_data, ensure_ascii=False, indent=2, sort_keys=True)
+            diff = "\n".join(difflib.unified_diff(
+                golden_str.splitlines(), py_str.splitlines(),
+                fromfile="golden", tofile="python", lineterm="", n=3,
+            ))
+            pytest.fail(f"F999 receivable byte-shape mismatch:\n{diff}")
