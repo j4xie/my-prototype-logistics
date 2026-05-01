@@ -133,3 +133,56 @@ class TestDatasourceFields:
                      for k in set(py_body) | set(golden_body)
                      if py_body.get(k) != golden_body.get(k)}
             pytest.fail(f"BYTE MISMATCH (fields not-exist): {json.dumps(diffs, indent=2, ensure_ascii=False)[:2000]}")
+
+
+class TestSchemaHistory:
+    """F999 byte-shape gate for /datasource/{id}/history (not-exist case)."""
+
+    def test_f999_history_not_exist_data_keys_match_golden(self, client, monkeypatch):
+        async def fake_not_exist(_id, _p, _s):
+            return None
+        monkeypatch.setattr(
+            "smartbi_compat.api.datasource._query_schema_history_page",
+            fake_not_exist,
+        )
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/datasource/999999/history",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200, f"got {resp.status_code}: {resp.text[:300]}"
+
+        py_keys = list(resp.json().keys())
+        with io.open(GOLDEN_DIR / "datasource-F999-history-not-exist.json", encoding="utf-8") as f:
+            golden_keys = list(json.load(f).keys())
+
+        assert set(py_keys) >= {"code", "message", "data", "success"}, py_keys
+        assert set(golden_keys) >= {"code", "message", "data", "success"}, golden_keys
+
+    def test_f999_history_not_exist_byte_shape(self, client, monkeypatch):
+        async def fake_not_exist(_id, _p, _s):
+            return None
+        monkeypatch.setattr(
+            "smartbi_compat.api.datasource._query_schema_history_page",
+            fake_not_exist,
+        )
+
+        resp = client.get(
+            "/api/mobile/F999/smart-bi/datasource/999999/history",
+            headers={"Authorization": f"Bearer {_make_token('F999')}"},
+        )
+        assert resp.status_code == 200
+
+        py_body = _strip_volatile(resp.json())
+        with io.open(GOLDEN_DIR / "datasource-F999-history-not-exist.json", encoding="utf-8") as f:
+            golden_body = _strip_volatile(json.load(f))
+
+        for k in ("actionHint", "severity", "hintTarget"):
+            golden_body.pop(k, None)
+            py_body.pop(k, None)
+
+        if py_body != golden_body:
+            diffs = {k: {"py": py_body.get(k), "g": golden_body.get(k)}
+                     for k in set(py_body) | set(golden_body)
+                     if py_body.get(k) != golden_body.get(k)}
+            pytest.fail(f"BYTE MISMATCH (history not-exist): {json.dumps(diffs, indent=2, ensure_ascii=False)[:2000]}")
