@@ -1137,8 +1137,8 @@ class TestCostTrendArithmetic:
 
     Verifies period aggregation, sort-by-period-key behavior, stacked series
     structure, abs() defensive at aggregation level, and period_key format
-    for MONTH/QUARTER/WEEK/DAY (mid-year dates only — C1 ISO-year boundary
-    bug deferred to its own PR per brainstorm decision B-i).
+    for MONTH/QUARTER/WEEK/DAY (incl. year-boundary regression for WEEK
+    after the C1 calendar-year fix per `python-java-port.md` Rule 2).
     """
 
     def _run_chart(self, fake_finance, period="MONTH"):
@@ -1266,8 +1266,10 @@ class TestCostTrendArithmetic:
     def test_get_period_key_format_yyyy_mm_yyyy_qN_yyyy_Wnn(self):
         """Direct unit test of _get_period_key for all 4 period types.
 
-        WEEK uses mid-year date (2025-06-15) per brainstorm decision B-i to avoid
-        C1 ISO-year boundary bug (Rule 2 violation on main; deferred to its own PR).
+        WEEK covers both mid-year (no divergence) and year-boundary cases
+        (2024-12-30 / 2027-01-01) where ISO year ≠ calendar year. Verifies
+        the C1 fix per `python-java-port.md` Rule 2 (calendar year matches
+        Java `date.getYear()`).
 
         Java FinanceAnalysisServiceImpl.getPeriodKey line 1472-1487.
         """
@@ -1285,11 +1287,18 @@ class TestCostTrendArithmetic:
         assert _get_period_key(date(2025, 8, 20),  "QUARTER") == "2025-Q3"
         assert _get_period_key(date(2025, 11, 10), "QUARTER") == "2025-Q4"
 
-        # WEEK: yyyy-Wnn (ISO week, 2-digit zero-padded) — mid-year dates only
-        # 2025-06-15 (Sunday) is in ISO week 24 of calendar year 2025
+        # WEEK: yyyy-Wnn (ISO week 2-digit zero-padded, calendar year per Rule 2)
+        # Mid-year (no boundary divergence; ISO year == calendar year):
         assert _get_period_key(date(2025, 6, 15), "WEEK") == "2025-W24"
-        # 2025-01-15 (Wednesday) is in ISO week 03
         assert _get_period_key(date(2025, 1, 15), "WEEK") == "2025-W03"
+        # Year-end boundary (calendar=2024, ISO calendar=(2025, 1, 1)):
+        # Java date.getYear()=2024, weekOfYear=1 → "2024-W01"
+        # Pre-fix Python emitted "2025-W01" (Rule 2 violation); post-fix correct.
+        assert _get_period_key(date(2024, 12, 30), "WEEK") == "2024-W01"
+        # Year-start boundary (calendar=2027, ISO calendar=(2026, 53, 5)):
+        # Java date.getYear()=2027, weekOfYear=53 → "2027-W53"
+        # Pre-fix Python emitted "2026-W53"; post-fix correct.
+        assert _get_period_key(date(2027, 1, 1), "WEEK") == "2027-W53"
 
         # DAY: yyyy-MM-dd — Java line 1474-1476
         assert _get_period_key(date(2025, 6, 15), "DAY") == "2025-06-15"
