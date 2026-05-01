@@ -80,6 +80,64 @@ async def _query_field_definitions(datasource_id: int) -> Optional[list]:
         return [dict(r) for r in rows]
 
 
+async def _query_schema_history_page(
+    datasource_id: int, page: int, size: int
+) -> Optional[dict]:
+    """Query smart_bi_schema_history with pagination, default ORDER BY created_at DESC.
+
+    Mirrors Java SmartBiSchemaServiceImpl.getSchemaHistory (line 289-298):
+      1. Check datasource exists (Java line 293) — returns None if not
+      2. Query findByDatasourceIdOrderByCreatedAtDesc with Pageable
+      3. Apply soft-delete filter
+
+    Returns Spring PageImpl-shaped dict (built via _build_page_impl).
+    Returns None if datasource not exist.
+
+    Note: First version supports default sort only (created_at DESC). Spring
+    `?sort=field,direction` parsing deferred — see spec §3.5 backlog.
+    """
+    pool = await _get_cretas_pool()
+    if pool is None:
+        return None
+
+    async with pool.acquire() as conn:
+        exists = await conn.fetchval(
+            "SELECT 1 FROM smart_bi_datasource WHERE id = $1 AND deleted_at IS NULL",
+            datasource_id,
+        )
+        if not exists:
+            return None
+
+        # Total count for pagination metadata
+        total = await conn.fetchval(
+            """
+            SELECT COUNT(*) FROM smart_bi_schema_history
+            WHERE datasource_id = $1 AND deleted_at IS NULL
+            """,
+            datasource_id,
+        )
+
+        # Page rows (default ORDER BY created_at DESC per Java repo method)
+        rows = await conn.fetch(
+            """
+            SELECT * FROM smart_bi_schema_history
+            WHERE datasource_id = $1 AND deleted_at IS NULL
+            ORDER BY created_at DESC
+            LIMIT $2 OFFSET $3
+            """,
+            datasource_id,
+            size,
+            page * size,
+        )
+
+        return _build_page_impl(
+            content=[_history_to_json(dict(r)) for r in rows],
+            page=page,
+            size=size,
+            total=total,
+        )
+
+
 # ============================================================
 # Section 2: DTO transformers (snake_case DB → camelCase JSON)
 # Key order matches golden recording (Lombok @Data getter reflection order)
@@ -118,6 +176,68 @@ def _field_def_to_json(row: dict) -> dict:
     }
 
 
+def _history_to_json(row: dict) -> dict:
+    """Mirror Lombok @Data getter reflection order for SmartBiSchemaHistory.
+
+    Field order verified against F999 golden recording (Phase C.2). If golden
+    differs from this order, update both helpers atomically.
+    """
+    return {
+        "id": row["id"],
+        "datasourceId": row["datasource_id"],
+        "changeType": row["change_type"],
+        "versionBefore": row.get("version_before"),
+        "versionAfter": row.get("version_after"),
+        "oldSchema": row.get("old_schema"),
+        "newSchema": row.get("new_schema"),
+        "ddlExecuted": row.get("ddl_executed"),
+        "createdBy": row.get("created_by"),
+        "changeDescription": row.get("change_description"),
+        "isReversible": row["is_reversible"],
+        "isApplied": row["is_applied"],
+        "errorMessage": row.get("error_message"),
+        "createdAt": row["created_at"].isoformat() if row.get("created_at") else None,
+        "updatedAt": row["updated_at"].isoformat() if row.get("updated_at") else None,
+        "deletedAt": row["deleted_at"].isoformat() if row.get("deleted_at") else None,
+    }
+
+
+def _build_page_impl(
+    content: list, page: int, size: int, total: int
+) -> dict:
+    """Mirror Spring PageImpl JSON serialization shape.
+
+    Field order verified against F999 golden recording (Phase C.2). Spring's
+    PageImpl uses Jackson default reflection order on getter methods — typically:
+      content, pageable, totalElements, totalPages, last, size, number, sort,
+      first, numberOfElements, empty
+
+    Sort defaults to UNSORTED (Spring's default when no sort param provided).
+    """
+    total_pages = (total + size - 1) // size if size > 0 else 0
+    sort_obj = {"empty": True, "sorted": False, "unsorted": True}
+    return {
+        "content": content,
+        "pageable": {
+            "sort": sort_obj,
+            "offset": page * size,
+            "pageNumber": page,
+            "pageSize": size,
+            "paged": True,
+            "unpaged": False,
+        },
+        "totalElements": total,
+        "totalPages": total_pages,
+        "last": (page >= total_pages - 1) if total_pages > 0 else True,
+        "size": size,
+        "number": page,
+        "sort": sort_obj,
+        "first": page == 0,
+        "numberOfElements": len(content),
+        "empty": len(content) == 0,
+    }
+
+
 # ============================================================
 # Section 3: Route handlers
 # ============================================================
@@ -146,3 +266,31 @@ async def get_datasource_fields(
             message=f"Get field definitions failed: 数据源不存在: {datasource_id}",
         )
     return wrap_response(data=[_field_def_to_json(r) for r in rows])
+
+
+@router.get("/api/mobile/{factory_id}/smart-bi/datasource/{datasource_id}/history")
+async def get_schema_history(
+    factory_id: str,
+    datasource_id: int,
+    page: int = Query(0, ge=0),
+    size: int = Query(20, ge=1, le=100),
+    auth: AuthContext = Depends(verify_jwt_and_factory),
+) -> dict:
+    """Java reference: SmartBIAnalysisController.getSchemaHistory line 764-780.
+
+    Behavior mirror:
+    - datasource not exist → 200 + success=false + sanitized error message (code=400 per Sub-B.2 finding)
+    - empty history (datasource exists, no history) → 200 + success=true + PageImpl(content=[])
+    - default sort: createdAt DESC (Java findByDatasourceIdOrderByCreatedAtDesc)
+
+    Pagination: ?page=N&size=N (defaults: page=0, size=20). Sort param deferred (spec §3.5).
+    """
+    page_data = await _query_schema_history_page(datasource_id, page, size)
+    if page_data is None:
+        return wrap_response(
+            data=None,
+            success=False,
+            code=400,
+            message=f"Get history failed: 数据源不存在: {datasource_id}",
+        )
+    return wrap_response(data=page_data)
