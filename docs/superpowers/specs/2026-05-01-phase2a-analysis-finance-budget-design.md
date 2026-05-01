@@ -322,17 +322,17 @@ Note: `type_` parameter name (with trailing underscore) avoids Python `type` bui
    - **Note (cost-style I-1 fix mirror)**: Java line 1001-1004 emits `budget`/`actual`/`variance` raw (no setScale), only `executionRate` uses SCALE=4 from divide. DB columns precision=15 scale=2，accumulator preserves scale 2 naturally. **No extra quantize on those 3 fields**.
    - Jackson serializes `Decimal("33.3300")` (4-decimal scale) as `33.33` (trailing-zeros stripped in JSON output). `_decimal_to_number(Decimal("33.3300"))` → `float(33.33)` → JSON `33.33`. Byte parity holds via `_decimal_to_number`.
    - Pass raw `executionRate` (4-decimal precision) into `_determine_budget_achievement_alert(executionRate)` (REUSED helper line 449-464) to match Java line 1009 which calls helper before any setScale (boundary precision matters for rates near 100.00 or 120.00).
-5. `options: dict`:
+5. `options: dict` (LinkedHashMap put-order for outer, Map.of(2) hash order for series items per Rule 8):
    ```python
    {
        "groupedBar": True,
        "series": [
-           {"name": "预算", "color": "#5470c6"},
-           {"name": "实际", "color": "#91cc75"},
+           {"color": "#5470c6", "name": "预算"},   # Map.of(2) hash order: [color, name], NOT param order
+           {"color": "#91cc75", "name": "实际"},   # verified via F999 golden line 13-20 + F001 golden line 13-20
        ],
    }
    ```
-   Note: Java line 1015-1018 uses `Map.of("name", X, "color", Y)` — `Map.of(2)` Jackson 序列化 put-order = `[name, color]`.
+   **Rule 8 caveat**: Java line 1015-1018 source code `Map.of("name", X, "color", Y)` reads `[name, color]` order, **but Jackson serializes Map.of(2) by hash, NOT param order**. Recorded F999/F001 goldens both show `{"color": ..., "name": ...}`. Python literal MUST mirror the recorded order.
 6. Return `_new_chart_config_dict`:
    - `chart_type = "BAR"`, `title = "预算 vs 实际对比"`.
    - `xaxis_field = "category"`, `yaxis_field = "budget"`.
@@ -350,20 +350,22 @@ Note: `type_` parameter name (with trailing underscore) avoids Python `type` bui
    waterfall  = await _get_budget_execution_waterfall(factory_id, year)
    comparison = await _get_budget_vs_actual_chart(factory_id, start_date, end_date)
    ```
-3. Return 5-key dict. **Jackson HashMap-hash order TBD from F999 golden recording** — Java Controller `result = new HashMap<>()` 是 unordered，put-order 是 `startDate, endDate, metrics, waterfall, comparison`，但 Jackson 实际序列化按 hash 顺序。Python port 必须 mirror golden 实际顺序 (e.g., cost golden 顺序是 `[endDate, trendChart, startDate, structureChart]` NOT put-order)。
+3. Return 5-key dict. **Jackson HashMap-hash order verified via 2026-05-02 golden recording** — Java Controller `result = new HashMap<>()` 是 unordered，put-order 是 `[startDate, endDate, metrics, waterfall, comparison]`，**but Jackson 实际序列化按 hash 顺序为 `[comparison, endDate, waterfall, metrics, startDate]`** (recorded F999 golden line 4-107, F001 golden identical due to test-env empty data).
 
 ```python
 return {
-    # Order TBD post-golden recording. Placeholder shape:
-    "endDate":     end_date.isoformat(),
-    "metrics":     metrics,
-    "waterfall":   waterfall,
-    "comparison":  comparison,
-    "startDate":   start_date.isoformat(),
+    # Verified Jackson hash order from F999/F001 budget goldens (2026-05-02 recording)
+    "comparison": comparison,
+    "endDate":    end_date.isoformat(),
+    "waterfall":  waterfall,
+    "metrics":    metrics,
+    "startDate":  start_date.isoformat(),
 }
 ```
 
-**实施 prerequisite**: PR-A 实施前必须先用 `record-java-golden.sh` 录到 F999 golden，确认实际 key 顺序。Plan task 中第 1 个 step 就是 record golden，再写 dispatcher。
+**Goldens recorded** at:
+- `tests/fixtures/java-smartbi-golden/analysis-finance-F999-budget.json` (test env 10011)
+- `tests/fixtures/java-smartbi-golden/analysis-finance-F001-budget.json` (test env 10011 — prod 10010 systemd inactive at recording time, deferred F001-prod re-recording for post-deploy smoke per §5.4)
 
 ### 3.7 Helper 命名 + 复用决策（F3 解释 — spec 显式条款）
 
@@ -407,107 +409,44 @@ if analysisType == "budget":
 
 F999 是空数据 factory，所有 budget 查询返回空集，所以 sub-service 输出全是 "empty state shape"。
 
-**IC2 envelope shape note**: Sister goldens have **inconsistent envelope shapes** (cost/profit goldens flat-style `{code, success, message, timestamp, data}` per `analysis-finance-F999-cost.json:1-5`; receivable golden wrapped-style `{verb, path, factory, response: {...}}` per `analysis-finance-F999-receivable.json:1-9`). The `record-java-golden.sh` script controls envelope output. PR-A step 1 (record F999) determines actual envelope shape. **Below is illustrative SHAPE OF `data.{...}` (the inner per-type response) only**; outer envelope structure mirrors whatever `record-java-golden.sh` produces.
+**Recorded goldens (truth source)**: Both F999 + F001 golden fixtures recorded 2026-05-02 from test env Java 10011. F001 prod re-recording deferred (10010 systemd inactive at recording time). Goldens at:
+- `tests/fixtures/java-smartbi-golden/analysis-finance-F999-budget.json` (113 lines)
+- `tests/fixtures/java-smartbi-golden/analysis-finance-F001-budget.json` (113 lines, identical to F999 due to test-env empty data)
 
-```jsonc
-// tests/fixtures/java-smartbi-golden/analysis-finance-F999-budget.json
-// (outer envelope - flat OR wrapped - resolved at recording time)
-{
-  // ... outer envelope keys per record-java-golden.sh ...
-  "data": {
-    // Jackson HashMap-hash order TBD from actual recording
-    "endDate":   "2025-12-31",
-    "startDate": "2025-01-01",
-    "metrics": [
-      {
-        "metricCode": "BUDGET_EXECUTION",
-        "metricName": "预算执行率",
-        "value": 0,
-        "formattedValue": "0.00%",
-        "unit": "%",
-        "changePercent": null,
-        "changeDirection": null,
-        "changeValue": null,
-        "alertLevel": "GREEN",
-        "dimensionValue": null,
-        "description": "实际支出占预算的比例"
-      },
-      {
-        "metricCode": "BUDGET_VARIANCE",
-        "metricName": "预算差异",
-        "value": 0,
-        "formattedValue": "0.00",
-        "unit": "元",
-        "changePercent": null,
-        "changeDirection": null,
-        "changeValue": null,
-        "alertLevel": "GREEN",
-        "dimensionValue": null,
-        "description": "实际支出与预算的差额"
-      },
-      {
-        "metricCode": "BUDGET_VARIANCE_RATE",
-        "metricName": "预算偏差率",
-        "value": 0,
-        "formattedValue": "0.00%",
-        "unit": "%",
-        "changePercent": null,
-        "changeDirection": null,
-        "changeValue": null,
-        "alertLevel": "GREEN",
-        "dimensionValue": null,
-        "description": "预算差异占预算的比例"
-      },
-      {
-        "metricCode": "BUDGET_REMAINING",
-        "metricName": "预算剩余",
-        "value": 0,
-        "formattedValue": "0.00",
-        "unit": "元",
-        "changePercent": null,
-        "changeDirection": null,
-        "changeValue": null,
-        "alertLevel": "GREEN",
-        "dimensionValue": null,
-        "description": "剩余可用预算额度"
-      }
-    ],
-    "waterfall": {
-      "chartType": "WATERFALL",
-      "title": "2025年预算执行瀑布图",
-      "data": [
-        {"name": "年度预算", "value": 0, "type": "total"},
-        {"name": "剩余预算", "value": 0, "type": "total"}
-      ],
-      "seriesField": null,
-      "xaxisField": "name",
-      "yaxisField": "value",
-      "options": {
-        "waterfallType": true,
-        "increaseColor": "#91cc75",
-        "decreaseColor": "#ee6666",
-        "totalColor": "#5470c6"
-      }
-    },
-    "comparison": {
-      "chartType": "BAR",
-      "title": "预算 vs 实际对比",
-      "data": [],
-      "seriesField": null,
-      "xaxisField": "category",
-      "yaxisField": "budget",
-      "options": {
-        "groupedBar": true,
-        "series": [
-          {"name": "预算", "color": "#5470c6"},
-          {"name": "实际", "color": "#91cc75"}
-        ]
-      }
-    }
-  },
-  // ... rest of outer envelope ...
-}
+**Verified Jackson key orders** (impl MUST mirror these exactly per Rule 8):
+
 ```
+Outer envelope (LinkedHashMap-style ApiResponse):
+  [code, message, data, timestamp, success, actionHint, severity, hintTarget]
+
+Inner data dispatcher (5-key Jackson HashMap-hash order):
+  [comparison, endDate, waterfall, metrics, startDate]
+
+ChartConfig DTO (Lombok @Data declaration order, used by waterfall + comparison):
+  [chartType, title, seriesField, data, options, xaxisField, yaxisField]
+
+MetricResult DTO (Lombok @Data declaration order, 11 fields):
+  [metricCode, metricName, value, formattedValue, unit,
+   changePercent, changeDirection, changeValue, alertLevel,
+   dimensionValue, description]
+
+waterfall.data items (LinkedHashMap put-order from createWaterfallItem):
+  [name, value, type]
+
+waterfall.options (LinkedHashMap put-order):
+  [waterfallType, increaseColor, decreaseColor, totalColor]
+
+comparison.options (LinkedHashMap put-order):
+  [groupedBar, series]
+
+comparison.options.series[i] Map.of(2) (Rule 8 hash order — NOT param order):
+  [color, name]   ← Java source `Map.of("name", X, "color", Y)` 但 Jackson 输出 [color, name]
+
+comparison.data items (when non-empty, LinkedHashMap put-order):
+  [category, budget, actual, variance, executionRate, alertLevel]
+```
+
+**Numeric byte-shape note**: All `value` fields output as `0.0` (float, not int) for empty data. Python `_decimal_to_number(Decimal("0.00"))` returns `int(0)` → JSON `0`. dict-eq compares `0.0 == 0` → True. Per Rule 4, this is acceptable under dict-eq gate. strict-byte gate would surface this divergence (Phase 2A backlog).
 
 **Volatile keys to strip on compare** (MC1 fix): Per-type goldens contain only `timestamp` as volatile (no `generatedAt`/`lastUpdated` keys exist in per-type response). The shared `_strip_volatile()` helper (analysis_finance.py:1075-1099) strips all 4 volatile keys (`generatedAt`, `lastUpdated`, `cacheExpireAt`, `timestamp`) uniformly — it's a **no-op on absent keys**, so existing helper reuses cleanly without per-type branching.
 
