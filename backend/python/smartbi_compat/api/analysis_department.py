@@ -108,3 +108,59 @@ async def _query_department_daily_trend(
     async with pool.acquire() as conn:
         rows = await conn.fetch(sql, factory_id, start_date, end_date)
     return [dict(r) for r in rows]
+
+
+def _aggregate_department_data(
+    rows: list[dict],
+) -> dict[str, dict]:
+    """Mirror Java DepartmentAnalysisServiceImpl.aggregateDepartmentData (line 546-567).
+
+    ⚠️ C1 lock — headcount aggregation = MAX across all records in window per
+    department, NOT SUM, NOT latest-by-date. Java code comment line 560
+    (`人员数取最新记录` "use latest record") is MISLEADING — actual impl
+    (line 561-562) is `if (data.getHeadcount() > agg.headcount) agg.headcount = ...`.
+
+    ⚠️ I3 lock — SELECT * pulls precomputed `per_capita_sales` + `per_capita_cost`
+    columns. This function MUST IGNORE them. Per-capita is recomputed in
+    efficiencyMatrix from aggregated salesAmount / costAmount / headcount.
+
+    ⚠️ Rule 1 lock — All null fields default to `Decimal("0")` via `is None`
+    ternary, NOT `or`. Java line 553-558 treats null as ZERO via
+    `data.getX() != null ? data.getX() : BigDecimal.ZERO`.
+    """
+    result: dict[str, dict] = {}    # LinkedHashMap → Python 3.7+ dict insertion-order
+
+    for row in rows:
+        dept = row["department"]
+        agg = result.setdefault(dept, {
+            "salesAmount":  Decimal("0"),
+            "salesTarget":  Decimal("0"),
+            "costAmount":   Decimal("0"),
+            "headcount":    0,
+        })
+
+        # Rule 1: explicit is-None ternary
+        agg["salesAmount"] += (
+            _to_decimal(row["sales_amount"])
+            if row.get("sales_amount") is not None
+            else Decimal("0")
+        )
+        agg["salesTarget"] += (
+            _to_decimal(row["sales_target"])
+            if row.get("sales_target") is not None
+            else Decimal("0")
+        )
+        agg["costAmount"] += (
+            _to_decimal(row["cost_amount"])
+            if row.get("cost_amount") is not None
+            else Decimal("0")
+        )
+
+        # C1 — running MAX headcount (NOT sum, NOT latest-by-date)
+        hc = row.get("headcount")
+        if hc is not None and int(hc) > agg["headcount"]:
+            agg["headcount"] = int(hc)
+
+        # I3 — per_capita_sales / per_capita_cost columns IGNORED (recompute later)
+
+    return result
