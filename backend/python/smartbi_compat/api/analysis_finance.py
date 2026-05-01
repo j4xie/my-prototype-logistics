@@ -853,9 +853,11 @@ async def _get_category_comparison_chart(
             {"yAxisIndex": 1, "type": "line", "name": "同比增长率", "color": "#ee6666"},
         ],
         "summary": {
-            "currentTotal": _decimal_to_number(current_total.quantize(Decimal("0.01"), ROUND_HALF_UP)),
-            "compareTotal": _decimal_to_number(compare_total.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            # Map.of(3) hash order recorded from live Java F999 golden:
+            # ['totalYoyGrowthRate', 'compareTotal', 'currentTotal']
             "totalYoyGrowthRate": _decimal_to_number(total_yoy_growth_rate.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "compareTotal": _decimal_to_number(compare_total.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "currentTotal": _decimal_to_number(current_total.quantize(Decimal("0.01"), ROUND_HALF_UP)),
         },
     }
 
