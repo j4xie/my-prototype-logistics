@@ -193,3 +193,27 @@ def _calculate_completion_rate(
     return ((actual * Decimal("100")) / target).quantize(
         _SCALE, rounding=_QUANTIZE_HALF_UP
     )
+
+
+def _determine_target_completion_alert(value: Decimal) -> str:
+    """Mirror Java MetricCalculatorServiceImpl.determineAlertLevel(TARGET_COMPLETION)
+    (line 458-461):
+
+      double v = value.doubleValue();
+      if (v < 60) return RED;
+      if (v < 85) return YELLOW;
+      return GREEN;
+
+    ⚠️ T1 lock — 60/85 Java HARDCODED, NOT from alert_thresholds.json (which has
+    `department.target_completion.yellow=80` — 不同概念, 给 /alerts endpoint 用的).
+    Inline const 防 sister bug.
+
+    ⚠️ Rule 7 lock — 阈值 60 / 85 是 INTEGER → `float(value)` 比较跟 Java
+    `value.doubleValue()` 一致 (Rule 7 explicitly notes integer thresholds OK).
+    """
+    v = float(value)
+    if v < float(_DEPARTMENT_TARGET_COMPLETION_RED):
+        return "RED"
+    if v < float(_DEPARTMENT_TARGET_COMPLETION_YELLOW):
+        return "YELLOW"
+    return "GREEN"
