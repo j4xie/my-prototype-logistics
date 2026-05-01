@@ -411,3 +411,105 @@ async def _get_department_completion_rates(
     # Java line 198: results.sort(by value desc)
     results.sort(key=lambda r: r["value"], reverse=True)
     return results
+
+
+async def _get_department_efficiency_matrix(
+    factory_id: str, start_date: date, end_date: date
+) -> dict:
+    """Mirror Java DepartmentAnalysisServiceImpl.getDepartmentEfficiencyMatrix (line 206-283).
+
+    Empty rows → _create_empty_chart("SCATTER", "部门效率矩阵").
+
+    Per-point loop with C3 quadrant recompute (DO NOT lift avg out).
+
+    options.quadrantLines = Map.of(2): {xAxis, yAxis}             ⚠️ I1 SALT flip risk
+    options.quadrantLabels = Map.of(4): {q1, q2, q3, q4}          ⚠️ I1 SALT flip risk
+
+    Python emits canonical insertion order matching first-record golden;
+    PR-B detects via Java backend restart cycle (F999 empty doesn't trigger).
+    """
+    rows = await _query_department_full(factory_id, start_date, end_date)
+    if not rows:
+        return _create_empty_chart("SCATTER", "部门效率矩阵")
+
+    aggregated = _aggregate_department_data(rows)
+
+    chart_data = []
+    total_per_capita_sales = Decimal("0")
+    total_per_capita_cost  = Decimal("0")
+    department_count = 0
+
+    for dept, agg in aggregated.items():
+        if agg["headcount"] > 0:
+            per_capita_sales = (agg["salesAmount"] / Decimal(agg["headcount"])).quantize(
+                _SCALE, rounding=_QUANTIZE_HALF_UP
+            )
+            per_capita_cost = (agg["costAmount"] / Decimal(agg["headcount"])).quantize(
+                _SCALE, rounding=_QUANTIZE_HALF_UP
+            )
+        else:
+            per_capita_sales = Decimal("0")
+            per_capita_cost  = Decimal("0")
+
+        # Java point LinkedHashMap put-order line 236-242
+        point = {
+            "department":     dept,
+            "perCapitaSales": _decimal_to_number(
+                per_capita_sales.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+            "perCapitaCost":  _decimal_to_number(
+                per_capita_cost.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+            "salesAmount":    _decimal_to_number(
+                agg["salesAmount"].quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+            "headcount":      agg["headcount"],
+            "quadrant":       _determine_quadrant(
+                per_capita_sales, per_capita_cost, aggregated
+            ),
+        }
+        chart_data.append(point)
+
+        total_per_capita_sales += per_capita_sales
+        total_per_capita_cost  += per_capita_cost
+        department_count += 1
+
+    if department_count > 0:
+        avg_per_capita_sales = (
+            total_per_capita_sales / Decimal(department_count)
+        ).quantize(_SCALE, rounding=_QUANTIZE_HALF_UP)
+        avg_per_capita_cost = (
+            total_per_capita_cost / Decimal(department_count)
+        ).quantize(_SCALE, rounding=_QUANTIZE_HALF_UP)
+    else:
+        avg_per_capita_sales = Decimal("0")
+        avg_per_capita_cost  = Decimal("0")
+
+    options = {
+        "quadrantLines": {
+            "xAxis": _decimal_to_number(
+                avg_per_capita_sales.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+            "yAxis": _decimal_to_number(
+                avg_per_capita_cost.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+            ),
+        },
+        "quadrantLabels": {
+            "q1": "高投入高产出 - 需优化效率",
+            "q2": "低投入低产出 - 表现平庸",
+            "q3": "高投入低产出 - 需重点关注",
+            "q4": "低投入高产出 - 明星部门",
+        },
+        "bubbleSizeField": "salesAmount",
+        "colorField":      "department",
+    }
+
+    return {
+        "chartType":   "SCATTER",
+        "title":       "部门效率矩阵",
+        "xAxisField":  "perCapitaSales",
+        "yAxisField":  "perCapitaCost",
+        "seriesField": "department",
+        "data":        chart_data,
+        "options":     options,
+    }
