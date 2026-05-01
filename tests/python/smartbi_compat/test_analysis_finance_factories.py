@@ -1551,3 +1551,170 @@ class TestPayableAgingBucketDepth:
         assert buckets["31-60天"]  == 200
         assert buckets["61-90天"]  == 300
         assert buckets["90天以上"] == 400
+
+
+class TestPayableMetricsArithmeticDepth:
+    """PR-B depth — formula arithmetic for 2 payable metrics.
+
+    Mirror Java FinanceAnalysisServiceImpl.getPayableMetrics (line 870-918).
+    Tests AP_BALANCE basic arithmetic + AP_TURNOVER_DAYS multi-stage Decimal pipeline.
+
+    Both metrics hardcode alertLevel="GREEN" regardless of value (no threshold helpers
+    for payable — distinct from receivable which has 4 alert helpers).
+    """
+
+    @staticmethod
+    async def _run_metrics(monkeypatch, rows):
+        """Run _get_payable_metrics with _query_finance_payable_data mocked."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, end_date):
+            return rows
+        monkeypatch.setattr(analysis_finance, "_query_finance_payable_data", fake_query)
+        return await analysis_finance._get_payable_metrics("F001", date(2025, 12, 31))
+
+    # ===== AP_BALANCE arithmetic =====
+
+    @pytest.mark.asyncio
+    async def test_ap_balance_basic_subtraction(self, monkeypatch):
+        """AP_BALANCE = totalPayable - totalPayment. 3000 payable - 1200 payment = 1800."""
+        rows = [{"payable_amount": "3000", "payment_amount": "1200", "aging_days": 30}]
+        metrics = await self._run_metrics(monkeypatch, rows)
+        assert metrics[0]["metricCode"] == "AP_BALANCE"
+        assert metrics[0]["value"] == 1800
+        assert metrics[0]["formattedValue"] == "1,800.00"  # thousands separator
+        assert metrics[0]["unit"] == "元"
+        assert metrics[0]["alertLevel"] == "GREEN"  # hardcoded
+
+    @pytest.mark.asyncio
+    async def test_ap_balance_negative_when_overpaid(self, monkeypatch):
+        """totalPayment > totalPayable → ap_balance < 0. AP_BALANCE keeps GREEN
+        (Java line 877 hardcoded), no alert flip."""
+        rows = [{"payable_amount": "1000", "payment_amount": "1500", "aging_days": 30}]
+        metrics = await self._run_metrics(monkeypatch, rows)
+        assert metrics[0]["value"] == -500
+        assert metrics[0]["alertLevel"] == "GREEN"
+
+    @pytest.mark.asyncio
+    async def test_ap_balance_quantize_half_up_two_decimals(self, monkeypatch):
+        """Decimal('0.005').quantize(0.01, HALF_UP) = 0.01.
+        payable=1000.005, payment=0 → balance=1000.005 → 1000.01."""
+        rows = [{"payable_amount": "1000.005", "payment_amount": "0", "aging_days": 30}]
+        metrics = await self._run_metrics(monkeypatch, rows)
+        assert metrics[0]["value"] == 1000.01
+
+    @pytest.mark.asyncio
+    async def test_ap_balance_empty_data_zero(self, monkeypatch):
+        """No rows → totalPayable=0, totalPayment=0, balance=0."""
+        rows = []
+        metrics = await self._run_metrics(monkeypatch, rows)
+        assert metrics[0]["value"] == 0
+        assert metrics[0]["formattedValue"] == "0.00"
+        assert metrics[0]["alertLevel"] == "GREEN"
+
+    @pytest.mark.asyncio
+    async def test_ap_balance_aggregates_across_rows(self, monkeypatch):
+        """Multiple rows → sums applied per side: payable summed, payment summed, then subtracted."""
+        rows = [
+            {"payable_amount": "1000", "payment_amount": "200", "aging_days": 30},
+            {"payable_amount": "500",  "payment_amount": "100", "aging_days": 60},
+            {"payable_amount": "300",  "payment_amount": "50",  "aging_days": 90},
+        ]
+        metrics = await self._run_metrics(monkeypatch, rows)
+        # totalPayable = 1800, totalPayment = 350, balance = 1450
+        assert metrics[0]["value"] == 1450
+
+    # ===== AP_TURNOVER_DAYS arithmetic =====
+
+    @pytest.mark.asyncio
+    async def test_ap_turnover_days_zero_guard_when_no_payment(self, monkeypatch):
+        """totalPayment=0 → daily_payment=0 → zero-guard skips division → turnover_days=0.
+
+        Java line 904: `if dailyPayment > 0` ternary.
+        """
+        rows = [{"payable_amount": "1000", "payment_amount": "0", "aging_days": 30}]
+        metrics = await self._run_metrics(monkeypatch, rows)
+        assert metrics[1]["metricCode"] == "AP_TURNOVER_DAYS"
+        assert metrics[1]["value"] == 0
+        assert metrics[1]["formattedValue"] == "0天"
+        assert metrics[1]["unit"] == "天"
+        assert metrics[1]["alertLevel"] == "GREEN"
+
+    @pytest.mark.asyncio
+    async def test_ap_turnover_days_full_formula(self, monkeypatch):
+        """Multi-stage Decimal pipeline:
+
+        totalPayable = 73000, totalPayment = 365, ap_balance = 72635
+        avg_payable = 72635 / 2 = 36317.5  → quantize(0.0001) = 36317.5000
+        daily_payment = 365 / 365 = 1.0     → quantize(0.0001) = 1.0000
+        turnover = 36317.5 / 1 = 36317.5    → quantize(0.0001) = 36317.5000
+        final value = quantize(Decimal("1"), HALF_UP) = 36318 (HALF_UP rounds .5 up)
+        """
+        rows = [{"payable_amount": "73000", "payment_amount": "365", "aging_days": 30}]
+        metrics = await self._run_metrics(monkeypatch, rows)
+        assert metrics[1]["value"] == 36318
+        assert metrics[1]["formattedValue"] == "36318天"
+
+    @pytest.mark.asyncio
+    async def test_ap_turnover_days_simple_full_year(self, monkeypatch):
+        """Round-numbers test:
+        payable=730, payment=365 → balance=365 → avg=182.5 → daily=1 → turnover=182.5 → 183 (HALF_UP)
+        """
+        rows = [{"payable_amount": "730", "payment_amount": "365", "aging_days": 30}]
+        metrics = await self._run_metrics(monkeypatch, rows)
+        # ap_balance = 730 - 365 = 365
+        # avg_payable = 365/2 = 182.5 → quantize(0.0001) = 182.5000
+        # daily_payment = 365/365 = 1.0 → quantize(0.0001) = 1.0000
+        # turnover = 182.5/1 = 182.5 → quantize(0.0001) = 182.5000
+        # final = quantize(Decimal("1"), HALF_UP) = 183 (.5 rounds up)
+        assert metrics[1]["value"] == 183
+
+    @pytest.mark.asyncio
+    async def test_ap_turnover_days_negative_balance(self, monkeypatch):
+        """Overpaid case: balance<0 → avg_payable<0 → turnover<0.
+        AlertLevel still GREEN (hardcoded line 920)."""
+        rows = [{"payable_amount": "100", "payment_amount": "365", "aging_days": 30}]
+        metrics = await self._run_metrics(monkeypatch, rows)
+        # ap_balance = 100 - 365 = -265
+        # avg_payable = -265/2 = -132.5 → quantize(0.0001) = -132.5000
+        # daily_payment = 365/365 = 1.0 → quantize(0.0001) = 1.0000
+        # turnover = -132.5 / 1 = -132.5 → quantize(0.0001) = -132.5000
+        # final quantize(1, HALF_UP) on -132.5 → Decimal HALF_UP rounds toward higher absolute → -133
+        assert metrics[1]["value"] == -133
+        assert metrics[1]["alertLevel"] == "GREEN"
+
+    @pytest.mark.asyncio
+    async def test_metrics_envelope_has_11_fields(self, monkeypatch):
+        """Both metrics emit all 11 Java MetricResult fields (per Lombok @Data)."""
+        rows = []
+        metrics = await self._run_metrics(monkeypatch, rows)
+        expected_keys = {
+            "metricCode", "metricName", "value", "formattedValue", "unit",
+            "changePercent", "changeDirection", "changeValue",
+            "alertLevel", "dimensionValue", "description",
+        }
+        for m in metrics:
+            assert set(m.keys()) == expected_keys
+
+    @pytest.mark.asyncio
+    async def test_metrics_descriptions_match_java(self, monkeypatch):
+        """Lock exact Chinese descriptions from Java line 882/909."""
+        rows = []
+        metrics = await self._run_metrics(monkeypatch, rows)
+        descs = [m["description"] for m in metrics]
+        assert descs == [
+            "尚未支付的应付账款总额",  # AP_BALANCE
+            "平均付款周期",                # AP_TURNOVER_DAYS
+        ]
+
+    @pytest.mark.asyncio
+    async def test_metrics_value_is_int_when_integral(self, monkeypatch):
+        """Rule 4 — _decimal_to_number returns int for integer-valued Decimals.
+        AP_TURNOVER_DAYS quantizes to scale=1 (Decimal('1')) so result is always integer.
+        AP_BALANCE may be float when fractional, int when whole.
+        """
+        rows = [{"payable_amount": "100", "payment_amount": "50", "aging_days": 30}]
+        metrics = await self._run_metrics(monkeypatch, rows)
+        assert metrics[0]["value"] == 50
+        assert isinstance(metrics[0]["value"], int)  # 50.00 → integral → int
+        assert isinstance(metrics[1]["value"], int)  # turnover_days always integer per scale=1
