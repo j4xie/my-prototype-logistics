@@ -2302,3 +2302,170 @@ class TestBudgetMetricsArithmetic:
         # remaining ≥ 0 → GREEN
         assert m["BUDGET_REMAINING"]["value"] == 250
         assert m["BUDGET_REMAINING"]["alertLevel"] == "GREEN"
+
+
+class TestBudgetExecutionWaterfallArithmetic:
+    """Unit tests for _get_budget_execution_waterfall arithmetic branches.
+
+    Spec ref: §5.2 + §3.4 algorithm.
+
+    Verifies 12-month iteration, decrease-skip threshold, remaining decrement,
+    null record_date defensive skip (intentional Java NPE divergence).
+    """
+
+    def _run_chart(self, fake_finance, year=2025):
+        """Run _get_budget_execution_waterfall with _query_finance_data mocked."""
+        import asyncio
+        from smartbi_compat.api import analysis_finance as af
+
+        original = af._query_finance_data
+        try:
+            af._query_finance_data = fake_finance
+            return asyncio.run(af._get_budget_execution_waterfall("F", year))
+        finally:
+            af._query_finance_data = original
+
+    def test_empty_data_returns_two_total_items(self):
+        """Empty rows → chart_data length=2 (年度预算 0 + 剩余预算 0).
+
+        annual_budget=0, monthly_actual={}, no decrease items (loop skips all),
+        only the two `total` bookends remain.
+        """
+        async def fake_empty(*_a, **_k): return []
+        chart = self._run_chart(fake_empty)
+        assert chart["chartType"] == "WATERFALL"
+        assert chart["title"] == "2025年预算执行瀑布图"
+        assert len(chart["data"]) == 2
+        assert chart["data"][0]["name"] == "年度预算"
+        assert chart["data"][0]["value"] == 0
+        assert chart["data"][0]["type"] == "total"
+        assert chart["data"][-1]["name"] == "剩余预算"
+        assert chart["data"][-1]["value"] == 0
+        assert chart["data"][-1]["type"] == "total"
+
+    def test_full_year_actuals_emit_14_items(self):
+        """12 months each with actual>0 → length=14 (1 total + 12 decrease + 1 total)."""
+        from datetime import date as _date
+        from decimal import Decimal
+        async def fake_full_year(*_a, **_k):
+            return [
+                {
+                    "budget_amount": Decimal("12000"),
+                    "actual_amount": Decimal("100"),  # each month positive
+                    "category": "test",
+                    "record_date": _date(2025, m, 15),
+                    "upload_id": 1,
+                }
+                for m in range(1, 13)
+            ]
+        chart = self._run_chart(fake_full_year)
+        assert len(chart["data"]) == 14
+        # First is total
+        assert chart["data"][0]["type"] == "total"
+        # Middle 12 are decrease
+        for i in range(1, 13):
+            assert chart["data"][i]["type"] == "decrease", f"item {i} should be decrease"
+            assert chart["data"][i]["name"] == f"{i}月"
+        # Last is total
+        assert chart["data"][13]["type"] == "total"
+
+    def test_zero_actual_month_skipped(self):
+        """4月 actual=0 → 该月 skipped (Java line 956: compareTo > 0 false).
+
+        Length=13 = 1 + 11 decrease + 1 (April skipped from 12).
+        """
+        from datetime import date as _date
+        from decimal import Decimal
+        async def fake_april_zero(*_a, **_k):
+            rows = []
+            for m in range(1, 13):
+                rows.append({
+                    "budget_amount": Decimal("12000"),
+                    "actual_amount": Decimal("0") if m == 4 else Decimal("100"),
+                    "category": "test",
+                    "record_date": _date(2025, m, 15),
+                    "upload_id": 1,
+                })
+            return rows
+        chart = self._run_chart(fake_april_zero)
+        assert len(chart["data"]) == 13
+        # Verify April not present in decrease items
+        decrease_names = [d["name"] for d in chart["data"] if d["type"] == "decrease"]
+        assert "4月" not in decrease_names
+        assert len(decrease_names) == 11
+
+    def test_negative_actual_month_skipped(self):
+        """6月 actual=-100 → Java compareTo(0) > 0 false → skipped.
+
+        F2 raw accumulation lets negatives through aggregation, but the >0 gate
+        in waterfall data construction filters them. Length=13.
+        """
+        from datetime import date as _date
+        from decimal import Decimal
+        async def fake_june_negative(*_a, **_k):
+            rows = []
+            for m in range(1, 13):
+                rows.append({
+                    "budget_amount": Decimal("12000"),
+                    "actual_amount": Decimal("-100") if m == 6 else Decimal("100"),
+                    "category": "test",
+                    "record_date": _date(2025, m, 15),
+                    "upload_id": 1,
+                })
+            return rows
+        chart = self._run_chart(fake_june_negative)
+        assert len(chart["data"]) == 13
+        decrease_names = [d["name"] for d in chart["data"] if d["type"] == "decrease"]
+        assert "6月" not in decrease_names
+
+    def test_remaining_decrement_correct(self):
+        """annual_budget=12000, monthly actuals=1000 each Jan-Mar → 剩余预算 = 9000.
+
+        Verifies remaining decrement loop: 12000 - 1000 - 1000 - 1000 = 9000.
+        """
+        from datetime import date as _date
+        from decimal import Decimal
+        async def fake_jan_to_mar(*_a, **_k):
+            return [
+                {"budget_amount": Decimal("12000"), "actual_amount": Decimal("1000"),
+                 "category": "test", "record_date": _date(2025, 1, 15), "upload_id": 1},
+                {"budget_amount": Decimal("0"), "actual_amount": Decimal("1000"),
+                 "category": "test", "record_date": _date(2025, 2, 15), "upload_id": 1},
+                {"budget_amount": Decimal("0"), "actual_amount": Decimal("1000"),
+                 "category": "test", "record_date": _date(2025, 3, 15), "upload_id": 1},
+            ]
+        chart = self._run_chart(fake_jan_to_mar)
+        # 5 items: 1 total + 3 decrease + 1 total
+        assert len(chart["data"]) == 5
+        assert chart["data"][0]["value"] == 12000  # 年度预算
+        assert chart["data"][-1]["name"] == "剩余预算"
+        assert chart["data"][-1]["value"] == 9000  # 12000 - 3*1000
+
+    def test_null_record_date_row_skipped(self):
+        """row with record_date=None → defensive skip (intentional Java NPE divergence).
+
+        Java line 941 NPEs on null record_date; Python defensive skip per spec §8 IC1.
+        Phase 3.B/C cleanup will decide if Python should match Java by raising.
+
+        Test: 1 row with None record_date + 1 valid row (Jan) → only 3 items
+        (1 total + 1 January decrease + 1 total). Null row contributes to
+        annual_budget sum (Java line 933-936 doesn't NPE — just budget_amount sum).
+        """
+        from datetime import date as _date
+        from decimal import Decimal
+        async def fake_null_date(*_a, **_k):
+            return [
+                {"budget_amount": Decimal("5000"), "actual_amount": Decimal("100"),
+                 "category": "test", "record_date": None, "upload_id": 1},  # null
+                {"budget_amount": Decimal("5000"), "actual_amount": Decimal("100"),
+                 "category": "test", "record_date": _date(2025, 1, 15), "upload_id": 1},
+            ]
+        chart = self._run_chart(fake_null_date)
+        # annual_budget = 5000 + 5000 = 10000 (null record_date doesn't filter sum)
+        assert chart["data"][0]["value"] == 10000
+        # Only 1 month (Jan) had actuals>0 emitted as decrease
+        decrease_items = [d for d in chart["data"] if d["type"] == "decrease"]
+        assert len(decrease_items) == 1
+        assert decrease_items[0]["name"] == "1月"
+        # remaining = 10000 - 100 = 9900
+        assert chart["data"][-1]["value"] == 9900
