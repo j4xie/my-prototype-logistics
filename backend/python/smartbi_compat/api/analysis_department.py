@@ -9,11 +9,14 @@ See spec: docs/superpowers/specs/2026-05-01-phase2a-analysis-department-design.m
 """
 from __future__ import annotations
 
+import logging
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, Query
+
+logger = logging.getLogger(__name__)
 
 from smartbi_compat.api.analysis_finance import (
     _get_period_key,         # post-PR #30 calendar-year fix (Rule 2 compliant)
@@ -59,8 +62,17 @@ async def _query_department_full(
             f"(got start_date={start_date!r}, end_date={end_date!r})"
         )
 
-    from smartbi.config import get_cretas_pool  # type: ignore
-    pool = await get_cretas_pool()
+    pool = None
+    try:
+        from smartbi.config import get_cretas_pool  # type: ignore
+        pool = await get_cretas_pool()
+    except Exception as e:
+        logger.warning("[department] pool acquisition failed factory=%s: %s", factory_id, e)
+        return []
+
+    if pool is None:
+        logger.warning("[department] pool is None factory=%s; returning empty rows", factory_id)
+        return []
 
     sql = """
         SELECT *
@@ -93,8 +105,21 @@ async def _query_department_daily_trend(
             f"(got start_date={start_date!r}, end_date={end_date!r})"
         )
 
-    from smartbi.config import get_cretas_pool  # type: ignore
-    pool = await get_cretas_pool()
+    pool = None
+    try:
+        from smartbi.config import get_cretas_pool  # type: ignore
+        pool = await get_cretas_pool()
+    except Exception as e:
+        logger.warning(
+            "[department-trend] pool acquisition failed factory=%s: %s", factory_id, e
+        )
+        return []
+
+    if pool is None:
+        logger.warning(
+            "[department-trend] pool is None factory=%s; returning empty rows", factory_id
+        )
+        return []
 
     sql = """
         SELECT order_date, department, SUM(amount) AS total_amount
