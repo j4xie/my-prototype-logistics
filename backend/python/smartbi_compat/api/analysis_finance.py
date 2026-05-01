@@ -484,6 +484,29 @@ def _determine_budget_achievement_alert(achievement_rate: Decimal) -> str:
     return "GREEN"
 
 
+def _determine_budget_variance_rate_alert(rate: Decimal) -> str:
+    """Mirror Java MetricCalculatorServiceImpl.determineAlertLevel BUDGET_VARIANCE_RATE
+    case (line 515-519).
+
+      abs(v) > 20 → RED   (偏差超过 20%)
+      abs(v) > 10 → YELLOW (偏差 10-20%)
+      else        → GREEN  (正常)
+
+    Note: Python端必须加前缀消岐义 (Java 是跨 service 调用 metricCalculatorService
+    .determineAlertLevel — Python 无 service 边界，函数名自带 disambiguation)。
+
+    Boundary: exactly 20 → YELLOW (NOT RED); exactly 10 → GREEN (NOT YELLOW).
+
+    Sign-symmetric: -25 → RED (abs=25 > 20), -15 → YELLOW (abs=15 > 10), -5 → GREEN.
+    """
+    v = abs(float(rate))
+    if v > 20:
+        return "RED"
+    if v > 10:
+        return "YELLOW"
+    return "GREEN"
+
+
 def _get_metric_display_name(metric: Optional[str]) -> str:
     """Mirror Java FinanceAnalysisServiceImpl.getMetricDisplayName (line 1804-1820)."""
     if metric is None:
