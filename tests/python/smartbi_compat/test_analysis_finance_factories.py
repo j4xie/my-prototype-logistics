@@ -1439,3 +1439,115 @@ class TestReceivableTrendDepth:
         )
         for item in result["data"]:
             assert list(item.keys()) == ["period", "receivable", "collection", "balance"]
+
+
+class TestPayableAgingBucketDepth:
+    """PR-B depth — aging-day boundaries for payable aging chart bucket assignment.
+
+    Tests boundaries of the inlined bucket logic in _get_payable_aging_chart
+    (line 2400-2414): aging_days <= 30/60/90/else chain, outstanding<=0 skip,
+    null aging_days fallback (Java `r.get("aging_days") or 0` → 0).
+
+    NOTE: Payable's bucket logic is inlined (not in a separate utility like
+    receivable's _calculate_aging_buckets), so we test it through the chart
+    function. Fewer tests than receivable PR-B Task 1 because payable has
+    no alertLevel per bucket and no shared utility.
+    """
+
+    @staticmethod
+    async def _run_chart(monkeypatch, rows):
+        """Run _get_payable_aging_chart with _query_finance_payable_data mocked."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, end_date):
+            return rows
+        monkeypatch.setattr(analysis_finance, "_query_finance_payable_data", fake_query)
+        return await analysis_finance._get_payable_aging_chart("F001", date(2025, 12, 31))
+
+    @pytest.mark.parametrize("aging_days,expected_bucket", [
+        (-1,  "0-30天"),    # negative → falls to 0-30 (aging<=30 catches negatives via `or 0` for None or via direct compare)
+        (0,   "0-30天"),    # boundary low
+        (30,  "0-30天"),    # boundary high of first bucket (<=)
+        (31,  "31-60天"),   # boundary low of second bucket
+        (60,  "31-60天"),   # boundary high of second bucket
+        (61,  "61-90天"),   # boundary low of third bucket
+        (90,  "61-90天"),   # boundary high of third bucket
+        (91,  "90天以上"),  # boundary low of fourth bucket
+    ])
+    @pytest.mark.asyncio
+    async def test_aging_day_boundary_assignment(self, aging_days, expected_bucket, monkeypatch):
+        """Boundary value falls into LOWER bucket per Java <= chain (line 2407-2413)."""
+        rows = [{"payable_amount": "1000", "payment_amount": "0", "aging_days": aging_days}]
+        chart = await self._run_chart(monkeypatch, rows)
+        # Exactly one bucket gets the 1000; others stay 0
+        for item in chart["data"]:
+            if item["agingBucket"] == expected_bucket:
+                assert item["amount"] == 1000, (
+                    f"aging_days={aging_days} expected {expected_bucket}=1000, got {item['amount']}"
+                )
+            else:
+                assert item["amount"] == 0, (
+                    f"aging_days={aging_days} expected only {expected_bucket} populated, "
+                    f"but {item['agingBucket']} = {item['amount']}"
+                )
+
+    @pytest.mark.parametrize("payable,payment,desc", [
+        ("100", "100", "outstanding=0 (equal) → skipped per line 2404"),
+        ("50",  "100", "outstanding<0 (overpaid) → skipped"),
+        ("0.01","0",   "outstanding=0.01 (just-positive) → kept (Decimal precision)"),
+    ])
+    @pytest.mark.asyncio
+    async def test_outstanding_threshold_strict_gt_zero(self, payable, payment, desc, monkeypatch):
+        """Java line 2404: `if outstanding <= 0 continue` — boundary outstanding=0 skipped."""
+        rows = [{"payable_amount": payable, "payment_amount": payment, "aging_days": 15}]
+        chart = await self._run_chart(monkeypatch, rows)
+        outstanding = Decimal(payable) - Decimal(payment)
+        if outstanding > Decimal("0"):
+            # Should be in 0-30天 bucket (Rule 4: amount serialized as float/int)
+            first_bucket = next(d for d in chart["data"] if d["agingBucket"] == "0-30天")
+            # Compare as float since _decimal_to_number converts to int/float
+            expected = float(outstanding) if outstanding != outstanding.to_integral_value() else int(outstanding)
+            assert first_bucket["amount"] == expected, desc
+        else:
+            # All buckets should be 0
+            assert all(d["amount"] == 0 for d in chart["data"]), desc
+
+    @pytest.mark.asyncio
+    async def test_null_aging_days_fallback_to_zero_bucket(self, monkeypatch):
+        """Java line 2406: `aging = r.get("aging_days") or 0` — None → 0 → 0-30天 bucket.
+
+        For int aging_days column, `or 0` is equivalent to is-not-None ternary
+        (both produce 0 for None and 0 for 0). Pinning current behavior.
+        """
+        rows = [{"payable_amount": "1000", "payment_amount": "0", "aging_days": None}]
+        chart = await self._run_chart(monkeypatch, rows)
+        first_bucket = next(d for d in chart["data"] if d["agingBucket"] == "0-30天")
+        assert first_bucket["amount"] == 1000
+
+    @pytest.mark.asyncio
+    async def test_multi_row_same_bucket_aggregates(self, monkeypatch):
+        """Multiple rows in same bucket → outstanding sums."""
+        rows = [
+            {"payable_amount": "100", "payment_amount": "0", "aging_days": 10},
+            {"payable_amount": "200", "payment_amount": "0", "aging_days": 20},
+            {"payable_amount": "300", "payment_amount": "0", "aging_days": 30},
+        ]
+        chart = await self._run_chart(monkeypatch, rows)
+        first_bucket = next(d for d in chart["data"] if d["agingBucket"] == "0-30天")
+        assert first_bucket["amount"] == 600  # 100 + 200 + 300
+
+    @pytest.mark.asyncio
+    async def test_distributes_across_all_4_buckets(self, monkeypatch):
+        """One row per bucket → 4 distinct totals."""
+        rows = [
+            {"payable_amount": "100", "payment_amount": "0", "aging_days": 15},   # 0-30
+            {"payable_amount": "200", "payment_amount": "0", "aging_days": 45},   # 31-60
+            {"payable_amount": "300", "payment_amount": "0", "aging_days": 75},   # 61-90
+            {"payable_amount": "400", "payment_amount": "0", "aging_days": 120},  # 90+
+        ]
+        chart = await self._run_chart(monkeypatch, rows)
+        buckets = {d["agingBucket"]: d["amount"] for d in chart["data"]}
+        assert buckets["0-30天"]   == 100
+        assert buckets["31-60天"]  == 200
+        assert buckets["61-90天"]  == 300
+        assert buckets["90天以上"] == 400
