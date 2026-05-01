@@ -6,6 +6,7 @@ import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.service.ProcessTaskService;
+import com.cretas.aims.exception.BusinessException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -116,6 +117,8 @@ public class ProcessTaskController {
                 Map<String, Object> rawMap = (Map<String, Object>) raw;
                 rawMap.forEach((k, v) -> plannedQuantities.put(k, new BigDecimal(v.toString())));
             }
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.warn("Failed to parse plannedQuantities, using defaults: {}", e.getMessage());
         }
@@ -123,9 +126,11 @@ public class ProcessTaskController {
         try {
             return ApiResponse.success(processTaskService.generateFromProduct(
                     factoryId, productTypeId, plannedQuantities, sourceCustomerName, createdBy));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("generateFromProduct failed: factoryId={}, productTypeId={}", factoryId, productTypeId, e);
-            return ApiResponse.error("生成工序任务失败: " + e.getMessage());
+            throw new BusinessException(500, "生成工序任务失败: " + e.getMessage(), e);
         }
     }
 

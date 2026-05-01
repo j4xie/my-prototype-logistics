@@ -8,6 +8,7 @@ import com.cretas.aims.dto.user.UpdateSkillsRequest;
 import com.cretas.aims.dto.user.UserDTO;
 import com.cretas.aims.entity.enums.FactoryUserRole;
 import com.cretas.aims.entity.enums.HireType;
+import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.service.UserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
@@ -303,14 +304,16 @@ public class UserController {
 
         log.info("从Excel批量导入用户: factoryId={}, filename={}", factoryId, file.getOriginalFilename());
 
-        // 验证文件类型
+        // R77: 验证文件类型 — throw BusinessException(400) + actionHint 替代 ApiResponse.error
         if (file.getOriginalFilename() == null || !file.getOriginalFilename().endsWith(".xlsx")) {
-            return ApiResponse.error("只支持.xlsx格式的Excel文件");
+            throw new BusinessException(400, "只支持.xlsx格式的Excel文件")
+                    .withHint("请使用模板下载按钮获取正确格式的 Excel 文件 (.xlsx)");
         }
 
         // 验证文件大小（10MB限制）
         if (file.getSize() > 10 * 1024 * 1024) {
-            return ApiResponse.error("文件大小不能超过10MB");
+            throw new BusinessException(400, "文件大小不能超过10MB")
+                    .withHint("请压缩或拆分后再次导入,单批 ≤ 10MB");
         }
 
         try {
@@ -328,9 +331,13 @@ public class UserController {
                                 result.getSuccessCount(), result.getFailureCount()),
                         result);
             }
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("用户批量导入失败: factoryId={}", factoryId, e);
-            return ApiResponse.error("导入失败: " + ErrorSanitizer.sanitize(e));
+            // R77: catch return ApiResponse.error → throw BusinessException(500)
+            // GlobalExceptionHandler maps to HTTP 500 + severity:"error" (R73-FIX-A default).
+            throw new BusinessException(500, "导入失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 

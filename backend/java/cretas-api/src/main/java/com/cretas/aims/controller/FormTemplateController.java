@@ -9,6 +9,7 @@ import com.cretas.aims.service.FormTemplateService;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.utils.TokenUtils;
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.exception.BusinessException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -323,9 +324,12 @@ public class FormTemplateController {
                     .toList();
 
             return ApiResponse.success(dtos);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("获取版本历史失败: templateId={}, error={}", id, e.getMessage(), e);
-            return ApiResponse.error("获取版本历史失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "获取版本历史失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -346,13 +350,16 @@ public class FormTemplateController {
                     .findByTemplateIdAndVersion(id, version);
 
             if (optVersion.isEmpty()) {
-                return ApiResponse.error("版本不存在: " + version);
+                throw new BusinessException(404, "版本不存在: " + version).withHint("请检查 ID 是否正确");
             }
 
             return ApiResponse.success(optVersion.get());
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("获取版本详情失败: error={}", e.getMessage(), e);
-            return ApiResponse.error("获取版本详情失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "获取版本详情失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -377,9 +384,12 @@ public class FormTemplateController {
             FormTemplate result = formTemplateService.rollbackToVersion(
                     id, request.getVersion(), request.getReason(), userId);
             return ApiResponse.success("回滚成功", result);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("回滚版本失败: templateId={}, error={}", id, e.getMessage(), e);
-            return ApiResponse.error("回滚版本失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "回滚版本失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -403,7 +413,7 @@ public class FormTemplateController {
                     .findByTemplateIdAndVersion(id, toVersion);
 
             if (optFrom.isEmpty() || optTo.isEmpty()) {
-                return ApiResponse.error("版本不存在");
+                throw new BusinessException(404, "版本不存在");
             }
 
             FormTemplateVersion from = optFrom.get();
@@ -418,9 +428,12 @@ public class FormTemplateController {
             result.setToChangeSummary(to.getChangeSummary());
 
             return ApiResponse.success(result);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("比较版本失败: error={}", e.getMessage(), e);
-            return ApiResponse.error("比较版本失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "比较版本失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 

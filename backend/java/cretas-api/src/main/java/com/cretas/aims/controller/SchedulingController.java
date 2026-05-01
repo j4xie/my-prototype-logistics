@@ -23,6 +23,7 @@ import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
 import com.cretas.aims.annotation.RequireModule;
+import com.cretas.aims.exception.BusinessException;
 
 /**
  * 智能调度控制器
@@ -734,7 +735,7 @@ public class SchedulingController {
         Double newThreshold = request.get("threshold");
 
         if (newThreshold == null || newThreshold < 0 || newThreshold > 1) {
-            return ApiResponse.error("阈值必须在0-1之间");
+            throw new BusinessException(400, "阈值必须在0-1之间");
         }
 
         log.info("更新紧急阈值: factoryId={}, userId={}, threshold={}",
@@ -1109,6 +1110,8 @@ public class SchedulingController {
         if (userIdObj instanceof String) {
             try {
                 return Long.parseLong((String) userIdObj);
+            } catch (BusinessException be) {
+                throw be;
             } catch (NumberFormatException e) {
                 return null;
             }

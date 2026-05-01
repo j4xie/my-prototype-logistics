@@ -4,6 +4,7 @@ import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.smartbi.AiAgentRule;
 import com.cretas.aims.repository.smartbi.AiAgentRuleRepository;
+import com.cretas.aims.exception.BusinessException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -69,13 +70,13 @@ public class AiAgentRuleController {
 
         Optional<AiAgentRule> rule = aiAgentRuleRepository.findById(ruleId);
         if (rule.isEmpty()) {
-            return ResponseEntity.ok(ApiResponse.error("规则不存在: " + ruleId));
+            throw new BusinessException(404, "规则不存在: " + ruleId).withHint("请检查 ID 是否正确");
         }
 
         // 检查规则是否属于该工厂或是全局规则
         AiAgentRule r = rule.get();
         if (!"DEFAULT".equals(r.getFactoryId()) && !factoryId.equals(r.getFactoryId())) {
-            return ResponseEntity.ok(ApiResponse.error("无权访问该规则"));
+            throw new BusinessException(403, "无权访问该规则").withSeverity("error");
         }
 
         return ResponseEntity.ok(ApiResponse.success(r));
@@ -150,17 +151,17 @@ public class AiAgentRuleController {
 
         Optional<AiAgentRule> existing = aiAgentRuleRepository.findById(ruleId);
         if (existing.isEmpty()) {
-            return ResponseEntity.ok(ApiResponse.error("规则不存在: " + ruleId));
+            throw new BusinessException(404, "规则不存在: " + ruleId).withHint("请检查 ID 是否正确");
         }
 
         AiAgentRule existingRule = existing.get();
 
         // 检查权限：只能修改自己工厂的规则，不能修改全局规则
         if ("DEFAULT".equals(existingRule.getFactoryId())) {
-            return ResponseEntity.ok(ApiResponse.error("无法修改全局规则，请联系平台管理员"));
+            throw new BusinessException(409, "无法修改全局规则，请联系平台管理员");
         }
         if (!factoryId.equals(existingRule.getFactoryId())) {
-            return ResponseEntity.ok(ApiResponse.error("无权修改该规则"));
+            throw new BusinessException(403, "无权修改该规则").withSeverity("error");
         }
 
         // 更新字段
@@ -190,17 +191,17 @@ public class AiAgentRuleController {
 
         Optional<AiAgentRule> existing = aiAgentRuleRepository.findById(ruleId);
         if (existing.isEmpty()) {
-            return ResponseEntity.ok(ApiResponse.error("规则不存在: " + ruleId));
+            throw new BusinessException(404, "规则不存在: " + ruleId).withHint("请检查 ID 是否正确");
         }
 
         AiAgentRule rule = existing.get();
 
         // 检查权限
         if ("DEFAULT".equals(rule.getFactoryId())) {
-            return ResponseEntity.ok(ApiResponse.error("无法删除全局规则，请联系平台管理员"));
+            throw new BusinessException(409, "无法删除全局规则，请联系平台管理员");
         }
         if (!factoryId.equals(rule.getFactoryId())) {
-            return ResponseEntity.ok(ApiResponse.error("无权删除该规则"));
+            throw new BusinessException(403, "无权删除该规则").withSeverity("error");
         }
 
         aiAgentRuleRepository.delete(rule);
@@ -219,17 +220,17 @@ public class AiAgentRuleController {
 
         Optional<AiAgentRule> existing = aiAgentRuleRepository.findById(ruleId);
         if (existing.isEmpty()) {
-            return ResponseEntity.ok(ApiResponse.error("规则不存在: " + ruleId));
+            throw new BusinessException(404, "规则不存在: " + ruleId).withHint("请检查 ID 是否正确");
         }
 
         AiAgentRule rule = existing.get();
 
         // 检查权限
         if ("DEFAULT".equals(rule.getFactoryId())) {
-            return ResponseEntity.ok(ApiResponse.error("无法修改全局规则状态，请联系平台管理员"));
+            throw new BusinessException(409, "无法修改全局规则状态，请联系平台管理员");
         }
         if (!factoryId.equals(rule.getFactoryId())) {
-            return ResponseEntity.ok(ApiResponse.error("无权修改该规则"));
+            throw new BusinessException(403, "无权修改该规则").withSeverity("error");
         }
 
         // 切换状态
@@ -253,17 +254,17 @@ public class AiAgentRuleController {
 
         Optional<AiAgentRule> existing = aiAgentRuleRepository.findById(ruleId);
         if (existing.isEmpty()) {
-            return ResponseEntity.ok(ApiResponse.error("规则不存在: " + ruleId));
+            throw new BusinessException(404, "规则不存在: " + ruleId).withHint("请检查 ID 是否正确");
         }
 
         AiAgentRule rule = existing.get();
 
         // 检查权限
         if ("DEFAULT".equals(rule.getFactoryId())) {
-            return ResponseEntity.ok(ApiResponse.error("无法修改全局规则优先级，请联系平台管理员"));
+            throw new BusinessException(409, "无法修改全局规则优先级，请联系平台管理员");
         }
         if (!factoryId.equals(rule.getFactoryId())) {
-            return ResponseEntity.ok(ApiResponse.error("无权修改该规则"));
+            throw new BusinessException(403, "无权修改该规则").withSeverity("error");
         }
 
         rule.setPriority(request.getPriority());

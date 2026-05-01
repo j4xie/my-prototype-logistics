@@ -7,6 +7,7 @@ import com.cretas.aims.dto.ai.AIStateMachineParseRequest;
 import com.cretas.aims.dto.ai.AIStateMachineParseResponse;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.rules.DroolsRule;
+import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.repository.DroolsRuleRepository;
 import com.cretas.aims.service.RuleEngineService;
 import com.cretas.aims.service.StateMachineService;
@@ -112,15 +113,19 @@ public class AIRuleController {
 
                 return ApiResponse.success("规则解析成功", result);
             } else {
-                return ApiResponse.error("AI服务返回异常");
+                throw new BusinessException(502, "AI服务返回异常")
+                        .withHint("请稍后重试,若持续失败请联系平台管理员");
             }
 
+        } catch (BusinessException be) {
+            throw be;
         } catch (RestClientException e) {
             log.error("调用AI服务失败", e);
-            return ApiResponse.error("AI服务不可用: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(503, "AI服务不可用: " + ErrorSanitizer.sanitize(e), e)
+                    .withHint("AI 服务暂时不可达,请稍后重试");
         } catch (Exception e) {
             log.error("规则解析失败", e);
-            return ApiResponse.error("规则解析失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "规则解析失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -138,25 +143,26 @@ public class AIRuleController {
     ) {
         log.info("AI解析并保存规则 - factoryId={}, input={}", factoryId, request.getUserInput());
 
-        // 先解析规则
+        // R78 cleanup (R77 reviewer flagged): parseRule() now throws BusinessException on
+        // failure, so the legacy `if (!parseResult.getSuccess())` branch is unreachable.
+        // Direct unwrap from .getData() is safe — exception propagates to handler.
         ApiResponse<AIRuleParseResponse> parseResult = parseRule(factoryId, request);
-        if (!parseResult.getSuccess()) {
-            return ApiResponse.error(parseResult.getMessage());
-        }
-
         AIRuleParseResponse parsed = parseResult.getData();
         if (parsed == null || !Boolean.TRUE.equals(parsed.getSuccess())) {
-            return ApiResponse.error(parsed != null ? parsed.getMessage() : "AI解析失败");
+            throw new BusinessException(500, parsed != null ? parsed.getMessage() : "AI解析失败")
+                    .withHint("请检查 AI 返回的 DRL 是否符合预期");
         }
 
         // 验证生成的 DRL
         if (parsed.getDrlContent() == null || parsed.getDrlContent().isEmpty()) {
-            return ApiResponse.error("AI未生成有效的DRL规则");
+            throw new BusinessException(500, "AI未生成有效的DRL规则")
+                    .withHint("请重新输入或调整描述");
         }
 
         Map<String, Object> validation = ruleEngineService.validateDRL(parsed.getDrlContent());
         if (!(Boolean) validation.get("isValid")) {
-            return ApiResponse.error("生成的规则语法错误: " + validation.get("errors"));
+            throw new BusinessException(400, "生成的规则语法错误: " + validation.get("errors"))
+                    .withHint("AI 生成的 DRL 语法不合法，请联系平台管理员");
         }
 
         // 检查规则名是否已存在
@@ -274,15 +280,19 @@ public class AIRuleController {
 
                 return ApiResponse.success("状态机解析成功", result);
             } else {
-                return ApiResponse.error("AI服务返回异常");
+                throw new BusinessException(502, "AI服务返回异常")
+                        .withHint("请稍后重试,若持续失败请联系平台管理员");
             }
 
+        } catch (BusinessException be) {
+            throw be;
         } catch (RestClientException e) {
             log.error("调用AI服务失败", e);
-            return ApiResponse.error("AI服务不可用: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(503, "AI服务不可用: " + ErrorSanitizer.sanitize(e), e)
+                    .withHint("AI 服务暂时不可达,请稍后重试");
         } catch (Exception e) {
             log.error("状态机解析失败", e);
-            return ApiResponse.error("状态机解析失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "状态机解析失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -301,15 +311,13 @@ public class AIRuleController {
         log.info("AI解析并保存状态机 - factoryId={}, entityType={}",
                 factoryId, request.getEntityType());
 
-        // 先解析状态机
+        // R78 cleanup (R77 reviewer flagged): parseStateMachine() now throws BusinessException
+        // on failure; legacy `if (!parseResult.getSuccess())` branch is unreachable.
         ApiResponse<AIStateMachineParseResponse> parseResult = parseStateMachine(factoryId, request);
-        if (!parseResult.getSuccess()) {
-            return ApiResponse.error(parseResult.getMessage());
-        }
-
         AIStateMachineParseResponse parsed = parseResult.getData();
         if (parsed == null || !Boolean.TRUE.equals(parsed.getSuccess())) {
-            return ApiResponse.error(parsed != null ? parsed.getMessage() : "AI解析失败");
+            throw new BusinessException(500, parsed != null ? parsed.getMessage() : "AI解析失败")
+                    .withHint("请检查输入或重试");
         }
 
         // 转换为 StateMachineConfig

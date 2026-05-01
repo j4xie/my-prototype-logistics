@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.exception.BusinessException;
 
 /**
  * 通用 AI Chat Controller
@@ -146,9 +147,13 @@ public class GenericAIChatController {
 
             return ApiResponse.success(response);
 
+        } catch (BusinessException be) {
+            throw be;
+
+
         } catch (Exception e) {
             log.error("AI Chat 失败: {}", e.getMessage(), e);
-            return ApiResponse.error("AI 服务暂时不可用: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "AI 服务暂时不可用: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -221,6 +226,8 @@ public class GenericAIChatController {
                     token -> {
                         try {
                             emitter.send(SseEmitter.event().name("token").data(token));
+                        } catch (BusinessException be) {
+                            throw be;
                         } catch (Exception e) {
                             log.debug("Client disconnected during token send");
                         }
@@ -241,17 +248,23 @@ public class GenericAIChatController {
                             emitter.send(SseEmitter.event().name("done")
                                     .data(objectMapper.writeValueAsString(doneData)));
                             emitter.complete();
+                        } catch (BusinessException be) {
+                            throw be;
                         } catch (Exception e) {
                             log.debug("Error sending done event: {}", e.getMessage());
                         }
                     });
 
+            } catch (BusinessException be) {
+                throw be;
             } catch (Exception e) {
                 log.error("Chat stream failed: {}", e.getMessage(), e);
                 try {
                     emitter.send(SseEmitter.event().name("error")
                             .data("{\"message\":\"" + ErrorSanitizer.sanitize(e).replace("\"", "'") + "\"}"));
                     emitter.complete();
+                } catch (BusinessException be) {
+                    throw be;
                 } catch (Exception sendErr) {
                     emitter.completeWithError(e);
                 }

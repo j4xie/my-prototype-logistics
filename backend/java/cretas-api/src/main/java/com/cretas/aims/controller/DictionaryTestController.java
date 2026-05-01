@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.exception.BusinessException;
 
 /**
  * 字典工具测试控制器
@@ -49,7 +50,7 @@ public class DictionaryTestController {
         try {
             Optional<ToolExecutor> executor = toolRegistry.getExecutor("dictionary_add");
             if (!executor.isPresent()) {
-                return ApiResponse.error("工具 dictionary_add 未找到");
+                throw new BusinessException(400, "工具 dictionary_add 未找到");
             }
 
             // 构建 ToolCall
@@ -68,9 +69,13 @@ public class DictionaryTestController {
 
             return ApiResponse.success(new com.fasterxml.jackson.databind.ObjectMapper().readValue(result, Map.class));
 
+        } catch (BusinessException be) {
+            throw be;
+
+
         } catch (Exception e) {
             log.error("dictionary_add 执行失败: {}", e.getMessage(), e);
-            return ApiResponse.error("执行失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "执行失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -88,7 +93,7 @@ public class DictionaryTestController {
         try {
             Optional<ToolExecutor> executor = toolRegistry.getExecutor("dictionary_list");
             if (!executor.isPresent()) {
-                return ApiResponse.error("工具 dictionary_list 未找到");
+                throw new BusinessException(400, "工具 dictionary_list 未找到");
             }
 
             // 构建参数
@@ -111,9 +116,13 @@ public class DictionaryTestController {
 
             return ApiResponse.success(new com.fasterxml.jackson.databind.ObjectMapper().readValue(result, Map.class));
 
+        } catch (BusinessException be) {
+            throw be;
+
+
         } catch (Exception e) {
             log.error("dictionary_list 执行失败: {}", e.getMessage(), e);
-            return ApiResponse.error("执行失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "执行失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -128,7 +137,7 @@ public class DictionaryTestController {
         try {
             Optional<ToolExecutor> executor = toolRegistry.getExecutor("dictionary_batch_import");
             if (!executor.isPresent()) {
-                return ApiResponse.error("工具 dictionary_batch_import 未找到");
+                throw new BusinessException(400, "工具 dictionary_batch_import 未找到");
             }
 
             // 构建 ToolCall
@@ -147,9 +156,13 @@ public class DictionaryTestController {
 
             return ApiResponse.success(new com.fasterxml.jackson.databind.ObjectMapper().readValue(result, Map.class));
 
+        } catch (BusinessException be) {
+            throw be;
+
+
         } catch (Exception e) {
             log.error("dictionary_batch_import 执行失败: {}", e.getMessage(), e);
-            return ApiResponse.error("执行失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "执行失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 

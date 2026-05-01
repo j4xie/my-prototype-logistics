@@ -3,6 +3,7 @@ package com.cretas.aims.controller;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.FactoryFeatureConfig;
 import com.cretas.aims.repository.FactoryFeatureConfigRepository;
+import com.cretas.aims.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,7 +36,7 @@ public class FeatureConfigController {
         return featureConfigRepository
                 .findByFactoryIdAndModuleIdAndDeletedAtIsNull(factoryId, moduleId)
                 .map(ApiResponse::success)
-                .orElse(ApiResponse.error("Module config not found"));
+                .orElseThrow(() -> new BusinessException(404, "Module config not found"));
     }
 
     @PutMapping("/{moduleId}")
@@ -46,7 +47,7 @@ public class FeatureConfigController {
         var existing = featureConfigRepository
                 .findByFactoryIdAndModuleIdAndDeletedAtIsNull(factoryId, moduleId);
         if (existing.isEmpty()) {
-            return ApiResponse.error("Module config not found");
+            throw new BusinessException(400, "Module config not found");
         }
         FactoryFeatureConfig cfg = existing.get();
         cfg.setConfig(config);

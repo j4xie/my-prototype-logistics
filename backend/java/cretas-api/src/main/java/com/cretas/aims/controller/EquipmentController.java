@@ -31,6 +31,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import com.cretas.aims.annotation.RequireModule;
+import com.cretas.aims.exception.BusinessException;
 
 /**
  * 设备管理控制器
@@ -293,7 +294,7 @@ public class EquipmentController {
         }
 
         if (actualDate == null) {
-            return ApiResponse.error(400, "维护日期不能为空");
+            throw new BusinessException(400, "维护日期不能为空");
         }
 
         log.info("记录设备维护: factoryId={}, equipmentId={}, date={}", factoryId, equipmentId, actualDate);
@@ -461,12 +462,12 @@ public class EquipmentController {
 
         // 验证文件类型
         if (file.getOriginalFilename() == null || !file.getOriginalFilename().endsWith(".xlsx")) {
-            return ApiResponse.error("只支持.xlsx格式的Excel文件");
+            throw new BusinessException(400, "只支持.xlsx格式的Excel文件");
         }
 
         // 验证文件大小（10MB限制）
         if (file.getSize() > 10 * 1024 * 1024) {
-            return ApiResponse.error("文件大小不能超过10MB");
+            throw new BusinessException(400, "文件大小不能超过10MB");
         }
 
         try {
@@ -484,9 +485,12 @@ public class EquipmentController {
                                 result.getSuccessCount(), result.getFailureCount()),
                         result);
             }
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("设备批量导入失败: factoryId={}", factoryId, e);
-            return ApiResponse.error("导入失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "导入失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 

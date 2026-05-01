@@ -23,6 +23,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import com.cretas.aims.annotation.RateLimit;
 import com.cretas.aims.annotation.RateLimit.LimitType;
+import com.cretas.aims.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -147,7 +148,7 @@ public class AIIntentConfigController {
 
         return aiIntentService.getIntentByCode(factoryId, intentCode)
                 .map(i -> ResponseEntity.ok(ApiResponse.success(i)))
-                .orElse(ResponseEntity.ok(ApiResponse.error("意图配置不存在: " + intentCode)));
+                .orElseThrow(() -> new BusinessException(404, "意图配置不存在: " + intentCode).withHint("请检查 ID 是否正确"));
     }
 
     // ==================== 意图识别 ====================

@@ -174,7 +174,7 @@ async function saveDraft() {
       ElMessage.success('草稿已保存')
     } catch (e) {
       console.error('Save draft failed:', e)
-      ElMessage.error('保存失败: ' + ((e as any)?.message || 'unknown'))
+      ElMessage.error('保存失败: ' + (e instanceof Error ? e.message : 'unknown'))
     }
   })
 }
@@ -229,7 +229,7 @@ async function newDraft() {
       clearDirty()
       ElMessage.success('新草稿已创建')
     } catch (e) {
-      ElMessage.error('创建草稿失败: ' + ((e as any)?.message || 'unknown'))
+      ElMessage.error('创建草稿失败: ' + (e instanceof Error ? e.message : 'unknown'))
     }
   })
 }

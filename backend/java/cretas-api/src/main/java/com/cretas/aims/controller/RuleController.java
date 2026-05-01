@@ -24,6 +24,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.*;
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.exception.BusinessException;
 
 /**
  * 规则引擎控制器
@@ -104,13 +105,13 @@ public class RuleController {
         // 验证规则语法
         Map<String, Object> validation = ruleEngineService.validateDRL(request.getRuleContent());
         if (!(Boolean) validation.get("isValid")) {
-            return ApiResponse.error("规则语法错误: " + validation.get("errors"));
+            throw new BusinessException(400, "规则语法错误: " + validation.get("errors"));
         }
 
         // 检查规则名是否已存在
         if (droolsRuleRepository.existsByFactoryIdAndRuleGroupAndRuleName(
                 factoryId, request.getRuleGroup(), request.getRuleName())) {
-            return ApiResponse.error("规则名已存在: " + request.getRuleName());
+            throw new BusinessException(409, "规则名已存在: " + request.getRuleName()).withHint("请检查是否重复或更新已有记录");
         }
 
         // 创建规则
@@ -152,19 +153,19 @@ public class RuleController {
 
         Optional<DroolsRule> ruleOpt = droolsRuleRepository.findById(ruleId);
         if (ruleOpt.isEmpty()) {
-            return ApiResponse.error("规则不存在");
+            throw new BusinessException(404, "规则不存在");
         }
 
         DroolsRule rule = ruleOpt.get();
         if (!rule.getFactoryId().equals(factoryId)) {
-            return ApiResponse.error("无权限修改此规则");
+            throw new BusinessException(403, "无权限修改此规则").withSeverity("error");
         }
 
         // 验证新规则内容
         if (request.getRuleContent() != null) {
             Map<String, Object> validation = ruleEngineService.validateDRL(request.getRuleContent());
             if (!(Boolean) validation.get("isValid")) {
-                return ApiResponse.error("规则语法错误: " + validation.get("errors"));
+                throw new BusinessException(400, "规则语法错误: " + validation.get("errors"));
             }
             rule.setRuleContent(request.getRuleContent());
         }
@@ -205,12 +206,12 @@ public class RuleController {
 
         Optional<DroolsRule> ruleOpt = droolsRuleRepository.findById(ruleId);
         if (ruleOpt.isEmpty()) {
-            return ApiResponse.error("规则不存在");
+            throw new BusinessException(404, "规则不存在");
         }
 
         DroolsRule rule = ruleOpt.get();
         if (!rule.getFactoryId().equals(factoryId)) {
-            return ApiResponse.error("无权限删除此规则");
+            throw new BusinessException(403, "无权限删除此规则").withSeverity("error");
         }
 
         String ruleGroup = rule.getRuleGroup();
@@ -236,7 +237,7 @@ public class RuleController {
     ) {
         String drlContent = request.get("ruleContent");
         if (drlContent == null || drlContent.isEmpty()) {
-            return ApiResponse.error("规则内容不能为空");
+            throw new BusinessException(400, "规则内容不能为空");
         }
 
         Map<String, Object> validation = ruleEngineService.validateDRL(drlContent);
@@ -262,7 +263,7 @@ public class RuleController {
         try {
             // 验证必填字段
             if (request.getRuleContent() == null || request.getRuleContent().isEmpty()) {
-                return ApiResponse.error("规则内容不能为空");
+                throw new BusinessException(400, "规则内容不能为空");
             }
 
             // 构建执行上下文
@@ -290,6 +291,8 @@ public class RuleController {
                 return ApiResponse.success("Dry-Run 执行失败", result);
             }
 
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Dry-Run 执行异常 - factoryId={}", factoryId, e);
             Map<String, Object> errorResult = new HashMap<>();
@@ -297,7 +300,7 @@ public class RuleController {
             errorResult.put("validationErrors", Collections.singletonList("执行异常: " + ErrorSanitizer.sanitize(e)));
             errorResult.put("rulesMatched", Collections.emptyList());
             errorResult.put("result", null);
-            return ApiResponse.error("Dry-Run 执行异常: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(400, "Dry-Run 执行异常: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -323,12 +326,12 @@ public class RuleController {
             // 1. 加载指定规则
             Optional<DroolsRule> ruleOpt = droolsRuleRepository.findById(ruleId);
             if (ruleOpt.isEmpty()) {
-                return ApiResponse.error("规则不存在: " + ruleId);
+                throw new BusinessException(404, "规则不存在: " + ruleId).withHint("请检查 ID 是否正确");
             }
 
             DroolsRule rule = ruleOpt.get();
             if (!rule.getFactoryId().equals(factoryId)) {
-                return ApiResponse.error("无权限测试此规则");
+                throw new BusinessException(403, "无权限测试此规则").withSeverity("error");
             }
 
             if (!Boolean.TRUE.equals(rule.getEnabled())) {
@@ -394,6 +397,8 @@ public class RuleController {
 
             return ApiResponse.success(result);
 
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("规则测试执行失败 - ruleId={}", ruleId, e);
             Map<String, Object> errorResult = new HashMap<>();
@@ -429,7 +434,7 @@ public class RuleController {
             // 验证生成的 DRL
             Map<String, Object> validation = ruleEngineService.validateDRL(drl);
             if (!(Boolean) validation.get("isValid")) {
-                return ApiResponse.error("决策表转换后的规则有语法错误: " + validation.get("errors"));
+                throw new BusinessException(400, "决策表转换后的规则有语法错误: " + validation.get("errors"));
             }
 
             // 保存规则
@@ -459,9 +464,13 @@ public class RuleController {
 
             return ApiResponse.success("决策表上传成功", result);
 
+        } catch (BusinessException be) {
+            throw be;
+
+
         } catch (Exception e) {
             log.error("决策表上传失败", e);
-            return ApiResponse.error("决策表上传失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "决策表上传失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -510,7 +519,7 @@ public class RuleController {
     ) {
         Optional<StateMachineConfig> config = stateMachineService.getStateMachine(factoryId, entityType);
         if (config.isEmpty()) {
-            return ApiResponse.error("状态机配置不存在");
+            throw new BusinessException(404, "状态机配置不存在");
         }
         return ApiResponse.success(config.get());
     }
@@ -705,6 +714,8 @@ public class RuleController {
                 (validation.getIsValid() ? "状态转换验证通过" : "守卫条件不满足"));
 
             return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Transition validation failed: {}", e.getMessage());
             result.setValid(false);
@@ -737,11 +748,13 @@ public class RuleController {
             if (result.getSuccess()) {
                 return ResponseEntity.ok(ApiResponse.success("状态转换成功", result));
             } else {
-                return ResponseEntity.ok(ApiResponse.error(result.getMessage()));
+                throw new BusinessException(500, result.getMessage() != null ? result.getMessage() : "操作失败");
             }
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Transition execution failed: {}", e.getMessage());
-            return ResponseEntity.ok(ApiResponse.error("状态转换失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "状态转换失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 }

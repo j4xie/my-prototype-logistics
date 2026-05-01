@@ -191,12 +191,15 @@ async function loadAll() {
       llmUsageApi.byFactory(days.value),
       llmUsageApi.byProvider(days.value),
     ]);
-    summary.value = (s as any)?.data ?? s;
-    byModel.value = ((m as any)?.data ?? m) || [];
-    byFactory.value = ((f as any)?.data ?? f) || [];
-    byProvider.value = ((p as any)?.data ?? p) || [];
-  } catch (e: any) {
-    ElMessage.error('加载 LLM 用量失败: ' + (e?.message || e));
+    // R77: response interceptor (api/request.ts:166) 已 unwrap 成 ApiResponse<T>,
+    // 直接访问 .data 而不用 `(s as any)?.data ?? s` band-aid.
+    summary.value = s.data ?? null;
+    byModel.value = m.data ?? [];
+    byFactory.value = f.data ?? [];
+    byProvider.value = p.data ?? [];
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    ElMessage.error('加载 LLM 用量失败: ' + msg);
   } finally {
     loading.value = false;
   }
@@ -206,10 +209,11 @@ async function onFactoryClick(row: ByFactoryRow) {
   selectedFactory.value = row.factory_id;
   drawerOpen.value = true;
   try {
-    const r: any = await llmUsageApi.byFactoryModel(days.value, row.factory_id);
-    factoryDetail.value = (r?.data ?? r) || [];
-  } catch (e: any) {
-    ElMessage.error('加载工厂细分失败: ' + (e?.message || e));
+    const r = await llmUsageApi.byFactoryModel(days.value, row.factory_id);
+    factoryDetail.value = r.data ?? [];
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    ElMessage.error('加载工厂细分失败: ' + msg);
   }
 }
 

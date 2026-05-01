@@ -393,9 +393,12 @@ public class SupplierController {
                                 result.getSuccessCount(), result.getFailureCount()),
                         result);
             }
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("供应商批量导入失败: factoryId={}", factoryId, e);
-            return ApiResponse.error("导入失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "导入失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 

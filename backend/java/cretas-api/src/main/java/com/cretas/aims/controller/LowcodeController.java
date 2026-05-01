@@ -5,6 +5,7 @@ import com.cretas.aims.annotation.RequirePermission;
 import com.cretas.aims.entity.LowcodeComponentDefinition;
 import com.cretas.aims.entity.LowcodePageConfig;
 import com.cretas.aims.service.LowcodeService;
+import com.cretas.aims.exception.BusinessException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -65,7 +66,7 @@ public class LowcodeController {
         log.info("获取页面配置: factoryId={}, pageId={}, roleCode={}", factoryId, pageId, roleCode);
         return lowcodeService.getPage(factoryId, pageId, roleCode)
                 .map(ApiResponse::success)
-                .orElse(ApiResponse.error(404, "页面不存在: " + pageId));
+                .orElseThrow(() -> new BusinessException(404, "页面不存在: " + pageId).withHint("请检查 ID 是否正确"));
     }
 
     /**
@@ -151,6 +152,6 @@ public class LowcodeController {
         log.info("获取组件详情: factoryId={}, type={}", factoryId, type);
         return lowcodeService.getComponent(type)
                 .map(ApiResponse::success)
-                .orElse(ApiResponse.error(404, "组件不存在: " + type));
+                .orElseThrow(() -> new BusinessException(404, "组件不存在: " + type).withHint("请检查 ID 是否正确"));
     }
 }

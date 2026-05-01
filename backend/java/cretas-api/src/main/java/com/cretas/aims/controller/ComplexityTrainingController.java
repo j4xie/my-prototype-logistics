@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.exception.BusinessException;
 
 /**
  * 复杂度分类器训练 API
@@ -58,9 +59,12 @@ public class ComplexityTrainingController {
             result.put("classifierReady", classifier.isTrained());
 
             return ApiResponse.success(result);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("训练失败", e);
-            return ApiResponse.error("训练失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "训练失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -72,7 +76,7 @@ public class ComplexityTrainingController {
     @PostMapping("/test")
     public ApiResponse<Map<String, Object>> test(@RequestParam String text) {
         if (!classifier.isTrained()) {
-            return ApiResponse.error("分类器未训练，请先调用 /train 接口");
+            throw new BusinessException(400, "分类器未训练，请先调用 /train 接口");
         }
 
         try {
@@ -93,9 +97,12 @@ public class ComplexityTrainingController {
             result.put("probabilities", probsMap);
 
             return ApiResponse.success(result);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("测试失败", e);
-            return ApiResponse.error("测试失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "测试失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -136,9 +143,12 @@ public class ComplexityTrainingController {
             result.put("classifierReady", classifier.isTrained());
 
             return ApiResponse.success(result);
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("从文件训练失败", e);
-            return ApiResponse.error("训练失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "训练失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 }

@@ -13,6 +13,7 @@ import com.cretas.aims.repository.ProductionPlanRepository;
 import com.cretas.aims.repository.ProductionReportRepository;
 import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.exception.ResourceNotFoundException;
+import com.cretas.aims.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -53,7 +54,8 @@ public class ProcessCheckinController {
         List<ProcessCheckinRecord> existing = checkinRepository
                 .findByFactoryIdAndEmployeeIdAndStatus(factoryId, employeeId, "CHECKED_IN");
         if (!existing.isEmpty()) {
-            return ApiResponse.error("该员工已签到（ID: " + existing.get(0).getId() + "），请先签退后再签到");
+            throw new BusinessException(409, "该员工已签到（ID: " + existing.get(0).getId() + "），请先签退后再签到")
+                    .withHint("请先签退现有进行中的工序后再签到");
         }
 
         ProcessCheckinRecord record = new ProcessCheckinRecord();
@@ -100,7 +102,7 @@ public class ProcessCheckinController {
                 .orElseThrow(() -> new ResourceNotFoundException("ProcessCheckinRecord", "id", id.toString()));
 
         if (!"CHECKED_IN".equals(record.getStatus())) {
-            return ApiResponse.error("当前状态无法签退");
+            throw new BusinessException(409, "当前状态无法签退");
         }
 
         record.setCheckOutTime(LocalDateTime.now());
@@ -117,6 +119,8 @@ public class ProcessCheckinController {
             try {
                 draftReportId = createReportDraft(record);
                 log.info("签退自动创建报工草稿: checkinId={}, draftReportId={}", id, draftReportId);
+            } catch (BusinessException be) {
+                throw be;
             } catch (Exception e) {
                 log.warn("报工草稿创建失败(不影响签退): checkinId={}, error={}", id, e.getMessage());
             }

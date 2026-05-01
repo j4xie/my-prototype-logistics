@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import com.cretas.aims.util.ErrorSanitizer;
 import com.cretas.aims.annotation.RequireModule;
+import com.cretas.aims.exception.BusinessException;
 
 /**
  * 调度优化 API Controller
@@ -46,9 +47,11 @@ public class SchedulingOptimizationController {
         try {
             FactorySchedulingConfig config = configService.getOrCreateConfig(factoryId);
             return ResponseEntity.ok(ApiResponse.success(config));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Error getting config for factory: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取配置失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取配置失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -64,9 +67,11 @@ public class SchedulingOptimizationController {
         try {
             FactorySchedulingConfig updated = configService.updateConfig(factoryId, config);
             return ResponseEntity.ok(ApiResponse.success("配置更新成功", updated));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Error updating config for factory: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("更新配置失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "更新配置失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -81,9 +86,11 @@ public class SchedulingOptimizationController {
         try {
             var effective = configService.getEffectiveConfig(factoryId, workerId);
             return ResponseEntity.ok(ApiResponse.success(effective));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Error getting effective config for worker: {}", workerId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取有效配置失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取有效配置失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -98,9 +105,11 @@ public class SchedulingOptimizationController {
         try {
             configService.performAdaptiveLearning(factoryId);
             return ResponseEntity.ok(ApiResponse.success("自适应学习执行成功", "OK"));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Error triggering adaptation for factory: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("自适应学习失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "自适应学习失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -116,9 +125,11 @@ public class SchedulingOptimizationController {
         try {
             var stats = tempWorkerService.getFactoryTempWorkerStats(factoryId);
             return ResponseEntity.ok(ApiResponse.success(stats));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Error getting temp worker stats for factory: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取统计失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取统计失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -136,9 +147,11 @@ public class SchedulingOptimizationController {
             FactoryTempWorker worker = tempWorkerService.registerTempWorker(
                     factoryId, workerId, request.getHireDate(), request.getExpectedEndDate());
             return ResponseEntity.ok(ApiResponse.success("临时工注册成功", worker));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Error registering temp worker: {}", workerId, e);
-            return ResponseEntity.ok(ApiResponse.error("注册失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "注册失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -154,9 +167,11 @@ public class SchedulingOptimizationController {
         try {
             FactoryTempWorker worker = tempWorkerService.convertToPermanent(factoryId, workerId);
             return ResponseEntity.ok(ApiResponse.success("转正成功", worker));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Error converting temp worker: {}", workerId, e);
-            return ResponseEntity.ok(ApiResponse.error("转正失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "转正失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -170,9 +185,11 @@ public class SchedulingOptimizationController {
         try {
             var candidates = tempWorkerService.getConversionCandidates(factoryId);
             return ResponseEntity.ok(ApiResponse.success(candidates));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Error getting conversion candidates for factory: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取候选人失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取候选人失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -186,9 +203,11 @@ public class SchedulingOptimizationController {
         try {
             var workers = tempWorkerService.getTempWorkersNeedingAssignment(factoryId);
             return ResponseEntity.ok(ApiResponse.success(workers));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Error getting temp workers needing assignment: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -205,10 +224,12 @@ public class SchedulingOptimizationController {
         try {
             var profile = skuComplexityService.getSkuProfile(factoryId, skuCode);
             return profile.map(p -> ResponseEntity.ok(ApiResponse.success(p)))
-                    .orElse(ResponseEntity.ok(ApiResponse.error("SKU不存在: " + skuCode)));
+                    .orElseThrow(() -> new BusinessException(404, "SKU不存在: " + skuCode).withHint("请检查 ID 是否正确"));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Error getting SKU complexity: {}", skuCode, e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -225,9 +246,11 @@ public class SchedulingOptimizationController {
         try {
             skuComplexityService.setSkuComplexity(factoryId, skuCode, request.getComplexityLevel());
             return ResponseEntity.ok(ApiResponse.success("SKU复杂度设置成功", "OK"));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Error setting SKU complexity: {}", skuCode, e);
-            return ResponseEntity.ok(ApiResponse.error("设置失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "设置失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -241,9 +264,11 @@ public class SchedulingOptimizationController {
         try {
             var skus = skuComplexityService.getTrainingSkus(factoryId);
             return ResponseEntity.ok(ApiResponse.success(skus));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Error getting training SKUs: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -257,9 +282,11 @@ public class SchedulingOptimizationController {
         try {
             var skus = skuComplexityService.getExpertSkus(factoryId);
             return ResponseEntity.ok(ApiResponse.success(skus));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Error getting expert SKUs: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -273,9 +300,11 @@ public class SchedulingOptimizationController {
         try {
             var drifts = skuComplexityService.detectComplexityDrift(factoryId);
             return ResponseEntity.ok(ApiResponse.success(drifts));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Error detecting SKU drift: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("检测失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "检测失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -291,9 +320,11 @@ public class SchedulingOptimizationController {
         try {
             var stats = fairMABService.getFactoryFairnessStats(factoryId);
             return ResponseEntity.ok(ApiResponse.success(stats));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Error getting fairness stats: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -308,9 +339,11 @@ public class SchedulingOptimizationController {
         try {
             var violations = fairMABService.detectFairnessViolations(factoryId, days);
             return ResponseEntity.ok(ApiResponse.success(violations));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Error detecting fairness violations: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("检测失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "检测失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -325,9 +358,11 @@ public class SchedulingOptimizationController {
         try {
             fairMABService.resetPeriod(factoryId);
             return ResponseEntity.ok(ApiResponse.success("公平性周期已重置", "OK"));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Error resetting fairness period: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("重置失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "重置失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -345,9 +380,11 @@ public class SchedulingOptimizationController {
         try {
             var complexity = complexityRouter.evaluateComplexity(factoryId, context);
             return ResponseEntity.ok(ApiResponse.success(complexity));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Error evaluating complexity: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("评估失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "评估失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -388,9 +425,11 @@ public class SchedulingOptimizationController {
             overview.put("conversionCandidates", candidates.size());
 
             return ResponseEntity.ok(ApiResponse.success(overview));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("Error getting overview: {}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取总览失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取总览失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 

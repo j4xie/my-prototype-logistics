@@ -11,6 +11,7 @@ import com.cretas.aims.service.CustomerService;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.utils.TokenUtils;
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.exception.BusinessException;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -231,7 +232,7 @@ public class CustomerController {
             activeStatus = body.get("isActive");
         }
         if (activeStatus == null) {
-            return ApiResponse.error("参数错误: isActive 是必需的");
+            throw new BusinessException(400, "参数错误: isActive 是必需的");
         }
 
         log.info("切换客户状态: factoryId={}, customerId={}, isActive={}",
@@ -416,12 +417,12 @@ public class CustomerController {
 
         // 验证文件类型
         if (file.getOriginalFilename() == null || !file.getOriginalFilename().endsWith(".xlsx")) {
-            return ApiResponse.error("只支持.xlsx格式的Excel文件");
+            throw new BusinessException(400, "只支持.xlsx格式的Excel文件");
         }
 
         // 验证文件大小（10MB限制）
         if (file.getSize() > 10 * 1024 * 1024) {
-            return ApiResponse.error("文件大小不能超过10MB");
+            throw new BusinessException(400, "文件大小不能超过10MB");
         }
 
         try {
@@ -438,9 +439,12 @@ public class CustomerController {
                         String.format("导入完成：成功%d条，失败%d条", result.getSuccessCount(), result.getFailureCount()),
                         result);
             }
+        } catch (BusinessException be) {
+            throw be;
+
         } catch (Exception e) {
             log.error("客户批量导入失败: factoryId={}", factoryId, e);
-            return ApiResponse.error("导入失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "导入失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 

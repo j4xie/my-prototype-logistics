@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.exception.BusinessException;
 
 /**
  * 图像分析测试 API
@@ -52,7 +53,7 @@ public class ImageAnalysisTestController {
                 factoryId, request.getWorkstationId(), request.getProcessStageType());
 
         if (request.getImageBase64() == null || request.getImageBase64().isEmpty()) {
-            return ApiResponse.error("图片数据不能为空");
+            throw new BusinessException(400, "图片数据不能为空");
         }
 
         // 移除可能的data:image前缀
@@ -112,7 +113,7 @@ public class ImageAnalysisTestController {
             return ApiResponse.success("检测完成", response);
         } else {
             log.warn("手势检测失败: {}", result.getMessage());
-            return ApiResponse.error(result.getMessage());
+            throw new BusinessException(400, result.getMessage());
         }
     }
 
@@ -133,7 +134,7 @@ public class ImageAnalysisTestController {
                 factoryId, file.getOriginalFilename(), file.getSize());
 
         if (file.isEmpty()) {
-            return ApiResponse.error("文件不能为空");
+            throw new BusinessException(400, "文件不能为空");
         }
 
         try {
@@ -152,7 +153,7 @@ public class ImageAnalysisTestController {
 
         } catch (IOException e) {
             log.error("文件读取失败", e);
-            return ApiResponse.error("文件读取失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "文件读取失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -177,7 +178,7 @@ public class ImageAnalysisTestController {
         );
 
         if (configs.isEmpty()) {
-            return ApiResponse.error("未找到匹配的Prompt配置");
+            throw new BusinessException(400, "未找到匹配的Prompt配置");
         }
 
         return ApiResponse.success(configs.get(0));
@@ -201,7 +202,7 @@ public class ImageAnalysisTestController {
             return ApiResponse.success("服务正常", status);
         } else {
             status.put("message", "AI视觉服务不可用，请检查DashScope API配置");
-            return ApiResponse.error("服务不可用");
+            throw new BusinessException(400, "服务不可用");
         }
     }
 

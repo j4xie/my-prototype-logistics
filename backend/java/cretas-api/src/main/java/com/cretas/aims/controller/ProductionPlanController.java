@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import com.cretas.aims.annotation.RequireModule;
+import com.cretas.aims.exception.BusinessException;
 
 /**
  * 生产计划管理控制器
@@ -230,7 +231,7 @@ public class ProductionPlanController {
 
         Object rawQty = body.get("actualQuantity");
         if (rawQty == null) {
-            return ApiResponse.error("缺少必要参数: actualQuantity");
+            throw new BusinessException(400, "缺少必要参数: actualQuantity");
         }
         BigDecimal actualQuantity = new BigDecimal(rawQty.toString());
         log.info("完成生产: factoryId={}, planId={}, actualQuantity={}", factoryId, planId, actualQuantity);
@@ -504,7 +505,7 @@ public class ProductionPlanController {
             @RequestParam("file") MultipartFile file) throws IOException {
 
         if (file.isEmpty()) {
-            return ApiResponse.error("请选择要导入的文件");
+            throw new BusinessException(400, "请选择要导入的文件");
         }
 
         String token = TokenUtils.extractToken(authorization);

@@ -29,6 +29,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.cretas.aims.annotation.RequireModule;
+import com.cretas.aims.exception.BusinessException;
 
 /**
  * 原材料消耗记录控制器
@@ -108,12 +109,12 @@ public class MaterialConsumptionController {
 
         Optional<MaterialConsumption> optConsumption = consumptionRepository.findById(id);
         if (optConsumption.isEmpty()) {
-            return ApiResponse.error(404, "消耗记录不存在");
+            throw new BusinessException(404, "消耗记录不存在");
         }
 
         MaterialConsumption consumption = optConsumption.get();
         if (!factoryId.equals(consumption.getFactoryId())) {
-            return ApiResponse.error(403, "无权访问该记录");
+            throw new BusinessException(403, "无权访问该记录");
         }
 
         Map<String, Object> enriched = enrichConsumption(consumption);

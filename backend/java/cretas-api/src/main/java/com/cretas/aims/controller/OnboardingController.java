@@ -15,6 +15,7 @@ import com.cretas.aims.service.FieldVisibilityService;
 import com.cretas.aims.service.FormTemplateService;
 import com.cretas.aims.service.UserService;
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,7 +53,7 @@ public class OnboardingController {
 
         // Validate internal API key
         if (apiKey == null || !apiKey.equals(internalApiKey)) {
-            return ApiResponse.error(403, "Invalid internal API key");
+            throw new BusinessException(403, "Invalid internal API key");
         }
 
         try {
@@ -85,6 +86,8 @@ public class OnboardingController {
             try {
                 fieldVisibilityService.recomputeVisibility(factoryId);
                 log.info("Onboarding: field visibility recomputed for '{}'", factoryId);
+            } catch (BusinessException be) {
+                throw be;
             } catch (Exception e) {
                 log.warn("Onboarding: visibility recompute failed (non-fatal): {}", e.getMessage());
             }
@@ -94,6 +97,8 @@ public class OnboardingController {
             try {
                 users = userService.provisionDefaultUsers(factoryId);
                 log.info("Onboarding: {} default users created", users.size());
+            } catch (BusinessException be) {
+                throw be;
             } catch (Exception e) {
                 log.warn("Onboarding: user provisioning failed (non-fatal): {}", e.getMessage());
             }
@@ -112,6 +117,8 @@ public class OnboardingController {
                                 .build();
                         featureConfigRepository.save(config);
                         configCount++;
+                    } catch (BusinessException be) {
+                        throw be;
                     } catch (Exception e) {
                         log.warn("Onboarding: failed to save feature config for module '{}': {}",
                                 mc.getModuleId(), ErrorSanitizer.sanitize(e));
@@ -132,6 +139,8 @@ public class OnboardingController {
                                 entityType + " (AI Generated)",
                                 schemaJson, null);
                         formTemplateCount++;
+                    } catch (BusinessException be) {
+                        throw be;
                     } catch (Exception e) {
                         log.warn("Onboarding: failed to save form template for '{}': {}",
                                 entry.getKey(), ErrorSanitizer.sanitize(e));
@@ -157,6 +166,8 @@ public class OnboardingController {
                                 .build();
                         alertThresholdRepository.save(threshold);
                         alertCount++;
+                    } catch (BusinessException be) {
+                        throw be;
                     } catch (Exception e) {
                         log.warn("Onboarding: failed to save alert threshold for '{}': {}",
                                 at.getMetric(), ErrorSanitizer.sanitize(e));
@@ -175,9 +186,13 @@ public class OnboardingController {
 
             return ApiResponse.success("工厂入驻成功", result);
 
+        } catch (BusinessException be) {
+            throw be;
+
+
         } catch (Exception e) {
             log.error("Onboarding failed: {}", e.getMessage(), e);
-            return ApiResponse.error("工厂入驻失败: " + ErrorSanitizer.sanitize(e));
+            throw new BusinessException(500, "工厂入驻失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 

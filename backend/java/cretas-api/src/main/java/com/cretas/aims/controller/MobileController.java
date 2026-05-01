@@ -22,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.cretas.aims.annotation.RateLimit;
 import com.cretas.aims.annotation.RateLimit.LimitType;
+import com.cretas.aims.exception.BusinessException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -422,7 +423,7 @@ public class MobileController {
         String role = (String) request.getAttribute("role");
         if (role == null || (!role.equals("factory_super_admin") && !role.equals("platform_admin")
                 && !role.equals("super_admin") && !role.equals("hr_admin"))) {
-            return ApiResponse.error("无权重置密码，需要管理员权限");
+            throw new BusinessException(403, "无权重置密码，需要管理员权限").withSeverity("error");
         }
         log.info("重置密码: factoryId={}, username={}, operator={}", factoryId, username, request.getAttribute("username"));
         mobileService.resetPassword(factoryId, username, newPassword);
@@ -566,7 +567,7 @@ public class MobileController {
             alertIdInt = Integer.parseInt(alertId);
         } catch (NumberFormatException e) {
             log.warn("alertId解析失败: {}", alertId);
-            return ApiResponse.error(400, "无效的告警ID");
+            throw new BusinessException(400, "无效的告警ID");
         }
 
         // 查找告警记录
@@ -575,7 +576,7 @@ public class MobileController {
 
         // 检查状态
         if (alert.getStatus() == AlertStatus.IGNORED) {
-            return ApiResponse.error(400, "该告警已被忽略");
+            throw new BusinessException(400, "该告警已被忽略");
         }
 
         // 更新为IGNORED状态

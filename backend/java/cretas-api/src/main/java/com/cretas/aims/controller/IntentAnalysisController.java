@@ -13,6 +13,7 @@ import com.cretas.aims.repository.config.AIIntentConfigRepository;
 import com.cretas.aims.scheduler.ErrorAttributionAnalysisScheduler;
 import com.cretas.aims.service.ErrorAttributionAnalysisService;
 import com.cretas.aims.service.SemanticRouterService;
+import com.cretas.aims.exception.BusinessException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -82,9 +83,11 @@ public class IntentAnalysisController {
             result.put("count", stats.size());
 
             return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取统计数据失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取统计数据失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取统计数据失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -103,13 +106,15 @@ public class IntentAnalysisController {
                             .orElse(null);
 
             if (stats == null) {
-                return ResponseEntity.ok(ApiResponse.error("未找到该日期的统计数据"));
+                throw new BusinessException(404, "未找到该日期的统计数据");
             }
 
             return ResponseEntity.ok(ApiResponse.success(stats));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取统计详情失败: factoryId={}, date={}", factoryId, date, e);
-            return ResponseEntity.ok(ApiResponse.error("获取统计详情失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取统计详情失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -127,9 +132,11 @@ public class IntentAnalysisController {
         try {
             Map<LocalDate, Double> trend = analysisService.analyzeMatchRateTrend(factoryId, days);
             return ResponseEntity.ok(ApiResponse.success(trend));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取匹配率趋势失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取趋势数据失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取趋势数据失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -145,9 +152,11 @@ public class IntentAnalysisController {
         try {
             Map<LocalDate, Integer> trend = analysisService.analyzeLlmFallbackTrend(factoryId, days);
             return ResponseEntity.ok(ApiResponse.success(trend));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取LLM Fallback趋势失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取趋势数据失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取趋势数据失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -164,9 +173,11 @@ public class IntentAnalysisController {
             Map<LocalDate, Map<String, Integer>> trend =
                     analysisService.analyzeErrorAttributionTrend(factoryId, days);
             return ResponseEntity.ok(ApiResponse.success(trend));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取错误归因趋势失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取趋势数据失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取趋势数据失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -186,9 +197,11 @@ public class IntentAnalysisController {
             List<Map<String, Object>> patterns =
                     analysisService.identifyFailurePatterns(factoryId, days, minFrequency);
             return ResponseEntity.ok(ApiResponse.success(patterns));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取失败模式失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败模式失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取失败模式失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -205,9 +218,11 @@ public class IntentAnalysisController {
             List<Map<String, Object>> intents =
                     analysisService.identifyAmbiguousIntents(factoryId, days);
             return ResponseEntity.ok(ApiResponse.success(intents));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取歧义意图失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取歧义意图失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取歧义意图失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -225,9 +240,11 @@ public class IntentAnalysisController {
             List<Map<String, Object>> patterns =
                     analysisService.identifyMissingRulePatterns(factoryId, days, minCount);
             return ResponseEntity.ok(ApiResponse.success(patterns));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取缺失规则模式失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取缺失规则模式失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取缺失规则模式失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -265,9 +282,11 @@ public class IntentAnalysisController {
             result.put("size", size);
 
             return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取优化建议失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取优化建议失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取优化建议失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -332,9 +351,11 @@ public class IntentAnalysisController {
             stats.put("updateIntentCount", updateIntentCount);
 
             return ResponseEntity.ok(ApiResponse.success(stats));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取建议统计失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取统计失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取统计失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -353,9 +374,11 @@ public class IntentAnalysisController {
                     suggestionRepository.findHighImpactPendingSuggestions(factoryId, BigDecimal.valueOf(minImpact),
                             PageRequest.of(0, limit));
             return ResponseEntity.ok(ApiResponse.success(suggestions));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取高影响力建议失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取高影响力建议失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取高影响力建议失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -376,11 +399,13 @@ public class IntentAnalysisController {
                 log.info("建议已采纳: suggestionId={}, operatorId={}", suggestionId, operatorId);
                 return ResponseEntity.ok(ApiResponse.successMessage("建议已采纳"));
             } else {
-                return ResponseEntity.ok(ApiResponse.error("建议不存在或状态已变更"));
+                throw new BusinessException(404, "建议不存在或状态已变更");
             }
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("采纳建议失败: suggestionId={}", suggestionId, e);
-            return ResponseEntity.ok(ApiResponse.error("采纳建议失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "采纳建议失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -401,11 +426,13 @@ public class IntentAnalysisController {
                 log.info("建议已拒绝: suggestionId={}, reason={}", suggestionId, reason);
                 return ResponseEntity.ok(ApiResponse.successMessage("建议已拒绝"));
             } else {
-                return ResponseEntity.ok(ApiResponse.error("建议不存在或状态已变更"));
+                throw new BusinessException(404, "建议不存在或状态已变更");
             }
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("拒绝建议失败: suggestionId={}", suggestionId, e);
-            return ResponseEntity.ok(ApiResponse.error("拒绝建议失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "拒绝建议失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -440,9 +467,11 @@ public class IntentAnalysisController {
             result.put("size", size);
 
             return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取创建新意图建议失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取建议列表失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取建议列表失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -475,9 +504,11 @@ public class IntentAnalysisController {
             result.put("size", size);
 
             return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取更新意图建议失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取建议列表失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取建议列表失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -495,21 +526,23 @@ public class IntentAnalysisController {
             IntentOptimizationSuggestion suggestion = suggestionRepository.findById(suggestionId).orElse(null);
 
             if (suggestion == null) {
-                return ResponseEntity.ok(ApiResponse.error("建议不存在"));
+                throw new BusinessException(404, "建议不存在");
             }
 
             if (!suggestion.getFactoryId().equals(factoryId)) {
-                return ResponseEntity.ok(ApiResponse.error("无权访问该建议"));
+                throw new BusinessException(403, "无权访问该建议").withSeverity("error");
             }
 
             if (!suggestion.isCreateIntent()) {
-                return ResponseEntity.ok(ApiResponse.error("该建议不是创建新意图类型"));
+                throw new BusinessException(400, "该建议不是创建新意图类型");
             }
 
             return ResponseEntity.ok(ApiResponse.success(suggestion));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取建议详情失败: suggestionId={}", suggestionId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取建议详情失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取建议详情失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -536,19 +569,19 @@ public class IntentAnalysisController {
             IntentOptimizationSuggestion suggestion = suggestionRepository.findById(suggestionId).orElse(null);
 
             if (suggestion == null) {
-                return ResponseEntity.ok(ApiResponse.error("建议不存在"));
+                throw new BusinessException(404, "建议不存在");
             }
 
             if (!suggestion.getFactoryId().equals(factoryId)) {
-                return ResponseEntity.ok(ApiResponse.error("无权访问该建议"));
+                throw new BusinessException(403, "无权访问该建议").withSeverity("error");
             }
 
             if (!suggestion.isCreateIntent()) {
-                return ResponseEntity.ok(ApiResponse.error("该建议不是创建新意图类型"));
+                throw new BusinessException(400, "该建议不是创建新意图类型");
             }
 
             if (suggestion.getStatus() != IntentOptimizationSuggestion.SuggestionStatus.PENDING) {
-                return ResponseEntity.ok(ApiResponse.error("建议状态已变更，无法审批"));
+                throw new BusinessException(400, "建议状态已变更，无法审批");
             }
 
             // 2. 确定最终使用的意图代码和名称
@@ -562,7 +595,7 @@ public class IntentAnalysisController {
             // 3. 检查意图代码是否已存在
             boolean exists = intentConfigRepository.findByFactoryIdAndIntentCode(factoryId, finalIntentCode).isPresent();
             if (exists) {
-                return ResponseEntity.ok(ApiResponse.error("意图代码已存在: " + finalIntentCode));
+                throw new BusinessException(409, "意图代码已存在: " + finalIntentCode).withHint("请检查是否重复或更新已有记录");
             }
 
             // 4. 创建新的 AIIntentConfig
@@ -594,9 +627,11 @@ public class IntentAnalysisController {
             result.put("message", "新意图创建成功: " + finalIntentCode);
 
             return ResponseEntity.ok(ApiResponse.success("新意图创建成功", result));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("审批创建新意图失败: suggestionId={}", suggestionId, e);
-            return ResponseEntity.ok(ApiResponse.error("审批失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "审批失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -613,9 +648,11 @@ public class IntentAnalysisController {
         try {
             Map<String, Object> report = analysisService.generateWeeklyReport(factoryId);
             return ResponseEntity.ok(ApiResponse.success(report));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("生成周报失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("生成周报失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "生成周报失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -672,9 +709,11 @@ public class IntentAnalysisController {
             dashboard.put("schedulerStatus", analysisScheduler.getSchedulerStatus());
 
             return ResponseEntity.ok(ApiResponse.success(dashboard));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取仪表盘数据失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取仪表盘数据失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取仪表盘数据失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -693,9 +732,11 @@ public class IntentAnalysisController {
         try {
             ErrorAttributionStatistics stats = analysisScheduler.triggerAggregation(factoryId, date);
             return ResponseEntity.ok(ApiResponse.success("统计聚合完成", stats));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("手动触发聚合失败: factoryId={}, date={}", factoryId, date, e);
-            return ResponseEntity.ok(ApiResponse.error("触发聚合失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "触发聚合失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -714,9 +755,11 @@ public class IntentAnalysisController {
                     analysisScheduler.triggerSuggestionGeneration(factoryId, days);
             return ResponseEntity.ok(ApiResponse.success(
                     "生成 " + suggestions.size() + " 条优化建议", suggestions));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("手动生成建议失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("生成建议失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "生成建议失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -730,9 +773,11 @@ public class IntentAnalysisController {
 
         try {
             return ResponseEntity.ok(ApiResponse.success(analysisScheduler.getSchedulerStatus()));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取调度器状态失败", e);
-            return ResponseEntity.ok(ApiResponse.error("获取调度器状态失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取调度器状态失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -759,14 +804,14 @@ public class IntentAnalysisController {
                     .findByFactoryIdAndIntentCode(factoryId, intentCode);
 
             if (intentOpt.isEmpty()) {
-                return ResponseEntity.ok(ApiResponse.error("意图不存在或不属于当前工厂"));
+                throw new BusinessException(404, "意图不存在或不属于当前工厂");
             }
 
             AIIntentConfig intent = intentOpt.get();
 
             // 2. 检查是否已经是平台级
             if (intent.getFactoryId() == null || "PLATFORM".equalsIgnoreCase(intent.getFactoryId())) {
-                return ResponseEntity.ok(ApiResponse.error("该意图已经是平台级意图"));
+                throw new BusinessException(400, "该意图已经是平台级意图");
             }
 
             // 3. 检查是否已有待审批的晋升请求
@@ -777,7 +822,7 @@ public class IntentAnalysisController {
                             IntentOptimizationSuggestion.SuggestionStatus.PENDING);
 
             if (!existingRequests.isEmpty()) {
-                return ResponseEntity.ok(ApiResponse.error("该意图已有待审批的晋升请求"));
+                throw new BusinessException(400, "该意图已有待审批的晋升请求");
             }
 
             // 4. 创建晋升建议
@@ -798,9 +843,11 @@ public class IntentAnalysisController {
             log.info("工厂 [{}] 申请将意图 [{}] 晋升为平台级", factoryId, intentCode);
             return ResponseEntity.ok(ApiResponse.success("晋升请求已提交", result));
 
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("请求晋升失败: factoryId={}, intentCode={}", factoryId, intentCode, e);
-            return ResponseEntity.ok(ApiResponse.error("请求晋升失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "请求晋升失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -821,9 +868,11 @@ public class IntentAnalysisController {
                             IntentOptimizationSuggestion.SuggestionStatus.PENDING);
 
             return ResponseEntity.ok(ApiResponse.success(pendingPromotions));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取待审批晋升请求失败", e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -847,17 +896,17 @@ public class IntentAnalysisController {
             // 1. 查找建议
             Optional<IntentOptimizationSuggestion> suggestionOpt = suggestionRepository.findById(suggestionId);
             if (suggestionOpt.isEmpty()) {
-                return ResponseEntity.ok(ApiResponse.error("晋升请求不存在"));
+                throw new BusinessException(404, "晋升请求不存在");
             }
 
             IntentOptimizationSuggestion suggestion = suggestionOpt.get();
 
             // 2. 验证类型和状态
             if (!suggestion.isPromoteToPlatform()) {
-                return ResponseEntity.ok(ApiResponse.error("该建议不是晋升请求"));
+                throw new BusinessException(400, "该建议不是晋升请求");
             }
             if (suggestion.getStatus() != IntentOptimizationSuggestion.SuggestionStatus.PENDING) {
-                return ResponseEntity.ok(ApiResponse.error("该请求已被处理"));
+                throw new BusinessException(400, "该请求已被处理");
             }
 
             Map<String, Object> result = new HashMap<>();
@@ -868,7 +917,7 @@ public class IntentAnalysisController {
                         .findByFactoryIdAndIntentCode(suggestion.getFactoryId(), suggestion.getIntentCode());
 
                 if (intentOpt.isEmpty()) {
-                    return ResponseEntity.ok(ApiResponse.error("原意图已不存在"));
+                    throw new BusinessException(404, "原意图已不存在");
                 }
 
                 AIIntentConfig intent = intentOpt.get();
@@ -904,9 +953,11 @@ public class IntentAnalysisController {
 
             return ResponseEntity.ok(ApiResponse.success(result));
 
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("审批晋升请求失败: suggestionId={}", suggestionId, e);
-            return ResponseEntity.ok(ApiResponse.error("审批失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "审批失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -953,9 +1004,11 @@ public class IntentAnalysisController {
             result.put("estimatedTimeSavedSeconds", String.format("%.1f", estimatedSavingsMs / 1000.0));
 
             return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("获取语义路由器统计失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取统计失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "获取统计失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
@@ -973,9 +1026,11 @@ public class IntentAnalysisController {
             semanticRouterService.refreshCache(factoryId);
             log.info("语义路由器缓存已刷新: factoryId={}", factoryId);
             return ResponseEntity.ok(ApiResponse.successMessage("缓存刷新成功"));
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             log.error("刷新语义路由器缓存失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("刷新缓存失败: " + ErrorSanitizer.sanitize(e)));
+            throw new BusinessException(500, "刷新缓存失败: " + ErrorSanitizer.sanitize(e), e);
         }
     }
 
