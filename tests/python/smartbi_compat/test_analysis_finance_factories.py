@@ -1285,3 +1285,157 @@ class TestOverdueRankingDepth:
         monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
         result = await analysis_finance._get_overdue_customer_ranking("F001", date(2025, 12, 31))
         assert result[0]["value"] == 1234.57
+
+
+class TestReceivableTrendDepth:
+    """PR-B depth — monthly aggregation arithmetic for _get_receivable_trend_chart.
+
+    Mirror Java FinanceAnalysisServiceImpl.getReceivableTrendChart (line 786-827).
+    PR-A covered basic shape (empty / 2-month / sort / null skip / Map.of order).
+    PR-B locks balance formula, multi-row aggregation, single-month, and quantize.
+
+    NOTE: Mid-year dates only. Cross-year ISO-week ambiguity is out of scope here.
+    """
+
+    @pytest.mark.asyncio
+    async def test_balance_equals_receivable_minus_collection_per_period(self, monkeypatch):
+        """Per-period: balance = receivable - collection. Verify across 3 months.
+        Java line 803-806."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [
+                {"record_date": date(2025, 6, 1),  "receivable_amount": "1000", "collection_amount": "300"},
+                {"record_date": date(2025, 7, 1),  "receivable_amount": "500",  "collection_amount": "500"},
+                {"record_date": date(2025, 8, 1),  "receivable_amount": "200",  "collection_amount": "600"},
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_receivable_trend_chart(
+            "F001", date(2025, 1, 1), date(2025, 12, 31)
+        )
+        data = result["data"]
+        # June: balance = 1000 - 300 = 700
+        assert data[0]["period"] == "2025-06"
+        assert data[0]["balance"] == 700
+        # July: balance = 500 - 500 = 0
+        assert data[1]["period"] == "2025-07"
+        assert data[1]["balance"] == 0
+        # August: balance = 200 - 600 = -400 (negative balance — overpayment)
+        assert data[2]["period"] == "2025-08"
+        assert data[2]["balance"] == -400
+
+    @pytest.mark.asyncio
+    async def test_multi_row_same_month_aggregates(self, monkeypatch):
+        """Same month, multiple rows → receivable + collection sum."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [
+                {"record_date": date(2025, 6, 1),  "receivable_amount": "100", "collection_amount": "10"},
+                {"record_date": date(2025, 6, 5),  "receivable_amount": "200", "collection_amount": "20"},
+                {"record_date": date(2025, 6, 15), "receivable_amount": "300", "collection_amount": "30"},
+                {"record_date": date(2025, 6, 28), "receivable_amount": "400", "collection_amount": "40"},
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_receivable_trend_chart(
+            "F001", date(2025, 6, 1), date(2025, 6, 30)
+        )
+        assert len(result["data"]) == 1
+        d = result["data"][0]
+        assert d["period"] == "2025-06"
+        assert d["receivable"] == 1000  # 100+200+300+400
+        assert d["collection"] == 100   # 10+20+30+40
+        assert d["balance"] == 900       # 1000 - 100
+
+    @pytest.mark.asyncio
+    async def test_single_month_single_row(self, monkeypatch):
+        """Minimal data: 1 month with 1 row → 1 chart point."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [{"record_date": date(2025, 7, 15), "receivable_amount": "5000", "collection_amount": "1000"}]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_receivable_trend_chart(
+            "F001", date(2025, 7, 1), date(2025, 7, 31)
+        )
+        assert len(result["data"]) == 1
+        assert result["data"][0]["period"] == "2025-07"
+        assert result["data"][0]["balance"] == 4000
+
+    @pytest.mark.asyncio
+    async def test_balance_quantize_half_up_two_decimals(self, monkeypatch):
+        """receivable=100.005, collection=0 → balance=100.005 → quantize(0.01, HALF_UP) = 100.01."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [{"record_date": date(2025, 6, 1), "receivable_amount": "100.005", "collection_amount": "0"}]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_receivable_trend_chart(
+            "F001", date(2025, 6, 1), date(2025, 6, 30)
+        )
+        assert result["data"][0]["balance"] == 100.01
+
+    @pytest.mark.asyncio
+    async def test_options_series_unchanged_regardless_of_data(self, monkeypatch):
+        """Rule 8 lock: options.series Map.of(2) order is `{name, type}` per item.
+        Verify across multiple data scenarios (empty / 1 row / multi-month) — series is invariant.
+        """
+        from smartbi_compat.api import analysis_finance
+
+        expected_series = [
+            {"name": "应收金额", "type": "bar"},
+            {"name": "回款金额", "type": "bar"},
+            {"name": "应收余额", "type": "line"},
+        ]
+
+        # Scenario A: empty
+        async def empty_query(factory_id, record_type, start, end):
+            return []
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", empty_query)
+        result_empty = await analysis_finance._get_receivable_trend_chart(
+            "F001", date(2025, 1, 1), date(2025, 12, 31)
+        )
+        assert result_empty["options"]["series"] == expected_series
+
+        # Scenario B: 1 row
+        async def one_row_query(factory_id, record_type, start, end):
+            return [{"record_date": date(2025, 6, 1), "receivable_amount": "100", "collection_amount": "0"}]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", one_row_query)
+        result_one = await analysis_finance._get_receivable_trend_chart(
+            "F001", date(2025, 1, 1), date(2025, 12, 31)
+        )
+        assert result_one["options"]["series"] == expected_series
+
+        # Scenario C: multi-month
+        async def multi_query(factory_id, record_type, start, end):
+            return [
+                {"record_date": date(2025, 5, 1), "receivable_amount": "100", "collection_amount": "0"},
+                {"record_date": date(2025, 6, 1), "receivable_amount": "200", "collection_amount": "0"},
+                {"record_date": date(2025, 7, 1), "receivable_amount": "300", "collection_amount": "0"},
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", multi_query)
+        result_multi = await analysis_finance._get_receivable_trend_chart(
+            "F001", date(2025, 1, 1), date(2025, 12, 31)
+        )
+        assert result_multi["options"]["series"] == expected_series
+
+        # Verify per-item key order locked (regression test for Rule 8 violation)
+        for item in result_multi["options"]["series"]:
+            assert list(item.keys()) == ["name", "type"]
+
+    @pytest.mark.asyncio
+    async def test_data_item_4key_order_locked(self, monkeypatch):
+        """Per-data-item order: [period, receivable, collection, balance] per spec §3.5."""
+        from smartbi_compat.api import analysis_finance
+
+        async def fake_query(factory_id, record_type, start, end):
+            return [
+                {"record_date": date(2025, 5, 1), "receivable_amount": "100", "collection_amount": "10"},
+                {"record_date": date(2025, 6, 1), "receivable_amount": "200", "collection_amount": "20"},
+            ]
+        monkeypatch.setattr(analysis_finance, "_query_finance_data", fake_query)
+        result = await analysis_finance._get_receivable_trend_chart(
+            "F001", date(2025, 1, 1), date(2025, 12, 31)
+        )
+        for item in result["data"]:
+            assert list(item.keys()) == ["period", "receivable", "collection", "balance"]
