@@ -1234,3 +1234,553 @@ class TestOverview:
         assert len(overview["kpiCards"]) == 4
         # 2-INFO insights (B: no 4-branch)
         assert all(i["level"] == "INFO" for i in overview["aiInsights"])
+
+
+# ============================================================
+# TestRankings — rankings sub-spec contract tests
+# ============================================================
+
+
+class TestRankings:
+    """Sibling sub-spec: rankings. Generic _build_ranking + 3 caller wrappers.
+
+    Foundation gates TestEnvelope; gold gates TestGold; overview gates TestOverview;
+    rankings (this class) gates the 3 ranking sub-services + tie stability.
+    """
+
+    def test_build_ranking_basic_sort_desc(self):
+        """Generic builder sorts by value DESC. No target, no percentage."""
+        from smartbi_compat.api.analysis_sales import _build_ranking
+        from decimal import Decimal
+
+        result = _build_ranking({
+            "A": Decimal("100"),
+            "B": Decimal("300"),
+            "C": Decimal("200"),
+        })
+        assert len(result) == 3
+        assert [r["name"] for r in result] == ["B", "C", "A"]
+        assert [r["rank"] for r in result] == [1, 2, 3]
+        # value scaled to 0.01
+        assert result[0]["value"] == Decimal("300.00")
+        # No target/completion → completionRate=0.00, alertLevel="GREEN"
+        assert result[0]["target"] is None
+        assert result[0]["completionRate"] == Decimal("0.00")
+        assert result[0]["alertLevel"] == "GREEN"
+
+    def test_build_ranking_tie_stability_name_asc(self):
+        """When values are tied, name ASC breaks tie (composite sort key)."""
+        from smartbi_compat.api.analysis_sales import _build_ranking
+        from decimal import Decimal
+
+        result = _build_ranking({
+            "蛋类": Decimal("100"),
+            "蔬菜": Decimal("100"),
+            "肉类": Decimal("200"),
+        })
+        # Rank 1: 肉类 (value=200, top)
+        # Rank 2-3: 蛋类 vs 蔬菜 (both value=100); name ASC → 蔬(U+852C) < 蛋(U+86CB) → 蔬菜 first
+        assert result[0]["name"] == "肉类"
+        assert result[1]["name"] == "蔬菜"
+        assert result[2]["name"] == "蛋类"
+
+    def test_build_ranking_top_n_cap(self):
+        """top_n caps result length AFTER sort."""
+        from smartbi_compat.api.analysis_sales import _build_ranking
+        from decimal import Decimal
+
+        result = _build_ranking(
+            {f"P{i}": Decimal(str(100 - i)) for i in range(15)},
+            top_n=10,
+        )
+        assert len(result) == 10
+        assert result[0]["name"] == "P0"  # value=100, top
+        assert result[9]["name"] == "P9"  # value=91, 10th
+
+    def test_build_ranking_with_percentage(self):
+        """with_percentage=True → completionRate = (value/total)*100, alertLevel=GREEN."""
+        from smartbi_compat.api.analysis_sales import _build_ranking
+        from decimal import Decimal
+
+        result = _build_ranking(
+            {"A": Decimal("400"), "B": Decimal("300"), "C": Decimal("300")},
+            with_percentage=True,
+        )
+        # Total = 1000; A=40%, B=30%, C=30%
+        assert result[0]["name"] == "A"
+        assert result[0]["completionRate"] == Decimal("40.00")
+        assert result[0]["alertLevel"] == "GREEN"  # hard-coded GREEN per Java line 528/588
+        # Tie-broken: B/C both value=300; name ASC → B first
+        assert result[1]["name"] == "B"
+        assert result[2]["name"] == "C"
+
+    def test_build_ranking_with_target_map(self):
+        """target_map → completionRate = (value/target)*100, alertLevel computed."""
+        from smartbi_compat.api.analysis_sales import _build_ranking
+        from decimal import Decimal
+
+        result = _build_ranking(
+            {"张三": Decimal("100000"), "李四": Decimal("50000")},
+            target_map={"张三": Decimal("200000"), "李四": Decimal("100000")},
+        )
+        # 张三: 100k/200k = 50% < TARGET_RED=60 → RED
+        # 李四: 50k/100k = 50% < TARGET_RED=60 → RED
+        assert result[0]["name"] == "张三"  # value=100k, top
+        assert result[0]["target"] == Decimal("200000.00")
+        # Final dict construction quantizes to DISPLAY_SCALE=2 (Decimal("0.01"))
+        # Note: _calculate_completion_rate returns SCALE=4 ("50.0000") but the
+        # final ranking dict reduces to "50.00" (DISPLAY_SCALE) per impl spec.
+        assert result[0]["completionRate"] == Decimal("50.00")
+        assert result[0]["alertLevel"] == "RED"
+
+    def test_build_ranking_with_target_zero_returns_zero_rate(self):
+        """When target=0, completionRate=0 (Java BigDecimal.ZERO line 1167-1169)."""
+        from smartbi_compat.api.analysis_sales import _build_ranking
+        from decimal import Decimal
+
+        result = _build_ranking(
+            {"X": Decimal("100")},
+            target_map={"X": Decimal("0")},
+        )
+        # _calculate_completion_rate returns Decimal("0") (not scaled);
+        # final .quantize(0.01) yields Decimal("0.00").
+        assert result[0]["completionRate"] == Decimal("0.00")
+        assert result[0]["alertLevel"] == "RED"  # 0 < TARGET_RED=60
+
+    @pytest.mark.asyncio
+    async def test_get_salesperson_ranking_full_path(self, monkeypatch):
+        """Aggregates per salesperson_name with target_map, computes completion + alert."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+        from collections import namedtuple
+
+        Row = namedtuple("Row", "salesperson_name amount monthly_target product_category customer_name order_date")
+
+        def fake_query(factory_id, range_):
+            return [
+                Row("张三", Decimal("60000"), Decimal("100000"), "P1", "C1", date(2025, 1, 1)),
+                Row("张三", Decimal("40000"), Decimal("100000"), "P2", "C2", date(2025, 1, 2)),
+                Row("李四", Decimal("80000"), Decimal("100000"), "P3", "C3", date(2025, 1, 3)),
+                Row(None, Decimal("99999"), Decimal("0"), "P4", "C4", date(2025, 1, 4)),  # null name → skip
+            ]
+
+        monkeypatch.setattr(m, "_query_sales_data", fake_query)
+
+        range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 1, 31))
+        result = await m._get_salesperson_ranking("F999", range_)
+
+        assert len(result) == 2  # null name skipped
+        # 张三: 60k+40k = 100k sales, 100k+100k = 200k target → 50% completion → RED
+        # 李四: 80k sales, 100k target → 80% completion → YELLOW (60 ≤ 80 < 85)
+        assert result[0]["name"] == "张三"  # value=100k, top
+        assert result[0]["value"] == Decimal("100000.00")
+        assert result[0]["target"] == Decimal("200000.00")
+        assert result[0]["completionRate"] == Decimal("50.00")
+        assert result[0]["alertLevel"] == "RED"
+        assert result[1]["name"] == "李四"
+        assert result[1]["value"] == Decimal("80000.00")
+        assert result[1]["target"] == Decimal("100000.00")
+        assert result[1]["completionRate"] == Decimal("80.00")
+        assert result[1]["alertLevel"] == "YELLOW"
+
+    @pytest.mark.asyncio
+    async def test_get_salesperson_ranking_empty_when_no_rows(self, monkeypatch):
+        """No rows → empty list (foundation stub byte shape preserved)."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+
+        def fake_query(factory_id, range_):
+            return []
+
+        monkeypatch.setattr(m, "_query_sales_data", fake_query)
+
+        range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 1, 31))
+        result = await m._get_salesperson_ranking("F999", range_)
+        assert result == []
+
+    @pytest.mark.asyncio
+    async def test_get_product_ranking_with_percentage(self, monkeypatch):
+        """Aggregates per product_category, completionRate = % of total, alertLevel=GREEN."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+        from collections import namedtuple
+
+        Row = namedtuple("Row", "salesperson_name amount monthly_target product_category customer_name order_date")
+
+        def fake_query(factory_id, range_):
+            return [
+                Row("X", Decimal("400"), None, "肉类", "C1", date(2025, 1, 1)),
+                Row("X", Decimal("300"), None, "蔬菜", "C2", date(2025, 1, 2)),
+                Row("X", Decimal("300"), None, "蛋类", "C3", date(2025, 1, 3)),
+                Row("X", Decimal("99"), None, None, "C4", date(2025, 1, 4)),  # null category → skip
+            ]
+
+        monkeypatch.setattr(m, "_query_sales_data", fake_query)
+
+        range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 1, 31))
+        result = await m._get_product_ranking("F999", range_)
+
+        assert len(result) == 3  # null skipped
+        # Total = 1000; rank by value DESC, ties name ASC
+        # 肉类(400) → 40%; 蔬菜(300) tied 蛋类(300) → name ASC: 蔬<蛋 → 蔬菜 first
+        assert result[0]["name"] == "肉类"
+        assert result[0]["value"] == Decimal("400.00")
+        assert result[0]["completionRate"] == Decimal("40.00")
+        assert result[0]["alertLevel"] == "GREEN"
+        assert result[0]["target"] is None
+        # Tie: 蔬菜 (U+852C) < 蛋类 (U+86CB)
+        assert result[1]["name"] == "蔬菜"
+        assert result[2]["name"] == "蛋类"
+
+    @pytest.mark.asyncio
+    async def test_get_product_ranking_empty(self, monkeypatch):
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        monkeypatch.setattr(m, "_query_sales_data", lambda f, r: [])
+        range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 1, 31))
+        result = await m._get_product_ranking("F999", range_)
+        assert result == []
+
+    @pytest.mark.asyncio
+    async def test_get_customer_ranking_top_10_cap(self, monkeypatch):
+        """15 customers → only top 10 by value DESC returned."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+        from collections import namedtuple
+
+        Row = namedtuple("Row", "salesperson_name amount monthly_target product_category customer_name order_date")
+
+        def fake_query(factory_id, range_):
+            return [
+                Row("X", Decimal(str(1000 - i * 10)), None, "P", f"客户{i:02d}", date(2025, 1, 1))
+                for i in range(15)
+            ]
+
+        monkeypatch.setattr(m, "_query_sales_data", fake_query)
+
+        range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 1, 31))
+        result = await m._get_customer_ranking("F999", range_)
+
+        assert len(result) == 10  # top_n=10 cap
+        # Top: 客户00 (value=1000)
+        assert result[0]["name"] == "客户00"
+        assert result[0]["value"] == Decimal("1000.00")
+        # 10th: 客户09 (value=910)
+        assert result[9]["name"] == "客户09"
+        assert result[9]["value"] == Decimal("910.00")
+        # All have alertLevel=GREEN
+        assert all(r["alertLevel"] == "GREEN" for r in result)
+        # All have target=None
+        assert all(r["target"] is None for r in result)
+
+    @pytest.mark.asyncio
+    async def test_get_customer_ranking_filters_null_name(self, monkeypatch):
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+        from collections import namedtuple
+
+        Row = namedtuple("Row", "salesperson_name amount monthly_target product_category customer_name order_date")
+
+        def fake_query(factory_id, range_):
+            return [
+                Row("X", Decimal("100"), None, "P", "客户A", date(2025, 1, 1)),
+                Row("X", Decimal("99999"), None, "P", None, date(2025, 1, 2)),  # null → skip
+            ]
+
+        monkeypatch.setattr(m, "_query_sales_data", fake_query)
+        range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 1, 31))
+        result = await m._get_customer_ranking("F999", range_)
+        assert len(result) == 1
+        assert result[0]["name"] == "客户A"
+
+    # ============================================================
+    # F001 byte-shape regression tests (Phase C.1)
+    # ============================================================
+    # F001 has no rows in legacy `smart_bi_sales_data` table — the F001
+    # golden confirms all 3 rankings are []. In test env, `_query_sales_data`
+    # returns [] (postgres_enabled=False), so all 3 ranking sub-services
+    # naturally return []. These tests gate the byte-shape contract by
+    # invoking the route end-to-end with an F001 token.
+
+    def test_F001_salesperson_ranking_byte_shape(self, client, f001_token):
+        """F001 has no sales data → salespersonRanking should be []."""
+        response = client.get(
+            "/api/mobile/F001/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+            headers={"Authorization": f"Bearer {f001_token}"},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["data"]["salespersonRanking"] == []
+
+    def test_F001_product_ranking_byte_shape(self, client, f001_token):
+        """F001 has no sales data → productRanking should be []."""
+        response = client.get(
+            "/api/mobile/F001/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+            headers={"Authorization": f"Bearer {f001_token}"},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["data"]["productRanking"] == []
+
+    def test_F001_customer_ranking_byte_shape(self, client, f001_token):
+        """F001 has no sales data → customerRanking should be []."""
+        response = client.get(
+            "/api/mobile/F001/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+            headers={"Authorization": f"Bearer {f001_token}"},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["data"]["customerRanking"] == []
+
+    # ============================================================
+    # F999 explicit rankings regression (Phase C.2)
+    # ============================================================
+    # Defensive — TestEnvelope.test_F999_empty_state_byte_shape compares the
+    # full envelope `data` against the F999 golden, but failures bubble up as
+    # generic byte-shape diffs. This test pinpoints the 3 ranking fields so a
+    # ranking-only regression (e.g. accidental sub-service producing a single
+    # entry for cleared data) surfaces with a clear "all 3 rankings empty"
+    # signal independent of the rest of the composite.
+
+    def test_F999_all_rankings_empty(self, client, f999_token):
+        """F999 has cleared data → all 3 rankings should be []."""
+        response = client.get(
+            "/api/mobile/F999/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+            headers={"Authorization": f"Bearer {f999_token}"},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["data"]["salespersonRanking"] == []
+        assert body["data"]["productRanking"] == []
+        assert body["data"]["customerRanking"] == []
+
+
+# ============================================================
+# TestTrend — trend sub-spec contract tests (DAY-only port)
+# ============================================================
+
+
+class TestTrend:
+    """Sibling sub-spec: trend. DAY bucketing only per spec §5.
+
+    Foundation gates TestEnvelope; gold gates TestGold; overview gates TestOverview;
+    rankings gates TestRankings; trend (this class) gates _get_sales_trend_chart real impl.
+    """
+
+    def test_format_bucket_key_DAY_from_date_object(self):
+        """date object → ISO YYYY-MM-DD string."""
+        from smartbi_compat.api.analysis_sales import _format_bucket_key
+        from datetime import date
+        assert _format_bucket_key(date(2025, 3, 15), "DAY") == "2025-03-15"
+        assert _format_bucket_key(date(2025, 12, 1), "DAY") == "2025-12-01"
+
+    def test_format_bucket_key_DAY_from_string_fallback(self):
+        """If row.order_date is already a string, return as-is (defensive)."""
+        from smartbi_compat.api.analysis_sales import _format_bucket_key
+        # Defensive: SQLAlchemy may return string in some configurations
+        assert _format_bucket_key("2025-03-15", "DAY") == "2025-03-15"
+
+    def test_format_bucket_key_unsupported_period_raises(self):
+        """WEEK/MONTH/YEAR not implemented per spec §5."""
+        from smartbi_compat.api.analysis_sales import _format_bucket_key
+        from datetime import date
+        for period in ("WEEK", "MONTH", "YEAR"):
+            with pytest.raises(NotImplementedError, match="not supported"):
+                _format_bucket_key(date(2025, 3, 15), period)
+
+    def test_format_bucket_key_case_insensitive(self):
+        """period accepts 'day' or 'DAY' (case-insensitive — Java uses .toUpperCase())."""
+        from smartbi_compat.api.analysis_sales import _format_bucket_key
+        from datetime import date
+        assert _format_bucket_key(date(2025, 3, 15), "day") == "2025-03-15"
+        assert _format_bucket_key(date(2025, 3, 15), "Day") == "2025-03-15"
+
+    def test_bucket_sales_DAY_aggregates_per_date(self):
+        """5 rows on 3 distinct dates → 3 buckets, summed, sorted ASC."""
+        from smartbi_compat.api.analysis_sales import _bucket_sales_by_period
+        from datetime import date
+        from decimal import Decimal
+
+        class _Row:
+            def __init__(self, order_date, amount):
+                self.order_date = order_date
+                self.amount = amount
+
+        rows = [
+            _Row(date(2025, 3, 15), Decimal("100.00")),
+            _Row(date(2025, 3, 15), Decimal("50.00")),
+            _Row(date(2025, 3, 14), Decimal("200.00")),
+            _Row(date(2025, 3, 16), Decimal("75.50")),
+            _Row(None, Decimal("999.99")),  # NULL order_date → skip per Java line 913
+        ]
+
+        result = _bucket_sales_by_period(rows, "DAY")
+
+        # Sorted ASC by ISO key (chronological)
+        assert list(result.keys()) == ["2025-03-14", "2025-03-15", "2025-03-16"]
+        assert result["2025-03-14"] == Decimal("200.00")
+        assert result["2025-03-15"] == Decimal("150.00")  # 100+50
+        assert result["2025-03-16"] == Decimal("75.50")
+
+    def test_bucket_sales_empty_rows(self):
+        """Empty input → empty dict."""
+        from smartbi_compat.api.analysis_sales import _bucket_sales_by_period
+        result = _bucket_sales_by_period([], "DAY")
+        assert result == {}
+
+    def test_bucket_sales_all_null_order_date(self):
+        """All rows have NULL order_date → empty dict (all filtered)."""
+        from smartbi_compat.api.analysis_sales import _bucket_sales_by_period
+        from decimal import Decimal
+
+        class _Row:
+            def __init__(self, order_date, amount):
+                self.order_date = order_date
+                self.amount = amount
+
+        rows = [_Row(None, Decimal("100")), _Row(None, Decimal("200"))]
+        result = _bucket_sales_by_period(rows, "DAY")
+        assert result == {}
+
+    def test_bucket_sales_null_amount_treated_as_zero(self):
+        """Defensive: row with NULL amount contributes 0 to sum (Java's reducer
+        tolerates null via getOrDefault; Python uses _to_decimal coercion)."""
+        from smartbi_compat.api.analysis_sales import _bucket_sales_by_period
+        from datetime import date
+        from decimal import Decimal
+
+        class _Row:
+            def __init__(self, order_date, amount):
+                self.order_date = order_date
+                self.amount = amount
+
+        rows = [
+            _Row(date(2025, 3, 15), Decimal("100")),
+            _Row(date(2025, 3, 15), None),  # NULL amount → 0 contribution
+        ]
+        result = _bucket_sales_by_period(rows, "DAY")
+        assert result == {"2025-03-15": Decimal("100")}
+
+    @pytest.mark.asyncio
+    async def test_get_sales_trend_chart_DAY_full_path(self, monkeypatch):
+        """Full path: query rows → bucket → ChartConfig with non-empty data."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+        from decimal import Decimal
+        from collections import namedtuple
+
+        Row = namedtuple("Row", "salesperson_name amount monthly_target product_category customer_name order_date")
+
+        def fake_query(factory_id, range_):
+            return [
+                Row("X", Decimal("100"), None, "P", "C", date(2025, 3, 15)),
+                Row("X", Decimal("50"), None, "P", "C", date(2025, 3, 15)),
+                Row("X", Decimal("200"), None, "P", "C", date(2025, 3, 14)),
+            ]
+
+        monkeypatch.setattr(m, "_query_sales_data", fake_query)
+
+        range_ = m.DateRange.custom(date(2025, 3, 1), date(2025, 3, 31))
+        result = await m._get_sales_trend_chart("F999", range_, "DAY")
+
+        # 7-key ChartConfig
+        assert result["chartType"] == "LINE"
+        assert result["title"] == "销售趋势"
+        assert result["xaxisField"] == "date"
+        assert result["yaxisField"] == "amount"
+        assert result["seriesField"] is None
+        assert result["options"] == {"showDataLabels": False, "smooth": True}
+        # data sorted ASC, 2 buckets
+        data = result["data"]
+        assert len(data) == 2
+        assert data[0]["date"] == "2025-03-14"
+        assert data[0]["amount"] == Decimal("200.00")
+        assert data[1]["date"] == "2025-03-15"
+        assert data[1]["amount"] == Decimal("150.00")  # 100+50
+
+    @pytest.mark.asyncio
+    async def test_get_sales_trend_chart_empty_returns_empty_data(self, monkeypatch):
+        """Empty rows → ChartConfig with data=[]."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+
+        monkeypatch.setattr(m, "_query_sales_data", lambda f, r: [])
+
+        range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 12, 31))
+        result = await m._get_sales_trend_chart("F999", range_, "DAY")
+
+        assert result["chartType"] == "LINE"
+        assert result["data"] == []
+        assert result["options"] == {"showDataLabels": False, "smooth": True}
+
+    @pytest.mark.asyncio
+    async def test_get_sales_trend_chart_unsupported_period_raises(self, monkeypatch):
+        """WEEK/MONTH/YEAR raise NotImplementedError before any DB call."""
+        from smartbi_compat.api import analysis_sales as m
+        from datetime import date
+
+        # Spy: query should NOT be called
+        called = {"count": 0}
+        def fake_query(f, r):
+            called["count"] += 1
+            return []
+        monkeypatch.setattr(m, "_query_sales_data", fake_query)
+
+        range_ = m.DateRange.custom(date(2025, 1, 1), date(2025, 12, 31))
+        for period in ("WEEK", "MONTH", "YEAR"):
+            with pytest.raises(NotImplementedError, match="not supported"):
+                await m._get_sales_trend_chart("F999", range_, period)
+
+        assert called["count"] == 0  # Raise BEFORE query — fail fast
+
+    # ============================================================
+    # F001/F999 trendChart byte-shape regression (Phase C.1)
+    # ============================================================
+    # Route-level guard: ensure trendChart matches the canonical empty-state
+    # ChartConfig 7-key shape. F001 has no order_date data (spec §11 Q2),
+    # F999 has cleared data — both should produce data=[]. These tests pin
+    # the byte contract so a future helper change that breaks empty-state
+    # path (e.g. forgetting to seed data:[] or options dict) trips here
+    # rather than slipping through TestEnvelope's generic golden diff.
+
+    def test_F001_trend_byte_shape(self, client, f001_token):
+        """F001 trendChart should match the empty-state ChartConfig.
+
+        F001 currently has no order_date data in test env (per spec §11 Q2),
+        so trendChart.data == [] and the rest is the canonical 7-key shape.
+        """
+        response = client.get(
+            "/api/mobile/F001/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+            headers={"Authorization": f"Bearer {f001_token}"},
+        )
+        assert response.status_code == 200
+        trend = response.json()["data"]["trendChart"]
+        assert trend["data"] == []
+        assert trend["chartType"] == "LINE"
+        assert trend["title"] == "销售趋势"
+        assert trend["xaxisField"] == "date"
+        assert trend["yaxisField"] == "amount"
+        assert trend["seriesField"] is None
+        assert trend["options"] == {"showDataLabels": False, "smooth": True}
+
+    def test_F999_trend_empty_byte_shape(self, client, f999_token):
+        """F999 has cleared data → trendChart.data is []."""
+        response = client.get(
+            "/api/mobile/F999/smart-bi/analysis/sales",
+            params={"startDate": "2025-01-01", "endDate": "2025-12-31"},
+            headers={"Authorization": f"Bearer {f999_token}"},
+        )
+        assert response.status_code == 200
+        trend = response.json()["data"]["trendChart"]
+        assert trend["data"] == []
+        assert trend["title"] == "销售趋势"
+        assert trend["options"] == {"showDataLabels": False, "smooth": True}

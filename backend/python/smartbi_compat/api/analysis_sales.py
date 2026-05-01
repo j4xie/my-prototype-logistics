@@ -43,6 +43,31 @@ from smartbi_compat.date_range import DateRange
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+
+# ============================================================
+# Python 3.8 compat shim for asyncio.to_thread (added 3.9+)
+# ============================================================
+async def _to_thread(fn, *args, **kwargs):
+    """Run a sync function in a thread executor.
+
+    Python 3.8-compatible replacement for asyncio.to_thread (3.9+).
+    Server venv38 runs Python 3.8.17; using asyncio.to_thread fails at
+    runtime with AttributeError. This shim works on Python 3.6+ via
+    asyncio.get_event_loop().run_in_executor.
+
+    For kwargs support, wraps the call in functools.partial — same effective
+    behavior as asyncio.to_thread which uses functools.partial under the hood.
+    """
+    import functools
+    try:
+        # Python 3.10+
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        # Python 3.7-3.9 fallback
+        loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, functools.partial(fn, *args, **kwargs))
+
+
 # ============================================================
 # Section 0: Legacy-path constants (mirror Java SalesAnalysisServiceImpl.java line 64-74)
 # ============================================================
@@ -238,7 +263,7 @@ async def _query_sales_aggregates(
                 return None
             return (row[0], row[1], row[2], row[3], row[4], row[5])
     try:
-        return await asyncio.to_thread(_exec)
+        return await _to_thread(_exec)
     except Exception as e:
         logger.warning(
             "[legacy] _query_sales_aggregates failed factory=%s: %s",
@@ -297,7 +322,7 @@ async def _query_top_salespersons_aggregate(
                 })
             ]
     try:
-        return await asyncio.to_thread(_exec)
+        return await _to_thread(_exec)
     except Exception as e:
         logger.warning(
             "[legacy] _query_top_salespersons_aggregate failed factory=%s: %s",
@@ -337,7 +362,7 @@ async def _query_daily_sales_trend_aggregate(
                 })
             ]
     try:
-        return await asyncio.to_thread(_exec)
+        return await _to_thread(_exec)
     except Exception as e:
         logger.warning(
             "[legacy] _query_daily_sales_trend_aggregate failed factory=%s: %s",
@@ -378,7 +403,7 @@ async def _query_category_distribution_aggregate(
                 })
             ]
     try:
-        return await asyncio.to_thread(_exec)
+        return await _to_thread(_exec)
     except Exception as e:
         logger.warning(
             "[legacy] _query_category_distribution_aggregate failed factory=%s: %s",
@@ -967,6 +992,97 @@ async def _build_legacy_category_chart(
 
 
 # ============================================================
+# Section 1.7: Generic ranking builder + 3 caller wrappers (rankings spec)
+# ============================================================
+# Mirrors Java SalesAnalysisServiceImpl: getSalespersonRanking (371-400) /
+# getProductRanking (491-533) / getCustomerRanking (550-593).
+#
+# Reuses existing helpers from Section 0 (overview impl):
+#   - _calculate_completion_rate (Java calculateCompletionRate line 1166-1171)
+#   - _determine_completion_alert_level (Java line 1176-1184)
+#   - TARGET_RED_THRESHOLD / TARGET_YELLOW_THRESHOLD / SCALE / DISPLAY_SCALE
+#   - _new_ranking_item_dict (foundation factory, 6 fields)
+
+
+def _build_ranking(
+    name_to_value: dict,
+    *,
+    top_n: Optional[int] = None,
+    with_percentage: bool = False,
+    target_map: Optional[dict] = None,
+) -> list[dict]:
+    """Generic ranking builder — covers salesperson / product / customer.
+
+    Mirrors Java's three rankings methods (sort + scale + dict construction).
+
+    Args:
+        name_to_value: aggregated {name: total_amount} dict
+        top_n: if set, slice to top N after sort (customer ranking uses 10)
+        with_percentage: if True, completionRate = (value / total) * 100
+                         (product + customer rankings)
+        target_map: if provided, completionRate = (value / target) * 100
+                    AND alertLevel computed from rate (salesperson ranking)
+
+    Returns:
+        list of RankingItem-shaped dicts per foundation _new_ranking_item_dict factory.
+
+    Sort stability:
+        Composite sort key (-value, name) — value DESC, name ASC for ties.
+        Spec §7: Python-side fix only. Java's HashMap grouping has nondeterministic
+        tie order; we stabilize on Python side.
+    """
+    # 1. Sort by value DESC, name ASC (tie stability)
+    sorted_items = sorted(
+        name_to_value.items(),
+        key=lambda kv: (-kv[1], kv[0]),
+    )
+
+    # 2. Apply top_n cap if set
+    if top_n is not None:
+        sorted_items = sorted_items[:top_n]
+
+    # 3. Compute total (only if needed for percentage)
+    total = sum(name_to_value.values(), Decimal("0")) if with_percentage else None
+
+    # 4. Build dicts
+    rankings: list[dict] = []
+    for rank, (name, value) in enumerate(sorted_items, start=1):
+        target: Optional[Decimal] = None
+        completion_rate: Decimal
+        alert_level: str
+
+        if target_map is not None:
+            # salesperson: per-person target → completion rate + alert level
+            target = target_map.get(name, Decimal("0"))
+            completion_rate = _calculate_completion_rate(value, target)
+            alert_level = _determine_completion_alert_level(completion_rate)
+        elif with_percentage:
+            # product/customer: percentage of total, alertLevel hard-coded GREEN
+            if total is None or total == Decimal("0"):
+                completion_rate = Decimal("0")
+            else:
+                completion_rate = (value / total * Decimal("100")).quantize(
+                    Decimal("0.0001"), rounding=ROUND_HALF_UP,
+                )
+            alert_level = "GREEN"  # Java line 528 / 588 hard-codes GREEN
+        else:
+            completion_rate = Decimal("0")
+            alert_level = "GREEN"
+
+        rankings.append(_new_ranking_item_dict(
+            rank=rank,
+            name=name,
+            value=value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+            target=(target.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                    if target is not None else None),
+            completion_rate=completion_rate.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+            alert_level=alert_level,
+        ))
+
+    return rankings
+
+
+# ============================================================
 # Section 2: Strip-volatile shared helper
 # ============================================================
 
@@ -1367,36 +1483,166 @@ async def _get_sales_overview(factory_id: str, range_: DateRange) -> dict:
 
 
 async def _get_salesperson_ranking(factory_id: str, range_: DateRange) -> list:
-    """STUB — rankings spec replaces.
+    """Real impl. Mirror Java SalesAnalysisServiceImpl.getSalespersonRanking line 371-400.
 
-    F999 empty: legacy SQL returns [] (no rows in 2025 window).
+    Aggregates SUM(amount) + SUM(monthly_target) per salesperson_name from raw rows,
+    then dispatches to _build_ranking with target_map for completion/alert.
+    Filters null salesperson_name (Java line 379: `if (name == null) continue;`).
+
+    No top_n cap (Java doesn't limit).
+
+    async per foundation §5: sync SQLAlchemy `_query_sales_data` wrapped via
+    `await asyncio.to_thread(...)` per foundation Phase B.6 strategy.
     """
-    return []
+    rows = await _to_thread(_query_sales_data, factory_id, range_)
+    sales: dict = {}
+    targets: dict = {}
+    for row in rows:
+        name = row.salesperson_name
+        if name is None:
+            continue
+        amount = _to_decimal(row.amount) if row.amount is not None else Decimal("0")
+        target = _to_decimal(row.monthly_target) if row.monthly_target is not None else Decimal("0")
+        sales[name] = sales.get(name, Decimal("0")) + amount
+        targets[name] = targets.get(name, Decimal("0")) + target
+    return _build_ranking(sales, target_map=targets)
 
 
 async def _get_product_ranking(factory_id: str, range_: DateRange) -> list:
-    """STUB — rankings spec replaces."""
-    return []
+    """Real impl. Mirror Java SalesAnalysisServiceImpl.getProductRanking line 491-533.
+
+    Aggregates SUM(amount) per product_category. completionRate = % of total.
+    alertLevel hard-coded GREEN (Java line 528).
+    Filters null product_category (Java line 499: `getProductCategory() != null`).
+    No top_n cap.
+    """
+    rows = await _to_thread(_query_sales_data, factory_id, range_)
+    sales: dict = {}
+    for row in rows:
+        category = row.product_category
+        if category is None:
+            continue
+        amount = _to_decimal(row.amount) if row.amount is not None else Decimal("0")
+        sales[category] = sales.get(category, Decimal("0")) + amount
+    return _build_ranking(sales, with_percentage=True)
 
 
 async def _get_customer_ranking(factory_id: str, range_: DateRange) -> list:
-    """STUB — rankings spec replaces."""
-    return []
+    """Real impl. Mirror Java SalesAnalysisServiceImpl.getCustomerRanking line 550-593.
+
+    Aggregates SUM(amount) per customer_name. completionRate = % of total.
+    alertLevel hard-coded GREEN (Java line 588).
+    Filters null customer_name. Top 10 cap (Java line 574 `.limit(10)`).
+    """
+    rows = await _to_thread(_query_sales_data, factory_id, range_)
+    sales: dict = {}
+    for row in rows:
+        name = row.customer_name
+        if name is None:
+            continue
+        amount = _to_decimal(row.amount) if row.amount is not None else Decimal("0")
+        sales[name] = sales.get(name, Decimal("0")) + amount
+    return _build_ranking(sales, with_percentage=True, top_n=10)
+
+
+# ============================================================
+# Section 3c: Trend bucketing helpers (trend sub-spec)
+# ============================================================
+# Mirror Java SalesAnalysisServiceImpl.aggregateByDay line 911-921.
+# DAY-only port per trend spec §5; WEEK/MONTH/YEAR raise NotImplementedError.
+
+
+def _format_bucket_key(d, period: str) -> str:
+    """Format a date into a bucket key string.
+
+    Mirror Java aggregateByDay line 915: `d.getOrderDate().toString()` produces
+    ISO YYYY-MM-DD. Java aggregateByWeek line 932-933 / aggregateByMonth line
+    949-950 not ported per spec §5.
+
+    Args:
+        d: datetime.date OR date-like string (SQLAlchemy may return either)
+        period: "DAY" only; case-insensitive
+
+    Returns:
+        ISO date string (e.g. "2025-03-15")
+
+    Raises:
+        NotImplementedError: for any period other than DAY
+    """
+    if period.upper() != "DAY":
+        raise NotImplementedError(
+            f"trend chart period='{period}' not supported; only DAY is "
+            f"used by /analysis/sales composite. See spec §5."
+        )
+    # Defensive: SQLAlchemy Row.order_date may be datetime.date or string
+    if hasattr(d, "isoformat"):
+        return d.isoformat()
+    return str(d)
+
+
+def _bucket_sales_by_period(rows, period: str) -> dict:
+    """Aggregate sales rows into buckets by period.
+
+    Mirror Java SalesAnalysisServiceImpl.aggregateByDay line 911-921:
+    - Filter rows where `order_date IS NULL` (Java line 913)
+    - Group by formatted bucket key (e.g. ISO date string for DAY)
+    - Sum amounts per bucket
+    - Return TreeMap-equivalent: dict sorted ASC by key
+
+    Args:
+        rows: iterable of Row-like objects with `order_date` and `amount` attrs
+        period: "DAY" only (delegates raise to _format_bucket_key)
+
+    Returns:
+        dict[bucket_key, Decimal] sorted ASC by key. Empty dict for empty input
+        or all-null input.
+    """
+    unsorted: dict = {}
+    for row in rows:
+        if row.order_date is None:
+            continue  # Java line 913 filter
+        key = _format_bucket_key(row.order_date, period)
+        amount = _to_decimal(row.amount) if row.amount is not None else Decimal("0")
+        unsorted[key] = unsorted.get(key, Decimal("0")) + amount
+    # Sort ASC by key (Python ≥3.7 preserves dict insertion order)
+    return dict(sorted(unsorted.items()))
 
 
 async def _get_sales_trend_chart(
     factory_id: str, range_: DateRange, period: str = "DAY",
 ) -> dict:
-    """STUB — trend spec replaces.
+    """Real impl. Mirror Java SalesAnalysisServiceImpl.getSalesTrendChart line 597-607
+    + buildSalesTrendChartFromData line 868-906.
 
-    F999 empty-state ChartConfig: empty data + hardcoded title/axes/options.
+    DAY-only port per trend spec §5; raise BEFORE query for unsupported periods
+    (fail fast — no wasted DB call).
+
+    async per foundation §5: sync `_query_sales_data` wrapped via `await asyncio.to_thread(...)`.
     """
+    # Fail fast: raise before query for unsupported periods
+    if period.upper() != "DAY":
+        raise NotImplementedError(
+            f"trend chart period='{period}' not supported; only DAY is "
+            f"used by /analysis/sales composite. See spec §5."
+        )
+
+    rows = await _to_thread(_query_sales_data, factory_id, range_)
+    period_sales = _bucket_sales_by_period(rows, period)
+
+    data_points = [
+        {
+            "date": key,
+            "amount": amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+        }
+        for key, amount in period_sales.items()
+    ]
+
     return _new_chart_config_dict(
         chart_type="LINE",
         title="销售趋势",
         xaxis_field="date",
         yaxis_field="amount",
-        data=[],
+        data=data_points,
         options={"showDataLabels": False, "smooth": True},
     )
 
