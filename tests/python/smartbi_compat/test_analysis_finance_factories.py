@@ -169,3 +169,28 @@ class TestDateRangeFactory:
             "startDate", "endDate", "granularity", "originalExpression",
             "relative", "days", "valid",
         ]
+
+
+class TestAgingBucketAlertLevel:
+    """Mirror Java FinanceAnalysisServiceImpl.getAgingBucketAlertLevel (line 1590-1603)."""
+
+    def test_0_30_returns_green(self):
+        from smartbi_compat.api.analysis_finance import _get_aging_bucket_alert_level
+        assert _get_aging_bucket_alert_level("0-30天") == "GREEN"
+
+    def test_31_60_returns_yellow(self):
+        from smartbi_compat.api.analysis_finance import _get_aging_bucket_alert_level
+        assert _get_aging_bucket_alert_level("31-60天") == "YELLOW"
+
+    def test_61_90_returns_yellow(self):
+        from smartbi_compat.api.analysis_finance import _get_aging_bucket_alert_level
+        assert _get_aging_bucket_alert_level("61-90天") == "YELLOW"
+
+    def test_over_90_returns_red(self):
+        from smartbi_compat.api.analysis_finance import _get_aging_bucket_alert_level
+        assert _get_aging_bucket_alert_level("90天以上") == "RED"
+
+    def test_unknown_bucket_returns_green_default(self):
+        """Java map.getOrDefault(..., GREEN) — unknown key returns GREEN."""
+        from smartbi_compat.api.analysis_finance import _get_aging_bucket_alert_level
+        assert _get_aging_bucket_alert_level("invalid-bucket") == "GREEN"

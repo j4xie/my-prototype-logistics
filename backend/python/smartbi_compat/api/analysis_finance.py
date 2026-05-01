@@ -1140,6 +1140,14 @@ def _get_period_key(d: date, period: str) -> str:
     return d.strftime("%Y-%m")
 
 
+def _get_aging_bucket_alert_level(bucket: str) -> str:
+    """Hardcoded bucket → alertLevel map.
+    Mirror Java FinanceAnalysisServiceImpl.getAgingBucketAlertLevel (line 1590-1603).
+    Unknown bucket defaults to GREEN (Java map.getOrDefault behavior).
+    """
+    return _AGING_BUCKET_ALERT_LEVELS.get(bucket, "GREEN")
+
+
 # Cost category constants (Java FinanceAnalysisServiceImpl COST_CATEGORY_* literal values)
 COST_CATEGORY_MATERIAL = "原材料"
 COST_CATEGORY_LABOR    = "人工"
