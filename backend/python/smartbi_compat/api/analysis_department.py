@@ -217,3 +217,62 @@ def _determine_target_completion_alert(value: Decimal) -> str:
     if v < float(_DEPARTMENT_TARGET_COMPLETION_YELLOW):
         return "YELLOW"
     return "GREEN"
+
+
+def _determine_quadrant(
+    per_capita_sales: Decimal,
+    per_capita_cost: Decimal,
+    aggregated_data: dict[str, dict],
+) -> str:
+    """Mirror Java DepartmentAnalysisServiceImpl.determineQuadrant (line 621-653).
+
+    ⚠️ C3 LOCK — DO NOT optimize by lifting avg computation OUT of the per-point
+    loop. Java line 225-249 invokes this PER POINT, and this function re-iterates
+    `aggregated_data` to compute averages AT EACH CALL. The SCALE=4 intermediate
+    divide+sum+divide is a 3-stage rounded operation; computing avg once outside
+    and inlining would change byte-shape due to rounding accumulation differences.
+
+    Algorithm:
+      avg_sales = sum(salesAmount.divide(headcount, SCALE=4, HALF_UP)
+                      for each dept where headcount > 0) / count
+      avg_cost  = sum(costAmount.divide(headcount, SCALE=4, HALF_UP)
+                      for each dept where headcount > 0) / count
+      Q1 = high output, high cost  (优化效率)
+      Q2 = low output,  low cost   (表现平庸)
+      Q3 = low output,  high cost  (重点关注)
+      Q4 = high output, low cost   (明星部门)
+    """
+    avg_sales = Decimal("0")
+    avg_cost  = Decimal("0")
+    count = 0
+
+    # iteration over aggregated_data.values() — LinkedHashMap insertion order
+    for agg in aggregated_data.values():
+        if agg["headcount"] > 0:
+            avg_sales += (agg["salesAmount"] / Decimal(agg["headcount"])).quantize(
+                _SCALE, rounding=_QUANTIZE_HALF_UP
+            )
+            avg_cost  += (agg["costAmount"] / Decimal(agg["headcount"])).quantize(
+                _SCALE, rounding=_QUANTIZE_HALF_UP
+            )
+            count += 1
+
+    if count > 0:
+        avg_sales = (avg_sales / Decimal(count)).quantize(
+            _SCALE, rounding=_QUANTIZE_HALF_UP
+        )
+        avg_cost  = (avg_cost / Decimal(count)).quantize(
+            _SCALE, rounding=_QUANTIZE_HALF_UP
+        )
+
+    high_output = per_capita_sales >= avg_sales
+    high_cost   = per_capita_cost  >= avg_cost
+
+    # Java labels mirror exactly (Java line 644-652)
+    if high_output and high_cost:
+        return "Q1_HIGH_OUTPUT_HIGH_COST"
+    if high_output and not high_cost:
+        return "Q4_HIGH_OUTPUT_LOW_COST"
+    if not high_output and high_cost:
+        return "Q3_LOW_OUTPUT_HIGH_COST"
+    return "Q2_LOW_OUTPUT_LOW_COST"
