@@ -94,17 +94,28 @@ def build_prompt(
     return "\n".join(lines)
 
 
-async def _call_llm(prompt: str, *, timeout_s: int) -> str:
+async def _call_llm(prompt: str, *, timeout_s: int, tier=None) -> str:
     """Call the LLM via shared multi-provider router.
 
     Adapts `common.llm_router.call_chain` (OpenAI-compatible chat completions)
     to a flat string return — extract `choices[0].message.content`. Mocked in
     tests; live path requires LLM_*_API_KEY env vars set.
 
+    β C2: `tier` hint guides slot selection. CHEAP → SLOT.MAPPER (cheap fast
+    model), EXPENSIVE → SLOT.CHAT (full reasoning model). When tier is None
+    (α path or selector failure), defaults to SLOT.MAPPER for backward compat.
+
     Raises whatever the router raises (RuntimeError on chain exhausted,
     TimeoutError on overall timeout) so caller's try/except can return [].
     """
     from common.llm_router import SLOT, call_chain  # type: ignore
+    from ai.router.llm_tier_selector import LlmTier
+
+    # Tier-driven slot selection. Default (no tier) preserves α behavior:
+    # SLOT.MAPPER (cheap mapping-style model). EXPENSIVE upgrades to SLOT.CHAT.
+    slot = SLOT.MAPPER
+    if tier == LlmTier.EXPENSIVE:
+        slot = SLOT.CHAT
 
     payload: Dict[str, Any] = {
         "messages": [
@@ -115,7 +126,7 @@ async def _call_llm(prompt: str, *, timeout_s: int) -> str:
         "max_tokens": 200,
         "response_format": {"type": "json_object"},
     }
-    resp = await call_chain(SLOT.MAPPER, payload, timeout=float(timeout_s))
+    resp = await call_chain(slot, payload, timeout=float(timeout_s))
     try:
         return resp["choices"][0]["message"]["content"] or ""
     except (KeyError, IndexError, TypeError) as e:
@@ -139,15 +150,36 @@ class LlmMatcher:
         query: str,
         visible_intents: List[Dict[str, Any]],
         history: Optional[List[Dict[str, Any]]] = None,
+        tier=None,  # β C2: LlmTier hint (None = default SLOT.MAPPER)
+        rag_cases=None,  # β C5: list of RAGCase from retrieval (None/[] = no enrichment)
     ) -> List[CandidateIntentDto]:
-        """Pick best intent via LLM. Returns [] on any failure or no-match."""
+        """Pick best intent via LLM. Returns [] on any failure or no-match.
+
+        β C2: `tier` hint chooses cheap (CHEAP → SLOT.MAPPER) vs expensive
+        (EXPENSIVE → SLOT.CHAT). None preserves α default (SLOT.MAPPER).
+        β C5: `rag_cases` (when present and non-empty) prepended to prompt as
+        "参考历史" block — top-3 historical cases by similarity. None/[]
+        preserves α default (no RAG enrichment).
+        """
         if not visible_intents:
             return []
 
-        prompt = build_prompt(query, visible_intents, history or [])
+        # β C5: prepend RAG context if cases were retrieved + judged HIGH/MEDIUM
+        rag_block = ""
+        if rag_cases:
+            rag_lines = [
+                f"- 历史案例: {c.query} → {c.intent_code} (相似度 {c.similarity:.2f})"
+                for c in rag_cases[:3]
+            ]
+            rag_block = "参考历史:\n" + "\n".join(rag_lines) + "\n\n"
+
+        prompt = rag_block + build_prompt(query, visible_intents, history or [])
+
+        if tier is not None:
+            logger.debug("Stage 8 LLM with tier hint: %s", tier)
 
         try:
-            raw = await _call_llm(prompt, timeout_s=self.timeout_s)
+            raw = await _call_llm(prompt, timeout_s=self.timeout_s, tier=tier)
         except TimeoutError:
             logger.warning("Stage 8 LLM: timeout after %ss", self.timeout_s)
             return []
