@@ -211,6 +211,90 @@ class TestQueryTemplatesWriteContract:
                 f"actual: {stripped_actual}\ngolden: {stripped_golden}"
             )
 
+    def test_post_hijack_createdat_override_actually_executes(self, client, monkeypatch):
+        """P1 fix from final reviewer audit (2026-05-01) — exercises the actual
+        `entity['createdAt'] = None` override at query_templates_write.py:116.
+
+        The companion test below (`test_post_hijack_byte_shape_lock`) mocks at the
+        `_create_template` boundary, so the override branch never runs (the mock
+        returns the golden directly with createdAt already null). That test only
+        proves the FastAPI response includes whatever the function returns.
+
+        This test mocks the LOWER layer (`get_db_context`) so the real
+        `_create_template` runs end-to-end. The fake DB row returns NON-NULL
+        `created_at` to prove the override at line 116 actively nulls it.
+        Without the override, this test fails — exactly the regression detection
+        the reviewer asked for.
+        """
+        from contextlib import contextmanager
+        from datetime import datetime
+        from types import SimpleNamespace
+
+        fake_row = SimpleNamespace(
+            id=46,
+            factory_id="F001",
+            name="hijacked",
+            category="evil",
+            description="test",
+            query_template="DROP",
+            parameters='["x"]',
+            created_at=datetime(2026, 5, 2, 1, 0, 0),  # NON-NULL — override must null this
+            updated_at=datetime(2026, 5, 2, 2, 0, 0),
+            deleted_at=None,
+        )
+
+        class FakeResult:
+            def first(self):
+                return fake_row
+
+        class FakeSession:
+            def execute(self, *args, **kwargs):
+                return FakeResult()
+
+            def commit(self):
+                pass
+
+        @contextmanager
+        def fake_get_db_context():
+            yield FakeSession()
+
+        # _create_template does `from smartbi.database.connection import ...` lazily
+        # inside the function body, so patching the module-level attributes here
+        # is picked up on next call.
+        monkeypatch.setattr(
+            "smartbi.database.connection.get_db_context",
+            fake_get_db_context,
+        )
+        monkeypatch.setattr(
+            "smartbi.database.connection.is_postgres_enabled",
+            lambda: True,
+        )
+
+        resp = client.post(
+            "/api/mobile/F001/smart-bi/query-templates",
+            json={"id": 46, "name": "hijacked", "category": "evil",
+                  "queryTemplate": "DROP", "parameters": '["x"]'},
+            headers={"Authorization": f"Bearer {_make_token('F001')}"},
+        )
+        assert resp.status_code == 200, resp.text
+        actual = resp.json()
+
+        # Critical: DB returned NON-NULL created_at, but response MUST be null
+        # because of the explicit override at query_templates_write.py:116.
+        # If the override is removed, this assertion fails.
+        assert actual["data"]["createdAt"] is None, (
+            "T6 override at query_templates_write.py:116 (entity['createdAt'] = None) "
+            "did NOT execute. Without it, Java JPA merge byte-shape parity is broken."
+        )
+        # updatedAt MUST be the DB-returned value — override does not touch it.
+        assert actual["data"]["updatedAt"] == "2026-05-02T02:00:00", (
+            f"updatedAt should be DB value, got {actual['data']['updatedAt']!r}"
+        )
+        # factoryId MUST be the path's value (also a verbatim Java behavior — but
+        # in this merge path the DB row already had factoryId=F001 due to ON CONFLICT
+        # SET, so this is end-to-end verified).
+        assert actual["data"]["factoryId"] == "F001"
+
     def test_post_hijack_byte_shape_lock(self, client, monkeypatch):
         """T6 defensive lock — verbatim mirror of Java JPA merge hijack behavior.
 
@@ -220,6 +304,10 @@ class TestQueryTemplatesWriteContract:
 
         This test does NOT fix the bug. It locks current behavior so a future Java
         fix changes will alert via failing test. See spec §7.2.
+
+        NOTE: This test mocks at `_create_template` boundary — it does NOT exercise
+        the override branch. See test_post_hijack_createdat_override_actually_executes
+        above for the lower-layer mock that does.
         """
         with io.open(GOLDEN_DIR / "query-templates-F001-hijack.json", encoding="utf-8") as f:
             golden = json.load(f)
