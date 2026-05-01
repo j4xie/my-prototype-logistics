@@ -583,18 +583,22 @@ async def _get_budget_achievement_chart(
 
     metric_name = _get_metric_display_name(metric)
 
-    # Map.of(4) Jackson hash order: golden recording verifies (Phase B.2)
+    # Map.of(4) Jackson hash order — recorded from live Java (Phase B.2 golden):
+    # yAxis[0]: ['position', 'name'] (Java Map.of(2) hash-order differs from profit's ['name','position'])
+    # yAxis[1]: ['position', 'min', 'name', 'max'] (Map.of(4) non-deterministic, captured empirically)
+    # series[i]: ['yAxisIndex', 'type', 'name', 'color'] (Map.of(4), differs from profit series Map.of(3))
+    # referenceLine: ['label', 'value'] (Map.of(2), captured empirically)
     options = {
         "yAxis": [
-            _new_yaxis_entry(name="金额", position="left"),
-            {"name": "达成率(%)", "position": "right", "min": 0, "max": 150},
+            {"position": "left", "name": "金额"},
+            {"position": "right", "min": 0, "name": "达成率(%)", "max": 150},
         ],
         "series": [
-            {"color": "#5470c6", "name": "预算", "type": "bar", "yAxisIndex": 0},
-            {"color": "#91cc75", "name": "实际", "type": "bar", "yAxisIndex": 0},
-            {"color": "#ee6666", "name": "达成率", "type": "line", "yAxisIndex": 1},
+            {"yAxisIndex": 0, "type": "bar", "name": "预算", "color": "#5470c6"},
+            {"yAxisIndex": 0, "type": "bar", "name": "实际", "color": "#91cc75"},
+            {"yAxisIndex": 1, "type": "line", "name": "达成率", "color": "#ee6666"},
         ],
-        "referenceLine": {"value": 100, "label": "目标线"},
+        "referenceLine": {"label": "目标线", "value": 100},
     }
 
     return _new_chart_config_dict(
