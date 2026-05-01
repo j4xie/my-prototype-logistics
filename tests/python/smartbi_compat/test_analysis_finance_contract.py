@@ -968,3 +968,165 @@ class TestCostHelpers:
         assert result["options"]["series"][0] == {"name": "原材料", "stack": "cost"}
         assert result["options"]["series"][1] == {"name": "人工", "stack": "cost"}
         assert result["options"]["series"][2] == {"name": "制造费用", "stack": "cost"}
+
+
+class TestCostStructureArithmetic:
+    """Unit tests for _get_cost_structure_chart arithmetic branches.
+
+    Direct chart-function-level calls (no HTTP/JWT) — exercises the full
+    structure chart computation: aggregation across cost categories, total>0
+    gating for chart_data emission, percentage rounding two-stage scale,
+    and abs() defensive against negative cost rows.
+
+    Companion to TestCostHelpers which calls _create_pie_data_item directly.
+    """
+
+    def _run_chart(self, fake_finance):
+        """Run _get_cost_structure_chart with _query_finance_data mocked.
+
+        Returns chart dict from line 1157-1210 with chartType=PIE.
+        """
+        import asyncio
+        from datetime import date
+        from smartbi_compat.api import analysis_finance as af
+
+        original = af._query_finance_data
+        try:
+            af._query_finance_data = fake_finance
+            return asyncio.run(af._get_cost_structure_chart(
+                "F", date(2025, 1, 1), date(2025, 12, 31)
+            ))
+        finally:
+            af._query_finance_data = original
+
+    def test_total_zero_emits_empty_data(self):
+        """All cost fields = 0 → totalCost=0 → chart_data=[] but options complete.
+
+        Java line 1191: `if total_cost > Decimal("0")` gate — false when total=0.
+        Empty data list, but showPercentage + 3 colors still emitted.
+        """
+        async def fake_zero(*_a, **_k):
+            return []  # no rows = total 0
+        chart = self._run_chart(fake_zero)
+        assert chart["chartType"] == "PIE"
+        assert chart["title"] == "成本结构分析"
+        assert chart["data"] == []
+        assert chart["options"]["showPercentage"] is True
+        assert chart["options"]["colors"] == ["#5470c6", "#91cc75", "#fac858"]
+
+    def test_three_categories_emit_three_pie_items(self):
+        """totalCost>0 → 3 pie items in order [material, labor, overhead].
+
+        Verifies LinkedHashMap order from Java line 521-526 (NOT alphabetic),
+        matched by Python list.append sequence.
+        """
+        from datetime import date
+        from decimal import Decimal
+        async def fake_positive(*_a, **_k):
+            return [{
+                "material_cost": Decimal("60000"),
+                "labor_cost":    Decimal("30000"),
+                "overhead_cost": Decimal("10000"),
+                "total_cost":    Decimal("100000"),
+                "record_date":   date(2025, 6, 1),
+                "upload_id":     1,
+            }]
+        chart = self._run_chart(fake_positive)
+        assert len(chart["data"]) == 3
+        # Order: material, labor, overhead (Java COST_CATEGORY_* literals)
+        assert chart["data"][0]["category"] == "原材料"
+        assert chart["data"][0]["value"]    == 60000
+        assert chart["data"][1]["category"] == "人工"
+        assert chart["data"][1]["value"]    == 30000
+        assert chart["data"][2]["category"] == "制造费用"
+        assert chart["data"][2]["value"]    == 10000
+        # Percentages: 60/30/10 of 100 → 60.00 / 30.00 / 10.00 (HALF_UP, dict-eq tolerates int)
+        assert chart["data"][0]["percentage"] in (60, 60.0)
+        assert chart["data"][1]["percentage"] in (30, 30.0)
+        assert chart["data"][2]["percentage"] in (10, 10.0)
+
+    def test_percentage_rounding_half_up(self):
+        """Percentage HALF_UP at chart-function level — 1/3 ≈ 33.33 (not 33.34).
+
+        Wires to _create_pie_data_item which uses two-stage Decimal arithmetic;
+        this test exercises it through the chart path (vs TestCostHelpers which
+        calls _create_pie_data_item directly).
+        """
+        from datetime import date
+        from decimal import Decimal
+        async def fake_thirds(*_a, **_k):
+            # material 1, labor 1, overhead 1 → total 3 → each is 1/3 = 33.33%
+            return [{
+                "material_cost": Decimal("1"),
+                "labor_cost":    Decimal("1"),
+                "overhead_cost": Decimal("1"),
+                "total_cost":    Decimal("3"),
+                "record_date":   date(2025, 6, 1),
+                "upload_id":     1,
+            }]
+        chart = self._run_chart(fake_thirds)
+        # Java 2-stage: (1/3).setScale(4, HALF_UP) = 0.3333; * 100 = 33.3300; setScale(2, HALF_UP) = 33.33
+        assert chart["data"][0]["percentage"] == 33.33
+        assert chart["data"][1]["percentage"] == 33.33
+        assert chart["data"][2]["percentage"] == 33.33
+
+    def test_negative_cost_abs_defensive_in_structure(self):
+        """Negative cost values in source rows → abs() at structure aggregation.
+
+        Java P0-1 Bug B: Excel 历史数据可能存负值 cost. Python line 1172-1184
+        applies `abs(_to_decimal(...))` per category before summing.
+        Verified at structure-level (top-level sum), distinct from
+        TestCostHelpers.test_aggregate_cost_by_period_negative_abs_defensive
+        which tests aggregation per-period.
+        """
+        from datetime import date
+        from decimal import Decimal
+        async def fake_negatives(*_a, **_k):
+            return [{
+                "material_cost": Decimal("-50000"),  # negative
+                "labor_cost":    Decimal("-20000"),  # negative
+                "overhead_cost": Decimal("-30000"),  # negative
+                "total_cost":    Decimal("-100000"),
+                "record_date":   date(2025, 6, 1),
+                "upload_id":     1,
+            }]
+        chart = self._run_chart(fake_negatives)
+        # All three categories abs()'d → positive → total = 100k → percentages 50/20/30
+        assert len(chart["data"]) == 3
+        assert chart["data"][0]["value"] == 50000  # abs(-50000)
+        assert chart["data"][1]["value"] == 20000  # abs(-20000)
+        assert chart["data"][2]["value"] == 30000  # abs(-30000)
+
+    def test_create_pie_data_item_total_zero_value_positive_percentage_zero(self):
+        """_create_pie_data_item edge: total=0 with value>0 → percentage=0.
+
+        Java line 220 gate `if total > Decimal("0")` is false when total=0;
+        percentage hardcoded to Decimal("0") regardless of value.
+
+        Distinct from TestCostHelpers.test_create_pie_data_item_total_zero_returns_zero_percentage
+        which uses value=0 (and total=0). This test uses value>0 to confirm
+        the gate decision is total-driven, not value-driven.
+        """
+        from decimal import Decimal
+        from smartbi_compat.api.analysis_finance import _create_pie_data_item
+        item = _create_pie_data_item("X", Decimal("50"), Decimal("0"))
+        assert item["category"] == "X"
+        assert item["value"] == 50  # value still emitted (Java line 1567 unaffected)
+        assert item["percentage"] == 0  # gate false → BigDecimal.ZERO
+
+    def test_create_pie_data_item_percentage_calc_two_stage_scale(self):
+        """Verify two-stage Decimal arithmetic: scale=4 intermediate, scale=2 final.
+
+        Java line 1571: divide(total, SCALE=4, HALF_UP) → multiply(100) → setScale(2, HALF_UP).
+
+        Test value 1/7 exercises full intermediate scale precision:
+          1/7 = 0.142857142857...
+          quantize(0.0001, HALF_UP) = 0.1429
+          * 100 = 14.2900
+          quantize(0.01, HALF_UP) = 14.29
+        """
+        from decimal import Decimal
+        from smartbi_compat.api.analysis_finance import _create_pie_data_item
+        item = _create_pie_data_item("X", Decimal("1"), Decimal("7"))
+        assert item["value"] == 1
+        assert item["percentage"] == 14.29
