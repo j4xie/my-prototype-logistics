@@ -477,6 +477,62 @@ def _get_metric_display_name(metric: Optional[str]) -> str:
     }.get(metric.lower(), "综合")
 
 
+def _safe_growth_rate(current: Decimal, base: Decimal) -> Decimal:
+    """Mirror Java growth rate formula at FinanceAnalysisServiceImpl.calculateMonthYoYMoM
+    line 1839-1850 etc. Returns scale=4 Decimal.
+
+    (current - base) / base * 100 with ROUND_HALF_UP, or Decimal("0") when base <= 0.
+    """
+    if base > Decimal("0"):
+        return ((current - base) / base * Decimal("100")).quantize(
+            Decimal("0.0001"), rounding=ROUND_HALF_UP
+        )
+    return Decimal("0")
+
+
+def _calculate_metric_from_sales(sales_rows: list[dict], metric: str) -> Decimal:
+    """Mirror Java FinanceAnalysisServiceImpl.calculateMetricFromSales (line 2040-2065).
+
+    Pre-aggregates total_revenue + total_cost from sales_rows, then dispatches:
+      revenue       → total_revenue
+      profit        → total_revenue - total_cost
+      gross_margin  → (rev - cost) / rev * 100, scale=4 (or 0 if rev=0)
+      default       → total_revenue
+    """
+    metric_lower = (metric or "").lower()
+
+    total_revenue = sum(
+        (
+            _to_decimal(r["amount"])
+            for r in sales_rows
+            if r.get("amount") is not None
+        ),
+        Decimal("0"),
+    )
+    # Java line 2046-2049: NO .abs() (unlike profit metrics path)
+    total_cost = sum(
+        (
+            _to_decimal(r["cost"])
+            for r in sales_rows
+            if r.get("cost") is not None
+        ),
+        Decimal("0"),
+    )
+
+    if metric_lower == "revenue":
+        return total_revenue
+    if metric_lower == "profit":
+        return total_revenue - total_cost
+    if metric_lower == "gross_margin":
+        if total_revenue > Decimal("0"):
+            return (
+                (total_revenue - total_cost) / total_revenue * Decimal("100")
+            ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        return Decimal("0")
+    # default
+    return total_revenue
+
+
 def _determine_gross_margin_alert(gross_margin: Decimal) -> str:
     """Java `FinanceAnalysisServiceImpl.determineGrossMarginAlertLevel` line 1619-1624.
 
