@@ -329,11 +329,41 @@ from smartbi_compat.api.analysis_finance import (
     _decimal_to_number,      # FastAPI Decimal serialization parity (Rule 4)
     _to_decimal,
     _utc_now_iso,
-    _fetch_all,
-    wrap_response,
 )
+from smartbi_compat.schema_compat import wrap_response   # ⚠️ Cycle 4 BLOCKER 1 fix —
+                                                          #    wrap_response lives in
+                                                          #    schema_compat NOT analysis_finance
+                                                          #    (sister specs procurement #40 +
+                                                          #    department #36 had same import
+                                                          #    error; this spec corrects)
 
-from smartbi_compat.auth import verify_factory_access, AuthContext
+from smartbi_compat.auth import verify_jwt_and_factory, AuthContext   # ⚠️ Cycle 4 BLOCKER 2 fix —
+                                                                       #    actual symbol is
+                                                                       #    verify_jwt_and_factory,
+                                                                       #    NOT verify_factory_access
+                                                                       #    (sister specs same error)
+
+# ⚠️ Cycle 4 BLOCKER 1 fix — `_fetch_all` does NOT yet exist in `analysis_finance.py`.
+# Sister specs (procurement #40, department #36) assume it but reference a not-yet-extant
+# helper. This spec MUST handle this via one of the following PR-A0 prereqs:
+#
+#   Option (a, RECOMMENDED): PR-A0 follow-up adds canonical wrapper to analysis_finance.py:
+#       async def _fetch_all(sql: str, *args) -> list[dict]:
+#           from smartbi.config import get_cretas_pool
+#           pool = await get_cretas_pool()
+#           async with pool.acquire() as conn:
+#               rows = await conn.fetch(sql, *args)
+#           return [dict(r) for r in rows]
+#     Then this spec's `_query_*` helpers `await _fetch_all(sql, ...)` work. PR-A impl
+#     chat opens a tiny PR-A0 to land the helper, then proceeds. Sister specs benefit
+#     too — this becomes shared util.
+#
+#   Option (b): Inline `pool = await get_cretas_pool(); async with pool.acquire() as conn:`
+#     in each `_query_*` helper. ~5 LOC duplication × 6 helpers = 30 LOC bloat. Not preferred.
+#
+# Spec assumes Option (a) for the `await _fetch_all(...)` pseudo-code in §3.3. Impl chat
+# decides whether to land PR-A0 or inline. If Option (b), each `_query_*` helper expands
+# accordingly during impl plan.
 
 # NOTE: NOT imported (intentional):
 #   - _calculate_mom_growth from analysis_procurement (inventory has NO MoM metric;
@@ -524,12 +554,16 @@ async def _query_batch_adjustments_in_range(
     ⚠️ T-INV-7 atTime(23, 59, 59) — same boundary trap as
     _query_material_consumptions_in_range.
 
-    **Note**: 仅 PR-B health score 可能间接调到 (实际 PR-B `getHealthScore` 不调
-    `getLossAnalysis`, 只调 `getTurnoverAnalysis` + `getExpiryRiskAnalysis` +
-    `getAgingMetrics` per L824-921). 因此本 helper PR-A/B/C **all 阶段都不实际调用**.
-    保留 helper 仅为 future-proof + 防 sister chats 看到 adjustments 没有 helper
-    误以为不需要 port. **决策**: spec 列出 helper signature, impl PR 标 `# unused, see §7`
-    或干脆 omit (PR-A 阶段 omit, future ai-insights 扩展时再补).
+    **Usage** (Cycle 4 NIT 10 fix — corrected from earlier "all unused" claim):
+    - **PR-A**: NOT called. PR-A impl chat may omit this helper.
+    - **PR-B**: REQUIRED — `_calculate_loss_rate_for_health_score` (§3.9) calls this
+      helper to fetch per-batch adjustments for LOSS_RATE computation feeding
+      `_get_health_score` dimension 3. (Java getHealthScore L866 calls public
+      getLossAnalysis L498-503 which calls findByMaterialBatchIdAnd...
+      Python mirrors via this private helper inside `_calculate_loss_rate_for_health_score`.)
+    - **PR-C**: indirectly tested via TestInventoryHealthScoreAsymmetric +
+      TestInventoryHealthScoreTierArithmetic (loss rate is one of 4 health
+      score dimensions).
     """
     if start_date is None or end_date is None:
         raise ValueError("_query_batch_adjustments_in_range: dates required")
@@ -555,6 +589,18 @@ _DISPLAY_SCALE     = Decimal("0.01")       # DISPLAY_SCALE=2 (Java line 59)
 _QUANTIZE_HALF_UP  = ROUND_HALF_UP         # Java RoundingMode.HALF_UP (line 60)
 
 # T-INV-1 alert thresholds — 4 named helpers + 4 inline (see §3.6)
+#
+# ⚠️ Cycle 4 MAJOR 4 fix — threshold UNIT scale notes:
+#   Turnover thresholds (6/12) compare against rate in 次/年 (raw scale).
+#   InventoryDays thresholds (30/60) compare against days (raw scale).
+#   ExpiryRisk thresholds (10/15) compare against PERCENTAGE (already × 100).
+#   LossRate thresholds (2/5) compare against PERCENTAGE (already × 100).
+#   Slow-moving inline (10/20) compare against PERCENTAGE (already × 100).
+#   Aging boundary (30/60/90) compare against days (raw scale).
+#
+# Easy to confuse a rate-scale threshold with a percentage-scale threshold —
+# Java getHealthScore (§3.9) inline arithmetic is the trap site.
+#
 # Named helper thresholds:
 _TURNOVER_RED          = Decimal("6")      # Java line 64, regular dir (lower=worse)
 _TURNOVER_YELLOW       = Decimal("12")     # Java line 66
@@ -2278,6 +2324,26 @@ async def _calculate_loss_rate_for_health_score(
 use `LocalDate.now()` (Java) / `date.today()` (Python). Goldens captured at date X will
 diverge from Python output at date Y unless test fixture mocks today's date.
 
+⚠️ **Cycle 4 MAJOR 6 — F999 seed determinism constraint** for `_query_expiring_batches`:
+
+The query result has single-col `ORDER BY expire_date ASC` (mirrors Java, see §3.3 +
+Risk 3). When `_get_expiring_batches_ranking` does `filtered[:20]` truncation, batches
+sharing identical `expire_date` get an unstable secondary order from PostgreSQL.
+
+**F999 seed MUST guarantee no two AVAILABLE batches share `expire_date`** (or, if
+ranking returns ≤20 total batches, the truncation never triggers — alternate
+mitigation). Add to `db_seed_inventory_full` fixture in `conftest.py` (PR-A impl
+chat):
+
+    # Assertion in fixture
+    expire_dates = [b.expire_date for b in seeded_batches if b.status == 'AVAILABLE']
+    assert len(set(expire_dates)) == len(expire_dates), \\
+        "F999 inventory seed must use unique expire_date per AVAILABLE batch"
+
+If this fixture invariant breaks (e.g., future seed expansion), goldens will become
+flaky across DB re-creates. PR-A impl plan must enforce this via fixture assertion,
+NOT via lifting the no-`id`-tiebreaker rule (Risk 3 lock-in).
+
 **Test impl strategy**: PR-A contract tests use `monkeypatch.setattr` on
 `smartbi_compat.api.analysis_inventory.date` to freeze today; goldens recorded
 at corresponding fixed date during impl phase.
@@ -2386,10 +2452,28 @@ class TestInventoryDateArithmetic:
     """Annualization + days-until-expiry signed semantics + null receipt → '90天以上'"""
 
 class TestInventoryLinkedHashMapOrder:
-    """Regression — assert chart_data list order matches Java pre-population:
-       expiry-risk-chart [正常, 关注, 预警, 紧急, 无保质期] (5 buckets)
-       aging-chart [0-30, 31-60, 61-90, 90以上] (4 buckets)
-       material-category-chart top-10 sorted desc by value"""
+    """Regression — assert chart_data list order matches Java pre-population.
+
+    ⚠️ **Cycle 4 MAJOR 5 lock-in**: under Phase 2A dict-eq gate, naive
+    `assertEqual(response, golden)` IGNORES key order in dict comparisons.
+    Tests MUST explicitly assert positional order:
+
+        # ❌ THEATER (passes when Python dict reorders silently):
+        assert chart["data"] == golden["data"]
+
+        # ✅ REAL ORDER ASSERTION:
+        actual_status_order = [d["status"] for d in chart["data"]]
+        assert actual_status_order == ["正常（>30天）", "关注（15-30天）",
+                                       "预警（7-15天）", "紧急（<7天）", "无保质期"]
+
+    Coverage:
+      expiry-risk-chart: 5-bucket positional order via list comp on data["status"]
+      aging-chart: 4-bucket positional order via list comp on data["aging"]
+      material-category-chart: top-10 sorted desc by value (assert ordered list)
+
+    Defensive — also assert ALL 5 (or 4) keys present even when only one bucket
+    has non-zero value: Java L456 always emits all entries, Python pre-populated
+    dict iteration does too."""
 
 class TestInventoryLossTrendChartMock:
     """T-INV-8 — assert _get_loss_trend_chart NOT exported from analysis_inventory.py.
