@@ -37,3 +37,39 @@ _QUANTIZE_HALF_UP  = ROUND_HALF_UP
 
 
 router = APIRouter()
+
+
+async def _query_department_full(
+    factory_id: str, start_date: date, end_date: date
+) -> list[dict]:
+    """Mirror Java SmartBiDepartmentDataRepository.findByFactoryIdAndRecordDateBetween.
+
+    ⚠️ C2 fix: Java JPA derived query has NO ORDER BY (repo line 33-35) → PG row
+    order unstable. Python adds explicit ORDER BY id for byte-shape determinism.
+
+    Rule 5: SELECT * for shared SQL helpers (future-proof for schema additions).
+    Caller (`_aggregate_department_data`) MUST IGNORE per_capita_sales /
+    per_capita_cost columns (I3 fix: recompute from aggregated values).
+
+    Rule 6: input boundary None-check.
+    """
+    if start_date is None or end_date is None:
+        raise ValueError(
+            f"_query_department_full: start_date / end_date required "
+            f"(got start_date={start_date!r}, end_date={end_date!r})"
+        )
+
+    from smartbi.config import get_cretas_pool  # type: ignore
+    pool = await get_cretas_pool()
+
+    sql = """
+        SELECT *
+        FROM smart_bi_department_data
+        WHERE factory_id = $1
+          AND deleted_at IS NULL
+          AND record_date BETWEEN $2 AND $3
+        ORDER BY id
+    """
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(sql, factory_id, start_date, end_date)
+    return [dict(r) for r in rows]
