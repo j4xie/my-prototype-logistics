@@ -104,12 +104,7 @@ class JWTAuthMiddleware:
             await self.app(scope, receive, send)
             return
 
-        # Skip public prefixes
-        if any(path.startswith(prefix) for prefix in PUBLIC_PREFIXES):
-            await self.app(scope, receive, send)
-            return
-
-        # Extract headers from scope
+        # Extract headers from scope (needed by both internal-secret + JWT branches)
         headers = dict(
             (k.decode("latin-1").lower(), v.decode("latin-1"))
             for k, v in scope.get("headers", [])
@@ -120,6 +115,12 @@ class JWTAuthMiddleware:
         # scopes properly for per-tenant internal jobs. Absent header →
         # INTERNAL sentinel (RLS will return 0 rows; caller must BYPASSRLS
         # or pass X-Factory-Id explicitly).
+        # May 1 2026: moved BEFORE PUBLIC_PREFIXES skip so paths under
+        # /api/ai/, /api/efficiency/, etc. (which are PUBLIC_PREFIXES so
+        # browser/RN can call them without JWT) can still surface
+        # auth_method=internal when called by Java with the header. Some
+        # handlers (e.g. ai/api.py:154) require auth_method=="internal" and
+        # used to fail with 401 because the secret check was skipped first.
         internal_secret = headers.get("x-internal-secret", "")
         expected_secret = os.environ.get("INTERNAL_API_SECRET", "")
         if expected_secret and internal_secret == expected_secret:
@@ -143,6 +144,11 @@ class JWTAuthMiddleware:
                         reset_factory_id(tenant_token)
                     except Exception:
                         pass
+            return
+
+        # Skip public prefixes (no JWT required, no internal-secret either)
+        if any(path.startswith(prefix) for prefix in PUBLIC_PREFIXES):
+            await self.app(scope, receive, send)
             return
 
         # Extract Bearer token
