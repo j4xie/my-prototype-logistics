@@ -2137,6 +2137,114 @@ async def _get_payable_analysis(factory_id: str, start_date: date, end_date: dat
 
 
 # ============================================================
+# Section 4d: Budget per-type real impl (Phase 2A)
+# ============================================================
+
+
+async def _get_budget_metrics(factory_id: str, year: int, month: int) -> list[dict]:
+    """Mirror Java FinanceAnalysisServiceImpl.getBudgetMetrics (line 1031-1116).
+
+    Signature `(factory_id, year, month)` per Rule 3 — does NOT take date_range
+    because Java method takes (int year, int month). Date range derived inside:
+        start_date = date(year, month, 1)
+        end_date = date(year, month, calendar.monthrange(year, month)[1])
+
+    Emits 4 MetricResult entries (BUDGET_EXECUTION / BUDGET_VARIANCE /
+    BUDGET_VARIANCE_RATE / BUDGET_REMAINING) using _new_metric_result_dict
+    (11-field DTO shape verified via F999 golden).
+
+    F2 risk: NO `.abs()` defensive on budget_amount/actual_amount per Rule 3 raw
+    mirror of Java line 1044-1052. Raw accumulation matches Java exactly.
+    """
+    start_date = date(year, month, 1)
+    end_date = date(year, month, calendar.monthrange(year, month)[1])
+
+    budget_data = await _query_finance_data(factory_id, "BUDGET", start_date, end_date)
+
+    # Java line 1044-1047: raw sum of budget_amount (NOT abs, F2 raw mirror Rule 3)
+    total_budget = sum(
+        (_to_decimal(r["budget_amount"]) for r in budget_data
+         if r.get("budget_amount") is not None),
+        Decimal("0"),
+    )
+    # Java line 1049-1052: raw sum of actual_amount
+    total_actual = sum(
+        (_to_decimal(r["actual_amount"]) for r in budget_data
+         if r.get("actual_amount") is not None),
+        Decimal("0"),
+    )
+
+    # BUDGET_EXECUTION (Java line 1054-1071)
+    if total_budget > Decimal("0"):
+        execution_rate_raw = (total_actual / total_budget).quantize(
+            Decimal("0.0001"), rounding=ROUND_HALF_UP
+        ) * Decimal("100")
+    else:
+        execution_rate_raw = Decimal("0")
+    execution_rate_display = execution_rate_raw.quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
+
+    # BUDGET_VARIANCE (Java line 1074-1085)
+    variance = total_actual - total_budget
+    variance_display = variance.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    # BUDGET_VARIANCE_RATE (Java line 1088-1099)
+    if total_budget > Decimal("0"):
+        variance_rate_raw = (variance / total_budget).quantize(
+            Decimal("0.0001"), rounding=ROUND_HALF_UP
+        ) * Decimal("100")
+    else:
+        variance_rate_raw = Decimal("0")
+    variance_rate_display = variance_rate_raw.quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
+
+    # BUDGET_REMAINING (Java line 1102-1113)
+    remaining = total_budget - total_actual
+    remaining_display = remaining.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    return [
+        _new_metric_result_dict(
+            metric_code="BUDGET_EXECUTION",
+            metric_name="预算执行率",
+            value=_decimal_to_number(execution_rate_display),
+            formatted_value=f"{execution_rate_display}%",
+            unit="%",
+            alert_level=_determine_budget_achievement_alert(execution_rate_raw),
+            description="实际支出占预算的比例",
+        ),
+        _new_metric_result_dict(
+            metric_code="BUDGET_VARIANCE",
+            metric_name="预算差异",
+            value=_decimal_to_number(variance_display),
+            formatted_value=_format_currency(variance),
+            unit="元",
+            alert_level="YELLOW" if variance > Decimal("0") else "GREEN",
+            description="实际支出与预算的差额",
+        ),
+        _new_metric_result_dict(
+            metric_code="BUDGET_VARIANCE_RATE",
+            metric_name="预算偏差率",
+            value=_decimal_to_number(variance_rate_display),
+            formatted_value=f"{variance_rate_display}%",
+            unit="%",
+            alert_level=_determine_budget_variance_rate_alert(variance_rate_raw),
+            description="预算差异占预算的比例",
+        ),
+        _new_metric_result_dict(
+            metric_code="BUDGET_REMAINING",
+            metric_name="预算剩余",
+            value=_decimal_to_number(remaining_display),
+            formatted_value=_format_currency(remaining),
+            unit="元",
+            alert_level="GREEN" if remaining >= Decimal("0") else "RED",
+            description="剩余可用预算额度",
+        ),
+    ]
+
+
+# ============================================================
 # Section 5: Route handler
 # ============================================================
 
