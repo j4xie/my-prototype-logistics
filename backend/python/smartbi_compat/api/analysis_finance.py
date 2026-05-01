@@ -533,6 +533,81 @@ def _calculate_metric_from_sales(sales_rows: list[dict], metric: str) -> Decimal
     return total_revenue
 
 
+async def _get_budget_achievement_chart(
+    factory_id: str, year: int, metric: str = "revenue"
+) -> dict:
+    """Mirror Java FinanceAnalysisServiceImpl.getBudgetAchievementChart (line 1121-1195).
+
+    Always emits 12 month entries (Java line 1132-1135 pre-fills with zeros).
+    """
+    start_date = date(year, 1, 1)
+    end_date = date(year, 12, 31)
+
+    budget_data = await _query_finance_data(
+        factory_id, "BUDGET", start_date, end_date
+    )
+
+    # Java line 1131-1135: TreeMap of 12 months pre-filled [budget=0, actual=0]
+    monthly_data: dict[int, list[Decimal]] = {
+        m: [Decimal("0"), Decimal("0")] for m in range(1, 13)
+    }
+
+    for record in budget_data:
+        if record.get("record_date") is None:
+            continue
+        month = record["record_date"].month
+        monthly_data[month][0] += _get_budget_amount_by_metric(record, metric)
+        monthly_data[month][1] += _get_actual_amount_by_metric(record, metric)
+
+    chart_data: list[dict] = []
+    for month in range(1, 13):
+        budget = monthly_data[month][0]
+        actual = monthly_data[month][1]
+        if budget > Decimal("0"):
+            achievement_rate = (
+                actual / budget * Decimal("100")
+            ).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        else:
+            achievement_rate = Decimal("0")
+        # Note: alert uses scale=4 value (precision matters at boundary)
+        alert_level = _determine_budget_achievement_alert(achievement_rate)
+
+        chart_data.append({
+            "month": f"{month}月",
+            "budget": _decimal_to_number(budget.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "actual": _decimal_to_number(actual.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "achievementRate": _decimal_to_number(achievement_rate.quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "variance": _decimal_to_number((actual - budget).quantize(Decimal("0.01"), ROUND_HALF_UP)),
+            "alertLevel": alert_level,
+        })
+
+    metric_name = _get_metric_display_name(metric)
+
+    # Map.of(4) Jackson hash order: golden recording verifies (Phase B.2)
+    options = {
+        "yAxis": [
+            _new_yaxis_entry(name="金额", position="left"),
+            {"name": "达成率(%)", "position": "right", "min": 0, "max": 150},
+        ],
+        "series": [
+            {"color": "#5470c6", "name": "预算", "type": "bar", "yAxisIndex": 0},
+            {"color": "#91cc75", "name": "实际", "type": "bar", "yAxisIndex": 0},
+            {"color": "#ee6666", "name": "达成率", "type": "line", "yAxisIndex": 1},
+        ],
+        "referenceLine": {"value": 100, "label": "目标线"},
+    }
+
+    return _new_chart_config_dict(
+        chart_type="LINE_BAR",
+        title=f"{year}年{metric_name}预算达成分析",
+        series_field="metric",
+        data=chart_data,
+        options=options,
+        xaxis_field="month",
+        yaxis_field="budget",
+    )
+
+
 def _determine_gross_margin_alert(gross_margin: Decimal) -> str:
     """Java `FinanceAnalysisServiceImpl.determineGrossMarginAlertLevel` line 1619-1624.
 
@@ -1659,3 +1734,15 @@ async def get_finance_analysis(
         code=501,
         message=f"analysisType={analysisType} 尚未 port 至 Python，请暂用 Java endpoint 或等待 phase2a/t-finance-perX 副轨完成",
     )
+
+
+@router.get("/api/mobile/{factory_id}/smart-bi/analysis/finance/budget-achievement")
+async def get_budget_achievement(
+    factory_id: str,
+    year: int = Query(...),
+    metric: str = Query("revenue"),
+    auth: AuthContext = Depends(verify_jwt_and_factory),
+) -> dict:
+    """Java reference: SmartBIAnalysisController.getBudgetAchievementChart line 276-292."""
+    result = await _get_budget_achievement_chart(auth.factory_id, year, metric)
+    return wrap_response(result)
