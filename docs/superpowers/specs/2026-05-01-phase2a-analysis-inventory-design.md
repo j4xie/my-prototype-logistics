@@ -307,3 +307,467 @@ PR-C (arithmetic depth tests):
 | `MaterialBatch.getCurrentQuantity()` | `MaterialBatch.java:167-175` | `@Transient`: receiptQty - usedQty - reservedQty, null-safe |
 | `MaterialBatchStatus.AVAILABLE` enum | `MaterialBatchStatus.java` | 仅此一个状态被 query (其他 IN_STOCK/FRESH/EXPIRED 不 query) |
 | `alert_thresholds.json` | (verified, no `inventory` key) | All 8 thresholds inline-only |
+
+### 3.2 Imports
+
+```python
+from datetime import date, datetime, time
+from decimal import Decimal, ROUND_HALF_UP
+from typing import Any, Optional
+
+from fastapi import APIRouter, Depends, Query
+
+from smartbi_compat.api.analysis_finance import (
+    _strip_volatile,         # already covers "lastUpdated" key (Tier 1 finance baseline)
+    VOLATILE_KEYS,
+    _decimal_to_number,      # FastAPI Decimal serialization parity (Rule 4)
+    _to_decimal,
+    _utc_now_iso,
+    _fetch_all,
+    wrap_response,
+)
+
+from smartbi_compat.auth import verify_factory_access, AuthContext
+
+# NOTE: NOT imported (intentional):
+#   - _calculate_mom_growth from analysis_procurement (inventory has NO MoM metric;
+#     Java side `MetricCalculatorService` 注入但不调用 — see §1.4 design diff)
+#   - _get_period_key from analysis_finance (Rule 2 fix) — inventory `getTurnoverTrendChart`
+#     hardcodes MONTH period via direct `LocalDate.withDayOfMonth(1)` 月迭代, 不走通用
+#     period dispatcher; WEEK / DAY 不可达 (controller hardcodes period="MONTH" line 429)
+#   - python-dateutil relativedelta — inventory MONTH iteration 用 `LocalDate.plusMonths(1)`
+#     mirror via custom `_plus_months(d, n)` 即可 (procurement spec §3.10b 同模式)
+```
+
+### 3.3 SQL helpers (T-INV-12 ORDER BY truth + Rule 5 + Rule 6)
+
+**T-INV-12 ORDER BY truth table** (verified by Round 2 grep against `*Repository.java`):
+
+| Repository method | Java has ORDER BY? | Python helper ORDER BY |
+|---|---|---|
+| `MaterialBatchRepository.findByFactoryIdAndStatus` (L146) | NO (JPA derived) | `ORDER BY id` (department C2 fix pattern) |
+| `MaterialBatchRepository.findExpiringBatches` (L173-177) | YES `ORDER BY m.expireDate ASC` (single col) | **mirror exact**: `ORDER BY expire_date ASC` (NO secondary `id`) |
+| `MaterialBatchRepository.findExpiredBatches` (L182-185) | NO | `ORDER BY id` |
+| `MaterialBatchRepository.calculateInventoryValue` (L195-197) | scalar SUM (no ORDER BY needed) | scalar SUM (single row) |
+| `MaterialConsumptionRepository.findByTimeRange` (L40-44) | NO | `ORDER BY id` |
+| `MaterialBatchAdjustmentRepository.findByMaterialBatchIdAndAdjustmentTimeBetweenOrderByAdjustmentTimeDesc` | YES `ORDER BY adjustment_time DESC` (in derived name) | **mirror exact**: `ORDER BY adjustment_time DESC` (NO secondary `id`) |
+
+⚠️ Per user lock-in (Round 2): Java 已有 ORDER BY 时 Python **不补 `id` 二级 tiebreaker**, 1:1 mirror. 仅 Java 无 ORDER BY 时 Python 补 `ORDER BY id`. `findExpiringBatches` single-col `expire_date ASC` 在 PostgreSQL 同 expire_date 多 row 时 secondary order 不确定 — **Java side bug**, out of Phase 2A scope, 见 §7.
+
+```python
+async def _query_material_batches_by_status(
+    factory_id: str, status: str = "AVAILABLE"
+) -> list[dict]:
+    """Mirror Java MaterialBatchRepository.findByFactoryIdAndStatus (L146).
+
+    JPA derived query, NO ORDER BY in Java → row order unstable. Python adds
+    explicit ORDER BY id for byte-shape determinism (T-INV-12 lock).
+
+    Soft-delete: WHERE deleted_at IS NULL (mirror @Where annotation if present).
+    Status: parameter (Java callers all pass MaterialBatchStatus.AVAILABLE).
+
+    Rule 5: SELECT * future-proof for schema additions.
+    Rule 6: input boundary None-check.
+    """
+    if factory_id is None:
+        raise ValueError("_query_material_batches_by_status: factory_id required")
+    sql = """
+        SELECT *
+        FROM material_batches
+        WHERE factory_id = $1
+          AND status = $2
+          AND deleted_at IS NULL
+        ORDER BY id
+    """
+    return await _fetch_all(sql, factory_id, status)
+
+
+async def _query_material_consumptions_in_range(
+    factory_id: str, start_date: date, end_date: date
+) -> list[dict]:
+    """Mirror Java MaterialConsumptionRepository.findByTimeRange (L40-44).
+
+    @Query JPQL `WHERE m.factoryId = :factoryId AND m.consumptionTime BETWEEN :startTime AND :endTime`
+    — NO ORDER BY → Python adds `ORDER BY id` (T-INV-12 lock).
+
+    ⚠️ T-INV-7 atTime(23, 59, 59) trap — Java callers convert LocalDate to LocalDateTime
+    via `startDate.atStartOfDay()` (00:00:00) and `endDate.atTime(23, 59, 59)`
+    (NOT 23:59:59.999999 — 1-second gap before midnight). Python equivalent:
+        start_dt = datetime.combine(start_date, time.min)         # 00:00:00
+        end_dt = datetime.combine(end_date, time(23, 59, 59))     # 23:59:59 (no microseconds)
+    """
+    if start_date is None or end_date is None:
+        raise ValueError(
+            f"_query_material_consumptions_in_range: start_date/end_date required "
+            f"(got start_date={start_date!r}, end_date={end_date!r})"
+        )
+    start_dt = datetime.combine(start_date, time.min)
+    end_dt = datetime.combine(end_date, time(23, 59, 59))
+    sql = """
+        SELECT *
+        FROM material_consumptions
+        WHERE factory_id = $1
+          AND consumption_time BETWEEN $2 AND $3
+        ORDER BY id
+    """
+    return await _fetch_all(sql, factory_id, start_dt, end_dt)
+
+
+async def _query_expiring_batches(
+    factory_id: str, warning_date: date
+) -> list[dict]:
+    """Mirror Java MaterialBatchRepository.findExpiringBatches (L173-177).
+
+    @Query JPQL `WHERE m.factoryId = :factoryId AND m.expireDate BETWEEN CURRENT_DATE AND :warningDate ORDER BY m.expireDate ASC`
+    — **YES ORDER BY** (single col `expire_date ASC`). Python mirror exact, NO secondary id.
+
+    ⚠️ Java side `CURRENT_DATE` = SQL function (server time at query exec). Python
+    mirrors: pass `date.today()` from Python, OR use SQL `CURRENT_DATE`. **决策**:
+    Python 用 SQL `CURRENT_DATE` mirror exactly (避免 Python `date.today()` 跟 server
+    timezone 偏差导致 byte parity drift).
+
+    ⚠️ Note: Java does NOT filter by status='AVAILABLE' here. So expiring query
+    returns batches of ANY status. Python mirror.
+    """
+    if warning_date is None:
+        raise ValueError("_query_expiring_batches: warning_date required")
+    sql = """
+        SELECT *
+        FROM material_batches
+        WHERE factory_id = $1
+          AND expire_date BETWEEN CURRENT_DATE AND $2
+          AND deleted_at IS NULL
+        ORDER BY expire_date ASC
+    """
+    return await _fetch_all(sql, factory_id, warning_date)
+
+
+async def _query_expired_batches(factory_id: str) -> list[dict]:
+    """Mirror Java MaterialBatchRepository.findExpiredBatches (L182-185).
+
+    @Query JPQL `WHERE m.factoryId = :factoryId AND m.status != 'EXPIRED' AND m.expireDate < CURRENT_DATE`
+    — NO ORDER BY → Python adds `ORDER BY id`.
+
+    ⚠️ Note Java filter `status != 'EXPIRED'` — counts already-expired-by-date batches
+    that haven't been transitioned to EXPIRED status yet. Python mirror exactly.
+    """
+    sql = """
+        SELECT *
+        FROM material_batches
+        WHERE factory_id = $1
+          AND status != 'EXPIRED'
+          AND expire_date < CURRENT_DATE
+          AND deleted_at IS NULL
+        ORDER BY id
+    """
+    return await _fetch_all(sql, factory_id)
+
+
+async def _query_inventory_value_total(factory_id: str) -> Decimal:
+    """Mirror Java MaterialBatchRepository.calculateInventoryValue (L195-197).
+
+    @Query JPQL: SELECT SUM((m.receiptQuantity - m.usedQuantity - m.reservedQuantity) * m.unitPrice)
+                 FROM MaterialBatch m WHERE m.factoryId = :factoryId AND m.status = 'AVAILABLE'
+
+    ⚠️ Java returns null when no rows (BigDecimal — Java NullPointer-prone). Caller
+    must null-coalesce to ZERO. Python mirror: NULL aggregate → coalesce to Decimal('0').
+
+    ⚠️ T-INV-13 — formula matches getCurrentQuantity() @Transient.
+    SQL nulls inside SUM expression: PostgreSQL treats NULL arithmetic as NULL → that
+    row contributes nothing. Same as Java's null-safe @Transient (which returns ZERO
+    if receiptQuantity null). **Caveat**: Java @Transient also coalesces usedQuantity
+    and reservedQuantity to ZERO before subtract; SQL `(NULL - x - y) * unitPrice`
+    propagates NULL. **Java DB query and Java @Transient method 在 receiptQuantity 非 null
+    但 usedQuantity 或 reservedQuantity null 时 behavior 不同**:
+      - @Transient: receiptQuantity - 0 - 0 = receiptQuantity (counts the row)
+      - SQL: receiptQuantity - NULL - NULL = NULL (drops the row)
+    
+    本 spec **Python 端 mirror Java SQL behavior** (因 controller default mode
+    KPI 卡用 `_query_inventory_value_total` SQL 路径而非 in-memory iteration).
+    所有 in-memory iteration 路径 (calculateTotalInventoryValue 1058-1063)
+    用 `_get_current_quantity()` 严格 mirror @Transient null-coalesce (T-INV-13).
+    
+    **PR-C 测试**: `TestInventoryGetCurrentQuantityFormula` 锁定 in-memory path;
+    `_query_inventory_value_total` 不需要单独 test (mirror SQL 即可).
+    """
+    sql = """
+        SELECT COALESCE(
+            SUM((m.receipt_quantity - m.used_quantity - m.reserved_quantity) * m.unit_price),
+            0
+        ) AS inventory_value
+        FROM material_batches m
+        WHERE m.factory_id = $1
+          AND m.status = 'AVAILABLE'
+          AND m.deleted_at IS NULL
+    """
+    rows = await _fetch_all(sql, factory_id)
+    if not rows or rows[0].get("inventory_value") is None:
+        return Decimal("0")
+    return _to_decimal(rows[0]["inventory_value"])
+
+
+async def _query_batch_adjustments_in_range(
+    batch_id: str, start_date: date, end_date: date
+) -> list[dict]:
+    """Mirror Java MaterialBatchAdjustmentRepository.findByMaterialBatchIdAnd
+    AdjustmentTimeBetweenOrderByAdjustmentTimeDesc.
+
+    Derived method name has `OrderByAdjustmentTimeDesc` → **YES ORDER BY**.
+    Python mirror exactly: `ORDER BY adjustment_time DESC` (NO secondary id).
+
+    ⚠️ T-INV-7 atTime(23, 59, 59) — same boundary trap as
+    _query_material_consumptions_in_range.
+
+    **Note**: 仅 PR-B health score 可能间接调到 (实际 PR-B `getHealthScore` 不调
+    `getLossAnalysis`, 只调 `getTurnoverAnalysis` + `getExpiryRiskAnalysis` +
+    `getAgingMetrics` per L824-921). 因此本 helper PR-A/B/C **all 阶段都不实际调用**.
+    保留 helper 仅为 future-proof + 防 sister chats 看到 adjustments 没有 helper
+    误以为不需要 port. **决策**: spec 列出 helper signature, impl PR 标 `# unused, see §7`
+    或干脆 omit (PR-A 阶段 omit, future ai-insights 扩展时再补).
+    """
+    if start_date is None or end_date is None:
+        raise ValueError("_query_batch_adjustments_in_range: dates required")
+    start_dt = datetime.combine(start_date, time.min)
+    end_dt = datetime.combine(end_date, time(23, 59, 59))
+    sql = """
+        SELECT *
+        FROM material_batch_adjustments
+        WHERE material_batch_id = $1
+          AND adjustment_time BETWEEN $2 AND $3
+        ORDER BY adjustment_time DESC
+    """
+    return await _fetch_all(sql, batch_id, start_dt, end_dt)
+```
+
+### 3.4 Constants + scale (T-INV-1 8 thresholds + 4 aging boundaries)
+
+```python
+# Mirror Java InventoryHealthAnalysisServiceImpl L58-83
+
+_SCALE             = Decimal("0.0001")     # SCALE=4 (Java line 58)
+_DISPLAY_SCALE     = Decimal("0.01")       # DISPLAY_SCALE=2 (Java line 59)
+_QUANTIZE_HALF_UP  = ROUND_HALF_UP         # Java RoundingMode.HALF_UP (line 60)
+
+# T-INV-1 alert thresholds — 4 named helpers + 4 inline (see §3.6)
+# Named helper thresholds:
+_TURNOVER_RED          = Decimal("6")      # Java line 64, regular dir (lower=worse)
+_TURNOVER_YELLOW       = Decimal("12")     # Java line 66
+_INVENTORY_DAYS_RED    = Decimal("60")     # Java L1308 inline new BigDecimal("60"), INVERSE
+_INVENTORY_DAYS_YELLOW = Decimal("30")     # Java L1311 inline, INVERSE
+_EXPIRY_RISK_RED       = Decimal("15")     # Java line 68, INVERSE (strict `>`)
+_EXPIRY_RISK_YELLOW    = Decimal("10")     # Java line 70, INVERSE (strict `>`)
+_LOSS_RATE_RED         = Decimal("5")      # Java line 72, INVERSE (strict `>`)
+_LOSS_RATE_YELLOW      = Decimal("2")      # Java line 74, INVERSE (strict `>`)
+
+# Aging segment boundaries (days) — Java line 77-79
+_AGING_FRESH    = 30   # 0-30 days bucket upper bound
+_AGING_NORMAL   = 60   # 31-60 days bucket upper bound
+_AGING_WARNING  = 90   # 61-90 days bucket upper bound; ageDays > 90 = "90天以上"
+
+# Expiry warning — Java line 82-83
+_DEFAULT_EXPIRY_WARNING_DAYS = 30
+_HIGH_RISK_EXPIRY_DAYS       = 7
+
+# Slow-moving rate inline thresholds (Java L747-751, getAgingMetrics ternary)
+# NOT a named helper, inline in _get_aging_metrics; constants exported for PR-C boundary tests
+_SLOW_MOVING_RED_INLINE    = Decimal("20")  # > 20% RED
+_SLOW_MOVING_YELLOW_INLINE = Decimal("10")  # > 10% YELLOW
+
+# Health score overall alert (Java L903-910, getHealthScore inline)
+# 用于 PR-B health score 总体 alert
+_HEALTH_SCORE_GREEN_MIN  = Decimal("80")    # >= 80 GREEN
+_HEALTH_SCORE_YELLOW_MIN = Decimal("60")    # >= 60 YELLOW
+
+# Per-batch ranking inline thresholds (Java L398-404 + L799-805)
+# `getExpiringBatchesRanking` per-row alert
+_EXPIRING_RANKING_RED_DAYS    = 7    # daysUntilExpiry <= 7 RED
+_EXPIRING_RANKING_YELLOW_DAYS = 15   # daysUntilExpiry <= 15 YELLOW
+# `getLongAgingBatchesRanking` per-row alert
+_LONG_AGING_RANKING_RED_DAYS    = 120   # ageDays > 120 RED
+_LONG_AGING_RANKING_YELLOW_DAYS = 90    # ageDays > 90 YELLOW (uses AGING_WARNING constant)
+```
+
+### 3.5 Shared logic helpers
+
+```python
+def _get_current_quantity(batch: dict) -> Decimal:
+    """Mirror Java MaterialBatch.getCurrentQuantity() @Transient (MaterialBatch.java:167-175).
+
+    Formula: receiptQuantity - usedQuantity - reservedQuantity
+    Null-safe:
+      - receiptQuantity null → return ZERO (Java line 169-171)
+      - usedQuantity null → 0 default (Java line 172)
+      - reservedQuantity null → 0 default (Java line 173)
+
+    ⚠️ T-INV-13 — Java SQL `calculateInventoryValue` (L195-197) 跟此 @Transient method
+    对 null component 的处理**不同** (SQL: NULL propagates → row drops; @Transient:
+    null coalesce ZERO → row counts). Spec 决策: in-memory path (calculateTotalInventoryValue
+    L1058-1063) 用本 helper mirror @Transient; SQL path (_query_inventory_value_total)
+    mirror Java SQL behavior. 两路径 byte-parity 各自对齐 Java.
+    """
+    rq = batch.get("receipt_quantity")
+    if rq is None:
+        return Decimal("0")
+    used = batch.get("used_quantity")
+    reserved = batch.get("reserved_quantity")
+    used_dec = _to_decimal(used) if used is not None else Decimal("0")
+    reserved_dec = _to_decimal(reserved) if reserved is not None else Decimal("0")
+    return _to_decimal(rq) - used_dec - reserved_dec
+
+
+def _calculate_total_inventory_value(batches: list[dict]) -> Decimal:
+    """Mirror Java InventoryHealthAnalysisServiceImpl.calculateTotalInventoryValue (L1058-1063).
+
+    Java:
+      batches.stream()
+        .map(b -> b.getCurrentQuantity().multiply(
+            b.getUnitPrice() != null ? b.getUnitPrice() : BigDecimal.ZERO))
+        .reduce(BigDecimal.ZERO, BigDecimal::add)
+
+    Python equivalent: sum(currentQuantity * unitPrice (default 0)) over batches.
+
+    Rule 1: explicit is-None check on unit_price.
+    """
+    total = Decimal("0")
+    for b in batches:
+        cq = _get_current_quantity(b)
+        up = b.get("unit_price")
+        up_dec = _to_decimal(up) if up is not None else Decimal("0")
+        total += cq * up_dec
+    return total
+
+
+def _format_currency(value: Optional[Decimal]) -> str:
+    """Mirror Java formatCurrency (L1346-1351).
+
+    Java:
+      if (value == null) return "-";
+      return String.format("%,.2f", value.setScale(DISPLAY_SCALE=2, HALF_UP).doubleValue());
+
+    ⚠️ T8 styled — 千分位 + 2 位小数, NO trailing "%" or "元" (caller adds unit suffix).
+    """
+    if value is None:
+        return "-"
+    quantized = value.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+    return f"{float(quantized):,.2f}"
+
+
+def _convert_to_kpi_cards(metric_results: list[dict]) -> list[dict]:
+    """Mirror Java convertToKPICards (L1241-1287).
+
+    Mapping:
+      AlertLevel name → status: RED→"red" / YELLOW→"yellow" / default→"green"
+      ChangeDirection: UP→"up" / DOWN→"down" / default→"flat"
+
+    KPICard JSON shape (Java @Builder field order):
+      [key, title, rawValue, value, unit, changeRate, change, trend, status, description]
+    """
+    cards = []
+    for metric in metric_results:
+        alert = metric.get("alertLevel")
+        if alert == "RED":
+            status = "red"
+        elif alert == "YELLOW":
+            status = "yellow"
+        else:
+            status = "green"
+
+        direction = metric.get("changeDirection")
+        if direction == "UP":
+            trend = "up"
+        elif direction == "DOWN":
+            trend = "down"
+        else:
+            trend = "flat"
+
+        # Java line 1276-1278:
+        # value = formattedValue if non-null else (value.toString() if non-null else "-")
+        formatted = metric.get("formattedValue")
+        raw_value = metric.get("value")
+        if formatted is not None:
+            display_value = formatted
+        elif raw_value is not None:
+            display_value = str(raw_value)
+        else:
+            display_value = "-"
+
+        cards.append({
+            "key":         metric.get("metricCode"),
+            "title":       metric.get("metricName"),
+            "rawValue":    raw_value,
+            "value":       display_value,
+            "unit":        metric.get("unit"),
+            "changeRate":  metric.get("changePercent"),
+            "change":      metric.get("changeValue"),
+            "trend":       trend,
+            "status":      status,
+            "description": metric.get("description"),
+        })
+    return cards
+```
+
+### 3.6 Alert-level helpers (4 named) + 4 inline alert decisions
+
+**Named helpers (mirror Java private methods):**
+
+```python
+def _determine_turnover_alert_level(turnover_rate: Decimal) -> str:
+    """Mirror Java determineTurnoverAlertLevel (L1294-1302).
+    Regular direction (lower = worse): RED < 6, YELLOW < 12, GREEN."""
+    if turnover_rate < _TURNOVER_RED:
+        return "RED"
+    if turnover_rate < _TURNOVER_YELLOW:
+        return "YELLOW"
+    return "GREEN"
+
+
+def _determine_inventory_days_alert_level(inventory_days: Decimal) -> str:
+    """Mirror Java determineInventoryDaysAlertLevel (L1307-1315).
+    INVERSE direction (higher = worse): RED > 60, YELLOW > 30, GREEN."""
+    if inventory_days > _INVENTORY_DAYS_RED:
+        return "RED"
+    if inventory_days > _INVENTORY_DAYS_YELLOW:
+        return "YELLOW"
+    return "GREEN"
+
+
+def _determine_expiry_risk_alert_level(expiry_risk_rate: Decimal) -> str:
+    """Mirror Java determineExpiryRiskAlertLevel (L1320-1328).
+    INVERSE direction, **strict `>`**: RED > 15, YELLOW > 10, GREEN.
+
+    PR-C boundary test:
+      15.0 → YELLOW (NOT RED; strict `> 15` for RED)
+      15.01 → RED
+      10.0 → GREEN (NOT YELLOW; strict `> 10` for YELLOW)
+      10.01 → YELLOW
+    """
+    if expiry_risk_rate > _EXPIRY_RISK_RED:
+        return "RED"
+    if expiry_risk_rate > _EXPIRY_RISK_YELLOW:
+        return "YELLOW"
+    return "GREEN"
+
+
+def _determine_loss_rate_alert_level(loss_rate: Decimal) -> str:
+    """Mirror Java determineLossRateAlertLevel (L1333-1341).
+    INVERSE direction, **strict `>`**: RED > 5, YELLOW > 2, GREEN.
+
+    Used by PR-B health score path only (getLossAnalysis NOT controller-dispatched).
+    """
+    if loss_rate > _LOSS_RATE_RED:
+        return "RED"
+    if loss_rate > _LOSS_RATE_YELLOW:
+        return "YELLOW"
+    return "GREEN"
+```
+
+**Inline alert decisions (4 sites, NOT extracted as helpers — port verbatim per Rule 3):**
+
+| Site | Java location | Logic | Python pattern |
+|---|---|---|---|
+| `getExpiringBatchesRanking` per-batch | L398-404 | `daysUntilExpiry <= 7 → RED; <= 15 → YELLOW; else GREEN` | inline if/elif in `_get_expiring_batches_ranking` |
+| `getLongAgingBatchesRanking` per-batch | L799-805 | `ageDays > 120 → RED; > 90 → YELLOW; else GREEN` | inline if/elif in `_get_long_aging_batches_ranking` |
+| `getAgingMetrics` SLOW_MOVING_RATE | L747-751 | `> 20 → RED; > 10 → YELLOW; else GREEN` (INVERSE) | inline ternary in `_get_aging_metrics` |
+| `getHealthScore` overall | L903-910 | `>= 80 → GREEN; >= 60 → YELLOW; else RED` (regular direction) | inline if/elif in `_get_health_score` (PR-B) |
+
+⚠️ Spec **不抽出**这 4 个 inline 为 helper. Java 1:1 mirror = inline. Sister specs (procurement #40 §3.7) 同 pattern.
