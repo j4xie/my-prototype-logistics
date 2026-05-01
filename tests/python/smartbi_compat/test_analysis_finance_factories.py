@@ -274,3 +274,54 @@ class TestCalculateAgingBuckets:
         rows = [{"receivable_amount": "0", "collection_amount": None, "aging_days": 15}]
         result = _calculate_aging_buckets(rows)
         assert all(v == Decimal("0") for v in result.values())
+
+
+class TestReceivableAlertHelpers:
+    """4 threshold helpers — boundary smoke only (PR-A). Full 24-case table is PR-B.
+
+    Java uses > strict; boundary value falls into LOWER alertLevel.
+    """
+
+    def test_collection_rate_below_60_red(self):
+        from smartbi_compat.api.analysis_finance import _determine_collection_rate_alert
+        assert _determine_collection_rate_alert(Decimal("59.99")) == "RED"
+        assert _determine_collection_rate_alert(Decimal("0")) == "RED"
+
+    def test_collection_rate_60_to_80_yellow(self):
+        from smartbi_compat.api.analysis_finance import _determine_collection_rate_alert
+        # Java line 1639-1644: if v<60 RED; if v<80 YELLOW; else GREEN
+        # Boundary 60.0: NOT < 60 → falls to YELLOW
+        assert _determine_collection_rate_alert(Decimal("60.00")) == "YELLOW"
+        assert _determine_collection_rate_alert(Decimal("79.99")) == "YELLOW"
+
+    def test_collection_rate_above_80_green(self):
+        from smartbi_compat.api.analysis_finance import _determine_collection_rate_alert
+        assert _determine_collection_rate_alert(Decimal("80.00")) == "GREEN"
+        assert _determine_collection_rate_alert(Decimal("100.00")) == "GREEN"
+
+    def test_aging_30_alert_thresholds(self):
+        """Java MetricCalculatorServiceImpl line 491-494: >50 RED, >25 YELLOW, else GREEN."""
+        from smartbi_compat.api.analysis_finance import _aging_30_alert
+        assert _aging_30_alert(Decimal("0")) == "GREEN"
+        assert _aging_30_alert(Decimal("25")) == "GREEN"      # NOT > 25
+        assert _aging_30_alert(Decimal("25.01")) == "YELLOW"  # > 25
+        assert _aging_30_alert(Decimal("50")) == "YELLOW"     # NOT > 50
+        assert _aging_30_alert(Decimal("50.01")) == "RED"     # > 50
+
+    def test_aging_60_alert_thresholds(self):
+        """Java MetricCalculatorServiceImpl line 485-488: >30 RED, >15 YELLOW, else GREEN."""
+        from smartbi_compat.api.analysis_finance import _aging_60_alert
+        assert _aging_60_alert(Decimal("0")) == "GREEN"
+        assert _aging_60_alert(Decimal("15")) == "GREEN"
+        assert _aging_60_alert(Decimal("15.01")) == "YELLOW"
+        assert _aging_60_alert(Decimal("30")) == "YELLOW"
+        assert _aging_60_alert(Decimal("30.01")) == "RED"
+
+    def test_aging_90_alert_thresholds(self):
+        """Java FinanceAnalysisServiceImpl line 715-719: >20.0 RED, >10.0 YELLOW, else GREEN."""
+        from smartbi_compat.api.analysis_finance import _aging_90_alert
+        assert _aging_90_alert(Decimal("0")) == "GREEN"
+        assert _aging_90_alert(Decimal("10")) == "GREEN"
+        assert _aging_90_alert(Decimal("10.01")) == "YELLOW"
+        assert _aging_90_alert(Decimal("20")) == "YELLOW"
+        assert _aging_90_alert(Decimal("20.01")) == "RED"

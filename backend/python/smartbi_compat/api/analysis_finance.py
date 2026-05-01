@@ -1200,6 +1200,60 @@ def _calculate_aging_buckets(ar_data: list[dict]) -> dict[str, Decimal]:
     return buckets
 
 
+def _determine_collection_rate_alert(rate: Decimal) -> str:
+    """Mirror Java FinanceAnalysisServiceImpl.determineCollectionRateAlertLevel (line 1639-1644).
+
+    Thresholds use < (not <=); boundary 60/80 falls into LOWER level.
+    Rule 7: integer thresholds → float() cast OK (matches Java doubleValue()).
+    """
+    v = float(rate)
+    if v < 60:
+        return "RED"
+    if v < 80:
+        return "YELLOW"
+    return "GREEN"
+
+
+def _aging_30_alert(ratio: Decimal) -> str:
+    """Mirror Java MetricCalculatorServiceImpl line 491-494: >50 RED, >25 YELLOW, else GREEN.
+
+    Boundary 25/50 falls into LOWER level (Java > strict).
+    """
+    v = float(ratio)
+    if v > 50:
+        return "RED"
+    if v > 25:
+        return "YELLOW"
+    return "GREEN"
+
+
+def _aging_60_alert(ratio: Decimal) -> str:
+    """Mirror Java MetricCalculatorServiceImpl line 485-488: >30 RED, >15 YELLOW, else GREEN.
+
+    Boundary 15/30 falls into LOWER level.
+    """
+    v = float(ratio)
+    if v > 30:
+        return "RED"
+    if v > 15:
+        return "YELLOW"
+    return "GREEN"
+
+
+def _aging_90_alert(ratio: Decimal) -> str:
+    """Mirror Java FinanceAnalysisServiceImpl line 715-719:
+    >AGING_90_RED_THRESHOLD (20.0) RED, >AGING_90_YELLOW_THRESHOLD (10.0) YELLOW, else GREEN.
+
+    Boundary 10/20 falls into LOWER level.
+    """
+    v = float(ratio)
+    if v > AGING_90_RED_THRESHOLD:
+        return "RED"
+    if v > AGING_90_YELLOW_THRESHOLD:
+        return "YELLOW"
+    return "GREEN"
+
+
 # Cost category constants (Java FinanceAnalysisServiceImpl COST_CATEGORY_* literal values)
 COST_CATEGORY_MATERIAL = "原材料"
 COST_CATEGORY_LABOR    = "人工"
