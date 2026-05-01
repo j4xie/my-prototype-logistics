@@ -374,3 +374,40 @@ async def _get_department_ranking(
             "alertLevel":     _determine_target_completion_alert(cr),
         })
     return rankings
+
+
+async def _get_department_completion_rates(
+    factory_id: str, start_date: date, end_date: date
+) -> list[dict]:
+    """Mirror Java DepartmentAnalysisServiceImpl.getDepartmentCompletionRates (line 161-201).
+
+    Empty rows → []. Sort by completionRate desc.
+
+    MetricResult put-order (Java line 183-192):
+      [metricCode, metricName, value, formattedValue, unit, dimensionValue, alertLevel]
+
+    formattedValue: Java DecimalFormat("#,##0.00") + "%" → Python f"{value:,.2f}%".
+    """
+    rows = await _query_department_full(factory_id, start_date, end_date)
+    if not rows:
+        return []
+
+    aggregated = _aggregate_department_data(rows)
+
+    results = []
+    for dept, agg in aggregated.items():
+        cr = _calculate_completion_rate(agg["salesAmount"], agg["salesTarget"])
+        cr_display = cr.quantize(_DISPLAY_SCALE, rounding=_QUANTIZE_HALF_UP)
+        results.append({
+            "metricCode":     "TARGET_COMPLETION",
+            "metricName":     "目标完成率",
+            "value":          _decimal_to_number(cr_display),
+            "formattedValue": f"{cr_display:,.2f}%",    # 千分位 + 2 位小数 + %
+            "unit":           "%",
+            "dimensionValue": dept,
+            "alertLevel":     _determine_target_completion_alert(cr),
+        })
+
+    # Java line 198: results.sort(by value desc)
+    results.sort(key=lambda r: r["value"], reverse=True)
+    return results
