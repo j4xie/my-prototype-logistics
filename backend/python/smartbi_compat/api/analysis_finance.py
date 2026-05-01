@@ -2463,6 +2463,9 @@ async def get_finance_analysis(
     Branches:
       analysisType empty       → composite (6-key Map via getComprehensiveAnalysis)
       analysisType=payable     → payable per-type (4-key shape, real impl Phase E)
+      analysisType=profit      → profit per-type (PR #21 + #22 sales fallback)
+      analysisType=cost        → cost per-type (PR #25 structure + trend)
+      analysisType=budget      → budget per-type (this PR, 5-key dispatcher)
       analysisType=other       → 501 envelope (un-ported, see spec §6 / §12)
     """
     range_ = DateRange.custom(startDate, endDate)
@@ -2481,6 +2484,10 @@ async def get_finance_analysis(
 
     if analysisType == "cost":
         result = await _get_cost_analysis(auth.factory_id, startDate, endDate)
+        return wrap_response(result)
+
+    if analysisType == "budget":
+        result = await _get_budget_analysis(auth.factory_id, startDate, endDate)
         return wrap_response(result)
 
     return wrap_response(
